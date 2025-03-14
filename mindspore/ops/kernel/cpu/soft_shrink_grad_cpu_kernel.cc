@@ -19,6 +19,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace soft_shrink_grad_cpu {
 #define SOFT_SHRINK_GRAD_CPU_REGISTER(DT, T)             \
   KernelAttr()                                           \
     .AddInputAttr(DT)                                    \
@@ -88,8 +89,8 @@ int SoftShrinkGradCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs
   return KRET_OK;
 }
 
-const std::vector<std::pair<KernelAttr, SoftShrinkGradCpuKernelMod::KernelRunFunc>> &
-SoftShrinkGradCpuKernelMod::GetFuncList() const {
+const std::vector<std::pair<KernelAttr, SoftShrinkGradCpuKernelMod::KernelRunFunc>>
+  &SoftShrinkGradCpuKernelMod::GetFuncList() const {
   static const std::vector<std::pair<KernelAttr, SoftShrinkGradCpuKernelMod::KernelRunFunc>> func_list = {
     {SOFT_SHRINK_GRAD_CPU_REGISTER(kNumberTypeFloat32, float)},
     {SOFT_SHRINK_GRAD_CPU_REGISTER(kNumberTypeInt32, int32_t)},
@@ -99,5 +100,6 @@ SoftShrinkGradCpuKernelMod::GetFuncList() const {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SoftShrinkGrad, SoftShrinkGradCpuKernelMod);
+}  // namespace soft_shrink_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

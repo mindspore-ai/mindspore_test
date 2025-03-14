@@ -29,6 +29,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace clip_by_norm_cpu {
 class ClipByNormCpuKernelMod : public NativeCpuKernelMod {
  public:
   ClipByNormCpuKernelMod() = default;
@@ -78,6 +79,7 @@ class ClipByNormCpuKernelMod : public NativeCpuKernelMod {
   ParallelSearchInfo parallel_search_info_div_;
   ParallelSearchInfo parallel_search_info_mul_;
 };
+}  // namespace clip_by_norm_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_CLIP_BY_NORM_CPU_KERNEL_H_

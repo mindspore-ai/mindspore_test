@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace lerp_scalar {
 
 class LerpScalarAscend : public AclnnKernelMod {
  public:
@@ -36,6 +37,7 @@ class LerpScalarAscend : public AclnnKernelMod {
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
   ScalarPtr weight_{nullptr};
 };
+}  // namespace lerp_scalar
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace embedding {
 
 class EmbeddingAscend : public AclnnKernelMod {
  public:
@@ -40,6 +41,7 @@ class EmbeddingAscend : public AclnnKernelMod {
   double max_norm_{0};
   double norm_type_{0};
 };
+}  // namespace embedding
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_segment_sum_cpu {
 bool SparseSegmentSumCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                         const std::vector<KernelTensor *> &outputs) {
   constexpr size_t input_num = 3;
@@ -111,5 +112,6 @@ const std::vector<std::pair<KernelAttr, SparseSegmentSumCpuKernelMod::KernelRunF
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SparseSegmentSum, SparseSegmentSumCpuKernelMod);
+}  // namespace sparse_segment_sum_cpu
 }  // namespace kernel
 }  // namespace mindspore

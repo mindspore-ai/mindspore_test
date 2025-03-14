@@ -18,6 +18,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace cumsum_cpu {
 namespace {
 constexpr size_t kCumSumInputsNum = 4;
 using complex64 = std::complex<float>;
@@ -421,5 +422,6 @@ std::vector<KernelAttr> CumSumCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, CumSum, CumSumCpuKernelMod);
+}  // namespace cumsum_cpu
 }  // namespace kernel
 }  // namespace mindspore

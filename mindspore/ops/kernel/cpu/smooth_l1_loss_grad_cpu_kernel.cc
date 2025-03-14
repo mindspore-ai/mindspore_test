@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace smooth_l1_loss_grad_cpu {
 namespace {
 constexpr size_t kSmoothL1LossGradInputsNum = 5;
 constexpr size_t kSmoothL1LossGradOutputsNum = 1;
@@ -174,5 +175,6 @@ const std::vector<std::pair<KernelAttr, SmoothL1LossGradCpuKernelMod::KernelRunF
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SmoothL1LossGrad, SmoothL1LossGradCpuKernelMod);
+}  // namespace smooth_l1_loss_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

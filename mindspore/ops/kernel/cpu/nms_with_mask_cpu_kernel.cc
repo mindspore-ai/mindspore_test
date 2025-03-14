@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace nms_with_mask_cpu {
 namespace {
 constexpr size_t kIndexDataBuff = 0;
 constexpr size_t kIndexIndexBuff = 1;
@@ -282,5 +283,6 @@ const std::vector<std::pair<KernelAttr, NMSWithMaskCpuKernelMod::KernelRunFunc>>
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, NMSWithMask, NMSWithMaskCpuKernelMod);
+}  // namespace nms_with_mask_cpu
 }  // namespace kernel
 }  // namespace mindspore

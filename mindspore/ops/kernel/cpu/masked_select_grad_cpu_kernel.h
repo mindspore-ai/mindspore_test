@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace masked_select_grad_cpu {
 class MaskedSelectGradCpuKernelMod : public NativeCpuKernelMod {
  public:
   MaskedSelectGradCpuKernelMod() = default;
@@ -58,6 +59,7 @@ class MaskedSelectGradCpuKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> output_shape_;
   int64_t tensor_size_ = 1;
 };
+}  // namespace masked_select_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_MASKED_SELECTED_GRAD_CPU_KERNEL_H_

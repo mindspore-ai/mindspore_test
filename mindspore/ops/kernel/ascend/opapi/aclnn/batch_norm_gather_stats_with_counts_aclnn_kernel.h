@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace batch_norm_gather_stats_with_counts {
 
 class BatchNormGatherStatsWithCountsAscend : public AclnnKernelMod {
  public:
@@ -35,6 +36,7 @@ class BatchNormGatherStatsWithCountsAscend : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace batch_norm_gather_stats_with_counts
 }  // namespace kernel
 }  // namespace mindspore
 

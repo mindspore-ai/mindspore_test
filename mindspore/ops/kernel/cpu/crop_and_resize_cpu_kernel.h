@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace crop_and_resize_cpu {
 constexpr int BILINEAR = 1;
 constexpr int NEAREST = 2;
 constexpr int BILINEAR_V2 = 3;
@@ -86,6 +87,7 @@ class CropAndResizeCpuKernelMod : public NativeCpuKernelMod {
   int final_width_{0};
   int channel_{0};
 };
+}  // namespace crop_and_resize_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

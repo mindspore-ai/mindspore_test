@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace isfinite_cpu {
 class IsFiniteCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<IsFiniteCpuKernelMod> {
  public:
   IsFiniteCpuKernelMod() = default;
@@ -51,6 +52,7 @@ class IsFiniteCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper
   static const std::vector<std::pair<KernelAttr, IsFiniteCpuKernelMod::KernelRunFunc>> func_list_;
 };
 
+}  // namespace isfinite_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

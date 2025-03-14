@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace random_categorical_cpu {
 class RandomCategoricalCpuKernel : public NativeCpuKernelMod, public MatchKernelHelper<RandomCategoricalCpuKernel> {
  public:
   RandomCategoricalCpuKernel() = default;
@@ -56,6 +57,7 @@ class RandomCategoricalCpuKernel : public NativeCpuKernelMod, public MatchKernel
   bool init_state_{true};
   std::default_random_engine rng_;
 };
+}  // namespace random_categorical_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_RANDOM_CATEGORICAL_CPU_KERNEL_H_

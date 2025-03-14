@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_relu {
 using TensorParams = device::ascend::TensorParams;
 
 class InplaceReLUAclnnKernelMod : public AclnnKernelMod {
@@ -37,6 +38,7 @@ class InplaceReLUAclnnKernelMod : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace inplace_relu
 }  // namespace kernel
 }  // namespace mindspore
 

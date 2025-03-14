@@ -19,6 +19,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace repeat_interleave_tensor {
 
 void RepeatInterleaveTensorAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                     const std::vector<KernelTensor *> &outputs) {
@@ -59,5 +60,6 @@ bool RepeatInterleaveTensorAscend::Launch(const std::vector<KernelTensor *> &inp
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(RepeatInterleaveTensor, RepeatInterleaveTensorAscend);
+}  // namespace repeat_interleave_tensor
 }  // namespace kernel
 }  // namespace mindspore

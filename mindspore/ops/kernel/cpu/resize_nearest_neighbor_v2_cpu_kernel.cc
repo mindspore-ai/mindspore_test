@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace resize_nearest_neighbor_v2_cpu {
 namespace {
 constexpr size_t kResizeNearestNeighborV2InputsNum = 4;
 constexpr size_t kResizeNearestNeighborV2OutputNum = 1;
@@ -125,5 +126,6 @@ std::vector<KernelAttr> ResizeNearestNeighborV2CpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ResizeNearestNeighborV2, ResizeNearestNeighborV2CpuKernelMod);
+}  // namespace resize_nearest_neighbor_v2_cpu
 }  // namespace kernel
 }  // namespace mindspore

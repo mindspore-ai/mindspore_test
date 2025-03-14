@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace logspace_cpu {
 namespace {
 constexpr size_t kLogSpaceInputsNum = 2;
 constexpr size_t kLogSpaceOutputsNum = 1;
@@ -117,5 +118,6 @@ std::vector<KernelAttr> LogSpaceCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, LogSpace, LogSpaceCpuKernelMod);
+}  // namespace logspace_cpu
 }  // namespace kernel
 }  // namespace mindspore

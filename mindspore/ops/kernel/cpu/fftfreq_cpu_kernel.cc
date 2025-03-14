@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace fftfreq_cpu {
 namespace {
 constexpr auto kInputNum = 3;
 constexpr auto kOutputNum = 1;
@@ -90,5 +91,6 @@ std::vector<KernelAttr> FFTFreqCpuKernelMod::GetOpSupport() {
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, FFTFreq, FFTFreqCpuKernelMod);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, RFFTFreq, FFTFreqCpuKernelMod);
+}  // namespace fftfreq_cpu
 }  // namespace kernel
 }  // namespace mindspore

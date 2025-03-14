@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace matmul_reduce_scatter {
 void MatmulReduceScatterAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                  const std::vector<KernelTensor *> &outputs) {
   MS_EXCEPTION_IF_NULL(primitive_);
@@ -70,5 +71,6 @@ bool MatmulReduceScatterAscend::Launch(const std::vector<KernelTensor *> &inputs
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(MatmulReduceScatter, MatmulReduceScatterAscend);
+}  // namespace matmul_reduce_scatter
 }  // namespace kernel
 }  // namespace mindspore

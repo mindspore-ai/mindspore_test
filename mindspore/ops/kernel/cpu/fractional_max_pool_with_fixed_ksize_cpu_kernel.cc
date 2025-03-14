@@ -25,12 +25,13 @@
 
 namespace mindspore {
 namespace kernel {
+namespace fractional_max_pool_with_fixed_ksize_cpu {
 namespace {
 const size_t kInputsNum = 2;
 const size_t kOutputsNum = 2;
 const size_t kInputIndex0 = 0;
 const size_t kInputIndex1 = 1;
-const size_t kOutputIndex1 = 1;
+const size_t kOutputIdx1 = 1;
 const size_t kInputDimIndexN = 0;
 const size_t kInputDimIndexC = 1;
 const size_t kInputDimIndexH = 2;
@@ -50,11 +51,11 @@ const size_t kKsizeLength2 = 2;
 const size_t kOutputShapeLength1 = 1;
 const size_t kOutputShapeLength2 = 2;
 
-#define ADD_KERNEL(t1, t2, t3, t4)  \
-  KernelAttr()                      \
-    .AddInputAttr(kNumberType##t1)  \
-    .AddInputAttr(kNumberType##t2)  \
-    .AddOutputAttr(kNumberType##t3) \
+#define FRACTIONAL_MAX_POOL_WITH_FIXED_KSIZE_ADD_KERNEL(t1, t2, t3, t4) \
+  KernelAttr()                                                          \
+    .AddInputAttr(kNumberType##t1)                                      \
+    .AddInputAttr(kNumberType##t2)                                      \
+    .AddOutputAttr(kNumberType##t3)                                     \
     .AddOutputAttr(kNumberType##t4)
 }  // namespace
 
@@ -66,7 +67,7 @@ bool FractionalMaxPoolWithFixedKsizeCPUKernelMod::Init(const std::vector<KernelT
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), output_num, kernel_name_);
   input_type_ = inputs[kInputIndex0]->dtype_id();
   random_samples_type_ = inputs[kInputIndex1]->dtype_id();
-  argmax_type_ = outputs[kOutputIndex1]->dtype_id();
+  argmax_type_ = outputs[kOutputIdx1]->dtype_id();
   auto kernel_attr = GetKernelAttrFromTensors(inputs, outputs);
   auto match = MatchKernelAttr(kernel_attr, GetOpSupport());
   if (!match.first) {
@@ -290,17 +291,25 @@ std::vector<int> FractionalMaxPoolWithFixedKsizeCPUKernelMod::GenerateIntervals(
 
 std::vector<KernelAttr> FractionalMaxPoolWithFixedKsizeCPUKernelMod::GetOpSupport() {
   static std::vector<KernelAttr> kernel_attr_list = {
-    ADD_KERNEL(Int32, Float32, Int32, Int64),     ADD_KERNEL(Int64, Float32, Int64, Int64),
-    ADD_KERNEL(Float16, Float32, Float16, Int64), ADD_KERNEL(Float32, Float32, Float32, Int64),
-    ADD_KERNEL(Float64, Float32, Float64, Int64), ADD_KERNEL(Int32, Float16, Int32, Int64),
-    ADD_KERNEL(Int64, Float16, Int64, Int64),     ADD_KERNEL(Float16, Float16, Float16, Int64),
-    ADD_KERNEL(Float32, Float16, Float32, Int64), ADD_KERNEL(Float64, Float16, Float64, Int64),
-    ADD_KERNEL(Int32, Float64, Int32, Int64),     ADD_KERNEL(Int64, Float64, Int64, Int64),
-    ADD_KERNEL(Float16, Float64, Float16, Int64), ADD_KERNEL(Float32, Float64, Float32, Int64),
-    ADD_KERNEL(Float64, Float64, Float64, Int64)};
+    FRACTIONAL_MAX_POOL_WITH_FIXED_KSIZE_ADD_KERNEL(Int32, Float32, Int32, Int64),
+    FRACTIONAL_MAX_POOL_WITH_FIXED_KSIZE_ADD_KERNEL(Int64, Float32, Int64, Int64),
+    FRACTIONAL_MAX_POOL_WITH_FIXED_KSIZE_ADD_KERNEL(Float16, Float32, Float16, Int64),
+    FRACTIONAL_MAX_POOL_WITH_FIXED_KSIZE_ADD_KERNEL(Float32, Float32, Float32, Int64),
+    FRACTIONAL_MAX_POOL_WITH_FIXED_KSIZE_ADD_KERNEL(Float64, Float32, Float64, Int64),
+    FRACTIONAL_MAX_POOL_WITH_FIXED_KSIZE_ADD_KERNEL(Int32, Float16, Int32, Int64),
+    FRACTIONAL_MAX_POOL_WITH_FIXED_KSIZE_ADD_KERNEL(Int64, Float16, Int64, Int64),
+    FRACTIONAL_MAX_POOL_WITH_FIXED_KSIZE_ADD_KERNEL(Float16, Float16, Float16, Int64),
+    FRACTIONAL_MAX_POOL_WITH_FIXED_KSIZE_ADD_KERNEL(Float32, Float16, Float32, Int64),
+    FRACTIONAL_MAX_POOL_WITH_FIXED_KSIZE_ADD_KERNEL(Float64, Float16, Float64, Int64),
+    FRACTIONAL_MAX_POOL_WITH_FIXED_KSIZE_ADD_KERNEL(Int32, Float64, Int32, Int64),
+    FRACTIONAL_MAX_POOL_WITH_FIXED_KSIZE_ADD_KERNEL(Int64, Float64, Int64, Int64),
+    FRACTIONAL_MAX_POOL_WITH_FIXED_KSIZE_ADD_KERNEL(Float16, Float64, Float16, Int64),
+    FRACTIONAL_MAX_POOL_WITH_FIXED_KSIZE_ADD_KERNEL(Float32, Float64, Float32, Int64),
+    FRACTIONAL_MAX_POOL_WITH_FIXED_KSIZE_ADD_KERNEL(Float64, Float64, Float64, Int64)};
   return kernel_attr_list;
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, FractionalMaxPoolWithFixedKsize, FractionalMaxPoolWithFixedKsizeCPUKernelMod);
+}  // namespace fractional_max_pool_with_fixed_ksize_cpu
 }  // namespace kernel
 }  // namespace mindspore

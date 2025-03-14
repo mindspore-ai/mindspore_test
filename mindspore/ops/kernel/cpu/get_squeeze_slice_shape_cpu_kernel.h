@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace get_squeeze_slice_shape_cpu {
 class GetSqueezeSliceShapeCpuKernelMod : public NativeCpuKernelMod {
  public:
   GetSqueezeSliceShapeCpuKernelMod() = default;
@@ -53,6 +54,7 @@ class GetSqueezeSliceShapeCpuKernelMod : public NativeCpuKernelMod {
   std::vector<std::vector<int64_t>> data_shapes_;
   std::vector<int64_t> tuple_index_types_;
 };
+}  // namespace get_squeeze_slice_shape_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_GET_SQUEEZE_SLICE_SHAPE_CPU_KERNEL_H_

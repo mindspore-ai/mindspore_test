@@ -28,13 +28,12 @@
 namespace mindspore {
 namespace ops {
 namespace {
-constexpr size_t kDimSize4 = 4;
-
 abstract::ShapePtr MaxUnpool2DInferShapeCompute(const std::string &data_format, const ShapeVector &in_shape,
                                                 const std::vector<int64_t> &ksize, const std::vector<int64_t> &strides,
                                                 const std::vector<int64_t> &pads,
                                                 const std::vector<int64_t> &attr_output_shape,
                                                 const std::string &op_name) {
+  constexpr size_t kDimSize4 = 4;
   if (data_format == "NCHW") {
     int64_t out_h = static_cast<int64_t>((in_shape[kInputIndex2] - 1) * strides[kInputIndex2] - 2 * pads[kInputIndex2] +
                                          ksize[kInputIndex2]);
@@ -110,6 +109,7 @@ abstract::ShapePtr MaxUnpool2DInferShape(const PrimitivePtr &primitive,
   auto data_format = GetValue<std::string>(primitive->GetAttr("format"));
   auto attr_output_shape = GetValue<std::vector<int64_t>>(primitive->GetAttr("output_shape"));
   constexpr size_t output_shape_size = 0;
+  constexpr size_t kDimSize4 = 4;
   if (attr_output_shape.size() != kDimSize4 && attr_output_shape.size() != output_shape_size) {
     MS_EXCEPTION(ValueError) << "MaxUnpool2D: Output_shape size must be 0 or 4.";
   }

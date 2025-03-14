@@ -25,6 +25,9 @@
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "kernel/cpu/eigen/eigen_common_utils.h"
 
+namespace mindspore {
+namespace kernel {
+namespace complex_cpu {
 namespace {
 constexpr size_t kComplexInputsNum = 2;
 constexpr size_t kComplexOutputsNum = 1;
@@ -45,9 +48,6 @@ bool NeedBroadcast(const std::vector<int64_t> &shape) {
   return false;
 }
 }  // namespace
-
-namespace mindspore {
-namespace kernel {
 bool ComplexCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   auto kernel_attr = GetKernelAttrFromTensors(inputs, outputs);
   auto [is_match, index] = MatchKernelAttr(kernel_attr, GetOpSupport());
@@ -147,5 +147,6 @@ std::vector<KernelAttr> ComplexCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Complex, ComplexCpuKernelMod);
+}  // namespace complex_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace adaptive_max_pool2d_cpu {
 bool AdaptiveMaxPool2dCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                          const std::vector<KernelTensor *> &outputs) {
   return MatchKernelFunc(kernel_name_, inputs, outputs);
@@ -215,5 +216,6 @@ const AdaptiveMaxPool2dCpuKernelMod::FuncList &AdaptiveMaxPool2dCpuKernelMod::Ge
   return func_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, AdaptiveMaxPool2D, AdaptiveMaxPool2dCpuKernelMod);
+}  // namespace adaptive_max_pool2d_cpu
 }  // namespace kernel
 }  // namespace mindspore

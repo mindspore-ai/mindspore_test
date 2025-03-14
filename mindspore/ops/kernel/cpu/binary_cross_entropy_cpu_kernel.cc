@@ -19,6 +19,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace binary_cross_entropy_cpu {
 namespace {
 constexpr size_t kBceInputsNumWithWeight = 4;
 constexpr size_t kBceOutputsNum = 1;
@@ -176,5 +177,6 @@ std::vector<KernelAttr> BinaryCrossEntropyCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, BinaryCrossEntropy, BinaryCrossEntropyCpuKernelMod);
+}  // namespace binary_cross_entropy_cpu
 }  // namespace kernel
 }  // namespace mindspore

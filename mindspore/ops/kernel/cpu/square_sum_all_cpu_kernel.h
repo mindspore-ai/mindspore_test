@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace square_sum_all_cpu {
 class SquareSumAllCpuKernelMod : public NativeCpuKernelMod {
  public:
   SquareSumAllCpuKernelMod() = default;
@@ -51,6 +52,7 @@ class SquareSumAllCpuKernelMod : public NativeCpuKernelMod {
   bool LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                     const std::vector<kernel::KernelTensor *> &outputs);
 };
+}  // namespace square_sum_all_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

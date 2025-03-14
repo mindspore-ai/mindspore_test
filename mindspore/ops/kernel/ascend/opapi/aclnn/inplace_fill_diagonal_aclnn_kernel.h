@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_fill_diagonal {
 
 class InplaceFillDiagonalAclnnKernelMod : public AclnnKernelMod {
  public:
@@ -38,6 +39,7 @@ class InplaceFillDiagonalAclnnKernelMod : public AclnnKernelMod {
   ScalarPtr fill_value_{nullptr};
   bool wrap_{false};
 };
+}  // namespace inplace_fill_diagonal
 }  // namespace kernel
 }  // namespace mindspore
 

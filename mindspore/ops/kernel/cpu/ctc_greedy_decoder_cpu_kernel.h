@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace ctc_greedy_decoder_cpu {
 class CTCGreedyDecoderCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<CTCGreedyDecoderCpuKernelMod> {
  public:
   CTCGreedyDecoderCpuKernelMod() = default;
@@ -57,6 +58,7 @@ class CTCGreedyDecoderCpuKernelMod : public NativeCpuKernelMod, public MatchKern
   bool LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs, const std::vector<KernelTensor *> &,
                     const std::vector<kernel::KernelTensor *> &outputs);
 };
+}  // namespace ctc_greedy_decoder_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_CTC_GREEDY_DECODER_CPU_KERNEL_H_

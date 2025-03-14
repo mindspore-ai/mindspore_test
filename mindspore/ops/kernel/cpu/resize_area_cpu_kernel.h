@@ -28,6 +28,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace resize_area_cpu {
 struct ResizeAreaCachedInterpolation {
   int64_t start;
   int64_t end;
@@ -82,6 +83,7 @@ class ResizeAreaCPUKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> input1_shape_;
   std::vector<ResizeAreaCachedInterpolation> x_interps_{};
 };
+}  // namespace resize_area_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

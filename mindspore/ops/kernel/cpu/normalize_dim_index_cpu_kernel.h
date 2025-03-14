@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace normalize_dim_index_cpu {
 class NormalizeDimIndexCpuKernelMod : public NativeCpuKernelMod {
  public:
   NormalizeDimIndexCpuKernelMod() = default;
@@ -52,6 +53,7 @@ class NormalizeDimIndexCpuKernelMod : public NativeCpuKernelMod {
   size_t dim_index_ = 0;
   size_t expand_dims_cnt_ = 0;
 };
+}  // namespace normalize_dim_index_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_NORMALIZE_DIM_INDEX_CPU_KERNEL_H_

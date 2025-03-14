@@ -29,6 +29,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace avg_pool1d {
 namespace {
 std::vector<int64_t> GetOriStrides(const std::vector<int64_t> &shape) {
   if (shape.empty()) {
@@ -132,5 +133,6 @@ bool AvgPool1DAscend::Launch(const std::vector<KernelTensor *> &inputs, const st
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(AvgPool1D, AvgPool1DAscend);
+}  // namespace avg_pool1d
 }  // namespace kernel
 }  // namespace mindspore

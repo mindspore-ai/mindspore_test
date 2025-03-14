@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace matmul_all_reduce {
 
 class MatMulAllReduceAscend : public AclnnKernelMod {
  public:
@@ -48,6 +49,7 @@ class MatMulAllReduceAscend : public AclnnKernelMod {
   std::string reduce_op_;
   int64_t stream_mode_ = 1;
 };
+}  // namespace matmul_all_reduce
 }  // namespace kernel
 }  // namespace mindspore
 

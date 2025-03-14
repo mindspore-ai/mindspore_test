@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace elu_ext {
 
 void EluExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                     const std::vector<KernelTensor *> &outputs) {
@@ -45,5 +46,6 @@ bool EluExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(EluExt, EluExtAscend);
+}  // namespace elu_ext
 }  // namespace kernel
 }  // namespace mindspore

@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace select_cpu {
 namespace {
 using float_complex = std::complex<float>;
 using double_complex = std::complex<double>;
@@ -178,5 +179,6 @@ const std::vector<selectPair> &SelectCpuKernelMod::GetFuncList() const {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Select, SelectCpuKernelMod);
+}  // namespace select_cpu
 }  // namespace kernel
 }  // namespace mindspore

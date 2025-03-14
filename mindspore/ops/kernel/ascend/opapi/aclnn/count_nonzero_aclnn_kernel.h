@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace count_nonzero {
 
 class CountNonZeroAscend : public AclnnKernelMod {
  public:
@@ -42,6 +43,7 @@ class CountNonZeroAscend : public AclnnKernelMod {
   TypeId out_dtype_{kNumberTypeInt64};
   ScalarPtr other_;
 };
+}  // namespace count_nonzero
 }  // namespace kernel
 }  // namespace mindspore
 

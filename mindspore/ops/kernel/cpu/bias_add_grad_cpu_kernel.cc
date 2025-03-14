@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace bias_add_grad_cpu {
 bool BiasAddGradCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                    const std::vector<KernelTensor *> &outputs) {
   if (!MatchKernelFunc(kernel_name_, inputs, outputs)) {
@@ -198,5 +199,6 @@ const std::vector<std::pair<KernelAttr, BiasAddGradCpuKernelMod::KernelRunFunc>>
   return func_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, BiasAddGrad, BiasAddGradCpuKernelMod);
+}  // namespace bias_add_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

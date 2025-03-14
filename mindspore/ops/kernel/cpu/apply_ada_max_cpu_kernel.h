@@ -28,6 +28,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace apply_ada_max_cpu {
 class ApplyAdaMaxCpuKernelMod : public NativeCpuKernelMod {
  public:
   ApplyAdaMaxCpuKernelMod() = default;
@@ -84,6 +85,7 @@ class ApplyAdaMaxCpuKernelMod : public NativeCpuKernelMod {
   template <typename T>
   void LaunchKernel(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
 };
+}  // namespace apply_ada_max_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace all_gather_matmul {
 
 class AllGatherMatmulAscend : public AclnnKernelMod {
  public:
@@ -46,6 +47,7 @@ class AllGatherMatmulAscend : public AclnnKernelMod {
   bool trans_x2_;
   const int64_t stream_mode_ = 1;
 };
+}  // namespace all_gather_matmul
 }  // namespace kernel
 }  // namespace mindspore
 

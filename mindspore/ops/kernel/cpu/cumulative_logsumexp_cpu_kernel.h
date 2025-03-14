@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace cumulative_logsumexp_cpu {
 class CumulativeLogsumexpCpuKernelMod : public NativeCpuKernelMod {
  public:
   CumulativeLogsumexpCpuKernelMod() = default;
@@ -53,6 +54,7 @@ class CumulativeLogsumexpCpuKernelMod : public NativeCpuKernelMod {
   bool reverse_{false};
   TypeId dtype_{kTypeUnknown};
 };
+}  // namespace cumulative_logsumexp_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif

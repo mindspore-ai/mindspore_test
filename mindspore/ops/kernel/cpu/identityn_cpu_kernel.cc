@@ -20,13 +20,13 @@
 #include "common/common_utils.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
+namespace mindspore {
+namespace kernel {
+namespace identityn_cpu {
 namespace {
 const size_t kInputsNum = 1;
 const size_t kOutputsNum = 1;
 }  // namespace
-
-namespace mindspore {
-namespace kernel {
 bool IdentityNCpuKernelMod::CheckType(TypeId idx_type, size_t idx) {
   bool is_in = (support_types_.find(idx_type) != support_types_.end());
   if (!is_in) {
@@ -97,5 +97,6 @@ std::vector<KernelAttr> IdentityNCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, IdentityN, IdentityNCpuKernelMod);
+}  // namespace identityn_cpu
 }  // namespace kernel
 }  // namespace mindspore

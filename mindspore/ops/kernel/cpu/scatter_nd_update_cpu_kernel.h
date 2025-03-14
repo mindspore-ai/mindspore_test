@@ -29,6 +29,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace scatter_nd_update_cpu {
 class ScatterUpdateArithmeticCpuKernelMod : public NativeCpuKernelMod {
  public:
   ScatterUpdateArithmeticCpuKernelMod() = default;
@@ -65,6 +66,7 @@ class ScatterUpdateArithmeticCpuKernelMod : public NativeCpuKernelMod {
   std::string kernel_type_;
   std::vector<size_t> out_strides_;
 };
+}  // namespace scatter_nd_update_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

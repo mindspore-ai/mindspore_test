@@ -30,6 +30,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace tile_cpu {
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
 
@@ -68,6 +69,7 @@ class TileCpuKernelMod : public NativeCpuKernelMod {
   bool one_dim_tile_{false};
   size_t input_size_{0};
 };
+}  // namespace tile_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_TILE_CPU_KERNEL_H_

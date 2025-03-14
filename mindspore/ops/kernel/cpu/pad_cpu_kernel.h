@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace pad_cpu {
 class PadCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<PadCpuKernelMod> {
  public:
   PadCpuKernelMod() = default;
@@ -62,6 +63,7 @@ class PadCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<PadC
   size_t output_size_{1};
   bool is_null_input_{false};
 };
+}  // namespace pad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_PAD_CPU_KERNEL_H_

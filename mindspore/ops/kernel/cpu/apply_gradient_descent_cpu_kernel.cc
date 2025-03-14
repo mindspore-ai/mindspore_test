@@ -20,6 +20,9 @@
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "ops_utils/op_utils.h"
 
+namespace mindspore {
+namespace kernel {
+namespace apply_gradient_descent_cpu {
 namespace {
 const size_t kZero = 0;
 const size_t kOne = 1;
@@ -27,9 +30,6 @@ const size_t kTwo = 2;
 constexpr size_t kApplyGradientDescentInputsNum = 3;
 constexpr size_t kApplyGradientDescentOutputsNum = 1;
 }  // namespace
-
-namespace mindspore {
-namespace kernel {
 namespace {
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
@@ -174,5 +174,6 @@ std::vector<KernelAttr> ApplyGradientDescentCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ApplyGradientDescent, ApplyGradientDescentCpuKernelMod);
+}  // namespace apply_gradient_descent_cpu
 }  // namespace kernel
 }  // namespace mindspore

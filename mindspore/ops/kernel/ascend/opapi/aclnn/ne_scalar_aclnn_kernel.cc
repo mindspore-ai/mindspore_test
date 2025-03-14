@@ -29,6 +29,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace ne_scalar {
 
 void NeScalarAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                       const std::vector<KernelTensor *> &outputs) {
@@ -43,5 +44,6 @@ bool NeScalarAscend::Launch(const std::vector<KernelTensor *> &inputs, const std
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(NeScalar, NeScalarAscend);
+}  // namespace ne_scalar
 }  // namespace kernel
 }  // namespace mindspore

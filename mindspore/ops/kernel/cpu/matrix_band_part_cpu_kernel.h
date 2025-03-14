@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace matrix_band_part_cpu {
 class MatrixBandPartCpuKernelMod : public NativeCpuKernelMod {
  public:
   MatrixBandPartCpuKernelMod() = default;
@@ -71,6 +72,7 @@ class MatrixBandPartCpuKernelMod : public NativeCpuKernelMod {
   ShapeVector broadcast_upper_shape_;
   ShapeVector broadcast_output_shape_;
 };
+}  // namespace matrix_band_part_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_MATRIX_BAND_PART_CPU_KERNEL_H_

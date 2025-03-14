@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace normalize_tuple_index_cpu {
 bool NormalizeTupleIndexCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                            const std::vector<KernelTensor *> &outputs) {
   index_types_ = GetValue<string>(primitive_->GetAttr(kAttrOriginIndexType));
@@ -225,5 +226,6 @@ std::vector<KernelAttr> NormalizeTupleIndexCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, NormalizeTupleIndex, NormalizeTupleIndexCpuKernelMod);
+}  // namespace normalize_tuple_index_cpu
 }  // namespace kernel
 }  // namespace mindspore

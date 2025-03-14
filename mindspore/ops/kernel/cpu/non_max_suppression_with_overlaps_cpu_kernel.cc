@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace non_max_suppression_with_overlaps_cpu {
 namespace {
 constexpr size_t kNonMaxSuppressionWithOverlapsInputsNum = 5;
 constexpr size_t kNonMaxSuppressionWithOverlapsOutputsNum = 1;
@@ -136,5 +137,6 @@ std::vector<KernelAttr> NonMaxSuppressionWithOverlapsCpuKernelMod::GetOpSupport(
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, NonMaxSuppressionWithOverlaps, NonMaxSuppressionWithOverlapsCpuKernelMod);
+}  // namespace non_max_suppression_with_overlaps_cpu
 }  // namespace kernel
 }  // namespace mindspore

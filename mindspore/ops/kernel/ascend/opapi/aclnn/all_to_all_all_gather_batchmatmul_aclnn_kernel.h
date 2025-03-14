@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace all_to_all_all_gather_batchmatmul {
 
 class AlltoAllAllGatherBatchMatMulAscend : public AclnnKernelMod {
  public:
@@ -56,6 +57,7 @@ class AlltoAllAllGatherBatchMatMulAscend : public AclnnKernelMod {
   //  Integer on the host side, enumeration of acl flow mode, currently only supports 1
   const int64_t stream_mode_ = 1;
 };
+}  // namespace all_to_all_all_gather_batchmatmul
 }  // namespace kernel
 }  // namespace mindspore
 

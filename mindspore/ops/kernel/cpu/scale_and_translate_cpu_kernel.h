@@ -30,6 +30,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace scale_and_translate_cpu {
 constexpr size_t dim1 = 1;
 constexpr size_t dim4 = 4;
 
@@ -149,6 +150,7 @@ class ScaleAndTranslateGradCpuKernelMod : public NativeCpuKernelMod {
   std::string kernel_type_{"lanczos3"};
   bool antialias_{true};
 };
+}  // namespace scale_and_translate_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

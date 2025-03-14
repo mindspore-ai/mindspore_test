@@ -29,6 +29,7 @@ using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
 namespace mindspore {
 namespace kernel {
+namespace unary_op_cpu {
 class UnaryOpCpuKernelMod : public NativeCpuKernelMod {
  public:
   UnaryOpCpuKernelMod() = default;
@@ -49,6 +50,7 @@ class UnaryOpCpuKernelMod : public NativeCpuKernelMod {
   std::shared_ptr<CpuKernelFunc> func_obj_;
   bool is_null_input_;
 };
+}  // namespace unary_op_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_UNARY_OP_CPU_KERNEL_H_

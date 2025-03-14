@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace cross {
 
 class CrossAscend : public AclnnKernelMod {
  public:
@@ -37,6 +38,7 @@ class CrossAscend : public AclnnKernelMod {
   int64_t dim_ = 0;
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace cross
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace soft_shrink_grad_cpu {
 class SoftShrinkGradCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<SoftShrinkGradCpuKernelMod> {
  public:
   SoftShrinkGradCpuKernelMod() = default;
@@ -53,6 +54,7 @@ class SoftShrinkGradCpuKernelMod : public NativeCpuKernelMod, public MatchKernel
   size_t size_ = 1;
   float lambd = 0.5;
 };
+}  // namespace soft_shrink_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_SOFT_SHRINK_GRAD_CPU_KERNEL_H_

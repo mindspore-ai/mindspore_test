@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace smooth_l1_loss_cpu {
 namespace {
 constexpr size_t kSmoothL1LossInputsNum = 4;
 constexpr size_t kSmoothL1LossOutputsNum = 1;
@@ -143,5 +144,6 @@ const std::vector<std::pair<KernelAttr, SmoothL1LossCpuKernelMod::KernelRunFunc>
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SmoothL1Loss, SmoothL1LossCpuKernelMod);
+}  // namespace smooth_l1_loss_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace zeros {
 
 class ZerosAscendCall : public AclnnKernelMod {
  public:
@@ -38,6 +39,7 @@ class ZerosAscendCall : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace zeros
 }  // namespace kernel
 }  // namespace mindspore
 

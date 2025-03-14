@@ -30,6 +30,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace multinomial_cpu {
 class MultinomialCpuKernelMod : public NativeCpuKernelMod {
  public:
   MultinomialCpuKernelMod() { ResetResource(); }
@@ -66,6 +67,7 @@ class MultinomialCpuKernelMod : public NativeCpuKernelMod {
   MultinomialFunc kernel_func_{};
   static std::vector<std::pair<KernelAttr, MultinomialFunc>> func_list_;
 };
+}  // namespace multinomial_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_MULTINOMIAL_CPU_KERNEL_H

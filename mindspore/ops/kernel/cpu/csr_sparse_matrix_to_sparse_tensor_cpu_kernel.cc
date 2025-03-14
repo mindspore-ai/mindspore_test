@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace csr_sparse_matrix_to_sparse_tensor_cpu {
 namespace {
 constexpr size_t kRankWithoutBatch = 2;
 constexpr size_t kRankWithBatch = 3;
@@ -33,21 +34,21 @@ constexpr size_t kInputIndex1 = 1;
 constexpr size_t kInputIndex2 = 2;
 constexpr size_t kInputIndex3 = 3;
 constexpr size_t kInputIndex4 = 4;
-constexpr size_t kOutputIndex0 = 0;
-constexpr size_t kOutputIndex1 = 1;
-constexpr size_t kOutputIndex2 = 2;
+constexpr size_t kOutputIdx0 = 0;
+constexpr size_t kOutputIdx1 = 1;
+constexpr size_t kOutputIdx2 = 2;
 constexpr int64_t kInitPrevBatch = -1;
 constexpr char kKernelName[] = "CSRSparseMatrixToSparseTensor";
 
-#define ADD_KERNEL(t1, t2, t3, t4, t5, t6, t7, t8) \
-  KernelAttr()                                     \
-    .AddInputAttr(kNumberType##t1)                 \
-    .AddInputAttr(kNumberType##t2)                 \
-    .AddInputAttr(kNumberType##t3)                 \
-    .AddInputAttr(kNumberType##t4)                 \
-    .AddInputAttr(kNumberType##t5)                 \
-    .AddOutputAttr(kNumberType##t6)                \
-    .AddOutputAttr(kNumberType##t7)                \
+#define CSR_SPARSE_MATRIX_TO_SPARSE_TENSOR_ADD_KERNEL(t1, t2, t3, t4, t5, t6, t7, t8) \
+  KernelAttr()                                                                        \
+    .AddInputAttr(kNumberType##t1)                                                    \
+    .AddInputAttr(kNumberType##t2)                                                    \
+    .AddInputAttr(kNumberType##t3)                                                    \
+    .AddInputAttr(kNumberType##t4)                                                    \
+    .AddInputAttr(kNumberType##t5)                                                    \
+    .AddOutputAttr(kNumberType##t6)                                                   \
+    .AddOutputAttr(kNumberType##t7)                                                   \
     .AddOutputAttr(kNumberType##t8)
 }  // namespace
 
@@ -145,11 +146,11 @@ void CSRSparseMatrixToSparseTensorCpuKernelMod::LaunchKernel(const std::vector<k
   batch_size_ = (rank_ == kRankWithoutBatch) ? kOne : static_cast<size_t>(x_dense_shape_ptr[kZero]);
   const size_t shift = (rank_ == kRankWithoutBatch) ? kZero : kOne;
   num_rows_ = static_cast<size_t>(*(static_cast<indiceT *>(inputs[kInputIndex0]->device_ptr()) + shift));
-  indiceT *indices_ptr = static_cast<indiceT *>(outputs[kOutputIndex0]->device_ptr());
+  indiceT *indices_ptr = static_cast<indiceT *>(outputs[kOutputIdx0]->device_ptr());
   MS_EXCEPTION_IF_NULL(indices_ptr);
-  valueT *values_ptr = static_cast<valueT *>(outputs[kOutputIndex1]->device_ptr());
+  valueT *values_ptr = static_cast<valueT *>(outputs[kOutputIdx1]->device_ptr());
   MS_EXCEPTION_IF_NULL(values_ptr);
-  indiceT *dense_shape_ptr = static_cast<indiceT *>(outputs[kOutputIndex2]->device_ptr());
+  indiceT *dense_shape_ptr = static_cast<indiceT *>(outputs[kOutputIdx2]->device_ptr());
   MS_EXCEPTION_IF_NULL(dense_shape_ptr);
   for (size_t i = kZero; i < rank_; i++) {
     dense_shape_ptr[i] = x_dense_shape_ptr[i];
@@ -181,18 +182,19 @@ void CSRSparseMatrixToSparseTensorCpuKernelMod::LaunchKernel(const std::vector<k
 
 std::vector<KernelAttr> CSRSparseMatrixToSparseTensorCpuKernelMod::GetOpSupport() {
   static std::vector<KernelAttr> kernel_attr_list = {
-    ADD_KERNEL(Int32, Int32, Int32, Int32, Float32, Int32, Float32, Int32),
-    ADD_KERNEL(Int32, Int32, Int32, Int32, Float64, Int32, Float64, Int32),
-    ADD_KERNEL(Int32, Int32, Int32, Int32, Complex64, Int32, Complex64, Int32),
-    ADD_KERNEL(Int32, Int32, Int32, Int32, Complex128, Int32, Complex128, Int32),
-    ADD_KERNEL(Int64, Int64, Int64, Int64, Float32, Int64, Float32, Int64),
-    ADD_KERNEL(Int64, Int64, Int64, Int64, Float64, Int64, Float64, Int64),
-    ADD_KERNEL(Int64, Int64, Int64, Int64, Complex64, Int64, Complex64, Int64),
-    ADD_KERNEL(Int64, Int64, Int64, Int64, Complex128, Int64, Complex128, Int64),
-    ADD_KERNEL(Int64, Int64, Int64, Int64, Int64, Int64, Float64, Int64)};
+    CSR_SPARSE_MATRIX_TO_SPARSE_TENSOR_ADD_KERNEL(Int32, Int32, Int32, Int32, Float32, Int32, Float32, Int32),
+    CSR_SPARSE_MATRIX_TO_SPARSE_TENSOR_ADD_KERNEL(Int32, Int32, Int32, Int32, Float64, Int32, Float64, Int32),
+    CSR_SPARSE_MATRIX_TO_SPARSE_TENSOR_ADD_KERNEL(Int32, Int32, Int32, Int32, Complex64, Int32, Complex64, Int32),
+    CSR_SPARSE_MATRIX_TO_SPARSE_TENSOR_ADD_KERNEL(Int32, Int32, Int32, Int32, Complex128, Int32, Complex128, Int32),
+    CSR_SPARSE_MATRIX_TO_SPARSE_TENSOR_ADD_KERNEL(Int64, Int64, Int64, Int64, Float32, Int64, Float32, Int64),
+    CSR_SPARSE_MATRIX_TO_SPARSE_TENSOR_ADD_KERNEL(Int64, Int64, Int64, Int64, Float64, Int64, Float64, Int64),
+    CSR_SPARSE_MATRIX_TO_SPARSE_TENSOR_ADD_KERNEL(Int64, Int64, Int64, Int64, Complex64, Int64, Complex64, Int64),
+    CSR_SPARSE_MATRIX_TO_SPARSE_TENSOR_ADD_KERNEL(Int64, Int64, Int64, Int64, Complex128, Int64, Complex128, Int64),
+    CSR_SPARSE_MATRIX_TO_SPARSE_TENSOR_ADD_KERNEL(Int64, Int64, Int64, Int64, Int64, Int64, Float64, Int64)};
 
   return kernel_attr_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, CSRSparseMatrixToSparseTensor, CSRSparseMatrixToSparseTensorCpuKernelMod);
+}  // namespace csr_sparse_matrix_to_sparse_tensor_cpu
 }  // namespace kernel
 }  // namespace mindspore

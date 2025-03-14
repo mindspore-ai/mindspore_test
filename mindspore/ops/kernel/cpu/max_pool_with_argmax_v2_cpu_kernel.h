@@ -29,6 +29,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace max_pool_with_argmax_v2_cpu {
 class MaxPoolWithArgmaxV2CpuKernelMod : public NativeCpuKernelMod {
  public:
   MaxPoolWithArgmaxV2CpuKernelMod() = default;
@@ -73,6 +74,7 @@ class MaxPoolWithArgmaxV2CpuKernelMod : public NativeCpuKernelMod {
   TypeId x_dtype_{kTypeUnknown};
   TypeId argmax_dtype_{kTypeUnknown};
 };
+}  // namespace max_pool_with_argmax_v2_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

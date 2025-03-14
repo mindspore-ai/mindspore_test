@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace adaptive_avg_pool_3d_grad_cpu {
 class AdaptiveAvgPool3DGradCPUKernelMod : public NativeCpuKernelMod {
  public:
   AdaptiveAvgPool3DGradCPUKernelMod() = default;
@@ -56,6 +57,7 @@ class AdaptiveAvgPool3DGradCPUKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> grad_input_dim_sizes_;
   TypeId dtype_{kTypeUnknown};
 };
+}  // namespace adaptive_avg_pool_3d_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_ADAPTIVEAVGPOOL3DGRAD_CPU_KERNEL_H_

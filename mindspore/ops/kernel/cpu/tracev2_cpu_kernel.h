@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace tracev2_cpu {
 class TraceV2CpuKernelMod : public NativeCpuKernelMod {
  public:
   TraceV2CpuKernelMod() = default;
@@ -60,6 +61,7 @@ class TraceV2CpuKernelMod : public NativeCpuKernelMod {
   size_t data_unit_size_{0};
   std::vector<size_t> tanspose_index_;
 };
+}  // namespace tracev2_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_TRACEV2_CPU_KERNEL_H_

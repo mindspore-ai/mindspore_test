@@ -24,6 +24,7 @@
 #include "common/ms_factory.h"
 namespace mindspore {
 namespace kernel {
+namespace lower_bound_cpu {
 class LowerBoundCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<LowerBoundCpuKernelMod> {
  public:
   LowerBoundCpuKernelMod() = default;
@@ -51,6 +52,7 @@ class LowerBoundCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelp
   size_t values_num_;
   size_t output_num_;
 };
+}  // namespace lower_bound_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

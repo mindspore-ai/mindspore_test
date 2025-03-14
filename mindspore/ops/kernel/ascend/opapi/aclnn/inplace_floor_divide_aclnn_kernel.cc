@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_floor_divide {
 
 void InplaceFloorDivideAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                 const std::vector<KernelTensor *> &outputs) {
@@ -35,5 +36,6 @@ bool InplaceFloorDivideAscend::Launch(const std::vector<KernelTensor *> &inputs,
   return true;
 }
 MS_ACLNN_KERNEL_FACTORY_REG(InplaceFloorDivide, InplaceFloorDivideAscend);
+}  // namespace inplace_floor_divide
 }  // namespace kernel
 }  // namespace mindspore

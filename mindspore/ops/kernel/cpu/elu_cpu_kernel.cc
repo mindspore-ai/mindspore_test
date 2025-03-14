@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace elu_cpu {
 template <typename T>
 bool EluCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                    const std::vector<KernelTensor *> &workspace,
@@ -58,5 +59,6 @@ const std::vector<std::pair<KernelAttr, EluCpuKernelMod::KernelRunFunc>> &EluCpu
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Elu, EluCpuKernelMod);
+}  // namespace elu_cpu
 }  // namespace kernel
 }  // namespace mindspore

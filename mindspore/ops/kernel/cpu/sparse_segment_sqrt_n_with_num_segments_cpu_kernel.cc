@@ -19,16 +19,17 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_segment_sqrt_n_with_num_segments_cpu {
 namespace {
 constexpr size_t kSparseSegmentSqrtNWithNumSegmentsInputsNum = 4;
 constexpr size_t kSparseSegmentSqrtNWithNumSegmentsOutputsNum = 1;
 
-#define ADD_KERNEL(t1, t2, t3, t4, t5) \
-  KernelAttr()                         \
-    .AddInputAttr(kNumberType##t1)     \
-    .AddInputAttr(kNumberType##t2)     \
-    .AddInputAttr(kNumberType##t3)     \
-    .AddInputAttr(kNumberType##t4)     \
+#define SPARSE_SEGMENT_SQRT_N_WITH_NUM_SEGMENTS_ADD_KERNEL(t1, t2, t3, t4, t5) \
+  KernelAttr()                                                                 \
+    .AddInputAttr(kNumberType##t1)                                             \
+    .AddInputAttr(kNumberType##t2)                                             \
+    .AddInputAttr(kNumberType##t3)                                             \
+    .AddInputAttr(kNumberType##t4)                                             \
     .AddOutputAttr(kNumberType##t5)
 }  // namespace
 
@@ -167,13 +168,17 @@ void SparseSegmentSqrtNWithNumSegmentsCpuKernelMod::LaunchKernel(const std::vect
 
 std::vector<KernelAttr> SparseSegmentSqrtNWithNumSegmentsCpuKernelMod::GetOpSupport() {
   static std::vector<KernelAttr> kernel_attr_list = {
-    ADD_KERNEL(Float16, Int32, Int32, Int32, Float16), ADD_KERNEL(Float16, Int64, Int64, Int64, Float16),
-    ADD_KERNEL(Float32, Int32, Int32, Int32, Float32), ADD_KERNEL(Float32, Int64, Int64, Int64, Float32),
-    ADD_KERNEL(Float64, Int32, Int32, Int32, Float64), ADD_KERNEL(Float64, Int64, Int64, Int64, Float64)};
+    SPARSE_SEGMENT_SQRT_N_WITH_NUM_SEGMENTS_ADD_KERNEL(Float16, Int32, Int32, Int32, Float16),
+    SPARSE_SEGMENT_SQRT_N_WITH_NUM_SEGMENTS_ADD_KERNEL(Float16, Int64, Int64, Int64, Float16),
+    SPARSE_SEGMENT_SQRT_N_WITH_NUM_SEGMENTS_ADD_KERNEL(Float32, Int32, Int32, Int32, Float32),
+    SPARSE_SEGMENT_SQRT_N_WITH_NUM_SEGMENTS_ADD_KERNEL(Float32, Int64, Int64, Int64, Float32),
+    SPARSE_SEGMENT_SQRT_N_WITH_NUM_SEGMENTS_ADD_KERNEL(Float64, Int32, Int32, Int32, Float64),
+    SPARSE_SEGMENT_SQRT_N_WITH_NUM_SEGMENTS_ADD_KERNEL(Float64, Int64, Int64, Int64, Float64)};
 
   return kernel_attr_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SparseSegmentSqrtNWithNumSegments,
                       SparseSegmentSqrtNWithNumSegmentsCpuKernelMod);
+}  // namespace sparse_segment_sqrt_n_with_num_segments_cpu
 }  // namespace kernel
 }  // namespace mindspore

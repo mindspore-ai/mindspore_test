@@ -27,10 +27,11 @@
 
 namespace mindspore {
 namespace kernel {
+namespace polygamma_cpu {
 namespace {
 constexpr size_t kInputIndex0 = 0;
 constexpr size_t kInputIndex1 = 1;
-constexpr size_t kOutputIndex = 0;
+constexpr size_t kOutputIdx = 0;
 constexpr size_t kInputsNum = 2;
 constexpr size_t kOutputsNum = 1;
 }  // namespace
@@ -224,5 +225,6 @@ std::vector<KernelAttr> PolygammaCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Polygamma, PolygammaCpuKernelMod);
+}  // namespace polygamma_cpu
 }  // namespace kernel
 }  // namespace mindspore

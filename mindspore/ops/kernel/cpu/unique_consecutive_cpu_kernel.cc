@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace unique_consecutive_cpu {
 namespace {
 // Value check constant
 constexpr size_t kUniqueConsecutiveInputsNum = 4;
@@ -386,5 +387,6 @@ const std::vector<std::pair<KernelAttr, UCKernelRunFunc>> &UniqueConsecutiveCpuK
   return func_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, UniqueConsecutive, UniqueConsecutiveCpuKernelMod);
+}  // namespace unique_consecutive_cpu
 }  // namespace kernel
 }  // namespace mindspore

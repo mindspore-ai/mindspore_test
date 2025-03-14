@@ -90,8 +90,6 @@ class GruGradInfer : public abstract::OpInferBase {
   const int64_t kNumber2 = 2;
   const int64_t kNumber3 = 3;
   const size_t kShapeSize = 3;
-  const int kIndex0 = 0;
-  const int kIndex2 = 2;
   const int kHxIdx = 1;
   const int kYIdx = 4;
   const int kDyIdx = 6;

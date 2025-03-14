@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace unique_consecutive {
 
 void UniqueConsecutiveAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                const std::vector<KernelTensor *> &outputs) {
@@ -80,5 +81,6 @@ void UniqueConsecutiveAscend::UpdateOutputShapeAndSize(const std::vector<KernelT
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(UniqueConsecutive, UniqueConsecutiveAscend);
+}  // namespace unique_consecutive
 }  // namespace kernel
 }  // namespace mindspore

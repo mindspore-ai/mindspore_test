@@ -21,6 +21,7 @@
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore::kernel {
+namespace hsigmoid_cpu {
 constexpr auto kHSigmoid = "HSigmoid";
 constexpr const size_t kHSigmoidInputsNum = 1;
 constexpr const size_t kHSigmoidOutputsNum = 1;
@@ -114,4 +115,5 @@ int HSigmoidCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
 
 MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, HSigmoid,
                                  []() { return std::make_shared<HSigmoidCpuKernelMod>(kHSigmoid); });
+}  // namespace hsigmoid_cpu
 }  // namespace mindspore::kernel

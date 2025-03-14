@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_softmax_cross_entropy_with_logits_cpu {
 bool SparseSoftmaxCrossEntropyWithLogitsCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                                            const std::vector<KernelTensor *> &outputs) {
   is_grad_ = GetValue<bool>(KernelMod::primitive_->GetAttr(ops::kIsGrad));
@@ -169,5 +170,6 @@ std::vector<KernelAttr> SparseSoftmaxCrossEntropyWithLogitsCpuKernelMod::GetOpSu
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SparseSoftmaxCrossEntropyWithLogits,
                       SparseSoftmaxCrossEntropyWithLogitsCpuKernelMod);
+}  // namespace sparse_softmax_cross_entropy_with_logits_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace equal_count_cpu {
 class EqualCountCpuKernelMod : public NativeCpuKernelMod {
  public:
   EqualCountCpuKernelMod() = default;
@@ -33,6 +34,7 @@ class EqualCountCpuKernelMod : public NativeCpuKernelMod {
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
               const std::vector<KernelTensor *> &outputs) override;
 };
+}  // namespace equal_count_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

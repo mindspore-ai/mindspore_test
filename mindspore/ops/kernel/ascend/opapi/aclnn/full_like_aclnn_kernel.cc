@@ -19,6 +19,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace full_like {
 
 void FullLikeAscendCall::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                           const std::vector<KernelTensor *> &outputs) {
@@ -34,5 +35,6 @@ bool FullLikeAscendCall::Launch(const std::vector<KernelTensor *> &inputs, const
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(FullLike, FullLikeAscendCall);
+}  // namespace full_like
 }  // namespace kernel
 }  // namespace mindspore

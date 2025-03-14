@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace quant_batch_matmul_all_reduce {
 void QuantBatchMatmulAllReduceAscend::InitializeCommonAttributes() {
   trans_a_ = GetRequiredAttr<bool>(kAttrIsTransA);
   trans_b_ = GetRequiredAttr<bool>(kAttrIsTransB);
@@ -59,5 +60,6 @@ bool QuantBatchMatmulAllReduceAscend::Launch(const std::vector<KernelTensor *> &
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(QuantBatchMatmulAllReduce, QuantBatchMatmulAllReduceAscend);
+}  // namespace quant_batch_matmul_all_reduce
 }  // namespace kernel
 }  // namespace mindspore

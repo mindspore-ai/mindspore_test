@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace max_pool_with_indices {
 
 void MaxPoolWithIndicesAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                 const std::vector<KernelTensor *> &outputs) {
@@ -51,5 +52,6 @@ bool MaxPoolWithIndicesAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(MaxPoolWithIndices, MaxPoolWithIndicesAscend);
+}  // namespace max_pool_with_indices
 }  // namespace kernel
 }  // namespace mindspore

@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace normal_tensor_tensor {
 
 void NormalTensorTensorAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                 const std::vector<KernelTensor *> &outputs) {
@@ -42,5 +43,6 @@ bool NormalTensorTensorAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(NormalTensorTensor, NormalTensorTensorAscend);
+}  // namespace normal_tensor_tensor
 }  // namespace kernel
 }  // namespace mindspore

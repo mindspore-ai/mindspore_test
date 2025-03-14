@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace masked_scatter_cpu {
 class MaskedScatterCpuKernelMod : public NativeCpuKernelMod {
  public:
   MaskedScatterCpuKernelMod() = default;
@@ -58,6 +59,7 @@ class MaskedScatterCpuKernelMod : public NativeCpuKernelMod {
   uint64_t updates_numElements_ = 1;
   bool need_broadcast_{false};
 };
+}  // namespace masked_scatter_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_MASKED_SCATTER_CPU_KERNEL_H_

@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace apply_power_sign_cpu {
 namespace {
 constexpr size_t kPowerSignInputsNum = 7;
 constexpr size_t kPowerSignOutputsNum = 2;
@@ -192,5 +193,6 @@ std::vector<KernelAttr> ApplyPowerSignCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ApplyPowerSign, ApplyPowerSignCpuKernelMod);
+}  // namespace apply_power_sign_cpu
 }  // namespace kernel
 }  // namespace mindspore

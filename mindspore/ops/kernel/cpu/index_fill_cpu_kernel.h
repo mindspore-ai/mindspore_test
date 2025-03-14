@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace index_fill_cpu {
 class IndexFillCpuKernelMod : public NativeCpuKernelMod {
  public:
   IndexFillCpuKernelMod() = default;
@@ -53,6 +54,7 @@ class IndexFillCpuKernelMod : public NativeCpuKernelMod {
   TypeId dim_type_;
   TypeId indices_type_;
 };
+}  // namespace index_fill_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

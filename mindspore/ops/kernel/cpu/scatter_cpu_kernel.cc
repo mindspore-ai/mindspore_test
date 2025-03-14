@@ -22,6 +22,7 @@
 #include "mindspore/ops/infer/ops_func_impl/tensor_scatter_elements.h"
 
 namespace mindspore::kernel {
+namespace scatter_cpu {
 namespace {
 template <class T>
 struct ReductionAdd {
@@ -258,4 +259,5 @@ MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, TensorScatterElements,
                                  []() { return std::make_shared<ScatterCpuKernelMod>(kTensorScatterElements); });
 MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, Scatter,
                                  []() { return std::make_shared<ScatterCpuKernelMod>(kScatter); });
+}  // namespace scatter_cpu
 }  // namespace mindspore::kernel

@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace instance_norm_v2_cpu {
 class InstanceNormV2CpuKernelMod : public NativeCpuKernelMod {
  public:
   InstanceNormV2CpuKernelMod() = default;
@@ -69,6 +70,7 @@ class InstanceNormV2CpuKernelMod : public NativeCpuKernelMod {
   bool input_x_is_4d_ = true;
   int64_t instance_num_ = 0;
 };
+}  // namespace instance_norm_v2_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

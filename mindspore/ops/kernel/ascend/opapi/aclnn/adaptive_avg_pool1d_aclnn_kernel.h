@@ -25,7 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
-
+namespace adaptive_avg_pool1d {
 class AdaptivePool1DAscend : public AclnnKernelMod {
  public:
   explicit AdaptivePool1DAscend(std::string &&op_type) : AclnnKernelMod(std::move(op_type)) {}
@@ -49,6 +49,7 @@ class AdaptiveAvgPool1DAscend : public AdaptivePool1DAscend {
   void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
 };
 
+}  // namespace adaptive_avg_pool1d
 }  // namespace kernel
 }  // namespace mindspore
 

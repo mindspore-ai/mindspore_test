@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace fftshift_cpu {
 class FFTShiftCpuKernelMod : public NativeCpuKernelMod {
  public:
   FFTShiftCpuKernelMod() = default;
@@ -56,6 +57,7 @@ class FFTShiftCpuKernelMod : public NativeCpuKernelMod {
   int64_t element_nums_;
   bool forward_;
 };
+}  // namespace fftshift_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_FFTSHIFT_CPU_KERNEL_H_

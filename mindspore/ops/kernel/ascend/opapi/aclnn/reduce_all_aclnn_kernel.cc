@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace reduce_all {
 
 void ReduceAllAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                        const std::vector<KernelTensor *> &outputs) {
@@ -45,5 +46,6 @@ bool ReduceAllAscend::Launch(const std::vector<KernelTensor *> &inputs, const st
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(ReduceAll, ReduceAllAscend);
+}  // namespace reduce_all
 }  // namespace kernel
 }  // namespace mindspore

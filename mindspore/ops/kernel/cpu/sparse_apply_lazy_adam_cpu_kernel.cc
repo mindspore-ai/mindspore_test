@@ -25,6 +25,8 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_apply_lazy_adam_cpu {
+using namespace sparse_optimizer_cpu;
 namespace {
 // "var","m","v","beta1_power","beta2_power","lr","beta1","beta2","epsilon","grad","indices"
 constexpr size_t kVarIndex = 0;
@@ -279,5 +281,6 @@ bool SparseApplyLazyAdamCpuKernelMod::LaunchKernel(const std::vector<kernel::Ker
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, FusedSparseLazyAdam, SparseApplyLazyAdamCpuKernelMod);
+}  // namespace sparse_apply_lazy_adam_cpu
 }  // namespace kernel
 }  // namespace mindspore

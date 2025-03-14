@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace eye {
 
 class EyeAscend : public AclnnKernelMod {
  public:
@@ -37,6 +38,7 @@ class EyeAscend : public AclnnKernelMod {
   int64_t m_col = 0;
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace eye
 }  // namespace kernel
 }  // namespace mindspore
 

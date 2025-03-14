@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace random_cpu {
 namespace {
 constexpr size_t kUniformIntInputsNum = 3;
 constexpr size_t kUniformRealInputsNum = 1;
@@ -189,5 +190,6 @@ MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, UniformInt,
                                  []() { return std::make_shared<RandomCpuKernelMod>(kUniformInt); });
 MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, UniformReal,
                                  []() { return std::make_shared<RandomCpuKernelMod>(kUniformReal); });
+}  // namespace random_cpu
 }  // namespace kernel
 }  // namespace mindspore

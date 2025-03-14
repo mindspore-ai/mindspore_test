@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace minimum_grad_grad_cpu {
 class MinimumGradGradCpuKernelMod : public NativeCpuKernelMod {
  public:
   MinimumGradGradCpuKernelMod() = default;
@@ -60,6 +61,7 @@ class MinimumGradGradCpuKernelMod : public NativeCpuKernelMod {
   int64_t output_size_{0};
   uint64_t tensor_size_ = 1;
 };
+}  // namespace minimum_grad_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_MINIMUM_GRAD_GRAD_CPU_KERNEL_H_

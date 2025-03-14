@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace grouped_matmul {
 
 class GroupedMatmulAscend : public AclnnKernelMod {
  public:
@@ -40,6 +41,7 @@ class GroupedMatmulAscend : public AclnnKernelMod {
   std::vector<int64_t> group_info_{};
   std::vector<int64_t> start_idxs_{};
 };
+}  // namespace grouped_matmul
 }  // namespace kernel
 }  // namespace mindspore
 

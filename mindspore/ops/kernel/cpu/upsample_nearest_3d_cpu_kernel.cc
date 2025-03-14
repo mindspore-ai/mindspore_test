@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace upsample_nearest_3d_cpu {
 namespace {
 const double kValueZero = 0.;
 }  // namespace
@@ -173,5 +174,6 @@ std::vector<KernelAttr> UpsampleNearest3DCpuKernelMod::GetOpSupport() {
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, UpsampleNearest1D, UpsampleNearest3DCpuKernelMod);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, UpsampleNearest2D, UpsampleNearest3DCpuKernelMod);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, UpsampleNearest3D, UpsampleNearest3DCpuKernelMod);
+}  // namespace upsample_nearest_3d_cpu
 }  // namespace kernel
 }  // namespace mindspore

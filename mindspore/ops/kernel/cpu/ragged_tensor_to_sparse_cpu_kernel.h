@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace ragged_tensor_to_sparse_cpu {
 class RaggedTensorToSparseCpuKernelMod : public NativeCpuKernelMod {
  public:
   RaggedTensorToSparseCpuKernelMod() = default;
@@ -70,6 +71,7 @@ class RaggedTensorToSparseCpuKernelMod : public NativeCpuKernelMod {
   TypeId splits_type_{kTypeUnknown};
   TypeId values_type_{kTypeUnknown};
 };
+}  // namespace ragged_tensor_to_sparse_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

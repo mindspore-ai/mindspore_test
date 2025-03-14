@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace lu_unpack_grad_cpu {
 namespace {
 const size_t kInputNum = 3;
 const size_t kOutputNum = 2;
@@ -189,5 +190,6 @@ std::vector<KernelAttr> LuUnpackGradCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, LuUnpackGrad, LuUnpackGradCpuKernelMod);
+}  // namespace lu_unpack_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

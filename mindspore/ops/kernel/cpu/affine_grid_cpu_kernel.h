@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace affine_grid_cpu {
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
 
@@ -70,6 +71,7 @@ class AffineGridCpuKernelMod : public NativeCpuKernelMod {
   std::vector<KernelTensor *> outputs_;
   ShapeVector output_shape_;
 };
+}  // namespace affine_grid_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

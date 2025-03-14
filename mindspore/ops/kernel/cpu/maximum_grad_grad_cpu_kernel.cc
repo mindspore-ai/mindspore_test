@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace maximum_grad_grad_cpu {
 namespace {
 constexpr size_t kMaximumGradGradInputsNum = 6;
 constexpr size_t kMaximumGradGradOutputsNum = 3;
@@ -27,9 +28,9 @@ constexpr size_t kInputIndex0 = 0;
 constexpr size_t kInputIndex1 = 1;
 constexpr size_t kInputIndex2 = 2;
 constexpr size_t kInputIndex3 = 3;
-constexpr size_t kOutputIndex0 = 0;
-constexpr size_t kOutputIndex1 = 1;
-constexpr size_t kOutputIndex2 = 2;
+constexpr size_t kOutputIdx0 = 0;
+constexpr size_t kOutputIdx1 = 1;
+constexpr size_t kOutputIdx2 = 2;
 }  // namespace
 
 bool MaximumGradGradCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
@@ -74,9 +75,9 @@ bool MaximumGradGradCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelT
   auto x2_addr = static_cast<T *>(inputs[kInputIndex1]->device_ptr());
   auto grad_y1_addr = static_cast<T *>(inputs[kInputIndex2]->device_ptr());
   auto grad_y2_addr = static_cast<T *>(inputs[kInputIndex3]->device_ptr());
-  auto sopd_x1_addr = static_cast<T *>(outputs[kOutputIndex0]->device_ptr());
-  auto sopd_x2_addr = static_cast<T *>(outputs[kOutputIndex1]->device_ptr());
-  auto sopd_grads_addr = static_cast<T *>(outputs[kOutputIndex2]->device_ptr());
+  auto sopd_x1_addr = static_cast<T *>(outputs[kOutputIdx0]->device_ptr());
+  auto sopd_x2_addr = static_cast<T *>(outputs[kOutputIdx1]->device_ptr());
+  auto sopd_grads_addr = static_cast<T *>(outputs[kOutputIdx2]->device_ptr());
 
   auto tensor_bytes = tensor_size_ * sizeof(T);
   auto ret_sopd_x1 = memset_s(sopd_x1_addr, tensor_bytes, 0, tensor_bytes);
@@ -213,5 +214,6 @@ std::vector<KernelAttr> MaximumGradGradCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, MaximumGradGrad, MaximumGradGradCpuKernelMod);
+}  // namespace maximum_grad_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

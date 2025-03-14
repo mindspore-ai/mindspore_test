@@ -28,6 +28,8 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_apply_ftrl_cpu {
+using namespace sparse_optimizer_cpu;
 namespace {
 // "var","accum","linear","grad","indices"
 constexpr size_t kVarIndex = 0;
@@ -473,5 +475,6 @@ bool SparseApplyFtrlCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelT
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, FusedSparseFtrl, FusedSparseFtrlCpuKernelMod);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SparseApplyFtrl, SparseApplyFtrlCpuKernelMod);
+}  // namespace sparse_apply_ftrl_cpu
 }  // namespace kernel
 }  // namespace mindspore

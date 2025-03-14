@@ -33,6 +33,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace stft_cpu {
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
 const complex128 kSTFTNegI{0, -1};
@@ -95,6 +96,7 @@ class STFTCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<STF
   int64_t batch_rank_{0};
   int64_t vmap_batches_{1};
 };
+}  // namespace stft_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace iou_cpu {
 class IOUCpuKernelMod : public NativeCpuKernelMod {
  public:
   IOUCpuKernelMod() = default;
@@ -53,6 +54,7 @@ class IOUCpuKernelMod : public NativeCpuKernelMod {
   enum iou_mod_ { IOU_MODE, IOF_MODE };
   int mode_{IOU_MODE};
 };
+}  // namespace iou_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

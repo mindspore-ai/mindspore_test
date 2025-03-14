@@ -29,6 +29,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace heaviside_cpu {
 namespace {
 const size_t kHeavisideInputsNum = 2;
 const size_t kHeavisideOutputsNum = 1;
@@ -128,5 +129,6 @@ std::vector<KernelAttr> HeavisideCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Heaviside, HeavisideCpuKernelMod);
+}  // namespace heaviside_cpu
 }  // namespace kernel
 }  // namespace mindspore

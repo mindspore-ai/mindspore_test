@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace stack_ext {
 namespace {
 constexpr size_t kStackMinNum = 2;
 }  // namespace
@@ -58,5 +59,6 @@ bool StackExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const std
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(StackExt, StackExtAscend);
+}  // namespace stack_ext
 }  // namespace kernel
 }  // namespace mindspore

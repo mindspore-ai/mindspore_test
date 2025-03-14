@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace split_tensor {
 
 class SplitTensorAscend : public AclnnKernelMod {
  public:
@@ -44,6 +45,7 @@ class SplitTensorAscend : public AclnnKernelMod {
 
   std::vector<KernelTensor *> GetSplitRealOutputs(const std::vector<KernelTensor *> &outputs);
 };
+}  // namespace split_tensor
 }  // namespace kernel
 }  // namespace mindspore
 

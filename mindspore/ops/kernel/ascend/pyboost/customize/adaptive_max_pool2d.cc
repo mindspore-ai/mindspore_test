@@ -26,7 +26,6 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-constexpr int kShapeDimNone = -1;
 constexpr int kShapeDim2d = 2;
 }  // namespace
 std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr> AdaptiveMaxPool2DAscendCustomize(
@@ -41,6 +40,7 @@ std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr> AdaptiveMaxPool2DAscend
 
   auto input_shape = input_tensor->shape();
   auto input_shape_size = input_shape.size();
+  constexpr int kShapeDimNone = -1;
   for (auto i = 0; i < kShapeDim2d; i++) {
     if (output_size_vector[i] != kShapeDimNone) {
       output_size_update.emplace_back(output_size_vector[i]);

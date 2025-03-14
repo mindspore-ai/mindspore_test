@@ -31,6 +31,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace tensor_scatter_op_cpu {
 namespace {
 template <typename T>
 using MatrixXd = Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>;
@@ -263,5 +264,6 @@ MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, TensorScatterMax, TensorScatterOpCpuKe
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, TensorScatterMin, TensorScatterOpCpuKernelMode);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, TensorScatterDiv, TensorScatterOpCpuKernelMode);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, TensorScatterMul, TensorScatterOpCpuKernelMode);
+}  // namespace tensor_scatter_op_cpu
 }  // namespace kernel
 }  // namespace mindspore

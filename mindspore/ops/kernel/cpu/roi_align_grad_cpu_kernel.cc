@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace roi_align_grad_cpu {
 namespace {
 template <typename T>
 void bilinear_interpolate(const int height, const int width, T y, T x, int *x_low, int *y_low, int *x_high, int *y_high,
@@ -317,5 +318,6 @@ bool ROIAlignGradCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &i
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ROIAlignGrad, ROIAlignGradCpuKernelMod);
+}  // namespace roi_align_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

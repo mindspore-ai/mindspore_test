@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace weight_quant_batch_matmul {
 
 class WeightQuantBatchMatmulV2Ascend : public AclnnKernelMod {
  public:
@@ -40,6 +41,7 @@ class WeightQuantBatchMatmulV2Ascend : public AclnnKernelMod {
   std::pair<KernelTensor *, bool> input_weight_;
   std::shared_ptr<KernelTensor> weight_;
 };
+}  // namespace weight_quant_batch_matmul
 }  // namespace kernel
 }  // namespace mindspore
 

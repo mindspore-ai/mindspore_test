@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sort_cpu {
 constexpr int kSortInputsNum = 1;
 constexpr int kSortOutputsNum = 2;
 
@@ -144,5 +145,6 @@ std::vector<KernelAttr> SortCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Sort, SortCpuKernelMod);
+}  // namespace sort_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace broadcastto {
 
 class BroadcastToAclnnKernelMod : public AclnnKernelMod {
  public:
@@ -36,6 +37,7 @@ class BroadcastToAclnnKernelMod : public AclnnKernelMod {
 
   std::vector<int64_t> shape_;
 };
+}  // namespace broadcastto
 }  // namespace kernel
 }  // namespace mindspore
 

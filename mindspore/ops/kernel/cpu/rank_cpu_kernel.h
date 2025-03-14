@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace rank_cpu {
 class RankCpuKernelMod : public NativeCpuKernelMod {
  public:
   RankCpuKernelMod() = default;
@@ -43,6 +44,7 @@ class RankCpuKernelMod : public NativeCpuKernelMod {
  private:
   int64_t input_shape_size;
 };
+}  // namespace rank_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_RANK_CPU_KERNEL_H_

@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace softshrink_grad {
 
 class SoftshrinkGradAscend : public AclnnKernelMod {
  public:
@@ -37,6 +38,7 @@ class SoftshrinkGradAscend : public AclnnKernelMod {
 
   ScalarPtr lambd_ = nullptr;
 };
+}  // namespace softshrink_grad
 }  // namespace kernel
 }  // namespace mindspore
 

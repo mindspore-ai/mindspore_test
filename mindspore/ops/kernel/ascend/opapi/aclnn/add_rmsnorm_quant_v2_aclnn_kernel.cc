@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace add_rmsnorm_quant_v2 {
 
 void AddRmsNormQuantAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                              const std::vector<KernelTensor *> &outputs) {
@@ -47,5 +48,6 @@ bool AddRmsNormQuantAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(AddRmsNormQuantV2, AddRmsNormQuantAscend);
+}  // namespace add_rmsnorm_quant_v2
 }  // namespace kernel
 }  // namespace mindspore

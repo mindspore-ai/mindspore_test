@@ -30,6 +30,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace mirror_pad_cpu {
 class MirrorPadCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<MirrorPadCpuKernelMod> {
  public:
   MirrorPadCpuKernelMod() = default;
@@ -61,6 +62,7 @@ class MirrorPadCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelpe
   std::vector<int64_t> input_shape_;
   std::vector<int64_t> output_shape_;
 };
+}  // namespace mirror_pad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_MIRROR_PAD_CPU_KERNEL_H_

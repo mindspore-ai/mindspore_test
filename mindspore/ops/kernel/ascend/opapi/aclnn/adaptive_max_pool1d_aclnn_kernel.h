@@ -25,8 +25,9 @@
 
 namespace mindspore {
 namespace kernel {
+namespace adaptive_max_pool1d {
 
-class AdaptiveMaxPool1DAscend : public AdaptivePool1DAscend {
+class AdaptiveMaxPool1DAscend : public adaptive_avg_pool1d::AdaptivePool1DAscend {
  public:
   AdaptiveMaxPool1DAscend() : AdaptivePool1DAscend(std::move("aclnnAdaptiveMaxPool2d")) {}
   ~AdaptiveMaxPool1DAscend() = default;
@@ -34,6 +35,7 @@ class AdaptiveMaxPool1DAscend : public AdaptivePool1DAscend {
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
   void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
 };
+}  // namespace adaptive_max_pool1d
 }  // namespace kernel
 }  // namespace mindspore
 

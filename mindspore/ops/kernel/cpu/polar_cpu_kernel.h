@@ -28,6 +28,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace polar_cpu {
 class PolarCpuKernelMod : public NativeCpuKernelMod {
  public:
   PolarCpuKernelMod() = default;
@@ -49,6 +50,7 @@ class PolarCpuKernelMod : public NativeCpuKernelMod {
   TypeId input1_dtype_{kTypeUnknown};
   TypeId input2_dtype_{kTypeUnknown};
 };
+}  // namespace polar_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

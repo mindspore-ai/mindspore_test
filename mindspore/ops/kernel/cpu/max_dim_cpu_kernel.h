@@ -28,9 +28,10 @@
 
 namespace mindspore {
 namespace kernel {
-class MaxDimCpuKernelMod : public ArgMaxWithValueCpuKernelMod {
+namespace max_dim_cpu {
+class MaxDimCpuKernelMod : public argmax_with_value_cpu::ArgMaxWithValueCpuKernelMod {
  public:
-  MaxDimCpuKernelMod() : ArgMaxWithValueCpuKernelMod(1, 0) {}
+  MaxDimCpuKernelMod() : argmax_with_value_cpu::ArgMaxWithValueCpuKernelMod(1, 0) {}
   ~MaxDimCpuKernelMod() override = default;
 
  protected:
@@ -106,6 +107,7 @@ class MaxDimCpuKernelMod : public ArgMaxWithValueCpuKernelMod {
     return kernel_attr_list;
   }
 };
+}  // namespace max_dim_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

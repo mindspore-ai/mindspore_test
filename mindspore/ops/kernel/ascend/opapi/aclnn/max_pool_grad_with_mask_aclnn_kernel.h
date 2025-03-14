@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace max_pool_grad_with_mask {
 
 class MaxPoolGradWithMaskAscend : public AclnnKernelMod {
  public:
@@ -41,6 +42,7 @@ class MaxPoolGradWithMaskAscend : public AclnnKernelMod {
   std::vector<int64_t> dilation_;
   bool ceil_mode_;
 };
+}  // namespace max_pool_grad_with_mask
 }  // namespace kernel
 }  // namespace mindspore
 

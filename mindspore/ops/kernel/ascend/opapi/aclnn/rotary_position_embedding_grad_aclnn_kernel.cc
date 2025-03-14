@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace rotary_position_embedding_grad {
 
 void RotaryPositionEmbeddingGradAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                          const std::vector<KernelTensor *> &outputs) {
@@ -46,5 +47,6 @@ bool RotaryPositionEmbeddingGradAscend::Launch(const std::vector<KernelTensor *>
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(RotaryPositionEmbeddingGrad, RotaryPositionEmbeddingGradAscend);
+}  // namespace rotary_position_embedding_grad
 }  // namespace kernel
 }  // namespace mindspore

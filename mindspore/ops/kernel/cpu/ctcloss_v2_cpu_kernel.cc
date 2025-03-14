@@ -24,6 +24,7 @@
 #include "abstract/utils.h"
 namespace mindspore {
 namespace kernel {
+namespace ctcloss_v2_cpu {
 namespace {
 constexpr int64_t target_mul = 2;
 }  // namespace
@@ -228,5 +229,6 @@ const std::vector<std::pair<KernelAttr, CTCLossV2CpuKernelMod::KernelRunFunc>> &
   return func_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, CTCLossV2, CTCLossV2CpuKernelMod);
+}  // namespace ctcloss_v2_cpu
 }  // namespace kernel
 }  // namespace mindspore

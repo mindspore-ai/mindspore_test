@@ -30,6 +30,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace upsample_bilinear2d {
 namespace {
 std::tuple<std::vector<int64_t>, std::tuple<double, double>, bool> UpsampleBilinear2DGenerate(
   const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
@@ -69,5 +70,6 @@ bool UpsampleBilinear2DAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(UpsampleBilinear2D, UpsampleBilinear2DAscend);
+}  // namespace upsample_bilinear2d
 }  // namespace kernel
 }  // namespace mindspore

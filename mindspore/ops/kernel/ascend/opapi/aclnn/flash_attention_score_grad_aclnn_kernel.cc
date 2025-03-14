@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace flash_attention_score_grad {
 void FlashAttentionScoreGradAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                      const std::vector<KernelTensor *> &outputs) {
   auto prefix = inputs[kIndex12];
@@ -97,5 +98,6 @@ bool FlashAttentionScoreGradAscend::Launch(const std::vector<KernelTensor *> &in
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(FlashAttentionScoreGrad, FlashAttentionScoreGradAscend);
+}  // namespace flash_attention_score_grad
 }  // namespace kernel
 }  // namespace mindspore

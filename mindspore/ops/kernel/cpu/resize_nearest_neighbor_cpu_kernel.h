@@ -28,6 +28,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace resize_nearest_neighbor_cpu {
 class ResizeNearestNeighborCpuKernelMod : public NativeCpuKernelMod,
                                           public MatchKernelHelper<ResizeNearestNeighborCpuKernelMod> {
  public:
@@ -66,6 +67,7 @@ class ResizeNearestNeighborCpuKernelMod : public NativeCpuKernelMod,
   float height_scale_{1.0};
   float width_scale_{1.0};
 };
+}  // namespace resize_nearest_neighbor_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_RESIZE_NEAREST_NEIGHBOR_CPU_KERNEL_H_

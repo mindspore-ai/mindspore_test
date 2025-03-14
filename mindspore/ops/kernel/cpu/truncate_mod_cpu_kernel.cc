@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace truncate_mod_cpu {
 namespace {
 const size_t kZero = 0;
 const size_t kOne = 1;
@@ -161,5 +162,6 @@ std::vector<KernelAttr> TruncateModCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, TruncateMod, TruncateModCpuKernelMod);
+}  // namespace truncate_mod_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -29,6 +29,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace scatter_arithmetic_cpu {
 namespace {
 template <typename T>
 void UpdateOutputData(T *output, size_t sz_out, T *input, size_t sz_in, const std::string &kernel_name) {
@@ -237,5 +238,6 @@ MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ScatterDiv, ScatterArithmeticCpuKernel
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ScatterMax, ScatterArithmeticCpuKernelMod);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ScatterMin, ScatterArithmeticCpuKernelMod);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ScatterUpdate, ScatterArithmeticCpuKernelMod);
+}  // namespace scatter_arithmetic_cpu
 }  // namespace kernel
 }  // namespace mindspore

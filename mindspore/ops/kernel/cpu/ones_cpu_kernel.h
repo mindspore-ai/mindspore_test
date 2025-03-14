@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace ones_cpu {
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
 
@@ -65,6 +66,7 @@ class OnesCpuKernelMod : public NativeCpuKernelMod {
   static std::vector<std::pair<KernelAttr, OnesFunc>> func_list_;
   OnesFunc kernel_func_;
 };
+}  // namespace ones_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

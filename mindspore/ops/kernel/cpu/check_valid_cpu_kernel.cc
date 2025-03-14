@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace check_valid_cpu {
 namespace {
 constexpr size_t kInputSize = 2;
 constexpr size_t kOutputSize = 1;
@@ -152,5 +153,6 @@ std::vector<KernelAttr> CheckValidCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, CheckValid, CheckValidCpuKernelMod);
+}  // namespace check_valid_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -30,6 +30,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_cross_cpu {
 class SparseCrossCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<SparseCrossCpuKernelMod> {
  public:
   SparseCrossCpuKernelMod() = default;
@@ -75,6 +76,7 @@ class SparseCrossCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHel
   int64_t N_;
   int64_t indices_row_{0};
 };
+}  // namespace sparse_cross_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_SPARSE_CROSS_CPU_KERNEL_H_

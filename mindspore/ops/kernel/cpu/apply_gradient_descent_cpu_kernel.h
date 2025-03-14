@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace apply_gradient_descent_cpu {
 class ApplyGradientDescentCpuKernelMod : public NativeCpuKernelMod {
  public:
   ApplyGradientDescentCpuKernelMod() = default;
@@ -58,6 +59,7 @@ class ApplyGradientDescentCpuKernelMod : public NativeCpuKernelMod {
   static std::vector<std::pair<KernelAttr, ApplyGradientDescentLaunchFunc>> func_list_;
   ApplyGradientDescentLaunchFunc kernel_func_;
 };
+}  // namespace apply_gradient_descent_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

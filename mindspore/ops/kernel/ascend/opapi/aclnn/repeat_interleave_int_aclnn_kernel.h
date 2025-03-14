@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace repeat_interleave_int {
 
 class RepeatInterleaveIntAscend : public AclnnKernelMod {
  public:
@@ -38,6 +39,7 @@ class RepeatInterleaveIntAscend : public AclnnKernelMod {
   int64_t repeats_ = 0;
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace repeat_interleave_int
 }  // namespace kernel
 }  // namespace mindspore
 

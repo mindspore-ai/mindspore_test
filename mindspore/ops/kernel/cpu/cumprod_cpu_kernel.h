@@ -28,6 +28,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace cumprod_cpu {
 class CumProdCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<CumProdCpuKernelMod> {
  public:
   CumProdCpuKernelMod() = default;
@@ -90,6 +91,7 @@ class CumProdCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<
   bool is_dynamic_shape_{false};
   int input_dim_length_{0};
 };
+}  // namespace cumprod_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_CUMPROD_CPU_KERNEL_H_

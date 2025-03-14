@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace masked_select_grad {
 void MaskedSelectGradAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                       const std::vector<KernelTensor *> &outputs) {
   ClearOpsWorkSpaceList();
@@ -40,5 +41,6 @@ bool MaskedSelectGradAclnnKernelMod::Launch(const std::vector<KernelTensor *> &i
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(MaskedSelectGrad, MaskedSelectGradAclnnKernelMod);
+}  // namespace masked_select_grad
 }  // namespace kernel
 }  // namespace mindspore

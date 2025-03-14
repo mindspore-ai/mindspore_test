@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace argmax_cpu {
 namespace {
 constexpr size_t kArgMaxInputsNum = 3;
 constexpr size_t kArgMaxOutputsNum = 1;
@@ -272,5 +273,6 @@ std::vector<KernelAttr> ArgmaxCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Argmax, ArgmaxCpuKernelMod);
+}  // namespace argmax_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -26,6 +26,7 @@
 #include "common/common_utils.h"
 namespace mindspore {
 namespace kernel {
+namespace array_len_cpu {
 namespace {
 constexpr size_t kInputNum = 1;
 constexpr size_t kOutputNum = 1;
@@ -69,5 +70,6 @@ std::vector<KernelAttr> ArrayLenCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, array_len, ArrayLenCpuKernelMod);
+}  // namespace array_len_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace linalg_vector_norm {
 
 class LinalgVectorNormAscend : public AclnnKernelMod {
  public:
@@ -40,6 +41,7 @@ class LinalgVectorNormAscend : public AclnnKernelMod {
   TypeId dtype_;
   bool keepdim_;
 };
+}  // namespace linalg_vector_norm
 }  // namespace kernel
 }  // namespace mindspore
 

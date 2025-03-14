@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace round_cpu {
 class RoundCpuKernelMod : public NativeCpuKernelMod {
  public:
   RoundCpuKernelMod() = default;
@@ -48,6 +49,7 @@ class RoundCpuKernelMod : public NativeCpuKernelMod {
   static std::vector<std::pair<KernelAttr, RoundFunc>> func_list_;
   RoundFunc kernel_func_;
 };
+}  // namespace round_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -19,6 +19,8 @@
 
 namespace mindspore {
 namespace kernel {
+namespace min_dim_cpu {
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, MinDim, MinDimCpuKernelMod);
+}  // namespace min_dim_cpu
 }  // namespace kernel
 }  // namespace mindspore

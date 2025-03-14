@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace lu_unpack_cpu {
 namespace {
 constexpr size_t kDimNum = 2;
 constexpr size_t kFirstDim = 1;
@@ -505,5 +506,6 @@ std::vector<KernelAttr> LuUnpackCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, LuUnpack, LuUnpackCpuKernelMod);
+}  // namespace lu_unpack_cpu
 }  // namespace kernel
 }  // namespace mindspore

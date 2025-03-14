@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace index_add_cpu {
 class IndexAddCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<IndexAddCpuKernelMod> {
  public:
   IndexAddCpuKernelMod() = default;
@@ -62,6 +63,7 @@ class IndexAddCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper
   size_t x_axis_size_{1};
   size_t y_axis_size_{1};
 };
+}  // namespace index_add_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

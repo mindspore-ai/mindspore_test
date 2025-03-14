@@ -18,6 +18,9 @@
 #include <functional>
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
+namespace mindspore {
+namespace kernel {
+namespace adaptive_max_pool_3d_cpu {
 namespace {
 #define ADAPTIVE_MAX_POOL_3D_COMPUTE_CASE(TYPENUM, DTYPE) \
   case (TYPENUM): {                                       \
@@ -25,9 +28,6 @@ namespace {
     break;                                                \
   }
 }  // namespace
-
-namespace mindspore {
-namespace kernel {
 constexpr size_t kInputNumDims5 = 5;
 constexpr size_t kInputShapeDims4 = 4;
 
@@ -298,5 +298,6 @@ void AdaptiveMaxPool3DCpuKernelMod::AdaptiveMaxPool3DCompute(const std::vector<K
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, AdaptiveMaxPool3D, AdaptiveMaxPool3DCpuKernelMod);
+}  // namespace adaptive_max_pool_3d_cpu
 }  // namespace kernel
 }  // namespace mindspore

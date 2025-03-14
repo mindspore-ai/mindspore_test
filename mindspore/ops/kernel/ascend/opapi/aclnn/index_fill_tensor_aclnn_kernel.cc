@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace index_fill_tensor {
 
 void IndexFillTensorAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                              const std::vector<KernelTensor *> &outputs) {
@@ -107,5 +108,6 @@ bool IndexFillTensorAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(IndexFillTensor, IndexFillTensorAscend);
+}  // namespace index_fill_tensor
 }  // namespace kernel
 }  // namespace mindspore

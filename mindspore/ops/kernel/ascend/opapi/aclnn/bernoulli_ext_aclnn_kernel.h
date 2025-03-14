@@ -23,7 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
-
+namespace bernoulli_ext {
 class BernoulliExtAscend : public AclnnKernelMod {
  public:
   BernoulliExtAscend() : AclnnKernelMod(std::move("aclnnInplaceBernoulliTensor")) {}
@@ -37,6 +37,7 @@ class BernoulliExtAscend : public AclnnKernelMod {
   int64_t offset_;
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace bernoulli_ext
 }  // namespace kernel
 }  // namespace mindspore
 

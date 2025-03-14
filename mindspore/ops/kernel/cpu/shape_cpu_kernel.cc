@@ -19,6 +19,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace shape_cpu {
 bool ShapeCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   return MatchKernelFunc(kernel_name_, inputs, outputs);
 }
@@ -87,5 +88,6 @@ const std::vector<std::pair<KernelAttr, ShapeCpuKernelMod::KernelRunFunc>> &Shap
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Shape, ShapeCpuKernelMod);
+}  // namespace shape_cpu
 }  // namespace kernel
 }  // namespace mindspore

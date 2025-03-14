@@ -28,6 +28,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace dynamic_broadcast_grad_args_cpu {
 class DynamicBroadcastGradientArgsCpuKernelMod : public NativeCpuKernelMod,
                                                  public MatchKernelHelper<DynamicBroadcastGradientArgsCpuKernelMod> {
  public:
@@ -72,6 +73,7 @@ class DynamicBroadcastGradientArgsCpuKernelMod : public NativeCpuKernelMod,
   bool is_null_input0_{false};
   bool is_null_input1_{false};
 };
+}  // namespace dynamic_broadcast_grad_args_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

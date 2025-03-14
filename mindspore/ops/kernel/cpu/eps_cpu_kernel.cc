@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace eps_cpu {
 namespace {
 constexpr size_t kEpsInputsNum = 1;
 constexpr size_t kEpsOnputsNum = 1;
@@ -86,5 +87,6 @@ std::vector<KernelAttr> EpsCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Eps, EpsCpuKernelMod);
+}  // namespace eps_cpu
 }  // namespace kernel
 }  // namespace mindspore

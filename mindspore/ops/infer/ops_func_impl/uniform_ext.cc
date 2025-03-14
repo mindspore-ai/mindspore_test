@@ -25,8 +25,6 @@
 
 namespace mindspore {
 namespace ops {
-const std::set<TypePtr> valid_types = {kInt8,    kInt16,   kInt32,   kInt64, kUInt8,
-                                       kFloat16, kFloat32, kFloat64, kBool,  kBFloat16};
 
 BaseShapePtr UniformExtFuncImpl::InferShape(const PrimitivePtr &primitive,
                                             const std::vector<AbstractBasePtr> &input_args) const {
@@ -38,6 +36,8 @@ TypePtr UniformExtFuncImpl::InferType(const PrimitivePtr &primitive,
   MS_EXCEPTION_IF_NULL(primitive);
   auto prim_name = primitive->name();
   auto x_type = input_args[0]->GetType();
+  const std::set<TypePtr> valid_types = {kInt8,    kInt16,   kInt32,   kInt64, kUInt8,
+                                         kFloat16, kFloat32, kFloat64, kBool,  kBFloat16};
   (void)CheckAndConvertUtils::CheckTensorTypeValid("x", x_type, valid_types, prim_name);
   return x_type;
 }

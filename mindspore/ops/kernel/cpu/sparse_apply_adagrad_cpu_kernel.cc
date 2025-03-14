@@ -26,6 +26,8 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_apply_adagrad_cpu {
+using namespace sparse_optimizer_cpu;
 namespace {
 constexpr size_t kVarIndex = 0;
 constexpr size_t kAccumIndex = 1;
@@ -247,5 +249,6 @@ bool SparseApplyAdagradCpuKernelMod::LaunchKernel(const std::vector<kernel::Kern
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SparseApplyAdagrad, SparseApplyAdagradCpuKernelMod);
+}  // namespace sparse_apply_adagrad_cpu
 }  // namespace kernel
 }  // namespace mindspore

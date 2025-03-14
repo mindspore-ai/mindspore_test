@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace softmax_cpu {
 class SoftmaxCpuKernelMod final : public NativeCpuKernelMod {
  public:
   SoftmaxCpuKernelMod() = default;
@@ -64,6 +65,7 @@ class SoftmaxCpuKernelMod final : public NativeCpuKernelMod {
   size_t output_elements_{0};
   size_t unit_size_{0};
 };
+}  // namespace softmax_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

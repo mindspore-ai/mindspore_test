@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace dctn_cpu {
 namespace {
 constexpr double kDCTFactor = 2.0;
 constexpr int64_t kNormFactor = 2;
@@ -274,5 +275,6 @@ std::vector<KernelAttr> DCTNCpuKernelMod::GetOpSupport() {
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, DCTN, DCTNCpuKernelMod);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, IDCTN, DCTNCpuKernelMod);
+}  // namespace dctn_cpu
 }  // namespace kernel
 }  // namespace mindspore

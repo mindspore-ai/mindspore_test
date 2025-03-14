@@ -32,6 +32,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace bitwise_cpu {
 constexpr size_t kBitwiseInitThreadNum = 50;
 constexpr float kBitwiseInitBlockSize = 100000;
 const size_t kBitwiseBigShapeNum = 5000000;
@@ -90,6 +91,7 @@ class BitwiseCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<
   size_t thread_num_{kBitwiseInitThreadNum};
   float block_size_{kBitwiseInitBlockSize};
 };
+}  // namespace bitwise_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

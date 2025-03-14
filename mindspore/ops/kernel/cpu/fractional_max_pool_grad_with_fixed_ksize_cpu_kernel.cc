@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace fractional_max_pool_grad_with_fixed_ksize_cpu {
 namespace {
 const size_t kInputsNum = 3;
 const size_t kOutputsNum = 1;
@@ -37,11 +38,11 @@ const size_t kInputsDimIndexC = 1;
 const size_t kInputsDimIndexH = 2;
 const size_t kInputsDimIndexW = 3;
 
-#define ADD_KERNEL(t1, t2, t3, t4) \
-  KernelAttr()                     \
-    .AddInputAttr(kNumberType##t1) \
-    .AddInputAttr(kNumberType##t2) \
-    .AddInputAttr(kNumberType##t3) \
+#define FRACTIONAL_MAX_POOL_GRAD_WITH_FIXED_KSIZE_ADD_KERNEL(t1, t2, t3, t4) \
+  KernelAttr()                                                               \
+    .AddInputAttr(kNumberType##t1)                                           \
+    .AddInputAttr(kNumberType##t2)                                           \
+    .AddInputAttr(kNumberType##t3)                                           \
     .AddOutputAttr(kNumberType##t4)
 }  // namespace
 
@@ -184,15 +185,21 @@ void FractionalMaxPoolGradWithFixedKsizeCPUKernelMod::FractionalMaxPoolGradWithF
 
 std::vector<KernelAttr> FractionalMaxPoolGradWithFixedKsizeCPUKernelMod::GetOpSupport() {
   static std::vector<KernelAttr> kernel_attr_list = {
-    ADD_KERNEL(Int32, Float16, Int64, Float16), ADD_KERNEL(Int32, Float32, Int64, Float32),
-    ADD_KERNEL(Int32, Float64, Int64, Float64), ADD_KERNEL(Int32, Int32, Int64, Int32),
-    ADD_KERNEL(Int32, Int64, Int64, Int64),     ADD_KERNEL(Int64, Float16, Int64, Float16),
-    ADD_KERNEL(Int64, Float32, Int64, Float32), ADD_KERNEL(Int64, Float64, Int64, Float64),
-    ADD_KERNEL(Int64, Int32, Int64, Int32),     ADD_KERNEL(Int64, Int64, Int64, Int64)};
+    FRACTIONAL_MAX_POOL_GRAD_WITH_FIXED_KSIZE_ADD_KERNEL(Int32, Float16, Int64, Float16),
+    FRACTIONAL_MAX_POOL_GRAD_WITH_FIXED_KSIZE_ADD_KERNEL(Int32, Float32, Int64, Float32),
+    FRACTIONAL_MAX_POOL_GRAD_WITH_FIXED_KSIZE_ADD_KERNEL(Int32, Float64, Int64, Float64),
+    FRACTIONAL_MAX_POOL_GRAD_WITH_FIXED_KSIZE_ADD_KERNEL(Int32, Int32, Int64, Int32),
+    FRACTIONAL_MAX_POOL_GRAD_WITH_FIXED_KSIZE_ADD_KERNEL(Int32, Int64, Int64, Int64),
+    FRACTIONAL_MAX_POOL_GRAD_WITH_FIXED_KSIZE_ADD_KERNEL(Int64, Float16, Int64, Float16),
+    FRACTIONAL_MAX_POOL_GRAD_WITH_FIXED_KSIZE_ADD_KERNEL(Int64, Float32, Int64, Float32),
+    FRACTIONAL_MAX_POOL_GRAD_WITH_FIXED_KSIZE_ADD_KERNEL(Int64, Float64, Int64, Float64),
+    FRACTIONAL_MAX_POOL_GRAD_WITH_FIXED_KSIZE_ADD_KERNEL(Int64, Int32, Int64, Int32),
+    FRACTIONAL_MAX_POOL_GRAD_WITH_FIXED_KSIZE_ADD_KERNEL(Int64, Int64, Int64, Int64)};
   return kernel_attr_list;
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, FractionalMaxPoolGradWithFixedKsize,
                       FractionalMaxPoolGradWithFixedKsizeCPUKernelMod);
+}  // namespace fractional_max_pool_grad_with_fixed_ksize_cpu
 }  // namespace kernel
 }  // namespace mindspore

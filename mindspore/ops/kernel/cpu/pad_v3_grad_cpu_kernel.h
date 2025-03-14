@@ -31,6 +31,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace pad_v3_grad_cpu {
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
 
@@ -123,6 +124,7 @@ class PadV3GradCpuKernelMod : public NativeCpuKernelMod {
   int64_t input_num_{1};
   int64_t output_num_{1};
 };
+}  // namespace pad_v3_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_PAD_V3_GRAD_CPU_KERNEL_H_

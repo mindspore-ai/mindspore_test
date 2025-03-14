@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace square_sum_all_cpu {
 namespace {
 constexpr size_t kSquareSumAllInputsNum = 2;
 constexpr size_t kSquareSumAllOutputsNum = 2;
@@ -125,5 +126,6 @@ std::vector<KernelAttr> SquareSumAllCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SquareSumAll, SquareSumAllCpuKernelMod);
+}  // namespace square_sum_all_cpu
 }  // namespace kernel
 }  // namespace mindspore

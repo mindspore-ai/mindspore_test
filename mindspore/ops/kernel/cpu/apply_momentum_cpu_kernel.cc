@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace apply_momentum_cpu {
 namespace {
 constexpr size_t kApplyMomentumInputsNum = 5;
 }  // namespace
@@ -106,42 +107,49 @@ void ApplyMomentumCpuKernelMod::LaunchApplyMomentum(const std::vector<KernelTens
   ParallelLaunchAutoSearch(task, elem_num, this, &parallel_search_info_);
 }
 
-#define ADD_KERNEL_1(dtype)              \
-  {                                      \
-    KernelAttr()                         \
-      .AddInputAttr(kNumberType##dtype)  \
-      .AddInputAttr(kNumberType##dtype)  \
-      .AddInputAttr(kNumberType##dtype)  \
-      .AddInputAttr(kNumberType##dtype)  \
-      .AddInputAttr(kNumberType##dtype)  \
-      .AddOutputAttr(kNumberType##dtype) \
-      .AddOutInRef(0, 0)                 \
+#define APPLY_MOMENTUM_ADD_KERNEL_1(dtype) \
+  {                                        \
+    KernelAttr()                           \
+      .AddInputAttr(kNumberType##dtype)    \
+      .AddInputAttr(kNumberType##dtype)    \
+      .AddInputAttr(kNumberType##dtype)    \
+      .AddInputAttr(kNumberType##dtype)    \
+      .AddInputAttr(kNumberType##dtype)    \
+      .AddOutputAttr(kNumberType##dtype)   \
+      .AddOutInRef(0, 0)                   \
   }
-#define ADD_KERNEL_2(dtype)              \
-  {                                      \
-    KernelAttr()                         \
-      .AddInputAttr(kNumberType##dtype)  \
-      .AddInputAttr(kNumberType##dtype)  \
-      .AddInputAttr(kNumberType##dtype)  \
-      .AddInputAttr(kNumberType##dtype)  \
-      .AddInputAttr(kNumberType##dtype)  \
-      .AddOutputAttr(kNumberType##dtype) \
-      .AddOutputAttr(kNumberType##dtype) \
-      .AddOutInRef(0, 0)                 \
+#define APPLY_MOMENTUM_ADD_KERNEL_2(dtype) \
+  {                                        \
+    KernelAttr()                           \
+      .AddInputAttr(kNumberType##dtype)    \
+      .AddInputAttr(kNumberType##dtype)    \
+      .AddInputAttr(kNumberType##dtype)    \
+      .AddInputAttr(kNumberType##dtype)    \
+      .AddInputAttr(kNumberType##dtype)    \
+      .AddOutputAttr(kNumberType##dtype)   \
+      .AddOutputAttr(kNumberType##dtype)   \
+      .AddOutInRef(0, 0)                   \
   }
 
 std::vector<KernelAttr> ApplyMomentumCpuKernelMod::GetOpSupport() {
   static std::vector<KernelAttr> kernel_attr_list = {
-    ADD_KERNEL_1(Float32),    ADD_KERNEL_2(Float32),   ADD_KERNEL_1(Float16),   ADD_KERNEL_2(Float16),
-    ADD_KERNEL_1(Int8),       ADD_KERNEL_2(Int8),      ADD_KERNEL_1(UInt8),     ADD_KERNEL_2(UInt8),
-    ADD_KERNEL_1(Int16),      ADD_KERNEL_2(Int16),     ADD_KERNEL_1(UInt16),    ADD_KERNEL_2(UInt16),
-    ADD_KERNEL_1(UInt32),     ADD_KERNEL_2(UInt32),    ADD_KERNEL_1(Int32),     ADD_KERNEL_2(Int32),
-    ADD_KERNEL_1(Int64),      ADD_KERNEL_2(Int64),     ADD_KERNEL_1(UInt64),    ADD_KERNEL_2(UInt64),
-    ADD_KERNEL_1(Float64),    ADD_KERNEL_2(Float64),   ADD_KERNEL_1(Complex64), ADD_KERNEL_2(Complex64),
-    ADD_KERNEL_1(Complex128), ADD_KERNEL_2(Complex128)};
+    APPLY_MOMENTUM_ADD_KERNEL_1(Float32),    APPLY_MOMENTUM_ADD_KERNEL_2(Float32),
+    APPLY_MOMENTUM_ADD_KERNEL_1(Float16),    APPLY_MOMENTUM_ADD_KERNEL_2(Float16),
+    APPLY_MOMENTUM_ADD_KERNEL_1(Int8),       APPLY_MOMENTUM_ADD_KERNEL_2(Int8),
+    APPLY_MOMENTUM_ADD_KERNEL_1(UInt8),      APPLY_MOMENTUM_ADD_KERNEL_2(UInt8),
+    APPLY_MOMENTUM_ADD_KERNEL_1(Int16),      APPLY_MOMENTUM_ADD_KERNEL_2(Int16),
+    APPLY_MOMENTUM_ADD_KERNEL_1(UInt16),     APPLY_MOMENTUM_ADD_KERNEL_2(UInt16),
+    APPLY_MOMENTUM_ADD_KERNEL_1(UInt32),     APPLY_MOMENTUM_ADD_KERNEL_2(UInt32),
+    APPLY_MOMENTUM_ADD_KERNEL_1(Int32),      APPLY_MOMENTUM_ADD_KERNEL_2(Int32),
+    APPLY_MOMENTUM_ADD_KERNEL_1(Int64),      APPLY_MOMENTUM_ADD_KERNEL_2(Int64),
+    APPLY_MOMENTUM_ADD_KERNEL_1(UInt64),     APPLY_MOMENTUM_ADD_KERNEL_2(UInt64),
+    APPLY_MOMENTUM_ADD_KERNEL_1(Float64),    APPLY_MOMENTUM_ADD_KERNEL_2(Float64),
+    APPLY_MOMENTUM_ADD_KERNEL_1(Complex64),  APPLY_MOMENTUM_ADD_KERNEL_2(Complex64),
+    APPLY_MOMENTUM_ADD_KERNEL_1(Complex128), APPLY_MOMENTUM_ADD_KERNEL_2(Complex128)};
   return kernel_attr_list;
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ApplyMomentum, ApplyMomentumCpuKernelMod);
+}  // namespace apply_momentum_cpu
 }  // namespace kernel
 }  // namespace mindspore

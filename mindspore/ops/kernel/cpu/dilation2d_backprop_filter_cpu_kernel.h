@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace dilation2d_backprop_filter_cpu {
 class Dilation2DBackpropFilterCpuKernelMod : public NativeCpuKernelMod,
                                              public MatchKernelHelper<Dilation2DBackpropFilterCpuKernelMod> {
  public:
@@ -60,6 +61,7 @@ class Dilation2DBackpropFilterCpuKernelMod : public NativeCpuKernelMod,
   std::string pad_mode_;
   std::string format_;
 };
+}  // namespace dilation2d_backprop_filter_cpu
 }  //  namespace kernel
 }  //  namespace mindspore
 

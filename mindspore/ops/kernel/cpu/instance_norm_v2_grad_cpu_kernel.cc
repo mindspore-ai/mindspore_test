@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace instance_norm_v2_grad_cpu {
 namespace {
 // GRAIN_SIZE for Parallel
 constexpr size_t kGrainSize = 4 * 1024;
@@ -172,5 +173,6 @@ std::vector<KernelAttr> InstanceNormV2GradCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, InstanceNormV2Grad, InstanceNormV2GradCpuKernelMod);
+}  // namespace instance_norm_v2_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

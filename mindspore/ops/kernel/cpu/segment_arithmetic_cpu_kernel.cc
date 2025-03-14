@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace segment_arithmetic_cpu {
 namespace {
 const size_t kSegmentsThreshold = 2 * 1024;
 const size_t kDataSizeThreshold = 2 * 1024;
@@ -270,5 +271,6 @@ bool SegmentArithmeticCPUKernelMod::LaunchKernel(const std::vector<kernel::Kerne
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SegmentSum, SegmentArithmeticCPUKernelMod);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SegmentProd, SegmentArithmeticCPUKernelMod);
+}  // namespace segment_arithmetic_cpu
 }  // namespace kernel
 }  // namespace mindspore

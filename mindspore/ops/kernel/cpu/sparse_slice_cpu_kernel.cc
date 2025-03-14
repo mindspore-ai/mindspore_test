@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_slice_cpu {
 namespace {
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
@@ -30,7 +31,7 @@ constexpr int64_t kSparseSliceOutputsNum = 3;
 constexpr int64_t kDim0Num = 1;
 constexpr int64_t kDim1Num = 2;
 
-#define ADD_KERNEL(dtype, type)                    \
+#define SPARSE_SLICE_ADD_KERNEL(dtype, type)       \
   {                                                \
     KernelAttr()                                   \
       .AddInputAttr(kNumberTypeInt64)              \
@@ -191,14 +192,17 @@ void SparseSliceCpuKernelMod::SliceCompute(int64_t *input_indices, T *input_valu
 const std::vector<std::pair<KernelAttr, SparseSliceCpuKernelMod::KernelRunFunc>> &SparseSliceCpuKernelMod::GetFuncList()
   const {
   static const std::vector<std::pair<KernelAttr, SparseSliceCpuKernelMod::KernelRunFunc>> func_list = {
-    ADD_KERNEL(Bool, bool),           ADD_KERNEL(UInt8, uint8_t),         ADD_KERNEL(UInt16, uint16_t),
-    ADD_KERNEL(Int8, int8_t),         ADD_KERNEL(Int16, int16_t),         ADD_KERNEL(Int32, int),
-    ADD_KERNEL(UInt32, uint32_t),     ADD_KERNEL(UInt64, uint64_t),       ADD_KERNEL(Int64, int64_t),
-    ADD_KERNEL(Float16, float16),     ADD_KERNEL(Float32, float),         ADD_KERNEL(Float64, double),
-    ADD_KERNEL(Complex64, complex64), ADD_KERNEL(Complex128, complex128),
+    SPARSE_SLICE_ADD_KERNEL(Bool, bool),           SPARSE_SLICE_ADD_KERNEL(UInt8, uint8_t),
+    SPARSE_SLICE_ADD_KERNEL(UInt16, uint16_t),     SPARSE_SLICE_ADD_KERNEL(Int8, int8_t),
+    SPARSE_SLICE_ADD_KERNEL(Int16, int16_t),       SPARSE_SLICE_ADD_KERNEL(Int32, int),
+    SPARSE_SLICE_ADD_KERNEL(UInt32, uint32_t),     SPARSE_SLICE_ADD_KERNEL(UInt64, uint64_t),
+    SPARSE_SLICE_ADD_KERNEL(Int64, int64_t),       SPARSE_SLICE_ADD_KERNEL(Float16, float16),
+    SPARSE_SLICE_ADD_KERNEL(Float32, float),       SPARSE_SLICE_ADD_KERNEL(Float64, double),
+    SPARSE_SLICE_ADD_KERNEL(Complex64, complex64), SPARSE_SLICE_ADD_KERNEL(Complex128, complex128),
   };
   return func_list;
-}  // namespace kernel
+}
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SparseSlice, SparseSliceCpuKernelMod);
+}  // namespace sparse_slice_cpu
 }  // namespace kernel
 }  // namespace mindspore

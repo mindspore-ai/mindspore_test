@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace lerp_cpu {
 bool LerpCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   if (inputs.empty() || outputs.empty()) {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "' got empty inputs or outputs, which is invalid.";
@@ -98,5 +99,6 @@ const std::vector<std::pair<KernelAttr, LerpCpuKernelMod::KernelRunFunc>> &LerpC
   return func_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Lerp, LerpCpuKernelMod);
+}  // namespace lerp_cpu
 }  // namespace kernel
 }  // namespace mindspore

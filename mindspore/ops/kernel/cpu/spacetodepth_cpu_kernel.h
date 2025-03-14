@@ -26,6 +26,7 @@
 #include "common/ms_factory.h"
 namespace mindspore {
 namespace kernel {
+namespace spacetodepth_cpu {
 class SpaceToDepthCpuKernelMod : public NativeCpuKernelMod {
  public:
   SpaceToDepthCpuKernelMod() = default;
@@ -56,6 +57,7 @@ class SpaceToDepthCpuKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> input_shape_;
   std::vector<int64_t> output_shape_;
 };
+}  // namespace spacetodepth_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_SPACETODEPTH_CPU_KERNEL_H_

@@ -29,6 +29,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace scatter_nd_arithmetic_cpu {
 class ScatterNdArithmeticCpuKernelMod : public NativeCpuKernelMod,
                                         public MatchKernelHelper<ScatterNdArithmeticCpuKernelMod> {
  public:
@@ -70,6 +71,7 @@ class ScatterNdArithmeticCpuKernelMod : public NativeCpuKernelMod,
   float block_size_{128.0};
   bool has_null_input_{false};
 };
+}  // namespace scatter_nd_arithmetic_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -30,6 +30,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace upsample_nearest1d {
 void UpsampleNearest1DAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                const std::vector<KernelTensor *> &outputs) {
   auto output_shape = outputs[kIndex0]->GetShapeVector();
@@ -47,5 +48,6 @@ bool UpsampleNearest1DAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(UpsampleNearest1D, UpsampleNearest1DAscend);
+}  // namespace upsample_nearest1d
 }  // namespace kernel
 }  // namespace mindspore

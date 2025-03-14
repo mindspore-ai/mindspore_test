@@ -17,6 +17,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace arange {
 void ArangeAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                     const std::vector<KernelTensor *> &outputs) {
   start = device::ascend::ConvertKernelTensor<ScalarPtr>(inputs[kIndex0]);
@@ -33,5 +34,6 @@ bool ArangeAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(Arange, ArangeAscend);
+}  // namespace arange
 }  // namespace kernel
 }  // namespace mindspore

@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace ragged_range_cpu {
 namespace {
 const size_t kOutputNum = 2;
 const size_t kInputNum = 3;
@@ -224,5 +225,6 @@ std::vector<KernelAttr> RaggedRangeCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, RaggedRange, RaggedRangeCpuKernelMod);
+}  // namespace ragged_range_cpu
 }  // namespace kernel
 }  // namespace mindspore

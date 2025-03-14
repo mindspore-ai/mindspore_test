@@ -28,6 +28,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace stridedslice_cpu {
 class StridedSliceCpuKernelMod : public NativeCpuKernelMod {
  public:
   StridedSliceCpuKernelMod() = default;
@@ -78,6 +79,7 @@ class StridedSliceCpuKernelMod : public NativeCpuKernelMod {
   ShapeVector stride_shape_;
   StridedSliceStruct slice_struct_;
 };
+}  // namespace stridedslice_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

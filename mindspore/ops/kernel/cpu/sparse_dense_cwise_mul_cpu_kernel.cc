@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_dense_cwise_mul_cpu {
 namespace {
 constexpr int64_t kSparseDenseCwiseInputsNum = 4;
 constexpr int64_t kSparseDenseCwiseOutputsNum = 1;
@@ -235,5 +236,6 @@ std::vector<KernelAttr> SparseDenseCwiseMulCpuKernelMod::GetOpSupport() {
   return kernel_attr_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SparseDenseCwiseMul, SparseDenseCwiseMulCpuKernelMod);
+}  // namespace sparse_dense_cwise_mul_cpu
 }  // namespace kernel
 }  // namespace mindspore

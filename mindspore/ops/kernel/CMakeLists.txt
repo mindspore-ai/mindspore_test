@@ -14,7 +14,6 @@ endif()
 
 # ===== CPU
 add_subdirectory(cpu)
-set(CPU_KERNEL_OBJECT_COUNT ${CPU_KERNEL_OBJECT_COUNT} PARENT_SCOPE)
 
 # ===== Ascend
 if(ENABLE_D)

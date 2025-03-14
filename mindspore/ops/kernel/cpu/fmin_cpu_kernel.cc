@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace fmin_cpu {
 namespace {
 constexpr auto kShapeIndexZero = 0;
 constexpr auto kShapeIndex1st = 1;
@@ -267,5 +268,6 @@ std::vector<KernelAttr> FminCpuKernelMod::GetOpSupport() {
   };
   return kernel_attr_list;
 }
+}  // namespace fmin_cpu
 }  // namespace kernel
 }  // namespace mindspore

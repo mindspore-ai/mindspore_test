@@ -24,6 +24,7 @@
 #include "mindspore/ops/infer/cumulative_logsumexp.h"
 namespace mindspore {
 namespace kernel {
+namespace cumulative_logsumexp_cpu {
 namespace {
 constexpr size_t kCumulativeLogsumexpInputsNum = 2;
 constexpr size_t kCumulativeLogsumexpOutputsNum = 1;
@@ -179,5 +180,6 @@ std::vector<KernelAttr> CumulativeLogsumexpCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, CumulativeLogsumexp, CumulativeLogsumexpCpuKernelMod);
+}  // namespace cumulative_logsumexp_cpu
 }  // namespace kernel
 }  // namespace mindspore

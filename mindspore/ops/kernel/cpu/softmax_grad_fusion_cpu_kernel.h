@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace softmax_grad_fusion_cpu {
 class SoftmaxGradFusionCpuKernelMod : public NativeCpuKernelMod {
  public:
   SoftmaxGradFusionCpuKernelMod() = default;
@@ -56,6 +57,7 @@ class SoftmaxGradFusionCpuKernelMod : public NativeCpuKernelMod {
   uint64_t parallel_num_ = 1;
   uint64_t last_dim_ = 1;
 };
+}  // namespace softmax_grad_fusion_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_SOFTMAX_GRAD_FUSION_H_

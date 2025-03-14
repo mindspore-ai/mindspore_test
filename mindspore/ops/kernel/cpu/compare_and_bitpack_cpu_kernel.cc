@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace compare_and_bitpack_cpu {
 namespace {
 constexpr size_t kCompareAndBitpackInputsNum = 2;
 constexpr size_t kCompareAndBitpackOutputsNum = 1;
@@ -111,5 +112,6 @@ const std::vector<std::pair<KernelAttr, CompareAndBitpackCpuKernelMod::KernelRun
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, CompareAndBitpack, CompareAndBitpackCpuKernelMod);
+}  // namespace compare_and_bitpack_cpu
 }  // namespace kernel
 }  // namespace mindspore

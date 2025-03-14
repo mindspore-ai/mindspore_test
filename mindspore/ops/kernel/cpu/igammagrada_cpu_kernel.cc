@@ -18,6 +18,7 @@
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 namespace mindspore {
 namespace kernel {
+namespace igammagrada_cpu {
 namespace {
 /**
  * Coefficients for the Lanczos approximation of the gamma function. The
@@ -432,5 +433,6 @@ void IgammaGradACpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTenso
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, IgammaGradA, IgammaGradACpuKernelMod);
+}  // namespace igammagrada_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -23,6 +23,9 @@
 #include <type_traits>
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
+namespace mindspore {
+namespace kernel {
+namespace polar_cpu {
 namespace {
 constexpr size_t kPolarInputsNum = 2;
 constexpr size_t kPolarOutputsNum = 1;
@@ -33,9 +36,6 @@ constexpr size_t kPolarOutputsNum = 1;
     break;                                     \
   }
 }  // namespace
-
-namespace mindspore {
-namespace kernel {
 bool PolarCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   input1_dtype_ = inputs[0]->dtype_id();
   return true;
@@ -86,5 +86,6 @@ std::vector<KernelAttr> PolarCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Polar, PolarCpuKernelMod);
+}  // namespace polar_cpu
 }  // namespace kernel
 }  // namespace mindspore

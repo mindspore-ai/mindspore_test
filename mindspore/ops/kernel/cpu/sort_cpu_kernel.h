@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sort_cpu {
 class SortCpuKernelMod : public NativeCpuKernelMod {
  public:
   SortCpuKernelMod() = default;
@@ -61,6 +62,7 @@ class SortCpuKernelMod : public NativeCpuKernelMod {
   AxisIterator axisIterator_{};
   bool descending_{false};
 };
+}  // namespace sort_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

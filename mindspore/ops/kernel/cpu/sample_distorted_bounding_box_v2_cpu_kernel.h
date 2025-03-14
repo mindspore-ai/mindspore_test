@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sample_distorted_bounding_box_v2_cpu {
 class Region {
  public:
   Region() { SetPiont(0, 0, 0, 0); }
@@ -98,6 +99,7 @@ class SampleDistortedBoundingBoxV2CPUKernelMod : public NativeCpuKernelMod {
   template <typename T>
   void LaunchSDBBExt2(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
 };
+}  // namespace sample_distorted_bounding_box_v2_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

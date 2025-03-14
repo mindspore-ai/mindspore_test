@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace index_add_cpu {
 namespace {
 constexpr size_t kIndexAddInputsNum = 3;
 constexpr size_t kIndexAddOutputsNum = 1;
@@ -261,5 +262,6 @@ const std::vector<std::pair<KernelAttr, IndexAddCpuKernelMod::KernelRunFunc>> &I
   return func_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, IndexAdd, IndexAddCpuKernelMod);
+}  // namespace index_add_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace channel_shuffle_cpu {
 class ChannelShuffleCpuKernelMod : public NativeCpuKernelMod {
  public:
   ChannelShuffleCpuKernelMod() = default;
@@ -50,6 +51,7 @@ class ChannelShuffleCpuKernelMod : public NativeCpuKernelMod {
   template <typename T>
   bool LaunchKernel(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
 };
+}  // namespace channel_shuffle_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

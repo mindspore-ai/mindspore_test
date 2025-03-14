@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace matmul_all_reduce {
 void MatMulAllReduceAscend::InitializeCommonAttributes() {
   trans_a_ = GetRequiredAttr<bool>(kAttrNameTransposeA);
   trans_b_ = GetRequiredAttr<bool>(kAttrNameTransposeB);
@@ -60,5 +61,6 @@ bool MatMulAllReduceAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(MatMulAllReduce, MatMulAllReduceAscend);
+}  // namespace matmul_all_reduce
 }  // namespace kernel
 }  // namespace mindspore

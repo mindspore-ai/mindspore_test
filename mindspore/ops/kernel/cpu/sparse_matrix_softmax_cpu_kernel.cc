@@ -28,6 +28,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_matrix_softmax_cpu {
 namespace {
 constexpr size_t kInputNum = 5;
 constexpr size_t kOutputNum = 5;
@@ -173,5 +174,6 @@ std::vector<KernelAttr> SparseMatrixSoftmaxCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SparseMatrixSoftmax, SparseMatrixSoftmaxCpuKernelMod);
+}  // namespace sparse_matrix_softmax_cpu
 }  // namespace kernel
 }  // namespace mindspore

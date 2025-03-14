@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace multinomial_ext {
 
 void MultinomialExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                             const std::vector<KernelTensor *> &outputs) {
@@ -44,5 +45,6 @@ bool MultinomialExtAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(MultinomialExt, MultinomialExtAscend);
+}  // namespace multinomial_ext
 }  // namespace kernel
 }  // namespace mindspore

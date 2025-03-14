@@ -31,6 +31,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace reduce_cpu {
 namespace {
 constexpr auto kReduceMean = "ReduceMean";
 constexpr auto kReduceMax = "ReduceMax";
@@ -656,5 +657,6 @@ MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, ReduceAll,
                                  []() { return std::make_shared<ReduceCpuKernelMod>(kReduceAll); });
 MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, ReduceAny,
                                  []() { return std::make_shared<ReduceCpuKernelMod>(kReduceAny); });
+}  // namespace reduce_cpu
 }  // namespace kernel
 }  // namespace mindspore

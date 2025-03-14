@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace pad_v3_cpu {
 namespace {
 constexpr auto kPadV3 = "PadV3";
 constexpr const size_t kConstantInputsNum = 3;
@@ -389,5 +390,6 @@ const std::vector<std::pair<KernelAttr, PadV3CpuKernelMod::KernelRunFunc>> &PadV
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, PadV3, PadV3CpuKernelMod);
+}  // namespace pad_v3_cpu
 }  // namespace kernel
 }  // namespace mindspore

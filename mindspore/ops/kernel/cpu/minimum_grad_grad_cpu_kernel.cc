@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace minimum_grad_grad_cpu {
 namespace {
 constexpr size_t kMinimumGradGradInputsNum = 4;
 constexpr size_t kMinimumGradGradOutputsNum = 3;
@@ -29,9 +30,9 @@ constexpr size_t kInputIndex0 = 0;
 constexpr size_t kInputIndex1 = 1;
 constexpr size_t kInputIndex2 = 2;
 constexpr size_t kInputIndex3 = 3;
-constexpr size_t kOutputIndex0 = 0;
-constexpr size_t kOutputIndex1 = 1;
-constexpr size_t kOutputIndex2 = 2;
+constexpr size_t kOutputIdx0 = 0;
+constexpr size_t kOutputIdx1 = 1;
+constexpr size_t kOutputIdx2 = 2;
 }  // namespace
 
 bool MinimumGradGradCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
@@ -77,9 +78,9 @@ bool MinimumGradGradCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelT
   auto x2_addr = static_cast<T *>(inputs[kInputIndex1]->device_ptr());
   auto grad_y1_addr = static_cast<T *>(inputs[kInputIndex2]->device_ptr());
   auto grad_y2_addr = static_cast<T *>(inputs[kInputIndex3]->device_ptr());
-  auto sopd_x1_addr = static_cast<T *>(outputs[kOutputIndex0]->device_ptr());
-  auto sopd_x2_addr = static_cast<T *>(outputs[kOutputIndex1]->device_ptr());
-  auto sopd_grads_addr = static_cast<T *>(outputs[kOutputIndex2]->device_ptr());
+  auto sopd_x1_addr = static_cast<T *>(outputs[kOutputIdx0]->device_ptr());
+  auto sopd_x2_addr = static_cast<T *>(outputs[kOutputIdx1]->device_ptr());
+  auto sopd_grads_addr = static_cast<T *>(outputs[kOutputIdx2]->device_ptr());
 
   auto ret_sopd_x1 = memset_s(sopd_x1_addr, 1, 0, 1);
   if (ret_sopd_x1 != EOK) {
@@ -202,5 +203,6 @@ std::vector<KernelAttr> MinimumGradGradCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, MinimumGradGrad, MinimumGradGradCpuKernelMod);
+}  // namespace minimum_grad_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

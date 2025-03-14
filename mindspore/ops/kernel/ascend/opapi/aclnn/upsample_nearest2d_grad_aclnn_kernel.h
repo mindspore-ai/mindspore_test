@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace upsample_nearest2d_grad {
 class UpsampleNearest2DGradAscend final : public AclnnKernelMod {
  public:
   UpsampleNearest2DGradAscend() : AclnnKernelMod(std::move("aclnnUpsampleNearest2dBackward")) {}
@@ -40,6 +41,7 @@ class UpsampleNearest2DGradAscend final : public AclnnKernelMod {
   double scales_h_;
   double scales_w_;
 };
+}  // namespace upsample_nearest2d_grad
 }  // namespace kernel
 }  // namespace mindspore
 

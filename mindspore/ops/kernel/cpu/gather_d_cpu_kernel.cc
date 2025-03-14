@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace gather_d_cpu {
 namespace {
 constexpr size_t kGatherDInputsNum = 3;
 constexpr size_t kGatherDOutputsNum = 1;
@@ -156,7 +157,7 @@ bool GatherDCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs
   return true;
 }
 
-#define REG_INDEX(DT1, DT2, T1, T2)                      \
+#define GATHERD_REG_INDEX(DT1, DT2, T1, T2)              \
   {                                                      \
     KernelAttr()                                         \
       .AddInputAttr(DT1)                                 \
@@ -167,7 +168,7 @@ bool GatherDCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs
   }
 
 #define GATHER_D_CPU_REGISTER(DT, T) \
-  REG_INDEX(DT, kNumberTypeInt64, T, int64_t), REG_INDEX(DT, kNumberTypeInt32, T, int32_t)
+  GATHERD_REG_INDEX(DT, kNumberTypeInt64, T, int64_t), GATHERD_REG_INDEX(DT, kNumberTypeInt32, T, int32_t)
 
 const std::vector<std::pair<KernelAttr, GatherDCpuKernelMod::KernelRunFunc>> &GatherDCpuKernelMod::GetFuncList() const {
   static const std::vector<std::pair<KernelAttr, GatherDCpuKernelMod::KernelRunFunc>> func_list = {
@@ -189,5 +190,6 @@ const std::vector<std::pair<KernelAttr, GatherDCpuKernelMod::KernelRunFunc>> &Ga
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, GatherD, GatherDCpuKernelMod);
+}  // namespace gather_d_cpu
 }  // namespace kernel
 }  // namespace mindspore

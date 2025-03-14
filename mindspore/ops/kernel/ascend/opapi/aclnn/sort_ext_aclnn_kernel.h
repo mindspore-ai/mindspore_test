@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sort_ext {
 
 class SortExtAscend : public AclnnKernelMod {
  public:
@@ -38,6 +39,7 @@ class SortExtAscend : public AclnnKernelMod {
   bool descending = false;
   bool stable = false;
 };
+}  // namespace sort_ext
 }  // namespace kernel
 }  // namespace mindspore
 

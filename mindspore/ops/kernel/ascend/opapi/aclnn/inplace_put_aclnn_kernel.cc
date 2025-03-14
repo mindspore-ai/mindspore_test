@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_put {
 
 void InplacePutAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                         const std::vector<KernelTensor *> &outputs) {
@@ -40,5 +41,6 @@ bool InplacePutAscend::Launch(const std::vector<KernelTensor *> &inputs, const s
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(InplacePut, InplacePutAscend);
+}  // namespace inplace_put
 }  // namespace kernel
 }  // namespace mindspore

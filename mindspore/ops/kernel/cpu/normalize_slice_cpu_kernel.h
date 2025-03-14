@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace normalize_slice_cpu {
 class NormalizeSliceInfoCpuKernelMod : public NativeCpuKernelMod {
  public:
   NormalizeSliceInfoCpuKernelMod() = default;
@@ -56,6 +57,7 @@ class NormalizeSliceInfoCpuKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> tuple_index_types_;
   std::vector<int64_t> init_by_none_;
 };
+}  // namespace normalize_slice_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_NORMALIZE_SLICE_CPU_KERNEL_H_

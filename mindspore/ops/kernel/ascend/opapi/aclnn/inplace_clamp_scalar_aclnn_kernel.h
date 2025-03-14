@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_clamp_scalar {
 
 class InplaceClampScalarAclnnKernelMod : public AclnnKernelMod {
  public:
@@ -38,6 +39,7 @@ class InplaceClampScalarAclnnKernelMod : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace inplace_clamp_scalar
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace batch_norm_ext {
 
 class BatchNormExtAscend : public AclnnKernelMod {
  public:
@@ -38,6 +39,7 @@ class BatchNormExtAscend : public AclnnKernelMod {
   double momentum_;
   double eps_;
 };
+}  // namespace batch_norm_ext
 }  // namespace kernel
 }  // namespace mindspore
 

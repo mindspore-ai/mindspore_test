@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sum_ext {
 
 class SumExtAscend : public AclnnKernelMod {
  public:
@@ -40,6 +41,7 @@ class SumExtAscend : public AclnnKernelMod {
   bool keep_dims_{false};
   TypeId dtype_;
 };
+}  // namespace sum_ext
 }  // namespace kernel
 }  // namespace mindspore
 

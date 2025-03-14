@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace upsample_bilinear2d {
 
 class UpsampleBilinear2DAscend final : public AclnnKernelMod {
  public:
@@ -41,6 +42,7 @@ class UpsampleBilinear2DAscend final : public AclnnKernelMod {
   double scales_w_;
   bool align_corners_;
 };
+}  // namespace upsample_bilinear2d
 }  // namespace kernel
 }  // namespace mindspore
 

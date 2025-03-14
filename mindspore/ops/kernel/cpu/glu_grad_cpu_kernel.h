@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace glu_grad_cpu {
 class GluGradCpuKernelMod : public NativeCpuKernelMod {
  public:
   GluGradCpuKernelMod() = default;
@@ -49,6 +50,7 @@ class GluGradCpuKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> x_shape_{};
   TypeId dtype_{kTypeUnknown};
 };
+}  // namespace glu_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_GLU_GRAD_KERNEL_H_

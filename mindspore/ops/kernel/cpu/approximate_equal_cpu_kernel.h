@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace approximate_equal_cpu {
 class ApproximateEqualCpuKernelMod : public NativeCpuKernelMod {
  public:
   ApproximateEqualCpuKernelMod() {}
@@ -57,6 +58,7 @@ class ApproximateEqualCpuKernelMod : public NativeCpuKernelMod {
   std::vector<size_t> output_shape_;
   static std::vector<std::pair<KernelAttr, ApproximateEqualFunc>> func_list_;
 };
+}  // namespace approximate_equal_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

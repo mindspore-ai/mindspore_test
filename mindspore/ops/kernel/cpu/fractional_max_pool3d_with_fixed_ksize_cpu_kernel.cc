@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace fractional_max_pool3d_with_fixed_ksize_cpu {
 namespace {
 constexpr size_t kDimSize2 = 2;
 constexpr size_t kDimSize3 = 3;
@@ -31,7 +32,7 @@ constexpr size_t kDimSize4 = 4;
 constexpr size_t kDimSize5 = 5;
 constexpr size_t kInputIndex0 = 0;
 constexpr size_t kInputIndex1 = 1;
-constexpr size_t kOutputIndex1 = 1;
+constexpr size_t kOutputIdx1 = 1;
 constexpr size_t kkernelsizeIndexD = 0;
 constexpr size_t kkernelsizeIndexH = 1;
 constexpr size_t kkernelsizeIndexW = 2;
@@ -59,11 +60,11 @@ constexpr size_t kDimSize4FormatNDHWCIndexC = 3;
 constexpr size_t kInputsNum = 2;
 constexpr size_t kOutputsNum = 2;
 
-#define ADD_KERNEL(t1, t2, t3, t4)  \
-  KernelAttr()                      \
-    .AddInputAttr(kNumberType##t1)  \
-    .AddInputAttr(kNumberType##t2)  \
-    .AddOutputAttr(kNumberType##t3) \
+#define FRACTIONAL_MAX_POOL3D_WITH_FIXED_KSIZE_ADD_KERNEL(t1, t2, t3, t4) \
+  KernelAttr()                                                            \
+    .AddInputAttr(kNumberType##t1)                                        \
+    .AddInputAttr(kNumberType##t2)                                        \
+    .AddOutputAttr(kNumberType##t3)                                       \
     .AddOutputAttr(kNumberType##t4)
 }  // namespace
 
@@ -93,7 +94,7 @@ int FractionalMaxPool3DWithFixedKsizeCPUKernelMod::Resize(const std::vector<Kern
   input_shape_ = inputs[kInputIndex0]->GetDeviceShapeVector();
   random_samples_type_ = inputs[kInputIndex1]->dtype_id();
   random_samples_shape_ = inputs[kInputIndex1]->GetDeviceShapeVector();
-  argmax_type_ = outputs[kOutputIndex1]->dtype_id();
+  argmax_type_ = outputs[kOutputIdx1]->dtype_id();
   output_shape_ = GetValue<std::vector<int64_t>>(primitive_->GetAttr("output_shape"));
   ksize_ = GetValue<std::vector<int64_t>>(primitive_->GetAttr("ksize"));
   data_format_ = GetValue<std::string>(primitive_->GetAttr(ops::kFormat));
@@ -366,25 +367,41 @@ bool FractionalMaxPool3DWithFixedKsizeCPUKernelMod::Launch(const std::vector<Ker
 
 std::vector<KernelAttr> FractionalMaxPool3DWithFixedKsizeCPUKernelMod::GetOpSupport() {
   static std::vector<KernelAttr> kernel_attr_list = {
-    ADD_KERNEL(Int32, Float32, Int32, Int32),     ADD_KERNEL(Int64, Float32, Int64, Int32),
-    ADD_KERNEL(Float16, Float32, Float16, Int32), ADD_KERNEL(Float32, Float32, Float32, Int32),
-    ADD_KERNEL(Float64, Float32, Float64, Int32), ADD_KERNEL(Int32, Float16, Int32, Int32),
-    ADD_KERNEL(Int64, Float16, Int64, Int32),     ADD_KERNEL(Float16, Float16, Float16, Int32),
-    ADD_KERNEL(Float32, Float16, Float32, Int32), ADD_KERNEL(Float64, Float16, Float64, Int32),
-    ADD_KERNEL(Int32, Float64, Int32, Int32),     ADD_KERNEL(Int64, Float64, Int64, Int32),
-    ADD_KERNEL(Float16, Float64, Float16, Int32), ADD_KERNEL(Float32, Float64, Float32, Int32),
-    ADD_KERNEL(Float64, Float64, Float64, Int32), ADD_KERNEL(Int32, Float32, Int32, Int64),
-    ADD_KERNEL(Int64, Float32, Int64, Int64),     ADD_KERNEL(Float16, Float32, Float16, Int64),
-    ADD_KERNEL(Float32, Float32, Float32, Int64), ADD_KERNEL(Float64, Float32, Float64, Int64),
-    ADD_KERNEL(Int32, Float16, Int32, Int64),     ADD_KERNEL(Int64, Float16, Int64, Int64),
-    ADD_KERNEL(Float16, Float16, Float16, Int64), ADD_KERNEL(Float32, Float16, Float32, Int64),
-    ADD_KERNEL(Float64, Float16, Float64, Int64), ADD_KERNEL(Int32, Float64, Int32, Int64),
-    ADD_KERNEL(Int64, Float64, Int64, Int64),     ADD_KERNEL(Float16, Float64, Float16, Int64),
-    ADD_KERNEL(Float32, Float64, Float32, Int64), ADD_KERNEL(Float64, Float64, Float64, Int64)};
+    FRACTIONAL_MAX_POOL3D_WITH_FIXED_KSIZE_ADD_KERNEL(Int32, Float32, Int32, Int32),
+    FRACTIONAL_MAX_POOL3D_WITH_FIXED_KSIZE_ADD_KERNEL(Int64, Float32, Int64, Int32),
+    FRACTIONAL_MAX_POOL3D_WITH_FIXED_KSIZE_ADD_KERNEL(Float16, Float32, Float16, Int32),
+    FRACTIONAL_MAX_POOL3D_WITH_FIXED_KSIZE_ADD_KERNEL(Float32, Float32, Float32, Int32),
+    FRACTIONAL_MAX_POOL3D_WITH_FIXED_KSIZE_ADD_KERNEL(Float64, Float32, Float64, Int32),
+    FRACTIONAL_MAX_POOL3D_WITH_FIXED_KSIZE_ADD_KERNEL(Int32, Float16, Int32, Int32),
+    FRACTIONAL_MAX_POOL3D_WITH_FIXED_KSIZE_ADD_KERNEL(Int64, Float16, Int64, Int32),
+    FRACTIONAL_MAX_POOL3D_WITH_FIXED_KSIZE_ADD_KERNEL(Float16, Float16, Float16, Int32),
+    FRACTIONAL_MAX_POOL3D_WITH_FIXED_KSIZE_ADD_KERNEL(Float32, Float16, Float32, Int32),
+    FRACTIONAL_MAX_POOL3D_WITH_FIXED_KSIZE_ADD_KERNEL(Float64, Float16, Float64, Int32),
+    FRACTIONAL_MAX_POOL3D_WITH_FIXED_KSIZE_ADD_KERNEL(Int32, Float64, Int32, Int32),
+    FRACTIONAL_MAX_POOL3D_WITH_FIXED_KSIZE_ADD_KERNEL(Int64, Float64, Int64, Int32),
+    FRACTIONAL_MAX_POOL3D_WITH_FIXED_KSIZE_ADD_KERNEL(Float16, Float64, Float16, Int32),
+    FRACTIONAL_MAX_POOL3D_WITH_FIXED_KSIZE_ADD_KERNEL(Float32, Float64, Float32, Int32),
+    FRACTIONAL_MAX_POOL3D_WITH_FIXED_KSIZE_ADD_KERNEL(Float64, Float64, Float64, Int32),
+    FRACTIONAL_MAX_POOL3D_WITH_FIXED_KSIZE_ADD_KERNEL(Int32, Float32, Int32, Int64),
+    FRACTIONAL_MAX_POOL3D_WITH_FIXED_KSIZE_ADD_KERNEL(Int64, Float32, Int64, Int64),
+    FRACTIONAL_MAX_POOL3D_WITH_FIXED_KSIZE_ADD_KERNEL(Float16, Float32, Float16, Int64),
+    FRACTIONAL_MAX_POOL3D_WITH_FIXED_KSIZE_ADD_KERNEL(Float32, Float32, Float32, Int64),
+    FRACTIONAL_MAX_POOL3D_WITH_FIXED_KSIZE_ADD_KERNEL(Float64, Float32, Float64, Int64),
+    FRACTIONAL_MAX_POOL3D_WITH_FIXED_KSIZE_ADD_KERNEL(Int32, Float16, Int32, Int64),
+    FRACTIONAL_MAX_POOL3D_WITH_FIXED_KSIZE_ADD_KERNEL(Int64, Float16, Int64, Int64),
+    FRACTIONAL_MAX_POOL3D_WITH_FIXED_KSIZE_ADD_KERNEL(Float16, Float16, Float16, Int64),
+    FRACTIONAL_MAX_POOL3D_WITH_FIXED_KSIZE_ADD_KERNEL(Float32, Float16, Float32, Int64),
+    FRACTIONAL_MAX_POOL3D_WITH_FIXED_KSIZE_ADD_KERNEL(Float64, Float16, Float64, Int64),
+    FRACTIONAL_MAX_POOL3D_WITH_FIXED_KSIZE_ADD_KERNEL(Int32, Float64, Int32, Int64),
+    FRACTIONAL_MAX_POOL3D_WITH_FIXED_KSIZE_ADD_KERNEL(Int64, Float64, Int64, Int64),
+    FRACTIONAL_MAX_POOL3D_WITH_FIXED_KSIZE_ADD_KERNEL(Float16, Float64, Float16, Int64),
+    FRACTIONAL_MAX_POOL3D_WITH_FIXED_KSIZE_ADD_KERNEL(Float32, Float64, Float32, Int64),
+    FRACTIONAL_MAX_POOL3D_WITH_FIXED_KSIZE_ADD_KERNEL(Float64, Float64, Float64, Int64)};
   return kernel_attr_list;
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, FractionalMaxPool3DWithFixedKsize,
                       FractionalMaxPool3DWithFixedKsizeCPUKernelMod);
+}  // namespace fractional_max_pool3d_with_fixed_ksize_cpu
 }  // namespace kernel
 }  // namespace mindspore

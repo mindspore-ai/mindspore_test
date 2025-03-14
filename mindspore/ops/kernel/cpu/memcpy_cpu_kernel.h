@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace memcpy_cpu {
 class MemcpyCpuKernelMod : public NativeCpuKernelMod {
  public:
   MemcpyCpuKernelMod() = default;
@@ -53,6 +54,7 @@ class MemcpyCpuKernelMod : public NativeCpuKernelMod {
 
   bool is_empty_tensor_{false};
 };
+}  // namespace memcpy_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

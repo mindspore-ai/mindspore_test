@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace custom {
 constexpr size_t kWorkspaceIndex = 3;
 constexpr size_t kReleaseFuncIndex = 2;
 
@@ -118,6 +119,7 @@ class CustomAclnnKernelMod : public AclnnKernelMod {
   }
 };
 
+}  // namespace custom
 }  // namespace kernel
 }  // namespace mindspore
 

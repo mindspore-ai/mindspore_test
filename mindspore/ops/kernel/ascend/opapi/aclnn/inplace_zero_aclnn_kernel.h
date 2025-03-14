@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_zero {
 class InplaceZeroAclnnKernelMod : public AclnnKernelMod {
  public:
   InplaceZeroAclnnKernelMod() : AclnnKernelMod("aclnnInplaceZero") {}
@@ -34,6 +35,7 @@ class InplaceZeroAclnnKernelMod : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE();
 };
+}  // namespace inplace_zero
 }  // namespace kernel
 }  // namespace mindspore
 

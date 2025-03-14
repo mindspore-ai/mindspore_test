@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace adaptive_max_pool_2d_grad_cpu {
 namespace {
 #define F64 kNumberTypeFloat64
 #define F32 kNumberTypeFloat32
@@ -151,5 +152,6 @@ std::vector<KernelAttr> AdaptiveMaxPool2DGradCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, AdaptiveMaxPool2DGrad, AdaptiveMaxPool2DGradCpuKernelMod);
+}  // namespace adaptive_max_pool_2d_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

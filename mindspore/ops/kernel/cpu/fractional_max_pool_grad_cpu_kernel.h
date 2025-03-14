@@ -32,6 +32,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace fractional_max_pool_grad_cpu {
 class FractionalMaxPoolGradCpuKernelMod : public NativeCpuKernelMod {
  public:
   FractionalMaxPoolGradCpuKernelMod() = default;
@@ -69,6 +70,7 @@ class FractionalMaxPoolGradCpuKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> tensor_out_shape_;
   bool overlapping_{false};
 };
+}  // namespace fractional_max_pool_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_FRACTIONAL_MAX_POOL_GRAD_CPU_KERNEL_H_

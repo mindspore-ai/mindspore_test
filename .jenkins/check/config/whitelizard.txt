@@ -94,6 +94,7 @@ mindspore/mindspore/lite/src/litert/ios_reg_ops.cc:mindspore::lite::IosRegisterO
 mindspore/mindspore/lite/src/litert/ios_reg_kernels.h:mindspore::kernel::IosRegisterKernels
 mindspore/mindspore/lite/src/litert/kernel/cpu/base/quant_dtype_cast.cc:mindspore::kernel::QuantDTypeCastCPUKernel::QuantDTypeCast
 mindspore/mindspore/lite/src/litert/kernel/cpu/base/quant_dtype_cast.cc:mindspore::kernel::QuantDTypeCastCPUKernel::Run
+mindspore/mindspore/ops/kernel/cpu/eltwise_grad_cpu_kernel.cc:mindspore::kernel::eltwise_grad_cpu::EltWiseGradCpuTypeFunc<T>::InitFunc
 mindspore/mindspore/ops/kernel/cpu/nnacl/infer/strided_slice_infer.c:StridedSliceInferShape
 mindspore/mindspore/ops/kernel/cpu/nnacl/infer/lstm_infer.c:CheckInputShapeValid
 mindspore/mindspore/ops/kernel/cpu/nnacl/fp16/winograd_transform_fp16.c:WinogradInputTransformFp16

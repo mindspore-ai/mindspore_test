@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace divs {
 
 class DivsAscend : public AclnnKernelMod {
  public:
@@ -35,6 +36,7 @@ class DivsAscend : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace divs
 }  // namespace kernel
 }  // namespace mindspore
 

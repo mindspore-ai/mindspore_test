@@ -29,6 +29,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace bincount_cpu {
 class BincountCpuKernelMod : public NativeCpuKernelMod {
  public:
   BincountCpuKernelMod() = default;
@@ -58,6 +59,7 @@ class BincountCpuKernelMod : public NativeCpuKernelMod {
                                             const std::vector<int64_t> &, const std::vector<int64_t> &)>>>
     calls_;
 };
+}  // namespace bincount_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_BINCOUNT_CPU_KERNEL_H_

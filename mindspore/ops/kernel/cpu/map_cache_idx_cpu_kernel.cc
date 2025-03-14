@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace map_cache_idx_cpu {
 namespace {
 constexpr size_t kMapCacheIdxInputsNum = 5;
 constexpr size_t kMapCacheIdxOutputsNum = 4;
@@ -260,5 +261,6 @@ std::vector<KernelAttr> MapCacheIdxCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, MapCacheIdx, MapCacheIdxCpuKernelMod);
+}  // namespace map_cache_idx_cpu
 }  // namespace kernel
 }  // namespace mindspore

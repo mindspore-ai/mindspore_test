@@ -21,6 +21,9 @@
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "common/common_utils.h"
 
+namespace mindspore {
+namespace kernel {
+namespace index_fill_cpu {
 namespace {
 #define INDEXFILL_COMPUTE_CASE(DTYPE, TYPE, inputs, outputs) \
   case (DTYPE): {                                            \
@@ -28,9 +31,6 @@ namespace {
     break;                                                   \
   }
 }  // namespace
-
-namespace mindspore {
-namespace kernel {
 namespace {
 const uint32_t kInputNum = 4;
 const uint32_t kOutputNum = 1;
@@ -265,5 +265,6 @@ std::vector<KernelAttr> IndexFillCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, IndexFill, IndexFillCpuKernelMod);
+}  // namespace index_fill_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace mse_loss_grad_ext {
 using TensorParams = device::ascend::TensorParams;
 
 class MSELossGradExtAclnnKernelMod : public AclnnKernelMod {
@@ -55,6 +56,7 @@ class MSELossGradExtAclnnKernelMod : public AclnnKernelMod {
   int64_t reduction_value_;
 };
 
+}  // namespace mse_loss_grad_ext
 }  // namespace kernel
 }  // namespace mindspore
 

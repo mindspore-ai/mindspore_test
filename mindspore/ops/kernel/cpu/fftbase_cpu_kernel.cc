@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace fftbase_cpu {
 namespace {
 const int64_t kNum2 = 2;
 constexpr int kOnesideDivisor = 2;
@@ -350,5 +351,6 @@ MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, RFFT, FFTBaseCpuKernelMod);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, IRFFT, FFTBaseCpuKernelMod);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, HFFT, FFTBaseCpuKernelMod);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, IHFFT, FFTBaseCpuKernelMod);
+}  // namespace fftbase_cpu
 }  // namespace kernel
 }  // namespace mindspore

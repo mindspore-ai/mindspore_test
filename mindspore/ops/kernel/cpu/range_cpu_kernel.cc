@@ -19,6 +19,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace range_cpu {
 namespace {
 constexpr size_t kRangeInputsNum = 4;
 constexpr size_t kRangeOutputsNum = 1;
@@ -100,5 +101,6 @@ const std::vector<std::pair<KernelAttr, RangeCpuKernelMod::KernelRunFunc>> &Rang
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Range, RangeCpuKernelMod);
+}  // namespace range_cpu
 }  // namespace kernel
 }  // namespace mindspore

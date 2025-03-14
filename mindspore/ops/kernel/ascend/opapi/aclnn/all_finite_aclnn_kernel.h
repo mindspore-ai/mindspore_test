@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace all_finite {
 
 class AllFiniteAscend : public AclnnKernelMod {
  public:
@@ -35,6 +36,7 @@ class AllFiniteAscend : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace all_finite
 }  // namespace kernel
 }  // namespace mindspore
 

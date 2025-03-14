@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace matmul_cpu {
 using LaunchEmptyTensorFunc = std::function<void(const std::vector<KernelTensor *> &)>;
 constexpr auto kUnkown = "Unknown";
 class MatMulCpuKernelMod : public NativeCpuKernelMod {
@@ -57,6 +58,7 @@ class MatMulCpuKernelMod : public NativeCpuKernelMod {
   bool is_empty_tensor_{false};
   LaunchEmptyTensorFunc launch_empty_tensor_func_;
 };
+}  // namespace matmul_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

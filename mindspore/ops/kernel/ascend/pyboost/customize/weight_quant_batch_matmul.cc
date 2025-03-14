@@ -40,7 +40,7 @@ void WeightQuantBatchMatmulV2AscendCall(const std::shared_ptr<OpRunner> &op,
                antiquant_group_size, outputs[0]);
   MS_LOG(DEBUG) << "Launch end";
 }
-ValueTuplePtr GetTransposePerm(const BaseTensorPtr &weight_tensor) {
+ValueTuplePtr GetWeightQuantBatchMatmulPerm(const BaseTensorPtr &weight_tensor) {
   const auto &shape = weight_tensor->shape();
   int64_t size = shape.size();
   std::vector<ValuePtr> perm(size);
@@ -92,13 +92,13 @@ tensor::BaseTensorPtr WeightQuantBatchMatmulV2AscendCustomize(
   if (transpose_x_imm) {
     const auto &device_name = device_context->device_context_key_.device_name_;
     auto transpose_op = CREATE_PYBOOST_OP(Transpose, device_name);
-    x_tensor_trans = transpose_op->Call(x_tensor_trans, GetTransposePerm(x_tensor_trans));
+    x_tensor_trans = transpose_op->Call(x_tensor_trans, GetWeightQuantBatchMatmulPerm(x_tensor_trans));
   }
   BaseTensorPtr weight_tensor_trans = new_weight_tensor;
   if (transpose_weight_imm) {
     const auto &device_name = device_context->device_context_key_.device_name_;
     auto transpose_op = CREATE_PYBOOST_OP(Transpose, device_name);
-    weight_tensor_trans = transpose_op->Call(weight_tensor_trans, GetTransposePerm(weight_tensor_trans));
+    weight_tensor_trans = transpose_op->Call(weight_tensor_trans, GetWeightQuantBatchMatmulPerm(weight_tensor_trans));
   }
   PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>(
     [op, x_tensor_trans, weight_tensor_trans, antiquant_scale_tensor, antiquant_offset_tensor, quant_scale_tensor,

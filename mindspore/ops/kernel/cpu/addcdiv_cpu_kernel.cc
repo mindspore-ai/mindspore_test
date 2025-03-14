@@ -31,13 +31,14 @@
 
 namespace mindspore {
 namespace kernel {
+namespace addcdiv_cpu {
 namespace {
-#define ADD_KERNEL(t1, t2, t3, t4, t5) \
-  KernelAttr()                         \
-    .AddInputAttr(kNumberType##t1)     \
-    .AddInputAttr(kNumberType##t2)     \
-    .AddInputAttr(kNumberType##t3)     \
-    .AddInputAttr(kNumberType##t4)     \
+#define ADDCDIV_ADD_KERNEL(t1, t2, t3, t4, t5) \
+  KernelAttr()                                 \
+    .AddInputAttr(kNumberType##t1)             \
+    .AddInputAttr(kNumberType##t2)             \
+    .AddInputAttr(kNumberType##t3)             \
+    .AddInputAttr(kNumberType##t4)             \
     .AddOutputAttr(kNumberType##t5)
 const int64_t kOutputNum = 1;
 const int64_t kInputNum = 4;
@@ -186,19 +187,30 @@ bool AddcdivCpuKernelMod::AddcdivCompute(const std::vector<KernelTensor *> &inpu
 
 std::vector<KernelAttr> AddcdivCpuKernelMod::GetOpSupport() {
   static const std::vector<KernelAttr> kernel_attr_list = {
-    ADD_KERNEL(Float32, Float32, Float32, Float16, Float32), ADD_KERNEL(Float32, Float32, Float32, Float32, Float32),
-    ADD_KERNEL(Float32, Float32, Float32, Float64, Float32), ADD_KERNEL(Float32, Float32, Float32, Int32, Float32),
-    ADD_KERNEL(Float32, Float32, Float32, Int64, Float32),   ADD_KERNEL(Float64, Float64, Float64, Float16, Float64),
-    ADD_KERNEL(Float64, Float64, Float64, Float32, Float64), ADD_KERNEL(Float64, Float64, Float64, Float64, Float64),
-    ADD_KERNEL(Float64, Float64, Float64, Int32, Float64),   ADD_KERNEL(Float64, Float64, Float64, Int64, Float64),
-    ADD_KERNEL(Float16, Float16, Float16, Float16, Float16), ADD_KERNEL(Float16, Float16, Float16, Float32, Float16),
-    ADD_KERNEL(Float16, Float16, Float16, Float64, Float16), ADD_KERNEL(Float16, Float16, Float16, Int32, Float16),
-    ADD_KERNEL(Float16, Float16, Float16, Int64, Float16),   ADD_KERNEL(Int64, Int64, Int64, Float16, Int64),
-    ADD_KERNEL(Int64, Int64, Int64, Float32, Int64),         ADD_KERNEL(Int64, Int64, Int64, Float64, Int64),
-    ADD_KERNEL(Int64, Int64, Int64, Int32, Int64),           ADD_KERNEL(Int64, Int64, Int64, Int64, Int64)};
+    ADDCDIV_ADD_KERNEL(Float32, Float32, Float32, Float16, Float32),
+    ADDCDIV_ADD_KERNEL(Float32, Float32, Float32, Float32, Float32),
+    ADDCDIV_ADD_KERNEL(Float32, Float32, Float32, Float64, Float32),
+    ADDCDIV_ADD_KERNEL(Float32, Float32, Float32, Int32, Float32),
+    ADDCDIV_ADD_KERNEL(Float32, Float32, Float32, Int64, Float32),
+    ADDCDIV_ADD_KERNEL(Float64, Float64, Float64, Float16, Float64),
+    ADDCDIV_ADD_KERNEL(Float64, Float64, Float64, Float32, Float64),
+    ADDCDIV_ADD_KERNEL(Float64, Float64, Float64, Float64, Float64),
+    ADDCDIV_ADD_KERNEL(Float64, Float64, Float64, Int32, Float64),
+    ADDCDIV_ADD_KERNEL(Float64, Float64, Float64, Int64, Float64),
+    ADDCDIV_ADD_KERNEL(Float16, Float16, Float16, Float16, Float16),
+    ADDCDIV_ADD_KERNEL(Float16, Float16, Float16, Float32, Float16),
+    ADDCDIV_ADD_KERNEL(Float16, Float16, Float16, Float64, Float16),
+    ADDCDIV_ADD_KERNEL(Float16, Float16, Float16, Int32, Float16),
+    ADDCDIV_ADD_KERNEL(Float16, Float16, Float16, Int64, Float16),
+    ADDCDIV_ADD_KERNEL(Int64, Int64, Int64, Float16, Int64),
+    ADDCDIV_ADD_KERNEL(Int64, Int64, Int64, Float32, Int64),
+    ADDCDIV_ADD_KERNEL(Int64, Int64, Int64, Float64, Int64),
+    ADDCDIV_ADD_KERNEL(Int64, Int64, Int64, Int32, Int64),
+    ADDCDIV_ADD_KERNEL(Int64, Int64, Int64, Int64, Int64)};
   return kernel_attr_list;
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Addcdiv, AddcdivCpuKernelMod);
+}  // namespace addcdiv_cpu
 }  // namespace kernel
 }  // namespace mindspore

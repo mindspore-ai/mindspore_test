@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace resize_bilinear_grad_cpu {
 class ResizeBilinearGradCpuKernelMod : public NativeCpuKernelMod,
                                        public MatchKernelHelper<ResizeBilinearGradCpuKernelMod> {
  public:
@@ -68,6 +69,7 @@ class ResizeBilinearGradCpuKernelMod : public NativeCpuKernelMod,
   std::vector<size_t> size_;
   std::vector<size_t> shape_;
 };
+}  // namespace resize_bilinear_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_RESIZE_BILINEAR_GRAD_CPU_KERNEL_H_

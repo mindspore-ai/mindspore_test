@@ -30,6 +30,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace dctn_cpu {
 class DCTNCpuKernelMod : public NativeCpuKernelMod {
  public:
   DCTNCpuKernelMod() = default;
@@ -80,6 +81,7 @@ class DCTNCpuKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> tensor_shape_;
   std::vector<int64_t> calculate_shape_;
 };
+}  // namespace dctn_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_DCTN_CPU_KERNEL_H_

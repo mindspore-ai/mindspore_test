@@ -37,6 +37,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace bernoulli_cpu {
 namespace {
 const size_t kBernoulliInputsNum = 2;
 const size_t kBernoulliOutputsNum = 1;
@@ -200,5 +201,6 @@ std::vector<KernelAttr> BernoulliCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Bernoulli, BernoulliCpuKernelMod);
+}  // namespace bernoulli_cpu
 }  // namespace kernel
 }  // namespace mindspore

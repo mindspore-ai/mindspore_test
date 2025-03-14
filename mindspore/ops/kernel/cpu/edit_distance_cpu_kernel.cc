@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace edit_distance_cpu {
 namespace {
 constexpr char normalize[] = "normalize";
 constexpr size_t kMaximumInputsNum = 6;
@@ -240,5 +241,6 @@ std::vector<KernelAttr> EditDistanceCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, EditDistance, EditDistanceCpuKernelMod);
+}  // namespace edit_distance_cpu
 }  // namespace kernel
 }  // namespace mindspore

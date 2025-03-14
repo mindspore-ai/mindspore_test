@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_scatter_src {
 
 void InplaceScatterSrcAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                const std::vector<KernelTensor *> &outputs) {
@@ -47,5 +48,6 @@ bool InplaceScatterSrcAscend::Launch(const std::vector<KernelTensor *> &inputs,
 int64_t InplaceScatterSrcAscend::GetReduce(const std::vector<KernelTensor *> &inputs) { return 0; }
 
 MS_ACLNN_KERNEL_FACTORY_REG(InplaceScatterSrc, InplaceScatterSrcAscend);
+}  // namespace inplace_scatter_src
 }  // namespace kernel
 }  // namespace mindspore

@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace unpack_cpu {
 namespace {
 constexpr size_t kUnpackInputsNum = 1;
 constexpr size_t kUnpackOutputsMinNum = 1;
@@ -179,5 +180,6 @@ std::vector<std::tuple<KernelAttr, UnpackCpuKernelMod::UnstackFunc, UnpackCpuKer
      &UnpackCpuKernelMod::LaunchKernel<double>, &UnpackCpuKernelMod::InitIOSize<double>}};
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Unstack, UnpackCpuKernelMod);
+}  // namespace unpack_cpu
 }  // namespace kernel
 }  // namespace mindspore

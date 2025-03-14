@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace no_repeat_ngram_cpu {
 class NoRepeatNGramCpuKernelMod : public NativeCpuKernelMod {
  public:
   NoRepeatNGramCpuKernelMod() = default;
@@ -64,6 +65,7 @@ class NoRepeatNGramCpuKernelMod : public NativeCpuKernelMod {
   int64_t output_dim_{1};
   int64_t num_seq_{1};
 };
+}  // namespace no_repeat_ngram_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

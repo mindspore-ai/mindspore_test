@@ -29,10 +29,10 @@
 namespace mindspore {
 namespace ops {
 namespace {
-constexpr size_t kIndexK = 2;
+constexpr size_t kWKVIndexK = 2;
 constexpr size_t kIndexS = 4;
 constexpr int64_t kInputNumber = 7;
-constexpr int64_t kTotalShapeSize = 3;
+constexpr int64_t kWKVTotalShapeSize = 3;
 }  // namespace
 MIND_API_OPERATOR_IMPL(WKV, BaseOperator);
 class WKVInfer : public abstract::OpInferBase {
@@ -43,13 +43,13 @@ class WKVInfer : public abstract::OpInferBase {
     auto prim_name = primitive->name();
     (void)CheckAndConvertUtils::CheckInteger("input numbers", SizeToLong(input_args.size()), kGreaterEqual,
                                              kInputNumber, prim_name);
-    auto k_shape = input_args[kIndexK]->GetShape();
+    auto k_shape = input_args[kWKVIndexK]->GetShape();
     auto real_shape = CheckAndConvertUtils::ConvertShapePtrToShapeMap(k_shape)[kShape];
-    (void)CheckAndConvertUtils::CheckInteger("k shape size", SizeToLong(real_shape.size()), kEqual, kTotalShapeSize,
+    (void)CheckAndConvertUtils::CheckInteger("k shape size", SizeToLong(real_shape.size()), kEqual, kWKVTotalShapeSize,
                                              prim_name);
     primitive->set_attr("batch_size", MakeValue(real_shape[0]));
     primitive->set_attr("seq_length", MakeValue(real_shape[1]));
-    primitive->set_attr("hidden_size", MakeValue(real_shape[kIndexK]));
+    primitive->set_attr("hidden_size", MakeValue(real_shape[kWKVIndexK]));
     const auto &build_shape_s = input_args[kIndexS]->GetShape();
     std::vector<abstract::BaseShapePtr> output_shapes = {k_shape, build_shape_s, build_shape_s, build_shape_s};
     return std::make_shared<abstract::TupleShape>(output_shapes);
@@ -60,8 +60,8 @@ class WKVInfer : public abstract::OpInferBase {
     auto prim_name = prim->name();
     (void)CheckAndConvertUtils::CheckInteger("input numbers", SizeToLong(input_args.size()), kEqual, kInputNumber,
                                              prim_name);
-    MS_EXCEPTION_IF_NULL(input_args[kIndexK]);
-    auto k_type = input_args[kIndexK]->GetType();
+    MS_EXCEPTION_IF_NULL(input_args[kWKVIndexK]);
+    auto k_type = input_args[kWKVIndexK]->GetType();
     (void)CheckAndConvertUtils::CheckTensorTypeValid("input_k", k_type, common_valid_types, prim_name);
     std::vector<TypePtr> output_types = {k_type, k_type, k_type, k_type};
     return std::make_shared<Tuple>(output_types);

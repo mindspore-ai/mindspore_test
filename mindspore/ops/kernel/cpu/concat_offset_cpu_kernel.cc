@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace concat_offset_cpu {
 namespace {
 constexpr size_t kConcatOffsetOutputNum = 1;
 constexpr size_t kConcatOffsetOutputShapeSize = 2;
@@ -151,5 +152,6 @@ std::vector<KernelAttr> ConcatOffsetCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ConcatOffset, ConcatOffsetCpuKernelMod);
+}  // namespace concat_offset_cpu
 }  // namespace kernel
 }  // namespace mindspore

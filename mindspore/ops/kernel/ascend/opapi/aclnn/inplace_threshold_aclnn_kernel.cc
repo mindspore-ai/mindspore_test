@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_threshold {
 
 void InplaceThresholdAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                               const std::vector<KernelTensor *> &outputs) {
@@ -37,5 +38,6 @@ bool InplaceThresholdAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(InplaceThreshold, InplaceThresholdAscend);
+}  // namespace inplace_threshold
 }  // namespace kernel
 }  // namespace mindspore

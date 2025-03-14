@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sgd_cpu {
 namespace {
 constexpr size_t kSGDInputsNum = 6;
 constexpr size_t kSGDOutputsNum = 1;
@@ -178,5 +179,6 @@ const std::vector<std::pair<KernelAttr, KernelRunFunc>> &SGDCpuKernelMod::GetFun
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SGD, SGDCpuKernelMod);
+}  // namespace sgd_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace check_numerics_cpu {
 class CheckNumericsCpuKernelMod : public NativeCpuKernelMod {
  public:
   CheckNumericsCpuKernelMod() = default;
@@ -56,6 +57,7 @@ class CheckNumericsCpuKernelMod : public NativeCpuKernelMod {
     {kNumberTypeFloat16, sizeof(float16)}, {kNumberTypeFloat32, sizeof(float)}, {kNumberTypeFloat64, sizeof(double)}};
   TypeId input_dtype_{kTypeUnknown};
 };
+}  // namespace check_numerics_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

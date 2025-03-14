@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace non_max_suppression_with_overlaps_cpu {
 class NonMaxSuppressionWithOverlapsCpuKernelMod : public NativeCpuKernelMod {
  public:
   NonMaxSuppressionWithOverlapsCpuKernelMod() = default;
@@ -48,6 +49,7 @@ class NonMaxSuppressionWithOverlapsCpuKernelMod : public NativeCpuKernelMod {
   int num_boxes_{0};
   int64_t real_output_size_{0};  // Dynamic shape related.
 };
+}  // namespace non_max_suppression_with_overlaps_cpu
 };  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_NON_MAX_SUPPRESSION_WITH_OVERLAPS_CPU_KERNEL_H_

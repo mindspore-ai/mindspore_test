@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace unsorted_segment_arithmetic_cpu {
 namespace {
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
@@ -244,5 +245,6 @@ MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, UnsortedSegmentMin, UnsortedSegmentAri
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, UnsortedSegmentMax, UnsortedSegmentArithmeticCpuKernelMod);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, UnsortedSegmentSum, UnsortedSegmentArithmeticCpuKernelMod);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, UnsortedSegmentProd, UnsortedSegmentArithmeticCpuKernelMod);
+}  // namespace unsorted_segment_arithmetic_cpu
 }  // namespace kernel
 }  // namespace mindspore

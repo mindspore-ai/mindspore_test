@@ -21,6 +21,7 @@
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore::kernel {
+namespace hsigmoid_grad_cpu {
 namespace {
 constexpr auto kHSigmoidGrad = "HSigmoidGrad";
 constexpr const size_t kHSigmoidGradInputsNum = 2;
@@ -120,4 +121,5 @@ int HSigmoidGradCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
 
 MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, HSigmoidGrad,
                                  []() { return std::make_shared<HSigmoidGradCpuKernelMod>(kHSigmoidGrad); });
+}  // namespace hsigmoid_grad_cpu
 }  // namespace mindspore::kernel

@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_elu {
 void InplaceEluAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                 const std::vector<KernelTensor *> &outputs) {
   TypeId data_type = inputs[kIndex0]->dtype_id();
@@ -42,5 +43,6 @@ bool InplaceEluAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
   return true;
 }
 MS_ACLNN_KERNEL_FACTORY_REG(InplaceElu, InplaceEluAclnnKernelMod);
+}  // namespace inplace_elu
 }  // namespace kernel
 }  // namespace mindspore

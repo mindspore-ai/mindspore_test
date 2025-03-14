@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace ne_scalar {
 
 class NeScalarAscend : public AclnnKernelMod {
  public:
@@ -37,6 +38,7 @@ class NeScalarAscend : public AclnnKernelMod {
   DEFINE_GET_WORKSPACE_FOR_OPS(aclnnNeScalar, NeScalar)
   ScalarPtr other_{nullptr};
 };
+}  // namespace ne_scalar
 }  // namespace kernel
 }  // namespace mindspore
 

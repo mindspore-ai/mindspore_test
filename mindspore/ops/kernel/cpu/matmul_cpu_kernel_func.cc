@@ -30,6 +30,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace matmul_cpu {
 namespace {
 constexpr size_t kMatMulInputsNum = 4;
 constexpr size_t kMatMulInputsCheckNum = 4;
@@ -208,6 +209,7 @@ int MatMulCpuKernelFunc::Resize(const std::vector<KernelTensorPtr> &inputs,
   }
   return 0;
 }
+}  // namespace matmul_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif

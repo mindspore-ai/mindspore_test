@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace logit_grad_cpu {
 namespace {
 constexpr size_t kLogitGradInputsNum = 2;
 constexpr size_t kLogitGradOutputsNum = 1;
@@ -144,5 +145,6 @@ std::vector<KernelAttr> LogitGradCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, LogitGrad, LogitGradCpuKernelMod);
+}  // namespace logit_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

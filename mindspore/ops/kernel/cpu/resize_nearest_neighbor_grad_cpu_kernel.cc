@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace resize_nearest_neighbor_grad_cpu {
 namespace {
 constexpr size_t kResizeNearestNeighborGradInputNum = 4;
 constexpr size_t kResizeNearestNeighborGradOutputNum = 1;
@@ -127,5 +128,6 @@ void ResizeNearestNeighborGradCpuKernelMod::LaunchKernel(const std::vector<Kerne
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ResizeNearestNeighborGrad, ResizeNearestNeighborGradCpuKernelMod);
+}  // namespace resize_nearest_neighbor_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

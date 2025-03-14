@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace get_tuple_index_info_cpu {
 static const size_t max_indices_num = 8;
 bool GetTupleIndexInfoCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                          const std::vector<KernelTensor *> &outputs) {
@@ -145,5 +146,6 @@ std::vector<KernelAttr> GetTupleIndexInfoCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, GetTupleIndexInfo, GetTupleIndexInfoCpuKernelMod);
+}  // namespace get_tuple_index_info_cpu
 }  // namespace kernel
 }  // namespace mindspore

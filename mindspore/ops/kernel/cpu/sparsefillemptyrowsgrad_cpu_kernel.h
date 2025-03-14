@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparsefillemptyrowsgrad_cpu {
 class SparseFillEmptyRowsGradCpuKernelMod : public NativeCpuKernelMod {
  public:
   SparseFillEmptyRowsGradCpuKernelMod() = default;
@@ -46,6 +47,7 @@ class SparseFillEmptyRowsGradCpuKernelMod : public NativeCpuKernelMod {
   ShapeVector reverse_index_map_shape_;
   ShapeVector grad_values_shape_;
 };
+}  // namespace sparsefillemptyrowsgrad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_SPARSEFILLEMPTYROWSGRAD_CPU_KERNEL_H_

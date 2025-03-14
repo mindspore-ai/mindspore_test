@@ -30,6 +30,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace upsample_linear1d_grad {
 namespace {
 const pyfloat DEFAULT_SCALE_VALUE = -1;
 std::tuple<std::vector<int64_t>, std::vector<int64_t>, double, bool> UpsampleLinear1DGradGenerate(
@@ -73,5 +74,6 @@ bool UpsampleLinear1DGradAscend::Launch(const std::vector<KernelTensor *> &input
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(UpsampleLinear1DGrad, UpsampleLinear1DGradAscend);
+}  // namespace upsample_linear1d_grad
 }  // namespace kernel
 }  // namespace mindspore

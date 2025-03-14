@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace split_cpu {
 namespace {
 constexpr size_t kSplitInputsNum = 3;
 using complex64 = std::complex<float>;
@@ -242,5 +243,6 @@ std::vector<std::tuple<KernelAttr, SplitCpuKernelMod::SplitFunc, SplitCpuKernelM
      &SplitCpuKernelMod::LaunchKernel<bool>, &SplitCpuKernelMod::InitIOSize<bool>}};
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Split, SplitCpuKernelMod);
+}  // namespace split_cpu
 }  // namespace kernel
 }  // namespace mindspore

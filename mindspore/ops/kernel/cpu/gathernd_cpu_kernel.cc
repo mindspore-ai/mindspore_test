@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace gathernd_cpu {
 namespace {
 #define MAX_INT ((static_cast<unsigned int>(-1)) >> 1)
 
@@ -190,5 +191,6 @@ std::vector<KernelAttr> GatherNdCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, GatherNd, GatherNdCpuKernelMod);
+}  // namespace gathernd_cpu
 }  // namespace kernel
 }  // namespace mindspore

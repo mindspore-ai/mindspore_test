@@ -25,7 +25,6 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-constexpr pyfloat DEFAULT_SCALE_VALUE = 0.;
 tensor::BaseTensorPtr UpsampleBilinear2DAscendCall(const std::shared_ptr<OpRunner> &op,
                                                    const device::DeviceContext *device_context,
                                                    const BaseTensorPtr &input_tensor,
@@ -55,6 +54,7 @@ tensor::BaseTensorPtr UpsampleBilinear2DAscendCustomize(const std::shared_ptr<Op
   const ShapeVector &osize = op->output(kIndex0)->shape();
   std::vector<int64_t> output_size_vector = {osize.begin() + kDim2, osize.end()};
 
+  constexpr pyfloat DEFAULT_SCALE_VALUE = 0.;
   std::vector<pyfloat> scales(kDim2, DEFAULT_SCALE_VALUE);
   if (scale_factors.has_value()) {
     MS_EXCEPTION(RuntimeError) << "For UpsampleBilinear2D, scale_factors is not supported now.";

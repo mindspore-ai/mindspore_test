@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace lin_space_cpu {
 class LinSpaceCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<LinSpaceCpuKernelMod> {
  public:
   LinSpaceCpuKernelMod() = default;
@@ -55,6 +56,7 @@ class LinSpaceCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper
   bool multi_dims_{false};
   TypeId num_dtype_{kTypeUnknown};
 };
+}  // namespace lin_space_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

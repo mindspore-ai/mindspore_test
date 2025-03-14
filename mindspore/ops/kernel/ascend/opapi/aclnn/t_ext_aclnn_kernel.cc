@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace t_ext {
 
 void TExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                   const std::vector<KernelTensor *> &outputs) {
@@ -45,5 +46,6 @@ bool TExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::ve
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(TExt, TExtAscend);
+}  // namespace t_ext
 }  // namespace kernel
 }  // namespace mindspore

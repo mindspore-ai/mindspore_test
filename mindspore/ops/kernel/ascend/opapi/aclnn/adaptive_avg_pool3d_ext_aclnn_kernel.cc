@@ -19,6 +19,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace adaptive_avg_pool3d_ext {
 namespace {
 constexpr int kShapeDim1d = 1;
 constexpr int kShapeDim3d = 3;
@@ -60,5 +61,6 @@ bool AdaptiveAvgPool3DExtAclnnKernelMod::Launch(const std::vector<KernelTensor *
   return true;
 }
 MS_ACLNN_KERNEL_FACTORY_REG(AdaptiveAvgPool3DExt, AdaptiveAvgPool3DExtAclnnKernelMod);
+}  // namespace adaptive_avg_pool3d_ext
 }  // namespace kernel
 }  // namespace mindspore

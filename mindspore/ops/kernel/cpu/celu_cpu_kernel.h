@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace celu_cpu {
 class CeluCpuKernelMod : public NativeCpuKernelMod {
  public:
   CeluCpuKernelMod() {}
@@ -45,6 +46,7 @@ class CeluCpuKernelMod : public NativeCpuKernelMod {
   size_t input_elements_;
   double alpha_{1.0};
 };
+}  // namespace celu_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

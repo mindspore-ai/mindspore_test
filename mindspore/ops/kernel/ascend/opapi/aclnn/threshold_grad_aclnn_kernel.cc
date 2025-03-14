@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace threshold_grad {
 
 void ThresholdGradAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                            const std::vector<KernelTensor *> &outputs) {
@@ -36,5 +37,6 @@ bool ThresholdGradAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(ThresholdGrad, ThresholdGradAscend);
+}  // namespace threshold_grad
 }  // namespace kernel
 }  // namespace mindspore

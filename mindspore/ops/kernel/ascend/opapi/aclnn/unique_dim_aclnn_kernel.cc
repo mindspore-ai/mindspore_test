@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace unique_dim {
 
 void UniqueDimAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                        const std::vector<KernelTensor *> &outputs) {
@@ -69,5 +70,6 @@ void UniqueDimAscend::UpdateOutputShapeAndSize(const std::vector<KernelTensor *>
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(UniqueDim, UniqueDimAscend);
+}  // namespace unique_dim
 }  // namespace kernel
 }  // namespace mindspore

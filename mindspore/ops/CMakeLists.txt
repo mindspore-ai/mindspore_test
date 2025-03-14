@@ -15,9 +15,11 @@ else()
     include(cmake/ops.cmake)
 endif()
 
-# mindspore_ops_grad
-include(cmake/ops_grad.cmake)
+if(NOT BUILD_LITE)
+    # mindspore_ops_grad
+    include(cmake/ops_grad.cmake)
 
-add_subdirectory(kernel)
+    add_subdirectory(kernel)
 
-include(cmake/ops_host.cmake)
+    include(cmake/ops_host.cmake)
+endif()

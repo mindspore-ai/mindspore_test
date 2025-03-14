@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace gather_d_grad_cpu {
 namespace {
 size_t get_element_num(const std::vector<size_t> &shape) {
   return std::accumulate(shape.begin(), shape.end(), static_cast<std::size_t>(1), std::multiplies<size_t>());
@@ -182,5 +183,6 @@ const std::vector<std::pair<KernelAttr, GatherDGradV2CpuKernelMod::KernelRunFunc
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, GatherDGradV2, GatherDGradV2CpuKernelMod);
+}  // namespace gather_d_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_addmm_cpu {
 namespace {
 constexpr size_t kSparseAddmmInputsNum = 7;
 constexpr size_t kSparseAddmmOutputsNum = 1;
@@ -375,5 +376,6 @@ std::vector<KernelAttr> SparseAddmmCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SparseAddmm, SparseAddmmCpuKernelMod);
+}  // namespace sparse_addmm_cpu
 }  // namespace kernel
 }  // namespace mindspore

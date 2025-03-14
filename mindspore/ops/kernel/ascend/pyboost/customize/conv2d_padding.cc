@@ -29,13 +29,9 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-void ExpandParamIfNeeded(std::vector<int64_t> *const param, size_t expect_dim) {
-  if (param->size() == kIndex1) {
-    param->insert(param->end(), expect_dim - kIndex1, param->at(kIndex0));
-  }
-}
-
-bool Conv2DBatchify(const ShapeVector &input_shape, const int64_t num_spatial_dims, const std::string &func_name) {
+void ExpandParamIfNeeded(std::vector<int64_t> *const param, size_t expect_dim);
+bool Conv2DPaddingBatchify(const ShapeVector &input_shape, const int64_t num_spatial_dims,
+                           const std::string &func_name) {
   const auto dim_count_no_batch = num_spatial_dims + 1;
   const auto dim_count_batch = dim_count_no_batch + 1;
   auto origin_shape_dim = SizeToLong(input_shape.size());
@@ -47,9 +43,9 @@ bool Conv2DBatchify(const ShapeVector &input_shape, const int64_t num_spatial_di
   return is_batched;
 }
 
-bool GetSymmetricPadding(std::vector<int64_t> &padding_l, std::vector<int64_t> &padding_r,
-                         const std::vector<int64_t> &stride_vector, const std::vector<int64_t> &dilation_vector,
-                         const ShapeVector &input_sizes, const ShapeVector &weight_sizes, const size_t dim) {
+bool GetSymmetricPadding2D(std::vector<int64_t> &padding_l, std::vector<int64_t> &padding_r,
+                           const std::vector<int64_t> &stride_vector, const std::vector<int64_t> &dilation_vector,
+                           const ShapeVector &input_sizes, const ShapeVector &weight_sizes, const size_t dim) {
   bool symmetric_padding = true;
   for (size_t i = 0; i < dim; ++i) {
     auto stride_value = stride_vector.size() == 1 ? stride_vector[0] : stride_vector[i];
@@ -92,7 +88,7 @@ tensor::BaseTensorPtr Conv2DPaddingAscendCustomize(const std::shared_ptr<OpRunne
   // Convert ValuePtr to c++ scalar
   auto padding_enum_imm = GetValue<int64_t>(padding_enum);
   auto input_shape = input_tensor->shape();
-  auto is_batchify = Conv2DBatchify(input_shape, 2, "conv2d");
+  auto is_batchify = Conv2DPaddingBatchify(input_shape, 2, "conv2d");
   BaseTensorPtr input_tensor_new = input_tensor;
   BaseTensorPtr expand_input_x_imm = input_tensor;
   if (!is_batchify) {
@@ -116,7 +112,7 @@ tensor::BaseTensorPtr Conv2DPaddingAscendCustomize(const std::shared_ptr<OpRunne
     std::vector<int64_t> padding_l;
     std::vector<int64_t> padding_r;
     bool symmetric_padding =
-      GetSymmetricPadding(padding_l, padding_r, stride_vector, dilation_vector, input_sizes, weight_sizes, dim);
+      GetSymmetricPadding2D(padding_l, padding_r, stride_vector, dilation_vector, input_sizes, weight_sizes, dim);
     if (symmetric_padding) {
       pad_vector = padding_l;
     } else {

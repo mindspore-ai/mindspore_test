@@ -30,6 +30,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace uniform_cpu {
 namespace {
 const size_t kUniformInputsNum = 1;
 const size_t kUniformOutputsNum = 1;
@@ -131,5 +132,6 @@ std::vector<KernelAttr> UniformCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Uniform, UniformCpuKernelMod);
+}  // namespace uniform_cpu
 }  // namespace kernel
 }  // namespace mindspore

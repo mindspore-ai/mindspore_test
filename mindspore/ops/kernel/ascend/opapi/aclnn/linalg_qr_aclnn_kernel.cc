@@ -18,6 +18,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace linalg_qr {
 void LinalgQrAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                               const std::vector<KernelTensor *> &outputs) {
   mode_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
@@ -32,5 +33,6 @@ bool LinalgQrAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(LinalgQr, LinalgQrAclnnKernelMod);
+}  // namespace linalg_qr
 }  // namespace kernel
 }  // namespace mindspore

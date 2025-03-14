@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace gcd_cpu {
 class GcdCpuKernelMod : public NativeCpuKernelMod {
  public:
   GcdCpuKernelMod() = default;
@@ -59,6 +60,7 @@ class GcdCpuKernelMod : public NativeCpuKernelMod {
   ShapeVector y_shape_;
   bool need_bcast_{false};
 };
+}  // namespace gcd_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

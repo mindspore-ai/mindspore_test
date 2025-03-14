@@ -26,7 +26,6 @@
 
 namespace mindspore {
 namespace kernel {
-
 void StdAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                  const std::vector<KernelTensor *> &outputs) {
   const auto dim_opt = inputs[kIndex1]->GetOptionalValueWithCheck<std::vector<int64_t>>();

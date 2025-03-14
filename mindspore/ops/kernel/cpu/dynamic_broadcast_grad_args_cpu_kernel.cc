@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace dynamic_broadcast_grad_args_cpu {
 namespace {
 constexpr size_t kDynamicBroadcastGradientArgsInputsNum = 2;
 constexpr size_t kDynamicBroadcastGradientArgsOutputsNum = 2;
@@ -199,5 +200,6 @@ const std::vector<std::pair<KernelAttr, KernelRunFunc>> &DynamicBroadcastGradien
   return func_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, DynamicBroadcastGradientArgs, DynamicBroadcastGradientArgsCpuKernelMod);
+}  // namespace dynamic_broadcast_grad_args_cpu
 }  // namespace kernel
 }  // namespace mindspore

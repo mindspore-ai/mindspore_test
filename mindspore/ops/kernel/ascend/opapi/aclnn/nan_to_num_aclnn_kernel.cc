@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace nan_to_num {
 void NanToNumAscend::GetInfValues(TypeId input_type, const std::optional<float> &posinf,
                                   const std::optional<float> &neginf, bool posinf_has_value, bool neginf_has_value) {
   const float DOUBLE_MAX_VALUE = 1.7976931348623157e+308;
@@ -90,5 +91,6 @@ bool NanToNumAscend::Launch(const std::vector<KernelTensor *> &inputs, const std
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(NanToNum, NanToNumAscend);
+}  // namespace nan_to_num
 }  // namespace kernel
 }  // namespace mindspore

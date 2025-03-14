@@ -17,6 +17,9 @@
 #include <vector>
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
+namespace mindspore {
+namespace kernel {
+namespace hsv_to_rgb_cpu {
 namespace {
 const size_t kZero = 0;
 const size_t kOne = 1;
@@ -24,8 +27,6 @@ const size_t kNumDims = 3;
 const size_t kInputsNum = 1;
 const size_t kOutputsNum = 1;
 }  // namespace
-namespace mindspore {
-namespace kernel {
 bool HSVToRGBCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   constexpr size_t input_num = kInputsNum;
   constexpr size_t output_num = kOutputsNum;
@@ -184,5 +185,6 @@ bool HSVToRGBCpuKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, HSVToRGB, HSVToRGBCpuKernelMod);
+}  // namespace hsv_to_rgb_cpu
 }  // namespace kernel
 }  // namespace mindspore

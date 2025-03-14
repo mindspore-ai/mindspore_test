@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace gelu_grad_ext {
 
 class GeluGradExtAscend : public AclnnKernelMod {
  public:
@@ -41,6 +42,7 @@ class GeluGradExtAscend : public AclnnKernelMod {
 
   std::string approximate_;
 };
+}  // namespace gelu_grad_ext
 }  // namespace kernel
 }  // namespace mindspore
 

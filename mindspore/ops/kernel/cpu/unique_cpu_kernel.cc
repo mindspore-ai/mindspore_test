@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace unique_cpu {
 namespace {
 constexpr size_t kBucketSortThreshold = 100000;
 constexpr size_t kWorkSpaceNum = 3;
@@ -109,5 +110,6 @@ void UniqueCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Unique, UniqueCpuKernelMod);
+}  // namespace unique_cpu
 }  // namespace kernel
 }  // namespace mindspore

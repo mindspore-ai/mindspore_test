@@ -23,6 +23,9 @@
 #include "kernel/cpu/nnacl/intrinsics/ms_simd_instructions.h"
 #include "ops_utils/op_utils.h"
 
+namespace mindspore {
+namespace kernel {
+namespace apply_proximal_gradient_descent_cpu {
 namespace {
 constexpr size_t kApplyProximalGradientDescentInputsNum = 5;
 constexpr size_t kApplyProximalGradientDescentOutputsNum = 1;
@@ -56,9 +59,6 @@ T Max(T x, T y) {
   return y;
 }
 }  // namespace
-
-namespace mindspore {
-namespace kernel {
 bool ApplyProximalGradientDescentCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                                     const std::vector<KernelTensor *> &outputs) {
   dtype_ = inputs[0]->dtype_id();
@@ -214,5 +214,6 @@ bool ApplyProximalGradientDescentCpuKernelMod::Launch(const std::vector<kernel::
   return true;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ApplyProximalGradientDescent, ApplyProximalGradientDescentCpuKernelMod);
+}  // namespace apply_proximal_gradient_descent_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace avg_pool1d {
 class AvgPool1DAscend final : public AclnnKernelMod {
  public:
   AvgPool1DAscend() : AclnnKernelMod(std::move("aclnnAvgPool2d")) {}
@@ -39,6 +40,7 @@ class AvgPool1DAscend final : public AclnnKernelMod {
 
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace avg_pool1d
 }  // namespace kernel
 }  // namespace mindspore
 

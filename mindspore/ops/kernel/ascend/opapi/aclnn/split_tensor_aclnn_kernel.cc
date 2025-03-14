@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace split_tensor {
 
 int64_t SplitTensorAscend::GetDimValue(KernelTensor *axis_ptr) const noexcept {
   auto axis_vec = device::ascend::ConvertKernelTensor<std::vector<int64_t>>(axis_ptr);
@@ -78,5 +79,6 @@ bool SplitTensorAscend::Launch(const std::vector<KernelTensor *> &inputs, const 
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(SplitTensor, SplitTensorAscend);
+}  // namespace split_tensor
 }  // namespace kernel
 }  // namespace mindspore

@@ -28,6 +28,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace ctcloss_cpu {
 class CTCLossCpuKernelMod : public NativeCpuKernelMod {
  public:
   CTCLossCpuKernelMod() = default;
@@ -72,6 +73,7 @@ class CTCLossCpuKernelMod : public NativeCpuKernelMod {
   bool ctc_merge_repeated_{false};
   bool ignore_longer_outputs_than_inputs_{false};
 };
+}  // namespace ctcloss_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_CTCLOSS_CPU_KERNEL_H_

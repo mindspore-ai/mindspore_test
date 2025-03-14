@@ -29,6 +29,7 @@ namespace mindspore {
 using mindspore::ops::FusedInferAttentionScoreInputIndex;
 using mindspore::ops::FusedInferAttentionScoreOutputIndex;
 namespace kernel {
+namespace fused_infer_attention_score {
 std::vector<int64_t> FusedInferAttentionScoreAscend::ConvertTensorToVector(const std::string &tensor_name,
                                                                            KernelTensor *const tensor_ptr) {
   MS_EXCEPTION_IF_NULL(tensor_ptr);
@@ -227,5 +228,6 @@ bool FusedInferAttentionScoreAscend::Launch(const std::vector<KernelTensor *> &i
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(FusedInferAttentionScore, FusedInferAttentionScoreAscend);
+}  // namespace fused_infer_attention_score
 }  // namespace kernel
 }  // namespace mindspore

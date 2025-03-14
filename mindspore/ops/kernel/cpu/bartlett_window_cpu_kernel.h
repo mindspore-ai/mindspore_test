@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace bartlett_window_cpu {
 class BartlettWindowCpuKernelMod : public NativeCpuKernelMod {
  public:
   BartlettWindowCpuKernelMod() = default;
@@ -50,6 +51,7 @@ class BartlettWindowCpuKernelMod : public NativeCpuKernelMod {
   static std::vector<std::pair<KernelAttr, BartlettWindowFunc>> func_list_;
   BartlettWindowFunc kernel_func_;
 };
+}  // namespace bartlett_window_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_BARTLETT_WINDOW_CPU_KERNEL_H_

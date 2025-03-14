@@ -19,6 +19,7 @@
 namespace mindspore {
 using mindspore::device::ascend::FFNActivationMode;
 namespace kernel {
+namespace ffn_ext {
 void FFNExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                     const std::vector<KernelTensor *> &outputs) {
   std::string activation_string = "fastgelu";
@@ -49,5 +50,6 @@ bool FFNExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(FFNExt, FFNExtAscend);
+}  // namespace ffn_ext
 }  // namespace kernel
 }  // namespace mindspore

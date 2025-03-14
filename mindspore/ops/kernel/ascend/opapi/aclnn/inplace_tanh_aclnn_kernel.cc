@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_tanh {
 
 void InplaceTanhAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                          const std::vector<KernelTensor *> &outputs) {
@@ -36,5 +37,6 @@ bool InplaceTanhAscend::Launch(const std::vector<KernelTensor *> &inputs, const 
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(InplaceTanh, InplaceTanhAscend);
+}  // namespace inplace_tanh
 }  // namespace kernel
 }  // namespace mindspore

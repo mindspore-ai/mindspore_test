@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace assign_cpu {
 namespace {
 constexpr size_t kAssignInputsNum = 2;
 constexpr size_t kAssignOutputsNum = 1;
@@ -216,5 +217,6 @@ std::vector<KernelAttr> AssignCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Assign, AssignCpuKernelMod);
+}  // namespace assign_cpu
 }  // namespace kernel
 }  // namespace mindspore

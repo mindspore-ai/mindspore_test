@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace trunc_cpu {
 class TruncCpuKernelMod : public NativeCpuKernelMod {
  public:
   TruncCpuKernelMod() {}
@@ -53,6 +54,7 @@ class TruncCpuKernelMod : public NativeCpuKernelMod {
   static std::vector<std::pair<KernelAttr, TruncFunc>> func_list_;
   TruncFunc kernel_func_;
 };
+}  // namespace trunc_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

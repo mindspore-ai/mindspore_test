@@ -19,6 +19,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace adaptive_max_pool_3d_grad_cpu {
 bool AdaptiveMaxPool3DGradCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                              const std::vector<KernelTensor *> &outputs) {
   if (!MatchKernelFunc(kernel_name_, inputs, outputs)) {
@@ -209,5 +210,6 @@ bool AdaptiveMaxPool3DGradCpuKernelMod::LaunchKernelHalf(const std::vector<Kerne
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, AdaptiveMaxPool3DGrad, AdaptiveMaxPool3DGradCpuKernelMod);
+}  // namespace adaptive_max_pool_3d_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

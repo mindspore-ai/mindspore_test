@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace triu_cpu {
 class TriuCpuKernelMod : public NativeCpuKernelMod {
  public:
   TriuCpuKernelMod() = default;
@@ -47,6 +48,7 @@ class TriuCpuKernelMod : public NativeCpuKernelMod {
   template <typename T>
   bool TriuCompute(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
 };
+}  // namespace triu_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

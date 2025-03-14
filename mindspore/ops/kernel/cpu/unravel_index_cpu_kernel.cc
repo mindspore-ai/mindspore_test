@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace unravel_index_cpu {
 namespace {
 constexpr int64_t kParallelDataNums = 1024;
 }  // namespace
@@ -106,5 +107,6 @@ std::vector<KernelAttr> UnravelIndexCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, UnravelIndex, UnravelIndexCpuKernelMod);
+}  // namespace unravel_index_cpu
 }  // namespace kernel
 }  // namespace mindspore

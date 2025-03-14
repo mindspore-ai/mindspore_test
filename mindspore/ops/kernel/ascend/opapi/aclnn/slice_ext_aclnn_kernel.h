@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace slice_ext {
 
 class SliceExtAscend : public AclnnKernelMod {
  public:
@@ -42,6 +43,7 @@ class SliceExtAscend : public AclnnKernelMod {
   int64_t end_;
   int64_t step_;
 };
+}  // namespace slice_ext
 }  // namespace kernel
 }  // namespace mindspore
 

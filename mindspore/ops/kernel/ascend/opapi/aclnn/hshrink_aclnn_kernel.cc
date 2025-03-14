@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace hshrink {
 
 void HshrinkAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                      const std::vector<KernelTensor *> &outputs) {
@@ -41,5 +42,6 @@ bool HshrinkAscend::Launch(const std::vector<KernelTensor *> &inputs, const std:
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(HShrink, HshrinkAscend);
+}  // namespace hshrink
 }  // namespace kernel
 }  // namespace mindspore

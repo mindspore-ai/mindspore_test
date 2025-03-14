@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace concat_cpu {
 namespace {
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
@@ -139,5 +140,6 @@ const std::vector<std::pair<KernelAttr, ConcatCpuKernelMod::KernelRunFunc>> &Con
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Concat, ConcatCpuKernelMod);
+}  // namespace concat_cpu
 }  // namespace kernel
 }  // namespace mindspore

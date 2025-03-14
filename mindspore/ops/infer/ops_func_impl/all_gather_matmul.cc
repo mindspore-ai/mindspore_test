@@ -22,9 +22,6 @@
 
 namespace mindspore {
 namespace ops {
-static constexpr ShapeValueDType kShapeRankAny = mindspore::abstract::Shape::kShapeRankAny;
-static constexpr ShapeValueDType kShapeDimAnyGather = mindspore::abstract::Shape::kShapeDimAny;
-
 ShapeArray AllGatherMatmulFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                const InferInfoPtrList &input_infos) const {
   auto op_name = primitive->name();
@@ -66,15 +63,18 @@ ShapeArray AllGatherMatmulFuncImpl::InferShape(const PrimitivePtr &primitive,
   MS_ASSERT(world_size_optional.has_value());
   auto world_size = world_size_optional.value();
 
+  static constexpr ShapeValueDType kShapeRankAny = mindspore::abstract::Shape::kShapeRankAny;
+  static constexpr ShapeValueDType kShapeDimAny = mindspore::abstract::Shape::kShapeDimAny;
+
   ShapeVector output_shape(2);  // The rank of output is 2.
-  output_shape[0] = input_row_known ? input_shape[input_row] * world_size : kShapeDimAnyGather;
-  output_shape[1] = x2_col_known ? x2_shape[x2_col] : kShapeDimAnyGather;
+  output_shape[0] = input_row_known ? input_shape[input_row] * world_size : kShapeDimAny;
+  output_shape[1] = x2_col_known ? x2_shape[x2_col] : kShapeDimAny;
 
   ShapeVector gather_out_shape = {kShapeRankAny};
   if (gather_output_optional.has_value()) {
     gather_out_shape = {0};
     if (gather_output_optional.value()) {
-      gather_out_shape = {kShapeDimAnyGather, kShapeDimAnyGather};
+      gather_out_shape = {kShapeDimAny, kShapeDimAny};
       if (input_row_known) {
         gather_out_shape[0] = input_shape[input_row] * world_size;
       }

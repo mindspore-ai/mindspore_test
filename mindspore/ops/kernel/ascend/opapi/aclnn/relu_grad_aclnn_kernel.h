@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace relu_grad {
 
 class ReluGradAscend : public AclnnKernelMod {
  public:
@@ -36,6 +37,7 @@ class ReluGradAscend : public AclnnKernelMod {
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
   ScalarPtr zero_ = nullptr;
 };
+}  // namespace relu_grad
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace pad_v3_grad_cpu {
 namespace {
 constexpr auto kPadV3Grad = "PadV3Grad";
 constexpr const size_t kInputsNum = 2;
@@ -381,5 +382,6 @@ std::vector<KernelAttr> PadV3GradCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, PadV3Grad, PadV3GradCpuKernelMod);
+}  // namespace pad_v3_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace isinf_cpu {
 namespace {
 constexpr size_t kIsInfInputsNum = 1;
 constexpr size_t kIsInfOutputsNum = 1;
@@ -80,5 +81,6 @@ void IsInfCpuKernelMod::LaunchKernelFloat(const std::vector<KernelTensor *> &inp
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, IsInf, IsInfCpuKernelMod);
+}  // namespace isinf_cpu
 }  // namespace kernel
 }  // namespace mindspore

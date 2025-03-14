@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace randn {
 
 class RandnAscend : public AclnnKernelMod {
  public:
@@ -39,6 +40,7 @@ class RandnAscend : public AclnnKernelMod {
   float std_{1.};
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace randn
 }  // namespace kernel
 }  // namespace mindspore
 

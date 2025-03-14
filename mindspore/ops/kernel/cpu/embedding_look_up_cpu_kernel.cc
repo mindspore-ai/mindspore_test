@@ -21,30 +21,33 @@
 
 namespace mindspore {
 namespace kernel {
+namespace embedding_look_up_cpu {
 namespace {
 constexpr size_t kEmbeddingLookupInputsNum = 3;
 constexpr size_t kEmbeddingLookUpInputParamsMaxDim = 2;
 constexpr size_t kOffsetIndex = 2;
 using KernelRunFunc = EmbeddingLookUpCpuKernelMod::KernelRunFunc;
 
-#define ADD_KERNEL(input_params_dtype, input_indices_dtype, output_dtype, input_params_type, input_indices_type) \
-  {                                                                                                              \
-    KernelAttr()                                                                                                 \
-      .AddInputAttr(kNumberType##input_params_dtype)                                                             \
-      .AddInputAttr(kNumberType##input_indices_dtype)                                                            \
-      .AddInputAttr(kNumberTypeInt64)                                                                            \
-      .AddOutputAttr(kNumberType##output_dtype),                                                                 \
-      &EmbeddingLookUpCpuKernelMod::LaunchKernel<input_params_type, input_indices_type, int64_t>                 \
+#define EMBEDDING_LOOK_UP_ADD_KERNEL(input_params_dtype, input_indices_dtype, output_dtype, input_params_type, \
+                                     input_indices_type)                                                       \
+  {                                                                                                            \
+    KernelAttr()                                                                                               \
+      .AddInputAttr(kNumberType##input_params_dtype)                                                           \
+      .AddInputAttr(kNumberType##input_indices_dtype)                                                          \
+      .AddInputAttr(kNumberTypeInt64)                                                                          \
+      .AddOutputAttr(kNumberType##output_dtype),                                                               \
+      &EmbeddingLookUpCpuKernelMod::LaunchKernel<input_params_type, input_indices_type, int64_t>               \
   }
 
-#define ADD_KERNEL_INT32(input_params_dtype, input_indices_dtype, output_dtype, input_params_type, input_indices_type) \
-  {                                                                                                                    \
-    KernelAttr()                                                                                                       \
-      .AddInputAttr(kNumberType##input_params_dtype)                                                                   \
-      .AddInputAttr(kNumberType##input_indices_dtype)                                                                  \
-      .AddInputAttr(kNumberTypeInt32)                                                                                  \
-      .AddOutputAttr(kNumberType##output_dtype),                                                                       \
-      &EmbeddingLookUpCpuKernelMod::LaunchKernel<input_params_type, input_indices_type, int32_t>                       \
+#define EMBEDDING_LOOK_UP_ADD_KERNEL_INT32(input_params_dtype, input_indices_dtype, output_dtype, input_params_type, \
+                                           input_indices_type)                                                       \
+  {                                                                                                                  \
+    KernelAttr()                                                                                                     \
+      .AddInputAttr(kNumberType##input_params_dtype)                                                                 \
+      .AddInputAttr(kNumberType##input_indices_dtype)                                                                \
+      .AddInputAttr(kNumberTypeInt32)                                                                                \
+      .AddOutputAttr(kNumberType##output_dtype),                                                                     \
+      &EmbeddingLookUpCpuKernelMod::LaunchKernel<input_params_type, input_indices_type, int32_t>                     \
   }
 
 template <typename T, typename S>
@@ -81,34 +84,34 @@ void RectifyIndex(S *indices_addr, size_t indices_lens, int64_t offset) {
 
 const std::vector<std::pair<KernelAttr, KernelRunFunc>> &EmbeddingLookUpCpuKernelMod::GetFuncList() const {
   static const std::vector<std::pair<KernelAttr, KernelRunFunc>> func_list = {
-    ADD_KERNEL(Bool, Int32, Bool, bool, int32_t),
-    ADD_KERNEL(Int8, Int32, Int8, int8_t, int32_t),
-    ADD_KERNEL(Int16, Int32, Int16, int16_t, int32_t),
-    ADD_KERNEL(Int32, Int32, Int32, int32_t, int32_t),
-    ADD_KERNEL(Int64, Int32, Int64, int64_t, int32_t),
-    ADD_KERNEL(UInt8, Int32, UInt8, uint8_t, int32_t),
-    ADD_KERNEL(UInt16, Int32, UInt16, uint16_t, int32_t),
-    ADD_KERNEL(UInt32, Int32, UInt32, uint32_t, int32_t),
-    ADD_KERNEL(UInt64, Int32, UInt64, uint64_t, int32_t),
-    ADD_KERNEL(Float16, Int32, Float16, float16, int32_t),
-    ADD_KERNEL(Float32, Int32, Float32, float, int32_t),
-    ADD_KERNEL(Float64, Int32, Float64, double, int32_t),
+    EMBEDDING_LOOK_UP_ADD_KERNEL(Bool, Int32, Bool, bool, int32_t),
+    EMBEDDING_LOOK_UP_ADD_KERNEL(Int8, Int32, Int8, int8_t, int32_t),
+    EMBEDDING_LOOK_UP_ADD_KERNEL(Int16, Int32, Int16, int16_t, int32_t),
+    EMBEDDING_LOOK_UP_ADD_KERNEL(Int32, Int32, Int32, int32_t, int32_t),
+    EMBEDDING_LOOK_UP_ADD_KERNEL(Int64, Int32, Int64, int64_t, int32_t),
+    EMBEDDING_LOOK_UP_ADD_KERNEL(UInt8, Int32, UInt8, uint8_t, int32_t),
+    EMBEDDING_LOOK_UP_ADD_KERNEL(UInt16, Int32, UInt16, uint16_t, int32_t),
+    EMBEDDING_LOOK_UP_ADD_KERNEL(UInt32, Int32, UInt32, uint32_t, int32_t),
+    EMBEDDING_LOOK_UP_ADD_KERNEL(UInt64, Int32, UInt64, uint64_t, int32_t),
+    EMBEDDING_LOOK_UP_ADD_KERNEL(Float16, Int32, Float16, float16, int32_t),
+    EMBEDDING_LOOK_UP_ADD_KERNEL(Float32, Int32, Float32, float, int32_t),
+    EMBEDDING_LOOK_UP_ADD_KERNEL(Float64, Int32, Float64, double, int32_t),
 
-    ADD_KERNEL(Bool, Int64, Bool, bool, int64_t),
-    ADD_KERNEL(Int8, Int64, Int8, int8_t, int64_t),
-    ADD_KERNEL(Int16, Int64, Int16, int16_t, int64_t),
-    ADD_KERNEL(Int32, Int64, Int32, int32_t, int64_t),
-    ADD_KERNEL(Int64, Int64, Int64, int64_t, int64_t),
-    ADD_KERNEL(UInt8, Int64, UInt8, uint8_t, int64_t),
-    ADD_KERNEL(UInt16, Int64, UInt16, uint16_t, int64_t),
-    ADD_KERNEL(UInt32, Int64, UInt32, uint32_t, int64_t),
-    ADD_KERNEL(UInt64, Int64, UInt64, uint64_t, int64_t),
-    ADD_KERNEL(Float16, Int64, Float16, float16, int64_t),
-    ADD_KERNEL(Float32, Int64, Float32, float, int64_t),
-    ADD_KERNEL(Float64, Int64, Float64, double, int64_t),
+    EMBEDDING_LOOK_UP_ADD_KERNEL(Bool, Int64, Bool, bool, int64_t),
+    EMBEDDING_LOOK_UP_ADD_KERNEL(Int8, Int64, Int8, int8_t, int64_t),
+    EMBEDDING_LOOK_UP_ADD_KERNEL(Int16, Int64, Int16, int16_t, int64_t),
+    EMBEDDING_LOOK_UP_ADD_KERNEL(Int32, Int64, Int32, int32_t, int64_t),
+    EMBEDDING_LOOK_UP_ADD_KERNEL(Int64, Int64, Int64, int64_t, int64_t),
+    EMBEDDING_LOOK_UP_ADD_KERNEL(UInt8, Int64, UInt8, uint8_t, int64_t),
+    EMBEDDING_LOOK_UP_ADD_KERNEL(UInt16, Int64, UInt16, uint16_t, int64_t),
+    EMBEDDING_LOOK_UP_ADD_KERNEL(UInt32, Int64, UInt32, uint32_t, int64_t),
+    EMBEDDING_LOOK_UP_ADD_KERNEL(UInt64, Int64, UInt64, uint64_t, int64_t),
+    EMBEDDING_LOOK_UP_ADD_KERNEL(Float16, Int64, Float16, float16, int64_t),
+    EMBEDDING_LOOK_UP_ADD_KERNEL(Float32, Int64, Float32, float, int64_t),
+    EMBEDDING_LOOK_UP_ADD_KERNEL(Float64, Int64, Float64, double, int64_t),
 
-    ADD_KERNEL_INT32(Int32, Int32, Int32, int32_t, int32_t),
-    ADD_KERNEL_INT32(Float32, Int32, Float32, float, int32_t)};
+    EMBEDDING_LOOK_UP_ADD_KERNEL_INT32(Int32, Int32, Int32, int32_t, int32_t),
+    EMBEDDING_LOOK_UP_ADD_KERNEL_INT32(Float32, Int32, Float32, float, int32_t)};
 
   return func_list;
 }
@@ -195,5 +198,6 @@ bool EmbeddingLookUpCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *>
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, EmbeddingLookup, EmbeddingLookUpCpuKernelMod);
+}  // namespace embedding_look_up_cpu
 }  // namespace kernel
 }  // namespace mindspore

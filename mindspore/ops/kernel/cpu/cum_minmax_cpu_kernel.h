@@ -29,6 +29,7 @@ enum CumOpType { CUMMIN = 0, CUMMAX, CUM_OP_INVALID_TYPE = 255 };
 
 namespace mindspore {
 namespace kernel {
+namespace cum_minmax_cpu {
 class CumMinMaxCpuKernelMod : public NativeCpuKernelMod {
  public:
   CumMinMaxCpuKernelMod() = default;
@@ -61,6 +62,7 @@ class CumMinMaxCpuKernelMod : public NativeCpuKernelMod {
   size_t outer_size_{1};
   size_t axis_size_{1};
 };
+}  // namespace cum_minmax_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

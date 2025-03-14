@@ -18,6 +18,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace broadcastto {
 void BroadcastToAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                  const std::vector<KernelTensor *> &outputs) {
   shape_ = outputs[0]->GetShapeVector();
@@ -33,5 +34,6 @@ bool BroadcastToAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inputs
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(BroadcastTo, BroadcastToAclnnKernelMod);
+}  // namespace broadcastto
 }  // namespace kernel
 }  // namespace mindspore

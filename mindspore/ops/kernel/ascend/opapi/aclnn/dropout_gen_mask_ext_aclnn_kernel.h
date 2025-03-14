@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace dropout_gen_mask_ext {
 
 class DropoutGenMaskExtAscend : public AclnnKernelMod {
  public:
@@ -40,6 +41,7 @@ class DropoutGenMaskExtAscend : public AclnnKernelMod {
   int64_t offset_value_;
   TypeId dtype_value_;
 };
+}  // namespace dropout_gen_mask_ext
 }  // namespace kernel
 }  // namespace mindspore
 

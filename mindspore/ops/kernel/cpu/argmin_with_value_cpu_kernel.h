@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace argmin_with_value_cpu {
 class ArgMinWithValueCpuKernelMod : public NativeCpuKernelMod {
  public:
   ArgMinWithValueCpuKernelMod() = default;
@@ -63,6 +64,7 @@ class ArgMinWithValueCpuKernelMod : public NativeCpuKernelMod {
   const size_t index_output_idx{0};
   const size_t value_output_idx{1};
 };
+}  // namespace argmin_with_value_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

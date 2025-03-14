@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace maximum_grad_cpu {
 namespace {
 constexpr size_t kMaximumGradInputsNum = 5;
 constexpr size_t kMaximumGradOutputsNum = 2;
@@ -237,5 +238,6 @@ void MaximumGradCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &in
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, MaximumGrad, MaximumGradCpuKernelMod);
+}  // namespace maximum_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

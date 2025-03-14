@@ -27,12 +27,7 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-std::vector<BaseTensorPtr> ConvertOptiaonlValueTupleToVector(const std::optional<ValueTuplePtr> &tensor_list_opt) {
-  if (tensor_list_opt.has_value()) {
-    return ConvertValueTupleToVector<BaseTensorPtr>(tensor_list_opt.value());
-  }
-  return {};
-}
+std::vector<BaseTensorPtr> ConvertOptiaonlValueTupleToVector(const std::optional<ValueTuplePtr> &tensor_list_opt);
 }  // namespace
 void GroupedMatmulV4AscendCustomize(
   const std::shared_ptr<OpRunner> &op, const ValueTuplePtr &x_tensor_list, const ValueTuplePtr &weight_tensor_list,

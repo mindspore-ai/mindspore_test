@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace affine_grid_grad_cpu {
 class AffineGridGradCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<AffineGridGradCpuKernelMod> {
  public:
   AffineGridGradCpuKernelMod() = default;
@@ -73,6 +74,7 @@ class AffineGridGradCpuKernelMod : public NativeCpuKernelMod, public MatchKernel
   bool align_corners_{false};
   std::vector<TypeId> input_info_;
 };
+}  // namespace affine_grid_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

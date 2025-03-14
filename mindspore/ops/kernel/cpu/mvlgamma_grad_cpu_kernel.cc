@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace mvlgamma_grad_cpu {
 namespace {
 /**
  * Coefficients for the Lanczos approximation of the gamma function. The
@@ -157,5 +158,6 @@ const std::vector<std::pair<KernelAttr, MvlgammaGradCpuKernelMod::KernelRunFunc>
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, MvlgammaGrad, MvlgammaGradCpuKernelMod);
+}  // namespace mvlgamma_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

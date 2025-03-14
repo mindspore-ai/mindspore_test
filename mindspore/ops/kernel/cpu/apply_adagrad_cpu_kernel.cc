@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace apply_adagrad_cpu {
 namespace {
 constexpr size_t kSizeFloat16 = 2;
 constexpr size_t kSizeFloat32 = 4;
@@ -169,5 +170,6 @@ std::vector<KernelAttr> ApplyAdagradCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ApplyAdagrad, ApplyAdagradCpuKernelMod);
+}  // namespace apply_adagrad_cpu
 }  // namespace kernel
 }  // namespace mindspore

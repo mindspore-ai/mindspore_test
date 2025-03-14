@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace batch_matmul {
 using TensorParams = device::ascend::TensorParams;
 
 class BMMAclnnKernelMod : public AclnnKernelMod {
@@ -56,6 +57,7 @@ class BMMExtAclnnKernelMod : public AclnnKernelMod {
 
   int8_t cube_math_type_;
 };
+}  // namespace batch_matmul
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace gcd_cpu {
 namespace {
 const size_t kGcdInputsNum = 2;
 const size_t kGcdOutputsNum = 1;
@@ -99,5 +100,6 @@ std::vector<KernelAttr> GcdCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Gcd, GcdCpuKernelMod);
+}  // namespace gcd_cpu
 }  // namespace kernel
 }  // namespace mindspore

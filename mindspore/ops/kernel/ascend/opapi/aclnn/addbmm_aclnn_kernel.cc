@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace addbmm {
 
 void AddbmmAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                             const std::vector<KernelTensor *> &outputs) {
@@ -41,5 +42,6 @@ bool AddbmmAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
   return true;
 }
 MS_ACLNN_KERNEL_FACTORY_REG(Addbmm, AddbmmAclnnKernelMod);
+}  // namespace addbmm
 }  // namespace kernel
 }  // namespace mindspore

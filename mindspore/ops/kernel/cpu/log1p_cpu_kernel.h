@@ -27,6 +27,7 @@ using complex128 = std::complex<double>;
 
 namespace mindspore {
 namespace kernel {
+namespace log1p_cpu {
 class Log1pCpuKernelMod : public NativeCpuKernelMod {
  public:
   Log1pCpuKernelMod() = default;
@@ -53,6 +54,7 @@ class Log1pCpuKernelMod : public NativeCpuKernelMod {
 
   TypeId input_dtype_{kTypeUnknown};
 };
+}  // namespace log1p_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace resize_bicubic_grad_cpu {
 namespace {
 constexpr size_t kResizeBicubicGradInputsNum = 4;
 constexpr size_t kResizeBicubicGradOutputNum = 1;
@@ -376,5 +377,6 @@ std::vector<KernelAttr> ResizeBicubicGradCPUKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ResizeBicubicGrad, ResizeBicubicGradCPUKernelMod);
+}  // namespace resize_bicubic_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

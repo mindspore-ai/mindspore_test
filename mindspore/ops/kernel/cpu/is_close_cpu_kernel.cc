@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace is_close_cpu {
 namespace {
 constexpr size_t kIsCloseInputsNum = 5;
 constexpr size_t kIsCloseOutputsNum = 1;
@@ -223,5 +224,6 @@ const std::vector<std::pair<KernelAttr, IsCloseCpuKernelMod::KernelRunFunc>> &Is
   return func_list_;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, IsClose, IsCloseCpuKernelMod);
+}  // namespace is_close_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -29,6 +29,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace igammagrada_cpu {
 class IgammaGradACpuKernelMod : public NativeCpuKernelMod {
  public:
   IgammaGradACpuKernelMod() = default;
@@ -63,6 +64,7 @@ class IgammaGradACpuKernelMod : public NativeCpuKernelMod {
   template <typename T>
   void NoBcastCompute(const std::vector<KernelTensor *> &, const std::vector<KernelTensor *> &);
 };
+}  // namespace igammagrada_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

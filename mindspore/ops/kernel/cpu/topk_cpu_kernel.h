@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace topk_cpu {
 class TopKCpuKernelMod : public NativeCpuKernelMod {
  public:
   TopKCpuKernelMod() = default;
@@ -50,6 +51,7 @@ class TopKCpuKernelMod : public NativeCpuKernelMod {
   bool sorted_{false};
   TypeId dtype_{kTypeUnknown};
 };
+}  // namespace topk_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_TOPK_CPU_KERNEL_H_

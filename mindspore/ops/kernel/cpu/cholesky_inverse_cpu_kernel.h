@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace cholesky_inverse_cpu {
 class CholeskyInverseCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<CholeskyInverseCpuKernelMod> {
  public:
   CholeskyInverseCpuKernelMod() = default;
@@ -52,6 +53,7 @@ class CholeskyInverseCpuKernelMod : public NativeCpuKernelMod, public MatchKerne
   int64_t input_dim_0_ = 0;
   bool is_upper_{false};
 };
+}  // namespace cholesky_inverse_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_CHOLESKYINVERSE_CPU_KERNEL_H_

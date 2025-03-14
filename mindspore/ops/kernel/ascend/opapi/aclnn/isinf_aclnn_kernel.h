@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace isinf {
 class IsInfAscend final : public AclnnKernelMod {
  public:
   IsInfAscend() : AclnnKernelMod(std::move("aclnnIsInf")) {}
@@ -42,6 +43,7 @@ class IsInfAscend final : public AclnnKernelMod {
   DEFINE_GET_WORKSPACE_FOR_OPS(aclnnEqScalar, EqScalar)
   DEFINE_GET_WORKSPACE_FOR_OPS(aclnnInplaceZero, InplaceZero)
 };
+}  // namespace isinf
 }  // namespace kernel
 }  // namespace mindspore
 

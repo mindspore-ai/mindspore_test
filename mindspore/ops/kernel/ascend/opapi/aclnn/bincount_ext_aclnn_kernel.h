@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace bincount_ext {
 
 class BincountExtAscend : public AclnnKernelMod {
  public:
@@ -49,6 +50,7 @@ class BincountExtAscend : public AclnnKernelMod {
   int64_t min_length_ = 0;
   TypePtr origin_output_typeptr_;
 };
+}  // namespace bincount_ext
 }  // namespace kernel
 }  // namespace mindspore
 

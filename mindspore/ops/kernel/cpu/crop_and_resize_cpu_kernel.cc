@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace crop_and_resize_cpu {
 bool CropAndResizeCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                      const std::vector<KernelTensor *> &outputs) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), INPUT_NUM, kernel_name_);
@@ -379,5 +380,6 @@ std::vector<KernelAttr> CropAndResizeCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, CropAndResize, CropAndResizeCpuKernelMod);
+}  // namespace crop_and_resize_cpu
 }  // namespace kernel
 }  // namespace mindspore

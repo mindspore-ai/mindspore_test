@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace cross {
 
 void CrossAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                    const std::vector<KernelTensor *> &outputs) {
@@ -41,5 +42,6 @@ bool CrossAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::v
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(Cross, CrossAscend);
+}  // namespace cross
 }  // namespace kernel
 }  // namespace mindspore

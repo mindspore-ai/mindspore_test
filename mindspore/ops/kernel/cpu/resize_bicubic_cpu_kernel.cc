@@ -25,7 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
-namespace {
+namespace resize_bicubic_cpu {
 constexpr size_t kIndex0 = 0;
 constexpr size_t kIndex1 = 1;
 constexpr size_t kIndex2 = 2;
@@ -83,7 +83,6 @@ struct LegacyScaler {
   LegacyScaler() {}
   inline float operator()(const int64_t x, const float scale) const { return static_cast<float>(x) * scale; }
 };
-}  // namespace
 
 struct WeightsAndIndices {
   float weight_0;
@@ -384,5 +383,6 @@ std::vector<KernelAttr> ResizeBicubicCPUKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ResizeBicubic, ResizeBicubicCPUKernelMod);
+}  // namespace resize_bicubic_cpu
 }  // namespace kernel
 }  // namespace mindspore

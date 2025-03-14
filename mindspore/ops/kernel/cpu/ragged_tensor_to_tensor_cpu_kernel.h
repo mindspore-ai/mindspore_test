@@ -33,6 +33,7 @@ using std::vector;
 
 namespace mindspore {
 namespace kernel {
+namespace ragged_tensor_to_tensor_cpu {
 #define TYPE1_flat Eigen::TensorMap<Eigen::Tensor<TYPE1, 1, Eigen::RowMajor, Eigen::DenseIndex>, Eigen::Aligned>
 #define TYPE2_flat Eigen::TensorMap<Eigen::Tensor<TYPE2, 1, Eigen::RowMajor, Eigen::DenseIndex>, Eigen::Aligned>
 
@@ -83,6 +84,7 @@ class RaggedTensorToTensorCpuKernelMod : public NativeCpuKernelMod {
   std::vector<std::string> row_partition_types_{};
   std::vector<std::vector<int64_t>> row_partition_shape_list_{};
 };
+}  // namespace ragged_tensor_to_tensor_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_RMSPROP_CPU_KERNEL_H_

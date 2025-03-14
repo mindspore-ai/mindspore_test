@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace concat_offset_cpu {
 class ConcatOffsetCpuKernelMod : public NativeCpuKernelMod {
  public:
   ConcatOffsetCpuKernelMod() = default;
@@ -53,6 +54,7 @@ class ConcatOffsetCpuKernelMod : public NativeCpuKernelMod {
   std::vector<ShapeVector> input_shapes_;
   ShapeVector output_shape_;
 };
+}  // namespace concat_offset_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

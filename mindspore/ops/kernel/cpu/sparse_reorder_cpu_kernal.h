@@ -28,6 +28,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_reorder_cpu {
 using float_complex = std::complex<float>;
 using double_complex = std::complex<double>;
 template <typename I, typename T>
@@ -79,6 +80,7 @@ class SparseReorderCpuKernelMod : public NativeCpuKernelMod {
   SparseReorderFunc kernel_func_;
   std::vector<size_t> indices_shape_{};
 };
+}  // namespace sparse_reorder_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_SPARSE_REORDER_CPU_KERNEL_H_

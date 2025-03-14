@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace pow_tensor_scalar {
 
 void PowTensorScalarAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                              const std::vector<KernelTensor *> &outputs) {
@@ -46,5 +47,6 @@ bool PowTensorScalarAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(PowTensorScalar, PowTensorScalarAscend);
+}  // namespace pow_tensor_scalar
 }  // namespace kernel
 }  // namespace mindspore

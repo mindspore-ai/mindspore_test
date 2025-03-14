@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sspaddmm_cpu {
 class SspaddmmCPUKernelMod : public NativeCpuKernelMod {
  public:
   SspaddmmCPUKernelMod() = default;
@@ -74,6 +75,7 @@ class SspaddmmCPUKernelMod : public NativeCpuKernelMod {
   size_t mat2_row_{0};
   size_t mat2_col_{0};
 };
+}  // namespace sspaddmm_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_SSPADDMM_CPU_KERNEL_H_

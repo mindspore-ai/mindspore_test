@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace kl_div_grad {
 
 class KLDivGradAscend : public AclnnKernelMod {
  public:
@@ -37,6 +38,7 @@ class KLDivGradAscend : public AclnnKernelMod {
   bool log_target_{false};
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace kl_div_grad
 }  // namespace kernel
 }  // namespace mindspore
 

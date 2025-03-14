@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace concat {
 class ConcatAscend : public AclnnKernelMod {
  public:
   ConcatAscend() : AclnnKernelMod(std::move("aclnnCat")) {}
@@ -37,6 +38,7 @@ class ConcatAscend : public AclnnKernelMod {
   std::vector<KernelTensorPtr> tuple_tensors_;
   int64_t axis_;
 };
+}  // namespace concat
 }  // namespace kernel
 }  // namespace mindspore
 

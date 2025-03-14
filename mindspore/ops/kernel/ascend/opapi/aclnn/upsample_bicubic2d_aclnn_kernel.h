@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace upsample_bicubic2d {
 
 class UpsampleBicubic2DAscend final : public AclnnKernelMod {
  public:
@@ -41,6 +42,7 @@ class UpsampleBicubic2DAscend final : public AclnnKernelMod {
   double scales_w_{0.};
   bool align_corners_{false};
 };
+}  // namespace upsample_bicubic2d
 }  // namespace kernel
 }  // namespace mindspore
 

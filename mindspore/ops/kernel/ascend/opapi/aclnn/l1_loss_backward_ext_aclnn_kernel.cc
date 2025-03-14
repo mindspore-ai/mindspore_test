@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace l1_loss_backward_ext {
 void L1LossBackwardExtAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                        const std::vector<KernelTensor *> &outputs) {
   ClearOpsWorkSpaceList();
@@ -90,5 +91,6 @@ bool L1LossBackwardExtAclnnKernelMod::Launch(const std::vector<KernelTensor *> &
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(L1LossBackwardExt, L1LossBackwardExtAclnnKernelMod);
+}  // namespace l1_loss_backward_ext
 }  // namespace kernel
 }  // namespace mindspore

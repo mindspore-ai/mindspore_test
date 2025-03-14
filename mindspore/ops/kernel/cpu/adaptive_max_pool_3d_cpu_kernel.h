@@ -28,6 +28,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace adaptive_max_pool_3d_cpu {
 class AdaptiveMaxPool3DCpuKernelMod : public NativeCpuKernelMod {
  public:
   AdaptiveMaxPool3DCpuKernelMod() = default;
@@ -77,6 +78,7 @@ class AdaptiveMaxPool3DCpuKernelMod : public NativeCpuKernelMod {
   size_t input_num_dims_ = 0;
   TypeId dtype_;
 };
+}  // namespace adaptive_max_pool_3d_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_ADAPTIVE_MAX_POOL_3D_CPU_KERNEL_H_

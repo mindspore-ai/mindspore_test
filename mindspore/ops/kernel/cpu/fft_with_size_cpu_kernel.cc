@@ -32,6 +32,7 @@
 using std::vector;
 namespace mindspore {
 namespace kernel {
+namespace fft_with_size_cpu {
 namespace {
 constexpr int kDimNum_FFT = 1;
 constexpr int kDimNum_IFFT = 2;
@@ -312,5 +313,6 @@ std::vector<KernelAttr> FFTWithSizeCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, FFTWithSize, FFTWithSizeCpuKernelMod);
+}  // namespace fft_with_size_cpu
 }  // namespace kernel
 }  // namespace mindspore

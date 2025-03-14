@@ -28,6 +28,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace in_top_k_cpu {
 class InTopKCpuKernelMod : public NativeCpuKernelMod {
  public:
   InTopKCpuKernelMod() = default;
@@ -55,6 +56,7 @@ class InTopKCpuKernelMod : public NativeCpuKernelMod {
   size_t inner_size_{1};
   int64_t k_{1};
 };
+}  // namespace in_top_k_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_IN_TOP_K_CPU_KERNEL_H_

@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace coalesce_cpu {
 namespace {
 constexpr size_t kCoalesceInputsNum = 3;
 constexpr size_t kCoalesceOutputsNum = 3;
@@ -186,5 +187,6 @@ std::vector<KernelAttr> CoalesceCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Coalesce, CoalesceCpuKernelMod);
+}  // namespace coalesce_cpu
 }  // namespace kernel
 }  // namespace mindspore

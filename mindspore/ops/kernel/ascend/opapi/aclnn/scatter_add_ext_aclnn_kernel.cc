@@ -30,6 +30,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace scatter_add_ext {
 void ScatterAddExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                            const std::vector<KernelTensor *> &outputs) {
   dim_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
@@ -45,5 +46,6 @@ bool ScatterAddExtAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(ScatterAddExt, ScatterAddExtAscend);
+}  // namespace scatter_add_ext
 }  // namespace kernel
 }  // namespace mindspore

@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace multi_scale_deformable_attn {
 void MultiScaleDeformableAttnAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                       const std::vector<KernelTensor *> &outputs) {
   ClearOpsWorkSpaceList();
@@ -171,5 +172,6 @@ bool MultiScaleDeformableAttnAscend::Launch(const std::vector<KernelTensor *> &i
   return true;
 }
 MS_ACLNN_KERNEL_FACTORY_REG(MultiScaleDeformableAttn, MultiScaleDeformableAttnAscend);
+}  // namespace multi_scale_deformable_attn
 }  // namespace kernel
 }  // namespace mindspore

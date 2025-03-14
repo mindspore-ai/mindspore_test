@@ -33,13 +33,14 @@
 
 namespace mindspore {
 namespace kernel {
+namespace multinomial_cpu {
 namespace {
 constexpr uint32_t kInputNum = 2;
 constexpr uint32_t kWorkspaceNum = 1;
 constexpr uint32_t kOutputNum = 1;
 
 // clang-format off
-#define ADD_KERNEL(prob_dtype, prob_type)                                                                              \
+#define MULTINOMIAL_ADD_KERNEL(prob_dtype, prob_type)                                                                  \
   {KernelAttr().AddInputAttr(kNumberType##prob_dtype).AddInputAttr(kNumberTypeInt32).AddOutputAttr(kNumberTypeInt32),  \
   &MultinomialCpuKernelMod::LaunchKernel<prob_type, int32_t>},                                                         \
   {KernelAttr().AddInputAttr(kNumberType##prob_dtype).AddInputAttr(kNumberTypeInt32).AddOutputAttr(kNumberTypeInt64),  \
@@ -170,9 +171,12 @@ bool MultinomialCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTenso
 }
 
 std::vector<std::pair<KernelAttr, MultinomialCpuKernelMod::MultinomialFunc>> MultinomialCpuKernelMod::func_list_ = {
-  ADD_KERNEL(Float16, float16), ADD_KERNEL(Float32, float),   ADD_KERNEL(Float64, double), ADD_KERNEL(Int8, int8_t),
-  ADD_KERNEL(Int16, int16_t),   ADD_KERNEL(Int32, int32_t),   ADD_KERNEL(Int64, int64_t),  ADD_KERNEL(UInt8, uint8_t),
-  ADD_KERNEL(UInt16, uint16_t), ADD_KERNEL(UInt32, uint32_t), ADD_KERNEL(UInt64, uint64_t)};
+  MULTINOMIAL_ADD_KERNEL(Float16, float16), MULTINOMIAL_ADD_KERNEL(Float32, float),
+  MULTINOMIAL_ADD_KERNEL(Float64, double),  MULTINOMIAL_ADD_KERNEL(Int8, int8_t),
+  MULTINOMIAL_ADD_KERNEL(Int16, int16_t),   MULTINOMIAL_ADD_KERNEL(Int32, int32_t),
+  MULTINOMIAL_ADD_KERNEL(Int64, int64_t),   MULTINOMIAL_ADD_KERNEL(UInt8, uint8_t),
+  MULTINOMIAL_ADD_KERNEL(UInt16, uint16_t), MULTINOMIAL_ADD_KERNEL(UInt32, uint32_t),
+  MULTINOMIAL_ADD_KERNEL(UInt64, uint64_t)};
 
 std::vector<KernelAttr> MultinomialCpuKernelMod::GetOpSupport() {
   std::vector<KernelAttr> support_list;
@@ -182,5 +186,6 @@ std::vector<KernelAttr> MultinomialCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Multinomial, MultinomialCpuKernelMod);
+}  // namespace multinomial_cpu
 }  // namespace kernel
 }  // namespace mindspore

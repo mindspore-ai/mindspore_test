@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace is_close_cpu {
 class IsCloseCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<IsCloseCpuKernelMod> {
  public:
   IsCloseCpuKernelMod() = default;
@@ -59,6 +60,7 @@ class IsCloseCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<
   bool is_need_broadcast_{false};
   bool has_null_input_{false};
 };
+}  // namespace is_close_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

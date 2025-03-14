@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace cummax {
 
 class CummaxAscend : public AclnnKernelMod {
  public:
@@ -36,6 +37,7 @@ class CummaxAscend : public AclnnKernelMod {
   int64_t axis_;
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace cummax
 }  // namespace kernel
 }  // namespace mindspore
 

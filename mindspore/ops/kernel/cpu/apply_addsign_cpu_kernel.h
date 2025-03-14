@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace apply_addsign_cpu {
 class ApplyAddsignCpuKernelMod : public NativeCpuKernelMod {
  public:
   ApplyAddsignCpuKernelMod() = default;
@@ -52,6 +53,7 @@ class ApplyAddsignCpuKernelMod : public NativeCpuKernelMod {
 
   TypeId dtype_{kTypeUnknown};
 };
+}  // namespace apply_addsign_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_APPLY_ADDSIGN_CPU_KERNEL_H_

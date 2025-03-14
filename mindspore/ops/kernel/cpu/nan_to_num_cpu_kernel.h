@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace nan_to_num_cpu {
 class NanToNumCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<NanToNumCpuKernelMod> {
  public:
   NanToNumCpuKernelMod() = default;
@@ -55,6 +56,7 @@ class NanToNumCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper
                     const std::vector<kernel::KernelTensor *> &workspace,
                     const std::vector<kernel::KernelTensor *> &outputs);
 };
+}  // namespace nan_to_num_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

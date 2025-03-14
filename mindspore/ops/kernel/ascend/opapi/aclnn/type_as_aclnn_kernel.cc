@@ -19,6 +19,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace type_as {
 
 void TypeAsAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                     const std::vector<KernelTensor *> &outputs) {
@@ -33,5 +34,6 @@ bool TypeAsAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(TypeAs, TypeAsAscend);
+}  // namespace type_as
 }  // namespace kernel
 }  // namespace mindspore

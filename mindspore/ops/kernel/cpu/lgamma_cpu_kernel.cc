@@ -25,9 +25,10 @@
 
 namespace mindspore {
 namespace kernel {
+namespace lgamma_cpu {
 namespace {
-constexpr size_t kInputIndex = 0;
-constexpr size_t kOutputIndex = 0;
+constexpr size_t kInputIdx = 0;
+constexpr size_t kOutputIdx = 0;
 constexpr size_t kInputsNum = 1;
 constexpr size_t kOutputsNum = 1;
 }  // namespace
@@ -56,10 +57,10 @@ int LgammaCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const 
     MS_LOG(WARNING) << kernel_name_ << " reinit failed.";
     return KRET_RESIZE_FAILED;
   }
-  input_shape_ = inputs[kInputIndex]->GetShapeVector();
-  output_shape_ = outputs[kOutputIndex]->GetShapeVector();
+  input_shape_ = inputs[kInputIdx]->GetShapeVector();
+  output_shape_ = outputs[kOutputIdx]->GetShapeVector();
   input_tensor_size_ = SizeToLong(SizeOf(input_shape_));
-  dtype_ = inputs[kInputIndex]->dtype_id();
+  dtype_ = inputs[kInputIdx]->dtype_id();
   return 0;
 }
 
@@ -102,5 +103,6 @@ std::vector<KernelAttr> LgammaCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Lgamma, LgammaCpuKernelMod);
+}  // namespace lgamma_cpu
 }  // namespace kernel
 }  // namespace mindspore

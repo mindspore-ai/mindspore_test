@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace index_add_ext {
 
 class IndexAddExtAscend : public AclnnKernelMod {
  public:
@@ -37,6 +38,7 @@ class IndexAddExtAscend : public AclnnKernelMod {
   int64_t dim_;
   ScalarPtr alpha_ = nullptr;
 };
+}  // namespace index_add_ext
 }  // namespace kernel
 }  // namespace mindspore
 

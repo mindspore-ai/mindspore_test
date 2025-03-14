@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace multi_scale_deformable_attn_grad {
 class MultiScaleDeformableAttnGradAscend : public AclnnKernelMod {
  public:
   MultiScaleDeformableAttnGradAscend() : AclnnKernelMod(std::move("aclnnMultiScaleDeformableAttnGrad")) {}
@@ -58,6 +59,7 @@ class MultiScaleDeformableAttnGradAscend : public AclnnKernelMod {
 
   std::vector<size_t> expand_indices_{};
 };
+}  // namespace multi_scale_deformable_attn_grad
 }  // namespace kernel
 }  // namespace mindspore
 

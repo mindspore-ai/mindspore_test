@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace adam_delta_cpu {
 class AdamDeltaCpuKernelMod : public NativeCpuKernelMod {
  public:
   AdamDeltaCpuKernelMod() = default;
@@ -49,6 +50,7 @@ class AdamDeltaCpuKernelMod : public NativeCpuKernelMod {
   size_t elem_num_{0};
   TypeId dtype_{kTypeUnknown};
 };
+}  // namespace adam_delta_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

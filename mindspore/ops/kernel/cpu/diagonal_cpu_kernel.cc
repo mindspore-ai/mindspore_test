@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace diagonal_cpu {
 namespace {
 constexpr size_t kDiagonalInputsNum = 4;
 constexpr size_t kDiagonalOutputsNum = 1;
@@ -295,5 +296,6 @@ std::vector<KernelAttr> DiagonalCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Diagonal, DiagonalCpuKernelMod);
+}  // namespace diagonal_cpu
 }  // namespace kernel
 }  // namespace mindspore

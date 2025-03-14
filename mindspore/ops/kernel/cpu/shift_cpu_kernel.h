@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_SORT_CPU_KERNEL_H_
-#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_SORT_CPU_KERNEL_H_
+#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_SHIFT_CPU_KERNEL_H_
+#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_SHIFT_CPU_KERNEL_H_
 
 #include <vector>
 #include <utility>
@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace shift_cpu {
 class ShiftCpuKernelMod : public NativeCpuKernelMod {
  public:
   ShiftCpuKernelMod() = default;
@@ -67,7 +68,8 @@ class ShiftCpuKernelMod : public NativeCpuKernelMod {
   int64_t fill_begin_{0};
   int64_t fill_size_{0};
 };
+}  // namespace shift_cpu
 }  // namespace kernel
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_SORT_CPU_KERNEL_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_SHIFT_CPU_KERNEL_H_

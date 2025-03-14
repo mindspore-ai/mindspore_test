@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace renorm_cpu {
 class RenormCpuKernelMod : public NativeCpuKernelMod {
  public:
   RenormCpuKernelMod() = default;
@@ -71,6 +72,7 @@ class RenormCpuKernelMod : public NativeCpuKernelMod {
   size_t axis_size_{1};
   size_t total_size_{1};
 };
+}  // namespace renorm_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

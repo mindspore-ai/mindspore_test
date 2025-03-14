@@ -28,6 +28,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace conjugate_transpose_cpu {
 namespace {
 constexpr size_t kConjugateTransposeInputsNum = 2;
 constexpr size_t kConjugateTransposeOutputsNum = 1;
@@ -567,5 +568,6 @@ void ConjugateTransposeCpuKernelMod::TransposeDims(const T *in_data, T *out_data
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ConjugateTranspose, ConjugateTransposeCpuKernelMod);
+}  // namespace conjugate_transpose_cpu
 }  // namespace kernel
 }  // namespace mindspore

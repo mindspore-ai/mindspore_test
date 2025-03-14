@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace incre_flash_attention {
 
 std::vector<int64_t> ConvertActualSeqLengthsToVector(KernelTensor *const actual_seq_length_ptr) {
   MS_EXCEPTION_IF_NULL(actual_seq_length_ptr);
@@ -110,5 +111,6 @@ bool IncreFlashAttentionAscend::Launch(const std::vector<KernelTensor *> &inputs
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(IncreFlashAttention, IncreFlashAttentionAscend);
+}  // namespace incre_flash_attention
 }  // namespace kernel
 }  // namespace mindspore

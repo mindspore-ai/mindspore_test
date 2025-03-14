@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace soft_margin_loss {
 
 void SoftMarginLossAscendKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                      const std::vector<KernelTensor *> &outputs) {
@@ -44,5 +45,6 @@ bool SoftMarginLossAscendKernelMod::Launch(const std::vector<KernelTensor *> &in
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(SoftMarginLoss, SoftMarginLossAscendKernelMod);
+}  // namespace soft_margin_loss
 }  // namespace kernel
 }  // namespace mindspore

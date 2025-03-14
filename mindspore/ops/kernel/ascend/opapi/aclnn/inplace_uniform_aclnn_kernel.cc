@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_uniform {
 namespace {
 double GetInputValueToDouble(const std::vector<KernelTensor *> &inputs, const size_t kIndex) {
   double value = 0;
@@ -73,5 +74,6 @@ bool InplaceUniformAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(InplaceUniform, InplaceUniformAscend);
+}  // namespace inplace_uniform
 }  // namespace kernel
 }  // namespace mindspore

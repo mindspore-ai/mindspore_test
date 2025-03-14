@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace logit_grad_cpu {
 class LogitGradCpuKernelMod : public NativeCpuKernelMod {
  public:
   LogitGradCpuKernelMod() = default;
@@ -49,6 +50,7 @@ class LogitGradCpuKernelMod : public NativeCpuKernelMod {
   float eps{-1.0};
   size_t input_elements_{0};
 };
+}  // namespace logit_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

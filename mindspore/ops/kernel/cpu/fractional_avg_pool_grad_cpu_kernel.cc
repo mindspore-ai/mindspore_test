@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace fractional_avg_pool_grad_cpu {
 namespace {
 constexpr size_t kInputsNum = 4;
 constexpr size_t kOutputsNum = 1;
@@ -218,5 +219,6 @@ std::vector<KernelAttr> FractionalAvgPoolGradCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, FractionalAvgPoolGrad, FractionalAvgPoolGradCpuKernelMod);
+}  // namespace fractional_avg_pool_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

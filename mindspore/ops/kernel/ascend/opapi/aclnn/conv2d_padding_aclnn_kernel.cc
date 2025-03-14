@@ -30,6 +30,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace conv2d_padding {
 namespace {
 void ExpandParamIfNeeded(std::vector<int64_t> *const param, size_t expect_dim) {
   if (param->size() == kIndex1) {
@@ -234,5 +235,6 @@ bool Conv2DPaddingAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(Conv2DPadding, Conv2DPaddingAscend);
+}  // namespace conv2d_padding
 }  // namespace kernel
 }  // namespace mindspore

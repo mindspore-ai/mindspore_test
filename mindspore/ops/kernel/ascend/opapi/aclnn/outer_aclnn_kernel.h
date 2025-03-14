@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace outer {
 
 class OuterAscend : public AclnnKernelMod {
  public:
@@ -38,6 +39,7 @@ class OuterAscend : public AclnnKernelMod {
 
   std::shared_ptr<KernelTensor> input_kernel_tensor_;
 };
+}  // namespace outer
 }  // namespace kernel
 }  // namespace mindspore
 

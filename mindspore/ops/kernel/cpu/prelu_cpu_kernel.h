@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace prelu_cpu {
 class PReluCpuKernelMod : public NativeCpuKernelMod {
  public:
   PReluCpuKernelMod() = default;
@@ -57,6 +58,7 @@ class PReluCpuKernelMod : public NativeCpuKernelMod {
   size_t weight_length_{0};
   size_t per_channel_length_{0};
 };
+}  // namespace prelu_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

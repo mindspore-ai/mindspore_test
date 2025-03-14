@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace mvlgamma_grad_cpu {
 class MvlgammaGradCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<MvlgammaGradCpuKernelMod> {
  public:
   MvlgammaGradCpuKernelMod() = default;
@@ -60,6 +61,7 @@ class MvlgammaGradCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHe
   int64_t attr_p_;
   int64_t input_tensor_size_;
 };
+}  // namespace mvlgamma_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_MVLGAMMA_GRAD_CPU_KERNEL_H_

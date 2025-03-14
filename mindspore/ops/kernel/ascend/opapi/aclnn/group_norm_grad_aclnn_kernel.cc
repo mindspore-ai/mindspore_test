@@ -28,6 +28,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace group_norm_grad {
 namespace {
 constexpr size_t kNumberTwo = 2;
 }  // namespace
@@ -64,5 +65,6 @@ bool GroupNormGradAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(GroupNormGrad, GroupNormGradAscend);
+}  // namespace group_norm_grad
 }  // namespace kernel
 }  // namespace mindspore

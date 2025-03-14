@@ -19,6 +19,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace trace_grad_cpu {
 namespace {
 constexpr size_t kInputNum = 2;
 constexpr size_t kOutputNum = 1;
@@ -105,5 +106,6 @@ void TraceGradCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inpu
   }
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, TraceGrad, TraceGradCpuKernelMod);
+}  // namespace trace_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

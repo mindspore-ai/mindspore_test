@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sub_and_filter_cpu {
 class SubAndFilterCpuKernelMod : public NativeCpuKernelMod {
  public:
   SubAndFilterCpuKernelMod() = default;
@@ -73,6 +74,7 @@ class SubAndFilterCpuKernelMod : public NativeCpuKernelMod {
   TypeId x_dtype_{kTypeUnknown};
   size_t x_dtype_size_;
 };
+}  // namespace sub_and_filter_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

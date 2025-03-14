@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace arg_with_value {
 
 class ArgMaxWithValueAscend : public AclnnKernelMod {
  public:
@@ -52,6 +53,7 @@ class ArgMinWithValueAscend : public AclnnKernelMod {
   int64_t axis_;
   bool keep_dims_;
 };
+}  // namespace arg_with_value
 }  // namespace kernel
 }  // namespace mindspore
 

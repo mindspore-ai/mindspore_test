@@ -28,6 +28,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace quantile_cpu {
 class QuantileCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<QuantileCpuKernelMod> {
  public:
   QuantileCpuKernelMod() = default;
@@ -66,6 +67,7 @@ class QuantileCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper
   bool ignore_nan_ = false;
   bool has_nan_ = false;
 };
+}  // namespace quantile_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

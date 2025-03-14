@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace t_ext {
 
 class TExtAscend : public AclnnKernelMod {
  public:
@@ -37,6 +38,7 @@ class TExtAscend : public AclnnKernelMod {
 
   std::vector<int64_t> dims_{};
 };
+}  // namespace t_ext
 }  // namespace kernel
 }  // namespace mindspore
 

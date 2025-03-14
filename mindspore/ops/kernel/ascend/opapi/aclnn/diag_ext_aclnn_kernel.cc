@@ -19,6 +19,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace diag_ext {
 
 void DiagExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                      const std::vector<KernelTensor *> &outputs) {
@@ -36,5 +37,6 @@ bool DiagExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const std:
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(DiagExt, DiagExtAscend);
+}  // namespace diag_ext
 }  // namespace kernel
 }  // namespace mindspore

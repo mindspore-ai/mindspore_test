@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace tensor_copy_cpu {
 constexpr auto kTensorMove = "TensorMove";
 class TensorCopyCpuKernelMod : public NativeCpuKernelMod {
  public:
@@ -56,6 +57,7 @@ class TensorCopyCpuKernelMod : public NativeCpuKernelMod {
     return support_list;
   }
 };
+}  // namespace tensor_copy_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace tile {
 void TileAscend::GetAdaptedMultiples(KernelTensor *x_tensor, KernelTensor *multiples_tensor) {
   auto x_shape = x_tensor->GetShape()->GetShapeVector();
   if (MS_UNLIKELY(IsDynamicRank(x_shape))) {
@@ -54,5 +55,6 @@ bool TileAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::ve
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(Tile, TileAscend);
+}  // namespace tile
 }  // namespace kernel
 }  // namespace mindspore

@@ -26,6 +26,7 @@
 #include "common/ms_factory.h"
 namespace mindspore {
 namespace kernel {
+namespace assert_cpu {
 class AssertCpuKernelMod : public NativeCpuKernelMod {
  public:
   AssertCpuKernelMod() {}
@@ -49,6 +50,7 @@ class AssertCpuKernelMod : public NativeCpuKernelMod {
   std::vector<int> summarizes_;
   int summarize_ = 0;
 };
+}  // namespace assert_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

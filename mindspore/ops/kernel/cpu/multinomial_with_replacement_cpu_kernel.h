@@ -31,6 +31,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace multinomial_with_replacement_cpu {
 class MultinomialWithReplacementCpuKernelMod : public NativeCpuKernelMod {
  public:
   MultinomialWithReplacementCpuKernelMod() = default;
@@ -82,6 +83,7 @@ class MultinomialWithReplacementCpuKernelMod : public NativeCpuKernelMod {
   int64_t init_offset_{0};
   BaseOperatorPtr kernel_ptr_{nullptr};
 };
+}  // namespace multinomial_with_replacement_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

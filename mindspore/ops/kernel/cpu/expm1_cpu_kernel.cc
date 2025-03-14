@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace expm1_cpu {
 namespace {
 constexpr size_t kExpm1InputsNum = 1;
 constexpr size_t kExpm1OutputsNum = 1;
@@ -72,5 +73,6 @@ void Expm1CpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Expm1, Expm1CpuKernelMod);
+}  // namespace expm1_cpu
 }  // namespace kernel
 }  // namespace mindspore

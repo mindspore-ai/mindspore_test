@@ -28,6 +28,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace lerp_cpu {
 class LerpCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<LerpCpuKernelMod> {
  public:
   LerpCpuKernelMod() = default;
@@ -56,6 +57,7 @@ class LerpCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<Ler
   ShapeVector weight_shape_;
   ShapeVector output_shape_;
 };
+}  // namespace lerp_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_LERP_CPU_KERNEL_H_

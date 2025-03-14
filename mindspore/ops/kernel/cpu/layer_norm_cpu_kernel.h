@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace layer_norm_cpu {
 class LayerNormCpuKernelMod : public NativeCpuKernelMod {
  public:
   LayerNormCpuKernelMod() = default;
@@ -50,6 +51,7 @@ class LayerNormCpuKernelMod : public NativeCpuKernelMod {
   size_t block_size_{1};
   size_t param_num_{1};
 };
+}  // namespace layer_norm_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_LAYER_NORM_CPU_KERNEL_H_

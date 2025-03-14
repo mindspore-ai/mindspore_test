@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_copy_cpu {
 class InplaceCopyCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<InplaceCopyCpuKernelMod> {
  public:
   InplaceCopyCpuKernelMod() = default;
@@ -61,6 +62,7 @@ class InplaceCopyCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHel
   int mode_;
   bool is_empty_;
 };
+}  // namespace inplace_copy_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

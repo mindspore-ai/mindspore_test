@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sum_ext {
 void SumExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                     const std::vector<KernelTensor *> &outputs) {
   const auto axis_opt = inputs[kIndex1]->GetOptionalValueWithCheck<std::vector<int64_t>>();
@@ -48,5 +49,6 @@ bool SumExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(SumExt, SumExtAscend);
+}  // namespace sum_ext
 }  // namespace kernel
 }  // namespace mindspore

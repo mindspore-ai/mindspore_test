@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace log_matrix_determinant_cpu {
 class LogMatrixDeterminantCpuKernelMod : public NativeCpuKernelMod {
  public:
   LogMatrixDeterminantCpuKernelMod() = default;
@@ -46,7 +47,7 @@ class LogMatrixDeterminantCpuKernelMod : public NativeCpuKernelMod {
         .AddOutputAttr(kNumberTypeComplex128)
         .AddOutputAttr(kNumberTypeComplex128)};
     return support_list;
-  }  // namespace kernel
+  }
 
  private:
   CNodeWeakPtr node_wpt_;
@@ -55,7 +56,8 @@ class LogMatrixDeterminantCpuKernelMod : public NativeCpuKernelMod {
   template <typename T>
   void LaunchLogMatrixDeterminant(const std::vector<KernelTensor *> &inputs,
                                   const std::vector<KernelTensor *> &outputs);
-};  // namespace kernel
+};
+}  // namespace log_matrix_determinant_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_LOG_MATRIX_DETERMINANT_CPU_KERNEL_H_

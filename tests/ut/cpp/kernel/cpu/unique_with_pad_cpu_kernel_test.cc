@@ -26,7 +26,7 @@ namespace mindspore {
 namespace kernel {
 class UniqueWithPadCpuKernelTest : public UT::Common {
  public:
-  UniqueWithPadCpuKernelTest() : unique_with_pad_(std::make_shared<UniqueWithPadCpuKernelMod>()) {}
+  UniqueWithPadCpuKernelTest() : unique_with_pad_(std::make_shared<unique_with_pad_cpu::UniqueWithPadCpuKernelMod>()) {}
 
   void SetUp() override {
     unique_with_pad_->input_size_ = 10;
@@ -61,7 +61,7 @@ class UniqueWithPadCpuKernelTest : public UT::Common {
   std::vector<KernelTensor *> inputs_;
   std::vector<KernelTensor *> workspace_;
   std::vector<KernelTensor *> outputs_;
-  std::shared_ptr<UniqueWithPadCpuKernelMod> unique_with_pad_;
+  std::shared_ptr<unique_with_pad_cpu::UniqueWithPadCpuKernelMod> unique_with_pad_;
 };
 
 TEST_F(UniqueWithPadCpuKernelTest, compute_test) {

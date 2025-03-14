@@ -29,6 +29,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_slice_cpu {
 class SparseSliceCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<SparseSliceCpuKernelMod> {
  public:
   SparseSliceCpuKernelMod() = default;
@@ -61,6 +62,7 @@ class SparseSliceCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHel
   int64_t slice_nnz_{0};
   int64_t rank_{0};
 };
+}  // namespace sparse_slice_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_SPARSE_SLICE_CPU_KERNEL_H_

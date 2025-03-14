@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace round {
 
 class RoundAscend : public AclnnKernelMod {
  public:
@@ -36,6 +37,7 @@ class RoundAscend : public AclnnKernelMod {
   int64_t decimals_;
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace round
 }  // namespace kernel
 }  // namespace mindspore
 

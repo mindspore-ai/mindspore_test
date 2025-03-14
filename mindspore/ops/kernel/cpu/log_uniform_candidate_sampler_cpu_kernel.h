@@ -28,10 +28,11 @@
 
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "common/ms_factory.h"
-#include "kernel/cpu/random_util.h"
+#include "kernel/cpu/utils/random_util.h"
 
 namespace mindspore {
 namespace kernel {
+namespace log_uniform_candidate_sampler_cpu {
 class LogUniformCandidateSamplerCpuKernel : public NativeCpuKernelMod {
  public:
   LogUniformCandidateSamplerCpuKernel() = default;
@@ -64,6 +65,7 @@ class LogUniformCandidateSamplerCpuKernel : public NativeCpuKernelMod {
   int32_t seed_;
   int64_t reserveSamplesNr_;
 };
+}  // namespace log_uniform_candidate_sampler_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_CANDIDATE_SAMPLER_CPU_KERNEL_H_

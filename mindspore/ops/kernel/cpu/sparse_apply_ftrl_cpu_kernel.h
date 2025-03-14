@@ -25,7 +25,8 @@
 
 namespace mindspore {
 namespace kernel {
-class FusedSparseFtrlCpuKernelMod : public SparseOptimizerCpuKernelMod,
+namespace sparse_apply_ftrl_cpu {
+class FusedSparseFtrlCpuKernelMod : public sparse_optimizer_cpu::SparseOptimizerCpuKernelMod,
                                     public MatchKernelHelper<FusedSparseFtrlCpuKernelMod> {
  public:
   FusedSparseFtrlCpuKernelMod() = default;
@@ -62,7 +63,7 @@ class FusedSparseFtrlCpuKernelMod : public SparseOptimizerCpuKernelMod,
                     const std::vector<kernel::KernelTensor *> &) const;
 };
 
-class SparseApplyFtrlCpuKernelMod : public SparseOptimizerCpuKernelMod,
+class SparseApplyFtrlCpuKernelMod : public sparse_optimizer_cpu::SparseOptimizerCpuKernelMod,
                                     public MatchKernelHelper<SparseApplyFtrlCpuKernelMod> {
  public:
   SparseApplyFtrlCpuKernelMod() = default;
@@ -100,6 +101,7 @@ class SparseApplyFtrlCpuKernelMod : public SparseOptimizerCpuKernelMod,
                     const std::vector<kernel::KernelTensor *> &workspace,
                     const std::vector<kernel::KernelTensor *> &) const;
 };
+}  // namespace sparse_apply_ftrl_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

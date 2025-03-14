@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace irfft_double_cpu {
 namespace {
 constexpr float kDoubleFactor = 2.0;
 constexpr int kOnsideDivisor = 2;
@@ -128,5 +129,6 @@ std::vector<KernelAttr> IRFFTDoubleCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, IRFFTDouble, IRFFTDoubleCpuKernelMod);
+}  // namespace irfft_double_cpu
 }  // namespace kernel
 }  // namespace mindspore

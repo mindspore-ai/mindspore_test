@@ -21,7 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
-namespace {
+namespace deformable_offsets_cpu {
 constexpr size_t kInputsSize = 2;
 constexpr size_t kOutputsSize = 1;
 constexpr size_t kStridesSize = 4;
@@ -89,7 +89,6 @@ T DeformableBilinear(const T *input, T x, T y, int64_t width, int64_t height) {
   T val = (w_lt * lt + w_rt * rt + w_lb * lb + w_rb * rb);
   return val;
 }
-}  // namespace
 
 bool DeformableOffsetsCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                          const std::vector<KernelTensor *> &outputs) {
@@ -274,5 +273,6 @@ const KernelAttrAndDeformableOffsetsFuncList &DeformableOffsetsCpuKernelMod::Get
   return func_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, DeformableOffsets, DeformableOffsetsCpuKernelMod);
+}  // namespace deformable_offsets_cpu
 }  // namespace kernel
 }  // namespace mindspore

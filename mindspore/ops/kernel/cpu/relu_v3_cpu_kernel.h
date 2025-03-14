@@ -26,6 +26,7 @@
 #include "common/ms_factory.h"
 
 namespace mindspore::kernel {
+namespace relu_v3_cpu {
 constexpr auto kUnknown = "Unknown";
 
 class ReLUV3CpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<ReLUV3CpuKernelMod> {
@@ -52,6 +53,7 @@ class ReLUV3CpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<R
 
   std::string kernel_type_{kUnknown};
 };
+}  // namespace relu_v3_cpu
 }  // namespace mindspore::kernel
 
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_RELU_V3_CPU_KERNEL_H_

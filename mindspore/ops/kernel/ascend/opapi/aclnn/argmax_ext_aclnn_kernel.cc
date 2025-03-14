@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace argmax_ext {
 
 void ArgMaxAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                     const std::vector<KernelTensor *> &outputs) {
@@ -76,5 +77,6 @@ bool ArgMaxAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(ArgMaxExt, ArgMaxAscend);
+}  // namespace argmax_ext
 }  // namespace kernel
 }  // namespace mindspore

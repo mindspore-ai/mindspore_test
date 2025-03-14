@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace non_zero_cpu {
 namespace {
 constexpr size_t kInputNum = 1;
 constexpr size_t kOutputNum = 1;
@@ -168,5 +169,6 @@ std::vector<KernelAttr> NonZeroCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, NonZero, NonZeroCpuKernelMod);
+}  // namespace non_zero_cpu
 }  // namespace kernel
 }  // namespace mindspore

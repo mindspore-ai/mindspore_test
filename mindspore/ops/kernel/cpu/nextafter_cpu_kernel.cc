@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace nextafter_cpu {
 namespace {
 constexpr size_t kNextAfterInputsNum = 2;
 constexpr size_t kNextAfterOutputsNum = 1;
@@ -66,5 +67,6 @@ const std::vector<std::pair<KernelAttr, NextAfterCpuKernelMod::KernelRunFunc>> &
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, NextAfter, NextAfterCpuKernelMod);
+}  // namespace nextafter_cpu
 }  // namespace kernel
 }  // namespace mindspore

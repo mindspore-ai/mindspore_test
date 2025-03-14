@@ -23,6 +23,9 @@
 #include "mindspore/ops/infer/scatter_add_with_axis.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
+namespace mindspore {
+namespace kernel {
+namespace scatter_add_with_axis_cpu {
 namespace {
 #define DO_COMPUTE_CASE(DTYPE, TYPE, ITYPE, inputs, outputs) \
   case (DTYPE): {                                            \
@@ -35,15 +38,12 @@ namespace {
     }                                                        \
   }
 }  // namespace
-
-namespace mindspore {
-namespace kernel {
 namespace {
-#define ADD_KERNEL(t1, t2, t3, t4) \
-  KernelAttr()                     \
-    .AddInputAttr(kNumberType##t1) \
-    .AddInputAttr(kNumberType##t2) \
-    .AddInputAttr(kNumberType##t3) \
+#define SCATTER_ADD_WITH_AXIS_ADD_KERNEL(t1, t2, t3, t4) \
+  KernelAttr()                                           \
+    .AddInputAttr(kNumberType##t1)                       \
+    .AddInputAttr(kNumberType##t2)                       \
+    .AddInputAttr(kNumberType##t3)                       \
     .AddOutputAttr(kNumberType##t4)
 const int32_t kInputNum = 3;
 const int32_t kOutputNum = 1;
@@ -188,20 +188,31 @@ void ScatterAddWithAxisCpuKernelMod::LaunchKernel(const std::vector<KernelTensor
 }
 
 std::vector<KernelAttr> ScatterAddWithAxisCpuKernelMod::GetOpSupport() {
-  static std::vector<KernelAttr> support_list = {
-    ADD_KERNEL(UInt8, Int32, UInt8, UInt8),       ADD_KERNEL(UInt8, Int64, UInt8, UInt8),
-    ADD_KERNEL(UInt16, Int32, UInt16, UInt16),    ADD_KERNEL(UInt16, Int64, UInt16, UInt16),
-    ADD_KERNEL(UInt32, Int32, UInt32, UInt32),    ADD_KERNEL(UInt32, Int64, UInt32, UInt32),
-    ADD_KERNEL(UInt64, Int32, UInt64, UInt64),    ADD_KERNEL(UInt64, Int64, UInt64, UInt64),
-    ADD_KERNEL(Int8, Int32, Int8, Int8),          ADD_KERNEL(Int8, Int64, Int8, Int8),
-    ADD_KERNEL(Int16, Int32, Int16, Int16),       ADD_KERNEL(Int16, Int64, Int16, Int16),
-    ADD_KERNEL(Int32, Int32, Int32, Int32),       ADD_KERNEL(Int32, Int64, Int32, Int32),
-    ADD_KERNEL(Int64, Int32, Int64, Int64),       ADD_KERNEL(Int64, Int64, Int64, Int64),
-    ADD_KERNEL(Float16, Int32, Float16, Float16), ADD_KERNEL(Float16, Int64, Float16, Float16),
-    ADD_KERNEL(Float32, Int32, Float32, Float32), ADD_KERNEL(Float32, Int64, Float32, Float32),
-    ADD_KERNEL(Float64, Int32, Float64, Float64), ADD_KERNEL(Float64, Int64, Float64, Float64)};
+  static std::vector<KernelAttr> support_list = {SCATTER_ADD_WITH_AXIS_ADD_KERNEL(UInt8, Int32, UInt8, UInt8),
+                                                 SCATTER_ADD_WITH_AXIS_ADD_KERNEL(UInt8, Int64, UInt8, UInt8),
+                                                 SCATTER_ADD_WITH_AXIS_ADD_KERNEL(UInt16, Int32, UInt16, UInt16),
+                                                 SCATTER_ADD_WITH_AXIS_ADD_KERNEL(UInt16, Int64, UInt16, UInt16),
+                                                 SCATTER_ADD_WITH_AXIS_ADD_KERNEL(UInt32, Int32, UInt32, UInt32),
+                                                 SCATTER_ADD_WITH_AXIS_ADD_KERNEL(UInt32, Int64, UInt32, UInt32),
+                                                 SCATTER_ADD_WITH_AXIS_ADD_KERNEL(UInt64, Int32, UInt64, UInt64),
+                                                 SCATTER_ADD_WITH_AXIS_ADD_KERNEL(UInt64, Int64, UInt64, UInt64),
+                                                 SCATTER_ADD_WITH_AXIS_ADD_KERNEL(Int8, Int32, Int8, Int8),
+                                                 SCATTER_ADD_WITH_AXIS_ADD_KERNEL(Int8, Int64, Int8, Int8),
+                                                 SCATTER_ADD_WITH_AXIS_ADD_KERNEL(Int16, Int32, Int16, Int16),
+                                                 SCATTER_ADD_WITH_AXIS_ADD_KERNEL(Int16, Int64, Int16, Int16),
+                                                 SCATTER_ADD_WITH_AXIS_ADD_KERNEL(Int32, Int32, Int32, Int32),
+                                                 SCATTER_ADD_WITH_AXIS_ADD_KERNEL(Int32, Int64, Int32, Int32),
+                                                 SCATTER_ADD_WITH_AXIS_ADD_KERNEL(Int64, Int32, Int64, Int64),
+                                                 SCATTER_ADD_WITH_AXIS_ADD_KERNEL(Int64, Int64, Int64, Int64),
+                                                 SCATTER_ADD_WITH_AXIS_ADD_KERNEL(Float16, Int32, Float16, Float16),
+                                                 SCATTER_ADD_WITH_AXIS_ADD_KERNEL(Float16, Int64, Float16, Float16),
+                                                 SCATTER_ADD_WITH_AXIS_ADD_KERNEL(Float32, Int32, Float32, Float32),
+                                                 SCATTER_ADD_WITH_AXIS_ADD_KERNEL(Float32, Int64, Float32, Float32),
+                                                 SCATTER_ADD_WITH_AXIS_ADD_KERNEL(Float64, Int32, Float64, Float64),
+                                                 SCATTER_ADD_WITH_AXIS_ADD_KERNEL(Float64, Int64, Float64, Float64)};
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ScatterAddWithAxis, ScatterAddWithAxisCpuKernelMod);
+}  // namespace scatter_add_with_axis_cpu
 }  // namespace kernel
 }  // namespace mindspore

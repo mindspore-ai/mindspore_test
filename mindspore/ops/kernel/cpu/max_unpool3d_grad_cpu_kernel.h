@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace max_unpool3d_grad_cpu {
 class MaxUnpool3DGradCpuKernelMod : public NativeCpuKernelMod {
  public:
   MaxUnpool3DGradCpuKernelMod() = default;
@@ -60,6 +61,7 @@ class MaxUnpool3DGradCpuKernelMod : public NativeCpuKernelMod {
   ShapeVector output_shape_;
   std::string data_format_;
 };
+}  // namespace max_unpool3d_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

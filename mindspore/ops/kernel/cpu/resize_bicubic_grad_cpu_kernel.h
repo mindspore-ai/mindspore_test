@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace resize_bicubic_grad_cpu {
 class ResizeBicubicGradCPUKernelMod : public NativeCpuKernelMod {
  public:
   ResizeBicubicGradCPUKernelMod() = default;
@@ -52,6 +53,7 @@ class ResizeBicubicGradCPUKernelMod : public NativeCpuKernelMod {
   static std::vector<std::pair<KernelAttr, ResizeBicubicGradFunc>> func_list_;
   ResizeBicubicGradFunc kernel_func_;
 };
+}  // namespace resize_bicubic_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_RESIZE_BICUBIC_GRAD_CPU_KERNEL_H_

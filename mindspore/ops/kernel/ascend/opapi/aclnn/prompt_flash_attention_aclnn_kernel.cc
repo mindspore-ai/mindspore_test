@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace prompt_flash_attention {
 void PromptFlashAttentionAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                   const std::vector<KernelTensor *> &outputs) {
   auto actual_seq_qlen = inputs[kIndex4];
@@ -83,5 +84,6 @@ bool PromptFlashAttentionAscend::Launch(const std::vector<KernelTensor *> &input
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(PromptFlashAttention, PromptFlashAttentionAscend);
+}  // namespace prompt_flash_attention
 }  // namespace kernel
 }  // namespace mindspore

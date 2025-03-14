@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace addmv {
 using TensorParams = device::ascend::TensorParams;
 
 class AddmvAclnnKernelMod : public AclnnKernelMod {
@@ -41,6 +42,7 @@ class AddmvAclnnKernelMod : public AclnnKernelMod {
 
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace addmv
 }  // namespace kernel
 }  // namespace mindspore
 

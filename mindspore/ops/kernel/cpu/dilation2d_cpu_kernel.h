@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace dilation2d_cpu {
 class Dilation2DCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<Dilation2DCpuKernelMod> {
  public:
   Dilation2DCpuKernelMod() = default;
@@ -57,6 +58,7 @@ class Dilation2DCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelp
   std::string pad_mode_;
   std::string format_;
 };
+}  // namespace dilation2d_cpu
 }  //  namespace kernel
 }  //  namespace mindspore
 

@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace argmin_ext {
 void ArgMinAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                     const std::vector<KernelTensor *> &outputs) {
   dim_ = 0;
@@ -75,5 +76,6 @@ bool ArgMinAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(ArgMinExt, ArgMinAscend);
+}  // namespace argmin_ext
 }  // namespace kernel
 }  // namespace mindspore

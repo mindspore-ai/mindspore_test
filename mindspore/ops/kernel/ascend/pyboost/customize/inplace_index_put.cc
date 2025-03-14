@@ -29,8 +29,9 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-std::vector<BaseTensorPtr> GetNewTensor(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                        const std::vector<BaseTensorPtr> &tensors) {
+std::vector<BaseTensorPtr> InplaceIndexGetNewTensor(const std::shared_ptr<OpRunner> &op,
+                                                    const BaseTensorPtr &input_tensor,
+                                                    const std::vector<BaseTensorPtr> &tensors) {
   auto device_context = op->device_context();
   const auto &device_name = device_context->device_context_key_.device_name_;
   std::vector<BaseTensorPtr> result{};
@@ -113,7 +114,7 @@ tensor::BaseTensorPtr InplaceIndexPutAscendCustomize(const std::shared_ptr<OpRun
   if (input_numel == 0 || values_numel == 0 || indices_tensor_vector.size() == 0) {
     return op->output(0);
   }
-  auto new_indices_tensor_vector = GetNewTensor(op, input_tensor, indices_tensor_vector);
+  auto new_indices_tensor_vector = InplaceIndexGetNewTensor(op, input_tensor, indices_tensor_vector);
 
   ValueTuplePtr new_indices_tensor_list = PyBoostUtils::ConvertTensorVectorToTuple(new_indices_tensor_vector);
 

@@ -19,6 +19,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace debug_cpu {
 namespace {
 constexpr size_t kDebugInputsNum = 1;
 constexpr size_t kDebugOutputsNum = 1;
@@ -51,5 +52,6 @@ std::vector<KernelAttr> DebugCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Debug, DebugCpuKernelMod);
+}  // namespace debug_cpu
 }  // namespace kernel
 }  // namespace mindspore

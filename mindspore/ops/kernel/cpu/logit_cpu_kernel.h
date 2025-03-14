@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace logit_cpu {
 class LogitCpuKernelMod : public NativeCpuKernelMod {
  public:
   LogitCpuKernelMod() = default;
@@ -49,6 +50,7 @@ class LogitCpuKernelMod : public NativeCpuKernelMod {
   float eps{-1.0};
   size_t input_elements_{0};
 };
+}  // namespace logit_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

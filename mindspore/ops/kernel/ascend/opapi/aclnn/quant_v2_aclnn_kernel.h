@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace quant_v2 {
 
 class QuantV2Ascend : public AclnnKernelMod {
  public:
@@ -36,6 +37,7 @@ class QuantV2Ascend : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace quant_v2
 }  // namespace kernel
 }  // namespace mindspore
 

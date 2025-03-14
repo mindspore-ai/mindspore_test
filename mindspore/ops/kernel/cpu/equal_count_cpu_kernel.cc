@@ -19,6 +19,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace equal_count_cpu {
 namespace {
 constexpr size_t kEqualCountInputsNum = 2;
 constexpr size_t kEqualCountOutputsNum = 1;
@@ -55,5 +56,6 @@ bool EqualCountCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *> &i
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, EqualCount, EqualCountCpuKernelMod);
+}  // namespace equal_count_cpu
 }  // namespace kernel
 }  // namespace mindspore

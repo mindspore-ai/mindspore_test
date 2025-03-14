@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_scatter_src {
 
 class InplaceScatterSrcAscend : public AclnnKernelMod {
  public:
@@ -38,6 +39,7 @@ class InplaceScatterSrcAscend : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace inplace_scatter_src
 }  // namespace kernel
 }  // namespace mindspore
 

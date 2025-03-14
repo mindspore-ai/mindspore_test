@@ -19,6 +19,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace soft_shrink_cpu {
 #define SOFT_SHRINK_CPU_REGISTER(DT, T)                                                                \
   KernelAttr().AddInputAttr(DT).AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32).AddOutputAttr(DT), \
     &SoftShrinkCpuKernelMod::LaunchKernel<T>
@@ -101,5 +102,6 @@ const std::vector<std::pair<KernelAttr, SoftShrinkCpuKernelMod::KernelRunFunc>> 
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SoftShrink, SoftShrinkCpuKernelMod);
+}  // namespace soft_shrink_cpu
 }  // namespace kernel
 }  // namespace mindspore

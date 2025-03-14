@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace l2loss_cpu {
 class L2LossCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<L2LossCpuKernelMod> {
  public:
   L2LossCpuKernelMod() = default;
@@ -55,6 +56,7 @@ class L2LossCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<L
   size_t tensor_size_ = 1;
   std::vector<int64_t> input_shape_;
 };
+}  // namespace l2loss_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_L2_LOSS_CPU_KERNEL_H_

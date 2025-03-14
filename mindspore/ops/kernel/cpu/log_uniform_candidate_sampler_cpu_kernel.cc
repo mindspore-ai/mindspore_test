@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace log_uniform_candidate_sampler_cpu {
 bool LogUniformCandidateSamplerCpuKernel::Init(const std::vector<KernelTensor *> &inputs,
                                                const std::vector<KernelTensor *> &outputs) {
   num_true_ = GetValue<int64_t>(primitive_->GetAttr(ops::kNumTrue));
@@ -150,5 +151,6 @@ bool LogUniformCandidateSamplerCpuKernel::Launch(const std::vector<KernelTensor 
   return true;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, LogUniformCandidateSampler, LogUniformCandidateSamplerCpuKernel);
+}  // namespace log_uniform_candidate_sampler_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace masked_scatter_cpu {
 namespace {
 constexpr size_t kMaskedScatterInputsNum = 3;
 constexpr size_t kMaskedScatterOutputsNum = 1;
@@ -176,5 +177,6 @@ std::vector<KernelAttr> MaskedScatterCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, MaskedScatter, MaskedScatterCpuKernelMod);
+}  // namespace masked_scatter_cpu
 }  // namespace kernel
 }  // namespace mindspore

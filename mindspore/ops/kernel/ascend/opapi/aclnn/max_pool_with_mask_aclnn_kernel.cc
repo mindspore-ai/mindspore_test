@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace max_pool_with_mask {
 
 void MaxPoolWithMaskAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                              const std::vector<KernelTensor *> &outputs) {
@@ -51,5 +52,6 @@ bool MaxPoolWithMaskAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(MaxPoolWithMask, MaxPoolWithMaskAscend);
+}  // namespace max_pool_with_mask
 }  // namespace kernel
 }  // namespace mindspore

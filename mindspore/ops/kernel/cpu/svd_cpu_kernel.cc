@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace svd_cpu {
 namespace {
 using float_complex = std::complex<float>;
 using double_complex = std::complex<double>;
@@ -244,5 +245,6 @@ std::vector<std::pair<KernelAttr, SvdCpuKernelMod::SvdFunc>> SvdCpuKernelMod::fu
    &SvdCpuKernelMod::LaunchKernelComplex<double_complex>}};
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Svd, SvdCpuKernelMod);
+}  // namespace svd_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace all_gather_matmul {
 void AllGatherMatmulAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                              const std::vector<KernelTensor *> &outputs) {
   MS_EXCEPTION_IF_NULL(primitive_);
@@ -64,5 +65,6 @@ bool AllGatherMatmulAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(AllGatherMatmul, AllGatherMatmulAscend);
+}  // namespace all_gather_matmul
 }  // namespace kernel
 }  // namespace mindspore

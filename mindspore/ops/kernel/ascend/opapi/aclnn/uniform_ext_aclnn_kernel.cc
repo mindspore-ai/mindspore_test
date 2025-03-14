@@ -30,6 +30,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace uniform_ext {
 double GetDoubleFromTensor(KernelTensor *tensor) {
   auto dtype_id = tensor->dtype_id();
   switch (dtype_id) {
@@ -71,5 +72,6 @@ bool UniformExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const s
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(UniformExt, UniformExtAscend);
+}  // namespace uniform_ext
 }  // namespace kernel
 }  // namespace mindspore

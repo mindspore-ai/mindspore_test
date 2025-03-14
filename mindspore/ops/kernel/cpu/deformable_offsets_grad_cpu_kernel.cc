@@ -24,7 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
-namespace {
+namespace deformable_offsets_grad_cpu {
 constexpr size_t kInputNum = 3;
 constexpr size_t kOutputNum = 2;
 
@@ -110,7 +110,6 @@ struct InputXIndex {
   float i;
   float j;
 };
-}  // namespace
 
 std::mutex mutex_;
 
@@ -462,7 +461,7 @@ KernelAttrAndFuncList &DeformableOffsetsGradCpuKernelMod::GetFuncList() const {
                                                              &DeformableOffsetsGradCpuKernelMod::LaunchKernel<float>}};
 
   return kernel_attr_and_func_list;
-}  // namespace kernel
+}
 
 void DeformableOffsetsGradCpuKernelMod::GetDataFormat() { data_format_ = deformable_kernel_operator_->get_format(); }
 
@@ -537,5 +536,6 @@ void DeformableOffsetsGradCpuKernelMod::SetDims(const std::vector<KernelTensor *
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, DeformableOffsetsGrad, DeformableOffsetsGradCpuKernelMod);
+}  // namespace deformable_offsets_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

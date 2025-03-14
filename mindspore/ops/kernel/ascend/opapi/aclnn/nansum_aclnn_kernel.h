@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace nansum {
 
 class NansumAscend : public AclnnKernelMod {
  public:
@@ -40,6 +41,7 @@ class NansumAscend : public AclnnKernelMod {
   bool keep_dim_{false};
   TypeId dtype_;
 };
+}  // namespace nansum
 }  // namespace kernel
 }  // namespace mindspore
 

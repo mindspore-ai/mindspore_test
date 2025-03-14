@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace conv1d_padding {
 
 class Conv1DPaddingAscend : public AclnnKernelMod {
  public:
@@ -69,6 +70,7 @@ class Conv1DPaddingAscend : public AclnnKernelMod {
   size_t expand_count_{0};
   std::vector<size_t> expand_indices_{};
 };
+}  // namespace conv1d_padding
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace apply_proximal_adagrad_cpu {
 constexpr size_t kApplyProximalAdagradInputsNum = 6;
 constexpr size_t kVarIndex = 0;
 constexpr size_t kAccIndex = 1;
@@ -167,5 +168,6 @@ bool ApplyProximalAdagradCpuKernelMod::Launch(const std::vector<kernel::KernelTe
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ApplyProximalAdagrad, ApplyProximalAdagradCpuKernelMod);
+}  // namespace apply_proximal_adagrad_cpu
 }  // namespace kernel
 }  // namespace mindspore

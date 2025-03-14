@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace silent_check_v2 {
 
 class SilentCheckV2Ascend : public AclnnKernelMod {
  public:
@@ -46,6 +47,7 @@ class SilentCheckV2Ascend : public AclnnKernelMod {
   pyfloat c_coeff_l2_{5000.};
   int64_t npu_asd_detect_{1};
 };
+}  // namespace silent_check_v2
 }  // namespace kernel
 }  // namespace mindspore
 

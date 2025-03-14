@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace conv3d_ext {
 
 class Conv3DExtAscend : public AclnnKernelMod {
  public:
@@ -49,6 +50,7 @@ class Conv3DExtAscend : public AclnnKernelMod {
   std::shared_ptr<KernelTensor> input_kernel_tensor_;
   bool _is_batchify{true};
 };
+}  // namespace conv3d_ext
 }  // namespace kernel
 }  // namespace mindspore
 

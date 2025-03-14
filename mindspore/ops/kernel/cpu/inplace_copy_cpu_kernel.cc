@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_copy_cpu {
 namespace {
 enum InplaceCopyMode : int {
   NoCastAndNoBroadCast,
@@ -346,5 +347,6 @@ const std::vector<std::pair<KernelAttr, KernelRunFunc>> &InplaceCopyCpuKernelMod
   return func_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, InplaceCopy, InplaceCopyCpuKernelMod);
+}  // namespace inplace_copy_cpu
 }  // namespace kernel
 }  // namespace mindspore

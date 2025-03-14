@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace non_zero {
 
 class NonZeroAscend : public AclnnKernelMod {
  public:
@@ -40,6 +41,7 @@ class NonZeroAscend : public AclnnKernelMod {
  protected:
   std::vector<ShapeVector> outputs_shape_{0};
 };
+}  // namespace non_zero
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace full_like {
 class FullLikeAscendCall : public AclnnKernelMod {
  public:
   FullLikeAscendCall() : AclnnKernelMod(std::move("aclnnInplaceFillScalar")) {}
@@ -34,6 +35,7 @@ class FullLikeAscendCall : public AclnnKernelMod {
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
   ScalarPtr fill_value_;
 };
+}  // namespace full_like
 }  // namespace kernel
 }  // namespace mindspore
 

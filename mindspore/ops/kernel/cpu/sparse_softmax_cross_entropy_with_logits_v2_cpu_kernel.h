@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_softmax_cross_entropy_with_logits_v2_cpu {
 class SparseSoftmaxCrossEntropyWithLogitsV2CpuKernelMod : public NativeCpuKernelMod {
  public:
   SparseSoftmaxCrossEntropyWithLogitsV2CpuKernelMod() = default;
@@ -60,6 +61,7 @@ class SparseSoftmaxCrossEntropyWithLogitsV2CpuKernelMod : public NativeCpuKernel
   size_t labels_length_{0};
   std::string reduction;
 };
+}  // namespace sparse_softmax_cross_entropy_with_logits_v2_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_SPARSE_SOFTMAX_CROSS_ENTROPY_WITH_LOGITS_V2_CPU_KERNEL_H_

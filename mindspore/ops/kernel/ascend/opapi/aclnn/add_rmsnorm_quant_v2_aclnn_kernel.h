@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace add_rmsnorm_quant_v2 {
 
 class AddRmsNormQuantAscend : public AclnnKernelMod {
  public:
@@ -37,6 +38,7 @@ class AddRmsNormQuantAscend : public AclnnKernelMod {
 
   double eps_ = 1e-5;
 };
+}  // namespace add_rmsnorm_quant_v2
 }  // namespace kernel
 }  // namespace mindspore
 

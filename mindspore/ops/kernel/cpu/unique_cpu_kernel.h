@@ -31,6 +31,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace unique_cpu {
 template <typename DataType, typename IndexType>
 struct UniqueParam {
   DataType *input_{nullptr};
@@ -513,6 +514,7 @@ class UniqueCpuKernelMod : public NativeCpuKernelMod {
     MergeBuckets(buckets, params);
   }
 };
+}  // namespace unique_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_UNIQUE_CPU_KERNEL_H_

@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace adaptive_max_pool2d {
 namespace {
 constexpr int kShapeDim2d = 2;
 constexpr int kShapeDimNone = -1;
@@ -62,5 +63,6 @@ bool AdaptiveMaxPool2DAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(AdaptiveMaxPool2D, AdaptiveMaxPool2DAscend);
+}  // namespace adaptive_max_pool2d
 }  // namespace kernel
 }  // namespace mindspore

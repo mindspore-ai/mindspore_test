@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace fill_cpu {
 class FillCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<FillCpuKernelMod> {
  public:
   FillCpuKernelMod() = default;
@@ -60,6 +61,7 @@ class FillCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<Fil
   TypeId x_type_id_;
   static constexpr size_t kShapeIndex_{0};
 };
+}  // namespace fill_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_FILL_CPU_KERNEL_H_

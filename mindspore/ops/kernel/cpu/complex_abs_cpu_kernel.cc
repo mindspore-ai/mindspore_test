@@ -19,6 +19,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace complex_abs_cpu {
 bool ComplexAbsCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                   const std::vector<KernelTensor *> &outputs) {
   constexpr size_t input_num = 1;
@@ -58,5 +59,6 @@ const std::vector<std::pair<KernelAttr, ComplexAbsCpuKernelMod::KernelRunFunc>> 
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ComplexAbs, ComplexAbsCpuKernelMod);
+}  // namespace complex_abs_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace fused_ada_factor_cpu {
 namespace {
 constexpr size_t kSizeFloat32 = sizeof(float);
 constexpr size_t kSizeFloat16 = sizeof(float16);
@@ -466,5 +467,6 @@ MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, FusedAdaFactor,
 MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, FusedAdaFactorWithGlobalNorm, []() {
   return std::make_shared<FusedAdaFactorCpuKernelMod>(kFusedAdaFactorWithGlobalNorm);
 });
+}  // namespace fused_ada_factor_cpu
 }  // namespace kernel
 }  // namespace mindspore

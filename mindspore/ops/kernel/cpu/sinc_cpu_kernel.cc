@@ -19,6 +19,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sinc_cpu {
 namespace {
 constexpr size_t kSincInputsNum = 1;
 constexpr size_t kSincOutputsNum = 1;
@@ -136,5 +137,6 @@ const std::vector<std::pair<KernelAttr, SincCpuKernelMod::KernelRunFunc>> &SincC
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Sinc, SincCpuKernelMod);
+}  // namespace sinc_cpu
 }  // namespace kernel
 }  // namespace mindspore

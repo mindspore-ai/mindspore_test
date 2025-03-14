@@ -29,6 +29,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace scatter_nd_arithmetic_cpu {
 namespace {
 constexpr size_t kMinIndiceRank = 2;
 template <typename T>
@@ -262,5 +263,6 @@ MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ScatterNdMul, ScatterNdArithmeticCpuKe
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ScatterNdDiv, ScatterNdArithmeticCpuKernelMod);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ScatterNdMax, ScatterNdArithmeticCpuKernelMod);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ScatterNdMin, ScatterNdArithmeticCpuKernelMod);
+}  // namespace scatter_nd_arithmetic_cpu
 }  // namespace kernel
 }  // namespace mindspore

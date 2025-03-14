@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace unique_consecutive_cpu {
 class UniqueConsecutiveCpuKernelMod : public NativeCpuKernelMod,
                                       public MatchKernelHelper<UniqueConsecutiveCpuKernelMod> {
  public:
@@ -67,6 +68,7 @@ class UniqueConsecutiveCpuKernelMod : public NativeCpuKernelMod,
   std::vector<int64_t> idx_shape_;
   std::vector<int64_t> count_shape_;
 };
+}  // namespace unique_consecutive_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_UNIQUE_CONSECUTIVE_CPU_KERNEL_H_

@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace minimum_cpu {
 namespace {
 constexpr size_t kMinimumInputsNum = 2;
 constexpr size_t kMinimumOutputsNum = 1;
@@ -262,5 +263,6 @@ const std::vector<std::pair<KernelAttr, MinimumCpuKernelMod::KernelRunFunc>> &Mi
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Minimum, MinimumCpuKernelMod);
+}  // namespace minimum_cpu
 }  // namespace kernel
 }  // namespace mindspore

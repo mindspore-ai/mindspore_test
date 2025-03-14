@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace take {
 
 class TakeAscend : public AclnnKernelMod {
  public:
@@ -35,6 +36,7 @@ class TakeAscend : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace take
 }  // namespace kernel
 }  // namespace mindspore
 

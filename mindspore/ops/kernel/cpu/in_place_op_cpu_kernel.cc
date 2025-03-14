@@ -29,6 +29,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace in_place_op_cpu {
 namespace {
 struct Add {
   template <typename T>
@@ -193,42 +194,42 @@ std::shared_ptr<CpuKernelFunc> InplaceOpCpuFunc() {
 using InplaceOpCpuFuncCreator = std::function<std::shared_ptr<CpuKernelFunc>()>;
 using OpFuncList = std::vector<std::pair<KernelAttr, InplaceOpCpuFuncCreator>>;
 
-#define DTYPE_REGISTER(INPUT_X, INPUT_V, OUTPUT, T) \
+#define INPLACE_OP_DTYPE_REGISTER(INPUT_X, INPUT_V, OUTPUT, T) \
   { KernelAttr().AddInputAttr(INPUT_X).AddInputAttr(INPUT_V).AddOutputAttr(OUTPUT), InplaceOpCpuFunc<T> }
 
 static const mindspore::HashMap<std::string, OpFuncList> kernel_attr_list = {
   {ops::kNameInplaceAdd,
    {
-     DTYPE_REGISTER(kNumberTypeFloat64, kNumberTypeFloat64, kNumberTypeFloat64, double),
-     DTYPE_REGISTER(kNumberTypeFloat32, kNumberTypeFloat32, kNumberTypeFloat32, float),
-     DTYPE_REGISTER(kNumberTypeInt64, kNumberTypeInt64, kNumberTypeInt64, int64_t),
-     DTYPE_REGISTER(kNumberTypeUInt64, kNumberTypeUInt64, kNumberTypeUInt64, uint64_t),
-     DTYPE_REGISTER(kNumberTypeInt32, kNumberTypeInt32, kNumberTypeInt32, int32_t),
-     DTYPE_REGISTER(kNumberTypeUInt32, kNumberTypeUInt32, kNumberTypeUInt32, uint32_t),
-     DTYPE_REGISTER(kNumberTypeInt16, kNumberTypeInt16, kNumberTypeInt16, int16_t),
-     DTYPE_REGISTER(kNumberTypeUInt16, kNumberTypeUInt16, kNumberTypeUInt16, uint16_t),
-     DTYPE_REGISTER(kNumberTypeInt8, kNumberTypeInt8, kNumberTypeInt8, int8_t),
-     DTYPE_REGISTER(kNumberTypeUInt8, kNumberTypeUInt8, kNumberTypeUInt8, uint8_t),
+     INPLACE_OP_DTYPE_REGISTER(kNumberTypeFloat64, kNumberTypeFloat64, kNumberTypeFloat64, double),
+     INPLACE_OP_DTYPE_REGISTER(kNumberTypeFloat32, kNumberTypeFloat32, kNumberTypeFloat32, float),
+     INPLACE_OP_DTYPE_REGISTER(kNumberTypeInt64, kNumberTypeInt64, kNumberTypeInt64, int64_t),
+     INPLACE_OP_DTYPE_REGISTER(kNumberTypeUInt64, kNumberTypeUInt64, kNumberTypeUInt64, uint64_t),
+     INPLACE_OP_DTYPE_REGISTER(kNumberTypeInt32, kNumberTypeInt32, kNumberTypeInt32, int32_t),
+     INPLACE_OP_DTYPE_REGISTER(kNumberTypeUInt32, kNumberTypeUInt32, kNumberTypeUInt32, uint32_t),
+     INPLACE_OP_DTYPE_REGISTER(kNumberTypeInt16, kNumberTypeInt16, kNumberTypeInt16, int16_t),
+     INPLACE_OP_DTYPE_REGISTER(kNumberTypeUInt16, kNumberTypeUInt16, kNumberTypeUInt16, uint16_t),
+     INPLACE_OP_DTYPE_REGISTER(kNumberTypeInt8, kNumberTypeInt8, kNumberTypeInt8, int8_t),
+     INPLACE_OP_DTYPE_REGISTER(kNumberTypeUInt8, kNumberTypeUInt8, kNumberTypeUInt8, uint8_t),
    }},
   {ops::kNameInplaceSub,
    {
-     DTYPE_REGISTER(kNumberTypeFloat64, kNumberTypeFloat64, kNumberTypeFloat64, double),
-     DTYPE_REGISTER(kNumberTypeFloat32, kNumberTypeFloat32, kNumberTypeFloat32, float),
-     DTYPE_REGISTER(kNumberTypeInt64, kNumberTypeInt64, kNumberTypeInt64, int64_t),
-     DTYPE_REGISTER(kNumberTypeUInt64, kNumberTypeUInt64, kNumberTypeUInt64, uint64_t),
-     DTYPE_REGISTER(kNumberTypeInt32, kNumberTypeInt32, kNumberTypeInt32, int32_t),
-     DTYPE_REGISTER(kNumberTypeUInt32, kNumberTypeUInt32, kNumberTypeUInt32, uint32_t),
-     DTYPE_REGISTER(kNumberTypeInt16, kNumberTypeInt16, kNumberTypeInt16, int16_t),
-     DTYPE_REGISTER(kNumberTypeUInt16, kNumberTypeUInt16, kNumberTypeUInt16, uint16_t),
-     DTYPE_REGISTER(kNumberTypeInt8, kNumberTypeInt8, kNumberTypeInt8, int8_t),
-     DTYPE_REGISTER(kNumberTypeUInt8, kNumberTypeUInt8, kNumberTypeUInt8, uint8_t),
+     INPLACE_OP_DTYPE_REGISTER(kNumberTypeFloat64, kNumberTypeFloat64, kNumberTypeFloat64, double),
+     INPLACE_OP_DTYPE_REGISTER(kNumberTypeFloat32, kNumberTypeFloat32, kNumberTypeFloat32, float),
+     INPLACE_OP_DTYPE_REGISTER(kNumberTypeInt64, kNumberTypeInt64, kNumberTypeInt64, int64_t),
+     INPLACE_OP_DTYPE_REGISTER(kNumberTypeUInt64, kNumberTypeUInt64, kNumberTypeUInt64, uint64_t),
+     INPLACE_OP_DTYPE_REGISTER(kNumberTypeInt32, kNumberTypeInt32, kNumberTypeInt32, int32_t),
+     INPLACE_OP_DTYPE_REGISTER(kNumberTypeUInt32, kNumberTypeUInt32, kNumberTypeUInt32, uint32_t),
+     INPLACE_OP_DTYPE_REGISTER(kNumberTypeInt16, kNumberTypeInt16, kNumberTypeInt16, int16_t),
+     INPLACE_OP_DTYPE_REGISTER(kNumberTypeUInt16, kNumberTypeUInt16, kNumberTypeUInt16, uint16_t),
+     INPLACE_OP_DTYPE_REGISTER(kNumberTypeInt8, kNumberTypeInt8, kNumberTypeInt8, int8_t),
+     INPLACE_OP_DTYPE_REGISTER(kNumberTypeUInt8, kNumberTypeUInt8, kNumberTypeUInt8, uint8_t),
    }},
   {ops::kNameInplaceUpdate,
    {
-     DTYPE_REGISTER(kNumberTypeInt32, kNumberTypeInt32, kNumberTypeInt32, int32_t),
-     DTYPE_REGISTER(kNumberTypeFloat64, kNumberTypeFloat64, kNumberTypeFloat64, double),
-     DTYPE_REGISTER(kNumberTypeFloat32, kNumberTypeFloat32, kNumberTypeFloat32, float),
-     DTYPE_REGISTER(kNumberTypeFloat16, kNumberTypeFloat16, kNumberTypeFloat16, float16),
+     INPLACE_OP_DTYPE_REGISTER(kNumberTypeInt32, kNumberTypeInt32, kNumberTypeInt32, int32_t),
+     INPLACE_OP_DTYPE_REGISTER(kNumberTypeFloat64, kNumberTypeFloat64, kNumberTypeFloat64, double),
+     INPLACE_OP_DTYPE_REGISTER(kNumberTypeFloat32, kNumberTypeFloat32, kNumberTypeFloat32, float),
+     INPLACE_OP_DTYPE_REGISTER(kNumberTypeFloat16, kNumberTypeFloat16, kNumberTypeFloat16, float16),
    }},
 };
 }  // namespace
@@ -276,5 +277,6 @@ std::vector<KernelAttr> InPlaceOpCpuKernelMod::GetOpSupport() {
 MS_KERNEL_FACTORY_REG_WITH_NAME_PARAM(NativeCpuKernelMod, InplaceAdd, InPlaceOpCpuKernelMod);
 MS_KERNEL_FACTORY_REG_WITH_NAME_PARAM(NativeCpuKernelMod, InplaceSub, InPlaceOpCpuKernelMod);
 MS_KERNEL_FACTORY_REG_WITH_NAME_PARAM(NativeCpuKernelMod, InplaceUpdate, InPlaceOpCpuKernelMod);
+}  // namespace in_place_op_cpu
 }  // namespace kernel
 }  // namespace mindspore

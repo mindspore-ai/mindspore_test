@@ -19,16 +19,17 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_segment_mean_grad_cpu {
 namespace {
 constexpr size_t kSparseSegmentMeanGradInputsNum = 4;
 constexpr size_t kSparseSegmentMeanGradOutputsNum = 1;
 
-#define ADD_KERNEL(t1, t2, t3, t4, t5) \
-  KernelAttr()                         \
-    .AddInputAttr(kNumberType##t1)     \
-    .AddInputAttr(kNumberType##t2)     \
-    .AddInputAttr(kNumberType##t3)     \
-    .AddInputAttr(kNumberType##t4)     \
+#define SPARSE_SEGMENT_MEAN_GRAD_ADD_KERNEL(t1, t2, t3, t4, t5) \
+  KernelAttr()                                                  \
+    .AddInputAttr(kNumberType##t1)                              \
+    .AddInputAttr(kNumberType##t2)                              \
+    .AddInputAttr(kNumberType##t3)                              \
+    .AddInputAttr(kNumberType##t4)                              \
     .AddOutputAttr(kNumberType##t5)
 }  // namespace
 
@@ -115,8 +116,10 @@ bool SparseSegmentMeanGradCpuKernelMod::LaunchKernel(const std::vector<kernel::K
 
 std::vector<std::pair<KernelAttr, SparseSegmentMeanGradCpuKernelMod::SparseSegmentMeanGradLaunchFunc>>
   SparseSegmentMeanGradCpuKernelMod::func_list_ = {
-    {ADD_KERNEL(Float32, Int32, Int32, Int32, Float32), &SparseSegmentMeanGradCpuKernelMod::LaunchKernel<float>},
-    {ADD_KERNEL(Float64, Int32, Int32, Int32, Float64), &SparseSegmentMeanGradCpuKernelMod::LaunchKernel<double>}};
+    {SPARSE_SEGMENT_MEAN_GRAD_ADD_KERNEL(Float32, Int32, Int32, Int32, Float32),
+     &SparseSegmentMeanGradCpuKernelMod::LaunchKernel<float>},
+    {SPARSE_SEGMENT_MEAN_GRAD_ADD_KERNEL(Float64, Int32, Int32, Int32, Float64),
+     &SparseSegmentMeanGradCpuKernelMod::LaunchKernel<double>}};
 
 std::vector<KernelAttr> SparseSegmentMeanGradCpuKernelMod::GetOpSupport() {
   std::vector<KernelAttr> support_list;
@@ -129,5 +132,6 @@ std::vector<KernelAttr> SparseSegmentMeanGradCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SparseSegmentMeanGrad, SparseSegmentMeanGradCpuKernelMod);
+}  // namespace sparse_segment_mean_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

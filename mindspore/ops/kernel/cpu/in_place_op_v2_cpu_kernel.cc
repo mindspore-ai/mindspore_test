@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace in_place_op_v2_cpu {
 namespace {
 struct Update {
   template <typename T>
@@ -161,7 +162,7 @@ std::shared_ptr<CpuKernelFunc> InplaceOpV2CpuFunc() {
 using InplaceOpCpuFuncCreator = std::function<std::shared_ptr<CpuKernelFunc>()>;
 using OpFuncList = std::vector<std::pair<KernelAttr, InplaceOpCpuFuncCreator>>;
 
-#define DTYPE_REGISTER(INPUT_X, INPUT_INDICES, INPUT_V, OUTPUT, T, S)                                           \
+#define INPLACEV2_OP_DTYPE_REGISTER(INPUT_X, INPUT_INDICES, INPUT_V, OUTPUT, T, S)                              \
   {                                                                                                             \
     KernelAttr().AddInputAttr(INPUT_X).AddInputAttr(INPUT_INDICES).AddInputAttr(INPUT_V).AddOutputAttr(OUTPUT), \
       InplaceOpV2CpuFunc<T, S>                                                                                  \
@@ -170,12 +171,18 @@ using OpFuncList = std::vector<std::pair<KernelAttr, InplaceOpCpuFuncCreator>>;
 static const mindspore::HashMap<std::string, OpFuncList> kernel_attr_list = {
   {ops::kNameInplaceUpdateV2,
    {
-     DTYPE_REGISTER(kNumberTypeInt32, kNumberTypeInt32, kNumberTypeInt32, kNumberTypeInt32, int32_t, int32_t),
-     DTYPE_REGISTER(kNumberTypeFloat32, kNumberTypeInt32, kNumberTypeFloat32, kNumberTypeFloat32, float, int32_t),
-     DTYPE_REGISTER(kNumberTypeFloat16, kNumberTypeInt32, kNumberTypeFloat16, kNumberTypeFloat16, float16, int32_t),
-     DTYPE_REGISTER(kNumberTypeInt32, kNumberTypeInt64, kNumberTypeInt32, kNumberTypeInt32, int32_t, int64_t),
-     DTYPE_REGISTER(kNumberTypeFloat32, kNumberTypeInt64, kNumberTypeFloat32, kNumberTypeFloat32, float, int64_t),
-     DTYPE_REGISTER(kNumberTypeFloat16, kNumberTypeInt64, kNumberTypeFloat16, kNumberTypeFloat16, float16, int64_t),
+     INPLACEV2_OP_DTYPE_REGISTER(kNumberTypeInt32, kNumberTypeInt32, kNumberTypeInt32, kNumberTypeInt32, int32_t,
+                                 int32_t),
+     INPLACEV2_OP_DTYPE_REGISTER(kNumberTypeFloat32, kNumberTypeInt32, kNumberTypeFloat32, kNumberTypeFloat32, float,
+                                 int32_t),
+     INPLACEV2_OP_DTYPE_REGISTER(kNumberTypeFloat16, kNumberTypeInt32, kNumberTypeFloat16, kNumberTypeFloat16, float16,
+                                 int32_t),
+     INPLACEV2_OP_DTYPE_REGISTER(kNumberTypeInt32, kNumberTypeInt64, kNumberTypeInt32, kNumberTypeInt32, int32_t,
+                                 int64_t),
+     INPLACEV2_OP_DTYPE_REGISTER(kNumberTypeFloat32, kNumberTypeInt64, kNumberTypeFloat32, kNumberTypeFloat32, float,
+                                 int64_t),
+     INPLACEV2_OP_DTYPE_REGISTER(kNumberTypeFloat16, kNumberTypeInt64, kNumberTypeFloat16, kNumberTypeFloat16, float16,
+                                 int64_t),
    }},
 };
 }  // namespace
@@ -221,5 +228,6 @@ std::vector<KernelAttr> InPlaceOpV2CpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG_WITH_NAME_PARAM(NativeCpuKernelMod, InplaceUpdateV2, InPlaceOpV2CpuKernelMod);
+}  // namespace in_place_op_v2_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace eye {
 
 void EyeAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                  const std::vector<KernelTensor *> &outputs) {
@@ -43,5 +44,6 @@ bool EyeAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::vec
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(Eye, EyeAscend);
+}  // namespace eye
 }  // namespace kernel
 }  // namespace mindspore

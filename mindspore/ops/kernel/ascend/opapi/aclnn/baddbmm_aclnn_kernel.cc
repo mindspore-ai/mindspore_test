@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace baddbmm {
 
 void BaddbmmAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                              const std::vector<KernelTensor *> &outputs) {
@@ -40,5 +41,6 @@ bool BaddbmmAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
   return true;
 }
 MS_ACLNN_KERNEL_FACTORY_REG(Baddbmm, BaddbmmAclnnKernelMod);
+}  // namespace baddbmm
 }  // namespace kernel
 }  // namespace mindspore

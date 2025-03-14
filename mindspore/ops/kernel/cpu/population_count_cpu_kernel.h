@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace population_count_cpu {
 class PopulationCountCpuKernelMod : public NativeCpuKernelMod {
  public:
   PopulationCountCpuKernelMod() = default;
@@ -48,6 +49,7 @@ class PopulationCountCpuKernelMod : public NativeCpuKernelMod {
 
   TypeId dtype_{kTypeUnknown};
 };
+}  // namespace population_count_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

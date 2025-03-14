@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace bitwise_or_scalar {
 
 class BitwiseOrScalarAscend : public AclnnKernelMod {
  public:
@@ -35,6 +36,7 @@ class BitwiseOrScalarAscend : public AclnnKernelMod {
   ScalarPtr other_ = nullptr;
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace bitwise_or_scalar
 }  // namespace kernel
 }  // namespace mindspore
 

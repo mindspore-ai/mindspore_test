@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_add_cpu {
 class SparseAddCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<SparseAddCpuKernelMod> {
  public:
   SparseAddCpuKernelMod() = default;
@@ -57,6 +58,7 @@ class SparseAddCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelpe
   size_t indices_column_ = 0;
   std::vector<TypeId> types_;
 };
+}  // namespace sparse_add_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

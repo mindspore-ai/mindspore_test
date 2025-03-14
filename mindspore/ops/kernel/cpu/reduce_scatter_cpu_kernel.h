@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace reduce_scatter_cpu {
 class ReduceScatterCpuKernelMod : public NativeCpuKernelMod {
  public:
   ReduceScatterCpuKernelMod();
@@ -44,6 +45,7 @@ class ReduceScatterCpuKernelMod : public NativeCpuKernelMod {
   std::string op_type_;
   std::vector<int> ranks_group_;
 };
+}  // namespace reduce_scatter_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

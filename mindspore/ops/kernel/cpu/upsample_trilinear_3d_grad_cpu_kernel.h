@@ -29,6 +29,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace upsample_trilinear_3d_grad_cpu {
 class UpsampleTrilinear3DGradCpuKernelMod : public NativeCpuKernelMod {
  public:
   UpsampleTrilinear3DGradCpuKernelMod() = default;
@@ -90,6 +91,7 @@ class UpsampleTrilinear3DGradCpuKernelMod : public NativeCpuKernelMod {
   std::vector<float> scales_;
   std::vector<int64_t> none_list_;
 };
+}  // namespace upsample_trilinear_3d_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

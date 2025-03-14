@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace softmax {
 
 class SoftmaxAscend : public AclnnKernelMod {
  public:
@@ -40,6 +41,7 @@ class SoftmaxAscend : public AclnnKernelMod {
   int64_t GetDimValue(KernelTensor *axis_ptr) const noexcept;
   int64_t dim_;
 };
+}  // namespace softmax
 }  // namespace kernel
 }  // namespace mindspore
 

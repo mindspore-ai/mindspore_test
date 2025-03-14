@@ -19,6 +19,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace pdist_cpu {
 namespace {
 constexpr size_t kPdistInputsNum = 1;
 constexpr size_t kPdistOutputsNum = 1;
@@ -172,5 +173,6 @@ std::vector<KernelAttr> PdistCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Pdist, PdistCpuKernelMod);
+}  // namespace pdist_cpu
 }  // namespace kernel
 }  // namespace mindspore

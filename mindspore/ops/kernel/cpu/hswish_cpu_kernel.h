@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace hswish_cpu {
 class HSwishCpuKernelMod : public NativeCpuKernelMod {
  public:
   HSwishCpuKernelMod() = default;
@@ -53,6 +54,7 @@ class HSwishCpuKernelMod : public NativeCpuKernelMod {
   ShapeVector x_shape_;
   uint64_t tensor_size_ = 1;
 };
+}  // namespace hswish_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_HSWISH_CPU_KERNEL_H_

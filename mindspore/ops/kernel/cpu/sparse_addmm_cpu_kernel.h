@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_addmm_cpu {
 class SparseAddmmCpuKernelMod : public NativeCpuKernelMod {
  public:
   SparseAddmmCpuKernelMod() = default;
@@ -56,6 +57,7 @@ class SparseAddmmCpuKernelMod : public NativeCpuKernelMod {
   size_t output_size_{0};
   size_t values_size_{0};
 };
+}  // namespace sparse_addmm_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_RMSPROP_CPU_KERNEL_H_

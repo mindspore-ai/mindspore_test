@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace fill_cpu {
 namespace {
 constexpr size_t kFillInputsNum = 2;
 constexpr size_t kFillOutputsNum = 1;
@@ -196,5 +197,6 @@ const std::vector<std::pair<KernelAttr, FillCpuKernelMod::KernelRunFunc>> &FillC
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Fill, FillCpuKernelMod);
+}  // namespace fill_cpu
 }  // namespace kernel
 }  // namespace mindspore

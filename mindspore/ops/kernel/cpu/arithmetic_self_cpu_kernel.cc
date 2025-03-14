@@ -49,6 +49,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace arithmetic_self_cpu {
 namespace {
 using complex64 = complex64;
 using complex128 = complex128;
@@ -1569,5 +1570,6 @@ ARITHMETIC_SELF_CPU_REGISTER(Mish, kMish);
 ARITHMETIC_SELF_CPU_REGISTER(Sigmoid, kSigmoid);
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Identity, IdentityCpuKernelMod);
+}  // namespace arithmetic_self_cpu
 }  // namespace kernel
 }  // namespace mindspore

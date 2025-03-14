@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace batch_norm_elemt {
 
 void BatchNormElemtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                             const std::vector<KernelTensor *> &outputs) {
@@ -46,5 +47,6 @@ bool BatchNormElemtAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(BatchNormElemt, BatchNormElemtAscend);
+}  // namespace batch_norm_elemt
 }  // namespace kernel
 }  // namespace mindspore

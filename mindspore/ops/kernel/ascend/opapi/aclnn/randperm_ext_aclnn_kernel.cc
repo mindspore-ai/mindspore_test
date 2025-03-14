@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace randperm_ext {
 
 void RandpermExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                          const std::vector<KernelTensor *> &outputs) {
@@ -42,5 +43,6 @@ bool RandpermExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const 
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(RandpermExt, RandpermExtAscend);
+}  // namespace randperm_ext
 }  // namespace kernel
 }  // namespace mindspore

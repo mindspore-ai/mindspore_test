@@ -29,6 +29,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace max_unpool2d_ext {
 
 void MaxUnpool2DExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                             const std::vector<KernelTensor *> &outputs) {
@@ -48,5 +49,6 @@ bool MaxUnpool2DExtAscend::Launch(const std::vector<KernelTensor *> &inputs,
   return true;
 }
 MS_ACLNN_KERNEL_FACTORY_REG(MaxUnpool2DExt, MaxUnpool2DExtAscend);
+}  // namespace max_unpool2d_ext
 }  // namespace kernel
 }  // namespace mindspore

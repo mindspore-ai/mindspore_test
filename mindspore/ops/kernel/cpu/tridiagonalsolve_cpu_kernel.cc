@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace tridiagonalsolve_cpu {
 namespace {
 constexpr size_t InputSize = 2;
 constexpr size_t OutputSize = 1;
@@ -347,5 +348,6 @@ std::vector<KernelAttr> TridiagonalSolveCPUKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, TridiagonalSolve, TridiagonalSolveCPUKernelMod);
+}  // namespace tridiagonalsolve_cpu
 }  // namespace kernel
 }  // namespace mindspore

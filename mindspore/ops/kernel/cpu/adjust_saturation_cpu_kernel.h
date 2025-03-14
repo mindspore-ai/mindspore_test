@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace adjust_saturation_cpu {
 class AdjustSaturationCpuKernelMod : public NativeCpuKernelMod {
  public:
   AdjustSaturationCpuKernelMod() = default;
@@ -37,6 +38,7 @@ class AdjustSaturationCpuKernelMod : public NativeCpuKernelMod {
  private:
   TypeId input_type_{kTypeUnknown};
 };
+}  // namespace adjust_saturation_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace zeros_like_cpu {
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
 
@@ -57,6 +58,7 @@ class ZerosLikeCpuKernelMod : public NativeCpuKernelMod {
   ShapeVector input_shape_;
   ShapeVector output_shape_;
 };
+}  // namespace zeros_like_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

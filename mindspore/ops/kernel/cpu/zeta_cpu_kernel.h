@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace zeta_cpu {
 class ZetaCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<ZetaCpuKernelMod> {
  public:
   ZetaCpuKernelMod() = default;
@@ -47,6 +48,7 @@ class ZetaCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<Zet
   bool LaunchKernel(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                     const std::vector<KernelTensor *> &outputs);
 };
+}  // namespace zeta_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

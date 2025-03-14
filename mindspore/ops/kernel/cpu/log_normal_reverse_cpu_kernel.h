@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace log_normal_reverse_cpu {
 class LogNormalReverseCpuKernel : public NativeCpuKernelMod {
  public:
   LogNormalReverseCpuKernel() = default;
@@ -49,6 +50,7 @@ class LogNormalReverseCpuKernel : public NativeCpuKernelMod {
   float input_mean_;
   float input_std_;
 };
+}  // namespace log_normal_reverse_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

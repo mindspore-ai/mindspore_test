@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace isclose {
 
 void IsCloseAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                      const std::vector<KernelTensor *> &outputs) {
@@ -41,5 +42,6 @@ bool IsCloseAscend::Launch(const std::vector<KernelTensor *> &inputs, const std:
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(IsClose, IsCloseAscend);
+}  // namespace isclose
 }  // namespace kernel
 }  // namespace mindspore

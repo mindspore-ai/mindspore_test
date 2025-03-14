@@ -28,6 +28,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace median_cpu {
 class MedianCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<MedianCpuKernelMod> {
  public:
   MedianCpuKernelMod() = default;
@@ -73,6 +74,7 @@ class MedianCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<M
   bool MedianComputeIgnoreNan(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                               const std::vector<KernelTensor *> &outputs);
 };
+}  // namespace median_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

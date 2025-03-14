@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_matrix_transpose_cpu {
 namespace {
 constexpr size_t kTwo = 2;
 constexpr size_t kInputsNum = 5;
@@ -29,11 +30,11 @@ constexpr size_t kInputIndex1 = 1;
 constexpr size_t kInputIndex2 = 2;
 constexpr size_t kInputIndex3 = 3;
 constexpr size_t kInputIndex4 = 4;
-constexpr size_t kOutputIndex0 = 0;
-constexpr size_t kOutputIndex1 = 1;
-constexpr size_t kOutputIndex2 = 2;
-constexpr size_t kOutputIndex3 = 3;
-constexpr size_t kOutputIndex4 = 4;
+constexpr size_t kOutputIdx0 = 0;
+constexpr size_t kOutputIdx1 = 1;
+constexpr size_t kOutputIdx2 = 2;
+constexpr size_t kOutputIdx3 = 3;
+constexpr size_t kOutputIdx4 = 4;
 constexpr size_t kDenseShape0 = 0;
 constexpr size_t kDenseShape1 = 1;
 constexpr size_t kDenseShape2 = 2;
@@ -56,7 +57,7 @@ KernelAttr AddKernel(const TypeId &ms_type1, const TypeId &ms_type2, const TypeI
   return kernel;
 }
 
-#define ADD_KERNEL(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10)                                                       \
+#define SPARSE_MATRIX_TRANSPOSE_ADD_KERNEL(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10)                               \
   AddKernel(kNumberType##t1, kNumberType##t2, kNumberType##t3, kNumberType##t4, kNumberType##t5, kNumberType##t6, \
             kNumberType##t7, kNumberType##t8, kNumberType##t9, kNumberType##t10)
 
@@ -173,11 +174,11 @@ void SparseMatrixTransposeCpuKernelMod::LaunchKernel(const std::vector<kernel::K
   indiceT *x_row_pointers = static_cast<indiceT *>(inputs[kInputIndex2]->device_ptr());
   indiceT *x_col_indices = static_cast<indiceT *>(inputs[kInputIndex3]->device_ptr());
   valueT *x_values = static_cast<valueT *>(inputs[kInputIndex4]->device_ptr());
-  indiceT *y_dense_shape_addr = static_cast<indiceT *>(outputs[kOutputIndex0]->device_ptr());
-  indiceT *y_batch_pointers_addr = static_cast<indiceT *>(outputs[kOutputIndex1]->device_ptr());
-  indiceT *y_row_pointers_addr = static_cast<indiceT *>(outputs[kOutputIndex2]->device_ptr());
-  indiceT *y_col_indices_addr = static_cast<indiceT *>(outputs[kOutputIndex3]->device_ptr());
-  valueT *y_values_addr = static_cast<valueT *>(outputs[kOutputIndex4]->device_ptr());
+  indiceT *y_dense_shape_addr = static_cast<indiceT *>(outputs[kOutputIdx0]->device_ptr());
+  indiceT *y_batch_pointers_addr = static_cast<indiceT *>(outputs[kOutputIdx1]->device_ptr());
+  indiceT *y_row_pointers_addr = static_cast<indiceT *>(outputs[kOutputIdx2]->device_ptr());
+  indiceT *y_col_indices_addr = static_cast<indiceT *>(outputs[kOutputIdx3]->device_ptr());
+  valueT *y_values_addr = static_cast<valueT *>(outputs[kOutputIdx4]->device_ptr());
   size_t batch_pointers = x_batch_pointers_size_;
   if (rank_x_ == kRankWithBatch) {
     y_dense_shape_addr[kDenseShape0] = x_dense_shape[kDenseShape0];
@@ -259,11 +260,11 @@ void SparseMatrixTransposeCpuKernelMod::LaunchcomplexKernel(const std::vector<ke
   indiceT *x_row_pointers = static_cast<indiceT *>(inputs[kInputIndex2]->device_ptr());
   indiceT *x_col_indices = static_cast<indiceT *>(inputs[kInputIndex3]->device_ptr());
   valueT *x_values = static_cast<valueT *>(inputs[kInputIndex4]->device_ptr());
-  indiceT *y_dense_shape_addr = static_cast<indiceT *>(outputs[kOutputIndex0]->device_ptr());
-  indiceT *y_batch_pointers_addr = static_cast<indiceT *>(outputs[kOutputIndex1]->device_ptr());
-  indiceT *y_row_pointers_addr = static_cast<indiceT *>(outputs[kOutputIndex2]->device_ptr());
-  indiceT *y_col_indices_addr = static_cast<indiceT *>(outputs[kOutputIndex3]->device_ptr());
-  valueT *y_values_addr = static_cast<valueT *>(outputs[kOutputIndex4]->device_ptr());
+  indiceT *y_dense_shape_addr = static_cast<indiceT *>(outputs[kOutputIdx0]->device_ptr());
+  indiceT *y_batch_pointers_addr = static_cast<indiceT *>(outputs[kOutputIdx1]->device_ptr());
+  indiceT *y_row_pointers_addr = static_cast<indiceT *>(outputs[kOutputIdx2]->device_ptr());
+  indiceT *y_col_indices_addr = static_cast<indiceT *>(outputs[kOutputIdx3]->device_ptr());
+  valueT *y_values_addr = static_cast<valueT *>(outputs[kOutputIdx4]->device_ptr());
   size_t batch_pointers = x_batch_pointers_size_;
   if (rank_x_ == kRankWithBatch) {
     y_dense_shape_addr[kDenseShape0] = x_dense_shape[kDenseShape0];
@@ -342,35 +343,36 @@ void SparseMatrixTransposeCpuKernelMod::LaunchcomplexKernel(const std::vector<ke
 
 std::vector<KernelAttr> SparseMatrixTransposeCpuKernelMod::GetOpSupport() {
   static std::vector<KernelAttr> kernel_attr_list = {
-    ADD_KERNEL(Int32, Int32, Int32, Int32, Int8, Int32, Int32, Int32, Int32, Int8),
-    ADD_KERNEL(Int32, Int32, Int32, Int32, UInt8, Int32, Int32, Int32, Int32, UInt8),
-    ADD_KERNEL(Int32, Int32, Int32, Int32, Int16, Int32, Int32, Int32, Int32, Int16),
-    ADD_KERNEL(Int32, Int32, Int32, Int32, UInt16, Int32, Int32, Int32, Int32, UInt16),
-    ADD_KERNEL(Int32, Int32, Int32, Int32, Int32, Int32, Int32, Int32, Int32, Int32),
-    ADD_KERNEL(Int32, Int32, Int32, Int32, Int64, Int32, Int32, Int32, Int32, Int64),
-    ADD_KERNEL(Int32, Int32, Int32, Int32, UInt32, Int32, Int32, Int32, Int32, UInt32),
-    ADD_KERNEL(Int32, Int32, Int32, Int32, UInt64, Int32, Int32, Int32, Int32, UInt64),
-    ADD_KERNEL(Int32, Int32, Int32, Int32, Float16, Int32, Int32, Int32, Int32, Float16),
-    ADD_KERNEL(Int32, Int32, Int32, Int32, Float32, Int32, Int32, Int32, Int32, Float32),
-    ADD_KERNEL(Int32, Int32, Int32, Int32, Float64, Int32, Int32, Int32, Int32, Float64),
-    ADD_KERNEL(Int32, Int32, Int32, Int32, Complex64, Int32, Int32, Int32, Int32, Complex64),
-    ADD_KERNEL(Int32, Int32, Int32, Int32, Complex128, Int32, Int32, Int32, Int32, Complex128),
-    ADD_KERNEL(Int64, Int64, Int64, Int64, Int8, Int64, Int64, Int64, Int64, Int8),
-    ADD_KERNEL(Int64, Int64, Int64, Int64, UInt8, Int64, Int64, Int64, Int64, UInt8),
-    ADD_KERNEL(Int64, Int64, Int64, Int64, Int16, Int64, Int64, Int64, Int64, Int16),
-    ADD_KERNEL(Int64, Int64, Int64, Int64, UInt16, Int64, Int64, Int64, Int64, UInt16),
-    ADD_KERNEL(Int64, Int64, Int64, Int64, Int32, Int64, Int64, Int64, Int64, Int32),
-    ADD_KERNEL(Int64, Int64, Int64, Int64, Int64, Int64, Int64, Int64, Int64, Int64),
-    ADD_KERNEL(Int64, Int64, Int64, Int64, UInt32, Int64, Int64, Int64, Int64, UInt32),
-    ADD_KERNEL(Int64, Int64, Int64, Int64, UInt64, Int64, Int64, Int64, Int64, UInt64),
-    ADD_KERNEL(Int64, Int64, Int64, Int64, Float16, Int64, Int64, Int64, Int64, Float16),
-    ADD_KERNEL(Int64, Int64, Int64, Int64, Float32, Int64, Int64, Int64, Int64, Float32),
-    ADD_KERNEL(Int64, Int64, Int64, Int64, Float64, Int64, Int64, Int64, Int64, Float64),
-    ADD_KERNEL(Int64, Int64, Int64, Int64, Complex64, Int64, Int64, Int64, Int64, Complex64),
-    ADD_KERNEL(Int64, Int64, Int64, Int64, Complex128, Int64, Int64, Int64, Int64, Complex128)};
+    SPARSE_MATRIX_TRANSPOSE_ADD_KERNEL(Int32, Int32, Int32, Int32, Int8, Int32, Int32, Int32, Int32, Int8),
+    SPARSE_MATRIX_TRANSPOSE_ADD_KERNEL(Int32, Int32, Int32, Int32, UInt8, Int32, Int32, Int32, Int32, UInt8),
+    SPARSE_MATRIX_TRANSPOSE_ADD_KERNEL(Int32, Int32, Int32, Int32, Int16, Int32, Int32, Int32, Int32, Int16),
+    SPARSE_MATRIX_TRANSPOSE_ADD_KERNEL(Int32, Int32, Int32, Int32, UInt16, Int32, Int32, Int32, Int32, UInt16),
+    SPARSE_MATRIX_TRANSPOSE_ADD_KERNEL(Int32, Int32, Int32, Int32, Int32, Int32, Int32, Int32, Int32, Int32),
+    SPARSE_MATRIX_TRANSPOSE_ADD_KERNEL(Int32, Int32, Int32, Int32, Int64, Int32, Int32, Int32, Int32, Int64),
+    SPARSE_MATRIX_TRANSPOSE_ADD_KERNEL(Int32, Int32, Int32, Int32, UInt32, Int32, Int32, Int32, Int32, UInt32),
+    SPARSE_MATRIX_TRANSPOSE_ADD_KERNEL(Int32, Int32, Int32, Int32, UInt64, Int32, Int32, Int32, Int32, UInt64),
+    SPARSE_MATRIX_TRANSPOSE_ADD_KERNEL(Int32, Int32, Int32, Int32, Float16, Int32, Int32, Int32, Int32, Float16),
+    SPARSE_MATRIX_TRANSPOSE_ADD_KERNEL(Int32, Int32, Int32, Int32, Float32, Int32, Int32, Int32, Int32, Float32),
+    SPARSE_MATRIX_TRANSPOSE_ADD_KERNEL(Int32, Int32, Int32, Int32, Float64, Int32, Int32, Int32, Int32, Float64),
+    SPARSE_MATRIX_TRANSPOSE_ADD_KERNEL(Int32, Int32, Int32, Int32, Complex64, Int32, Int32, Int32, Int32, Complex64),
+    SPARSE_MATRIX_TRANSPOSE_ADD_KERNEL(Int32, Int32, Int32, Int32, Complex128, Int32, Int32, Int32, Int32, Complex128),
+    SPARSE_MATRIX_TRANSPOSE_ADD_KERNEL(Int64, Int64, Int64, Int64, Int8, Int64, Int64, Int64, Int64, Int8),
+    SPARSE_MATRIX_TRANSPOSE_ADD_KERNEL(Int64, Int64, Int64, Int64, UInt8, Int64, Int64, Int64, Int64, UInt8),
+    SPARSE_MATRIX_TRANSPOSE_ADD_KERNEL(Int64, Int64, Int64, Int64, Int16, Int64, Int64, Int64, Int64, Int16),
+    SPARSE_MATRIX_TRANSPOSE_ADD_KERNEL(Int64, Int64, Int64, Int64, UInt16, Int64, Int64, Int64, Int64, UInt16),
+    SPARSE_MATRIX_TRANSPOSE_ADD_KERNEL(Int64, Int64, Int64, Int64, Int32, Int64, Int64, Int64, Int64, Int32),
+    SPARSE_MATRIX_TRANSPOSE_ADD_KERNEL(Int64, Int64, Int64, Int64, Int64, Int64, Int64, Int64, Int64, Int64),
+    SPARSE_MATRIX_TRANSPOSE_ADD_KERNEL(Int64, Int64, Int64, Int64, UInt32, Int64, Int64, Int64, Int64, UInt32),
+    SPARSE_MATRIX_TRANSPOSE_ADD_KERNEL(Int64, Int64, Int64, Int64, UInt64, Int64, Int64, Int64, Int64, UInt64),
+    SPARSE_MATRIX_TRANSPOSE_ADD_KERNEL(Int64, Int64, Int64, Int64, Float16, Int64, Int64, Int64, Int64, Float16),
+    SPARSE_MATRIX_TRANSPOSE_ADD_KERNEL(Int64, Int64, Int64, Int64, Float32, Int64, Int64, Int64, Int64, Float32),
+    SPARSE_MATRIX_TRANSPOSE_ADD_KERNEL(Int64, Int64, Int64, Int64, Float64, Int64, Int64, Int64, Int64, Float64),
+    SPARSE_MATRIX_TRANSPOSE_ADD_KERNEL(Int64, Int64, Int64, Int64, Complex64, Int64, Int64, Int64, Int64, Complex64),
+    SPARSE_MATRIX_TRANSPOSE_ADD_KERNEL(Int64, Int64, Int64, Int64, Complex128, Int64, Int64, Int64, Int64, Complex128)};
 
   return kernel_attr_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SparseMatrixTranspose, SparseMatrixTransposeCpuKernelMod);
+}  // namespace sparse_matrix_transpose_cpu
 }  // namespace kernel
 }  // namespace mindspore

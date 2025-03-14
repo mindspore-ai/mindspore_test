@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace trunc_cpu {
 namespace {
 const size_t kZero = 0;
 constexpr size_t kTruncInputsNum = 1;
@@ -106,5 +107,6 @@ std::vector<KernelAttr> TruncCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Trunc, TruncCpuKernelMod);
+}  // namespace trunc_cpu
 }  // namespace kernel
 }  // namespace mindspore

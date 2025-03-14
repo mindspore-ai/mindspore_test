@@ -30,6 +30,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace upsample_nearest2d {
 void UpsampleNearest2DAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                const std::vector<KernelTensor *> &outputs) {
   auto input_dtype_id = inputs[0]->dtype_id();
@@ -53,5 +54,6 @@ bool UpsampleNearest2DAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(UpsampleNearest2D, UpsampleNearest2DAscend);
+}  // namespace upsample_nearest2d
 }  // namespace kernel
 }  // namespace mindspore

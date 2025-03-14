@@ -31,6 +31,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace bernoulli_cpu {
 class BernoulliCpuKernelMod : public NativeCpuKernelMod {
  public:
   BernoulliCpuKernelMod() = default;
@@ -73,6 +74,7 @@ class BernoulliCpuKernelMod : public NativeCpuKernelMod {
   int64_t offset_{0};
   BaseOperatorPtr kernel_ptr_{nullptr};
 };
+}  // namespace bernoulli_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

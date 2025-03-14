@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace one_hot_ext {
 
 class OneHotExtAscend : public AclnnKernelMod {
  public:
@@ -39,6 +40,7 @@ class OneHotExtAscend : public AclnnKernelMod {
   int64_t depth_;
   int64_t axis_;
 };
+}  // namespace one_hot_ext
 }  // namespace kernel
 }  // namespace mindspore
 

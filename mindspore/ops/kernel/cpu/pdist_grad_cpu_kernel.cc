@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace pdist_grad_cpu {
 namespace {
 constexpr size_t kPdistGradInputsNum = 3;
 constexpr size_t kPdistGradOutputsNum = 1;
@@ -188,5 +189,6 @@ std::vector<KernelAttr> PdistGradCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, PdistGrad, PdistGradCpuKernelMod);
+}  // namespace pdist_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace debug_cpu {
 class DebugCpuKernelMod : public NativeCpuKernelMod {
  public:
   DebugCpuKernelMod() = default;
@@ -36,6 +37,7 @@ class DebugCpuKernelMod : public NativeCpuKernelMod {
 
   std::vector<KernelAttr> GetOpSupport() override;
 };
+}  // namespace debug_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

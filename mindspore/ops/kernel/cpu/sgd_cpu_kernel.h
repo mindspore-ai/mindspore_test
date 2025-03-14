@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sgd_cpu {
 class SGDCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<SGDCpuKernelMod> {
  public:
   SGDCpuKernelMod() = default;
@@ -52,6 +53,7 @@ class SGDCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<SGDC
   float weight_decay_{0.0};
   bool nesterov_{true};
 };
+}  // namespace sgd_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif

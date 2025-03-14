@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace pdist_grad_cpu {
 class PdistGradCpuKernelMod : public NativeCpuKernelMod {
  public:
   PdistGradCpuKernelMod() {}
@@ -59,6 +60,7 @@ class PdistGradCpuKernelMod : public NativeCpuKernelMod {
   int64_t temp_;
   float p_;
 };
+}  // namespace pdist_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

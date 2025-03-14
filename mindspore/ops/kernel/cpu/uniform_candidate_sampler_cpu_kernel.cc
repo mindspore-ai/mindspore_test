@@ -29,6 +29,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace uniform_candidate_sampler_cpu {
 namespace {
 template <typename S>
 S Probability(int64_t range_max) {
@@ -283,5 +284,6 @@ const std::vector<std::pair<KernelAttr, USCKernelRunFunc>> &UniformCandidateSamp
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, UniformCandidateSampler, UniformCandidateSamplerCpuKernelMod);
+}  // namespace uniform_candidate_sampler_cpu
 }  // namespace kernel
 }  // namespace mindspore

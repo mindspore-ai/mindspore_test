@@ -30,6 +30,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace arithmetic_logic_cpu {
 namespace {
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
@@ -761,5 +762,6 @@ MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, LogicalOr,
                                  []() { return std::make_shared<ArithmeticLogicCpuKernelMod>(kLogicalOr); });
 MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, LogicalXor,
                                  []() { return std::make_shared<ArithmeticLogicCpuKernelMod>(kLogicalXor); });
+}  // namespace arithmetic_logic_cpu
 }  // namespace kernel
 }  // namespace mindspore

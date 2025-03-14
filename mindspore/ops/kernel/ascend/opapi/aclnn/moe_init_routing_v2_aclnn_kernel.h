@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace moe_init_routing_v2 {
 class MoeInitRoutingV2Ascend : public AclnnKernelMod {
  public:
   MoeInitRoutingV2Ascend() : AclnnKernelMod(std::move("aclnnMoeInitRoutingV2")) {}
@@ -42,6 +43,7 @@ class MoeInitRoutingV2Ascend : public AclnnKernelMod {
   int64_t expert_tokens_count_or_cumsum_flag_;
   bool expert_tokens_before_capacity_flag_;
 };
+}  // namespace moe_init_routing_v2
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_MOE_INIT_ROUTING_V2_ACLNN_KERNEL_MOD_H_

@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace reduce_std_cpu {
 constexpr auto kUnknown = "Unknown";
 
 class ReduceStdCpuKernelMod : public NativeCpuKernelMod {
@@ -55,6 +56,7 @@ class ReduceStdCpuKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> axis_;
   std::vector<int64_t> input_shape_;
 };
+}  // namespace reduce_std_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_REDUCE_STD_CPU_KERNEL_H_

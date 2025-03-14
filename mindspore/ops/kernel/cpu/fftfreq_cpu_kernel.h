@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_FFTBASE_CPU_KERNEL_H_
-#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_FFTBASE_CPU_KERNEL_H_
+#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_FFTFREQ_CPU_KERNEL_H_
+#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_FFTFREQ_CPU_KERNEL_H_
 
 #include <vector>
 #include <complex>
@@ -30,6 +30,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace fftfreq_cpu {
 class FFTFreqCpuKernelMod : public NativeCpuKernelMod {
  public:
   FFTFreqCpuKernelMod() = default;
@@ -60,6 +61,7 @@ class FFTFreqCpuKernelMod : public NativeCpuKernelMod {
   double d_;
   TypeId num_dtype_{kTypeUnknown};
 };
+}  // namespace fftfreq_cpu
 }  // namespace kernel
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_FFTBASE_CPU_KERNEL_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_FFTFREQ_CPU_KERNEL_H_

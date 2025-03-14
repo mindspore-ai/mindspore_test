@@ -26,6 +26,7 @@
 namespace mindspore {
 using mindspore::device::ascend::FASInputLayoutMode;
 namespace kernel {
+namespace flash_attention_score_grad {
 using TensorParams = device::ascend::TensorParams;
 
 class FlashAttentionScoreGradAscend : public AclnnKernelMod {
@@ -118,6 +119,7 @@ class FlashAttentionScoreGradAscend : public AclnnKernelMod {
           outputs[kIndex1], outputs[kIndex2], outputs[kIndex3]);
   }
 };
+}  // namespace flash_attention_score_grad
 }  // namespace kernel
 }  // namespace mindspore
 

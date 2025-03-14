@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace repeat_interleave_grad {
 
 class RepeatInterleaveGradAscend : public AclnnKernelMod {
  public:
@@ -38,6 +39,7 @@ class RepeatInterleaveGradAscend : public AclnnKernelMod {
   int64_t dim_ = 0;
   int64_t output_size_;
 };
+}  // namespace repeat_interleave_grad
 }  // namespace kernel
 }  // namespace mindspore
 

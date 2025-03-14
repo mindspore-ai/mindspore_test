@@ -32,6 +32,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace max_pool3d_with_argmax_cpu {
 class MaxPool3DWithArgmaxCpuKernelMod : public NativeCpuKernelMod {
  public:
   MaxPool3DWithArgmaxCpuKernelMod() = default;
@@ -83,6 +84,7 @@ class MaxPool3DWithArgmaxCpuKernelMod : public NativeCpuKernelMod {
   TypeId x_dtype_{kTypeUnknown};
   TypeId argmax_dtype_{kTypeUnknown};
 };
+}  // namespace max_pool3d_with_argmax_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_MAX_POOL3D_WITH_ARGMAX_CPU_KERNEL_H_

@@ -29,6 +29,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace split_cpu {
 class SplitCpuKernelMod : public NativeCpuKernelMod {
  public:
   SplitCpuKernelMod() = default;
@@ -153,6 +154,7 @@ class SplitCpuKernelMod : public NativeCpuKernelMod {
   size_t output_num_{1};
   std::vector<int> input_shape_;
 };
+}  // namespace split_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

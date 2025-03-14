@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inner_non_zero {
 
 void InnerNonZeroAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                           const std::vector<KernelTensor *> &outputs) {
@@ -54,5 +55,6 @@ void InnerNonZeroAscend::UpdateOutputShapeAndSize(const std::vector<KernelTensor
   outputs[kIndex0]->set_size(update_size);
 }
 MS_ACLNN_KERNEL_FACTORY_REG(InnerNonZero, InnerNonZeroAscend);
+}  // namespace inner_non_zero
 }  // namespace kernel
 }  // namespace mindspore

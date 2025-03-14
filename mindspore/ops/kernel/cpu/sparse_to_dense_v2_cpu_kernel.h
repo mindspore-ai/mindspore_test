@@ -29,6 +29,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_to_dense_v2_cpu {
 class SparseToDenseV2CpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<SparseToDenseV2CpuKernelMod> {
  public:
   SparseToDenseV2CpuKernelMod() = default;
@@ -62,6 +63,7 @@ class SparseToDenseV2CpuKernelMod : public NativeCpuKernelMod, public MatchKerne
   size_t values_size_{0};
   size_t indices_dims_{0};
 };
+}  // namespace sparse_to_dense_v2_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_SPARSE_TO_DENSE_V2_CPU_KERNEL_H_

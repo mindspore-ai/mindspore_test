@@ -29,6 +29,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace count_nonzero {
 
 void CountNonZeroAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                           const std::vector<KernelTensor *> &outputs) {
@@ -69,5 +70,6 @@ bool CountNonZeroAscend::Launch(const std::vector<KernelTensor *> &inputs, const
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(CountNonZero, CountNonZeroAscend);
+}  // namespace count_nonzero
 }  // namespace kernel
 }  // namespace mindspore

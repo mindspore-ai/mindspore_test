@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace unique_dim {
 
 class UniqueDimAscend : public AclnnKernelMod {
  public:
@@ -39,6 +40,7 @@ class UniqueDimAscend : public AclnnKernelMod {
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
   std::vector<ShapeVector> output_shapes_;
 };
+}  // namespace unique_dim
 }  // namespace kernel
 }  // namespace mindspore
 

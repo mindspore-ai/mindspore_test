@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_normal {
 class InplaceNormalAscend : public AclnnKernelMod {
  public:
   InplaceNormalAscend() : AclnnKernelMod("aclnnInplaceNormal") {}
@@ -39,6 +40,7 @@ class InplaceNormalAscend : public AclnnKernelMod {
   int64_t seed_;
   int64_t offset_;
 };
+}  // namespace inplace_normal
 }  // namespace kernel
 }  // namespace mindspore
 

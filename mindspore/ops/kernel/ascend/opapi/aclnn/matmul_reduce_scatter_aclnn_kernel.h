@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace matmul_reduce_scatter {
 class MatmulReduceScatterAscend : public AclnnKernelMod {
  public:
   MatmulReduceScatterAscend() : AclnnKernelMod(std::move("aclnnMatmulReduceScatter")) {}
@@ -45,6 +46,7 @@ class MatmulReduceScatterAscend : public AclnnKernelMod {
   bool trans_x2_;
   int64_t stream_mode_ = 1;
 };
+}  // namespace matmul_reduce_scatter
 }  // namespace kernel
 }  // namespace mindspore
 

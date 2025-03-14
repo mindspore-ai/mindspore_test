@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace upper_bound_cpu {
 bool UpperBoundCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                   const std::vector<KernelTensor *> &outputs) {
   constexpr size_t input_num = 2;
@@ -146,5 +147,6 @@ std::vector<KernelAttr> UpperBoundCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, UpperBound, UpperBoundCpuKernelMod);
+}  // namespace upper_bound_cpu
 }  // namespace kernel
 }  // namespace mindspore

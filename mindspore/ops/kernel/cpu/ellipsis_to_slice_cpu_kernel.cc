@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace ellipsis_to_slice_cpu {
 bool EllipsisToSliceCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                        const std::vector<KernelTensor *> &outputs) {
   auto tuple_index_types = GetValue<std::vector<int64_t>>(primitive_->GetAttr(kAttrTupleIndexTypes));
@@ -158,5 +159,6 @@ std::vector<KernelAttr> EllipsisToSliceCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, EllipsisToSlice, EllipsisToSliceCpuKernelMod);
+}  // namespace ellipsis_to_slice_cpu
 }  // namespace kernel
 }  // namespace mindspore

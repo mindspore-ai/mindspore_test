@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace floor_div_scalar {
 
 void FloorDivScalarAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                             const std::vector<KernelTensor *> &outputs) {
@@ -36,5 +37,6 @@ bool FloorDivScalarAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(FloorDivScalar, FloorDivScalarAscend);
+}  // namespace floor_div_scalar
 }  // namespace kernel
 }  // namespace mindspore

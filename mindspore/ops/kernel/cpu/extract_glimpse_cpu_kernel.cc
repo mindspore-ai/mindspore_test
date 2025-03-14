@@ -26,6 +26,9 @@
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/extract_glimpse.h"
 
+namespace mindspore {
+namespace kernel {
+namespace extract_glimpse_cpu {
 namespace {
 const size_t kDataSizeThreshold = 4 * 1024;
 using std::random_device;
@@ -37,8 +40,6 @@ std::uniform_real_distribution<float> dis_uniform(-1, 1);
 std::normal_distribution<float> dis_normal(kNumber10, kNumber11);
 }  // namespace
 
-namespace mindspore {
-namespace kernel {
 bool ExtractGlimpseCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                       const std::vector<KernelTensor *> &outputs) {
   constexpr size_t input_num = 3;
@@ -230,5 +231,6 @@ std::vector<KernelAttr> ExtractGlimpseCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ExtractGlimpse, ExtractGlimpseCpuKernelMod);
+}  // namespace extract_glimpse_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace scatter_nd_cpu {
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
 
@@ -65,6 +66,7 @@ class ScatterNdCpuKernelMod : public NativeCpuKernelMod {
   int indices_unit_rank_{0};
   std::vector<int> out_strides_;
 };
+}  // namespace scatter_nd_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

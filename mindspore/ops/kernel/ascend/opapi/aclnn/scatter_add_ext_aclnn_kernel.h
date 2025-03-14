@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace scatter_add_ext {
 
 class ScatterAddExtAscend : public AclnnKernelMod {
  public:
@@ -38,6 +39,7 @@ class ScatterAddExtAscend : public AclnnKernelMod {
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
   int64_t dim_;
 };
+}  // namespace scatter_add_ext
 }  // namespace kernel
 }  // namespace mindspore
 

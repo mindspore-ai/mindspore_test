@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace grid_sampler_3d_cpu {
 class GridSampler3DCpuKernelMod : public NativeCpuKernelMod {
  public:
   GridSampler3DCpuKernelMod() = default;
@@ -79,6 +80,7 @@ class GridSampler3DCpuKernelMod : public NativeCpuKernelMod {
 
   bool within_bounds_3d(int64_t d, int64_t h, int64_t w, int64_t D, int64_t H, int64_t W) const;
 };
+}  // namespace grid_sampler_3d_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -26,6 +26,7 @@
 #include "common/ms_factory.h"
 
 namespace mindspore::kernel {
+namespace fast_gelu_grad_cpu {
 constexpr auto kUnknown = "Unknown";
 
 class FastGeLUGradCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<FastGeLUGradCpuKernelMod> {
@@ -55,6 +56,7 @@ class FastGeLUGradCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHe
   std::string kernel_type_{kUnknown};
   const size_t max_dims_{7};
 };
+}  // namespace fast_gelu_grad_cpu
 }  // namespace mindspore::kernel
 
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_FAST_GELU_GRAD_CPU_KERNEL_H_

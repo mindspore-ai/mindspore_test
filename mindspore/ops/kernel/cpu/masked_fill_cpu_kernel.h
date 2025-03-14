@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace masked_fill_cpu {
 class MaskedFillCpuKernelMod : public NativeCpuKernelMod {
  public:
   MaskedFillCpuKernelMod() = default;
@@ -56,6 +57,7 @@ class MaskedFillCpuKernelMod : public NativeCpuKernelMod {
   std::vector<size_t> input_index_;
   bool need_broadcast_{false};
 };
+}  // namespace masked_fill_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_MASKED_FILL_CPU_KERNEL_H_

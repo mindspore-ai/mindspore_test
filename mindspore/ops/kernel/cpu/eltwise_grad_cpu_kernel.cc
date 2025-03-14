@@ -38,6 +38,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace eltwise_grad_cpu {
 namespace {
 constexpr auto kReluGrad = "ReluGrad";
 constexpr auto kReLU6Grad = "ReLU6Grad";
@@ -937,5 +938,6 @@ MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, RsqrtGrad,
                                  []() { return std::make_shared<EltWiseGradCpuKernelMod>(kRsqrtGrad); });
 MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, ReciprocalGrad,
                                  []() { return std::make_shared<EltWiseGradCpuKernelMod>(kReciprocalGrad); });
+}  // namespace eltwise_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

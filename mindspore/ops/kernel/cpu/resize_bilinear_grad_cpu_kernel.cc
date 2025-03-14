@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace resize_bilinear_grad_cpu {
 namespace {
 constexpr size_t kResizeBilinearGradInputsNum = 4;
 constexpr size_t kResizeBilinearGradOutputNum = 1;
@@ -381,5 +382,6 @@ FuncVec &ResizeBilinearGradCpuKernelMod::GetFuncList() const {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ResizeBilinearGrad, ResizeBilinearGradCpuKernelMod);
+}  // namespace resize_bilinear_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

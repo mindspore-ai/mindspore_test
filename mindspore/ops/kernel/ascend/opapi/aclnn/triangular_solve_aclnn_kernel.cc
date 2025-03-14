@@ -18,6 +18,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace triangular_solve {
 
 void TriangularSolveAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                              const std::vector<KernelTensor *> &outputs) {
@@ -38,5 +39,6 @@ bool TriangularSolveAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(TriangularSolve, TriangularSolveAscend);
+}  // namespace triangular_solve
 }  // namespace kernel
 }  // namespace mindspore

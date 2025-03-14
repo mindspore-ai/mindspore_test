@@ -29,6 +29,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace avg_pool2d {
 namespace {
 std::tuple<std::vector<int64_t>, std::vector<int64_t>, std::vector<int64_t>, std::tuple<bool, bool, int64_t, int8_t>>
 AvgPool2DGenerate(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
@@ -72,5 +73,6 @@ bool AvgPool2DAscend::Launch(const std::vector<KernelTensor *> &inputs, const st
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(AvgPool2D, AvgPool2DAscend);
+}  // namespace avg_pool2d
 }  // namespace kernel
 }  // namespace mindspore

@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace affine_grid_cpu {
 namespace {
 constexpr size_t kRowNum2 = 2;
 constexpr size_t kRowNum3 = 3;
@@ -256,5 +257,6 @@ std::vector<KernelAttr> AffineGridCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, AffineGrid, AffineGridCpuKernelMod);
+}  // namespace affine_grid_cpu
 }  // namespace kernel
 }  // namespace mindspore

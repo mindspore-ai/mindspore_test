@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace igammac_cpu {
 class IgammacCpuKernelMod : public NativeCpuKernelMod {
  public:
   IgammacCpuKernelMod() = default;
@@ -61,6 +62,7 @@ class IgammacCpuKernelMod : public NativeCpuKernelMod {
   template <typename T>
   void NoBcastCompute(const std::vector<KernelTensor *> &, const std::vector<KernelTensor *> &);
 };
+}  // namespace igammac_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

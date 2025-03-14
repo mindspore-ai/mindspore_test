@@ -23,7 +23,6 @@
 
 namespace mindspore {
 namespace kernel {
-
 class StdAscend : public AclnnKernelMod {
  public:
   StdAscend() : AclnnKernelMod(std::move("aclnnStd")) {}

@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace ragged_range_cpu {
 class RaggedRangeCpuKernelMod : public NativeCpuKernelMod {
  public:
   RaggedRangeCpuKernelMod() = default;
@@ -54,6 +55,7 @@ class RaggedRangeCpuKernelMod : public NativeCpuKernelMod {
   template <typename T, typename TSPLITS>
   TSPLITS RangeSize(T start, T limit, T delta) const;
 };
+}  // namespace ragged_range_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

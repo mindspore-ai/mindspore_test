@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace hswish_grad_cpu {
 namespace {
 constexpr size_t kHSwishGradInputsNum = 2;
 constexpr size_t kHSwishGradOutputsNum = 1;
@@ -111,5 +112,6 @@ std::vector<KernelAttr> HSwishGradCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, HSwishGrad, HSwishGradCpuKernelMod);
+}  // namespace hswish_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

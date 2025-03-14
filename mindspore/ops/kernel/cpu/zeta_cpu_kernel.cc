@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace zeta_cpu {
 bool ZetaCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   constexpr size_t input_num = 2;
   constexpr size_t output_num = 1;
@@ -63,5 +64,6 @@ const std::vector<std::pair<KernelAttr, ZetaCpuKernelMod::KernelRunFunc>> &ZetaC
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Zeta, ZetaCpuKernelMod);
+}  // namespace zeta_cpu
 }  // namespace kernel
 }  // namespace mindspore

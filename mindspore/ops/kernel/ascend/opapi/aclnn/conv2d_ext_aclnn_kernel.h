@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace conv2d_ext {
 
 class Conv2DExtAscend : public AclnnKernelMod {
  public:
@@ -52,6 +53,7 @@ class Conv2DExtAscend : public AclnnKernelMod {
   std::vector<int64_t> output_padding_{0, 0};
   std::shared_ptr<KernelTensor> input_kernel_tensor_;
 };
+}  // namespace conv2d_ext
 }  // namespace kernel
 }  // namespace mindspore
 

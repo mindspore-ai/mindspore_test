@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace apply_proximal_gradient_descent_cpu {
 class ApplyProximalGradientDescentCpuKernelMod : public NativeCpuKernelMod {
  public:
   ApplyProximalGradientDescentCpuKernelMod() = default;
@@ -69,6 +70,7 @@ class ApplyProximalGradientDescentCpuKernelMod : public NativeCpuKernelMod {
   int unit_size_;
   size_t input_elements_;
 };
+}  // namespace apply_proximal_gradient_descent_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_APPLY_PROXIMAL_GRADIENT_DESCENT_CPU_KERNEL_H_

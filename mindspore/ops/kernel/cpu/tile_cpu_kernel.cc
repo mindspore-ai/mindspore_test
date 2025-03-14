@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace tile_cpu {
 namespace {
 constexpr size_t kTileInputsNum = 2;
 constexpr size_t kTileOutputsNum = 1;
@@ -232,5 +233,6 @@ static const std::vector<KernelAttr> support_list = {KernelAttr()
 std::vector<KernelAttr> TileCpuKernelMod::GetOpSupport() { return support_list; }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Tile, TileCpuKernelMod);
+}  // namespace tile_cpu
 }  // namespace kernel
 }  // namespace mindspore

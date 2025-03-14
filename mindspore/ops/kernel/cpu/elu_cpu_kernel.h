@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace elu_cpu {
 class EluCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<EluCpuKernelMod> {
  public:
   EluCpuKernelMod() = default;
@@ -53,6 +54,7 @@ class EluCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<EluC
   bool LaunchKernel(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                     const std::vector<KernelTensor *> &outputs);
 };
+}  // namespace elu_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_ELU_CPU_KERNEL_H_

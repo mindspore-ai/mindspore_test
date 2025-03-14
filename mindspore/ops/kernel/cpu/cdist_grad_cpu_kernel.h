@@ -25,6 +25,7 @@
 #include "common/ms_factory.h"
 namespace mindspore {
 namespace kernel {
+namespace cdist_grad_cpu {
 class CdistGradCpuKernelMod : public NativeCpuKernelMod {
  public:
   CdistGradCpuKernelMod() {}
@@ -54,6 +55,7 @@ class CdistGradCpuKernelMod : public NativeCpuKernelMod {
 
   float p_ = 2;
 };
+}  // namespace cdist_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

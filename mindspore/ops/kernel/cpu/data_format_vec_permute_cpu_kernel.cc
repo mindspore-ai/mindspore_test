@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace data_format_vec_permute_cpu {
 namespace {
 constexpr size_t kDataFormatVecPermuteInputsNum = 1;
 constexpr size_t kDataFormatVecPermuteOutputsNum = 1;
@@ -103,5 +104,6 @@ std::vector<KernelAttr> DataFormatVecPermuteCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, DataFormatVecPermute, DataFormatVecPermuteCpuKernelMod);
+}  // namespace data_format_vec_permute_cpu
 }  // namespace kernel
 }  // namespace mindspore

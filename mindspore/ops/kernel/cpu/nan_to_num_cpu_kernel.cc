@@ -22,6 +22,7 @@ using std::isnan;
 
 namespace mindspore {
 namespace kernel {
+namespace nan_to_num_cpu {
 namespace {
 constexpr size_t kNanToNumInputsNum = 4;
 constexpr size_t kNanToNumOutputsNum = 1;
@@ -161,5 +162,6 @@ const std::vector<std::pair<KernelAttr, NanToNumCpuKernelMod::KernelRunFunc>> &N
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, NanToNum, NanToNumCpuKernelMod);
+}  // namespace nan_to_num_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace angle_cpu {
 class AngleCpuKernelMod : public NativeCpuKernelMod {
  public:
   AngleCpuKernelMod() = default;
@@ -41,6 +42,7 @@ class AngleCpuKernelMod : public NativeCpuKernelMod {
 
   TypeId input_dtype_ = kNumberTypeComplex64;
 };
+}  // namespace angle_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

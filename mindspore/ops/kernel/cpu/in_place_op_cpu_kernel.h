@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace in_place_op_cpu {
 class InPlaceOpCpuKernelMod : public NativeCpuKernelMod {
  public:
   InPlaceOpCpuKernelMod() = default;
@@ -52,6 +53,7 @@ class InPlaceOpCpuKernelMod : public NativeCpuKernelMod {
   std::shared_ptr<CpuKernelFunc> func_obj_;
   std::string kernel_type_{"Unknown"};
 };
+}  // namespace in_place_op_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace muls {
 
 class MulsAscend : public AclnnKernelMod {
  public:
@@ -37,6 +38,7 @@ class MulsAscend : public AclnnKernelMod {
 
   ScalarPtr other_scalar_ = nullptr;
 };
+}  // namespace muls
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace hshrink_cpu {
 class HShrinkCpuKernelMod : public NativeCpuKernelMod {
  public:
   HShrinkCpuKernelMod() = default;
@@ -43,6 +44,7 @@ class HShrinkCpuKernelMod : public NativeCpuKernelMod {
   size_t unit_size_ = 0;
   float lambd = 0.5;
 };
+}  // namespace hshrink_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_HSHRINK_CPU_KERNEL_H_

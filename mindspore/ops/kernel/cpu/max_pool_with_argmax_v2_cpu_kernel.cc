@@ -19,6 +19,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace max_pool_with_argmax_v2_cpu {
 namespace {
 constexpr size_t kMaxPoolWithArgmaxV2InputNum = 1;
 constexpr size_t kMaxPoolWithArgmaxV2OutputsNum = 2;
@@ -158,28 +159,38 @@ void MaxPoolWithArgmaxV2CpuKernelMod::MaxPoolWithArgmaxV2SingleCompute(DATA_T *i
   output_argmax[i] = max_idx;
 }
 
-#define ADD_KERNEL(x_dtype, shape_dtype, x_type, shape_type)             \
-  {                                                                      \
-    KernelAttr()                                                         \
-      .AddInputAttr(kNumberType##x_dtype)                                \
-      .AddOutputAttr(kNumberType##x_dtype)                               \
-      .AddOutputAttr(kNumberType##shape_dtype),                          \
-      &MaxPoolWithArgmaxV2CpuKernelMod::LaunchKernel<x_type, shape_type> \
+#define MAX_POOL_WITH_ARGMAX_V2_ADD_KERNEL(x_dtype, shape_dtype, x_type, shape_type) \
+  {                                                                                  \
+    KernelAttr()                                                                     \
+      .AddInputAttr(kNumberType##x_dtype)                                            \
+      .AddOutputAttr(kNumberType##x_dtype)                                           \
+      .AddOutputAttr(kNumberType##shape_dtype),                                      \
+      &MaxPoolWithArgmaxV2CpuKernelMod::LaunchKernel<x_type, shape_type>             \
   }
 
 std::vector<std::pair<KernelAttr, MaxPoolWithArgmaxV2CpuKernelMod::MaxPoolWithArgmaxV2Func>>
-  MaxPoolWithArgmaxV2CpuKernelMod::func_list_ = {
-    ADD_KERNEL(Float16, Int32, float16, int32_t), ADD_KERNEL(Float32, Int32, float, int32_t),
-    ADD_KERNEL(Float64, Int32, double, int32_t),  ADD_KERNEL(Int8, Int32, int8_t, int32_t),
-    ADD_KERNEL(Int16, Int32, int16_t, int32_t),   ADD_KERNEL(Int32, Int32, int32_t, int32_t),
-    ADD_KERNEL(Int64, Int32, int64_t, int32_t),   ADD_KERNEL(UInt8, Int32, uint8_t, int32_t),
-    ADD_KERNEL(UInt16, Int32, uint16_t, int32_t), ADD_KERNEL(UInt32, Int32, uint32_t, int32_t),
-    ADD_KERNEL(UInt64, Int32, uint64_t, int32_t), ADD_KERNEL(Float16, Int64, float16, int64_t),
-    ADD_KERNEL(Float32, Int64, float, int64_t),   ADD_KERNEL(Float64, Int64, double, int64_t),
-    ADD_KERNEL(Int8, Int64, int8_t, int64_t),     ADD_KERNEL(Int16, Int64, int16_t, int64_t),
-    ADD_KERNEL(Int32, Int64, int32_t, int64_t),   ADD_KERNEL(Int64, Int64, int64_t, int64_t),
-    ADD_KERNEL(UInt8, Int64, uint8_t, int64_t),   ADD_KERNEL(UInt16, Int64, uint16_t, int64_t),
-    ADD_KERNEL(UInt32, Int64, uint32_t, int64_t), ADD_KERNEL(UInt64, Int64, uint64_t, int64_t)};
+  MaxPoolWithArgmaxV2CpuKernelMod::func_list_ = {MAX_POOL_WITH_ARGMAX_V2_ADD_KERNEL(Float16, Int32, float16, int32_t),
+                                                 MAX_POOL_WITH_ARGMAX_V2_ADD_KERNEL(Float32, Int32, float, int32_t),
+                                                 MAX_POOL_WITH_ARGMAX_V2_ADD_KERNEL(Float64, Int32, double, int32_t),
+                                                 MAX_POOL_WITH_ARGMAX_V2_ADD_KERNEL(Int8, Int32, int8_t, int32_t),
+                                                 MAX_POOL_WITH_ARGMAX_V2_ADD_KERNEL(Int16, Int32, int16_t, int32_t),
+                                                 MAX_POOL_WITH_ARGMAX_V2_ADD_KERNEL(Int32, Int32, int32_t, int32_t),
+                                                 MAX_POOL_WITH_ARGMAX_V2_ADD_KERNEL(Int64, Int32, int64_t, int32_t),
+                                                 MAX_POOL_WITH_ARGMAX_V2_ADD_KERNEL(UInt8, Int32, uint8_t, int32_t),
+                                                 MAX_POOL_WITH_ARGMAX_V2_ADD_KERNEL(UInt16, Int32, uint16_t, int32_t),
+                                                 MAX_POOL_WITH_ARGMAX_V2_ADD_KERNEL(UInt32, Int32, uint32_t, int32_t),
+                                                 MAX_POOL_WITH_ARGMAX_V2_ADD_KERNEL(UInt64, Int32, uint64_t, int32_t),
+                                                 MAX_POOL_WITH_ARGMAX_V2_ADD_KERNEL(Float16, Int64, float16, int64_t),
+                                                 MAX_POOL_WITH_ARGMAX_V2_ADD_KERNEL(Float32, Int64, float, int64_t),
+                                                 MAX_POOL_WITH_ARGMAX_V2_ADD_KERNEL(Float64, Int64, double, int64_t),
+                                                 MAX_POOL_WITH_ARGMAX_V2_ADD_KERNEL(Int8, Int64, int8_t, int64_t),
+                                                 MAX_POOL_WITH_ARGMAX_V2_ADD_KERNEL(Int16, Int64, int16_t, int64_t),
+                                                 MAX_POOL_WITH_ARGMAX_V2_ADD_KERNEL(Int32, Int64, int32_t, int64_t),
+                                                 MAX_POOL_WITH_ARGMAX_V2_ADD_KERNEL(Int64, Int64, int64_t, int64_t),
+                                                 MAX_POOL_WITH_ARGMAX_V2_ADD_KERNEL(UInt8, Int64, uint8_t, int64_t),
+                                                 MAX_POOL_WITH_ARGMAX_V2_ADD_KERNEL(UInt16, Int64, uint16_t, int64_t),
+                                                 MAX_POOL_WITH_ARGMAX_V2_ADD_KERNEL(UInt32, Int64, uint32_t, int64_t),
+                                                 MAX_POOL_WITH_ARGMAX_V2_ADD_KERNEL(UInt64, Int64, uint64_t, int64_t)};
 
 std::vector<KernelAttr> MaxPoolWithArgmaxV2CpuKernelMod::GetOpSupport() {
   std::vector<KernelAttr> support_list;
@@ -189,5 +200,6 @@ std::vector<KernelAttr> MaxPoolWithArgmaxV2CpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, MaxPoolWithArgmaxV2, MaxPoolWithArgmaxV2CpuKernelMod);
+}  // namespace max_pool_with_argmax_v2_cpu
 }  // namespace kernel
 }  // namespace mindspore

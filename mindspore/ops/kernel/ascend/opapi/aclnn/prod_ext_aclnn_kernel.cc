@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace prod_ext {
 void ProdExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                      const std::vector<KernelTensor *> &outputs) {
   const auto axis_opt = inputs[kIndex1]->GetOptionalValueWithCheck<std::vector<int64_t>>();
@@ -60,5 +61,6 @@ bool ProdExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const std:
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(ProdExt, ProdExtAscend);
+}  // namespace prod_ext
 }  // namespace kernel
 }  // namespace mindspore

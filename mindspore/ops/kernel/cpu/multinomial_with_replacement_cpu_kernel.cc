@@ -38,6 +38,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace multinomial_with_replacement_cpu {
 namespace {
 const size_t kMultinomialWithReplacementInputsNum = 3;
 const size_t kMultinomialWithReplacementOutputsNum = 1;
@@ -292,5 +293,6 @@ std::vector<KernelAttr> MultinomialWithReplacementCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, MultinomialWithReplacement, MultinomialWithReplacementCpuKernelMod);
+}  // namespace multinomial_with_replacement_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace mul_no_nan_cpu {
 class MulNoNanCPUKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<MulNoNanCPUKernelMod> {
  public:
   MulNoNanCPUKernelMod() = default;
@@ -62,6 +63,7 @@ class MulNoNanCPUKernelMod : public NativeCpuKernelMod, public MatchKernelHelper
   template <typename T>
   void BcastCompute(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
 };
+}  // namespace mul_no_nan_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

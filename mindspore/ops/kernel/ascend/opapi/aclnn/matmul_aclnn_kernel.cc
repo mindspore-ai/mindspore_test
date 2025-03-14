@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace matmul {
 void MatMulAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                             const std::vector<KernelTensor *> &outputs) {
   bool trans_a = inputs[kIndex2]->GetValueWithCheck<bool>();
@@ -76,5 +77,6 @@ MS_ACLNN_KERNEL_FACTORY_REG(MatMul, MatMulAclnnKernelMod);
 MS_ACLNN_KERNEL_FACTORY_REG(MatMulV2, MatMulAclnnKernelMod);
 MS_ACLNN_KERNEL_FACTORY_REG(MatMulExt, MMExtAclnnKernelMod);
 MS_ACLNN_KERNEL_FACTORY_REG(Mm, MmAclnnKernelMod);
+}  // namespace matmul
 }  // namespace kernel
 }  // namespace mindspore

@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace l1_loss_ext {
 void L1LossExtAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                const std::vector<KernelTensor *> &outputs) {
   ClearOpsWorkSpaceList();
@@ -92,5 +93,6 @@ bool L1LossExtAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(L1LossExt, L1LossExtAclnnKernelMod);
+}  // namespace l1_loss_ext
 }  // namespace kernel
 }  // namespace mindspore

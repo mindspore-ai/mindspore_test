@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace compare_and_bitpack_cpu {
 class CompareAndBitpackCpuKernelMod : public NativeCpuKernelMod,
                                       public MatchKernelHelper<CompareAndBitpackCpuKernelMod> {
  public:
@@ -51,6 +52,7 @@ class CompareAndBitpackCpuKernelMod : public NativeCpuKernelMod,
  private:
   TypeId dtype_{kTypeUnknown};
 };
+}  // namespace compare_and_bitpack_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace hamming_window_cpu {
 class HammingWindowCpuKernelMod : public NativeCpuKernelMod {
  public:
   HammingWindowCpuKernelMod() = default;
@@ -52,6 +53,7 @@ class HammingWindowCpuKernelMod : public NativeCpuKernelMod {
   bool periodic_;
   float alpha_, beta_;
 };
+}  // namespace hamming_window_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

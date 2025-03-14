@@ -18,13 +18,13 @@
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 
+namespace mindspore {
+namespace kernel {
+namespace angle_cpu {
 namespace {
 const size_t kOutputsNum = 1;
 const size_t kInputsNum = 1;
 }  // namespace
-
-namespace mindspore {
-namespace kernel {
 bool AngleCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kOutputsNum, kernel_name_);
@@ -79,5 +79,6 @@ std::vector<KernelAttr> AngleCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Angle, AngleCpuKernelMod);
+}  // namespace angle_cpu
 }  // namespace kernel
 }  // namespace mindspore

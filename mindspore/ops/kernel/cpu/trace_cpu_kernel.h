@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace trace_cpu {
 class TraceCpuKernelMod : public NativeCpuKernelMod {
  public:
   TraceCpuKernelMod() = default;
@@ -60,6 +61,7 @@ class TraceCpuKernelMod : public NativeCpuKernelMod {
   std::vector<size_t> input_shape_;
   TypeId values_type_{kTypeUnknown};
 };
+}  // namespace trace_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -26,6 +26,7 @@
 namespace mindspore {
 using mindspore::device::ascend::FASInputLayoutMode;
 namespace kernel {
+namespace flash_attention_score {
 using TensorParams = device::ascend::TensorParams;
 
 class FlashAttentionScoreAscend : public AclnnKernelMod {
@@ -136,6 +137,7 @@ class FlashAttentionScoreAscend : public AclnnKernelMod {
     return is_increased && seq_list[num - 1] == t_shape[0];
   }
 };
+}  // namespace flash_attention_score
 }  // namespace kernel
 }  // namespace mindspore
 

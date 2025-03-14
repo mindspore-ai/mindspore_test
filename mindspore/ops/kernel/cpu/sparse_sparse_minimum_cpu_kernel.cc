@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_sparse_minimum_cpu {
 namespace {
 constexpr int64_t kSparseSparseMinimumInputsNum = 6;
 constexpr int64_t kSparseSparseMinimumOutputsNum = 2;
@@ -192,31 +193,32 @@ void SparseSparseMinimumCpuKernelMod::UpdateOutputShapeAndSize(const std::vector
   outputs[1]->set_size(LongToSize(y_nnz_) * UnitSizeInBytes(dtype_));
 }
 
-#define ADD_KERNEL(t1, t2, t3, t4, t5, t6, t7, t8) \
-  KernelAttr()                                     \
-    .AddInputAttr(kNumberType##t1)                 \
-    .AddInputAttr(kNumberType##t2)                 \
-    .AddInputAttr(kNumberType##t3)                 \
-    .AddInputAttr(kNumberType##t4)                 \
-    .AddInputAttr(kNumberType##t5)                 \
-    .AddInputAttr(kNumberType##t6)                 \
-    .AddOutputAttr(kNumberType##t7)                \
+#define SPARSE_SPARSE_MINIMUM_ADD_KERNEL(t1, t2, t3, t4, t5, t6, t7, t8) \
+  KernelAttr()                                                           \
+    .AddInputAttr(kNumberType##t1)                                       \
+    .AddInputAttr(kNumberType##t2)                                       \
+    .AddInputAttr(kNumberType##t3)                                       \
+    .AddInputAttr(kNumberType##t4)                                       \
+    .AddInputAttr(kNumberType##t5)                                       \
+    .AddInputAttr(kNumberType##t6)                                       \
+    .AddOutputAttr(kNumberType##t7)                                      \
     .AddOutputAttr(kNumberType##t8)
 
 std::vector<KernelAttr> SparseSparseMinimumCpuKernelMod::GetOpSupport() {
   static std::vector<KernelAttr> kernel_attr_list = {
-    ADD_KERNEL(Int64, UInt8, Int64, Int64, UInt8, Int64, Int64, UInt8),
-    ADD_KERNEL(Int64, UInt16, Int64, Int64, UInt16, Int64, Int64, UInt16),
-    ADD_KERNEL(Int64, Int8, Int64, Int64, Int8, Int64, Int64, Int8),
-    ADD_KERNEL(Int64, Int16, Int64, Int64, Int16, Int64, Int64, Int16),
-    ADD_KERNEL(Int64, Int32, Int64, Int64, Int32, Int64, Int64, Int32),
-    ADD_KERNEL(Int64, Int64, Int64, Int64, Int64, Int64, Int64, Int64),
-    ADD_KERNEL(Int64, Float16, Int64, Int64, Float16, Int64, Int64, Float16),
-    ADD_KERNEL(Int64, Float32, Int64, Int64, Float32, Int64, Int64, Float32),
-    ADD_KERNEL(Int64, Float64, Int64, Int64, Float64, Int64, Int64, Float64)};
+    SPARSE_SPARSE_MINIMUM_ADD_KERNEL(Int64, UInt8, Int64, Int64, UInt8, Int64, Int64, UInt8),
+    SPARSE_SPARSE_MINIMUM_ADD_KERNEL(Int64, UInt16, Int64, Int64, UInt16, Int64, Int64, UInt16),
+    SPARSE_SPARSE_MINIMUM_ADD_KERNEL(Int64, Int8, Int64, Int64, Int8, Int64, Int64, Int8),
+    SPARSE_SPARSE_MINIMUM_ADD_KERNEL(Int64, Int16, Int64, Int64, Int16, Int64, Int64, Int16),
+    SPARSE_SPARSE_MINIMUM_ADD_KERNEL(Int64, Int32, Int64, Int64, Int32, Int64, Int64, Int32),
+    SPARSE_SPARSE_MINIMUM_ADD_KERNEL(Int64, Int64, Int64, Int64, Int64, Int64, Int64, Int64),
+    SPARSE_SPARSE_MINIMUM_ADD_KERNEL(Int64, Float16, Int64, Int64, Float16, Int64, Int64, Float16),
+    SPARSE_SPARSE_MINIMUM_ADD_KERNEL(Int64, Float32, Int64, Int64, Float32, Int64, Int64, Float32),
+    SPARSE_SPARSE_MINIMUM_ADD_KERNEL(Int64, Float64, Int64, Int64, Float64, Int64, Int64, Float64)};
 
   return kernel_attr_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SparseSparseMinimum, SparseSparseMinimumCpuKernelMod);
+}  // namespace sparse_sparse_minimum_cpu
 }  // namespace kernel
 }  // namespace mindspore

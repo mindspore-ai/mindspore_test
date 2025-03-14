@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_tensor_dense_matmul_cpu {
 class SparseTensorDenseMatmulCpuKernelMod : public NativeCpuKernelMod {
  public:
   SparseTensorDenseMatmulCpuKernelMod() = default;
@@ -59,6 +60,7 @@ class SparseTensorDenseMatmulCpuKernelMod : public NativeCpuKernelMod {
   bool adj_dt_{false};
   enum input_list_ { INDICES, VALUES, SPARSE_SHAPE, DENSE };
 };
+}  // namespace sparse_tensor_dense_matmul_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_RMSPROP_CPU_KERNEL_H_
