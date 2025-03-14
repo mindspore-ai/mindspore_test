@@ -28,7 +28,7 @@ class AdjustControlflowPass : public Pass {
   bool Run(const FuncGraphPtr &func_graph) override;
 
  private:
-  int32_t AdjustBranchs(const ValueNodePtr &branch_value_node, const FuncGraphPtr &func_graph);
+  int32_t AdjustBranchs(const FuncGraphPtr &branch, const FuncGraphPtr &func_graph);
   int32_t AdjustControlflow(const CNodePtr &cnode, const FuncGraphPtr &func_graph);
 };
 }  // namespace opt
