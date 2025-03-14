@@ -2696,10 +2696,19 @@ bool OperatorInfo::IsMultiInput() const {
 
 bool CompareSwc(const std::pair<std::shared_ptr<StrategyWithCost>, std::pair<double, double>> &a,
                 const std::pair<std::shared_ptr<StrategyWithCost>, std::pair<double, double>> &b) {
-  if (std::abs(a.second.first - b.second.first) < EPS) {
+  if (!common::IsDoubleEqual(a.second.first, b.second.first)) {
+    return a.second.first < b.second.first;
+  }
+
+  if (!common::IsDoubleEqual(a.second.second, b.second.second)) {
     return a.second.second < b.second.second;
   }
-  return a.second.first < b.second.first;
+
+  if (!common::IsDoubleEqual(a.first->cost_list[0]->computation_cost_, b.first->cost_list[0]->computation_cost_)) {
+    return a.first->cost_list[0]->computation_cost_ < b.first->cost_list[0]->computation_cost_;
+  }
+  return a.first->cost_list[0]->communication_without_parameter_ <
+         b.first->cost_list[0]->communication_without_parameter_;
 }
 
 bool OperatorInfo::AllInputsVisited() const {
@@ -2713,6 +2722,7 @@ std::shared_ptr<StrategyWithCost> OperatorInfo::GetStrategyByVisitedEdges() {
   std::vector<std::pair<std::shared_ptr<StrategyWithCost>, std::pair<double, double>>> cur_op_swcs;
   for (std::shared_ptr<StrategyWithCost> &cur_op_swc : strategy_cost_) {
     MS_LOG(INFO) << "cur_op_swc strategy: " << cur_op_swc->strategy_ptr->ToString();
+    MS_LOG(INFO) << "cur_op_swc strategy computation cost: " << cur_op_swc->cost_list[0]->computation_cost_;
     double communication_cost_sum = 0.0;
     double computation_cost_sum = 0.0;
     bool strategy_valid = true;

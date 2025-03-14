@@ -109,7 +109,7 @@ def test_cell_shard_with_layout_be_set_and_propagate():
         "'interleaved_parallel': false, 'alias_name': (dp, sp, mp)})"
     )
     para2 = "PrimFunc_MatMul(%2"
-    in_strategy = "in_strategy: ((2, 1), (1, 1))"
+    in_strategy = "in_strategy: ((2, 1), (1, 4))"
     check_layout_config(para1, file, in_layout1)
     check_layout_config(para2, file, in_strategy)
 
@@ -137,7 +137,7 @@ def test_ms_shard_with_layout_be_set_and_propagate():
         "'interleaved_parallel': false, 'alias_name': (dp, sp, mp)})"
     )
     para2 = "PrimFunc_MatMul(%2"
-    in_strategy = "in_strategy: ((2, 1), (1, 1))"
+    in_strategy = "in_strategy: ((2, 1), (1, 4))"
     check_layout_config(para1, file, in_layout1)
     check_layout_config(para2, file, in_strategy)
 
