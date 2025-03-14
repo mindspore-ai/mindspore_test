@@ -1462,6 +1462,20 @@ REG_BPROP_BUILDER("ViewAs").FreeUselessValues_IO({}, {}).SetBody(BODYFUNC(ib) {
   return {dx, ib->OutZeros(other)};
 });
 
+REG_BPROP_BUILDER("View").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto shp = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex3);
+  auto shape_x = ib->GetShape(x);
+  NodePtr dx;
+  if (!IsDynamic(shape_x)) {
+    dx = ib->Reshape(dout, shape_x);
+  } else {
+    dx = ib->Reshape(dout, ib->Shape(x));
+  }
+  return {dx, ib->OutZeros(shp)};
+});
+
 REG_BPROP_BUILDER("NonZero").SetUnusedInputs({i0, i1, i2}).SetBody(ReturnZeros);
 
 REG_BPROP_BUILDER("NonZeroExt").SetUnusedInputs({i0, i1, i2}).SetBody(ReturnZeros);

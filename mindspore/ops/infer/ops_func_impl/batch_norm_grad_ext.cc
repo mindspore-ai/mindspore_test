@@ -26,6 +26,15 @@ BaseShapePtr BatchNormGradExtFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                   const std::vector<AbstractBasePtr> &input_args) const {
   // Get input tensor shape.
   auto x_shape_ptr = input_args[kInputIndex1]->GetShape();
+  if (input_args[kInputIndex2]->GetType()->isa<TypeNone>()) {
+    const auto &x_shape = x_shape_ptr->GetShapeVector();
+    ShapeVector weight_shape = {x_shape[1]};
+    ShapeVector bias_shape = {x_shape[1]};
+    auto weight_shape_ptr = std::make_shared<abstract::TensorShape>(weight_shape);
+    auto bias_shape_ptr = std::make_shared<abstract::TensorShape>(bias_shape);
+    std::vector<BaseShapePtr> shapes_list{x_shape_ptr->Clone(), weight_shape_ptr, bias_shape_ptr};
+    return std::make_shared<abstract::TupleShape>(shapes_list);
+  }
   auto weight_shape_ptr = input_args[kInputIndex2]->GetShape();
   std::vector<BaseShapePtr> shapes_list{x_shape_ptr->Clone(), weight_shape_ptr->Clone(), weight_shape_ptr->Clone()};
   return std::make_shared<abstract::TupleShape>(shapes_list);

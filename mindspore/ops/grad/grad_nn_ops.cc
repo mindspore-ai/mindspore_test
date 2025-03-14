@@ -3155,8 +3155,10 @@ REG_BPROP_BUILDER("BatchNormExt").FreeUselessValues_IO({i2}, {i0}).SetBody(BODYF
   auto out = ib->GetInput(kIndex8);
   auto dout = ib->GetInput(kIndex9);
   auto is_training_value_ptr = training->BuildValue();
-  std::vector<int64_t> output_mask_vec = {x->need_compute_grad_out(), weight->need_compute_grad_out(),
-                                          bias->need_compute_grad_out()};
+
+  bool weight_mask = ib->GetDtype(weight)->isa<TypeNone>() ? true : weight->need_compute_grad_out();
+  bool bias_mask = ib->GetDtype(bias)->isa<TypeNone>() ? true : bias->need_compute_grad_out();
+  std::vector<int64_t> output_mask_vec = {x->need_compute_grad_out(), weight_mask, bias_mask};
   auto output_mask = ib->EmitValue(MakeValue(output_mask_vec));
   auto result = ib->BatchNormGradExt(ib->TupleGetItem(dout, 0), x, weight, running_mean, running_var,
                                      ib->TupleGetItem(out, 1), ib->TupleGetItem(out, 2), training, eps, output_mask);

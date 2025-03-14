@@ -285,6 +285,9 @@ from mindspore.mint.nn.layer.normalization import BatchNorm2d
 
 # 676
 from mindspore.mint.nn.layer.normalization import BatchNorm3d
+from mindspore.mint.nn.layer.instancenorm import InstanceNorm1d
+from mindspore.mint.nn.layer.instancenorm import InstanceNorm2d
+from mindspore.mint.nn.layer.instancenorm import InstanceNorm3d
 
 from mindspore.mint.nn.layer.pooling import AdaptiveMaxPool1d
 
@@ -1451,6 +1454,9 @@ __all__ = [
     'BatchNorm2d',
     # 676
     'BatchNorm3d',
+    'InstanceNorm1d',
+    'InstanceNorm2d',
+    'InstanceNorm3d',
     'UpsamplingNearest2d',
     'UpsamplingBilinear2d',
 ]

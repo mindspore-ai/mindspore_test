@@ -26,7 +26,8 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 void BatchNormGradExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &dout_tensor,
-                                     const BaseTensorPtr &input_tensor, const BaseTensorPtr &weight_tensor,
+                                     const BaseTensorPtr &input_tensor,
+                                     const std::optional<BaseTensorPtr> &weight_tensor,
                                      const std::optional<BaseTensorPtr> &running_mean_tensor,
                                      const std::optional<BaseTensorPtr> &runnning_var_tensor,
                                      const std::optional<BaseTensorPtr> &saved_mean_tensor,

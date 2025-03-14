@@ -1,5 +1,5 @@
-#operator batch_norm_ext
-batch_norm_ext:
+#operator instance_norm_ext
+instance_norm_ext:
     args:
         input:
             dtype: tensor
@@ -15,7 +15,7 @@ batch_norm_ext:
         runnning_var:
             dtype: tensor
             default: None
-        training:
+        use_input_stats:
             dtype: bool
             default: False
         momentum:
@@ -27,16 +27,11 @@ batch_norm_ext:
     returns:
         output:
             dtype: tensor
-        saved_mean:
-            dtype: tensor
-        saved_variance:
-            dtype: tensor
     class:
-        name: BatchNormExt
+        name: InstanceNormExt
     function:
         disable: True
+    bprop_expander: False
     dispatch:
         enable: True
-        Ascend: BatchNormExtAscend
-        CPU: None
-        GPU: None
+        Ascend: InstanceNormExtAscend
