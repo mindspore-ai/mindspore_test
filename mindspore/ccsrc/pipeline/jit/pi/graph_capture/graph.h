@@ -91,7 +91,7 @@ class FrameStates {
   void Swap(int i) {
     MS_ASSERT((int)stack.size() - i >= 0);
     auto top_idx = stack.size() - 1;
-    std::swap(stack[top_idx], stack[i]);
+    std::swap(stack[top_idx], stack[top_idx - i]);
   }
 
   void ResizeLocal(int i) {

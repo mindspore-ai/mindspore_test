@@ -127,7 +127,7 @@ class GraphAnalyzer {
   // Collect top-graph closure side-effect nodes.
   void CollectClosureSideEffect();
   void OptimizeSideEffectRecord() const;
-  void ResetSideEffectRecord() const;
+  void ResetSideEffectRecord(bool is_del_sub_graph_side_effect = false) const;
 
   // UD analyze
   void UseDefAnalyze();
@@ -144,7 +144,7 @@ class GraphAnalyzer {
   void UpdateUseDefNode();
 
   bool NeedSkipAddGraphOutput(ValueNode *node);
-
+  bool IsDelSubGraphSideEffect();
   ValueNode *MutateSequenceNode(ValueNode *node);
   ValueNode *MutateNamedtupleNode(ValueNode *tuple_node, ValueNode *namedtuple_node);
   std::pair<ValueNode *, ValueNode *> MutateDictNode(ValueNode *node);

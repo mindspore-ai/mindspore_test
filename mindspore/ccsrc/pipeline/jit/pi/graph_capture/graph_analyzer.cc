@@ -40,6 +40,15 @@
 namespace mindspore {
 namespace pijit {
 
+bool IsEnableSubGraphBreakOptimize(const Graph *graph) {
+#if IS_PYTHON_3_11_PLUS
+  return false;
+#else
+  return graph->Config().GetBoolConfig(GraphJitConfig::kSubgraphBreakOpt) &&
+         common::GetCompileConfig("PIJIT_SUBGRAPH_BREAK_OPTIMIZE") != "0";
+#endif
+}
+
 void GraphAnalyzer::OptimizeSideEffectRecord() const {
   if (graph_->GetSideEffect()->IsEmpty()) {
     return;
@@ -78,7 +87,7 @@ std::vector<ValueNode *> CollectSideEffectRecords(const Graph *graph, int break_
 }
 }  // namespace
 
-void GraphAnalyzer::ResetSideEffectRecord() const {
+void GraphAnalyzer::ResetSideEffectRecord(bool is_del_sub_graph_side_effect) const {
   int break_bci = graph_->GetStopTraceBci();
   if (break_bci == -1 || graph_->GetSideEffect()->IsEmpty()) {
     return;
@@ -90,6 +99,10 @@ void GraphAnalyzer::ResetSideEffectRecord() const {
       const std::vector<ValueNode *> &subgraph_nodes = CollectSideEffectRecords(graph, graph->GetStopTraceBci());
       nodes.insert(nodes.end(), subgraph_nodes.begin(), subgraph_nodes.end());
     }
+  }
+  if (is_del_sub_graph_side_effect) {
+    nodes.erase(std::remove_if(nodes.begin(), nodes.end(), [this](auto node) { return node->GetGraph() != graph_; }),
+                nodes.end());
   }
   side_effect->ResetRecord({nodes.begin(), nodes.end()});
 
@@ -240,9 +253,10 @@ void GraphAnalyzer::Analyze() {
   // assume all values is captured to func_graph
   GetCaptureInfo().captured_.operations = collect_trace_nodes();
   UseDefAnalyze();
-  ResetSideEffectRecord();
-
   auto func_graph_builder = graph_builder_->FGBuilder();
+  auto is_del_sub_graph_side_effect = IsDelSubGraphSideEffect();
+  ResetSideEffectRecord(is_del_sub_graph_side_effect);
+
   if (func_graph_builder->graph() == nullptr) {
     // Graph build failed, add all nodes to ordered_escaped_locals.
     PyCodeWrapper co(graph_->GetCodeObj());
@@ -771,14 +785,6 @@ CallNode *FindBreakAtCall(const Graph *graph) {
 // Check if the graph is break at calling subgraph.
 inline bool IsBreakAtCall(Graph *graph) { return FindBreakAtCall(graph) != nullptr; }
 
-bool IsEnableSubGraphBreakOptimize(const Graph *graph) {
-#if IS_PYTHON_3_11_PLUS
-  return false;
-#else
-  return graph->Config().GetBoolConfig(GraphJitConfig::kSubgraphBreakOpt) &&
-         common::GetCompileConfig("PIJIT_SUBGRAPH_BREAK_OPTIMIZE") != "0";
-#endif
-}
 }  // namespace
 
 void GraphAnalyzer::UseDefAnalyze() {

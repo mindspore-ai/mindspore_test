@@ -614,7 +614,9 @@ bool GraphBuilder::DoCall(const Instr &instr) {
   }
 
   CallNode *call_node = static_cast<CallNode *>(seek(0));
-  call_node->set_kw_names(instr.cnst());
+  if (instr.cnst().ptr() != nullptr) {
+    call_node->set_kw_names(instr.cnst());
+  }
   call_node->SetVobj(AObject::MakeAObject(AObject::kTypeAnyValue));
   call_node->SetLineNo(instr.line());
   call_node->set_bci(instr.bci());

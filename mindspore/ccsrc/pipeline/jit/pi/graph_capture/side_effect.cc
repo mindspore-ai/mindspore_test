@@ -314,10 +314,15 @@ void SideEffect::RestoreEntry(CodeGenerator *cg, const Entry &e) const {
   }
   int opcode = node->GetOpcode();
   int oparg = node->GetOparg();
+  int load_args_offset = cg->GetCode().co_code.size();
   for (const auto &i : node->getInputs()) {
     cg->LoadValue(GetSource(i));
   }
-  cg->NewInstr(opcode, oparg);
+  if (Opcode(node->GetOpcode()).IsCallFunc()) {
+    cg->AddCallInstr(load_args_offset, oparg);
+  } else {
+    cg->NewInstr(opcode, oparg);
+  }
   cg->GetCode().co_code.back()->set_name(node->GetName());
   if (Opcode(node->GetOpcode()).IsCall()) {
     cg->NewInstr(POP_TOP);
@@ -433,7 +438,7 @@ void SideEffect::RestoreBuiltinMethod(CodeGenerator *cg, const Entry &e) const {
   for (size_t i = 1 + is_method_descriptor; i < node->getInputs().size(); ++i) {
     cg->LoadValue(GetSource(node->input(i)));
   }
-  cg->NewInstr(CALL_METHOD, node->getInputs().size() - 1 - is_method_descriptor);
+  cg->NewInstr(IS_PYTHON_3_11_PLUS ? CALL : CALL_METHOD, node->getInputs().size() - 1 - is_method_descriptor);
   cg->NewInstr(POP_TOP);
 }
 

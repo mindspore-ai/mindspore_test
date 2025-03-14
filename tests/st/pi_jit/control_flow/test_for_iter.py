@@ -58,7 +58,7 @@ def for_mix_with_sideeffect(x):
     x = [x, x, x]
     z = zip(list(enumerate(x)))
     for i in z:
-        if i[0] == 1:
+        if i[0][0] == 1:
             break
     return list(z)
 

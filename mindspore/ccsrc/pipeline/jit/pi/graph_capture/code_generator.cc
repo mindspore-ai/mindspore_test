@@ -2162,7 +2162,10 @@ static bool FindBlock(int start_bci, const CFG *cfg, int *end_bci, int *stack_ef
 
 py::object MakeCodeFromCodeGen(const GraphBuilderPtr &builder, const GraphAnalyzerPtr &analyzer, PyObject *globals) {
   TimeRecorder time_recorder(__FUNCTION__, kPIJitConfigDefault.GetBoolConfig(GraphJitConfig::kLogPerf));
-
+  if (analyzer->GetCaptureInfo().captured_.operations.empty() && builder->GetGraph()->GetStopTraceBci() == -1) {
+    MS_LOG(INFO) << "skip graph capture because of no graph in the function";
+    return PyCodeWrapper(builder->GetGraph()->GetCodeObj()).DeepCopy();
+  }
   auto graph = builder->GetGraph();
   auto cg = std::make_shared<CodeBreakGenerator>(builder, py::cast<py::dict>(globals), graph->GetCodeObj());
   cg->Init(*analyzer, graph);

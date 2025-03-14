@@ -656,7 +656,7 @@ AbstractWrapperPtr FuncGraphBuilder::AddNodeCallFunctionKw(const ValuePtr &calla
     {NewValueNode(prim::kPrimDoUnpackCall), NewValueNode(callable_value), arg_tuple_node, dict_node_inputs});
   fg->set_output(call_node);
 
-  AbstractWrapperPtrList new_abstract_wrapper(inputs_abstract_wrapper.begin(), inputs_abstract_wrapper.end() - 1);
+  AbstractWrapperPtrList new_abstract_wrapper(inputs_abstract_wrapper.begin(), inputs_abstract_wrapper.end() - offset);
   return AddNode(fg, new_abstract_wrapper);
 }
 
