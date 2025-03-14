@@ -426,6 +426,9 @@ from mindspore.ops.function.math_func import addmm
 # 846
 from mindspore.ops.function.math_func import count_nonzero
 
+# 853
+from mindspore.ops.function.math_func import deg2rad, rad2deg
+
 # 880
 from mindspore.ops.auto_generate import lerp, lerp_scalar
 
@@ -1717,6 +1720,35 @@ def tensor_erfc(input):
 # 207 expm1
 def tensor_expm1(input):
     return expm1(input)
+
+
+# 853 deg2rad
+def tensor_deg2rad(x):
+    r"""
+    For details, please refer to :func:`mindspore.ops.deg2rad`.
+    """
+    return deg2rad(x)
+
+
+def deprecated_tensor_deg2rad(x):
+    r"""
+    For details, please refer to :func:`mindspore.ops.deg2rad`.
+    """
+    return deg2rad(x)
+
+
+def tensor_rad2deg(x):
+    r"""
+    For details, please refer to :func:`mindspore.ops.rad2deg`.
+    """
+    return rad2deg(x)
+
+
+def deprecated_tensor_rad2deg(x):
+    r"""
+    For details, please refer to :func:`mindspore.ops.rad2deg`.
+    """
+    return rad2deg(x)
 
 
 # 880

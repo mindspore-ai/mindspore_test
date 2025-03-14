@@ -91,6 +91,8 @@
 "mindspore/mindspore/ccsrc/plugin/res_manager/ascend/symbol_interface/acl_tdt_symbol.cc"  "unknownMacro"
 "mindspore/mindspore/ccsrc/plugin/res_manager/ascend/symbol_interface/symbol_utils.cc"  "unknownMacro"
 "mindspore/ccsrc/plugin/res_manager/ascend/op_adapter/op_declare/image_ops_declare.cc"  "unknownMacro"
+"mindspore/mindspore/ccsrc/frontend/operator/meta_dsl/func_op/deg2rad.cc"  "syntaxError"
+"mindspore/mindspore/ccsrc/frontend/operator/meta_dsl/func_op/rad2deg.cc"  "syntaxError"
 
 # MindData
 "mindspore/mindspore/ccsrc/minddata/dataset/engine/dataset_iterator.cc"                               "useStlAlgorithm"

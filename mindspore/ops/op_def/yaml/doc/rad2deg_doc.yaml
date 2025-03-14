@@ -1,0 +1,32 @@
+rad2deg:
+    description: |
+        rad2deg(input) -> Tensor
+
+        Returns a new tensor with each of the elements of input converted from angles in radians to degrees.
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Args:
+            input (Tensor): Input tensor.
+
+        Returns:
+            Tensor. If `input` is a floating-point type (float16/float32/float64), the output dtype matches `input`.
+            If `input` is of type uint8, int8, int16, or bool, the output dtype is float32.
+
+        Raises:
+            TypeError: If the `input` is not a tensor.
+            TypeError: If the dtype of `input` is complex64, complex128, uint16, uint32 and so on.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import numpy as np
+            >>> from mindspore import mint, Tensor
+            >>> input = Tensor(np.array([[3.142, -3.142], [6.283, -6.283], [1.570, -1.570]]).astype(np.float32))
+            >>> output = mint.rad2deg(input)
+            >>> print(output)
+            [[ 180.02335 -180.02335]
+             [ 359.98938 -359.98938]
+             [  89.95438  -89.95438]]

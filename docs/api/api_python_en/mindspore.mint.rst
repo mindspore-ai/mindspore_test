@@ -182,6 +182,8 @@ Pointwise Operations
     mindspore.mint.tanh
     mindspore.mint.trunc
     mindspore.mint.xlogy
+    mindspore.mint.deg2rad
+    mindspore.mint.rad2deg
 
 Reduction Operations
 ^^^^^^^^^^^^^^^^^^^^^
