@@ -50,6 +50,10 @@ class ScalarMulFrontendFuncImpl : public ScalarArithmeticFrontendFuncImpl {};
 class ScalarPowFrontendFuncImpl : public ScalarArithmeticFrontendFuncImpl {};
 
 class ScalarSubFrontendFuncImpl : public ScalarArithmeticFrontendFuncImpl {};
+
+class ScalarMaxFrontendFuncImpl : public ScalarArithmeticFrontendFuncImpl {};
+
+class ScalarMinFrontendFuncImpl : public ScalarArithmeticFrontendFuncImpl {};
 }  // namespace ops
 }  // namespace mindspore
 
