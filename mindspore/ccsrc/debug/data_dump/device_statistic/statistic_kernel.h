@@ -26,8 +26,6 @@
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/common/debug/common.h"
 #include "ir/dtype/tensor_type.h"
-#include "runtime/device/device_address_utils.h"
-#include "runtime/graph_scheduler/actor/actor_common.h"
 #include "runtime/graph_scheduler/device_tensor_store.h"
 #include "runtime/hardware/device_context.h"
 #include "utils/log_adapter.h"

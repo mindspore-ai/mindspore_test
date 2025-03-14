@@ -1213,17 +1213,6 @@ void KernelRuntime::GenLaunchArgs(const mindspore::kernel::KernelMod &kernel_mod
   }
 }
 
-bool KernelRuntime::UseMemScheduler() {
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-  if (!context_ptr->get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD)) {
-    return false;
-  }
-  // Not use MemScheduler when running single op
-  return (!context_ptr->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_INFER) &&
-          (context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE) != kPynativeMode));
-}
-
 void KernelRuntime::GenKernelEvents(const session::KernelGraph &graph) {
   auto &kernels = graph.execution_order();
   if (kernels.empty() || graph_kernel_events_map_.find(graph.graph_id()) != graph_kernel_events_map_.end()) {
@@ -1599,7 +1588,7 @@ bool KernelRuntime::LaunchKernelMod(const session::KernelGraph &graph, bool mock
   MS_EXCEPTION_IF_NULL(context_ptr);
   std::shared_ptr<MemScheduler> mem_scheduler = nullptr;
 
-  if (UseMemScheduler()) {
+  if (AnfUtils::UseMemScheduler()) {
     mem_scheduler = mem_scheduler_manager_.GetOrCreateMemScheduler(graph.graph_id());
     MS_EXCEPTION_IF_NULL(mem_scheduler);
     mem_scheduler->Reset();
@@ -1671,7 +1660,7 @@ bool KernelRuntime::LaunchKernelMod(const session::KernelGraph &graph, bool mock
     }
     LaunchKernelEvent(kernel_post_run_events, kernels[i]);
   }
-  if (UseMemScheduler() && !mock) {
+  if (AnfUtils::UseMemScheduler() && !mock) {
     SyncParameter(graph, mem_scheduler);
   }
   return true;
@@ -1715,7 +1704,7 @@ void KernelRuntime::SyncParameter(const session::KernelGraph &graph,
 void KernelRuntime::UseMemSchedulerIfNeeded(const session::KernelGraph &graph) {
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
-  if (!UseMemScheduler()) {
+  if (!AnfUtils::UseMemScheduler()) {
     return;
   }
   auto mem_scheduler = mem_scheduler_manager_.GetOrCreateMemScheduler(graph.graph_id());

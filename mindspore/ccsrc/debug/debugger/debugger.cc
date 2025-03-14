@@ -26,7 +26,6 @@
 #include "backend/common/session/session_basic.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "runtime/device/kernel_runtime.h"
 #include "include/backend/debug/data_dump/e2e_dump.h"
 #include "include/common/utils/config_manager.h"
 #include "include/common/debug/env_config_parser.h"
@@ -34,7 +33,6 @@
 #include "runtime/hardware/device_context_manager.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/common/debug/anf_dump_utils.h"
-#include "runtime/graph_scheduler/device_tensor_store.h"
 #ifdef ENABLE_DEBUGGER
 #include "debug/debugger/proto_exporter.h"
 #endif
@@ -48,9 +46,23 @@ using debugger::GraphProto;
 using debugger::ModelProto;
 using debugger::Statistics;
 using debugger::TensorProto;
-using mindspore::runtime::DeviceTensorStore;
 
 namespace mindspore {
+namespace {
+bool DumpDataEnabledIteration() {
+  // Returns true if e2e dump is enabled and current iteration must be dumped.
+  auto &dump_json_parser = DumpJsonParser::GetInstance();
+  if (!dump_json_parser.e2e_dump_enabled()) {
+    return false;
+  }
+
+  auto cur_iter = dump_json_parser.cur_dump_iter();
+  if (dump_json_parser.IsDumpIter(cur_iter)) {
+    return true;
+  }
+  return false;
+}
+}  // namespace
 
 static constexpr auto g_chunk_size = 1024 * 1024 * 3;
 static constexpr int32_t heartbeat_period_second = 30;
@@ -647,7 +659,7 @@ void Debugger::LoadConstsForGraph(const KernelGraphPtr &graph) {
 }
 
 void Debugger::ClearCurrentData() {
-  if (device::KernelRuntime::DumpDataEnabledIteration()) {
+  if (DumpDataEnabledIteration()) {
     if (debug_services_) {
       debug_services_->EmptyCurrentTensor();
     } else {

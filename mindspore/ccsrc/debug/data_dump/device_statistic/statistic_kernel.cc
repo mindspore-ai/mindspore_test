@@ -19,6 +19,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include "backend/common/backend_common_callback.h"
 #include "debug/debugger/debugger_utils.h"
 #include "include/common/debug/common.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
@@ -74,7 +75,14 @@ DeviceAddressPtr StatisticKernel::GetWorkSpaceDeviceAddress(const std::vector<Ke
     MS_VLOG(VL_DUMP) << "Statistic kernel name is " << kernel_name_ << ", workspace size is " << work_space[0]
                      << ", input shape is " << inputs[0]->GetShapeVector() << ", dtype is "
                      << TypeIdToString(inputs[0]->dtype_id());
-    return runtime::DeviceAddressUtils::CreateWorkspaceAddress(device_context_, kDefaultStreamIndex, work_space[0]);
+    constexpr char kCreateWorkspaceAddressFunc[] = "CreateWorkspaceAddress";
+    static const auto create_workspace_address =
+      backend_common::BackendCommonCallback::GetInstance()
+        .GetCallback<device::DeviceAddressPtr, const device::DeviceContext *, size_t, const size_t &>(
+          kCreateWorkspaceAddressFunc);
+    if (create_workspace_address) {
+      return create_workspace_address(device_context_, kDefaultStreamIndex, work_space[0]);
+    }
   }
   return nullptr;
 }

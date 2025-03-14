@@ -21,6 +21,7 @@
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "debug/profiler/profiling.h"
 #include "utils/file_utils.h"
+#include "utils/ms_context.h"
 
 namespace mindspore {
 namespace kernel {

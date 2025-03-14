@@ -23,7 +23,6 @@
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/common/debug/anf_ir_dump.h"
-#include "runtime/device/kernel_runtime_manager.h"
 #include "backend/common/optimizer/common_backend_optimization.h"
 #include "backend/common/session/jit_call_graph.h"
 #include "utils/trace_base.h"
@@ -1143,7 +1142,7 @@ ValueNodePtr KernelGraphMgr::CreateNewValueNode(const AnfNodePtr &anf, KernelGra
   MS_EXCEPTION_IF_NULL(value);
   // Copy data from device if the tensor is an output of Op or Graph.
   if (value->isa<tensor::Tensor>()) {
-    auto tensor = value->cast<TensorPtr>();
+    auto tensor = value->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(tensor);
     if (!tensor->is_forward_output() && !tensor->is_parameter()) {
       tensor->data_sync();
@@ -1443,7 +1442,7 @@ void KernelGraphMgr::GetNewCNodeInputs(const CNodePtr &cnode, KernelGraph *graph
       AddValueNode(backend_node, graph);
       continue;
     } else if ((is_depend && input_idx > kRealInputIndexInDepend && !enable_ge)) {
-      (void)params.emplace_back(graph->NewValueNode(std::make_shared<Tensor>(SizeToInt(input_idx))));
+      (void)params.emplace_back(graph->NewValueNode(std::make_shared<tensor::Tensor>(SizeToInt(input_idx))));
       continue;
     } else if (other_graph_cnode->find(anf) != other_graph_cnode->end()) {
       (void)params.emplace_back((*other_graph_cnode)[anf]);

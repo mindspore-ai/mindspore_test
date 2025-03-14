@@ -94,7 +94,6 @@ class BACKEND_EXPORT KernelRuntime {
   virtual void ReleaseDeviceRes() {}
   void set_device_id(uint32_t device_id) { device_id_ = device_id; }
   uint32_t device_id() const { return device_id_; }
-  static bool UseMemScheduler();
   void SyncParameter(const session::KernelGraph &graph, const std::shared_ptr<MemScheduler> &mem_scheduler) const;
 
 #ifdef ENABLE_DEBUGGER

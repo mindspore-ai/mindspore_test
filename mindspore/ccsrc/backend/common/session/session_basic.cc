@@ -40,8 +40,7 @@
 #include "backend/common/optimizer/common_backend_optimization.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/backend/optimizer/op_adaptation_info_factory.h"
-#include "runtime/device/kernel_runtime_manager.h"
-#include "runtime/pynative/op_compiler.h"
+#include "pynative/base.h"
 #include "utils/ms_utils.h"
 #include "ir/anf.h"
 #include "ir/func_graph_cloner.h"
@@ -60,7 +59,6 @@
 #include "abstract/abstract_value.h"
 #endif
 #include "backend/common/session/session_factory.h"
-#include "runtime/pynative/op_executor.h"
 #ifdef ENABLE_DEBUGGER
 #include "debug/tensor_load.h"
 #include "debug/debugger/proto_exporter.h"
@@ -742,7 +740,8 @@ ValuePtr SessionBasic::GetValueNodeOutput(const AnfNodePtr &node, size_t output_
   } else if (value->isa<StringImm>()) {
     auto value_string = GetValue<std::string>(value);
     const ShapeVector shape = {1, SizeToLong(value_string.size())};
-    TensorPtr tensor = std::make_shared<Tensor>(kObjectTypeString, shape, value_string.data(), value_string.size());
+    tensor::TensorPtr tensor =
+      std::make_shared<tensor::Tensor>(kObjectTypeString, shape, value_string.data(), value_string.size());
     MS_EXCEPTION_IF_NULL(tensor);
     tensor->set_sync_status(kNeedSyncHostToDevice);
     return tensor;
@@ -755,9 +754,9 @@ ValuePtr SessionBasic::GetValueNodeOutput(const AnfNodePtr &node, size_t output_
   return value;
 }
 
-TensorPtr SessionBasic::GetParameterOutputTensor(const AnfNodePtr &node,
-                                                 const std::map<AnfNodePtr, size_t> &parameter_index,
-                                                 const std::vector<tensor::TensorPtr> &graph_inputs) const {
+tensor::TensorPtr SessionBasic::GetParameterOutputTensor(const AnfNodePtr &node,
+                                                         const std::map<AnfNodePtr, size_t> &parameter_index,
+                                                         const std::vector<tensor::TensorPtr> &graph_inputs) const {
   MS_EXCEPTION_IF_NULL(node);
   if (!node->isa<Parameter>()) {
     return nullptr;
@@ -1056,7 +1055,7 @@ void SessionBasic::UpdateOutputTensors(const VectorRef *outputs,
                                        std::map<DeviceAddressPtr, DeviceAddressPtr> *) {
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
-  if (device::KernelRuntime::UseMemScheduler()) {
+  if (AnfUtils::UseMemScheduler()) {
     return;
   }
   MS_EXCEPTION_IF_NULL(outputs);

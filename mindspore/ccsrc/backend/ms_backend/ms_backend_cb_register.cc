@@ -14,8 +14,12 @@
  * limitations under the License.
  */
 
+#include "backend/common/backend_common_callback.h"
 #include "common/kernel_callback.h"
 #include "include/backend/distributed/init.h"
+#include "runtime/device/device_address_utils.h"
+#include "runtime/device/kernel_runtime_manager.h"
+#include "runtime/hardware/device_context.h"
 #include "runtime/graph_scheduler/actor/kernel_async_infer_actor.h"
 #include "runtime/graph_scheduler/actor/kernel_async_resize_actor.h"
 #include "runtime/graph_scheduler/actor/kernel_async_launch_actor.h"
@@ -71,6 +75,17 @@ void StopRuntimeSchedulerOnException() {
 #endif
 }
 REGISTER_DISTRIBUTED_CALLBACK(StopRuntimeSchedulerOnException);
+
+void ReleaseKernelRuntime(const std::string &device_name, uint32_t device_id) {
+  return device::KernelRuntimeManager::Instance().ReleaseKernelRuntime(device_name, device_id);
+}
+REGISTER_BACKEND_COMMON_CALLBACK(ReleaseKernelRuntime);
+
+device::DeviceAddressPtr CreateWorkspaceAddress(const device::DeviceContext *device_context, size_t stream_id,
+                                                const size_t &workspace_size) {
+  return runtime::DeviceAddressUtils::CreateWorkspaceAddress(device_context, stream_id, workspace_size);
+}
+REGISTER_BACKEND_COMMON_CALLBACK(CreateWorkspaceAddress);
 }  // namespace ms_backend
 }  // namespace backend
 }  // namespace mindspore
