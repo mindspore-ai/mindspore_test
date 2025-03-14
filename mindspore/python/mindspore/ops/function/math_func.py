@@ -6360,7 +6360,7 @@ def diff(x, n=1, axis=-1, prepend=None, append=None):
     Computes the n-th forward difference along the given axis.
 
     The first-order differences is calculated as :math:`out[i] = x[i+1] - x[i]` .
-    Higher-order differences are calculated by using :func:`mindspore.ops.diff recursively..
+    Higher-order differences are calculated by using :func:`mindspore.ops.diff` recursively.
 
     Note:
         Zero-shaped Tensor is not supported, a value error is raised if
@@ -6375,10 +6375,10 @@ def diff(x, n=1, axis=-1, prepend=None, append=None):
         axis (int, optional): The axis to compute the difference along. Default ``-1`` .
         prepend (Tensor, optional): Values to prepend to `x` along
             `axis` before performing the difference. Their dimensions must be equivalent to that of `x`, and their
-            shapes must match input’s shape except on dim. Default ``None`` .
+            shapes must match input's shape except on dim. Default ``None`` .
         append (Tensor, optional): Values to append to `x` along
             `axis` before performing the difference. Their dimensions must be equivalent to that of `x`, and their
-            shapes must match input’s shape except on dim. Default ``None`` .
+            shapes must match input's shape except on dim. Default ``None`` .
 
     Returns:
         Tensor, the n-th differences of input. The shape of the output is the same as `x`

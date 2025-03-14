@@ -328,9 +328,9 @@ class BatchNorm2d(_BatchNorm):
               training and evaluation mode. During training, the parameter is set to true, and during evaluation, the
               parameter is set to false.
 
-        data_format (str): The optional value for data format, is ``'NHWC'`` or ``'NCHW'`` .
+        data_format (str, optional): The optional value for data format, is ``'NHWC'`` or ``'NCHW'`` .
             Default: ``'NCHW'`` .
-        dtype (:class:`mindspore.dtype`): Dtype of Parameters. Default: ``mstype.float32`` .
+        dtype (:class:`mindspore.dtype`, optional): Dtype of Parameters. Default: ``mstype.float32`` .
 
     Inputs:
         - **x** (Tensor) - Tensor of shape :math:`(N, C, H, W)`. Supported types: float16, float32.
@@ -343,7 +343,7 @@ class BatchNorm2d(_BatchNorm):
         TypeError: If `eps` is not a float.
         ValueError: If `num_features` is less than 1.
         ValueError: If `momentum` is not in range [0, 1].
-        ValueError: If `data_format` is neither ``'NHWC'` not ``'NCHW'``.
+        ValueError: If `data_format` is neither ``'NHWC'`` not ``'NCHW'``.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``

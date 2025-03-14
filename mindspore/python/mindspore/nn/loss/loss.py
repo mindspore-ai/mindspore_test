@@ -900,8 +900,8 @@ class DiceLoss(LossBase):
     :math:`pred` represent `logits`, :math:`true` represent `labels` .
 
     Args:
-        smooth (float): A term added to the denominator to improve numerical stability. Should be greater than 0.
-                        Default: ``1e-5`` .
+        smooth (float, optional): A term added to the denominator to improve numerical stability.
+            Should be greater than 0. Default: ``1e-5`` .
 
     Inputs:
         - **logits** (Tensor) - Input predicted value. The data type must be float16 or float32.

@@ -31,10 +31,9 @@ mindspore.mindrecord
     :members:
 
 .. autofunction:: mindspore.mindrecord.set_enc_key
-    :members:
+
 
 .. autofunction:: mindspore.mindrecord.set_enc_mode
-    :members:
+
 
 .. autofunction:: mindspore.mindrecord.set_dec_mode
-    :members:

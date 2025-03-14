@@ -406,9 +406,6 @@ class Parameter(Tensor_):
             init_in_server (bool): Whether trainable parameter updated by parameter server is
                 initialized on server. Default: ``False``.
 
-        Tutorial Examples:
-            - `Parameter Server Mode
-              <https://www.mindspore.cn/docs/en/master/model_train/parallel/parameter_server_training.html>`_
         """
         if not _is_ps_mode() or not (_is_role_worker() or _is_role_pserver() or _is_role_sched()):
             raise RuntimeError("Must complete following two steps before calling set_param_ps: \n"

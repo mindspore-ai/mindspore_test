@@ -4054,7 +4054,7 @@ def rrelu(input, lower=1.0 / 8, upper=1.0 / 3):
         input (Tensor): The input of rrelu is a Tensor of any dimension.
         lower (Union[int, float]): Slope of the activation function at data of `input` is less than 0.
             Default: ``1.0 / 8`` .
-        upper (Union[int, float]): Slope of the activation function at data of `input`` is less than 0.
+        upper (Union[int, float]): Slope of the activation function at data of `input` is less than 0.
             Default: ``1.0 / 3`` .
 
     Returns:

@@ -1783,17 +1783,17 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
             ...                       [3, -7, -2, 4],
             ...                       [8, -4, 1, -3]])
             >>> # case 1: By default, compute the minimum along axis 0.
-            >>> x.argmax_with_value()
+            >>> x.argmin_with_value()
             (Tensor(shape=[4], dtype=Int64, value= [ 2, -7, -2, -3]),
              Tensor(shape=[4], dtype=Int64, value= [0, 1, 1, 2]))
             >>>
             >>> # case 2: Compute the minimum along axis 1.
-            >>> x.argmax_with_value(axis=1)
+            >>> x.argmin_with_value(axis=1)
             (Tensor(shape=[3], dtype=Int64, value= [ 1, -7, -4]),
              Tensor(shape=[3], dtype=Int64, value= [2, 1, 1]))
             >>>
             >>> # case 3: If keep_dims=True, the output shape will be same of that of the input.
-            >>> x.argmax_with_value(axis=1, keep_dims=True)
+            >>> x.argmin_with_value(axis=1, keep_dims=True)
             (Tensor(shape=[3, 1], dtype=Int64, value=
              [[ 1],
               [-7],
@@ -1804,7 +1804,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
               [1]]))
             >>>
             >>> # case 4: If axis=None, compute the minimum of all elements.
-            >>> x.argmax_with_value(axis=1, keep_dims=True)
+            >>> x.argmin_with_value(axis=1, keep_dims=True)
             (Tensor(shape=[], dtype=Int64, value= -7),
              Tensor(shape=[], dtype=Int64, value= 0))
         """
