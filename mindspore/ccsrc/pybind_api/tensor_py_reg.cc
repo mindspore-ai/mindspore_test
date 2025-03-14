@@ -536,30 +536,20 @@ static int TensorPy_pyinit(PyObject *obj, PyObject *args, PyObject *kwargs) {
     MS_EXCEPTION(TypeError) << "Not support tensor input parameter type!!!";
   }
   py::dict p;
-  try {
-    p = GetPythonTensor().attr("_init")(
-      py::cast<py::object>(py::handle(argsT.input_data_)), py::cast<py::object>(py::handle(argsT.dtype_)),
-      py::cast<py::object>(py::handle(argsT.shape_)), py::cast<py::object>(py::handle(argsT.init_)),
-      py::cast<py::object>(py::handle(argsT.const_arg_)), py::cast<py::object>(py::handle(argsT.device_)));
-  } catch (py::error_already_set &e) {
-    // restore
-    e.restore();
-    return -1;
-  }
-  try {
-    TensorPtr tensor = TensorPyImpl::InitTensor(p);
-    new (&self->value) TensorPy(tensor);
-    self->value.SetInitializer(TensorPyImpl::GetInitializerFromPython(p));
-    self->value.SetConstArg(TensorPyImpl::GetConstArgFromPython(p));
-    self->value.SetDevice(TensorPyImpl::GetDeviceFromPython(p));
-    self->value.SetSymbolicShape(TensorPyImpl::GetSymbolicShapeFromPython(p));
-    self->value.SetInitFinished(true);
-  } catch (const std::exception &e) {
-    PyErr_SetString(PyExc_TypeError, e.what());
-    return -1;
-  }
-
+  HANDLE_MS_EXCEPTION
+  p = GetPythonTensor().attr("_init")(
+    py::cast<py::object>(py::handle(argsT.input_data_)), py::cast<py::object>(py::handle(argsT.dtype_)),
+    py::cast<py::object>(py::handle(argsT.shape_)), py::cast<py::object>(py::handle(argsT.init_)),
+    py::cast<py::object>(py::handle(argsT.const_arg_)), py::cast<py::object>(py::handle(argsT.device_)));
+  TensorPtr tensor = TensorPyImpl::InitTensor(p);
+  new (&self->value) TensorPy(tensor);
+  self->value.SetInitializer(TensorPyImpl::GetInitializerFromPython(p));
+  self->value.SetConstArg(TensorPyImpl::GetConstArgFromPython(p));
+  self->value.SetDevice(TensorPyImpl::GetDeviceFromPython(p));
+  self->value.SetSymbolicShape(TensorPyImpl::GetSymbolicShapeFromPython(p));
+  self->value.SetInitFinished(true);
   return 0;
+  HANDLE_MS_EXCEPTION_RET_FAIL_END
 }
 
 static PyObject *TensorPython_set_paramInfo_(PyObject *, PyObject *args) {
@@ -570,7 +560,6 @@ static PyObject *TensorPython_set_paramInfo_(PyObject *, PyObject *args) {
     return nullptr;
   }
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
-  Py_INCREF(value);
   ParamInfoPtr paramInfo_object = py::cast<ParamInfoPtr>(value);
   obj->value.SetParamInfo(paramInfo_object);
   Py_RETURN_NONE;
@@ -1254,6 +1243,21 @@ static PyObject *TensorPython_NeedContiguous(PyObject *self, PyObject *args, PyO
   HANDLE_MS_EXCEPTION_END
 }
 
+static PyObject *TensorPython_SetLoad(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
+  PyObject *obj;
+  if (self != nullptr) {
+    obj = self;
+  } else if (!PyArg_ParseTuple(args, "O", &obj)) {
+    return nullptr;
+  }
+  PyType<TensorPy> *tensorObj = (PyType<TensorPy> *)obj;
+  auto tensor = tensorObj->value.GetTensor();
+  TensorPybind::Load(*tensor);
+  Py_RETURN_NONE;
+  HANDLE_MS_EXCEPTION_END
+}
+
 static PyObject *TensorPython_getstate(PyObject *self, PyObject *args) {
   HANDLE_MS_EXCEPTION
   PyObject *state;
@@ -1570,6 +1574,7 @@ static PyMethodDef Tensor_methods[] = {
   {"hooks", (PyCFunction)TensorPython_GetHooks, METH_VARARGS | METH_KEYWORDS, "get hooks."},
   {"_data_ptr", (PyCFunction)TensorPython_GetDataPtr, METH_VARARGS, "get Data ptr."},
   {"_need_contiguous", (PyCFunction)TensorPython_NeedContiguous, METH_VARARGS | METH_KEYWORDS, "need Contiguous."},
+  {"_load", (PyCFunction)TensorPython_SetLoad, METH_VARARGS, "SetLoad."},
   {NULL, NULL, 0, NULL}};
 
 static void TensorPy_pydealloc(PyObject *obj) {
