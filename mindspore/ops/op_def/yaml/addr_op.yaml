@@ -1,0 +1,23 @@
+#operator addr
+addr:
+  args:
+    input:
+      dtype: tensor
+    vec1:
+      dtype: tensor
+    vec2:
+      dtype: tensor
+    beta:
+      dtype: number
+      default: 1
+    alpha:
+      dtype: number
+      default: 1
+  returns:
+    output:
+      dtype: tensor
+  dispatch:
+    enable: True
+    Ascend: AddrAscend
+    CPU: None
+    GPU: None

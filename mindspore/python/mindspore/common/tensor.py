@@ -1315,12 +1315,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('addmm_')(self, mat1, mat2, beta=beta, alpha=alpha)
 
-    def addr(self, vec1, vec2, beta=1, alpha=1):
-        r"""
-        For details, please refer to :func:`mindspore.ops.addr`.
-        """
-        return tensor_operator_registry.get('addr')(self, vec1, vec2, beta=beta, alpha=alpha)
-
     def adjoint(self):
         r"""
         For details, please refer to :func:`mindspore.ops.adjoint`.

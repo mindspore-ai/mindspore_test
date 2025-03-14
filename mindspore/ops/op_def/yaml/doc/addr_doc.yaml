@@ -1,0 +1,47 @@
+addr:
+    description: |
+        Computes the outer product of two vector `vec1` and `vec2`, and adds the resulting matrix to `input`.
+
+        Given `vec1` and `vec2` of sizes :math:`N` and :math:`M`,
+        `input` must be able to broadcast to a matrix of shape :math:`(N, M)`.
+
+        `beta` and `alpha` are optional scaling factors for the outer product of `vec1` and `vec2`,
+        and the matrix `input` respectively. Setting `beta` to 0 will exclude `input` from the computation.
+
+        .. math::
+            output = \beta input + \alpha (vec1 \otimes vec2)
+
+        Args:
+            input (Tensor): Vector to be added. The shape of the tensor is :math:`(N, M)`.
+            vec1 (Tensor): The first tensor to be multiplied. The shape of the tensor is :math:`(N,)`.
+            vec2 (Tensor): The second tensor to be multiplied. The shape of the tensor is :math:`(M,)`.
+
+        Keyword Args:
+            beta (scalar[int, float, bool], optional): Multiplier for `input` . The `beta` must be int or
+                float or bool. Default: ``1`` .
+            alpha (scalar[int, float, bool], optional): Multiplier for `vec1` :math:`\otimes` `vec2` . The `alpha` must
+                be int or float or bool. Default: ``1`` .
+
+        Returns:
+            Tensor, the shape of the output tensor is :math:`(N, M)`, has the same dtype as `input`.
+
+        Raises:
+            TypeError: If `input`, `vec1`, `vec2` is not a Tensor.
+            TypeError: If `vec1` and `vec2` are not the same dtype.
+            ValueError: If `vec1`, `vec2` is not a 1-D Tensor.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import numpy as np
+            >>> from mindspore import Tensor, mint
+            >>> input = Tensor(np.array([[2., 2.], [3., 2.], [3., 4.]], np.float32))
+            >>> vec1 = Tensor(np.array([2., 3., 2.], np.float32))
+            >>> vec2 = Tensor(np.array([3, 4], np.float32))
+            >>> output = mint.addr(input, vec1, vec2)
+            >>> print(output)
+            [[ 8. 10.]
+             [12. 14.]
+             [ 9. 12.]]
+
