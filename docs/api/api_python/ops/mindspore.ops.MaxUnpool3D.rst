@@ -20,8 +20,7 @@ mindspore.ops.MaxUnpool3D
         这是一个实验性API，后续可能修改或删除。
 
     参数：
-        - **ksize** (Union[int, tuple[int]]) - 用于取最大值的内核大小，
-          是一个整数，表示内核的深度、高度和宽度，或一个元组包含三个整数，分别表示深度、高度和宽度。
+        - **ksize** (Union[int, tuple[int]]) - 用于取最大值的内核大小。是一个整数，表示内核的深度、高度和宽度；或一个元组包含三个整数，分别表示深度、高度和宽度。
         - **strides** (Union[int, tuple[int]]，可选) - 内核移动的步长，默认值： ``0`` 。
 
           - 一个整数，则表示移动的深度、高度和宽度都是 `strides` ，
@@ -38,7 +37,7 @@ mindspore.ops.MaxUnpool3D
           - 如果 :math:`output\_shape == ()` ，则输出的shape由 `kszie` 、 `strides` 和 `pads` 根据上面的公式计算得到。
           - 如果 :math:`output\_shape != ()` ，则 `output_shape` 数据格式为 :math:`(N, C, D, H, W)` 或 :math:`(N, D, H, W, C)` ，
             同时 `output_shape` 必须属于 :math:`[(N, C, D_{out} - strides[0], H_{out} - strides[1], W_{out} - strides[2]),
-            (N, C, D_{out} + strides[0], H_{out} + strides[1], W_{out} + strides[2])]` 范围。
+            (N, C, D_{out} + strides[0], H_{out} + strides[1], W_{out} + strides[2])]` 的范围。
         
         - **data_format** (str，可选) - 可选的数据格式。当前支持 ``'NCDHW'`` 和 ``'NDHWC'`` 。默认值： ``'NCDHW'`` 。
 
