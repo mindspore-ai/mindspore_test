@@ -266,7 +266,11 @@ Status VirtualDatasetInfo::CheckOutputLayout() {
     return FAILED;
   }
   if (!in_infer_flag_) {
-    MS_LOG(ERROR) << "Output tensor layout for " << name_ << " is not allowed to be set by users.";
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << "Output tensor layout for " << name_ << " is not allowed to be set by users.";
+    } else {
+      MS_LOG(ERROR) << "Output tensor layout for " << name_ << " is not allowed to be set by users.";
+    }
     return FAILED;
   }
   MS_LOG(INFO) << name_ << ": Using output tensor layout infer by input tensor layout.";

@@ -322,8 +322,13 @@ Status MeanExtInfo::CheckOutputLayout() {
     return FAILED;
   }
   if (!is_infer_out_layout_) {
-    MS_LOG(ERROR) << "For distributed operator " << name_ << ", parameter of output tensor layout for " << name_
-                  << " is not allowed to be set by users.";
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << "For distributed operator " << name_ << ", parameter of output tensor layout for " << name_
+                      << " is not allowed to be set by users.";
+    } else {
+      MS_LOG(ERROR) << "For distributed operator " << name_ << ", parameter of output tensor layout for " << name_
+                    << " is not allowed to be set by users.";
+    }
     return FAILED;
   }
   MS_LOG(DEBUG) << "For distributed operator " << name_ << ", using output tensor layout infer by input tensor layout.";
@@ -530,8 +535,13 @@ Status SumExtInfo::CheckOutputLayout() {
     return FAILED;
   }
   if (!is_infer_out_layout_) {
-    MS_LOG(ERROR) << "For distributed operator " << name_ << ", parameter of output tensor layout for " << name_
-                  << " is not allowed to be set by users.";
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << "For distributed operator " << name_ << ", parameter of output tensor layout for " << name_
+                      << " is not allowed to be set by users.";
+    } else {
+      MS_LOG(ERROR) << "For distributed operator " << name_ << ", parameter of output tensor layout for " << name_
+                    << " is not allowed to be set by users.";
+    }
     return FAILED;
   }
   MS_LOG(DEBUG) << "For distributed operator " << name_ << ", using output tensor layout infer by input tensor layout.";
@@ -664,8 +674,13 @@ Status MaxInfo::CheckOutputLayout() {
     return FAILED;
   }
   if (!is_infer_out_layout_) {
-    MS_LOG(ERROR) << "For distributed operator " << name_ << ", parameter of output tensor layout for " << name_
-                  << " is not allowed to be set by users.";
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << "For distributed operator " << name_ << ", parameter of output tensor layout for " << name_
+                      << " is not allowed to be set by users.";
+    } else {
+      MS_LOG(ERROR) << "For distributed operator " << name_ << ", parameter of output tensor layout for " << name_
+                    << " is not allowed to be set by users.";
+    }
     return FAILED;
   }
   MS_LOG(DEBUG) << "For distributed operator " << name_ << ", using output tensor layout infer by input tensor layout.";
