@@ -16,7 +16,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import Tensor, mint, ops, jit, JitConfig
+from mindspore import Tensor, mint, ops, jit
 from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
@@ -71,8 +71,9 @@ def test_mint_std_tensor(mode):
         output = std_forward_tensor(x, dim=0, correction=1, keepdim=True)
         input_grad = std_backward_tensor(x, dim=0, correction=1, keepdim=True)
     elif mode == ms.GRAPH_MODE:
-        output = (jit(std_forward_tensor, jit_level="O0"))(x, dim=0, correction=1, keepdim=True)
-        input_grad = (jit(std_backward_tensor, jit_level="O0"))(x, dim=0, correction=1, keepdim=True)
+        output = (jit(std_forward_tensor, backend="ms_backend", jit_level="O0"))(x, dim=0, correction=1, keepdim=True)
+        input_grad = (jit(std_backward_tensor, backend="ms_backend", jit_level="O0"))(
+            x, dim=0, correction=1, keepdim=True)
     assert input_grad.asnumpy().dtype == np.float32
     assert np.allclose(output.asnumpy(), expect_output)
 
@@ -101,8 +102,8 @@ def test_mint_std_norlmal(mode):
         output = std_forward(x, dim=0, correction=1, keepdim=True)
         input_grad = std_backward(x, dim=0, correction=1, keepdim=True)
     elif mode == ms.GRAPH_MODE:
-        output = (jit(std_forward, jit_level="O0"))(x, dim=0, correction=1, keepdim=True)
-        input_grad = (jit(std_backward, jit_level="O0"))(x, dim=0, correction=1, keepdim=True)
+        output = (jit(std_forward, backend="ms_backend", jit_level="O0"))(x, dim=0, correction=1, keepdim=True)
+        input_grad = (jit(std_backward, backend="ms_backend", jit_level="O0"))(x, dim=0, correction=1, keepdim=True)
     assert input_grad.asnumpy().dtype == np.float32
     assert np.allclose(output.asnumpy(), expect_output)
 

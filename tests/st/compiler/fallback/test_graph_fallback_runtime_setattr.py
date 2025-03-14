@@ -258,7 +258,7 @@ def test_setattr_global_obj_attr2():
     Description: Support 'obj.attr = value'.
     Expectation: No exception.
     """
-    @ms.jit
+    @ms.jit(backend="ms_backend")
     def simple_assign_global_obj_attr2():
         data_obj2.x = 101
         return data_obj2.x
@@ -279,7 +279,7 @@ def test_setattr_global_obj_attr3():
     Description: Support 'obj.attr = value'.
     Expectation: No exception.
     """
-    @ms.jit
+    @ms.jit(backend="ms_backend")
     def simple_assign_global_obj_attr3():
         data_obj3.shape = (2, 2)
         return data_obj3.shape, data_obj3
@@ -311,7 +311,7 @@ def test_setattr_global_obj_nested_attr1():
     data_obj1 = OuterAssignTarget()
     data_obj1.a.b.x = 100
 
-    @ms.jit
+    @ms.jit(backend="ms_backend")
     def simple_assign_global_obj_attr1():
         data_obj1.a.b.x = 99
         return data_obj1.a.b.x
@@ -333,7 +333,7 @@ def test_setattr_global_obj_nested_attr2():
     Description: Support 'obj.attr = value'.
     Expectation: No exception.
     """
-    @ms.jit
+    @ms.jit(backend="ms_backend")
     def simple_assign_global_obj_attr2():
         nested_data_obj2.a.b.x = 101
         return nested_data_obj2.a.b.x
@@ -558,7 +558,7 @@ def test_global_getattr_after_setattr_1():
         def __init__(self):
             self.x = 1
 
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         obj.x = obj.x + 1
 
@@ -588,7 +588,7 @@ def test_global_getattr_after_setattr_2():
         def __init__(self):
             self.x = 1
 
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         obj2.x = obj1.x + obj2.x
         obj1.x = obj1.x + obj2.x
@@ -618,7 +618,7 @@ def test_global_getattr_after_setattr_3():
         def __init__(self):
             self.x = 1
 
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         obj.x = obj.x + 1
         y = obj.x
@@ -647,7 +647,7 @@ def test_global_getattr_before_setattr():
         def __init__(self):
             self.x = 1
 
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         y = obj.x
         obj.x = obj.x + 1
@@ -676,7 +676,7 @@ def test_global_setattr_in_control_flow():
             super(SetattrNet, self).__init__()
             self.x = 5
 
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         while obj.x > 0:
             obj.x = obj.x - 2
@@ -700,7 +700,7 @@ def test_global_setattr_in_control_flow_2():
             super(SetattrNet, self).__init__()
             self.x = 4
 
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         count = 0
         while obj.x:
@@ -745,7 +745,7 @@ def test_setattr_for_attribute_no_exist_2():
         def __init__(self):
             self.x = 1
 
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         obj.y = obj.x + 1
 
@@ -767,7 +767,7 @@ def test_setattr_for_attribute_no_exist_3():
         def __init__(self):
             self.x = 1
 
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         obj.y = obj.x + 1
 
@@ -855,7 +855,7 @@ def test_setattr_in_loop():
         def __init__(self):
             self.x = 1
 
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         for _ in range(5):
             obj.x = obj.x + 1

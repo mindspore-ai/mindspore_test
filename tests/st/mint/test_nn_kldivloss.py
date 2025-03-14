@@ -16,7 +16,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import mint
+from mindspore import mint, jit
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 from tests.mark_utils import arg_mark
@@ -28,6 +28,7 @@ def kldivloss_forward_func(input_x, target, reduction='mean', log_target=False):
     net = mint.nn.KLDivLoss(reduction=reduction, log_target=log_target)
     return net(input_x, target)
 
+@jit(backend="ms_backend")
 def kldivloss_backward_func(input_x, target, reduction='mean', log_target=False):
     net = mint.nn.KLDivLoss(reduction=reduction, log_target=log_target)
     return ms.grad(net, (0,))(input_x, target)
@@ -170,7 +171,7 @@ def test_mint_nn_kldivloss_broadcast(mode):
     if mode == 'pynative':
         ms.context.set_context(mode=ms.PYNATIVE_MODE)
     elif mode == 'KBK':
-        ms.context.set_context(mode=ms.GRAPH_MODE, jit_level='O0')
+        ms.context.set_context(mode=ms.GRAPH_MODE, backend="ms_backend", jit_level='O0')
 
     mint_nn_kldivloss_binary_case5()
     mint_nn_kldivloss_binary_case6()

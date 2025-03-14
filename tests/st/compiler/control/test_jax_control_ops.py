@@ -46,13 +46,13 @@ def while_body_fun(val):
     return val
 
 
-@jit
+@jit(backend="ms_backend")
 def call_while_loop(x):
     val = while_loop(while_cond, while_body_fun, x)
     return val
 
 
-@jit
+@jit(backend="ms_backend")
 def grad_while_loop(x):
     x = grad_all(call_while_loop)(x)
     return x
@@ -83,7 +83,7 @@ def cumsum(res, el):
     return res, res  # ("carryover", "accumulated")
 
 
-@jit
+@jit(backend="ms_backend")
 def call_scan(a):
     result_init = 0
     return scan(cumsum, result_init, a)
@@ -95,13 +95,13 @@ def for_body_fun(i, val):
     return x
 
 
-@jit
+@jit(backend="ms_backend")
 def call_fori_loop(x):
     x = fori_loop(1, 100, for_body_fun, x)
     return x
 
 
-@jit
+@jit(backend="ms_backend")
 def grad_for_loop(x):
     x = grad_all(call_fori_loop)(x)
     return x
@@ -184,7 +184,7 @@ def no_inline_fun(val):
     return x
 
 
-@jit
+@jit(backend="ms_backend")
 def call_no_inline_fun(val):
     for _ in range(100):
         val = no_inline_fun(val)

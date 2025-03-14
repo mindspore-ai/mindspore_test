@@ -28,7 +28,7 @@ def test_if_after_for_in_for_numpy():
     Description: Test fallback with control flow.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_if_after_for_in_for():
         x = np.array([3, 2])
         y = Tensor(np.array([0, 2, 4, 6, 8]))

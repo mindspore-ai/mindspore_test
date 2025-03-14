@@ -28,7 +28,7 @@ def build_context_func(fn, mode):
     if mode == 'Pynative':
         return fn
     if mode == 'KBK':
-        return jit(fn, jit_level="O0")
+        return jit(fn, backend="ms_backend", jit_level="O0")
     # Graph Mode with GE
     return jit(fn, backend="GE")
 

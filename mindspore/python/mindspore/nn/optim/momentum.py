@@ -199,7 +199,7 @@ class Momentum(Optimizer):
         self._get_distributed_optimizer_list("momentum", use_nesterov=self.use_nesterov)
         self.use_dist_optimizer = self._use_distibuted_optimizer()
 
-    @jit
+    @jit(backend="ms_backend")
     def construct(self, gradients):
         params = self.params
         moments = self.moments

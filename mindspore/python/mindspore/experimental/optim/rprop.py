@@ -133,7 +133,7 @@ class Rprop(Optimizer):
         self.increase_tensor = Tensor(1, mstype.int32)
         self.op_cast = P.Cast()
 
-    @jit
+    @jit(backend="ms_backend")
     def implementation(self, etaminus, etaplus, group_id, lr, gradients, maximize, step_size_min, step_size_max):
         """Extract the common computing part for acceleration"""
         etaminus, etaplus = op_cast(etaminus, mstype.float32), op_cast(etaplus, mstype.float32)

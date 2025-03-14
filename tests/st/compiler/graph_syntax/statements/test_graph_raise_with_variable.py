@@ -617,7 +617,7 @@ def test_raise_in_sub_func_graph_with_isolate_node():
     Description: Test raise isolate node in sub graph.
     Expectation: No exception.
     """
-    @ms.jit
+    @ms.jit(backend="ms_backend")
     def bool_index(data_input, index_input, x):
         tuple_index = (0, index_input)
         judge_tuple_index_dim(data_input, tuple_index, x)

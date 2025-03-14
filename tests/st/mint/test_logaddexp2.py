@@ -64,7 +64,7 @@ def test_logaddexp2_forward_backward(mode):
         out = logaddexp2_forward_func(input_x, other)
     elif mode == 'KBK':
         context.set_context(mode=ms.GRAPH_MODE)
-        out = (jit(logaddexp2_forward_func, jit_config=JitConfig(jit_level="O0")))(input_x, other)
+        out = (jit(logaddexp2_forward_func, backend="ms_backend", jit_config=JitConfig(jit_level="O0")))(input_x, other)
     else:
         context.set_context(mode=ms.GRAPH_MODE)
         out = logaddexp2_forward_func(input_x, other)
@@ -80,7 +80,7 @@ def test_logaddexp2_forward_backward(mode):
     elif mode == 'KBK':
         context.set_context(mode=ms.GRAPH_MODE)
         input_grad, other_grad = \
-            (jit(logaddexp2_backward_func, jit_config=JitConfig(jit_level="O0")))(input_x, other)
+            (jit(logaddexp2_backward_func, backend="ms_backend", jit_config=JitConfig(jit_level="O0")))(input_x, other)
     else:
         context.set_context(mode=ms.GRAPH_MODE)
         input_grad, other_grad = logaddexp2_backward_func(input_x, other)

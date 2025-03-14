@@ -29,7 +29,7 @@ def test_while_after_while_in_while_numpy():
     Description: Test fallback with control flow.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_while_after_while_in_while():
         x = np.array([-1])
         y = np.array([-2])

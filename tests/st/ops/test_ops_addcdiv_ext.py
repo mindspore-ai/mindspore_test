@@ -60,10 +60,10 @@ def test_ops_addcdiv_ext_normal(mode):
         output_grad = addcdiv_ext_backward_func(ms.Tensor(x1), ms.Tensor(x2), ms.Tensor(x3), value=value)
     else:
         output = (
-            jit(addcdiv_ext_forward_func, jit_config=JitConfig(jit_level="O0"))
+            jit(addcdiv_ext_forward_func, backend="ms_backend", jit_config=JitConfig(jit_level="O0"))
         )(ms.Tensor(x1), ms.Tensor(x2), ms.Tensor(x3), value=value)
         output_grad = (
-            jit(addcdiv_ext_backward_func, jit_config=JitConfig(jit_level="O0"))
+            jit(addcdiv_ext_backward_func, backend="ms_backend", jit_config=JitConfig(jit_level="O0"))
         )(ms.Tensor(x1), ms.Tensor(x2), ms.Tensor(x3), value=value)
     expect = generate_expect_forward_output(x1, x2, x3, value)
     print(output_grad)

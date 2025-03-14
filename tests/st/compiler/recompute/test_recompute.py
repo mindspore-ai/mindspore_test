@@ -40,7 +40,7 @@ class GradInJit(Cell):
         self.grad = ops.GradOperation()
         self.net = net
 
-    @jit
+    @jit(backend="ms_backend")
     def construct(self, x):
         grad_net = self.grad(self.net)
         return grad_net(x)

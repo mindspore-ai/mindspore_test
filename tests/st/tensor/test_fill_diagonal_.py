@@ -70,9 +70,9 @@ def test_tensor_fill_diagonal(mode, wrap):
         output_forward = fill_diagonal_forward_func(
             input_x, fill_value, wrap=wrap)
     else:
-        output_grad = (jit(fill_diagonal__backward_func, jit_config=JitConfig(jit_level="O0")))(
+        output_grad = (jit(fill_diagonal__backward_func, backend="ms_backend", jit_config=JitConfig(jit_level="O0")))(
             input_x, fill_value, wrap)
-        output_forward = (jit(fill_diagonal_forward_func, jit_config=JitConfig(jit_level="O0")))(
+        output_forward = (jit(fill_diagonal_forward_func, backend="ms_backend", jit_config=JitConfig(jit_level="O0")))(
             input_x, fill_value, wrap)
     assert np.allclose(output_forward.asnumpy(), expect_forward_output)
     assert np.allclose(output_grad.asnumpy(), expect_grad_output.asnumpy())

@@ -17,10 +17,14 @@ import numpy as np
 import pytest
 
 import mindspore as ms
-from mindspore import mint, context
+from mindspore import mint, context, jit
 from mindspore import Tensor
 from tests.mark_utils import arg_mark
 
+
+@jit(backend="ms_backend")
+def backward_func(net, input_x):
+    return ms.grad(net)(input_x)
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE, ms.GRAPH_MODE])
@@ -53,7 +57,7 @@ def test_conv1d_ext_default(mode):
     net.bias = ms.Parameter(ms.Tensor(np.ones((2,)), dtype=dtype), name='bias')
 
     out = net(input_x)
-    input_grad = ms.grad(net)(input_x)
+    input_grad = backward_func(net, input_x)
     expected_out = [[[7.6679688, 14.3359375],
                      [7.6679688, 14.3359375]]]
     expect_input_grad = [[[2., 2.],

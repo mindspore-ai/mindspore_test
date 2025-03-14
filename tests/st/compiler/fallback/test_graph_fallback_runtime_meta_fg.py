@@ -1043,7 +1043,7 @@ def test_multitype_with_cache():
     Expectation: throw RuntimeError
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x):
         a = 2 * x
         a = a.asnumpy()

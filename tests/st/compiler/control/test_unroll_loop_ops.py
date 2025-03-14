@@ -41,7 +41,7 @@ def test_while_loop():
     def cond_func(init_value):
         return init_value.value() < 100
 
-    @jit
+    @jit(backend="ms_backend")
     def test_while_loop_inner(init_val):
         whileop = ops.WhileLoop()
         result = whileop(cond_func, complex_pure_function, init_val)
@@ -107,7 +107,7 @@ def test_scan_unroll():
         fc = activation(input_tensor)
         return fc, el
 
-    @jit
+    @jit(backend="ms_backend")
     def test_scan_inner(result_init, array):
         scan_op = ops.Scan()
         return scan_op(complex_pure_function, result_init, array, len(array), True)
@@ -138,7 +138,7 @@ def test_scan_not_unroll():
         fc = activation(input_tensor)
         return fc, el
 
-    @jit
+    @jit(backend="ms_backend")
     def test_scan_inner(result_init, array):
         scan_op = ops.Scan()
         return scan_op(complex_pure_function, result_init, array, len(array), False)
@@ -168,7 +168,7 @@ def test_scan_simple_loop():
         res = res + el
         return res, res
 
-    @jit
+    @jit(backend="ms_backend")
     def test_simple_scan_inner(result_init):
         array = [1, 2, 3, 4]
         scan_op = ops.Scan()
@@ -193,7 +193,7 @@ def test_foriloop_unroll():
         add = ops.Add()
         return add(val, index)
 
-    @jit
+    @jit(backend="ms_backend")
     def test_fori_loop_inner(result_init):
         fori_loop = ops.ForiLoop()
         return fori_loop(0, 10, complex_pure_function, result_init)
@@ -258,7 +258,7 @@ def test_scan_unsupport1():
         assign_op(input_tensor, activation(input_tensor))
         return input_tensor, input_tensor
 
-    @jit
+    @jit(backend="ms_backend")
     def test_scan_inner(result_init, array):
         scan_op = ops.Scan()
         return scan_op(complex_pure_function, result_init, array, len(array), True)

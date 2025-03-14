@@ -70,9 +70,9 @@ def test_relu6_std(mode):
         output_grad = relu6_backward_func(x)
         inplace_x = inplace_relu6_forward_func(ms.Tensor(x_np, dtype=ms.float32))
     else:
-        output = (jit(relu6_forward_func, jit_level="O0"))(x)
-        output_grad = (jit(relu6_backward_func, jit_level="O0"))(x)
-        inplace_x = (jit(inplace_relu6_forward_func, jit_level="O0"))(
+        output = (jit(relu6_forward_func, backend="ms_backend", jit_level="O0"))(x)
+        output_grad = (jit(relu6_backward_func, backend="ms_backend", jit_level="O0"))(x)
+        inplace_x = (jit(inplace_relu6_forward_func, backend="ms_backend", jit_level="O0"))(
             ms.Tensor(x_np, dtype=ms.float32))
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-5, atol=1e-5)
     np.testing.assert_allclose(output_grad.asnumpy(), expect_grad, rtol=1e-5, atol=1e-5)

@@ -16,7 +16,7 @@
 
 import numpy as np
 import mindspore as ms
-from mindspore import ops, Generator
+from mindspore import ops, Generator, jit
 from tests.mark_utils import arg_mark
 import pytest
 
@@ -36,6 +36,7 @@ def normal_forward_func(x, mean=0, std=1, generator=None):
     return Net()(x, mean, std, generator)
 
 
+@jit(backend="ms_backend")
 def normal_backward_func(x):
     grad = ops.GradOperation(get_all=True)
     return grad(Net())(x)

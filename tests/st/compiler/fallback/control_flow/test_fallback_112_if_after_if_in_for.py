@@ -28,7 +28,7 @@ def test_if_after_if_in_for_tensor_2():
     Description: Test fallback with control flow.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_if_after_if_in_for():
         x = Tensor(5)
         y = Tensor(2)

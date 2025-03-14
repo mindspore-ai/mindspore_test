@@ -74,8 +74,8 @@ def test_median_dim_normal(mode):
             y = median_forward_func(input_tensor, axis, keepdim)
             grad = median_backward_func(input_tensor, axis, keepdim)
         elif mode == 'KBK':
-            y = (jit(median_forward_func, jit_level="O0"))(input_tensor, axis, keepdim)
-            grad = (jit(median_backward_func, jit_level="O0"))(input_tensor, axis, keepdim)
+            y = (jit(median_forward_func, backend="ms_backend", jit_level="O0"))(input_tensor, axis, keepdim)
+            grad = (jit(median_backward_func, backend="ms_backend", jit_level="O0"))(input_tensor, axis, keepdim)
         else:
             y = (jit(median_forward_func, backend="GE"))(input_tensor, axis, keepdim)
             grad = (jit(median_backward_func, backend="GE"))(input_tensor, axis, keepdim)

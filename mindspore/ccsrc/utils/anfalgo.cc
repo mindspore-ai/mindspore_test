@@ -1704,9 +1704,13 @@ bool AnfAlgo::IsDynamicShapeFuncGraph(const FuncGraphPtr &func_graph) {
     if (node == nullptr || common::AnfAlgo::IsCallNode(node)) {
       return false;
     }
-    return common::AnfAlgo::IsDynamicShape(node) || common::AnfAlgo::IsDynamicSequence(node) ||
-           common::AnfAlgo::IsNodeMutableScalar(node);
+    return common::AnfAlgo::IsDynamic(node);
   });
+}
+
+bool AnfAlgo::IsDynamic(const AnfNodePtr &node) {
+  return common::AnfAlgo::IsDynamicShape(node) || common::AnfAlgo::IsDynamicSequence(node) ||
+         common::AnfAlgo::IsNodeMutableScalar(node);
 }
 
 bool AnfAlgo::IsDynamicShape(const AnfNodePtr &node) {
@@ -2832,7 +2836,7 @@ bool AnfAlgo::IsDynamicGraph(const FuncGraphPtr &func_graph) {
     if (node->abstract() != nullptr) {
       auto shape = node->abstract()->GetShape();
       // Dynamic shape tensor.
-      if (shape->isa<abstract::TensorShape>() && IsDynamic(shape->GetShapeVector())) {
+      if (shape->isa<abstract::TensorShape>() && mindspore::IsDynamic(shape->GetShapeVector())) {
         dynamic_node = node;
         break;
       }

@@ -32,7 +32,7 @@ def test_single_for_1():
     Description: Test fallback with control flow.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_for():
         x = Tensor(7).astype("int32")
         y = Tensor(0).astype("int32")
@@ -52,7 +52,7 @@ def test_single_for_2():
     Description: Test fallback with control flow.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_for():
         x = Tensor(7).astype("int32")
         y = Tensor(0).astype("int32")
@@ -73,7 +73,7 @@ def test_single_for_zip():
     Description: Test fallback with control flow.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_for():
         tuple_x = (Tensor(1).astype("int32"), Tensor(3).astype("int32"), Tensor(5).astype("int32"))
         sum_x = Tensor(0).astype("int32")
@@ -94,7 +94,7 @@ def test_single_for_builtin_function_int():
     Description: Test fallback with control flow.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_for():
         x = np.array(1.1)
         for _ in range(3):

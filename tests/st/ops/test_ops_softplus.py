@@ -15,7 +15,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import ops
+from mindspore import ops, jit
 from mindspore.mint.nn.functional import softplus
 from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
@@ -43,6 +43,7 @@ def softplus_backward_func(x, beta=1, threshold=20):
     return ms.grad(softplus_forward_func, (0))(x, beta, threshold)
 
 
+@jit(backend="ms_backend")
 @test_utils.run_with_cell
 def softplus_vmap_func(x, beta=1, threshold=20):
     return ops.vmap(softplus_forward_func, in_axes=(0, None, None), out_axes=0)(x, beta, threshold)

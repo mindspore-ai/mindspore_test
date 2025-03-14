@@ -124,7 +124,7 @@ class ASGD(Optimizer):
         self.assignadd = P.AssignAdd()
         self.op_cast = P.Cast()
 
-    @jit
+    @jit(backend="ms_backend")
     def implementation(self, lambd, alpha, t0, lr, group_id, maximize, gradients, weight_decay):
         """Extract the common computing part for acceleration"""
         start_id = self.group_start_id[group_id]

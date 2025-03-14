@@ -28,7 +28,7 @@ def test_if_after_if_tensor():
     Description: Test fallback with control flow.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_if_after_if():
         x = Tensor(1)
         y = Tensor(0)
@@ -50,7 +50,7 @@ def test_if_after_if_tensor_2():
     Description: Test fallback with control flow.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_if_after_if():
         x = Tensor(1)
         y = Tensor(0)
@@ -78,7 +78,7 @@ def test_if_after_if_tensor_3():
     Description: Test fallback with control flow.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_if_after_if(a):
         if a > 15:
             y = Tensor(1)

@@ -104,7 +104,7 @@ def test_if_in_for_dict():
     Description: Execute 'for x in xs' when xs is dictionary.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_for(xs):
         result = 0
         ys = {'b': 0, 'g': 0}

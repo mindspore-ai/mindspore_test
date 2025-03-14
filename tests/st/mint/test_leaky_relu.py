@@ -16,7 +16,7 @@
 import numpy as np
 import pytest
 import mindspore as ms
-from mindspore import mint, jit, JitConfig
+from mindspore import mint, jit
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 
@@ -61,9 +61,9 @@ def test_leaky_relu_std(mode):
         output_forward = leaky_relu_forward_func(ms.Tensor(x), negative_slope)
         output_grad = leaky_relu_backward_func(ms.Tensor(x), negative_slope)
     else:
-        output_forward = (jit(leaky_relu_forward_func, jit_level="O0"))(ms.Tensor(x),
+        output_forward = (jit(leaky_relu_forward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x),
                                                                                               negative_slope)
-        output_grad = (jit(leaky_relu_backward_func, jit_level="O0"))(ms.Tensor(x),
+        output_grad = (jit(leaky_relu_backward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x),
                                                                                             negative_slope)
 
     assert np.allclose(output_forward.asnumpy(), expect_forward)

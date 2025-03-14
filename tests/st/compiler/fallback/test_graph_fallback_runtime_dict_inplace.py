@@ -36,7 +36,7 @@ def test_global_dict_used_in_graph():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         return global_dict_1
 
@@ -96,7 +96,7 @@ def test_global_dict_as_graph_input():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(dict_input):
         return dict_input
 
@@ -234,7 +234,7 @@ def test_dict_inplace_setitem_3():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(dict_input, list_input):
         dict_input["b"] = list_input
         return dict_input

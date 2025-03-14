@@ -194,6 +194,7 @@ class COMMON_EXPORT AnfAlgo {
   static bool IsDynamicShape(const AnfNodePtr &node);
   static bool IsDynamicRankNode(const AnfNodePtr &node);
   static bool IsDynamicValue(const AnfNodePtr &node);
+  static bool IsDynamic(const AnfNodePtr &node);
   static bool IsDynamicShapeFuncGraph(const FuncGraphPtr &func_graph);
   static bool IsNodeInputDynamicRank(const CNodePtr &anf_node_ptr);
   static bool IsNodeOutputDynamicRank(const AnfNodePtr &node);

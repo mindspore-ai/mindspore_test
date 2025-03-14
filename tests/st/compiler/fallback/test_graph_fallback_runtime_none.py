@@ -299,7 +299,7 @@ def test_none_is_input():
     Description: Support None is arg of top graph.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo(x):
         return x
 
@@ -443,7 +443,7 @@ def test_none_is_input_of_dict_return():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         x = {'a': 'a', 'b': 'b'}
         y = x.get('a')
@@ -463,7 +463,7 @@ def test_none_nested_input_of_dict_return():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         x = {'a': 'a', 'b': 'b'}
         y = x.get('a')
@@ -483,7 +483,7 @@ def test_none_is_input_of_tuple_return():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         return 1, "a", None
 

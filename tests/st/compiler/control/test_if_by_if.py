@@ -1,7 +1,7 @@
 import numpy as np
 from tests.st.compiler.control.cases_register import case_register
 import mindspore.context as context
-from mindspore import Tensor
+from mindspore import Tensor, jit
 from mindspore.common.parameter import Parameter
 from mindspore.common import dtype
 from mindspore.nn import Cell
@@ -73,6 +73,11 @@ def test_if_by_if_basic():
     assert np.allclose(out_ms.asnumpy(), out_np)
 
 
+@jit(backend="ms_backend")
+def grad_func(net, x, y):
+    return F.grad(net, grad_position=(0, 1))(x, y)
+
+
 @case_register.level0
 @case_register.target_ascend
 def test_branch_same_shape():
@@ -105,9 +110,8 @@ def test_branch_same_shape():
     x = np.array([-1], np.float32)
     y = np.array([2], np.float32)
     net = Net()
-    grad_net = F.grad(net, grad_position=(0, 1))
     context.set_context(mode=context.GRAPH_MODE)
-    fgrad = grad_net(Tensor(x), Tensor(y))
+    fgrad = grad_func(net, Tensor(x), Tensor(y))
     print(fgrad)
 
 

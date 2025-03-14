@@ -148,7 +148,7 @@ def test_scipy_concatenate():
     Description: Test scipy.linalg in graph mode.
     Expectation: No exception.
     """
-    @ms.jit
+    @ms.jit(backend="ms_backend")
     def func():
         x = np.array([1, 2, 3])
         y = np.array([4, 5, 6])

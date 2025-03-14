@@ -77,7 +77,7 @@ def test_tracev2_grad_like_forward(mode):
         grads = tracev2_grad_forward_func(
             ms.Tensor(Dout), ms.Tensor(A.shape))
     elif mode == 'KBK':
-        grads = (jit(tracev2_grad_forward_func, jit_level="O0"))(
+        grads = (jit(tracev2_grad_forward_func, backend="ms_backend", jit_level="O0"))(
             ms.Tensor(Dout), ms.Tensor(A.shape))
     for i in range(2):
         np.testing.assert_allclose(

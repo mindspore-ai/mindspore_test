@@ -50,7 +50,7 @@ def test_str_format_mutiple_input():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x):
         ms_str = "{} is {}".format("string", x + x)
         return ms_str
@@ -68,7 +68,7 @@ def test_fallback_str_format_input():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(a):
         ms_str = format(a)
         ms_str2 = format(ms_str, "4")
@@ -89,7 +89,7 @@ def test_format_with_number_placeholder_input():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         ms_str = "{1} {0} {1}"
         ms_format_str = ms_str.format(x, y)
@@ -110,7 +110,7 @@ def test_format_with_key_input():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         ms_str = "hello {name2},It's me, {name1}"
         ms_format_str = ms_str.format(name2=x, name1=y)
@@ -133,7 +133,7 @@ def test_format_with_list_index():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         ms_str = "hello {0[1]},It's me {0[0]}"
         names = [x, y]
@@ -155,7 +155,7 @@ def test_format_with_tuple_index():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         ms_str = "hello {0[1]},It's me {0[0]}"
         names = (x, y)
@@ -205,7 +205,7 @@ def test_format_as_function():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         func = "hello {0[1]},It's me {0[0]}".format
         names = (x, y)
@@ -228,7 +228,7 @@ def test_format_number():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(num1, num2, num3, num4, num5):
         str1_format = "{:.2f}".format(num1)
         str2_format = "{:.0f}".format(num1)
@@ -262,7 +262,7 @@ def test_format_padding():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(num1, num2, num3):
         str1_format = "{:0>2}".format(num1)
         str2_format = "{:x<4}".format(num1)

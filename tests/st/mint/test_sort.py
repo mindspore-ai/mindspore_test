@@ -15,7 +15,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import ops, mint, jit, JitConfig
+from mindspore import ops, mint, jit
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 
@@ -77,8 +77,8 @@ def test_sort_std(descending, mode):
             output, indices = sort_forward_func(x, dim, descending, False)
             ms_grad = sort_backward_func(x, dim, descending, False)
         else:
-            output, indices = (jit(sort_forward_func, jit_level="O0"))(x, dim, descending, False)
-            ms_grad = (jit(sort_backward_func, jit_level="O0"))(x, dim, descending, False)
+            output, indices = (jit(sort_forward_func, backend="ms_backend", jit_level="O0"))(x, dim, descending, False)
+            ms_grad = (jit(sort_backward_func, backend="ms_backend", jit_level="O0"))(x, dim, descending, False)
 
         np.testing.assert_array_equal(output.asnumpy(), expected_output)
         np.testing.assert_array_equal(indices.asnumpy(), expected_indices)

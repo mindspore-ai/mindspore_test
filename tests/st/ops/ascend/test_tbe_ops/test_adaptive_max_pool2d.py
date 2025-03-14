@@ -26,7 +26,7 @@ class Net(nn.Cell):
         super(Net, self).__init__()
         self.adaptive_max_pool2d = nn.AdaptiveMaxPool2d(output_size, return_indices)
 
-    @jit
+    @jit(backend="ms_backend")
     def construct(self, x):
         return self.adaptive_max_pool2d(x)
 

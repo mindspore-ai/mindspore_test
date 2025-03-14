@@ -30,7 +30,7 @@ def test_for_after_for_in_if_3():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def func3303():
         x = np.array([1, 2, 3])
         y = np.array([5, 6, 7])
@@ -60,7 +60,7 @@ def test_for_after_for_in_if_4():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def func3304():
         x = Tensor([1])
         y = Tensor([2])

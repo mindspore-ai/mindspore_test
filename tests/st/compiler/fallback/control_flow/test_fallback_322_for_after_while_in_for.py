@@ -31,7 +31,7 @@ def test_for_after_while_in_for_1():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def func3221():
         x = Tensor([0])
         y = np.array([1])
@@ -57,7 +57,7 @@ def test_for_after_while_in_for_2():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def func3222():
         x = Tensor([0])
         y = Tensor([0])
@@ -89,7 +89,7 @@ def test_for_after_while_in_for_3():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def func3224():
         x = Tensor([0])
         for i in range(3):

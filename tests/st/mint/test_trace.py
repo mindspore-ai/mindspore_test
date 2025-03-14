@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 
 import mindspore as ms
-from mindspore import mint, Tensor, jit, JitConfig
+from mindspore import mint, Tensor, jit
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 
@@ -48,8 +48,8 @@ def test_mint_trace_ext_normal(mode):
         output = trace_forward_func(x)
         grad = trace_backward_func(x)
     elif mode == 'KBK':
-        output = (jit(trace_forward_func, jit_level="O0"))(x)
-        grad = (jit(trace_backward_func, jit_level="O0"))(x)
+        output = (jit(trace_forward_func, backend="ms_backend", jit_level="O0"))(x)
+        grad = (jit(trace_backward_func, backend="ms_backend", jit_level="O0"))(x)
     assert np.allclose(output.asnumpy(), expect_output.asnumpy())
     assert np.allclose(grad.asnumpy(), expect_grad.asnumpy())
 

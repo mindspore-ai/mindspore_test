@@ -113,7 +113,7 @@ def test_dict_get_3():
     Expectation: No exception.
     """
 
-    @ms.jit
+    @ms.jit(backend="ms_backend")
     def dict_net_3():
         x = {'a': 1, 'b': 2}
         y = x.get('a')
@@ -480,11 +480,11 @@ def test_return_nested_dict2():
     Expectation: No exception.
     """
 
-    @ms.jit
+    @ms.jit(backend="ms_backend")
     def dict_net1():
         return {'a': None, 'b': [1, 2, None]}
 
-    @ms.jit
+    @ms.jit(backend="ms_backend")
     def dict_net2():
         return {'a': None, 'b': [1, 2, {'a': 1}]}
 
@@ -503,11 +503,11 @@ def test_return_nested_dict3():
     Expectation: No exception.
     """
 
-    @ms.jit
+    @ms.jit(backend="ms_backend")
     def dict_net1():
         return {'a': None, 'b': (1, 2, None)}
 
-    @ms.jit
+    @ms.jit(backend="ms_backend")
     def dict_net2():
         return {'a': None, 'b': (1, 2, {'a': 1})}
 
@@ -526,7 +526,7 @@ def test_return_nested_dict_with_inputs():
     Expectation: No exception.
     """
 
-    @ms.jit
+    @ms.jit(backend="ms_backend")
     def dict_net(x, y):
         return {'a': [x, y], 'b': (1, 2, {'a': 1})}
 
@@ -817,7 +817,7 @@ def test_return_dict_with_empty_shape_tensor():
     Expectation: No exception.
     """
 
-    @ms.jit
+    @ms.jit(backend="ms_backend")
     def dict_net():
         return {'a': Tensor(2)}
 
@@ -834,7 +834,7 @@ def test_return_dict_in_if_else():
     Expectation: No exception.
     """
 
-    @ms.jit
+    @ms.jit(backend="ms_backend")
     def dict_net(x, key):
         if key > 0:
             y = {"abc": x, "number": [1, 2, 3]}
@@ -856,7 +856,7 @@ def test_return_different_size_dict_in_if_else():
     Expectation: Throw an exception.
     """
 
-    @ms.jit
+    @ms.jit(backend="ms_backend")
     def dict_net(x, key):
         if key < 0:
             y = {Tensor([True]): x, "number": [1, 2, 3]}
@@ -918,7 +918,7 @@ def test_return_dict_with_string_input():
     Expectation: No exception.
     """
 
-    @ms.jit
+    @ms.jit(backend="ms_backend")
     def dict_net(x, input_str):
         return {input_str: x}
 
@@ -1077,7 +1077,7 @@ def test_pynative_jit_dict_grad_2():
     Expectation: No exception.
     """
 
-    @ms.jit
+    @ms.jit(backend="ms_backend")
     def dict_net(a):
         x = {'a': a, 'b': 2}
         return x
@@ -1119,7 +1119,7 @@ def test_jitclass_grad():
             self._mod_x()
             return ops.mul(obj.x, y)
 
-        @jit
+        @jit(backend="ms_backend")
         def _mod_x(self):
             obj.x = -1*obj.x
 

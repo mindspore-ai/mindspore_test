@@ -16,7 +16,7 @@
 import numpy as np
 import pytest
 import mindspore as ms
-from mindspore import Tensor, mint, ops
+from mindspore import Tensor, mint, ops, jit
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
@@ -54,6 +54,7 @@ def Inplace_ELU_forward(x, alpha):
     return ELU_Inplace(alpha)(x)
 
 
+@jit(backend="ms_backend")
 def Inplace_ELU_grad(x, alpha):
     grad = ops.GradOperation(get_all=True)
     return grad(ELU_Inplace(alpha))(x)

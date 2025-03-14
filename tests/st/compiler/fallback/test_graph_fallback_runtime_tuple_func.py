@@ -33,7 +33,7 @@ def test_sequence_in_with_irregular_sequence():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         x = mutable(1)
         y = (1, Tensor([1, 2, 3]), "m")
@@ -50,7 +50,7 @@ def test_sequence_in_with_irregular_sequence_2():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         x = mutable(2)
         y = (1, Tensor([1]), "m")
@@ -67,7 +67,7 @@ def test_sequence_in_with_irregular_sequence_3():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo(x):
         y = (1, Tensor([1, 2, 3]), np.array([1, 2, 3, 4]))
         return x in y
@@ -84,7 +84,7 @@ def test_sequence_in_with_nested_sequence():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         x = mutable(1)
         y = ((1, 1), 1, ["m", "n"])
@@ -101,7 +101,7 @@ def test_sequence_in_with_nested_sequence_2():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo(x):
         y = ((1, 1), 1, ["m", "n"], x+1)
         return x in y
@@ -117,7 +117,7 @@ def test_sequence_in_with_nested_sequence_3():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo(x):
         y = ((1, 1), 1, ["m", "n"], x)
         return x in y
@@ -133,7 +133,7 @@ def test_sequence_mul_with_irregular_sequence():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         x = mutable(2)
         y = ((1, 1), 1, ["m", "n"])
@@ -151,7 +151,7 @@ def test_sequence_mul_with_irregular_sequence_2():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         x = mutable(2)
         y = [(1, 1), 1, ["m", "n"]]
@@ -169,7 +169,7 @@ def test_sequence_mul_with_irregular_sequence_3():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         x = mutable(2)
         y = (np.array([1, 2, 3]), np.array([4, 5]))
@@ -193,7 +193,7 @@ def test_sequence_mul_with_nested_sequence():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         x = 2
         y = mutable(((1, 1), (2, 2)), True)
@@ -212,7 +212,7 @@ def test_sequence_mul_with_nested_sequence_2():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         x = 2
         y = mutable([(1, 1), (2, 2)], True)
@@ -231,7 +231,7 @@ def test_sequence_mul_used_in_operator():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         a = mutable(2)
         m = ((x, y), (x+1, y+1))
@@ -256,7 +256,7 @@ def test_ops_with_sequence_of_any_input():
 
     obj = Container()
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x):
         m = [x, obj.x]
         return ops.addn(m)
@@ -279,7 +279,7 @@ def test_ops_with_sequence_of_any_input_2():
 
     obj = Container()
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x):
         m = (x, obj.x)
         return ops.addn(m)
@@ -296,7 +296,7 @@ def test_sequence_compare_with_operation():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         m = ((x, x+1), x+2)
         n = ((y, y-1), y+2)
@@ -318,7 +318,7 @@ def test_sequence_compare_with_operation_2():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         m = [[x, x+1], x+2]
         n = [[y, y-1], y+2]
@@ -339,7 +339,7 @@ def test_sequence_compare_with_operation_3():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         m = ([x, x+1], x+2)
         n = ([y, y-1], y+2)
@@ -360,7 +360,7 @@ def test_sequence_compare_with_operation_4():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         x_np = x.asnumpy()
         y_np = y.asnumpy()
@@ -383,7 +383,7 @@ def test_sequence_compare_with_operation_5():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: TypeError.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         x_np = x.asnumpy()
         y_np = y.asnumpy()
@@ -405,7 +405,7 @@ def test_sequence_len_with_operation():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: TypeError.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         x = mutable(((1, 2), (3, 4)), True)
         return len(x)
@@ -422,7 +422,7 @@ def test_sequence_count_with_operation():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         m = ((x, y), (x+1, y+1), (x, y))
         n = (x, y)
@@ -440,7 +440,7 @@ def test_sequence_count_with_operation_2():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         m = [(x, y), (x+1, y+1), (x, y)]
         n = (x, y)
@@ -458,7 +458,7 @@ def test_sequence_count_with_operation_3():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         m = ((x, y), (x+1, y+1), [x, y])
         n = (x, y)
@@ -476,7 +476,7 @@ def test_sequence_count_with_operation_4():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         m = ((x, y), (x+1, y+1), [x, y])
         n = (x, y)
@@ -494,7 +494,7 @@ def test_sequence_count_with_operation_5():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         m = (x, y, "a", 1)
         return m.count(x)
@@ -511,7 +511,7 @@ def test_sequence_count_with_operation_6():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         m = [x, y, "a", 1]
         return m.count(x)
@@ -528,7 +528,7 @@ def test_sequence_index_with_operation():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         m = (x, y, "a", 1)
         return m.index(x)
@@ -545,7 +545,7 @@ def test_sequence_index_with_operation_2():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         m = [x, y, "a", Tensor([10])]
         return m.index(x, 1, 3)
@@ -562,7 +562,7 @@ def test_sequence_index_with_operation_3():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         m = ((x+1, y+1), (x, y), "1", 10)
         return m.index((x, y))
@@ -580,7 +580,7 @@ def test_sequence_index_with_operation_4():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo(y):
         y_np = y.asnumpy()
         m = (y_np, 10, "a")
@@ -599,7 +599,7 @@ def test_sequence_index_with_operation_5():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         m = (np.array([2]), 10, "a")
         return m.index(np.array([2]))
@@ -617,7 +617,7 @@ def test_sequence_index_with_operation_6():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         x_np = x.asnumpy()
         y_np = y.asnumpy()
@@ -637,7 +637,7 @@ def test_sequence_getitem_with_tensor_index():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         m = (1, 2, 3, 4)
         return m[x], m[y]
@@ -655,7 +655,7 @@ def test_sequence_getitem_with_tensor_index_2():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         m = (1, (2, 5), np.array([1, 2, 3, 4]), 4)
         return m[x], m[y]
@@ -673,7 +673,7 @@ def test_sequence_getitem_with_tensor_index_3():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         m = (x, x+1, y, y+1)
         return m[x], m[y]
@@ -691,7 +691,7 @@ def test_sequence_getitem_with_index():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         m = [(x, y), "1", x, np.array([0])]
         n1 = mutable(0)
@@ -718,7 +718,7 @@ def test_sequence_getitem_with_index_2():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo(x):
         m = (x.asnumpy(), "abcd", x+1, np.array([1, 2, 3, 4]))
         n1 = mutable(0)
@@ -745,7 +745,7 @@ def test_sequence_getitem_with_slice():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo(x):
         m = (x.asnumpy(), "abcd", x+1, np.array([1, 2, 3, 4]))
         n1 = mutable(0)
@@ -767,7 +767,7 @@ def test_sequence_getitem_with_slice_2():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo(x):
         m = [x.asnumpy(), "abcd", [1, x+1], np.array([1, 2, 3, 4])]
         n1 = mutable(0)
@@ -792,7 +792,7 @@ def test_sequence_ops_with_grad():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo(x):
         m = ("1", [1, 2], x, x+1, x)
         return m.count(x)
@@ -810,7 +810,7 @@ def test_sequence_ops_with_grad_2():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo(x):
         m = ("1", [1, 2], x, x+1, x)
         return m.index(x)
@@ -828,7 +828,7 @@ def test_sequence_ops_with_grad_3():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo(x):
         m = ("1", [1, 2], x, x+1, x)
         return m[x]
@@ -847,7 +847,7 @@ def test_sequence_ops_with_grad_4():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo(x):
         m = ("1", [1, 2], x, x+1, x)
         return m[x]
@@ -868,7 +868,7 @@ def test_sequence_getitem_with_abstract_any_input():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         x = ([2, 1], [5, 6], [3, 4])
         x = mutable(x, True)

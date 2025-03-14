@@ -51,9 +51,9 @@ def test_diag_forward(mode):
         out = diag_forward_func(input_x)
         out_grad = diag_backward_func(input_x)
     else:
-        out = (jit(diag_forward_func, jit_config=JitConfig(jit_level="O0")))(
+        out = (jit(diag_forward_func, backend="ms_backend", jit_config=JitConfig(jit_level="O0")))(
             input_x, 0)
-        out_grad = (jit(diag_backward_func, jit_config=JitConfig(jit_level="O0")))(
+        out_grad = (jit(diag_backward_func, backend="ms_backend", jit_config=JitConfig(jit_level="O0")))(
             input_x, 0)
     assert out_grad.asnumpy().dtype == np.float16
     np.testing.assert_allclose(out.asnumpy(), expect, rtol=1e-4)

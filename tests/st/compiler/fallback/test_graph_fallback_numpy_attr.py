@@ -377,7 +377,7 @@ def test_np_char_1():
     Description: Test numpy char method in graph mode.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def np_char():
         char_add = np.char.add(['MindSpore'], [' fallback'])
         char_multiply = np.char.multiply('fallback ', 3)

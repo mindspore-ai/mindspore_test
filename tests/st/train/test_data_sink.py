@@ -174,7 +174,7 @@ def test_function_data_sink_dynamic_shape(mode):
     epochs = 5
     steps = data_size * epochs
     sink_size = data_size
-    jit = ms.JitConfig()
+    jit = ms.JitConfig(backend="ms_backend")
 
     input_signature = (Tensor(shape=[None,], dtype=ms.float32), Tensor(shape=[None,], dtype=ms.float32))
 

@@ -16,7 +16,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import ops, jit, JitConfig
+from mindspore import ops, jit
 from mindspore.mint import cumsum
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.st.utils import test_utils
@@ -64,8 +64,8 @@ def test_cumsum_normal(mode):
         output = cumsum_forward_func(ms.Tensor(x), dim1)
         output1 = cumsum_backward_func(ms.Tensor(x), dim2)
     else:
-        output = (jit(cumsum_forward_func, jit_level="O0"))(ms.Tensor(x), dim1)
-        output1 = (jit(cumsum_backward_func, jit_level="O0"))(ms.Tensor(x), dim2)
+        output = (jit(cumsum_forward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x), dim1)
+        output1 = (jit(cumsum_backward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x), dim2)
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-4)
     np.testing.assert_allclose(output1.asnumpy(), expect1, rtol=1e-4)
 

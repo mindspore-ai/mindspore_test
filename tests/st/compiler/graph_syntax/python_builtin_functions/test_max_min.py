@@ -172,7 +172,7 @@ def test_builtin_function_max_min_with_tuple_with_variable(mode):
     Description: Test max()/min() in graph mode when input is tuple with variable.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo(x):
         return max(x), min(x)
 

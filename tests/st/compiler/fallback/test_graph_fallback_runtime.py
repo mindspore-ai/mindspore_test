@@ -453,7 +453,7 @@ def test_np_save():
     Description: Use numpy.save().
     Expectation: No error.
     """
-    @ms.jit
+    @ms.jit(backend="ms_backend")
     def func(x):
         if isinstance(x, ms.Tensor):
             np.save("x_data.npy", x.asnumpy())

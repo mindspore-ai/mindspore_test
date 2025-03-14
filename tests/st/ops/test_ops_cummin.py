@@ -15,7 +15,7 @@
 import numpy as np
 import pytest
 from mindspore.mint import cummin
-from mindspore import ops, Tensor
+from mindspore import ops, Tensor, jit
 import mindspore as ms
 from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
@@ -36,9 +36,10 @@ def cummin_backward_func(x, axis):
     return ms.grad(cummin_forward_func, (0))(x, axis)
 
 
+@jit(backend="ms_backend")
 @test_utils.run_with_cell
 def cummin_vmap_func(x, axis):
-    return ops.vmap(cummin_forward_func, in_axes=(0, None), out_axes=(0, None))(x, axis)
+    return ops.vmap(ops.vmap(cummin_forward_func, in_axes=(0, None)), in_axes=(0, None))(x, axis)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0',
@@ -63,9 +64,9 @@ def test_mint_cummin(mode, dtype):
         output_grad = cummin_backward_func(x, axis)
     elif mode == 'KBK':
         ms.context.set_context(mode=ms.GRAPH_MODE)
-        op_froward = ms.jit(cummin_forward_func, jit_level="O0")
+        op_froward = ms.jit(cummin_forward_func, backend="ms_backend", jit_level="O0")
         output = op_froward(x, axis)
-        op_backward = ms.jit(cummin_backward_func, jit_level="O0")
+        op_backward = ms.jit(cummin_backward_func, backend="ms_backend", jit_level="O0")
         output_grad = op_backward(x, axis)
     assert np.allclose(output[0].asnumpy(), expect_values)
     assert np.allclose(output[1].asnumpy(), expect_indices)
@@ -87,8 +88,7 @@ def test_cummin_vmap(context_mode, dtype):
     np_array = np.array([[[1, 2, 3, 4], [5, 6, 7, 8]]]).astype(dtype)
     x = Tensor(np_array)
     axis = -1
-    nest_vmap = ops.vmap(ops.vmap(cummin_forward_func, in_axes=(0, None)), in_axes=(0, None))
-    values, indices = nest_vmap(x, axis)
+    values, indices = cummin_vmap_func(x, axis)
     expect_values = np.array([[[1, 1, 1, 1], [5, 5, 5, 5]]]).astype(dtype)
     expect_indices = np.array([[[0, 0, 0, 0], [0, 0, 0, 0]]]).astype(np.int64)
     assert (values.asnumpy() == expect_values).all()

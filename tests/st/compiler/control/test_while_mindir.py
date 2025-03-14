@@ -82,7 +82,7 @@ def test_jit_function_while():
     loaded_net = nn.GraphCell(graph)
     context.set_context(mode=context.PYNATIVE_MODE)
 
-    @jit
+    @jit(backend="ms_backend")
     def run_graph(x, y):
         outputs = loaded_net(x, y)
         return outputs

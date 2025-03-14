@@ -42,7 +42,7 @@ from mindspore.common.sparse_tensor import RowTensor as PythonRowTensor
 from mindspore._c_expression.amp import get_curr_amp_strategy
 from mindspore._c_expression import GraphExecutor_, JitExecutor_, CSRTensor, RowTensor, COOTensor, \
     PyNativeExecutor_, verify_inputs_signature, init_exec_dataset, _set_dataset_mode_config, init_pipeline, \
-    _run_jit_pipeline, _ms_memory_recycle, _bind_device_ctx, StubNode, TensorPy as Tensor
+    _run_jit_pipeline, _ms_memory_recycle, _bind_device_ctx, StubNode, MSContext, TensorPy as Tensor
 from mindspore.parallel._ps_context import _is_role_sched
 from mindspore.parallel._utils import _check_full_batch, _get_parameter_broadcast, _is_in_auto_parallel_mode, \
     _is_parallel_mode
@@ -1157,8 +1157,9 @@ def jit(
     jit_level = Validator.check_string(jit_level, ["O0", "O1"], "jit_level", "jit")
     dynamic = Validator.check_int_range(dynamic, 0, 1, Validator.INC_BOTH, "dynamic", "jit")
     fullgraph = Validator.check_bool(fullgraph, "fullgraph", "jit")
-    if backend != "":
-        backend = Validator.check_string(backend, ["ms_backend", "GE"], "backend", "jit")
+    if backend == "":
+        backend = "GE" if MSContext.get_instance().get_ascend_soc_version() == "ascend910" else "ms_backend"
+    backend = Validator.check_string(backend, ["ms_backend", "GE"], "backend", "jit")
     jit_syntax_level = "LAX" if fullgraph is False else "STRICT"
     hash_obj = _get_hash_obj(options)
     _check_options(options, backend)

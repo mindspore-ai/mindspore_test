@@ -71,8 +71,8 @@ def test_ops_argmin_ext(mode):
             output = argmin_ext_forward_func(ms.Tensor(x), dim, keepdim)
             out_grad = argmin_ext_backward_func(ms.Tensor(x), dim, keepdim)
         elif mode == 'KBK':
-            output = (jit(argmin_ext_forward_func, jit_level="O0"))(ms.Tensor(x), dim, keepdim)
-            out_grad = (jit(argmin_ext_backward_func, jit_level="O0"))(ms.Tensor(x), dim, keepdim)
+            output = (jit(argmin_ext_forward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x), dim, keepdim)
+            out_grad = (jit(argmin_ext_backward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x), dim, keepdim)
         else:
             output = (jit(argmin_ext_forward_func, backend="GE"))(ms.Tensor(x), dim, keepdim)
             out_grad = (jit(argmin_ext_backward_func, backend="GE"))(ms.Tensor(x), dim, keepdim)
