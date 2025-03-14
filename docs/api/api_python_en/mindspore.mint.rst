@@ -129,6 +129,7 @@ Pointwise Operations
     mindspore.mint.cos
     mindspore.mint.cosh
     mindspore.mint.cross
+    mindspore.mint.deg2rad
     mindspore.mint.diff
     mindspore.mint.div
     mindspore.mint.divide
@@ -162,6 +163,7 @@ Pointwise Operations
     mindspore.mint.negative
     mindspore.mint.pow
     mindspore.mint.polar
+    mindspore.mint.rad2deg
     mindspore.mint.ravel
     mindspore.mint.reciprocal
     mindspore.mint.remainder
@@ -182,8 +184,6 @@ Pointwise Operations
     mindspore.mint.tanh
     mindspore.mint.trunc
     mindspore.mint.xlogy
-    mindspore.mint.deg2rad
-    mindspore.mint.rad2deg
 
 Reduction Operations
 ^^^^^^^^^^^^^^^^^^^^^

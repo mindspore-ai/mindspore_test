@@ -13,7 +13,7 @@ mindspore.mint.deg2rad
 
     返回：
         Tensor，若输入 `input` 为float类型（float16/float32/float64），返回类型与 `input` 相同；
-        若输入的 `input` 为uint8、int8、int16、bool类型等，返回的Tensor类型为float32。
+        若输入的 `input` 为uint8、int32、bool类型等，返回的Tensor类型为float32。
 
     异常：
         - **TypeError** - 如果 `input` 不是一个Tensor。
