@@ -11,16 +11,17 @@ mindspore.ops.svd
         A=U*diag(S)*V^{T}
 
     参数：
-        - **input** (Tensor) - 待分解的矩阵。shape为 :math:`(*, M, N)` ，支持的数据类型为float32和float64。
+        - **input** (Tensor) - 待分解的矩阵。shape为 :math:`(*, M, N)` 。
         - **full_matrices** (bool, 可选) - 如果为 ``True`` ，则计算完整的 :math:`U` 和 :math:`V` 。否则仅计算前P个奇异向量，P为M和N中的较小值，M和N分别是输入矩阵的行和列。默认值： ``False`` 。
         - **compute_uv** (bool, 可选) - 如果这个参数为 ``True`` ，则计算 :math:`U` 和 :math:`V` ，否则只计算 :math:`S` 。默认值： ``True`` 。
 
     返回：
-        - **s** (Tensor) - 奇异值。shape为 :math:`(*, P)` 。
-        - **u** (Tensor) - 左奇异向量。如果 `compute_uv` 为 ``False`` ，该值不会返回。shape为 :math:`(*, M, P)` 。如果 `full_matrices` 为 ``True`` ，则shape为 :math:`(*, M, M)` 。
-        - **v** (Tensor) - 右奇异向量。如果 `compute_uv` 为 ``False`` ，该值不会返回。shape为 :math:`(*, N, P)` 。如果 `full_matrices` 为 ``True`` ，则shape为 :math:`(*, N, N)` 。
+        如果 `compute_uv` 为 ``True`` ，将返回包含 `s` 、 `u` 和 `v` 的Tensor元组。否则，将仅返回单个Tensor `s` 。
+
+        - `s` 是奇异值Tensor。shape为 :math:`(*, P)` 。
+        - `u` 是左奇异向量Tensor。如果 `compute_uv` 为 ``False`` ，该值不会返回。shape为 :math:`(*, M, P)` 。如果 `full_matrices` 为 ``True`` ，则shape为 :math:`(*, M, M)` 。
+        - `v` 是右奇异向量Tensor。如果 `compute_uv` 为 ``False`` ，该值不会返回。shape为 :math:`(*, N, P)` 。如果 `full_matrices` 为 ``True`` ，则shape为 :math:`(*, N, N)` 。
 
     异常：
         - **TypeError** - `full_matrices` 或 `compute_uv` 不是bool类型。
         - **TypeError** - 输入的rank小于2。
-        - **TypeError** - 输入的数据类型不为float32或float64。
