@@ -25,6 +25,7 @@
 #include <algorithm>
 #include <functional>
 
+#include "ir/core_ops_primitive.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/structure_ops.h"
@@ -57,6 +58,7 @@
 #include "pipeline/jit/ps/silent_check.h"
 #include "frontend/optimizer/optimizer.h"
 #include "frontend/optimizer/ad/grad.h"
+#include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 #include "utils/ms_utils.h"
 #include "utils/phase.h"
@@ -1601,6 +1603,41 @@ bool IsCellReuse(const AnfNodePtr &input) {
   return false;
 }
 
+bool CantInlineCellReuse(const FuncGraphPtr &fg) {
+  MS_EXCEPTION_IF_NULL(fg);
+  if (!fg->has_flag(FUNC_GRAPH_FLAG_CELL_REUSE)) {
+    return false;
+  }
+  MS_LOG(INFO) << "Cell reuse graph: " << fg->ToString();
+  // cell reuse func graph has switch
+  if (!fg->switch_nodes().empty()) {
+    MS_LOG(INFO) << "Set no inline because cell reuse graph has switch, " << fg->ToString();
+    return true;
+  }
+  // cell reuse sub graph has switch or cell reuse
+  for (auto &sub_graph : fg->func_graphs_used_total()) {
+    if (!sub_graph->switch_nodes().empty() || sub_graph->has_flag(FUNC_GRAPH_FLAG_CELL_REUSE)) {
+      MS_LOG(INFO) << "Set no inline because cell reuse sub graph has switch or nested cell reuse, "
+                   << sub_graph->ToString();
+      return true;
+    }
+  }
+  MS_EXCEPTION_IF_NULL(fg->get_return());
+  MS_LOG(INFO) << "Graph return node: " << fg->get_return()->DebugString();
+  for (auto input : fg->get_return()->inputs()) {
+    if (IsPrimitiveCNode(input, prim::kPrimMakeTuple)) {
+      for (auto inner_input : input->cast<CNodePtr>()->inputs()) {
+        if (IsPrimitiveCNode(inner_input, prim::kPrimMakeTuple)) {
+          MS_LOG(INFO) << "Set no inline because cell reuse graph has nested make tuple.";
+          return true;
+        }
+      }
+    }
+  }
+  MS_LOG(INFO) << "Graph: " << fg->ToString() << " can be lazyinlined.";
+  return false;
+}
+
 void ProcessCanNotInline(const FuncGraphPtr &func_graph, const std::shared_ptr<MsContext> &context_ptr) {
   auto graphs = func_graph->func_graphs_used_total();
   (void)graphs.insert(func_graph);
@@ -1610,28 +1647,7 @@ void ProcessCanNotInline(const FuncGraphPtr &func_graph, const std::shared_ptr<M
     MS_LOG(INFO) << "Set no inline because graph has while.";
     context_ptr->SetCellReuseLevel(CellReuseLevel::kNoInline);
   }
-
-  auto cant_inline_cell_reuse = [](const FuncGraphPtr &fg) -> bool {
-    if (!fg->has_flag(FUNC_GRAPH_FLAG_CELL_REUSE)) {
-      return false;
-    }
-    MS_LOG(INFO) << "Cell reuse graph: " << fg->ToString();
-    // cell reuse func graph has switch
-    if (!fg->switch_nodes().empty()) {
-      MS_LOG(INFO) << "Set no inline because cell reuse graph has switch, " << fg->ToString();
-      return true;
-    }
-    // cell reuse sub graph has switch or cell reuse
-    for (auto &sub_graph : fg->func_graphs_used_total()) {
-      if (!sub_graph->switch_nodes().empty() || sub_graph->has_flag(FUNC_GRAPH_FLAG_CELL_REUSE)) {
-        MS_LOG(INFO) << "Set no inline because cell reuse sub graph has switch or nested cell reuse, "
-                     << sub_graph->ToString();
-        return true;
-      }
-    }
-    return false;
-  };
-  if (std::any_of(graphs.cbegin(), graphs.cend(), cant_inline_cell_reuse)) {
+  if (std::any_of(graphs.cbegin(), graphs.cend(), CantInlineCellReuse)) {
     MS_LOG(INFO) << "Set no inline because cell reuse graph has switch or nested cell reuse.";
     context_ptr->SetCellReuseLevel(CellReuseLevel::kNoInline);
   }
