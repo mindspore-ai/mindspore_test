@@ -35,6 +35,7 @@ class DUMP_EXPORT TensorDumpStepManager {
   ~TensorDumpStepManager() = default;
   void SetDumpStep(const std::vector<size_t> &);
   std::string ProcessFileName(const std::string &, const std::string &, const int = kGraphMode);
+  void SetAclDumpCallbackReg(void *);
 
  private:
   TensorDumpStepManager() = default;
@@ -47,6 +48,7 @@ class DUMP_EXPORT TensorDumpStepManager {
   std::atomic<size_t> id_;
   std::array<size_t, 2> step_ = {0, 0};
   std::set<size_t> valid_steps_;
+  void *aclDumpCallbackReg_;
 };
 
 }  // namespace mindspore

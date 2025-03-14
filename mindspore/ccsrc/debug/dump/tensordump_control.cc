@@ -131,4 +131,6 @@ std::string TensorDumpStepManager::ProcessFileName(const std::string &filename, 
   }
   return TensorNameToArrayName(filename, dtype, mode);
 }
+
+void TensorDumpStepManager::SetAclDumpCallbackReg(void *callbackReg) { aclDumpCallbackReg_ = callbackReg; }
 }  // namespace mindspore
