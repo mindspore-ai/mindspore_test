@@ -2643,6 +2643,11 @@ REG_BPROP_BUILDER("Neg").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
   return {-dout};
 });
 
+REG_BPROP_BUILDER("InplaceNeg").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
+  auto dout = ib->GetInput(kIndex2);
+  return {-dout};
+});
+
 REG_BPROP_BUILDER("RealDiv").FreeUselessValues(FreeTensorsOfDiv).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto y = ib->GetInput(kIndex1);
