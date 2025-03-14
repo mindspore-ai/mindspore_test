@@ -52,6 +52,7 @@ class GroupedMatmulAssignaddFusion : public PatternProcessPass {
   bool CheckFusion(const CNodePtr &grouped_matmul, const EquivPtr &equiv) const;
   bool CheckDataType(const AnfNodePtr &input_x, const AnfNodePtr &weight, const AnfNodePtr &group_list,
                      const AnfNodePtr &out) const;
+  void ReplaceGMMForDepend(const FuncGraphPtr &graph, const CNodePtr &gmm, const CNodePtr &gmm_add) const;
 
   VarPtr x_;
   VarPtr weight_;

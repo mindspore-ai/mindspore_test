@@ -121,6 +121,20 @@ bool GroupedMatmulAssignaddFusion::CheckDataType(const AnfNodePtr &input_x, cons
   return true;
 }
 
+void GroupedMatmulAssignaddFusion::ReplaceGMMForDepend(const FuncGraphPtr &graph, const CNodePtr &gmm,
+                                                       const CNodePtr &gmm_add) const {
+  // replace GMM with GMMAdd when GMM is depend's 2nd input.(depend is created by dw masking)
+  auto manager = graph->manager();
+  MS_EXCEPTION_IF_NULL(manager);
+  const auto &gmm_users = manager->node_users()[gmm];
+  for (const auto &[node, index] : gmm_users) {
+    const int depend_idx = 2;
+    if (IsPrimitiveCNode(node, prim::kPrimDepend) && index == depend_idx) {
+      (void)manager->SetEdge(node, kIndex2, gmm_add);
+    }
+  }
+}
+
 std::vector<std::string> GroupedMatmulAssignaddFusion::MustExistPrimitiveName() const {
   std::vector<std::string> ret{kTransposeExtOpName, prim::kPrimGroupedMatmul->name(), kAssignAddOpName};
   return ret;
@@ -156,7 +170,6 @@ const AnfNodePtr GroupedMatmulAssignaddFusion::Process(const FuncGraphPtr &graph
     return nullptr;
   }
 
-  const std::string fusion_op_name = "InplaceGroupedMatmulAdd";
   auto input_x = GetAnfNodeByVar(equiv, x_);
   auto weight = GetAnfNodeByVar(equiv, weight_);
   auto group_list = GetAnfNodeByVar(equiv, group_list_);
@@ -166,6 +179,8 @@ const AnfNodePtr GroupedMatmulAssignaddFusion::Process(const FuncGraphPtr &graph
     return nullptr;
   }
 
+  // create InplaceGroupedMatmulAdd
+  const std::string fusion_op_name = "InplaceGroupedMatmulAdd";
   std::vector<AnfNodePtr> inputs = {NewValueNode(std::make_shared<Primitive>(fusion_op_name)), input_x, weight_node,
                                     group_list, out};
   auto grouped_matmul_add = NewCNode(inputs, graph);
@@ -174,6 +189,7 @@ const AnfNodePtr GroupedMatmulAssignaddFusion::Process(const FuncGraphPtr &graph
   if (common::AnfAlgo::HasNodeAttr(GRAPH_FLAG_SIDE_EFFECT_MEM, node->cast<CNodePtr>())) {
     common::AnfAlgo::CopyNodeAttr(GRAPH_FLAG_SIDE_EFFECT_MEM, node, grouped_matmul_add);
   }
+  ReplaceGMMForDepend(graph, grouped_matmul_cnode, grouped_matmul_add);
   return grouped_matmul_add;
 }
 }  // namespace opt
