@@ -3,10 +3,10 @@ mindspore.ops.dense_to_sparse_coo
 
 .. py:function:: mindspore.ops.dense_to_sparse_coo(tensor: Tensor)
 
-    将常规Tensor转为稀疏化的COOTensor。
+    将常规Tensor转换为稀疏化的COOTensor。
 
     .. note::
-        现在只支持二维Tensor。
+        目前只支持二维Tensor。
 
     参数：
         - **tensor** (Tensor) - 一个稠密Tensor，必须是二维。
