@@ -48,6 +48,62 @@ REG_FALLBACK_BUILDER("AddExt").SetBody(BODYFUNC(ib) {
   return {x + y * alpha_tensor};
 });
 
+REG_FALLBACK_BUILDER("AddScalar").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto y = ib->GetInput(kIndex1);
+  auto alpha = ib->GetInput(kIndex2);
+
+  auto x_type = ib->GetDtype(x)->type_id();
+  auto y_type = ib->GetDtype(y)->type_id();
+  if ((y_type == kNumberTypeFloat32 || y_type == kNumberTypeInt64) &&
+      (x_type == kNumberTypeUInt16 || x_type == kNumberTypeUInt32 || x_type == kNumberTypeUInt64)) {
+    MS_EXCEPTION(TypeError) << "Type implicit conversion between Tensor[" << TypeIdToString(x_type) << "] and "
+                            << TypeIdToString(y_type) << " is not supported.";
+  }
+
+  std::set<TypeId> kSet = {kNumberTypeUInt8, kNumberTypeInt8, kNumberTypeInt16, kNumberTypeInt32, kNumberTypeInt64};
+  auto promote_type = TypeIdToType(kNumberTypeFloat32);
+  if ((kSet.find(x_type) != kSet.end()) && y_type == kNumberTypeFloat32) {
+    promote_type = TypeIdToType(kNumberTypeFloat32);
+  } else if (x_type == kNumberTypeBool && (y_type == kNumberTypeFloat32 || y_type == kNumberTypeInt64)) {
+    promote_type = TypeIdToType(y_type);
+  } else {
+    promote_type = TypeIdToType(x_type);
+  }
+  auto x_cast = ib->Cast(x, promote_type);
+  auto y_cast = ib->ScalarToTensor(y, promote_type);
+
+  return {ib->Emit("AddExt", {x_cast, y_cast, alpha})};
+});
+
+REG_FALLBACK_BUILDER("SubScalar").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto y = ib->GetInput(kIndex1);
+  auto alpha = ib->GetInput(kIndex2);
+
+  auto x_type = ib->GetDtype(x)->type_id();
+  auto y_type = ib->GetDtype(y)->type_id();
+  if ((y_type == kNumberTypeFloat32 || y_type == kNumberTypeInt64) &&
+      (x_type == kNumberTypeUInt16 || x_type == kNumberTypeUInt32 || x_type == kNumberTypeUInt64)) {
+    MS_EXCEPTION(TypeError) << "Type implicit conversion between Tensor[" << TypeIdToString(x_type) << "] and "
+                            << TypeIdToString(y_type) << " is not supported.";
+  }
+
+  std::set<TypeId> kSet = {kNumberTypeUInt8, kNumberTypeInt8, kNumberTypeInt16, kNumberTypeInt32, kNumberTypeInt64};
+  auto promote_type = TypeIdToType(kNumberTypeFloat32);
+  if ((kSet.find(x_type) != kSet.end()) && y_type == kNumberTypeFloat32) {
+    promote_type = TypeIdToType(kNumberTypeFloat32);
+  } else if (x_type == kNumberTypeBool && (y_type == kNumberTypeFloat32 || y_type == kNumberTypeInt64)) {
+    promote_type = TypeIdToType(y_type);
+  } else {
+    promote_type = TypeIdToType(x_type);
+  }
+  auto x_cast = ib->Cast(x, promote_type);
+  auto y_cast = ib->ScalarToTensor(y, promote_type);
+
+  return {ib->Emit("SubExt", {x_cast, y_cast, alpha})};
+});
+
 REG_FALLBACK_BUILDER("InplaceAddExt").SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto y = ib->GetInput(kIndex1);
