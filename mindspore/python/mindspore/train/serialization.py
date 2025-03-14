@@ -2919,7 +2919,7 @@ def restore_group_info_list(group_info_file_name):
     who saves the `group_info_file_name`. To save the group info file, please export GROUP_INFO_FIL
     environment variables like "export GROUP_INFO_FILE=/data/group_info.pb".
     """
-    new_restore_group_info_list(group_info_file_name)
+    return new_restore_group_info_list(group_info_file_name)
 
 
 def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_strategy=None,
@@ -2937,9 +2937,9 @@ def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_stra
 
 def merge_sliced_parameter(sliced_parameters, strategy=None):
     """ Merge parameter slices into one parameter. Used in the case of distributed inference. """
-    new_merge_sliced_parameter(sliced_parameters, strategy)
+    return new_merge_sliced_parameter(sliced_parameters, strategy)
 
 
 def build_searched_strategy(strategy_filename):
     """ Build strategy of every parameter in network. Used in the case of distributed inference. """
-    new_build_searched_strategy(strategy_filename)
+    return new_build_searched_strategy(strategy_filename)
