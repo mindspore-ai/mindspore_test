@@ -122,6 +122,8 @@ class GraphAnalyzer {
   const GraphBreakInfo &graph_break_info() const { return graph_break_info_; }
 
  private:
+  void BeforeAnalyze();
+
   // Collect top-graph closure side-effect nodes.
   void CollectClosureSideEffect();
   void OptimizeSideEffectRecord() const;

@@ -17,6 +17,7 @@
 #define MINDSPORE_PI_JIT_PYTHON_ADAPTER_PY_CODE_H
 
 #include <string>
+#include <sstream>
 #include "pipeline/jit/pi/python_adapter/pydef.h"
 #include "pybind11/pybind11.h"
 
@@ -24,6 +25,9 @@ namespace mindspore {
 namespace pijit {
 
 namespace py = pybind11;
+
+// the value is -1 if no line or no column
+struct CodeLocation;
 
 /**
  * wrapper code object to fast access it's field
@@ -67,11 +71,37 @@ class PyCodeWrapper {
   py::tuple FastLocalNames() const;
   int FastLocalSize() const;
 
+  int Addr2Line(int byte_offset);
+  CodeLocation Addr2Location(int byte_offset);
+
  private:
   PyCodeObject *ptr_;
 };
 
 std::string ToString(const PyCodeWrapper &code);
+
+// the value is -1 if no line or no column
+struct CodeLocation {
+  int start_line_;
+  int end_line_;
+  int start_column_;
+  int end_column_;
+};
+
+inline std::ostream &operator<<(std::ostream &s, const CodeLocation &loc) {
+  s << "Loc(" << loc.start_line_ << "," << loc.end_line_ << "," << loc.start_column_ << "," << loc.end_column_ << ")";
+  return s;
+}
+
+inline bool operator==(const CodeLocation &x, const CodeLocation &y) {
+  return x.start_line_ == y.start_line_ && x.end_line_ == y.end_line_ && x.start_column_ == y.start_column_ &&
+         x.end_column_ == y.end_column_;
+}
+
+inline bool operator!=(const CodeLocation &x, const CodeLocation &y) {
+  return x.start_line_ != y.start_line_ || x.end_line_ != y.end_line_ || x.start_column_ != y.start_column_ ||
+         x.end_column_ != y.end_column_;
+}
 
 }  // namespace pijit
 }  // namespace mindspore

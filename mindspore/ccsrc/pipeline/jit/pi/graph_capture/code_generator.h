@@ -48,9 +48,19 @@ struct GraphInputInfo {
   ValueNode *vargs = nullptr;
   ValueNode *kwargs = nullptr;
 };
+using InstructionList = std::vector<std::unique_ptr<Instr>>;
 
 class CodeGenerator {
  public:
+  struct ExceptionCodeItem {
+    // [begin, end]
+    Instr *begin_;
+    Instr *end_;
+    Instr *jump_;
+    int stack_;
+    bool lasti_;
+  };
+
   struct Code {
     int co_argcount;
     int co_kwonlyargcount;
@@ -63,9 +73,8 @@ class CodeGenerator {
     std::vector<std::string> co_freevars;
     std::string co_name;
     py::object co_filename;
-    py::object co_qualname;
-    py::object co_exceptiontable;
-    py::object co_line_table;
+    std::string co_qualname;
+    std::vector<ExceptionCodeItem> co_exceptiontable;
   };
 
   explicit CodeGenerator(const NodeSet *nodes)
@@ -89,10 +98,8 @@ class CodeGenerator {
   void SetCellVariableNames(const std::vector<std::string> &names) { code_.co_cellvars = names; }
   void SetFreeVariableNames(const std::vector<std::string> &names) { code_.co_freevars = names; }
   void SetCodeName(const std::string &name) { code_.co_name = name; }
+  void SetQualName(const std::string &qualname) { code_.co_qualname = qualname; }
   void SetFileName(const py::object &file) { code_.co_filename = file; }
-  void SetQualName(const py::object &qualname) { code_.co_qualname = qualname; }
-  void SetExceptionTable(const py::object &exceptiontable) { code_.co_exceptiontable = exceptiontable; }
-  void SetLineTable(const py::object &bytes) { code_.co_line_table = bytes; }
 
   void ClearAlive(ValueNode *node) { nodes_alive_.erase(node); }
   void ClearAlive() { nodes_alive_.clear(); }
@@ -102,6 +109,8 @@ class CodeGenerator {
   void MakeSameLocal(ValueNode *new_node, ValueNode *old_node, bool clear = false);
   void NewInstr(int op, int arg = 0, int line = -1);
   void AddInstrs(std::vector<std::unique_ptr<Instr>> &&list);
+  void AddInstructionWithExceptionTable(const CFG *cfg, int start, int end);
+  void CollectExceptionTableItem(const CFG *cfg, int start, int end);
   void AddInstr(std::unique_ptr<Instr> &&instr);
   void AddCallInstr(size_t load_args_offset, int oparg);
   py::object NewCode();
@@ -166,19 +175,14 @@ class CodeGenerator {
     const std::vector<std::unique_ptr<Instr>> &replacement);
 
   /**
-   * Erase unused instr
-   *
-   * \param list instruction list
-   */
-  static void EraseUnusedInstr(std::vector<std::unique_ptr<Instr>> *list);
-
-  /**
    * generate rot instructions
    */
   static std::vector<std::unique_ptr<Instr>> RotStack(int stack);
 
  private:
   void MarkAlive(ValueNode *node, int order);
+  void EraseUnusedInstr();
+  void ResetExceptionCodeItem(InstructionList::const_iterator erased);
 
   static py::object Transform(const Code &ccode);
   static std::pair<py::bytes, py::bytes> ConvertToCodeBytes(const Code &ccode);

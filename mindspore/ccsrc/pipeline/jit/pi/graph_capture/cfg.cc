@@ -69,7 +69,7 @@ std::string Instr::ToString() const {
   }
 #endif
   std::stringstream s;
-  s << bci_ << ' ' << Opcode(op_).name() << ' ' << arg_;
+  s << bci() << ' ' << Opcode(op_).name() << ' ' << arg_;
 #if IS_PYTHON_3_11_PLUS
   if (op() == BINARY_OP) {
     s << nb_map[arg_];
@@ -84,6 +84,7 @@ std::string Instr::ToString() const {
   if (extra_jump()) {
     s << " -> " << extra_jump()->bci();
   }
+  s << " " << loc_;
   return s.str();
 }
 
@@ -139,12 +140,42 @@ void CFG::GenerateCFG() {
   BuildInst(begin, end);
   BuildCFG(BuildBB(begin, end));
   MarkDeadBB();
+  InitExceptionTable();
+
 #if IS_PYTHON_3_11_PLUS
   for (size_t index = 0, size = instrs_.size(); index < size; ++index) {
     // code check: std::replace can't apply to std::make_unique
     (void)(instrs_[index] == nullptr ? !(instrs_[index] = std::make_unique<Instr>(CACHE, 0, index)) : false);
   }
 #endif
+}
+
+void CFG::InitExceptionTable() {
+  py::object bytes = py::getattr(reinterpret_cast<PyObject *>(co_.ptr()), "co_exceptiontable", nullptr);
+  if (bytes.ptr() == nullptr) {
+    return;
+  }
+  const uint8_t *begin = reinterpret_cast<const uint8_t *>(PyBytes_AsString(bytes.ptr()));
+  const uint8_t *end = begin + PyBytes_GET_SIZE(bytes.ptr());
+  auto iter = begin;
+  const auto read_variant = [&iter, &end]() {
+    const int kValidBits = 6;
+    const int kValueMask = (1 << kValidBits) - 1;
+    int val = iter[0] & kValueMask;
+    while (iter[0] & (1 << kValidBits)) {
+      iter++;
+      val = (val << kValidBits) | (iter[0] & kValueMask);
+    }
+    ++iter;
+    return val;
+  };
+  while (iter < end) {
+    int start = read_variant();
+    int len = read_variant();
+    int jump = read_variant();
+    int pack = read_variant();
+    exc_table_[start] = {start, start + len, jump, pack >> 1, (pack & 1) ? true : false};
+  }
 }
 
 static int DeOptimizedOpcode(int op) {
@@ -221,12 +252,11 @@ void CFG::BuildInst(const uint8_t *begin, const uint8_t *end) {
     int bci = off / PY_BCSIZE;
     MS_EXCEPTION_IF_CHECK_FAIL(static_cast<size_t>(bci) < instrs_.size(), "Error byte code end");
 
-    int line = PyCode_Addr2Line(co_.ptr(), off);
     Instr *cur = GetInstruction(bci);
     cur->set_bci(bci);
     cur->set_op(op);
     cur->set_arg(arg);
-    cur->set_line(line);
+    cur->set_location(co_.Addr2Location(off));
     SetInstructionName(co_, cur);
     if (opcode.HasConst()) {  // KW_NAMES, LOAD_CONST, RETURN_CONST
       cur->set_cnst(co_.co_consts()[arg]);
@@ -376,6 +406,34 @@ Block *CFG::GetBlockByBci(int bci) const {
   return iter->get();
 }
 
+ExceptionTable::const_iterator CFG::FindTryWithBlock(int random_bci) const {
+  const auto &map = this->exc_table();
+  const auto &list = this->instr_pool();
+  if (map.empty()) {
+    return map.end();
+  }
+  MS_EXCEPTION_IF_CHECK_FAIL(static_cast<size_t>(random_bci) < list.size(), "out of bci range");
+  if (list[random_bci]->op() == BEFORE_WITH) {
+    random_bci++;
+  }
+  auto iter = map.lower_bound(random_bci);
+  if (iter == map.end() || (iter->first != random_bci && iter != map.begin())) {
+    --iter;  // check previous item
+  }
+  MS_LOG(DEBUG) << "find a closest exception table item for bci: " << random_bci << ": " << iter->second;
+  if (iter->second.begin_ > random_bci || random_bci >= iter->second.end_) {
+    return map.end();
+  }
+  int handler = iter->second.jump_;
+  if (list[handler]->op() != PUSH_EXC_INFO) {
+    MS_LOG(INFO) << "unknown exception handler pattern";
+    return map.end();
+  }
+  MS_LOG(DEBUG) << "try/with block syntax bci range (no finally block) [" << iter->second.begin_ << ","
+                << (list[handler - 1]->extra_jump() ? list[handler - 1]->extra_jump()->bci() : list.size()) << ")";
+  return iter;
+}
+
 std::string CFG::ToString() const {
   std::ostringstream os;
   os << "*** Dump BB on [" << co_.ToString() << "] ***" << std::endl;
@@ -386,6 +444,13 @@ std::string CFG::ToString() const {
         os << "  " << instrs_[i]->ToString() << std::endl;
       }
     }
+  }
+  if (exc_table_.empty()) {
+    return os.str();
+  }
+  os << "exception handler:" << std::endl;
+  for (const auto &pair : exc_table_) {
+    os << pair.second << std::endl;
   }
   return os.str();
 }

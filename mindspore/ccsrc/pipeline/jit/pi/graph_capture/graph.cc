@@ -908,8 +908,9 @@ void Graph::DumpBreakInfo(std::ostream *out) const {
     }
   } else {
     auto iter = std::find_if(nodes.begin(), nodes.end(), [break_bci](ValueNode *n) { return n->bci() == break_bci; });
-    MS_EXCEPTION_IF_CHECK_FAIL(iter != nodes.end(), "can't find break info.");
-    parameters.push_back(*iter);
+    if (iter != nodes.end()) {
+      parameters.push_back(*iter);
+    }
   }
   // print traced value
   for (auto node : parameters) {

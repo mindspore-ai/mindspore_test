@@ -225,6 +225,18 @@ py::object PyCodeWrapper::DeepCopy() {
   throw py::error_already_set();
 }
 
+int PyCodeWrapper::Addr2Line(int byte_offset) { return PyCode_Addr2Line(ptr_, byte_offset); }
+CodeLocation PyCodeWrapper::Addr2Location(int byte_offset) {
+#if IS_PYTHON_3_11_PLUS
+  CodeLocation loc;
+  PyCode_Addr2Location(ptr_, byte_offset, &loc.start_line_, &loc.start_column_, &loc.end_line_, &loc.end_column_);
+  return loc;
+#else
+  int line = Addr2Line(byte_offset);
+  return {line, line, -1, -1};
+#endif
+}
+
 std::string ToString(const PyCodeWrapper &code) {
   return std::string(py::str(reinterpret_cast<PyObject *>(code.ptr())));
 }

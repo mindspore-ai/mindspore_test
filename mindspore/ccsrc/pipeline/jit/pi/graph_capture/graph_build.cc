@@ -180,6 +180,7 @@ const std::unordered_map<int, bool (GraphBuilder::*)(const Instr &)> GraphBuilde
   {GET_YIELD_FROM_ITER, &GraphBuilder::DoGetYieldFromIter},
   {POP_BLOCK, &GraphBuilder::DoPopStack},
   {SETUP_WITH, &GraphBuilder::DoWith},
+  {BEFORE_WITH, &GraphBuilder::DoWith},
   {SETUP_FINALLY, &GraphBuilder::DoSetupFinally},
   {WITH_CLEANUP_START, &GraphBuilder::DoWithCleanUpStart},
   {WITH_CLEANUP_FINISH, &GraphBuilder::DoWithCleanUpFinish},
@@ -818,7 +819,7 @@ bool GraphBuilder::DoWith(const Instr &instr) {
     MS_LOG(INFO) << "function '__enter__' runs failed.";
     return false;
   }
-  PushStack(TryBlock{SETUP_WITH, instr.extra_jump()->bci(), instr.name(), instr.bci(), false});
+  PushStack(TryBlock{instr.op(), instr.extra_jump()->bci(), instr.name(), instr.bci(), false});
   cur_bci_++;
   return true;
 }

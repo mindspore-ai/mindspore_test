@@ -194,7 +194,29 @@ void UpdateBreakInfo(Graph *graph) {
 }
 }  // namespace
 
+void GraphAnalyzer::BeforeAnalyze() {
+#if IS_PYTHON_3_11_PLUS
+  Graph *g = this->graph_;
+  int break_bci = g->GetStopTraceBci();
+  if (break_bci == -1) {
+    return;
+  }
+  auto iter = g->GetCFG()->FindTryWithBlock(break_bci);
+  if (iter == g->GetCFG()->exc_table().end()) {
+    return;
+  }
+  int new_break_bci = iter->second.begin_;
+  if (new_break_bci != 0 && g->GetCFG()->instr_pool()[new_break_bci - 1]->op() == BEFORE_WITH) {
+    new_break_bci--;
+  }
+  MS_LOG(INFO) << "break at try/with block, reset break bci to try/with syntax start: " << break_bci << " -> "
+               << new_break_bci;
+  g->StopTraceAt(new_break_bci, g->GetStopTraceReason());
+#endif
+}
+
 void GraphAnalyzer::Analyze() {
+  BeforeAnalyze();
   MS_LOG(INFO) << "Start graph analyze";
   auto collect_trace_nodes = [this]() {
     const auto &nodes = graph_->GetTracedNodes();
