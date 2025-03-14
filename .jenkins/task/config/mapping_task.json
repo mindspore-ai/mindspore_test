@@ -319,6 +319,7 @@
       "version.txt",
       "build.sh",
       "graphengine",
+      "mstt",
       "CMakeLists.txt",
       ".gitignore",
       "third_party",
@@ -816,6 +817,7 @@
     "DIR_ARRAY": [
       "build.sh",
       "graphengine",
+      "mstt",
       "CMakeLists.txt",
       ".gitignore",
       "cmake",
