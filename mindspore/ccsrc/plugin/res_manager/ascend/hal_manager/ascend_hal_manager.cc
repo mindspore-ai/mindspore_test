@@ -18,12 +18,12 @@
 
 #include <fstream>
 #include <string>
-#include <nlohmann/json.hpp>
 #include "include/common/debug/common.h"
 #include "acl/acl_rt.h"
 #include "utils/log_adapter.h"
 #include "utils/convert_utils_base.h"
 #include "utils/ms_context.h"
+#include "plugin/res_manager/ascend/device_context_conf/op_debug_conf.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
@@ -171,23 +171,6 @@ void AscendHalManager::SetContext(uint32_t device_id) {
   thread_local_rt_context = default_device_context_map_[device_id];
 }
 
-namespace {
-bool GenerateAclInitJson(const std::string &json_file_path) {
-  nlohmann::json acl_init_json;
-  acl_init_json["err_msg_mode"] = "1";
-  std::string json_file_str = acl_init_json.dump();
-  std::ofstream json_file(json_file_path);
-  if (!json_file.is_open()) {
-    MS_LOG(WARNING) << "Open file [" << json_file_path << "] failed!";
-    return false;
-  }
-  json_file << json_file_str;
-  json_file.close();
-  MS_LOG(INFO) << "Generate aclInit json to file : " << json_file_path;
-  return true;
-}
-}  // namespace
-
 void AscendHalManager::InitializeAcl() {
   std::lock_guard<std::mutex> lock(acl_init_mutex_);
   if (acl_initialized_) {
@@ -197,7 +180,7 @@ void AscendHalManager::InitializeAcl() {
   std::string file_name = "./aclinit.json";
   auto realpath = Common::CreatePrefixPath(file_name);
   if (realpath.has_value()) {
-    if (Common::FileExists(realpath.value()) || GenerateAclInitJson(realpath.value())) {
+    if (OpDebugConf::GetInstance()->GenerateAclInitJson(realpath.value())) {
       acl_json_path = realpath.value().c_str();
     }
   } else {

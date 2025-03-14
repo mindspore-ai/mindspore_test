@@ -113,19 +113,27 @@ def aclinit_config(config):
               either by process or by thread. The default level is by process. "0" indicating that error information
               is retrieved by thread.
               "1" is the default value, indicates that error information is retrieved by process.
+            - ``"dump"``: This parameter is used to enable exception dump for Ascend operators. The value can be set to
+              {"dump_scene": "lite_exception"}, {"dump_scene": "lite_exception:disable"}.
+              {"dump_scene": "lite_exception"} indicates that the exception dump is enabled.
+              {"dump_scene": "lite_exception:disable"} indicates that the exception dump is disabled.
+              {"dump_scene": "lite_exception"} is the default value, indicates that the exception dump is enabled.
 
     Examples:
         >>> import mindspore as ms
         >>> ms.set_device("Ascend", 0)
-        >>> ms.device_context.ascend.op_debug.aclinit_config({"max_opqueue_num": "20000", "err_msg_mode": "1"})
+        >>> ms.device_context.ascend.op_debug.aclinit_config({"max_opqueue_num": "20000", "err_msg_mode": "1",
+        ...                                                   "dump": {"dump_scene": "lite_exception"}})
     """
     aclinit_cfg_modes = {
         "max_opqueue_num": (str,),
-        "err_msg_mode": ['0', '1']
+        "err_msg_mode": ['0', '1'],
+        "dump": [{"dump_scene": "lite_exception"}, {"dump_scene": "lite_exception:disable"}],
     }
     aclinit_cfg_setters = {
         "max_opqueue_num": set_max_opqueue_num,
-        "err_msg_mode": set_err_msg_mode
+        "err_msg_mode": set_err_msg_mode,
+        "dump": set_lite_exception_dump
     }
     aclinit_cfg_set = tuple(aclinit_cfg_modes.keys())
     for key, value in config.items():
@@ -141,11 +149,12 @@ def aclinit_config(config):
                             f"must be one of {supported_modes}, but got {type(value)}.")
         cfg_setter = aclinit_cfg_setters.get(key)
         cfg_setter(value)
-        if not AscendOpDebugConf.get_instance().generate_aclinit_json():
-            raise RuntimeError("The AclInit json file is not generated successfully, please check the log.")
 
 def set_max_opqueue_num(opqueue_num):
     AscendOpDebugConf.get_instance().set_max_opqueue_num(opqueue_num)
 
 def set_err_msg_mode(msg_mode):
     AscendOpDebugConf.get_instance().set_err_msg_mode(msg_mode)
+
+def set_lite_exception_dump(msg_mode):
+    AscendOpDebugConf.get_instance().set_lite_exception_dump(msg_mode)

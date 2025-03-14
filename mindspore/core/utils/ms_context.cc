@@ -685,7 +685,6 @@ void MsContext::InitStringTypeDefaultValue() {
   set_param<std::string>(MS_CTX_AOE_JOB_TYPE, "2");
   set_param<std::string>(MS_CTX_GRAPH_KERNEL_FLAGS, "");
   set_param<std::string>(MS_CTX_HOST_SCHEDULING_MAX_THRESHOLD, "");
-  set_param<std::string>(MS_CTX_ENABLE_EXCEPTION_DUMP, "2");
   set_param<std::string>(MS_CTX_GRAPH_MEMORY_MAX_SIZE, "0");
   set_param<std::string>(MS_CTX_VARIABLE_MEMORY_MAX_SIZE, "0");
   set_param<std::string>(MS_CTX_PROFILING_OPTIONS, "training_trace");

@@ -335,8 +335,8 @@ class _Context:
                   default not enabled, only supports ``"oom"`` currently.
                   ``"oom"``: Detect memory out of bounds.
                 - ge_options (dict): Global or session CANN options.
-                - exception_dump (str): Enable exception dump for Ascend operators. ``"0"`` , ``"1"`` and ``"2"``.
-                  Default: ``"2"`` .
+                - exception_dump (str): Has been deprecated since MindSpore 2.6. Please use
+                  api :func:`mindspore.device_context.ascend.op_debug.aclinit_config` instead.
                 - parallel_speed_up_json_path(Union[str, None]): The path to the parallel speed up json file.
                   If its value is None or '', it does not take effect. Default None.
                 - host_scheduling_max_threshold(int): The host scheduling max threshold.
@@ -370,7 +370,7 @@ class _Context:
             'atomic_clean_policy': self._get_ascend_config_setter('atomic_clean_policy', str),
             'matmul_allow_hf32': self._get_ascend_config_setter('matmul_allow_hf32', lambda v: "1" if v else "0"),
             'conv_allow_hf32': self._get_ascend_config_setter('conv_allow_hf32', lambda v: "1" if v else "0"),
-            'exception_dump': self._get_ascend_config_setter('exception_dump'),
+            'exception_dump': lambda x: x,
             'op_debug_option': self._set_op_debug_option,
             'op_precision_mode': self._set_op_precision_mode,
             'ge_options': self._set_ge_options,
@@ -383,11 +383,24 @@ class _Context:
             'hccl_watchdog': self._set_hccl_watchdog,
             'topo_order': self._set_topo_order
         }
+        invalid_context_dict = {
+            'exception_dump': {'version': '2.6', 'interface': 'device_context.ascend.op_debug.aclinit_config()'}
+        }
         ascend_cfg_set = tuple(ascend_cfg_modes.keys())
         for ascend_key, ascend_value in ascend_config.items():
             if ascend_key not in ascend_cfg_set:
                 raise ValueError(f"For 'context.set_context', the key of argument 'ascend_config' must be one of "
                                  f"{ascend_cfg_set}, but got {ascend_key}.")
+            if ascend_key in invalid_context_dict:
+                key = invalid_context_dict.get(ascend_key)
+                deprecated_version, new_interface = key.get('version'), key.get('interface')
+                log = (
+                    f"For 'ascend_config', the parameter '{ascend_key}' has been removed"
+                    f" since MindSpore {deprecated_version} version."
+                )
+                if new_interface:
+                    log += f" Please use the {new_interface} instead."
+                raise ValueError(log)
             supported_modes = ascend_cfg_modes.get(ascend_key)
             if isinstance(supported_modes, list) and ascend_value not in supported_modes:
                 raise ValueError(f"For 'ascend_config', the value of argument {ascend_key} must be one of "
@@ -1324,7 +1337,7 @@ def _check_target_specific_cfgs(device, arg_key):
 def _check_ascend_device_context_initialized(device_target, settings):
     if device_target == 'Ascend' and is_initialized(device_target):
         for key, _ in settings.items():
-            if key in ('ascend_config', 'deterministic', 'jit_compile', 'exception_dump', 'device_id'):
+            if key in ('ascend_config', 'deterministic', 'jit_compile', 'device_id'):
                 logger.warning(f"For 'context.set_context' in Ascend backend, the backend is already initialized, "
                                "please set it before the definition of any Tensor and Parameter, and the "
                                "instantiation and execution of any operation and net, otherwise the settings may not "
@@ -1374,12 +1387,24 @@ def _check_context_deprecated(key):
                                                      mindspore.device_context.gpu.op_precision.conv_dgrad_algo()''',
                                'runtime_num_threads': 'api mindspore.device_context.cpu.op_tuning.threads_num()',
                                'memory_offload': "`device` parameter of `mindspore.Parameter`"}
+    invalid_context_dict = {
+        'exception_dump': {'version': '2.6', 'interface': 'device_context.ascend.op_debug.aclinit_config()'}
+    }
     if key in deprecated_context_dict:
         log = f"For 'context.set_context', the parameter '{key}' will be deprecated and removed in a future version."
         if deprecated_context_dict.get(key) != '':
             log += f" Please use the {deprecated_context_dict.get(key)} instead."
         logger.warning(log)
-
+    if key in invalid_context_dict:
+        info = invalid_context_dict.get(key)
+        deprecated_version, new_interface = info.get('version'), info.get('interface')
+        log = (
+            f"For 'context.set_context', the parameter '{key}' has been removed"
+            f" since MindSpore {deprecated_version} version."
+        )
+        if new_interface:
+            log += f" Please use the {new_interface} instead."
+        raise ValueError(log)
 
 @args_type_check(mode=int, precompile_only=bool, device_target=str, device_id=int, save_graphs=(bool, int),
                  save_graphs_path=str, aoe_tune_mode=str, aoe_config=dict,
@@ -1726,11 +1751,8 @@ def set_context(**kwargs):
               For detailed information, please refer to `Ascend community <https://www.hiascend.com/>`_ .
               This parameter will be deprecated and will be removed in future versions. Please use the
               api :func:`mindspore.device_context.ascend.op_precision.conv_allow_hf32` instead.
-            - exception_dump (str): Enable exception dump for Ascend operators, providing the input and output data for
-              failing Ascend operators. The value can be ``"0"`` , ``"1"`` and ``"2"``. For ``"0"`` , exception dump is
-              turned off; for ``"1"``, all inputs and outputs will be dumped for AICore exception operators;
-              for ``"2"``, inputs will be dumped for AICore exception operators, reducing the saved information
-              but improving performance. Default: ``"2"`` .
+            - exception_dump (str): Has been deprecated since MindSpore 2.6. Please use the
+              api :func:`mindspore.device_context.ascend.op_debug.aclinit_config` instead.
             - op_precision_mode (str): Path to config file of op precision mode. For detailed information, please refer
               to `Ascend community <https://www.hiascend.com/>`_ .
               This parameter will be deprecated and will be removed in future versions. Please use the
