@@ -560,7 +560,7 @@ class TBERegOp(RegOp):
         Args:
             dynamic_rank_support (bool): Description whether the operator supports dynamic rank (dynamic dimension).
                                          True: indicates that dynamic rank is supported, and the operator supports
-                                         shape (- 2), which is used to determine whether dynamic is performed.
+                                         shape (- 2), which is used to determine whether dynamic rank is performed.
                                          False: indicates that the operator does not support dynamic rank.
                                          Default: ``False`` .
         """
@@ -676,7 +676,8 @@ class TBERegOp(RegOp):
         Whether the operator supports dynamic compile static.
 
         Args:
-            dynamic_compile_static (bool): Value of dynamic compile static. Default: ``False`` .
+            dynamic_compile_static (bool): An identifier that indicates
+                whether the operator supports dynamic compile static. Default: ``False`` .
         """
         if self._is_bool(dynamic_compile_static):
             self.dynamic_compile_static_ = dynamic_compile_static
@@ -785,7 +786,7 @@ class CustomRegOp(RegOp):
     attributes and target of `func`.
 
     Args:
-        op_name (str): kernel name. The name will be record in the reg_op_name attr of the kernel node.
+        op_name (str, optional): kernel name. The name will be record in the reg_op_name attr of the kernel node.
             Besides, the operator will generate a unique name automatically to identify the reg info.
             Default: ``"Custom"`` .
 

@@ -3501,7 +3501,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         Judge whether the data type of tensor is a signed data type.
 
         Returns:
-            Bool. If the dtype of `self` is a signed data type, return True. Otherwise, return False.
+            Bool. If the dtype of the tensor is a signed data type, return True. Otherwise, return False.
 
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``

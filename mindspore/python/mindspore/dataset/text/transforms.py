@@ -1332,7 +1332,8 @@ if platform.system().lower() != 'windows':
 
     class FilterWikipediaXML(TextTensorOperation):
         """
-        Filter Wikipedia XML dumps to "clean" text consisting only of lowercase letters (a-z, converted from A-Z),
+        Filter the text in the format of Wikipedia XML dumps to "clean" text
+        consisting only of lowercase letters (a-z, converted from A-Z),
         and spaces (never consecutive).
 
         Note:

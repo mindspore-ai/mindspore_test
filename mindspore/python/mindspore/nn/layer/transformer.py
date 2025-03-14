@@ -54,16 +54,16 @@ class MultiheadAttention(Cell):
         embed_dim (int): Total dimension of MultiheadAttention.
         num_heads (int): Number of attention heads. Note that `embed_dim` will be split
             across `num_heads` (i.e. each head will have dimension `embed_dim // num_heads`).
-        dropout (float): Dropout probability of `attn_output_weights`. Default: ``0.0``.
-        has_bias (bool): Whether adds bias to input / output projection layers. Default: ``True``.
-        add_bias_kv (bool): Whether adds bias to the key and value sequences at axis=0. Default: ``False``.
-        add_zero_attn (bool): Whether adds a new batch of zeros to the key and value sequences at axis=1.
+        dropout (float, optional): Dropout probability of `attn_output_weights`. Default: ``0.0``.
+        has_bias (bool, optional): Whether adds bias to input / output projection layers. Default: ``True``.
+        add_bias_kv (bool, optional): Whether adds bias to the key and value sequences at axis=0. Default: ``False``.
+        add_zero_attn (bool, optional): Whether adds a new batch of zeros to the key and value sequences at axis=1.
             Default: ``False``.
-        kdim (int): Total number of features for keys. Default: ``None`` (`kdim=embed_dim`).
-        vdim (int): Total number of features for values. Default: ``None`` (`vdim=embed_dim`).
-        batch_first (bool): If ``True``, then the input and output shape are :math:`(batch, seq, feature)` ,
+        kdim (int, optional): Total number of features for keys. Default: ``None`` (`kdim=embed_dim`).
+        vdim (int, optional): Total number of features for values. Default: ``None`` (`vdim=embed_dim`).
+        batch_first (bool, optional): If ``True``, then the input and output shape are :math:`(batch, seq, feature)` ,
             else :math:`(seq, batch, feature)` . Default: ``False``.
-        dtype (:class:`mindspore.dtype`): Data type of Parameter. Default: ``mstype.float32`` .
+        dtype (:class:`mindspore.dtype`, optional): Data type of Parameter. Default: ``mstype.float32`` .
 
     Inputs:
         - **query** (Tensor) - The query embeddings. If `query` is unbatched, the shape is :math:`(L, E_q)`,
@@ -85,7 +85,7 @@ class MultiheadAttention(Cell):
           For a binary mask, a ``True`` value indicates that the corresponding `key` value will be ignored for
           the purpose of attention. For a float mask, it will be directly added to the corresponding `key` value.
           Supported float types: float16, float32, float64. Default: ``None``.
-        - **need_weights** (bool) - Whether returns `attn_output_weights` in addition to `attn_outputs`.
+        - **need_weights** (bool, optional) - Whether returns `attn_output_weights` in addition to `attn_outputs`.
           Default: ``True``.
         - **attn_mask** (Tensor, optional) - If specified, a 2D or 3D mask preventing attention to certain positions.
           Must be of shape :math:`(L, S)` or :math:`(N\cdot\text{num_heads}, L, S)`, where :math:`N` is the
@@ -94,7 +94,8 @@ class MultiheadAttention(Cell):
           in the batch. For a binary mask, a ``True`` value indicates that the corresponding position is not allowed
           to attend. For a float mask, the mask values will be added to the attention weight.
           Supported float types: float16, float32, float64. Default: ``None``.
-        - **average_attn_weights** (bool) - If true, indicates that the returned `attn_weights` should be averaged
+        - **average_attn_weights** (bool, optional) - If true, indicates that
+          the returned `attn_weights` should be averaged
           across heads. Otherwise, `attn_weights` are provided separately per head. Note that this flag only
           has an effect when `need_weights=True`. Default: ``True`` (i.e. average weights across heads)
 

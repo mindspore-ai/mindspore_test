@@ -92,8 +92,8 @@ class DynamicLossScaleUpdateCell(Cell):
     Dynamic Loss scale update cell.
 
     For loss scaling training, the initial loss scaling value will be set to be `loss_scale_value`.
-    In each training step, the loss scaling value will be decreased by `loss_scale`/`scale_factor`
-    when there is an overflow. And it will be increased by `loss_scale` * `scale_factor` if there is no
+    In each training step, the loss scaling value will be decreased by :math:`loss\_scale/scale\_factor`
+    when there is an overflow. And it will be increased by :math:`loss\_scale * scale\_factor` if there is no
     overflow for a continuous `scale_window` steps.
 
     `get_update_cell` method of :class:`mindspore.amp.DynamicLossScaleManager` will return this class. It will be called

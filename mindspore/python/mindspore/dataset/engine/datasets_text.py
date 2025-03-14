@@ -91,9 +91,9 @@ class AGNewsDataset(SourceDataset, TextBaseDataset):
         >>> ag_news_dataset_dir = "/path/to/ag_news_dataset_file"
         >>> dataset = ds.AGNewsDataset(dataset_dir=ag_news_dataset_dir, usage='all')
 
-    About AGNews dataset:
+    About AG News dataset:
 
-    AG is a collection of over 1 million news articles. The news articles were collected
+    AG News is a collection of over 1 million news articles. The news articles were collected
     by ComeToMyHead from over 2,000 news sources in over 1 year of activity. ComeToMyHead
     is an academic news search engine that has been in operation since July 2004.
     The dataset is provided by academics for research purposes such as data mining
@@ -1437,11 +1437,11 @@ class SogouNewsDataset(SourceDataset, TextBaseDataset):
         >>> sogou_news_dataset_dir = "/path/to/sogou_news_dataset_dir"
         >>> dataset = ds.SogouNewsDataset(dataset_dir=sogou_news_dataset_dir, usage='all')
 
-    About SogouNews Dataset:
+    About Sogou News Dataset:
 
-    SogouNews dataset includes 3 columns, corresponding to class index (1 to 5), title and content. The title and
+    Sogou News dataset includes 3 columns, corresponding to class index (1 to 5), title and content. The title and
     content are escaped using double quotes ("), and any internal double quote is escaped by 2 double quotes ("").
-    New lines are escaped by a backslash followed with an "n" character, that is "\n".
+    New lines are escaped by a backslash followed with an "n" character, that is "\\n".
 
     You can unzip the dataset files into the following structure and read by MindSpore's API:
 
@@ -2075,11 +2075,14 @@ class YelpReviewDataset(SourceDataset, TextBaseDataset):
     Args:
         dataset_dir (str): Path to the root directory that contains the dataset.
         usage (str, optional): Usage of this dataset, can be ``'train'`` , ``'test'`` or ``'all'`` .
-            For Polarity, ``'train'`` will read from 560,000 train samples,
-            ``'test'`` will read from 38,000 test samples,
-            ``'all'`` will read from all 598,000 samples.
-            For Full, ``'train'`` will read from 650,000 train samples, ``'test'`` will read from 50,000 test samples,
-            ``'all'`` will read from all 700,000 samples. Default: ``None`` , all samples.
+            Default: ``None`` , all samples.
+
+            - For Polarity, ``'train'`` will read from 560,000 train samples,
+              ``'test'`` will read from 38,000 test samples,
+              ``'all'`` will read from all 598,000 samples.
+            - For Full, ``'train'`` will read from 650,000 train samples, ``'test'`` will read from 50,000 test samples,
+              ``'all'`` will read from all 700,000 samples.
+
         num_samples (int, optional): Number of samples (rows) to read. Default: ``None`` , reads all samples.
         shuffle (Union[bool, Shuffle], optional): Perform reshuffling of the data every epoch.
             Bool type and Shuffle enum are both supported to pass in.

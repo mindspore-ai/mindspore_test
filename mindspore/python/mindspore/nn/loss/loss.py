@@ -127,7 +127,8 @@ class LossBase(Cell):
         Args:
             x (Tensor): Tensor of shape :math:`(N, *)` where :math:`*` means, any number of
                 additional dimensions.
-            weights (Union[float, Tensor]): Optional `Tensor` whose rank is either 0, or the same rank as inputs,
+            weights (Union[float, Tensor], optional): Weights. When `weights` is a Tensor,
+                the rank is either 0, or the same rank as inputs,
                 and must be broadcastable to inputs (i.e., all dimensions must be either `1`,
                 or the same as the corresponding inputs dimension). Default: ``1.0`` .
 
@@ -617,7 +618,8 @@ class MarginRankingLoss(LossBase):
 
 class SmoothL1Loss(LossBase):
     r"""
-    SmoothL1 loss function, if the absolute error element-wise between the predicted value and the target value
+    SmoothL1 loss function. Compare the error value element-wise and
+    if the absolute error between the predicted value and the target value
     is less than the set threshold `beta`, the square term is used, otherwise the absolute error term is used.
 
     Given two input :math:`x,\  y`, the SmoothL1Loss can be described as follows:
@@ -740,7 +742,7 @@ class SoftMarginLoss(LossBase):
           In GE mode, the data type should be the same as `logits`.
 
     Outputs:
-        Tensor or Scalar, if `reduction` is ``"none"``, its shape is the same as `logits`.
+        Tensor or Scalar, if `reduction` is ``'none'``, its shape is the same as `logits`.
         Otherwise, a scalar value will be returned.
 
     Raises:

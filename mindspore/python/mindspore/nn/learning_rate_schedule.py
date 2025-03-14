@@ -223,7 +223,8 @@ class InverseDecayLR(LearningRateSchedule):
         learning_rate (float): The initial value of learning rate.
         decay_rate (float): The decay rate.
         decay_steps (int): Number of steps to decay over.
-        is_stair (bool): If true, learning rate decay once every `decay_steps` times. If False, the learning rate
+        is_stair (bool, optional): If true, learning rate decay once every `decay_steps` times.
+            If False, the learning rate
             decays for every step. Default: ``False`` .
 
     Inputs:

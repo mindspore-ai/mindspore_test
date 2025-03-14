@@ -936,16 +936,16 @@ class Tile(Primitive):
 
     Refer to :func:`mindspore.ops.tile` for more details.
 
-    Note:
-        On Ascend, the number of `dims` should not exceed 8, and currently does not support scenarios
-        where more than 4 dimensions are repeated simultaneously.
-
     Inputs:
         - **input** (Tensor) - The tensor whose elements need to be repeated. Set the shape of input tensor as
           :math:`(x_1, x_2, ..., x_S)` .
         - **dims** (tuple[int]) - The parameter that specifies the number of replications,
           the parameter type is tuple, and the data type is int, i.e., :math:`(y_1, y_2, ..., y_S)`.
           Only constant value is allowed.
+
+        Note:
+            On Ascend, the number of `dims` should not exceed 8, and currently does not support scenarios
+            where more than 4 dimensions are repeated simultaneously.
 
     Outputs:
         Tensor, has the same data type as the `input`. Suppose the length of `dims` is `d`,
