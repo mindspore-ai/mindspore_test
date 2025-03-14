@@ -3,15 +3,12 @@ mindspore.ops.fill
 
 .. py:function:: mindspore.ops.fill(type, shape, value)
 
-    创建一个指定shape的Tensor，并用指定值填充。
+    创建tensor，用指定值填充。
 
     参数：
-        - **type** (mindspore.dtype) - 指定输出Tensor的数据类型。数据类型只支持 `bool_ <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html#mindspore.dtype>`_ 和 `number <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html#mindspore.dtype>`_ 。
-        - **shape** (Union(Tensor, tuple[int])) - 指定输出Tensor的shape。
-        - **value** (Union(Tensor, number.Number, bool)) - 用来填充输出Tensor的值。
+        - **type** (mindspore.dtype) - 指定的数据类型。
+        - **shape** (Union(Tensor, tuple[int])) - 指定的shape。
+        - **value** (Union(Tensor, number.Number, bool)) - 指定值。
 
     返回：
-        Tensor。
-
-    异常：
-        - **TypeError** - `shape` 不是元组或Tensor。
+        Tensor

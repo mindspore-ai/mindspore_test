@@ -4078,13 +4078,13 @@ def nanmean(input, axis=None, keepdims=False, *, dtype=None):
 
 def orgqr(input, input2):
     r"""
-    Calculates the explicit representation of the orthogonal matrix :math:`Q`
+    Compute the first :math:`N` columns of a product of Householder matrices.
+
+    Usually used to calculate the explicit representation of the orthogonal matrix :math:`Q`
     returned by :class:`mindspore.ops.Geqrf`.
 
-    Take the case of input without batch dimension as an example,
-    computes the first :math:`N` columns of a product of
-    `Householder <https://en.wikipedia.org/wiki/Householder_transformation#Householder_matrix>`_
-    matrices. Suppose input `input` is a matrix of size :math:`(M, N)` after householder transformation.
+    Take the case of input without batch dimension as an example:
+    Suppose input `input` is a matrix of size :math:`(M, N)` after householder transformation.
     When the diagonal of `input` is set to 1, every column of lower triangular in `input` is
     denoted as :math:`w_j` for :math:`j` for
     :math:`j=1, \ldots, M`, this function returns the first :math:`N` columns of the matrix
@@ -4098,38 +4098,24 @@ def orgqr(input, input2):
     :math:`tau` is corresponding to `input2`.
 
     Args:
-        input (Tensor): Tensor of shape :math:`(*, M, N)`, indicating 2D or 3D matrices,
-            with float32, float64, complex64 and complex128 data type.
-        input2 (Tensor): Tensor of shape :math:`(*, K)`, where `K` is less than or equal to `N`, indicating the
-            reflecting coefficient in Householder transformation, which have the same type as `input`.
+        input (Tensor): 2-D or 3-D input tensor, householder vectors, shape :math:`(*, M, N)`.
+        input2 (Tensor): 1-D or 2-D input tensor, householder reflection coefficients, shape :math:`(*, K)`, where `K`
+            is less than or equal to `N`, indicating.
 
     Returns:
-        Tensor, has the same shape and data type as `input`.
-
-    Raises:
-        TypeError: If `input` or `input2` are not Tensors.
-        TypeError: If dtype of `input` and `input2` is not one of: float64, float32, complex64, complex128.
-        ValueError: If `input` and `input2` have different batch size.
-        ValueError: If input.shape[-2] < input.shape[-1].
-        ValueError: If input.shape[-1] < input2.shape[-1].
-        ValueError: If rank(input) - rank(input2) != 1.
-        ValueError: If rank(input) != 2 or 3.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input = Tensor(np.array([[-114.6, 10.9, 1.1], [-0.304, 38.07, 69.38], [-0.45, -0.17, 62.]]),
-        ... mindspore.float32)
-        >>> input2 = Tensor(np.array([1.55, 1.94, 0.0]), mindspore.float32)
-        >>> y = ops.orgqr(input, input2)
-        >>> print(y)
-        [[-0.54999995 -0.2128925   0.8137956 ]
-         [ 0.47119996 -0.8752807   0.08240613]
-         [ 0.69749993  0.42560163  0.57772595]]
+        >>> input = mindspore.tensor([[-2.0, -1.0], [1.0, 2.0]])
+        >>> y, tau = mindspore.ops.geqrf(input)
+        >>> mindspore.ops.orgqr(y, tau)
+        Tensor(shape=[2, 2], dtype=Float32, value=
+        [[-8.94427061e-01,  4.47213590e-01],
+         [ 4.47213590e-01,  8.94427180e-01]])
     """
 
     orgqr_ = Orgqr()
@@ -4138,51 +4124,34 @@ def orgqr(input, input2):
 
 def ormqr(input, tau, other, left=True, transpose=False):
     r"""
-    Calculates two matrices multiplication of a product of a general matrix with Householder matrices.
-    Calculates the product of a matrix C(given by `other`) with dimensions (m, n) and a matrix Q which is represented
-    using Householder reflectors (`input`, `tau`). Returns a Tensor.
+    Calculates the product of a matrix `other` and a matrix Q (represented by Householder vectors `input` and
+    Householder reflection coefficients `tau`).
+
+    If `left` is True, computes Q \* `other` , otherwise, compute `other` \* Q.
 
     Args:
-        input (Tensor): Tensor of shape :math:`(*, mn, k)`, when `left` is True, mn equals to m,
-            otherwise, mn equals to n. And `*` is zero or more batch dimensions.
-        tau (Tensor): Tensor of shape :math:`(*, min(mn, k))` where `*` is zero or more batch dimensions,
-            and its type is the same as `input`.
-        other (Tensor): Tensor of shape :math:`(*, m, n)` where `*` is zero or more batch dimensions,
-            and its type is the same as `input`.
-        left (bool, optional): determines the order of multiplication. If True, computes op(Q) \* `other` ,
-            otherwise, compute `other` \* op(Q). Default: ``True`` .
-        transpose (bool, optional): If True, the matrix Q is conjugate transposed,
-            otherwise, not conjugate transposing matrix Q. Default: ``False`` .
+        input (Tensor): The input tensor, shape :math:`(*, mn, k)`, when `left` is True, mn equals to m,
+            otherwise, mn equals to n.
+        tau (Tensor): The input tensor, shape :math:`(*, min(mn, k))` .
+        other (Tensor): The input tensor, shape :math:`(*, m, n)` .
+        left (bool, optional): The order of computation. Default ``True`` .
+        transpose (bool, optional): Whether the matrix Q is conjugate transposed or not. Default ``False`` .
 
     Returns:
-        Tensor, with the same type and shape as `other`.
-
-    Raises:
-        TypeError: If `input` or `tau` or `other` is not Tensor.
-        TypeError: If dtype of `input` or `tau` or `other` is not one of: float64, float32, complex64, complex128.
-        ValueError: If the dimension of `input` or `other` is less than 2D.
-        ValueError: If rank(`input`) - rank(`tau`) != 1.
-        ValueError: If tau.shape[:-1] != input.shape[:-2]
-        ValueError: If other.shape[:-2] != input.shape[:-2]
-        ValueError: If left == true, other.shape[-2] < tau.shape[-1].
-        ValueError: If left == true, other.shape[-2] != input.shape[-2].
-        ValueError: If left == false, other.shape[-1] < tau.shape[-1].
-        ValueError: If left == false, other.shape[-1] != input.shape[-2].
+        Tensor
 
     Supported Platforms:
         ``GPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input = Tensor(np.array([[-114.6, 10.9, 1.1], [-0.304, 38.07, 69.38], [-0.45, -0.17, 62]]),
-        ...                mindspore.float32)
-        >>> tau = Tensor(np.array([1.55, 1.94, 3.0]), mindspore.float32)
-        >>> other = Tensor(np.array([[-114.6, 10.9, 1.1],
-        ...                          [-0.304, 38.07, 69.38],
-        ...                          [-0.45, -0.17, 62]]), mindspore.float32)
-        >>> output = ops.ormqr(input, tau, other)
+        >>> input = mindspore.tensor(([[-114.6, 10.9, 1.1], [-0.304, 38.07, 69.38], [-0.45, -0.17, 62]]),
+        ...                             mindspore.float32)
+        >>> tau = mindspore.tensor(([1.55, 1.94, 3.0]), mindspore.float32)
+        >>> other = mindspore.tensor(([[-114.6, 10.9, 1.1],
+        ...                            [-0.304, 38.07, 69.38],
+        ...                            [-0.45, -0.17, 62]]), mindspore.float32)
+        >>> output = mindspore.ops.ormqr(input, tau, other)
         >>> print(output)
         [[  63.82713   -13.823125 -116.28614 ]
          [ -53.659264  -28.157839  -70.42702 ]
@@ -5081,37 +5050,33 @@ def reciprocal(input):
 
 def outer(input, vec2):
     """
-    Return outer product of `input` and `vec2`. If `input` is a vector of size :math:`n`
-    and `vec2` is a vector of size :math:`m` , then output must be a matrix of shape :math:`(n, m)` .
+    Compute outer product of two tensors.
+
+    If `input` ’s length is :math:`n` and `vec2` ’s length is :math:`m` , then output must be a matrix of shape
+    :math:`(n, m)` .
 
     Note:
         This function does not broadcast.
 
     Args:
-        input (Tensor): 1-D input vector.
-        vec2 (Tensor): 1-D input vector.
+        input (Tensor): The 1-D input tensor.
+        vec2 (Tensor): The 1-D input tensor.
 
     Returns:
-        out (Tensor, optional), 2-D matrix, the outer product of two vectors.
-
-    Raises:
-        TypeError: If `input` or `vec2` is not a Tensor.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor
-        >>> from mindspore import ops
-        >>> input = Tensor(np.array([7, 8, 9]), mindspore.int32)
-        >>> vec2 = Tensor(np.array([7, 10, 11]), mindspore.int32)
-        >>> out = ops.outer(input, vec2)
-        >>> print(out)
-        [[49 70 77]
-         [56 80 88]
-         [63 90 99]]
+        >>> input = mindspore.tensor([1, 2, 3])
+        >>> vec2 = mindspore.tensor([4, 5, 6])
+        >>> mindspore.ops.outer(input, vec2)
+        Tensor(shape=[3, 3], dtype=Int64, value=
+        [[ 4,  5,  6],
+         [ 8, 10, 12],
+         [12, 15, 18]])
     """
 
     if not isinstance(input, (Tensor, Tensor_)):
@@ -6912,33 +6877,33 @@ def combinations(input, r=2, with_replacement=False):
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import itertools
-        >>> input = [1, 2, 3]
-        >>> list(itertools.combinations(input, r=2))
-        >>> [(1, 2), (1, 3), (2, 3)]
-        >>> list(itertools.combinations(input, r=3))
-        >>> [(1, 2, 3)]
-        >>> list(itertools.combinations_with_replacement(input, r=2))
-        >>> [(1, 1), (1, 2), (1, 3), (2, 2), (2, 3), (3, 3)]
-        >>>
         >>> import mindspore
         >>> input = mindspore.tensor(input)
         >>> mindspore.ops.combinations(input)
-        >>> Tensor(shape=[3, 2], dtype=Int64, value=
-        >>> [[1, 2],
-        >>>  [1, 3],
-        >>>  [2, 3]])
+        Tensor(shape=[3, 2], dtype=Int64, value=
+        [[1, 2],
+         [1, 3],
+         [2, 3]])
         >>> mindspore.ops.combinations(input, r=3)
-        >>> Tensor(shape=[1, 3], dtype=Int64, value=
-        >>> [[1, 2, 3]])
+        Tensor(shape=[1, 3], dtype=Int64, value=
+        [[1, 2, 3]])
         >>> mindspore.ops.combinations(input, with_replacement=True)
-        >>> Tensor(shape=[6, 2], dtype=Int64, value=
-        >>> [[1, 1],
-        >>>  [1, 2],
-        >>>  [1, 3],
-        >>>  [2, 2],
-        >>>  [2, 3],
-        >>>  [3, 3]])
+        Tensor(shape=[6, 2], dtype=Int64, value=
+        [[1, 1],
+         [1, 2],
+         [1, 3],
+         [2, 2],
+         [2, 3],
+         [3, 3]])
+        >>> # It has the same results as using itertools.combinations.
+        >>> import itertools
+        >>> input = [1, 2, 3]
+        >>> list(itertools.combinations(input, r=2))
+        [(1, 2), (1, 3), (2, 3)]
+        >>> list(itertools.combinations(input, r=3))
+        [(1, 2, 3)]
+        >>> list(itertools.combinations_with_replacement(input, r=2))
+        [(1, 1), (1, 2), (1, 3), (2, 2), (2, 3), (3, 3)]
     """
 
     def _combinations(iterable, r):
@@ -11583,12 +11548,11 @@ def diag_embed(input, offset=0, dim1=-2, dim2=-1):
         ...                           [4, 5, 6],
         ...                           [7, 8, 9]])
         >>> mindspore.ops.diag_embed(input)
-        >>> Tensor(shape=[3, 3, 3], dtype=Int64, value=
+        Tensor(shape=[3, 3, 3], dtype=Int64, value=
         [[[1, 0, 0], [0, 2, 0], [0, 0, 3]],
          [[4, 0, 0], [0, 5, 0], [0, 0, 6]],
          [[7, 0, 0], [0, 8, 0], [0, 0, 9]]])
         >>> mindspore.ops.diag_embed(input, offset=1, dim1=0, dim2=1)
-        mindspore.ops.diag_embed(input, offset=1, dim1=0, dim2=1)
         Tensor(shape=[4, 4, 3], dtype=Int64, value=
         [[[0, 0, 0], [1, 4, 7], [0, 0, 0], [0, 0, 0]],
          [[0, 0, 0], [0, 0, 0], [2, 5, 8], [0, 0, 0]],
