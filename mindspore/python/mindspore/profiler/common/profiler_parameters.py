@@ -196,17 +196,17 @@ class ProfilerParameters:
                           "reset to 'ProfilerLevel.Level0'.")
 
         if self.__dict__.get('profiler_level') in (ProfilerLevel.LevelNone, ProfilerLevel.Level0) and \
-            self.__dict__.get('aicore_metrics') != AicoreMetrics.AiCoreNone:
-            self.aicore_metrics = AicoreMetrics.AiCoreNone
+            self.__dict__.get('aic_metrics') != AicoreMetrics.AiCoreNone:
+            self.aic_metrics = AicoreMetrics.AiCoreNone
             warnings.warn(f"when 'profiler_level' is set to '{self.__dict__.get('profiler_level')}', "
-                          f"'aicore_metrics' cannot be set to other value except 'AicoreMetrics.AiCoreNone', "
+                          f"'aic_metrics' cannot be set to other value except 'AicoreMetrics.AiCoreNone', "
                           f"reset to 'AicoreMetrics.AiCoreNone'.")
 
         if self.__dict__.get('profiler_level') in (ProfilerLevel.Level1, ProfilerLevel.Level2) and \
-            self.__dict__.get('aicore_metrics') == AicoreMetrics.AiCoreNone:
-            self.aicore_metrics = AicoreMetrics.PipeUtilization
+            self.__dict__.get('aic_metrics') == AicoreMetrics.AiCoreNone:
+            self.aic_metrics = AicoreMetrics.PipeUtilization
             warnings.warn(f"when 'profiler_level' is set to '{self.__dict__.get('profiler_level')}', "
-                          f"'aicore_metrics' cannot be set to 'AicoreMetrics.AiCoreNone', "
+                          f"'aic_metrics' cannot be set to 'AicoreMetrics.AiCoreNone', "
                           f"reset to 'AicoreMetrics.PipeUtilization'.")
 
     def _check_and_get_export_type(self, export_type) -> list:
