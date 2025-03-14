@@ -80,6 +80,7 @@ std::vector<std::pair<KernelAttr, OnesCpuKernelMod::OnesFunc>> OnesCpuKernelMod:
   {ONES_CPU_REG(kNumberTypeInt64, kNumberTypeBool, bool)},
   {ONES_CPU_REG(kNumberTypeInt64, kNumberTypeComplex64, complex64)},
   {ONES_CPU_REG(kNumberTypeInt64, kNumberTypeComplex128, complex128)},
+  {ONES_CPU_REG(kNumberTypeInt64, kNumberTypeBFloat16, bfloat16)},
   {ONES_CPU_REG(kNumberTypeInt32, kNumberTypeFloat16, float16)},
   {ONES_CPU_REG(kNumberTypeInt32, kNumberTypeFloat32, float)},
   {ONES_CPU_REG(kNumberTypeInt32, kNumberTypeFloat64, double)},
@@ -93,7 +94,8 @@ std::vector<std::pair<KernelAttr, OnesCpuKernelMod::OnesFunc>> OnesCpuKernelMod:
   {ONES_CPU_REG(kNumberTypeInt32, kNumberTypeUInt64, uint64_t)},
   {ONES_CPU_REG(kNumberTypeInt32, kNumberTypeBool, bool)},
   {ONES_CPU_REG(kNumberTypeInt32, kNumberTypeComplex64, complex64)},
-  {ONES_CPU_REG(kNumberTypeInt32, kNumberTypeComplex128, complex128)}};
+  {ONES_CPU_REG(kNumberTypeInt32, kNumberTypeComplex128, complex128)},
+  {ONES_CPU_REG(kNumberTypeInt32, kNumberTypeBFloat16, bfloat16)}};
 
 std::vector<KernelAttr> OnesCpuKernelMod::GetOpSupport() {
   std::vector<KernelAttr> support_list;

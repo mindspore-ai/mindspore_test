@@ -27,7 +27,6 @@ from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 
-
 def concat_func(x1, x2, axis):
     return F.concat((x1, x2), axis=axis)
 
@@ -54,7 +53,8 @@ def concat_dyn_seq_bwd_func(seq, axis):
     return ops.grad(concat_dyn_seq_fwd_func, (0,))(seq, axis)
 
 
-def forward_datas_prepare(shape, num=2, axis=0, diff_shapes=False, need_expect=True, numpy_inputs=False):
+def forward_datas_prepare(shape, num=2, axis=0, diff_shapes=False, need_expect=True, numpy_inputs=False,\
+                          is_bfloat16=False):
     np_inpus = []
     tensor_inputs = []
     if diff_shapes:
@@ -64,7 +64,8 @@ def forward_datas_prepare(shape, num=2, axis=0, diff_shapes=False, need_expect=T
     for i in range(num):
         np_input = np.random.rand(*(shape[i] if diff_shapes else shape)).astype(np.float32)
         np_inpus.append(np_input)
-        tensor_inputs.append(ms.Tensor(np_input))
+        t = ms.Tensor(np_input, ms.bfloat16) if is_bfloat16 else ms.Tensor(np_input)
+        tensor_inputs.append(t)
     np_expect = np.concatenate(np_inpus, axis) if need_expect else None
     return tuple(np_inpus if numpy_inputs else tensor_inputs), np_expect
 
@@ -93,6 +94,32 @@ def test_concat_normal(mode, params):
     expect_grad = (expect_grad1, expect_grad2)
     for out, expect in zip(grads, expect_grad):
         assert np.allclose(out.asnumpy(), expect)
+
+
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize("mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+@pytest.mark.parametrize("params", [(((2, 2), (2, 3)), 1), (((3, 2, 3), (3, 3, 3)), -2)])
+def test_concat_bfloat16(mode, params):
+    """
+    Feature: Ops.
+    Description: test op concat.
+    Expectation: expect correct result.
+    """
+    ms.set_context(mode=mode)
+    shape_param, axis = params
+    tensor_inputs, expect = forward_datas_prepare(shape_param, axis=axis, diff_shapes=True, is_bfloat16=True)
+    out = concat_forward_func(tensor_inputs[0], tensor_inputs[1], axis)
+    assert np.allclose(out.float().asnumpy(), expect, 4e-3, 4e-3)
+
+    x1 = ms.Tensor(np.random.rand(*shape_param[0]).astype(np.float32), ms.bfloat16)
+    x2 = ms.Tensor(np.random.rand(*shape_param[1]).astype(np.float32), ms.bfloat16)
+    grads = concat_backward_func(x1, x2, axis)
+    expect_grad1 = np.ones(shape_param[0]).astype(np.float32)
+    expect_grad2 = np.ones(shape_param[1]).astype(np.float32)
+    expect_grad = (expect_grad1, expect_grad2)
+    for out, expect in zip(grads, expect_grad):
+        assert np.allclose(out.float().asnumpy(), expect)
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',

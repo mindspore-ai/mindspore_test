@@ -1590,7 +1590,7 @@ def infer_value_for_Concat(tensors, axis):
     if not tensors or None in tensors or axis is None:
         return None
 
-    tensor_to_concat = [x.asnumpy() if x.dtype != mstype.bfloat16 else x.float().asnumpy() for x in tensors]
+    tensor_to_concat = [x.asnumpy() for x in tensors]
     return Tensor(np.concatenate(tensor_to_concat, axis), dtype=tensors[0].dtype)
 
 
