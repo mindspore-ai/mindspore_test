@@ -333,6 +333,7 @@ add_dependencies(converter_src_mid fbs_src fbs_inner_src)
 
 
 target_compile_definitions(converter_src_mid PRIVATE BACKEND_DLL)
+target_compile_definitions(converter_src_mid PRIVATE BACKEND_COMMON_DLL)
 target_compile_definitions(quantizer_mid PRIVATE BACKEND_DLL)
 
 add_dependencies(mindspore_converter nnacl_mid)

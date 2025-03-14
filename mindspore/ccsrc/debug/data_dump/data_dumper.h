@@ -28,7 +28,7 @@
 namespace mindspore {
 namespace datadump {
 
-class BACKEND_EXPORT DataDumper {
+class BACKEND_COMMON_EXPORT DataDumper {
  public:
   virtual void Initialize() { MS_LOG(WARNING) << "Initialize ACL DataDumper"; }
   virtual void EnableDump(uint32_t device_id, uint32_t step_id, bool is_init,
@@ -38,7 +38,7 @@ class BACKEND_EXPORT DataDumper {
   virtual void Finalize() { MS_LOG(WARNING) << "Finalize ACL DataDumper"; }
 };
 
-class BACKEND_EXPORT DataDumperRegister {
+class BACKEND_COMMON_EXPORT DataDumperRegister {
  public:
   static DataDumperRegister &Instance();
 

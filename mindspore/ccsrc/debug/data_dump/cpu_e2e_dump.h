@@ -25,7 +25,7 @@
 #include "include/backend/visible.h"
 
 namespace mindspore {
-class BACKEND_EXPORT CPUE2eDump {
+class BACKEND_COMMON_EXPORT CPUE2eDump {
  public:
   CPUE2eDump() = default;
   ~CPUE2eDump() = default;

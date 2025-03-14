@@ -22,7 +22,7 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT ReduceAxisUpdate : public PatternToPatternPass {
+class BACKEND_COMMON_EXPORT ReduceAxisUpdate : public PatternToPatternPass {
  public:
   ReduceAxisUpdate() : PatternToPatternPass("reduce_axis_update", true) {}
   ~ReduceAxisUpdate() override = default;

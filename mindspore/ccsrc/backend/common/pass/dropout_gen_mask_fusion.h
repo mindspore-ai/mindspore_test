@@ -25,7 +25,7 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT DropoutGenMaskFusion : public Pass {
+class BACKEND_COMMON_EXPORT DropoutGenMaskFusion : public Pass {
  public:
   DropoutGenMaskFusion() : Pass("DropoutGenMask") {}
   ~DropoutGenMaskFusion() override = default;

@@ -23,6 +23,6 @@
 
 namespace mindspore::graphkernel {
 // infer abstract shape by device_shape and data_format
-BACKEND_EXPORT ShapeVector GetFakeAbstractShape(const ShapeVector &device_shape, const std::string &format);
+BACKEND_COMMON_EXPORT ShapeVector GetFakeAbstractShape(const ShapeVector &device_shape, const std::string &format);
 }  // namespace mindspore::graphkernel
 #endif  // MINDSPORE_CCSRC_BACKEND_OPTIMIZER_GRAPH_KERNEL_ADAPTER_FAKE_ABSTRACT_SHAPE_H_

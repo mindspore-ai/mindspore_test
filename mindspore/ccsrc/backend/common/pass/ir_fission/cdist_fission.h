@@ -23,7 +23,7 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT CdistFission : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT CdistFission : public PatternProcessPass {
  public:
   explicit CdistFission(bool multigraph = true) : PatternProcessPass("cdist_fission", multigraph) {}
   ~CdistFission() override = default;
@@ -34,7 +34,7 @@ class BACKEND_EXPORT CdistFission : public PatternProcessPass {
   std::vector<std::string> MustExistPrimitiveName() const override;
 };
 
-class BACKEND_EXPORT CdistGradFission : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT CdistGradFission : public PatternProcessPass {
  public:
   explicit CdistGradFission(bool multigraph = true) : PatternProcessPass("cdist_grad_fission", multigraph) {}
   ~CdistGradFission() override = default;

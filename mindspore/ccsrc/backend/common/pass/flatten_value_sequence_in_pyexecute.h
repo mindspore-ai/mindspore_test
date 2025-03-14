@@ -21,7 +21,7 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT FlattenValueSequenceInPyExecute : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT FlattenValueSequenceInPyExecute : public PatternProcessPass {
  public:
   explicit FlattenValueSequenceInPyExecute(bool multigraph = true)
       : PatternProcessPass("flatten_value_sequence_in_pyexecute", multigraph) {}

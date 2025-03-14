@@ -39,7 +39,7 @@ constexpr auto kKernelMetaSuffix = "_kernel_meta/";
 constexpr auto kJsonSuffix = ".json";
 constexpr auto kInfoSuffix = ".info";
 
-class BACKEND_EXPORT KernelMeta {
+class BACKEND_COMMON_EXPORT KernelMeta {
  public:
   KernelMeta() = default;
   void Initialize(const std::string &backend = "akg");
@@ -59,33 +59,35 @@ class BACKEND_EXPORT KernelMeta {
   std::unordered_map<std::string, std::string> kernel_meta_map_;
 };
 
-BACKEND_EXPORT std::string GetCompilerCachePath();
+BACKEND_COMMON_EXPORT std::string GetCompilerCachePath();
 bool CheckCache(const std::string &kernel_name);
 KernelPackPtr SearchCache(const std::string &kernel_name, const std::string &processor);
 KernelPackPtr InsertCache(const std::string &kernel_name, const std::string &processor);
 
-BACKEND_EXPORT bool GetShapeSize(const ShapeVector &shape, const TypePtr &type_ptr, int64_t *size_i);
+BACKEND_COMMON_EXPORT bool GetShapeSize(const ShapeVector &shape, const TypePtr &type_ptr, int64_t *size_i);
 
-BACKEND_EXPORT bool ParseMetadata(const CNodePtr &kernel_node, const std::shared_ptr<const OpInfo> &op_info_ptr,
-                                  Processor processor,
-                                  std::vector<std::shared_ptr<KernelBuildInfo>> *const kernel_info_list);
+BACKEND_COMMON_EXPORT bool ParseMetadata(const CNodePtr &kernel_node, const std::shared_ptr<const OpInfo> &op_info_ptr,
+                                         Processor processor,
+                                         std::vector<std::shared_ptr<KernelBuildInfo>> *const kernel_info_list);
 
-BACKEND_EXPORT void SaveJsonInfo(const std::string &json_name, const std::string &info, const std::string &base_path);
+BACKEND_COMMON_EXPORT void SaveJsonInfo(const std::string &json_name, const std::string &info,
+                                        const std::string &base_path);
 
 std::string GetProcessor(const AnfNodePtr &anf_node);
 Processor GetProcessor(const string &processor);
 Processor GetProcessorFromContext();
 std::string GetStrProcessorFromContext();
 
-BACKEND_EXPORT std::vector<std::pair<AnfNodePtr, size_t>> GetOutputIndex(const std::vector<AnfNodePtr> &node_list,
-                                                                         const std::vector<AnfNodePtr> &input_list,
-                                                                         const std::vector<AnfNodePtr> &output_list);
-BACKEND_EXPORT void GetValidKernelNodes(const FuncGraphPtr &func_graph, std::vector<AnfNodePtr> *node_list);
-BACKEND_EXPORT void GetValidKernelNodes(const FuncGraphPtr &func_graph, std::vector<AnfNodePtr> *node_list,
-                                        std::vector<AnfNodePtr> *input_list, std::vector<AnfNodePtr> *output_list);
+BACKEND_COMMON_EXPORT std::vector<std::pair<AnfNodePtr, size_t>> GetOutputIndex(
+  const std::vector<AnfNodePtr> &node_list, const std::vector<AnfNodePtr> &input_list,
+  const std::vector<AnfNodePtr> &output_list);
+BACKEND_COMMON_EXPORT void GetValidKernelNodes(const FuncGraphPtr &func_graph, std::vector<AnfNodePtr> *node_list);
+BACKEND_COMMON_EXPORT void GetValidKernelNodes(const FuncGraphPtr &func_graph, std::vector<AnfNodePtr> *node_list,
+                                               std::vector<AnfNodePtr> *input_list,
+                                               std::vector<AnfNodePtr> *output_list);
 void GetFuncGraphOutputNodes(const FuncGraphPtr &func_graph, std::vector<AnfNodePtr> *output_list);
 void GetGraphRealOutput(const FuncGraphPtr &func_graph, std::vector<std::pair<AnfNodePtr, size_t>> *node_list);
-BACKEND_EXPORT std::vector<int64_t> GetReduceAttrAxis(const CNodePtr &cnode);
+BACKEND_COMMON_EXPORT std::vector<int64_t> GetReduceAttrAxis(const CNodePtr &cnode);
 
 struct KernelArgs {
   std::vector<KernelTensorPtr> inputs;
@@ -94,18 +96,18 @@ struct KernelArgs {
   // cppcheck-suppress unusedStructMember
   constexpr static char key[] = "KernelArgs";
 };
-BACKEND_EXPORT KernelArgs AbstractArgsFromCNode(const CNodePtr &cnode);
-BACKEND_EXPORT std::shared_ptr<KernelArgs> GetArgsFromCNode(const CNodePtr &cnode);
-BACKEND_EXPORT void SetArgsToCNode(const CNodePtr &cnode, const KernelArgs &args);
+BACKEND_COMMON_EXPORT KernelArgs AbstractArgsFromCNode(const CNodePtr &cnode);
+BACKEND_COMMON_EXPORT std::shared_ptr<KernelArgs> GetArgsFromCNode(const CNodePtr &cnode);
+BACKEND_COMMON_EXPORT void SetArgsToCNode(const CNodePtr &cnode, const KernelArgs &args);
 
-BACKEND_EXPORT BaseOperatorPtr CreateOperatorByCNode(const CNodePtr &cnode);
-BACKEND_EXPORT void UpdateNodeShape(const CNodePtr &cnode);
+BACKEND_COMMON_EXPORT BaseOperatorPtr CreateOperatorByCNode(const CNodePtr &cnode);
+BACKEND_COMMON_EXPORT void UpdateNodeShape(const CNodePtr &cnode);
 
-BACKEND_EXPORT void SetInputsByDependMap(const std::map<uint32_t, tensor::TensorPtr> &depend_tensor_map,
-                                         std::vector<KernelTensorPtr> *inputs, bool is_stored_in_device = false);
-BACKEND_EXPORT void SetInputsByConstInputs(const CNodePtr &node,
-                                           std::map<uint32_t, tensor::TensorPtr> *inputs_tensor_map);
-BACKEND_EXPORT bool CheckResizeCondition(const CNodePtr &node);
+BACKEND_COMMON_EXPORT void SetInputsByDependMap(const std::map<uint32_t, tensor::TensorPtr> &depend_tensor_map,
+                                                std::vector<KernelTensorPtr> *inputs, bool is_stored_in_device = false);
+BACKEND_COMMON_EXPORT void SetInputsByConstInputs(const CNodePtr &node,
+                                                  std::map<uint32_t, tensor::TensorPtr> *inputs_tensor_map);
+BACKEND_COMMON_EXPORT bool CheckResizeCondition(const CNodePtr &node);
 
 inline std::map<uint32_t, tensor::TensorPtr> GetKernelDepends(const CNodePtr &cnode) {
   auto args = GetArgsFromCNode(cnode);
@@ -117,12 +119,13 @@ inline std::map<uint32_t, tensor::TensorPtr> GetKernelDepends(const CNodePtr &cn
 
 KernelObjectType StringToKernelObjectType(const std::string &object_type);
 
-BACKEND_EXPORT void UnfoldKernelBuildInfo(const CNodePtr &kernel_node);
-BACKEND_EXPORT int64_t CalOutputTupleSize(const AnfNodePtr &node);
-BACKEND_EXPORT void SetDynamicInputSizeAttr(const CNodePtr &cnode);
-BACKEND_EXPORT bool IsDynamicParamKernel(const std::string &op_name);
-BACKEND_EXPORT std::pair<std::string, ExceptionType> KernelObjectTypeNotSupportWarning(const CNodePtr &kernel_node);
-BACKEND_EXPORT bool IsKernelObjectTypeNotSupportedError(const std::string &error_str);
+BACKEND_COMMON_EXPORT void UnfoldKernelBuildInfo(const CNodePtr &kernel_node);
+BACKEND_COMMON_EXPORT int64_t CalOutputTupleSize(const AnfNodePtr &node);
+BACKEND_COMMON_EXPORT void SetDynamicInputSizeAttr(const CNodePtr &cnode);
+BACKEND_COMMON_EXPORT bool IsDynamicParamKernel(const std::string &op_name);
+BACKEND_COMMON_EXPORT std::pair<std::string, ExceptionType> KernelObjectTypeNotSupportWarning(
+  const CNodePtr &kernel_node);
+BACKEND_COMMON_EXPORT bool IsKernelObjectTypeNotSupportedError(const std::string &error_str);
 }  // namespace kernel
 }  // namespace mindspore
 

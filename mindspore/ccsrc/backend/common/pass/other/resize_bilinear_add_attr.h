@@ -23,7 +23,7 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT ResizeBilinearAddAttr : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT ResizeBilinearAddAttr : public PatternProcessPass {
  public:
   explicit ResizeBilinearAddAttr(bool multigraph = true) : PatternProcessPass("resize_bilinear_add_attr", multigraph) {}
   ~ResizeBilinearAddAttr() override = default;

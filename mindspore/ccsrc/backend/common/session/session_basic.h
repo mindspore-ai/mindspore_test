@@ -95,7 +95,7 @@ struct GraphOutputInfo {
 
 class Executor;
 
-class BACKEND_EXPORT SessionBasic : public KernelGraphMgr, public std::enable_shared_from_this<SessionBasic> {
+class BACKEND_COMMON_EXPORT SessionBasic : public KernelGraphMgr, public std::enable_shared_from_this<SessionBasic> {
  public:
   using KernelGraphMgr::ConstructKernelGraph;
   SessionBasic() : context_(nullptr), summary_callback_(nullptr), device_id_(0) {
@@ -283,8 +283,8 @@ class BACKEND_EXPORT SessionBasic : public KernelGraphMgr, public std::enable_sh
 using SessionPtr = std::shared_ptr<session::SessionBasic>;
 using NamedSummaryOutputs = std::map<std::string, std::pair<AnfNodePtr, int>>;
 }  // namespace session
-BACKEND_EXPORT void DumpGraphExeOrder(const std::string &file_name, const std::string &target_dir,
-                                      const std::vector<CNodePtr> &execution_order);
-BACKEND_EXPORT uint32_t GetRankId();
+BACKEND_COMMON_EXPORT void DumpGraphExeOrder(const std::string &file_name, const std::string &target_dir,
+                                             const std::vector<CNodePtr> &execution_order);
+BACKEND_COMMON_EXPORT uint32_t GetRankId();
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_SESSION_SESSION_BASIC_H

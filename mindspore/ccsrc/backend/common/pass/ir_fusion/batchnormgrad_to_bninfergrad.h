@@ -24,7 +24,7 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT BatchNormGrad2BNInferGrad : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT BatchNormGrad2BNInferGrad : public PatternProcessPass {
  public:
   explicit BatchNormGrad2BNInferGrad(bool multigraph = true)
       : PatternProcessPass("batchnormgrad_to_bninfergrad", multigraph) {}

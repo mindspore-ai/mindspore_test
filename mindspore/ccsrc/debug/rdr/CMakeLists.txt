@@ -1,5 +1,0 @@
-if(ENABLE_DUMP_IR)
-    file(GLOB_RECURSE RDR_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cc")
-    add_library(_mindspore_debug_rdr_obj OBJECT ${RDR_SRC_LIST})
-    add_dependencies(_mindspore_debug_rdr_obj proto_input)
-endif()

@@ -21,7 +21,7 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT EraseNotCutAttr : public Pass {
+class BACKEND_COMMON_EXPORT EraseNotCutAttr : public Pass {
  public:
   explicit EraseNotCutAttr(const std::string &name = "erase_not_cut_attr") : Pass(name) {}
   ~EraseNotCutAttr() override = default;

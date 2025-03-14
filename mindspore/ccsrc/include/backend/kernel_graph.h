@@ -88,7 +88,7 @@ struct SomasInfo {
 using DeviceType = device::DeviceType;
 using KernelMapTensor = std::map<session::KernelWithIndex, BaseRef, session::KernelWithIndexCmp>;
 
-class BACKEND_EXPORT KernelGraph : public FuncGraph {
+class BACKEND_COMMON_EXPORT KernelGraph : public FuncGraph {
  public:
   KernelGraph()
       : inputs_(std::make_shared<AnfNodePtrList>()),

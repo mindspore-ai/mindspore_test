@@ -23,7 +23,7 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT ProcessCallInline : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT ProcessCallInline : public PatternProcessPass {
  public:
   explicit ProcessCallInline(bool multi_graph = true) : PatternProcessPass("process_call_inline", multi_graph) {}
   ~ProcessCallInline() override = default;

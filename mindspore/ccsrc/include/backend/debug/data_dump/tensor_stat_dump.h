@@ -29,7 +29,7 @@ namespace mindspore {
 class Debugger;
 class TensorData;
 
-class BACKEND_EXPORT TensorStatDump {
+class BACKEND_COMMON_EXPORT TensorStatDump {
  public:
   static bool OpenStatisticsFile(const std::string &dump_path);
 

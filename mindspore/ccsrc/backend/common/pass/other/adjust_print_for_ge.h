@@ -24,7 +24,7 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT AdjustPrintForGe : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT AdjustPrintForGe : public PatternProcessPass {
  public:
   explicit AdjustPrintForGe(bool multigraph = true)
       : PatternProcessPass("print_insert_placeholder_for_tensor_name", multigraph) {}

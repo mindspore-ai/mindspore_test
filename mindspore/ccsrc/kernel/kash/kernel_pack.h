@@ -72,7 +72,7 @@ struct KernelJsonInfo {
   KernelJsonInfo() = default;
 };
 
-class BACKEND_EXPORT KernelPack {
+class BACKEND_COMMON_EXPORT KernelPack {
  public:
   KernelPack() : json_(nullptr), kernel_(nullptr) {}
   KernelPack(const KernelPack &) = default;

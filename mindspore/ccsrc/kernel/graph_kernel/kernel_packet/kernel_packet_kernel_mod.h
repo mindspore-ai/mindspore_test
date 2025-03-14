@@ -31,14 +31,14 @@ namespace mindspore {
 namespace kernel {
 class KernelPacketKernelMod;
 class KernelPacketInfer;
-class BACKEND_EXPORT KernelPacketInitializer {
+class BACKEND_COMMON_EXPORT KernelPacketInitializer {
  public:
   static bool InitKernel(const CNodePtr &real_node, const KernelModPtr &real_kernel_mod,
                          KernelPacketKernelMod *packet_kernel_mod, KernelPacketInfer *infer);
 };
 
 /// \brief Kernel Mod of subgraph into which host ops are clustered
-class BACKEND_EXPORT KernelPacketKernelMod : public KernelMod {
+class BACKEND_COMMON_EXPORT KernelPacketKernelMod : public KernelMod {
  public:
   friend class KernelPacketInitializer;
 
@@ -84,7 +84,7 @@ class BACKEND_EXPORT KernelPacketKernelMod : public KernelMod {
   std::string real_node_debug_str_;
   std::vector<size_t> ignored_input_idx_;
 };
-BACKEND_EXPORT CNodePtr GetKernelPacketRealNode(const AnfNodePtr &kernelpacket);
+BACKEND_COMMON_EXPORT CNodePtr GetKernelPacketRealNode(const AnfNodePtr &kernelpacket);
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_KERNEL_GRAPH_KERNEL_KERNEL_PACKET_KERNEL_PACKET_KERNEL_MOD_H_

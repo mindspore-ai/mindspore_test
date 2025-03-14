@@ -29,15 +29,17 @@
 #include "kernel/framework_utils.h"
 
 namespace mindspore::opt::dynamic_shape {
-BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args);
+BACKEND_COMMON_EXPORT BaseShapePtr InferShape(const PrimitivePtr &primitive,
+                                              const std::vector<AbstractBasePtr> &input_args);
 
-void UpdateKernelTensorShape(const BaseShapePtr &base_shape,
-                             const std::vector<kernel::KernelTensor *> &output_kernel_tensors);
+BACKEND_COMMON_EXPORT void UpdateKernelTensorShape(const BaseShapePtr &base_shape,
+                                                   const std::vector<kernel::KernelTensor *> &output_kernel_tensors);
 
-abstract::AbstractBasePtr InferShapeAndType(const PrimitivePtr &primitive,
-                                            const std::vector<AbstractBasePtr> &input_args);
+BACKEND_COMMON_EXPORT abstract::AbstractBasePtr InferShapeAndType(const PrimitivePtr &primitive,
+                                                                  const std::vector<AbstractBasePtr> &input_args);
 
-void UpdateKernelTensorType(const TypePtr &type, const std::vector<kernel::KernelTensor *> &output_kernel_tensors);
+BACKEND_COMMON_EXPORT void UpdateKernelTensorType(const TypePtr &type,
+                                                  const std::vector<kernel::KernelTensor *> &output_kernel_tensors);
 
 bool IsRealCNode(const BaseRef &n);
 void InferOp(const CNodePtr &node, void *args = nullptr);
@@ -73,7 +75,7 @@ class CustomActorNodeManager {
 };
 
 /// \brief The class to implement an InferShape function, which is decoupled from the mindspore/core.
-class BACKEND_EXPORT InferShapeFunctor : public Functor {
+class BACKEND_COMMON_EXPORT InferShapeFunctor : public Functor {
  public:
   /// \brief Constructor of InferShapeFunctor.
   explicit InferShapeFunctor(const std::string &name) : Functor(name) {}

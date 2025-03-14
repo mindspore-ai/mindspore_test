@@ -34,7 +34,7 @@ void CheckJsonUnsignedType(const nlohmann::json &content, const std::string &key
 void CheckJsonStringType(const nlohmann::json &content, const std::string &key);
 void CheckJsonArrayType(const nlohmann::json &content, const std::string &key);
 
-class BACKEND_EXPORT DumpJsonParser {
+class BACKEND_COMMON_EXPORT DumpJsonParser {
  public:
   static DumpJsonParser &GetInstance() {
     std::call_once(instance_mutex_, []() {

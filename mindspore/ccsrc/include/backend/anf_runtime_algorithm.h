@@ -49,7 +49,7 @@ using kernel::KernelObjectType;
 using kernel::KernelTensor;
 using kernel::KernelTensorPtr;
 
-class BACKEND_EXPORT AnfRuntimeAlgorithm {
+class BACKEND_COMMON_EXPORT AnfRuntimeAlgorithm {
  public:
   static AnfNodePtr MakeMonadValueNode(const KernelGraphPtr &kg);
   static void KeepOrder(const KernelGraphPtr &kg, const AnfNodePtr &former, const AnfNodePtr &latter);

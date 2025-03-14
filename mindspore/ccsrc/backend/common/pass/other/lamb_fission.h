@@ -23,7 +23,7 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT LambFissionGe : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT LambFissionGe : public PatternProcessPass {
  public:
   explicit LambFissionGe(bool multi_graph = true) : PatternProcessPass("lamb_fission_ge", multi_graph) {}
   ~LambFissionGe() override = default;

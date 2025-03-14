@@ -29,7 +29,7 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT CustomDefinedDepend : public Pass {
+class BACKEND_COMMON_EXPORT CustomDefinedDepend : public Pass {
  public:
   CustomDefinedDepend(bool is_ge, int64_t graph_id)
       : Pass("backend_custom_depend"), is_ge_(is_ge), graph_id_(graph_id) {}

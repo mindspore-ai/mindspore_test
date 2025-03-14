@@ -26,7 +26,7 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT NeighborExchangeV2UnifyMindIR : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT NeighborExchangeV2UnifyMindIR : public PatternProcessPass {
  public:
   explicit NeighborExchangeV2UnifyMindIR(bool multigraph = true)
       : PatternProcessPass("neighbor_exchange_v2_unify_mindir", multigraph) {}
@@ -53,7 +53,7 @@ class BACKEND_EXPORT NeighborExchangeV2UnifyMindIR : public PatternProcessPass {
   std::vector<std::string> MustExistPrimitiveName() const override;
 };
 
-class BACKEND_EXPORT NeighborExchangeV2GradUnifyMindIR : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT NeighborExchangeV2GradUnifyMindIR : public PatternProcessPass {
  public:
   explicit NeighborExchangeV2GradUnifyMindIR(bool multigraph = true)
       : PatternProcessPass("neighbor_exchange_v2_grad_unify_mindir", multigraph) {}

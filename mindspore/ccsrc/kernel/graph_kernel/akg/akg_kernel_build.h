@@ -29,7 +29,7 @@ namespace mindspore {
 namespace kernel {
 using graphkernel::GraphKernelJsonGenerator;
 
-class BACKEND_EXPORT AkgKernelBuilder : public GraphKernelBuilder {
+class BACKEND_COMMON_EXPORT AkgKernelBuilder : public GraphKernelBuilder {
  public:
   AkgKernelBuilder() = default;
   virtual ~AkgKernelBuilder() = default;

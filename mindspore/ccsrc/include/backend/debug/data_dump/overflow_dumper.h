@@ -24,7 +24,7 @@
 
 namespace mindspore {
 namespace debug {
-class BACKEND_EXPORT OverflowDumper {
+class BACKEND_COMMON_EXPORT OverflowDumper {
  public:
   OverflowDumper() = default;
   virtual ~OverflowDumper() = default;

@@ -48,7 +48,7 @@ namespace mindspore {
 using mindspore::device::DeviceContext;
 
 class DebugServices;
-class BACKEND_EXPORT Debugger : public std::enable_shared_from_this<Debugger> {
+class BACKEND_COMMON_EXPORT Debugger : public std::enable_shared_from_this<Debugger> {
  public:
   static std::shared_ptr<Debugger> GetInstance();
 

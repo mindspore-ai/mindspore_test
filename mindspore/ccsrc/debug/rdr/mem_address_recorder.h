@@ -53,10 +53,10 @@ class MemAddressRecorder : public BaseRecorder {
 using MemAddressRecorderPtr = std::shared_ptr<MemAddressRecorder>;
 
 namespace RDR {
-BACKEND_EXPORT bool RecordMemAddressInfo(const SubModuleId module, const std::string &name);
-BACKEND_EXPORT bool UpdateMemAddress(const SubModuleId module, const std::string &name, const std::string &op_name,
-                                     const KernelLaunchAddr &mem_info);
-BACKEND_EXPORT void ClearMemAddressInfo();
+BACKEND_COMMON_EXPORT bool RecordMemAddressInfo(const SubModuleId module, const std::string &name);
+BACKEND_COMMON_EXPORT bool UpdateMemAddress(const SubModuleId module, const std::string &name,
+                                            const std::string &op_name, const KernelLaunchAddr &mem_info);
+BACKEND_COMMON_EXPORT void ClearMemAddressInfo();
 }  // namespace RDR
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_DEBUG_RDR_MEM_ADDRESS_RECORDER_H_

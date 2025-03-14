@@ -21,7 +21,7 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT ConvertAttrToUnifyMindIR : public InplaceNodePass {
+class BACKEND_COMMON_EXPORT ConvertAttrToUnifyMindIR : public InplaceNodePass {
  public:
   ConvertAttrToUnifyMindIR() : InplaceNodePass("convert_attr_to_unify_mindir") {}
   bool Process(const AnfNodePtr &node) const override;

@@ -25,7 +25,7 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT RenormSplit : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT RenormSplit : public PatternProcessPass {
  public:
   explicit RenormSplit(bool multigraph = true, const std::string &name = "renorm_split")
       : PatternProcessPass(name, multigraph) {}

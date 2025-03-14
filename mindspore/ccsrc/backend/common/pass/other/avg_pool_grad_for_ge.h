@@ -24,7 +24,7 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT AvgPoolGradForGE : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT AvgPoolGradForGE : public PatternProcessPass {
  public:
   explicit AvgPoolGradForGE(bool multigraph = true) : PatternProcessPass("avg_pool_grad_for_ge", multigraph) {}
   ~AvgPoolGradForGE() override = default;

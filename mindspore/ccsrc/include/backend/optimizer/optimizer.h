@@ -35,7 +35,7 @@ namespace mindspore {
 namespace opt {
 using PatternListType = std::initializer_list<BaseRef>;
 
-class BACKEND_EXPORT PatternPass : public NodePass {
+class BACKEND_COMMON_EXPORT PatternPass : public NodePass {
  public:
   explicit PatternPass(const std::string &name = "", bool multigraph = true)
       : NodePass(name),
@@ -55,7 +55,7 @@ class BACKEND_EXPORT PatternPass : public NodePass {
   EquivPtr equiv_;
 };
 
-class BACKEND_EXPORT PatternProcessPass : public PatternPass {
+class BACKEND_COMMON_EXPORT PatternProcessPass : public PatternPass {
  public:
   explicit PatternProcessPass(const std::string &name = "", bool multigraph = true) : PatternPass(name, multigraph) {}
   ~PatternProcessPass() override = default;
@@ -68,7 +68,7 @@ class BACKEND_EXPORT PatternProcessPass : public PatternPass {
   AnfNodePtr pattern_ = nullptr;
 };
 
-class BACKEND_EXPORT MultipleOutputPatternProcessPass : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT MultipleOutputPatternProcessPass : public PatternProcessPass {
  public:
   explicit MultipleOutputPatternProcessPass(const std::string &name = "", bool multigraph = true)
       : PatternProcessPass(name, multigraph),

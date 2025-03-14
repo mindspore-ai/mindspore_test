@@ -24,7 +24,7 @@
 
 namespace mindspore {
 namespace pynative {
-class BACKEND_EXPORT JitCallGraph {
+class BACKEND_COMMON_EXPORT JitCallGraph {
  public:
   explicit JitCallGraph(std::function<VectorRef(const VectorRef &arg_list)> call_back_func)
       : call_back_func_(std::move(call_back_func)) {}

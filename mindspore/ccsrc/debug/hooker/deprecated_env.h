@@ -16,10 +16,10 @@
 
 #ifndef MINDSPORE_CCSRC_DEBUG_HOOKER_DEPRECATED_ENV_H_
 #define MINDSPORE_CCSRC_DEBUG_HOOKER_DEPRECATED_ENV_H_
-
+#include "include/backend/visible.h"
 namespace mindspore {
 namespace hooker {
-void CheckDeprecatedDumpEnv();
+BACKEND_COMMON_EXPORT void CheckDeprecatedDumpEnv();
 void PrintDeprecatedWarning(bool, bool);
 }  // namespace hooker
 }  // namespace mindspore

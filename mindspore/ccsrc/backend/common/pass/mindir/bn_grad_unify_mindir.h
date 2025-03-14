@@ -21,7 +21,7 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT BatchNormGradUnifyMindIR : public PatternToPatternPass {
+class BACKEND_COMMON_EXPORT BatchNormGradUnifyMindIR : public PatternToPatternPass {
  public:
   BatchNormGradUnifyMindIR() : PatternToPatternPass("bn_grad_unify_mindir", true) {}
   ~BatchNormGradUnifyMindIR() override = default;

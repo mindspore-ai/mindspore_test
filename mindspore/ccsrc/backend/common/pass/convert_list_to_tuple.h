@@ -23,7 +23,7 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT ConvertListToTuple : public Pass {
+class BACKEND_COMMON_EXPORT ConvertListToTuple : public Pass {
  public:
   explicit ConvertListToTuple(const std::string &name) : Pass(name) {}
   ~ConvertListToTuple() override = default;

@@ -903,6 +903,7 @@ if(WIN32)
     add_compile_definitions(BUILDING_CORE_DLL)
     add_compile_definitions(OPS_DLL)
     add_compile_definitions(OPS_KERNEL_COMMON_DLL)
+    add_compile_definitions(BACKEND_COMMON_DLL)
 endif()
 
 include_directories(${CORE_DIR}/mindrt)

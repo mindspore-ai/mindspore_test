@@ -20,6 +20,7 @@
 #include <memory>
 
 #include "include/common/debug/rdr/base_recorder.h"
+#include "include/backend/visible.h"
 namespace mindspore {
 class StringRecorder : public BaseRecorder {
  public:
@@ -34,7 +35,7 @@ class StringRecorder : public BaseRecorder {
 };
 using StringRecorderPtr = std::shared_ptr<StringRecorder>;
 namespace RDR {
-bool RecordString(SubModuleId module, const std::string &name, const std::string &data);
+BACKEND_COMMON_EXPORT bool RecordString(SubModuleId module, const std::string &name, const std::string &data);
 }  // namespace RDR
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_DEBUG_RDR_STRING_RECORDER_H_

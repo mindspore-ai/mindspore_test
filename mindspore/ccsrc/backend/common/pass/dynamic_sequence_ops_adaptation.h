@@ -22,7 +22,7 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT DynamicSequenceOpsAdaptation : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT DynamicSequenceOpsAdaptation : public PatternProcessPass {
  public:
   explicit DynamicSequenceOpsAdaptation(bool multigraph = true)
       : PatternProcessPass("dynamic_sequence_ops_adaptation", multigraph) {}

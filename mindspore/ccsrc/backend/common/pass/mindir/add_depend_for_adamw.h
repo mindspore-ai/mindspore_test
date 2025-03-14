@@ -26,7 +26,7 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT AddDependForAdamW : public Pass {
+class BACKEND_COMMON_EXPORT AddDependForAdamW : public Pass {
  public:
   AddDependForAdamW() : Pass("add_depend_for_adamw") {}
   ~AddDependForAdamW() override = default;

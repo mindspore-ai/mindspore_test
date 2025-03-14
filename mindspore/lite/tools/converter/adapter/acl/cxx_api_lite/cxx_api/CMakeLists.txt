@@ -101,7 +101,7 @@ if((MODE_ASCEND_ACL) AND NOT BUILD_LITE)
         "${CMAKE_SOURCE_DIR}/mindspore/ccsrc/backend/common/optimizer/visitor.cc"
         "${CMAKE_SOURCE_DIR}/mindspore/ccsrc/backend/operator/ops_backend_infer_function.cc"
         "${CMAKE_SOURCE_DIR}/mindspore/ops/kernel/common/kernel_build_info.cc"
-        "${CMAKE_SOURCE_DIR}/mindspore/ccsrc/runtime/device/kernel_info.cc"
+        "${CMAKE_SOURCE_DIR}/mindspore/ccsrc/kernel/kernel_info.cc"
         "${CMAKE_SOURCE_DIR}/mindspore/ccsrc/plugin/device/ascend/optimizer/mindir/reduce_axis_update.cc"
         "${CMAKE_SOURCE_DIR}/mindspore/ccsrc/plugin/device/ascend/optimizer/ge_optimization.cc")
     # MODE_ASCEND_ACL don't need reg akg kernel

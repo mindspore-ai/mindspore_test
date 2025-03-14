@@ -21,7 +21,7 @@
 
 namespace mindspore {
 namespace hooker {
-class BACKEND_EXPORT HookDebugger {
+class BACKEND_COMMON_EXPORT HookDebugger {
  public:
   HookDebugger() : is_enabled_(IsHookerEnabled()) {
     if (is_enabled_) {

@@ -23,7 +23,7 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT Label1F1BOverlapNode : public Pass {
+class BACKEND_COMMON_EXPORT Label1F1BOverlapNode : public Pass {
  public:
   explicit Label1F1BOverlapNode(const std::string &name = "label_1f1b_overlap_node") : Pass(name) {}
   ~Label1F1BOverlapNode() override = default;

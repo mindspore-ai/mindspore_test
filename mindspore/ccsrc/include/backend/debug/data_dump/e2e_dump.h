@@ -39,7 +39,7 @@ class Debugger;
 namespace mindspore {
 using mindspore::device::DeviceContext;
 
-class BACKEND_EXPORT E2eDump {
+class BACKEND_COMMON_EXPORT E2eDump {
  public:
   E2eDump() = default;
   ~E2eDump() = default;

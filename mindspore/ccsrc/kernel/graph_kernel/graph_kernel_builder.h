@@ -33,7 +33,7 @@ namespace kernel {
 using graphkernel::GraphKernelJsonGenerator;
 using JsonNodePair = std::pair<GraphKernelJsonGenerator, AnfNodePtr>;
 
-class BACKEND_EXPORT GraphKernelBuilder {
+class BACKEND_COMMON_EXPORT GraphKernelBuilder {
  public:
   GraphKernelBuilder() = default;
   virtual ~GraphKernelBuilder() = default;

@@ -23,7 +23,7 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT ProcessPartialInline : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT ProcessPartialInline : public PatternProcessPass {
  public:
   explicit ProcessPartialInline(bool multi_graph = true) : PatternProcessPass("process partial inline", multi_graph) {}
   ~ProcessPartialInline() override = default;

@@ -31,9 +31,9 @@ struct ClusterConfig {
   AnfNodePtr only_output_basenode{nullptr};
 };
 
-BACKEND_EXPORT std::tuple<FuncGraphPtr, AnfNodePtrList, AnfNodePtrList> BuildGraphFromNodesInner(
+BACKEND_COMMON_EXPORT std::tuple<FuncGraphPtr, AnfNodePtrList, AnfNodePtrList> BuildGraphFromNodesInner(
   const AnfNodePtrList &nodes, const ClusterConfig &config);
-BACKEND_EXPORT std::tuple<FuncGraphPtr, AnfNodePtrList, AnfNodePtrList> BuildGraphFromNodes(
+BACKEND_COMMON_EXPORT std::tuple<FuncGraphPtr, AnfNodePtrList, AnfNodePtrList> BuildGraphFromNodes(
   const AnfNodePtrList &nodes);
 std::tuple<FuncGraphPtr, AnfNodePtrList, AnfNodePtrList> BuildSingleGraphFromNodes(
   const AnfNodePtrList &nodes, const ClusterConfig &config = ClusterConfig());

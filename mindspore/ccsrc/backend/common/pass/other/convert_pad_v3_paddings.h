@@ -24,7 +24,7 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT ConvertBasePaddings : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT ConvertBasePaddings : public PatternProcessPass {
  public:
   explicit ConvertBasePaddings(const std::string &pass_name, bool multi_graph = true)
       : PatternProcessPass(pass_name, multi_graph) {}
@@ -56,7 +56,7 @@ class BACKEND_EXPORT ConvertBasePaddings : public PatternProcessPass {
   virtual void ReduceOutputDims(const FuncGraphPtr &, const CNodePtr &) const {}
 };
 
-class BACKEND_EXPORT ConvertPadV3Paddings : public ConvertBasePaddings {
+class BACKEND_COMMON_EXPORT ConvertPadV3Paddings : public ConvertBasePaddings {
  public:
   explicit ConvertPadV3Paddings(bool multi_graph = true)
       : ConvertBasePaddings("convert_pad_v3_paddings", multi_graph) {}
@@ -85,7 +85,7 @@ class BACKEND_EXPORT ConvertPadV3Paddings : public ConvertBasePaddings {
   std::vector<std::string> MustExistPrimitiveName() const override;
 };
 
-class BACKEND_EXPORT ConvertPadV3GradPaddings : public ConvertBasePaddings {
+class BACKEND_COMMON_EXPORT ConvertPadV3GradPaddings : public ConvertBasePaddings {
  public:
   explicit ConvertPadV3GradPaddings(bool multi_graph = true)
       : ConvertBasePaddings("convert_pad_v3_grad_paddings", multi_graph) {}

@@ -25,7 +25,7 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT DropoutAndDropoutGradUnifyMindIR : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT DropoutAndDropoutGradUnifyMindIR : public PatternProcessPass {
  public:
   explicit DropoutAndDropoutGradUnifyMindIR(bool multigraph = true)
       : PatternProcessPass("dropout_and_dropoutgrad_unify_mindir", multigraph) {
@@ -39,7 +39,7 @@ class BACKEND_EXPORT DropoutAndDropoutGradUnifyMindIR : public PatternProcessPas
   VarPtr grad_input_;
 };
 
-class BACKEND_EXPORT DropoutUnifyMindIR0 : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT DropoutUnifyMindIR0 : public PatternProcessPass {
  public:
   explicit DropoutUnifyMindIR0(bool multigraph = true) : PatternProcessPass("dropout_unify_mindir0", multigraph) {}
   ~DropoutUnifyMindIR0() override = default;
@@ -47,7 +47,7 @@ class BACKEND_EXPORT DropoutUnifyMindIR0 : public PatternProcessPass {
   const AnfNodePtr Process(const FuncGraphPtr &, const AnfNodePtr &, const EquivPtr &) const override;
 };
 
-class BACKEND_EXPORT DropoutUnifyMindIR1 : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT DropoutUnifyMindIR1 : public PatternProcessPass {
  public:
   explicit DropoutUnifyMindIR1(const std::string &name = "dropout_unify_mindir1", bool multigraph = true)
       : PatternProcessPass(name, multigraph) {}
@@ -61,7 +61,7 @@ class BACKEND_EXPORT DropoutUnifyMindIR1 : public PatternProcessPass {
   bool enable_keep_prob_ = false;
 };
 
-class BACKEND_EXPORT DropoutGradUnifyMindIR : public PatternToPatternPass {
+class BACKEND_COMMON_EXPORT DropoutGradUnifyMindIR : public PatternToPatternPass {
  public:
   DropoutGradUnifyMindIR() : PatternToPatternPass("dropoutgrad_unify_mindir", true) {}
   ~DropoutGradUnifyMindIR() override = default;
@@ -70,7 +70,7 @@ class BACKEND_EXPORT DropoutGradUnifyMindIR : public PatternToPatternPass {
   void DefineDstPattern(DstPattern *dst_pattern) override;
 };
 
-class BACKEND_EXPORT DropoutExtUnifyMindIR1 : public DropoutUnifyMindIR1 {
+class BACKEND_COMMON_EXPORT DropoutExtUnifyMindIR1 : public DropoutUnifyMindIR1 {
  public:
   explicit DropoutExtUnifyMindIR1(bool multigraph = true)
       : DropoutUnifyMindIR1("dropout_ext_unify_mindir1", multigraph) {
@@ -83,7 +83,7 @@ class BACKEND_EXPORT DropoutExtUnifyMindIR1 : public DropoutUnifyMindIR1 {
   std::vector<std::string> MustExistPrimitiveName() const override;
 };
 
-class BACKEND_EXPORT DropoutGradExtUnifyMindIR : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT DropoutGradExtUnifyMindIR : public PatternProcessPass {
  public:
   explicit DropoutGradExtUnifyMindIR(bool multigraph = true)
       : PatternProcessPass("dropoutgrad_ext_unify_mindir", multigraph) {}

@@ -1,7 +1,7 @@
 file(GLOB_RECURSE KERNEL_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     "kernel_factory.cc"
     "kernel_build_info.cc"
-    "kernel.cc"
+    "kernel_info.cc"
     "ops_utils.cc"
     "common_utils.cc"
     "format_utils.cc"

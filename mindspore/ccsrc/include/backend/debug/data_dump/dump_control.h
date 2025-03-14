@@ -23,7 +23,7 @@
 
 namespace mindspore {
 
-class BACKEND_EXPORT DumpControl {
+class BACKEND_COMMON_EXPORT DumpControl {
  public:
   static DumpControl &GetInstance() {
     static DumpControl instance;

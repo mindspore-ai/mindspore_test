@@ -37,7 +37,7 @@ class GraphKernelCommInfo {
 
 using GraphKernelCommInfoCreator = std::function<std::shared_ptr<GraphKernelCommInfo>()>;
 
-class BACKEND_EXPORT GraphKernelCommInfoManager {
+class BACKEND_COMMON_EXPORT GraphKernelCommInfoManager {
  public:
   static GraphKernelCommInfoManager &Instance();
   void Register(const std::string &device_type, GraphKernelCommInfoCreator &&creator);
