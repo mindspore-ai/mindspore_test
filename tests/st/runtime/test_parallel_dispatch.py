@@ -18,7 +18,7 @@ import numpy as np
 import mindspore as ms
 import mindspore.nn as nn
 import mindspore.ops as P
-from mindspore import Tensor
+from mindspore import Tensor, mutable
 from mindspore import dtype as mstype
 import mindspore.context as context
 from tests.mark_utils import arg_mark
@@ -43,15 +43,16 @@ class Net(nn.Cell):
         self.add = P.Add()
         self.mul = P.Mul()
         self.sub = P.Sub()
+        self.add_n = P.AddN()
         self.reshape = P.Reshape()
 
-    def construct(self, x):
+    def construct(self, x, key_cache_list, value_cache_list):
         x = self.reshape(x, (1, -1))
 
         for _ in range(g_block_num):
             x = self.add(x, 1)
             x = self.sub(x, 1.1)
-            x = self.reshape(x, (3, -1))
+            x = self.reshape(x, (2, -1))
             x = self.mul(x, 0.251)
             x = self.add(x, 1)
 
@@ -61,8 +62,11 @@ class Net(nn.Cell):
             x = self.mul(x, 2)
             x = self.add(x, 1)
             x = self.sub(x, 1.1)
-            x = self.reshape(x, (6, -1))
+            x = self.reshape(x, (4, -1))
             x = self.mul(x, 0.051)
+            x = self.reshape(x, (2, -1))
+            x = self.add_n(key_cache_list) + x
+            x = self.add_n(value_cache_list) + x
 
         x = self.reshape(x, (2, -1))
         return x
@@ -76,22 +80,46 @@ def test_host_bound_for_parallel_dispatch():
                  internal kernels.
     Expectation: The program execute and exit normally.
     """
-    input_data = Tensor(np.zeros((2, 3)).astype(np.float32))
+    input_data1 = Tensor(np.zeros((2, 2)).astype(np.float32))
+    input_data2 = Tensor(np.zeros((2, 4)).astype(np.float32))
     dyn_input_data = Tensor(shape=[2, None], dtype=mstype.float32)
+    k_cache_list1 = []
+    v_cache_list1 = []
+    k_cache_list2 = []
+    v_cache_list2 = []
+    dyn_k_cache_list = []
+    dyn_v_cache_list = []
+
+    for _ in range(10):
+        dyn_k_cache_list.append(dyn_input_data)
+        dyn_v_cache_list.append(dyn_input_data)
+
+    for _ in range(10):
+        new_input_data = P.Add()(input_data1, 1)
+        k_cache_list1.append(new_input_data)
+        v_cache_list1.append(new_input_data)
 
     net = Net()
-    net.set_inputs(dyn_input_data)
+    net.set_inputs(dyn_input_data, mutable(dyn_k_cache_list), mutable(dyn_v_cache_list))
     net.phase = "increment"
 
+
     # warm up
-    output = net(input_data)
-    output = net(input_data)
+    output = net(input_data1, mutable(k_cache_list1), mutable(v_cache_list1))
+    output = net(input_data1, mutable(k_cache_list1), mutable(v_cache_list1))
     print(output)
+    k_cache_list1 = []
+    v_cache_list1 = []
+
+    for _ in range(10):
+        new_input_data = P.Add()(input_data2, 1)
+        k_cache_list2.append(new_input_data)
+        v_cache_list2.append(new_input_data)
 
     for _ in range(steps):
-        output = net(input_data)
+        output = net(input_data2, mutable(k_cache_list2), mutable(v_cache_list2))
         output.asnumpy()
 
-    exp_val = -0.06835
-    exp_array = np.array([[exp_val, exp_val, exp_val], [exp_val, exp_val, exp_val]])
+    exp_val = 20.191507
+    exp_array = np.array([[exp_val, exp_val, exp_val, exp_val], [exp_val, exp_val, exp_val, exp_val]])
     assert np.allclose(output.asnumpy(), exp_array, 0.0001, 0.0001)

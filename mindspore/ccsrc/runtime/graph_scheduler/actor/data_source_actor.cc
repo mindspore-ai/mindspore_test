@@ -15,6 +15,9 @@
  */
 
 #include "runtime/graph_scheduler/actor/data_source_actor.h"
+
+#include <set>
+
 #include "runtime/graph_scheduler/actor/kernel_actor.h"
 #include "runtime/graph_scheduler/actor/memory_manager_actor.h"
 #include "runtime/graph_scheduler/actor/output_actor.h"
@@ -43,16 +46,9 @@ void DataSourceActor::FetchData(OpContext<DeviceTensor> *const context) {
   MS_LOG(INFO) << "Data source actor(" << GetAID().Name() << ") fetches data.";
   MS_EXCEPTION_IF_NULL(context);
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, GetAID().Name(), GetAID().Name(), "");
-  // Pop the data of last time.
-  if (!buffers_.empty()) {
-    buffers_.pop();
-  }
 
   // Construct device tensors and fill to the buffers from member nodes.
-  FillDataBuffer();
-  if (buffers_.size() == 0) {
-    SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "The data queue is empty.");
-  }
+  FillDataBuffer(context);
 
   // Allocate memory for device tensors.
   SendMemoryAllocReq(context);
@@ -65,18 +61,13 @@ void DataSourceActor::UpdateOutputData(OpData<DeviceTensor> *const output_data, 
   MS_EXCEPTION_IF_NULL(output_node);
   MS_EXCEPTION_IF_NULL(context);
 
-  if (buffers_.size() == 0) {
-    SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "The data queue is empty.");
-  }
-  const auto &output_device_tensors = buffers_.front();
-
   auto position = FetchNodePosition({output_node, data_arrow->from_output_index_});
   // Host data souruce actor uses the node position, device data source actor uses the output index.
   auto output_position = (position != 0) ? position : IntToSize(data_arrow->from_output_index_);
-  if (output_position >= output_device_tensors.size()) {
+  if (output_position >= device_tensors_.size()) {
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "The output index is of range.");
   }
-  output_data->data_ = output_device_tensors[output_position];
+  output_data->data_ = device_tensors_[output_position];
 }
 
 void DeviceQueueDataSourceActor::Init() {
@@ -101,7 +92,7 @@ void DeviceQueueDataSourceActor::Init() {
   stream_ = device_contexts_[0]->device_res_manager_->GetStream(kernel_info_->stream_id());
 }
 
-void DeviceQueueDataSourceActor::FillDataBuffer() {
+void DeviceQueueDataSourceActor::FillDataBuffer(OpContext<DeviceTensor> *const context) {
   MS_EXCEPTION_IF_NULL(kernel_info_);
   if (is_dynamic_shape_) {
     // For GetNext dynamic case, the Resize method finish update output shape and output size in kernel tensor via data
@@ -114,38 +105,33 @@ void DeviceQueueDataSourceActor::FillDataBuffer() {
     }
   }
 
-  // Construct device tensors.
-  std::vector<DeviceTensor *> device_tensors;
+  device_tensors_.clear();
   for (auto &device_tensor : kernel_info_->output_address_list()) {
     MS_EXCEPTION_IF_NULL(device_tensor);
-    (void)device_tensors.emplace_back(device_tensor.get());
+    (void)device_tensors_.emplace_back(device_tensor.get());
   }
-
-  buffers_.push(device_tensors);
 }
 
 void DeviceQueueDataSourceActor::SendMemoryAllocReq(OpContext<DeviceTensor> *const context) {
-  auto &device_tensors = buffers_.back();
   if (ActorDispatcher::is_memory_allocation_sync()) {
-    ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::AllocateMemory, &device_tensors,
+    ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::AllocateMemory, &device_tensors_,
                               device_contexts_[0], context, GetAID());
     OnMemoryAllocFinish(context);
   } else {
-    ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::AllocateMemory, &device_tensors,
+    ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::AllocateMemory, &device_tensors_,
                           device_contexts_[0], context, GetAID());
   }
 }
 
 void DeviceQueueDataSourceActor::SendMemoryFreeReq(OpContext<DeviceTensor> *const context) {
-  auto &device_tensors = buffers_.front();
   if (device_contexts_.empty()) {
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Empty device contexts in device data source actor.");
   }
   if (ActorDispatcher::is_memory_free_sync()) {
-    ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::FreeMemory, &device_tensors,
+    ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::FreeMemory, &device_tensors_,
                               device_contexts_[0], context, GetAID());
   } else {
-    ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::FreeMemory, &device_tensors, device_contexts_[0],
+    ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::FreeMemory, &device_tensors_, device_contexts_[0],
                           context, GetAID());
   }
 }
@@ -158,29 +144,24 @@ void DeviceQueueDataSourceActor::OnMemoryAllocFinish(OpContext<DeviceTensor> *co
   if (IsRunningFailed(context)) {
     return;
   }
-  if (buffers_.size() == 0) {
-    SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "The data queue is empty.");
-  }
 
-  // Construct outputs of data kernel launching.
-  auto &device_tensors = buffers_.back();
-  if (output_kernel_tensors_.size() != device_tensors.size()) {
+  if (output_kernel_tensors_.size() != device_tensors_.size()) {
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "The outputs number is not equal to the device tensors number.");
   }
-  for (size_t i = 0; i < device_tensors.size(); ++i) {
+  for (size_t i = 0; i < device_tensors_.size(); ++i) {
     MS_EXCEPTION_IF_NULL(output_kernel_tensors_[i]);
-    MS_EXCEPTION_IF_NULL(device_tensors[i]);
-    output_kernel_tensors_[i]->set_device_ptr(device_tensors[i]->GetMutablePtr());
-    output_kernel_tensors_[i]->set_size(device_tensors[i]->GetSize());
+    MS_EXCEPTION_IF_NULL(device_tensors_[i]);
+    output_kernel_tensors_[i]->set_device_ptr(device_tensors_[i]->GetMutablePtr());
+    output_kernel_tensors_[i]->set_size(device_tensors_[i]->GetSize());
     if (recorder_aid_ != nullptr || debug_aid_ != nullptr) {
-      mem_info_.outputs_[i]->addr = device_tensors[i]->GetMutablePtr();
-      mem_info_.outputs_[i]->size = device_tensors[i]->GetSize();
+      mem_info_.outputs_[i]->addr = device_tensors_[i]->GetMutablePtr();
+      mem_info_.outputs_[i]->size = device_tensors_[i]->GetSize();
     }
   }
 
   if (debug_aid_ != nullptr) {
     ActorDispatcher::SendSync(*debug_aid_, &DebugActor::DebugPreLaunch, data_kernel_, std::vector<DeviceTensor *>(),
-                              device_tensors, device_contexts_[0], context, &GetAID());
+                              device_tensors_, device_contexts_[0], context, &GetAID());
   }
 
   // Copy data from device queue by data kernel launching.
@@ -213,7 +194,7 @@ void DeviceQueueDataSourceActor::OnMemoryAllocFinish(OpContext<DeviceTensor> *co
 
 void DeviceQueueDataSourceActor::SendDebugReq(OpContext<DeviceTensor> *const context) {
   ActorDispatcher::SendSync(*debug_aid_, &DebugActor::DebugPostLaunch, data_kernel_, std::vector<DeviceTensor *>(),
-                            buffers_.back(), device_contexts_[0], context, &GetAID());
+                            device_tensors_, device_contexts_[0], context, &GetAID());
   OnDebugFinish(context);
 }
 
@@ -226,97 +207,113 @@ void DeviceQueueDataSourceActor::SendRecorderInfo(OpContext<DeviceTensor> *const
 }
 
 void DeviceQueueDataSourceActor::IncreaseNewRefCounts(OpContext<DeviceTensor> *const context) {
-  if (buffers_.size() == 0) {
-    SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "The device data source actor data queue is empty.");
-  }
-  const auto &output_device_tensors = buffers_.front();
   for (const auto &data_arrow : output_data_arrows_) {
     MS_EXCEPTION_IF_NULL(data_arrow);
     size_t position = IntToSize(data_arrow->from_output_index_);
-    if (position >= output_device_tensors.size()) {
+    if (position >= device_tensors_.size()) {
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Invalid output index:" + std::to_string(position) +
-                                                      " total size:" + std::to_string(output_device_tensors.size()) +
+                                                      " total size:" + std::to_string(device_tensors_.size()) +
                                                       " for device queue data source actor.");
     }
-    MS_EXCEPTION_IF_NULL(output_device_tensors[position]);
-    output_device_tensors[data_arrow->from_output_index_]->IncreaseNewRefCount();
+    MS_EXCEPTION_IF_NULL(device_tensors_[position]);
+    device_tensors_[data_arrow->from_output_index_]->IncreaseNewRefCount();
     MS_LOG(DEBUG) << "Increase new ref count for device address:"
-                  << output_device_tensors[data_arrow->from_output_index_]->PrintInfo() << " in actor:" << GetAID();
+                  << device_tensors_[data_arrow->from_output_index_]->PrintInfo() << " in actor:" << GetAID();
   }
 }
 void HostQueueDataSourceActor::IncreaseNewRefCounts(OpContext<DeviceTensor> *const context) {
-  if (buffers_.size() == 0) {
-    SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "The device data source actor data queue is empty.");
-  }
-  const auto &output_device_tensors = buffers_.front();
-  if (output_data_arrows_.size() != output_data_nodes_.size()) {
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kRuntime, runtime::ProfilerEvent::kOutputProcess,
+                                     "DataSourceActorIncreaseRefCount");
+  if (output_data_arrows_.size() != output_data_nodes_.size() ||
+      need_refresh_device_address_.size() != output_data_arrows_.size()) {
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR(
-      (*context), "Invalid data arrow size:" + std::to_string(output_data_arrows_.size()) + " and data node size:" +
-                    std::to_string(output_data_nodes_.size()) + " for host queue data source actor.");
+      (*context), "Invalid data arrow size:" + std::to_string(output_data_arrows_.size()) +
+                    " and data node size:" + std::to_string(output_data_nodes_.size()) +
+                    " and need refresh flag size:" + std::to_string(need_refresh_device_address_.size()) +
+                    " for host queue data source actor.");
   }
   for (size_t i = 0; i < output_data_arrows_.size(); ++i) {
+    if (!need_refresh_device_address_[i]) {
+      continue;
+    }
     auto &data_arrow = output_data_arrows_[i];
     auto output_node = output_data_nodes_[i];
     MS_EXCEPTION_IF_NULL(data_arrow);
     MS_EXCEPTION_IF_NULL(output_node);
     auto position = FetchNodePosition({output_node, data_arrow->from_output_index_});
-    if (position >= output_device_tensors.size()) {
+    if (position >= device_tensors_.size()) {
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Invalid output index:" + std::to_string(position) +
-                                                      " total size:" + std::to_string(output_device_tensors.size()) +
+                                                      " total size:" + std::to_string(device_tensors_.size()) +
                                                       " for device queue data source actor.");
     }
-    MS_EXCEPTION_IF_NULL(output_device_tensors[position]);
-    output_device_tensors[position]->IncreaseNewRefCount();
-    MS_LOG(DEBUG) << "Increase new ref count for device address:" << output_device_tensors[position]->PrintInfo()
+    MS_EXCEPTION_IF_NULL(device_tensors_[position]);
+    device_tensors_[position]->IncreaseNewRefCount();
+    MS_LOG(DEBUG) << "Increase new ref count for device address:" << device_tensors_[position]->PrintInfo()
                   << " in actor:" << GetAID();
   }
 }
 
-void HostQueueDataSourceActor::FillDataBuffer() {
+void HostQueueDataSourceActor::FillDataBuffer(OpContext<DeviceTensor> *const context) {
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kRuntime, runtime::ProfilerEvent::kOutputProcess,
+                                     "DataSourceActorFillDataBuffer");
   // Construct device tensors.
-  std::vector<DeviceTensor *> device_tensors;
-  for (auto &node_with_index : data_node_with_indexs_) {
+  if (device_tensors_.size() != data_node_with_indexs_.size()) {
+    std::stringstream ofs;
+    ofs << "Invalid device tensor size:" << device_tensors_.size()
+        << " and data node size:" << data_node_with_indexs_.size() << " for actor:" << GetAID();
+    SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), ofs.str());
+  }
+  auto update_device_tensor = [this](const KernelWithIndex &node_with_index, size_t index) {
     auto device_address = AnfAlgo::GetMutableOutputAddr(node_with_index.first, node_with_index.second, false);
     MS_EXCEPTION_IF_NULL(device_address);
     MS_LOG(DEBUG) << "Node:" << node_with_index.first->DebugString() << " index:" << node_with_index.second
                   << " device address:" << device_address->PrintInfo();
-    (void)device_tensors.emplace_back(device_address.get());
+    device_tensors_[index] = device_address.get();
+  };
+  if (is_shape_match_) {
+    MS_LOG(DEBUG) << "Fill data in shape match mode, refreash index:" << need_refresh_input_index_
+                  << " for actor:" << GetAID();
+    std::for_each(
+      need_refresh_input_index_.begin(), need_refresh_input_index_.end(),
+      [update_device_tensor, this](size_t index) { update_device_tensor(data_node_with_indexs_[index], index); });
+    is_shape_match_ = false;
+  } else {
+    for (size_t i = 0; i < data_node_with_indexs_.size(); ++i) {
+      update_device_tensor(data_node_with_indexs_[i], i);
+    }
   }
 
   for (const auto &pair : heter_index_pair_) {
-    if (pair.first >= device_tensors.size() || pair.second >= device_tensors.size()) {
+    if (pair.first >= device_tensors_.size() || pair.second >= device_tensors_.size()) {
       MS_LOG(EXCEPTION) << "Invalid index:" << pair.first << " " << pair.second
-                        << " device tensor size:" << device_tensors.size() << " for data source actor.";
+                        << " device tensor size:" << device_tensors_.size() << " for data source actor.";
     }
-    MS_LOG(DEBUG) << "Add device tensor copy store for device address:" << device_tensors[pair.second]
-                  << " type:" << device_tensors[pair.second]->GetDeviceType() << " and " << device_tensors[pair.first]
-                  << " type:" << device_tensors[pair.first]->GetDeviceType() << " for actor:" << GetAID();
-    DeviceTensorCopyStore::GetInstance().Insert(device_tensors[pair.second], device_tensors[pair.first]);
+    MS_LOG(DEBUG) << "Add device tensor copy store for device address:" << device_tensors_[pair.second]
+                  << " type:" << device_tensors_[pair.second]->GetDeviceType() << " and " << device_tensors_[pair.first]
+                  << " type:" << device_tensors_[pair.first]->GetDeviceType() << " for actor:" << GetAID();
+    DeviceTensorCopyStore::GetInstance().Insert(device_tensors_[pair.second], device_tensors_[pair.first]);
   }
-
-  buffers_.push(device_tensors);
 }
 
 void HostQueueDataSourceActor::SendMemoryAllocReq(OpContext<DeviceTensor> *const context) {
   if (device_contexts_.empty()) {
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Empty device contexts in device data source actor.");
   }
-  auto &device_tensors = buffers_.back();
   if (ActorDispatcher::is_memory_allocation_sync()) {
     if (IsSameDeviceType()) {
-      ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::AllocateMemory, &device_tensors,
+      ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::AllocateMemory, &device_tensors_,
                                 device_contexts_[0], context, GetAID());
     } else {
-      ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::AllocateBatchMemory, &device_tensors,
+      ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::AllocateBatchMemory, &device_tensors_,
                                 &device_contexts_, context, GetAID());
     }
     OnMemoryAllocFinish(context);
   } else {
     if (IsSameDeviceType()) {
-      ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::AllocateMemory, &device_tensors,
+      ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::AllocateMemory, &device_tensors_,
                             device_contexts_[0], context, GetAID());
     } else {
-      ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::AllocateBatchMemory, &device_tensors,
+      ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::AllocateBatchMemory, &device_tensors_,
                             &device_contexts_, context, GetAID());
     }
   }
@@ -326,21 +323,20 @@ void HostQueueDataSourceActor::SendMemoryFreeReq(OpContext<DeviceTensor> *const 
   if (device_contexts_.empty()) {
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Empty device contexts in device data source actor.");
   }
-  auto &device_tensors = buffers_.front();
   if (ActorDispatcher::is_memory_free_sync()) {
     if (IsSameDeviceType()) {
-      ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::FreeMemory, &device_tensors,
+      ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::FreeMemory, &device_tensors_,
                                 device_contexts_[0], context, GetAID());
     } else {
-      ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::FreeBatchMemory, &device_tensors,
+      ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::FreeBatchMemory, &device_tensors_,
                                 &device_contexts_, context, GetAID());
     }
   } else {
     if (IsSameDeviceType()) {
-      ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::FreeMemory, &device_tensors, device_contexts_[0],
+      ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::FreeMemory, &device_tensors_, device_contexts_[0],
                             context, GetAID());
     } else {
-      ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::FreeBatchMemory, &device_tensors,
+      ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::FreeBatchMemory, &device_tensors_,
                             &device_contexts_, context, GetAID());
     }
   }
@@ -370,15 +366,18 @@ void HostQueueDataSourceActor::AddCopyDataCallBack(
   }
 }
 
+namespace {
+bool IsEmptyTuple(const tensor::TensorPtr &host_tensor, device::DeviceAddress *const device_tensor) {
+  return host_tensor->data_ptr() == nullptr && device_tensor->GetSize() == 0;
+}
+}  // namespace
+
 void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<DeviceTensor> *const context) {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   MS_EXCEPTION_IF_NULL(context);
   if (IsRunningFailed(context)) {
     return;
-  }
-  if (buffers_.size() == 0) {
-    SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "The data queue is empty.");
   }
 
   // Get host tensors from host queue and get device tensors from buffers.
@@ -387,8 +386,7 @@ void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<DeviceTensor> *cons
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Host data queue is empty.");
   }
   auto &host_tensors = host_queue_->Pull();
-  auto &device_tensors = buffers_.back();
-  if (host_tensors.size() != device_tensors.size()) {
+  if (host_tensors.size() != device_tensors_.size()) {
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context),
                                       "The length of host tensors is not equal to the length of device tensors.");
   }
@@ -398,11 +396,15 @@ void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<DeviceTensor> *cons
   // Copy data from host tensor to device tensor.
   uint64_t start_time = 0;
   PROFILER_START(start_time);
-  auto enable_async_copy = (ms_context->IsEnableInferBoost() || is_infer_phase_) && !sync_copy_input;
+  static const bool enable_infer_boost = ms_context->IsEnableInferBoost();
+  auto enable_async_copy = (enable_infer_boost || is_infer_phase_) && !sync_copy_input;
   try {
     for (size_t i = 0; i < host_tensors.size(); ++i) {
       auto &host_tensor = host_tensors[i];
-      auto &device_tensor = device_tensors[i];
+      auto &device_tensor = device_tensors_[i];
+      if (host_tensor == nullptr && enable_infer_boost) {
+        continue;
+      }
       MS_EXCEPTION_IF_NULL(device_tensor);
       MS_EXCEPTION_IF_NULL(host_tensor);
       // No used device address need skip.
@@ -422,7 +424,7 @@ void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<DeviceTensor> *cons
         }
         continue;
       }
-      if (host_tensor->data_ptr() == nullptr && device_tensor->GetSize() == 0) {
+      if (IsEmptyTuple(host_tensor, device_tensor)) {
         MS_LOG(INFO) << "Empty tuple sync";
         continue;
       }
@@ -447,7 +449,7 @@ void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<DeviceTensor> *cons
         device_tensor->set_host_shape(host_tensor->shape());
       }
     }
-    AddCopyDataCallBack(enable_async_copy, host_tensors, device_tensors);
+    AddCopyDataCallBack(enable_async_copy, host_tensors, device_tensors_);
   } catch (const std::exception &e) {
     MsException::Instance().SetException();
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Host data source actor run exception.");
@@ -483,6 +485,52 @@ bool HostQueueDataSourceActor::IsSameDeviceType() const {
   return true;
 }
 
+void HostQueueDataSourceActor::Init() {
+  DataSourceActor::Init();
+  device_tensors_.resize(data_node_with_indexs_.size());
+  need_refresh_device_address_.resize(output_data_nodes_.size(), true);
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  static const bool enable_infer_boost = ms_context->IsEnableInferBoost();
+  if (!enable_infer_boost) {
+    need_refresh_input_index_.resize(data_node_with_indexs_.size());
+    std::iota(need_refresh_input_index_.begin(), need_refresh_input_index_.end(), 0);
+    return;
+  }
+
+  std::set<KernelWithIndex> kv_cache_parameters;
+  for (size_t i = 0; i < data_node_with_indexs_.size(); ++i) {
+    MS_EXCEPTION_IF_NULL(data_node_with_indexs_[i].first);
+    const auto &graph = data_node_with_indexs_[i].first->func_graph();
+    const auto &kernel_graph = dynamic_cast<KernelGraph *>(graph.get());
+    if (kernel_graph == nullptr) {
+      need_refresh_input_index_.emplace_back(i);
+      continue;
+    }
+    const auto &front_node_with_index = GetFrontNodeByKernelGraph(data_node_with_indexs_[i].first, kernel_graph);
+    if (front_node_with_index.first != nullptr &&
+        front_node_with_index.first->fullname_with_scope().find("key_cache") == std::string::npos &&
+        front_node_with_index.first->fullname_with_scope().find("value_cache") == std::string::npos) {
+      need_refresh_input_index_.emplace_back(i);
+      continue;
+    }
+    kv_cache_parameters.emplace(data_node_with_indexs_[i]);
+  }
+  if (output_data_nodes_.size() != output_data_arrows_.size()) {
+    MS_LOG(EXCEPTION) << "Invalid output data node size:" << output_data_nodes_.size()
+                      << " and output data arrow size:" << output_data_arrows_.size() << " for actor:" << GetAID();
+  }
+  for (size_t i = 0; i < output_data_nodes_.size(); ++i) {
+    MS_EXCEPTION_IF_NULL(output_data_arrows_[i]);
+    if (kv_cache_parameters.find({output_data_nodes_[i], output_data_arrows_[i]->from_output_index_}) !=
+        kv_cache_parameters.end()) {
+      need_refresh_device_address_[i] = false;
+    }
+  }
+  MS_LOG(DEBUG) << "Need refresh input index:" << need_refresh_input_index_
+                << " and need update device tensor flag:" << need_refresh_device_address_ << " for actor:" << GetAID();
+}
+
 void HostQueueDataSourceActor::ReleaseData() {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kRuntime, runtime::ProfilerEvent::kOutputProcess,
                                      "DataSourceActorReleaseData");
@@ -491,7 +539,8 @@ void HostQueueDataSourceActor::ReleaseData() {
   host_queue_->Pop();
 
   // The step end need release data node address.
-  for (auto &data_node_with_index : data_node_with_indexs_) {
+  for (size_t i : need_refresh_input_index_) {
+    const auto &data_node_with_index = data_node_with_indexs_[i];
     if (!AnfAlgo::OutputAddrExist(data_node_with_index.first, data_node_with_index.second)) {
       continue;
     }
