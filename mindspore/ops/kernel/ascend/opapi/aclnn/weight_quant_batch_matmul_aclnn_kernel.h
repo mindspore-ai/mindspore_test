@@ -40,6 +40,7 @@ class WeightQuantBatchMatmulV2Ascend : public AclnnKernelMod {
   std::pair<KernelTensor *, bool> input_x_;
   std::pair<KernelTensor *, bool> input_weight_;
   std::shared_ptr<KernelTensor> weight_;
+  int64_t antiquant_group_size_;
 };
 }  // namespace weight_quant_batch_matmul
 }  // namespace kernel
