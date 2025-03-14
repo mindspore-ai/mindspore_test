@@ -606,7 +606,9 @@ AnfNodePtr Resolver::ResolveSymbol(const FuncGraphManagerPtr &manager, const Nam
     auto cell_obj = name_space->module_obj();
     if (py::isinstance<Cell>(cell_obj)) {
       auto cell_interpteted = std::make_shared<InterpretedObject>(cell_obj);
-      dyn_cast<CNode>(node)->add_input(NewValueNode(cell_interpteted));
+      auto cnode = dyn_cast<CNode>(node);
+      MS_EXCEPTION_IF_NULL(cnode);
+      cnode->add_input(NewValueNode(cell_interpteted));
     }
   }
   if (IsValueNode<NameSpace>(resolved_node) && !py::isinstance<py::none>(name_space->module_obj())) {

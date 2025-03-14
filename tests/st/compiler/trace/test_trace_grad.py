@@ -32,6 +32,7 @@ from mindspore.nn.wrap.loss_scale import DynamicLossScaleUpdateCell
 import mindspore.ops as ops
 import mindspore.nn as nn
 from mindspore.train import Model
+from mindspore import ParameterTuple
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -720,3 +721,43 @@ def test_trace_10():
     print(f'res1: {res1}, res2: {res2}, res3: {res3}, res4: {res4}')
     assert np.allclose(res1.asnumpy(), res2.asnumpy())
     assert np.allclose(res3.asnumpy(), res4.asnumpy())
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_trace_11():
+    """
+    Feature: JIT trace function
+    Description: JIT trace function
+    Expectation: No exception
+    """
+
+    class ParamNetMultipleOutputs(nn.Cell):
+        def __init__(self):
+            super(ParamNetMultipleOutputs, self).__init__()
+            self.w1 = Parameter(Tensor([2., 2.], mstype.float32), name="w1")
+            self.w2 = Parameter(Tensor([3., 3.], mstype.float32), name="w2")
+
+        def construct(self, x):
+            res = x * self.w1 * self.w2
+            return res, x, self.w1
+    context.set_context(mode=context.GRAPH_MODE)
+    x = Tensor(np.array([1, 2]).astype(np.float32))
+    net = ParamNetMultipleOutputs()
+    weights = ParameterTuple(net.trainable_params())
+    expect_grad_input = np.array([6, 6]).astype(np.float32)
+    expect_grad_weight1 = np.array([3, 6]).astype(np.float32)
+    expect_grad_weight2 = np.array([2, 4]).astype(np.float32)
+    expect_value0 = np.array([6, 12]).astype(np.float32)
+    expect_value1 = np.array([1, 2]).astype(np.float32)
+    expect_value2 = np.array([2, 2]).astype(np.float32)
+
+    @ms.jit(capture_mode="trace")
+    def trace_func(x):
+        return ops.value_and_grad(net, 0, weights, True)(x)
+    value, gradient = trace_func(x)
+    assert np.allclose(value[0].asnumpy(), expect_value0)
+    assert np.allclose(value[1].asnumpy(), expect_value1)
+    assert np.allclose(value[2].asnumpy(), expect_value2)
+    assert np.allclose(gradient[0].asnumpy(), expect_grad_input)
+    assert np.allclose(gradient[1][0].asnumpy(), expect_grad_weight1)
+    assert np.allclose(gradient[1][1].asnumpy(), expect_grad_weight2)

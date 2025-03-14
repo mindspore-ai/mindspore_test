@@ -375,9 +375,18 @@ void TraceRecorder::NewFuncGraphNode(const py::tuple &info, const py::args &inpu
     }
     MS_LOG(DEBUG) << "Add input, " << node->DebugString();
   }
-  AnfNodePtr cnode;
+  const size_t fv_param_count = jit_fg->fv_param_count();
+  if (fv_param_count > 0) {
+    const auto &parameters = jit_fg->parameters();
+    const size_t fv_position = parameters.size() - fv_param_count;
+    for (size_t i = fv_position; i < parameters.size(); ++i) {
+      const auto &param = parameters[i]->cast<ParameterPtr>();
+      const auto &new_param = graph_stack_.top()->AddFvParameter(param->name(), param->default_param());
+      (void)node_inputs.emplace_back(new_param);
+    }
+  }
   (void)node_inputs.insert(node_inputs.cbegin(), NewValueNode(jit_fg));
-  cnode = graph_stack_.top()->NewCNodeInOrder(node_inputs);
+  AnfNodePtr cnode = graph_stack_.top()->NewCNodeInOrder(node_inputs);
   if (cnode->debug_info() != nullptr) {
     cnode->debug_info()->set_trace_info(MakeTraceInfo<TraceOpt>(debug_info));
   }

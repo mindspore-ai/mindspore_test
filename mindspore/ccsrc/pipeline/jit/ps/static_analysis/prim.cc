@@ -5555,6 +5555,7 @@ class TraceGraphEvaluator : public TransitionPrimEvaluator {
         MS_LOG(EXCEPTION) << "Trace node missing cell object.";
       }
       const auto &cell_value_node = cell_node->cast<ValueNodePtr>();
+      MS_EXCEPTION_IF_NULL(cell_value_node);
       const auto &cell_value = GetValueNode<parse::InterpretedObjectPtr>(cell_value_node);
       MS_EXCEPTION_IF_NULL(cell_value);
       cell_obj = cell_value->obj();
