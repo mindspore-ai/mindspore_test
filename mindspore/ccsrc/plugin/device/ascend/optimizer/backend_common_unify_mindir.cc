@@ -59,7 +59,7 @@
 #include "plugin/device/ascend/optimizer/ir_fusion/flash_attention_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion/grouped_matmul_assignadd_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/add_layer_norm_fusion.h"
-#include "plugin/device/ascend/optimizer/ir_fusion_infer/add_rms_norm_fusion.h"
+#include "plugin/device/ascend/optimizer/ir_fusion/add_rms_norm_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/rms_norm_quant_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/add_rms_norm_quant_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/add_cast_rms_norm_cast_quant_fusion.h"
@@ -182,7 +182,6 @@ PassManagerPtr GetBackendFusionGroupPassManager() {
   pm->AddFusionPass(std::make_shared<opt::AddRmsNormQuantFusion>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::AddCastRmsNormCastQuantFusion>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::RmsNormQuantFusion>(), infer_boost);
-  pm->AddFusionPass(std::make_shared<opt::AddRmsNormFusion>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::AddCastRmsNormCastFusion>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::ShapeReshapeFusion>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::SplitConcatFusion>());
@@ -195,6 +194,7 @@ PassManagerPtr GetBackendFusionGroupPassManager() {
   pm->AddFusionPass(std::make_shared<opt::TransposeBatchMatmulTranspose>(), infer_boost);
 #endif  // ENABLE_INTERNAL_KERNELS
 
+  pm->AddFusionPass(std::make_shared<opt::AddRmsNormFusion>());
   if (ms_context->IsKByKExecutorMode()) {
     // Do communication op fusion before InsertTensorMoveForCommunication pass.
     // So these passes are before kernel select process, no need to generate kernel build info in them.

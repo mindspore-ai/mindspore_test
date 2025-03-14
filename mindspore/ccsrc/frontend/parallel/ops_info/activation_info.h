@@ -610,6 +610,19 @@ class RemainderScalarTensorInfo : public ActivationOther {
       : ActivationOther(name, inputs_shape, outputs_shape, attrs, std::make_shared<RemainderCost>()) {}
   ~RemainderScalarTensorInfo() = default;
 };
+
+class SwigluInfo : public Softmax {
+ public:
+  SwigluInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+             const PrimitiveAttrs &attrs)
+      : Softmax(name, inputs_shape, outputs_shape, attrs) {}
+  ~SwigluInfo() override = default;
+
+ protected:
+  Status GetAttrs() override;
+  Status ComputeReplaceGraphForInterleaved(const CNodePtr &cnode) override;
+  Status InferOutputTensorInfo() override;
+};
 }  // namespace parallel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_FRONTEND_PARALLEL_OPS_INFO_ACTIVATION_INFO_H_
