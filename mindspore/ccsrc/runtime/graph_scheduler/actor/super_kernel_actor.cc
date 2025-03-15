@@ -1668,8 +1668,9 @@ void SuperKernelActor::RecreateCommunicationGroup() {
   }
 
   if (group_set.size() > 1) {
-    MS_LOG(WARNING) << "Communication ops parallel dispatch doesn't support multi communication group now, enable "
-                       "parallel dispatch for communication ops with risk.";
+    MS_LOG(EXCEPTION)
+      << "Communication ops parallel dispatch doesn't support multi communication group now, please disable "
+         "parallel dispatch for communication ops by: export MS_DEV_RUNTIME_CONF='communication_launch_group:False'";
   }
   std::string old_group_name = "";
   std::vector<uint32_t> group_ranks = {};
@@ -1677,8 +1678,12 @@ void SuperKernelActor::RecreateCommunicationGroup() {
     old_group_name = *group_set.begin();
     group_ranks = distributed::collective::CollectiveManager::instance()->GetGroupRanks(old_group_name);
     MS_LOG(INFO) << "Old group name: " << old_group_name << ", group ranks: " << group_ranks;
+  } else {
+    MS_LOG(WARNING) << "There is no communication ops can parallel launch.";
+    return;
   }
 
+  MS_LOG(INFO) << "Enable parallel launch communication ops.";
   for (size_t i = 0; i < parallel_launch_comm_kernels.size(); i++) {
     auto &comm_kernel_actors = parallel_launch_comm_kernels[i];
     if (comm_kernel_actors.empty()) {
