@@ -577,9 +577,7 @@ BackendGraphId GEBackend::Build(const FuncGraphPtr &func_graph, const BackendJit
   WaitTaskFinish();
   MS_EXCEPTION_IF_NULL(func_graph);
   // Clear the temp members of last graph.
-  graph_ids_.clear();
-  func_graph_to_kernel_graph_ids_.clear();
-  control_nodes_.clear();
+  ClearGraphBuildMember();
   MS_LOG(INFO) << "Status record: start compile function graph: " << func_graph->ToString();
   uint64_t start_time = profiler::GetClockSyscnt();
   PROF_START(compile_backend_graph);
@@ -622,6 +620,8 @@ BackendGraphId GEBackend::Build(const FuncGraphPtr &func_graph, const BackendJit
     (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageCompileGraphs, start_time,
                                     profiler::GetClockSyscnt(), 1);
     graph_compile_type_[graph_id] = compile_type;
+    // Clear the temp members.
+    ClearGraphBuildMember();
     return graph_id;
   }
   if (compile_type == CompileType::SubGraph) {
@@ -634,10 +634,7 @@ BackendGraphId GEBackend::Build(const FuncGraphPtr &func_graph, const BackendJit
     graph_compile_type_[graph_id] = compile_type;
 
     // Clear the temp members.
-    graph_ids_.clear();
-    func_graph_to_kernel_graph_ids_.clear();
-    control_nodes_.clear();
-
+    ClearGraphBuildMember();
     return graph_id;
   }
   MS_LOG(EXCEPTION)
@@ -2026,6 +2023,16 @@ void GEBackend::ParseControlNodes(const mindspore::ge_backend::runtime::GraphCom
 
   graph_compile_info.control_node_parser_->Parse(control_nodes_, graph_compile_info.graphs_, root_graph,
                                                  func_graph_to_kernel_graphs);
+}
+
+// Clear the temp members at the end of graph building.
+void GEBackend::ClearGraphBuildMember() {
+  MS_EXCEPTION_IF_NULL(graph_compiler_);
+  graph_compiler_->ClearGraphBuildMember();
+
+  graph_ids_.clear();
+  func_graph_to_kernel_graph_ids_.clear();
+  control_nodes_.clear();
 }
 
 void GEBackend::RunSubGraph(BackendGraphId graph_id, const VectorRef &inputs, VectorRef *outputs) {

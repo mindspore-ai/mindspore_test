@@ -367,6 +367,8 @@ void MSBackend::RunGraphByActors(BackendGraphId graph_id, const GraphCompilerInf
   auto actor_set = runtime::GraphScheduler::GetInstance().Fetch(graph_id);
   if (actor_set == nullptr) {
     actor_set = RealCompileGraphBeforeRunActor(graph_id, graph_compiler_info, args, no_multi_graph);
+    // Clear the temp members at the end of graph building.
+    ClearGraphBuildMember();
   }
   MS_EXCEPTION_IF_NULL(actor_set);
 

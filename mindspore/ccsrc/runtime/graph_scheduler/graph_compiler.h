@@ -172,6 +172,11 @@ class GraphCompiler {
   // Get graph by graph id, if not exist return nullptr, used in Graph mode.
   KernelGraphPtr Fetch(GraphId graph_id) const;
 
+  void ClearGraphBuildMember() {
+    MS_EXCEPTION_IF_NULL(session_);
+    session_->ClearGraphBuildMember();
+  }
+
   // The following four methods used in PyNative back propagation to split complete kernel graph to single
   // op graph, and these methods will be removed to class MindRTBackend after deleting session module.
 

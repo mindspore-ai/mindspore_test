@@ -85,6 +85,8 @@ class BACKEND_EXPORT GEBackend : public BackendBase {
     const FuncGraphPtr &root_graph, const BackendJitConfig &backend_jit_config);
   void ParseControlNodes(const mindspore::ge_backend::runtime::GraphCompilerInfo &graph_compile_info,
                          const FuncGraphPtr &root_graph);
+  // Clear the temp members at the end of graph building.
+  void ClearGraphBuildMember();
 
   // for run graph
   void RunWholeGraph(BackendGraphId graph_id, const VectorRef &inputs, VectorRef *outputs);

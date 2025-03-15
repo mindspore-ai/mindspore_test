@@ -68,6 +68,9 @@ class BACKEND_EXPORT MSBackendBase : public BackendBase {
 #endif
 
  protected:
+  // Clear the temp members at the end of graph building.
+  void ClearGraphBuildMember();
+
   // Convert the nodes which are not supported in the backend.
   void UnifyMindIR(const FuncGraphPtr &func_graph) const;
 

@@ -920,6 +920,16 @@ runtime::KernelMapPosition FetchOriginOutputOrder(const AnfNodePtr &node) {
 }
 }  // namespace
 
+void MSBackendBase::ClearGraphBuildMember() {
+  MS_EXCEPTION_IF_NULL(graph_compiler_);
+  graph_compiler_->ClearGraphBuildMember();
+
+  root_graph_ = nullptr;
+  graph_id_to_device_context_.clear();
+  func_graph_to_kernel_graph_ids_.clear();
+  control_nodes_.clear();
+}
+
 void MSBackendBase::UnifyMindIR(const FuncGraphPtr &root_graph) const {
   MS_EXCEPTION_IF_NULL(root_graph);
   MS_EXCEPTION_IF_NULL(root_graph->manager());
@@ -1994,10 +2004,8 @@ BackendGraphId MSBackendBase::Build(const FuncGraphPtr &func_graph, const Backen
   MS_EXCEPTION_IF_NULL(graph_compiler_);
   MS_EXCEPTION_IF_NULL(func_graph);
   // Clear the resource of last graph.
-  root_graph_ = nullptr;
-  graph_id_to_device_context_.clear();
-  func_graph_to_kernel_graph_ids_.clear();
-  control_nodes_.clear();
+  ClearGraphBuildMember();
+
   MS_LOG(INFO) << "Status record: start compile function graph: " << func_graph->ToString();
   uint64_t start_time = profiler::GetClockSyscnt();
   PROF_START(compile_backend_graph);
@@ -2045,6 +2053,8 @@ BackendGraphId MSBackendBase::Build(const FuncGraphPtr &func_graph, const Backen
   }
   if (!load_compile_cache) {
     PROF_START(CompileSubGraph);
+    bool is_dynamic_graph = common::AnfAlgo::IsDynamicShapeFuncGraph(func_graph);
+    MS_LOG(INFO) << func_graph->ToString() << ", is_dynamic_graph: " << is_dynamic_graph;
     if (NeedCheckMultiTarget(func_graph, ms_execution_mode)) {
       ProcessNotSupportCnode(func_graph, device_context->GetDeviceType(), mindspore::device::DeviceType::kCPU);
     }
@@ -2100,10 +2110,8 @@ BackendGraphId MSBackendBase::Build(const FuncGraphPtr &func_graph, const Backen
                << ", backend_graph_id: " << graph_compiler_info->id_;
 
   // Clear the temp members.
-  root_graph_ = nullptr;
-  graph_id_to_device_context_.clear();
-  func_graph_to_kernel_graph_ids_.clear();
-  control_nodes_.clear();
+  ClearGraphBuildMember();
+
   return graph_compiler_info->id_;
 }
 
