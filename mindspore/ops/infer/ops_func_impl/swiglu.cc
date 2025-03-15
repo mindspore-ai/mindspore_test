@@ -27,31 +27,31 @@ ShapeArray SwigluFuncImpl::InferShape(const PrimitivePtr &primitive, const Infer
   constexpr size_t kSplitNum = 2;
   auto &x = input_infos[kInputIndex0];
   ShapeVector x_shape = x->GetShape();
-  if (MS_LIKELY(x->IsDynamic())) {
-    if (dim_opt.has_value() && (x_shape[dim_opt.value()] > 1) && !(x_shape[dim_opt.value()] % 2)) {
-      x_shape[dim_opt.value()] = x_shape[dim_opt.value()] / kSplitNum;
-    }
+  if (MS_LIKELY(x->IsDynamicRank())) {
     return {x_shape};
   }
   auto rank = SizeToLong(x_shape.size());
   if (MS_UNLIKELY(!dim_opt.has_value())) {
     ShapeVector dyn_output = ShapeVector(rank, abstract::TensorShape::kShapeDimAny);
     return {dyn_output};
+  } else {
+    auto dim_temp = dim_opt.value();
+    MS_CHECK_VALUE(dim_temp >= -rank && dim_temp < rank, CheckAndConvertUtils::FormatCheckInRangeMsg(
+                                                           "dim", dim_temp, kIncludeLeft, {-rank, rank}, primitive));
+    if (dim_temp < 0) {
+      dim_temp += rank;
+    }
+    if (x_shape[dim_temp] != abstract::TensorShape::kShapeDimAny) {
+      if (!(x_shape[dim_temp] % kSplitNum)) {
+        x_shape[dim_temp] = x_shape[dim_temp] / kSplitNum;
+      } else {
+        MS_EXCEPTION(ValueError)
+          << "For 'Swiglu', the dimension specified by 'dim' must be divisible by 2, but got x_shape[dim]: "
+          << x_shape[dim_temp] << " .";
+      }
+    }
+    return {x_shape};
   }
-  auto dim = dim_opt.value();
-
-  MS_CHECK_VALUE(dim >= -rank && dim < rank,
-                 CheckAndConvertUtils::FormatCheckInRangeMsg("dim", dim, kIncludeLeft, {-rank, rank}, primitive));
-  if (dim < 0) {
-    dim += rank;
-  }
-  if (x_shape[dim] % kSplitNum) {
-    MS_EXCEPTION(ValueError)
-      << "For 'Swiglu', the dimension specified by 'dim' must be divisible by 2, but got x_shape[dim]: " << x_shape[dim]
-      << " .";
-  }
-  x_shape[dim] = x_shape[dim] / kSplitNum;
-  return {x_shape};
 }
 
 std::vector<TypeId> SwigluFuncImpl::InferType(const PrimitivePtr &primitive,
