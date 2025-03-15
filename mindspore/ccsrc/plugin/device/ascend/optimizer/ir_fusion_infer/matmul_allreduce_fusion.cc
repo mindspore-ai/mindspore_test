@@ -28,7 +28,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
 #include "mindspore/ops/infer/all_reduce.h"
-#include "plugin/device/ascend/optimizer/common/gllo_utils.h"
+#include "backend/common/pass/common/gllo_utils.h"
 #include "ops_utils/op_utils.h"
 #include "mindspore/ops/op_def/other_op_name.h"
 #include "ir/anf.h"

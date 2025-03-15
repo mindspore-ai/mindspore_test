@@ -25,7 +25,7 @@
 #include "utils/ms_context.h"
 #include "include/common/utils/anfalgo.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
-#include "plugin/device/ascend/optimizer/get_value_helper.h"
+#include "backend/common/pass/common/get_value_helper.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"

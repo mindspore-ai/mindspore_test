@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "plugin/device/ascend/optimizer/ir_fission/bn_grad_split.h"
+#include "backend/common/pass/ir_fission/bn_grad_split.h"
 
 #include <memory>
 #include <vector>
@@ -26,8 +26,8 @@
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "ops_utils/op_utils.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
-#include "plugin/device/ascend/optimizer/ir_fission/bn_split.h"
-#include "plugin/device/ascend/optimizer/get_value_helper.h"
+#include "backend/common/pass/ir_fission/bn_split.h"
+#include "backend/common/pass/common/get_value_helper.h"
 #include "utils/trace_base.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"

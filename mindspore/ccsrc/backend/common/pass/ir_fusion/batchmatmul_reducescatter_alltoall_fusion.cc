@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "backend/common/pass/ir_fusion/batchmatmul_reducescatter_alltoall_fusion.h"
 #include <set>
 #include <memory>
 #include <utility>
@@ -20,11 +21,8 @@
 #include <functional>
 #include <vector>
 #include "base/base.h"
-#include "plugin/device/ascend/optimizer/common/gllo_utils.h"
-#include "plugin/device/ascend/optimizer/ir_fusion/batchmatmul_reducescatter_alltoall_fusion.h"
-#include "plugin/device/ascend/optimizer/ir_fusion/mc2_fusion.h"
-#include "plugin/device/ascend/hal/common/ascend_utils.h"
-#include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
+#include "backend/common/pass/common/gllo_utils.h"
+#include "backend/common/pass/ir_fusion/mc2_fusion.h"
 #include "include/common/utils/anfalgo.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
@@ -74,12 +72,35 @@ bool IsBpropNode(const AnfNodePtr &node) {
   return node->fullname_with_scope().find("Gradients") == 0;
 }
 
+namespace {
+bool EnableLccl() {
+  auto ascend_soc_version = MsContext::GetInstance()->ascend_soc_version();
+  if (ascend_soc_version != "ascend910b" && ascend_soc_version != "ascend910_93") {
+    return false;
+  }
+  auto enable_infer_boost = MsContext::GetInstance()->IsEnableInferBoost();
+  if (enable_infer_boost) {
+    static bool disable_lccl = common::GetEnv("MS_ENABLE_LCCL") == "off";
+    if (disable_lccl) {
+      return false;
+    }
+    return true;
+  } else {
+    static bool enable_lccl = common::GetEnv("MS_ENABLE_LCCL") == "on";
+    if (enable_lccl) {
+      return true;
+    }
+    return false;
+  }
+}
+}  // namespace
+
 bool IsKbkAclnnMode() {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
 
   bool is_k_by_k_mode = ms_context->IsKByKExecutorMode();
-  bool enable_lccl = device::ascend::AscendHalManager::GetInstance().EnableLccl();
+  bool enable_lccl = EnableLccl();
   //  When lccl communication is not enabled in the kbk scenario
   return is_k_by_k_mode && !enable_lccl;
 }

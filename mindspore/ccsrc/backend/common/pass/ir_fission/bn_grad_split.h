@@ -19,10 +19,11 @@
 #include <string>
 #include <vector>
 #include "include/backend/optimizer/optimizer.h"
+#include "include/backend/visible.h"
 
 namespace mindspore {
 namespace opt {
-class BnGradSplit : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT BnGradSplit : public PatternProcessPass {
  public:
   explicit BnGradSplit(const string name = "bn_grad_split", bool multigraph = true)
       : PatternProcessPass(name, multigraph) {}
@@ -41,7 +42,7 @@ class BnGradSplit : public PatternProcessPass {
   std::vector<std::string> MustExistPrimitiveName() const override;
 };
 
-class SyncBnGradSplit : public BnGradSplit {
+class BACKEND_COMMON_EXPORT SyncBnGradSplit : public BnGradSplit {
  public:
   explicit SyncBnGradSplit(bool multigraph = true) : BnGradSplit("sync_bn_grad_split", multigraph) {}
   ~SyncBnGradSplit() override = default;

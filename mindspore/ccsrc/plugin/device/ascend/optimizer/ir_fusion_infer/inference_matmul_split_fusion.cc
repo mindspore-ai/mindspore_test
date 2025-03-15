@@ -16,7 +16,7 @@
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/inference_matmul_split_fusion.h"
 #include <vector>
 #include <set>
-#include "plugin/device/ascend/optimizer/common/gllo_utils.h"
+#include "backend/common/pass/common/gllo_utils.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "include/backend/optimizer/helper.h"

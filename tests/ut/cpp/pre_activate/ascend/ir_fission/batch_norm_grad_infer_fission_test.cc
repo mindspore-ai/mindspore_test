@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/optimizer/ir_fission/batch_norm_grad_infer_fission.h"
+#include "backend/common/pass/ir_fission/batch_norm_grad_infer_fission.h"
 #include "backend/common/pass/mindir/bn_grad_unify_mindir.h"
 #include "common/backend_common_test.h"
 #include "common/py_func_graph_fetcher.h"

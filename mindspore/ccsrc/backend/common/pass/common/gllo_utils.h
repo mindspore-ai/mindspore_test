@@ -23,6 +23,7 @@
 #include "ir/anf.h"
 #include "base/base_ref.h"
 #include "ops_utils/op_utils.h"
+#include "include/backend/visible.h"
 
 namespace mindspore {
 namespace opt {
@@ -31,7 +32,7 @@ constexpr int RET_OK = 0;
 constexpr int RET_ERROR = -1;
 constexpr int RET_NULL_PTR = -2;  // NULL pointer returned.
 
-bool CheckPrimitiveType(const AnfNodePtr &node, const PrimitivePtr &primitive_type);
+BACKEND_COMMON_EXPORT bool CheckPrimitiveType(const AnfNodePtr &node, const PrimitivePtr &primitive_type);
 
 #define MS_CHECK_TRUE_RET(value, errcode) \
   do {                                    \

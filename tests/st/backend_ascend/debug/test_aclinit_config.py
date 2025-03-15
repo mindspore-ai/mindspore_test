@@ -15,6 +15,7 @@
 """ test_aclinit_config """
 import json
 import mindspore as ms
+import os
 from tests.device_utils import set_device
 from tests.mark_utils import arg_mark
 

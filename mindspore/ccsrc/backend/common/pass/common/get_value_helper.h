@@ -19,14 +19,15 @@
 #include <string>
 #include <vector>
 #include "base/base.h"
+#include "include/backend/visible.h"
 
 namespace mindspore {
 namespace opt {
 using AnfNodePtr = mindspore::AnfNodePtr;
-std::string GetNodeFormatValue(const AnfNodePtr &node);
+BACKEND_COMMON_EXPORT std::string GetNodeFormatValue(const AnfNodePtr &node);
 
 template <typename T>
-T GetNodeScalarValue(const AnfNodePtr &node);
+BACKEND_COMMON_EXPORT T GetNodeScalarValue(const AnfNodePtr &node);
 }  // namespace opt
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_IR_GET_VALUE_HELPER_H_
