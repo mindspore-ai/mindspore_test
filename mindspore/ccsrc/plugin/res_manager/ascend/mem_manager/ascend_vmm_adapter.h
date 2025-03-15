@@ -70,6 +70,8 @@ class AscendVmmAdapter {
   size_t EagerFreeDeviceMem(const DeviceMemPtr addr, const size_t size);
   size_t GetAllocatedSize() { return physical_handle_size_ * kVmmAlignSize; }
 
+  size_t EmptyCache();
+
   static const bool IsEnabled() {
     static bool is_enable_vmm = IsVmmEnabled();
     return is_enable_vmm;

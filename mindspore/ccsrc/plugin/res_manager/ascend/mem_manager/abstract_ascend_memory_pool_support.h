@@ -59,6 +59,8 @@ class BACKEND_EXPORT AbstractAscendMemoryPoolSupport : virtual public DynamicMem
   size_t AllocDeviceMemByEagerFree(size_t size, DeviceMemPtr *addr) override;
 
   size_t FreeDeviceMemByEagerFree(const DeviceMemPtr addr, const size_t size) override;
+
+  size_t EmptyCache() override;
 };
 using AbstractAscendMemoryPoolSupportPtr = std::shared_ptr<AbstractAscendMemoryPoolSupport>;
 }  // namespace ascend

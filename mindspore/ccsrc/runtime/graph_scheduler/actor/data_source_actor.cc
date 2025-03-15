@@ -339,10 +339,12 @@ void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<DeviceTensor> *cons
                                       "The length of host tensors is not equal to the length of device tensors.");
   }
 
+  static const std::string kSyncCopyInput = "sync_copy_input";
+  static bool sync_copy_input = common::IsEnableRuntimeConfig(kSyncCopyInput);
   // Copy data from host tensor to device tensor.
   uint64_t start_time = 0;
   PROFILER_START(start_time);
-  auto enable_async_copy = ms_context->IsEnableInferBoost() || is_infer_phase_;
+  auto enable_async_copy = (ms_context->IsEnableInferBoost() || is_infer_phase_) && !sync_copy_input;
   try {
     for (size_t i = 0; i < host_tensors.size(); ++i) {
       auto &host_tensor = host_tensors[i];

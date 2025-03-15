@@ -100,6 +100,8 @@ class AscendResManager : public HalResBase {
   void ResetMaxMemoryReserved() override;
   void ResetMaxMemoryAllocated() override;
 
+  size_t EmptyCache() override;
+
   void SwapIn(const void *host_ptr, void *device_ptr, size_t mem_size, void *stream) override;
   void SwapOut(const void *device_ptr, void *host_ptr, size_t mem_size, void *stream) override;
 

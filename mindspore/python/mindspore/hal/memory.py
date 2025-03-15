@@ -14,7 +14,7 @@
 # ============================================================================
 
 """Hardware memory interfaces."""
-from mindspore._c_expression import _memory_stats, _reset_max_mem_reserved, _reset_max_mem_allocated
+from mindspore._c_expression import _memory_stats, _reset_max_mem_reserved, _reset_max_mem_allocated, _empty_cache
 from mindspore import log as logger
 from .device import _check_inputs_validation, is_initialized
 
@@ -146,7 +146,7 @@ def max_memory_reserved(device_target=None):
 
 
 @_check_inputs_validation
-def empty_cache():
+def empty_cache(device_target=None):
     """
     Release all memory fragments in the memory pool, so that memory arrangement
     will be optimized.
@@ -160,7 +160,8 @@ def empty_cache():
     """
     if not function_memory_status['empty_cache']:
         function_memory_status['empty_cache'] = True
-        logger.warning(f"The empty_cache operation is currently not supported.")
+    logger.warning(f"The empty_cache operation is executing.")
+    return _empty_cache(device_target)
 
 
 @_check_inputs_validation

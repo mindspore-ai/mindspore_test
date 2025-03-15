@@ -68,6 +68,7 @@ class BACKEND_EXPORT AscendMemoryManager : public MemoryManager {
   GetPersistentMemBlocksInfoStatistics() const override;
   void ResetMaxMemoryReserved() override;
   void ResetMaxMemoryAllocated() override;
+  size_t EmptyCache() override;
 
   DynamicMemPool *GetMemoryPool() override;
 

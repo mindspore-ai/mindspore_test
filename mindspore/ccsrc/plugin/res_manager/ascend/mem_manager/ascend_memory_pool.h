@@ -55,6 +55,8 @@ class BACKEND_EXPORT DefaultAscendMemoryPool : public AbstractAscendMemoryPoolSu
   }
 
   const bool IsEnableEagerFree() const override { return AbstractAscendMemoryPoolSupport::IsEnableEagerFree(); }
+
+  size_t EmptyCache() override;
 };
 using DefaultAscendMemoryPoolPtr = std::shared_ptr<DefaultAscendMemoryPool>;
 
