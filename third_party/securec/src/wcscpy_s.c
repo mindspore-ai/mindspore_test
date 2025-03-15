@@ -1,30 +1,26 @@
-/**
- * Copyright 2020 Huawei Technologies Co., Ltd
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2014-2021. All rights reserved.
+ * Licensed under Mulan PSL v2.
+ * You can use this software according to the terms and conditions of the Mulan PSL v2.
+ * You may obtain a copy of Mulan PSL v2 at:
+ *          http://license.coscl.org.cn/MulanPSL2
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+ * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+ * See the Mulan PSL v2 for more details.
+ * Description: wcscpy_s  function
+ * Create: 2014-02-25
  */
-
-#define SECUREC_INLINE_DO_MEMCPY 1
 
 #include "securecutil.h"
 
-static errno_t SecDoWcscpy(wchar_t *strDest, size_t destMax, const wchar_t *strSrc)
+SECUREC_INLINE errno_t SecDoCpyW(wchar_t *strDest, size_t destMax, const wchar_t *strSrc)
 {
     size_t srcStrLen;
-
     SECUREC_CALC_WSTR_LEN(strSrc, destMax, &srcStrLen);
+
     if (srcStrLen == destMax) {
-        strDest[0] = '\0';
+        strDest[0] = L'\0';
         SECUREC_ERROR_INVALID_RANGE("wcscpy_s");
         return ERANGE_AND_RESET;
     }
@@ -33,8 +29,8 @@ static errno_t SecDoWcscpy(wchar_t *strDest, size_t destMax, const wchar_t *strS
     }
 
     if (SECUREC_STRING_NO_OVERLAP(strDest, strSrc, srcStrLen)) {
-        /* performance optimization srcStrLen include '\0' */
-        SecDoMemcpy(strDest, strSrc, (srcStrLen + 1) * sizeof(wchar_t)); /* single character length  include \0 */
+        /* Performance optimization, srcStrLen is single character length  include '\0' */
+        SECUREC_MEMCPY_WARP_OPT(strDest, strSrc, (srcStrLen + 1) * sizeof(wchar_t));
         return EOK;
     } else {
         strDest[0] = L'\0';
@@ -46,7 +42,7 @@ static errno_t SecDoWcscpy(wchar_t *strDest, size_t destMax, const wchar_t *strS
 /*
  * <FUNCTION DESCRIPTION>
  *   The wcscpy_s function copies the wide string pointed to by strSrc
- *   (including theterminating null wide character) into the array pointed to by strDest
+ *   (including the terminating null wide character) into the array pointed to by strDest
 
  * <INPUT PARAMETERS>
  *    strDest               Destination string buffer
@@ -59,7 +55,7 @@ static errno_t SecDoWcscpy(wchar_t *strDest, size_t destMax, const wchar_t *strS
  * <RETURN VALUE>
  *    EOK                   Success
  *    EINVAL                strDest is  NULL and destMax != 0 and destMax <= SECUREC_WCHAR_STRING_MAX_LEN
- *    EINVAL_AND_RESET      strDest != NULL and strSrc is NULLL and destMax != 0
+ *    EINVAL_AND_RESET      strDest != NULL and strSrc is NULL and destMax != 0
  *                          and destMax <= SECUREC_WCHAR_STRING_MAX_LEN
  *    ERANGE                destMax > SECUREC_WCHAR_STRING_MAX_LEN or destMax is 0
  *    ERANGE_AND_RESET      destMax <= length of strSrc and strDest != strSrc
@@ -85,7 +81,6 @@ errno_t wcscpy_s(wchar_t *strDest, size_t destMax, const wchar_t *strSrc)
         }
         return EINVAL;
     }
-    return SecDoWcscpy(strDest, destMax, strSrc);
+    return SecDoCpyW(strDest, destMax, strSrc);
 }
-
 

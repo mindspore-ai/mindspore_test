@@ -1,22 +1,24 @@
-/**
- * Copyright 2020 Huawei Technologies Co., Ltd
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2014-2021. All rights reserved.
+ * Licensed under Mulan PSL v2.
+ * You can use this software according to the terms and conditions of the Mulan PSL v2.
+ * You may obtain a copy of Mulan PSL v2 at:
+ *          http://license.coscl.org.cn/MulanPSL2
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+ * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+ * See the Mulan PSL v2 for more details.
+ * Description: vswscanf_s  function
+ * Create: 2014-02-25
  */
+
+#ifndef SECUREC_FOR_WCHAR
+#define SECUREC_FOR_WCHAR
+#endif
 
 #include "secinput.h"
 
-static size_t SecWcslen(const wchar_t *s)
+SECUREC_INLINE size_t SecWcslen(const wchar_t *s)
 {
     const wchar_t *end = s;
     while (*end != L'\0') {
@@ -55,7 +57,7 @@ int vswscanf_s(const wchar_t *buffer, const wchar_t *format, va_list argList)
     SecFileStream fStr;
     int retVal;
 
-    /* validation section */
+    /* Validation section */
     if (buffer == NULL || format == NULL) {
         SECUREC_ERROR_INVALID_PARAMTER("vswscanf_s");
         return SECUREC_SCANF_EINVAL;
@@ -66,8 +68,7 @@ int vswscanf_s(const wchar_t *buffer, const wchar_t *format, va_list argList)
         SECUREC_ERROR_INVALID_PARAMTER("vswscanf_s");
         return SECUREC_SCANF_EINVAL;
     }
-    SECUREC_INIT_SEC_FILE_STREAM(fStr, SECUREC_MEM_STR_FLAG, NULL, 0,\
-                                 (const char *)buffer, (int)count * ((int)sizeof(wchar_t)));
+    SECUREC_FILE_STREAM_FROM_STRING(&fStr, (const char *)buffer, count * sizeof(wchar_t));
     retVal = SecInputSW(&fStr, format, argList);
     if (retVal < 0) {
         SECUREC_ERROR_INVALID_PARAMTER("vswscanf_s");
@@ -75,5 +76,4 @@ int vswscanf_s(const wchar_t *buffer, const wchar_t *format, va_list argList)
     }
     return retVal;
 }
-
 

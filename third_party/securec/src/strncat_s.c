@@ -1,34 +1,32 @@
-/**
- * Copyright 2020 Huawei Technologies Co., Ltd
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2014-2021. All rights reserved.
+ * Licensed under Mulan PSL v2.
+ * You can use this software according to the terms and conditions of the Mulan PSL v2.
+ * You may obtain a copy of Mulan PSL v2 at:
+ *          http://license.coscl.org.cn/MulanPSL2
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+ * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+ * See the Mulan PSL v2 for more details.
+ * Description: strncat_s  function
+ * Create: 2014-02-25
  */
-
-#define SECUREC_INLINE_STR_LEN   1
-#define SECUREC_INLINE_DO_MEMCPY 1
 
 #include "securecutil.h"
 
 /*
  * Befor this function, the basic parameter checking has been done
  */
-static errno_t SecDoStrncat(char *strDest, size_t destMax, const char *strSrc, size_t count)
+SECUREC_INLINE errno_t SecDoCatLimit(char *strDest, size_t destMax, const char *strSrc, size_t count)
 {
-    size_t destLen = SecStrMinLen(strDest, destMax);
-    /* The strSrc is no longer optimized. The reason is that when count is small,
+    size_t destLen;
+    size_t srcLen;
+    SECUREC_CALC_STR_LEN(strDest, destMax, &destLen);
+    /*
+     * The strSrc is no longer optimized. The reason is that when count is small,
      * the efficiency of strnlen is higher than that of self realization.
      */
-    size_t srcLen = SecStrMinLen(strSrc, count);
+    SECUREC_CALC_STR_LEN(strSrc, count, &srcLen);
 
     if (SECUREC_CAT_STRING_IS_OVERLAP(strDest, destLen, strSrc, srcLen)) {
         strDest[0] = '\0';
@@ -48,7 +46,7 @@ static errno_t SecDoStrncat(char *strDest, size_t destMax, const char *strSrc, s
         SECUREC_ERROR_INVALID_RANGE("strncat_s");
         return ERANGE_AND_RESET;
     }
-    SecDoMemcpy(strDest + destLen, strSrc, srcLen);    /* no  terminator */
+    SECUREC_MEMCPY_WARP_OPT(strDest + destLen, strSrc, srcLen);    /* No terminator */
     *(strDest + destLen + srcLen) = '\0';
     return EOK;
 }
@@ -105,17 +103,17 @@ errno_t strncat_s(char *strDest, size_t destMax, const char *strSrc, size_t coun
 #ifdef  SECUREC_COMPATIBLE_WIN_FORMAT
         if (count == (size_t)(-1)) {
             /* Windows internal functions may pass in -1 when calling this function */
-            return SecDoStrncat(strDest, destMax, strSrc, destMax);
+            return SecDoCatLimit(strDest, destMax, strSrc, destMax);
         }
 #endif
         strDest[0] = '\0';
         SECUREC_ERROR_INVALID_RANGE("strncat_s");
         return ERANGE_AND_RESET;
     }
-    return SecDoStrncat(strDest, destMax, strSrc, count);
+    return SecDoCatLimit(strDest, destMax, strSrc, count);
 }
 
-#if SECUREC_IN_KERNEL
+#if SECUREC_EXPORT_KERNEL_SYMBOL
 EXPORT_SYMBOL(strncat_s);
 #endif
 

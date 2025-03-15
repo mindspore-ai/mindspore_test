@@ -26,7 +26,7 @@
 #undef HAVE_STDLIB_H
 #endif
 
-#include "./securec.h"
+#include "securec/include/securec.h"
 #include "proto/example.pb.h"
 #ifdef ENABLE_PYTHON
 #include "pybind11/numpy.h"
@@ -361,7 +361,7 @@ class DATASET_API Tensor {
   Status Zero() {
     CHECK_FAIL_RETURN_UNEXPECTED(!type_.IsString(), "Can not fill zeros on tensor of type string or bytes.");
     dsize_t size = SizeInBytes();
-    CHECK_FAIL_RETURN_UNEXPECTED(memset_sp(GetMutableBuffer(), size, 0, size) == 0,
+    CHECK_FAIL_RETURN_UNEXPECTED(memset_s(GetMutableBuffer(), size, 0, size) == 0,
                                  "Failed to fill tensor with zeroes.");
     return Status::OK();
   }

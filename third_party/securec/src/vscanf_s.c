@@ -1,17 +1,15 @@
-/**
- * Copyright 2020 Huawei Technologies Co., Ltd
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2014-2021. All rights reserved.
+ * Licensed under Mulan PSL v2.
+ * You can use this software according to the terms and conditions of the Mulan PSL v2.
+ * You may obtain a copy of Mulan PSL v2 at:
+ *          http://license.coscl.org.cn/MulanPSL2
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+ * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+ * See the Mulan PSL v2 for more details.
+ * Description: vscanf_s  function
+ * Create: 2014-02-25
  */
 
 #include "secinput.h"
@@ -42,10 +40,10 @@ int vscanf_s(const char *format, va_list argList)
 {
     int retVal;                 /* If initialization causes  e838 */
     SecFileStream fStr;
-    SECUREC_INIT_SEC_FILE_STREAM(fStr, SECUREC_FROM_STDIN_FLAG, stdin, 0, NULL, 0);
+    SECUREC_FILE_STREAM_FROM_STDIN(&fStr);
     /*
-     * "va_list" has different definition on different platform, so we can't use argList == NULL
-     * to determine it's invalid. If you has fixed platform, you can check some fields to validate it,
+     * The "va_list" has different definition on different platform, so we can't use argList == NULL
+     * To determine it's invalid. If you has fixed platform, you can check some fields to validate it,
      * such as "argList == NULL" or argList.xxx != NULL or *(size_t *)&argList != 0.
      */
     if (format == NULL || fStr.pf == NULL) {
@@ -54,9 +52,7 @@ int vscanf_s(const char *format, va_list argList)
     }
 
     SECUREC_LOCK_STDIN(0, fStr.pf);
-
     retVal = SecInputS(&fStr, format, argList);
-
     SECUREC_UNLOCK_STDIN(0, fStr.pf);
     if (retVal < 0) {
         SECUREC_ERROR_INVALID_PARAMTER("vscanf_s");
@@ -64,5 +60,4 @@ int vscanf_s(const char *format, va_list argList)
     }
     return retVal;
 }
-
 
