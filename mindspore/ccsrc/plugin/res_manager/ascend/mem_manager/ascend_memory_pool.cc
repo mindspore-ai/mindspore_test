@@ -553,11 +553,9 @@ bool AscendMemoryPool::UseEnhancedMemoryPool() {
     enable_debugger = true;
   }
 #endif
-  auto submodule = common::GetEnv("MS_SUBMODULE_LOG_v");
-  bool enable_pre_act_log = ParseDebugConfig(submodule, "PRE_ACT") == "0";
   bool enable_debug_log = common::GetEnv("GLOG_v") == "0";
-  return enable_debugger || enable_pre_act_log || enable_debug_log ||
-         MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_PROF_MEM) ||
+  bool enable_memory_vlog = IS_VLOG_ON(VL_RUNTIME_FRAMEWORK_MEMORY);
+  return enable_debugger || enable_debug_log || enable_memory_vlog ||
          common::IsEnableAllocConfig(common::kAllocMemoryTracker) ||
          common::IsEnableRuntimeConfig(common::kRuntimeMemoryStat) || common::IsDryRun();
 }

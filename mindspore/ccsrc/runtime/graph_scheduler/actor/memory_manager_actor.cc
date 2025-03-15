@@ -42,19 +42,16 @@ void MemoryManagerActor::AllocateMemory(const std::vector<DeviceTensor *> *alloc
       continue;
     }
 
-    if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
-      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, from_aid.Name(), memory::mem_pool::MemType::kKernel,
-                                                     device_tensor->GetSize(), device_tensor);
-    }
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, from_aid.Name(), memory::mem_pool::MemType::kKernel,
+                                                   device_tensor->GetSize(), device_tensor);
 
     try {
       bool success = false;
       if (device_tensor->continuous_device_addresses() == nullptr) {
         success = device_context->device_res_manager_->AllocateMemory(device_tensor, kDefaultStreamIndex);
       } else {
-        if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
-          device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), "ContinuousMemory", "", false);
-        }
+        device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), "ContinuousMemory", "", false);
+
         MS_LOG(DEBUG) << "Allocate continuous memory, device address : " << device_tensor << ".";
         success = AllocateContinuousMemory(device_tensor, device_context, from_aid);
       }
@@ -94,10 +91,10 @@ bool MemoryManagerActor::AllocateContinuousMemory(const DeviceTensor *device_ten
       device_address->set_ptr(device_addresses[i]);
       device_address->set_from_mem_pool(true);
       device_address->IncreaseNewRefCount();
+      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, from_aid.Name(),
+                                                     memory::mem_pool::MemType::kContinuousMemory,
+                                                     device_address->GetSize(), device_address.get());
       if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
-        device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, from_aid.Name(),
-                                                       memory::mem_pool::MemType::kContinuousMemory,
-                                                       device_address->GetSize(), device_address.get());
         device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(BindDevicePtr, device_address.get(), device_addresses[i]);
       }
     }

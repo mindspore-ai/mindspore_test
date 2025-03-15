@@ -30,10 +30,6 @@
 
 namespace mindspore {
 namespace device {
-LockGuard::LockGuard(const Lock &lock) : lock_(const_cast<Lock *>(&lock)) { lock_->lock(); }
-
-LockGuard::~LockGuard() { lock_->unlock(); }
-
 MemBuf::MemBuf(size_t size, void *addr, uint32_t stream_id, MemBlock *mem_block, MemBufStatus status)
     : prev_(nullptr),
       next_(nullptr),
@@ -326,7 +322,7 @@ MemBuf *MemBufAllocator::MapAndSplitMemBuf(MemBuf *candidate, size_t size) {
 MemBlock *MemBufAllocator::ExpandBlock(size_t size) {
   MemBlock *mem_block = mem_block_expander_(size);
   if (mem_block == nullptr) {
-    MS_LOG(WARNING) << "Expand block failed, expand size : 0, memory is not enough.";
+    MS_LOG(WARNING) << "Expand block failed, expand size : " << size << ", memory is not enough.";
     return nullptr;
   }
 
@@ -942,7 +938,7 @@ std::string AbstractDynamicMemPool::DynamicMemPoolStateInfo() const {
     other_used_size += mem_buf_used_stat[i];
   }
 
-  ss << "The dynamic memory pool stat info : " << mem_stat_.ToReadableString()
+  ss << "The dynamic memory pool[" << GetMemoryPoolType() << "] stat info : " << mem_stat_.ToReadableString()
      << ", actual peak used mem:" << ActualPeakStatistics() / kMBToByte
      << "M. Weight used size:" << mem_buf_used_stat[static_cast<int>(memory::mem_pool::MemType::kWeight)] / kMBToByte
      << "M, constant value used size:"

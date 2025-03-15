@@ -17,6 +17,7 @@
 #ifndef MINDSPORE_CCSRC_MEMORY_MEM_POOL_MEM_POOL_UTIL_H_
 #define MINDSPORE_CCSRC_MEMORY_MEM_POOL_MEM_POOL_UTIL_H_
 
+#include <atomic>
 #include <string>
 
 #include "include/backend/visible.h"
@@ -39,6 +40,27 @@ enum class MemType : int {
   kPyNativeOutput,
   kWorkSpace,
   kOther
+};
+
+class BACKEND_EXPORT Lock {
+ public:
+  inline void lock() {
+    while (locked.test_and_set(std::memory_order_acquire)) {
+    }
+  }
+  inline void unlock() { locked.clear(std::memory_order_release); }
+
+ protected:
+  std::atomic_flag locked = ATOMIC_FLAG_INIT;
+};
+
+class BACKEND_EXPORT LockGuard {
+ public:
+  explicit LockGuard(const Lock &lock) : lock_(const_cast<Lock *>(&lock)) { lock_->lock(); }
+  ~LockGuard() { lock_->unlock(); }
+
+ private:
+  Lock *lock_;
 };
 
 BACKEND_EXPORT std::string MemTypeToStr(MemType mem_type);

@@ -951,12 +951,10 @@ void DeviceAddressUtils::MallocForInput(const DeviceContext *device_context, con
   MS_EXCEPTION_IF_NULL(device_address);
   device_address->set_is_view(is_view);
 
-  if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
-    auto mem_type =
-      tensor->is_parameter() ? memory::mem_pool::MemType::kWeight : memory::mem_pool::MemType::kPyNativeInput;
-    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", mem_type, device_address->GetSize(),
-                                                   device_address.get());
-  }
+  auto mem_type =
+    tensor->is_parameter() ? memory::mem_pool::MemType::kWeight : memory::mem_pool::MemType::kPyNativeInput;
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", mem_type, device_address->GetSize(),
+                                                 device_address.get());
   if (device_address->GetMutablePtr() != nullptr) {
     if (!is_view || device_address->GetDeviceType() != device::DeviceType::kCPU || device_address->from_mem_pool()) {
       return;
