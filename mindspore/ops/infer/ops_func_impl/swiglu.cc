@@ -23,19 +23,23 @@
 namespace mindspore {
 namespace ops {
 ShapeArray SwigluFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  std::optional<int64_t> dim_opt = input_infos[kInputIndex1]->GetScalarValue<int64_t>();
+  constexpr size_t kSplitNum = 2;
   auto &x = input_infos[kInputIndex0];
   ShapeVector x_shape = x->GetShape();
   if (MS_LIKELY(x->IsDynamic())) {
+    if (dim_opt.has_value() && (x_shape[dim_opt.value()] > 1) && !(x_shape[dim_opt.value()] % 2)) {
+      x_shape[dim_opt.value()] = x_shape[dim_opt.value()] / kSplitNum;
+    }
     return {x_shape};
   }
   auto rank = SizeToLong(x_shape.size());
-  constexpr size_t kSplitNum = 2;
-  std::optional<int64_t> dim_opt = input_infos[kInputIndex1]->GetScalarValue<int64_t>();
   if (MS_UNLIKELY(!dim_opt.has_value())) {
     ShapeVector dyn_output = ShapeVector(rank, abstract::TensorShape::kShapeDimAny);
     return {dyn_output};
   }
   auto dim = dim_opt.value();
+
   MS_CHECK_VALUE(dim >= -rank && dim < rank,
                  CheckAndConvertUtils::FormatCheckInRangeMsg("dim", dim, kIncludeLeft, {-rank, rank}, primitive));
   if (dim < 0) {
