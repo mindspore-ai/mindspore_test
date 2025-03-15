@@ -823,6 +823,9 @@ class Model:
         _device_number_check(self._parallel_mode, self._device_number)
 
         if train_dataset:
+            if not isinstance(train_dataset, mindspore.dataset.Dataset):
+                raise TypeError("The type of 'train_dataset' must be `Dataset`, "
+                                "but got {}.".format(type(train_dataset)))
             vlog_print("1", "ME", __file__, sys._getframe().f_lineno,
                        "Begin to check parameter broadcast in model.build().")
             logger.info("Begin to check parameter broadcast in model.build() procedure.")
