@@ -59,7 +59,7 @@ COMMON_EXPORT bool IsStubTensor(const py::handle &obj);
 COMMON_EXPORT tensor::TensorPtr ConvertStubTensor(const py::handle &obj);
 // Convert sub node to base tensor, for pynative output tensor.
 COMMON_EXPORT tensor::BaseTensorPtr StubNodeToTensor(const py::object &obj);
-COMMON_EXPORT py::object CTensorToPyStubNodes(const ValuePtr &val);
+COMMON_EXPORT py::object CValueToPybindObj(const ValuePtr &val);
 // COMMON_EXPORT tensor::TensorPtr ConvertTensorAndSyncCompiling(const py::handle &obj);
 COMMON_EXPORT ValuePtr PyStubNodeCast(const py::handle &obj);
 COMMON_EXPORT ValuePtr ConvertTensorNode(const py::object &obj);
@@ -70,6 +70,8 @@ COMMON_EXPORT ValuePtr ShallowCopyTensorValue(const ValuePtr &value);
 COMMON_EXPORT ValuePtr ConvertPyObjectToCTensor(const py::object &input_object);
 COMMON_EXPORT void ConvertPyObjectToCTensor(const py::object &input_object, std::vector<ValuePtr> *tensors,
                                             bool is_base_tensor = false);
+COMMON_EXPORT void ConvertPybindTupleGradToCValue(const py::tuple &input_tuple, std::vector<ValuePtr> *gradient_values,
+                                                  bool is_base_tensor = false);
 COMMON_EXPORT py::object ConvertCTensorToPyTensor(const py::object &input_arg);
 COMMON_EXPORT std::string ConvertPyObjToString(const py::object &obj);
 COMMON_EXPORT py::tuple CheckBpropOut(const py::object &grads_obj, const py::tuple &py_args,

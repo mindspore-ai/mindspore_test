@@ -1403,27 +1403,6 @@ ValuePtr ConvertTensor(const py::object &obj) {
   return nullptr;
 }
 
-tensor::BaseTensorPtr ConvertBaseTensor(const py::object &obj) {
-  auto tensor = tensor::ConvertToBaseTensor(obj);
-  if (tensor != nullptr) {
-    return tensor;
-  }
-
-  if (IsStubTensor(obj)) {
-    auto v = PyStubNodeCast(obj);
-    if (v->isa<stub::StubNode>()) {
-      return v->cast<stub::StubNodePtr>()->WaitValue()->cast<tensor::BaseTensorPtr>();
-    }
-    return v->cast<tensor::BaseTensorPtr>();
-  }
-
-  if (tensor::IsTensorPy(obj)) {
-    return tensor::ConvertToTensor(obj);
-  }
-
-  return nullptr;
-}
-
 TensorPtr ConvertTensorValue(const py::object &obj) {
   // The difference between the new ConvertTensorValue function and the existing ConvertTensor is:
   // If the obj a StubNode, it must be called the WaitValue to convert to a Tensor.

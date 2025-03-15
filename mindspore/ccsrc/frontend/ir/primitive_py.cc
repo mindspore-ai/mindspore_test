@@ -46,23 +46,6 @@ std::map<std::string, std::string> kOpAttrNameReplaceMap = {
   {"data_format", "format"},
 };
 
-void SyncData(const py::object &arg) {
-  if (py::isinstance<py::tuple>(arg)) {
-    py::tuple arg_list = py::cast<py::tuple>(arg);
-    for (size_t i = 0; i < arg_list.size(); i++) {
-      SyncData(arg_list[i]);
-    }
-  }
-  if (tensor::IsTensorPy(arg)) {
-    auto tensor = tensor::ConvertToTensor(arg);
-    tensor->data_sync();
-  }
-  if (IsStubTensor(arg)) {
-    auto tensor = ConvertStubTensor(arg);
-    tensor->data_sync();
-  }
-}
-
 std::map<HookType, std::string> hook_type_with_str = {
   {HookType::kCustomOpBprop, "CustomOpBprop"},
   {HookType::kCellCustomBprop, "CellCustomBprop"},
@@ -206,16 +189,13 @@ void PrimitivePy::CheckHookConsistency(const py::object &grad_out, const py::obj
     }
   }
 
-  if (tensor::IsTensorPy(expected_grad_out) || IsStubTensor(expected_grad_out)) {
-    if (!tensor::IsTensorPy(grad_out) && !IsStubTensor(grad_out)) {
+  if (tensor::IsTensorPy(expected_grad_out)) {
+    if (!tensor::IsTensorPy(grad_out)) {
       MS_EXCEPTION(TypeError) << "The output type of function: " << py::str(co_name) << " should be a tensor but got "
                               << py::cast<std::string>(grad_out.attr("__class__").attr("__name__")) << ".";
     }
-    tensor::TensorPtr actual_out_tensor =
-      IsStubTensor(grad_out) ? ConvertStubTensor(grad_out) : tensor::ConvertToTensor(grad_out);
-    tensor::TensorPtr expected_out_tensor = IsStubTensor(expected_grad_out)
-                                              ? ConvertStubTensor(expected_grad_out)
-                                              : tensor::ConvertToTensor(expected_grad_out);
+    tensor::TensorPtr actual_out_tensor = tensor::ConvertToTensor(grad_out);
+    tensor::TensorPtr expected_out_tensor = tensor::ConvertToTensor(expected_grad_out);
     MS_EXCEPTION_IF_NULL(actual_out_tensor);
     MS_EXCEPTION_IF_NULL(expected_out_tensor);
     if (actual_out_tensor->GetShapeAndDataTypeInfo() != expected_out_tensor->GetShapeAndDataTypeInfo()) {

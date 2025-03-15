@@ -91,7 +91,6 @@ inline int32_t CombineTypesForTypeCast(const mindspore::ops::OP_DTYPE &src, cons
 typedef ValuePtr (*OpDefConvertFunc)(const py::object &);
 FRONTEND_EXPORT OpDefConvertFunc GetConverterByType(int32_t dtype);
 FRONTEND_EXPORT ValuePtr ConvertTensor(const py::object &obj);
-FRONTEND_EXPORT tensor::BaseTensorPtr ConvertBaseTensor(const py::object &obj);
 template <typename TS, typename TD, OpDefConvertFunc func>
 ValuePtr ConvertSequence(const py::object &obj) {
   if (!py::isinstance<TS>(obj)) {
