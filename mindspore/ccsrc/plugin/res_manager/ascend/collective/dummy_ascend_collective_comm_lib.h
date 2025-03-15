@@ -22,13 +22,17 @@
 #include "runtime/collective/communication_group.h"
 #include "runtime/collective/dummy_collective_communication_lib.h"
 
+#ifndef EXPORT_WRAPPER
+#define EXPORT_WRAPPER __attribute__((visibility("default")))
+#endif
+
 namespace mindspore {
 namespace device {
 ///
 /// \brief DummyAscendCollectiveCommLib to maintain collective communication relationship with ascend device
 /// communication.
 ///
-class DummyAscendCollectiveCommLib : public DummyCollectiveCommunicationLib {
+class EXPORT_WRAPPER DummyAscendCollectiveCommLib : public DummyCollectiveCommunicationLib {
  public:
   static DummyAscendCollectiveCommLib &GetInstance() {
     static DummyAscendCollectiveCommLib instance;

@@ -214,7 +214,6 @@ bool AscendHalManager::EnableLccl() {
     return false;
   }
 }
-
 // void AscendHalManager::BindDeviceToCurrentThread(uint32_t device_id, bool force_bind) const {
 //   if (force_bind) {
 //     SetContextForce(device_id);

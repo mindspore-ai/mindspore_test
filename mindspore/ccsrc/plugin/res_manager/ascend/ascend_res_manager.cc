@@ -37,11 +37,20 @@
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "utils/file_utils.h"
+#include "utils/distributed_meta.h"
 #include "graph/def_types.h"
 #include "acl/acl_rt.h"
+#include "plugin/res_manager/ascend/collective/ccool_collective_comm_lib.h"
+#include "plugin/res_manager/ascend/collective/multi_ascend_collective_comm_lib.h"
+#include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
+#include "plugin/res_manager/ascend/collective/dummy_ascend_collective_comm_lib.h"
+#ifdef ENABLE_INTERNAL_KERNELS
+#include "plugin/res_manager/ascend/collective/lowlatency_collective_comm_lib.h"
+#endif
 #include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
+#include "common/kernel_callback.h"
 #include "runtime/device/res_manager/tensor_array.h"
 #include "plugin/res_manager/ascend/hal_manager/ascend_err_manager.h"
 
@@ -49,6 +58,16 @@ namespace mindspore {
 namespace device {
 namespace ascend {
 namespace {
+// Register callbacks for collective methods.
+// These code should be deleted after collective so is extracted.
+std::string GetCommName(const std::string &group) {
+  if (!common::GetEnv(kSimulationLevel).empty()) {
+    return DummyAscendCollectiveCommLib::GetInstance().CommName(group);
+  }
+  return AscendCollectiveCommLib::GetInstance().CommName(group);
+}
+REGISTER_KERNEL_CALLBACK(GetCommName);
+
 using Callback = std::function<void(void)>;
 typedef HcclResult (*HcclSetConfigFunc)(HcclConfig, HcclConfigValue);
 std::mutex set_opt_mutex;
@@ -111,6 +130,11 @@ void AclrtLaunchCallback(void *user_data) {
   delete callback_func;
 }
 }  // namespace
+
+std::function<CollectiveCommunicationLib *(void)> gLoadCollectiveCommLibCallback;
+void RegisterLoadCollectiveCallback(const std::function<CollectiveCommunicationLib *(void)> &func) {
+  gLoadCollectiveCommLibCallback = func;
+}
 
 void AscendResManager::Initialize() {
   auto ms_context = MsContext::GetInstance();
@@ -422,14 +446,22 @@ DeviceAddressPtr AscendResManager::CreateDeviceAddress(void *ptr, size_t size, c
                                                stream_id);
 }
 
-void AscendResManager::RegisterLoadCollectiveCallback(
-  const std::function<CollectiveCommunicationLib *(void)> &callback) {
-  load_comm_lib_cb_ = callback;
-}
-
 bool AscendResManager::LoadCollectiveCommLib() {
-  collective_comm_lib_ = load_comm_lib_cb_();
+  // If this is simulation, load dummy collective communication library.
+  if (!common::GetEnv(kSimulationLevel).empty()) {
+    collective_comm_lib_ = &DummyAscendCollectiveCommLib::GetInstance();
+    return true;
+  }
+  if (DistributedMeta::GetInstance()->enable_cross_cluster()) {
+    collective_comm_lib_ = &CcoolCollectiveCommLib::GetInstance();
+    MS_EXCEPTION_IF_NULL(collective_comm_lib_);
+    MS_LOG(INFO) << "Loading CCOOL collective library successfully.";
+    return true;
+  }
+  // Load Multi ascend collective communication lib using dynamic library.
+  collective_comm_lib_ = &MultiAscendCollectiveCommLib::GetInstance();
   MS_EXCEPTION_IF_NULL(collective_comm_lib_);
+  MS_LOG(INFO) << "Loading MACCL collective library successfully.";
   return true;
 }
 

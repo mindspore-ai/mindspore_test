@@ -35,51 +35,11 @@
 #include "runtime/device/kernel_runtime_manager.h"
 #include "runtime/device/move_to.h"
 #include "utils/ms_exception.h"
-#include "utils/distributed_meta.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
-
-#include "common/kernel_callback.h"
-#include "plugin/res_manager/ascend/collective/ccool_collective_comm_lib.h"
-#include "plugin/res_manager/ascend/collective/multi_ascend_collective_comm_lib.h"
-#include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
-#include "plugin/res_manager/ascend/collective/dummy_ascend_collective_comm_lib.h"
-#ifdef ENABLE_INTERNAL_KERNELS
-#include "plugin/res_manager/ascend/collective/lowlatency_collective_comm_lib.h"
-#endif
 
 namespace mindspore {
 namespace device {
 namespace ascend {
-// Register callbacks for collective methods.
-// These code should be deleted after collective so is extracted.
-std::string GetCommName(const std::string &group) {
-  if (!common::GetEnv(kSimulationLevel).empty()) {
-    return DummyAscendCollectiveCommLib::GetInstance().CommName(group);
-  }
-  return AscendCollectiveCommLib::GetInstance().CommName(group);
-}
-REGISTER_KERNEL_CALLBACK(GetCommName);
-
-CollectiveCommunicationLib *LoadAscendCommLib() {
-  CollectiveCommunicationLib *collective_comm_lib = nullptr;
-  // If this is simulation, load dummy collective communication library.
-  if (!common::GetEnv(kSimulationLevel).empty()) {
-    collective_comm_lib = &DummyAscendCollectiveCommLib::GetInstance();
-    return collective_comm_lib;
-  }
-  if (DistributedMeta::GetInstance()->enable_cross_cluster()) {
-    collective_comm_lib = &CcoolCollectiveCommLib::GetInstance();
-    MS_EXCEPTION_IF_NULL(collective_comm_lib);
-    MS_LOG(INFO) << "Loading CCOOL collective library successfully.";
-    return collective_comm_lib;
-  }
-  // Load Multi ascend collective communication lib using dynamic library.
-  collective_comm_lib = &MultiAscendCollectiveCommLib::GetInstance();
-  MS_EXCEPTION_IF_NULL(collective_comm_lib);
-  MS_LOG(INFO) << "Loading MACCL collective library successfully.";
-  return collective_comm_lib;
-}
-
 void AscendDeviceResManager::Initialize() {
   if (initialized_) {
     return;
@@ -96,7 +56,6 @@ void AscendDeviceResManager::Initialize() {
   ascend_res_manager_ = dynamic_cast<AscendResManager *>(HalResManager::GetInstance().GetOrCreateResManager(res_key));
   MS_EXCEPTION_IF_NULL(ascend_res_manager_);
   ascend_res_manager_->Initialize();
-  ascend_res_manager_->RegisterLoadCollectiveCallback(LoadAscendCommLib);
   initialized_ = true;
 }
 
