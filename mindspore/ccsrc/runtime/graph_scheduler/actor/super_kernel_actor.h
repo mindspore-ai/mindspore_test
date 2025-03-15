@@ -272,7 +272,11 @@ class SuperKernelActor : public DebugAwareActor {
   static std::vector<std::pair<size_t, void *>> streams_;
   static std::vector<DeviceEventPtr> events_;
   static std::vector<AsyncRQueuePtr> queues_;
+
+  // Remove after input optimize simplify.
   bool first_step_for_inference_{true};
+  bool enable_infer_boost_{false};
+
   // Whether the actor include a control flow actor.
   bool enable_inline_control_flow_{false};
 };
