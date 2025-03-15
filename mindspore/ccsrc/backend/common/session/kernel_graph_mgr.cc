@@ -1457,8 +1457,8 @@ void KernelGraphMgr::GetNewCNodeInputs(const CNodePtr &cnode, KernelGraph *graph
     } else if (anf->isa<Parameter>()) {
       auto new_parameter = CreateNewParameterFromParameter(anf, graph);
       MS_EXCEPTION_IF_NULL(new_parameter);
-      MS_LOG(DEBUG) << "Create new parameter:" << new_parameter->DebugString()
-                    << " by front parameter:" << anf->DebugString();
+      MS_LOG(INFO) << "Create new parameter:" << new_parameter->DebugString()
+                   << " by front parameter:" << anf->DebugString();
       (void)params.emplace_back(new_parameter);
       graph->FrontBackendMapAdd(anf, new_parameter);
       continue;

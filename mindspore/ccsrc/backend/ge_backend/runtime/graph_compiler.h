@@ -144,6 +144,11 @@ class GraphCompiler {
   // Get graph by graph id, if not exist return nullptr, used in Graph mode.
   KernelGraphPtr Fetch(GraphId graph_id) const;
 
+  void ClearGraphBuildMember() {
+    MS_EXCEPTION_IF_NULL(session_);
+    session_->ClearGraphBuildMember();
+  }
+
   // Register a summary callback function, which is called in the final stages of summary.
   void RegisterSummaryCallBackFunc(const CallBackFunc &callback) const;
   // Execute graph summary.

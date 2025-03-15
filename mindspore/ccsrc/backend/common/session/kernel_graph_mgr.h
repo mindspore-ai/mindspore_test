@@ -81,6 +81,15 @@ class BACKEND_COMMON_EXPORT KernelGraphMgr {
   // Get graph by graph id, if not exist return null ptr
   KernelGraphPtr GetGraph(GraphId graph_id) const;
   void ClearGraph();
+  void ClearGraphBuildMember() {
+    partial_parameters_map_.clear();
+    partial_target_map_.clear();
+    default_param_map_.clear();
+    front_backend_graph_map_.clear();
+    kernel_graph_partial_map_.clear();
+    need_flatten_.clear();
+    need_flatten_tuple_map_.clear();
+  }
   virtual void UnifyMindIR(const KernelGraphPtr &graph);
   virtual ParameterPtr CreateNewParameterFromParameter(const AnfNodePtr &anf, KernelGraph *graph);
   // create a new kernel graph and update the graph sum
