@@ -670,34 +670,20 @@ def matrix_band_part(x, lower, upper):
         This is an experimental API that is subject to change or deletion.
 
     Args:
-        x (Tensor): Input tensor. :math:`(*, m, n)` where :math:`*` means, any number of additional dimensions.
-        lower (Union[int, Tensor]): Number of subdiagonals to keep. The data type must be int32 or int64.
-            If negative, keep entire lower triangle.
-        upper (Union[int, Tensor]): Number of superdiagonals to keep. The data type must be int32 or int64.
-            If negative, keep entire upper triangle.
+        x (Tensor): The input tensor.
+        lower (Union[int, Tensor]): Number of subdiagonals to keep. If negative, keep entire lower triangle.
+        upper (Union[int, Tensor]): Number of superdiagonals to keep. If negative, keep entire upper triangle.
 
     Returns:
-        Tensor, has the same type and shape as `x`.
-
-    Raises:
-        TypeError: If `x` is not a Tensor.
-        TypeError: If dtype of `x` is not valid.
-        TypeError: If `lower` is neither a number nor a Tensor.
-        TypeError: If `upper` is neither a number nor a Tensor.
-        TypeError: If dtype of `lower` is neither int32 nor int64.
-        TypeError: If dtype of `upper` is neither int32 nor int64.
-        ValueError: If the shape of `x` is not greater than or equal to 2D.
-        ValueError: If the shape of `lower` is not equal to 0D.
-        ValueError: If the shape of `upper` is not equal to 0D.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.ones([2, 4, 4]).astype(np.float32))
-        >>> output = ops.matrix_band_part(x, 2, 1)
+        >>> import mindspore
+        >>> x = mindspore.ops.ones([2, 4, 4])
+        >>> output = mindspore.ops.matrix_band_part(x, 2, 1)
         >>> print(output)
         [[[1. 1. 0. 0.]
           [1. 1. 1. 0.]
@@ -4011,37 +3997,24 @@ def batch_to_space_nd(input_x, block_shape, crops):
 
 def matrix_diag(x, k=0, num_rows=-1, num_cols=-1, padding_value=0, align="RIGHT_LEFT"):
     r"""
-    Returns a Tensor with the contents in `x` as k[0]-th to k[1]-th diagonals of a matrix, with everything else padded
-    with `padding_value`. `num_rows` and `num_cols` specify the dimension of the innermost matrix of the output. If both
-    are not specified, the op assumes the innermost matrix of output Tensor is square and infers its size from `k` and
-    the innermost dimension of `x`. If the `num_rows` and `num_cols` specify only one of them, the operator will derive
-    the smallest legal value as the dimension of output. Moreover, when only one diagonal is given
-    (k is an integer or k[0] == k[1]), the first to the second innermost dimension of `x` is the batch size. Otherwise,
-    the second innermost dimension is not a part of batch size.
+    Return a tensor with the contents in `x` as k[0]-th to k[1]-th diagonals of a matrix, with everything else padded
+    with `padding_value` .
+
+    `num_rows` and `num_cols` are tensors type of int32 with only one value, which is -1, indicating that the innermost
+    matrix of the output tensor is a square.
 
     Args:
-        x (Tensor): The diagonal Tensor.
-        k (Union[int, Tensor], optional): Diagonal offsets. A Tensor of type int32. Positive value means superdiagonal,
-            0 refers to the main diagonal, and negative value means subdiagonals. `k` can be a single integer
-            (for a single diagonal) or a pair of integers specifying the low and high ends of a matrix band.
-            k[0] must not be larger than k[1]. The value must be in the range of given or derivated `num_rows`
-            and `num_cols`, meaning value of k must be in (-num_rows, num_cols). Default: ``0`` .
-        num_rows (Union[int, Tensor], optional): The number of rows of the output Tensor. A Tensor of type int32 with
-            only one value. If `num_rows` is -1, indicating that the innermost matrix of the output Tensor is a square
-            matrix, and the real number of rows will be derivated by other inputs. That is
-            :math:`num\_rows = x.shape[-1] - min(k[1], 0)`. Otherwise, the value must be equal or greater than
-            :math:`x.shape[-1] - min(k[1], 0)`. Default: ``-1`` .
-        num_cols (Union[int, Tensor], optional): The number of columns of
-            the output Tensor. A Tensor of type int32 with only one value.
-            If `num_cols` is -1, indicating that the innermost matrix of the output
-            Tensor is a square matrix, and the real number of columns will be derivated by other inputs.
-            That is :math:`num\_cols = x.shape[-1] + max(k[0], 0)`. Otherwise, the value must be equal or
-            greater than :math:`x.shape[-1] - min(k[1], 0)`.  Default: ``-1`` .
+        x (Tensor): The input tensor.
+        k (Union[int, Tensor], optional): Diagonal offsets. Positive value means superdiagonal, and negative value
+            means subdiagonals. When `k` is a pair of integers specifying the low and high ends of a matrix band.
+            Default ``0`` .
+        num_rows (Union[int, Tensor], optional): The number of rows of the output tensor. Default ``-1`` .
+        num_cols (Union[int, Tensor], optional): The number of columns of the output tensor. Default ``-1`` .
         padding_value (Union[int, float, Tensor], optional): The number to fill the area outside the specified
-            diagonal band. A Tensor with only one value. Have the same dtype as x. Default: ``0`` .
+            diagonal band. Default ``0`` .
         align (str, optional): specifies how superdiagonals and subdiagonals should be aligned.
-            Supported values: ``"RIGHT_LEFT"`` , ``"LEFT_RIGHT"`` , ``"LEFT_LEFT"`` , ``"RIGHT_RIGHT"`` .
-            Default: ``"RIGHT_LEFT"`` .
+            Supported values ``"RIGHT_LEFT"`` , ``"LEFT_RIGHT"`` , ``"LEFT_LEFT"`` , ``"RIGHT_RIGHT"`` .
+            Default ``"RIGHT_LEFT"`` .
 
             - When set to "RIGHT_LEFT", the alignment of superdiagonals will be towards the right side
               (padding the row on the left), while subdiagonals will be towards the left side
@@ -4055,42 +4028,19 @@ def matrix_diag(x, k=0, num_rows=-1, num_cols=-1, padding_value=0, align="RIGHT_
               the right side(padding the row on the left).
 
     Returns:
-        A Tensor. Has the same type as `x`.
-        Suppose `x` has r dimensions with shape :math:`(I, J, ..., M, N)` . The output Tensor has rank r + 1 with shape
-        :math:`(I, J, ..., M, num\_rows, num\_cols)` when only one diagonal is given (k is an integer or k[0] == k[1]).
-        Otherwise, it has rank r with shape :math:`(I, J, ..., num\_rows, num\_cols)` .
-
-    Raises:
-        TypeError: If `x` is not Tensor.
-        TypeError: If input `x` and `padding_value` are not the same dtype.
-        TypeError: If `k`, `num_rows` or `num_cols` is not int32 dtype.
-        ValueError: If rank of `k` is not equal to 0 or 1.
-        ValueError: If rank of `num_rows`, `num_cols` or `padding_value` is not equal to 0.
-        ValueError: If size of `k` is not equal to 1 or 2.
-        ValueError: If the value of `k` is not in (-num_rows, num_cols).
-        ValueError: If k[1] is not greater equal to k[0] when k[0] != k[1].
-        ValueError: If rank of `x` is not greater than or is equal to 1 when k is an integer or k[0] == k[1].
-        ValueError: If rank of `x` is not greater than or is equal to 2 when k[0] != k[1].
-        ValueError: If x.shape[-2] is not equal to k[1] - k[0] + 1 when k[0] != k[1].
-        ValueError: If `num_rows` and `num_cols` do not match the dimensions of `x` and the values of `k`.
-        ValueError: If `align` is not a string or not in the valid set of values.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor
-        >>> from mindspore import ops
-        >>> x = Tensor(np.array([[8, 9, 0],
-        ...                      [1, 2, 3],
-        ...                      [0, 4, 5]]), mindspore.float32)
-        >>> k =Tensor(np.array([-1, 1]), mindspore.int32)
-        >>> num_rows = Tensor(np.array(3), mindspore.int32)
-        >>> num_cols = Tensor(np.array(3), mindspore.int32)
-        >>> padding_value = Tensor(np.array(11), mindspore.float32)
-        >>> output = ops.matrix_diag(x, k, num_rows, num_cols, padding_value, align='LEFT_RIGHT')
+        >>> x = mindspore.tensor([[8., 9., 0.],
+        ...                      [1., 2., 3.],
+        ...                      [0., 4., 5.]])
+        >>> k = mindspore.tensor(np.array([-1, 1])
+        >>> padding_value = mindspore.tensor(11)
+        >>> output = ops.matrix_diag(x, k, mindspore.tensor(3), mindspore.tensor(3), padding_value, align='LEFT_RIGHT')
         >>> print(output)
         [[ 1.  8. 11.]
          [ 4.  2.  9.]
@@ -4112,57 +4062,43 @@ def matrix_diag(x, k=0, num_rows=-1, num_cols=-1, padding_value=0, align="RIGHT_
 
 def matrix_diag_part(x, k, padding_value, align="RIGHT_LEFT"):
     r"""
-    Returns the diagonal part of input tensor.
-    Returns a tensor with the k[0]-th to k[1]-th diagonals of `x`. Some diagonals are shorter than
-    max_diag_len and need to be padded. Input k and padding_value must be const Tensor when taking Graph mode.
+    Return a tensor that retains the values of the specified diagonal while setting all other elements to zero.
+
+    Input `k` and `padding_value` must be const tensor when taking graph mode.
 
     Args:
-        x (Tensor): The input Tensor with rank r, where r >= 2.
-        k (Tensor): A Tensor of type int32. Diagonal offset(s). Positive value means
-            superdiagonal, 0 refers to the main diagonal, and negative value means subdiagonals. k can be
-            a single integer (for a single diagonal) or a pair of integers specifying the low and high ends
-            of a matrix band. k[0] must not be larger than k[1]. The value of k has restructions, meaning
-            value of k must be in (-x.shape[-2], x.shape[-1]).
-        padding_value (Tensor): A Tensor with only one value. Have the same dtype as x.
-            The number to fill the area outside the specified diagonal band.
-        align (str, optional): An optional string from: ``"RIGHT_LEFT"`` , ``"LEFT_RIGHT"`` ,
-            ``"LEFT_LEFT"`` , ``"RIGHT_RIGHT"`` . Align is a string specifying how superdiagonals and subdiagonals
-            should be aligned, respectively. ``"RIGHT_LEFT"`` aligns superdiagonals to the right (left-pads the row)
-            and subdiagonals to the left (right-pads the row). Default: ``"RIGHT_LEFT"`` . Default: ``"RIGHT_LEFT"``.
+        x (Tensor): The input tensor with rank r, where r >= 2.
+        k (Union[int, Tensor], optional): Diagonal offsets. Positive value means superdiagonal, and negative value
+            means subdiagonals. When `k` is a pair of integers specifying the low and high ends of a matrix band.
+            Default ``0`` .
+        align (str, optional): specifies how superdiagonals and subdiagonals should be aligned.
+            Supported values ``"RIGHT_LEFT"`` , ``"LEFT_RIGHT"`` , ``"LEFT_LEFT"`` , ``"RIGHT_RIGHT"`` .
+            Default ``"RIGHT_LEFT"`` .
+
+            - When set to "RIGHT_LEFT", the alignment of superdiagonals will be towards the right side
+              (padding the row on the left), while subdiagonals will be towards the left side
+              (padding the row on the right)
+            - When set to "LEFT_RIGHT", the alignment of superdiagonals will be towards the left side
+              (padding the row on the right), while subdiagonals will be towards the right side
+              (padding the row on the left)
+            - When set to "LEFT_LEFT", the alignment of  both superdiagonals and subdiagonals will be towards
+              the left side(padding the row on the right).
+            - When set to "RIGHT_RIGHT", the alignment of both superdiagonals and subdiagonals will be towards
+              the right side(padding the row on the left).
 
     Returns:
-        A Tensor. Has the same type as `x`.
-        Assume `x` has r dimensions :math:`(I, J, ..., M, N)` . Let `max_diag_len` be the maximum length among all
-        diagonals to be extracted, :math:`max\_diag\_len = min(M + min(k[1], 0), N + min(-k[0], 0))`
-        Let `num_diags` be the number of diagonals to extract, :math:`num\_diags = k[1] - k[0] + 1`.
-        If :math:`num\_diags == 1`, the output tensor is of rank r - 1 with shape :math:`(I, J, ..., L, max\_diag\_len)`
-        Otherwise, the output tensor has rank r with dimensions :math:`(I, J, ..., L, num\_diags, max\_diag\_len)` .
-
-    Raises:
-        TypeError: If `x` is not Tensor.
-        TypeError: If input `x` and `padding_value` are not the same dtype.
-        TypeError: If `k` is not int32 dtype.
-        ValueError: If `align` is not a string or not in the valid range.
-        ValueError: If rank of `k` is not equal to 0 or 1.
-        ValueError: If rank of `padding_value` is not equal to 0.
-        ValueError: If rank of `x` is not greater equal to 2.
-        ValueError: If size of `k` is not equal to 1 or 2.
-        ValueError: If k[1] is not greater equal to k[0] in case the size of `k` is 2.
-        ValueError: If the value of `k` is not in (-x.shape[-2], x.shape[-1]).
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([[1, 2, 3, 4],
-        ...                      [5, 6, 7, 8],
-        ...                      [9, 8, 7, 6]]), mindspore.float32)
-        >>> k =Tensor(np.array([1, 3]), mindspore.int32)
-        >>> padding_value = Tensor(np.array(9), mindspore.float32)
-        >>> output = ops.matrix_diag_part(x, k, padding_value, align='RIGHT_LEFT')
+        >>> x = mindspore.tensor([[1., 2., 3., 4.],
+        ...                       [5., 6., 7., 8.],
+        ...                       [9., 8., 7., 6.]])
+        >>> k = mindspore.tensor([1, 3], mindspore.int32)
+        >>> output = mindspore.ops.matrix_diag_part(x, k, mindspore.tensor(9.), align='RIGHT_LEFT')
         >>> print(output)
         [[9. 9. 4.]
          [9. 3. 8.]
@@ -4176,70 +4112,46 @@ def matrix_diag_part(x, k, padding_value, align="RIGHT_LEFT"):
 
 def matrix_set_diag(x, diagonal, k=0, align="RIGHT_LEFT"):  # pylint: disable=redefined-outer-name
     r"""
-    Returns a batched matrix tensor with new batched diagonal values.
-    Given x and diagonal, this operation returns a tensor with the same shape and values as x, except for the specified
-    diagonals of the innermost matrices. These will be overwritten by the values in diagonal. Some diagonals are shorter
-    than max_diag_len and need to be padded.
-    The diagonal :math:`shape[-2]` must be equal to num_diags calculated by :math:`k[1] - k[0] + 1`.
-    The diagonal :math:`shape[-1]` must be
-    equal to the longest diagonal value max_diag_len calculated
-    by :math:`min(x.shape[-2] + min(k[1], 0), x.shape[-1] + min(-k[0], 0))`.
-    Let x have r + 1 dimensions :math:`(I, J, ..., L, M, N)` .
-    The diagonal tensor has rank r with shape :math:`(I, J, ..., L, max\_diag\_len)`
-    when k is an integer or :math:`k[0] == k[1]`. Otherwise, it has rank r + 1
-    with shape :math:`(I, J, ... L, num\_diags, max\_diag\_len)` .
+    Return a tensor by replacing the elements on the k[0]-th to k[1]-th diagonals of the matrix `x` with the values
+    from the input `diagonal` .
 
     Args:
-        x (Tensor): Rank r + 1, where r >= 1.
-        diagonal (Tensor): A Tensor. Have the same dtype as x. Rank r when k is an integer or :math:`k[0] == k[1]`.
-            Otherwise, it has rank r + 1.
-        k (Union[int, Tensor], optional): A int32 Scalar or int32 Tensor. Diagonal offset(s). Positive value means
-            superdiagonal, 0 refers to the main diagonal, and negative value means subdiagonals. k can be a
-            single integer (for a single diagonal) or a pair of integers specifying the low and high ends of
-            a matrix band. k[0] must not be larger than k[1].
-            The alue of k has restructions, meaning value of k must be in :math:`(-x.shape[-2], x.shape[-1])`.
-            Input k must be const Tensor when taking Graph mode. Default: ``0`` .
-        align (str, optional): An optional string from: ``"RIGHT_LEFT"`` (default), ``"LEFT_RIGHT"`` , ``"LEFT_LEFT"`` ,
-            ``"RIGHT_RIGHT"`` . Align is a string specifying how superdiagonals and subdiagonals should be aligned,
-            respectively. ``"RIGHT_LEFT"`` aligns superdiagonals to the right (left-pads the row) and subdiagonals
-            to the left (right-pads the row).
+        x (Tensor): The input tensor with rank r, where r >= 2.
+        diagonal (Tensor): A diagonal tensor.
+        k (Union[int, Tensor], optional): Diagonal offsets. Positive value means superdiagonal, and negative value
+            means subdiagonals. When `k` is a pair of integers specifying the low and high ends of a matrix band.
+            Default ``0`` .
+       align (str, optional): specifies how superdiagonals and subdiagonals should be aligned.
+            Supported values ``"RIGHT_LEFT"`` , ``"LEFT_RIGHT"`` , ``"LEFT_LEFT"`` , ``"RIGHT_RIGHT"`` .
+            Default ``"RIGHT_LEFT"`` .
+
+            - When set to "RIGHT_LEFT", the alignment of superdiagonals will be towards the right side
+              (padding the row on the left), while subdiagonals will be towards the left side
+              (padding the row on the right)
+            - When set to "LEFT_RIGHT", the alignment of superdiagonals will be towards the left side
+              (padding the row on the right), while subdiagonals will be towards the right side
+              (padding the row on the left)
+            - When set to "LEFT_LEFT", the alignment of  both superdiagonals and subdiagonals will be towards
+              the left side(padding the row on the right).
+            - When set to "RIGHT_RIGHT", the alignment of both superdiagonals and subdiagonals will be towards
+              the right side(padding the row on the left).
 
     Returns:
-        Tensor, The same type as x. Let x has r+1 dimensions :math:`(I, J, ..., L, M, N)` .
-        The output is a tensor of rank r+1 with dimensions :math:`(I, J, ..., L, M, N)` , the same as input x.
-
-    Raises:
-        TypeError: If input `x` or `diagonal` is not Tensor.
-        TypeError: If input `x` and `diagonal` are not the same dtype.
-        TypeError: If `k` is not int32 dtype.
-        ValueError: If `align` is not a string or not in the valid range.
-        ValueError: If rank of `k` is not equal to 0 or 1.
-        ValueError: If rank of `x` is not greater equal to 2.
-        ValueError: If size of `k` is not equal to 1 or 2.
-        ValueError: If k[1] is not greater equal to k[0] in case the size of `k` is 2.
-        ValueError: If the `diagonal` rank size don't match with input `x` rank size.
-        ValueError: If the `diagonal` shape value don't match with input `x` shape value.
-        ValueError: If the diagonal :math:`shape[-2]` is not equal to num_diags calculated by :math:`k[1]-k[0]+1`.
-        ValueError: If the value of `k` is not in :math:`(-x.shape[-2], x.shape[-1])`.
-        ValueError: If the diagonal.shape[-1] is not equal to the max_diag_len calculated by
-            :math:`min(x.shape[-2] + min(k[1],
-            0), x.shape[-1] + min(-k[0], 0))`.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([[7, 7, 7, 7],
-        ...                      [7, 7, 7, 7],
-        ...                      [7, 7, 7, 7]]), mindspore.float32)
-        >>> diagonal = Tensor(np.array([[0, 9, 1],
-        ...                             [6, 5, 8],
-        ...                             [1, 2, 3],
-        ...                             [4, 5, 0]]), mindspore.float32)
-        >>> k = Tensor(np.array([-1, 2]), mindspore.int32)
+        >>> x = mindspore.tensor([[7., 7., 7., 7.],
+        ...                       [7., 7., 7., 7.],
+        ...                       [7., 7., 7., 7.]])
+        >>> diagonal = mindspore.tensor([[0., 9., 1.],
+        ...                    [6., 5., 8.],
+        ...                    [1., 2., 3.],
+        ...                    [4., 5., 0.]])
+        >>> k = mindspore.tensor(([-1, 2]), mindspore.int32)
         >>> align = 'RIGHT_LEFT'
         >>> output = ops.matrix_set_diag(x, diagonal, k, align)
         >>> print(output)
