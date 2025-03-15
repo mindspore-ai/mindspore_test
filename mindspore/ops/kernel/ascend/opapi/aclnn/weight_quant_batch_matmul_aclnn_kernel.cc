@@ -31,7 +31,7 @@ void WeightQuantBatchMatmulV2Ascend::GetWorkSpaceInfo(const std::vector<KernelTe
                                                       const std::vector<KernelTensor *> &outputs) {
   auto trans_x = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex7]);
   auto trans_weight = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex8]);
-  auto antiquant_group_size = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex9]);
+  antiquant_group_size_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex9]);
 
   weight_ = std::make_shared<KernelTensor>(*inputs[kIndex1]);
   KernelTensor *weight = weight_.get();
@@ -45,7 +45,7 @@ void WeightQuantBatchMatmulV2Ascend::GetWorkSpaceInfo(const std::vector<KernelTe
   input_x_ = std::pair<KernelTensor *, bool>(inputs[kIndex0], trans_x);
   input_weight_ = std::pair<KernelTensor *, bool>(weight, trans_weight);
   GetWorkspaceForResize(input_x_, input_weight_, inputs[kIndex2], inputs[kIndex3], inputs[kIndex4], inputs[kIndex5],
-                        inputs[kIndex6], antiquant_group_size, outputs[kIndex0]);
+                        inputs[kIndex6], antiquant_group_size_, outputs[kIndex0]);
 }
 
 bool WeightQuantBatchMatmulV2Ascend::Launch(const std::vector<KernelTensor *> &inputs,
@@ -53,21 +53,22 @@ bool WeightQuantBatchMatmulV2Ascend::Launch(const std::vector<KernelTensor *> &i
                                             const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
 
-  auto antiquant_group_size = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex9]);
   input_x_.first = inputs[kIndex0];
 
-  weight_ = std::make_shared<KernelTensor>(*inputs[kIndex1]);
-  KernelTensor *weight = weight_.get();
-  if (weight->dtype_id() == kNumberTypeInt4) {
+  if (inputs[kIndex1]->dtype_id() == kNumberTypeInt4) {
+    weight_ = std::make_shared<KernelTensor>(*inputs[kIndex1]);
+    KernelTensor *weight = weight_.get();
     ShapeVector weight_shape = weight->GetShapeVector();
     int kInt4ShapeMul = 2;
     weight_shape.back() *= kInt4ShapeMul;
     weight->SetShapeVector(weight_shape);
+    input_weight_.first = weight;
+  } else {
+    input_weight_.first = inputs[kIndex1];
   }
-  input_weight_.first = weight;
 
   RunOp(stream_ptr, workspace, input_x_, input_weight_, inputs[kIndex2], inputs[kIndex3], inputs[kIndex4],
-        inputs[kIndex5], inputs[kIndex6], antiquant_group_size, outputs[kIndex0]);
+        inputs[kIndex5], inputs[kIndex6], antiquant_group_size_, outputs[kIndex0]);
   return true;
 }
 MS_ACLNN_KERNEL_FACTORY_REG(WeightQuantBatchMatmul, WeightQuantBatchMatmulV2Ascend);
