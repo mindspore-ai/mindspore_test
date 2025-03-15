@@ -17,7 +17,7 @@
 #include "common/graph_optimizer_test_framework.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "common/common_test.h"
-#include "plugin/device/ascend/optimizer/mindir/all_to_all_unify_mindir.h"
+#include "backend/common/pass/mindir/all_to_all_unify_mindir.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "pre_activate/common/pattern_to_pattern_pass_utils.h"

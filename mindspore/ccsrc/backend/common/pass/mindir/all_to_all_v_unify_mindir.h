@@ -19,6 +19,7 @@
 #include <string>
 #include <vector>
 #include "include/backend/optimizer/optimizer.h"
+#include "include/backend/visible.h"
 
 /* AlltoAllVUnifyMindIR
  * let rank size is 4:
@@ -39,7 +40,7 @@
 
 namespace mindspore {
 namespace opt {
-class AlltoAllVUnifyMindIR : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT AlltoAllVUnifyMindIR : public PatternProcessPass {
  public:
   explicit AlltoAllVUnifyMindIR(bool multigraph = true) : PatternProcessPass("all_to_all_v_unify_mindir", multigraph) {}
   ~AlltoAllVUnifyMindIR() override = default;
