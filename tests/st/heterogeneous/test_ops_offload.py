@@ -442,6 +442,7 @@ def test_offload_op_with_recompute4():
             self.block.sub1.recompute()
             self.block.add.recompute()
             self.block.softmax._offload()
+            self.block.dropout._offload()
 
         def construct(self, x):
             return self.block(x)
