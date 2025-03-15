@@ -3658,6 +3658,15 @@ AnfNodePtr KernelGraphMgr::DoInline(const FuncGraphPtr &func_graph, const FuncGr
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_EXCEPTION_IF_NULL(graph);
   MS_EXCEPTION_IF_NULL(target_func_graph);
+  if (func_graph->isa<KernelGraph>()) {
+    const auto &sub_kernel_graph = func_graph->cast<KernelGraphPtr>();
+    MS_LOG(INFO) << "subgraph: " << sub_kernel_graph->ToString()
+                 << ", is dynamic shape:" << sub_kernel_graph->is_dynamic_shape();
+    MS_LOG(INFO) << "graph: " << graph->ToString() << ", is dynamic shape:" << graph->is_dynamic_shape();
+    if (sub_kernel_graph->is_dynamic_shape()) {
+      graph->SetGraphDynamicAttr(true);
+    }
+  }
   KernelGraphPtr target_kernel_graph = nullptr;
   if (target_func_graph->isa<KernelGraph>()) {
     target_kernel_graph = target_func_graph->cast<KernelGraphPtr>();
