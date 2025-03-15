@@ -86,7 +86,7 @@ def mse_loss_backward_func(x, target, reduction):
 
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 @pytest.mark.parametrize("reduction", ["mean", "sum", "none"])
 def test_mse_loss_forward(mode, reduction):
