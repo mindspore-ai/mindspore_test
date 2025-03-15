@@ -37,6 +37,10 @@ static std::unordered_map<FeatureType, std::string> FMK_FEATURES = {{FeatureType
 void FeatureMgr::Init() {
   size_t size = 0;
   void *dataPtr = nullptr;
+  if (mindspore::device::ascend::aclprofGetSupportedFeatures_ == nullptr) {
+    MS_LOG(WARNING) << "CANN not support to get aclprofGetSupportedFeatures method.";
+    return;
+  }
   auto ret = CALL_ASCEND_API(aclprofGetSupportedFeatures, &size, &dataPtr);
   if (ret == ACL_ERROR_PROF_MODULES_UNSUPPORTED) {
     MS_LOG(EXCEPTION) << "Not support to get feature list.";
