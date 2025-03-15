@@ -1857,18 +1857,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
             return (self, Tensor(0))
         return tensor_operator_registry.get('argmin_with_value')(self, axis, keep_dims)
 
-    def cummin(self, axis):
-        r"""
-        For details, please refer to :func:`mindspore.ops.cummin`.
-        """
-        return tensor_operator_registry.get('cummin')(self, axis)
-
-    def cummax(self, axis):
-        r"""
-        For details, please refer to :func:`mindspore.ops.cummax`.
-        """
-        return tensor_operator_registry.get('cummax')(self, axis)
-
     def index_fill(self, axis, index, value):
         """
         For details, please refer to :func:`mindspore.ops.index_fill`.

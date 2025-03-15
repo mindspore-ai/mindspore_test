@@ -1,0 +1,5 @@
+cummax:
+  description: |
+    cummax(dim) -> Tensor
+
+    For details, please refer to :func:`mindspore.ops.cummax`.

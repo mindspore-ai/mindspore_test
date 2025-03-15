@@ -391,6 +391,10 @@ deprecated_tensor_method_map = {
     "addmv": "deprecated_tensor_addmv",
     # 846
     "count_nonzero": "deprecated_tensor_count_nonzero",
+    # 849
+    "cummax": "tensor_cummax",  # only used to rename axis/dim in Graph Mode (O0)
+    # 850
+    "cummin": "deprecated_tensor_cummin",
     # 853
     "deg2rad": "deprecated_tensor_deg2rad",
     "rad2deg": "deprecated_tensor_rad2deg",
