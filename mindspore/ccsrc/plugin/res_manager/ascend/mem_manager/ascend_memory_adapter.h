@@ -88,6 +88,7 @@ class ASCEND_RES_MANAGER_EXPORT AscendMemAdapter {
   // rts Memory INFO
   size_t device_hbm_total_size_{0};
   size_t device_hbm_free_size_{0};
+  size_t device_hbm_huge_page_reserved_size_{0};
 
   int64_t ms_used_hbm_size_{0};
   int64_t max_available_ms_hbm_size_{0};
