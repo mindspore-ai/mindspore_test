@@ -21,11 +21,10 @@
 #include "include/common/utils/convert_utils_py.h"
 #include "debug/profiler/profiler.h"
 #include "pybind_api/gil_scoped_long_running.h"
+#include "include/common/utils/pyobj_manager.h"
 
 namespace mindspore {
 namespace tensor {
-static PyObject *tensorModule{nullptr};
-
 PyTypeObject *TensorPy_Type;
 
 TensorPy::TensorPy(const BaseTensorPtr &input) { SetBaseTensor(input); }
@@ -384,10 +383,7 @@ const TensorPtr ConvertToTensor(const py::handle &obj) {
 }
 
 py::object GetPythonTensor() {
-  static PyObject *tensor_module{nullptr};
-  if (tensor_module == nullptr) {
-    tensor_module = PyImport_ImportModule("mindspore.common.tensor");
-  }
+  auto tensor_module = PyObjManager::Get().GetTensorModule();
   return py::reinterpret_borrow<py::object>(tensor_module);
 }
 
@@ -480,10 +476,7 @@ const py::handle ConvertToTensorPy(const py::handle &obj) {
 }
 
 PyObject *TensorPythonInit(BaseTensorPtr tensor) {
-  if (tensorModule == nullptr) {
-    tensorModule = PyImport_ImportModule("mindspore.common.tensor");
-  }
-  PyObject *tensorPythonClass = PyObject_GetAttrString(tensorModule, "Tensor");
+  PyObject *tensorPythonClass = PyObject_GetAttrString(PyObjManager::Get().GetTensorModule(), "Tensor");
   PyObject *obj = (reinterpret_cast<PyTypeObject *>(tensorPythonClass))
                     ->tp_alloc(reinterpret_cast<PyTypeObject *>(tensorPythonClass), 0);
   if (obj == nullptr) {
@@ -530,10 +523,7 @@ py::object PackTensorToPyObject(BaseTensorPtr tensor) {
 }
 
 PyObject *PackTensor(const BaseTensorPtr &tensor) {
-  if (tensorModule == nullptr) {
-    tensorModule = PyImport_ImportModule("mindspore.common.tensor");
-  }
-  PyObject *python_tensor_class = PyObject_GetAttrString(tensorModule, "Tensor");
+  PyObject *python_tensor_class = PyObject_GetAttrString(PyObjManager::Get().GetTensorModule(), "Tensor");
   auto tensor_py_type = reinterpret_cast<PyTypeObject *>(python_tensor_class);
   PyObject *obj = tensor_py_type->tp_alloc(tensor_py_type, 0);
   if (obj == nullptr) {

@@ -74,6 +74,7 @@
 #include "frontend/ir/py_execute_py.h"  // Only include one-time in the whole project.
 #include "mindspore/ccsrc/pynative/op_function/auto_generate/tensor_func_utils.h"
 #include "backend/common/somas/somas.h"
+#include "include/common/utils/pyobj_manager.h"
 
 namespace mindspore {
 void RecordExitStatus() { MS_LOG(INFO) << "Status record: system exit."; }
@@ -210,6 +211,8 @@ void ClearResPart3() {
   MS_LOG(INFO) << "Start clear ParserDefaultObjects ...";
   pynative::ParserDefaultObjects::GetInstance().ClearRes();
   MS_LOG(INFO) << "End clear ParserDefaultObjects...";
+
+  PyObjManager::Get().Clear();
 
   // ResetPythonScope after all py::object is freed.
   MS_LOG(INFO) << "Start clear python_adapter...";
