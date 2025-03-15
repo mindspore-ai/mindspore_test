@@ -1796,7 +1796,9 @@ void SuperKernelActor::GetRefCountForGraphOutput(const std::vector<AnfNodePtr> &
       MS_EXCEPTION_IF_NULL(device_tensor);
       auto actor_iter = kernel_to_actor.find(real_node_with_index.first);
       if (actor_iter == kernel_to_actor.end()) {
-        MS_LOG(EXCEPTION) << "Failed to get actor by kernel:" << real_node_with_index.first->fullname_with_scope();
+        MS_LOG(EXCEPTION) << "Failed to get actor by kernel:" << real_node_with_index.first->fullname_with_scope()
+                          << " debug string:" << real_node_with_index.first->DebugString()
+                          << " in graph:" << graph_->ToString() << " for actor:" << GetAID();
       }
       MS_EXCEPTION_IF_NULL(actor_iter->second);
       actor_iter->second->increase_ref_count_size_[real_node_with_index.second]++;

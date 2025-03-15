@@ -139,6 +139,9 @@ class AnyTypeKernelActor : public SuperKernelActor {
   ScheduleFunc schedule_func_;
   KernelGraphPtr model_graph_;
 
+  std::vector<AnfNodePtr> model_output_data_nodes_;
+  std::vector<DataArrowPtr> model_output_data_arrows_;
+
   // The dependent device tensor stores, the dependent expression is pair<index, AnfNode>.
   // Index is the input position, AnfNode is the key of the device tensor store.
   std::vector<std::pair<size_t, AnfNodePtr>> extern_device_tensor_store_keys_;
