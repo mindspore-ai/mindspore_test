@@ -19,10 +19,10 @@ from mindspore.nn import Cell
 from mindspore.common import Tensor, Parameter
 import mindspore.ops.operations as P
 from mindspore import context, ops, lazy_inline, nn
+from tests.mark_utils import arg_mark
 
 context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
 context.set_context(jit_level='O0')
-context.set_context(memory_offload='ON')
 context.set_context(max_device_memory='50GB')
 
 
@@ -145,6 +145,7 @@ def run_offload_cell_offload(net, folder_path):
     return forward_output, backward_output
 
 
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="onecard", essential_mark="essential")
 def test_cell_offload():
     """
     Feature: offload with lazy inline.
@@ -161,6 +162,7 @@ def test_cell_offload():
     assert np.all(backward_output.asnumpy() == offload_backward_output.asnumpy())
 
 
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level0", card_mark="onecard", essential_mark="essential")
 def test_cells_offload():
     """
     Feature: offload with lazy inline.
