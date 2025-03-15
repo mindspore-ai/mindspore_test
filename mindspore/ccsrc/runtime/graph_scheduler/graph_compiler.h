@@ -95,7 +95,7 @@ struct BACKEND_EXPORT GraphCompilerInfo {
         control_node_parser_(parser),
         origin_parameters_order_(origin_parameters_order),
         origin_outputs_order_(origin_outputs_order),
-        output_node_(nullptr),
+        origin_output_node_(nullptr),
         outputs_num_(outputs_num),
         inputs_num_(inputs_num),
         name_(name),
@@ -119,7 +119,8 @@ struct BACKEND_EXPORT GraphCompilerInfo {
   mutable mindspore::HashMap<AnfNodePtr, std::vector<std::pair<KernelWithIndex, KernelWithIndex>>>
     origin_parameters_to_backend_parameters_;
   mutable KernelMapPosition origin_outputs_order_;
-  AnfNodePtr output_node_;
+  // The origin output node of func graph before build.
+  AnfNodePtr origin_output_node_;
   size_t outputs_num_;
   size_t inputs_num_;
   std::string name_;

@@ -372,10 +372,11 @@ void MSBackend::RunGraphByActors(BackendGraphId graph_id, const GraphCompilerInf
 
   if (graph_compiler_info.enable_graph_pipeline_) {
     // 1. Construct stub output.
-    MS_EXCEPTION_IF_NULL(graph_compiler_info.output_node_);
+    auto output_node = graph_compiler_info.root_func_graph_->output();
+    MS_EXCEPTION_IF_NULL(output_node);
     runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kRuntime, runtime::ProfilerEvent::kOutputProcess,
                                        "MakeStubNode");
-    auto stub_output_pair = stub::MakeStubNode(graph_compiler_info.output_node_->abstract());
+    auto stub_output_pair = stub::MakeStubNode(output_node->abstract());
     if (stub_output_pair.second) {
       MS_LOG(DEBUG) << "Enable pynative graph pipeline for actor set: " << graph_id;
       // 2. Async run graph.
@@ -445,10 +446,12 @@ void MSBackend::RunActorSet(BackendGraphId graph_id, runtime::ActorSet *actor_se
   MS_EXCEPTION_IF_NULL(graph_compiler_);
   graph_compiler_->Summary(graph_compiler_info.graphs_);
 
-  MS_LOG(DEBUG) << "Current out " << graph_compiler_info.output_node_->DebugString();
+  auto output = graph_compiler_info.root_func_graph_->output();
+  MS_LOG(DEBUG) << "Current out " << output->DebugString();
   if (graph_compiler_info.root_func_graph_->has_flag(kFlagIsPyNativeBpropKernelGraph)) {
-    MS_EXCEPTION_IF_NULL(graph_compiler_info.output_node_);
-    graph_compiler_info.root_func_graph_->set_output(graph_compiler_info.output_node_);
+    MS_EXCEPTION_IF_NULL(graph_compiler_info.origin_output_node_);
+    MS_LOG(DEBUG) << "Origin out:" << graph_compiler_info.origin_output_node_->DebugString();
+    graph_compiler_info.root_func_graph_->set_output(graph_compiler_info.origin_output_node_);
   }
   ConstructOutputs(actor_set, outputs, graph_compiler_info.root_func_graph_,
                    graph_compiler_info.enable_graph_pipeline_);

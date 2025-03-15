@@ -46,12 +46,16 @@ std::string GetBackendLibNameByType(BackendType backend_type) {
   return iter->second;
 }
 
-BackendType GetBackendType() {
+BackendType GetBackendType(const std::string &backend_name) {
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
   auto device_target = context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
   if (device_target != kAscendDevice) {
     return kMSBackend;
+  }
+
+  if (!backend_name.empty()) {
+    return GetBackendTypeByName(backend_name);
   }
 
   if (context->IsKByKExecutorMode()) {
@@ -90,16 +94,12 @@ std::pair<BackendType, BackendGraphId> BackendManager::Build(const FuncGraphPtr 
                                                              const BackendJitConfig &backend_jit_config,
                                                              const std::string &backend_name) {
   MS_EXCEPTION_IF_NULL(func_graph);
-  BackendType backend_type = kInvalidBackend;
-  if (backend_name.empty()) {
-    backend_type = GetBackendType();
-  } else {
-    backend_type = GetBackendTypeByName(backend_name);
-  }
-
+  auto backend_type = GetBackendType(backend_name);
   auto backend = GetOrCreateBackend(backend_type);
   MS_EXCEPTION_IF_NULL(backend);
   auto graph_id = backend->Build(func_graph, backend_jit_config);
+  MS_LOG(INFO) << "Backend build graph, backend name: " << backend_name << ", backend type: " << backend_type
+               << ", backend graph id: " << graph_id;
   return {backend_type, graph_id};
 }
 
@@ -107,18 +107,13 @@ RunningStatus BackendManager::Run(BackendType backend_type, BackendGraphId graph
                                   VectorRef *outputs) {
   auto backend = backends_[backend_type];
   MS_EXCEPTION_IF_NULL(backend);
+  MS_LOG(INFO) << "Backend run graph: " << graph_id << ", backend type: " << backend_type;
   return backend->Run(graph_id, inputs, outputs);
 }
 
 string BackendManager::ExportIR(const FuncGraphPtr &anf_graph, const std::string &file_name, bool is_save_to_file,
                                 IRFormat ir_format, const std::string &backend_name) {
-  BackendType backend_type = kInvalidBackend;
-  if (backend_name.empty()) {
-    backend_type = GetBackendType();
-  } else {
-    backend_type = GetBackendTypeByName(backend_name);
-  }
-
+  auto backend_type = GetBackendType(backend_name);
   auto backend = GetOrCreateBackend(backend_type);
   MS_EXCEPTION_IF_NULL(backend);
   return backend->ExportIR(anf_graph, file_name, is_save_to_file, ir_format);
@@ -127,13 +122,7 @@ string BackendManager::ExportIR(const FuncGraphPtr &anf_graph, const std::string
 void BackendManager::ConvertIR(const FuncGraphPtr &anf_graph,
                                const std::map<std::string, std::shared_ptr<tensor::Tensor>> &init_tensors,
                                IRFormat ir_format, const std::string &backend_name) {
-  BackendType backend_type = kInvalidBackend;
-  if (backend_name.empty()) {
-    backend_type = GetBackendType();
-  } else {
-    backend_type = GetBackendTypeByName(backend_name);
-  }
-
+  auto backend_type = GetBackendType(backend_name);
   auto backend = GetOrCreateBackend(backend_type);
   MS_EXCEPTION_IF_NULL(backend);
   return backend->ConvertIR(anf_graph, init_tensors, ir_format);
