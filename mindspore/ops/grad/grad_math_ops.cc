@@ -2846,6 +2846,14 @@ REG_BPROP_BUILDER("Sqrt").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
   return {dx};
 });
 
+REG_BPROP_BUILDER("InplaceSqrt").SetBody(BODYFUNC(ib) {
+  auto result = ib->GetInput(kIndex1);  // Inplace op, result is input itself.
+  auto grad = ib->GetInput(kIndex2);
+  // when supporting complex, it should change to return grad / (2 * result.conj())
+  // crrently it returns grad / (2 * result)
+  return {ib->Div(grad, ib->Emit("Muls", {result, ib->Value<float>(2)}))};
+});
+
 REG_BPROP_BUILDER("SqrtGrad").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   auto y = ib->GetInput(kIndex0);
   auto grad = ib->GetInput(kIndex1);

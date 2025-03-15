@@ -395,6 +395,7 @@ mindspore.Tensor
     mindspore.Tensor.sort
     mindspore.Tensor.split
     mindspore.Tensor.sqrt
+    mindspore.Tensor.sqrt_
     mindspore.Tensor.square
     mindspore.Tensor.squeeze
     mindspore.Tensor.std
