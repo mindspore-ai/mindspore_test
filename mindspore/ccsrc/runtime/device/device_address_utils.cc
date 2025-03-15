@@ -280,7 +280,8 @@ void DeviceAddressUtils::CreateParameterDeviceAddress(const DeviceContext *devic
       kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(item));
       auto device_address = real_device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
       MS_EXCEPTION_IF_NULL(device_address);
-      MS_LOG(DEBUG) << "Create device address:" << device_address << " for item:" << item->DebugString();
+      MS_LOG(DEBUG) << "Create device address:" << device_address->PrintInfo() << " for item:" << item->DebugString()
+                    << " in graph:" << graph->ToString();
       // Set the flag of no user parameter.
       if (item->isa<Parameter>()) {
         auto input_param = item->cast<ParameterPtr>();

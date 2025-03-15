@@ -16,6 +16,7 @@
 
 #include "runtime/graph_scheduler/actor/any_type_kernel_actor.h"
 #include <set>
+#include <unordered_map>
 #include <functional>
 #include "include/common/debug/anf_ir_dump.h"
 #include "plugin/device/cpu/kernel/pyexecute/py_execute_cpu_kernel.h"
@@ -82,6 +83,9 @@ void AnyTypeKernelActor::FetchInputDeviceTensor(OpContext<DeviceTensor> *const c
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
     }
     input_device_tensors_[device_tensor_store_key.first] = device_tensor;
+    MS_LOG(DEBUG) << "Fetch device tensor store:" << device_tensor->PrintInfo()
+                  << " by key:" << device_tensor_store_key.second->DebugString()
+                  << " index:" << device_tensor_store_key.first << " for actor:" << GetAID();
   }
 }
 
@@ -429,7 +433,7 @@ void PersisitValueNode(const KernelGraphPtr &graph, const DeviceContext *device_
       }
       auto device_tensor = AnfAlgo::GetMutableOutputAddr(input_node, 0, false);
       MS_EXCEPTION_IF_NULL(device_tensor);
-      MS_LOG(INFO) << "Fetch no device tensor store by:" << front_node->fullname_with_scope()
+      MS_LOG(INFO) << "Fetch no device tensor store by:" << front_node->DebugString()
                    << ", type:" << real_device_context->GetDeviceType()
                    << " node device tensor:" << device_tensor->PrintInfo();
       const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
@@ -443,11 +447,12 @@ void PersisitValueNode(const KernelGraphPtr &graph, const DeviceContext *device_
       other_type_device_tensor->set_from_persistent_mem(true);
       MS_LOG(DEBUG) << "Create device tensor:" << other_type_device_tensor
                     << " type:" << other_type_device_tensor->type_id()
-                    << " device type:" << real_device_context->device_context_key().ToString();
+                    << " device type:" << real_device_context->device_context_key().ToString()
+                    << " for value node:" << front_node->DebugString();
       DeviceTensorStore::GetInstance().Insert(const_cast<AnfNode *>(front_node.get()), other_type_device_tensor);
       MS_LOG(DEBUG) << "Add device tensor store:" << other_type_device_tensor << " node:" << front_node->DebugString()
                     << " graph:" << graph->ToString();
-      PrepareValueNode(input_node, device_tensor.get());
+      PrepareValueNode(input_node, other_type_device_tensor.get());
     }
   }
 }
@@ -500,6 +505,43 @@ KernelGraphPtr AnyTypeKernelActor::CompileRealKernelGraph(OpContext<DeviceTensor
   }
 }
 
+void ReorderInputDeviceTensor(std::vector<DeviceTensor *> *device_tensors, const KernelGraphPtr &model_graph,
+                              const KernelGraphPtr &real_graph, OpContext<DeviceTensor> *const context,
+                              const std::string &actor_name) {
+  MS_EXCEPTION_IF_NULL(device_tensors);
+  MS_EXCEPTION_IF_NULL(model_graph);
+  MS_EXCEPTION_IF_NULL(real_graph);
+  MS_LOG(DEBUG) << "Reorder input for model graph:" << model_graph->ToString()
+                << " real graph:" << real_graph->ToString() << " in actor:" << actor_name;
+  std::vector<DeviceAddress *> reorder_device_tensors(device_tensors->size(), nullptr);
+  if (device_tensors->size() != model_graph->input_nodes().size() ||
+      model_graph->input_nodes().size() != real_graph->input_nodes().size()) {
+    std::stringstream ofs;
+    ofs << "Invalid input device tensor size:" << device_tensors->size() << " model graph:" << model_graph->ToString()
+        << " parameter size:" << model_graph->input_nodes().size() << " real graph" << real_graph->ToString()
+        << " parameter size:" << real_graph->input_nodes().size() << " for actor:" << actor_name;
+    SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(GraphExecutionStrategy::kPipeline, (*context), ofs.str());
+  }
+  size_t input_size = device_tensors->size();
+  std::unordered_map<AnfNodePtr, DeviceTensor *> node_to_device_tensors;
+  for (size_t i = 0; i < input_size; ++i) {
+    node_to_device_tensors[model_graph->input_nodes()[i]] = (*device_tensors)[i];
+  }
+  for (size_t i = 0; i < input_size; ++i) {
+    MS_EXCEPTION_IF_NULL(real_graph->input_nodes()[i]);
+    const auto &front_node = real_graph->GetFrontAnfByBackendAnf(real_graph->input_nodes()[i]);
+    if (front_node == nullptr || node_to_device_tensors.find(front_node) == node_to_device_tensors.end()) {
+      std::stringstream ofs;
+      ofs << "Failed to get front parameter for backend parameter:" << real_graph->input_nodes()[i]->DebugString()
+          << " index:" << i << " in graph:" << real_graph->ToString() << " model graph:" << model_graph->ToString()
+          << " for actor:" << actor_name;
+      SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(GraphExecutionStrategy::kPipeline, (*context), ofs.str());
+    }
+    reorder_device_tensors[i] = node_to_device_tensors[front_node];
+  }
+  (*device_tensors).swap(reorder_device_tensors);
+}
+
 void AnyTypeKernelActor::PrepareRunContext(OpContext<DeviceTensor> *const context) {
   const auto &data_type = GenerateIDForGraph(input_device_tensors_, any_type_parameter_indexes_);
   if (data_type == "FAILED") {
@@ -507,6 +549,7 @@ void AnyTypeKernelActor::PrepareRunContext(OpContext<DeviceTensor> *const contex
                                                   GetAID().Name() + " failed to generate id.");
   }
   if (data_type == current_data_type_) {
+    ReorderInputDeviceTensor(&input_device_tensors_, model_graph_, graph_, context, GetAID().Name());
     return;
   }
   current_data_type_ = data_type;
@@ -554,17 +597,18 @@ void AnyTypeKernelActor::ClearElements(OpContext<DeviceTensor> *const context) {
     MS_EXCEPTION_IF_NULL(real_output[i].first);
     model_to_real_outputs[model_output[i]] = real_output[i];
   }
-  if (output_data_nodes_.size() != output_data_arrows_.size()) {
-    MS_LOG(EXCEPTION) << "Invalid output data node size:" << output_data_nodes_.size()
-                      << " and arrow size:" << output_data_arrows_.size() << " for actor:" << GetAID();
+  if (model_output_data_nodes_.size() != model_output_data_arrows_.size()) {
+    MS_LOG(EXCEPTION) << "Invalid output data node size:" << model_output_data_nodes_.size()
+                      << " and arrow size:" << model_output_data_arrows_.size() << " for actor:" << GetAID();
   }
-  MS_LOG(DEBUG) << "node size:" << output_data_nodes_.size() << " for actor:" << GetAID();
-  for (size_t i = 0; i < output_data_nodes_.size(); ++i) {
-    MS_EXCEPTION_IF_NULL(output_data_nodes_[i]);
-    MS_EXCEPTION_IF_NULL(output_data_arrows_[i]);
-    const auto &iter = model_to_real_outputs.find({output_data_nodes_[i], output_data_arrows_[i]->from_output_index_});
+  MS_LOG(DEBUG) << "node size:" << model_output_data_nodes_.size() << " for actor:" << GetAID();
+  for (size_t i = 0; i < model_output_data_nodes_.size(); ++i) {
+    MS_EXCEPTION_IF_NULL(model_output_data_nodes_[i]);
+    MS_EXCEPTION_IF_NULL(model_output_data_arrows_[i]);
+    const auto &iter =
+      model_to_real_outputs.find({model_output_data_nodes_[i], model_output_data_arrows_[i]->from_output_index_});
     if (iter == model_to_real_outputs.end()) {
-      MS_LOG(EXCEPTION) << "Failed to get real output by model output:" << output_data_nodes_[i]->DebugString()
+      MS_LOG(EXCEPTION) << "Failed to get real output by model output:" << model_output_data_nodes_[i]->DebugString()
                         << " model graph:" << model_graph_->ToString() << " real graph:" << graph_->ToString();
     }
     output_data_nodes_[i] = iter->second.first;
@@ -848,6 +892,12 @@ void AnyTypeKernelActor::Init() {
     }
   }
   model_graph_ = graph();
+  model_output_data_nodes_ = output_data_nodes_;
+  for (const auto &data_arrow : output_data_arrows_) {
+    MS_EXCEPTION_IF_NULL(data_arrow);
+    model_output_data_arrows_.emplace_back(
+      std::make_shared<DataArrow>(data_arrow->from_output_index_, data_arrow->to_op_id_, data_arrow->to_input_index_));
+  }
   extern_device_tensor_store_keys_.swap(device_tensor_store_keys_);
   for (const auto &node_with_index : common::AnfAlgo::GetAllOutputWithOutMonadAndParameter(graph()->output())) {
     MS_EXCEPTION_IF_NULL(node_with_index.first);
