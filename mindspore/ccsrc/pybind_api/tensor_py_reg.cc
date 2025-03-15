@@ -226,7 +226,6 @@ static int TensorPython_set_init(PyObject *self, PyObject *value, void *) {
   HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   py::object initializer_object = py::reinterpret_borrow<py::object>(value);
-  Py_INCREF(value);
   obj->value.SetInitializer(initializer_object);
   return 0;
   HANDLE_MS_EXCEPTION_RET_FAIL_END
@@ -244,7 +243,6 @@ static int TensorPython_set_device(PyObject *self, PyObject *value, void *) {
 static int TensorPython_set_ParentTensor(PyObject *self, PyObject *value, void *) {
   HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
-  Py_INCREF(value);
   obj->value.SetParentTensor(py::reinterpret_borrow<py::object>(value));
   return 0;
   HANDLE_MS_EXCEPTION_RET_FAIL_END
@@ -253,7 +251,6 @@ static int TensorPython_set_ParentTensor(PyObject *self, PyObject *value, void *
 static int TensorPython_set_IndexOfParent(PyObject *self, PyObject *value, void *) {
   HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
-  Py_INCREF(value);
   obj->value.SetIndexOfParent(py::reinterpret_borrow<py::object>(value));
   return 0;
   HANDLE_MS_EXCEPTION_RET_FAIL_END
@@ -901,7 +898,6 @@ static PyObject *TensorPy_set_user_data(PyObject *self, PyObject *args) {
   if (!PyArg_ParseTuple(args, "sO", &key, &value_obj)) {
     return nullptr;
   }
-  Py_INCREF(value_obj);
   TensorPybind::SetUserData(tensor->value.GetBaseTensor(), py::str(key), py::reinterpret_borrow<py::object>(value_obj));
   Py_RETURN_NONE;
   HANDLE_MS_EXCEPTION_END
