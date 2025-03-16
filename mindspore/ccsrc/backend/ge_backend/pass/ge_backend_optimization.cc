@@ -104,7 +104,7 @@
 #include "backend/ge_backend/pass/ascend_mindir_op_adapter.h"
 #include "plugin/device/ascend/optimizer/ir_fusion/flash_attention_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/matmul_allreduce_fusion.h"
-#include "plugin/device/ascend/optimizer/ir_fusion_infer/matmul_allreduce_add_rmsnorm_fusion.h"
+#include "backend/ge_backend/pass/matmul_allreduce_add_rmsnorm_fusion.h"
 #include "backend/common/pass/convert_list_to_tuple.h"
 #include "backend/common/pass/eliminate_func_data_type.h"
 #include "backend/common/pass/conv_transpose_to_conv_bp.h"
@@ -238,7 +238,7 @@ mindspore::opt::PassManagerPtr GetBackendFusionGroupPassManager() {
   pm->AddFusionPass(std::make_shared<mindspore::opt::FlashAttentionFusionV2>());
   pm->AddFusionPass(std::make_shared<mindspore::opt::QuantBatchMatmulAllReduceFusion>());
   pm->AddFusionPass(std::make_shared<mindspore::opt::MatMulAllReduceFusion>());
-  // pm->AddFusionPass(std::make_shared<mindspore::opt::MatMulAllReduceAddRmsNormFusion>());
+  // pm->AddFusionPass(std::make_shared<mindspore::opt::MatMulAllReduceAddRmsNormFusionForGe>());
   return pm;
 }
 
