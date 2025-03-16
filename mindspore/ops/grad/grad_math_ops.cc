@@ -1224,7 +1224,6 @@ REG_BPROP_BUILDER("AddExt").FreeUselessValues_IO({i0, i1}, {}).SetBody(BODYFUNC(
   auto x = ib->GetInput(kIndex0);
   auto y = ib->GetInput(kIndex1);
   auto alpha = ib->GetInput(kIndex2);
-  auto alpha_tensor = ib->ScalarToTensor(alpha, ib->GetDtype(x));
 
   auto dout = ib->GetInput(kIndex4);
   NodePtr dx = nullptr;
@@ -1234,25 +1233,22 @@ REG_BPROP_BUILDER("AddExt").FreeUselessValues_IO({i0, i1}, {}).SetBody(BODYFUNC(
     dx = dout;
   }
   if (y->need_compute_grad_out()) {
-    dy = dout;
     auto alpha_opt = GetAlpha(alpha);
     if (!alpha_opt.has_value()) {
-      auto alpha_tensor = ib->ScalarToTensor(alpha, ib->GetDtype(x));
-      dy = ib->Mul(dy, alpha_tensor);
-    } else if (alpha_opt.value() != 1) {
-      if (ib->GetDtypeId(x) == kNumberTypeFloat16) {
-        auto alpha_tensor = ib->ScalarToTensor(alpha);
-        dy = ib->Mul(dy, alpha_tensor);
+      dy = ib->Emit("Muls", {dout, alpha});
+    } else {
+      if (alpha_opt.value() == 1) {
+        dy = dout;
       } else {
-        auto alpha_tensor = ib->Tensor(alpha_opt.value(), ib->GetDtype(x));
-        dy = ib->Mul(dy, alpha_tensor);
+        dy = ib->Emit("Muls", {dout, alpha});
       }
     }
   }
 
   std::vector<NodePtr> ret = BinopGradCommon(ib, x, y, dx, dy);
-  ret.emplace_back(ib->OutZeros(alpha));
-  return ret;
+  auto dx_cast = x->need_compute_grad_out() ? ib->Cast(ret[0], ib->GetDtype(x)) : ib->OutZeros(x);
+  auto dy_cast = y->need_compute_grad_out() ? ib->Cast(ret[1], ib->GetDtype(y)) : ib->OutZeros(y);
+  return {dx_cast, dy_cast, ib->OutZeros(alpha)};
 });
 
 REG_BPROP_BUILDER("AddScalar").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
@@ -1376,25 +1372,22 @@ REG_BPROP_BUILDER("SubExt").FreeUselessValues_IO({i0, i1}, {}).SetBody(BODYFUNC(
     dx = dout;
   }
   if (y->need_compute_grad_out()) {
-    dy = ib->Neg(dout);
     auto alpha_opt = GetAlpha(alpha);
     if (!alpha_opt.has_value()) {
-      auto alpha_tensor = ib->ScalarToTensor(alpha, ib->GetDtype(x));
-      dy = ib->Mul(dy, alpha_tensor);
-    } else if (alpha_opt.value() != 1) {
-      if (ib->GetDtypeId(x) == kNumberTypeFloat16) {
-        auto alpha_tensor = ib->ScalarToTensor(alpha);
-        dy = ib->Mul(dy, alpha_tensor);
+      dy = ib->Emit("Muls", {ib->Neg(dout), alpha});
+    } else {
+      if (alpha_opt.value() == 1) {
+        dy = ib->Neg(dout);
       } else {
-        auto alpha_tensor = ib->Tensor(alpha_opt.value(), ib->GetDtype(x));
-        dy = ib->Mul(dy, alpha_tensor);
+        dy = ib->Emit("Muls", {ib->Neg(dout), alpha});
       }
     }
   }
 
   std::vector<NodePtr> ret = BinopGradCommon(ib, x, y, dx, dy);
-  ret.emplace_back(ib->OutZeros(alpha));
-  return ret;
+  auto dx_cast = x->need_compute_grad_out() ? ib->Cast(ret[0], ib->GetDtype(x)) : ib->OutZeros(x);
+  auto dy_cast = y->need_compute_grad_out() ? ib->Cast(ret[1], ib->GetDtype(y)) : ib->OutZeros(y);
+  return {dx_cast, dy_cast, ib->OutZeros(alpha)};
 });
 
 REG_BPROP_BUILDER("Mul").FreeUselessValues(FreeTensorsOfMul).SetBody(BODYFUNC(ib) {
