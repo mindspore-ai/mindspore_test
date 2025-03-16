@@ -72,11 +72,14 @@ DefaultAscendMemoryPool::DefaultAscendMemoryPool() {
 }
 
 size_t DefaultAscendMemoryPool::EmptyCache() {
-  LockGuard lock(AbstractDynamicMemPool::lock());
-  AbstractEnhancedDynamicMemPool::WaitPipelineHelper();
-  AbstractAscendMemoryPoolSupport::SyncAllStreams();
-  AbstractEnhancedDynamicMemPool::FreeIdleMemsByEagerFree();
-  return AbstractAscendMemoryPoolSupport::EmptyCache();
+  if (IsEnableVmm() || IsEnableEagerFree()) {
+    LockGuard lock(AbstractDynamicMemPool::lock());
+    AbstractEnhancedDynamicMemPool::WaitPipelineHelper();
+    AbstractAscendMemoryPoolSupport::SyncAllStreams();
+    AbstractEnhancedDynamicMemPool::FreeIdleMemsByEagerFree();
+    return AbstractAscendMemoryPoolSupport::EmptyCache();
+  }
+  return 0L;
 }
 
 AscendMemoryTimeEvent::AscendMemoryTimeEvent(int32_t device_id, const MemoryTimeEventPtr &memory_time_event)
