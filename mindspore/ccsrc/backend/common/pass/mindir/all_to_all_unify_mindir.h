@@ -20,10 +20,11 @@
 #include <string>
 #include <vector>
 #include "include/backend/optimizer/optimizer.h"
+#include "include/backend/visible.h"
 
 namespace mindspore {
 namespace opt {
-class NeighborExchangeUnifyMindIR : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT NeighborExchangeUnifyMindIR : public PatternProcessPass {
  public:
   explicit NeighborExchangeUnifyMindIR(bool multigraph = true)
       : PatternProcessPass("neighbor_exchange_unify_mindir", multigraph) {}
@@ -62,7 +63,7 @@ class NeighborExchangeUnifyMindIR : public PatternProcessPass {
  *                           |
  *                         Output
  */
-class AllToAllUnifyMindIR : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT AllToAllUnifyMindIR : public PatternProcessPass {
  public:
   explicit AllToAllUnifyMindIR(bool multigraph = true) : PatternProcessPass("all_to_all_unify_mindir", multigraph) {}
   ~AllToAllUnifyMindIR() override = default;

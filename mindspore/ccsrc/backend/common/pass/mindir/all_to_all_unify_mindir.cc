@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/optimizer/mindir/all_to_all_unify_mindir.h"
+#include "backend/common/pass/mindir/all_to_all_unify_mindir.h"
 #include <vector>
 #include <string>
 #include "mindspore/ops/op_def/other_ops.h"
