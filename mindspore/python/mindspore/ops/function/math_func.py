@@ -382,8 +382,8 @@ def addcdiv(input, tensor1, tensor2, value=1):
 
 def addcmul(input, tensor1, tensor2, value=1):
     r"""
-    Performs the element-wise product of tensor tensor1 and tensor tensor2,
-    multiply the result by the scalar value and add it to input data.
+    Performs the element-wise product of tensor `tensor1` and tensor `tensor2`,
+    multiply the result by the scalar value and add it to `input`.
 
     .. math::
         output[i] = input[i] + value[i] * (tensor1[i] * tensor2[i])
@@ -392,7 +392,7 @@ def addcmul(input, tensor1, tensor2, value=1):
         input (Tensor): The tensor to be added.
         tensor1 (Tensor): The tensor to be multiplied.
         tensor2 (Tensor): The tensor to be multiplied.
-        value (Union[Tensor, Number]): The multiplier for tensor1*tensor2. Default: ``1`` .
+        value (Union[Tensor, Number], optional): The multiplier for tensor1*tensor2. Default: ``1`` .
 
     Returns:
         Tensor, has the same shape and dtype as tensor1*tensor2.
@@ -4374,13 +4374,13 @@ def logaddexp(input, other):
         input (Tensor): Input Tensor. The dtype of `input` must be float.
         other (Tensor): Input Tensor. The dtype of `other` must be float.
             If the shape of `input` is not equal to the shape of `other`,
-            they must be broadcastable to a common shape (which becomes the shape of the output).
+            they must be broadcastable to a common shape.
 
     Returns:
         Tensor.
 
     Raises:
-        TypeError: If `input`, `other` is not a Tensor.
+        TypeError: If `input` or `other` is not a Tensor.
         TypeError: The dtype of `input` or `other` is not float.
 
     Supported Platforms:

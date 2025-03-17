@@ -876,7 +876,7 @@ class RandomCategorical(PrimitiveWithInfer):
         the `seed` parameter has no effect.
 
     Args:
-        dtype (mindspore.dtype): The type of output. Its value must be one of mstype.int16,
+        dtype (mindspore.dtype, optional): The type of output. Its value must be one of mstype.int16,
             mstype.int32 and mstype.int64. Default: ``mstype.int64`` .
 
     Inputs:

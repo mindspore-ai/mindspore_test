@@ -509,7 +509,7 @@ class Dataset:
     @check_batch
     def batch(self, batch_size, drop_remainder=False, num_parallel_workers=None, **kwargs):
         """
-        Combine batch_size number of consecutive rows into batch which apply per_batch_map to the samples first.
+        Combine `batch_size` number of consecutive rows into batch which apply `per_batch_map` to the samples first.
 
         For any column, all the elements within that column must have the same shape.
 
@@ -573,8 +573,8 @@ class Dataset:
                   - If it is an int value, it represents ``input_columns`` and ``output_columns`` use this value as the
                     unit to create shared memory.
 
-                  - If it is a list, the first element represents the ``input_columns`` use this value as the unit to
-                    create shared memory, and the second element represents ``output_columns`` use this value as the
+                  - If it is a list, represents the ``input_columns`` use the first element as the unit to
+                    create shared memory, and represents ``output_columns`` use the second element as the
                     unit to create shared memory.
 
         Returns:
@@ -678,9 +678,9 @@ class Dataset:
 
         Args:
             condition_name (str): The condition name that is used to toggle sending next row.
-            num_batch (int): the number of batches without blocking at the start of each epoch.
+            num_batch (int, optional): the number of batches without blocking at the start of each epoch.
                 Default: ``1``.
-            callback (function): The callback function that will be invoked when sync_update is called.
+            callback (function, optional): The callback function that will be invoked when sync_update is called.
                 Default: ``None``.
 
         Returns:
@@ -1738,7 +1738,7 @@ class Dataset:
         Get the shapes of output data.
 
         Args:
-            estimate (bool): If `estimate` is ``False`` , will return the shapes of first data row.
+            estimate (bool, optional): If `estimate` is ``False`` , will return the shapes of first data row.
                 Otherwise, will iterate the whole dataset and return the estimated shapes of data row,
                 where dynamic shape is marked as None (used in dynamic data shapes scenario).
                 Default: ``False`` .

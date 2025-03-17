@@ -2332,7 +2332,7 @@ def flipud(input):
         input (Tensor): Input array.
 
     Returns:
-        Tensor after the flip.
+        Tensor, the result after the flip.
 
     Raises:
         TypeError: If the input is not a tensor.

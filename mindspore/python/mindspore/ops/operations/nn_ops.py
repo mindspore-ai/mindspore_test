@@ -811,13 +811,13 @@ class Conv2D(Primitive):
 
     Inputs:
         - **x** (Tensor) - Input tensor of shape :math:`(N, C_{in}, H_{in}, W_{in})` or
-          :math:`(N, H_{in}, W_{in}, C_{in}, )` depending on `data_format` .
+          :math:`(N, H_{in}, W_{in}, C_{in})` depending on `data_format` .
         - **weight** (Tensor) - The convolutional kernel value, it should has shape
           :math:`(C_{out}, C_{in} / \text{group}, \text{kernel_size[0]}, \text{kernel_size[1]})` .
 
     Outputs:
         Tensor, the value that applied 2D convolution. The shape is :math:`(N, C_{out}, H_{out}, W_{out})`
-        or :math:`(N, H_{out}, W_{out}, C_{out}, )`.
+        or :math:`(N, H_{out}, W_{out}, C_{out})`.
         To see how different pad modes affect the output shape, please refer to
         :class:`mindspore.nn.Conv2d` for more details.
 
@@ -2062,7 +2062,7 @@ class SoftmaxCrossEntropyWithLogits(Primitive):
         - **labels** (Tensor) - Ground truth labels, with shape :math:`(N, C)`, has the same data type with `logits`.
 
     Outputs:
-        Tuple of 2 tensors(loss, dlogits), the `loss` shape is :math:`(N,)`,
+        Tuple of 2 tensors( `loss` , `dlogits` ), the `loss` shape is :math:`(N,)`,
         and the `dlogits` with the same shape as `logits`.
 
     Raises:

@@ -20,8 +20,8 @@ baddbmm:
         Tensor, has the same dtype as self, shape will be :math:`(C, W, H)`.
 
     Raises:
-        TypeError: If the type of `self`, `batch1`, `batch2` is not Tensor.
-        TypeError: If the types of `self`, `batch1`, `batch2` are different.
+        TypeError: If the type of `self`, `batch1` or `batch2` is not Tensor.
+        TypeError: If the types of `self`, `batch1` and `batch2` are different.
         ValueError: If `batch1` and `batch2` are not 3-D tensors.
 
     Supported Platforms:

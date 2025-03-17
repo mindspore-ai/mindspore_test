@@ -2406,7 +2406,7 @@ def scatter_max(input_x, indices, updates):
             the data type is same as `input_x`, the shape is `indices.shape + x.shape[1:]`.
 
     Returns:
-        Tensor, the updated `input_x`, the type and shape same as `input_x`.
+        Tensor, the updated `input_x`, the type and shape same as origin `input_x`.
 
     Raises:
         TypeError: If `indices` is not an int32 or int64.
@@ -4548,7 +4548,7 @@ def unsorted_segment_max(x, segment_ids, num_segments):
         x (Tensor): The shape is :math:`(x_1, x_2, ..., x_R)`. With float16, float32 or int32 data type.
         segment_ids (Tensor): TThe label indicates the segment to which each element belongs.
             Set the shape as :math:`(x_1, x_2, ..., x_N)`, where 0 < N <= R.
-        num_segments (Union[int, Tensor], optional): Set :math:`z` as num_segments, it can be an int or 0-D Tensor.
+        num_segments (Union[int, Tensor]): Set :math:`z` as num_segments, it can be an int or 0-D Tensor.
 
     Returns:
         Tensor, the shape is :math:`(z, x_{N+1}, ..., x_R)`.
@@ -4738,7 +4738,7 @@ def index_select(input, axis, index):
     dimensions will be unchanged from the original `input` Tensor.
 
     .. note::
-        The value of index must be in the range of `[0, input.shape[axis])`, the result is undefined out of range.
+        The value of `index` must be in the range of `[0, input.shape[axis])`, the result is undefined out of range.
 
     Args:
         input (Tensor): The input Tensor.
@@ -5904,12 +5904,13 @@ def argmax(input, dim=None, keepdim=False):
 
     Args:
         input (Tensor): The input tensor.
-        dim (Union[int, None], optional): Specify the dimension for computation. If ``None`` , compute all elements in
+        dim (Union[int, None], optional): Specify the dimension for computation. If ``None`` ,
+            compute maximum value indexes of all elements in
             the `input` . Default ``None`` .
         keepdim (bool, optional): Whether the output tensor has dim retained. Default ``False`` .
 
     Returns:
-        Tensor
+        Tensor, contains the index of the maximum value.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -6715,7 +6716,7 @@ def column_stack(tensors):
     like :func:`mindspore.ops.hstack`.
 
     Args:
-        tensors (Union[tuple[Tensor], list[Tensor]]): A sequence of tensors. All
+        tensors (Union[tuple[Tensor], list[Tensor]]): A tuple or list containing multiple Tensors. All
             of them must have the same shape except the axis to be concatenated.
 
     Returns:
