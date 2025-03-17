@@ -536,6 +536,10 @@ def _pipeline_clear_grad(accu_grad, grad):
     zeros = F.zeros_like(accu_grad)
     return F.assign(accu_grad, zeros)
 
+def grad_scale(scale, grad):
+    """grad_scale"""
+    new_grad = scale * grad
+    return new_grad
 
 @_primexpr
 def _check_shape_value_on_axis_divided_by_target_value(input_shape, micro_size):
@@ -643,6 +647,13 @@ class _TrainGradAccuStepCell(TrainOneStepCell):
         self.opt_shard = _get_enable_parallel_optimizer()
         self._get_attr_from_cell(network)
         self.enable_tft = False
+        if not self.sense_flag:
+            micro_size = 1.0
+            for _, cell in network.cells_and_names():
+                if hasattr(cell, 'micro_size'):
+                    micro_size = cell.micro_size
+                    break
+            self.sens = 1 / micro_size
 
     def construct(self, *inputs):
         if not self.sense_flag:
@@ -666,8 +677,10 @@ class _TrainGradAccuStepCell(TrainOneStepCell):
         grads = self.grad_no_sens(self.network, self.weights)(*inputs)
         accu_grads = ops.depend(self.accu_grads, grads)
         if self.opt_shard:
+            grads = self.hyper_map(F.partial(grad_scale, self.sens), grads)
             succ = self.optimizer(grads)
         else:
+            accu_grads = self.hyper_map(F.partial(grad_scale, self.sens), accu_grads)
             succ = self.optimizer(accu_grads)
         loss = ops.depend(loss, succ)
         clear = self.hyper_map(_pipeline_clear_grad, accu_grads, grads)
