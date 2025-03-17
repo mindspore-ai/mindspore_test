@@ -152,3 +152,84 @@ def test_tensor_view_inplace_grad():
     net.construct = ms.jit(net.construct, backend="ms_backend")
     out_jit = grad(net)(Tensor([3, 4]))
     assert np.allclose(out_expect.asnumpy(), out_jit.asnumpy())
+
+
+@pytest.mark.skip(reason="No support")
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
+def test_view_and_inplace_grad_change_same_area1():
+    """
+    Feature: view inplace operation in grad.
+    Description: view inplace operation in grad.
+    Expectation: no exception
+    """
+
+    class Net(nn.Cell):
+        def construct(self, x, input_tensor):
+            input_tensor1 = ops.abs(input_tensor)
+            m = select_ext_view_op(input_tensor1, 0, 0)
+            t = select_ext_view_op(m, 0, 0)
+            t.add_(x)
+            n = select_ext_view_op(input_tensor1, 0, 0)
+            z = select_ext_view_op(n, 0, 0)
+            z.mul_(2)
+            return input_tensor1
+
+    ms.set_context(mode=ms.PYNATIVE_MODE, jit_level="O0")
+    net = Net()
+    out_expect = grad(net)(Tensor(3), Tensor([[1, 2], [3, 4]]))
+    net.construct = ms.jit(net.construct, backend="ms_backend")
+    out_jit = grad(net)(Tensor(3), Tensor([[1, 2], [3, 4]]))
+    assert out_expect == out_jit
+
+
+@pytest.mark.skip(reason="No support")
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
+def test_view_and_inplace_grad_change_same_area2():
+    """
+    Feature: view inplace operation in grad.
+    Description: view inplace operation in grad.
+    Expectation: no exception
+    """
+    class Net(nn.Cell):
+        def construct(self, x, input_tensor):
+            input_tensor1 = ops.abs(input_tensor)
+            m = select_ext_view_op(input_tensor1, 0, 0)
+            t = select_ext_view_op(m, 0, 0)
+            t.add_(x)
+            input_tensor1.add_(input_tensor1)
+            return input_tensor1
+
+    ms.set_context(mode=ms.PYNATIVE_MODE, jit_level="O0")
+    net = Net()
+    out_expect = grad(net)(Tensor(3), Tensor([[1, 2], [3, 4]]))
+    net.construct = ms.jit(net.construct, backend="ms_backend")
+    out_jit = grad(net)(Tensor(3), Tensor([[1, 2], [3, 4]]))
+    assert out_expect == out_jit
+
+
+@pytest.mark.skip(reason="No support")
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
+def test_view_and_inplace_grad_change_same_area3():
+    """
+    Feature: view inplace operation in grad.
+    Description: view inplace operation in grad.
+    Expectation: no exception
+    """
+    class Net(nn.Cell):
+        def construct(self, x, input_tensor):
+            input_tensor1 = ops.abs(input_tensor)
+            m = select_ext_view_op(input_tensor1, 0, 0)
+            m.add_(x)
+            n = select_ext_view_op(m, 0, 0)
+            n.add_(n)
+            return input_tensor1
+
+    ms.set_context(mode=ms.PYNATIVE_MODE, jit_level="O0")
+    net = Net()
+    out_expect = grad(net)(Tensor([1, 1]), Tensor([[1, 2], [3, 4]]))
+    net.construct = ms.jit(net.construct, backend="ms_backend")
+    out_jit = grad(net)(Tensor([1, 1]), Tensor([[1, 2], [3, 4]]))
+    assert np.allclose(out_expect.asnumpy(), out_jit.asnumpy())
