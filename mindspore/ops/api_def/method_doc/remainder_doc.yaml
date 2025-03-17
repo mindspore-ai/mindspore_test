@@ -26,8 +26,8 @@ remainder:
         Tensor, with dtype promoted and shape broadcasted.
 
     Raises:
-        TypeError: If `self` and `other` are not of types: (tensor, tensor), (tensor, number), (tensor, bool),
-            (number, tensor) or (bool, tensor).
+        TypeError: If `self` and `other` are not of types: (Tensor, Tensor), (Tensor, Number),
+            (Tensor, bool), (Number, Tensor) or (bool, Tensor).
         ValueError: If `self` and `other` are not broadcastable.
 
     Supported Platforms:
@@ -73,7 +73,7 @@ remainder:
         and the data type is the one with higher precision.
 
     Raises:
-        TypeError: If neither `self` nor `divisor` is one of the following: Tensor, number, bool.
+        TypeError: If neither `self` nor `divisor` is one of the following: Tensor, Number, bool.
         ValueError: If the shape of `self` and `divisor` cannot be broadcasted to each other.
 
     Supported Platforms:

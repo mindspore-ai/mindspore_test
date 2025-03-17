@@ -798,7 +798,7 @@ def csr_add(a: CSRTensor, b: CSRTensor, alpha: Tensor, beta: Tensor) -> CSRTenso
 
         - **indptr** -  Indicates the start and end point for non-zero values in each row.
         - **indices** - The column positions of all non-zero values of the input.
-        - **values** - The non-zero values of the dense tensor.
+        - **values** - The non-zero values.
         - **shape** - The shape of the CSRTensor.
 
     Supported Platforms:

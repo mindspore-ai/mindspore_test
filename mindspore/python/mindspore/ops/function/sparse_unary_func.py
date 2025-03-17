@@ -1905,7 +1905,7 @@ def coo_neg(x: COOTensor) -> COOTensor:
         x (COOTensor): The input COOTensor with a dtype of Number.
 
     Returns:
-        COOTensor, has the same shape and dtype as input.
+        COOTensor, has the same shape and dtype as input `x`.
 
     Raises:
         TypeError: If `x` is not a COOTensor.

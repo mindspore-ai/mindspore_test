@@ -1119,10 +1119,10 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         When no parameters are passed in, a list of stride for all dimensions is returned.
 
         Args:
-            dim (int): The dim of stride from one element to the next.
+            dim (int, optional): The dim of stride from one element to the next. Default: ``None``.
 
         Returns:
-            Int, the stride of tensor.
+            Int, returns the step size necessary to jump from one element to the next in the specified dimension.
 
         Raises:
             TypeError: `dim` is not an int.
@@ -2455,11 +2455,11 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
 
         Args:
             v (Union[int, float, bool, list, tuple, Tensor]): Values to insert into the tensor.
-            side (str, optional): If 'left', the index of the first suitable
-                location found is given. If 'right', return the last such index. If there is
+            side (str, optional): If ``left``, the index of the first suitable
+                location found is given. If ``right``, return the last such index. If there is
                 no suitable index, return either 0 or N (where N is the length of the tensor).
                 Default: ``left`` .
-            sorter (Union[int, list, tuple, Tensor]): optional tensor of
+            sorter (Union[int, list, tuple, Tensor], optional): optional tensor of
                 integer indices that sort the tensor into ascending order on the innermost dimension
                 and the type must be int64. They are typically the result of argsort. Default: ``None`` .
                 CPU and GPU can only use default values
