@@ -37,7 +37,7 @@ slice_ = P.Slice()
 
 def cond(A, p=None):
     r"""
-    Returns the matrix norm or vector norm of a given tensor.
+    Return the matrix norm or vector norm of a given tensor.
 
     `p` is the calculation mode of norm. The following norm modes are supported.
 
@@ -61,28 +61,22 @@ def cond(A, p=None):
         Currently, complex numbers are not supported.
 
     Args:
-        A (Tensor): Tensor of shape :math:`(*, n)` or :math:`(*, m, n)`
-            where :math:`*` is zero or more batch dimensions.
-        p (Union[int, float, inf, -inf, 'fro', 'nuc'], optional): norm's mode. Refer to the table above for
-            behavior. Default: ``None``.
+        A (Tensor): The input tensor which is zero or more batch dimensions.
+        p (Union[int, float, inf, -inf, 'fro', 'nuc'], optional): Norm's mode. Refer to the table above for
+            behavior. Default ``None``.
 
     Returns:
-        Tensor, the result of norm calculation on the specified dimension, `dim`, has the same dtype as `A`.
-
-    Raises:
-        TypeError: If `A` is a vector and `p` is a str.
-        ValueError: If `A` is a matrices and `p` is not in valid mode.
-        ValueError: If `A` is a matrix and `p` is an integer that is not in [1, -1, 2, -2].
+        Tensor
 
     Supported Platforms:
         ``GPU`` ``CPU``
 
     Examples:
-        >>> import mindspore as ms
-        >>> x = ms.Tensor([[1.0, 0.0, -1.0], [0.0, 1.0, 0.0], [1.0, 0.0, 1.0]])
-        >>> print(ms.ops.cond(x))
+        >>> import mindspore
+        >>> x = mindspore.tensor([[1.0, 0.0, -1.0], [0.0, 1.0, 0.0], [1.0, 0.0, 1.0]])
+        >>> print(mindspore.ops.cond(x))
         1.4142
-        >>> print(ms.ops.cond(x, 'fro'))
+        >>> print(mindspore.ops.cond(x, 'fro'))
         3.1622777
     """
     matrix_inverse = _get_cache_prim(P.MatrixInverse)(adjoint=False)
@@ -147,35 +141,24 @@ def eig(A):
 
 def eigvals(A):
     """
-    Computes the eigenvalues of a square matrix(batch square matrices).
+    Compute the eigenvalues of a square matrix.
 
     .. warning::
         This is an experimental API that is subject to change or deletion.
 
     Args:
-        A (Tensor): Square matrices of shape :math:`(*, N, N)`,
-            with float32, float64, complex64 or complex128 data type.
+        A (Tensor): Square matrices with shape :math:`(*, N, N)` .
 
     Returns:
-        **eigen_values** (Tensor) - Shape :math:`(*, N)`. Returns the eigenvalues of
-        the corresponding matrix, which may not have an order.
-
-    Raises:
-        TypeError: If dtype of `A` is not one of: float64, float32, complex64 or complex128.
-        TypeError: If `A` is not a Tensor.
-        ValueError: If `A` is not a square(batch squares).
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import Tensor, ops
-        >>> import numpy as np
-        >>> input_x = Tensor(np.array([[1.0, 0.0], [0.0, 2.0]]), mindspore.float32)
-        >>> u = ops.eigvals(input_x)
-        >>> print(u)
-        [1.+0.j 2.+0.j]
+        >>> mindspore.ops.eigvals(mindspore.tensor([[1.0, 0.0], [0.0, 2.0]]))
+        Tensor(shape=[2], dtype=Complex64, value= [1+0j, 2+0j])
     """
     u, _ = _get_cache_prim(P.Eig)(compute_v=False)(A)
     return u
