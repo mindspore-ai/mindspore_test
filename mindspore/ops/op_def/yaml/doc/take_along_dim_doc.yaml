@@ -1,0 +1,34 @@
+take_along_dim:
+  description: |
+    take_along_dim(input, indices, dim=None)
+
+    Selects values from input at the 1-dimensional indices from indices along the given dim.
+    
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+    
+    Args:
+        input (Tensor): The input tensor.
+        indices (Tensor): The indices into input. Must have long dtype.
+        dim (int, optional): Dimension to select along.
+
+    Returns:
+        Tensor, elements are selected from `input`.
+    
+    Supported Platforms:
+        ``Ascend``
+    
+    Examples:
+        >>> import numpy as np
+        >>> import mindspore
+        >>> from mindspore import Tensor, ops
+        >>> t = Tensor([[10, 30, 20], [60, 40, 50]])
+        >>> max_idx = ops.argmax(t)
+        >>> output = ops.take_along_dim(t, max_idx)
+        >>> print(output)
+        [60]
+        >>> sorted_idx = ops.argsort(t, dim=1)
+        >>> output = ops.take_along_dim(t, sorted_idx, dim=1)
+        >>> print(output)
+        [[10, 20, 30],
+        [40, 50, 60]]

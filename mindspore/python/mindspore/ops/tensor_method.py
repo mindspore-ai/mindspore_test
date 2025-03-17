@@ -442,6 +442,9 @@ from mindspore.ops.function.math_func import addmv
 from mindspore.ops.primitive import constexpr
 from mindspore._checkparam import check_is_number
 
+# 985
+from mindspore.ops.auto_generate import take_along_dim
+
 # 1020 neg_
 
 # 1028
@@ -1788,6 +1791,11 @@ def tensor_flip(input, dims):
 # 931
 def deprecated_tensor_nansum(input, axis=(), keepdims=False, *, dtype=None):
     return nansum(input, axis, keepdims, dtype=dtype)
+
+
+# 985
+def tensor_take_along_dim(input, indices, dim=None):
+    return take_along_dim(input, indices, dim)
 
 
 # 244 log1p

@@ -400,6 +400,7 @@ mindspore.Tensor
     mindspore.Tensor.T
     mindspore.Tensor.t
     mindspore.Tensor.take
+    mindspore.Tensor.take_along_dim
     mindspore.Tensor.tan
     mindspore.Tensor.tanh
     mindspore.Tensor.tensor_split

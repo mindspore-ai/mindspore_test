@@ -290,6 +290,7 @@ BLAS和LAPACK运算
     mindspore.mint.searchsorted
     mindspore.mint.tril
     mindspore.mint.triangular_solve
+    mindspore.mint.take_along_dim
 
 mindspore.mint.nn
 ------------------

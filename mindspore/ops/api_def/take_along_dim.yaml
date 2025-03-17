@@ -1,0 +1,7 @@
+take_along_dim:
+  op_yaml: take_along_dim_op.yaml
+  py_method: tensor_take_along_dim
+  Ascend: pyboost
+  CPU: py_method
+  GPU: py_method
+  interface: tensor

@@ -1,0 +1,18 @@
+#operator take_along_dim
+take_along_dim:
+  args:
+    input:
+      dtype: tensor
+    indices:
+      dtype: tensor
+    dim:
+      dtype: int
+      default: None
+  returns:
+    output:
+      dtype: tensor
+  bprop_expander: False
+  dispatch:
+    enable: True
+    Ascend: TakeAlongDimAscend
+

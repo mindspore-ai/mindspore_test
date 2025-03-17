@@ -1,0 +1,5 @@
+take_along_dim:
+  description: |
+    take_along_dim(indices, dim=None) -> Tensor
+
+    For details, please refer to :func:`mindspore.mint.take_along_dim`.
