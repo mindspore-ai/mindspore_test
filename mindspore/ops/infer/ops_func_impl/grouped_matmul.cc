@@ -75,9 +75,9 @@ int32_t GroupedMatmulFuncImpl::PrivateCheckValidation(const PrimitivePtr &primit
   MS_EXCEPTION_IF_NULL(ms_context);
   bool enable_infer_boost_310p =
     ms_context->IsEnableInferBoost() && ms_context->ascend_soc_version() == kAscendVersion310p;
+  auto transpose_a = GetTransposeValue(input_infos, idxes_.transpose_a);
+  auto transpose_b = GetTransposeValue(input_infos, idxes_.transpose_b);
   if (enable_infer_boost_310p) {
-    auto transpose_a = GetTransposeValue(input_infos, idxes_.transpose_a);
-    auto transpose_b = GetTransposeValue(input_infos, idxes_.transpose_b);
     if (MS_UNLIKELY(transpose_a || !transpose_b)) {
       MS_EXCEPTION(ValueError) << "For internal_op'" << primitive->name()
                                << "', transpose_a should be False, transpose_b should be True, but got " << transpose_a
@@ -95,6 +95,12 @@ int32_t GroupedMatmulFuncImpl::PrivateCheckValidation(const PrimitivePtr &primit
       MS_EXCEPTION(ValueError) << "For internal_op'" << primitive->name()
                                << "', when group_list should be 1-D Tensor or List with int32 elements, but got "
                                << group_list_info->DebugInfo();
+    }
+  } else {
+    if (MS_UNLIKELY(transpose_a || transpose_b)) {
+      MS_EXCEPTION(ValueError) << "For '" << primitive->name()
+                               << "', transpose_a and transpose_b should both be false, but got " << transpose_a
+                               << " and " << transpose_b;
     }
   }
 

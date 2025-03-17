@@ -95,9 +95,10 @@ void GroupedMatmulBaseFuncImpl::CheckInputAndWeightShapeForSingleOutput(const Pr
     w_k = w_shape[w_shape.size() - kInputIndex2];
   }
   if (MS_UNLIKELY(x_k != abstract::Shape::kShapeDimAny && w_k != abstract::Shape::kShapeDimAny && x_k != w_k)) {
-    MS_EXCEPTION(ValueError) << "For '" << op_name
-                             << "', x[0] shape should be (m, k), w[0] shape show be(e, k, n) or (k, n)."
-                             << "But got x[0]'s shape: " << x_shape << ", w[0]'s shape: " << w_shape;
+    auto expect_w_shape = group_type == 0 ? "(e, k, n)" : "(k, n)";
+    MS_EXCEPTION(ValueError) << "For '" << op_name << "', when group_type is " << group_type
+                             << ", x[0]'s shape should be (m, k), w[0]'s shape should be " << expect_w_shape
+                             << ", but got x[0]'s shape: " << x_shape << ", w[0]'s shape: " << w_shape;
   }
 }
 
