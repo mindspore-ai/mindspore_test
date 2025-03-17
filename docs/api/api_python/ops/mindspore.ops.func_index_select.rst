@@ -3,12 +3,12 @@ mindspore.ops.index_select
 
 .. py:function:: mindspore.ops.index_select(input, axis, index)
 
-    返回一个新的Tensor，该Tensor沿维度 `axis` 按 `index` 中给定的索引对 `input` 进行选择。
+    返回一个新的Tensor，该Tensor沿维度 `axis` 按照 `index` 中给定的索引对 `input` 进行选择。
 
-    返回的Tensor和输入Tensor( `input` )的维度数量相同，其第 `axis` 维度的大小和 `index` 的长度相同；其他维度和 `input` 相同。
+    返回的Tensor与输入Tensor(`input`)的维度数量相同，其中第 `axis` 维度的大小与 `index` 的长度相同；其他维度与 `input` 相同。
 
     .. note::
-        index的值必须在 `[0, input.shape[axis])` 范围内，超出该范围结果未定义。
+        `index` 的值必须在 `[0, input.shape[axis])` 范围内，超出该范围的结果未定义。
 
     参数：
         - **input** (Tensor) - 输入Tensor。
