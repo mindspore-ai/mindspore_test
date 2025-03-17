@@ -765,8 +765,6 @@ void ControlActor::ResetState() {
       FreeMemoryByDeviceContext(device_tensor, device_context);
     }
   }
-  created_device_tensors_.clear();
-  last_step_created_device_tensors_.clear();
   MS_LOG(INFO) << "End free control actor " << GetAID();
 }
 }  // namespace runtime
