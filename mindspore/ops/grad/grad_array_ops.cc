@@ -2676,7 +2676,7 @@ REG_BPROP_BUILDER("MaskedFill").FreeUselessValues_IO({i0, i2}, {}).SetBody(BODYF
     if (IsDynamicRank(dvalue_shape)) {
       auto dvalue_rank = ib->Shape(ib->Shape(dvalue, true), true);
       auto axis_node = ib->Range(ib->TensorToScalar(dvalue_rank));
-      dvalue = ib->SumExt(bout[1], axis_node, ib->Value(false));
+      dvalue = ib->SumExt(bout[1], ib->TensorToTuple(axis_node), ib->Value(false));
     } else {
       dvalue = ib->SumExt(bout[1], ib->EmitValue(kNone), ib->Value(false));
     }
