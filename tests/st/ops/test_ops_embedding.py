@@ -21,6 +21,7 @@ import mindspore as ms
 from mindspore import ops, nn
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
+from tests.st.utils import test_utils
 
 
 def embedding_func(input_x, weight, padding_idx=None, max_norm=None, norm_type=2.0):
@@ -187,6 +188,52 @@ def test_embedding_grad():
                    [1., 1., 1.]]
     ms_out = grad_func4(input_x, weight, 0.3, 1.6, True)
     assert np.allclose(ms_out.asnumpy(), expect_out4, rtol=1e-4, atol=1e-4)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_embedding_ge_grad():
+    """
+    Feature: grad of embedding of GE mode.
+    Description: test grad using different padding_idx, max_norm and scale_grad_by_freq
+    Expectation: expect correct result.
+    """
+
+    ms.context.set_context(mode=ms.GRAPH_MODE, jit_level='O2')
+
+    @test_utils.run_with_cell
+    def embedding_func_ge(input_x, weight, padding_idx, max_norm, norm_type, scale_grad):
+        return ops.embedding(input_x, weight, padding_idx, max_norm, norm_type, scale_grad)
+
+    @test_utils.run_with_cell
+    def grad_func_ge(input_x, weight, padding_idx, max_norm, norm_type, scale_grad):
+        return ms.grad(embedding_func_ge, grad_position=1)(input_x, weight, padding_idx, max_norm, norm_type,
+                                                           scale_grad)
+
+    input_x = ms.Tensor([[0, 2, 4, 5], [4, 3, 2, 9]])
+    weight = ms.Parameter([[0.3649, 0.6303, 0.7726],
+                           [0.4307, 0.7575, 0.7544],
+                           [0.5400, 0.6909, 0.9423],
+                           [0.7787, 0.0619, 0.6290],
+                           [0.3424, 0.4064, 0.9990],
+                           [0.5328, 0.5363, 0.3558],
+                           [0.5438, 0.9858, 0.8243],
+                           [0.0440, 0.2209, 0.9105],
+                           [0.1723, 0.6084, 0.4130],
+                           [0.6587, 0.5972, 0.7808]])
+
+    expect_out = [[1., 1., 1.],
+                  [0., 0., 0.],
+                  [0., 0., 0.],
+                  [1., 1., 1.],
+                  [2., 2., 2.],
+                  [1., 1., 1.],
+                  [0., 0., 0.],
+                  [0., 0., 0.],
+                  [0., 0., 0.],
+                  [1., 1., 1.]]
+
+    ms_out = grad_func_ge(input_x, weight, -8, 0.3, 1.6, False)
+    assert np.allclose(ms_out.asnumpy(), expect_out, rtol=1e-4, atol=1e-4)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
