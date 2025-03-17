@@ -187,6 +187,7 @@ int Conv2DFusionMapper::ReplaceConvToQuantConv(const FuncGraphPtr &func_graph, c
   qaunt_conv_cnode->set_fullname_with_scope(cnode->fullname_with_scope() + "_quant_conv");
   MS_CHECK_TRUE_RET(cnode->abstract() != nullptr, RET_ERROR);
   auto abs_shape_ptr = cnode->abstract()->GetShape();
+  MS_CHECK_TRUE_RET(abs_shape_ptr != nullptr, RET_ERROR);
   auto abstract = std::make_shared<abstract::AbstractTensor>(TypeIdToType(TypeId::kNumberTypeFloat16), abs_shape_ptr);
   qaunt_conv_cnode->set_abstract(abstract);
   MS_LOG(INFO) << "QuantConv name: " << qaunt_conv_cnode->fullname_with_scope()

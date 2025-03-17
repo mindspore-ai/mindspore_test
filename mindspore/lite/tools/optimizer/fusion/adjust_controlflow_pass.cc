@@ -29,19 +29,11 @@
 #include "common/log_util.h"
 #include "mindspore/ops/op_def/lite_ops.h"
 #include "ops_utils/op_constants.h"
+#include "tools/converter/export_model.h"
 
 namespace mindspore {
 namespace opt {
-int32_t AdjustControlflowPass::AdjustBranchs(const ValueNodePtr &branch_value_node, const FuncGraphPtr &func_graph) {
-  if (branch_value_node == nullptr) {
-    MS_LOG(ERROR) << "Branch value node is nullptr!";
-    return lite::RET_ERROR;
-  }
-  auto branch = GetValue<FuncGraphPtr>(branch_value_node->value());
-  if (branch == nullptr) {
-    MS_LOG(ERROR) << "Value of then branch is null!";
-    return lite::RET_ERROR;
-  }
+int32_t AdjustControlflowPass::AdjustBranchs(const FuncGraphPtr &branch, const FuncGraphPtr &func_graph) {
   auto node_list = TopoSort(branch->get_return());
   for (auto &node : node_list) {
     if (!utils::isa<CNodePtr>(node)) {
@@ -80,16 +72,51 @@ int32_t AdjustControlflowPass::AdjustControlflow(const CNodePtr &cnode, const Fu
     return lite::RET_ERROR;
   }
 
-  if (AdjustBranchs(then_value_node, func_graph) != lite::RET_OK) {
+  auto branch_then = GetValue<FuncGraphPtr>(then_value_node->value());
+  if (branch_then == nullptr) {
+    MS_LOG(ERROR) << "Value of then branch is null!";
+    return lite::RET_ERROR;
+  }
+
+  auto branch_else = GetValue<FuncGraphPtr>(else_value_node->value());
+  if (branch_else == nullptr) {
+    MS_LOG(ERROR) << "Value of then branch is null!";
+    return lite::RET_ERROR;
+  }
+  auto new_param = std::make_shared<ConverterPara>();
+  new_param->fmk_type = converter::kFmkTypeMs;
+  new_param->save_type = kMindIR;
+  std::map<FuncGraphPtr, FuncGraphPtr> cloned_func_graph;
+  auto mirror_graph_then = lite::CloneFuncGraph(branch_then, new_param, &cloned_func_graph);
+  MS_CHECK_TRUE_MSG(mirror_graph_then != nullptr, lite::RET_NULL_PTR, "mirror_graph_then create failed!");
+
+  auto mirror_graph_else = lite::CloneFuncGraph(branch_else, new_param, &cloned_func_graph);
+  MS_CHECK_TRUE_MSG(mirror_graph_else != nullptr, lite::RET_NULL_PTR, "mirror_graph_else create failed!");
+
+  static auto manager_then = Manage(mirror_graph_then);
+  MS_CHECK_TRUE_MSG(manager_then != nullptr, lite::RET_NULL_PTR, "manager_then create failed!");
+  mirror_graph_then->set_manager(manager_then);
+
+  static auto manager_else = Manage(mirror_graph_else);
+  MS_CHECK_TRUE_MSG(manager_else != nullptr, lite::RET_NULL_PTR, "manager_else create failed!");
+  mirror_graph_else->set_manager(manager_else);
+
+  if (AdjustBranchs(mirror_graph_then, func_graph) != lite::RET_OK) {
     MS_LOG(ERROR) << "Adjust then_value_node failed!";
     return lite::RET_ERROR;
   }
-  if (AdjustBranchs(else_value_node, func_graph) != lite::RET_OK) {
+  if (AdjustBranchs(mirror_graph_else, func_graph) != lite::RET_OK) {
     MS_LOG(ERROR) << "Adjust else_value_node failed!";
     return lite::RET_ERROR;
   }
+  auto mirror_value_then = NewValueNode(mirror_graph_then);
+  MS_CHECK_TRUE_MSG(mirror_value_then != nullptr, lite::RET_NULL_PTR, "mirror_value_then create failed!");
+  auto mirror_value_else = NewValueNode(mirror_graph_else);
+  MS_CHECK_TRUE_MSG(mirror_value_else != nullptr, lite::RET_NULL_PTR, "mirror_value_else create failed!");
+
   auto if_inputs = cnode->inputs();
-  if_inputs.insert(if_inputs.begin() + kIndex2, {then_value_node});
+  if_inputs[kIndex2] = mirror_value_else;
+  if_inputs.insert(if_inputs.begin() + kIndex2, {mirror_value_then});
   cnode->set_inputs(if_inputs);
   return lite::RET_OK;
 }
