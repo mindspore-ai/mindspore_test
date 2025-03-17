@@ -55,11 +55,11 @@ def parameter_broadcast(net, layout, cur_rank=0, initial_rank=0):
         >>> from mindspore.communication import init
         >>> from mindspore.common.initializer import initializer
         >>> from mindspore.train import Model
-        >>> from mindspore.parallel.parameter_broadcast import parameter_broadcast
         >>> from mindspore.train.serialization import load_checkpoint, load_param_into_net
+        >>> from mindspore.parallel.auto_parallel import AutoParallel
+        >>> from mindspore.parallel import parameter_broadcast
         >>> ms.set_context(mode=ms.GRAPH_MODE)
         >>> ms.runtime.set_memory(max_size="28GB")
-        >>> ms.set_auto_parallel_context(parallel_mode=ms.ParallelMode.SEMI_AUTO_PARALLEL)
         >>> init()
         >>> ms.set_seed(1)
         >>> class Network(nn.Cell):
@@ -92,7 +92,8 @@ def parameter_broadcast(net, layout, cur_rank=0, initial_rank=0):
         >>> dataset = create_dataset()
         >>> optim = nn.SGD(net.trainable_params(), 1e-2)
         >>> loss = nn.CrossEntropyLoss()
-        >>> model = Model(net, loss_fn=loss, optimizer=optim)
+        >>> parallel_net = AutoParallel(net)
+        >>> model = Model(parallel_net, loss_fn=loss, optimizer=optim)
         >>> model.train(1, dataset)
         >>> ms.save_checkpoint(net, "./simple.ckpt", False)
         >>> layout = model.train_network.parameter_layout_dict
