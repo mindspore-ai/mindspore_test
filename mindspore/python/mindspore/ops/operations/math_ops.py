@@ -3891,8 +3891,8 @@ class Digamma(Primitive):
         Tensor, has the same dtype as `x`.
 
     Raises:
-        TypeError: If x is not a Tensor.
-        TypeError: If dtype of input x is not float16 or float32 or float64.
+        TypeError: If `x` is not a Tensor.
+        TypeError: If dtype of input `x` is not float16 or float32 or float64.
 
     Supported Platforms:
         ``GPU`` ``CPU``
