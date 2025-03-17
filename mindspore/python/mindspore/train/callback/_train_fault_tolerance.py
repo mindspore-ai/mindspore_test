@@ -371,7 +371,7 @@ class TrainFaultTolerance(Callback):
         Optimizer wrapper func when using tft.
 
         Args:
-            origin_opt_cls: origin optimizer class.
+            origin_opt_cls (Class): origin optimizer class.
         """
 
         class TFTOptSubCls(origin_opt_cls):

@@ -1,7 +1,7 @@
 mindspore.profiler.profile
 ===========================
 
-.. py:class:: mindspore.profiler.profile(ctivities: list = None, with_stack: bool = False, profile_memory: bool = False, data_process: bool = False, parallel_strategy: bool = False, start_profile: bool = True, hbm_ddr: bool = False, pcie: bool = False, sync_enable: bool = True, schedule: Schedule = None, on_trace_ready: Optional[Callable[..., Any]] = None, experimental_config: Optional[_ExperimentalConfig] = None)
+.. py:class:: mindspore.profiler.profile(activities: list = None, with_stack: bool = False, profile_memory: bool = False, data_process: bool = False, parallel_strategy: bool = False, start_profile: bool = True, hbm_ddr: bool = False, pcie: bool = False, sync_enable: bool = True, schedule: Schedule = None, on_trace_ready: Optional[Callable[..., Any]] = None, experimental_config: Optional[_ExperimentalConfig] = None)
 
     MindSpore用户能够通过该类对神经网络的性能进行采集。可以通过导入该类初始化profile对象，
     使用 `profile.start()` 开始分析，并使用 `profile.stop()` 停止收集并分析结果。可通过

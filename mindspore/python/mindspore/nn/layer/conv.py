@@ -929,12 +929,12 @@ class Conv3dTranspose(_Conv):
             ``'xavier_uniform'`` , ``'he_uniform'`` , ``'ones'`` and ``'zeros'`` are acceptable. Uppercase and
             lowercase are both acceptable. Refer to the values of Initializer for more details. Default: ``None`` ,
             weight will be initialized using HeUniform.
-        bias_init (Union[Tensor, str, Initializer, numbers.Number]): Initialization method of bias parameter.
+        bias_init (Union[Tensor, str, Initializer, numbers.Number], optional): Initialization method of bias parameter.
             Available initialization methods are the same as 'weight_init'. Refer to the values of
             Initializer for more details. Default: ``None`` , bias will be initialized using Uniform.
-        data_format (str): The optional value for data format. Currently only support ``'NCDHW'`` .
+        data_format (str, optional): The optional value for data format. Currently only support ``'NCDHW'`` .
             Default: ``'NCDHW'`` .
-        dtype (:class:`mindspore.dtype`): Dtype of Parameters. Default: ``mstype.float32`` .
+        dtype (:class:`mindspore.dtype`, optional): Dtype of Parameters. Default: ``mstype.float32`` .
 
     Inputs:
         - **x** (Tensor) - Tensor of shape :math:`(N, C_{in}, D_{in}, H_{in}, W_{in})`.
