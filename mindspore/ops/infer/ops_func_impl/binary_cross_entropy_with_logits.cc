@@ -55,10 +55,12 @@ BaseShapePtr BCEWithLogitsLossFuncImpl::InferShape(const PrimitivePtr &primitive
 
   auto target_shape_ptr = input_args[kInputIndex1]->GetShape();
   auto target_shape_vector = target_shape_ptr->GetShapeVector();
-  if (!ObscureShapeEqual(input_shape_vector, target_shape_vector)) {
-    MS_EXCEPTION(ValueError) << "For '" << primitive->name()
-                             << "', two inputs 'input' and 'target' shape are not equal, 'input' shape: "
-                             << input_shape_vector << ", 'target' shape: " << target_shape_vector;
+  if (!IsDynamicShape(input_shape_vector) && !IsDynamicShape(target_shape_vector)) {
+    if (!ObscureShapeEqual(input_shape_vector, target_shape_vector)) {
+      MS_EXCEPTION(ValueError) << "For '" << primitive->name()
+                               << "', two inputs 'input' and 'target' shape are not equal, 'input' shape: "
+                               << input_shape_vector << ", 'target' shape: " << target_shape_vector;
+    }
   }
 
   auto weight_shape_ptr = input_args[kInputIndex2]->GetShape();
