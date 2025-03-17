@@ -313,14 +313,14 @@ def test_inplace_backward_clone_input():
         def construct(self, x, min_val=-1.0, max_val=1.0):
             return self.op(x, min_val=min_val, max_val=max_val)
 
-    @ms.jit
+    @ms.jit(backend="ms_backend")
     def hardtanh_backward_func(x, min_val, max_val):
         return ms.ops.grad(Hardtanh_(), (0))(x, min_val, max_val)
 
     def get_expect_grad(x, min_val, max_val):
         return np.where(((min_val < x) & (x < max_val)), 1., 0.)
 
-    context.set_context(mode=0, jit_level='O2')
+    context.set_context(mode=0)
     values = [[0.1, 0.9], [-1, 1]]
     for value in values:
         x_np = np.random.randn(2, 3).astype(np.float32)
