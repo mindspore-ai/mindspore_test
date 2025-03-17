@@ -21,19 +21,20 @@ mindspore.train.TrainFaultTolerance
     .. note::
         在运行TrainFaultTolerance的用例之前，需要配置相应的环境变量。推荐使用msrun进行分布式的启动，参考 `msrun启动方式 <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/msrun_launcher.html>`_。用例应该在4张卡上运行。
 
+    .. py:method:: end(run_context)
+
+        训练结束，解注册MindIO TTP。
+
+        参数：
+            - **run_context** (RunContext) - 包含模型的相关信息。详情请参考 :class:`mindspore.train.RunContext`。
+
     .. py:method:: get_optimizer_wrapper(origin_opt_cls)
+        :classmethod:
 
         使用TFT功能时的优化器类封装函数。
 
         参数：
             - **origin_opt_cls** (Class) - 原优化器类。
-
-    .. py:method:: on_train_step_end(run_context)
-
-        每个step完成时，进行MindIO TTP的上报。
-
-        参数：
-            - **run_context** (RunContext) - 包含模型的相关信息。详情请参考 :class:`mindspore.train.RunContext`。
 
     .. py:method:: on_train_begin(run_context)
 
@@ -42,9 +43,9 @@ mindspore.train.TrainFaultTolerance
         参数：
             - **run_context** (RunContext) - 包含模型的相关信息。详情请参考 :class:`mindspore.train.RunContext`。
 
-    .. py:method:: end(run_context)
+    .. py:method:: on_train_step_end(run_context)
 
-        训练结束，解注册MindIO TTP。
+        每个step完成时，进行MindIO TTP的上报。
 
         参数：
             - **run_context** (RunContext) - 包含模型的相关信息。详情请参考 :class:`mindspore.train.RunContext`。

@@ -1002,7 +1002,7 @@ class Tile(Primitive):
           the parameter type is tuple, and the data type is int, i.e., :math:`(y_1, y_2, ..., y_S)`.
           Only constant value is allowed.
 
-        Note:
+        .. note::
             On Ascend, the number of `dims` should not exceed 8, and currently does not support scenarios
             where more than 4 dimensions are repeated simultaneously.
 

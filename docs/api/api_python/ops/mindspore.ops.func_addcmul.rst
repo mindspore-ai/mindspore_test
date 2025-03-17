@@ -18,7 +18,7 @@ mindspore.ops.addcmul
         Tensor，具有与tensor1*tensor2相同的shape和dtype。
 
     异常：
-        - **TypeError** - 如果 `tensor1` 、 `tensor2`或 `input` 不是Tensor。
+        - **TypeError** - 如果 `tensor1` 、 `tensor2` 或 `input` 不是Tensor。
         - **TypeError** - 如果 `input` 的dtype不是float32、float16或int32之一。
         - **TypeError** - 如果 `tensor1` 或 `tensor2` 的dtype不是float32、float16或int32之一。
         - **TypeError** - 如果 `value` 的dtype不是float32、float16或int32之一。

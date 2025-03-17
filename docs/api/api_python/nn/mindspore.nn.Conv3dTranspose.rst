@@ -81,5 +81,5 @@ mindspore.nn.Conv3dTranspose
         - **ValueError** - `padding` 小于0。
         - **ValueError** - `pad_mode` 不是 ``"same"`` ， ``"valid"`` 或 ``"pad"`` 。
         - **ValueError** - `padding` 是长度不等于6的tuple。
-        - **ValueError** - `pad_mode` 不等于 ``"pad"``且 `padding` 不等于 ``(0, 0, 0, 0, 0, 0)``。
+        - **ValueError** - `pad_mode` 不等于 ``"pad"`` 且 `padding` 不等于 ``(0, 0, 0, 0, 0, 0)``。
         - **ValueError** - `data_format` 不是 ``"NCDHW"``。
