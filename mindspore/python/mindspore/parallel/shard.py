@@ -558,8 +558,6 @@ def shard(fn, in_strategy, out_strategy=None, parameter_plan=None, device="Ascen
         (32, 10)
 
     Tutorial Examples:
-        - `Functional Operator Sharding
-          <https://www.mindspore.cn/docs/en/master/model_train/parallel/shard_function_parallel.html>`_
         - `mindspore.Layout
           <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.Layout.html>`_
     """

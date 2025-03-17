@@ -83,7 +83,8 @@ class Rprop(Optimizer):
               If `order_params` in the keys, other keys will be ignored and the element of 'order_params' must be in
               one group of `params`.
 
-        learning_rate (Union[float, int, Tensor, Iterable, LearningRateSchedule]): Learning_rate. Default: ``0.1`` .
+        learning_rate (Union[float, int, Tensor, Iterable, LearningRateSchedule], optional): Learning_rate.
+            Default: ``0.1`` .
 
             - float: The fixed learning rate value. Must be equal to or greater than 0.
 
@@ -99,11 +100,12 @@ class Rprop(Optimizer):
               <https://www.mindspore.cn/docs/en/master/api_python/mindspore.nn.html#learningrateschedule-class>`_
               with step as the input to get the learning rate of current step.
 
-        etas (tuple[float, float]): The factor of multiplicative increasing or
+        etas (tuple[float, float], optional): The factor of multiplicative increasing or
             descreasing(etaminus, etaplus). Default: ``(0.5, 1.2)`` .
-        step_sizes(tuple[float, float]): The allowed minimal and maximal step size(min_step_sizes, max_step_size).
+        step_sizes(tuple[float, float], optional): The allowed minimal and maximal
+            step size(min_step_sizes, max_step_size).
             Default: ``(1e-6, 50.)`` .
-        weight_decay (Union[float, int, Cell]): Weight decay (L2 penalty). Default: ``0.0`` .
+        weight_decay (Union[float, int, Cell], optional): Weight decay (L2 penalty). Default: ``0.0`` .
 
             - float: The fixed weight decay value. Must be equal to or greater than 0.
 

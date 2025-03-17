@@ -93,7 +93,7 @@ class Adadelta(Optimizer):
               If `order_params` in the keys, other keys will be ignored and the element of 'order_params' must be in
               one group of `params`.
 
-        learning_rate (Union[float, int, Tensor, Iterable, LearningRateSchedule]): Default: ``1.0`` .
+        learning_rate (Union[float, int, Tensor, Iterable, LearningRateSchedule], optional): Default: ``1.0`` .
 
             - float: The fixed learning rate value. Must be equal to or greater than 0.
 
@@ -109,14 +109,16 @@ class Adadelta(Optimizer):
               <https://www.mindspore.cn/docs/en/master/api_python/mindspore.nn.html#learningrateschedule-class>`_
               with step as the input to get the learning rate of current step.
 
-        rho (float): Decay rate, must be in range [0.0, 1.0]. Default: ``0.9`` .
-        epsilon (float):  A small value added for numerical stability, must be non-negative. Default: ``1e-6`` .
-        loss_scale (float): Value for the loss scale. It must be greater than 0.0. In general, use the default value.
+        rho (float, optional): Decay rate, must be in range [0.0, 1.0]. Default: ``0.9`` .
+        epsilon (float, optional):  A small value added for numerical stability, must be non-negative.
+            Default: ``1e-6`` .
+        loss_scale (float, optional): Value for the loss scale. It must be greater than 0.0. In general,
+            use the default value.
             Only when `FixedLossScaleManager` is used for training and the `drop_overflow_update` in
             `FixedLossScaleManager` is set to ``False`` , then this value needs to be the same as the `loss_scale` in
             `FixedLossScaleManager`. Refer to class :class:`mindspore.amp.FixedLossScaleManager` for more details.
             Default: ``1.0`` .
-        weight_decay (Union[float, int, Cell]): Weight decay (L2 penalty). Default: ``0.0`` .
+        weight_decay (Union[float, int, Cell], optional): Weight decay (L2 penalty). Default: ``0.0`` .
 
             - float: The fixed weight decay value. Must be equal to or greater than 0.
 

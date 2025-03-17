@@ -872,7 +872,7 @@ class Conv3dTranspose(_Conv):
             The data type is an integer or a tuple of three integers. An integer represents the depth, height
             and width of the convolution kernel. A tuple of three integers represents the depth, height
             and width of the convolution kernel respectively.
-        stride (Union[int, tuple[int]]): The movement stride of the 3D convolution kernel.
+        stride (Union[int, tuple[int]], optional): The movement stride of the 3D convolution kernel.
             The data type is an integer or a tuple of three integers. An integer represents the movement step size
             in depth, height and width directions. A tuple of three integers represents the movement step size
             in the depth, height and width directions respectively. Default: ``1`` .
@@ -892,13 +892,15 @@ class Conv3dTranspose(_Conv):
               in the depth, height and width dimension is determined by the `padding` parameter.
               If this mode is set, `padding` must be greater than or equal to 0.
 
-        padding (Union(int, tuple[int])): The number of padding on the depth, height and width directions of the input.
+        padding (Union(int, tuple[int]), optional): The number of padding on the depth, height and
+            width directions of the input.
             The data type is an integer or a tuple of six integers. If `padding` is an integer,
             then the head, tail, top, bottom, left, and right padding are all equal to `padding`.
             If `padding` is a tuple of six integers, then the head, tail, top, bottom, left, and right padding
             is equal to `padding[0]`, `padding[1]`, `padding[2]`, `padding[3]`, `padding[4]` and `padding[5]`
             respectively. The value should be greater than or equal to 0. Default: ``0`` .
-        dilation (Union[int, tuple[int]]): Specifies the dilation rate to use for dilated convolution. The data type
+        dilation (Union[int, tuple[int]], optional): Specifies the dilation rate to use for dilated convolution.
+            The data type
             can be a single int or a tuple of 3 integers. A single int means the dilation size is the same in the
             depth, height and width directions. A tuple of 3 ints represents the dilation size in the depth, height
             and width directions, respectively.
@@ -908,17 +910,19 @@ class Conv3dTranspose(_Conv):
             The values in the depth, height and width dimensions are in
             the ranges [1, D], [1, H] and [1, W], respectively.
             Default: ``1`` .
-        group (int): Splits filter into groups, `in_channels` and `out_channels` must be
+        group (int, optional): Splits filter into groups, `in_channels` and `out_channels` must be
             divisible by `group`. Default: ``1`` .
-        output_padding (Union(int, tuple[int])): The number of padding on the depth, height and width directions of
+        output_padding (Union(int, tuple[int]), optional): The number of padding on the depth,
+            height and width directions of
             the output. The data type is an integer or a tuple of three integers. If `output_padding` is an integer,
             then the depth, height, and width dimension padding are all equal to `output_padding`.
             If `output_padding` is a tuple of three integers, then the depth, height, and width padding is equal to
             `output_padding[0]`, `output_padding[1]` and `output_padding[2]` respectively.
             The value should be greater than or equal to 0.
             Default: ``0`` .
-        has_bias (bool): Whether the Conv3dTranspose layer has a bias parameter. Default: ``False`` .
-        weight_init (Union[Tensor, str, Initializer, numbers.Number]): Initialization method of weight parameter.
+        has_bias (bool, optional): Whether the Conv3dTranspose layer has a bias parameter. Default: ``False`` .
+        weight_init (Union[Tensor, str, Initializer, numbers.Number], optional): Initialization method of
+            weight parameter.
             It can be a Tensor, a string, an Initializer or a numbers.Number. When a string is specified,
             values from ``'TruncatedNormal'`` , ``'Normal'`` , ``'Uniform'`` , ``'HeUniform'`` and ``'XavierUniform'``
             distributions as well as constant ``'One'`` and ``'Zero'`` distributions are possible. Alias

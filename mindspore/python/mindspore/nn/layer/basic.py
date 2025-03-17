@@ -640,17 +640,19 @@ class Dense(Cell):
     Args:
         in_channels (int): The number of channels in the input space.
         out_channels (int): The number of channels in the output space.
-        weight_init (Union[Tensor, str, Initializer, numbers.Number]): The trainable weight_init parameter. The dtype
-            is same as `x`. The values of str refer to the function `initializer`. Default: ``None`` ,
+        weight_init (Union[Tensor, str, Initializer, numbers.Number], optional): The trainable weight_init parameter.
+            The dtype is same as `x`. The values of str refer to the function `initializer`. Default: ``None`` ,
             weight will be initialized using HeUniform.
-        bias_init (Union[Tensor, str, Initializer, numbers.Number]): The trainable bias_init parameter. The dtype is
-            same as `x`. The values of str refer to the function `initializer`. Default: ``None`` ,
+        bias_init (Union[Tensor, str, Initializer, numbers.Number], optional): The trainable bias_init parameter.
+            The dtype is same as `x`. The values of str refer to the function `initializer`. Default: ``None`` ,
             bias will be initialized using Uniform.
-        has_bias (bool): Specifies whether the layer uses a bias vector :math:`\text{bias}`. Default: ``True``.
-        activation (Union[str, Cell, Primitive, None]): activate function applied to the output of the fully connected
+        has_bias (bool, optional): Specifies whether the layer uses a bias vector :math:`\text{bias}`.
+            Default: ``True``.
+        activation (Union[str, Cell, Primitive, None], optional): activate function applied to
+            the output of the fully connected
             layer. Both activation name, e.g. 'relu', and mindspore activation function, e.g. mindspore.ops.ReLU(),
             are supported. Default: ``None`` .
-        dtype (:class:`mindspore.dtype`): Data type of Parameter. Default: ``mstype.float32`` .
+        dtype (:class:`mindspore.dtype`, optional): Data type of Parameter. Default: ``mstype.float32`` .
             When `weight_init` is Tensor, Parameter has the same data type as `weight_init` ,
             in other cases, Parameter has the same data type as `dtype`, the same goes for `bias_init`.
 
