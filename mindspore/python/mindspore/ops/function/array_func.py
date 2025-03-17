@@ -5149,7 +5149,7 @@ def col2im(input_x, output_size, kernel_size, dilation, padding_value, stride):
             for height and width. If type is int, it means that height equal with width.
 
     Returns:
-        A 4D Tensor, with same type as 'input_x'.
+        A 4D Tensor, with same type as `input_x`.
 
     Raises:
         TypeError: If :attr:`kernel_size`, `dilation`, `padding_value`, `stride` data type is not in
