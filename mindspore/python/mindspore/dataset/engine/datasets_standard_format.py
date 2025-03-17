@@ -238,6 +238,12 @@ class MindDataset(MappableDataset, UnionBaseDataset):
     """
 
     def parse(self, children=None):
+        child_sampler = self.sampler.get_child()
+        if (child_sampler is not None and not isinstance(child_sampler, samplers.DistributedSampler)
+                and self.num_padded > 0):
+            raise RuntimeError("When the padded sample logic is enabled and use sampler chain,"
+                               "the first sampler which is specified by parameter "
+                               "sampler or (num_shards, shard_id) is not distributed sampling.")
         return cde.MindDataNode(self.dataset_files, self.columns_list, self.sampler, self.new_padded_sample,
                                 self.num_padded, shuffle_to_shuffle_mode(self.shuffle_option))
 
@@ -310,10 +316,6 @@ class MindDataset(MappableDataset, UnionBaseDataset):
                     self.new_padded_sample[k] = v.tobytes()
                 else:
                     self.new_padded_sample[k] = v
-
-        if self.num_padded > 0 and not isinstance(self.sampler, samplers.DistributedSampler):
-            raise RuntimeError("When the padded sample logic is enabled, the sampler which is specified by parameter "
-                               "sampler or (num_shards, shard_id) is not distributed sampling.")
 
     def __deepcopy__(self, memodict):
         if id(self) in memodict:
