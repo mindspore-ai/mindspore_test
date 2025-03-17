@@ -2,7 +2,7 @@ take_along_dim:
   description: |
     take_along_dim(input, indices, dim=None)
 
-    Selects values from input at the 1-dimensional indices from indices along the given dim.
+    Selects values from `input` at the 1-dimensional `indices` from indices along the given `dim`.
     
     .. warning::
         This is an experimental API that is subject to change or deletion.
@@ -10,7 +10,7 @@ take_along_dim:
     Args:
         input (Tensor): The input tensor.
         indices (Tensor): The indices into input. Must have long dtype.
-        dim (int, optional): Dimension to select along.
+        dim (int, optional): Dimension to select along. Default: ``None`` .
 
     Returns:
         Tensor, elements are selected from `input`.

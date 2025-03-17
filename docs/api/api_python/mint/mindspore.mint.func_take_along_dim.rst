@@ -11,7 +11,7 @@ mindspore.mint.take_along_dim
     参数：
         - **input** (Tensor) - 输入张量。
         - **indices** (Tensor) - 输入张量的索引张量, 一定要是long类型。
-        - **dim** (int, 可选) - 选择的维度。
+        - **dim** (int, 可选) - 选择的维度。默认值： ``None``。
     
     返回：
         Tensor，元素来自于 `input` 。
