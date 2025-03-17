@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2024 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@
 #endif
 
 #include <csignal>
+#include <set>
 #include <string>
 #include <unordered_map>
 
@@ -134,21 +135,32 @@ void SIGCHLDHandler(int signal, siginfo_t *info, void *context) {
       siginfo_t sig_info{};
       sig_info.si_pid = 0;
       auto error = waitid(P_PID, pid, &sig_info, WEXITED | WNOHANG | WNOWAIT);
-      if (error < 0 || sig_info.si_pid == 0) {  // There were no children in a waitable state.
-        continue;
-      }
       std::string msg;
-      if (sig_info.si_code == CLD_EXITED && sig_info.si_status != EXIT_SUCCESS) {  // exited unexpected
-        msg = "Dataset worker process " + std::to_string(sig_info.si_pid) + " exited unexpected with exit code " +
-              std::to_string(sig_info.si_status) + ".";
-      } else if (sig_info.si_code == CLD_KILLED) {  // killed by signal
-        msg = "Dataset worker process " + std::to_string(sig_info.si_pid) +
-              " was killed by signal: " + std::string(strsignal(sig_info.si_status)) + ".";
-      } else if (sig_info.si_code == CLD_DUMPED) {  // core dumped
-        msg = "Dataset worker process " + std::to_string(sig_info.si_pid) +
-              " core dumped: " + std::string(strsignal(sig_info.si_status)) + ".";
+      if (error < 0) {
+        if (errno == ECHILD) {
+          msg = "Dataset worker process " + std::to_string(pid) +
+                " has already exited. Its state may have been retrieved by other threads.";
+        } else {
+          MS_LOG(WARNING) << "Failed to wait for dataset worker process " << pid << ", got: " + strerror(errno);
+          continue;
+        }
       } else {
-        continue;
+        if (sig_info.si_pid == 0) {
+          continue;  // There were no children in a wait state.
+        }
+        if (sig_info.si_code == CLD_EXITED && sig_info.si_status != EXIT_SUCCESS) {  // exited unexpected
+          msg = "Dataset worker process " + std::to_string(sig_info.si_pid) + " exited unexpected with exit code " +
+                std::to_string(sig_info.si_status) + ".";
+        } else if (sig_info.si_code == CLD_KILLED) {  // killed by signal
+          msg = "Dataset worker process " + std::to_string(sig_info.si_pid) +
+                " was killed by signal: " + std::string(strsignal(sig_info.si_status)) + ".";
+        } else if (sig_info.si_code == CLD_DUMPED) {  // core dumped
+          msg = "Dataset worker process " + std::to_string(sig_info.si_pid) +
+                " core dumped: " + std::string(strsignal(sig_info.si_status)) + ".";
+        } else {
+          MS_LOG(INFO) << "Ignore dataset worker process " << pid << " with signal code " << sig_info.si_code;
+          continue;
+        }
       }
       auto pids_to_kill = pids;
       pids.clear();  // Clear the monitoring status of the process group before performing a termination.
@@ -161,6 +173,7 @@ void SIGCHLDHandler(int signal, siginfo_t *info, void *context) {
       MS_LOG(ERROR) << msg << " Main process will be terminated.";
       kill(getpid(), SIGTERM);
       // In case the signal is not responded, return here
+      MS_LOG(WARNING) << "Main process may not respond to the SIGTERM signal, please check if it is blocked.";
       return;
     }
   }
