@@ -1748,6 +1748,15 @@ class Cell(Cell_):
                         new_param_tuple.append(param)
                     cell.__dict__[key] = ParameterTuple(new_param_tuple)
 
+    def _get_cell_parallel_mode(self):
+        """Determine whether the current cell is in parallel mode."""
+        is_parallel_mode = False
+        for _, param in self.parameters_and_names():
+            if param.param_info.is_param_init:
+                is_parallel_mode = True
+                break
+        return is_parallel_mode
+
     def init_parameters_data(self, auto_parallel_mode=False):
         """
         Initialize all parameters and replace the original saved parameters in cell.
@@ -1792,9 +1801,18 @@ class Cell(Cell_):
 
         # replace all original usage.
         cells = self.cells_and_names()
+        is_parallel_mode = self._get_cell_parallel_mode()
+        is_graph_mode = context.get_context('mode') == context.GRAPH_MODE
+
         for _, cell in cells:
             params = cell._params.items()
             for param_name, param in params:
+                not_sliced = not param.sliced
+                judgment = not_sliced
+                if param.param_info.is_pipeline_shared_param:
+                    continue
+                if is_graph_mode and is_parallel_mode and judgment:
+                    continue
                 if not auto_parallel_mode:
                     cell._params[param_name] = _updata(param)
                     continue
@@ -1806,6 +1824,12 @@ class Cell(Cell_):
                     param_tuple = cell_dict[key]
                     new_param_tuple = []
                     for param in param_tuple:
+                        not_sliced = not param.sliced
+                        judgment = not_sliced
+                        if param.param_info.is_pipeline_shared_param:
+                            continue
+                        if is_graph_mode and is_parallel_mode and judgment:
+                            continue
                         if not auto_parallel_mode:
                             new_param_tuple.append(_updata(param))
                             continue
