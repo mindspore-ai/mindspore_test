@@ -29,6 +29,7 @@
 #include "pybind_api/ir/tensor_register/auto_generate/tensor_py_gen.h"
 #include "include/common/pynative/adapter.h"
 #include "include/common/utils/exception.h"
+#include "include/common/utils/pyobj_manager.h"
 
 namespace mindspore {
 namespace tensor {
@@ -585,6 +586,7 @@ static PyObject *TensorPython_asnumpy(PyObject *self, PyObject *args) {
 
 static PyObject *TensorPython_data_sync(PyObject *self, PyObject *args) {
   HANDLE_MS_EXCEPTION
+  MS_LOG(DEBUG) << "Tensor data_sync";
   PyType<TensorPy> *py_tensor;
   bool need_wait;
   if (self != NULL) {
@@ -1639,7 +1641,7 @@ void RegPyTensor(py::module *m) {
     return;
   }
   Py_DECREF(module_name);
-  PyObject *abc_meta = PyImport_ImportModule("abc");
+  PyObject *abc_meta = PyObjManager::Get().GetAbcModule();
   if (abc_meta == nullptr) {
     PyErr_Print();
     return;
