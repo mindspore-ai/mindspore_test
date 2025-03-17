@@ -64,8 +64,6 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public HalResBase {
                                        TypeId type_id, const std::string &device_name, uint32_t device_id,
                                        uint32_t stream_id) const override;
 
-  // This method should be deleted after collective so is extracted.
-  void RegisterLoadCollectiveCallback(const std::function<CollectiveCommunicationLib *(void)> &callback);
   bool LoadCollectiveCommLib() override;
   bool IsEnableVmm() const override;
 
