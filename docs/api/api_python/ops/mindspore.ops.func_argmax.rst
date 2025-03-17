@@ -7,8 +7,8 @@ mindspore.ops.argmax
 
     参数：
         - **input** (Tensor) - 输入tensor。
-        - **dim** (Union[int, None]，可选) - 指定计算维度。如果为 ``None`` ，计算 `input` 中的所有元素。默认 ``None`` 。
-        - **keepdim** (bool，可选) - 输出tensor是否保留维度。默认 ``False`` 。
+        - **dim** (Union[int, None]，可选) - 指定计算的维度。如果为 ``None`` ，则计算 `input` 中所有元素的最大值索引。默认值： ``None`` 。
+        - **keepdim** (bool，可选) - 是否保留输出tensor的维度。默认值： ``False`` 。
 
     返回：
-        Tensor
+        Tensor，包含最大值的索引。
