@@ -36,6 +36,7 @@ class TransposeBatchMatmulTranspose : public PatternProcessPass {
 
  private:
   std::vector<std::string> MustExistPrimitiveName() const override;
+  ShapeVector GetPermValue(const AnfNodePtr &node) const;
 };
 }  // namespace opt
 }  // namespace mindspore
