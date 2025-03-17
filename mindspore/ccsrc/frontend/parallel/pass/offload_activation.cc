@@ -55,10 +55,19 @@ FuncGraphPtr OffloadActivationOptimizer::GetBackwardGraph(const FuncGraphPtr &fu
 
 void OffloadActivationOptimizer::GetFwBwGraphs() {
   for (const auto &child_graph : manager_->func_graphs()) {
-    if (child_graph->has_flag(FUNC_GRAPH_RECOMPUTE_K_GRAPH)) {
-      MS_LOG(WARNING) << "Cell can not be recomputed and offloaded at the same time, ignore offload fot it. Graph: "
-                      << child_graph->ToString() << ".";
-      continue;
+    if (child_graph->has_flag(FUNC_GRAPH_FLAG_CELL_REUSE)) {
+      const auto &all_nodes = TopoSort(child_graph->get_return(), SuccDeeperSimple);
+      for (const auto &node : all_nodes) {
+        if (!node->isa<CNode>()) {
+          continue;
+        }
+        const auto &fw_cnode = node->cast<CNodePtr>();
+        const auto &fw_primitive = GetCNodePrimitive(fw_cnode);
+        if (!GetPrimitiveFlag(fw_primitive, kAttrOffload)) {
+          continue;
+        }
+        offload_in_lazy_inline_.insert(fw_cnode);
+      }
     }
     const auto &backward_graph = GetBackwardGraph(child_graph);
     if (backward_graph == nullptr) {
@@ -109,9 +118,10 @@ void OffloadActivationOptimizer::GetActivationOffloadInfo(const FuncGraphPtr &fw
       if (!GetPrimitiveFlag(fw_primitive, kAttrOffload)) {
         continue;
       }
-      if (GetPrimitiveFlag(fw_primitive, kAttrRecompute)) {
+      if (GetPrimitiveFlag(fw_primitive, kAttrRecompute) || fw_graph->has_flag(FUNC_GRAPH_RECOMPUTE_K_GRAPH)) {
         MS_LOG(WARNING) << "Node can not be recomputed and offloaded at the same time, ignore offload fot it. Node: "
                         << trace::GetDebugInfoStr(fw_cnode->debug_info());
+        continue;
       }
       int64_t prefetch = kDefaultPrefetch;
       const auto prefetch_value = fw_primitive->GetAttr(kAttrBackwardPrefetch);
@@ -124,25 +134,56 @@ void OffloadActivationOptimizer::GetActivationOffloadInfo(const FuncGraphPtr &fw
   }
 }
 
-void OffloadActivationOptimizer::DelRecomputeForUser(const CNodePtr &fw_node) {
-  const auto &users_iter = manager_->node_users().find(fw_node);
-  if (users_iter == manager_->node_users().end()) {
+void OffloadActivationOptimizer::DelRecomputeForUser(const CNodePtr &fw_node, const std::optional<size_t> &output_idx) {
+  const auto &node_users = manager_->node_users();
+  const auto &users_iter = node_users.find(fw_node);
+  if (users_iter == node_users.end()) {
     return;
   }
+  auto handle_cnode = [](CNodePtr cnode, const CNodePtr &fw_node) {
+    const auto &first_input = cnode->input(kIndex0);
+    if (first_input->isa<Primitive>()) {
+      const auto &user_prim = GetValueNode<PrimitivePtr>(first_input);
+      if (user_prim != nullptr && GetPrimitiveFlag(user_prim, kAttrRecompute)) {
+        user_prim->DelAttr(kAttrRecompute);
+      }
+    } else if (IsValueNode<FuncGraph>(first_input)) {
+      const auto &user_graph = GetValueNode<FuncGraphPtr>(first_input);
+      if (user_graph->has_flag(FUNC_GRAPH_RECOMPUTE_K_GRAPH)) {
+        user_graph->erase_flag(FUNC_GRAPH_RECOMPUTE_K_GRAPH);
+      }
+    }
+  };
   const auto &users = users_iter->second;
   for (const auto &user : users) {
     const auto &user_node = user.first;
-    if (user_node->func_graph() != fw_node->func_graph()) {
+    if (user_node->func_graph() != fw_node->func_graph() || !user_node->isa<CNode>()) {
       continue;
     }
-    const auto &user_prim = GetCNodePrimitive(user_node);
-    if (user_prim == nullptr) {
-      continue;
-    }
-    if (GetPrimitiveFlag(user_prim, kAttrRecompute)) {
+    if (output_idx.has_value()) {
+      if (!common::AnfAlgo::CheckPrimitiveType(user_node, prim::kPrimTupleGetItem)) {
+        continue;
+      }
+      if (common::AnfAlgo::GetTupleGetItemOutIndex(user_node->cast<CNodePtr>()) != output_idx.value()) {
+        continue;
+      }
+      const auto &get_item_user = node_users.find(user_node);
+      if (get_item_user == node_users.end()) {
+        continue;
+      }
+      for (const auto &get_item_user_node_index : get_item_user->second) {
+        const auto &get_item_user_node = get_item_user_node_index.first;
+        if (get_item_user_node->func_graph() != fw_node->func_graph() || !get_item_user_node->isa<CNode>()) {
+          continue;
+        }
+        handle_cnode(get_item_user_node->cast<CNodePtr>(), fw_node);
+        MS_LOG(WARNING) << get_item_user_node->DebugString() << "'s input(" << fw_node->DebugString()
+                        << ") has offload flag, so remove recompute flag from it";
+      }
+    } else {
+      handle_cnode(user_node->cast<CNodePtr>(), fw_node);
       MS_LOG(WARNING) << user_node->DebugString() << "'s input(" << fw_node->DebugString()
                       << ") has offload flag, so remove recompute flag from it";
-      user_prim->DelAttr(kAttrRecompute);
     }
   }
 }
@@ -197,6 +238,9 @@ void OffloadActivationOptimizer::InsertMoveToForOffloadActivation(const OffloadI
     get_item_node->set_abstract(offload_info->bw_node_->abstract());
     offload_info->fw_node_ = get_item_node;
     MS_LOG(DEBUG) << "Backward node is TupleGetItem, move it to forward graph.";
+    DelRecomputeForUser(offload_info->fw_node_, get_item_idx);
+  } else {
+    DelRecomputeForUser(offload_info->fw_node_, std::nullopt);
   }
 
   auto move_in_node = move_to_node_cache_[offload_info->fw_node_][offload_info->bw_graph_];
@@ -245,12 +289,32 @@ void OffloadActivationOptimizer::InsertMoveToForOffloadActivation(const OffloadI
   }
 }
 
+void OffloadActivationOptimizer::WarningOffloadOutsideLazyInline() {
+  for (const auto &child_graph : manager_->func_graphs()) {
+    if (child_graph->has_flag(FUNC_GRAPH_FLAG_CELL_REUSE)) {
+      continue;
+    }
+    const auto &all_cnodes = child_graph->GetOrderedCnodes();
+    for (const auto &cnode : all_cnodes) {
+      const auto &primitive = GetCNodePrimitive(cnode);
+      if (!GetPrimitiveFlag(primitive, kAttrOffload)) {
+        continue;
+      }
+      if (offload_in_lazy_inline_.count(cnode) == 0) {
+        MS_LOG(WARNING) << "Offload does not take effect outside the scope of the lazy_inline Cell. NOde: "
+                        << cnode->DebugString() << ", trace info: " << trace::GetDebugInfoStr(cnode->debug_info());
+      }
+    }
+  }
+}
+
 bool OffloadActivationOptimizer::Optimize(const FuncGraphPtr &func_graph) {
   MS_EXCEPTION_IF_NULL(func_graph);
   bool changed = false;
   manager_ = func_graph->manager();
   MS_EXCEPTION_IF_NULL(manager_);
   GetFwBwGraphs();
+  WarningOffloadOutsideLazyInline();
   // Add offload flag for communication user node of offloaded nodes.
   for (const auto &fw_bw : fw_bw_graphs_) {
     AddOffloadForCommUser(fw_bw.first);
@@ -261,7 +325,6 @@ bool OffloadActivationOptimizer::Optimize(const FuncGraphPtr &func_graph) {
   changed = !offload_infos_.empty();
   // Insert MoveTo node
   for (const auto &offload_info : offload_infos_) {
-    DelRecomputeForUser(offload_info->fw_node_);
     InsertMoveToForOffloadActivation(offload_info);
   }
   return changed;

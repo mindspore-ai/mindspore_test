@@ -251,6 +251,39 @@ abstract::ShapePtr GetDropoutInputShape(const AnfNodePtr &input) {
   return input_shape;
 }
 
+void UpdateDropoutUserAbstract(const FuncGraphPtr &func_graph, const CNodePtr &dropout,
+                               const std::shared_ptr<abstract::AbstractTensor> &gen_mask_abstract) {
+  const auto &manager = func_graph->manager();
+  MS_EXCEPTION_IF_NULL(manager);
+  const auto &node_users = manager->node_users();
+  const auto &iter = node_users.find(dropout);
+  if (iter == node_users.end()) {
+    return;
+  }
+  for (const auto &node_index : iter->second) {
+    const auto used_node = node_index.first;
+    MS_EXCEPTION_IF_NULL(used_node);
+    if (!common::AnfAlgo::CheckPrimitiveType(used_node, prim::kPrimTupleGetItem)) {
+      continue;
+    }
+    if (common::AnfAlgo::GetTupleGetItemOutIndex(used_node->cast<CNodePtr>()) != kIndex1) {
+      continue;
+    }
+    const auto &get_item_user = node_users.find(used_node);
+    if (get_item_user == node_users.end()) {
+      continue;
+    }
+    for (const auto &user_node_index : get_item_user->second) {
+      const auto &get_item_user_node = user_node_index.first;
+      MS_EXCEPTION_IF_NULL(get_item_user_node);
+      if (!common::AnfAlgo::CheckPrimitiveType(get_item_user_node, prim::kPrimMoveTo)) {
+        continue;
+      }
+      get_item_user_node->set_abstract(gen_mask_abstract);
+    }
+  }
+}
+
 CNodePtr CreateDropoutGenMaskCNode(const FuncGraphPtr &func_graph, const CNodePtr &dropout,
                                    const AnfNodePtr &keep_prob_value, const abstract::ShapePtr &input_shape,
                                    const bool use_v3, bool enable_keep_prob = false) {
@@ -321,6 +354,7 @@ CNodePtr CreateDropoutGenMaskCNode(const FuncGraphPtr &func_graph, const CNodePt
   MS_EXCEPTION_IF_NULL(gen_mask_abstract);
   dropout_gen_mask->set_abstract(gen_mask_abstract);
   dropout_gen_mask->set_scope(dropout->scope());
+  UpdateDropoutUserAbstract(func_graph, dropout, gen_mask_abstract);
   common::AnfAlgo::CopyNodeAttrs(dropout, dropout_gen_mask);
   auto dropout_gen_mask_primitive = common::AnfAlgo::GetCNodePrimitive(dropout_gen_mask);
   if (enable_keep_prob) {

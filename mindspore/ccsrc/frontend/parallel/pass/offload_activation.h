@@ -54,14 +54,16 @@ class OffloadActivationOptimizer {
   void GetFwBwGraphs();
   void AddOffloadForCommUser(const FuncGraphPtr &fw_graph);
   void GetActivationOffloadInfo(const FuncGraphPtr &fw_graph, const FuncGraphPtr &bw_grpah);
-  void DelRecomputeForUser(const CNodePtr &fw_node);
+  void DelRecomputeForUser(const CNodePtr &fw_node, const std::optional<size_t> &output_idx);
   void AddDependForMoveOut(const FuncGraphPtr &fw_graph, const CNodePtr &fw_node, const CNodePtr &move_out);
   void InsertMoveToForOffloadActivation(const OffloadInfoPtr &offload_info);
+  void WarningOffloadOutsideLazyInline();
 
   FuncGraphManagerPtr manager_{nullptr};
   std::vector<std::pair<FuncGraphPtr, FuncGraphPtr>> fw_bw_graphs_;
   std::vector<OffloadInfoPtr> offload_infos_;
   HashMap<CNodePtr, HashMap<FuncGraphPtr, CNodePtr>> move_to_node_cache_;
+  HashSet<CNodePtr> offload_in_lazy_inline_;
 };
 }  // namespace parallel
 }  // namespace mindspore
