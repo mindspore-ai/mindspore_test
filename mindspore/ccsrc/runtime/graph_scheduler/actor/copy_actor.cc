@@ -217,7 +217,7 @@ void CopyActor::FetchDeviceTensor(OpContext<DeviceTensor> *const context) {
     }
   }
 
-  if (!WaitRuntimePipelineFinish(context)) {
+  if (!WaitRuntimePipelineFinish(context, GetAID().Name())) {
     MS_LOG(INFO) << "Run failed and early stop.";
     return;
   }

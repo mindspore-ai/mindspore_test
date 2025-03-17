@@ -209,7 +209,7 @@ void RecvActor::EraseInput(const OpContext<DeviceTensor> *context) {
   }
   // Release data allocated by AllocateMessage.
   if (recv_data_ != nullptr) {
-    if (!WaitRuntimePipelineFinish(context)) {
+    if (!WaitRuntimePipelineFinish(context, GetAID().Name())) {
       MS_LOG(INFO) << "Run failed and early stop.";
       return;
     }
@@ -222,7 +222,7 @@ void RecvActor::EraseInput(const OpContext<DeviceTensor> *context) {
 #ifdef ENABLE_RDMA
   // Release data of URPC by caller.
   if (common::GetEnv(kEnableRDMA) == "1" && rdma_buf_ != nullptr) {
-    if (!WaitRuntimePipelineFinish(context)) {
+    if (!WaitRuntimePipelineFinish(context, GetAID().Name())) {
       MS_LOG(INFO) << "Run failed and early stop.";
       return;
     }

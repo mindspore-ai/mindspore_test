@@ -112,7 +112,7 @@ void ConditionSwitchActor::ExecuteResizeKernelModTask(OpContext<DeviceTensor> *c
 
 void ConditionSwitchActor::ExecuteLaunchKernelTask(OpContext<DeviceTensor> *const context) {
   ProfilerRecorder profiler(ProfilerModule::kKernel, ProfilerEvent::kKernelLaunch, GetAID().Name());
-  if (!WaitRuntimePipelineFinish(context)) {
+  if (!WaitRuntimePipelineFinish(context, GetAID().Name())) {
     MS_LOG(INFO) << "Run failed and early stop.";
     return;
   }
@@ -206,7 +206,7 @@ void ConditionSwitchActor::SendOutput(OpContext<DeviceTensor> *const context, si
 
 void ConditionSwitchActor::Run(OpContext<DeviceTensor> *const context) {
   try {
-    if (!WaitRuntimePipelineFinish(context)) {
+    if (!WaitRuntimePipelineFinish(context, GetAID().Name())) {
       MS_LOG(INFO) << "Run failed and early stop.";
       return;
     }
