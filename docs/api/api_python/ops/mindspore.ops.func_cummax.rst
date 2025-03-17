@@ -13,5 +13,6 @@ mindspore.ops.cummax
     参数：
         - **input** (Tensor) - 输入tensor。
         - **axis** (int) - 指定计算的轴。
+
     返回：
-        两个tensor组成的tuple(max, max_indices)
+        两个tensor组成的tuple(max, max_indices)。

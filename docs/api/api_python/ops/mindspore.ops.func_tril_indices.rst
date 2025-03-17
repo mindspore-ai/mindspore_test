@@ -8,7 +8,7 @@ mindspore.ops.tril_indices
     矩阵的下三角部分包括对角线及其以下的所有元素。
 
     .. note::
-        在CUDA上运行的时候， `row` * `col` 必须小于2^59以防止计算时溢出。
+        在CUDA上运行时， `row` * `col` 必须小于2^59，以防止计算时溢出。
 
     参数：
         - **row** (int) - 2-D 矩阵的行数。
