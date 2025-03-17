@@ -923,15 +923,76 @@ class Cell(Cell_):
 
     def offload(self, backward_prefetch="Auto"):
         """
-        Set the cell offload. All primitive ops in the cell will be set offload. For the intermediate activations
-        calculated by these primitive ops, we will not save them in the forward pass, but offload them and onload them
-        in the backward pass.
+        Set the cell offload. All primitive ops in the cell will be set offload. For the intermediate
+        activations calculated by these primitive ops, we will not save them in the forward pass, but
+        offload them and onload them in the backward pass.
 
         Note:
-            - Not supported in pynative mode
+            - If Cell.offload is called, the mode should be set to "GRAPH_MODE".
+            - If Cell.offload is called, lazyinline should be enabled.
 
         Args:
-            backward_prefetch(Union[str, int]): Specifies whether the activation is prefetched in backward pass.
+            backward_prefetch(Union[str, int], optional): The timing for prefetching activations in advance in backward
+                                                          pass. Default: ``"Auto"``. If set it to ``"Auto"``, framework
+                                                          will start to prefetch activations one operator in advance.
+                                                          If set it to a positive int value, framework will start to
+                                                          prefetch activations ``backward_prefetch`` operators in
+                                                          advance, such as 1, 20, 100.
+        Examples:
+            >>> import mindspore.nn as nn
+            >>> from mindspore import ops
+            >>> from mindspore.common import Tensor, Parameter
+            >>>
+            >>> class Block(nn.Cell):
+            ...     def __init__(self):
+            ...         super(Block, self).__init__()
+            ...         self.transpose1 = ops.Transpose()
+            ...         self.transpose2 = ops.Transpose()
+            ...         self.transpose3 = ops.Transpose()
+            ...         self.transpose4 = ops.Transpose()
+            ...         self.real_div1 = ops.RealDiv()
+            ...         self.real_div2 = ops.RealDiv()
+            ...         self.batch_matmul1 = ops.BatchMatMul()
+            ...         self.batch_matmul2 = ops.BatchMatMul()
+            ...         self.softmax = ops.Softmax(-1)
+            ...         self.expand_dims = ops.ExpandDims()
+            ...         self.sub = ops.Sub()
+            ...         self.y = Parameter(Tensor(np.ones((1024, 128, 128)).astype(np.float32)))
+            ...     def construct(self, x):
+            ...         transpose1 = self.transpose1(x, (0, 2, 1, 3))
+            ...         real_div1 = self.real_div1(transpose1, Tensor(2.37891))
+            ...         transpose2 = self.transpose2(x, (0, 2, 3, 1))
+            ...         real_div2 = self.real_div2(transpose2, Tensor(2.37891))
+            ...         batch_matmul1 = self.batch_matmul1(real_div1, real_div2)
+            ...         expand_dims = self.expand_dims(self.y, 1)
+            ...         sub = self.sub(Tensor([1.0]), expand_dims)
+            ...         soft_max = self.softmax(sub)
+            ...         transpose3 = self.transpose3(x, (0, 2, 1, 3))
+            ...         batch_matmul2 = self.batch_matmul2(soft_max[0], transpose3)
+            ...         transpose4 = self.transpose4(batch_matmul2, (0, 2, 1, 3))
+            ...         return transpose4
+            >>>
+            >>> class OuterBlock(nn.Cell):
+            ...     @lazy_inline
+            ...     def __init__(self):
+            ...         super(OuterBlock, self).__init__()
+            ...         self.block = Block()
+            ...     def construct(self, x):
+            ...         return self.block(x)
+            >>>
+            >>> class Nets(nn.Cell):
+            ...     def __init__(self):
+            ...         super(Nets, self).__init__()
+            ...         self.blocks = nn.CellList()
+            ...         for _ in range(3):
+            ...             b = OuterBlock()
+            ...             b.offload()
+            ...             self.blocks.append(b)
+            ...     def construct(self, x):
+            ...         out = x
+            ...         for i in range(3):
+            ...             out = self.blocks[i](out)
+            ...         return out
         """
         if context._get_mode() == context.PYNATIVE_MODE:
             raise ValueError("The Cell offload does not support PyNative mode now.")
