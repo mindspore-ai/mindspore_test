@@ -16,7 +16,6 @@
 import os
 import math
 import numpy as np
-import time
 
 import mindspore as ms
 import mindspore.dataset as ds
@@ -128,6 +127,7 @@ def graph_model_predict(checkpoint_filenames=None, train_strategy_file=None, par
     # tansfer strategy
     model = Model(net)
     predict_strategy = model.infer_predict_layout(predict_data)
+    ms.mint.distributed.barrier()
     load_distributed_checkpoint(net, checkpoint_filenames, predict_strategy, train_strategy_file)
     predict_result = model.predict(predict_data)
     return predict_result
@@ -243,7 +243,7 @@ def graph_func_train(parallel=True, parallel_config=None, cpkt_file=None):
     with open(cpkt_file, 'w') as file:
         file.write("")
     save_checkpoint(net, cpkt_file, integrated_save=True)
-    time.sleep(5)
+    ms.mint.distributed.barrier()
 
 
 def graph_func_predict_net(parallel_config=None):
@@ -304,6 +304,7 @@ def cpkt_transfer_func_auto_parallel():
                             range(get_group_size())]
     train_strategy_file = train_stra_ckpt_file
     predict_strategy = predict_net.parameter_layout_dict
+    ms.mint.distributed.barrier()
     load_distributed_checkpoint(network=predict_net, checkpoint_filenames=src_checkpoint_files,
                                 predict_strategy=predict_strategy, train_strategy_filename=train_strategy_file)
     predict_result_load_distributed_checkpoint = predict_net(predict_data)
