@@ -63,9 +63,7 @@ class ScalarSummary(Primitive):
     """
     This operator will put a scalar to a summary file with protocol buffer format.
     It must be used with :class:`mindspore.SummaryRecord` or :class:`mindspore.SummaryCollector`,
-    which specify the directory of the summary file. The summary file can
-    be loaded and shown by MindInsight, see `MindInsight documents <https://www.mindspore.cn/
-    mindinsight/docs/en/master/index.html>`_ for details.
+    which specify the directory of the summary file.
     In Ascend platform with graph mode, the environment variables `MS_DUMP_SLICE_SIZE` and `MS_DUMP_WAIT_TIME`
     can be set to solve operator execution failure when calling this operator intensively.
 
@@ -123,9 +121,7 @@ class ScalarSummary(Primitive):
 class ImageSummary(Primitive):
     """
     This operator will put an image tensor to a summary file with protocol buffer format. It must be used with
-    SummaryRecord or SummaryCollector, which specify the directory of the summary file. The summary file can
-    be loaded and shown by MindInsight, see `MindInsight documents <https://www.mindspore.cn/
-    mindinsight/docs/en/master/index.html>`_ for details.
+    SummaryRecord or SummaryCollector, which specify the directory of the summary file.
     In Ascend platform with graph mode, the environment variables `MS_DUMP_SLICE_SIZE` and `MS_DUMP_WAIT_TIME`
     can be set to solve execution failure when calling this operator intensively.
 
@@ -176,9 +172,7 @@ class ImageSummary(Primitive):
 class TensorSummary(Primitive):
     """
     This operator will put a tensor to a summary file with protocol buffer format. It must be used with SummaryRecord
-    or SummaryCollector, which specify the directory of the summary file. The summary file can
-    be loaded and shown by MindInsight, see `MindInsight documents <https://www.mindspore.cn/
-    mindinsight/docs/en/master/index.html>`_ for details.
+    or SummaryCollector, which specify the directory of the summary file.
     In Ascend platform with graph mode, the environment variables `MS_DUMP_SLICE_SIZE` and `MS_DUMP_WAIT_TIME`
     can be set to solve operator execution failure when calling this operator intensively.
 
@@ -345,8 +339,6 @@ class HistogramSummary(Primitive):
     """
     This operator will calculate the histogram of a tensor and put it to a summary file with protocol buffer format.
     It must be used with SummaryRecord or SummaryCollector, which specify the directory of the summary file.
-    The summary file can be loaded and shown by MindInsight, see `MindInsight documents <https://www.mindspore.cn/
-    mindinsight/docs/en/master/index.html>`_ for details.
     In Ascend platform with graph mode, the environment variables `MS_DUMP_SLICE_SIZE` and `MS_DUMP_WAIT_TIME`
     can be set to solve operator execution failure when calling this operator intensively.
 
