@@ -1,13 +1,15 @@
 mindspore.Tensor.new_full
 ==========================
 
-.. py:method:: mindspore.Tensor.new_full(size, fill_value, *dtype=None)
+.. py:method:: mindspore.Tensor.new_full(size, fill_value, *, dtype=None)
 
     返回一个大小为 `size` 的Tensor，填充值为 `fill_value`。
 
     参数：
         - **size** (Union[tuple(int), list(int)]) - 定义输出的shape。
         - **fill_value** (Union[number.Number, bool]) - 填充值。
+
+    关键字参数：
         - **dtype** (:class:`mindspore.dtype`, 可选) - 输出的数据类型。默认值： ``None`` ，返回的Tensor使用和 `self` 相同的数据类型。
 
     返回：
