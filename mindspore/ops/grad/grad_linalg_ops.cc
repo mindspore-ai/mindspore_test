@@ -133,26 +133,24 @@ DEF_PURE_SHAPE_CALC(dynamic_calc_strided_slice_0_m)
     ShapeVector begin_strides(uv_shape.size(), 0);
     ShapeVector end_strides = uv_shape;
     ShapeVector step_strides(uv_shape.size(), 1);
-    size_t end_mask = 0;
-    constexpr size_t kOne = 1;
     auto zero = MakeValue<int64_t>(0);
     auto dim = SizeToLong(uv_shape.size()) - 1;
     begin_strides[dim] = slice[kIndex0];
     end_strides[dim] = slice[kIndex1];
     if (end_strides[dim] == LLONG_MAX) {
-      end_mask |= (kOne << dim);
+      MS_EXCEPTION(ValueError) << "For StridedSlice, end_strides[" << dim << "] is too large.";
     }
 
-    return {begin_strides, end_strides, step_strides, ShapeVector{SizeToLong(end_mask)}};
+    return {begin_strides, end_strides, step_strides};
   })
   .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &unknown_inputs) -> std::vector<int64_t> {
     auto a_shape = inputs.at(kIndex0);
     auto uv_shape = inputs.at(kIndex1);
     if (IsDynamicRank(a_shape) || IsDynamicRank(uv_shape) || !unknown_inputs.empty()) {
-      return {-1, -1, -1, 1};
+      return {-1, -1, -1};
     }
     auto size = SizeToLong(uv_shape.size());
-    return {size, size, size, 1};
+    return {size, size, size};
   });
 
 DEF_PURE_SHAPE_CALC(dynamic_calc_strided_slice_m_n)
@@ -170,26 +168,24 @@ DEF_PURE_SHAPE_CALC(dynamic_calc_strided_slice_m_n)
     ShapeVector begin_strides(uv_shape.size(), 0);
     ShapeVector end_strides = uv_shape;
     ShapeVector step_strides(uv_shape.size(), 1);
-    size_t end_mask = 0;
-    constexpr size_t kOne = 1;
     auto zero = MakeValue<int64_t>(0);
     auto dim = SizeToLong(uv_shape.size()) - 1;
     begin_strides[dim] = slice[kIndex0];
     end_strides[dim] = slice[kIndex1];
     if (end_strides[dim] == LLONG_MAX) {
-      end_mask |= (kOne << dim);
+      MS_EXCEPTION(ValueError) << "For StridedSlice, end_strides[" << dim << "] is too large.";
     }
 
-    return {begin_strides, end_strides, step_strides, ShapeVector{SizeToLong(end_mask)}};
+    return {begin_strides, end_strides, step_strides};
   })
   .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &unknown_inputs) -> std::vector<int64_t> {
     auto a_shape = inputs.at(kIndex0);
     auto uv_shape = inputs.at(kIndex1);
     if (IsDynamicRank(a_shape) || IsDynamicRank(uv_shape) || !unknown_inputs.empty()) {
-      return {-1, -1, -1, 1};
+      return {-1, -1, -1};
     }
     auto size = SizeToLong(uv_shape.size());
-    return {size, size, size, 1};
+    return {size, size, size};
   });
 
 NodePtrList GetDynamicUv(BpropBuilder *ib, const NodePtr &uv, const NodePtr &m, const NodePtr &n) {
@@ -275,12 +271,12 @@ NodePtr SvdBpropDynamic(BpropBuilder *ib, const NodePtr &a, const NodePtr &out, 
 
   auto strides_slice_v1 = ib->ShapeCalc(dynamic_calc_strided_slice_0_m, {a, v});
   auto v1 = ib->StridedSlice(v, strides_slice_v1[kIndex0], strides_slice_v1[kIndex1], strides_slice_v1[kIndex2],
-                             ib->Value<int64_t>(0LL), ib->TupleGetItem(strides_slice_v1[kIndex3], kIndex0),
-                             ib->Value<int64_t>(0LL), ib->Value<int64_t>(0LL), ib->Value<int64_t>(0LL));
+                             ib->Value<int64_t>(0LL), ib->Value<int64_t>(0LL), ib->Value<int64_t>(0LL),
+                             ib->Value<int64_t>(0LL), ib->Value<int64_t>(0LL));
   auto strides_slice_dv1 = ib->ShapeCalc(dynamic_calc_strided_slice_0_m, {a, dv});
   auto dv1 = ib->StridedSlice(dv, strides_slice_dv1[kIndex0], strides_slice_dv1[kIndex1], strides_slice_dv1[kIndex2],
-                              ib->Value<int64_t>(0LL), ib->TupleGetItem(strides_slice_dv1[kIndex3], kIndex0),
-                              ib->Value<int64_t>(0LL), ib->Value<int64_t>(0LL), ib->Value<int64_t>(0LL));
+                              ib->Value<int64_t>(0LL), ib->Value<int64_t>(0LL), ib->Value<int64_t>(0LL),
+                              ib->Value<int64_t>(0LL), ib->Value<int64_t>(0LL));
   auto u_gu = DoMatMul(ib, Adjoint(ib, u), du);
   auto v_gv = DoMatMul(ib, Adjoint(ib, v1), dv1);
   auto f_u = ib->Mul(f, u_gu);
@@ -296,15 +292,13 @@ NodePtr SvdBpropDynamic(BpropBuilder *ib, const NodePtr &a, const NodePtr &out, 
     auto term2_nous = e->Sub(gv1t, ControlFlowMatMul(e, gv1t_v1, ControlFlowAdjoint(e, v1)));
     if (full_matrices) {
       auto strides_slice_v2 = e->ShapeCalc(dynamic_calc_strided_slice_m_n, {a, v});
-      auto v2 =
-        e->Emit("StridedSlice", {v, strides_slice_v2[kIndex0], strides_slice_v2[kIndex1], strides_slice_v2[kIndex2],
-                                 e->Value<int64_t>(0LL), e->TupleGetItem(strides_slice_v2[kIndex3], kIndex0),
-                                 e->Value<int64_t>(0LL), e->Value<int64_t>(0LL), e->Value<int64_t>(0LL)});
+      auto v2 = e->Emit("StridedSlice", {v, strides_slice_v2[kIndex0], strides_slice_v2[kIndex1],
+                                         strides_slice_v2[kIndex2], e->Value<int64_t>(0LL), e->Value<int64_t>(0LL),
+                                         e->Value<int64_t>(0LL), e->Value<int64_t>(0LL), e->Value<int64_t>(0LL)});
       auto strides_slice_dv2 = e->ShapeCalc(dynamic_calc_strided_slice_m_n, {a, dv});
-      auto dv2 =
-        e->Emit("StridedSlice", {dv, strides_slice_dv2[kIndex0], strides_slice_dv2[kIndex1], strides_slice_dv2[kIndex2],
-                                 e->Value<int64_t>(0LL), e->TupleGetItem(strides_slice_dv2[kIndex3], kIndex0),
-                                 e->Value<int64_t>(0LL), e->Value<int64_t>(0LL), e->Value<int64_t>(0LL)});
+      auto dv2 = e->Emit("StridedSlice", {dv, strides_slice_dv2[kIndex0], strides_slice_dv2[kIndex1],
+                                          strides_slice_dv2[kIndex2], e->Value<int64_t>(0LL), e->Value<int64_t>(0LL),
+                                          e->Value<int64_t>(0LL), e->Value<int64_t>(0LL), e->Value<int64_t>(0LL)});
 
       auto v1t_gv2 = ControlFlowMatMul(e, ControlFlowAdjoint(e, v1), dv2);
       term2_nous = e->Sub(term2_nous, ControlFlowMatMul(e, v1t_gv2, ControlFlowAdjoint(e, v2)));
