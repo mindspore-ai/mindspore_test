@@ -1129,8 +1129,13 @@ DeviceTensorPtr PrepareForNonTensorAddress(const std::pair<KernelWithIndex, size
       shape = tensor->base_shape_ptr();
     }
     MS_EXCEPTION_IF_NULL(shape);
-    auto old_addr_info =
+    auto old_addr_info_ret =
       graph_parameter_store->GetReleasePositionInfo({outer_index, inner_index}, device_context->GetDeviceType());
+    if (!old_addr_info_ret.first) {
+      MS_LOG(EXCEPTION) << "Can not find info, outer index: " << outer_index << ", inner index: " << inner_index
+                        << ", type: " << device_context->GetDeviceType();
+    }
+    auto old_addr_info = old_addr_info_ret.second;
     TypePtr type = old_addr_info.first;
     MS_EXCEPTION_IF_NULL(type);
     auto kernel_tensor = std::make_shared<kernel::KernelTensor>(shape, type, nullptr);
@@ -1230,6 +1235,13 @@ DeviceTensor *PrepareParameter(const std::pair<KernelWithIndex, size_t> &paramet
           const auto &node_with_index = device_tensor->GetNodeIndex();
           tensor_address->SetNodeIndex(node_with_index.first, node_with_index.second);
           tensor_address->set_flag(device_tensor->flag());
+        } else {
+          auto old_addr_info_ret =
+            graph_parameter_store->GetReleasePositionInfo({outer_index, inner_index}, device_context->GetDeviceType());
+          if (old_addr_info_ret.first) {
+            auto old_addr_info = old_addr_info_ret.second;
+            tensor_address->SetNodeIndex(old_addr_info.second.first, old_addr_info.second.second);
+          }
         }
         // device tensor may be null.
         device_tensor = tensor_address;
