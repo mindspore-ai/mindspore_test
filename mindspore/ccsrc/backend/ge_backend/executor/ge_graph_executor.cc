@@ -35,7 +35,6 @@
 #include "backend/ge_backend/utils/device_address_utils.h"
 #include "backend/ge_backend/executor/ge_memory_allocator.h"
 #include "backend/ge_backend/executor/ge_utils.h"
-#include "plugin/device/ascend/hal/hardware/ascend_device_context.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_memory_adapter.h"
 #include "plugin/res_manager/ascend/ascend_device_address/ascend_device_address.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
@@ -52,6 +51,7 @@ namespace mindspore {
 namespace backend {
 namespace ge_backend {
 namespace {
+static bool initialized_ge = false;
 const std::set<std::string> kIgnoreGEShapeOps = {kSoftMarginLossOpName};
 using mindspore::session::KernelWithIndex;
 
@@ -881,7 +881,6 @@ void GeGraphExecutor::AddRefCorrespondPairs(const KernelGraphPtr &graph,
 
 bool GeGraphExecutor::CompileGraph(const FuncGraphPtr &graph, const std::map<string, string> &compile_options) {
   MS_EXCEPTION_IF_NULL(graph);
-  dynamic_cast<device::ascend::AscendDeviceContext *>(device_context_)->ContextInitGe();
 
   auto graph_name = GetGraphName(graph);
   uint64_t start_time = profiler::GetClockSyscnt();
@@ -1361,7 +1360,10 @@ void GeGraphExecutor::RunInitGraph(const std::string &graph_name) {
   }
 }
 
-void GeGraphExecutor::GraphInitGe() {
+void GeGraphExecutor::InitializeForGe() {
+  if (initialized_ge) {
+    return;
+  }
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
 
@@ -1386,7 +1388,19 @@ void GeGraphExecutor::GraphInitGe() {
       MS_LOG(EXCEPTION) << "Initialize GE failed!";
     }
   }
+  initialized_ge = true;
+}
 
+void GeGraphExecutor::Initialize() {
+  if (initialized_) {
+    return;
+  }
+
+  ge_res_manager_ = std::make_shared<GeDeviceResManager>();
+  ge_res_manager_->Initialize();
+  InitializeForGe();
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
   CreateSessionAndGraphRunner();
   auto graph_runner = backend::ge_backend::GetGraphRunner();
   MS_EXCEPTION_IF_NULL(graph_runner);
@@ -1401,15 +1415,6 @@ void GeGraphExecutor::GraphInitGe() {
 
   ms_context->increase_param<uint32_t>(MS_CTX_GE_REF);
   MS_LOG(INFO) << "Init ge successful, ge reference = " << ms_context->get_param<uint32_t>(MS_CTX_GE_REF) << ".";
-}
-
-void GeGraphExecutor::Initialize() {
-  if (initialized_) {
-    return;
-  }
-
-  ge_res_manager_ = std::make_shared<GeDeviceResManager>();
-  ge_res_manager_->Initialize();
   initialized_ = true;
   return;
 }

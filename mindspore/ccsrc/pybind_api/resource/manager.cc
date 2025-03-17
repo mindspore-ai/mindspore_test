@@ -165,6 +165,10 @@ void ClearResPart2() {
   session::ExecutorManager::Instance().Clear();
   device::HalResManager::GetInstance().Clear();
 
+  MS_LOG(INFO) << "Start clear BackendManager...";
+  backend::BackendManager::GetInstance().Clear();
+  MS_LOG(INFO) << "End clear BackendManager...";
+
   MS_LOG(INFO) << "Start clear device context...";
   device::DeviceContextManager::GetInstance().ClearDeviceContexts();
   MS_LOG(INFO) << "End clear device context.";
@@ -249,7 +253,6 @@ void ClearSingleton() {
   device::DataQueueMgr::GetInstance().Clear();
   session::SessionFactory::Get().Clear();
   device::KernelRuntimeManager::Instance().Clear();
-  backend::BackendManager::GetInstance().Clear();
   ExecuteOrderTracker::GetInstance().Clear();
   OpPrimPyRegister::GetInstance().Clear();
   DumpJsonParser::Finalize();

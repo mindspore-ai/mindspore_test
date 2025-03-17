@@ -207,6 +207,7 @@ void DfGraphManager::DeleteGeSession() noexcept {
     }
     sess_ptr_ = nullptr;
     saved_graphs_.clear();
+    graphs_.clear();
     MS_LOG(INFO) << "Delete Ge Session success";
   }
 }

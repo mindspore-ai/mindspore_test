@@ -33,10 +33,7 @@ namespace device {
 namespace ascend {
 class EXPORT_WRAPPER DvmCollectiveCommLib : public CollectiveCommunicationLib {
  public:
-  static DvmCollectiveCommLib &GetInstance() {
-    static DvmCollectiveCommLib instance;
-    return instance;
-  }
+  static DvmCollectiveCommLib &GetInstance();
 
   bool Initialize(uint32_t global_rank, uint32_t global_rank_size, uint32_t local_rank_id) override;
 

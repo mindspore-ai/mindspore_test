@@ -45,10 +45,7 @@ struct LeaperConnInfo {
 
 class EXPORT_WRAPPER LeaperTrans {
  public:
-  static LeaperTrans &GetInstance() {
-    static LeaperTrans instance;
-    return instance;
-  }
+  static LeaperTrans &GetInstance();
 
   LeaperConnInfo Connect(std::string dst_ip, uint16_t src_port, uint16_t dst_port);
   bool SendRecv(const void *send_data, void *recv_data, size_t send_size, size_t recv_size,

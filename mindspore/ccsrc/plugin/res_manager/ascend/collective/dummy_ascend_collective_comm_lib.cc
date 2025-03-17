@@ -27,6 +27,11 @@
 
 namespace mindspore {
 namespace device {
+DummyAscendCollectiveCommLib &DummyAscendCollectiveCommLib::GetInstance() {
+  static DummyAscendCollectiveCommLib instance;
+  return instance;
+}
+
 DummyAscendCollectiveCommLib::DummyAscendCollectiveCommLib() {
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);

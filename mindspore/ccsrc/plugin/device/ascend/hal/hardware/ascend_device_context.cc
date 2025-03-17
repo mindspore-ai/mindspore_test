@@ -213,17 +213,17 @@ RunMode AscendDeviceContext::GetRunMode(const FuncGraphPtr &func_graph) const {
   }
 }
 
-void AscendDeviceContext::ContextInitGe() const {
-  if (ge_initialized_) {
+void AscendDeviceContext::InitializeForAclop() const {
+  if (initialized_aclop_) {
     return;
   }
   if (!UseSimulationApi()) {
-    dynamic_cast<backend::ge_backend::GeGraphExecutor *>(graph_executor_.get())->GraphInitGe();
+    dynamic_cast<backend::ge_backend::GeGraphExecutor *>(graph_executor_.get())->InitializeForGe();
   }
   // should be called after ge initialize.
   SetAclOpDebugOption();
   TensorDumpStepManager::GetInstance().SetAclDumpCallbackReg(reinterpret_cast<void *>(acldumpRegCallback));
-  ge_initialized_ = true;
+  initialized_aclop_ = true;
 }
 
 void AscendDeviceContext::Initialize() {
@@ -257,14 +257,14 @@ void AscendDeviceContext::Initialize() {
   MS_EXCEPTION_IF_NULL(device_res_manager_);
   device_res_manager_->Initialize();
 
-  // set MS_CTX_ENABLE_GE_HETEROGENOUS true according to  heterogeneous mode
+  // set MS_CTX_ENABLE_GE_HETEROGENOUS true according to heterogeneous mode
   ms_context->set_param<bool>(MS_CTX_ENABLE_GE_HETEROGENOUS, false);
-  if (!UseSimulationApi()) {
+  if (!UseSimulationApi() && !UseNewBackend()) {
     graph_executor_->Initialize();
   }
 
   if (ms_context->GetBackend() == kBackendGE || ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
-    ContextInitGe();
+    InitializeForAclop();
   }
 
   MS_EXCEPTION_IF_NULL(GetKernelExecutor(false));
@@ -275,15 +275,6 @@ void AscendDeviceContext::Initialize() {
   GetKernelExecutor(false)->Initialize();
 
   InitDump();
-  auto op_tuning_conf = OpTuningConf::GetInstance();
-  MS_EXCEPTION_IF_NULL(op_tuning_conf);
-  if (op_tuning_conf->EnableAoeOnline()) {
-    std::string aoe_job_type = op_tuning_conf->aoe_job_type();
-    backend::ge_backend::InitializeAoeUtil(aoe_job_type);
-  }
-  if (op_tuning_conf->EnableAoeOffline()) {
-    backend::ge_backend::EnableAoeOffline();
-  }
   // open tsd
   if (!common::UseDynamicCluster()) {
     if (!GetDeprecatedInterface()->OpenTsd(ms_context)) {
@@ -301,13 +292,7 @@ void AscendDeviceContext::Destroy() {
     MS_LOG(INFO) << "The device context is not initialized by current process, it doesn't need to be destroyed.";
     return;
   }
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto op_tuning_conf = OpTuningConf::GetInstance();
-  MS_EXCEPTION_IF_NULL(op_tuning_conf);
-  if (op_tuning_conf->EnableAoeOnline()) {
-    backend::ge_backend::DestroyAoeUtil();
-  }
+
   if (graph_executor_ == nullptr) {
     return;
   }

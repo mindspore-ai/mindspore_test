@@ -20,6 +20,11 @@
 namespace mindspore {
 namespace device {
 namespace ascend {
+DvmCollectiveCommLib &DvmCollectiveCommLib::GetInstance() {
+  static DvmCollectiveCommLib instance;
+  return instance;
+}
+
 DvmCollectiveCommLib::DvmCollectiveCommLib() { global_group_name_ = kHCCLWorldGroup; }
 
 bool DvmCollectiveCommLib::Initialize(uint32_t global_rank, uint32_t global_rank_size, uint32_t local_rank_id) {

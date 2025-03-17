@@ -50,7 +50,6 @@ class GeDeviceResManager {
  private:
   bool initialized_ = false;
   std::shared_ptr<device::MemoryManager> mem_manager_{nullptr};
-  device::HalResBase *res_manager_ = nullptr;
 };
 using GeDeviceResManagerPtr = std::shared_ptr<GeDeviceResManager>;
 

@@ -49,7 +49,7 @@ class AscendDeviceContext
 
   void Initialize() override;
 
-  void ContextInitGe() const;
+  void InitializeForAclop() const;
 
   void Destroy() override;
 
@@ -72,7 +72,7 @@ class AscendDeviceContext
   void InitDump() const;
 
   std::unique_ptr<AscendDeprecatedInterface> deprecated_interface_;
-  mutable bool ge_initialized_{false};
+  mutable bool initialized_aclop_{false};
 };
 }  // namespace ascend
 }  // namespace device

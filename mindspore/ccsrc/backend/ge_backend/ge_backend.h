@@ -153,9 +153,7 @@ class BACKEND_EXPORT GEBackend : public BackendBase {
 
   std::shared_ptr<mindspore::ge_backend::runtime::GraphCompiler> graph_compiler_;
   static BackendGraphId backend_graph_id_;
-  std::shared_ptr<device::GraphExecutor> graph_executor_;
-  BackendJitConfig backend_jit_config_;
-  compile::GraphPartitionPtr graph_partition_;
+  std::shared_ptr<GeGraphExecutor> graph_executor_;
   inline static std::mutex init_mutex_;
   bool is_initialized_ = false;
 };

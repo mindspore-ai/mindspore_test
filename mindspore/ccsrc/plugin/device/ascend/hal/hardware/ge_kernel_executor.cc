@@ -1053,7 +1053,7 @@ void GeKernelExecutor::OptimizeGraph(const FuncGraphPtr &graph) const {
   if (has_aclop) {
     static std::once_flag ge_init_flag_ = {};
     std::call_once(ge_init_flag_, [&]() {
-      dynamic_cast<AscendDeviceContext *>(device_context_)->ContextInitGe();
+      dynamic_cast<AscendDeviceContext *>(device_context_)->InitializeForAclop();
       SetAclOpPrecisionMode();
       res_manager_->SetAclDeterministic();
     });
@@ -1254,7 +1254,7 @@ void GeKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const {
   }
 
   // use GE, delete when delete disable_ge_kernel
-  if (kernel_graph->is_graph_run_mode()) {
+  if (kernel_graph->is_graph_run_mode() && !UseNewBackend()) {
     if (AnfAlgo::IsNoRealKernelGraph(kernel_graph)) {
       return;
     }

@@ -41,10 +41,7 @@ namespace ascend {
 // CCOOL: Collection Communication operator orchestration
 class EXPORT_WRAPPER CcoolCollectiveCommLib : public CollectiveCommunicationLib {
  public:
-  static CcoolCollectiveCommLib &GetInstance() {
-    static CcoolCollectiveCommLib instance;
-    return instance;
-  }
+  static CcoolCollectiveCommLib &GetInstance();
 
   bool Initialize(uint32_t global_rank, uint32_t global_rank_size, uint32_t local_rank_id) override;
 

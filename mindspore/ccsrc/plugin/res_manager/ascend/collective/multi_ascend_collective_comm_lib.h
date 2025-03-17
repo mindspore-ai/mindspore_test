@@ -46,10 +46,7 @@ constexpr char kMACCLGlobalGroupName[] = "hccl_world_group";
 
 class EXPORT_WRAPPER MultiAscendCollectiveCommLib : public CollectiveCommunicationLib {
  public:
-  static MultiAscendCollectiveCommLib &GetInstance() {
-    static MultiAscendCollectiveCommLib instance;
-    return instance;
-  }
+  static MultiAscendCollectiveCommLib &GetInstance();
 
   bool isGroupWithinLocalMachine(const std::vector<uint32_t> &group_ranks);
 

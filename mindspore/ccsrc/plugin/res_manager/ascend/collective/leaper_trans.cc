@@ -25,6 +25,11 @@ namespace mindspore {
 namespace device {
 namespace ascend {
 
+LeaperTrans &LeaperTrans::GetInstance() {
+  static LeaperTrans instance;
+  return instance;
+}
+
 LeaperTrans::LeaperTrans() {}
 
 LeaperConnInfo LeaperTrans::Connect(std::string dst_ip, uint16_t src_port, uint16_t dst_port) {

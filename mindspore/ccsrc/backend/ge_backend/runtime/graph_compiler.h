@@ -33,7 +33,6 @@
 #include "kernel/framework_utils.h"
 #include "common/device_type.h"
 #include "backend/ge_backend/executor/ge_graph_executor.h"
-#include "runtime/hardware/device_context.h"
 
 namespace mindspore {
 namespace ge_backend {
@@ -86,7 +85,7 @@ struct BACKEND_EXPORT GraphCompilerInfo {
                     const KernelMapPosition &origin_outputs_order, size_t outputs_num, size_t inputs_num,
                     const std::string &name, bool need_erase, GraphExecutionStrategy strategy,
                     const std::string &graph_phase, const FuncGraphPtr &root_graph,
-                    const std::shared_ptr<device::GraphExecutor> &graph_executor)
+                    const std::shared_ptr<backend::ge_backend::GeGraphExecutor> &graph_executor)
       : graphs_(graphs),
         tensors_mask_(tensors_mask),
         input_tensors_(input_tensors),
@@ -121,12 +120,12 @@ struct BACKEND_EXPORT GraphCompilerInfo {
   mutable GraphExecutionStrategy strategy_;
   std::string graph_phase_;
   FuncGraphPtr root_graph_;
-  std::shared_ptr<device::GraphExecutor> graph_executor_;
+  std::shared_ptr<backend::ge_backend::GeGraphExecutor> graph_executor_;
 };
 
 class GraphCompiler {
  public:
-  explicit GraphCompiler(std::shared_ptr<device::GraphExecutor> graph_executor) {
+  explicit GraphCompiler(std::shared_ptr<backend::ge_backend::GeGraphExecutor> graph_executor) {
     session_ = session::SessionFactory::Get().Create(kSessionBasic);
     graph_executor_ = graph_executor;
   }
@@ -171,7 +170,7 @@ class GraphCompiler {
   // The member variable 'session_' will be removed after removing session module.
   // Now all the GraphCompiler share the same 'session_'.
   session::SessionPtr session_;
-  std::shared_ptr<device::GraphExecutor> graph_executor_;
+  std::shared_ptr<backend::ge_backend::GeGraphExecutor> graph_executor_;
 };
 }  // namespace runtime
 }  // namespace ge_backend

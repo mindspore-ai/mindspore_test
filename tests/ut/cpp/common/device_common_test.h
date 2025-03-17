@@ -245,7 +245,9 @@ class TestGraphExecutor : public device::GraphExecutor {
 
 class TestDeviceContext : public device::DeviceInterface<TestGraphExecutor, TestKernelExecutor, TestDeviceResManager> {
  public:
-  explicit TestDeviceContext(const DeviceContextKey &device_context_key) : DeviceInterface(device_context_key) {}
+  explicit TestDeviceContext(const DeviceContextKey &device_context_key) : DeviceInterface(device_context_key) {
+    graph_executor_ = std::make_shared<TestGraphExecutor>();
+  }
   ~TestDeviceContext() override = default;
 
   virtual void Initialize() {}
