@@ -1049,7 +1049,14 @@ void FuncGraphSpecializer::EliminateUnusedSequenceItem(const CNodePtr &cnode) co
   }
 }
 
-bool FuncGraphSpecializer::GetIgnoreBuildValueFlag(const AnfNodePtr &node_input) {
+bool FuncGraphSpecializer::GetIgnoreBuildValueFlag(const AnfNodePtr &node_input, const AbstractBasePtr &abs) {
+  // If node_inplace is used by the view operator or the inplace operator,
+  // don't replace it because of the constant folding.
+  if (abs != nullptr && abs->inplace_abstract() != nullptr) {
+    MS_LOG(DEBUG) << "Do not replace. The node_input is used by view operator or inplace operator: "
+                  << node_input->DebugString();
+    return true;
+  }
   bool ignore_build_value = false;
   MS_EXCEPTION_IF_NULL(specializer_->engine());
   bool back_prop = false;
@@ -1070,7 +1077,7 @@ bool FuncGraphSpecializer::GetIgnoreBuildValueFlag(const AnfNodePtr &node_input)
   // Recheck input
   auto cnode = node_input->cast<CNodePtr>();
   if (IsPrimitiveCNode(cnode, prim::kPrimStopGradient)) {
-    return GetIgnoreBuildValueFlag(cnode->input(1));
+    return GetIgnoreBuildValueFlag(cnode->input(1), cnode->input(1)->abstract());
   }
   if (IsPrimitiveCNode(cnode, prim::kPrimMakeTuple)) {
     auto inner_inputs = cnode->inputs();
@@ -1147,7 +1154,7 @@ void FuncGraphSpecializer::ProcessNode(const AnfNodePtr &node) {
     replace_node->set_abstract(abs);
     MS_LOG(DEBUG) << "Set replaced input[" << i << "]: " << replace_node->DebugString()
                   << ", NodeConfig: " << input_conf->ToString() << ", result: " << abs.get() << "/" << abs->ToString();
-    if (!GetIgnoreBuildValueFlag(replace_node)) {
+    if (!GetIgnoreBuildValueFlag(replace_node, abs)) {
       auto replace_value_node = BuildPossibleValueNode(replace_node, abs, attrs, node);
       if (replace_value_node != nullptr) {
         MS_LOG(DEBUG) << "Build possible value node for node: " << replace_node->DebugString()
