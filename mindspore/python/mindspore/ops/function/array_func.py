@@ -256,62 +256,32 @@ def _get_max_type(start, end, step):
 
 def arange(start=0, end=None, step=1, *, dtype=None):
     r"""
-    Creates a sequence of numbers that begins at `start` and extends by increments of
-    `step` up to but not including `end`.
+    Returns a tensor with a step length of `step` in the interval [ `start` , `end` ).
 
     Args:
-        start (Union[float, int, Tensor], optional): The start of the interval.
-            If Tensor, the shape must be :math:`()` . Default: ``0`` .
-        end (Union[float, int, Tensor], optional): The end of the interval, exclusive.
-            If Tensor, the shape must be :math:`()`.
-            Default: ``None`` . If ``None`` , it defaults to the value of `start`, and 0 is used as the starting value.
-        step (Union[float, int, Tensor], optional): Number that increments `start`.
-            If Tensor, the shape must be :math:`()`. Default: ``1`` .
+        start (Union[float, int, Tensor], optional): The start value of the interval.
+            Default ``0`` .
+        end (Union[float, int, Tensor], optional): The end value of the interval.
+            Default ``None`` represents to the value of `start` , and `0` is used as the start value.
+        step (Union[float, int, Tensor], optional): The interval between each value. Default ``1`` .
 
     Keyword Args:
-        dtype (mindspore.dtype, optional): The required data type of returned Tensor. Default: ``None`` .
-            When `dtype` is not specified or ``None``:
-
-            - If `start`, `end`, and `step` are all integers, the dtype of output is int64,
-
-            - If `start`, `end`, and `step` contain at least one floating-point number, the dtype of output is float32.
+        dtype (mindspore.dtype, optional): The data type specified. Default ``None`` .
 
     Returns:
-        A 1-D Tensor, with the same type as the inputs.
-
-    Raises:
-        TypeError: If `start`, `end` or `step` is not an int or a float or a TensorScalar(Special Tensor with shape ())
-                   in valid dtypes.
-        ValueError: If `step` = 0.
-        ValueError: If `start` >= `end` when `step` > 0.
-        ValueError: If `start` <= `end` when `step` < 0.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import mindspore as ms
-        >>> from mindspore import Tensor, ops
-        >>> output = ops.arange(1, 6)
-        >>> print(output)
-        [1 2 3 4 5]
-        >>> print(output.dtype)
-        Int64
-        >>> output = ops.arange(0, 3, 1.2)
-        >>> print(output)
-        [0.  1.2 2.4]
-        >>> print(output.dtype)
-        Float32
-        >>> output = ops.arange(7, 1, -2)
-        >>> print(output)
-        [7 5 3]
-        >>> print(output.dtype)
-        Int64
-        >>> output = ops.arange(ms.Tensor(12.0, dtype=ms.float64), 2, ms.Tensor(-1.0, dtype=ms.float32))
-        >>> print(output)
-        [12. 11. 10.  9.  8.  7.  6.  5.  4.  3.]
-        >>> print(output.dtype)
-        Float32
+        >>> import mindspore
+        >>> mindspore.ops.arange(4)
+        Tensor(shape=[4], dtype=Int64, value= [0, 1, 2, 3])
+        >>> mindspore.ops.arange(1, 6)
+        Tensor(shape=[5], dtype=Int64, value= [1, 2, 3, 4, 5])
+        >>> mindspore.ops.arange(0, 2, 0.5)
+        Tensor(shape=[4], dtype=Float32, value= [ 0.00000000e+00,  5.00000000e-01,  1.00000000e+00,  1.50000000e+00])
     """
     if end is None:
         start, end = 0, start
@@ -772,10 +742,8 @@ def _check_axis_type(axis, type_int=True, type_tuple=True, type_list=True, ops_n
 
 def one_hot(indices, depth, on_value=1, off_value=0, axis=-1):
     r"""
-    Computes a one-hot tensor.
-
-    The locations represented by indices in `indices` take value `on_value`, while all
-    other locations take value `off_value`.
+    Generate a new tensor, where the positions specified by `indices` are assigned `on_value`, and all
+    other positions are assigned `off_value`.
 
     Note:
         If the input `indices` has rank `N`, the output will have rank `N+1`.
@@ -783,44 +751,51 @@ def one_hot(indices, depth, on_value=1, off_value=0, axis=-1):
         int64 dtype, and the value for `on_value` and `off_value` can only be 1 and 0.
 
     Args:
-        indices(Tensor): A tensor of indices. Tensor of shape :math:`(X_0, \ldots, X_n)`.
-            Data type must be int32 or int64.
-        depth(int): A scalar defining the depth of the one-hot dimension.
-        on_value(Union[Tensor, int, float], optional): A value to fill in output when `indices[j] = i`.
-            Data type must be int32, int64, float16 or float32. Default: ``1`` .
-        off_value(Union[Tensor, int, float], optional): A value to fill in output when `indices[j] != i`.
-            Has the same data type as `on_value`. Default: ``0`` .
-        axis(int, optional): Position to insert the value. e.g. If shape of `self` is :math:`(N, C)`, and `axis` is -1,
-            the output shape will be :math:`(N, C, depth)`, If `axis` is 0,
-            the output shape will be :math:`(depth, N, C)`.
-            Default: ``-1`` .
+        indices(Tensor): The input tensor of indices.
+        depth(int): The depth of the one-hot.
+        on_value(Union[Tensor, int, float], optional): The value used to fill indexed positions. Default ``1`` .
+        off_value(Union[Tensor, int, float], optional): The value used to fill non-indexed positions. Default ``0`` .
+        axis(int, optional): Specify the axis for computation. Default ``-1`` .
 
     Returns:
-        Tensor, one-hot tensor. Tensor of shape :math:`(X_0, \ldots, X_{axis}, \text{depth} ,X_{axis+1}, \ldots, X_n)`,
-        and it has the same data type as `on_value`.
-
-    Raises:
-        TypeError: If `axis` or `depth` is not an int.
-        TypeError: If dtype of `indices` is not int32 or int64.
-        TypeError: If dtype of `on_value` is not int32, int64, float16 or float32.
-        TypeError: If `indices`, `on_value` or `off_value` is not a Tensor.
-        ValueError: If `axis` is not in range [-1, ndim].
-        ValueError: If `depth` is less than 0.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> indices = Tensor(np.array([0, 1, 2]), mindspore.int32)
-        >>> depth, on_value, off_value = 3, Tensor(1.0, mindspore.float32), Tensor(0.0, mindspore.float32)
-        >>> output = ops.one_hot(indices, depth, on_value, off_value, axis=-1)
-        >>> print(output)
-        [[1. 0. 0.]
-         [0. 1. 0.]
-         [0. 0. 1.]]
+        >>> indices = mindspore.tensor([0, 1, 2, 4])
+        >>> mindspore.ops.one_hot(indices, depth=5)
+        Tensor(shape=[4, 5], dtype=Int64, value=
+        [[1, 0, 0, 0, 0],
+         [0, 1, 0, 0, 0],
+         [0, 0, 1, 0, 0],
+         [0, 0, 0, 0, 1]])
+        >>>
+        >>> mindspore.ops.one_hot(indices, depth=3)
+        Tensor(shape=[4, 3], dtype=Int64, value=
+        [[1, 0, 0],
+         [0, 1, 0],
+         [0, 0, 1],
+         [0, 0, 0]])
+        >>> # If shape of indices is (N, C), and axis=-1, the returned shape will be (N, C, depth).
+        >>> indices = mindspore.tensor([[0, 2], [1, -1]])
+        >>> mindspore.ops.one_hot(indices, depth=3, on_value=10, off_value=4, axis=-1)
+        Tensor(shape=[2, 2, 3], dtype=Int64, value=
+        [[[10,  4,  4],
+          [ 4,  4, 10]],
+         [[ 4, 10,  4],
+          [ 4,  4,  4]]])
+        >>> # If axis=0, the returned shape will be (depth, N, C).
+        >>> mindspore.ops.one_hot(indices, depth=3, on_value=10, off_value=4, axis=0)
+        Tensor(shape=[3, 2, 2], dtype=Int64, value=
+        [[[10,  4],
+          [ 4,  4]],
+         [[ 4,  4],
+          [10,  4]],
+         [[ 4, 10],
+          [ 4,  4]]])
     """
     if not isinstance(on_value, Tensor):
         on_value = Tensor(on_value)

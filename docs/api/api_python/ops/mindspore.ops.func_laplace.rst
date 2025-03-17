@@ -5,7 +5,7 @@ mindspore.ops.laplace
 
     根据拉普拉斯分布生成随机数。
 
-    它的定义为：
+    支持广播。
 
     .. math::
         \text{f}(x;μ,λ) = \frac{1}{2λ}\exp(-\frac{|x-μ|}{λ}),
@@ -16,10 +16,10 @@ mindspore.ops.laplace
         Ascend后端不支持随机数重现功能， `seed` 参数不起作用。
 
     参数：
-        - **shape** (tuple) - 指定生成随机Tensor的shape。格式为 :math:`(N,*)` ，其中 :math:`*` 表示任意数量的附加维度。
-        - **mean** (Tensor) - 均值μ分布参数，指定峰值的位置。数据类型为float32。
-        - **lambda_param** (Tensor) - 用于控制此随机分布方差的参数。拉普拉斯分布的方差等于 `lambda_param` 平方的两倍。数据类型为float32。
-        - **seed** (int，可选) - 随机种子，用作生成随机数。默认值： ``None`` ，此时使用0作为seed。
+        - **shape** (tuple) - 生成随机数的shape。
+        - **mean** (Tensor) - 分布的均值。
+        - **lambda_param** (Tensor) - 控制分布方差。拉普拉斯分布的方差等于 `lambda_param` 平方的两倍。
+        - **seed** (int，可选) - 随机种子。默认 ``None`` 表示使用0。
 
     返回：
-        Tensor。输出shape应该是使用输入 `shape` 、 `mean` 和 `lambda_param` 广播后的shape。数据类型为float32。
+        Tensor
