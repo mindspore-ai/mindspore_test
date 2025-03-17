@@ -1,0 +1,14 @@
+le_:
+  - op_yaml: inplace_le_scalar_op.yaml
+    py_method: tensor_inplace_le
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
+
+  - op_yaml: inplace_le_tensor_op.yaml
+    py_method: tensor_inplace_le
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
