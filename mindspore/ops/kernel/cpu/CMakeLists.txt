@@ -51,7 +51,7 @@ endif()
 
 # merge cpu kernel files, NOT recursively
 if(NOT BUILD_LITE)
-    if(NOT CMAKE_SYSTEM_NAME MATCHES "Windows")
+    if(NOT CMAKE_SYSTEM_NAME MATCHES "Windows" AND NOT CMAKE_SYSTEM_NAME MATCHES "Darwin")
         set(CPU_KERNEL_MERGE_DIR ${CMAKE_BINARY_DIR}/merge/mindspore/ops/kernel/cpu)
         merge_ops_files(${CMAKE_CURRENT_SOURCE_DIR} ${CPU_KERNEL_MERGE_DIR} cpu_kernel_merge "${EXCLUDE_PATTERN}" TRUE)
         file(GLOB_RECURSE CPU_KERNEL_MERGE_FILES ${CPU_KERNEL_MERGE_DIR}/*.cc)
