@@ -1426,7 +1426,7 @@ void GEBackend::ConstructInputsRefMode(const KernelGraphPtr &func_graph, const V
         std::dynamic_pointer_cast<mindspore::device::DeviceAddress>(flatten_tensors[j]->device_address());
 
       UpdateInputsShapeAndSize(parameter, device_tensor, flatten_tensors[j]);
-
+      CheckContiguousTensor(flatten_tensors[j]);
       // in different backend object, but has init, skip
       if (common::AnfAlgo::IsParameterWeight(parameter)) {
         is_weight_init_[parameter] = true;
@@ -1475,7 +1475,6 @@ void GEBackend::ConstructInputsRefMode(const KernelGraphPtr &func_graph, const V
             flatten_tensors[j]->data_sync();
             is_need_sync = true;
           } else {
-            CheckContiguousTensor(flatten_tensors[j]);
             host_tensor_address =
               std::dynamic_pointer_cast<mindspore::device::DeviceAddress>(flatten_tensors[j]->device_address());
             // other not same: device copy
@@ -1503,12 +1502,15 @@ void GEBackend::ConstructInputs(const KernelGraphPtr &func_graph, const VectorRe
 }
 
 bool GEBackend::Copy(const mindspore::device::DeviceAddress *dst_device_tensor,
-                     const mindspore::device::DeviceAddress *src_device_tensor) {
+                     mindspore::device::DeviceAddress *src_device_tensor) {
   MS_EXCEPTION_IF_NULL(dst_device_tensor);
   MS_EXCEPTION_IF_NULL(src_device_tensor);
   if (src_device_tensor->GetSize() != dst_device_tensor->GetSize()) {
     MS_LOG(INFO) << "Copy size is not equal, input size:" << src_device_tensor->GetSize()
                  << ", output size:" << dst_device_tensor->GetSize();
+    auto new_address_size =
+      GetTypeByte(TypeIdToType(src_device_tensor->type_id())) * SizeOf(src_device_tensor->GetShapeVector());
+    src_device_tensor->SetSize(new_address_size);
   }
 
   // Exist the size alignment in some device, so get the min device size.
