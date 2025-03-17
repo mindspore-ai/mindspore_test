@@ -48,6 +48,8 @@
 #include "kernel/ascend/availability/silent_check/ascend_silent_check.h"
 #include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "acl/acl_dump.h"
+#include "debug/dump/tensordump_control.h"
 
 namespace mindspore {
 namespace device {
@@ -220,6 +222,7 @@ void GeDeviceContext::GeInitialize() const {
   }
   // should be called after ge initialize.
   SetAclOpDebugOption();
+  TensorDumpStepManager::GetInstance().SetAclDumpCallbackReg(reinterpret_cast<void *>(acldumpRegCallback));
   ge_initialized_ = true;
 }
 
