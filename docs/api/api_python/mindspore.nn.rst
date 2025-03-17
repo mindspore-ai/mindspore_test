@@ -384,8 +384,8 @@ Dynamic LR函数
     mindspore.nn.PixelUnshuffle
     mindspore.nn.Upsample
 
-工具
------
+公共层
+-------
 
 .. mscnplatformautosummary::
     :toctree: nn
@@ -396,4 +396,13 @@ Dynamic LR函数
     mindspore.nn.Flatten
     mindspore.nn.Identity
     mindspore.nn.Unflatten
+
+工具
+-----
+
+.. mscnautosummary::
+    :toctree: nn
+    :nosignatures:
+    :template: classtemplate.rst
+
     mindspore.nn.utils.no_init_parameters

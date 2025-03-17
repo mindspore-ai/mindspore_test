@@ -387,8 +387,8 @@ Image Processing Layer
     mindspore.nn.PixelUnshuffle
     mindspore.nn.Upsample
 
-Tools
------
+Common Layer
+------------
 
 .. msplatformautosummary::
     :toctree: nn
@@ -399,4 +399,13 @@ Tools
     mindspore.nn.Flatten
     mindspore.nn.Identity
     mindspore.nn.Unflatten
+
+Tools
+-----
+
+.. autosummary::
+    :toctree: nn
+    :nosignatures:
+    :template: classtemplate.rst
+
     mindspore.nn.utils.no_init_parameters
