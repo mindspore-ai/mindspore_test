@@ -3,21 +3,17 @@ mindspore.ops.mm
 
 .. py:function:: mindspore.ops.mm(input, mat2)
 
-    计算两个矩阵的乘积。
+    计算两个输入的矩阵乘积。
 
-    如果 `input` 是一个 :math:`(n \times m)` 的Tensor， `mat2` 是一个 :math:`(m \times p)` 的Tensor， `out` 则会是一个 :math:`(n \times p)` 的Tensor。
+    若 `input` 的shape为 :math:`(n \times m)` ， `mat2` 的shape为 :math:`(m \times p)` ， `out` 的shape为 :math:`(n \times p)` 。
 
     .. note::
         - 此函数不能支持广播。若需要可广播的方法，请参考 :func:`mindspore.ops.matmul`。
-        - Ascend上，暂不支持float64类型。
+        - Ascend平台，不支持float64类型。
 
     参数：
-        - **input** (Tensor) - 矩阵相乘的第一个矩阵， `input` 的最后一维度必须和 `mat2` 的第一维度相等。
-        - **mat2** (Tensor) - 矩阵相乘的第二个矩阵， `input` 的最后一维度必须和 `mat2` 的第一维度相等。
+        - **input** (Tensor) - 第一个输入tensor。
+        - **mat2** (Tensor) - 第二个输入tensor。
 
     返回：
-        Tensor，输入的矩阵乘积。
-
-    异常：
-        - **ValueError** - `input` 的最后一维度和 `mat2` 的倒数第二维度不相等。
-        - **ValueError** - `input` 或 `mat2` 不是Tensor。
+        Tensor
