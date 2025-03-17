@@ -3,7 +3,7 @@ mindspore.ops.bounding_box_decode
 
 .. py:function:: mindspore.ops.bounding_box_decode(anchor_box, deltas, max_shape, means=(0.0, 0.0, 0.0, 0.0), stds=(1.0, 1.0, 1.0, 1.0), wh_ratio_clip=0.016)
 
-    解码边界框位置信息，计算偏移量，此算子将偏移量转换为Bbox，用于在后续图像中标记目标等。
+    解码边界框位置信息，计算偏移量。此算子将偏移量转换为Bbox，用于在后续图像中标记目标等。
 
     参数：
         - **anchor_box** (Tensor) - 锚框。锚框的shape必须为 :math:`(n, 4)` 。
