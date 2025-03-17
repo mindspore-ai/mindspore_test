@@ -539,8 +539,8 @@ def bincount(input, weights=None, minlength=0):
 
 def bucketize(input, boundaries, *, right=False):
     r"""
-    Bucketizes `input` based on `boundaries`. If `right` is ``False``, the left boundary is closed. For each element x
-    in `input`, the returned index satisfies the following rules:
+    Return the indices of the buckets to which each element in the input tensor belongs. If `right` is ``False``, the
+    left boundary is open. For each element x in `input`, the returned index satisfies the following rules:
 
     .. math::
 
@@ -550,32 +550,28 @@ def bucketize(input, boundaries, *, right=False):
         \end{cases}
 
     Args:
-        input (Tensor): A tensor containing the search value(s).
-        boundaries (list): A sorted list of boundary values of the buckets.
+        input (Tensor): The input tensor.
+        boundaries (list): A sorted ascending list of bucket boundary values.
 
     Keyword Args:
         right (bool, optional): if ``False``, gets the lower bound index for each value in input from boundaries;
             If ``True``, gets the upper bound index instead. Default: ``False``.
 
     Returns:
-        Tensor, the indexes Tensor, with the same shape as the input, and data type is int32.
-
-    Raises:
-        TypeError: If `boundaries` is not a list.
-        TypeError: If `input` is not a Tensor.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input = Tensor(np.array([[3, 6, 9], [3, 6, 9]]))
-        >>> boundaries = list(np.array([1., 3., 5., 7., 9.]))
-        >>> output = ops.bucketize(input, boundaries, right=True)
-        >>> print(output)
-        [[2 3 5]
-         [2 3 5]]
+        >>> import mindspore
+        >>> input = mindspore.tensor([[3, 6, 9], [3, 6, 9]])
+        >>> boundaries = [1., 3., 5., 7., 9.]
+        >>> output = mindspore.ops.bucketize(input, boundaries, right=True)
+        >>> output
+        Tensor(shape=[2, 3], dtype=Int32, value=
+        [[2 3 5],
+         [2 3 5]])
     """
 
     bucketize_op = _get_cache_prim(P.Bucketize)
@@ -3356,7 +3352,7 @@ def lt(input, other):
 
 def le(input, other):
     r"""
-    Computes the boolean value of :math:`input <= other` element-wise.
+    Compute the value of :math:`input <= other` element-wise.
 
     .. math::
 
@@ -3366,42 +3362,40 @@ def le(input, other):
             \end{cases}
 
     .. note::
-        - Inputs of `input` and `other` comply with the implicit type conversion rules to make the data types
-          consistent.
+        - Support implicit type conversion.
         - The inputs must be two tensors or one tensor and one scalar.
         - When the inputs are one tensor and one scalar, the scalar could only be a constant.
 
     Args:
-        input (Union[Tensor, number.Number, bool]): The first input is a number.Number or
-            a bool or a tensor whose data type is
-            `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
-            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
-        other (Union[Tensor, number.Number, bool]): The second input, when the first input is a Tensor,
-            the second input should be a number.Number or bool value, or a Tensor whose data type is number or bool\_.
-            When the first input is Scalar, the second input must be a Tensor whose data type is number or bool\_.
+        input (Union[Tensor, Number, bool]): The first input.
+        other (Union[Tensor, Number, bool]): The second input.
 
     Returns:
-        Tensor, the shape is the same as the one after broadcasting, and the data type is bool.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([1, 2, 3]), mindspore.int32)
-        >>> y = Tensor(np.array([1, 1, 4]), mindspore.int32)
-        >>> output = ops.le(x, y)
+        >>> # case 1: The shape of two inputs are different
+        >>> input = mindspore.tensor([1, 2, 3], mindspore.float32)
+        >>> output = mindspore.ops.le(input, 2.0)
         >>> print(output)
-        [ True False  True]
+        [True  True False]
+        >>> # case 2: The shape of two inputs are the same
+        >>> input = mindspore.tensor([1, 2, 3], mindspore.int32)
+        >>> other = mindspore.tensor([1, 2, 4], mindspore.int32)
+        >>> output = mindspore.ops.le(input, other)
+        >>> print(output)
+        [ True  True  True]
     """
     return tensor_le(input, other)
 
 
 def gt(input, other):
     r"""
-    Compare the value of the input parameters :math:`input,other` element-wise, and the output result is a bool value.
+    Compute the value of :math:`input > other` element-wise.
 
     .. math::
 
@@ -3422,43 +3416,38 @@ def gt(input, other):
           in another input by copying the value of the dimension.
 
     Args:
-        input (Union[Tensor, number.Number, bool]): The first input is a number.Number or
-            a bool or a tensor whose data type is
-            `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
-            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ .
-        other (Union[Tensor, number.Number, bool]): The second input, when the first input is a Tensor,
-            the second input should be a number.Number or bool value, or a Tensor whose data type is number or bool\_.
-            When the first input is Scalar, the second input must be a Tensor whose data type is number or bool\_.
+        input (Union[Tensor, Number, bool]): The first input.
+        other (Union[Tensor, Number, bool]): The second input.
 
     Returns:
-        Tensor, the shape is the same as the one after broadcasting, and the data type is bool.
-
-    Raises:
-        TypeError: If neither `input` nor `other` is a Tensor.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([1, 2, 3]), mindspore.int32)
-        >>> y = Tensor(np.array([1, 1, 4]), mindspore.int32)
-        >>> output = ops.gt(x, y)
+        >>> # case 1: The shape of two inputs are different
+        >>> input = mindspore.tensor([1, 2, 3], mindspore.float32)
+        >>> output = mindspore.ops.gt(input, 2.0)
         >>> print(output)
-        [False True False]
+        [False False True]
+        >>> # case 2: The shape of two inputs are the same
+        >>> input = mindspore.tensor([1, 2, 3], mindspore.int32)
+        >>> other = mindspore.tensor([1, 2, 4], mindspore.int32)
+        >>> output = mindspore.ops.gt(input, other)
+        >>> print(output)
+        [ False False False]
     """
     return tensor_gt(input, other)
 
 
 def ge(input, other):
     r"""
-    Computes the boolean value of :math:`input >= other` element-wise.
+    Compute the value of :math:`input >= other` element-wise.
 
     Note:
-        - Inputs of `input` and `other` comply with the implicit type conversion rules to make the data types
-          consistent.
+        - Support implicit type conversion.
         - The inputs must be two tensors or one tensor and one scalar.
         - When the inputs are two tensors, dtypes of them cannot be bool at the same time,
           and the shapes of them can be broadcast.
@@ -3475,38 +3464,35 @@ def ge(input, other):
             \end{cases}
 
     Args:
-        input (Union[Tensor, Number, bool]): The first input is a number or
-            a bool or a tensor whose data type is number or bool.
-        other (Union[Tensor, Number, bool]): The second input is a number or
-            a bool when the first input is a tensor or a tensor whose data type is number or bool.
+        input (Union[Tensor, Number, bool]): The first input.
+        other (Union[Tensor, Number, bool]): The second input.
 
     Returns:
-        Tensor, the shape is the same as the one after broadcasting, and the data type is bool.
-
-    Raises:
-        TypeError: If neither `input` nor `other` is a Tensor.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([1, 2, 3]), mindspore.int32)
-        >>> y = Tensor(np.array([1, 1, 4]), mindspore.int32)
-        >>> output = ops.ge(x, y)
+        >>> # case 1: The shape of two inputs are different
+        >>> input = mindspore.tensor([1, 2, 3], mindspore.float32)
+        >>> output = mindspore.ops.ge(input, 2.0)
         >>> print(output)
-        [True True False]
+        [False  True True]
+        >>> # case 2: The shape of two inputs are the same
+        >>> input = mindspore.tensor([1, 2, 3], mindspore.int32)
+        >>> other = mindspore.tensor([1, 2, 4], mindspore.int32)
+        >>> output = mindspore.ops.ge(input, other)
+        >>> print(output)
+        [ True  True False]
     """
     return tensor_ge(input, other)
 
 
 def eq(input, other):
     r"""
-    Computes the equivalence between two tensors element-wise.
-
-    The second argument can be a number or a tensor whose shape is broadcastable with the first argument and vise versa.
+    Compute the equivalence of the two inputs element-wise.
 
     .. math::
 
@@ -3516,38 +3502,31 @@ def eq(input, other):
             \end{cases}
 
     Note:
-        - `input` and `other` comply with the implicit type conversion rules to make the data types consistent.
+        - Support implicit type conversion.
         - The input must be two Tensors, or a Tensor and a Scalar.
         - The shapes of the inputs can be broadcasted to each other.
 
     Args:
-        input (Union[Tensor, Number]): The first input is a number or
-            a tensor whose data type is number.
-        other (Union[Tensor, Number]): The second input is a number when the first input is a tensor.
-            The data type is the same as the first input. If the first input is a number,
-            the second input should be a tensor.
+        input (Union[Tensor, Number]): The first input.
+        other (Union[Tensor, Number]): The second input.
 
     Returns:
-        Tensor, the shape is the same as the one after broadcasting, and the data type is bool.
-
-    Raises:
-        TypeError: If neither `input` nor `other` is a Tensor.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import Tensor, ops
         >>> # case 1: The shape of two inputs are different
-        >>> x = Tensor([1, 2, 3], mindspore.float32)
-        >>> output = ops.eq(x, 2.0)
+        >>> x = mindspore.tensor([1, 2, 3], mindspore.float32)
+        >>> output = mindspore.ops.eq(x, 2.0)
         >>> print(output)
-        [False True False]
+        [False  True False]
         >>> # case 2: The shape of two inputs are the same
-        >>> x = Tensor([1, 2, 3], mindspore.int32)
-        >>> y = Tensor([1, 2, 4], mindspore.int32)
-        >>> output = ops.eq(x, y)
+        >>> x = mindspore.tensor([1, 2, 3], mindspore.int32)
+        >>> y = mindspore.tensor([1, 2, 4], mindspore.int32)
+        >>> output = mindspore.ops.eq(x, y)
         >>> print(output)
         [ True  True False]
     """
@@ -3556,7 +3535,7 @@ def eq(input, other):
 
 def ne(input, other):
     r"""
-    Computes the non-equivalence of two tensors element-wise.
+    Compute the non-equivalence of two inputs element-wise.
 
     .. math::
 
@@ -3566,40 +3545,34 @@ def ne(input, other):
         \end{cases}
 
     Note:
-        - Inputs of `input` and `other` comply with the implicit type conversion rules to make the data types
-          consistent.
+        - Support implicit type conversion.
         - When the inputs are two tensors, the shapes of them could be broadcast.
         - When the inputs are one tensor and one scalar, the scalar could only be a constant.
         - Broadcasting is supported.
 
     Args:
-        input (Union[Tensor, Number, bool]): The first input is a number or
-            a bool or a tensor whose data type is number or bool.
-        other (Union[Tensor, Number, bool]): The second input is a number or
-            a bool when the first input is a tensor or a tensor whose data type is number or bool.
+        input (Union[Tensor, Number, bool]): The first input.
+        other (Union[Tensor, Number, bool]): The second input.
 
     Returns:
-        Tensor, the shape is the same as the one after broadcasting,and the data type is bool.
-
-    Raises:
-        TypeError: If `input` and `other` is not one of the following: Tensor, Number, bool.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor([1, 2, 3], mindspore.float32)
-        >>> output = ops.ne(x, 2.0)
+        >>> # case 1: The shape of two inputs are different
+        >>> input = mindspore.tensor([1, 2, 3], mindspore.float32)
+        >>> output = mindspore.ops.ne(input, 2.0)
         >>> print(output)
-        [ True False  True]
-        >>>
-        >>> x = Tensor([1, 2, 3], mindspore.int32)
-        >>> y = Tensor([1, 2, 4], mindspore.int32)
-        >>> output = ops.ne(x, y)
+        [True False  True]
+        >>> # case 2: The shape of two inputs are the same
+        >>> input = mindspore.tensor([1, 2, 3], mindspore.int32)
+        >>> other = mindspore.tensor([1, 2, 4], mindspore.int32)
+        >>> output = mindspore.ops.ne(input, other)
         >>> print(output)
-        [False False  True]
+        [ False False  True]
     """
     return not_equal(input, other)
 
