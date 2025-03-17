@@ -1,0 +1,5 @@
+inplace_sqrt:
+  description: |
+    InplaceSqrt is the implementation for :func:`mindspore.Tensor.sqrt_`.
+
+    For details, please refer to :func:`mindspore.Tensor.sqrt_`.

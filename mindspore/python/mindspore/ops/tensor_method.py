@@ -1954,6 +1954,11 @@ def tensor_gelu(input, *, approximate):
     return gelu(input, approximate)
 
 
+# 1062
+def tensor_sqrt_(input):
+    raise NotImplementedError('Tensor.sqrt_ only supports Ascend.')
+
+
 # 1091 triangular_solve
 def tensor_triangular_solve(
         input,

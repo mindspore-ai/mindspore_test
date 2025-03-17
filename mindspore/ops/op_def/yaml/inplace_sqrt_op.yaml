@@ -1,0 +1,18 @@
+#operator InplaceSqrt
+inplace_sqrt:
+  args:
+    input:
+      dtype: tensor
+  args_signature:
+    rw_write: input
+  returns:
+    output:
+      dtype: tensor
+      inplace: input
+  labels:
+    side_effect_mem: True
+  dispatch:
+    enable: True
+    Ascend: InplaceSqrtAscend
+  function:
+    disable: True

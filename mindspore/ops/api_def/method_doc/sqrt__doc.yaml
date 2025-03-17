@@ -1,0 +1,32 @@
+sqrt_:
+  description: |
+    sqrt_() -> Tensor
+
+    Replace each element in the current Tensor `self` with its square root.
+
+    .. note::
+        When an element of `self` is negative, the result at that position depends on the platform.
+
+        - Calculate the square root of its opposite number on Atlas training series.
+        - Get ``NaN`` on other platforms, such as Atlas A2 training series.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    .. math::
+        self_{i} =  \sqrt{self_{i}}
+
+    Returns:
+        Tensor, the modified `self` itself.
+
+    Supported Platforms:
+       ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor
+        >>> import numpy as np
+        >>> x = Tensor(np.array([1.0, 4.0, 9.0]), mindspore.float32)
+        >>> output = x.sqrt_()
+        >>> print(output)
+        [1. 2. 3.]
