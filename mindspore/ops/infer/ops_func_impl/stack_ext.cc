@@ -33,7 +33,7 @@
 
 namespace mindspore::ops {
 namespace {
-constexpr size_t kTupleInputNum = 2;
+constexpr size_t kTupleInputNum1 = 2;
 inline ShapeVector CheckAndGetInferredShape(const PrimitivePtr &primitive, const ShapeArray &element_shapes) {
   MS_CHECK_VALUE(element_shapes.size() >= 1, CheckAndConvertUtils::FormatCheckIntegerMsg(
                                                "size of elements", element_shapes.size(), kGreaterEqual, 1, primitive));
@@ -74,7 +74,7 @@ BaseShapePtr StackExtFuncImpl::InferShape(const PrimitivePtr &primitive,
   ShapeVector inferred_shape;
   size_t axis_index = input_args.size() - 1;
   auto num = abstract::TensorShape::kShapeDimAny;
-  if (MS_LIKELY(input_args.size() == kTupleInputNum)) {
+  if (MS_LIKELY(input_args.size() == kTupleInputNum1)) {
     auto input_shape = input_args[kInputIndex0]->GetShape();
     auto dynamic_sequence = input_shape->cast<abstract::DynamicSequenceShapePtr>();
     if (MS_UNLIKELY(dynamic_sequence != nullptr)) {
@@ -91,7 +91,7 @@ BaseShapePtr StackExtFuncImpl::InferShape(const PrimitivePtr &primitive,
       }
       inferred_shape = CheckAndGetInferredShape(primitive, element_shapes);
     }
-  } else if (input_args.size() > kTupleInputNum) {
+  } else if (input_args.size() > kTupleInputNum1) {
     // Here for the case expanding tuple to tensors, it maybe deleted in the near future...
     num = SizeToLong(axis_index);
     ShapeArray element_shapes;
@@ -129,7 +129,7 @@ BaseShapePtr StackExtFuncImpl::InferShape(const PrimitivePtr &primitive,
 TypePtr StackExtFuncImpl::InferType(const PrimitivePtr &primitive,
                                     const std::vector<AbstractBasePtr> &input_args) const {
   auto input_type = input_args[kInputIndex0]->GetType();
-  if (MS_UNLIKELY(input_args.size() != kTupleInputNum)) {
+  if (MS_UNLIKELY(input_args.size() != kTupleInputNum1)) {
     return input_type->Clone();
   }
 

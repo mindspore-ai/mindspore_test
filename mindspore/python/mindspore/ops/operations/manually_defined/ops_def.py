@@ -1619,6 +1619,24 @@ def infer_value_for_Softmax(input, axis):
     output = e_input / np.sum(e_input, axis=axis, keepdims=True)
     return Tensor(output, dtype=input.dtype)
 
+def infer_value_for_AddExt(input, other, alpha):
+    """Infer value for AddExt op."""
+    if input is None or other is None:
+        return None
+    input_np = input.asnumpy()
+    other_np = other.asnumpy()
+
+    return Tensor(np.add(input_np, np.multiply(other_np, alpha)))
+
+def infer_value_for_SubExt(input, other, alpha):
+    """Infer value for SubExt op."""
+    if input is None or other is None:
+        return None
+    input_np = input.asnumpy()
+    other_np = other.asnumpy()
+
+    return Tensor(np.subtract(input_np, np.multiply(other_np, alpha)))
+
 
 def infer_value_for_ReduceSum(input_x, axis, keep_dims, skip_mode):
     """Infer value for ReduceSum op."""

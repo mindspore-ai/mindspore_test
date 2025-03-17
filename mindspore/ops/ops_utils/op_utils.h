@@ -165,6 +165,10 @@ void CheckSparseIndicesDtype(const TypePtr data_type, const std::string &arg_nam
 
 void CheckSparseIndicesDtypeInt32(const TypePtr data_type, const std::string &arg_name);
 
+size_t GetHashId(int a, int b);
+TypeId ConvertTypeBetweenTensorAndScalar(const TypeId &tensor_type_id, const TypeId &scalar_type_id,
+                                         const size_t hash_id);
+
 inline void CheckInputShapeEmpty(const std::string &prim_name, const std::vector<AbstractBasePtr> &input_args) {
   for (size_t i = 0; i < input_args.size(); ++i) {
     MS_EXCEPTION_IF_NULL(input_args[i]->GetShape());
