@@ -1302,7 +1302,7 @@ def inplace_sub(x, v, indices):
 
 def logical_not(input):
     """
-    Computes the "logical NOT" of a tensor element-wise.
+    Compute the "logical NOT" of the input tensor element-wise.
 
     .. math::
 
@@ -1312,20 +1312,15 @@ def logical_not(input):
         input (Tensor): The input tensor.
 
     Returns:
-        Tensor, the shape is the same as the `input`, and the dtype is bool.
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([True, False, True]), mindspore.bool_)
-        >>> output = ops.logical_not(x)
+        >>> x = mindspore.tensor([True, False, True], mindspore.bool_)
+        >>> output = mindspore.ops.logical_not(x)
         >>> print(output)
         [False  True False]
     """
@@ -1334,56 +1329,46 @@ def logical_not(input):
 
 def logical_or(input, other):
     r"""
-    Computes the "logical OR" of two tensors element-wise.
-
-    Inputs of `input` and `other` comply with the implicit type conversion rules to make the data types consistent.
-    The inputs must be two tensors or one tensor and one bool.
-
-    When the inputs are two tensors, the shapes of them could be broadcast.
-
-    When the inputs are one tensor and one bool, the bool object could only be a constant.
+    Compute the "logical OR" of two tensors element-wise.
 
     .. math::
 
         out_{i} = input_{i} \vee other_{i}
 
-    Note:
-        logical_or supports broadcasting.
+    .. note::
+        - Broadcasting is supported.
+        - Support implicit type conversion.
 
     Args:
-        input (Union[Tensor, bool]): The first input is a bool or a tensor whose data type can be implicitly
-            converted to bool.
-        other (Union[Tensor, bool]): The second input is a bool when the first input is a tensor or
-            a tensor whose data type can be implicitly converted to bool.
+        input (Union[Tensor, bool]): The first input.
+        other (Union[Tensor, bool]): The second input.
 
     Returns:
-        Tensor, the shape is the same as the one after broadcasting, and the data type is bool.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([True, False, True]), mindspore.bool_)
-        >>> y = Tensor(np.array([True, True, False]), mindspore.bool_)
-        >>> output = ops.logical_or(x, y)
+        >>> x = mindspore.tensor([True, False, True], mindspore.bool_)
+        >>> y = mindspore.tensor([True, True, False], mindspore.bool_)
+        >>> output = mindspore.ops.logical_or(x, y)
         >>> print(output)
         [ True  True  True]
-        >>> x = Tensor(1, mindspore.bool_)
-        >>> y = Tensor(0, mindspore.bool_)
-        >>> output = ops.logical_or(x, y)
+        >>> x = mindspore.tensor(1, mindspore.bool_)
+        >>> y = mindspore.tensor(0, mindspore.bool_)
+        >>> output = mindspore.ops.logical_or(x, y)
         >>> print(output)
         True
         >>> x = True
-        >>> y = Tensor(0, mindspore.bool_)
-        >>> output = ops.logical_or(x, y)
+        >>> y = mindspore.tensor(0, mindspore.bool_)
+        >>> output = mindspore.ops.logical_or(x, y)
         >>> print(output)
         True
         >>> x = True
-        >>> y = Tensor(np.array([True, False]), mindspore.bool_)
-        >>> output = ops.logical_or(x, y)
+        >>> y = mindspore.tensor([True, False], mindspore.bool_)
+        >>> output = mindspore.ops.logical_or(x, y)
         >>> print(output)
         [True True]
     """
@@ -1392,59 +1377,46 @@ def logical_or(input, other):
 
 def logical_and(input, other):
     r"""
-    Computes the "logical AND" of two tensors element-wise.
-
-    Inputs of `input` and `other` comply with the implicit type conversion rules to make the data types consistent.
-    The inputs must be two tensors or one tensor and one bool.
-
-    When the inputs are two tensors, the shapes of them could be broadcast.
-
-    When the inputs are one tensor and one bool, the bool object could only be a constant.
+    Compute the "logical AND" of two tensors element-wise.
 
     .. math::
 
         out_{i} = input_{i} \wedge other_{i}
 
-    Note:
-        logical_and supports broadcasting.
+    .. note::
+        - Broadcasting is supported.
+        - Support implicit type conversion.
 
     Args:
-        input (Union[Tensor, bool]): The first input is a bool or a tensor whose data type can be implicitly
-            converted to bool.
-        other (Union[Tensor, bool]): The second input is a bool when the first input is a tensor or
-            a tensor whose data type can be implicitly converted to bool.
+        input (Union[Tensor, bool]): The first input.
+        other (Union[Tensor, bool]): The second input.
 
     Returns:
-        Tensor, the shape is the same as the one after broadcasting, and the data type is bool.
-
-    Raises:
-        TypeError: If neither `input` nor `other` is a Tensor.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([True, False, True]), mindspore.bool_)
-        >>> y = Tensor(np.array([True, True, False]), mindspore.bool_)
-        >>> output = ops.logical_and(x, y)
+        >>> x = mindspore.tensor([True, False, True], mindspore.bool_)
+        >>> y = mindspore.tensor([True, True, False], mindspore.bool_)
+        >>> output = mindspore.ops.logical_and(x, y)
         >>> print(output)
         [ True False False]
-        >>> x = Tensor(1, mindspore.bool_)
-        >>> y = Tensor(0, mindspore.bool_)
-        >>> output = ops.logical_and(x, y)
+        >>> x = mindspore.tensor(1, mindspore.bool_)
+        >>> y = mindspore.tensor(0, mindspore.bool_)
+        >>> output = mindspore.ops.logical_and(x, y)
         >>> print(output)
         False
         >>> x = True
-        >>> y = Tensor(0, mindspore.bool_)
-        >>> output = ops.logical_and(x, y)
+        >>> y = mindspore.tensor(0, mindspore.bool_)
+        >>> output = mindspore.ops.logical_and(x, y)
         >>> print(output)
         False
         >>> x = True
-        >>> y = Tensor(np.array([True, False]), mindspore.bool_)
-        >>> output = ops.logical_and(x, y)
+        >>> y = mindspore.tensor([True, False], mindspore.bool_)
+        >>> output = mindspore.ops.logical_and(x, y)
         >>> print(output)
         [True False]
     """
@@ -11403,51 +11375,48 @@ def isneginf(input):
 
 def logical_xor(input, other):
     r"""
-    Computes the "logical XOR" of two tensors element-wise.
+    Compute the "logical XOR" of two tensors element-wise.
 
     .. math::
 
         out_{i} = input_{i} \oplus other_{i}
 
+    .. note::
+        - Broadcasting is supported.
+        - Support implicit type conversion.
+
     Args:
-        input (Tensor): The first input is a tensor whose data type can be implicitly converted to bool.
-        other (Tensor): The second input is a tensor whose data type can be implicitly converted to bool
-            to compute XOR with the first input.
+        input (Tensor): The first input tensor.
+        other (Tensor): The second input tensor.
 
     Returns:
-        Tensor, the shape is the same as the one after broadcasting, and the data type is bool.
-
-    Raises:
-        TypeError: If the dtype of `input` or `other` is not bool or can not be implicitly converted to bool.
-        ValueError: If the shapes of two inputs cannot be broadcast.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([True, False, True]), mindspore.bool_)
-        >>> y = Tensor(np.array([True, True, False]), mindspore.bool_)
-        >>> output = ops.logical_xor(x, y)
+        >>> x = mindspore.tensor([True, False, True], mindspore.bool_)
+        >>> y = mindspore.tensor([True, True, False], mindspore.bool_)
+        >>> output = mindspore.ops.logical_xor(x, y)
         >>> print(output)
-        [False True True]
-        >>> x = Tensor(1, mindspore.bool_)
-        >>> y = Tensor(0, mindspore.bool_)
-        >>> output = ops.logical_xor(x, y)
+        [False  True  True]
+        >>> x = mindspore.tensor(1, mindspore.bool_)
+        >>> y = mindspore.tensor(0, mindspore.bool_)
+        >>> output = mindspore.ops.logical_xor(x, y)
         >>> print(output)
         True
         >>> x = True
-        >>> y = Tensor(0, mindspore.bool_)
-        >>> output = ops.logical_xor(x, y)
+        >>> y = mindspore.tensor(0, mindspore.bool_)
+        >>> output = mindspore.ops.logical_xor(x, y)
         >>> print(output)
         True
         >>> x = True
-        >>> y = Tensor(np.array([True, False]), mindspore.bool_)
-        >>> output = ops.logical_xor(x, y)
+        >>> y = mindspore.tensor([True, False], mindspore.bool_)
+        >>> output = mindspore.ops.logical_xor(x, y)
         >>> print(output)
-        [False True]
+        [False  True]
     """
     return logical_xor_(input, other)
 

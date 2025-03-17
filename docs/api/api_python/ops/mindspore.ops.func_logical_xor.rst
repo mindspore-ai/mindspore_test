@@ -3,18 +3,18 @@ mindspore.ops.logical_xor
 
 .. py:function:: mindspore.ops.logical_xor(input, other)
 
-    逐元素计算两个Tensor的逻辑异或运算。
+    逐元素计算两个tensor的逻辑异或运算。
 
     .. math::
         out_{i} = input_{i} \oplus other_{i}
 
+    .. note::
+        - 支持广播。
+        - 支持隐式类型转换。
+
     参数：
-        - **input** (Tensor) - 第一个Tensor输入。其数据类型为可被隐式转换为bool。
-        - **other** (Tensor) - 第二个Tensor输入。其数据类型可被隐式转换为bool，并与第一个输入进行异或计算。
+        - **input** (Tensor) - 第一个输入tensor。
+        - **other** (Tensor) - 第二个输入tensor。
 
     返回：
-        Tensor，其shape与广播后的shape相同，数据类型为bool。
- 
-    异常：
-        - **TypeError** - `input` 或 `other` 的dtype不是bool，或不可被隐式转换为bool。
-        - **ValueError** - 两个输入的shape不能被广播。
+        Tensor
