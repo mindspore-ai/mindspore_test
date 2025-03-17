@@ -265,6 +265,18 @@
         返回：
             Dict[String, Cell]，Cell中的所有子Cell及其名称。
 
+    .. py:method:: offload(backward_prefetch="Auto")
+
+        设置Cell激活值卸载，设置后该Cell中所有的Primitive类会被使能激活值卸载标签。若激活值需要在反向阶段被用于计算
+        梯度，则该激活值会在正向阶段被搬运至host侧，不会存储在device侧，并在反向阶段使用其之前，预取回device侧。
+
+        .. note::
+            - 当某个Cell被标记为offload时，运行模型必须为"GRAPH_MODE"模式。
+            - 当某个Cell被标记为offload时，需要开启lazyinline。
+
+        参数：
+            - **backward_prefetch** (Union[str, int]，可选) - 设置反向阶段提前预取激活值的时机。默认值： ``"Auto"`` 。当为 ``"Auto"`` 时，框架将提前一个算子开始预取激活值；当为正整数时，框架将提前 ``backward_prefetch`` 个算子开始预期激活值，例如1、20、100。
+
     .. py:method:: param_prefix
         :property:
 
