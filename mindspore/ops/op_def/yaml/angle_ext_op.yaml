@@ -1,0 +1,11 @@
+#operator angle_ext
+angle_ext:
+  args:
+    input:
+      dtype: tensor
+  returns:
+    output:
+      dtype: tensor
+  dispatch:
+    enable: True
+    Ascend: AngleExtAscend

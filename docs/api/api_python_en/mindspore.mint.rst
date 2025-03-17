@@ -110,6 +110,7 @@ Pointwise Operations
     mindspore.mint.addmv
     mindspore.mint.acos
     mindspore.mint.acosh
+    mindspore.mint.angle
     mindspore.mint.arccos
     mindspore.mint.arccosh
     mindspore.mint.arcsin
