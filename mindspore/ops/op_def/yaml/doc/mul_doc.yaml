@@ -11,36 +11,29 @@ mul:
               they must be able to broadcast to a common shape.
             - The two inputs can not be bool type at the same time,
               [True, Tensor(True, bool\_), Tensor(np.array([True]), bool\_)] are all considered bool type.
-            - The two inputs comply with the implicit type conversion rules to make the data types
-              consistent.
+            - Support implicit type conversion and type promotion.
     
         Args:
-            input (Union[Tensor, number.Number, bool]): The first input is a number.Number or
-                a bool or a tensor whose data type is
-                `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
-                `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
-            other (Union[Tensor, number.Number, bool]): The second input, which is a number.Number or
-                a bool or a tensor whose data type is
-                `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
-                `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
+            input (Union[Tensor, Number, bool]): The first input.
+            other (Union[Tensor, Number, bool]): The second input.
     
         Returns:
-            Tensor, the shape is the same as the one after broadcasting,
-            and the data type is the one with higher precision or higher digits among the two inputs.
-    
-        Raises:
-            TypeError: If `input` and `other` is not one of the following: Tensor, number.Number, bool.
-            ValueError: If `input` and `other` are not the same shape.
+            Tensor
     
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``
     
         Examples:
+            >>> case 1: The shape of two inputs are different
             >>> import mindspore
-            >>> import numpy as np
-            >>> from mindspore import Tensor, ops
-            >>> x = Tensor(np.array([1.0, 2.0, 3.0]), mindspore.float32)
-            >>> y = Tensor(np.array([4.0, 5.0, 6.0]), mindspore.float32)
-            >>> output = ops.mul(x, y)
+            >>> x = mindspore.tensor([1.0, 2.0, 3.0], mindspore.float32)
+            >>> output = mindspore.ops.mul(x, 100)
+            >>> print(output)
+            [100. 200. 300.]
+            >>> case 2: The shape of two inputs are the same
+            >>> import mindspore
+            >>> x = mindspore.tensor([1.0, 2.0, 3.0], mindspore.float32)
+            >>> y = mindspore.tensor([4.0, 5.0, 6.0], mindspore.float32)
+            >>> output = mindspore.ops.mul(x, y)
             >>> print(output)
             [ 4. 10. 18.]

@@ -675,26 +675,21 @@ def negative(input):
 
 def positive(input):
     r"""
-    Return self Tensor.
+    Return self tensor.
 
     Args:
-        input (Tensor): Input Tensor.
+        input (Tensor): The input tensor.
 
     Returns:
-        Tensor, self input.
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> from mindspore import dtype as mstype
-        >>> x = Tensor(np.array([-5.0, 1.5, 3.0, 100.0]), mstype.float32)
-        >>> print(ops.positive(x))
+        >>> import mindspore
+        >>> x = mindspore.tensor([-5.0, 1.5, 3.0, 100.0], mindspore.float32)
+        >>> print(mindspore.ops.positive(x))
         [ -5.    1.5   3.  100. ]
     """
     _check_is_tensor("input", input, "positive")
@@ -1918,20 +1913,11 @@ def polar(abs, angle):  # pylint: disable=redefined-outer-name
         y_{i} =  abs_{i} * \cos(angle_{i}) + abs_{i} * \sin(angle_{i}) * j
 
     Args:
-        abs (Tensor, float): Radial distance. Tensor of any dimension,
-            with dtype required to be float32.
-
-        angle (Tensor, float): Polar angle. It has the same shape and dtype as `abs`.
+        abs (Tensor, float): Radial distance.
+        angle (Tensor, float): Polar angle.
 
     Returns:
-        Tensor, with the same shape as `abs` and the dtype is complex64.
-
-
-    Raises:
-        TypeError: If neither `abs` nor `angle` is a Tensor.
-        TypeError: If the dtype of input is not one of: float32.
-        TypeError: If the dtypes of `abs` and `angle` are not the same.
-        ValueError: If `abs`'s shape is not the same as `angle`.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -1939,10 +1925,9 @@ def polar(abs, angle):  # pylint: disable=redefined-outer-name
     Examples:
         >>> import mindspore
         >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> abs = Tensor(np.array([1, 2]), mindspore.float32)
-        >>> angle = Tensor(np.array([np.pi / 2, 5 * np.pi / 4]), mindspore.float32)
-        >>> output = ops.polar(abs, angle)
+        >>> abs = mindspore.tensor([1, 2], mindspore.float32)
+        >>> angle = mindspore.tensor([np.pi / 2, 5 * np.pi / 4], mindspore.float32)
+        >>> output = mindspore.ops.polar(abs, angle)
         >>> print(output)
         [ -4.3711388e-08+1.j         -1.4142137e+00-1.4142134j]
     """
@@ -3211,48 +3196,35 @@ def truncate_mod(x, y):
 
 def ldexp(x, other):
     """
-    Multiplies input Tensor by :math:`2^{other}` element-wise.
+    Multiplies input tensor by :math:`2^{other}` element-wise.
 
-    It takes two arguments, a mantissa `x` and an exponent `other`,
-    and returns their product as a floating-point number:
+    Typically this function is used to construct floating point numbers by multiplying mantissas in `x` with integral
+    powers of two created from the exponents in `other`:
 
     .. math::
 
         out_{i} = x_{i} * ( 2 ^{other_{i}} )
 
-    Note:
-        This function is commonly used to construct
-        floating-point numbers from their component parts, or to scale a
-        floating-point number by a power of two.
-
     Args:
-        x (Tensor): The input Tensor.
-        other (Tensor): A Tensor of integers that represent exponents.
+        x (Tensor): Mantissas tensor.
+        other (Tensor): Exponents tensor, typically integers.
 
     Returns:
-        Tensor, the output Tensor.
-
-    Raises:
-        TypeError: If `x` is not a Tensor.
-        TypeError: If `other` is not a Tensor.
-        ValueError: If shape of `x` and `other` can not broadcast.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor
-        >>> from mindspore import ops
-        >>> x = Tensor(np.array([1.]), mindspore.float32)
-        >>> other = Tensor(np.array([1, 2, 3, 4]), mindspore.int32)
-        >>> out = ops.ldexp(x, other)
+        >>> x = mindspore.tensor([1.], mindspore.float32)
+        >>> other = mindspore.tensor([1, 2, 3, 4], mindspore.int32)
+        >>> out = mindspore.ops.ldexp(x, other)
         >>> print(out)
         [ 2.  4.  8. 16.]
-        >>> x = Tensor(np.array([[1.], [2]]), mindspore.float32)
-        >>> other = Tensor(np.array([[1.], [2]]), mindspore.int32)
-        >>> out = ops.ldexp(x, other)
+        >>> x = mindspore.tensor([[1.], [2]], mindspore.float32)
+        >>> other = mindspore.tensor([[1.], [2]], mindspore.int32)
+        >>> out = mindspore.ops.ldexp(x, other)
         >>> print(out)
         [[2.]
          [8.]]
@@ -3264,6 +3236,8 @@ def ldexp(x, other):
 def logit(input, eps=None):
     r"""
     Calculate the logit of a tensor element-wise.
+
+    The formula is defined as:
 
     .. math::
         \begin{align}
@@ -3277,26 +3251,20 @@ def logit(input, eps=None):
         \end{align}
 
     Args:
-        input (Tensor): The input tensor of type float16, float32 or float64.
-        eps (float, optional): The epsilon. If eps is not None, the input clamp bound is defined as [eps, 1-eps],
-            otherwise, the `input` is not clamped. Default: ``None`` .
+        input (Tensor): The input tensor.
+        eps (float, optional): The epsilon for input clamp bound. If eps is not None,
+            the input clamp bound is defined as [eps, 1-eps], otherwise, the `input` is not clamped. Default ``None`` .
 
     Returns:
-        Tensor, with the same shape and dtype as the `input`.
-
-    Raises:
-        TypeError: If `eps` is not a float.
-        TypeError: If `input` is not a Tensor.
-        TypeError: If dtype of `input` is not float16, float32 or float64.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([0.1, 0.2, 0.3]).astype(np.float32))
-        >>> output = ops.logit(x, eps=1e-5)
+        >>> import mindspore
+        >>> x = mindspore.tensor([0.1, 0.2, 0.3], mindspore.float32)
+        >>> output = mindspore.ops.logit(x, eps=1e-5)
         >>> print(output)
         [-2.1972246 -1.3862944 -0.8472978]
     """
@@ -5509,45 +5477,35 @@ def lerp(input, end, weight):
     """
     Does a linear interpolation of two tensors input and end based on a float or tensor weight.
 
-    If `weight` is a tensor, the shapes of three inputs need to be broadcast;
-    If `weight` is a float, the shapes of `input` and `end` need to be broadcast.
-    If `weight` is a float and platform is Ascend, the types of `input` and `end` need to be float32.
-
     .. math::
-
         output_{i} = input_{i} + weight_{i} * (end_{i} - input_{i})
 
+    .. note::
+        - The shapes of `input` and `end` must be broadcastable.
+        - If weight is a tensor, then the shapes of `weight` , `start` , and `end` must be broadcastable.
+        - On the Ascend platform, if `weight` dtype is float, the type of `input` and `end` need to be float32.
+
     Args:
-        input (Tensor): The tensor with the starting points. Data type must be float16 or float32.
-        end (Tensor): The tensor with the ending points. Data type must be the same as `input`.
-        weight (Union[float, Tensor]): The weight for the interpolation formula. Must be a float
-            or a scalar tensor with float16 or float32 data type.
+        input (Tensor): The tensor with the starting points.
+        end (Tensor): The tensor with the ending points.
+        weight (Union[float, Tensor]): The weight for the interpolation formula.
 
     Returns:
-        Tensor, has the same type and shape as input `input`.
-
-    Raises:
-        TypeError: If `input` or `end` is not a tensor.
-        TypeError: If `weight` is neither scalar(float) nor tensor.
-        TypeError: If dtype of `input` or `end` is neither float16 nor float32.
-        TypeError: If dtype of `weight` is neither float16 nor float32 when it is a tensor.
-        TypeError: If `input` and `end` have different data types.
-        TypeError: If `input`, `end` and `weight` have different data types when `weight` is a tensor.
-        ValueError: If `end` could not be broadcast to a tensor with shape of `input`.
-        ValueError: If `weight` could not be broadcast to tensors with shapes of `input` and `end` when it is a tensor.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input = Tensor(np.array([1., 2., 3., 4.]), mindspore.float32)
-        >>> end = Tensor(np.array([10., 10., 10., 10.]), mindspore.float32)
-        >>> output = ops.lerp(input, end, 0.5)
+        >>> start = mindspore.tensor([1., 2., 3., 4.], mindspore.float32)
+        >>> end = mindspore.tensor([10., 10., 10., 10.], mindspore.float32)
+        >>> output = mindspore.ops.lerp(start, end, 0.5)
         >>> print(output)
-        [5.5 6. 6.5 7. ]
+        [5.5 6.  6.5 7. ]
+        >>> output = mindspore.ops.lerp(start, end, mindspore.tensor([0.5, 0.5, 0.5, 0.5], mindspore.float32))
+        >>> print(output)
+        [5.5 6.  6.5 7. ]
     """
     return lerp_(input, end, weight)
 
@@ -11136,28 +11094,19 @@ def polygamma(n, input):
 
     Args:
         n (Tensor): The order of the polygamma function.
-            Supported dtypes: int32, int64. The shape of `n` is :math:`()`.
-        input (Tensor): The tensor to compute the :math:`n`-th derivative of the polygamma function with.
+        input (Tensor): The input tensor.
 
     Returns:
-        Tensor, has the same dtype as `input`.
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
-        TypeError: If dtype of `input` is not one of: float16, float32, float64.
-        TypeError: If dtype of `n` is not one of: int32, int64.
-        TypeError: If shape of `n` is not :math:`()`.
+        Tensor
 
     Supported Platforms:
         ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([3.14, -2.71]), mindspore.float64)
-        >>> a = Tensor(np.array(1), mindspore.int64)
-        >>> output = ops.polygamma(a, x)
+        >>> x = mindspore.tensor([3.14, -2.71], mindspore.float64)
+        >>> a = mindspore.tensor(1, mindspore.int64)
+        >>> output = mindspore.ops.polygamma(a, x)
         >>> print(output)
         [ 0.37446456 15.49884838]
     """

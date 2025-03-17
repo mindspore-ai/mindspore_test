@@ -6,22 +6,17 @@ neg:
             out_{i} = - input_{i}
         
         Args:
-            input (Tensor): The input tensor with a dtype of Number.
+            input (Tensor): The input tensor.
         
         Returns:
-            Tensor, has the same shape and dtype as input.
-        
-        Raises:
-            TypeError: If `input` is not a Tensor.
+            Tensor
         
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``
         
         Examples:
             >>> import mindspore
-            >>> import numpy as np
-            >>> from mindspore import Tensor, ops
-            >>> input = Tensor(np.array([1, 2, -1, 2, 0, -3.5]), mindspore.float32)
-            >>> output = ops.neg(input)
+            >>> input = mindspore.tensor([1, 2, -1, 2, 0, -3.5], mindspore.float32)
+            >>> output = mindspore.ops.neg(input)
             >>> print(output)
             [-1.  -2.   1.  -2.   0.   3.5]
