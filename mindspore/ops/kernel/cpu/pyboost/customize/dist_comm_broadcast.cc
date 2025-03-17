@@ -32,14 +32,19 @@ using device::cpu::MsCollectiveCommLib;
 #endif
 namespace pyboost {
 void DistCommBroadcastCPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &tensor,
-                                   const Int64ImmPtr &src, const StringImmPtr &group) {
+                                   const Int64ImmPtr &src, const Int64ImmPtr &rank_id, const StringImmPtr &group) {
 #if defined(__linux__) && defined(WITH_BACKEND)
   PyBoostUtils::PrepareOpInputs(op->device_context(), kDefaultStreamIndex, tensor);
   op->set_outputs({tensor});
   auto src_rank = GetValue<int64_t>(src);
-  auto run_func = [op, tensor, src_rank, group]() {
+  auto local_rank = GetValue<int64_t>(rank_id);
+  auto run_func = [op, tensor, src_rank, local_rank, group]() {
     auto device_context = op->device_context();
-    PyBoostUtils::MallocOpInputs(device_context, tensor);
+    if (local_rank == src_rank) {
+      PyBoostUtils::MallocOpInputs(device_context, tensor);
+    } else {
+      PyBoostUtils::MallocOpOutputs(device_context, {tensor});
+    }
     const auto &input_address_info =
       PyBoostUtils::GetAddressInfo(device_context, op->stream_id(), op->input_abs(), tensor);
     auto in_addr = input_address_info.first;

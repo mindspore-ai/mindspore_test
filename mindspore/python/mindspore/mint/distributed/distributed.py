@@ -1536,8 +1536,9 @@ def broadcast(tensor, src, group=None, async_op=False):
         raise TypeError(
             f"The argument 'async_op' must be a bool, but got {type(async_op)}."
         )
-    rank = get_group_rank_from_world_rank(src, group)
-    output = dist_comm_broadcast_op(tensor, rank, group)
+    src_rank = get_group_rank_from_world_rank(src, group)
+    rank_id = get_rank(group)
+    output = dist_comm_broadcast_op(tensor, src_rank, rank_id, group)
     _, handle = _deal_comm_outputs(output, async_op)
     return handle
 

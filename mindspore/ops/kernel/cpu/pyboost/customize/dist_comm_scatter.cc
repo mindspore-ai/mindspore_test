@@ -51,7 +51,9 @@ void DistCommScatterCPUCustomize(const std::shared_ptr<OpRunner> &op, const Base
 
   auto run_func = [op, other_tensor, local_rank, src_rank, group, rank_size_imm, scatter_tensors, input_tensor]() {
     auto device_context = op->device_context();
-    PyBoostUtils::MallocOpInputs(device_context, other_tensor, input_tensor, scatter_tensors);
+    PyBoostUtils::MallocOpInputs(device_context, scatter_tensors);
+    PyBoostUtils::MallocOpOutputs(device_context, {other_tensor, input_tensor});
+
     const auto &input_address_info =
       PyBoostUtils::GetAddressInfo(device_context, op->stream_id(), op->input_abs(), input_tensor);
     auto in_addr = input_address_info.first;

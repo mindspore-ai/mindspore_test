@@ -37,7 +37,9 @@ void DistCommScatterTensorAscendCustomize(const std::shared_ptr<OpRunner> &op, c
   auto run_func = [op, other_tensor, input_tensor, rank_size, src, group]() {
     auto device_context = op->device_context();
 
-    PyBoostUtils::MallocOpInputs(device_context, other_tensor, input_tensor);
+    PyBoostUtils::MallocOpInputs(device_context, input_tensor);
+    PyBoostUtils::MallocOpOutputs(device_context, op->outputs());
+
     auto rank_size_imm = GetValue<int64_t>(rank_size);
     auto [hccl_count, hccl_data_type] =
       HcomUtil::GetHcclCountAndTypeFromTensor(op->primitive(), input_tensor, rank_size_imm);

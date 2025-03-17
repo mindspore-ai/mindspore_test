@@ -44,12 +44,11 @@ void DistCommGatherAscendCustomize(const std::shared_ptr<OpRunner> &op, const Ba
   PyBoostUtils::PrepareOpOutputs(op->device_context(), kDefaultStreamIndex, op->outputs());
 
   auto run_func = [op, gather_tensors, input_tensor, local_rank, dst_rank, group, rank_size_imm]() {
-    if (local_rank == dst_rank) {
-      PyBoostUtils::MallocOpInputs(op->device_context(), gather_tensors, input_tensor);
-    } else {
-      PyBoostUtils::MallocOpInputs(op->device_context(), input_tensor);
-    }
+    PyBoostUtils::MallocOpInputs(op->device_context(), input_tensor);
     PyBoostUtils::MallocOpOutputs(op->device_context(), op->outputs());
+    if (local_rank == dst_rank) {
+      PyBoostUtils::MallocOpOutputs(op->device_context(), gather_tensors);
+    }
 
     auto [hccl_count, hccl_data_type] = HcomUtil::GetHcclCountAndTypeFromTensor(op->primitive(), input_tensor);
     const auto &op_name = op->primitive()->name();

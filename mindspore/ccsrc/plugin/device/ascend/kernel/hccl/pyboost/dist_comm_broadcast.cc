@@ -27,15 +27,22 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 void DistCommBroadcastAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &tensor,
-                                      const Int64ImmPtr &src, const StringImmPtr &group) {
+                                      const Int64ImmPtr &src, const Int64ImmPtr &rank_id, const StringImmPtr &group) {
   PyBoostUtils::PrepareOpInputs(op->device_context(), kDefaultStreamIndex, tensor);
   op->set_outputs({tensor});
 
-  auto run_func = [op, tensor, src, group]() {
+  auto run_func = [op, tensor, src, rank_id, group]() {
     auto device_context = op->device_context();
-    PyBoostUtils::MallocOpInputs(device_context, tensor);
-    auto [hccl_count, hccl_data_type] = HcomUtil::GetHcclCountAndTypeFromTensor(op->primitive(), tensor);
     auto src_imm = GetValue<int64_t>(src);
+    auto local_rank = GetValue<int64_t>(rank_id);
+    if (local_rank == src_imm) {
+      PyBoostUtils::MallocOpInputs(device_context, tensor);
+    } else {
+      PyBoostUtils::MallocOpOutputs(device_context, {tensor});
+    }
+
+    auto [hccl_count, hccl_data_type] = HcomUtil::GetHcclCountAndTypeFromTensor(op->primitive(), tensor);
+
     const auto &op_name = op->primitive()->name();
     auto input_data_ptr = GetDevicePtrFromTensor(op_name, tensor);
     auto launch_func = [input_data_ptr, hccl_count, hccl_data_type, src_imm](const HcclComm &hccl_comm,

@@ -35,7 +35,7 @@ void DistCommIrecvAscendCustomize(const std::shared_ptr<OpRunner> &op, const Bas
 
   auto run_func = [op, input_tensor, src, group]() {
     // Malloc for input tensors
-    PyBoostUtils::MallocOpInputs(op->device_context(), input_tensor);
+    PyBoostUtils::MallocOpOutputs(op->device_context(), op->outputs());
 
     const auto &output_tensor = op->output(0);
     auto [hccl_count, hccl_data_type] = HcomUtil::GetHcclCountAndTypeFromTensor(op->primitive(), output_tensor);

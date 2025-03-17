@@ -46,7 +46,8 @@ void DistCommAllGatherCPUCustomize(const std::shared_ptr<OpRunner> &op, const Va
   auto rank_size_imm = static_cast<size_t>(GetValue<int64_t>(rank_size));
 
   auto launch_func = [op, gather_tensors, input_tensor, group, rank_size_imm]() {
-    PyBoostUtils::MallocOpInputs(op->device_context(), gather_tensors, input_tensor);
+    PyBoostUtils::MallocOpInputs(op->device_context(), input_tensor);
+    PyBoostUtils::MallocOpOutputs(op->device_context(), gather_tensors);
     PyBoostUtils::MallocOpOutputs(op->device_context(), op->outputs());
 
     const auto &input_address_info =
