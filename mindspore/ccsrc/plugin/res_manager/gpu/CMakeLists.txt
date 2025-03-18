@@ -11,7 +11,8 @@ if(ENABLE_GPU)
   list(APPEND GPU_RES_MANAGER_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_plugin_res_manager_gpu_device_obj>)
 
   add_library(mindspore_gpu_res_manager SHARED ${GPU_RES_MANAGER_OBJECTS_SRC})
-  target_link_libraries(mindspore_gpu_res_manager PRIVATE mindspore_core mindspore_common pybind11::module)
+  target_link_libraries(mindspore_gpu_res_manager PRIVATE mindspore_core mindspore_common pybind11::module
+    mindspore_res_manager)
   if(CMAKE_SYSTEM_NAME MATCHES "Linux" AND ${CUDA_VERSION} VERSION_GREATER "11.0")
     target_link_libraries(mindspore_gpu_res_manager PRIVATE gpu_hash_table)
   endif()
