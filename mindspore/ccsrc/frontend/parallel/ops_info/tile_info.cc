@@ -154,6 +154,8 @@ Status TileInfo::CheckOutputLayout() {
                   << " rather than 1.";
     return FAILED;
   }
+  auto in_layout0 = inputs_tensor_info_[kIndex0].tensor_layout();
+  auto in_tensor_map = in_layout0.tensor_map_before();
   auto out_layout = outputs_tensor_info_[kIndex0].tensor_layout();
   auto out_tensor_map = out_layout.tensor_map_before();
   auto out_shape = out_layout.tensor_shape_before().array();
@@ -186,6 +188,18 @@ Status TileInfo::CheckOutputLayout() {
         return FAILED;
       }
       slice_multiples_[i] = slice_multiples_[i] / axis_shard;
+    }
+  }
+  for (size_t i = 0; i < out_tensor_map.size(); ++i) {
+    if (i - offset >= 0 && full_multiples_[i - offset] > 1) {
+      continue;
+    } else {
+      // when the multiple <= 1, the output tensor map should be the same as the input tensor map
+      auto input_offset = out_tensor_map.size() - in_tensor_map.size();
+      if (i > input_offset && out_tensor_map[i] != in_tensor_map[i - input_offset]) {
+        MS_LOG(ERROR) << "When the dim <= 1, the output tensor map should be the same as the input tensor map.";
+        return FAILED;
+      }
     }
   }
   return SUCCESS;
