@@ -150,7 +150,8 @@ const BaseRef GroupedMatmulAssignaddFusion::DefinePattern() const {
   auto grouped_matmul = VectorRef(
     {grouped_matmul_, maketuple, weight_, Xs, group_list_, split_item_, group_type_, transpose_a_, transpose_b_});
   auto getitem = VectorRef({prim::kPrimTupleGetItem, grouped_matmul, getitem_index});
-  auto assignadd = VectorRef({std::make_shared<Primitive>(kAssignAddOpName), out_, getitem});
+  VarPtr monad = std::make_shared<SeqVar>();
+  auto assignadd = VectorRef({std::make_shared<Primitive>(kAssignAddOpName), out_, getitem, monad});
   return assignadd;
 }
 
@@ -159,6 +160,8 @@ const AnfNodePtr GroupedMatmulAssignaddFusion::Process(const FuncGraphPtr &graph
   MS_EXCEPTION_IF_NULL(graph);
   MS_EXCEPTION_IF_NULL(node);
   MS_EXCEPTION_IF_NULL(equiv);
+  auto assign_add = node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(assign_add);
 
   if (AnfAlgo::GetBackend(graph) != kBackendMSBackend) {
     return nullptr;
@@ -183,11 +186,16 @@ const AnfNodePtr GroupedMatmulAssignaddFusion::Process(const FuncGraphPtr &graph
   const std::string fusion_op_name = "InplaceGroupedMatmulAdd";
   std::vector<AnfNodePtr> inputs = {NewValueNode(std::make_shared<Primitive>(fusion_op_name)), input_x, weight_node,
                                     group_list, out};
+  const size_t assign_add_monad_idx = 3;
+  if (common::AnfAlgo::GetInputNum(assign_add) == assign_add_monad_idx) {
+    // add monad input
+    (void)inputs.emplace_back(assign_add->input(assign_add_monad_idx));
+  }
   auto grouped_matmul_add = NewCNode(inputs, graph);
   grouped_matmul_add->set_scope(grouped_matmul->scope());
   grouped_matmul_add->set_abstract(node->abstract());
-  if (common::AnfAlgo::HasNodeAttr(GRAPH_FLAG_SIDE_EFFECT_MEM, node->cast<CNodePtr>())) {
-    common::AnfAlgo::CopyNodeAttr(GRAPH_FLAG_SIDE_EFFECT_MEM, node, grouped_matmul_add);
+  if (common::AnfAlgo::HasNodeAttr(GRAPH_FLAG_SIDE_EFFECT_MEM, assign_add)) {
+    common::AnfAlgo::CopyNodeAttr(GRAPH_FLAG_SIDE_EFFECT_MEM, assign_add, grouped_matmul_add);
   }
   ReplaceGMMForDepend(graph, grouped_matmul_cnode, grouped_matmul_add);
   return grouped_matmul_add;
