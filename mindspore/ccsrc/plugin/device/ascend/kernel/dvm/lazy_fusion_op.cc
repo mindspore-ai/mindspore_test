@@ -57,12 +57,17 @@ bool IsFloatType(const TypeId &type) {
   }
 }
 
+bool NeedSync() {
+  static auto need_sync = runtime::OpExecutor::NeedSync();
+  return (need_sync && !runtime::OpExecutor::GetInstance().async_for_graph());
+}
+
 bool IsFloatIntType(const TypeId &type) { return IsFloatType(type) || type == kNumberTypeInt32; }
 
 bool IsSupportType(const TypeId &type) { return IsFloatIntType(type) || type == kNumberTypeBool; }
 
 bool InputCheck(const BaseTensorPtr &x, const std::function<bool(const TypeId &type)> &type_check = IsFloatType) {
-  return x->is_contiguous() && type_check(x->data_type());
+  return !NeedSync() && x->is_contiguous() && type_check(x->data_type());
 }
 
 bool IsScalar(const BaseTensorPtr &x) { return (x->device_address() == nullptr) && (x->DataSize() == 1); }
@@ -119,6 +124,9 @@ void CheckForwardFuse(const device::DeviceContext *context, size_t stream, const
 std::pair<bool, TypeId> CheckMatMul(const PrimitivePtr prim, const BaseTensorPtr &x_tensor,
                                     const BaseTensorPtr &y_tensor) {
   auto output_type = x_tensor->data_type();
+  if (NeedSync()) {
+    return {false, output_type};
+  }
   if (output_type != y_tensor->data_type()) {
     return {false, output_type};
   }
@@ -1204,7 +1212,8 @@ tensor::BaseTensorPtr MatMulExtAscendDvm::Call(const mindspore::tensor::BaseTens
   ShapeVector input_shape;
   ShapeVector other_shape;
   auto data_type = input_tensor->data_type();
-  if (other_tensor->data_type() != data_type || (data_type != kNumberTypeFloat16 && data_type != kNumberTypeBFloat16) ||
+  if (NeedSync() || other_tensor->data_type() != data_type ||
+      (data_type != kNumberTypeFloat16 && data_type != kNumberTypeBFloat16) ||
       !CheckMatMulExtTranspose(input_tensor, &transpose_a, &input_shape) ||
       !CheckMatMulExtTranspose(other_tensor, &transpose_b, &other_shape)) {
     return MatMulExtAscend::Call(input_tensor, other_tensor);
