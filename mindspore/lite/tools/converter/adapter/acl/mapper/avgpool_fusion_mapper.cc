@@ -24,6 +24,7 @@
 #include "ops_utils/op_utils.h"
 #include "mindspore/ops/op_def/op_name.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/ops_utils/op_constants.h"
 
 namespace mindspore {
 namespace lite {
@@ -66,6 +67,13 @@ STATUS AvgPoolFusionMapper::Mapper(const CNodePtr &cnode) {
     // the attr format has been changed to data_format because of dynamic(defined in gen_lite_ops.h)
     dst_prim->AddAttr(kAttrDataFormat, src_prim->GetAttr(ops::kFormat));
   }
+  if (is_3d_) {
+    dst_prim->AddAttr(kAttrFormat, MakeValue("NCDHW"));
+    if (src_prim->HasAttr(ops::kPad)) {
+      dst_prim->AddAttr(ops::kPadList, src_prim->GetAttr(ops::kPad));
+    }
+  }
+
   value_node->set_value(dst_prim);
   return lite::RET_OK;
 }
@@ -85,10 +93,15 @@ void AvgPoolFusionMapper::CreateTargetPrim(const PrimitivePtr &src_prim, Primiti
       *dst_prim = std::make_shared<acl::GlobalAveragePool>();
     } else {
       auto kernel_size = opt::CastToInt(val_ptr);
-      MS_CHECK_TRUE_RET_VOID(kernel_size.size() == kDim2);
-      if (kernel_size.at(0) <= kSizeHW && kernel_size.at(1) <= kSizeHW &&
-          kernel_size.at(0) * kernel_size.at(1) <= kSizeHWMul) {
+      MS_CHECK_TRUE_RET_VOID(kernel_size.size() == kDim2 || kernel_size.size() == kDim3);
+      if (kernel_size.size() == kDim2 && kernel_size.at(0) <= kSizeHW && kernel_size.at(kIndex1) <= kSizeHW &&
+          kernel_size.at(0) * kernel_size.at(kIndex1) <= kSizeHWMul) {
         *dst_prim = std::make_shared<acl::AvgPoolV2>();
+      } else if (kernel_size.size() == kDim3 && kernel_size.at(0) <= kSizeHW && kernel_size.at(kIndex1) <= kSizeHW &&
+                 kernel_size.at(kIndex2) <= kSizeHW &&
+                 kernel_size.at(0) * kernel_size.at(kIndex1) * kernel_size.at(kIndex2) <= kSizeHWMul) {
+        *dst_prim = std::make_shared<acl::AvgPool3D>();
+        is_3d_ = true;
       }
     }
   }

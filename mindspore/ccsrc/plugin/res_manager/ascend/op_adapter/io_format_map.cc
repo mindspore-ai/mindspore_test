@@ -58,7 +58,8 @@ mindspore::HashMap<std::string, std::string> IOFormatMap::io_format_map_ = {{"BN
                                                                             {"SpaceToDepth", "NCHW"},
                                                                             {"Pooling", "NCHW"},
                                                                             {"AvgPoolV2", "NCHW"},
-                                                                            {"QuantConv2D", "NCHW"}};
+                                                                            {"QuantConv2D", "NCHW"},
+                                                                            {"GridSampler3D", "NCDHW"}};
 mindspore::HashMap<std::string, std::string> &IOFormatMap::get() { return io_format_map_; }
 
 std::string GetOpIOFormat(const AnfNodePtr &anf) {

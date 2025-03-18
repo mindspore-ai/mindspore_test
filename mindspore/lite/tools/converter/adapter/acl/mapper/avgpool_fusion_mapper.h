@@ -33,6 +33,7 @@ class AvgPoolFusionMapper : public PrimitiveMapper {
 
  private:
   void CreateTargetPrim(const PrimitivePtr &src_prim, PrimitivePtr *dst_prim, int fmk_type);
+  bool is_3d_ = false;
 };
 }  // namespace lite
 }  // namespace mindspore
