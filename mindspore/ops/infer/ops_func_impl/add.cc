@@ -23,9 +23,7 @@
 
 namespace mindspore::ops {
 TypePtr AddFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
-  std::map<std::string, TypePtr> types;
-  (void)types.emplace("x", input_args[kInputIndex0]->GetType());
-  (void)types.emplace("y", input_args[kInputIndex1]->GetType());
-  return CheckAndConvertUtils::CheckMathBinaryOpTensorType(types, common_valid_types, primitive->name());
+  return std::make_shared<TensorType>(
+    PromoteType(input_args[kInputIndex0]->GetType(), input_args[kInputIndex1]->GetType(), primitive->name()));
 }
 }  // namespace mindspore::ops
