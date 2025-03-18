@@ -48,10 +48,15 @@ void HcclWatchDogManager::DestroyHandlerByName(const std::string &name) {
         MS_LOG(DEBUG) << "Wait watch dog thread exit before destroy hcom.";
       }
       handle->Terminate();
+      while (!handle->exit()) {
+        MS_LOG(DEBUG) << "Wait check finish, group name:" << name;
+      }
       break;
     }
   }
 }
+
+HcclWatchDogManager::~HcclWatchDogManager() { handles_.clear(); }
 
 HcclWatchDogHandler::~HcclWatchDogHandler() {
   MS_LOG(DEBUG) << "HcclWatchDogHandler destructor start";
@@ -143,6 +148,7 @@ void HcclWatchDogHandler::DoProcess() {
       Terminate();
     }
   }
+  exit_.store(true, std::memory_order_acq_rel);
 }
 
 void HcclWatchDogHandler::WatchDogProcess() {
