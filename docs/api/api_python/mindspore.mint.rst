@@ -75,6 +75,7 @@ Tensor
     mindspore.mint.squeeze
     mindspore.mint.stack
     mindspore.mint.swapaxes
+    mindspore.mint.take_along_dim
     mindspore.mint.transpose
     mindspore.mint.triu
     mindspore.mint.unbind
@@ -291,7 +292,6 @@ BLAS和LAPACK运算
     mindspore.mint.searchsorted
     mindspore.mint.tril
     mindspore.mint.triangular_solve
-    mindspore.mint.take_along_dim
 
 mindspore.mint.nn
 ------------------
