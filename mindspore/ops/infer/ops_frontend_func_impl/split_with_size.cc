@@ -56,6 +56,9 @@ class SplitWithSizeFrontendFuncImpl : public OpFrontendFuncImpl {
     } else {
       auto output_shape = input_shape;
       auto rank = SizeToLong(input_shape.size());
+      if (rank <= 0) {
+        MS_EXCEPTION(ValueError) << "For [SplitWithSize], expected at least a 1-dimensional tensor.";
+      }
       auto axis = axis_opt.value();
       if (axis < 0) {
         axis += rank;

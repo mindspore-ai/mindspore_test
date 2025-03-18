@@ -47,6 +47,9 @@ class SplitTensorFrontendFuncImpl : public OpFrontendFuncImpl {
       return abs_tuple;
     }
     auto rank = SizeToLong(input_shape.size());
+    if (rank <= 0) {
+      MS_EXCEPTION(ValueError) << "For [SplitWithSize], expected at least a 1-dimensional tensor.";
+    }
     auto dim = axis_opt.value();
     auto split_size = split_sections_opt.value();
     if (split_size == 0) {
