@@ -478,14 +478,14 @@ class Node:
             ...         self.relu = nn.ReLU()
             ...
             ...     def construct(self, input):
-            ...         output = self.relu(x=input)
+            ...         output = self.relu(input=input)
             ...         return output
             >>>
             >>> net = ReLUNet()
             >>> stree = SymbolTree.create(net)
             >>> node = stree.get_node("relu")
             >>> print(node.get_kwargs())
-            {'x': input}
+            {'input': input}
         """
         return self._node.get_kwargs()
 
