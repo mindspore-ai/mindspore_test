@@ -65,7 +65,7 @@ class AscendStepTraceTimeViewer(BaseViewer):
     # HCCL Send, Recv op pattern
     PP_OP_PATTERN = (
         # eg: hcom_BatchSendRecv__101_0_1
-        re.compile(r"hcom_\w+SendRecv__\d+"),
+        re.compile(r"^hcom_\w+SendRecv__\d+"),
         # eg: hcom_send__101_0_1
         re.compile(r"hcom_send__\d+"),
         # eg: hcom_receive__101_0_1
