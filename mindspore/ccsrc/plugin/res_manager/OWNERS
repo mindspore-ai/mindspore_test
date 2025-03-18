@@ -1,0 +1,19 @@
+approvers:
+- jjfeing
+- limingqi107
+- ZPaC
+- zyli2020
+- yuchaojie
+- liujunzhu
+- reku1997
+
+
+reviewers:
+- ZPaC
+- zyli2020
+- jjfeing
+- reku1997
+
+options:
+    no_parent_owners: true
+
