@@ -52,6 +52,7 @@ bool IsForwardNode(const AnfNodePtr &node) {
     return false;
   }
   auto cnode = node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
   return !(cnode->HasPrimalAttr(kPrimalAttrForwardUniqueId) || cnode->HasAttr(kAttrDuplicated));
 }
 
@@ -61,6 +62,7 @@ bool IsRecomputeNode(const AnfNodePtr &node) {
     return false;
   }
   auto cnode = node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
   return cnode->HasAttr(kAttrDuplicated);
 }
 
@@ -127,6 +129,7 @@ bool GetExpectedInput(const AnfNodePtr &node, const PrimitivePtr expect_prim,
       return false;
     }
     auto cnode = prenode->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     auto from_shape = common::AnfAlgo::GetOutputInferShape(cnode->input(kIndex1), kIndex0);
     auto to_shape = common::AnfAlgo::GetOutputInferShape(cnode, kIndex0);
     if (skip_prim == prim::kPrimStridedSlice || skip_prim == prim::kPrimStridedSliceGrad) {
@@ -186,6 +189,17 @@ CNodePtr CreateReshapeCNode(const FuncGraphPtr &func_graph, const AnfNodePtr &in
   common::AnfAlgo::SetOutputInferTypeAndShape({dtype}, {to_shape}, reshape_cnode.get());
   return reshape_cnode;
 }
+
+ValuePtr GetAttrFromCNodePrimitive(const CNodePtr &node, const std::string &attr_name) {
+  MS_EXCEPTION_IF_NULL(node);
+  auto prim = GetCNodePrimitive(node);
+  MS_EXCEPTION_IF_NULL(prim);
+  auto attr = prim->GetAttr(attr_name);
+  if (attr == nullptr) {
+    MS_LOG(EXCEPTION) << "Get attribute " << attr_name << " from node " << node->DebugString() << " failed.";
+  }
+  return attr;
+}
 }  // namespace
 
 bool BatchMatMulReduceScatterAllToAllFusion::IsValidAllToAll(const AnfNodePtr &node) {
@@ -239,10 +253,9 @@ void BatchMatMulReduceScatterAllToAllFusion::ClearAttr() {
 }
 
 bool BatchMatMulReduceScatterAllToAllFusion::InferInputDimAndSplitConcatDimByAllToAllCNode() {
-  MS_EXCEPTION_IF_NULL(alltoall_cnode_);
-  split_dim_ = GetValue<int64_t>(GetCNodePrimitive(alltoall_cnode_)->GetAttr(kAttrSplitDim));
-  concat_dim_ = GetValue<int64_t>(GetCNodePrimitive(alltoall_cnode_)->GetAttr(kAttrConcatDim));
-  ep_world_size_ = GetValue<int64_t>(GetCNodePrimitive(alltoall_cnode_)->GetAttr(kAttrSplitCount));
+  split_dim_ = GetValue<int64_t>(GetAttrFromCNodePrimitive(alltoall_cnode_, kAttrSplitDim));
+  concat_dim_ = GetValue<int64_t>(GetAttrFromCNodePrimitive(alltoall_cnode_, kAttrConcatDim));
+  ep_world_size_ = GetValue<int64_t>(GetAttrFromCNodePrimitive(alltoall_cnode_, kAttrSplitCount));
   if (ep_world_size_ != kSplitTwo && ep_world_size_ != kSplitFour && ep_world_size_ != kSplitEight &&
       ep_world_size_ != kSplitSixteen) {
     return false;
@@ -397,6 +410,7 @@ AnfNodePtr BatchMatMulReduceScatterAllToAllFusion::Run(const FuncGraphPtr &func_
     return nullptr;
   }
   batch_matmul_cnode_ = batchmatmul->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(batch_matmul_cnode_);
   auto inputs = batch_matmul_cnode_->inputs();
   if (inputs.size() != kIndex5) {
     MS_LOG(DEBUG) << "The input size of BatchMatMul should be 5, but got " << inputs.size();
