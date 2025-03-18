@@ -325,6 +325,11 @@ bool ParallelVirtualDataset(const ResourcePtr &res) {
   AnfNodePtr ret = root->get_return();
 
   MS_EXCEPTION_IF_NULL(ret);
+  if (root->has_flag(mindspore::parallel::kHasShard)) {
+    MS_LOG(INFO) << "There exists shard prim, insert virtual dataset in step auto parallel";
+    return true;
+  }
+
   std::vector<AnfNodePtr> all_nodes = DeepScopedGraphSearch(ret);
 
   if (!HasVirtualDataset(all_nodes)) {

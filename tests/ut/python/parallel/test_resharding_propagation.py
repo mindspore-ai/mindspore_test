@@ -152,7 +152,7 @@ def test_parameter_plan_with_strategy_4x1():
     """
     net, x, ir_graph_path = before_test("test_parameter_plan_with_strategy_4x1")
     compile_net(net, x, layout1, layout2)
-    file1 = f"{ir_graph_path}/rank_0/step_auto_parallel_begin_*"
+    file1 = f"{ir_graph_path}/rank_0/step_parallel_begin_*"
     para1 = "PrimFunc_AShardIdentity(%28)"
     in_strategy1 = "in_strategy: ((4, 1))"
     check_layout_config(para1, file1, in_strategy1)
@@ -171,7 +171,7 @@ def test_parameter_plan_with_layout_4x1():
     _, x, ir_graph_path = before_test("test_parameter_plan_with_layout_4x1")
     net = Net2()
     compile_net(net, x, layout1, layout2)
-    file1 = f"{ir_graph_path}/rank_0/step_auto_parallel_begin_*"
+    file1 = f"{ir_graph_path}/rank_0/step_parallel_begin_*"
     para1 = "PrimFunc_AShardIdentity(%10)"
     in_strategy1 = ("in_layout: ({'device_matrix': (4, 1), 'tensor_map': (1, 0), "
                     "'interleaved_parallel': false, 'alias_name': (dp, mp)})")
