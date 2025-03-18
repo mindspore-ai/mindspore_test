@@ -16,6 +16,7 @@
 
 #include "infer/ops_func_impl/fmod_tensor.h"
 #include <set>
+#include <unordered_set>
 #include <algorithm>
 #include <memory>
 #include "abstract/dshape.h"
@@ -30,34 +31,31 @@
 
 namespace mindspore {
 namespace ops {
-BaseShapePtr FmodTensorFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                            const std::vector<AbstractBasePtr> &input_args) const {
-  return BroadCastInferShape(primitive->name(), input_args);
+ShapeArray FmodTensorFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  auto input_shape = input_infos[kIndex0]->GetShape();
+  auto other_shape = input_infos[kIndex1]->GetShape();
+  return {CalBroadCastShape(input_shape, other_shape, primitive->name())};
 }
 
-TypePtr FmodTensorFuncImpl::InferType(const PrimitivePtr &primitive,
-                                      const std::vector<AbstractBasePtr> &input_args) const {
-  auto input_type = input_args[kInputIndex0]->GetType();
-  auto other_type = input_args[kInputIndex1]->GetType();
-  MS_EXCEPTION_IF_NULL(input_type);
-  MS_EXCEPTION_IF_NULL(other_type);
-  auto out_type = PromoteType(input_type, other_type, primitive->name());
-  return std::make_shared<TensorType>(out_type);
-}
+std::vector<TypeId> FmodTensorFuncImpl::InferType(const PrimitivePtr &primitive,
+                                                  const InferInfoPtrList &input_infos) const {
+  const std::unordered_set<TypeId> kIntBoolTypes{kNumberTypeInt8,  kNumberTypeInt16, kNumberTypeInt32,
+                                                 kNumberTypeInt64, kNumberTypeUInt8, kNumberTypeBool};
+  auto IsIntBoolType = [&kIntBoolTypes](TypeId type) { return kIntBoolTypes.find(type) != kIntBoolTypes.end(); };
 
-TypePtrList FmodTensorFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &input_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
-  const auto &other_tensor = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>();
-  MS_EXCEPTION_IF_NULL(input_tensor);
-  MS_EXCEPTION_IF_NULL(other_tensor);
-  const auto &input_type = input_tensor->Dtype();
-  const auto &other_type = other_tensor->Dtype();
-  return {PromoteType(input_type, other_type, primitive->name())};
-}
+  auto input_type = input_infos[kIndex0]->GetType();
+  auto other_type = input_infos[kIndex1]->GetType();
+  TypeId out_type;
 
-ShapeArray FmodTensorFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  return {BroadCastInferShape(primitive->name(), input_values)};
+  if (IsIntBoolType(input_type) && other_type == kNumberTypeFloat32) {
+    out_type = kNumberTypeFloat32;
+  } else if (input_type == kNumberTypeBool && IsIntBoolType(other_type)) {
+    out_type = kNumberTypeInt64;
+  } else {
+    out_type = input_type;
+  }
+
+  return {out_type};
 }
-REGISTER_SIMPLE_INFER(kNameFmodTensor, FmodTensorFuncImpl)
 }  // namespace ops
 }  // namespace mindspore
