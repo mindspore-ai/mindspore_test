@@ -272,8 +272,8 @@ class BACKEND_EXPORT GraphParameterStore {
 
   void FillBuffer(size_t idx, const std::vector<TensorPtr> &tensors);
 
-  std::pair<TypePtr, KernelWithIndex> GetReleasePositionInfo(const std::pair<size_t, size_t> &position,
-                                                             DeviceTensorType type);
+  std::pair<bool, std::pair<TypePtr, KernelWithIndex>> GetReleasePositionInfo(const std::pair<size_t, size_t> &position,
+                                                                              DeviceTensorType type);
 
  private:
   // The input args refresh in every step.

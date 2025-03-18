@@ -322,14 +322,15 @@ void GraphParameterStore::InsertRefDeviceTensors(const DeviceTensorPosition &key
   ref_device_tensors_[key].insert(value);
 }
 
-std::pair<TypePtr, KernelWithIndex> GraphParameterStore::GetReleasePositionInfo(
+std::pair<bool, std::pair<TypePtr, KernelWithIndex>> GraphParameterStore::GetReleasePositionInfo(
   const std::pair<size_t, size_t> &position, DeviceTensorType type) {
   const auto &iter = release_data_info_.find({position, type});
   if (iter == release_data_info_.end()) {
-    MS_LOG(EXCEPTION) << "Can not find type in store, where outer index: " << position.first
-                      << ", inner index: " << position.second << ", type: " << type;
+    MS_LOG(INFO) << "Can not find type in store, where outer index: " << position.first
+                 << ", inner index: " << position.second << ", type: " << type;
+    return std::make_pair(false, std::make_pair(nullptr, std::make_pair(nullptr, 0)));
   }
-  return iter->second;
+  return std::make_pair(true, iter->second);
 }
 }  // namespace runtime
 }  // namespace mindspore
