@@ -1811,6 +1811,11 @@ def deprecated_tensor_var(input, axis=None, ddof=0, keepdims=False):
     return _tensor_div(x_sum, nums - ddof)
 
 
+# 1222
+def tensor_index_fill_(input, dim, index, value):
+    raise NotImplementedError('Tensor.index_fill_ only supports Ascend.')
+
+
 def tensor_kthvalue(input, k, dim=-1, keepdim=False):
     raise ValueError("should not come here for kthvalue py_method.")
 

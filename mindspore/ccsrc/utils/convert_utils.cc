@@ -540,6 +540,11 @@ ValuePtr CreateValueFromTensor(const tensor::TensorPtr &tensor) {
       break;
     }
 
+    case kNumberTypeFloat16: {
+      ret = GetTensorValue<float16, FP16Imm>(tensor);
+      break;
+    }
+
     case kNumberTypeFloat32: {
       ret = GetTensorValue<float, FP32Imm>(tensor);
       break;

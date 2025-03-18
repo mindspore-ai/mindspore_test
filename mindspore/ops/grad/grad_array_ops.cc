@@ -1847,6 +1847,42 @@ REG_BPROP_BUILDER("IndexFillTensor").SetUnusedInputs({i0, i4}).SetBody(BODYFUNC(
   return {x_grad, ib->OutZeros(dim), ib->OutZeros(indices), value_grad};
 });
 
+REG_BPROP_BUILDER("InplaceIndexFillScalar").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) {
+  auto dim = ib->GetInput(kIndex1);
+  auto index = ib->GetInput(kIndex2);
+  auto value = ib->GetInput(kIndex3);
+  auto dout = ib->GetInput(kIndex5);
+  auto x_grad = ib->Emit("IndexFillScalar", {dout, dim, index, ib->Value<int64_t>(0)});
+  return {x_grad, ib->OutZeros(dim), ib->OutZeros(index), ib->OutZeros(value)};
+});
+
+REG_BPROP_BUILDER("InplaceIndexFillTensor").FreeUselessValues_IO({i0, i3}, {}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto dim = ib->GetInput(kIndex1);
+  auto index = ib->GetInput(kIndex2);
+  auto value = ib->GetInput(kIndex3);
+  auto dout = ib->GetInput(kIndex5);
+
+  NodePtr x_grad = nullptr;
+  NodePtr value_grad = nullptr;
+  if (x->need_compute_grad_out()) {
+    x_grad = ib->Emit("IndexFillScalar", {dout, dim, index, ib->Value<int64_t>(0)});
+  } else {
+    x_grad = ib->OutZeros(x);
+  }
+  if (value->need_compute_grad_out()) {
+    auto index_unsorted = ib->Unique2(index, ib->Value(false), ib->Value(false), ib->Value(false));
+    auto index_unsorted_first = ib->TupleGetItem(index_unsorted, kIndex0);
+    auto index_select_answer = ib->Emit("IndexSelect", {dout, dim, index_unsorted_first});
+    value_grad = ib->SumExt(index_select_answer, ib->EmitValue(kNone), ib->Value(false), ib->EmitValue(kNone));
+    value_grad = ib->Cast(value_grad, ib->GetDtype(value));
+  } else {
+    value_grad = ib->OutZeros(value);
+  }
+
+  return {x_grad, ib->OutZeros(dim), ib->OutZeros(index), value_grad};
+});
+
 REG_BPROP_BUILDER("InplaceFillScalar").SetUnusedInputs({i0, i1, i2, i3}).SetBody(BODYFUNC(ib) {
   return {ib->ZerosLikeExt(ib->GetInput(i0), ib->EmitValue(kNone)), ib->OutZeros(ib->GetInput(i1))};
 });
