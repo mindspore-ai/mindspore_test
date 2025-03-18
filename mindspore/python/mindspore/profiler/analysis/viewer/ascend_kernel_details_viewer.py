@@ -205,7 +205,7 @@ class AscendKernelDetailsViewer(BaseViewer):
             else:
                 launch_ops[index] = f"{fwk_langch_op_name}/{dev_kernel_name}"
 
-            if step_id is None and self._is_set_schedule:
+            if step_id is None and self._is_set_schedule and self._jit_level != JitLevel.GRAPH_LEVEL:
                 self._logger.warning(
                     "Can not find step id for dev kernel %s, ts %s",
                     dev_kernel_name,
