@@ -338,7 +338,7 @@ FuncGraphPtr JitBpropGraphPass(const ResourcePtr &resource, bool need_renormaliz
 
   MS_EXCEPTION_IF_NULL(resource);
   auto func_graph = resource->func_graph();
-  auto graph_opt = opt::Optimizer::MakeOptimizer("jit_bprop_graph_opt", resource, map);
+  auto graph_opt = opt::Optimizer::MakeOptimizer("jit_bprop_graph_opt", resource, map, false, false, false);
   auto optimized_fg = graph_opt->step(func_graph, false);
   auto lifted_fg = LiftingClone(optimized_fg);
 
