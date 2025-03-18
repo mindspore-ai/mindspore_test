@@ -105,7 +105,7 @@ class BACKEND_EXPORT GEBackend : public BackendBase {
   void SyncTensorData(const tensor::TensorPtr &host_tensor, const std::shared_ptr<device::DeviceAddress> &device_tensor,
                       const AnfNodePtr &node);
   bool Copy(const mindspore::device::DeviceAddress *dst_device_tensor,
-            const mindspore::device::DeviceAddress *src_device_tensor);
+            mindspore::device::DeviceAddress *src_device_tensor);
   // outputs
   void ConstructOutputs(const KernelGraphPtr &func_graph, std::vector<tensor::TensorPtr> *outputs);
   void ConstructOutputs(const AnfNodePtr &output_node, const std::vector<tensor::TensorPtr> &output_tensors,
