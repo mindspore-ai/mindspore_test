@@ -284,8 +284,8 @@ class _ProcessManager:
                 # If node_id is generated in '_get_node_id_and_log_path' method, export 'RANK_ID' environment variable.
                 # This is for rank_table method's compatibility consideration.
                 os.environ["RANK_ID"] = str(node_id)
-                logger.warning(f"Start worker process with rank id:{node_id}, log file:{log_name}. "
-                               "Environment variable [RANK_ID] is exported.")
+                logger.info(f"Start worker process with rank id:{node_id}, log file:{log_name}. "
+                            f"Environment variable [RANK_ID={node_id}] is exported.")
             if self.is_simulation and (self.sim_rank_id != -1):
                 # Reset RANK_ID env to sim_rank_id if sim_rank_id is set.
                 os.environ["RANK_ID"] = str(self.sim_rank_id)
@@ -354,7 +354,7 @@ class _ProcessManager:
                 logger.error(f"Scheduler process {self.msn_process.pid} exit with exception.")
 
         if has_exception:
-            logger.warning("Analyzing exception log...")
+            logger.info("Analyzing exception log...")
             self._analyze_log()
             raise RuntimeError("Distributed job exited with exception. Please check logs in "
                                f"directory: {self.log_dir}.")
