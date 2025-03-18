@@ -118,5 +118,5 @@ def test_ops_swiglu_dynamic_shape():
     x1 = generate_random_input((2, 8, 4), np.float32)
     dim1 = 1
     x2 = generate_random_input((4, 5, 7, 9), np.float32)
-    dim2 = 0
+    dim2 = -4
     TEST_OP(swiglu_forward_func, [[ms.Tensor(x1), dim1], [ms.Tensor(x2), dim2]], 'swiglu', disable_mode=['GRAPH_MODE'])
