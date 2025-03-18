@@ -461,8 +461,8 @@ def dense_to_sparse_coo(tensor: Tensor) -> COOTensor:
         - shape (tuple(int)): the shape of the COOTensor, is the same as the original dense tensor.
 
     Raises:
-        TypeError: If input is not a tensor.
-        ValueError: If input tensor is not 2-D.
+        TypeError: If `tensor` is not a tensor.
+        ValueError: If `tensor` is not 2-D.
 
     Supported Platforms:
         ``GPU``

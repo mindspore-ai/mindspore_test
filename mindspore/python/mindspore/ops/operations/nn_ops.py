@@ -5624,12 +5624,14 @@ class CTCLoss(Primitive):
     such that the length of target series must be less than or equal to the length of input.
 
     Args:
-        preprocess_collapse_repeated (bool): If ``True`` , repeated labels will be collapsed prior to the CTC
+        preprocess_collapse_repeated (bool, optional): If ``True`` , repeated labels will be collapsed prior to the CTC
                                              calculation. Default: ``False`` .
-        ctc_merge_repeated (bool): If ``False`` , during CTC calculation, repeated non-blank labels will not be merged
+        ctc_merge_repeated (bool, optional): If ``False`` , during CTC calculation,
+                                   repeated non-blank labels will not be merged
                                    and these labels will be interpreted as individual ones. This is a simplified
                                    version of CTC. Default: ``True`` .
-        ignore_longer_outputs_than_inputs (bool): If ``True`` , sequences with longer outputs than inputs will be
+        ignore_longer_outputs_than_inputs (bool, optional): If ``True`` ,
+                                                  sequences with longer outputs than inputs will be
                                                   ignored. Default: ``False`` .
 
     Inputs:

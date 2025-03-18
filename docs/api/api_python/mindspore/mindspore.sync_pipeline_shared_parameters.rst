@@ -12,9 +12,6 @@ mindspore.sync_pipeline_shared_parameters
     参数：
         - **net** (nn.Cell) - 推理网络。
 
-    支持平台：
-        ``Ascend``
-
     样例：
 
     .. note::

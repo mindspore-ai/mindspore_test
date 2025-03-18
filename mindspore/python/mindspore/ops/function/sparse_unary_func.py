@@ -674,7 +674,7 @@ def csr_sqrt(x: CSRTensor) -> CSRTensor:
 
 def coo_sqrt(x: COOTensor) -> COOTensor:
     r"""
-    Returns sqrt of a COOTensor element-wise.
+    Computes sqrt of a COOTensor element-wise.
 
     .. math::
 
@@ -798,11 +798,11 @@ def csr_isnan(x: CSRTensor) -> CSRTensor:
     .. math::
 
         out_i = \begin{cases}
-          & \ True,\ \text{ if } x_{i} = \text{Nan} \\
-          & \ False,\ \text{ if } x_{i} \ne  \text{Nan}
+          & \ True,\ \text{ if } x_{i} = \text{NaN} \\
+          & \ False,\ \text{ if } x_{i} \ne  \text{NaN}
         \end{cases}
 
-    where :math:`Nan` means not a number.
+    where :math:`NaN` means not a number.
 
     Args:
         x (CSRTensor): The input CSRTensor.

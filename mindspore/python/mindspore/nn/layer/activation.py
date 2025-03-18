@@ -1167,7 +1167,7 @@ class PReLU(Cell):
 
     where :math:`x_i` is an element of an channel of the input.
 
-    Here :math:`w` is a learnable parameter with a default initial value 0.25.
+    Here :math:`w` is a learnable parameter with a default initial value ``0.25``.
     Parameter :math:`w` has dimensionality of the argument channel. If called without argument
     channel, a single parameter :math:`w` will be shared across all channels.
 
@@ -1178,7 +1178,7 @@ class PReLU(Cell):
 
     Args:
         channel (int, optional): The elements number of parameter :math:`w`.
-          It could be an int, and the value is 1 or the channels number of input tensor `x`. Default: ``1`` .
+          It could be an int, and the value is ``1`` or the channels number of input tensor `x`. Default: ``1`` .
         w (Union[float, list, Tensor], optional): The initial value of parameter. It could be a float, a float list or
           a tensor has the same dtype as the input tensor `x`. Default: ``0.25`` .
 

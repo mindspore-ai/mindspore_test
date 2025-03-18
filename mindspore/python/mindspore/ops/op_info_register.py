@@ -558,9 +558,9 @@ class TBERegOp(RegOp):
         Description whether the operator supports dynamic rank (dynamic dimension).
 
         Args:
-            dynamic_rank_support (bool): Description whether the operator supports dynamic rank (dynamic dimension).
-                                         True: indicates that dynamic rank is supported, and the operator supports
-                                         shape (- 2), which is used to determine whether dynamic rank is performed.
+            dynamic_rank_support (bool, optional): Description whether the operator
+                                         supports dynamic rank (dynamic dimension).
+                                         True: indicates that dynamic rank is supported.
                                          False: indicates that the operator does not support dynamic rank.
                                          Default: ``False`` .
         """
@@ -595,7 +595,7 @@ class TBERegOp(RegOp):
         Define the calculation efficiency of the operator, whether the asynchronous calculation is supported.
 
         Args:
-            async_flag (bool): Value of async flag. Default: ``False`` .
+            async_flag (bool, optional): Value of async flag. Default: ``False`` .
         """
         self._is_bool(async_flag)
         self.async_flag_ = async_flag
@@ -618,7 +618,7 @@ class TBERegOp(RegOp):
         in the tiling module.
 
         Args:
-            compute_cost (int): Value of compute cost. Default: ``10`` .
+            compute_cost (int, optional): Value of compute cost. Default: ``10`` .
         """
         self._is_int(compute_cost)
         self.compute_cost_ = compute_cost
@@ -640,7 +640,7 @@ class TBERegOp(RegOp):
         Define the calculation efficiency of operator, whether the partial calculation is supported.
 
         Args:
-            partial_flag (bool): Value of partial flag. Default: ``True`` .
+            partial_flag (bool, optional): Value of partial flag. Default: ``True`` .
         """
         self._is_bool(partial_flag)
         self.partial_flag_ = partial_flag
@@ -665,7 +665,7 @@ class TBERegOp(RegOp):
         Whether the operator supports dynamic shape.
 
         Args:
-            dynamic_shape (bool): Value of dynamic shape. Default: ``False`` .
+            dynamic_shape (bool, optional): Value of dynamic shape. Default: ``False`` .
         """
         self._is_bool(dynamic_shape)
         self.dynamic_shape_support_ = dynamic_shape
@@ -676,7 +676,7 @@ class TBERegOp(RegOp):
         Whether the operator supports dynamic compile static.
 
         Args:
-            dynamic_compile_static (bool): An identifier that indicates
+            dynamic_compile_static (bool, optional): An identifier that indicates
                 whether the operator supports dynamic compile static. Default: ``False`` .
         """
         if self._is_bool(dynamic_compile_static):
@@ -688,7 +688,7 @@ class TBERegOp(RegOp):
         Whether the operator needs check supports.
 
         Args:
-            need_check_supported (bool): Value of need_check_supported. Default: ``False`` .
+            need_check_supported (bool, optional): Value of need_check_supported. Default: ``False`` .
         """
         if self._is_bool(need_check_supported):
             self.need_check_support_ = need_check_supported
@@ -699,7 +699,7 @@ class TBERegOp(RegOp):
         Whether the operator needs calop_select_format api.
 
         Args:
-            is_dynamic_format (bool): Value of is_dynamic_format. Default: ``False`` .
+            is_dynamic_format (bool, optional): Value of is_dynamic_format. Default: ``False`` .
         """
         if self._is_bool(is_dynamic_format):
             self.dynamic_format_ = is_dynamic_format
@@ -710,7 +710,7 @@ class TBERegOp(RegOp):
         The behavior type of operator, such as broadcast, reduce and so on.
 
         Args:
-            pattern (str): Value of op pattern, e.g. "broadcast", "reduce". Default: ``None`` .
+            pattern (str, optional): Value of op pattern, e.g. "broadcast", "reduce". Default: ``None`` .
         """
         if pattern is not None and self._is_string(pattern):
             self.op_pattern_ = pattern
@@ -721,11 +721,11 @@ class TBERegOp(RegOp):
         Register TBE op attribute information.
 
         Args:
-            name (str): Name of the attribute. Default: ``None`` .
-            param_type (str): Param type of the attribute. Default: ``None`` .
-            value_type (str): Type of the attribute. Default: ``None`` .
-            value (str): Value of the attribute. Default: ``None`` .
-            default_value (str): Default value of attribute. Default: ``None`` .
+            name (str, optional): Name of the attribute. Default: ``None`` .
+            param_type (str, optional): Param type of the attribute. Default: ``None`` .
+            value_type (str, optional): Type of the attribute. Default: ``None`` .
+            value (str, optional): Value of the attribute. Default: ``None`` .
+            default_value (str, optional): Default value of attribute. Default: ``None`` .
             kwargs (dict): Other information of the attribute.
         """
         param_list = [name, param_type, value_type, value, default_value]
@@ -740,12 +740,12 @@ class TBERegOp(RegOp):
         Register TBE op input information.
 
         Args:
-            index (int): Order of the input. Default: ``None`` .
-            name (str): Name of the input. Default: ``None`` .
-            need_compile (bool): Whether the input needs to be compiled or not. Default: ``None`` .
-            param_type (str): Type of the input. Default: ``None`` .
-            shape (str): Shape of the input. Default: ``None`` .
-            value_depend (str): Whether the input is constant value depend. Default: ``None`` .
+            index (int, optional): Order of the input. Default: ``None`` .
+            name (str, optional): Name of the input. Default: ``None`` .
+            need_compile (bool, optional): Whether the input needs to be compiled or not. Default: ``None`` .
+            param_type (str, optional): Type of the input. Default: ``None`` .
+            shape (str, optional): Shape of the input. Default: ``None`` .
+            value_depend (str, optional): Whether the input is constant value depend. Default: ``None`` .
             kwargs (dict): Other information of the input.
         """
         param_list = [index, name, need_compile, param_type, shape, value_depend]
@@ -764,11 +764,11 @@ class TBERegOp(RegOp):
         Register TBE op output information.
 
         Args:
-            index (int): Order of the output. Default: ``None`` .
-            name (str): Name of the output. Default: ``None`` .
-            need_compile (bool): Whether the output needs to be compiled or not. Default: ``None`` .
-            param_type (str): Type of the output. Default: ``None`` .
-            shape (str): Shape of the output. Default: ``None`` .
+            index (int, optional): Order of the output. Default: ``None`` .
+            name (str, optional): Name of the output. Default: ``None`` .
+            need_compile (bool, optional): Whether the output needs to be compiled or not. Default: ``None`` .
+            param_type (str, optional): Type of the output. Default: ``None`` .
+            shape (str, optional): Shape of the output. Default: ``None`` .
             kwargs (dict): Other information of the output.
         """
         param_list = [index, name, need_compile, param_type, shape]

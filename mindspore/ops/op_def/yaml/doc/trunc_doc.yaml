@@ -6,7 +6,7 @@ trunc:
             input (Tensor): The input tensor.
 
         Returns:
-            Tensor, the same shape and data type as the input.
+            Tensor, the same shape and data type as the `input`.
 
         Raises:
             TypeError: If `input` is not a Tensor.

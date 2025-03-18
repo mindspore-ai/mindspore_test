@@ -93,7 +93,7 @@ def merge_sliced_parameter(sliced_parameters, strategy=None):
 
     Args:
         sliced_parameters (list[Parameter]): Parameter slices in order of rank id.
-        strategy (Optional[dict]): Parameter slice strategy, whose key is parameter name and
+        strategy (Optional[dict], optional): Parameter slice strategy, whose key is parameter name and
             value is slice strategy of this parameter. If strategy is None, just merge
             parameter slices in 0 axis order. Default: ``None``.
 
@@ -602,7 +602,7 @@ def transform_checkpoints(src_checkpoints_dir, dst_checkpoints_dir, ckpt_prefix,
                                  is without any sharing for each parameter. Default:None.
         process_num (int, optional): Number of processes to use for parallel processing. Defaults: 1.
         output_format (str, optional): Control the format of the output checkpoint after conversion.
-            It can be set to either "ckpt" or "safetensors". Default: "ckpt".
+            It can be set to either ``"ckpt"`` or ``"safetensors"``. Default: ``"ckpt"``.
 
     Raises:
         ValueError: `src_strategy_file` or `dst_strategy_file` is incorrect.

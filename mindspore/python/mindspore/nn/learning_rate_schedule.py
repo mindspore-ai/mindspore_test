@@ -80,7 +80,7 @@ class ExponentialDecayLR(LearningRateSchedule):
         learning_rate (float): The initial value of learning rate.
         decay_rate (float): The decay rate.
         decay_steps (int): Number of steps to decay over.
-        is_stair (bool, optional): If true, learning rate is decayed once every `decay_steps` time.
+        is_stair (bool, optional): If ``True``, learning rate is decayed once every `decay_steps` time.
             Default: ``False`` .
 
     Inputs:

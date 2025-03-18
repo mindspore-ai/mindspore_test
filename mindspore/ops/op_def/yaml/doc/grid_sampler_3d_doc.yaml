@@ -15,7 +15,7 @@ grid_sampler_3d:
                 - ``"nearest"``: Nearest neighbor interpolation. Each output pixel is assigned the value of the
                   nearest input pixel. This method is simple and fast but can result in blocky or pixelated outputs.
                 - ``"bilinear"``: Bilinear interpolation. Each output pixel is a weighted average of the four nearest input
-                  pixels, computed using bilinear interpolation. This method produces smoother results compared
+                  pixels. This method produces smoother results compared
                   to nearest neighbor interpolation.
     
             padding_mode (str, optional): An optional string specifying the pad method.

@@ -449,13 +449,15 @@ def avg_pool1d(input_x, kernel_size=1, stride=1, padding=0, ceil_mode=False, cou
 
     Args:
         input_x (Tensor): Tensor of shape :math:`(N, C_{in}, L_{in})`.
-        kernel_size (int): The size of kernel window used to take the average value. Default: ``1`` .
-        stride (Union(int, tuple[int])): The distance of kernel moving. `stride` can either be an int
+        kernel_size (int, optional): The size of kernel window used to take the average value. Default: ``1`` .
+        stride (Union(int, tuple[int]), optional): The distance of kernel moving. `stride` can either be an int
             number or a tuple of one int number. Default: ``1`` .
-        padding (Union(int, tuple[int])): The pad value to be filled. `padding` can either be an integer
+        padding (Union(int, tuple[int]), optional): The pad value to be filled. `padding` can either be an integer
             or a tuple of one integer. Default: ``0`` .
-        ceil_mode (bool): If True, apply ceil instead of floor to compute the output shape. Default: ``False``.
-        count_include_pad (bool): If True, include the zero-padding in the averaging calculation. Default: ``True`` .
+        ceil_mode (bool, optional): If True, apply ceil instead of floor to compute the output shape.
+            Default: ``False``.
+        count_include_pad (bool, optional): If True, include the zero-padding in the averaging calculation.
+            Default: ``True`` .
 
     Returns:
         Tensor of shape :math:`(N, C_{out}, L_{out})`.

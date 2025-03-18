@@ -5,7 +5,8 @@ chunk:
     Cut the self Tensor into `chunks` sub-tensors along the specified dimension.
 
     Note:
-        This function may return less than the specified number of chunks!
+        The number of sub-tensors returned by this function may be less than the number
+        of sub-tensors specified by `chunks`.
 
     .. warning::
         This is an experimental API that is subject to change or deletion.

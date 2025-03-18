@@ -182,7 +182,8 @@ class Profiler:
               r1_read_cache_hit etc. This function only support Atlas A2 training series products.
             - AicoreMetrics.MemoryAccess: Statistics on storage access bandwidth and storage capacity of main
               storage and l2 cache etc.
-        with_stack (bool, optional): (Ascend) Whether to collect frame host call stack data on the Python side. This
+        with_stack (bool, optional): (Ascend only) Whether to collect frame host call stack data
+            on the Python side. This
             data is presented in the form of a flame graph in the timeline. When using this parameter, `activities` must
             include ``ProfilerActivity.CPU``. Default value: ``False`` .
         data_simplification (bool, optional): (Ascend only) Whether to remove FRAMEWORK data and other redundant data.
@@ -436,7 +437,7 @@ class Profiler:
         Analyze training performance data offline, which is invoked after performance data collection is completed.
 
         Args:
-            path (str): The profiling data path which need to be analyzed offline.
+            path (str): The profiling data path which needs to be analyzed offline.
                 There needs to be a profiler directory in this path.
             pretty (bool, optional): Whether to pretty json files. Default: ``False``.
             step_list (list, optional): A list of steps that need to be analyzed, the steps must be
@@ -704,7 +705,8 @@ class Profile:
             first step. Default: ``False`` . The operator name currently collected by this parameter is incomplete.
             This issue will be resolved in later versions. It is recommended to use the environment variable
             ``MS_ALLOC_CONF`` instead.
-        with_stack (bool, optional): (Ascend) Whether to collect frame host call stack data on the Python side. This
+        with_stack (bool, optional): (Ascend only) Whether to collect frame host call stack data
+            on the Python side. This
             data is presented in the form of a flame graph in the timeline. When using this parameter, `activities` must
             include ``ProfilerActivity.CPU``. Default value: ``False`` .
         hbm_ddr (bool, optional): (Ascend only) Whether to collect On-Chip Memory/DDR read and write rate data,

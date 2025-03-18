@@ -10,13 +10,13 @@ mindspore.mutable
 
     为解决以上的问题，我们提供了 `mutable` 接口去设置网络的常量输入为"可变的"。一个"可变的"输入意味着这个输入成为了像Tensor一样的变量，最重要的是，我们可以对其进行求导了。
 
-    当 `input_data` 是tuple或者list并且 `dynamic_len` 是False的情况下，`mutable` 的返回值是一个固定长度的tuple或者list，且其中的每一个元素都是可变的。当 `dyanmic_len` 被设置为True的时候，返回的tuple或者list长度是动态的。
+    当 `input_data` 是tuple或者list并且 `dynamic_len` 是False的情况下，`mutable` 的返回值是一个固定长度的tuple或者list，且其中的每一个元素都是可变的。当 `dynamic_len` 被设置为True的时候，返回的tuple或者list长度是动态的。
 
     当 `mutable` 返回的动态长度的tuple或者list被作为网络的输入并且这个网络被重复调用，即使每一次的输入的tuple或者list长度都不一致，这个网络也不需要被重新编译。
 
     参数：
-        - **input_data** (Union[Tensor, scalar, tuple, list, dict]) - 要设置为可变的输入数据。如果 `input_data` 是list、tuple或者dict， 其内部元素的类型也需要是这些有效类型中的一个。
-        - **dynamic_len** (bool，可选) - 是否要将整个序列设置为动态长度的。在图编译内，如果 `dynamic_len` 被设置为 ``True`` ， 那么 `input_data` 必须为tuple或者list， 并且其中的元素必须有相同的类型以及shape。默认值： ``False`` 。
+        - **input_data** (Union[Tensor, scalar, tuple, list, dict]) - 要设置为可变的输入数据。如果 `input_data` 是list、tuple或者dict，其内部元素的类型也需要是这些有效类型中的一个。
+        - **dynamic_len** (bool，可选) - 是否要将整个序列设置为动态长度的。在图编译内，如果 `dynamic_len` 被设置为 ``True`` ，那么 `input_data` 必须为tuple或者list，并且其中的元素必须有相同的类型以及shape。默认值： ``False`` 。
 
     .. warning::
         这是一个实验性API，后续可能修改或删除。

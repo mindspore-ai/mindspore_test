@@ -18,4 +18,4 @@ mindspore.ops.cosine_similarity
         - **eps** (float, 可选) - 极小值，用于避免除零的情况。默认 ``1e-08`` 。
 
     返回：
-        Tensor。
+        Tensor
