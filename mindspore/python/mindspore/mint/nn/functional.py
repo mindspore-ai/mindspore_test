@@ -32,6 +32,7 @@ from mindspore.ops.functional import (
 
 # 4
 from mindspore.ops.function.nn_func import interpolate_ext as interpolate
+from mindspore.ops.function.nn_func import instance_norm
 # 5
 from mindspore.ops.function.nn_func import pad_ext as pad
 # 6
@@ -1228,6 +1229,7 @@ __all__ = [
     # 52
     'embedding',
     # 53
+    'instance_norm',
 
     # 54
 

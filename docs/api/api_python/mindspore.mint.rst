@@ -329,6 +329,9 @@ mindspore.mint.nn
     mindspore.mint.nn.BatchNorm1d
     mindspore.mint.nn.BatchNorm2d
     mindspore.mint.nn.BatchNorm3d
+    mindspore.mint.nn.InstanceNorm1d
+    mindspore.mint.nn.InstanceNorm2d
+    mindspore.mint.nn.InstanceNorm3d
     mindspore.mint.nn.GroupNorm
     mindspore.mint.nn.LayerNorm
     mindspore.mint.nn.SyncBatchNorm
@@ -510,6 +513,7 @@ mindspore.mint.nn.functional
     :template: classtemplate.rst
 
     mindspore.mint.nn.functional.batch_norm
+    mindspore.mint.nn.functional.instance_norm
     mindspore.mint.nn.functional.elu
     mindspore.mint.nn.functional.elu_
     mindspore.mint.nn.functional.gelu

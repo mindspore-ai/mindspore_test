@@ -52,25 +52,27 @@ void BatchNormExtShapeCheck(const PrimitivePtr &primitive, const std::vector<Abs
                    CheckAndConvertUtils::FormatCheckInRangeMsg("rank of images", SizeToLong(x_shape.size()),
                                                                kIncludeBoth, {minDim, maxDim}, primitive));
   }
-  MS_CHECK_VALUE(weight_shape.size() == 1, CheckAndConvertUtils::FormatCheckIntegerMsg(
-                                             "rank of weight", SizeToLong(weight_shape.size()), kEqual, 1, primitive));
-  MS_CHECK_VALUE(bias_shape.size() == 1, CheckAndConvertUtils::FormatCheckIntegerMsg(
-                                           "rank of bias", SizeToLong(bias_shape.size()), kEqual, 1, primitive));
-  if (MS_LIKELY(!(IsDynamic(weight_shape) || IsDynamic(bias_shape)))) {
-    MS_CHECK_VALUE(bias_shape == weight_shape, CheckAndConvertUtils::FormatCheckMsg("weight and bias", weight_shape,
-                                                                                    kEqual, bias_shape, primitive));
-  }
-  if (MS_LIKELY(!IsDynamic(x_shape) && !IsDynamic(weight_shape))) {
-    auto channel = x_shape[kInputIndex1];
-    if (MS_UNLIKELY(weight_shape[kInputIndex0] != channel)) {
-      MS_EXCEPTION(ValueError) << "For " << primitive->name()
-                               << ", weight.shape[0] should be equal to input_x's channel dimension: " << channel
-                               << ", bug got weight.shape[0]: " << weight_shape[kInputIndex0] << ".";
+  if (!input_args[kInputIndex1]->GetType()->isa<TypeNone>() && !input_args[kInputIndex2]->GetType()->isa<TypeNone>()) {
+    MS_CHECK_VALUE(weight_shape.size() == 1,
+                   CheckAndConvertUtils::FormatCheckIntegerMsg("rank of weight", SizeToLong(weight_shape.size()),
+                                                               kEqual, 1, primitive));
+    MS_CHECK_VALUE(bias_shape.size() == 1, CheckAndConvertUtils::FormatCheckIntegerMsg(
+                                             "rank of bias", SizeToLong(bias_shape.size()), kEqual, 1, primitive));
+    if (MS_LIKELY(!(IsDynamic(weight_shape) || IsDynamic(bias_shape)))) {
+      MS_CHECK_VALUE(bias_shape == weight_shape, CheckAndConvertUtils::FormatCheckMsg("weight and bias", weight_shape,
+                                                                                      kEqual, bias_shape, primitive));
+    }
+    if (MS_LIKELY(!IsDynamic(x_shape) && !IsDynamic(weight_shape))) {
+      auto channel = x_shape[kInputIndex1];
+      if (MS_UNLIKELY(weight_shape[kInputIndex0] != channel)) {
+        MS_EXCEPTION(ValueError) << "For " << primitive->name()
+                                 << ", weight.shape[0] should be equal to input_x's channel dimension: " << channel
+                                 << ", bug got weight.shape[0]: " << weight_shape[kInputIndex0] << ".";
+      }
     }
   }
 
-  if (input_args[kInputIndex3]->GetType()->isa<TypeNone>()
-    || input_args[kInputIndex4]->GetType()->isa<TypeNone>()) {
+  if (input_args[kInputIndex3]->GetType()->isa<TypeNone>() || input_args[kInputIndex4]->GetType()->isa<TypeNone>()) {
     return;
   }
   auto mean_shape = input_args[kInputIndex3]->GetShape()->GetShapeVector();
@@ -98,8 +100,21 @@ void BatchNormExtShapeCheck(const PrimitivePtr &primitive, const std::vector<Abs
 BaseShapePtr BatchNormExtFuncImpl::InferShape(const PrimitivePtr &primitive,
                                               const std::vector<AbstractBasePtr> &input_args) const {
   const auto &x_shape = input_args[kInputIndex0]->GetShape()->GetShapeVector();
-  const auto &weight_shape = input_args[kInputIndex1]->GetShape()->GetShapeVector();
-  const auto &bias_shape = input_args[kInputIndex2]->GetShape()->GetShapeVector();
+  if (MS_LIKELY(!IsDynamicRank(x_shape))) {
+    MS_CHECK_VALUE(minDim <= x_shape.size() && x_shape.size() <= maxDim,
+                   CheckAndConvertUtils::FormatCheckInRangeMsg("rank of images", SizeToLong(x_shape.size()),
+                                                               kIncludeBoth, {minDim, maxDim}, primitive));
+  }
+
+  ShapeVector weight_shape;
+  ShapeVector bias_shape;
+  if (input_args[kInputIndex1]->GetType()->isa<TypeNone>() || input_args[kInputIndex2]->GetType()->isa<TypeNone>()) {
+    weight_shape = {x_shape[1]};
+    bias_shape = {x_shape[1]};
+  } else {
+    weight_shape = input_args[kInputIndex1]->GetShape()->GetShapeVector();
+    bias_shape = input_args[kInputIndex2]->GetShape()->GetShapeVector();
+  }
   auto attr_pos = GetAttrPosZero();
   BatchNormExtShapeCheck(primitive, input_args, x_shape, weight_shape, bias_shape, attr_pos);
 
@@ -115,8 +130,12 @@ BaseShapePtr BatchNormExtFuncImpl::InferShape(const PrimitivePtr &primitive,
 TypePtr BatchNormExtFuncImpl::InferType(const PrimitivePtr &primitive,
                                         const std::vector<AbstractBasePtr> &input_args) const {
   auto x_type = input_args[kInputIndex0]->GetType();
-  auto weight_type = input_args[kInputIndex1]->GetType();
   std::vector<TypePtr> types_list;
+  if (input_args[kInputIndex1]->GetType()->isa<TypeNone>() || input_args[kInputIndex2]->GetType()->isa<TypeNone>()) {
+    types_list = {x_type, x_type, x_type};
+    return std::make_shared<Tuple>(types_list);
+  }
+  auto weight_type = input_args[kInputIndex1]->GetType();
   types_list = {x_type, weight_type, weight_type};
   return std::make_shared<Tuple>(types_list);
 }
@@ -125,7 +144,10 @@ ShapeArray BatchNormExtFuncImpl::InferShape(const PrimitivePtr &primitive, const
   const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
   const auto &weight_tensor = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
-  MS_EXCEPTION_IF_NULL(weight_tensor);
+  if (weight_tensor == nullptr) {
+    auto x_shape = x_tensor->shape();
+    return {x_shape, {x_shape[1]}, {x_shape[1]}};
+  }
   return {x_tensor->shape(), weight_tensor->shape(), weight_tensor->shape()};
 }
 
@@ -133,7 +155,9 @@ TypePtrList BatchNormExtFuncImpl::InferType(const PrimitivePtr &primitive, const
   const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
   const auto &weight_tensor = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
-  MS_EXCEPTION_IF_NULL(weight_tensor);
+  if (weight_tensor == nullptr) {
+    return {x_tensor->Dtype(), x_tensor->Dtype(), x_tensor->Dtype()};
+  }
   return {x_tensor->Dtype(), weight_tensor->Dtype(), weight_tensor->Dtype()};
 }
 

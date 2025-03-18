@@ -473,6 +473,7 @@ from .nn_func import (
     moe_token_unpermute,
     batch_norm,
     add_rms_norm,
+    instance_norm,
     rms_norm,
     bidense,
     celu,

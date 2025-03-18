@@ -91,7 +91,7 @@ from mindspore.ops.auto_generate import avg_pool3d_ext_op
 # 19
 
 # 20
-
+from mindspore.ops.auto_generate import instance_norm_ext_op
 from mindspore.ops.auto_generate.gen_ops_prim import embedding_op, MaxPoolWithIndices, \
     PromptFlashAttention, MaxPoolWithMask
 from mindspore.ops.auto_generate.gen_ops_prim import conv3d_ext_op, conv3d_padding_op, conv2d_ext_op, \
@@ -6957,6 +6957,18 @@ def group_norm(input, num_groups, weight=None, bias=None, eps=1e-5):
     return group_norm_op(input, num_groups, weight, bias, eps)[0]
 
 
+def instance_norm(input, running_mean=None, running_var=None, weight=None, bias=None,
+                  use_input_stats=True, momentum=0.1, eps=1e-05):
+    r"""
+    Applies Instance Normalization for each channel in each data sample in a batch.
+
+    See :class:`mindspore.nn.InstanceNorm1d`, :class:`mindspore.nn.InstanceNorm2d`,
+    :class:`mindspore.nn.InstanceNorm3d` for details.
+    """
+    return instance_norm_ext_op(input, weight, bias, running_mean, running_var,
+                                use_input_stats, momentum, eps)
+
+
 def batch_norm_ext(input, running_mean, running_var, weight=None, bias=None, training=False, momentum=0.1, eps=1e-5):
     r"""
     Batch Normalization for input data and updated parameters.
@@ -7015,10 +7027,6 @@ def batch_norm_ext(input, running_mean, running_var, weight=None, bias=None, tra
         [[ 2.1621194  1.2360122]
          [14.810596  10.180061 ]]
     """
-    if weight is None:
-        weight = ops.ones([input.shape[1]], dtype=input.dtype)
-    if bias is None:
-        bias = ops.zeros([input.shape[1]], dtype=input.dtype)
     output = batch_norm_ext_op(input, weight, bias, running_mean, running_var, training, momentum, eps)
     return output[0]
 
@@ -9757,6 +9765,7 @@ __all__ = [
     'add_layer_norm',
     'group_norm',
     'rms_norm',
+    'instance_norm',
     'add_rms_norm',
 ]
 __all__.sort()
