@@ -42,6 +42,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "op_def/arithmetic_ops.h"
 
 namespace mindspore {
 namespace parallel {
@@ -687,21 +688,22 @@ Status OperatorInfo::InferTensorInfo() {
   if (!inputs_shape_new_.empty()) {
     return InferTensorInfoNew();
   }
-  if (inputs_shape_.empty() || outputs_shape_.empty() || inputs_tensor_map_.empty() || outputs_tensor_map_.empty()) {
-    MS_LOG(ERROR) << name_ << ": Invalid args";
-    return FAILED;
-  }
 
   size_t real_input_index = 0;
   for (size_t i = 0; i < inputs_tensor_map_.size(); ++i) {
     // Insert placeholder TensorInfo for optional input
-    while (real_input_index < input_value_.size() && input_value_[real_input_index] != nullptr &&
+    while (real_input_index < input_value_.size() && input_value_.at(real_input_index) != nullptr &&
            input_value_[real_input_index]->isa<None>()) {
       (void)inputs_tensor_info_.emplace_back(TensorInfo());
       ++real_input_index;
     }
+    if (i >= inputs_shape_.size()) {
+      (void)inputs_tensor_info_.emplace_back(TensorInfo());
+      ++real_input_index;
+      continue;
+    }
     TensorLayout input_layout;
-    if (input_layout.InitFromVector(dev_matrix_shape_, inputs_tensor_map_[i], inputs_shape_[i]) != SUCCESS) {
+    if (input_layout.InitFromVector(dev_matrix_shape_, inputs_tensor_map_.at(i), inputs_shape_.at(i)) != SUCCESS) {
       MS_LOG(ERROR) << name_ << ": Infer input tensor layout failed, the index is " << i;
       return FAILED;
     }
@@ -712,7 +714,7 @@ Status OperatorInfo::InferTensorInfo() {
 
   for (size_t i = 0; i < outputs_tensor_map_.size(); ++i) {
     TensorLayout output_layout;
-    if (output_layout.InitFromVector(dev_matrix_shape_, outputs_tensor_map_[i], outputs_shape_[i]) != SUCCESS) {
+    if (output_layout.InitFromVector(dev_matrix_shape_, outputs_tensor_map_.at(i), outputs_shape_.at(i)) != SUCCESS) {
       MS_LOG(ERROR) << name_ << ": Infer output tensor layout failed, the index is " << i;
       return FAILED;
     }
