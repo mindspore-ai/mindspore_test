@@ -2182,9 +2182,6 @@ def kl_div_ext(input, target, reduction='mean', log_target=False):
         - The output aligns with the mathematical definition of Kullback-Leibler divergence
           only when `reduction` is set to ``'batchmean'``.
 
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
     Args:
         input (Tensor): The input Tensor. The data type must be float16, float32 or bfloat16(only supported by Atlas A2
             training series products).
