@@ -42,6 +42,7 @@ from mindspore.ops.operations import Cast
 from mindspore.ops.primitive import Primitive
 from mindspore.ops.operations import _inner_ops as inner
 from mindspore.parallel.shard import Shard
+from mindspore.parallel._utils import _is_in_auto_parallel_mode
 from mindspore._check_jit_forbidden_api import jit_forbidden_register
 from mindspore.common._decorator import deprecated
 from mindspore.common._register_for_recompute import recompute_registry
@@ -1350,15 +1351,24 @@ class Cell(Cell_):
         def _updata(param):
             if param in replace:
                 return replace.get(param)
-            new_p = param.init_data(None, set_sliced=False)
+            new_p = param.init_data(None, set_sliced=param.sliced)
             replace[param] = new_p
             return new_p
+
+        is_parallel_mode = _is_in_auto_parallel_mode()
+        is_graph_mode = context.get_context('mode') == context.GRAPH_MODE
 
         # replace all original usage.
         cells = self.cells_and_names()
         for _, cell in cells:
             params = cell._params.items()
             for param_name, param in params:
+                not_sliced = not param.sliced
+                judgment = not_sliced
+                if param.param_info.is_pipeline_shared_param:
+                    continue
+                if is_graph_mode and is_parallel_mode and judgment:
+                    continue
                 if not auto_parallel_mode:
                     cell._params[param_name] = _updata(param)
                     continue
@@ -1370,6 +1380,12 @@ class Cell(Cell_):
                     param_tuple = cell_dict[key]
                     new_param_tuple = []
                     for param in param_tuple:
+                        not_sliced = not param.sliced
+                        judgment = not_sliced
+                        if param.param_info.is_pipeline_shared_param:
+                            continue
+                        if is_graph_mode and is_parallel_mode and judgment:
+                            continue
                         if not auto_parallel_mode:
                             new_param_tuple.append(_updata(param))
                             continue
