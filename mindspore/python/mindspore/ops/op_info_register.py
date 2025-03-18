@@ -32,6 +32,7 @@ BUILT_IN_CUSTOM_OPS_REGISTER_PATH = "mindspore/ops/_op_impl/_custom_op"
 KEY_NAME = "name"
 ASCEND_CUSTOM_OPP_PATH = "ASCEND_CUSTOM_OPP_PATH"
 
+
 def op_info_register(op_info):
     r"""
     A decorator which is used to register an operator.
@@ -109,6 +110,9 @@ def custom_info_register(*reg_info):
 
     Raises:
         TypeError: If `reg_info` is not a tuple.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> from mindspore.ops import custom_info_register, CustomRegOp, DataType
