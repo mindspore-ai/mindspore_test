@@ -23,6 +23,7 @@ class FileSystem:
         self.create_args = ("ab",)
         self.open = open
         self.open_args = ("rb",)
+        self.backend = "basic"
 
 
 def _register_basic_file_system(fs: FileSystem):
@@ -52,4 +53,5 @@ def _register_mindio_file_system(fs: FileSystem):
     fs.create_args = ()
     fs.open = mindio.open_file
     fs.open_args = ()
+    fs.backend = "mindio"
     return True

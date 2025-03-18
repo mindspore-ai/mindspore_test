@@ -80,6 +80,7 @@ from mindspore._c_expression import load_mindir, _encrypt, _decrypt, _is_cipher_
     split_mindir, split_dynamic_mindir
 from mindspore.common.generator import Generator
 
+
 tensor_to_ms_type = {"Int8": mstype.int8, "UInt8": mstype.uint8, "Int16": mstype.int16, "UInt16": mstype.uint16,
                      "Int32": mstype.int32, "UInt32": mstype.uint32, "Int64": mstype.int64, "UInt64": mstype.uint64,
                      "Float16": mstype.float16, "Float32": mstype.float32, "Float64": mstype.float64,
@@ -362,6 +363,8 @@ def _exec_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-GCM", map_
             file_name_list = list(os.path.splitext(ckpt_file_name))
             file_name_list[1] = file_name_list[1].replace(f".{format}", ".tmp")
             tmp_name = ''.join(file_name_list)
+            if _ckpt_fs.backend == "mindio":
+                tmp_name = ckpt_file_name
             if os.path.exists(ckpt_file_name):
                 os.chmod(ckpt_file_name, stat.S_IWUSR)
                 os.remove(ckpt_file_name)
@@ -445,7 +448,7 @@ def _exec_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-GCM", map_
             if not os.path.exists(tmp_name):
                 logger.warning(f"Rename failed, can't find {tmp_name}, it is possible that multiple processes have "
                                f"simultaneously modified a file.")
-            else:
+            elif _ckpt_fs.backend != "mindio":
                 os.rename(tmp_name, ckpt_file_name)
             os.chmod(ckpt_file_name, stat.S_IRUSR)
     except BaseException as e:
