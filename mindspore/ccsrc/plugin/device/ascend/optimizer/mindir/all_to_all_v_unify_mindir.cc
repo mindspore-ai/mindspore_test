@@ -206,6 +206,7 @@ CNodePtr CreateAlltoAllVUnifyMindIRNode(const FuncGraphPtr &graph, const AnfNode
   common::AnfAlgo::SetNodeAttr(kAttrSendOffsetList, MakeValue(send_mem_range.displs), atav_node);
   common::AnfAlgo::SetNodeAttr(kAttrRecvOffsetList, MakeValue(recv_mem_range.displs), atav_node);
   common::AnfAlgo::SetNodeAttr(kAttrGroup, MakeValue<std::string>(group), atav_node);
+  common::AnfAlgo::SetNodeAttr(kAttrBlockSize, MakeValue<int64_t>(1), atav_node);
   common::AnfAlgo::SetNodeAttr(kAttrGroupRankIds, MakeValue<std::vector<uint32_t>>(group_rank_ids), atav_node);
   if (common::AnfAlgo::HasNodeAttr(kAttrRecvType, origin_node)) {
     common::AnfAlgo::CopyNodeAttr(kAttrRecvType, origin_node, atav_node);
