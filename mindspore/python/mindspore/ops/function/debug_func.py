@@ -23,9 +23,9 @@ from .._primitive_cache import _get_cache_prim
 
 def print_(*input_x):
     """
-    Outputs the inputs to stdout. The outputs are printed to screen by default.
+    Outputs the inputs to stdout.
+    The outputs are printed to screen by default.
     It can also be saved in a file by setting the parameter  `print_file_path` in `context`.
-    Once set, the output will be saved in the file specified by print_file_path.
     :func:`mindspore.parse_print` can be employed to reload the data.
     For more information, please refer to :func:`mindspore.set_context` and :func:`mindspore.parse_print`.
     In Ascend platform with graph mode, the environment variables `MS_DUMP_SLICE_SIZE` and `MS_DUMP_WAIT_TIME`
@@ -33,7 +33,7 @@ def print_(*input_x):
 
     Note:
         In pynative mode, please use python print function.
-        In Ascend platform with graph mode, the bool, int and float would be converted into Tensor to print, and
+        In Ascend platform with graph mode, the bool, int and float would be converted into tensor to print, and
         str remains unchanged.
         This function is used for debugging.
 
@@ -44,17 +44,13 @@ def print_(*input_x):
     Returns:
         Invalid value, should be ignored.
 
-    Raises:
-        TypeError: If `input_x` is not one of the following: Tensor, bool, int, float, str, tuple or list.
-
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.ones([2, 1]).astype(np.int32))
-        >>> y = Tensor(np.ones([2, 2]).astype(np.int32))
+        >>> import mindspore
+        >>> x = mindspore.tensor(mindspore.ops.ones([2, 1], mindspore.int32))
+        >>> y = mindspore.tensor(mindspore.ops.ones([2, 2], mindspore.int32))
         >>> result = ops.print_('Print Tensor x and Tensor y:', x, y)
         Print Tensor x and Tensor y:
         Tensor(shape=[2, 1], dtype=Int32, value=
@@ -71,10 +67,10 @@ def print_(*input_x):
 
 def tensordump(file_name, tensor, mode='out'):
     """
-    Save Tensor in numpy's npy format.
+    Save tensor in npy format.
 
     .. warning::
-        - The parameter mode will no longer support the value 'all'.
+        - The parameter `mode` will no longer support the value 'all'.
 
     In Parallel situation, tensordump will dump slice of data at each rank.
     In Ascend platform with graph mode, Your code OpA --> OpB may compiled as OpA --> RedistributionOps --> OpB.
@@ -89,18 +85,18 @@ def tensordump(file_name, tensor, mode='out'):
     So the parameter mode is to handle this situation.
 
     Assuming OpA's output is used as both tensordump's input parameter and OpB's input parameter.
-    Different requirements of saving dump data can be achieved by configuring parameter mode:
+    Different requirements of saving dump data can be achieved by configuring parameter `mode` :
 
-    - If the mode is 'out', the dump data contains only OpA's output slice.
-    - If the mode is 'in', the dump data contains only OpB's input slice.
+    - If the `mode` is 'out', the dump data contains only OpA's output slice.
+    - If the `mode` is 'in', the dump data contains only OpB's input slice.
 
-    For mode 'in', the input slice npy file format is: fileName_dumpMode_dtype_id.npy.
+    For `mode` 'in', the input slice npy file format is: fileName_dumpMode_dtype_id.npy.
 
-    For mode 'out', the output slice npy file format is: filename_dtype_id.npy.
+    For `mode` 'out', the output slice npy file format is: fileName_dtype_id.npy.
 
     - fileName: Value of the parameter file_name
-      (if parameter file_name is a user-specified path, the value of fileName is the last level of the path).
-    - dumpMode: Value of the parameter mode.
+      (if parameter `file_name` is a user-specified path, the value of fileName is the last level of the path).
+    - dumpMode: Value of the parameter `mode`.
     - dtype: The original data type. Data of type bfloat16 stored in the .npy file will be converted to float32.
     - id: An auto increment ID.
 
@@ -108,21 +104,14 @@ def tensordump(file_name, tensor, mode='out'):
         - In Ascend platform with graph mode, the environment variables `MS_DUMP_SLICE_SIZE` and `MS_DUMP_WAIT_TIME`
           can be set to solve operator execution failure when outputting big tensor or outputting tensor intensively.
         - The operator of tensordump doesn't support in control flow.
-        - If current parallel mode is STAND_ALONE, mode should only be 'out'.
-        - Parameter mode will be set to 'out' if user doesn't configure it.
+        - If current parallel mode is STAND_ALONE, `mode` should only be 'out'.
         - This function is used for debugging.
 
     Args:
         file_name (str): The path of the npy file saves.
         tensor (Tensor): The tensor that user want to dump.
         mode (str, optional): Used to control tensordump behavior, available value is one of ['in', 'out'].
-            Default value is ``out``.
-
-    Raises:
-        TypeError: If `file_name` is not str.
-        TypeError: If `tensor` is not Tensor.
-        TypeError: If `mode` is not str.
-        ValueError: If `mode` is not in one of ['in', 'out'].
+            Default ``out`` .
 
     Supported Platforms:
         ``Ascend``
@@ -134,38 +123,37 @@ def tensordump(file_name, tensor, mode='out'):
 
         >>> import os
         >>> import numpy as np
-        >>> import mindspore as ms
-        >>> from mindspore import nn, Tensor, ops, context
-        >>> from mindspore.ops import operations as P
+        >>> import mindspore
+        >>> from mindspore import nn, context
         >>> from mindspore.communication import init, get_rank
         >>> init()
         >>> rank_id = get_rank()
-        >>> dump_path = f'dumps/rank_{rank_id}/mul1_mul2.npy'
+        >>> dump_path = f'rank_{rank_id}_mul1_mul2.npy'
         >>> class Net(nn.Cell):
         ...     def __init__(self, strategy1, strategy2):
         ...         super(Net, self).__init__()
-        ...         self.matmul1 = P.MatMul().shard(strategy1)
-        ...         self.matmul2 = P.MatMul().shard(strategy2)
+        ...         self.matmul1 = mindspore.ops.MatMul().shard(strategy1)
+        ...         self.matmul2 = mindspore.ops.MatMul().shard(strategy2)
         ...
         ...     def construct(self, x, y, b):
         ...         out1 = self.matmul1(x, y)
-        ...         ops.tensordump(dump_path, out1, 'out')
+        ...         mindspore.ops.tensordump(dump_path, out1, 'out')
         ...         out2 = self.matmul2(out1, b)
         ...         return out2
         ...
-        >>> ms.set_context(mode=ms.GRAPH_MODE)
+        >>> mindspore.set_context(mode=mindspore.GRAPH_MODE)
         >>> os.environ["MS_DEV_SAVE_GRAPHS"] = "2"
         >>> context.set_auto_parallel_context(parallel_mode='semi_auto_parallel', full_batch=True)
         >>> strategy1 = ((1, 2), (2, 1))
         >>> strategy2 = ((1, 2), (2, 1))
         >>> net = Net(strategy1, strategy2)
-        >>> x = Tensor(0.1 * np.random.randn(64, 64).astype(np.float32))
-        >>> y = Tensor(0.1 * np.random.randn(64, 64).astype(np.float32))
-        >>> b = Tensor(0.1 * np.random.randn(64, 64).astype(np.float32))
+        >>> x = mindspore.tensor(0.1 * mindspore.ops.randn(64, 64), mindspore.float32)
+        >>> y = mindspore.tensor(0.1 * mindspore.ops.randn(64, 64), mindspore.float32)
+        >>> b = mindspore.tensor(0.1 * mindspore.ops.randn(64, 64), mindspore.float32)
         >>> out = net(x, y, b)
         >>> print(f"out shape is: {out.shape}")
         >>> # out shape is (64, 64)
-        >>> matmul1_output_slice = np.load('dumps/rank_0/mul1_mul2_float32_0.npy')      # load matmul1's output slice
+        >>> matmul1_output_slice = np.load(f'rank_{rank_id}_mul1_mul2_float32_0.npy')      # load matmul1's output slice
         >>> print(f"matmul1_output_slice is loaded, shape is: {matmul1_output_slice.shape}")
         >>> # matmul1_output_slice is loaded, shape is: (64, 64)
     """

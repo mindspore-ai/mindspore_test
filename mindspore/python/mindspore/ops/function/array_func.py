@@ -2615,9 +2615,13 @@ def scatter_div(input_x, indices, updates):
 
 def scatter_update(input_x, indices, updates):
     r"""
-    Updates tensor values by using input indices and value.
+    Updates the input tensor values using the given input indices and update values.
 
-    Using given values to update tensor value, along with the input indices.
+    .. note::
+        - Support implicit type conversion and type promotion.
+        - Since Parameter objects do not support type conversion,
+          an exception will be thrown when input_x is of a low-precision data type.
+        - The `updates` with a shape of `indices.shape + input_x.shape[1:]` .
 
     for each `i, ..., j` in `indices.shape`:
 
@@ -2625,39 +2629,26 @@ def scatter_update(input_x, indices, updates):
 
         \text{input_x}[\text{indices}[i, ..., j], :] = \text{updates}[i, ..., j, :]
 
-    Inputs of `input_x` and `updates` comply with the implicit type conversion rules to make the data types consistent.
-    If they have different data types, the lower priority data type will be converted to
-    the relatively highest priority data type.
-
     Args:
-        input_x (Union[Parameter, Tensor]): The target tensor, with data type of Parameter or Tensor.
-        indices (Tensor): The index of input tensor. With int32 or int64 data type.
+        input_x (Union[Parameter, Tensor]): The input parameter or tensor.
+        indices (Tensor): Specify the indices for update operation.
             If there are duplicates in indices, the order for updating is undefined.
-        updates (Tensor): The tensor to update the input tensor, has the same type as input,
-            and updates.shape = indices.shape + input_x.shape[1:].
+        updates (Tensor): The values to update.
 
     Returns:
-        Tensor, has the same shape and type as `input_x`.
-
-    Raises:
-        TypeError: If `indices` is not an int32 or an int64.
-        ValueError: If the shape of `updates` is not equal to `indices.shape + input_x.shape[1:]`.
-        RuntimeError: If the data type of `input_x` and `updates` conversion is required when data type conversion
-                      is not supported.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> np_x = np.array([[-0.1, 0.3, 3.6], [0.4, 0.5, -3.2]])
-        >>> input_x = mindspore.Parameter(Tensor(np_x, mindspore.float32), name="x")
-        >>> indices = Tensor(np.array([0, 1]), mindspore.int32)
-        >>> np_updates = np.array([[2.0, 1.2, 1.0], [3.0, 1.2, 1.0]])
-        >>> updates = Tensor(np_updates, mindspore.float32)
-        >>> output = ops.scatter_update(input_x, indices, updates)
+        >>> np_x = mindspore.tensor([[-0.1, 0.3, 3.6], [0.4, 0.5, -3.2]], mindspore.float32)
+        >>> input_x = mindspore.Parameter(np_x, name="x")
+        >>> indices = mindspore.tensor([0, 1], mindspore.int32)
+        >>> np_updates =  mindspore.tensor([[2.0, 1.2, 1.0], [3.0, 1.2, 1.0]])
+        >>> updates =  mindspore.tensor(np_updates, mindspore.float32)
+        >>> output = mindspore.ops.scatter_update(input_x, indices, updates)
         >>> print(output)
         [[2. 1.2  1.]
          [3. 1.2  1.]]
@@ -3977,28 +3968,17 @@ def batch_to_space_nd(input_x, block_shape, crops):
             :math:`input\_shape[i+offset]*block\_shape[i] > crops[i][0]+crops[i][1]`
 
     Returns:
-        Tensor, the output tensor with the same type as input.
-
-    Raises:
-        TypeError: If `block_shape` is not one of list, tuple, int.
-        TypeError: If `crops` is neither list nor tuple.
-        ValueError: If `block_shape` is not one dimensional when `block_shape` is a list or tuple.
-        ValueError: If the length of `block_shape` is not 2 on Ascend.
-        ValueError: If the element of `block_shape` is not an integer larger than or euqal to 1.
-        ValueError: If shape of `crops` is not (M, 2), where M is the length of `block_shape`.
-        ValueError: If the element of `crops` is not an integer larger than or euqal to 0.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
         >>> block_shape = [2, 2]
         >>> crops = [[0, 0], [0, 0]]
-        >>> input_x = Tensor(np.array([[[[1]]], [[[2]]], [[[3]]], [[[4]]]]), mindspore.float32)
-        >>> output = ops.batch_to_space_nd(input_x, block_shape, crops)
+        >>> input_x = mindspore.tensor([[[[1]]], [[[2]]], [[[3]]], [[[4]]]], mindspore.float32)
+        >>> output = mindspore.ops.batch_to_space_nd(input_x, block_shape, crops)
         >>> print(output)
         [[[[1.  2.]
            [3.  4.]]]]
@@ -6684,30 +6664,25 @@ def nonzero(input, *, as_tuple=False):
 
 def argwhere(input):
     """
-    Return a Tensor of the positions of all non-zero values.
+    Return a tensor of containing the positions of all non-zero elements in the input tensor.
 
     Args:
-        input (Tensor): The input tensor. The data type is Number or Bool.
+        input (Tensor): The input tensor.
 
     Returns:
-        Tensor, a 2-D Tensor whose data type is int64, containing the positions of all non-zero values of the input.
-
-    Raises:
-        TypeError: If `input` is not Tensor.
-        ValueError: If dim of `input` equals to 0.
+        2-D Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import Tensor, ops
-        >>> import numpy as np
-        >>> x = Tensor(np.array([[[1,  0], [-5, 0]]]), mindspore.int32)
-        >>> output = ops.argwhere(x)
+        >>> x = mindspore.tensor([[[1,  0], [-5, 0]]], mindspore.int32)
+        >>> output = mindspore.ops.argwhere(x)
         >>> print(output)
-        [[0 0 0]
-         [0 1 0]]
+        Tensor(shape=[2, 3], dtype=Int64, value=
+        [[0, 0, 0],
+        [0, 1, 0]])
     """
     return nonzero(input)
 

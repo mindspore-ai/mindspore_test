@@ -467,49 +467,42 @@ def jet(fn, primals, series):
     while the other to 0, which is like the derivative of origin input with respect to itself.
 
     Note:
-        If `primals` is Tensor of int type, it will be converted to Tensor of float type.
+        If `primals` is tensor of int type, it will be converted to Tensor of float type.
 
     Args:
         fn (Union[Cell, function]): Function to do TaylorOperation.
         primals (Union[Tensor, tuple[Tensor]]): The inputs to `fn`.
-        series (Union[Tensor, tuple[Tensor]]): If tuple, the length and type of series should be the same as inputs.
-            For each Tensor, the length of first dimension `i` represents the `1` to `i+1`-th order of derivative of
-            output with respect to the inputs will be figured out.
+        series (Union[Tensor, tuple[Tensor]]): The original 1st to nth order derivatives of the input.
+            The index `i` of the zeroth dimension of the tensor corresponds to the `i+1` -th order derivative of the
+            output with respect to the input.
 
     Returns:
-        Tuple, tuple of out_primals and out_series.
+        Tuple(out_primals, out_series)
 
         - **out_primals** (Union[Tensor, list[Tensor]]) - The output of `fn(primals)`.
-        - **out_series** (Union[Tensor, list[Tensor]]) - The `1` to `i+1`-th order of derivative of output with respect
+        - **out_series** (Union[Tensor, list[Tensor]]) - The `1` to `i+1` -th order of derivative of output with respect
           to the inputs.
-
-    Raises:
-        TypeError: If `primals` is not a tensor or tuple of tensors.
-        TypeError: If type of `primals` is not the same as type of `series`.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> import mindspore.nn as nn
-        >>> import mindspore as ms
-        >>> from mindspore import ops
-        >>> from mindspore import Tensor
-        >>> ms.set_context(mode=ms.GRAPH_MODE)
+        >>> import mindspore
+        >>> from mindspore import nn
+        >>> mindspore.set_context(mode=mindspore.GRAPH_MODE)
         >>> class Net(nn.Cell):
         ...     def __init__(self):
         ...         super().__init__()
-        ...         self.sin = ops.Sin()
-        ...         self.exp = ops.Exp()
+        ...         self.sin = mindspore.ops.Sin()
+        ...         self.exp = mindspore.ops.Exp()
         ...     def construct(self, x):
         ...         out1 = self.sin(x)
         ...         out2 = self.exp(out1)
         ...         return out2
-        >>> primals = Tensor(np.array([[1, 2], [3, 4]]).astype(np.float32))
-        >>> series = Tensor(np.array([[[1, 1], [1, 1]], [[0, 0], [0, 0]], [[0, 0], [0, 0]]]).astype(np.float32))
+        >>> primals = mindspore.tensor([[1, 2], [3, 4]], mindspore.float32)
+        >>> series = mindspore.tensor([[[1, 1], [1, 1]], [[0, 0], [0, 0]], [[0, 0], [0, 0]]], mindspore.float32)
         >>> net = Net()
-        >>> out_primals, out_series = ops.jet(net, primals, series)
+        >>> out_primals, out_series = mindspore.ops.jet(net, primals, series)
         >>> print(out_primals, out_series)
         [[2.319777  2.4825778]
          [1.1515628 0.4691642]] [[[ 1.2533808  -1.0331168 ]
@@ -577,49 +570,41 @@ def derivative(fn, primals, order):
     input first order derivative is set to 1, while the other to 0.
 
     Note:
-        If `primals` is Tensor of int type, it will be converted to Tensor of float type.
+        If `primals` is tensor of int type, it will be converted to tensor of float type.
 
     Args:
         fn (Union[Cell, function]): Function to do TaylorOperation.
         primals (Union[Tensor, tuple[Tensor]]): The inputs to `fn`.
-        order (int): For each Tensor, the `order`-th order of derivative of output with respect to the inputs will be
-            figured out.
+        order (int): The order of differentiation.
 
     Returns:
-        Tuple, tuple of out_primals and out_series.
+        Tuple(out_primals, out_series)
 
         - **out_primals** (Union[Tensor, list[Tensor]]) - The output of `fn(primals)`.
         - **out_series** (Union[Tensor, list[Tensor]]) - The `order`-th order of derivative of output with respect
           to the inputs.
 
-    Raises:
-        TypeError: If `primals` is not a tensor or tuple of tensors.
-        TypeError: If `order` is not int.
-        ValueError: If `order` is less than 1.
-
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> import mindspore as ms
-        >>> import mindspore.nn as nn
-        >>> from mindspore import ops
-        >>> from mindspore import Tensor
-        >>> ms.set_context(mode=ms.GRAPH_MODE)
+        >>> import mindspore
+        >>> from mindspore import nn
+        >>> mindspore.set_context(mode=mindspore.GRAPH_MODE)
         >>> class Net(nn.Cell):
         ...     def __init__(self):
         ...         super().__init__()
-        ...         self.sin = ops.Sin()
-        ...         self.exp = ops.Exp()
+        ...         self.sin = mindspore.ops.Sin()
+        ...         self.exp = mindspore.ops.Exp()
         ...     def construct(self, x):
         ...         out1 = self.sin(x)
         ...         out2 = self.exp(out1)
         ...         return out2
-        >>> primals = Tensor(np.array([[1, 2], [3, 4]]).astype(np.float32))
+        >>>
+        >>> primals = mindspore.tensor([[1, 2], [3, 4]], mindspore.float32)
         >>> order = 3
         >>> net = Net()
-        >>> out_primals, out_series = ops.derivative(net, primals, order)
+        >>> out_primals, out_series = mindspore.ops.derivative(net, primals, order)
         >>> print(out_primals, out_series)
         [[2.319777  2.4825778]
          [1.1515628 0.4691642]] [[-4.0515366   3.6724353 ]
