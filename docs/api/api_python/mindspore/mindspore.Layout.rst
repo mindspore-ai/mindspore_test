@@ -5,8 +5,6 @@ mindspore.Layout
 
     Layout描述了详细的切分信息。
 
-    详情请参考文档 `高阶算子级并行 <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/advanced_operator_parallel.html>`_。
-
     .. note::
         - 仅在半自动并行或自动并行模式下有效。
         - `device_matrix` 的累乘结果必须等于一个pipeline stage中的设备数。

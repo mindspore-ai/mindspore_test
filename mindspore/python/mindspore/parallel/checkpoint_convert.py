@@ -24,8 +24,7 @@ __all__ = ["rank_list_for_convert",
 def rank_list_for_convert(rank_id, src_strategy_file=None, dst_strategy_file=None):
     """
     List of original distributed checkpoint rank index for obtaining the target checkpoint of a rank_id during the
-    distributed checkpoint conversion. For more details about converting distributed Checkpoint, please refer to
-    `Model Transformation <https://www.mindspore.cn/docs/en/master/model_train/parallel/model_transformation.html>`_.
+    distributed checkpoint conversion.
 
     Args:
         rank_id (int): The rank of which distributed checkpoint needs to be obtained after conversion.
@@ -63,8 +62,7 @@ def convert_checkpoint_by_rank(rank_id, checkpoint_files_map, save_checkpoint_fi
                                src_strategy_file=None, dst_strategy_file=None):
     """
     Convert distributed checkpoint from source sharding strategy to destination sharding strategy by rank
-    for a network. For more details about converting distributed Checkpoint, please refer to
-    `Model Transformation <https://www.mindspore.cn/docs/en/master/model_train/parallel/model_transformation.html>`_.
+    for a network.
 
     Args:
         rank_id (int): The rank of which distributed checkpoint needs to be obtained after conversion.
@@ -111,8 +109,6 @@ def convert_checkpoints(src_checkpoints_dir, dst_checkpoints_dir, ckpt_prefix, s
                         dst_strategy_file=None, process_num=1, output_format="ckpt"):
     """
     Convert distributed checkpoint from source sharding strategy to destination sharding strategy for a rank.
-    For more details about converting distributed Checkpoint, please refer to
-    `Model Transformation <https://www.mindspore.cn/docs/en/master/model_train/parallel/model_transformation.html>`_.
 
     Note:
         The `src_checkpoints_dir` directory structure should be organized like "src_checkpoints_dir/rank_0/a.ckpt", the
