@@ -523,7 +523,9 @@ std::vector<py::object> TensorIndex::GenerateNonZeroIndexTensorList(const ShapeV
   (void)std::transform(nonzero_indices.begin(), nonzero_indices.end(), std::back_inserter(nonzero_indices_tensor_list),
                        [](const py::handle &nonzero_index) {
                          auto tensor = TensorPybind::MakeTensor(TensorIndex::np_module_.attr("array")(nonzero_index));
-                         return PackTensorToPyObject(tensor);
+                         PyObject *tensor_py = TensorPythonInit(tensor);
+                         // still use in c++
+                         return py::reinterpret_borrow<py::object>(tensor_py);
                        });
   return nonzero_indices_tensor_list;
 }
@@ -979,10 +981,8 @@ bool TensorIndex::RemoveExpandedDimsParseTensorIndex(const ShapeVector &data_sha
     std::vector<TensorIndex> true_index_tensors;
 
     (void)std::transform(nonzero_indices_tensors.begin(), nonzero_indices_tensors.end(),
-                         std::back_inserter(true_index_tensors), [](const py::object true_index) {
-                           py::handle handle = true_index.ptr();
-                           return TensorIndex(handle);
-                         });
+                         std::back_inserter(true_index_tensors),
+                         [](const py::object true_index) { return TensorIndex(true_index); });
     size_t true_index_nums = nonzero_indices_tensors.size();
     indices_out->insert(indices_out->end(), true_index_tensors.begin(), true_index_tensors.end());
     MS_EXCEPTION_IF_NULL(nonzero_indices_tensors[0]);
