@@ -25,6 +25,10 @@ namespace mindspore {
 namespace device {
 namespace ascend {
 namespace {
+constexpr auto err_msg_mode = "err_msg_mode";
+constexpr auto default_err_msg_mode = "1";
+constexpr auto max_opqueue_num = "max_opqueue_num";
+constexpr auto dump = "dump";
 constexpr auto dump_scene = "dump_scene";
 constexpr auto lite_exception = "lite_exception";
 constexpr auto lite_exception_disable = "lite_exception:disable";
@@ -45,8 +49,8 @@ std::shared_ptr<OpDebugConf> OpDebugConf::GetInstance() {
 }
 
 OpDebugConf::OpDebugConf() {
-  acl_init_json_["err_msg_mode"] = "1";
-  acl_init_json_["dump"][dump_scene] = lite_exception;
+  acl_init_json_[err_msg_mode] = default_err_msg_mode;
+  acl_init_json_[dump][dump_scene] = lite_exception;
 }
 
 void OpDebugConf::set_execute_timeout(uint32_t op_timeout) {
@@ -60,7 +64,7 @@ void OpDebugConf::set_lite_exception_dump(const std::map<std::string, std::strin
     return;
   }
   if (it->second == lite_exception_disable) {
-    acl_init_json_.erase("dump");
+    acl_init_json_.erase(dump);
   }
 }
 
@@ -98,17 +102,17 @@ bool OpDebugConf::GenerateAclInitJson(const std::string &file_path) {
 }
 
 void OpDebugConf::set_max_opqueue_num(const std::string &opqueue_num) {
-  if (acl_init_json_["max_opqueue_num"] == opqueue_num) {
+  if (acl_init_json_[max_opqueue_num] == opqueue_num) {
     return;
   }
-  acl_init_json_["max_opqueue_num"] = opqueue_num;
+  acl_init_json_[max_opqueue_num] = opqueue_num;
 }
 
 void OpDebugConf::set_err_msg_mode(const std::string &msg_mode) {
-  if (acl_init_json_["err_msg_mode"] == msg_mode) {
+  if (acl_init_json_[err_msg_mode] == msg_mode) {
     return;
   }
-  acl_init_json_["err_msg_mode"] = msg_mode;
+  acl_init_json_[err_msg_mode] = msg_mode;
 }
 
 void RegOpDebugConf(py::module *m) {
