@@ -250,8 +250,13 @@ Status MaxDimInfo::CheckOutputLayout() {
     return FAILED;
   }
   if (!is_infer_out_layout_) {
-    MS_LOG(ERROR) << "For distributed operator " << name_
-                  << ", the output tensor layout is not allowed to be set by users.";
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << "For distributed operator " << name_
+                      << ", the output tensor layout is not allowed to be set by users.";
+    } else {
+      MS_LOG(ERROR) << "For distributed operator " << name_
+                    << ", the output tensor layout is not allowed to be set by users.";
+    }
     return FAILED;
   }
   return SUCCESS;
