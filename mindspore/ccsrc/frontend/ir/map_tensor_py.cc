@@ -143,12 +143,13 @@ void RegMapTensor(const py::module *m) {
          }),
          py::arg("key_dtype"), py::arg("value_dtype"), py::arg("value_shape"), py::arg("default_value"),
          py::arg("permit_filter_value"), py::arg("evict_filter_value"))
-    .def(py::init([](const tensor::TensorPy &key_tensor, const tensor::TensorPy &value_tensor,
-                     const py::object &default_value_obj, const py::object &permit_filter_obj,
-                     const py::object &evict_filter_obj) {
-           auto key_tensor_ptr = std::make_shared<tensor::Tensor>(*key_tensor.GetTensor());
-           auto value_tensor_ptr = std::make_shared<tensor::Tensor>(*value_tensor.GetTensor());
-           auto status_tensor_ptr = std::make_shared<Tensor>(kNumberTypeInt, key_tensor.GetShape());
+    .def(py::init([](const py::object &key_tensor, const py::object &value_tensor, const py::object &default_value_obj,
+                     const py::object &permit_filter_obj, const py::object &evict_filter_obj) {
+           auto key_tensor_ori = ConvertPyObject2TensorPyType(key_tensor);
+           auto value_tensor_ori = ConvertPyObject2TensorPyType(value_tensor);
+           auto key_tensor_ptr = std::make_shared<tensor::Tensor>(key_tensor_ori->value.GetTensor().get());
+           auto value_tensor_ptr = std::make_shared<tensor::Tensor>(value_tensor_ori->value.GetTensor().get());
+           auto status_tensor_ptr = std::make_shared<Tensor>(kNumberTypeInt, key_tensor_ori->value.GetShape());
            auto value_dtype = value_tensor_ptr->Dtype();
            ValuePtr default_value = ConvertMapTensorDefaultValue(default_value_obj, value_dtype);
            ValuePtr permit_filter_value = ConvertMapTensorFilterValue(permit_filter_obj);
