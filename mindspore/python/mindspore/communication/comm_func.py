@@ -819,6 +819,7 @@ def broadcast(tensor, src=0, group=GlobalComm.WORLD_COMM_GROUP):
         >>> comm.init()
         >>> data = ms.Tensor(np.arange(8).reshape([2, 4]).astype(np.float32))
         >>> out = comm.comm_func.broadcast(tensor=data, src=0)
+        >>> print(out)
         [[0. 1. 2. 3.]
          [4. 5. 6. 7.]]
 
@@ -869,6 +870,8 @@ def barrier(group=GlobalComm.WORLD_COMM_GROUP):
         >>> # Launch 2 processes.
         >>> comm.init()
         >>> comm.comm_func.barrier()
+        >>> print("barrier finish!")
+        barrier finish!
 
     Tutorial Examples:
         - `Distributed Set Communication Primitives - Barrier
@@ -946,12 +949,13 @@ def send(tensor, dst=0, group=GlobalComm.WORLD_COMM_GROUP, tag=0):
         >>>
         >>>
         >>> if rank < size / 2:
-        >>>     _x = ms.Tensor(x)
-        >>>     send(_x, rank + size // 2)
+        ...     _x = ms.Tensor(x)
+        ...     send(_x, rank + size // 2)
         >>> else:
-        >>>     _x2 = ms.Tensor(x2)
-        >>>     output = recv(_x2, rank - size // 2)
-        >>>     print(output)
+        ...     _x2 = ms.Tensor(x2)
+        ...     output = recv(_x2, rank - size // 2)
+        ...     print(output)
+        rank1:
         [[0.01  0.01]
          [0.01  0.01]]
     """
@@ -1020,12 +1024,13 @@ def recv(tensor, src=0, group=GlobalComm.WORLD_COMM_GROUP, tag=0):
         >>>
         >>>
         >>> if rank < size / 2:
-        >>>     _x = ms.Tensor(x)
-        >>>     send(_x, rank + size // 2)
+        ...     _x = ms.Tensor(x)
+        ...     send(_x, rank + size // 2)
         >>> else:
-        >>>     _x2 = ms.Tensor(x2)
-        >>>     output = recv(_x2, rank - size // 2)
-        >>>     print(output)
+        ...     _x2 = ms.Tensor(x2)
+        ...     output = recv(_x2, rank - size // 2)
+        ...     print(output)
+        rank1:
         [[0.01  0.01]
          [0.01  0.01]]
     """
@@ -1095,13 +1100,14 @@ def isend(tensor, dst=0, group=GlobalComm.WORLD_COMM_GROUP, tag=0):
         >>>
         >>>
         >>> if rank < size / 2:
-        >>>     _x = ms.Tensor(x)
-        >>>     isend(_x, rank + size // 2)
+        ...     _x = ms.Tensor(x)
+        ...     isend(_x, rank + size // 2)
         >>> else:
-        >>>     _x2 = ms.Tensor(x2)
-        >>>     output, handle = irecv(_x2, rank - size // 2)
-        >>>     handle.wait()
-        >>>     print(output)
+        ...     _x2 = ms.Tensor(x2)
+        ...     output, handle = irecv(_x2, rank - size // 2)
+        ...     handle.wait()
+        ...     print(output)
+        rank1:
         [[0.01  0.01]
          [0.01  0.01]]
     """
@@ -1173,13 +1179,14 @@ def irecv(tensor, src=0, group=GlobalComm.WORLD_COMM_GROUP, tag=0):
         >>>
         >>>
         >>> if rank < size / 2:
-        >>>     _x = ms.Tensor(x)
-        >>>     isend(_x, rank + size // 2)
+        ...     _x = ms.Tensor(x)
+        ...     isend(_x, rank + size // 2)
         >>> else:
-        >>>     _x2 = ms.Tensor(x2)
-        >>>     output, handle = irecv(_x2, rank - size // 2)
-        >>>     handle.wait()
-        >>>     print(output)
+        ...     _x2 = ms.Tensor(x2)
+        ...     output, handle = irecv(_x2, rank - size // 2)
+        ...     handle.wait()
+        ...     print(output)
+        rank1:
         [[0.01  0.01]
          [0.01  0.01]]
     """
@@ -1241,11 +1248,11 @@ def all_to_all_with_output_shape(output_shape_list, input_tensor_list, group=Non
         >>> comm.init()
         >>> this_rank = comm.get_rank()
         >>> if this_rank == 0:
-        >>>     send_tensor_list = [ms.Tensor(1.), ms.Tensor([[2, 3], [4, 5.]])]
-        >>>     recv_tensor_list = [(), (2,)]
+        ...     send_tensor_list = [ms.Tensor(1.), ms.Tensor([[2, 3], [4, 5.]])]
+        ...     recv_tensor_list = [(), (2,)]
         >>> if this_rank == 1:
-        >>>     send_tensor_list = [ms.Tensor([2, 2.]), ms.Tensor([4, 5, 6, 7.])]
-        >>>     recv_tensor_list = [(2, 2), (4,)]
+        ...     send_tensor_list = [ms.Tensor([2, 2.]), ms.Tensor([4, 5, 6, 7.])]
+        ...     recv_tensor_list = [(2, 2), (4,)]
         >>> output, _ = comm.comm_func.all_to_all_with_output_shape(recv_tensor_list, send_tensor_list)
         >>> print(output)
         rank 0:
