@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-"""test dynamic step profiler"""
+"""test ascend profiler with schedule"""
 import os
 import tempfile
 import glob
@@ -21,7 +21,7 @@ import pandas as pd
 
 import mindspore
 import mindspore.dataset as ds
-from mindspore.profiler import ProfilerLevel, AicoreMetrics, ExportType, ProfilerActivity
+from mindspore.profiler import ProfilerLevel, AicoreMetrics, ExportType
 from mindspore import Tensor, context, nn
 from mindspore.profiler.profiler_interface import ProfilerInterface
 
@@ -57,74 +57,6 @@ def train(add):
     x = np.random.randn(1, 3, 3, 4).astype(np.float32)
     y = np.random.randn(1, 3, 3, 4).astype(np.float32)
     add(Tensor(x), Tensor(y))
-
-
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-def test_dynamic_step_single_active_kbk_profiler():
-    """
-    Feature: Dynamic Step Profiler
-    Description: This test case verifies that the profiler can correctly profile the network at single active steps.
-    Expectation: The profiler should profile the network without any exceptions and
-    generate the expected profiling data.
-    """
-    step_num = 15
-    with tempfile.TemporaryDirectory(suffix="_step_profiler_1") as tmpdir:
-        schedule = mindspore.profiler.schedule(wait=1, warmup=1, active=1, repeat=2, skip_first=1)
-        add = TinyAddNet()
-        _dynamic_step_train_profiler(tmpdir, add, step_num, schedule, mindspore.GRAPH_MODE, "O0")
-        # Check whether the number of generated files is the same as the data collected by the step
-        ascend_ms_dir_nums = len([d for d in os.listdir(tmpdir) if os.path.isdir(os.path.join(tmpdir, d))])
-        assert ascend_ms_dir_nums == 2
-        # Check kernel_details.csv
-        kernel_details_path_step_1 = os.path.join(
-            tmpdir,
-            _sort_directories_by_timestamp(tmpdir)[0],  # The first sorted directory
-            "ASCEND_PROFILER_OUTPUT",
-            "kernel_details.csv"
-        )
-        kernel_details_path_step_2 = os.path.join(
-            tmpdir,
-            _sort_directories_by_timestamp(tmpdir)[1],  # The first sorted directory
-            "ASCEND_PROFILER_OUTPUT",
-            "kernel_details.csv"
-        )
-        FileChecker.check_csv_items(kernel_details_path_step_1, {"Step ID": "3"}, fuzzy_match=False)
-        FileChecker.check_csv_items(kernel_details_path_step_2, {"Step ID": "6"}, fuzzy_match=False)
-        # Check trace_view.json
-        trace_view_json_path_1 = os.path.join(
-            tmpdir,
-            _sort_directories_by_timestamp(tmpdir)[0],  # The first sorted directory
-            "ASCEND_PROFILER_OUTPUT",
-            "trace_view.json"
-        )
-        trace_view_json_path_2 = os.path.join(
-            tmpdir,
-            _sort_directories_by_timestamp(tmpdir)[1],  # The first sorted directory
-            "ASCEND_PROFILER_OUTPUT",
-            "trace_view.json"
-        )
-        FileChecker.check_timeline_values(
-            trace_view_json_path_1,
-            "name",
-            [
-                "*ProfilerStep#3"  # check profiler step
-            ],
-            fuzzy_match=True
-        )
-        FileChecker.check_timeline_values(
-            trace_view_json_path_2,
-            "name",
-            [
-                "*ProfilerStep#6"  # check profiler step
-            ],
-            fuzzy_match=True
-        )
-        # Check profiler.log
-        profiler_log_paths = glob.glob(f"{tmpdir}/*_ascend_ms/"
-                                       f"logs/profiler_*.log")
-        for profiler_log_path in profiler_log_paths:
-            FileChecker.check_file_for_keyword(profiler_log_path, "error")
-
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_dynamic_step_multi_active_kbk_profiler():
@@ -194,6 +126,71 @@ def test_dynamic_step_multi_active_kbk_profiler():
         for profiler_log_path in profiler_log_paths:
             FileChecker.check_file_for_keyword(profiler_log_path, "error")
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_dynamic_step_single_active_kbk_profiler():
+    """
+    Feature: Dynamic Step Profiler
+    Description: This test case verifies that the profiler can correctly profile the network at single active steps.
+    Expectation: The profiler should profile the network without any exceptions and
+    generate the expected profiling data.
+    """
+    step_num = 15
+    with tempfile.TemporaryDirectory(suffix="_step_profiler_1") as tmpdir:
+        schedule = mindspore.profiler.schedule(wait=1, warmup=1, active=1, repeat=2, skip_first=1)
+        add = TinyAddNet()
+        _dynamic_step_train_profiler(tmpdir, add, step_num, schedule, mindspore.GRAPH_MODE, "O0")
+        # Check whether the number of generated files is the same as the data collected by the step
+        ascend_ms_dir_nums = len([d for d in os.listdir(tmpdir) if os.path.isdir(os.path.join(tmpdir, d))])
+        assert ascend_ms_dir_nums == 2
+        # Check kernel_details.csv
+        kernel_details_path_step_1 = os.path.join(
+            tmpdir,
+            _sort_directories_by_timestamp(tmpdir)[0],  # The first sorted directory
+            "ASCEND_PROFILER_OUTPUT",
+            "kernel_details.csv"
+        )
+        kernel_details_path_step_2 = os.path.join(
+            tmpdir,
+            _sort_directories_by_timestamp(tmpdir)[1],  # The first sorted directory
+            "ASCEND_PROFILER_OUTPUT",
+            "kernel_details.csv"
+        )
+        FileChecker.check_csv_items(kernel_details_path_step_1, {"Step ID": "3"}, fuzzy_match=False)
+        FileChecker.check_csv_items(kernel_details_path_step_2, {"Step ID": "6"}, fuzzy_match=False)
+        # Check trace_view.json
+        trace_view_json_path_1 = os.path.join(
+            tmpdir,
+            _sort_directories_by_timestamp(tmpdir)[0],  # The first sorted directory
+            "ASCEND_PROFILER_OUTPUT",
+            "trace_view.json"
+        )
+        trace_view_json_path_2 = os.path.join(
+            tmpdir,
+            _sort_directories_by_timestamp(tmpdir)[1],  # The first sorted directory
+            "ASCEND_PROFILER_OUTPUT",
+            "trace_view.json"
+        )
+        FileChecker.check_timeline_values(
+            trace_view_json_path_1,
+            "name",
+            [
+                "*ProfilerStep#3"  # check profiler step
+            ],
+            fuzzy_match=True
+        )
+        FileChecker.check_timeline_values(
+            trace_view_json_path_2,
+            "name",
+            [
+                "*ProfilerStep#6"  # check profiler step
+            ],
+            fuzzy_match=True
+        )
+        # Check profiler.log
+        profiler_log_paths = glob.glob(f"{tmpdir}/*_ascend_ms/"
+                                       f"logs/profiler_*.log")
+        for profiler_log_path in profiler_log_paths:
+            FileChecker.check_file_for_keyword(profiler_log_path, "error")
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_dynamic_step_single_active_py_native_profiler():
@@ -283,120 +280,6 @@ def test_dynamic_step_single_active_py_native_profiler():
         for profiler_log_path in profiler_log_paths:
             FileChecker.check_file_for_keyword(profiler_log_path, "error")
 
-
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-def test_dynamic_step_npu_py_native_profiler():
-    """
-    Feature: Dynamic Step Profiler
-    Description: This test case verifies that the profiler can correctly profile the network at CPU device.
-    Expectation: The profiler should profile the network without any exceptions and
-    generate the expected profiling data.
-    """
-    step_num = 8
-    with tempfile.TemporaryDirectory(suffix="_step_profiler_npu") as tmpdir:
-        schedule = mindspore.profiler.schedule(wait=1, warmup=1, active=1, repeat=1, skip_first=1)
-        net = Net()
-        context.set_context(mode=mindspore.PYNATIVE_MODE, device_target="Ascend")
-        # pylint: disable=protected-access
-        experimental_config = mindspore.profiler._ExperimentalConfig()
-        profile = mindspore.profiler.profile(activities=[ProfilerActivity.NPU],
-                                             schedule=schedule,
-                                             on_trace_ready=mindspore.profiler.tensorboard_trace_handler(
-                                                 dir_name=tmpdir),
-                                             experimental_config=experimental_config)
-        for _ in range(step_num):
-            train_net(net)
-            profile.step()
-        ProfilerInterface.finalize()
-        ProfilerInterface.clear()
-        _check_npu_profiler_data(tmpdir)
-
-
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-def test_dynamic_step_cpu_py_native_profiler():
-    """
-    Feature: Dynamic Step Profiler
-    Description: This test case verifies that the profiler can correctly profile the network at CPU device.
-    Expectation: The profiler should profile the network without any exceptions and
-    generate the expected profiling data.
-    """
-    step_num = 8
-    with tempfile.TemporaryDirectory(suffix="_step_profiler_cpu") as tmpdir:
-        schedule = mindspore.profiler.schedule(wait=1, warmup=1, active=1, repeat=1, skip_first=1)
-        net = Net()
-        context.set_context(mode=mindspore.PYNATIVE_MODE, device_target="Ascend")
-        # pylint: disable=protected-access
-        experimental_config = mindspore.profiler._ExperimentalConfig()
-        profile = mindspore.profiler.profile(activities=[ProfilerActivity.CPU],
-                                             schedule=schedule,
-                                             on_trace_ready=mindspore.profiler.tensorboard_trace_handler(
-                                                 dir_name=tmpdir),
-                                             experimental_config=experimental_config)
-        for _ in range(step_num):
-            train_net(net)
-            profile.step()
-        ProfilerInterface.finalize()
-        ProfilerInterface.clear()
-        _check_cpu_profiler_data(tmpdir)
-
-
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-def test_dynamic_step_npu_graph_profiler():
-    """
-    Feature: Dynamic Step Profiler
-    Description: This test case verifies that the profiler can correctly profile the network at CPU device.
-    Expectation: The profiler should profile the network without any exceptions and
-    generate the expected profiling data.
-    """
-    step_num = 8
-    with tempfile.TemporaryDirectory(suffix="_step_profiler_npu") as tmpdir:
-        schedule = mindspore.profiler.schedule(wait=1, warmup=1, active=1, repeat=1, skip_first=1)
-        net = Net()
-        context.set_context(mode=mindspore.GRAPH_MODE, device_target="Ascend")
-        context.set_context(jit_config={"jit_level": "O0"})
-        # pylint: disable=protected-access
-        experimental_config = mindspore.profiler._ExperimentalConfig()
-        profile = mindspore.profiler.profile(activities=[ProfilerActivity.NPU],
-                                             schedule=schedule,
-                                             on_trace_ready=mindspore.profiler.tensorboard_trace_handler(
-                                                 dir_name=tmpdir),
-                                             experimental_config=experimental_config)
-        for _ in range(step_num):
-            train_net(net)
-            profile.step()
-        ProfilerInterface.finalize()
-        ProfilerInterface.clear()
-        _check_npu_profiler_data(tmpdir)
-
-
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-def test_dynamic_step_cpu_graph_profiler():
-    """
-    Feature: Dynamic Step Profiler
-    Description: This test case verifies that the profiler can correctly profile the network at CPU device.
-    Expectation: The profiler should profile the network without any exceptions and
-    generate the expected profiling data.
-    """
-    step_num = 8
-    with tempfile.TemporaryDirectory(suffix="_step_profiler_cpu") as tmpdir:
-        schedule = mindspore.profiler.schedule(wait=1, warmup=1, active=1, repeat=1, skip_first=1)
-        net = Net()
-        context.set_context(mode=mindspore.GRAPH_MODE, device_target="Ascend")
-        context.set_context(jit_config={"jit_level": "O0"})
-        # pylint: disable=protected-access
-        experimental_config = mindspore.profiler._ExperimentalConfig()
-        profile = mindspore.profiler.profile(activities=[ProfilerActivity.CPU],
-                                             schedule=schedule,
-                                             on_trace_ready=mindspore.profiler.tensorboard_trace_handler(
-                                                 dir_name=tmpdir),
-                                             experimental_config=experimental_config)
-        for _ in range(step_num):
-            train_net(net)
-            profile.step()
-        ProfilerInterface.finalize()
-        ProfilerInterface.clear()
-        _check_cpu_profiler_data(tmpdir)
-
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_dynamic_step_single_active_profiler_db():
     """
@@ -425,7 +308,7 @@ def test_dynamic_step_single_active_profiler_db():
                 profile.step()
             ProfilerInterface.finalize()
             ProfilerInterface.clear()
-
+            # Check ascend_mindspore_profiler*.db
             db_path = os.path.join(
                 tmpdir,
                 _sort_directories_by_timestamp(tmpdir)[0],  # The first sorted directory
@@ -434,7 +317,13 @@ def test_dynamic_step_single_active_profiler_db():
             db_files = glob.glob(os.path.join(db_path, 'ascend_mindspore_profiler*.db'))
             assert len(db_files) == 1
             FileChecker.check_file_exists(db_files[0])
+            # Check kernel_details.csv
             assert not os.path.exists(os.path.join(db_path, 'kernel_details.csv'))
+            # Check profiler.log
+            profiler_log_paths = glob.glob(f"{tmpdir}/*_ascend_ms/"
+                                           f"logs/profiler_*.log")
+            for profiler_log_path in profiler_log_paths:
+                FileChecker.check_file_for_keyword(profiler_log_path, "error")
 
 def _dynamic_step_train_profiler(tmpdir, net, step_num, schedule, context_mode, jit_level=None):
     """ Collect performance data according to step"""
@@ -486,63 +375,3 @@ def _sort_directories_by_timestamp(path):
 
     # Returns the sorted list of folder names
     return [name for name, _ in directories_with_timestamp]
-
-def _check_npu_profiler_data(tmpdir):
-    """ Check only NPU profiler data."""
-    # Check kernel_details.csv
-    kernel_details_path = glob.glob(f"{tmpdir}/*_ascend_ms/"
-                                    f"ASCEND_PROFILER_OUTPUT/kernel_details.csv")[0]
-    FileChecker.assert_csv_no_header(kernel_details_path, "Step ID")
-    FileChecker.check_csv_items(kernel_details_path, {"Name": ["*BiasAdd*", "*MatMul*"]})
-    # Check trace_view.json
-    trace_view_path = glob.glob(f"{tmpdir}/*_ascend_ms/"
-                                f"ASCEND_PROFILER_OUTPUT/trace_view.json")[0]
-    FileChecker.check_timeline_values(
-        trace_view_path,
-        "name",
-        ["*MatMul*",
-         "*Add*"
-         ],
-        fuzzy_match=True
-    )
-    # Check step_trace_time.csv
-    step_trace_time_path = glob.glob(f"{tmpdir}/*_ascend_ms/"
-                                     f"ASCEND_PROFILER_OUTPUT/step_trace_time.csv")[0]
-    FileChecker.check_csv_data_non_negative(step_trace_time_path, comparison_func=_is_non_negative)
-    # Check api_statistic.csv
-    api_statistic_path = glob.glob(f"{tmpdir}/*_ascend_ms/"
-                                   f"ASCEND_PROFILER_OUTPUT/api_statistic.csv")[0]
-    FileChecker.check_file_exists(api_statistic_path)
-    # Check profiler.log
-    profiler_log_paths = glob.glob(f"{tmpdir}/*_ascend_ms/"
-                                   f"logs/profiler_*.log")
-    for profiler_log_path in profiler_log_paths:
-        FileChecker.check_file_for_keyword(profiler_log_path, "error")
-
-
-def _check_cpu_profiler_data(tmpdir):
-    """ Check only CPU profiler data."""
-    # Check trace_view.json
-    trace_view_path = glob.glob(f"{tmpdir}/*_ascend_ms/"
-                                f"ASCEND_PROFILER_OUTPUT/trace_view.json")[0]
-    FileChecker.check_timeline_values(
-        trace_view_path,
-        "name",
-        ["*ProfilerStep#3"
-         ],
-        fuzzy_match=True
-    )
-    # Check profiler.log
-    profiler_log_paths = glob.glob(f"{tmpdir}/*_ascend_ms/"
-                                   f"logs/profiler_*.log")
-    for profiler_log_path in profiler_log_paths:
-        FileChecker.check_file_for_keyword(profiler_log_path, "error")
-    # Check dataset.csv
-    dataset_path = glob.glob(f"{tmpdir}/*_ascend_ms/"
-                             f"ASCEND_PROFILER_OUTPUT/dataset.csv")[0]
-    FileChecker.check_file_exists(dataset_path)
-
-
-def _is_non_negative(value):
-    """ Check if a given value is non-negative (i.e., greater than or equal to zero)."""
-    return float(value) >= 0.0

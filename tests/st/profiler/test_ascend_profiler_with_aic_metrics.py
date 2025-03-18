@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-"""test aic metrics memory access profiler"""
+"""test ascend profiler with aic metrics"""
 import glob
 import tempfile
 
@@ -77,3 +77,8 @@ def test_aic_metrics_memory_access_kbk_profiler():
                                                             "aiv_L0C_to_GM_datas(KB)",
                                                             "aiv_GM_to_UB_datas(KB)",
                                                             "aiv_UB_to_GM_datas(KB)"])
+        # Check profiler.log
+        profiler_log_paths = glob.glob(f"{tmpdir}/*_ascend_ms/"
+                                       f"logs/profiler_*.log")
+        for profiler_log_path in profiler_log_paths:
+            FileChecker.check_file_for_keyword(profiler_log_path, "error")

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""test ascend profiler with call back."""
 import glob
 import os
 import tempfile
@@ -21,6 +22,7 @@ from mindspore import nn
 import mindspore as ms
 import mindspore.dataset as ds
 from tests.mark_utils import arg_mark
+from file_check import FileChecker
 
 class StopAtStep(ms.Callback):
     """
@@ -94,3 +96,8 @@ def test_ascend_profiler():
             reader = csv.reader(csvfile)
             row_count = sum(1 for row in reader)
             assert row_count == 2
+        # Check profiler.log
+        profiler_log_paths = glob.glob(f"{tmpdir}/*_ascend_ms/"
+                                       f"logs/profiler_*.log")
+        for profiler_log_path in profiler_log_paths:
+            FileChecker.check_file_for_keyword(profiler_log_path, "error")

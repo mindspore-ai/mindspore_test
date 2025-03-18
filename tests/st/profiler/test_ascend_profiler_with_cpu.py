@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""test ascend profiler with cpu."""
 import glob
 import tempfile
 from mindspore import context, Model, nn
@@ -56,3 +57,8 @@ def test_cpu_profiler():
         res = profiler.op_analyse(op_name=op_name_list)
         for op_name in op_name_list:
             assert op_name in res
+        # Check profiler.log
+        profiler_log_paths = glob.glob(f"{tmpdir}/*_ascend_ms/"
+                                       f"logs/profiler_*.log")
+        for profiler_log_path in profiler_log_paths:
+            FileChecker.check_file_for_keyword(profiler_log_path, "error")

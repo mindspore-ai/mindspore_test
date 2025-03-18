@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-"""test dynamic start stop profiler"""
+"""test ascend profiler with start stop"""
 import glob
 import os
 import tempfile
@@ -51,13 +51,18 @@ def test_dynamic_start_stop_kbk_profiler():
         # Check whether the number of generated files is the same as the data collected by the step
         ascend_ms_dir_nums = len(glob.glob(f"{tmpdir}/*_ascend_ms"))
         assert ascend_ms_dir_nums == 1
-        # Check if the header of the kernel.csv does not contain the Step ID
+        # Check kernel_details.csv
         kernel_details_path_step = os.path.join(
             glob.glob(f"{tmpdir}/*_ascend_ms")[0],
             "ASCEND_PROFILER_OUTPUT",
             "kernel_details.csv"
         )
         FileChecker.assert_csv_no_header(kernel_details_path_step, "Step ID")
+        # Check profiler.log
+        profiler_log_paths = glob.glob(f"{tmpdir}/*_ascend_ms/"
+                                       f"logs/profiler_*.log")
+        for profiler_log_path in profiler_log_paths:
+            FileChecker.check_file_for_keyword(profiler_log_path, "error")
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -75,13 +80,18 @@ def test_dynamic_start_stop_graph_profiler():
         # Check whether the number of generated files is the same as the data collected by the step
         ascend_ms_dir_nums = len(glob.glob(f"{tmpdir}/*_ascend_ms"))
         assert ascend_ms_dir_nums == 1
-        # Check if the header of the kernel.csv does not contain the Step ID
+        # Check kernel_details.csv
         kernel_details_path_step = os.path.join(
             glob.glob(f"{tmpdir}/*_ascend_ms")[0],
             "ASCEND_PROFILER_OUTPUT",
             "kernel_details.csv"
         )
         FileChecker.assert_csv_no_header(kernel_details_path_step, "Step ID")
+        # Check profiler.log
+        profiler_log_paths = glob.glob(f"{tmpdir}/*_ascend_ms/"
+                                       f"logs/profiler_*.log")
+        for profiler_log_path in profiler_log_paths:
+            FileChecker.check_file_for_keyword(profiler_log_path, "error")
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -99,13 +109,18 @@ def test_dynamic_start_stop_py_native_profiler():
         # Check whether the number of generated files is the same as the data collected by the step
         ascend_ms_dir_nums = len(glob.glob(f"{tmpdir}/*_ascend_ms"))
         assert ascend_ms_dir_nums == 1
-        # Check if the header of the kernel.csv does not contain the Step ID
+        # Check kernel_details.csv
         kernel_details_path_step = os.path.join(
             glob.glob(f"{tmpdir}/*_ascend_ms")[0],
             "ASCEND_PROFILER_OUTPUT",
             "kernel_details.csv"
         )
         FileChecker.assert_csv_no_header(kernel_details_path_step, "Step ID")
+        # Check profiler.log
+        profiler_log_paths = glob.glob(f"{tmpdir}/*_ascend_ms/"
+                                       f"logs/profiler_*.log")
+        for profiler_log_path in profiler_log_paths:
+            FileChecker.check_file_for_keyword(profiler_log_path, "error")
 
 
 def _dynamic_start_stop_train_profiler(tmpdir, add, context_mode, jit_level=None):
