@@ -18,6 +18,7 @@ import mindspore as ms
 import mindspore.nn as nn
 from mindspore import ops, mint
 from mindspore.ops.auto_generate.gen_ops_prim import select_ext_view_op as select_ext_op
+from mindspore.ops.auto_generate.gen_ops_prim import slice_ext_view_op as select_ext_op
 from mindspore.ops.auto_generate.gen_ops_prim import inplace_copy_op, slice_ext_op
 from tests.mark_utils import arg_mark
 
@@ -52,7 +53,7 @@ def test_tensor_view_inplace_grad_once():
     class Net(nn.Cell):
         def construct(self, x):
             y = ops.abs(x)
-            y_viewed = slice_ext_op(y, 0, 0, 1, 1)
+            y_viewed = select_ext_op(y, 0, 0)
             inplace_copy_op(y_viewed, ms.Tensor(-1, dtype=ms.float32))
             return y
 

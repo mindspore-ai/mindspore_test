@@ -2553,19 +2553,27 @@ bool IsDoutTupleContainsMask(const AbstractBasePtr &abs) {
   return value == 0 || value == 1 || value == 2;
 }
 
-FuncGraphPtr AccumulateDout::BuildAddOutputFG(const std::string &name) {
+FuncGraphPtr AccumulateDout::BuildAddOutputFG(const std::string &name, const AbstractBasePtrList &args_abs_list) {
   auto fg = std::make_shared<FuncGraph>();
   fg->debug_info()->set_name(name);
   auto dout_tuple_input = fg->add_parameter();
   auto factor_tuple_input = fg->add_parameter();
+  auto dout_tuple_abs = args_abs_list[0];
+  auto factor_tuple_abs = args_abs_list[1];
   auto dout =
     fg->NewCNodeInOrder({NewValueNode(std::make_shared<prim::GetRealBpropOut>("get_real_dout")), dout_tuple_input});
   auto factor =
     fg->NewCNodeInOrder({NewValueNode(std::make_shared<prim::GetRealBpropOut>("get_real_dout")), factor_tuple_input});
-  auto factor_inner_tuple =
-    fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), factor_tuple_input, NewValueNode(int64_t(1))});
   auto cal_dout = fg->NewCNodeInOrder({NewValueNode(prim::GetPythonOps("hyper_add")), dout, factor});
-  auto cal_res = fg->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), cal_dout, factor_inner_tuple});
+  if (IsDoutTupleContainsMask(dout_tuple_abs) && IsDoutTupleContainsMask(factor_tuple_abs)) {
+    auto mask_tuple =
+      fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), factor_tuple_input, NewValueNode(int64_t(1))});
+    auto cal_res = fg->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), cal_dout, mask_tuple});
+    fg->set_output(cal_res);
+    return fg;
+  }
+  auto generate_dout_tuple = std::make_shared<prim::GenerateBpropOutTuple>("generate_dout_tuple");
+  auto cal_res = fg->NewCNodeInOrder({NewValueNode(generate_dout_tuple), cal_dout});
   fg->set_output(cal_res);
   return fg;
 }
@@ -2636,7 +2644,7 @@ FuncGraphPtr AccumulateDout::GenerateFuncGraph(const AbstractBasePtrList &args_a
       fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), dout_inner_tuple, NewValueNode(int64_t(1))});
     auto add_out_cond =
       fg->NewCNodeInOrder({NewValueNode(prim::GetPythonOps("equal")), dout_type, NewValueNode(int64_t(0))});
-    auto add_output_fg = BuildAddOutputFG("accumulate_dout_add_output");
+    auto add_output_fg = BuildAddOutputFG("accumulate_dout_add_output", args_abs_list);
     auto inner_fg = std::make_shared<FuncGraph>();
     inner_fg->debug_info()->set_name("accumulate_dout_not_add_dout");
     auto inner_dout_tuple_input = inner_fg->add_parameter();
@@ -2670,7 +2678,7 @@ FuncGraphPtr AccumulateDout::GenerateFuncGraph(const AbstractBasePtrList &args_a
 
   // Constant scene, no switch.
   if (IsAddDout()) {
-    return BuildAddOutputFG("accumulate_dout");
+    return BuildAddOutputFG("accumulate_dout", args_abs_list);
   }
   if (types_["dout"] == 2 && types_["factor"] == 2) {
     return BuildAccumulateInplaceOutputFG("accumulate_dout");
