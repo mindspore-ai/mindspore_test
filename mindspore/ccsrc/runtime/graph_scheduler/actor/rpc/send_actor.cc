@@ -95,8 +95,8 @@ bool SendActor::LaunchKernel(OpContext<DeviceTensor> *const context, bool is_ski
   for (const auto &device_tensor : workspace_device_tensors_) {
     MS_EXCEPTION_IF_NULL(device_tensor);
     device_tensor->IncreaseNewRefCount();
-    MS_LOG(WARNING) << "Increase new ref count for device tensor:" << device_tensor->PrintInfo()
-                    << " in actor:" << GetAID();
+    MS_LOG(DEBUG) << "Increase new ref count for device tensor:" << device_tensor->PrintInfo()
+                  << " in actor:" << GetAID();
   }
   if (is_skip_launch) {
     return KernelActor::LaunchKernel(context, is_skip_launch);
