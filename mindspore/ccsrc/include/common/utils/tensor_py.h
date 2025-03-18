@@ -390,6 +390,16 @@ class COMMON_EXPORT TensorPy : public TensorPyBase {
   static std::vector<std::shared_ptr<TensorPy>> GetFlattenedTensors(
     const std::vector<std::shared_ptr<TensorPy>> &tensorpys);
 
+  /// \brief Check whether the type of tensor is complex.
+  ///
+  /// \return Boolean indicate whether the type of tensor is complex.
+  bool IsComplex() const;
+
+  /// \brief Check whether the type of tensor is signed.
+  ///
+  /// \return Boolean indicate whether the type of tensor is signed.
+  bool IsSigned() const;
+
   /// \brief Get the fusion size for the given flat tensorpys.
   ///
   /// \param[in] flat_tensorpys [std::vector<std::shared_ptr<TensorPy>>] The input flat tensorpys.
