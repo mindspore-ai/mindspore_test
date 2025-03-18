@@ -26,6 +26,10 @@ mindspore.profiler._ExperimentalConfig
         - **l2_cache** (bool, 可选) - （仅限Ascend）是否收集L2 Cache数据，当值为 ``True`` 时，收集这些数据。默认值： ``False`` 。该采集项在ASCEND_PROFILER_OUTPUT文件夹下生成l2_cache.csv文件。
         - **mstx** (bool, 可选) - （仅限Ascend）是否收集MSTX数据，当值为 ``True`` 时，收集这些数据。默认值： ``False`` 。
         - **data_simplification** (bool, 可选) - （仅限Ascend）是否开启数据精简，开启后将在导出性能数据后删除FRAMEWORK目录数据以及其他多余数据，仅保留profiler的交付件以及PROF_XXX目录下的原始性能数据，以节省空间。默认值: ``True`` 。
+        - **export_type** (list, 可选) - （仅限Ascend）要导出的数据类型。默认值： ``None``，以text类型导出数据。
+
+          - ExportType.Text：导出text类型的数据。
+          - ExportType.Db：导出db类型的数据。
 
     异常：
         - **RuntimeError** - 当CANN的版本与MindSpore版本不匹配时，MindSpore无法解析生成的ascend_job_id目录结构。

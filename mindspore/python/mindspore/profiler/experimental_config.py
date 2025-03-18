@@ -65,6 +65,11 @@ class _ExperimentalConfig:
             If set to True, only the delivery of profiler and the original performance data in the PROF_XXX
             directory are retained to save disk space.
             Default value: ``True`` .
+        export_type (list, optional): (Ascend only) The data type to export.
+            Default value:`` None``. Only export text type data.
+
+            - ExportType.Text: Export text type data.
+            - ExportType.Db: Export db type data.
 
     Raises:
         RuntimeError: When the version of CANN does not match the version of MindSpore,
