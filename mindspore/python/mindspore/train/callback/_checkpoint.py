@@ -84,7 +84,7 @@ def _chg_ckpt_file_name_if_same_exist(directory, prefix, exception=False):
         name_ext = os.path.splitext(filename)
         if exception and filename[-16:] != "_breakpoint.ckpt":
             continue
-        if not exception and (name_ext[-1] != ".ckpt" or filename[-16:] == "_breakpoint.ckpt"):
+        if not exception and (name_ext[-1] not in (".ckpt", ".safetensors") or filename[-16:] == "_breakpoint.ckpt"):
             continue
         # find same prefix file
         if filename.find(prefix) == 0 and not filename[pre_len].isalpha():
