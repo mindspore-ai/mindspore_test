@@ -591,6 +591,7 @@ class DistributedSampler(BuiltinSampler):
         """Get the shuffle mode"""
         return self.shuffle
 
+
 class PKSampler(BuiltinSampler):
     """
     Samples K elements for each P class in the dataset.
