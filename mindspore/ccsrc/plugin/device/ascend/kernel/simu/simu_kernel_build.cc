@@ -39,7 +39,7 @@ KernelModPtr SimuOpBuild(const AnfNodePtr &anf_node) {
 
   std::vector<KernelTensor *> input_kernel_tensors = AnfAlgo::GetOrCreateAllInputKernelTensors(anf_node);
   std::vector<KernelTensor *> output_kernel_tensors = AnfAlgo::GetOrCreateAllOutputKernelTensors(anf_node);
-  if (!kernel_mod_ptr->Init(input_kernel_tensors, output_kernel_tensors)) {
+  if (!kernel_mod_ptr->Init(prim, input_kernel_tensors, output_kernel_tensors)) {
     MS_LOG_WITH_NODE(EXCEPTION, anf_node)
       << "#dmsg#Kernel build failed:#dmsg#Initialize simu kernel op[" << anf_node->fullname_with_scope() << "] failed.";
   }

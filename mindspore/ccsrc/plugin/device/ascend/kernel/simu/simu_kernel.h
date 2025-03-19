@@ -33,6 +33,7 @@ class SimuKernel : public KernelMod {
  public:
   SimuKernel() = default;
   ~SimuKernel() override = default;
+  using KernelMod::Init;
 
   bool Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override {
     MS_LOG(INFO) << "SimuKernel default init with input size " << inputs.size() << " output size " << outputs.size();

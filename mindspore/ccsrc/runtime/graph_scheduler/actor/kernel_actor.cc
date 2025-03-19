@@ -47,7 +47,8 @@ bool IsSomasEnable(const SomasInfo *somas_info) {
 }
 
 void CheckDryRun(const CNodePtr &kernel_) {
-  static const bool is_dry_run_mode = (common::GetEnv(kSimulationLevel) == kSimulationLevelCompileKernel);
+  static const bool is_dry_run_mode =
+    (common::IsCompileSimulation() || common::IsExecuteSimulation() || common::IsDryRun());
   static auto enabled_profile = common::GetCompileConfig("COMPILE_PROFILE") == "1";
   if (is_dry_run_mode && !enabled_profile) {
     MS_LOG_WITH_NODE(EXCEPTION, kernel_)
