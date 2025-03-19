@@ -4,10 +4,24 @@
 .. py:class:: mindspore.ops.TensorScatterSub
 
     根据指定的更新值 `input_x` 和输入索引 `indices`，进行减法运算更新输入Tensor的值。当同一索引有不同更新值时，更新的结果将是累积减法的结果。此操作与 :class:`mindspore.ops.ScatterNdSub` 类似，只是更新后的结果是通过算子output返回，而不是直接原地更新input。
-    更多参考详见 :func:`mindspore.ops.tensor_scatter_sub`。
+    
+    .. code-block:: python
 
-    .. math::
-        output\left [indices  \right ] = input\_x- update
+        # 遍历所有索引
+        for i in range(indices.shape[0]):
+            for j in range(indices.shape[1]):
+                ...
+                for k in range(indices.shape[-2]):  # 最后一维是坐标维度
+                    # 获取当前索引组合
+                    index_tuple = (i, j, ..., k)
+                    # 获取目标位置
+                    target_index = indices[index_tuple]
+                    # 获取对应更新值
+                    update_value = updates[index_tuple]
+                    # 执行减法操作
+                    output[target_index] -= update_value
+
+    更多参考详见 :func:`mindspore.ops.tensor_scatter_sub`。
 
     输入：
         - **input_x** (Tensor) - 输入Tensor。 `input_x` 的维度必须大于等于indices.shape[-1]。
