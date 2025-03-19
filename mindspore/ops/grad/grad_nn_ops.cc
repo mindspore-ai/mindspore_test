@@ -1876,6 +1876,26 @@ REG_BPROP_BUILDER("ROIAlign").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
   return {dx, ib->OutZeros(rois)};
 });
 
+REG_BPROP_BUILDER("RoiAlignExt").SetUnusedInputs({i6}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto boxes = ib->GetInput(kIndex1);
+  auto output_size = ib->GetInput(kIndex2);
+  auto spatial_scale = ib->GetInput(kIndex3);
+  auto sampling_ratio = ib->GetInput(kIndex4);
+  auto aligned = ib->GetInput(kIndex5);
+  auto dout = ib->GetInput(kIndex7);
+
+  auto input_shape = ib->Shape(input);
+  auto dx =
+    ib->Emit("RoiAlignGradExt", {dout, boxes, input_shape, output_size, spatial_scale, sampling_ratio, aligned}, {});
+  return {dx,
+          ib->OutZeros(boxes),
+          ib->OutZeros(output_size),
+          ib->OutZeros(spatial_scale),
+          ib->OutZeros(sampling_ratio),
+          ib->OutZeros(aligned)};
+});
+
 REG_BPROP_BUILDER("LRN").SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto out = ib->GetInput(kIndex1);

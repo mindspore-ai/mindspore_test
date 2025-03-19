@@ -104,7 +104,7 @@ from mindspore.ops._utils.utils import ms_arrange
 from mindspore.ops.auto_generate import cat, range, scatter_nd, deepcopy, masked_fill, diagonal, expand_dims, \
     flip, transpose, triu, unsorted_segment_sum, diag, gather, gather_d, gather_nd, reshape, masked_select, \
     broadcast_to, strided_slice, ones, zeros, max_, min_, select, zero_, view_as, \
-    expand_as, unstack_ext_op, full_like_op, \
+    expand_as, unstack_ext_op, full_like_op, roi_align, \
     index_fill_scalar, index_fill_tensor
 from mindspore.ops.auto_generate import take, tensor_scatter_elements as tensor_scatter_elements_ext
 from mindspore.ops.auto_generate.gen_ops_prim import scatter_add_ext_op, gather_d_op, slice_op, tril_ext_op
@@ -7699,5 +7699,6 @@ __all__ = [
     'view_as',
     'type_as',
     'expand_as',
+    'roi_align',
 ]
 __all__.sort()
