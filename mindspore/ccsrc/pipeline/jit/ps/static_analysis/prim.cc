@@ -1440,8 +1440,8 @@ AbstractBasePtr PrimitiveFunctionEvaluator::ProcessViewInplaceAbstract(const Abs
       auto ge_mode = common::AnfAlgo::IsBackendGe();
       if (ge_mode) {
         prim_func_->set_attr(GRAPH_FLAG_SIDE_EFFECT_MEM, MakeValue(false));
-        MS_LOG(INTERNAL_EXCEPTION) << "The view feature is not currently supported in GE mode. "
-                                   << "The code utilizes the View operator: " << prim_func_->ToString();
+        MS_LOG(WARNING) << "The view feature is not currently supported in GE mode. "
+                        << "The code utilizes the View operator: " << prim_func_->ToString();
       } else {
         MS_LOG(DEBUG) << "View prim infer.";
         return UpdateViewOpsAbstract(res, args);

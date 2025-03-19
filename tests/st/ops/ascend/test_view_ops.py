@@ -63,7 +63,7 @@ class NetCat(nn.Cell):
         out = out / 2.0
         return out
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_transpose_view():
     """
     Feature: Transpose view operation
@@ -80,7 +80,7 @@ def test_transpose_view():
     assert np.allclose(out.asnumpy(), out_np, rtol=10e-4, atol=10e-4)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_split_view():
     """
     Feature: Transpose view operation
@@ -96,7 +96,7 @@ def test_split_view():
     out_np = np.matmul(a, b)
     assert np.allclose(out.asnumpy(), out_np, rtol=10e-4, atol=10e-4)
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_concat_view():
     """
     Feature: Concat view operation
@@ -126,7 +126,7 @@ class ViewOut(nn.Cell):
         return res
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_graph_view_out():
     """
     Feature: Runtime view graph mode.
@@ -142,7 +142,7 @@ def test_graph_view_out():
     assert np.allclose(out_graph.asnumpy(), out_pynative.asnumpy(), rtol=10e-4, atol=10e-4)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_pynative_view_to_graph():
     """
     Feature: Runtime view graph mode.
@@ -173,7 +173,7 @@ class MakeContiguous(nn.Cell):
         return res
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_graph_view_to_aclop():
     """
     Feature: Runtime view graph mode.
@@ -191,7 +191,7 @@ def test_graph_view_to_aclop():
     assert np.allclose(out_graph.asnumpy(), out_pynative.asnumpy(), rtol=10e-4, atol=10e-4)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_broadcast_to_view():
     """
     Feature: Runtime view graph mode.
@@ -215,7 +215,7 @@ def test_broadcast_to_view():
     assert (graph_output.asnumpy() == pynative_output.asnumpy()).all()
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_expand_dims_view():
     """
     Feature: Runtime view graph mode.
@@ -239,7 +239,7 @@ def test_expand_dims_view():
     assert (graph_output.asnumpy() == pynative_output.asnumpy()).all()
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_narrow_view():
     """
     Feature: Runtime view graph mode.
@@ -263,7 +263,7 @@ def test_narrow_view():
     assert (graph_output.asnumpy() == pynative_output.asnumpy()).all()
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_transpose_ext_view():
     """
     Feature: Runtime view graph mode.
@@ -286,7 +286,7 @@ def test_transpose_ext_view():
     assert output.shape == (4, 3, 2)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_view_and_inplace_nested_ctrl_dynamic_rank():
     """
     Feature: Runtime view graph mode.
