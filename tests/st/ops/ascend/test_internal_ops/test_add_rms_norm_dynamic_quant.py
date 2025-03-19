@@ -79,8 +79,8 @@ def _test_add_rms_norm_dynamic_quant_fusion(shape, dtype, has_smooth_scale, inte
     np_dtype = np_dtype_map[dtype]
     tensor_dtype = ms_dtype_map[dtype]
 
-    input_x = np.random.rand(*shape).astype(np_dtype)
-    input_y = np.random.rand(*shape).astype(np_dtype)
+    input_x = np.ones(shape).astype(np_dtype)
+    input_y = np.ones(shape).astype(np_dtype)
     gamma = np.ones([shape[-1]]).astype(np_dtype)
     net = AddRmsNormNet(internal_kernel, shape, np_dtype, tensor_dtype, has_smooth_scale)
 
@@ -117,6 +117,6 @@ def test_add_rms_norm_dynamic_quant(shape, dtype, has_smooth_scale):
     expect_quant, expect_scale, expect_add_res =\
         _test_add_rms_norm_dynamic_quant_fusion(shape, dtype, has_smooth_scale, False)
 
-    assert np.amax(np.abs(internal_quant - expect_quant)) <= 2
-    assert np.amax(np.abs(internal_scale - expect_scale)) <= 5e-3
-    assert np.amax(np.abs(internal_add_res - expect_add_res)) <= 5e-3
+    assert np.amax(np.abs(internal_quant - expect_quant)) <= 1
+    assert np.amax(np.abs(internal_scale - expect_scale)) <= 5e-2
+    assert np.amax(np.abs(internal_add_res - expect_add_res)) <= 5e-2

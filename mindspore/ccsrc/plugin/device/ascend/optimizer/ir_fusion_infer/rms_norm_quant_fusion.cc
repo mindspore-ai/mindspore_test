@@ -120,6 +120,16 @@ static bool IsSupport(const FuncGraphPtr &graph, const AnfNodePtr &node, const A
     }
   }
 
+  auto scale_shape = common::AnfAlgo::GetPrevNodeOutputInferShape(node, 1);
+  auto offset_shape = common::AnfAlgo::GetPrevNodeOutputInferShape(node, 2);
+
+  if (scale_shape.size() > 1 || IsDynamicRank(scale_shape) || offset_shape.size() > 1 || IsDynamicRank(offset_shape)) {
+    MS_LOG(INFO)
+      << "RmsNormQuant fused failed because the rank of scale_shape and offset_shape must be 1, but got scale_shape: "
+      << scale_shape << ", offset_shape: " << offset_shape;
+    return false;
+  }
+
   return true;
 }
 
