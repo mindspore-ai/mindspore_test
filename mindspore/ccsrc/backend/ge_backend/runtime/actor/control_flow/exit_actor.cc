@@ -182,7 +182,7 @@ void ExitActor::IncreaseDynamicRefCounts(OpContext<DeviceTensor> *const context)
 
   // The input device tensor may not have users and needs to free the memory.
   for (size_t i = 0; i < input_device_tensors_.size(); ++i) {
-    if (device_type != input_device_tensors_[i]->GetDeviceType()) {
+    if ((input_device_tensors_[i] != nullptr) && (device_type != input_device_tensors_[i]->GetDeviceType())) {
       MS_LOG(EXCEPTION) << "GE backend only support Ascend, but get " << input_device_tensors_[i]->device_name();
     }
     if ((input_device_tensors_[i] != nullptr) && (input_device_tensors_[i]->dynamic_ref_count() == 0)) {

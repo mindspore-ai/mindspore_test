@@ -1244,6 +1244,7 @@ std::vector<GeTensor> GeGraphExecutor::GenerateInputGeTensor(const KernelGraphPt
       // alloc static memory for unused inputs
       // error in ge when set nullptr into ge tensor
       GEMemoryAllocator::AllocUnuseInput(kernel_graph, input_node, output_addr, ge_res_manager_);
+      node_output_addr = output_addr->GetMutablePtr();
     }
     MS_LOG(INFO) << "[ZeroCopy] For Graph " << kernel_graph->ToString() << ", update input "
                  << GetNodeInfo(iter->second.need_update_input[i].first) << " address to "

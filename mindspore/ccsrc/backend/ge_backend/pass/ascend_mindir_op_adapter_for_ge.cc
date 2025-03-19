@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "backend/ge_backend/pass/ascend_mindir_op_adapter.h"
+#include "backend/ge_backend/pass/ascend_mindir_op_adapter_for_ge.h"
 #include "plugin/device/ascend/optimizer/mindir/reg_ascend_vm_op_adaptation_info.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"

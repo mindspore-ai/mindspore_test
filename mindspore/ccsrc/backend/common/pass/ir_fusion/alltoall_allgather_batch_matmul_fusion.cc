@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "backend/common/pass/ir_fusion/alltoall_allgather_batch_matmul_fusion.h"
 #include <set>
 #include <memory>
 #include <algorithm>
@@ -21,7 +22,6 @@
 #include <vector>
 #include <string>
 #include <functional>
-#include "backend/common/pass/ir_fusion/alltoall_allgather_batch_matmul_fusion.h"
 #include "backend/common/pass/ir_fusion/mc2_fusion.h"
 #include "backend/common/pass/common/gllo_utils.h"
 #include "include/common/utils/anfalgo.h"
