@@ -181,12 +181,13 @@ Status MaxDimInfo::CheckInputLayout() {
   auto input_tensor_layout = inputs_tensor_info_[kIndex0].tensor_layout();
   auto input_tensor_map = input_tensor_layout.tensor_map_before();
   dev_matrix_shape_ = input_tensor_layout.device_arrangement_origin().array();
+  auto device_dim = SizeToLong(dev_matrix_shape_.size());
   Shapes input_shard_strategy;
   Shape dim_shard_strategy;
   for (size_t i = 0; i < input_tensor_map.size(); ++i) {
     dim_shard_strategy.clear();
     for (size_t j = 0; j < input_tensor_map[i].size(); ++j) {
-      auto shard_idx = dev_matrix_shape_.size() - 1 - input_tensor_map[i][j];
+      auto shard_idx = device_dim - 1 - input_tensor_map[i][j];
       dim_shard_strategy.push_back(dev_matrix_shape_[shard_idx]);
     }
     input_shard_strategy.push_back(dim_shard_strategy);

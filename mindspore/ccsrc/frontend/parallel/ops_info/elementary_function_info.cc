@@ -148,7 +148,8 @@ Status RepeatInterleaveInfo::CheckInputLayout() {
       MS_LOG(ERROR) << "For distributed operator " << name_ << ", the layout of inputs' dimension 'dim' is empty.";
       return FAILED;
     }
-    auto shard_idx = dev_matrix_shape_.size() - 1 - input_tensor_map[dim_][kIndex0];
+    auto device_dims = SizeToLong(dev_matrix_shape_.size());
+    auto shard_idx = device_dims - 1 - input_tensor_map[dim_][kIndex0];
     if (input_tensor_map[dim_].size() != kSizeOne || dev_matrix_shape_[shard_idx] != NO_SPLIT_STRATEGY) {
       MS_LOG(ERROR) << "For distributed operator " << name_ << ", the input's dimension 'dim' can not be split.";
       return FAILED;
@@ -159,7 +160,7 @@ Status RepeatInterleaveInfo::CheckInputLayout() {
       MS_LOG(ERROR) << "For distributed operator " << name_ << ", the layout of input 'repeats' is empty.";
       return FAILED;
     }
-    shard_idx = dev_matrix_shape_.size() - 1 - repeat_tensor_map[kIndex0][kIndex0];
+    shard_idx = device_dims - 1 - repeat_tensor_map[kIndex0][kIndex0];
     // the layout of 'repeats' such as ("a", "b") and (("a", "b")) is invalid
     if (repeat_tensor_map.size() != kSizeOne || repeat_tensor_map[kIndex0].size() != kSizeOne ||
         dev_matrix_shape_[shard_idx] != NO_SPLIT_STRATEGY) {
