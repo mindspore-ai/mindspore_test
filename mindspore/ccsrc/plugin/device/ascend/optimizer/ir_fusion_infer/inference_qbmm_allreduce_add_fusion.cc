@@ -82,7 +82,9 @@ const AnfNodePtr QbmmAllReduceAddFusion::Process(const FuncGraphPtr &func_graph,
     MS_LOG(INFO) << "Currently, do not support to fuse qbmm(pertoken) with communication.";
     return nullptr;
   }
-  CheckValid();
+  if (!CheckValid()) {
+    return nullptr;
+  }
   auto cnode = CreateQbmmAllReduceAddNode(func_graph, node, equiv);
   return cnode;
 }

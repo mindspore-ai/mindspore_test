@@ -80,7 +80,9 @@ const AnfNodePtr QbmmAddFusion::Process(const FuncGraphPtr &func_graph, const An
     MS_LOG(INFO) << "Currently, do not support to fuse qbmm(pertoken) with add.";
     return nullptr;
   }
-  CheckValid();
+  if (!CheckValid()) {
+    return nullptr;
+  }
   auto cnode = CreateQbmmAddNode(func_graph, node, equiv);
   return cnode;
 }
