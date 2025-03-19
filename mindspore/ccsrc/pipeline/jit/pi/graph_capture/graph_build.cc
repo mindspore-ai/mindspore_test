@@ -167,6 +167,7 @@ const std::unordered_map<int, bool (GraphBuilder::*)(const Instr &)> GraphBuilde
   {JUMP_FORWARD, &GraphBuilder::TraceRunControl},
   {JUMP_ABSOLUTE, &GraphBuilder::TraceRunControl},
   {JUMP_BACKWARD, &GraphBuilder::TraceRunControl},
+  {JUMP_BACKWARD_NO_INTERRUPT, &GraphBuilder::TraceRunControl},
   {POP_JUMP_BACKWARD_IF_FALSE, &GraphBuilder::TraceRunControl},
   {POP_JUMP_BACKWARD_IF_NONE, &GraphBuilder::TraceRunControl},
   {POP_JUMP_BACKWARD_IF_NOT_NONE, &GraphBuilder::TraceRunControl},
@@ -206,6 +207,8 @@ const std::unordered_map<int, bool (GraphBuilder::*)(const Instr &)> GraphBuilde
   {RESUME, &GraphBuilder::DoNop},
   {PRECALL, &GraphBuilder::DoNop},
   {CACHE, &GraphBuilder::DoNop},
+  {RETURN_GENERATOR, &GraphBuilder::DoPushNull},
+  {SEND, &GraphBuilder::DoSend},
 };
 
 bool GraphBuilder::DoOtherBytecode(const Instr &instr) {
@@ -643,6 +646,26 @@ bool GraphBuilder::DoGetYieldFromIter(const Instr &instr) {
     MS_LOG(INFO) << "not support yield iterator yet!";
     return false;
   }
+  return true;
+}
+
+bool GraphBuilder::DoSend(const Instr &instr) {
+  auto iter_node = dynamic_cast<IterNode *>(seek(1));
+  MS_EXCEPTION_IF_NULL(iter_node);
+  size_t size = frame_.GetStacks().size();
+  if (!UnpackElements(iter_node->iterable())) {
+    return false;
+  }
+  size = frame_.GetStacks().size() - size;
+  std::vector<ValueNode *> elements(frame_.GetStacks().end() - size, frame_.GetStacks().end());
+  popn(size);
+  for (auto n : elements) {
+    push(n);
+    DoYieldValue(instr);
+    pop();
+  }
+  pop();  // None
+  cur_bci_ = instr.extra_jump()->bci();
   return true;
 }
 
@@ -4024,7 +4047,8 @@ bool GraphBuilder::TraceRunControl(const Instr &instr) {
   ValueNode *cond_node = nullptr;
   int cond = -1;
   int jump_to = -1;
-  if (opcode == JUMP_FORWARD || opcode == JUMP_ABSOLUTE || opcode == JUMP_BACKWARD) {
+  if (opcode == JUMP_FORWARD || opcode == JUMP_ABSOLUTE || opcode == JUMP_BACKWARD ||
+      opcode == JUMP_BACKWARD_NO_INTERRUPT) {
     cur_bci_ = instr.extra_jump()->bci();
     return true;
   } else if (opcode == FOR_ITER) {

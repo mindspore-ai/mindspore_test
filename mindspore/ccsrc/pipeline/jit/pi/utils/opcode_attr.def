@@ -206,7 +206,7 @@ DEF_OPCODE( MATCH_SEQUENCE               , Opcode::Class::kOther,          kMayD
 DEF_OPCODE( PRECALL                      , Opcode::Class::kNop,            0)
 DEF_OPCODE( PRINT_EXPR                   , Opcode::Class::kOther,          0)
 DEF_OPCODE( PUSH_NULL                    , Opcode::Class::kOther,          0)
-DEF_OPCODE( SEND                         , Opcode::Class::kOther,          0)
+DEF_OPCODE( SEND                         , Opcode::Class::kOther,          kJRel)
 DEF_OPCODE( SETUP_ANNOTATIONS            , Opcode::Class::kOther,          0)
 DEF_OPCODE( SETUP_ASYNC_WITH             , Opcode::Class::kOther,          0)
 DEF_OPCODE( YIELD_FROM                   , Opcode::Class::kOther,          0)

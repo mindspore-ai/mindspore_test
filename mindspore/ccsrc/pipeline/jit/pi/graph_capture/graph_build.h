@@ -282,6 +282,7 @@ class GraphBuilder {
   bool DoMergeOp(const Instr &instr);
   bool DoFormatValue(const Instr &instr);
   bool DoImport(const Instr &instr);
+  bool DoSend(const Instr &instr);
   bool DoYieldValue(const Instr &instr);
   bool DoYieldFrom(const Instr &instr);
   bool DoGetYieldFromIter(const Instr &instr);
