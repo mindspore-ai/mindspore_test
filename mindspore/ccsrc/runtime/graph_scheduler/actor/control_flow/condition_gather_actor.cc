@@ -56,12 +56,10 @@ void ConditionGatherActor::RunBranchName(const std::string &branch_name, OpConte
 }
 
 void ConditionGatherActor::ExecuteInferShapeTask(OpContext<DeviceTensor> *const context) {
-  MS_LOG(EXCEPTION) << "Condition gather actor not support dynamci shape.";
+  ExecuteLaunchKernelTask(context);
 }
 
-void ConditionGatherActor::ExecuteResizeKernelModTask(OpContext<DeviceTensor> *const context) {
-  MS_LOG(EXCEPTION) << "Condition gather actor not support dynamci shape.";
-}
+void ConditionGatherActor::ExecuteResizeKernelModTask(OpContext<DeviceTensor> *const context) {}
 
 void ConditionGatherActor::ExecuteLaunchKernelTask(OpContext<DeviceTensor> *const context) {
   new_memory_free_list_.clear();

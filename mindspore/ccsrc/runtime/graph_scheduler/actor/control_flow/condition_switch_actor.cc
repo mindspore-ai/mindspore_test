@@ -103,12 +103,10 @@ void ConditionSwitchActor::UpdateRefDeviceAddress(OpContext<DeviceTensor> *const
 }
 
 void ConditionSwitchActor::ExecuteInferShapeTask(OpContext<DeviceTensor> *const context) {
-  MS_LOG(EXCEPTION) << "Condition switch actor not support dynamci shape.";
+  ExecuteLaunchKernelTask(context);
 }
 
-void ConditionSwitchActor::ExecuteResizeKernelModTask(OpContext<DeviceTensor> *const context) {
-  MS_LOG(EXCEPTION) << "Condition switch actor not support dynamci shape.";
-}
+void ConditionSwitchActor::ExecuteResizeKernelModTask(OpContext<DeviceTensor> *const context) {}
 
 void ConditionSwitchActor::ExecuteLaunchKernelTask(OpContext<DeviceTensor> *const context) {
   ProfilerRecorder profiler(ProfilerModule::kKernel, ProfilerEvent::kKernelLaunch, GetAID().Name());
