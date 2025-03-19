@@ -1,28 +1,23 @@
 square:
     description: |
-        Returns square of a tensor element-wise.
+        Return square of a tensor element-wise.
 
         .. math::
         
             y_i = input_i ^ 2
     
         Args:
-            input (Tensor): The input tensor with a dtype of Number.
+            input (Tensor): The input tensor.
     
         Returns:
-            Tensor, has the same shape and dtype as the `input`.
-    
-        Raises:
-            TypeError: If `input` is not a Tensor.
+            Tensor
     
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``
     
         Examples:
             >>> import mindspore
-            >>> import numpy as np
-            >>> from mindspore import Tensor, ops
-            >>> input = Tensor(np.array([1.0, 2.0, 3.0]), mindspore.float32)
-            >>> output = ops.square(input)
+            >>> input = mindspore.tensor([1.0, 2.0, 3.0], mindspore.float32)
+            >>> output = mindspore.ops.square(input)
             >>> print(output)
             [1. 4. 9.]

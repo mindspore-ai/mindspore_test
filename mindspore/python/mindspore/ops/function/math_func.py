@@ -771,35 +771,31 @@ def permute(input, axis):
 
 def subtract(input, other, *, alpha=1):
     r"""
-    Performs the element-wise subtract of input tensors.
+    Subtract `other` scaled by `alpha` from `input`.
+
+    Support implicit type conversion and type promotion.
 
     .. math::
         output[i] = input[i] - alpha * other[i]
 
     Args:
-        input (Union[Tensor, number.Number]): Tensor or Number involved in subtraction.
-        other (Union[Tensor, number.Number]): Tensor or Number involved in subtraction.
+        input (Union[Tensor, number.Number]): The first input.
+        other (Union[Tensor, number.Number]): The second input.
 
     Keyword Args:
-        alpha (Number): The multiplier for :math:`other`. Default: ``1`` .
+        alpha (number): The multiplier for :math:`other`. Default ``1`` .
 
     Returns:
-        Tensor, has the same shape and dtype as input tensors.
-
-    Raises:
-        TypeError: `input` or `other` is neither Tensor nor number.Number.
-        TypeError: Both `input` and `other` are not Tensor.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input = Tensor(np.array([4, 5, 6]), mindspore.float32)
-        >>> y = Tensor(np.array([1, 2, 3]), mindspore.float32)
-        >>> z = ops.subtract(input, y, alpha=1)
+        >>> input = mindspore.tensor([4, 5, 6], mindspore.float32)
+        >>> y = mindspore.tensor([1, 2, 3], mindspore.float32)
+        >>> z = mindspore.ops.subtract(input, y, alpha=1)
         >>> print(z)
         [3. 3. 3.]
     """
@@ -4371,27 +4367,20 @@ def logaddexp(input, other):
         out_i = \log(exp(input_i) + \exp(other_i))
 
     Args:
-        input (Tensor): Input Tensor. The dtype of `input` must be float.
-        other (Tensor): Input Tensor. The dtype of `other` must be float.
-            If the shape of `input` is not equal to the shape of `other`,
-            they must be broadcastable to a common shape.
+        input (Tensor): The input tensor.
+        other (Tensor): The input tensor.
 
     Returns:
         Tensor.
-
-    Raises:
-        TypeError: If `input` or `other` is not a Tensor.
-        TypeError: The dtype of `input` or `other` is not float.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x1 = Tensor(np.array([1, 2, 3]).astype(np.float16))
-        >>> x2 = Tensor(np.array(2).astype(np.float16))
-        >>> output = ops.logaddexp(x1, x2)
+        >>> import mindspore
+        >>> x1 = mindspore.tensor([1, 2, 3], mindspore.float16)
+        >>> x2 = mindspore.tensor(2, mindspore.float16)
+        >>> output = mindspore.ops.logaddexp(x1, x2)
         >>> print(output)
         [2.312 2.693 3.312]
     """
@@ -4419,29 +4408,22 @@ def logaddexp2(input, other):
         out_i = \log_2(2^{input_i} + 2^{other_i})
 
     Args:
-        input (Tensor): Input tensor. The dtype of `input` must be float.
-        other (Tensor): Input tensor. The dtype of `other` must be float.
-            If ``input.shape != other.shape``, they must be broadcastable to
-            a common shape (which becomes the shape of the output).
+        input (Tensor): The input tensor.
+        other (Tensor): The input tensor.
 
     Returns:
         Tensor.
-
-    Raises:
-        TypeError: If `input`, `other` is not a Tensor.
-        TypeError: If the dtype of `input`, `other` is not a float.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x1 = Tensor(np.array([2, 4, 8]).astype(np.float16))
-        >>> x2 = Tensor(np.array([2]).astype(np.float16))
-        >>> output = ops.logaddexp2(x1, x2)
+        >>> import mindspore
+        >>> x1 = mindspore.tensor([1, 2, 3], mindspore.float16)
+        >>> x2 = mindspore.tensor(2, mindspore.float16)
+        >>> output = mindspore.ops.logaddexp2(x1, x2)
         >>> print(output)
-        [3. 4.32 8.02]
+        [2.586 3.    3.586]
     """
     _check_is_tensor("input", input, "logaddexp2")
     _check_is_tensor("other", other, "logaddexp2")
@@ -9551,7 +9533,7 @@ def baddbmm_ext(input, batch1, batch2, *, beta=1, alpha=1):
 
 def log2(input):
     r"""
-    Returns a new Tensor by taking the base 2 logarithm of the elements in the input Tensor.
+    Compute the logarithm to the base 2 of the input tensor element-wise.
 
     .. math::
         y_i = \log_2(input_i)
@@ -9561,24 +9543,18 @@ def log2(input):
         be affected.
 
     Args:
-        input (Tensor): Input Tensor of any dimension. The value must be greater than 0.
+        input (Tensor): The input tensor.
 
     Returns:
-        Tensor, has the same shape and dtype as the `input`.
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
-        TypeError: If dtype of `input` is not float16 or float32 or float64 on CPU and GPU, if dtype of `input`
-            is not float16 or float32 on Ascend.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([2, 4, 8]).astype(np.float16))
-        >>> output = ops.log2(x)
+        >>> import mindspore
+        >>> x = mindspore.tensor([2, 4, 8], mindspore.float16)
+        >>> output = mindspore.ops.log2(x)
         >>> print(output)
         [1. 2. 3.]
     """
@@ -9727,7 +9703,7 @@ def xdivy(x, y):
 
 def log10(input):
     r"""
-    Returns a new Tensor by taking the base 10 logarithm of the elements in the input Tensor.
+    Compute the logarithm to the base 10 of the input tensor element-wise.
 
     .. math::
         y_i = \log_{10}(input_i)
@@ -9737,24 +9713,18 @@ def log10(input):
         be affected.
 
     Args:
-        input (Tensor): Input Tensor of any dimension. The each element in Tensor must be greater than 0.
+        input (Tensor): The input tensor.
 
     Returns:
-        Tensor, has the same shape and dtype as the `input`.
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
-        TypeError: If dtype of `input` is not float16 or float32 or float64 on CPU and GPU, if dtype of `input`
-            is not float16 or float32 on Ascend.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([2, 4, 10]).astype(np.float16))
-        >>> output = ops.log10(x)
+        >>> import mindspore
+        >>> x = mindspore.tensor([2, 4, 10], mindspore.float16)
+        >>> output = mindspore.ops.log10(x)
         >>> print(output)
         [0.301 0.602 1.   ]
     """
