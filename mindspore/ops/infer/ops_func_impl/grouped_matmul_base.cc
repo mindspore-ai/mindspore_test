@@ -197,11 +197,25 @@ ShapeArray GroupedMatmulBaseFuncImpl::InferShape(const PrimitivePtr &primitive,
   return InferShapeForSingleOutput(primitive, x_shapes, w_shapes, group_list_size, group_type, transpose_b);
 }
 
-TypeIdList GroupedMatmulBaseFuncImpl::InferType(const PrimitivePtr &primitive,
-                                                const InferInfoPtrList &input_infos) const {
+bool GroupedMatmulBaseFuncImpl::EnableInternal(const std::string &op_name) const {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->IsEnableInferBoost() && ms_context->ascend_soc_version() == kAscendVersion310p) {
+  bool enable_infer_boost_310p =
+    ms_context->IsEnableInferBoost() && ms_context->ascend_soc_version() == kAscendVersion310p;
+  if (enable_infer_boost_310p) {
+    std::string disable_op_env = common::GetEnv("MS_DISABLE_INTERNAL_KERNELS_LIST");
+    std::set<std::string> disable_op_list;
+    common::SplitString(disable_op_env, ',', &disable_op_list);
+    bool disable_internal_op =
+      (std::find(disable_op_list.begin(), disable_op_list.end(), op_name) != disable_op_list.end());
+    return !disable_internal_op;
+  }
+  return false;
+}
+
+TypeIdList GroupedMatmulBaseFuncImpl::InferType(const PrimitivePtr &primitive,
+                                                const InferInfoPtrList &input_infos) const {
+  if (EnableInternal(primitive->name())) {
     return {kNumberTypeFloat16};
   }
 
@@ -227,13 +241,10 @@ std::pair<int32_t, int64_t> GroupedMatmulBaseFuncImpl::CommonCheckValidation(
   }
 
   if (group_type != kMultiOutGroupType) {
-    auto ms_context = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(ms_context);
-    bool enable_infer_boost_310p =
-      ms_context->IsEnableInferBoost() && ms_context->ascend_soc_version() == kAscendVersion310p;
     const auto &group_list_info = input_infos[idxes_.group_list];
-    if (MS_UNLIKELY(group_list_info->IsNone() || (!enable_infer_boost_310p && !group_list_info->IsSequence() &&
-                                                  group_list_info->GetType() != kNumberTypeInt64))) {
+    if (MS_UNLIKELY(group_list_info->IsNone() ||
+                    (!EnableInternal(primitive->name()) && !group_list_info->IsSequence() &&
+                     group_list_info->GetType() != kNumberTypeInt64))) {
       MS_EXCEPTION(ValueError)
         << "For '" << primitive->name()
         << "', when group_type is not -1, group_list should be 1-D Tensor or List with int64 elements, but got "
