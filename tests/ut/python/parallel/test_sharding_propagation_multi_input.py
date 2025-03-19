@@ -42,6 +42,15 @@ class NetWithLoss(nn.Cell):
         predict = self.network(x)
         return self.loss(predict)
 
+class NetWithLossSoftmax(nn.Cell):
+    def __init__(self, network):
+        super(NetWithLossSoftmax, self).__init__()
+        self.loss = P.SoftmaxCrossEntropyWithLogits()
+        self.network = network
+
+    def construct(self, x, b):
+        predict = self.network(x)
+        return self.loss(predict, b)[0]
 
 class GradWrap(nn.Cell):
     def __init__(self, network):
@@ -411,3 +420,74 @@ def test_mint_waitting():
         elif re.search('Div-op0', k) is not None:
             print("check Div-op0")
             assert v == [[4, 1], [4, 2]]
+
+def test_mint_rma_softmaxcrossentropywithlogits():
+    """
+    Feature: Sharding propagation for add, relu, matmul net, and use softmaxcrossentropywithlogits.
+    Description: To test whether Virtual dataset be inserted correctly.
+    Expectation: matmul, add get right strategy without compile error.
+    """
+    class Net(nn.Cell):
+        def __init__(self, in_layout, gamma_layout, use_shard=False, matmul_strategy=False, relu_strategy=False):
+            super(Net, self).__init__()
+            if matmul_strategy and relu_strategy:
+                self.rma_net = RMANet(matmul_strategy=matmul_strategy, relu_strategy=relu_strategy)
+            elif matmul_strategy and not relu_strategy:
+                self.rma_net = RMANet(matmul_strategy=matmul_strategy)
+            elif relu_strategy and not matmul_strategy:
+                self.rma_net = RMANet(relu_strategy=relu_strategy)
+            else:
+                self.rma_net = RMANet()
+            self.use_shard = use_shard
+            if self.use_shard:
+                self.rma_net_shard = ms.shard(self.rma_net, in_strategy=in_layout,
+                                              parameter_plan={"self.rma_net.gamma": gamma_layout})
+        def construct(self, x):
+            if self.use_shard:
+                return self.rma_net_shard(x)
+            return self.rma_net(x)
+
+    class RMANet(nn.Cell):
+        def __init__(self, matmul_strategy=False, relu_strategy=False):
+            super().__init__()
+            self.gamma = Parameter(Tensor(np.ones([16, 16]), dtype=ms.float32), name="gamma")
+            self.beta = Parameter(Tensor(np.ones([16, 16]), dtype=ms.float32), name="beta")
+            self.add = mint.add
+            if not matmul_strategy:
+                self.matmul = mint.matmul
+            else:
+                self.matmul = ms.shard(mint.matmul, in_strategy=matmul_strategy)
+            if not relu_strategy:
+                self.relu = mint.nn.ReLU()
+            else:
+                self.relu = ms.shard(mint.nn.ReLU(), in_strategy=relu_strategy)
+
+        def construct(self, x):
+            out0 = self.add(x, self.gamma)
+            out1 = self.relu(self.beta)
+            out2 = self.matmul(out0, out1)
+            return out2
+
+    device_num = 8
+    context.set_auto_parallel_context(device_num=device_num, global_rank=0, parallel_mode="auto_parallel",
+                                      search_mode="sharding_propagation")
+
+    x = Tensor(np.ones([16, 16]), dtype=ms.float32)
+    y = Tensor(np.ones([16, 16]), dtype=ms.float32)
+    ly = ms.Layout((4, 2), ("axis0", "axis1"))
+    in_layout = (ly("axis0", "axis1"),)
+    gamma_layout = ly("axis0", "axis1")
+
+    net = GradWrapTwoInput(NetWithLossSoftmax(Net(in_layout=in_layout, gamma_layout=gamma_layout, use_shard=True)))
+    net.set_train()
+    _cell_graph_executor.compile(net, x, y, phase='train')
+    strategies = _cell_graph_executor._get_shard_strategy(net)
+    context._reset_auto_parallel_context()
+    for (k, v) in strategies.items():
+        print("cnode: {} strategy: {}".format(k, v))
+        if re.search('AddExt-op0', k) is not None:
+            print("check AddExt-op0")
+            assert v == [[4, 2], [4, 2]]
+        elif re.search('MatMulExt-op0', k) is not None:
+            print("check MatMulExt-op0")
+            assert v == [[4, 2], [2, 1]]
