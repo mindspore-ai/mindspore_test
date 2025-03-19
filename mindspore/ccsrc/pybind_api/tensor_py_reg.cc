@@ -1536,32 +1536,32 @@ static PyMethodDef Tensor_methods[] = {
   {"is_contiguous", (PyCFunction)TensorPython_is_contiguous, METH_NOARGS,
    "Check if the tensor is contiguous in memory."},
   {"is_complex", (PyCFunction)TensorPython_is_complex, METH_NOARGS, R"mydelimiter(
-                              Check if the type of tensor is complex.
                               For details, please refer to: func:'mindspore.ops.is_complex'.
-
-                              Returns:
-                                  A Boolean, check whether the tensor is of complex type.
 
                               Examples
                                   >>> x = mindspore.Tensor([1 + 1j], dtype=mindspore.complex128)
                                   >>> y = mindspore.Tensor([1], dtype=mindspore.int32)
-                                  >>> x.is_complex()
-                                  Ture
-                                  >>> y.is_complex()
+                                  >>> print(x.is_complex())
+                                  True
+                                  >>> print(y.is_complex())
                                   False
                               )mydelimiter"},
   {"is_signed", (PyCFunction)TensorPython_is_signed, METH_NOARGS, R"mydelimiter(
                               Judge whether the data type of tensor is a signed data type.
 
                               Returns:
-                                  A Boolean, check whether the tensor is of signed type.
+                                  Bool. If the dtype of the tensor is a signed data type, return True. Otherwise,
+                                  return False.
 
                               Examples:
-                                  >>> x = mindspore.Tensor([1.0], dtype=mindspore.float32)
-                                  >>> y = mindspore.Tensor([1], dtype=mindspore.uint32)
-                                  >>> x.is_signed()
-                                  Ture
-                                  >>> y.is_signed()
+                                  >>> import mindspore as ms
+                                  >>> x = ms.Tensor([1, 2, 3], ms.int64)
+                                  >>> y = ms.Tensor([1, 2, 3], ms.uint64)
+                                  >>> output = x.is_signed()
+                                  >>> output2 = y.is_signed()
+                                  >>> print(output)
+                                  True
+                                  >>> print(output2)
                                   False
                               )mydelimiter"},
   {"stride", (PyCFunction)TensorPython_get_stride, METH_NOARGS, "Get the stride of the tensor."},

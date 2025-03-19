@@ -189,11 +189,11 @@ def tensor(input_data=None, dtype=None, shape=None, init=None, const_arg=False):
     based on the `dtype` argument.
 
     Please refer to `Creating and Using Tensor
-    <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html#mindspore-user-defined-data-types>`_ .
+    <https://www.mindspore.cn/tutorials/en/master/compile/static_graph.html#mindspore-user-defined-data-types>`_ .
 
     The difference between it and the Tensor class is that it adds
     `Annotation
-    <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html#annotation-type>`_
+    <https://www.mindspore.cn/tutorials/en/master/compile/static_graph.html#annotation-type>`_
     which can prevent the generation of AnyType compared to the Tensor class.
 
     The arguments and return values are the same as the Tensor class. Also see: :class:`mindspore.Tensor`.
@@ -230,7 +230,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         - If `init` interface is used to initialize `Tensor`, the `Tensor.init_data` API needs to be called to load the
           actual data to `Tensor`.
         - All modes of CPU and GPU, and Atlas training series with `graph mode (mode=mindspore.GRAPH_MODE)
-          <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html>`_  do not supported
+          <https://www.mindspore.cn/tutorials/en/master/compile/static_graph.html>`_  do not supported
           in-place operations yet.
 
     Warning:
@@ -378,26 +378,26 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
     def __int__(self):
         try:
             data = self._item()
+            return int(data)
         except ValueError:
             raise ValueError("Only one element tensors can be converted to Python scalars")
-        except TypeError as e:
-            raise TypeError(str(e))
-        else:
-            return int(data)
+
 
     def __float__(self):
-        data = self.asnumpy()
-        return self._convert_scalar_(data, float, "Only one element tensors can be converted to Python scalars")
+        try:
+            data = self._item()
+            return float(data)
+        except ValueError:
+            raise ValueError("Only one element tensors can be converted to Python scalars")
 
     def __index__(self):
         try:
             data = self._item()
+            if not isinstance(data, (int, bool)):
+                raise ValueError
+            return int(data)
         except ValueError:
             raise ValueError("Only integer tensors of a single element can be converted to an index.")
-        else:
-            if not isinstance(data, (int, bool)):
-                raise ValueError("Only integer tensors of a single element can be converted to an index.")
-            return int(data)
 
     def __pos__(self):
         return self
