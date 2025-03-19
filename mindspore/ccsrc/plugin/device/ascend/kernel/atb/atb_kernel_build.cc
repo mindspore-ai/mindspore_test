@@ -50,6 +50,7 @@ std::shared_ptr<KernelPlugin> GetAtbKernelPLugin() {
   if (!ret) {
     MS_LOG(INFO) << "Load so failed " << dlopen_error_msg.str()
                  << ", you can enable ATB by install the nnal package and source the set_env.sh in nnal.";
+    k_atb_kernel_plugin_ptr = nullptr;
     return nullptr;
   }
 

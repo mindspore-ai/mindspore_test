@@ -40,7 +40,7 @@ bool MaskedSelectAclnnKernelMod::Launch(const std::vector<KernelTensor *> &input
 
   // Update output shape.
   outputs_shape_.resize(1);
-  outputs_shape_[kIndex0] = device::ascend::UpdateOutputShape(all_tensor.get<2>());
+  outputs_shape_[kIndex0] = device::ascend::UpdateOutputShape(all_tensor.get<kIndex2>());
   return true;
 }
 
