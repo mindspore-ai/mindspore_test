@@ -98,6 +98,8 @@ mindir_to_tensor_type = {1: mstype.float32, 2: mstype.uint8, 3: mstype.int8, 4: 
                          5: mstype.int16, 6: mstype.int32, 7: mstype.int64, 10: mstype.float16,
                          11: mstype.float64, 12: mstype.uint32, 13: mstype.uint64}
 
+safetensors_to_mstype = {'Int4': mstype.qint4x2}
+
 _ckpt_mutex = RLock()
 
 # unit is KB
@@ -430,9 +432,15 @@ def _exec_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-GCM", map_
             elif format == "safetensors":
                 save_dict = {}
                 crc_num = 0
+                meta_data = {}
                 for name in sorted(data_list.keys()):
                     value = data_list[name]
-                    save_dict[name] = value[2].asnumpy()
+                    if isinstance(value[2], np.ndarray):
+                        save_dict[name] = value[2]
+                    else:
+                        if value[2].dtype == mstype.qint4x2:
+                            meta_data[name] = str(mstype.qint4x2)
+                        save_dict[name] = value[2].asnumpy()
 
                     if crc_check:
                         crc_num = binascii.crc32(bytes(name, encoding='utf-8'), crc_num)
@@ -440,10 +448,10 @@ def _exec_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-GCM", map_
                             bytes(save_dict[name]), crc_num)
                 safetensors_save_time_start = time.time()
                 if crc_check:
-                    save_file(save_dict, tmp_name, metadata={
-                        "crc_num": str(crc_num)})
+                    meta_data.update({"crc_num": str(crc_num)})
+                    save_file(save_dict, tmp_name, metadata=meta_data)
                 else:
-                    save_file(save_dict, tmp_name)
+                    save_file(save_dict, tmp_name, metadata=meta_data)
                 safetensors_save_time_end = time.time()
                 cost_time = safetensors_save_time_end - safetensors_save_time_start
                 vlog_print("1", "ME", __file__, sys._getframe().f_lineno, f"Save safetensors io cost time:{cost_time}.")
@@ -1202,7 +1210,12 @@ def _load_into_param_dict(ckpt_file_name, parameter_dict, specify_prefix, filter
                 io_end_time = time.time()
                 io_cost_time = io_end_time - io_start_time
                 total_io_cost_time += io_cost_time
-                parameter_dict[k] = Parameter(Tensor.from_numpy(value))
+                if f.metadata() is not None and k in f.metadata().keys():
+                    sf_dtype = f.metadata()[k]
+                    ms_dtype = safetensors_to_mstype[sf_dtype]
+                    parameter_dict[k] = Parameter(Tensor(value, dtype=ms_dtype))
+                else:
+                    parameter_dict[k] = Parameter(Tensor.from_numpy(value))
 
             vlog_print("1", "ME", __file__, sys._getframe().f_lineno,
                        f"Load safetensors io cost time:{total_io_cost_time}.")
