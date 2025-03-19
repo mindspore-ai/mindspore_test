@@ -15,7 +15,7 @@ rad2deg:
 
     Returns:
         Tensor. For floating-point inputs (float16/float32/float64), the output dtype matches the `self`.
-        If the `self` is one of uint8, int8, int16, or bool, the output dtype is float32.
+        If the `self` is uint8, int32, bool, etc., the output dtype is float32.
 
     Raises:
         TypeError: If the dtypes of `self` is complex64, complex128, uint16, uint32 and so on.

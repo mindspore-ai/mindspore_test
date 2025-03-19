@@ -12,7 +12,7 @@ deg2rad:
 
         Returns:
             Tensor. If `input` is a floating-point type (float16/float32/float64), the output dtype matches `input`.
-            If `input` is of type uint8, int8, int16, or bool, the output dtype is float32.
+            If `input` is uint8, int32, bool, etc., the output dtype is float32.
 
         Raises:
             TypeError: If the `input` is not a tensor.
