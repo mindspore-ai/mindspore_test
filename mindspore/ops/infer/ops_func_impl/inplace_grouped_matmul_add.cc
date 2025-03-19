@@ -16,6 +16,8 @@
 
 #include "infer/ops_func_impl/inplace_grouped_matmul_add.h"
 
+#include <algorithm>
+#include <numeric>
 #include <vector>
 #include <set>
 
@@ -25,6 +27,18 @@
 
 namespace mindspore {
 namespace ops {
+namespace {
+void InplaceGroupedMatmulAddCheckEmptyTensor(const std::string &prim_name, const std::string &arg_name,
+                                             const std::vector<int64_t> &shape, bool is_dynamic) {
+  if (is_dynamic) {
+    return;
+  }
+  if (std::any_of(shape.begin(), shape.end(), [](int64_t dim_size) { return dim_size <= 0; })) {
+    MS_EXCEPTION(ValueError) << "For '" << prim_name << ", the input " << arg_name << " should not be empty, but got "
+                             << arg_name << "'s shape: " << shape;
+  }
+}
+}  // namespace
 ShapeArray InplaceGroupedMatmulAddFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                        const InferInfoPtrList &input_infos) const {
   return {input_infos[kIndex3]->GetShape()};
@@ -33,26 +47,37 @@ ShapeArray InplaceGroupedMatmulAddFuncImpl::InferShape(const PrimitivePtr &primi
 std::vector<TypeId> InplaceGroupedMatmulAddFuncImpl::InferType(const PrimitivePtr &primitive,
                                                                const InferInfoPtrList &input_infos) const {
   const auto &prim_name = primitive->name();
+  const auto &x_type = input_infos[kIndex0]->GetType();
+  const auto &weight_type = input_infos[kIndex1]->GetType();
   const std::set<TypeId> valid_types{kNumberTypeBFloat16, kNumberTypeFloat16};
-  (void)CheckAndConvertUtils::CheckTypeIdValid("x", input_infos[kIndex0]->GetType(), valid_types, prim_name);
-  (void)CheckAndConvertUtils::CheckTypeIdValid("weight", input_infos[kIndex1]->GetType(), valid_types, prim_name);
+  (void)CheckAndConvertUtils::CheckTypeIdValid("x", x_type, valid_types, prim_name);
+  (void)CheckAndConvertUtils::CheckTypeIdValid("weight", weight_type, valid_types, prim_name);
+  if (x_type != weight_type) {
+    MS_EXCEPTION(TypeError) << "For '" << prim_name << "', the dtype of `x` should be the same as `weight`";
+  }
   (void)CheckAndConvertUtils::CheckTypeIdValid("group_list", input_infos[kIndex2]->GetType(), {kNumberTypeInt64},
                                                prim_name);
   (void)CheckAndConvertUtils::CheckTypeIdValid("out", input_infos[kIndex3]->GetType(), {kNumberTypeFloat32}, prim_name);
+
   return {input_infos[kIndex3]->GetType()};
 }
 
 int32_t InplaceGroupedMatmulAddFuncImpl::CheckValidation(const PrimitivePtr &primitive,
                                                          const InferInfoPtrList &input_infos) const {
+  const auto &prim_name = primitive->name();
   const auto &x_info = input_infos[kIndex0];
   const auto &weight_info = input_infos[kIndex1];
   const auto &group_list_info = input_infos[kIndex2];
   const auto &out_info = input_infos[kIndex3];
 
   const auto &x_shape = x_info->GetShape();
+  InplaceGroupedMatmulAddCheckEmptyTensor(prim_name, "x", x_shape, x_info->IsDynamic());
   const auto &weight_shape = weight_info->GetShape();
+  InplaceGroupedMatmulAddCheckEmptyTensor(prim_name, "weight", weight_shape, weight_info->IsDynamic());
   const auto &group_list_shape = group_list_info->GetShape();
+  InplaceGroupedMatmulAddCheckEmptyTensor(prim_name, "group_list", group_list_shape, group_list_info->IsDynamic());
   const auto &out_shape = out_info->GetShape();
+  InplaceGroupedMatmulAddCheckEmptyTensor(prim_name, "out", out_shape, out_info->IsDynamic());
 
   auto m_x = abstract::Shape::kShapeDimAny;
   auto k = abstract::Shape::kShapeDimAny;
@@ -76,8 +101,8 @@ int32_t InplaceGroupedMatmulAddFuncImpl::CheckValidation(const PrimitivePtr &pri
 
   if (MS_UNLIKELY(m_x != abstract::Shape::kShapeDimAny && m_weight != abstract::Shape::kShapeDimAny &&
                   m_x != m_weight)) {
-    MS_EXCEPTION(ValueError) << "For '" << primitive->name() << "', x's first dim should be equal to weight, but got "
-                             << m_x << " and " << m_weight;
+    MS_EXCEPTION(ValueError) << "For '" << prim_name << "', x's first dim should be equal to weight, but got " << m_x
+                             << " and " << m_weight;
   }
 
   MS_CHECK_VALUE(group_list_shape.size() == kIndex1,
@@ -102,7 +127,7 @@ int32_t InplaceGroupedMatmulAddFuncImpl::CheckValidation(const PrimitivePtr &pri
     expect_out_shape.insert(expect_out_shape.begin(), group_list_shape[kIndex0]);
   }
   if (MS_UNLIKELY(expect_out_shape != out_shape)) {
-    MS_EXCEPTION(ValueError) << "For '" << primitive->name() << "', given k: " << k << ", n: " << n
+    MS_EXCEPTION(ValueError) << "For '" << prim_name << "', given k: " << k << ", n: " << n
                              << ", out's shape should be " << expect_out_shape << ", but got " << out_shape;
   }
 

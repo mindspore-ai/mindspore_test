@@ -487,5 +487,20 @@ REG_FALLBACK_BUILDER("PowScalarTensor").SetBody(BODYFUNC(ib) {
   auto out = ib->Pow(input_tensor, exponent);
   return {out};
 });
+
+REG_FALLBACK_BUILDER("BitwiseAndTensor").SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto other = ib->GetInput(kIndex1);
+  auto input_type = input->dtype()->type_id();
+  NodePtr out{nullptr};
+  if (input_type == kNumberTypeBool) {
+    auto int_input = ib->Cast(input, kInt8);
+    auto int_other = ib->Cast(other, kInt8);
+    out = ib->Cast(ib->Emit("BitwiseAnd", {int_input, int_other}), input_type);
+  } else {
+    out = ib->Emit("BitwiseAnd", {input, other});
+  }
+  return {out};
+});
 }  // namespace expander
 }  // namespace mindspore

@@ -73,7 +73,7 @@ bool BitwiseCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const 
 }
 
 int BitwiseCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
-  if (auto ret = KernelMod::Resize(inputs, outputs); ret != 0) {
+  if (auto ret = KernelMod::Resize(inputs, outputs); ret != KRET_OK) {
     return ret;
   }
   input_shape_1_ = inputs[kIndex0]->GetShapeVector();
@@ -81,7 +81,7 @@ int BitwiseCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const
   output_shape_ = outputs[kIndex0]->GetShapeVector();
   if (output_shape_.size() > max_dims_) {
     MS_LOG(ERROR) << "For '" << kernel_name_
-                  << "', the dimension of output should be less than or equal to max_dims 7, but got "
+                  << "', the dimension of output should be less than or equal to max_dims 8, but got "
                   << output_shape_.size() << ".";
     return KRET_RESIZE_FAILED;
   }
@@ -151,7 +151,7 @@ int BitwiseCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const
 template <typename T>
 void BitwiseCpuKernelMod::InitFunc() {
   if (broadcast_ == false) {
-    if (kernel_name_ == prim::kPrimBitwiseAnd->name()) {
+    if (kernel_name_ == prim::kPrimBitwiseAnd->name() || kernel_name_ == prim::kPrimBitwiseAndTensor->name()) {
       bitwise_launch_func_ = &BitwiseCpuKernelMod::LaunchNoBroadcast<T, BitwiseAndFunc<T>>;
     } else if (kernel_name_ == prim::kPrimBitwiseOr->name()) {
       bitwise_launch_func_ = &BitwiseCpuKernelMod::LaunchNoBroadcast<T, BitwiseOrFunc<T>>;
@@ -162,7 +162,7 @@ void BitwiseCpuKernelMod::InitFunc() {
                     << kernel_name_;
     }
   } else {
-    if (kernel_name_ == prim::kPrimBitwiseAnd->name()) {
+    if (kernel_name_ == prim::kPrimBitwiseAnd->name() || kernel_name_ == prim::kPrimBitwiseAndTensor->name()) {
       bitwise_launch_func_ = &BitwiseCpuKernelMod::LaunchBroadcast<T, BitwiseAndFunc<T>>;
     } else if (kernel_name_ == prim::kPrimBitwiseOr->name()) {
       bitwise_launch_func_ = &BitwiseCpuKernelMod::LaunchBroadcast<T, BitwiseOrFunc<T>>;
@@ -244,6 +244,9 @@ const std::vector<std::pair<KernelAttr, BitwiseCpuKernelMod::KernelRunFunc>> &Bi
   return func_list;
 }
 
+MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, BitwiseAndTensor, []() {
+  return std::make_shared<BitwiseCpuKernelMod>(prim::kPrimBitwiseAndTensor->name());
+});
 MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, BitwiseAnd,
                                  []() { return std::make_shared<BitwiseCpuKernelMod>(prim::kPrimBitwiseAnd->name()); });
 MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, BitwiseOr,
