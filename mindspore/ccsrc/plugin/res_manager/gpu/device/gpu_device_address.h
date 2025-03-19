@@ -21,7 +21,7 @@
 #include <vector>
 #include "common/device_address.h"
 #include "runtime/hardware/device_context.h"
-#include "runtime/hardware/device_context_manager.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
 #include "runtime/device/res_manager/loadable_device_address.h"
 
 using ShapeVecotr = std::vector<int>;
@@ -95,10 +95,11 @@ class GPUDeviceAddress : public LoadableDeviceAddress {
                            const std::string &format) const override;
 
  private:
-  DeviceContext *GetDeviceContext() const {
-    DeviceContext *device_context = nullptr;
-    device_context = DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_name(), device_id()});
-    return device_context;
+  HalResBase *GetHalRes() const {
+    device::ResKey res_key{device::GetDeviceTypeByName(device_name()), device_id()};
+    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+    MS_EXCEPTION_IF_NULL(res_manager);
+    return res_manager;
   }
   bool CopyBetweenHostDevice(void *dst, const void *src, size_t size, bool async, size_t stream_id,
                              bool host_to_device) const;

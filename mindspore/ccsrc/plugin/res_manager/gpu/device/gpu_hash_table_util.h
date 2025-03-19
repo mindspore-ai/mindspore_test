@@ -28,7 +28,6 @@
 #include "plugin/res_manager/gpu/device/gpu_hash_table_dummy.h"
 #endif
 
-#include "include/backend/distributed/ps/ps_context.h"
 #if CUDA_VERSION > 11000 && defined(__linux__)
 
 namespace mindspore {
@@ -69,8 +68,7 @@ void SetHashTable(const UserDataPtr &user_data) {
 
   // Embedding cache sparse mode(use hash table) involves multi-streaming, and the memory pool does not support
   // multi-streaming currently, so hash table on embedding cache mode does not use the memory pool currently.
-  bool use_memory_pool = !ps::PSContext::instance()->cache_enable();
-  GPUAllocator<char> allocator(use_memory_pool);
+  GPUAllocator<char> allocator(true);
 
   if (default_value->isa<StringImm>()) {
     user_data->set<GPUHashTable<KeyType, ValueType>>(
