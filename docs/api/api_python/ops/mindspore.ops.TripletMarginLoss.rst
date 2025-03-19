@@ -38,7 +38,7 @@ mindspore.ops.TripletMarginLoss
 
 
     输出：
-        Tensor或Scalar，如果 `reduction` 为"none"，将返回Tensor，其shape为 :math:`(N)`，否则，将返回Scalar。
+        Tensor或Scalar，如果 `reduction` 为 ``"none"``，将返回Tensor，其shape为 :math:`(N)`，否则，将返回Scalar。
 
     异常：
         - **TypeError** -  `x` 、 `positive` 、 `negative` 或者 `margin` 不是Tensor。

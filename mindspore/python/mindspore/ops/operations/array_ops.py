@@ -3037,7 +3037,7 @@ class ScatterNdDiv(_ScatterNdOp):
 
 class ScatterNdMax(_ScatterNdOp):
     r"""
-    Applies sparse maximum to individual values or slices in a tensor.
+    Computes sparse maximum to individual values or slices in a tensor.
 
     Using given values to update parameter value through the maximum operation, along with the input indices.
     This operation outputs the `input_x` after the update is done, which makes it convenient to use the updated value.
@@ -4231,7 +4231,7 @@ class TensorScatterSub(Primitive):
     r"""
     Creates a new tensor by subtracting the values from the positions in `input_x` indicated by
     `indices`, with values from `updates`. When multiple values are provided for the same
-    index, the result of the update will be to subtract these values respectively. This operation is almost
+    index, the result of the update will subtract these values respectively. This operation is almost
     equivalent to using :class:`mindspore.ops.ScatterNdSub` , except that the updates are applied on output `Tensor`
     instead of input `Parameter`.
 

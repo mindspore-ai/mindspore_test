@@ -2532,12 +2532,20 @@ def interpolate(input,
             If scale_factor is a tuple or list, its length should be the same as the number of dimensions in input
             after removing the first two dimensions N, C.
             One and only one of size and scale_factor can be set to None. Default: ``None`` .
-        mode (str): The sampling algorithm.
-            One of 'nearest', 'linear' (3D only), 'bilinear' (4D only), 'trilinear' (5D only), 'bicubic' (4D only),
-            'area', 'nearest-exact'(matches Scikit-Image and PIL nearest neighbours interpolation algorithms and fixes
-            knows issues with `nearest`, 3D and 4D). Default: ``"nearest"`` .
+        mode (str, optional): The sampling algorithm. Default: ``"nearest"`` .
+            One of the following sampling methods can be used:
 
-        align_corners (bool): Whether to use corner alignment for coordinate mapping. Assuming a transformation is
+            - 'nearest': the nearest neighbours interpolation.
+            - 'linear': Linear interpolation, 3D only.
+            - 'bilinear': Bilinear interpolation, 4D only.
+            - 'trilinear': Trilinear interpolation, 5D only.
+            - 'bicubic': Double trilinear interpolation, 4D only.
+            - 'area': area interpolation.
+            - 'nearest-exact': matches Scikit-Image and PIL nearest neighbours interpolation algorithms and fixes
+              knows issues with `nearest`, for 3D and 4D.
+
+        align_corners (bool, optional): Whether to use corner alignment for coordinate mapping.
+            Assuming a transformation is
             applied to the input Tensor along the x-axis, the specific calculation formula is as follows:
 
             .. code-block::
@@ -2554,9 +2562,10 @@ def interpolate(input,
 
             This is only valid for ``'linear'``, ``'bilinear'``, or ``'bicubic'`` modes. Default: ``False`` .
         recompute_scale_factor (bool, optional): Recalculate `scale_factor`.
-            If True, the parameter `size` will be calculated using the value of the `scale_factor`,
-            and finally scaled using the value of `size`.
-            If False, the value of `size` or `scale_factor` will be used for direct interpolation. Default: ``None`` .
+
+            - If True, the parameter `size` will be calculated using the value of the `scale_factor`,
+              and finally scaled using the value of `size`.
+            - If False, the value of `size` or `scale_factor` will be used for direct interpolation. Default: ``None`` .
 
     .. note::
         The 'nearest-exact' mode is the same as the nearest-neighbor interpolation algorithm used in

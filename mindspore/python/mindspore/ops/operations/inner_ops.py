@@ -87,7 +87,7 @@ class NoRepeatNGram(Primitive):
     Because 3 consecutive words [2, 3, 2] do not appear twice in the word sequence.
 
     Args:
-        ngram_size (int): Size of n-grams, must be greater than 0. Default: ``1`` .
+        ngram_size (int, optional): Size of n-grams, must be greater than 0. Default: ``1`` .
 
     Inputs:
         - **state_seq** (Tensor) - n-gram word series, a 3-D tensor with shape: :math:`(batch\_size, beam\_width, m)`.

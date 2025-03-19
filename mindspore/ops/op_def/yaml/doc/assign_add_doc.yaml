@@ -27,8 +27,7 @@ assign_add:
 
         Raises:
             TypeError: If `value` is neither Number nor Tensor.
-            RuntimeError: If the data type of `variable` and `value` conversion of Parameter or Tensor
-                        is required when data type conversion of Parameter or Tensor is not supported.
+            RuntimeError: If the data type of `value` cannot be converted to that of `variable`.
 
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``

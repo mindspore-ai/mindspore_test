@@ -231,7 +231,7 @@ class TensorDump(Primitive):
     Save the Tensor as an npy file in numpy format.
 
     .. warning::
-        - The parameter input_output will no longer support the value 'all'.
+        The parameter input_output will no longer support the value 'all'.
 
     .. note::
         In Ascend platform with graph mode, the environment variables `MS_DUMP_SLICE_SIZE` and `MS_DUMP_WAIT_TIME`

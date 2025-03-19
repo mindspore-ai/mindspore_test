@@ -33,11 +33,11 @@ class GumbelCDF(Bijector):
         name (str): The name of the Bijector. Default: ``'GumbelCDF'`` .
 
     Note:
-        `scale` must be greater than zero.
-        For `inverse` and `inverse_log_jacobian`, input should be in range of (0, 1).
-        The dtype of `loc` and `scale` must be float.
-        If `loc`, `scale` are passed in as numpy.ndarray or tensor, they have to have
-        the same dtype otherwise an error will be raised.
+        - `scale` must be greater than zero.
+        - For `inverse` and `inverse_log_jacobian`, input should be in range of (0, 1).
+        - The dtype of `loc` and `scale` must be float.
+        - If `loc`, `scale` are passed in as numpy.ndarray or tensor, they have to have
+          the same dtype otherwise an error will be raised.
 
     Raises:
         TypeError: When the dtype of `loc` or `scale` is not float,

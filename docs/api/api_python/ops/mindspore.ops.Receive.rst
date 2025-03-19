@@ -20,7 +20,7 @@ mindspore.ops.Receive
         - Tensor - Tensor的shape与Send算子所发送Tensor的shape相同。
 
     异常：
-        - **TypeError** - src_rank不是int或group不是str。
+        - **TypeError** - `src_rank` 不是int或 `group` 不是str。
         - **RuntimeError** - 如果目标设备无效，或者后端无效，或者分布式初始化失败。
         - **ValueError** - 如果该线程的rank id 大于通信组的rank size。
 

@@ -24,8 +24,8 @@ mindspore.ops.ResizeBilinearV2
     异常：
         - **TypeError** - `align_corners` 不是bool。
         - **TypeError** - `half_pixel_centers` 不是bool。
-        - **TypeError** - `align_corners` 和 `half_pixel_centers` 同时为True。
-        - **ValueError** - `half_pixel_centers` 为True，同时运行平台为CPU。
+        - **TypeError** - `align_corners` 和 `half_pixel_centers` 同时为 ``True``。
+        - **ValueError** - `half_pixel_centers` 为 ``True``，同时运行平台为CPU。
         - **ValueError** - `x` 维度不是4。
         - **ValueError** - `size` 为Tensor且维度不是1。
         - **ValueError** - `size` 含有元素个数不是2。
