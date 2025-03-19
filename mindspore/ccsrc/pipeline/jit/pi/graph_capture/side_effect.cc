@@ -360,7 +360,9 @@ void SideEffect::RestoreAttr(CodeGenerator *cg, const Entry &e) const {
     attr_node = method_name == kDelAttr ? nullptr : node->input(0);
     attr_name = node->GetName();
   } else if (Opcode(opcode).IsCall()) {  // setattr(obj, "name", value), delattr(obj, "name")
-    constexpr int obj_index = 1, name_index = 2, value_index = 3;
+    constexpr int obj_index = 1;
+    constexpr int name_index = 2;
+    constexpr int value_index = 3;
     src_node = node->input(obj_index);
     py::object name = node->input(name_index)->GetVobj()->GetPyObject();
     MS_EXCEPTION_IF_NULL(name.ptr());
