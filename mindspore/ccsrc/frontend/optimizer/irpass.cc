@@ -15,6 +15,7 @@
  */
 
 #include "frontend/optimizer/irpass.h"
+#include <memory>
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ops/op_def/sparse_tensor_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
@@ -176,6 +177,8 @@ OptimizeIRPassLib::OptimizeIRPassLib() {
   depend_value_elim_ = MakeSubstitution(std::make_shared<DependValueElim>(), "depend_value_elim", prim::kPrimDepend);
   all_reduce_const_elim_ =
     MakeSubstitution(std::make_shared<AllReduceConstElim>(), "reduce_all_const_elim", prim::kPrimAllReduce);
+  virtual_view_grad_op_eliminate_ = MakeSubstitution(std::make_shared<VirtualViewGradEliminater>(),
+                                                     "virtual_view_grad_eliminate", prim::kPrimVirtualViewGrad);
 
   // Environ Item Eliminate
   environ_get_eliminate_ =

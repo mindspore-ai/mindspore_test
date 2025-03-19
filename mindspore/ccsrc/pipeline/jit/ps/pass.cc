@@ -337,6 +337,7 @@ FuncGraphPtr JitBpropGraphPass(const ResourcePtr &resource, bool need_renormaliz
     irpass.addn_zero_filter_,
     irpass.ad_related_special_op_eliminate_,
     irpass.special_op_eliminate_,
+    irpass.virtual_view_grad_op_eliminate_,
   });
   opt::OptPassConfig fill_zeros_like = opt::OptPassConfig{irpass.zero_like_fill_zero_};
   // In case custom bprop has meta fg need to expand, such as J.
@@ -1757,8 +1758,9 @@ bool OptAfterJitGradPass(const ResourcePtr &resource) {
   auto func_graph = resource->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);
   opt::irpass::OptimizeIRPassLib irpass;
-  opt::OptPassConfig ad_related_special_op_eliminate = opt::OptPassConfig(
-    {irpass.ad_related_special_op_eliminate_, irpass.special_op_eliminate_, irpass.dump_gradient_eliminate_});
+  opt::OptPassConfig ad_related_special_op_eliminate =
+    opt::OptPassConfig({irpass.ad_related_special_op_eliminate_, irpass.special_op_eliminate_,
+                        irpass.dump_gradient_eliminate_, irpass.virtual_view_grad_op_eliminate_});
 
   opt::OptPassConfig mutable_op_eliminate = opt::OptPassConfig({
     irpass.mutable_op_eliminate_,

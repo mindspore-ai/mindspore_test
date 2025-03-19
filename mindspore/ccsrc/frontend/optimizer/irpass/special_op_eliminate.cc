@@ -667,6 +667,18 @@ AnfNodePtr PynativeGradjitPrimitivePyEliminater::operator()(const OptimizerPtr &
   MS_EXCEPTION_IF_NULL(func_graph);
   return func_graph->NewCNode(args);
 }
+
+// {prim::kPrimVirtualViewGrad, X, Y, ..., U} ==> X
+AnfNodePtr VirtualViewGradEliminater::operator()(const OptimizerPtr &, const AnfNodePtr &node) {
+  if (!IsPrimitiveCNode(node, prim::kPrimVirtualViewGrad) || node->func_graph() == nullptr) {
+    return nullptr;
+  }
+  auto cnode = node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
+  const auto &func_graph = node->func_graph();
+  MS_EXCEPTION_IF_NULL(func_graph);
+  return cnode->input(1);
+}
 }  // namespace irpass
 }  // namespace opt
 }  // namespace mindspore
