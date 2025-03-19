@@ -34,10 +34,19 @@ bool MoveToD2H(const tensor::TensorPtr &src_tensor, const DeviceAddressPtr &src_
     auto ret = memcpy_s(dst_tensor->data_c(), size, src_tensor->data_c(), size);
     return ret == EOK;
   }
-  if (blocking && !src_device_ptr->SyncDeviceToHost(dst_tensor->Size(), dst_tensor->data_c())) {
-    MS_LOG(EXCEPTION) << "SyncDeviceToHost failed.";
-  } else if (!src_device_ptr->AsyncDeviceToHost(dst_tensor->Size(), dst_tensor->data_c())) {
-    MS_LOG(EXCEPTION) << "AsyncDeviceToHost failed.";
+  auto shape = src_tensor->shape();
+  auto type_id = src_tensor->data_type();
+  auto ret = true;
+  std::string status;
+  if (blocking) {
+    status = "SyncDeviceToHost";
+    ret = src_device_ptr->SyncDeviceToHost(shape, dst_tensor->Size(), type_id, dst_tensor->data_c());
+  } else {
+    status = "AsyncDeviceToHost";
+    ret = src_device_ptr->AsyncDeviceToHost(dst_tensor->Size(), dst_tensor->data_c());
+  }
+  if (!ret) {
+    MS_LOG(EXCEPTION) << status << " failed.";
   }
   return true;
 }
@@ -46,19 +55,27 @@ void MoveToH2D(const tensor::TensorPtr &src_tensor, const DeviceAddressPtr &src_
                const DeviceAddressPtr &dst_device_ptr, bool blocking) {
   MS_EXCEPTION_IF_NULL(src_tensor);
   MS_EXCEPTION_IF_NULL(dst_device_ptr);
+  auto shape = src_tensor->shape();
+  auto type_id = src_tensor->data_type();
   auto src_size = src_tensor->Size();
   if (src_device_ptr != nullptr) {
     src_size = src_device_ptr->GetSize();
   }
   size_t size = std::min(src_size, dst_device_ptr->GetSize());
   auto src_data = src_device_ptr == nullptr ? src_tensor->data_c() : src_device_ptr->GetPtr();
-  if (blocking && !dst_device_ptr->SyncHostToDevice(size, src_data)) {
-    MS_LOG(EXCEPTION) << "SyncHostToDevice failed.";
-  } else if (!dst_device_ptr->AsyncHostToDevice(size, src_data)) {
-    MS_LOG(EXCEPTION) << "AsyncHostToDevice failed.";
+  auto ret = true;
+  std::string status;
+  if (blocking) {
+    ret = dst_device_ptr->SyncHostToDevice(shape, size, type_id, src_data);
+    status = "SyncHostToDevice";
+  } else {
+    ret = dst_device_ptr->AsyncHostToDevice(size, src_data);
+    status = "AsyncHostToDevice";
+  }
+  if (!ret) {
+    MS_LOG(EXCEPTION) << status << " failed.";
   }
 }
-
 }  // namespace
 
 void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_tensor, const std::string &to,
