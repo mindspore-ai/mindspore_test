@@ -330,6 +330,7 @@ FuncGraphPtr JitBpropGraphPass(const ResourcePtr &resource, bool need_renormaliz
     irpass.depend_value_elim_,
     irpass.reshape_eliminate_,
     irpass.switch_simplify_,
+    irpass.merge_addn_,
     irpass.addn_zero_filter_,
     irpass.ad_related_special_op_eliminate_,
     irpass.special_op_eliminate_,
