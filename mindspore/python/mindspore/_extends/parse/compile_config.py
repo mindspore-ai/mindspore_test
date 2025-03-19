@@ -362,6 +362,15 @@ Value Range:
 """
 JIT_ENABLE_AUGASSIGN_INPLACE = '0'
 
+"""
+Name: ENABLE_VIEW_INPLACE_GRAD_NEW_METHOD
+Function: Whether enable new method for view inplace grad
+Value Range:
+    1: Enable
+    Default: Disable
+"""
+ENABLE_VIEW_INPLACE_GRAD_NEW_METHOD = ''
+
 __all__ = [
     "COMPILE_PROFILE",
     "COMPILE_PROFILE_FINISH_ACTION",
@@ -400,5 +409,6 @@ __all__ = [
     "PUT_ALL_CNODE_INTO_ORDER_LIST",
     "CHECK_PASS_NODE_SCOPE",
     "CHECK_INVALID_VIEW_INPLACE_DOUT_LEVEL",
-    "JIT_ENABLE_AUGASSIGN_INPLACE"
+    "JIT_ENABLE_AUGASSIGN_INPLACE",
+    "ENABLE_VIEW_INPLACE_GRAD_NEW_METHOD"
 ]
