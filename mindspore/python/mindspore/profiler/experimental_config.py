@@ -66,7 +66,7 @@ class _ExperimentalConfig:
             directory are retained to save disk space.
             Default value: ``True`` .
         export_type (list, optional): (Ascend only) The data type to export.
-            Default value:`` None``. Only export text type data.
+            Default value: ``None`` . Only export text type data.
 
             - ExportType.Text: Export text type data.
             - ExportType.Db: Export db type data.
