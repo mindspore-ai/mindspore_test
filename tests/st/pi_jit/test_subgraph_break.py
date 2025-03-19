@@ -26,6 +26,10 @@ from tests.st.pi_jit.one_stage.test_utils import save_graph_ir, check_ir_num
 from tests.st.pi_jit.share.utils import match_array, assert_has_graph_break, assert_equal, pi_jit_with_config
 from tests.mark_utils import arg_mark
 
+SYS_VER = (sys.version_info.major, sys.version_info.minor)
+if SYS_VER >= (3, 11):
+    pytest.skip(reason="not implement for python" + str(SYS_VER), allow_module_level=True)
+
 SKIP_PY37 = pytest.mark.skipif(sys.version_info[:2] == (3, 7), reason="Not support py37 setup loop bytecode")
 
 context.set_context(mode=context.PYNATIVE_MODE)
