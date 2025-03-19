@@ -82,6 +82,7 @@ class ProfilerEvent(Enum):
     # Inner event is not counted in the total time.
     KERNEL_INFER_INNER = "KernelInferInner"
     KERNEL_INFER_DATA_SYNC = "KernelInferDataSync"
+    KERNEL_RESIZE_INNER = "KernelResizeInner"
     KERNEL_LAUNCH_INNER = "KernelLaunchInner"
     BACKEND_GRAPH_RUN_INNER = "BackendGraphRunInner"
     # PyNative Pipeline
