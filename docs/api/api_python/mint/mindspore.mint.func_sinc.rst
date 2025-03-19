@@ -10,12 +10,7 @@ mindspore.mint.sinc
         1 & input_i=0 \end{cases}
 
     参数：
-        - **input** (Tensor) - 输入Tensor。
+        - **input** (Tensor) - 输入tensor。
 
     返回：
-        Tensor，shape与 `input` 相同。
-        当输入类型为int或bool时，返回值类型为float32。
-        否则，返回值类型与输入类型相同。
-
-    异常：
-        - **TypeError** - 如果 `input` 不是Tensor。
+        Tensor

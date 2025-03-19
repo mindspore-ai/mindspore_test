@@ -14,10 +14,7 @@ mindspore.ops.sgn
                             \end{cases}
 
     参数：
-        - **input** (Tensor) - 输入Tensor。
+        - **input** (Tensor) - 输入tensor。
 
     返回：
-        Tensor，`input` 的sgn计算结果。
-
-    异常：
-        - **TypeError** - 如果 `input` 不是Tensor。
+        Tensor

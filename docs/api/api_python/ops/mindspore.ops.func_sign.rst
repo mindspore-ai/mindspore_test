@@ -3,7 +3,7 @@ mindspore.ops.sign
 
 .. py:function:: mindspore.ops.sign(input)
 
-    按sign公式逐元素计算输入Tensor。注意：在输入为NaN且数据类型为float64时，该算子计算结果为NaN。
+    按sign公式逐元素计算输入tensor。
 
     .. math::
         \text{out}_{i} = \begin{cases}
@@ -12,11 +12,11 @@ mindspore.ops.sign
                            1 & \text{input}_{i} > 0
                          \end{cases}
 
+    .. note::
+        在输入为NaN且数据类型为float64时，该算子计算结果为NaN。
+
     参数：
-        - **input** (Tensor) - 输入Tensor。
+        - **input** (Tensor) - 输入tensor。
 
     返回：
-        Tensor， `input` 的sign计算结果。
-
-    异常：
-        - **TypeError** - `input` 不是Tensor。
+        Tensor
