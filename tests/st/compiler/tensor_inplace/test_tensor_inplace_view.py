@@ -86,23 +86,7 @@ class ViewOut(nn.Cell):
         return x * 3
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
-def test_graph_view_out_ge_mode():
-    """
-    Feature: Runtime view graph mode.
-    Description: view op as graph output.
-    Expectation: pass.
-    """
-    context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O2"})
-    with pytest.raises(RuntimeError) as raise_info:
-        x1 = ms.Tensor(np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [-1, -1, 0, -1]],
-                                 [[0, -1, 0, 0], [0, 0, 0, 0], [0, 1, 0, 0]]]), ms.int32)
-        net = ViewOut()
-        net(x1)
-    assert "The view feature is not currently supported in GE mode." in str(raise_info.value)
-
-
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_graph_view_out():
     """
     Feature: Runtime view graph mode.
@@ -135,7 +119,7 @@ class ViewOut2(nn.Cell):
         return x * 3 + y
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_graph_view_out_tensormove():
     """
     Feature: Runtime view graph mode.
