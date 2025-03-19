@@ -11107,7 +11107,7 @@ def cumprod(input, dim, dtype=None):
     Examples:
         >>> import mindspore
         >>> input = mindspore.tensor([[1, 2, 3],
-        >>>                           [4, 5, 6]])
+        ...                           [4, 5, 6]])
         >>> mindspore.ops.cumprod(input, dim=0)
         Tensor(shape=[2, 3], dtype=Int64, value=
         [[ 1,  2,  3],
