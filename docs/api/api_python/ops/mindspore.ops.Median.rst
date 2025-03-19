@@ -13,7 +13,7 @@ mindspore.ops.Median
         - **global_median** (bool, 可选) - 是否计算Tensor中所有元素的中值。默认值： ``False`` 。
         - **axis** (int, 可选) - 进行中值计算的轴。默认值： ``0`` 。
         - **keep_dims** (bool, 可选) - 是否保留 `axis` 指定的维度。默认值： ``False`` 。
-        - **ignore_nan** (bool, 可选) - 是否忽略输入Tensor中的NaN值。默认值： ``False`` 。
+        - **ignore_nan** (bool, 可选) - 是否忽略输入Tensor中的 ``NaN`` 值。为 ``False`` 时，若输入范围（由 `global_median` 确定）中含有 ``NaN`` 值，则 `values` 的相应元素为 ``NaN``。为 ``True`` 时，计算排除 ``NaN`` 后剩余元素的中值。默认值： ``False`` 。
 
     输入：
         - **x** (Tensor) - 要计算中值的Tensor。

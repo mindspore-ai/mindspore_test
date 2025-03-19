@@ -18,8 +18,10 @@
 
 #include <functional>
 #include <algorithm>
+#include <limits>
 #include <type_traits>
 #include <cmath>
+#include <vector>
 
 #include "mindspore/ops/infer/median.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
@@ -34,6 +36,9 @@ constexpr size_t kIndex0 = 0;
 constexpr int64_t kHalf = 2;
 constexpr size_t kWorkSpaceTempMedianVecIndex = 0;
 constexpr size_t kWorkSpaceTempMedianIndexVecIndex = 1;
+
+template <typename T>
+constexpr bool DtypeSupportNan = std::is_same_v<T, float> || std::is_same_v<T, double>;
 
 template <typename T>
 inline bool IsNan(T val) {
@@ -135,46 +140,52 @@ template <typename T>
 bool MedianCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                       const std::vector<KernelTensor *> &workspace,
                                       const std::vector<KernelTensor *> &outputs) {
-  if (is_null_input_) {
-    return true;
-  }
-  constexpr bool dtype_support_nan = std::is_same_v<T, float> || std::is_same_v<T, double>;
   if (global_median_ == false) {
-    if constexpr ((!dtype_support_nan)) {
+    if (is_null_input_) {
+      return true;
+    }
+    if constexpr (!DtypeSupportNan<T>) {
       return MedianCompute<T>(inputs, workspace, outputs);
     } else if (ignore_nan_ == false) {
       return MedianCompute<T>(inputs, workspace, outputs);
     } else {
       return MedianComputeIgnoreNan<T>(inputs, workspace, outputs);
     }
-  } else {
-    return GlobalMedianCompute<T>(inputs, outputs);
   }
-  return true;
+  // GlobalMedianCompute handles empty input
+  return GlobalMedianCompute<T>(inputs, outputs);
 }
 
 template <typename T>
 bool MedianCpuKernelMod::GlobalMedianCompute(const std::vector<KernelTensor *> &inputs,
                                              const std::vector<KernelTensor *> &outputs) {
-  constexpr bool dtype_support_nan = std::is_same_v<T, float> || std::is_same_v<T, double>;
-  auto *input0 = GetDeviceAddress<T>(inputs, 0);
+  const T *const raw_input = GetDeviceAddress<T>(inputs, 0);
   auto *output0 = GetDeviceAddress<T>(outputs, 0);
   auto *output1 = GetDeviceAddress<T>(outputs, 1);
   *output1 = 0;
   output_num_elements_ = 1;
-  if constexpr ((!dtype_support_nan)) {
+  if (is_null_input_) {
+    if constexpr (DtypeSupportNan<T>) {
+      *output0 = std::numeric_limits<T>::quiet_NaN();
+    } else {
+      *output0 = 0;
+    }
+    return true;
+  }
+  if constexpr (!DtypeSupportNan<T>) {
     int64_t median_pos = static_cast<int64_t>((input_num_elements_ - 1) / kHalf);
-    std::nth_element(input0, input0 + median_pos, input0 + input_num_elements_);
-    *output0 = *(input0 + median_pos);
+    *output0 = CopyAndCalcMedian(raw_input, median_pos);
   } else if (ignore_nan_ == false) {
-    int64_t median_pos = static_cast<int64_t>((input_num_elements_ - 1) / kHalf);
-    std::nth_element(input0, input0 + median_pos, input0 + input_num_elements_);
-    *output0 = *(input0 + median_pos);
+    if (std::any_of(raw_input, raw_input + input_num_elements_, &IsNan<T>)) {
+      *output0 = std::numeric_limits<T>::quiet_NaN();
+    } else {
+      const int64_t median_pos = static_cast<int64_t>((input_num_elements_ - 1) / kHalf);
+      *output0 = CopyAndCalcMedian(raw_input, median_pos);
+    }
   } else {
-    int64_t nan_num = std::count_if(input0, input0 + input_num_elements_, IsNan<T>);
+    int64_t nan_num = std::count_if(raw_input, raw_input + input_num_elements_, IsNan<T>);
     int64_t median_pos = (static_cast<int64_t>(input_num_elements_) - nan_num - 1) / kHalf;
-    std::nth_element(input0, input0 + median_pos, input0 + input_num_elements_, CompareAll<T>);
-    *output0 = *(input0 + median_pos);
+    *output0 = CopyAndCalcMedian(raw_input, median_pos, &CompareAll<T>);
   }
   return true;
 }
@@ -218,6 +229,14 @@ bool MedianCpuKernelMod::MedianCompute(const std::vector<KernelTensor *> &inputs
         auto num_index = start + k * jump + j;
         temp_median_index_vec[k] = static_cast<int64_t>(k);
         temp_median_vec[k] = *num_index;
+      }
+      if constexpr (DtypeSupportNan<T>) {
+        const auto nan_pos = std::find_if(temp_median_vec, temp_median_vec + dim_data_num, IsNan<T>);
+        if (nan_pos != temp_median_vec + dim_data_num) {
+          *(output0 + i * jump + j) = *nan_pos;
+          *(output1 + i * jump + j) = static_cast<int64_t>(nan_pos - temp_median_vec);
+          continue;
+        }
       }
       std::nth_element(temp_median_index_vec, temp_median_index_vec + median_pos, temp_median_index_vec + dim_data_num,
                        [&temp_median_vec, dim_data_num](size_t pos1, size_t pos2) {
@@ -308,6 +327,16 @@ bool MedianCpuKernelMod::MedianComputeIgnoreNan(const std::vector<KernelTensor *
     }
   }
   return true;
+}
+
+template <typename T, typename... CompFunc>
+inline T MedianCpuKernelMod::CopyAndCalcMedian(const T *const input_begin, int64_t median_pos, CompFunc... comp) {
+  T *const input0 = new T[input_num_elements_];
+  (void)std::copy(input_begin, input_begin + input_num_elements_, input0);
+  std::nth_element(input0, input0 + median_pos, input0 + input_num_elements_, comp...);
+  T output = *(input0 + median_pos);
+  delete[] input0;
+  return output;
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Median, MedianCpuKernelMod);
