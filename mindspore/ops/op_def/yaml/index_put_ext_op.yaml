@@ -1,0 +1,22 @@
+#operator index_put_ext
+index_put_ext:
+  args:
+    input:
+      dtype: tensor
+    indices:
+      dtype: tuple[tensor]
+      type_cast: list[tensor]
+    values:
+      dtype: tensor
+    accumulate:
+      dtype: bool
+      default: False
+  returns:
+    output:
+      dtype: tensor
+  function:
+    disable: True
+  bprop_expander: False
+  dispatch:
+    enable: True
+    Ascend: IndexPutExtAscend

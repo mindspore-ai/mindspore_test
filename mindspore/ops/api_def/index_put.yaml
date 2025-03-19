@@ -1,0 +1,14 @@
+index_put:
+  - op_yaml: index_put_ext_op.yaml
+    py_method: tensor_index_put
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
+
+  - op_yaml: deprecated/index_put_method.yaml
+    py_method: deprecated_tensor_index_put
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

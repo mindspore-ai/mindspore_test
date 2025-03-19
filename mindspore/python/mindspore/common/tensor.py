@@ -3788,62 +3788,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('masked_scatter')()(self, mask, x)
 
-    def index_put(self, indices, values, accumulate=False):
-        r"""
-        Based on the indices in `indices`, replace the corresponding elements in Tensor `self`
-        with the values in `values`. Outplace version of  :func:`mindspore.Tensor.index_put_` 。
-
-        .. warning::
-            The behavior is unpredictable in the following scenario:
-
-            - If `accumulate` is `False` and `indices` contains duplicate elements.
-
-        Args:
-            indices (tuple[Tensor], list[Tensor]): the indices of type int32 or int64, used to index into the `self`.
-                The rank of tensors in indices should be 1-D, size of indices should <= `self.rank`
-                and the tensors in indices should be broadcastable.
-            values (Tensor): 1-D Tensor with the same type as `self`. `values` should be broadcastable with size 1.
-            accumulate (bool, optional): If `accumulate` is `True`, the elements in `values` will be added to `self`,
-                otherwise the elements in `values` will replace the corresponding elements in the `self`.
-                Default: ``False``.
-
-        Returns:
-            Tensor, with the same type and shape as the "self Tensor".
-
-        Raises:
-            TypeError: If the dtype of the `self` is not equal to the dtype of `values`.
-            TypeError: If the dtype of `indices` is not tuple[Tensor], list[Tensor].
-            TypeError: If the dtype of tensors in `indices` are not int32 or int64.
-            TypeError: If the dtype of tensors in `indices` are inconsistent.
-            TypeError: If the dtype of `accumulate` is not bool.
-            ValueError: If rank(`values`) is not 1-D.
-            ValueError: If size(`values`) is not 1 or max size of the tensors in `indices` when
-                rank(`self`) == size(`indices`).
-            ValueError: If size(`values`) is not 1 or `self`.shape[-1] when rank(`self`) > size(`indices`).
-            ValueError: If the rank of tensors in `indices` is not 1-D.
-            ValueError: If the tensors in `indices` is not be broadcastable.
-            ValueError: If size(`indices`) > rank(`self`).
-
-        Supported Platforms:
-            ``Ascend`` ``CPU``
-
-        Examples:
-            >>> import numpy as np
-            >>> import mindspore
-            >>> from mindspore import Tensor
-            >>> x = Tensor(np.array([[1, 2, 3], [4, 5, 6]]).astype(np.int32))
-            >>> values = Tensor(np.array([3]).astype(np.int32))
-            >>> indices = [Tensor(np.array([0, 1, 1]).astype(np.int32)), Tensor(np.array([1, 2, 1]).astype(np.int32))]
-            >>> accumulate = True
-            >>> output = x.index_put(indices, values, accumulate)
-            >>> print(output)
-            [[1 5 3]
-            [4 8 9]]
-        """
-        validator.check_value_type('accumulate', accumulate, bool, 'Tensor.index_put')
-        _index_put = tensor_operator_registry.get('index_put')(0 if accumulate is False else 1)
-        return _index_put(self, values, indices)
-
     def index_put_(self, indices, values, accumulate=False):
         r"""
         Based on the indices in `indices`, replace the corresponding elements in Tensor `self` with the values
