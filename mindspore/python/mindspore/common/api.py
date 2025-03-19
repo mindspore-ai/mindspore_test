@@ -1002,7 +1002,6 @@ def _check_options(options, backend):
 
     # check options' device, backend and value
     for option, value in options.items():
-        # _check_option_device(option, device)
         _check_option_backend(option, backend)
         _check_option_value(option, value)
 

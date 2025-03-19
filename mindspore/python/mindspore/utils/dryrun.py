@@ -87,6 +87,7 @@ def set_simulation():
     Tensor.tolist = obj.inject(Tensor.tolist)
     Tensor.__int__ = obj.inject(Tensor.__int__)
 
+
 def mock(mock_val, *args):
     """
     In the network, if some `if` branch need to use the actual execution values and the virtual execution cannot obtain
