@@ -110,6 +110,17 @@ AbstractBasePtr InferImplUpdateState(const AnalysisEnginePtr &, const PrimitiveP
   return args_abs_list[0]->Broaden();
 }
 
+AbstractBasePtr InferImplVirtualViewGrad(const AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                         const AbstractBasePtrList &args_abs_list) {
+  // Inputs: two tensors, VirtualViewGrad(view_input, view_output)
+  constexpr size_t size_expected = 2;
+  if (args_abs_list.size() < size_expected) {
+    MS_LOG(EXCEPTION) << primitive->name() << " input args size should be at least 2, but got " << args_abs_list.size();
+  }
+  MS_EXCEPTION_IF_NULL(args_abs_list[0]);
+  return args_abs_list[0];
+}
+
 AbstractBasePtr InferImplMakeRowTensor(const AnalysisEnginePtr &, const PrimitivePtr &primitive,
                                        const AbstractBasePtrList &args_abs_list) {
   // Inputs: two tensors and a tuple.

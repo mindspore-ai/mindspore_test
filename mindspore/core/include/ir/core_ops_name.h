@@ -27,6 +27,7 @@ constexpr auto kEnvironCreateOpName = "EnvironCreate";
 constexpr auto kLoadOpName = "Load";
 constexpr auto kIsInstanceOpName = "isinstance";
 constexpr auto kUpdateStateOpName = "UpdateState";
+constexpr auto kVirtualViewGradOpName = "_VirtualViewGrad";
 constexpr auto kReturnOpName = "Return";
 constexpr auto kSwitchOpName = "Switch";
 constexpr auto kMakeTupleOpName = "MakeTuple";

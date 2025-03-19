@@ -56,6 +56,7 @@ GVAR_DEF(PrimitivePtr, kPrimIsInstance, std::make_shared<Primitive>(kIsInstanceO
 GVAR_DEF(PrimitivePtr, kPrimUpdateState, std::make_shared<Primitive>(kUpdateStateOpName));
 GVAR_DEF(PrimitivePtr, kPrimReturn, std::make_shared<Primitive>(kReturnOpName));
 GVAR_DEF(PrimitivePtr, kPrimSwitch, std::make_shared<Primitive>(kSwitchOpName));
+GVAR_DEF(PrimitivePtr, kPrimVirtualViewGrad, std::make_shared<Primitive>(kVirtualViewGradOpName));
 
 GVAR_DEF(PrimitivePtr, kPrimDynamicLossScale, std::make_shared<Primitive>("_DynamicLossScale"));
 

@@ -26,6 +26,9 @@ namespace mindspore {
 namespace opt {
 namespace {
 bool IsInplaceCNode(const AnfNodePtr &node) {
+  if (IsPrimitiveCNode(node, prim::kPrimVirtualViewGrad)) {
+    return true;
+  }
   auto prim = GetCNodePrimitive(node);
   return prim != nullptr && prim->inplace_prim();
 }
@@ -111,13 +114,19 @@ void ChangeInplaceInputInner(const FuncGraphPtr &func_graph) {
       manager->SetEdge(cnode, i, repalced_node);
     }
     const auto &prim = GetCNodePrimitive(cnode);
-    if (prim != nullptr && prim->inplace_prim()) {
+    if (prim == nullptr) {
+      continue;
+    }
+    if (prim->inplace_prim()) {
       const auto &indexes = prim->inplace_input_indexes();
       if (indexes.size() != 1) {
         continue;
       }
       inplace_input[cnode->input(LongToSize(indexes[0] + 1))] = cnode;
       MS_LOG(INFO) << "Record cnode as inplace node: " << cnode->DebugString();
+    } else if (IsPrimitiveCNode(node, prim::kPrimVirtualViewGrad)) {
+      inplace_input[cnode->input(1)] = cnode;
+      MS_LOG(INFO) << "Record VirtualViewGrad cnode as inplace node: " << cnode->DebugString();
     }
   }
   return;

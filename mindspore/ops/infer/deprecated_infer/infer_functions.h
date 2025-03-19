@@ -90,6 +90,8 @@ OPS_API AbstractBasePtr InferImplDepend(const AnalysisEnginePtr &, const Primiti
                                         const AbstractBasePtrList &args_abs_list);
 OPS_API AbstractBasePtr InferImplUpdateState(const AnalysisEnginePtr &, const PrimitivePtr &primitive,
                                              const AbstractBasePtrList &args_abs_list);
+OPS_API AbstractBasePtr InferImplVirtualViewGrad(const AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                                 const AbstractBasePtrList &args_abs_list);
 OPS_API AbstractBasePtr InferImplDebug(const AnalysisEnginePtr &, const PrimitivePtr &primitive,
                                        const AbstractBasePtrList &args_abs_list);
 OPS_API AbstractBasePtr InferImplMakeRowTensor(const AnalysisEnginePtr &, const PrimitivePtr &primitive,

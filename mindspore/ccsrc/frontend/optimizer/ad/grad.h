@@ -43,6 +43,7 @@ FuncGraphPtr Kprim(const ValueNodePtr &value_node, const pipeline::ResourceBaseP
 MetaFuncGraphPtr Kmeta(const PrimitivePtr &prim, const pipeline::ResourceBasePtr &, const AnfNodePtr &node);
 FRONTEND_EXPORT void CleanRes();
 bool MergeForward(const FuncGraphPtr &root, const opt::OptimizerPtr &opt);
+void VirtualViewGradInsert(const FuncGraphPtr &root, const opt::OptimizerPtr &opt);
 }  // namespace ad
 }  // namespace mindspore
 
