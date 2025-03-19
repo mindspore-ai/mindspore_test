@@ -12,7 +12,33 @@ if(ENABLE_GPU)
 
   add_library(mindspore_gpu_res_manager SHARED ${GPU_RES_MANAGER_OBJECTS_SRC})
   target_link_libraries(mindspore_gpu_res_manager PRIVATE mindspore_core mindspore_common pybind11::module
-    mindspore_res_manager)
+    mindspore_res_manager mindspore_profiler)
+  message("add gpu lib to mindspore_gpu_res_manager")
+  if(WIN32)
+    target_link_libraries(mindspore_gpu_res_manager PRIVATE
+            ${CUBLAS_LIBRARY_PATH}
+            ${CUDA_PATH}/lib/x64/curand.lib
+            ${CUDNN_LIBRARY_PATH}
+            ${CUDA_PATH}/lib/x64/cudart.lib
+            ${CUDA_PATH}/lib/x64/cuda.lib
+            ${CUDA_PATH}/lib/x64/cusolver.lib
+            ${CUDA_PATH}/lib/x64/cufft.lib
+            ${CUDA_PATH}/lib/x64/cusparse.lib
+            ${CUDA_PATH}/lib/x64/nvrtc.lib
+            )
+    else()
+    target_link_libraries(mindspore_gpu_res_manager PRIVATE
+            ${CUBLAS_LIBRARY_PATH}
+            ${CUDA_PATH}/lib64/libcurand.so
+            ${CUDNN_LIBRARY_PATH}
+            ${CUDA_PATH}/lib64/libcudart.so
+            ${CUDA_PATH}/lib64/stubs/libcuda.so
+            ${CUDA_PATH}/lib64/libcusolver.so
+            ${CUDA_PATH}/lib64/libcufft.so
+            ${CUDA_PATH}/lib64/libcusparse.so
+            ${CUDA_PATH}/lib64/libnvrtc.so
+            )
+  endif()
   if(CMAKE_SYSTEM_NAME MATCHES "Linux" AND ${CUDA_VERSION} VERSION_GREATER "11.0")
     target_link_libraries(mindspore_gpu_res_manager PRIVATE gpu_hash_table)
   endif()
