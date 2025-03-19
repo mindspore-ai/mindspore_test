@@ -27,7 +27,10 @@ py::object PYNATIVE_EXPORT ${func_name}_OP(const PrimitivePtr &prim, const std::
                                 op_run_info->base_op_run_info.device_target));
   kernel::pyboost::RequireGradGuard require_grad_guard(op_run_info->requires_grad);
 
-  auto outputs = kernel::pyboost::${operator_name}(${cast_args});
+  auto outputs = [&](){
+    GilReleaseWithCheck no_gil;
+    return kernel::pyboost::${operator_name}(${cast_args});
+  }();
   auto op = kernel::pyboost::OpRunStatus::Get().GetLastOp();
   // Data sync in mix mode(Graph and PyNative)
   PyNativeAlgo::PyBoost::DataSyncForGraph(op);
