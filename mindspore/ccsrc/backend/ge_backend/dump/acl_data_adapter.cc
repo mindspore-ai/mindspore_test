@@ -24,8 +24,6 @@
 namespace mindspore {
 namespace dump {
 
-#define TO_MAP(var, id, map) map[id] = static_cast<void *>(&var);
-
 constexpr uint32_t kAllKernelNames = 0;
 constexpr uint32_t kIsKbyK = 1;
 
@@ -42,8 +40,8 @@ void AclDataAdapter::AdaptOnStepBegin(uint32_t device_id, int step_count_num,
     auto hooker = reinterpret_cast<HookBeginPtr>(func_ptr);
     MS_LOG(INFO) << "Hook on step begin start.";
     std::map<uint32_t, void *> param_list{};
-    TO_MAP(all_kernel_names, kAllKernelNames, param_list);
-    TO_MAP(is_kbyk, kIsKbyK, param_list);
+    param_list[kAllKernelNames] = static_cast<void *>(&all_kernel_names);
+    param_list[kIsKbyK] = static_cast<void *>(&is_kbyk);
     // check if need dump & is_init, generate dump path dir and then init&enable dump
     hooker(device_id, step_count_num, param_list);
   }

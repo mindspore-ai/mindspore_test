@@ -93,6 +93,7 @@ def debug_option(option_value):
         )
     AscendOpDebugConf.get_instance().set_debug_option(option_value)
 
+
 def aclinit_config(config):
     """
     Configure the configuration items for the aclInit interface.
@@ -130,10 +131,11 @@ def aclinit_config(config):
         "err_msg_mode": ['0', '1'],
         "dump": [{"dump_scene": "lite_exception"}, {"dump_scene": "lite_exception:disable"}],
     }
+    instance = AscendOpDebugConf.get_instance()
     aclinit_cfg_setters = {
-        "max_opqueue_num": set_max_opqueue_num,
-        "err_msg_mode": set_err_msg_mode,
-        "dump": set_lite_exception_dump
+        "max_opqueue_num": instance.set_max_opqueue_num,
+        "err_msg_mode": instance.set_err_msg_mode,
+        "dump": instance.set_lite_exception_dump
     }
     aclinit_cfg_set = tuple(aclinit_cfg_modes.keys())
     for key, value in config.items():
@@ -149,12 +151,3 @@ def aclinit_config(config):
                             f"must be one of {supported_modes}, but got {type(value)}.")
         cfg_setter = aclinit_cfg_setters.get(key)
         cfg_setter(value)
-
-def set_max_opqueue_num(opqueue_num):
-    AscendOpDebugConf.get_instance().set_max_opqueue_num(opqueue_num)
-
-def set_err_msg_mode(msg_mode):
-    AscendOpDebugConf.get_instance().set_err_msg_mode(msg_mode)
-
-def set_lite_exception_dump(msg_mode):
-    AscendOpDebugConf.get_instance().set_lite_exception_dump(msg_mode)
