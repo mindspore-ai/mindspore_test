@@ -16,12 +16,14 @@
 
 #include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
 
+#include <unistd.h>
 #include <fstream>
 #include <string>
 #include "include/common/debug/common.h"
 #include "acl/acl_rt.h"
 #include "utils/log_adapter.h"
 #include "utils/convert_utils_base.h"
+#include "utils/temp_file_manager.h"
 #include "utils/ms_context.h"
 #include "plugin/res_manager/ascend/device_context_conf/op_debug_conf.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
@@ -176,22 +178,25 @@ void AscendHalManager::InitializeAcl() {
   if (acl_initialized_) {
     return;
   }
-  const char *acl_json_path = nullptr;
-  std::string file_name = "./aclinit.json";
+  acl_initialized_ = true;
+  pid_t pid = getpid();
+  std::string file_name = "./aclinit_" + std::to_string(pid) + ".json";
   auto realpath = Common::CreatePrefixPath(file_name);
-  if (realpath.has_value()) {
-    if (OpDebugConf::GetInstance()->GenerateAclInitJson(realpath.value())) {
-      acl_json_path = realpath.value().c_str();
-    }
-  } else {
+  if (!realpath.has_value()) {
     MS_LOG(WARNING) << "Failed to get real path: [" << file_name << "] in generate aclInit json file path.";
+    return;
   }
-  if (CALL_ASCEND_API(aclInit, acl_json_path) != ACL_ERROR_NONE) {
-    MS_LOG(WARNING) << "Call aclInit failed, acl data dump function will be unusable.";
+  if (!OpDebugConf::GetInstance()->GenerateAclInitJson(realpath.value())) {
+    MS_LOG(WARNING) << "Failed to generate aclinit json, the file path is " << realpath.value() << ".";
+    return;
+  }
+  TempFileManager::GetInstance().Register(realpath.value());
+  aclError ret = CALL_ASCEND_API(aclInit, realpath.value().c_str());
+  if (ret != ACL_ERROR_NONE) {
+    MS_LOG(WARNING) << "Call aclInit failed, the error number is " << ret;
   } else {
     MS_LOG(INFO) << "Call aclInit successfully";
   }
-  acl_initialized_ = true;
 }
 
 bool AscendHalManager::EnableLccl() {
