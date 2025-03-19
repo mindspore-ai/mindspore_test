@@ -99,7 +99,7 @@ def test_star_strategy_consistency1():
     strategy_dict = {"mul1": ((2, 4), (2, 4)), "mul2": None, "relu1": ((4, 1),), "bias_add": ((8, 1), (1,)),
                      "relu2": ((2, 2),), "add": ((1, 8), (1, 8))}
     net = NetWithLoss(Net(strategy_dict))
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
     reset_op_id()
     net.set_train()
     _cell_graph_executor.compile(net, x, phase='train')
@@ -118,7 +118,7 @@ def test_star_strategy_consistency2():
     strategy_dict = {"mul1": None, "mul2": ((1, 4), (1, 4)), "relu1": ((2, 1),), "bias_add": ((4, 2), (2,)),
                      "relu2": ((2, 2),), "add": ((8, 1), (8, 1))}
     net = NetWithLoss(Net(strategy_dict))
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
     reset_op_id()
     net.set_train()
     _cell_graph_executor.compile(net, x, phase='train')
@@ -137,7 +137,7 @@ def test_star_strategy_consistency3():
     strategy_dict = {"mul1": None, "mul2": None, "relu1": ((8, 1),), "bias_add": ((1, 4), (4,)),
                      "relu2": ((4, 1),), "add": ((2, 2), (2, 2))}
     net = NetWithLoss(Net(strategy_dict))
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
     reset_op_id()
     net.set_train()
     _cell_graph_executor.compile(net, x, phase='train')
@@ -156,7 +156,7 @@ def test_star_strategy_consistency4():
     strategy_dict = {"mul1": ((1, 8), (1, 8)), "mul2": ((1, 4), (1, 4)), "relu1": None, "bias_add": None,
                      "relu2": None, "add": None}
     net = NetWithLoss(Net(strategy_dict))
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
     reset_op_id()
     with pytest.raises(RuntimeError):
         net.set_train()

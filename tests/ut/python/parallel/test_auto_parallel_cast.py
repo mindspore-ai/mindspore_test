@@ -87,7 +87,7 @@ def test_double_star_graph():
     w = Tensor(np.ones([16, 32]), dtype=ms.float32)
 
     net = NetWithLoss(Net())
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
     reset_op_id()
 
     net.set_train()

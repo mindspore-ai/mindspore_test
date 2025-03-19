@@ -45,7 +45,7 @@ def test_inference_phase():
     Expectation: compile success
     """
     context.set_auto_parallel_context(device_num=8, global_rank=0)
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
     set_cost_model_context(run_phase=1)
 
     net = Net(512, 128)

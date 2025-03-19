@@ -66,7 +66,7 @@ def test_batch_parallel_matmul():
     Expectation: using batch parallel mode to generate unspecified strategies in primitive ops
     """
     context.set_auto_parallel_context(device_num=8, global_rank=0)
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
     net = NetMatMul()
     net.set_data_parallel()
 
@@ -83,7 +83,7 @@ def test_batch_parallel_mul():
     Expectation: using batch parallel mode to generate unspecified strategies in primitive ops
     """
     context.set_auto_parallel_context(device_num=8, global_rank=0)
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
     net = NetMatMul()
     net.set_data_parallel()
 
@@ -100,7 +100,7 @@ def test_batch_parallel_recursive():
     Expectation: using batch parallel mode to generate unspecified strategies in primitive ops
     """
     context.set_auto_parallel_context(device_num=8, global_rank=0)
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
     net = NetRecursive()
     net.set_data_parallel()
 
@@ -118,7 +118,7 @@ def test_batch_parallel_with_user_strategy():
                  for those who do not, using batch parallel mode to generate strategies
     """
     context.set_auto_parallel_context(device_num=8, global_rank=0)
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
     net = NetMatMul(strategy=((1, 8), (8, 1)))
     net.set_data_parallel()
 

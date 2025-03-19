@@ -84,7 +84,7 @@ def test_rhombus1():
     b = Tensor(np.ones([128, 128]), dtype=ms.float32)
 
     net = GradWrap(NetWithLoss(Net()))
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
     compile_net(net, x, y, b)
 
 
@@ -121,7 +121,7 @@ def test_rhombus2():
     b = Tensor(np.ones([128, 128]), dtype=ms.float32)
 
     net = GradWrap(NetWithLoss(Net()))
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
     compile_net(net, x, y, b)
 
 
@@ -158,5 +158,5 @@ def test_rhombus3():
     z = Tensor(np.ones([128, 128]), dtype=ms.float32)
 
     net = GradWrap(NetWithLoss(Net()))
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
     compile_net(net, x, y, z)

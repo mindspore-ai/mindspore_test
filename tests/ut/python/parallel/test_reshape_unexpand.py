@@ -53,7 +53,7 @@ class GradWrap(nn.Cell):
         return grad_all(self.network)(x)
 
 
-def compile_net(net, input_data, dev_num=8, parallel_mode="semi_auto_parallel", search_mode="dynamic_programming"):
+def compile_net(net, input_data, dev_num=8, parallel_mode="semi_auto_parallel", search_mode="sharding_propagation"):
     context.set_auto_parallel_context(device_num=dev_num, global_rank=0)
     context.set_auto_parallel_context(parallel_mode=parallel_mode, search_mode=search_mode)
     net.set_train()
@@ -298,7 +298,7 @@ def test_reshape_unexpand_7():
     context.set_auto_parallel_context(parallel_mode="auto_parallel")
     x = Tensor(np.ones([32, 3, 224, 224]), dtype=ms.float32)
     net = GradWrap(NetWithLoss(Net()))
-    compile_net(net, x, parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    compile_net(net, x, parallel_mode="auto_parallel", search_mode="sharding_propagation")
 
 
 def test_reshape_unexpand_8():
@@ -322,4 +322,4 @@ def test_reshape_unexpand_8():
 
     x = Tensor(np.ones([128, 96]), dtype=ms.float32)
     net = GradWrap(NetWithLoss(Net()))
-    compile_net(net, x, parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    compile_net(net, x, parallel_mode="auto_parallel", search_mode="sharding_propagation")

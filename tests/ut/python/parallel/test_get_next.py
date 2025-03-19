@@ -122,7 +122,7 @@ def test_get_next_auto_parallel():
     Expectation: compile well done.
     """
     context.set_auto_parallel_context(device_num=4, global_rank=0)
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="recursive_programming")
     network = Net()
     net_with_loss = NetWithLoss(network, [ms.float32, ms.int32], [[32, 64], [32]], 2)
     net = GradWrap(net_with_loss)

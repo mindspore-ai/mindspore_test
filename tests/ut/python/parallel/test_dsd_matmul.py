@@ -122,7 +122,7 @@ class NetWithLoss(nn.Cell):
 
 def compile_graph(batch_size, num_heads, dp, mp, auto=False, shard=True):
     if auto:
-        context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+        context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
     else:
         context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
     x = Tensor(np.ones((batch_size * 1024, num_heads * 128)), ms.float32)

@@ -74,7 +74,7 @@ def test_dct_auto_parallel():
     Description: auto parallel
     Expectation: compile success
     """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=4,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=4,
                                       global_rank=0)
     net = GradWrap(NetWithLoss(Net(P.DCT(), tp=2, n=4, axis=-1, norm="ortho")))
     net.set_train()
@@ -112,7 +112,7 @@ def test_idct_auto_parallel():
     Description: auto parallel
     Expectation: compile success
     """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=4,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=4,
                                       global_rank=0)
     net = GradWrap(NetWithLoss(Net(P.IDCT(), tp=2, n=4, axis=-1, norm="ortho")))
     net.set_train()
@@ -150,7 +150,7 @@ def test_dctn_auto_parallel():
     Description: auto parallel
     Expectation: compile success
     """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=4,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=4,
                                       global_rank=0)
     net = GradWrap(NetWithLoss(Net(P.DCTN(), tp=2, n=(4, 4), axis=(-2, -1), norm="ortho")))
     net.set_train()
@@ -188,7 +188,7 @@ def test_idctn_auto_parallel():
     Description: auto parallel
     Expectation: compile success
     """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=4,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=4,
                                       global_rank=0)
     net = GradWrap(NetWithLoss(Net(P.IDCTN(), tp=2, n=(4, 4), axis=(-2, -1), norm="ortho")))
     net.set_train()

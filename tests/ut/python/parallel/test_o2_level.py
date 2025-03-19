@@ -207,6 +207,6 @@ def test_stridedslice_auto_parallel():
     Expectation: compile success
     """
     context.set_auto_parallel_context(
-        parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=8, global_rank=0)
+        parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=8, global_rank=0)
     net = Net2(_w2, (0, 0, 0), (32, 64, 1), (1, 1, 1))
     compile_net(net)

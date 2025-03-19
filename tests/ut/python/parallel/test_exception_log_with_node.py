@@ -125,7 +125,7 @@ def test_exception_log_with_node_1():
     Expectation: specific error python code lines can be printed
     """
     # fork from test_manual_gatherv2.py::test_auto_parallel_error
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=2,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=2,
                                       global_rank=0)
     net = Net()
     _x = Tensor(np.ones([8, 8]), dtype=ms.int32)

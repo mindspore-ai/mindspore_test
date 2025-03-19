@@ -71,7 +71,7 @@ def test_fftshift_auto_parallel():
     Description: auto parallel
     Expectation: compile success
     """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=4,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=4,
                                       global_rank=0)
     net = GradWrap(NetWithLoss(Net(P.FFTShift(), axes=(2,))))
     net.set_train()
@@ -109,7 +109,7 @@ def test_ifftshift_auto_parallel():
     Description: auto parallel
     Expectation: compile success
     """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=4,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=4,
                                       global_rank=0)
     net = GradWrap(NetWithLoss(Net(P.IFFTShift(), axes=(2,))))
     net.set_train()

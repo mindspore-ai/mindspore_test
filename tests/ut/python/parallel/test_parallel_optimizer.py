@@ -128,7 +128,7 @@ class Net5(nn.Cell):
         return x - y
 
 
-def auto_parallel_compile_net(mode, dev_num, net, strategy1=None, strategy2=None, search_mode="dynamic_programming"):
+def auto_parallel_compile_net(mode, dev_num, net, strategy1=None, strategy2=None, search_mode="sharding_propagation"):
     context.set_context(mode=context.GRAPH_MODE)
     context.set_auto_parallel_context(parallel_mode=mode, device_num=dev_num, enable_parallel_optimizer=True,
                                       search_mode=search_mode)

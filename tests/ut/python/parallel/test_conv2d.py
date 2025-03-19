@@ -266,7 +266,7 @@ def test_conv2d_auto_parallel():
     Description: generate data parallel strategy
     Expectation: compile success
     """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=8,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=8,
                                       global_rank=0)
     net = Net(_w2, out_channel=8, kernel_size=3, pad_mode="same", stride=1)
     compile_net(net)

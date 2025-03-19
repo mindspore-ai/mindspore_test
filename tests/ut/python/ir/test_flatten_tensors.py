@@ -295,7 +295,7 @@ def test_init_data_after_flatten_weights():
             return x
 
     # Set 'auto_parallel' to enable tensor data lazy initialization.
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
     net = MyCell()
     net.flatten_weights()
     assert net.para2.init is not None

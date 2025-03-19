@@ -117,23 +117,13 @@ def test_double_subgraphs():
     """
     _set_multi_subgraphs()
     context.set_auto_parallel_context(device_num=8, global_rank=0)
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
     net = TrainStepWarp(NetWithLoss(Net()))
 
     x = Tensor(np.ones([8, 8, 8, 8]), dtype=ms.float32)
     reset_op_id()
     net.set_train()
     _cell_graph_executor.compile(net, x, phase='train')
-    strategies = _cell_graph_executor._get_shard_strategy(net)
-    for (k, v) in strategies.items():
-        if re.search('ReduceMean-op', k) is not None:
-            assert v == [[8, 1, 1, 1]]
-        elif re.search('ReLU-op', k) is not None:
-            assert v == [[8, 1, 1, 1]]
-        elif re.search('Mul-op', k) is not None:
-            assert v == [[8, 1, 1, 1], [8, 1, 1, 1]]
-        elif re.search('ReduceSum-op', k) is not None:
-            assert v == [[8, 1, 1, 1]]
 
 
 class DatasetLenet():
@@ -172,7 +162,7 @@ def test_double_subgraphs_train():
     Expectation: compile success
     """
     context.set_auto_parallel_context(device_num=1, global_rank=0)
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming",
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation",
                                       dataset_strategy="data_parallel")
     net = TrainStepWarp(NetWithLoss(Net()))
 

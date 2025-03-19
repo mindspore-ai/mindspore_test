@@ -70,7 +70,7 @@ def test_invert_population_count_auto():
     Description:
     Expectation: compile success
     """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=8,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=8,
                                       full_batch=True)
     strategy = None
     net = Net(strategy)

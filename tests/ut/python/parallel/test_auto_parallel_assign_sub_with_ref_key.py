@@ -67,7 +67,7 @@ def test_auto_parallel_assign_sub_with_ref_key():
     x = Tensor(np.random.rand(4, 4, 32, 64), dtype=ms.float32)
 
     net = NetWithLoss(nn.PReLU(4))
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
     reset_op_id()
 
     net.set_train()

@@ -210,7 +210,7 @@ def test_six_matmul_save_auto():
                               strategy_ckpt_config={"save_file": "./strategy_stage1_auto.json",
                                                     "only_trainable_params": True})
     net = GradWrap(NetWithLoss(Net()))
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming",
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation",
                                       dataset_strategy="full_batch")
     x1 = Tensor(np.ones([32, 32]), dtype=ms.float32)
     x6 = Tensor(np.ones([128, 32]), dtype=ms.float32)
@@ -277,7 +277,7 @@ def six_matmul_load_auto():
     strategy4 = ((2, 2), (2, 2))
     strategy5 = ((2, 2), (2, 2))
     net = GradWrap(NetWithLoss(Net(strategy1, strategy3, strategy4, strategy5)))
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming",
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation",
                                       dataset_strategy="full_batch")
     x1 = Tensor(np.ones([32, 32]), dtype=ms.float32)
     x6 = Tensor(np.ones([128, 32]), dtype=ms.float32)

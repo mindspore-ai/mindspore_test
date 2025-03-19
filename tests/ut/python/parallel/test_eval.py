@@ -83,7 +83,7 @@ def test_train_and_eval_auto():
     Description: train and eval net in auto parallel.
     Expectation: compile done without error.
     """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=16)
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=16)
     strategy1 = ((4, 4), (4, 4))
     strategy2 = ((4, 4),)
     net = Net(_w1, strategy1, strategy2)
