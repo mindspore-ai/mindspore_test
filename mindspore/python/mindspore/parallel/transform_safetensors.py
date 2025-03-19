@@ -68,6 +68,7 @@ def _progress_bar(iterable, total=None):
         elapsed_time_str = time.strftime("%H:%M:%S", time.gmtime(elapsed_time))
         remaining_time_str = time.strftime("%H:%M:%S", time.gmtime(remaining_time))
 
+        sys.stdout.reconfigure(encoding="utf-8")
         print(f'\r{percent}%|{bar}|[{elapsed_time_str}<{remaining_time_str}]', end='')
         if iteration == total:
             print()
