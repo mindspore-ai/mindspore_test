@@ -15,6 +15,7 @@
 
 """JIT Context for various JIT compile."""
 
+
 class JitContext():
     """JIT context"""
     def __init__(self):
@@ -65,9 +66,11 @@ class JitContext():
 
 _jit_context = None
 
+
 def set_jit_context(new_jit_context):
     global _jit_context
     _jit_context = new_jit_context
+
 
 def jit_context():
     return _jit_context
