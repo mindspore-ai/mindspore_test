@@ -12,7 +12,7 @@ mindspore.ops.avg_pool1d
         \text{input}(N_i, C_j, s_0 \times l + n)
 
     .. warning::
-        - `kernel_size` 取值为[1, 255]范围内的正整数， `stride` 的取值为[1, 63]范围内的正整数。
+        `kernel_size` 取值为[1, 255]范围内的正整数， `stride` 的取值为[1, 63]范围内的正整数。
 
     参数：
         - **input_x** (Tensor) - 输入shape为 :math:`(N, C_{in}, L_{in})` 的Tensor。

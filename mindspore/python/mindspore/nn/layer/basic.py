@@ -632,7 +632,7 @@ class Dense(Cell):
     where :math:`X` is the input tensors, :math:`\text{activation}` is the activation function passed as the activation
     argument (if passed in), :math:`\text{kernel}` is a weight matrix with the same
     data type as the :math:`X` created by the layer, and :math:`\text{bias}` is a bias vector
-    with the same data type as the :math:`X` created by the layer (only if has_bias is True).
+    with the same data type as the :math:`X` created by the layer (only if `has_bias` is ``True``).
 
     .. warning::
         On the Ascend platform, if `bias` is ``False`` , the `x` cannot be greater than 6D in PYNATIVE or KBK mode.

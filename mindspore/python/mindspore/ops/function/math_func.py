@@ -1758,7 +1758,7 @@ def xlogy(input, other):
     the scalar could only be a constant.
 
     .. warning::
-        - On Ascend, the data type of `input` and `other` must be float16 or float32.
+        On Ascend, the data type of `input` and `other` must be float16 or float32.
 
     Args:
         input (Union[Tensor, numbers.Number, bool]): The first input is a numbers.Number or
@@ -3659,11 +3659,11 @@ def isnan(input):
     .. math::
 
         out_i = \begin{cases}
-          & \ True,\ \text{ if } input_{i} = \text{Nan} \\
-          & \ False,\ \text{ if } input_{i} \ne  \text{Nan}
+          & \ True,\ \text{ if } input_{i} = \text{NaN} \\
+          & \ False,\ \text{ if } input_{i} \ne  \text{NaN}
         \end{cases}
 
-    where :math:`Nan` means not a number.
+    where :math:`NaN` means not a number.
 
     Args:
         input (Tensor): The input tensor.
@@ -3747,7 +3747,7 @@ def isreal(input):
         input (Tensor): The input tensor.
 
     Returns:
-       Tensor, true where `input` is real number, false otherwise.
+       Tensor, ``True`` where `input` is real number, ``False`` otherwise.
 
     Raises:
         TypeError: If `input` is not a Tensor.

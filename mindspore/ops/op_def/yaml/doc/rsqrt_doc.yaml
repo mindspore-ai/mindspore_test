@@ -3,19 +3,19 @@ rsqrt:
         Computes reciprocal of square root of input tensor element-wise.
 
         .. math::
-        
+
             out_{i} =  \frac{1}{\sqrt{input_{i}}}
-    
+
         Args:
             input (Tensor): The input of rsqrt. Its each element must be a non-negative
-                number, if an element is negative, the calculation result is nan.
-    
+                number, if an element is negative, the calculation result is NaN.
+
         Returns:
             Tensor, has the same shape and dtype as the `input`.
-    
+
         Raises:
             TypeError: If `input` is not a Tensor.
-    
+
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``
     

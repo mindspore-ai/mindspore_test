@@ -856,11 +856,12 @@ class Conv3dTranspose(_Conv):
     where :math:`N` is batch size, :math:`C_{in}` is a number of
     channels, :math:`D_{in}, H_{in}, W_{in}` are the depth, height and width of the feature layer respectively.
 
-    When Conv3d and Conv3dTranspose are initialized with the same parameters, and `pad_mode` is set to 'pad',
+    When Conv3d and Conv3dTranspose are initialized with the same parameters, and `pad_mode` is set to ``'pad'``,
     :math:`dilation * (kernel\_size - 1) - padding` amount of zero will be paded to the depth, height and width
     directions of the input, they are inverses of each other in regard to the input and output shapes in this case.
-    However, when `stride` > 1, Conv2d maps multiple input shapes to the same output shape. Deconvolutional network
-    can refer to `Deconvolutional Networks <https://www.matthewzeiler.com/mattzeiler/deconvolutionalnetworks.pdf>`_.
+    However, when `stride` > 1, Conv2d maps multiple input shapes to the same output shape.
+    For the detailed information of Deconvolutional network,
+    refer to `Deconvolutional Networks <https://www.matthewzeiler.com/mattzeiler/deconvolutionalnetworks.pdf>`_.
 
     Note:
         For Atlas A2 training series products, `output_padding` is currently not supported.
@@ -938,7 +939,7 @@ class Conv3dTranspose(_Conv):
 
     Inputs:
         - **x** (Tensor) - Tensor of shape :math:`(N, C_{in}, D_{in}, H_{in}, W_{in})`.
-          Currently input data dtype only support float16 and float32.
+          Currently input data dtype only supports float16 and float32.
 
     Outputs:
         Tensor, the shape is :math:`(N, C_{out}, D_{out}, H_{out}, W_{out})`.
@@ -984,10 +985,10 @@ class Conv3dTranspose(_Conv):
         TypeError: If input data type is not float16 or float32.
         ValueError: If `in_channels`, `out_channels`, `kernel_size`, `stride` or `dilation` is less than 1.
         ValueError: If `padding` is less than 0.
-        ValueError: If `pad_mode` is not one of 'same', 'valid', 'pad'.
+        ValueError: If `pad_mode` is not one of ``'same'``, ``'valid'``, ``'pad'``.
         ValueError: If `padding` is a tuple whose length is not equal to 6.
-        ValueError: If `pad_mode` is not equal to 'pad' and `padding` is not equal to (0, 0, 0, 0, 0, 0).
-        ValueError: If `data_format` is not 'NCDHW'.
+        ValueError: If `pad_mode` is not equal to ``'pad'`` and `padding` is not equal to (0, 0, 0, 0, 0, 0).
+        ValueError: If `data_format` is not ``'NCDHW'``.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``

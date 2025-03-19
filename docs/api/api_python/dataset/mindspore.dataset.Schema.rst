@@ -6,7 +6,7 @@ mindspore.dataset.Schema
     用于解析和存储数据列属性的类。
 
     参数：
-        - **schema_file** (str) - schema文件的路径。默认值： ``None`` 。
+        - **schema_file** (str，可选) - schema文件的路径。默认值： ``None`` 。
 
     异常：
         - **RuntimeError** - schema文件加载失败。

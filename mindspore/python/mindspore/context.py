@@ -1527,7 +1527,7 @@ def set_context(**kwargs):
     +-------------------------+------------------------------+---------------------------+----------------------------+
 
     Args:
-        device_id (int): ID of the target device, the value must be in [0, device_num_per_host-1],
+        device_id (int, optional): ID of the target device, the value must be in [0, device_num_per_host-1],
             while device_num_per_host should be no more than 4096. Default: ``0`` . This parameter will be deprecated
             and will be removed in future versions.Please use api :func:`mindspore.set_device`
             with 'device_target' instead.
@@ -1535,7 +1535,7 @@ def set_context(**kwargs):
             If device target is not set, the version of MindSpore package is used. This parameter will be deprecated
             and will be removed in future versions.Please use api :func:`mindspore.set_device`
             with 'device_id' instead.
-        max_device_memory (str): Set the maximum memory available for devices. The format is "xxGB".
+        max_device_memory (str, optional): Set the maximum memory available for devices. The format is "xxGB".
             Default: ``" 1024GB"`` . The actual used memory size is the minimum of the available memory of the device
             and max_device_memory. 'max_device_memory' should be set before the program runs. When virtual memory is
             enabled, a too small 'max_device_memory' will cause frequent defragmentation, affecting performance.
@@ -1543,13 +1543,14 @@ def set_context(**kwargs):
             api :func:`mindspore.runtime.set_memory` instead.
         variable_memory_max_size (str): This parameter will be deprecated and will be removed in future versions. Please
             use the api :func:`mindspore.runtime.set_memory` instead.
-        mempool_block_size (str): It takes effect when virtual memory is turned off, set the size of the memory pool
+        mempool_block_size (str, optional): It takes effect when virtual memory is turned off,
+            set the size of the memory pool
             block for devices. The format is "xxGB". Default: ``"1GB"`` . Minimum size is "1G". The actual used memory
             block size is the minimum of the available memory of the device and mempool_block_size. When there is
             enough memory, the memory will be expanded by this value.
             This parameter will be deprecated and will be removed in future versions. Please use the
             api :func:`mindspore.runtime.set_memory` instead.
-        op_timeout (int): Set the maximum duration of executing an operator in seconds.
+        op_timeout (int, optional): Set the maximum duration of executing an operator in seconds.
             If the execution time exceeds this value, system will terminate the task.
             0 means endless wait. The defaults for AI Core and AICPU operators vary on different hardware.
             For more information,
@@ -1558,7 +1559,7 @@ def set_context(**kwargs):
             Default: ``900`` .
             This parameter will be deprecated and will be removed in future versions. Please use the
             api :func:`mindspore.device_context.ascend.op_debug.execute_timeout` instead.
-        save_graphs (bool or int): Whether to save intermediate compilation graphs. Default: ``0`` .
+        save_graphs (bool or int, optional): Whether to save intermediate compilation graphs. Default: ``0`` .
             Available values are:
 
             - False or 0: disable saving of intermediate compilation graphs.
@@ -1574,13 +1575,13 @@ def set_context(**kwargs):
             are saved in the current directory.
             This parameter will be deprecated and removed in a future version. Please use the environment variable
             `MS_DEV_SAVE_GRAPHS` instead.
-        save_graphs_path (str): Path to save graphs. Default: ``"."``.
+        save_graphs_path (str, optional): Path to save graphs. Default: ``"."``.
             If the specified directory does not exist, the system will automatically create the directory.
             During distributed training, graphs will be saved to the directory of
             `save_graphs_path/rank_${rank_id}/`. `rank_id` is the ID of the current device in the cluster.
             This parameter will be deprecated and removed in a future version. Please use the environment variable
             `MS_DEV_SAVE_GRAPHS_PATH` instead.
-        deterministic (str): Whether to enable op run in deterministic mode. The value must be in the
+        deterministic (str, optional): Whether to enable op run in deterministic mode. The value must be in the
             range of ['ON', 'OFF'], and the default value is ``'OFF'`` .
 
             - "ON": Enable operator deterministic running mode.
@@ -1597,12 +1598,12 @@ def set_context(**kwargs):
         print_file_path (str): This parameter will be deprecated and will be removed in future versions.
         env_config_path (str): This parameter will be deprecated and will be removed in future versions.
 
-        precompile_only (bool): Whether to only precompile the network. Default: ``False`` .
+        precompile_only (bool, optional): Whether to only precompile the network. Default: ``False`` .
             If set to ``True`` , the network will only be compiled, not executed.
             This parameter will be deprecated and removed in a future version. Please use the environment variable
             `MS_DEV_PRECOMPILE_ONLY` instead.
         reserve_class_name_in_scope (bool): This parameter will be deprecated and will be removed in future versions.
-        pynative_synchronize (bool): Whether to enable synchronous execution of the device in PyNative mode.
+        pynative_synchronize (bool, optional): Whether to enable synchronous execution of the device in PyNative mode.
             Default: ``False`` . When the value is set to ``False`` , the operator is executed asynchronously on the
             device. When an error occurs in the execution of the operator, the specific error script code location
             cannot be located, when the value is set to ``True`` , the operator is executed synchronously on the
@@ -1610,9 +1611,9 @@ def set_context(**kwargs):
             execution of the operator, the location of the error script code can be located according to the call stack
             of the error. This parameter will be deprecated and will be removed in future versions.Please use
             the api :func:`mindspore.runtime.launch_blocking` instead.
-        mode (int): Running in GRAPH_MODE(0) or PYNATIVE_MODE(1).
+        mode (int, optional): Running in GRAPH_MODE(0) or PYNATIVE_MODE(1).
             Both modes support all backends. Default: ``PYNATIVE_MODE`` .
-        enable_reduce_precision (bool): Whether to enable precision reduction.
+        enable_reduce_precision (bool, optional): Whether to enable precision reduction.
             If the operator does not support the user-specified precision, the precision will
             be changed automatically. Default: ``True`` .
         aoe_tune_mode (str): AOE tuning mode setting, which is not set by default.
@@ -1630,21 +1631,23 @@ def set_context(**kwargs):
             This parameter will be deprecated and will be removed in future versions. Please use the
             api :func:`mindspore.device_context.ascend.op_tuning.aoe_job_type` instead.
 
-        check_bprop (bool): Whether to check back propagation nodes. The checking ensures that the shape and dtype
+        check_bprop (bool, optional): Whether to check back propagation nodes.
+            The checking ensures that the shape and dtype
             of back propagation node outputs is the same as input parameters. Default: ``False`` .
             This parameter will be deprecated and removed in a future version.
-        max_call_depth (int): Specify the maximum depth of function call. Must be positive integer. Default: ``1000`` .
+        max_call_depth (int, optional): Specify the maximum depth of function call.
+            Must be positive integer. Default: ``1000`` .
             The max_call_depth parameter needs to be set when the nested call is too deep or the number
             of subgraphs is too large. If max_call_depth is set larger than before, the system max stack depth should be
             set larger too, otherwise a `core dumped` exception may be raised because of system stack overflow.
             This parameter will be deprecated and removed in a future version. Please use the api
             :func:`mindspore.set_recursion_limit` instead.
-        grad_for_scalar (bool):  Whether to get gradient for scalar. Default: ``False`` .
+        grad_for_scalar (bool, optional):  Whether to get gradient for scalar. Default: ``False`` .
             When grad_for_scalar is set to ``True`` , the function's scalar input can be derived.
             The default value is ``False`` . Because the back-end does not support scaling operations currently,
             this interface only supports simple operations that can be deduced by the front-end.
             This parameter will be deprecated and removed in a future version. Please take the tensor derivative.
-        enable_compile_cache (bool): Whether to save or load the compiled cache of the graph.
+        enable_compile_cache (bool, optional): Whether to save or load the compiled cache of the graph.
             After enable_compile_cache is set to ``True`` , during the first execution, a compilation cache is
             generated and exported to a MINDIR file. When the network is executed again, if enable_compile_cache is
             still set to ``True`` and the network scripts are not changed, the compile cache is loaded.
@@ -1654,13 +1657,14 @@ def set_context(**kwargs):
             This is an experimental prototype that is subject to change and/or deletion.
             This parameter will be deprecated and removed in a future version. Please use the environment variable
             `MS_COMPILER_CACHE_ENABLE` instead.
-        compile_cache_path (str): Path to save the compile cache. Default: ``"."``.
+        compile_cache_path (str, optional): Path to save the compile cache. Default: ``"."``.
             If the specified directory does not exist, the system will automatically create the directory.
             The cache will be saved to the directory of `compile_cache_path/rank_${rank_id}/`. The `rank_id` is
             the ID of the current device in the cluster.
             This parameter will be deprecated and removed in a future version. Please use the environment variable
             `MS_COMPILER_CACHE_PATH` instead.
-        inter_op_parallel_num(int): The thread number of op parallel at the same time. Default value is ``0`` ,
+        inter_op_parallel_num(int, optional): The thread number of op parallel at the same time.
+            Default value is ``0`` ,
             which means use the default num. This parameter will be deprecated and will be removed in future versions.
             Please use the api :func:`mindspore.runtime.dispatch_threads_num` instead.
         runtime_num_threads(int): The thread pool number of cpu kernel used in runtime,
@@ -1669,15 +1673,17 @@ def set_context(**kwargs):
             the runtime asynchronous pipeline capability cannot be enabled, which may affect performance.
             This parameter will be deprecated and will be removed in future versions. Please use the
             api :func:`mindspore.device_context.cpu.op_tuning.threads_num` instead.
-        disable_format_transform (bool): Whether to disable the automatic format transform function from NCHW to NHWC.
+        disable_format_transform (bool, optional): Whether to disable
+            the automatic format transform function from NCHW to NHWC.
             When the network training performance of fp16 is worse than fp32, `disable_format_transform` can be set to
             ``True`` to try to improve training performance. Default: ``False`` .
         support_binary (bool): Whether to support run .pyc or .so in graph mode. If want to support run .so or .pyc
-            in graph mode, coulde set 'support_binary' to be ``True`` , and run once .py file. It would save the source
+            in graph mode, coulde set 'support_binary' to be ``True`` ,
+            and run once .py file. It would save the source
             of the interfaces would be compiled by MindSpore to the interfaces definition .py file that should be
             guaranteed to be writable. Then compile the .py file to the .pyc or .so file, and could run in Graph mode.
             Currently, this config option only support stand_alone.
-        memory_optimize_level (str): The memory optimize level.
+        memory_optimize_level (str, optional): The memory optimize level.
             On Ascend hardware platform, default: ``O1``, on other hardware platforms, default: ``O0``.
             The value must be in ['O0', 'O1'].
 
@@ -1688,7 +1694,8 @@ def set_context(**kwargs):
             This parameter will be deprecated and will be removed in future versions. Please use the
             api :func:`mindspore.runtime.set_memory` instead.
 
-        memory_offload (str): Whether to enable the memory offload function. When it is enabled, the idle data will be
+        memory_offload (str, optional): Whether to enable the memory offload function.
+            When it is enabled, the idle data will be
             temporarily copied to the host side in the case of insufficient device memory. The value must be in the
             range of ['ON', 'OFF'], and the default value is ``'OFF'`` .
 
@@ -1843,16 +1850,18 @@ def set_context(**kwargs):
               scenarios, this approach can save stream resources. If the number of operations in the static graph is
               greater than the maximum threshold, this graph will be executed in original static process.
 
-        jit_syntax_level (int): Set JIT syntax level for graph compiling, triggered by GRAPH_MODE and @jit decorator.
+        jit_syntax_level (int, optional): Set JIT syntax level for graph compiling,
+            triggered by GRAPH_MODE and @jit decorator.
             The value must be ``STRICT`` or ``LAX`` . Default: ``LAX`` . All levels support all backends.
 
-            - ``STRICT`` : Only basic syntax is supported, and execution performance is optimal. Can be used for MindIR
+            - ``STRICT`` : Only basic syntax is supported, and execution performance is optimal.
+              Can be used for MindIR
               load and export.
             - ``LAX`` : Compatible with all Python syntax as much as possible. However, execution performance may be
               affected and not optimal. Cannot be used for MindIR load and export due to some syntax that may not be
               able to be exported.
 
-        debug_level (int): Set config for debugging. Default value: ``RELEASE``.
+        debug_level (int, optional): Set config for debugging. Default value: ``RELEASE``.
 
             - ``RELEASE``: Used for normally running, and some debug information will be discard to get a better
               compiling performance.

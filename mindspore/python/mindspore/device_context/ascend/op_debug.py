@@ -35,7 +35,7 @@ def execute_timeout(op_timeout):
     Args:
         op_timeout (int): Set the maximum duration of executing an operator in seconds.
           If the execution time exceeds this value, system will terminate the task.
-          0 means endless wait. The defaults for AI Core and AICPU operators vary on different hardware.
+          0 means endless wait. The defaults for AI Core and AI CPU operators vary on different hardware.
 
     Examples:
         >>> import mindspore as ms

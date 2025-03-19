@@ -51,9 +51,10 @@ class FixedLossScaleManager(LossScaleManager):
     inherits from :class:`mindspore.amp.LossScaleManager`.
 
     Args:
-        loss_scale (float): Magnification factor of gradients. Note that if `drop_overflow_update` is set to ``False`` ,
+        loss_scale (float, optional): Magnification factor of gradients.
+            Note that if `drop_overflow_update` is set to ``False`` ,
             the value of `loss_scale` in optimizer should be set to the same as here. Default: ``128.0`` .
-        drop_overflow_update (bool): Whether to execute optimizer if there is an overflow.
+        drop_overflow_update (bool, optional): Whether to execute optimizer if there is an overflow.
             If ``True`` , the optimizer will
             not executed when overflow occurs. Default: ``True`` .
 
@@ -110,8 +111,8 @@ class FixedLossScaleManager(LossScaleManager):
 
         Returns:
             None or :class:`mindspore.nn.FixedLossScaleUpdateCell`. Instance of
-            :class:`mindspore.nn.FixedLossScaleUpdateCell` when `drop_overflow_update` is True. None when
-            `drop_overflow_update` is False.
+            :class:`mindspore.nn.FixedLossScaleUpdateCell` when `drop_overflow_update` is ``True``. None when
+            `drop_overflow_update` is ``False``.
         """
         if not self._drop_overflow_update:
             return None

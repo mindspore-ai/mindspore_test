@@ -715,9 +715,9 @@ class MaxPool1d(_PoolNd):
         \text{input}(N_i, C_j, s_0 \times l + n)
 
     Args:
-        kernel_size (int): The size of kernel used to take the max value, Default: ``1`` .
-        stride (int): The distance of kernel moving, an int number that represents
-            the width of movement is stride, Default: ``1`` .
+        kernel_size (int, optional): The size of kernel used to take the max value. Default: ``1`` .
+        stride (int, optional): The distance of kernel moving, an int number that represents
+            the width of movement is stride. Default: ``1`` .
         pad_mode (str, optional): Specifies the padding mode with a padding value of 0. It can be set to:
             ``"same"`` , ``"valid"`` or ``"pad"`` . Default: ``"valid"`` .
 
@@ -733,24 +733,25 @@ class MaxPool1d(_PoolNd):
               at the begin and end is determined by the `padding` parameter.
               If this mode is set, `padding` must be greater than or equal to 0.
 
-        padding (Union(int, tuple[int], list[int])): Padding value for the pooling. Default value is ``0``.
+        padding (Union(int, tuple[int], list[int]), optional): Padding value for the pooling. Default value is ``0``.
             padding can only be an integer or a tuple/list containing a single integer, in which case padding times or
             padding[0] times are padded on both sides of the input.
-        dilation (Union(int, tuple[int])): The spacing between the elements of the kernel in convolution,
+        dilation (Union(int, tuple[int]), optional): The spacing between the elements of the kernel in convolution,
             used to increase the receptive field of the pooling operation. If it is a tuple, its length can only be 1.
             Default: ``1`` .
-        return_indices (bool): If ``True`` , the function will return both the result of max pooling and the indices of
+        return_indices (bool, optional): If ``True`` , the function will return
+            both the result of max pooling and the indices of
             the max elements. Default: ``False`` .
-        ceil_mode (bool): If True, use ceil to compute the output shape instead of floor. Default: ``False`` .
+        ceil_mode (bool, optional): If True, use ceil to compute the output shape instead of floor. Default: ``False`` .
 
     Inputs:
         - **x** (Tensor) - Tensor of shape :math:`(N, C_{in}, L_{in})` or :math:`(C_{in}, L_{in})`.
 
     Outputs:
-        If `return_indices` is False, output is a Tensor, with shape :math:`(N, C_{out}, L_{out})` or
+        If `return_indices` is ``False``, output is a Tensor, with shape :math:`(N, C_{out}, L_{out})` or
         :math:`(C_{out}, L_{out})`. It has the same data type as `x`.
 
-        If `return_indices` is True, output is a Tuple of 2 Tensors, representing the maxpool result and where
+        If `return_indices` is ``True``, output is a Tuple of 2 Tensors, representing the maxpool result and where
         the max values are generated.
 
         - **output** (Tensor) - Maxpooling result, with shape :math:`(N, C_{out}, L_{out})` or
@@ -1780,7 +1781,8 @@ class AdaptiveMaxPool2d(Cell):
         output_size (Union[int, tuple]): The target output size. `output_size` can be a tuple :math:`(H, W)`,
             or an int H for :math:`(H, H)`. :math:`H` and :math:`W` can be int or None.
             If it is None, it means the output size is the same as the input size.
-        return_indices (bool, optional): If `return_indices` is ``True`` , the indices of max value would be output.
+        return_indices (bool, optional): Whether to output the index of the maximum value.
+            If `return_indices` is ``True`` , the indices of max value would be output.
             Default: ``False`` .
 
     Inputs:

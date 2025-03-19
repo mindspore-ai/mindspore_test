@@ -329,7 +329,8 @@ class TrainOneStepCell(Cell):
     Args:
         network (Cell): The training network. The network only supports single output.
         optimizer (Union[Cell], optional): Optimizer for updating the network parameters.
-        sens (numbers.Number): The scaling number to be filled as the input of backpropagation. Default value is
+        sens (numbers.Number, optional): The scaling number to be filled as the input of backpropagation.
+            Default value is
             ``None`` , which is ``1.0`` .
         return_grad (bool, optional): Whether to return gradient. If ``True``,
             it will return the gradient in the form of a dict

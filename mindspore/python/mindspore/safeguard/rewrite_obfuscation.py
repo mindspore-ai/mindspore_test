@@ -372,7 +372,8 @@ def load_obf_params_into_net(network, target_modules=None, obf_ratios=None, obf_
 
     Args:
         network (nn.Cell): The original network that need to be obfuscated.
-        target_modules (list[str]): The target ops that need to be obfuscated in the network. The first string
+        target_modules (list[str], optional): The target ops that need to be obfuscated in the network.
+            The first string
             represents the network path of the target ops in the original network, which should be in form of
             ``"A/B/C"``. The second string represents the names of multiple target ops in the same path, which
             should be in form of ``"D|E|F"``. For example, thr target_modules of GPT2 can be ``['backbone
@@ -380,9 +381,10 @@ def load_obf_params_into_net(network, target_modules=None, obf_ratios=None, obf_
             in the format of 'obfuscate_layers:all' or 'obfuscate_layers:int', which represents the number of
             layers need to be obfuscated of duplicate layers (such as transformer layers or resnet blocks).
             Default: ``None``.
-        obf_ratios (Tensor): The obf ratios generated when execute :func:`mindspore.obfuscate_ckpt`. Default: ``None``.
-        obf_config (dict): The configuration of model obfuscation polices. Default: ``None``.
-        data_parallel_num (int): The data parallel number of parallel training. Default: 1.
+        obf_ratios (Tensor, optional): The obf ratios generated when execute :func:`mindspore.obfuscate_ckpt`.
+            Default: ``None``.
+        obf_config (dict, optional): The configuration of model obfuscation polices. Default: ``None``.
+        data_parallel_num (int, optional): The data parallel number of parallel training. Default: ``1``.
         kwargs (dict): Configuration options dictionary.
 
             - ignored_func_decorators (list[str]): The name list of function decorators in network's python code.

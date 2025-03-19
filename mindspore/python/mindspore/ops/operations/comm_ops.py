@@ -1354,10 +1354,10 @@ class Send(PrimitiveWithInfer):
     Send tensors to the specified dest_rank.
 
     Note:
-        Send and Receive must be used in combination and have same sr_tag.
+        Send and Receive must be used in combination and have same `sr_tag`.
 
     Args:
-        sr_tag (int): The tag to identify the send/recv message. The message will
+        sr_tag (int): The tag to identify the send/recv message. The message sent by this operator will
                       be received by the Receive op with the same "sr_tag".
         dest_rank (int): A required integer identifying the destination rank.
         group (str, optional): The communication group to work on. Default: ``GlobalComm.WORLD_COMM_GROUP``.
@@ -1933,7 +1933,8 @@ class AlltoAllV(PrimitiveWithInfer):
     Args:
         group (str, optional): The communication group to work on. Default: ``GlobalComm.WORLD_COMM_GROUP``, which
             means ``"hccl_world_group"`` in Ascend.
-        block_size (int, optional): The basic units for scatter and gather numel by `send_numel_list` and `recv_numel_list`.
+        block_size (int, optional): The basic units for scatter and gather numel by `send_numel_list`
+            and `recv_numel_list`.
             Default: ``1``.
 
     Inputs:

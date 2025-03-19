@@ -2306,7 +2306,7 @@ class ScatterAdd(Primitive):
         This is an in-place update operator. Therefore, the `input_x` will be updated after the operation is completed.
 
     Args:
-        use_locking (bool): Whether to protect the assignment by a lock.
+        use_locking (bool, optional): Whether to protect the assignment by a lock.
             If ``True`` , `input_x` will be protected by the lock.
             Otherwise, the calculation result is undefined. Default: ``False`` .
 
@@ -5523,7 +5523,7 @@ class AffineGrid(Primitive):
 
     Args:
         align_corners (bool, optional): Geometrically, each pixel of input is viewed as a squqre instead of dot.
-            If True, consider extremum -1 and 1 referring to the centers of the pixels rather than pixel corners.
+            If ``True``, consider extremum -1 and 1 referring to the centers of the pixels rather than pixel corners.
             The default value is ``False`` , extremum -1 and 1 refer to the corners of the pixels, so that sampling is
             irrelevant to resolution of the image. Default: ``False`` .
 
@@ -5535,7 +5535,7 @@ class AffineGrid(Primitive):
           or :math:`(N, C, D, H, W)` for 3D grid.
 
     Outputs:
-        Tensor, a tensor whose data type is same as 'theta', and the shape is :math:`(N, H, W, 2)` for 2D grid
+        Tensor, a tensor whose data type is same as `theta`, and the shape is :math:`(N, H, W, 2)` for 2D grid
         or :math:`(N, D, H, W, 3)` for 3D grid.
 
     Supported Platforms:

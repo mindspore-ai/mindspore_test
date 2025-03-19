@@ -64,23 +64,23 @@ mindspore.nn.Adam
           .. include:: mindspore.nn.optim_group_gc.rst
           .. include:: mindspore.nn.optim_group_order.rst
 
-        - **learning_rate** (Union[float, int, Tensor, Iterable, LearningRateSchedule]) - 默认值： ``1e-3`` 。
+        - **learning_rate** (Union[float, int, Tensor, Iterable, LearningRateSchedule]，可选) - 默认值： ``1e-3`` 。
 
           .. include:: mindspore.nn.optim_arg_dynamic_lr.rst
 
-        - **beta1** (float) - 第一个动量矩阵的指数衰减率。参数范围（0.0,1.0）。默认值： ``0.9`` 。
-        - **beta2** (float) - 第二个动量矩阵的指数衰减率。参数范围（0.0,1.0）。默认值： ``0.999`` 。
-        - **eps** (float) - 加在分母上的值，以确保数值稳定。必须大于0。默认值： ``1e-8`` 。
-        - **use_locking** (bool) - 是否对参数更新加锁保护。如果为 ``True`` ，则 `w` 、`m` 和 `v` 的Tensor更新将受到锁的保护。如果为 ``False`` ，则结果不可预测。默认值： ``False`` 。
-        - **use_nesterov** (bool) - 是否使用Nesterov Accelerated Gradient (NAG)算法更新梯度。如果为 ``True`` ，使用NAG更新梯度。如果为 ``False`` ，则在不使用NAG的情况下更新梯度。默认值：``False`` 。
-        - **use_amsgrad** (bool) - 是否使用Amsgrad算法更新梯度。如果为 ``True`` ，使用Amsgrad更新梯度。如果为 ``False`` ，则在不使用Amsgrad的情况下更新梯度。默认值： ``False`` 。
-        - **weight_decay** (Union[float, int, Cell]) - 权重衰减（L2 penalty）。默认值： ``0.0`` 。
+        - **beta1** (float，可选) - 第一个动量矩阵的指数衰减率。参数范围（0.0,1.0）。默认值： ``0.9`` 。
+        - **beta2** (float，可选) - 第二个动量矩阵的指数衰减率。参数范围（0.0,1.0）。默认值： ``0.999`` 。
+        - **eps** (float，可选) - 加在分母上的值，以确保数值稳定。必须大于0。默认值： ``1e-8`` 。
+        - **use_locking** (bool，可选) - 是否对参数更新加锁保护。如果为 ``True`` ，则 `w` 、`m` 和 `v` 的Tensor更新将受到锁的保护。如果为 ``False`` ，则结果不可预测。默认值： ``False`` 。
+        - **use_nesterov** (bool，可选) - 是否使用Nesterov Accelerated Gradient (NAG)算法更新梯度。如果为 ``True`` ，使用NAG更新梯度。如果为 ``False`` ，则在不使用NAG的情况下更新梯度。默认值：``False`` 。
+        - **use_amsgrad** (bool，可选) - 是否使用Amsgrad算法更新梯度。如果为 ``True`` ，使用Amsgrad更新梯度。如果为 ``False`` ，则在不使用Amsgrad的情况下更新梯度。默认值： ``False`` 。
+        - **weight_decay** (Union[float, int, Cell]，可选) - 权重衰减（L2 penalty）。默认值： ``0.0`` 。
 
           .. include:: mindspore.nn.optim_arg_dynamic_wd.rst
 
         .. include:: mindspore.nn.optim_arg_loss_scale.rst
 
-        - **kwargs**
+        - **kwargs** -
 
           - use_lazy (bool)：是否使用Lazy Adam算法。默认值： ``False`` 。如果为 ``True`` ，使用lazy Adam，反之使用普通Adam算法。
           - use_offload (bool)：是否在主机CPU上运行Adam优化算法。默认值： ``False`` 。如果为 ``True`` ，使用offload方法，反之使用普通Adam算法。

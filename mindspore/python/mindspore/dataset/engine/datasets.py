@@ -4466,7 +4466,7 @@ class Schema:
     Class to represent a schema of a dataset.
 
     Args:
-        schema_file (str): Path of the schema file. Default: ``None``.
+        schema_file (str, optional): Path of the schema file. Default: ``None``.
 
     Raises:
         RuntimeError: If schema file failed to load.

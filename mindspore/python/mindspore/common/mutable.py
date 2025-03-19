@@ -126,13 +126,14 @@ def mutable(input_data, dynamic_len=False):
     When the `input_data` is tuple or list and `dynamic_len` is False, `mutable` will return a constant length tuple
     or list with all mutable elements. If `dynamic_len` is True, the length of the return tuple or list will be dynamic.
 
-    If a dynamic length tuple or list is used as the input of the network and the network is repeatedly called, and
+    When a dynamic-length tuple or list returned by `mutable` is used as input to a network
+    and the network is called repeatedly, and
     the length of the tuple or list is different for each run, it does not need to be re-compiled.
 
     Args:
         input_data (Union[Tensor, scalar, tuple, list, dict]): The input data to be made mutable. If
             'input_data' is list/tuple/dict, the type of each element should also in the valid types.
-        dynamic_len (bool): Whether to set the whole sequence to be dynamic length. In graph compilation, if
+        dynamic_len (bool, optional): Whether to set the whole sequence to be dynamic length. In graph compilation, if
             `dynamic_len` is ``True`` , the `input_data` must be list or tuple and the elements of `input_data` must
             have the same type and shape. Default: ``False`` .
 
