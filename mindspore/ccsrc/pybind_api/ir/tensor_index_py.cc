@@ -486,7 +486,6 @@ py::tuple TensorIndex::GenerateNonZeroIndex(const ShapeVector &data_shape, const
 
   const int64_t data_dim = SizeToLong(data_shape.size());
   const int64_t index_dims = tensor_index->value.DataDim();
-
   if (data_dim < index_dims) {
     MS_EXCEPTION(IndexError) << "The dim of index cannot be greater than indexed data, but got dim of index:"
                              << index_dims << ", dim of data:" << data_dim;
@@ -993,7 +992,6 @@ bool TensorIndex::RemoveExpandedDimsParseTensorIndex(const ShapeVector &data_sha
 
     shapes->insert(shapes->end(), true_index_shapes.begin(), true_index_shapes.end());
     *cur_dim += true_index_nums;
-
   } else {
     if (index_out->value.DataDim() > 0) {
       *has_sequence = true;
@@ -1579,7 +1577,6 @@ py::object TensorIndex::GetItemByList(const ShapeVector &data_shape, const Tenso
     }
 
     TensorIndex tuple_index = SequenceToTensor(tensor_index, data_shape[0]);
-
     if (tuple_index.IsBoolean() && !tuple_index.boolean()) {
       MS_EXCEPTION(IndexError) << "When tensor is indexed by list, the list can't be empty.";
     }
@@ -2348,7 +2345,6 @@ py::object TensorIndex::SetItemIndexInfo(const py::object &py_data, const py::ob
   bool valid = CheckTypeIsInstance<TensorIndexType>(
     value_type, {TensorIndexType::Integer, TensorIndexType::Float, TensorIndexType::Boolean, TensorIndexType::Tensor,
                  TensorIndexType::List, TensorIndexType::Tuple});
-
   if (!valid) {
     MS_EXCEPTION(TypeError) << "only support numbers, Tensor, tuple, list as value, but got "
                             << TensorIndex::py_value_handle_ << " with type "
@@ -2441,7 +2437,6 @@ py::object TensorIndex::SetItemIndexByIndexType(const TensorIndex &index, const 
 const py::handle TensorIndex::ConvertPyObject2StubTensor(const py::handle &obj) {
   auto pyStub = py::getattr(obj, stub::PY_ATTR_STUB);
   auto stub = pyStub.cast<stub::StubNodePtr>();
-
   if (stub == nullptr) {
     py::handle tensorpy = tensor::ConvertToTensorPy(py::getattr(obj, stub::PY_ATTR_TENSOR));
     MS_EXCEPTION_IF_NULL(tensorpy);
