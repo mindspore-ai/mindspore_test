@@ -163,6 +163,9 @@ def _tft_stop_callback(args, cb_ctx):
     if (not cb_ctx.is_uce_rank) and (not cb_ctx._is_params_consistent()):  # pylint: disable=W0212
         raise RuntimeError("Can't stop device, because training parameters are left in inconsistent state!")
     cb_ctx.is_uce_rank = False
+    if cb_ctx.tft.tft_get_repair_type() == "recover":
+        logger.warning(f"Reset limit step")
+        cb_ctx.tft.reset_limit_step()
     logger.info("Finish _tft_stop_callback")
 
 
