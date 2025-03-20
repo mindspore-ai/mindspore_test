@@ -740,6 +740,7 @@ void SuperKernelActor::FetchParameterInput(const KernelActorPtr &kernel_actor, O
   if (!enable_input_optimize_) {
     return;
   }
+  static bool is_disable_new_ref_count = common::IsDisableRuntimeConfig(common::kRuntimeNewRefCount);
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kPreLaunch, "FetchParameterInput");
   bool need_event = false;
   for (const auto &parameter_index : kernel_actor->parameter_indexs()) {
@@ -747,11 +748,14 @@ void SuperKernelActor::FetchParameterInput(const KernelActorPtr &kernel_actor, O
       continue;
     }
     need_event = true;
-    auto device_tensor =
-      FetchParameter(parameter_index.second, context, kernel_actor->device_contexts()[0], kernel_actor->GetAID());
+    auto device_context = (is_disable_new_ref_count ? kernel_actor->device_contexts()[0] : device_contexts_[0]);
+    auto device_tensor = FetchParameter(parameter_index.second, context, device_context, kernel_actor->GetAID());
     MS_LOG(DEBUG) << "Actor: " << kernel_actor->GetAID().Name() << ", input index: " << parameter_index.first
                   << ", device tensor: " << device_tensor << ", ptr: " << device_tensor->GetPtr()
-                  << ", ref cnt: " << device_tensor->ref_count() << " new ref count:" << device_tensor->new_ref_count();
+                  << ", ref cnt: " << device_tensor->ref_count() << " new ref count:" << device_tensor->new_ref_count()
+                  << " is_disable_new_ref_count:" << is_disable_new_ref_count
+                  << " super kernel actor context:" << device_contexts_[0]->device_context_key().ToString()
+                  << " kernel actor context:" << kernel_actor->device_contexts()[0]->device_context_key().ToString();
     kernel_actor->SetInputDeviceTensor(device_tensor, parameter_index.first);
   }
 
