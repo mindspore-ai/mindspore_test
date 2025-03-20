@@ -4235,8 +4235,21 @@ class TensorScatterSub(Primitive):
     equivalent to using :class:`mindspore.ops.ScatterNdSub` , except that the updates are applied on output `Tensor`
     instead of input `Parameter`.
 
-    .. math::
-        output\left [indices  \right ] = input\_x- update
+    .. code-block:: python
+
+        # Iterate through all index
+        for i in range(indices.shape[0]):
+            for j in range(indices.shape[1]):
+                ...
+                for k in range(indices.shape[-2]):  # The last dimension is coordinate dimension
+                    # Get current index combination
+                    index_tuple = (i, j, ..., k)
+                    # Get target position
+                    target_index = indices[index_tuple]
+                    # Get corresponding update value
+                    update_value = updates[index_tuple]
+                    # Perform subtraction operation
+                    output[target_index] -= update_value
 
     Refer to :func:`mindspore.ops.tensor_scatter_sub` for more details.
 
