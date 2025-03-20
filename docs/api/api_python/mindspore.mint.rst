@@ -361,6 +361,7 @@ mindspore.mint.nn
     mindspore.mint.nn.Sigmoid
     mindspore.mint.nn.Softmax
     mindspore.mint.nn.Softshrink
+    mindspore.mint.nn.Softsign
     mindspore.mint.nn.Tanh
 
 嵌入层
@@ -537,6 +538,7 @@ mindspore.mint.nn.functional
     mindspore.mint.nn.functional.softmax
     mindspore.mint.nn.functional.softplus
     mindspore.mint.nn.functional.softshrink
+    mindspore.mint.nn.functional.softsign
     mindspore.mint.nn.functional.tanh
 
 归一化函数

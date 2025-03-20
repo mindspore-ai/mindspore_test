@@ -280,6 +280,8 @@ from mindspore.ops.function.nn_func import logsigmoid_ext as logsigmoid
 
 # 559
 from mindspore.ops.auto_generate import max_unpool3d_ext as max_unpool3d
+# 768
+from mindspore.ops.auto_generate import softsign_ext as softsign
 
 from mindspore.ops.auto_generate import adaptive_avg_pool1d
 
@@ -1376,4 +1378,6 @@ __all__ = [
     'kl_div',
     # 559
     'max_unpool3d',
+    # 768
+    'softsign',
 ]
