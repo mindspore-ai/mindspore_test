@@ -13,7 +13,6 @@
 # limitations under the License.
 # ============================================================================
 from tests.mark_utils import arg_mark
-import pytest
 import numpy as np
 
 import mindspore as ms
@@ -87,7 +86,7 @@ def test_functional_select_scalar():
     Description: Operator select's input `x` is a Tensor with int32 type, input `y` is a int.
     Expectation: Assert result.
     """
-    cond = np.array([[True, False], [True, False]]).astype(np.bool)
+    cond = np.array([[True, False], [True, False]]).astype(np.bool_)
     x = np.array([[12, 1], [1, 0]]).astype(np.int32)
     y = 2
     output = ops.select(Tensor(cond), Tensor(x), y)
@@ -105,7 +104,7 @@ def test_functional_select_bf16():
     Description: Operator select's input `x` and 'y' both are Tensor with bfloat16 type.
     Expectation: Assert result compare with torch.
     """
-    cond = np.array([[True, False], [True, False]]).astype(np.bool)
+    cond = np.array([[True, False], [True, False]]).astype(np.bool_)
     input_x_me = Tensor([[2.45, -0.38], [0.91, 0.23]], ms.bfloat16)
     input_y_me = Tensor([[0.83, 4.72], [1.89, 0.96]], ms.bfloat16)
     output_me = Select()(Tensor(cond), input_x_me, input_y_me)

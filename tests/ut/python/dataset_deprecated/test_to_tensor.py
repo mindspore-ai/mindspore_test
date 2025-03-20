@@ -166,7 +166,7 @@ def test_to_tensor_eager_float16():
     test_config(np.uint16, "uint16")
     test_config(np.uint32, "uint32")
     test_config(np.uint64, "uint64")
-    test_config(np.bool, "bool")
+    test_config(np.bool_, "bool")
 
 
 def test_to_tensor_eager_float64():
@@ -200,7 +200,7 @@ def test_to_tensor_eager_float64():
     test_config(np.uint16, "uint16")
     test_config(np.uint32, "uint32")
     test_config(np.uint64, "uint64")
-    test_config(np.bool, "bool")
+    test_config(np.bool_, "bool")
 
 
 def test_to_tensor_eager_int32():
@@ -234,7 +234,7 @@ def test_to_tensor_eager_int32():
     test_config(np.uint16, "uint16")
     test_config(np.uint32, "uint32")
     test_config(np.uint64, "uint64")
-    test_config(np.bool, "bool")
+    test_config(np.bool_, "bool")
 
 
 def test_to_tensor_eager_int64():
@@ -268,7 +268,7 @@ def test_to_tensor_eager_int64():
     test_config(np.uint16, "uint16")
     test_config(np.uint32, "uint32")
     test_config(np.uint64, "uint64")
-    test_config(np.bool, "bool")
+    test_config(np.bool_, "bool")
 
 
 def test_to_tensor_eager_uint32():
@@ -302,7 +302,7 @@ def test_to_tensor_eager_uint32():
     test_config(np.uint16, "uint16")
     test_config(np.uint32, "uint32")
     test_config(np.uint64, "uint64")
-    test_config(np.bool, "bool")
+    test_config(np.bool_, "bool")
 
 
 def test_to_tensor_eager_uint64():
@@ -336,7 +336,7 @@ def test_to_tensor_eager_uint64():
     test_config(np.uint16, "uint16")
     test_config(np.uint32, "uint32")
     test_config(np.uint64, "uint64")
-    test_config(np.bool, "bool")
+    test_config(np.bool_, "bool")
 
 
 def test_to_tensor_eager_bool():
@@ -346,7 +346,7 @@ def test_to_tensor_eager_bool():
     Expectation: Test runs successfully and results are verified
     """
 
-    image = np.random.randint(0, 255, (128, 128, 3)).astype(np.bool)
+    image = np.random.randint(0, 255, (128, 128, 3)).astype(np.bool_)
     my_np_type = np.uint8
     op = py_vision.ToTensor(output_type=my_np_type)
     out = op(image)
@@ -402,7 +402,7 @@ def test_to_tensor_eager_error_string():
     Description: Test ToTensor in eager scenario with string image
     Expectation: Correct error is thrown as expected
     """
-    image = np.random.randint(0, 255, (128, 128, 3)).astype(np.str)
+    image = np.random.randint(0, 255, (128, 128, 3)).astype(np.str_)
     my_np_type = np.uint8
     with pytest.raises(TypeError) as error_info:
         op = py_vision.ToTensor(output_type=my_np_type)

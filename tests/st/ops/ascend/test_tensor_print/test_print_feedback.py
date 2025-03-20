@@ -74,7 +74,7 @@ def test_print_tensor_many_times():
     x = np.full((1024, 512, 7, 7), 1.22222121, np.float32)
     y = np.full((1024, 512, 7, 7), 1.22222121, np.float16)
     a = np.full((1024, 512, 7, 7), 12222, np.int32)
-    b = np.full((1024, 512, 7, 7), False, np.bool)
+    b = np.full((1024, 512, 7, 7), False, np.bool_)
     c = np.full((1024, 512, 7, 7), 1.222222222222, np.float64)
     input1 = Tensor(x)
     input2 = Tensor(y)

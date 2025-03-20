@@ -94,7 +94,7 @@ def test_ms_syntax_operator_logic_not_tensor_1_float():
     Expectation: No exception
     """
     net = LogicNot()
-    x = Tensor(np.ones([1], np.float))
+    x = Tensor(np.ones([1], np.float_))
     ret = net(x)
     assert not ret
 
@@ -124,7 +124,7 @@ def test_ms_syntax_operator_logic_not_tensor_2x2_float():
     """
     with pytest.raises(ValueError, match="Only tensor which shape is"):
         net = LogicNot()
-        x = Tensor(np.ones([2, 2], np.float))
+        x = Tensor(np.ones([2, 2], np.float_))
         ret = net(x)
         print(ret)
 

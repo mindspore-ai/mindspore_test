@@ -216,7 +216,7 @@ def test_create_cell_with_tensor():
     Expectation: TypeError.
     """
     context.set_context(mode=context.GRAPH_MODE)
-    t = Tensor(np.zeros((2, 2), np.float), dtype.float32)
+    t = Tensor(np.zeros((2, 2), np.float_), dtype.float32)
     with pytest.raises(TypeError):
         print(WrapCell()(t))
 

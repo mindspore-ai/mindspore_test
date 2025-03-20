@@ -15,7 +15,6 @@
 from tests.mark_utils import arg_mark
 
 import numpy as np
-import pytest
 
 import mindspore.context as context
 import mindspore.nn as nn
@@ -40,7 +39,7 @@ def test_masked_select_grad():
     Expectation: the result match expect.
     """
     input_tensor = Tensor(np.array([1, 2, 3, 4]).astype(np.int32))
-    mask = Tensor(np.array([[[0], [1], [0], [1]], [[0], [1], [0], [1]]]).astype(np.bool))
+    mask = Tensor(np.array([[[0], [1], [0], [1]], [[0], [1], [0], [1]]]).astype(np.bool_))
     output_grad = Tensor(np.array([1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4]).astype(np.int32))
     expect_result = (np.array([4, 8, 12, 16]))
 
