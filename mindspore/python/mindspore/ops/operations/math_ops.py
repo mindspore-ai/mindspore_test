@@ -1350,7 +1350,7 @@ class MulNoNan(_MathBinaryOp):
           int32, int64, float16, float32, float64, complex64, complex128 currently or scalar.
 
     Outputs:
-        Tensor, the shape is the same as the shape after broadcasting,
+        Tensor, the shape is the same as the shape of input Tensor after broadcasting,
         and the data type is the one with higher precision among the two inputs.
 
     Raises:
@@ -4435,8 +4435,7 @@ class CholeskySolve(Primitive):
 
 class TrilIndices(Primitive):
     r"""
-    Calculates the indices of the lower triangular elements in a `row` * `col` matrix
-    and returns them as a 2-by-N Tensor.
+    Computes the indices of the lower triangular elements of a 2D matrix and returns them as a Tensor.
 
     .. warning::
         This is an experimental API that is subject to change or deletion.

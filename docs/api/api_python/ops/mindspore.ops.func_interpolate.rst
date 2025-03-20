@@ -9,7 +9,7 @@ mindspore.ops.interpolate
         - **input** (Tensor) - 被调整大小的Tensor。输入向量必须为三维、四维或五维，shape为 :math:`(N, C, [optional D], [optional H], W)` ，数据类型为float。
         - **size** (Union[int, tuple[int], list[int]], 可选) - 目标大小。如果 `size` 为tuple或list，那么其长度应该和 `input` 去掉 `N, C` 的维度相同。 `size` 和 `scale_factor` 同时只能指定一个。默认值： ``None`` 。
         - **scale_factor** (Union[float, tuple[float], list[float]]，可选) - 每个维度的缩放系数。如果 `scale_factor` 为tuple或list，那么其长度应该和 `input` 去掉 `N, C` 的维度相同。 `size` 和 `scale_factor` 同时只能指定一个。默认值： ``None`` 。
-        - **mode** (str) - 采样算法。默认值： ``"nearest"`` 。可采用以下采样方式的一种：
+        - **mode** (str，可选) - 采样算法。默认值： ``"nearest"`` 。可采用以下采样方式的一种：
 
           - 'nearest'：最近邻插值。
           - 'linear' ：线性插值，仅三维。
@@ -19,7 +19,7 @@ mindspore.ops.interpolate
           - 'area'：区域插值。
           - 'nearest-exact'：此方法类似于Scikit-Image和PIL最邻插值，可解决一些最邻插值的问题，三维和四维。
 
-        - **align_corners** (bool) - 是否使用角对齐进行坐标映射。假设对输入Tensor沿x轴进行变换，具体计算公式如下：
+        - **align_corners** (bool，可选) - 是否使用角对齐进行坐标映射。假设对输入Tensor沿x轴进行变换，具体计算公式如下：
 
           .. code-block::
 

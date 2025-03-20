@@ -5233,23 +5233,25 @@ def split(tensor, split_size_or_sections, axis=0):
     Args:
         tensor (Tensor): A Tensor to be divided.
         split_size_or_sections (Union[int, tuple(int), list(int)]):
-            If `split_size_or_sections` is an int type, `tensor` will be split into equally sized chunks,
-            each chunk with size `split_size_or_sections`. Last chunk will be smaller than `split_size_or_sections`
-            if `tensor.shape[axis]` is not divisible by `split_size_or_sections`.
-            If `split_size_or_sections` is a list type, then `tensor` will be split into len(split_size_or_sections)
-            chunks with sizes `split_size_or_sections` along the given `axis`.
-        axis (int): The axis along which to split. Default: ``0`` .
+
+            - If `split_size_or_sections` is an int type, `tensor` will be split into equally sized chunks,
+              each chunk with size `split_size_or_sections`. Last chunk will be smaller than `split_size_or_sections`
+              if `tensor.shape[axis]` is not divisible by `split_size_or_sections`.
+            - If `split_size_or_sections` is a list type, then `tensor` will be split into len(split_size_or_sections)
+              chunks with sizes `split_size_or_sections` along the given `axis`.
+
+        axis (int, optional): The axis along which to split. Default: ``0`` .
 
     Returns:
         A tuple of sub-tensors.
 
     Raises:
         TypeError: If argument `tensor` is not Tensor.
-        TypeError: If argument `axis` is not Tensor.
+        TypeError: If argument `axis` is not int.
         ValueError: If argument `axis` is out of range of :math:`[-tensor.ndim, tensor.ndim)` .
         TypeError: If each element in `split_size_or_sections` is not integer.
         TypeError: If argument `split_size_or_sections` is not int, tuple(int) or list(int).
-        ValueError: The sum of `split_size_or_sections` is not equal to x.shape[axis].
+        ValueError: The sum of `split_size_or_sections` is not equal to tensor.shape[axis].
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -6367,7 +6369,7 @@ def unfold(input, kernel_size, dilation=1, padding=0, stride=1):
     Args:
         input (Tensor): 4-D Tensor, supported dtypes: float16, float32, float64, complex64 and complex128.
         kernel_size (Union[int, tuple[int], list[int]]): The size of the kernel, should be two int
-            for height and width. If type is int, it means that height equal with width. Must be specified.
+            for height and width. If type is int, it means that height equal with width.
         dilation (Union[int, tuple[int], list[int]], optional): The dilation of the window, should be two int
             for height and width. If type is int, it means that height equal with width. Default: ``1`` .
         padding (Union[int, tuple[int], list[int]], optional): The pad of the window, that must be

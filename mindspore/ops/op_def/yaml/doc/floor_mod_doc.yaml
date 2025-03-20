@@ -13,7 +13,7 @@ floor_mod:
 
     .. warning::
         - Data of input `y` should not be 0, or the maximum value of its dtype will be returned.
-        - When the elements of input exceeds 2048 , the accuracy of operator cannot guarantee the requirement of
+        - When the elements of input exceed 2048, the accuracy of operator cannot guarantee the requirement of
           double thousandths in the mini form.
         - Due to different architectures, the calculation results of this operator on NPU and CPU may be inconsistent.
         - If shape is expressed as :math:`(D1, D2 ..., Dn)`, then D1\*D2... \*DN<=1000000,n<=8.

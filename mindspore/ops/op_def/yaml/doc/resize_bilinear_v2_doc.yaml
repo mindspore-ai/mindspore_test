@@ -2,7 +2,7 @@ resize_bilinear_v2:
   description: |
     Resizes an image to a certain size using the bilinear interpolation.
 
-    The resizing only affects the lower two dimensions which represent the height and width.
+    The resizing only affects the lower two dimensions which represent the height and width of the image.
 
     .. warning::
         This is an experimental API that is subject to change or deletion.
@@ -27,7 +27,7 @@ resize_bilinear_v2:
     Raises:
         TypeError: If `align_corners` is not a bool.
         TypeError: If `half_pixel_centers` is not a bool.
-        TypeError: If `align_corners` and `half_pixel_centers` are all ``True`` .
+        TypeError: If `align_corners` and `half_pixel_centers` are ``True`` .
         ValueError: If `half_pixel_centers` is ``True`` and device_target is CPU.
         ValueError: If dim of `x` is not 4.
         ValueError: If `size` is Tensor and its dim is not 1.

@@ -1435,11 +1435,11 @@ class Receive(PrimitiveWithInfer):
     Receive tensors from src_rank.
 
     Note:
-        Send and Receive must be used in combination and have same sr_tag.
+        Send and Receive must be used in combination and have same `sr_tag`.
 
     Args:
-        sr_tag (int): A required integer identifying the send/recv message tag. The message will
-                      will be send by the Send op with the same "sr_tag".
+        sr_tag (int): A required integer identifying the send/recv message tag. This operator will receive the tensor
+            sent by the Send operator with the same `sr_tag` tag.
         src_rank (int): A required integer identifying the source rank.
         shape (list[int]): A required list identifying the shape of the tensor to be received.
         dtype (Type): A required Type identifying the type of the tensor to be received. The supported types:
@@ -1452,7 +1452,7 @@ class Receive(PrimitiveWithInfer):
         Tensor, output has the same shape as the Tensor sent by `Send` operation.
 
     Raises:
-        TypeError: If `group` is not a str.
+        TypeError: If `src_rank` is not an int or `group` is not a str.
         RuntimeError: If device target is invalid, or backend is invalid, or distributed initialization fails.
         ValueError: If the local rank id of the calling process in the group
                     is larger than the group's rank size.

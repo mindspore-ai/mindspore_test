@@ -2096,7 +2096,7 @@ class SparseSoftmaxCrossEntropyWithLogits(Primitive):
     r"""
     Computes the softmax cross-entropy value between logits and sparse encoding labels.
 
-    Sets input logits as `X`, input label as `Y`, output as `loss`. Then,
+    Sets input logits as `X`, input label as `Y`, output as `loss`. The formula is as follows:
 
     .. math::
         \begin{array}{ll} \\
@@ -2106,7 +2106,7 @@ class SparseSoftmaxCrossEntropyWithLogits(Primitive):
         \end{array}
 
     Args:
-        is_grad (bool): If ``True`` , this operation returns the computed gradient. Default: ``False`` .
+        is_grad (bool, optional): If ``True`` , this operation returns the computed gradient. Default: ``False`` .
 
     Inputs:
         - **logits** (Tensor) - Input logits, with shape :math:`(N, C)`. Data type must be float16 or float32.
@@ -2114,7 +2114,7 @@ class SparseSoftmaxCrossEntropyWithLogits(Primitive):
           Data type must be int32 or int64.
 
     Outputs:
-        Tensor, if `is_grad` is False, the output tensor is the value of loss which is a scalar tensor;
+        Tensor, if `is_grad` is ``False``, the output tensor is the value of loss;
         if `is_grad` is ``True`` , the output tensor is the gradient of input with the same shape as `logits`.
 
     Raises:
@@ -2616,12 +2616,12 @@ class ApplyRMSProp(PrimitiveWithInfer):
     :math:`\eta` represents `learning_rate`. :math:`\nabla Q_{i}(w)` represents `grad`.
 
     .. warning::
-        Note that in dense implementation of this algorithm, "mean_square" and "moment" will update even if "grad" is 0,
-        but in this sparse implementation, "mean_square" and "moment" will not update
-        in iterations during which "grad" is 0.
+        Note that in dense implementation of this algorithm, `mean_square` and `moment` will update even if `grad` is 0,
+        but in this sparse implementation, `mean_square` and `moment` will not update
+        in iterations during which `grad` is 0.
 
     Args:
-        use_locking (bool): Whether to enable a lock to protect the variable and accumulation tensors
+        use_locking (bool, optional): Whether to enable a lock to protect the variable and accumulation tensors
                             from being updated. Default: ``False`` .
 
     Inputs:
@@ -4105,7 +4105,7 @@ class KLDivLoss(Primitive):
         TypeError: If neither `logits` nor `labels` is a Tensor.
         TypeError: If dtype of `logits` or `labels` is not currently supported.
         ValueError: If shape of `logits` is not the same as `labels`.
-        RuntimeError: If `logits` or `labels` is a scalar when `reduction` is 'batchmean'.
+        RuntimeError: If `logits` or `labels` is a scalar when `reduction` is ``'batchmean'``.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -5572,7 +5572,7 @@ class Dropout3D(PrimitiveWithInfer):
     Dropout3D can improve the independence between channel feature maps.
 
     Args:
-        keep_prob (float): The keep probability of a channel, between 0 and 1, e.g. `keep_prob` = 0.8,
+        keep_prob (float, optional): The keep probability of a channel, between 0 and 1, e.g. `keep_prob` = 0.8,
             means dropping out 20% of channels. Default: ``0.5`` .
 
     Inputs:
@@ -6855,9 +6855,9 @@ class CTCLossV2(Primitive):
             and its correlated gradient to zero. Default: ``False`` .
 
     Inputs:
-        - **log_probs** (Tensor) - A tensor of shape :math:`(T, N, C)`, where :math:`T` is input length, :math:`N` is
+        - **log_probs** (Tensor) - A 3D tensor of shape :math:`(T, N, C)`, where :math:`T` is input length, :math:`N` is
           batch size and :math:`C` is number of classes (including blank). Supported dtypes: float32, float64.
-        - **targets** (Tensor) - A tensor of shape :math:`(N, S)`, where :math:`S` is max target length,
+        - **targets** (Tensor) - A 2D tensor of shape :math:`(N, S)`, where :math:`S` is max target length,
           means the target sequences. Supported dtypes: int32, int64.
         - **input_lengths** (Union(Tuple, Tensor)) - A tuple or Tensor of shape :math:`(N)`.
           It means the lengths of the input. Supported dtypes: int32, int64.
@@ -8481,13 +8481,13 @@ class TripletMarginLoss(Primitive):
         - **margin** (Tensor) - Make a margin between the positive pair and the negative pair.
 
     Outputs:
-        Union[Tensor, Scalar], if `reduction` is ``"none"``, its shape is :math:`(N)`.
+        Union[Tensor, Scalar], if `reduction` is ``"none"``, a Ten sor will be returned with a shape of :math:`(N)`.
         Otherwise, a scalar value will be returned.
 
     Raises:
-        TypeError: If `x` or `positive` or `negative` or `margin` is not a Tensor.
-        TypeError: If dtype of `x` or `positive` or `negative` is not BasicType.
-        TypeError: If dtype of `x`, `positive` and `negative` is not the same.
+        TypeError: If `x`, `positive`, `negative`, or `margin` is not a Tensor.
+        TypeError: If dtype of `x`, `positive`, or `negative` is not BasicType.
+        TypeError: If dtypes of `x`, `positive` and `negative` are not the same.
         TypeError: If `margin` is not float32.
         TypeError: If `p` is not an int.
         TypeError: If `eps` is not a float.
@@ -8497,7 +8497,7 @@ class TripletMarginLoss(Primitive):
         ValueError: If the dimension of input `x` or `positive` or `negative`
           is bigger than or equal to 8.
         ValueError: If length of shape of `margin` is not 0.
-        ValueError: If shape of `x`, `positive` and `negative` cannot broadcast.
+        ValueError: If shapes of `x`, `positive` and `negative` cannot broadcast.
         ValueError: If `reduction` is not one of ``'none'``, ``'mean'``, ``'sum'``.
 
     Supported Platforms:
