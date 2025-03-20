@@ -36,12 +36,16 @@ class CustomAclnnKernelMod : public AclnnKernelMod {
   ~CustomAclnnKernelMod() = default;
   void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                         const std::vector<KernelTensor *> &outputs) override {
+    MS_LOG(DEBUG) << "Start get custom workspace info, op_type: " << op_type_;
     const auto &res_tuple = GetKernelTuple<N>(inputs, outputs);
     std::apply([this](const auto &... args) { GetWorkspaceForResize(args...); }, res_tuple);
+    MS_LOG(DEBUG) << "End get custom workspace info, op_type: " << op_type_;
   }
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override {
+    MS_LOG(DEBUG) << "Start launch custom, op_type: " << op_type_;
     CallRun(stream_ptr, workspace, inputs, outputs);
+    MS_LOG(DEBUG) << "End launch custom, op_type: " << op_type_;
     return true;
   }
 

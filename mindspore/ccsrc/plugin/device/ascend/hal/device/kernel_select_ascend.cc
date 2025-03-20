@@ -722,6 +722,7 @@ bool IsEnableAclnn(const KernelGraphPtr &kernel_graph, const AnfNodePtr &node) {
       MS_LOG(INFO) << "Kernel of custom op " << node->fullname_with_scope() << "is selected AclNN.";
       return true;
     }
+    MS_LOG(WARNING) << "Can not find custom [" << op_type << "] aclnn api, aclop will be selected.";
   }
 
   if (kernel_graph->is_from_single_op()) {

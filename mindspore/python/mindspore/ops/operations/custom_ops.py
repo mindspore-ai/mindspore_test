@@ -110,6 +110,11 @@ def _compile_aot(file):
     func_path = cache_path + file_name + ".so"
     include_file = "{} -I{}".format(include_file, file[:file.rindex('/')])
 
+    if context.get_context("device_target") == "Ascend":
+        ascend_cann_path = os.getenv("ASCEND_OPP_PATH").split('opp')[0]
+        ascend_include = os.path.join(ascend_cann_path, "include")
+        include_file = "{} -I{}".format(include_file, ascend_include)
+
     if func_path not in Custom.compiled_bin:
         Custom.compiled_bin.append(func_path)
 
@@ -146,8 +151,9 @@ def _compile_aot(file):
         else:
             raise ValueError("The source file must be a cc/cpp/cu file, but get: {}".format(file))
 
+        cmd = " ".join(cmd)
         proc = subprocess.Popen(
-            cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
 
         (out, _) = proc.communicate(timeout=30)
 
