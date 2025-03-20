@@ -16,7 +16,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import Tensor, ops, nn, context
+from mindspore import Tensor, ops, nn, context, Parameter
 from mindspore.common.api import _pynative_executor
 from tests.mark_utils import arg_mark
 from tests.device_utils import set_device
@@ -220,6 +220,21 @@ def test_abnormal_case4(mode):
     with pytest.raises(ValueError):
         y.move_to(to="Ascend")
         _pynative_executor.sync()
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('mode', [context.PYNATIVE_MODE])
+def test_move_to_change_type(mode):
+    """
+    Feature: test tensor offload
+    Description: only support PYNATIVE_MODE
+    Expectation: change dtype
+    """
+    p1 = Parameter(ms.ops.ones((2, 2), dtype=ms.float32))
+    p1.set_dtype(ms.float16)
+    p2 = p1.move_to("Ascend")
+    p3 = p2.move_to("CPU")
+    assert np.allclose(p2.asnumpy(), p3.asnumpy(), 0, 0)
 
 
 if __name__ == "__main__":
