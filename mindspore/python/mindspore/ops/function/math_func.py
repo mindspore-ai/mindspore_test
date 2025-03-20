@@ -7309,15 +7309,15 @@ def amin(input, axis=None, keepdims=False, *, initial=None, where=None):
         ...                           [3, -7, -2, 4],
         ...                           [8, -4, 1, -3]])
         >>> # case 1: By default, compute the minimum of all elements.
-        >>> mindspore.ops.min(input)
+        >>> mindspore.ops.amin(input)
         Tensor(shape=[], dtype=Int64, value= -7)
         >>>
         >>> # case 2: Compute minimum along axis 1.
-        >>> mindspore.ops.min(input, axis=1)
+        >>> mindspore.ops.amin(input, axis=1)
         Tensor(shape=[3], dtype=Int64, value= [ 1, -7, -4])
         >>>
         >>> # case 3: If keepdims=True, the output shape will be same of that of the input.
-        >>> mindspore.ops.min(input, axis=1, keepdims=True)
+        >>> mindspore.ops.amin(input, axis=1, keepdims=True)
         Tensor(shape=[3, 1], dtype=Int64, value=
         [[ 1],
          [-7],
@@ -7327,7 +7327,7 @@ def amin(input, axis=None, keepdims=False, *, initial=None, where=None):
         >>> where = mindspore.tensor([[1, 0, 1, 0],
         ...                           [0, 0, 1, 1],
         ...                           [1, 1, 1, 0]], dtype=mindspore.bool_)
-        >>> mindspore.ops.min(input, axis=1, keepdims=True, initial=0, where=where)
+        >>> mindspore.ops.amin(input, axis=1, keepdims=True, initial=0, where=where)
         Tensor(shape=[3, 1], dtype=Int64, value=
          [[ 0],
           [-2],
@@ -7337,7 +7337,7 @@ def amin(input, axis=None, keepdims=False, *, initial=None, where=None):
         >>> where = mindspore.tensor([[False],
         ...                           [False],
         ...                           [False]])
-        >>> mindspore.ops.min(input, axis=0, keepdims=True, initial=0, where=where)
+        >>> mindspore.ops.amin(input, axis=0, keepdims=True, initial=0, where=where)
         Tensor(shape=[1, 4], dtype=Int64, value=
          [[0, 0, 0, 0]])
     """
