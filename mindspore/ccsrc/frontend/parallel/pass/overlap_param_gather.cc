@@ -60,7 +60,7 @@ bool ParamGatherTopoSort(const ParamGatherUser &a, const ParamGatherUser &b) {
     }
     return a.users[i].second < b.users[i].second;
   }
-  return a.users.size() <= b.users.size();
+  return a.users.size() < b.users.size();
 }
 
 FuncGraphPtr GetNextFuncGraph(const AnfNodePtr &node) {

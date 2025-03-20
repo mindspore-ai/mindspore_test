@@ -912,8 +912,12 @@ class _Context:
                                         f"but got value is {value} and type is {type(value)}.")
                     if key == "pp_1f1b_overlap":
                         values = value.split(",")
-                        if not set(values).issubset(set(["AlltoAll", "AlltoAllV"])):
-                            raise ValueError("{} 's value should be one of ['AlltoAll'].".format(key))
+                        for v in values:
+                            if v not in ['AlltoAll', 'AlltoAllV', 'MorphAllGather',
+                                         'AllGather', 'ReduceScatter', 'MorphReduceScatter']:
+                                raise ValueError("{} 's value should be subset of ['AlltoAll', 'AlltoAllV',"
+                                                 " 'MorphAllGather', 'AllGather', 'ReduceScatter',"
+                                                 " 'MorphReduceScatter'].".format(key))
                     self.set_param(set_func, value)
         except (TypeError, ValueError) as exo:
             raise ValueError(str(exo) + "\nFor 'context.set_context', "

@@ -20,6 +20,7 @@
 #include <list>
 #include <algorithm>
 #include <string>
+#include "include/common/utils/anfalgo.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
@@ -66,7 +67,7 @@ bool is_first_receive(const AnfNodePtr &node) {
       }
     }
     auto micro = GetValue<int64_t>(recv_node->GetPrimalAttr(parallel::MICRO));
-    if (micro != 0 || recv_node->HasPrimalAttr(parallel::PIPELINE_PARAM)) {
+    if (micro != 0) {
       return false;
     }
     return true;
@@ -77,7 +78,7 @@ bool is_first_receive(const AnfNodePtr &node) {
 void OverlapOptShardInPipeline(const FuncGraphPtr &graph) {
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
-  static const bool is_enable_ge = (context->backend_policy() == "ge");
+  static const bool is_enable_ge = common::AnfAlgo::IsBackendGe();
   if (is_enable_ge) {
     return;
   }
@@ -102,53 +103,33 @@ void OverlapOptShardInPipeline(const FuncGraphPtr &graph) {
   }
   std::list<CNodePtr> orders = graph->GetOrderedCnodes();
   std::vector<CNodePtr> origin_nodes_topological(orders.cbegin(), orders.cend());
-  CNodePtr first_receive_cnode = nullptr;
-  for (auto &node : origin_nodes_topological) {
-    if (is_first_receive((node))) {
-      first_receive_cnode = node->cast<CNodePtr>();
-      first_receive_cnode->AddAttr(parallel::FIRST_RECEIVE, MakeValue(True));
-    }
-  }
-  if (first_receive_cnode == nullptr) {
-    return;
-  }
-  auto recv_users = manager->node_users()[first_receive_cnode];
-  if (recv_users.empty()) {
-    return;
-  }
-
+  std::vector<CNodePtr> first_receive_cnode_list;
+  std::copy_if(origin_nodes_topological.begin(), origin_nodes_topological.end(),
+               std::back_inserter(first_receive_cnode_list), [](const auto &node) { return is_first_receive(node); });
   std::vector<CNodePtr> opt_shard_allgather_list;
-  for (auto &node : origin_nodes_topological) {
-    MS_EXCEPTION_IF_NULL(node);
-    if (!is_allgather_comm_ops(node)) {
-      continue;
-    }
-    auto cnode_allgather = node->cast<CNodePtr>();
-    opt_shard_allgather_list.push_back(cnode_allgather);
-    auto allgather_prim = GetCNodePrimitive(cnode_allgather);
-    auto group_name = GetValue<std::string>(allgather_prim->GetAttr(parallel::GROUP));
-    if (group_name.find("parallel_optimizer") != std::string::npos) {
-      continue;
-    }
-    auto rank_ids = parallel::g_device_manager->FindRankListByHashName(group_name);
-    if (rank_ids.empty()) {
-      continue;
-    }
-    auto dev_list = parallel::g_device_manager->CreateDeviceListByRankList(rank_ids);
-    auto new_group_name = group_name + "_parallel_optimizer";
-    parallel::Group cur_device_list;
-    (void)parallel::g_device_manager->CreateGroup(new_group_name, dev_list, &cur_device_list);
-    (void)allgather_prim->AddAttr(parallel::GROUP, MakeValue<std::string>(new_group_name));
+  std::vector<AbstractBasePtr> maketuple_abs_inputs;
+  std::copy_if(origin_nodes_topological.begin(), origin_nodes_topological.end(),
+               std::back_inserter(opt_shard_allgather_list),
+               [](const auto &node) { return is_allgather_comm_ops(node); });
+  std::transform(opt_shard_allgather_list.begin(), opt_shard_allgather_list.end(),
+                 std::back_inserter(maketuple_abs_inputs),
+                 [](const auto &cnode_allgather) { return cnode_allgather->abstract(); });
+  if (opt_shard_allgather_list.empty() || first_receive_cnode_list.empty()) {
+    return;
   }
   std::vector<AnfNodePtr> make_tuple_inputs{NewValueNode(prim::kPrimMakeTuple)};
   (void)std::copy(opt_shard_allgather_list.begin(), opt_shard_allgather_list.end(),
                   std::back_inserter(make_tuple_inputs));
-  std::vector<AnfNodePtr> depend_inputs{NewValueNode(prim::kPrimDepend), first_receive_cnode,
-                                        graph->NewCNode(make_tuple_inputs)};
-  auto depend_node = graph->NewCNode(depend_inputs);
-  depend_node->set_abstract(first_receive_cnode->abstract()->Clone());
-  depend_node->AddAttr("RecAllGatherDepend", MakeValue(True));
-  (void)manager->Replace(first_receive_cnode, depend_node);
+  auto make_tuple_cnode = graph->NewCNode(make_tuple_inputs);
+  make_tuple_cnode->set_abstract(std::make_shared<abstract::AbstractTuple>(maketuple_abs_inputs));
+  for (const auto &first_receive_cnode : first_receive_cnode_list) {
+    std::vector<AnfNodePtr> depend_inputs{NewValueNode(prim::kPrimDepend), first_receive_cnode->input(kIndex1),
+                                          make_tuple_cnode};
+    auto depend_node = graph->NewCNode(depend_inputs);
+    depend_node->set_abstract(first_receive_cnode->input(kIndex1)->abstract()->Clone());
+    depend_node->AddAttr("RecAllGatherDepend", MakeValue(True));
+    (void)manager->SetEdge(first_receive_cnode, kIndex1, depend_node);
+  }
 }
 
 static std::vector<CNodePtr> GetOptShardReduceScatter(const std::vector<AnfNodePtr> &all_nodes) {

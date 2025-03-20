@@ -93,8 +93,9 @@ bool EraseMicroDepend(const FuncGraphPtr &graph) {
     sort(tuple_inputs.begin(), tuple_inputs.end(), [](const CNodePtr &a, const CNodePtr &b) {
       return GetValue<int64_t>(a->GetPrimalAttr(MICRO)) > GetValue<int64_t>(b->GetPrimalAttr(MICRO));
     });
-
-    manager->SetEdge(cnode, kIndex2, tuple_inputs[0]);
+    if (!tuple_inputs.empty()) {
+      manager->SetEdge(cnode, kIndex2, tuple_inputs[0]);
+    }
   }
   return true;
 }

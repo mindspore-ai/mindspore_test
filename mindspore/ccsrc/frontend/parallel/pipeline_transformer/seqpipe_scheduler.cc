@@ -683,10 +683,10 @@ void SeqpipeScheduler::Reorder1f1bOverlap() {
 
 void SeqpipeScheduler::Add1f1bAttr(const BorderPair &recv, const std::string &tag, size_t index_1f1b) {
   if (IsPrimitiveCNode(recv.second.border)) {
-    recv.second.border->AddAttr(kCNodeAttr1f1bIndexRecv, MakeValue<size_t>(index_1f1b));
+    recv.second.border->AddAttr(tag, MakeValue<size_t>(index_1f1b));
   }
   if (IsPrimitiveCNode(recv.first.border)) {
-    recv.first.border->AddAttr(kCNodeAttr1f1bIndexRecv, MakeValue<size_t>(index_1f1b));
+    recv.first.border->AddAttr(tag, MakeValue<size_t>(index_1f1b));
   }
 }
 
