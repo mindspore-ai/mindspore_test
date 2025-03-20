@@ -809,10 +809,9 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
           (such as Pandas, Numpy or PyArrow objects) for member variables, or load less metadata in member variables,
           or configure `python_multiprocessing=False` to use multi-threading mode.
 
-          There are several classes/functions that can help you reduce the size of member variables, and you can choose
-          to use them:
+          You can use the following classes/functions to reduce the size of member variables:
 
-          1. :class:`mindspore.dataset.utils.LineReader`: Use this class to initialize your text file object in the
+          - :class:`mindspore.dataset.utils.LineReader`: Use this class to initialize your text file object in the
           `__init__` function. Then read the file content based on the line number of the object with the `__getitem__`
           function.
 

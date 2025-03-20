@@ -19,7 +19,8 @@ mindspore.dataset.SST2Dataset
           如果 `shuffle` 为 ``False`` ，则不混洗，如果 `shuffle` 为 ``True`` ，等同于将 `shuffle` 设置为 ``mindspore.dataset.Shuffle.GLOBAL`` 。
           通过传入枚举变量设置数据混洗的模式：
 
-          - ``Shuffle.GLOBAL`` ：混洗样本。
+          - ``Shuffle.GLOBAL`` ：混洗文件和样本。
+          - ``Shuffle.FILES`` ：仅混洗文件。
 
         - **num_shards** (int, 可选) - 指定分布式训练时将数据集进行划分的分片数。默认值： ``None`` 。指定此参数后， `num_samples` 表示每个分片的最大样本数。一般在 `数据并行模式训练 <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/data_parallel.html#数据并行模式加载数据集>`_ 的时候使用。
         - **shard_id** (int, 可选) - 指定分布式训练时使用的分片ID号。默认值： ``None`` 。只有当指定了 `num_shards` 时才能指定此参数。

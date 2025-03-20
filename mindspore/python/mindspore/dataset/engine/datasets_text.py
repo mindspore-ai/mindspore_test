@@ -62,7 +62,6 @@ class AGNewsDataset(SourceDataset, TextBaseDataset):
             Set the mode of data shuffling by passing in enumeration variables:
 
             - ``Shuffle.GLOBAL``: Shuffle both the files and samples.
-
             - ``Shuffle.FILES``: Shuffle files only.
 
         num_shards (int, optional): Number of shards that the dataset will be divided into.
@@ -173,7 +172,6 @@ class AmazonReviewDataset(SourceDataset, TextBaseDataset):
             Set the mode of data shuffling by passing in enumeration variables:
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples.
-
             - ``Shuffle.FILES`` : Shuffle files only.
 
         num_shards (int, optional): Number of shards that the dataset will be divided into. Default: ``None`` .
@@ -273,7 +271,6 @@ class CLUEDataset(SourceDataset, TextBaseDataset):
             There are three levels of shuffling, desired shuffle enum defined by :class:`mindspore.dataset.Shuffle` .
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples, same as setting `shuffle` to ``True``.
-
             - ``Shuffle.FILES`` : Shuffle files only.
 
         num_shards (int, optional): Number of shards that the dataset will be divided into. Default: ``None`` .
@@ -621,7 +618,6 @@ class DBpediaDataset(SourceDataset, TextBaseDataset):
             Set the mode of data shuffling by passing in enumeration variables:
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples.
-
             - ``Shuffle.FILES`` : Shuffle files only.
 
         num_shards (int, optional): Number of shards that the dataset will be divided into. Default: ``None`` .
@@ -722,7 +718,6 @@ class EnWik9Dataset(SourceDataset, TextBaseDataset):
             Set the mode of data shuffling by passing in enumeration variables:
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples.
-
             - ``Shuffle.FILES`` : Shuffle files only.
 
         num_shards (int, optional): Number of shards that the dataset will be divided into. Default: ``None`` .
@@ -950,7 +945,6 @@ class IWSLT2016Dataset(SourceDataset, TextBaseDataset):
             Set the mode of data shuffling by passing in enumeration variables:
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples.
-
             - ``Shuffle.FILES`` : Shuffle files only.
 
         num_shards (int, optional): Number of shards that the dataset will be divided into. Default: ``None`` .
@@ -1084,7 +1078,6 @@ class IWSLT2017Dataset(SourceDataset, TextBaseDataset):
             Set the mode of data shuffling by passing in enumeration variables:
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples.
-
             - ``Shuffle.FILES`` : Shuffle files only.
 
         num_shards (int, optional): Number of shards that the dataset will be divided into. Default: ``None`` .
@@ -1230,7 +1223,7 @@ class Multi30kDataset(SourceDataset, TextBaseDataset):
 
     Multi30K is a multilingual dataset that features approximately 31,000 standardized images
     described in multiple languages. The images are sourced from Flickr and each image comes
-    with sentence descripitions in both English and German, as well as descriptions in other
+    with sentence descriptions in both English and German, as well as descriptions in other
     languages. Multi30k is used primarily for training and testing in tasks such as image
     captioning, machine translation, and visual question answering.
 
@@ -1305,7 +1298,6 @@ class PennTreebankDataset(SourceDataset, TextBaseDataset):
             Set the mode of data shuffling by passing in enumeration variables:
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples.
-
             - ``Shuffle.FILES`` : Shuffle files only.
 
         num_shards (int, optional): Number of shards that the dataset will be divided into. Default: ``None`` .
@@ -1336,7 +1328,7 @@ class PennTreebankDataset(SourceDataset, TextBaseDataset):
     About PennTreebank dataset:
 
     Penn Treebank (PTB) dataset, is widely used in machine learning for NLP (Natural Language Processing)
-    research. Word-level PTB does not contain capital letters, numbers, and punctuations, and the vocabulary
+    research. Word-level PTB does not contain capital letters, numbers, and punctuation, and the vocabulary
     is capped at 10k unique words, which is relatively small in comparison to most modern datasets which
     can result in a larger number of out of vocabulary tokens.
 
@@ -1407,8 +1399,8 @@ class SogouNewsDataset(SourceDataset, TextBaseDataset):
             Set the mode of data shuffling by passing in enumeration variables:
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples, same as setting shuffle to True.
-
             - ``Shuffle.FILES`` : Shuffle files only.
+
         num_shards (int, optional): Number of shards that the dataset will be divided into. Default: ``None`` .
             When this argument is specified, `num_samples` reflects the max sample number of per shard.
             Used in `data parallel training <https://www.mindspore.cn/docs/en/master/model_train/
@@ -1630,7 +1622,8 @@ class SST2Dataset(SourceDataset, TextBaseDataset):
             If `shuffle` is ``True`` , the behavior is the same as setting shuffle to be Shuffle.GLOBAL
             Set the mode of data shuffling by passing in enumeration variables:
 
-            - ``Shuffle.GLOBAL`` : Shuffle the samples.
+            - ``Shuffle.GLOBAL`` : Shuffle both the files and samples.
+            - ``Shuffle.FILES`` : Shuffle files only.
 
         num_shards (int, optional): Number of shards that the dataset will be divided into. Default: ``None`` .
             When this argument is specified, `num_samples` reflects the maximum sample number of per shard.
@@ -1734,7 +1727,6 @@ class TextFileDataset(SourceDataset, TextBaseDataset):
             There are three levels of shuffling, desired shuffle enum defined by :class:`mindspore.dataset.Shuffle` .
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples, same as setting shuffle to True.
-
             - ``Shuffle.FILES`` : Shuffle files only.
 
         num_shards (int, optional): Number of shards that the dataset will be divided into. Default: ``None`` .
@@ -1800,7 +1792,6 @@ class UDPOSDataset(SourceDataset, TextBaseDataset):
             Set the mode of data shuffling by passing in enumeration variables:
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples.
-
             - ``Shuffle.FILES`` : Shuffle files only.
 
         num_shards (int, optional): Number of shards that the dataset will be divided into. Default: ``None`` .
@@ -1888,7 +1879,6 @@ class WikiTextDataset(SourceDataset, TextBaseDataset):
             Set the mode of data shuffling by passing in enumeration variables:
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples.
-
             - ``Shuffle.FILES`` : Shuffle files only.
 
         num_shards (int, optional): Number of shards that the dataset will be divided into. Default: ``None`` .
@@ -1987,7 +1977,6 @@ class YahooAnswersDataset(SourceDataset, TextBaseDataset):
             Set the mode of data shuffling by passing in enumeration variables:
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples.
-
             - ``Shuffle.FILES`` : Shuffle files only.
 
         num_shards (int, optional): Number of shards that the dataset will be divided into. Default: ``None`` .
@@ -2093,8 +2082,8 @@ class YelpReviewDataset(SourceDataset, TextBaseDataset):
             Set the mode of data shuffling by passing in enumeration variables:
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples.
-
             - ``Shuffle.FILES`` : Shuffle files only.
+
         num_shards (int, optional): Number of shards that the dataset will be divided into. Default: ``None`` .
             When this argument is specified, `num_samples` reflects the max sample number of per shard.
             Used in `data parallel training <https://www.mindspore.cn/docs/en/master/model_train/

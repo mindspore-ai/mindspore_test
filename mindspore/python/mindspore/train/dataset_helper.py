@@ -335,11 +335,11 @@ class DatasetHelper:
         dataset_sink_mode (bool): If the value is True, GetNext is employed to fetch the data at device through the
                                   dataset pipeline, otherwise fetch the data at host by iterating through the dataset.
                                   Default: ``True``.
-        sink_size (int): Control the amount of data in each sink.
+        sink_size (int): Control the amount of data in each sink. Must be -1 or positive.
                           If sink_size=-1, sink the complete dataset for each epoch.
                           If sink_size>0, sink sink_size data for each epoch.
-                          Default: -1.
-        epoch_num (int): The number of passes of the entire dataset to be sent. Default: 1.
+                          Default: ``-1``.
+        epoch_num (int): The number of passes of the entire dataset to be sent. Default: ``1``.
 
     Examples:
         >>> import numpy as np

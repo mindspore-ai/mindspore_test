@@ -54,9 +54,9 @@
           （如：Pandas、Numpy或PyArrow对象）替换Python对象（如：list / dict / int / float / string等），或者加载更少的元数据以减小成员变量，
           或者配置 `python_multiprocessing=False` 使用多线程方式。
 
-          下面有几个类/函数可以帮助你减少成员变量的大小，你可以选择来使用：
+          你可以使用以下类/函数来减少成员变量的大小：
 
-          1. :class:`mindspore.dataset.utils.LineReader` ：在 `__init__` 函数中，使用该类初始化你的文本文件对象，然后在 `__getitem__` 函数中通过该对象按行号读取文件内容。
+          - :class:`mindspore.dataset.utils.LineReader` ：在 `__init__` 函数中，使用该类初始化你的文本文件对象，然后在 `__getitem__` 函数中通过该对象按行号读取文件内容。
 
         - `source` 参数接收用户自定义的Python函数（PyFuncs），通过ds.config.set_multiprocessing_start_method("spawn")方式设置多进程的启动方式为 \
           `spawn` 模式，且 `python_multiprocessing=True` 和 `num_parallel_workers>1` 时，支持将 `mindspore.nn` 和 `mindspore.ops`\
