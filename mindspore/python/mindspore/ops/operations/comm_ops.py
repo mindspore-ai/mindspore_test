@@ -1054,7 +1054,7 @@ class NeighborExchangeV2(Primitive):
         ...     def construct(self, x):
         ...         out = self.neighbor_exchangev2(x)
         ...         return out
-        ... class Net1(nn.Cell):
+        >>> class Net1(nn.Cell):
         ...     def __init__(self):
         ...         super(Net1, self).__init__()
         ...         self.neighbor_exchangev2 = ops.NeighborExchangeV2(send_rank_ids=[0, -1, -1, -1, -1, -1, -1, -1],
@@ -1161,12 +1161,12 @@ class CollectiveScatter(Primitive):
         >>> # Launch 2 processes.
         >>> init()
         >>> class CollectiveScatterNet(nn.Cell):
-        >>>     def __init__(self):
-        >>>         super(CollectiveScatter, self).__init__()
-        >>>         self.collective_scatter = ops.CollectiveScatter(src_rank=0)
-        >>>
-        >>>     def construct(self, x):
-        >>>         return self.collective_scatter(x)
+        ...     def __init__(self):
+        ...         super(CollectiveScatter, self).__init__()
+        ...         self.collective_scatter = ops.CollectiveScatter(src_rank=0)
+        ...
+        ...     def construct(self, x):
+        ...         return self.collective_scatter(x)
         >>>
         >>> input = Tensor(np.arange(8).reshape([4, 2]).astype(np.float32))
         >>> net = CollectiveScatterNet()
@@ -1322,12 +1322,12 @@ class Barrier(PrimitiveWithInfer):
         >>> # Launch 4 processes.
         >>> init()
         >>> class BarrierNet(nn.Cell):
-        >>>     def __init__(self):
-        >>>         super(BarrierNet, self).__init__()
-        >>>         self.barrier = ops.Barrier()
-        >>>
-        >>>     def construct(self):
-        >>>         self.barrier()
+        ...     def __init__(self):
+        ...         super(BarrierNet, self).__init__()
+        ...         self.barrier = ops.Barrier()
+        ...
+        ...     def construct(self):
+        ...         self.barrier()
         >>> net = BarrierNet()
         >>> net()
 
@@ -1396,14 +1396,14 @@ class Send(PrimitiveWithInfer):
         >>>
         >>> init()
         >>> class SendNet(nn.Cell):
-        >>>     def __init__(self):
-        >>>         super(SendNet, self).__init__()
-        >>>         self.depend = ops.Depend()
-        >>>         self.send = ops.Send(sr_tag=0, dest_rank=8, group="hccl_world_group")
-        >>>
-        >>>     def construct(self, x):
-        >>>         out = self.depend(x, self.send(x))
-        >>>         return out
+        ...     def __init__(self):
+        ...         super(SendNet, self).__init__()
+        ...         self.depend = ops.Depend()
+        ...         self.send = ops.Send(sr_tag=0, dest_rank=8, group="hccl_world_group")
+        ...
+        ...     def construct(self, x):
+        ...         out = self.depend(x, self.send(x))
+        ...         return out
         >>>
         >>> input_ = Tensor(np.ones([2, 8]).astype(np.float32))
         >>> net = Net()
@@ -1480,14 +1480,14 @@ class Receive(PrimitiveWithInfer):
         >>>
         >>> init()
         >>> class ReceiveNet(nn.Cell):
-        >>>     def __init__(self):
-        >>>         super(ReceiveNet, self).__init__()
-        >>>         self.recv = ops.Receive(sr_tag=0, src_rank=0, shape=[2, 8], dtype=ms.float32,
-        >>>                               group="hccl_world_group")
-        >>>
-        >>>     def construct(self):
-        >>>         out = self.recv()
-        >>>         return out
+        ...     def __init__(self):
+        ...         super(ReceiveNet, self).__init__()
+        ...         self.recv = ops.Receive(sr_tag=0, src_rank=0, shape=[2, 8], dtype=ms.float32,
+        ...                                 group="hccl_world_group")
+        ...
+        ...     def construct(self):
+        ...         out = self.recv()
+        ...         return out
         >>>
         >>> net = Net()
         >>> output = net()
