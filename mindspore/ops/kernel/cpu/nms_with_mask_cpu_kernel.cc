@@ -36,6 +36,9 @@ constexpr size_t kIndexSelBoxes = 2;
 uint32_t NmsRoundUpPower2(int v) {
   constexpr uint32_t ONE = 1, TWO = 2, FOUR = 4, EIGHT = 8, SIXTEEN = 16;
   v--;
+  if (v <= 0) {
+    return ONE;
+  }
   uint32_t value = IntToUint(v);
   value |= value >> ONE;
   value |= value >> TWO;
