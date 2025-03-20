@@ -21,6 +21,7 @@ import re
 import ast
 import hashlib
 import stat
+import copy
 import inspect
 import importlib
 import platform
@@ -109,12 +110,19 @@ def _compile_aot(file):
     func_path = cache_path + file_name + ".so"
     include_file = "{} -I{}".format(include_file, file[:file.rindex('/')])
 
+    if context.get_context("device_target") == "Ascend":
+        ascend_cann_path = os.getenv("ASCEND_OPP_PATH").split('opp')[0]
+        ascend_include = os.path.join(ascend_cann_path, "include")
+        include_file = "{} -I{}".format(include_file, ascend_include)
+
+    include_file = include_file.split(" ")
     if func_path not in Custom.compiled_bin:
         Custom.compiled_bin.append(func_path)
 
         if file.endswith("cpp") or file.endswith("cc"):
             cmd = ["g++", "-std=c++17", "--shared", "-fPIC", "-D_GLIBCXX_USE_CXX11_ABI=0"]
-            cmd += [include_file, "-o", func_path, file]
+            cmd += include_file
+            cmd += ["-o", func_path, file]
         elif file.endswith("cu"):
             cmd = ["nvcc"]
             cmd += ["--shared", "-Xcompiler", "-fPIC", "-O3", "-gencode", "arch=compute_70, code=sm_70"]
@@ -141,12 +149,13 @@ def _compile_aot(file):
                 logger.warning("The current version of nvcc, V{}.{}.{},  might have unfixed issues with std string, "
                                "which will lead to errors in aot custom op with attrs."
                                "The version higher than V10.1.168 is recommended".format(v_major, v_mid, v_minor))
-            cmd += [include_file, "-o", func_path, file]
+            cmd += include_file
+            cmd += ["-o", func_path, file]
         else:
             raise ValueError("The source file must be a cc/cpp/cu file, but get: {}".format(file))
 
         proc = subprocess.Popen(
-            cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=False)
 
         (out, _) = proc.communicate(timeout=30)
 
@@ -435,6 +444,7 @@ class Custom(ops.PrimitiveWithInfer):
         self._is_ms_kernel = False
         self.out_shape = out_shape
         self.out_dtype = out_dtype
+        self.is_ascend_c = context.get_context("device_target") == "Ascend" and self.func_type == "aot"
 
         self._check_platform()
         self._check_func()
@@ -450,10 +460,8 @@ class Custom(ops.PrimitiveWithInfer):
             add_pyfunc(func_id, self.func)
             self.add_prim_attr("fn_id", func_id)
 
-        if self.out_shape is None and self.func_type == "aot":
-            self.add_prim_attr("cpp_infer_shape", True)
-        if self.out_dtype is None and self.func_type == "aot":
-            self.add_prim_attr("cpp_infer_type", True)
+        self.set_infer_flag()
+
         self.multi_output = (reg_info is not None and (len(reg_info.get("outputs", [])) > 1))
         self.add_prim_attr("multi_output", self.multi_output)
 
@@ -479,11 +487,24 @@ class Custom(ops.PrimitiveWithInfer):
         self.add_prim_attr("func_type", self.func_type)
         self._update_attr()
 
-        self.enable_pyboost = (context.get_context("device_target") == "Ascend" and self.func_type == "aot")
-        if self.enable_pyboost:
+        if self.is_ascend_c:
+            self.set_inputs_type(reg_info)
             self.custom_pyboost = _CustomExt(self.func, self.out_shape, self.out_dtype, self.bprop)
             for key, value in super().get_attr_dict().items():
                 self.custom_pyboost.add_prim_attr(key, value)
+
+    def set_infer_flag(self):
+        if self.out_shape is None and self.func_type == "aot":
+            self.add_prim_attr("cpp_infer_shape", True)
+        if self.out_dtype is None and self.func_type == "aot":
+            self.add_prim_attr("cpp_infer_type", True)
+
+    def set_inputs_type(self, reg_info):
+        if not self.is_ascend_c or not reg_info.get('attr'):
+            return
+        inputs_type = ["tensor"] * len(reg_info.get("inputs", [])) + [attr.get("type") for attr in
+                                                                      reg_info.get("attr", [])]
+        self.add_prim_attr("custom_inputs_type", inputs_type)
 
     def __infer__(self, *args):
         if callable(self.out_shape):
@@ -776,6 +797,26 @@ class Custom(ops.PrimitiveWithInfer):
                     if isinstance(item, dict) and item.get("value") is not None:
                         self.add_prim_attr(item[KEY_NAME], item["value"])
 
+    def _convert_attr_to_input(self, ori_reg_info):
+        """convert attr to input"""
+        if not self.is_ascend_c or not ori_reg_info.get("attr"):
+            return ori_reg_info
+
+        reg_info = copy.deepcopy(ori_reg_info)
+        start_index = len(reg_info.get("inputs", []))
+        for i, attr_item in enumerate(reg_info.get("attr", [])):
+            new_input = {
+                'index': start_index + i,
+                'name': attr_item['name'],
+                'paramType': attr_item['paramType']}
+            reg_info['inputs'].append(new_input)
+            for dtype_format_item in reg_info.get("dtype_format", []):
+                new_dtype_format_item = list(dtype_format_item)
+                new_dtype_format_item.insert(start_index + i, DataType.None_None)
+                reg_info['dtype_format'][reg_info['dtype_format'].index(dtype_format_item)] = new_dtype_format_item
+        reg_info['attr'] = []
+        return reg_info
+
     def _register_info(self, info):
         """Register reg_info."""
         reg_info = info
@@ -806,14 +847,15 @@ class Custom(ops.PrimitiveWithInfer):
                 continue
             # Register
             reg_info = self._reformat_reg_info(reg_info, target)
-            reg_info_str = json.dumps(reg_info)
+            new_reg_info = self._convert_attr_to_input(reg_info)
+            reg_info_str = json.dumps(new_reg_info)
             op_lib = Oplib()
             if not op_lib.reg_op(reg_info_str, self.imply_path):
                 raise ValueError("{}, the registration information is registered failed. Use 'CustomRegOp' to "
                                  "generate the registration information, then pass it to 'reg_info' or use "
                                  "'custom_info_register' to bind it to 'func' if 'func' is a function."
                                  .format(self.log_prefix))
-            self._save_attr(reg_info)
+            self._save_attr(new_reg_info)
             self._save_register_status(target)
 
     def _get_expanded_list(self, data):
@@ -1097,7 +1139,7 @@ class Custom(ops.PrimitiveWithInfer):
         return infer_shape, infer_dtype, infer_value
 
     def __call__(self, *args):
-        if self.enable_pyboost:
+        if self.is_ascend_c:
             res = pyboost_custom_ext(self.custom_pyboost, [args])
             return res if self.multi_output else res[0]
         should_elim, output = self.check_elim(*args)
