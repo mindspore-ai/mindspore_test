@@ -3960,17 +3960,17 @@ def median(input, axis=-1, keepdims=False):
         ...                           [5, 2, 7, 4],
         ...                           [8, 1, 3, 6]])
         >>> # case 1: By default, compute the median along axis -1.
-        >>> mindspore.ops.prod(input)
+        >>> mindspore.ops.median(input)
         (Tensor(shape=[3], dtype=Int64, value= [4, 4, 3]),
-        Tensor(shape=[3], dtype=Int64, value= [2, 3, 2]))
+         Tensor(shape=[3], dtype=Int64, value= [2, 3, 2]))
         >>>
-        >>> # case 2: Compute the median along axis 1.
-        >>> mindspore.ops.prod(input, axis=1)
+        >>> # case 2: Compute the median along axis 0.
+        >>> mindspore.ops.median(input, axis=0)
         (Tensor(shape=[4], dtype=Int64, value= [8, 2, 4, 5]),
          Tensor(shape=[4], dtype=Int64, value= [2, 1, 0, 0]))
         >>>
         >>> # case 3: If keepdims=True, the output shape will be same of that of the input.
-        >>> mindspore.ops.prod(input, axis=1, keepdims=True)
+        >>> mindspore.ops.median(input, axis=0, keepdims=True)
         (Tensor(shape=[1, 4], dtype=Int64, value=
          [[8, 2, 4, 5]]),
          Tensor(shape=[1, 4], dtype=Int64, value=
@@ -4740,42 +4740,42 @@ def var_mean(input, axis=None, ddof=0, keepdims=False):
 
     Examples:
         >>> import mindspore
-        >>> x = mindspore.tensor([[1., 3, 4, 2],
-        >>>                       [4, 2, 5, 3],
-        >>>                       [5, 4, 2, 3]])
+        >>> input = mindspore.tensor([[1., 3, 4, 2],
+        ...                           [4, 2, 5, 3],
+        ...                           [5, 4, 2, 3]])
         >>> # case 1: By default, compute the variance and mean of all elements.
-        >>> mindspore.ops.var_mean(x)
+        >>> mindspore.ops.var_mean(input)
         (Tensor(shape=[], dtype=Float32, value= 1.47222),
          Tensor(shape=[], dtype=Float32, value= 3.16667))
         >>>
         >>> # case 2: Compute the variance and mean along axis 0.
-        >>> output = mindspore.ops.var_mean(x, axis=0)
+        >>> output = mindspore.ops.var_mean(input, axis=0)
         (Tensor(shape=[4], dtype=Float32, value= [ 2.88888884e+00,  6.66666687e-01,  1.55555570e+00,  2.22222194e-01]),
          Tensor(shape=[4], dtype=Float32, value= [ 3.33333325e+00,  3.00000000e+00,  3.66666675e+00,  2.66666675e+00]))
         >>>
         >>> # case 3: If keepdims=True, the output shape will be same of that of the input.
-        >>> output = mindspore.ops.var_mean(x, axis=0, keepdims=True)
+        >>> output = mindspore.ops.var_mean(input, axis=0, keepdims=True)
         (Tensor(shape=[1, 4], dtype=Float32, value=
          [[ 2.88888884e+00,  6.66666687e-01,  1.55555570e+00,  2.22222194e-01]]),
          Tensor(shape=[1, 4], dtype=Float32, value=
          [[ 3.33333325e+00,  3.00000000e+00,  3.66666675e+00,  2.66666675e+00]]))
         >>>
         >>> # case 4: If ddof=1:
-        >>> output = mindspore.ops.var_mean(x, axis=0, keepdims=True, ddof=1)
+        >>> output = mindspore.ops.var_mean(input, axis=0, keepdims=True, ddof=1)
         (Tensor(shape=[1, 4], dtype=Float32, value=
          [[ 4.33333349e+00,  1.00000000e+00,  2.33333349e+00,  3.33333313e-01]]),
          Tensor(shape=[1, 4], dtype=Float32, value=
          [[ 3.33333325e+00,  3.00000000e+00,  3.66666675e+00,  2.66666675e+00]]))
         >>>
         >>> # case 5: If ddof=True, same as ddof=1:
-        >>> output = mindspore.ops.var_mean(x, axis=0, keepdims=True, ddof=True)
+        >>> output = mindspore.ops.var_mean(input, axis=0, keepdims=True, ddof=True)
         (Tensor(shape=[1, 4], dtype=Float32, value=
          [[ 4.33333349e+00,  1.00000000e+00,  2.33333349e+00,  3.33333313e-01]]),
          Tensor(shape=[1, 4], dtype=Float32, value=
          [[ 3.33333325e+00,  3.00000000e+00,  3.66666675e+00,  2.66666675e+00]]))
         >>>
         >>> # case 6: If ddof=False, same as ddof=0:
-        >>> output = mindspore.ops.var_mean(x, axis=0, keepdims=True, ddof=False)
+        >>> output = mindspore.ops.var_mean(input, axis=0, keepdims=True, ddof=False)
         (Tensor(shape=[1, 4], dtype=Float32, value=
          [[ 2.88888884e+00,  6.66666687e-01,  1.55555570e+00,  2.22222194e-01]]),
          Tensor(shape=[1, 4], dtype=Float32, value=
@@ -4889,42 +4889,42 @@ def std_mean(input, axis=None, ddof=0, keepdims=False):
 
     Examples:
         >>> import mindspore
-        >>> x = mindspore.tensor([[1., 3, 4, 2],
-        >>>                       [4, 2, 5, 3],
-        >>>                       [5, 4, 2, 3]])
+        >>> input = mindspore.tensor([[1., 3, 4, 2],
+        ...                           [4, 2, 5, 3],
+        ...                           [5, 4, 2, 3]])
         >>> # case 1: By default, compute the standard deviation and mean of all elements.
-        >>> mindspore.ops.std(x)
+        >>> mindspore.ops.std_mean(input)
         (Tensor(shape=[], dtype=Float32, value= 1.21335),
          Tensor(shape=[], dtype=Float32, value= 3.16667))
         >>>
         >>> # case 2: Compute the standard deviation and mean along axis 0.
-        >>> output = mindspore.ops.std(x, axis=0)
+        >>> mindspore.ops.std_mean(input, axis=0)
         (Tensor(shape=[4], dtype=Float32, value= [ 1.69967318e+00,  8.16496611e-01,  1.24721920e+00,  4.71404493e-01]),
          Tensor(shape=[4], dtype=Float32, value= [ 3.33333325e+00,  3.00000000e+00,  3.66666675e+00,  2.66666675e+00]))
         >>>
         >>> # case 3: If keepdims=True, the output shape will be same of that of the input.
-        >>> output = mindspore.ops.std(x, axis=0, keepdims=True)
+        >>> mindspore.ops.std_mean(input, axis=0, keepdims=True)
         (Tensor(shape=[1, 4], dtype=Float32, value=
          [[ 1.69967318e+00,  8.16496611e-01,  1.24721920e+00,  4.71404493e-01]]),
          Tensor(shape=[1, 4], dtype=Float32, value=
          [[ 3.33333325e+00,  3.00000000e+00,  3.66666675e+00,  2.66666675e+00]]))
         >>>
         >>> # case 4: If ddof=1:
-        >>> output = mindspore.ops.std(x, axis=0, keepdims=True, ddof=1)
+        >>> mindspore.ops.std_mean(input, axis=0, keepdims=True, ddof=1)
         (Tensor(shape=[1, 4], dtype=Float32, value=
          [[ 2.08166599e+00,  1.00000000e+00,  1.52752531e+00,  5.77350259e-01]]),
          Tensor(shape=[1, 4], dtype=Float32, value=
          [[ 3.33333325e+00,  3.00000000e+00,  3.66666675e+00,  2.66666675e+00]]))
         >>>
         >>> # case 5: If ddof=True, same as ddof=1:
-        >>> output = mindspore.ops.std(x, axis=0, keepdims=True, ddof=True)
+        >>> mindspore.ops.std_mean(input, axis=0, keepdims=True, ddof=True)
         (Tensor(shape=[1, 4], dtype=Float32, value=
          [[ 2.08166599e+00,  1.00000000e+00,  1.52752531e+00,  5.77350259e-01]]),
          Tensor(shape=[1, 4], dtype=Float32, value=
          [[ 3.33333325e+00,  3.00000000e+00,  3.66666675e+00,  2.66666675e+00]]))
         >>>
         >>> # case 6: If ddof=False, same as ddof=0:
-        >>> output = mindspore.ops.std(x, axis=0, keepdims=True, ddof=False)
+        >>> mindspore.ops.std_mean(input, axis=0, keepdims=True, ddof=False)
         (Tensor(shape=[1, 4], dtype=Float32, value=
          [[ 1.69967318e+00,  8.16496611e-01,  1.24721920e+00,  4.71404493e-01]]),
          Tensor(shape=[1, 4], dtype=Float32, value=
