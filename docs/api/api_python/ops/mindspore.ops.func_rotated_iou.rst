@@ -14,11 +14,11 @@ mindspore.ops.rotated_iou
     参数：
         - **boxes** (Tensor) - 第一组矩形，shape为 :math:`(B, N, 5)`。
         - **query_boxes** (Tensor) - 第二组矩形，shape为 :math:`(B, K, 5)`。
-        - **trans** (bool) - 区分boxes与query_boxes中矩形表示方法。如果为 ``True``，格式为 ``'xyxyt'``，如果为 ``False``，格式为 ``'xywht'``。默认为 ``False``。
-        - **mode** (int) - 区分计算模式。如果为 ``1``，计算方法为 ``'iof'``，如果为 ``0``，计算方法为 ``'iou'``。默认为 ``0``。
-        - **is_cross** (bool) - 如果为 ``True``，采用交叉计算，如果为 ``False``，表示一对一计算。默认为 ``True``。
-        - **v_threshold** (float) - 为交叉计算提供条件松弛。默认为 ``0.0``。
-        - **e_threshold** (float) - 为交叉计算提供条件松弛。默认为 ``0.0``。
+        - **trans** (bool，可选) - 区分boxes与query_boxes中矩形表示方法。如果为 ``True``，格式为 ``'xyxyt'``，如果为 ``False``，格式为 ``'xywht'``。默认为 ``False``。
+        - **mode** (int，可选) - 区分计算模式。如果为 ``1``，计算方法为 ``'iof'``，如果为 ``0``，计算方法为 ``'iou'``。默认为 ``0``。
+        - **is_cross** (bool，可选) - 如果为 ``True``，采用交叉计算，如果为 ``False``，表示一对一计算。默认为 ``True``。
+        - **v_threshold** (float，可选) - 顶点判断的容忍阈值。默认为 ``0.0``。
+        - **e_threshold** (float，可选) - 边相交判断的容忍阈值。默认为 ``0.0``。
 
     返回：
         Tensor，shape为 :math:`(B, N, K)`。
