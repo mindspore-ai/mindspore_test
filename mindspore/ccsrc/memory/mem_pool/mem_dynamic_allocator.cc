@@ -1121,8 +1121,6 @@ void DynamicMemPoolBestFit::ReleaseDeviceRes() {
   };
   fn(common_mem_);
   fn(persistent_mem_);
-
-  tracker::MemTrackerManager::GetInstance().Dump(rank_id_getter_());
 }
 
 void DynamicMemPoolBestFit::DumpDynamicMemPoolStateInfo() {

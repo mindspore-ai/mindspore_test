@@ -980,7 +980,7 @@ void AbstractDynamicMemPool::DumpDynamicMemPoolDebugInfo() {
   // Write info file.
   static std::atomic<size_t> file_count = 0;
   auto file_path =
-    memory::mem_pool::GeneratePath(rank_id_getter_(), "/MemoryDebugInfo" + std::to_string(file_count++), "txt");
+    memory::mem_pool::GeneratePath(rank_id_getter_(), "MemoryDebugInfo" + std::to_string(file_count++), "txt");
   std::ofstream file_stream(file_path);
   file_stream << ss.str();
   file_stream.close();

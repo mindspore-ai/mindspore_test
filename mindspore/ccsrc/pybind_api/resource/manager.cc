@@ -30,6 +30,8 @@
 #include "include/common/utils/config_manager.h"
 #include "include/common/utils/convert_utils.h"
 #include "include/backend/debug/execute_order_tracker/execute_order_tracker.h"
+#include "include/backend/mem_reuse/mem_tracker.h"
+#include "utils/distributed_meta.h"
 #include "utils/log_adapter.h"
 #include "utils/info.h"
 #include "include/common/utils/comm_manager.h"
@@ -102,6 +104,16 @@ void MemoryRecycle() {
   FuncGraphLoopBreaker::Inst().BreakLoop();
 }
 
+namespace {
+void MemTrackerInstanceClear() {
+  size_t rank_id = SIZE_MAX;
+  if (DistributedMeta::GetInstance()->initialized()) {
+    rank_id = DistributedMeta::GetInstance()->global_rank_id();
+  }
+  device::tracker::MemTrackerManager::GetInstance().Dump(rank_id);
+}
+}  // namespace
+
 void ClearResPart1() {
   pynative::PyNativeExecutor::GetInstance()->WorkerJoin();
   runtime::OpExecutor::GetInstance().WorkerJoin();
@@ -115,6 +127,7 @@ void ClearResPart1() {
   mindspore::RDR::ResetRecorder();
 #endif
   runtime::GraphScheduler::GetInstance().Clear();
+  MemTrackerInstanceClear();
   runtime::ProfilerAnalyzer::GetInstance().Clear();
   opt::PassConfigure::Instance().Clear();
 
