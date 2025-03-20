@@ -1252,9 +1252,8 @@ void ControlNodeScheduler::LinkArrowByKernel(const AnfNodePtr &kernel, ControlAc
     auto backoff_kernel_with_index = parser->FetchBackendOutputByKernelGraph(graph, from_node_with_index);
     // If front node and backend node are not the same type, maybe the output node has been replaced by pass,
     // the output arrow should be linked to the new node.
-    if (kernel_with_index.first != nullptr && kernel_with_index.first->isa<CNode>() &&
-        common::AnfAlgo::CheckPrimitiveType(kernel_with_index.first, prim::kPrimNPUClearFloatStatusV2) &&
-        backoff_kernel_with_index.first != nullptr && backoff_kernel_with_index.first->isa<ValueNode>()) {
+    if (kernel_with_index.first != nullptr && backoff_kernel_with_index.first != nullptr &&
+        backoff_kernel_with_index.first->isa<ValueNode>()) {
       MS_LOG(INFO) << "Backend node has been replaced from:" << kernel_with_index.first->DebugString()
                    << " to:" << backoff_kernel_with_index.first->DebugString();
       LinkArrowByValueNode(backoff_kernel_with_index.first, to_actor, backoff_kernel_with_index.second,

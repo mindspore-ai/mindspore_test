@@ -101,7 +101,7 @@
 #include "backend/common/pass/other/avg_pool_grad_for_ge.h"
 #include "backend/common/pass/ir_fusion/mc2_fusion.h"
 #include "backend/common/pass/other/add_attr_to_dump.h"
-#include "backend/ge_backend/pass/ascend_mindir_op_adapter.h"
+#include "backend/ge_backend/pass/ascend_mindir_op_adapter_for_ge.h"
 #include "plugin/device/ascend/optimizer/ir_fusion/flash_attention_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/matmul_allreduce_fusion.h"
 #include "backend/ge_backend/pass/matmul_allreduce_add_rmsnorm_fusion.h"
@@ -238,7 +238,6 @@ mindspore::opt::PassManagerPtr GetBackendFusionGroupPassManager() {
   pm->AddFusionPass(std::make_shared<mindspore::opt::FlashAttentionFusionV2>());
   pm->AddFusionPass(std::make_shared<mindspore::opt::QuantBatchMatmulAllReduceFusion>());
   pm->AddFusionPass(std::make_shared<mindspore::opt::MatMulAllReduceFusion>());
-  // pm->AddFusionPass(std::make_shared<mindspore::opt::MatMulAllReduceAddRmsNormFusionForGe>());
   return pm;
 }
 

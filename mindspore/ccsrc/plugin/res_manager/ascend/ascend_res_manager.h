@@ -72,10 +72,10 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public HalResBase {
   void *GetCopyDataStream() const;
 
   // Relevant function to allocate and free device memory of raw ptr.
-  bool AllocateMemory(DeviceAddress *const &address, uint32_t stream_id = UINT32_MAX) const;
+  bool AllocateMemory(DeviceAddress *const &address, uint32_t stream_id = UINT32_MAX) const override;
   void *AllocateStaticMemory(size_t size, uint32_t stream_id = kDefaultStreamIndex) const;
   void *AllocateMemory(size_t size, uint32_t stream_id = kDefaultStreamIndex) const override;
-  void FreeMemory(DeviceAddress *const &address) const;
+  void FreeMemory(DeviceAddress *const &address) const override;
   void FreeMemory(void *ptr) const override;
   void FreePartMemorys(const std::vector<void *> &free_addrs, const std::vector<void *> &keep_addrs,
                        const std::vector<size_t> &keep_addr_sizes) const override;

@@ -36,12 +36,12 @@ namespace mindspore {
 namespace backend {
 namespace ge_backend {
 namespace {
-device::DeviceAddressPtr CreateDeviceAddressForScalarAndString(const ValueNodePtr &value_node) {
+device::DeviceAddressPtr CreateDeviceAddressForScalarAndString(const ValueNodePtr &value_node,
+                                                               const KernelGraphPtr &graph) {
   MS_EXCEPTION_IF_NULL(value_node);
   const auto &ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  auto kernel_graph = std::dynamic_pointer_cast<session::KernelGraph>(value_node->func_graph());
-  auto node_target = AnfAlgo::FetchDeviceTarget(value_node, kernel_graph.get());
+  auto node_target = AnfAlgo::FetchDeviceTarget(value_node, graph.get());
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   device::ResKey res_key{device::GetDeviceTypeByName(node_target), device_id};
   auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
@@ -307,14 +307,14 @@ void DeviceAddressUtils::UpdateDeviceAddressHostInfoByNode(const device::DeviceA
 
 device::DeviceAddressPtrList DeviceAddressUtils::CreateDeviceAddressForTensorValue(const ValuePtr &node_value,
                                                                                    size_t output_idx,
-                                                                                   const ValueNodePtr &value_node) {
+                                                                                   const ValueNodePtr &value_node,
+                                                                                   const KernelGraphPtr &graph) {
   MS_EXCEPTION_IF_NULL(node_value);
   MS_EXCEPTION_IF_NULL(value_node);
   const auto &ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
 
-  auto kernel_graph = std::dynamic_pointer_cast<session::KernelGraph>(value_node->func_graph());
-  auto node_target = AnfAlgo::FetchDeviceTarget(value_node, kernel_graph.get());
+  auto node_target = AnfAlgo::FetchDeviceTarget(value_node, graph.get());
 
   device::DeviceAddressPtrList address_list;
   if (node_value->isa<tensor::BaseTensor>()) {
@@ -386,7 +386,7 @@ void DeviceAddressUtils::CreateValueNodeDeviceAddress(const KernelGraphPtr &grap
     const auto &node_value = value_node->value();
     MS_EXCEPTION_IF_NULL(node_value);
     if (node_value->isa<tensor::BaseTensor>() || node_value->isa<ValueSequence>()) {
-      auto address_list = CreateDeviceAddressForTensorValue(node_value, 0, value_node);
+      auto address_list = CreateDeviceAddressForTensorValue(node_value, 0, value_node, graph);
       // Deal with tensor and tuple
       if (value_nodes_without_init_args.find(value_node) == value_nodes_without_init_args.end()) {
         for (const auto &address : address_list) {
@@ -401,7 +401,7 @@ void DeviceAddressUtils::CreateValueNodeDeviceAddress(const KernelGraphPtr &grap
       continue;
     }
 
-    device::DeviceAddressPtr address = CreateDeviceAddressForScalarAndString(value_node);
+    device::DeviceAddressPtr address = CreateDeviceAddressForScalarAndString(value_node, graph);
     // Deal with string and scalar; Address will be nullptr if the input is a type.
     if (address && (value_nodes_without_init_args.find(value_node) == value_nodes_without_init_args.end())) {
       address->UpdateFlag(device::kDeviceAddressFlagIgnoreDevicePtr);

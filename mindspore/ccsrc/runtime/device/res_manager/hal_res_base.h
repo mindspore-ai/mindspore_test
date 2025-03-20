@@ -77,11 +77,11 @@ class RES_EXPORT HalResBase {
   }
 
   // Relevant function to allocate and free device memory of DeviceAddress.
-  virtual bool AllocateMemory(DeviceAddress *const &address, uint32_t stream_id = UINT32_MAX) {
+  virtual bool AllocateMemory(DeviceAddress *const &address, uint32_t stream_id = UINT32_MAX) const {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
     return false;
   }
-  virtual void FreeMemory(DeviceAddress *const &address) {
+  virtual void FreeMemory(DeviceAddress *const &address) const {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
     return;
   }
