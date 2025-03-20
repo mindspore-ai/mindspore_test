@@ -244,7 +244,7 @@ def test_mul_op_dynamic_backward_rank(context_mode):
 
 
 @pytest.mark.parametrize("context_mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-@pytest.mark.parametrize("data_type", [np.bool])
+@pytest.mark.parametrize("data_type", [np.bool_])
 @test_utils.run_test_with_On
 def test_mul_op_check_dtype(context_mode, data_type):
     """

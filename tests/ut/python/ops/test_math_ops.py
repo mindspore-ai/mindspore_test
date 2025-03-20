@@ -110,7 +110,7 @@ def test_pow():
     """ test_pow """
     input_tensor = Tensor(np.array([[2, 2], [3, 3]]))
     power = Tensor(np.array(3.0, np.int64))
-    power2 = Tensor(np.array(True, np.bool))
+    power2 = Tensor(np.array(True, np.bool_))
     testpow = P.Pow()
     expect = np.array([[8, 8], [27, 27]])
     result = testpow(input_tensor, power)

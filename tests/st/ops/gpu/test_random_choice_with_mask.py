@@ -15,7 +15,6 @@
 from tests.mark_utils import arg_mark
 
 import numpy as np
-import pytest
 
 import mindspore.context as context
 import mindspore.nn as nn
@@ -67,7 +66,7 @@ def test_RCWM_3D():
     Expectation: success.
     """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
-    input_tensor = Tensor(np.ones([3, 4, 5]).astype(np.bool))
+    input_tensor = Tensor(np.ones([3, 4, 5]).astype(np.bool_))
     expect1 = (10, 3)
     expect2 = (10,)
     rcwm = RCWM_3D()
@@ -85,7 +84,7 @@ def test_RCWM_count_out():
     """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     input_tensor = Tensor(np.array([[1, 0, 1, 0], [0, 0, 0, 1], [1, 1, 1, 1],
-                                    [0, 0, 0, 1]]).astype(np.bool))
+                                    [0, 0, 0, 1]]).astype(np.bool_))
     expect1 = (10, 2)
     expect2 = (10,)
     rcwm = RCWM_count_out()
@@ -103,7 +102,7 @@ def test_RCWM_count_in():
     """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     input_tensor = Tensor(np.array([[1, 0, 1, 0], [0, 0, 0, 1], [1, 1, 1, 1],
-                                    [0, 0, 0, 1]]).astype(np.bool))
+                                    [0, 0, 0, 1]]).astype(np.bool_))
     expect1 = (4, 2)
     expect2 = (4,)
     rcwm = RCWM_count_in()
@@ -121,7 +120,7 @@ def test_RCWM_1D():
     """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     input_tensor = Tensor(
-        np.array([1, 0, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1]).astype(np.bool))
+        np.array([1, 0, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1]).astype(np.bool_))
     expect_index = np.array([[11], [9], [7], [10], [8], [0],
                              [15], [2], [0], [0]]).astype(np.int32)
     expect_mask = np.array(

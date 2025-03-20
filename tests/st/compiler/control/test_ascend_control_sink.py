@@ -293,8 +293,8 @@ def test_if_by_if_by_if():
     """
     x = np.array(2.345678).astype(np.float32)
     y = np.array(1.234567).astype(np.float32)
-    cond1 = np.array(True).astype(np.bool)
-    cond2 = np.array(False).astype(np.bool)
+    cond1 = np.array(True).astype(np.bool_)
+    cond2 = np.array(False).astype(np.bool_)
     input_shape = (127, 7, 53, 31)
     input_data = np.random.randn(*input_shape).astype(np.float32)
     net = ControlIfbyIfbyIf()
@@ -311,8 +311,8 @@ def test_simple_while():
     Description: Test control flow in graph mode.
     Expectation: No exception.
     """
-    x = np.array(True).astype(np.bool)
-    y = np.array(False).astype(np.bool)
+    x = np.array(True).astype(np.bool_)
+    y = np.array(False).astype(np.bool_)
     input_shape = (127, 7, 53, 31)
     input_data = np.random.randn(*input_shape).astype(np.float32)
     net = ControlSimpleWhile()

@@ -82,7 +82,7 @@ def test_where_float32(mode):
     Expectation: Assert result.
     """
     context.set_context(mode=mode)
-    cond = np.array([[True, False], [True, False]]).astype(np.bool)
+    cond = np.array([[True, False], [True, False]]).astype(np.bool_)
     x = np.array([[1.2, 1], [1, 0]]).astype(np.float32)
     y = np.array([[1, 2], [3, 4.0]]).astype(np.float32)
     output = where_forward_func(Tensor(cond), Tensor(x), Tensor(y))
@@ -104,7 +104,7 @@ def test_where_float16(mode):
     Expectation: Assert result.
     """
     context.set_context(mode=mode)
-    cond = np.array([[True, False], [True, False]]).astype(np.bool)
+    cond = np.array([[True, False], [True, False]]).astype(np.bool_)
     x = np.array([[1.2, 1], [1, 0]]).astype(np.float16)
     y = np.array([[1, 2], [3, 4.0]]).astype(np.float16)
     output = where_forward_func(Tensor(cond), Tensor(x), Tensor(y))
@@ -126,7 +126,7 @@ def test_where_int32(mode):
     Expectation: Assert result.
     """
     context.set_context(mode=mode)
-    cond = np.array([[True, False], [True, False]]).astype(np.bool)
+    cond = np.array([[True, False], [True, False]]).astype(np.bool_)
     x = np.array([[12, 1], [1, 0]]).astype(np.int32)
     y = np.array([[1, 2], [3, 4]]).astype(np.int32)
     output = where_forward_func(Tensor(cond), Tensor(x), Tensor(y))
@@ -147,7 +147,7 @@ def test_functional_where_scalar(mode):
     Expectation: Assert result.
     """
     context.set_context(mode=mode)
-    cond = np.array([[True, False], [True, False]]).astype(np.bool)
+    cond = np.array([[True, False], [True, False]]).astype(np.bool_)
     x = np.array([[12, 1], [1, 0]]).astype(np.int32)
     y = 2
     output = where_forward_func(Tensor(cond), Tensor(x), y)

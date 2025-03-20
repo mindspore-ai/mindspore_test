@@ -47,7 +47,7 @@ class Cases():
 
         self.array_sets = [1, 1.1, True, [1, 0, True], [1, 1.0, 2], (1,),
                            [(1, 2, 3), (4, 5, 6)], onp.random.random((100, 100)).astype(onp.float32),
-                           onp.random.random((100, 100)).astype(onp.bool)]
+                           onp.random.random((100, 100)).astype(onp.bool_)]
 
         self.arrs = [
             rand_int(2),

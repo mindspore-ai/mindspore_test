@@ -40,7 +40,7 @@ def test_real_normal(mode):
     """
     ms.set_context(mode=mode)
     net = Net()
-    x = ms.Tensor(np.asarray(np.complex(1.3+0.4j)), ms.complex64)
+    x = ms.Tensor(np.asarray(np.complex_(1.3+0.4j)), ms.complex64)
     out = net(x)
     expect_out = np.array(1.3)
     assert np.allclose(out.asnumpy(), expect_out)

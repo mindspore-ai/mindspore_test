@@ -636,14 +636,14 @@ def test_dynamic_rank_setitem_tuple_with_multi_tensor_index():
         def construct(self, x, axis):
             x = ops.reduce_min(x, axis)
             x[Tensor(np.ones((25), int)), :, Tensor(
-                np.ones((5, 5)).astype(np.bool))] = Tensor([1], mstype.int64)
+                np.ones((5, 5)).astype(np.bool_))] = Tensor([1], mstype.int64)
             return x
 
     class NumpyNet():
         @classmethod
         def __call__(cls, x, axis):
             x = x.min(axis=axis[0])
-            x[np.ones((25), int), :, np.ones((5, 5)).astype(np.bool)] = 1
+            x[np.ones((25), int), :, np.ones((5, 5)).astype(np.bool_)] = 1
             return x
 
     net_ms = Net()
@@ -672,14 +672,14 @@ def test_dynamic_rank_setitem_tuple_with_empty_bool_tensor_index():
     class Net(Cell):
         def construct(self, x, axis):
             x = ops.reduce_min(x, axis)
-            x[:, :, Tensor(np.zeros((5, 5)).astype(np.bool))] = 1
+            x[:, :, Tensor(np.zeros((5, 5)).astype(np.bool_))] = 1
             return x
 
     class NumpyNet():
         @classmethod
         def __call__(cls, x, axis):
             x = x.min(axis=axis[0])
-            x[:, :, np.zeros((5, 5)).astype(np.bool)] = 1
+            x[:, :, np.zeros((5, 5)).astype(np.bool_)] = 1
             return x
 
     net_ms = Net()

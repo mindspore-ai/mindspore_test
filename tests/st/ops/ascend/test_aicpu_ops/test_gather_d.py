@@ -200,7 +200,7 @@ def test_net_bool():
     expect_out = np.array([[0, 1, 0, 0, 1],
                            [0, 1, 0, 0, 0],
                            [0, 1, 0, 0, 0],
-                           [0, 1, 0, 0, 1]]).astype(np.bool)
+                           [0, 1, 0, 0, 1]]).astype(np.bool_)
     assert np.array_equal(out.asnumpy(), expect_out)
 
 
