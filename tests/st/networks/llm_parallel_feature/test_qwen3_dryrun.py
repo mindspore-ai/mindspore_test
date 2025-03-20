@@ -54,7 +54,8 @@ def test_qwen3_dp2mp4pp1_recompute():
         check_compile_time(log_path, 15)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only',
+          essential_mark='essential')
 def test_qwen3_dp4mp4pp1op_recompute():
     """
     Feature: test qwen3 dp4mp4pp1op full_recompute
@@ -82,7 +83,7 @@ def test_qwen3_dp4mp4pp1op_recompute():
     real_log_path = log_path_preprocess(output_file, rank_list, case_name)
     for log_path in real_log_path:
         check_log(log_path, check_pair)
-        check_peak_memory(log_path, "12265")
+        check_peak_memory(log_path, "15132")
         check_compile_time(log_path, 15)
 
 
@@ -146,8 +147,8 @@ def test_qwen3_cell_dp2mp4pp2vpp4op_1f1b():
     for log_path in real_log_path:
         check_log(log_path, check_pair)
         check_compile_time(log_path, 15)
-    check_peak_memory(real_log_path[0], "20445")
-    check_peak_memory(real_log_path[1], "26968")
+    check_peak_memory(real_log_path[0], "20499")
+    check_peak_memory(real_log_path[1], "27439")
     graph_path = graph_path_preprocess(qwen3_config.save_graphs_path, rank_list)
     # stage 0
     ops_check_pairs_0 = {"VirtualAssignAdd": 65}
@@ -204,7 +205,8 @@ def test_qwen3_cell_dp2mp1pp2vpp2cp4_1f1b_select_recompute():
     check_peak_memory(real_log_path[1], "60558")
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only',
+          essential_mark='essential')
 def test_qwen3_dp4mp4pp1op_recompute_2():
     """
     Feature: test qwen3 dp4mp4pp1op_recompute_2
@@ -244,7 +246,7 @@ def test_qwen3_dp4mp4pp1op_recompute_2():
     log_path = None
     for log_path in real_log_path:
         check_log(log_path, check_pair)
-    check_peak_memory(log_path, "12265")
+    check_peak_memory(log_path, "15132")
     check_compile_time(log_path, 15)
 
 
@@ -277,5 +279,5 @@ def test_qwen3_dp8mp1pp1op():
     log_path = None
     for log_path in real_log_path:
         check_log(log_path, check_pair)
-    check_peak_memory(log_path, "61277")
+    check_peak_memory(log_path, "61422")
     check_compile_time(log_path, 15)

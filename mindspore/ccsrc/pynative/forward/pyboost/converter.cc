@@ -1510,6 +1510,10 @@ ValuePtr ParserArgs::ConvertByParseDtype(size_t index) {
     // convert to py::object and then used in data_converter, because data_converter haven't been refactored to PyObject
     py::object py_item = py::reinterpret_borrow<py::object>(item);
     auto value = data_convert_func(py_item);
+    if (value && (dst == mindspore::ops::DT_TENSOR)) {
+      auto t = value->cast<tensor::TensorPtr>();
+      t->set_source_type(src);
+    }
     return (value != nullptr) ? value : nullptr;
   } else {
     // borrow reference

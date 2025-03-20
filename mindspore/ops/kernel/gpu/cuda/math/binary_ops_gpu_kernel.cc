@@ -16,6 +16,10 @@
 
 #include "kernel/gpu/cuda/math/binary_ops_gpu_kernel.h"
 #include <memory>
+#include <map>
+#include <string>
+#include <vector>
+#include <utility>
 #include "primitive/math_ops.h"
 #include "primitive/comparison_ops.h"
 #include "kernel/gpu/cuda/math/broadcast_public.h"
@@ -176,6 +180,86 @@ std::vector<KernelAttr> BroadcastOptGpuKernelMod::GetOpSupport() {
 #define MS_REG_BROADCAST_COMPARE_OP_TYPE(OP_TYPE) \
   MS_REG_BROADCAST_COMP_OP_INT_TYPE(OP_TYPE), MS_REG_BROADCAST_COMP_OP_FLOAT_TYPE(OP_TYPE)
 
+#define MS_REG_MUL_MIX_OP_DIFF_TYPE(OP_TYPE, In0_t_NUM_TYPE, In1_t_NUM_TYPE, OUT_NUM_TYPE, In0_t_TYPE, In1_t_TYPE, \
+                                    OUT_TYPE)                                                                      \
+  {KernelAttr().AddInputAttr(In0_t_NUM_TYPE).AddInputAttr(In1_t_NUM_TYPE).AddOutputAttr(OUT_NUM_TYPE),             \
+   &BroadcastOptGpuKernelMod::LaunchKernel<OP_TYPE, In0_t_TYPE, In1_t_TYPE, OUT_TYPE>},                            \
+  {                                                                                                                \
+    KernelAttr().AddInputAttr(In1_t_NUM_TYPE).AddInputAttr(In0_t_NUM_TYPE).AddOutputAttr(OUT_NUM_TYPE),            \
+      &BroadcastOptGpuKernelMod::LaunchKernel<OP_TYPE, In1_t_TYPE, In0_t_TYPE, OUT_TYPE>                           \
+  }
+
+#define MS_REG_MUL_MIX_INT_TYPE(OP_TYPE)                                                                               \
+  MS_REG_MUL_MIX_OP_DIFF_TYPE(OP_TYPE, kNumberTypeInt8, kNumberTypeUInt8, kNumberTypeInt16, int8_t, uint8_t, int16_t), \
+    MS_REG_MUL_MIX_OP_DIFF_TYPE(OP_TYPE, kNumberTypeInt8, kNumberTypeInt16, kNumberTypeInt16, int8_t, int16_t,         \
+                                int16_t),                                                                              \
+    MS_REG_MUL_MIX_OP_DIFF_TYPE(OP_TYPE, kNumberTypeInt8, kNumberTypeInt32, kNumberTypeInt32, int8_t, int32_t,         \
+                                int32_t),                                                                              \
+    MS_REG_MUL_MIX_OP_DIFF_TYPE(OP_TYPE, kNumberTypeInt8, kNumberTypeInt64, kNumberTypeInt64, int8_t, int64_t,         \
+                                int64_t),                                                                              \
+    MS_REG_MUL_MIX_OP_DIFF_TYPE(OP_TYPE, kNumberTypeUInt8, kNumberTypeInt16, kNumberTypeInt16, uint8_t, int16_t,       \
+                                int16_t),                                                                              \
+    MS_REG_MUL_MIX_OP_DIFF_TYPE(OP_TYPE, kNumberTypeUInt8, kNumberTypeInt32, kNumberTypeInt32, uint8_t, int32_t,       \
+                                int32_t),                                                                              \
+    MS_REG_MUL_MIX_OP_DIFF_TYPE(OP_TYPE, kNumberTypeUInt8, kNumberTypeInt64, kNumberTypeInt64, uint8_t, int64_t,       \
+                                int64_t),                                                                              \
+    MS_REG_MUL_MIX_OP_DIFF_TYPE(OP_TYPE, kNumberTypeInt16, kNumberTypeInt32, kNumberTypeInt32, int16_t, int32_t,       \
+                                int32_t),                                                                              \
+    MS_REG_MUL_MIX_OP_DIFF_TYPE(OP_TYPE, kNumberTypeInt16, kNumberTypeInt64, kNumberTypeInt64, int16_t, int64_t,       \
+                                int64_t),                                                                              \
+    MS_REG_MUL_MIX_OP_DIFF_TYPE(OP_TYPE, kNumberTypeInt32, kNumberTypeInt64, kNumberTypeInt64, int32_t, int64_t,       \
+                                int64_t)
+
+#define MS_REG_MUL_MIX_FLOAT_TYPE(OP_TYPE)                                                                          \
+  MS_REG_MUL_MIX_OP_DIFF_TYPE(OP_TYPE, kNumberTypeFloat16, kNumberTypeFloat32, kNumberTypeFloat32, half, float,     \
+                              float),                                                                               \
+    MS_REG_MUL_MIX_OP_DIFF_TYPE(OP_TYPE, kNumberTypeFloat16, kNumberTypeFloat64, kNumberTypeFloat64, half, double,  \
+                                double),                                                                            \
+    MS_REG_MUL_MIX_OP_DIFF_TYPE(OP_TYPE, kNumberTypeFloat32, kNumberTypeFloat64, kNumberTypeFloat64, float, double, \
+                                double)
+
+#define MS_REG_MUL_MIX_FLOAT_INT_TYPE(OP_TYPE)                                                                       \
+  MS_REG_MUL_MIX_OP_DIFF_TYPE(OP_TYPE, kNumberTypeFloat16, kNumberTypeInt8, kNumberTypeFloat16, half, int8_t, half), \
+    MS_REG_MUL_MIX_OP_DIFF_TYPE(OP_TYPE, kNumberTypeFloat16, kNumberTypeUInt8, kNumberTypeFloat16, half, uint8_t,    \
+                                half),                                                                               \
+    MS_REG_MUL_MIX_OP_DIFF_TYPE(OP_TYPE, kNumberTypeFloat16, kNumberTypeInt16, kNumberTypeFloat16, half, int16_t,    \
+                                half),                                                                               \
+    MS_REG_MUL_MIX_OP_DIFF_TYPE(OP_TYPE, kNumberTypeFloat16, kNumberTypeInt32, kNumberTypeFloat16, half, int32_t,    \
+                                half),                                                                               \
+    MS_REG_MUL_MIX_OP_DIFF_TYPE(OP_TYPE, kNumberTypeFloat16, kNumberTypeInt64, kNumberTypeFloat16, half, int64_t,    \
+                                half),                                                                               \
+    MS_REG_MUL_MIX_OP_DIFF_TYPE(OP_TYPE, kNumberTypeFloat32, kNumberTypeInt8, kNumberTypeFloat32, float, int8_t,     \
+                                float),                                                                              \
+    MS_REG_MUL_MIX_OP_DIFF_TYPE(OP_TYPE, kNumberTypeFloat32, kNumberTypeUInt8, kNumberTypeFloat32, float, uint8_t,   \
+                                float),                                                                              \
+    MS_REG_MUL_MIX_OP_DIFF_TYPE(OP_TYPE, kNumberTypeFloat32, kNumberTypeInt16, kNumberTypeFloat32, float, int16_t,   \
+                                float),                                                                              \
+    MS_REG_MUL_MIX_OP_DIFF_TYPE(OP_TYPE, kNumberTypeFloat32, kNumberTypeInt32, kNumberTypeFloat32, float, int32_t,   \
+                                float),                                                                              \
+    MS_REG_MUL_MIX_OP_DIFF_TYPE(OP_TYPE, kNumberTypeFloat32, kNumberTypeInt64, kNumberTypeFloat32, float, int64_t,   \
+                                float),                                                                              \
+    MS_REG_MUL_MIX_OP_DIFF_TYPE(OP_TYPE, kNumberTypeFloat64, kNumberTypeInt8, kNumberTypeFloat64, double, int8_t,    \
+                                double),                                                                             \
+    MS_REG_MUL_MIX_OP_DIFF_TYPE(OP_TYPE, kNumberTypeFloat64, kNumberTypeUInt8, kNumberTypeFloat64, double, uint8_t,  \
+                                double),                                                                             \
+    MS_REG_MUL_MIX_OP_DIFF_TYPE(OP_TYPE, kNumberTypeFloat64, kNumberTypeInt16, kNumberTypeFloat64, double, int16_t,  \
+                                double),                                                                             \
+    MS_REG_MUL_MIX_OP_DIFF_TYPE(OP_TYPE, kNumberTypeFloat64, kNumberTypeInt32, kNumberTypeFloat64, double, int32_t,  \
+                                double),                                                                             \
+    MS_REG_MUL_MIX_OP_DIFF_TYPE(OP_TYPE, kNumberTypeFloat64, kNumberTypeInt64, kNumberTypeFloat64, double, int64_t,  \
+                                double)
+
+#define MS_REG_MUL_MIX_BOOL_TYPE(OP_TYPE)                                                                              \
+  MS_REG_MUL_MIX_OP_DIFF_TYPE(OP_TYPE, kNumberTypeInt8, kNumberTypeBool, kNumberTypeInt8, int8_t, bool, int8_t),       \
+    MS_REG_MUL_MIX_OP_DIFF_TYPE(OP_TYPE, kNumberTypeUInt8, kNumberTypeBool, kNumberTypeUInt8, uint8_t, bool, uint8_t), \
+    MS_REG_MUL_MIX_OP_DIFF_TYPE(OP_TYPE, kNumberTypeInt16, kNumberTypeBool, kNumberTypeInt16, int16_t, bool, int16_t), \
+    MS_REG_MUL_MIX_OP_DIFF_TYPE(OP_TYPE, kNumberTypeInt32, kNumberTypeBool, kNumberTypeInt32, int32_t, bool, int32_t), \
+    MS_REG_MUL_MIX_OP_DIFF_TYPE(OP_TYPE, kNumberTypeInt64, kNumberTypeBool, kNumberTypeInt64, int64_t, bool, int64_t), \
+    MS_REG_MUL_MIX_OP_DIFF_TYPE(OP_TYPE, kNumberTypeFloat16, kNumberTypeBool, kNumberTypeFloat16, half, bool, half),   \
+    MS_REG_MUL_MIX_OP_DIFF_TYPE(OP_TYPE, kNumberTypeFloat32, kNumberTypeBool, kNumberTypeFloat32, float, bool, float), \
+    MS_REG_MUL_MIX_OP_DIFF_TYPE(OP_TYPE, kNumberTypeFloat64, kNumberTypeBool, kNumberTypeFloat64, double, bool,        \
+                                double)
+
 // now only for op named Complex
 #define MS_REG_BROADCAST_OP_COMPLEX(OP_TYPE)                                                                         \
   MS_REG_BROADCAST_OP_DIFF_TYPE(OP_TYPE, kNumberTypeFloat32, kNumberTypeFloat32, kNumberTypeComplex64, float, float, \
@@ -192,8 +276,10 @@ std::map<std::string, std::vector<std::pair<KernelAttr, BroadcastOptGpuKernelMod
      {MS_REG_BROADCAST_OP_INT_TYPE(BinaryOpType::kSub), MS_REG_BROADCAST_OP_FLOAT_TYPE(BinaryOpType::kSub),
       MS_REG_BROADCAST_OP_COMPLEX_TYPE(BinaryOpType::kSub)}},
     {"Mul",
-     {MS_REG_BROADCAST_OP_INT_TYPE(BinaryOpType::kMul), MS_REG_BROADCAST_OP_FLOAT_TYPE(BinaryOpType::kMul),
-      MS_REG_BROADCAST_OP_COMPLEX_TYPE(BinaryOpType::kMul)}},
+     {MS_REG_BROADCAST_OP_BOOL_TYPE(BinaryOpType::kMul), MS_REG_BROADCAST_OP_INT_TYPE(BinaryOpType::kMul),
+      MS_REG_BROADCAST_OP_FLOAT_TYPE(BinaryOpType::kMul), MS_REG_BROADCAST_OP_COMPLEX_TYPE(BinaryOpType::kMul),
+      MS_REG_MUL_MIX_INT_TYPE(BinaryOpType::kMul), MS_REG_MUL_MIX_FLOAT_TYPE(BinaryOpType::kMul),
+      MS_REG_MUL_MIX_FLOAT_INT_TYPE(BinaryOpType::kMul), MS_REG_MUL_MIX_BOOL_TYPE(BinaryOpType::kMul)}},
     {"Div",
      {MS_REG_BROADCAST_DIV_INT_TO_FLOAT_TYPE(BinaryOpType::kDiv), MS_REG_BROADCAST_OP_FLOAT_TYPE(BinaryOpType::kDiv),
       MS_REG_BROADCAST_OP_COMPLEX_TYPE(BinaryOpType::kDiv)}},

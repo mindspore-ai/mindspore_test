@@ -1,5 +1,5 @@
 /**
- * Copyright 2023-2025 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_MUL_H_
-#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_MUL_H_
+#ifndef MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_PYBOOST_CUSTOMIZE_MULS_H_
+#define MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_PYBOOST_CUSTOMIZE_MULS_H_
 
 #include <vector>
-#include "ops/ops_func_impl/op_func_impl.h"
+#include <memory>
+#include "ir/scalar.h"
+#include "ir/value.h"
+#include "mindspore/ccsrc/pynative/utils/pyboost/op_runner.h"
 
 namespace mindspore {
-namespace ops {
-class OPS_API MulFuncImpl : public OpFuncImpl {
- public:
-  ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
-  std::vector<TypeId> InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
-  bool GeneralInferRegistered() const override { return true; };
-};
-}  // namespace ops
+namespace kernel {
+namespace pyboost {
+void MulsCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor, const ScalarPtr &other);
+}  // namespace pyboost
+}  // namespace kernel
 }  // namespace mindspore
-#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_MUL_H_
+#endif  // MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_PYBOOST_CUSTOMIZE_MULS_H_

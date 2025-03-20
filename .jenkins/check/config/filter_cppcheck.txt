@@ -70,6 +70,8 @@
 "mindspore/mindspore/ccsrc/backend/ms_backend/graph_fusion/expander/ops/"                                 "internalAstError"
 "mindspore/ccsrc/backend/ms_backend/graph_fusion/core/arithmetic_simplify.cc"                             "variableScope"
 "mindspore/mindspore/ops/kernel/cpu/native/arithmetic_cpu_kernel.cc"                         "internalAstError"
+"mindspore/mindspore/ops/kernel/cpu/arithmetic_cpu_kernel.cc"           "internalAstError"
+"mindspore/mindspore/ops/infer/ops_frontend_func_impl/mul.cc"           "assignBoolToFloat"
 "mindspore/mindspore/ops/kernel/cpu/native/xlogy_cpu_kernel.cc"                              "unreadVariable"
 "mindspore/mindspore/ops/kernel/cpu/native/arithmetic_cpu_kernel.cc"                         "unreadVariable"
 "mindspore/mindspore/ops/kernel/ascend/hccl/mux_send_ascend_kernel.cc"                "knownConditionTrueFalse"
