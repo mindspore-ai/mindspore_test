@@ -26,14 +26,6 @@ namespace mindspore {
 const char kDeterministic[] = "deterministic";
 const char kDeviceTargetType[] = "device_target";
 enum class DeviceTargetType { kUnknown = 0, kCPU = 1, kAscend = 2, kGPU = 3 };
-const std::map<std::string, DeviceTargetType> device_name_to_type_map = {{"Unknown", DeviceTargetType::kUnknown},
-                                                                         {"Ascend", DeviceTargetType::kAscend},
-                                                                         {"CPU", DeviceTargetType::kCPU},
-                                                                         {"GPU", DeviceTargetType::kGPU}};
-const std::map<DeviceTargetType, std::string> device_type_to_name_map = {{DeviceTargetType::kUnknown, "Unknown"},
-                                                                         {DeviceTargetType::kAscend, "Ascend"},
-                                                                         {DeviceTargetType::kCPU, "CPU"},
-                                                                         {DeviceTargetType::kGPU, "GPU"}};
 
 class MS_CORE_API DeviceManagerConf {
  public:
@@ -50,8 +42,8 @@ class MS_CORE_API DeviceManagerConf {
     is_default_device_id_ = is_default_device_id;
   }
   const std::string &GetDeviceTarget() {
-    auto it = device_type_to_name_map.find(device_type_);
-    if (it == device_type_to_name_map.end()) {
+    auto it = device_type_to_name_map_.find(device_type_);
+    if (it == device_type_to_name_map_.end()) {
       MS_EXCEPTION(RuntimeError) << "Can't get the device target. Current wrong device type: " << device_type_;
     }
     return it->second;
@@ -72,14 +64,16 @@ class MS_CORE_API DeviceManagerConf {
     if (IsDeviceEnable()) {
       return;
     }
-    auto it = device_name_to_type_map.find(device_target);
-    if (it != device_name_to_type_map.end()) {
+    auto it = device_name_to_type_map_.find(device_target);
+    if (it != device_name_to_type_map_.end()) {
       device_type_ = it->second;
     }
   }
 
  private:
   static std::shared_ptr<DeviceManagerConf> instance_;
+  static std::map<std::string, DeviceTargetType> device_name_to_type_map_;
+  static std::map<DeviceTargetType, std::string> device_type_to_name_map_;
 
   DeviceTargetType device_type_{DeviceTargetType::kUnknown};
   uint32_t device_id_{0};
