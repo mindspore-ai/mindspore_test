@@ -42,7 +42,7 @@ tensor::TensorPtr GetParamFromLoad(const CNodePtr &load, const bool unused);
 
 bool CheckFusionValid(const CNodePtr &matmul, int64_t *k, const int trans_a_pos, const int trans_b_pos,
                       const std::vector<TypeId> &valid_dtypes);
-
+std::shared_ptr<ValueNode> CreateValueNode(const tensor::TensorPtr &assist_tensor, const TensorTypePtr &tensor_type);
 std::shared_ptr<ValueNode> CreateWeightTensor(TypeId type_id, const std::vector<int64_t> &weight_shape,
                                               const std::vector<void *> &data_c_list,
                                               const std::vector<int64_t> &n_len_list, const int64_t &k_len,
