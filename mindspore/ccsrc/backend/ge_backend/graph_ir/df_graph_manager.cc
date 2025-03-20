@@ -40,10 +40,6 @@ DfGraphManager::DfGraphManager() {
 }
 
 DfGraphManager::~DfGraphManager() {
-  // in python first destroy after atexit but in c++ destroy before atexit
-  DeleteGraphRunner();
-  DeleteGeSession();
-  ClearGraph();
 #ifndef ENABLE_LITE_ACL
   python_adapter::set_python_env_flag(false);
 #endif
