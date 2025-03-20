@@ -80,7 +80,7 @@ class BACKEND_COMMON_EXPORT DumpJsonParser {
   uint32_t cur_dump_iter() const { return cur_dump_iter_; }
   uint32_t input_output() const { return input_output_; }
   void UpdateDumpIter() { ++cur_dump_iter_; }
-  void UpdateDumpIter(int cur_step_count) { cur_dump_iter_ = cur_step_count + initial_dump_iter_; }
+  void UpdateDumpIter(int cur_step_count);
   bool GetDatasetSink() { return is_dataset_sink_; }
   void SetDatasetSink(bool is_dataset_sink) { is_dataset_sink_ = is_dataset_sink; }
   bool FileFormatIsNpy() const { return file_format_ == JsonFileFormat::FORMAT_NPY; }

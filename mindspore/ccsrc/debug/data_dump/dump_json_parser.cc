@@ -376,6 +376,10 @@ void DumpJsonParser::CopyMSCfgJsonToDir(uint32_t rank_id) {
   }
 }
 
+void DumpJsonParser::UpdateDumpIter(int cur_step_count) {
+  cur_dump_iter_ = static_cast<uint32_t>(cur_step_count) + initial_dump_iter_;
+}
+
 bool DumpJsonParser::GetIterDumpFlag() const { return e2e_dump_enabled_ && IsDumpIter(cur_dump_iter_); }
 
 bool DumpJsonParser::DumpEnabledForIter() const {
