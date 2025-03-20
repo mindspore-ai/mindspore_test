@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -117,6 +117,7 @@ constexpr auto kTypeY = "y";
 constexpr auto kTypeX = "x";
 constexpr auto kProcessNodeEngineID = "_process_node_engine_id";
 constexpr auto kIsFreeVariable = "_is_free_variable";
+static int64_t refdata_null_idx = 0;
 
 namespace {
 const std::map<TypeId, TypeId> kReduceRaiseMap = {{kNumberTypeInt64, kNumberTypeInt32}};
@@ -927,6 +928,9 @@ void DfGraphConvertor::InitParamWithData(const TensorOrderMap &tensors) {
     }
     if (as_ref_data) {
       StorageFormatConvertor::SetupStorageFormat(anf_graph_, node, desc);
+      if (name.empty()) {
+        name = "RefData_NULL_" + std::to_string(refdata_null_idx++);
+      }
       auto ref_data = std::make_shared<RefData>(name);
       MS_EXCEPTION_IF_NULL(ref_data);
       (void)ref_data->update_output_desc_y(*desc);
@@ -990,7 +994,6 @@ void DfGraphConvertor::ReplaceAllParameterToRefData() {
   if (ref_mode_ && (ref_mode_type_ == RefModeFlag::kRefModeAll) && !export_air_) {
     MS_LOG(INFO) << "Graph abs ref tenor to ref data, " << anf_graph_->ToString();
     auto parameters = anf_graph_->parameters();
-    int64_t idx = 0;
     for (const auto &param : parameters) {
       MS_EXCEPTION_IF_NULL(param);
       auto op_itor = op_cache_.find(param.get());
@@ -1019,7 +1022,7 @@ void DfGraphConvertor::ReplaceAllParameterToRefData() {
       }
       auto name = para->name();
       if (name.empty()) {
-        name = "RefData_NULL_" + std::to_string(idx++);
+        name = "RefData_NULL_" + std::to_string(refdata_null_idx++);
       }
       auto ref_data = std::make_shared<RefData>(name);
       MS_EXCEPTION_IF_NULL(ref_data);
@@ -2729,6 +2732,9 @@ void DfGraphConvertor::TransformConstOp(const CNodePtr &node, const AnfNodePtr &
         vars_.find(name) != vars_.end()) {
       MS_EXCEPTION_IF_NULL(vars_[name]);
       if (ref_mode_) {
+        if (name.empty()) {
+          name = "RefData_NULL_" + std::to_string(refdata_null_idx++);
+        }
         auto variable = std::make_shared<RefData>(name);
         MS_EXCEPTION_IF_NULL(variable);
         auto desc = vars_[name]->GetOutputDesc(kTypeY);
