@@ -8,5 +8,5 @@ MindSpore格式数据可以更加方便地保存和加载数据，其目标是�
 
 用户可以使用 `mindspore.mindrecord.FileWriter` 生成MindRecord格式数据文件，并使用 `mindspore.dataset.MindDataset <https://www.mindspore.cn/docs/zh-CN/master/api_python/dataset/mindspore.dataset.MindDataset.html>`_ 加载MindRecord格式数据集。
 
-用户还可以将其他格式数据集转换为MindRecord格式数据集，详见 `MindRecord格式转换 <https://www.mindspore.cn/docs/zh-CN/master/model_train/dataset/record.html>`_ 。
+用户还可以将其他格式数据集转换为MindRecord格式数据集，详见 `MindRecord格式转换 <https://www.mindspore.cn/tutorials/zh-CN/master/dataset/record.html>`_ 。
 同时，MindRecord还支持配置文件加密、解密和完整性校验，以保证MindRecord格式数据集的安全。

@@ -22,7 +22,7 @@ This module provides the following data loading methods to help users load datas
   `Iterable-style dataset <https://www.mindspore.cn/tutorials/en/master/beginner/dataset.html#iterable-dataset>`_
   to customize data reading and processing logic.
 - Standard format dataset loading: support loading dataset files in standard data formats, including
-  `MindRecord <https://www.mindspore.cn/docs/en/master/model_train/dataset/record.html>`_,
+  `MindRecord <https://www.mindspore.cn/tutorials/en/master/dataset/record.html>`_,
   `TFRecord <https://tensorflow.google.cn/tutorials/load_data/tfrecord.md?hl=en>`_ .
 - Open source dataset loading: supports reading `open source datasets <#open-source>`_ ,
   such as MNIST, CIFAR-10, CLUE, LJSpeech, etc.

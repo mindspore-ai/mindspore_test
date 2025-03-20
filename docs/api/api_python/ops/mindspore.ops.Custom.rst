@@ -5,7 +5,7 @@ mindspore.ops.Custom
 
     `Custom` 算子是MindSpore自定义算子的统一接口。用户可以利用该接口自行定义MindSpore内置算子库尚未包含的算子。
     根据输入函数的不同，用户可以创建多个自定义算子，并将其应用于神经网络中。
-    关于自定义算子的详细说明和介绍，包括参数的正确书写，请参见 `自定义算子教程 <https://www.mindspore.cn/docs/zh-CN/master/model_train/custom_program/op_custom.html>`_ 。
+    关于自定义算子的详细说明和介绍，包括参数的正确书写，请参见 `自定义算子教程 <https://www.mindspore.cn/tutorials/zh-CN/master/custom_program/op_custom.html>`_ 。
 
     .. warning::
         - 这是一个实验性API，后续可能修改或删除。
@@ -71,7 +71,7 @@ mindspore.ops.Custom
 
                b) Ascend平台
 
-               在Ascend平台使用Custom算子之前，用户首先需要基于Ascend C开发自定义算子并编译。完整的开发和使用流程可参考教程 `AOT类型自定义算子（Ascend平台） <https://www.mindspore.cn/docs/zh-CN/master/model_train/custom_program/operation/op_custom_ascendc.html>`_。
+               在Ascend平台使用Custom算子之前，用户首先需要基于Ascend C开发自定义算子并编译。完整的开发和使用流程可参考教程 `AOT类型自定义算子（Ascend平台） <https://www.mindspore.cn/tutorials/zh-CN/master/custom_program/operation/op_custom_ascendc.html>`_。
                在入参 `func` 中传入算子的名字。根据infer函数的实现方式，存在以下两种使用方式：
 
                - **Python infer**：若算子的infer函数是Python实现，即通过 `out_shape` 和 `out_dtype` 参数传入infer shape和infer type函数，则指定 `func="CustomName"` 。
