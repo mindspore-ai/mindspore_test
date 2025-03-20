@@ -145,6 +145,7 @@ def is_available():
         >>> from mindspore.mint.distributed import is_available
         >>> ms.set_device(device_target="Ascend")
         >>> is_available()
+        True
     """
     return _is_available()
 
@@ -173,7 +174,8 @@ def is_initialized():
         >>> from mindspore.mint.distributed import init_process_group, is_initialized
         >>> ms.set_device(device_target="Ascend")
         >>> init_process_group()
-        >>> is_initialized()
+        >>> print(is_initialized())
+        True
     """
     return _is_initialized()
 
@@ -353,6 +355,8 @@ def get_rank(group=None):
         >>> rank_id = get_rank()
         >>> print(rank_id)
         >>> # the result is the rank_id in world_group
+        #rank 0: 0
+        #rank 1: 1
     """
     if group is None:
         group = GlobalComm.WORLD_COMM_GROUP
@@ -400,6 +404,8 @@ def get_world_size(group=None):
             Please see the `msrun start up
             <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
             for more details.
+
+            This example should be run with 8 devices.
 
         >>> import mindspore as ms
         >>> from mindspore.mint.distributed import init_process_group, get_world_size
@@ -1583,6 +1589,8 @@ def barrier(group=None, async_op=False, device_ids=None):
         >>> # Launch 2 processes.
         >>> init_process_group()
         >>> barrier()
+        >>> print("barrier finish!")
+        barrier finish!
     """
     if group is None:
         group = GlobalComm.WORLD_COMM_GROUP
@@ -1639,17 +1647,16 @@ def send(tensor, dst=0, group=None, tag=0):
         >>> from mindspore import Tensor
         >>> import numpy as np
         >>>
-        # Launch 2 processes.
+        # Launch 2 processes, Process 0 sends the array to Process 1.
         >>> init_process_group()
         >>> this_rank = get_rank()
-        # Process 0 send the array to Process 1
         >>> if this_rank == 0:
-        >>>     input_ = Tensor(np.ones([2, 8]).astype(np.float32))
-        >>>     send(input_, 1)
+        ...     input_ = Tensor(np.ones([2, 8]).astype(np.float32))
+        ...     send(input_, 1)
         >>> if this_rank == 1:
-        >>>     x = Tensor(np.zeros([2, 8]).astype(np.float32))
-        >>>     out = recv(x, src=0)
-        >>>     print(x)
+        ...     x = Tensor(np.zeros([2, 8]).astype(np.float32))
+        ...     out = recv(x, src=0)
+        ...     print(x)
         rank 1:
         [[1. 1. 1. 1. 1. 1. 1. 1.]
          [1. 1. 1. 1. 1. 1. 1. 1.]]
@@ -1718,17 +1725,16 @@ def recv(tensor, src=0, group=None, tag=0):
         >>> from mindspore import Tensor
         >>> import numpy as np
         >>>
-        # Launch 2 processes.
+        # Launch 2 processes, Process 0 sends the array to Process 1.
         >>> init_process_group()
         >>> this_rank = get_rank()
-        # Process 0 send the array to Process 1
         >>> if this_rank == 0:
-        >>>     input_ = Tensor(np.ones([2, 8]).astype(np.float32))
-        >>>     send(input_, 1)
+        ...     input_ = Tensor(np.ones([2, 8]).astype(np.float32))
+        ...     send(input_, 1)
         >>> if this_rank == 1:
-        >>>     x = Tensor(np.zeros([2, 8]).astype(np.float32))
-        >>>     out = recv(x, src=0)
-        >>>     print(x)
+        ...     x = Tensor(np.zeros([2, 8]).astype(np.float32))
+        ...     out = recv(x, src=0)
+        ...     print(x)
         rank 1:
         [[1. 1. 1. 1. 1. 1. 1. 1.]
          [1. 1. 1. 1. 1. 1. 1. 1.]]
@@ -1793,19 +1799,18 @@ def isend(tensor, dst=0, group=None, tag=0):
         >>> from mindspore import Tensor
         >>> import numpy as np
         >>>
-        # Launch 2 processes.
+        # Launch 2 processes, Process 0 sends the array to Process 1.
         >>> init_process_group()
         >>> this_rank = get_rank()
-        # Process 0 send the array to Process 1
         >>> if this_rank == 0:
-        >>>     input_ = Tensor(np.ones([2, 8]).astype(np.float32))
-        >>>     handle = isend(input_, 1)
-        >>>     handle.wait()
+        ...     input_ = Tensor(np.ones([2, 8]).astype(np.float32))
+        ...     handle = isend(input_, 1)
+        ...     handle.wait()
         >>> if this_rank == 1:
-        >>>     x = Tensor(np.zeros([2, 8]).astype(np.float32))
-        >>>     handle = irecv(x, src=0)
-        >>>     handle.wait()
-        >>>     print(x)
+        ...     x = Tensor(np.zeros([2, 8]).astype(np.float32))
+        ...     handle = irecv(x, src=0)
+        ...     handle.wait()
+        ...     print(x)
         rank 1:
         [[1. 1. 1. 1. 1. 1. 1. 1.]
          [1. 1. 1. 1. 1. 1. 1. 1.]]
@@ -1875,19 +1880,18 @@ def irecv(tensor, src=0, group=None, tag=0):
         >>> from mindspore import Tensor
         >>> import numpy as np
         >>>
-        # Launch 2 processes.
+        # Launch 2 processes, Process 0 sends the array to Process 1.
         >>> init_process_group()
         >>> this_rank = get_rank()
-        # Process 0 send the array to Process 1
         >>> if this_rank == 0:
-        >>>     input_ = Tensor(np.ones([2, 8]).astype(np.float32))
-        >>>     handle = isend(input_, 1)
-        >>>     handle.wait()
+        ...     input_ = Tensor(np.ones([2, 8]).astype(np.float32))
+        ...     handle = isend(input_, 1)
+        ...     handle.wait()
         >>> if this_rank == 1:
-        >>>     x = Tensor(np.zeros([2, 8]).astype(np.float32))
-        >>>     handle = irecv(x, src=0)
-        >>>     handle.wait()
-        >>>     print(x)
+        ...     x = Tensor(np.zeros([2, 8]).astype(np.float32))
+        ...     handle = irecv(x, src=0)
+        ...     handle.wait()
+        ...     print(x)
         rank 1:
         [[1. 1. 1. 1. 1. 1. 1. 1.]
          [1. 1. 1. 1. 1. 1. 1. 1.]]
@@ -1956,11 +1960,11 @@ def all_to_all(output_tensor_list, input_tensor_list, group=None, async_op=False
         >>> init_process_group()
         >>> this_rank = get_rank()
         >>> if this_rank == 0:
-        >>>     send_tensor_list = [Tensor(1.), Tensor([[2, 3], [4, 5.]])]
-        >>>     recv_tensor_list = [Tensor((0), dtype=ms.float32), Tensor([0, 0.])]
+        ...     send_tensor_list = [Tensor(1.), Tensor([[2, 3], [4, 5.]])]
+        ...     recv_tensor_list = [Tensor((0), dtype=ms.float32), Tensor([0, 0.])]
         >>> if this_rank == 1:
-        >>>     send_tensor_list = [Tensor([2, 2.]), Tensor([4, 5, 6, 7.])]
-        >>>     recv_tensor_list = [Tensor([[0, 0.],[0, 0]]), Tensor([0, 0, 0, 0.])]
+        ...     send_tensor_list = [Tensor([2, 2.]), Tensor([4, 5, 6, 7.])]
+        ...     recv_tensor_list = [Tensor([[0, 0.],[0, 0]]), Tensor([0, 0, 0, 0.])]
         >>> handle = all_to_all(recv_tensor_list, send_tensor_list)
         >>> print(recv_tensor_list)
         rank 0:
@@ -2109,15 +2113,15 @@ def all_to_all_single(output,
         >>> init_process_group()
         >>> this_rank = get_rank()
         >>> if this_rank == 0:
-        >>>     output = Tensor(np.zeros([3, 3]).astype(np.float32))
-        >>>     tensor = Tensor([[0, 1, 2.], [3, 4, 5], [6, 7, 8]])
-        >>>     result = all_to_all_single(output, tensor, [2, 1], [2, 1])
-        >>>     print(output)
+        ...     output = Tensor(np.zeros([3, 3]).astype(np.float32))
+        ...     tensor = Tensor([[0, 1, 2.], [3, 4, 5], [6, 7, 8]])
+        ...     result = all_to_all_single(output, tensor, [2, 1], [2, 1])
+        ...     print(output)
         >>> if this_rank == 1:
-        >>>     output = Tensor(np.zeros([2, 3]).astype(np.float32))
-        >>>     tensor = Tensor([[9, 10., 11], [12, 13, 14]])
-        >>>     result = all_to_all_single(output, tensor, [1, 1], [1, 1])
-        >>>     print(output)
+        ...     output = Tensor(np.zeros([2, 3]).astype(np.float32))
+        ...     tensor = Tensor([[9, 10., 11], [12, 13, 14]])
+        ...     result = all_to_all_single(output, tensor, [1, 1], [1, 1])
+        ...     print(output)
         rank 0:
         [[ 0.  1.  2.]
          [ 3.  4.  5.]
@@ -2750,7 +2754,7 @@ def broadcast_object_list(object_list, src=0, group=None, device=None):
         >>> rank = get_rank()
         >>> obj = ["test", 12, {1: 2}]
         >>> if rank == 1:
-        >>>     obj = [None, None, None]
+        ...     obj = [None, None, None]
         >>> broadcast_object_list(obj)
         >>> print(obj)
         ['test', 12, {1: 2}]
