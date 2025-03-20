@@ -27,10 +27,10 @@ namespace opt {
 /* GroupedMatmulAssignaddFusion
  *          input
  *            |
- *      [TransposeExt]
- *            |
- *       [MakeTuple] weight ... group_list...      input weight group_list Weight
- *                \     |       /                      \      |         |      /
+ *    [TransposeExt] weight
+ *            |         |
+ *     [MakeTuple] [MakeTuple] ... group_list...     input weight group_list Weight
+ *               \      |        /                     \      |         |      /
  *                [GroupedMatmul]              ->      [GroupedMatmulInplaceAdd]
  *            (split_item=3, group_type=2)                         |
  *                 |                                             output
