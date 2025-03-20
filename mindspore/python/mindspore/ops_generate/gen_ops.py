@@ -35,6 +35,7 @@ module_generators = [
     generate_api_files        # generate api definition files
 ]
 
+
 def main():
     resource_mgr = prepare_resources()
 

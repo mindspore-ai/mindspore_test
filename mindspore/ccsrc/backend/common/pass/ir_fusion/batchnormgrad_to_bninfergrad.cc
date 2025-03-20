@@ -46,6 +46,7 @@ std::optional<T> GetScalarAnfNodeValue(const AnfNodePtr &anf_node) {
     return std::nullopt;
   }
   auto value_node = anf_node->cast<ValueNodePtr>();
+  MS_EXCEPTION_IF_NULL(value_node);
   auto value_opt = mindspore::GetScalarValue<T>(value_node->value());
   if (!value_opt.has_value()) {
     return std::nullopt;

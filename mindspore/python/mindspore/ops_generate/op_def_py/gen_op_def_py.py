@@ -23,6 +23,7 @@ from op_def_py.op_def_py_generator import OpDefPyGenerator
 from resources.resource_list import ResourceType
 from common import gen_constants as K
 
+
 def generate_ops_prim_file(work_path, op_protos, doc_dict, file_pre):
     generator = OpPrimPyGenerator()
     generator.generate(work_path, op_protos, doc_dict, file_pre)

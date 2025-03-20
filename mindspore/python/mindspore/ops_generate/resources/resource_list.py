@@ -17,6 +17,7 @@
 
 from enum import Enum
 
+
 class ResourceType(Enum):
     OP_PROTO = 0
     DEPRECATED_OP_PROTO = 1

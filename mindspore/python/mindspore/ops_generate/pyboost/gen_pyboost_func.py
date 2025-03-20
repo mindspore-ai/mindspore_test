@@ -52,7 +52,7 @@ def clear_old_generated_code(work_path):
         real_path = os.path.join(work_path, f)
         if os.path.exists(real_path):
             shutil.rmtree(real_path)
-            logging.warning(f"rm file ${real_path}")  # pylint: disable=logging-fstring-interpolation
+            logging.warning("rm file %s", real_path)
 
 
 def gen_pyboost_code(resource_mgr):
