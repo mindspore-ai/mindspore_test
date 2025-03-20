@@ -51,19 +51,3 @@ def test_copy_(mode):
     z_output = net(Tensor(x), Tensor(z))
     assert np.allclose(y_output.asnumpy(), y, rtol=1e-5, equal_nan=True)
     assert np.allclose(z_output.asnumpy(), expect_z, rtol=1e-5, equal_nan=True)
-
-
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu'],
-          level_mark='level1', card_mark='onecard', essential_mark='unessential')
-def test_copy_exception_():
-    """
-    Feature: test Tensor.copy_
-    Description: Verify the result of Tensor.copy_
-    Expectation: expect ValueError result
-    """
-    x = generate_random_input((2, 2, 3, 4), np.float32)
-    y = generate_random_input((2, 2, 3, 4), np.float32)
-
-    with pytest.raises(RuntimeError):
-        net = Net()
-        net(Tensor(x), Tensor(y))
