@@ -121,6 +121,17 @@ void CheckForwardFuse(const device::DeviceContext *context, size_t stream, const
   }
 }
 
+bool CheckMatMulShape(const ShapeVector &shape1, const ShapeVector &shape2) {
+  constexpr int64_t MAX_GM_STRIDE = UINT16_MAX;
+  if (shape1.size() > kDim4 || shape2.size() > kDim4) {
+    return false;
+  }
+  if (shape1.back() > MAX_GM_STRIDE || shape2.back() > MAX_GM_STRIDE) {
+    return false;
+  }
+  return true;
+}
+
 std::pair<bool, TypeId> CheckMatMul(const PrimitivePtr prim, const BaseTensorPtr &x_tensor,
                                     const BaseTensorPtr &y_tensor) {
   auto output_type = x_tensor->data_type();
@@ -142,10 +153,7 @@ std::pair<bool, TypeId> CheckMatMul(const PrimitivePtr prim, const BaseTensorPtr
   if (!x_tensor->is_contiguous() || !y_tensor->is_contiguous()) {
     return {false, output_type};
   }
-  if (x_tensor->shape().size() > kDim4 || y_tensor->shape().size() > kDim4) {
-    return {false, output_type};
-  }
-  return {true, output_type};
+  return {CheckMatMulShape(x_tensor->shape(), y_tensor->shape()), output_type};
 }
 
 template <typename F, typename... Args>
@@ -217,6 +225,26 @@ void BinaryDvmCall(const std::string &op_name, OpRunner *op, dvm::BinaryOpType o
   outputs.emplace_back(std::move(tensor));
   op->CreateOutputSimpleInfo();
   MS_LOG(INFO) << op_name << " call end, kernel id is " << k->id();
+}
+
+bool SameTensor(const BaseTensorPtr &tensor1, const BaseTensorPtr &tensor2) {
+  MS_EXCEPTION_IF_NULL(tensor1);
+  MS_EXCEPTION_IF_NULL(tensor2);
+  if (tensor1->data_type() != tensor2->data_type()) {
+    return false;
+  }
+  if (tensor1->shape() != tensor2->shape()) {
+    return false;
+  }
+  if (!tensor1->is_contiguous() || !tensor2->is_contiguous()) {
+    return false;
+  }
+  auto s1 = tensor1->storage_info();
+  auto s2 = tensor2->storage_info();
+  if (s1 != nullptr && s2 != nullptr) {
+    return s1->storage_offset == s2->storage_offset && s1->shape == s2->shape && s1->strides == s2->strides;
+  }
+  return true;
 }
 }  // namespace
 
@@ -982,13 +1010,11 @@ tensor::BaseTensorPtr InplaceCopyAscendDvm::Call(const BaseTensorPtr &variable_t
   ProfileTrackerTask();
   auto addr0 = variable_tensor->device_address();
   auto addr1 = value_tensor->device_address();
-  if (addr0 && addr1 && addr0->GetMutablePtr() == addr1->GetMutablePtr() &&
-      value_tensor->shape() == variable_tensor->shape()) {
+  if (addr0 && addr1 && addr0->GetMutablePtr() == addr1->GetMutablePtr() && SameTensor(variable_tensor, value_tensor)) {
     PyBoostUtils::PrepareOpInputs(device_context_, stream_id_, variable_tensor, value_tensor);
     outputs_.push_back(variable_tensor);
     outputs_[0]->set_need_pipeline_sync(true);
     CreateOutputSimpleInfo();
-    FlushLazyFusion();
     return outputs_[0];
   }
   auto k = g_lazy_fusion_manager.Get(device_context_, stream_id_);
@@ -996,6 +1022,9 @@ tensor::BaseTensorPtr InplaceCopyAscendDvm::Call(const BaseTensorPtr &variable_t
   PyBoostUtils::PrepareOpInputs(device_context_, stream_id_, variable_tensor, value_tensor);
   // copy value_tensor to variable_tensor
   auto value_obj = k->Input(value_tensor, false);
+  if (value_tensor->data_type() != variable_tensor->data_type()) {
+    value_obj = k->Cast(value_obj, k->TransType(variable_tensor->data_type()));
+  }
   if (value_tensor->shape() != variable_tensor->shape()) {
     value_obj = k->Broadcast(value_obj, k->GetShapeRef(variable_tensor->shape()));
   }
@@ -1211,11 +1240,12 @@ tensor::BaseTensorPtr MatMulExtAscendDvm::Call(const mindspore::tensor::BaseTens
   bool transpose_b = false;
   ShapeVector input_shape;
   ShapeVector other_shape;
+  auto check_input_tensor = CheckMatMulExtTranspose(input_tensor, &transpose_a, &input_shape);
+  auto check_other_tensor = CheckMatMulExtTranspose(other_tensor, &transpose_b, &other_shape);
   auto data_type = input_tensor->data_type();
   if (NeedSync() || other_tensor->data_type() != data_type ||
-      (data_type != kNumberTypeFloat16 && data_type != kNumberTypeBFloat16) ||
-      !CheckMatMulExtTranspose(input_tensor, &transpose_a, &input_shape) ||
-      !CheckMatMulExtTranspose(other_tensor, &transpose_b, &other_shape)) {
+      (data_type != kNumberTypeFloat16 && data_type != kNumberTypeBFloat16) || !check_input_tensor ||
+      !check_other_tensor || !CheckMatMulShape(input_shape, other_shape)) {
     return MatMulExtAscend::Call(input_tensor, other_tensor);
   }
   FlushLazyFusion();  // forward fusion not allowed
@@ -1241,7 +1271,6 @@ tensor::BaseTensorPtr MatMulExtAscendDvm::Call(const mindspore::tensor::BaseTens
 
 void RegisterLazyFusionOp() {
   const auto &disable_ops = LazyFusionFlags::GetInstance().disable_ops;
-  MS_REPLACE_DVM_OP(Add);
   MS_REPLACE_DVM_OP(Cast);
   MS_REPLACE_DVM_OP(Abs);
   MS_REPLACE_DVM_OP(Neg);
