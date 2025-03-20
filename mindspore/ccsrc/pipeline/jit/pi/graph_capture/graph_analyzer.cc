@@ -972,7 +972,8 @@ ValueNode *MutateFreeVarNode(ValueNode *node, std::vector<ValueNode *> *output_o
   MS_EXCEPTION_IF_CHECK_FAIL(node->getInputs().size() == 1, "inputs.size() should be 1");
   ValueNode *binary_subscr = node->getInputs()[0];
   output_optimize->push_back(binary_subscr);
-  MS_EXCEPTION_IF_CHECK_FAIL(binary_subscr->getInputs().size() == 2, "inputs.size() should be 2");
+  constexpr size_t kBinarySubscrInputsSize = 2;
+  MS_EXCEPTION_IF_CHECK_FAIL(binary_subscr->getInputs().size() == kBinarySubscrInputsSize, "inputs.size() should be 2");
   ValueNode *load_attr = binary_subscr->getInputs()[0];
   output_optimize->push_back(load_attr);
   MS_EXCEPTION_IF_CHECK_FAIL(node->getInputs().size() == 1, "inputs.size() should be 1");

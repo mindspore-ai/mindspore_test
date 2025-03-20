@@ -17,6 +17,7 @@
 
 from .jit_trace import _jit_trace_begin, _jit_trace_end
 
+
 def _jit_begin(fn_name, *args):
     """
     Start to build a MindIR func graph for a code snippet.
