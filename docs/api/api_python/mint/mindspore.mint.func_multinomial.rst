@@ -33,7 +33,7 @@ mindspore.mint.multinomial
 
     返回：
         Tensor，数据类型为int64。
-        如果 `input` 是向量， 输出数据shape是 `num_samples` 的向量。
+        如果 `input` 是向量，输出数据shape是 `num_samples` 的向量。
         如果 `input` 是 m 行矩阵，输出数据shape是 m * num_samples 大小的矩阵。
 
     异常：
