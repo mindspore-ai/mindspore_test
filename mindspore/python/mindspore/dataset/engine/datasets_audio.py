@@ -721,7 +721,7 @@ class TedliumDataset(MappableDataset, AudioBaseDataset):
 
     This is the TED-LIUM corpus release 2, licensed under Creative Commons BY-NC-ND 3.0. All talks and text are
     property of TED Conferences LLC. The TED-LIUM corpus was made from audio talks and their transcriptions available
-    on the TED website. We have prepared and filtered these data in order to train acoustic models to participate to
+    on the TED website. These data were prepared and filtered in order to train acoustic models to participate to
     the International Workshop on Spoken Language Translation 2011 (the LIUM English/French SLT system reached the
     first rank in the SLT task).
 
