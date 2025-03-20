@@ -416,8 +416,8 @@ class COMMON_EXPORT TensorPy : public TensorPyBase {
   ///
   /// \return True if tensor memory is contiguous, false otherwise.
   bool NeedContiguous() const;
-  PyObject *GetFlattenTensor();
-  void SetFlattenTensor(PyObject *tensor);
+  py::object GetFlattenTensor();
+  void SetFlattenTensor(py::object tensor);
 
   /// \brief Used for automatic gradient.
   ///
@@ -520,7 +520,7 @@ class COMMON_EXPORT TensorPy : public TensorPyBase {
   py::object slice_num_of_persistent_data_;
   py::object slice_shape_of_persistent_data_;
   std::string device_;
-  PyObject *flatten_tensor_;
+  py::object flatten_tensor_;
   stub::StubNodePtr stub_{nullptr};
 };
 

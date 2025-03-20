@@ -256,9 +256,9 @@ void TensorPy::SetParamInfo(const ParamInfoPtr &param_info) {
   base_tensor->set_param_info(param_info);
 }
 
-PyObject *TensorPy::GetFlattenTensor() { return flatten_tensor_; }
+py::object TensorPy::GetFlattenTensor() { return flatten_tensor_; }
 
-void TensorPy::SetFlattenTensor(PyObject *tensor) {
+void TensorPy::SetFlattenTensor(py::object tensor) {
   if (tensor == nullptr) {
     return;
   }
