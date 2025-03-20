@@ -83,7 +83,7 @@ def test_greater_equal_op_dtype_2(mode, dtype):
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
-@pytest.mark.parametrize('dtype', [np.bool])
+@pytest.mark.parametrize('dtype', [np.bool_])
 def test_greater_equal_op_dtype_3(mode, dtype):
     """
     Feature: Test GreaterEqual op.

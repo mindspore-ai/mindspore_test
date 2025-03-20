@@ -17,7 +17,6 @@ from tests.mark_utils import arg_mark
 import os
 import stat
 import numpy as np
-import pytest
 
 import mindspore
 import mindspore.context as context
@@ -103,14 +102,14 @@ def test_gatherd_int32():
 def test_gatherd_bool():
     prop = 100 if np.random.random() > 0.5 else -100
     x = np.random.randn(5, 5, 5).astype(np.int32) * prop
-    x = (x >= 0).astype(np.bool)
+    x = (x >= 0).astype(np.bool_)
     index = np.random.randint(0, 5, (5, 5, 8)).astype(np.int32)
     dim = -1
 
     gatherd = NetGatherD(dim)
     output = gatherd(Tensor(x), Tensor(index))
 
-    expect = np.zeros(index.shape).astype(np.bool)
+    expect = np.zeros(index.shape).astype(np.bool_)
     for i in range(index.shape[0]):
         for j in range(index.shape[1]):
             for k in range(index.shape[2]):

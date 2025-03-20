@@ -51,8 +51,8 @@ class NetNot(Cell):
         return self.logicalnot(input_x)
 
 
-x = np.array([True, False, False]).astype(np.bool)
-y = np.array([False]).astype(np.bool)
+x = np.array([True, False, False]).astype(np.bool_)
+y = np.array([False]).astype(np.bool_)
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

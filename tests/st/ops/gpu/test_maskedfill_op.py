@@ -15,7 +15,6 @@
 from tests.mark_utils import arg_mark
 
 import numpy as np
-import pytest
 
 import mindspore as ms
 import mindspore.context as context
@@ -39,26 +38,26 @@ class MaskedFillNet(nn.Cell):
 def maskedfill_fun(ntype):
     maskedfill_net = MaskedFillNet()
     inputs = Tensor(np.array([[1, 2, 3, 4], [5, 6, 7, 8]]).astype(ntype))
-    mask = Tensor(np.array([[True, True, False, True], [False, False, True, False]]).astype(np.bool))
+    mask = Tensor(np.array([[True, True, False, True], [False, False, True, False]]).astype(np.bool_))
     value = Tensor(np.array(22).astype(ntype))
     expect = np.array([[22, 22, 3, 22], [5, 6, 22, 8]]).astype(ntype)
     output = maskedfill_net(inputs, mask, value)
     assert (output.asnumpy() == expect).all()
 
-    mask = Tensor(np.array([[True, True, True, True], [True, True, True, True]]).astype(np.bool))
+    mask = Tensor(np.array([[True, True, True, True], [True, True, True, True]]).astype(np.bool_))
     value = Tensor(np.array(1).astype(ntype))
     expect = np.array([[1, 1, 1, 1], [1, 1, 1, 1]]).astype(ntype)
     output = maskedfill_net(inputs, mask, value)
     assert (output.asnumpy() == expect).all()
 
-    mask = Tensor(np.array([[False, False, False, False], [False, False, False, False]]).astype(np.bool))
+    mask = Tensor(np.array([[False, False, False, False], [False, False, False, False]]).astype(np.bool_))
     value = Tensor(np.array(22).astype(ntype))
     expect = np.array([[1, 2, 3, 4], [5, 6, 7, 8]]).astype(ntype)
     output = maskedfill_net(inputs, mask, value)
     assert (output.asnumpy() == expect).all()
 
     # BroadCast
-    mask = Tensor(np.array([True, True, False, True]).astype(np.bool))
+    mask = Tensor(np.array([True, True, False, True]).astype(np.bool_))
     value = Tensor(np.array(22).astype(ntype))
     expect = np.array([[22, 22, 3, 22], [22, 22, 7, 22]]).astype(ntype)
     output = maskedfill_net(inputs, mask, value)
@@ -108,7 +107,7 @@ def test_maskedfill_int8():
 def maskedfill_value(value):
     maskedfill_net = MaskedFillNet()
     inputs = Tensor(np.array([1, 2, 3, 4]).astype(np.float32))
-    mask = Tensor(np.array([True, True, False, True]).astype(np.bool))
+    mask = Tensor(np.array([True, True, False, True]).astype(np.bool_))
     expect = np.array([0.5, 0.5, 3, 0.5]).astype(np.float32)
     output = maskedfill_net(inputs, mask, value)
     assert (output.asnumpy() == expect).all()
@@ -132,7 +131,7 @@ def test_func_masked_fill_float():
     Expectation: The result match to expect.
     """
     inputs = Tensor(np.array([[1, 2, 3, 4], [5, 6, 7, 8]]).astype(np.float16))
-    mask = Tensor(np.array([[True, True, False, True], [False, False, True, False]]).astype(np.bool))
+    mask = Tensor(np.array([[True, True, False, True], [False, False, True, False]]).astype(np.bool_))
     value = F.cast(22, inputs.dtype)
     expect = np.array([[22, 22, 3, 22], [5, 6, 22, 8]]).astype(np.float16)
     output = F.masked_fill(inputs, mask, value)
@@ -147,7 +146,7 @@ def test_tensor_masked_fill_float():
     Expectation: The result match to expect.
     """
     inputs = Tensor(np.array([[1, 2, 3, 4], [5, 6, 7, 8]]).astype(np.float16))
-    mask = Tensor(np.array([[True, True, False, True], [False, False, True, False]]).astype(np.bool))
+    mask = Tensor(np.array([[True, True, False, True], [False, False, True, False]]).astype(np.bool_))
     value = F.cast(22, inputs.dtype)
     output = inputs.masked_fill(mask, value)
     expect = np.array([[22, 22, 3, 22], [5, 6, 22, 8]]).astype(np.float16)

@@ -24,7 +24,7 @@ import mindspore.context as context
 
 
 class TensorIntAutoCast(nn.Cell):
-    def __init__(self, ):
+    def __init__(self):
         super(TensorIntAutoCast, self).__init__()
         self.i = 2
 
@@ -34,7 +34,7 @@ class TensorIntAutoCast(nn.Cell):
 
 
 class TensorFPAutoCast(nn.Cell):
-    def __init__(self, ):
+    def __init__(self):
         super(TensorFPAutoCast, self).__init__()
         self.f = 1.2
 
@@ -44,7 +44,7 @@ class TensorFPAutoCast(nn.Cell):
 
 
 class TensorBoolAutoCast(nn.Cell):
-    def __init__(self, ):
+    def __init__(self):
         super(TensorBoolAutoCast, self).__init__()
         self.f = True
 
@@ -54,8 +54,8 @@ class TensorBoolAutoCast(nn.Cell):
 
 
 class TensorAutoCast(nn.Cell):
-    def __init__(self, ):
-        super(TensorAutoCast, self).__init__()
+    def __init__(self):
+        pass
 
     def construct(self, t1, t2):
         z = F.tensor_mul(t1, t2)
@@ -250,7 +250,7 @@ def test_tensor_auto_cast():
 
 def test_bool_tensor_and_float():
     context.set_context(mode=context.GRAPH_MODE)
-    t_bool = Tensor(np.ones([2, 1, 2, 2]).astype(np.bool), mstype.bool_)
+    t_bool = Tensor(np.ones([2, 1, 2, 2]).astype(np.bool_), mstype.bool_)
     t_int32 = Tensor(np.ones([2, 1, 2, 2]), mstype.int32)
     t_fp16 = Tensor(np.ones([2, 1, 2, 2]), mstype.float16)
     t_fp32 = Tensor(np.ones([2, 1, 2, 2]), mstype.float32)
