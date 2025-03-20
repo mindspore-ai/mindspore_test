@@ -38,6 +38,7 @@ mindspore/mindspore/ccsrc/pipeline/jit/ps/parse/parse.cc:mindspore::parse::Parse
 mindspore/mindspore/ccsrc/pynative/grad/ir/ir_bprop.cc:mindspore::pynative::autograd::IrBprop::GetBpropGraphFromExpander
 mindspore/mindspore/ccsrc/include/common/utils/python_utils.h:mindspore::HandleExceptionRethrow
 mindspore/mindspore/ccsrc/backend/common/session/anf_runtime_algorithm.cc:mindspore::session::AnfRuntimeAlgorithm::FlattenInputArg
+mindspore/mindspore/ccsrc/backend/ge_backend/graph_ir/convert.cc:mindspore::backend::ge_backend::DfGraphConvertor::InitParamWithData
 mindspore/mindspore/ccsrc/runtime/graph_scheduler/actor/output_actor.cc:mindspore::runtime::OutputActor::CreateOutputTensor
 mindspore/mindspore/ccsrc/pipeline/jit/ps/static_analysis/prim.cc:mindspore::abstract::ConvertAbstractToPython
 mindspore/mindspore/ccsrc/frontend/ir/log_adapter_py.h:mindspore::PyExceptionInitializer::HandleExceptionPy
