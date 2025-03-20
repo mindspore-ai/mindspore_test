@@ -1316,29 +1316,29 @@ def load_checkpoint(ckpt_file_name, net=None, strict_load=False, filter_prefix=N
 
     Args:
         ckpt_file_name (str): Checkpoint file name.
-        net (Cell): The network where the parameters will be loaded. Default: ``None`` .
-        strict_load (bool): Whether to strict load the parameter into net. If ``False`` , it will load parameter
-                            into net when parameter name's suffix in checkpoint file is the same as the
+        net (Cell, optional): The network where the parameters will be loaded. Default: ``None`` .
+        strict_load (bool, optional): Whether to strict load the parameter into net. If ``False`` , it will load
+                            parameter into net when parameter name's suffix in checkpoint file is the same as the
                             parameter in the network. When the types are inconsistent perform type conversion
                             on the parameters of the same type, such as float32 to float16. Default: ``False`` .
-        filter_prefix (Union[str, list[str], tuple[str]]): Deprecated(see `choice_func`). Parameters starting with the
-            filter_prefix will not be loaded. Default: ``None`` .
-        dec_key (Union[None, bytes]): Byte type key used for decryption. If the value is ``None`` , the decryption
-                                      is not required. Default: ``None`` .
-        dec_mode (str): This parameter is valid only when dec_key is not set to ``None`` . Specifies the decryption
-                        mode, currently supports ``"AES-GCM"`` and ``"AES-CBC"`` and ``"SM4-CBC"`` .
+        filter_prefix (Union[str, list[str], tuple[str]], optional): Deprecated(see `choice_func`).
+            Parameters starting with the filter_prefix will not be loaded. Default: ``None`` .
+        dec_key (Union[None, bytes], optional): Byte type key used for decryption. If the value is ``None`` ,
+                                      the decryption is not required. Default: ``None`` .
+        dec_mode (str, optional): This parameter is valid only when dec_key is not set to ``None`` . Specifies the
+                        decryption mode, currently supports ``"AES-GCM"`` and ``"AES-CBC"`` and ``"SM4-CBC"`` .
                         Default: ``"AES-GCM"`` .
-        specify_prefix (Union[str, list[str], tuple[str]]): Deprecated(see `choice_func`). Parameters starting with the
-            specify_prefix will be loaded. Default: ``None`` .
-        choice_func (Union[None, function]) : Input value of the function is a Parameter name of type string,
+        specify_prefix (Union[str, list[str], tuple[str]], optional): Deprecated(see `choice_func`).
+            Parameters starting with the specify_prefix will be loaded. Default: ``None`` .
+        choice_func (Union[None, function], optional) : Input value of the function is a Parameter name of type string,
             and the return value is a bool. If returns ``True`` , the Parameter
             that matches the custom condition will be loaded. If returns ``False`` , the Parameter that
             matches the custom condition will be removed. Default: ``None`` .
-        crc_check (bool) : Whether to perform crc32 validation when loading checkpoint. Default: ``False`` .
-        remove_redundancy (bool): Whether to enable loading of checkpoint saved with redundancy removal.
+        crc_check (bool, optional) : Whether to perform crc32 validation when loading checkpoint. Default: ``False`` .
+        remove_redundancy (bool, optional): Whether to enable loading of checkpoint saved with redundancy removal.
             Redundancy removal refers to eliminating redundant data in data parallelism mode. Default: ``False`` , means
             redundant-free loading is not enabled.
-        format (str): Format of the input file, can be "ckpt" or "safetensors". Default: "ckpt".
+        format (str, optional): Format of the input file, can be "ckpt" or "safetensors". Default: "ckpt".
 
     Returns:
         Dict, key is parameter name, value is a Parameter or string. When the `append_dict` parameter of
