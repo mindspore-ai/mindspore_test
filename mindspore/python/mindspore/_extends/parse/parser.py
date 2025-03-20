@@ -923,6 +923,7 @@ def is_from_third_party_library(value):
     """Check if value is from a third-party library."""
     return third_party_checker.is_from_third_party_module(value)
 
+
 def convert_to_mutable(object):
     return mutable(object)
 
