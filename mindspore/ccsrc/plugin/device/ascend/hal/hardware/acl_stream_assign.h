@@ -118,7 +118,8 @@ class AclStreamAssign {
                                  std::map<size_t, std::set<size_t>> *no_event_streams, CNodePtr pre_cnode = nullptr,
                                  CNodePtr next_cnode = nullptr);
   void AddDelayedSendRecvKernel(const NotNull<mindspore::KernelGraphPtr> &kernel_graph, const CNodePtr &kernel,
-                                size_t exec_idx, uint32_t record_stream_id, std::vector<CNodePtr> *exec_order,
+                                size_t exec_idx, uint32_t record_stream_id,
+                                const std::vector<CNodePtr> &origin_exec_order, std::vector<CNodePtr> *exec_order,
                                 std::map<size_t, std::set<size_t>> *no_event_streams,
                                 mindspore::HashMap<size_t, std::vector<CNodePtr>> *delayed_recv_nodes);
   void ProcessSideEffect(const NotNull<KernelGraphPtr> &kernel_graph, const CNodePtr kernel, size_t process_stream_id,

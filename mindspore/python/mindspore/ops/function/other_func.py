@@ -19,6 +19,7 @@ from mindspore.ops.auto_generate.gen_ops_prim import moe_init_routing_v2_op
 
 partial_ = P.Partial()
 depend_ = P.Depend()
+move_to_ = P.MoveTo()
 
 
 def partial(func, *args):
@@ -106,6 +107,48 @@ def depend(value, expr):
          [0.2 0.2 0.2 0.2 0.2]]
     """
     return depend_(value, expr)
+
+
+def move_to(input, to="CPU", blocking=True):
+    """
+    Copy tensor to target device synchronously or asynchronously, default synchronously.
+
+    .. note::
+        This interface currently only supports Graph mode with jit_level of O0 or O1.
+
+    Args:
+        input (Union[Tensor, list[int], tuple[int]]): The input tensor. When the input is list and tuple, it will be
+                                                      converted to tensor before copying.
+        to (str, optional): Specify the target device, with optional values of ``"Ascend"`` and ``"CPU"``.
+                            Default ``"CPU"`` .
+        blocking (bool, optional): Whether use synchronous copying. Default ``True``.
+
+    Returns:
+        A new tensor on target device.
+
+    Supported Platforms:
+        ``Ascend`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import nn, ops, Tensor
+        >>> mindspore.set_context(mode=mindspore.GRAPH_MODE)
+        >>> class MoveToNet(nn.Cell):
+        ...     def __init__(self):
+        ...         super().__init__()
+        ...
+        ...     def construct(self, x):
+        ...         cpu_x = ops.move_to(x, "CPU")
+        ...         npu_x = ops.move_to(cpu_x, "Ascend")
+        ...         return npu_x
+        ...
+        >>> net = MoveToNet()
+        >>> x = Tensor([1, 2, 3], mindspore.int64)
+        >>> y = net(x)
+        >>> print(y)
+        [1 2 3]
+    """
+    return move_to_(input, to, blocking)
 
 
 def moe_init_routing_v2(x, expert_idx, active_num, expert_capacity, expert_num, drop_pad_mode,
@@ -224,6 +267,7 @@ __all__ = [
     'depend',
     'partial',
     'rotary_position_embedding',
+    'move_to',
     'moe_init_routing_v2'
 ]
 __all__.sort()

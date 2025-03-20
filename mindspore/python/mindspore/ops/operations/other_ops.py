@@ -19,7 +19,8 @@ from mindspore import log as logger
 from mindspore.ops import signature as sig
 from mindspore import _checkparam as validator
 from mindspore.common import dtype as mstype
-from mindspore.ops.primitive import Primitive, PrimitiveWithCheck, PrimitiveWithInfer, prim_attr_register
+from mindspore.ops.primitive import Primitive, PrimitiveWithCheck, PrimitiveWithInfer
+from mindspore.ops.primitive import prim_attr_register, prim_arg_register
 from mindspore.ops.operations._pyfunc_registry import add_pyfunc
 from mindspore._c_expression import typing
 from mindspore.ops._primitive_cache import _get_cache_prim
@@ -523,6 +524,56 @@ class Depend(Primitive):
 
     def __call__(self, value, expr):
         return value
+
+class MoveTo(Primitive):
+    r"""
+    Copy tensor to target device synchronously or asynchronously, default synchronously.
+
+    .. note::
+        This interface currently only supports Graph mode with jit_level of O0 or O1.
+
+    Args:
+        input (Union[Tensor, list[int], tuple[int]]): The input tensor. When the input is list and tuple, it will be
+                                                      converted to tensor before copying.
+        to (str, optional): Specify the target device, with optional values of ``"Ascend"`` and ``"CPU"``.
+                            Default ``"CPU"`` .
+        blocking (bool, optional): Whether use synchronous copying. Default ``True``.
+
+    Returns:
+        A new tensor on target device.
+
+    Supported Platforms:
+        ``Ascend`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import nn, ops, Tensor
+        >>> mindspore.set_context(mode=mindspore.GRAPH_MODE)
+        >>> class MoveToNet(nn.Cell):
+        ...     def __init__(self):
+        ...         super().__init__()
+        ...         self.move_to = ops.MoveTo()
+        ...
+        ...     def construct(self, x):
+        ...         cpu_x = self.move_to(x, "CPU")
+        ...         npu_x = self.move_to(cpu_x, "Ascend")
+        ...         return npu_x
+        ...
+        >>> net = MoveToNet()
+        >>> x = Tensor([1, 2, 3], mindspore.int64)
+        >>> y = net(x)
+        >>> print(y)
+        [1 2 3]
+    """
+    __mindspore_signature__ = (
+        sig.make_sig('input'),
+        sig.make_sig('to', default='CPU'),
+        sig.make_sig('blocking', default=True)
+    )
+
+    @prim_arg_register
+    def __init__(self):
+        pass
 
 
 class UpdateState(Primitive):
