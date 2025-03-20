@@ -495,7 +495,7 @@ class _ProcessManager:
             try:
                 p = self.proc_rank_map[rank_id]
                 p_status = p.poll()
-                if not psutil.pid_exists(p.pid):
+                if (not psutil.pid_exists(p.pid)) and (p_status != 0):
                     p_status = 300
                 return {"pid": p.pid, "status": p_status, "global_rank": global_rank_id}
             except KeyError:
