@@ -30,6 +30,7 @@ namespace mindspore::backend::ge_backend {
 void ClearGeSessionAndRunner() {
   DfGraphManager::GetInstance().DeleteGraphRunner();
   DfGraphManager::GetInstance().DeleteGeSession();
+  DfGraphManager::GetInstance().ClearGraph();
 }
 
 bool IsInitDataSetQueueNode(const AnfNodePtr &node) {
