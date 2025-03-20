@@ -305,8 +305,8 @@ bool DatasetReaderOptimizer::CreateZeroNode(const Shapes &shapes, const std::vec
         for (size_t k = 0; k < cur_tensor_map.at(j).size(); ++k) {
           auto val = cur_tensor_map.at(j).at(k);
           if (val != -1) {
-            auto real_idx = cur_dev_mat.size() - val - 1;
-            shard_size *= cur_dev_mat.at(real_idx);
+            auto real_idx = cur_dev_mat.size() - LongToSize(val) - 1;
+            shard_size *= LongToSize(cur_dev_mat.at(real_idx));
           }
         }
         slice_shape.emplace_back(cur_input_shape.at(j) / SizeToLong(shard_size));
