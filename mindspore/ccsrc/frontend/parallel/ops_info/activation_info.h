@@ -29,6 +29,8 @@
 
 namespace mindspore {
 namespace parallel {
+constexpr size_t SORT_EXT_INPUT_SIZE = 2;
+
 class ActivationBase : public OperatorInfo {
  public:
   ActivationBase(const std::string &operator_name, const Shapes &inputs_shape, const Shapes &outputs_shape,
@@ -181,7 +183,7 @@ class SortExtInfo : public SortInfo {
   SortExtInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
               const PrimitiveAttrs &attrs)
       : SortInfo(name, inputs_shape, outputs_shape, attrs) {
-    outputs_size_ = 2;
+    outputs_size_ = SORT_EXT_INPUT_SIZE;
   }
   ~SortExtInfo() override = default;
   ReplaceGraphPtr replace_graph(const CNodePtr &cnode) override;
