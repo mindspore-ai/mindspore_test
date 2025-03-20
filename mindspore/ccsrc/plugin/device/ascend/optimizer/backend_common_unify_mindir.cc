@@ -181,6 +181,7 @@ PassManagerPtr GetBackendFusionGroupPassManager() {
   pm->AddFusionPass(std::make_shared<opt::AddRmsNormDynamicQuantFusion>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::AddRmsNormQuantFusion>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::AddCastRmsNormCastQuantFusion>(), infer_boost);
+  pm->AddFusionPass(std::make_shared<opt::RmsNormAddQuantFusion>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::RmsNormQuantFusion>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::AddCastRmsNormCastFusion>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::ShapeReshapeFusion>(), infer_boost);

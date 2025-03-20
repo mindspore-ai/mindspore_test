@@ -36,6 +36,16 @@ void ConvertDataType(void *dst_data, void *ori_data, int64_t len, bool need_rank
     dst_data_t[i] = static_cast<DST_T>(ori_data_t[i]);
   }
 }
+float int32_to_float(std::int32_t int_value) {
+  union {
+    std::int32_t i;
+    float f;
+  } converter;
+  converter.i = int_value;
+  return converter.f;
+}
+
+}  // namespace
 
 std::shared_ptr<ValueNode> CreateValueNode(const tensor::TensorPtr &assist_tensor, const TensorTypePtr &tensor_type) {
   MS_EXCEPTION_IF_NULL(assist_tensor);
@@ -54,17 +64,6 @@ std::shared_ptr<ValueNode> CreateValueNode(const tensor::TensorPtr &assist_tenso
   AnfAlgo::SetSelectKernelBuildInfo(builder.Build(), assist_const.get());
   return assist_const;
 }
-
-float int32_to_float(std::int32_t int_value) {
-  union {
-    std::int32_t i;
-    float f;
-  } converter;
-  converter.i = int_value;
-  return converter.f;
-}
-
-}  // namespace
 
 std::shared_ptr<ValueNode> ConvertWeightsToNewType(const AnfNodePtr &weight_node) {
   auto w_param = GetParamFromLoad(weight_node->cast<CNodePtr>(), true);
