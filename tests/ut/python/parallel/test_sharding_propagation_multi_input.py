@@ -191,6 +191,84 @@ def test_mint_matmul_layout():
             assert v == [[4, 2], [2, 1]]
 
 
+def test_mint_matmul_layout_222():
+    """
+    Feature: Sharding propagation for mint.matmul.
+    Description: identity(1, 2)->matmul identity(2, 2)->matmul
+    Expectation: matmul gets right strategy.
+    """
+    device_num = 8
+    class MatMulNet(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.gamma = Parameter(Tensor(np.ones([128, 96]), dtype=ms.float32), name="gamma")
+            self.matmul = mint.matmul
+            ly = ms.Layout((2, 2, 2, 1), ("axis0", "axis1", "axis2", "axis3"))
+            self.matmul_shard = ms.shard(self.matmul, in_strategy=(ly("axis3", "axis1"), ly("axis1", "axis0")))
+
+        def construct(self, input_x, input_y):
+            output = self.matmul_shard(input_x, input_y)
+            print("output:", output)
+            return output
+
+    context.set_auto_parallel_context(device_num=device_num, global_rank=0, parallel_mode="auto_parallel",
+                                      search_mode="sharding_propagation")
+
+    net = GradWrapTwoInput(NetWithLossTwoInput(MatMulNet()))
+    net.set_train()
+
+    x = Tensor(np.ones([128, 96]), dtype=ms.float32)
+    y = Tensor(np.ones([96, 96]), dtype=ms.float32)
+
+
+    _cell_graph_executor.compile(net, x, y, phase='train')
+    strategies = _cell_graph_executor._get_shard_strategy(net)
+    context._reset_auto_parallel_context()
+    for (k, v) in strategies.items():
+        print("cnode: {} strategy: {}".format(k, v))
+        if re.search('MatMulExt', k) is not None:
+            print("check MatMulExt")
+            assert v == [[1, 2], [2, 2]]
+
+def test_mint_add_layout_222():
+    """
+    Feature: Sharding propagation for mint.matmul.
+    Description: identity(2, 1)->add identity(2, 1)->add
+    Expectation: add gets right strategy.
+    """
+    device_num = 8
+    class MatMulNet(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.gamma = Parameter(Tensor(np.ones([128, 96]), dtype=ms.float32), name="gamma")
+            self.add = mint.add
+            ly = ms.Layout((2, 1, 2, 2), ("axis0", "axis1", "axis2", "axis3"))
+            self.add_shard = ms.shard(self.add, in_strategy=(ly("axis3", "axis1"), ly("axis3", "axis1")))
+
+        def construct(self, input_x, input_y):
+            output = self.add_shard(input_x, input_y)
+            print("output:", output)
+            return output
+
+    context.set_auto_parallel_context(device_num=device_num, global_rank=0, parallel_mode="auto_parallel",
+                                      search_mode="sharding_propagation")
+
+    net = GradWrapTwoInput(NetWithLossTwoInput(MatMulNet()))
+    net.set_train()
+
+    x = Tensor(np.ones([96, 96]), dtype=ms.float32)
+    y = Tensor(np.ones([96, 96]), dtype=ms.float32)
+
+
+    _cell_graph_executor.compile(net, x, y, phase='train')
+    strategies = _cell_graph_executor._get_shard_strategy(net)
+    context._reset_auto_parallel_context()
+    for (k, v) in strategies.items():
+        print("cnode: {} strategy: {}".format(k, v))
+        if re.search('AddExt', k) is not None:
+            print("check AddExt")
+            assert v == [[2, 1], [2, 1]]
+
 
 def test_mint_add_layout_broadcast():
     """

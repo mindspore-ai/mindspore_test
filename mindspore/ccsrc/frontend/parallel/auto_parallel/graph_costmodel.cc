@@ -356,23 +356,41 @@ void CostGraph::SetOpStrategy(const OperatorInfoPtr &curr_op, const std::shared_
   }
 }
 
-bool CostGraph::CheckBFSNextNode(const std::shared_ptr<Edge> &edge, const OperatorInfoPtr &curr_op,
-                                 const OperatorInfoPtr &next_op, int64_t curr_depth) {
-  bool is_has_stra_op = visited.at(next_op) || configured_ops.find(next_op) != configured_ops.end();
-  if (IsOpNotPropagate(curr_op, next_op)) {
-    return false;
+void CostGraph::AddSwcUnderPrevOpDevMatrix(const OperatorInfoPtr &curr_op, const OperatorInfoPtr &next_op,
+                                           const std::shared_ptr<Edge> &edge) {
+  if (next_op->IsMultiInput()) {
+    next_op->AddVisitedEdge(edge);
+    if (next_op->AllInputsVisited()) {
+      if (next_op->AddSwcUnderPrevOpDevMatrixMulti() != SUCCESS) {
+        MS_LOG(WARNING) << "AddSwcUnderPrevOpDevMatrixMulti failed. curr_op: " << curr_op->name();
+      }
+    }
+  } else {
+    if (!curr_op->outputs_tensor_map_before().empty()) {
+      if (next_op->AddSwcUnderPrevOpDevMatrixSingle(curr_op->out_dev_matrix_shape(),
+                                                    curr_op->outputs_tensor_map_before()[edge->prev_op_output_index()],
+                                                    edge->next_op_input_index()) != SUCCESS) {
+        MS_LOG(WARNING) << "AddSwcUnderPrevOpDevMatrix failed. curr_op:" << curr_op->name();
+      }
+    }
   }
-  if (!curr_op->outputs_tensor_map_before().empty()) {
-    if (next_op->AddSwcUnderPrevOpDevMatrix(curr_op->out_dev_matrix_shape(),
-                                            curr_op->outputs_tensor_map_before()[edge->prev_op_output_index()],
-                                            edge->next_op_input_index()) != SUCCESS) {
-      MS_LOG(WARNING) << "AddSwcUnderPrevOpDevMatrix failed.";
+  return;
+}
+
+bool CostGraph::BFSNextNodeInitEdgeAndCheck(const std::shared_ptr<Edge> &edge, const OperatorInfoPtr &curr_op,
+                                            const OperatorInfoPtr &next_op, int64_t curr_depth) {
+  bool is_has_stra_op = visited.at(next_op) || configured_ops.find(next_op) != configured_ops.end();
+
+  if (!is_has_stra_op && next_op->IsMultiInput()) {
+    if (next_op->AllInputsVisited()) {
+      next_op->InitVisitedEdges();
+    }
+  } else {
+    if (edge->InitEdgeCost() != SUCCESS && !is_has_stra_op) {
+      MS_LOG(EXCEPTION) << "Edge cost initialization failed.";
     }
   }
 
-  if (edge->InitEdgeCost() != SUCCESS && !is_has_stra_op) {
-    MS_LOG(EXCEPTION) << "Edge cost initialization failed.";
-  }
   if (visited.at(next_op)) {
     (void)CheckVisitedEdgeConsistency(edge);
     return false;
@@ -391,9 +409,17 @@ void CostGraph::BFSNextNode(const std::shared_ptr<Edge> &edge, int64_t curr_dept
   const auto &curr_op = edge->prev_operator();
   const auto &next_op = edge->next_operator();
 
-  next_op->LayoutPropagationBegin();
+  if (IsOpNotPropagate(curr_op, next_op)) {
+    return;
+  }
 
-  if (!CheckBFSNextNode(edge, curr_op, next_op, curr_depth)) {
+  bool is_has_stra_op = visited.at(next_op) || configured_ops.find(next_op) != configured_ops.end();
+  next_op->LayoutPropagationBegin();
+  if (!is_has_stra_op) {
+    (void)AddSwcUnderPrevOpDevMatrix(curr_op, next_op, edge);
+  }
+
+  if (!BFSNextNodeInitEdgeAndCheck(edge, curr_op, next_op, curr_depth)) {
     return;
   }
 
@@ -428,14 +454,18 @@ void CostGraph::BFSNextNode(const std::shared_ptr<Edge> &edge, int64_t curr_dept
   if (next_op->IsMultiInput()) {
     MS_LOG(INFO) << "BFSNextNode next_op is multi-input op! cur:" << curr_op->name() << " next: " << next_op->name()
                  << " cnode name: " << next_op->cnode()->fullname_with_scope();
-    bool exist_candidate_strategy = false;
-    next_op->AddVisitedEdge(edge);
-    candidate_swc = edge->GetNextOpStrategyByCurMultiInput(&waitting_list_, curr_depth, &exist_candidate_strategy);
-    if (exist_candidate_strategy) {
-      MS_LOG(INFO) << "BFSNextNode next_op is multi-input op! exist candidate strategy";
+    if (next_op->AllInputsVisited()) {
+      MS_LOG(INFO) << "next_op AllInputsVisited";
+      candidate_swc = edge->GetNextOpStrategyByCurMultiInput(&waitting_list_, curr_depth);
+    } else {
+      // There is input of next_op not visited.
+      MS_LOG(INFO) << "next_op_visited_edges size: " << next_op->get_visited_edges().size();
+      waitting_list_[next_op] = curr_depth;
       // Do nothing when next_op has candidate strategies
+      MS_LOG(INFO) << "BFSNextNode next_op is multi-input op! exist candidate strategy";
       return;
     }
+
     MS_LOG(INFO) << "Get selected next op strategy: " << candidate_swc->strategy_ptr->ToString();
     // Clear VisitedEdges when next_op has selected strategy.
     next_op->ClearVisitedEdges();
@@ -508,6 +538,8 @@ void CostGraph::BFS(const std::map<OperatorInfoPtr, StrategyPtr, OpsPtrCompare>:
         continue;
       }
       int64_t saved_depth = 0;
+
+      op_with_cands->InitVisitedEdges();
       std::shared_ptr<StrategyWithCost> selected_swc = op_with_cands->GetStrategyByVisitedEdges();
 
       StrategyPtr &selected_strategy = selected_swc->strategy_ptr;

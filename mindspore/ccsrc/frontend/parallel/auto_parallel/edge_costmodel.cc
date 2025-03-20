@@ -406,39 +406,15 @@ StrategyPtr Edge::GetNextOpStrategyByOutStrategy(const StrategyPtr &out_strategy
 }
 
 std::shared_ptr<StrategyWithCost> Edge::GetNextOpStrategyByCurMultiInput(
-  std::map<OperatorInfoPtr, int64_t, OpsPtrCompare> *waitting_list, int64_t curr_depth, bool *exist_candidates) {
-  auto next_op = next_op_;
-  const auto &swc_list = next_op->GetStrategyCost();
-  std::vector<std::shared_ptr<Edge>> &next_op_visited_edges = next_op->get_visited_edges();
-  if (next_op_visited_edges.size() == 1) {
-    // first visit
-    MS_LOG(INFO) << "next_op_visited_edges size 1 first visit";
-    // Only one strategy
-    if (swc_list.size() == 1) {
-      MS_LOG(INFO) << "swc_list only one swc";
-      return swc_list[0];
-    }
-    *exist_candidates = true;
-    (*waitting_list)[next_op] = curr_depth;
-    return nullptr;
+  std::map<OperatorInfoPtr, int64_t, OpsPtrCompare> *waitting_list, int64_t curr_depth) {
+  // Delete next_op from the waitting_list list
+  auto it = waitting_list->find(next_op_);
+  if (it != waitting_list->end()) {
+    MS_LOG(INFO) << "Delete next_op: " << next_op_->name() << " from waitting_list.";
+    waitting_list->erase(it);
   }
-
-  if (next_op->AllInputsVisited()) {
-    MS_LOG(INFO) << "next_op AllInputsVisited";
-    // Delete next_op from the waitting_list list
-    auto it = waitting_list->find(next_op);
-    if (it != waitting_list->end()) {
-      MS_LOG(INFO) << "Delete next_op: " << next_op->name() << " from waitting_list.";
-      waitting_list->erase(it);
-    }
-    MS_LOG(INFO) << "waitting_list size: " << waitting_list->size();
-
-    return next_op->GetStrategyByVisitedEdges();
-  }
-  // There is input of next_op not visited.
-  *exist_candidates = true;
-  (*waitting_list)[next_op] = curr_depth;
-  return nullptr;
+  MS_LOG(INFO) << "waitting_list size: " << waitting_list->size();
+  return next_op_->GetStrategyByVisitedEdges();
 }
 
 struct CompareSwcCost {
