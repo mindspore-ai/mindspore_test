@@ -510,10 +510,7 @@ ValuePtrList HookBackwardNode::CallBackward(const ValuePtrList &grads) {
   if (utils::isa<PyObjectRef>(out)) {
     PyObjectRef py_ref = utils::cast<PyObjectRef>(out);
     auto out_py_tuple = py_ref.object_;
-    if (!py::isinstance<py::tuple>(out_py_tuple)) {
-      MS_LOG(EXCEPTION) << "Hook out object should be tuple";
-    }
-    ConvertPybindTupleGradToCValue(py::cast<py::tuple>(out_py_tuple), &gradient_values, false);
+    ConvertPyObjectToCTensor(out_py_tuple, &gradient_values, true);
   }
   if (gradient_values.empty()) {
     MS_LOG(EXCEPTION) << "Hook fn output is not <PyObjectRef> type!";
