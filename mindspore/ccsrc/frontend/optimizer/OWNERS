@@ -1,12 +1,12 @@
 approvers:
-- zh_qh #
-- ginfung
+- ginfung #
 - liangzhibo
+- huangbingjian
+- Margaret_wangrui
+- zh_qh
 
 reviewers:
 - lanzhineng
-- Margaret_wangrui
-- huangbingjian
 - Liangcan-Li
 
 options:
