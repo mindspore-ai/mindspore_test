@@ -31,6 +31,7 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/arithmetic_ops.h"
 #include "frontend/operator/ops.h"
 #include "frontend/optimizer/optimizer.h"
 #include "frontend/parallel/auto_parallel/graph_costmodel.h"
@@ -1352,8 +1353,8 @@ void ParallelProcessor::StepRedistribution(const CNodePtr &cnode, const NodeUser
   FuncGraphManagerPtr manager = cnode->func_graph()->manager();
   MS_EXCEPTION_IF_NULL(manager);
   // In pipeline parallel mode, redistribution is inserted after receive, not send.
-  if (IsPrimitiveCNode(cnode, prim::kPrimSend) || IsPrimitiveCNode(cnode, prim::kPrimMakeTuple) ||
-      IsPrimitiveCNode(cnode, prim::kPrimMakeList)) {
+  if (IsOneOfPrimitiveCNode(cnode,
+                            {prim::kPrimSend, prim::kPrimMakeTuple, prim::kPrimMakeList, prim::kPrimTensorToScalar})) {
     return;
   }
   // Find Redistribution next_nodes

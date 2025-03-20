@@ -802,15 +802,26 @@ T GetInputValueFromCNode(const CNodePtr &cnode, size_t index) {
   return GetValue<T>(value);
 }
 
+// Return default value if get value from input failed
 template <typename T>
 T GetInputValueFromCNodeWithDefaultValue(const CNodePtr &cnode, size_t index, T default_value) {
-  try {
-    return GetInputValueFromCNode<T>(cnode, index);
-  } catch (const std::exception &err) {
-    MS_LOG_WITH_NODE(DEBUG, cnode) << "Get value failed, the exception: " << err.what()
-                                   << " Return default value: " << default_value;
+  MS_EXCEPTION_IF_NULL(cnode);
+  auto inputs = cnode->inputs();
+  if (index >= inputs.size()) {
+    MS_LOG_WITH_NODE(DEBUG, cnode) << "The input index (" << index << ") is exceed of inputs size (" << inputs.size()
+                                   << "). Return default value: " << default_value;
     return default_value;
   }
+  auto input_node = inputs[index];
+  MS_EXCEPTION_IF_NULL(input_node);
+  if (!input_node->isa<ValueNode>()) {
+    MS_LOG_WITH_NODE(DEBUG, cnode) << "The input index (" << index
+                                   << ") is not a value node. Return default value: " << default_value;
+    return default_value;
+  }
+  auto value = input_node->cast<ValueNodePtr>()->value();
+  MS_EXCEPTION_IF_NULL(value);
+  return GetValue<T>(value);
 }
 
 template <typename T>

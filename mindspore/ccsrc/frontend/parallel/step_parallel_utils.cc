@@ -53,6 +53,7 @@
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/arithmetic_ops.h"
 #include "frontend/parallel/parallel_node_check.h"
 #include "utils/hash_map.h"
 #include "utils/ms_context.h"
@@ -1491,7 +1492,7 @@ std::pair<std::vector<NewShapes>, std::vector<Symbols>> ExtractNewShapeAndSymbol
       MS_LOG(DEBUG) << "The " << i << "th input shape of " << node->DebugString() << " is "
                     << input->Shape()->ToString();
     }
-    if (HasAbstractMonad(input)) {
+    if (HasAbstractMonad(input) || IsPrimitiveCNode(input, prim::kPrimTensorToScalar)) {
       continue;
     }
     if (IsValueNode<RefKey>(input)) {
@@ -1573,7 +1574,7 @@ std::pair<std::vector<Shapes>, std::vector<Symbols>> ExtractShapeAndSymbol(const
     Shapes input_shapes;
     Symbols input_symbols;
     AnfNodePtr input = all_inputs[i];
-    if (HasAbstractMonad(input)) {
+    if (HasAbstractMonad(input) || IsPrimitiveCNode(input, prim::kPrimTensorToScalar)) {
       continue;
     }
     if (IsValueNode<RefKey>(input)) {
@@ -2764,7 +2765,8 @@ Status ExtractUserConfigLayout(const mindspore::HashMap<std::string, ValuePtr> &
     auto layout_value_tuple = layout_value->cast<ValueTuplePtr>();
     std::vector<ValuePtr> layout_value_vector = layout_value_tuple->value();
     if (inputs_shape.size() != layout_value_vector.size()) {
-      MS_LOG(ERROR) << "The in_layout configured for node is not equal to its input nums";
+      MS_LOG(ERROR) << "The number of in_layout configured for the node must be equal to its input's number but got"
+                    << layout_value_vector.size() << " and " << inputs_shape.size();
       return FAILED;
     }
 
