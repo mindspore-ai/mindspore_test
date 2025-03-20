@@ -774,6 +774,9 @@ def tensor_isfinite(input):
 def tensor_le(input, other):
     return le(input, other)
 
+def tensor_inplace_le(input, other):
+    raise RuntimeError(f"le_ does not support CPU or GPU")
+
 
 # 53 less
 def tensor_less(input, other):
