@@ -36,7 +36,8 @@ bool DvmCommunicationGroup::Initialize(void *root_info) {
   uint32_t group_rank = GetGroupRank(global_rank_);
   dvm_comm_ = std::make_shared<dvm::Comm>();
   CHECK_IF_NULL(dvm_comm_);
-  if (local_group_size_ < 2) {
+  const size_t kMinimumGroupSize = 2;
+  if (local_group_size_ < kMinimumGroupSize) {
     return true;
   }
   if (!dvm_comm_->Init(group_rank, size_)) {

@@ -400,6 +400,7 @@ int64_t AnfUtils::GetIntValue(const ValuePtr &value) {
 
 bool IsOutputNestedTuple(const FuncGraphPtr &fg) {
   auto output = fg->output();
+  MS_EXCEPTION_IF_NULL(output);
   auto abstract = output->abstract();
   if (!abstract || !abstract->isa<abstract::AbstractTuple>()) {
     return false;

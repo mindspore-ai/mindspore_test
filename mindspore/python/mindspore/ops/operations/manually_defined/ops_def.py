@@ -1824,6 +1824,7 @@ def infer_value_for_DivMod(input_x, other_x, rounding_mode):
         return Tensor(np.floor_divide(input_x.asnumpy(), other_x.asnumpy()))
     return None
 
+
 def infer_value_for_DivMods(input_x, other_x, rounding_mode):
     """Infer value for DivMods op."""
     if input_x is None or other_x is None:
@@ -1835,6 +1836,7 @@ def infer_value_for_DivMods(input_x, other_x, rounding_mode):
         # floor
         return Tensor(np.floor_divide(input_x.asnumpy(), other_x))
     return None
+
 
 def infer_value_for_ReduceMax(input_x, axis, keep_dims):
     """Infer value for ReduceMax op."""
