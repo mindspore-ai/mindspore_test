@@ -118,20 +118,16 @@ Serialization
     mindspore.load
     mindspore.load_checkpoint
     mindspore.load_checkpoint_async
-    mindspore.load_distributed_checkpoint
     mindspore.load_mindir
     mindspore.load_param_into_net
     mindspore.load_segmented_checkpoints
     mindspore.merge_pipeline_strategys
     mindspore.merge_sliced_parameter
     mindspore.parse_print
-    mindspore.rank_list_for_transform
     mindspore.restore_group_info_list
     mindspore.safetensors_to_ckpt
     mindspore.save_checkpoint
     mindspore.save_mindir
-    mindspore.transform_checkpoint_by_rank
-    mindspore.transform_checkpoints
     mindspore.unified_safetensors
 
 Automatic Differentiation
