@@ -37,19 +37,20 @@
 
           注意：当前默认开启的优化仅适用部分网络，并非所有网络都能获得相同收益。建议在Ascend平台的图模式下开启boost模式，同时为了获取更好的加速效果，请参考 :class:`mindspore.boost.AutoBoost` 配置boost_config_dict。
 
-    .. py:method:: build(train_dataset=None, valid_dataset=None, sink_size=-1, epoch=1)
+    .. py:method:: build(train_dataset=None, valid_dataset=None, sink_size=-1, epoch=1, sink_mode=True)
 
-        数据下沉模式下构建计算图和数据图。
+        编译构建计算图和数据图。
 
         .. warning:: 这是一个实验性API，后续可能修改或删除。
 
-        .. note:: 如果预先调用该接口构建计算图，那么 `Model.train` 会直接执行计算图。预构建计算图目前仅支持GRAPH_MODE模式和Ascend处理器。仅支持数据下沉模式。
+        .. note:: 如果预先调用该接口构建计算图，那么 `Model.train` 会直接执行计算图。预构建计算图目前仅支持GRAPH_MODE模式和Ascend处理器。
 
         参数：
             - **train_dataset** (Dataset) - 一个训练集迭代器。如果定义了 `train_dataset` ，将会构建训练计算图。默认值： ``None`` 。
             - **valid_dataset** (Dataset) - 一个验证集迭代器。如果定义了 `valid_dataset` ，将会构建验证计算图，此时 `Model` 中的 `metrics` 不能为None。默认值： ``None`` 。
             - **sink_size** (int) - 控制每次数据下沉的step数量。默认值： ``-1`` 。
             - **epoch** (int) - 控制训练轮次。默认值： ``1`` 。
+            - **sink_mode** (bool) - 是否开启数据下沉模式。默认值： ``Ture`` 。
 
     .. py:method:: eval(valid_dataset, callbacks=None, dataset_sink_mode=False)
 

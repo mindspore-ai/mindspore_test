@@ -43,6 +43,55 @@ class AutoParallel(Cell):
 
     Supported Platforms:
         ``Ascend`` ``GPU``
+
+    Examples:
+        >>> import os
+        >>> import mindspore as ms
+        >>> import mindspore.dataset as ds
+        >>> from mindspore import nn, ops
+        >>> from mindspore.communication import init
+        >>> from mindspore.common.initializer import initializer
+        >>> from mindspore.parallel.auto_parallel import AutoParallel
+        >>> from mindspore.train import Model
+        >>> ms.set_context(mode=ms.GRAPH_MODE)
+        >>> init()
+        >>> ms.set_seed(1)
+        >>>
+        >>> class Network(nn.Cell):
+        ...     def __init__(self):
+        ...         super().__init__()
+        ...         self.flatten = ops.Flatten()
+        ...         self.fc1_weight = ms.Parameter(initializer("normal", [28*28, 512], ms.float32))
+        ...         self.fc2_weight = ms.Parameter(initializer("normal", [512, 512], ms.float32))
+        ...         self.fc3_weight = ms.Parameter(initializer("normal", [512, 10], ms.float32))
+        ...         self.matmul1 = ops.MatMul()
+        ...         self.relu1 = ops.ReLU()
+        ...         self.matmul2 = ops.MatMul()
+        ...         self.relu2 = ops.ReLU()
+        ...         self.matmul3 = ops.MatMul()
+        ...
+        ...     def construct(self, x):
+        ...         x = self.flatten(x)
+        ...         x = self.matmul1(x, self.fc1_weight)
+        ...         x = self.relu1(x)
+        ...         x = self.matmul2(x, self.fc2_weight)
+        ...         x = self.relu2(x)
+        ...         logits = self.matmul3(x, self.fc3_weight)
+        ...         return logits
+        >>>
+        >>> net = Network()
+        >>> net.matmul1.shard(((2, 4), (4, 1)))
+        >>> net.relu1.shard(((4, 1),))
+        >>> net.matmul2.shard(((1, 8), (8, 1)))
+        >>> net.relu2.shard(((8, 1),))
+        >>> parallel_net = AutoParallel(net, parallel_mode='semi_auto')
+        >>> # Create the dataset taking MNIST as an example. Refer to
+        >>> # https://gitee.com/mindspore/docs/blob/master/docs/mindspore/code/mnist.py
+        >>> dataset = create_dataset()
+        >>> optim = nn.SGD(net.trainable_params(), 1e-2)
+        >>> loss = nn.CrossEntropyLoss()
+        >>> model = Model(parallel_net, loss_fn=loss, optimizer=optim)
+        >>> model.train(1, dataset)
     """
 
     def __init__(self, network, parallel_mode="semi_auto"):
@@ -100,6 +149,10 @@ class AutoParallel(Cell):
 
         .. warning::
         This is an experimental interface, may be changed or canceled in the future;
+
+        Examples:
+            >>> parallel_net = AutoParallel(net)
+            >>> parallel_net.no_init_parameters_in_compile()
         """
         self._init_param_in_compile = False
 
@@ -156,6 +209,10 @@ class AutoParallel(Cell):
             TypeError: If the type of 'file_path' is not str
             KeyError: When 'file_path' is not an absolute path.
             KeyError: When 'file_path' does not end in ``".json"`` .
+
+        Examples:
+            >>> parallel_net = AutoParallel(net, parallel_mode='sharding_propagation')
+            >>> parallel_net.load_operator_strategy_file("/tmp/strategy.json")
         """
         if not isinstance(file_path, str):
             raise TypeError("the argument 'file_path' must be str, but got the type : {} .".format(type(file_path)))
@@ -186,6 +243,10 @@ class AutoParallel(Cell):
             TypeError: If the type of 'file_path' is not str
             KeyError: When 'file_path' is not an absolute path.
             KeyError: When 'file_path' does not end in ``".json"`` .
+
+        Examples:
+            >>> parallel_net = AutoParallel(net, parallel_mode='sharding_propagation')
+            >>> parallel_net.save_operator_strategy_file("/tmp/strategy.json")
         """
         if not isinstance(file_path, str):
             raise TypeError("the argument 'file_path' must be str, but got the type : {} .".format(type(file_path)))
@@ -206,7 +267,22 @@ class AutoParallel(Cell):
         Raises:
             ValueError: If the type of 'config' is str, but it's value is not 'full_batch' or 'data_parallel'.
             TypeError: When 'config' is not str type nor tuple type.
-            TypeError: IF 'config' is tuple type, but it's element is not tuple type nor Layout type.
+            TypeError: IF 'config' is tuple type, but its element is not tuple type nor Layout type.
+
+        Examples:
+            # Case 1: dataset strategy using str
+            >>> parallel_net = AutoParallel(net, parallel_mode='semi_auto')
+            >>> parallel_net.dataset_strategy("data_parallel")
+
+            # Case 2: dataset strategy using tuple(tuple)
+            >>> parallel_net = AutoParallel(net, parallel_mode='semi_auto')
+            >>> parallel_net.dataset_strategy((2,1,1),(2,1))
+
+            # Case 3: dataset strategy using tuple(Layout)
+            >>> from mindspore.parallel import Layout
+            >>> layout = Layout((2 ,2 ,2),("dp", "mp", "sp"))
+            >>> parallel_net = AutoParallel(net, parallel_mode='semi_auto')
+            >>> parallel_net.dataset_strategy(layout)
         """
         if config is None:
             raise ValueError("dataset_strategy is none in config!")
@@ -370,7 +446,13 @@ class AutoParallel(Cell):
         self._group_ckpt_save_file = file_path
 
     def print_local_norm(self):
-        """ Print local norm value for auto parallel. """
+        """
+        Print local norm value for auto parallel.
+
+        Examples:
+            >>> parallel_net = AutoParallel(net, parallel_mode="semi_auto")
+            >>> parallel_net.print_local_norm()
+        """
         self._dump_local_norm = True
 
     def dump_local_norm(self, file_path):
@@ -382,6 +464,10 @@ class AutoParallel(Cell):
 
         Raises:
             TypeError: If the type of 'file_path' is not str.
+
+        Examples:
+            >>> parallel_net = AutoParallel(net, parallel_mode="semi_auto")
+            >>> parallel_net.dump_local_norm("./dump_path")
         """
         if not isinstance(file_path, str):
             raise TypeError("the argument 'file_path' must be str, but got the type : {} .".format(type(file_path)))
@@ -389,7 +475,14 @@ class AutoParallel(Cell):
         self._dump_local_norm_path = file_path
 
     def enable_device_local_norm(self):
-        """Enable device local norm printing."""
+        """
+        Enable device local norm printing.
+
+        Examples:
+            >>> parallel_net = AutoParallel(net, parallel_mode="semi_auto")
+            >>> parallel_net.dump_local_norm("./dump_path")
+            >>> parallel_net.enable_device_local_norm()
+        """
         self._dump_device_local_norm = True
 
     def enable_gradients_mean(self):
