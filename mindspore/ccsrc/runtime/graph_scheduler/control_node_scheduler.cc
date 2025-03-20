@@ -56,12 +56,14 @@ std::string GetStackActorNameByExitName(const std::string &exit_name) {
 }
 
 // Parameter and ref node can not copy the device tensor.
-bool is_need_copy_device_tensor(const AnfNodePtr &backend_node, size_t index) {
+CopyStat is_need_copy_device_tensor(const AnfNodePtr &backend_node, size_t index) {
   MS_EXCEPTION_IF_NULL(backend_node);
   // Skip the parameter and Load node.
   const auto &real_backend_node = common::AnfAlgo::VisitKernelWithReturnType(backend_node, index, false);
+  MS_LOG(DEBUG) << "Check for backend node:" << backend_node->fullname_with_scope()
+                << " debug string:" << backend_node->DebugString();
   if (real_backend_node.first != nullptr && (!real_backend_node.first->isa<CNode>())) {
-    return false;
+    return CopyStat::COPY_DISABLE;
   }
   auto kernel_graph = AnfAlgo::FetchKernelGraph(backend_node.get());
   MS_EXCEPTION_IF_NULL(kernel_graph);
@@ -69,10 +71,10 @@ bool is_need_copy_device_tensor(const AnfNodePtr &backend_node, size_t index) {
     const auto &origin_node = kernel_graph->GetRefNodeRecursive(real_backend_node).first;
     MS_EXCEPTION_IF_NULL(origin_node);
     if (origin_node->isa<ValueNode>() || origin_node->isa<Parameter>()) {
-      return false;
+      return CopyStat::COPY_POINTER_REF_COUNT;
     }
   }
-  return true;
+  return CopyStat::COPY_PTR;
 }
 
 // Check whether the exit actor corresponding to the call node to the to actor already exists control arrow.
@@ -474,7 +476,7 @@ std::vector<ExitActorPtr> ControlNodeScheduler::BuildExitActor(const GraphCompil
       continue;
     }
 
-    std::vector<bool> is_need_copy_device_tensors;
+    std::vector<CopyStat> is_need_copy_device_tensors;
     std::vector<bool> is_need_dynamic_checks;
     std::vector<bool> is_dynamic_shapes;
     std::vector<KernelWithIndex> formal_parameters;
@@ -2027,6 +2029,30 @@ void ControlNodeScheduler::LinkControlArrowForKernelActor(ActorSet *const actor_
   LinkOutputControlArrowForActor(actor_set, graph_compiler_info);
 }
 
+std::set<AnfNodePtr> CollectInvalidStackControlInput(const std::set<AnfNodePtr> &depend_nodes,
+                                                     const ControlNodeParserPtr &parser) {
+  std::set<AnfNodePtr> invalid_stack_control_inputs;
+  std::map<FuncGraphPtr, AnfNodePtr> func_graph_to_call_node;
+  for (const auto &depend_node : depend_nodes) {
+    if (!common::AnfAlgo::IsCallNode(depend_node)) {
+      continue;
+    }
+    const auto func_graphs = parser->call_node_to_func_graphs().find(depend_node);
+    for (const auto &func_graph : func_graphs->second) {
+      if (func_graph == nullptr) {
+        continue;
+      }
+      if (func_graph_to_call_node.count(func_graph) > 0) {
+        invalid_stack_control_inputs.emplace(func_graph_to_call_node[func_graph]);
+        invalid_stack_control_inputs.emplace(depend_node);
+        continue;
+      }
+      func_graph_to_call_node[func_graph] = depend_node;
+    }
+  }
+  return invalid_stack_control_inputs;
+}
+
 void ControlNodeScheduler::LinkControlArrowByAutoMonad(ControlActor *to_actor, const AnfNodePtr &from_node,
                                                        const ControlNodeParserPtr &parser) const {
   MS_EXCEPTION_IF_NULL(to_actor);
@@ -2037,7 +2063,7 @@ void ControlNodeScheduler::LinkControlArrowByAutoMonad(ControlActor *to_actor, c
 
   std::set<AnfNodePtr> depend_nodes;
   FetchRealDependNodeByAutoMonad(from_node, &depend_nodes);
-
+  std::set<AnfNodePtr> invalid_stack_control_inputs = CollectInvalidStackControlInput(depend_nodes, parser);
   for (const auto &depend_node : depend_nodes) {
     MS_EXCEPTION_IF_NULL(depend_node);
     MS_LOG(DEBUG) << "Add depend node:" << depend_node->DebugString() << " for actor:" << to_actor->GetAID();
@@ -2093,6 +2119,11 @@ void ControlNodeScheduler::LinkControlArrowByAutoMonad(ControlActor *to_actor, c
     }
     if (to_actor->type_ != KernelTransformType::kStackActor || parser->IsNeedStackControlNode(depend_node) ||
         parser->IsRecursionCallNode(depend_node) || (graph != nullptr && parser->IsRecursionKernelGraph(graph))) {
+      continue;
+    }
+    if (invalid_stack_control_inputs.find(depend_node) != invalid_stack_control_inputs.end()) {
+      MS_LOG(DEBUG) << "Skip add stack control arrow for depend node:" << depend_node->DebugString()
+                    << " to actor:" << to_actor->GetAID();
       continue;
     }
     // If the control arrow comes from a recursive call node or a recursive kernel graph, these control edges will be
@@ -2842,6 +2873,29 @@ void GetAllInputByArrow(AbstractActor *const actor,
   }
 }
 
+void GetAllInputByStore(AbstractActor *const actor, std::map<size_t, InputInfo> *input_aids, size_t *max_index) {
+  MS_EXCEPTION_IF_NULL(actor);
+  MS_EXCEPTION_IF_NULL(input_aids);
+  MS_EXCEPTION_IF_NULL(max_index);
+  // Get all inputs by device tensor store.
+  for (const auto &pair : actor->device_tensor_store_keys()) {
+    MS_EXCEPTION_IF_NULL(pair.second);
+    std::string name = pair.second->DebugString(0);
+    if (pair.second->isa<ValueNode>()) {
+      name = GetValueNodeName(pair.second->cast<ValueNodePtr>());
+    }
+    (*input_aids)[pair.first] = {name, 0};
+    *max_index = (*max_index > pair.first ? *max_index : pair.first);
+  }
+  // Get all inputs by parameter store.
+  for (const auto &pair : actor->parameter_indexs()) {
+    MS_EXCEPTION_IF_NULL(pair.second.first.first);
+    std::string name = pair.second.first.first->DebugString(0);
+    (*input_aids)[pair.first] = {name, 0};
+    *max_index = (*max_index > pair.first ? *max_index : pair.first);
+  }
+}
+
 // Get string of all input actor.
 std::map<size_t, InputInfo> GetInputName(AbstractActor *const actor, const ControlNodeParserPtr &parser,
                                          const std::unordered_map<std::string, std::string> &exit_to_gather,
@@ -2863,16 +2917,8 @@ std::map<size_t, InputInfo> GetInputName(AbstractActor *const actor, const Contr
   size_t max_index = 0;
   // Get all inputs by input arrows.
   GetAllInputByArrow(actor, graph_output_to_actor, &input_aids, &max_index);
-  // Get all inputs by device tensor store.
-  for (const auto &pair : actor->device_tensor_store_keys()) {
-    MS_EXCEPTION_IF_NULL(pair.second);
-    std::string name = pair.second->DebugString(0);
-    if (pair.second->isa<ValueNode>()) {
-      name = GetValueNodeName(pair.second->cast<ValueNodePtr>());
-    }
-    input_aids[pair.first] = {name, 0};
-    max_index = (max_index > pair.first ? max_index : pair.first);
-  }
+  // Get all inputs by store.
+  GetAllInputByStore(actor, &input_aids, &max_index);
 
   // Get all inputs for control actor.
   if (IsControlFlowActor(actor->type())) {

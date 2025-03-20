@@ -333,7 +333,7 @@ void ExitActor::MergeDynamiclenDeviceAddress(OpContext<DeviceTensor> *const cont
 }
 
 bool ExitActor::IsNeedCopyDeviceAddress(DeviceTensor *const input_device_tensor, size_t index) {
-  if ((input_device_tensor == nullptr) || (!is_need_copy_device_tensors_[index])) {
+  if ((input_device_tensor == nullptr) || (is_need_copy_device_tensors_[index] == CopyStat::COPY_DISABLE)) {
     return false;
   }
 
@@ -463,6 +463,12 @@ void ExitActor::CopyDeviceAddress(OpContext<DeviceTensor> *const context) {
         SET_OPCONTEXT_FAIL_RET_WITH_ERROR(*context, "Sync device to device failed.");
       }
     } else {
+      if (is_need_copy_device_tensors_[i] == CopyStat::COPY_POINTER_REF_COUNT) {
+        MS_LOG(DEBUG) << "Set pointer ref count from:" << input_device_tensor->PrintInfo()
+                      << " to:" << new_device_tensor->PrintInfo() << " for actor:" << GetAID();
+        new_device_tensor->set_pointer_ref_count(input_device_tensor->pointer_ref_count());
+        continue;
+      }
       // Move the device ptr from input_device_tensor to new_device_tensor.
       input_device_tensor->Swap(new_device_tensor.get());
       DeviceTensorCopyStore::GetInstance().Replace(input_device_tensor, new_device_tensor.get());

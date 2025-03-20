@@ -163,6 +163,7 @@ void ConditionGatherActor::Init() {
                     << " is not equal kernel info stream id : " << kernel_info_->stream_id() << ".";
     }
     (void)output_device_tensors_.emplace_back(output_address.get());
+    (void)output_kernel_tensors_.emplace_back(output_address->kernel_tensor().get());
     // The output taken over by soma does not need to allocate memory.
     if (kernel_info_->IsTensorEnableSomas(somas_outputs, i)) {
       // Somas outputs use the info of kernelMod, and output address use the info of device address.
@@ -241,9 +242,9 @@ void ConditionGatherActor::UpdateRefDeviceAddress(OpContext<DeviceTensor> *const
       MS_LOG(DEBUG) << "Skip set ref for output index:" << i << " for actor:" << GetAID();
       continue;
     }
-
+    output_device_tensors_[i]->set_tensor_storage_info(input_device_tensors_[input_index]->GetTensorStorageInfo());
     output_device_tensors_[i]->set_pointer_ref_count(input_device_tensors_[input_index]->pointer_ref_count());
-    output_device_tensors_[i]->IncreaseNewRefCount();
+    output_device_tensors_[i]->IncreaseNewRefCount(GetAID().Name());
     MS_LOG(DEBUG) << "Actor:" << GetAID() << " increase new ref count:" << output_device_tensors_[i]->new_ref_count()
                   << " and set ref device address:" << output_device_tensors_[i]->PrintInfo()
                   << " ref input device address:" << input_device_tensors_[input_index]->PrintInfo();

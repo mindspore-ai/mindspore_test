@@ -310,7 +310,7 @@ void AbstractActor::IncreaseNewRefCounts(OpContext<DeviceTensor> *const context)
 void AbstractActor::IncreaseNewRefCount(const OpData<DeviceTensor> *op_data) const {
   MS_EXCEPTION_IF_NULL(op_data);
   MS_EXCEPTION_IF_NULL(op_data->data_);
-  op_data->data_->IncreaseNewRefCount();
+  op_data->data_->IncreaseNewRefCount(GetAID().Name());
   MS_LOG(DEBUG) << "Actor:" << GetAID() << " increase new ref count for:" << op_data->data_
                 << " count:" << op_data->data_->new_ref_count();
 }

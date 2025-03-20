@@ -239,7 +239,7 @@ void DeviceQueueDataSourceActor::IncreaseNewRefCounts(OpContext<DeviceTensor> *c
                                                       " for device queue data source actor.");
     }
     MS_EXCEPTION_IF_NULL(output_device_tensors[position]);
-    output_device_tensors[data_arrow->from_output_index_]->IncreaseNewRefCount();
+    output_device_tensors[data_arrow->from_output_index_]->IncreaseNewRefCount(GetAID().Name());
     MS_LOG(DEBUG) << "Increase new ref count for device address:"
                   << output_device_tensors[data_arrow->from_output_index_]->PrintInfo() << " in actor:" << GetAID();
   }
@@ -266,7 +266,7 @@ void HostQueueDataSourceActor::IncreaseNewRefCounts(OpContext<DeviceTensor> *con
                                                       " for device queue data source actor.");
     }
     MS_EXCEPTION_IF_NULL(output_device_tensors[position]);
-    output_device_tensors[position]->IncreaseNewRefCount();
+    output_device_tensors[position]->IncreaseNewRefCount(GetAID().Name());
     MS_LOG(DEBUG) << "Increase new ref count for device address:" << output_device_tensors[position]->PrintInfo()
                   << " in actor:" << GetAID();
   }
@@ -407,7 +407,7 @@ void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<DeviceTensor> *cons
       MS_EXCEPTION_IF_NULL(host_tensor);
       // No used device address need skip.
       if (TEST_FLAG(device_tensor->flag(), device::kDeviceAddressFlagNotUsed)) {
-        device_tensor->IncreaseNewRefCount();
+        device_tensor->IncreaseNewRefCount(GetAID().Name());
         MS_LOG(DEBUG) << GetAID().Name() << " input index " << i << " is not used.";
         continue;
       }

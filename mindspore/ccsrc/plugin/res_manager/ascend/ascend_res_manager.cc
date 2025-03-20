@@ -218,7 +218,8 @@ bool AscendResManager::AllocateMemory(DeviceAddress *const &address, uint32_t st
   const auto &hete_info =
     address->kernel_tensor() == nullptr ? nullptr : address->kernel_tensor()->heterogeneous_info();
   if (hete_info != nullptr) {
-    address->IncreaseNewRefCount();
+    static std::string name = "Alloc memory";
+    address->IncreaseNewRefCount(name);
     return AllocateForHete(address, hete_info);
   }
   device_ptr = mem_manager_->MallocMemFromMemPool(address->GetSize(), address->from_persistent_mem(),
@@ -229,7 +230,8 @@ bool AscendResManager::AllocateMemory(DeviceAddress *const &address, uint32_t st
 
   address->set_ptr(device_ptr);
   address->set_from_mem_pool(true);
-  address->IncreaseNewRefCount();
+  static std::string name = "Alloc memory";
+  address->IncreaseNewRefCount(name);
   static bool enable_memory_tracker = device::tracker::MemTrackerManager::GetInstance().IsEnabled();
   if (enable_memory_tracker) {
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(BindDevicePtr, address, device_ptr);

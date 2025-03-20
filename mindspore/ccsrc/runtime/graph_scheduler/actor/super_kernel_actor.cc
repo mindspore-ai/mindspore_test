@@ -724,7 +724,7 @@ void SuperKernelActor::UpdateOutputAddress(
     DeviceTensor *real_input = kernel_actor->input_device_tensors_[kernel_input_index];
     MS_EXCEPTION_IF_NULL(real_input);
     const std::vector<size_t> &actor_output_indices = pair.second;
-    real_input->IncreaseNewRefCount(actor_output_indices.size());
+    real_input->IncreaseNewRefCount(GetAID().Name(), actor_output_indices.size());
     MS_LOG(DEBUG) << "Increase ref count to:" << real_input->new_ref_count()
                   << " increase size:" << actor_output_indices.size() - 1
                   << " for device address:" << real_input->PrintInfo() << " in actor:" << GetAID();
@@ -812,6 +812,11 @@ void SuperKernelActor::FreeInputParamWithoutUser(OpContext<DeviceTensor> *const 
       MS_EXCEPTION_IF_NULL(device_tensor);
       if (device_tensor->new_ref_count() != SIZE_MAX) {
         // No user for this input in graph.
+        MS_LOG(DEBUG) << "Free ref count for no used parameter:" << iter.second.first.first->DebugString()
+                      << " inner index:" << iter.second.first.second << " out index:" << iter.second.second
+                      << " device tensor:" << device_tensor->PrintInfo()
+                      << " device context:" << device_contexts_[0]->device_context_key().ToString()
+                      << " for actor:" << GetAID();
         MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(device_tensor, device_contexts_[0], GetAID().Name());
       }
     }

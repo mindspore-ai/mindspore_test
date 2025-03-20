@@ -688,7 +688,7 @@ void KernelActor::SetSomasMemory(OpContext<DeviceTensor> *const context) const {
                     << " in actor:" << GetAID();
       output_device_tensors_[i]->set_ptr(device_ptr);
       if (somas_graph_output_indexes_.count(i)) {
-        output_device_tensors_[i]->IncreaseNewRefCount();
+        output_device_tensors_[i]->IncreaseNewRefCount(GetAID().Name());
         MS_LOG(DEBUG) << "Add new ref count for somas output address:" << output_device_tensors_[i]
                       << " in kernel actor:" << GetAID();
       }
@@ -1025,7 +1025,7 @@ void KernelActor::UpdateGraphOutputRefCount(OpContext<DeviceTensor> *const conte
       MS_LOG(EXCEPTION) << "Invalid output index:" << pair.first << " total size:" << output_device_tensors_.size()
                         << " for actor:" << GetAID();
     }
-    output_device_tensors_[pair.first]->IncreaseNewRefCount(pair.second);
+    output_device_tensors_[pair.first]->IncreaseNewRefCount(GetAID().Name(), pair.second);
     MS_LOG(DEBUG) << "Add new ref count size:" << pair.second
                   << " for device address:" << output_device_tensors_[pair.first]->PrintInfo()
                   << " for kernel actor:" << GetAID();
@@ -1072,7 +1072,7 @@ void KernelActor::UpdateRefDeviceAddress(OpContext<DeviceTensor> *const context,
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(strategy_, (*context), error_info.str());
     }
     output_device_tensors_[pair.first]->set_pointer_ref_count(input_device_tensors_[pair.second]->pointer_ref_count());
-    output_device_tensors_[pair.first]->IncreaseNewRefCount();
+    output_device_tensors_[pair.first]->IncreaseNewRefCount(GetAID().Name());
     MS_LOG(DEBUG) << "Actor:" << GetAID()
                   << " increase new ref count for device address:" << output_device_tensors_[pair.first]->PrintInfo()
                   << " and input device address:" << input_device_tensors_[pair.second]->PrintInfo();

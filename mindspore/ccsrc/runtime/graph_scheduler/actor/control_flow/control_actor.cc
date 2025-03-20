@@ -118,7 +118,7 @@ void ControlActor::IncreaseNewRefCountForPartial(const OpPartialPtr &op_partial)
   GetAllDeviceTensors(op_partial, &partial_device_tensors);
   for (auto &partial_device_tensor : partial_device_tensors) {
     MS_EXCEPTION_IF_NULL(partial_device_tensor);
-    partial_device_tensor->IncreaseNewRefCount();
+    partial_device_tensor->IncreaseNewRefCount(GetAID().Name());
     MS_LOG(DEBUG) << "Increase new ref count for device address:" << partial_device_tensor->PrintInfo()
                   << " in actor:" << GetAID();
   }
@@ -129,7 +129,7 @@ void ControlActor::IncreaseNewRefCountForRealParameter(const OpRealParameterWith
   GetAllDeviceTensors(op_real_parameter, &partial_device_tensors);
   for (auto &partial_device_tensor : partial_device_tensors) {
     MS_EXCEPTION_IF_NULL(partial_device_tensor);
-    partial_device_tensor->IncreaseNewRefCount();
+    partial_device_tensor->IncreaseNewRefCount(GetAID().Name());
     MS_LOG(DEBUG) << "Increase new ref count for device address:" << partial_device_tensor->PrintInfo()
                   << " in actor:" << GetAID();
   }

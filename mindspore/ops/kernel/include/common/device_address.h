@@ -203,8 +203,8 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   size_t IncreaseCounter();
   size_t DecreaseCounter();
 
-  void IncreaseNewRefCount(size_t i = 1);
-  size_t DecreaseNewRefCount();
+  void IncreaseNewRefCount(const std::string &op_name, size_t i = 1);
+  size_t DecreaseNewRefCount(const std::string &op_name);
   void set_new_ref_count(size_t new_ref_count) const;
   size_t new_ref_count() const;
 

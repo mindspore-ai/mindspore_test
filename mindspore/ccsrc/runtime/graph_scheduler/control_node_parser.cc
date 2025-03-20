@@ -2036,6 +2036,9 @@ NodeWithIndexToContext ControlNodeParser::FetchBackendParameterWithContextByFron
                   << " for front node:" << front_parameter_with_index.first->DebugString()
                   << " index:" << front_parameter_with_index.second << " output size is 0.";
   }
+  if (!iter->second.empty()) {
+    return *(iter->second.begin());
+  }
   return {};
 }
 

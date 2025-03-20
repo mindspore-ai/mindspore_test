@@ -199,7 +199,8 @@ bool GPUResManager::AllocateMemory(DeviceAddress *const &address, uint32_t strea
 
   address->set_ptr(device_ptr);
   address->set_from_mem_pool(true);
-  address->IncreaseNewRefCount();
+  static std::string name = "Alloc memory";
+  address->IncreaseNewRefCount(name);
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(BindDevicePtr, address, device_ptr);
   return true;
 }
