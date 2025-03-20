@@ -178,4 +178,19 @@ TEST_F(TestMetaDslApi, test_or) {
   ASSERT_TRUE(out_abs->isa<AbstractTensor>());
   ASSERT_GE(GetPrimitiveSize(fg, prim::kPrimSwitch), 1);
 }
+
+/// Feature: Meta DSL
+/// Description: Convert TypeId to dtype.
+/// Expectation: Run successfully.
+TEST_F(TestMetaDslApi, test_dtype) {
+  auto op = CreateMetaImpl("TestDtype");
+  auto abs_dtype = std::make_shared<AbstractScalar>(static_cast<int64_t>(kNumberTypeInt32));
+  AbstractBasePtrList abs_list{NewAbstractTensor(1, kFloat64), NewAbstractTensor(2, kFloat64), abs_dtype};
+  auto fg = NewFuncGraph(op, abs_list);
+  auto out_abs = fg->return_node()->abstract();
+  MS_EXCEPTION_IF_NULL(out_abs);
+  ASSERT_TRUE(out_abs->isa<AbstractTensor>());
+  auto type_id = out_abs->cast<AbstractTensorPtr>()->element()->BuildType()->type_id();
+  ASSERT_TRUE(type_id == kNumberTypeInt32);
+}
 }  // namespace mindspore::prim

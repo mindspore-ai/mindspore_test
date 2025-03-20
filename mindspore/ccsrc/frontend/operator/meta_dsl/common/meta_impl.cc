@@ -186,7 +186,34 @@ void MetaImpl::Return(const NodePtr &output) { func_builder_stack_.top()->SetOut
 
 NodePtr MetaImpl::NewParam(const std::string &name) { return func_builder_stack_.top()->AddParameter(name); }
 
-NodePtr MetaImpl::NewNode(const NodePtrList &nodes) { return func_builder_stack_.top()->CreateNode(nodes); }
+void MetaImpl::ConvertTypeIdToType(NodePtrList *nodes) {
+  constexpr size_t index_prim = 0;
+  auto do_trans = GetValueNode<prim::DoTransPrimitiveFunctionPtr>(nodes->at(index_prim));
+  if (do_trans == nullptr) {
+    return;
+  }
+  const auto &op_name = do_trans->function()->name();
+  const auto &op_def = mindspore::ops::GetOpDef(op_name);
+  MS_EXCEPTION_IF_NULL(op_def);
+  const auto &op_args = op_def->args_;
+  if (op_args.size() != nodes->size() - 1) {
+    MS_LOG(INTERNAL_EXCEPTION) << "Operator[" << op_name << "] expects " << op_args.size() << " arguments, but got "
+                               << nodes->size() - 1;
+  }
+  for (size_t i = 0; i < op_args.size(); ++i) {
+    const auto &op_arg = op_args[i];
+    if (!op_arg.arg_handler_.empty() && op_arg.arg_handler_ == "dtype_to_type_id") {
+      NodePtrList convert_node_list = {NewValueNode(prim::kPrimEnumToDtype), (*nodes)[i + 1]};
+      (*nodes)[i + 1] = func_builder_stack_.top()->CreateNode(convert_node_list);
+    }
+  }
+}
+
+NodePtr MetaImpl::NewNode(const NodePtrList &nodes) {
+  NodePtrList node_list = nodes;
+  ConvertTypeIdToType(&node_list);
+  return func_builder_stack_.top()->CreateNode(node_list);
+}
 
 FuncGraphPtr MetaImpl::BuildSubFunction(const std::string &func_name, const BlockFunc &sub_func) {
   BeginFunc(func_name);
