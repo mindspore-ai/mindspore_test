@@ -6119,7 +6119,7 @@ def cumsum(x, axis, dtype=None):
     Examples:
         >>> import mindspore
         >>> input = mindspore.tensor([[1, 2, 3],
-        >>>                           [4, 5, 6]])
+        ...                           [4, 5, 6]])
         >>> mindspore.ops.cumsum(input, axis=0)
         Tensor(shape=[2, 3], dtype=Int64, value=
         [[1, 2, 3],
@@ -11584,34 +11584,16 @@ def diag_embed(input, offset=0, dim1=-2, dim2=-1):
         ...                           [7, 8, 9]])
         >>> mindspore.ops.diag_embed(input)
         >>> Tensor(shape=[3, 3, 3], dtype=Int64, value=
-        [[[1, 0, 0],
-          [0, 2, 0],
-          [0, 0, 3]],
-         [[4, 0, 0],
-          [0, 5, 0],
-          [0, 0, 6]],
-         [[7, 0, 0],
-          [0, 8, 0],
-          [0, 0, 9]]])
+        [[[1, 0, 0], [0, 2, 0], [0, 0, 3]],
+         [[4, 0, 0], [0, 5, 0], [0, 0, 6]],
+         [[7, 0, 0], [0, 8, 0], [0, 0, 9]]])
         >>> mindspore.ops.diag_embed(input, offset=1, dim1=0, dim2=1)
         mindspore.ops.diag_embed(input, offset=1, dim1=0, dim2=1)
         Tensor(shape=[4, 4, 3], dtype=Int64, value=
-        [[[0, 0, 0],
-          [1, 4, 7],
-          [0, 0, 0],
-          [0, 0, 0]],
-         [[0, 0, 0],
-          [0, 0, 0],
-          [2, 5, 8],
-          [0, 0, 0]],
-         [[0, 0, 0],
-          [0, 0, 0],
-          [0, 0, 0],
-          [3, 6, 9]],
-         [[0, 0, 0],
-          [0, 0, 0],
-          [0, 0, 0],
-          [0, 0, 0]]])
+        [[[0, 0, 0], [1, 4, 7], [0, 0, 0], [0, 0, 0]],
+         [[0, 0, 0], [0, 0, 0], [2, 5, 8], [0, 0, 0]],
+         [[0, 0, 0], [0, 0, 0], [0, 0, 0], [3, 6, 9]],
+         [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]])
     """
 
     transpose_op = Transpose()
