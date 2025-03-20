@@ -511,32 +511,34 @@ class SyncBatchNorm(_BatchNorm):
 
     Args:
         num_features (int): `C` from an expected input of size :math:`(N, C, H, W)`.
-        eps (float): :math:`\epsilon`, a value added to the denominator for numerical stability. Default: ``1e-5`` .
-        momentum (float): A floating hyperparameter of the momentum for the
+        eps (float, optional): :math:`\epsilon`, a value added to the denominator for numerical stability.
+            Default: ``1e-5`` .
+        momentum (float, optional): A floating hyperparameter of the momentum for the
             running_mean and running_var computation. Default: ``0.9`` .
-        affine (bool): A bool value. When set to ``True`` , :math:`\gamma` and :math:`\beta` can be learned.
+        affine (bool, optional): A bool value. When set to ``True`` , :math:`\gamma` and :math:`\beta` are learnable
+            parameters. When set to ``False`` , :math:`\gamma` and :math:`\beta` are unlearnable parameters.
             Default: ``True`` .
-        gamma_init (Union[Tensor, str, Initializer, numbers.Number]): Initializer for the :math:`\gamma` weight.
-            The values of str refer to the function `initializer` including ``'zeros'`` , ``'ones'`` ,
+        gamma_init (Union[Tensor, str, Initializer, numbers.Number], optional): Initializer for the :math:`\gamma`
+            weight. The values of str refer to the function `initializer` including ``'zeros'`` , ``'ones'`` ,
             ``'xavier_uniform'`` , ``'he_uniform'`` , etc. Default: ``'ones'`` .
-        beta_init (Union[Tensor, str, Initializer, numbers.Number]): Initializer for the :math:`\beta` weight.
+        beta_init (Union[Tensor, str, Initializer, numbers.Number], optional): Initializer for the :math:`\beta` weight.
             The values of str refer to the function `initializer` including ``'zeros'`` , ``'ones'`` ,
             ``'xavier_uniform'`` , ``'he_uniform'`` , etc. Default: ``'zeros'`` .
-        moving_mean_init (Union[Tensor, str, Initializer, numbers.Number]): Initializer for the moving mean.
+        moving_mean_init (Union[Tensor, str, Initializer, numbers.Number], optional): Initializer for the moving mean.
             The values of str refer to the function `initializer` including ``'zeros'`` , ``'ones'`` ,
             ``'xavier_uniform'`` , ``'he_uniform'`` , etc. Default: ``'zeros'`` .
-        moving_var_init (Union[Tensor, str, Initializer, numbers.Number]): Initializer for the moving variance.
-            The values of str refer to the function `initializer` including ``'zeros'`` , ``'ones'`` ,
+        moving_var_init (Union[Tensor, str, Initializer, numbers.Number], optional): Initializer for the moving
+            variance. The values of str refer to the function `initializer` including ``'zeros'`` , ``'ones'`` ,
             ``'xavier_uniform'`` , ``'he_uniform'`` , etc. Default: ``'ones'`` .
-        use_batch_statistics (bool): If ``true`` , use the mean value and variance value of current batch data. If
-            ``false`` , use the mean value and variance value of specified value. If ``None`` , training process will
-            use the mean and variance of current batch data and track the running mean and variance, eval process will
-            use the running mean and variance. Default: ``None`` .
-        process_groups (list): A list to divide devices into different sync groups, containing N subtraction lists.
-            Each subtraction list contains int numbers identifying rank ids which need to be synchronized in the same
-            group. All int values must be in [0, rank_size) and different from each other. Default: ``None`` ,
+        use_batch_statistics (bool, optional): If ``true`` , use the mean value and variance value of current batch
+            data. If ``false`` , use the mean value and variance value of specified value. If ``None`` , training
+            process will use the mean and variance of current batch data and track the running mean and variance, eval
+            process will use the running mean and variance. Default: ``None`` .
+        process_groups (list, optional): A list to divide devices into different sync groups, containing N subtraction
+            lists. Each subtraction list contains int numbers identifying rank ids which need to be synchronized in the
+            same group. All int values must be in [0, rank_size) and different from each other. Default: ``None`` ,
             indicating synchronization across all devices.
-        dtype (:class:`mindspore.dtype`): Dtype of Parameters. Default: ``mstype.float32`` .
+        dtype (:class:`mindspore.dtype`, optional): Dtype of Parameters. Default: ``mstype.float32`` .
 
     Inputs:
         - **x** (Tensor) - Tensor of shape :math:`(N, C_{in}, H_{in}, W_{in})`.

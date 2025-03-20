@@ -15,11 +15,11 @@ mindspore.mint.nn.SyncBatchNorm
 
     参数：
         - **num_features** (int) - 指定输入Tensor的通道数量，输入Tensor的size为 :math:`(N, C, +)` 。
-        - **eps** (float) - :math:`\epsilon` 添加到分母中的值，以确保数值稳定。默认值： ``1e-5`` 。
-        - **momentum** (float) - 动态均值和动态方差所使用的动量。默认值： ``0.1`` 。
-        - **affine** (bool) - bool类型。设置为True时， :math:`\gamma` 和 :math:`\beta` 为可学习参数。默认值： ``True`` 。
+        - **eps** (float，可选) - :math:`\epsilon` 添加到分母中的值，以确保数值稳定。默认值： ``1e-5`` 。
+        - **momentum** (float，可选) - 动态均值和动态方差所使用的动量。默认值： ``0.1`` 。
+        - **affine** (bool，可选) - bool类型。设置为 ``True`` 时， :math:`\gamma` 和 :math:`\beta` 为可学习参数。设置为 ``False`` 时，:math:`\gamma` 和 :math:`\beta` 为不可学习参数。默认值： ``True`` 。
         - **track_running_stats** (bool, 可选) - bool类型。设置为 ``True`` 时，会跟踪运行时的均值和方差。当设置为 ``False`` 时，
-          则不会跟踪这些统计信息。且在tran和eval模式下，该cell总是使用batch的统计信息。
+          则不会跟踪这些统计信息。且在tran和eval模式下，该cell总是使用batch的统计信息。默认值： ``True`` 。
         - **process_group** (str, 可选) - 统计数据的同步在每个进程组内单独进行。默认行为是全局同步。默认值： ``None`` 。
         - **dtype** (:class:`mindspore.dtype`, 可选) - Parameters的dtype。默认值： ``None`` 。
 
