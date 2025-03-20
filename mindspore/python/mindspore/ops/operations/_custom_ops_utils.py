@@ -21,6 +21,7 @@ import shlex
 import subprocess
 import sysconfig
 import time
+import stat
 from mindspore import log as logger
 
 
@@ -101,7 +102,8 @@ class FileLocker:
     def try_lock(self):
         """Acquire a file-based lock."""
         try:
-            self.lock_fd = os.open(self.lock_file_name, os.O_CREAT | os.O_EXCL)
+            mode = stat.S_IRUSR | stat.S_IWUSR
+            self.lock_fd = os.open(self.lock_file_name, os.O_CREAT | os.O_EXCL, mode)
             return True
         except FileExistsError:
             return False

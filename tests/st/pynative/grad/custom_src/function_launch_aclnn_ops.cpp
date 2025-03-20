@@ -14,17 +14,8 @@
  * limitations under the License.
  */
 
-#include <string>
-#include "ms_extension.h"
 #include <memory>
-#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
-#include "mindspore/ccsrc/pyboost/op_register.h"
-#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
-#include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "runtime/device/device_address_utils.h"
-#include "kernel/ascend/opapi/aclnn/custom_aclnn_utils.h"
-#include "runtime/pynative/op_runner.h"
-#include "mindspore/ccsrc/pyboost/op_runner.h"
+#include "ms_extension.h"
 
 namespace mindspore::pynative {
 namespace autograd {

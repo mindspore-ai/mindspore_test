@@ -15,10 +15,13 @@
  */
 
 #include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
+#include "utils/ms_context.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
+OpStatus::OpStatus() { device_target = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET); }
+
 OpRunStatus &OpRunStatus::Get() {
   static OpRunStatus instance;
   return instance;
