@@ -19,6 +19,7 @@ from mindspore import log as logger
 from mindspore import ops
 from mindspore.ops import operations as P
 from mindspore.ops import functional as F
+from mindspore.ops.primitive import constexpr
 from mindspore.ops.composite.multitype_ops import _compile_utils as utils
 from mindspore.ops.composite.multitype_ops._compile_utils import (
     sequence_to_tensor, _tensor_sub, _tensor_pow, _tensor_div, _tensor_floordiv, _tensor_mod
@@ -439,7 +440,6 @@ from mindspore.ops.function.nn_func import flip
 from mindspore.ops.function.math_func import addmv
 
 # 916 index_add
-from mindspore.ops.primitive import constexpr
 from mindspore._checkparam import check_is_number
 
 # 985
@@ -1880,6 +1880,22 @@ def tensor_inplace_sub(input, other, *, alpha=1):
     if alpha == 1:
         return sub(input, other)
     return sub_ext(input, other, alpha=alpha)
+
+
+check_bool_type = constexpr(validator.check_bool)
+
+
+def tensor_index_put(input, indices, values, accumulate=False):
+    check_bool_type(accumulate, 'accumulate', 'Tensor.index_put')
+    _index_put = P.array_ops.IndexPut(0 if accumulate is False else 1)
+    return _index_put(input, values, indices)
+
+
+def deprecated_tensor_index_put(input, indices, values, accumulate=False):
+    check_bool_type(accumulate, 'accumulate', 'Tensor.index_put')
+    _index_put = P.array_ops.IndexPut(0 if accumulate is False else 1)
+    return _index_put(input, values, indices)
+
 
 def tensor_new_full(input, size, fill_value, *, dtype=None):
     raise NotImplementedError("new_full method support Ascend only")

@@ -1,0 +1,16 @@
+#deprecated index_put
+index_put:
+  args:
+    input:
+      dtype: tensor
+    indices:
+      dtype: tuple[tensor]
+      type_cast: list[tensor]
+    values:
+      dtype: tensor
+    accumulate:
+      dtype: bool
+      default: False
+  returns:
+    output:
+      dtype: tensor

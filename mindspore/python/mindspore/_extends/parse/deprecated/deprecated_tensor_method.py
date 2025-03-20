@@ -103,7 +103,7 @@ deprecated_tensor_method_map = {
     # 42 half
 
     # 43 index_put
-
+    "index_put": "deprecated_tensor_index_put",
     # 44 index_select
     "index_select": "deprecated_tensor_index_select",
     # 45 int
