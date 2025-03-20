@@ -1,0 +1,7 @@
+argwhere:
+  op_yaml: non_zero_op.yaml
+  py_method: deprecated_argwhere
+  Ascend: pyboost
+  CPU: pyboost
+  GPU: pyboost
+  interface: function
