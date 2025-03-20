@@ -178,6 +178,16 @@ def check_parameter_available(func):
         Wrapper. If not available, raise Error.
     """
     def wrapper(*args, **kargs):
+        # This function list indicates these functions will return 0 or 1 value in standalone mode or not calling 'init' method.
+        standalone_bypass_check_func_list = [
+            "_get_rank_helper",
+            "_get_local_rank_helper",
+            "_get_size_helper",
+            "_get_local_size_helper"
+        ]
+        if not GlobalComm.INITED and func.__name__ not in standalone_bypass_check_func_list:
+            raise RuntimeError(f"Distributed Communication has not been inited."
+                               f"You can't invoke {func.__name__} yet. Please call `init()` method first.")
         group = None
         if "group" in kargs.keys():
             group = kargs.get("group")
