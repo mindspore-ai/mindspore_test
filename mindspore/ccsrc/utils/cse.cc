@@ -241,11 +241,11 @@ bool CheckAbstractSame(const AnfNodePtr &main, const AnfNodePtr &node) {
 size_t GetAllReduceStartIdx(const CNodePtr &c_main, const CNodePtr &c_node) {
   size_t i = kAnfPrimitiveIndex;
   if (IsPrimitiveCNode(c_main, prim::kPrimAllReduce)) {
-    MS_LOG(INFO) << "Enter allreduce cse process for node " << c_main->DebugString() << ", and node "
-                 << c_node->DebugString();
     // For AllReduce, we require inputs except Primitive to be equal, so we compare from the second input.
-    auto c_main_group = GetCNodePrimitive(c_main)->GetAttr("group");
-    auto c_node_group = GetCNodePrimitive(c_node)->GetAttr("group");
+    auto c_main_group = GetValue<std::string>(GetCNodePrimitive(c_main)->GetAttr("group"));
+    auto c_node_group = GetValue<std::string>(GetCNodePrimitive(c_node)->GetAttr("group"));
+    MS_LOG(INFO) << "Enter allreduce cse process for node " << c_main->DebugString() << ", group is " << c_main_group
+                 << ", and node " << c_node->DebugString() << ", group is " << c_node_group;
     if (c_main_group == c_node_group) {
       i = kAnfPrimitiveIndex + 1;
     }
