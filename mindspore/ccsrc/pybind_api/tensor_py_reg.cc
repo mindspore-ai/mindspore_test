@@ -883,12 +883,7 @@ static PyObject *TensorPython_move_to(PyObject *self, PyObject *args) {
   }
   PyType<TensorPy> *tensor = (PyType<TensorPy> *)self;
   auto tensorTmp = tensor->value.GetTensor();
-  TensorPtr result = TensorPybind::MoveTo(*tensorTmp, std::string(to), blocking);
-  TensorPyPtr tmpTensor = std::make_shared<TensorPy>(result);
-  PyType<TensorPy> *resultTensor = (PyType<TensorPy> *)TensorPyType->tp_alloc(TensorPyType, 0);
-  new (&resultTensor->value) TensorPy(tmpTensor->GetTensor());
-  resultTensor->value.SetInitFinished(true);
-  return reinterpret_cast<PyObject *>(resultTensor);
+  return tensor::PackTensor(TensorPybind::MoveTo(*tensorTmp, std::string(to), blocking));
   HANDLE_MS_EXCEPTION_END
 }
 
