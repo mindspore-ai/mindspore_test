@@ -27,6 +27,7 @@ namespace mindspore {
 namespace pipeline {
 py::object SetFormat(const py::object &py_tensor, const std::string &format_name) {
   auto tensor = IsStubTensor(py_tensor) ? ConvertStubTensor(py_tensor) : tensor::ConvertToTensor(py_tensor);
+  MS_EXCEPTION_IF_NULL(tensor);
   auto tensor_py = tensor::PackTensorToPyObject(tensor);
   if (format_name != kOpFormat_ND && format_name != kOpFormat_FRAC_NZ) {
     MS_LOG(ERROR) << "The format " << format_name
