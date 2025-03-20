@@ -5,8 +5,6 @@ mindspore.ops.slice_scatter
 
     指定维度上对输入Tensor进行切片并将源Tensor覆盖切片结果。`input` 沿着指定维度进行切片，切片的起始位置是 `start` ，结束位置是 `end` ，步长是 `step` ，然后将 `src` 覆盖切片结果，得到输出Tensor。
 
-    从 `begin` 指定的位置开始，根据 `size` 的shape对输入Tensor进行切片。 `begin` 表示 `input_x` 每个维度的偏移量。 `size` 表示输出Tensor的大小。
-
     参数：
         - **input** (Tensor) - 目标Tensor。
         - **src** (Tensor) - 源Tensor。
