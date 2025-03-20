@@ -367,6 +367,7 @@ class Profiler:
             self.action_controller.transit_action(self.current_action, None)
         else:
             ProfilerInterface.stop()
+            ProfilerMetaData.dump_metadata()
 
     def analyse(self, offline_path=None, pretty=False, step_list=None, mode="sync") -> None:
         """
