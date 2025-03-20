@@ -199,8 +199,12 @@ Status StrategyLoader::LoadStrategyFromFile(const std::vector<AnfNodePtr> &all_n
     return FAILED;
   }
 
-  StrategyMap stra_map, out_stra_map;
-  TensorLayoutValueMap layout_map, out_layout_map, layoutnewshape_map, out_layoutnewshape_map;
+  StrategyMap stra_map;
+  StrategyMap out_stra_map;
+  TensorLayoutValueMap layout_map;
+  TensorLayoutValueMap out_layout_map;
+  TensorLayoutValueMap layoutnewshape_map;
+  TensorLayoutValueMap out_layoutnewshape_map;
   if (StrategyCheckpoint::GetInstance().LoadAutoOpStrategy(&stra_map, &out_stra_map, &layout_map, &out_layout_map,
                                                            &layoutnewshape_map, &out_layoutnewshape_map) != SUCCESS) {
     return FAILED;

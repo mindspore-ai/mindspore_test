@@ -231,6 +231,7 @@ std::tuple<size_t, size_t> GetSeqLengthAndAttentionHeads(const FuncGraphPtr &roo
       auto cnode = forward_node->cast<CNodePtr>();
       if (IsParallelCareNode(cnode) && cnode->has_user_data<OperatorInfo>()) {
         auto current_prim = GetValueNode<PrimitivePtr>(cnode->input(0));
+        MS_EXCEPTION_IF_NULL(current_prim);
         if (seq_length == 0 && strcmp(current_prim->name().c_str(), GET_NEXT) == 0) {
           Shapes param_shapes = GetNodeShape(cnode);
           MS_LOG(DEBUG) << current_prim->name().c_str() << " with shape " << param_shapes;
