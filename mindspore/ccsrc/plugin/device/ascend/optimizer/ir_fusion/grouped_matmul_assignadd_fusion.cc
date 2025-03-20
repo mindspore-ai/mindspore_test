@@ -55,9 +55,12 @@ bool GroupedMatmulAssignaddFusion::CheckFusion(const CNodePtr &grouped_matmul, c
   }
   auto split_item_int = GetValue<int64_t>(split_item_value);
   auto group_type_int = GetValue<int64_t>(group_type_value);
-  if (split_item_int != 3 || group_type_int != 2) {
-    MS_LOG(INFO) << "Expect split_item is 3 and groupe_type is 2, but got split_item[" << split_item_int
-                 << "] and group_type[" << group_type_int << "], skip fusion.";
+  const int64_t split_item_type3 = 3;
+  const int64_t group_type_k = 2;
+  if (split_item_int != split_item_type3 || group_type_int != group_type_k) {
+    MS_LOG(INFO) << "Expect split_item is " << split_item_type3 << " and groupe_type is " << group_type_k
+                 << ", but got split_item[" << split_item_int << "] and group_type[" << group_type_int
+                 << "], skip fusion.";
     return false;
   }
 

@@ -3163,6 +3163,7 @@ void OnnxExporter::ExportPrimUpsampleNearest2D(const FuncGraphPtr &, const CNode
   node_proto->set_op_type("Resize");
   node_proto->add_input(x_input_name);
   std::string roi_name = node_name + "_roi";
+  MS_EXCEPTION_IF_NULL(dyn_cast<abstract::Shape>(x_input_node->Shape()));
   auto x_input_shape = dyn_cast<abstract::Shape>(x_input_node->Shape())->shape();
   if (x_input_shape.size() != kFourNum) {
     MS_EXCEPTION(ValueError) << "When export UpsampleNearest for onnx, The rank od x "
