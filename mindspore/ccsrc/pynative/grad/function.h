@@ -144,7 +144,6 @@ struct PYNATIVE_EXPORT AutogradContext {
   /// computation. The data is stored as key-value pairs.
   std::unordered_map<std::string, ValuePtr> saved_data;
 
-  // NOLINTNEXTLINE(runtime/references)
   friend PYNATIVE_EXPORT void CppFunctionDoGrad(AutogradContext *context, const BaseTensorPtrList &inputs,
                                                 BaseTensorPtrList *outputs);
 
