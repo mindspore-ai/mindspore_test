@@ -31,6 +31,7 @@ namespace {
 constexpr size_t kONNXFloat32Type = 1;
 constexpr size_t kONNXInt8Type = 3;
 constexpr size_t kONNXTensorElementNum = 1;
+constexpr uint8_t kUint8MeanValue = 128;
 }  // namespace
 tensor::TensorPtr OnnxQuantizeLinearParser::GetConstData(const onnx::GraphProto &onnx_graph,
                                                          const std::string &input_name) {
@@ -126,7 +127,7 @@ bool OnnxQuantizeLinearParser::SetZeroPointAttr(const onnx::GraphProto &onnx_gra
     MS_CHECK_TRUE_RET(zp_data != nullptr, false);
     int zero_point = 0;
     if (zp_data_type == mindspore::kNumberTypeUInt8) {
-      zero_point = *(static_cast<const uint8_t *>(zp_data)) - 128;
+      zero_point = *(static_cast<const uint8_t *>(zp_data)) - kUint8MeanValue;
     } else if (zp_data_type == mindspore::kNumberTypeInt8) {
       auto zero_point_int8 = *(static_cast<const int8_t *>(zp_data));
       zero_point = static_cast<const int32_t>(zero_point_int8);
@@ -145,7 +146,7 @@ bool OnnxQuantizeLinearParser::SetZeroPointAttr(const onnx::GraphProto &onnx_gra
     if (zp_data_type == mindspore::kNumberTypeUInt8) {
       auto zero_point = static_cast<const uint8_t *>(zp_data);
       for (size_t i = 0; i < static_cast<size_t>(onnx_zero_point_tensor->ElementsNum()); i++) {
-        point_vec.push_back(static_cast<int8_t>(zero_point[i] - 128));
+        point_vec.push_back(static_cast<int8_t>(zero_point[i] - kUint8MeanValue));
       }
     } else if (zp_data_type == mindspore::kNumberTypeInt8) {
       auto zero_point_int8 = static_cast<const int8_t *>(zp_data);
@@ -157,7 +158,6 @@ bool OnnxQuantizeLinearParser::SetZeroPointAttr(const onnx::GraphProto &onnx_gra
       return false;
     }
     prim->AddAttr(kAttrZeroPointVec, MakeValue(point_vec));
-
   } else {
     MS_LOG(ERROR) << "Parse zero point param failed.";
     return false;
