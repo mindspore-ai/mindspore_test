@@ -114,14 +114,8 @@ ValuePtrList CustomBackward::CallBackward(const ValuePtrList &grads) {
 
 void CustomBackward::Release() {
   py::gil_scoped_acquire gil_acquire;
-  bprop_fn_ = py::none();
-  bprop_inputs_ = py::none();
-}
-
-PyBackwardNode::~PyBackwardNode() {
-  py::gil_scoped_acquire gil_acquire;
-  backward_fn_ = py::object();
-  obj_ = py::object();
+  bprop_fn_ = py::object();
+  bprop_inputs_ = py::object();
 }
 
 ValuePtrList PyBackwardNode::CallBackward(const ValuePtrList &grads) {
@@ -187,6 +181,7 @@ ValuePtrList PyBackwardNode::CallBackward(const ValuePtrList &grads) {
 void PyBackwardNode::Release() {
   py::gil_scoped_acquire gil_acquire;
   backward_fn_ = py::object();
+  obj_ = py::object();
 }
 
 }  // namespace autograd

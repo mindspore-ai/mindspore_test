@@ -894,9 +894,12 @@ void FuncGrad::CallCustomFunction(const std::shared_ptr<FunctionContext> &contex
   MS_LOG(DEBUG) << "Begin Call CallCustomFunction";
 
   BackwardNodePtr custom_fn;
-  custom_fn =
-    std::make_shared<PyBackwardNode>("FunctionCustomBackward", context->backward_fn, context->obj,
-                                     GenerateFlattenAbs(context->flatten_outputs), context->flatten_outputs.size());
+  {
+    py::gil_scoped_acquire gil;
+    custom_fn =
+      std::make_shared<PyBackwardNode>("FunctionCustomBackward", context->backward_fn, context->obj,
+                                       GenerateFlattenAbs(context->flatten_outputs), context->flatten_outputs.size());
+  }
   ConstructParameterNodes(context->inputs);
   UpdateNextEdges(custom_fn, context->inputs);
   auto variable = std::make_shared<FuncVariable>(custom_fn, false);
