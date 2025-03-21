@@ -243,6 +243,7 @@ std::string PrimitivePy::HookTypeToString() const { return hook_type_with_str[ho
 
 void PrimitivePy::CopyHookFunction(const PrimitivePyPtr &primitive_py) {
   MS_EXCEPTION_IF_NULL(primitive_py);
+  pybind11::gil_scoped_acquire gil;
   SetHookFn(primitive_py->hook_fn(), primitive_py->hook_type());
   if (hook_type_ == HookType::kCellCustomBprop) {
     set_bprop_cls_name(primitive_py->bprop_cls_name_);
