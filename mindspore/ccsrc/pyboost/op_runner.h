@@ -123,14 +123,14 @@ class PYBOOST_API OpRunner : public std::enable_shared_from_this<OpRunner> {
   }
 
   void ProfileTrackerTask() {
-    if (MS_UNLIKELY(device::tracker::MemTrackerManager::GetInstance().enable_memory_debug_info())) {
+    static bool enable_trace_mem = device::tracker::MemTrackerManager::GetInstance().IsEnabled();
+    if (MS_UNLIKELY(enable_trace_mem || device::tracker::MemTrackerManager::GetInstance().enable_memory_debug_info())) {
       PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([primitive = primitive_]() {
         // wait for event
         runtime::Pipeline::Get().launch_stage()->Wait();
         device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddNestedTask, "PyNative", primitive->name(), "");
       }));
     }
-    static bool enable_trace_mem = device::tracker::MemTrackerManager::GetInstance().IsEnabled();
     if (MS_LIKELY(!enable_trace_mem)) {
       return;
     }
