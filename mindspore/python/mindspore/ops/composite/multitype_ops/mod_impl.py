@@ -18,6 +18,8 @@ from __future__ import absolute_import
 from mindspore.ops.composite.multitype_ops import _compile_utils as utils
 from mindspore.ops.composite import base
 from mindspore.ops import functional as F
+from mindspore.ops.auto_generate import (remainder_tensor_tensor_op, remainder_tensor_scalar_op,
+                                         remainder_scalar_tensor_op)
 
 
 mod = base.MultitypeFuncGraph("mod", True)
@@ -37,19 +39,19 @@ def _mod_scalar(x, y):
 @mod.register("Tensor", "Tensor")
 def _mod_tensor(x, y):
     """Returns x % y where x and y are all tensors."""
-    return F.tensor_mod(x, y)
+    return remainder_tensor_tensor_op(x, y)
 
 
 @mod.register("Tensor", "Number")
 def _tensor_mod_scalar(x, y):
     """Returns x % y where x is a tensor and y is a scalar. x and y should have same dtype."""
-    return F.tensor_mod(x, y)
+    return remainder_tensor_scalar_op(x, y)
 
 
 @mod.register("Number", "Tensor")
 def _scalar_mod_tensor(x, y):
     """Returns x % y where x is a scalar and y is a tensor. x and y should have same dtype."""
-    return F.tensor_mod(x, y)
+    return remainder_scalar_tensor_op(x, y)
 
 
 @mod.register("Tuple", "Tensor")

@@ -2724,8 +2724,9 @@ REG_BPROP_BUILDER("FloorMod").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("RemainderTensorScalar").FreeUselessValues_IO({}, {}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
   auto other = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto dout = ib->Cast(ib->GetInput(kIndex3), ib->GetDtype(input));
   return {dout, ib->OutZeros(other)};
 });
 
@@ -2737,9 +2738,12 @@ REG_BPROP_BUILDER("RemainderTensorTensor").SetUnusedInputs({i2}).SetBody(BODYFUN
   NodePtr d_other = nullptr;
   if (other->need_compute_grad_out()) {
     d_other = (-dout) * (ib->DivMod(input, other, ops::RoundingMode::FLOOR));
+    d_other = ib->Cast(d_other, ib->GetDtype(other));
   }
   return {BinopGradCommon(ib, input, other, d_input, d_other)};
 });
+
+REG_BPROP_BUILDER("RemainderScalarTensor").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
 
 REG_BPROP_BUILDER("InplaceRemainderTensorScalar").FreeUselessValues_IO({}, {}).SetBody(BODYFUNC(ib) {
   auto other = ib->GetInput(kIndex1);

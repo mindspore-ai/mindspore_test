@@ -975,6 +975,10 @@ def deprecated_tensor_remainder(input, divisor):
     return remainder(input, divisor)
 
 
+def deprecated_tensor_mod(input, other):
+    return _tensor_mod(input, other)
+
+
 # 86 repeat
 def tensor_repeat(input, *repeats):
     raise RuntimeError("'repeat' is not supported on this device.")

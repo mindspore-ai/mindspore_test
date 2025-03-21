@@ -218,6 +218,19 @@ void ReduceAny(const T *in, T *out, size_t start, size_t end, TransposeIterator 
 }
 
 template <typename T>
+bool SkipExecute(const T *in, T *out, size_t input_size, size_t output_size, const std::string &kernel_name) {
+  if (output_size == 0 && input_size == 0) {
+    MS_LOG(DEBUG) << "For '" << kernel_name << "', empty tensor input does not need to memcpy.";
+    return true;
+  }
+  auto ret = memcpy_s(out, output_size, in, input_size);
+  if (ret != EOK) {
+    MS_LOG(EXCEPTION) << "For '" << kernel_name << "', launch kernel error: memcpy failed. Error no: " << ret;
+  }
+  return true;
+}
+
+template <typename T>
 void ReduceCpuKernelFunc<T>::SpecialExcute() {
   // reset simple_execute_
   simple_execute_ = false;
@@ -384,11 +397,7 @@ bool ReduceCpuKernelFunc<T>::RunFunc(const std::vector<kernel::KernelTensor *> &
   size_t input_size = inputs[0]->size() / sizeof(T);
   auto *input_addr = GetDeviceAddress<T>(inputs, kIndex0);
   auto *output_addr = GetDeviceAddress<T>(outputs, kIndex0);
-  if (need_skip_execute_) {
-    auto ret = memcpy_s(output_addr, outputs[0]->size(), input_addr, inputs[0]->size());
-    if (ret != EOK) {
-      MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', launch kernel error: memcpy failed. Error no: " << ret;
-    }
+  if (need_skip_execute_ && SkipExecute(input_addr, output_addr, inputs[0]->size(), outputs[0]->size(), kernel_name_)) {
     return true;
   }
 
