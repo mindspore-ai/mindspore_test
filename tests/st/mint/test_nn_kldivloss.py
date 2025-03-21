@@ -171,7 +171,7 @@ def test_mint_nn_kldivloss_broadcast(mode):
     if mode == 'pynative':
         ms.context.set_context(mode=ms.PYNATIVE_MODE)
     elif mode == 'KBK':
-        ms.context.set_context(mode=ms.GRAPH_MODE, backend="ms_backend", jit_level='O0')
+        ms.context.set_context(mode=ms.GRAPH_MODE, jit_level='O0')
 
     mint_nn_kldivloss_binary_case5()
     mint_nn_kldivloss_binary_case6()

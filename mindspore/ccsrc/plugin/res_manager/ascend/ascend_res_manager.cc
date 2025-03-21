@@ -30,6 +30,7 @@
 #include "plugin/res_manager/ascend/mem_manager/ascend_vmm_adapter.h"
 #include "plugin/res_manager/ascend/ascend_device_address/ascend_device_address.h"
 #include "plugin/res_manager/ascend/ascend_device_address/ascend_device_synchronizer.h"
+#include "plugin/res_manager/ascend/device_context_conf/op_debug_conf.h"
 #include "plugin/res_manager/ascend/event/ascend_event.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_pin_mem_pool.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_compiler_symbol.h"
@@ -513,6 +514,18 @@ void AscendResManager::SetDeterministic() const {
   }
 }
 
+void AscendResManager::SetDebugKernel() const {
+  auto op_debug_conf = OpDebugConf::GetInstance();
+  MS_EXCEPTION_IF_NULL(op_debug_conf);
+  auto op_debug_option = op_debug_conf->debug_option();
+  if (op_debug_option == "oom") {
+    auto ret = CALL_ASCEND_API(aclrtCtxSetSysParamOpt, aclSysParamOpt::ACL_OPT_ENABLE_DEBUG_KERNEL, 1);
+    if (ret != ACL_SUCCESS) {
+      MS_LOG(EXCEPTION) << "Acl enable debug kernel failed! Error flag is " << ret;
+    }
+  }
+}
+
 bool AscendResManager::BindDeviceToCurrentThread(bool force_bind) const {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
@@ -525,6 +538,7 @@ bool AscendResManager::BindDeviceToCurrentThread(bool force_bind) const {
       MS_LOG(EXCEPTION) << "Device " << device_id << " call aclrtSetDevice failed, ret:" << static_cast<int>(ret);
     }
     SetDeterministic();
+    SetDebugKernel();
   });
 
   if (force_bind) {
