@@ -2,7 +2,7 @@ le_:
   description: |
     le_(other) -> Tensor
     
-    In-place version of :func:`mindspore.Tensor.le`.
+    In-place update version of :func:`mindspore.Tensor.le`.
     
     .. warning::
         This is an experimental API that is subject to change or deletion.
