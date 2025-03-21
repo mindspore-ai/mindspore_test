@@ -120,46 +120,45 @@ bool CrossCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &
   auto output_data_addr = reinterpret_cast<T *>(outputs[0]->device_ptr());
   size_t total = input1_data_num / kNumber3;
   const size_t n = input1_shape_.size();
-  std::vector<size_t> a_stride(n);
-  int64_t stride_tmp = 1;
-  for (int64_t i = static_cast<int64_t>(n - 1); i >= 0; i--) {
-    a_stride[LongToSize(i)] = LongToSize(stride_tmp);
-    stride_tmp *= input1_shape_[LongToSize(i)];
+  const int64_t abr_number = kDim3;
+  std::vector<std::vector<size_t>> strides(abr_number);
+  for (int64_t j = 0; j < abr_number; j++) {
+    strides[j].resize(n);
+    int64_t stride_tmp = 1;
+    const auto &shape = (j == 0) ? input1_shape_ : (j == 1) ? input2_shape_ : output_shape_;
+    for (int64_t i = static_cast<int64_t>(n - 1); i >= 0; i--) {
+      strides[j][LongToSize(i)] = LongToSize(stride_tmp);
+      stride_tmp *= shape[LongToSize(i)];
+    }
   }
-  size_t input1_data_stride = a_stride[LongToSize(dim_)];
-  std::vector<size_t> b_stride(n);
-  stride_tmp = 1;
-  for (int64_t i = static_cast<int64_t>(n - 1); i >= 0; i--) {
-    b_stride[LongToSize(i)] = LongToSize(stride_tmp);
-    stride_tmp *= input2_shape_[LongToSize(i)];
-  }
-  size_t input2_data_stride = b_stride[LongToSize(dim_)];
-  std::vector<size_t> r_stride(n);
-  stride_tmp = 1;
-  for (int64_t i = static_cast<int64_t>(n - 1); i >= 0; i--) {
-    r_stride[LongToSize(i)] = LongToSize(stride_tmp);
-    stride_tmp *= output_shape_[LongToSize(i)];
-  }
-  size_t output_data_stride = r_stride[LongToSize(dim_)];
+  size_t input1_data_stride = strides[kDim0][LongToSize(dim_)];
+  size_t input2_data_stride = strides[kDim1][LongToSize(dim_)];
+  size_t output_data_stride = strides[kDim2][LongToSize(dim_)];
   const size_t pos = 2;
-  auto cross_shard = [this, &a_stride, &b_stride, &r_stride, &output_data_addr, &input1_data_addr, &input2_data_addr,
-                      &output_data_stride, &input1_data_stride, &input2_data_stride, &pos](size_t start, size_t end) {
+  auto cross_shard = [this, &strides, &output_data_addr, &input1_data_addr, &input2_data_addr, &output_data_stride,
+                      &input1_data_stride, &input2_data_stride, &pos](size_t start, size_t end) {
     const size_t input1_data_dim = input1_shape_.size();
     std::vector<int64_t> position_in_dims(input1_data_dim);
-    int64_t index_in_curr_dim = SizeToLong(start), input1_data_start = 0, input2_data_start = 0, output_data_start = 0;
+    int64_t index_in_curr_dim = SizeToLong(start);
+    int64_t input1_data_start = 0;
+    int64_t input2_data_start = 0;
+    int64_t output_data_start = 0;
     for (int64_t i = 0; i < static_cast<int64_t>(input1_data_dim); i++) {
       if (i == static_cast<int64_t>(dim_)) {
         continue;
       }
       if (input1_shape_[LongToSize(i)] != 0) {
         position_in_dims[LongToSize(i)] = index_in_curr_dim % input1_shape_[LongToSize(i)];
-        input1_data_start += (index_in_curr_dim % input1_shape_[LongToSize(i)]) * SizeToLong(a_stride[LongToSize(i)]);
+        input1_data_start +=
+          (index_in_curr_dim % input1_shape_[LongToSize(i)]) * SizeToLong(strides[kDim0][LongToSize(i)]);
       }
       if (input2_shape_[LongToSize(i)] != 0) {
-        input2_data_start += (index_in_curr_dim % input2_shape_[LongToSize(i)]) * SizeToLong(b_stride[LongToSize(i)]);
+        input2_data_start +=
+          (index_in_curr_dim % input2_shape_[LongToSize(i)]) * SizeToLong(strides[kDim1][LongToSize(i)]);
       }
       if (output_shape_[LongToSize(i)] != 0) {
-        output_data_start += (index_in_curr_dim % output_shape_[LongToSize(i)]) * SizeToLong(r_stride[LongToSize(i)]);
+        output_data_start +=
+          (index_in_curr_dim % output_shape_[LongToSize(i)]) * SizeToLong(strides[kDim2][LongToSize(i)]);
       }
       if (input1_shape_[LongToSize(i)] != 0) {
         index_in_curr_dim = index_in_curr_dim / input1_shape_[LongToSize(i)];
@@ -187,13 +186,13 @@ bool CrossCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &
           continue;
         }
         position_in_dims[i]++;
-        input1_data_start += SizeToLong(a_stride[i]);
-        input2_data_start += SizeToLong(b_stride[i]);
-        output_data_start += SizeToLong(r_stride[i]);
+        input1_data_start += SizeToLong(strides[kDim0][i]);
+        input2_data_start += SizeToLong(strides[kDim1][i]);
+        output_data_start += SizeToLong(strides[kDim2][i]);
         if (position_in_dims[i] == input1_shape_[i] && i != (input1_shape_.size() - 1)) {
-          input1_data_start -= position_in_dims[i] * SizeToLong(a_stride[i]);
-          input2_data_start -= position_in_dims[i] * SizeToLong(b_stride[i]);
-          output_data_start -= position_in_dims[i] * SizeToLong(r_stride[i]);
+          input1_data_start -= position_in_dims[i] * SizeToLong(strides[kDim0][i]);
+          input2_data_start -= position_in_dims[i] * SizeToLong(strides[kDim1][i]);
+          output_data_start -= position_in_dims[i] * SizeToLong(strides[kDim2][i]);
           position_in_dims[i] = 0;
         } else {
           break;
