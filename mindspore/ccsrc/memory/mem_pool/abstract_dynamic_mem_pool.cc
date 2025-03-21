@@ -982,6 +982,11 @@ void AbstractDynamicMemPool::DumpDynamicMemPoolDebugInfo() {
 }
 
 const std::pair<size_t, size_t> AbstractDynamicMemPool::FreeIdleMemsByEagerFree() {
+  if (!IsEnableVmm() && !IsEnableEagerFree()) {
+    MS_LOG(WARNING) << "FreeIdleMemsByEagerFree is not allowed since vmm is not enabled.";
+    return std::make_pair(0L, 0L);
+  }
+
   MS_LOG(INFO) << "Free idle mems by eager free start, allocator size : " << stream_id_allocators_.size() << ".";
   eager_free_count_++;
 
