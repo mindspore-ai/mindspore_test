@@ -50,7 +50,7 @@ mindspore.ops.DynamicRNN
         - **output_h** (Tensor) - 所有时刻输出层的输出向量，shape为 :math:`(num\_step, batch\_size, hidden\_size)` 的Tensor。数据类型为float16。
         - **output_c** (Tensor) - 所有时刻的Cell状态的输出向量，shape为 :math:`(num\_step, batch\_size, hidden\_size)` 的Tensor。数据类型与输入 `b` 相同。
         - **i** (Tensor) - 更新输入门的权重，shape为 :math:`(num\_step, batch\_size, hidden\_size)` 的Tensor。数据类型与输入 `b` 相同。
-        - **j** (Tensor) - 更新新门的权重，shape为 :math:`(num\_step, batch\_size, hidden\_size)` 的Tensor。数据类型与输入 `b` 相同。
+        - **j** (Tensor) - 更新单元状态的权重，shape为 :math:`(num\_step, batch\_size, hidden\_size)` 的Tensor。数据类型与输入 `b` 相同。
         - **f** (Tensor) - 更新遗忘门的权重，shape为 :math:`(num\_step, batch\_size, hidden\_size)` 的Tensor。数据类型输入 `b` 相同。
         - **o** (Tensor) - 更新输出门的权重，shape为 :math:`(num\_step, batch\_size, hidden\_size)` 的Tensor。数据类型与输入 `b` 相同。
         - **tanhct** (Tensor) - 更新tanh的权重，shape为 :math:`(num\_step, batch\_size, hidden\_size)` 的Tensor。数据类型与输入 `b` 相同。
