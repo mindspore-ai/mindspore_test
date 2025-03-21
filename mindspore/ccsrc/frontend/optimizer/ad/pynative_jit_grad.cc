@@ -308,6 +308,22 @@ std::pair<bool, FuncGraphPtr> GetBpropGraphWithParamalization(const pynative::Gr
   MS_EXCEPTION_IF_NULL(forward_fg);
   if (need_forward_result) {
     MS_LOG(INFO) << "Start run forward graph result";
+    const auto &output = forward_fg->output();
+    MS_EXCEPTION_IF_NULL(output);
+    const auto &output_abs = output->abstract();
+    MS_EXCEPTION_IF_NULL(output_abs);
+    if (need_reuse_forward_node) {
+      // {prim::kPrimMakeTuple, origin_forward_output, {prim::kPrimMakeTuple, reuse_cnode1, reuse_cnode2, ...}}
+      auto tuple_output_abstract = output_abs->cast<abstract::AbstractTuplePtr>();
+      if (tuple_output_abstract == nullptr || tuple_output_abstract->size() == 0) {
+        MS_LOG(EXCEPTION) << "Invalid output abstract: " << output_abs->ToString();
+      }
+      auto node_abstracts = tuple_output_abstract->elements();
+      node_abstracts[kIndex0] = origin_forward_output_abs;
+      forward_fg->output()->set_abstract(std::make_shared<abstract::AbstractTuple>(node_abstracts));
+    } else {
+      forward_fg->output()->set_abstract(origin_forward_output_abs);
+    }
     auto forward_result = GetGraphResult(forward_fg, arg_list, cache_hit, grad_param->graph_cache_key);
     py::object py_forward_result =
       HandleForwardResult(forward_result, forward_fg, origin_forward_output_abs, grad_param, need_reuse_forward_node);

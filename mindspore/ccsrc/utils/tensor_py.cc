@@ -594,9 +594,15 @@ PyObject *Wrap(const ValuePtr &value) {
     auto sequeue = value->cast<ValueSequencePtr>();
     const auto &values = sequeue->value();
     size_t size = values.size();
-    PyObject *output = PyTuple_New(static_cast<Py_ssize_t>(size));
+    bool is_tuple = value->isa<ValueTuple>();
+    PyObject *output =
+      is_tuple ? PyTuple_New(static_cast<Py_ssize_t>(size)) : PyList_New(static_cast<Py_ssize_t>(size));
     for (size_t i = 0; i < size; ++i) {
-      PyTuple_SET_ITEM(output, i, Wrap(values[i]));
+      if (is_tuple) {
+        PyTuple_SET_ITEM(output, i, Wrap(values[i]));
+      } else {
+        PyList_SET_ITEM(output, i, Wrap(values[i]));
+      }
     }
     return output;
   } else {
