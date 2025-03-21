@@ -486,10 +486,12 @@ class SyncBatchNorm(_BatchNorm):
 
     Args:
         num_features (int): `C` from an expected input of size :math:`(N, C, +)`.
-        eps (float): :math:`\epsilon`, a value added to the denominator for numerical stability. Default: ``1e-5`` .
-        momentum (float): A floating hyperparameter of the momentum for the
+        eps (float, optional): :math:`\epsilon`, a value added to the denominator for numerical stability.
+            Default: ``1e-5`` .
+        momentum (float, optional): A floating hyperparameter of the momentum for the
             running_mean and running_var computation. Default: ``0.1`` .
-        affine (bool): A bool value. When set to ``True`` , :math:`\gamma` and :math:`\beta` can be learned.
+        affine (bool, optional): A bool value. When set to ``True`` , :math:`\gamma` and :math:`\beta` are learnable
+            parameters. When set to ``False`` , :math:`\gamma` and :math:`\beta` are unlearnable parameters.
             Default: ``True`` .
         track_running_stats (bool, optional): a boolean value that when set to ``True``, this
             cell tracks the running mean and variance, and when set to ``False``,
