@@ -102,7 +102,7 @@ ValuePtrList CustomBackward::CallBackward(const ValuePtrList &grads) {
   }
   MS_LOG(DEBUG) << "Run cell custom bprop function end.";
   ValuePtrList gradient_values;
-  ConvertPybindTupleGradToCValue(input_grads, &gradient_values, true);
+  ConvertPyObjectToCTensor(input_grads, &gradient_values, true);
   if (gradient_values.empty()) {
     MS_LOG(EXCEPTION) << "Hook fn grad output is empty!";
   }

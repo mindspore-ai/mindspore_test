@@ -1035,14 +1035,8 @@ ValuePtr ShallowCopyTensorValue(const ValuePtr &value) {
 
 ValuePtr ConvertPyObjectToCObject(const py::object &input_object, bool is_base_tensor) {
   ValuePtr output = nullptr;
-  if (IsStubTensor(input_object)) {
-    if (is_base_tensor) {
-      output = StubNodeToTensor(input_object);
-    } else {
-      output = ConvertStubTensor(input_object);
-    }
-  } else if (tensor::IsTensorPy(input_object)) {
-    output = tensor::ConvertToBaseTensor(input_object);
+  if (tensor::IsTensorPy(input_object)) {
+    output = is_base_tensor ? tensor::ConvertToBaseTensor(input_object) : tensor::ConvertToTensor(input_object);
   } else if (py::isinstance<py::none>(input_object)) {
     output = kNone;
   } else if (py::isinstance<py::float_>(input_object)) {
