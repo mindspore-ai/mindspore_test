@@ -1739,13 +1739,16 @@ def test_basic_transforms_pipeline():
     map_with_dvpp_shape_and_type()
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_map_with_dvpp_with_spawn_independent_mode():
     """
     Feature: Map op
     Description: Test map with dvpp with multi process + spawn mode by independent mode
     Expectation: The result is equal to the expected
     """
+
+    if sys.version_info < (3, 8):
+        return
 
     os.environ['MS_INDEPENDENT_DATASET'] = "True"
     ds.config.set_multiprocessing_start_method("spawn")
