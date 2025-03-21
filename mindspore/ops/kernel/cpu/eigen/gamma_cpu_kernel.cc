@@ -53,6 +53,7 @@ bool GammaCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const st
 template <typename T>
 void GammaCpuKernelMod::InferShape(const std::vector<KernelTensor *> &inputs) {
   const auto *shape_value = GetDeviceAddress<T>(inputs, 0);
+  MS_EXCEPTION_IF_NULL(shape_value);
   for (int64_t i = 0; i < shape_shape_[0]; i++) {
     output_shape_.emplace_back(static_cast<int64_t>(shape_value[i]));
   }

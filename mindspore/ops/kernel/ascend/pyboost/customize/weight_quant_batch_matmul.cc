@@ -18,6 +18,7 @@
 #include <memory>
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "kernel/ascend/pyboost/auto_generate/transpose.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "mindspore/ccsrc/pyboost/op_register.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
@@ -44,14 +45,14 @@ ValueTuplePtr GetWeightQuantBatchMatmulPerm(const BaseTensorPtr &weight_tensor) 
   const auto &shape = weight_tensor->shape();
   int64_t size = shape.size();
   std::vector<ValuePtr> perm(size);
-  if (size < 2) {
+  if (size < ops::kSize2) {
     auto zero = std::make_shared<Int64Imm>(0);
     perm[0] = MakeValue(zero);
     return std::make_shared<ValueTuple>(perm);
   }
-  perm[size - 1] = MakeValue(size - 2);
-  perm[size - 2] = MakeValue(size - 1);
-  for (int64_t i = 0; i < size - 2; ++i) {
+  perm[size - 1] = MakeValue(size - kDim2);
+  perm[size - kDim2] = MakeValue(size - 1);
+  for (int64_t i = 0; i < size - ops::kSize2; ++i) {
     perm[i] = MakeValue(i);
   }
   return std::make_shared<ValueTuple>(perm);

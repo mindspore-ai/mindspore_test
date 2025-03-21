@@ -298,6 +298,7 @@ from mindspore.ops.function.nn_func import _nllloss_nd as nllloss
 
 from mindspore.ops.auto_generate import upsample_nearest2d_op, upsample_bilinear2d_op
 
+
 class NLLLoss(Cell):
     r"""
     Gets the negative log likelihood loss between inputs and target.
@@ -435,7 +436,7 @@ class CrossEntropyLoss(Cell):
     Note:
         Dynamic shape, dynamic rank and variable constant input are not supported in `strict graph mode
         (jit_syntax_level=mindspore.STRICT)
-        <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html>`_.
+        <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.JitConfig.html>`_.
 
     Args:
         weight (Tensor, optional): A rescaling weight applied to the loss of each batch element.
