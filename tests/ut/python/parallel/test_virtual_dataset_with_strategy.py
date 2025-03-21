@@ -156,7 +156,7 @@ def test_virtual_dataset_model_parallel_auto_parallel():
     Description: virtual_dataset/model_parallel/fully shard/repeat in left.
     Expectation: compile done without error.
     """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
     context.set_auto_parallel_context(device_num=8, global_rank=0)
     strategy0 = ((1, 8), (1, 8), (1, 8))
     context.set_auto_parallel_context(dataset_strategy=strategy0)
@@ -196,7 +196,7 @@ def test_virtual_dataset_model_parallel_auto_parallel_diff_input_dim():
     Description: virtual_dataset/model_parallel/fully shard/repeat in left.
     Expectation: compile done without error.
     """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="recursive_programming")
     context.set_auto_parallel_context(device_num=8, global_rank=0)
     strategy0 = ((1, 8), (1, 8), (8,))
     context.set_auto_parallel_context(dataset_strategy=strategy0)
@@ -236,7 +236,7 @@ def test_virtual_dataset_model_parallel_auto_parallel_diff_input_dim_not_fully_s
     Description: virtual_dataset/model_parallel/not fully shard/repeat in left.
     Expectation: compile done without error.
     """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
     context.set_auto_parallel_context(device_num=16, global_rank=0)
     strategy0 = ((1, 8), (1, 8), (1,))
     context.set_auto_parallel_context(dataset_strategy=strategy0)
@@ -298,7 +298,7 @@ def test_without_virtual_dataset_model_parallel_auto_parallel():
     Description: virtual_dataset/model_parallel/fully shard/repeat in left.
     Expectation: compile done without error.
     """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
     context.set_auto_parallel_context(device_num=8, global_rank=0)
     strategy0 = ((1, 8), (1, 8), (1, 8))
     context.set_auto_parallel_context(dataset_strategy=strategy0)

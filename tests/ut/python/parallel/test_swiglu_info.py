@@ -49,7 +49,7 @@ def test_swiglu_auto_parallel():
     Description: auto parallel
     Expectation: compile success
     """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=8,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=8,
                                       global_rank=0)
     net = NetSwiGlu()
     input_data = Tensor([[-0.12, 0.123, 31.122, 4.1], [2.1223, 4.1212121217, 0.3123, 8.1]], dtype=ms.float32)

@@ -110,7 +110,7 @@ def test_topk_ext_auto_parallel():
     Expectation: compile success
     """
     context.set_auto_parallel_context(
-        parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=8, global_rank=0)
+        parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=8, global_rank=0)
     net = TopkExtNet(_w1, _k)
     compile_net(net)
 

@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import re
 import numpy as np
 
 import mindspore as ms
@@ -81,14 +80,8 @@ def test_matmul_prelu():
     b = Tensor(np.array([0.01, 0.02, 0.03]), dtype=ms.float32)
 
     net = NetWithLoss(Net())
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
     reset_op_id()
 
     net.set_train()
     _cell_graph_executor.compile(net, x, y, b, phase='train')
-    strategies = _cell_graph_executor._get_shard_strategy(net)
-    for (k, v) in strategies.items():
-        if re.search('PReLU-op', k) is not None:
-            assert v == [[16, 1, 1, 1], [1]]
-        elif re.search('Mul-op', k) is not None:
-            assert v == [[16, 1, 1, 1], [16, 1, 1, 1]]

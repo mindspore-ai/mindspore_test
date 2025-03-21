@@ -86,7 +86,7 @@ def test_unique_column_split():
 
     size = 8
     context.set_auto_parallel_context(device_num=size, global_rank=0, parallel_mode="auto_parallel",
-                                      search_mode="dynamic_programming")
+                                      search_mode="sharding_propagation")
     x = Tensor(np.ones([32, 64]), dtype=ms.int32)
     net = Net()
     optimizer = Momentum(net.trainable_params(), learning_rate=0.1, momentum=0.9)

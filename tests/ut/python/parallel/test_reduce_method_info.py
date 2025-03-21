@@ -501,7 +501,7 @@ def test_arg_max_with_value_mul_auto():
     strategy2 = None
     strategy3 = None
     net = GradWrap(NetWithLoss(ArgMaxWithValueNet(strategy1, strategy2, strategy3)))
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
     gen_inputs_and_compile_net(net)
 
 
@@ -546,7 +546,7 @@ def test_arg_min_with_value_mul_auto():
     strategy2 = None
     strategy3 = None
     net = GradWrap(NetWithLoss(ArgMinWithValueNet(strategy1, strategy2, strategy3)))
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
     gen_inputs_and_compile_net(net)
 
 
@@ -588,7 +588,7 @@ def test_arg_max_mul_auto():
     strategy1 = None
     strategy2 = None
     net = GradWrapNoBias(NetWithLossNoBias(ArgMaxNet(strategy1, strategy2)))
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
     gen_inputs_and_compile_net_no_bias(net)
 
 
@@ -630,7 +630,7 @@ def test_arg_min_mul_auto():
     strategy1 = None
     strategy2 = None
     net = GradWrapNoBias(NetWithLossNoBias(ArgMinNet(strategy1, strategy2)))
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
     gen_inputs_and_compile_net_no_bias(net)
 
 
@@ -684,7 +684,7 @@ def test_arg_min_with_value_mul_auto2():
     strategy2 = None
     strategy3 = None
     net = GradWrapNoBias(NetWithLossNoBias(ArgMinWithValueNet2(strategy1, strategy2, strategy3)))
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
     gen_inputs_and_compile_net_no_bias(net)
 
 
@@ -776,7 +776,7 @@ def test_cross_batch_auto():
 
     context.set_auto_parallel_context(device_num=8, global_rank=0)
     net = GradWrapNoBias(NetWithLossNoBias(Net()))
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
 
     x = Tensor(np.ones([32, 64]), dtype=ms.float32)
     y = Tensor(np.ones([32, 64]), dtype=ms.float32)
@@ -1050,7 +1050,7 @@ def test_prod_mul_auto():
     strategy1 = None
     strategy2 = None
     net = GradWrapNoBias(NetWithLossNoBias(Net(strategy1, strategy2)))
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
     gen_inputs_and_compile_net_no_bias(net)
 
 

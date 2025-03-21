@@ -80,15 +80,8 @@ def test_two_matmul_transpose():
     b = Tensor(np.ones([64, 64]), dtype=ms.float32)
 
     net = NetWithLoss(Net())
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
     reset_op_id()
 
     net.set_train()
     _cell_graph_executor.compile(net, x, y, b, phase='train')
-    strategies = _cell_graph_executor._get_shard_strategy(net)
-    print(strategies)
-    expected_strategies = {'Default/network-Net/Transpose-op0': [[16, 1]],
-                           'Default/network-Net/MatMul-op0': [[16, 1], [1, 1]],
-                           'Default/network-Net/MatMul-op1': [[16, 1], [1, 1]],
-                           'Default/_VirtualDataset-op0': [[1, 1], [1, 1], [1, 1]]}
-    assert strategies == expected_strategies

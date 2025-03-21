@@ -64,7 +64,7 @@ class Net2(nn.Cell):
 
 
 def auto_parallel_compile_net(mode, dev_num, net, strategy1=None, strategy2=None, enable_parallel_optimizer=False,
-                              gradient_fp32_sync=True, search_mode="dynamic_programming"):
+                              gradient_fp32_sync=True, search_mode="sharding_propagation"):
     context.set_context(mode=context.GRAPH_MODE)
     context.set_auto_parallel_context(parallel_mode=mode, device_num=dev_num,
                                       enable_parallel_optimizer=enable_parallel_optimizer,

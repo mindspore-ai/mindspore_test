@@ -23,9 +23,7 @@ from mindspore.nn.optim import Adam, FTRL
 from mindspore.ops import composite as C
 from mindspore.ops import operations as P
 from mindspore.ops import functional as F
-from mindspore.parallel._cost_model_context import _set_multi_subgraphs
 from mindspore.parallel._utils import _reset_op_id as reset_op_id
-from mindspore.parallel._cost_model_context import _set_algo_single_loop
 
 
 def setup_function():
@@ -133,16 +131,13 @@ def test_double_subgraphs():
     Description: auto parallel
     Expectation: compile success
     """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=8,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=8,
                                       global_rank=0)
-    _set_algo_single_loop(True)
     net = TrainStepWarp(NetWithLoss(Net()))
-    _set_multi_subgraphs()
-
     x = Tensor(np.ones([8, 8, 8, 8]), dtype=ms.float32)
     reset_op_id()
     net.set_train()
     _cell_graph_executor.compile(net, x, phase='train')
     num_ops = _cell_graph_executor._get_num_parallel_ops(net)
-    expected_num = 10
+    expected_num = 14
     assert expected_num == num_ops

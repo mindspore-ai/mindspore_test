@@ -75,7 +75,7 @@ def test_fft_auto_parallel():
     Description: auto parallel
     Expectation: compile success
     """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=4,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=4,
                                       global_rank=0)
     net = GradWrap(NetWithLoss(Net(P.FFT(), n=4, dim=0, norm="backward")))
     net.set_train()
@@ -113,7 +113,7 @@ def test_ifft_auto_parallel():
     Description: auto parallel
     Expectation: compile success
     """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=4,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=4,
                                       global_rank=0)
     net = GradWrap(NetWithLoss(Net(P.IFFT(), n=4, dim=0, norm="backward")))
     net.set_train()
@@ -151,7 +151,7 @@ def test_fft2_auto_parallel():
     Description: auto parallel
     Expectation: compile success
     """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=4,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=4,
                                       global_rank=0)
     net = GradWrap(NetWithLoss(Net(P.FFT2(), n=(4, 4), dim=(-2, -1), norm="backward")))
     net.set_train()
@@ -189,7 +189,7 @@ def test_ifft2_auto_parallel():
     Description: auto parallel
     Expectation: compile success
     """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=4,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=4,
                                       global_rank=0)
     net = GradWrap(NetWithLoss(Net(P.IFFT2(), n=(4, 4), dim=(-2, -1), norm="backward")))
     net.set_train()
@@ -227,7 +227,7 @@ def test_fftn_auto_parallel():
     Description: auto parallel
     Expectation: compile success
     """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=4,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=4,
                                       global_rank=0)
     net = GradWrap(NetWithLoss(Net(P.FFTN(), n=(4, 4, 4), dim=(-3, -2, -1), norm="backward")))
     net.set_train()
@@ -265,7 +265,7 @@ def test_ifftn_auto_parallel():
     Description: auto parallel
     Expectation: compile success
     """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=4,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=4,
                                       global_rank=0)
     net = GradWrap(NetWithLoss(Net(P.IFFTN(), n=(4, 4, 4), dim=(-3, -2, -1), norm="backward")))
     net.set_train()
@@ -305,7 +305,7 @@ def test_rfft_auto_parallel():
     Description: auto parallel
     Expectation: compile success
     """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=4,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=4,
                                       global_rank=0)
     net = GradWrap(NetWithLoss(Net(P.RFFT(), n=4, dim=0, norm="backward")))
     net.set_train()
@@ -343,7 +343,7 @@ def test_irfft_auto_parallel():
     Description: auto parallel
     Expectation: compile success
     """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=4,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=4,
                                       global_rank=0)
     net = GradWrap(NetWithLoss(Net(P.IRFFT(), n=4, dim=0, norm="backward")))
     net.set_train()
@@ -380,7 +380,7 @@ def test_rfft2_auto_parallel():
     Description: auto parallel
     Expectation: compile success
     """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=4,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=4,
                                       global_rank=0)
     net = GradWrap(NetWithLoss(Net(P.RFFT2(), n=(4, 4), dim=(-2, -1), norm="backward")))
     net.set_train()
@@ -418,7 +418,7 @@ def test_irfft2_auto_parallel():
     Description: auto parallel
     Expectation: compile success
     """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=4,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=4,
                                       global_rank=0)
     net = GradWrap(NetWithLoss(Net(P.IRFFT2(), n=(4, 4), dim=(-2, -1), norm="backward")))
     net.set_train()
@@ -456,7 +456,7 @@ def test_rfftn_auto_parallel():
     Description: auto parallel
     Expectation: compile success
     """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=4,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=4,
                                       global_rank=0)
     net = GradWrap(NetWithLoss(Net(P.RFFTN(), n=(4, 4), dim=(-2, -1), norm="backward")))
     net.set_train()
@@ -494,7 +494,7 @@ def test_irfftn_auto_parallel():
     Description: auto parallel
     Expectation: compile success
     """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=4,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=4,
                                       global_rank=0)
     net = GradWrap(NetWithLoss(Net(P.IRFFTN(), n=(4, 4), dim=(-2, -1), norm="backward")))
     net.set_train()
@@ -532,7 +532,7 @@ def test_hfft_auto_parallel():
     Description: auto parallel
     Expectation: compile success
     """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=4,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=4,
                                       global_rank=0)
     net = GradWrap(NetWithLoss(Net(P.HFFT(), n=4, dim=0, norm="backward")))
     net.set_train()
@@ -570,7 +570,7 @@ def test_ihfft_auto_parallel():
     Description: auto parallel
     Expectation: compile success
     """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=4,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=4,
                                       global_rank=0)
     net = GradWrap(NetWithLoss(Net(P.IHFFT(), n=4, dim=0, norm="backward")))
     net.set_train()
@@ -608,7 +608,7 @@ def test_hfft2_auto_parallel():
     Description: auto parallel
     Expectation: compile success
     """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=4,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=4,
                                       global_rank=0)
     net = GradWrap(NetWithLoss(Net(P.HFFT2(), n=(4, 4), dim=(-2, -1), norm="backward")))
     net.set_train()
@@ -646,7 +646,7 @@ def test_ihfft2_auto_parallel():
     Description: auto parallel
     Expectation: compile success
     """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=4,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=4,
                                       global_rank=0)
     net = GradWrap(NetWithLoss(Net(P.IHFFT2(), n=(4, 4), dim=(-2, -1), norm="backward")))
     net.set_train()
@@ -684,7 +684,7 @@ def test_hfftn_auto_parallel():
     Description: auto parallel
     Expectation: compile success
     """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=4,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=4,
                                       global_rank=0)
     net = GradWrap(NetWithLoss(Net(P.HFFTN(), n=(4, 4), dim=(-2, -1), norm="backward")))
     net.set_train()
@@ -722,7 +722,7 @@ def test_ihfftn_auto_parallel():
     Description: auto parallel
     Expectation: compile success
     """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=4,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=4,
                                       global_rank=0)
     net = GradWrap(NetWithLoss(Net(P.IHFFTN(), n=(4, 4), dim=(-2, -1), norm="backward")))
     net.set_train()

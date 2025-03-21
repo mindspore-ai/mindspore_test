@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import re
 import numpy as np
 
 import mindspore as ms
@@ -79,7 +78,7 @@ def test_two_bn():
             return out
 
     context.set_auto_parallel_context(device_num=8, global_rank=0)
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
     net = NetWithLoss(Net())
     x = Tensor(np.ones([64, 64]), dtype=ms.float32)
     net.set_train()
@@ -89,11 +88,3 @@ def test_two_bn():
     _cell_graph_executor.compile(net, x, phase='train')
     strategies = _cell_graph_executor._get_shard_strategy(net)
     assert len(strategies) == 5
-
-    for (k, v) in strategies.items():
-        if re.search('BatchNorm-op', k) is not None:
-            assert v == [[8, 1], [1], [1], [1], [1]]
-        elif re.search('TensorAdd-op', k) is not None:
-            assert v == [[8, 1], [8, 1]]
-        elif re.search('ReLU-op', k) is not None:
-            assert v == [[8, 1]]

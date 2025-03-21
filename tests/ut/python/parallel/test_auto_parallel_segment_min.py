@@ -70,7 +70,7 @@ def test_auto_parallel_unsortedsegmentmin():
 
     size = 8
     context.set_auto_parallel_context(device_num=size, global_rank=0)
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
 
     x = Tensor(np.random.rand(16, 16, 32, 64), dtype=ms.float32)
     indices = Tensor(np.random.randint(16, size=(16,)), ms.int32)

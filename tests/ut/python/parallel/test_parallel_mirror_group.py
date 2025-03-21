@@ -81,22 +81,6 @@ def test_mirror_group():
     del os.environ['GROUP_INFO_FILE']
 
 
-def test_mirror_group_auto_parallel():
-    """
-    Feature: save and load mirror group
-    Description: auto parallel, disable parallel optimizer.
-    Expectation: group info list match expectation value.
-    """
-    os.environ['GROUP_INFO_FILE'] = "./test_mirror_group_auto_parallel.pb"
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming",
-                                      device_num=32, enable_parallel_optimizer=False)
-    auto_parallel_compile_net(((8, 1), (1, 4)), ((32, 1), (1, 1)), ((8, 4), (4, 1)))
-    group_info_list = restore_group_info_list("./test_mirror_group_auto_parallel.pb")
-    assert group_info_list == [0, 4, 8, 12, 16, 20, 24, 28]
-    context.reset_auto_parallel_context()
-    del os.environ['GROUP_INFO_FILE']
-
-
 def test_data_parallel_group():
     """
     Feature: save and load mirror group

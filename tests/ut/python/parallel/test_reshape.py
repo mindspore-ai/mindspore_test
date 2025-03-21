@@ -82,7 +82,7 @@ def reshape_net(strategy0, strategy1, strategy2):
     return ReshapeNet(strategy0=strategy0, strategy1=strategy1, strategy2=strategy2)
 
 
-def reshape_common(parallel_mode, strategy0, strategy1, strategy2, strategy_loss, search_mode="dynamic_programming"):
+def reshape_common(parallel_mode, strategy0, strategy1, strategy2, strategy_loss, search_mode="sharding_propagation"):
     learning_rate = 0.1
     momentum = 0.9
     epoch_size = 2
@@ -563,7 +563,7 @@ class CrossEntropyLoss(nn.Cell):
         return loss
 
 
-def test_flatten_reshape(parallel_mode="auto_parallel", search_mode="dynamic_programming"):
+def test_flatten_reshape(parallel_mode="auto_parallel", search_mode="sharding_propagation"):
     """
     Feature: test auto parallel
     Description: auto parallel
@@ -587,7 +587,7 @@ def test_flatten_reshape(parallel_mode="auto_parallel", search_mode="dynamic_pro
     model.train(epoch_size, dataset, dataset_sink_mode=False)
 
 
-def test_flatten_reshape2(parallel_mode="auto_parallel", search_mode="dynamic_programming"):
+def test_flatten_reshape2(parallel_mode="auto_parallel", search_mode="sharding_propagation"):
     """
     Feature: test auto parallel
     Description: auto parallel
@@ -634,7 +634,7 @@ class ParallelReshapeNet(nn.Cell):
 
 # the shape of input and output of reshape is the same
 # reshape is optimized before step_parallel
-def test_flatten_reshape3(parallel_mode="auto_parallel", search_mode="dynamic_programming"):
+def test_flatten_reshape3(parallel_mode="auto_parallel", search_mode="sharding_propagation"):
     """
     Feature: test auto parallel
     Description: auto parallel

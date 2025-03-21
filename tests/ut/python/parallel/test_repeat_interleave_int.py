@@ -52,7 +52,7 @@ class RepeatInterleaveIntNet1(nn.Cell):
         return out[0]
 
 
-def compile_graph(net, device_num, parallel_mode, input_data, repeats, dim, search_mode="dynamic_programming"):
+def compile_graph(net, device_num, parallel_mode, input_data, repeats, dim, search_mode="sharding_propagation"):
     context.set_auto_parallel_context(device_num=device_num, global_rank=0, parallel_mode=parallel_mode)
     net.set_train()
     phase, _ = _cell_graph_executor.compile(net, input_data, repeats, dim)

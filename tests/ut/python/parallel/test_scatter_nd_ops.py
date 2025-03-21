@@ -292,7 +292,7 @@ def test_tensor_scatter_mul_auto_parallel():
     Expectation: assert ok.
     """
     context.set_context(mode=context.GRAPH_MODE)
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=8,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=8,
                                       full_batch=True)
     ms.set_algo_parameters(fully_use_devices=True)
     input1 = Tensor(np.ones([32, 64, 128]).astype(np.float32))

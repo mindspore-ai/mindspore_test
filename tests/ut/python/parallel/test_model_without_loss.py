@@ -174,7 +174,7 @@ def test_concat_auto_parallel():
     Expectation: compile success
     """
     context.set_auto_parallel_context(
-        parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=8, global_rank=0)
+        parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=8, global_rank=0)
     net = Net2(_w2)
     compile_net(net)
 
@@ -186,7 +186,7 @@ def test_concat_auto_parallel2():
     Expectation: compile success
     """
     context.set_auto_parallel_context(
-        parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=8, global_rank=0)
+        parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=8, global_rank=0)
     strategy1 = None
     strategy2 = None
     net = Net2(_w3, strategy1, strategy2, axis=1)
@@ -200,6 +200,6 @@ def test_concat_auto_parallel_3_tensor():
     Expectation: compile success
     """
     context.set_auto_parallel_context(
-        parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=8, global_rank=0)
+        parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=8, global_rank=0)
     net = Net3(w1, w2, w3)
     compile_net(net)
