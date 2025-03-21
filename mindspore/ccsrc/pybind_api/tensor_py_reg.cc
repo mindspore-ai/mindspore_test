@@ -1043,9 +1043,18 @@ static PyObject *TensorPython_set_device_address(PyObject *self, PyObject *args)
   if (!PyArg_ParseTuple(args, "KOO", &addr, &shape_obj, &type_ptr_obj)) {
     return nullptr;
   }
-  for (Py_ssize_t i = 0; i < PyTuple_Size(shape_obj); ++i) {
-    PyObject *item = PyTuple_GET_ITEM(shape_obj, i);
-    shape.push_back(PyLong_AsLong(item));
+  if (PyTuple_Check(shape_obj)) {
+    for (Py_ssize_t i = 0; i < PyTuple_Size(shape_obj); ++i) {
+      PyObject *item = PyTuple_GET_ITEM(shape_obj, i);
+      shape.push_back(PyLong_AsLong(item));
+    }
+  } else if (PyList_Check(shape_obj)) {
+    for (Py_ssize_t i = 0; i < PyList_Size(shape_obj); ++i) {
+      PyObject *item = PyList_GetItem(shape_obj, i);
+      shape.push_back(PyLong_AsLong(item));
+    }
+  } else {
+    return nullptr;
   }
   TypePtr type_ptr = py::cast<TypePtr>(py::handle(type_ptr_obj));
   PyType<TensorPy> *tensor = (PyType<TensorPy> *)self;

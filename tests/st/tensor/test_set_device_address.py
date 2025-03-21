@@ -18,7 +18,7 @@ import numpy as np
 
 from tests.mark_utils import arg_mark
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_set_getstate_bypickle():
     """
     Feature: TensorPy.set_device_address
@@ -30,4 +30,7 @@ def test_set_getstate_bypickle():
     y = Tensor(np.zeros((2, 3)), dtype=ms.int32)
     ms.set_context(mode=ms.GRAPH_MODE)
     y.set_device_address(x._data_ptr(), x.shape, x.dtype)  # pylint: disable=W0212
+    assert np.allclose(x._data_ptr(), y._data_ptr())  # pylint: disable=W0212
+    x_shapelist = [2, 3]
+    y.set_device_address(x._data_ptr(), x_shapelist, x.dtype)  # pylint: disable=W0212
     assert np.allclose(x._data_ptr(), y._data_ptr())  # pylint: disable=W0212
