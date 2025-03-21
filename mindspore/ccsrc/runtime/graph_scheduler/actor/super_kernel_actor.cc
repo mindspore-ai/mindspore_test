@@ -810,6 +810,14 @@ void SuperKernelActor::FreeInputParamWithoutUser(OpContext<DeviceTensor> *const 
     for (const auto &iter : input_params_no_user_) {
       auto device_tensor = FetchParameter(iter.second, context, device_contexts_[0], GetAID());
       MS_EXCEPTION_IF_NULL(device_tensor);
+      if (device_tensor->GetDeviceType() != device_contexts_[0]->GetDeviceType()) {
+        MS_LOG(DEBUG) << "Skip free ref count for no used parameter:" << iter.second.first.first->DebugString()
+                      << " inner index:" << iter.second.first.second << " out index:" << iter.second.second
+                      << " device tensor:" << device_tensor->PrintInfo()
+                      << " device context:" << device_contexts_[0]->device_context_key().ToString()
+                      << " for actor:" << GetAID();
+        continue;
+      }
       if (device_tensor->new_ref_count() != SIZE_MAX) {
         // No user for this input in graph.
         MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(device_tensor, device_contexts_[0], GetAID().Name());

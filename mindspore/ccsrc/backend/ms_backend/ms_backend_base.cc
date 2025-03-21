@@ -556,6 +556,12 @@ bool IsEnableControlFlowInline(const FuncGraphPtr &graph) {
     return false;
   }
 
+  auto runtime_num_threads = static_cast<size_t>(context->get_param<uint32_t>(MS_CTX_RUNTIME_NUM_THREADS));
+  if (runtime_num_threads <= 1) {
+    MS_LOG(INFO) << "Disable switch inline for single thread.";
+    return false;
+  }
+
   if (context->CellReuseLevel() != CellReuseLevel::kLazyInline) {
     auto is_include_no_switch_call = [](const FuncGraphPtr &graph) {
       MS_EXCEPTION_IF_NULL(graph);
