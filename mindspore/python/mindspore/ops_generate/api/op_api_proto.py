@@ -62,6 +62,7 @@ def get_tensor_method_ast_dict():
             tensor_method_ast_dict[node.name] = node
     return tensor_method_ast_dict
 
+
 class OpApiProtoLoader(ResourceLoader):
     """
     Loads api related proto data.

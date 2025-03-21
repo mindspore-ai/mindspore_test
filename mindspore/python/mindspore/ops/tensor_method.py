@@ -444,6 +444,8 @@ from mindspore.ops.auto_generate.gen_ops_prim import inplace_log_op
 
 from .._checkparam import check_axis_in_range
 from ..ops.composite.multitype_ops import _compile_utils as compile_utils
+
+
 ########################################functions########################################
 def place_holder():
     logger.error(

@@ -45,6 +45,7 @@ class ResourceManager():
             raise ValueError(f"Resource '{type.name}' not registered")
         return self.resource_map[type]
 
+
 def prepare_resources() -> ResourceManager:
     """
     Load needed resources.

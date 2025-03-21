@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
+#include "mindspore/ops/kernel/cpu/utils/random_util.h"
 #include <random>
 #include "securec/include/securec.h"
-#include "mindspore/ops/kernel/cpu/utils/random_util.h"
 #include "include/common/utils/utils.h"
 
 namespace mindspore {
