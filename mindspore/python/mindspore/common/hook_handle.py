@@ -31,7 +31,7 @@ class _TensorHookHandle:
 
     def __init__(self, tensor):
         self.id = None
-        self.tensor = tensor
+        self.tensor_ref = weakref.ref(tensor)
 
     def remove(self):
         """
@@ -67,7 +67,9 @@ class _TensorHookHandle:
         """
         if self.id is not None:
             Tensor_.remove_hook(self.id)
-            self.tensor._remove_hook() # pylint:disable=protected-access
+            tensor = self.tensor_ref()
+            if tensor is not None:
+                tensor._remove_hook() # pylint:disable=protected-access
 
 
 class HookHandle:
