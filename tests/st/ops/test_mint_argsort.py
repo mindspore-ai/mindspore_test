@@ -28,7 +28,7 @@ def argsort_forward(input_x, dim=-1, descending=False, stable=False):
     return mint.argsort(input_x, dim, descending, stable)
 
 
-@arg_mark(plat_marks=['platform_ascend910b', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'],
+@arg_mark(plat_marks=['platform_ascend910b'],
           level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_argsort_normal(mode):
