@@ -49,6 +49,7 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public HalResBase {
   void Destroy() override;
 
   void SetDeterministic() const;
+  void SetDebugKernel() const;
 
   void SetAclDeterministic() const;
 

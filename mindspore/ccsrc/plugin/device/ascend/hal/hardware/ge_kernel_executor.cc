@@ -244,18 +244,6 @@ kernel::KernelModPtr GenerateAkgKernelMod(const CNodePtr &kernel) {
 #endif
 }
 
-void SetAclDebugKernel() {
-  auto op_debug_conf = OpDebugConf::GetInstance();
-  MS_EXCEPTION_IF_NULL(op_debug_conf);
-  auto op_debug_option = op_debug_conf->debug_option();
-  if (op_debug_option == "oom") {
-    auto ret = CALL_ASCEND_API(aclrtCtxSetSysParamOpt, aclSysParamOpt::ACL_OPT_ENABLE_DEBUG_KERNEL, 1);
-    if (ret != ACL_SUCCESS) {
-      MS_LOG(EXCEPTION) << "Acl enable debug kernel failed! Error flag is " << ret;
-    }
-  }
-}
-
 void SetAclOpPrecisionMode() {
   auto op_precision_conf = OpPrecisionConf::GetInstance();
   MS_EXCEPTION_IF_NULL(op_precision_conf);
@@ -1385,7 +1373,6 @@ bool GeKernelExecutor::LaunchKernel(const CNodePtr &kernel, const std::vector<Ke
     }
     if (!acl_option_initialized_ && dynamic_cast<kernel::AclKernelMod *>(kernel_mod) != nullptr) {
       dynamic_cast<GeDeviceContext *>(device_context_)->GeInitialize();
-      SetAclDebugKernel();
       // not check graph executor, may use in ascend device context
       SetAclOpPrecisionMode();
       res_manager_->SetAclDeterministic();
