@@ -40,15 +40,6 @@
 namespace mindspore {
 namespace pijit {
 
-bool IsEnableSubGraphBreakOptimize(const Graph *graph) {
-#if IS_PYTHON_3_11_PLUS
-  return false;
-#else
-  return graph->Config().GetBoolConfig(GraphJitConfig::kSubgraphBreakOpt) &&
-         common::GetCompileConfig("PIJIT_SUBGRAPH_BREAK_OPTIMIZE") != "0";
-#endif
-}
-
 void GraphAnalyzer::OptimizeSideEffectRecord() const {
   if (graph_->GetSideEffect()->IsEmpty()) {
     return;
@@ -86,6 +77,20 @@ std::vector<ValueNode *> CollectSideEffectRecords(const Graph *graph, int break_
   return result;
 }
 }  // namespace
+
+bool IsEnableSubGraphBreakOptimize(const Graph *graph) {
+#if IS_PYTHON_3_11_PLUS
+  return false;
+#else
+  return graph->Config().GetBoolConfig(GraphJitConfig::kSubgraphBreakOpt) &&
+         common::GetCompileConfig("PIJIT_SUBGRAPH_BREAK_OPTIMIZE") != "0";
+#endif
+}
+
+bool GraphAnalyzer::IsDelSubGraphSideEffect() {
+  return !IsEnableSubGraphBreakOptimize(graph_) && (graph_builder_->FGBuilder()->graph() == nullptr) &&
+         !(graph_break_info_.is_break_at_call && !graph_break_info_.captured_subgraphs.empty());
+}
 
 void GraphAnalyzer::ResetSideEffectRecord(bool is_del_sub_graph_side_effect) const {
   int break_bci = graph_->GetStopTraceBci();
@@ -254,6 +259,7 @@ void GraphAnalyzer::Analyze() {
   GetCaptureInfo().captured_.operations = collect_trace_nodes();
   UseDefAnalyze();
   auto func_graph_builder = graph_builder_->FGBuilder();
+  // if sub graph is deleted, the side effects recorded in sub graph should be reset.
   auto is_del_sub_graph_side_effect = IsDelSubGraphSideEffect();
   ResetSideEffectRecord(is_del_sub_graph_side_effect);
 

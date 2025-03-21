@@ -141,12 +141,11 @@ py::tuple PyCodeWrapper::FastLocalNames() const {
 }
 
 int PyCodeWrapper::Cell2Arg(int cell_var_index) {
-  py::tuple names = CellVars();
-  int size = names.size();
-  if (cell_var_index < size) {
+  if (cell_var_index >= CellVarsSize()) {
     return -1;
   }
 #if IS_PYTHON_3_11_PLUS
+  py::tuple names = CellVars();
   const char *cell_var_name = PyUnicode_AsUTF8(PyTuple_GET_ITEM(names.ptr(), cell_var_index));
   return Cell2Arg(cell_var_name);
 #else

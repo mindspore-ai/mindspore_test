@@ -3,8 +3,10 @@ from mindspore.ops import operations as P
 from mindspore import jit
 from mindspore._c_expression import get_code_extra
 import dis
+import sys
 from tests.mark_utils import arg_mark
 
+SYS_VER = (sys.version_info.major, sys.version_info.minor)
 
 def fibonacci():
     a, b = 0, 1
@@ -105,7 +107,9 @@ def test_with_case_2():
     new_code = jcr["code"]["compiled_code_"]
     flag = False
     for i in dis.get_instructions(new_code):
-        if i.opname == "SETUP_WITH":
+        if i.opname == "SETUP_WITH" and SYS_VER < (3, 11):
+            flag = True
+        elif i.opname == "BEFORE_WITH" and SYS_VER >= (3, 11):
             flag = True
     assert flag
     assert expected == res
@@ -285,7 +289,9 @@ def test_with_case_9():
     new_code = jcr["code"]["compiled_code_"]
     flag = False
     for i in dis.get_instructions(new_code):
-        if i.opname == "SETUP_WITH":
+        if i.opname == "SETUP_WITH" and SYS_VER < (3, 11):
+            flag = True
+        elif i.opname == "BEFORE_WITH" and SYS_VER >= (3, 11):
             flag = True
     assert flag
     assert expected == res
@@ -317,7 +323,9 @@ def test_with_case_10():
     new_code = jcr["code"]["compiled_code_"]
     flag = False
     for i in dis.get_instructions(new_code):
-        if i.opname == "SETUP_WITH":
+        if i.opname == "SETUP_WITH" and SYS_VER < (3, 11):
+            flag = True
+        elif i.opname == "BEFORE_WITH" and SYS_VER >= (3, 11):
             flag = True
     assert flag
     assert expected == res

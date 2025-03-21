@@ -3055,7 +3055,7 @@ bool GraphBuilder::PackKwParams(const py::object &func, std::vector<ValueNode *>
   }
 
   params->erase(param_iter + 1, params->end());
-  MS_LOG(ERROR) << "pack kw names: " << k_cnt << " kw " << keys_info->ToString()
+  MS_LOG(DEBUG) << "pack kw names: " << k_cnt << " kw " << keys_info->ToString()
                 << " other param size: " << params->size();
   if (!has_kw_va) {
     return kw_2_p_cnt == k_cnt;  // if not equal, too many key-word arguments
@@ -4444,8 +4444,8 @@ std::pair<bool, std::vector<py::object>> GraphBuilder::GetConstantInputsObject(C
 
 BindArgumentsHelper<ValueNode *> GraphBuilder::PackInputsForFunc(const py::object &obj, int op_code,
                                                                  const std::vector<ValueNode *> &inputs,
-                                                                 ValueNode *self_node, bool eliminate_sens,
-                                                                 PyObject *kw_names) {
+                                                                 PyObject *kw_names, ValueNode *self_node,
+                                                                 bool eliminate_sens) {
   auto func_info = obj;
   func_info = FindPyFunc(AObject::Convert(func_info));
   PyCodeObject *co = reinterpret_cast<PyCodeObject *>(PyFunction_GET_CODE(func_info.ptr()));
@@ -4675,7 +4675,13 @@ bool GraphBuilder::ConvertClassType(const py::object &callable_info, CallNode *c
     std::vector<ValueNode *> args;
     const auto &call_node_inputs = call_node->getInputs();
     (void)std::copy(call_node_inputs.begin() + 1, call_node_inputs.end(), std::back_inserter(args));
-    FGAddNode(call_node, callable_value, HandleInputArgs(args), stop_reason);
+    auto args_abstract_wrapper = HandleInputArgs(args);
+#if !IS_PYTHON_3_11_PLUS
+    if (call_node->IsCallKW()) {
+      args_abstract_wrapper.pop_back();
+    }
+#endif
+    FGAddNode(call_node, callable_value, args_abstract_wrapper, stop_reason);
     return true;
   }
   auto py_builtin_func = ConvertPythonBuiltInFunction(callable_info, class_type_name);
@@ -4684,7 +4690,13 @@ bool GraphBuilder::ConvertClassType(const py::object &callable_info, CallNode *c
     std::vector<ValueNode *> args;
     const auto &call_node_inputs = call_node->getInputs();
     (void)std::copy(call_node_inputs.begin() + 1, call_node_inputs.end(), std::back_inserter(args));
-    FGAddNode(call_node, py_builtin_func, HandleInputArgs(args), stop_reason);
+    auto args_abstract_wrapper = HandleInputArgs(args);
+#if !IS_PYTHON_3_11_PLUS
+    if (call_node->IsCallKW()) {
+      args_abstract_wrapper.pop_back();
+    }
+#endif
+    FGAddNode(call_node, py_builtin_func, args_abstract_wrapper, stop_reason);
     return true;
   }
   return false;
@@ -4737,7 +4749,13 @@ py::object GraphBuilder::FGAddNodeAst(CallNode *call_node, const py::object &cal
     py::isinstance<mindspore::Cell>(callable_info)
       ? py::reinterpret_steal<py::object>(PyObject_GetAttrString(callable_info.ptr(), "construct"))
       : callable_info;
-  FGAddNode(call_node, callable_object, HandleInputArgs(args), stop_reason);
+  auto args_abstract_wrapper = HandleInputArgs(args);
+#if !IS_PYTHON_3_11_PLUS
+  if (call_node->IsCallKW()) {
+    args_abstract_wrapper.pop_back();
+  }
+#endif
+  FGAddNode(call_node, callable_object, args_abstract_wrapper, stop_reason);
   return py::object();
 }
 
@@ -4754,7 +4772,13 @@ py::object GraphBuilder::FGAddNodeTensorOverload(CallNode *call_node, const py::
   const auto &name = GetTensorMethodName(callable_info);
   MS_EXCEPTION_IF_CHECK_FAIL(name != "", "Fail to get tensor method name");
   const auto &functional_prim = abstract::BuildMethodFunctional(name);
-  FGAddNode(call_node, functional_prim, HandleInputArgs(args), stop_reason);
+  auto args_abstract_wrapper = HandleInputArgs(args);
+#if !IS_PYTHON_3_11_PLUS
+  if (call_node->IsCallKW()) {
+    args_abstract_wrapper.pop_back();
+  }
+#endif
+  FGAddNode(call_node, functional_prim, args_abstract_wrapper, stop_reason);
   return py::object();
 }
 
@@ -4777,7 +4801,7 @@ py::object GraphBuilder::HandleMSCallable(CallNode *call_node, const py::object 
     const auto &call_node_inputs = call_node->getInputs();
     (void)std::copy(call_node_inputs.begin() + 1, call_node_inputs.end(), std::back_inserter(args));
   }
-  const auto &args_abstract_wrapper = HandleInputArgs(args);
+  auto args_abstract_wrapper = HandleInputArgs(args);
   const auto &helper = GraphBuildHelperFactory(callable_info);
   if (helper != nullptr) {
     auto callable_value = ConvertPyObjToValue(callable_info);
@@ -4786,7 +4810,11 @@ py::object GraphBuilder::HandleMSCallable(CallNode *call_node, const py::object 
     UpdateNodeInfo(res, call_node, stop_reason);
     return py::object();
   }
-
+#if !IS_PYTHON_3_11_PLUS
+  if (call_node->IsCallKW()) {
+    args_abstract_wrapper.pop_back();
+  }
+#endif
   FGAddNode(call_node, callable_info, args_abstract_wrapper, stop_reason);
   return py::object();
 }
@@ -5093,7 +5121,7 @@ bool GraphBuilder::CollectNamedtupleElements(const CallNode *call_node, const Ab
   try {
     // This method throws an exception when arguments matching fails, so try-catch is required.
     BindArgumentsHelper<ValueNode *> args_helper = PackInputsForFunc(
-      new_method, call_node->GetOpcode(), call_node->getInputs(), cls_node, false, call_node->kw_names().ptr());
+      new_method, call_node->GetOpcode(), call_node->getInputs(), call_node->kw_names().ptr(), cls_node, false);
     // The __new__ method of namedtuple does not have variable-length arguments, so we just ignore va_ and kw_va_.
     const std::vector<ValueNode *> &args = args_helper.results().args_;
     // The first argument is cls_node, it is not the data element of namedtuple, so we remove it.

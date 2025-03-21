@@ -615,27 +615,11 @@ AbstractWrapperPtr FuncGraphBuilder::AddNodeCallFunctionKw(const ValuePtr &calla
                                                            const AbstractWrapperPtrList &inputs_abstract_wrapper,
                                                            const py::object &kw_names) {
   MS_LOG(INFO) << "Handle CallFunctionKw with callable_value: " << callable_value->ToString();
-#if !IS_PYTHON_3_11_PLUS
-  auto key_abstract = inputs_abstract_wrapper.back()->abstract();
-  if (key_abstract == nullptr || !key_abstract->isa<abstract::AbstractTuple>()) {
-    MS_LOG(INFO) << "Key abstract should be tuple but got: " << key_abstract->ToString();
-    return nullptr;
-  }
-  auto key_tuple_abstract = key_abstract->cast<abstract::AbstractTuplePtr>();
-  auto key_tuple_value = key_tuple_abstract->BuildValue();
-  if (key_tuple_value->ContainsValueAny()) {
-    MS_LOG(INFO) << "Key abstract should be constant but got: " << key_abstract->ToString();
-    return nullptr;
-  }
-  size_t dict_len = key_tuple_abstract->size();
-#else
   MS_EXCEPTION_IF_CHECK_FAIL(kw_names.ptr() != nullptr && py::tuple::check_(kw_names), "must be tuple");
   size_t dict_len = py::reinterpret_borrow<py::tuple>(kw_names).size();
   auto key_tuple_value = ConvertPyObjToValue(kw_names);
-#endif
-  const int offset = !IS_PYTHON_3_11_PLUS;
-  MS_EXCEPTION_IF_CHECK_FAIL(inputs_abstract_wrapper.size() >= dict_len + offset, "kwargs length check error");
-  size_t arg_len = inputs_abstract_wrapper.size() - dict_len - offset;
+  MS_EXCEPTION_IF_CHECK_FAIL(inputs_abstract_wrapper.size() >= dict_len, "kwargs length check error");
+  size_t arg_len = inputs_abstract_wrapper.size() - dict_len;
 
   auto fg = std::make_shared<FuncGraph>();
   std::vector<AnfNodePtr> arg_inputs = {NewValueNode(prim::kPrimMakeTuple)};
@@ -656,7 +640,7 @@ AbstractWrapperPtr FuncGraphBuilder::AddNodeCallFunctionKw(const ValuePtr &calla
     {NewValueNode(prim::kPrimDoUnpackCall), NewValueNode(callable_value), arg_tuple_node, dict_node_inputs});
   fg->set_output(call_node);
 
-  AbstractWrapperPtrList new_abstract_wrapper(inputs_abstract_wrapper.begin(), inputs_abstract_wrapper.end() - offset);
+  AbstractWrapperPtrList new_abstract_wrapper(inputs_abstract_wrapper.begin(), inputs_abstract_wrapper.end());
   return AddNode(fg, new_abstract_wrapper);
 }
 

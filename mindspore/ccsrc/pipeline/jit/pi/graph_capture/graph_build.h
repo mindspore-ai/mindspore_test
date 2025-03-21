@@ -335,9 +335,8 @@ class GraphBuilder {
   bool Symbolic(ValueNode *node);
 
   BindArgumentsHelper<ValueNode *> PackInputsForFunc(const py::object &obj, int op_code,
-                                                     const std::vector<ValueNode *> &inputs,
-                                                     ValueNode *self_node = nullptr, bool eliminate_sens = false,
-                                                     PyObject *kw_names = nullptr);
+                                                     const std::vector<ValueNode *> &inputs, PyObject *kw_names,
+                                                     ValueNode *self_node = nullptr, bool eliminate_sens = false);
   GraphBuilderPtr get_prev_call_builder() const { return prev_call_builder_; }
 
  private:

@@ -367,8 +367,8 @@ std::pair<FuncGraphPtr, BindArgumentsHelper<ValueNode *>> GradGraphBuildHelper::
   MS_EXCEPTION_IF_NULL(func_info.ptr());
 
   auto self_node = is_cell ? forward_node : nullptr;
-  BindArgumentsHelper<ValueNode *> bind_helper =
-    graph_builder->PackInputsForFunc(func_info, call_node->GetOpcode(), call_node->getInputs(), self_node, has_sense);
+  BindArgumentsHelper<ValueNode *> bind_helper = graph_builder->PackInputsForFunc(
+    func_info, call_node->GetOpcode(), call_node->getInputs(), call_node->kw_names().ptr(), self_node, has_sense);
 
   auto bind_arguments_result = bind_helper.results();
   const auto &bind_args = bind_arguments_result.args_;
