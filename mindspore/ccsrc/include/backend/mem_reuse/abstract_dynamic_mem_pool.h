@@ -168,18 +168,19 @@ struct BACKEND_EXPORT MemStat {
     used_by_event_size_ = 0;
     eager_free_size_ = 0;
 
-    temp_used_size_ = 0;
-    temp_used_by_event_size_ = 0;
-    temp_peak_size_ = 0;
-    temp_alloc_size_ = 0;
+    iter_used_peak_size_ = 0;
+    iter_alloc_peak_size_ = 0;
   }
 
   inline size_t IdleSize() const { return alloc_size_ - used_size_; }
 
-  inline void UpdatePeakSize() {
+  inline void UpdatePeakSize(const bool is_enable_vmm, size_t vmm_used_mem_size) {
     peak_size_ = std::max(peak_size_, used_size_);
-    if (used_size_ > temp_used_size_) {
-      temp_peak_size_ = std::max(temp_peak_size_, used_size_ - temp_used_size_);
+    iter_used_peak_size_ = std::max(iter_used_peak_size_, used_size_);
+    if (is_enable_vmm) {
+      iter_alloc_peak_size_ = std::max(iter_alloc_peak_size_, vmm_used_mem_size);
+    } else {
+      iter_alloc_peak_size_ = std::max(iter_alloc_peak_size_, alloc_size_);
     }
   }
 
@@ -217,10 +218,8 @@ struct BACKEND_EXPORT MemStat {
   size_t used_by_event_size_;
   size_t eager_free_size_;
 
-  size_t temp_used_size_;
-  size_t temp_used_by_event_size_;
-  size_t temp_peak_size_;
-  size_t temp_alloc_size_;
+  size_t iter_used_peak_size_;
+  size_t iter_alloc_peak_size_;
 };
 
 class AbstractDynamicMemPool;

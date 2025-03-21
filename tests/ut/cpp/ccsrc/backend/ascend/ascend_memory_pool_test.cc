@@ -355,9 +355,7 @@ class DefaultAscendMemoryPoolImpl : public DefaultAscendMemoryPool {
   std::string GetMemoryPoolType() const override { return "DefaultAscendMemoryPoolImpl"; }
 
   size_t gen_set_rank_id_getter_{0};
-  void SetRankIdGetter(const std::function<size_t()> &rank_id_getter) override {
-    gen_set_rank_id_getter_++;
-  }
+  void SetRankIdGetter(const std::function<size_t()> &rank_id_getter) override { gen_set_rank_id_getter_++; }
 };
 using DefaultAscendMemoryPoolImplPtr = std::shared_ptr<DefaultAscendMemoryPoolImpl>;
 
@@ -453,7 +451,7 @@ TEST_F(TestAscendMemoryPool, test_default_enhanced_ascend_memory_pool_proxy) {
   EXPECT_EQ(pool->get_max_used_mem_size_.Get(), 1);
 
   enhanced_pool->GetVmmUsedMemSize();
-  EXPECT_EQ(pool->get_vmm_used_mem_size_.Get(), 1);
+  EXPECT_EQ(pool->get_vmm_used_mem_size_.Get(), 2);
 
   enhanced_pool->DefragMemory();
   EXPECT_EQ(pool->defrag_memory_, 1);

@@ -459,7 +459,7 @@ std::pair<MemBuf *, MemBufAllocator *> AbstractDynamicMemPool::AllocMemBuf(size_
 
   // Update stat.
   mem_stat_.used_size_ += mem_buf->size_;
-  mem_stat_.UpdatePeakSize();
+  mem_stat_.UpdatePeakSize(enable_vmm_, GetVmmUsedMemSize());
   return std::make_pair(mem_buf, allocator);
 }
 
@@ -1013,7 +1013,12 @@ const std::pair<size_t, size_t> AbstractDynamicMemPool::FreeIdleMemsByEagerFree(
 }
 
 // The statistics information.
-size_t AbstractDynamicMemPool::TotalMemStatistics() const { return mem_stat_.alloc_size_; }
+size_t AbstractDynamicMemPool::TotalMemStatistics() const {
+  if (IsEnableVmm()) {
+    return GetVmmUsedMemSize();
+  }
+  return mem_stat_.alloc_size_;
+}
 
 size_t AbstractDynamicMemPool::TotalUsedMemStatistics() const { return mem_stat_.used_size_; }
 
@@ -1025,12 +1030,9 @@ size_t AbstractDynamicMemPool::TotalEagerFreeMemStatistics() const { return mem_
 
 size_t AbstractDynamicMemPool::UsedMemPeakStatistics() const { return mem_stat_.peak_size_; }
 
-size_t AbstractDynamicMemPool::MaxMemAllocatedStatistics() const { return mem_stat_.temp_peak_size_; }
+size_t AbstractDynamicMemPool::MaxMemAllocatedStatistics() const { return mem_stat_.iter_used_peak_size_; }
 
-size_t AbstractDynamicMemPool::MaxMemReservedStatistics() const {
-  return enable_vmm_ ? GetVmmUsedMemSize() - mem_stat_.temp_alloc_size_
-                     : mem_stat_.alloc_size_ - mem_stat_.temp_alloc_size_;
-}
+size_t AbstractDynamicMemPool::MaxMemReservedStatistics() const { return mem_stat_.iter_alloc_peak_size_; }
 
 size_t AbstractDynamicMemPool::ActualPeakStatistics() const {
   if (IsEnableVmm()) {
@@ -1107,14 +1109,12 @@ AbstractDynamicMemPool::PersistentMemBlocksInfoStatistics() const {
 
 void AbstractDynamicMemPool::ResetMaxMemReserved() {
   LockGuard lock(lock_);
-  mem_stat_.temp_alloc_size_ = enable_vmm_ ? GetVmmUsedMemSize() : mem_stat_.alloc_size_;
+  mem_stat_.iter_alloc_peak_size_ = IsEnableVmm() ? GetVmmUsedMemSize() : mem_stat_.alloc_size_;
 }
 
 void AbstractDynamicMemPool::ResetMaxMemAllocated() {
   LockGuard lock(lock_);
-  mem_stat_.temp_used_size_ = mem_stat_.used_size_;
-  mem_stat_.temp_used_by_event_size_ = mem_stat_.used_by_event_size_;
-  mem_stat_.temp_peak_size_ = 0;
+  mem_stat_.iter_used_peak_size_ = mem_stat_.used_size_;
 }
 
 AbstractEnhancedDynamicMemPool::AbstractEnhancedDynamicMemPool() {}
