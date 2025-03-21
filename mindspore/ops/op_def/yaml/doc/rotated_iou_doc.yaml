@@ -10,19 +10,19 @@ rotated_iou:
         bfloat16, float16, float32.
     
     Args:
-        trans (bool): Distinguish the rectangles representations
+        trans (bool, optional): Distinguish the rectangles representations
             of boxes and query_boxes. If ``True``, the format of boxes
             and query_boxes is ``'xyxyt'``, else the format is ``'xywht'``. 
             The default value is ``False``.
-        mode (int): Distinguish the calculation mode. If the value 
+        mode (int, optional): Distinguish the calculation mode. If the value 
             is ``1``, the calculation mode is ``'iof'``, else the 
             calculation mode is ``'iou'``. The default value is ``0``.
-        is_cross (bool): If ``True``, use cross-calculation, else use 
+        is_cross (bool, optional): If ``True``, use cross-calculation, else use 
             one-to-one calculation. The default value is ``True``.
-        v_threshold (float): Provide condition relaxation for 
-            intersection calculation. The default value is ``0.0``.
-        e_threshold (float): Provide condition relaxation for 
-            intersection calculation. The default value is ``0.0``.
+        v_threshold (float, optional): Tolerance threshold for vertex determination.
+            The default value is ``0.0``.
+        e_threshold (float, optional): Tolerance threshold for edge intersection 
+            determination. The default value is ``0.0``.
     
     Inputs:
         boxes (Tensor): The first set of rectangles which has a 

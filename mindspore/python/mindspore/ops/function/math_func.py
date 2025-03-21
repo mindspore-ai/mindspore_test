@@ -6499,7 +6499,7 @@ def diff_ext(input, n=1, dim=-1, prepend=None, append=None):
     Computes the n-th forward difference along the given dimension.
 
     The first-order differences are given by :math:`out[i] = input[i+1] - input[i]`. Higher-order differences are
-    calculated by using `torch.diff()` recursively.
+    calculated by using `diff` recursively.
 
     .. warning::
         This is an experimental API that is subject to change or deletion.
@@ -13302,19 +13302,19 @@ def rotated_iou(boxes, query_boxes, trans=False, mode=0, is_cross=True, v_thresh
             shape of :math:`(B, N, 5)`.
         query_boxes (Tensor): The second set of rectangles which
             has a shape of :math:`(B, K, 5)`.
-        trans (bool): Distinguish the rectangles representations
+        trans (bool, optional): Distinguish the rectangles representations
             of boxes and query_boxes. If ``True``, the format of boxes
             and query_boxes is ``'xyxyt'``, else the format is ``'xywht'``.
             The default value is ``False``.
-        mode (int): Distinguish the calculation mode. If the value
+        mode (int, optional): Distinguish the calculation mode. If the value
             is ``1``, the calculation mode is ``'iof'``, else the
             calculation mode is ``'iou'``. The default value is ``0``.
-        is_cross (bool): If ``True``, use cross-calculation, else use
+        is_cross (bool, optional): If ``True``, use cross-calculation, else use
             one-to-one calculation. The default value is ``True``.
-        v_threshold (float): Provide condition relaxation for
-            intersection calculation. The default value is ``0.0``.
-        e_threshold (float): Provide condition relaxation for
-            intersection calculation. The default value is ``0.0``.
+        v_threshold (float, optional): Tolerance threshold for vertex determination.
+            The default value is ``0.0``.
+        e_threshold (float, optional): Tolerance threshold for edge intersection
+            determination. The default value is ``0.0``.
 
     Returns:
         Tensor, the shape is :math:`(B, N, K)`.
