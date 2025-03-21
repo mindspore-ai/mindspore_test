@@ -180,6 +180,7 @@ tensor_lt = P.Less()
 tensor_mod = P.FloorMod()
 floormod = tensor_mod
 tensor_mul = P.Mul()
+tensor_muls = muls
 tensor_pow = P.Pow()
 pows = tensor_pow
 tensor_sub = P.Sub()
@@ -13152,6 +13153,7 @@ __all__ = [
     'sub',
     'subtract',
     'tensor_mul',
+    'tensor_muls',
     'mul',
     'multiply',
     'nan_to_num',
