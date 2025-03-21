@@ -539,7 +539,6 @@ void Graph::GuardGlobal(ValueNode *node) {
     // not implement ...
   }
   // How to fast check Module attribute(or global varialbe) changed ?
-  // GuardValueNode(node, GuardLevel::GDeduce);
 }
 
 bool Graph::GuardValueNodeClosure(ValueNode *node, GuardLevel level) {

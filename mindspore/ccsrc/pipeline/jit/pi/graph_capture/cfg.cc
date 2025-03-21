@@ -155,8 +155,7 @@ void CFG::BuildInst(const uint8_t *begin, const uint8_t *end) {
     cur->set_arg(arg);
     cur->set_line(line);
     if (opcode.HasConst()) {  // KW_NAMES, LOAD_CONST, RETURN_CONST
-      int index = arg;
-      cur->set_cnst(PyTuple_GET_ITEM(co_.co_consts().ptr(), index));
+      cur->set_cnst(co_.co_consts()[arg]);
     }
     if (opcode.HasName()) {
       int index = arg;
@@ -165,7 +164,7 @@ void CFG::BuildInst(const uint8_t *begin, const uint8_t *end) {
 #elif IS_PYTHON_3_11_PLUS
       index = op == LOAD_GLOBAL ? (index >> 1) : index;
 #endif
-      cur->set_name(PyUnicode_AsUTF8(PyTuple_GET_ITEM(co_.co_names().ptr(), index)));
+      cur->set_name(PyUnicode_AsUTF8(co_.co_names()[index].ptr()));
     }
     if (!opcode.HasJump()) {
       return;

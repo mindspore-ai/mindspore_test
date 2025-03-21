@@ -443,7 +443,7 @@ std::vector<std::unique_ptr<Instr>> CodeGenerator::CopyAndReplaceInstr(
                << ", end_bci:" << end_bci;
   size_t index = 0;
   // instructions before start_bci
-  for (size_t bci = list.front()->bci(); bci < start_bci; ++bci) {
+  for (size_t bci = static_cast<size_t>(list.front()->bci()); bci < start_bci; ++bci) {
     const auto &i = list[bci];
     (void)instrs.emplace_back(std::make_unique<Instr>(i->op(), i->arg(), index, i->line()));
     instrs.back()->set_name(i->name());
@@ -1342,8 +1342,8 @@ py::object CodeBreakGenerator::MakeDispatchCode() {
   if (no_graph_ && !NeedHandleBreakAtCall()) {
     MS_LOG(DEBUG) << "No graph captured";
     interpret_.outputs.resize(interpret_.outputs.size() - side_effect_handler_->GetRequiredNodes().size());
-    int stack_count = interpret_.outputs.size() - alive_locals_.size();
-    int output_index = 0;
+    auto stack_count = interpret_.outputs.size() - alive_locals_.size();
+    size_t output_index = 0;
     std::vector<std::unique_ptr<Instr>> instrs;
     std::vector<ValueNode *> locals(co_->co_nlocals + stack_count, &ValueNode::kUnboundLocal);
     for (; output_index < stack_count; ++output_index) {
@@ -1913,7 +1913,7 @@ py::object LoopBodyReCaptureCodeGenerator::MakeLoopBodyCode(int loopBodyStartBci
                                                             const std::vector<int> &outputLocals,
                                                             bool ifForLoop) const {
   int stack_count = is_for_loop_ ? 1 : 0;
-  const int argc = inputLocals.size() + stack_count;
+  const int argc = static_cast<int>(inputLocals.size()) + stack_count;
 
   // Parameter assembly rule: first the stackEffect, then the local live variables.
   std::vector<std::unique_ptr<Instr>> ld;

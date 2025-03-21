@@ -201,7 +201,7 @@ class Graph {
   const std::shared_ptr<SideEffect> &GetSideEffect() const;
   void SetSideEffect(const std::shared_ptr<SideEffect> &handler);
 
-  std::vector<ValueNode *> CollectAliveNode(int bci, std::vector<int> * = nullptr) const;
+  std::vector<ValueNode *> CollectAliveNode(int bci, std::vector<int> *ids = nullptr) const;
   // collect alive node, clear the bit if alive local is unbound
   static std::vector<ValueNode *> CollectAliveNode(const FrameStates &, BitMap *, std::vector<int> * = nullptr);
 
