@@ -169,7 +169,6 @@ DefaultEnhancedAscendMemoryPool::DefaultEnhancedAscendMemoryPool(const DefaultAs
 void DefaultEnhancedAscendMemoryPool::ReleaseDeviceRes() {
   MS_LOG(INFO) << "Start release device res.";
   instance_->ReleaseDeviceRes();
-  tracker::MemTrackerManager::GetInstance().Dump(rank_id_getter_());
 }
 
 DeviceMemPtr DefaultEnhancedAscendMemoryPool::AllocTensorMem(size_t size, bool from_persistent_mem, bool need_recycle,

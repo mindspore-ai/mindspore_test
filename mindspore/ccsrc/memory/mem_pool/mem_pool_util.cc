@@ -47,9 +47,12 @@ std::string GeneratePath(size_t rank_id, const std::string &file_name, const std
   if (path.empty()) {
     path = "./";
   }
+  if (path.back() != '/') {
+    path += "/";
+  }
 
   if (rank_id != SIZE_MAX) {
-    path += "/rank_" + std::to_string(rank_id) + "/";
+    path += "rank_" + std::to_string(rank_id) + "/";
 
     auto path_opt = Common::CreatePrefixPath(path);
     if (!path_opt.has_value()) {

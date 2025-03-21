@@ -297,9 +297,9 @@ TrackerOperatorPtr GraphTracker::GetOperator(TaskInfoPtr task_info) {
 }  // namespace graph
 
 std::tuple<std::string, std::string, std::string> MemoryTrackerEnabled::GetPath(size_t rank_id) {
-  std::string block_csv_path = memory::mem_pool::GeneratePath(rank_id, "/memory_block", "csv");
-  std::string task_csv_path = memory::mem_pool::GeneratePath(rank_id, "/task", "csv");
-  std::string graph_path = memory::mem_pool::GeneratePath(rank_id, "/tracker_graph", "ir");
+  std::string block_csv_path = memory::mem_pool::GeneratePath(rank_id, "memory_block", "csv");
+  std::string task_csv_path = memory::mem_pool::GeneratePath(rank_id, "task", "csv");
+  std::string graph_path = memory::mem_pool::GeneratePath(rank_id, "tracker_graph", "ir");
   return std::tuple(block_csv_path, task_csv_path, graph_path);
 }
 
