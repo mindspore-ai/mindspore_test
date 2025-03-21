@@ -28,7 +28,7 @@ mindspore.mint.nn.functional.interpolate
 
           其中， :math:`ori\_length` 与 :math:`new\_length` 分别表示Tensor在x轴方向上转换前、后的长度， :math:`new\_i` 表示转换后沿x轴第i个元素的坐标， :math:`ori\_i` 表示沿x轴原始数据的对应坐标。
 
-          此选项只对 ``'linear'`` 、 ``'bilinear'`` 和 ``'bicubic'`` 模式有效，默认值： ``False``。
+          此选项只对 ``'linear'`` 、 ``'bilinear'`` 和 ``'bicubic'`` 模式有效，默认值： ``None``。
 
         - **recompute_scale_factor** (bool, 可选) - 重计算 `scale_factor` 。如果为True，会使用参数 `scale_factor` 计算参数 `size`，最终使用 `size` 的值进行缩放。如果为False，将使用 `size` 或 `scale_factor` 直接进行插值。默认值： ``None`` 。
 
@@ -58,19 +58,6 @@ mindspore.mint.nn.functional.interpolate
 
     返回：
         采样后的Tensor，维度和数据类型与 `input` 相同。
-
-    Shape:
-        输入: :math:`(N, C, W_{in})`, :math:`(N, C, H_{in}, W_{in})` 或 :math:`(N, C, D_{in}, H_{in}, W_{in})`
-        输出: :math:`(N, C, W_{out})`, :math:`(N, C, H_{out}, W_{out})` 或 :math:`(N, C, D_{out}, H_{out}, W_{out})`, 其中
-
-    .. math::
-        D_{out} = \left\lfloor D_{in} \times \text{scale\_factor} \right\rfloor
-
-    .. math::
-        H_{out} = \left\lfloor H_{in} \times \text{scale\_factor} \right\rfloor
-
-    .. math::
-        W_{out} = \left\lfloor W_{in} \times \text{scale\_factor} \right\rfloor
 
     异常：
         - **TypeError** - `input` 不是Tensor。

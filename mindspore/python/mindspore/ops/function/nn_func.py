@@ -2923,7 +2923,7 @@ def interpolate_ext(input,
             the corresponding coordinate of the original
             data along the x-axis.
 
-            This is only valid for ``'linear'``, ``'bilinear'``, or ``'bicubic'`` modes. Default: ``False`` .
+            This is only valid for ``'linear'``, ``'bilinear'``, or ``'bicubic'`` modes. Default: ``None`` .
         recompute_scale_factor (bool, optional): Recalculate `scale_factor`.
             If True, the parameter `size` will be calculated using the value of the `scale_factor`,
             and finally scaled using the value of `size`.
@@ -2955,20 +2955,6 @@ def interpolate_ext(input,
 
     Returns:
         Tensor, sampled, whose dimensions and dtype are the same as `input`.
-
-    Shape:
-        - Input: :math:`(N, C, W_{in})`, :math:`(N, C, H_{in}, W_{in})` or :math:`(N, C, D_{in}, H_{in}, W_{in})`
-        - Output: :math:`(N, C, W_{out})`, :math:`(N, C, H_{out}, W_{out})`
-          or :math:`(N, C, D_{out}, H_{out}, W_{out})`, where
-
-    .. math::
-        D_{out} = \left\lfloor D_{in} \times \text{scale\_factor} \right\rfloor
-
-    .. math::
-        H_{out} = \left\lfloor H_{in} \times \text{scale\_factor} \right\rfloor
-
-    .. math::
-        W_{out} = \left\lfloor W_{in} \times \text{scale\_factor} \right\rfloor
 
     Raises:
         TypeError: `input` is not a Tensor.

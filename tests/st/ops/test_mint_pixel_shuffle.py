@@ -57,7 +57,7 @@ def gloden_forward(input_tensor, upscale_factor):
     ow = w * upscale_factor
 
     added_dims_shape = input_x_shape[:-3] + (oc, upscale_factor, upscale_factor, h, w)
-    input_reshaped = np.reshape(input, added_dims_shape)
+    input_reshaped = np.reshape(input_x, added_dims_shape)
 
     permutation = np.arange(len(input_x_shape) - 3)
     permutation = tuple(permutation) + (-5, -2, -4, -1, -3)

@@ -2800,11 +2800,15 @@ REG_BPROP_BUILDER("Xlogy").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   NodePtr bc_dx = nullptr;
   NodePtr bc_dy = nullptr;
   if (x->need_compute_grad_out()) {
-    auto not_zero_x = ib->Cast(ib->NotEqual(x, ib->Tensor(0.0, x_dtype)), x_dtype);
-    bc_dx = ib->Emit("Xlogy", {not_zero_x, y}) * dout;
+    // dx = xlog(grad, other).masked_fill((self == 0) & (other <= 0.), 0.)
+    auto zero = ib->Tensor(0.0, x_dtype);
+    auto input = ib->Emit("Xlogy", {dout, y});
+    auto mask = ib->Emit("BitwiseAndTensor", {ib->Equal(x, zero), ib->LessEqual(y, zero)});
+    bc_dx = ib->MaskedFill(input, mask, zero);
   }
   if (y->need_compute_grad_out()) {
-    bc_dy = ib->Div(x, y) * dout;
+    // dy = grad * self / other
+    bc_dy = ib->Div(ib->Mul(dout, x), y);
   }
   return {BinopGradCommon(ib, x, y, bc_dx, bc_dy)};
 });

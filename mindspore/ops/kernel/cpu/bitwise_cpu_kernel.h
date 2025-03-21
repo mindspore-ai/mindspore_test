@@ -86,7 +86,7 @@ class BitwiseCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<
   ShapeVector input_shape_2_;
   ShapeVector output_shape_;
   size_t output_size_ = 1;
-  const size_t max_dims_{7};
+  const size_t max_dims_{8};
   bool broadcast_ = false;
   size_t thread_num_{kBitwiseInitThreadNum};
   float block_size_{kBitwiseInitBlockSize};
