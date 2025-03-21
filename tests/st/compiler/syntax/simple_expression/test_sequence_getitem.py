@@ -182,7 +182,7 @@ def test_list_getitem_with_variable_bool_index_2():
     Description: sequence getitem
     Expectation: No exception
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, a):
         m = [x, x+1, x+2, x+3]
         return m[a == 1], m[a == 2]

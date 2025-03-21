@@ -194,9 +194,11 @@ AnfNodePtr InputsUnifyMindIR::CreateCastNode(const FuncGraphPtr &func_graph, con
 
   auto prim = std::make_shared<Primitive>(kCastOpName);
   MS_EXCEPTION_IF_NULL(prim);
-  auto dst_type_value = NewValueNode(static_cast<int64_t>(data_type->type_id()));
+  auto type_value = static_cast<int64_t>(data_type->type_id());
+  auto dst_type_value = NewValueNode(type_value);
   MS_EXCEPTION_IF_NULL(dst_type_value);
-  dst_type_value->set_abstract(data_type->ToAbstract());
+  auto dst_type_abstract = std::make_shared<abstract::AbstractScalar>(std::make_shared<Int64Imm>(type_value));
+  dst_type_value->set_abstract(dst_type_abstract);
   AnfNodePtrList inputs = {NewValueNode(prim), node, dst_type_value};
   CNodePtr cast = func_graph->NewCNode(inputs);
   MS_EXCEPTION_IF_NULL(cast);
