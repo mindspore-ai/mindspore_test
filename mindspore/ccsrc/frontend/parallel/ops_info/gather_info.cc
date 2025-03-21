@@ -892,7 +892,6 @@ Status ShardAxisImpl::InferDevMatrixShape() {
   auto index_product =
     std::accumulate(indices_strategy_.begin(), indices_strategy_.end(), 1, std::multiplies<int64_t>());
   auto stage_device_size = SizeToLong(g_device_manager->GetDeviceListInThisStage().size());
-
   if (param_product * index_product < stage_device_size) {
     MS_EXCEPTION_IF_ZERO("param_product * index_product", param_product * index_product);
     repeated_calculation_num_ = stage_device_size / (param_product * index_product);  // set the repeat calc num
@@ -1215,7 +1214,6 @@ Status GatherInfo::CheckProductValidity(const Dimensions &param_strategy, const 
   const auto product_indices =
     std::accumulate(indices_strategy.begin(), indices_strategy.end(), 1, std::multiplies<int>());
   const auto stage_device_size = SizeToLong(g_device_manager->GetDeviceListInThisStage().size());
-
   if (product_param != 1 && product_param != stage_device_size) {
     MS_LOG(ERROR) << name_ << "param_strategy " << param_strategy << " is not supported";
     return FAILED;
@@ -1235,16 +1233,14 @@ Status GatherInfo::CheckStrategy(const StrategyPtr &strategy) {
   gather_mode_ = INVALID;
   Shape param_shape;
   Strategies input_dim = strategy->GetInputDim();
-  Dimensions param_strategy, indices_strategy;
-  if (name_.find(EMBEDDING) != std::string::npos && name_.find(EMBEDDING_LOOKUP) == std::string::npos) {
-    param_shape = inputs_shape_[1];
-    param_strategy = input_dim[1];
-    indices_strategy = input_dim[0];
-  } else {
-    param_shape = inputs_shape_[0];
-    param_strategy = input_dim[0];
-    indices_strategy = input_dim[1];
-  }
+  Dimensions param_strategy;
+  Dimensions indices_strategy;
+  bool is_embedding = name_.find(EMBEDDING) != std::string::npos && name_.find(EMBEDDING_LOOKUP) == std::string::npos;
+  const int64_t param_idx = is_embedding ? 1 : 0;
+  const int64_t indices_idx = 1 - param_idx;
+  param_shape = inputs_shape_[param_idx];
+  param_strategy = input_dim[param_idx];
+  indices_strategy = input_dim[indices_idx];
   if (name_.find(EMBEDDING) != std::string::npos && name_.find(EMBEDDING_LOOKUP) == std::string::npos &&
       CheckProductValidity(param_strategy, indices_strategy) != SUCCESS) {
     return FAILED;
@@ -1361,7 +1357,8 @@ Status GatherInfo::CheckOutputStrategy(const StrategyPtr &out_strategy) {
   auto shard_axis_util = std::dynamic_pointer_cast<ShardAxisImpl>(gather_util_);
 
   Strategies in_stra = strategy_->GetInputDim();
-  Dimensions param_strategy, index_strategy;
+  Dimensions param_strategy;
+  Dimensions index_strategy;
   if (name_.find(EMBEDDING) != std::string::npos && name_.find(EMBEDDING_LOOKUP) == std::string::npos) {
     param_strategy = in_stra[1];
     index_strategy = in_stra[0];
@@ -1620,8 +1617,8 @@ Status EmbeddingInfo::InferMirrorOps() {
     return FAILED;
   }
 
-  OperatorVector op_for_input_a, op_for_input_b;
-
+  OperatorVector op_for_input_a;
+  OperatorVector op_for_input_b;
   if (input_a_group.empty()) {
     MS_LOG(INFO) << name_ << " : The mirror group is empty.";
     return SUCCESS;
