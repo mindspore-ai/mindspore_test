@@ -904,6 +904,11 @@ py::object ParserDefaultObjects::StrToPyObj(const ops::OP_DTYPE &type, const std
   }
 }
 
+ParserDefaultObjects &ParserDefaultObjects::GetInstance() {
+  static ParserDefaultObjects default_objs_instance;
+  return default_objs_instance;
+}
+
 // Declare template to compile corresponding method.
 template ValueTuplePtr Converter::ToTensorList<py::tuple>(const py::list &python_args, size_t i);
 template ValueTuplePtr Converter::ToTensorList<py::list>(const py::list &python_args, size_t i);
