@@ -3256,11 +3256,13 @@ static std::tuple<ShapeVector, ShapeVector, ShapeVector> RepeatGradShapesCalcCom
   // If repeat of this dim larger than 1,
   // reshape to split this dim into (repeats[x], input.shape[x]), and then reduce the `repeat` dim.
   // OtherWise, no need to reduce.
-  ShapeVector reduce_dims{}, grad_new_shape{};
+  ShapeVector reduce_dims{};
+  ShapeVector grad_new_shape{};
   reduce_dims.reserve(input_rank);
   grad_new_shape.reserve(input.size() * i2);
   for (ShapeValueDType input_dim = 0; input_dim < input_rank; ++input_dim) {
-    const auto input_size = *(input.begin() + input_dim), repeat = *(repeats.begin() + (input_dim + extra_rank));
+    const auto input_size = *(input.begin() + input_dim);
+    const auto repeat = *(repeats.begin() + (input_dim + extra_rank));
     if (repeat > 1) {
       reduce_dims.push_back(grad_new_shape.size());
       grad_new_shape.push_back(repeat);
@@ -3277,7 +3279,7 @@ DEF_PURE_SHAPE_CALC(g_repeat)
   .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
     const auto &input = inputs[kIndex0], &repeats = inputs[kIndex1];
     if (IsShapeNone(input) || IsShapeNone(repeats)) {
-      return {{0}, {}, {}, {}};
+      return {{}, {}, {}, {}};
     }
     const auto [pre_reduce, new_shape, reduce] = RepeatGradShapesCalcCommonFunc(input, repeats);
     return {{1}, pre_reduce, new_shape, reduce};
@@ -3319,19 +3321,18 @@ REG_BPROP_BUILDER("Repeat").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) 
     const auto calc_result = ib->ShapeCalc(g_repeat, {input, repeats}, {kIndex1});
     const auto return_zeros = calc_result[0];  // If it's empty, directly return zeros
     const auto pre_reduce = calc_result[1], new_shape = calc_result[2], reduce = calc_result[3];
-    const auto input_dtype = ib->Value(static_cast<int64_t>(ib->GetDtypeId(input)));
     auto input_grad = ib->Conditional(
       IsEmptySequence(ib, return_zeros),
-      [input, input_dtype](Emitter *e) -> NodePtrList { return {e->ZerosLikeExt(input, input_dtype)}; },
-      [grad, pre_reduce, new_shape, reduce](Emitter *e) -> NodePtrList {
+      [&input](Emitter *e) -> NodePtrList { return {e->ZerosLikeExt(input, e->EmitValue(kNone))}; },
+      [&grad, &pre_reduce, &new_shape, &reduce](Emitter *e) -> NodePtrList {
         auto grad1 = e->Conditional(
-          IsEmptySequence(e, pre_reduce), [grad](Emitter *e) -> NodePtrList { return {grad}; },
-          [grad, pre_reduce](Emitter *e) -> NodePtrList {
+          IsEmptySequence(e, pre_reduce), [&grad](Emitter *e) -> NodePtrList { return {grad}; },
+          [&grad, &pre_reduce](Emitter *e) -> NodePtrList {
             return {e->SumExt(grad, pre_reduce, e->Value<bool>(false))};
           });
         return {e->Conditional(
-          IsEmptySequence(e, reduce), [grad1](Emitter *e) -> NodePtrList { return {grad1}; },
-          [grad1, new_shape, reduce](Emitter *e) -> NodePtrList {
+          IsEmptySequence(e, reduce), [&grad1](Emitter *e) -> NodePtrList { return {grad1}; },
+          [&grad1, &new_shape, &reduce](Emitter *e) -> NodePtrList {
             // Slow path when need to call reduce: not all of repeats are all 1.
             return {e->SumExt(e->Reshape(grad1, new_shape), reduce, e->Value<bool>(false))};
           })};

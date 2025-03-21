@@ -2212,18 +2212,17 @@ def repeat(x, *args, repeats=None):
     """
     # only simulate 2 overload of repeat. Further check by F.tile
     if repeats is None:
-        # called as x.repeat(...)
+        # no `repeats`: called by positional arguments like ``x.repeat(...)``
         if len(args) == 1 and isinstance(args[0], (list, tuple)):
-            repeats = tuple(args[0])  # called as x.repeat([x0, x1, ...])
+            repeats = tuple(args[0])  # transform ``x.repeat([x0, x1, ...])`` (list type) to tuple
         else:
-            repeats = args  # called as x.repeat(x0, x1, ...)
+            repeats = args  # called as variable-length parameter like ``x.repeat(x0, x1, ...)``
     else:
         if args:  # simulate an exception thrown by Python interpreter
             raise TypeError("repeat() got multiple values for argument 'repeat'")
-        # called as x.repeat(repeats=[x0, x1, ...])
+        # transform named argument with list type like ``x.repeat(repeats=[x0, x1, ...])`` to tuple
         if isinstance(repeats, list):
             repeats = tuple(repeats)
-    # else called as x.repeat(repeats=...)
     x_rank = F.rank(x)
     if len(repeats) < x_rank:
         raise ValueError(
