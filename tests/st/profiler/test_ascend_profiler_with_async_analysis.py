@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""test ascend profiler with async analysis."""
 import os
 import glob
 import shutil
 import tempfile
 from tests.mark_utils import arg_mark
-
+from file_check import FileChecker
 
 def cleanup():
     data_path = os.path.join(os.getcwd(), "data")
@@ -71,4 +72,9 @@ def test_ascend_profiler():
         )
         ascend_profiler_output_path = glob.glob(f"{tmpdir}/*_ascend_ms/ASCEND_PROFILER_OUTPUT")[0]
         CheckProfilerFiles(ascend_profiler_output_path, "Ascend")
+        # Check profiler.log
+        profiler_log_paths = glob.glob(f"{tmpdir}/*_ascend_ms/"
+                                       f"logs/profiler_*.log")
+        for profiler_log_path in profiler_log_paths:
+            FileChecker.check_file_for_keyword(profiler_log_path, "error")
         assert status == 0
