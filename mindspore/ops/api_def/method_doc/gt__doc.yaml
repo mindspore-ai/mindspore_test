@@ -1,0 +1,8 @@
+gt_:
+  description: |
+    gt_(other) -> Tensor
+    
+    Inplace update version of :func:`mindspore.Tensor.gt`.
+
+    .. warning::
+      This is an experimental API that is subject to change or deletion.

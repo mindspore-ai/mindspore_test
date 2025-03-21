@@ -95,7 +95,7 @@ deprecated_tensor_method_map = {
     # 38 gather
     "gather": "deprecated_tensor_gather",
     # 39 greater
-
+    "greater": "deprecated_tensor_greater",
     # 40 greater_equal
     "greater_equal": "deprecated_tensor_greater_equal",
     # 41 gt

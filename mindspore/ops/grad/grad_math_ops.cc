@@ -2600,6 +2600,12 @@ REG_BPROP_BUILDER("NotEqual").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZe
 
 REG_BPROP_BUILDER("Greater").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
 
+REG_BPROP_BUILDER("GreaterScalar").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
+
+REG_BPROP_BUILDER("InplaceGreaterScalar").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
+
+REG_BPROP_BUILDER("InplaceGreaterTensor").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
+
 REG_BPROP_BUILDER("GreaterEqual").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
 
 REG_BPROP_BUILDER("GreaterEqualScalar").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
