@@ -137,6 +137,11 @@ class DataPrepareActor : public DebugAwareActor {
   void PrepareDataBeforeInputOptimize(const std::vector<std::vector<TensorPtr>> &input_tensors, const VectorRef &args,
                                       OpContext<DeviceTensor> *const context, uint64_t start_time);
 
+  // Record updated tensors for reprepare.
+  void RecordTensorsNeedReprepare(tensor::Tensor *tensor);
+  void PrepareWeightForInputOptimize(const KernelWithIndex &node_with_index, OpContext<DeviceTensor> *const context,
+                                     const DeviceContext *device_context);
+
   // Remove after refact.
   bool enable_prepare_case() {
     auto ms_context = MsContext::GetInstance();
@@ -178,6 +183,9 @@ class DataPrepareActor : public DebugAwareActor {
   bool is_sub_data_{false};
   // heterogeneous parameter needs to prepare data every step, remove after refact.
   bool has_heter_weights_{false};
+
+  // Record enable infer boost for reprepare and record graph input.
+  bool is_enable_infer_boost_{false};
 };  // namespace runtime
 
 using DataPrepareActorPtr = std::shared_ptr<DataPrepareActor>;

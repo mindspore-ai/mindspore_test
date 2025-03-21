@@ -338,12 +338,9 @@ void RecordGraphInputsForInputOptimize(const GraphCompilerInfo *graph_compiler_i
                                        bool has_dynamic_shape, bool has_continuous_memory) {
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kPreLaunch, "RecordGraphInputsForInputOptimize",
                             true);
-  auto ms_context = MsContext::GetInstance();
   auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
-  MS_EXCEPTION_IF_NULL(ms_context);
   MS_EXCEPTION_IF_NULL(graph_parameter_store);
-  static const bool enable_infer_boost = ms_context->IsEnableInferBoost();
-  if (enable_infer_boost && EnableKbkSubGraphExecute()) {
+  if (EnableKbkSubGraphExecute()) {
     std::vector<size_t> input_index;
     std::vector<ParameterPtr> parameters;
     for (size_t i = 0; i < graph_compiler_info->origin_parameters_order_.size(); ++i) {
@@ -428,6 +425,10 @@ void DataPrepareActor::Init() {
     }
   }
   tensors_need_reprepare_[this] = {};
+
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  is_enable_infer_boost_ = ms_context->IsEnableInferBoost();
 }
 
 void DataPrepareActor::UpdateDynamicShapeAndSize(const AnfNodePtr &input_node, const TensorPtr &input_tensor) const {
@@ -551,11 +552,19 @@ void DataPrepareActor::PrepareDataBeforeInputOptimize(const std::vector<std::vec
   auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
   MS_EXCEPTION_IF_NULL(graph_parameter_store);
   graph_parameter_store->ResetPrepareState();
-  if (first_step_) {
+  // Input optimize performance is not good for inference, so weights only prepare once. However, for offload,
+  // memory of device address for tensor in heterogeneous is not free.
+  // This will be removed after input optimize performance improved.
+  if (first_step_ || (is_enable_infer_boost_ && !tensors_need_reprepare_.empty())) {
     PrepareDataForDeviceTensorStore(input_tensors, args, context);
+    tensors_need_reprepare_[this].clear();
   }
   first_step_ = false;
-  RecordGraphInputsForInputOptimize(graph_compiler_info_, args, has_dynamic_shape_, has_continuous_memory());
+
+  if (is_enable_infer_boost_) {
+    RecordGraphInputsForInputOptimize(graph_compiler_info_, args, has_dynamic_shape_, has_continuous_memory());
+  }
+
   // Debug actor is blocked, must wait debug actor callback message to process continue.
   if (debug_aid_ != nullptr && strategy_ == GraphExecutionStrategy::kPipeline) {
     SendDebugReq(context);
@@ -664,6 +673,30 @@ void DataPrepareActor::OnDebugFinish(OpContext<DeviceTensor> *const context) {
   PostRun(context);
 }
 
+void DataPrepareActor::RecordTensorsNeedReprepare(tensor::Tensor *tensor) {
+  tensor_with_graphs_[tensor].insert(this);
+  if (tensor != nullptr && tensor->is_parameter()) {
+    auto callback = [](const tensor::Tensor *tensor) {
+      const auto &graph_iter = tensor_with_graphs_.find(tensor);
+      if (graph_iter != tensor_with_graphs_.end()) {
+        const auto &data_prepare_actors = graph_iter->second;
+        for (const auto &data_prepare_actor : data_prepare_actors) {
+          const auto &iter = tensors_need_reprepare_.find(data_prepare_actor);
+          if (iter != tensors_need_reprepare_.end()) {
+            tensors_need_reprepare_[data_prepare_actor].insert(tensor);
+          }
+        }
+      }
+    };
+    tensor->set_update_value_callback(callback);
+  }
+
+  if (tensor != nullptr && !tensors_need_reprepare_[this].empty() && tensor->is_parameter()) {
+    auto erased_num = tensors_need_reprepare_[this].erase(tensor);
+    MS_LOG(DEBUG) << "Erase " << erased_num << " tensor which is reprepared.";
+  }
+}
+
 TensorPtr DataPrepareActor::FetchInputTensor(const std::vector<TensorPtr> &tensors, size_t tensor_index,
                                              const VectorRef &args, const KernelWithIndex &front_node) {
   if (!tensors.empty()) {
@@ -686,27 +719,7 @@ TensorPtr DataPrepareActor::FetchInputTensor(const std::vector<TensorPtr> &tenso
   auto arg_index = iter - graph_compiler_info_->origin_parameters_order_.begin();
   auto tensor = FetchInputTensorByArg(args, arg_index, front_node);
   // The tensor needs to be updated if modified.
-  tensor_with_graphs_[tensor.get()].insert(this);
-  if (tensor != nullptr && tensor->is_parameter()) {
-    auto callback = [](const tensor::Tensor *tensor) {
-      const auto &graph_iter = tensor_with_graphs_.find(tensor);
-      if (graph_iter != tensor_with_graphs_.end()) {
-        const auto &data_prepare_actors = graph_iter->second;
-        for (const auto &data_prepare_actor : data_prepare_actors) {
-          const auto &iter = tensors_need_reprepare_.find(data_prepare_actor);
-          if (iter != tensors_need_reprepare_.end()) {
-            tensors_need_reprepare_[data_prepare_actor].insert(tensor);
-          }
-        }
-      }
-    };
-    tensor->set_update_value_callback(callback);
-  }
-
-  if (tensor != nullptr && !tensors_need_reprepare_[this].empty() && tensor->is_parameter()) {
-    auto erased_num = tensors_need_reprepare_[this].erase(tensor.get());
-    MS_LOG(DEBUG) << "Erase " << erased_num << " tensor which is reprepared.";
-  }
+  RecordTensorsNeedReprepare(tensor.get());
 
   // The tensor needs to be converted to contiguous before being given to the actors.
   // After the view feature is supported in the graph mode, the following code will be deleted.
@@ -775,11 +788,7 @@ void DataPrepareActor::PrepareDataForDeviceTensorStore(const std::vector<std::ve
                     << " front is weight:" << parser->IsRootGraphPersistentDeviceTensor(front_node);
       if (IsPersistentDeviceTensor(input_node) && parser->IsRootGraphPersistentDeviceTensor(front_node)) {
         if (enable_input_optimize_) {
-          auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
-          MS_EXCEPTION_IF_NULL(graph_parameter_store);
-          auto outer_idx = graph_parameter_store->GetFrontNodeToIndex(front_node.get());
-          (void)FetchParameter(std::make_pair(std::make_pair(front_node, 0), outer_idx), context, real_device_context,
-                               GetAID());
+          PrepareWeightForInputOptimize(std::make_pair(front_node, 0), context, real_device_context);
           continue;
         }
         std::vector<TensorPtr> graph_tensors = input_tensors.empty() ? std::vector<TensorPtr>() : input_tensors[i];
@@ -954,10 +963,7 @@ void DataPrepareActor::PrepareDataForHostTensorQueueNew(const VectorRef &args, O
     }
   }
 
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  static const bool enable_infer_boost = ms_context->IsEnableInferBoost();
-  if (enable_infer_boost && EnableKbkSubGraphExecute()) {
+  if (is_enable_infer_boost_ && EnableKbkSubGraphExecute()) {
     RecordGraphInputs(host_tensors, host_param_indexes);
     if (has_dynamic_shape_) {
       ActorDispatcher::set_enable_static_shape(!isDyn);
@@ -1450,13 +1456,10 @@ void DataPrepareActor::PrepareDeviceTensorStoreForControlNode(const ControlNodeP
     }
 
     if (enable_input_optimize_) {
-      auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
-      MS_EXCEPTION_IF_NULL(graph_parameter_store);
       const auto &node_with_index_with_context =
         control_node_parser->FetchBackendParameterWithContextByFrontParameter(control_node_parameters[i]);
       const auto &device_context = node_with_index_with_context.second;
-      auto outer_index = graph_parameter_store->GetFrontNodeToIndex(front_parameter.get());
-      (void)FetchParameter({control_node_parameters[i], outer_index}, context, device_context, GetAID());
+      PrepareWeightForInputOptimize(control_node_parameters[i], context, device_context);
       continue;
     }
 
@@ -1538,6 +1541,23 @@ void DataPrepareActor::PrepareHostTensorQueueForControlNode(const std::vector<Te
     // Avoid the device `ptr_` being hold by the input tensor and the output tensor, the input tensor address cannot
     // be directly set to the input control node, which may be a passthrough node. The device 'ptr_' is re-malloced
     // and device to device copy by input tensor address in data source process.
+  }
+}
+
+void DataPrepareActor::PrepareWeightForInputOptimize(const KernelWithIndex &node_with_index,
+                                                     OpContext<DeviceTensor> *const context,
+                                                     const DeviceContext *device_context) {
+  auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
+  MS_EXCEPTION_IF_NULL(graph_parameter_store);
+  const auto &front_node = node_with_index.first;
+  MS_EXCEPTION_IF_NULL(front_node);
+  auto outer_idx = graph_parameter_store->GetFrontNodeToIndex(front_node.get());
+  (void)FetchParameter(std::make_pair(node_with_index, outer_idx), context, device_context, GetAID());
+  // Record the update tensors for reprepare.
+  // This will be removed after input optimization performance improved.
+  if (is_enable_infer_boost_) {
+    auto tensor = graph_parameter_store->FetchTensor(outer_idx, node_with_index);
+    RecordTensorsNeedReprepare(tensor);
   }
 }
 
