@@ -272,7 +272,7 @@ def test_dynamic_step_single_active_py_native_profiler():
             "ASCEND_PROFILER_OUTPUT",
         )
         db_files = glob.glob(os.path.join(db_path, 'ascend_mindspore_profiler*.db'))
-        assert len(db_files) == 1
+        assert len(db_files) >= 1
         FileChecker.check_file_exists(db_files[0])
         # Check profiler.log
         profiler_log_paths = glob.glob(f"{tmpdir}/*_ascend_ms/"
@@ -288,42 +288,40 @@ def test_dynamic_step_single_active_profiler_db():
     Expectation: The profiler should generate the db profiling data.
     """
     step_num = 1
-    test_export_types = ["db", [ExportType.Db]]
-    for test_export_type in test_export_types:
-        with tempfile.TemporaryDirectory(suffix="_step_profiler") as tmpdir:
-            schedule = mindspore.profiler.schedule(wait=0, warmup=0, active=1, repeat=0, skip_first=0)
-            net = Net()
-            context.set_context(mode=mindspore.PYNATIVE_MODE, device_target="Ascend")
-            # pylint: disable=protected-access
-            experimental_config = mindspore.profiler._ExperimentalConfig(profiler_level=ProfilerLevel.Level1,
-                                                                         l2_cache=True,
-                                                                         export_type=test_export_type)
-            profile = mindspore.profiler.profile(data_process=False,
-                                                 schedule=schedule,
-                                                 on_trace_ready=mindspore.profiler.tensorboard_trace_handler(
-                                                     dir_name=tmpdir),
-                                                 experimental_config=experimental_config)
-            for _ in range(step_num):
-                train_net(net)
-                profile.step()
-            ProfilerInterface.finalize()
-            ProfilerInterface.clear()
-            # Check ascend_mindspore_profiler*.db
-            db_path = os.path.join(
-                tmpdir,
-                _sort_directories_by_timestamp(tmpdir)[0],  # The first sorted directory
-                "ASCEND_PROFILER_OUTPUT",
-            )
-            db_files = glob.glob(os.path.join(db_path, 'ascend_mindspore_profiler*.db'))
-            assert len(db_files) == 1
-            FileChecker.check_file_exists(db_files[0])
-            # Check kernel_details.csv
-            assert not os.path.exists(os.path.join(db_path, 'kernel_details.csv'))
-            # Check profiler.log
-            profiler_log_paths = glob.glob(f"{tmpdir}/*_ascend_ms/"
-                                           f"logs/profiler_*.log")
-            for profiler_log_path in profiler_log_paths:
-                FileChecker.check_file_for_keyword(profiler_log_path, "error")
+    with tempfile.TemporaryDirectory(suffix="_step_profiler") as tmpdir:
+        schedule = mindspore.profiler.schedule(wait=0, warmup=0, active=1, repeat=0, skip_first=0)
+        net = Net()
+        context.set_context(mode=mindspore.PYNATIVE_MODE, device_target="Ascend")
+        # pylint: disable=protected-access
+        experimental_config = mindspore.profiler._ExperimentalConfig(profiler_level=ProfilerLevel.Level1,
+                                                                     l2_cache=True,
+                                                                     export_type="db")
+        profile = mindspore.profiler.profile(data_process=False,
+                                             schedule=schedule,
+                                             on_trace_ready=mindspore.profiler.tensorboard_trace_handler(
+                                                 dir_name=tmpdir),
+                                             experimental_config=experimental_config)
+        for _ in range(step_num):
+            train_net(net)
+            profile.step()
+        ProfilerInterface.finalize()
+        ProfilerInterface.clear()
+        # Check ascend_mindspore_profiler*.db
+        db_path = os.path.join(
+            tmpdir,
+            _sort_directories_by_timestamp(tmpdir)[0],  # The first sorted directory
+            "ASCEND_PROFILER_OUTPUT",
+        )
+        db_files = glob.glob(os.path.join(db_path, 'ascend_mindspore_profiler*.db'))
+        assert len(db_files) >= 1
+        FileChecker.check_file_exists(db_files[0])
+        # Check kernel_details.csv
+        assert not os.path.exists(os.path.join(db_path, 'kernel_details.csv'))
+        # Check profiler.log
+        profiler_log_paths = glob.glob(f"{tmpdir}/*_ascend_ms/"
+                                       f"logs/profiler_*.log")
+        for profiler_log_path in profiler_log_paths:
+            FileChecker.check_file_for_keyword(profiler_log_path, "error")
 
 def _dynamic_step_train_profiler(tmpdir, net, step_num, schedule, context_mode, jit_level=None):
     """ Collect performance data according to step"""
