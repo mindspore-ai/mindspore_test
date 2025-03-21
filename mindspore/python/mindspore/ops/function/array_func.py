@@ -6771,7 +6771,7 @@ def hstack(tensors):
 
     .. note::
         Dynamic rank input of 8-D tensors with type float64 is not supported in `graph mode (mode=mindspore.GRAPH_MODE)
-        <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html>`_.
+        <https://www.mindspore.cn/tutorials/en/master/compile/static_graph.html>`_.
 
     Args:
         tensors (Union[tuple[Tensor], list[Tensor]]): A sequence of tensors. The

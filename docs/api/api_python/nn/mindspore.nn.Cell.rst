@@ -58,10 +58,6 @@
 
         在图模式下使用，用于标识是否使用自定义的反向传播函数。
 
-        教程样例：
-            - `自定义神经网络层 - 自定义Cell反向
-              <https://mindspore.cn/docs/zh-CN/master/model_train/custom_program/network_custom.html#自定义cell反向>`_
-
     .. py:method:: cast_inputs(inputs, dst_type)
 
         将输入转换为指定类型。

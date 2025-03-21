@@ -25,21 +25,21 @@ class AutoParallel(Cell):
 
     Args:
         network (Cell): Top-level cell or function in the forward network. Defines the core computational graph
-                     structure that will be parallelized. Must be a subclass of `nn.Cell` containing the model
-                     architecture.
+            structure that will be parallelized. Must be a subclass of `nn.Cell` containing the model
+            architecture.
 
         parallel_mode (str, optional): Specifies the parallelization strategy engine. Available modes: ``"semi_auto"``,
-                    ``"sharding_propagation"``, ``"recursive_programming"``. Default: ``"semi_auto"``.
+            ``"sharding_propagation"``, ``"recursive_programming"``. Default: ``"semi_auto"``.
 
-                     - semi_auto: Achieves data and model parallelism by setting parallel strategies.
+            - semi_auto: Achieves data and model parallelism by setting parallel strategies.
 
-                     - sharding_propagation:
-                       Automatic strategy propagation mode. Infers sharding strategies for non-annotated operators
-                       based on configured operator strategies.
+            - sharding_propagation:
+              Automatic strategy propagation mode. Infers sharding strategies for non-annotated operators
+              based on configured operator strategies.
 
-                     - recursive_programming:
-                       Full automatic parallelization mode. Dynamically generates parallel strategies through
-                       recursive program analysis.
+            - recursive_programming:
+              Full automatic parallelization mode. Dynamically generates parallel strategies through
+              recursive program analysis.
 
     Supported Platforms:
         ``Ascend`` ``GPU``
@@ -262,7 +262,7 @@ class AutoParallel(Cell):
         Set dataset sharding strategy.
 
         Args:
-            config Union[str, tuple(tuple), tuple(Layout)]: The dataset sharding strategy.
+            config (Union[str, tuple(tuple), tuple(Layout)]): The dataset sharding strategy.
 
         Raises:
             ValueError: If the type of 'config' is str, but it's value is not 'full_batch' or 'data_parallel'.
@@ -328,13 +328,13 @@ class AutoParallel(Cell):
             optimizer_level: optimizer_level configuration is used to specify
                              the splitting level for optimizer sharding. It is important to note that the implementation
                              of optimizer sharding in static graph is inconsistent with dynamic graph like megatron,
-                             but the memory optimization effect is the same. When optimizer_level=``level1``,
-                             splitting is performed on weights and optimizer state. When optimizer_level=``level2``,
+                             but the memory optimization effect is the same. When optimizer_level= ``level1``,
+                             splitting is performed on weights and optimizer state. When optimizer_level= ``level2``,
                              splitting is performed on weights, optimizer state, and gradients.
-                             When optimizer_level=``level3``, splitting is performed on weights, optimizer state,
+                             When optimizer_level= ``level3``, splitting is performed on weights, optimizer state,
                              gradients, additionally, before the backward pass, the weights are further applied with
                              allgather communication to release the memory used by the forward pass allgather.
-                             It must be one of [``level1``, ``level2``, ``level3``]. Default: ``level1``.
+                             It must be one of [ ``level1``, ``level2``, ``level3`` ]. Default: ``level1``.
         """
         self._enable_parallel_optimizer = True
         if not isinstance(shard_size, int) or (shard_size <= 0 and shard_size != -1):
@@ -353,6 +353,7 @@ class AutoParallel(Cell):
         """
         Configure the number of pipelin_dages, whether to broadcast the results,
         whether to enable interleaving scheduling, configure type of scheduler when using pipeline parallel.
+
         Args:
             stages (int): Set the stage information for pipeline parallelism
                 This indicates how the devices are individually distributed on the pipeline.
@@ -360,7 +361,8 @@ class AutoParallel(Cell):
             output_broadcast (bool): When performing pipeline parallel inference,
                 whether the result of the last stage is broadcasted to the other stages. Default value: False.
             interleave (bool): Whether to enable interleaving scheduling.
-            scheduler(str): The type of scheduler
+            scheduler(str): The type of scheduler.
+
         Raises:
             TypeError: If the type of 'stages is not int
             ValueError: When stages <= 0
@@ -505,64 +507,64 @@ class AutoParallel(Cell):
 
         Args:
             file_path(Union[str, None]): The path to the parallel speed up json file, configuration can refer to
-            `parallel_speed_up.json
-            <https://gitee.com/mindspore/mindspore/blob/master/config/parallel_speed_up.json>`_ .
-            If its value is None or '', it does not take effect. Default None.
+                `parallel_speed_up.json
+                <https://gitee.com/mindspore/mindspore/blob/master/config/parallel_speed_up.json>`_ .
+                If its value is None or '', it does not take effect. Default None.
 
-             - recomputation_communication_overlap (bool): Enable overlap between recompute ops and communication ops
-               if True.
-               Default: False.
-             - grad_matmul_communication_overlap (bool): Enable overlap between dw matmul and
-               tensor parallel communication ops if True. Default: False.
-             - grad_fa_allgather_overlap (bool): Enable overlap between duplicated allgather by recomputing
-               in sequence parallel and flashattentionscoregrad ops if True. Default: False.
-             - enable_communication_fusion (bool): Enable communication fusion to optimize the number of communication
-               operator tasks if True.
-               Default: False.
-             - grad_computation_allreduce_overlap (bool): Enable overlap between dx ops and data parallel communication
-               ops if True.
-               Currently, do not support
-               `O2 <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.JitConfig.html>`_
-               Default: False.
-             - computation_allgather_overlap (bool): Enable overlap between forward ops
-               and optimizer parallel allgather communication if True. Currently, do not support
-               `O2 <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.JitConfig.html>`_
-               Default: False.
-             - computation_communication_fusion_level (int): Enable the fusion between compute and communicate.
-               Default: ``0``. Note: This function must be used with Ascend Training Solution 24.0.RC2 or later.
+                - recomputation_communication_overlap (bool): Enable overlap between recompute ops and communication ops
+                  if True.
+                  Default: False.
+                - grad_matmul_communication_overlap (bool): Enable overlap between dw matmul and
+                  tensor parallel communication ops if True. Default: False.
+                - grad_fa_allgather_overlap (bool): Enable overlap between duplicated allgather by recomputing
+                  in sequence parallel and flashattentionscoregrad ops if True. Default: False.
+                - enable_communication_fusion (bool): Enable communication fusion to optimize the number of
+                  communication operator tasks if True.
+                  Default: False.
+                - grad_computation_allreduce_overlap (bool): Enable overlap between dx ops and data parallel
+                  communication ops if True.
+                  Currently, do not support
+                  `O2 <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.JitConfig.html>`_
+                  Default: False.
+                - computation_allgather_overlap (bool): Enable overlap between forward ops
+                  and optimizer parallel allgather communication if True. Currently, do not support
+                  `O2 <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.JitConfig.html>`_
+                  Default: False.
+                - computation_communication_fusion_level (int): Enable the fusion between compute and communicate.
+                  Default: ``0``. Note: This function must be used with Ascend Training Solution 24.0.RC2 or later.
 
-               - 0: Disable fusion.
+                  - 0: Disable fusion.
 
-               - 1: Apply fusion to forward nodes.
+                  - 1: Apply fusion to forward nodes.
 
-               - 2: Apply fusion to backward nodes.
+                  - 2: Apply fusion to backward nodes.
 
-               - 3: Apply fusion to all nodes.
-             - dataset_broadcast_opt_level (int): Optimize the scenario that the dataset repeated reading. Only
-               support O0/O1 jit level. It doesn't work in O2 mode. Default: ``0``.
+                  - 3: Apply fusion to all nodes.
+                - dataset_broadcast_opt_level (int): Optimize the scenario that the dataset repeated reading. Only
+                  support O0/O1 jit level. It doesn't work in O2 mode. Default: ``0``.
 
-               - 0: Disable this optimize.
+                  - 0: Disable this optimize.
 
-               - 1: Optimize dataset reader between pipeline stage.
+                  - 1: Optimize dataset reader between pipeline stage.
 
-               - 2: Optimize dataset reader within pipeline stage.
+                  - 2: Optimize dataset reader within pipeline stage.
 
-               - 3: Optimize dataset reader with all scenes.
-             - allreduce_and_biasadd_swap (bool): Enable node execution order swap communication operators and add
-               operators if ``True``. Only 1-dimension bias node is supported. Default: ``False``.
-             - enable_allreduce_slice_to_reducescatter (bool): Enable allreduce optimization. In the scenario where
-               the batchmatmul model introduces allreduce in parallel, if the subsequent nodes are stridedslice
-               operator with model parallel, allreduce will be optimized as reducescatter according to the identified
-               patterns. Typical used in MoE module with groupwise alltoall. Default: ``False``.
-             - enable_interleave_split_concat_branch (bool): Enable communication computation parallel optimization
-               for branches formed by split and concat operators with ``enable_interleave`` attribute. It is typical
-               used in MoE parallel scenario. After splitting the input data, each slice of data is processed by the
-               MoE module, and then the branch results are concatenated. When the optimization is enable,
-               communication and computation will be executed in parallel between branches. Default: ``False``.
-             - enable_interleave_parallel_branch (bool): Enable communication computation parallel optimization
-               for parallel branches with ``parallel_branch`` attribute in branches merge node. It is typical
-               used in MoE parallel scenario with routed and shared expert. When the optimization is enable,
-               communication and computation will be executed in parallel between branches. Default: ``False``.
+                  - 3: Optimize dataset reader with all scenes.
+                - allreduce_and_biasadd_swap (bool): Enable node execution order swap communication operators and add
+                  operators if ``True``. Only 1-dimension bias node is supported. Default: ``False``.
+                - enable_allreduce_slice_to_reducescatter (bool): Enable allreduce optimization. In the scenario where
+                  the batchmatmul model introduces allreduce in parallel, if the subsequent nodes are stridedslice
+                  operator with model parallel, allreduce will be optimized as reducescatter according to the identified
+                  patterns. Typical used in MoE module with groupwise alltoall. Default: ``False``.
+                - enable_interleave_split_concat_branch (bool): Enable communication computation parallel optimization
+                  for branches formed by split and concat operators with ``enable_interleave`` attribute. It is typical
+                  used in MoE parallel scenario. After splitting the input data, each slice of data is processed by the
+                  MoE module, and then the branch results are concatenated. When the optimization is enable,
+                  communication and computation will be executed in parallel between branches. Default: ``False``.
+                - enable_interleave_parallel_branch (bool): Enable communication computation parallel optimization
+                  for parallel branches with ``parallel_branch`` attribute in branches merge node. It is typical
+                  used in MoE parallel scenario with routed and shared expert. When the optimization is enable,
+                  communication and computation will be executed in parallel between branches. Default: ``False``.
 
         Examples:
             >>> net = AutoParallel(net)

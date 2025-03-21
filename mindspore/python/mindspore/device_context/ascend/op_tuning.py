@@ -61,8 +61,6 @@ def op_compile(value):
 def aoe_tune_mode(tune_mode):
     """
     AOE tuning mode setting, which is not set by default.
-    For detailed information, please refer to `Ascend Optimization Enging
-    <https://www.mindspore.cn/docs/en/master/model_train/optimize/aoe.html>`_ .
 
     Args:
         tune_mode (str): AOE tuning mode setting.
@@ -97,8 +95,6 @@ def aoe_job_type(config):
     Set the parameters specific to Ascend Optimization Engine.It needs to be used in
     conjunction with mindspore.device_context.op_tuning.aoe_tune_mode(tune_mode).
     The framework set to "2" by default.
-    For detailed information, please refer to `Ascend Optimization Enging
-    <https://www.mindspore.cn/docs/en/master/model_train/optimize/aoe.html>`_ .
 
     Args:
         config (str): Choose the tuning type.

@@ -121,10 +121,7 @@ class Callback:
     When creating a custom Callback, model context information can be obtained in Callback
     methods by calling `RunContext.original_args()`, which is a dictionary varivable
     recording current attributes. Users can add custimized attributes to the information.
-    Training process can also be stopped by calling `request_stop` method. For details
-    of custom Callback, please check
-    `Callback tutorial <https://www.mindspore.cn/docs/en/master/model_train/train_process/model/
-    callback.html#customized-callback-mechanism>`_.
+    Training process can also be stopped by calling `request_stop` method.
 
     Examples:
         >>> import numpy as np
@@ -491,9 +488,7 @@ class RunContext:
 
     Callback objects not only can obtain the Model context information by calling by
     `RunContext.original_args()` and add extra attributes to the information, but also can stop the
-    training process by calling `request_stop` method. For details of custom Callback,
-    please check
-    `Callback Mechanism <https://www.mindspore.cn/docs/en/master/model_train/train_process/model/callback.html>`_.
+    training process by calling `request_stop` method.
 
     `RunContext.original_args()` holds the model context information as a dictionary variable, and
     different attributes of the dictionary are stored in training or eval process. Details are as follows:
@@ -572,10 +567,6 @@ class RunContext:
 
         Returns:
            Dict, an object that holds the original arguments of model.
-
-        Tutorial Examples:
-            - `Callback Mechanism - Customized Callback Mechanism
-              <https://mindspore.cn/docs/en/master/model_train/train_process/model/callback.html#customized-callback-mechanism>`_
         """
         return self._original_args
 
@@ -585,11 +576,6 @@ class RunContext:
 
         Callbacks can use this function to request stop of iterations.
         model.train() checks whether this is called or not.
-
-        Tutorial Examples:
-            - `Callback Mechanism - Customized Training Termination Time
-              <https://mindspore.cn/docs/en/master/model_train/train_process/model/callback.html#
-              customized-training-termination-time>`_
         """
         self._stop_requested = True
 

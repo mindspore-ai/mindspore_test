@@ -21,7 +21,7 @@ mindspore.CSRTensor
     - 稠密张量第1行非零元素所在的列位置由 `indices` 中的第[2, 5)个元素（即[1, 2, 4]）给出，实际值由 `values` 中的第[2, 5)个元素（即[3., 4., 5.]）给出。
     - 稠密张量第2行非零元素所在的列位置由 `indices` 中的第[5, 6)个元素（即[2]）给出，实际值由 `values` 中的第[5, 6)个元素（即[6.]）给出。
 
-    `CSRTensor` 的算术运算包括：加（+）、减（-）、乘（*）、除（/）。详细的算术运算支持请参考 `运算符 <https://www.mindspore.cn/docs/zh-CN/master/model_train/program_form/static_graph.html#%E8%BF%90%E7%AE%97%E7%AC%A6>`_。
+    `CSRTensor` 的算术运算包括：加（+）、减（-）、乘（*）、除（/）。详细的算术运算支持请参考 `运算符 <https://www.mindspore.cn/tutorials/zh-CN/master/compile/static_graph.html#%E8%BF%90%E7%AE%97%E7%AC%A6>`_。
 
     .. warning::
         - 这是一个实验性API，后续可能修改或删除。

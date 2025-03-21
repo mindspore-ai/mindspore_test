@@ -39,4 +39,4 @@ mindspore.mint.norm
 
     .. note::
         动态shape、动态rank和可变输入不支持在 `图模式(mode=mindspore.GRAPH_MODE)
-        <https://www.mindspore.cn/docs/zh-CN/master/model_train/program_form/static_graph.html>`_ 下执行。
+        <https://www.mindspore.cn/tutorials/zh-CN/master/compile/static_graph.html>`_ 下执行。
