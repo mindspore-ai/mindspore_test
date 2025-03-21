@@ -61,12 +61,9 @@ static std::unordered_map<std::string, ops::OP_DTYPE> type_not_in_yaml_str_map =
   {"any", ops::OP_DTYPE::DT_ANY},
 };
 
-class ParserDefaultObjects {
+class PYNATIVE_EXPORT ParserDefaultObjects {
  public:
-  static ParserDefaultObjects &GetInstance() {
-    static ParserDefaultObjects default_objs_instance;
-    return default_objs_instance;
-  }
+  static ParserDefaultObjects &GetInstance();
 
   const py::object &Get(const std::string &default_str) {
     auto iter = objects_.find(default_str);
