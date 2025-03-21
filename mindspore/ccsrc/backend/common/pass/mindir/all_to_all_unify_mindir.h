@@ -71,6 +71,7 @@ class BACKEND_COMMON_EXPORT AllToAllUnifyMindIR : public PatternProcessPass {
   const AnfNodePtr Process(const FuncGraphPtr &, const AnfNodePtr &, const EquivPtr &) const override;
 
  private:
+  const CNodePtr CreateReshapeNode(const FuncGraphPtr &, const AnfNodePtr &, const ShapeVector &) const;
   CNodePtr CreateSplitNode(const KernelGraphPtr &graph, const CNodePtr &all_to_all, const AnfNodePtr &input_node,
                            int64_t split_count, int64_t split_dim) const;
   CNodePtr CreateSplitNodeWithSplitDim(const KernelGraphPtr &graph, const CNodePtr &all_to_all) const;

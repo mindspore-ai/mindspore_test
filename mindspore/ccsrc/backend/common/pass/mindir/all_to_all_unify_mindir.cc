@@ -37,7 +37,17 @@ constexpr size_t kCNodePrimitiveIdx = 0;
 constexpr size_t kAllToAllInputIdx = 1;
 constexpr auto kAttrIrUnified = "ir_unified";
 constexpr auto kAttrFlashIndex = "FLASH_INDEX";
-
+bool CheckNoNeedTranspose(const ShapeVector &shape, size_t dim) {
+  if (shape.size() > dim && dim > 0) {
+    for (size_t i = 0; i < dim; i++) {
+      if (shape[i] != 1) {
+        return false;
+      }
+    }
+    return true;
+  }
+  return false;
+}
 void ChangePrimitiveToAllToAllV(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
   auto neighbor_exchange = node->cast<CNodePtr>();
@@ -271,6 +281,21 @@ CNodePtr AllToAllUnifyMindIR::CreateConcatNodeWithDim0(const KernelGraphPtr &gra
   return CreateConcatNode(graph, all_to_all, input_node, split_count, 0);
 }
 
+const CNodePtr AllToAllUnifyMindIR::CreateReshapeNode(const FuncGraphPtr &graph, const AnfNodePtr &input_node,
+                                                      const ShapeVector &shape) const {
+  auto prim = std::make_shared<Primitive>(kReshapeOpName);
+  MS_EXCEPTION_IF_NULL(prim);
+  auto shape_value_node = CreateValueNodeWithKernelInfo(graph, MakeValue(shape));
+  MS_EXCEPTION_IF_NULL(shape_value_node);
+  AnfNodePtrList reshape_inputs = {NewValueNode(prim), input_node, shape_value_node};
+  auto reshape_node = NewCNode(reshape_inputs, graph);
+  MS_EXCEPTION_IF_NULL(reshape_node);
+  auto abs = InferAbstract(prim, {input_node, shape_value_node});
+  MS_EXCEPTION_IF_NULL(abs);
+  reshape_node->set_abstract(abs);
+  return reshape_node;
+}
+
 std::vector<std::string> NeighborExchangeUnifyMindIR::MustExistPrimitiveName() const {
   std::vector<std::string> ret;
   ret.emplace_back(prim::kPrimNeighborExchange->name());
@@ -330,7 +355,19 @@ const AnfNodePtr AllToAllUnifyMindIR::Process(const FuncGraphPtr &graph, const A
     int64_t split_dim = common::AnfAlgo::GetNodeAttr<int64_t>(all_to_all, kAttrSplitDim);
     int64_t concat_dim = common::AnfAlgo::GetNodeAttr<int64_t>(all_to_all, kAttrConcatDim);
     AnfNodePtr all_to_all_input = all_to_all->input(kAllToAllInputIdx);
-    if (split_dim != 0) {
+    auto shape = common::AnfAlgo::GetOutputInferShape(all_to_all->input(kIndex1), kIndex0);
+    int64_t split_count = common::AnfAlgo::GetNodeAttr<int64_t>(all_to_all, kAttrSplitCount);
+    if (CheckNoNeedTranspose(shape, static_cast<size_t>(split_dim))) {
+      auto new_shape = shape;
+      if (shape[split_dim] % split_count != 0) {
+        MS_LOG(INTERNAL_EXCEPTION) << "Invalid split count " << split_count << " cannot be divisible by shape["
+                                   << split_dim << "] = " << shape[split_dim] << trace::DumpSourceLines(all_to_all);
+      }
+      new_shape[0] = shape[0] * split_count;
+      new_shape[split_dim] = shape[split_dim] / split_count;
+      auto reshape_node = CreateReshapeNode(kernel_graph, all_to_all_input, new_shape);
+      all_to_all_input = reshape_node;
+    } else if (split_dim != 0) {
       auto split = CreateSplitNodeWithSplitDim(kernel_graph, all_to_all);
       auto concat_dim0 = CreateConcatNodeWithDim0(kernel_graph, all_to_all, split);
       all_to_all_input = concat_dim0;
@@ -338,7 +375,11 @@ const AnfNodePtr AllToAllUnifyMindIR::Process(const FuncGraphPtr &graph, const A
     }
     auto new_ata = CreateAllToAllNode(kernel_graph, all_to_all, all_to_all_input);
     ret_node = new_ata;
-    if (concat_dim != 0) {
+    auto out_shape = common::AnfAlgo::GetOutputInferShape(all_to_all, kIndex0);
+    if (CheckNoNeedTranspose(out_shape, static_cast<size_t>(concat_dim))) {
+      auto reshape_node = CreateReshapeNode(kernel_graph, new_ata, out_shape);
+      ret_node = reshape_node;
+    } else if (concat_dim != 0) {
       OptimizerUtils::MoveContrlDepend(graph, node, new_ata);
       auto moved_depends = OptimizerUtils::MoveDataDepend(graph, node, new_ata);
       auto pre_node = new_ata;
