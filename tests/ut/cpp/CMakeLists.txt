@@ -310,7 +310,7 @@ foreach(comp ${ALL_UT_COMPS})
     target_link_libraries(ut_${comp}_tests PRIVATE -Wl,--start-group mindspore_frontend mindspore_pynative
             _ut_obj_static -Wl,--end-group)
     target_link_libraries(ut_${comp}_tests PRIVATE mindspore_ms_backend mindspore_core mindspore_ops mindspore_common
-            mindspore_backend_manager mindspore_res_manager mindspore_profiler
+            mindspore_backend_manager mindspore_res_manager mindspore_profiler mindspore_memory_pool
             mindspore_backend_common)
     if(CMAKE_SYSTEM_NAME MATCHES "Linux")
         target_link_libraries(ut_${comp}_tests PRIVATE mindspore::gtest mindspore::gmock mindspore::mockcpp

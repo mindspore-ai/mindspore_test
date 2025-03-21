@@ -12,7 +12,7 @@ mindspore.ops.NPUGetFloatStatus
         - **x** (Tensor) - :class:`mindspore.ops.NPUAllocFloatStatus` 的输出Tensor。数据类型必须为float16或float32。 :math:`(N,*)` ，其中 :math:`*` 表示任意附加维度，其rank应小于8。
 
     输出：
-        Tensor，shape与 `x` 相同。Tensor中的所有元素都将为零。
+        Tensor，shape与 `x` 相同。
 
     异常：
         - **TypeError** - 如果 `x` 不是Tensor。

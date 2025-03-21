@@ -222,7 +222,7 @@ add_library(mindspore_ms_backend SHARED ${MS_BACKEND_SUB_OBJECTS_SRC})
 target_link_libraries(mindspore_ms_backend PRIVATE mindspore::pybind11_module)
 target_link_libraries(mindspore_ms_backend PRIVATE mindspore_core mindspore_ops
         mindspore_common mindspore_ops_kernel_common mindspore_backend_manager proto_input mindspore_res_manager
-        mindspore_profiler mindspore_runtime_pipeline mindspore_backend_common)
+        mindspore_profiler mindspore_runtime_pipeline mindspore_backend_common mindspore_memory_pool)
 
 target_link_libraries(mindspore_backend_common PRIVATE securec)
 target_link_libraries(mindspore_ms_backend PRIVATE securec)

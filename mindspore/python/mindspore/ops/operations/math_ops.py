@@ -1934,7 +1934,7 @@ class NPUGetFloatStatus(Primitive):
           :math:`(N,*)` where :math:`*` means, any number of additional dimensions, its rank should be less than 8.
 
     Outputs:
-        Tensor, has the same shape as `x`. All the elements in the tensor will be zero.
+        Tensor, has the same shape as `x`.
 
     Raises:
         TypeError: If `x` is not a Tensor.

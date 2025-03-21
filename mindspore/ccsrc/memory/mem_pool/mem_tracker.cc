@@ -511,7 +511,8 @@ void MemoryTrackerEnabled::AddMemInfo(const std::string &task_name, MemType type
     if (iter != task_map_.end()) {
       device::DynamicMemAllocatorDebugInfo::SetDebugInfo(iter->second->node_name, type);
     } else {
-      MS_LOG(WARNING) << "Find task : " << task_name << " failed.";
+      MS_LOG(WARNING) << "Find task : " << task_name << " failed, file name : " << file_name
+                      << ", line num : " << line_num << ".";
     }
   }
 }
@@ -571,6 +572,10 @@ void MemoryTrackerEnabled::BindDevicePtr(DeviceAddress *device_address, DeviceMe
       return;
     }
     mem_info = iter->second;
+  }
+  if (mem_info == nullptr) {
+    MS_LOG(ERROR) << "BindDevicePtr failed, mem_info is nullptr, " << file_name << ":" << line_num << ".";
+    return;
   }
   auto mem_block_iter = FindMemBlock(device_ptr, file_name, line_num);
   if (mem_block_iter == device_mem_block_map.end()) {
@@ -965,7 +970,8 @@ void MemoryTrackerDisabled::AddMemInfo(const std::string &task_name, MemType typ
     LockGuard lock(lock_);
     auto &&iter = task_map_.find(task_name);
     if (iter == task_map_.end()) {
-      MS_LOG(WARNING) << "Find task : " << task_name << " failed.";
+      MS_LOG(WARNING) << "Find task : " << task_name << " failed, file name : " << file_name
+                      << ", line num : " << line_num << ".";
     } else {
       DynamicMemAllocatorDebugInfo::SetDebugInfo(iter->second, type);
     }
