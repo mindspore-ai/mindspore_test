@@ -295,7 +295,7 @@ def test_print_format_np():
 
 
 @security_off_wrap
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_print_format_tensor():
     """
     Feature: JIT Fallback
@@ -317,7 +317,7 @@ def test_print_format_tensor():
         sys.stdout.flush()
         time.sleep(2.0)
 
-    patterns = {'tensor_sum: Tensor(shape=[5], dtype=Int64, value=[ 2  4  6  8 10])\n'}
+    patterns = {'tensor_sum: [ 2  4  6  8 10]\n'}
     check_output(cap.output, patterns)
 
 
