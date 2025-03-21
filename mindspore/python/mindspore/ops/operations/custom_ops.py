@@ -1181,17 +1181,27 @@ class CustomOpBuilder:
         flags = [
             '-L' + os.path.abspath(os.path.join(CustomOpBuilder._mindspore_path, 'lib')),
             '-lmindspore_core',
-            '-lmindspore_backend',
-            '-lmindspore_pynative'
+            '-lmindspore_backend'
         ]
         if self.backend == "Ascend":
             flags.append('-L' + os.path.abspath(os.path.join(CustomOpBuilder._mindspore_path, 'lib/plugin')))
             flags.append('-L' + os.path.abspath(os.path.join(self.ascend_cann_path, "lib64")))
             flags.append('-lascendcl')
             flags.append('-l:libmindspore_ascend.so.2')
+
+        flags.append(self._find_c_expression_file(CustomOpBuilder._mindspore_path))
+
         if self.ldflags is not None:
             flags.append(self.ldflags)
         return flags
+
+    def _find_c_expression_file(self, start_path):
+        """Find the _c_expression library"""
+        for root, _, files in os.walk(start_path):
+            for file in files:
+                if file.startswith("_c_expression.") and file.endswith(".so"):
+                    return os.path.abspath(os.path.join(root, file))
+        return ""
 
     def load(self):
         """load module"""
