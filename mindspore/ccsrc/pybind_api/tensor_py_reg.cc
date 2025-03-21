@@ -167,16 +167,16 @@ static PyObject *TensorPython_get_size(PyObject *self, void *) {
 static PyObject *TensorPython_get_itemsize(PyObject *self, void *) {
   HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
-  size_t itemsize = obj->value.GetBaseTensor()->data().itemsize();
-  return PyLong_FromSize_t(itemsize);
+  ssize_t itemsize = obj->value.GetBaseTensor()->data().itemsize();
+  return PyLong_FromSsize_t(itemsize);
   HANDLE_MS_EXCEPTION_END
 }
 
 static PyObject *TensorPython_get_nbytes(PyObject *self, void *) {
   HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
-  size_t nbytes = obj->value.GetBaseTensor()->data().nbytes();  // use data().nbytes()
-  return PyLong_FromSize_t(nbytes);
+  ssize_t nbytes = obj->value.GetBaseTensor()->data().nbytes();  // use data().nbytes()
+  return PyLong_FromSsize_t(nbytes);
   HANDLE_MS_EXCEPTION_END
 }
 
@@ -593,13 +593,13 @@ static PyObject *TensorPython_data_sync(PyObject *self, PyObject *args) {
     py_tensor = (PyType<TensorPy> *)self;
     TensorPy &tensor = py_tensor->value;
     if (!PyArg_ParseTuple(args, "p", &need_wait)) {
-      return NULL;
+      return nullptr;
     }
     tensor.DataSync(need_wait);
   } else {
     PyObject *oriTensor;
     if (!PyArg_ParseTuple(args, "Op", &oriTensor, &need_wait)) {
-      return NULL;
+      return nullptr;
     }
     py_tensor = (PyType<TensorPy> *)oriTensor;
     TensorPy &tensor = py_tensor->value;
@@ -665,7 +665,6 @@ static PyObject *TensorIndex_getitem_index_info(PyObject *self, PyObject *args) 
   py::object result;
 
   result = TensorIndex::GetItemIndexInfo(data, index, ascend);
-
   if (result.is_none()) {
     Py_INCREF(Py_None);
     return Py_None;
@@ -680,12 +679,12 @@ static PyObject *TensorIndex_is_flattened(PyObject *self, PyObject *args) {
   PyObject *tensor_list;
   if (!PyArg_ParseTuple(args, "O", &tensor_list)) {
     PyErr_SetString(PyExc_TypeError, "Expected a list of TensorPy objects.");
-    return NULL;
+    return nullptr;
   }
 
   if (!PyList_Check(tensor_list)) {
     PyErr_SetString(PyExc_TypeError, "Argument must be a list.");
-    return NULL;
+    return nullptr;
   }
   TensorPtrList tensors;
   for (Py_ssize_t i = 0; i < PyList_Size(tensor_list); i++) {
@@ -1024,7 +1023,7 @@ static PyObject *TensorPython_SetOffload(PyObject *self, PyObject *args) {
   PyObject *tensor_obj;
   PyObject *releaseObj;
   if (!PyArg_ParseTuple(args, "OO", &tensor_obj, &releaseObj)) {
-    return NULL;
+    return nullptr;
   }
   PyType<TensorPy> *tensor = (PyType<TensorPy> *)tensor_obj;
   bool release = (PyObject_IsTrue(releaseObj) == 1);
@@ -1061,7 +1060,7 @@ static PyObject *TensorPython_GetItem(PyObject *self, PyObject *args) {
   HANDLE_MS_EXCEPTION
   PyObject *py_index = NULL;
   if (!PyArg_ParseTuple(args, "O", &py_index)) {
-    return NULL;
+    return nullptr;
   }
   py::object result =
     TensorPybind::TensorGetItem(py::reinterpret_borrow<py::object>(self), py::reinterpret_borrow<py::object>(py_index));
@@ -1073,14 +1072,14 @@ static PyObject *TensorPython_SetItem(PyObject *self, PyObject *args) {
   HANDLE_MS_EXCEPTION
   PyObject *py_index = NULL, *py_value = NULL;
   if (!PyArg_ParseTuple(args, "|OO", &py_index, &py_value)) {
-    return NULL;
+    return nullptr;
   }
   py::object self_obj = py::reinterpret_borrow<py::object>(self);
   py::object py_index_obj = py::reinterpret_borrow<py::object>(py_index);
   py::object py_value_obj = py::reinterpret_borrow<py::object>(py_value);
   py::object result = TensorPybind::TensorSetItem(self_obj, py_index_obj, py_value_obj);
   if (result.is(py::none())) {
-    return NULL;
+    return nullptr;
   }
   return result.release().ptr();
   HANDLE_MS_EXCEPTION_END
@@ -1136,10 +1135,10 @@ static PyObject *TensorPython_FlattenTensors(PyObject *self, PyObject *args, PyO
   PyObject *py_tensor_list = NULL;
   PyObject *fusion_size_ori = NULL;
   size_t fusion_size = 0;
-  static const char *kwlist[] = {"py_tensor_list", "fusion_size", NULL};
+  static const char *kwlist[] = {"py_tensor_list", "fusion_size", nullptr};
   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|O", const_cast<char **>(kwlist), &py_tensor_list,
                                    &fusion_size_ori)) {
-    return NULL;
+    return nullptr;
   }
   if (fusion_size_ori != NULL) {
     fusion_size = (size_t)PyLong_AsUnsignedLongLong(fusion_size_ori);

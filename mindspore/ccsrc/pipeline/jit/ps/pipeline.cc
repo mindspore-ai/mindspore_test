@@ -1833,8 +1833,6 @@ void ExecutorPy::ProcessVmArg(const py::tuple &args, const std::string &phase, V
 void GraphExecutorPy::TerminateDebugger() {
   if (Common::GetDebugTerminate()) {
     MS_LOG(INFO) << "Terminate debugger and clear resources!";
-    // TODO(caifubi): remove
-    // ClearResAtexit();
     exit(static_cast<int>(!Common::GetDebugExitSuccess()));
   }
 }
