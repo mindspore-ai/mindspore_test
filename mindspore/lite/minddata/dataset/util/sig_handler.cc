@@ -141,7 +141,7 @@ void SIGCHLDHandler(int signal, siginfo_t *info, void *context) {
           msg = "Dataset worker process " + std::to_string(pid) +
                 " has already exited. Its state may have been retrieved by other threads.";
         } else {
-          MS_LOG(WARNING) << "Failed to wait for dataset worker process " << pid << ", got: " + strerror(errno);
+          MS_LOG(WARNING) << "Failed to wait for dataset worker process " << pid << ", got: " << strerror(errno);
           continue;
         }
       } else {
