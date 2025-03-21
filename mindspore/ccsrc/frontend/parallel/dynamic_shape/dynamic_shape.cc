@@ -321,8 +321,8 @@ std::vector<symshape::SymbolInfoList> ParallelSymbolInfo(const std::vector<symsh
         for (size_t k = 0; k < cur_tensor_map.at(j).size(); ++k) {
           auto val = cur_tensor_map.at(j).at(k);
           if (val != -1) {
-            auto real_idx = cur_dev_mat.size() - val - 1;
-            shard_size *= cur_dev_mat.at(real_idx);
+            auto real_idx = cur_dev_mat.size() - LongToSize(val) - 1;
+            shard_size *= LongToSize(cur_dev_mat.at(real_idx));
           }
         }
         local_stra.push_back(shard_size);

@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include "frontend/parallel/step_parallel_utils.h"
 
 #include <algorithm>
@@ -2115,6 +2114,7 @@ OperatorInfoPtr CreateOperatorInfoForNewShape(const CNodePtr &cnode) {
       continue;
     } else if (IsPrimitiveCNode(inputs[index], prim::kPrimShape)) {
       auto shape_op_cnode = dyn_cast_ptr<CNode>(inputs[index]);
+      MS_EXCEPTION_IF_NULL(shape_op_cnode);
       auto dst_shape = GetNodeShape(shape_op_cnode->input(1));
       (void)input_value.emplace_back(MakeValue(dst_shape[0]));
       MS_LOG(INFO) << "The prim is " << prim->name() << ", the input index is " << index - 1
@@ -3702,8 +3702,8 @@ Shapes ConvertDatasetLayoutToStrategy() {
       for (size_t k = 0; k < cur_tensor_map.at(j).size(); ++k) {
         auto val = cur_tensor_map.at(j).at(k);
         if (val != -1) {
-          auto real_idx = cur_dev_mat.size() - val - 1;
-          shard_size *= cur_dev_mat.at(real_idx);
+          auto real_idx = cur_dev_mat.size() - LongToSize(val) - 1;
+          shard_size *= LongToSize(cur_dev_mat.at(real_idx));
         }
       }
       local_stra.push_back(shard_size);
