@@ -60,11 +60,11 @@ AnfNodePtr CopyDefaultParamFromFg(const FuncGraphPtr &fg, const ParameterPtr &pa
 }
 
 size_t GetMonadParameterSize(const FuncGraphPtr &fg) {
-  size_t monad_param_size = 0;
+  int64_t monad_param_size = 0;
   if (fg->has_attr(kFlagMonadParameterSize)) {
     monad_param_size = GetValue<int64_t>(fg->get_attr(kFlagMonadParameterSize));
   }
-  return monad_param_size;
+  return LongToSize(monad_param_size);
 }
 
 CNodePtr CreateNewCNode(const FuncGraphPtr &fg, const CNodePtr &cnode, size_t start_of_monad) {
