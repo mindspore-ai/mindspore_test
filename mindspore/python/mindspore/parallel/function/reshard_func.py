@@ -26,6 +26,7 @@ from mindspore.parallel._auto_parallel_context import _get_all_auto_parallel_con
 REDIST_CELL_CACHE = {}
 COMM_TENSOR_CELL_CACHE = {}
 
+
 # pylint: disable=W0212
 def reshard(tensor, layout):
     r"""
