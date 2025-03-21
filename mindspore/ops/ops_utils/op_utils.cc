@@ -794,6 +794,62 @@ void CheckSparseIndicesDtypeInt32(const TypePtr data_type, const std::string &ar
   }
 }
 
+static const std::map<size_t, TypeId> scalar_tensor_convert_map = {
+  // Scalar is bool.
+  {GetHashId(kNumberTypeBool, kNumberTypeBool), kNumberTypeBool},
+  {GetHashId(kNumberTypeBool, kNumberTypeInt8), kNumberTypeInt8},
+  {GetHashId(kNumberTypeBool, kNumberTypeInt16), kNumberTypeInt16},
+  {GetHashId(kNumberTypeBool, kNumberTypeInt32), kNumberTypeInt32},
+  {GetHashId(kNumberTypeBool, kNumberTypeInt64), kNumberTypeInt64},
+  {GetHashId(kNumberTypeBool, kNumberTypeUInt8), kNumberTypeUInt8},
+  {GetHashId(kNumberTypeBool, kNumberTypeUInt16), kNumberTypeUInt16},
+  {GetHashId(kNumberTypeBool, kNumberTypeUInt32), kNumberTypeUInt32},
+  {GetHashId(kNumberTypeBool, kNumberTypeUInt64), kNumberTypeUInt64},
+  {GetHashId(kNumberTypeBool, kNumberTypeFloat16), kNumberTypeFloat16},
+  {GetHashId(kNumberTypeBool, kNumberTypeBFloat16), kNumberTypeBFloat16},
+  {GetHashId(kNumberTypeBool, kNumberTypeFloat32), kNumberTypeFloat32},
+  {GetHashId(kNumberTypeBool, kNumberTypeFloat64), kNumberTypeFloat64},
+  {GetHashId(kNumberTypeBool, kNumberTypeComplex64), kNumberTypeComplex64},
+  {GetHashId(kNumberTypeBool, kNumberTypeComplex128), kNumberTypeComplex128},
+  // Scalar is int.
+  {GetHashId(kNumberTypeInt64, kNumberTypeBool), kNumberTypeInt64},
+  {GetHashId(kNumberTypeInt64, kNumberTypeInt8), kNumberTypeInt8},
+  {GetHashId(kNumberTypeInt64, kNumberTypeInt16), kNumberTypeInt16},
+  {GetHashId(kNumberTypeInt64, kNumberTypeInt32), kNumberTypeInt32},
+  {GetHashId(kNumberTypeInt64, kNumberTypeInt64), kNumberTypeInt64},
+  {GetHashId(kNumberTypeInt64, kNumberTypeUInt8), kNumberTypeUInt8},
+  {GetHashId(kNumberTypeInt64, kNumberTypeFloat16), kNumberTypeFloat16},
+  {GetHashId(kNumberTypeInt64, kNumberTypeBFloat16), kNumberTypeBFloat16},
+  {GetHashId(kNumberTypeInt64, kNumberTypeFloat32), kNumberTypeFloat32},
+  {GetHashId(kNumberTypeInt64, kNumberTypeFloat64), kNumberTypeFloat64},
+  {GetHashId(kNumberTypeInt64, kNumberTypeComplex64), kNumberTypeComplex64},
+  {GetHashId(kNumberTypeInt64, kNumberTypeComplex128), kNumberTypeComplex128},
+  // Scalar is float.
+  {GetHashId(kNumberTypeFloat32, kNumberTypeBool), kNumberTypeFloat32},
+  {GetHashId(kNumberTypeFloat32, kNumberTypeInt8), kNumberTypeFloat32},
+  {GetHashId(kNumberTypeFloat32, kNumberTypeInt16), kNumberTypeFloat32},
+  {GetHashId(kNumberTypeFloat32, kNumberTypeInt32), kNumberTypeFloat32},
+  {GetHashId(kNumberTypeFloat32, kNumberTypeInt64), kNumberTypeFloat32},
+  {GetHashId(kNumberTypeFloat32, kNumberTypeUInt8), kNumberTypeFloat32},
+  {GetHashId(kNumberTypeFloat32, kNumberTypeFloat16), kNumberTypeFloat16},
+  {GetHashId(kNumberTypeFloat32, kNumberTypeBFloat16), kNumberTypeBFloat16},
+  {GetHashId(kNumberTypeFloat32, kNumberTypeFloat32), kNumberTypeFloat32},
+  {GetHashId(kNumberTypeFloat32, kNumberTypeFloat64), kNumberTypeFloat64},
+  {GetHashId(kNumberTypeFloat32, kNumberTypeComplex64), kNumberTypeComplex64},
+  {GetHashId(kNumberTypeFloat32, kNumberTypeComplex128), kNumberTypeComplex128},
+};
+TypeId ConvertTypeBetweenTensorAndScalar(const TypeId &tensor_type_id, const TypeId &scalar_type_id,
+                                         const size_t hash_id) {
+  auto iter = scalar_tensor_convert_map.find(hash_id);
+  if (iter != scalar_tensor_convert_map.end()) {
+    return iter->second;
+  }
+  MS_EXCEPTION(TypeError) << "Type implicit conversion between Tensor[" << TypeIdToString(tensor_type_id) << "] and "
+                          << TypeIdToString(scalar_type_id) << " is not supported.";
+}
+
+size_t GetHashId(int a, int b) { return a < b ? hash_combine(a, b) : hash_combine(b, a); }
+
 ShapeVector ConvertToShapeVector(const abstract::AbstractTuplePtr &shape) {
   auto shape_value = shape->GetValue()->cast<ValueTuplePtr>();
   MS_EXCEPTION_IF_NULL(shape_value);

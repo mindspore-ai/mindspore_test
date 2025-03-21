@@ -166,6 +166,8 @@ def _init(input_data=None, dtype=None, shape=None, init=None, const_arg=False, d
         validator.check_type_name('dtype', dtype, mstype.number_type + (mstype.bool_, mstype.string), "Tensor")
         return {"dtype": dtype, "shape": shape, "init": init, "const_arg": const_arg, "device": device,
                 "symbolic_shape": symbolic_shape}
+    if isinstance(input_data, np.longlong):
+        input_data = np.array(input_data)
 
     _check_input_data_type(input_data)
     dtype = _set_dtype(input_data, dtype)
