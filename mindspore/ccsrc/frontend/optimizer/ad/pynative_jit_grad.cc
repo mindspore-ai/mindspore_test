@@ -264,6 +264,21 @@ py::object HandleForwardResult(const BaseRef &forward_result, const FuncGraphPtr
     return ret_tuple[kIndex0];
   }
 }
+
+bool IsValidAbstract(const AbstractBasePtr &prim_abstract) {
+  if (prim_abstract == nullptr || prim_abstract->isa<abstract::AbstractRefTensor>()) {
+    return false;
+  }
+  if (prim_abstract->isa<abstract::AbstractTensor>()) {
+    return true;
+  }
+  if (prim_abstract->isa<abstract::AbstractSequence>()) {
+    const auto &elements = prim_abstract->cast<abstract::AbstractSequencePtr>()->elements();
+    return std::all_of(elements.begin(), elements.end(),
+                       [](const AbstractBasePtr &element) { return IsValidAbstract(element); });
+  }
+  return false;
+}
 }  // namespace
 
 std::pair<bool, FuncGraphPtr> GetBpropGraphWithParamalization(const pynative::GradParamPtr &grad_param) {
@@ -532,7 +547,7 @@ void BpropGenerator::Init() {
     }
     // Process primal abstract
     const auto &prim_abstract = primal_cnode->abstract();
-    if (!prim_abstract || !prim_abstract->isa<abstract::AbstractTensor>()) {
+    if (!IsValidAbstract(prim_abstract)) {
       continue;
     }
     MS_LOG(DEBUG) << "Reuse forward output node: " << primal_cnode->DebugString()
