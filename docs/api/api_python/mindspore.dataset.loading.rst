@@ -7,7 +7,7 @@ MindSpore的核心数据加载模块是Dataset，是一种基于Pipeline设计�
 
 - 自定义数据集加载：允许用户通过Python定义 `可随机访问(Map-style)数据集 <https://www.mindspore.cn/tutorials/zh-CN/master/beginner/dataset.html#可随机访问数据集>`_ 
   和 `可迭代(Iterable-style)数据集 <https://www.mindspore.cn/tutorials/zh-CN/master/beginner/dataset.html#可迭代数据集>`_ 自定义数据读取、处理逻辑。
-- 标准格式数据集加载：支持加载业界标准数据格式的数据集文件，包括 `MindRecord <https://www.mindspore.cn/docs/zh-CN/master/model_train/dataset/record.html>`_ 、`TFRecord <https://tensorflow.google.cn/tutorials/load_data/tfrecord.md?hl=zh-cn>`_ 等。
+- 标准格式数据集加载：支持加载业界标准数据格式的数据集文件，包括 `MindRecord <https://www.mindspore.cn/tutorials/zh-CN/master/dataset/record.html>`_ 、`TFRecord <https://tensorflow.google.cn/tutorials/load_data/tfrecord.md?hl=zh-cn>`_ 等。
 - 开源数据集加载：支持部分 `开源数据集 <#开源数据集加载>`_ 的解析读取，如MNIST、CIFAR-10、CLUE、LJSpeech等。
 
 此外，该模块也提供了对数据进行采样、增强变换、批处理等功能，以及随机种子、并行数等基础配置，与数据集加载API配合使用。

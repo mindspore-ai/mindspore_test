@@ -72,7 +72,7 @@ API样例中常用的导入模块如下：
 数据增强操作可以放入数据处理Pipeline中执行，也可以Eager模式执行：
 
 - Pipeline模式用于流式处理大型数据集，示例可参考 `数据处理Pipeline介绍 <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore.dataset.loading.html#数据处理pipeline介绍>`_ 。
-- Eager模式用于函数调用方式处理样本，示例可参考 `轻量化数据处理 <https://www.mindspore.cn/docs/zh-CN/master/model_train/dataset/eager.html>`_ 。
+- Eager模式用于函数调用方式处理样本，示例可参考 `轻量化数据处理 <https://www.mindspore.cn/tutorials/zh-CN/master/dataset/eager.html>`_ 。
 
 样例库
 ^^^^^^
@@ -219,7 +219,7 @@ API样例中常用的导入模块如下：
 数据增强操作可以放入数据处理Pipeline中执行，也可以Eager模式执行：
 
 - Pipeline模式用于流式处理大型数据集，示例可参考 `数据处理Pipeline介绍 <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore.dataset.loading.html#数据处理pipeline介绍>`_ 。
-- Eager模式用于函数调用方式处理样本，示例可参考 `轻量化数据处理 <https://www.mindspore.cn/docs/zh-CN/master/model_train/dataset/eager.html>`_ 。
+- Eager模式用于函数调用方式处理样本，示例可参考 `轻量化数据处理 <https://www.mindspore.cn/tutorials/zh-CN/master/dataset/eager.html>`_ 。
 
 样例库
 ^^^^^^
@@ -289,7 +289,7 @@ API样例中常用的导入模块如下：
 数据增强操作可以放入数据处理Pipeline中执行，也可以Eager模式执行：
 
 - Pipeline模式用于流式处理大型数据集，示例可参考 `数据处理Pipeline介绍 <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore.dataset.loading.html#数据处理pipeline介绍>`_ 。
-- Eager模式用于函数调用方式处理样本，示例可参考 `轻量化数据处理 <https://www.mindspore.cn/docs/zh-CN/master/model_train/dataset/eager.html>`_ 。
+- Eager模式用于函数调用方式处理样本，示例可参考 `轻量化数据处理 <https://www.mindspore.cn/tutorials/zh-CN/master/dataset/eager.html>`_ 。
 
 样例库
 ^^^^^^
