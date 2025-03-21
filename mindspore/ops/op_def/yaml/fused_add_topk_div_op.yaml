@@ -1,0 +1,34 @@
+#operator FusedAddTopKDiv
+fused_add_topk_div:
+  args:
+    x:
+      dtype: tensor
+    add_num:
+      dtype: tensor
+      type_cast: number
+    group_num:
+      dtype: int
+    group_topk:
+      dtype: int
+    n:
+      dtype: int
+    k:
+      dtype: int
+    activate_type:
+      dtype: int
+      default: 0
+    is_norm:
+      dtype: bool
+      default: True
+    scale: 
+      dtype: float
+      default: 2.5
+  returns:
+    weight:
+      dtype: tensor
+    indices:
+      dtype: tensor  
+  function:
+    name: fused_add_topk_div
+  class:
+    name: FusedAddTopKDiv
