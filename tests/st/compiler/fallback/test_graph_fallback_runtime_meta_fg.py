@@ -1086,7 +1086,6 @@ def test_multitype_generated_by_inner_method_1():
     Description: test multitype_generated_by_inner_method
     Expectation: throw RuntimeError
     """
-    ms.set_context(jit_level="O0")
     class Net(nn.Cell):
         def construct(self, x):
             out = x[::2]
