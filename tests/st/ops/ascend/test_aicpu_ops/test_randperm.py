@@ -39,7 +39,7 @@ def test_net(mode):
     Description: test Randperm on Acsend
     Expectation: success.
     """
-    context.set_context(mode=mode, device_target="Ascend")
+    context.set_context(mode=mode, device_target="Ascend", jit_level="O0")
     net = Net(max_length=5, pad=-1)
     output = net(Tensor([3], mindspore.int32))
 
