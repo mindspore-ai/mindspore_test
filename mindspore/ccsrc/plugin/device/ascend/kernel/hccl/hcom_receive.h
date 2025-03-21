@@ -38,10 +38,12 @@ class HcomReceiveKernel : public HcclKernel {
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
   int Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
 
+  bool Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
+
  protected:
   void UpdateOutputShapeAndSize(const std::vector<KernelTensor *> &inputs,
                                 const std::vector<KernelTensor *> &outputs) override;
-  bool IsNeedUpdateOutputShapeAndSize() override { return true; }
+  bool IsNeedUpdateOutputShapeAndSize() override { return is_dynamic_shape_; }
 
  private:
   std::vector<int64_t> real_shape_;
