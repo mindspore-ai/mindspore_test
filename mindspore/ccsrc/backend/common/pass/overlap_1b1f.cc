@@ -138,7 +138,7 @@ void OverlapAll2All(const KernelGraphPtr &kernel_graph, const CNodeMapMap &forwa
         common::AnfAlgo::InsertDepend(forward_a2a_inputs.at(j), backward_a2a_output, manager, kernel_graph,
                                       "1b1f_depend1");
       }
-      if (j < min_a2a_size - 1) {
+      if (j < forward_a2a_outputs.size() - 1) {
         for (const auto &forward_a2a_output : forward_a2a_outputs.at(j + 1)) {
           common::AnfAlgo::InsertDepend(backward_a2a_inputs.at(j), forward_a2a_output, manager, kernel_graph,
                                         "1b1f_depend2");
@@ -150,8 +150,8 @@ void OverlapAll2All(const KernelGraphPtr &kernel_graph, const CNodeMapMap &forwa
 }  // namespace
 
 bool Overlap1b1f::DoOverlap1b1f(const KernelGraphPtr &kernel_graph) {
-  kernel_graph->SetExecOrderByDefault();
-  const auto &execution_order = kernel_graph->execution_order();
+  auto order_cnodes = kernel_graph->GetOrderedCnodes();
+  CNodePtrList execution_order(order_cnodes.cbegin(), order_cnodes.cend());
   auto manager = kernel_graph->manager();
   CNodeMapMap forward_input_points_map;
   CNodeMapMap backward_input_points_map;
