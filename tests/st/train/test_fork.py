@@ -129,7 +129,7 @@ def childprocess(mode, i, q):
 
 @ms.jit(backend="ms_backend")
 def grad_func(net, x, y):
-    F.grad(net, grad_position=(0, 1))(x, y)
+    return F.grad(net, grad_position=(0, 1))(x, y)
 
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
