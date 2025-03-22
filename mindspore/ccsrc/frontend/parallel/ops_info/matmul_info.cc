@@ -601,8 +601,13 @@ Status MatMul::Check3DTPInputLayout(const TensorLayout &a_in_layout, const Tenso
 Status MatMul::CheckInputLayout() {
   // Check all device matrix should be the same
   if (inputs_tensor_info_.size() != kSizeTwo) {
-    MS_LOG(ERROR) << "The size of input_tensor_layout for matmul is " << inputs_tensor_info_.size()
-                  << " rather than 2.";
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << ": The size of input_tensor_layout for matmul is " << inputs_tensor_info_.size()
+                      << " rather than 2.";
+    } else {
+      MS_LOG(ERROR) << "The size of input_tensor_layout for matmul is " << inputs_tensor_info_.size()
+                    << " rather than 2.";
+    }
     return FAILED;
   }
   auto in_layout0 = inputs_tensor_info_[kIndex0].tensor_layout();
@@ -672,8 +677,13 @@ Status MatMul::CheckInputLayout() {
 Status MatMul::CheckOutputLayout() {
   // Check all device matrix should be the same
   if (outputs_tensor_info_.size() != kSizeOne) {
-    MS_LOG(ERROR) << "The size of output_tensor_layout for matmul is " << outputs_tensor_info_.size()
-                  << " rather than 1.";
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << name_ << ": The size of output_tensor_layout for matmul is " << outputs_tensor_info_.size()
+                      << " rather than 1.";
+    } else {
+      MS_LOG(ERROR) << "The size of output_tensor_layout for matmul is " << outputs_tensor_info_.size()
+                    << " rather than 1.";
+    }
     return FAILED;
   }
   auto out_layout = outputs_tensor_info_[kIndex0].tensor_layout();

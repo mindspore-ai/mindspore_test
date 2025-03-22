@@ -270,8 +270,13 @@ std::vector<StrategyPtr> MeanExtInfo::GenerateOpStrategies(int64_t stage_id) {
 
 Status MeanExtInfo::CheckInputLayout() {
   if (inputs_tensor_info_.size() != kSizeOne) {
-    MS_LOG(ERROR) << "For distributed operator " << name_ << ", the size of inputs_tensor_info should be 1, but got "
-                  << inputs_tensor_info_.size() << ".";
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << "For distributed operator " << name_
+                      << ", the size of inputs_tensor_info should be 1, but got " << inputs_tensor_info_.size() << ".";
+    } else {
+      MS_LOG(ERROR) << "For distributed operator " << name_ << ", the size of inputs_tensor_info should be 1, but got "
+                    << inputs_tensor_info_.size() << ".";
+    }
     return FAILED;
   }
   return SUCCESS;
@@ -317,8 +322,13 @@ Status MeanExtInfo::InferOutputTensorInfo() {
 
 Status MeanExtInfo::CheckOutputLayout() {
   if (outputs_tensor_info_.size() != kSizeOne) {
-    MS_LOG(ERROR) << "For distributed operator " << name_ << ", the size of output_tensor_layout for " << name_
-                  << " is " << outputs_tensor_info_.size() << " rather than 1.";
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << "For distributed operator " << name_ << ", the size of output_tensor_layout for " << name_
+                      << " is " << outputs_tensor_info_.size() << " rather than 1.";
+    } else {
+      MS_LOG(ERROR) << "For distributed operator " << name_ << ", the size of output_tensor_layout for " << name_
+                    << " is " << outputs_tensor_info_.size() << " rather than 1.";
+    }
     return FAILED;
   }
   if (!is_infer_out_layout_) {
@@ -483,8 +493,13 @@ std::vector<StrategyPtr> SumExtInfo::GenerateOpStrategies(int64_t stage_id) {
 
 Status SumExtInfo::CheckInputLayout() {
   if (inputs_tensor_info_.size() != kSizeOne) {
-    MS_LOG(ERROR) << "For distributed operator " << name_ << ", the size of inputs_tensor_info should be 1, but got "
-                  << inputs_tensor_info_.size() << ".";
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << "For distributed operator " << name_
+                      << ", the size of inputs_tensor_info should be 1, but got " << inputs_tensor_info_.size() << ".";
+    } else {
+      MS_LOG(ERROR) << "For distributed operator " << name_ << ", the size of inputs_tensor_info should be 1, but got "
+                    << inputs_tensor_info_.size() << ".";
+    }
     return FAILED;
   }
   return SUCCESS;
@@ -530,8 +545,13 @@ Status SumExtInfo::InferOutputTensorInfo() {
 
 Status SumExtInfo::CheckOutputLayout() {
   if (outputs_tensor_info_.size() != kSizeOne) {
-    MS_LOG(ERROR) << "For distributed operator " << name_ << ", the size of output_tensor_layout for " << name_
-                  << " is " << outputs_tensor_info_.size() << " rather than 1.";
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << "For distributed operator " << name_ << ", the size of output_tensor_layout for " << name_
+                      << " is " << outputs_tensor_info_.size() << " rather than 1.";
+    } else {
+      MS_LOG(ERROR) << "For distributed operator " << name_ << ", the size of output_tensor_layout for " << name_
+                    << " is " << outputs_tensor_info_.size() << " rather than 1.";
+    }
     return FAILED;
   }
   if (!is_infer_out_layout_) {
@@ -637,8 +657,13 @@ Status MaxInfo::InferForwardCommunicationByLayout() {
 
 Status MaxInfo::CheckInputLayout() {
   if (inputs_tensor_info_.size() != kSizeOne) {
-    MS_LOG(ERROR) << "For distributed operator " << name_ << ", the size of inputs_tensor_info should be 1, but got "
-                  << inputs_tensor_info_.size() << ".";
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << "For distributed operator " << name_
+                      << ", the size of inputs_tensor_info should be 1, but got " << inputs_tensor_info_.size() << ".";
+    } else {
+      MS_LOG(ERROR) << "For distributed operator " << name_ << ", the size of inputs_tensor_info should be 1, but got "
+                    << inputs_tensor_info_.size() << ".";
+    }
     return FAILED;
   }
   return SUCCESS;
@@ -669,8 +694,13 @@ Status MaxInfo::InferOutputTensorInfo() {
 
 Status MaxInfo::CheckOutputLayout() {
   if (outputs_tensor_info_.size() != kSizeOne) {
-    MS_LOG(ERROR) << "For distributed operator " << name_ << ", the size of output_tensor_layout for " << name_
-                  << " is " << outputs_tensor_info_.size() << " rather than 1.";
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << "For distributed operator " << name_ << ", the size of output_tensor_layout for " << name_
+                      << " is " << outputs_tensor_info_.size() << " rather than 1.";
+    } else {
+      MS_LOG(ERROR) << "For distributed operator " << name_ << ", the size of output_tensor_layout for " << name_
+                    << " is " << outputs_tensor_info_.size() << " rather than 1.";
+    }
     return FAILED;
   }
   if (!is_infer_out_layout_) {

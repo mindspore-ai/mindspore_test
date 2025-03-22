@@ -126,9 +126,19 @@ Status RepeatInterleaveInfo::CheckStrategy(const mindspore::parallel::StrategyPt
 
 Status RepeatInterleaveInfo::CheckInputLayout() {
   if (inputs_tensor_info_.size() != inputs_shape_.size()) {
-    MS_LOG(ERROR) << "For distributed operator " << name_ << ", the size of inputs_tensor_info should be equal to the "
-                  << "num of tensor inputs, but the inputs_tensor_info.size() is " << inputs_tensor_info_.size() << " "
-                  << "and the num of tensor inputs is " << inputs_shape_.size() << ".";
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << "For distributed operator " << name_
+                      << ", the size of inputs_tensor_info should be equal to the "
+                      << "num of tensor inputs, but the inputs_tensor_info.size() is " << inputs_tensor_info_.size()
+                      << " "
+                      << "and the num of tensor inputs is " << inputs_shape_.size() << ".";
+    } else {
+      MS_LOG(ERROR) << "For distributed operator " << name_
+                    << ", the size of inputs_tensor_info should be equal to the "
+                    << "num of tensor inputs, but the inputs_tensor_info.size() is " << inputs_tensor_info_.size()
+                    << " "
+                    << "and the num of tensor inputs is " << inputs_shape_.size() << ".";
+    }
     return FAILED;
   }
 
@@ -137,7 +147,11 @@ Status RepeatInterleaveInfo::CheckInputLayout() {
 
   // when 'dim' is None, all dimensions cannot be split
   if (dim_ == kInvalidDimValue) {
-    MS_LOG(ERROR) << "For distributed operator " << name_ << ", all dimensions cannot be split when 'dim' is None.";
+    if (is_in_layout_propagation_) {
+      MS_LOG(INFO) << "For distributed operator " << name_ << ", all dimensions cannot be split when 'dim' is None.";
+    } else {
+      MS_LOG(ERROR) << "For distributed operator " << name_ << ", all dimensions cannot be split when 'dim' is None.";
+    }
     return FAILED;
   }
 
@@ -145,26 +159,42 @@ Status RepeatInterleaveInfo::CheckInputLayout() {
   if (is_tensor_repeat_) {
     auto input_tensor_map = input_tensor_layout.tensor_map_before();
     if (input_tensor_map[dim_].empty()) {
-      MS_LOG(ERROR) << "For distributed operator " << name_ << ", the layout of inputs' dimension 'dim' is empty.";
+      if (is_in_layout_propagation_) {
+        MS_LOG(INFO) << "For distributed operator " << name_ << ", the layout of inputs' dimension 'dim' is empty.";
+      } else {
+        MS_LOG(ERROR) << "For distributed operator " << name_ << ", the layout of inputs' dimension 'dim' is empty.";
+      }
       return FAILED;
     }
     auto device_dims = SizeToLong(dev_matrix_shape_.size());
     auto shard_idx = device_dims - 1 - input_tensor_map[dim_][kIndex0];
     if (input_tensor_map[dim_].size() != kSizeOne || dev_matrix_shape_[shard_idx] != NO_SPLIT_STRATEGY) {
-      MS_LOG(ERROR) << "For distributed operator " << name_ << ", the input's dimension 'dim' can not be split.";
+      if (is_in_layout_propagation_) {
+        MS_LOG(INFO) << "For distributed operator " << name_ << ", the input's dimension 'dim' can not be split.";
+      } else {
+        MS_LOG(ERROR) << "For distributed operator " << name_ << ", the input's dimension 'dim' can not be split.";
+      }
       return FAILED;
     }
     auto repeat_tensor_layout = inputs_tensor_info_[kIndex1].tensor_layout();
     auto repeat_tensor_map = repeat_tensor_layout.tensor_map_before();
     if (repeat_tensor_map[kIndex0].empty()) {
-      MS_LOG(ERROR) << "For distributed operator " << name_ << ", the layout of input 'repeats' is empty.";
+      if (is_in_layout_propagation_) {
+        MS_LOG(INFO) << "For distributed operator " << name_ << ", the layout of input 'repeats' is empty.";
+      } else {
+        MS_LOG(ERROR) << "For distributed operator " << name_ << ", the layout of input 'repeats' is empty.";
+      }
       return FAILED;
     }
     shard_idx = device_dims - 1 - repeat_tensor_map[kIndex0][kIndex0];
     // the layout of 'repeats' such as ("a", "b") and (("a", "b")) is invalid
     if (repeat_tensor_map.size() != kSizeOne || repeat_tensor_map[kIndex0].size() != kSizeOne ||
         dev_matrix_shape_[shard_idx] != NO_SPLIT_STRATEGY) {
-      MS_LOG(ERROR) << "For distributed operator " << name_ << ", the input 'repeat' cannot be split.";
+      if (is_in_layout_propagation_) {
+        MS_LOG(INFO) << "For distributed operator " << name_ << ", the input 'repeat' cannot be split.";
+      } else {
+        MS_LOG(ERROR) << "For distributed operator " << name_ << ", the input 'repeat' cannot be split.";
+      }
       return FAILED;
     }
   }

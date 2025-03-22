@@ -239,9 +239,15 @@ Status VirtualDatasetInfo::Init(const StrategyPtr &in_strategy, const StrategyPt
 
 Status VirtualDatasetInfo::CheckInputLayout() {
   if (inputs_tensor_info_.size() != inputs_shape_.size()) {
-    MS_LOG(ERROR) << "The size of inputs tensor info must be equal to the size of inputs shape, but got inputs tensor "
-                     "info size: "
-                  << inputs_tensor_info_.size() << ", inputs shape size: " << inputs_shape_.size();
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << "The size of inputs tensor info must be equal to the size of inputs shape, "
+                      << "but got inputs tensor info size: " << inputs_tensor_info_.size()
+                      << ", inputs shape size: " << inputs_shape_.size();
+    } else {
+      MS_LOG(ERROR) << "The size of inputs tensor info must be equal to the size of inputs shape, "
+                    << "but got inputs tensor info size: " << inputs_tensor_info_.size()
+                    << ", inputs shape size: " << inputs_shape_.size();
+    }
     return FAILED;
   }
   return SUCCESS;
@@ -259,10 +265,15 @@ Status VirtualDatasetInfo::InferOutputTensorInfo() {
 
 Status VirtualDatasetInfo::CheckOutputLayout() {
   if (outputs_tensor_info_.size() != outputs_shape_.size()) {
-    MS_LOG(ERROR)
-      << "The size of outputs tensor info must be equal to the size of outputs shape, but got outputs tensor "
-         "info size: "
-      << outputs_tensor_info_.size() << ", outputs shape size: " << outputs_shape_.size();
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << "The size of outputs tensor info must be equal to the size of outputs shape, but got outputs "
+                      << "tensor info size: " << outputs_tensor_info_.size()
+                      << ", outputs shape size: " << outputs_shape_.size();
+    } else {
+      MS_LOG(ERROR) << "The size of outputs tensor info must be equal to the size of outputs shape, but got outputs "
+                    << "tensor info size: " << outputs_tensor_info_.size()
+                    << ", outputs shape size: " << outputs_shape_.size();
+    }
     return FAILED;
   }
   if (!in_infer_flag_) {

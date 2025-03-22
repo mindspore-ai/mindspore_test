@@ -104,7 +104,11 @@ Status SelfDefineShardInfo::CheckInputLayout() {
                   << ". User needs to ensure the accuracy and correctness of input/output layout, and framework "
                      "will only do basic check.";
   if (CheckLayout(inputs_shape_new_, inputs_tensor_info_new_, "input") != SUCCESS) {
-    MS_LOG(ERROR) << name_ << " check input layout failed";
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << name_ << " check input layout failed";
+    } else {
+      MS_LOG(ERROR) << name_ << " check input layout failed";
+    }
     return FAILED;
   }
   return SUCCESS;
@@ -112,7 +116,11 @@ Status SelfDefineShardInfo::CheckInputLayout() {
 
 Status SelfDefineShardInfo::CheckOutputLayout() {
   if (CheckLayout(outputs_shape_new_, outputs_tensor_info_new_, "output") != SUCCESS) {
-    MS_LOG(ERROR) << name_ << " check input layout failed";
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << name_ << " check output layout failed";
+    } else {
+      MS_LOG(ERROR) << name_ << " check output layout failed";
+    }
     return FAILED;
   }
   return SUCCESS;
@@ -289,7 +297,11 @@ Status CustomInfo::CheckInputLayout() {
                  << inputs_tensor_info_new_.size() << ". They are not equal, which means that scalar in it";
   }
   if (CheckLayout(inputs_shape_new_, inputs_tensor_info_new_, "input") != SUCCESS) {
-    MS_LOG(ERROR) << name_ << " check input layout failed";
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << name_ << " check input layout failed";
+    } else {
+      MS_LOG(ERROR) << name_ << " check input layout failed";
+    }
     return FAILED;
   }
   return SUCCESS;

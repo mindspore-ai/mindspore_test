@@ -48,8 +48,13 @@ Status TrilInfo::CheckStrategy(const StrategyPtr &strategy) {
 
 Status TrilInfo::CheckInputLayout() {
   if (inputs_tensor_info_.size() != kSizeOne) {
-    MS_LOG(ERROR) << "The size of input_tensor_layout for " << name_ << " is " << inputs_tensor_info_.size()
-                  << " rather than 1.";
+    if (is_in_layout_propagation_) {
+      MS_LOG(INFO) << "The size of input_tensor_layout for " << name_ << " is " << inputs_tensor_info_.size()
+                   << " rather than 1.";
+    } else {
+      MS_LOG(ERROR) << "The size of input_tensor_layout for " << name_ << " is " << inputs_tensor_info_.size()
+                    << " rather than 1.";
+    }
     return FAILED;
   }
   constexpr size_t smallest_layout_len = 2;
@@ -57,8 +62,13 @@ Status TrilInfo::CheckInputLayout() {
   auto input_layout0 = inputs_tensor_info_[kIndex0].tensor_layout();
   auto layout_value = input_layout0.device_arrangement_origin().array();
   if (layout_value.size() < smallest_layout_len || layout_value.size() > max_layout_len) {
-    MS_LOG(ERROR) << name_ << ": The layout value size must be greater than 2 and less than 7"
-                  << ", but got " << layout_value.size();
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << name_ << ": The layout value size must be greater than 2 and less than 7"
+                      << ", but got " << layout_value.size();
+    } else {
+      MS_LOG(ERROR) << name_ << ": The layout value size must be greater than 2 and less than 7"
+                    << ", but got " << layout_value.size();
+    }
     return FAILED;
   }
 
