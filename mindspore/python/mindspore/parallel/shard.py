@@ -284,7 +284,7 @@ class Shard(Shard_):
         self._set_param_layout_into_parameter(fn, parameter_plan)
 
         def shard_fn(*args):
-            @ms.common.jit(hash_args=fn)
+            @ms.common.jit(hash_args=fn, backend="ms_backend")
             def after_shard(*args):
                 return shard_(fn, in_strategy, out_strategy, device, level)(*args)
 

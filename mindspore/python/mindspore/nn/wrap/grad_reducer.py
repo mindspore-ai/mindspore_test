@@ -429,7 +429,7 @@ class DistributedGradReducer(Cell):
         self.mode = context.get_context("mode")
         self.enable_tuple_broaden = True
 
-    @jit
+    @jit(backend="ms_backend")
     def construct(self, grads):
         """
         Under certain circumstances, the data precision of grads could be mixed with float16 and float32. Thus, the
