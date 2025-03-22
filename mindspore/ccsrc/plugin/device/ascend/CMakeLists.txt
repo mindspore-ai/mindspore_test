@@ -82,6 +82,7 @@ target_link_libraries(mindspore_ascend PRIVATE mindspore_backend_common mindspor
                       mindspore_ops_kernel_common mindspore_ops_ascend mindspore_profiler mindspore_runtime_pipeline
                       mindspore_ms_backend)
 target_link_libraries(mindspore_ascend PRIVATE mindspore_ascend_res_manager)
+target_link_libraries(mindspore_ascend PRIVATE mindspore_res_manager)
 target_link_libraries(mindspore_ascend PRIVATE -Wl,--no-as-needed mindspore_pyboost -Wl,--as-needed)
 target_link_libraries(mindspore_ascend PRIVATE proto_input mindspore::protobuf)
 target_link_libraries(mindspore_ascend PRIVATE securec d_collective)

@@ -15,6 +15,7 @@
  */
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/rms_norm_quant_fusion.h"
 
+#include <cstring>
 #include <vector>
 #include <string>
 #include <utility>
@@ -30,12 +31,21 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "plugin/device/ascend/optimizer/ir_fusion_infer/inference_weight_preprocess_utils.h"
 
 namespace mindspore {
 namespace opt {
-std::vector<std::string> RmsNormQuantFusion::MustExistPrimitiveName() const {
-  std::vector<std::string> ret{prim::kPrimRmsNorm->name(), prim::kPrimAdd->name(), prim::kPrimQuantV2->name()};
-  return ret;
+template <typename T>
+std::shared_ptr<ValueNode> CreateZeroTensor(const ShapeVector &gamma_shape, TypeId gamma_type) {
+  tensor::TensorPtr assist_tensor = std::make_shared<tensor::Tensor>(gamma_type, gamma_shape);
+  TensorTypePtr tensor_type = std::make_shared<TensorType>(TypeIdToType(gamma_type));
+  T *dst_data_t = reinterpret_cast<T *>(assist_tensor->data_c());
+  const auto data_size = sizeof(T);
+  auto set_ret = memset_s(dst_data_t, gamma_shape[0] * data_size, 0, gamma_shape[0] * data_size);
+  if (set_ret != EOK) {
+    MS_LOG(EXCEPTION) << "Failed to set tensor to zeros.";
+  }
+  return CreateValueNode(assist_tensor, tensor_type);
 }
 
 inline bool IsZero(const BaseRef &n) {
@@ -53,20 +63,6 @@ inline bool IsZero(const BaseRef &n) {
   }
 
   return false;
-}
-
-const BaseRef RmsNormQuantFusion::DefinePattern() const {
-  auto index0 = std::make_shared<CondVar>(IsConstant);
-  auto rms_norm = VectorRef({prim::kPrimRmsNorm, x1_, gamma_, eps_});
-
-  auto tuple_get_item_0 = VectorRef({prim::kPrimTupleGetItem, rms_norm, index0});
-  auto add = VectorRef({prim::kPrimAdd, tuple_get_item_0, beta0_});
-
-  auto sqrt_mode0 = std::make_shared<CondVar>(IsConstant);      // not used
-  auto rounding_mode0 = std::make_shared<CondVar>(IsConstant);  // not used
-  auto dst_type0 = std::make_shared<CondVar>(IsConstant);       // not used
-  auto quant = VectorRef({prim::kPrimQuantV2, add, scale0_, offset0_, sqrt_mode0, rounding_mode0, dst_type0});
-  return quant;
 }
 
 static bool IsSupport(const FuncGraphPtr &graph, const AnfNodePtr &node, const AnfNodePtr &rms_norm) {
@@ -133,87 +129,6 @@ static bool IsSupport(const FuncGraphPtr &graph, const AnfNodePtr &node, const A
   return true;
 }
 
-static constexpr auto kRmsNormOut2OneAddQuant = 1;
-static constexpr auto kRmsNormOut2TwoAddQuant = 2;
-static constexpr auto kRmsNormOut2OneAddQuantAndOneShape = 3;
-static constexpr auto kRmsNormOut2TwoAddQuantAndOneShape = 4;
-
-// the num of Add is more than kAddNumTwo, or one of the users is not add-quant
-static constexpr auto kUnsupportedTag = 0xffff;
-
-void GetAddAndShapeNum(const FuncGraphPtr &graph,
-                       const std::shared_ptr<std::vector<std::pair<AnfNodePtr, int>>> &rms_norm_out0_users,
-                       size_t *add_num, size_t *shape_num, AnfNodePtr *shape_node) {
-  for (const auto &user : *rms_norm_out0_users) {
-    const auto &user_node = user.first;
-    if (IsPrimitiveCNode(user_node, prim::kPrimAdd)) {
-      auto add_users = GetRealNodeUsedList(graph, user_node);
-      if (add_users->size() != 1) {
-        MS_LOG(INFO) << "RmsNormQuant fuse failed because the user of Add is more than one: " << add_users->size();
-        return;
-      }
-
-      if (!IsPrimitiveCNode(add_users->at(0).first, prim::kPrimQuantV2)) {
-        MS_LOG(INFO) << "RmsNormQuant fuse failed because the user of Add is not Quant: "
-                     << add_users->at(0).first->fullname_with_scope();
-        return;
-      }
-      ++(*add_num);
-    } else if (IsPrimitiveCNode(user_node, prim::kPrimShape)) {
-      ++(*shape_num);
-      *shape_node = user_node;
-    }
-  }
-}
-
-inline size_t GetOpsCaseAfterRmsNorm(const FuncGraphPtr &graph, const AnfNodePtr &rms_norm_out0,
-                                     AnfNodePtr *shape_node) {
-  auto users = GetRealNodeUsedList(graph, rms_norm_out0);
-
-  auto user_num = users->size();
-  size_t add_num = 0;
-  size_t shape_num = 0;
-
-  GetAddAndShapeNum(graph, users, &add_num, &shape_num, shape_node);
-
-  if (user_num == 1) {
-    if (add_num != 1) {
-      MS_LOG(INFO) << "RmsNormQuant fuse failed because the user of RmsNorm is not Add-Quant";
-      return kUnsupportedTag;
-    }
-
-    return kRmsNormOut2OneAddQuant;
-  }
-
-  if (user_num == 2) {
-    if (shape_num == 1 && add_num == 1) {
-      return kRmsNormOut2OneAddQuantAndOneShape;
-    }
-
-    if (add_num == user_num) {
-      return kRmsNormOut2TwoAddQuant;
-    }
-
-    MS_LOG(INFO)
-      << "RmsNormQuant fuse failed because the num of Add and shape in users of RmsNorm is invalid, add_num: "
-      << add_num << ", shape_num: " << shape_num;
-    return kUnsupportedTag;
-  }
-
-  if (user_num == 3) {
-    if (shape_num == 1 && add_num == 2) {
-      return kRmsNormOut2TwoAddQuantAndOneShape;
-    }
-
-    MS_LOG(INFO)
-      << "RmsNormQuant fuse failed because the num of Add and shape in users of RmsNorm is invalid, add_num: "
-      << add_num << ", shape_num: " << shape_num;
-    return kUnsupportedTag;
-  }
-
-  return kUnsupportedTag;
-}
-
 static const AnfNodePtr CreateRmsNormQuantNode(const FuncGraphPtr &graph, const AnfNodePtr &node, const AnfNodePtr &x1,
                                                const AnfNodePtr &gamma, const AnfNodePtr &beta, const AnfNodePtr &scale,
                                                const AnfNodePtr &offset, const AnfNodePtr &eps) {
@@ -239,9 +154,203 @@ static const AnfNodePtr CreateRmsNormQuantNode(const FuncGraphPtr &graph, const 
   return rms_norm_quant;
 }
 
-const AnfNodePtr RmsNormQuantFusion::RmsNormQuantFuseWithOnePath(const FuncGraphPtr &graph, const AnfNodePtr &node,
-                                                                 const EquivPtr &equiv,
-                                                                 const AnfNodePtr &shape_node) const {
+std::vector<std::string> RmsNormQuantFusion::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimRmsNorm->name(), prim::kPrimQuantV2->name()};
+  return ret;
+}
+
+const BaseRef RmsNormQuantFusion::DefinePattern() const {
+  auto index0 = std::make_shared<CondVar>(IsConstant);
+  auto rms_norm = VectorRef({prim::kPrimRmsNorm, x1_, gamma_, eps_});
+
+  auto tuple_get_item_0 = VectorRef({prim::kPrimTupleGetItem, rms_norm, index0});
+
+  auto sqrt_mode0 = std::make_shared<CondVar>(IsConstant);      // not used
+  auto rounding_mode0 = std::make_shared<CondVar>(IsConstant);  // not used
+  auto dst_type0 = std::make_shared<CondVar>(IsConstant);       // not used
+  auto quant =
+    VectorRef({prim::kPrimQuantV2, tuple_get_item_0, scale0_, offset0_, sqrt_mode0, rounding_mode0, dst_type0});
+  return quant;
+}
+
+const AnfNodePtr RmsNormQuantFusion::Process(const FuncGraphPtr &graph, const AnfNodePtr &node,
+                                             const EquivPtr &equiv) const {
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  if (!ms_context->IsEnableInferBoost()) {
+    MS_LOG(INFO) << "Internal op is disabled.";
+    return nullptr;
+  }
+
+  const std::string fusion_op_name = "RmsNormQuant";
+  auto enable_op_list = ms_context->ms_internal_enable_custom_kernel_list();
+  bool enable_add_rmsnorm =
+    (std::find(enable_op_list.begin(), enable_op_list.end(), fusion_op_name) != enable_op_list.end());
+  if (!enable_add_rmsnorm) {
+    MS_LOG(INFO) << "Internal RmsNormQuant is disabled.";
+    return nullptr;
+  }
+
+  auto rms_norm_out0 = common::AnfAlgo::GetInputNode(utils::cast<CNodePtr>(node), 0);
+  auto rms_norm_node = common::AnfAlgo::GetInputNode(utils::cast<CNodePtr>(rms_norm_out0), 0);
+  MS_EXCEPTION_IF_NULL(rms_norm_node);
+
+  if (!IsSupport(graph, node, rms_norm_node)) {
+    MS_LOG(INFO) << "Can't fused to RmsNormQuant because of unsupported case.";
+    return nullptr;
+  }
+
+  auto rms_norm_out0_users = GetRealNodeUsedList(graph, rms_norm_out0);
+  if (rms_norm_out0_users->size() > 1) {
+    MS_LOG(INFO) << "RmsNormQuant fused failed because the number of users of rms_norm_out0 is more than 1: "
+                 << rms_norm_out0_users->size();
+    return nullptr;
+  }
+
+  auto x1 = utils::cast<AnfNodePtr>((*equiv)[x1_]);
+  auto gamma = utils::cast<AnfNodePtr>((*equiv)[gamma_]);
+  auto scale = utils::cast<AnfNodePtr>((*equiv)[scale0_]);
+  auto offset = utils::cast<AnfNodePtr>((*equiv)[offset0_]);
+  auto eps = utils::cast<AnfNodePtr>((*equiv)[eps_]);
+
+  auto kernel_graph = graph->cast<KernelGraphPtr>();
+  MS_EXCEPTION_IF_NULL(kernel_graph);
+
+  TypeId gamma_type = common::AnfAlgo::GetOutputInferDataType(gamma, 0);
+  auto gamma_shape = common::AnfAlgo::GetOutputInferShape(gamma, kIndex0);
+  if (gamma_shape.size() != 1) {
+    MS_LOG(INFO) << "gamma_shape.size():" << gamma_shape.size() << " != 1.";
+    return nullptr;
+  }
+
+  ValueNodePtr beta;
+  if (gamma_type == kNumberTypeFloat16) {
+    beta = CreateZeroTensor<float16>(gamma_shape, gamma_type);
+  } else if (gamma_type == kNumberTypeBFloat16) {
+    beta = CreateZeroTensor<bfloat16>(gamma_shape, gamma_type);
+  } else {
+    MS_LOG(INFO) << "gamma_type:" << TypeIdToString(gamma_type) << " != kNumberTypeFloat16 && != kNumberTypeBFloat16.";
+    return nullptr;
+  }
+  if (!beta) {
+    MS_LOG(INFO) << "beta is nullptr.";
+    return nullptr;
+  }
+  kernel_graph->AddValueNodeToGraph(beta);
+
+  auto rms_norm_quant = CreateRmsNormQuantNode(graph, node, x1, gamma, beta, scale, offset, eps);
+  if (rms_norm_quant != nullptr) {
+    MS_LOG(INFO) << "RmsNormQuant fused successfully.";
+  } else {
+    MS_LOG(INFO) << "RmsNormQuant fused failed.";
+  }
+
+  return rms_norm_quant;
+}
+
+std::vector<std::string> RmsNormAddQuantFusion::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimRmsNorm->name(), prim::kPrimAdd->name(), prim::kPrimQuantV2->name()};
+  return ret;
+}
+
+const BaseRef RmsNormAddQuantFusion::DefinePattern() const {
+  auto index0 = std::make_shared<CondVar>(IsConstant);
+  auto rms_norm = VectorRef({prim::kPrimRmsNorm, x1_, gamma_, eps_});
+
+  auto tuple_get_item_0 = VectorRef({prim::kPrimTupleGetItem, rms_norm, index0});
+  auto add = VectorRef({prim::kPrimAdd, tuple_get_item_0, beta0_});
+
+  auto sqrt_mode0 = std::make_shared<CondVar>(IsConstant);      // not used
+  auto rounding_mode0 = std::make_shared<CondVar>(IsConstant);  // not used
+  auto dst_type0 = std::make_shared<CondVar>(IsConstant);       // not used
+  auto quant = VectorRef({prim::kPrimQuantV2, add, scale0_, offset0_, sqrt_mode0, rounding_mode0, dst_type0});
+  return quant;
+}
+
+static constexpr auto kRmsNormOut2OneAddQuant = 1;
+static constexpr auto kRmsNormOut2TwoAddQuant = 2;
+static constexpr auto kRmsNormOut2OneAddQuantAndOneShape = 3;
+static constexpr auto kRmsNormOut2TwoAddQuantAndOneShape = 4;
+
+// the num of Add is more than kAddNumTwo, or one of the users is not add-quant
+static constexpr auto kUnsupportedTag = 0xffff;
+
+void GetAddAndShapeNum(const FuncGraphPtr &graph,
+                       const std::shared_ptr<std::vector<std::pair<AnfNodePtr, int>>> &rms_norm_out0_users,
+                       size_t *add_num, size_t *shape_num, AnfNodePtr *shape_node) {
+  for (const auto &user : *rms_norm_out0_users) {
+    const auto &user_node = user.first;
+    if (IsPrimitiveCNode(user_node, prim::kPrimAdd)) {
+      auto add_users = GetRealNodeUsedList(graph, user_node);
+      if (add_users->size() != 1) {
+        MS_LOG(INFO) << "RmsNormAddQuant fuse failed because the user of Add is more than one: " << add_users->size();
+        return;
+      }
+
+      if (!IsPrimitiveCNode(add_users->at(0).first, prim::kPrimQuantV2)) {
+        MS_LOG(INFO) << "RmsNormAddQuant fuse failed because the user of Add is not Quant: "
+                     << add_users->at(0).first->fullname_with_scope();
+        return;
+      }
+      ++(*add_num);
+    } else if (IsPrimitiveCNode(user_node, prim::kPrimShape)) {
+      ++(*shape_num);
+      *shape_node = user_node;
+    }
+  }
+}
+
+inline size_t GetOpsCaseAfterRmsNorm(const FuncGraphPtr &graph, const AnfNodePtr &rms_norm_out0,
+                                     AnfNodePtr *shape_node) {
+  auto users = GetRealNodeUsedList(graph, rms_norm_out0);
+
+  auto user_num = users->size();
+  size_t add_num = 0;
+  size_t shape_num = 0;
+
+  GetAddAndShapeNum(graph, users, &add_num, &shape_num, shape_node);
+
+  if (user_num == 1) {
+    if (add_num != 1) {
+      MS_LOG(INFO) << "RmsNormAddQuant fuse failed because the user of RmsNorm is not Add-Quant";
+      return kUnsupportedTag;
+    }
+
+    return kRmsNormOut2OneAddQuant;
+  }
+
+  if (user_num == 2) {
+    if (shape_num == 1 && add_num == 1) {
+      return kRmsNormOut2OneAddQuantAndOneShape;
+    }
+
+    if (add_num == user_num) {
+      return kRmsNormOut2TwoAddQuant;
+    }
+
+    MS_LOG(INFO)
+      << "RmsNormAddQuant fuse failed because the num of Add and shape in users of RmsNorm is invalid, add_num: "
+      << add_num << ", shape_num: " << shape_num;
+    return kUnsupportedTag;
+  }
+
+  if (user_num == 3) {
+    if (shape_num == 1 && add_num == 2) {
+      return kRmsNormOut2TwoAddQuantAndOneShape;
+    }
+
+    MS_LOG(INFO)
+      << "RmsNormAddQuant fuse failed because the num of Add and shape in users of RmsNorm is invalid, add_num: "
+      << add_num << ", shape_num: " << shape_num;
+    return kUnsupportedTag;
+  }
+
+  return kUnsupportedTag;
+}
+
+const AnfNodePtr RmsNormAddQuantFusion::RmsNormQuantFuseWithOnePath(const FuncGraphPtr &graph, const AnfNodePtr &node,
+                                                                    const EquivPtr &equiv,
+                                                                    const AnfNodePtr &shape_node) const {
   auto x1 = utils::cast<AnfNodePtr>((*equiv)[x1_]);
   auto gamma = utils::cast<AnfNodePtr>((*equiv)[gamma_]);
   auto beta = utils::cast<AnfNodePtr>((*equiv)[beta0_]);
@@ -253,7 +362,7 @@ const AnfNodePtr RmsNormQuantFusion::RmsNormQuantFuseWithOnePath(const FuncGraph
   if (shape_node != nullptr) {
     shape_input_node = common::AnfAlgo::GetInputNode(utils::cast<CNodePtr>(shape_node), 0);
     if (shape_input_node == nullptr) {
-      MS_LOG(INFO) << "RmsNormQuant fused failed because shape_input_node is nullptr";
+      MS_LOG(INFO) << "RmsNormAddQuant fused failed because shape_input_node is nullptr";
       return nullptr;
     }
   }
@@ -364,9 +473,10 @@ inline bool ParameterNotEqual(const std::string &name, const AnfNodePtr &load0, 
   return ValueNotEqual(data_c0, data_c1, size0);
 }
 
-const AnfNodePtr RmsNormQuantFusion::RmsNormQuantFuseWithTwoPath(const FuncGraphPtr &graph, const AnfNodePtr &node,
-                                                                 const EquivPtr &equiv, const AnfNodePtr &rms_norm_out0,
-                                                                 const AnfNodePtr &shape_node) const {
+const AnfNodePtr RmsNormAddQuantFusion::RmsNormQuantFuseWithTwoPath(const FuncGraphPtr &graph, const AnfNodePtr &node,
+                                                                    const EquivPtr &equiv,
+                                                                    const AnfNodePtr &rms_norm_out0,
+                                                                    const AnfNodePtr &shape_node) const {
   auto x1 = utils::cast<AnfNodePtr>((*equiv)[x1_]);
   auto gamma = utils::cast<AnfNodePtr>((*equiv)[gamma_]);
   auto beta0_load = utils::cast<AnfNodePtr>((*equiv)[beta0_]);
@@ -378,7 +488,7 @@ const AnfNodePtr RmsNormQuantFusion::RmsNormQuantFuseWithTwoPath(const FuncGraph
   if (shape_node != nullptr) {
     shape_input_node = common::AnfAlgo::GetInputNode(utils::cast<CNodePtr>(shape_node), 0);
     if (shape_input_node == nullptr) {
-      MS_LOG(INFO) << "RmsNormQuant fused failed because shape_input_node is nullptr";
+      MS_LOG(INFO) << "RmsNormAddQuant fused failed because shape_input_node is nullptr";
       return nullptr;
     }
   }
@@ -404,8 +514,9 @@ const AnfNodePtr RmsNormQuantFusion::RmsNormQuantFuseWithTwoPath(const FuncGraph
     const auto add_node = user.first;
     auto load = common::AnfAlgo::GetInputNode(utils::cast<CNodePtr>(add_node), 1);
     if (!IsPrimitiveCNode(load, prim::kPrimLoad)) {
-      MS_LOG(INFO) << "RmsNormQuant fuse failed because the input node is not load when add-quant number is 2, input: "
-                   << load->DebugString();
+      MS_LOG(INFO)
+        << "RmsNormAddQuant fuse failed because the input node is not load when add-quant number is 2, input: "
+        << load->DebugString();
       return nullptr;
     }
 
@@ -419,7 +530,7 @@ const AnfNodePtr RmsNormQuantFusion::RmsNormQuantFuseWithTwoPath(const FuncGraph
   }
 
   if (ParameterNotEqual("beta", beta0_load, beta1_load)) {
-    MS_LOG(INFO) << "RmsNormQuant fuse failed because the value of beta is not equal.";
+    MS_LOG(INFO) << "RmsNormAddQuant fuse failed because the value of beta is not equal.";
     return nullptr;
   }
 
@@ -435,12 +546,12 @@ const AnfNodePtr RmsNormQuantFusion::RmsNormQuantFuseWithTwoPath(const FuncGraph
   auto offset1 = common::AnfAlgo::GetInputNode(utils::cast<CNodePtr>(quant_node1), kOffsetIdx);
 
   if (ParameterNotEqual("scale", scale0, scale1)) {
-    MS_LOG(INFO) << "RmsNormQuant fuse failed because the value of scale is not equal.";
+    MS_LOG(INFO) << "RmsNormAddQuant fuse failed because the value of scale is not equal.";
     return nullptr;
   }
 
   if (ParameterNotEqual("offset", offset0, offset1)) {
-    MS_LOG(INFO) << "RmsNormQuant fuse failed because the value of offset is not equal.";
+    MS_LOG(INFO) << "RmsNormAddQuant fuse failed because the value of offset is not equal.";
     return nullptr;
   }
 
@@ -456,8 +567,8 @@ const AnfNodePtr RmsNormQuantFusion::RmsNormQuantFuseWithTwoPath(const FuncGraph
   return rms_norm_quant_node;
 }
 
-const AnfNodePtr RmsNormQuantFusion::Process(const FuncGraphPtr &graph, const AnfNodePtr &node,
-                                             const EquivPtr &equiv) const {
+const AnfNodePtr RmsNormAddQuantFusion::Process(const FuncGraphPtr &graph, const AnfNodePtr &node,
+                                                const EquivPtr &equiv) const {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   if (!ms_context->IsEnableInferBoost()) {
@@ -480,7 +591,7 @@ const AnfNodePtr RmsNormQuantFusion::Process(const FuncGraphPtr &graph, const An
   MS_EXCEPTION_IF_NULL(rms_norm_node);
 
   if (!IsSupport(graph, node, rms_norm_node)) {
-    MS_LOG(INFO) << "Can't fused to RmsNormQuant because of unsupported case.";
+    MS_LOG(INFO) << "Can't fused to RmsNormAddQuant because of unsupported case.";
     return nullptr;
   }
 
@@ -496,7 +607,7 @@ const AnfNodePtr RmsNormQuantFusion::Process(const FuncGraphPtr &graph, const An
   }
 
   if (out_node != nullptr) {
-    MS_LOG(INFO) << "RmsNormQuant fused successfully with RmsNorm out case: " << num_of_add_after_rmsnorm;
+    MS_LOG(INFO) << "RmsNormAddQuant fused successfully with RmsNorm out case: " << num_of_add_after_rmsnorm;
   }
 
   return out_node;

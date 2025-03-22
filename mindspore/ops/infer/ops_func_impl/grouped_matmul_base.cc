@@ -105,7 +105,7 @@ void GroupedMatmulBaseFuncImpl::CheckInputAndWeightShapeForSingleOutput(const Pr
 ShapeArray GroupedMatmulBaseFuncImpl::InferShapeForSingleOutput(const PrimitivePtr &primitive,
                                                                 const ShapeArray &x_shapes, const ShapeArray &w_shapes,
                                                                 int64_t group_list_size, int64_t group_type,
-                                                                bool transpose_b) const {
+                                                                bool transpose_b, bool is_int4) const {
   if (MS_UNLIKELY(x_shapes.size() != kIndex1 || w_shapes.size() != kIndex1)) {
     MS_EXCEPTION(ValueError) << "For '" << primitive->name()
                              << "', when split_item is 3. the size of x and weight should both be 1, but got x's size "
@@ -119,6 +119,9 @@ ShapeArray GroupedMatmulBaseFuncImpl::InferShapeForSingleOutput(const PrimitiveP
   auto n = abstract::Shape::kShapeDimAny;
   if (!IsDynamicRank(w_shape)) {
     n = transpose_b ? w_shape[w_shape.size() - kInputIndex2] : w_shape.back();
+    if (is_int4) {
+      n = n << 1;
+    }
   }
 
   std::vector<int64_t> res_shape;
@@ -194,7 +197,16 @@ ShapeArray GroupedMatmulBaseFuncImpl::InferShape(const PrimitivePtr &primitive,
   }
   auto group_list_size = FetchGroupListSize(primitive, input_infos);
   auto transpose_b = GetTransposeValue(input_infos, idxes_.transpose_b);
-  return InferShapeForSingleOutput(primitive, x_shapes, w_shapes, group_list_size, group_type, transpose_b);
+  bool is_int4 = false;
+  if (MS_LIKELY(input_infos[idxes_.weight]->IsSequence())) {
+    const auto &w_tensors = input_infos[idxes_.weight]->GetSequenceElements();
+    MS_ASSERT(w_tensors.size() > 0);
+    is_int4 = w_tensors[0]->GetType() == kNumberTypeInt4;
+  } else {
+    is_int4 = input_infos[idxes_.weight]->GetType() == kNumberTypeInt4;
+  }
+
+  return InferShapeForSingleOutput(primitive, x_shapes, w_shapes, group_list_size, group_type, transpose_b, is_int4);
 }
 
 bool GroupedMatmulBaseFuncImpl::EnableInternal(const std::string &op_name) const {

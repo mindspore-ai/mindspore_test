@@ -59,6 +59,23 @@ std::vector<std::vector<KernelTensor *>> DealWithGroupedMatmulListTensors(const 
 }
 }  // namespace
 
+static inline void UnifyWeightShape(const std::vector<KernelTensor *> &ori_weights,
+                                    std::vector<std::shared_ptr<KernelTensor>> *new_weights_shared_ptr,
+                                    std::vector<KernelTensor *> *new_weights_raw_ptr) {
+  for (const auto &w : ori_weights) {
+    if (w->dtype_id() == kNumberTypeInt4) {
+      auto new_w = std::make_shared<KernelTensor>(*w);
+      auto w_shape = w->GetShapeVector();
+      w_shape.back() *= 2;
+      new_w->SetShapeVector(w_shape);
+      new_weights_shared_ptr->emplace_back(new_w);
+      new_weights_raw_ptr->emplace_back(new_w.get());
+    } else {
+      new_weights_raw_ptr->emplace_back(w);
+    }
+  }
+}
+
 void GroupedMatmulV4Ascend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                              const std::vector<KernelTensor *> &outputs) {
   group_info_ = GetValue<std::vector<int64_t>>(primitive_->GetAttr("group_info"));
@@ -89,7 +106,11 @@ void GroupedMatmulV4Ascend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &
   MS_EXCEPTION_IF_NULL(act_type_tensor);
   act_type_ = act_type_tensor->GetValueWithCheck<int64_t>();
 
-  GetWorkspaceForResize(list_inputs[kInputXIdx], list_inputs[kInputWeightIdx], list_inputs[kInputBiasIdx],
+  std::vector<std::shared_ptr<KernelTensor>> new_weights;
+  std::vector<KernelTensor *> new_weights_raw;
+  UnifyWeightShape(list_inputs[kInputWeightIdx], &new_weights, &new_weights_raw);
+
+  GetWorkspaceForResize(list_inputs[kInputXIdx], new_weights_raw, list_inputs[kInputBiasIdx],
                         list_inputs[kInputScaleIdx], list_inputs[kInputOffsetIdx], list_inputs[kInputAntiquantScaleIdx],
                         list_inputs[kInputAntiquantOffsetIdx], list_inputs[kInputPreTokenScaleIdx], group_list_tensor,
                         list_inputs[kInputActivationInputIdx], list_inputs[kInputActivationQuantScaleIdx],
@@ -103,7 +124,11 @@ bool GroupedMatmulV4Ascend::Launch(const std::vector<KernelTensor *> &inputs,
   MS_EXCEPTION_IF_NULL(stream_ptr);
   auto list_inputs = DealWithGroupedMatmulListTensors(group_info_, start_idxs_, inputs);
   auto group_list_tensor = *(inputs.begin() + start_idxs_[kInputGroupListIdx]);
-  RunOp(stream_ptr, workspace, list_inputs[kInputXIdx], list_inputs[kInputWeightIdx], list_inputs[kInputBiasIdx],
+  std::vector<std::shared_ptr<KernelTensor>> new_weights;
+  std::vector<KernelTensor *> new_weights_raw;
+  UnifyWeightShape(list_inputs[kInputWeightIdx], &new_weights, &new_weights_raw);
+
+  RunOp(stream_ptr, workspace, list_inputs[kInputXIdx], new_weights_raw, list_inputs[kInputBiasIdx],
         list_inputs[kInputScaleIdx], list_inputs[kInputOffsetIdx], list_inputs[kInputAntiquantScaleIdx],
         list_inputs[kInputAntiquantOffsetIdx], list_inputs[kInputPreTokenScaleIdx], group_list_tensor,
         list_inputs[kInputActivationInputIdx], list_inputs[kInputActivationQuantScaleIdx],

@@ -29,11 +29,34 @@ class RmsNormQuantFusion : public PatternProcessPass {
     x1_ = std::make_shared<Var>();
     gamma_ = std::make_shared<Var>();
     eps_ = std::make_shared<Var>();
-    beta0_ = std::make_shared<Var>();
     scale0_ = std::make_shared<Var>();
     offset0_ = std::make_shared<Var>();
   }
   ~RmsNormQuantFusion() override = default;
+  const BaseRef DefinePattern() const override;
+  const AnfNodePtr Process(const FuncGraphPtr &, const AnfNodePtr &, const EquivPtr &) const override;
+
+ private:
+  std::vector<std::string> MustExistPrimitiveName() const override;
+
+  VarPtr x1_;
+  VarPtr gamma_;
+  VarPtr eps_;
+  VarPtr scale0_;
+  VarPtr offset0_;
+};
+
+class RmsNormAddQuantFusion : public PatternProcessPass {
+ public:
+  explicit RmsNormAddQuantFusion(bool multigraph = true) : PatternProcessPass("rms_norm_add_quant_fusion", multigraph) {
+    x1_ = std::make_shared<Var>();
+    gamma_ = std::make_shared<Var>();
+    eps_ = std::make_shared<Var>();
+    beta0_ = std::make_shared<Var>();
+    scale0_ = std::make_shared<Var>();
+    offset0_ = std::make_shared<Var>();
+  }
+  ~RmsNormAddQuantFusion() override = default;
   const BaseRef DefinePattern() const override;
   const AnfNodePtr Process(const FuncGraphPtr &, const AnfNodePtr &, const EquivPtr &) const override;
 
