@@ -224,8 +224,6 @@ class OPS_ASCEND_API SilentChecker {
   KernelTensorPtr p_scalar_ = nullptr;
   KernelTensorPtr dim_ = nullptr;
   KernelTensorPtr keep_dim_ = nullptr;
-  // constants used by aclnnNeTensor to find no-zero values
-  KernelTensorPtr zero_ = nullptr;
 
   // constants used by aclnnSilentCheck and aclnnSilentCheckV2
   KernelTensorPtr c_thresh_l1_ = nullptr;     // for silent check v2 and v3
