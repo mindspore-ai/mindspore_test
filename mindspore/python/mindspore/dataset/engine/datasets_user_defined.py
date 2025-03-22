@@ -18,32 +18,33 @@ You can define your own dataset loading class, and use GeneratorDataset to help 
 After declaring the dataset object, you can further apply dataset operations
 (e.g. filter, skip, concat, map, batch) on it.
 """
+import atexit
 import builtins
 import copy
 import errno
 import itertools
 import math
-import os
-import signal
-import time
-from types import GeneratorType
 import multiprocessing
+import os
+import platform
 import queue
-from functools import partial
+import signal
 import subprocess
 import threading
-import platform
-import psutil
-import numpy as np
+import time
+import weakref
+from functools import partial
+from types import GeneratorType
+
 import dill
+import numpy as np
+import psutil
 
 import mindspore._c_dataengine as cde
-
-from mindspore.common import Tensor
 from mindspore import log as logger
-
-from .datasets import UnionBaseDataset, MappableDataset, Schema, to_list, _PythonMultiprocessing, _check_shm_usage
+from mindspore.common import Tensor
 from . import samplers
+from .datasets import UnionBaseDataset, MappableDataset, Schema, to_list, _PythonMultiprocessing, _check_shm_usage
 from .queue import _SharedQueue
 from .validators import check_generator_dataset, check_numpy_slices_dataset, check_padded_dataset
 from ..core.config import get_enable_shared_mem, get_prefetch_size, get_multiprocessing_timeout_interval, \
@@ -277,6 +278,10 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
                 worker.daemon = True
                 self.need_join = True
                 self.workers.append(worker)
+
+        # Register a termination function using weakref to avoid the object from unable to properly destruct.
+        atexit.register(lambda cleanup: cleanup()() if cleanup() is not None else None,
+                        weakref.WeakMethod(self.terminate))
 
     def terminate(self):
         self._stop_subprocess()
@@ -512,10 +517,6 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
         self.__init__(self.dataset, self.num_worker, self.multi_process, self.max_rowsize)
 
 
-def _subprocess_handle(eof, signum, frame):
-    threading.Thread(target=eof.set()).start()
-
-
 def _ignore_sigint(is_multiprocessing):
     """
     We need to ignore sigint signal here so subprocesses can exit normally and clear.
@@ -546,7 +547,6 @@ def _generator_worker_loop(dataset, idx_queue, result_queue, eof, is_multiproces
 
     if is_multiprocessing:
         result_queue.cancel_join_thread()  # Ensure that the process does not hang when exiting
-        signal.signal(signal.SIGTERM, partial(_subprocess_handle, eof))
 
         # init the random seed and np.random seed for the subprocess
         if get_seed() != 5489:
