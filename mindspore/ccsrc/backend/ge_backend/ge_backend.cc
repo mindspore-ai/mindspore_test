@@ -81,6 +81,7 @@ constexpr size_t kMapTensorKeyIndex = 0;
 constexpr size_t kMapTensorValueIndex = 1;
 constexpr size_t kMapTensorStatusIndex = 2;
 constexpr size_t kGraphInfoSavePrefixLen = 5;
+using KernelWithIndex = session::KernelWithIndex;
 using mindspore::abstract::AbstractFunction;
 using mindspore::abstract::AbstractFunctionPtr;
 using PrimTypePair = std::pair<PrimitivePtr, AbstractFunctionPtr>;
@@ -309,6 +310,62 @@ bool IsControlFlowGraph(const FuncGraphPtr &func_graph) {
   return false;
 }
 
+int64_t GetTupleGetItemOutIndex(const CNodePtr &tuple_get_item) {
+  MS_EXCEPTION_IF_NULL(tuple_get_item);
+  if (tuple_get_item->size() != kTupleGetItemInputSize) {
+    MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Runtime error info:#dmsg#The node tuple_get_item must have 2 inputs!";
+  }
+  auto output_index_value_node = tuple_get_item->input(kInputNodeOutputIndexInTupleGetItem);
+  MS_EXCEPTION_IF_NULL(output_index_value_node);
+  auto value_node = output_index_value_node->cast<ValueNodePtr>();
+  MS_EXCEPTION_IF_NULL(value_node);
+  auto value = value_node->value();
+  MS_EXCEPTION_IF_NULL(value);
+  auto idx = value->isa<Int64Imm>() ? GetValue<int64_t>(value) : GetValue<int>(value);
+  return idx;
+}
+
+KernelWithIndex VisitRealNodeWithNestLevel(const AnfNodePtr &anf_node, size_t index, size_t *nest_level) {
+  MS_EXCEPTION_IF_NULL(anf_node);
+  if (!anf_node->isa<CNode>()) {
+    return {anf_node, index};
+  }
+  auto cnode = anf_node->cast<CNodePtr>();
+  if (common::AnfAlgo::GetCNodeName(cnode) == mindspore::kTupleGetItemOpName) {
+    (*nest_level)++;
+    auto real_node_with_index = VisitRealNodeWithNestLevel(common::AnfAlgo::GetTupleGetItemRealInput(cnode),
+                                                           common::AnfAlgo::GetTupleGetItemOutIndex(cnode), nest_level);
+    auto real_node = real_node_with_index.first;
+    auto real_index = real_node_with_index.second;
+    MS_EXCEPTION_IF_NULL(real_node);
+    if (real_node->isa<CNode>() && common::AnfAlgo::GetCNodeName(real_node) == mindspore::kMakeTupleOpName) {
+      (*nest_level)--;
+      auto make_tuple = real_node->cast<CNodePtr>();
+      return VisitRealNodeWithNestLevel(make_tuple->input(real_index + 1), index, nest_level);
+    }
+    return real_node_with_index;
+  }
+  return common::AnfAlgo::VisitKernelWithReturnType(anf_node, index, false,
+                                                    {prim::kPrimMakeTuple, prim::kPrimTupleGetItem});
+}
+
+bool NeedConvertToRealTupleGetItem(const CNodePtr &cnode) {
+  if (cnode->size() != kTupleGetItemInputSize) {
+    return false;
+  }
+  if (!cnode->input(kInputNodeOutputIndexInTupleGetItem)->isa<ValueNode>() || GetTupleGetItemOutIndex(cnode) < 0) {
+    return true;
+  }
+  size_t nest_level = 0;
+  const size_t nest_limit = 1;
+  auto real_node = VisitRealNodeWithNestLevel(cnode, 0, &nest_level);
+  if (!common::AnfAlgo::IsCallNode(real_node.first) && AnfUtils::IsRealCNodeKernel(real_node.first) &&
+      nest_level > nest_limit) {
+    return true;
+  }
+  return false;
+}
+
 void UnifyIR(const CNodePtr &cnode) {
   MS_EXCEPTION_IF_NULL(cnode);
   static const std::map<std::string, std::string> kOpListToTupleNames = {
@@ -326,6 +383,26 @@ void UnifyIR(const CNodePtr &cnode) {
     MS_LOG(INFO) << "Rename op from " << iter->first << " to " << iter->second << " for op "
                  << cnode->fullname_with_scope() << ", debug name:" << cnode->DebugString();
     op_name = iter->second;
+  }
+
+  // TupleGetItem --> RealTupleGetItem.
+  if (op_name == mindspore::kTupleGetItemOpName && NeedConvertToRealTupleGetItem(cnode)) {
+    common::AnfAlgo::SetNodeAttr(kAttrOpAdaptationProcessed, MakeValue(true), cnode);
+    cnode->set_input(0, mindspore::NewValueNode(std::make_shared<Primitive>(mindspore::kRealTupleGetItemOpName)));
+    // Reset full scope name.
+    cnode->set_fullname_with_scope("");
+    MS_LOG(INFO) << "Rename op from TupleGetItem to RealTupleGetItem for op " << cnode->fullname_with_scope()
+                 << ", debug name:" << cnode->DebugString();
+  }
+
+  // MakeTuple --> RealMakeTuple
+  if (op_name == mindspore::kMakeTupleOpName && common::AnfAlgo::IsDynamicSequence(cnode)) {
+    common::AnfAlgo::SetNodeAttr(kAttrOpAdaptationProcessed, MakeValue(true), cnode);
+    cnode->set_input(0, mindspore::NewValueNode(std::make_shared<Primitive>(mindspore::kRealMakeTupleOpName)));
+    // Reset full scope name.
+    cnode->set_fullname_with_scope("");
+    MS_LOG(INFO) << "Rename op from MakeTuple to RealMakeTuple for op " << cnode->fullname_with_scope()
+                 << ", debug name:" << cnode->DebugString();
   }
 }
 }  // namespace

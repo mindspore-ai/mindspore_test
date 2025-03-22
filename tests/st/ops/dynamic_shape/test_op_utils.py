@@ -818,7 +818,7 @@ def TEST_OP(op, inputs_seq, yaml_name, *, disable_input_check=False, disable_yam
     ignore_output_index = convert_input_args(ignore_output_index)
 
     old_mode = context.get_context("mode")
-    running_mode_map = {'GRAPH_MODE_O0': context.GRAPH_MODE, 'PYNATIVE_MODE': context.PYNATIVE_MODE}
+    running_mode_map = {'PYNATIVE_MODE': context.PYNATIVE_MODE, 'GRAPH_MODE_O0': context.GRAPH_MODE}
     for mode_name, mode in running_mode_map.items():
         if disable_mode is not None and mode_name in disable_mode:
             warning_log(f"{mode_name} is skipped.")
