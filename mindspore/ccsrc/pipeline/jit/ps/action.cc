@@ -2215,9 +2215,9 @@ std::vector<ActionItem> VmPipeline(const ResourcePtr &resource, bool trace_flag,
     if (!pipeline::IsPhaseExport(phase)) {
       (void)actions.emplace_back(std::make_pair(kDistributedSplit, DistributedSplitAction));
     }
-    auto checker = silentcheck::SilentCheckerBase::GetInstance();
-    if (checker != nullptr && checker->IsNpuAsdEnable() &&
-        MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) != kPynativeMode) {
+
+    if (IsEnableSilentCheck()) {
+      // silent check pass, mark nodes which are need for silent check
       (void)actions.emplace_back(std::make_pair(kSilentCheck, SilentCheckAction));
     }
 #endif

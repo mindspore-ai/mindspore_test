@@ -18,6 +18,7 @@
 #include <vector>
 #include <utility>
 #include "pipeline/jit/ps/pass.h"
+#include "pipeline/jit/ps/silent_check.h"
 #include "pipeline/jit/ps/event_message_print.h"
 #include "frontend/optimizer/ad/dfunctor.h"
 #include "frontend/optimizer/ad/prim_bprop_optimizer.h"
@@ -135,6 +136,9 @@ std::vector<PassItem> GetJitPasses(const ResourcePtr &resource, bool build_top_g
     (void)jit_passes.emplace_back(kGetJitBpropGraph, GetJitBpropGraph);
     (void)jit_passes.emplace_back(kRewriterAfterJitBprop, RewriterAfterOptAPassAfterJitBprop);
     (void)jit_passes.emplace_back(kOptAfterJitGrad, OptAfterJitGrad);
+    if (IsEnableSilentCheck()) {
+      (void)jit_passes.emplace_back(kSilentCheck, SilentCheckPass);
+    }
     (void)jit_passes.emplace_back(kValidate, ValidatePass);
   }
 
