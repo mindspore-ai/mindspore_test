@@ -98,7 +98,7 @@ class ProfilerActionController:
         # Handle special case for ProfilerAction.RECORD_AND_SAVE to ProfilerAction.RECORD_AND_SAVE transition
         if start_state == ProfilerAction.RECORD_AND_SAVE and end_state == ProfilerAction.RECORD_AND_SAVE:
             process_action = [self.prof_interface.stop, self.prof_interface.finalize,
-                              self._trace_ready, self.prof_interface.init,
+                              self._trace_ready, self.prof_interface.clear, self.prof_interface.init,
                               self.prof_interface.start]
         else:
             while start_state != end_state:
