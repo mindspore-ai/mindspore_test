@@ -118,6 +118,7 @@ constexpr size_t kInputSizeThree = 3;
 constexpr auto kMatMulOpName = "MatMul";
 constexpr auto kMatMulV2OpName = "MatMulV2";
 constexpr auto kSqueezeOpName = "Squeeze";
+constexpr auto kStridedSliceOpName = "StridedSlice";
 constexpr auto kCustomOpName = "Custom";
 constexpr auto kPromptFlashAttentionOpName = "PromptFlashAttention";
 
@@ -178,9 +179,12 @@ int ConvertAttrToArgsForNode(const AnfNodePtr &node, const FuncGraphManagerPtr &
   }
   const auto &attrs_adjust = kAttrMapNeedAdjust.at(prim_name);
   const auto &origin_attrs = origin_prim->attrs();
-
   auto node_inputs = cnode->inputs();
   auto actual_input_num = node_inputs.size();
+  // skip when attr to arg conversion has been completed.
+  if ((prim_name == kStridedSliceOpName) && ((attrs_adjust.back().second + 1) == actual_input_num)) {
+    return RET_OK;
+  }
   // Pad none for optional input, first input of cnode is Primitive, so an extra none is padded.
   if (attrs_adjust.begin()->second > actual_input_num) {
     auto pad_none_size = attrs_adjust.begin()->second - actual_input_num;
