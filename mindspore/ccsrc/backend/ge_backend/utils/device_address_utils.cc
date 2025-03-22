@@ -529,7 +529,7 @@ bool DeviceAddressUtils::IsContiguousTensor(const tensor::BaseTensorPtr &tensor)
   }
 
   auto new_storage_info = tensor->storage_info();
-  if (old_storage_info->shape == new_storage_info->shape) {
+  if (new_storage_info && old_storage_info->is_contiguous && new_storage_info->is_contiguous) {
     MS_LOG(INFO) << "It is a contiguous tensor, tensor: " << tensor;
     return true;
   }
