@@ -35,13 +35,13 @@ def test_single_if():
             z = x + 1
         else:
             z = y * 3
-        return x - 3, z / x
+        return x - 3, z - x
 
     x = Tensor(5, mstype.int32)
     y = Tensor(7, mstype.int32)
     ret1 = foo(x, y)
     ret2 = foo(y, x)
-    assert ret1 == (Tensor(2, mstype.int32), Tensor(4, mstype.int32))
+    assert ret1 == (Tensor(2, mstype.int32), Tensor(16, mstype.int32))
     assert ret2 == (Tensor(4, mstype.int32), Tensor(1, mstype.int32))
 
 

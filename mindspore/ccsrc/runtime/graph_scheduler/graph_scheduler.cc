@@ -764,10 +764,10 @@ void GraphScheduler::Initialize() {
   }
   if (default_actor_thread_num_ <= kAsyncLaunchThreadNum && EnableRuntimePipeline() &&
       runtime_threads_num == static_cast<uint32_t>(1)) {
-    MS_LOG(WARNING)
-      << "The number of actor threads is only: " << default_actor_thread_num_
-      << ", and pipelined runtime optimization is not enabled, the performance may not reach the optimal level. Please "
-         "increase the value of `runtime_num_threads` in context or not set `runtime_num_threads`.";
+    MS_LOG(WARNING) << "The number of actor threads is only: " << default_actor_thread_num_
+                    << ", and pipelined runtime optimization include the switch inline is not enabled, the performance "
+                       "may not reach the optimal level. Please "
+                       "increase the value of `runtime_num_threads` in context or not set `runtime_num_threads`.";
   }
 
 #ifdef ENABLE_RPC_ACTOR
@@ -1905,6 +1905,19 @@ void CollectRefDeviceTensorForStore(const GraphCompilerInfo &graph_compiler_info
   }
 }
 
+bool IsRootGraphParameter(const AnfNodePtr &input_node, const KernelGraphPtr &graph,
+                          const std::vector<AnfNodePtr> &root_graph_parameters) {
+  if (input_node == nullptr || graph == nullptr) {
+    return false;
+  }
+  const auto &internal_parameter = graph->GetFrontNodeByInternalParameter(input_node);
+  if (internal_parameter.first == nullptr) {
+    return false;
+  }
+  return std::find(root_graph_parameters.begin(), root_graph_parameters.end(), internal_parameter.first) !=
+         root_graph_parameters.end();
+}
+
 void GraphScheduler::BuildGraphParameterStore(const GraphCompilerInfo &graph_compiler_info) {
   std::map<KernelWithIndex, size_t> front_node_position_temp_map;
   ParameterStore &parameterStore = ParameterStore::GetInstance();
@@ -1919,54 +1932,57 @@ void GraphScheduler::BuildGraphParameterStore(const GraphCompilerInfo &graph_com
     for (size_t j = 0; j < input_nodes.size(); j++) {
       const auto &input_node = input_nodes[j];
       MS_EXCEPTION_IF_NULL(input_node);
-      if (IsHostQueueDSActor(input_node, graph, root_parameters, graph_compiler_info.strategy_)) {
-        MS_EXCEPTION_IF_NULL(graph_compiler_info.control_node_parser_);
-        KernelWithIndex front_node_with_index = graph->GetElementInTupleBackendFrontIndexMap(input_node);
-        if (graph_compiler_info.control_node_parser_->IsInited()) {
-          if ((front_node_with_index.first != nullptr) && front_node_with_index.first->isa<Parameter>() &&
-              (find(root_parameters.begin(), root_parameters.end(), front_node_with_index.first) ==
-               root_parameters.end())) {
-            continue;
-          }
-        }
-        if (front_node_with_index.first == nullptr) {
-          front_node_with_index = {AnfAlgo::FetchFrontNodeByBackendNode(input_node, *graph), 0};
-          MS_LOG(DEBUG) << "Init backend input node:" << input_node->DebugString() << " for host data source actor.";
-        }
-        MS_EXCEPTION_IF_NULL(front_node_with_index.first);
-        graph_compiler_info.origin_parameters_to_backend_parameters_[front_node_with_index.first].emplace_back(
-          std::make_pair(front_node_with_index, KernelWithIndex(input_node, 0)));
-
-        auto cur_device_tensor = AnfAlgo::GetMutableOutputAddr(input_node, 0, false);
-        MS_EXCEPTION_IF_NULL(cur_device_tensor);
-        size_t real_outer_idx = cur_graph_parameter_store->GetFrontNodeToIndex(front_node_with_index.first.get());
-        size_t real_inner_idx = front_node_with_index.second;
-        // Record dynamic shape info.
-        auto input_param = input_node->cast<ParameterPtr>();
-        if (input_param == nullptr) {
-          continue;
-        }
-        if (input_param->has_dynamic_shape()) {
-          cur_graph_parameter_store->SetIsPositionDynamic(real_outer_idx, real_inner_idx, true);
-        }
-
-        auto cur_device_type = cur_device_tensor->GetDeviceType();
-        if (front_node_position_temp_map.count(front_node_with_index) > 0 &&
-            !cur_graph_parameter_store->CheckDeviceTensorHeter(real_outer_idx, real_inner_idx, cur_device_type)) {
-          continue;
-        }
-
-        // The device tensor is not hold by runtime.
-        if (cur_device_tensor->GetPtr() != nullptr) {
-          continue;
-        }
-
-        (void)cur_graph_parameter_store->Push(real_outer_idx, real_inner_idx, cur_device_tensor, cur_device_type, 0);
-        MS_LOG(DEBUG) << "Build graph parameter :" << input_node->DebugString()
-                      << " for front node:" << front_node_with_index.first->DebugString()
-                      << " index:" << front_node_with_index.second << " position:" << real_outer_idx;
-        (void)front_node_position_temp_map.emplace(front_node_with_index, real_outer_idx);
+      if (!IsHostQueueDSActor(input_node, graph, root_parameters, graph_compiler_info.strategy_) &&
+          !IsRootGraphParameter(input_node, graph, root_parameters)) {
+        continue;
       }
+      MS_EXCEPTION_IF_NULL(graph_compiler_info.control_node_parser_);
+      KernelWithIndex front_node_with_index = graph->GetElementInTupleBackendFrontIndexMap(input_node);
+      if (graph_compiler_info.control_node_parser_->IsInited()) {
+        if ((front_node_with_index.first != nullptr) && front_node_with_index.first->isa<Parameter>() &&
+            (find(root_parameters.begin(), root_parameters.end(), front_node_with_index.first) ==
+             root_parameters.end())) {
+          continue;
+        }
+      }
+      if (front_node_with_index.first == nullptr) {
+        front_node_with_index = {AnfAlgo::FetchFrontNodeByBackendNode(input_node, *graph), 0};
+        MS_LOG(DEBUG) << "Init backend input node:" << input_node->DebugString() << " for host data source actor.";
+      }
+      MS_EXCEPTION_IF_NULL(front_node_with_index.first);
+      graph_compiler_info.origin_parameters_to_backend_parameters_[front_node_with_index.first].emplace_back(
+        std::make_pair(front_node_with_index, KernelWithIndex(input_node, 0)));
+
+      auto cur_device_tensor = AnfAlgo::GetMutableOutputAddr(input_node, 0, false);
+      MS_EXCEPTION_IF_NULL(cur_device_tensor);
+      size_t real_outer_idx = cur_graph_parameter_store->GetFrontNodeToIndex(front_node_with_index.first.get());
+      size_t real_inner_idx = front_node_with_index.second;
+      // Record dynamic shape info.
+      auto input_param = input_node->cast<ParameterPtr>();
+      if (input_param == nullptr) {
+        continue;
+      }
+      if (input_param->has_dynamic_shape()) {
+        cur_graph_parameter_store->SetIsPositionDynamic(real_outer_idx, real_inner_idx, true);
+      }
+
+      auto cur_device_type = cur_device_tensor->GetDeviceType();
+      if (front_node_position_temp_map.count(front_node_with_index) > 0 &&
+          !cur_graph_parameter_store->CheckDeviceTensorHeter(real_outer_idx, real_inner_idx, cur_device_type)) {
+        continue;
+      }
+
+      // The device tensor is not hold by runtime.
+      if (cur_device_tensor->GetPtr() != nullptr) {
+        continue;
+      }
+
+      (void)cur_graph_parameter_store->Push(real_outer_idx, real_inner_idx, cur_device_tensor, cur_device_type, 0);
+      MS_LOG(DEBUG) << "Build graph parameter :" << input_node->DebugString()
+                    << " for front node:" << front_node_with_index.first->DebugString()
+                    << " index:" << front_node_with_index.second << " position:" << real_outer_idx
+                    << " device tensor:" << cur_device_tensor->PrintInfo();
+      (void)front_node_position_temp_map.emplace(front_node_with_index, real_outer_idx);
     }
   }
   CollectRefDeviceTensorForStore(graph_compiler_info);
