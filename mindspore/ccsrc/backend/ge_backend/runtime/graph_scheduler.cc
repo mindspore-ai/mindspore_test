@@ -176,13 +176,6 @@ void ClearNodeInfo(const KernelGraphPtr &graph) {
   }
 }
 
-#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
-void IntHandler(int, siginfo_t *, void *) {
-  int this_pid = getpid();
-  MS_LOG(WARNING) << "Process " << this_pid << " receive KeyboardInterrupt signal.";
-  (void)kill(this_pid, SIGTERM);
-}
-#endif
 }  // namespace
 
 GraphScheduler &GraphScheduler::GetInstance() noexcept {
@@ -447,7 +440,9 @@ void GraphScheduler::Run(ActorSet *const actor_set, const std::vector<std::vecto
   MS_EXCEPTION_IF_NULL(actor_set);
   MS_EXCEPTION_IF_NULL(actor_set->data_prepare_actor_);
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
-  SignalGuard sg(IntHandler);
+  if (!RegisterGlobalSignalHandler(DefaultIntHandler)) {
+    MS_EXCEPTION(RuntimeError) << "Failed to register the callback signal handling.";
+  }
 #endif
 
   // Create recorder actor in the running to support the profiler in callback scene.

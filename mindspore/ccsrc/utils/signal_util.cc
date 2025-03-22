@@ -43,4 +43,34 @@ void SignalGuard::RegisterHandlers(IntHandlerFunc IntHandler) {
   int_action.sa_flags = SA_RESTART | SA_SIGINFO;
   (void)sigaction(SIGINT, &int_action, nullptr);
 }
+
+bool RegisterGlobalSignalHandler(IntHandlerFunc handler) {
+  struct sigaction int_action;
+  struct sigaction old_int_action;
+
+  MS_LOG(WARNING) << "MSCONTEXT_REGISTER_INIT_FUNC register int handler";
+  if (sigaction(SIGINT, nullptr, &old_int_action) == -1) {
+    MS_LOG(ERROR) << "Failed to retrieve current SIGINT handler";
+    return false;
+  }
+  if (old_int_action.sa_sigaction != nullptr) {
+    MS_LOG(WARNING) << "The signal has been registered";
+  }
+
+  int_action.sa_sigaction = handler;
+  (void)sigemptyset(&int_action.sa_mask);
+  int_action.sa_flags = SA_RESTART | SA_SIGINFO;
+
+  if (sigaction(SIGINT, &int_action, nullptr) == -1) {
+    MS_LOG(ERROR) << "Failed to register SIGINT handler";
+    return false;
+  }
+  return true;
+}
+
+void DefaultIntHandler(int, siginfo_t *, void *) {
+  int this_pid = getpid();
+  MS_LOG(WARNING) << "Process " << this_pid << " receive the KeyboardInterrupt signal.";
+  (void)kill(this_pid, SIGTERM);
+}
 }  // namespace mindspore
