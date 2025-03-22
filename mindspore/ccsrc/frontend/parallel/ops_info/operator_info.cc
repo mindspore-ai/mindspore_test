@@ -3378,8 +3378,9 @@ Dimensions ConvertLayoutToDemensions(const Shape &dev_matrix, const std::vector<
   return dimens;
 }
 
-Status OperatorInfo::AddSwcUnderPrevOpDevMatrix(const Shape &prev_op_dev_matrix,
-                                                const std::vector<Shape> &prev_op_tensor_map, size_t layout_index) {
+Status OperatorInfo::AddSwcUnderPrevOpDevMatrixSingle(const Shape &prev_op_dev_matrix,
+                                                      const std::vector<Shape> &prev_op_tensor_map,
+                                                      size_t layout_index) {
   if (prev_op_dev_matrix.empty()) {
     MS_LOG(WARNING) << "Layout propagation prev_op_dev_matrix is empty";
     return FAILED;
@@ -3453,5 +3454,145 @@ std::vector<std::shared_ptr<TensorLayout>> OperatorInfo::InferLayoutsByStrategy(
   }
   return in_layouts;
 }
+
+bool OperatorInfo::CheckPrevOpStatus(const Shape &prev_op_dev_matrix, const std::vector<Shape> &prev_op_tensor_map,
+                                     size_t layout_index) {
+  if (prev_op_dev_matrix.empty()) {
+    MS_LOG(WARNING) << "Layout propagation prev_op_dev_matrix is empty";
+    return false;
+  }
+  if (inputs_shape_.size() <= layout_index) {
+    MS_LOG(WARNING) << "layout_index is illegal:" << layout_index
+                    << " while inputs_shape_ size:" << inputs_shape_.size();
+    return false;
+  }
+  if (inputs_shape_[layout_index].size() != prev_op_tensor_map.size()) {
+    MS_LOG(WARNING) << "prev_op_tensor_map is illegal";
+    return false;
+  }
+
+  return true;
+}
+
+bool OperatorInfo::StrategyMatchTensorMap(const StrategyPtr &strategy_ptr,
+                                          const std::vector<std::vector<Shape>> &prev_op_tensor_maps) {
+  for (size_t i = 0; i < prev_op_tensor_maps.size(); i++) {
+    if (strategy_ptr->GetInputDim()[i] != ConvertLayoutToDemensions(dev_matrix_shape_, prev_op_tensor_maps[i])) {
+      return false;
+    }
+  }
+  return true;
+}
+
+Status OperatorInfo::AddSwcUnderPrevOpDevMatrixMulti() {
+  std::vector<Shape> prev_op_dev_matrixs;
+  std::vector<std::vector<Shape>> prev_op_tensor_maps(inputs_shape_.size());
+
+  auto it = visited_edges_.begin();
+  const auto &prev_operator_first = (*it)->prev_operator();
+  const Shape &dev_matrix_first = prev_operator_first->out_dev_matrix_shape();
+  size_t layout_index_first = (*it)->next_op_input_index();
+
+  if (prev_operator_first->outputs_tensor_map_before().empty()) {
+    MS_LOG(WARNING) << "Add swcs under device matrix failed, prev_op_tensor_map empty, op: "
+                    << prev_operator_first->name();
+    return FAILED;
+  }
+  const std::vector<Shape> prev_op_tensor_map_first =
+    prev_operator_first->outputs_tensor_map_before()[(*it)->prev_op_output_index()];
+  if (!CheckPrevOpStatus(dev_matrix_first, prev_op_tensor_map_first, layout_index_first)) {
+    return FAILED;
+  }
+  prev_op_tensor_maps[layout_index_first] = prev_op_tensor_map_first;
+  it++;
+
+  while (it != visited_edges_.end()) {
+    const auto &prev_operator = (*it)->prev_operator();
+    const Shape &dev_matrix = prev_operator->out_dev_matrix_shape();
+    size_t layout_index = (*it)->next_op_input_index();
+
+    if (dev_matrix != dev_matrix_first) {
+      MS_LOG(WARNING) << "Add swcs under device matrix failed, prev ops dev_matrix inconsistent, op: "
+                      << prev_operator->name();
+      return FAILED;
+    }
+
+    if (prev_operator->outputs_tensor_map_before().empty()) {
+      MS_LOG(WARNING) << "Add swcs under device matrix failed, prev_op_tensor_map empty, op: " << prev_operator->name();
+      return FAILED;
+    }
+
+    const std::vector<Shape> prev_op_tensor_map =
+      prev_operator->outputs_tensor_map_before()[(*it)->prev_op_output_index()];
+    if (!CheckPrevOpStatus(dev_matrix, prev_op_tensor_map, layout_index)) {
+      return FAILED;
+    }
+    prev_op_tensor_maps[layout_index] = prev_op_tensor_map;
+    it++;
+  }
+
+  if (strategy_cost_.empty()) {
+    return SUCCESS;
+  }
+
+  dev_matrix_shape_ = dev_matrix_first;
+  std::vector<StrategyPtr> strategy_ptrs;
+  (void)std::transform(strategy_cost_.begin(), strategy_cost_.end(), std::back_inserter(strategy_ptrs),
+                       [](const auto &swc) { return swc->strategy_ptr; });
+  size_t add_cnt = 0;
+  for (const auto &strategy_ptr : strategy_ptrs) {
+    if (!StrategyMatchTensorMap(strategy_ptr, prev_op_tensor_maps)) {
+      continue;
+    }
+
+    MS_LOG(INFO) << "Add swcs under device matrix find valid strategy: " << strategy_ptr->ToString();
+
+    std::vector<std::shared_ptr<TensorLayout>> in_tensor_layouts =
+      InferLayoutsByStrategy(strategy_ptr, prev_op_tensor_maps);
+    if (in_tensor_layouts.empty()) {
+      continue;
+    }
+    auto out_tensor_layouts = std::vector<std::shared_ptr<TensorLayout>>();
+    if (SetCostUnderLayout(strategy_ptr, nullptr, in_tensor_layouts, out_tensor_layouts) != SUCCESS) {
+      MS_LOG(WARNING) << "Failure: operator " << name_ << " SetCostUnderLayout failed";
+      return FAILED;
+    }
+    add_cnt++;
+  }
+  MS_LOG(INFO) << name_ << " add " << add_cnt << " swcs.";
+  return SUCCESS;
+}
+
+std::vector<std::shared_ptr<TensorLayout>> OperatorInfo::InferLayoutsByStrategy(
+  const StrategyPtr &strategy_ptr, const std::vector<std::vector<Shape>> &prev_op_tensor_maps) {
+  std::vector<std::shared_ptr<TensorLayout>> in_layouts;
+  Strategies inputs = strategy_ptr->GetInputDim();
+
+  for (size_t i = 0; i < inputs.size(); i++) {
+    auto in_layout = std::make_shared<TensorLayout>();
+    std::vector<Shape> tensor_map;
+    if (!inputs[i].empty()) {
+      tensor_map = prev_op_tensor_maps[i];
+    }
+
+    if (in_layout->InitFromExtendVector(dev_matrix_shape_, tensor_map, inputs_shape_[i]) != SUCCESS) {
+      MS_LOG(WARNING) << "InferLayoutsByStrategy failed.";
+      return std::vector<std::shared_ptr<TensorLayout>>();
+    }
+    in_layouts.push_back(in_layout);
+    MS_LOG(INFO) << "InferLayoutsByStrategy in_layout: " << in_layout->ToString();
+  }
+  return in_layouts;
+}
+
+void OperatorInfo::InitVisitedEdges() {
+  for (auto &edge : visited_edges_) {
+    if (edge->InitEdgeCost() != SUCCESS) {
+      MS_LOG(EXCEPTION) << "Edge cost initialization failed.";
+    }
+  }
+  return;
+}
+
 }  // namespace parallel
 }  // namespace mindspore

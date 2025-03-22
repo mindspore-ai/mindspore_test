@@ -482,11 +482,20 @@ class OperatorInfo {
   void LayoutPropagationBegin() { is_in_layout_propagation_ = true; }
   void LayoutPropagationEnd() { is_in_layout_propagation_ = false; }
 
-  Status AddSwcUnderPrevOpDevMatrix(const Shape &prev_op_dev_matrix, const std::vector<Shape> &prev_op_tensor_map,
-                                    size_t layout_index);
+  Status AddSwcUnderPrevOpDevMatrixSingle(const Shape &prev_op_dev_matrix, const std::vector<Shape> &prev_op_tensor_map,
+                                          size_t layout_index);
   std::vector<std::shared_ptr<TensorLayout>> InferLayoutsByStrategy(const StrategyPtr &strategy_ptr,
                                                                     const std::vector<Shape> &prev_op_tensor_map,
                                                                     size_t layout_index);
+
+  bool StrategyMatchTensorMap(const StrategyPtr &strategy_ptr,
+                              const std::vector<std::vector<Shape>> &prev_op_tensor_maps);
+  Status AddSwcUnderPrevOpDevMatrixMulti();
+  bool CheckPrevOpStatus(const Shape &prev_op_dev_matrix, const std::vector<Shape> &prev_op_tensor_map,
+                         size_t layout_index);
+  std::vector<std::shared_ptr<TensorLayout>> InferLayoutsByStrategy(
+    const StrategyPtr &strategy_ptr, const std::vector<std::vector<Shape>> &prev_op_tensor_maps);
+  void InitVisitedEdges();
 
   TensorRedistributionPtr CreateTensorRedistribution(bool construct_op_flag = true, bool keep_reshape = false) {
     if (this->tensor_redistribution_ != nullptr) {
