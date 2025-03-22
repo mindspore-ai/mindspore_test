@@ -90,7 +90,7 @@ void MemorySwapActor::AllocDeviceContinuousMem(const std::vector<DeviceTensor *>
       device_tensors[i]->set_ptr(device_ptrs[i]);
     }
     device_tensors[i]->set_from_mem_pool(true);
-    device_tensors[i]->IncreaseNewRefCount();
+    device_tensors[i]->IncreaseNewRefCount(GetAID().Name());
   }
 }
 

@@ -243,7 +243,7 @@ void CopyActor::IncreaseNewRefCounts(OpContext<DeviceTensor> *const context) {
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info.str());
   }
   for (size_t i = 0; i < output_data_arrows_.size() - output_free_size_; ++i) {
-    output_device_tensor_[0]->IncreaseNewRefCount();
+    output_device_tensor_[0]->IncreaseNewRefCount(GetAID().Name());
     MS_LOG(DEBUG) << "Increase new ref count for device address:" << output_device_tensor_[0]->PrintInfo()
                   << " in actor:" << GetAID();
   }

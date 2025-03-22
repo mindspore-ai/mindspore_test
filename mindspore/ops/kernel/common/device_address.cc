@@ -247,14 +247,14 @@ size_t DeviceAddress::IncreaseCounter() { return address_common_->pointer_ref_co
 
 size_t DeviceAddress::DecreaseCounter() { return address_common_->pointer_ref_count_->DecreaseCounter(); }
 
-void DeviceAddress::IncreaseNewRefCount(size_t i) {
+void DeviceAddress::IncreaseNewRefCount(const std::string &op_name, size_t i) {
   address_common_->pointer_ref_count_->IncreaseNewRefCount(i);
-  MS_LOG(DEBUG) << "Increase new ref count for device address:" << PrintInfo();
+  MS_LOG(DEBUG) << "Op:" << op_name << " increase new ref count for device address:" << PrintInfo();
 }
 
-size_t DeviceAddress::DecreaseNewRefCount() {
+size_t DeviceAddress::DecreaseNewRefCount(const std::string &op_name) {
   size_t ref_count = address_common_->pointer_ref_count_->DecreaseNewRefCount();
-  MS_LOG(DEBUG) << "Decrease new ref count for device address:" << PrintInfo();
+  MS_LOG(DEBUG) << "Op:" << op_name << " decrease new ref count for device address:" << PrintInfo();
   return ref_count;
 }
 

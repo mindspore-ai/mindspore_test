@@ -141,7 +141,7 @@ void OutputActor::FreeSummaryNodeMem() {
 }
 
 void OutputActor::ClearOutputCache() {
-  output_node_to_tensor_device_address_.clear();
+  old_to_new_device_address_.clear();
   outputs_.clear();
   outputs_.resize(outputs_num_);
   output_nodes_.clear();
@@ -179,8 +179,8 @@ void OutputActor::FetchParameterInput(OpContext<DeviceTensor> *const context) {
     auto &device_context = device_contexts_[output_position];
     auto device_tensor = FetchParameter(parameter_index.second, context, device_context, GetAID());
     // Create the device address and put it into host tensor.
-    if (output_node_to_tensor_device_address_.count({output_node, front_node_with_idx.second}) > 0) {
-      new_tensor->set_device_address(output_node_to_tensor_device_address_[{output_node, front_node_with_idx.second}]);
+    if (old_to_new_device_address_.count(device_tensor) > 0) {
+      new_tensor->set_device_address(old_to_new_device_address_[device_tensor]);
     } else {
       auto output_kernel_tensor = device_tensor->kernel_tensor();
       MS_EXCEPTION_IF_NULL(output_kernel_tensor);
@@ -199,7 +199,7 @@ void OutputActor::FetchParameterInput(OpContext<DeviceTensor> *const context) {
                     << " type:" << tensor_device_address->type_id()
                     << " output node:" << output_node->fullname_with_scope() << " output position:" << output_position
                     << ", origin output device tensor: " << device_tensor;
-      output_node_to_tensor_device_address_[{output_node, front_node_with_idx.second}] = tensor_device_address;
+      old_to_new_device_address_[device_tensor] = tensor_device_address;
       new_tensor->set_device_address(tensor_device_address);
     }
 
@@ -481,8 +481,8 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
   }
 
   // Create the device address and put it into host tensor.
-  if (output_node_to_tensor_device_address_.count({output_node, output_index}) > 0) {
-    tensor->set_device_address(output_node_to_tensor_device_address_[{output_node, output_index}]);
+  if (old_to_new_device_address_.count(device_tensor) > 0) {
+    tensor->set_device_address(old_to_new_device_address_[device_tensor]);
   } else {
     auto kernel_tensor = std::make_shared<kernel::KernelTensor>(
       nullptr, device_tensor->GetSize(), kernel::GetFormatFromStrToEnum(device_tensor->format()),
@@ -501,7 +501,7 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
                   << " output position:" << output_position << ", origin output device tensor: " << device_tensor;
     tensor->set_device_address(tensor_device_address);
     tensor_device_address->set_new_ref_count(SIZE_MAX);
-    output_node_to_tensor_device_address_[{output_node, output_index}] = tensor_device_address;
+    old_to_new_device_address_[device_tensor] = tensor_device_address;
   }
 
   tensor->set_need_release_device_mem(true);
@@ -649,7 +649,7 @@ void OutputActor::UpdateOutputDeviceAddress() {
       device_tensor->type_id(), device_tensor->GetShapeVector(), device_tensor->GetTensorStorageInfo());
   }
 
-  output_node_to_tensor_device_address_.clear();
+  old_to_new_device_address_.clear();
   output_nodes_.clear();
   output_nodes_.resize(outputs_num_);
   output_device_tensors_.clear();

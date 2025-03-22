@@ -433,6 +433,9 @@ bool IsNodeValid(const AnfNodePtr &node) {
   } else if (node->isa<CNode>() && common::AnfAlgo::IsTypeTransformOp(common::AnfAlgo::GetCNodeName(node))) {
     MS_LOG(INFO) << "Disable switch inline for backoff node:" << node->DebugString();
     return false;
+  } else if (common::AnfAlgo::CheckPrimitiveType(node, prim::kPrimPyExecute)) {
+    MS_LOG(INFO) << "Disable switch inline for fallback node:" << node->DebugString();
+    return false;
   } else if (common::AnfAlgo::CheckPrimitiveType(node, prim::kPrimPartial)) {
     const auto &cnode = node->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(cnode);

@@ -90,7 +90,7 @@ bool MemoryManagerActor::AllocateContinuousMemory(const DeviceTensor *device_ten
       const auto &device_address = (*(continuous_device_addresses))[i].lock();
       device_address->set_ptr(device_addresses[i]);
       device_address->set_from_mem_pool(true);
-      device_address->IncreaseNewRefCount();
+      device_address->IncreaseNewRefCount(from_aid.Name() + " alloc continue memory");
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, from_aid.Name(),
                                                      memory::mem_pool::MemType::kContinuousMemory,
                                                      device_address->GetSize(), device_address.get());
@@ -411,7 +411,7 @@ void MemoryManagerActor::FreeMemoryByRefCount(DeviceTensor *const device_tensor,
     }
 
     MS_LOG(DEBUG) << "Op:" << op_name << " decrease new ref count for:" << device_tensor->PrintInfo();
-    if ((device_tensor->DecreaseNewRefCount() == 0) && device_tensor->IsPtrValid()) {
+    if ((device_tensor->DecreaseNewRefCount(op_name) == 0) && device_tensor->IsPtrValid()) {
       device_tensor->ClearUserData();
       MS_LOG(DEBUG) << "Op:" << op_name
                     << " free memory by the new reference count, device address:" << device_tensor->GetPtr() << ".";

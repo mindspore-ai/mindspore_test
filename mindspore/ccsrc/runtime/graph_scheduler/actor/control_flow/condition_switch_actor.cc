@@ -95,7 +95,7 @@ void ConditionSwitchActor::UpdateRefDeviceAddress(OpContext<DeviceTensor> *const
       MS_LOG(EXCEPTION) << "Invalid input device tensor index:" << i + 1 << " for actor:" << GetAID();
     }
     output_device_tensors_[i]->set_pointer_ref_count(input_device_tensors_[i + 1]->pointer_ref_count());
-    output_device_tensors_[i]->IncreaseNewRefCount();
+    output_device_tensors_[i]->IncreaseNewRefCount(GetAID().Name());
     MS_LOG(DEBUG) << "Actor:" << GetAID() << " increase new ref count:" << output_device_tensors_[i]->new_ref_count()
                   << " and set ref device address:" << output_device_tensors_[i]->PrintInfo()
                   << " ref input device address:" << input_device_tensors_[i + 1]->PrintInfo();

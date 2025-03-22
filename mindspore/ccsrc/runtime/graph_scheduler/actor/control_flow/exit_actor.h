@@ -28,6 +28,7 @@
 
 namespace mindspore {
 namespace runtime {
+enum CopyStat { COPY_DISABLE, COPY_PTR, COPY_POINTER_REF_COUNT };
 // The exit actor is used to receive a set of data arrow and a branch id in the control flow, and then send the
 // device tensors in the data to the corresponding actor. It is the exit of the end of kernel graph execution.
 class ExitActor : public ControlActor {
@@ -49,7 +50,7 @@ class ExitActor : public ControlActor {
   const mindspore::HashMap<int, std::vector<DataArrowPtr>> &output_branch_partial_arrows() const {
     return output_branch_partial_arrows_;
   }
-  const std::vector<bool> &is_need_copy_device_tensors() const { return is_need_copy_device_tensors_; }
+  const std::vector<CopyStat> &is_need_copy_device_tensors() const { return is_need_copy_device_tensors_; }
   const mindspore::HashMap<int, std::vector<std::pair<std::vector<size_t>, bool>>> &output_branch_dynamic_len_index()
     const {
     return output_branch_dynamic_len_index_;
@@ -85,7 +86,7 @@ class ExitActor : public ControlActor {
 
   // In exit actor, we need to copy a new device tensor for the output of the kernel actor, but parameter is not
   // needed. This mark is used to record whether it need to be copied.
-  std::vector<bool> is_need_copy_device_tensors_;
+  std::vector<CopyStat> is_need_copy_device_tensors_;
   std::vector<bool> is_need_dynamic_checks_;
   std::map<KernelWithIndex, KernelWithIndex> ref_out_in_map_;
   // Cache the dynamic shape flag to optimize the running performance.

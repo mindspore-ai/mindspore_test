@@ -531,7 +531,7 @@ void SchedulerHelper::InsertParameterIndexsForActor(AbstractActor *const to_acto
                                                     const KernelGraphPtr &graph) {
   MS_EXCEPTION_IF_NULL(to_actor);
   MS_EXCEPTION_IF_NULL(front_node_with_idx.first);
-  MS_LOG(DEBUG) << "Inser parameter index to actor:" << to_actor->GetAID()
+  MS_LOG(DEBUG) << "Insert parameter index to actor:" << to_actor->GetAID()
                 << " front node:" << front_node_with_idx.first->DebugString()
                 << " index:" << front_node_with_idx.second;
 
@@ -562,6 +562,9 @@ void SchedulerHelper::InsertParameterIndexsForActor(AbstractActor *const to_acto
                   << " and skip increase user count for outer index:" << real_outer_idx
                   << " and inner index:" << real_inner_idx;
   } else {
+    MS_LOG(DEBUG) << "Insert parameter store user count to actor:" << to_actor->GetAID()
+                  << " front node:" << front_node_with_idx.first->DebugString() << " out index:" << real_outer_idx
+                  << " inner index:" << real_inner_idx << " device type:" << cur_device_tensor->GetDeviceType();
     cur_graph_parameter_store->IncreaseUserCnt(real_outer_idx, real_inner_idx, cur_device_tensor->GetDeviceType());
   }
   if (IsControlFlowActor(to_actor->type())) {

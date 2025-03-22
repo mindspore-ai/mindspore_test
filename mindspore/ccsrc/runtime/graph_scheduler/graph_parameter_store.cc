@@ -59,7 +59,8 @@ void GraphParameterStore::ResetAddrRefCount(size_t outer_index, size_t inner_ind
       if (user_cnt == SIZE_MAX) {
         device_tensor->set_new_ref_count(SIZE_MAX);
       } else {
-        device_tensor->IncreaseNewRefCount(user_cnt - 1);
+        static std::string name = "Parameter store";
+        device_tensor->IncreaseNewRefCount(name, user_cnt - 1);
       }
       MS_LOG(DEBUG) << "Parameter store set new ref count:" << user_cnt - 1
                     << " for device address:" << device_tensor->PrintInfo();
@@ -81,7 +82,8 @@ void GraphParameterStore::ResetAddrRefCount(size_t outer_index, size_t inner_ind
       if (user_cnt == SIZE_MAX) {
         heter_device_tensor->set_new_ref_count(SIZE_MAX);
       } else {
-        heter_device_tensor->IncreaseNewRefCount(user_cnt - 1);
+        static std::string name = "Parameter store";
+        heter_device_tensor->IncreaseNewRefCount(name, user_cnt - 1);
       }
 
       MS_LOG(DEBUG) << "Parameter store set new ref count:" << user_cnt - 1

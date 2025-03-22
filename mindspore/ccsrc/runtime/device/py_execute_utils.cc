@@ -345,7 +345,7 @@ void UserDataToRawMemory(DeviceAddress *const device_address) {
                   << ") memory isn't enough and alloc failed, alloc size: " + std::to_string(device_address->GetSize());
     return;
   }
-  device_address->DecreaseNewRefCount();
+  device_address->DecreaseNewRefCount("Pyexecute sync");
   tensor::TensorPtr tensor = GetValueByPyObj(obj);
   TensorToRawMemory(tensor, device_address);
 }

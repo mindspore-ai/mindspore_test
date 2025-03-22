@@ -72,20 +72,6 @@ class DeviceTensorCopyStore {
         copy_device_tensors_[sub_value->pointer_ref_count()] = key_iter->second;
       }
     }
-
-    if (IS_OUTPUT_ON(mindspore::kDebug)) {
-      for (const auto &pair : copy_device_tensors_) {
-        if (pair.second == nullptr) {
-          MS_LOG(WARNING) << "Invalid copy store key pointer ref count:" << pair.first;
-          continue;
-        }
-        for (const auto &value : *(pair.second)) {
-          MS_LOG(DEBUG) << "After insert print copy store:" << this << " print key pointer ref count:" << pair.first
-                        << " value device address:" << value
-                        << " value pointer ref count:" << (value == nullptr ? nullptr : value->pointer_ref_count());
-        }
-      }
-    }
   }
 
   std::shared_ptr<std::set<DeviceTensor *>> Fetch(DeviceTensor *const key) const {

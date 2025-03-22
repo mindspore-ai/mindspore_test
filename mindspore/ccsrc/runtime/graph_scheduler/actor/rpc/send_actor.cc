@@ -94,7 +94,7 @@ void SendActor::Clear() {
 bool SendActor::LaunchKernel(OpContext<DeviceTensor> *const context, bool is_skip_launch) {
   for (const auto &device_tensor : workspace_device_tensors_) {
     MS_EXCEPTION_IF_NULL(device_tensor);
-    device_tensor->IncreaseNewRefCount();
+    device_tensor->IncreaseNewRefCount(GetAID().Name());
     MS_LOG(DEBUG) << "Increase new ref count for device tensor:" << device_tensor->PrintInfo()
                   << " in actor:" << GetAID();
   }
