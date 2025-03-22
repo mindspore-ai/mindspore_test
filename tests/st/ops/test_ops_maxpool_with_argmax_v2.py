@@ -77,7 +77,7 @@ def test_dynamic_maxpool_with_argmax_v2(mode):
     Description: Test MaxPoolWithArgmaxV2 following Unique and gather ops.
     Expectation: success.
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_level="O0")
     attributes = {'kernel_size': (3, 2), 'strides': (2, 1), 'pads': 0, 'dilation': 1,
                   'ceil_mode': False, 'argmax_type': mstype.int64}
     x = Tensor(np.arange(20 * 16 * 50 * 32).reshape((20, 16, 50, 32)), mstype.float16)
@@ -98,7 +98,7 @@ def test_maxpool_with_argmax_v2_dynamic_shape(mode):
     Description: Test MaxPoolWithArgmaxV2 with dynamic shape.
     Expectation: success.
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_level="O0")
     attributes = {'kernel_size': (3, 2), 'strides': (2, 1), 'pads': 0, 'dilation': 1,
                   'ceil_mode': False, 'argmax_type': mstype.int64}
     x = Tensor(np.arange(20 * 16 * 50 * 32).reshape((20, 16, 50, 32)), mstype.float16)
