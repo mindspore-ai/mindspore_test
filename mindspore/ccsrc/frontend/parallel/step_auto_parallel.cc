@@ -784,7 +784,17 @@ Status ConstructCostGraphNodesByUniqueIdTC(const std::vector<AnfNodePtr> &all_no
 
     // Find the operatorInfo if it exists
     auto search_cnode = from_cnode_to_info.find(cnode->UniqueIdThroughCopy() + prim->name());
-    if (search_cnode == from_cnode_to_info.cend()) {
+    bool op_in_map = search_cnode != from_cnode_to_info.cend();
+    bool is_same_graph = false;
+    if (op_in_map) {
+      auto &op_created = search_cnode->second;
+      is_same_graph = op_created->cnode()->func_graph() == cnode->func_graph();
+    }
+    MS_LOG(INFO) << "The CNode with UniqueId: " << cnode->UniqueId()
+                 << " and UniqueIdThroughCopy: " << cnode->UniqueIdThroughCopy()
+                 << ", CNode fullname_with_scope: " << cnode->fullname_with_scope() << " op_in_map: " << op_in_map
+                 << ", is_same_graph: " << is_same_graph;
+    if (!op_in_map || is_same_graph) {
       size_t loop_index = 0;
       bool is_in_loop = GetLoopIndexFromCNode(cnode, &loop_index);
       const auto single_loop = CostModelContext::GetInstance()->dp_algo_single_loop();
