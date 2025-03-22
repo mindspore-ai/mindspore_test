@@ -467,7 +467,6 @@ SilentChecker::SilentChecker(const DeviceContext *device_context) : device_conte
                                         MakeValue(std::vector<int64_t>{}));
 
   keep_dim_ = std::make_shared<KernelTensor>(nullptr, kBool, MakeValue(false));
-  zero_ = GenerateKernelTensor(kNumberTypeInt8, ShapeVector{1}, MakeValue<int8_t>(0), true);
 
   // create constants used by aclnnSilentCheck
   auto upper_thresh = parse_thresh(kVarNpuAsdUpperThresh, kUpperThreshDefaultVal, kThreshMinimalVal);
@@ -689,6 +688,10 @@ KernelTensorPtr SilentChecker::GenerateKernelTensor(TypeId dtype_id, const Shape
   tensor->SetShape(std::make_shared<abstract::TensorShape>(shape));
   if (value) {
     tensor->SetValue(value);
+    if (addr != nullptr && CALL_ASCEND_API(aclrtMemcpy, addr, mem_size, tensor->GetValuePtr(), mem_size,
+                                           ACL_MEMCPY_HOST_TO_DEVICE) != ACL_SUCCESS) {
+      MS_LOG(EXCEPTION) << "Copy data from host to device failed.";
+    }
   }
   return tensor;
 }
