@@ -3188,6 +3188,34 @@ REG_BPROP_BUILDER("MoeTokenPermute").FreeUselessValues_IO({i0, i1, i2}, {i0}).Se
   return {res_grad, ib->OutZeros(indices), ib->OutZeros(num_out_tokens), ib->OutZeros(padded_mode)};
 });
 
+REG_BPROP_BUILDER("CrossEntropyLoss").FreeUselessValues_IO({i0}, {i0}).SetBody(BODYFUNC(ib) {
+  auto target = ib->GetInput(kIndex1);
+  auto weight = ib->GetInput(kIndex2);
+  auto reduction = ib->GetInput(kIndex3);
+  auto ignore_index = ib->GetInput(kIndex4);
+  auto label_smoothing = ib->GetInput(kIndex5);
+  auto lse_square_scale_for_zloss = ib->GetInput(kIndex6);
+  auto return_zloss = ib->GetInput(kIndex7);
+  auto out = ib->GetInput(kIndex8);
+  auto dout = ib->GetInput(kIndex9);
+  auto grad_loss = ib->TupleGetItem(dout, kIndex0);
+  auto grad_zloss = ib->TupleGetItem(dout, kIndex2);
+  auto log_prob = ib->TupleGetItem(out, kIndex1);
+  auto lse_for_zloss = ib->TupleGetItem(out, kIndex3);
+
+  auto input_grad =
+    ib->Emit("CrossEntropyLossGrad", {grad_loss, log_prob, target, weight, grad_zloss, lse_for_zloss, reduction,
+                                      ignore_index, label_smoothing, lse_square_scale_for_zloss});
+  return {input_grad,
+          ib->OutZeros(target),
+          ib->OutZeros(weight),
+          ib->OutZeros(reduction),
+          ib->OutZeros(ignore_index),
+          ib->OutZeros(label_smoothing),
+          ib->OutZeros(lse_square_scale_for_zloss),
+          ib->OutZeros(return_zloss)};
+});
+
 REG_BPROP_BUILDER("BatchNormGradExt").SetUnusedInputs({i3, i4, i9}).SetBody(BODYFUNC(ib) {
   auto dy = ib->GetInput(kIndex0);
   auto x = ib->GetInput(kIndex1);
