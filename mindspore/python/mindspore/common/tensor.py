@@ -189,11 +189,11 @@ def tensor(input_data=None, dtype=None, shape=None, init=None, internal=False, c
     based on the `dtype` argument.
 
     Please refer to `Creating and Using Tensor
-    <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html#mindspore-user-defined-data-types>`_ .
+    <https://www.mindspore.cn/tutorials/en/master/compile/static_graph.html#mindspore-user-defined-data-types>`_ .
 
     The difference between it and the Tensor class is that it adds
     `Annotation
-    <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html#annotation-type>`_
+    <https://www.mindspore.cn/tutorials/en/master/compile/static_graph.html#annotation-type>`_
     which can prevent the generation of AnyType compared to the Tensor class.
 
     The arguments and return values are the same as the Tensor class. Also see: :class:`mindspore.Tensor`.
@@ -230,7 +230,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         - If `init` interface is used to initialize `Tensor`, the `Tensor.init_data` API needs to be called to load the
           actual data to `Tensor`.
         - All modes of CPU and GPU, and Atlas training series with `graph mode (mode=mindspore.GRAPH_MODE)
-          <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html>`_  do not supported
+          <https://www.mindspore.cn/tutorials/en/master/compile/static_graph.html>`_  do not supported
           in-place operations yet.
 
     Warning:
@@ -2237,11 +2237,13 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
 
         from mindspore.common.initializer import Zero as ZeroInitializer
 
+        is_qint4x2 = self.dtype == mstype.qint4x2
         try:
+            dtype_ = mstype.int8 if is_qint4x2 else self.dtype
             if isinstance(self.init, ZeroInitializer):
-                data = np.zeros(data_shape, dtype=mstype.dtype_to_nptype(self.dtype))
+                data = np.zeros(data_shape, dtype=mstype.dtype_to_nptype(dtype_))
             else:
-                data = np.ndarray(data_shape, dtype=mstype.dtype_to_nptype(self.dtype))
+                data = np.ndarray(data_shape, dtype=mstype.dtype_to_nptype(dtype_))
         except ValueError as e:
             msg = "Error shape={}".format(shape)
             logger.critical(msg)
@@ -2286,6 +2288,10 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
             self.assign_value(TensorPy_.persistent_data_from_numpy(data, slice_num_of_persistent_data))
         else:
             self.assign_value(TensorPy_.from_numpy(data))
+
+        if is_qint4x2:
+            self.set_dtype(mstype.qint4x2)
+
         return self
 
     def resize(self, *new_shape):
