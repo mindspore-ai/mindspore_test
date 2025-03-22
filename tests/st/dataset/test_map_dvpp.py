@@ -1881,7 +1881,8 @@ def test_map_with_dvpp_with_910a_exception():
     with pytest.raises(RuntimeError) as error_info:
         for _ in numpy_slices_dataset.create_dict_iterator(num_epochs=1, output_numpy=True):
             pass
-    assert "The SoC: Ascend910A is not Ascend910B / Ascend910_93" in str(error_info.value)
+    assert "is not Ascend910B / Ascend910_93" in str(error_info.value) and \
+        any(char in str(error_info.value) for char in {'Ascend910A', 'Ascend910ProA', 'Ascend910PremiumA'})
 
 
 if __name__ == '__main__':
