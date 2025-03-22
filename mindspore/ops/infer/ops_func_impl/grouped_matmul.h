@@ -22,22 +22,18 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API GroupedMatmulFuncImpl : public GroupedMatmulBaseFuncImpl {
+class OPS_API GroupedMatmulFuncImpl final : public GroupedMatmulBaseFuncImpl {
  public:
   GroupedMatmulFuncImpl() {
     idxes_.x = 0;
     idxes_.weight = 1;
     idxes_.group_list = 7;
-    idxes_.split_item = 8;
-    idxes_.group_type = 9;
+    idxes_.split_item_offset = -4;
+    idxes_.group_type_offset = -3;
     idxes_.transpose_a = 10;
     idxes_.transpose_b = 11;
   }
   ~GroupedMatmulFuncImpl() = default;
-
-  std::set<int64_t> GetValueDependArgIndices() const override {
-    return {static_cast<int64_t>(this->idxes_.group_list)};
-  }
 
  protected:
   void FetchGroupInfo(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
@@ -46,6 +42,7 @@ class OPS_API GroupedMatmulFuncImpl : public GroupedMatmulBaseFuncImpl {
 
   int32_t PrivateCheckValidation(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos,
                                  int64_t group_type) const override;
+
   bool GetTransposeValue(const InferInfoPtrList &input_infos, size_t transpose_index) const override;
 };
 }  // namespace ops

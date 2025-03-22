@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import numpy as np
-
+import pytest
 import mindspore as ms
 from mindspore import dtype as mstype
 from mindspore import context, Tensor, ops
 from mindspore.nn import Cell
-from mindspore.ops.auto_generate import grouped_matmul_v4, GroupedMatmulV4
+from mindspore.ops.auto_generate import GroupedMatmulV4
 
 from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
@@ -95,19 +95,204 @@ class GroupedMatmulV4Net(Cell):
 
 @test_utils.run_with_cell
 def grouped_matmul_v4_forward_func(x, weight, group_list):
-    out = grouped_matmul_v4([x,], [weight,], group_list=group_list, split_item=3, group_type=0, group_list_type=1)
+    net = GroupedMatmulV4Net()
+    out = net([x,], [weight,], group_list=group_list, split_item=3, group_type=0, group_list_type=1)
     return out[0]
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-def test_grouped_matmul_v4_x2d_w3d_splititem3_grouptype0_none_a8w8():
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('mode', ['KBK', 'pynative'])
+def test_grouped_matmul_v4_x2d_w2d_splititem0_grouptypeneg1_none(mode):
     """
     Feature: Test grouped_matmul
     Description: semi_auto_parallel
     Expectation: shape is as expected.
     """
     context.set_context(device_target="Ascend")
-    ms.set_context(mode=ms.GRAPH_MODE, jit_level='O0')
+    if mode == 'KBK':
+        ms.set_context(mode=ms.GRAPH_MODE)
+        ms.set_context(jit_level='O0')
+    elif mode == 'pynative':
+        ms.set_context(mode=ms.PYNATIVE_MODE)
+    gmm_v4_net = GroupedMatmulV4Net()
+
+    split_item = 0
+    group_type = -1
+
+    M0 = 16
+    K0 = 256
+    N0 = 128
+
+    M1 = 127
+    K1 = 88
+    N1 = 64
+
+    # numpy calculate
+    np_x0 = np.random.uniform(1, 2, size=[2, 3, 4, 5, M0, K0]).astype(np.float32)
+    np_w0 = np.random.uniform(1, 2, size=[K0, N0]).astype(np.float32)
+    np_b0 = np.random.uniform(1, 5, size=[N0]).astype(np.float32)
+
+    np_x1 = np.random.uniform(1, 2, size=[2, 3, 4, 5, M1, K1]).astype(np.float32)
+    np_w1 = np.random.uniform(1, 2, size=[K1, N1]).astype(np.float32)
+    np_b1 = np.random.uniform(1, 5, size=[N1]).astype(np.float32)
+
+    except0 = np.matmul(np_x0, np_w0) + np_b0
+    except1 = np.matmul(np_x1, np_w1) + np_b1
+
+    # ms calculate
+    x = [ms.Tensor(np_x0, dtype=mstype.bfloat16), ms.Tensor(np_x1, dtype=mstype.bfloat16)]
+    w = [ms.Tensor(np_w0, dtype=mstype.bfloat16), ms.Tensor(np_w1, dtype=mstype.bfloat16)]
+    b = [ms.Tensor(np_b0), ms.Tensor(np_b1)]
+
+    res = gmm_v4_net(x, w, b, split_item=split_item, group_type=group_type)
+
+    # compare
+    np.testing.assert_allclose(except0, res[0].float().asnumpy(), rtol=4e-3)
+    np.testing.assert_allclose(except1, res[1].float().asnumpy(), rtol=4e-3)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('mode', ['KBK', 'pynative'])
+def test_grouped_matmul_v4_x2d_w3d_splititem3_grouptype0_a16w8(mode):
+    """
+    Feature: Test grouped_matmul
+    Description: semi_auto_parallel
+    Expectation: shape is as expected.
+    """
+    context.set_context(device_target="Ascend")
+    if mode == 'KBK':
+        ms.set_context(mode=ms.GRAPH_MODE)
+        ms.set_context(jit_level='O0')
+    elif mode == 'pynative':
+        ms.set_context(mode=ms.PYNATIVE_MODE)
+    gmm_v4_net = GroupedMatmulV4Net()
+
+    split_item = 3
+    group_type = 0
+    group_list_type = 0
+
+    M0 = 32
+    K0 = 256
+    N0 = 128
+    E0 = 8
+    group_list_np = [1, 3, 10, 14, 18, 22, 24, 30] # last value can be less than total token numbers
+
+    # numpy calculate
+    np_x_all = np.random.uniform(-128, 127, size=[M0, K0]).astype(np.float16)
+    np_w_all = np.random.uniform(-128, 127, size=[E0, K0, N0]).astype(np.int8)
+    antiquant_scale0 = np.array(np.full([E0, N0], 0.01)).astype(np.float16)
+    antiquant_offset0 = np.array(np.full([E0, N0], 1)).astype(np.float16)
+
+    np_x = split_x(np_x_all, group_list_np)
+    np_w = split_w(np_w_all)
+    np_s = split_w(antiquant_scale0)
+    np_o = split_w(antiquant_offset0)
+    res_np = [np.matmul(x0, (w0 + o0) * s0) for x0, w0, s0, o0 in zip(np_x, np_w, np_s, np_o)]
+    except_np = np.concatenate(res_np, axis=0)
+
+    # ms calculate
+    x = [ms.Tensor(np_x_all)]
+    w = [ms.Tensor(np_w_all)]
+    antiquant_scale = [ms.Tensor(antiquant_scale0)]
+    antiquant_offset = [ms.Tensor(antiquant_offset0)]
+
+    b = None
+    scale = None
+    offset = None
+    pertoken_scale = None
+    group_list = ms.Tensor(group_list_np, dtype=mstype.int64)
+
+    res = gmm_v4_net(x, w, b, scale, offset, antiquant_scale, antiquant_offset, pertoken_scale, group_list,
+                     split_item, group_type, group_list_type)
+
+    # compare
+    np.testing.assert_allclose(except_np, res[0][:30].asnumpy(), rtol=1e-3)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('mode', ['KBK', 'pynative'])
+def test_grouped_matmul_v4_x2d_w3d_splititem3_grouptype0_a16w4(mode):
+    """
+    Feature: Test grouped_matmul
+    Description: semi_auto_parallel
+    Expectation: shape is as expected.
+    """
+    context.set_context(device_target="Ascend")
+    if mode == 'KBK':
+        ms.set_context(mode=ms.GRAPH_MODE)
+        ms.set_context(jit_level='O0')
+    elif mode == 'pynative':
+        ms.set_context(mode=ms.PYNATIVE_MODE)
+    gmm_v4_net = GroupedMatmulV4Net()
+
+    split_item = 3
+    group_type = 0
+    group_list_type = 0
+
+    M0 = 32
+    K0 = 256
+    N0 = 128
+    E0 = 8
+    group_list_np = [1, 3, 10, 14, 18, 22, 24, 30] # last value can be less than total token numbers
+
+    # numpy calculate
+    np_x_all = np.random.uniform(-128, 127, size=[M0, K0]).astype(np.float16)
+    np_w_all = np.random.uniform(0, 2, size=[E0, K0, N0]).astype(np.int8)
+    antiquant_scale0 = np.array(np.full([E0, N0], 0.01)).astype(np.float16)
+    antiquant_offset0 = np.array(np.full([E0, N0], 1)).astype(np.float16)
+
+    for i in range(E0):
+        for j in range(K0):
+            for k in range(N0):
+                np_w_all[i, j, k] = np_w_all[i, j, k] & 0xf
+
+    np_w_all_int4 = np.ones((E0 * K0 * N0 // 2,), dtype=np.int8)
+    np_w_all_one_rank = np_w_all.reshape(-1,)
+    for i in range(E0 * K0 * N0 // 2):
+        np_w_all_int4[i] = np_w_all_one_rank[i * 2] | ((np_w_all_one_rank[(i * 2) + 1] & 15) << 4)
+
+    np_w_all_int4_3_rank = np_w_all_int4.reshape((E0, K0, N0 // 2))
+
+    np_x = split_x(np_x_all, group_list_np)
+    np_w = split_w(np_w_all)
+    np_s = split_w(antiquant_scale0)
+    np_o = split_w(antiquant_offset0)
+    res_np = [np.matmul(x0, (w0 + o0) * s0) for x0, w0, s0, o0 in zip(np_x, np_w, np_s, np_o)]
+    expect_np = np.concatenate(res_np, axis=0)
+
+    # ms calculate
+    x = [ms.Tensor(np_x_all)]
+    w = [ms.Tensor(np_w_all_int4_3_rank, dtype=ms.qint4x2)]
+    antiquant_scale = [ms.Tensor(antiquant_scale0)]
+    antiquant_offset = [ms.Tensor(antiquant_offset0)]
+
+    b = None
+    scale = None
+    offset = None
+    pertoken_scale = None
+    group_list = ms.Tensor(group_list_np, dtype=mstype.int64)
+
+    res = gmm_v4_net(x, w, b, scale, offset, antiquant_scale, antiquant_offset, pertoken_scale, group_list,
+                     split_item, group_type, group_list_type)
+
+    # compare
+    np.testing.assert_allclose(expect_np, res[0][:30].asnumpy(), rtol=1e-3, atol=1e-3)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('mode', ['KBK', 'pynative'])
+def test_grouped_matmul_v4_x2d_w3d_splititem3_grouptype0_none_pertoken(mode):
+    """
+    Feature: Test grouped_matmul
+    Description: semi_auto_parallel
+    Expectation: shape is as expected.
+    """
+    context.set_context(device_target="Ascend")
+    if mode == 'KBK':
+        ms.set_context(mode=ms.GRAPH_MODE)
+        ms.set_context(jit_level='O0')
+    elif mode == 'pynative':
+        ms.set_context(mode=ms.PYNATIVE_MODE)
     gmm_v4_net = GroupedMatmulV4Net()
 
     split_item = 3
@@ -123,8 +308,8 @@ def test_grouped_matmul_v4_x2d_w3d_splititem3_grouptype0_none_a8w8():
     # numpy calculate
     np_x_all = np.random.uniform(-128, 127, size=[M0, K0]).astype(np.int8)
     np_w_all = np.random.uniform(-128, 127, size=[E0, K0, N0]).astype(np.int8)
-    np_s_all = np.array(np.full([E0, N0], 0.1)).astype(np.float32)
-    np_pts = np.array([0.1] * M0).astype(np.float32)
+    np_s_all = np.array(np.full([E0, N0], 10)).astype(np.float32)
+    np_pts = np.array([10] * M0).astype(np.float32)
 
     np_x = split_x(np_x_all, np.cumsum(group_list_np))
     np_w = split_w(np_w_all)
@@ -148,7 +333,64 @@ def test_grouped_matmul_v4_x2d_w3d_splititem3_grouptype0_none_a8w8():
                      split_item, group_type, group_list_type)
 
     # compare
-    np.testing.assert_allclose(except_np, res[0].float().asnumpy(), rtol=5e-3)
+    np.testing.assert_allclose(except_np, res[0].float().asnumpy(), rtol=4e-3)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('mode', ['KBK', 'pynative'])
+def test_grouped_matmul_v4_x2d_w3d_splititem3_grouptype0_none_perchannel(mode):
+    """
+    Feature: Test grouped_matmul
+    Description: semi_auto_parallel
+    Expectation: shape is as expected.
+    """
+    context.set_context(device_target="Ascend")
+    if mode == 'KBK':
+        ms.set_context(mode=ms.GRAPH_MODE)
+        ms.set_context(jit_level='O0')
+    elif mode == 'pynative':
+        ms.set_context(mode=ms.PYNATIVE_MODE)
+    gmm_v4_net = GroupedMatmulV4Net()
+
+    split_item = 3
+    group_type = 0
+    group_list_type = 1
+
+    M0 = 32
+    K0 = 256
+    N0 = 128
+    E0 = 8
+    group_list_np = [1, 2, 7, 4, 4, 4, 2, 8]
+
+    # numpy calculate
+    np_x_all = np.random.uniform(-128, 127, size=[M0, K0]).astype(np.int8)
+    np_w_all = np.random.uniform(-128, 127, size=[E0, K0, N0]).astype(np.int8)
+    np_s_all = np.array(np.full([E0, N0], 10)).astype(np.float32)
+    np_b_all = np.array(np.full([E0, N0], 1)).astype(np.float32)
+
+    np_x = split_x(np_x_all, np.cumsum(group_list_np))
+    np_w = split_w(np_w_all)
+    np_s = split_w(np_s_all)
+    np_b = split_w(np_b_all)
+    res_np = [np.matmul(x0, w0 * s0) + b0 * s0 for x0, w0, s0, b0 in zip(np_x, np_w, np_s, np_b)]
+    except_np = np.concatenate(res_np, axis=0)
+
+    # ms calculate
+    x = [ms.Tensor(np_x_all)]
+    w = [ms.Tensor(np_w_all)]
+    scale = [ms.Tensor(np_s_all, dtype=mstype.bfloat16)]
+    bias = [ms.Tensor(np_b, dtype=mstype.int32)]
+
+    offset = None
+    antiquant_scale = None
+    antiquant_offset = None
+    group_list = ms.Tensor(group_list_np, dtype=mstype.int64)
+
+    res = gmm_v4_net(x, w, bias, scale, offset, antiquant_scale, antiquant_offset, None, group_list,
+                     split_item, group_type, group_list_type)
+
+    # compare
+    np.testing.assert_allclose(except_np, res[0].float().asnumpy(), rtol=4e-3)
 
 
 @arg_mark(
@@ -157,10 +399,10 @@ def test_grouped_matmul_v4_x2d_w3d_splititem3_grouptype0_none_a8w8():
     card_mark="onecard",
     essential_mark="unessential",
 )
-def test_grouped_matmul_v4__dyn_shape():
+def test_grouped_matmul_v4_dyn_shape():
     """
     Feature: Ops
-    Description: test op GroupedMatmul with gorup type 0
+    Description: test op GroupedMatmulV4 with gorup type 0
     Expectation: expect correct result.
     """
     context.set_context(runtime_num_threads=1)  # multi-threads have none-initialized bug now.
@@ -193,3 +435,48 @@ def test_grouped_matmul_v4__dyn_shape():
         disable_yaml_check=True,
         disable_mode=['GRAPH_MODE',]
     )
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('mode', ['KBK', 'pynative'])
+def test_ops_grouped_mamtul_v4_multi_dyn(mode):
+    """
+    Feature: pyboost function.
+    Description: test GroupedMatmulV4 forward with dynamic rank/shape.
+    Expectation: success.
+    """
+    context.set_context(device_target="Ascend")
+    if mode == 'KBK':
+        ms.set_context(mode=ms.GRAPH_MODE)
+        ms.set_context(jit_level='O0')
+    elif mode == 'pynative':
+        ms.set_context(mode=ms.PYNATIVE_MODE)
+    gmm_v4_net = GroupedMatmulV4Net()
+
+    split_item = 0
+    group_type = -1
+    group_list_type = 0
+
+    x = ms.mutable([Tensor(shape=(None, None), dtype=mstype.float16), Tensor(shape=(None, None), dtype=mstype.float16)])
+    weight = ms.mutable([Tensor(shape=(None, None), dtype=mstype.float16),
+                         Tensor(shape=(None, None), dtype=mstype.float16)])
+    gmm_v4_net.set_inputs(x, weight, None, None, None, None, None, None, None, split_item, group_type, group_list_type)
+
+    np_x0 = np.random.uniform(0.1, 2, size=[16, 256]).astype(np.float32)
+    np_w0 = np.random.uniform(0.1, 1, size=[256, 128]).astype(np.float32)
+    expect0 = np.matmul(np_x0, np_w0)
+
+    np_x1 = np.random.uniform(0.1, 2, size=[127, 88]).astype(np.float32)
+    np_w1 = np.random.uniform(0.1, 1, size=[88, 64]).astype(np.float32)
+    expect1 = np.matmul(np_x1, np_w1)
+
+    x1 = ms.mutable([ms.Tensor(np_x0, dtype=mstype.float16), ms.Tensor(np_x1, dtype=mstype.float16)])
+    weight1 = ms.mutable([ms.Tensor(np_w0, dtype=mstype.float16), ms.Tensor(np_w1, dtype=mstype.float16)])
+    res1 = gmm_v4_net(x1, weight1, split_item=split_item, group_type=group_type)
+    np.testing.assert_allclose(expect0, res1[0].asnumpy(), rtol=1e-1)
+    np.testing.assert_allclose(expect1, res1[1].asnumpy(), rtol=1e-1)
+
+    x2 = ms.mutable([ms.Tensor(np_x0, dtype=mstype.float16), ms.Tensor(np_x1, dtype=mstype.float16)])
+    weight2 = ms.mutable([ms.Tensor(np_w0, dtype=mstype.float16), ms.Tensor(np_w1, dtype=mstype.float16)])
+    res2 = gmm_v4_net(x2, weight2, split_item=split_item, group_type=group_type)
+    np.testing.assert_allclose(expect0, res2[0].asnumpy(), rtol=1e-1)

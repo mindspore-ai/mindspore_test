@@ -18,7 +18,6 @@
 
 #include <vector>
 
-#include "include/common/utils/utils.h"
 #include "ops/ops_func_impl/op_func_impl.h"
 #include "ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
@@ -72,16 +71,6 @@ int32_t GroupedMatmulFuncImpl::PrivateCheckValidation(const PrimitivePtr &primit
     return OP_CHECK_SUCCESS;
   }
 
-  // check the value of group_list
-  ShapeVector x_shape;
-  if (input_infos[idxes_.x]->IsSequence()) {
-    x_shape = input_infos[idxes_.x]->GetSequenceElements().at(kIndex0)->GetShape();
-  } else {
-    x_shape = input_infos[idxes_.x]->GetShape();
-  }
-
-  const auto &group_list_info = input_infos[idxes_.group_list];
-
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   bool enable_infer_boost_310p =
@@ -100,6 +89,7 @@ int32_t GroupedMatmulFuncImpl::PrivateCheckValidation(const PrimitivePtr &primit
                                << group_type;
     }
 
+    const auto &group_list_info = input_infos[idxes_.group_list];
     if (MS_UNLIKELY(group_list_info->IsNone() ||
                     (!group_list_info->IsSequence() && group_list_info->GetType() != kNumberTypeInt32))) {
       MS_EXCEPTION(ValueError) << "For internal_op'" << primitive->name()
@@ -107,28 +97,6 @@ int32_t GroupedMatmulFuncImpl::PrivateCheckValidation(const PrimitivePtr &primit
                                << group_list_info->DebugInfo();
     }
   }
-
-  auto group_list_opt = group_list_info->GetArrayValue<int64_t>();
-  if (MS_UNLIKELY(IsDynamic(x_shape) || !group_list_opt.has_value() || group_list_opt.value().HasUnknownValue())) {
-    return OP_CHECK_RETRY;
-  }
-
-  auto expect_sum = group_type == 0 ? x_shape.front() : x_shape.back();
-  const auto &group_list = group_list_opt.value().ToVector();
-  for (size_t i = 0; i < group_list.size(); ++i) {
-    if (i == kIndex0) {
-      MS_CHECK_VALUE(group_list[i] >= 0, CheckAndConvertUtils::FormatCheckIntegerMsg(
-                                           "first element of group_list", group_list[i], kGreaterEqual, 0, primitive));
-    } else {
-      if (MS_UNLIKELY(group_list[i] < group_list[i - 1])) {
-        MS_EXCEPTION(ValueError) << "For '" << primitive->name()
-                                 << "', the group_list must be an incrementing sequence, but got " << group_list;
-      }
-    }
-  }
-  MS_CHECK_VALUE(group_list.back() == expect_sum,
-                 CheckAndConvertUtils::FormatCheckIntegerMsg("group_list's last element ", group_list.back(), kEqual,
-                                                             expect_sum, primitive));
 
   return OP_CHECK_SUCCESS;
 }

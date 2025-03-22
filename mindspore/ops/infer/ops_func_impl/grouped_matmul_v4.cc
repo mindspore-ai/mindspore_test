@@ -18,7 +18,6 @@
 #include <vector>
 #include <algorithm>
 
-#include "include/common/utils/utils.h"
 #include "ops/ops_func_impl/op_func_impl.h"
 #include "ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
@@ -37,7 +36,7 @@ void GroupedMatmulV4FuncImpl::FetchGroupInfo(const PrimitivePtr &primitive, cons
       dyn_input_sizes.push_back(0);
       continue;
     }
-    if (i == idxes_.group_list) {
+    if (i == static_cast<size_t>(idxes_.group_list)) {
       dyn_input_sizes.push_back(1);
       continue;
     }
@@ -79,7 +78,6 @@ int32_t GroupedMatmulV4FuncImpl::PrivateCheckValidation(const PrimitivePtr &prim
     return OP_CHECK_RETRY;
   }
 
-  auto expect_sum = group_type == 0 ? x_shape.front() : x_shape.back();
   const auto &group_list = group_list_opt.value().ToVector();
   auto group_list_type = group_list_type_opt.value();
   if (MS_UNLIKELY(group_list_type != 0 && group_list_type != 1)) {
@@ -98,9 +96,6 @@ int32_t GroupedMatmulV4FuncImpl::PrivateCheckValidation(const PrimitivePtr &prim
         }
       }
     }
-    MS_CHECK_VALUE(group_list.back() == expect_sum,
-                   CheckAndConvertUtils::FormatCheckIntegerMsg("group_list's last element ", group_list.back(), kEqual,
-                                                               expect_sum, primitive));
   } else {
     for (auto &e : group_list) {
       MS_CHECK_VALUE(
@@ -120,18 +115,27 @@ TypeIdList GroupedMatmulV4FuncImpl::InferType(const PrimitivePtr &primitive,
   }
 
   const auto &x_tensors = input_infos[idxes_.x]->GetSequenceElements();
-  const auto &per_token_scale_info = input_infos[per_token_scale_idx_];
+  const auto &scale_infos = input_infos[scale_idx_];
   TypeIdList output_types;
-  if (per_token_scale_info->IsNone()) {
+  if (scale_infos->IsNone()) {
     std::transform(x_tensors.begin(), x_tensors.end(), std::back_inserter(output_types),
                    [](const InferInfoPtr &info) { return info->GetType(); });
   } else {
-    if (input_infos[scale_idx_]->IsNone()) {
-      MS_EXCEPTION(ValueError) << "For '" << primitive->name() << "', the scale cannot be None in per-token quant.";
+    const auto &scale_tensors = scale_infos->GetSequenceElements();
+    TypeId scale_type = scale_tensors[0]->GetType();
+    if (scale_type == kNumberTypeUInt64) {
+      std::transform(x_tensors.begin(), x_tensors.end(), std::back_inserter(output_types),
+                     [](const InferInfoPtr &info) { return kNumberTypeInt8; });
+    } else if (scale_type == kNumberTypeBFloat16) {
+      std::transform(x_tensors.begin(), x_tensors.end(), std::back_inserter(output_types),
+                     [](const InferInfoPtr &info) { return kNumberTypeBFloat16; });
+    } else if (scale_type == kNumberTypeFloat32) {
+      std::transform(x_tensors.begin(), x_tensors.end(), std::back_inserter(output_types),
+                     [](const InferInfoPtr &info) { return kNumberTypeFloat16; });
+    } else {
+      MS_EXCEPTION(ValueError) << "For '" << primitive->name()
+                               << "', the scale only support Uint16, BFloat16 and Float32, but got " << scale_type;
     }
-    const auto &scale_tensors = input_infos[scale_idx_]->GetSequenceElements();
-    std::transform(scale_tensors.begin(), scale_tensors.end(), std::back_inserter(output_types),
-                   [](const InferInfoPtr &info) { return info->GetType(); });
   }
   return output_types;
 }

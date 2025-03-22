@@ -33,7 +33,22 @@ std::vector<BaseTensorPtr> ConvertOptiaonlValueTupleToVector(const std::optional
   }
   return {};
 }
+
+void UnifyWeightShape(const std::vector<BaseTensorPtr> &ori_weights, std::vector<BaseTensorPtr> *new_weights) {
+  for (const auto &ori_weight : ori_weights) {
+    if (ori_weight->data_type() == kNumberTypeInt4) {
+      auto new_weight = std::make_shared<BaseTensor>(*ori_weight);
+      auto ori_weight_shape = ori_weight->shape();
+      ori_weight_shape.back() *= 2;
+      (void)new_weight->set_shape(ori_weight_shape);
+      (void)new_weights->emplace_back(new_weight);
+    } else {
+      (void)new_weights->emplace_back(ori_weight);
+    }
+  }
+}
 }  // namespace
+
 void GroupedMatmulV4AscendCustomize(
   const std::shared_ptr<OpRunner> &op, const ValueTuplePtr &x_tensor_list, const ValueTuplePtr &weight_tensor_list,
   const std::optional<ValueTuplePtr> &bias_tensor_list, const std::optional<ValueTuplePtr> &scale_tensor_list,
@@ -80,9 +95,12 @@ void GroupedMatmulV4AscendCustomize(
   std::vector<BaseTensorPtr> dyn_quant_scale_out;
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
 
+  std::vector<BaseTensorPtr> new_weights;
+  UnifyWeightShape(weight, &new_weights);
+
   // Async
   PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>(
-    [op, x, weight, bias, scale, offset, antiquant_scale, antiquant_offset, pre_token_scale, group_list,
+    [op, x, new_weights, weight, bias, scale, offset, antiquant_scale, antiquant_offset, pre_token_scale, group_list,
      activation_input, activation_quant_scale, activation_quant_offset, split_item, group_type, group_list_type,
      act_type, activation_feature_out, dyn_quant_scale_out]() {
       auto device_context = op->device_context();
@@ -94,7 +112,7 @@ void GroupedMatmulV4AscendCustomize(
       // Malloc for output tensors
       PyBoostUtils::MallocOpOutputs(device_context, outputs);
 
-      LAUNCH_ACLNN(aclnnGroupedMatmulV4, device_context, op->stream_id(), x, weight, bias, scale, offset,
+      LAUNCH_ACLNN(aclnnGroupedMatmulV4, device_context, op->stream_id(), x, new_weights, bias, scale, offset,
                    antiquant_scale, antiquant_offset, pre_token_scale, group_list, activation_input,
                    activation_quant_scale, activation_quant_offset, split_item, group_type, group_list_type, act_type,
                    outputs, activation_feature_out, dyn_quant_scale_out);
