@@ -236,14 +236,6 @@ void ClearNodeInfo(const KernelGraphPtr &graph) {
   }
 }
 
-#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
-void IntHandler(int, siginfo_t *, void *) {
-  int this_pid = getpid();
-  MS_LOG(WARNING) << "Process " << this_pid << " receive KeyboardInterrupt signal.";
-  (void)kill(this_pid, SIGTERM);
-}
-#endif
-
 #if defined(__linux__) && defined(WITH_BACKEND)
 void SendFinishTransform(const std::string &actor_set_name) {
   auto node = ClusterContext::instance()->node();
@@ -867,6 +859,11 @@ void GraphScheduler::BuildAndScheduleGlobalActor() {
 }
 
 ActorSet *GraphScheduler::Transform(const GraphCompilerInfo &graph_compiler_info) {
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
+  if (!RegisterGlobalSignalHandler(DefaultIntHandler)) {
+    MS_EXCEPTION(RuntimeError) << "Failed to register the callback signal handling.";
+  }
+#endif
   struct ScopeCleaner {
     GraphScheduler *const scheduler_;
     explicit ScopeCleaner(GraphScheduler *scheduler) : scheduler_(scheduler) {}
@@ -1217,9 +1214,6 @@ void GraphScheduler::Run(ActorSet *const actor_set, const std::vector<std::vecto
   }
   MS_EXCEPTION_IF_NULL(actor_set);
   MS_EXCEPTION_IF_NULL(actor_set->data_prepare_actor_);
-#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
-  SignalGuard sg(IntHandler);
-#endif
 
   CheckUceBeforeGraphRun(actor_set);
 
