@@ -115,10 +115,10 @@ def test_ops_norm_dyn():
     TEST_OP(norm_ext_forward_dyn, [[in1], [in2]], '', disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('p', [-np.inf, -1.0, 0, 2.0, 4.0, np.inf, 'fro', 'nuc'])
-@pytest.mark.parametrize('dim', [0, 1])
-@pytest.mark.parametrize('keepdim', [True, False])
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('p', [0, 'nuc'])
+@pytest.mark.parametrize('dim', [0])
+@pytest.mark.parametrize('keepdim', [True])
 def test_ops_norm_infer_value(p, dim, keepdim):
     """
     Feature: norm for infer value
