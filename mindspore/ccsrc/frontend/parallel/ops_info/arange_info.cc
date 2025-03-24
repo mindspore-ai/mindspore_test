@@ -54,23 +54,19 @@ Status ArangeInfo::ComputeReplaceGraph(const CNodePtr &cnode) {
   auto new_start = gen_g.PushBack({gen_g.NewOpInst(SCALAR_ADD), start, start_offset});
   auto new_end = gen_g.PushBack({gen_g.NewOpInst(SCALAR_ADD), new_start, single_slice_offset});
 
-  MS_EXCEPTION_IF_NULL(cnode->input(1));
-  MS_EXCEPTION_IF_NULL(cnode->input(1)->abstract());
-  MS_EXCEPTION_IF_NULL(cnode->input(1)->abstract()->GetType());
-  auto dtype_id_start = cnode_->input(1)->abstract()->GetType()->type_id();
-  auto new_start_same_type = gen_g.PushBack({gen_g.NewOpInst(SCALAR_CAST), new_start, CreatInt64Imm(dtype_id_start)});
+  MS_EXCEPTION_IF_NULL(cnode->Type());
+  auto input_dtype_id = cnode->Type()->cast<mindspore::TensorTypePtr>()->element()->type_id();
+  auto new_start_same_type = gen_g.PushBack({gen_g.NewOpInst(SCALAR_CAST), new_start, CreatInt64Imm(input_dtype_id)});
+  auto new_end_same_type = gen_g.PushBack({gen_g.NewOpInst(SCALAR_CAST), new_end, CreatInt64Imm(input_dtype_id)});
+  auto new_step_same_type = gen_g.PushBack({gen_g.NewOpInst(SCALAR_CAST), step, CreatInt64Imm(input_dtype_id)});
 
-  MS_EXCEPTION_IF_NULL(cnode->input(2));
-  MS_EXCEPTION_IF_NULL(cnode->input(2)->abstract());
-  MS_EXCEPTION_IF_NULL(cnode->input(2)->abstract()->GetType());
-  auto dtype_id_end = cnode_->input(2)->abstract()->GetType()->type_id();
-  auto new_end_same_type = gen_g.PushBack({gen_g.NewOpInst(SCALAR_CAST), new_end, CreatInt64Imm(dtype_id_end)});
+  auto arange =
+    gen_g.PushBack({gen_g.NewOpInst(ARANGE), new_start_same_type, new_end_same_type, new_step_same_type, dtype_});
 
-  auto arange = gen_g.PushBack({gen_g.NewOpInst(ARANGE), new_start_same_type, new_end_same_type, step, dtype_});
+  std::vector<std::pair<AnfNodePtr, int64_t>> inputs_nodes = {
+    std::make_pair(end_minus_start, 2), std::make_pair(end_minus_start, 1), std::make_pair(new_start, 1),
+    std::make_pair(new_step_same_type, 3)};
 
-  std::vector<std::pair<AnfNodePtr, int64_t>> inputs_nodes = {std::make_pair(end_minus_start, 2),
-                                                              std::make_pair(end_minus_start, 1),
-                                                              std::make_pair(new_start, 1), std::make_pair(arange, 3)};
   replace_graph_ = std::make_shared<std::pair<std::vector<std::pair<AnfNodePtr, int64_t>>, AnfNodePtr>>(
     std::make_pair(inputs_nodes, arange));
   MS_LOG(INFO) << name_ << ": output_size_ " << output_size_ << ", split_num_ " << split_num_;
