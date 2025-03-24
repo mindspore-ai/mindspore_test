@@ -92,3 +92,4 @@ def generate_api_files(resource_mgr):
     gen_tensor_docs_code()
     # generate functional_overload.py which init pybind mint APIs from cpp
     gen_functional_overload_py(work_path, mint_func_protos, alias_api_mapping)
+    print(mint_func_protos)

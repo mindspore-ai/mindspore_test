@@ -1,0 +1,12 @@
+#operator less
+less_scalar:
+  args:
+    input:
+      dtype: tensor
+    other:
+      dtype: number
+  returns:
+    output:
+      dtype: tensor
+  dispatch:
+    enable: True
