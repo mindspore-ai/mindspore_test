@@ -461,6 +461,7 @@ class MetaImpl : public MetaFuncGraph {
   void CheckInputs(const AbstractBasePtrList &input_args) const;
   FuncGraphPtr BuildSubFunction(const std::string &func_name, const BlockFunc &sub_func);
   void DefineCustomBprop(const FuncGraphPtr &graph);
+  void ConvertTypeIdToType(NodePtrList *nodes);
   void DumpIRForMetaDsl(const FuncGraphPtr &graph) const;
 
   PrimitivePtr prim_{nullptr};
