@@ -50,7 +50,7 @@ def set_device(device_target, device_id=None):
 
     Args:
         device_target (str): The target device to run, only support "Ascend", "GPU", and "CPU".
-        device_id (int): ID of the target device, the value must be in [0, device_num_per_host-1],
+        device_id (int, optional): ID of the target device, the value must be in [0, device_num_per_host-1],
             where device_num_per_host refers to the total number of devices on the host. Default: ``None`` .
             The frame will set different default behaviours according to the scenario:
             if it is a single-card scenario, the frame will be set to 0.
