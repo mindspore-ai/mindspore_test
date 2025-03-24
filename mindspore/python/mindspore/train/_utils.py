@@ -65,6 +65,7 @@ def _get_types_and_shapes(dataset):
     dataset_shapes = dataset.output_shapes()
     return dataset_types, dataset_shapes
 
+
 def enable_data_broadcast():
     """Get status to indicate if enable dataset broadcast."""
     return MSContext.get_instance().get_param(ms_ctx_param.dataset_broadcast_opt_level) > 0
