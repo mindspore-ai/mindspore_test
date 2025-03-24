@@ -3,7 +3,10 @@ mindspore.ops.minimum
 
 .. py:function:: mindspore.ops.minimum(input, other)
 
-    逐元素计算两个输入Tensor中的最小值。
+    逐元素计算两个输入tensor的最小值。
+
+    .. math::
+        output_i = \min(input_i, other_i)
 
     .. note::
         - 输入 `input` 和 `other` 遵循隐式类型转换规则，使数据类型保持一致。
@@ -12,16 +15,9 @@ mindspore.ops.minimum
         - 支持广播操作。
         - 当一个元素与NaN比较时，将返回NaN。
 
-    .. math::
-        output_i = \min(input_i, other_i)
-
     参数：
-        - **input** (Union[Tensor, Number, bool]) - 第一个输入可以是Number或bool，也可以是数据类型为Number或bool的Tensor。
-        - **other** (Union[Tensor, Number, bool]) - 第二个输入可以是Number或bool，也可以是数据类型为Number或bool的Tensor。
+        - **input** (Union[Tensor, Number, bool]) - 第一个输入。
+        - **other** (Union[Tensor, Number, bool]) - 第二个输入。
 
     返回：
-        一个Tensor，其shape与广播后的shape相同，其数据类型为两个输入中精度较高的类型。
-
-    异常：
-        - **TypeError** - `input` 和 `other` 不是以下之一：Tensor、Number、bool。
-        - **ValueError** - `input` 和 `other` 的广播后的shape不相同。
+        Tensor

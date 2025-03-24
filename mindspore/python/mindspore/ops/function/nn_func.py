@@ -4971,37 +4971,25 @@ def leaky_relu(input, alpha=0.2):
 
 def intopk(x1, x2, k):
     r"""
-    Determines whether the targets are in the top `k` predictions.
+    Return whether the elements in second input tensor exist among the top `k` elements of the first input tensor.
 
     Args:
-        x1 (Tensor): A 2D Tensor defines the predictions of a batch of samples with float16 or float32
-          data type.
-        x2 (Tensor): A 1D Tensor defines the labels of a batch of samples with int32 data type. The size of `x2`
-          must be equal to the first dimension of `x1`. The values of `x2` can not be negative and
-          must be equal to or less than index of x1's second dimension.
-        k (int): Specifies the number of top elements to be used for computing precision along the last dimension.
+        x1 (Tensor): The 2-D input tensor.
+        x2 (Tensor): The 1-D input tensor, should satisfy :math:`x2.shape[0] = x1.shape[0]` .
+        k (int): Top `k` elements.
 
     Returns:
-        Tensor has 1 dimension of type bool and the same shape with `x2`. For labeling sample `i` in `x2`,
-        if the label in the first `k` predictions for sample `i` is in `x1`, then the value is True, otherwise False.
-
-    Raises:
-        TypeError: If `k` is not an int.
-        TypeError: If `x1` or `x2` is not a Tensor.
-        TypeError: If dtype of `x1` is neither float16 nor float32.
+        A 1-D tensor whose data type is bool, has the same shape with `x2`.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x1 = Tensor(np.array([[1, 8, 5, 2, 7], [4, 9, 1, 3, 5]]), mindspore.float32)
-        >>> x2 = Tensor(np.array([1, 3]), mindspore.int32)
-        >>> output = ops.intopk(x1, x2, 3)
-        >>> print(output)
-        [ True  False]
+        >>> x1 = mindspore.tensor([[1, 8, 5, 2, 7], [4, 9, 1, 3, 5]], mindspore.float32)
+        >>> x2 = mindspore.tensor([1, 3], mindspore.int32)
+        >>> mindspore.ops.intopk(x1, x2, 3)
+        Tensor(shape=[2], dtype=Bool, value= [ True, False])
     """
     _in_topk = _get_cache_prim(P.InTopK)(k)
     return _in_topk(x1, x2)
