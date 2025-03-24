@@ -1109,11 +1109,6 @@ class ParameterTuple(tuple):
 
         Returns:
             Tuple, the new Parameter tuple.
-
-        Tutorial Examples:
-            - `Tensor and Parameter - Parameter Tuple
-              <https://mindspore.cn/docs/en/master/model_train/model_building/tensor_and_parameter.html
-              #parameter-tuple>`_
         """
         Validator.check_str_by_regular(prefix)
         new = []

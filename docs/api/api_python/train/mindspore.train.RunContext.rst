@@ -7,7 +7,7 @@ mindspore.train.RunContext
 
     `RunContext` 主要用于收集训练或推理过程中模型的上下文相关信息，并作为入参传入callback对象中来实现信息的共享。
 
-    Callback的类方法中，调用 `RunContext.original_args()` 可以获取模型当前的上下文信息，用户也可以为此信息添加额外的自定义属性，同时 `request_stop()` 方法可以控制训练过程的停止。具体用法请查看 `回调机制Callback <https://www.mindspore.cn/docs/zh-CN/master/model_train/train_process/model/callback.html>`_。
+    Callback的类方法中，调用 `RunContext.original_args()` 可以获取模型当前的上下文信息，用户也可以为此信息添加额外的自定义属性，同时 `request_stop()` 方法可以控制训练过程的停止。
 
     `RunContext.original_args()` 存储的模型信息为一个字典型变量，在训练和推理过程会存储不同的属性。详情如下：
 
@@ -74,16 +74,9 @@ mindspore.train.RunContext
         返回：
             dict，含有模型的相关信息的对象。
 
-        教程样例：
-            - `回调机制 Callback - 自定义回调机制
-              <https://mindspore.cn/docs/zh-CN/master/model_train/train_process/model/callback.html#自定义回调机制>`_
-
     .. py:method:: request_stop()
 
         在训练期间设置停止请求。
 
         可以使用此函数请求停止训练。 `Model.train()` 会检查是否调用此函数。
 
-        教程样例：
-            - `回调机制 Callback - 自定义终止训练
-              <https://mindspore.cn/docs/zh-CN/master/model_train/train_process/model/callback.html#自定义终止训练>`_

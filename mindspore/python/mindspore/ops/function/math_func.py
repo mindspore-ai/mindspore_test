@@ -8400,7 +8400,7 @@ def matrix_norm_ext(A, ord='fro', dim=(-2, -1), keepdim=False, *, dtype=None):
 
     Note:
         Dynamic shape, Dynamic rank and mutable input is not supported in `graph mode (mode=mindspore.GRAPH_MODE)
-        <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html>`_.
+        <https://www.mindspore.cn/tutorials/en/master/compile/static_graph.html>`_.
 
     Supported Platforms:
         ``Ascend``
@@ -8521,7 +8521,7 @@ def linalg_norm(A, ord=None, dim=None, keepdim=False, *, dtype=None):
 
     Note:
         Dynamic shape, Dynamic rank and mutable input is not supported in `graph mode (mode=mindspore.GRAPH_MODE)
-        <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html>`_.
+        <https://www.mindspore.cn/tutorials/en/master/compile/static_graph.html>`_.
 
     Supported Platforms:
         ``Ascend``
@@ -8595,7 +8595,7 @@ def norm_ext(input, p='fro', dim=None, keepdim=False, *, dtype=None):
 
     Note:
         Dynamic shape, Dynamic rank and mutable input is not supported in `graph mode (mode=mindspore.GRAPH_MODE)
-        <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html>`_.
+        <https://www.mindspore.cn/tutorials/en/master/compile/static_graph.html>`_.
 
     Supported Platforms:
         ``Ascend``
@@ -11163,7 +11163,7 @@ def einsum_ext(equation, *operands):
         In this format, equation can be derived by the sublists which are made up of Python's Ellipsis and list of
         integers in [0, 52). Each operand is followed by a sublist and an output sublist is at the end.
         Dynamic shape, dynamic rank input is not supported in `graph mode (mode=mindspore.GRAPH_MODE)
-        <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html>`_.
+        <https://www.mindspore.cn/tutorials/en/master/compile/static_graph.html>`_.
 
     .. warning::
         This is an experimental API that is subject to change or deletion.

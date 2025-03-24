@@ -6,7 +6,7 @@ mindspore.lazy_inline
     指定一个cell是可复用的。该cell在前端编译为可复用的子图，后端根据策略内联。
     注册此装饰器到cell的内置函数 `__init__` 时，此装饰器会按照 `attrs` 的值去添加 `__init__` 函数对应的入参作为cell的属性。
 
-    详细功能说明可参考 `使用lazy_inline装饰器 <https://www.mindspore.cn/docs/zh-CN/master/model_train/program_form/static_graph_syntax/static_graph_expert_programming.html#%E4%BD%BF%E7%94%A8lazy-inline%E8%A3%85%E9%A5%B0%E5%99%A8>`_ 。
+    详细功能说明可参考 `使用lazy_inline装饰器 <https://www.mindspore.cn/tutorials/zh-CN/master/compile/static_graph_expert_programming.html#%E4%BD%BF%E7%94%A8lazy-inline%E8%A3%85%E9%A5%B0%E5%99%A8>`_ 。
 
     .. warning::
         该特性仅支持Ascend，其他硬件不支持。

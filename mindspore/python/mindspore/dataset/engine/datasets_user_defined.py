@@ -812,7 +812,7 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
           There are several classes/functions that can help you reduce the size of member variables, and you can choose
           to use them:
 
-          1. :class:`mindspore.dataset.utils.LineReader`: Use this class to initialize your text file object in the
+          :class:`mindspore.dataset.utils.LineReader`: Use this class to initialize your text file object in the
           `__init__` function. Then read the file content based on the line number of the object with the `__getitem__`
           function.
 
