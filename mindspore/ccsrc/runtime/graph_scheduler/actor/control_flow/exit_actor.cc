@@ -465,8 +465,7 @@ void ExitActor::CopyDeviceAddress(OpContext<DeviceTensor> *const context) {
                       << new_device_tensors[iter->second]->pointer_ref_count()
                       << " between device address:" << new_device_tensor << " and:" << new_device_tensors[iter->second];
         continue;
-      }
-      if (is_need_copy_device_tensors_[i] == CopyStat::COPY_POINTER_REF_COUNT) {
+      } else if (is_need_copy_device_tensors_[i] == CopyStat::COPY_POINTER_REF_COUNT) {
         MS_LOG(DEBUG) << "Set pointer ref count from:" << input_device_tensor->PrintInfo()
                       << " to:" << new_device_tensor->PrintInfo() << " for actor:" << GetAID();
         new_device_tensor->set_pointer_ref_count(input_device_tensor->pointer_ref_count());
