@@ -70,8 +70,13 @@ Status ActivationInfo::GetAttrs() {
 
 Status ActivationBase::CheckInputLayout() {
   if (inputs_tensor_info_.size() != kSizeOne) {
-    MS_LOG(ERROR) << "The size of input_tensor_layout for " << name_ << " is " << inputs_tensor_info_.size()
-                  << " rather than 1.";
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << "The size of input_tensor_layout for " << name_ << " is " << inputs_tensor_info_.size()
+                      << " rather than 1.";
+    } else {
+      MS_LOG(ERROR) << "The size of input_tensor_layout for " << name_ << " is " << inputs_tensor_info_.size()
+                    << " rather than 1.";
+    }
     return FAILED;
   }
   return SUCCESS;
@@ -79,8 +84,13 @@ Status ActivationBase::CheckInputLayout() {
 
 Status ActivationBase::CheckOutputLayout() {
   if (outputs_tensor_info_.size() != outputs_size_) {
-    MS_LOG(ERROR) << "The size of output_tensor_layout for " << name_ << " is " << outputs_tensor_info_.size()
-                  << " rather than 1.";
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << "The size of output_tensor_layout for " << name_ << " is " << outputs_tensor_info_.size()
+                      << " rather than 1.";
+    } else {
+      MS_LOG(ERROR) << "The size of output_tensor_layout for " << name_ << " is " << outputs_tensor_info_.size()
+                    << " rather than 1.";
+    }
     return FAILED;
   }
   if (output_infer_tensor_layout_.tensor_shape_before().array().empty()) {
@@ -356,8 +366,13 @@ std::vector<StrategyPtr> Softmax::GenerateOpStrategies(int64_t stage_id) {
 
 Status Softmax::CheckInputLayout() {
   if (inputs_tensor_info_.size() != kSizeOne) {
-    MS_LOG(ERROR) << "The size of input_tensor_layout for " << name_ << " is " << inputs_tensor_info_.size()
-                  << " rather than 1.";
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << "The size of input_tensor_layout for " << name_ << " is " << inputs_tensor_info_.size()
+                      << " rather than 1.";
+    } else {
+      MS_LOG(ERROR) << "The size of input_tensor_layout for " << name_ << " is " << inputs_tensor_info_.size()
+                    << " rather than 1.";
+    }
     return FAILED;
   }
   auto tensor_layout = inputs_tensor_info_[kIndex0].tensor_layout();
@@ -1251,8 +1266,13 @@ Status SortExtInfo::GetAttrs() {
 
 Status SortExtInfo::CheckInputLayout() {
   if (inputs_tensor_info_.size() != kSizeOne) {
-    MS_LOG(ERROR) << "For distributed operator " << name_ << ", the size of inputs_tensor_info should be 1, but got "
-                  << inputs_tensor_info_.size() << ".";
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << "For distributed operator " << name_
+                      << ", the size of inputs_tensor_info should be 1, but got " << inputs_tensor_info_.size() << ".";
+    } else {
+      MS_LOG(ERROR) << "For distributed operator " << name_ << ", the size of inputs_tensor_info should be 1, but got "
+                    << inputs_tensor_info_.size() << ".";
+    }
     return FAILED;
   }
   auto input_tensor_layout = inputs_tensor_info_[kIndex0].tensor_layout();
@@ -1272,8 +1292,15 @@ Status SortExtInfo::CheckInputLayout() {
   if (input_shard_strategy[axis_[kIndex0]].size() == 1 && input_shard_strategy[axis_[kIndex0]][kIndex0] == 1) {
     return SUCCESS;
   } else {
-    MS_LOG(ERROR) << "For distributed operator " << name_ << ", the input's dimension 'dim' can not be split, the 'dim'"
-                  << " is " << axis_[kIndex0] << " and the input shard strategy is " << input_shard_strategy << ".";
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << "For distributed operator " << name_
+                      << ", the input's dimension 'dim' can not be split, the 'dim'"
+                      << " is " << axis_[kIndex0] << " and the input shard strategy is " << input_shard_strategy << ".";
+    } else {
+      MS_LOG(ERROR) << "For distributed operator " << name_
+                    << ", the input's dimension 'dim' can not be split, the 'dim'"
+                    << " is " << axis_[kIndex0] << " and the input shard strategy is " << input_shard_strategy << ".";
+    }
     return FAILED;
   }
   return SUCCESS;

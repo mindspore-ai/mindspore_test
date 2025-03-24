@@ -320,25 +320,42 @@ Status SplitInfo::InferTensorMap() {
 
 Status SplitInfo::CheckInputLayout() {
   if (inputs_tensor_info_.size() != kSizeOne) {
-    MS_LOG(ERROR) << "The size of input_tensor_layout for " << name_ << " is " << inputs_tensor_info_.size()
-                  << " rather than 1.";
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << "The size of input_tensor_layout for " << name_ << " is " << inputs_tensor_info_.size()
+                      << " rather than 1.";
+    } else {
+      MS_LOG(ERROR) << "The size of input_tensor_layout for " << name_ << " is " << inputs_tensor_info_.size()
+                    << " rather than 1.";
+    }
     return FAILED;
   }
   auto stra = inputs_tensor_info_.front().InferStrategy();
   if (axis_ >= stra.size()) {
-    MS_LOG(ERROR) << name_ << ": The axis is out of range, the axis is " << axis_;
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << name_ << ": The axis is out of range, the axis is " << axis_;
+    } else {
+      MS_LOG(ERROR) << name_ << ": The axis is out of range, the axis is " << axis_;
+    }
     return FAILED;
   }
   auto input_layout = inputs_tensor_info_.front().tensor_layout();
   if (input_layout.IsInterleavedParallel()) {
     auto tensor_map_axis = input_layout.tensor_map_before()[axis_];
     if (std::find(tensor_map_axis.begin(), tensor_map_axis.end(), 0) != tensor_map_axis.end()) {
-      MS_LOG(ERROR) << name_ << ": The axis can not be split by interleaved_parallel.";
+      if (is_in_layout_propagation_) {
+        MS_LOG(WARNING) << name_ << ": The axis can not be split by interleaved_parallel.";
+      } else {
+        MS_LOG(ERROR) << name_ << ": The axis can not be split by interleaved_parallel.";
+      }
       return FAILED;
     }
   }
   if (stra[axis_] != 1 && !skip_redistribution_) {
-    MS_LOG(ERROR) << name_ << ": The axis can not be split";
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << name_ << ": The axis can not be split";
+    } else {
+      MS_LOG(ERROR) << name_ << ": The axis can not be split";
+    }
     return FAILED;
   }
   return SUCCESS;

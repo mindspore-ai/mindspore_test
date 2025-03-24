@@ -247,7 +247,7 @@ Status TransposeInfo::CheckOutputLayout() {
       correspond_target_tensor_map = axis_1;
     }
     if (!(IsValidTensorMap(correspond_target_tensor_map) && IsValidTensorMap(correspond_og_tensor_map))) {
-      MS_LOG(ERROR) << name_ << ": the output tensor layout is not matched, and devicematrix can not be transpose.";
+      MS_LOG(ERROR) << name_ << ": the output tensor map is not matched, and devicematrix can not be transpose.";
       return FAILED;
     }
     auto og_start_pos = correspond_og_tensor_map[0];
@@ -285,7 +285,11 @@ Status TransposeInfo::CheckOutputLayout() {
 
 Status TransposeInfo::CheckInputLayout() {
   if (inputs_tensor_info_.size() != kSizeOne) {
-    MS_LOG(ERROR) << name_ << ": The size of inputs tensor info must be 1, but got " << inputs_tensor_info_.size();
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << name_ << ": The size of inputs tensor info must be 1, but got " << inputs_tensor_info_.size();
+    } else {
+      MS_LOG(ERROR) << name_ << ": The size of inputs tensor info must be 1, but got " << inputs_tensor_info_.size();
+    }
     return FAILED;
   }
   auto in_layout = inputs_tensor_info_[kIndex0].tensor_layout();
