@@ -82,7 +82,8 @@ class FunctionalMapCppGenerator(BaseGenerator):
         """
         ops_inc_head_set = set()
         dep_method_decl_list = self._get_dep_method_decl_list(tensor_method_protos_data)
-        tensor_method_overload_list, op_inc_1 = self._get_functional_method_map(tensor_method_protos_data, alias_func_mapping)
+        tensor_method_overload_list, op_inc_1 = self._get_functional_method_map(tensor_method_protos_data,
+                                                                                alias_func_mapping)
         mint_overload_list, op_inc_2 = self._get_functional_mint_map(mint_func_protos_data, alias_func_mapping)
         tensor_method_kw_only_args_list = self._get_tensor_method_kwonlyargs_map(tensor_method_protos_data)
         mint_kw_only_args_list = self._get_mint_kwonlyargs_map(mint_func_protos_data, alias_func_mapping)
@@ -319,6 +320,7 @@ class FunctionalMapCppGenerator(BaseGenerator):
         """
 
         op_inc_set = set()
+
         def get_sort_func_method_list(func_protos):
             """
             Retrieves a sorted list of operator primitives, prioritizing deprecated operators.
