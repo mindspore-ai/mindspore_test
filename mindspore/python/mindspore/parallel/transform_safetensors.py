@@ -31,6 +31,7 @@ from safetensors import safe_open
 
 import mindspore as ms
 from mindspore import log as logger
+from mindspore.common import dtype as mstype
 from mindspore.log import vlog_print
 from mindspore.parallel._parallel_serialization import _get_device_num_from_strategy, _make_dir, \
     _extract_layout_map, _extract_src_dst_layout_map, _parameter_not_in_local_stage, _extract_pipeline_stage_num, \
@@ -42,6 +43,7 @@ from mindspore.parallel._tensor import _get_tensor_strategy, _construct_from_to_
 from mindspore.parallel._parallel_serialization import _build_searched_strategy, _load_protobuf_strategy, \
     _convert_to_list
 
+safetensors_to_mstype = {'Int4': mstype.qint4x2}
 
 def _progress_bar(iterable, total=None):
     """
@@ -945,6 +947,11 @@ def _load_parallel_checkpoint(file_info):
             if cur_param_name not in f.keys():
                 continue
             sf_obj = f.get_slice(cur_param_name)
+            qint4 = False
+            if f.metadata() is not None and param_name in f.metadata().keys():
+                qint4 = True
+                sf_dtype = f.metadata()[param_name]
+                ms_dtype = safetensors_to_mstype[sf_dtype]
 
         tensor_shape = sf_obj.get_shape()
         from_dev_matrix = [1]
@@ -997,7 +1004,10 @@ def _load_parallel_checkpoint(file_info):
             end_time = time.time()
             cost_time = end_time - start_time
             total_io_cost_time += cost_time
-        total_param[param_name] = ms.Parameter(ms.Tensor.from_numpy(slice_param))
+        if qint4:
+            total_param[param_name] = ms.Parameter(ms.Tensor(slice_param, dtype=ms_dtype))
+        else:
+            total_param[param_name] = ms.Parameter(ms.Tensor.from_numpy(slice_param))
     vlog_print("1", "ME", __file__, sys._getframe().f_lineno,
                f"load distributed safetensors io cost time:{total_io_cost_time}.")
     total_param = _process_hyper_params(file_list, total_safetensors_dir, total_param)
