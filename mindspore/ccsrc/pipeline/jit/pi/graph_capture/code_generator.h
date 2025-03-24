@@ -230,8 +230,8 @@ class LoopBodyReCaptureCodeGenerator {
   Graph *graph_;
   PyCodeObject *co_;
   bool is_for_loop_ = false;
-  int loopBodyStartBci_;
-  int loopBodyEndBci_;
+  int loopBodyStartBci_{0};
+  int loopBodyEndBci_{0};
 };
 
 class CodeBreakGenerator;

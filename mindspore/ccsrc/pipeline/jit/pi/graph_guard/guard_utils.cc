@@ -416,11 +416,12 @@ class ListData : public ItemData {
     }
   }
   bool CheckList(PyObject *obj) const {
-    if (tp_ != ItemType::PyList || listVar_.size() != (size_t)PyList_Size(obj)) {
+    auto list = py::cast<py::list>(obj);
+    if (tp_ != ItemType::PyList || listVar_.size() != list.size()) {
       return false;
     }
     for (size_t idx = 0; idx < listVar_.size(); ++idx) {
-      if (!(*(listVar_[idx]) == PyList_GET_ITEM(obj, idx))) {
+      if (!(*(listVar_[idx]) == list[idx].ptr())) {
         return false;
       }
     }
@@ -428,11 +429,12 @@ class ListData : public ItemData {
   }
 
   bool CheckTuple(PyObject *obj) const {
-    if (tp_ != ItemType::PyTuple || listVar_.size() != (size_t)PyTuple_GET_SIZE(obj)) {
+    auto tuple = py::cast<py::tuple>(obj);
+    if (tp_ != ItemType::PyTuple || listVar_.size() != tuple.size()) {
       return false;
     }
     for (size_t idx = 0; idx < listVar_.size(); ++idx) {
-      if (!(*(listVar_[idx]) == PyTuple_GET_ITEM(obj, idx))) {
+      if (!(*(listVar_[idx]) == tuple[idx].ptr())) {
         return false;
       }
     }
@@ -597,8 +599,9 @@ class SliceData : public ItemData {
   bool operator==(const ItemData &obj) const override {
     if (ItemData::operator==(obj)) {
       const SliceData &other = static_cast<const SliceData &>(obj);
-      return (!specialized_ || (other.sliceVar_[0] == sliceVar_[0] && other.sliceVar_[1] == sliceVar_[1] &&
-                                other.sliceVar_[2] == sliceVar_[2]));
+      return (!specialized_ || (other.sliceVar_[SLICE_IDX_START] == sliceVar_[SLICE_IDX_START] &&
+                                other.sliceVar_[SLICE_IDX_STOP] == sliceVar_[SLICE_IDX_STOP] &&
+                                other.sliceVar_[SLICE_IDX_STEP] == sliceVar_[SLICE_IDX_STEP]));
     }
     return false;
   }
@@ -612,7 +615,8 @@ class SliceData : public ItemData {
       Py_ssize_t stop = 0;
       Py_ssize_t step = 0;
       PySlice_Unpack(obj, &start, &stop, &step);
-      return !specialized_ || (start == sliceVar_[0] && stop == sliceVar_[1] && step == sliceVar_[2]);
+      return !specialized_ || (start == sliceVar_[SLICE_IDX_START] && stop == sliceVar_[SLICE_IDX_STOP] &&
+                               step == sliceVar_[SLICE_IDX_STEP]);
     }
     return false;
   }
@@ -626,6 +630,10 @@ class SliceData : public ItemData {
   }
 
  protected:
+  static constexpr int SLICE_IDX_START = 0;
+  static constexpr int SLICE_IDX_STOP = 1;
+  static constexpr int SLICE_IDX_STEP = 2;
+
   void SubInfo(InfoPack *info) override { (*info) << sliceVar_; }
   std::vector<int64_t> sliceVar_;
 };
@@ -2515,8 +2523,6 @@ class EqGuard : public GuardItem {
 
   bool CheckData(PyObject *obj) {
     // It is faster to use PyObject* to compare than createitem
-    // ItemDataPtr other = CreateItem(obj, specialized_, recurse_);
-    // return *dp_ == *other;
     return *dp_ == obj;
   }
 

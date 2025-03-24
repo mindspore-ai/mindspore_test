@@ -605,7 +605,8 @@ bool GraphAnalyzer::AnalyzeTopGraphAliveNodes(const std::vector<ValueNode *> &al
     // Unfortunately, due to some defectuve side-effect node processing, they do not have
     // This issue must be fixed, just pass-by and reminder here
     // This code will be redundant after the issue fixed.
-    bool is_not_in_top_graph = (func_graph_builder->FindNodeByWrapper(node->abstract_wrapper()) == nullptr);
+    auto graph_node = func_graph_builder->FindNodeByWrapper(node->abstract_wrapper());
+    bool is_not_in_top_graph = (graph_node == nullptr);
     // it is top graph node but not find in top func_graph
 
     // Contains data whose type is not supported by the graph, analyze its inputs

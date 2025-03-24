@@ -469,7 +469,8 @@ void SideEffect::MergeTensorOperations() {
       erased.push_back(&entry);
     }
   }
-  if (latest.empty() /* no tensor is modified */ || erased.empty() /* no tensor is modified multiple times */) {
+  // no tensor is modified or no tensor is modified multiple times
+  if (latest.empty() || erased.empty()) {
     return;
   }
   // update alive

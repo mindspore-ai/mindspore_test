@@ -51,13 +51,11 @@ constexpr OptimizeFuncT optimize_func_map[] = {FUNC_MAPPING_ENUM};
 // fold trace path `x=[a[0]][0]` to `x=a`
 TracePtr FoldTupleGetItem(const OpTracePtr &trace);
 // fold trace path `x={"k":{"k":a]["k"]}}["k"]` to `x=a`, all key must be constant
-// TracePtr FoldDictGetItem(const OpTracePtr &trace);
 // fold trace path `x=[]+[]+[a]` to `x=[a]`
 TracePtr FoldTupleAdd(const OpTracePtr &trace);
 // fold trace path `x=len([1,2,3])` to `x=3`, this is internal case
 TracePtr FoldTupleLengthTrace(const OpTracePtr &trace);
 // fold trace path `x=[p[0],p[1]]`, to `x=p[0:2]`
-// TracePtr FoldBuildTupleWithSubscipt(const OpTracePtr &trace);
 
 std::string GenSignature(PyTypeObject *const *arr, size_t size) {
   std::stringstream s;
@@ -215,7 +213,7 @@ TracePtr FoldTupleAdd(const OpTracePtr &trace) {
   }
   TraceVector params;
   for (const auto &tr : {left_op, right_op}) {
-    for (int i = 0, size = tr->GetParamCount(); i < size; ++i) {
+    for (size_t i = 0, size = tr->GetParamCount(); i < size; ++i) {
       params.push_back(tr->GetParam(i));
     }
   }
@@ -245,7 +243,7 @@ TracePtr OpTrace::Fold() {
     return current;
   }
   is_fold_ = true;
-  for (int i = 0, size = this->GetParamCount(); i < size; ++i) {
+  for (size_t i = 0, size = this->GetParamCount(); i < size; ++i) {
     if (this->GetParam(i)->GetTraceType() == TraceType::Operation) {
       OpTracePtr input = std::static_pointer_cast<OpTrace>(this->GetParam(i));
       if (!input->is_fold_) {

@@ -165,7 +165,6 @@ class AbstractObjectBase {
   unsigned ms_flag_;
   AObject *pre_version_{nullptr};
   AObject *next_version_{nullptr};
-  int version_id_;
   std::set<AObject *> users_;
   AbstractWrapperPtr abstract_wrapper_{nullptr};
 };
@@ -222,7 +221,7 @@ class AbstractType : public AbstractObject {
 class AbstractSequence : public AbstractObject {
  public:
   explicit AbstractSequence(Type type, const py::object &obj)
-      : AbstractObject(type, obj), element_type_(kTypeUnknown) {}
+      : AbstractObject(type, obj), element_type_(kTypeUnknown), elements_({}) {}
   explicit AbstractSequence(Type type, const std::vector<AObject *> &elements);
   virtual ~AbstractSequence() {}
 
