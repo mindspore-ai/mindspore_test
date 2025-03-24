@@ -99,12 +99,12 @@ def _grad_scale(scale, grad):
     return grad * scale.astype(grad.dtype)
 
 
-@jit
+@jit(backend="ms_backend")
 def _grad_scale_map(scale_value, inputs):
     return _hypermap(_partial(_grad_scale, scale_value), inputs)
 
 
-@jit
+@jit(backend="ms_backend")
 def _grad_unscale_map(scale_value, inputs):
     return _hypermap(_partial(_grad_unscale, scale_value), inputs)
 
@@ -116,7 +116,7 @@ def _overflow(inputs):
     return 1 - status.all()
 
 
-@jit
+@jit(backend="ms_backend")
 def _all_finite(inputs, check_overflow_mode, enable_allfinite):
     """all finite check"""
     if _ascend_target():
