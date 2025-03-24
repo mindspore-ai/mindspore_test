@@ -93,6 +93,7 @@ def _sync_stub_tensor(stub):
         return list(_sync_stub_tensor(item) for item in stub)
     return stub
 
+
 def convert_tensorpy(args):
     new_args = []
     for arg in args:
@@ -101,6 +102,7 @@ def convert_tensorpy(args):
         else:
             new_args.append(arg)
     return tuple(new_args)
+
 
 def _convert_arg_for_operators(arg, prim_name):
     """Convert dtype to enum"""
