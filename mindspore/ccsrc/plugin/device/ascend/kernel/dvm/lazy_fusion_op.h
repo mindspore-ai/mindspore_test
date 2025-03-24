@@ -36,6 +36,7 @@
 #include "kernel/ascend/pyboost/auto_generate/silu_grad.h"
 #include "kernel/ascend/pyboost/auto_generate/gelu.h"
 #include "kernel/ascend/pyboost/auto_generate/gelu_grad.h"
+#include "kernel/ascend/pyboost/auto_generate/relu.h"
 #include "kernel/ascend/pyboost/auto_generate/sum_ext.h"
 #include "kernel/ascend/pyboost/auto_generate/reciprocal.h"
 #include "kernel/ascend/pyboost/auto_generate/isfinite.h"
@@ -65,10 +66,14 @@
 #include "kernel/ascend/pyboost/auto_generate/inplace_exp.h"
 #include "kernel/ascend/pyboost/auto_generate/inplace_add_ext.h"
 #include "kernel/ascend/pyboost/auto_generate/inplace_sub_ext.h"
+#include "kernel/ascend/pyboost/auto_generate/inplace_relu.h"
 #include "kernel/ascend/pyboost/auto_generate/dense.h"
 #include "kernel/ascend/pyboost/auto_generate/matmul.h"
 #include "kernel/ascend/pyboost/auto_generate/batch_mat_mul.h"
 #include "kernel/ascend/pyboost/auto_generate/matmul_ext.h"
+#include "kernel/ascend/pyboost/auto_generate/batch_norm_stats.h"
+#include "kernel/ascend/pyboost/auto_generate/batch_norm_gather_stats_with_counts.h"
+#include "kernel/ascend/pyboost/auto_generate/batch_norm_elemt.h"
 
 namespace mindspore {
 namespace kernel {
@@ -346,6 +351,14 @@ class GeLUGradAscendDvm : public GeLUGradAscend {
                              const BaseTensorPtr &y_tensor) override;
 };
 
+class ReLUAscendDvm : public ReLUAscend {
+ public:
+  ReLUAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
+      : ReLUAscend(std::move(primitive), device_context) {}
+  ~ReLUAscendDvm() = default;
+  tensor::BaseTensorPtr Call(const BaseTensorPtr &input_tensor) override;
+};
+
 class SumExtAscendDvm : public SumExtAscend {
  public:
   SumExtAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
@@ -446,6 +459,14 @@ class InplaceSubExtAscendDvm : public InplaceSubExtAscend {
                              const ScalarPtr &alpha) override;
 };
 
+class InplaceReLUAscendDvm : public InplaceReLUAscend {
+ public:
+  InplaceReLUAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
+      : InplaceReLUAscend(std::move(primitive), device_context) {}
+  ~InplaceReLUAscendDvm() = default;
+  tensor::BaseTensorPtr Call(const mindspore::tensor::BaseTensorPtr &input_tensor) override;
+};
+
 class DenseAscendDvm : public DenseAscend {
  public:
   DenseAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
@@ -484,6 +505,45 @@ class MatMulExtAscendDvm : public MatMulExtAscend {
 
   tensor::BaseTensorPtr Call(const mindspore::tensor::BaseTensorPtr &input_tensor,
                              const mindspore::tensor::BaseTensorPtr &other_tensor) override;
+};
+
+class BatchNormStatsAscendDvm : public BatchNormStatsAscend {
+ public:
+  BatchNormStatsAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
+      : BatchNormStatsAscend(std::move(primitive), device_context) {}
+  ~BatchNormStatsAscendDvm() = default;
+
+  std::tuple<mindspore::tensor::BaseTensorPtr, mindspore::tensor::BaseTensorPtr> Call(
+    const mindspore::tensor::BaseTensorPtr &input_tensor, const mindspore::FP32ImmPtr &eps) override;
+};
+
+class BatchNormGatherStatsWithCountsAscendDvm : public BatchNormGatherStatsWithCountsAscend {
+ public:
+  BatchNormGatherStatsWithCountsAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
+      : BatchNormGatherStatsWithCountsAscend(std::move(primitive), device_context) {}
+  ~BatchNormGatherStatsWithCountsAscendDvm() = default;
+
+  std::tuple<mindspore::tensor::BaseTensorPtr, mindspore::tensor::BaseTensorPtr> Call(
+    const mindspore::tensor::BaseTensorPtr &input_tensor, const mindspore::tensor::BaseTensorPtr &mean_tensor,
+    const mindspore::tensor::BaseTensorPtr &invstd_tensor,
+    const std::optional<mindspore::tensor::BaseTensorPtr> &running_mean_tensor_opt,
+    const std::optional<mindspore::tensor::BaseTensorPtr> &running_var_tensor_opt,
+    const mindspore::FP32ImmPtr &momentum, const mindspore::FP32ImmPtr &eps,
+    const std::optional<mindspore::tensor::BaseTensorPtr> &counts_tensor_opt) override;
+};
+
+class BatchNormElemtAscendDvm : public BatchNormElemtAscend {
+ public:
+  BatchNormElemtAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
+      : BatchNormElemtAscend(std::move(primitive), device_context) {}
+  ~BatchNormElemtAscendDvm() = default;
+
+  mindspore::tensor::BaseTensorPtr Call(const mindspore::tensor::BaseTensorPtr &input_tensor,
+                                        const std::optional<mindspore::tensor::BaseTensorPtr> &weight_tensor_opt,
+                                        const std::optional<mindspore::tensor::BaseTensorPtr> &bias_tensor_opt,
+                                        const std::optional<mindspore::tensor::BaseTensorPtr> &mean_tensor_opt,
+                                        const std::optional<mindspore::tensor::BaseTensorPtr> &invstd_tensor_opt,
+                                        const mindspore::FP32ImmPtr &eps) override;
 };
 }  // namespace pyboost
 }  // namespace kernel
