@@ -50,7 +50,7 @@ mindspore.parallel提供了大量的自动并行接口，包括并行配置基�
     mindspore.parallel.build_searched_strategy
     mindspore.parallel.function.reshard
     mindspore.parallel.shard
-    mindspore.parallel.layout
+    mindspore.parallel.Layout
 
 
 其他

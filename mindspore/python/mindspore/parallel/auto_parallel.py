@@ -22,12 +22,16 @@ from mindspore.communication.management import get_rank, get_group_size
 class AutoParallel(Cell):
     """
     AutoParallel enable auto parallel configuration for neural network cells. This class provides multiple
-    parallel strategies to optimize distributed training across Ascend/GPU devices.
+    parallel strategies to optimize distributed training across Ascend devices.
+
+    Note:
+        - When using the `Model` API, the network passed to the `Model` must be wrapped with `AutoParallel`.
+        - When using `functional` API, the outermost layer must be wrapped with `AutoParallel`.
+        - When using `functional` API, data sinking mode are not currently supported.
 
     Args:
-        network (Cell): Top-level cell or function in the forward network. Defines the core computational graph
-            structure that will be parallelized. Must be a subclass of `nn.Cell` containing the model
-            architecture.
+        network (Union[Cell, Function]): Top-level cell or function in the forward network. Defines the core
+                     computational graph structure that will be parallelized.
 
         parallel_mode (str, optional): Specifies the parallelization strategy engine. Available modes: ``"semi_auto"``,
             ``"sharding_propagation"``, ``"recursive_programming"``. Default: ``"semi_auto"``.
@@ -43,56 +47,116 @@ class AutoParallel(Cell):
               recursive program analysis.
 
     Supported Platforms:
-        ``Ascend`` ``GPU``
+        ``Ascend``
 
     Examples:
+        .. note::
+            You need to use the msrun command to run the following examples.
+
         >>> import os
         >>> import mindspore as ms
         >>> import mindspore.dataset as ds
         >>> from mindspore import nn, ops
-        >>> from mindspore.communication import init
+        >>> from mindspore.communication import init, get_rank
         >>> from mindspore.common.initializer import initializer
         >>> from mindspore.parallel.auto_parallel import AutoParallel
         >>> from mindspore.train import Model
+        >>> from mindspore.train import LossMonitor
         >>> ms.set_context(mode=ms.GRAPH_MODE)
         >>> init()
         >>> ms.set_seed(1)
         >>>
+        >>> # Create the dataset taking MNIST as an example. Refer to
+        >>> # https://gitee.com/mindspore/docs/blob/master/docs/mindspore/code/mnist.py
+        >>>
+        >>> def create_dataset(batch_size):
+        ...    dataset_path = os.getenv("DATA_PATH")
+        ...    dataset = ds.MnistDataset(dataset_path)
+        ...    image_transforms = [
+        ...        ds.vision.Rescale(1.0 / 255.0, 0),
+        ...        ds.vision.Normalize(mean=(0.1307,), std=(0.3081,)),
+        ...        ds.vision.HWC2CHW()
+        ...    ]
+        ...    label_transform = ds.transforms.TypeCast(ms.int32)
+        ...    dataset = dataset.map(image_transforms, 'image')
+        ...    dataset = dataset.map(label_transform, 'label')
+        ...    dataset = dataset.batch(batch_size)
+        ...    return dataset
+        >>>
+        >>> dataset = create_dataset(32)
+        >>>
+        >>> from mindspore import nn, ops, Parameter
+        >>> from mindspore.common.initializer import initializer, HeUniform
+        >>> import math
+        >>>
+        >>> class MatMulCell(nn.Cell):
+        ...     def __init__(self, param=None, shape=None):
+        ...         super().__init__()
+        ...         if shape is None:
+        ...             shape = [28 * 28, 512]
+        ...         weight_init = HeUniform(math.sqrt(5))
+        ...         self.param = Parameter(initializer(weight_init, shape), name="param")
+        ...         if param is not None:
+        ...             self.param = param
+        ...         self.print = ops.Print()
+        ...         self.matmul = ops.MatMul()
+        ...
+        ...     def construct(self, x):
+        ...         out = self.matmul(x, self.param)
+        ...         self.print("out is:", out)
+        ...         return out
+        >>>
         >>> class Network(nn.Cell):
         ...     def __init__(self):
         ...         super().__init__()
-        ...         self.flatten = ops.Flatten()
-        ...         self.fc1_weight = ms.Parameter(initializer("normal", [28*28, 512], ms.float32))
-        ...         self.fc2_weight = ms.Parameter(initializer("normal", [512, 512], ms.float32))
-        ...         self.fc3_weight = ms.Parameter(initializer("normal", [512, 10], ms.float32))
-        ...         self.matmul1 = ops.MatMul()
-        ...         self.relu1 = ops.ReLU()
-        ...         self.matmul2 = ops.MatMul()
-        ...         self.relu2 = ops.ReLU()
-        ...         self.matmul3 = ops.MatMul()
+        ...         self.flatten = nn.Flatten()
+        ...         self.layer1 = MatMulCell()
+        ...         self.relu1 = nn.ReLU()
+        ...         self.layer2 = nn.Dense(512, 512)
+        ...         self.relu2 = nn.ReLU()
+        ...         self.layer3 = nn.Dense(512, 10)
         ...
         ...     def construct(self, x):
         ...         x = self.flatten(x)
-        ...         x = self.matmul1(x, self.fc1_weight)
+        ...         x = self.layer1(x)
         ...         x = self.relu1(x)
-        ...         x = self.matmul2(x, self.fc2_weight)
+        ...         x = self.layer2(x)
         ...         x = self.relu2(x)
-        ...         logits = self.matmul3(x, self.fc3_weight)
+        ...         logits = self.layer3(x)
         ...         return logits
         >>>
-        >>> net = Network()
-        >>> net.matmul1.shard(((2, 4), (4, 1)))
-        >>> net.relu1.shard(((4, 1),))
-        >>> net.matmul2.shard(((1, 8), (8, 1)))
-        >>> net.relu2.shard(((8, 1),))
-        >>> parallel_net = AutoParallel(net, parallel_mode='semi_auto')
-        >>> # Create the dataset taking MNIST as an example. Refer to
-        >>> # https://gitee.com/mindspore/docs/blob/master/docs/mindspore/code/mnist.py
-        >>> dataset = create_dataset()
-        >>> optim = nn.SGD(net.trainable_params(), 1e-2)
-        >>> loss = nn.CrossEntropyLoss()
-        >>> model = Model(parallel_net, loss_fn=loss, optimizer=optim)
-        >>> model.train(1, dataset)
+        >>> import mindspore as ms
+        >>> from mindspore import nn, ops
+        >>> from mindspore.parallel.nn import Pipeline, PipelineGradReducer
+        >>> from mindspore.nn.utils import no_init_parameters
+        >>>
+        >>> with no_init_parameters():
+        >>>     net = Network()
+        >>>     optimizer = nn.SGD(net.trainable_params(), 1e-2)
+        >>>     pp_grad_reducer = PipelineGradReducer(optimizer.parameters, opt_shard=False)
+        >>>
+        >>> loss_fn = nn.CrossEntropyLoss()
+        >>> net_with_loss = Pipeline(nn.WithLossCell(net, loss_fn), 4, stage_config={"_backbone.flatten":0,
+        >>>     "_backbone.layer1": 0, "_backbone.relu1": 0, "_backbone.layer2": 1,
+        >>>     "_backbone.relu2": 1, "_backbone.layer3": 1})
+        >>> parallel_net = AutoParallel(net_with_loss, parallel_mode="semi_auto")
+        >>> parallel_net.hsdp()
+        >>> parallel_net.pipeline(stages=2)
+        >>> parallel_net.dataset_strategy("data_parallel")
+        >>> parallel_net.save_param_strategy_file(f"/tmp/param_{get_rank()}.ckpt")
+        >>> parallel_net.set_group_ckpt_save_file(f"/tmp/comm_group_{get_rank()}.ckpt")
+        >>> parallel_net.dump_local_norm(f"/tmp/local_norm_{get_rank()}")
+        >>> parallel_net.disable_strategy_file_only_for_trainable_params()
+        >>> parallel_net.enable_fp32_communication()
+        >>> parallel_net.enable_device_local_norm()
+        >>> parallel_net.enable_gradients_mean()
+        >>> parallel_net.disable_gradient_fp32_sync()
+        >>> parallel_net.disable_loss_repeated_mean()
+        >>>
+        >>> loss_monitor = LossMonitor(per_print_times=1)
+        >>> model = Model(network=parallel_net, optimizer=optimizer)
+        >>> model.train(epoch=2, train_dataset=dataset, callbacks=[loss_monitor])
+
     """
 
     def __init__(self, network, parallel_mode="semi_auto"):
@@ -146,13 +210,17 @@ class AutoParallel(Cell):
 
     def no_init_parameters_in_compile(self):
         """
-        Suppress the parameter initialization process in the compilation procedure.
+        When enabled, the model weight parameters will not be initialized during the compilation process.
 
         .. warning::
-        This is an experimental interface, may be changed or canceled in the future;
+            This is an experimental interface, may be changed or canceled in the future.
 
         Examples:
-            >>> parallel_net = AutoParallel(net)
+            >>> from mindspore.parallel.auto_parallel import AutoParallel
+            >>> # Define the network structure of LeNet5. Refer to
+            >>> # https://gitee.com/mindspore/docs/blob/master/docs/mindspore/code/lenet.py
+            >>> net = LeNet5()
+            >>> parallel_net = AutoParallel(net, parallel_mode="semi_auto")
             >>> parallel_net.no_init_parameters_in_compile()
         """
         self._init_param_in_compile = False
@@ -197,62 +265,54 @@ class AutoParallel(Cell):
         non-trainable parameters as well."""
         self._only_trainable_params = False
 
-    def load_operator_strategy_file(self, file_path):
-        """
-        Set the path to load strategy json when using sharding propagation.
-
-        .. warning::
-        This is an experimental interface, may be changed or canceled in the future;
-        This interface currently doesn't support loading strategies using layout.
-
-        Note:
-            - It only works when `parallel_mode=sharding_propagation`.
-            - When performing distributed training, users can first save the strategy using dryrun on a single device
-            and then load strategy to perform distributed training.
-
-        Args:
-            file_path (str): Path to load parallel strategy json, must be an absolute path.
-
-        Raises:
-            TypeError: If the type of 'file_path' is not str
-            KeyError: When 'file_path' is not an absolute path.
-            KeyError: When 'file_path' does not end in ``".json"`` .
-
-        Examples:
-            >>> parallel_net = AutoParallel(net, parallel_mode='sharding_propagation')
-            >>> parallel_net.load_operator_strategy_file("/tmp/strategy.json")
-        """
-        if not isinstance(file_path, str):
-            raise TypeError("the argument 'file_path' must be str, but got the type : {} .".format(type(file_path)))
-        if not os.path.isabs(file_path):
-            raise KeyError("the argument 'file_path' must be an absolute path.")
-        _, file_type = os.path.splitext(file_path)
-        if file_type != ".json":
-            raise KeyError("File type must be .json")
-        self._load_operator_strategy_file = file_path
-
     def save_operator_strategy_file(self, file_path):
         """
         Set the path to save strategy json when using sharding propagation.
 
         .. warning::
-        This is an experimental interface, may be changed or canceled in the future;
-        This interface currently doesn't support saving strategies using layout.
+            This is an experimental interface, may be changed or canceled in the future;
+            This interface currently doesn't support saving strategies using layout.
 
         Note:
             - It only works when `parallel_mode=sharding_propagation`.
             - When performing distributed training, users can first save the strategy using dryrun on a single device
-            and then load strategy to perform distributed training.
+              and then load strategy to perform distributed training.
 
         Args:
             file_path (str): Path to save parallel strategy json, must be an absolute path.
 
         Raises:
-            TypeError: If the type of 'file_path' is not str
+            TypeError: If the type of 'file_path' is not str.
             KeyError: When 'file_path' is not an absolute path.
             KeyError: When 'file_path' does not end in ``".json"`` .
 
         Examples:
+            >>> import math
+            >>> import mindspore as ms
+            >>> import numpy as np
+            >>> from mindspore import nn, ops
+            >>> from mindspore.communication.management import init
+            >>> from mindspore.parallel.auto_parallel import AutoParallel
+            >>> from mindspore.common.initializer import initializer, HeUniform
+            >>>
+            >>> class ParallelNetwork(nn.Cell):
+            ...     def __init__(self, strategy=None):
+            ...         super().__init__()
+            ...         self.flatten = ops.Flatten()
+            ...         self.fc1_weight = ms.Parameter(initializer(HeUniform(math.sqrt(5)), shape=[
+            ...             16, 10], dtype=ms.float32), name="fc1")
+            ...         self.matmul1 = ops.MatMul().shard(strategy)
+            ...         self.relu1 = ops.ReLU()
+            ...
+            ...     def construct(self, x):
+            ...         x = self.flatten(x)
+            ...         x = self.matmul1(x, self.fc1_weight)
+            ...         x = self.relu1(x)
+            ...         return x
+            >>>
+            >>> init(backend_name='hccl')
+            >>> strategy = ((1, 1), (1, 2))
+            >>> net = ParallelNetwork(strategy)
             >>> parallel_net = AutoParallel(net, parallel_mode='sharding_propagation')
             >>> parallel_net.save_operator_strategy_file("/tmp/strategy.json")
         """
@@ -265,32 +325,63 @@ class AutoParallel(Cell):
             raise KeyError("File type must be .json")
         self._save_operator_strategy_file = file_path
 
+    def load_operator_strategy_file(self, file_path):
+        """
+        Set the path to load strategy json when using sharding propagation.
+
+        .. warning::
+            This is an experimental interface, may be changed or canceled in the future;
+            This interface currently doesn't support loading strategies using layout.
+
+        Note:
+            - It only works when `parallel_mode=sharding_propagation`.
+            - When performing distributed training, users can first save the strategy using dryrun on a single device
+              and then load strategy to perform distributed training.
+
+        Args:
+            file_path (str): Path to load parallel strategy json, must be an absolute path.
+
+        Raises:
+            TypeError: If the type of 'file_path' is not str.
+            KeyError: When 'file_path' is not an absolute path.
+            KeyError: When 'file_path' does not end in ``".json"`` .
+
+        Examples:
+            >>> # Define the network structure of ParallelNetwork. Refer to
+            >>> the example of 'AutoParallel.save_operator_strategy_file(file_path)'
+            >>> from mindspore.parallel.auto_parallel import AutoParallel
+            >>> init(backend_name='hccl')
+            >>> strategy = ((1, 1), (1, 2))
+            >>> net = ParallelNetwork(strategy)
+            >>> parallel_net = AutoParallel(net, parallel_mode='sharding_propagation')
+            >>> parallel_net.load_operator_strategy_file("/tmp/strategy.json")
+        """
+        if not isinstance(file_path, str):
+            raise TypeError("the argument 'file_path' must be str, but got the type : {} .".format(type(file_path)))
+        if not os.path.isabs(file_path):
+            raise KeyError("the argument 'file_path' must be an absolute path.")
+        _, file_type = os.path.splitext(file_path)
+        if file_type != ".json":
+            raise KeyError("File type must be .json")
+        self._load_operator_strategy_file = file_path
+
     def dataset_strategy(self, config):
         """
         Set dataset sharding strategy.
 
         Args:
-            config (Union[str, tuple(tuple), tuple(Layout)]): The dataset sharding strategy.
+            config (Union[str, tuple(tuple), tuple(Layout)]): The dataset sharding strategy. Default: "data_parallel".
+                       If you want to split dataset across devices, you can set the dataset strategy as "data_parallel".
+                       If you load whole batch datasets, you need to set the dataset strategy as "full_batch".
+                       For dataset load into net by dataset strategy like ds_stra((1, 8), (1, 8)),it requires using
+                       AutoParallel.dataset_strategy(ds_stra).Besides, dataset strategy also supports tuple of Layout.
 
         Raises:
-            ValueError: If the type of 'config' is str, but it's value is not 'full_batch' or 'data_parallel'.
             TypeError: When 'config' is not str type nor tuple type.
-            TypeError: IF 'config' is tuple type, but its element is not tuple type nor Layout type.
-
-        Examples:
-            # Case 1: dataset strategy using str
-            >>> parallel_net = AutoParallel(net, parallel_mode='semi_auto')
-            >>> parallel_net.dataset_strategy("data_parallel")
-
-            # Case 2: dataset strategy using tuple(tuple)
-            >>> parallel_net = AutoParallel(net, parallel_mode='semi_auto')
-            >>> parallel_net.dataset_strategy((2,1,1),(2,1))
-
-            # Case 3: dataset strategy using tuple(Layout)
-            >>> from mindspore.parallel import Layout
-            >>> layout = Layout((2 ,2 ,2),("dp", "mp", "sp"))
-            >>> parallel_net = AutoParallel(net, parallel_mode='semi_auto')
-            >>> parallel_net.dataset_strategy(layout)
+            TypeError: If 'config' is tuple type, but its element is not tuple type nor Layout type.
+            TypeError: If 'config' is tuple type and its element is tuple type, the element in subtuple isn't int type.
+            ValueError: If 'config' is None.
+            ValueError: If the type of 'config' is str, but it's value is not 'full_batch' or 'data_parallel'.
         """
         if config is None:
             raise ValueError("dataset_strategy is none in config!")
@@ -371,12 +462,12 @@ class AutoParallel(Cell):
             interleave (bool, optional): Whether to enable interleaving scheduling.
             scheduler(str, optional): The type of scheduler
         Raises:
-            TypeError: If the type of 'stages is not int
-            ValueError: When stages <= 0
-            TypeError: If the type of 'output_broadcast' is not bool
-            TypeError: If the type of 'interleave' is not bool
-            TypeError: If the type of 'scheduler' is not str
-            ValueError: If the type of 'scheduler' is not supported
+            TypeError: If the type of 'stages is not int.
+            ValueError: When stages <= 0.
+            TypeError: If the type of 'output_broadcast' is not bool.
+            TypeError: If the type of 'interleave' is not bool.
+            TypeError: If the type of 'scheduler' is not str.
+            ValueError: If the type of 'scheduler' is not supported.
         """
         if not isinstance(stages, int):
             raise TypeError("For 'AutoParallel.pipeline', the argument 'stages' "
@@ -469,6 +560,10 @@ class AutoParallel(Cell):
         Print local norm value for auto parallel.
 
         Examples:
+            >>> from mindspore.parallel.auto_parallel import AutoParallel
+            >>> # Define the network structure of LeNet5. Refer to
+            >>> # https://gitee.com/mindspore/docs/blob/master/docs/mindspore/code/lenet.py
+            >>> net = LeNet5()
             >>> parallel_net = AutoParallel(net, parallel_mode="semi_auto")
             >>> parallel_net.print_local_norm()
         """
@@ -483,10 +578,6 @@ class AutoParallel(Cell):
 
         Raises:
             TypeError: If the type of 'file_path' is not str.
-
-        Examples:
-            >>> parallel_net = AutoParallel(net, parallel_mode="semi_auto")
-            >>> parallel_net.dump_local_norm("./dump_path")
         """
         if not isinstance(file_path, str):
             raise TypeError("the argument 'file_path' must be str, but got the type : {} .".format(type(file_path)))
@@ -496,11 +587,6 @@ class AutoParallel(Cell):
     def enable_device_local_norm(self):
         """
         Enable device local norm printing.
-
-        Examples:
-            >>> parallel_net = AutoParallel(net, parallel_mode="semi_auto")
-            >>> parallel_net.dump_local_norm("./dump_path")
-            >>> parallel_net.enable_device_local_norm()
         """
         self._dump_device_local_norm = True
 
