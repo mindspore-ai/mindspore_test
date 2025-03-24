@@ -439,11 +439,6 @@ void GraphScheduler::Run(ActorSet *const actor_set, const std::vector<std::vecto
                          const VectorRef &args, GraphExecutionStrategy strategy) {
   MS_EXCEPTION_IF_NULL(actor_set);
   MS_EXCEPTION_IF_NULL(actor_set->data_prepare_actor_);
-#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
-  if (!RegisterGlobalSignalHandler(DefaultIntHandler)) {
-    MS_EXCEPTION(RuntimeError) << "Failed to register the callback signal handling.";
-  }
-#endif
 
   // Create recorder actor in the running to support the profiler in callback scene.
   if (profiler::ProfilerManager::GetInstance()->GetProfilingEnableFlag() && (recorder_aid_ == nullptr)) {

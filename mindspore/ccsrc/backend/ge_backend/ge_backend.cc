@@ -54,6 +54,9 @@
 #include "include/common/runtime_conf/runtime_conf.h"
 #include "backend/ge_backend/runtime/control_node_parser.h"
 #include "include/common/utils/parallel_context.h"
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
+#include "include/common/utils/signal_util.h"
+#endif
 #include "runtime/device/res_manager/hal_res_manager.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
@@ -651,6 +654,11 @@ bool GEBackend::CloseTsd(bool force) {
 }
 
 BackendGraphId GEBackend::Build(const FuncGraphPtr &func_graph, const BackendJitConfig &backend_jit_config) {
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
+  if (!RegisterGlobalSignalHandler(DefaultIntHandler)) {
+    MS_EXCEPTION(RuntimeError) << "Failed to register the callback signal handling.";
+  }
+#endif
   WaitTaskFinish();
   MS_EXCEPTION_IF_NULL(func_graph);
   // Clear the temp members of last graph.
