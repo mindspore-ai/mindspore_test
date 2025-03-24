@@ -335,6 +335,48 @@ Status MeanExtInfo::CheckOutputLayout() {
   return SUCCESS;
 }
 
+Status MeanExtInfo::InferForwardCommunicationByLayout() {
+  forward_op_.clear();
+  auto input_layout = inputs_tensor_info_[kIndex0].tensor_layout();
+  auto input_tensor_map = input_layout.tensor_map_before();
+
+  std::vector<int64_t> dim_list = reduce_dim();
+  std::vector<int64_t> shard_dims;
+  for (size_t i = 0; i < input_tensor_map.size(); ++i) {
+    // use to generate group_rank_id
+    auto pos = std::find_if(dim_list.begin(), dim_list.end(), [i](const int64_t &dim) { return SizeToLong(i) == dim; });
+    if (pos != dim_list.end()) {
+      std::transform(input_tensor_map[i].begin(), input_tensor_map[i].end(), std::back_inserter(shard_dims),
+                     [this](auto elem) { return SizeToLong(dev_matrix_shape_.size() - kIndex1 - elem); });
+    }
+  }
+
+  RankList comm_rank_list;
+  auto device_matrix =
+    DeviceMatrix(g_device_manager->global_rank(), g_device_manager->GetDeviceListInThisStage(), dev_matrix_shape_);
+  if (device_matrix.GetDevicesAlongMultiDim(shard_dims, &comm_rank_list) != SUCCESS) {
+    MS_LOG(ERROR) << "For distributed operator " << name_ << ", infer Forward communication by multi dim failed.";
+    return FAILED;
+  }
+  if (comm_rank_list.size() == 1) {
+    MS_LOG(INFO) << "For distributed operator " << name_ << ", forward communication is not required.";
+    return SUCCESS;
+  }
+  Group comm_group;
+  if (g_device_manager->CreateGroup(comm_rank_list, &comm_group) != SUCCESS) {
+    MS_LOG(ERROR) << "For distributed operator " << name_
+                  << ", create communication group by comm_rank_list failed, the communication rank_list is: "
+                  << comm_rank_list << ", the full_name of node is: " << cnode_->fullname_with_scope();
+    return FAILED;
+  }
+
+  auto element_type = outputs_dtype_->cast<mindspore::TensorTypePtr>()->element();
+  forward_op_ = CreateMeanExtForwardOp(comm_group, element_type);
+  MS_LOG(INFO) << "For distributed operator " << name_ << ", the group name of forward communication is "
+               << comm_group.name() << ".";
+  return SUCCESS;
+}
+
 ForwardOp ReduceAnyInfo::CreateForwardOp(const std::vector<Group> &forward_group) const {
   // Create Cast to Int32 op
   Operator op0 = CreateCastOp(kInt32);

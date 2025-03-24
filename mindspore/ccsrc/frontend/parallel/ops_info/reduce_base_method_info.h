@@ -76,6 +76,7 @@ class MeanExtInfo : public ReduceMeanInfo {
   Status CheckInputLayout() override;
   Status InferOutputTensorInfo() override;
   Status CheckOutputLayout() override;
+  Status InferForwardCommunicationByLayout() override;
 
  private:
   bool is_infer_out_layout_ = false;
