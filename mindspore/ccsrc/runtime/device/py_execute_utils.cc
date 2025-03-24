@@ -41,6 +41,9 @@ void TensorToRawMemory(const tensor::TensorPtr &tensor, DeviceAddress *const dev
     MS_LOG(EXCEPTION) << "Invalid tensor size:" << tensor->Size() << " device tensor size:" << device_address->GetSize()
                       << " for device tensor:" << device_address;
   }
+  if (tensor->Size() == 0) {
+    return;
+  }
   if (device_address->device_name() == "CPU") {
     MS_EXCEPTION_IF_NULL(device_address->GetMutablePtr());
     const auto &res = memcpy_s(reinterpret_cast<char *>(device_address->GetMutablePtr()), device_address->GetSize(),
