@@ -377,7 +377,7 @@ py::object DynamicShape::GetDynamicInput(const py::object &actual_input) {
     const auto &infer = PyNativeAlgo::Common::GetPyNativeExecutor()->forward_executor()->infer_operation();
     auto tensor_ptr = tensor::ConvertToBaseTensor(actual_input);
     MS_EXCEPTION_IF_NULL(tensor_ptr);
-    auto dyn_compile_tensor = std::make_shared<tensor::BaseTensor>(tensor_ptr->data_type(), tensor_ptr->shape_c());
+    auto dyn_compile_tensor = std::make_shared<tensor::Tensor>(tensor_ptr->data_type(), tensor_ptr->shape_c());
     const auto &abs = infer->GetNodeAbsById(PyNativeAlgo::PyParser::GetIdByPyObj(actual_input));
     if (abs != nullptr) {
       auto base_shape = abs->BuildShape();

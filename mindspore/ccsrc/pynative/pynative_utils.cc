@@ -831,7 +831,7 @@ ValuePtr Common::CreateFakeValueWithoutDeviceAddress(const ValuePtr &value, bool
       return value;
     }
 
-    auto t = std::make_shared<tensor::BaseTensor>(*v_t);
+    auto t = std::make_shared<tensor::Tensor>(*v_t);
     if (v_t->is_parameter()) {
       t->set_param_info(v_t->param_info());
     }

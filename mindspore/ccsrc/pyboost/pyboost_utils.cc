@@ -40,14 +40,14 @@ namespace pyboost {
 namespace {
 void CreateTensor(const TypeId &type_id, const ShapeVector &shape_vector, const AbstractBasePtr &abstract_tensor,
                   std::vector<tensor::BaseTensorPtr> *outputs) {
-  auto output_tensor = std::make_shared<tensor::BaseTensor>(type_id, shape_vector);
+  auto output_tensor = std::make_shared<tensor::Tensor>(type_id, shape_vector);
   output_tensor->set_need_pipeline_sync(true);
   (void)outputs->emplace_back(output_tensor);
   MS_LOG(DEBUG) << "Create output tensor " << output_tensor->ToString();
 }
 
 void CreateTensor(const TypeId &type_id, const ShapeVector &shape_vector, std::vector<tensor::BaseTensorPtr> *outputs) {
-  auto output_tensor = std::make_shared<tensor::BaseTensor>(type_id, shape_vector);
+  auto output_tensor = std::make_shared<tensor::Tensor>(type_id, shape_vector);
   output_tensor->set_need_pipeline_sync(true);
   (void)outputs->emplace_back(output_tensor);
   MS_LOG(DEBUG) << "Create output tensor " << output_tensor->ToString();
@@ -109,27 +109,27 @@ tensor::BaseTensorPtr PyBoostUtils::ScalarToTensor(const ScalarPtr &scalar, cons
   TypeId type_id = data_type->type_id();
   switch (type_id) {
     case kNumberTypeBool:
-      return std::make_shared<tensor::BaseTensor>(GetValue<bool>(scalar), tensor_dtype);
+      return std::make_shared<tensor::Tensor>(GetValue<bool>(scalar), tensor_dtype);
     case kNumberTypeInt8:
-      return std::make_shared<tensor::BaseTensor>(static_cast<int64_t>(GetValue<int8_t>(scalar)), tensor_dtype);
+      return std::make_shared<tensor::Tensor>(static_cast<int64_t>(GetValue<int8_t>(scalar)), tensor_dtype);
     case kNumberTypeInt16:
-      return std::make_shared<tensor::BaseTensor>(static_cast<int64_t>(GetValue<int16_t>(scalar)), tensor_dtype);
+      return std::make_shared<tensor::Tensor>(static_cast<int64_t>(GetValue<int16_t>(scalar)), tensor_dtype);
     case kNumberTypeInt32:
-      return std::make_shared<tensor::BaseTensor>(static_cast<int64_t>(GetValue<int32_t>(scalar)), tensor_dtype);
+      return std::make_shared<tensor::Tensor>(static_cast<int64_t>(GetValue<int32_t>(scalar)), tensor_dtype);
     case kNumberTypeInt64:
-      return std::make_shared<tensor::BaseTensor>(GetValue<int64_t>(scalar), tensor_dtype);
+      return std::make_shared<tensor::Tensor>(GetValue<int64_t>(scalar), tensor_dtype);
     case kNumberTypeUInt8:
-      return std::make_shared<tensor::BaseTensor>(static_cast<uint64_t>(GetValue<uint8_t>(scalar)), tensor_dtype);
+      return std::make_shared<tensor::Tensor>(static_cast<uint64_t>(GetValue<uint8_t>(scalar)), tensor_dtype);
     case kNumberTypeUInt16:
-      return std::make_shared<tensor::BaseTensor>(static_cast<uint64_t>(GetValue<uint16_t>(scalar)), tensor_dtype);
+      return std::make_shared<tensor::Tensor>(static_cast<uint64_t>(GetValue<uint16_t>(scalar)), tensor_dtype);
     case kNumberTypeUInt32:
-      return std::make_shared<tensor::BaseTensor>(static_cast<uint64_t>(GetValue<uint32_t>(scalar)), tensor_dtype);
+      return std::make_shared<tensor::Tensor>(static_cast<uint64_t>(GetValue<uint32_t>(scalar)), tensor_dtype);
     case kNumberTypeUInt64:
-      return std::make_shared<tensor::BaseTensor>(GetValue<uint64_t>(scalar), tensor_dtype);
+      return std::make_shared<tensor::Tensor>(GetValue<uint64_t>(scalar), tensor_dtype);
     case kNumberTypeFloat32:
-      return std::make_shared<tensor::BaseTensor>(GetValue<float>(scalar), tensor_dtype);
+      return std::make_shared<tensor::Tensor>(GetValue<float>(scalar), tensor_dtype);
     case kNumberTypeFloat64:
-      return std::make_shared<tensor::BaseTensor>(GetValue<double>(scalar), tensor_dtype);
+      return std::make_shared<tensor::Tensor>(GetValue<double>(scalar), tensor_dtype);
     default:
       MS_LOG(EXCEPTION) << "When convert scalar to tensor, the scalar type: " << data_type << " is invalid.";
   }
@@ -236,7 +236,7 @@ void PyBoostUtils::CreateOutputTensor(const DeviceContext *device_context, const
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative,
                                      runtime::ProfilerEvent::kPyBoostCreateOutputTensor,
                                      runtime::ProfilerRecorder::kNoName, false);
-  auto output_tensor = std::make_shared<tensor::BaseTensor>(input->data_type(), storage_info->shape);
+  auto output_tensor = std::make_shared<tensor::Tensor>(input->data_type(), storage_info->shape);
   output_tensor->set_need_pipeline_sync(true);
   output_tensor->set_contiguous_callback(
     [](const DeviceSyncPtr &device_address) -> DeviceSyncPtr { return ContiguousByDeviceAddress(device_address); });

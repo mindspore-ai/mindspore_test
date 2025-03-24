@@ -318,7 +318,7 @@ void AutoGradUtil::BuildViewAutoGradMeta(const tensor::BaseTensorPtr &src_tensor
       }
     }
     // Temp method to avoid view tensor hold by grad.
-    auto base_tensor = std::make_shared<tensor::BaseTensor>(*src_tensor);
+    auto base_tensor = std::make_shared<tensor::Tensor>(*src_tensor);
     if (src_tensor->is_parameter()) {
       base_tensor->set_param_info(src_tensor->param_info());
     }

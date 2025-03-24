@@ -578,6 +578,8 @@ PyObject *PackTensor(const BaseTensorPtr &tensor) {
 
 PyObject *Wrap(const BaseTensorPtr &tensor) { return PackTensor(tensor); }
 
+PyObject *Wrap(const TensorPtr &tensor) { return PackTensor(tensor); }
+
 PyObject *Wrap(const std::vector<BaseTensorPtr> &tensors) {
   PyObject *output = PyTuple_New(static_cast<Py_ssize_t>(tensors.size()));
   for (size_t i = 0; i < tensors.size(); ++i) {
