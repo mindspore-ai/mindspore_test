@@ -173,7 +173,20 @@ static int GetOpcodeMaxStackEffect(int op, int arg, bool jump) {
   return off;
 }
 
-int CodeGenerator::CalculateStackSize(const std::vector<std::unique_ptr<Instr>> &list, int sp) {
+int CodeGenerator::ExceptionStackRequired(const Code &ccode) {
+  int sp = 0;
+  if (ccode.co_exceptiontable.empty()) {
+    return sp;
+  }
+  // python3.11+
+  for (const auto &item : ccode.co_exceptiontable) {
+    sp = std::max(item.stack_ + item.lasti_, sp);
+  }
+  return sp;
+}
+
+int CodeGenerator::CalculateStackSize(const Code &ccode, int sp) {
+  const InstructionList &list = ccode.co_code;
   std::unordered_map<Instr *, int> blocks;
   int max_depth = 0;
   int flag = 0;
@@ -200,7 +213,7 @@ int CodeGenerator::CalculateStackSize(const std::vector<std::unique_ptr<Instr>> 
     sp += GetOpcodeMaxStackEffect(op, arg, false);
     max_depth = std::max(sp, max_depth);
   }
-  return sp < 0 ? -1 : max_depth;
+  return sp < 0 ? -1 : max_depth + ExceptionStackRequired(ccode);
 }
 
 // reset bci, reset jump offset
@@ -454,7 +467,7 @@ py::object CodeGenerator::Transform(const Code &ccode) {
     SetNamedInstrIndex(i, &names);
     SetLoadConstIndex(i, consts);
   }
-  co_stacksize = CalculateStackSize(ccode.co_code);
+  co_stacksize = CalculateStackSize(ccode);
   if (co_stacksize < 0) {
     MS_LOG(ERROR) << "\n" << PrintInstr(ccode.co_code);
     MS_EXCEPTION_IF_CHECK_FAIL(co_stacksize >= 0, "check instruction list, computer stack size failed");
@@ -847,9 +860,12 @@ void CodeGenerator::AddInstructionWithExceptionTable(const CFG *cfg, int start, 
 
 void CodeGenerator::CollectExceptionTableItem(const CFG *cfg, int start, int end) {
   const auto &table = cfg->exc_table();
+  if (table.empty()) {
+    return;
+  }
   auto iter = cfg->FindTryWithBlock(start);
   if (iter == table.end()) {
-    return;
+    iter = table.lower_bound(start);
   }
   /**
    * cfg->instr_pool():   |...|copied instructions|...|

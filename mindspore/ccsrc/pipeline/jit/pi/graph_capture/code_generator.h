@@ -136,15 +136,6 @@ class CodeGenerator {
   int AllocLocal(ValueNode *node, int index = INT_MAX);
 
   /**
-   * Calculate max stack size
-   *
-   * \param list instruct nodes list
-   * \param sp start of stack depth
-   * \return max depth of stack, or -1 if stack out of bound
-   */
-  static int CalculateStackSize(const std::vector<std::unique_ptr<Instr>> &list, int sp = 0);
-
-  /**
    * Copy instruction list at range [start, end).
    * NOTE: reset opcode:
    *       LOAD_METHOD -> LOAD_ATTR,
@@ -186,12 +177,14 @@ class CodeGenerator {
 
   static py::object Transform(const Code &ccode);
   static std::pair<py::bytes, py::bytes> ConvertToCodeBytes(const Code &ccode);
+  static int CalculateStackSize(const Code &ccode, int sp = 0);
 
   // python3.11+ only
   std::vector<std::unique_ptr<Instr>> ByteCodePrefix() const;
   void FixOffset();
   void FixLocalOffset(int invalid_index);
   void FixFreeOffset(const std::vector<std::string> &other_closure_names);
+  static int ExceptionStackRequired(const Code &ccode);
 
   const NodeSet *nodes_;
   py::dict globals_;
