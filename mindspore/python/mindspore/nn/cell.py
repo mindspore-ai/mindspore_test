@@ -3105,35 +3105,20 @@ class Cell(Cell_):
 
         Examples:
             >>> import mindspore
-            ...
-            ...
-            >>> class NetB(mindspore.nn.Cell):
+            >>> class Model(mindspore.nn.Cell):
             ...     def __init__(self):
             ...         super().__init__()
-            ...         self.buffer_b = mindspore.nn.Buffer(mindspore.tensor([1, 2, 3]))
-            ...         self.param_b = mindspore.Parameter(mindspore.tensor([1, 2, 3]))
-            ...
-            ...     def construct(self, x):
-            ...         return x + self.buffer_b + self.param_b
-            ...
-            ...
-            >>> class NetA(mindspore.nn.Cell):
-            ...     def __init__(self, net_b):
-            ...         super().__init__()
-            ...         self.net_b = net_b
             ...         self.buffer_a = mindspore.nn.Buffer(mindspore.tensor([4, 5, 6]))
+            ...         self.param_a = mindspore.Parameter(mindspore.tensor([1, 2, 3]))
             ...
             ...     def construct(self, x):
-            ...         return self.net_b(x) + self.buffer_a
+            ...         return x + self.buffer_a + self.param_a
             ...
             ...
-            >>> net_b = NetB()
-            >>> net_a = NetA(net_b)
-            >>> print(net_a.state_dict())
-            OrderedDict([('buffer_a', Tensor(shape=[3], dtype=Int64, value= [4, 5, 6])), \
-            ('net_b.param_b', Parameter (name=net_b.param_b, shape=(3,), dtype=Int64, requires_grad=True)), \
-            ('net_b.buffer_b', Tensor(shape=[3], dtype=Int64, value= [1, 2, 3]))])
-
+            >>> model = Model()
+            >>> print(model.state_dict())
+            OrderedDict([('param_a', Parameter (name=param_a, shape=(3,), dtype=Int64, requires_grad=True)), \
+            ('buffer_a', Tensor(shape=[3], dtype=Int64, value= [4, 5, 6]))])
         """
         # TODO: Remove `args` and the parsing logic when BC allows.
         if args:
@@ -3383,43 +3368,27 @@ class Cell(Cell_):
         Examples:
             >>> import mindspore
             >>> import os
-            ...
-            ...
-            >>> class NetB(mindspore.nn.Cell):
+            >>> class Model(mindspore.nn.Cell):
             ...     def __init__(self):
             ...         super().__init__()
-            ...         self.buffer_b = mindspore.nn.Buffer(mindspore.tensor([1, 2, 3]))
-            ...         self.param_b = mindspore.Parameter(mindspore.tensor([1, 2, 3]))
-            ...
-            ...     def construct(self, x):
-            ...         return x + self.buffer_b + self.param_b
-            ...
-            ...
-            >>> class NetA(mindspore.nn.Cell):
-            ...     def __init__(self, net_b):
-            ...         super().__init__()
-            ...         self.net_b = net_b
             ...         self.buffer_a = mindspore.nn.Buffer(mindspore.tensor([4, 5, 6]))
+            ...         self.param_a = mindspore.Parameter(mindspore.tensor([1, 2, 3]))
             ...
             ...     def construct(self, x):
-            ...         return self.net_b(x) + self.buffer_a
+            ...         return x + self.buffer_a + self.param_a
             ...
             ...
-            >>> net_b = NetB()
-            >>> net_a = NetA(net_b)
-            >>> print(f'Origin net_a state_dict is {net_a.state_dict()}')
-            >>> mindspore.save_checkpoint(net_a.state_dict(), './net_state_dict_ckpt')
-            >>> new_net_b = NetB()
-            >>> new_net_a = NetA(net_b)
-            >>> new_net_a.load_state_dict(mindspore.load_checkpoint('./net_state_dict_ckpt'))
-            >>> print(f'New net_a state_dict is {new_net_a.state_dict()}')
-            >>> os.remove('./net_state_dict_ckpt')
-            Origin net_a state_dict is OrderedDict([('buffer_a', Tensor(shape=[3], dtype=Int64, value= [4, 5, 6])), \
-            ('net_b.param_b', Parameter (name=net_b.param_b, shape=(3,), dtype=Int64, requires_grad=True)), \
-            ('net_b.buffer_b', Tensor(shape=[3], dtype=Int64, value= [1, 2, 3]))])
-            New net_a state_dict is OrderedDict([('buffer_a', Tensor(shape=[3], dtype=Int64, value= [4, 5, 6])), \
-            ('net_b.param_b', Parameter (name=net_b.param_b, shape=(3,), dtype=Int64, requires_grad=True)), \
-            ('net_b.buffer_b', Tensor(shape=[3], dtype=Int64, value= [1, 2, 3]))])
+            >>> model = Model()
+            >>> print(model.state_dict())
+            >>> mindspore.save_checkpoint(model.state_dict(), './model_state_dict_ckpt')
+            >>> new_model = Model()
+            >>> new_model.load_state_dict(mindspore.load_checkpoint('./model_state_dict_ckpt'))
+            >>> print(new_model.state_dict())
+            >>> os.remove('./model_state_dict_ckpt')
+            OrderedDict([('param_a', Parameter (name=param_a, shape=(3,), dtype=Int64, requires_grad=True)), \
+            ('buffer_a', Tensor(shape=[3], dtype=Int64, value= [4, 5, 6]))])
+            OrderedDict([('param_a', Parameter (name=param_a, shape=(3,), dtype=Int64, requires_grad=True)), \
+            ('buffer_a', Tensor(shape=[3], dtype=Int64, value= [4, 5, 6]))])
         """
         if not isinstance(state_dict, Mapping):
             raise TypeError(
