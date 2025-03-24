@@ -24,6 +24,7 @@ from mindspore.parallel._ps_context import _need_reset_device_target_for_ps
 
 __all__ = ['set_device', 'set_deterministic', 'get_current_device']
 
+
 class DeviceInfo(tuple):
     """
     DeviceInfo class. Store the current device target and the corresponding device id.

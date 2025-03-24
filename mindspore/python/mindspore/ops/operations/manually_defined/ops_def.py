@@ -605,6 +605,7 @@ scalar_usub = ScalarUsub()
 scalar_max = ScalarMax()
 scalar_min = ScalarMin()
 
+
 class BatchNorm(Primitive):
     r"""
     Batch Normalization for input data and updated parameters.

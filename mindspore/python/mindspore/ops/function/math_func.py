@@ -13339,22 +13339,20 @@ def rotated_iou(boxes, query_boxes, trans=False, mode=0, is_cross=True, v_thresh
         >>> output = ops.rotated_iou(box1, box2, trans=False, mode=0, is_cross=True)
     """
     origin_dtype = boxes.dtype
-    if (origin_dtype != mstype.float16 and origin_dtype != mstype.float32
-            and origin_dtype != mstype.bfloat16):
+    if origin_dtype not in {mstype.float16, mstype.float32, mstype.bfloat16}:
         raise ValueError(f"input boxes type is illegal.")
 
-    if (query_boxes.dtype != mstype.float16 and query_boxes.dtype != mstype.float32
-            and query_boxes.dtype != mstype.bfloat16):
+    if query_boxes.dtype not in {mstype.float16, mstype.float32, mstype.bfloat16}:
         raise ValueError(f"input query_boxes type is illegal.")
 
     boxes_perm = (0, 2, 1)
     boxes_cp = permute(boxes, boxes_perm)
-    if boxes_cp.dtype == mstype.float16 or boxes_cp.dtype == mstype.bfloat16:
+    if boxes_cp.dtype in {mstype.float16, mstype.bfloat16}:
         boxes_cp = cast_(boxes_cp, mstype.float32)
 
     query_boxes_perm = (0, 2, 1)
     query_boxes_cp = permute(query_boxes, query_boxes_perm)
-    if query_boxes_cp.dtype == mstype.float16 or query_boxes_cp.dtype == mstype.bfloat16:
+    if query_boxes_cp.dtype in {mstype.float16, mstype.bfloat16}:
         query_boxes_cp = cast_(query_boxes_cp, mstype.float32)
 
     iou = rotated_iou_op(boxes_cp, query_boxes_cp, trans, mode, is_cross, v_threshold, e_threshold)
