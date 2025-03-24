@@ -29,14 +29,15 @@ class GroupedMatmulAssignaddFusion : public UT::Common {
 };
 
 /// Feature: A backend ir fusion pass: GroupedMatmulAssignaddFusion
-/// Description: Convert TransposeExt+MakeTuple+GroupedMatmul+TupleGetItem+AssignAdd to InplaceGroupedMatmulAdd for kbk
+/// Description: Convert TransposeExtView+MakeTuple+GroupedMatmul+TupleGetItem+AssignAdd to InplaceGroupedMatmulAdd
+/// for kbk
 /// Expectation: After optimize, match InplaceGroupedMatmulAdd.
 TEST_F(GroupedMatmulAssignaddFusion, test_grouped_matmul_assignadd_fusion) {
   test::ConstructGraph c;
   auto input_x = c.NewTensorInput("input_x", kBFloat16, {2, 2048});
   auto transpose_dim0 = c.NewValueNode(MakeValue<int64_t>(-1));
   auto transpose_dim1 = c.NewValueNode(MakeValue<int64_t>(-2));
-  auto transpose_ext = c.NewCNode("TransposeExt", {input_x, transpose_dim0, transpose_dim1}, {});
+  auto transpose_ext = c.NewCNode("TransposeExtView", {input_x, transpose_dim0, transpose_dim1}, {});
   auto maketuple1 = c.NewCNode("MakeTuple", {transpose_ext}, {});
 
   auto weight = c.NewTensorInput("weight", kBFloat16, {2, 2048});
