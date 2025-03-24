@@ -209,46 +209,33 @@ def random_categorical(logits, num_sample, seed=0, dtype=mstype.int64):
 @_function_forbid_reuse
 def multinomial_with_replacement(x, seed, offset, numsamples, replacement=False):
     r"""
-    Returns a tensor where each row contains numsamples indices sampled from the
-    multinomial distribution with replacement. It is different from `multinomial` in that it allows
-    the same outcome to be chosen multiple times.
+    Generate a tensor from a multinomial distribution.
 
     Note:
-        The rows of input do not need to sum to one (in which case we use the values as weights),
-        but must be non-negative, finite and have a non-zero sum.
+        - The rows of input do not need to sum to one (in which case we use the values as weights),
+          but must be non-negative, finite and have a non-zero sum.
+        - If `seed` is set to be ``-1`` , and `offset` is set to be ``0``, the random number
+          generator is seeded by a random seed.
 
     Args:
-        x (Tensor): the input tensor containing the cumsum of probabilities, must be 1 or 2
-          dimensions. Must be one of the following types: float16, float32, float64.
-        seed (int): If seed is set to be -1, and offset is set to be 0, the random number
-          generator is seeded by a random seed. Otherwise, it is seeded by the given seed.
-        offset (int): Offset used to avoid seed collision.
-        numsamples (int): the number of samples to draw.
-        replacement (bool, optional): Whether to draw with replacement or not. Default: ``False`` .
+        x (Tensor): The 1-D or 2-D input tensor containing probabilities.
+        seed (int): Random seed.
+        offset (int): Offset.
+        numsamples (int): The number of samples to draw.
+        replacement (bool, optional): Whether to draw with replacement or not. Default ``False`` .
 
     Returns:
-        Tensor with the same rows as `x`, each row has `numsamples` sampled indices.
-
-    Raises:
-        TypeError: If `x`  is not a 1D or 2D Tensor.
-        TypeError: If dtype of `x` is not float16, float32 or float64.
-        TypeError: If `numsamples` is not an int.
-        TypeError: If `replacement` is not a bool.
-        ValueError: If the value of `numsamples` is not greater than x_shape[-1] when `replacement` is False.
-        ValueError: If the sum of one row of `x` less than 0.
-        ValueError: If one of the element of each row of `x` less than 0.
-        ValueError: If `numsamples` equal or less than 0.
+        Tensor
 
     Supported Platforms:
         ``CPU``
 
     Examples:
-        >>> from mindspore import Tensor, ops
-        >>> from mindspore import dtype as mstype
-        >>> x = Tensor([[0., 9., 4., 0.]], mstype.float32)
-        >>> output = ops.multinomial_with_replacement(x, 2, 5, 2, True)
-        >>> print(output)
-        [[1 1]]
+        >>> import mindspore
+        >>> x = mindspore.tensor([[0., 9., 4., 0.]], mindspore.float32)
+        >>> mindspore.ops.multinomial_with_replacement(x, 2, 5, 2, True)
+        Tensor(shape=[1, 2], dtype=Int64, value=
+        [[1, 1]])
     """
     if not isinstance(seed, Tensor):
         if not isinstance(seed, int):
@@ -1001,7 +988,8 @@ def normal(shape, mean, stddev, seed=None):
 def laplace(shape, mean, lambda_param, seed=None):
     r"""
     Generates random numbers according to the Laplace random number distribution.
-    It is defined as:
+
+    Support broadcasting.
 
     .. math::
         \text{f}(x;μ,λ) = \frac{1}{2λ}\exp(-\frac{|x-μ|}{λ}),
@@ -1011,30 +999,24 @@ def laplace(shape, mean, lambda_param, seed=None):
         the `seed` parameter has no effect.
 
     Args:
-        shape (tuple): The shape of random tensor to be generated.
-          The format is :math:`(N,*)` where :math:`*` means, any number of additional dimensions.
-        mean (Tensor): The mean μ distribution parameter, which specifies the location of the peak.
-          With float32 data type.
-        lambda_param (Tensor): The parameter used for controlling the variance of this random distribution. The
-          variance of Laplace distribution is equal to twice the square of lambda_param. With float32 data type.
-        seed (int, optional): Seed is used as entropy source for Random number engines generating pseudo-random numbers.
-          Default: ``None`` , which will be treated as 0.
+        shape (tuple): The shape specified.
+        mean (Tensor): The mean of distribution.
+        lambda_param (Tensor): Control the variance of distribution. The
+          variance of Laplace distribution is equal to twice the square of `lambda_param` .
+        seed (int, optional): Random seed. Default ``None`` represents 0.
 
     Returns:
-        Tensor. The shape should be the broadcasted shape of input `shape` and shapes of `mean` and `lambda_param`.
-        The dtype is float32.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import Tensor
-        >>> from mindspore import ops as ops
         >>> shape = (2, 3)
-        >>> mean = Tensor(1.0, mindspore.float32)
-        >>> lambda_param = Tensor(1.0, mindspore.float32)
-        >>> output = ops.laplace(shape, mean, lambda_param, seed=5)
+        >>> mean = mindspore.tensor(1.0, mindspore.float32)
+        >>> lambda_param = mindspore.tensor(1.0, mindspore.float32)
+        >>> output = mindspore.ops.laplace(shape, mean, lambda_param, seed=5)
         >>> print(output.shape)
         (2, 3)
     """
@@ -1057,56 +1039,47 @@ def gamma(shape, alpha, beta, seed=None):
     r"""
     Generates random numbers according to the Gamma random number distribution.
 
+    Support broadcasting.
+
     .. warning::
         The Ascend backend does not support the reproducibility of random numbers, so
         the `seed` parameter has no effect.
 
     Args:
-        shape (tuple): The shape of random tensor to be generated.
-        alpha (Tensor): The :math:`\alpha` distribution parameter. It should be greater than 0 with float32 data type.
-        beta (Tensor): The :math:`\beta` distribution parameter. It should be greater than 0 with float32 data type.
-        seed (int, optional): Seed is used as entropy source for the random number engines to generate
-            pseudo-random numbers, must be non-negative. Default: ``None`` .
+        shape (tuple): The shape specified.
+        alpha (Tensor): The shape parameter.
+        beta (Tensor): The inverse scale parameter.
+        seed (int, optional): The random seed, Default ``None`` .
 
     Returns:
-        Tensor. The shape should be equal to the broadcasted shape between the input `shape` and shapes
-        of `alpha` and `beta`.
-        The dtype is float32.
-
-    Raises:
-        TypeError: If `shape` is not a tuple.
-        TypeError: If neither `alpha` nor `beta` is a Tensor.
-        TypeError: If `seed` is not an int.
-        TypeError: If dtype of `alpha` and `beta` is not float32.
+        Tensor
 
     Supported Platforms:
         ``Ascend``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
         >>> # case 1: alpha_shape is (2, 2)
         >>> shape = (3, 1, 2)
-        >>> alpha = Tensor(np.array([[3, 4], [5, 6]]), mindspore.float32)
-        >>> beta = Tensor(np.array([1.0]), mindspore.float32)
-        >>> output = ops.gamma(shape, alpha, beta, seed=5)
+        >>> alpha = mindspore.tensor([[3, 4], [5, 6]], mindspore.float32)
+        >>> beta = mindspore.tensor([1.0], mindspore.float32)
+        >>> output = mindspore.ops.gamma(shape, alpha, beta, seed=5)
         >>> result = output.shape
         >>> print(result)
         (3, 2, 2)
         >>> # case 2: alpha_shape is (2, 3), so shape is (3, 1, 3)
         >>> shape = (3, 1, 3)
-        >>> alpha = Tensor(np.array([[1, 3, 4], [2, 5, 6]]), mindspore.float32)
-        >>> beta = Tensor(np.array([1.0]), mindspore.float32)
-        >>> output = ops.gamma(shape, alpha, beta, seed=5)
+        >>> alpha = mindspore.tensor([[1, 3, 4], [2, 5, 6]]), mindspore.float32)
+        >>> beta = mindspore.tensor([1.0], mindspore.float32)
+        >>> output = mindspore.ops.gamma(shape, alpha, beta, seed=5)
         >>> result = output.shape
         >>> print(result)
         (3, 2, 3)
         >>> # case 3: beta_shape is (1, 2), the output is different.
         >>> shape = (3, 1, 2)
-        >>> alpha = Tensor(np.array([[3, 4], [5, 6]]), mindspore.float32)
-        >>> beta = Tensor(np.array([1.0, 2]), mindspore.float32)
-        >>> output = ops.gamma(shape, alpha, beta, seed=5)
+        >>> alpha = mindspore.tensor([[3, 4], [5, 6]], mindspore.float32)
+        >>> beta = mindspore.tensor([1.0, 2], mindspore.float32)
+        >>> output = mindspore.ops.gamma(shape, alpha, beta, seed=5)
         >>> print(output)
         [[[ 2.2132034  5.8855834]
           [ 3.8825176  8.6066265]]
@@ -1116,9 +1089,9 @@ def gamma(shape, alpha, beta, seed=None):
           [ 3.786061   5.160872 ]]]
         >>> # case 4: beta_shape is (2, 1), the output is different.
         >>> shape = (3, 1, 2)
-        >>> alpha = Tensor(np.array([[3, 4], [5, 6]]), mindspore.float32)
-        >>> beta = Tensor(np.array([[1.0], [2.0]]), mindspore.float32)
-        >>> output = ops.gamma(shape, alpha, beta, seed=5)
+        >>> alpha = mindspore.tensor([[3, 4], [5, 6]], mindspore.float32)
+        >>> beta = mindspore.tensor([[1.0], [2.0]], mindspore.float32)
+        >>> output = mindspore.ops.gamma(shape, alpha, beta, seed=5)
         >>> print(output)
         [[[ 5.6085486  7.8280783]
          [ 15.97684  16.116285]]
@@ -1877,27 +1850,26 @@ def poisson(shape, mean, seed=None):
 @_function_forbid_reuse
 def multinomial(input, num_samples, replacement=True, seed=None):
     r"""
-    Returns a tensor sampled from the multinomial probability distribution located in the corresponding
-    row of the input tensor.
+    Generate a tensor from a multinomial distribution.
 
     The polynomial distribution is a probability distribution that generalizes the binomial distribution formula to
     multiple states. In the polynomial distribution, each event has a fixed probability, and the sum of these
-    probabilities is 1. The purpose of the :func:`mindspore.ops.multinomial` interface
-    is to perform `num_samples` sampling
+    probabilities is 1.
+
+    The purpose of this interface is to perform `num_samples` sampling
     on the input `input`, and the output tensor is the index of the input tensor for each sampling.
     The values in `input` represent the probability of selecting the corresponding index for each sampling.
 
     Here is an extreme example for better understanding. Suppose we have an input probability tensor with
-    values `Tensor([90 / 100, 10 / 100, 0], mindspore.float32)`, which means we can sample three indices,
+    values `[90 / 100, 10 / 100, 0]`, which means we can sample three indices,
     namely index 0, index 1, and index 2, with probabilities of 90%, 10%, and 0%, respectively. We perform n samplings,
     and the resulting sequence is the calculation result of the polynomial distribution, with a length equal to the
     number of samplings.
 
     In case 1 of the sample code, we perform two non-replacement samplings (`replacement` is `False`).
-    The calculation result is most likely `[0, 1]`, and less likely `[1, 0]`. Since the probability of selecting
-    index 0 is 90% for each sampling, the first result is most likely to be index 0. Since the probability of selecting
-    index 2 is 0, index 2 cannot appear in the sampling result. Therefore, the second result must be index 1,
-    and the resulting sequence is `[0, 1]`.
+    Since the probability of selecting index 0 is 90% for each sampling, the first result is most likely to be index 0.
+    Since the probability of selecting index 2 is 0, index 2 cannot appear in the sampling result. Therefore, the
+    second result must be index 1, and the resulting sequence is `[0, 1]`.
 
     In case 2 of the sample code, we perform 10 replacement samplings (`replacement` is `True`).
     As expected, about 90% of the sampling results are index 0.
@@ -1915,59 +1887,42 @@ def multinomial(input, num_samples, replacement=True, seed=None):
         the `seed` parameter has no effect.
 
     Args:
-        input (Tensor): The input tensor containing probabilities, must be 1 or 2 dimensions, with
-          float32 data type.
+        input (Tensor): The input tensor containing probabilities.
         num_samples (int): Number of samples to draw.
-        replacement (bool, optional): Whether to draw with replacement or not. Default: ``True`` .
-        seed (int, optional): Seed is used as entropy source for the random number engines to generate
-          pseudo-random numbers, must be non-negative. Default: ``None`` .
+        replacement (bool, optional): Whether to draw with replacement or not. Default ``True`` .
+        seed (int, optional): Random seed. Default ``None`` .
 
     Returns:
-        Tensor, has the same rows with input. The number of sampled indices of each row is `num_samples`.
-        The dtype is int32.
-
-    Raises:
-        TypeError: If `input` is not a Tensor whose dtype is not float32.
-        TypeError: If `num_samples` is not an int.
-        TypeError: If `seed` is neither an int nor None.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import Tensor, ops
-        >>> from mindspore import dtype as mstype
         >>> # case 1: The output is random, and the length of the output is the same as num_sample.
         >>> # replacement is False.
-        >>> input1 = Tensor([90 / 100, 10 / 100, 0], mindspore.float32)
-        >>> input2 = Tensor([90, 10, 0], mindspore.float32)
+        >>> input1 = mindspore.tensor([90 / 100, 10 / 100, 0])
+        >>> input2 = mindspore.tensor([90, 10, 0])
         >>> # input1 and input2 have the same meaning.
-        >>> output1 = ops.multinomial(input1, 2, replacement=False)
-        >>> output2 = ops.multinomial(input2, 2, replacement=False)
-        >>> # print(output1)
-        >>> # [0 1]
-        >>> # print(output2)
-        >>> # [0 1]
-        >>> print(len(output1))
-        2
-        >>> print(len(output2))
-        2
+        >>> mindspore.ops.multinomial(input1, 2, replacement=False)
+        Tensor(shape=[2], dtype=Int32, value= [0, 1])
+        >>> mindspore.ops.multinomial(input2, 2, replacement=False)
+        Tensor(shape=[2], dtype=Int32, value= [1, 0])
+        >>>
         >>> # case 2: The output is random, and the length of the output is the same as num_sample.
         >>> # replacement is True.
-        >>> output3 = ops.multinomial(input1, 10)
-        >>> # print(output3)
-        >>> # [0 0 1 0 0 0 0 0 0 0]
-        >>> print(len(output3))
-        10
+        >>> mindspore.ops.multinomial(input1, 10)
+        Tensor(shape=[10], dtype=Int32, value= [0, 0, 1, 0, 0, 0, 0, 0, 0, 0])
+        >>>
         >>> # case 3: The output is random, and the length of the output is the same as num_sample.
         >>> # replacement is True.
         >>> # rank is 2
-        >>> input4 = Tensor([[90, 10, 0], [10, 90, 0]], mstype.float32)
-        >>> output4 = ops.multinomial(input4, 10)
-        >>> # print(output4)
-        >>> # [[0 0 0 0 0 0 0 0 1 0]
-        >>> #  [1 1 1 1 1 0 1 1 1 1]]
+        >>> input3 = mindspore.tensor([[90, 10, 0], [10, 90, 0]], mindspore.float32)
+        >>> output = mindspore.ops.multinomial(input3, 10)
+        >>> print(output)
+        [[0 0 0 0 0 0 0 0 0 0]
+         [1 0 1 1 1 1 1 1 1 1]]
     """
     def _check_valid_dim(dim, name):
         if dim not in (1, 2):

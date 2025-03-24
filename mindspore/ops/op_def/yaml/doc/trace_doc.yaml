@@ -1,36 +1,23 @@
 trace:
   description: |
-    Returns a new tensor that is the sum of the `input` main trace.
+    Return the sum of the elements along the diagonal of the input tensor.
 
     Note:
         Input must be matrix, and complex number is not supported at present.
 
     Args:
-        input (Tensor): A matrix to be calculated. The matrix must be two dimensional.
+        input (Tensor): The input tensor.
 
     Returns:
-        Tensor, with the same data type as input `input`, and size equals to 1.
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
-        ValueError: If the dimension of `input` is not equal to 2.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input = Tensor(np.array([[10, 11, 12], [13, 14, 15], [16, 17, 18]]), mindspore.float32)
-        >>> output = ops.trace(input)
-        >>> print(output)
-        42.0
-        >>> input = Tensor(np.arange(1, 13).reshape(3, 4), mindspore.float32)
-        >>> output = ops.trace(input)
-        >>> print(output)
-        18.0
-        >>> input = Tensor(np.arange(12, 0, -1).reshape(4, 3), mindspore.float32)
-        >>> output = ops.trace(input)
-        >>> print(output)
-        24.0
+        >>> input = mindspore.tensor([[0, 1, 2], 
+        ...                           [3, 4, 5], 
+        ...                           [6, 7, 8]])
+        >>> mindspore.ops.trace(input)
+        Tensor(shape=[], dtype=Int64, value= 12)

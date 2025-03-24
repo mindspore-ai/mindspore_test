@@ -2789,30 +2789,23 @@ def bessel_y1(x):
 
 def eps(x):
     r"""
-    Create a Tensor with the same data type and shape as input, and the element value is the minimum value that the
+    Create a tensor with the same data type and shape as input, and the element value is the minimum value that the
     corresponding data type can express.
 
     Args:
-        x (Tensor): Tensor of any dimension used to obtain the minimum value that its data type can express.
-            The data type must be float16, float32 or float64.
+        x (Tensor): The input tensor.
 
     Returns:
-        Tensor, has the same type and shape as `x`, but filled with `x` dtype minimum val.
-
-    Raises:
-        TypeError: If `x` is not a Tensor.
-        TypeError: If data type of `x` is neither float16, float32, nor float64.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor([4, 1, 2, 3], mindspore.float32)
-        >>> output = ops.eps(x)
-        >>> print(output)
-        [1.1920929e-07 1.1920929e-07 1.1920929e-07 1.1920929e-07]
+        >>> x = mindspore.tensor([4, 1, 2, 3], mindspore.float32)
+        >>> mindspore.ops.eps(x)
+        Tensor(shape=[4], dtype=Float32, value= [ 1.19209290e-07,  1.19209290e-07,  1.19209290e-07,  1.19209290e-07])
     """
     return eps_(x)
 
@@ -3099,34 +3092,28 @@ def slogdet(input):
         The type of output always be real-value, even `input` is complex.
 
     Args:
-        input (Tensor): A matrix to be calculated, its shape is :math:`(..., M, M)`.
-          The matrix must be at least two dimensions, and the last two
-          dimensions must be the same size. Data type must be float32, float64, complex64 or complex128.
+        input (Tensor): The input tensor, shape is :math:`(..., M, M)`.
 
     Returns:
-        Tensor. The signs of the log determinants. The shape is :math:`input.shape[:-2]`.
-
-        Tensor. The absolute values of the log determinants. The shape is :math:`input.shape[:-2]`.
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
-        TypeError: If dtype of `input` not float32, float64, complex64 or complex128.
-        ValueError: If the last two dimensions of `input` is not same size.
-        ValueError: If the dimension of `input` is less than 2.
+        Tuple of 2 tensors which are sign and the log of the absolute value.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input_x = Tensor(np.array([[[-4.5, -1.5], [7.0, 6.0]], [[2.5, 0.5], [3.0, 9.0]]]), mindspore.float32)
-        >>> sign, output = ops.slogdet(input_x)
+        >>> input = mindspore.tensor([[1., 2], [3, 4]])
+        >>> sign, value = mindspore.ops.slogdet(input)
         >>> print(sign)
-        [-1.   1.]
-        >>> print(output)
-        [2.80336046e+00    3.04452229e+00]
+        -1.0
+        >>> print(value)
+        0.6931472
+        >>> input = mindspore.tensor([[[-4.5, -1.5], [7.0, 6.0]], [[2.5, 0.5], [3.0, 9.0]]])
+        >>> sign, value = mindspore.ops.slogdet(input)
+        >>> print(sign)
+        [-1.  1.]
+        >>> print(value)
+        [2.8033605 3.0445223]
     """
     return log_matrix_determinant_(input)
 
@@ -4176,7 +4163,9 @@ def hypot(input, other):
 
 def heaviside(input, values):
     r"""
-    Computes the Heaviside step function for each element in input.
+    Perform Heaviside step function element-wise.
+
+    Support broadcasting.
 
     .. math::
         \text { heaviside }(\text { input, values })=\left\{\begin{array}{ll}
@@ -4186,29 +4175,34 @@ def heaviside(input, values):
         \end{array}\right.
 
     Args:
-        input (Tensor): The input tensor. With real number data type.
-        values (Tensor): The values to use where `input` is zero. Values can be broadcast with `input` .
-            `input` should have the same dtype with `values` .
+        input (Tensor): The input tensor.
+        values (Tensor): The value to fill when the element in `input` is 0.
 
     Returns:
-        Tensor, has the same type as `input` and `values`.
-
-    Raises:
-        TypeError: If `input` or `values` is not Tensor.
-        TypeError: If data type `input` and `values` is different.
-        ValueError: If shape of two inputs are not broadcastable.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input = Tensor(np.array([-5., 1., 0., 2., 0.]))
-        >>> values = Tensor(np.array([3.]))
-        >>> y = ops.heaviside(input, values)
-        >>> print(y)
-        [0. 1. 3. 1. 3.]
+        >>> import mindspore
+        >>> input = mindspore.tensor([[-2., 0, 3],
+        ...                           [5, -1, 0],
+        ...                           [0, 7, -3]])
+        >>> values = mindspore.tensor([2, 0.5, 1])
+        >>> output = mindspore.ops.heaviside(input, values)
+        >>> print(output)
+        [[0.  0.5 1. ]
+         [1.  0.  1. ]
+         [2.  1.  0. ]]
+        >>> output = mindspore.ops.heaviside(input, mindspore.tensor(0.5))
+        >>> print(output)
+        [[0.  0.5 1. ]
+         [1.  0.  0.5]
+         [0.5 1.  0. ]]
+        >>> output = mindspore.ops.heaviside(mindspore.tensor(-3.), values)
+        >>> print(output)
+        [0. 0. 0.]
     """
 
     heaviside_ = Heaviside()
@@ -4254,8 +4248,8 @@ def histc(input, bins=100, min=0., max=0.):
 
 def logspace(start, end, steps, base=10, *, dtype=mstype.float32):
     r"""
-    Returns a 1-D Tensor with size `steps` whose value is from :math:`base^{start}` to :math:`base^{end}`,
-    and use `base` as the base number.
+    Return a tensor with `steps` elements, evenly distributed in the interval
+    [ :math:`base^{start}` , :math:`base^{end}`].
 
     .. math::
         \begin{aligned}
@@ -4265,33 +4259,22 @@ def logspace(start, end, steps, base=10, *, dtype=mstype.float32):
 
     Args:
         start (Union[float, Tensor]): Start value of interval.
-        end (Union[float, Tensor]): End value of interval.
-        steps (int): The steps must be a non-negative integer.
-        base (int, optional): The base must be a non-negative integer. Default: ``10`` .
+        end (Union[float, Tensor]): Last value of interval.
+        steps (int): Number of elements.
+        base (int, optional): Base of the logarithm function. Default ``10`` .
 
     Keyword Args:
-        dtype (mindspore.dtype, optional): The dtype of output. Default: ``mstype.float32`` .
+        dtype (mindspore.dtype, optional): The data type specified. Default ``mstype.float32`` .
 
     Returns:
-        Tensor has the shape as :math:`(step, )`. Its datatype is set by the attr 'dtype'.
-
-    Raises:
-        TypeError: If `start` is not a float or a Tensor.
-        TypeError: If `end` is not a float or a Tensor.
-        TypeError: If `steps` is not an int.
-        TypeError: If `base` is not an int.
-        ValueError: If `steps` is not a non-negative integer.
-        ValueError: If `base` is not a non-negative integer.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import Tensor, ops
-        >>> start = Tensor(1, mindspore.float32)
-        >>> end = Tensor(10, mindspore.float32)
-        >>> output = ops.logspace(start, end, steps = 10, base = 10, dtype=mindspore.float32)
+        >>> output = mindspore.ops.logspace(1., 10., steps = 10, base = 10)
         >>> print(output)
         [1.e+01 1.e+02 1.e+03 1.e+04 1.e+05 1.e+06 1.e+07 1.e+08 1.e+09 1.e+10]
     """
@@ -5594,48 +5577,32 @@ def lerp(input, end, weight):
 
 def bernoulli(input, p=0.5, seed=None):
     r"""
-    Randomly set the elements of output to 0 or 1 with the probability of `p`
-    which follows the Bernoulli distribution.
+    Generates Bernoulli random values (0 or 1).
 
     .. math::
         out_{i} \sim Bernoulli(p_{i})
 
     Args:
-        input (Tensor): Input Tensor. Data
-                        type must be int8, uint8, int16, int32, int64, bool, float32 or float64.
-        p (Union[Tensor, float], optional): Success probability, representing the probability of setting 1 for the
-            corresponding position of the current Tensor. It has the same shape as `input`, the value of `p`
-            must be in the range `[0, 1]`. Default: ``0.5`` .
-        seed (Union[int, None], optional): The seed value for random generating. The value of `seed` must be a
-            positive integer. Default: ``None`` , means using the current timestamp.
+        input (Tensor): The input Tensor.
+        p (Union[Tensor, float], optional): The probability of setting 1 for the
+            corresponding position of the returned tensor. The value of `p` must be in the range `[0, 1]`.
+            Default ``0.5`` .
+        seed (Union[int, None], optional): The random seed. Default ``None`` means using the current timestamp.
 
     Returns:
-        output (Tensor), with the same shape and type as `input`.
-
-    Raises:
-        TypeError: If dtype of `input` is not one of: int8, uint8, int16, int32, int64, bool, float32, float64.
-        TypeError: If dtype of `p` is not one of: float32, float64.
-        TypeError: If dtype of `seed` is not int or None.
-        ValueError: If `p` is not in range [0, 1].
-        ValueError: If `seed` is less than 0.
-        ValueError: If `p` is a Tensor but has different shape than `input`.
+        Tensor
 
     Supported Platforms:
         ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor
-        >>> from mindspore import ops
-        >>> input_x = Tensor(np.array([1, 2, 3]), mindspore.int8)
-        >>> output = ops.bernoulli(input_x, p=1.0)
-        >>> print(output)
-        [1 1 1]
-        >>> input_p = Tensor(np.array([0.0, 1.0, 1.0]), mindspore.float32)
-        >>> output = ops.bernoulli(input_x, input_p)
-        >>> print(output)
-        [0 1 1]
+        >>> input = mindspore.tensor([1, 2, 3])
+        >>> mindspore.ops.bernoulli(input, p=1.0)
+        Tensor(shape=[3], dtype=Int64, value= [1, 1, 1])
+        >>> p = mindspore.tensor([0.0, 1.0, 1.0])
+        >>> mindspore.ops.bernoulli(input, p)
+        Tensor(shape=[3], dtype=Int64, value= [0, 1, 1])
     """
     if seed is None:
         seed = -1
