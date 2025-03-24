@@ -1,0 +1,7 @@
+asinh_:
+  - op_yaml: inplace_asinh_op.yaml
+    py_method: tensor_inplace_asinh
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

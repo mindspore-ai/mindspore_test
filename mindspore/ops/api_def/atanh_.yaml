@@ -1,0 +1,7 @@
+atanh_:
+  - op_yaml: inplace_atanh_op.yaml
+    py_method: tensor_inplace_atanh
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

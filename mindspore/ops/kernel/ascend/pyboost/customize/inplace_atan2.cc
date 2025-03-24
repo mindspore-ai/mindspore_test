@@ -1,0 +1,52 @@
+/**
+ * Copyright 2023 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include "kernel/ascend/pyboost/customize/inplace_atan2.h"
+#include "runtime/hardware/device_context_manager.h"
+#include "kernel/ascend/pyboost/aclnn_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+
+namespace mindspore {
+namespace kernel {
+namespace pyboost {
+tensor::BaseTensorPtr InplaceAtan2AscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                                  const BaseTensorPtr &input_tensor,
+                                                  const BaseTensorPtr &other_tensor) {
+  MS_LOG(DEBUG) << "Call aclnnInplaceAtan2 start";
+  auto input_type = input_tensor->Dtype()->type_id();
+  if (input_type != kNumberTypeBFloat16 && input_type != kNumberTypeFloat16 && input_type != kNumberTypeFloat32 &&
+      input_type != kNumberTypeFloat64) {
+    MS_EXCEPTION(RuntimeError) << "The input tensor type is illegal";
+  }
+
+  PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor, other_tensor);
+
+  op->set_outputs({input_tensor});
+  // Async
+  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([op, input_tensor, other_tensor]() {
+    auto device_context = op->device_context();
+    // Malloc for input tensors
+    PyBoostUtils::MallocOpInputs(device_context, input_tensor, other_tensor);
+
+    // Inplace output need be front
+    LAUNCH_ACLNN(aclnnInplaceAtan2, device_context, op->stream_id(), input_tensor, other_tensor);
+    MS_LOG(DEBUG) << "Launch aclnnInplaceAtan2 end";
+  }));
+  return op->output(0);
+}
+}  // namespace pyboost
+}  // namespace kernel
+}  // namespace mindspore

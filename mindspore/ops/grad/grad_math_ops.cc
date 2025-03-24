@@ -45,6 +45,8 @@ NodePtrList AddnGradFunc(BpropBuilder *ib) {
   return {ib->MakeTuple(result)};
 }
 
+bool CloneInplaceInputFuncForTrigonometry(const PynativeCallback &cb) { return true; }
+
 bool CloneInplaceInputFuncForInplaceDiv(const PynativeCallback &cb) {
   if (!cb.IsNotRequiresGrad(kIndex1)) {
     return true;
@@ -1679,6 +1681,21 @@ REG_BPROP_BUILDER("Asin").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   return {dx};
 });
 
+REG_BPROP_BUILDER("InplaceAsin").CloneInplaceInput(CloneInplaceInputFuncForTrigonometry).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto dout = ib->GetInput(kIndex2);
+
+  auto cal_part1 =
+    ib->Emit("AddScalar", {ib->Mul(ib->Neg(input), input), ib->Value<int64_t>(1), ib->Value<int64_t>(1)});
+  auto cal_part2 = ib->Emit("Rsqrt", {cal_part1});
+  auto cal_part2_dtype = ib->GetDtypeId(cal_part2);
+  if (cal_part2_dtype == kNumberTypeComplex64 || cal_part2_dtype == kNumberTypeComplex128) {
+    cal_part2 = ib->Conj(cal_part2);
+  }
+  auto input_grad = ib->Mul(dout, cal_part2);
+  return {ib->Cast(input_grad, ib->GetDtype(input))};
+});
+
 REG_BPROP_BUILDER("AsinExt").FreeUselessValues_O().SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto dout = ib->GetInput(kIndex2);
@@ -1714,6 +1731,8 @@ REG_BPROP_BUILDER("Asinh").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
   auto dx = ib->Emit("AsinhGrad", {out, dout});
   return {dx};
 });
+
+REG_BPROP_BUILDER("InplaceAsinh").SetUnusedInputs({i0, i1}).SetBody(ReturnZeros);
 
 REG_BPROP_BUILDER("AsinhExt").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
@@ -1881,6 +1900,28 @@ REG_BPROP_BUILDER("Atan2").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   return {BinopGradCommon(ib, x, y, bc_dx, bc_dy)};
 });
 
+REG_BPROP_BUILDER("InplaceAtan2").CloneInplaceInput(CloneInplaceInputFuncForTrigonometry).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto other = ib->GetInput(kIndex1);
+  auto grad = ib->GetInput(kIndex3);
+  NodePtr bc_input = nullptr;
+  NodePtr bc_other = nullptr;
+
+  auto recip = ib->Reciprocal(ib->Add(ib->Mul(input, input), ib->Mul(other, other)));
+  if (input->need_compute_grad_out()) {
+    bc_input = ib->Mul(ib->Mul(grad, other), recip);
+  }
+
+  if (other->need_compute_grad_out()) {
+    bc_other = ib->Mul(grad, ib->Mul(ib->Neg(input), recip));
+  }
+
+  std::vector<NodePtr> ret = BinopGradCommon(ib, input, other, bc_input, bc_other);
+  auto input_cast = input->need_compute_grad_out() ? ib->Cast(ret[0], ib->GetDtype(input)) : ib->OutZeros(input);
+  auto other_cast = other->need_compute_grad_out() ? ib->Cast(ret[1], ib->GetDtype(other)) : ib->OutZeros(other);
+  return {input_cast, other_cast};
+});
+
 REG_BPROP_BUILDER("Atan2Ext").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto y = ib->GetInput(kIndex1);
@@ -1912,6 +1953,20 @@ REG_BPROP_BUILDER("Atan").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   auto dout = ib->GetInput(kIndex2);
   auto dx = ib->Emit("AtanGrad", {x, dout});
   return {dx};
+});
+
+REG_BPROP_BUILDER("InplaceAtan").CloneInplaceInput(CloneInplaceInputFuncForTrigonometry).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto dout = ib->GetInput(kIndex2);
+
+  auto cal_part1 = ib->Mul(input, input);
+  auto cal_part2 = ib->Emit("AddScalar", {cal_part1, ib->Value<int64_t>(1), ib->Value<int64_t>(1)});
+  auto cal_part2_dtype = ib->GetDtypeId(cal_part2);
+  if (cal_part2_dtype == kNumberTypeComplex64 || cal_part2_dtype == kNumberTypeComplex128) {
+    cal_part2 = ib->Conj(cal_part2);
+  }
+  auto res = ib->Div(dout, cal_part2);
+  return {ib->Cast(res, ib->GetDtype(input))};
 });
 
 REG_BPROP_BUILDER("AtanExt").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
@@ -2356,6 +2411,8 @@ REG_BPROP_BUILDER("Atanh").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   }
   return {dx};
 });
+
+REG_BPROP_BUILDER("InplaceAtanh").SetUnusedInputs({i0, i1}).SetBody(ReturnZeros);
 
 REG_BPROP_BUILDER("Inv").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
   auto out = ib->GetInput(kIndex1);

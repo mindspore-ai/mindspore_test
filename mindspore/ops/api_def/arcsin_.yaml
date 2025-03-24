@@ -1,0 +1,7 @@
+arcsin_:
+  - op_yaml: inplace_asin_op.yaml
+    py_method: tensor_inplace_asin
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

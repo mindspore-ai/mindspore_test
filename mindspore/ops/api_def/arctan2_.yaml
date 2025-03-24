@@ -1,0 +1,7 @@
+arctan2_:
+  - op_yaml: inplace_atan2_op.yaml
+    py_method: tensor_inplace_atan2
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
