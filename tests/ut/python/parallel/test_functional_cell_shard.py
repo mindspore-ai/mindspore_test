@@ -354,3 +354,22 @@ def test_ms_shard_with_out_strategy_be_set_and_propagate_reduce_scatter():
     validator = ParallelValidator(net, phase)
     rank_list = {"rank_list": '(0, 1, 2, 3)'}
     assert validator.check_node_attrs('ReduceScatter-0', rank_list)
+
+
+def test_ms_shard_with_layout_be_set_and_propagate_pynative():
+    """
+    Feature: Test ms.shard + pynative.
+    Description: dev_num is 8.
+    Expectation: compile success
+    """
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation",
+                                      device_num=8, global_rank=0)
+    context.set_context(mode=ms.PYNATIVE_MODE)
+    case_name = "test_ms_shard_with_layout_be_set_and_propagate_pynative"
+    ir_graph_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "layout_ir", case_name)
+    context.set_context(save_graphs=True, save_graphs_path=ir_graph_path)
+    layout = Layout((2, 4, 1), ("dp", "sp", "mp"))
+    in_layout1 = (layout("dp", "mp"),)
+    x = Tensor(np.ones([1024, 1024]), dtype=ms.float32)
+    net = GradWrap(NetWithLoss(ShardNet(in_layout1, shard_key="ms")))
+    compile_net(net, x)

@@ -127,6 +127,16 @@ def before_test(case_name, device_num=4):
     x = Tensor(np.ones(shape=(32, 1, 28, 28)), dtype=ms.float32)
     return net, x, ir_graph_path
 
+def before_test_pynative(case_name, device_num=4):
+    context.set_auto_parallel_context(parallel_mode=ms.ParallelMode.AUTO_PARALLEL, device_num=device_num,
+                                      global_rank=0, search_mode="sharding_propagation")
+    context.set_context(mode=ms.PYNATIVE_MODE)
+    ir_graph_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "reshard_ir", case_name)
+    context.set_context(save_graphs=True, save_graphs_path=ir_graph_path)
+    net = Net()
+    x = Tensor(np.ones(shape=(32, 1, 28, 28)), dtype=ms.float32)
+    return net, x, ir_graph_path
+
 def test_shard_with_in_strategy_4x1():
     """
     Feature: Test shard.
@@ -237,3 +247,30 @@ def test_reshard_with_tuple_as_input():
     with pytest.raises(TypeError) as err:
         compile_net(net, x, ((2, 1),), layout2)
     assert "Reshard only support type mindspore.Layout" in str(err.value)
+
+
+def test_parameter_plan_with_strategy_4x1_pynative():
+    """
+    Feature: shard nested shard
+    Description: test usage of shard nested shard
+    Expectation: throw an exception indicating that shard nested shard is invalid usage
+    """
+    net, x, _ = before_test_pynative("test_parameter_plan_with_strategy_4x1_pynative")
+    error_msg = "Nested use of shard (e.g shard(shard(...), ...) is not supported in PyNative mode"
+    with pytest.raises(Exception) as err:
+        compile_net(net, x, layout1, layout2)
+    assert error_msg in str(err.value)
+
+
+def test_parameter_plan_with_layout_4x1_pynative():
+    """
+    Feature: shard nested shard
+    Description: test usage of shard nested shard
+    Expectation: throw an exception indicating that shard nested shard is invalid usage
+    """
+    _, x, _ = before_test_pynative("test_parameter_plan_with_layout_4x1_pynative")
+    error_msg = "Nested use of shard (e.g shard(shard(...), ...) is not supported in PyNative mode"
+    with pytest.raises(Exception) as err:
+        net = Net2()
+        compile_net(net, x, layout1, layout2)
+    assert error_msg in str(err.value)
