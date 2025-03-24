@@ -3,13 +3,10 @@ mindspore.ops.imag
 
 .. py:function:: mindspore.ops.imag(input)
 
-    返回包含输入Tensor的虚部。如果输入为实数，则返回零。
+    返回输入tensor每个元素的虚部。如果元素为实数，则返回零。
 
     参数：
-        - **input** (Tensor) - 要计算的输入Tensor。
+        - **input** (Tensor) - 输入tensor。
 
     返回：
-        Tensor，shape与 `input` 相同。
-
-    异常：
-        - **TypeError** - 如果 `input` 不是Tensor。
+        Tensor

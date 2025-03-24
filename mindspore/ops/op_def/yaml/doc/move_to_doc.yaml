@@ -1,25 +1,22 @@
 move_to:
   description: |
-    Copy Tensor to target device synchronously or asynchronously, default synchronously. This interface currently only supports Graph mode and jit_level is O0 or O1.
+    Copy tensor to target device synchronously or asynchronously, default synchronously.
+
+    .. note::
+        This interface currently only supports graph mode and jit_level is O0 or O1.
 
     Args:
-        input (Union[Tensor, list[int], tuple[int]]): The input tensor that need to be moved, when the input is list and tuple, it will be converted to Tensor before copying.
-        to (str, optional): Specify the name of the target device, with optional values of ``"Ascend"`` and ``"CPU"``. Default: ``"CPU"`` .
-        blocking (bool, optional): Specify the use of synchronous or asynchronous copying, with optional values of ``True`` and ``False``. Default: ``True``, represents synchronous copying.
+        input (Union[Tensor, list[int], tuple[int]]): The input tensor. When the input is list and tuple, it will be converted to tensor before copying.
+        to (str, optional): Specify the target device, with optional values of ``"Ascend"`` and ``"CPU"``. Default ``"CPU"`` .
+        blocking (bool, optional): Whether use synchronous copying. Default ``True``.
 
     Returns:
-        New Tensor, storged on target device which with the same type and shape as the `input`.
-
-    Raises:
-        ValueError: If the value of `to` is not one of ``"Ascend"``, ``"CPU"``.
-        ValueError: If the type of `blocking` is not bool type.
-        ValueError: If the run mode is not Graph mode or jit_level is not O0 or O1.
+        A new tensor on target device.
 
     Supported Platforms:
         ``Ascend`` ``CPU``
 
     Examples:
-        >>> import mindspore as ms
-        >>> from mindspore import ops
-        >>> x = ms.Tensor([1, 2, 3], ms.int64)
-        >>> new_tensor = ops.move_to(x, "CPU")
+        >>> import mindspore
+        >>> x = mindspore.tensor([1, 2, 3], mindspore.int64)
+        >>> new_tensor = mindspore.ops.move_to(x, "CPU")
