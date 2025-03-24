@@ -96,7 +96,7 @@ class Edge {
   std::shared_ptr<StrategyWithCost> GetNextOpSwcByPrevOpStrategyWithMiniComm(const StrategyPtr &prev_op_stra);
   std::shared_ptr<StrategyWithCost> GetPrevOpSwcByNextOpStrategyWithMiniComm(const StrategyPtr &next_op_stra);
   std::shared_ptr<StrategyWithCost> GetNextOpStrategyByCurMultiInput(
-    std::map<OperatorInfoPtr, int64_t, OpsPtrCompare> *waitting_list, int64_t curr_depth);
+    int64_t curr_depth, std::map<OperatorInfoPtr, int64_t, OpsPtrCompare> *waitting_list);
   int64_t GetReshapeSWCIndexByNextOpStrategy(const StrategyPtr &next_op_stra);
   int64_t GetReshapeSWCIndexByPrevOpStrategy(const StrategyPtr &prev_op_stra);
   StrategyPtr GetPrevOpStrategyByReshapeSWCIndex(int64_t swc_index);

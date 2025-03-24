@@ -447,6 +447,7 @@ void SetStrategyToOperator(const OperatorInfoPtr &operator_info, const Primitive
     MS_LOG(EXCEPTION) << "Failure: operator " << prim->name() << " SetCostUnderStrategy failed";
   }
   CheckStrategyUsedDevices(operator_info);
+  operator_info->SetDefaultLayoutInfo();
   (void)configured_stra_ops_.emplace(operator_info, strategyPtr);
 }
 

@@ -47,6 +47,13 @@ class TmpIdentityInfo : public OperatorInfo {
   Status InferForwardCommunication() override { return SUCCESS; }
   Status InferDevMatrixShape() override;
   Status InferTensorMap() override;
+  Status CheckInputLayout() override { return SUCCESS; }
+  Status InferOutputTensorInfo() override;
+
+  size_t outputs_size_ = 1;
+
+ private:
+  TensorLayout output_infer_tensor_layout_;
 };
 }  // namespace parallel
 }  // namespace mindspore

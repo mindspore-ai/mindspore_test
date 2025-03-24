@@ -406,7 +406,7 @@ StrategyPtr Edge::GetNextOpStrategyByOutStrategy(const StrategyPtr &out_strategy
 }
 
 std::shared_ptr<StrategyWithCost> Edge::GetNextOpStrategyByCurMultiInput(
-  std::map<OperatorInfoPtr, int64_t, OpsPtrCompare> *waitting_list, int64_t curr_depth) {
+  int64_t curr_depth, std::map<OperatorInfoPtr, int64_t, OpsPtrCompare> *waitting_list) {
   // Delete next_op from the waitting_list list
   auto it = waitting_list->find(next_op_);
   if (it != waitting_list->end()) {

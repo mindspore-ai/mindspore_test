@@ -65,5 +65,15 @@ std::vector<StrategyPtr> TmpIdentityInfo::GenerateOpStrategies(int64_t stage_id)
 
   return sp_vector;
 }
+
+Status TmpIdentityInfo::InferOutputTensorInfo() {
+  output_infer_tensor_layout_ = inputs_tensor_info_[kIndex0].tensor_layout();
+  TensorInfo output_tensor_info(output_infer_tensor_layout_);
+  for (size_t i = 0; i < outputs_size_; ++i) {
+    outputs_tensor_info_.push_back(output_tensor_info);
+  }
+  return SUCCESS;
+}
+
 }  // namespace parallel
 }  // namespace mindspore
