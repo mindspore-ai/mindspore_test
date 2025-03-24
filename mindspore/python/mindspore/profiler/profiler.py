@@ -41,7 +41,7 @@ def tensorboard_trace_handler(dir_name: str = None, worker_name: str = None,
     Args:
         dir_name (str, optional): Specifies the directory path to save the analysis results. The default is ``None``.
             The default save path is ``"./data"``.
-        worker_name (int, optional): Specifies the system version name. The default is ``None``. The default project
+        worker_name (str, optional): Specifies the system version name. The default is ``None``. The default project
             thread name is ``"Name of the current operating system + process ID"``.
         analyse_flag (bool, optional): Whether to enable online analysis. The default value is ``True``.
             Indicates online analysis.
