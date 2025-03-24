@@ -1476,10 +1476,12 @@ def tensor_isneginf(input):
     neg_tensor = input < 0
     return logical_and(inf_tensor, neg_tensor)
 
+
 def deprecated_tensor_isneginf(input):
     inf_tensor = isinf(input)
     neg_tensor = input < 0
     return logical_and(inf_tensor, neg_tensor)
+
 
 # 155
 def deprecated_tensor_median(input, axis=-1, keepdims=False):
@@ -1836,9 +1838,11 @@ def matmul_reduce_scatter(
     """
     raise NotImplementedError('matmul_reduce_scatter only supports Ascend.')
 
+
 # 1030
 def tensor_log_(input):
     return inplace_log_op(input)
+
 
 def tensor_floor_div(input, other):
     return floor_div_op(input, other)
