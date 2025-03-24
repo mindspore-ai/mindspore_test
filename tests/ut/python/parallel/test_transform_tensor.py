@@ -651,3 +651,42 @@ def test_construct_tensor_layout_for_opt_shard_by_layout_multi_repeat_dim():
     assert new_dev_matrix == [4, 2, 2, 4]
     assert new_tensor_map == [[0, 1], 3, 2, -1]
     assert full_tensor_shape == [8, 4, 1, 8]
+
+
+def test_construct_tensor_layout_for_opt_shard_with_multi_repeated_dim():
+    """
+    Feature: construct tensor layout for optimizer shard.
+    Description: construct tensor layout for optimizer shard, multi repeated dim not fully sharded.
+    Expectation: assert no error.
+    """
+    dev_matrix = [8, 4, 2]
+    tensor_map = [1, -1, -1]
+    opt_shard_step = 3
+    opt_shard_size = 2
+    origin_full_tensor_shape = [16, 6144, 4096]
+    new_dev_matrix, new_tensor_map, full_tensor_shape = \
+    _construct_tensor_layout_for_opt_shard(dev_matrix, tensor_map, opt_shard_step,
+                                           opt_shard_size, origin_full_tensor_shape)
+    assert new_dev_matrix == [8, 4, 2]
+    assert new_tensor_map == [1, 0, -1, -1]
+    assert full_tensor_shape == [4, 4, 6144, 4096]
+
+
+def test_construct_tensor_layout_for_opt_shard_with_multi_repeated_dim_v2():
+    """
+    Feature: construct tensor layout for optimizer shard.
+    Description: construct tensor layout for optimizer shard, multi repeated dim not fully sharded,
+    need reshape device matrix.
+    Expectation: assert no error.
+    """
+    dev_matrix = [8, 4, 2]
+    tensor_map = [1, -1, -1]
+    opt_shard_step = 3
+    opt_shard_size = 4
+    origin_full_tensor_shape = [16, 6144, 4096]
+    new_dev_matrix, new_tensor_map, full_tensor_shape = \
+    _construct_tensor_layout_for_opt_shard(dev_matrix, tensor_map, opt_shard_step,
+                                           opt_shard_size, origin_full_tensor_shape)
+    assert new_dev_matrix == [4, 2, 4, 2]
+    assert new_tensor_map == [1, 2, 0, -1, -1]
+    assert full_tensor_shape == [4, 2, 2, 6144, 4096]
