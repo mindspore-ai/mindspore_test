@@ -36,8 +36,8 @@
         异常：
             - **TypeError** - 文件路径类型非字符串
             - **KeyError** - 文件路径非绝对路径或非JSON文件后缀结尾
-             
-    
+
+
     .. py:method:: save_operator_strategy_file(file_path)
 
         在使用策略传播模式时，设置保存策略JSON文件的路径。
@@ -80,6 +80,7 @@
 
         参数：
             - **file_path** (str) - 保存路径，默认值为 `""`
+
         异常：
             - **TypeError** - 文件路径类型非字符串
 

@@ -4648,7 +4648,7 @@ def cross_entropy_ext(input, target, weight=None, ingore_index=-100, reduction='
     Note:
         Dynamic shape, dynamic rank and variable constant input are not supported in `strict graph mode
         (jit_syntax_level=mindspore.STRICT)
-        <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html>`_.
+        <https://www.mindspore.cn/tutorials/en/master/compile/static_graph.html>`_.
 
     Args:
         input (Tensor): :math:`(N)` or :math:`(N, C)` where `C = number of classes` or :math:`(N, C, H, W)`
@@ -9465,7 +9465,7 @@ def speed_fusion_attention(query, key, value, head_num, input_layout, *, pse=Non
 
     Note:
         This interface is not supported in `graph mode (mode=mindspore.GRAPH_MODE)
-        <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html>`_.
+        <https://www.mindspore.cn/tutorials/en/master/compile/static_graph.html>`_.
 
     Args:
         query (Tensor): The query tensor. Input tensor of shape :math:`(B, S1, H1)`,

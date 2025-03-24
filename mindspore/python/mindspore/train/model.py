@@ -1528,10 +1528,6 @@ class Model:
             >>> optim = nn.Momentum(params=net.trainable_params(), learning_rate=0.1, momentum=0.9)
             >>> model = Model(net, loss_fn=loss, optimizer=optim, metrics={"accuracy"})
             >>> model.fit(2, train_dataset, valid_dataset)
-
-        Tutorial Examples:
-            - `Advanced Encapsulation: Model - Train and Save Model
-              <https://www.mindspore.cn/docs/en/master/model_train/train_process/model.html#training-and-saving-model>`_
         """
         _init_auto_parallel_context(self._network)
         device_target = context.get_context("device_target")
@@ -1808,10 +1804,6 @@ class Model:
             >>> loss = nn.SoftmaxCrossEntropyWithLogits(sparse=True)
             >>> model = Model(net, loss_fn=loss, optimizer=None, metrics={'acc'})
             >>> acc = model.eval(dataset, dataset_sink_mode=False)
-
-        Tutorial Examples:
-            - `Advanced Encapsulation: Model - Train and Save Model
-              <https://www.mindspore.cn/docs/en/master/model_train/train_process/model.html#training-and-saving-model>`_
         """
         _init_auto_parallel_context(self._network)
         dataset_sink_mode = Validator.check_bool(dataset_sink_mode)

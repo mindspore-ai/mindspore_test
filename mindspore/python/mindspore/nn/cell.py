@@ -313,11 +313,6 @@ class Cell(Cell_):
     def bprop_debug(self):
         """
         Get whether cell custom bprop debug is enabled.
-
-        Tutorial Examples:
-            - `Custom Neural Network Layers - Custom Cell Reverse
-              <https://mindspore.cn/docs/en/master/model_train/custom_program/network_custom.html
-              #custom-cell-reverse>`_
         """
         return self._bprop_debug
 
