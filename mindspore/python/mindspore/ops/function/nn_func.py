@@ -8024,30 +8024,19 @@ def channel_shuffle(x, groups):
     shape in the final output.
 
     Args:
-        x (Tensor): Tensor to be divided, it has shape :math:`(*, C, H, W)`,
-          with float16, float32, int8, int16, int32, int64, uint8, uint16, uint32, uint64 data type.
+        x (Tensor): The input tensor.
         groups (int): Number of groups to divide channels in.
 
     Returns:
-        A Tensor, has the same type as the `x`, and has the shape :math:`(*, C, H, W)`.
-
-    Raises:
-        TypeError: If data type of `x` is not one of the following:
-                   float16, float32, int8, int16, int32, int64, uint8, uint16, uint32, uint64.
-        TypeError: If dim of `x` is < 4.
-        TypeError: If `groups` is not a positive number.
-        ValueError: If channel number of `x` is not divisible by `groups`.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> group = 2
-        >>> x = Tensor(np.arange(1* 4 * 2 * 2).reshape(1, 4, 2, 2).astype(np.int16))
-        >>> y = mindspore.ops.channel_shuffle(x, group)
+        >>> x = mindspore.tensor(mindspore.ops.arange(0, 16, dtype=mindspore.int16).reshape(1, 4, 2, 2))
+        >>> y = mindspore.ops.channel_shuffle(x, groups=2)
         >>> print(y)
         [[[[ 0  1]
            [ 2  3]]
