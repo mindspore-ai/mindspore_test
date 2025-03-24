@@ -473,30 +473,37 @@ class Cell(Cell_):
         r"""Add a buffer to the cell.
 
         This is typically used to register a buffer that should not to be
-        considered a model parameter. For example, BatchNorm's ``running_mean``
+        considered a model parameter. For example, BatchNorm's `running_mean`
         is not a parameter, but is part of the cell's state. Buffers, by
         default, are persistent and will be saved alongside parameters. This
-        behavior can be changed by setting :attr:`persistent` to ``False``. The
+        behavior can be changed by setting `persistent` to ``False`` . The
         only difference between a persistent buffer and a non-persistent buffer
-        is that the latter will not be a part of this cell's
-        :attr:`state_dict`.
+        is that the latter will not be a part of this cell's :attr:`state_dict` .
 
         Buffers can be accessed as attributes using given names.
 
         Args:
             name (str): name of the buffer. The buffer can be accessed
-                from this cell using the given name
-            tensor (Tensor or None): buffer to be registered. If ``None``, then operations
-                that run on buffers, such as :attr:`cuda`, are ignored. If ``None``,
-                the buffer is **not** included in the cell's :attr:`state_dict`.
-            persistent (bool): whether the buffer is part of this cell's
-                :attr:`state_dict`.
+                from this cell using the given name.
+            tensor (Tensor): Buffer to be registered. If ``None`` ,
+                the buffer is not included in the cell's :attr:`state_dict` .
+            persistent (bool, optional): Whether the buffer is part of this cell's :attr:`state_dict`. Default ``True``.
 
-        Example::
-
-            >>> # xdoctest: +SKIP("undefined vars")
-            >>> self.register_buffer('running_mean', Tensor(np.array([1, 2, 3]).astype(np.float32)))
-
+        Examples:
+            >>> import mindspore
+            ...
+            >>> class Net(mindspore.nn.Cell):
+            ...    def __init__(self):
+            ...        super().__init__()
+            ...        self.register_buffer("buffer0", mindspore.tensor([1, 2, 3]))
+            ...
+            ...    def construct(self, x):
+            ...        return x + self.net_buffer
+            ...
+            >>> net = Net()
+            >>> net.register_buffer(mindspore.tensor("buffer0", [4, 5, 6]))
+            >>> print(net.buffer0)
+            [1 2 3]
         """
 
         if "_buffers" not in self.__dict__:
@@ -530,24 +537,60 @@ class Cell(Cell_):
 
     @jit_forbidden_register
     def get_buffer(self, target: str) -> "Tensor":
-        """Return the buffer given by ``target`` if it exists, otherwise throw an error.
+        """Return the buffer given by `target` if it exists, otherwise throw an error.
 
-        See the docstring for ``get_sub_cell`` for a more detailed
+        See the docstring for `get_sub_cell` for a more detailed
         explanation of this method's functionality as well as how to
-        correctly specify ``target``.
+        correctly specify `target` .
 
         Args:
-            target: The fully-qualified string name of the buffer
-                to look for. (See ``get_sub_cell`` for how to specify a
+            target (str): The fully-qualified string name of the buffer
+                to look for. (See `get_sub_cell` for how to specify a
                 fully-qualified string.)
 
         Returns:
-            Tensor: The buffer referenced by ``target``
+            Tensor
 
-        Raises:
-            AttributeError: If the target string references an invalid
-                path or resolves to something that is not a
-                buffer
+        Examples:
+            >>> import mindspore
+            ...
+            ...
+            >>> class NetC(mindspore.nn.Cell):
+            ...     def __init__(self):
+            ...         super().__init__()
+            ...         self.buffer_c = mindspore.nn.Buffer(mindspore.tensor([0, 0, 0]))
+            ...
+            ...     def construct(self, x):
+            ...         return x + self.buffer_c
+            ...
+            ...
+            >>> class NetB(mindspore.nn.Cell):
+            ...     def __init__(self, net_c):
+            ...         super().__init__()
+            ...         self.net_c = net_c
+            ...         self.buffer_b = mindspore.nn.Buffer(mindspore.tensor([1, 2, 3]))
+            ...
+            ...     def construct(self, x):
+            ...         return self.net_c(x) + self.buffer_b
+            ...
+            ...
+            >>> class NetA(mindspore.nn.Cell):
+            ...     def __init__(self, net_b):
+            ...         super().__init__()
+            ...         self.net_b = net_b
+            ...         self.buffer_a = mindspore.nn.Buffer(mindspore.tensor([4, 5, 6]))
+            ...
+            ...     def construct(self, x):
+            ...         return self.net_b(x) + self.buffer_a
+            ...
+            ...
+            >>> net_c = NetC()
+            >>> net_b = NetB(net_c)
+            >>> net_a = NetA(net_b)
+            >>> buffer_c = net_a.get_buffer("net_b.net_c.buffer_c")
+            >>> print(f'buffer_c is {buffer_c}')
+            buffer_c is [0, 0, 0]
+
         """
         cell_path, _, buffer_name = target.rpartition(".")
 
@@ -572,21 +615,45 @@ class Cell(Cell_):
         r"""Return an iterator over cell buffers, yielding both the name of the buffer as well as the buffer itself.
 
         Args:
-            prefix (str): prefix to prepend to all buffer names.
-            recurse (bool, optional): if True, then yields buffers of this cell
+            prefix (str, optional): prefix to prepend to all buffer names. Default ``""``.
+            recurse (bool, optional): if ``True`` , then yields buffers of this cell
                 and all sub cells. Otherwise, yields only buffers that
-                are direct members of this cell. Defaults to True.
-            remove_duplicate (bool, optional): whether to remove the duplicated buffers in the result. Defaults to True.
+                are direct members of this cell. Default ``True``.
+            remove_duplicate (bool, optional): Whether to remove the duplicated buffers in the result. Default ``True``.
 
-        Yields:
-            (str, Tensor): Tuple containing the name and buffer
+        Returns:
+            Iterator[Tuple[str, Tensor]], an iterator of tuple containing the name and buffer.
 
-        Example::
-
-            >>> # xdoctest: +SKIP("undefined vars")
-            >>> for name, buf in self.named_buffers():
-            >>>     if name in ['running_var']:
-            >>>         print(buf.size())
+        Examples:
+            >>> import mindspore
+            ...
+            ...
+            >>> class NetB(mindspore.nn.Cell):
+            ...     def __init__(self):
+            ...         super().__init__()
+            ...         self.buffer_b = mindspore.nn.Buffer(mindspore.tensor([1, 2, 3]))
+            ...
+            ...     def construct(self, x):
+            ...         return x + self.buffer_b
+            ...
+            ...
+            >>> class NetA(mindspore.nn.Cell):
+            ...     def __init__(self, net_b):
+            ...         super().__init__()
+            ...         self.net_b = net_b
+            ...         self.buffer_a = mindspore.nn.Buffer(mindspore.tensor([4, 5, 6]))
+            ...
+            ...     def construct(self, x):
+            ...         return self.net_b(x) + self.buffer_a
+            ...
+            ...
+            >>> net_b = NetB()
+            >>> net_a = NetA(net_b)
+            >>>
+            >>> for name, buffer in net_a.named_buffers():
+            >>>     print(f'buffer name is {name}, buffer is {buffer}')
+            buffer name is buffer_a, buffer is [4, 5, 6]
+            buffer name is net_b.buffer_b, buffer is [1, 2, 3]
 
         """
         gen = self._named_members(
@@ -602,20 +669,43 @@ class Cell(Cell_):
         r"""Return an iterator over cell buffers.
 
         Args:
-            recurse (bool): if True, then yields buffers of this cell
+            recurse (bool): If ``True`` , then yields buffers of this cell
                 and all sub cells. Otherwise, yields only buffers that
-                are direct members of this cell.
+                are direct members of this cell. Default ``True``.
 
-        Yields:
-            mindspore.Tensor: cell buffer
+        Returns:
+            Iterator[Tensor], an iterator of buffer.
 
-        Example::
-
-            >>> # xdoctest: +SKIP("undefined vars")
-            >>> for buf in model.buffers():
-            >>>     print(type(buf), buf.size())
-            <class 'mindspore.Tensor'> (20L,)
-            <class 'mindspore.Tensor'> (20L, 1L, 5L, 5L)
+        Examples:
+            >>> import mindspore
+            ...
+            ...
+            >>> class NetB(mindspore.nn.Cell):
+            ...     def __init__(self):
+            ...         super().__init__()
+            ...         self.buffer_b = mindspore.nn.Buffer(mindspore.tensor([1, 2, 3]))
+            ...
+            ...     def construct(self, x):
+            ...         return x + self.buffer_b
+            ...
+            ...
+            >>> class NetA(mindspore.nn.Cell):
+            ...     def __init__(self, net_b):
+            ...         super().__init__()
+            ...         self.net_b = net_b
+            ...         self.buffer_a = mindspore.nn.Buffer(mindspore.tensor([4, 5, 6]))
+            ...
+            ...     def construct(self, x):
+            ...         return self.net_b(x) + self.buffer_a
+            ...
+            ...
+            >>> net_b = NetB()
+            >>> net_a = NetA(net_b)
+            >>>
+            >>> for buffer in net_a.buffers():
+            >>>     print(f'buffer is {buffer}')
+            buffer is [4, 5, 6]
+            buffer is [1, 2, 3]
 
         """
         for _, buf in self.named_buffers(recurse=recurse):
@@ -641,7 +731,7 @@ class Cell(Cell_):
 
     @jit_forbidden_register
     def get_sub_cell(self, target: str) -> "Cell":
-        """Return the sub cell given by ``target`` if it exists, otherwise throw an error.
+        """Return the sub cell given by `target` if it exists, otherwise throw an error.
 
         For example, let's say you have an ``nn.Cell`` ``A`` that
         looks like this:
@@ -661,30 +751,69 @@ class Cell(Cell_):
         sub cell ``net_b``, which itself has two sub cells ``net_c``
         and ``dense``. ``net_c`` then has a sub cell ``conv``.)
 
-        To check whether or not we have the ``dense`` sub cell, we
-        would call ``get_sub_cell("net_b.dense")``. To check whether
+        To check whether we have the ``dense`` sub cell, we
+        would call `get_sub_cell("net_b.dense")`. To check whether
         we have the ``conv`` sub cell, we would call
-        ``get_sub_cell("net_b.net_c.conv")``.
+        `get_sub_cell("net_b.net_c.conv")`.
 
         The runtime of ``get_sub_cell`` is bounded by the degree
-        of cell nesting in ``target``. A query against
-        ``name_cells`` achieves the same result, but it is O(N) in
+        of cell nesting in `target`. A query against
+        `name_cells` achieves the same result, but it is O(N) in
         the number of transitive cells. So, for a simple check to see
-        if some sub cells exists, ``get_sub_cell`` should always be
+        if some sub cells exist, ``get_sub_cell`` should always be
         used.
 
         Args:
-            target: The fully-qualified string name of the sub cell
+            target (str): The fully-qualified string name of the sub cell
                 to look for. (See above example for how to specify a
                 fully-qualified string.)
 
         Returns:
-            mindspore.nn.Cell: The sub cell referenced by ``target``
+            Cell
 
-        Raises:
-            AttributeError: If the target string references an invalid
-                path or resolves to something that is not an
-                ``mindspore.nn.Cell``
+        Examples:
+            >>> import mindspore
+            ...
+            ...
+            >>> class NetC(mindspore.nn.Cell):
+            ...     def __init__(self):
+            ...         super().__init__()
+            ...         self.buffer_c = mindspore.nn.Buffer(mindspore.tensor([0, 0, 0]))
+            ...         self.dense_c = mindspore.nn.Dense(5, 3)
+            ...
+            ...     def construct(self, x):
+            ...         return self.dense_c(x) + self.buffer_c
+            ...
+            ...
+            >>> class NetB(mindspore.nn.Cell):
+            ...     def __init__(self, net_c):
+            ...         super().__init__()
+            ...         self.net_c = net_c
+            ...         self.buffer_b = mindspore.nn.Buffer(mindspore.tensor([1, 2, 3]))
+            ...
+            ...     def construct(self, x):
+            ...         return self.net_c(x) + self.buffer_b
+            ...
+            ...
+            >>> class NetA(mindspore.nn.Cell):
+            ...     def __init__(self, net_b):
+            ...         super().__init__()
+            ...         self.net_b = net_b
+            ...         self.buffer_a = mindspore.nn.Buffer(mindspore.tensor([4, 5, 6]))
+            ...
+            ...     def construct(self, x):
+            ...         return self.net_b(x) + self.buffer_a
+            ...
+            ...
+            >>> net_c = NetC()
+            >>> net_b = NetB(net_c)
+            >>> net_a = NetA(net_b)
+            >>> net_c = net_a.get_sub_cell("net_b.net_c")
+            >>> print(f'net_c is {net_c}')
+            net_c is NetC(
+                (dense_c): Dense(input_channels=5, output_channels=3, has_bias=True)
+            )
+
         """
         if target == "":
             return self
@@ -2806,17 +2935,17 @@ class Cell(Cell_):
     def get_extra_state(self) -> Any:
         """Return any extra state to include in the cell's state_dict.
 
-        Implement this and a corresponding :func:`set_extra_state` for your cell
-        if you need to store extra state. This function is called when building the
-        Cell's `state_dict()`.
+        This function is called from ``state_dict``.
+        Implement this and a corresponding ``set_extra_state`` for your cell
+        if you need to store extra state.
 
         Note that extra state should be picklable to ensure working serialization
-        of the state_dict. We only provide backwards compatibility guarantees
-        for serializing Tensors; other objects may break backwards compatibility if
+        of the state_dict. Only provide backwards compatibility guarantees
+        for serializing tensors; other objects may break backwards compatibility if
         their serialized pickled form changes.
 
         Returns:
-            object: Any extra state to store in the cell's state_dict
+            object, any extra state to store in the cell's state_dict.
         """
         raise RuntimeError(
             "Reached a code path in Cell.get_extra_state() that should never be called."
@@ -2826,13 +2955,13 @@ class Cell(Cell_):
     def set_extra_state(self, state: Any) -> None:
         """Set extra state contained in the loaded `state_dict`.
 
-        This function is called from :func:`load_state_dict` to handle any extra state
+        This function is called from `load_state_dict` to handle any extra state
         found within the `state_dict`. Implement this function and a corresponding
-        :func:`get_extra_state` for your cell if you need to store extra state within its
+        `get_extra_state` for your cell if you need to store extra state within its
         `state_dict`.
 
         Args:
-            state (dict): Extra state from the `state_dict`
+            state (dict): Extra state from the `state_dict`.
         """
         raise RuntimeError(
             "Reached a code path in Cell.set_extra_state() that should never be called."
@@ -2840,12 +2969,21 @@ class Cell(Cell_):
 
     @jit_forbidden_register
     def register_state_dict_post_hook(self, hook):
-        r"""Register a post-hook for the :meth:`~mindspore.nn.Cell.state_dict` method.
+        r"""Register a post-hook for the :func:`mindspore.nn.Cell.state_dict` method.
 
-        It should have the following signature::
-            hook(cell, state_dict, prefix, local_metadata) -> None
+        It should have the following signature:
+
+        hook(cell, state_dict, prefix, local_metadata) -> None
 
         The registered hooks can modify the ``state_dict`` inplace.
+
+        Args:
+            hook (Callable): The hook function after `state_dict` is called.
+
+        Returns:
+            :class:`~mindspore.nn.utils.hooks.RemovableHandle`,
+            a handle that can be used to remove the added hook by calling
+            `handle.remove()`.
         """
         handle = RemovableHandle(self._state_dict_hooks)
         self._state_dict_hooks[handle.id] = hook
@@ -2853,13 +2991,48 @@ class Cell(Cell_):
 
     @jit_forbidden_register
     def register_state_dict_pre_hook(self, hook):
-        r"""Register a pre-hook for the :meth:`~mindspore.nn.Cell.state_dict` method.
+        r"""Register a pre-hook for the :func:`mindspore.nn.Cell.state_dict` method.
 
-        It should have the following signature::
-            hook(cell, prefix, keep_vars) -> None
+        It should have the following signature:
 
-        The registered hooks can be used to perform pre-processing before the ``state_dict``
+        hook(cell, prefix, keep_vars) -> None
+
+        The registered hooks can be used to perform pre-processing before the `state_dict`
         call is made.
+
+        Args:
+            hook (Callable): The hook function before `state_dict` is called.
+
+        Returns:
+            :class:`~mindspore.nn.utils.hooks.RemovableHandle`,
+            a handle that can be used to remove the added hook by calling
+            `handle.remove()`.
+        Examples:
+
+        Examples:
+            >>> import mindspore
+            ...
+            ...
+            >>> class NetA(mindspore.nn.Cell):
+            ...     def __init__(self):
+            ...         super().__init__()
+            ...         self.buffer_a = mindspore.nn.Buffer(mindspore.tensor([1, 2, 3]))
+            ...         self.param_a = mindspore.Parameter(mindspore.tensor([1, 2, 3]))
+            ...
+            ...     def construct(self, x):
+            ...         return x + self.buffer_a + self.param_a
+            ...
+            ...
+            >>> def _add_extra_param(cell, prefix, keep_vars):
+            ...     cell._params["extra_param"] = mindspore.Parameter(mindspore.tensor([4, 5, 6]))
+            ...
+            ...
+            >>> net = NetA()
+            >>> handle = net.register_state_dict_pre_hook(_add_extra_param)
+            >>> net_state_dict = net.state_dict()
+            >>> handle.remove()
+            >>> print("extra_param" in net_state_dict)
+            True
         """
         handle = RemovableHandle(self._state_dict_pre_hooks)
         self._state_dict_pre_hooks[handle.id] = hook
@@ -2870,7 +3043,7 @@ class Cell(Cell_):
 
         The `destination` dictionary will contain the state
         of the cell, but not its descendants. This is called on every
-        sub cell in :meth:`~mindspore.nn.Cell.state_dict`.
+        sub cell in :func:`mindspore.nn.Cell.state_dict`.
 
         In rare cases, subclasses can achieve class-specific behavior by
         overriding this method with custom logic.
@@ -2910,35 +3083,56 @@ class Cell(Cell_):
             to the cell's parameters and buffers.
 
         .. warning::
-            Currently ``state_dict()`` also accepts positional arguments for
-            ``destination``, ``prefix`` and ``keep_vars`` in order. However,
-            this is being deprecated and keyword arguments will be enforced in
-            future releases.
+            - Currently ``state_dict()`` also accepts positional arguments for
+                ``destination``, ``prefix`` and ``keep_vars`` in order. However,
+                this is being deprecated and keyword arguments will be enforced in
+                future releases.
 
-        .. warning::
-            Please avoid the use of argument ``destination`` as it is not
-            designed for end-users.
+            - Please avoid the use of argument ``destination`` as it is not
+                designed for end-users.
 
         Args:
             destination (dict, optional): If provided, the state of cell will
                 be updated into the dict and the same object is returned.
                 Otherwise, an ``OrderedDict`` will be created and returned.
                 Default: ``None``.
-            prefix (str, optional): a prefix added to parameter and buffer
+            prefix (str, optional): A prefix added to parameter and buffer
                 names to compose the keys in state_dict. Default: ``''``.
-            keep_vars (bool, optional): by default the :class:`~mindspore.common.Tensor` s
-                returned in the state dict are detached from autograd. If it's
-                set to ``True``, detaching will not be performed.
-                Default: ``False``.
+            keep_vars (bool, optional): Whether the state_dict returns a copy. Default: ``False`` , returns a reference.
 
         Returns:
-            dict:
-                a dictionary containing a whole state of the cell
+            Dict, a dictionary containing a whole state of the cell.
 
-        Example::
-            >>> # xdoctest: +SKIP("undefined vars")
-            >>> cell.state_dict().keys()
-            ['bias', 'weight']
+        Examples:
+            >>> import mindspore
+            ...
+            ...
+            >>> class NetB(mindspore.nn.Cell):
+            ...     def __init__(self):
+            ...         super().__init__()
+            ...         self.buffer_b = mindspore.nn.Buffer(mindspore.tensor([1, 2, 3]))
+            ...         self.param_b = mindspore.Parameter(mindspore.tensor([1, 2, 3]))
+            ...
+            ...     def construct(self, x):
+            ...         return x + self.buffer_b + self.param_b
+            ...
+            ...
+            >>> class NetA(mindspore.nn.Cell):
+            ...     def __init__(self, net_b):
+            ...         super().__init__()
+            ...         self.net_b = net_b
+            ...         self.buffer_a = mindspore.nn.Buffer(mindspore.tensor([4, 5, 6]))
+            ...
+            ...     def construct(self, x):
+            ...         return self.net_b(x) + self.buffer_a
+            ...
+            ...
+            >>> net_b = NetB()
+            >>> net_a = NetA(net_b)
+            >>> print(net_a.state_dict())
+            OrderedDict([('buffer_a', Tensor(shape=[3], dtype=Int64, value= [4, 5, 6])), \
+            ('net_b.param_b', Parameter (name=net_b.param_b, shape=(3,), dtype=Int64, requires_grad=True)), \
+            ('net_b.buffer_b', Tensor(shape=[3], dtype=Int64, value= [1, 2, 3]))])
 
         """
         # TODO: Remove `args` and the parsing logic when BC allows.
@@ -2990,14 +3184,19 @@ class Cell(Cell_):
 
     @jit_forbidden_register
     def register_load_state_dict_pre_hook(self, hook):
-        r"""Register a pre-hook to be run before cell's :meth:`~mindspore.nn.Cell.load_state_dict` is called.
+        r"""Register a pre-hook to be run before cell's :func:`mindspore.nn.Cell.load_state_dict` is called.
 
-        It should have the following signature::
-            hook(cell, state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs) -> None  # noqa: B950
+        It should have the following signature:
 
-        Arguments:
-            hook (Callable): Callable hook that will be invoked before
-                loading the state dict.
+        hook(cell, state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs) -> None  # noqa: B950
+
+        Args:
+            hook (Callable): The hook function before `load_state_dict` is called.
+
+        Returns:
+            :class:`~mindspore.nn.utils.hooks.RemovableHandle`,
+            a handle that can be used to remove the added hook by calling
+            `handle.remove()`.
         """
         handle = RemovableHandle(self._load_state_dict_pre_hooks)
         self._load_state_dict_pre_hooks[handle.id] = hook
@@ -3005,10 +3204,11 @@ class Cell(Cell_):
 
     @jit_forbidden_register
     def register_load_state_dict_post_hook(self, hook):
-        r"""Register a post-hook to be run after cell's :meth:`~mindspore.nn.Cell.load_state_dict` is called.
+        r"""Register a post-hook to be run after cell's :func:`mindspore.nn.Cell.load_state_dict` is called.
 
-        It should have the following signature::
-            hook(cell, incompatible_keys) -> None
+        It should have the following signature:
+
+        hook(cell, incompatible_keys) -> None
 
         The ``cell`` argument is the current cell that this hook is registered
         on, and the ``incompatible_keys`` argument is a ``NamedTuple`` consisting
@@ -3024,10 +3224,13 @@ class Cell(Cell_):
         set of keys will result in an error being thrown when ``strict=True``, and
         clearing out both missing and unexpected keys will avoid an error.
 
+        Args:
+            hook (Callable): The hook function after `load_state_dict` is called.
+
         Returns:
-            :class:`mindspore.nn.hooks.RemovableHandle`:
+            :class:`~mindspore.nn.utils.hooks.RemovableHandle`,
             a handle that can be used to remove the added hook by calling
-            ``handle.remove()``
+            `handle.remove()`.
         """
         handle = RemovableHandle(self._load_state_dict_post_hooks)
         self._load_state_dict_post_hooks[handle.id] = hook
@@ -3046,7 +3249,7 @@ class Cell(Cell_):
         r"""Copy parameters and buffers from :attr:`state_dict` into only this cell, but not its descendants.
 
         This is called on every sub cell
-        in :meth:`~mindspore.nn.Cell.load_state_dict`. Metadata saved for this
+        in :func:`mindspore.nn.Cell.load_state_dict`. Metadata saved for this
         cell in input :attr:`state_dict` is provided as :attr:`local_metadata`.
         For state dicts without metadata, :attr:`local_metadata` is empty.
         Subclasses can achieve class-specific backward compatible loading using
@@ -3054,7 +3257,7 @@ class Cell(Cell_):
 
         .. note::
             :attr:`state_dict` is not the same object as the input
-            :attr:`state_dict` to :meth:`~mindspore.nn.Cell.load_state_dict`. So
+            :attr:`state_dict` to :func:`mindspore.nn.Cell.load_state_dict`. So
             it can be modified.
 
         Args:
@@ -3073,7 +3276,7 @@ class Cell(Cell_):
                 keys to this list
             error_msgs (list of str): error messages should be added to this
                 list, and will be reported together in
-                :meth:`~mindspore.nn.Cell.load_state_dict`
+                :func:`mindspore.nn.Cell.load_state_dict`
         """
         for hook in self._load_state_dict_pre_hooks.values():
             hook(
@@ -3154,26 +3357,69 @@ class Cell(Cell_):
 
         If :attr:`strict` is ``True``, then
         the keys of :attr:`state_dict` must exactly match the keys returned
-        by this cell's :meth:`~mindspore.nn.Cell.state_dict` function.
+        by this cell's :func:`mindspore.nn.Cell.state_dict` function.
 
         Args:
-            state_dict (dict): a dict containing parameters and
+            state_dict (dict): A dict containing parameters and
                 persistent buffers.
-            strict (bool, optional): whether to strictly enforce that the keys
-                in :attr:`state_dict` match the keys returned by this cell's
-                :meth:`~mindspore.nn.Cell.state_dict` function. Default: ``True``
+            strict (bool, optional): Whether to strictly enforce that the keys
+                in input `state_dict` match the keys returned by this cell's
+                :func:`mindspore.nn.Cell.state_dict` function. Default ``True`` .
 
         Returns:
-            ``NamedTuple`` with ``missing_keys`` and ``unexpected_keys`` fields:
-                * **missing_keys** is a list of str containing any keys that are expected
-                    by this cell but missing from the provided ``state_dict``.
-                * **unexpected_keys** is a list of str containing the keys that are not
-                    expected by this cell but present in the provided ``state_dict``.
+            A namedtuple with ``missing_keys`` and ``unexpected_keys`` fields,
+
+            - `missing_keys` is a list of str containing any keys that are expected
+                by this cell but missing from the provided ``state_dict``.
+
+            - `unexpected_keys` is a list of str containing the keys that are not
+                expected by this cell but present in the provided ``state_dict``.
 
         Note:
             If a parameter or buffer is registered as ``None`` and its corresponding key
-            exists in :attr:`state_dict`, :meth:`load_state_dict` will raise a
+            exists in :attr:`state_dict`, :func:`mindspore.nn.Cell.load_state_dict` will raise a
             ``RuntimeError``.
+
+        Examples:
+            >>> import mindspore
+            >>> import os
+            ...
+            ...
+            >>> class NetB(mindspore.nn.Cell):
+            ...     def __init__(self):
+            ...         super().__init__()
+            ...         self.buffer_b = mindspore.nn.Buffer(mindspore.tensor([1, 2, 3]))
+            ...         self.param_b = mindspore.Parameter(mindspore.tensor([1, 2, 3]))
+            ...
+            ...     def construct(self, x):
+            ...         return x + self.buffer_b + self.param_b
+            ...
+            ...
+            >>> class NetA(mindspore.nn.Cell):
+            ...     def __init__(self, net_b):
+            ...         super().__init__()
+            ...         self.net_b = net_b
+            ...         self.buffer_a = mindspore.nn.Buffer(mindspore.tensor([4, 5, 6]))
+            ...
+            ...     def construct(self, x):
+            ...         return self.net_b(x) + self.buffer_a
+            ...
+            ...
+            >>> net_b = NetB()
+            >>> net_a = NetA(net_b)
+            >>> print(f'Origin net_a state_dict is {net_a.state_dict()}')
+            >>> mindspore.save_checkpoint(net_a.state_dict(), './net_state_dict_ckpt')
+            >>> new_net_b = NetB()
+            >>> new_net_a = NetA(net_b)
+            >>> new_net_a.load_state_dict(mindspore.load_checkpoint('./net_state_dict_ckpt'))
+            >>> print(f'New net_a state_dict is {new_net_a.state_dict()}')
+            >>> os.remove('./net_state_dict_ckpt')
+            Origin net_a state_dict is OrderedDict([('buffer_a', Tensor(shape=[3], dtype=Int64, value= [4, 5, 6])), \
+            ('net_b.param_b', Parameter (name=net_b.param_b, shape=(3,), dtype=Int64, requires_grad=True)), \
+            ('net_b.buffer_b', Tensor(shape=[3], dtype=Int64, value= [1, 2, 3]))])
+            New net_a state_dict is OrderedDict([('buffer_a', Tensor(shape=[3], dtype=Int64, value= [4, 5, 6])), \
+            ('net_b.param_b', Parameter (name=net_b.param_b, shape=(3,), dtype=Int64, requires_grad=True)), \
+            ('net_b.buffer_b', Tensor(shape=[3], dtype=Int64, value= [1, 2, 3]))])
         """
         if not isinstance(state_dict, Mapping):
             raise TypeError(
