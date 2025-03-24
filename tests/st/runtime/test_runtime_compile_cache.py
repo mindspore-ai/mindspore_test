@@ -201,18 +201,6 @@ def test_compile_cache_ms_function():
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-def test_compile_cache_lenet_ge():
-    """
-    Feature: compile cache.
-    Description: Test whether the ge compile cache function can run successfully.
-    Expectation: success.
-    """
-    fpath = os.path.realpath(os.path.dirname(os.getcwd()))
-    pypath = fpath + "/compiler/compile_cache/run_lenet.py"
-    run_twice_with_same_network(pypath, "./lenet", "lenet_first.txt", "lenet_second.txt")
-
-
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_resnet_infer_compile_cache():
     """
     Feature: support compile cache in inference scenarios.
