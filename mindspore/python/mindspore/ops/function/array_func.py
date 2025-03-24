@@ -3157,31 +3157,40 @@ def sort_ext(input, *, dim=-1, descending=False, stable=False):
 
 def argsort(input, axis=-1, descending=False):
     r"""
-    Sorts the input tensor along the given dimension in specified order and return the sorted indices.
+    Return the indices that sort the tensor along the specified axis.
+
+    .. note::
+        The Ascend backend only supports sorting the last dimension.
 
     Args:
-        input(Tensor): The input tensor to sort.
-        axis (int): The axis to sort along. Default: ``-1`` , means the last dimension.
-            The Ascend backend only supports sorting the last dimension.
-        descending (bool): The sort order. If `descending` is True then the elements
-            are sorted in descending order by value. Otherwise sort in ascending order. Default: ``False`` .
+        input(Tensor): The input tensor.
+        axis (int): Specify the axis to sort along. Default ``-1`` .
+        descending (bool): Specify the sorting order (ascending or descending).
 
     Returns:
-        Tensor, the indices of sorted input tensor. Data type is int32.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([[8, 2, 1], [5, 9, 3], [4, 6, 7]]), mindspore.float16)
-        >>> sort = ops.argsort(x)
-        >>> print(sort)
-        [[2 1 0]
-         [2 0 1]
-         [0 1 2]]
+        >>> # case 1: 1-dimensional sort
+        >>> input = mindspore.tensor([1, 3, 5, 4, 2, 1])
+        >>> mindspore.ops.argsort(input)
+        Tensor(shape=[6], dtype=Int32, value= [0, 5, 4, 1, 3, 2])
+        >>>
+        >>> # case 2: multi-dimensional sort
+        >>> input = mindspore.tensor([[2, 1, 3],
+        ...                           [6, 4, 3]])
+        >>> mindspore.ops.argsort(input, axis=1)
+        Tensor(shape=[2, 3], dtype=Int32, value=
+        [[1, 0, 2],
+         [2, 1, 0]])
+        >>> mindspore.ops.argsort(input, axis=1, descending=True)
+        Tensor(shape=[2, 3], dtype=Int32, value=
+        [[2, 0, 1],
+         [0, 1, 2]])
     """
     _sort = _get_cache_prim(P.Sort)(axis, descending)
     _, arg_sort = _sort(input)

@@ -2387,29 +2387,33 @@ def fliplr(input):
 
 def is_floating_point(input):
     """
-    Judge whether the data type of `input` is a floating point data type i.e., one of mindspore.float64,
-    mindspore.float32, mindspore.float16.
+    If the data type of the tensor is a floating point data type, return True. Otherwise return False.
 
     Args:
         input (Tensor): The input Tensor.
 
     Returns:
-        Bool. If the dtype of `input` is a floating point data type, return ``True`` . Otherwise, return ``False`` .
+        Bool
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import mindspore as ms
-        >>> from mindspore import ops
-        >>> from mindspore import Tensor
-        >>> x = ms.Tensor([1, 2, 3], ms.float32)
-        >>> y = ms.Tensor([1, 2, 3], ms.int64)
-        >>> output = ops.is_floating_point(x)
-        >>> output2 = ops.is_floating_point(y)
-        >>> print(output)
+        >>> import mindspore
+        >>> input = mindspore.tensor([False, 0j, 1, 2.1, 1+2j], mindspore.float64)
+        >>> mindspore.ops.is_floating_point(input)
         True
-        >>> print(output2)
+        >>>
+        >>> input = mindspore.tensor([False, 0j, 1, 2.1, 1+2j], mindspore.float32)
+        >>> mindspore.ops.is_floating_point(input)
+        True
+        >>>
+        >>> input = mindspore.tensor([False, 0j, 1, 2.1, 1+2j], mindspore.float16)
+        >>> mindspore.ops.is_floating_point(input)
+        True
+        >>>
+        >>> input = mindspore.tensor([False, 0j, 1, 2.1, 1+2j], mindspore.int32)
+        >>> mindspore.ops.is_floating_point(input)
         False
     """
     return input.dtype in [mstype.float32, mstype.bfloat16, mstype.float16, mstype.float64]

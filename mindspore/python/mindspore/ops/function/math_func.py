@@ -3573,7 +3573,11 @@ def ne(input, other):
 
 def approximate_equal(x, y, tolerance=1e-5):
     r"""
-    Returns ``True`` if abs(x-y) is smaller than tolerance element-wise, otherwise ``False`` .
+    Return a boolean tensor where two tensors are element-wise equal within a tolerance.
+
+    Support implicit type conversion and type promotion.
+
+    Math function is defined as:
 
     .. math::
 
@@ -3582,124 +3586,99 @@ def approximate_equal(x, y, tolerance=1e-5):
         & \text{ if } \left | x_{i} - y_{i} \right | \ge \text{tolerance},\ \  False
         \end{cases}
 
-    where `tolerance` indicates Acceptable maximum tolerance.
-
-    Inputs of `x` and `y` comply with the implicit type conversion rules to make the data types consistent.
-    If they have different data types, the lower precision data type will be converted to
-    the relatively highest precision data type.
+    Two infinite values and two NaN values are not considered equal.
 
     Args:
-        x (Tensor): A tensor. Must be one of the following types: float32, float16.
-          :math:`(N,*)` where :math:`*` means, any number of additional dimensions.
-        y (Tensor): A tensor of the same type and shape as `x`.
-        tolerance (float): The maximum deviation that two elements can be considered equal. Default: ``1e-5`` .
+        x (Tensor): The first input tensor.
+        y (Tensor): The second input tensor.
+        tolerance (float): The maximum deviation that two elements can be considered equal. Default ``1e-5`` .
 
     Returns:
-        Tensor, the shape is the same as the shape of `x`, and the data type is bool.
-
-    Raises:
-        TypeError: If `tolerance` is not a float.
-        RuntimeError: If the data type of `x`, `y` conversion of Parameter is given
-                      but data type conversion of Parameter is not supported.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> from mindspore import dtype as mstype
-        >>> tol = 1.5
-        >>> x = Tensor(np.array([1, 2, 3]), mstype.float32)
-        >>> y = Tensor(np.array([2, 4, 6]), mstype.float32)
-        >>> output = ops.approximate_equal(Tensor(x), Tensor(y), tol)
-        >>> print(output)
-        [ True  False  False]
+        >>> import mindspore
+        >>> mindspore.ops.approximate_equal(mindspore.tensor([1e6, 2e6, float("inf"), float("-inf"), float("nan")]),
+        ...                                 mindspore.tensor([1e6, 2e7, float("inf"), float("-inf"), float("nan")]))
+        Tensor(shape=[6], dtype=Bool, value= [ True, False, False, False, False])
+        >>>
+        >>> mindspore.ops.approximate_equal(mindspore.tensor([1e6, 2e6, 3e6]),
+        ...                                 mindspore.tensor([1.00001e6, 2.00002e6, 3.00009e6]), tolerance=1e3)
+        Tensor(shape=[3], dtype=Bool, value= [ True,  True,  True])
+        >>>
+        >>> # If `x` and `y` have different datatypes, the lower precision data type will be converted to the
+            relatively highest precision data type.
+        >>> mindspore.ops.approximate_equal(mindspore.tensor([1, 2], mindspore.int32),
+        ...                                 mindspore.tensor([1., 2], mindspore.float32))
+        Tensor(shape=[2], dtype=Bool, value= [ True,  True])
     """
     return _get_cache_prim(P.ApproximateEqual)(tolerance)(x, y)
 
 
 def isnan(input):
     r"""
-    Determines which elements are NaN for each position.
-
-    .. math::
-
-        out_i = \begin{cases}
-          & \ True,\ \text{ if } input_{i} = \text{NaN} \\
-          & \ False,\ \text{ if } input_{i} \ne  \text{NaN}
-        \end{cases}
-
-    where :math:`NaN` means not a number.
+    Return a boolean tensor indicating which elements are NaN.
 
     Args:
         input (Tensor): The input tensor.
 
     Returns:
-        Tensor, has the same shape of `input`, and the dtype is bool.
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([np.log(-1), 1, np.log(0)]), mindspore.float32)
-        >>> output = ops.isnan(x)
-        >>> print(output)
-        [ True False False]
-        >>> x = Tensor(2.1, mindspore.float64)
-        >>> output = ops.isnan(x)
-        >>> print(output)
-        False
+        >>> input = mindspore.tensor([-1, 3, float("inf"), float("-inf"), float("nan")])
+        >>> mindspore.ops.isnan(input)
+        Tensor(shape=[5], dtype=Bool, value= [False, False, False, False,  True])
     """
     return isnan_(input)
 
 
 def isclose(input, other, rtol=1e-05, atol=1e-08, equal_nan=False):
     """
-    Returns a new Tensor with boolean elements representing if each element of `input`
-    is “close” to the corresponding element of `other`. Closeness is defined as:
+    Return a boolean tensor where two tensors are element-wise equal within a tolerance. Math function is defined as:
 
     .. math::
         |input-other| ≤ atol + rtol × |other|
 
+    Two Infinite values are considered equal if they have the same sign, Two NaN values are considered equal if
+    `equal_nan` is ``True`` .
+
     Args:
-        input (Tensor): First tensor to compare.
-            Support dtype: float16, float32, float64, int8, int16, int32, int64 and uint8.
-            On Ascend, more dtypes are support: bool and bfloat16.
-        other (Tensor): Second tensor to compare. Dtype must be same as `input`.
-        rtol (Union[float, int, bool], optional): Relative tolerance. Default: ``1e-05`` .
-        atol (Union[float, int, bool], optional): Absolute tolerance. Default: ``1e-08`` .
-        equal_nan (bool, optional): If ``True`` , then two NaNs will be considered equal. Default: ``False``.
+        input (Tensor): The first input tensor.
+        other (Tensor): The second input tensor.
+        rtol (Union[float, int, bool], optional): Relative tolerance. Default ``1e-05`` .
+        atol (Union[float, int, bool], optional): Absolute tolerance. Default ``1e-08`` .
+        equal_nan (bool, optional): Whether two NaNs are considered equal. Default ``False`` .
 
     Returns:
-        A bool Tensor, with the shape as broadcasted result of the input `input` and `other`.
-
-    Raises:
-        TypeError: `input` or `other` is not Tensor.
-        TypeError: `input` or `other` dtype is not support.
-        TypeError: `atol` or `rtol` is not float, int or bool.
-        TypeError: `equal_nan` is not bool.
-        TypeError: `input` and `other` have different dtypes.
-        ValueError: `input` and `other` cannot broadcast.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input = Tensor(np.array([1.3, 2.1, 3.2, 4.1, 5.1]), mindspore.float16)
-        >>> other = Tensor(np.array([1.3, 3.3, 2.3, 3.1, 5.1]), mindspore.float16)
-        >>> output = ops.isclose(input, other)
-        >>> print(output)
-        [ True False False False  True]
+        >>> mindspore.ops.isclose(mindspore.tensor([2e6, float("inf"), float("-inf"), float("inf"), float("nan")]),
+        ...                       mindspore.tensor([2e7, float("inf"), float("-inf"), float("-inf"), float("nan")]))
+        Tensor(shape=[6], dtype=Bool, value= [ True, False,  True,  True, False, False])
+        >>>
+        >>> mindspore.ops.isclose(mindspore.tensor([1e6, 2e6, 3e6]),
+        ...                       mindspore.tensor([1.00008e6, 2.00008e7, 3.00008e8]), rtol=1e3)
+        Tensor(shape=[3], dtype=Bool, value= [ True,  True,  True])
+        >>>
+        >>> mindspore.ops.isclose(mindspore.tensor([1e6, 2e6, 3e6]),
+        ...                       mindspore.tensor([1.00001e6, 2.00002e6, 3.00009e6]), atol=1e3)
+        Tensor(shape=[3], dtype=Bool, value= [ True,  True,  True])
+        >>> mindspore.ops.isclose(mindspore.tensor([float("nan"), 1, 2]),
+        ...                       mindspore.tensor([float("nan"), 1, 2]), equal_nan=True)
+        Tensor(shape=[3], dtype=Bool, value= [ True,  True,  True])
     """
     is_close = _get_cache_prim(P.IsClose)(rtol=rtol, atol=atol, equal_nan=equal_nan)
     return is_close(input, other)
@@ -3707,28 +3686,24 @@ def isclose(input, other, rtol=1e-05, atol=1e-08, equal_nan=False):
 
 def isreal(input):
     """
-    Tests element-wise for real number.
+    Return a boolean tensor indicating which elements are real.
+
     A complex value is considered real when its imaginary part is 0.
 
     Args:
         input (Tensor): The input tensor.
 
     Returns:
-       Tensor, ``True`` where `input` is real number, ``False`` otherwise.
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
+       Tensor
 
     Supported Platforms:
         ``GPU`` ``CPU``
 
     Examples:
-        >>> from mindspore import ops, Tensor
-        >>> from mindspore import dtype as mstype
-        >>> x = Tensor([1, 1+1j, 2+0j], mstype.complex64)
-        >>> output = ops.isreal(x)
-        >>> print(output)
-        [ True False True]
+        >>> import mindspore
+        >>> input = mindspore.tensor([False, 0j, 1, 2.1, 1+2j])
+        >>> mindspore.ops.isreal(input)
+        Tensor(shape=[5], dtype=Bool, value= [ True,  True,  True,  True, False])
     """
 
     _check_is_tensor("input", input, "isreal")
@@ -3743,27 +3718,29 @@ def isreal(input):
 
 def is_complex(input):
     '''
-    Return True if the data type of the tensor is complex, otherwise return False.
+    Return a boolean tensor indicating which elements are complex.
 
     Args:
         input (Tensor): The input tensor.
 
     Returns:
-        Bool, return whether the data type of the tensor is complex.
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
+        Bool
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> from mindspore import ops, Tensor
-        >>> from mindspore import dtype as mstype
-        >>> input = Tensor([1, 1+1j, 2+2j], mstype.complex64)
-        >>> output = ops.is_complex(input)
-        >>> print(output)
+        >>> import mindspore
+        >>> input = mindspore.tensor([1, 1+1j, 2+2j], mindspore.dtype.complex64)
+        >>> mindspore.ops.is_complex(input)
         True
+        >>>
+        >>> input = mindspore.tensor([1, 1+1j, 2+2j], mindspore.dtype.complex128)
+        >>> mindspore.ops.is_complex(input)
+        True
+        >>> input = mindspore.tensor([1, 1+1j, 2+2j], mindspore.dtype.int32)
+        >>> mindspore.ops.is_complex(input)
+        False
     '''
     if not isinstance(input, (Tensor, Tensor_)):
         raise TypeError("The input must be Tensor!")
@@ -11211,30 +11188,26 @@ def _is_sign_inf(x, fn):
 
 def isposinf(input):
     """
-    Tests element-wise for positive infinity.
+    Return a boolean tensor indicating which elements are positive infinity.
 
     .. warning::
         For Ascend, it is only supported on platforms above Atlas A2.
 
     Args:
-        input (Tensor): Input values.
+        input (Tensor): The input tensor.
 
     Returns:
-       Tensor, true where `input` is positive infinity, false otherwise.
-
-    Raises:
-        TypeError: If the input is not a tensor.
+       Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> from mindspore import ops, Tensor
-        >>> from mindspore import dtype as mstype
-        >>> output = ops.isposinf(Tensor([[-float("inf"), float("inf")], [1, float("inf")]], mstype.float32))
-        >>> print(output)
-        [[False  True]
-         [False  True]]
+        >>> from mindspore
+        >>> input = mindspore.tensor([-1, 3, float("inf"), float("-inf"), float("nan")])
+        >>> mindspore.ops.isposinf(input)
+        Tensor(shape=[5], dtype=Bool, value= [False, False,  True, False, False])
+
     """
     _check_is_tensor("input", input, "isposinf")
     return _is_sign_inf(input, tensor_gt)
@@ -11242,30 +11215,25 @@ def isposinf(input):
 
 def isneginf(input):
     """
-    Tests element-wise for negative infinity.
+    Return a boolean tensor indicating which elements are negative infinity.
 
     .. warning::
         For Ascend, it is only supported on platforms above Atlas A2.
 
     Args:
-        input (Tensor): Input Tensor.
+        input (Tensor): The input tensor.
 
     Returns:
-       Tensor, true where `input` is negative infinity, false otherwise.
-
-    Raises:
-        TypeError: If the input is not a tensor.
+       Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> from mindspore import ops, Tensor
-        >>> from mindspore import dtype as mstype
-        >>> output = ops.isneginf(Tensor([[-float("inf"), float("inf")], [1, -float("inf")]], mstype.float32))
-        >>> print(output)
-        [[ True False]
-         [False  True]]
+        >>> import mindspore
+        >>> input = mindspore.tensor([-1, 3, float("inf"), float("-inf"), float("nan")])
+        >>> mindspore.ops.isneginf(input)
+        Tensor(shape=[5], dtype=Bool, value= [False, False, False,  True, False])
     """
     _check_is_tensor("input", input, "isneginf")
     return _is_sign_inf(input, tensor_lt)

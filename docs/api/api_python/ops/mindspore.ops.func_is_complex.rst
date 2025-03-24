@@ -3,13 +3,10 @@ mindspore.ops.is_complex
 
 .. py:function:: mindspore.ops.is_complex(input)
 
-    如果Tensor的数据类型是复数，则返回True，否则返回False。
+    返回一个布尔型tensor，指示哪些元素是复数。
 
     参数：
-        - **input** (Tensor) - 输入Tensor。
+        - **input** (Tensor) - 输入tensor。
 
     返回：
-        Bool，返回Tensor的数据类型是否为复数。
-
-    异常：
-        - **TypeError** - `input` 不是Tensor。
+        Bool
