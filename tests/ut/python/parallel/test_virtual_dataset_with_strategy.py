@@ -433,7 +433,7 @@ def test_dataset_strategy_with_layout_using_autoparallel_cell():
     b = Tensor(np.ones([64 // 4, 2048 // 2]), dtype=ms.float32)
     phase = compile_net(parallel_net, x, y, b)
     validator = ParallelValidator(parallel_net, phase)
-    assert validator.check_node_inputs_has('MatMul-0', ['Reshape-2', 'StridedSlice-1'])
+    assert validator.check_node_inputs_has('MatMul-0', ['Reshape-1', 'Reshape-3', False, False])
 
 if __name__ == '__main__':
     context.reset_auto_parallel_context()

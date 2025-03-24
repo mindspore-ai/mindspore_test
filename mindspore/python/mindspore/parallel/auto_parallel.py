@@ -128,7 +128,7 @@ class AutoParallel(Cell):
         self._comm_fusion_config = dict()
 
         self._force_fp32_communication = False
-        self._enable_alltoall = False
+        self._enable_alltoall = True
         self._parameter_broadcast = False
         self._group_ckpt_save_file = ""
 
