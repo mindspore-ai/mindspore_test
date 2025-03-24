@@ -1287,7 +1287,6 @@ def all_to_all_with_output_shape(output_shape_list, input_tensor_list, group=Non
             recv_shape_list.append(_shape)
 
     send_flatten_tensor = cat(send_flatten_tensor)
-    send_flatten_tensor = _contiguous(send_flatten_tensor)
     group = GlobalComm.WORLD_COMM_GROUP if group is None else _get_group(group)
     global _GROPU_SIZE_CACHE
     if group not in _GROPU_SIZE_CACHE:
