@@ -677,6 +677,7 @@ bool Graph::GuardType(ValueNode *node) {
 static bool SkipGuardInlinedFunc(CallNode *node) {
   ValueNode *func_node = node->input(0);
   if (func_node->IsConstantValue()) {
+    MS_LOG(DEBUG) << "Func node is const value, skip guard. " << func_node->ToString();
     return true;
   }
   // Now only guard specialized function and cell
@@ -689,7 +690,7 @@ static bool SkipGuardInlinedFunc(CallNode *node) {
     MS_LOG(INFO) << "skip guard function from attribute";
     return true;
   }
-  return node->GetInlineReason() != InlineReason::kInlineFuncSpecialize;
+  return false;
 }
 
 bool Graph::GuardInlinedFunc(CallNode *call_node) {
@@ -701,6 +702,7 @@ bool Graph::GuardInlinedFunc(CallNode *call_node) {
   TracePtr tr = this->TraceValueNode(call_node->input(0));
   if (tr == nullptr) {
     // unknown source function. Maybe dynamic call-site, do nothing
+    MS_LOG(DEBUG) << "Unknown source function, cannot add guard. " << call_node->ToString();
     return false;
   }
   const auto &guard = this->GetGuardManager()->GetGuard();
@@ -723,6 +725,7 @@ bool Graph::GuardInlinedFunc(CallNode *call_node) {
     guard->GuardOn(tr, GuardLevel::GId);
     call_node->input(0)->SetConstantValue(true);
   } else {
+    MS_LOG(DEBUG) << "Unknown callable type, cannot add guard. " << callable_info->ToString();
     return false;
   }
   return true;
