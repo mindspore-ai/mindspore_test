@@ -409,7 +409,7 @@ class Parameter(Tensor_):
 
         Tutorial Examples:
             - `Parameter Server Mode
-              <https://www.mindspore.cn/docs/en/master/model_train/parallel/parameter_server_training.html>`_
+              <https://www.mindspore.cn/tutorials/en/master/beginner/train.html>`_
         """
         if not _is_ps_mode() or not (_is_role_worker() or _is_role_pserver() or _is_role_sched()):
             raise RuntimeError("Must complete following two steps before calling set_param_ps: \n"
