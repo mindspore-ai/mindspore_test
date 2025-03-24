@@ -1202,8 +1202,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
             >>> print(output)
             (Tensor(shape=[], dtype=Float32, value=8), Tensor(shape=[], dtype=Float32, value=6))
         """
-        if not check_hook_fn("register_hook", hook):
-            return _TensorHookHandle(self)
+        check_hook_fn(hook)
         handle = _TensorHookHandle(self)
         handle.id = TensorPy_.register_hook(self, hook)
         return handle

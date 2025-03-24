@@ -619,8 +619,7 @@ class HookBackward(PrimitiveWithInfer):
     def __init__(self, hook_fn, cell_id=""):
         """Initialize HookBackward."""
         super(HookBackward, self).__init__(self.__class__.__name__)
-        if not check_hook_fn("HookBackward", hook_fn):
-            return
+        check_hook_fn(hook_fn)
         if cell_id != "":
             logger.warning(f"The args 'cell_id' of HookBackward will be removed in a future version. If the value of "
                            f"'cell_id' is set, the hook function will not work.")

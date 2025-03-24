@@ -2704,8 +2704,7 @@ class Cell(Cell_):
         """
         if context._get_mode() == context.GRAPH_MODE:
             return HookHandle()
-        if not check_hook_fn("register_forward_pre_hook", hook_fn):
-            return HookHandle()
+        check_hook_fn(hook_fn)
         handle = HookHandle(self._forward_pre_hook)
         self._forward_pre_hook[handle.handle_id] = hook_fn
         return handle
@@ -2804,8 +2803,7 @@ class Cell(Cell_):
             return HookHandle()
         if context._get_mode() == context.GRAPH_MODE:
             return HookHandle()
-        if not check_hook_fn("register_forward_hook", hook_fn):
-            return HookHandle()
+        check_hook_fn(hook_fn)
         handle = HookHandle(self._forward_hook)
         self._forward_hook[handle.handle_id] = hook_fn
         return handle
@@ -2895,8 +2893,7 @@ class Cell(Cell_):
         """
         if context._get_mode() == context.GRAPH_MODE:
             return HookHandle()
-        if not check_hook_fn("register_backward_pre_hook", hook_fn):
-            return HookHandle()
+        check_hook_fn(hook_fn)
         handle = HookHandle(self._backward_pre_hook)
         self._backward_pre_hook[handle.handle_id] = hook_fn
         if self._cell_backward_pre_hook is None:
@@ -3513,8 +3510,7 @@ class Cell(Cell_):
         """
         if context._get_mode() == context.GRAPH_MODE:
             return HookHandle()
-        if not check_hook_fn("register_backward_hook", hook_fn):
-            return HookHandle()
+        check_hook_fn(hook_fn)
         handle = HookHandle(self._backward_hook)
         self._backward_hook[handle.handle_id] = hook_fn
         if self._cell_backward_hook is None:
