@@ -25,7 +25,6 @@
 #include <tuple>
 #include "pybind11/pybind11.h"
 #include "ir/tensor.h"
-#include "ir/tensor_py_base.h"
 #include "include/common/visible.h"
 #include "include/common/utils/stub_tensor.h"
 
@@ -35,7 +34,7 @@ namespace mindspore {
 namespace tensor {
 
 // TensorPyBase: An entity class
-class COMMON_EXPORT TensorPy : public TensorPyBase {
+class COMMON_EXPORT TensorPy {
  public:
   TensorPy() = default;
   /// \brief Create tensorpy from another tensorpy, data is shared.
@@ -479,22 +478,7 @@ class COMMON_EXPORT TensorPy : public TensorPyBase {
   /// \param[in] slice_shape_of_persistent_data [py::object] The slice shape of persistent data.
   void SetSliceShapeOfPersistentData(const py::object &slice_shape_of_persistent_data);
 
-  bool operator==(const Value &other) const override {
-    if (other.isa<TensorPy>()) {
-      auto &other_ = static_cast<const TensorPy &>(other);
-      return *this == other_;
-    }
-    return false;
-  }
-
-  MS_DECLARE_PARENT(TensorPy, TensorPyBase);
-
-  /// \brief Create Abstract for Tensor.
-  ///
-  /// \return Abstract of Tensor.
-  abstract::AbstractBasePtr ToAbstract() override;
-
-  BaseTensorPtr GetBaseTensor() const override;
+  BaseTensorPtr GetBaseTensor() const;
 
   void UpdateStub(const BaseTensorPtr &tensor);
   bool has_stub() const { return stub_ != nullptr; }
@@ -520,6 +504,7 @@ class COMMON_EXPORT TensorPy : public TensorPyBase {
   py::object slice_num_of_persistent_data_;
   py::object slice_shape_of_persistent_data_;
   std::string device_;
+  BaseTensorPtr tensor_{nullptr};
   py::object flatten_tensor_;
   stub::StubNodePtr stub_{nullptr};
 };
@@ -585,27 +570,6 @@ COMMON_EXPORT py::object PackTensorToPyObject(BaseTensorPtr tensor);
 ///
 /// \return The python Tensor.
 COMMON_EXPORT py::object GetPythonTensor();
-
-/// \brief Make default_parameter of Parameter to BaseTensor.
-///
-/// \param[in] value [ValuePtr] The given input parameter.
-///
-/// \return A BaseTensor.
-COMMON_EXPORT const BaseTensorPtr GetBaseTensorFromValue(const ValuePtr &value);
-
-/// \brief Make default_parameter of Parameter to Tensor.
-///
-/// \param[in] value [ValuePtr] The given input parameter.
-///
-/// \return A Tensor.
-COMMON_EXPORT const TensorPtr GetTensorFromValue(const ValuePtr &value);
-
-/// \brief Make default_parameter of Parameter to MetaTensor.
-///
-/// \param[in] value [ValuePtr] The given input parameter.
-///
-/// \return A MetaTensor.
-COMMON_EXPORT const MetaTensorPtr GetMetaTensorFromValue(const ValuePtr &value);
 
 COMMON_EXPORT PyObject *PackTensor(const BaseTensorPtr &tensor);
 COMMON_EXPORT PyObject *Wrap(const BaseTensorPtr &tensor);
