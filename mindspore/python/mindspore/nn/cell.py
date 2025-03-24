@@ -275,6 +275,9 @@ class Cell(Cell_):
 
     @property
     def exist_names(self):
+        """
+        Get exist parameter names adding by tuple or list of parameter.
+        """
         if self._exist_names is None:
             self._exist_names = set("")
         return self._exist_names
@@ -3285,7 +3288,7 @@ class Cell(Cell_):
         )
         local_state = {k: v for k, v in local_name_params if v is not None}
 
-        for name, param in local_state.items():  # pylint: disable=R1702
+        for name, param in local_state.items():
             key = prefix + name
             if key in state_dict:
                 input_param = state_dict[key]
@@ -3421,11 +3424,12 @@ class Cell(Cell_):
             incompatible_keys = _IncompatibleKeys(missing_keys, unexpected_keys)
             for hook in cell._load_state_dict_post_hooks.values():
                 out = hook(cell, incompatible_keys)
-                assert out is None, (
-                    "Hooks registered with ``register_load_state_dict_post_hook`` are not"
-                    "expected to return new values, if incompatible_keys need to be modified,"
-                    "it should be done inplace."
-                )
+                if out is not None:
+                    raise RuntimeError(
+                        "Hooks registered with ``register_load_state_dict_post_hook`` are not"
+                        "expected to return new values, if incompatible_keys need to be modified,"
+                        "it should be done inplace."
+                    )
 
         load(self, state_dict)
         del load
@@ -3973,13 +3977,13 @@ def _is_parameter_list_or_tuple(value):
     return False
 
 
-def _addindent(s_, numSpaces):
+def _addindent(s_, num_spaces):
     s = s_.split("\n")
     # don't do anything for single-line stuff
     if len(s) == 1:
         return s_
     first = s.pop(0)
-    s = [(numSpaces * " ") + line for line in s]
+    s = [(num_spaces * " ") + line for line in s]
     s = "\n".join(s)
     s = first + "\n" + s
     return s
