@@ -27,7 +27,8 @@ internal::InternalOpPtr InternalAddRmsNormQuant::CreateKernel(const internal::In
                                                               const std::vector<KernelTensor *> &ms_outputs) {
   internal::NormParam param;
   param.eps = ms_inputs[kIndex5]->GetValueWithCheck<float>();
-  MS_LOG(INFO) << "Create kernel: " << internal::kInternalAddRmsNormQuantOpName << " eps: " << param.eps;
+  param.need_rms_norm_out =
+    primitive_->HasAttr("need_rms_norm_out") ? GetValue<bool>(primitive_->GetAttr("need_rms_norm_out")) : false;
   return internal::CreateAddRmsNormQuantOp(inputs_ii, outputs_ii, param, internal::kInternalAddRmsNormQuantOpName);
 }
 MS_INTERNAL_KERNEL_FACTORY_REG(AddRmsNormQuantV2, internal::kInternalAddRmsNormQuantOpName, InternalAddRmsNormQuant);
