@@ -39,4 +39,4 @@ mindspore.train.ConfusionMatrix
 
         异常：
             - **ValueError** - 输入参数的数量不等于2。
-            - **ValueError** - 如果预测值和标签的维度不一致。
+            - **ValueError** - 如果预测值 `y_pred` 和真实值 `y` 的维度不一致。

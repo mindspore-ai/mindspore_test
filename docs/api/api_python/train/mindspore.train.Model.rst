@@ -33,7 +33,7 @@
 
           如果想自行配置boost模式，可以将 `boost_config_dict` 设置为 `boost.py`。
 
-          为使功能生效，需要同时设置optimizer、eval_network或metric参数。
+          为使 `boost_level` 功能生效，必须配置优化器 `optimizer`，同时至少需要设置评估网络 `eval_network` 或评估指标 `metric` 中的一项（也可两项都配置）。
 
           注意：当前默认开启的优化仅适用部分网络，并非所有网络都能获得相同收益。建议在Ascend平台的图模式下开启boost模式，同时为了获取更好的加速效果，请参考 :class:`mindspore.boost.AutoBoost` 配置boost_config_dict。
 
@@ -91,7 +91,7 @@
         更多详细信息请参考 :func:`mindspore.train.Model.train` 和 :func:`mindspore.train.Model.eval`。
 
         参数：
-            - **epoch** (int) - 训练执行轮次。通常每个epoch都会使用全量数据集进行训练。当 `dataset_sink_mode` 设置为True且 `sink_size` 大于零时，则每个epoch训练次数为 `sink_size` 而不是数据集的总步数。如果 `epoch` 与 `initial_epoch` 一起使用，它表示训练的最后一个 `epoch` 是多少。
+            - **epoch** (int) - 训练执行轮次。通常每个epoch都会使用全量数据集进行训练。当 `dataset_sink_mode` 设置为True且 `sink_size` 大于零时，则每个epoch训练次数为 `sink_size` 而不是数据集的总步数。如果 `epoch` 与 `initial_epoch` 一起使用，它表示断点续训多少个epoch。
             - **train_dataset** (Dataset) - 训练数据集迭代器。如果定义了 `loss_fn` ，则数据和标签会被分别传给 `network` 和 `loss_fn` ，此时数据集需要返回一个元组（data, label）。如果数据集中有多个数据或者标签，可以设置 `loss_fn` 为None，并在 `network` 中实现损失函数计算，此时数据集返回的所有数据组成的元组（data1, data2, data3, ...）会传给 `network` 。
             - **valid_dataset** (Dataset) - 评估模型的数据集迭代器。默认值： ``None`` 。
             - **valid_frequency** (int, list) - 此参数只有在valid_dataset不为None时生效。如果为int类型，表示执行推理的频率，例如 `valid_frequency=2`，则每2个训练epoch执行一次推理；如果为list类型，指明在哪几个epoch时执行推理，例如 `valid_frequency=[1, 5]`，则在第1个和第5个epoch执行推理。默认值： ``1`` 。
@@ -144,9 +144,16 @@
         参数：
             - **predict_data** (Union[Tensor, list[Tensor], tuple[Tensor]], 可选) - 预测样本，数据可以是单个张量、张量列表或张量元组。
             - **backend** (str) - 选择预测后端，该参数为实验性质特性，主要用于MindSpore Lite云侧推理。默认值： ``None`` 。
-            - **config** (dict，可选) - 当后端为 ‘lite’ 时，config 参数使能。config 包括两个部分：config_path（configPath，str）和 config_item（str，dict）。当 config_item 设置时，其优先级高于 config_path。设置推理的排名表文件。配置文件的内容如下：
+            - **config** (dict，可选) - 当后端为 ‘lite’ 时，config 参数使能。
+              `config` 有三种配置形式：
 
-              config_path 定义配置文件的路径，用于在构建模型期间传递用户定义选项。在以下场景中，用户可能需要设置参数。例如："/home/user/config.ini"。默认值： ``""`` , 以下是 config.ini 文件的内容：
+              1. `configPath` 定义配置文件的路径，用于在构建模型期间传递用户定义选项。默认值： ``""``。
+
+              .. code-block::
+
+                  config = {"configPath" : "/home/user/config.ini"}
+
+              以下是 /home/user/config.ini 文件的内容：
 
               .. code-block::
 
@@ -156,25 +163,19 @@
                   [op_name1]=data_type:float16（名字为op_name1的算子设置数据类型为float16）
                   [op_name2]=data_type:float32（名字为op_name2的算子设置数据类型为float32）
 
-              当只配置config_path的方式如下：
-
-              .. code-block::
-
-                  config = {"configPath" : "/home/user/config.ini"}
-
-              config_dict 配置参数字典，当只配置config_dict的方式如下：
+              2. 将用户配置内容形成参数字典，方式如下：
 
               .. code-block::
 
                   config = {"ascend_context" : {"rank_table_file" : "path_b"}, "execution_plan" : {"op_name1" : "data_type:float16", "op_name2" : "data_type:float32"}}
 
-              当同时配置config_path 和 config_dict的方式如下：
+              3. 当同时配置 `configPath` 和参数字典，其中参数字典的优先级高于配置文件里的内容，方式如下：
 
               .. code-block::
 
                   config = {"configPath" : "/home/user/config.ini", "ascend_context" : {"rank_table_file" : "path_b"}, "execution_plan" : {"op_name3" : "data_type:float16", "op_name4" : "data_type:float32"}}
 
-              注意到 config_dict 和 config_item均配置了"configPath"，此时以 config_dict 中的 "path_b" 为准。
+              注意：在示例中 `configPath` 中的 `rank_table_file=[path_a]`，字典中 `"ascend_context" : {"rank_table_file" : "path_b"}`，此时以字典中的 `"path_b"` 为准。
 
         返回：
             返回预测结果，类型是Tensor或Tensor元组。
@@ -201,7 +202,7 @@
             - 每次epoch将从上一次遍历的最后位置继续开始遍历。该接口会构建并执行计算图，如果使用前先执行了 `Model.build` ，那么它会直接执行计算图而不构建。
 
         参数：
-            - **epoch** (int) - 训练执行轮次。通常每个epoch都会使用全量数据集进行训练。当 `dataset_sink_mode` 设置为True且 `sink_size` 大于零时，则每个epoch训练次数为 `sink_size` 而不是数据集的总步数。如果 `epoch` 与 `initial_epoch` 一起使用，它表示训练的最后一个 `epoch` 是多少。
+            - **epoch** (int) - 训练执行轮次。通常每个epoch都会使用全量数据集进行训练。当 `dataset_sink_mode` 设置为True且 `sink_size` 大于零时，则每个epoch训练次数为 `sink_size` 而不是数据集的总步数。如果 `epoch` 与 `initial_epoch` 一起使用，它表示断点续训多少个epoch。
             - **train_dataset** (Dataset) - 一个训练数据集迭代器。如果定义了 `loss_fn` ，则数据和标签会被分别传给 `network` 和 `loss_fn` ，此时数据集需要返回一个元组（data, label）。如果数据集中有多个数据或者标签，可以设置 `loss_fn` 为None，并在 `network` 中实现损失函数计算，此时数据集返回的所有数据组成的元组（data1, data2, data3, ...）会传给 `network` 。
             - **callbacks** (Optional[list[Callback], Callback]) - 训练过程中需要执行的回调对象或者回调对象列表。默认值： ``None`` 。
             - **dataset_sink_mode** (bool) - 数据是否直接下沉至处理器进行处理。使用PYNATIVE_MODE模式或CPU处理器时，模型训练流程将以非下沉模式执行。默认值： ``False`` 。

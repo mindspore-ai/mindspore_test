@@ -435,8 +435,8 @@ class Model:
               the accuracy is reduced by less than 3%.
 
             If you want to config boost mode by yourself, you can set boost_config_dict as `boost.py`.
-            In order for this function to work, you need to set the optimizer, eval_network or metric parameters
-            at the same time.
+            In order for this function to work, you need to set the parameter `optimizer`, along with
+            at least one of the parameter `eval_network` or performance `metrics`.
 
             Notice: The current optimization enabled by default only applies to some networks, and not all networks
             can obtain the same benefits.  It is recommended to enable this function on
@@ -1871,7 +1871,8 @@ class Model:
                 The predict data, can be a single tensor,
                 a list of tensor, or a tuple of tensor.
 
-            config (dict, optional) - The config parameter is enabled when the backend is ‘lite’.
+            config (dict, optional): The config parameter is enabled when the backend is ‘lite’.
+
                 The config includes two parts: config_path (configPath, str) and config_item (str, dict).
                 When the config_item is set, its priority is higher than the config_path. Set the ranking
                 table file for inference. The content of the configuration file is as follows:
@@ -1881,6 +1882,16 @@ class Model:
                     For example: "/home/user/config.ini". Default value: ``"" `` , here is the content of the
                     config.ini file:
 
+                The config has 3 forms：
+                1. configPath defines the path of the configuration file, which is used to pass user-defined
+                options during model building. Default value: ``"" ``.
+
+                .. code-block::
+
+                    config = {"configPath" : "/home/user/config.ini"}
+
+                Here is the content of the config.ini file:
+
                 .. code-block::
 
                     [ascend_context]
@@ -1889,20 +1900,15 @@ class Model:
                     [op_name1] = data_type:float16 (operator named op_name1 is set to data type float16)
                     [op_name2] = data_type:float32 (operator named op_name2 is set to data type float32)
 
-                When only the config_path is configured, it is done as follows:
-
-                .. code-block::
-
-                    config = {"configPath" : "/home/user/config.ini"}
-
-                When only the config_dict is configured, it is done as follows:
+                2. Set the user-defined options in parameter dictionary, it is done as follows:
 
                 .. code-block::
 
                     config = {"ascend_context" : {"rank_table_file" : "path_b"},
                               "execution_plan" : {"op_name1" : "data_type:float16", "op_name2" : "data_type:float32"}}
 
-                When both the `config_path` and the `config_dict` are configured, it is done as follows:
+                3. Both the `configPath` and the `parameter dictionary` are configured, The priority of the parameter
+                dictionary is higher than that of the content in the configuration file. It is done as follows:
 
                 .. code-block::
 
@@ -1910,8 +1916,8 @@ class Model:
                               "ascend_context" : {"rank_table_file" : "path_b"},
                               "execution_plan" : {"op_name3" : "data_type:float16", "op_name4" : "data_type:float32"}}
 
-                Note that both the "configPath" is configured in the config_dict and the config_item,
-                    in this case, the path_b in the config_dict takes precedence.
+                Note that in the "configPath" the parameter is set as "rank_table_file = [path_a]", but in dict is set
+                as "ascend_context" : {"rank_table_file" : "path_b"}, in this case, the path_b takes precedence.
 
         Returns:
             Tensor, array(s) of predictions.
