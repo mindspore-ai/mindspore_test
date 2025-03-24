@@ -27,6 +27,7 @@ from mindspore.common import dtype as mstype
 from mindspore.nn.cell import Cell
 from mindspore._c_expression import MSContext
 from mindspore.ops.auto_generate import avg_pool1d_ext
+from mindspore.ops.function.nn_func import max_pool2d_ext
 
 
 __all__ = ['AvgPool3d', 'MaxPool3d', 'AvgPool2d', 'MaxPool2d', 'AvgPool1d', 'MaxPool1d', 'FractionalMaxPool2d',
@@ -686,20 +687,16 @@ class MaxPool2dExt(Cell):
                  ceil_mode=False):
         """Initialize MaxPool2d."""
         super(MaxPool2dExt, self).__init__()
+        self.kernel_size = kernel_size
+        self.stride = stride if (stride is not None) else kernel_size
+        self.padding = padding
+        self.dilation = dilation
         self.return_indices = return_indices
-        strides = stride if (stride is not None) else kernel_size
-        if return_indices:
-            self.max_pool_func_ = ops.auto_generate.gen_ops_prim.MaxPoolWithIndices(kernel_size, strides, padding,
-                                                                                    dilation, ceil_mode)
-        else:
-            self.max_pool_func_ = ops.auto_generate.gen_ops_prim.MaxPoolWithMask(kernel_size, strides, padding,
-                                                                                 dilation, ceil_mode)
+        self.ceil_mode = ceil_mode
 
     def construct(self, input):
-        out, indices = self.max_pool_func_(input)
-        if self.return_indices:
-            return out, indices
-        return out
+        return max_pool2d_ext(input, self.kernel_size, self.stride, self.padding,
+                              self.dilation, self.ceil_mode, self.return_indices)
 
 
 class MaxPool1d(_PoolNd):
