@@ -832,36 +832,25 @@ def one_hot(indices, depth, on_value=1, off_value=0, axis=-1):
 
 def fill(type, shape, value):  # pylint: disable=redefined-outer-name
     """
-    Create a Tensor of the specified shape and fill it with the specified value.
+    Create a tensor filled with a specified value.
 
     Args:
-        type (mindspore.dtype): The specified type of output tensor. The data type only supports
-            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ and
-            `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ .
-        shape (Union(Tensor, tuple[int])): The specified shape of output tensor.
-        value (Union(Tensor, number.Number, bool)): Value to fill the returned tensor.
+        type (mindspore.dtype): The data type specified.
+        shape (Union(Tensor, tuple[int])): The shape specified.
+        value (Union(Tensor, number.Number, bool)): The value specified.
 
     Returns:
-        Tensor.
-
-    Raises:
-        TypeError: If `shape` is not a tuple or a tensor.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import ops
-        >>> output = ops.fill(mindspore.float32, (2, 2), 1)
-        >>> print(output)
-        [[1. 1.]
-         [1. 1.]]
-        >>> output = ops.fill(mindspore.float32, (3, 3), 0)
-        >>> print(output)
-        [[0. 0. 0.]
-         [0. 0. 0.]
-         [0. 0. 0.]]
+        >>> mindspore.ops.fill(mindspore.float32, (2, 3),  1.2)
+        Tensor(shape=[2, 3], dtype=Float32, value=
+        [[ 1.20000005e+00,  1.20000005e+00,  1.20000005e+00],
+         [ 1.20000005e+00,  1.20000005e+00,  1.20000005e+00]])
     """
     value = cast_(value, type)
     return fillv2_(shape, value)
@@ -869,37 +858,34 @@ def fill(type, shape, value):  # pylint: disable=redefined-outer-name
 
 def full(size, fill_value, *, dtype=None):  # pylint: disable=redefined-outer-name
     """
-    Create a Tensor of the specified shape and fill it with the specified value.
+    Create a tensor filled with a specified value.
+
+    Note:
+        `fill_value` 's data type not support complex numbers.
 
     Args:
-        size (Union(tuple[int], list[int])): The specified shape of output tensor.
-        fill_value (number.Number): Value to fill the returned tensor. Complex numbers are not supported for now.
+        size (Union(tuple[int], list[int])): The shape specified.
+        fill_value (number.Number): The value specified.
 
     Keyword Args:
-        dtype (mindspore.dtype): The specified type of output tensor. `bool_` and `number` are supported, for details,
-            please refer to :class:`mindspore.dtype` . Default: ``None`` .
+        dtype (mindspore.dtype): The data type specified. Default ``None`` .
 
     Returns:
-        Tensor.
-
-    Raises:
-        TypeError: If `size` is not a tuple or list.
-        ValueError: The element in `size` is less than 0.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> from mindspore import ops
-        >>> output = ops.full((2, 2), 1)
-        >>> print(output)
-        [[1. 1.]
-         [1. 1.]]
-        >>> output = ops.full((3, 3), 0)
-        >>> print(output)
-        [[0. 0. 0.]
-         [0. 0. 0.]
-         [0. 0. 0.]]
+        >>> import mindspore
+        >>> mindspore.ops.full((2, 3), 1.2)
+        Tensor(shape=[2, 3], dtype=Int64, value=
+        [[1, 1, 1],
+         [1, 1, 1]])
+        >>> mindspore.ops.full((2, 3), 1.2, dtype=mindspore.float32)
+        Tensor(shape=[2, 3], dtype=Float32, value=
+        [[ 1.20000005e+00,  1.20000005e+00,  1.20000005e+00],
+         [ 1.20000005e+00,  1.20000005e+00,  1.20000005e+00]])
     """
     if not isinstance(size, (list, tuple)):
         raise TypeError(
@@ -955,39 +941,31 @@ def full_ext(size, fill_value, *, dtype=None):  # pylint: disable=redefined-oute
 
 def full_like(input, fill_value, *, dtype=None):
     """
-    Return a Tensor of the same shape as `input` and filled with `fill_value`.
+    Return a tensor of the same shape as `input` and filled with a specified value.
+
+    Note:
+        `fill_value` 's data type not support complex numbers.
 
     Args:
-        input (Tensor): input Tensor and the output Tensor have the same shape as `input`.
-        fill_value (Number): Value to fill the returned Tensor. Complex numbers are not supported for now.
+        input (Tensor): The input tensor.
+        fill_value (Number): The specified value.
 
     Keyword Args:
-        dtype (mindspore.dtype, optional): The specified type of output tensor. `bool_` and `number` are supported,
-            for details, please refer to :class:`mindspore.dtype` . Default: ``None`` .
+        dtype (mindspore.dtype, optional): The data type specified. Default: ``None`` .
 
     Returns:
-        Tensor.
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import Tensor, ops
-        >>> input = Tensor([[0, 1], [2, 1]], dtype=mindspore.int32)
-        >>> output = ops.full_like(input, 1)
-        >>> print(output)
-        [[1. 1.]
-         [1. 1.]]
-        >>> input = Tensor([[0, 1, 1], [2, 1, 2], [1, 3, 4]], dtype=mindspore.int32)
-        >>> output = ops.full_like(input, 0)
-        >>> print(output)
-        [[0. 0. 0.]
-         [0. 0. 0.]
-         [0. 0. 0.]]
+        >>> input = mindspore.ops.arange(4)
+        >>> mindspore.ops.full_like(input, 1.2)
+        Tensor(shape=[4], dtype=Int64, value= [1, 1, 1, 1])
+        >>> mindspore.ops.full_like(input, 1.2, dtype=mindspore.float32)
+        Tensor(shape=[4], dtype=Float32, value= [ 1.20000005e+00,  1.20000005e+00,  1.20000005e+00,  1.20000005e+00])
     """
     if not isinstance(input, Tensor):
         raise TypeError(
@@ -1178,32 +1156,31 @@ def fills(x, value):
 
 def ones_like(input, *, dtype=None):
     """
-    Returns a Tensor with a value of 1 and its shape is the same as the input.
+    Return a tensor filled with 1, with the same size as `input`.
 
     Args:
-        input (Tensor): Tensor of any dimension.
+        input (Tensor): The input tensor.
 
     Keyword Args:
-        dtype (:class:`mindspore.dtype`, optional): The specified dtype of the output tensor. If `dtype` is ``None`` ,
-            the dtype of the input tensor will be used. Default: ``None`` .
+        dtype (:class:`mindspore.dtype`, optional): The data type specified. Default ``None`` represents the same data
+            type as the input.
 
     Returns:
-        Tensor, has the same shape as `input` but filled with ones.
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([[0, 1], [2, 1]]).astype(np.int32))
-        >>> output = ops.ones_like(x)
-        >>> print(output)
-        [[1 1]
-         [1 1]]
+        >>> import mindspore
+        >>> input = mindspore.ops.arange(4)
+        >>> mindspore.ops.ones_like(input)
+        Tensor(shape=[4], dtype=Int64, value= [1, 1, 1, 1])
+        >>> mindspore.ops.ones_like(x, dtype=mindspore.float32)
+        Tensor(shape=[3, 2], dtype=Float32, value=
+        [[ 1.00000000e+00,  1.00000000e+00],
+         [ 1.00000000e+00,  1.00000000e+00],
+         [ 1.00000000e+00,  1.00000000e+00]])
     """
     output = ones_like_(input)
     _dtype = input.dtype if dtype is None else dtype
@@ -1213,35 +1190,31 @@ def ones_like(input, *, dtype=None):
 
 def zeros_like(input, *, dtype=None):
     r"""
-    Creates a tensor filled with 0, with the same size as input, and the given dtype.
-
-    If `dtype = None`, the tensor will have the same dtype as input `input`.
+    Return a tensor filled with 0, with the same size as `input` .
 
     Args:
-        input (Tensor): Tensor of any dimension.
+        input (Tensor): The input tensor.
 
     Keyword Args:
-        dtype (:class:`mindspore.dtype`, optional): The specified dtype of the output tensor. If `dtype` is ``None`` ,
-            the dtype of the input tensor will be used. Default: ``None`` .
+        dtype (:class:`mindspore.dtype`, optional): The data type specified. Default ``None`` represents the same data
+            type as the input.
 
     Returns:
-        Tensor, filled with 0.
-
-    Raises:
-        TypeError: If dtype is not a MindSpore dtype.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.arange(4).reshape(2, 2))
-        >>> output = ops.zeros_like(x, dtype=mindspore.float32)
-        >>> print(output)
-        [[0. 0.]
-         [0. 0.]]
+        >>> input = mindspore.ops.arange(4)
+        >>> mindspore.ops.zeros_like(input)
+        Tensor(shape=[4], dtype=Int64, value= [0, 0, 0, 0])
+        >>> mindspore.ops.zeros_like(x, dtype=mindspore.float32)
+        Tensor(shape=[3, 2], dtype=Float32, value=
+        [[ 0.00000000e+00,  0.00000000e+00],
+         [ 0.00000000e+00,  0.00000000e+00],
+         [ 0.00000000e+00,  0.00000000e+00]])
     """
     _dtype = input.dtype if dtype is None else dtype
     output = zeros_like_(input)
