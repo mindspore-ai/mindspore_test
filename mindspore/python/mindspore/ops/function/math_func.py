@@ -10880,7 +10880,7 @@ def einsum_ext(equation, *operands):
         >>> equation = "i->"
         >>> output = ops.einsum_ext(equation, x)
         >>> print(output)
-        [7.]
+        7.0
         >>> x = Tensor(np.array([1.0, 2.0, 4.0]), mindspore.float32)
         >>> y = Tensor(np.array([2.0, 4.0, 3.0]), mindspore.float32)
         >>> equation = "i,i->i"
@@ -10910,7 +10910,7 @@ def einsum_ext(equation, *operands):
         >>> equation = "...->"
         >>> output = ops.einsum_ext(equation, x)
         >>> print(output)
-        [21.]
+        21.0
         >>> x = Tensor(np.array([1.0, 2.0, 3.0]), mindspore.float32)
         >>> y = Tensor(np.array([2.0, 4.0, 1.0]), mindspore.float32)
         >>> equation = "j,i->ji"
