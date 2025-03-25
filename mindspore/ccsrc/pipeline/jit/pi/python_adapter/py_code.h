@@ -18,6 +18,7 @@
 
 #include <string>
 #include <sstream>
+#include <map>
 #include "pipeline/jit/pi/python_adapter/pydef.h"
 #include "pybind11/pybind11.h"
 
@@ -28,6 +29,18 @@ namespace py = pybind11;
 
 // the value is -1 if no line or no column
 struct CodeLocation;
+struct ExceptionTableItem {
+  // [begin, end)
+  int begin_;
+  int end_;
+  // handler instruction start index
+  int jump_;
+  // stack effect
+  int stack_;
+  // need push last instruction index to stack
+  bool lasti_;
+};
+using ExceptionTable = std::map<int, ExceptionTableItem>;
 
 /**
  * wrapper code object to fast access it's field
@@ -75,6 +88,7 @@ class PyCodeWrapper {
 
   int Addr2Line(int byte_offset);
   CodeLocation Addr2Location(int byte_offset);
+  ExceptionTable DecodeExceptionTable();
 
  private:
   PyCodeObject *ptr_;
@@ -103,6 +117,11 @@ inline bool operator==(const CodeLocation &x, const CodeLocation &y) {
 inline bool operator!=(const CodeLocation &x, const CodeLocation &y) {
   return x.start_line_ != y.start_line_ || x.end_line_ != y.end_line_ || x.start_column_ != y.start_column_ ||
          x.end_column_ != y.end_column_;
+}
+
+inline std::ostream &operator<<(std::ostream &s, const ExceptionTableItem &i) {
+  s << "[" << i.begin_ << "," << i.end_ << ")->" << i.jump_ << "[" << i.stack_ << "]" << (i.lasti_ ? "lasti" : "");
+  return s;
 }
 
 }  // namespace pijit

@@ -128,24 +128,6 @@ class Block {
   bool is_dead_ = true;
 };
 
-struct ExceptionTableItem {
-  // [begin, end)
-  int begin_;
-  int end_;
-  // handler instruction start index
-  int jump_;
-  // stack effect
-  int stack_;
-  // need push last instruction index to stack
-  bool lasti_;
-};
-using ExceptionTable = std::map<int, ExceptionTableItem>;
-
-inline std::ostream &operator<<(std::ostream &s, const ExceptionTableItem &i) {
-  s << "[" << i.begin_ << "," << i.end_ << ")->" << i.jump_ << "[" << i.stack_ << "]" << (i.lasti_ ? "lasti" : "");
-  return s;
-}
-
 class CFG {
  public:
   explicit CFG(PyCodeObject *co) : co_(co) {}
@@ -203,7 +185,6 @@ class CFG {
   void BuildInst(const uint8_t *begin, const uint8_t *end);
   std::map<int, Block *> BuildBB(const uint8_t *begin, const uint8_t *end);
   void BuildCFG(const std::map<int, Block *> &labels);
-  void InitExceptionTable();
 
   PyCodeWrapper co_;
   std::vector<std::unique_ptr<Instr>> instrs_;

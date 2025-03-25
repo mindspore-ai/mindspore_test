@@ -560,18 +560,19 @@ bool GraphBuilder::DoCall(const Instr &instr) {
   Opcode opcode(instr.op());
   int oparg = instr.arg();
 
-#if IS_PYTHON_3_11_PLUS
-  auto iter = frame_.GetStacks().end() - instr.arg() - 2;
-  if (iter >= frame_.GetStacks().begin() && (*iter == &ValueNode::kStackNull)) {
-    frame_.GetStacks().erase(iter);  // pop null
+#if IS_PYTHON_3_13_PLUS
+  MS_LOG(ERROR) << "not implement nullptr of call stack";
+#elif IS_PYTHON_3_11_PLUS
+  if (instr.bci() == cur_bci_) {
+    auto iter = (frame_.GetStacks().end() - 1) - instr.arg() - 1 - (opcode == CALL_FUNCTION_EX);
+    MS_EXCEPTION_IF_CHECK_FAIL(iter >= frame_.GetStacks().begin(), "stack out of bound, check call instruction");
+    if (*iter == &ValueNode::kStackNull) {
+      frame_.GetStacks().erase(iter);  // pop null
+    } else {
+      MS_EXCEPTION_IF_CHECK_FAIL(opcode == CALL, "check call stack:\n" + frame_.ToString());
+      oparg += 1;  // a object push to stack as self
+    }
   }
-#if !IS_PYTHON_3_12_PLUS
-  // python3.11 only, use iterable object as self. Although the oparg is 0, actual number of args is 1
-  if (opcode == CALL && seek(oparg)->GetOpcode() == GET_ITER &&
-      frame_.GetStacks().size() > static_cast<size_t>(oparg) && seek(oparg + 1)->GetOpcode() == MAKE_FUNCTION) {
-    oparg = oparg + 1;
-  }
-#endif
 #endif
 
   int tmp_arg = oparg;

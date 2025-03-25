@@ -1112,17 +1112,19 @@ static bool SupportCall(PyObject *func, const std::string &name) {
          (name.size() != 0 && PyDict_GetItemString(PyEval_GetBuiltins(), name.c_str()) == func);
 }
 
-static PyObject *DoCall(const std::vector<PyObject *> &params, int op, const std::string &name) {
-  if (!Opcode(op).IsCall() || params.size() < 1) {
+static PyObject *DoCall(PyObject *const *stack, int op, int arg, PyObject *kw_names) {
+  PyObject *const *params = stack + 1;
+  PyObject *callable = stack[0];
+  if (!Opcode(op).IsCall() || arg < 0) {
     return nullptr;
   }
-  if (support_infer_primitive(params[0])) {
-    std::vector<PyObject *> list;
+  MS_LOG(DEBUG) << "guard call trace: " << std::string(py::str(callable)) << " with key words "
+                << (kw_names == nullptr ? "<nullptr>" : std::string(py::str(kw_names)));
+  if (support_infer_primitive(callable)) {
     auto inst = mindspore::pijit::InferEngine::GetInstance();
-    list.insert(list.begin(), params.begin() + 1, params.end());
     bool is_abstract = false;
     try {
-      return inst->InferPrimitive(params[0], list, &is_abstract);
+      return inst->InferPrimitive(callable, {params, params + arg}, &is_abstract);
     } catch (py::error_already_set &e) {
       MS_LOG(ERROR) << "InferPrimitive failed " << std::endl << e.what();
     } catch (py::builtin_exception &e) {
@@ -1131,15 +1133,16 @@ static PyObject *DoCall(const std::vector<PyObject *> &params, int op, const std
     return nullptr;
   }
 
-  size_t nargs = (params.size() - 1);
-  size_t kw_cnt;
-  if (Opcode(op).IsCallFunc()) {
-    return PyObject_Vectorcall(params[0], params.data() + 1, nargs, NULL);
+  if (op == CALL) {
+    int kw_cnt = kw_names ? PyTuple_GET_SIZE(kw_names) : 0;
+    return PyObject_Vectorcall(callable, params, arg - kw_cnt, kw_names);
+  } else if (op == CALL_FUNCTION) {
+    return PyObject_Vectorcall(callable, params, arg, NULL);
   } else if (op == CALL_FUNCTION_KW) {
-    kw_cnt = PyTuple_GET_SIZE(params.back());
-    return PyObject_Vectorcall(params[0], params.data() + 1, nargs - 1 - kw_cnt, params.back());
+    int kw_cnt = kw_names ? PyTuple_GET_SIZE(kw_names) : 0;
+    return PyObject_Vectorcall(callable, params, arg - kw_cnt, kw_names);
   } else if (op == CALL_FUNCTION_EX) {
-    return PyObject_Call(params[0], params[1], params.size() > 2 ? params[2] : nullptr);
+    return PyObject_Call(callable, params[0], arg != 0 ? params[1] : nullptr);
   }
   return nullptr;
 }
@@ -1823,7 +1826,7 @@ static std::unordered_map<int, PythonBytecodeFuncSet> kBytecodeExecuter = {
 OpTrace::OpTrace(PyObject *obj, int opcode, int opargs, TraceVector params, std::string name)
     : Trace(obj, nullptr), opcode_(opcode), opargs_(opargs), params_(params), name_(name), is_fold_(false) {
   curType_ = TraceType::Operation;
-  if (Opcode(opcode_).IsCall() || opcode_ == LOAD_ATTR) {
+  if (opcode_ == LOAD_ATTR) {
     opargs_ = -1;
   }
   if (!std::any_of(params.begin(), params.end(), [](const TracePtr &item) { return !item->IsConst(); })) {
@@ -1894,7 +1897,10 @@ PyObject *OpTrace::Retrieve(PTraceContext context, bool perf) {
     MS_EXCEPTION_IF_CHECK_FAIL(name_.size(), "check trace");
     ret = PyObject_GetAttrString(params[0], name_.c_str());
   } else if (Opcode(opcode_).IsCall()) {
-    ret = DoCall(params, opcode_, name_);
+    int argc = params.size() - 1;
+    MS_EXCEPTION_IF_CHECK_FAIL(argc == opargs_ || argc == opargs_ + 1, "invalid call trace");
+    PyObject *kw_names = opcode_ != CALL_FUNCTION_EX && argc != opargs_ ? params.back() : nullptr;
+    ret = DoCall(params.data(), opcode_, opargs_, kw_names);
   }
   for (auto p : params) {
     Py_DECREF(p);

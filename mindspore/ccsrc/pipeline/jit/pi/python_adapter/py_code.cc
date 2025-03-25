@@ -264,6 +264,36 @@ CodeLocation PyCodeWrapper::Addr2Location(int byte_offset) {
 #endif
 }
 
+ExceptionTable PyCodeWrapper::DecodeExceptionTable() {
+  ExceptionTable exc_table;
+  py::object bytes = py::getattr(reinterpret_cast<PyObject *>(ptr()), "co_exceptiontable", nullptr);
+  if (bytes.ptr() == nullptr) {
+    return exc_table;
+  }
+  const uint8_t *begin = reinterpret_cast<const uint8_t *>(PyBytes_AsString(bytes.ptr()));
+  const uint8_t *end = begin + PyBytes_GET_SIZE(bytes.ptr());
+  auto iter = begin;
+  const auto read_variant = [&iter, &end]() {
+    const int kValidBits = 6;
+    const int kValueMask = (1 << kValidBits) - 1;
+    int val = iter[0] & kValueMask;
+    while (iter[0] & (1 << kValidBits)) {
+      iter++;
+      val = (val << kValidBits) | (iter[0] & kValueMask);
+    }
+    ++iter;
+    return val;
+  };
+  while (iter < end) {
+    int start = read_variant();
+    int len = read_variant();
+    int jump = read_variant();
+    int pack = read_variant();
+    exc_table[start] = {start, start + len, jump, pack >> 1, (pack & 1) ? true : false};
+  }
+  return exc_table;
+}
+
 std::string ToString(const PyCodeWrapper &code) {
   return std::string(py::str(reinterpret_cast<PyObject *>(code.ptr())));
 }

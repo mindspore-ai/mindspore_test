@@ -364,6 +364,14 @@ TracePtr GetTrace(ValueNode *node, bool strict, bool print, int depth, int max_d
   return g == nullptr ? GuardBuilder(strict, max_depth, print).GetTrace(node) : g->TraceValueNode(node);
 }
 
+static void HandleCallArgs(TraceVector *tv, const py::object &kw) {
+#if IS_PYTHON_3_11_PLUS
+  if (kw.ptr() != nullptr) {
+    tv->push_back(CreateOpTrace(kw.ptr(), LOAD_CONST, 0, {}));
+  }
+#endif
+}
+
 TracePtr GuardBuilder::GetTrace(ValueNode *node, int depth) {
   bool strict = strict_;
   bool print = print_;
@@ -400,10 +408,8 @@ TracePtr GuardBuilder::GetTrace(ValueNode *node, int depth) {
       break;
     case AbstractNode::Type::Call:
       if (!has_unsupported) {
-#if IS_PYTHON_3_11_PLUS
-        MS_EXCEPTION_IF_CHECK_FAIL(static_cast<CallNode *>(node)->kw_names().ptr() == nullptr, "adapter later");
-#endif
         const std::string &func_name = node->input(0)->GetName();
+        HandleCallArgs(&tv, static_cast<CallNode *>(node)->kw_names());
         ret = CreateOpTrace(obj, opcode, oparg, tv, module_name, func_name, strict, print);
       }
       break;
@@ -857,7 +863,7 @@ static void TraceInferFailed(std::ostream *out, ValueNode *node, int depth = 0) 
   s << " object is ";
   PyObject *op = node->GetVobj() ? node->GetVobj()->GetPyObject().ptr() : nullptr;
   if (op != nullptr) {
-    s << AObject::ToString(op);
+    s << AObject::ToString(op) << std::endl;
     return;
   }
   s << "<NULL>:" << std::endl;

@@ -140,7 +140,7 @@ void CFG::GenerateCFG() {
   BuildInst(begin, end);
   BuildCFG(BuildBB(begin, end));
   MarkDeadBB();
-  InitExceptionTable();
+  exc_table_ = co_.DecodeExceptionTable();
 
 #if IS_PYTHON_3_11_PLUS
   for (size_t index = 0, size = instrs_.size(); index < size; ++index) {
@@ -148,34 +148,6 @@ void CFG::GenerateCFG() {
     (void)(instrs_[index] == nullptr ? !(instrs_[index] = std::make_unique<Instr>(CACHE, 0, index)) : false);
   }
 #endif
-}
-
-void CFG::InitExceptionTable() {
-  py::object bytes = py::getattr(reinterpret_cast<PyObject *>(co_.ptr()), "co_exceptiontable", nullptr);
-  if (bytes.ptr() == nullptr) {
-    return;
-  }
-  const uint8_t *begin = reinterpret_cast<const uint8_t *>(PyBytes_AsString(bytes.ptr()));
-  const uint8_t *end = begin + PyBytes_GET_SIZE(bytes.ptr());
-  auto iter = begin;
-  const auto read_variant = [&iter, &end]() {
-    const int kValidBits = 6;
-    const int kValueMask = (1 << kValidBits) - 1;
-    int val = iter[0] & kValueMask;
-    while (iter[0] & (1 << kValidBits)) {
-      iter++;
-      val = (val << kValidBits) | (iter[0] & kValueMask);
-    }
-    ++iter;
-    return val;
-  };
-  while (iter < end) {
-    int start = read_variant();
-    int len = read_variant();
-    int jump = read_variant();
-    int pack = read_variant();
-    exc_table_[start] = {start, start + len, jump, pack >> 1, (pack & 1) ? true : false};
-  }
 }
 
 static int DeOptimizedOpcode(int op) {
