@@ -55,7 +55,7 @@ def test_custom_argmin(context_mode):
                 .get_op_info()
             self.dim = dim
             self.keep_dim = keep_dim
-            self.custom_argmin = ops.Custom("./infer_file/custom_callback.cc:aclnnArgMin",
+            self.custom_argmin = ops.Custom("aclnnArgMin",
                                             lambda x, dim, keep_dim: (x[1], x[2], x[3]), ms.dtype.int64,
                                             func_type="aot", bprop=None,
                                             reg_info=aclnn_reg_info)
@@ -88,18 +88,8 @@ def test_custom_mul_aclnn(context_mode):
     class CustomNet(Cell):
         def __init__(self, func, out_shape, bprop):
             super(CustomNet, self).__init__()
-            aclnn_reg_info = CustomRegOp("aclnnMul") \
-                .input(0, "x", "required") \
-                .input(1, "y", "required") \
-                .output(0, "z", "required") \
-                .dtype_format(DataType.F16_Default, DataType.F16_Default, DataType.F16_Default) \
-                .target("Ascend") \
-                .get_op_info()
-
             self.custom_mul = ops.Custom(func, out_shape, lambda x, _: x, func_type="aot", bprop=bprop,
-                                         reg_info=aclnn_reg_info)
-            # just for test case of custom v2
-            self.custom_mul.add_prim_attr("custom_inputs_type", ["tensor", "tensor"])
+                                         reg_info=None)
             self.add = P.Add()
             self.sub = P.Sub()
 
@@ -142,7 +132,68 @@ def test_custom_batch_norm_aclnn(context_mode):
                 .attr("training", "required", "bool") \
                 .attr("momentum", "required", "float") \
                 .attr("eps", "required", "float") \
-                .output(0, "output", "float") \
+                .output(0, "output", "required") \
+                .output(1, "saved_mean", "required") \
+                .output(2, "saved_variance", "required") \
+                .dtype_format(DataType.F16_Default, DataType.F16_Default, DataType.F16_Default, DataType.F16_Default,
+                              DataType.F16_Default, DataType.F16_Default, DataType.F16_Default, DataType.F16_Default) \
+                .target("Ascend") \
+                .get_op_info()
+
+            self.custom_batch_norm = ops.Custom(func, lambda x, scale, bias, mean, var, training, momentum, eps: (
+                x, scale, scale), lambda x, scale, bias, mean, var, training, momentum, eps: (x, x, x), func_type="aot",
+                                                bprop=None, reg_info=aclnn_reg_info)
+            # pylint: disable=protected-access
+            self.custom_batch_norm._generate_get_worspace_size_func_by_types(
+                "const aclTensor* input, const aclTensor* weight,const aclTensor * bias,"
+                "aclTensor * runningMean,aclTensor * runningVar, bool training, float momentum, "
+                "float eps,aclTensor * output, aclTensor * saveMean, aclTensor * saveInvstd,"
+                "uint64_t * workspaceSize, aclOpExecutor ** executor")
+            self.training = False
+            self.momentum = 0.1
+            self.eps = 1e-5
+
+        def construct(self, x, scale, bias, mean, var):
+            res = self.custom_batch_norm(x, scale, bias, mean, var, self.training, self.momentum, self.eps)
+            return res
+
+    context.set_context(mode=context_mode, save_graphs=False, save_graphs_path="./graphs",
+                        jit_config={"jit_level": "O0"})
+
+    x = Tensor((3 * np.ones(16)).reshape(2, 2, 1, 4).astype(np.float32))
+    scale = Tensor(np.ones(2).astype(np.float32))
+    bias = Tensor(np.ones(2).astype(np.float32))
+    mean = Tensor(np.ones(2).astype(np.float32))
+    variance = Tensor(np.ones(2).astype(np.float32))
+
+    expect = np.array([2.99999]).repeat(16, axis=0).astype(np.float32).reshape((2, 2, 1, 4))
+    net = CustomNet("aclnnBatchNorm")
+    output = net(x, scale, bias, mean, variance)[0]
+    assert np.allclose(output.asnumpy(), expect, rtol=1e-4, atol=1e-4)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE])
+def test_custom_batch_norm_double_aclnn(context_mode):
+    """
+    Feature: Custom op testcase
+    Description: test case for batch norm by custom
+    Expectation: the result match with numpy result
+    """
+
+    class CustomNet(Cell):
+        def __init__(self, func):
+            super(CustomNet, self).__init__()
+            aclnn_reg_info = CustomRegOp("aclnnBatchNorm") \
+                .input(0, "x", "required") \
+                .input(1, "scale", "required") \
+                .input(2, "bias", "required") \
+                .input(3, "mean", "required") \
+                .input(4, "var", "required") \
+                .attr("training", "required", "bool") \
+                .attr("momentum", "required", "double") \
+                .attr("eps", "required", "double") \
+                .output(0, "output", "required") \
                 .output(1, "saved_mean", "required") \
                 .output(2, "saved_variance", "required") \
                 .dtype_format(DataType.F16_Default, DataType.F16_Default, DataType.F16_Default, DataType.F16_Default,
@@ -171,9 +222,72 @@ def test_custom_batch_norm_aclnn(context_mode):
     variance = Tensor(np.ones(2).astype(np.float32))
 
     expect = np.array([2.99999]).repeat(16, axis=0).astype(np.float32).reshape((2, 2, 1, 4))
-    net = CustomNet("./infer_file/custom_callback.cc:aclnnBatchNorm")
+    net = CustomNet("aclnnBatchNorm")
     output = net(x, scale, bias, mean, variance)[0]
     assert np.allclose(output.asnumpy(), expect, rtol=1e-4, atol=1e-4)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE])
+def test_custom_arg_pool_2d_aclnn(context_mode):
+    """
+    Feature: Custom op testcase
+    Description: test case for AvgPool2D by custom
+    Expectation: the result match with numpy result
+    """
+
+    class CustomNet(Cell):
+        def __init__(self, func):
+            super(CustomNet, self).__init__()
+            reg_info = CustomRegOp("aclnnAvgPool2d") \
+                .input(0, "x", "required") \
+                .attr("kernel_size", "required", "listInt") \
+                .attr("stride", "required", "listInt") \
+                .attr("padding", "required", "listInt") \
+                .attr("ceil_mode", "required", "bool") \
+                .attr("count_include_pad", "required", "bool") \
+                .attr("divisor_override", "required", "int") \
+                .attr("cube_math_type", "required", "bool") \
+                .output(0, "output", "required") \
+                .dtype_format(DataType.F16_Default, DataType.F16_Default) \
+                .target("Ascend") \
+                .get_op_info()
+            self.kernel_size = (2, 2)
+            self.stride = (2, 2)
+            self.padding = (1, 1)
+            self.ceil_mode = False
+            self.count_include_pad = True
+            self.divisor_override = 0
+            self.cube_math_type = False
+            self.custom_avg_pool = ops.Custom(func, None,
+                                              lambda x, kernel_size, stride, padding, ceil_mode, count_include_pad,
+                                                     divisor_override, cube_math_type: x,
+                                              func_type="aot",
+                                              bprop=None, reg_info=reg_info)
+            self.custom_avg_pool.add_prim_attr("kernel_size", self.kernel_size)
+            self.custom_avg_pool.add_prim_attr("stride", self.stride)
+            self.custom_avg_pool.add_prim_attr("padding", self.padding)
+
+        def construct(self, x):
+            res = self.custom_avg_pool(x, self.kernel_size, self.stride, self.padding, self.ceil_mode,
+                                       self.count_include_pad, self.divisor_override, self.cube_math_type)
+            return res
+
+    context.set_context(mode=context_mode, save_graphs=False, save_graphs_path="./graphs",
+                        jit_config={"jit_level": "O0"})
+
+    image = Tensor(np.array([[[4.1702e-1, 7.2032e-1, 1.1437e-4, 3.0223e-1],
+                              [1.4676e-1, 9.2339e-2, 1.8626e-1, 3.4556e-1],
+                              [3.9677e-1, 5.3882e-1, 4.1919e-1, 6.8522e-1],
+                              [2.0445e-1, 8.7812e-1, 2.7338e-2, 6.7047e-1]]]).astype(np.float32))
+    net = CustomNet("./infer_file/custom_cpp_infer.cc:aclnnAvgPool2d")
+    output = net(image)
+
+    expected = np.array([[[0.1043, 0.1801, 0.0756],
+                          [0.1359, 0.3092, 0.2577],
+                          [0.0511, 0.2264, 0.1676]]]).astype(np.float32)
+
+    assert np.allclose(output.asnumpy(), expected, rtol=1e-4, atol=1e-4)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level4', card_mark='onecard', essential_mark='essential')
@@ -187,19 +301,10 @@ def test_custom_topk():
     class MoeSoftMaxTopkNet(Cell):
         def __init__(self, func, out_shape):
             super(MoeSoftMaxTopkNet, self).__init__()
-            reg_info = CustomRegOp("MoeSoftMaxTopk") \
-                .input(0, "x", "required") \
-                .attr("k", "required", "int") \
-                .output(0, "y", "required") \
-                .output(1, "indices", "required") \
-                .dtype_format(DataType.F32_Default, DataType.F32_Default, DataType.I32_Default) \
-                .target("Ascend") \
-                .get_op_info()
-
             self.k = 2
             self.moe_softmax_topk_custom = ops.Custom(func=func, out_shape=out_shape,
                                                       out_dtype=[mstype.float32, mstype.int32], func_type="aot",
-                                                      bprop=None, reg_info=reg_info)
+                                                      bprop=None, reg_info=None)
             # Used for infer shape
             self.moe_softmax_topk_custom.add_prim_attr("attr_k", self.k)
 

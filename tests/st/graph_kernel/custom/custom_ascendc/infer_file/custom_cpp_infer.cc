@@ -69,3 +69,30 @@ extern "C" std::vector<std::vector<int64_t>> aclnnMultiScaleDeformableAttnGradIn
   res_output_shape.emplace_back(out3_shape);
   return res_output_shape;
 }
+
+extern "C" std::vector<int64_t> aclnnAvgPool2dInferShape(int *ndims, int64_t **shapes, AotExtra *extra) {
+  std::vector<int64_t> output_shape;
+  auto input0_size = ndims[0];
+  auto kernel_size = extra->Attr<std::vector<int64_t>>("kernel_size");
+  auto stride = extra->Attr<std::vector<int64_t>>("stride");
+  auto padding = extra->Attr<std::vector<int64_t>>("padding");
+  (void)output_shape.emplace_back(shapes[0][0]);
+  auto h_out = (shapes[0][1] + 2 * padding[0] - kernel_size[0]) / stride[0] + 1;
+  auto w_out = (shapes[0][2] + 2 * padding[1] - kernel_size[1]) / stride[1] + 1;
+  output_shape.emplace_back(h_out);
+  output_shape.emplace_back(w_out);
+  return output_shape;
+}
+
+extern "C" std::vector<int64_t> aclnnCatInferShape(int *ndims, int64_t **shapes, AotExtra *extra) {
+  std::vector<int64_t> output_shape;
+  auto input0_size = ndims[0];
+  auto input1_size = ndims[1];
+  for (size_t i = 0; i < input0_size; i++) {
+    output_shape.emplace_back(shapes[0][i]);
+  }
+  output_shape[1] = shapes[0][1] + shapes[1][1];
+  return output_shape;
+}
+
+extern "C" TypeId aclnnCatInferType(std::vector<TypeId> type_ids, AotExtra *extra) { return type_ids[0]; }

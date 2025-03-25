@@ -95,6 +95,71 @@ void GetInferFilePathAndFuncName(const PrimitivePtr &primitive, std::string *fil
   }
 }
 
+void PrepareInferShapeParams(const std::string &kernel_name, const std::vector<AbstractBasePtr> &input_args,
+                             std::vector<int> *ndims, std::vector<std::vector<int64_t>> *shape_list) {
+  MS_EXCEPTION_IF_NULL(ndims);
+  MS_EXCEPTION_IF_NULL(shape_list);
+  for (size_t idx = 0; idx < input_args.size(); idx++) {
+    const auto &input_arg = input_args[idx];
+    MS_EXCEPTION_IF_NULL(input_arg);
+    MS_LOG(DEBUG) << "Custom op [" << kernel_name << "], input " << idx << " debug string: " << ToString(input_args);
+    MS_VLOG(VL_CUSTOM_OP) << "Custom op [" << kernel_name << "], input " << idx
+                          << " debug string: " << ToString(input_args);
+    if (input_arg->isa<mindspore::abstract::AbstractSequence>()) {
+      auto seq_input = input_arg->cast<mindspore::abstract::AbstractSequencePtr>();
+      auto elements = seq_input->elements();
+      for (size_t ele_idx = 0; ele_idx < elements.size(); ele_idx++) {
+        if (elements[ele_idx]->GetType()->object_type() != kObjectTypeTensorType) {
+          break;
+        }
+        auto params_shape_ptr = CheckAndConvertUtils::GetTensorInputShape(kernel_name, elements, ele_idx);
+        MS_EXCEPTION_IF_NULL(params_shape_ptr);
+        auto params_shape = params_shape_ptr->shape();
+        (void)ndims->emplace_back(SizeToInt(params_shape.size()));
+        (void)shape_list->emplace_back(params_shape);
+      }
+    }
+    if (input_arg->GetType()->object_type() != kObjectTypeTensorType) {
+      continue;
+    }
+    auto params_shape_ptr = CheckAndConvertUtils::GetTensorInputShape(kernel_name, input_args, idx);
+    MS_EXCEPTION_IF_NULL(params_shape_ptr);
+    auto params_shape = params_shape_ptr->shape();
+    (void)ndims->emplace_back(SizeToInt(params_shape.size()));
+    (void)shape_list->emplace_back(params_shape);
+  }
+}
+
+void PrePareInferTypeParams(const std::string &kernel_name, const std::vector<AbstractBasePtr> &input_args,
+                            std::vector<TypeId> *input_types) {
+  MS_EXCEPTION_IF_NULL(input_types);
+  for (size_t idx = 0; idx < input_args.size(); ++idx) {
+    const auto &input_arg = input_args[idx];
+    MS_EXCEPTION_IF_NULL(input_arg);
+    MS_LOG(DEBUG) << "Custom op [" << kernel_name << "], input " << idx << " debug string: " << ToString(input_args);
+    MS_VLOG(VL_CUSTOM_OP) << "Custom op [" << kernel_name << "], input " << idx
+                          << " debug string: " << ToString(input_args);
+    if (input_arg->isa<mindspore::abstract::AbstractSequence>()) {
+      auto seq_input = input_arg->cast<mindspore::abstract::AbstractSequencePtr>();
+      auto elements = seq_input->elements();
+      for (size_t ele_idx = 0; ele_idx < elements.size(); ele_idx++) {
+        if (elements[ele_idx]->GetType()->object_type() != kObjectTypeTensorType) {
+          break;
+        }
+        auto type = CheckAndConvertUtils::GetTensorInputType(kernel_name, elements, ele_idx);
+        MS_EXCEPTION_IF_NULL(type);
+        (void)input_types->emplace_back(type->type_id());
+      }
+    }
+    if (input_arg->GetType()->object_type() != kObjectTypeTensorType) {
+      continue;
+    }
+    auto type = CheckAndConvertUtils::GetTensorInputType(kernel_name, input_args, idx);
+    MS_EXCEPTION_IF_NULL(type);
+    (void)input_types->emplace_back(type->type_id());
+  }
+}
+
 BaseShapePtr CustomInferShapeByCPP(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) {
   const auto &kernel_name = GetValue<std::string>(primitive->GetAttr(kRegOpName));
   MS_LOG(DEBUG) << "Start infer type for " << kernel_name;
@@ -103,18 +168,7 @@ BaseShapePtr CustomInferShapeByCPP(const PrimitivePtr &primitive, const std::vec
   std::vector<int> ndims;
   std::vector<std::vector<int64_t>> shape_list;
   BaseShapePtr res_shape = nullptr;
-  for (size_t idx = 0; idx < input_args.size(); idx++) {
-    auto input_arg = input_args[idx];
-    MS_EXCEPTION_IF_NULL(input_arg);
-    if (input_arg->GetType()->object_type() != kObjectTypeTensorType) {
-      continue;
-    }
-    auto params_shape_ptr = CheckAndConvertUtils::GetTensorInputShape(kernel_name, input_args, idx);
-    MS_EXCEPTION_IF_NULL(params_shape_ptr);
-    auto params_shape = params_shape_ptr->shape();
-    ndims.push_back(SizeToInt(params_shape.size()));
-    (void)shape_list.emplace_back(params_shape);
-  }
+  PrepareInferShapeParams(kernel_name, input_args, &ndims, &shape_list);
   (void)std::transform(std::begin(shape_list), std::end(shape_list), std::back_inserter(input_shapes),
                        [](auto &v) { return &v[0]; });
 
@@ -169,11 +223,7 @@ TypePtr CustomInferTypeByCPP(const PrimitivePtr &primitive, const std::vector<Ab
   MS_LOG(DEBUG) << "Start infer type for " << kernel_name;
   MS_VLOG(VL_CUSTOM_OP) << "Start infer type for " << kernel_name;
   std::vector<TypeId> input_types;
-  for (size_t idx = 0; idx < input_args.size(); ++idx) {
-    auto type = CheckAndConvertUtils::GetTensorInputType(kernel_name, input_args, idx);
-    MS_EXCEPTION_IF_NULL(type);
-    input_types.push_back(type->type_id());
-  }
+  PrePareInferTypeParams(kernel_name, input_args, &input_types);
 
   AotExtraImpl attrs;
   attrs.SetKernelPrim(primitive);
