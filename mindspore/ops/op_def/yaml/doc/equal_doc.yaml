@@ -1,8 +1,6 @@
 equal:
   description: |
-    Computes the equivalence between two tensors element-wise.
-
-    The second argument can be a number or a tensor whose shape is broadcastable with the first argument and vise versa.
+    Compute the equivalence of the two inputs element-wise.
 
     .. math::
 
@@ -12,36 +10,30 @@ equal:
             \end{cases}
 
     Note:
-        - `input` and `other` comply with the implicit type conversion rules to make the data types consistent.
+        - Support implicit type conversion.
         - The input must be two Tensors, or a Tensor and a Scalar.
         - The shapes of the inputs can be broadcasted to each other.
 
     Args:
-        input (Union[Tensor, Number]): The first input is a number or
-            a tensor whose data type is number.
-        other (Union[Tensor, Number]): The second input is a number or
-            a tensor whose data type is number.
+        input (Union[Tensor, Number]): The first input.
+        other (Union[Tensor, Number]): The second input.
 
     Returns:
-        Tensor, the shape is the same as the one after broadcasting, and the data type is bool.
-
-    Raises:
-        TypeError: If neither `input` nor `other` is a Tensor or number.Number.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import Tensor, ops
         >>> # case 1: The shape of two inputs are different
-        >>> input = Tensor([1, 2, 3], mindspore.float32)
-        >>> output = ops.equal(input, 2.0)
+        >>> input = mindspore.tensor([1, 2, 3], mindspore.float32)
+        >>> output = mindspore.ops.equal(input, 2.0)
         >>> print(output)
-        [False True False]
+        [False  True False]
         >>> # case 2: The shape of two inputs are the same
-        >>> input = Tensor([1, 2, 3], mindspore.int32)
-        >>> other = Tensor([1, 2, 4], mindspore.int32)
-        >>> output = ops.equal(input, other)
+        >>> input = mindspore.tensor([1, 2, 3], mindspore.int32)
+        >>> other = mindspore.tensor([1, 2, 4], mindspore.int32)
+        >>> output = mindspore.ops.equal(input, other)
         >>> print(output)
         [ True  True False]
