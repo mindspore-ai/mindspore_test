@@ -46,13 +46,17 @@ class make_tuple_from_fprop_eliminater : public AnfVisitor {
     auto cnode = dyn_cast<CNode>(node);
     auto &inputs = cnode->inputs();
     // {prim::kPrimMakeTuple, MakeTupleCNode, PartialCNode}
-    if (inputs.size() != 3) {
+    if (inputs.size() < 3) {
       return nullptr;
     }
     const auto &sub_tuple = inputs[1];
-    const auto &sub_partial = inputs[2];
-    if (!IsPrimitiveCNode(sub_tuple, prim::kPrimMakeTuple) || !IsPrimitiveCNode(sub_partial, prim::kPrimPartial)) {
+    if (!IsPrimitiveCNode(sub_tuple, prim::kPrimMakeTuple)) {
       return nullptr;
+    }
+    for (size_t i = 2; i < inputs.size(); ++i) {
+      if (!IsPrimitiveCNode(inputs[i], prim::kPrimPartial)) {
+        return nullptr;
+      }
     }
     std::vector<AnfNodePtr> new_tuple_element{NewValueNode(prim::kPrimMakeTuple)};
     const auto &sub_tuple_cnode = dyn_cast<CNode>(sub_tuple);
@@ -60,7 +64,9 @@ class make_tuple_from_fprop_eliminater : public AnfVisitor {
     for (size_t i = 1; i < sub_tuple_elements.size(); i++) {
       (void)new_tuple_element.emplace_back(sub_tuple_elements[i]);
     }
-    (void)new_tuple_element.emplace_back(sub_partial);
+    for (size_t i = 2; i < inputs.size(); ++i) {
+      (void)new_tuple_element.emplace_back(inputs[i]);
+    }
     const auto &new_node = func_graph->NewCNode(new_tuple_element);
     const auto &manager = opt->resource()->manager();
     ModifyAllUser(node, manager, sub_tuple_elements.size() - 1);
@@ -119,13 +125,11 @@ class make_tuple_from_fprop_eliminater : public AnfVisitor {
       }
       const auto &new_node = fg->NewCNode(new_tuple_element);
       manager->Replace(use_node, new_node);
-    } else if (index == 1) {
-      const auto &new_node = fg->NewCNode(
-        {NewValueNode(prim::kPrimTupleGetItem), source_node, NewValueNode(MakeValue(SizeToLong(tuple_size)))});
+    } else {
+      const auto &new_node = fg->NewCNode({NewValueNode(prim::kPrimTupleGetItem), source_node,
+                                           NewValueNode(MakeValue(SizeToLong(tuple_size + index - 1)))});
       (void)visit_.emplace_back(new_node);
       manager->Replace(use_node, new_node);
-    } else {
-      MS_LOG(EXCEPTION) << "Tuple Getitem out of index.";
     }
   }
 
