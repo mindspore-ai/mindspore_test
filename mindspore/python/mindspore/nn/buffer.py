@@ -22,8 +22,8 @@ __all__ = ["Buffer"]
 # Metaclass to combine _TensorMeta and the instance check override for Buffer.
 class _BufferMeta(_TensorMeta):
     # Make `isinstance(t, Buffer)` return True for custom tensor instances that have the _is_buffer flag.
-    def __instancecheck__(self, instance):  # pylint: disable=C0203
-        if self is Buffer:
+    def __instancecheck__(cls, instance):
+        if cls is Buffer:
             if isinstance(instance, Tensor) and getattr(instance, "_is_buffer", False):
                 return True
         return super().__instancecheck__(instance)
