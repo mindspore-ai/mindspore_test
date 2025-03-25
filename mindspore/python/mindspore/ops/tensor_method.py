@@ -273,6 +273,8 @@ from mindspore.ops.operations.manually_defined import tile
 
 # 110 topk
 from mindspore.ops.function.array_func import topk
+from mindspore.ops.function.nn_func import softmax, softmax_ext
+
 # 111 transpose
 from mindspore.ops.auto_generate import transpose, transpose_ext
 # 112 tril
@@ -1206,6 +1208,20 @@ def tensor_topk(input, k, dim=-1, largest=True, sorted=True):
 
 def deprecated_tensor_topk(input, k, dim=None, largest=True, sorted=True):
     return topk(input, k, dim, largest, sorted)
+
+
+def tensor_softmax(input, dim, *, dtype=None):
+    """
+    For details, please refer to :func:`mindspore.ops.softmax`.
+    """
+    return softmax_ext(input, dim, dtype=dtype)
+
+
+def deprecated_tensor_softmax(input, axis, dtype=None):
+    """
+    For details, please refer to :func:`mindspore.ops.softmax`.
+    """
+    return softmax(input, axis, dtype=dtype)
 
 
 # 111 transpose

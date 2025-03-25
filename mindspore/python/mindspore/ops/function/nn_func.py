@@ -3171,7 +3171,7 @@ def softmax(input, axis=-1, *, dtype=None):
     return softmax_impl(input, axis)
 
 
-def softmax_ext(input, dim=None, dtype=None):
+def softmax_ext(input, dim=None, *, dtype=None):
     r"""
     Applies the Softmax operation to the input tensor on the specified axis.
     Suppose a slice in the given axis :math:`dim`, then for each element :math:`input_i`,

@@ -2036,12 +2036,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('tensor_scatter_max')(self, indices, updates)
 
-    def softmax(self, axis, dtype=None):
-        """
-        For details, please refer to :func:`mindspore.ops.softmax`.
-        """
-        return tensor_operator_registry.get('softmax')(self, axis, dtype=dtype)
-
     def fill(self, value):
         """
         `Tensor.fill` is deprecated, please use `ops.fill` instead.
