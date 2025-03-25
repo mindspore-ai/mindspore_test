@@ -6651,27 +6651,23 @@ def atleast_3d(inputs):
 
 def view_as_real(input):
     r"""
-    View a complex Tensor as a real Tensor.
-    The size of last dimension of the returned real Tensor is 2, and the last dimension is composed of
-    the real and imaginary components of complex numbers.
+    Return a real tensor with the last dimension of size 2, composed of the real and imaginary parts of the complex
+    elements in the input tensor.
 
     Args:
-        input (Tensor): the input must be a complex Tensor.
+        input (Tensor): The complex input tensor.
 
     Returns:
-        A real Tensor.
-
-    Raises:
-        TypeError: If the input Tensor is not a complex Tensor.
+        A real tensor.
 
     Supported Platforms:
         ``GPU`` ``CPU``
 
     Examples:
-        >>> from mindspore import Tensor, ops
-        >>> from mindspore import dtype as mstype
-        >>> x = Tensor([2+1j,2+3j,2-1j,2], mstype.complex64)
-        >>> print(ops.view_as_real(x))
+        >>> import mindspore
+        >>> input = mindspore.tensor([2+1j,2+3j,2-1j,2])
+        >>> output = mindspore.ops.view_as_real(input)
+        >>> print(output)
         [[ 2.  1.]
          [ 2.  3.]
          [ 2. -1.]
@@ -6694,29 +6690,32 @@ def vstack(inputs):
     and then be concatenated along the first axis.
 
     Args:
-        inputs (Union(List[tensor], Tuple[tensor])): A sequence of 1-D or 2-D tensors.
-            The tensors must have the same shape along all but the first axis.
-            1-D tensors must have the same shape.
+        inputs (Union(List[tensor], Tuple[tensor])): The 1-D or 2-D input.
 
     Returns:
-        Tensor, formed by stacking the given tensors, will be at least 3-D.
-        The output shape is similar to the output of `numpy.vstack()` function.
-
-    Raises:
-        TypeError: If `inputs` is not list or tuple.
-        ValueError: If `inputs` is empty.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import mindspore.numpy as np
-        >>> x1 = np.array([3, 1, 4])
-        >>> x2 = np.array([1, 5, 9])
-        >>> out = ops.vstack([x1, x2])
-        >>> print(out)
-        [[3 1 4]
-         [1 5 9]]
+        >>> import mindspore
+        >>> x1 = mindspore.tensor([1, 2, 3])
+        >>> x2 = mindspore.tensor([4, 5, 6])
+        >>> mindspore.ops.vstack((x1, x2))
+        Tensor(shape=[2, 3], dtype=Int64, value=
+        [[1, 2, 3],
+         [4, 5, 6]])
+        >>> x1 = mindspore.tensor([[1],[2],[3]])
+        >>> x2 = mindspore.tensor([[4],[5],[6]])
+        >>> mindspore.ops.vstack([x1, x2])
+        Tensor(shape=[6, 1], dtype=Int64, value=
+        [[1],
+         [2],
+         [3],
+         [4],
+         [5],
+         [6]])
     """
     if not isinstance(inputs, (tuple, list)):
         msg = f"For 'vstack', list or tuple of tensors are required, but got {type(inputs)}"
@@ -8613,39 +8612,33 @@ def lu_unpack(LU_data, LU_pivots, unpack_data=True, unpack_pivots=True):
 
 def renorm(input, p, axis, maxnorm):
     """
-    Renormalizes the sub-tensors along dimension `axis`, and each sub-tensor's p-norm should not exceed the
-    `maxnorm`. The values of current sub-tensor don't need change if the p-norm of the sub-tensor is less than
-    `maxnorm`. Otherwise the sub-tensor needs to be modified to the original value of the corresponding position
-    divided by the p-norm of the substensor and then multiplied by `maxnorm`.
+    Returns a tensor where each subtensor along the specified dimension is renormalized such that its `p` norm is less
+    than or equal to `maxnorm`. If the `p` norm exceeds `maxnorm`, return the values that are obtained by dividing the
+    original values of the subtensor by its `p` norm and then multiplying by `maxnorm`.
 
     Args:
-        input (Tensor): A Tensor, types: float32 or float16.
-        p (int): Power of norm calculation.
-        axis (int): The dimension that expected to get the slice-tensor.
-        maxnorm (float32): Max norm.
+        input (Tensor): The input tensor.
+        p (int): The power of norm calculation.
+        axis (int): Specify the axis for computation.
+        maxnorm (float32): The max norm specified.
 
     Returns:
-        Tensor, has the same dtype and shape as input.
-
-    Raises:
-        TypeError: If dtype of `p` is not int.
-        TypeError: If dtype of `axis` is not int.
-        TypeError: If dtype of `maxnorm` is not float32.
-        ValueError: If the value of `p` less than 1.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([[1, 1, 1], [2, 2, 2], [3, 3, 3]]), mindspore.float32)
-        >>> y = ops.renorm(x, p=1, axis=0, maxnorm=5.)
-        >>> print(y)
-        [[1.       1.        1.        ]
-        [1.6666666 1.6666666 1.6666666 ]
-        [1.6666667 1.6666667 1.6666667 ]]
+        >>> input = mindspore.tensor([[1., 1, 1], [2, 2, 2], [3, 3, 3]])
+        >>> output = mindspore.ops.norm(input, 1, 1)
+        >>> print(output)
+        [3. 6. 9.]
+        >>> output = mindspore.ops.renorm(input, 1, 0, 6.)
+        >>> print(output)
+        [[1. 1. 1.]
+         [2. 2. 2.]
+         [2. 2. 2.]]
     """
     renorm_ = _get_cache_prim(Renorm)(p, axis, maxnorm)
     return renorm_(input)
@@ -10292,47 +10285,37 @@ def cholesky_solve(input, input2, upper=False):
 
 def cross(input, other, dim=None):
     r"""
-    Computes the cross product of `input` and `other` in dimension `dim`.
-    `input` and `other` must have the same shape, and the size of their `dim` dimension should be `3`.
-    If `dim` is not specified, it is set to be the first dimension found with the size `3`.
+    Compute the cross product of two input tensors along the specified dimension.
+
+    Note:
+        `input` and `other` must have the same shape, and the size of their `dim` dimension should be `3`.
+        If `dim` is not specified, it is set to be the first dimension found with the size `3`.
 
     Args:
-        input (Tensor): input is a tensor.
-        other (Tensor):  The other Tensor, `other` must have the same shape and type as input `input`, and
-            the size of their `dim` dimension should be `3`.
-        dim (int, optional): dimension to apply cross product in. if `dim` is None, it is set to be the first dimension
-            found with the size `3`. Default: ``None``.
+        input (Tensor): The first input tensor.
+        other (Tensor):  The second input tensor.
+        dim (int, optional): Specify the dimension for computation. Default ``None``.
 
     Returns:
-        Tensor, has the same shape and type as `input`.
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
-        TypeError: If `other` is not a Tensor.
-        TypeError: If the type of `input` is not the same as that of `other`.
-        ValueError: If `input` and `other` not have the same size, and the size of their `dim` dimension not be `3`.
-        ValueError: If `input` and `other` not have the same shape.
-        ValueError: If `dim` is out of range, `dim` should be [-len(input.shape), len(input.shape)-1].
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``CPU``
 
     Examples:
-        >>> from mindspore import Tensor, ops
-        >>> # case 1: dim=None.
-        >>> x = Tensor([[1, 2, 3], [1, 2, 3]])
-        >>> other = Tensor([[4, 5, 6], [4, 5, 6]])
-        >>> output = ops.cross(x, other)
-        >>> print(output)
-        [[-3  6 -3]
-         [-3  6 -3]]
-        >>> # case 2: dim=1.
-        >>> x = Tensor([[1, 2, 3], [1, 2, 3]])
-        >>> other = Tensor([[4, 5, 6], [4, 5, 6]])
-        >>> output = ops.cross(x, other, dim=1)
-        >>> print(output)
-        [[-3  6 -3]
-         [-3  6 -3]]
+        >>> import mindspore
+        >>> input = mindspore.tensor([[1, 2, 3], [1, 2, 3], [1, 2, 3]])
+        >>> other = mindspore.tensor([[4, 5, 6], [4, 5, 6], [4, 5, 6]])
+        >>> mindspore.ops.cross(input, other)
+        Tensor(shape=[3, 3], dtype=Int64, value=
+        [[0, 0, 0],
+         [0, 0, 0],
+         [0, 0, 0]])
+        >>> mindspore.ops.cross(input, other, dim=1)
+        Tensor(shape=[3, 3], dtype=Int64, value=
+        [[-3,  6, -3],
+         [-3,  6, -3],
+         [-3,  6, -3]])
     """
     if dim is None:
         dim = -65530

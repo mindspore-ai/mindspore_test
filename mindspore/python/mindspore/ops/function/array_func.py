@@ -474,7 +474,9 @@ def hamming_window(window_length, periodic=True, alpha=0.54, beta=0.46, *, dtype
 
 def where(condition, input, other):
     r"""
-    Selects elements from `input` or `other` based on `condition` and returns a tensor.
+    Return a tensor in which the elements are selected from `input` or `other` based on the `condition`.
+
+    Support broadcasting.
 
     .. math::
         output_i = \begin{cases} input_i,\quad &if\ condition_i \\ other_i,\quad &otherwise \end{cases}
@@ -485,27 +487,22 @@ def where(condition, input, other):
         other (Union[Tensor, Scalar]): When `condition` is False, values to select from.
 
     Returns:
-        Tensor, elements are selected from `input` and `other`.
-
-    Raises:
-        TypeError: If `condition` is not a Tensor.
-        TypeError: If both `input` and `other` are scalars.
-        ValueError: If `condition`, `input` and `other` can not broadcast to each other.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> from mindspore import dtype as mstype
-        >>> a = Tensor(np.arange(4).reshape((2, 2)), mstype.float32)
-        >>> b = Tensor(np.ones((2, 2)), mstype.float32)
-        >>> condition = a < 3
-        >>> output = ops.where(condition, a, b)
-        >>> print(output)
-        [[0. 1.]
-         [2. 1.]]
+        >>> import mindspore
+        >>> input = mindspore.tensor([[0, 1],
+        ...                           [2, 3]])
+        >>> other = mindspore.tensor([[1, 1],
+        ...                           [1, 1]])
+        >>> condition = input < 3
+        >>> mindspore.ops.where(condition, input, other)
+        Tensor(shape=[2, 2], dtype=Int64, value=
+        [[0, 1],
+         [2, 1]])
     """
     return tensor_select_(condition, input, other)
 
@@ -2025,33 +2022,24 @@ def stack(tensors, axis=0):
 
 def unstack(input_x, axis=0):
     r"""
-    Unstacks tensor in specified axis, this is the opposite of :func:`mindspore.ops.stack`.
-    Assuming input is a tensor of rank `R`, output tensors will have rank `(R-1)`.
+    Unstack the input tensor along the specified axis.
 
     Args:
-        input_x (Tensor): The shape is :math:`(x_1, x_2, ..., x_R)`.
-            A tensor to be unstacked and the rank of the tensor must be greater than 0.
-        axis (int): Dimension along which to unpack. Default: ``0`` .
-            Negative values wrap around. The range is [-R, R).
+        input_x (Tensor): The input tensor.
+        axis (int): The specified axis. Default ``0`` .
 
     Returns:
-        A tuple of tensors, the shape of each objects is the same.
-        Given a tensor of shape :math:`(x_1, x_2, ..., x_R)`. If :math:`0 \le axis`,
-        the shape of tensor in output is :math:`(x_1, x_2, ..., x_{axis}, x_{axis+2}, ..., x_R)`.
-
-    Raises:
-        ValueError: If axis is out of the range [-len(input_x.shape), len(input_x.shape)).
+        Tuple of tensors
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input_x = Tensor(np.array([[1, 1, 1, 1], [2, 2, 2, 2]]))
-        >>> output = ops.unstack(input_x, 0)
-        >>> print(output)
-        (Tensor(shape=[4], dtype=Int64, value= [1, 1, 1, 1]), Tensor(shape=[4], dtype=Int64, value= [2, 2, 2, 2]))
+        >>> import mindspore
+        >>> input = mindspore.tensor([[1, 1, 1, 1], [2, 2, 2, 2]])
+        >>> mindspore.ops.unstack(input, 0)
+        (Tensor(shape=[4], dtype=Int64, value= [1, 1, 1, 1]),
+         Tensor(shape=[4], dtype=Int64, value= [2, 2, 2, 2]))
     """
     _unstack = _get_cache_prim(P.Unstack)(axis)
     return _unstack(input_x)
@@ -2133,34 +2121,30 @@ def unbind_ext(input, dim=0):
 
 def unsqueeze(input, dim):
     """
-    Adds an additional dimension to `input` at the given dim.
+    Adds an additional dimension to the input tensor at the given dimension.
 
     Args:
-        input (Tensor): The shape of tensor is :math:`(n_1, n_2, ..., n_R)`.
-        dim (int): Specifies the dimension index at which to expand
-            the shape of `input`. The value of `dim` must be in the range
-            `[-input.ndim-1, input.ndim]`. Only constant value is allowed.
+        input (Tensor): The input tensor.
+        dim (int): The dimension specified.
 
     Returns:
-        Tensor, the shape of tensor is :math:`(1, n_1, n_2, ..., n_R)` if the
-        value of `dim` is 0. It has the same data type as `input`.
-
-    Raises:
-        TypeError: If `dim` is not an int.
-        ValueError: If `dim` is not in the valid range :math:`[-input.ndim-1, input.ndim]`.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input_tensor = Tensor(np.array([[2, 2], [2, 2]]), mindspore.float32)
-        >>> output = ops.unsqueeze(input_tensor, dim=0)
-        >>> print(output)
-        [[[2. 2.]
-          [2. 2.]]]
+        >>> input = mindspore.tensor([1, 2, 3, 4])
+        >>> mindspore.ops.unsqueeze(input, 0)
+        Tensor(shape=[1, 4], dtype=Int64, value=
+        [[1, 2, 3, 4]])
+        >>> mindspore.ops.unsqueeze(input, 1)
+        Tensor(shape=[4, 1], dtype=Int64, value=
+        [[1],
+         [2],
+         [3],
+         [4]])
     """
     return expand_dims(input, dim)
 
@@ -5614,30 +5598,44 @@ def tensor_split(input, indices_or_sections, axis=0):
 
 def vsplit(input, indices_or_sections):
     """
-    Splits `input` with two or more dimensions, into multiple sub-tensors vertically
+    Split the input tensor with two or more dimensions, into multiple sub-tensors vertically
     according to `indices_or_sections`.
 
     It is equivalent to `ops.tensor_split` with :math:`axis=0` .
 
     Args:
-        input (Tensor): A Tensor to be divided.
-        indices_or_sections (Union[int, tuple(int), list(int)]): See argument in :func:`mindspore.ops.tensor_split`.
+        input (Tensor): The input tensor.
+        indices_or_sections (Union[int, tuple(int), list(int)]): See `indices_or_sections` argument in
+            :func:`mindspore.ops.tensor_split`.
 
     Returns:
-        A list of sub-tensors.
+        Tuple of tensors.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input_x = np.arange(9).reshape((3, 3)).astype('float32')
-        >>> output = ops.vsplit(Tensor(input_x), 3)
-        >>> print(output)
-        (Tensor(shape=[1, 3], dtype=Float32, value=[[ 0.00000000e+00,  1.00000000e+00,  2.00000000e+00]]),
-         Tensor(shape=[1, 3], dtype=Float32, value=[[ 3.00000000e+00,  4.00000000e+00,  5.00000000e+00]]),
-         Tensor(shape=[1, 3], dtype=Float32, value=[[ 6.00000000e+00,  7.00000000e+00,  8.00000000e+00]]))
+        >>> import mindspore
+        >>> input = mindspore.tensor([[ 0,  1,  2,  3],
+        ...                           [ 4,  5,  6,  7],
+        ...                           [ 8,  9, 10, 11],
+        ...                           [12, 13, 14, 15]])
+        >>> mindspore.ops.vsplit(input, 2)
+        (Tensor(shape=[2, 4], dtype=Int64, value=
+         [[0, 1, 2, 3],
+          [4, 5, 6, 7]]),
+         Tensor(shape=[2, 4], dtype=Int64, value=
+         [[ 8,  9, 10, 11],
+          [12, 13, 14, 15]]))
+        >>> mindspore.ops.vsplit(input, [3, 6])
+        (Tensor(shape=[3, 4], dtype=Int64, value=
+         [[ 0,  1,  2,  3],
+          [ 4,  5,  6,  7],
+          [ 8,  9, 10, 11]]),
+         Tensor(shape=[1, 4], dtype=Int64, value=
+         [[12, 13, 14, 15]]),
+         Tensor(shape=[0, 4], dtype=Int64, value=
+         ))
     """
     if not isinstance(input, Tensor):
         raise TypeError(f'expect `x` is a Tensor, but got {type(input)}')

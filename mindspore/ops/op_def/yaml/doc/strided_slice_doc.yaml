@@ -2,18 +2,12 @@ strided_slice:
     description: |
         Extracts a strided slice of a Tensor based on `begin/end` index and `strides`.
 
-        This operation extracts a fragment of size (end-begin)/strides from the given 'input_tensor'.
-        Starting from the beginning position, the fragment continues adding strides to the index until
-        all dimensions are not less than the ending position.
-
         Note:
             - `begin` , `end` and `strides` must have the same shape.
             - `begin` , `end` and `strides` are all 1-D Tensor,  and their shape size
               must not greater than the dim of `input_x`.
 
-        During the slicing process, the fragment (end-begin)/strides are extracted from each dimension.
-
-        Example: For Tensor `input_x` with shape :math:`(5, 6, 7)`,
+        Example: For `input_x` with shape :math:`(5, 6, 7)`,
         set `begin`, `end` and `strides` to (1, 3, 2), (3, 5, 6),
         (1, 1, 2) respectively, then elements from index 1 to 3 are extrected for dim 0, index 3 to 5
         are extrected for dim 1 and index 2 to 6 with a `stirded` of 2 are extrected for dim 2, this
@@ -73,84 +67,38 @@ strided_slice:
             use at the same time, it might incur unexpected result.
 
         Args:
-            input_x (Tensor): The input Tensor to be extracted from.
-            begin (tuple[int]): A tuple which represents the location where to start.
-            end (tuple[int]): A tuple or which represents the maximum location where to end.
-            strides (tuple[int]): A tuple which represents the strides is continuously added
-                before reaching the maximum location. Only int is allowed, it can be negative
-                which results in reversed slicing.
-            begin_mask (int, optional): Starting index of the slice. Default: ``0`` .
-            end_mask (int, optional): Ending index of the slice. Default: ``0`` .
-            ellipsis_mask (int, optional): An int mask, ignore slicing operation when set to 1. Default: ``0`` .
-            new_axis_mask (int, optional): An int mask for adding new dims. Default: ``0`` .
-            shrink_axis_mask (int, optional): An int mask for shrinking dims. Default: ``0`` .
+            input_x (Tensor): The input tensor.
+            begin (tuple[int]): Specify the index to start slicing.
+            end (tuple[int]): Specify the index to end slicing.
+            strides (tuple[int]): Specify the step size for slicing in each dimension.
+            begin_mask (int, optional): Starting index of the slice. Default ``0`` .
+            end_mask (int, optional): Ending index of the slice. Default ``0`` .
+            ellipsis_mask (int, optional): An int mask, ignore slicing operation when set to 1. Default ``0`` .
+            new_axis_mask (int, optional): An int mask for adding new dims. Default ``0`` .
+            shrink_axis_mask (int, optional): An int mask for shrinking dims. Default ``0`` .
 
         Returns:
-            Tensor, return the extracts a strided slice of a Tensor based on `begin/end` index and `strides`.
-
-        Raises:
-            TypeError: If `begin_mask`, `end_mask`, `ellipsis_mask`, `new_axis_mask` or
-                `shrink_axis_mask` is not an int.
-            TypeError: If `begin`, `end` or `strides` is not tuple[int].
-            ValueError: If `begin_mask`, `end_mask`, `ellipsis_mask`, `new_axis_mask` or
-                `shrink_axis_mask` is less than 0.
-            ValueError: If `begin`, `end` and `strides` have different shapes.
+            Tensor
 
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``
 
         Examples:
-            >>> import mindspore
-            >>> from mindspore import Tensor, ops
-            >>> input_x = Tensor([[[1, 1, 1], [2, 2, 2]], [[3, 3, 3], [4, 4, 4]],
-            ...                   [[5, 5, 5], [6, 6, 6]]], mindspore.float32)
-            >>> output = ops.strided_slice(input_x, (1, 0, 2), (3, 1, 3), (1, 1, 1))
-            >>> # Take this " output = strided_slice(input_x, (1, 0, 2), (3, 1, 3), (1, 1, 1)) " as an example,
-            >>> # start = [1, 0, 2] , end = [3, 1, 3], strides = [1, 1, 1], Find a segment of (start, end),
-            >>> # note that end is an open interval
-            >>> # To facilitate understanding, this operator can be divided into three steps:
-            >>> # Step 1: Calculation of the first dimension:
-            >>> # start = 1, end = 3, strides = 1, So can take 1st, 2nd rows, and then gets the final output at this time.
-            >>> # output_1th =
-            >>> # [
-            >>> #     [
-            >>> #         [3,3,3]
-            >>> #         [4,4,4]
-            >>> #     ]
-            >>> #     [
-            >>> #         [5,5,5]
-            >>> #         [6,6,6]
-            >>> #     ]
-            >>> # ]
-            >>> # Step 2: Calculation of the second dimension
-            >>> # 2nd dimension, start = 0, end = 1, strides = 1. So only 0th rows
-            >>> # can be taken, and the output at this time.
-            >>> # output_2nd =
-            >>> # [
-            >>> #     [
-            >>> #         [3,3,3]
-            >>> #     ]
-            >>> #     [
-            >>> #         [5,5,5]
-            >>> #     ]
-            >>> # ]
-            >>> # Step 3: Calculation of the third dimension
-            >>> # 3nd dimension,start = 2, end = 3, strides = 1, So can take 2th cols,
-            >>> # and you get the final output at this time.
-            >>> # output_3ed =
-            >>> # [
-            >>> #     [
-            >>> #         [3]
-            >>> #     ]
-            >>> #     [
-            >>> #         [5]
-            >>> #     ]
-            >>> # ]
-            >>> # The final output after finishing is:
-            >>> print(output)
-            [[[3.]]
-            [[5.]]]
-            >>> # another example like :
-            >>> output = strided_slice(input_x, (1, 0, 0), (2, 1, 3), (1, 1, 1))
-            >>> print(output)
-            [[[3. 3. 3.]]]
+            >>> import mindspore[3. 6. 9.]
+            >>> input = mindspore.tensor([[[1, 1, 1], 
+            ...                            [2, 2, 2]],
+            ...                           [[3, 3, 3], 
+            ...                            [4, 4, 4]],
+            ...                           [[5, 5, 5], 
+            ...                            [6, 6, 6]]])
+            >>> mindspore.ops.strided_slice(input, [1, 0, 0], [2, 1, 3], [1, 1, 1]) 
+            Tensor(shape=[1, 1, 3], dtype=Int64, value=
+            [[[3, 3, 3]]])
+            >>> mindspore.ops.strided_slice(input, [1, 0, 0], [2, 2, 3], [1, 1, 1]) 
+            Tensor(shape=[1, 2, 3], dtype=Int64, value=
+            [[[3, 3, 3],
+              [4, 4, 4]]])
+            >>> mindspore.ops.strided_slice(input, [1, -1, 0], [2, -3, 3], [1, -1, 1]) 
+            Tensor(shape=[1, 2, 3], dtype=Int64, value=
+            [[[4, 4, 4],
+              [3, 3, 3]]])
