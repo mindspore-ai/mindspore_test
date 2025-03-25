@@ -1689,7 +1689,7 @@ void CheckObjAttrValid(const TypePtr &data_type, const std::string &item_name, c
                       << "Try to use the '" << data_type_str << "." << item_name << "' externally "
                       << "such as initialized in the method '__init__' before assigning"
                       << ".\nFor more details, please refer to "
-                      << "https://www.mindspore.cn/docs/zh-CN/master/model_train/program_form/static_graph.html \n";
+                      << "https://www.mindspore.cn/tutorials/zh-CN/master/compile/static_graph.html \n";
   }
 }
 
@@ -3050,6 +3050,7 @@ EvalResultPtr PrimitiveToMetaEvaluator::EvalPrim(const AnalysisEnginePtr &engine
   const auto &meta_op = prim::CreateMetaImpl(op_name);
   MS_EXCEPTION_IF_NULL(meta_op);
   meta_op->set_prim(prim_);
+  meta_op->set_manager(fg->manager());
   AnfNodePtrList op_inputs{NewValueNode(meta_op)};
   constexpr size_t index_data = 1;
   (void)std::transform(cnode->weak_inputs().begin() + index_data, cnode->weak_inputs().end(),
