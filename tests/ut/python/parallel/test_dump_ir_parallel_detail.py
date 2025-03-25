@@ -1,4 +1,4 @@
-# Copyright 2024 Huawei Technologies Co., Ltd
+# Copyright 2024-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,16 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+
+import os
 import numpy as np
+
 import mindspore as ms
 import mindspore.nn as nn
 from mindspore import Tensor, Parameter
 from mindspore import context
 from mindspore.ops import composite as C
 from mindspore.ops import operations as P
+from mindspore.parallel.shard import Layout
 from tests.ut.python.ops.test_math_ops import VirtualLoss
 from parallel.utils.utils import ParallelValidator, compile_net
-import os
+from parallel.auto_parallel_interface._utils import find_ir_file_path, check_node_pairs_num
 
 
 def setup_function():
@@ -80,15 +84,15 @@ class Net_semi(nn.Cell):
 
 
 class Net_auto(nn.Cell):
-    def __init__(self, shape, axis=0, strategy1=None, strategy2=None, batch_dims=0, gather_out_strategy=None,
+    def __init__(self, shape, axis=0, strategy1=None, layout=None, batch_dims=0, gather_out_strategy=None,
                  weight_shape=None):
         super().__init__()
         self.gatherv2 = P.Gather(batch_dims=batch_dims).shard(strategy1, out_strategy=gather_out_strategy)
-        self.mul = P.Mul().shard(strategy2)
+        self.mul = P.Mul().shard(layout)
         self.relu1 = P.ReLU()
         self.relu2 = P.ReLU().shard(strategy1)
-        if strategy2:
-            self.relu1.shard(strategy2)
+        if layout:
+            self.relu1.shard(layout)
         self.index = None
         if shape:
             self.index = Tensor(np.ones(shape), dtype=ms.int32)
@@ -121,7 +125,7 @@ def test_dump_ir_parallel_detail_semi():
     Description: net with strategy in semi auto parallel, print Dump IR parallel detail.
     Expectation: compile done without error.
     """
-    context.set_context(save_graphs=True, save_graphs_path="./graphs")
+    context.set_context(save_graphs=True, save_graphs_path="./test_dump_ir_parallel_detail/semi_auto_graphs")
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", device_num=8, global_rank=0)
     strategy1 = ((1, 2), (4,))
     strategy2 = ((4, 2), (4, 2))
@@ -145,22 +149,18 @@ def test_dump_ir_parallel_detail_auto():
     Description: net with strategy in auto parallel & sharding_propagation  model, print Dump IR parallel detail.
     Expectation: compile done without error.
     """
-    context.set_context(save_graphs=True, save_graphs_path="./graphs")
+    graph_path = "./test_dump_ir_parallel_detail/sharding_propagation_graphs"
+    context.set_context(save_graphs=True, save_graphs_path=graph_path)
     context.set_auto_parallel_context(parallel_mode="auto_parallel", device_num=8, global_rank=0,
                                       search_mode="sharding_propagation")
     strategy1 = ((2, 4),)
-    strategy2 = ((8, 1),)
-    net = GradWrap(NetWithLoss(Net_auto(shape=(), axis=0, strategy1=strategy1, strategy2=strategy2)))
+    layout = Layout((8, 1), ("dp", "mp"))
+    layout1 = (layout("dp", "mp"),)
+    net = GradWrap(NetWithLoss(Net_auto(shape=(), axis=0, strategy1=strategy1, layout=layout1)))
     x = Tensor(np.ones([32, 64]), dtype=ms.float32)
     y = Tensor(np.ones([64]), dtype=ms.float32)
-    phase = compile_graph(net, x, y)
-    validator = ParallelValidator(net, phase)
-    assert validator.check_node_attrs('ReLU-0', {"inputs_tensor_map": '((1, 0))', "device_matrix": '(8, 1)',
-                                                 "outputs_tensor_map": '((1, 0))'}, 0)
-    assert validator.check_node_attrs('Sub-0', {"inputs_tensor_map": '((1, 0), (1, 0))', "device_matrix": '(8, 1)',
-                                                "outputs_tensor_map": '((1, 0))'}, 0)
-    assert validator.check_node_attrs('Sub-1', {"inputs_tensor_map": '((1, 0), (0))', "device_matrix": '(2, 4)',
-                                                "outputs_tensor_map": '((1, 0))'}, 0)
-    assert validator.check_node_attrs('ReLU-1', {"inputs_tensor_map": '((1, 0))', "device_matrix": '(2, 4)',
-                                                 "outputs_tensor_map": '((1, 0))'}, 0)
- 
+    compile_graph(net, x, y)
+
+    validate_ir = find_ir_file_path(graph_path, "validate")
+    check_pair = {"out_layout": "4"}
+    check_node_pairs_num(validate_ir, check_pair)

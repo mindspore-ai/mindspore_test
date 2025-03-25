@@ -1355,9 +1355,12 @@ void ParallelPreprocessor::SetOperatorInfo() {
     auto &all_nodes = processor_context_->all_nodes;
     ExtractInformation(all_nodes);
 
-    // print dump IR parallel detail
+    // dump IR detail in semi_auto_parallel and recursive_programming mode
     std::string env_var = common::GetEnv("MS_DEV_DUMP_IR_PARALLEL_DETAIL");
-    if (!env_var.empty() && env_var == kDumpIrParallelDetail) {
+    auto parallel_mode = ParallelContext::GetInstance()->parallel_mode();
+    auto strategy_search_mode = ParallelContext::GetInstance()->strategy_search_mode();
+    if (!env_var.empty() && env_var == kDumpIrParallelDetail &&
+        (parallel_mode == "semi_auto_parallel" || strategy_search_mode == "recursive_programming")) {
       for (const auto &node : all_nodes) {
         if (node->has_user_data<OperatorInfo>()) {
           auto operator_info = node->user_data<OperatorInfo>();
