@@ -327,7 +327,8 @@ static void SetOutputLayout(const FuncGraphPtr &func_graph, const AnfNodePtr &ou
   PreCheckStrategy(out_strategy_tuple, &need_default_strategy, &out_strategy_size);
 
   if (out_strategy_size != 1) {
-    MS_LOG_WITH_NODE(EXCEPTION, out_strategy) << "Numbers of out strategy should be 1.";
+    MS_LOG(WARNING) << "Numbers of out strategy should be 1.";
+    return;
   }
 
   // Get strategy in ValueTuple.
