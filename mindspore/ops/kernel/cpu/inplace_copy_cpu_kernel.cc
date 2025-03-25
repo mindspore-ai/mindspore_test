@@ -277,7 +277,6 @@ void InplaceCopyCpuKernelMod::InplaceCopyBroadcastTo(T *input, T *output, const 
   auto pad_input_shape = input_shape;
   auto input_rank = input_shape.size();
   auto output_rank = output_shape.size();
-
   if (input_rank != output_rank) {
     std::vector<int64_t> padding_dims(SizeToLong(output_rank) - SizeToLong(input_rank), 1);
     pad_input_shape.insert(pad_input_shape.begin(), padding_dims.begin(), padding_dims.end());

@@ -50,7 +50,6 @@ ShapeArray MoeTokenPermuteGradFuncImpl::InferShape(const PrimitivePtr &primitive
     output_permuted_tokens_shape[kIndex1] = permuted_output_grad_shape[kIndex1];
   }
   auto num_topk = input_infos[kIndex2]->GetScalarValue<int64_t>();
-
   if (!num_topk.has_value()) {
     return {output_permuted_tokens_shape};
   }
