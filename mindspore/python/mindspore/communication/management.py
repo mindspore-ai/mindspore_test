@@ -699,7 +699,7 @@ def get_comm_name(group=GlobalComm.WORLD_COMM_GROUP):
     if not isinstance(group, str):
         raise TypeError("For 'get_comm_name', the argument 'group' must be type of string, "
                         "but got 'group' type : {}.".format(type(group)))
-    return _get_comm_name_helper(group)
+    return _get_comm_name_helper(group=_get_group(group))
 
 
 def get_process_group_ranks(group=GlobalComm.WORLD_COMM_GROUP):
@@ -742,4 +742,4 @@ def get_process_group_ranks(group=GlobalComm.WORLD_COMM_GROUP):
         [0, 1, 2, 3]
 
     """
-    return _get_group_ranks(group)
+    return _get_group_ranks(group=_get_group(group))
