@@ -31,6 +31,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "include/backend/distributed/collective/collective_manager.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/inference_weight_preprocess_utils.h"
 
 namespace mindspore {
@@ -45,6 +46,64 @@ std::shared_ptr<ValueNode> CreateZeroTensor(const ShapeVector &gamma_shape, Type
   if (set_ret != EOK) {
     MS_LOG(EXCEPTION) << "Failed to set tensor to zeros.";
   }
+  return CreateValueNode(assist_tensor, tensor_type);
+}
+
+template <typename T>
+std::shared_ptr<ValueNode> CreateNewGammaTensor(const AnfNodePtr &gamma, const AnfNodePtr &scale) {
+  auto gamma_param = GetParamFromLoad(gamma->cast<CNodePtr>(), true);
+  MS_EXCEPTION_IF_NULL(gamma_param);
+  auto scale_param = GetParamFromLoad(scale->cast<CNodePtr>(), true);
+  MS_EXCEPTION_IF_NULL(scale_param);
+  TypeId gamma_type = common::AnfAlgo::GetOutputInferDataType(gamma, 0);
+  TensorTypePtr tensor_type = std::make_shared<TensorType>(TypeIdToType(gamma_type));
+  auto origin_shape = gamma_param->shape();
+  auto shape = common::AnfAlgo::GetOutputInferShape(gamma, kIndex0);
+  bool need_rank_offset = false;
+  if (origin_shape[0] != shape[0]) {
+    need_rank_offset = true;
+  }
+  auto len = shape[0];
+  void *gamma_data = gamma_param->data_c();
+  void *scale_data = scale_param->data_c();
+  auto global_rank_id = distributed::collective::CollectiveManager::instance()->global_rank_id();
+  auto rank_offset = need_rank_offset ? global_rank_id * len : 0;
+  tensor::TensorPtr assist_tensor = std::make_shared<tensor::Tensor>(gamma_type, shape);
+  void *dst_data = assist_tensor->data_c();
+
+  T *gamma_data_t = reinterpret_cast<T *>(gamma_data) + rank_offset;
+  T *scale_data_t = reinterpret_cast<T *>(scale_data) + rank_offset;
+  T *dst_data_t = reinterpret_cast<T *>(dst_data);
+  for (int i = 0; i < len; i++) {
+    float gamma_fp32 = static_cast<float>(gamma_data_t[i]);
+    float scale_fp32 = static_cast<float>(scale_data_t[i]);
+    float new_gamma_fp32 = gamma_fp32 / scale_fp32;
+    dst_data_t[i] = static_cast<T>(new_gamma_fp32);
+  }
+  return CreateValueNode(assist_tensor, tensor_type);
+}
+
+template <typename T>
+std::shared_ptr<ValueNode> CreateScaleTensor(TypeId gamma_type) {
+  ShapeVector shape = {1};
+  tensor::TensorPtr assist_tensor = std::make_shared<tensor::Tensor>(gamma_type, shape);
+  TensorTypePtr tensor_type = std::make_shared<TensorType>(TypeIdToType(gamma_type));
+  T *dst_data_t = reinterpret_cast<T *>(assist_tensor->data_c());
+  dst_data_t[0] = static_cast<T>(1.0);
+  return CreateValueNode(assist_tensor, tensor_type);
+}
+
+std::shared_ptr<ValueNode> CreateOffsetTensor(const AnfNodePtr &offset) {
+  auto offset_param = GetParamFromLoad(offset->cast<CNodePtr>(), true);
+  MS_EXCEPTION_IF_NULL(offset_param);
+  void *offset_data = offset_param->data_c();
+  int8_t *offset_data_t = reinterpret_cast<int8_t *>(offset_data);
+
+  ShapeVector shape = {1};
+  tensor::TensorPtr assist_tensor = std::make_shared<tensor::Tensor>(kNumberTypeInt8, shape);
+  TensorTypePtr tensor_type = std::make_shared<TensorType>(TypeIdToType(kNumberTypeInt8));
+  int8_t *dst_data_t = reinterpret_cast<int8_t *>(assist_tensor->data_c());
+  dst_data_t[0] = offset_data_t[0];
   return CreateValueNode(assist_tensor, tensor_type);
 }
 
@@ -218,16 +277,30 @@ const AnfNodePtr RmsNormQuantFusion::Process(const FuncGraphPtr &graph, const An
 
   TypeId gamma_type = common::AnfAlgo::GetOutputInferDataType(gamma, 0);
   auto gamma_shape = common::AnfAlgo::GetOutputInferShape(gamma, kIndex0);
-  if (gamma_shape.size() != 1) {
-    MS_LOG(INFO) << "gamma_shape.size():" << gamma_shape.size() << " != 1.";
+  TypeId scale_type = common::AnfAlgo::GetOutputInferDataType(scale, 0);
+  auto scale_shape = common::AnfAlgo::GetOutputInferShape(scale, kIndex0);
+
+  if (gamma_shape.size() != 1 || scale_shape.size() != 1) {
+    MS_LOG(INFO) << "gamma_shape.size():" << gamma_shape.size() << " scale_shape.size():" << scale_shape.size()
+                 << " != 1.";
     return nullptr;
   }
 
-  ValueNodePtr beta;
+  if (gamma_type != scale_type || gamma_shape[0] != scale_shape[0]) {
+    MS_LOG(INFO) << "gamma_type:" << TypeIdToString(gamma_type) << " scale_type:" << TypeIdToString(scale_type)
+                 << "gamma_shape[0]:" << gamma_shape[0] << " scale_shape[0]:" << scale_shape[0] << " not equal.";
+    return nullptr;
+  }
+
+  ValueNodePtr beta, new_gamma, new_scale, new_offset;
   if (gamma_type == kNumberTypeFloat16) {
     beta = CreateZeroTensor<float16>(gamma_shape, gamma_type);
+    new_gamma = CreateNewGammaTensor<float16>(gamma, scale);
+    new_scale = CreateScaleTensor<float16>(gamma_type);
   } else if (gamma_type == kNumberTypeBFloat16) {
     beta = CreateZeroTensor<bfloat16>(gamma_shape, gamma_type);
+    new_gamma = CreateNewGammaTensor<bfloat16>(gamma, scale);
+    new_scale = CreateScaleTensor<bfloat16>(gamma_type);
   } else {
     MS_LOG(INFO) << "gamma_type:" << TypeIdToString(gamma_type) << " != kNumberTypeFloat16 && != kNumberTypeBFloat16.";
     return nullptr;
@@ -236,9 +309,13 @@ const AnfNodePtr RmsNormQuantFusion::Process(const FuncGraphPtr &graph, const An
     MS_LOG(INFO) << "beta is nullptr.";
     return nullptr;
   }
+  new_offset = CreateOffsetTensor(offset);
   kernel_graph->AddValueNodeToGraph(beta);
+  kernel_graph->AddValueNodeToGraph(new_gamma);
+  kernel_graph->AddValueNodeToGraph(new_scale);
+  kernel_graph->AddValueNodeToGraph(new_offset);
 
-  auto rms_norm_quant = CreateRmsNormQuantNode(graph, node, x1, gamma, beta, scale, offset, eps);
+  auto rms_norm_quant = CreateRmsNormQuantNode(graph, node, x1, new_gamma, beta, new_scale, new_offset, eps);
   if (rms_norm_quant != nullptr) {
     MS_LOG(INFO) << "RmsNormQuant fused successfully.";
   } else {
