@@ -18,6 +18,7 @@ from mindspore.nn.cell import Cell
 from mindspore.parallel.shard import Layout
 from mindspore.communication.management import get_rank, get_group_size
 
+
 class AutoParallel(Cell):
     """
     AutoParallel enable auto parallel configuration for neural network cells. This class provides multiple
@@ -158,13 +159,19 @@ class AutoParallel(Cell):
 
     def load_param_strategy_file(self, file_path):
         """
-        Set the path to load parameter strategy checkpoint file.
+        Set the path to load parallel sharding strategy file. By default, load strategy information for trainable
+        parameters only.
 
         Args:
             file_path (str): The path to load parameter strategy checkpoint.
 
         Raises:
-            TypeError: If the type of 'file_path' is not str
+            TypeError: If the type of 'file_path' is not str.
+
+        Examples:
+            >>> from mindspore.parallel.auto_parallel import AutoParallel
+            >>> parallel_net = AutoParallel(net)
+            >>> parallel_net.load_param_strategy_file(file_path="./train_strategy.ckpt")
         """
         if not isinstance(file_path, str):
             raise TypeError("the argument 'file_path' must be str, but got the type : {} .".format(type(file_path)))
@@ -172,13 +179,14 @@ class AutoParallel(Cell):
 
     def save_param_strategy_file(self, file_path):
         """
-        Set the path to save parameter strategy checkpoint file.
+        Set the path to save parallel sharding strategy file. By default, save strategy information for trainable
+        parameters only.
 
         Args:
-            file_path (str): The path to save parameter strategy checkpoint.
+            file_path (str): The path where the parallel sharding strategy is saved.
 
         Raises:
-            TypeError: If the type of 'file_path' is not str
+            TypeError: If the type of 'file_path' is not str.
         """
         if not isinstance(file_path, str):
             raise TypeError("the argument 'file_path' must be str, but got the type : {} .".format(type(file_path)))
@@ -397,33 +405,43 @@ class AutoParallel(Cell):
 
     def comm_fusion(self, config):
         r"""
-        Set fusion method for auto parallel.
+        Set fusion configuration of parallel communication operators.
 
         Args:
-            config (dict): A dict contains the types and configurations for setting the communication fusion. each
-                communication fusion config has two keys: "mode" and "config".
-                It supports following communication fusion types and configurations:
+            config (dict): A dict contains the types and configurations for setting the communication fusion. Each
+            communication fusion config has two keys: "mode" and "config".
+            It supports following communication fusion types and configurations:
 
-                - openstate: Whether turn on the communication fusion or not. If `openstate` is ``True`` ,
-                  turn on the communication fusion, otherwise, turn off the communication fusion.
-                  Default: ``True`` .
-                - allreduce: If communication fusion type is `allreduce`. The `mode` contains: `auto`, `size`
-                  and `index`. In `auto` mode, AllReduce fusion is configured by gradients size and the default
-                  fusion threshold is `64` MB. In 'size' mode, AllReduce fusion is configured by gradients size
-                  manually, and the fusion threshold must be larger than `0` MB. In `index` mode, it is same as
-                  `all_reduce_fusion_config`.
-                - allgather: If communication fusion type is `allgather`. The `mode` contains: `auto`, `size`.
-                  In `auto` mode, AllGather fusion is configured by gradients size, and the default fusion
-                  threshold is `64` MB. In 'size' mode, AllGather fusion is configured by gradients size
-                  manually, and the fusion threshold must be larger than `0` MB.
-                - reducescatter: If communication fusion type is `reducescatter`. The `mode` contains: `auto`
-                  and `size`. Config is same as `allgather`.
+             - openstate: Whether turn on the communication fusion or not. If `openstate` is `True`, turn on
+               the communication fusion, otherwise, turn off the communication fusion. Default: `True`.
+
+             - allreduce: if communication fusion type is `allreduce`. The `mode` contains: `auto`, `size`
+               and `index`. In `auto` mode, allreduce fusion is configured by gradients size, and the default
+               fusion threshold is `64` MB. In 'size' mode, allreduce fusion is configured by gradients size
+               manually, and the fusion threshold must be larger than `0` MB. In `index` mode, it is same as
+               `all_reduce_fusion_config`.
+
+             - allgather: If communication fusion type is `allgather`. The `mode` contains: `auto`, `size`.
+               In `auto` mode, AllGather fusion is configured by gradients size, and the default fusion
+               threshold is `64` MB. In 'size' mode, AllGather fusion is configured by gradients size
+               manually, and the fusion threshold must be larger than `0` MB.
+
+             - reducescatter: If communication fusion type is `reducescatter`. The `mode` contains: `auto`
+               and `size`. Config is same as `allgather`.
 
         Raises:
-            KeyError: If the type of config is not dict.
+            TypeError: If the type of config is not dict.
+
+        Examples:
+            >>> from mindspore.parallel.auto_parallel import AutoParallel
+            >>> # Define the network structure of LeNet5. Refer to
+            >>> # https://gitee.com/mindspore/docs/blob/master/docs/mindspore/code/lenet.py
+            >>> parallel_net = AutoParallel(net, parallel_mode="semi_auto")
+            >>> comm_config = {"openstate": True, "allreduce": {"mode": "auto", "config": None}}
+            >>> net.comm_fusion(config=comm_config)
         """
         if config is not None and not isinstance(config, dict):
-            raise TypeError(f"The parameter '{config}' must be {dict}, but got {type(config)}")
+            raise TypeError(f"The parameter '{config}' must be {dict}, but got {type(config)}.")
         self._comm_fusion_config = config
 
     def enable_fp32_communication(self):
@@ -441,7 +459,7 @@ class AutoParallel(Cell):
             file_path (str): The path to save parallel group checkpoint.
 
         Raises:
-            TypeError: If the type of 'file_path' is not str
+            TypeError: If the type of 'file_path' is not str.
         """
         if not isinstance(file_path, str):
             raise TypeError("the argument 'file_path' must be str, but got the type : {} .".format(type(file_path)))
@@ -503,7 +521,7 @@ class AutoParallel(Cell):
 
     def transformer_opt(self, file_path):
         r"""
-        Check and set speedup config for auto parallel.
+        Check and set speedup config for auto parallel. If this parameter is set to None, it is disabled.
 
         Args:
             file_path(Union[str, None]): The path to the parallel speed up json file, configuration can refer to
@@ -567,7 +585,12 @@ class AutoParallel(Cell):
                   communication and computation will be executed in parallel between branches. Default: ``False``.
 
         Examples:
-            >>> net = AutoParallel(net)
+            >>> from mindspore.parallel.auto_parallel import AutoParallel
+            >>>
+            >>> # Define the network structure of LeNet5. Refer to
+            >>> # https://gitee.com/mindspore/docs/blob/master/docs/mindspore/code/lenet.py
+            >>> net = LeNet5()
+            >>> net = AutoParallel(net, parallel_mode="semi_auto")
             >>> net.transformer_opt("./parallel_speed_up.json")
         """
         # disable pylint too broad Exception

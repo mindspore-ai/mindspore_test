@@ -1,7 +1,7 @@
-mindspore.load_segmented_checkpoints
-====================================
+mindspore.parallel.load_segmented_checkpoints
+=============================================
 
-.. py:function:: mindspore.load_segmented_checkpoints(ckpt_file_dir, net=None, strict_load=False, filter_prefix=None, dec_key=None, dec_mode="AES-GCM", specify_prefix=None, choice_func=None)
+.. py:function:: mindspore.parallel.load_segmented_checkpoints(ckpt_file_dir, net=None, strict_load=False, filter_prefix=None, dec_key=None, dec_mode="AES-GCM", specify_prefix=None, choice_func=None)
 
     加载指定路径下所有checkpoint文件。当ckpt_file_dir指定路径下存在多个checkpoint文件时，会逐个读取各个checkpoint文件并返回合并后的字典。
 
