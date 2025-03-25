@@ -80,8 +80,8 @@ def rmsnorm_quant_net_1_way(x_shape, ms_type):
     beta_num = x_shape[-1]
     new_gamma_shape = [1] * len(x_shape)
     new_gamma_shape[-1] = beta_num
-    beta = Parameter(Tensor(np.ones([beta_num])).reshape(new_gamma_shape).astype(ms_type))
-    gamma = Parameter(Tensor(np.ones([beta_num])).reshape(new_gamma_shape).astype(ms_type))
+    beta = Parameter(Tensor(np.ones([beta_num])).astype(ms_type))
+    gamma = Parameter(Tensor(np.ones([beta_num])).astype(ms_type))
     scale = Parameter(Tensor(np.random.normal(0.1, 0.5, size=[1])).astype(ms_type))
     offset = Parameter(Tensor(np.random.randint(1, 2, size=[1])).astype(ms.int8))
 
