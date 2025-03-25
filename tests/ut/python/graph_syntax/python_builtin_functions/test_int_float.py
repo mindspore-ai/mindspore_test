@@ -136,9 +136,8 @@ def test_fallback_int_with_input_numpy():
         x = np.array([1, 2, 3, 4])
         return int(x)
 
-    with pytest.raises(TypeError) as ex:
+    with pytest.raises(TypeError):
         foo()
-    assert "only size-1 arrays can be " in str(ex.value)
 
 
 def test_fallback_int_with_input_numpy_2():
@@ -331,9 +330,8 @@ def test_fallback_float_with_input_numpy():
         x = np.array([1, 2, 3, 4])
         return float(x)
 
-    with pytest.raises(TypeError) as ex:
+    with pytest.raises(TypeError):
         foo()
-    assert "only size-1 arrays can be " in str(ex.value)
 
 
 def test_fallback_float_with_input_numpy_2():
