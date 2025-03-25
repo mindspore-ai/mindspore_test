@@ -141,18 +141,8 @@ def _convert_python_data(data):
     Returns:
         data, a data convert C++ to python
     """
-    if isinstance(data, (Tensor, PythonTensor)) and data.adapter_flag:
-        return ms_adapter_registry.tensor(data)
-    if _ms_adapter_tensor_as_parameter_output(data) and hasattr(data, "tensor"):
-        return data.tensor
-    if isinstance(data, Tensor) and not isinstance(data, PythonTensor):
-        return PythonTensor(data)
-    if isinstance(data, CSRTensor) and not isinstance(data, PythonCSRTensor):
-        return PythonCSRTensor(csr_tensor=data)
-    if isinstance(data, COOTensor) and not isinstance(data, PythonCOOTensor):
-        return PythonCOOTensor(coo_tensor=data)
-    if isinstance(data, RowTensor) and not isinstance(data, PythonRowTensor):
-        return PythonRowTensor(row_tensor=data)
+    if isinstance(data, PythonTensor):
+        return data
     if isinstance(data, StubNode):
         return ms.common._stub_tensor._convert_stub(data)
     if data.__class__ is tuple:
@@ -163,6 +153,12 @@ def _convert_python_data(data):
             fields = data_dict.keys()
             return namedtuple(type_name, fields)(**_convert_python_data(data_dict))
         return tuple(_convert_python_data(x) for x in data)
+    if isinstance(data, CSRTensor) and not isinstance(data, PythonCSRTensor):
+        return PythonCSRTensor(csr_tensor=data)
+    if isinstance(data, COOTensor) and not isinstance(data, PythonCOOTensor):
+        return PythonCOOTensor(coo_tensor=data)
+    if isinstance(data, RowTensor) and not isinstance(data, PythonRowTensor):
+        return PythonRowTensor(row_tensor=data)
     if data.__class__ is list:
         # Keep list object not change for inplace operation.
         for i in range(len(data)):
