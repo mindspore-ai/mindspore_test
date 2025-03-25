@@ -693,8 +693,8 @@ def get_comm_name(group=GlobalComm.WORLD_COMM_GROUP):
         ...     customizd_group_comm_name = get_comm_name(group)
         ...     print("comm_name of customizd group is ", customizd_group_comm_name)
         >>> print("comm_name of world group is: ", world_group_comm_name)
-        comm_name of customizd group is: 90.90.93.230%enp189s0f0_60000_0_1739168277481706
-        comm_name of world group is: 90.90.93.230%enp189s0f0_60000_0_1739168274606363
+        comm_name of customizd group is: 11.22.33.44%eth0_60000_0_0123456789101112
+        comm_name of world group is: 11.22.33.44%eth0_60000_0_1211109876543210
     """
     if not isinstance(group, str):
         raise TypeError("For 'get_comm_name', the argument 'group' must be type of string, "
