@@ -1,7 +1,7 @@
 mindspore.train.FlopsUtilizationCollector
 =========================================
 
-.. py:class:: mindspore.train.FlopsUtilizationCollector(data_size=None, computility=1, full_flops=True, enable_ma_collector=False)
+.. py:class:: mindspore.train.FlopsUtilizationCollector(data_size, computility=1, full_flops=True, enable_ma_collector=False)
 
     FlopsUtilizationCollector接口统计模型利用率信息MFU，硬件利用率信息HFU。
     
@@ -10,7 +10,7 @@ mindspore.train.FlopsUtilizationCollector
     只支持静态图静态shape模式。
 
     参数：
-        - **data_size** (int) - 表示每隔多少个step打印一次信息。默认值： ``None`` 。
+        - **data_size** (int) - 表示每隔多少个step打印一次信息。
 
         - **computility** (int) - 表示每张计算卡的峰值算力。默认值： ``1`` 。
 
