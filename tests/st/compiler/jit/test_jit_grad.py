@@ -413,6 +413,32 @@ def test_jit_grad_with_dynamic_shape_change_param():
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_jit_grad_with_out_cell_custom_bprop():
+    """
+    Feature: Custom cell bprop.
+    Description: Test grad jit scene for custom cell bprop.
+    Expectation: Success.
+    """
+    class Net(nn.Cell):
+        @jit
+        def construct(self, x, y):
+            z = x * y
+            z = z * y
+            return z
+
+        def bprop(self, x, y, out, dout):
+            x_dout = x + y
+            y_dout = x * y
+            return x_dout, y_dout, out, dout
+
+    context.set_context(mode=1)
+    grad_all = ops.GradOperation(get_all=True)
+    output = grad_all(Net())(Tensor(1, mstype.float32), Tensor(2, mstype.float32))
+    result = (Tensor(3, mstype.float32), Tensor(2, mstype.float32))
+    assert output == result
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_jit_grad_with_custom_bprop():
     """
     Feature: Custom cell bprop.

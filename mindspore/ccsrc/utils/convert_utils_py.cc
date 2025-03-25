@@ -1062,6 +1062,8 @@ ValuePtr ConvertPyObjectToCObject(const py::object &input_object, bool is_base_t
     output = py::cast<tensor::CSRTensorPtr>(input_object);
   } else if (py::isinstance<tensor::COOTensor>(input_object)) {
     output = py::cast<tensor::COOTensorPtr>(input_object);
+  } else if (IsStubTensor(input_object)) {
+    output = ConvertStubTensor(input_object);
   } else {
     MS_EXCEPTION(TypeError) << "Unreasonable data type: " << input_object.get_type() << ".";
   }
