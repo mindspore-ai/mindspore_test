@@ -183,6 +183,7 @@ void LazyFusionFlags::RegisterFlags(std::map<std::string, std::string> *flag_map
   reg.AddFlag("opt_level", &opt_level);
   reg.AddFlag("online_tuning", &online_tuning);
   reg.AddFlag("disable_ops", &disable_ops);
+  reg.AddFlag("enable_ops_only", &enable_ops_only);
 }
 
 std::string LazyFusionFlags::DumpAllFlags() const {
@@ -190,6 +191,7 @@ std::string LazyFusionFlags::DumpAllFlags() const {
   j["dump_as_text"] = dump_as_text;
   j["synchronize"] = synchronize;
   j["disable_ops"] = disable_ops;
+  j["enable_ops_only"] = enable_ops_only;
   j["opt_level"] = opt_level;
   j["online_tuning"] = online_tuning;
   j["flush_threshold"] = flush_threshold;

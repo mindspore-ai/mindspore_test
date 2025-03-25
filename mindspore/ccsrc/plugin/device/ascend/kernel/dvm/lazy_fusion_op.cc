@@ -41,11 +41,20 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/copy.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
+bool EnableFuse(const std::string &op, const std::vector<std::string> &enable_ops_only,
+                const std::vector<std::string> &disable_ops) {
+  if (!enable_ops_only.empty()) {
+    return std::find(enable_ops_only.begin(), enable_ops_only.end(), op) != enable_ops_only.end();
+  }
+  return std::find(disable_ops.begin(), disable_ops.end(), op) == disable_ops.end();
+}
+
 bool IsFloatType(const TypeId &type) {
   switch (type) {
     case kNumberTypeFloat16:
@@ -245,6 +254,15 @@ bool SameTensor(const BaseTensorPtr &tensor1, const BaseTensorPtr &tensor2) {
     return s1->storage_offset == s2->storage_offset && s1->shape == s2->shape && s1->strides == s2->strides;
   }
   return true;
+}
+
+tensor::BaseTensorPtr ToContiguous(const BaseTensorPtr &tensor, const std::string &device_target, size_t stream_id) {
+  if (tensor->is_contiguous()) {
+    return tensor;
+  }
+  auto copy_op = CREATE_PYBOOST_OP(Copy, device_target);
+  copy_op->set_stream_id(stream_id);
+  return copy_op->Call(tensor);
 }
 }  // namespace
 
@@ -785,6 +803,20 @@ tensor::BaseTensorPtr GeLUGradAscendDvm::Call(const BaseTensorPtr &dy_tensor, co
   return outputs_.front();
 }
 
+tensor::BaseTensorPtr ReLUAscendDvm::Call(const BaseTensorPtr &input_tensor) {
+  if (!InputCheck(input_tensor)) {
+    return ReLUAscend::Call(input_tensor);
+  }
+  DvmCall(
+    op_name_, this,
+    [&input_tensor](LazyFusionKernelAscend *k) -> BaseTensorPtr {
+      auto obj = k->Binary(dvm::BinaryOpType::kMaximum, k->Input(input_tensor), 0.0f);
+      return k->Output(obj, input_tensor->data_type(), input_tensor->shape());
+    },
+    input_tensor);
+  return outputs_.front();
+}
+
 tensor::BaseTensorPtr SumExtAscendDvm::Call(const BaseTensorPtr &input_tensor, const std::optional<ValueTuplePtr> &dim,
                                             const BoolImmPtr &keepdim, const std::optional<Int64ImmPtr> &dtype) {
   auto dst_type = dtype.has_value() ? static_cast<TypeId>(GetValue<int64_t>(dtype.value())) : kMetaTypeNone;
@@ -1140,6 +1172,24 @@ tensor::BaseTensorPtr InplaceSubExtAscendDvm::Call(const BaseTensorPtr &input_te
   return outputs_[0];
 }
 
+tensor::BaseTensorPtr InplaceReLUAscendDvm::Call(const BaseTensorPtr &input_tensor) {
+  if (!InputCheck(input_tensor)) {
+    return InplaceReLUAscend::Call(input_tensor);
+  }
+  auto k = g_lazy_fusion_manager.Get(device_context_, stream_id_);
+  MS_LOG(INFO) << op_name() << " call start, kernel id is " << k->id();
+  PyBoostUtils::PrepareOpInputs(device_context_, stream_id_, input_tensor);
+  auto out_obj = k->Binary(dvm::BinaryOpType::kMaximum, k->Input(input_tensor), 0.0f);
+  // update
+  outputs_.push_back(input_tensor);
+  k->Output(outputs_[0], out_obj);
+  outputs_[0]->set_need_pipeline_sync(true);
+  CreateOutputSimpleInfo();
+  MS_LOG(INFO) << op_name() << " call end, kernel id is " << k->id();
+  FlushLazyFusion();
+  return outputs_[0];
+}
+
 tensor::BaseTensorPtr DenseAscendDvm::Call(const BaseTensorPtr &input_tensor, const BaseTensorPtr &weight_tensor,
                                            const std::optional<BaseTensorPtr> &bias_tensor) {
   BaseTensorPtr bias = nullptr;
@@ -1261,8 +1311,180 @@ tensor::BaseTensorPtr MatMulExtAscendDvm::Call(const mindspore::tensor::BaseTens
   return outputs_.front();
 }
 
+std::tuple<BaseTensorPtr, BaseTensorPtr> BatchNormStatsAscendDvm::Call(const BaseTensorPtr &input_tensor,
+                                                                       const mindspore::FP32ImmPtr &eps) {
+  // input check
+  if (NeedSync() || input_tensor->data_type() != kNumberTypeFloat32) {
+    return BatchNormStatsAscend::Call(input_tensor, eps);
+  }
+  auto x = ToContiguous(input_tensor, device_context_->device_context_key_.device_name_, stream_id_);
+  auto k = g_lazy_fusion_manager.Get(device_context_, stream_id_);
+  MS_LOG(INFO) << op_name() << " call start, kernel id is " << k->id();
+  PyBoostUtils::PrepareOpInputs(device_context_, stream_id_, x);
+  ShapeVector axis;
+  for (int64_t i = 0; i < static_cast<int64_t>(x->shape().size()); ++i) {
+    if (i != 1) {  // reduce all axis except C channel(axis 1)
+      axis.push_back(i);
+    }
+  }
+  auto axis_ref = k->GetShapeRef(axis);
+  auto input_obj = k->Input(x);
+  auto local_sum = k->Reduce(dvm::ReduceOpType::kSum, input_obj, axis_ref, false);
+  auto local_square_sum =
+    k->Reduce(dvm::ReduceOpType::kSum, k->Binary(dvm::BinaryOpType::kMul, input_obj, input_obj), axis_ref, false);
+  auto local_sum_tensor = k->Output(local_sum, x->data_type(), k->GetShape(local_sum));
+  auto local_square_sum_tensor = k->Output(local_square_sum, x->data_type(), k->GetShape(local_square_sum));
+  outputs_.push_back(local_sum_tensor);
+  outputs_.push_back(local_square_sum_tensor);
+  for (const auto &output : outputs_) {
+    output->set_need_pipeline_sync(true);
+  }
+  CreateOutputSimpleInfo();
+  MS_LOG(INFO) << op_name() << " call end, kernel id is " << k->id();
+  return std::make_tuple(outputs_[kIndex0], outputs_[kIndex1]);
+}
+
+std::tuple<BaseTensorPtr, BaseTensorPtr> BatchNormGatherStatsWithCountsAscendDvm::Call(
+  const BaseTensorPtr &input_tensor, const BaseTensorPtr &mean_tensor, const BaseTensorPtr &invstd_tensor,
+  const std::optional<BaseTensorPtr> &running_mean_tensor_opt,
+  const std::optional<BaseTensorPtr> &running_var_tensor_opt, const mindspore::FP32ImmPtr &momentum,
+  const mindspore::FP32ImmPtr &eps, const std::optional<BaseTensorPtr> &counts_tensor_opt) {
+  BaseTensorPtr counts_tensor = counts_tensor_opt.has_value() ? counts_tensor_opt.value() : nullptr;
+  BaseTensorPtr running_mean_tensor = running_mean_tensor_opt.has_value() ? running_mean_tensor_opt.value() : nullptr;
+  BaseTensorPtr running_var_tensor = running_var_tensor_opt.has_value() ? running_var_tensor_opt.value() : nullptr;
+  // input check
+  if (NeedSync() || input_tensor->data_type() != kNumberTypeFloat32 || counts_tensor == nullptr) {
+    return BatchNormGatherStatsWithCountsAscend::Call(input_tensor, mean_tensor, invstd_tensor, running_mean_tensor_opt,
+                                                      running_var_tensor_opt, momentum, eps, counts_tensor_opt);
+  }
+  auto x = ToContiguous(input_tensor, device_context_->device_context_key_.device_name_, stream_id_);
+  auto sum_all = ToContiguous(mean_tensor, device_context_->device_context_key_.device_name_, stream_id_);
+  auto square_sum_all = ToContiguous(invstd_tensor, device_context_->device_context_key_.device_name_, stream_id_);
+  counts_tensor = ToContiguous(counts_tensor, device_context_->device_context_key_.device_name_, stream_id_);
+  if (running_mean_tensor != nullptr) {
+    running_mean_tensor =
+      ToContiguous(running_mean_tensor, device_context_->device_context_key_.device_name_, stream_id_);
+  }
+  if (running_var_tensor != nullptr) {
+    running_var_tensor =
+      ToContiguous(running_var_tensor, device_context_->device_context_key_.device_name_, stream_id_);
+  }
+  auto momentum_imm = GetValue<float>(momentum);
+  auto momentum_imm_reverse = 1.0f - momentum_imm;
+  auto eps_imm = GetValue<float>(eps);
+  auto k = g_lazy_fusion_manager.Get(device_context_, stream_id_);
+  MS_LOG(INFO) << op_name() << " call start, kernel id is " << k->id();
+  PyBoostUtils::PrepareOpInputs(device_context_, stream_id_, x, sum_all, square_sum_all, running_mean_tensor_opt,
+                                running_var_tensor_opt, counts_tensor_opt);
+
+  ShapeVector counts_axis;
+  for (int64_t i = 0; i < static_cast<int64_t>(counts_tensor->shape().size()); ++i) {
+    counts_axis.push_back(i);
+  }
+  auto count_axis_ref = k->GetShapeRef(counts_axis);
+  auto global_counts = k->Reduce(dvm::ReduceOpType::kSum, k->Input(counts_tensor), count_axis_ref, false);
+
+  ShapeVector mean_axis;
+  for (int64_t i = 0; i < static_cast<int64_t>(sum_all->shape().size()) - 1; ++i) {  // last aixs is C channel
+    mean_axis.push_back(i);
+  }
+  auto mean_axis_ref = k->GetShapeRef(mean_axis);
+  auto global_sum = k->Reduce(dvm::ReduceOpType::kSum, k->Input(sum_all), mean_axis_ref, false);
+  auto global_square_sum = k->Reduce(dvm::ReduceOpType::kSum, k->Input(square_sum_all), mean_axis_ref, false);
+  auto global_mean = k->Binary(dvm::BinaryOpType::kDiv, global_sum, global_counts);
+  auto global_mean_tensor = k->Output(global_mean, x->data_type(), k->GetShape(global_mean));
+  auto global_var =
+    k->Binary(dvm::BinaryOpType::kSub, k->Binary(dvm::BinaryOpType::kDiv, global_square_sum, global_counts),
+              k->Binary(dvm::BinaryOpType::kMul, global_mean, global_mean));
+  auto global_invstd =
+    k->Unary(dvm::UnaryOpType::kReciprocal,
+             k->Unary(dvm::UnaryOpType::kSqrt, k->Binary(dvm::BinaryOpType::kAdd, global_var, eps_imm)));
+  auto global_invstd_tensor = k->Output(global_invstd, x->data_type(), k->GetShape(global_invstd));
+  // update running_mean
+  if (running_mean_tensor != nullptr) {
+    auto running_mean_new = k->Binary(
+      dvm::BinaryOpType::kAdd, k->Binary(dvm::BinaryOpType::kMul, k->Input(running_mean_tensor), momentum_imm_reverse),
+      k->Binary(dvm::BinaryOpType::kMul, global_mean, momentum_imm));
+    k->Output(running_mean_tensor, running_mean_new);
+  }
+  // update running_var
+  if (running_var_tensor != nullptr) {
+    auto global_var1 = k->Binary(
+      dvm::BinaryOpType::kMul, global_var,
+      k->Binary(dvm::BinaryOpType::kDiv, global_counts, k->Binary(dvm::BinaryOpType::kSub, global_counts, 1.0f)));
+    auto running_var_new = k->Binary(
+      dvm::BinaryOpType::kAdd, k->Binary(dvm::BinaryOpType::kMul, k->Input(running_var_tensor), momentum_imm_reverse),
+      k->Binary(dvm::BinaryOpType::kMul, global_var1, momentum_imm));
+    k->Output(running_var_tensor, running_var_new);
+  }
+  outputs_.push_back(global_mean_tensor);
+  outputs_.push_back(global_invstd_tensor);
+  for (const auto &output : outputs_) {
+    output->set_need_pipeline_sync(true);
+  }
+  CreateOutputSimpleInfo();
+  MS_LOG(INFO) << op_name() << " call end, kernel id is " << k->id();
+  return std::make_tuple(outputs_[kIndex0], outputs_[kIndex1]);
+}
+
+BaseTensorPtr BatchNormElemtAscendDvm::Call(const BaseTensorPtr &input_tensor,
+                                            const std::optional<BaseTensorPtr> &weight_tensor_opt,
+                                            const std::optional<BaseTensorPtr> &bias_tensor_opt,
+                                            const std::optional<BaseTensorPtr> &mean_tensor_opt,
+                                            const std::optional<BaseTensorPtr> &invstd_tensor_opt,
+                                            const mindspore::FP32ImmPtr &eps) {
+  BaseTensorPtr weight_tensor = weight_tensor_opt.has_value() ? weight_tensor_opt.value() : nullptr;
+  BaseTensorPtr bias_tensor = bias_tensor_opt.has_value() ? bias_tensor_opt.value() : nullptr;
+  BaseTensorPtr mean_tensor = mean_tensor_opt.has_value() ? mean_tensor_opt.value() : nullptr;
+  BaseTensorPtr invstd_tensor = invstd_tensor_opt.has_value() ? invstd_tensor_opt.value() : nullptr;
+  // input check
+  if (NeedSync() || input_tensor->data_type() != kNumberTypeFloat32) {
+    return BatchNormElemtAscend::Call(input_tensor, weight_tensor_opt, bias_tensor_opt, mean_tensor_opt,
+                                      invstd_tensor_opt, eps);
+  }
+  auto x = ToContiguous(input_tensor, device_context_->device_context_key_.device_name_, stream_id_);
+  if (weight_tensor != nullptr) {
+    weight_tensor = ToContiguous(weight_tensor, device_context_->device_context_key_.device_name_, stream_id_);
+  }
+  if (bias_tensor != nullptr) {
+    bias_tensor = ToContiguous(bias_tensor, device_context_->device_context_key_.device_name_, stream_id_);
+  }
+  if (mean_tensor != nullptr) {
+    mean_tensor = ToContiguous(mean_tensor, device_context_->device_context_key_.device_name_, stream_id_);
+  }
+  if (invstd_tensor != nullptr) {
+    invstd_tensor = ToContiguous(invstd_tensor, device_context_->device_context_key_.device_name_, stream_id_);
+  }
+  FlushLazyFusion();  // forward fusion not allowed, because inputs need reshape
+  DvmCall(
+    op_name_, this,
+    [&](LazyFusionKernelAscend *k) -> BaseTensorPtr {
+      // (x - mean) * invstd * weight + bias
+      auto input_obj = k->Input(x);
+      ShapeVector new_shape(x->shape().size(), 1);
+      new_shape[1] = x->shape()[1];
+      if (mean_tensor != nullptr) {
+        input_obj = k->Binary(dvm::BinaryOpType::kSub, input_obj, k->Input(mean_tensor, true, new_shape));
+      }
+      if (invstd_tensor != nullptr) {
+        auto scale = weight_tensor == nullptr
+                       ? k->Input(invstd_tensor, true, new_shape)
+                       : k->Binary(dvm::BinaryOpType::kMul, k->Input(invstd_tensor, true, new_shape),
+                                   k->Input(weight_tensor, true, new_shape));
+        input_obj = k->Binary(dvm::BinaryOpType::kMul, input_obj, scale);
+      }
+      if (bias_tensor != nullptr) {
+        input_obj = k->Binary(dvm::BinaryOpType::kAdd, input_obj, k->Input(bias_tensor, true, new_shape));
+      }
+      return k->Output(input_obj, x->data_type(), x->shape());
+    },
+    x, weight_tensor_opt, bias_tensor_opt, mean_tensor_opt, invstd_tensor_opt);
+  return outputs_.front();
+}
+
 #define MS_REPLACE_DVM_OP(clazz)                                                                     \
-  if (std::find(disable_ops.begin(), disable_ops.end(), #clazz) == disable_ops.end()) {              \
+  if (EnableFuse(#clazz, enable_ops_only, disable_ops)) {                                            \
+    MS_LOG(INFO) << "Register dvm op [" << #clazz << "]";                                            \
     OpFactory<clazz>::Get().op_creator()[kAscendDevice] = []() {                                     \
       return std::make_shared<clazz##AscendDvm>(prim::kPrim##clazz,                                  \
                                                 runtime::OpRunner::GetDeviceContext(kAscendDevice)); \
@@ -1271,6 +1493,7 @@ tensor::BaseTensorPtr MatMulExtAscendDvm::Call(const mindspore::tensor::BaseTens
 
 void RegisterLazyFusionOp() {
   const auto &disable_ops = LazyFusionFlags::GetInstance().disable_ops;
+  const auto &enable_ops_only = LazyFusionFlags::GetInstance().enable_ops_only;
   MS_REPLACE_DVM_OP(Cast);
   MS_REPLACE_DVM_OP(Abs);
   MS_REPLACE_DVM_OP(Neg);
@@ -1305,6 +1528,7 @@ void RegisterLazyFusionOp() {
   MS_REPLACE_DVM_OP(SiLUGrad);
   MS_REPLACE_DVM_OP(GeLU);
   MS_REPLACE_DVM_OP(GeLUGrad);
+  MS_REPLACE_DVM_OP(ReLU);
   MS_REPLACE_DVM_OP(SumExt);
   MS_REPLACE_DVM_OP(AddExt);
   MS_REPLACE_DVM_OP(SubExt);
@@ -1316,10 +1540,14 @@ void RegisterLazyFusionOp() {
   MS_REPLACE_DVM_OP(InplaceExp);
   MS_REPLACE_DVM_OP(InplaceAddExt);
   MS_REPLACE_DVM_OP(InplaceSubExt);
+  MS_REPLACE_DVM_OP(InplaceReLU);
   MS_REPLACE_DVM_OP(Dense);
   MS_REPLACE_DVM_OP(MatMul);
   MS_REPLACE_DVM_OP(BatchMatMul);
   MS_REPLACE_DVM_OP(MatMulExt);
+  MS_REPLACE_DVM_OP(BatchNormStats);
+  MS_REPLACE_DVM_OP(BatchNormGatherStatsWithCounts);
+  MS_REPLACE_DVM_OP(BatchNormElemt);
 }
 
 void LazyFusionAscendInit() {

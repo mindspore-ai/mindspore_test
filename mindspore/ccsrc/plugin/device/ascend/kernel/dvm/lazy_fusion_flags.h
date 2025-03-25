@@ -86,6 +86,15 @@ class BACKEND_EXPORT LazyFusionFlags {
   std::vector<std::string> disable_ops;
 
   /**
+   * @brief List of operation names that are enabled for lazy fusion.
+   *
+   * Operations only operators listed here can be fused.
+   *
+   * Default value: Empty vector.
+   */
+  std::vector<std::string> enable_ops_only;
+
+  /**
    * @brief Threshold value for triggering a flush operation.
    *
    * When certain metrics (e.g., operation count) reach this threshold, a flush is triggered
