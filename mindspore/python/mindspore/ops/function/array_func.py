@@ -4988,7 +4988,7 @@ def tuple_to_array(input_x):
 
     Args:
         input_x (tuple): A tuple of numbers. These numbers have the same type. Only constant value is allowed.
-            The shape is :math:`(N,*)` where :math:`*` means any number of additional dimensions.
+            The shape is :math:`(N,)`.
 
     Returns:
         Tensor, if the input tuple contains `N` numbers, then the shape of the output tensor is (N,).
