@@ -2225,7 +2225,7 @@ test_case_math_ops = [
     ('IsFinite', {
         'block': P.IsFinite(),
         'desc_inputs': [Tensor(np.random.random((3, 4, 5)).astype(np.float32))],
-        'desc_bprop': [Tensor(np.random.random((3, 4, 5)).astype(np.bool))]}),
+        'desc_bprop': [Tensor(np.random.random((3, 4, 5)).astype(np.bool_))]}),
     ('Div', {
         'block': P.Div(),
         'desc_inputs': [[4, 5], [2, 3, 4, 5]],
@@ -2631,7 +2631,7 @@ test_case_math_ops = [
         'desc_bprop': [Tensor(np.array([1, 1, 1]).astype(np.float32))]}),
     ('Bucketize', {
         'block': Bucketize(boundaries=[1., 3., 5., 7., 9.]),
-        'desc_inputs': [Tensor(np.array([[-1, 6, 8], [3, 6, 9]]).astype(np.float))],
+        'desc_inputs': [Tensor(np.array([[-1, 6, 8], [3, 6, 9]]).astype(np.float_))],
         'skip': ['backward']}),
     ('TridiagonalMatMul', {
         'block': TridiagonalMatMul(),

@@ -34,5 +34,5 @@ def test_real_normal():
     Expectation: Success
     """
     net = Net()
-    x = ms.Tensor(np.asarray(np.complex(1.3 + 0.4j)), ms.complex64)
+    x = ms.Tensor(np.asarray(np.complex_(1.3 + 0.4j)), ms.complex64)
     _cell_graph_executor.compile(net, x)

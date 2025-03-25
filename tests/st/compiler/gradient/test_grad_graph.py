@@ -1419,7 +1419,7 @@ def test_grad_complex_inputs_complex_outputs():
             gradient_function = self.grad_op(self.net)
             return gradient_function(x)
 
-    x = Tensor(np.asarray(np.complex(1.3 + 0.4j)), mstype.complex64)
+    x = Tensor(np.asarray(np.complex_(1.3 + 0.4j)), mstype.complex64)
     output = GradNetWrtX(ImagNet())(x)
-    expect = np.asarray(np.complex(1j), dtype=np.complex64)
+    expect = np.asarray(np.complex_(1j), dtype=np.complex64)
     assert np.allclose(output.asnumpy(), expect)
