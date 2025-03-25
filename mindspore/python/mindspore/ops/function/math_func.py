@@ -6126,36 +6126,33 @@ def block_diag(*inputs):
 
 def atleast_1d(inputs):
     r"""
-    Reshapes Tensor in `inputs`, every Tensor has at least one dimension after this operation.
-
-    Scalar is converted to a 1-D Tensor, input tensor with one or more dimensions will be returned as it is.
+    Returns a one-dimensional tensor of each zero-dimensional tensor,
+    while tensors with one or more dimensions remain unchanged.
 
     Args:
-        inputs (Union[Tensor, list[Tensor]]): One or more input tensors.
+        inputs (Union[Tensor, list[Tensor]]): The input tensor or list of tensors.
 
     Returns:
-        Tensor or list[Tensor]. If returned a list, every element `a` in that list satisfies `a.ndim >= 1`.
-
-    Raises:
-        TypeError: If the `inputs` is not a tensor or a list of tensors.
+        Tensor or list of tensors.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x1 = Tensor(np.ones((2, 3)))
-        >>> x2 = Tensor(np.ones(()))
-        >>> x3 = Tensor(np.ones(5))
-        >>> out = ops.atleast_1d([x1, x2, x3])
-        >>> print(out[0].asnumpy())
-        [[1. 1. 1.]
-         [1. 1. 1.]]
-        >>> print(out[1].asnumpy())
-        [1.]
-        >>> print(out[2].asnumpy())
-        [1. 1. 1. 1. 1.]
+        >>> import mindspore
+        >>> # case 1: Input is a zero-dimensional tensor.
+        >>> x = mindspore.tensor(1)
+        >>> mindspore.ops.atleast_1d(x)
+        Tensor(shape=[1], dtype=Int64, value= [1])
+        >>>
+        >>> # case 2: Input is a one-dimensional tensor.
+        >>> y = mindspore.tensor([0, 1])
+        >>> mindspore.ops.atleast_1d(y)
+        Tensor(shape=[2], dtype=Int64, value= [0, 1])
+        >>>
+        >>> # case 3: Input is a list containing tensors of various dimensions.
+        >>> mindspore.ops.atleast_1d([x, y])
+        (Tensor(shape=[1], dtype=Int64, value= [1]), Tensor(shape=[2], dtype=Int64, value= [0, 1]))
     """
     if isinstance(inputs, Tensor):
         return _expand(inputs, 1)
@@ -6517,35 +6514,38 @@ def triu_indices(row, col, offset=0, *, dtype=mstype.int64):
 
 def atleast_2d(inputs):
     r"""
-    Reshapes Tensor in `inputs`, every Tensor has at least 2 dimension after this operation.
-
-    Scalar or 1-D Tensor is converted to 2-D Tensor, tensor with higher dimensions will be returned as it is.
+    Returns a 2-dimensional tensor of each tensor, while tensors with two or more dimensions remain unchanged.
 
     Args:
-        inputs (Union[Tensor, list[Tensor]]): One or more input tensors.
+        inputs (Union[Tensor, list[Tensor]]): The input tensor or list of tensors.
 
     Returns:
-        Tensor or list[Tensor]. If returned a list, every element `a` in that list satisfies `a.ndim >= 2` .
-
-    Raises:
-        TypeError: If the `inputs` is not a tensor or a list of tensors.
+        Tensor or list of tensors.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import mindspore.numpy as np
-        >>> from mindspore import ops
-        >>> x1 = np.ones((2, 3))
-        >>> x2 = np.ones(())
-        >>> x3 = np.ones(5)
-        >>> out = ops.atleast_2d([x1, x2, x3])
-        >>> print(out)
-        (Tensor(shape=[2, 3], dtype=Float32, value=
-        [[ 1.00000000e+00, 1.00000000e+00, 1.00000000e+00],
-        [ 1.00000000e+00, 1.00000000e+00, 1.00000000e+00]]), Tensor(shape=[1, 1], dtype=Float32, value=
-        [[ 1.00000000e+00]]), Tensor(shape=[1, 5], dtype=Float32, value=
-        [[ 1.00000000e+00, 1.00000000e+00, 1.00000000e+00, 1.00000000e+00, 1.00000000e+00]]))
+        >>> import mindspore
+        >>> # case 1: Input is a zero-dimensional tensor.
+        >>> x = mindspore.tensor(1)
+        >>> mindspore.ops.atleast_2d(x)
+        Tensor(shape=[1, 1], dtype=Int64, value= [[1]])
+        >>>
+        >>> # case 2: Input is a 2-dimensional tensor.
+        >>> y = mindspore.tensor([[0, 1], [2, 3]])
+        >>> mindspore.ops.atleast_2d(y)
+        Tensor(shape=[2, 2], dtype=Int64, value=
+        [[0, 1],
+         [2, 3]])
+        >>>
+        >>> # case 3: Input is a list containing tensors of various dimensions.
+        >>> mindspore.ops.atleast_2d([x, y])
+        (Tensor(shape=[1, 1], dtype=Int64, value=
+         [[1]]),
+         Tensor(shape=[2, 2], dtype=Int64, value=
+         [[0, 1],
+          [2, 3]]))
     """
     if isinstance(inputs, Tensor):
         return _expand(inputs, 2)
@@ -6597,48 +6597,38 @@ def cartesian_prod(*inputs):
 
 def atleast_3d(inputs):
     r"""
-    Reshapes Tensor in `inputs`, every Tensor has at least 3 dimension after this operation.
-
-    Scalar, 1-D or 2-D Tensor is converted to 3-D Tensor,
-    tensor with higher dimensions will be returned as it is.
+    Returns a 3-dimensional tensor of each tensor, while tensors with three or more dimensions remain unchanged.
 
     Args:
-        inputs (Union[Tensor, list[Tensor]]): One or more input tensors.
+        inputs (Union[Tensor, list[Tensor]]): The input tensor or list of tensors.
 
     Returns:
-        Tensor or list[Tensor]. If returned a list, every element `a` in that list satisfies `a.ndim >= 3`.
-        For example, a 1-D Tensor of shape :math:`(N,)` becomes a Tensor of shape :math:`(1, N, 1)`, and
-        a 2-D Tensor of shape :math:`(M, N)` becomes a tensor of shape :math:`(M, N, 1)`.
-
-    Raises:
-        TypeError: If the `inputs` is not a tensor or a list of tensors.
+        Tensor or list of tensors.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x1 = Tensor(np.ones((2, 3)))
-        >>> x2 = Tensor(np.ones(()))
-        >>> x3 = Tensor(np.ones(5))
-        >>> out = ops.atleast_3d([x1, x2, x3])
-        >>> print(out[0].asnumpy())
-        [[[1.]
-          [1.]
-          [1.]]
-        <BLANKLINE>
-         [[1.]
-          [1.]
-          [1.]]]
-        >>> print(out[1].asnumpy())
-        [[[1.]]]
-        >>> print(out[2].asnumpy())
-        [[[1.]
-          [1.]
-          [1.]
-          [1.]
-          [1.]]]
+        >>> import mindspore
+        >>> # case 1: Input is a zero-dimensional tensor.
+        >>> x = mindspore.tensor(1)
+        >>> mindspore.ops.atleast_3d(x)
+        Tensor(shape=[1, 1, 1], dtype=Int64, value= [[[1]]])
+        >>>
+        >>> # case 2: Input is a 3-dimensional tensor.
+        >>> y = mindspore.tensor([[[0, 1], [2, 3]]])
+        >>> mindspore.ops.atleast_3d(y)
+        Tensor(shape=[1, 2, 2], dtype=Int64, value=
+        [[[0, 1],
+          [2, 3]]])
+        >>>
+        >>> # case 3: Input is a list containing tensors of various dimensions.
+        >>> mindspore.ops.atleast_3d([x, y])
+        (Tensor(shape=[1, 1, 1], dtype=Int64, value=
+         [[[1]]]),
+         Tensor(shape=[1, 2, 2], dtype=Int64, value=
+         [[[0, 1],
+           [2, 3]]])
     """
 
     def _expand3(arr):
