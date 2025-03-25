@@ -628,13 +628,14 @@ void CollectOpSelectedType(std::string op_name, SelectedKernelType op_type, std:
   }
 }
 
-std::tuple<bool, std::string, ExceptionType> SelectKernelInfoWithMsg(const KernelGraphPtr &graph, const CNodePtr &node,
-                                                                     std::vector<size_t> *op_selected_num) {
+std::tuple<bool, std::string, ExceptionType, bool> SelectKernelInfoWithMsg(const KernelGraphPtr &graph,
+                                                                           const CNodePtr &node,
+                                                                           std::vector<size_t> *op_selected_num) {
   MS_EXCEPTION_IF_NULL(graph);
   MS_EXCEPTION_IF_NULL(node);
   static std::vector<std::set<std::string>> op_selected_type(kOpTypeNumber);
   device::ascend::ErrorAclType acl_err_type = device::ascend::ErrorAclType::kNormalOp;
-  std::tuple<bool, std::string, ExceptionType> result = std::make_tuple(true, "", NoExceptionType);
+  std::tuple<bool, std::string, ExceptionType, bool> result = std::make_tuple(true, "", NoExceptionType, false);
   std::string op_name = common::AnfAlgo::GetCNodeName(node);
 
   if (common::AnfAlgo::CheckPrimitiveType(node, prim::kPrimGEGraphOp)) {
@@ -653,7 +654,7 @@ std::tuple<bool, std::string, ExceptionType> SelectKernelInfoWithMsg(const Kerne
   static const std::set<std::string> select_host_priorly = {kShapeOpName, kTensorShapeOpName};
   if ((select_host_priorly.count(op_name) != 0) && AnfAlgo::IsNodeSupportKernelSelectBackoff(node, graph)) {
     MS_VLOG(VL_ASCEND_KERNEL_SELECT) << op_name << " select host kernel priorly.";
-    return {false, op_name + " select host kernel priorly.", NotSupportError};
+    return {false, op_name + " select host kernel priorly.", NotSupportError, false};
   }
 
   if (kernel::IsEnableAtb(graph, node)) {
@@ -686,6 +687,7 @@ std::tuple<bool, std::string, ExceptionType> SelectKernelInfoWithMsg(const Kerne
   if (kernel_type == KernelType::ACL_KERNEL) {
     GenerateKernelBuildInfo(node, kernel_type);
     CollectOpSelectedType(op_name, SelectedKernelType::ACLOP_KERNEL, op_selected_num, &op_selected_type);
+    std::get<kIndex3>(result) = true;
     return result;
   }
 
@@ -706,7 +708,7 @@ std::tuple<bool, std::string, ExceptionType> SelectKernelInfoWithMsg(const Kerne
   }
 
   auto [msg, etype] = CollectNotMatchMessage(node, host_kernel_info_list, acl_err_type);
-  return {false, msg, etype};
+  return {false, msg, etype, false};
 }
 
 bool IsEnableAclnn(const KernelGraphPtr &kernel_graph, const AnfNodePtr &node) {
@@ -772,9 +774,10 @@ void SetKernelInfoBeforeCreateKernel(const std::vector<CNodePtr> &nodes) {
 
     const auto &kernel_graph = AnfAlgo::FetchKernelGraph(node.get());
     MS_EXCEPTION_IF_NULL(kernel_graph);
-    auto [select_res, msg, etype] = SelectKernelInfoWithMsg(kernel_graph, node);
+    auto [select_res, msg, etype, is_aclop] = SelectKernelInfoWithMsg(kernel_graph, node);
     if (!select_res) {
-      MS_LOG(INFO) << "node is " << node->fullname_with_scope() << " should backoff";
+      MS_LOG(INFO) << "node is " << node->fullname_with_scope() << " should backoff "
+                   << "is_aclop: " << is_aclop;
       MS_VLOG(VL_ASCEND_KERNEL_SELECT) << "node is " << node->fullname_with_scope() << " should backoff";
       std::pair<std::string, ExceptionType> failure_info = std::make_pair(msg, etype);
       HandleKernelSelectFailure(kernel_graph, node, failure_info);
@@ -790,11 +793,12 @@ class AscendGraphKernelInfo : public GraphKernelInfo {
     MS_EXCEPTION_IF_NULL(kernel_node);
     const auto &kernel_graph = AnfAlgo::FetchKernelGraph(kernel_node.get());
     MS_EXCEPTION_IF_NULL(kernel_graph);
-    auto [select_res, msg, etype] = SelectKernelInfoWithMsg(kernel_graph, kernel_node);
+    auto [select_res, msg, etype, is_aclop] = SelectKernelInfoWithMsg(kernel_graph, kernel_node);
     if (select_res) {
       return;
     }
-    MS_LOG(INFO) << "node is " << kernel_node->fullname_with_scope() << " should backoff";
+    MS_LOG(INFO) << "node is " << kernel_node->fullname_with_scope() << " should backoff"
+                 << ", is_aclop: " << is_aclop;
     std::pair<std::string, ExceptionType> failure_info = std::make_pair(msg, etype);
     HandleKernelSelectFailure(kernel_graph, kernel_node, failure_info);
   }
