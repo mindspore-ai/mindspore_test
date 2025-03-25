@@ -45,6 +45,9 @@ class TestMetaDslApi : public UT::Common {
   FuncGraphPtr NewFuncGraph(const MetaImplPtr &meta, const AbstractBasePtrList &abs_list) {
     // Create FuncGraph.
     FuncGraphPtr fg = std::make_shared<FuncGraph>();
+    std::vector<FuncGraphPtr> graphs{fg};
+    auto func_graph_manager = std::make_shared<FuncGraphManager>(graphs);
+    meta->set_manager(func_graph_manager);
     AnfNodePtrList inputs{NewValueNode(meta)};
     for (size_t i = 0; i < abs_list.size(); ++i) {
       auto param = fg->add_parameter();

@@ -16,6 +16,7 @@
 
 #include "common/common_test.h"
 #include "tests/ut/cpp/operator/meta_dsl/dense.h"
+#include "ir/manager.h"
 #include "pipeline/jit/ps/static_analysis/prim.h"
 #include "pipeline/jit/ps/static_analysis/static_analysis.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
@@ -39,11 +40,14 @@ class TestMetaDsl : public UT::Common {
 
 FuncGraphPtr CreateFuncGraphWithDense() {
   FuncGraphPtr fg = std::make_shared<FuncGraph>();
+  std::vector<FuncGraphPtr> graphs{fg};
+  auto func_graph_manager = std::make_shared<FuncGraphManager>(graphs);
   AnfNodePtr param_input = fg->add_parameter();
   AnfNodePtr param_weight = fg->add_parameter();
   AnfNodePtr param_bias = fg->add_parameter();
   auto dense = std::make_shared<DenseMetaImpl>();
   dense->set_prim(prim::kPrimDense);
+  dense->set_manager(func_graph_manager);
   CNodePtr cnode = fg->NewCNode({NewValueNode(dense), param_input, param_weight, param_bias});
   fg->set_output(cnode);
   return fg;

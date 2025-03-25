@@ -109,6 +109,8 @@ void MetaImpl::set_prim(const PrimitivePtr &prim) { prim_ = prim; }
 
 PrimitivePtr MetaImpl::prim() const { return prim_; }
 
+void MetaImpl::set_manager(const FuncGraphManagerPtr &manager) { manager_ = manager; }
+
 void MetaImpl::set_check_func(const CheckFunc &check_func) { check_func_ = check_func; }
 
 void MetaImpl::set_bprop_func(const std::function<std::shared_ptr<MetaImpl>()> &bprop_func) {
@@ -142,6 +144,9 @@ FuncGraphPtr MetaImpl::EndFunc() {
   }
   auto graph = func_builder_stack_.top()->EndFunc();
   func_builder_stack_.pop();
+  // Add graph to manager.
+  MS_EXCEPTION_IF_NULL(manager_);
+  manager_->AddFuncGraph(graph);
   // Process top graph.
   if (func_builder_stack_.empty()) {
     // Define custom bprop for current op.
@@ -175,6 +180,9 @@ void MetaImpl::DefineCustomBprop(const FuncGraphPtr &graph) {
     (void)bprop_graph_->transforms().emplace("primal", FuncGraphTransform(graph));
     graph->set_flag(FUNC_GRAPH_FLAG_DEFER_INLINE, true);
     graph->set_flag(FUNC_GRAPH_FLAG_PRIMAL_OF_BPROP, true);
+    // Add bprop_graph to manager.
+    MS_EXCEPTION_IF_NULL(manager_);
+    manager_->AddFuncGraph(bprop_graph_);
   }
 }
 
