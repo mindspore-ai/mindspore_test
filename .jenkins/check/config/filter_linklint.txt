@@ -72,3 +72,5 @@ https://www.mindspore.cn*/r2.4.0/*
 https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore.dataset.loading.html*
 https://www.mindspore.cn/docs/en/master/api_python/mindspore.dataset.loading.html*
 https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html*
+https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/mpirun.html*
+https://www.mindspore.cn/docs/en/master/model_train/parallel/mpirun.html*

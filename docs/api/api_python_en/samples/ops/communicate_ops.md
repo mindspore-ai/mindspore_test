@@ -653,7 +653,7 @@ class SendNet(nn.Cell):
         return out
 
 input_ = Tensor(np.ones([2, 8]).astype(np.float32))
-net = Net()
+net = SendNet()
 output = net(input_)
 ```
 
@@ -679,7 +679,7 @@ class ReceiveNet(nn.Cell):
         out = self.recv()
         return out
 
-net = Net()
+net = ReceiveNet()
 output = net()
 ```
 

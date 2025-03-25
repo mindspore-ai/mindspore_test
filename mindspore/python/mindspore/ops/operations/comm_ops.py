@@ -1406,7 +1406,7 @@ class Send(PrimitiveWithInfer):
         ...         return out
         >>>
         >>> input_ = Tensor(np.ones([2, 8]).astype(np.float32))
-        >>> net = Net()
+        >>> net = SendNet()
         >>> output = net(input_)
 
     Tutorial Examples:
@@ -1489,7 +1489,7 @@ class Receive(PrimitiveWithInfer):
         ...         out = self.recv()
         ...         return out
         >>>
-        >>> net = Net()
+        >>> net = ReceiveNet()
         >>> output = net()
 
     Tutorial Examples:
