@@ -227,7 +227,7 @@ class COOTensor(COOTensor_):
 
     Common arithmetic operations include: addition (+), subtraction (-), multiplication (*),
     and division (/). For details about operations supported by `COOTensor`, see
-    `operators <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html#operators>`_.
+    `operators <https://www.mindspore.cn/tutorials/en/master/compile/static_graph.html#operators>`_.
 
     .. warning::
         - This is an experimental API that is subject to change or deletion.
@@ -671,7 +671,7 @@ class CSRTensor(CSRTensor_):
 
     Common arithmetic operations include: addition (+), subtraction (-), multiplication (*),
     and division (/). For details about operations supported by `CSRTensor`, see
-    `operators <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html#operators>`_.
+    `operators <https://www.mindspore.cn/tutorials/en/master/compile/static_graph.html#operators>`_.
 
     .. warning::
         - This is an experimental API that is subjected to change.

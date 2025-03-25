@@ -214,8 +214,7 @@ def _get_dataset_aux(dataset):
 
 def connect_network_with_dataset(network, dataset_helper):
     """
-    Connect the `network` with dataset in `dataset_helper`. Only supported in `sink mode
-    <https://www.mindspore.cn/docs/en/master/model_train/train_process/optimize/sink_mode.html>`_,
+    Connect the `network` with dataset in `dataset_helper`. Only supported in sink mode,
     (dataset_sink_mode=True).
 
     Args:

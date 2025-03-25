@@ -192,11 +192,11 @@ def tensor(input_data=None, dtype=None, shape=None, init=None, const_arg=False):
     based on the `dtype` argument.
 
     Please refer to `Creating and Using Tensor
-    <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html#mindspore-user-defined-data-types>`_ .
+    <https://www.mindspore.cn/tutorials/en/master/compile/static_graph.html#mindspore-user-defined-data-types>`_ .
 
     The difference between it and the Tensor class is that it adds
     `Annotation
-    <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html#annotation-type>`_
+    <https://www.mindspore.cn/tutorials/en/master/compile/static_graph.html#annotation-type>`_
     which can prevent the generation of AnyType compared to the Tensor class.
 
     The arguments and return values are the same as the Tensor class. Also see: :class:`mindspore.Tensor`.
@@ -233,7 +233,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         - If `init` interface is used to initialize `Tensor`, the `Tensor.init_data` API needs to be called to load the
           actual data to `Tensor`.
         - All modes of CPU and GPU, and Atlas training series with `graph mode (mode=mindspore.GRAPH_MODE)
-          <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html>`_  do not supported
+          <https://www.mindspore.cn/tutorials/en/master/compile/static_graph.html>`_  do not supported
           in-place operations yet.
 
     Warning:

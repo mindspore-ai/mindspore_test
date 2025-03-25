@@ -1032,9 +1032,9 @@ def jit(
         capture_mode (str, optional): The method to create a callable MindSpore graph. The value of capture_mode
             should be ``ast`` , ``bytecode`` or ``trace`` . Default: ``ast`` .
 
-            - `ast <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html>`_ :
+            - `ast <https://www.mindspore.cn/tutorials/en/master/compile/static_graph.html>`_ :
               Parse Python ast to build graph.
-            - `bytecode <https://www.mindspore.cn/docs/en/master/model_train/program_form/pynative.html#pijit>`_ :
+            - `bytecode` :
               Parse Python bytecode to build graph at runtime. This is an experimental prototype that is subject to
               change and/or deletion.
             - `trace` : Trace the execution of Python code to build graph. This is an experimental prototype that is
