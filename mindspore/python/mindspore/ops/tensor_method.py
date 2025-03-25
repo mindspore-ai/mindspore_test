@@ -38,6 +38,7 @@ from mindspore import Tensor
 from mindspore.common import dtype as mstype
 # 4 common import
 from mindspore.common import COOTensor
+#from mindspore.common.generator import default_generator
 
 # 5 common import
 from mindspore.ops.function.nn_func import gelu
@@ -415,6 +416,9 @@ from mindspore.ops.function.math_func import nansum
 
 # 244 log1p
 from mindspore.ops.auto_generate import log1p
+
+# 245 exponential_
+# from mindspore.ops.auto_generate import inplace_exponential_op
 
 # 501
 from mindspore.ops.function.math_func import addbmm
@@ -1712,6 +1716,14 @@ def deprecated_tensor_nansum(input, axis=(), keepdims=False, *, dtype=None):
 def tensor_log1p(input):
     return log1p(input)
 
+# # 245 exponential_
+# def tensor_exponential_(input, lambd=1, generator=None):
+#     if generator is None:
+#         generator = default_generator
+#     # generator_step_ same as standard_method.py
+#     generator_step_ = Tensor(12, mstype.int64)
+#     seed, offset = generator._step(generator_step_)
+#     return inplace_exponential_op(input, lambd, seed, offset)
 
 def tensor_diag(input, diagonal=0):
     return F.diag(input)
