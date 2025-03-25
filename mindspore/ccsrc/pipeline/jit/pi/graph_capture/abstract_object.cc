@@ -734,13 +734,13 @@ AObject *AbstractString::GetItem(AObject *index) {
   if (subscript.empty()) {
     return AObject::MakeAObject(kTypeAnyValue);
   }
-  constexpr int SUBSCR_IDX_TWO = 2;
-  if ((subscript[0] + subscript[SUBSCR_IDX_TWO]) >= SizeToInt(str_.size())) {
+  constexpr int subscr_idx_two = 2;
+  if ((subscript[0] + subscript[subscr_idx_two]) >= SizeToInt(str_.size())) {
     MS_LOG(ERROR) << "The range should be in [0, " << str_.size() << "), but got [" << subscript[0] << ", "
-                  << (subscript[0] + subscript[SUBSCR_IDX_TWO]) << ").";
+                  << (subscript[0] + subscript[subscr_idx_two]) << ").";
     return AObject::MakeAObject(kTypeAnyValue);
   }
-  return Convert(py::str(str_.substr(subscript[0], subscript[SUBSCR_IDX_TWO])).ptr());
+  return Convert(py::str(str_.substr(subscript[0], subscript[subscr_idx_two])).ptr());
 }
 
 static AObject::Type BinaryIntOp(AObject::Type l, AObject::Type r) {
@@ -1289,8 +1289,8 @@ AbstractTuple *AbstractList::ListToTuple() {
 AObjectPairList CreateAbstractPairList(const std::vector<AObject *> &elements) {
   std::map<AObject *, size_t> keys_2_index;
   std::vector<AObjectPair> key_values;
-  constexpr int STEP = 2;
-  for (size_t index = 0; index < elements.size(); index += STEP) {
+  constexpr int step = 2;
+  for (size_t index = 0; index < elements.size(); index += step) {
     if (keys_2_index.find(elements[index]) != keys_2_index.end()) {
       key_values[keys_2_index.at(elements[index])].second = elements[index + 1];
     } else {
