@@ -2522,6 +2522,7 @@ Status OperatorInfo::SetCostUnderStrategyWithCost(const std::shared_ptr<Strategy
     MS_LOG(WARNING) << name_ << ": InferVirtualDivOps failed.";
     return FAILED;
   }
+  InferReplaceOps();
   return SUCCESS;
 }
 
