@@ -66,8 +66,12 @@ bool is_first_receive(const AnfNodePtr &node) {
         return false;
       }
     }
-    auto micro = GetValue<int64_t>(recv_node->GetPrimalAttr(parallel::MICRO));
-    if (micro != 0) {
+    if (recv_node->HasPrimalAttr(parallel::MICRO)) {
+      auto micro = GetValue<int64_t>(recv_node->GetPrimalAttr(parallel::MICRO));
+      if (micro != 0) {
+        return false;
+      }
+    } else {
       return false;
     }
     return true;
