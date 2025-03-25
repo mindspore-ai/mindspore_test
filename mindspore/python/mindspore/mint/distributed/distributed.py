@@ -86,8 +86,9 @@ safe_builtins = {
     'slice',
 }
 
+
 def get_cache_group_size(group=GlobalComm.WORLD_COMM_GROUP):
-    # get cache group size.
+    """get cache group size."""
     global _GROPU_SIZE_CACHE
     if group not in _GROPU_SIZE_CACHE:
         _GROPU_SIZE_CACHE[group] = _get_size_helper(group)
@@ -96,7 +97,7 @@ def get_cache_group_size(group=GlobalComm.WORLD_COMM_GROUP):
 
 
 def get_cache_group_rank(group=GlobalComm.WORLD_COMM_GROUP):
-    # get cache rank id.
+    """get cache rank id."""
     global _GROPU_RANK_CACHE
     if group not in _GROPU_RANK_CACHE:
         _GROPU_RANK_CACHE[group] = _get_rank_helper(group)
