@@ -86,7 +86,6 @@ ShapeArray MoeInitRoutingV2FuncImpl::InferShape(const PrimitivePtr &primitive,
   auto expert_capacity_val = expert_capacity.has_value() ? expert_capacity.value() : any_dim;
   auto expert_num_val = expert_num.has_value() ? expert_num.value() : any_dim;
   auto drop_pad_mode_val = drop_pad_mode.has_value() ? drop_pad_mode.value() : any_dim;
-
   if (drop_pad_mode_val == any_dim) {
     return {{any_shape}, {expd_row_idx_dim}, {expert_num_val}, {expert_num_val}};
   }
