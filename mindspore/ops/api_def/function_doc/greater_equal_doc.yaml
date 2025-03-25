@@ -48,6 +48,6 @@ greater_equal:
         >>> print(output)
         [True True False]
         >>> y = 2.1
-        >>> output = mint.greater_equal(input, other)
+        >>> output = mint.greater_equal(input, y)
         >>> print(output)
         [False False True]
