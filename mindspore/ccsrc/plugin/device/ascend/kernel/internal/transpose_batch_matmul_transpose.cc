@@ -27,6 +27,8 @@ internal::InternalOpPtr InternalTransposeBatchMatmulTranspose::CreateKernel(
   internal::TransBMMTransParam param;
   param.perm_in = ms_inputs[kIndex2]->GetValueWithCheck<std::vector<int64_t>>();
   param.perm_out = ms_inputs[kIndex3]->GetValueWithCheck<std::vector<int64_t>>();
+  param.transpose_a = ms_inputs[kIndex4]->GetValueWithCheck<bool>();
+  param.transpose_b = ms_inputs[kIndex5]->GetValueWithCheck<bool>();
   if (param.perm_in.size() != param.perm_out.size()) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', size of perm_in should equal to the perm_out, but got "
                       << param.perm_in.size() << " and " << param.perm_out.size();
