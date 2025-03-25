@@ -1134,6 +1134,8 @@ CNodePtr InsertQuantNodeManager::NewAscendAntiQuantCNode(const FuncGraphPtr &fun
 
 CNodePtr InsertQuantNodeManager::NewMulNode(const FuncGraphPtr &func_graph, const AnfNodePtr &input_1,
                                             const AnfNodePtr &input_2) {
+  MS_CHECK_TRUE_MSG(input_1 != nullptr, nullptr, "input_1 is nullptr.");
+  MS_CHECK_TRUE_MSG(input_2 != nullptr, nullptr, "input_2 is nullptr.");
   auto prim_c = std::make_shared<ops::MulFusion>();
   MS_CHECK_TRUE_MSG(prim_c != nullptr, nullptr, "prim_c is nullptr.");
   auto prim = prim_c->GetPrim();
@@ -1152,6 +1154,8 @@ CNodePtr InsertQuantNodeManager::NewMulNode(const FuncGraphPtr &func_graph, cons
 
 CNodePtr InsertQuantNodeManager::NewAddNode(const FuncGraphPtr &func_graph, const AnfNodePtr &input_1,
                                             const AnfNodePtr &input_2) {
+  MS_CHECK_TRUE_MSG(input_1 != nullptr, nullptr, "input_1 is nullptr.");
+  MS_CHECK_TRUE_MSG(input_2 != nullptr, nullptr, "input_2 is nullptr.");
   auto prim_c = std::make_shared<ops::AddFusion>();
   MS_CHECK_TRUE_MSG(prim_c != nullptr, nullptr, "prim_c is nullptr.");
   auto prim = prim_c->GetPrim();
