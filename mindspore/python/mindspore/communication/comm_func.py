@@ -951,7 +951,7 @@ def send(tensor, dst=0, group=GlobalComm.WORLD_COMM_GROUP, tag=0):
         >>> if rank < size / 2:
         ...     _x = ms.Tensor(x)
         ...     send(_x, rank + size // 2)
-        >>> else:
+        ... else:
         ...     _x2 = ms.Tensor(x2)
         ...     output = recv(_x2, rank - size // 2)
         ...     print(output)
@@ -1026,7 +1026,7 @@ def recv(tensor, src=0, group=GlobalComm.WORLD_COMM_GROUP, tag=0):
         >>> if rank < size / 2:
         ...     _x = ms.Tensor(x)
         ...     send(_x, rank + size // 2)
-        >>> else:
+        ... else:
         ...     _x2 = ms.Tensor(x2)
         ...     output = recv(_x2, rank - size // 2)
         ...     print(output)
@@ -1102,7 +1102,7 @@ def isend(tensor, dst=0, group=GlobalComm.WORLD_COMM_GROUP, tag=0):
         >>> if rank < size / 2:
         ...     _x = ms.Tensor(x)
         ...     isend(_x, rank + size // 2)
-        >>> else:
+        ... else:
         ...     _x2 = ms.Tensor(x2)
         ...     output, handle = irecv(_x2, rank - size // 2)
         ...     handle.wait()
@@ -1181,7 +1181,7 @@ def irecv(tensor, src=0, group=GlobalComm.WORLD_COMM_GROUP, tag=0):
         >>> if rank < size / 2:
         ...     _x = ms.Tensor(x)
         ...     isend(_x, rank + size // 2)
-        >>> else:
+        ... else:
         ...     _x2 = ms.Tensor(x2)
         ...     output, handle = irecv(_x2, rank - size // 2)
         ...     handle.wait()
