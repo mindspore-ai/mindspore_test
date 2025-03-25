@@ -49,7 +49,7 @@ class BACKEND_COMMON_EXPORT GraphKernelBuilder {
   virtual bool SingleOpParallelBuild(const std::vector<AnfNodePtr> &anf_nodes) = 0;
   virtual bool ParallelBuild(const std::vector<JsonNodePair> &build_args) = 0;
 
-  std::function<std::tuple<FuncGraphPtr, AnfNodePtrList, AnfNodePtrList>(const AnfNodePtrList &)> build_func_;
+  static std::function<std::tuple<FuncGraphPtr, AnfNodePtrList, AnfNodePtrList>(const AnfNodePtrList &)> build_func_;
 
  protected:
   std::vector<std::string> GetKernelJsonsByHashId(const std::vector<JsonNodePair> &build_args,
