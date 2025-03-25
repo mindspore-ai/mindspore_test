@@ -332,9 +332,12 @@ FuncGraphPtr JitBpropGraphPass(const ResourcePtr &resource, bool need_renormaliz
     irpass.special_op_eliminate_,
   });
   opt::OptPassConfig fill_zeros_like = opt::OptPassConfig{irpass.zero_like_fill_zero_};
+  // In case custom bprop has meta fg need to expand, such as J.
+  opt::OptPassConfig expand_meta_fg = opt::OptPassConfig{opt::irpass::ExpandMetaFg()};
 
   (void)map.emplace_back("grad_graph_opt", grad_graph_opt);
   (void)map.emplace_back("zeros_like", fill_zeros_like);
+  (void)map.emplace_back("expand_meta_fg", expand_meta_fg);
 
   MS_EXCEPTION_IF_NULL(resource);
   auto func_graph = resource->func_graph();
