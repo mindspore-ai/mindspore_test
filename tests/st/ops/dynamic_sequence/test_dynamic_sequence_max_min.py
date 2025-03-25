@@ -91,7 +91,7 @@ def test_seq_max_grad():
     x = mutable((1, 2, 3), True)
     dout = mutable(2)
     net = MaxNet()
-    grad_func = GradOperation(get_all=True, sens_param=True)(net)
+    grad_func = jit(GradOperation(get_all=True, sens_param=True)(net), backend="ms_backend")
     print("grad=:", grad_func(x, dout))
 
 
@@ -106,7 +106,7 @@ def test_seq_min_grad():
     x = mutable((1, 2, 3), True)
     dout = mutable(2)
     net = MinNet()
-    grad_func = GradOperation(get_all=True, sens_param=True)(net)
+    grad_func = jit(GradOperation(get_all=True, sens_param=True)(net), backend="ms_backend")
     print("grad=:", grad_func(x, dout))
 
 
