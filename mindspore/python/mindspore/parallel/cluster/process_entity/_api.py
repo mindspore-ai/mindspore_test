@@ -284,8 +284,8 @@ class _ProcessManager:
                 # If node_id is generated in '_get_node_id_and_log_path' method, export 'RANK_ID' environment variable.
                 # This is for rank_table method's compatibility consideration.
                 os.environ["RANK_ID"] = str(node_id)
-                logger.info(f"Start worker process with rank id:{node_id}, log file:{log_name}. "
-                            f"Environment variable [RANK_ID={node_id}] is exported.")
+                print(f"Start worker process with rank id:{node_id}, log file:{log_name}. "
+                      f"Environment variable [RANK_ID={node_id}] is exported.", flush=True)
             if self.is_simulation and (self.sim_rank_id != -1):
                 # Reset RANK_ID env to sim_rank_id if sim_rank_id is set.
                 os.environ["RANK_ID"] = str(self.sim_rank_id)
