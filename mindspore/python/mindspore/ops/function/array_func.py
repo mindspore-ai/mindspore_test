@@ -513,6 +513,9 @@ def where(condition, input, other):
 def reverse(x, axis):
     """
     This interface will be deprecated in the future, and use :func:`mindspore.ops.flip` instead.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
     """
     return flip(x, axis)
 
