@@ -2109,6 +2109,8 @@ REG_BPROP_BUILDER("NormalFloatFloat").SetUnusedInputs({i0, i1, i2, i3, i4, i5}).
 
 REG_BPROP_BUILDER("UniformExt").SetUnusedInputs({i0, i1, i2, i3, i4, i5}).SetBody(ReturnZeros);
 
+REG_BPROP_BUILDER("InplaceExponential").SetUnusedInputs({i0, i1, i2, i3, i4, i5}).SetBody(ReturnZeros);
+
 REG_BPROP_BUILDER("InplaceUniform").SetUnusedInputs({i5, i6}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto from = ib->GetInput(kIndex1);
