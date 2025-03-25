@@ -540,6 +540,9 @@ def _pipeline_clear_grad(accu_grad, grad):
 def grad_scale(scale, grad):
     """grad_scale"""
     new_grad = scale * grad
+    grad = ops.depend(grad, new_grad)
+    zeros = F.zeros_like(grad)
+    new_grad = ops.depend(new_grad, F.assign(grad, zeros))
     return new_grad
 
 @_primexpr
