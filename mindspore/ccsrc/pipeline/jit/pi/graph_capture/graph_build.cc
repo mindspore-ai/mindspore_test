@@ -211,11 +211,6 @@ const std::unordered_map<int, bool (GraphBuilder::*)(const Instr &)> GraphBuilde
   {SEND, &GraphBuilder::DoSend},
 };
 
-bool GraphBuilder::DoOtherBytecode(const Instr &instr) {
-  MS_LOG(ERROR) << "TODO: resolve for instruction " << instr.ToString();
-  return false;
-}
-
 bool GraphBuilder::ReplaceAll(ValueNode *old_node, ValueNode *new_node, bool *is_referenced) {
   static const std::set<int> ref_op = {
     BUILD_TUPLE, BUILD_LIST, BUILD_SET, BUILD_MAP, BUILD_CONST_KEY_MAP,
@@ -636,7 +631,6 @@ bool GraphBuilder::DoCall(const Instr &instr) {
 Instr GraphBuilder::NewCallFuncInstr(int oparg) { return Instr(IS_PYTHON_3_11_PLUS ? CALL : CALL_FUNCTION, oparg); }
 
 bool GraphBuilder::DoNop(const Instr &instr) { return true; }
-bool GraphBuilder::NotImplementBytecode(const Instr &instr) { return false; }
 
 bool GraphBuilder::DoGetYieldFromIter(const Instr &instr) {
   auto iterable = seek(0)->GetVobj()->GetPyObject().ptr();
@@ -2184,40 +2178,6 @@ GraphBuilder::GraphBuilder(const PyFrameWrapper &f)
   }
 }
 
-void GraphBuilder::CollectInlineInfo(CallNode *node) {
-  Graph *sub_graph = node->GetSubGraph();
-  if (!sub_graph) {
-    return;
-  }
-  std::string inline_name = "";
-  int code_size = 0;
-  if (sub_graph != nullptr && sub_graph->GetCodeObj() != nullptr) {
-    inline_name = py::str(reinterpret_cast<PyObject *>(sub_graph->GetCodeObj())).cast<std::string>();
-    code_size = _PyCode_NBYTES(sub_graph->GetCodeObj());
-  }
-  std::string func_name = graph_->GetCodeName();
-  std::string root_name = root_->GetGraph()->GetCodeName();
-  JitCompileResults *jcr = GetJitCompileResults(root_->GetGraph()->GetCodeObj());
-  if (jcr && jcr->tbs() && !func_name.empty()) {
-    jcr->tbs()->PushInlineInfo(
-      {func_name, inline_name, root_name, node->GetInlineReason(), code_size, 0, node->GetLineNo()});
-  }
-}
-
-void GraphBuilder::HandleLoop() {
-  Block *loop_head = graph_->GetCFG()->GetBlockByBci(cur_bci_);
-  if (!loop_head->is_loop_head()) {
-    return;
-  }
-  /**
-   * (chaiyouheng): before trace start, unrolling loop. avoid graph status is changed while trace loop
-   *       just unrolling a small loop that call nn.CellList.
-   *
-   * LoopUnrolling loopUnrollingExe = LoopUnrolling(*graph_);
-   * (void)loopUnrollingExe.ExecuteLoopUnroll(loop_head);
-   */
-}
-
 py::object GraphBuilder::FindPyFunc(AObject *vobj) {
   if (!vobj) {
     return py::cast<py::object>(nullptr);
@@ -2448,47 +2408,6 @@ AObject *GraphBuilder::BuildSuperObject(PyCodeObject *co) {
   return super_obj;
 }
 
-bool GraphBuilder::ClassInstantiationFold(CallNode *call_node, AObject::Type type) {
-  const auto &params = call_node->getInputs();
-  int call_op = call_node->GetOpcode();
-
-  // list, tuple, dict fold
-  std::vector<ValueNode *> inputs;
-  int new_op;
-  int new_arg;
-  if (type == AObject::kTypeTuple || type == AObject::kTypeList) {
-    if (params.size() > 1) {
-      int arg_op = params[1]->GetOpcode();
-      if (Opcode(call_op).IsCallFunc() && (arg_op == BUILD_TUPLE || arg_op == BUILD_LIST)) {
-        inputs = params[1]->getInputs();
-      } else {
-        return false;
-      }
-    }
-    new_op = type == AObject::kTypeTuple ? BUILD_TUPLE : BUILD_LIST;
-    new_arg = inputs.size();
-  } else if (type == AObject::kTypeDict) {
-    if (params.size() > 1) {
-      ValueNode *map_node;
-      if (Opcode(call_op).IsCallFunc() && params[1]->GetOpcode() == BUILD_MAP) {
-        map_node = params[1];
-      } else if (call_op == CALL_FUNCTION_EX && params.size() > 2 && params[2]->GetOpcode() == BUILD_MAP) {
-        map_node = params[2];
-      } else {
-        return false;
-      }
-      inputs = map_node->getInputs();
-    }
-    new_op = BUILD_MAP;
-    new_arg = inputs.size() / 2;
-  } else {
-    return false;
-  }
-  pop();
-  std::for_each(inputs.begin(), inputs.end(), [this](auto n) { push(n); });
-  return DoBuildOp({new_op, new_arg});
-}
-
 void LogGuardFailed(ValueNode *node, const GraphJitConfig &conf, const std::string &msg) {
   if (!conf.GetBoolConfig(GraphJitConfig::kLogGraphBreak)) {
     return;
@@ -2620,80 +2539,6 @@ ValueNode *GetSelfFromMethod(ValueNode *method) {
   // a = TypeA(); b = TypeB(); a.method = b.method
   // then tp of a.method is TypeA, but real_tp is TypeB.
   return nullptr;
-}
-
-bool GraphBuilder::ReplaceCall(CallNode *call_node, const py::object &old_func) {
-  if (call_node->GetOpcode() == CALL_FUNCTION_EX && call_node->input(1)->GetOpcode() != BUILD_TUPLE) {
-    // dynamic length variable arguments, user-defined unpack sequence
-    return false;
-  }
-  if (!graph_->GuardInlinedFunc(call_node)) {
-    return false;
-  }
-  auto jcr = GetJitCompileResults(old_func.ptr());
-  if (jcr != nullptr && jcr->stat() != JitCompileResults::NEVER_COMPILE) {
-    return true;
-  }
-
-  py::object new_func = GetPIJitCopiedFunc(old_func);
-
-  auto &nodes = graph_->GetTracedNodes();
-  size_t index = std::distance(nodes.rbegin(), std::find(nodes.rbegin(), nodes.rend(), call_node));
-  MS_EXCEPTION_IF_CHECK_FAIL(index < nodes.size(), "can't find call node");
-  ++index;
-
-  ValueNode *self = nullptr;
-  AObject::Type func_type = call_node->input(0)->GetVobj()->GetType();
-  if (func_type == AObject::kTypeBoundMethod) {
-    ValueNode *func_val = call_node->input(0);
-    self = GetSelfFromMethod(func_val);
-    if (self == nullptr) {
-      ValueNode *node = NewValueNode(func_val->get_attr(GraphBuilder::ID___self__), LOAD_ATTR, -1, {func_val},
-                                     GraphBuilder::ID___self__);
-      node->SetGraph(call_node->GetGraph());
-      nodes.insert(nodes.end() - index, node);
-      self = node;
-    }
-  } else if (func_type == AObject::kTypeCell || AObject::kTypeAnyValue) {
-    self = call_node->input(0);
-  } else if (func_type != AObject::kTypeFunction) {
-    return false;
-  }
-
-  std::stringstream key;
-  PyObject *func_name = reinterpret_cast<PyFunctionObject *>(new_func.ptr())->func_qualname;
-  key << std::string(py::str(func_name)) << "." << new_func.ptr();
-
-  // new func node
-  DoLoadConst({LOAD_CONST, -1, new_func});
-  ValueNode *func_node = pop();
-  nodes.insert(nodes.end() - index, func_node);
-
-  // replace node
-  call_node->getInputs()[0] = func_node;
-  if (self == nullptr) {
-    return true;
-  }
-
-  // append self to args
-  if (call_node->GetOpcode() != CALL_FUNCTION_EX) {
-    call_node->getInputs().insert(call_node->getInputs().begin() + 1, self);
-    call_node->SetOparg(call_node->GetOparg() + 1);
-    return true;
-  }
-
-  // append self to variable arguments
-  ValueNode *args_node = call_node->input(1);
-  std::vector<ValueNode *> inputs = args_node->getInputs();
-  inputs.insert(inputs.begin(), self);
-  AObject *args_info = AObject::BuildOperations(CollectObjects(inputs), BUILD_TUPLE, nullptr);
-
-  ValueNode *tuple = this->NewValueNode(args_info, BUILD_TUPLE, inputs.size(), inputs);
-  tuple->set_bci(call_node->bci());
-  tuple->SetLineNo(call_node->GetLineNo());
-  nodes.insert(nodes.end() - index, tuple);
-  call_node->getInputs()[1] = tuple;
-  return true;
 }
 
 namespace {
@@ -2935,61 +2780,6 @@ bool GraphBuilder::HandleSubGraphOutput(const AbstractWrapperPtr &output, const 
 
   (void)std::copy(subgraph_builder->side_effect_outputs_.begin(), subgraph_builder->side_effect_outputs_.end(),
                   std::back_inserter(side_effect_outputs_));
-  return true;
-}
-
-bool GraphBuilder::UnpackDynamicLengthDictByBytecode(std::vector<ValueNode *> *params, CallNode *call_node,
-                                                     ValueNode *dict_node) {
-  // user defined mappings, dynamic length dictionary unpack
-  if (dict_node->GetVobj()->GetType() != AObject::kTypeDict) {
-    return false;
-  }
-  auto dict = static_cast<AbstractDict *>(dict_node->GetVobj());
-  /**
-   * must be guard this dict length
-   */
-  py::dict py_dict = dict->GetPyObject();
-  py::tuple keys(py_dict.size());
-  PyObject *key;
-  PyObject *value;
-  Py_ssize_t pos = 0;
-  Py_ssize_t cnt = 0;
-  while (PyDict_Next(py_dict.ptr(), &pos, &key, &value)) {
-    PyObject *py_key = key;
-    MS_EXCEPTION_IF_CHECK_FAIL(PyUnicode_CheckExact(py_key), "key must be string");
-    PyObject *py_value = value;
-    ValueNode *index = NewValueNode(AObject::Convert(py_key), LOAD_CONST, -1, {});
-    ValueNode *val = NewValueNode(AObject::Convert(py_value), BINARY_SUBSCR, 0, {dict_node, index});
-    keys[cnt++] = py_key;
-    params->push_back(val);
-    call_node->AddParam(val);
-  }
-  ValueNode *const_keys = NewValueNode(AObject::Convert(keys), LOAD_CONST, -1, {});
-  params->push_back(const_keys);
-  return true;
-}
-
-bool GraphBuilder::UnpackDynamicLengthTupleByBytecode(std::vector<ValueNode *> *params, ValueNode *args_node,
-                                                      CallNode *call_node) {
-  // user-defined sequence, dynamic length tuple unpack
-  if (args_node->GetVobj() && args_node->GetVobj()->GetType() != AObject::kTypeTuple &&
-      args_node->GetVobj()->GetType() != AObject::kTypeList) {
-    return false;
-  }
-  AbstractTuple *tuple = static_cast<AbstractTuple *>(args_node->GetVobj());
-  /**
-   * must be guard this tuple length
-   */
-  auto items = tuple->GetElements();
-  std::vector<ValueNode *> args;
-  for (size_t i = 0; i < items.size(); i++) {
-    ValueNode *idx_node = this->NewValueNode(AObject::Convert(py::int_(i)), LOAD_CONST, -1, {});
-    auto value = this->NewValueNode(items[i], BINARY_SUBSCR, 0, {args_node, idx_node});
-    args.push_back(value);
-
-    call_node->AddParam(value);
-  }
-  params->insert(params->begin(), args.begin(), args.end());
   return true;
 }
 
@@ -3444,7 +3234,6 @@ StopTraceReason GraphBuilder::HandleCall() {
   SetMixedPrecisionType(call_node, frame);
   // build sub-graph
   stop_reason = BuildSubGraph(call_node, callable_info, subgraph);
-  CollectInlineInfo(call_node);
   return stop_reason;
 }
 

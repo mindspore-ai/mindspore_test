@@ -145,17 +145,6 @@ static void ensureInitialize() {
   init = true;
 }
 
-void Traceback::PushInlineInfo(InlineInfo info) {
-  const auto &it = inline_infos_.find(info.root_name_);
-  if (it != inline_infos_.cend()) {
-    it->second.push_back(info);
-  } else {
-    std::list<InlineInfo> inlines;
-    inlines.push_back(info);
-    inline_infos_.emplace(info.root_name_, inlines);
-  }
-}
-
 static void PrintLabel(std::stringstream &os, const std::string &str, int distance = 30) {
   os << std::left << std::setw(distance) << str << ": ";
 }
@@ -203,32 +192,11 @@ std::string Traceback::Dump(bool is_all) const {
     } else {
       os << std::left << std::setw(kThree * width) << "unknown";
     }
-    os << std::left << std::setw(width) << tb.code_size_ << " =====>\n";
-    // dump inline info
-    DumpInlineInfo(os, tb.func_name_);
+    os << std::left << std::setw(width) << tb.code_size_ << "\n";
   }
   os << "\n\n";
   os << DumpSummary();
   return os.str();
-}
-
-void Traceback::DumpInlineInfo(std::stringstream &os, const std::string &func_name) const {
-  const auto &it = inline_infos_.find(func_name);
-  if (it == inline_infos_.cend()) {
-    return;
-  }
-  for (const auto &info : it->second) {
-    std::string space((info.depth + 1) * kTwo, ' ');
-    os << space << "| inline_info:" << GetInlineReasonDesc(static_cast<InlineReason>(info.res))
-       << " line:" << info.line;
-    if (!info.inline_name_.empty()) {
-      os << " func_name:" << info.inline_name_;
-    }
-    if (info.res == InlineReason::kInline || info.res == InlineReason::kInlinePartial) {
-      os << " code_size:" << info.code_size_;
-    }
-    os << "\n";
-  }
 }
 
 std::string Traceback::DumpSummary() const {

@@ -67,7 +67,6 @@ class GraphBuilder {
 
   StopTraceReason TraceRun();
 
-  void CollectInlineInfo(CallNode *node);
   Graph *GetGraph() const { return graph_; }
   void DumpDFG();
 
@@ -87,9 +86,6 @@ class GraphBuilder {
   int StackSize() { return tryBlockStacks_.size(); }
   std::vector<TryBlock> &GetTryBlockStacks() { return tryBlockStacks_; }
   TryBlock PopStack();
-
-  // loop analyze
-  void HandleLoop();
 
   /**
    * Handle call node. Infer call result. Inline call node bytecode
@@ -128,8 +124,6 @@ class GraphBuilder {
    */
   bool HandleCallParameters(const py::object &func_info, CallNode *call_node, FrameStates *frame);
 
-  bool UnpackDynamicLengthTupleByBytecode(std::vector<ValueNode *> *params, ValueNode *args_node, CallNode *call_node);
-
   /**
    * Unpack CALL_FUNCTION_EX parameters to stack
    * \param[in] params the call stack
@@ -141,10 +135,6 @@ class GraphBuilder {
   bool UnpackCallExParams(std::vector<ValueNode *> *params, int extra_local, bool *has_kw, CallNode *call_node);
 
   bool UnpackCallExDict(std::vector<ValueNode *> *params, CallNode *call_node);
-
-  bool UnpackDynamicLengthDictByBytecode(std::vector<ValueNode *> *params, CallNode *call_node, ValueNode *dict_node);
-  // generate the general unpack operations of dict, return operations
-  std::vector<AbstractNode *> GenerateDictUnpack(ValueNode *kwargs_node);
 
   /**
    * Pack key-word parameters, generate kwvargs value node, check kw-defaults arguments
@@ -178,8 +168,6 @@ class GraphBuilder {
 
   // build subgraph, return stop trace reason
   StopTraceReason BuildSubGraph(CallNode *call_node, const py::object &func, const GraphBuilderPtr &subgraph);
-
-  bool ReplaceCall(CallNode *call_node, const py::object &func);
 
   ValueNode *BuildCallClassNode(CallNode *call_node);
 
@@ -217,8 +205,6 @@ class GraphBuilder {
   ValueNode *MakeTensorCopy(ValueNode *tensor);
 
   ValueNode *ReplaceMergeOp(int opcode, const std::vector<ValueNode *> &inputs);
-
-  bool ClassInstantiationFold(CallNode *, AObject::Type);
 
   // frame operation
   ValueNode *&seek(int p) { return frame_.Peek(p); }
@@ -287,8 +273,6 @@ class GraphBuilder {
   bool DoYieldFrom(const Instr &instr);
   bool DoGetYieldFromIter(const Instr &instr);
   bool DoWith(const Instr &instr);
-  bool DoOtherBytecode(const Instr &instr);
-  bool NotImplementBytecode(const Instr &instr);
   bool DoRaise(const Instr &instr);
   bool DoSetupFinally(const Instr &instr);
   bool DoWithCleanUpStart(const Instr &instr);
@@ -298,7 +282,6 @@ class GraphBuilder {
   bool DoEndFinally(const Instr &instr);
   bool DoCallFinally(const Instr &instr);
   bool DoSetupExc(const Instr &instr);
-  bool DoRaiseVarage(const Instr &instr);
   bool DoPopExc(const Instr &instr);
   bool DoExcMatch(const Instr &instr);
   bool DoLoadAssertError(const Instr &instr);
