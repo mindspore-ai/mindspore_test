@@ -1367,6 +1367,7 @@ class MetaTensorData : public ItemData {
         ret = tid_ == tensor_ptr->data_type() && is_parameter_ == is_parameter &&
               CheckTypeAndShape(tensor_ptr->Dtype(), tensor_ptr->shape());
       }
+      Py_XDECREF(stub);
       return ret && ((is_parameter_ != true) || ParamInfoData::Equal(param_, param));
     }
     return false;
@@ -1627,6 +1628,7 @@ class TensorData : public MetaTensorData {
       mindspore::tensor::MetaTensorPtr mtensor_ptr = nullptr;
       PyObject *stub = nullptr;
       bool is_stubtensor = GetStubInfo(obj, &stub, &mtensor_ptr);
+      Py_XDECREF(stub);
       if (is_stubtensor_ || is_stubtensor) {
         return ret;
       }
