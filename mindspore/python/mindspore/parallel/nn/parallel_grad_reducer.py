@@ -57,28 +57,17 @@ class PipelineGradReducer(Cell):
 
     Args:
         parameters (list): the parameters to be updated.
-        scale_sense (float): the scale sense of the gradient. Default: 1.0.
-        opt_shard(bool): if use parallel optimizer, set opt_shard True.
+        scale_sense (float, optional): the scale sense of the gradient. Default: 1.0.
+        opt_shard(bool, optional): if use parallel optimizer, set opt_shard True.
 
     Raise:
         RuntimeError: If the mode is not graph mode.
-        RuntimeError: If the parallel mode is not semi auto parallel or auto parallel.
 
     Supported Platforms:
         ``Ascend`` ``GPU``
 
     Examples:
         .. note::
-            Before running the following examples, you need to configure the communication environment variables.
-
-            For the Ascend devices, users need to prepare the rank table, set rank_id and device_id.
-            Please see the `rank table Startup
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/rank_table.html>`_
-            for more details.
-
-            For the GPU devices, users need to prepare the host file and mpi, please see the `mpirun Startup
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/mpirun.html>`_ .
-
             This example should be run with multiple devices.
 
         >>> import numpy as np

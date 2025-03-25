@@ -363,14 +363,13 @@ class AutoParallel(Cell):
         whether to enable interleaving scheduling, configure type of scheduler when using pipeline parallel.
 
         Args:
-            stages (int): Set the stage information for pipeline parallelism
+            stages (int, optional): Set the stage information for pipeline parallelism
                 This indicates how the devices are individually distributed on the pipeline.
                 All devices will be divided into stages of pipine_dags. Default value: 1.
-            output_broadcast (bool): When performing pipeline parallel inference,
+            output_broadcast (bool, optional): When performing pipeline parallel inference,
                 whether the result of the last stage is broadcasted to the other stages. Default value: False.
-            interleave (bool): Whether to enable interleaving scheduling.
-            scheduler(str): The type of scheduler.
-
+            interleave (bool, optional): Whether to enable interleaving scheduling.
+            scheduler(str, optional): The type of scheduler
         Raises:
             TypeError: If the type of 'stages is not int
             ValueError: When stages <= 0
@@ -506,16 +505,34 @@ class AutoParallel(Cell):
         self._dump_device_local_norm = True
 
     def enable_gradients_mean(self):
-        """ Perform mean operator after allreduce of gradients in parallel mode. """
+        """
+        Perform mean operator after allreduce of gradients in parallel mode.
+
+        Examples:
+            >>> parallel_net = AutoParallel(net, parallel_mode="semi_auto")
+            >>> parallel_net.enable_gradients_mean()
+        """
         self._gradients_mean = True
 
     def disable_gradient_fp32_sync(self):
-        """ Disable convert tensor type from fp16 to fp32 before parameter gradients allreduce. """
+        """
+        Disable convert tensor type from fp16 to fp32 before parameter gradients allreduce.
+
+        Examples:
+            >>> net = Network()
+            >>> parallel_net = AutoParallel(net, parallel_mode="semi_auto")
+            >>> parallel_net.disable_gradient_fp32_sync()
+        """
         self._gradient_fp32_sync = False
 
     def disable_loss_repeated_mean(self):
         """
         The mean operator is not executed backwards when the calculation is repeated.
+
+        Examples:
+            >>> net = Network()
+            >>> parallel_net = AutoParallel(net, parallel_mode="semi_auto")
+            >>> parallel_net.disable_loss_repeated_mean()
         """
         self._loss_repeated_mean = False
 
