@@ -3136,7 +3136,7 @@ class Cell(Cell_):
                 prefix = args[1]
             if len(args) > 2 and keep_vars is False:
                 keep_vars = args[2]
-        if destination is not None and not isinstance(destination, OrderedDict):
+        if destination is not None and not isinstance(destination, dict):
             raise TypeError(f"The type of destination must be OrderedDict, but got {type(destination)}")
         if not isinstance(prefix, str):
             raise TypeError(f"The type of prefix must be string, but got {type(prefix)}")
