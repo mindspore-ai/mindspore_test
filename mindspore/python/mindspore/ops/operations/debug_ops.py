@@ -458,6 +458,7 @@ class InsertGradientOf(Primitive):
         self.add_prim_attr('side_effect_backprop', True)
         self.f = f
 
+
 class Morph(PrimitiveWithInfer):
     """
     The `Morph` Primitive is used to encapsulate a user-defined function `fn`, allowing it to be used as a custom
@@ -557,6 +558,7 @@ class Morph(PrimitiveWithInfer):
 
     def __call__(self, *args):
         raise RuntimeError("Morph is only supported in GRAPH_MODE.")
+
 
 class HookBackward(PrimitiveWithInfer):
     """

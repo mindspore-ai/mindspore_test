@@ -457,6 +457,7 @@ unique2_ = Unique2()
 tuple_slice = validator.tuple_slice
 expanded_shape = validator.expanded_shape
 
+
 # 1 to
 def tensor_to(input, dtype):
     return cast(input, dtype)
@@ -1306,6 +1307,7 @@ def tensor_inplace_mul(input, other):
 def tensor_bincount(input, weights=None, minlength=0):
     return bincount(input, weights, minlength)
 
+
 def tensor_roll(input, shifts, dims=None):
     return roll(input, shifts, dims)
 
@@ -1314,6 +1316,7 @@ def tensor_roll(input, shifts, dims=None):
 # 135 double
 
 # 136 lcm
+
 
 # 137 mm
 def tensor_mm(input, mat2):
@@ -1500,23 +1503,29 @@ def tensor_median_dim(input, dim=-1, keepdim=False):
 def tensor_logaddexp2(input, other):
     return logaddexp2(input, other)
 
+
 def deprecated_tensor_logaddexp2(input, other):
     return F.logaddexp2(input, other)
+
 
 # 157
 def tensor_empty(*size, dtype=None, device=None):
     logger.error(
         "This is a function for empty not should be called. Please check the implementation.")
 
+
 def deprecated_tensor_logaddexp(input, other):
     return F.logaddexp(input, other)
+
 
 def tensor_xlogy(input, other):
     if isinstance(other, (float, int, bool)):
         other = F.scalar_to_tensor(other)
     return xlogy_op(input, other)
 
+
 # 158
+
 
 # 159 histc
 def tensor_histc(input, bins=100, min=0, max=0):
@@ -1527,35 +1536,45 @@ def tensor_histc(input, bins=100, min=0, max=0):
 def tensor_frac(input):
     return frac(input)
 
+
 # 161 bitwise_not baddbmm bitwise_or bitwise_and bitwise_xor logical_xor
 def deprecated_baddbmm(input, batch1, batch2, *, beta=1, alpha=1):
     return F.baddbmm(input, batch1, batch2, beta=beta, alpha=alpha)
 
+
 def tensor_bitwise_not(input):
     return bitwise_not_op(input)
+
 
 def deprecated_bitwise_or(input, other):
     return bitwise_or(input, other)
 
+
 def deprecated_bitwise_and(input, other):
     return bitwise_and(input, other)
+
 
 def deprecated_bitwise_xor(input, other):
     return bitwise_xor(input, other)
 
+
 def tensor_logical_xor(input, other):
     return logical_xor_op(input, other)
+
 
 # 162
 def tensor_log10(input):
     return log10(input)
 
+
 # 186
 def deprecated_tensor_addcdiv(input, tensor1, tensor2, value=1):
     return addcdiv(input, tensor1, tensor2, value=value)
 
+
 def tensor_addcdiv_ext(input, tensor1, tensor2, *, value=1):
     return addcdiv_ext_op(input, tensor1, tensor2, value=value)
+
 
 # 501
 def tensor_addbmm(input, batch1, batch2, *, beta=1, alpha=1):
@@ -1773,8 +1792,10 @@ def deprecated_tensor_var(input, axis=None, ddof=0, keepdims=False):
             nums *= input.shape[ax]
     return _tensor_div(x_sum, nums - ddof)
 
+
 def tensor_kthvalue(input, k, dim=-1, keepdim=False):
     raise ValueError("should not come here for kthvalue py_method.")
+
 
 def tensor_sub_empty_(input, other, alpha=1):
     raise ValueError("should not come here for sub_ method.")
