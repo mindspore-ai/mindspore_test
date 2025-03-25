@@ -413,7 +413,6 @@ mindspore::HashSet<const tensor::Tensor *> GEBackend::weights_need_reprepare_ = 
 BackendGraphId GEBackend::backend_graph_id_ = 0;
 
 GEBackend::GEBackend() {
-  // Init();
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
   std::string device_target = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
@@ -1125,10 +1124,6 @@ void GEBackend::WaitMultiStream() {
 RunningStatus GEBackend::Run(BackendGraphId graph_id, const VectorRef &inputs, VectorRef *outputs) {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kRuntime, runtime::ProfilerEvent::kBackendGraphRunInner,
                                      "graph_" + std::to_string(graph_id), true);
-
-  // if (IsGraphOutputValueNodeOrParameter(root_graph_->output(), args, outputs)) {
-  //   return;
-  // }
 
   const auto &context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
@@ -2027,7 +2022,6 @@ void GEBackend::CompileGraphFromSegment(const GraphSegmentPtr &segment, const Ba
     auto new_fg = graph_compiler_->Fetch(graph_id);
     MS_EXCEPTION_IF_NULL(new_fg);
 
-    // CacheFuncGraphWithKernelGraphId(segment->nodes_[0]->func_graph(), graph_id, device_context);
     graph_ids_.insert(graph_id);
     if (func_graph_to_kernel_graph_ids_.find(segment->nodes_[0]->func_graph()) ==
         func_graph_to_kernel_graph_ids_.end()) {
