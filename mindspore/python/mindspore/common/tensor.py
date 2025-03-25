@@ -378,26 +378,26 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
     def __int__(self):
         try:
             data = self._item()
+            return int(data)
         except ValueError:
             raise ValueError("Only one element tensors can be converted to Python scalars")
-        except TypeError as e:
-            raise TypeError(str(e))
-        else:
-            return int(data)
+
 
     def __float__(self):
-        data = self.asnumpy()
-        return self._convert_scalar_(data, float, "Only one element tensors can be converted to Python scalars")
+        try:
+            data = self._item()
+            return float(data)
+        except ValueError:
+            raise ValueError("Only one element tensors can be converted to Python scalars")
 
     def __index__(self):
         try:
             data = self._item()
+            if not isinstance(data, (int, bool)):
+                raise ValueError
+            return int(data)
         except ValueError:
             raise ValueError("Only integer tensors of a single element can be converted to an index.")
-        else:
-            if not isinstance(data, (int, bool)):
-                raise ValueError("Only integer tensors of a single element can be converted to an index.")
-            return int(data)
 
     def __pos__(self):
         return self
