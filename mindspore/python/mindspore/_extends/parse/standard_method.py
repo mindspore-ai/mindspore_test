@@ -3706,6 +3706,13 @@ def bernoulli(input, *, generator=None):
     return F.bernoulli_ext(input, generator=generator)
 
 
+def bernoulli_(input, p=0.5, *, generator=None):
+    """
+    Randomly draws binary numbers from a Bernoulli distribution.
+    """
+    return F.bernoulli_(input, p, generator=generator)
+
+
 def gather_nd(input_x, indices):
     r"""
     Gathers slices from a tensor by indices.

@@ -360,6 +360,7 @@ BuiltInTypeMap &GetMethodMap() {
        {"exp", std::string("exp")},                                        // P.Exp()
        {"repeat", std::string("repeat")},                                  // C.repeat_elements
        {"bernoulli", std::string("bernoulli")},                            // P.Bernoulli()
+       {"bernoulli_", std::string("bernoulli_")},                          // F.bernoulli_
        {"ceil", std::string("ceil")},                                      // P.Ceil
        {"floor", std::string("floor")},                                    // P.floor
        {"floor_divide", std::string("floor_divide")},                      // floor_divide

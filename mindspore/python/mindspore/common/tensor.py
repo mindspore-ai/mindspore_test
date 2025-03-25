@@ -2583,6 +2583,14 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('bernoulli')(self, generator=generator)
 
+    def bernoulli_(self, p=0.5, *, generator=None):
+        r"""
+        bernoulli_(p=0.5, *, generator=None) -> Tensor
+
+        In-place update version of :func:`mindspore.Tensor.bernoulli`.
+        """
+        return tensor_operator_registry.get('bernoulli_')(self, p, generator=generator)
+
     def random_(self, from_=0, to=None, *, generator=None):
         r"""
         Fill the tensor with numbers sampled from a discrete uniform distribution over an
