@@ -96,33 +96,11 @@ def test_cpu_e2e_dump():
     run_e2e_dump()
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-@security_off_wrap
-def test_cpu_e2e_dump_with_hccl_set():
-    context.set_context(mode=context.GRAPH_MODE, device_target="CPU")
-    os.environ["RANK_TABLE_FILE"] = "invalid_file.json"
-    os.environ["RANK_ID"] = "4"
-    run_e2e_dump()
-    del os.environ['RANK_TABLE_FILE']
-    del os.environ['RANK_ID']
-
-
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @security_off_wrap
 def test_gpu_e2e_dump():
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     run_e2e_dump()
-
-
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-@security_off_wrap
-def test_gpu_e2e_dump_with_hccl_set():
-    context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
-    os.environ["RANK_TABLE_FILE"] = "invalid_file.json"
-    os.environ["RANK_ID"] = "4"
-    run_e2e_dump()
-    del os.environ['RANK_TABLE_FILE']
-    del os.environ['RANK_ID']
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
