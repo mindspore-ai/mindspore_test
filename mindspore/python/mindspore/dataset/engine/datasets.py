@@ -3368,6 +3368,7 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
         # cache thread (get_ident()) to worker_id mapping in Python layer
         self.python_threads_to_workers = {}
         self.eof = None
+        self.running = False
 
     def __del__(self):
         try:
@@ -3508,17 +3509,20 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
 
         # Launch a clean process and register worker processes to be monitored by the watch dog.
         self._launch_monitor()
+        self.running = True
 
         # Register a termination function using weakref to avoid the object from unable to properly destruct.
         atexit.register(lambda cleanup: cleanup()() if cleanup() is not None else None,
                         weakref.WeakMethod(self.terminate))
 
     def terminate(self):
-        # abort the monitor first and then close all the workers
-        self._abort_monitor()
-        self.close_all_workers()
-        if hasattr(self, "warning_ctl"):
-            del self.warning_ctl
+        if self.running:
+            # abort the monitor first and then close all the workers
+            self._abort_monitor()
+            self.close_all_workers()
+            if hasattr(self, "warning_ctl"):
+                del self.warning_ctl
+            self.running = False
 
     def get_pids(self):
         """
