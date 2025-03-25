@@ -300,7 +300,7 @@ py::object FunctionBase::apply(const py::object &cls, const py::args &inputs) {
       bool is_diff = non_diff_tensors.count(base_tensor) == 0;
       if (!is_diff) {
         // For tensor not need grad, we should clean grad meta data.
-        base_tensor = std::make_shared<tensor::BaseTensor>(*base_tensor);
+        base_tensor = std::make_shared<tensor::Tensor>(*base_tensor);
         base_tensor->set_auto_grad_meta_data(nullptr);
         output_ret[i] = CValueToPybindObj(base_tensor);
       } else {

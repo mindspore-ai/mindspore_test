@@ -87,7 +87,7 @@ tensor::BaseTensorPtr ContiguousTensorOpProcess(const std::shared_ptr<OpRunner> 
   MS_EXCEPTION_IF_NULL(input_tensor);
 
   if (input_tensor->storage_info() == nullptr) {
-    auto output_tensor = std::make_shared<tensor::BaseTensor>(*input_tensor);
+    auto output_tensor = std::make_shared<tensor::Tensor>(*input_tensor);
     op->set_outputs({output_tensor});
     MS_LOG(DEBUG) << "Input_tensor storage_info is nullptr, just return cloned tensor, input_tensor id:"
                   << input_tensor->id() << ", output_tensor id:" << output_tensor->id();

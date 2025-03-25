@@ -609,6 +609,7 @@ COMMON_EXPORT const MetaTensorPtr GetMetaTensorFromValue(const ValuePtr &value);
 
 COMMON_EXPORT PyObject *PackTensor(const BaseTensorPtr &tensor);
 COMMON_EXPORT PyObject *Wrap(const BaseTensorPtr &tensor);
+COMMON_EXPORT PyObject *Wrap(const TensorPtr &tensor);
 COMMON_EXPORT PyObject *Wrap(const std::vector<BaseTensorPtr> &tensors);
 template <typename... Args>
 PyObject *Wrap(const std::tuple<Args...> &tuple) {

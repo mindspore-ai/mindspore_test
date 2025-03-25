@@ -344,7 +344,7 @@ tensor::BaseTensorPtr PostRunOp::CreateOutputTensor(const AnfNodePtr &output_nod
 
   // Create host tensor, the output tensor should use the infer type, it will be handed correctly by tensor data sync
   // when infer type is not equal to device type.
-  auto tensor = std::make_shared<tensor::BaseTensor>(kernel_tensor->dtype_id(), kernel_tensor->GetShapeVector());
+  auto tensor = std::make_shared<tensor::Tensor>(kernel_tensor->dtype_id(), kernel_tensor->GetShapeVector());
 
   // Put device tensor into host tensor.
   tensor->set_device_address(device_tensor);
@@ -525,7 +525,7 @@ tensor::BaseTensorPtr PostRunOp::CreateOutputTensorDynamicImpl(const OpCompilerI
 
   // Create host tensor, the output tensor should use the infer type, it will be handed correctly by tensor data sync
   // when infer type is not equal to device type.
-  auto tensor = std::make_shared<tensor::BaseTensor>(address->type_id(), address->host_shape());
+  auto tensor = std::make_shared<tensor::Tensor>(address->type_id(), address->host_shape());
 
   // Put device tensor into host tensor.
   address->SetNodeIndex(output_node, output_index);

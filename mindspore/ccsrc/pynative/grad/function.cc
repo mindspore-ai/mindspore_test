@@ -95,7 +95,7 @@ void CppFunctionDoGrad(AutogradContext *context, const BaseTensorPtrList &inputs
       const bool is_diff = context->non_differentiable_.count(output_tensor) == 0;
       const bool is_input = input_tensor_set.count(output_tensor);
       if (!is_diff && is_input) {
-        output_tensor = std::make_shared<tensor::BaseTensor>(*output_tensor);
+        output_tensor = std::make_shared<tensor::Tensor>(*output_tensor);
         output_tensor->set_auto_grad_meta_data(nullptr);
       } else {
         (void)PyNativeAlgo::AutoGradUtil::SetValueGradInfo(output_tensor, InputType::kOpOutput);

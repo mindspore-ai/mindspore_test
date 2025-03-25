@@ -444,11 +444,11 @@ void DynamicSilentChecker::DoSilentCheck(const std::string &op_name, const std::
 
 DynamicCheckStatePtr DynamicSilentChecker::CreateDynamicCheckState(const BaseTensorPtr &input_grad) {
   auto state = std::make_shared<DynamicCheckState>();
-  state->step = std::make_shared<BaseTensor>(kNumberTypeInt64, ShapeVector{1});
+  state->step = std::make_shared<tensor::Tensor>(kNumberTypeInt64, ShapeVector{1});
   if (HasApiSilentCheckV3()) {
-    state->avg = std::make_shared<BaseTensor>(input_grad->data_type(), ShapeVector{1});
+    state->avg = std::make_shared<tensor::Tensor>(input_grad->data_type(), ShapeVector{1});
   } else {
-    state->sfda = std::make_shared<BaseTensor>(kNumberTypeFloat32, ShapeVector{3});
+    state->sfda = std::make_shared<tensor::Tensor>(kNumberTypeFloat32, ShapeVector{3});
   }
   return state;
 }

@@ -25,6 +25,7 @@
 #include "include/common/visible.h"
 #include "include/common/pynative/ring_buffer.h"
 #include "ir/base_tensor.h"
+#include "ir/tensor.h"
 
 namespace mindspore {
 namespace pynative {
@@ -39,6 +40,7 @@ class COMMON_EXPORT AbstractConverter {
   AbstractBasePtr ConvertAbstract(const ValuePtr &t);
   // Tensor is held by Abstract, may lead to memory leak.
   AbstractBasePtr ConvertAbstract(const BaseTensorPtr &t);
+  AbstractBasePtr ConvertAbstract(const tensor::TensorPtr &t);
   AbstractBasePtr ConvertAbstract(const ValueTuplePtr &t);
 
   template <typename T>
