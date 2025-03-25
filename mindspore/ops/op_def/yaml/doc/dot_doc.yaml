@@ -27,9 +27,8 @@ dot:
             >>> from mindspore import Tensor, mint
             >>> x = Tensor([2.0, 3.0], mindspore.float32)
             >>> y = Tensor([2.0, 1.0], mindspore.float32)
-            >>> dot = mint.dot()
-            >>> output = dot(x, y)
+            >>> output = mint.dot(x, y)
             >>> print(output)
-            [7.        ]
+            7.0
             >>> print(output.dtype)
             Float32
