@@ -1088,8 +1088,10 @@ def analyse(profiler_path: str, max_process_number: int = os.cpu_count() // 2, p
             The default value is ``os.cpu_count() // 2``.
         pretty (bool, optional): Format the JSON file. Default: ``False``,
             indicating that the formatting is not performed.
-        step_list (list, optional): A list of steps that need to be analyzed, the steps must be
-            consecutive integers. Default: ``None``. By default, all steps will be analyzed.
+        step_list (list, optional): Only the performance data of the specified step is parsed. The specified step must
+            be a consecutive integer. Only the GRAPH mode is supported. In O0 and O1 mode, only when schedule
+            parameters wait and skip_first are 0 and warm_up is greater than or equal to 0 are supported.
+            Default: ``None``, indicating that full resolution.
         data_simplification (bool, optional): Whether to enable data simplification. Default: ``True``,
             indicating the data simplification is enabled.
 
