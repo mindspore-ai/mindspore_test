@@ -54,11 +54,15 @@ void EntranceActor::RunOpRealParameterWithBranchID(const OpRealParameterWithBran
   }
 }
 
-void EntranceActor::ClearDataOnStepEnd(AID *const input_control, OpContext<DeviceTensor> *const context) {
+void EntranceActor::HandleWaitMessage(OpContext<DeviceTensor> *const context, const AID &from_aid) {
+  ClearDataOnStepEnd(from_aid, context);
+  AbstractActor::HandleWaitMessage(context, from_aid);
+}
+
+void EntranceActor::ClearDataOnStepEnd(const AID &input_control, OpContext<DeviceTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);
-  MS_EXCEPTION_IF_NULL(input_control);
-  MS_LOG(DEBUG) << "Actor(" << GetAID().Name()
-                << ") receive the message of clearing data from:" << input_control->Name() << ".";
+  MS_LOG(DEBUG) << "Actor(" << GetAID().Name() << ") receive the message of clearing data from:" << input_control
+                << ".";
 
   is_loop_body_execution_ = false;
 

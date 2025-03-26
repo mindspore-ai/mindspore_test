@@ -113,7 +113,8 @@ class AbstractActor : public OpActor<DeviceTensor> {
 
   // Get the position of node in the actor.
   virtual size_t FetchNodePosition(const KernelWithIndex &node) const { return 0; }
-
+  virtual void HandleWaitMessage(OpContext<DeviceTensor> *const context, const AID &from_aid);
+  virtual void HandleNotifyMessage(OpContext<DeviceTensor> *const context, const AID &from_aid) {}
   // Get the member.
   KernelTransformType type() const { return type_; }
   int64_t actor_id() const { return actor_id_; }
@@ -263,7 +264,6 @@ class AbstractActor : public OpActor<DeviceTensor> {
   // The information used for integration of dynamic and static memory.
   AbstractActor *memory_alloc_insert_position_;
   AbstractActor *memory_free_insert_position_;
-
   // Whether use input optimize.
   bool enable_input_optimize_;
   std::string debug_info_;

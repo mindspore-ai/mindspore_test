@@ -61,6 +61,10 @@ class LoopCountActor : public DebugAwareActor {
   // The debug related operation interface.
   void SendDebugReq(OpContext<DeviceTensor> *const context) override;
   void SendProfilerReq(OpContext<DeviceTensor> *const context);
+  void HandleNotifyMessage(OpContext<DeviceTensor> *const context, const AID &from_aid) override;
+  void HandleNotifyOnePhase(OpContext<DeviceTensor> *const context);
+  void HandleNotifyTwoPhase(OpContext<DeviceTensor> *const context);
+  void RealRun(OpContext<DeviceTensor> *const context);
 
   // Get the member.
   size_t loop_count() const { return loop_count_; }
@@ -93,6 +97,7 @@ class LoopCountActor : public DebugAwareActor {
   // The actors which need be handled separately by loop count actor.
   AID data_prepare_aid_;
   std::vector<AID> entrance_aids_;
+  std::vector<AID> first_control_aids_;
 
   // The execution strategy for executing actor.
   // In pipeline mode,  sync stream for every step.
@@ -100,6 +105,9 @@ class LoopCountActor : public DebugAwareActor {
 
   // Only need sync stream in DR scenarios.
   bool is_need_sync_stream_{true};
+  // Input num of signal message.
+  size_t input_signal_num_;
+  std::vector<AID> notify_messages_;
 };
 
 using LoopCountActorPtr = std::shared_ptr<LoopCountActor>;
