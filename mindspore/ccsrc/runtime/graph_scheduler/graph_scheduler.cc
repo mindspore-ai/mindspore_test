@@ -1135,6 +1135,9 @@ void ClearKernelActorDataForUce(ActorSet *const actor_set) {
     for (auto output_device_tensor : kernel_actor->GetOutputDeviceTensors()) {
       MS_EXCEPTION_IF_NULL(output_device_tensor);
       output_device_tensor->ResetRefCount();
+      if (output_device_tensor->new_ref_count() != SIZE_MAX) {
+        output_device_tensor->set_new_ref_count(0);
+      }
     }
     kernel_actor->ResetState();
   }
@@ -1149,6 +1152,9 @@ void ClearKernelActorDataForUce(ActorSet *const actor_set) {
       for (auto output_device_tensor : kernel_actor->GetOutputDeviceTensors()) {
         MS_EXCEPTION_IF_NULL(output_device_tensor);
         output_device_tensor->ResetRefCount();
+        if (output_device_tensor->new_ref_count() != SIZE_MAX) {
+          output_device_tensor->set_new_ref_count(0);
+        }
       }
       kernel_actor->ResetState();
     }

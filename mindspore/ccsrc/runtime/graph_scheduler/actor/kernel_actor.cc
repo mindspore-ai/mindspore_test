@@ -1666,7 +1666,7 @@ void KernelActor::ResetState() {
   auto device_context = const_cast<DeviceContext *>(device_contexts_[0]);
   MS_LOG(INFO) << "Free output_device_tensor, list size: " << output_device_tensors_.size();
   for (auto device_tensor : output_device_tensors_) {
-    if ((device_tensor->ref_count() == SIZE_MAX) && (device_tensor->dynamic_ref_count() == INT32_MAX)) {
+    if (device_tensor->new_ref_count() == SIZE_MAX) {
       continue;
     }
     if (device_tensor != nullptr && device_tensor->GetPtr() != nullptr) {
