@@ -17,11 +17,16 @@
         - **gradient_scale** (float, 可选) - 梯度的缩放比例。默认值： ``1.0`` 。
 
     输入：
-        - **variable** (Union[Parameter, Tensor]) - 要更新的权重，数据类型必须为float。
+        - **variable** (Union[Parameter, Tensor]) - 要更新的权重，数据类型必须为float64、int64、float、
+          float16、int16、int32、int8、uint16、uint32、uint64、uint8、complex64、complex128。
         - **accumulation** (Union[Parameter, Tensor]) - 按动量权重计算的累加梯度值，数据类型与 `variable` 相同。
-        - **learning_rate** (Union[Number, Tensor]) - 学习率，必须是float或为float数据类型的Scalar的Tensor。
+        - **learning_rate** (Union[Number, Tensor]) - 学习率，必须是float64、int64、float、
+          float16、int16、int32、int8、uint16、uint32、uint64、uint8、complex64、complex128或为float64、int64、float、float16、int16、int32、int8、uint16、uint32、uint64、uint8、
+          complex64、complex128数据类型的Scalar的Tensor。
         - **gradient** (Tensor) - 梯度，数据类型与 `variable` 相同。
-        - **momentum** (Union[Number, Tensor]) - 动量，必须是float或为float数据类型的Scalar的Tensor。
+        - **momentum** (Union[Number, Tensor]) - 动量，必须是float64、int64、float、float16、int16、int32、
+          int8、uint16、uint32、uint64、uint8、complex64、complex128类型的数值，或是具有float64、int64、float、float16、int16、int32、int8、uint16、uint32、uint64、uint8、
+          complex64、complex128数据类型的Scalar的Tensor。
 
     输出：
         Tensor，更新后的参数。
