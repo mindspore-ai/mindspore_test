@@ -396,6 +396,70 @@ def test_sequence_compare_with_operation_5():
     assert "not supported between instances of" in str(execinfo.value)
 
 
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_sequence_compare_with_operation_6():
+    """
+    Feature: Enable sequence operations with nested or irregular inputs.
+    Description: This example is not currently supported.
+    Expectation: TypeError.
+    """
+
+    @jit
+    def foo(x, y):
+        m = (x + 2, (x, x + 1))
+        n = (y + 2, (y, y - 1))
+        return m < n, m <= n, m > n, m >= n
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    # This case is not currently supported.
+    with pytest.raises(TypeError) as execinfo:
+        foo(Tensor([1]), Tensor([3]))
+    assert "the input element must be scalar" in str(execinfo.value)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_sequence_compare_with_operation_7():
+    """
+    Feature: Enable sequence operations with nested or irregular inputs.
+    Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
+    Expectation: No exception.
+    """
+
+    @jit
+    def foo(x, y):
+        m = ((1, 2), x + 2)
+        n = ((2, 3), y + 2)
+        return m < n, m <= n, m > n, m >= n
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    # This case is not currently supported.
+    with pytest.raises(TypeError) as execinfo:
+        foo(Tensor([1]), Tensor([3]))
+    assert "For op 'tuple_lt' input must be" in str(execinfo.value)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_sequence_compare_with_operation_8():
+    """
+    Feature: Enable sequence operations with nested or irregular inputs.
+    Description: can be constant-folded, no need jit-fallback.
+    Expectation: No exception.
+    """
+
+    @jit(fullgraph=True)  # strict mode
+    def foo(x, y):
+        m = (1, (x, x + 1))
+        n = (2, (y, y - 1))
+        return m < n, m <= n, m > n, m >= n  # can be constant-folded, no need jit-fallback
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    a1, a2, a3, a4 = foo(Tensor([1]), Tensor([3]))
+    assert a1
+    assert a2
+    assert not a3
+    assert not a4
+
+
 @pytest.mark.skip(reason="dynamic length sequence output format failed")
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
           essential_mark='unessential')
