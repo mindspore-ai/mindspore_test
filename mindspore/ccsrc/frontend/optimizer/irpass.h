@@ -217,7 +217,7 @@ class AdjustGraphAfterValidatePassLib {
  public:
   AdjustGraphAfterValidatePassLib();
   ~AdjustGraphAfterValidatePassLib() = default;
-  SubstitutionPtr make_tuple_from_fprop_eliminater_;
+  SubstitutionPtr make_tuple_from_fprop_eliminate_;
 };
 
 // Predicate functions

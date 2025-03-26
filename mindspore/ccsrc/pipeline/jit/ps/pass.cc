@@ -1734,7 +1734,7 @@ bool BackendPass(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(func_graph);
   opt::irpass::AdjustGraphAfterValidatePassLib irpass;
   opt::OptPassConfig make_tuple_from_fprop_eliminate = opt::OptPassConfig({
-    irpass.make_tuple_from_fprop_eliminater_,
+    irpass.make_tuple_from_fprop_eliminate_,
   });
   OptPassGroupMap map({
     {"make_tuple_from_fprop_eliminate", make_tuple_from_fprop_eliminate},
