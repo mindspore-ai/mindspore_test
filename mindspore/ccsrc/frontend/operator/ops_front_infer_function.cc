@@ -1143,10 +1143,13 @@ AbstractBasePtr InferImplEnumToDtype(const AnalysisEnginePtr &, const PrimitiveP
                                      const AbstractBasePtrList &args_abs_list) {
   constexpr size_t args_num = 1;
   CheckArgsSize(primitive->name(), args_abs_list, args_num);
-  auto abs_input = args_abs_list[ops::kInputIndex0]->cast<abstract::AbstractScalarPtr>();
-  if (abs_input == nullptr || !abs_input->BuildValue()->isa<Int64Imm>()) {
+  auto abs_input = args_abs_list[ops::kInputIndex0];
+  if (abs_input->isa<abstract::AbstractNone>()) {
+    return abs_input;
+  }
+  if (!abs_input->isa<abstract::AbstractScalar>() || !abs_input->BuildValue()->isa<Int64Imm>()) {
     MS_EXCEPTION(TypeError) << "For '" << primitive->name() << "', the input should be Int64Imm, but got "
-                            << args_abs_list[ops::kInputIndex0]->ToString();
+                            << abs_input->ToString();
   }
   auto type_id = GetValue<int64_t>(abs_input->BuildValue());
   return std::make_shared<AbstractType>(TypeIdToType(static_cast<TypeId>(type_id)));

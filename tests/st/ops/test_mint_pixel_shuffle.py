@@ -74,9 +74,9 @@ def generate_inputs(input_shape, upscale_factor):
 
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
-          level_mark='level1',
+          level_mark='level0',
           card_mark='onecard',
-          essential_mark='unessential')
+          essential_mark='essential')
 @pytest.mark.parametrize("mode", ["GE", "PYBOOST", "KBK"])
 def test_pixel_shuffle_static(mode):
     """
