@@ -2037,8 +2037,12 @@ std::set<AnfNodePtr> CollectInvalidStackControlInput(const std::set<AnfNodePtr> 
     if (!common::AnfAlgo::IsCallNode(depend_node)) {
       continue;
     }
-    const auto func_graphs = parser->call_node_to_func_graphs().find(depend_node);
-    for (const auto &func_graph : func_graphs->second) {
+    const auto func_graph_iter = parser->call_node_to_func_graphs().find(depend_node);
+    if (func_graph_iter == parser->call_node_to_func_graphs().end()) {
+      MS_LOG(DEBUG) << "Skip check for call node:" << depend_node->DebugString();
+      continue;
+    }
+    for (const auto &func_graph : func_graph_iter->second) {
       if (func_graph == nullptr) {
         continue;
       }
