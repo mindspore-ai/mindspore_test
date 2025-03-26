@@ -93,21 +93,70 @@ MemBuf *MemBufAllocator::Malloc(size_t size) {
   search_key_->size_ = size;
   auto it = free_mem_bufs_.lower_bound(search_key_);
   MemBuf *candidate = nullptr;
+  // 1. Try to find in free mem bufs.
   if (MS_LIKELY(it != free_mem_bufs_.end())) {
     candidate = *it;
     (void)free_mem_bufs_.erase(it);
-  } else {
-    it = eager_free_mem_bufs_.lower_bound(search_key_);
-    if (it != eager_free_mem_bufs_.end()) {
-      candidate = *it;
-      (void)eager_free_mem_bufs_.erase(it);
-    }
+    return MapAndSplitMemBuf(candidate, size);
   }
-  if (MS_UNLIKELY(candidate == nullptr)) {
-    return nullptr;
+  // 2. Try to search available buf, free and eager free buf.
+  candidate = SearchAvaliableMemBuf(size);
+  if (MS_UNLIKELY(candidate != nullptr)) {
+    return candidate;
+  }
+  // 3. Try to find in eager free mem bufs.
+  it = eager_free_mem_bufs_.lower_bound(search_key_);
+  if (it != eager_free_mem_bufs_.end()) {
+    candidate = *it;
+    (void)eager_free_mem_bufs_.erase(it);
+    return MapAndSplitMemBuf(candidate, size);
   }
 
-  return MapAndSplitMemBuf(candidate, size);
+  return nullptr;
+}
+
+inline MemBuf *MemBufAllocator::SearchAvaliableMemBuf(size_t size) {
+  if (!enable_eager_free_ || has_do_eager_free_) {
+    return nullptr;
+  }
+  // Search from back to front, because the free mem buf is sorted by size.
+  // More efficient way is to search more candidates, do it in the next version.
+  for (auto backward_it = free_mem_bufs_.rbegin(); backward_it != free_mem_bufs_.rend(); backward_it++) {
+    auto mem_buf = *backward_it;
+    auto next_buf = mem_buf->next_;
+    if (next_buf != nullptr && next_buf->status_ == MemBufStatus::kMemBufEagerFree &&
+        mem_buf->size_ + next_buf->size_ >= size) {
+      // Located candidates, try map and split.
+      auto need_map_size = size - mem_buf->size_;
+      auto mapped_size = mem_mapper_(need_map_size, next_buf->addr_);
+      if (mapped_size != need_map_size) {
+        MS_LOG(WARNING) << "Map mem buf : " << mem_buf->ToJson() << ", next buf : " << next_buf->ToJson()
+                        << ", size : " << size << ", need_map_size : " << need_map_size
+                        << ", mapped_size : " << mapped_size << " failed.";
+        return nullptr;
+      }
+      // Update mem buf.
+      free_mem_bufs_.erase(mem_buf);
+      mem_buf->size_ = size;
+      mem_buf->status_ = MemBufStatus::kMemBufUsed;
+      // Remove eager free buf and try update it.
+      eager_free_mem_bufs_.erase(next_buf);
+      next_buf->addr_ = static_cast<uint8_t *>(next_buf->addr_) + need_map_size;
+      next_buf->size_ = next_buf->size_ - need_map_size;
+      // If next buf is empty, remove it or update remain eager free mem buf.
+      if (next_buf->size_ == 0) {
+        mem_buf->next_ = next_buf->next_;
+        if (next_buf->next_ != nullptr) {
+          next_buf->next_->prev_ = mem_buf;
+        }
+        delete next_buf;
+      } else {
+        eager_free_mem_bufs_.insert(next_buf);
+      }
+      return mem_buf;
+    }
+  }
+  return nullptr;
 }
 
 bool MemBufAllocator::Free(MemBuf *mem_buf, MemBufStatus target_status) {
@@ -230,6 +279,7 @@ const std::pair<size_t, size_t> MemBufAllocator::FreeIdleMemsByEagerFree() {
   }
   MS_LOG(INFO) << "Free idle mems by eager free, eager_free_size : " << eager_free_size
                << ", real_free_size : " << real_free_size << ".";
+  has_do_eager_free_ = true;
   return std::make_pair(eager_free_size, real_free_size);
 }
 
@@ -289,8 +339,9 @@ MemBuf *MemBufAllocator::MapAndSplitMemBuf(MemBuf *candidate, size_t size) {
     }
   }
 
+  bool need_split = remaining_size >= kDynamicMemAlignSize;
   // Try to split mem buf.
-  if (MS_LIKELY(remaining_size >= kDynamicMemAlignSize)) {
+  if (MS_LIKELY(need_split)) {
     void *remaining_addr = static_cast<uint8_t *>(candidate->addr_) + size;
     auto remaining_buf =
       new MemBuf(remaining_size, remaining_addr, candidate->stream_id_, candidate->mem_block_, candidate->status_);
