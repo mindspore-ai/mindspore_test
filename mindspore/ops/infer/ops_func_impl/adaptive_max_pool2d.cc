@@ -15,6 +15,7 @@
  */
 
 #include "infer/ops_func_impl/adaptive_max_pool2d.h"
+#include "utils/check_convert_utils.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 
 namespace mindspore {
@@ -65,6 +66,10 @@ ShapeArray AdaptiveMaxPool2DFuncImpl::InferShape(const PrimitivePtr &primitive,
 
   int64_t shapeDimNums = SizeToLong(x_shape.size());
   const int64_t kInputNumDims3 = 3;
+  const int64_t kInputNumDims4 = 4;
+  auto prim_name = primitive->name();
+  CheckAndConvertUtils::CheckInRange("rank of x", shapeDimNums, kIncludeBoth, {kInputNumDims3, kInputNumDims4},
+                                     prim_name);
   int64_t output_size_dim0 = GetDimOfOutputSizeDim(input_infos[kInputIndex1], kInputIndex0);
   int64_t output_size_dim1 = GetDimOfOutputSizeDim(input_infos[kInputIndex1], kInputIndex1);
   if (kInputNumDims3 == shapeDimNums) {
