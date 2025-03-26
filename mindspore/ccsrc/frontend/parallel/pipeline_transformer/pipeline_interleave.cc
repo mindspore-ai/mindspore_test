@@ -275,10 +275,16 @@ size_t PipelineInterleave::GetBatchAxisForInput(const AnfNodeIndexSet &input_nod
       }
     }
   }
-  if (batch_axis_count != kSizeOne) {
+  if (batch_axis_count == kSizeZero) {
+    MS_LOG(EXCEPTION) << "For pipeline parallelism, batch data must be split into micro batch along one dimension. "
+                      << "Please check the implementation of the data partitioning micro batch in the script. or "
+                         "setting micro_batch_num > 1.";
+  } else if (batch_axis_count > kSizeOne) {
     MS_LOG(EXCEPTION)
-      << "For pipeline parallelism, micro_size partitioning of the input along a certain dimension is and "
-      << "is only allowed, but it is found that " << batch_axis_count << " to be partitioned.";
+      << "For pipeline parallelism, batch data must be split into micro batch along one dimension. "
+         "However, it is detected that you have divided micro batch along "
+      << batch_axis_count
+      << " dimensions, please check the implementation of the data partitioning micro batch in the script.";
   }
   return batch_axis;
 }

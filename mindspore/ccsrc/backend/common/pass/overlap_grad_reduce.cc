@@ -269,6 +269,7 @@ std::optional<std::string> ExtractAccuRefKeyFromAssignAddCNode(const CNodePtr &c
   MS_EXCEPTION_IF_NULL(cnode);
   CNodePtr assign_cnode = nullptr;
   auto prim = GetCNodePrimitive(cnode);
+  MS_EXCEPTION_IF_NULL(prim);
   if (IsPrimitiveCNode(cnode, prim::kPrimAssignAdd)) {
     assign_cnode = cnode;
     assign_add_nodes->push_back(cnode);
