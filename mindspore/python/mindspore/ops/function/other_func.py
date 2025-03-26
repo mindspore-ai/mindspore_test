@@ -117,6 +117,7 @@ def moe_init_routing_v2(x, expert_idx, active_num, expert_capacity, expert_num, 
         - NUM_ROWS: The number of rows in 'x', which represents the number of original input tokens.
         - H: The number of cols in 'x', which denotes for the hiddens of input tokens.
         - K: The number of experts corresponding to each row of features in the output of MoeGatingTopKSoftmaxV2.
+        - Currently, MoeInitRoutingV2 does not support mutable inputs.
 
     Args:
         x (Tensor): A 2D tensor, which contains the input feature tokens. The shape of the tensor
@@ -189,25 +190,23 @@ def moe_init_routing_v2(x, expert_idx, active_num, expert_capacity, expert_num, 
         >>> from mindspore import Tensor
         >>> from mindspore import ops
         >>> import numpy as np
-        >>> x = np.random.uniform(-1, 1, size=(3, 3)).astype(np.float16)
-        >>> expert_idx = np.random.randint(0, 3, size=(3, 3)).astype(np.int32)
-        >>> x_tensor = Tensor(x, ms.float16)
-        >>> expert_idx_tensor = Tensor(expert_idx, ms.int32)
-        >>> out1, out2 = ops.moe_init_routing_v2(x_tensor, expert_idx_tensor, 3, 2, 4, 1, 0, False)
+        >>> x = Tensor(np.array([[0.1, 0.2, 0.3], [0.2, 0.7, 0.8], [0.3, 0.3, 0.5]]), ms.float16)
+        >>> expert_idx = Tensor(np.array([[0, 1, 1], [2, 1, 1], [0, 0, 0]]), ms.int32)
+        >>> active_num = 3
+        >>> expert_capacity = 2
+        >>> expert_num = 3
+        >>> drop_pad_mode = 1
+        >>> out1, out2 = ops.moe_init_routing_v2(x, expert_idx, active_num, expert_capacity,
+        expert_num, drop_pad_mode, 0, False)
         >>> print(out1)
-        [[[ 0.5264  0.9453  0.4878 ]
-          [ 0.5264  0.9453  0.4778 ]]
-
-         [[-0.6157  0.429   0.2195 ]
-          [-0.1366  0.02672 0.8555 ]]
-
-         [[ 0.5264  0.9453  0.4878 ]
-          [ 0.      0.      0.     ]]
-
-         [[ 0.      0.      0.     ]
-          [ 0.      0.      0.     ]]]
+        [[[0.1  0.2  0.3]
+          [0.3  0.3  0.5]]
+         [[0.1  0.2  0.3]
+          [0.1  0.2  0.3]]
+         [[0.2  0.7  0.8]
+          [0.   0.   0. ]]]
         >>> print(out2)
-        [ 0  4  1 -1 -1  2  3 -1 -1 ]
+        [ 0  2  3  4 -1 -1  1 -1 -1 ]
     """
     expanded_x, expanded_row_idx, \
     expert_tokens_count_or_cumsum,\
