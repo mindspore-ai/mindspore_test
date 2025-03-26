@@ -83,6 +83,14 @@ int32_t RangeFuncImpl::CheckValidation(const PrimitivePtr &primitive,
 
 BaseShapePtr RangeFuncImpl::InferShape(const PrimitivePtr &primitive,
                                        const std::vector<AbstractBasePtr> &input_args) const {
+  auto start_type = input_args[kInputIndex0]->GetType()->type_id();
+  auto limit_type = input_args[kInputIndex1]->GetType()->type_id();
+  auto delta_type = input_args[kInputIndex2]->GetType()->type_id();
+  if (!(start_type == limit_type && limit_type == delta_type)) {
+    MS_EXCEPTION(TypeError) << "For Range, the dtypes of inputs must be the same, but got ("
+                            << TypeIdToString(start_type) << ", " << TypeIdToString(limit_type) << ", "
+                            << TypeIdToString(delta_type) << ").";
+  }
   ShapeVector out_shape = {};
   auto start_value = input_args[kInputIndex0]->GetValue();
   auto limit_value = input_args[kInputIndex1]->GetValue();
