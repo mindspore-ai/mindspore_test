@@ -247,13 +247,13 @@ class Reduce(PrimitiveWithInfer):
         >>> # Launch 4 processes.
         >>> init()
         >>> class ReduceNet(nn.Cell):
-        >>>     def __init__(self):
-        >>>         super(Net, self).__init__()
-        >>>         self.reduce = ops.Reduce(dest_rank=1)
-        >>>
-        >>>     def construct(self, x):
-        >>>         out = self.reduce(x)
-        >>>         return out
+        ...     def __init__(self):
+        ...         super(ReduceNet, self).__init__()
+        ...         self.reduce = ops.Reduce(dest_rank=1)
+        ...
+        ...     def construct(self, x):
+        ...         out = self.reduce(x)
+        ...         return out
         >>> input = Tensor(np.ones([2, 8]).astype(np.float32))
         >>> net = ReduceNet()
         >>> output = net(input)
@@ -1070,16 +1070,19 @@ class NeighborExchangeV2(Primitive):
         >>> init()
         >>> rank_id = int(os.getenv("RANK_ID"))
         >>> if (rank_id % 2 == 0):
-        >>>     input_x = ms.Tensor(np.ones([1, 1, 2, 2]), dtype = ms.float32)
-        >>>     net = Net0()
-        >>>     output = net(input_x)
-        >>>     print(output)
-        >>> else:
-        >>>     input_x = ms.Tensor(np.ones([1, 1, 2, 2]) * 2, dtype = ms.float32)
-        >>>     net = Net1()
-        >>>     output = net(input_x)
-        >>>     print(output)
+        ...     input_x = ms.Tensor(np.ones([1, 1, 2, 2]), dtype = ms.float32)
+        ...     net = Net0()
+        ...     output = net(input_x)
+        ...     print(output)
+        ... else:
+        ...     input_x = ms.Tensor(np.ones([1, 1, 2, 2]) * 2, dtype = ms.float32)
+        ...     net = Net1()
+        ...     output = net(input_x)
+        ...     print(output)
+        rank 0:
         [[[[1. 1.], [1. 1.], [2. 2.]]]]
+        rank 1:
+        [[[[1. 1.], [2. 2.], [2. 2.]]]]
 
     Tutorial Examples:
         - `Distributed Set Communication Primitives - NeighborExchangeV2
@@ -1162,7 +1165,7 @@ class CollectiveScatter(Primitive):
         >>> init()
         >>> class CollectiveScatterNet(nn.Cell):
         ...     def __init__(self):
-        ...         super(CollectiveScatter, self).__init__()
+        ...         super(CollectiveScatterNet, self).__init__()
         ...         self.collective_scatter = ops.CollectiveScatter(src_rank=0)
         ...
         ...     def construct(self, x):
