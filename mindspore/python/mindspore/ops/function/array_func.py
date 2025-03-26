@@ -1352,49 +1352,31 @@ def new_zeros(input, size, *, dtype=None):
 
 def unique(input):
     """
-    Returns the unique elements of input tensor and also return a tensor containing the index of each value of input
-    tensor corresponding to the output unique tensor.
-
-    The output contains Tensor `y` and Tensor `idx`, the format is probably similar to (`y`, `idx`).
-    The shape of Tensor `y` and Tensor `idx` is different in most cases, because Tensor `y` will be deduplicated,
-    and the shape of Tensor `idx` is consistent with the input.
-
-    To get the same shape between `idx` and `y`, please ref to :class:`mindspore.ops.UniqueWithPad` operator.
-
-    Args:
-        input (Tensor): The input tensor.
-            The shape is :math:`(N,*)` where :math:`*` means, any number of additional dimensions.
+    Remove duplicate elements from the input tensor.
 
     .. warning::
         This is an experimental API that is subject to change or deletion.
 
-    Returns:
-        Tuple, containing Tensor objects (`y`, `idx`), `y` is a tensor with the
-        same type as `input`, and contains the unique elements in `input`.
-        `idx` is a tensor containing indices of elements in
-        the input corresponding to the output tensor, have the same shape with `input`.
+    Args:
+        input (Tensor): The input tensor.
 
-    Raises:
-        TypeError: If `input` is not a Tensor.
+    Returns:
+        Tuple(output, indices) of 2 tensors.
+
+        - **output** (Tensor) - The deduplicated output tensor.
+        - **indices** (Tensor) - The indices of the elements of the input tensor in the `output` .
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, nn
-        >>> from mindspore import ops
-        >>> x = Tensor(np.array([1, 2, 5, 2]), mindspore.int32)
-        >>> output = ops.unique(x)
+        >>> x = mindspore.tensor([1, 2, 5, 2], mindspore.int32)
+        >>> output, indices = mindspore.ops.unique(x)
         >>> print(output)
-        (Tensor(shape=[3], dtype=Int32, value= [1, 2, 5]), Tensor(shape=[4], dtype=Int32, value= [0, 1, 2, 1]))
-        >>> y = output[0]
-        >>> print(y)
-        [1 2 5]
-        >>> idx = output[1]
-        >>> print(idx)
-        [0 1 2 1]
+        [1, 2, 5]
+        >>> print(indices)
+        [0, 1, 2, 1]
     """
     shape_x = input.shape
     length_x = get_x_shape(shape_x)
@@ -1533,44 +1515,33 @@ def unique_with_pad(x, pad_num):
 
 def unique_consecutive(input, return_inverse=False, return_counts=False, dim=None):
     """
-    Returns the elements that are unique in each consecutive group of equivalent elements in the input tensor.
+    Remove consecutive duplicate elements in the input tensor,
+    retaining only the first occurrence from each repeated group.
 
     Args:
         input (Tensor): The input tensor.
-        return_inverse (bool, optional): Whether to return the index of where the element in the original input
-            maps to the position in the output. Default: ``False`` .
-        return_counts (bool, optional): Whether to return the counts of each unique element. Default: ``False`` .
-        dim (int, optional): The dimension to apply unique. If ``None`` , the unique of the flattened input is
-            returned. If specified, it must be int32 or int64. Default: ``None`` .
+        return_inverse (bool, optional): Whether to also return the indices for where elements
+            in the original input ended up in the returned unique list. Default ``False`` .
+        return_counts (bool, optional): Whether to also return the counts for each unique element. Default ``False`` .
+        dim (int, optional): Specify the dimension for unique. Default ``None`` , the input tensor will be flattened.
 
     Returns:
-        A tensor or a tuple of tensors containing tensor objects (`output`, `idx`, `counts`). `output` has the
-        same type as `input` and is used to represent the output list of unique scalar elements. If `return_inverse` is
-        True, there will be an additional returned tensor, `idx`, which has the same shape as `input` and represents
-        the index of where the element in the original input maps to the position in the output. If `return_counts`
-        is True, there will be an additional returned tensor, `counts`, which represents the number of occurrences
-        for each unique value or tensor.
+        Tensor or tuple(output, inverse_indices, counts) of tensors.
 
-    Raises:
-        TypeError: If `input` is not a Tensor.
-        TypeError: If dtype of `input` is not supported.
-        TypeError: If `return_inverse` is not a bool.
-        TypeError: If `return_counts` is not a bool.
-        TypeError: If `dim` is not an int.
-        ValueError: If `dim` is not in the range of :math:`[-ndim, ndim-1]`.
+        - **output** (Tensor) - The deduplicated output tensor.
+        - **inverse_indices** (Tensor, optional) - The indices of the elements of the input tensor in the `output` .
+        - **counts** (Tensor, optional) - The counts for each unique element.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> from mindspore import dtype as mstype
-        >>> x = Tensor(np.array([1, 1, 2, 2, 3, 1, 1, 2]), mstype.int32)
-        >>> output, idx, counts = ops.unique_consecutive(x, True, True, None)
+        >>> import mindspore
+        >>> x = mindspore.tensor([1, 1, 2, 2, 3, 1, 1, 2], mindspore.int32)
+        >>> output, inverse_indices, counts = mindspore.ops.unique_consecutive(x, True, True, None)
         >>> print(output)
         [1 2 3 1 2]
-        >>> print(idx)
+        >>> print(inverse_indices)
         [0 0 1 1 2 3 3 4]
         >>> print(counts)
         [2 2 1 2 1]
@@ -2059,32 +2030,22 @@ def unstack(input_x, axis=0):
 
 def unbind(input, dim=0):
     r"""
-    Removes a tensor dimension in specified axis.
-
-    Unstacks a tensor of rank `R` along axis dimension, and output tensors will have rank `(R-1)`.
-
-    Given a tensor of shape :math:`(n_1, n_2, ..., n_R)` and a specified `dim`,
-    shape of the output tensors is :math:`(n_1, n_2, ..., n_{dim}, n_{dim+2}, ..., n_R)`.
+    Remove a tensor dimension, return a tuple of all slices along a given dimension.
 
     Args:
-        input (Tensor): The shape is :math:`(n_1, n_2, ..., n_R)`.
-            A tensor to be unstacked and the rank of the tensor must be greater than 0.
-        dim (int): Dimension along which to unpack. Negative values wrap around. The range is [-R, R). Default: ``0`` .
+        input (Tensor): The input tensor.
+        dim (int): Specipy the dimension to remove. Default ``0`` .
 
     Returns:
-        A tuple of tensors, the shape of each objects is the same.
-
-    Raises:
-        ValueError: If axis is out of the range [-R, R).
+        tuple of tensors.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]))
-        >>> output = ops.unbind(x, dim=0)
+        >>> import mindspore
+        >>> x = mindspore.tensor([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+        >>> output = mindspore.ops.unbind(x, dim=0)
         >>> print(output)
         (Tensor(shape=[3], dtype=Int64, value=[1, 2, 3]), Tensor(shape=[3], dtype=Int64, value=[4, 5, 6]),
         Tensor(shape=[3], dtype=Int64, value=[7, 8, 9]))
