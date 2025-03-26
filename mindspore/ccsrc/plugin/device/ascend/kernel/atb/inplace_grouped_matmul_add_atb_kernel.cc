@@ -47,6 +47,7 @@ void InplaceGroupedMatmulAddATBKernelMod::GetWorkSpaceInfo(const std::vector<Ker
                                                            const std::vector<KernelTensor *> &outputs) {
   uint64_t hash_id = device::ascend::AtbHash();
   if (hash_id != hash_id_) {
+    hash_id_ = hash_id;
     atb::infer::GroupedMatmulInplaceAddParam param;
     param.transposeA = true;
     param.transposeB = false;
