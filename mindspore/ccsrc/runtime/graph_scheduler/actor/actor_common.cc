@@ -1178,6 +1178,23 @@ bool IsNeedSync(Tensor *tensor) {
   return sync_flag;
 }
 
+void SetNodeIndexForTensorAddress(const DeviceTensorPtr &device_tensor, const DeviceTensorPtr &tensor_address,
+                                  size_t outer_index, size_t inner_index, const DeviceContext *device_context) {
+  auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
+  if (device_tensor != nullptr) {
+    const auto &node_with_index = device_tensor->GetNodeIndex();
+    tensor_address->SetNodeIndex(node_with_index.first, node_with_index.second);
+    tensor_address->set_flag(device_tensor->flag());
+  } else {
+    auto old_addr_info_ret =
+      graph_parameter_store->GetReleasePositionInfo({outer_index, inner_index}, device_context->GetDeviceType());
+    if (old_addr_info_ret.first) {
+      auto old_addr_info = old_addr_info_ret.second;
+      tensor_address->SetNodeIndex(old_addr_info.second.first, old_addr_info.second.second);
+    }
+  }
+}
+
 DeviceTensor *PrepareParameter(const std::pair<KernelWithIndex, size_t> &parameter_index,
                                const DeviceContext *device_context, OpContext<DeviceTensor> *const context,
                                const AID &from_aid) {
@@ -1231,29 +1248,24 @@ DeviceTensor *PrepareParameter(const std::pair<KernelWithIndex, size_t> &paramet
                       << ", device type: " << device::GetDeviceNameByType(tensor_address->GetDeviceType());
         graph_parameter_store->Push(outer_index, inner_index, tensor_address, tensor_address->GetDeviceType(),
                                     SIZE_MAX);
-        if (device_tensor != nullptr) {
-          const auto &node_with_index = device_tensor->GetNodeIndex();
-          tensor_address->SetNodeIndex(node_with_index.first, node_with_index.second);
-          tensor_address->set_flag(device_tensor->flag());
-        } else {
-          auto old_addr_info_ret =
-            graph_parameter_store->GetReleasePositionInfo({outer_index, inner_index}, device_context->GetDeviceType());
-          if (old_addr_info_ret.first) {
-            auto old_addr_info = old_addr_info_ret.second;
-            tensor_address->SetNodeIndex(old_addr_info.second.first, old_addr_info.second.second);
-          }
-        }
+        SetNodeIndexForTensorAddress(device_tensor, tensor_address, outer_index, inner_index, device_context);
         // device tensor may be null.
         device_tensor = tensor_address;
       }
       SyncDeviceTensorsInParameterStore(outer_index, inner_index, tensor_address, tensor, context, from_aid);
-      tensor_address = device_tensor;
-      UpdateRefCount(tensor_address.get(), true);
-      if (tensor_address != nullptr && front_node.first->isa<Parameter>() &&
+
+      // Address type of tensor is different from address type of node, set node address to tensor.
+      if (tensor_address != nullptr && tensor_address->GetDeviceType() != device_tensor->GetDeviceType() &&
+          front_node.first->isa<Parameter>() &&
           common::AnfAlgo::IsParameterWeight(front_node.first->cast<ParameterPtr>())) {
-        tensor->set_device_address(tensor_address);
+        MS_LOG(DEBUG) << "The device type is not equal, host tensor type: " << tensor_address->GetDeviceType()
+                      << ", device tensor type: " << device_tensor->GetDeviceType();
+        UpdateRefCount(device_tensor.get(), true);
+        tensor->set_device_address(device_tensor);
+        return device_tensor.get();
       }
 
+      UpdateRefCount(tensor_address.get(), true);
       return tensor_address.get();
     }
 
