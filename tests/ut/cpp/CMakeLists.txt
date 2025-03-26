@@ -248,6 +248,7 @@ file(GLOB_RECURSE MINDSPORE_ASCEND_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/ir_fusion_infer/inference_swiglu_fusion.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/ir_fusion_infer/matmul_sigmoid_add_fusion.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/ir_fusion_infer/matmul_elemwise_fusion.cc"
+        "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/ir_fusion_infer/swiglu_dynamic_quant_fusion.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/mindir/*.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/optimizer_utils.cc"
         "../../../mindspore/ccsrc/plugin/res_manager/ascend/symbol_interface/*.cc"
