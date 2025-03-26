@@ -187,7 +187,7 @@ def check_parameter_available(func):
         ]
         if not GlobalComm.INITED and func.__name__ not in standalone_bypass_check_func_list:
             raise RuntimeError(f"Distributed Communication has not been inited."
-                               f"You can't invoke {func.__name__} yet. Please call `init()` method first.")
+                               f"You can't invoke this interface yet. Please call `init()` method first.")
         group = None
         if "group" in kargs.keys():
             group = kargs.get("group")
@@ -272,6 +272,11 @@ def _get_rank_helper(group):
     if _check_bypass_rank_id_and_size():
         rank_id = 0
         return rank_id
+    if not GlobalComm.INITED:
+        # If 'RANK_ID' is not set, return 0 as default value.
+        logger.warning(f"You are invoking this interface without calling `init` method."
+                       "Return 'RANK_ID' env value instead. If 'RANK_ID' is not set, return 0 as default value.")
+        return int(os.getenv("RANK_ID", "0"))
     if _hccl_test():
         return hccl.get_rank_id(group)
     rank_id = CollectiveManager.get_instance().get_rank_id(group)
@@ -296,6 +301,11 @@ def _get_local_rank_helper(group):
     if _check_bypass_rank_id_and_size():
         local_rank_id = 0
         return local_rank_id
+    if not GlobalComm.INITED:
+        # If 'LOCAL_RANK' env is not set, return 0 as default value.
+        logger.warning(f"You are invoking this interface without calling `init` method."
+                       "Return 'LOCAL_RANK' env value instead. If 'LOCAL_RANK' is not set, return 0 as default value.")
+        return int(os.getenv("LOCAL_RANK", "0"))
     if _hccl_test():
         return hccl.get_local_rank_id(group)
     rank_id = CollectiveManager.get_instance().get_local_rank_id(group)
@@ -320,6 +330,11 @@ def _get_size_helper(group):
     if _check_bypass_rank_id_and_size():
         size = 1
         return size
+    if not GlobalComm.INITED:
+        # If 'LOCAL_RANK' env is not set, return 0 as default value.
+        logger.warning(f"You are invoking this interface without calling `init` method."
+                       "Return 'RANK_SIZE' env value instead. If 'RANK_SIZE' is not set, return 1 as default value.")
+        return int(os.getenv("RANK_SIZE", "1"))
     if _hccl_test():
         return hccl.get_rank_size(group)
     size = CollectiveManager.get_instance().get_group_size(group)
@@ -341,6 +356,15 @@ def _get_local_size_helper(group):
     Returns:
         Integer. The local rank size where the calling process is being within specified group.
     """
+    if _check_bypass_rank_id_and_size():
+        size = 1
+        return size
+    if not GlobalComm.INITED:
+        # If 'LOCAL_RANK_SIZE' env is not set, return 0 as default value.
+        logger.warning(f"You are invoking this interface without calling `init` method."
+                       "Return 'LOCAL_RANK_SIZE' env value instead. If 'LOCAL_RANK_SIZE' is not set,"
+                       "return 1 as default value.")
+        return int(os.getenv("LOCAL_RANK_SIZE", "1"))
     size = CollectiveManager.get_instance().get_local_group_size(group)
     return size
 
