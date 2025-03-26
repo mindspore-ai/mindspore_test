@@ -797,7 +797,8 @@ class _JitExecutor:
             raise RuntimeError("Executor compile failed.")
         set_parameter_hook_updated(False)
         ms_compile_cache.add(phase)
-        predict_phase_compile_cache[self.obj.phase] = phase
+        if hasattr(self.obj, "phase"):
+            predict_phase_compile_cache[self.obj.phase] = phase
 
         return phase
 
