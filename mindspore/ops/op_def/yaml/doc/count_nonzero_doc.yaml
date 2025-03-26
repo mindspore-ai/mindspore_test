@@ -31,7 +31,7 @@ count_nonzero:
             >>> x = Tensor(np.array([[0, 1, 0], [1, 1, 0]]).astype(np.float32))
             >>> nonzero_num = ops.count_nonzero(input=x, dim=[0, 1])
             >>> print(nonzero_num)
-            [[3]]
+            3
             >>> # case 2: all value is default.
             >>> nonzero_num = ops.count_nonzero(input=x)
             >>> print(nonzero_num)
