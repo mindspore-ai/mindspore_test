@@ -252,30 +252,28 @@ void FuncGraph::GenerateDefaultValue(const FuncGraphPtr &specialized_graph,
 
 FuncGraphPtr FuncGraph::GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) {
   if (has_attr(FUNC_GRAPH_FLAG_PROXY_GRAPH)) {
+    MS_LOG(DEBUG) << "proxy function graph: " << ToString();
     auto original_params_size = parameters().size();
     auto args_size = args_abs_list.size();
-    if (args_size == original_params_size) {
-      MS_LOG(DEBUG) << "proxy function graph: " << ToString();
-      return shared_from_base<FuncGraph>();
-    } else if (args_size < original_params_size) {
-      auto new_params = parameters();
-      new_params.resize(args_size);
+    MS_LOG(DEBUG) << "original_params_size:" << original_params_size << ", args_size:" << args_size;
+    if (args_size != original_params_size) {
+      std::vector<AnfNodePtr> new_params;
+      set_parameters(new_params);
       auto call_node = output()->cast<CNodePtr>();
       MS_EXCEPTION_IF_NULL(call_node);
-      auto new_inputs = call_node->inputs();
-      new_inputs.resize(new_inputs.size() + args_size - original_params_size);
-
+      std::vector<AnfNodePtr> new_inputs{call_node->input(0)};
+      for (size_t index = 0; index < args_size; ++index) {
+        auto new_param = add_parameter();
+        (void)new_params.emplace_back(new_param);
+        (void)new_inputs.emplace_back(new_param);
+      }
       set_parameters(new_params);
       auto new_out = NewCNodeInOrder(new_inputs);
       set_output(new_out);
-      MS_LOG(INFO) << "The proxy truncates the parameters to match the size. fg: " << ToString()
-                   << ", original args: " << original_params_size << ", call args: " << args_size
-                   << ", new args: " << parameters().size() << ", call inputs: " << new_out->inputs().size();
-      return shared_from_base<FuncGraph>();
+      MS_LOG(DEBUG) << "The proxy truncates the parameters to match the size. fg: " << ToString()
+                    << ", original args: " << original_params_size << ", call args: " << args_size
+                    << ", new args: " << parameters().size() << ", call inputs: " << new_out->inputs().size();
     }
-    MS_LOG(WARNING) << "The number of parameter is wrong. The number of the construct function's parameter is "
-                    << original_params_size << ", but the number of call parameter is " << args_size
-                    << ". graph:" << ToString();
     return shared_from_base<FuncGraph>();
   }
 
