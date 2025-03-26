@@ -388,7 +388,11 @@ Status Softmax::CheckInputLayout() {
     if (corresponding_tensor_map.size() == 1 && corresponding_tensor_map[0] == -1) {
       return SUCCESS;
     } else {
-      MS_LOG(ERROR) << "Calculate axis can not be split";
+      if (is_in_layout_propagation_) {
+        MS_LOG(WARNING) << "Calculate axis can not be split";
+      } else {
+        MS_LOG(ERROR) << "Calculate axis can not be split";
+      }
       return FAILED;
     }
   }
