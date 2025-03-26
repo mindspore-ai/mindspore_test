@@ -67,14 +67,24 @@ abstract::BaseShapePtr SwiGLUDynamicQuantFuncImpl::InferShape(const PrimitivePtr
 
   BaseShapePtr out_y_shape_ptr;
   BaseShapePtr out_scale_shape_ptr;
+  ShapeVector y_shape;
   if (IsDynamicRank(x_shape)) {
     out_scale_shape_ptr = x_shape_ptr;
   } else {
     MS_CHECK_VALUE(x_shape.size() > 1, CheckAndConvertUtils::FormatCommMsg(
                                          "The rank of input x must be greater than 1, but got: ", x_shape));
     x_shape[dim] = x_shape[dim] / kSplitNum;
-    out_y_shape_ptr = std::make_shared<abstract::Shape>(x_shape);
-    out_scale_shape_ptr = std::make_shared<abstract::Shape>(ShapeVector(x_shape.begin(), x_shape.end() - 1));
+    if (prim->HasAttr("HasReshape") && !IsDynamic(x_shape)) {
+      auto input_element =
+        std::accumulate(x_shape.begin(), x_shape.end() - 1, static_cast<int64_t>(1), std::multiplies<int64_t>());
+      y_shape.push_back(input_element);
+      y_shape.push_back(x_shape[dim]);
+      out_y_shape_ptr = std::make_shared<abstract::Shape>(y_shape);
+      out_scale_shape_ptr = std::make_shared<abstract::Shape>(ShapeVector(y_shape.begin(), y_shape.end() - 1));
+    } else {
+      out_y_shape_ptr = std::make_shared<abstract::Shape>(x_shape);
+      out_scale_shape_ptr = std::make_shared<abstract::Shape>(ShapeVector(x_shape.begin(), x_shape.end() - 1));
+    }
   }
 
   std::vector<BaseShapePtr> shapes_list = {out_y_shape_ptr, out_scale_shape_ptr};
