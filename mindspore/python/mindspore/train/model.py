@@ -696,8 +696,6 @@ class Model:
             dataset_helper = DatasetHelper(dataset, dataset_sink_mode, sink_size, epoch_num)
 
         if dataset_sink_mode:
-            vlog_print("1", "ME", __file__, sys._getframe().f_lineno, "Begin to connect network with dataset.")
-            logger.info("Begin to connect network with dataset.")
             network = connect_network_with_dataset(network, dataset_helper)
 
         if _get_recovery_context("enable_recovery") and is_train:

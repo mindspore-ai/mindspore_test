@@ -73,7 +73,6 @@ def test_dataset_iterator_vlog_flow():
                        "Begin to check parameter broadcast in model.build()",
                        "Begin to exec preprocess in model.build()",
                        "Begin to create DatasetHelper",
-                       "Begin to connect network with dataset",
                        "Begin to warmup dataset in model.build()",
                        "Dataset Pipeline TreeAdapter Compile started",
                        "Dataset Pipeline TreeAdapter Compile finished",
