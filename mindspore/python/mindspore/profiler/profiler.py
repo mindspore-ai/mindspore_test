@@ -1099,6 +1099,11 @@ def analyse(profiler_path: str, max_process_number: int = os.cpu_count() // 2, p
         >>> from mindspore.profiler.profiler import analyse
         >>> analyse(profiler_path="./profiling_path")
     """
+    if not isinstance(max_process_number, int) or isinstance(max_process_number, bool) or max_process_number <= 0:
+        logger.warning(f"Parameter 'max_process_number' should be of type int, but got "
+                       f"{type(max_process_number).__name__}. reset to int {os.cpu_count() // 2}.")
+        max_process_number = os.cpu_count() // 2
+
     real_path = PathManager.get_real_path(profiler_path)
     PathManager.check_input_directory_path(real_path)
     ascend_ms_path_list = PathManager.get_ascend_ms_path_list(real_path)

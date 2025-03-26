@@ -176,25 +176,35 @@ class Schedule:
             return ProfilerAction.WARM_UP
         return ProfilerAction.RECORD if mod_step < num_steps - 1 else ProfilerAction.RECORD_AND_SAVE
 
+    def __repr__(self):
+        return (f"Schedule(wait={self.wait!r}, active={self.active!r}, "
+                f"warmup={self.warmup!r}, repeat={self.repeat!r}, "
+                f"skip_first={self.skip_first!r})")
+
     def _check_params(self):
         """
         Verify all parameters in the schedule,
         and set them to default values if the parameters are not compliant.
         """
-        if not isinstance(self.wait, int) or self.wait < 0:
-            logger.warning("Invalid parameter wait, reset it to 0.")
+        if not isinstance(self.wait, int) or isinstance(self.wait, bool) or self.wait < 0:
+            logger.warning(f"Parameter 'wait' should be of type int, but got "
+                           f"{type(self.wait).__name__}. reset to int 0.")
             self.wait = 0
-        if not isinstance(self.warmup, int) or self.warmup < 0:
-            logger.warning("Invalid parameter warmup, reset it to 0.")
+        if not isinstance(self.warmup, int) or isinstance(self.warmup, bool) or self.warmup < 0:
+            logger.warning(f"Parameter 'warmup' should be of type int, but got "
+                           f"{type(self.warmup).__name__}. reset to int 0.")
             self.warmup = 0
-        if not isinstance(self.active, int) or self.active <= 0:
-            logger.warning("Invalid parameter active, reset it to 1.")
+        if not isinstance(self.active, int) or isinstance(self.active, bool) or self.active <= 0:
+            logger.warning(f"Parameter 'active' should be of type int, but got "
+                           f"{type(self.active).__name__}. reset to int 1.")
             self.active = 1
-        if not isinstance(self.repeat, int) or self.repeat < 0:
-            logger.warning("Invalid parameter repeat, reset it to 0.")
+        if not isinstance(self.repeat, int) or isinstance(self.repeat, bool) or self.repeat < 0:
+            logger.warning(f"Parameter 'repeat' should be of type int, but got "
+                           f"{type(self.repeat).__name__}. reset to int 0.")
             self.repeat = 0
-        if not isinstance(self.skip_first, int) or self.skip_first < 0:
-            logger.warning("Invalid parameter skip_first, reset it to 0.")
+        if not isinstance(self.skip_first, int) or isinstance(self.skip_first, bool) or self.skip_first < 0:
+            logger.warning(f"Parameter 'skip_first' should be of type int, but got "
+                           f"{type(self.skip_first).__name__}. reset to int 0.")
             self.skip_first = 0
         if self.warmup == 0:
             logger.warning("Profiler won't be using warmup, this can skew profiler results")
