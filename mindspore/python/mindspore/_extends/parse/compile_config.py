@@ -371,7 +371,16 @@ Value Range:
     2: Choose new scheme.
     Default: 2
 """
+
+"""
 ENABLE_VIEW_INPLACE_GRAD_SCHEME_CHOOSE = '2'
+Name: GRAD_JIT_FILTER
+Function: Whether to filter grad jit graph.
+Value Range:
+    1: Enable
+    Default: Disable.
+"""
+GRAD_JIT_FILTER = '1'
 
 __all__ = [
     "COMPILE_PROFILE",
@@ -412,5 +421,6 @@ __all__ = [
     "CHECK_PASS_NODE_SCOPE",
     "CHECK_INVALID_VIEW_INPLACE_DOUT_LEVEL",
     "JIT_ENABLE_AUGASSIGN_INPLACE",
-    "ENABLE_VIEW_INPLACE_GRAD_SCHEME_CHOOSE"
+    "ENABLE_VIEW_INPLACE_GRAD_SCHEME_CHOOSE",
+    "GRAD_JIT_FILTER"
 ]
