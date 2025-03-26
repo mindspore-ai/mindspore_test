@@ -39,23 +39,10 @@ ShapeArray FmodTensorFuncImpl::InferShape(const PrimitivePtr &primitive, const I
 
 std::vector<TypeId> FmodTensorFuncImpl::InferType(const PrimitivePtr &primitive,
                                                   const InferInfoPtrList &input_infos) const {
-  const std::unordered_set<TypeId> kIntBoolTypes{kNumberTypeInt8,  kNumberTypeInt16, kNumberTypeInt32,
-                                                 kNumberTypeInt64, kNumberTypeUInt8, kNumberTypeBool};
-  auto IsIntBoolType = [&kIntBoolTypes](TypeId type) { return kIntBoolTypes.find(type) != kIntBoolTypes.end(); };
-
   auto input_type = input_infos[kIndex0]->GetType();
   auto other_type = input_infos[kIndex1]->GetType();
-  TypeId out_type;
 
-  if (IsIntBoolType(input_type) && other_type == kNumberTypeFloat32) {
-    out_type = kNumberTypeFloat32;
-  } else if (input_type == kNumberTypeBool && IsIntBoolType(other_type)) {
-    out_type = kNumberTypeInt64;
-  } else {
-    out_type = input_type;
-  }
-
-  return {out_type};
+  return {PromoteType(input_type, other_type, primitive->name())};
 }
 }  // namespace ops
 }  // namespace mindspore
