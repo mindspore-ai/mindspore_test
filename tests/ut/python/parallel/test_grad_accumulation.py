@@ -1,4 +1,4 @@
-# Copyright 2023 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,7 +23,11 @@ from mindspore.common.parameter import Parameter
 from mindspore.common.initializer import initializer
 from mindspore.train import Model
 from mindspore.parallel import set_algo_parameters
+from mindspore.parallel.auto_parallel import AutoParallel
+from mindspore.parallel.nn import GradAccumulation
 from mindspore.nn import GradAccumulationCell, MicroBatchInterleaved
+from mindspore.nn.utils import no_init_parameters
+from hccl_test.manage.api import Hccl
 from .test_pipeline_split import DatasetLenet
 
 
@@ -246,7 +250,6 @@ def test_grad_accumulation_new_module():
     Description: In grad_accumulation mode, expected success
     Expectation: success
     '''
-    from mindspore.parallel.nn import GradAccumulation
     context.set_auto_parallel_context(device_num=32, global_rank=0)
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
     data = Tensor(np.ones([32, 64]), dtype=ms.float32)
@@ -266,9 +269,6 @@ def test_grad_accumulation_using_autoparallel_cell():
     Description: In grad_accumulation mode, expected success
     Expectation: success
     '''
-    from hccl_test.manage.api import Hccl
-    from mindspore.parallel.auto_parallel import AutoParallel
-    from mindspore.parallel.nn import GradAccumulation
     hccl = Hccl()
     hccl.rank_id = 0
     hccl.rank_size = 32
@@ -276,10 +276,11 @@ def test_grad_accumulation_using_autoparallel_cell():
     label = Tensor(np.ones([64, 64]), dtype=ms.float32)
     strategy1 = ((16, 1), (1, 1))
     strategy2 = ((8, 1), (1, 1))
-    net = GradAccumulation(Net(strategy1, strategy2), 4)
+    with no_init_parameters():
+        net = GradAccumulation(Net(strategy1, strategy2), 4)
+        params = net.network.trainable_params()
+        optimizer = nn.Lamb(params, learning_rate=0.01)
     parallel_net = AutoParallel(net, parallel_mode="semi_auto")
-    params = net.network.trainable_params()
     dataset = DatasetLenet(data, label, 3)
-    optimizer = nn.Lamb(params, learning_rate=0.01)
     model = Model(parallel_net, optimizer=optimizer)
     model.train(2, dataset, dataset_sink_mode=False)

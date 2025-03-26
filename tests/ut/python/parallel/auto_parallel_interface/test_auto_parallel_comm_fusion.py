@@ -1,4 +1,4 @@
-# Copyright 2024 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ from mindspore.nn.loss import SoftmaxCrossEntropyWithLogits
 from mindspore.nn.optim import Lamb
 from mindspore.ops import operations as P
 from mindspore.train import Model
-from mindspore.parallel import _cost_model_context as cost_model_context
+from mindspore.nn.utils import no_init_parameters
 from tests.dataset_mock import MindData
 from parallel.auto_parallel_interface._utils import init_hccl, set_parallel_mode, remove_files, \
     find_ir_file_path, check_node_attrs_pair
@@ -148,7 +148,8 @@ def train_common(net, parallel_config):
     dataset = Dataset(predict, label, 2)
 
     loss = SoftmaxCrossEntropyWithLogits(sparse=True, reduction='mean')
-    opt = Momentum(net.trainable_params(), learning_rate=0.01, momentum=0.9)
+    with no_init_parameters():
+        opt = Momentum(net.trainable_params(), learning_rate=0.01, momentum=0.9)
     # set auto_parallel config
     net = set_parallel_mode(net, parallel_config)
     model = Model(net, loss, opt)
@@ -168,7 +169,8 @@ def test_allreduce_fusion_auto():
     graph_path = './test_auto_parallel/test_allreduce_fusion_auto_graphs'
     context.set_context(save_graphs=True, save_graphs_path=graph_path)
 
-    net = SimpleDMLNet(DenseNet1(has_bias=False, activation=None), DenseNet2(has_bias=False, activation=None))
+    with no_init_parameters():
+        net = SimpleDMLNet(DenseNet1(has_bias=False, activation=None), DenseNet2(has_bias=False, activation=None))
     comm_fusion_dict = {"allreduce": {"mode": "auto", "config": None}}
     parallel_config = {"parallel_mode": "semi_auto", "comm_fusion": comm_fusion_dict}
     train_common(net, parallel_config)
@@ -200,7 +202,9 @@ def test_allreduce_fusion_size():
 
     comm_fusion_dict = {"allreduce": {"mode": "size", "config": 32}}
     parallel_config = {"parallel_mode": "semi_auto", "comm_fusion": comm_fusion_dict}
-    net = SimpleDMLNet(DenseNet1(has_bias=False, activation=None), DenseNet2(has_bias=False, activation=None))
+
+    with no_init_parameters():
+        net = SimpleDMLNet(DenseNet1(has_bias=False, activation=None), DenseNet2(has_bias=False, activation=None))
     train_common(net, parallel_config)
     expect_dict = {'backbone2.fc8.weight': 1,
                    'backbone2.fc7.weight': 1,
@@ -217,7 +221,6 @@ def test_allreduce_fusion_size():
     validate_ir = find_ir_file_path(graph_path, "validate")
     check_pairs = {"AllReduce": expect_dict}
     check_node_attrs_pair(validate_ir, check_pairs)
-    cost_model_context.reset_cost_model_context()
 
 
 def test_lamb_split_fusion_in_index():
@@ -229,10 +232,12 @@ def test_lamb_split_fusion_in_index():
     graph_path = './test_auto_parallel/test_lamb_split_fusion_in_index_graphs'
     context.set_context(save_graphs=True, save_graphs_path=graph_path)
 
-    net = Net()
+    with no_init_parameters():
+        net = Net()
+        optimizer = Lamb(net.trainable_params(), learning_rate=0.1)
+
     net.set_train()
     loss = nn.SoftmaxCrossEntropyWithLogits()
-    optimizer = Lamb(net.trainable_params(), learning_rate=0.1)
     net_with_loss = WithLossCell(net, loss)
     train_network = TrainOneStepCell(net_with_loss, optimizer)
 

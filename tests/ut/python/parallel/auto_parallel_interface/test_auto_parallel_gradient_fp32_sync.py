@@ -20,6 +20,8 @@ from mindspore import Tensor, context
 from mindspore.common.api import _cell_graph_executor
 from mindspore.ops import composite as C
 from mindspore.ops import operations as P
+from mindspore.nn.utils import no_init_parameters
+from mindspore.common.initializer import initializer
 from tests.ut.python.ops.test_math_ops import VirtualLoss
 from parallel.auto_parallel_interface._utils import init_hccl, set_parallel_mode, remove_files, find_ir_file_path,\
     check_node_dependency_backward_search
@@ -44,8 +46,8 @@ class Net(nn.Cell):
         super().__init__()
         self.matmul = P.MatMul().shard(strategy1)
         self.cast = P.Cast()
-        self.y = ms.Parameter(Tensor(np.ones([32, 64]), dtype=ms.float16))
-        self.b = ms.Parameter(Tensor(np.ones([64, 64]), dtype=ms.float32))
+        self.y = ms.Parameter(initializer("ones", [32, 64], dtype=ms.float16), "y")
+        self.b = ms.Parameter(initializer("ones", [64, 64], dtype=ms.float32), "b")
 
     def construct(self, x, y, b):
         out = self.matmul(x, self.y)
@@ -84,7 +86,8 @@ def test_gradient_fp32_sync_true():
     context.set_context(save_graphs=True, save_graphs_path=graph_path)
 
     strategy1 = ((2, 2), (2, 2))
-    net = GradWrap(NetWithLoss(Net(strategy1)))
+    with no_init_parameters():
+        net = GradWrap(NetWithLoss(Net(strategy1)))
     net.set_train()
 
     # set auto_parallel
@@ -114,7 +117,8 @@ def test_gradient_fp32_sync_false():
     context.set_context(save_graphs=True, save_graphs_path=graph_path)
 
     strategy1 = ((2, 2), (2, 2))
-    net = GradWrap(NetWithLoss(Net(strategy1)))
+    with no_init_parameters():
+        net = GradWrap(NetWithLoss(Net(strategy1)))
     net.set_train()
 
     # set auto_parallel

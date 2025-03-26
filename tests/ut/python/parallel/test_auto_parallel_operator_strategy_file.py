@@ -21,6 +21,8 @@ from mindspore.common.api import _cell_graph_executor
 from mindspore.nn import Cell
 from mindspore.ops import operations as P
 from mindspore.parallel.auto_parallel import AutoParallel
+from mindspore.nn.utils import no_init_parameters
+from mindspore.common.initializer import initializer
 from hccl_test.manage.api import Hccl
 
 
@@ -36,7 +38,7 @@ def test_save_and_load_operator_strategy_file():
     """
 
     class NetForSaveAndLoad(Cell):
-        def __init__(self, mul_weight1, mul_weight2, in_strategy1, in_strategy2):
+        def __init__(self, w1_size, w2_size, in_strategy1, in_strategy2):
             super().__init__()
             self.matmul1 = P.MatMul(transpose_b=True).shard(
                 in_strategy=in_strategy1)
@@ -45,8 +47,8 @@ def test_save_and_load_operator_strategy_file():
             self.add1 = P.Add()
             self.add2 = P.Add()
             self.add3 = P.Add()
-            self.mul_weight1 = Parameter(mul_weight1, "w1")
-            self.mul_weight2 = Parameter(mul_weight2, "w2")
+            self.mul_weight1 = Parameter(initializer("ones", w1_size), "w1")
+            self.mul_weight2 = Parameter(initializer("ones", w2_size), "w2")
 
         def construct(self, x, b1, b2, b3):
             out = self.add1(x, b1)
@@ -59,12 +61,14 @@ def test_save_and_load_operator_strategy_file():
     def compile_and_get_strategies(in_strategy1, in_strategy2, mode):
         x = Tensor(np.ones([64, 32]), dtype=ms.float32)
         b1 = Tensor(np.ones([64, 32]), dtype=ms.float32)
-        w1 = Tensor(np.ones([8, 32]), dtype=ms.float32)
+        w1_size = [8, 32]
         b2 = Tensor(np.ones([64, 8]), dtype=ms.float32)
-        w2 = Tensor(np.ones([16, 8]), dtype=ms.float32)
+        w2_size = [16, 8]
         b3 = Tensor(np.ones([64, 16]), dtype=ms.float32)
 
-        net = NetForSaveAndLoad(w1, w2, in_strategy1, in_strategy2)
+        with no_init_parameters():
+            net = NetForSaveAndLoad(w1_size, w2_size, in_strategy1, in_strategy2)
+
         net.set_train()
         parallel_net = AutoParallel(net, parallel_mode='sharding_propagation')
         if mode == "save":
@@ -112,5 +116,4 @@ def test_save_and_load_operator_strategy_file():
     _strategies = compile_and_get_strategies(
         _in_strategy1, _in_strategy2, "load")
     assert_sharding_strategy(_dp1, _mp1, _dp2, _mp2, _strategies)
-    ms.reset_auto_parallel_context()
     os.remove("/tmp/strategy.json")

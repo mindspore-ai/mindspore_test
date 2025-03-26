@@ -38,6 +38,7 @@ from mindspore.train import load_distributed_checkpoint as second_load_distribut
 from mindspore.train import merge_sliced_parameter as second_merge_sliced_parameter
 from mindspore.train import build_searched_strategy as second_build_searched_strategy
 from mindspore.train import restore_group_info_list as second_restore_group_info_list
+from mindspore.nn.utils import no_init_parameters
 
 
 ms.set_context(mode=ms.GRAPH_MODE)
@@ -68,7 +69,8 @@ def test_pipeline_grad_reducer():
             return logits
 
     in_features, out_features = 32, 10
-    net = Network(in_features, out_features)
+    with no_init_parameters():
+        net = Network(in_features, out_features)
     net.layer1.pipeline_stage = 0
     net.relu1.pipeline_stage = 0
     net.layer2.pipeline_stage = 0
