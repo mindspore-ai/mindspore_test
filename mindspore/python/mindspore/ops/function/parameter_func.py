@@ -22,47 +22,35 @@ from mindspore.ops.auto_generate import assign, assign_add, assign_sub
 
 def index_add(x, indices, y, axis, use_lock=True, check_index_bound=True):
     """
-    Adds tensor `y` to specified axis and indices of `x`. The axis should be in [0,  len(x.dim) - 1],
-    and indices should be in [0, x.shape[axis] - 1] at the axis dimension.
+    Add the elements of input `y` into input `x` along the given axis and indices.
+
+    .. note::
+        - `indices` is a one-dimensional tensor, and :math:`indices.shape[0] = y.shape[axis]` .
+        - The value range of the elements in `indices` is :math:`[0, x.shape[axis] - 1]` .
 
     Args:
-        x (Union[Parameter, Tensor]): The input Parameter or Tensor to add to.
-        indices (Tensor): Add the value of `x` and `y` along the dimension of the `axis` according to the
-            specified index value, with data type int32.
-            The `indices` must be 1D with the same size as the size of `y` in the `axis` dimension. The values
-            of `indices` should be in [0, b), where the b is the size of `x` in the `axis` dimension.
-        y (Tensor): The input tensor with the value to add. Must have same data type as `x`.
-            The shape must be the same as `x` except the `axis` th dimension.
-        axis (int): The dimension along which to index.
+        x (Union[Parameter, Tensor]): The input parameter or tensor.
+        indices (Tensor): The specified indices.
+        y (Tensor): The input tensor to add to `x`.
+        axis (int): The specified axis.
         use_lock (bool, optional): Whether to enable a lock to protect the updating process of variable tensors.
-            If ``True`` , when updating the value of `x`, this process will be protected by a lock by using atomic
-            operation.
-            If ``False`` , the result may be unpredictable. Default: ``True`` .
-        check_index_bound (bool, optional): If ``True``, check index boundary. If ``False`` ,
-            don't check index boundary. Default: ``True`` .
+           Default ``True`` .
+        check_index_bound (bool, optional): Whether to check index boundary. Default ``True`` .
 
     Returns:
-        Tensor, has the same shape and dtype as `x`.
-
-    Raises:
-        TypeError: If neither `indices` nor `y` is a Tensor.
-        ValueError: If axis is out of `x` rank's range.
-        ValueError: If `x` rank is not the same as `y` rank.
-        ValueError: If shape of `indices` is not 1D or size of `indices` is not equal to dimension of y[axis].
-        ValueError: If `y`'s shape is not the same as `x` except the `axis` th dimension.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
         >>> import mindspore
-        >>> from mindspore import Tensor, Parameter
-        >>> from mindspore import ops
-        >>> x = Parameter(Tensor(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]), mindspore.float32), name="name_x")
-        >>> indices = Tensor(np.array([0, 2]), mindspore.int32)
-        >>> y = Tensor(np.array([[0.5, 1.0], [1.0, 1.5], [2.0, 2.5]]), mindspore.float32)
-        >>> output = ops.index_add(x, indices, y, 1)
+        >>> import numpy as np
+        >>> x = mindspore.Parameter(mindspore.tensor(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]), mindspore.float32),
+        ...                         name="name_x")
+        >>> indices = mindspore.tensor(np.array([0, 2]), mindspore.int32)
+        >>> y = mindspore.tensor(np.array([[0.5, 1.0], [1.0, 1.5], [2.0, 2.5]]), mindspore.float32)
+        >>> output = mindspore.ops.index_add(x, indices, y, 1)
         >>> print(output)
         [[ 1.5  2.   4. ]
          [ 5.   5.   7.5]

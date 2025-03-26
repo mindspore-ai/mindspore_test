@@ -1110,42 +1110,34 @@ def i0(input):
 
 def inplace_update(x, v, indices):
     """
-    Updates specified values in `x` to `v` according to `indices`.
+    Updates `x` to `v` according to the indices.
 
     .. warning::
         This is an experimental API that is subject to change or deletion.
 
-    Note:
-        `indices` can only be indexed along the highest dimension.
+    for each `i, ..., j` in `indices` :
+
+    .. math::
+        x[\text{indices}[i, ..., j]] = v[i, ..., j]
 
     Args:
-        x (Tensor): A tensor which to be inplace updated. It can be one of the following data types:
-            float32, float16 and int32.
-        v (Tensor): A tensor with the same type as `x` and the same dimension size as `x` except
-            the first dimension, which must be the same as the size of `indices`.
-        indices (Union[int, tuple[int], Tensor]): Determines which rows of `x` to update with `v`,
-            should be several int. It is an int or tuple or tensor with one dimension.
-            When it is a tuple or Tensor, the size is the same as the first dimension of `v`.
-            Takes values in the range [-N, N), where N is the size of the first dimension of `x`.
+        x (Tensor): The input tensor.
+        v (Tensor): The input tensor to update to `x`.
+        indices (Union[int, tuple[int], Tensor]): Indices into the input `x` along the 0th dimension.
 
     Returns:
-        Tensor, with the same type and shape as the input `x`.
-
-    Raises:
-        TypeError: If `indices` is neither int nor tuple nor Tensor.
-        TypeError: If `indices` is a tuple or Tensor, but its element is not an int.
+        Tensor
 
     Supported Platforms:
         ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
         >>> import mindspore
-        >>> from mindspore import Tensor, ops
+        >>> import numpy as np
         >>> indices = (0, 1)
-        >>> x = Tensor(np.array([[1, 2], [3, 4], [5, 6]]), mindspore.float32)
-        >>> v = Tensor(np.array([[0.5, 1.0], [1.0, 1.5]]), mindspore.float32)
-        >>> output = ops.inplace_update(x, v, indices)
+        >>> x = mindspore.tensor(np.array([[1, 2], [3, 4], [5, 6]]), mindspore.float32)
+        >>> v = mindspore.tensor(np.array([[0.5, 1.0], [1.0, 1.5]]), mindspore.float32)
+        >>> output = mindspore.ops.inplace_update(x, v, indices)
         >>> print(output)
         [[0.5 1. ]
          [1.  1.5]
@@ -1156,41 +1148,32 @@ def inplace_update(x, v, indices):
 
 
 def inplace_add(x, v, indices):
-    """
-    Adds `v` into specified rows of `x`. Computes `y` = `x`; y[i,] += `v`.
+    r"""
+    Add `x` to `v` according to the indices.
 
-    Note:
-            `indices` refers to the left-most dimension.
+    for each `i, ..., j` in `indices` :
+
+    .. math::
+        x[\text{indices}[i, ..., j]] \mathrel{+}= y[i, ..., j]
 
     Args:
-        x (Tensor): The tensor to be added. It has shape :math:`(N,*)` where :math:`*` means
-            any number of additional dimensions.
-        v (Tensor):  The value tensor add to `x`. It has the same dimension sizes as `x` except
-          the first dimension, whose size must be the same as `indices`. It has the same data type with `x`.
-        indices (Union[int, tuple]): Indices into the left-most dimension of `x`, and determines which rows of `x`
-            to add with `v`. It is an integer or a tuple, whose value is in [0, the first dimension size of `x`).
+        x (Tensor): The input tensor.
+        v (Tensor): The input tensor to add to `x`.
+        indices (Union[int, tuple]): Indices into the input `x` along the 0th dimension.
 
     Returns:
-        Tensor, has the same shape and dtype as `x`.
-
-    Raises:
-        TypeError: If `indices` is neither int nor tuple.
-        TypeError: If `indices` is a tuple whose elements are not all int.
-        ValueError: If the rank of `x` is not equal to the rank of `v`.
-        ValueError: If the length of `indices` is not equal to `v.shape[0]`.
-        ValueError: If the values of `indices` are not in range of `[0, x.shape[0])`.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
         >>> import mindspore
-        >>> from mindspore import Tensor, ops
+        >>> import numpy as np
         >>> indices = (0, 1)
-        >>> x = Tensor(np.array([[1, 2], [3, 4], [5, 6]]), mindspore.float32)
-        >>> input_v = Tensor(np.array([[0.5, 1.0], [1.0, 1.5]]), mindspore.float32)
-        >>> output = ops.inplace_add(x, input_v, indices)
+        >>> x = mindspore.tensor(np.array([[1, 2], [3, 4], [5, 6]]), mindspore.float32)
+        >>> input_v = mindspore.tensor(np.array([[0.5, 1.0], [1.0, 1.5]]), mindspore.float32)
+        >>> output = mindspore.ops.inplace_add(x, input_v, indices)
         >>> print(output)
         [[1.5 3. ]
          [4.  5.5]
@@ -1201,28 +1184,24 @@ def inplace_add(x, v, indices):
 
 
 def inplace_index_add(var, indices, updates, axis):  # pylint: disable=redefined-outer-name
-    """
-    Adds Tensor `updates` to specified axis and indices of Tensor `var` element-wise.
+    r"""
+    Add `updates` to `var` according to the indices and axis.
+
+    for each `i, ..., j` in `indices` :
+
+    .. math::
+        x[:, \text{indices}[i, ..., j], :] \mathrel{+}= v[:, i, ..., j, :]
+
+    where `i` is the index of the element in `indices`, and the axis of `indices[i]` is determined by the input `axis`.
 
     Args:
-        var (Union[Parameter, Tensor]): The input Parameter or Tensor to add to, with data type uint8, int8, int16,
-            int32, float16, float32, float64.
-        indices (Tensor): The indies along `axis` to perform the addition. A 1D Tensor
-            of shape :math:`(updates.shape[axis],)`, every value of it
-            should be in range :math:`[0, var.shape[axis])` with data type int32.
-        updates (Tensor): The input Tensor with the value to add. Must have same data type as `var`.
-            The shape must be the same as `var` except the `axis` th dimension.
-        axis (int): The dimension along which to index. It should be in range :math:`[0, len(var.dim))`.
+        var (Union[Parameter, Tensor]): The input parameter or tensor.
+        indices (Tensor): The specified indices, a 1-D tensor.
+        updates (Tensor): The input tensor to add to `var`.
+        axis (int): The specified axis.
 
     Returns:
-        Tensor, updated result, has the same shape and dtype as `var`.
-
-    Raises:
-        TypeError: If neither `indices` nor `updates` is a Tensor.
-        ValueError: If `axis` is out of valid range.
-        ValueError: If `var` rank is not the same as `updates` rank.
-        ValueError: If shape of `indices` is not :math:`(updates.shape[axis],)`.
-        ValueError: If `updates`'s shape is not the same as `var` except the `axis` th dimension.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``CPU``
@@ -1230,12 +1209,11 @@ def inplace_index_add(var, indices, updates, axis):  # pylint: disable=redefined
     Examples:
         >>> import mindspore
         >>> import numpy as np
-        >>> from mindspore import Tensor, ops, Parameter
-        >>> var = Parameter(Tensor(np.array([[1, 2], [3, 4], [5, 6]]), mindspore.float32))
-        >>> indices = Tensor(np.array([0, 1]), mindspore.int32)
-        >>> updates = Tensor(np.array([[0.5, 1.0], [1.0, 1.5]]), mindspore.float32)
-        >>> var = ops.inplace_index_add(var, indices, updates, axis=0)
-        >>> print(var)
+        >>> var = mindspore.Parameter(mindspore.tensor(np.array([[1, 2], [3, 4], [5, 6]]), mindspore.float32))
+        >>> indices = mindspore.tensor(np.array([0, 1]), mindspore.int32)
+        >>> updates = mindspore.tensor(np.array([[0.5, 1.0], [1.0, 1.5]]), mindspore.float32)
+        >>> mindspore.ops.inplace_index_add(var, indices, updates, axis=0)
+        >>> print(var.asnumpy())
         [[1.5 3. ]
          [4.  5.5]
          [5.  6. ]]
@@ -1247,40 +1225,31 @@ def inplace_index_add(var, indices, updates, axis):  # pylint: disable=redefined
 
 def inplace_sub(x, v, indices):
     r"""
-    Subtracts `v` into specified rows of `x`. Computes :math:`y = x`; :math:`y[i,] -= input\_v`.
+    Subtract `v` in `x` according to the indices.
 
-    Note:
-        `indices` refers to the left-most dimension.
+    for each `i, ..., j` in `indices` :
+
+    .. math::
+        x[\text{indices}[i, ..., j]] \mathrel{-}= v[i, ..., j]
 
     Args:
-        x (Tensor): TThe tensor to be subtracted. It has shape :math:`(N,*)` where :math:`*` means
-            any number of additional dimensions.
-        v (Tensor): The value tensor subtract from `x`. It has the same dimension sizes as `x` except
-            the first dimension, whose size must be the same as `indices`. It has the same data type with `x`.
-        indices (Union[int, tuple]): Indices into the left-most dimension of `x`, and determines which rows of `x`
-            to subtract with `v`. It is an int or tuple, whose value is in [0, the first dimension size of `x`).
+        x (Tensor): The input tensor.
+        v (Tensor): The input tensor to subtract from `x` .
+        indices (Union[int, tuple]): Indices into the input `x` along the 0th dimension.
 
     Returns:
-        Tensor, has the same shape and dtype as `x`.
-
-    Raises:
-        TypeError: If `indices` is neither int nor tuple.
-        TypeError: If `indices` is a tuple whose elements are not all int.
-        ValueError: If the rank of `x` is not equal to the rank of `v`.
-        ValueError: If the length of `indices` is not equal to `v.shape[0]`.
-        ValueError: If the values of `indices` are not in range of `[0, x.shape[0])`.
+        Tensor.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
         >>> import mindspore
-        >>> from mindspore import Tensor, ops
+        >>> import numpy as np
         >>> indices = (0, 1)
-        >>> x = Tensor(np.array([[1, 2], [3, 4], [5, 6]]), mindspore.float32)
-        >>> input_v = Tensor(np.array([[0.5, 1.0], [1.0, 1.5]]), mindspore.float32)
-        >>> output = ops.inplace_sub(x, input_v, indices)
+        >>> x = mindspore.tensor(np.array([[1, 2], [3, 4], [5, 6]]), mindspore.float32)
+        >>> input_v = mindspore.tensor(np.array([[0.5, 1.0], [1.0, 1.5]]), mindspore.float32)
+        >>> output = mindspore.ops.inplace_sub(x, input_v, indices)
         >>> print(output)
         [[0.5 1. ]
          [2.  2.5]
@@ -5938,45 +5907,36 @@ def cumsum(x, axis, dtype=None):
 
 def sparse_segment_mean(x, indices, segment_ids):
     r"""
-    Computes a Tensor such that :math:`output_i = \frac{\sum_j x_{indices[j]}}{N}` where mean is over :math:`j` such
-    that :math:`segment\_ids[j] == i` and :math:`N` is the total number of values summed. If the mean is empty for
-    a given segment ID :math:`i`, :math:`output[i] = 0`.
+    Computes the mean of sparse segments in the input tensor.
+
+    .. math::
+        output_i = \frac{\sum_j x_{indices[j]}}{N}
+
+    where `N` is the number of elements where :math:`segment\_ids[j] == i` .
+    If `segment_ids` doesn't contain `i`, then :math:`output[i] = 0` .
 
     Note:
-        - On CPU, values in `segment_ids` are always validated to be sorted, and an error is thrown for indices that
-          are not increasing. Moreover, values in `indices` are validated to be bounded, and an error is thrown when
-          `indices` are out of range[0, x.shape[0]).
-        - On GPU, this does not throw an error for unsorted `segment_ids` and out-of-bound `indices`. Out-of-order
-          `segment_ids` result in safe but unspecified behavior, while out-of-range `indices` will be ignored.
+        - On CPU, values in `segment_ids` must be sorted and `indices` must be within range[0, x.shape[0]).
+        - On GPU, unsorted `segment_ids` may result in undefined but safe behavior.Out-of-range `indices` will
+            be ignored.
 
     Args:
-        x (Tensor): A Tensor, and its rank must be greater than or equal to 1.
-        indices (Tensor): A 1-D Tensor, with int32 or int64 data type.
-        segment_ids (Tensor): A 1-D Tensor, must have the same dtype as `indices`.
-            Values should be sorted and can be repeated.
+        x (Tensor): The input tensor with at least one dimension.
+        indices (Tensor): The specified indices, a 1-D tensor.
+        segment_ids (Tensor): A 1-D tensor, must be sorted and can contain duplicates.
 
     Returns:
-        Tensor, whose dtype and rank is the same as `x`. The first dimension is equal to the value of the last element
-        of `segment_ids` plus one, and the other dimensions are the same as those of `x`.
-
-    Raises:
-        TypeError: If `x`, `indices` or `segment_ids` is not a Tensor.
-        TypeError: If the dtype of `x` is not one of the following dtype: float16, float32, float64.
-        TypeError: If the dtype of `indices` and `segment_ids` are not one of the following dtype: int32, int64.
-        TypeError: If the dtype of `indices` and `segment_ids` are not the same.
-        ValueError: If the shape of `x`, `indices` or `segment_ids` don't meet the parameter description.
-        ValueError: If the size of `indices` and `segment_ids` are not the same.
+        Tensor
 
     Supported Platforms:
         ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor([[0, 1, 2], [1, 2, 3], [3, 6, 7]], dtype=mindspore.float32)
-        >>> indices = Tensor([0, 1, 2], dtype=mindspore.int32)
-        >>> segment_ids = Tensor([1,2,2], dtype=mindspore.int32)
-        >>> out = ops.sparse_segment_mean(x, indices, segment_ids)
+        >>> x = mindspore.tensor([[0, 1, 2], [1, 2, 3], [3, 6, 7]], dtype=mindspore.float32)
+        >>> indices = mindspore.tensor([0, 1, 2], dtype=mindspore.int32)
+        >>> segment_ids = mindspore.tensor([1,2,2], dtype=mindspore.int32)
+        >>> out = mindspore.ops.sparse_segment_mean(x, indices, segment_ids)
         >>> print(out)
         [[0. 0. 0.]
          [0. 1. 2.]
@@ -6096,31 +6056,27 @@ def dstack(tensors):
     r"""
     Stacks tensors along the third axis.
 
-    1-D tensors :math:`(N,)` should be reshaped to :math:`(1,N,1)`.
-    2-D tensors :math:`(M,N)` should be reshaped to :math:`(M,N,1)` before concatenation.
+    .. note::
+        - 1-D tensors :math:`(N,)` should be reshaped to :math:`(1,N,1)`. 2-D tensors :math:`(M,N)` should
+          be reshaped to :math:`(M,N,1)` before concatenation.
+        - The tensors must have the same shape along all but the third axis.
+          1-D or 2-D tensors must have the same shape.
 
     Args:
-        tensors (Union(List[Tensor], Tuple[Tensor])): A sequence of tensors.
-            The tensors must have the same shape along all but the third axis.
-            1-D or 2-D tensors must have the same shape.
+        tensors (Union(List[Tensor], Tuple[Tensor])): The list of tensors or tuple of tensors.
 
     Returns:
-        Stacked Tensor, will be at least 3-D.
-        The output shape is similar to the output of `numpy.dstack()` function.
-
-    Raises:
-        TypeError: If `tensors` is not tuple or list.
-        ValueError: If `tensors` is empty.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
+        >>> import mindspore
         >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x1 = Tensor(np.arange(1, 7).reshape(2, 3))
-        >>> x2 = Tensor(np.arange(7, 13).reshape(2, 3))
-        >>> out = ops.dstack([x1, x2])
+        >>> x1 = mindspore.tensor(np.arange(1, 7).reshape(2, 3))
+        >>> x2 = mindspore.tensor(np.arange(7, 13).reshape(2, 3))
+        >>> out = mindspore.ops.dstack([x1, x2])
         >>> print(out.asnumpy())
         [[[ 1.  7.]
           [ 2.  8.]
@@ -10274,27 +10230,21 @@ def einsum(equation, *operands):
     r"""
     According to the Einstein summation Convention (Einsum),
     the product of the input tensor elements is summed along the specified dimension.
-    This operator can be used to perform diagonal, reducesum, transpose, matmul, mul, inner product operations, etc.
 
     Note:
-        The sublist format is also supported. For example, ops.einsum(op1, sublist1, op2, sublist2, ..., sublist_out).
-        In this format, equation can be derived by the sublists which are made up of Python's Ellipsis and list of
-        integers in [0, 52). Each operand is followed by a sublist and an output sublist is at the end.
+        - The sublist format is also supported. For example, ops.einsum(op1, sublist1, op2, sublist2, ..., sublist_out).
+          In this format, equation can be derived by the sublists which are made up of Python's Ellipsis and list of
+          integers in [0, 52). Each operand is followed by a sublist and an output sublist is at the end.
+        - The value can contain only letters, commas, ellipsis and arrow. The letters represent input tensor dimension,
+          commas represent separate tensors, ellipsis indicates the tensor dimension that you do not care about, the
+          left of the arrow indicates the input tensors, and the right of it indicates the desired output dimension.
 
     Args:
-        equation (str): Notation based on the Einstein summation convention, represent the operation you want to do.
-            the value can contain only letters, commas, ellipsis and arrow.
-            The letters represent input tensor dimension, commas represent separate tensors, ellipsis indicates
-            the tensor dimension that you do not care about, the left of the arrow indicates the input tensors,
-            and the right of it indicates the desired output dimension.
-        operands (Tensor): Input tensor used for calculation. The dtype of the tensor must be the same.
+        equation (str): Notation based on the Einstein summation convention.
+        operands (Tensor): The input tensor.
 
     Returns:
-        Tensor, the shape of it can be obtained from the `equation` , and the dtype is the same as input tensors.
-
-    Raises:
-        TypeError: If `equation` is invalid, or the `equation` does not match the input tensor.
-        ValueError: If the number in sublist is not in [0, 52) in sublist format.
+        Tensor
 
     Supported Platforms:
         ``GPU``
@@ -10302,53 +10252,52 @@ def einsum(equation, *operands):
     Examples:
         >>> import mindspore
         >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([1.0, 2.0, 4.0]), mindspore.float32)
+        >>> x = mindspore.tensor(np.array([1.0, 2.0, 4.0]), mindspore.float32)
         >>> equation = "i->"
-        >>> output = ops.einsum(equation, x)
+        >>> output = mindspore.ops.einsum(equation, x)
         >>> print(output)
         [7.]
-        >>> x = Tensor(np.array([1.0, 2.0, 4.0]), mindspore.float32)
-        >>> y = Tensor(np.array([2.0, 4.0, 3.0]), mindspore.float32)
+        >>> x = mindspore.tensor(np.array([1.0, 2.0, 4.0]), mindspore.float32)
+        >>> y = mindspore.tensor(np.array([2.0, 4.0, 3.0]), mindspore.float32)
         >>> equation = "i,i->i"
-        >>> output = ops.einsum(equation, x, y)
+        >>> output = mindspore.ops.einsum(equation, x, y)
         >>> print(output)
         [ 2. 8. 12.]
-        >>> x = Tensor(np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]), mindspore.float32)
-        >>> y = Tensor(np.array([[2.0, 3.0], [1.0, 2.0], [4.0, 5.0]]), mindspore.float32)
+        >>> x = mindspore.tensor(np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]), mindspore.float32)
+        >>> y = mindspore.tensor(np.array([[2.0, 3.0], [1.0, 2.0], [4.0, 5.0]]), mindspore.float32)
         >>> equation = "ij,jk->ik"
-        >>> output = ops.einsum(equation, x, y)
+        >>> output = mindspore.ops.einsum(equation, x, y)
         >>> print(output)
         [[16. 22.]
          [37. 52.]]
-        >>> x = Tensor(np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]), mindspore.float32)
+        >>> x = mindspore.tensor(np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]), mindspore.float32)
         >>> equation = "ij->ji"
-        >>> output = ops.einsum(equation, x)
+        >>> output = mindspore.ops.einsum(equation, x)
         >>> print(output)
         [[1. 4.]
          [2. 5.]
          [3. 6.]]
-        >>> x = Tensor(np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]), mindspore.float32)
+        >>> x = mindspore.tensor(np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]), mindspore.float32)
         >>> equation = "ij->j"
-        >>> output = ops.einsum(equation, x)
+        >>> output = mindspore.ops.einsum(equation, x)
         >>> print(output)
         [5. 7. 9.]
-        >>> x = Tensor(np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]), mindspore.float32)
+        >>> x = mindspore.tensor(np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]), mindspore.float32)
         >>> equation = "...->"
-        >>> output = ops.einsum(equation, x)
+        >>> output = mindspore.ops.einsum(equation, x)
         >>> print(output)
         [21.]
-        >>> x = Tensor(np.array([1.0, 2.0, 3.0]), mindspore.float32)
-        >>> y = Tensor(np.array([2.0, 4.0, 1.0]), mindspore.float32)
+        >>> x = mindspore.tensor(np.array([1.0, 2.0, 3.0]), mindspore.float32)
+        >>> y = mindspore.tensor(np.array([2.0, 4.0, 1.0]), mindspore.float32)
         >>> equation = "j,i->ji"
-        >>> output = ops.einsum(equation, x, y)
+        >>> output = mindspore.ops.einsum(equation, x, y)
         >>> print(output)
         [[ 2. 4. 1.]
          [ 4. 8. 2.]
          [ 6. 12. 3.]]
-        >>> x = mindspore.Tensor([1, 2, 3, 4], mindspore.float32)
-        >>> y = mindspore.Tensor([1, 2], mindspore.float32)
-        >>> output = ops.einsum(x, [..., 1], y, [..., 2], [..., 1, 2])
+        >>> x = mindspore.tensor([1, 2, 3, 4], mindspore.float32)
+        >>> y = mindspore.tensor([1, 2], mindspore.float32)
+        >>> output = mindspore.ops.einsum(x, [..., 1], y, [..., 2], [..., 1, 2])
         >>> print(output)
         [[1. 2.]
          [2. 4.]
