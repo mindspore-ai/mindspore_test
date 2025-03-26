@@ -742,7 +742,7 @@ void MsContext::SetMsInternalEnableCustomKernelList() {
     "MatMul,RmsNorm,Add,Sub,FlashAttentionScore,PagedAttention,PagedAttentionMask,AddRmsNorm,AddLayerNorm,"
     "MatMulAllReduce,InferenceMatmulSplit,AddRmsNormQuantV2,InferenceSwiGLU,QbmmAllReduceAdd,QbmmAdd,"
     "AddRmsNormDynamicQuant,MatMulElemwise,RmsNormQuant,TransposeBatchMatmulTranspose,FusedAddTopKDiv,"
-    "SwiGLUDynamicQuant";
+    "SwiGLUDynamicQuant,SwiGLUReshapeDynamicQuant";
   const std::string k310pDefaultEnabledOpList = "MatMul,QuantBatchMatmul,QuantLinearSparse,QbmmAllReduceAdd,QbmmAdd";
   auto internal_op_boost_env = common::GetEnv("MS_ENABLE_INTERNAL_BOOST");
   bool is_enable_internal_op = true;
