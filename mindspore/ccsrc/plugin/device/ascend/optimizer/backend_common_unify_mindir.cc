@@ -75,6 +75,7 @@
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/inference_swiglu_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/inference_swiglu_fusion_v2.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/swiglu_dynamic_quant_fusion.h"
+#include "plugin/device/ascend/optimizer/ir_fusion_infer/swiglu_reshape_dynamic_quant_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/inference_qbmm_add_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/inference_qbmm_allreduce_add_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/matmul_allreduce_add_rmsnorm_fusion.h"
@@ -183,6 +184,7 @@ PassManagerPtr GetBackendFusionGroupPassManager() {
   pm->AddFusionPass(std::make_shared<opt::InferenceMatmulSplitFusion>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::AddRmsNormDynamicQuantFusion>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::SwiGLUDynamicQuantFusion>(), infer_boost);
+  pm->AddFusionPass(std::make_shared<opt::SwiGLUReshapeDynamicQuantFusion>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::AddRmsNormQuantFusion>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::AddCastRmsNormCastQuantFusion>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::RmsNormAddQuantFusion>(), infer_boost);
