@@ -872,7 +872,7 @@ class SmoothL1Loss(Cell):
         0.16666667
         >>> reduction_3 = 'sum'
         >>> loss3 = mint.nn.SmoothL1Loss(reduction=reduction_3, beta=beta)
-        >>> output = loss2(loss3, target)
+        >>> output = loss3(input, target)
         >>> print(output)
         0.5
     """

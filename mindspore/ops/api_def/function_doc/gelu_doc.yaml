@@ -50,9 +50,10 @@ gelu:
 
         Examples:
             >>> import mindspore
+            >>> import numpy as np
             >>> from mindspore import Tensor, mint
             >>> input = Tensor(np.array([[-1.0, 4.0, -8.0], [2.0, -5.0, 9.0]]), mindspore.float32)
-            >>> result = mint.nn.functional.gelu(x)
+            >>> result = mint.nn.functional.gelu(input)
             >>> print(result)
             [[-1.58655241e-01  3.99987316e+00 -0.00000000e+00]
              [ 1.95449972e+00 -1.41860323e-06  9.0000000e+00]]
