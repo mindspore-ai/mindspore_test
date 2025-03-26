@@ -1,0 +1,8 @@
+arctan2_:
+  description: |
+    arctan2_(other) -> Tensor
+    
+    In-place update version of :func:`mindspore.Tensor.arctan2`.
+    
+    .. warning::
+        This is an experimental API that is subject to change or deletion.

@@ -1,0 +1,8 @@
+arctanh_:
+  description: |
+    arctanh_() -> Tensor
+    
+    In-place update version of :func:`mindspore.Tensor.arctanh`.
+    
+    .. warning::
+        This is an experimental API that is subject to change or deletion.

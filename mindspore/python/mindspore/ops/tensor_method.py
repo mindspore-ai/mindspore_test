@@ -567,6 +567,9 @@ def deprecated_tensor_argsort(input, axis=-1, descending=False):
 def tensor_atan2(input, other):
     return atan2(input, other)
 
+def tensor_inplace_atan2(input, other):
+    raise RuntimeError(f"atan2_ does not have CPU/GPU backward")
+
 
 # 14 bfloat16
 
@@ -1457,6 +1460,11 @@ def tensor_asin(input):
 def deprecated_tensor_asin(input):
     return F.asin(input)
 
+def tensor_inplace_asin(input):
+    raise RuntimeError(f"asin_ does not have CPU/GPU implement")
+
+def tensor_inplace_asinh(input):
+    raise RuntimeError(f"asinh_ does not have CPU/GPU implement")
 
 def tensor_asinh(input):
     return asinh_ext(input)
@@ -1469,6 +1477,9 @@ def deprecated_tensor_asinh(input):
 def tensor_atan(input):
     return atan_ext(input)
 
+def tensor_inplace_atan(input):
+    raise RuntimeError(f"atan_ does not have CPU/GPU backward")
+
 
 def deprecated_tensor_atan(input):
     return F.atan(input)
@@ -1476,6 +1487,9 @@ def deprecated_tensor_atan(input):
 
 def tensor_atanh(input):
     return F.atanh(input)
+
+def tensor_inplace_atanh(input):
+    raise RuntimeError(f"atanh_ does not have CPU/GPU backward")
 
 
 def tensor_copy_(input, src):
