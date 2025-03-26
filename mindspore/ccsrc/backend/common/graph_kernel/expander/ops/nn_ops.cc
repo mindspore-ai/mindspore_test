@@ -161,42 +161,42 @@ REG_EXPANDER_FUNC("Adam").SetBody(BODYFUNC(ib) {
     epsilon = ib->Cast(epsilon, dtype);
   }
 
-  // calc m_new : m_new = beta1 * m + (1 - beta1) * grad
-  auto m_b = ib->Mul(beta1, m);
+  // calc m_new : m_new = m + (1 - beta1) * (grad - m)
   auto const_one = ib->Tensor(1.0, var->GetDtype());
-  auto m1_beta1 = ib->Sub(const_one, beta1);
-  auto m_g = ib->Mul(m1_beta1, grad);
-  auto m_new = ib->Add(m_b, m_g);
+  auto one_minus_beta1 = ib->Sub(const_one, beta1);
+  auto m_g = ib->Mul(one_minus_beta1, grad);
+  auto grad_minus_m = ib->Sub(grad, m);
+  auto m_new = ib->Add(m, ib->Mul(one_minus_beta1, grad_minus_m));
 
-  // calc v_new: v_new = beta2 * v + (1 - beta2) * grad * grad
-  auto v_b = ib->Mul(beta2, v);
-  auto m1_beta2 = ib->Sub(const_one, beta2);
-  auto grad_mul = ib->Mul(grad, grad);
-  auto v_g = ib->Mul(m1_beta2, grad_mul);
-  auto v_new = ib->Add(v_b, v_g);
+  // calc v_new: v_new = v + (1 - beta2) * (grad * grad - v)
+  auto one_minus_beta2 = ib->Sub(const_one, beta2);
+  auto grad_square = ib->Mul(grad, grad);
+  auto grad_square_minus_v = ib->Sub(grad_square, v);
+  auto v_new = ib->Add(v, ib->Mul(one_minus_beta2, grad_square_minus_v));
 
-  // calc lr_t: lr_t = lr * sqrt(1 - beta2_power) / (1 - beta1_power);
-  auto m1_beta2_power = ib->Sub(const_one, beta2_power);
-  auto m1_beta2_power_sqrt = ib->Sqrt(m1_beta2_power);
+  // calc lr_t: lr_t = lr * sqrt(1 - beta2_power) / (1 - beta1_power)
+  auto one_minus_beta2_power = ib->Sub(const_one, beta2_power);
+  auto sqrt_res = ib->Sqrt(one_minus_beta2_power);
+  auto lr_mul = ib->Mul(lr, sqrt_res);
   auto m1_beta1_power = ib->Sub(const_one, beta1_power);
-  auto power_div = ib->Div(m1_beta2_power_sqrt, m1_beta1_power);
-  auto lr_t = ib->Mul(lr, power_div);
+  auto lr_t = ib->Div(lr_mul, m1_beta1_power);
 
-  // if use_nesterov: var_new <- var - lr_t * (m_new * beta1 + (1 - beta1) * grad) / (epsilon + sqrt(v_new))
-  // if not use_nesterov: var_new <- var - lr_t * m_new / (epsilon + sqrt(v_new))
+  // if use_nesterov: var_new = var - lr_t * (m_new * beta1 + (1 - beta1) * grad) / (epsilon + sqrt(v_new))
+  // if not use_nesterov: var_new = var - lr_t * m_new / (epsilon + sqrt(v_new))
   auto v_new_sqrt = ib->Sqrt(v_new);
   auto v_new_sqrt_e = ib->Add(epsilon, v_new_sqrt);
-  auto lr_t_div = ib->Div(lr_t, v_new_sqrt_e);
-  NodePtr var_sub;
+  NodePtr div_res;
   if (GetValue<bool>(ib->attr("use_nesterov"))) {
     auto m_new_mul = ib->Mul(m_new, beta1);
     auto m_new_mul_add = ib->Add(m_new_mul, m_g);
-    var_sub = ib->Mul(lr_t_div, m_new_mul_add);
+    auto lr_mul = ib->Mul(lr_t, m_new_mul_add);
+    div_res = ib->Div(lr_mul, v_new_sqrt_e);
   } else {
-    var_sub = ib->Mul(lr_t_div, m_new);
+    auto lr_m_mul = ib->Mul(lr_t, m_new);
+    div_res = ib->Div(lr_m_mul, v_new_sqrt_e);
   }
 
-  auto var_new = ib->Sub(var, var_sub);
+  auto var_new = ib->Sub(var, div_res);
   auto var_result = ib->Assign(var, var_new);
   auto m_result = ib->Assign(m, m_new);
   auto v_result = ib->Assign(v, v_new);
