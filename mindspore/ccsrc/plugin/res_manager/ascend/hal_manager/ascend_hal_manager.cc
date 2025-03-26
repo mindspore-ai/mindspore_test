@@ -181,21 +181,22 @@ void AscendHalManager::InitializeAcl() {
   acl_initialized_ = true;
   pid_t pid = getpid();
   std::string file_name = "./aclinit_" + std::to_string(pid) + ".json";
+  std::string json_str;
   auto realpath = Common::CreatePrefixPath(file_name);
   if (!realpath.has_value()) {
     MS_LOG(WARNING) << "Failed to get real path: [" << file_name << "] in generate aclInit json file path.";
     return;
   }
-  if (!OpDebugConf::GetInstance()->GenerateAclInitJson(realpath.value())) {
+  if (!OpDebugConf::GetInstance()->GenerateAclInitJson(realpath.value(), &json_str)) {
     MS_LOG(WARNING) << "Failed to generate aclinit json, the file path is " << realpath.value() << ".";
     return;
   }
-  TempFileManager::GetInstance().Register(realpath.value());
   aclError ret = CALL_ASCEND_API(aclInit, realpath.value().c_str());
+  TempFileManager::GetInstance().RemoveFile(realpath.value());
   if (ret != ACL_ERROR_NONE) {
-    MS_LOG(WARNING) << "Call aclInit failed, the error number is " << ret;
+    MS_LOG(WARNING) << "Call aclInit failed, the error number is " << ret << ", json is " << json_str;
   } else {
-    MS_LOG(INFO) << "Call aclInit successfully";
+    MS_LOG(INFO) << "Call aclInit successfully, json is " << json_str;
   }
 }
 

@@ -42,7 +42,7 @@ class ASCEND_RES_MANAGER_EXPORT OpDebugConf {
   void set_max_opqueue_num(const std::string &opqueue_num);
   void set_err_msg_mode(const std::string &msg_mode);
   void set_lite_exception_dump(const std::map<std::string, std::string> &);
-  bool GenerateAclInitJson(const std::string &file_name);
+  bool GenerateAclInitJson(const std::string &file_name, std::string *json_str);
   bool IsExecuteTimeoutConfigured() const { return is_execute_timeout_configured_; }
   bool IsDebugOptionConfigured() const { return !debug_option_.empty(); }
 
