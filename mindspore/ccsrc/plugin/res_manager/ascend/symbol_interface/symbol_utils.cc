@@ -51,7 +51,7 @@ std::string GetAscendPath() {
   }
   auto path_tmp = std::string(info.dli_fname);
   const std::string kLatest = "latest";
-  auto pos = path_tmp.find(kLatest);
+  auto pos = path_tmp.rfind(kLatest);
   if (pos == std::string::npos) {
     MS_EXCEPTION(ValueError)
       << "Get ascend path failed, please check whether CANN packages are installed correctly, \n"
