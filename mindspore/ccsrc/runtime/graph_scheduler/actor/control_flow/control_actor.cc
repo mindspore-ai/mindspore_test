@@ -751,18 +751,20 @@ void ControlActor::ResetState() {
         continue;
       }
       // Weight can not be free.
-      if ((device_tensor->ref_count() == SIZE_MAX) && (device_tensor->dynamic_ref_count() == INT32_MAX)) {
+      if (device_tensor->new_ref_count() == SIZE_MAX) {
         continue;
       }
       auto held_by_nodes = device_tensor->held_by_nodes();
       if (!held_by_nodes.empty()) {
         FreeMemoryByValueNode(held_by_nodes, device_tensor);
+        device_tensor->set_new_ref_count(0);
         continue;
       }
       const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
         {device_tensor->device_name(), device_tensor->device_id()});
       MS_EXCEPTION_IF_NULL(device_context);
       FreeMemoryByDeviceContext(device_tensor, device_context);
+      device_tensor->set_new_ref_count(0);
     }
   }
   MS_LOG(INFO) << "End free control actor " << GetAID();
