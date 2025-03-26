@@ -48,6 +48,7 @@ class GluGradCpuKernelMod : public NativeCpuKernelMod {
   int64_t axis_{1};
   std::vector<int64_t> grad_shape_{};
   std::vector<int64_t> x_shape_{};
+  bool is_x_empty_{false};
   TypeId dtype_{kTypeUnknown};
 };
 }  // namespace glu_grad_cpu
