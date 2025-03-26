@@ -61,8 +61,8 @@ void UCEException::ProcessApiUceError(const FuncInfo &fn_info, int error_code,
                                       bool throw_exception) {
   const std::string &api_func = fn_info.api_msg;
   if (api_func == "aclrtProcessReport" || api_func == "acltdtReceiveTensor") {
-    MS_LOG(INFO) << "Call ascend api <" << api_func << "> in <" << fn_info.caller_func << "> at " << fn_info.caller_file
-                 << ":" << fn_info.caller_line << " failed, error code [" << error_code << "].";
+    MS_LOG(DEBUG) << "Call ascend api <" << api_func << "> in <" << fn_info.caller_func << "> at "
+                  << fn_info.caller_file << ":" << fn_info.caller_line << " failed, error code [" << error_code << "].";
   } else {
     MS_LOG(ERROR) << "Call ascend api <" << api_func << "> in <" << fn_info.caller_func << "> at "
                   << fn_info.caller_file << ":" << fn_info.caller_line << " failed, error code [" << error_code << "].";
