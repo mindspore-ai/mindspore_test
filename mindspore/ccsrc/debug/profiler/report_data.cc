@@ -56,11 +56,11 @@ std::vector<uint8_t> OpRangeData::encode() {
 
   uint16_t dataType = static_cast<uint16_t>(ReportFileType::OP_RANGE);
   for (size_t i = 0; i < sizeof(uint16_t); ++i) {
-    resultTLV.push_back((dataType >> (i * 8)) & 0xff);
+    resultTLV.push_back((dataType >> (i * kBitsPerByte)) & 0xff);
   }
   uint32_t length = tlvBytes.size();
   for (size_t i = 0; i < sizeof(uint32_t); ++i) {
-    resultTLV.push_back((length >> (i * 8)) & 0xff);
+    resultTLV.push_back((length >> (i * kBitsPerByte)) & 0xff);
   }
   resultTLV.insert(resultTLV.end(), tlvBytes.cbegin(), tlvBytes.cend());
   return resultTLV;

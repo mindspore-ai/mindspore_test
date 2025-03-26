@@ -163,6 +163,7 @@ class OpRangeStructField(Enum):
     EVENT_GRAPH = 16
     CUSTOM_INFO = 17
 
+
 class FwkProfileDataField:
     """Framework profile data field."""
 
