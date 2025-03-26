@@ -407,30 +407,27 @@ def clip_by_global_norm(x, clip_norm=1.0, use_norm=None):
     Clips tensor values by the ratio of the sum of their norms.
 
     Note:
-        - Input `x` should be a tuple or list of tensors. Otherwise, it will raise an error.
         - On the SEMI_AUTO_PARALLEL mode or AUTO_PARALLEL mode, if the input `x` is the gradient,
           the gradient norm values on all devices will be automatically aggregated by allreduce inserted after
           the local square sum of the gradients.
 
     Args:
         x (Union(tuple[Tensor], list[Tensor])): Input data to clip.
-        clip_norm (Union(float, int)): The clipping ratio, it should be greater than 0. Default: ``1.0`` .
-        use_norm (None): The global norm. Default: ``None`` . Currently only none is supported.
+        clip_norm (Union(float, int)): The clipping ratio, it should be greater than 0. Default ``1.0`` .
+        use_norm (None): The global norm. Currently only none is supported. Default ``None`` .
 
     Returns:
-        tuple[Tensor], a clipped Tensor. It has the same data type as `x` and each Tensor in the output tuple is the
-        same as the original input shape.
+        Tuple of tensors
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> from mindspore import Tensor, ops
-        >>> import numpy as np
-        >>> x1 = np.array([[2., 3.], [1., 2.]]).astype(np.float32)
-        >>> x2 = np.array([[1., 4.], [3., 1.]]).astype(np.float32)
-        >>> input_x = (Tensor(x1), Tensor(x2))
-        >>> out = ops.clip_by_global_norm(input_x, 1.0)
+        >>> import mindspore
+        >>> x1 = mindspore.tensor([[2., 3.], [1., 2.]], dtype=mindspore.float32)
+        >>> x2 = mindspore.tensor([[1., 4.], [3., 1.]], dtype=mindspore.float32)
+        >>> input_x = (x1, x2)
+        >>> out = mindspore.ops.clip_by_global_norm(input_x, 1.0)
         >>> print(out)
         (Tensor(shape=[2, 2], dtype=Float32, value=
         [[ 2.98142403e-01,  4.47213590e-01],

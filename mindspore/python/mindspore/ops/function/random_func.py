@@ -121,7 +121,6 @@ def _get_seed(op_seed, kernel_name):
 def standard_laplace(shape, seed=None):
     r"""
     Generates random numbers according to the Laplace random number distribution (mean=0, lambda=1).
-    It is defined as:
 
     .. math::
         \text{f}(x) = \frac{1}{2}\exp(-|x|)
@@ -131,16 +130,13 @@ def standard_laplace(shape, seed=None):
         the `seed` parameter has no effect.
 
     Args:
-        shape (Union[tuple, Tensor]): The shape of random tensor to be generated. Only constant value is allowed
-          when the input type is tuple. And the operator supports dynamic shape only when the input type is Tensor.
-        seed (int, optional): Seed is used as entropy source for Random number engines generating pseudo-random numbers.
-          Default: ``None`` .
+        shape (Union[tuple, Tensor]): The shape of returned tensor.
+        seed (int, optional): Random number seed. Default ``None`` .
 
     Returns:
-        Tensor. The shape that the input `shape` denotes. The dtype is float32.
+        Tensor
 
     Raises:
-        TypeError: If shape is neither a tuple nor a Tensor.
         ValueError: If shape is a tuple containing non-positive items.
         ValueError: If shape is a Tensor, and the rank of the Tensor is not equal to 1.
 
@@ -148,12 +144,11 @@ def standard_laplace(shape, seed=None):
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> from mindspore import ops
+        >>> import mindspore
         >>> shape = (4, 4)
-        >>> output = ops.standard_laplace(shape)
-        >>> result = output.shape
-        >>> print(result)
-        (4, 4)
+        >>> output = mindspore.ops.standard_laplace(shape, seed=5)
+        >>> print(f'output shape is {output.shape}')
+        output shape is (4, 4)
     """
     seed1, seed2 = _get_seed(seed, "standard_laplace")
     standard_laplace_op = P.StandardLaplace(seed=seed1, seed2=seed2)
@@ -348,49 +343,31 @@ def uniform(shape, minval, maxval, seed=None, dtype=mstype.float32):
         The number in tensor minval should be strictly less than maxval at any position after broadcasting.
 
     Args:
-        shape (Union[tuple, Tensor]): The shape of random tensor to be generated.
-        minval (Tensor): The distribution parameter `a`.
-          It defines the minimum possible generated value, with int32 or float32 data type.
-          If dtype is int32, only one number is allowed.
-        maxval (Tensor): The distribution parameter `b`.
-          It defines the maximum possible generated value, with int32 or float32 data type.
-          If dtype is int32, only one number is allowed.
-        seed (int): Seed is used as entropy source for the random number engines to generate pseudo-random numbers,
-          must be non-negative. Default: ``None`` , which will be treated as 0.
-        dtype (mindspore.dtype): Type of the Uniform distribution. If it is int32, it generates numbers from discrete
-          uniform distribution; if it is float32, it generates numbers from continuous uniform distribution. It only
-          supports these two data types. Default: mstype.float32.
+        shape (Union[tuple, Tensor]): The shape of returned tensor.
+        minval (Tensor): Defines the minimum possible generated value.
+        maxval (Tensor): Defines the maximum possible generated value.
+        seed (int): Random number seed. Default ``None`` .
+        dtype (mindspore.dtype): Type of the returned tensor.
 
     Returns:
-        Tensor. The shape should be equal to the broadcasted shape between the input `shape` and shapes
-        of `minval` and `maxval`.
-        The dtype is designated as the input `dtype`.
-
-    Raises:
-        TypeError: If `shape` is neither a tuple nor a Tensor.
-        TypeError: If 'minval' or 'maxval' is neither int32 nor float32
-            and dtype of 'minval' is not the same as 'maxval'.
-        TypeError: If `seed` is not an int.
-        TypeError: If 'dtype' is neither int32 nor float32.
+        Tensor
 
     Supported Platforms:
         ``GPU`` ``CPU``
 
     Examples:
-        >>> from mindspore import Tensor, ops
         >>> import mindspore
-        >>> import numpy as np
         >>> # For discrete uniform distribution, only one number is allowed for both minval and maxval:
         >>> shape = (4, 2)
-        >>> minval = Tensor(1, mindspore.int32)
-        >>> maxval = Tensor(2, mindspore.int32)
-        >>> output = ops.uniform(shape, minval, maxval, seed=5, dtype=mindspore.int32)
+        >>> minval = mindspore.tensor(1, mindspore.int32)
+        >>> maxval = mindspore.tensor(2, mindspore.int32)
+        >>> output = mindspore.ops.uniform(shape, minval, maxval, seed=5, dtype=mindspore.int32)
         >>>
         >>> # For continuous uniform distribution, minval and maxval can be multi-dimentional:
         >>> shape = (3, 1, 2)
-        >>> minval = Tensor(np.array([[3, 4], [5, 6]]), mindspore.float32)
-        >>> maxval = Tensor([8.0, 10.0], mindspore.float32)
-        >>> output = ops.uniform(shape, minval, maxval, seed=5)
+        >>> minval = mindspore.tensor([[3, 4], [5, 6]], mindspore.float32)
+        >>> maxval = mindspore.tensor([8.0, 10.0], mindspore.float32)
+        >>> output = mindspore.ops.uniform(shape, minval, maxval, seed=5)
         >>> result = output.shape
         >>> print(result)
         (3, 2, 2)
@@ -425,9 +402,6 @@ def standard_normal(shape, seed=None):
     r"""
     Generates random numbers according to the standard Normal (or Gaussian) random number distribution.
 
-    Returns the tensor with the given shape, the random numbers in it drawn from normal distributions
-    whose mean is 0 and standard deviation is 1.
-
     .. math::
         f(x)=\frac{1}{\sqrt{2 \pi}} e^{\left(-\frac{x^{2}}{2}\right)}
 
@@ -436,27 +410,25 @@ def standard_normal(shape, seed=None):
         the `seed` parameter has no effect.
 
     Args:
-        shape (Union[tuple, Tensor]): The shape of random tensor to be generated. Only constant value is allowed
-          when the input type is tuple. And the operator supports dynamic shape only when the input type is Tensor.
-        seed (int, optional): Seed is used as entropy source for Random number engines generating pseudo-random numbers.
-          Default: ``None`` , which will be treated as 0.
+        shape (Union[tuple, Tensor]): The shape of returned tensor.
+        seed (int, optional): Random number Seed. Default ``None`` .
 
     Returns:
-        Tensor. The shape that the input 'shape' denotes. The dtype is float32.
+        Tensor
 
     Raises:
-        TypeError: If `shape` is neither a tuple nor a Tensor.
         ValueError: If `shape` is a tuple containing non-positive items.
+        ValueError: If shape is a Tensor, and the rank of the Tensor is not equal to 1.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> from mindspore import ops
+        >>> import mindspore
         >>> shape = (4, 4)
-        >>> output = ops.standard_normal(shape)
-        >>> result = output.shape
-        >>> print(result)
+        >>> output = mindspore.ops.standard_normal(shape, seed=5)
+        >>> print(f'output shape is {output.shape}')
+        output shape is (4, 4)
         (4, 4)
     """
     seed1, seed2 = _get_seed(seed, "standard_normal")

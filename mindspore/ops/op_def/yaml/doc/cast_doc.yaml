@@ -4,18 +4,14 @@ cast:
 
         Note:
             When converting complex numbers to boolean type, the imaginary part of the complex number is not
-            taken into account. As long as the real part is non-zero, it returns True; otherwise, it returns False.
+            taken into account. As long as the real part is non-zero, it returns ``True``; otherwise, it returns ``False``.
 
         Args:
-            input (Union[Tensor, Number]): The shape of tensor is :math:`(x_1, x_2, ..., x_R)`. The tensor to be cast.
-            dtype (dtype.Number): The valid data type of the output tensor. Only constant value is allowed.
+            input (Union[Tensor, Number]): The input tensor or number.
+            dtype (dtype.Number): The dtype after conversion. Only constant value is allowed.
 
         Returns:
-            Tensor, the shape of tensor is the same as `input`, :math:`(x_1, x_2, ..., x_R)`.
-
-        Raises:
-            TypeError: If `input` is neither Tensor nor Number.
-            TypeError: If `dtype` is not a Number.
+            Tensor
 
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``
@@ -23,11 +19,10 @@ cast:
         Examples:
             >>> import mindspore
             >>> import numpy as np
-            >>> from mindspore import Tensor, ops
             >>> input_np = np.random.randn(2, 3, 4, 5).astype(np.float32)
-            >>> input = Tensor(input_np)
+            >>> input = mindspore.tensor(input_np)
             >>> dtype = mindspore.int32
-            >>> output = ops.cast(input, dtype)
+            >>> output = mindspore.ops.cast(input, dtype)
             >>> print(output.dtype)
             Int32
             >>> print(output.shape)
