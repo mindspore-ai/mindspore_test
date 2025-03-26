@@ -272,6 +272,18 @@ def vm_impl_real_div(self):
     return vm_impl
 
 
+@vm_impl_getters.register(P.Reciprocal)
+def vm_impl_reciprocal(self):
+    """Generate vm_impl function for Reciprocal."""
+
+    def vm_impl(x):
+        x = x.asnumpy()
+        out = np.reciprocal(x)
+        return Tensor(out)
+
+    return vm_impl
+
+
 @vm_impl_getters.register(P.Div)
 def vm_impl_div(self):
     """Generate vm_impl function for Div."""

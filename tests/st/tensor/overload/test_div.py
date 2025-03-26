@@ -27,6 +27,16 @@ class NetNone(nn.Cell):
         return x.div(other)
 
 
+class NetNone1(nn.Cell):
+    def construct(self, x, other):
+        return x / other
+
+
+class NetNone2(nn.Cell):
+    def construct(self, x, other):
+        return other / x
+
+
 class NetFloor(nn.Cell):
     def construct(self, x, other):
         return x.div(other, rounding_mode="floor")
@@ -49,7 +59,7 @@ class NetKwFault2(nn.Cell):
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend',
                       'platform_ascend910b'],
-          level_mark='level1',
+          level_mark='level0',
           card_mark='onecard',
           essential_mark='unessential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
@@ -61,16 +71,28 @@ def test_divide_none(mode):
     """
     context.set_context(mode=mode, jit_config={"jit_level": "O0"})
     net = NetNone()
+    net1 = NetNone1()
+    net2 = NetNone2()
     x = Tensor(np.array([1.0, 5.0, 7.5]), mstype.float32)
     y = Tensor(np.array([4.0, 2.0, 3.0]), mstype.float32)
     output = net(x, y)
     expected = np.array([0.25, 2.5, 2.5], dtype=np.float32)
     assert np.allclose(output.asnumpy(), expected)
+    x = Tensor(np.array([3.0, 10.5, 7.5]), mstype.float16)
+    y = 3
+    output = net1(x, y)
+    expected = np.array([1.0, 3.5, 2.5], dtype=np.float16)
+    assert np.allclose(output.asnumpy(), expected)
+    x = Tensor(np.array([1.0, 2.0, 3.5]), mstype.float64)
+    y = 10
+    output = net2(x, y)
+    expected = np.array([10.0, 5.0, 2.85714286], dtype=np.float64)
+    assert np.allclose(output.asnumpy(), expected)
 
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend',
                       'platform_ascend910b'],
-          level_mark='level1',
+          level_mark='level0',
           card_mark='onecard',
           essential_mark='unessential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
@@ -91,7 +113,7 @@ def test_divide_floor(mode):
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend',
                       'platform_ascend910b'],
-          level_mark='level1',
+          level_mark='level0',
           card_mark='onecard',
           essential_mark='unessential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
@@ -112,7 +134,7 @@ def test_divide_trunc(mode):
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend',
                       'platform_ascend910b'],
-          level_mark='level1',
+          level_mark='level0',
           card_mark='onecard',
           essential_mark='unessential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
