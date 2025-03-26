@@ -4110,9 +4110,11 @@ void GraphBuilder::ExpandContainerParameters(ValueNode *node) {
     AddInput(node);
     push(node);
   } else if (is_dict) {
+    node->GetGraph()->GuardSequenceNodeLength(node, py::len(obj));
     expand_dict(node, obj);
     DoBuildOp({BUILD_MAP, SizeToInt(py::len(obj))});
   } else {
+    node->GetGraph()->GuardSequenceNodeLength(node, py::len(obj));
     expand_list_tuple(node, obj);
     DoBuildOp({(is_tuple ? BUILD_TUPLE : BUILD_LIST), SizeToInt(py::len(obj))});
   }
