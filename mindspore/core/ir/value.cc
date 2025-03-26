@@ -123,6 +123,16 @@ bool UInt64Imm::operator==(const Value &other) const {
 }
 bool UInt64Imm::operator==(const UInt64Imm &other) const { return v_ == other.v_; }
 
+bool FP16Imm::operator==(const Value &other) const {
+  if (other.isa<FP16Imm>()) {
+    auto &other_ = static_cast<const FP16Imm &>(other);
+    return *this == other_;
+  }
+  return false;
+}
+
+bool FP16Imm::operator==(const FP16Imm &other) const { return v_ == other.v_; }
+
 bool FP32Imm::operator==(const Value &other) const {
   if (other.isa<FP32Imm>()) {
     auto &other_ = static_cast<const FP32Imm &>(other);

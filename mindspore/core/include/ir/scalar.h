@@ -26,16 +26,21 @@
 #include <sstream>
 #include <utility>
 #include <cfloat>
+#include <functional>
 
 #include "base/base.h"
 #include "ir/dtype.h"
 #include "ir/dtype/number.h"
 #include "utils/hashing.h"
 #include "base/bfloat16.h"
+#include "base/float16.h"
 
 using std::fabs;
 
 namespace mindspore {
+// Half floating error threshold : 2^(-10)
+constexpr float HALF_EPSILON = 0.0009765625f;
+
 template <typename T>
 inline std::string scalar_float_to_string(T v) {
   std::stringstream ss;
@@ -468,6 +473,54 @@ class MS_CORE_API FloatImm : public Scalar {
   MS_DECLARE_PARENT(FloatImm, Scalar)
 };
 using FloatImmPtr = std::shared_ptr<FloatImm>;
+
+/// \brief FP16Imm defines interface for float16 data.
+class MS_CORE_API FP16Imm final : public FloatImm {
+ public:
+  /// \brief The default constructor for FP16Imm.
+  FP16Imm() : FloatImm(kFloat16), v_(0.0) {}
+  /// \brief The constructor for FP16Imm.
+  ///
+  /// \param[in] v The value of FP16Imm.
+  explicit FP16Imm(float16 v) : FloatImm(kFloat16), v_(v) {
+    hash_ = hash_combine(tid(), [&]() {
+      uint16_t value;
+      auto ret = memcpy_s(&value, sizeof(value), &v_, sizeof(uint16_t));
+      if (ret != EOK) {
+        MS_LOG(EXCEPTION) << "Failed to copy data, memcpy_s errorno: " << ret;
+      }
+      return std::hash<uint16_t>{}(value);
+    }());
+  }
+  /// \brief The destructor of FP16Imm.
+  ~FP16Imm() override = default;
+  MS_DECLARE_PARENT(FP16Imm, FloatImm)
+  std::size_t hash() const override { return hash_; }
+  bool IsZero() override { return fabs(half_to_float(v_)) <= HALF_EPSILON; }
+  bool IsOne() override { return fabs(half_to_float(v_) - 1.0) <= HALF_EPSILON; }
+  /// \brief Get the value of FP16Imm.
+  ///
+  /// \return Return the value of FP16Imm.
+  float16 value() const { return v_; }
+  bool operator==(const Value &other) const override;
+  /// \brief Compare two FP16Imm objects is equal.
+  ///
+  /// \param[in] other The other FP16Imm to be compared with.
+  /// \return Return true if other's value and the value of current object are the same,else return false.
+  bool operator==(const FP16Imm &other) const;
+  std::string ToString() const override { return scalar_float_to_string(v_); }
+
+  std::string DumpText() const override {
+    std::ostringstream oss;
+    oss << "F16(" << v_ << ")";
+    return oss.str();
+  }
+
+ private:
+  float16 v_;
+};
+using FP16ImmPtr = std::shared_ptr<FP16Imm>;
+IMM_TRAITS(FP16ImmPtr, float16)
 
 /// \brief FP32Imm defines interface for float32 data.
 class MS_CORE_API FP32Imm final : public FloatImm {
