@@ -19,6 +19,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include "ir/graph_utils.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "include/common/utils/primitive_utils.h"
 #include "include/common/utils/hook.h"
@@ -907,6 +908,149 @@ void HookBackwardNode::Release() {
   check_func_ = nullptr;
 }
 
+bool GraphBackwardNode::FilterGradOutput(const std::vector<bool> &need_grad) {
+  MS_LOG(INFO) << "Start filter grad function graph output";
+  MS_EXCEPTION_IF_NULL(func_graph_->output());
+  auto graph_output = func_graph_->output()->cast<CNodePtr>();
+  if (graph_output == nullptr) {
+    MS_LOG(INFO) << "Do not filter grad output for constant output " << func_graph_->output()->DebugString();
+    return false;
+  }
+  MS_EXCEPTION_IF_NULL(graph_output);
+  const auto &graph_output_element = graph_output->inputs();
+  MS_EXCEPTION_IF_CHECK_FAIL(graph_output_element.size() - 1 == need_grad.size(), "Size not match");
+  AnfNodePtrList new_graph_output_element = {NewValueNode(prim::kPrimMakeTuple)};
+  bool need_filter = false;
+  for (size_t i = 0; i < need_grad.size(); ++i) {
+    if (need_grad[i]) {
+      (void)new_graph_output_element.emplace_back(graph_output_element[i + 1]);
+      continue;
+    }
+    (void)new_graph_output_element.emplace_back(func_graph_->parameters()[i]);
+    need_filter = true;
+  }
+  func_graph_->set_flag("is_filtered", true);
+  if (!need_filter) {
+    return need_filter;
+  }
+  MS_LOG(INFO) << "Do filter for grad function graph output";
+  auto new_graph_output = func_graph_->NewCNode(new_graph_output_element);
+  new_graph_output->set_abstract(graph_output->abstract());
+  func_graph_->set_output(new_graph_output);
+  if (MsContext::GetInstance()->CanDump(kIntroductory)) {
+    DumpIR("filtered_output_grad_fg.ir", func_graph_);
+  }
+  return need_filter;
+}
+
+void GraphBackwardNode::FilterGradInput(const std::vector<bool> &need_filter, size_t add_args_size,
+                                        size_t skip_filter_size) {
+  const auto &bprop_parameters = func_graph_->parameters();
+  AnfNodePtrList new_bprop_parameters;
+  for (size_t i = 0; i < skip_filter_size; ++i) {
+    (void)new_bprop_parameters.emplace_back(bprop_parameters[i]);
+  }
+  for (size_t i = 0; i < add_args_size; ++i) {
+    bool cur_need_filter = need_filter[i];
+    if (!cur_need_filter) {
+      (void)new_bprop_parameters.emplace_back(bprop_parameters[i + skip_filter_size]);
+    }
+  }
+  func_graph_->set_parameters(new_bprop_parameters);
+  if (MsContext::GetInstance()->CanDump(kIntroductory)) {
+    DumpIR("filtered_bprop_fg.ir", func_graph_);
+  }
+}
+
+void GraphBackwardNode::RefreshAddedArgs(const std::vector<bool> &need_filter, size_t add_args_size) {
+  std::vector<BaseRef> new_added_args_element;
+  for (size_t i = 0; i < add_args_size; ++i) {
+    bool cur_need_filter = need_filter[i];
+    if (!cur_need_filter) {
+      (void)new_added_args_element.emplace_back(added_args_[i]);
+    }
+  }
+  added_args_ = VectorRef(new_added_args_element);
+}
+
+void GraphBackwardNode::FilterForwardOutput(const std::vector<bool> &need_filter, size_t add_args_size) {
+  auto forward_graph = ad::GetGradAndForwardGraph(cache_key_).first;
+  MS_EXCEPTION_IF_NULL(forward_graph);
+  auto forward_graph_output = forward_graph->output();
+  MS_EXCEPTION_IF_CHECK_FAIL(IsPrimitiveCNode(forward_graph_output, prim::kPrimMakeTuple), "Invalid output");
+  const auto &forward_graph_output_elements = forward_graph_output->cast<CNodePtr>()->inputs();
+  // one for kPrimMakeTuple, one for real graph output.
+  MS_EXCEPTION_IF_CHECK_FAIL(forward_graph_output_elements.size() - 2 == add_args_size, "Size not match");
+  AnfNodePtrList new_forward_output_elements = {NewValueNode(prim::kPrimMakeTuple), forward_graph_output_elements[1]};
+  auto forward_graph_output_elements_abstract = forward_graph_output->abstract();
+  MS_EXCEPTION_IF_NULL(forward_graph_output_elements_abstract);
+  MS_EXCEPTION_IF_CHECK_FAIL(forward_graph_output_elements_abstract->isa<abstract::AbstractTuple>(), "cast failed");
+  const auto &forward_graph_output_elements_abstract_elements =
+    forward_graph_output_elements_abstract->cast<abstract::AbstractTuplePtr>()->elements();
+  AbstractBasePtrList new_forward_output_abstract_elements = {forward_graph_output_elements_abstract_elements[0]};
+  for (size_t i = 0; i < add_args_size; ++i) {
+    bool cur_need_filter = need_filter[i];
+    if (!cur_need_filter) {
+      (void)new_forward_output_elements.emplace_back(forward_graph_output_elements[i + 2]);
+      (void)new_forward_output_abstract_elements.emplace_back(forward_graph_output_elements_abstract_elements[i + 1]);
+    }
+  }
+  auto new_forward_output = forward_graph->NewCNode(new_forward_output_elements);
+  new_forward_output->set_abstract(std::make_shared<abstract::AbstractTuple>(new_forward_output_abstract_elements));
+  forward_graph->set_output(new_forward_output);
+  forward_graph->set_flag("need_repeat_task_emit", true);
+  if (MsContext::GetInstance()->CanDump(kIntroductory)) {
+    DumpIR("filtered_forward_fg.ir", forward_graph);
+  }
+}
+
+std::pair<std::vector<bool>, int> GraphBackwardNode::CollectFilterMsg() const {
+  const auto &bprop_parameters = func_graph_->parameters();
+  auto add_args_size = added_args_.size();
+  MS_LOG(INFO) << "add_args_size: " << add_args_size;
+  auto skip_filter_size = bprop_parameters.size() - add_args_size;
+  MS_LOG(INFO) << "Skip filter size: " << skip_filter_size;
+
+  ud_chain::Preprocess(func_graph_);
+  std::vector<bool> need_filter(add_args_size);
+  for (size_t i = 0; i < add_args_size; ++i) {
+    auto cur_bprop_parameters = bprop_parameters[i + skip_filter_size];
+    const auto &cur_users = ud_chain::GetUsers(cur_bprop_parameters);
+    need_filter[i] = cur_users.empty();
+  }
+  return std::make_pair(need_filter, skip_filter_size);
+}
+
+void GraphBackwardNode::FilterGraph() {
+  if (func_graph_->has_flag("is_filtered")) {
+    return;
+  }
+  MS_LOG(INFO) << "Start to filter grad jit graph.";
+  const auto &need_grad = GetNeedGradIndexes(args_);
+  bool filtered = FilterGradOutput(need_grad);
+  if (!filtered) {
+    MS_LOG(INFO) << "No need to filter grad jit graph.";
+    return;
+  }
+  MS_LOG(INFO) << "Finish filter grad jit graph.";
+
+  const auto &filter_msg = CollectFilterMsg();
+  const auto &need_filter = filter_msg.first;
+  auto skip_filter_size = filter_msg.second;
+  auto add_args_size = need_filter.size();
+
+  if (add_args_size == 0 || std::all_of(need_filter.begin(), need_filter.end(), [](auto e) { return !e; })) {
+    MS_LOG(INFO) << "No need to filter grad input";
+    return;
+  }
+  MS_LOG(INFO) << "Start to filter grad input.";
+
+  FilterGradInput(need_filter, add_args_size, skip_filter_size);
+  RefreshAddedArgs(need_filter, add_args_size);
+  FilterForwardOutput(need_filter, add_args_size);
+  MS_LOG(INFO) << "Finish filter grad input.";
+}
+
 ValuePtrList GraphBackwardNode::CallBackward(const ValuePtrList &grads) {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunExpanderFunc,
                                      name(), false);
@@ -914,6 +1058,9 @@ ValuePtrList GraphBackwardNode::CallBackward(const ValuePtrList &grads) {
   MS_LOG(DEBUG) << PyNativeAlgo::Common::PrintDebugInfo(grads, "bprop cut input grads: ");
   const auto &need_grad_indexes = GetNeedGradIndexes(args_);
   mindspore::ad::CheckBpropGraphHasInvalidDout(cache_key_, need_grad_indexes);
+  if (common::GetCompileConfig("GRAD_JIT_FILTER") == "1") {
+    FilterGraph();
+  }
   auto graph_call_back = AutoGradUtil::CreateGraphCallBack(func_graph_, cache_key_, graph_call_condition_);
   // Add graph din
   const auto &device_target = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);

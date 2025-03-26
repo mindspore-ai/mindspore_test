@@ -362,6 +362,15 @@ Value Range:
 """
 JIT_ENABLE_AUGASSIGN_INPLACE = '0'
 
+"""
+Name: GRAD_JIT_FILTER
+Function: Whether to filter grad jit graph.
+Value Range:
+    1: Enable
+    Default: Disable.
+"""
+GRAD_JIT_FILTER = '1'
+
 __all__ = [
     "COMPILE_PROFILE",
     "COMPILE_PROFILE_FINISH_ACTION",
@@ -400,5 +409,6 @@ __all__ = [
     "PUT_ALL_CNODE_INTO_ORDER_LIST",
     "CHECK_PASS_NODE_SCOPE",
     "CHECK_INVALID_VIEW_INPLACE_DOUT_LEVEL",
-    "JIT_ENABLE_AUGASSIGN_INPLACE"
+    "JIT_ENABLE_AUGASSIGN_INPLACE",
+    "GRAD_JIT_FILTER"
 ]

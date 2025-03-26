@@ -49,6 +49,14 @@ mindspore::HashMap<std::string, pipeline::ResourcePtr> jit_forward_resource;
 mindspore::HashMap<std::string, FuncGraphPtr> original_bprop_graph;
 std::set<std::string> check_invalid_dout_bprop_graph;
 
+std::pair<FuncGraphPtr, FuncGraphPtr> GetGradAndForwardGraph(const std::string &key) {
+  auto iter = pass_grad_graph_param_.find(key);
+  if (iter == pass_grad_graph_param_.end()) {
+    return std::make_pair(nullptr, nullptr);
+  }
+  return iter->second;
+}
+
 namespace {
 static const std::vector<PrimitivePtr> UNREUSED_PRIM_LIST = {
   prim::kPrimStopGradient, prim::kPrimUpdateState,      prim::kPrimMirror,
@@ -164,8 +172,11 @@ BaseRef GetGraphResult(const FuncGraphPtr &fg, const VectorRef &arg_list, bool c
                        const std::string &cache_key) {
   pipeline::ResourcePtr resource;
   const auto &it = jit_forward_resource.find(cache_key);
-  if (it == jit_forward_resource.end()) {
-    if (cache_hit) {
+  bool need_repeat_task_emit = fg->has_flag("need_repeat_task_emit");
+  if (it == jit_forward_resource.end() || need_repeat_task_emit) {
+    if (need_repeat_task_emit) {
+      fg->erase_flag("need_repeat_task_emit");
+    } else if (cache_hit) {
       MS_LOG(WARNING) << "Can not find cached resource for func graph: " << fg->ToString();
     }
     resource = std::make_shared<pipeline::Resource>();

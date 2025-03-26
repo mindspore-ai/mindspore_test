@@ -102,6 +102,12 @@ class GraphBackwardNode : public BackwardNode {
   void Release() override;
 
  private:
+  void FilterGraph();
+  bool FilterGradOutput(const std::vector<bool> &need_grad);
+  void FilterGradInput(const std::vector<bool> &need_filter, size_t add_args_size, size_t skip_filter_size);
+  void RefreshAddedArgs(const std::vector<bool> &need_filter, size_t add_args_size);
+  void FilterForwardOutput(const std::vector<bool> &need_filter, size_t add_args_size);
+  std::pair<std::vector<bool>, int> CollectFilterMsg() const;
   FuncGraphPtr func_graph_;
   VectorRef args_;
   VectorRef added_args_;
