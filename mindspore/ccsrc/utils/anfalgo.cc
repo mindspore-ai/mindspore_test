@@ -1701,7 +1701,7 @@ bool AnfAlgo::IsDynamicShapeFuncGraph(const FuncGraphPtr &func_graph) {
   }
   auto nodes = TopoSort(func_graph->get_return(), SuccDeeperSimple);
   return std::any_of(nodes.begin(), nodes.end(), [](const AnfNodePtr &node) {
-    if (node == nullptr || common::AnfAlgo::IsCallNode(node)) {
+    if (node == nullptr || common::AnfAlgo::IsCallNode(node) || IsPrimitiveCNode(node, prim::kPrimReturn)) {
       return false;
     }
     return common::AnfAlgo::IsDynamic(node);
