@@ -91,6 +91,12 @@ static bool IsSupport(const FuncGraphPtr &graph, const AnfNodePtr &node, const A
     return false;
   }
 
+  auto gamma_shape = common::AnfAlgo::GetPrevNodeOutputInferShape(rms_norm, kIndex1);
+  if (gamma_shape.size() != 1) {
+    MS_LOG(INFO) << "RmsNormQuant fused failed because the rank of gamma is not 1:" << gamma_shape;
+    return false;
+  }
+
   // if rstd is used, do not fuse
   auto rms_norm_users = GetRealNodeUsedList(graph, rms_norm);
   for (const auto &user : *rms_norm_users) {
