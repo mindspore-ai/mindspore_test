@@ -115,8 +115,7 @@
 #include "ir/cell.h"
 #endif
 
-#include "frontend/ir/log_adapter_py.h"  // Only include one-time in the whole project.
-#include "frontend/ir/py_execute_py.h"   // Only include one-time in the whole project.
+#include "frontend/ir/py_execute_py.h"  // Only include one-time in the whole project.
 #include "include/common/utils/compile_cache_context.h"
 #include "include/common/utils/tensor_py.h"
 #include "include/common/utils/tensor_py_wrapper.h"

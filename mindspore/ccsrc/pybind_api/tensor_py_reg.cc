@@ -25,6 +25,7 @@
 #include "debug/profiler/profiler.h"
 #include "include/backend/mbuf_device_address.h"
 #include "utils/ordered_set.h"
+#include "utils/ms_context.h"
 #include "pybind_api/ir/tensor_register/tensor_func_reg.h"
 #include "pybind_api/ir/tensor_register/auto_generate/tensor_py_gen.h"
 #include "include/common/pynative/adapter.h"
@@ -1065,6 +1066,15 @@ static PyObject *TensorPython_set_device_address(PyObject *self, PyObject *args)
   HANDLE_MS_EXCEPTION_END
 }
 
+static py::object TensorGetItemImpl(const py::object &self, const py::object &py_index) {
+  static std::string config_static_shape = common::GetEnv("MS_PYNATIVE_CONFIG_STATIC_SHAPE");
+  if (MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET) != kAscendDevice ||
+      MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode || config_static_shape == "1") {
+    return self.attr("_getitem_origin")(py_index);
+  }
+  return self.attr("_getitem")(py_index);
+}
+
 static PyObject *TensorPython_GetItem(PyObject *self, PyObject *args) {
   HANDLE_MS_EXCEPTION
   PyObject *py_index = NULL;
@@ -1072,9 +1082,18 @@ static PyObject *TensorPython_GetItem(PyObject *self, PyObject *args) {
     return nullptr;
   }
   py::object result =
-    TensorPybind::TensorGetItem(py::reinterpret_borrow<py::object>(self), py::reinterpret_borrow<py::object>(py_index));
+    TensorGetItemImpl(py::reinterpret_borrow<py::object>(self), py::reinterpret_borrow<py::object>(py_index));
   return result.release().ptr();
   HANDLE_MS_EXCEPTION_END
+}
+
+static py::object TensorSetItemImpl(const py::object &self, const py::object &py_index, const py::object &py_value) {
+  static std::string config_static_shape = common::GetEnv("MS_PYNATIVE_CONFIG_STATIC_SHAPE");
+  if (MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET) != kAscendDevice ||
+      MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode || config_static_shape == "1") {
+    return self.attr("_setitem_origin")(py_index, py_value);
+  }
+  return self.attr("_setitem")(py_index, py_value);
 }
 
 static PyObject *TensorPython_SetItem(PyObject *self, PyObject *args) {
@@ -1086,7 +1105,7 @@ static PyObject *TensorPython_SetItem(PyObject *self, PyObject *args) {
   py::object self_obj = py::reinterpret_borrow<py::object>(self);
   py::object py_index_obj = py::reinterpret_borrow<py::object>(py_index);
   py::object py_value_obj = py::reinterpret_borrow<py::object>(py_value);
-  py::object result = TensorPybind::TensorSetItem(self_obj, py_index_obj, py_value_obj);
+  py::object result = TensorSetItemImpl(self_obj, py_index_obj, py_value_obj);
   if (result.is(py::none())) {
     return nullptr;
   }

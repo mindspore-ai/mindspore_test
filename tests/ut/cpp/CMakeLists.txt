@@ -96,7 +96,9 @@ file(GLOB_RECURSE UT_PS_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./ps/*.cc ./pl
 file(GLOB_RECURSE UT_CCSRC_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./ccsrc/*.cc)
 file(GLOB_RECURSE UT_OTHERS_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./debug/*.cc ./place/*.cc)
 file(GLOB_RECURSE UT_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./stub/*.cc ./common/*.cc ./mock/*.cc
-        ../../../mindspore/ccsrc/pybind_api/resource/manager.cc)
+        ../../../mindspore/ccsrc/pybind_api/resource/manager.cc
+        ../../../mindspore/ccsrc/common/python_utils.cc
+        ../../../mindspore/ccsrc/pybind_api/utils/log_adapter_py.cc)
 
 if(NOT ENABLE_CPU OR WIN32 OR APPLE)
     file(GLOB_RECURSE UT_DISTRIBUTED_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
