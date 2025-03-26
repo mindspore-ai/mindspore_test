@@ -224,3 +224,23 @@
 
     .. py:method:: disable_loss_repeated_mean()
         开启后，loss在多卡重复计算时，均值运算符不会向后执行。
+
+    .. py:method:: hsdp(shard_size=-1, threshold=64, optimizer_level=level1)
+
+        设置优化器并行配置。
+
+        参数：
+            - **shard_size** (int, 可选) - 指定优化器权重跨设备切分通信域的大小，数值范围可为 (0, 设备数量]。默认值： ``-1`` ，表明优化器权重分片组大小将采用每个参数的数据并行组。
+            - **threshold** (int, 可选) - 切分参数时，要求目标参数所占内存的最小值，小于该阈值的参数不会在设备间进行分片。Parameter size = shape[0] \* ... \*shape[n] \* size(dtype)。取值范围：非负数，单位：KB。。默认值： ``64`` 。
+            - **optimizer_level** (str, 可选) - 配置用于指定优化器切分的切分级别，静态图下的优化器分片实现与动态图（如 Megatron）不一致，但内存优化效果相同。默认为 ``level1`` 。
+
+              - ``"level1"``: 对权重、优化器状态进行切分。
+
+              - ``"level2"``: 对权重、优化器状态以及梯度进行切分。
+
+              - ``"level3"``: 对权重、优化器状态、梯度进行切分，并且在反向开始前会对权重额外展开一次 `allgather` 通信，以释放前向 `allgather` 的显存。
+
+        异常：
+            - **ValueError** - `shard_size` 不是正整数或-1。
+            - **ValueError** - `threshold` 不是正整数或0。
+            - **ValueError** - `optimizer_level` 取值不是 "level1" ， "level2" 或 "level3" 中的一个。

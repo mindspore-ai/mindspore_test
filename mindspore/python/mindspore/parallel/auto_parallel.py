@@ -324,25 +324,42 @@ class AutoParallel(Cell):
         Set optimizer parallel configs.
 
         Args:
-            shard_size: Set the optimizer weight shard group size if you want to specific the
+            shard_size (int):
+                        Set the optimizer weight shard group size if you want to specific the
                         maximum group size across devices when the parallel optimizer is
                         enabled. The numerical range can be (0, device_num]. Default value
                         is -1, which means the optimizer weight shard group size will
-                        the data parallel group of each parameter. Default -1.
-            threshold: Set the threshold of parallel optimizer. When parallel optimizer is
+                        the data parallel group of each parameter. Default  ``-1``.
+            threshold (int, optional):
+                        Set the threshold of parallel optimizer. When parallel optimizer is
                        enabled, parameters with size smaller than this threshold will not be
                        sharded across the devices. Parameter size = shape[0] \* ... \*
                        shape[n] \* size(dtype). Non-negative. Unit: KB. Default: 64.
-            optimizer_level: optimizer_level configuration is used to specify
+            optimizer_level (str, optional):
+                             optimizer_level configuration is used to specify
                              the splitting level for optimizer sharding. It is important to note that the implementation
                              of optimizer sharding in static graph is inconsistent with dynamic graph like megatron,
-                             but the memory optimization effect is the same. When optimizer_level= ``level1``,
-                             splitting is performed on weights and optimizer state. When optimizer_level= ``level2``,
-                             splitting is performed on weights, optimizer state, and gradients.
-                             When optimizer_level= ``level3``, splitting is performed on weights, optimizer state,
-                             gradients, additionally, before the backward pass, the weights are further applied with
-                             allgather communication to release the memory used by the forward pass allgather.
+                             but the memory optimization effect is the same.
                              It must be one of [ ``level1``, ``level2``, ``level3`` ]. Default: ``level1``.
+
+                             - level1:
+                               Splitting is performed on weights and optimizer state.
+                             - level2:
+                               Splitting is performed on weights, optimizer state, and gradients.
+                             - level3:
+                               Splitting is performed on weights, optimizer state,
+                               gradients, additionally, before the backward pass, the weights are further applied with
+                               allgather communication to release the memory used by the forward pass allgather.
+
+
+        Raises:
+            ValueError: If the `shard_size` is not a positive integer or -1.
+            ValueError: If `threshold` is not a positive integer or 0.
+            ValueError: If `optimizer_level` is not one of the [ ``level1``, ``level2``, ``level3`` ].
+
+        Examples:
+            >>> parallel_net = AutoParallel(net, parallel_mode="semi_auto")
+            >>> parallel_net.hsdp(shard_size=-1, threshold=64, optimizer_level="level1")
         """
         self._enable_parallel_optimizer = True
         if not isinstance(shard_size, int) or (shard_size <= 0 and shard_size != -1):

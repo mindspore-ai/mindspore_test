@@ -915,8 +915,8 @@ def build_searched_strategy(strategy_filename):
         TypeError: `strategy_filename` is not a string.
 
     Examples:
-        >>> import mindspore as ms
-        >>> strategy = ms.build_searched_strategy("./strategy_train.ckpt")
+        >>> from mindspore.parallel import build_searched_strategy
+        >>> strategy = build_searched_strategy("./strategy_train.ckpt")
     """
     return _build_searched_strategy(strategy_filename)
 
@@ -1259,6 +1259,7 @@ def restore_group_info_list(group_info_file_name):
 
     Examples:
         >>> import mindspore as ms
+        >>> from mindspore.parallel import restore_group_info_list
         >>> ms.restore_list = restore_group_info_list("./group_info.pb")
     """
     if not isinstance(group_info_file_name, str):
