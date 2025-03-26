@@ -9,16 +9,16 @@
         使用Model高阶接口进行训练或推理时，传入Model的network必须用AutoParallel进行封装。
         使用函数式训练或推理接口时，必须在最外层进行AutoParallel进行封装，即对AutoParallel进行编译。
         使用函数式训练或推理接口时，暂不支持数据下沉场景。
-        
+
 
     参数：
         - **network** (Cell或Function，必选) - 待封装的前向网络的顶层Cell或函数，必须是Cell类型或者Python函数。
         - **parallel_mode** (str，可选) - 并行模式。默认为 `semi_auto`，支持：
-  
+
           - ``"semi_auto"``: 半自动化并行模式，支持数据并行、算子级并行、优化器并行和流水线并行场景，默认开启该模式
-  
+
           - ``"sharding_propagation"``: 策略传播搜索模式
-  
+
           - ``"recursive_programming"``: 递归编程搜索模式
 
 
@@ -32,10 +32,10 @@
 
         参数：
             - **file_path** (dict) - Cell的配置信息，目前用于绑定Cell和数据集。用户也可通过该参数自定义Cell属性。
-        
+
         异常：
-            - **TypeError** - 文件路径类型非字符串
-            - **KeyError** - 文件路径非绝对路径或非JSON文件后缀结尾
+            - **TypeError** - 文件路径类型非字符串。
+            - **KeyError** - 文件路径非绝对路径或非JSON文件后缀结尾。
 
 
     .. py:method:: save_operator_strategy_file(file_path)
@@ -47,26 +47,26 @@
             - 暂不支持加载策略时使用Layout格式。
 
         参数：
-            - **file_path** (str) - 绝对路径的JSON文件
-  
+            - **file_path** (str) - 绝对路径的JSON文件。
+
         异常：
-            - **TypeError** - 文件路径类型非字符串
-            - **KeyError** - 文件路径非绝对路径或非JSON文件后缀结尾
-            
+            - **TypeError** - 文件路径类型非字符串。
+            - **KeyError** - 文件路径非绝对路径或非JSON文件后缀结尾。
+
 
     .. py:method:: dataset_strategy(config)
 
         设置数据集分片策略。
 
         参数：
-            - **config** (Union[str, tuple(tuple), tuple(Layout)]) - 数据集切分策略配置
-  
+            - **config** (Union[str, tuple(tuple), tuple(Layout)]) - 数据集切分策略配置。
+
         异常：
-            - **TypeError** - config不是字符串或元组类型
-            - **TypeError** - config是元组类型时，元组中的元素不是"元组类型"或者"Layout类型"中的一个
-            - **TypeError** - config是元组类型时，且元组中的元素是元组类型时，子元组的元素类型不是"int"
-            - **ValueError** - 输入config为空
-            - **ValueError** - config为字符串类型时，取值不是"full_batch"或"data_parallel"中的一个
+            - **TypeError** - config不是字符串或元组类型。
+            - **TypeError** - config是元组类型时，元组中的元素不是"元组类型"或者"Layout类型"中的一个。
+            - **TypeError** - config是元组类型时，且元组中的元素是元组类型时，子元组的元素类型不是"int"。
+            - **ValueError** - 输入config为空。
+            - **ValueError** - config为字符串类型时，取值不是"full_batch"或"data_parallel"中的一个。
 
 
     .. py:method:: print_local_norm()
@@ -101,15 +101,15 @@
     .. py:method:: comm_fusion(config)
 
         用于设置并行通信算子的融合配置。
-        
+
         参数：
             - **config** (dict) - 输入格式为{"通信类型": {"mode":str, "config": None int 或者 list}}, 每种通信算子的融合配置有两个键："mode"和"config"。支持以下通信类型的融合类型和配置：
-                  
+
               - openstate：是否开启通信融合功能。通过 ``True`` 或 ``False`` 来开启或关闭通信融合功能。默认值： ``True``，开启通信融合功能。
               - allreduce：进行AllReduce算子的通信融合。"mode"包含"auto"、"size"和"index"。在"auto"模式下，融合梯度变量的大小，默认值阈值为"64"MB，"config"对应的值为None。在"size"模式下，需要用户在config的字典中指定梯度大小阈值，这个值必须大于"0"MB。在"mode"为"index"时，它与"all_reduce_fusion_config"相同，用户需要给"config"传入一个列表，里面每个值表示梯度的索引。
               - allgather：进行AllGather算子的通信融合。"mode"包含"auto"、"size"。在 'auto' 模式下，AllGather融合由梯度值决定，其默认融合配置阈值为 '64' MB。在 'size' 模式下，手动设置AllGather算子融合的梯度阈值，并且其融合阈值必须大于 '0' MB。
               - reducescatter：进行ReduceScatter算子的通信融合。"mode"包含"auto"、"size"，"auto" 和 "size"模式的配置方式与allgather相同。
-            
+
         异常：
             - **TypeError** - 配置项非字典类型。
 
@@ -150,7 +150,7 @@
 
         在自动/半自动并行场景下，指定图编译过程中所创建group的保存路径。
 
-        参数：         
+        参数：
             - **file_path** (str) - 保存路径。
 
         异常：
@@ -197,3 +197,30 @@
               - **enable_allreduce_slice_to_reducescatter** (bool): 为 ``True`` 时，表示开启AllReduce优化。在batchmatmul模型并行引入AllReduce的场景中，如果后续节点是配置了模型并行的StridedSlice算子，在已识别可优化的模式中，将AllReduce优化为ReduceScatter。典型的用在开启了groupwise alltoall的MoE模块。默认值： ``False`` 。
               - **enable_interleave_split_concat_branch** (bool): 为 ``True`` 时，表示针对带enable_interleave属性的Split和Concat算子形成的分支，开启通信计算并行优化。典型的使用场景为MoE模块并行场景，对输入数据进行split后，对各切片数据进行MoE模块运算，再对分支结果进行Concat，开启后各分支的MoE模块进行通信计算并行优化。默认值： ``False`` 。
               - **enable_interleave_parallel_branch** (bool): 为 ``True`` 时，表示针对可并行的分支，如果分支汇聚点带parallel_branch属性，开启通信计算并行优化。典型的使用场景为MoE模块带路由专家和共享专家分支的并行场景，开启后并行分支进行通信计算并行优化。默认值： ``False`` 。
+
+    .. py:method:: pipeline(stages=1, output_broadcast=False, interleave=False, scheduler="1f1b")
+
+        配置流水线阶段的数量，stage的结果是否广播，是否启用interleave调度，配置流水线并行时配置调度策略。
+
+        参数：
+            - **stages** (int，可选) - 设置流水线并行的阶段信息。默认值： ``1`` 。
+            - **output_broadcast** (bool，可选) - 在执行流水线并行推理时，是否将最后阶段的结果广播到其他阶段。默认值： ``False`` 。
+            - **interleave** (bool，可选) - 是否启用交错调度。默认值： ``False`` 。
+            - **scheduler** (str，可选) - 调度器的类型。默认值： ``1f1b`` 。
+
+        异常：
+            - **TypeError** - `stages` 的类型非int。
+            - **ValueError** - `stages` <= 0。
+            - **TypeError** - `output_broadcast` 的类型非bool。
+            - **TypeError** - `interleave` 的类型非bool。
+            - **TypeError** - `scheduler` 的类型非str。
+            - **ValueError** - `scheduler` 的类型非支持。
+
+    .. py:method:: enable_gradients_mean()
+        开启后，在并行模式下，对梯度执行allreduce操作后的mean操作。
+
+    .. py:method:: disable_gradient_fp32_sync()
+        开启后，关闭梯度间的fp32通信。
+
+    .. py:method:: disable_loss_repeated_mean()
+        开启后，loss在多卡重复计算时，均值运算符不会向后执行。
