@@ -95,7 +95,6 @@ mindspore
     :toctree: mindspore
 
     mindspore.async_ckpt_thread_status
-    mindspore.build_searched_strategy
     mindspore.check_checkpoint
     mindspore.ckpt_to_safetensors
     mindspore.convert_model
@@ -111,6 +110,7 @@ mindspore
     mindspore.merge_sliced_parameter
     mindspore.parse_print
     mindspore.restore_group_info_list
+    mindspore.rank_list_for_transform
     mindspore.safetensors_to_ckpt
     mindspore.save_checkpoint
     mindspore.save_mindir
@@ -147,11 +147,8 @@ mindspore
 .. mscnautosummary::
     :toctree: mindspore
 
-    mindspore.Layout
     mindspore.parameter_broadcast
     mindspore.recompute
-    mindspore.reshard
-    mindspore.shard
     mindspore.sync_pipeline_shared_parameters
     mindspore.parallel.set_op_strategy_config
 

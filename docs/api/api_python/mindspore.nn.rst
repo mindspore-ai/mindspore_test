@@ -49,7 +49,6 @@ MindSpore中 `mindspore.nn` 接口与上一版本相比，新增、删除和支�
     mindspore.nn.ForwardValueAndGrad
     mindspore.nn.GetNextSingleOp
     mindspore.nn.GradAccumulationCell
-    mindspore.nn.MicroBatchInterleaved
     mindspore.nn.ParameterUpdate
     mindspore.nn.PipelineCell
     mindspore.nn.PipelineGradReducer

@@ -67,9 +67,10 @@ def reshard(tensor, layout):
         >>> import numpy as np
         >>> import mindspore as ms
         >>> from mindspore import ops, nn, Tensor, context, Layout
+        >>> from mindspore.parallel.function import reshard
+        >>> from mindspore.nn.utils import no_init_parameters
+        >>> from mindspore.parallel.auto_parallel import AutoParallel
         >>> context.set_context(mode=ms.GRAPH_MODE)
-        >>> context.set_auto_parallel_context(parallel_mode=ms.ParallelMode.AUTO_PARALLEL,
-        ...                                   search_mode="sharding_propagation")
         >>> class Network(nn.Cell):
         ...     def __init__(self):
         ...         super().__init__()
@@ -77,16 +78,17 @@ def reshard(tensor, layout):
         ...         self.relu = ops.ReLU()
         ...     def construct(self, x, layout):
         ...         x = self.relu(x)
-        ...         x_reshard = ops.reshard(x, layout)
+        ...         x_reshard = reshard(x, layout)
         ...         y = Tensor(np.ones(shape=(128, 128)), dtype=ms.float32)
         ...         x = self.matmul(x_reshard, y)
         ...         return x
-        >>>
         >>> layout = Layout((4, 2), ("dp", "mp"))
         >>> input_layout = layout("dp", "mp")
-        >>> net = Network()
+        >>> with no_init_parameters():
+        >>>     net = Network()
+        >>> parallel_net = AutoParallel(net, parallel_mode='sharding_propagation')
         >>> tensor = Tensor(np.ones(shape=(128, 128)), dtype=ms.float32)
-        >>> out = net(tensor, input_layout)
+        >>> out = parallel_net(tensor, input_layout)
     """
     if not isinstance(tensor, Tensor):
         raise TypeError(f"Reshard takes in Tensor type as the first input param, but got: {type(tensor)}.")
