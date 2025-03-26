@@ -5295,60 +5295,56 @@ def split_ext(tensor, split_size, dim=0):
 
 def tril(input, diagonal=0):  # pylint: disable=redefined-outer-name
     """
-    Returns the lower triangle part of `input` (elements that contain the diagonal and below),
-    and set the other elements to zeros.
+    Zero the input tensor above the diagonal specified.
 
     Args:
-        input (Tensor): A Tensor with shape :math:`(x_1, x_2, ..., x_R)`. The rank must be at least 2.
-          Supporting all number types including bool.
-        diagonal (int, optional): An optional attribute indicates the diagonal to consider, default: 0,
-            indicating the main diagonal.
+        input (Tensor): The input tensor. The rank must be at least 2.
+        diagonal (int, optional): The diagonal specified of 2-D tensor. Default ``0`` represents the main diagonal.
 
     Returns:
-        Tensor, the same shape and data type as the `input`.
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
-        TypeError: If `diagonal` is not an int.
-        TypeError: If the type of `input` is neither number nor bool.
-        ValueError: If the rank of `input` is less than 2.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([[ 1,  2,  3,  4],
-        ...                      [ 5,  6,  7,  8],
-        ...                      [10, 11, 12, 13],
-        ...                      [14, 15, 16, 17]]))
-        >>> result = ops.tril(x)
-        >>> print(result)
-        [[ 1  0  0  0]
-         [ 5  6  0  0]
-         [10 11 12  0]
-         [14 15 16 17]]
-        >>> x = Tensor(np.array([[ 1,  2,  3,  4],
-        ...                      [ 5,  6,  7,  8],
-        ...                      [10, 11, 12, 13],
-        ...                      [14, 15, 16, 17]]))
-        >>> result = ops.tril(x, diagonal=1)
-        >>> print(result)
-        [[ 1  2  0  0]
-         [ 5  6  7  0]
-         [10 11 12 13]
-         [14 15 16 17]]
-        >>> x = Tensor(np.array([[ 1,  2,  3,  4],
-        ...                      [ 5,  6,  7,  8],
-        ...                      [10, 11, 12, 13],
-        ...                      [14, 15, 16, 17]]))
-        >>> result = ops.tril(x, diagonal=-1)
-        >>> print(result)
-        [[ 0  0  0  0]
-         [ 5  0  0  0]
-         [10 11  0  0]
-         [14 15 16  0]]
+        >>> import mindspore
+        >>> input = mindspore.tensor([[ 1,  2,  3,  4],
+        ...                           [ 5,  6,  7,  8],
+        ...                           [10, 11, 12, 13],
+        ...                           [14, 15, 16, 17]])
+        >>> mindspore.ops.tril(input)
+        Tensor(shape=[4, 4], dtype=Int64, value=
+        [[ 1,  0,  0,  0],
+         [ 5,  6,  0,  0],
+         [10, 11, 12,  0],
+         [14, 15, 16, 17]])
+        >>> mindspore.ops.tril(input, 1)
+        Tensor(shape=[4, 4], dtype=Int64, value=
+        [[ 1,  2,  0,  0],
+         [ 5,  6,  7,  0],
+         [10, 11, 12, 13],
+         [14, 15, 16, 17]])
+        >>> mindspore.ops.tril(input, -1)
+        Tensor(shape=[4, 4], dtype=Int64, value=
+        [[ 0,  0,  0,  0],
+         [ 5,  0,  0,  0],
+         [10, 11,  0,  0],
+         [14, 15, 16,  0]])
+        >>> input = mindspore.tensor([[[ 1,  2,  3],
+        ...                            [ 5,  6,  7],
+        ...                            [10, 11, 12]],
+        ...                           [[ 1,  2,  3],
+        ...                            [ 5,  6,  7],
+        ...                            [10, 11, 12]]])
+        >>> mindspore.ops.tril(input)
+        Tensor(shape=[2, 3, 3], dtype=Int64, value=
+        [[[ 1,  0,  0],
+          [ 5,  6,  0],
+          [10, 11, 12]],
+         [[ 1,  0,  0],
+          [ 5,  6,  0],
+          [10, 11, 12]]])
     """
     tril_ = _get_cache_prim(Tril)(diagonal)
     return tril_(input)
@@ -5541,48 +5537,68 @@ def _tensor_split_sub_int(x, indices_or_sections, axis):
 
 def tensor_split(input, indices_or_sections, axis=0):
     r"""
-    Splits a tensor into multiple sub-tensors along the given axis.
+    Split the input tensor into multiple subtensors according to the specified indices or chunks.
 
     Args:
-        input (Tensor): A Tensor to be divided.
-        indices_or_sections (Union[int, tuple(int), list(int)]):
+        input (Tensor): The input tensor.
+        indices_or_sections (Union[int, tuple(int), list(int)]): The specified indices or chunks.
 
-            - If `indices_or_sections` is an integer n, input tensor will be split into n sections.
+            - If it is an integer, input tensor will be split into `indices_or_sections` sections.
 
-              - If :math:`input.shape[axis]` can be divisible by n, sub-sections will have equal size
-                :math:`input.shape[axis] / n` .
-              - If :math:`input.shape[axis]` is not divisible by n, the first :math:`input.shape[axis] \bmod n` sections
-                will have size :math:`input.shape[axis] // n + 1` , and the rest will have
-                size :math:`input.shape[axis] // n` .
-            - If `indices_or_sections` is of type tuple(int) or list(int), the input tensor will be split at the
-              indices in the list or tuple. For example, given parameters :math:`indices\_or\_sections=[1, 4]`
-              and :math:`axis=0` , the input tensor will be split into sections :math:`input[:1]` ,
-              :math:`input[1:4]` , and :math:`input[4:]` .
+              - If :math:`input.shape[axis]` can be divisible by `indices_or_sections`, sub-sections will have equal
+                size :math:`input.shape[axis] / n` .
+              - If :math:`input.shape[axis]` can not be divisible by `indices_or_sections`, the first
+                :math:`input.shape[axis] \bmod n` sections will have size :math:`input.shape[axis] // n + 1` , and the
+                rest will have size :math:`input.shape[axis] // n` .
+            - If it is a tuple(int) or list(int) type, it represts indices and the input tensor will be split at the
+              indices.
 
-        axis (int, optional): The axis along which to split. Default: ``0`` .
+        axis (int, optional): The axis along which to split. Default ``0`` .
 
     Returns:
-        A tuple of sub-tensors.
-
-    Raises:
-        TypeError: If argument `input` is not Tensor.
-        TypeError: If argument `axis` is not int.
-        ValueError: If argument `axis` is out of range of :math:`[-input.ndim, input.ndim)` .
-        TypeError: If each element in 'indices_or_sections' is not integer.
-        TypeError: If argument `indices_or_sections` is not int, tuple(int) or list(int).
+        Tuple of tensors.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input_x = np.arange(9).astype("float32")
-        >>> output = ops.tensor_split(Tensor(input_x), 3)
-        >>> print(output)
-        (Tensor(shape=[3], dtype=Float32, value= [ 0.00000000e+00,  1.00000000e+00,  2.00000000e+00]),
-        Tensor(shape=[3], dtype=Float32, value= [ 3.00000000e+00,  4.00000000e+00,  5.00000000e+00]),
-        Tensor(shape=[3], dtype=Float32, value= [ 6.00000000e+00,  7.00000000e+00,  8.00000000e+00]))
+        >>> import mindspore
+        >>> input = mindspore.tensor([0, 1, 2, 3, 4, 5, 6, 7])
+        >>> mindspore.ops.tensor_split(input, 3)
+        (Tensor(shape=[3], dtype=Int64, value= [0, 1, 2]),
+         Tensor(shape=[3], dtype=Int64, value= [3, 4, 5]),
+         Tensor(shape=[2], dtype=Int64, value= [6, 7]))
+        >>> input = mindspore.tensor([0, 1, 2, 3, 4, 5, 6])
+        >>> mindspore.ops.tensor_split(input, 3)
+        (Tensor(shape=[3], dtype=Int64, value= [0, 1, 2]),
+         Tensor(shape=[2], dtype=Int64, value= [3, 4]),
+         Tensor(shape=[2], dtype=Int64, value= [5, 6]))
+        >>> mindspore.ops.tensor_split(input, (1, 6))
+        (Tensor(shape=[1], dtype=Int64, value= [0]),
+         Tensor(shape=[5], dtype=Int64, value= [1, 2, 3, 4, 5]),
+         Tensor(shape=[1], dtype=Int64, value= [6]))
+        >>> input = mindspore.tensor([[ 0,  1,  2,  3,  4,  5,  6],
+        ...                           [ 7,  8,  9, 10, 11, 12, 13]])
+        >>> mindspore.ops.tensor_split(input, 3, axis=1)
+        (Tensor(shape=[2, 3], dtype=Int64, value=
+         [[0, 1, 2],
+          [7, 8, 9]]),
+         Tensor(shape=[2, 2], dtype=Int64, value=
+         [[ 3,  4],
+          [10, 11]]),
+         Tensor(shape=[2, 2], dtype=Int64, value=
+         [[ 5,  6],
+          [12, 13]]))
+        >>> mindspore.ops.tensor_split(input, (1, 6), axis=1)
+        (Tensor(shape=[2, 1], dtype=Int64, value=
+         [[0],
+          [7]]),
+         Tensor(shape=[2, 5], dtype=Int64, value=
+         [[ 1,  2,  3,  4,  5],
+          [ 8,  9, 10, 11, 12]]),
+         Tensor(shape=[2, 1], dtype=Int64, value=
+         [[ 6],
+          [13]]))
     """
     if not isinstance(input, Tensor):
         raise TypeError(f'expect `x` is a Tensor, but got {type(input)}')

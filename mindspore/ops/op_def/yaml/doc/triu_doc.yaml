@@ -1,57 +1,55 @@
 triu:
     description: |
-        Returns the upper triangle part of `input` (elements that contain the diagonal and upper part),
-        and set the other elements to zeros.
+        Zero the input tensor below the diagonal specified.
 
         .. warning::
             This is an experimental API that is subject to change or deletion.
 
         Args:
-            input (Tensor): The input tensor with shape :math:`(*, M, N)` where * means any number of additional dimensions.
-            diagonal (int, optional): An optional attribute indicates the diagonal to consider, default: ``0``,
-                indicating the main diagonal.
+            input (Tensor): The input tensor.
+            diagonal (int, optional): The diagonal specified of 2-D tensor. Default ``0`` represents the main diagonal.
 
         Returns:
-            Tensor, a tensor has the same shape and data type as `input`.
-
-        Raises:
-            TypeError: If `diagonal` is not an int.
-            TypeError: If `input` is not a Tensor.
-            ValueError: If the dimension of `input` is less than 2.
+            Tensor
 
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``
 
         Examples:
-            >>> import numpy as np
-            >>> from mindspore import Tensor, ops
-            >>> x = Tensor(np.array([[ 1,  2,  3,  4],
-            ...                      [ 5,  6,  7,  8],
-            ...                      [10, 11, 12, 13],
-            ...                      [14, 15, 16, 17]]))
-            >>> result = ops.triu(x)
-            >>> print(result)
-            [[ 1  2  3  4]
-             [ 0  6  7  8]
-             [ 0  0 12 13]
-             [ 0  0  0 17]]
-            >>> x = Tensor(np.array([[ 1,  2,  3,  4],
-            ...                      [ 5,  6,  7,  8],
-            ...                      [10, 11, 12, 13],
-            ...                      [14, 15, 16, 17]]))
-            >>> result = ops.triu(x, diagonal=1)
-            >>> print(result)
-            [[ 0  2  3  4]
-             [ 0  0  7  8]
-             [ 0  0  0 13]
-             [ 0  0  0  0]]
-            >>> x = Tensor(np.array([[ 1,  2,  3,  4],
-            ...                      [ 5,  6,  7,  8],
-            ...                      [10, 11, 12, 13],
-            ...                      [14, 15, 16, 17]]))
-            >>> result = ops.triu(x, diagonal=-1)
-            >>> print(result)
-            [[ 1  2  3  4]
-             [ 5  6  7  8]
-             [ 0 11 12 13]
-             [ 0  0 16 17]]
+            >>> import mindspore
+            >>> input = mindspore.tensor([[ 1,  2,  3,  4],
+            ...                           [ 5,  6,  7,  8],
+            ...                           [10, 11, 12, 13],
+            ...                           [14, 15, 16, 17]])
+            >>> mindspore.ops.triu(input)
+            Tensor(shape=[4, 4], dtype=Int64, value=
+            [[ 1,  2,  3,  4],
+             [ 0,  6,  7,  8],
+             [ 0,  0, 12, 13],
+             [ 0,  0,  0, 17]])
+            >>> mindspore.ops.triu(input, 1)
+            Tensor(shape=[4, 4], dtype=Int64, value=
+            [[ 0,  2,  3,  4],
+             [ 0,  0,  7,  8],
+             [ 0,  0,  0, 13],
+             [ 0,  0,  0,  0]])
+            >>> mindspore.ops.triu(input, -1)
+            Tensor(shape=[4, 4], dtype=Int64, value=
+            [[ 1,  2,  3,  4],
+             [ 5,  6,  7,  8],
+             [ 0, 11, 12, 13],
+             [ 0,  0, 16, 17]])
+            >>> input = mindspore.tensor([[[ 1,  2,  3],
+            ...                            [ 5,  6,  7],
+            ...                            [10, 11, 12]],
+            ...                           [[ 1,  2,  3],
+            ...                            [ 5,  6,  7],
+            ...                            [10, 11, 12]]])
+            >>> mindspore.ops.triu(input)
+            Tensor(shape=[2, 3, 3], dtype=Int64, value=
+            [[[ 1,  2,  3],
+              [ 0,  6,  7],
+              [ 0,  0, 12]],
+             [[ 1,  2,  3],
+              [ 0,  6,  7],
+              [ 0,  0, 12]]])
