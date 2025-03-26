@@ -6,6 +6,7 @@ moe_init_routing_v2:
             - NUM_ROWS: The number of rows in 'x', which represents the number of original input tokens.
             - H: The number of cols in 'x', which denotes for the hiddens of input tokens.
             - K: The number of experts corresponding to each row of features in the output of MoeGatingTopKSoftmaxV2.
+            - Currently, MoeInitRoutingV2 does not support mutable inputs.
 
         Inputs:
             - **x** (Tensor) - A 2D tensor, which contains the input feature tokens. The shape of the tensor is (NUM_ROWS, H).
