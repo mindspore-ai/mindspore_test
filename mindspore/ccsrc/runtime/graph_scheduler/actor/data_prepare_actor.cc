@@ -517,7 +517,6 @@ void DataPrepareActor::UpdateDeviceAddressForDataNode(const AnfNodePtr &input_no
   // Assign tensor address to input data node and set `ref_count` to `SIZE_MAX` for avoiding clean.
   (void)address_modified_input_nodes_.insert(input_node.get());
   tensor_address->set_flag(device_address->flag());
-  DeviceAddressUtils::UpdateDeviceAddressHostInfoByNode(tensor_address, input_node, 0);
   if (is_kv_cache) {
     const auto &kernel_tensor = device_address->kernel_tensor();
     MS_EXCEPTION_IF_NULL(kernel_tensor);

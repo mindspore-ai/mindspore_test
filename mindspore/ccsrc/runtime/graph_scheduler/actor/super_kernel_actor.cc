@@ -1880,6 +1880,8 @@ SuperKernelActor::SuperKernelActor(const std::string &name, const KernelGraphPtr
   kernel_async_launch_aid_ = KernelAsyncLaunchActor::GetInstance()->GetAID();
   somas_info_ = graph_->MutableSomasInfo();
   enable_parallel_dispatch_ = EnableParallelDispatchKernel() && (graph_phase_.find("increment") != std::string::npos);
+  MS_LOG(INFO) << "The kernel graph: " << graph_->ToString() << " phase: " << graph_phase_
+               << ", enable parallel dispatch kernel: " << enable_parallel_dispatch_;
 }
 
 void SuperKernelActor::GetRefCountForGraphOutput(const std::vector<AnfNodePtr> &output_data_nodes,
