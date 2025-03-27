@@ -193,7 +193,7 @@ class AscendOpMemoryViewer:
         "Device Type",
     ]
     DEVICE_TYPE_FMT = "NPU:{}"
-    NS_TO_US = 1024
+    NS_TO_US = 1000
     BYTES_TO_KB = 1024
     BYTES_TO_MB = 1024 * 1024
     EMPTY_VALUE = "N/A"
