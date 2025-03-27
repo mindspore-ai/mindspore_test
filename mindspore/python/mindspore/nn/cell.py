@@ -34,6 +34,7 @@ from typing import (
     Mapping
 )
 
+import mindspore as ms
 from mindspore._checkparam import args_type_check, check_hook_fn
 from mindspore.common._auto_dynamic import is_auto_dynamic, convert_inputs_to_dynamic
 from mindspore import log as logger
@@ -60,6 +61,7 @@ from mindspore.common._decorator import deprecated
 from mindspore.common._register_for_recompute import recompute_registry
 from mindspore.nn.utils.hooks import RemovableHandle
 from mindspore.nn.buffer import Buffer
+
 
 __all__ = [
     "register_cell_buffer_registration_hook",
@@ -1190,10 +1192,8 @@ class Cell(Cell_):
             ...     x = self.block2_shard(x)
             ...     return x
         """
-        if context.get_auto_parallel_context("parallel_mode") not in ["auto_parallel", "semi_auto_parallel"]:
-            raise AssertionError(f"Cell shard only supports auto parallel or semi_auto_parallel "
-                                 f"Please check the parallel mode in parallel context.")
-
+        if ms.communication.management.get_group_size() == 1:
+            return self
         shard_fn = Shard()
         fn = shard_fn(self, in_strategy, out_strategy, parameter_plan, device, level)
         self._shard_fn = fn

@@ -226,18 +226,6 @@ class Shard(Shard_):
         self.level = None
 
     def __call__(self, fn, in_strategy, out_strategy=None, parameter_plan=None, device="Ascend", level=0):
-        parallel_mode = ms.context.get_auto_parallel_context("parallel_mode")
-        if parallel_mode not in ("auto_parallel", "semi_auto_parallel"):
-            raise AssertionError(
-                f"Cell shard only supports auto parallel and semi auto parallel.")
-        if ms.context.get_context("device_target") not in ("Ascend", "GPU"):
-            raise AssertionError(
-                f"'Shard' now only supports 'Ascend' and 'GPU'")
-        if parallel_mode == "auto_parallel" and \
-            ms.context.get_auto_parallel_context("search_mode") != "sharding_propagation":
-            raise AssertionError(f"'search_mode' must be 'sharding_propagation' for 'Shard' when the "
-                                 f"'parallel_mode' is 'auto_parallel.'")
-
         if not isinstance(in_strategy, tuple):
             raise TypeError(
                 f"For 'Shard', the 'in_strategy' should be a tuple, but got {type(in_strategy).__name__}.")
@@ -266,7 +254,8 @@ class Shard(Shard_):
                            "will be overwritten as False.")
             ms.set_algo_parameters(fully_use_devices=False)
 
-        if ms.context.get_auto_parallel_context("full_batch_is_set") is False:
+        if ms.context.get_auto_parallel_context("full_batch_is_set") is False and \
+            ms.context.get_context("mode") == ms.context.PYNATIVE_MODE:
             logger.warning("When calling the shard interface, "
                            "'dataset_strategy' or 'full_batch' is not manually set by the user, "
                            "and the 'dataset_strategy' will be set to 'full_batch'.")
@@ -561,6 +550,8 @@ def shard(fn, in_strategy, out_strategy=None, parameter_plan=None, device="Ascen
         (32, 10)
 
     """
+    if ms.communication.management.get_group_size() == 1:
+        return fn
     if not isinstance(fn, (ms.nn.Cell)):
         logger.warning("'fn' is not a mindspore.nn.Cell, and its definition cannot involve Parameter; "
                        "otherwise, the result may be incorrect.")

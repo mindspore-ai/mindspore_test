@@ -55,6 +55,7 @@ def init_env():
     init()
     context.set_context(mode=ms.GRAPH_MODE, device_target='Ascend', jit_level="O1")
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
+    context.set_auto_parallel_context(dataset_strategy="full_batch")
 
 def test_semi_auto_parallel():
     init_env()
