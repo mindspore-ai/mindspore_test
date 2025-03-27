@@ -878,7 +878,22 @@ class AfterOptARewriter : public BaseRewriter {
   }
   ~AfterOptARewriter() override = default;
 
+ public:
+  static bool NeedConvertToPyExecute(const PrimitivePtr &prim, const AbstractBasePtrList &args_abs_list,
+                                     const AbstractBasePtr &output_abs) {
+    if (seq_prim_set_.find(prim) != seq_prim_set_.end()) {
+      return NeedConvertSequenceOpToPyExecute(args_abs_list, output_abs);
+    }
+    return false;
+  }
+
  protected:
+  static bool NeedConvertSequenceOpToPyExecute(const AbstractBasePtrList &inputs_abs,
+                                               const AbstractBasePtr &output_abs) {
+    return CheckAndConvertUtils::CheckContainNestedOrIrregularSequence(inputs_abs) ||
+           (output_abs != nullptr && output_abs->isa<abstract::AbstractAny>());
+  }
+
   // From:
   //   MakeSparseTensor(indices, values, dense_shape)
   // To:
@@ -2400,8 +2415,7 @@ class AfterOptARewriter : public BaseRewriter {
     MS_EXCEPTION_IF_NULL(output_abs);
     // Only sequence ops with nested sequence input or irregular input (element with different shape/type)
     // or the output abstract of sequence node is AbstractAny should be converted to PyExecute node.
-    if (!CheckAndConvertUtils::CheckContainNestedOrIrregularSequence(inputs_abs) &&
-        !output_abs->isa<abstract::AbstractAny>()) {
+    if (!NeedConvertSequenceOpToPyExecute(inputs_abs, output_abs)) {
       return nullptr;
     }
 
@@ -2944,6 +2958,17 @@ bool OrderPyExecuteAfterRewriter(const FuncGraphPtr &root, const pipeline::Resou
     (void)pipeline::Renormalize(resource, root, new_args_spec);
   }
   return change;
+}
+
+bool ShouldRunWithJitFallback(const PrimitivePtr &prim, const AbstractBasePtrList &args_abs_list,
+                              const AbstractBasePtr &output_abs) {
+  if (output_abs != nullptr) {
+    auto value = output_abs->BuildValue();
+    if (value != nullptr && !value->ContainsValueAny()) {
+      return false;  // Can be constant-folded.
+    }
+  }
+  return AfterOptARewriter::NeedConvertToPyExecute(prim, args_abs_list, output_abs);
 }
 }  // namespace opt
 }  // namespace mindspore
