@@ -63,5 +63,26 @@ py::object GetTensorPyFromValue(const ValuePtr &value) {
   return back;
 }
 
+const MetaTensorPtr GetMetaTensorFromValue(const ValuePtr &value) {
+  if (value == nullptr) {
+    return nullptr;
+  }
+
+  if (value->isa<TensorPyWrapper>()) {
+    auto tensorpy = value->cast<TensorPyWrapperPtr>();
+    auto tensorPyWrapper = tensorpy->GetTensorWrapper();
+    PyObject *py_obj = tensorPyWrapper.ptr();
+    PyType<TensorPy> *tensor = (PyType<TensorPy> *)py_obj;
+    return (tensor->value.GetBaseTensor())->cast<MetaTensorPtr>();
+  }
+
+  if (value->isa<BaseTensor>()) {
+    auto tensor = value->cast<BaseTensorPtr>();
+    return tensor->cast<MetaTensorPtr>();
+  }
+
+  return value->cast<MetaTensorPtr>();
+}
+
 }  // namespace tensor
 }  // namespace mindspore

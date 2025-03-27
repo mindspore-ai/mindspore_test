@@ -1117,7 +1117,7 @@ static PyObject *TensorPython_GetFlattenTensors(PyObject *self, PyObject *args, 
   }
   std::map<TypeId, OrderedSet<PyObject *>> chunk_map;
   for (auto &tensorpy : tensorpys) {
-    auto owner_tensorpy = tensorpy.GetFlattenTensor();
+    auto owner_tensorpy = tensorpy.GetFlattenTensor().ptr();
     auto get_normalize_type = [](TypeId id) {
       if (id == kNumberTypeFloat) {
         // kNumberTypeFloat is an alias of kNumberTypeFloat32.
@@ -1176,8 +1176,7 @@ static PyObject *TensorPython_FlattenTensors(PyObject *self, PyObject *args, PyO
       auto flatten = Tensor::GetFlattenedTensor(tensorPython->value.GetTensor());
       if (tensor == flatten) {
         // need to store falttened python tensor
-        Py_INCREF(outTensor);
-        tensorPython->value.SetFlattenTensor(outTensor);
+        tensorPython->value.SetFlattenTensor(py::reinterpret_borrow<py::object>(outTensor));
       }
     }
     PyList_SetItem(resultList, index++, outTensor);

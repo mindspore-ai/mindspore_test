@@ -27,40 +27,32 @@ namespace mindspore {
 namespace tensor {
 PyTypeObject *TensorPy_Type;
 
-TensorPy::TensorPy(const BaseTensorPtr &input) { SetBaseTensor(input); }
+TensorPy::TensorPy(const BaseTensorPtr &input) { tensor_ = input; }
 
-TensorPy::TensorPy(const TensorPtr &input) { SetBaseTensor(input); }
+TensorPy::TensorPy(const TensorPtr &input) { tensor_ = input; }
 
-TensorPy::TensorPy(int64_t input, const TypePtr &data_type) {
-  SetBaseTensor(std::make_shared<Tensor>(input, data_type));
-}
+TensorPy::TensorPy(int64_t input, const TypePtr &data_type) { tensor_ = std::make_shared<Tensor>(input, data_type); }
 
-TensorPy::TensorPy(int32_t input, const TypePtr &data_type) {
-  SetBaseTensor(std::make_shared<Tensor>(input, data_type));
-}
+TensorPy::TensorPy(int32_t input, const TypePtr &data_type) { tensor_ = std::make_shared<Tensor>(input, data_type); }
 
-TensorPy::TensorPy(int16_t input, const TypePtr &data_type) {
-  SetBaseTensor(std::make_shared<Tensor>(input, data_type));
-}
+TensorPy::TensorPy(int16_t input, const TypePtr &data_type) { tensor_ = std::make_shared<Tensor>(input, data_type); }
 
-TensorPy::TensorPy(int8_t input, const TypePtr &data_type) {
-  SetBaseTensor(std::make_shared<Tensor>(input, data_type));
-}
+TensorPy::TensorPy(int8_t input, const TypePtr &data_type) { tensor_ = std::make_shared<Tensor>(input, data_type); }
 
 TensorPy::TensorPy(const std::vector<int64_t> &input, const TypePtr &data_type) {
-  SetBaseTensor(std::make_shared<Tensor>(input, data_type));
+  tensor_ = std::make_shared<Tensor>(input, data_type);
 }
 
 TensorPy::TensorPy(const std::vector<int32_t> &input, const TypePtr &data_type) {
-  SetBaseTensor(std::make_shared<Tensor>(input, data_type));
+  tensor_ = std::make_shared<Tensor>(input, data_type);
 }
 
 TensorPy::TensorPy(const std::vector<double> &input, const TypePtr &data_type) {
-  SetBaseTensor(std::make_shared<Tensor>(input, data_type));
+  tensor_ = std::make_shared<Tensor>(input, data_type);
 }
 
 TensorPy::TensorPy(const std::vector<float> &input, const TypePtr &data_type) {
-  SetBaseTensor(std::make_shared<Tensor>(input, data_type));
+  tensor_ = std::make_shared<Tensor>(input, data_type);
 }
 
 TensorPy::TensorPy(const TensorPy &input)
@@ -74,12 +66,10 @@ TensorPy::TensorPy(const TensorPy &input)
       symbolic_shape_(input.symbolic_shape_),
       device_(input.device_),
       flatten_tensor_(input.flatten_tensor_) {
-  SetBaseTensor(input.GetBaseTensor());
+  tensor_ = input.GetBaseTensor();
 }
 
-TensorPy::TensorPy(TypeId data_type, const ShapeVector &shape) {
-  SetBaseTensor(std::make_shared<Tensor>(data_type, shape));
-}
+TensorPy::TensorPy(TypeId data_type, const ShapeVector &shape) { tensor_ = std::make_shared<Tensor>(data_type, shape); }
 
 bool TensorPy::IsInitFinished() { return init_finished_flag_; }
 
@@ -256,9 +246,9 @@ void TensorPy::SetParamInfo(const ParamInfoPtr &param_info) {
   base_tensor->set_param_info(param_info);
 }
 
-PyObject *TensorPy::GetFlattenTensor() { return flatten_tensor_; }
+py::object TensorPy::GetFlattenTensor() { return flatten_tensor_; }
 
-void TensorPy::SetFlattenTensor(PyObject *tensor) {
+void TensorPy::SetFlattenTensor(py::object tensor) {
   if (tensor == nullptr) {
     return;
   }
@@ -398,8 +388,6 @@ void TensorPy::SetSliceShapeOfPersistentData(const py::object &slice_shape_of_pe
   slice_shape_of_persistent_data_ = slice_shape_of_persistent_data;
 }
 
-abstract::AbstractBasePtr TensorPy::ToAbstract() { return GetTensor()->ToAbstract(); }
-
 /* =========================================== Common Function ================================================= */
 bool IsTensorPy(const py::handle &obj) {
   if (TensorPy_Type == nullptr || !obj.check()) {
@@ -425,51 +413,6 @@ const TensorPtr ConvertToTensor(const py::handle &obj) {
 py::object GetPythonTensor() {
   auto tensor_module = PyObjManager::Get().GetTensorModule();
   return py::reinterpret_borrow<py::object>(tensor_module);
-}
-
-const BaseTensorPtr GetBaseTensorFromValue(const ValuePtr &value) {
-  if (value == nullptr) {
-    return nullptr;
-  }
-
-  if (value->isa<TensorPy>()) {
-    auto tensorpy = value->cast<TensorPyPtr>();
-    return tensorpy->GetBaseTensor();
-  }
-
-  return value->cast<BaseTensorPtr>();
-}
-
-const TensorPtr GetTensorFromValue(const ValuePtr &value) {
-  if (value == nullptr) {
-    return nullptr;
-  }
-
-  auto tensorpy = value->cast<TensorPyPtr>();
-  if (tensorpy != nullptr) {
-    return tensorpy->GetTensor();
-  }
-
-  return value->cast<TensorPtr>();
-}
-
-const MetaTensorPtr GetMetaTensorFromValue(const ValuePtr &value) {
-  if (value == nullptr) {
-    return nullptr;
-  }
-
-  if (value->isa<TensorPy>()) {
-    auto tensorpy = value->cast<TensorPyPtr>();
-    auto meta_tensor = tensorpy->GetBaseTensor();
-    return meta_tensor->cast<MetaTensorPtr>();
-  }
-
-  if (value->isa<BaseTensor>()) {
-    auto tensor = value->cast<BaseTensorPtr>();
-    return tensor->cast<MetaTensorPtr>();
-  }
-
-  return value->cast<MetaTensorPtr>();
 }
 
 const ValuePtr ConvertToValue(const py::handle &obj) {
