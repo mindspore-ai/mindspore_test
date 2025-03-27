@@ -2786,34 +2786,22 @@ def matrix_solve(matrix, rhs, adjoint=False):  # pylint: disable=redefined-outer
         On GPU, if the matrix is irreversible, an error may be reported or an unknown result may be returned.
 
     Args:
-        matrix (Tensor): The shape of tensor is :math:`(..., M, M)` .
-        rhs (Tensor): The shape of tensor is :math:`(..., M, K)` . `rhs` must have the same dtype as `matrix`.
+        matrix (Tensor): The first input tensor.
+        rhs (Tensor): The second input tensor.
         adjoint(bool, optional): Indicating whether to solve with matrix or its (block-wise) adjoint.
-            Default: ``False`` .
+            Default ``False`` .
 
     Returns:
-        x (Tensor), The dtype and shape is the same as `rhs`.
-
-    Raises:
-        TypeError: If adjoint is not the type of bool.
-        TypeError: If the type of matrix is not one of the following dtype:
-                   mstype.float16, mstype.float32, mstype.float64, mstype.complex64, mstype.complex128.
-        TypeError: If the type of `matrix` is not the same as that of `rhs`.
-        ValueError: If the rank of `matrix` less than 2.
-        ValueError: If the dimension of `matrix` is not the same as `rhs`.
-        ValueError: If the inner-most 2 dimension of `matrix` is not the same.
-        ValueError: If the inner-most 2 dimension of `rhs` does not match `matrix`.
-        ValueError: If the `matrix` is irreversible.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import Tensor, ops
-        >>> matrix = Tensor([[5, 4], [3, 1]], mindspore.float32)
-        >>> rhs = Tensor([[7], [2]], mindspore.float32)
-        >>> result = ops.matrix_solve(matrix, rhs)
+        >>> matrix = mindspore.tensor([[5., 4.], [3., 1.]])
+        >>> rhs = mindspore.tensor([[7.], [2.]])
+        >>> result = mindspore.ops.matrix_solve(matrix, rhs)
         >>> print(result)
         [[0.14285707]
          [1.5714287 ]]
