@@ -829,7 +829,9 @@ T GetInputValueFromCNodeWithDefaultValue(const CNodePtr &cnode, size_t index, T 
                                    << ") is not a value node. Return default value: " << default_value;
     return default_value;
   }
-  auto value = input_node->cast<ValueNodePtr>()->value();
+  auto value_ptr = input_node->cast<ValueNodePtr>();
+  MS_EXCEPTION_IF_NULL(value_ptr);
+  auto value = value_ptr->value();
   MS_EXCEPTION_IF_NULL(value);
   return GetValue<T>(value);
 }

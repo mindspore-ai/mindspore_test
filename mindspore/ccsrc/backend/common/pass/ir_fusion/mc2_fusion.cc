@@ -41,6 +41,7 @@ bool IsForwardNode(const AnfNodePtr &node) {
     return false;
   }
   auto cnode = node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
   return !(cnode->HasPrimalAttr(kPrimalAttrForwardUniqueId) || cnode->HasAttr(kAttrDuplicated));
 }
 
@@ -50,6 +51,7 @@ bool IsRecomputeNode(const AnfNodePtr &node) {
     return false;
   }
   auto cnode = node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
   return cnode->HasAttr(kAttrDuplicated);
 }
 
@@ -144,7 +146,9 @@ T GetInputValueFromCNode(const CNodePtr &cnode, size_t index) {
   if (!input_node->isa<ValueNode>()) {
     MS_LOG(EXCEPTION) << "The " << index << "-th input is not a value node.";
   }
-  auto value = input_node->cast<ValueNodePtr>()->value();
+  auto value_ptr = input_node->cast<ValueNodePtr>();
+  MS_EXCEPTION_IF_NULL(value_ptr);
+  auto value = value_ptr->value();
   MS_EXCEPTION_IF_NULL(value);
   return GetValue<T>(value);
 }
@@ -282,6 +286,7 @@ CNodePtr MatmulReduceScatterFusion::CreateFusionCNode(const FuncGraphPtr &func_g
   auto matmul_reduce_scatter_prim = prim::kPrimMatmulReduceScatter->Clone();
   MS_CHECK_TRUE_RET(matmul_reduce_scatter_prim, {});
   auto reduce_scatter_prim = GetCNodePrimitive(reduce_scatter_cnode);
+  MS_EXCEPTION_IF_NULL(reduce_scatter_prim);
   matmul_reduce_scatter_prim->AddAttr(kAttrGroup, reduce_scatter_prim->GetAttr(kAttrGroup));
   auto reduce_op = GetValue<std::string>(reduce_scatter_prim->GetAttr(kAttrOp));
   if (reduce_op != "sum") {

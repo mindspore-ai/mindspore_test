@@ -80,7 +80,8 @@ int64_t GetMatMulFlops(const CNodePtr &cnode) {
   }
   // [N, C]*[C, M]
   auto M = transpose_b ? *(full_b_shape.end() - 2) : *(full_b_shape.end() - 1);
-  flops *= 2 * full_a_shape[a_dim_index] * full_a_shape[b_dim_index] * M;
+  const int64_t coefficient = 2;
+  flops *= coefficient * full_a_shape[a_dim_index] * full_a_shape[b_dim_index] * M;
   return flops;
 }
 
