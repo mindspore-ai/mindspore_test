@@ -4288,6 +4288,7 @@ def index_fill(x, axis, index, value):
         value = cast_(value, x.dtype)
     return index_fill_(x, axis, index, value)
 
+
 def index_fill_ext(input, dim, index, value):
     """
     Fills the elements under the `dim` dimension of the input Tensor `input` with the input `value`
