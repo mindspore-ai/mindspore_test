@@ -17,6 +17,7 @@
 #include "frontend/parallel/ops_info/transpose_info.h"
 
 #include <memory>
+#include <ostream>
 #include <vector>
 #include <numeric>
 #include <utility>
@@ -194,9 +195,19 @@ bool IsValidTensorMap(const Shape &tensor_map) {
   return true;
 }
 
+void log_func_tr(std::ostringstream &oss, bool is_in_layout_propagation) {
+  if (is_in_layout_propagation) {
+    MS_LOG(WARNING) << oss.str();
+  } else {
+    MS_LOG(ERROR) << oss.str();
+  }
+}
+
 Status TransposeInfo::CheckOutputLayout() {
   if (outputs_tensor_info_.size() != kSizeOne) {
-    MS_LOG(ERROR) << name_ << ": The size of output tensor info must be 1, but got " << outputs_tensor_info_.size();
+    std::ostringstream oss;
+    oss << name_ << ": The size of output tensor info must be 1, but got " << outputs_tensor_info_.size();
+    log_func_tr(oss, is_in_layout_propagation_);
     return FAILED;
   }
   if (!output_infer_tensor_layout_.tensor_shape_before().array().empty()) {
@@ -221,13 +232,17 @@ Status TransposeInfo::CheckOutputLayout() {
   auto in_tensor_map = in_layout.tensor_map_before();
   auto out_tensor_map = out_layout.tensor_map_before();
   if (in_tensor_map != out_tensor_map) {
-    MS_LOG(ERROR) << "To apply device matrix transposes, the input and output tensor map must be equal. But got "
-                  << in_tensor_map << " and " << out_tensor_map;
+    std::ostringstream oss;
+    oss << "To apply device matrix transposes, the input and output tensor map must be equal. But got " << in_tensor_map
+        << " and " << out_tensor_map;
+    log_func_tr(oss, is_in_layout_propagation_);
     return FAILED;
   }
   if ((input_device_arrangement.size() != output_device_arrangement.size()) ||
       (in_tensor_map.size() != out_tensor_map.size())) {
-    MS_LOG(ERROR) << name_ << ": The size of input and output device arrangement and tensor map must be equal.";
+    std::ostringstream oss;
+    oss << name_ << ": The size of input and output device arrangement and tensor map must be equal.";
+    log_func_tr(oss, is_in_layout_propagation_);
     return FAILED;
   }
   auto exchange_axes = CalculateExchangeAxes(axis_v_);
@@ -247,7 +262,9 @@ Status TransposeInfo::CheckOutputLayout() {
       correspond_target_tensor_map = axis_1;
     }
     if (!(IsValidTensorMap(correspond_target_tensor_map) && IsValidTensorMap(correspond_og_tensor_map))) {
-      MS_LOG(ERROR) << name_ << ": the output tensor map is not matched, and devicematrix can not be transpose.";
+      std::ostringstream oss;
+      oss << name_ << ": the output tensor map is not matched, and devicematrix can not be transpose.";
+      log_func_tr(oss, is_in_layout_propagation_);
       return FAILED;
     }
     auto og_start_pos = correspond_og_tensor_map[0];
@@ -276,7 +293,9 @@ Status TransposeInfo::CheckOutputLayout() {
     }
   }
   if (expected_device_arrangement != output_device_arrangement) {
-    MS_LOG(ERROR) << name_ << ": The output device arrangement is not equal to the expected device arrangement.";
+    std::ostringstream oss;
+    oss << name_ << ": The output device arrangement is not equal to the expected device arrangement.";
+    log_func_tr(oss, is_in_layout_propagation_);
     return FAILED;
   }
   UpdateOutputTensorInfoForInterleaved();
