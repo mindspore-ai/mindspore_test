@@ -333,6 +333,11 @@ class BACKEND_COMMON_EXPORT AnfRuntimeAlgorithm {
   static ValueNodePtr CreateTypeIdValueNodeToFuncGraph(const FuncGraphPtr &func_graph, TypeId data_type);
   static bool IsNoRealKernelGraph(const KernelGraphPtr &kernel_graph);
 
+  // if graph output is valuenode or parameter, used to skip compile or run
+  static bool IsGraphOutputValueNodeOrParameterForCompile(const AnfNodePtr &graph_output);
+  static bool IsGraphOutputValueNodeOrParameter(const AnfNodePtr &graph_output, const VectorRef &args,
+                                                VectorRef *outputs);
+
   // Only used for ascend ops.
   static bool IsLaunchIgnoredInputAddressIdx(const AnfNodePtr &node, size_t input_idx);
   static std::string GetValueByDeviceAddress(DeviceAddress *const device_address, size_t element_num);

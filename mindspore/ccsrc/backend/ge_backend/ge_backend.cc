@@ -1063,6 +1063,16 @@ BackendGraphId GEBackend::CompileWholeGraph(const FuncGraphPtr &func_graph,
   KernelGraphPtr root_graph =
     kg_mgr->ConstructKernelGraph(func_graph, &all_graphs, device::DeviceType::kAscend, backend_jit_config);
   MS_EXCEPTION_IF_NULL(root_graph);
+  if (AnfAlgo::IsGraphOutputValueNodeOrParameterForCompile(root_graph->output())) {
+    auto cur_backend_graph_id = backend_graph_id_++;
+    graph_map_[cur_backend_graph_id] = root_graph;
+    graph_run_iter_[root_graph] = 0;
+    root_graph_map_[cur_backend_graph_id] = func_graph;
+    MS_LOG(INFO) << "Status record: end compile graph. backend_graph_id: " << cur_backend_graph_id
+                 << ", kernel graph id: " << root_graph->graph_id();
+    return cur_backend_graph_id;
+  }
+
   for (const auto &graph : all_graphs) {
     MS_EXCEPTION_IF_NULL(graph);
     MS_LOG(INFO) << "Set root graph for graph: " << graph->graph_id() << " to: " << root_graph->graph_id() << ".";
@@ -1747,6 +1757,10 @@ void GEBackend::RunWholeGraph(BackendGraphId graph_id, const VectorRef &inputs, 
 
   MS_EXCEPTION_IF_NULL(graph_executor_);
   auto func_graph = graph_map_[graph_id];
+  if (AnfAlgo::IsGraphOutputValueNodeOrParameter(func_graph->output(), inputs, outputs)) {
+    MS_LOG(INFO) << "Status record: end run graph: " << graph_id;
+    return;
+  }
 
 // for data_dump
 #ifndef ENABLE_SECURITY
