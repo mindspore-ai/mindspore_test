@@ -1,0 +1,5 @@
+nan_median:
+  description: |
+    The implementation for ``nanmedian()``.
+
+    For details, please refer to :func:`mindspore.mint.nanmedian`.

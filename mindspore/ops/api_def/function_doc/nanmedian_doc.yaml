@@ -1,0 +1,104 @@
+nanmedian:
+  description: |
+    nanmedian(input) -> Tensor
+
+    Calculates the median value on `input` and ignores all ``NaN`` values.
+
+    If there is no ``NaN`` value in `input`, the return value of this function is the same as that of
+    :func:`mindspore.mint.median`. However, if one or more ``NaN`` exist in `input`, :func:`mindspore.mint.median`
+    always returns ``NaN`` and this function returns the median value after all ``NaN`` elements are excluded from
+    `input`. If all elements in `input` are ``NaN``, the function also returns ``NaN``.
+
+    .. note::
+        - When self Tensor is empty, ``NaN`` is returned. If the dtype does not support ``NaN``, ``0`` is returned.
+        - This overload is unavailable in GRAPH_MODE(O2).
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): Tensor of any dimension.
+
+    Returns:
+        Tensor, whose dtype is the same as that of `input`. The shape is empty and contains only one element,
+        indicating the median value of the input tensor after ``NaN`` is excluded.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor, mint, float32
+        >>> x = Tensor([3, float('nan'), 1, 2], dtype=float32)
+        >>> mint.nanmedian(x)
+        Tensor(shape=[], dtype=Float32, value= 2)
+        >>> # compare with median, difference caused by x[1] is NaN
+        >>> mint.median(x)
+        Tensor(shape=[], dtype=Float32, value= nan)
+        >>> # also returns NaN when all elements are NaN
+        >>> mint.nanmedian(Tensor([float('nan')], dtype=float32))
+        Tensor(shape=[], dtype=Float32, value= nan)
+
+    .. function:: mindspore.mint.nanmedian(input, dim, keepdim=False)
+        :noindex:
+
+    Calculates a tuple `(values, indices)`, indicating the median value of each row of `input` in the dimension
+    specified by `dim` after all ``NaN`` values are ignored and the index of the median value.
+
+    If a row of `input` does not contain ``NaN``, the result of this function for this row is the same as that of
+    :func:`mindspore.mint.median`. However, if one or more ``NaN`` exist in a row, :func:`mindspore.mint.median`
+    returns ``NaN`` in this row, when this function returns the median value after all ``NaN`` elements are excluded
+    from `input`. If all elements in a row of `input` are ``NaN``, the function also returns ``NaN`` for this row.
+
+    Shapes of the two output Tensors can be described as the following expression, where `r` is the number of
+    dimensions of `input` and :math:`s_x` indicates the length of `input` in the `x` th dimension.
+
+    .. math::
+
+        shape = \begin{cases}
+        [s_{0}, ... , s_{dim - 1}, s_{dim + 1}, ... , s_{r - 1}]    & \text{if } keepdim = False \\
+        [s_{0}, ... , s_{dim - 1}, 1, s_{dim + 1}, ... , s_{r - 1}] & \text{if } keepdim = True \\
+        \end{cases}
+
+    .. note::
+        - When `input` has a length of 0 on the dimension selected by `dim`, it throws an ``IndexError``.
+        - `input` cannot be a scalar Tensor.
+
+    .. warning::
+        - If the median value of `input` is not unique in a row (including this row is all ``NaN``), `indices` does
+          not necessarily return the index of the first occurrence of the median value for that row.
+        - This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): Tensor of any dimension.
+        dim (int): Specify the dimension for calculation.
+        keepdim (bool, optional): Indicates whether to retain the dimension specified by `dim`. Default: ``False``.
+
+    Returns:
+        - values (Tensor) - Tensor for storing median values. The dtype is the same as that of `input`. See the
+          formula above for its shape.
+        - indices (Tensor) - An index of each element of `values` in a corresponding row of `input`. The dtype is
+          int64. See the formula above for its shape.
+
+    Raises:
+        IndexError: If the length of `input` in the dimension selected by `dim` is 0.
+        RuntimeError: If the value of `dim` is not within the range of `[-input.ndim, input.ndim)`.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor, mint, float32
+        >>> x = Tensor([
+        ...     [2, 3,            float('nan')],
+        ...     [1, float('nan'), float('nan')]
+        ... ], dtype=float32)
+        >>> print(*mint.nanmedian(x, 1))
+        [2. 1.] [0 0]
+        >>> # index[0, 2] depends on platform (multiple median value `NaN`)
+        >>> print(*mint.nanmedian(x, dim=0, keepdim=True))
+        [[ 1.  3. nan]] [[1 0 1]]
+        >>> # compare with median, difference caused by x[:, 1] containing NaN
+        >>> print(*mint.median(x, dim=0, keepdim=True))
+        [[ 1. nan nan]] [[1 1 0]]

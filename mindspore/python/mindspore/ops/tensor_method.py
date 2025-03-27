@@ -424,6 +424,8 @@ from mindspore.ops.auto_generate import log1p
 from mindspore.ops.function.math_func import addbmm
 # 502
 from mindspore.ops.function.math_func import addmm
+# 563 nanmedian
+from mindspore.ops.operations.math_ops import Median
 # 846
 from mindspore.ops.function.math_func import count_nonzero
 
@@ -1643,6 +1645,18 @@ def tensor_addr(input, vec1, vec2, *, beta=1, alpha=1):
 
 def deprecated_tensor_addr(input, vec1, vec2, beta=1, alpha=1):
     return addr(input, vec1, vec2, beta=beta, alpha=alpha)
+
+
+# 563 nanmedian
+def tensor_nanmedian(input):
+    """Provides CPU/GPU support by using primitive Median."""
+    # when global_median=True, primitive Median also returns 2 Tensor but only values (first Tensor) is needed
+    return Median(global_median=True, keep_dims=False, ignore_nan=True)(input)[0]
+
+
+def tensor_nanmedian_dim(input, dim, keepdim=False):
+    """Provides CPU/GPU support by using primitive Median."""
+    return Median(global_median=False, axis=dim, keep_dims=keepdim, ignore_nan=True)(input)
 
 
 # 790

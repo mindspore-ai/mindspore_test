@@ -1,0 +1,12 @@
+#operator nan_median
+nan_median:
+  args:
+    input:
+      dtype: tensor
+  returns:
+    out:
+      dtype: tensor
+  function:
+    disable: True
+  dispatch:
+    enable: True

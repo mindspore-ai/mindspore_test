@@ -208,6 +208,7 @@ Reduction Operations
     mindspore.mint.max
     mindspore.mint.mean
     mindspore.mint.median
+    mindspore.mint.nanmedian
     mindspore.mint.min
     mindspore.mint.norm
     mindspore.mint.prod

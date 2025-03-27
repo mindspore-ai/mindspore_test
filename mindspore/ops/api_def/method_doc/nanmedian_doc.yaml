@@ -1,0 +1,108 @@
+nanmedian:
+  description: |
+    nanmedian() -> Tensor
+
+    Calculates the median value on self Tensor and ignores all ``NaN`` values.
+
+    If there is no ``NaN`` value in self Tensor, the return value of this function is the same as that of
+    :func:`mindspore.Tensor.median`. However, if one or more ``NaN`` exist in self Tensor, :func:`mindspore.Tensor.median`
+    always returns ``NaN`` and this function returns the median value after all ``NaN`` elements are excluded from
+    self Tensor. If all elements in self Tensor are ``NaN``, the function also returns ``NaN``.
+
+    .. note::
+        - When self Tensor is empty, ``NaN`` is returned. If the dtype does not support ``NaN``, ``0`` is returned.
+        - This overload is unavailable in GRAPH_MODE(O2).
+        - This overload only supports ``Ascend`` platform in GRAPH_MODE.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Returns:
+        Tensor, whose dtype is the same as that of self Tensor. The shape is empty and contains only one element,
+        indicating the median value of the self tensor after ``NaN`` is excluded.
+
+    Supported Platforms:
+        ``Ascend`` ``CPU``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor, float32
+        >>> x = Tensor([3, float('nan'), 1, 2], dtype=float32)
+        >>> x.nanmedian()
+        Tensor(shape=[], dtype=Float32, value= 2)
+        >>> # compare with median, difference caused by x[1] is NaN
+        >>> x.median()
+        Tensor(shape=[], dtype=Float32, value= nan)
+        >>> # also returns NaN when all elements are NaN
+        >>> Tensor([float('nan')], dtype=float32).nanmedian()
+        Tensor(shape=[], dtype=Float32, value= nan)
+
+    .. method:: Tensor.nanmedian(dim, keepdim=False) -> Tuple[Tensor, Tensor]
+        :noindex:
+
+    Calculates a tuple `(values, indices)`, indicating the median value of each row of self Tensor in the dimension
+    specified by `dim` after all ``NaN`` values are ignored and the index of the median value.
+
+    If a row of self Tensor does not contain ``NaN``, the result of this function for this row is the same as that of
+    :func:`mindspore.Tensor.median`. However, if one or more ``NaN`` exist in a row, :func:`mindspore.Tensor.median`
+    returns ``NaN`` in this row, when this function returns the median value after all ``NaN`` elements are excluded
+    from self Tensor. If all elements in a row of self Tensor are ``NaN``, the function also returns ``NaN`` for this row.
+
+    Shapes of the two output Tensors can be described as the following expression, where `r` is the number of
+    dimensions of self Tensor and :math:`s_x` indicates the length of self Tensor in the `x` th dimension.
+
+    .. math::
+
+        shape = \begin{cases}
+        [s_{0}, ... , s_{dim - 1}, s_{dim + 1}, ... , s_{r - 1}]    & \text{if } keepdim = False \\
+        [s_{0}, ... , s_{dim - 1}, 1, s_{dim + 1}, ... , s_{r - 1}] & \text{if } keepdim = True \\
+        \end{cases}
+
+    .. note::
+        - When self Tensor has a length of 0 on the dimension selected by `dim`, its behavior depends on the platform:
+
+          - On the ``Ascend`` platform, it throws an ``IndexError``.
+          - On the ``CPU`` platform, it only generates WARNING logs.
+
+        - On the ``Ascend`` platform, self Tensor cannot be a scalar Tensor.
+        - This overload only supports ``CPU`` platform in GRAPH_MODE.
+
+    .. warning::
+        - If the median value of self Tensor is not unique in a row (including this row is all ``NaN``), `indices` does
+          not necessarily return the index of the first occurrence of the median value for that row.
+        - This is an experimental API that is subject to change or deletion.
+
+    Args:
+        dim (int): Specify the dimension for calculation.
+        keepdim (bool, optional): Indicates whether to retain the dimension specified by `dim`. Default: ``False``.
+
+    Returns:
+        - values (Tensor) - Tensor for storing median values. The dtype is the same as that of self Tensor. See the
+          formula above for its shape.
+        - indices (Tensor) - An index of each element of `values` in a corresponding row of self Tensor. The dtype is
+          int64. See the formula above for its shape.
+
+    Raises:
+        IndexError: If the length of self Tensor in the dimension selected by `dim` is 0 on the ``Ascend`` platform.
+        ValueError: If the value of `dim` is not within the range of `[-self.ndim, self.ndim)` on the ``CPU`` platform.
+        RuntimeError: If the value of `dim` is not within the range of `[-self.ndim, self.ndim)` on the
+            ``Ascend`` platform.
+
+    Supported Platforms:
+        ``Ascend`` ``CPU``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor, float32
+        >>> x = Tensor([
+        ...     [2, 3,            float('nan')],
+        ...     [1, float('nan'), float('nan')]
+        ... ], dtype=float32)
+        >>> print(*x.nanmedian(1))
+        [2. 1.] [0 0]
+        >>> # index[0, 2] depends on platform (multiple median value `NaN`)
+        >>> print(*x.nanmedian(dim=0, keepdim=True))
+        [[ 1.  3. nan]] [[1 0 1]]
+        >>> # compare with median, difference caused by x[:, 1] containing NaN
+        >>> print(*x.median(dim=0, keepdim=True))
+        [[ 1. nan nan]] [[1 1 0]]

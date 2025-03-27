@@ -1,0 +1,19 @@
+nanmedian:
+  - op_yaml: nan_median_op.yaml
+    py_method: tensor_nanmedian
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor, function
+  - op_yaml: nan_median_dim_op.yaml
+    py_method: tensor_nanmedian_dim
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor, function
+  - op_yaml: deprecated/nan_median_dim_method.yaml # for CPU/GPU support under GRAPH_MODE O0
+    py_method: tensor_nanmedian_dim
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

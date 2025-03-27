@@ -1,0 +1,5 @@
+nan_median_dim:
+  description: |
+    The implementation for ``nanmedian(dim, keepdim=False)``.
+
+    For details, please refer to :func:`mindspore.mint.nanmedian`.
