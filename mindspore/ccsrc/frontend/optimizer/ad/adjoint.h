@@ -35,10 +35,19 @@ class Adjoint {
   void UpdateK(const AnfNodePtr &new_k);
   void RegisterKUser(const CNodePtr &user, size_t index);
   AnfNodePtr dout();
+  AnfNodePtr real_dout() { return dout_; }
   void AccumulateDout(const AnfNodePtr &dout_factor);
   void RegisterDoutUser(const CNodePtr &user, size_t index);
   void CallDoutHole();
   FuncGraphPtr caller() { return caller_; }
+  bool side_effect_bprop_app_propagate() { return side_effect_bprop_app_propagate_; }
+  void set_side_effect_bprop_app_propagate(bool side_effect_bprop_app_propagate) {
+    side_effect_bprop_app_propagate_ = side_effect_bprop_app_propagate;
+  }
+  CNodePtr k_app() { return k_app_; }
+  void set_k_app(const CNodePtr &k_app) { k_app_ = k_app; }
+  bool back_bproped() { return back_bproped_; }
+  void set_back_bproped(bool back_bproped) { back_bproped_ = back_bproped; }
 
  private:
   AnfNodePtr primal_;
@@ -50,6 +59,9 @@ class Adjoint {
   AnfNodePtr dout_hole_;
   std::vector<std::pair<CNodePtr, size_t>> dout_user_;
   bool is_view_inplace_;
+  bool back_bproped_{false};
+  bool side_effect_bprop_app_propagate_{false};
+  CNodePtr k_app_;
 };
 
 using AdjointPtr = std::shared_ptr<Adjoint>;
