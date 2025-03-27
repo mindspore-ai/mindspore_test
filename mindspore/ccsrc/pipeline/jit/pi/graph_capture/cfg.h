@@ -167,6 +167,7 @@ class CFG {
   const ExceptionTable &exc_table() const { return exc_table_; }
   // python3.11+ only, find first exception table item of try/with blocks
   ExceptionTable::const_iterator FindTryWithBlock(int bci) const;
+  ExceptionTable::const_iterator FindExcTableItem(int bci) const;
   int GetLocalCount() const { return co_.LocalSize(); }
 
   const Liveness *GetLiveness();

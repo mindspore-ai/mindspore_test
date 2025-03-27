@@ -209,6 +209,7 @@ const std::unordered_map<int, bool (GraphBuilder::*)(const Instr &)> GraphBuilde
   {CACHE, &GraphBuilder::DoNop},
   {RETURN_GENERATOR, &GraphBuilder::DoPushNull},
   {SEND, &GraphBuilder::DoSend},
+  {PUSH_EXC_INFO, &GraphBuilder::DoPushExcInfo},
 };
 
 bool GraphBuilder::ReplaceAll(ValueNode *old_node, ValueNode *new_node, bool *is_referenced) {
@@ -854,6 +855,8 @@ bool GraphBuilder::DoPopFinally(const mindspore::pijit::Instr &instr) {
   return true;
 }
 
+bool GraphBuilder::DoPushExcInfo(const mindspore::pijit::Instr &instr) { return true; }
+
 bool GraphBuilder::DoRaiseVarags(const mindspore::pijit::Instr &instr) {
   int oparg = instr.arg();
   if (oparg != 1) {
@@ -861,10 +864,29 @@ bool GraphBuilder::DoRaiseVarags(const mindspore::pijit::Instr &instr) {
   }
   auto exc = pop();
   pushExc(exc);
+#if IS_PYTHON_3_11_PLUS
+  push(exc);
+#endif
   return DoRaise(instr);
 }
 
 bool GraphBuilder::DoRaise(const mindspore::pijit::Instr &instr) {
+#if IS_PYTHON_3_11_PLUS
+  if (graph_->Config().GetBoolConfig(GraphJitConfig::kSkipException)) {
+    graph_->StopTraceAt(cur_bci_, StopTraceReason::kStopTraceSkip_Exception);
+    return false;
+  }
+  auto random_bci = instr.bci();
+  auto iter = graph_->GetCFG()->FindExcTableItem(random_bci);
+  if (iter == graph_->GetCFG()->exc_table().end()) {
+    return false;
+  }
+  auto except = seek(0);
+  push(except);
+  cur_bci_ = iter->second.jump_ - 1;
+  return true;
+#endif
+
   auto exc = peekExc(0);
 
   if (StackSize() < 1) {
@@ -920,6 +942,11 @@ bool GraphBuilder::DoSetupExc(const mindspore::pijit::Instr &instr) {
 }
 
 bool GraphBuilder::DoPopExc(const mindspore::pijit::Instr &instr) {
+#if IS_PYTHON_3_11_PLUS
+  pop();
+  return true;
+#endif
+
   if (StackSize() < 1) {
     MS_LOG(ERROR) << "try block stack size is 0.";
     return false;
@@ -957,7 +984,7 @@ bool GraphBuilder::DoExcMatch(const mindspore::pijit::Instr &instr) {
 
 bool GraphBuilder::DoCheckExcMatch(const mindspore::pijit::Instr &instr) {
   auto expectedExcType = pop();
-  auto gotExcInstance = pop();
+  auto gotExcInstance = seek(0);
 
   auto expectedErrs = expectedExcType->GetVobj()->GetPyObject().ptr();
   auto gotErr = gotExcInstance->GetVobj()->GetPyObject().ptr();

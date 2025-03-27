@@ -291,6 +291,7 @@ class GraphBuilder {
   bool DoPushNull(const Instr &instr);
   bool DoBinaryOp(const Instr &instr);
   bool DoCheckExcMatch(const Instr &instr);
+  bool DoPushExcInfo(const Instr &instr);
 
   const auto &root() const { return root_; }
   const auto &frame() const { return frame_; }

@@ -368,6 +368,22 @@ void CFG::MarkDeadBB() {
   }
 }
 
+ExceptionTable::const_iterator CFG::FindExcTableItem(int random_bci) const {
+  const auto &map = this->exc_table();
+  if (map.size() == 0) {
+    return map.end();
+  }
+  auto iter = map.lower_bound(random_bci);
+  if (iter == map.end() || (iter->first != random_bci && iter != map.begin())) {
+    --iter;  // check previous item
+  }
+  MS_LOG(DEBUG) << "find a closest exception table item for bci: " << random_bci << ": " << iter->second;
+  if (iter->second.begin_ > random_bci || random_bci >= iter->second.end_) {
+    return map.end();
+  }
+  return iter;
+}
+
 Block *CFG::GetBlockByBci(int bci) const {
   auto iter = std::find_if(bb_pool().begin(), bb_pool().end(), [bci](const std::unique_ptr<Block> &i) {
     return i->begin_ci() <= bci && bci < i->end_ci();
@@ -388,13 +404,9 @@ ExceptionTable::const_iterator CFG::FindTryWithBlock(int random_bci) const {
   if (list[random_bci]->op() == BEFORE_WITH) {
     random_bci++;
   }
-  auto iter = map.lower_bound(random_bci);
-  if (iter == map.end() || (iter->first != random_bci && iter != map.begin())) {
-    --iter;  // check previous item
-  }
-  MS_LOG(DEBUG) << "find a closest exception table item for bci: " << random_bci << ": " << iter->second;
-  if (iter->second.begin_ > random_bci || random_bci >= iter->second.end_) {
-    return map.end();
+  auto iter = FindExcTableItem(random_bci);
+  if (iter == map.end()) {
+    return iter;
   }
   int handler = iter->second.jump_;
   if (list[handler]->op() != PUSH_EXC_INFO) {
