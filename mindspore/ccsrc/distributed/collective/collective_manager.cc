@@ -775,6 +775,7 @@ bool CollectiveManager::CreateDeviceCommunicator(const std::string &group_name, 
   if (group_name.compare(kIndex0, kSizeFour, kPlatFormMccl) == 0 &&
       MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
     group = host_comm_lib_instance_->GetGroup(group_name);
+    MS_LOG(INFO) << "Begin to Create mccl group " << group_name;
   }
   MS_EXCEPTION_IF_NULL(group);
   std::string rank_table_file_path = common::GetEnv("RANK_TABLE_FILE");

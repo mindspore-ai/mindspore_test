@@ -70,6 +70,10 @@ class BACKEND_EXPORT MsCollectiveCommLib : public CollectiveCommunicationLib {
               const std::string &group_name, void *stream = nullptr) override;
   bool Scatter(const void *send_buff, void *recv_buff, size_t send_count, TypeId data_type, uint32_t root_rank,
                const std::string &group_name, void *stream = nullptr) override;
+  bool Send(const void *send_buff, size_t send_count, TypeId data_type, uint32_t dst_rank,
+            const std::string &group_name, void *stream = nullptr) override;
+  bool Recv(void *recv_buff, size_t send_count, TypeId data_type, uint32_t src_rank, const std::string &group_name,
+            void *stream = nullptr) override;
   bool AllReduce(const void *send_buff, void *recv_buff, size_t send_count, TypeId data_type,
                  CollectiveOpReduceType reduce_op, const std::string &group_name, void *stream = nullptr) override;
 
@@ -82,7 +86,7 @@ class BACKEND_EXPORT MsCollectiveCommLib : public CollectiveCommunicationLib {
   }
   bool CheckIfVal(const void *send_buff, void *recv_buff, const std::string &group_name,
                   CommunicationGroupInfo *group_info);
-
+  bool CheckIfVal(const std::string &group_name, CommunicationGroupInfo *group_info);
   void ClearUniqueID(const std::string &group_name) const override;
 
  private:

@@ -29,6 +29,17 @@
 namespace mindspore {
 namespace fl {
 namespace server {
+enum CollectiveOpReduceType : int64_t {
+  Reduce_Mean = 0,
+  Reduce_Max = 1,
+  Reduce_Min = 2,
+  Reduce_Prod = 3,
+  Reduce_Sum = 4,
+  Reduce_Sum_Square = 5,
+  Reduce_ASum = 6,
+  Reduce_All = 7
+};
+
 // The timeout for server collective communication in case of network jitter.
 constexpr uint32_t kCollectiveCommTimeout = 30;
 // The max timeout for server collective communication, used in disaster recovery to prevent networking flapping.
@@ -64,12 +75,19 @@ class BACKEND_COMMON_EXPORT CollectiveOpsImpl {
   void Initialize(const std::shared_ptr<ps::core::ServerNode> &server_node);
 
   template <typename T>
-  bool AllReduce(const std::string &data_name, void *sendbuff, void *recvbuff, size_t count);
+  bool AllReduce(const void *sendbuff, void *recvbuff, size_t count, int reduce_op,
+                 const ps::core::AbstractNodePtr &node, const CommunicationGroupInfo &group_info);
 
   template <typename T>
   bool AllGather(const void *sendbuff, void *recvbuff, size_t send_count, const ps::core::AbstractNodePtr &node,
                  const CommunicationGroupInfo &group_info);
 
+  template <typename T>
+  bool Send(const void *sendbuff, size_t send_count, uint32_t root, const ps::core::AbstractNodePtr &node,
+            const CommunicationGroupInfo &group_info);
+  template <typename T>
+  bool Recv(void *recvbuff, size_t recv_count, uint32_t root, const ps::core::AbstractNodePtr &node,
+            const CommunicationGroupInfo &group_info);
   template <typename T>
   bool Gather(const void *sendbuff, void *recvbuff, size_t send_count, uint32_t root,
               const ps::core::AbstractNodePtr &node, const CommunicationGroupInfo &group_info);
@@ -102,21 +120,28 @@ class BACKEND_COMMON_EXPORT CollectiveOpsImpl {
 
   // Implementation of RingAllReduce.
   template <typename T>
-  bool RunRingAllReduce(const std::string &data_name, uint32_t send_to_rank, uint32_t recv_from_rank,
-                        const std::vector<size_t> &chunk_sizes, const std::vector<size_t> &chunk_offset,
-                        T *output_buff);
+  bool RunRingAllReduce(uint32_t send_to_rank, uint32_t recv_from_rank, const std::vector<size_t> &chunk_sizes,
+                        const std::vector<size_t> &chunk_offset, T *output_buff, CollectiveOpReduceType reduce_op,
+                        const CommunicationGroupInfo &group_info);
 
   // Implementation of RingAllReduce.
   template <typename T>
-  bool RingAllReduce(const std::string &data_name, const void *sendbuff, void *recvbuff, size_t count);
+  bool RingAllReduce(const void *sendbuff, void *recvbuff, size_t count, CollectiveOpReduceType reduce_op,
+                     const CommunicationGroupInfo &group_info);
 
   // Implementation of BroadcastAllReduce.
   template <typename T>
-  bool ReduceBroadcastAllReduce(const std::string &data_name, const void *sendbuff, void *recvbuff, size_t count);
+  bool ReduceBroadcastAllReduce(const void *sendbuff, void *recvbuff, size_t count, CollectiveOpReduceType reduce_op,
+                                const CommunicationGroupInfo &group_info);
 
   // Implementation of RingAllGather.
   template <typename T>
   bool RingAllGather(const void *sendbuff, void *recvbuff, size_t send_count, const CommunicationGroupInfo &group_info);
+
+  template <typename T>
+  bool Send(const void *sendbuff, size_t send_count, uint32_t root, const CommunicationGroupInfo &group_info);
+  template <typename T>
+  bool Recv(void *recvbuff, size_t recv_count, uint32_t root, const CommunicationGroupInfo &group_info);
 
   template <typename T>
   bool Gather(const void *sendbuff, void *recvbuff, size_t send_count, uint32_t root,
