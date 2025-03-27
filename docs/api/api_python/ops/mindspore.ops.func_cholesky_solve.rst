@@ -19,19 +19,9 @@ mindspore.ops.cholesky_solve
         这是一个实验性API，后续可能修改或删除。
 
     参数：
-        - **input** (Tensor) - shape为 :math:`(*, N, M)` 的Tensor，表示2D或3D矩阵，数据类型是float32或float64。
-        - **input2** (Tensor) - shape为 :math:`(*, N, N)` 的Tensor，表示由2D或3D方阵组成上三角或下三角的Cholesky因子，数据类型是float32或float64。 `input` 和 `input2` 必须具有相同的数据类型。
-        - **upper** (bool, 可选) - 标志，将Cholesky因子视为上三角矩阵或下三角矩阵。默认值：``False``，Cholesky因子为下三角矩阵。
+        - **input** (Tensor) - shape为 :math:`(*, N, M)` 的输入tensor。
+        - **input2** (Tensor) - shape为 :math:`(*, N, N)` 的tensor，Cholesky因子。
+        - **upper** (bool, 可选) - 是否视为上三角矩阵。默认``False`` 。
 
     返回：
-        Tensor，shape和数据类型与 `input` 相同。
-
-    异常：
-        - **TypeError** - `upper` 不是bool。
-        - **TypeError** - `input` 和 `input2` 的数据类型不是float32或float64。
-        - **TypeError** - `input` 不是Tensor。
-        - **TypeError** - `input2` 不是Tensor。
-        - **ValueError** - `input` 和 `input2` 的批次大小相同。
-        - **ValueError** - `input` 和 `input2` 的行数不同。
-        - **ValueError** - `input` 不是2D或3D的矩阵。
-        - **ValueError** - `input2` 不是2D或3D的方阵。
+        Tensor

@@ -1028,28 +1028,22 @@ def fmod(input, other):
 
 def logdet(input):
     r"""
-    Calculates log determinant of one or a batch of square matrices.
+    Calculate log determinant of one or a batch of square matrices.
 
     Args:
-        input (Tensor): Tensor of shape :math:`(*, N, N)` where :math:`*` means zero or more batch dimensions.
+        input (Tensor): The input tensor of shape :math:`(*, N, N)` where :math:`*` means batch dimensions.
 
     Returns:
-        Tensor, the log determinant of `input`. If the matrix determinant is smaller than 0, nan will be returned. If
-        the matrix determinant is 0, -inf will be returned.
-
-    Raises:
-        TypeError: If dtype of `input` is not float32, float64, Complex64 or Complex128.
+        Tensor
 
     Supported Platforms:
         ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import Tensor, ops
-        >>> a = Tensor([[[8, 9], [1, 2]], [[5, 6], [3, 4]]], mindspore.float32)
-        >>> output = ops.logdet(a)
-        >>> print(output)
-        [1.9459091 0.6931454]
+        >>> a = mindspore.tensor([[[8., 9.], [1., 2.]], [[5., 6.], [3., 4.]]])
+        >>> mindspore.ops.logdet(a)
+        Tensor(shape=[2], dtype=Float32, value= [ 1.94591010e+00,  6.93146825e-01])
     """
     det_x = det(input)
     return log_(det_x)
@@ -2240,28 +2234,21 @@ def inverse(input):
     Compute the inverse of the input matrix.
 
     Note:
-        The `input` dtype of complex numbers is not supported.
+        The `input` must be at least two dimensions, and the size of the last two dimensions must be the same size.
+        The matrix must be invertible. Dtype of complex numbers is not supported.
 
     Args:
-        input (Tensor): A matrix to be calculated. Input `input` must be at least two dimensions, and the size of
-            the last two dimensions must be the same size. And the matrix must be invertible.
+        input (Tensor): The input tensor.
 
     Returns:
-        Tensor, has the same type and shape as input `input`.
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
-        ValueError: If the size of the last two dimensions of `input` is not the same.
-        ValueError: If the dimension of `input` is less than 2.
+        Tensor
 
     Supported Platforms:
         ``GPU`` ``CPU``
 
     Examples:
-        >>> from mindspore import Tensor, ops
-        >>> from mindspore import dtype as mstype
-        >>> x = Tensor([[1., 2.], [3., 4.]], mstype.float32)
-        >>> print(ops.inverse(x))
+        >>> import mindspore
+        >>> print(mindspore.ops.inverse(mindspore.tensor([[1., 2.], [3., 4.]])))
         [[-2.   1. ]
          [ 1.5 -0.5]]
     """
@@ -2825,48 +2812,34 @@ def log_matrix_determinant(input):
 
 def lu_solve(b, LU_data, LU_pivots):
     r"""
-    Computes the solution y to the system of linear equations :math:`Ay = b` ,
-    given LU decomposition :math:`A` and column vector :math:`b`.
+    Compute the solution to a system of linear equations :math:`Ay = b`.
 
-    LU decomposition of a matrix can be generated from :func:`mindspore.scipy.linalg.lu_factor` .
+    .. note::
+        - `b` of shape :math:`(*, m, k)` , `LU_data` of shape :math:`(*, m, m)` ,
+          `LU_pivots` of shape :math:`(*, m)` , where :math:`*` means batch dimensions.
 
     .. warning::
         This is an experimental API that is subject to change or deletion.
 
     Args:
-        b (Tensor): Column vector `b` in the above equation. It has shape :math:`(*, m, k)`,
-            where :math:`*` is batch dimensions, with data type float32, float16.
-        LU_data (Tensor): LU decomposition. It has shape :math:`(*, m, m)`, where :math:`*` is batch
-            dimensions, that can be decomposed into an upper triangular matrix U and a lower triangular
-            matrix L, with data type float32, float16.
-        LU_pivots (Tensor): Permutation matrix P of LU decomposition. It has
-            shape :math:`(*, m)`, where :math:`*` is batch dimensions, that can be converted
-            to a permutation matrix P, with data type int32.
+        b (Tensor): Column vector `b` in the above equation.
+        LU_data (Tensor): LU decomposition. The `A` in the formula above.
+        LU_pivots (Tensor): Permutation matrix P of LU decomposition.
 
     Returns:
-        Tensor, the same data type as the `b` and `LU_data`.
-
-    Raises:
-        TypeError: If dtype of `b` or `LU_data` is not one of: float32, float16.
-        TypeError: If dtype of `LU_pivots` is not: int32.
-        TypeError: If `b`, `LU_data` or `LU_pivots` is not Tensor.
-        TypeError: If dtype of `b` is not same as dtype of `LU_data`.
-        ValueError: If the batch dimensions of LU_pivots does not match the batch dimensions of LU_data.
-        ValueError: If `b` dimension less than 2, `LU_data` dimension less than 2 or `LU_pivots` dimension less than 1.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> b = Tensor(np.array([[1], [3], [3]]), mindspore.float32)
-        >>> LU_data = Tensor(np.array([[2, 1, 1], [0.5, 1, 1.5], [0.5, 0, 2.5]]), mindspore.float32)
-        >>> LU_pivots = Tensor(np.array([2, 2, 3]), mindspore.int32)
-        >>> y = ops.lu_solve(b, LU_data, LU_pivots)
+        >>> b = mindspore.tensor([[1.], [3.], [3.]])
+        >>> LU_data = mindspore.tensor([[2., 1., 1.], [0.5, 1., 1.5], [0.5, 0., 2.5]])
+        >>> LU_pivots = mindspore.tensor(([2, 2, 3]), mindspore.int32)
+        >>> y = mindspore.ops.lu_solve(b, LU_data, LU_pivots)
         >>> print(y)
-        [[ 1.9000002]
+        [[ 1.9000001]
          [-1.4000001]
          [ 0.6      ]]
     """
@@ -8226,56 +8199,36 @@ def matrix_norm(A, ord='fro', axis=(-2, -1), keepdims=False, *, dtype=None):
 
 def lu_unpack(LU_data, LU_pivots, unpack_data=True, unpack_pivots=True):
     r"""
-    Converts `LU_data` and `LU_pivots` back into P, L and U matrices, where
-    P is a permutation matrix, L is a lower triangular matrix, and U is an
-    upper triangular matrix. Typically, `LU_data` and `LU_pivots` are generated
-    from the LU decomposition of a matrix.
+    Unpack the LU decomposition returned by :func:`mindspore.scipy.linalg.lu_factor` into the P, L, U matrices.
+
+    .. note::
+        - `LU_data` of shape :math:`(*, M, N)` , `LU_pivots` of shape :math:`(*, min(M, N))` , where
+          :math:`*` is batch dimensions.
 
     Args:
-        LU_data (Tensor): The packed LU factorization data. A Tensor of shape :math:`(*, M, N)`, where :math:`*` is
-            batch dimensions. The dim of `LU_data` must be equal to or greater than 2.
-        LU_pivots (Tensor): The packed LU factorization pivots. A Tensor of shape :math:`(*, min(M, N))`,
-            where :math:`*` is
-            batch dimensions, with data type int8, uint8, int16, int32, int64.
+        LU_data (Tensor): The packed LU factorization data, the rank is greater than or equal to 2.
+        LU_pivots (Tensor): The packed LU factorization pivots.
         unpack_data (bool, optional): A flag indicating if the `LU_data` should be unpacked. If ``False`` ,
-            then the returned L and U are None. Default: ``True`` .
+            then the returned L and U are None. Default ``True`` .
         unpack_pivots (bool, optional): A flag indicating if the `LU_pivots` should be unpacked into
-            a permutation matrix P. If ``False`` , then the returned P is None. Default: ``True`` .
+            a permutation matrix P. If ``False`` , then the returned P is None. Default ``True`` .
 
     Returns:
-        - pivots(Tensor) - The permutation matrix of LU factorization.
-          The shape is :math:`(*, M, M)`, the dtype is same as `LU_data`.
-        - L (Tensor) - The L matrix  of LU factorization. The dtype is same as `LU_data`.
-        - U (Tensor) - The U matrix  of LU factorization. The dtype is same as `LU_data`.
-
-    Raises:
-        TypeError: If the dtype of `LU_data` is int, uint or float.
-        TypeError: If the dtype of `LU_pivots` is not one of the following: int8, uint8, int16, int32, int64.
-        ValueError: If the dimension of `LU_data` is less than 2.
-        ValueError: If the dimension of `LU_pivots` is less than 1.
-        ValueError: If the size of the last dimension of LU_pivots is not equal to the minimum of the sizes of the last
-                    two dimensions of LU_data.
-        ValueError: If the batch dimensions of LU_data's does not match LU_pivots's batch dimensions.
-        ValueError: On the CPU platform, if the value of `LU_pivots` are out of range :math:`[1, LU\_data.shape[-2])`.
-        RuntimeError: On the Ascend platform, if the value of `LU_pivots` are
-                    out of range :math:`[1, LU\_data.shape[-2])`.
+        Tuple of tensors(Pivots, L, U).
 
     Supported Platforms:
         ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> from mindspore import dtype as mstype
-        >>> LU_data = Tensor(np.array([[[-0.3806, -0.4872,  0.5536],
+        >>> import mindspore
+        >>> LU_data = mindspore.tensor([[[-0.3806, -0.4872,  0.5536],
         ...                             [-0.1287,  0.6508, -0.2396],
         ...                             [ 0.2583,  0.5239,  0.6902]],
         ...                            [[ 0.6706, -1.1782,  0.4574],
         ...                             [-0.6401, -0.4779,  0.6701],
-        ...                             [ 0.1015, -0.5363,  0.6165]]]), mstype.float64)
-        >>> LU_pivots = Tensor(np.array([[1, 3, 3],
-        ...                              [2, 3, 3]]), mstype.int32)
-        >>> pivots, L, U = ops.lu_unpack(LU_data, LU_pivots)
+        ...                             [ 0.1015, -0.5363,  0.6165]]])
+        >>> LU_pivots = mindspore.tensor(([[1, 3, 3], [2, 3, 3]]), mindspore.int32)
+        >>> pivots, L, U = mindspore.ops.lu_unpack(LU_data, LU_pivots)
         >>> print(pivots)
         [[[1. 0. 0.]
           [0. 0. 1.]
@@ -8740,53 +8693,44 @@ def matmul(input, other):
 
 def inner(input, other):
     r"""
-    Returns the inner product of two tensors.
+    Return the dot product of two 1-D tensors.
 
-    For 1-D tensors (without complex conjugation), returns the ordinary inner product of vectors.
-
-    For higher dimensions, returns a sum product over the last axis.
+    For higher dimensions, return a sum product over the last axis.
 
     Note:
          If `input` or `other` is a Tensor scalar, :func:`mindspore.ops.inner` will be the same as
          :func:`mindspore.ops.mul` .
 
     Args:
-        input (Tensor): First input.
-        other (Tensor): Second input.
+        input (Tensor): The first input.
+        other (Tensor): The second input.
 
     Returns:
-        Tensor, the result of the inner product.
-
-    Raises:
-        ValueError: If neither `input` nor `other` is scalar, and the last dimension of the two input tensors do not
-            match.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import mindspore as ms
-        >>> from mindspore import Tensor, ops
-        >>> from mindspore import dtype as mstype
-        >>> # case1: 2 1D tensors
-        >>> input = ms.Tensor([1, 2, 3], mstype.float32)
-        >>> y = ms.Tensor([4, 5, 6], mstype.float32)
-        >>> output = ops.inner(input, y)
-        >>> print(output)
-        32
+        >>> import mindspore
+        >>> # case 1: Two 1D tensors
+        >>> input = mindspore.tensor([1., 2., 3.])
+        >>> y = mindspore.tensor([4., 5., 6.])
+        >>> mindspore.ops.inner(input, y)
+        Tensor(shape=[], dtype=Float32, value= 32)
         >>> # case2: Tensor scalar and tensor
-        >>> input = ms.Tensor([[[1, 2, 3], [3, 2, 1]], [[4, 5, 6], [4, 5, 6]]], mstype.float32)
-        >>> y = ms.Tensor(2, mstype.float32)
-        >>> output = ops.inner(input, y)
+        >>> input = mindspore.tensor([[[1., 2., 3.], [3., 2., 1.]], [[4., 5., 6.], [4., 5., 6.]]])
+        >>> y = mindspore.tensor(2.)
+        >>> output = mindspore.ops.inner(input, y)
         >>> print(output)
         [[[ 2.  4.  6.]
           [ 6.  4.  2.]]
          [[ 8. 10. 12.]
           [ 8. 10. 12.]]]
         >>> # case3: Two tensors
-        >>> input = ms.Tensor([[[1, 2, 3], [3, 2, 1]], [[4, 5, 6], [4, 5, 6]]], mstype.float32)
-        >>> y = ms.Tensor([[2, 3, 4], [4, 3, 2]], mstype.float32)
-        >>> output = ops.inner(input, y)
+        >>> input = mindspore.tensor([[[1., 2., 3.], [3., 2., 1.]], [[4., 5., 6.], [4., 5., 6.]]])
+        >>> y = mindspore.tensor([[2., 3., 4.], [4., 3., 2.]])
+        >>> output = mindspore.ops.inner(input, y)
         >>> print(output)
         [[[20. 16.]
           [16. 20.]]
@@ -9294,46 +9238,36 @@ def log10(input):
 
 def kron(input, other):
     """
-    Computes the Kronecker product :math:`input ⊗ other`, denoted by ⊗, of `input` and `other`.
+    Compute the Kronecker product of two tensors.
 
-    If `input` is a :math:`(a_{0}` input :math:`a_{1}` input ... input :math:`a_{n})` Tensor
-    and `other` is a :math:`(b_{0}` input :math:`b_{1}` input ... input :math:`b_{n})` Tensor,
-    the result will be a :math:`(a_{0}*b_{0}` input :math:`a_{1}*b_{1}` input ... input :math:`a_{n}*b_{n})`
-    Tensor with the following entries:
+    If the shape of `input` is :math:`(a_{0}` input :math:`a_{1}` input ... input :math:`a_{n})`
+    and the shape of `other` is :math:`(b_{0}` input :math:`b_{1}` input ... input :math:`b_{n})` ,
+    the result will be :math:`(a_{0}*b_{0}` input :math:`a_{1}*b_{1}` input ... input :math:`a_{n}*b_{n})` .
 
     .. math::
         (input ⊗ other)_{k_{0},k_{1},...k_{n}} =
         input_{i_{0},i_{1},...i_{n}} * other_{j_{0},j_{1},...j_{n}},
 
-    where :math:`k_{t} = i_{t} * b_{t} + j_{t}` for 0 ≤ `t` ≤ `n`. If one
-    Tensor has fewer dimensions than the other it is unsqueezed
-    until it has the same number of dimensions.
+    where :math:`k_{t} = i_{t} * b_{t} + j_{t}` for 0 ≤ `t` ≤ `n`.
 
     Note:
         Supports real-valued and complex-valued inputs.
 
     Args:
-        input (Tensor): Input Tensor, has the shape :math:`(r0, r1, ... , rN)`.
-        other (Tensor): Input Tensor, has the shape :math:`(s0, s1, ... , sN)`.
+        input (Tensor): First input tensor.
+        other (Tensor): Second input tensor.
 
     Returns:
-        Tensor, has the shape :math:`(r0 * s0, r1 * s1, ... , rN * sN)`.
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
-        TypeError: If `other` is not a Tensor.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, nn
-        >>> from mindspore import ops
-        >>> input = Tensor(np.array([[0, 1, 2], [3, 4, 5]])).astype(np.float32)
-        >>> other = Tensor(np.array([[-1, -2, -3], [-4, -6, -8]])).astype(np.float32)
-        >>> output = ops.kron(input, other)
+        >>> input = mindspore.tensor([[0., 1., 2.], [3., 4., 5.]])
+        >>> other = mindspore.tensor([[-1., -2., -3.], [-4., -6., -8.]])
+        >>> output = mindspore.ops.kron(input, other)
         >>> print(output)
         [[  0.   0.   0.  -1.  -2.  -3.  -2.  -4.  -6.]
          [  0.   0.   0.  -4.  -6.  -8.  -8. -12. -16.]
@@ -9803,15 +9737,15 @@ def trapz(y, x=None, *, dx=1.0, dim=-1):
 
 def cholesky(input_x, upper=False):
     r"""
-    Returns the Cholesky decomposition of zero or more batch dimensions consisting of symmetric positive-definite
+    Return the Cholesky decomposition of zero or more batch dimensions consisting of symmetric positive-definite
     matrices.
 
-    If `upper` is `True`, returns an upper-triangular matrix, :math:`U`, and the decomposition has the form:
+    If `upper` is `True`, return an upper-triangular matrix, :math:`U`, and the decomposition has the form:
 
     .. math::
         A = U^TU
 
-    If `upper` is `False`, returns a lower-triangular matrix, :math:`L`, and the decomposition has the form:
+    If `upper` is `False`, return a lower-triangular matrix, :math:`L`, and the decomposition has the form:
 
     .. math::
         A = LL^T
@@ -9819,30 +9753,20 @@ def cholesky(input_x, upper=False):
     where `A` is the symmetric positive-definite matrix.
 
     Args:
-        input_x (Tensor): Tensor of shape :math:`(*, N, N)`, where :math:`*` is zero or more batch dimensions
-            consisting of symmetric positive-definite matrices, with float32 or float64 data type.
-        upper (bool, optional): If `upper` is `True`, returns an upper-triangular matrix. If `upper` is `False`, returns
-            a lower-triangular matrix. Default: ``False`` .
+        input_x (Tensor): The input tensor of shape :math:`(*, N, N)`, where :math:`*` is batch dimensions.
+            In the above formula, :math:`A` .
+        upper (bool, optional): Return an upper-triangular matrix or not. Default: ``False`` .
 
     Returns:
-        Tensor, has the same shape and data type as `input_x`.
-
-    Raises:
-        TypeError: If `upper` is not a bool.
-        TypeError: If dtype of `input_x` is not one of: float64, float32.
-        TypeError: If `input_x` is not a Tensor.
-        ValueError: If `input_x` is not a or a batch of square matrix.
-        ValueError: If `input_x` is not symmetric positive definite.
+        Tensor
 
     Supported Platforms:
         ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input_x = Tensor(np.array([[1.0, 1.0], [1.0, 2.0]]), mindspore.float32)
-        >>> output = ops.cholesky(input_x, upper=False)
+        >>> input_x = mindspore.tensor([[1.0, 1.0], [1.0, 2.0]])
+        >>> output = mindspore.ops.cholesky(input_x, upper=False)
         >>> print(output)
         [[1. 0.]
          [1. 1.]]
@@ -9920,38 +9844,22 @@ def cholesky_solve(input, input2, upper=False):
         This is an experimental API that is subject to change or deletion.
 
     Args:
-        input (Tensor): Tensor of shape :math:`(*, N, M)`, indicating 2D or 3D matrices,
-            with float32 or float64 data type.
-        input2 (Tensor): Tensor of shape :math:`(*, N, N)`, indicating 2D or 3D square matrices composed of
-            upper or lower triangular Cholesky factor, with float32 or float64 data type.
-            `input` and `input2` must have the same type.
-        upper (bool, optional): A flag indicates whether to treat the Cholesky factor
-            as an upper or a lower triangular matrix. Default: ``False``, treating the Cholesky factor
-            as a lower triangular matrix.
+        input (Tensor): The input tensor of shape :math:`(*, N, M)`.
+        input2 (Tensor): The tensor of shape :math:`(*, N, N)` , composed of
+            upper or lower triangular Cholesky factor.
+        upper (bool, optional): Whether to treat the Cholesky factor as an upper triangular matrix. Default ``False`` .
 
     Returns:
-        Tensor, has the same shape and data type as `input`.
-
-    Raises:
-        TypeError: If `upper` is not a bool.
-        TypeError: If dtype of `input` and `input2` is not float64 or float32.
-        TypeError: If `input` is not a Tensor.
-        TypeError: If `input2` is not a Tensor.
-        ValueError: If `input` and `input2` have different batch size.
-        ValueError: If `input` and `input2` have different row numbers.
-        ValueError: If `input` is not 2D or 3D matrices.
-        ValueError: If `input2` is not 2D or 3D square matrices.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input1 = Tensor(np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]), mindspore.float32)
-        >>> input2 = Tensor(np.array([[2, 0, 0], [4, 1, 0], [-1, 1, 2]]), mindspore.float32)
-        >>> out = ops.cholesky_solve(input1, input2, upper=False)
+        >>> input1 = mindspore.tensor([[1., 0., 0.], [0., 1., 0.], [0., 0., 1.]])
+        >>> input2 = mindspore.tensor([[2., 0., 0.], [4., 1., 0.], [-1., 1., 2.]])
+        >>> out = mindspore.ops.cholesky_solve(input1, input2, upper=False)
         >>> print(out)
         [[ 5.8125 -2.625   0.625 ]
          [-2.625   1.25   -0.25  ]

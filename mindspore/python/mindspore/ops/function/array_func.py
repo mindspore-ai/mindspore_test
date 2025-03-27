@@ -1638,35 +1638,26 @@ def searchsorted(sorted_sequence, values, *, out_int32=False, right=False, side=
 
 def ger(input, vec2):
     r"""
-    Ger product of `input` and `vec2`. Calculate the outer product of two arrays. If `input` is a 1D Tensor of
-    shape :math:`(m,)` and `vec2` is a 1D Tensor of shape :math:`(n,)`, then `output` must be a 2D Tensor of shape
-    :math:`(m, n)`.
+    Calculate the outer product of two arrays `input` and `vec2`.
 
     Note:
         Currently Ascend does not support float64 data input.
 
     Args:
-        input (Tensor): input Tensor, with dtype of float16, float32 or float64.
-        vec2 (Tensor): input Tensor, with dtype of float16, float32 or float64, must have the same dtype as `input`.
+        input (Tensor): The 1-D input tensor.
+        vec2 (Tensor): The 1-D input tensor.
 
     Returns:
-        Tensor, output matrix with the same dtype as inputs. With `input` shape :math:`(m,)` and
-        `vec2` shape of :math:`(n,)`, the `output` has shape :math:`(m, n)`.
-
-    Raises:
-        TypeError: If `input` or `vec2` is not a 1-D Tensor.
-        TypeError: If the dtype of `input` and `vec2` is not float16, float32 or float64.
-        TypeError: If the dtype of `input` and `vec2` are not the same.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import Tensor, ops
-        >>> input = Tensor([1., 2., 3., 4.], mindspore.float32)
-        >>> vec2 = Tensor([1., 2., 3.], mindspore.float32)
-        >>> output = ops.ger(input, vec2)
+        >>> input = mindspore.tensor([1., 2., 3., 4.])
+        >>> vec2 = mindspore.tensor([1., 2., 3.])
+        >>> output = mindspore.ops.ger(input, vec2)
         >>> print(output)
         [[ 1.  2.  3.]
          [ 2.  4.  6.]
