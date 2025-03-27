@@ -300,32 +300,23 @@ remainder_scalar_tensor_ = RemainderScalarTensor()
 
 def addn(x):
     """
-    Computes addition of all input tensors element-wise.
-
-    All input tensors must have the same shape.
+    Return the element-wise sum of all input tensors.
 
     Args:
-        x (Union(tuple[Tensor], list[Tensor])): A tuple or list composed of Tensor.
+        x (Union(tuple[Tensor], list[Tensor])): List of tensors or tuple of tensors.
 
     Returns:
-        Tensor, has the same shape and dtype as each Tensor of `x`.
-
-    Raises:
-        TypeError: If `x` is neither tuple nor list.
-        ValueError: If there are Tensors with different shapes in `x`.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([1, 2, 3]), mindspore.float32)
-        >>> y = Tensor(np.array([4, 5, 6]), mindspore.float32)
-        >>> output = ops.addn([x, y, x, y])
-        >>> print(output)
-        [10. 14. 18.]
+        >>> x = mindspore.tensor([1, 2, 3])
+        >>> y = mindspore.tensor([4, 5, 6])
+        >>> mindspore.ops.addn([x, y, x, y])
+        Tensor(shape=[3], dtype=Int64, value= [10, 14, 18])
     """
     return addn_(x)
 
@@ -9326,35 +9317,26 @@ def remainder_ext(input, other):
 
 def accumulate_n(x):
     r"""
-    Computes accumulation of all input tensors element-wise.
+    Return the element-wise sum of all input tensors.
 
     :func:`mindspore.ops.accumulate_n` is similar to :func:`mindspore.ops.addn`,
-    but there is a significant difference between them: accumulate_n will not wait
-    for all of its inputs to be ready before summing. That is to say, accumulate_n is able to save memory when inputs
-    are ready at different time since the minimum temporary storage is proportional to the output size rather than the
-    input size.
+    but accumulate_n will not wait for all of its inputs to be ready before summing, which is able
+    to reduce peak memory.
 
     Args:
-        x (Union(tuple[Tensor], list[Tensor])): The input tuple or list is made up of multiple tensors whose dtype is
-            number to be added together. Each element of tuple or list should have the same shape.
+        x (Union(tuple[Tensor], list[Tensor])): List of tensors or tuple of tensors.
 
     Returns:
-        Tensor, has the same shape and dtype as each entry of `x`.
-
-    Raises:
-        TypeError: If `x` is neither tuple nor list.
-        ValueError: If there is an input element with a different shape.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([1, 2, 3]), mindspore.float32)
-        >>> y = Tensor(np.array([4, 5, 6]), mindspore.float32)
-        >>> output = ops.accumulate_n([x, y, x, y])
+        >>> x = mindspore.tensor([1, 2, 3]), mindspore.float32)
+        >>> y = mindspore.tensor([4, 5, 6]), mindspore.float32)
+        >>> output = mindspore.ops.accumulate_n([x, y, x, y])
         >>> print(output)
         [10. 14. 18.]
     """
