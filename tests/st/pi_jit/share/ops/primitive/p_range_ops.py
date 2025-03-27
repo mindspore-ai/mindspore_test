@@ -20,14 +20,14 @@ class OpsRangeFactory():
         self.start = start
         self.limit = limit
         self.delta = delta
-        self.input_dtype = dtype
-        self.input_dtype = common.dtype.pytype_to_dtype(dtype)
+        self.dtype = dtype
+        self.input_dtype = common.dtype.pytype_to_dtype(self.dtype)
         self.out_grad_np = None
-        if self.input_dtype == np.float16:
+        if self.dtype == np.float16:
             self.loss = 1e-3
-        elif self.input_dtype in (np.float32, np.complex64):
+        elif self.dtype in (np.float32, np.complex64):
             self.loss = 1e-4
-        elif self.input_dtype in (np.float64, np.complex128):
+        elif self.dtype in (np.float64, np.complex128):
             self.loss = 1e-5
         else:
             self.loss = 0
