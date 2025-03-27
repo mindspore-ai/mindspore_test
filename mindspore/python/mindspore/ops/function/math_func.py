@@ -32,8 +32,8 @@ from mindspore.ops import composite as C
 from mindspore.ops.composite.multitype_ops import _constexpr_utils as const_utils
 from mindspore.ops.primitive import constexpr, _primexpr
 from mindspore.ops.operations._inner_ops import TileSize
-from mindspore.ops.auto_generate import Cummin, BatchMatMul, BernoulliExt, lin_space_ext_op, BitwiseAndScalar,\
-    BitwiseAndTensor, BitwiseOrScalar, BitwiseOrTensor, BitwiseXorScalar, BitwiseXorTensor, RemainderTensorTensor,\
+from mindspore.ops.auto_generate import Cummin, BatchMatMul, BernoulliExt, lin_space_ext_op, BitwiseAndScalar, \
+    BitwiseAndTensor, BitwiseOrScalar, BitwiseOrTensor, BitwiseXorScalar, BitwiseXorTensor, RemainderTensorTensor, \
     RemainderTensorScalar, RemainderScalarTensor, std_mean_op, var_mean_op, InplaceErfinv
 from mindspore.ops import auto_generate
 from mindspore.ops.operations.math_ops import STFT
@@ -46,7 +46,8 @@ from mindspore.ops.operations.math_ops import DivMod
 from mindspore.ops.auto_generate import multi_scale_deformable_attn_op
 from mindspore.ops.operations.array_ops import MatrixSetDiagV3, Transpose
 # 1
-from mindspore.ops.auto_generate import (minimum, maximum, mul, muls, sin, sinc, sinh, cummax, real, conj, add, sub, cos,
+from mindspore.ops.auto_generate import (minimum, maximum, mul, muls, sin, sinc, sinh, cummax, real, conj, add, sub,
+                                         cos,
                                          cosh, nan_to_num, norm_op, lp_norm_v2_op, linalg_vector_norm_op, std_op,
                                          matrix_exp, sqrt, rsqrt, square, trace, nextafter, abs, acos, acosh, angle,
                                          asin, asinh, atan, atan2, atanh, ceil, equal, erf, erfc, erfinv, exp, expm1,
@@ -289,13 +290,13 @@ bitwise_or_tensor_ = BitwiseOrTensor()
 bitwise_xor_scalar_ = BitwiseXorScalar()
 bitwise_xor_tensor_ = BitwiseXorTensor()
 
-
 #####################################
 # Element-wise Operation Functions.
 #####################################
 remainder_tensor_tensor_ = RemainderTensorTensor()
 remainder_tensor_scalar_ = RemainderTensorScalar()
 remainder_scalar_tensor_ = RemainderScalarTensor()
+
 
 def addn(x):
     """
@@ -341,83 +342,62 @@ def absolute(input):
 
 def addcdiv(input, tensor1, tensor2, value=1):
     r"""
-    Performs the element-wise division of tensor tensor1 by tensor tensor2,
-    multiply the result by the scalar value and add it to input data.
+    Divide `tensor1` by `tensor2` element-wise, multiply the result by
+    the scalar `value` , and add it to `input` .
 
     .. math::
         y[i] = input[i] + value[i] * (tensor1[i] / tensor2[i])
 
     Args:
-        input (Tensor): The tensor to be added.
-        tensor1 (Tensor): The numerator tensor.
-        tensor2 (Tensor): The denominator tensor.
-        value (Union[Tensor, Number]): The multiplier for tensor1/tensor2. Default: ``1`` .
+        input (Tensor): The input tensor.
+        tensor1 (Tensor): Tensor1, the numerator.
+        tensor2 (Tensor): Tensor2, the denominator.
+        value (Union[Tensor, number]): The multiplier for ( `tensor1` / `tensor2` ). Default ``1`` .
 
     Returns:
-        Tensor, has the same shape and dtype as tensor1/tensor2.
-
-    Raises:
-        TypeError: If dtype of `tensor1`, `tensor2`, `input` is not tensor.
-        ValueError: If `tensor1` could not be broadcast to a tensor with shape of `tensor2`.
-        ValueError: If `value` could not be broadcast to tensors with shapes of `tensor1/tensor2`.
-        ValueError: If `input` could not be broadcast to tensors with shapes of `value*(tensor1/tensor2)`.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input_data = Tensor(np.array([1, 1, 1, 1]), mindspore.float32)
-        >>> x1 = Tensor(np.array([1, 2, 3, 4]), mindspore.float32)
-        >>> x2 = Tensor(np.array([4, 3, 2, 1]), mindspore.float32)
-        >>> value = Tensor([1], mindspore.float32)
-        >>> y = ops.addcdiv(input_data, x1, x2, value)
+        >>> x = mindspore.tensor([1, 1, 1, 1], mindspore.float32)
+        >>> x1 = mindspore.tensor([1, 2, 3, 4], mindspore.float32)
+        >>> x2 = mindspore.tensor([4, 4, 2, 1], mindspore.float32)
+        >>> y = mindspore.ops.addcdiv(x, x1, x2, 0.1)
         >>> print(y)
-        [1.25      1.6666667 2.5       5.       ]
+        [1.025 1.05  1.15  1.4  ]
     """
     return addcdiv_(input, tensor1, tensor2, Tensor(value))
 
 
 def addcmul(input, tensor1, tensor2, value=1):
     r"""
-    Performs the element-wise product of tensor `tensor1` and tensor `tensor2`,
-    multiply the result by the scalar value and add it to `input`.
+    Multiply `tensor1` by `tensor2` element-wise, scale the result by
+    the scalar `value` , and add it to `input` .
 
     .. math::
         output[i] = input[i] + value[i] * (tensor1[i] * tensor2[i])
 
     Args:
-        input (Tensor): The tensor to be added.
-        tensor1 (Tensor): The tensor to be multiplied.
-        tensor2 (Tensor): The tensor to be multiplied.
-        value (Union[Tensor, Number], optional): The multiplier for tensor1*tensor2. Default: ``1`` .
+        input (Tensor): The input tensor.
+        tensor1 (Tensor): The first tensor to be multiplied.
+        tensor2 (Tensor): The second tensor to be multiplied.
+        value (Union[Tensor, number]): The multiplier for ( `tensor1` * `tensor2` ). Default ``1`` .
 
     Returns:
-        Tensor, has the same shape and dtype as tensor1*tensor2.
-
-    Raises:
-        TypeError: If dtype of `tensor1`, `tensor2`, `input` is not Tensor.
-        TypeError: If dtype of `input` is not one of: float32, float16, int32.
-        TypeError: If dtype of `tensor1` or `tensor2` is not one of: float32, float16, int32.
-        TypeError: If dtype of `value` is not one of: float32, float16, int32.
-        ValueError: If `tensor1` could not be broadcast to a tensor with shape of `tensor2`.
-        ValueError: If `value` could not be broadcast to tensors with shapes of `tensor1` * `tensor2`.
-        ValueError: If `input` could not be broadcast to tensors with shapes of `value*(tensor1*tensor2)`.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input_data = Tensor(np.array([1, 1, 1]), mindspore.float32)
-        >>> x1 = Tensor(np.array([[1], [2], [3]]), mindspore.float32)
-        >>> x2 = Tensor(np.array([[1, 2, 3]]), mindspore.float32)
-        >>> value = Tensor([1], mindspore.float32)
-        >>> y = ops.addcmul(input_data, x1, x2, value)
+        >>> x = mindspore.tensor(([1, 1, 1]), mindspore.float32)
+        >>> x1 = mindspore.tensor([[1], [2], [3]], mindspore.float32)
+        >>> x2 = mindspore.tensor([[1, 2, 3]], mindspore.float32)
+        >>> y = mindspore.ops.addcmul(x, x1, x2, 1)
         >>> print(y)
         [[ 2.  3.  4.]
          [ 3.  5.  7.]
@@ -536,6 +516,7 @@ def bincount(input, weights=None, minlength=0):
             raise ValueError('for bincount `input` and `weights` must have the same length')
         idx_mapping = weights * idx_mapping
     return reduce_sum_(idx_mapping.astype(mstype.float32), 1).ravel()
+
 
 def bucketize(input, boundaries, *, right=False):
     r"""
@@ -5143,47 +5124,37 @@ def addmm(input, mat1, mat2, *, beta=1, alpha=1):
 
 def addmv(input, mat, vec, *, beta=1, alpha=1):
     """
-    Multiplies matrix `mat` and vector `vec`. The vector `input` is added to the final result.
+    Multiply the matrix `mat` and vector `vec` , and then add the result to the `input` .
 
-    If mat is a :math:`(N, M)` tensor, vec is a 1-D tensor of size :math:`M`, then `input` must be broadcastable
-    with a 1-D tensor of size :math:`N`.In this case `out` will be 1-D tensor of size :math:`N`.
-
-    The optional values `beta` and `alpha` are the matrix-vector product between `mat` and `vec` and the scale
-    factor for the added Tensor `input` respectively. If `beta` is 0, then `input` will be ignored.
+    .. note::
+        - If mat is a :math:`(N, M)` tensor, vec is a 1-D tensor of size :math:`M`, then `input` must
+        be broadcastable with a 1-D tensor of size :math:`N`, `out` will be a 1-D tensor of size :math:`N`.
+        - If `beta` is 0, `input` will be ignored.
 
     .. math::
         output = β input + α (mat @ vec)
 
     Args:
-        input (Tensor): Vector to be added. The shape of the tensor is :math:`(N,)`.
-        mat (Tensor): The first tensor to be multiplied. The shape of the tensor is :math:`(N, M)`.
-        vec (Tensor): The second tensor to be multiplied. The shape of the tensor is :math:`(M,)`.
+        input (Tensor): The input tensor.
+        mat (Tensor): The matrix tensor to be multiplied.
+        vec (Tensor): The vector tensor to be multiplied.
 
     Keyword Args:
-        beta (scalar[int, float, bool], optional): Multiplier for `input` (β). The `beta` must be int or
-            float or bool. Default: ``1`` .
-        alpha (scalar[int, float, bool], optional): Multiplier for `mat` @ `vec` (α). The `alpha` must
-            be int or float or bool. Default: ``1`` .
+        beta (scalar[int, float, bool], optional): Scale factor for `input` . Default ``1`` .
+        alpha (scalar[int, float, bool], optional): Scale factor for ( `mat` @ `vec` ). Default ``1`` .
 
     Returns:
-        Tensor, the shape of the output tensor is :math:`(N,)`, has the same dtype as `input`.
-
-    Raises:
-        TypeError: If `mat`, `vec`, `input` is not a Tensor.
-        TypeError: If inputs `mat`, `vec` are not the same dtype.
-        ValueError: If `mat` is not a 2-D Tensor.
-        ValueError: If `vec` is not a 1-D Tensor.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input = Tensor(np.array([2., 3.]).astype(np.float32))
-        >>> mat = Tensor(np.array([[2., 5., 3.], [4., 2., 2.]]).astype(np.float32))
-        >>> vec = Tensor(np.array([3., 2., 4.]).astype(np.float32))
-        >>> output = ops.addmv(input, mat, vec)
+        >>> import mindspore
+        >>> input = mindspore.tensor([2., 3.])
+        >>> mat = mindspore.tensor([[2., 5., 3.], [4., 2., 2.]])
+        >>> vec = mindspore.tensor([3., 2., 4.])
+        >>> output = mindspore.ops.addmv(input, mat, vec)
         >>> print(output)
         [30. 27.]
     """
@@ -13215,7 +13186,7 @@ def gmm_v2(x, weight, *, bias=None, group_list=None, group_type=0, group_list_ty
         >>> [10, 8]
     """
     return grouped_matmul_v4(x, weight, bias=bias, group_list=group_list, split_item=3,
-                              group_type=group_type, group_list_type=group_list_type, act_type=0)
+                             group_type=group_type, group_list_type=group_list_type, act_type=0)
 
 
 def gmm_v2_backward(grad, x, weight, *, group_list=None, group_list_type=0):
