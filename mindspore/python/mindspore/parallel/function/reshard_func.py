@@ -13,7 +13,6 @@
 # limitations under the License.
 # ============================================================================
 """Defines parameter operators with functional form."""
-import mindspore as ms
 from mindspore import context, ops
 from mindspore import log as logger
 from mindspore.ops import operations as P
@@ -201,11 +200,11 @@ def _redistribute(tensor, dst_dtensor_info):
             if not comm_tensor_data_func._current_rank_has_data:
                 new_tensor_shape = tuple([tensor_data.shape[i] // tensor._dtensor_info.sharding_strategy[i]
                                           for i in range(len(tensor.shape))])
-                tensor_data = comm_tensor_data_func.comm_data(ops.zeros(new_tensor_shape, tensor.dtype))
+                tensor_data = ops.zeros(new_tensor_shape, tensor.dtype)
+                _ = comm_tensor_data_func.comm_data(tensor_data)
             else:
-                tensor_data = comm_tensor_data_func.comm_data(tensor)
+                _ = comm_tensor_data_func.comm_data(tensor_data)
             all_reduce_data = True
-    ms.communication.comm_func.barrier()
     if src_layout_info['device_matrix'] == dst_layout_info['device_matrix'] and src_layout_info['tensor_map'] == \
             dst_layout_info['tensor_map']:
         return tensor_data

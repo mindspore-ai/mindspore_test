@@ -257,12 +257,13 @@ class CommTensorDataForPP(Cell):
         self._current_rank_has_data = self._current_rank_id in src_dtensor_info.layout.to_dict()["rank_list"]
         self._diff_rank_id = [
             rank_id for rank_id in dst_dtensor_info.layout.to_dict()["rank_list"] if rank_id not in self._from_rank_id]
-        self.all_reduce = P.AllReduce(group=self._create_all_reduce_group())
+        self._group, self._root_idx = self._create_all_reduce_group()
 
     def comm_data(self, comm_data):
         """communicate data"""
-        out_tensor = self.all_reduce(comm_data)
-        return out_tensor
+        from mindspore import mint
+        comm_handle = mint.distributed.broadcast(comm_data, self._root_idx, self._group, async_op=False)
+        return comm_handle
 
     def _create_all_reduce_group(self):
         """create all reduce group"""
@@ -271,6 +272,7 @@ class CommTensorDataForPP(Cell):
         end_stage = self._from_dev_num_in_stage * (current_rank_stage_id + 1)
         rank_pos_in_stage = [rank_id for rank_id in range(self._from_dev_num_in_stage * current_rank_stage_id,
                                                           end_stage)].index(self._current_rank_id)
+        root_idx = self._from_rank_id[rank_pos_in_stage]
         all_reduce_rank_list = [self._from_rank_id[rank_pos_in_stage]]
         while rank_pos_in_stage < len(self._diff_rank_id):
             all_reduce_rank_list.append(self._diff_rank_id[rank_pos_in_stage])
@@ -279,11 +281,11 @@ class CommTensorDataForPP(Cell):
         str_rank_list = '-'.join([str(rank) for rank in all_reduce_rank_list])
         all_reduce_group = f"pp_allreduce_group-{str_rank_list}"
         if all_reduce_group in ALLREDUCE_GROUP_LIST:
-            return all_reduce_group
+            return all_reduce_group, root_idx
         ALLREDUCE_GROUP_LIST.append(all_reduce_group)
         create_group(all_reduce_group, all_reduce_rank_list)
         logger.debug(f"Create group {all_reduce_group} for tensor data communication.")
-        return all_reduce_group
+        return all_reduce_group, root_idx
 
 
 class RedistributionCell(Cell):
