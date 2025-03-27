@@ -852,29 +852,21 @@ class Rank(Primitive):
 
 def rank(input_x):
     """
-    Returns the rank of a tensor.
-
-    Returns a 0-D int32 Tensor representing the rank of input; the rank of a tensor
-    is the number of indices required to uniquely select each element of the tensor.
+    Return the rank of a tensor.
 
     Args:
-        input_x (Tensor): The shape of tensor is :math:`(x_1, x_2, ..., x_R)`. The data type is Number.
+        input_x (Tensor): The input tensor.
 
     Returns:
-        Tensor. 0-D int32 Tensor representing the rank of input, i.e., :math:`R`. The data type is an int.
-
-    Raises:
-        TypeError: If `input_x` is not a Tensor.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input_tensor = Tensor(np.array([[2, 2], [2, 2]]), mindspore.float32)
-        >>> output = ops.rank(input_tensor)
+        >>> input_tensor = mindspore.tensor([[2, 2], [2, 2]], mindspore.float32)
+        >>> output = mindspore.ops.rank(input_tensor)
         >>> print(output)
         2
         >>> print(type(output))

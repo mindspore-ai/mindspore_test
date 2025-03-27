@@ -1752,64 +1752,53 @@ def dyn_shape(input_x):
 
 def reverse_sequence(x, seq_lengths, seq_dim, batch_dim=0):
     r"""
-    Reverses variable length slices.
+    Partially reverse the input sequence.
 
     Args:
-        x (Tensor): The input to reverse, supporting all number types including bool.
-        seq_lengths (Tensor): Specified reversing length, must be a 1-D vector with int32 or int64 types.
-        seq_dim (int): The dimension where reversal is performed. Required.
-        batch_dim (int): The input is sliced in this dimension. Default: ``0`` .
+        x (Tensor): The input tensor.
+        seq_lengths (Tensor): The specified reversing length.
+        seq_dim (int): The specified dimension for reversal.
+        batch_dim (int): The specified slice dimension. Default ``0`` .
 
     Returns:
-        Tensor, with the same shape and data type as `x`.
-
-    Raises:
-        TypeError: If `seq_dim` or `batch_dim` is not an int.
-        ValueError: If :math:`len(seq\_lengths) != x.shape[batch\_dim]`.
-        ValueError: If :math:`batch\_dim == seq\_dim`.
-        ValueError: If :math:`seq\_dim < 0` or :math:`seq\_dim >= len(x.shape)`.
-        ValueError: If :math:`batch\_dim < 0` or :math:`batch\_dim >= len(x.shape)`.
-        RuntimeError: If any value of `seq_lengths` is less than 0.
-        RuntimeError: If any value of `seq_lengths` is larger than `x.shape[seq_dim]`.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]), mindspore.float32)
-        >>> seq_lengths = Tensor(np.array([1, 2, 3]))
-        >>> output = ops.reverse_sequence(x, seq_lengths, seq_dim=1)
+        >>> x = mindspore.tensor([[1, 2, 3], [4, 5, 6], [7, 8, 9]], mindspore.float32)
+        >>> seq_lengths = mindspore.tensor([1, 2, 3])
+        >>> output = mindspore.ops.reverse_sequence(x, seq_lengths, seq_dim=1)
         >>> print(output)
         [[1. 2. 3.]
          [5. 4. 6.]
          [9. 8. 7.]]
-        >>> x = Tensor(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]), mindspore.float32)
-        >>> seq_lengths = Tensor(np.array([1, 2, 3]))
-        >>> output = ops.reverse_sequence(x, seq_lengths, seq_dim=0, batch_dim=1)
+        >>> x = mindspore.tensor([[1, 2, 3], [4, 5, 6], [7, 8, 9]], mindspore.float32)
+        >>> seq_lengths = mindspore.tensor([1, 2, 3])
+        >>> output = mindspore.ops.reverse_sequence(x, seq_lengths, seq_dim=0, batch_dim=1)
         >>> print(output)
         [[1. 5. 9.]
          [4. 2. 6.]
          [7. 8. 3.]]
-        >>> x = Tensor(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]), mindspore.float32)
-        >>> seq_lengths = Tensor(np.array([2, 2, 3]))
-        >>> output = ops.reverse_sequence(x, seq_lengths, seq_dim=1)
+        >>> x = mindspore.tensor([[1, 2, 3], [4, 5, 6], [7, 8, 9]], mindspore.float32)
+        >>> seq_lengths = mindspore.tensor([2, 2, 3])
+        >>> output = mindspore.ops.reverse_sequence(x, seq_lengths, seq_dim=1)
         >>> print(output)
         [[2. 1. 3.]
          [5. 4. 6.]
          [9. 8. 7.]]
-        >>> x = Tensor(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]), mindspore.float32)
-        >>> seq_lengths = Tensor(np.array([3, 2, 3]))
-        >>> output = ops.reverse_sequence(x, seq_lengths, seq_dim=1)
+        >>> x = mindspore.tensor([[1, 2, 3], [4, 5, 6], [7, 8, 9]], mindspore.float32)
+        >>> seq_lengths = mindspore.tensor([3, 2, 3])
+        >>> output = mindspore.ops.reverse_sequence(x, seq_lengths, seq_dim=1)
         >>> print(output)
         [[3. 2. 1.]
          [5. 4. 6.]
          [9. 8. 7.]]
-        >>> x = Tensor(np.array([[1, 2, 3, 4], [5, 6, 7, 8]]), mindspore.float32)
-        >>> seq_lengths = Tensor(np.array([4, 4]))
-        >>> output = ops.reverse_sequence(x, seq_lengths, seq_dim=1)
+        >>> x = mindspore.tensor([[1, 2, 3, 4], [5, 6, 7, 8]], mindspore.float32)
+        >>> seq_lengths = mindspore.tensor([4, 4])
+        >>> output = mindspore.ops.reverse_sequence(x, seq_lengths, seq_dim=1)
         >>> print(output)
         [[4. 3. 2. 1.]
          [8. 7. 6. 5.]]
@@ -3336,53 +3325,42 @@ def scatter(input, axis, index, src):
     Refer to :func:`mindspore.ops.tensor_scatter_elements` for more details.
 
     .. note::
-        The backward is supported only for the case `src.shape == index.shape`.
+        If `src` is a tensor, the backward is supported only for the case `src.shape == index.shape`.
 
     Args:
-        input (Tensor): The target tensor. The rank of `input` must be at least 1.
-        axis (int): Which axis to scatter. Accepted range is [-r, r) where r = rank(input).
-        index (Tensor): The index to do update operation whose data must be positive number with type of mindspore.int32
-            or mindspore.int64. Same rank as `input` . And accepted range is [-s, s) where s is the size along axis.
-        src (Tensor, float): The data doing the update operation with `input`. Can be a tensor with the same data type
-            as `input` or a float number to scatter.
+        input (Tensor): The input tensor.
+        axis (int): The axis to do update operation.
+        index (Tensor): The index to do update operation.
+        src (Tensor, float): The data to do the update operation with `input` .
 
     Returns:
-        The backward is supported only for the case `src.shape == index.shape` when `src` is a tensor.
-
-    Raises:
-        TypeError: If `index` is neither int32 nor int64.
-        ValueError: If rank of any of `input` , `index` and `src` less than 1.
-        ValueError: If the rank of `src` is not equal to the rank of `input` .
-        TypeError: If the data type of `input` and `src` have different dtypes.
-        RuntimeError: If `index` has negative elements.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> import mindspore as ms
-        >>> from mindspore import Tensor, ops
-        >>> input = Tensor(np.array([[1, 2, 3, 4, 5]]), dtype=ms.float32)
-        >>> src = Tensor(np.array([[8, 8]]), dtype=ms.float32)
-        >>> index = Tensor(np.array([[2, 4]]), dtype=ms.int64)
-        >>> out = ops.scatter(input=input, axis=1, index=index, src=src)
+        >>> import mindspore
+        >>> input = mindspore.tensor([[1, 2, 3, 4, 5]], dtype=mindspore.float32)
+        >>> src = mindspore.tensor([[8, 8]], dtype=mindspore.float32)
+        >>> index = mindspore.tensor([[2, 4]], dtype=mindspore.int64)
+        >>> out = mindspore.ops.scatter(input=input, axis=1, index=index, src=src)
         >>> print(out)
         [[1. 2. 8. 4. 8.]]
-        >>> input = Tensor(np.zeros((5, 5)), dtype=ms.float32)
-        >>> src = Tensor(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]), dtype=ms.float32)
-        >>> index = Tensor(np.array([[0, 0, 0], [2, 2, 2], [4, 4, 4]]), dtype=ms.int64)
-        >>> out = ops.scatter(input=input, axis=0, index=index, src=src)
+        >>> input = mindspore.tensor(mindspore.ops.zeros((5, 5)), dtype=mindspore.float32)
+        >>> src = mindspore.tensor([[1, 2, 3], [4, 5, 6], [7, 8, 9]], dtype=mindspore.float32)
+        >>> index = mindspore.tensor([[0, 0, 0], [2, 2, 2], [4, 4, 4]], dtype=mindspore.int64)
+        >>> out = mindspore.ops.scatter(input=input, axis=0, index=index, src=src)
         >>> print(out)
         [[1. 2. 3. 0. 0.]
         [0. 0. 0. 0. 0.]
         [4. 5. 6. 0. 0.]
         [0. 0. 0. 0. 0.]
         [7. 8. 9. 0. 0.]]
-        >>> input = Tensor(np.zeros((5, 5)), dtype=ms.float32)
-        >>> src = Tensor(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]), dtype=ms.float32)
-        >>> index = Tensor(np.array([[0, 2, 4], [0, 2, 4], [0, 2, 4]]), dtype=ms.int64)
-        >>> out = ops.scatter(input=input, axis=1, index=index, src=src)
+        >>> input = mindspore.tensor(mindspore.ops.zeros((5, 5)), dtype=mindspore.float32)
+        >>> src = mindspore.tensor([[1, 2, 3], [4, 5, 6], [7, 8, 9]], dtype=mindspore.float32)
+        >>> index = mindspore.tensor([[0, 2, 4], [0, 2, 4], [0, 2, 4]], dtype=mindspore.int64)
+        >>> out = mindspore.ops.scatter(input=input, axis=1, index=index, src=src)
         >>> print(out)
         [[1. 0. 2. 0. 3.]
         [4. 0. 5. 0. 6.]
@@ -3542,28 +3520,22 @@ def select_scatter(input, src, axis, index):
     On the specified dimension `axis` of `input` , `src` is scattered into `input` on the specified `index` of `input` .
 
     Args:
-        input (Tensor): The target Tensor.
-        src (Tensor): The source Tensor.
+        input (Tensor): The input tensor.
+        src (Tensor): The source tensor.
         axis (int): The dimension of `input` to be embedded.
         index (int): The location of scattering on the specified dimension.
 
     Returns:
-        Tensor after embedding, has the same shape and type as `input` .
-
-    Raises:
-        ValueError: The shape of `src` is not the same as the shape scattered over `input` .
-        TypeError: If `input` is not a Tensor.
-        TypeError: If `src` is not a Tensor.
-        TypeError: If `axis` or `index` is not an integer.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import mindspore as ms
-        >>> a = ms.ops.zeros((2, 3, 3))
-        >>> b = ms.ops.ones((2, 3))
-        >>> output = ms.ops.select_scatter(a, b, axis=1, index=1)
+        >>> import mindspore
+        >>> input = mindspore.ops.zeros((2, 3, 3))
+        >>> src = mindspore.ops.ones((2, 3))
+        >>> output = mindspore.ops.select_scatter(input, src, axis=1, index=1)
         >>> print(output)
         [[[0. 0. 0.]
           [1. 1. 1.]
@@ -4423,29 +4395,21 @@ def index_select(input, axis, index):
 
 def population_count(input_x):
     r"""
-    Computes element-wise population count(a.k.a bitsum, bitcount).
-    For each entry in `input_x`, calculates the number of 1 bits in the binary representation of that entry.
+    Calculate the number of 1 bits in the binary representation of each element in the input tensor.
 
     Args:
-        input_x (Tensor): Tensor of any dimension. The data type must be int16 or uint16 (Ascend).
-            The data type must be int8, int16, int32, int64, uint8, uint16, uint32, uint64 (CPU and GPU).
+        input_x (Tensor): The input tensor.
 
     Returns:
-        Tensor, with the same shape as the input, and the data type is uint8.
-
-    Raises:
-        TypeError: If `input_x` is not a Tensor.
-        TypeError: If dtype of `input_x` is not int16, uint16 (Ascend).
-        TypeError: If dtype of `input_x` is not int8, int16, int32, int64, uint8, uint16, uint32, uint64 (CPU and GPU).
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import Tensor, ops
-        >>> input_x = Tensor([0, 1, 3], mindspore.int16)
-        >>> output = ops.population_count(input_x)
+        >>> input_x = mindspore.tensor([0, 1, 3], mindspore.int16)
+        >>> output = mindspore.ops.population_count(input_x)
         >>> print(output)
         [0 1 2]
     """
@@ -5703,36 +5667,28 @@ def aminmax(input, *, axis=0, keepdims=False):
 
 def narrow(input, axis, start, length):
     """
-    Obtains a tensor of a specified length at a
-    specified start position along a specified axis.
+    Slice the tensor from the `start` position with a length of `length` along `axis` .
 
     Args:
-        input (Tensor): the tensor to narrow.
-        axis (int): the axis along which to narrow.
-        start (int): the starting dimension.
-        length (int): the distance to the ending dimension.
+        input (Tensor): The input tensor.
+        axis (int): the specified axis.
+        start (int): the specified starting position.
+        length (int): the specified length.
 
     Returns:
-        Tensor.
-
-        - output (Tensors) - The narrowed tensor.
-
-    Raises:
-        TypeError: If the input is not a tensor or tuple or list of tensors.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import ops
-        >>> from mindspore import Tensor
-        >>> x = Tensor([[1, 2, 3], [4, 5, 6], [7, 8, 9]], mindspore.int32)
-        >>> output = ops.narrow(x, 0, 0, 2)
+        >>> x = mindspore.tensor([[1, 2, 3], [4, 5, 6], [7, 8, 9]], mindspore.int32)
+        >>> output = mindspore.ops.narrow(x, 0, 0, 2)
         >>> print(output)
         [[ 1 2 3]
          [ 4 5 6]]
-        >>> output = ops.narrow(x, 1, 1, 2)
+        >>> output = mindspore.ops.narrow(x, 1, 1, 2)
         >>> print(output)
         [[ 2 3]
          [ 5 6]
@@ -6214,55 +6170,42 @@ def nonzero(input, *, as_tuple=False):
     Return the positions of all non-zero values.
 
     Args:
-        input (Tensor): The input Tensor.
+        input (Tensor): The input tensor.
 
-            - Ascend: its rank can be equal to 0 except O2 mode.
-            - CPU/GPU: its rank should be greater than or eaqual to 1.
+    .. note::
+        - Ascend: Rank of Input tensor can be equal to 0 except jit level O2 mode.
+        - CPU/GPU: Rank of Input tensor should be greater than or eaqual to 1.
 
     Keyword Args:
-        as_tuple (bool, optional): Whether the output is tuple.
-            If ``False`` , return Tensor. Default: ``False`` .
-            If ``True`` , return Tuple of Tensor, only support ``Ascend`` .
+        as_tuple (bool, optional): Whether the output is tuple. Default ``False`` .
 
     Returns:
-        - If `as_tuple` is ``False``, return the Tensor, a 2-D Tensor whose data type is int64,
-          containing the positions of all non-zero values of the input.
-        - If `as_tuple` is ``True``, return the Tuple of Tensor and data type is int64.
-          The Tuple length is the dimension of the input tensor,
-          and each element is the 1D tensor of the subscript of all non-zero elements of
-          the input tensor in that dimension.
-
-    Raises:
-        TypeError: If `input` is not Tensor.
-        TypeError: If `as_tuple` is not bool.
-        RuntimeError: On GPU or CPU or Ascend O2 mode, if dim of `input` equals to 0.
+        Tensor or tuple of tensors
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([[[1,  0], [-5, 0]]]), mindspore.int32)
-        >>> output = ops.nonzero(x)
+        >>> x = mindspore.tensor([[[1,  0], [-5, 0]]], mindspore.int32)
+        >>> output = mindspore.ops.nonzero(x)
         >>> print(output)
         [[0 0 0]
          [0 1 0]]
-        >>> x = Tensor(np.array([1, 0, 2, 0, 3]), mindspore.int32)
-        >>> output = ops.nonzero(x, as_tuple=False)
+        >>> x = mindspore.tensor([1, 0, 2, 0, 3], mindspore.int32)
+        >>> output = mindspore.ops.nonzero(x, as_tuple=False)
         >>> print(output)
         [[0]
          [2]
          [4]]
-        >>> x = Tensor(np.array([[[1,  0], [-5, 0]]]), mindspore.int32)
-        >>> output = ops.nonzero(x, as_tuple=True)
+        >>> x = mindspore.tensor([[[1,  0], [-5, 0]]], mindspore.int32)
+        >>> output = mindspore.ops.nonzero(x, as_tuple=True)
         >>> print(output)
         (Tensor(shape=[2], dtype=Int64, value=[0, 0]),
          Tensor(shape=[2], dtype=Int64, value=[0, 1]),
          Tensor(shape=[2], dtype=Int64, value=[0, 0]))
-        >>> x = Tensor(np.array([1, 0, 2, 0, 3]), mindspore.int32)
-        >>> output = ops.nonzero(x, as_tuple=True)
+        >>> x = mindspore.tensor([1, 0, 2, 0, 3], mindspore.int32)
+        >>> output = mindspore.ops.nonzero(x, as_tuple=True)
         >>> print(output)
         (Tensor(shape=[3], dtype=Int64, value=[0, 2, 4]), )
     """
@@ -6442,41 +6385,29 @@ def _get_moved_perm(ndim, source, destination):
 
 def movedim(x, source, destination):
     """
-    Moves axis of an array from source to destination.
-
-    Other axis remain in their original order.
+    Swap two dimensions of the input tensor.
 
     Args:
-        x (Tensor): The tensor array whose axis should be reordered.
-            The dimension of `x` must not be 0.
-        source (Union[int, sequence[int]]): Original positions of the
-            axis to move. The length of `source` and `destination` must be the same.
-        destination (Union[int, sequence[int]]): Destination positions
-            for each of the original axis. The length of `source` and `destination` must be the same.
+        x (Tensor): The input tensor.
+        source (Union[int, sequence[int]]): Original dimensions.
+        destination (Union[int, sequence[int]]): Destination positions for each of the original dimensions.
 
     Returns:
-        Tensor, array with moved axis.
-
-    Raises:
-        ValueError: If axis are out of the range of `[-x.ndim, x.ndim)`, or
-            if the axis contain duplicates.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> # case1 : moving single axis
-        >>> from mindspore import ops, Tensor
-        >>> import numpy as np
-        >>> x = Tensor(np.zeros((3, 4, 5)))
-        >>> output = ops.movedim(x, 0, -1)
+        >>> import mindspore
+        >>> x = mindspore.tensor(mindspore.ops.zeros((3, 4, 5)))
+        >>> output = mindspore.ops.movedim(x, 0, -1)
         >>> print(output.shape)
         (4, 5, 3)
         >>> # case 2 : moving multiple axes
-        >>> from mindspore import ops, Tensor
-        >>> import numpy as np
-        >>> x = Tensor(np.zeros((3, 4, 5)))
-        >>> output = ops.movedim(x, (0, 2), (1, 2))
+        >>> x = mindspore.tensor(mindspore.ops.zeros((3, 4, 5)))
+        >>> output = mindspore.ops.movedim(x, (0, 2), (1, 2))
         >>> print(output.shape)
         (4, 3, 5)
     """
@@ -6493,7 +6424,7 @@ def movedim(x, source, destination):
 
 def moveaxis(x, source, destination):
     """
-    Alias for `ops.movedim`. Moves axis of an array from source to destination.
+    Move axis of an array from source to destination.
 
     Refer to :func:`mindspore.ops.movedim` for more detail.
 
@@ -6501,10 +6432,9 @@ def moveaxis(x, source, destination):
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> from mindspore import ops, Tensor
-        >>> import numpy as np
-        >>> x = Tensor(np.zeros((3, 4, 5)))
-        >>> output = ops.moveaxis(x, 0, -1)
+        >>> import mindspore
+        >>> x = mindspore.ops.zeros((3, 4, 5))
+        >>> output = mindspore.ops.moveaxis(x, 0, -1)
         >>> print(output.shape)
         (4, 5, 3)
     """
@@ -6633,31 +6563,33 @@ def repeat_interleave(input, repeats, axis=None):
     Repeat elements of a tensor along an axis, like :func:`mindspore.numpy.repeat`.
 
     Args:
-        input (Tensor): The tensor to repeat values for. Must be of type: float16,
-            float32, int8, uint8, int16, int32, or int64.
+        input (Tensor): The input tensor.
         repeats (Union[int, tuple, list, Tensor]): The number of times to repeat, must be positive.
-        axis (int, optional): The axis along which to repeat, Default: ``None``. if dims is None,
-            the input Tensor will be flattened and the output will alse be flattened.
+        axis (int, optional): The axis along which to repeat, Default ``None``. if dims is None,
+            both the input and output tensors will be flattened into 1-D.
 
     Returns:
-        One tensor with values repeated along the specified axis. If input has shape
-        :math:`(s1, s2, ..., sn)` and axis is i, the output will have shape :math:`(s1, s2, ...,
-        si * repeats, ..., sn)`. The output type will be the same as the type of `input`.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input = Tensor(np.array([[0, 1, 2], [3, 4, 5]]), mindspore.int32)
-        >>> output = ops.repeat_interleave(input, repeats=2, axis=0)
+        >>>  # case 1 : repeat on axis 0
+        >>> input = mindspore.tensor([[0, 1, 2], [3, 4, 5]], mindspore.int32)
+        >>> output = mindspore.ops.repeat_interleave(input, repeats=2, axis=0)
         >>> print(output)
         [[0 1 2]
          [0 1 2]
          [3 4 5]
          [3 4 5]]
+        >>>  # case 2 : repeat on axis 1
+        >>> input = mindspore.tensor([[0, 1, 2], [3, 4, 5]], mindspore.int32)
+        >>> output = mindspore.ops.repeat_interleave(input, repeats=2, axis=1)
+        >>> print(output)
+        [[0 0 1 1 2 2]
+        [3 3 4 4 5 5]]
     """
     if axis is None:
         input = input.reshape(-1)
@@ -6744,37 +6676,29 @@ def repeat_elements(x, rep, axis=0):
         a maximum of 8, and get better performance.
 
     Args:
-        x (Tensor): The tensor to repeat values for. Must be of type: float16, float32, int8, uint8, int16, int32,
-            or int64. The rank of `x` must be less than or equal to 7.
+        x (Tensor): The input tensor.
         rep (int): The number of times to repeat, must be positive.
-        axis (int): The axis along which to repeat. Default: 0.
+        axis (int): The axis along which to repeat. Default 0.
 
     Returns:
-        One tensor with values repeated along the specified axis. If x has shape
-        :math:`(s1, s2, ..., sn)` and axis is i, the output will have shape :math:`(s1, s2, ..., si * rep, ..., sn)`.
-        The output type will be the same as the type of `x`.
-
-    Raises:
-        ValueError: If the rank of `x` is greater than 7.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
         >>> # case 1 : repeat on axis 0
-        >>> x = Tensor(np.array([[0, 1, 2], [3, 4, 5]]), mindspore.int32)
-        >>> output = ops.repeat_elements(x, rep = 2, axis = 0)
+        >>> x = mindspore.tensor([[0, 1, 2], [3, 4, 5]], mindspore.int32)
+        >>> output = mindspore.ops.repeat_elements(x, rep = 2, axis = 0)
         >>> print(output)
         [[0 1 2]
          [0 1 2]
          [3 4 5]
          [3 4 5]]
         >>> # case 2 : repeat on axis 1
-        >>> x = Tensor(np.array([[0, 1, 2], [3, 4, 5]]), mindspore.int32)
-        >>> output = ops.repeat_elements(x, rep = 2, axis = 1)
+        >>> x = mindspore.tensor([[0, 1, 2], [3, 4, 5]], mindspore.int32)
+        >>> output = mindspore.ops.repeat_elements(x, rep = 2, axis = 1)
         >>> print(output)
         [[0 0 1 1 2 2]
          [3 3 4 4 5 5]]
@@ -6807,41 +6731,35 @@ def sequence_mask(lengths, maxlen=None):
         lengths (Tensor): Tensor to calculate the mask for. All values in this tensor should be
             less than or equal to `maxlen`. Values greater than `maxlen` will be treated as `maxlen`.
         maxlen (int): size of the last dimension of returned tensor. Must be positive and same
-            type as elements in `lengths`. Default is ``None`` .
+            type as elements in `lengths`. Default ``None`` .
 
     Returns:
-        One mask tensor of shape `lengths.shape + (maxlen,)` .
-
-    Raises:
-        TypeError: If `lengths` is not a Tensor.
-        TypeError: If `maxlen` is not an int.
-        TypeError: If dtype of `lengths` is neither int32 nor int64.
+        Tensor, shape is `lengths.shape + (maxlen,)` .
 
     Supported Platforms:
         ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
+        >>> import mindspore
         >>> # case 1: When maxlen is assigned
-        >>> x = Tensor(np.array([1, 2, 3, 4]))
-        >>> output = ops.sequence_mask(x, 5)
+        >>> x = mindspore.tensor([1, 2, 3, 4])
+        >>> output = mindspore.ops.sequence_mask(x, 5)
         >>> print(output)
         [[ True False False False False]
          [ True  True False False False]
          [ True  True  True False False]
          [ True  True  True  True False]]
         >>> # case 2: When there is 0 in x
-        >>> x = Tensor(np.array([[1, 3], [2, 0]]))
-        >>> output = ops.sequence_mask(x, 5)
+        >>> x = mindspore.tensor([[1, 3], [2, 0]])
+        >>> output = mindspore.ops.sequence_mask(x, 5)
         >>> print(output)
         [[[ True False False False False]
           [ True  True  True False False]]
          [[ True  True False False False]
           [False False False False False]]]
         >>> # case 3: when the maxlen is not assigned
-        >>> x = Tensor(np.array([[1, 3], [2, 4]]))
-        >>> output = ops.sequence_mask(x)
+        >>> x = mindspore.tensor([[1, 3], [2, 4]])
+        >>> output = mindspore.ops.sequence_mask(x)
         >>> print(output)
         [[[ True False False False ]
           [ True  True  True False ]]
