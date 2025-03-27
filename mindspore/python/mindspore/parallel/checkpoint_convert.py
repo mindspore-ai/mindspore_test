@@ -46,6 +46,9 @@ def rank_list_for_convert(rank_id, src_strategy_file=None, dst_strategy_file=Non
         TypeError: `src_strategy_file` or `dst_strategy_file` is not a string.
         TypeError: `rank_id` is not an int.
 
+    Supported Platforms:
+        ``Ascend``
+
     Examples:
         >>> from mindspore.parallel import rank_list_for_convert
         >>> rank_id = 0
@@ -87,6 +90,9 @@ def convert_checkpoint_by_rank(rank_id, checkpoint_files_map, save_checkpoint_fi
         TypeError: `src_strategy_file` or `dst_strategy_file` is not a string.
         TypeError: `rank_id` is not an int.
         TypeError: `save_checkpoint_file_name` is not a string.
+
+    Supported Platforms:
+        ``Ascend``
 
     Examples:
         >>> from mindspore.parallel import rank_list_for_convert, convert_checkpoint_by_rank
@@ -139,6 +145,9 @@ def convert_checkpoints(src_checkpoints_dir, dst_checkpoints_dir, ckpt_prefix, s
         NotADirectoryError: `src_checkpoints_dir` or `dst_checkpoints_dir` is not a directory.
         ValueError: The checkpoint file is missing in `src_checkpoints_dir`.
         TypeError: `src_strategy_file` or `dst_strategy_file` is not a string.
+
+    Supported Platforms:
+        ``Ascend``
 
     Examples:
         >>> from mindspore.parallel import convert_checkpoints
