@@ -567,6 +567,7 @@ Dropout函数
     :nosignatures:
     :template: classtemplate.rst
 
+    mindspore.mint.nn.functional.cross_entropy
     mindspore.mint.nn.functional.binary_cross_entropy
     mindspore.mint.nn.functional.binary_cross_entropy_with_logits
     mindspore.mint.nn.functional.kl_div

@@ -25,7 +25,6 @@ from mindspore import mint
 
 _optim_adamw_opt = C.MultitypeFuncGraph("optim_adamw_opt")
 hyper_map = C.HyperMap()
-assign_add = P.AssignAdd()
 
 
 @_optim_adamw_opt.register("Float", "Float", "Float", "Tensor", "Tensor", "Tensor", "Tensor",
@@ -44,7 +43,7 @@ def _run_optim_adamw_amsgrad_opt(beta1, beta2, eps, neg_step_size, sqrt_bias_cor
     delta_param = mint.mul(F.cast(neg_step_size, max_exp_avg_sq.dtype), mint.div(exp_avg_tmp, denom))
     F.assign(exp_avg, exp_avg_tmp)
     F.assign(exp_avg_sq, exp_avg_sq_tmp)
-    assign_add(parameters, delta_param)
+    parameters += delta_param
     return success
 
 
@@ -62,7 +61,7 @@ def _run_optim_adamw_opt(beta1, beta2, eps, neg_step_size, sqrt_bias_correction2
     delta_param = mint.mul(F.cast(neg_step_size, exp_avg_sq_tmp.dtype), mint.div(exp_avg_tmp, denom))
     F.assign(exp_avg, exp_avg_tmp)
     F.assign(exp_avg_sq, exp_avg_sq_tmp)
-    assign_add(parameters, delta_param)
+    parameters += delta_param
     return success
 
 

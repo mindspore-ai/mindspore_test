@@ -7931,7 +7931,7 @@ class ApplyAdamWithAmsgradV2(Primitive):
 
     Args:
         use_locking (bool): If ``True`` , updating of the `var`, `m`, and `v` tensors will
-            be protected by a lock; Otherwise the behavior is undefined, but may exhibit less contention.
+            be protected by a lock; Otherwise some contention may occur.
             Default: ``False`` .
 
     Inputs:
