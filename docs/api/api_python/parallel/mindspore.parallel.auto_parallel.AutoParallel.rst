@@ -217,22 +217,25 @@
             - **ValueError** - `scheduler` 的类型非支持。
 
     .. py:method:: enable_gradients_mean()
+
         开启后，在并行模式下，对梯度执行allreduce操作后的mean操作。
 
     .. py:method:: disable_gradient_fp32_sync()
+
         开启后，关闭梯度间的fp32通信。
 
     .. py:method:: disable_loss_repeated_mean()
+
         开启后，loss在多卡重复计算时，均值运算符不会向后执行。
 
-    .. py:method:: hsdp(shard_size=-1, threshold=64, optimizer_level=level1)
+    .. py:method:: hsdp(shard_size=-1, threshold=64, optimizer_level="level1")
 
         设置优化器并行配置。
 
         参数：
             - **shard_size** (int, 可选) - 指定优化器权重跨设备切分通信域的大小，数值范围可为 (0, 设备数量]。默认值： ``-1`` ，表明优化器权重分片组大小将采用每个参数的数据并行组。
             - **threshold** (int, 可选) - 切分参数时，要求目标参数所占内存的最小值，小于该阈值的参数不会在设备间进行分片。Parameter size = shape[0] \* ... \*shape[n] \* size(dtype)。取值范围：非负数，单位：KB。。默认值： ``64`` 。
-            - **optimizer_level** (str, 可选) - 配置用于指定优化器切分的切分级别，静态图下的优化器分片实现与动态图（如 Megatron）不一致，但内存优化效果相同。默认为 ``level1`` 。
+            - **optimizer_level** (str, 可选) - 配置用于指定优化器切分的切分级别，静态图下的优化器分片实现与动态图（如 Megatron）不一致，但内存优化效果相同。默认为 ``"level1"`` 。
 
               - ``"level1"``: 对权重、优化器状态进行切分。
 

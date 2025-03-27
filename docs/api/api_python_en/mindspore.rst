@@ -109,7 +109,6 @@ Serialization
     :template: classtemplate.rst
 
     mindspore.async_ckpt_thread_status
-    mindspore.build_searched_strategy
     mindspore.check_checkpoint
     mindspore.ckpt_to_safetensors
     mindspore.convert_model

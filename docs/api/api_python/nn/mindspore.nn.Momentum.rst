@@ -34,18 +34,18 @@ mindspore.nn.Momentum
           .. include:: mindspore.nn.optim_group_gc.rst
           .. include:: mindspore.nn.optim_group_order.rst
 
-        - **learning_rate** (Union[float, int, Tensor, Iterable, LearningRateSchedule]) - 
+        - **learning_rate** (Union[float, int, Tensor, Iterable, LearningRateSchedule]，可选) - 
 
           .. include:: mindspore.nn.optim_arg_dynamic_lr.rst
 
-        - **momentum** (float) - 浮点数类型的超参，表示移动平均的动量。必须等于或大于0.0。
-        - **weight_decay** (Union[float, int, Cell]) - 权重衰减（L2 penalty）。默认值： ``0.0`` 。
+        - **momentum** (float，可选) - 浮点数类型的超参，表示移动平均的动量。必须等于或大于0.0。
+        - **weight_decay** (Union[float, int, Cell]，可选) - 权重衰减（L2 penalty）。默认值： ``0.0`` 。
 
           .. include:: mindspore.nn.optim_arg_dynamic_wd.rst
 
         .. include:: mindspore.nn.optim_arg_loss_scale.rst
 
-        - **use_nesterov** (bool) - 是否使用Nesterov Accelerated Gradient (NAG)算法更新梯度。默认值： ``False`` 。
+        - **use_nesterov** (bool，可选) - 是否使用Nesterov Accelerated Gradient (NAG)算法更新梯度。默认值： ``False`` 。
 
     输入：
         - **gradients** (tuple[Tensor]) - `params` 的梯度，形状（shape）与 `params` 相同。

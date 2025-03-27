@@ -51,16 +51,16 @@ mindspore.nn.Adagrad
           .. include:: mindspore.nn.optim_group_gc.rst
           .. include:: mindspore.nn.optim_group_order.rst
 
-        - **accum** (float) - 累加器 :math:`h` 的初始值，必须大于等于零。默认值： ``0.1`` 。
-        - **learning_rate** (Union[float, int, Tensor, Iterable, LearningRateSchedule]) - 默认值： ``0.001`` 。
+        - **accum** (float，可选) - 累加器 :math:`h` 的初始值，必须大于等于零。默认值： ``0.1`` 。
+        - **learning_rate** (Union[float, int, Tensor, Iterable, LearningRateSchedule]，可选) - 默认值： ``0.001`` 。
 
           .. include:: mindspore.nn.optim_arg_dynamic_lr.rst
 
-        - **update_slots** (bool) - 如果为 ``True`` ，则更新累加器 :math:`h` 。默认值： ``True`` 。
+        - **update_slots** (bool，可选) - 如果为 ``True`` ，则更新累加器 :math:`h` 。默认值： ``True`` 。
 
         .. include:: mindspore.nn.optim_arg_loss_scale.rst
 
-        - **weight_decay** (Union[float, int, Cell]) - 要乘以权重的权重衰减值，必须大于等于 ``0.0`` 。默认值： ``0.0`` 。
+        - **weight_decay** (Union[float, int, Cell]，可选) - 要乘以权重的权重衰减值，必须大于等于 ``0.0`` 。默认值： ``0.0`` 。
 
           - float：固定的权量衰减值。必须等于或大于0。
           - int：固定的权量衰减值。必须等于或大于0。它将会被转换为float类型。

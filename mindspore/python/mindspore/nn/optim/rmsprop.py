@@ -92,9 +92,9 @@ class RMSProp(Optimizer):
     :math:`t` represents the current step.
 
     Note:
-        If parameters are not grouped, the `weight_decay` in optimizer will be applied on the network parameters without
-        'beta' or 'gamma' in their names. Users can group parameters to change the strategy of decaying weight. When
-        parameters are grouped, each group can set `weight_decay`. If not, the `weight_decay` in optimizer will be
+        If parameters are not grouped, the `weight_decay` in optimizer will be applied on the network parameters
+        without 'beta' or 'gamma' in their names. Users can group parameters to change the strategy of decaying weight.
+        When parameters are grouped, each group can set `weight_decay`. If not, the `weight_decay` in optimizer will be
         applied.
 
     Args:
@@ -124,7 +124,7 @@ class RMSProp(Optimizer):
               If `order_params` in the keys, other keys will be ignored and the element of 'order_params' must be in
               one group of `params`.
 
-        learning_rate (Union[float, int, Tensor, Iterable, LearningRateSchedule]): Default: ``0.1`` .
+        learning_rate (Union[float, int, Tensor, Iterable, LearningRateSchedule], optional): Default: ``0.1`` .
 
             - float: The fixed learning rate value. Must be equal to or greater than 0.
 
@@ -140,21 +140,22 @@ class RMSProp(Optimizer):
               <https://www.mindspore.cn/docs/en/master/api_python/mindspore.nn.html#learningrateschedule-class>`_
               with step as the input to get the learning rate of the current step.
 
-        decay (float): Decay rate. Should be equal to or greater than 0. Default: ``0.9`` .
-        momentum (float): Hyperparameter of type float, means momentum for the moving average. Should be equal to or
-                          greater than 0. Default: ``0.0`` .
-        epsilon (float): Term added to the denominator to improve numerical stability. Should be greater than
+        decay (float, optional): Decay rate. Should be equal to or greater than 0. Default: ``0.9`` .
+        momentum (float, optional): Hyperparameter of type float, means momentum for the moving average.
+            Should be equal to or greater than 0. Default: ``0.0`` .
+        epsilon (float, optional): Term added to the denominator to improve numerical stability. Should be greater than
                          0. Default: ``1e-10`` .
-        use_locking (bool):  Whether to enable a lock to protect the updating process of variable tensors.
+        use_locking (bool, optional):  Whether to enable a lock to protect the updating process of variable tensors.
             Default: ``False`` .
-        centered (bool): If True, gradients are normalized by the estimated variance of the gradient.
+        centered (bool, optional): If True, gradients are normalized by the estimated variance of the gradient.
             Default: ``False`` .
-        loss_scale (float): A floating point value for the loss scale. Should be greater than 0. In general, use the
+        loss_scale (float, optional): A floating point value for the loss scale. Should be greater than 0. In general,
+            use the
             default value. Only when `FixedLossScaleManager` is used for training and the `drop_overflow_update` in
             `FixedLossScaleManager` is set to ``False`` , then this value needs to be the same as the `loss_scale` in
             `FixedLossScaleManager`. Refer to class :class:`mindspore.amp.FixedLossScaleManager` for more details.
             Default: ``1.0`` .
-        weight_decay (Union[float, int, Cell]): Weight decay (L2 penalty). Default: ``0.0`` .
+        weight_decay (Union[float, int, Cell], optional): Weight decay (L2 penalty). Default: ``0.0`` .
 
             - float: The fixed weight decay value. Must be equal to or greater than 0.
 

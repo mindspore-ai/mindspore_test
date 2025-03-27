@@ -12,7 +12,7 @@ The module import method is as follows:
 Parallel Configuration Units
 ----------------------------------------------------------------
 
-.. mscnplatwarnautosummary::
+.. msplatwarnautosummary::
     :toctree: parallel
     :nosignatures:
     :template: classtemplate.rst
@@ -27,7 +27,7 @@ Parallel Configuration Units
 Model Serialization
 ----------------------------------------------------------------
 
-.. mscnplatwarnautosummary::
+.. msplatwarnautosummary::
     :toctree: parallel
     :nosignatures:
     :template: classtemplate.rst
@@ -42,7 +42,7 @@ Model Serialization
 Parallel Partitioning Strategy
 ----------------------------------------------------------------
 
-.. mscnplatwarnautosummary::
+.. msplatwarnautosummary::
     :toctree: parallel
     :nosignatures:
     :template: classtemplate.rst
@@ -56,7 +56,7 @@ Parallel Partitioning Strategy
 others
 ----------------------------------------------------------------
 
-.. mscnplatwarnautosummary::
+.. msplatwarnautosummary::
     :toctree: parallel
     :nosignatures:
     :template: classtemplate.rst

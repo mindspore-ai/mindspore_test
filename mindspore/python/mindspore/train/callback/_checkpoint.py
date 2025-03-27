@@ -449,7 +449,7 @@ class ModelCheckpoint(Callback):
         In the distributed training scenario, please specify different directories for each training process
         to save the checkpoint file. Otherwise, the training may fail.
         If this callback is used in the
-        `Model <https://www.mindspore.cn/docs/en/master/api_python/train/mindspore.train.Model.html>_` function,
+        `Model <https://www.mindspore.cn/docs/en/master/api_python/train/mindspore.train.Model.html>`_ function,
         the checkpoint file will saved parameters of the optimizer by default.
 
     Args:

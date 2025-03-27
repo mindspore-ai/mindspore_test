@@ -672,7 +672,7 @@ class Cell(Cell_):
         r"""Return an iterator over cell buffers.
 
         Args:
-            recurse (bool): If ``True`` , then yields buffers of this cell
+            recurse (bool, optional): If ``True`` , then yields buffers of this cell
                 and all sub cells. Otherwise, yields only buffers that
                 are direct members of this cell. Default ``True``.
 
@@ -3084,12 +3084,12 @@ class Cell(Cell_):
 
         .. warning::
             - Currently ``state_dict()`` also accepts positional arguments for
-                ``destination``, ``prefix`` and ``keep_vars`` in order. However,
-                this is being deprecated and keyword arguments will be enforced in
-                future releases.
+              ``destination``, ``prefix`` and ``keep_vars`` in order. However,
+              this is being deprecated and keyword arguments will be enforced in
+              future releases.
 
             - Please avoid the use of argument ``destination`` as it is not
-                designed for end-users.
+              designed for end-users.
 
         Args:
             destination (dict, optional): If provided, the state of cell will
@@ -3355,10 +3355,10 @@ class Cell(Cell_):
             A namedtuple with ``missing_keys`` and ``unexpected_keys`` fields,
 
             - `missing_keys` is a list of str containing any keys that are expected
-                by this cell but missing from the provided ``state_dict``.
+              by this cell but missing from the provided ``state_dict``.
 
             - `unexpected_keys` is a list of str containing the keys that are not
-                expected by this cell but present in the provided ``state_dict``.
+              expected by this cell but present in the provided ``state_dict``.
 
         Note:
             If a parameter or buffer is registered as ``None`` and its corresponding key
