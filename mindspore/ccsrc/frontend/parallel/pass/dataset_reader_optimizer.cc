@@ -44,6 +44,9 @@ bool DatasetReaderOptimizer::Init() {
     return false;
   }
   opt_level_ = ms_context->get_param<int>(MS_CTX_DATASET_BROADCAST_OPT_LEVEL);
+  if (opt_level_ != WITHIN_STAGE && opt_level_ != OPT_ALL && opt_level_ != BETWEEN_STAGE) {
+    return false;
+  }
   auto is_kbk = ms_context->IsKByKExecutorMode();
   if (!is_kbk) {
     MS_LOG(WARNING) << "Now, Dataset broadcast optimize pass only support O0 and O1 jit level.";
@@ -493,6 +496,25 @@ void ControlOptShardCommAndDataBroadcastOrder(const FuncGraphPtr &graph) {
   (void)manager->Replace(broadcast_op->input(1), depend_node);
 }
 
+static std::vector<CNodePtr> GetPPComms(const AnfNodePtrList &nodes) {
+  std::vector<CNodePtr> pp_comms;
+  for (const auto &node : nodes) {
+    if (!IsPrimitiveCNode(node, prim::kPrimReceive) && !IsPrimitiveCNode(node, prim::kPrimSend)) {
+      continue;
+    }
+    if (is_first_receive(node)) {
+      pp_comms.emplace_back(node->cast<CNodePtr>());
+      continue;
+    }
+    auto cnode = node->cast<CNodePtr>();
+    if (!cnode->HasPrimalAttr(PIPELINE_PARAM)) {
+      continue;
+    }
+    pp_comms.emplace_back(cnode);
+  }
+  return pp_comms;
+}
+
 void ControlPipelineCommAndDataBroadcastOrder(const FuncGraphPtr &graph) {
   auto ms_context = MsContext::GetInstance();
   if (ms_context == nullptr) {
@@ -517,14 +539,8 @@ void ControlPipelineCommAndDataBroadcastOrder(const FuncGraphPtr &graph) {
     return;
   }
   auto all_nodes = TopoSort(graph->get_return(), SuccDeeperSimple);
-  CNodePtr first_recv;
-  for (const auto &node : all_nodes) {
-    if (is_first_receive((node))) {
-      first_recv = node->cast<CNodePtr>();
-      break;
-    }
-  }
-  if (first_recv == nullptr) {
+  auto pp_comms = GetPPComms(all_nodes);
+  if (pp_comms.empty()) {
     return;
   }
   CNodePtr broadcast_op;
@@ -543,10 +559,12 @@ void ControlPipelineCommAndDataBroadcastOrder(const FuncGraphPtr &graph) {
   if (broadcast_op == nullptr) {
     return;
   }
-  std::vector<AnfNodePtr> depend_inputs{NewValueNode(prim::kPrimDepend), first_recv->input(1), broadcast_op};
-  auto depend_node = graph->NewCNode(depend_inputs);
-  depend_node->set_abstract(first_recv->input(1)->abstract()->Clone());
-  (void)manager->Replace(first_recv->input(1), depend_node);
+  for (const auto &pp_comm : pp_comms) {
+    std::vector<AnfNodePtr> depend_inputs{NewValueNode(prim::kPrimDepend), pp_comm->input(1), broadcast_op};
+    auto depend_node = graph->NewCNode(depend_inputs);
+    depend_node->set_abstract(pp_comm->input(1)->abstract()->Clone());
+    (void)manager->Replace(pp_comm->input(1), depend_node);
+  }
 }
 }  // namespace parallel
 }  // namespace mindspore
