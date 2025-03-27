@@ -219,39 +219,6 @@ AbstractBasePtr InferImplHasType(const AnalysisEnginePtr &, const PrimitivePtr &
   return std::make_shared<AbstractScalar>(std::make_shared<BoolImm>(v), kBool);
 }
 
-bool IsAdapterTensor(const AbstractBasePtr &x) {
-  if (!x->isa<abstract::AbstractTensor>()) {
-    return false;
-  }
-  return x->cast<abstract::AbstractTensorPtr>()->is_adapter();
-}
-
-bool CheckIsInstanceForAdapter(const AbstractBasePtr &x, const AbstractBasePtr &cmp) {
-  if (cmp->isa<abstract::AbstractTuple>()) {
-    const auto &elements = cmp->cast<abstract::AbstractTuplePtr>()->elements();
-    return std::any_of(elements.begin(), elements.end(),
-                       [=](const AbstractBasePtr &element) { return CheckIsInstanceForAdapter(x, element); });
-  }
-  auto cmp_value = cmp->BuildValue();
-  MS_EXCEPTION_IF_NULL(cmp_value);
-  if (cmp_value->isa<parse::ClassType>()) {
-    auto class_obj = cmp_value->cast<parse::ClassTypePtr>()->obj();
-    py::module mod = python_adapter::GetPyModule(parse::PYTHON_MOD_PARSE_MODULE);
-    // isinstance(tensor_x, Tensor) -> true, isinstance(tensor_x, Parameter) -> false.
-    // isinstance(parameter_x, Tensor) -> true, isinstance(parameter_x, Parameter) -> true.
-    bool is_cmp_tensor =
-      python_adapter::CallPyModFn(mod, parse::PYTHON_MOD_IS_ADAPTER_TENSOR_CLASS, class_obj).cast<bool>();
-    if (is_cmp_tensor) {
-      return true;
-    }
-    bool is_x_parameter = x->isa<abstract::AbstractRefTensor>();
-    bool is_cmp_parameter =
-      python_adapter::CallPyModFn(mod, parse::PYTHON_MOD_IS_ADAPTER_PARAMETER_CLASS, class_obj).cast<bool>();
-    return is_x_parameter && is_cmp_parameter;
-  }
-  return false;
-}
-
 bool CheckPythonIsInstance(const py::object &x, const AbstractBasePtr &cmp, const py::module &mod, bool is_const) {
   if (cmp->isa<abstract::AbstractTuple>()) {
     const auto &cmp_tuple_elements = cmp->cast<abstract::AbstractTuplePtr>()->elements();
@@ -441,10 +408,6 @@ AbstractBasePtr InferImplIsInstance(const AnalysisEnginePtr &, const PrimitivePt
     // x is sparse tensor with type RowTensor.
     const size_t row_index = 2;
     result = CheckIsInstanceForSparse(cmp, kSparsePrimStr[row_index]);
-  } else if (IsAdapterTensor(x)) {
-    // x is adapter tensor.
-    result = CheckIsInstanceForAdapter(x, cmp);
-    return std::make_shared<AbstractScalar>(std::make_shared<BoolImm>(result), kBool);
   } else if (x->BuildValue()->ContainsValueAny()) {
     // x is variable built-in type.
     auto x_abs_type = std::make_shared<AbstractType>(x->BuildType());
@@ -1080,42 +1043,6 @@ std::optional<StandardPrimitiveImplReg> GetFrontendPrimitiveInferImpl(const Prim
   return std::optional<StandardPrimitiveImplReg>();
 }
 
-AbstractBasePtr SetAdapterFlag(const std::string &op_name, const AbstractBasePtr &abs_input, bool adapter_flag) {
-  MS_EXCEPTION_IF_NULL(abs_input);
-  // Clone is needed here.
-  if (abs_input->isa<AbstractRefTensor>()) {
-    auto abs_ref = abs_input->Clone()->cast<AbstractRefPtr>();
-    abs_ref->set_is_adapter(adapter_flag);
-    return abs_ref;
-  }
-  if (abs_input->isa<AbstractTensor>()) {
-    auto abs_tensor = abs_input->Clone()->cast<AbstractTensorPtr>();
-    abs_tensor->set_is_adapter(adapter_flag);
-    return abs_tensor;
-  }
-  MS_LOG(EXCEPTION) << op_name << " requires a tensor as the first argument, but got " << abs_input->ToString();
-}
-
-AbstractBasePtr InferImplConvertToAdapterTensor(const AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                const AbstractBasePtrList &args_abs_list) {
-  // Inputs: a tensor.
-  constexpr size_t args_num = 1;
-  constexpr size_t input_index = 0;
-  const std::string op_name = primitive->name();
-  CheckArgsSize(op_name, args_abs_list, args_num);
-  return SetAdapterFlag(op_name, args_abs_list[input_index], true);
-}
-
-AbstractBasePtr InferImplConvertToMsTensor(const AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                           const AbstractBasePtrList &args_abs_list) {
-  // Inputs: a tensor.
-  constexpr size_t args_num = 1;
-  constexpr size_t input_index = 0;
-  const std::string op_name = primitive->name();
-  CheckArgsSize(op_name, args_abs_list, args_num);
-  return SetAdapterFlag(op_name, args_abs_list[input_index], false);
-}
-
 AbstractBasePtr InferImplDtypeToEnum(const AnalysisEnginePtr &, const PrimitivePtr &primitive,
                                      const AbstractBasePtrList &args_abs_list) {
   constexpr size_t args_num = 3;
@@ -1203,10 +1130,6 @@ REGISTER_PRIMITIVE_FRONT_EVAL_IMPL(AddAttr, prim::kPrimAddAttr, InferImplAddAttr
 REGISTER_PRIMITIVE_FRONT_EVAL_IMPL(Vmap, prim::kPrimVmap, InferImplVmap, nullptr);
 REGISTER_PRIMITIVE_FRONT_EVAL_IMPL(StringUpper, prim::kPrimStringUpper, InferImplStringUpper, nullptr);
 REGISTER_PRIMITIVE_FRONT_EVAL_IMPL(StringLower, prim::kPrimStringLower, InferImplStringLower, nullptr);
-REGISTER_PRIMITIVE_FRONT_EVAL_IMPL(ConvertToAdapterTensor, prim::kPrimConvertToAdapterTensor,
-                                   InferImplConvertToAdapterTensor, nullptr);
-REGISTER_PRIMITIVE_FRONT_EVAL_IMPL(ConvertToMsTensor, prim::kPrimConvertToMsTensor, InferImplConvertToMsTensor,
-                                   nullptr);
 REGISTER_PRIMITIVE_FRONT_EVAL_IMPL(DtypeToEnum, prim::kPrimDtypeToEnum, InferImplDtypeToEnum, nullptr);
 REGISTER_PRIMITIVE_FRONT_EVAL_IMPL(EnumToDtype, prim::kPrimEnumToDtype, InferImplEnumToDtype, nullptr);
 REGISTER_PRIMITIVE_FRONT_EVAL_IMPL(CellBackwardHook, prim::kPrimCellBackwardHook, InferImplCellBackwardHook, nullptr)
@@ -1268,11 +1191,6 @@ void RegPrimitiveFrontEval() {
                                                 InferImplStringUpper, nullptr);
   abstract::RegisterStandardPrimitiveEvalHelper(abstract::GetFrontendPrimitiveInferMapPtr(), prim::kPrimStringLower,
                                                 InferImplStringLower, nullptr);
-  abstract::RegisterStandardPrimitiveEvalHelper(abstract::GetFrontendPrimitiveInferMapPtr(),
-                                                prim::kPrimConvertToAdapterTensor, InferImplConvertToAdapterTensor,
-                                                nullptr);
-  abstract::RegisterStandardPrimitiveEvalHelper(abstract::GetFrontendPrimitiveInferMapPtr(),
-                                                prim::kPrimConvertToMsTensor, InferImplConvertToMsTensor, nullptr);
   abstract::RegisterStandardPrimitiveEvalHelper(abstract::GetFrontendPrimitiveInferMapPtr(), prim::kPrimDtypeToEnum,
                                                 InferImplDtypeToEnum, nullptr);
   abstract::RegisterStandardPrimitiveEvalHelper(abstract::GetFrontendPrimitiveInferMapPtr(), prim::kPrimEnumToDtype,

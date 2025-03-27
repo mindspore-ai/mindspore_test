@@ -694,12 +694,6 @@ const SpecialPrimitiveInferFuncMap &GetSpecialPrimitiveInferFunc() {
     PyErr_Clear();
     return res;
   };
-  constexpr const auto CToMSTensor = [](PyObject *prim, const std::vector<PyObject *> &args) {
-    return args.size() == 0 ? nullptr : ConvertToMsTensor(py::cast<py::object>(args[0])).inc_ref().ptr();
-  };
-  constexpr const auto CToAdapterTensor = [](PyObject *prim, const std::vector<PyObject *> &args) {
-    return args.size() == 0 ? nullptr : ConvertToAdapterTensor(py::cast<py::object>(args[0])).inc_ref().ptr();
-  };
   static const SpecialPrimitiveInferFuncMap specialize = {
     {"Size", InferSize},
     {"Rank", InferRank},
@@ -710,8 +704,6 @@ const SpecialPrimitiveInferFuncMap &GetSpecialPrimitiveInferFunc() {
     {"TupleToTensor", CallValue},
     {"ScalarToTensor", CallValue},
     {"make_range", CallValue},
-    {"ConvertToMsTensor", CToMSTensor},
-    {"ConvertToAdapterTensor", CToAdapterTensor},
     {"IsShapeUnKnown", [](PyObject *, const std::vector<PyObject *> &) { Py_RETURN_FALSE; }},
   };
   return specialize;

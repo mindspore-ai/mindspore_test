@@ -47,10 +47,9 @@ mindspore::HashMap<std::string, pipeline::ResourcePtr> jit_forward_resource;
 
 namespace {
 static const std::vector<PrimitivePtr> UNREUSED_PRIM_LIST = {
-  prim::kPrimStopGradient,      prim::kPrimUpdateState,      prim::kPrimMirror,
-  prim::kPrimVirtualDiv,        prim::kPrimMutable,          prim::kPrimConvertToAdapterTensor,
-  prim::kPrimConvertToMsTensor, prim::kPrimInsertGradientOf, prim::kPrimHookBackward,
-  prim::kPrimCellBackwardHook,  prim::kPrimPrintShapeType};
+  prim::kPrimStopGradient, prim::kPrimUpdateState,      prim::kPrimMirror,
+  prim::kPrimVirtualDiv,   prim::kPrimMutable,          prim::kPrimInsertGradientOf,
+  prim::kPrimHookBackward, prim::kPrimCellBackwardHook, prim::kPrimPrintShapeType};
 
 // Optimizes the forward function graph.
 FuncGraphPtr OptimizeForwardGraph(const FuncGraphPtr &bprop_func_graph, bool need_renormalize = false) {

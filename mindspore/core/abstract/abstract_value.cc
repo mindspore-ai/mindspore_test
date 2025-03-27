@@ -555,10 +555,6 @@ std::size_t AbstractTensor::hash() const {
   return hash_sum;
 }
 
-bool AbstractTensor::is_adapter() const { return is_adapter_; }
-
-void AbstractTensor::set_is_adapter(bool is_adapter) { is_adapter_ = is_adapter; }
-
 AbstractAny::AbstractAny()
     : AbstractTensor(DefaultDtype(), std::make_shared<Shape>(ShapeVector({Shape::kShapeRankAny}))) {}
 
@@ -1766,18 +1762,12 @@ AbstractBasePtr AbstractTensor::Join(const AbstractBasePtr &other) {
   // Check element
   auto element = element_->Join(other_tensor->element_);
   MS_EXCEPTION_IF_NULL(element);
-  auto ret = std::make_shared<AbstractTensor>(element, res_shape);
-  ret->set_is_adapter(is_adapter_);
-  return ret;
+  return std::make_shared<AbstractTensor>(element, res_shape);
 }
 
 bool AbstractTensor::equal_to(const AbstractTensor &other) const {
   if (this == &other) {
     return true;
-  }
-  // Check if both Tensor or both AdapterTensor.
-  if (is_adapter() != other.is_adapter()) {
-    return false;
   }
   const auto &v1 = GetValueTrack();
   const auto &v2 = other.GetValueTrack();
@@ -1817,7 +1807,6 @@ AbstractBasePtr AbstractTensor::Clone() const {
   ShapePtr shp = shape();
   clone->set_shape(shp->Clone());
   clone->set_value(GetValueTrack());
-  clone->set_is_adapter(is_adapter());
   clone->SetSymbolicShape(this->GetSymbolicShape());
   clone->SetSymbolicValue(this->GetSymbolicValue());
   return clone;
@@ -1830,7 +1819,6 @@ AbstractBasePtr AbstractTensor::Broaden() const {
   MS_EXCEPTION_IF_NULL(shp);
   broaden->set_shape(shp->Clone());
   broaden->set_value(kValueAny);
-  broaden->set_is_adapter(is_adapter());
   return broaden;
 }
 
@@ -1842,7 +1830,6 @@ AbstractBasePtr AbstractTensor::BroadenWithShape() const {
   shp->Broaden();
   broaden->set_shape(shp);
   broaden->set_value(kValueAny);
-  broaden->set_is_adapter(is_adapter());
   return broaden;
 }
 
@@ -1855,11 +1842,9 @@ std::string AbstractTensor::ToString() const {
   MS_EXCEPTION_IF_NULL(element_);
   auto value_track = GetValueTrack();
   MS_EXCEPTION_IF_NULL(value_track);
-  std::string is_adapter = this->is_adapter() ? "True" : "False";
   buffer << type_name() << "("
          << "shape: " << shape_track->ToString() << ", element: " << element_->ToString()
-         << ", is adapter: " << is_adapter << ", value_ptr: " << value_track << ", value: " << value_track->ToString()
-         << ")";
+         << ", value_ptr: " << value_track << ", value: " << value_track->ToString() << ")";
   return buffer.str();
 }
 
@@ -2088,7 +2073,6 @@ std::size_t AbstractJTagged::hash() const { return hash_combine(tid(), element_-
 AbstractRefTensor::AbstractRefTensor(const AbstractTensorPtr &ref_value, const ValuePtr &ref_key_value)
     : AbstractTensor(*ref_value), ref_key_value_(ref_key_value) {
   set_type(std::make_shared<RefType>());
-  set_is_adapter(ref_value->is_adapter());
   MS_EXCEPTION_IF_NULL(ref_key_value);
   if (ref_key_value != kValueAny && !ref_key_value->isa<RefKey>()) {
     MS_LOG(INTERNAL_EXCEPTION) << "ref_key_value must be kValueAny or RefKey, but got:" << ref_key_value->ToString();

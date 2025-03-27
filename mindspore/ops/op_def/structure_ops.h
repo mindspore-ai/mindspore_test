@@ -61,8 +61,6 @@ GVAR_DEF(PrimitivePtr, kPrimFakeBprop, std::make_shared<Primitive>("fake_bprop")
 GVAR_DEF(PrimitivePtr, kPrimBroadcastGradientArgs, std::make_shared<Primitive>("BroadcastGradientArgs"));
 GVAR_DEF(PrimitivePtr, kPrimDynamicBroadcastGradientArgs,
          std::make_shared<Primitive>(kDynamicBroadcastGradientArgsOpName));
-GVAR_DEF(PrimitivePtr, kPrimConvertToAdapterTensor, std::make_shared<Primitive>("ConvertToAdapterTensor"));
-GVAR_DEF(PrimitivePtr, kPrimConvertToMsTensor, std::make_shared<Primitive>("ConvertToMsTensor"));
 GVAR_DEF(PrimitivePtr, kPrimDtypeToEnum, std::make_shared<Primitive>("DtypeToEnum"));
 GVAR_DEF(PrimitivePtr, kPrimEnumToDtype, std::make_shared<Primitive>("EnumToDtype"));
 

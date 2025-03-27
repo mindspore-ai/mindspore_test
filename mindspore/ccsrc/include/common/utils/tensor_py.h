@@ -235,16 +235,6 @@ class COMMON_EXPORT TensorPy {
   /// \param[in] flag Whether this Tensor is initialized.
   void SetInitFlag(bool flag);
 
-  /// \brief Check whether this Tensor needs to be converted.
-  ///
-  /// \return Whether this Tensor needs to be converted.
-  bool IsAdapter() const;
-
-  /// \brief Set the adapter flag of this TensorPy.
-  ///
-  /// \param[in] flag Whether this Tensor needs to be converted.
-  void SetAdapterFlag(bool flag);
-
   /// \brief Set the shape of the tensor in this TensorPy.
   ///
   /// \param[in] shape [ShapeVector] The shape of the tensor.

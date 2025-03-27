@@ -918,7 +918,6 @@ ValuePtr ObjCast(const py::object &obj) {
 static const std::vector<DataConvertFuncPtr> &GetDataConvertFuncs() {
   // Convert data by python object type.
   static const std::vector<DataConvertFuncPtr> data_convert_funcs{
-    // AdapterTensor needs to be processed before Tensor because it inherits from Tensor.
     std::make_shared<ByFuncDataConvertFunc>(IsStubTensor, ConvertStubTensor),
     std::make_shared<ByFuncDataConvertFunc>(IsNamedTuple, ConvertNamedTuple),
     std::make_shared<ByFuncDataConvertFunc>(tensor::IsTensorPy, ConvertTensorAndSyncCompiling),

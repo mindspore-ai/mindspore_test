@@ -27,9 +27,8 @@ from .parser import (Parser, create_instance, is_supported_create_instance_type,
                      is_class_type, check_obj_bool, python_isinstance, ms_isinstance, convert_to_ms_csrtensor,
                      convert_to_ms_cootensor, convert_class_to_function, convert_cell_list_to_sequence, is_cell_list,
                      get_obj_from_sequence, get_type, is_class_member_recursive, get_global_params,
-                     get_adapter_tensor_attr, get_obj_defined_from_obj_type, is_from_third_party_library,
-                     get_const_abs, get_const_round, get_const_len, is_adapter_tensor_class,
-                     is_adapter_parameter_class, convert_to_namedtuple, check_attrs, generate_lambda_object,
+                     get_obj_defined_from_obj_type, is_from_third_party_library, get_const_abs, get_const_round,
+                     get_const_len, convert_to_namedtuple, check_attrs, generate_lambda_object,
                      check_is_subclass, check_attr_is_property, get_method_info, can_constant_fold,
                      convert_to_mutable)
 
@@ -43,8 +42,7 @@ __all__ = ['Parser', 'create_instance', 'is_supported_create_instance_type', 'ge
            'get_ms_class_name', 'is_class_type', 'check_obj_bool', 'python_isinstance', 'ms_isinstance',
            'convert_to_ms_csrtensor', 'convert_to_ms_cootensor', 'convert_class_to_function',
            'convert_cell_list_to_sequence', 'is_cell_list', 'get_obj_from_sequence', 'get_type',
-           'is_class_member_recursive', 'get_adapter_tensor_attr', 'get_obj_defined_from_obj_type',
+           'is_class_member_recursive', 'get_obj_defined_from_obj_type',
            'is_from_third_party_library', 'get_const_abs', 'get_const_round', 'get_const_len', 'get_method_info',
-           'is_adapter_tensor_class', 'is_adapter_parameter_class',
            'convert_to_namedtuple', 'check_attrs', 'generate_lambda_object', 'check_is_subclass', 'check_attr_is_property',
            'can_constant_fold', 'convert_to_mutable']

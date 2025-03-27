@@ -1819,22 +1819,15 @@ AnfNodePtr Parser::ParseCall(const FunctionBlockPtr &block, const py::object &no
   // If the expression is to create Tensor(including adapter tensor) without jit annotation,
   // using functional api to create corresponding tensor since the functional api has jit annotation.
   auto class_tensor_object = call_function_node->user_data<py::object>(kClassTensorObject);
-  ClassInstanceType class_tensor_type = CLASS_INSTANCE_TYPE_INVALID;
   if (class_tensor_object != nullptr) {
     auto call_location = GetLocation(node);
     if (call_location != nullptr && call_location->comments().empty()) {
-      class_tensor_type = ClassInstanceType(
+      ClassInstanceType class_tensor_type = ClassInstanceType(
         ast_->CallParserObjMethod(PYTHON_PARSE_GET_CLASS_TENSOR_TYPE, *class_tensor_object).cast<int32_t>());
       AnfNodePtr new_call_function_node = nullptr;
       if (class_tensor_type == CLASS_INSTANCE_TYPE_TENSOR) {
         constexpr auto tensor_func_str = "__ms_tensor_func__";
         new_call_function_node = block->MakeResolveSymbol(tensor_func_str);
-      } else if (class_tensor_type == CLASS_INSTANCE_TYPE_ADAPTER_TENSOR) {
-        constexpr auto adapter_convert_function = "get_adapter_convert_function";
-        py::object generate_func = ast_->CallParserObjMethod(adapter_convert_function, *class_tensor_object);
-        if (!py::isinstance<py::none>(generate_func)) {
-          new_call_function_node = NewValueNode(ParsePythonCode(generate_func));
-        }
       }
       if (new_call_function_node != nullptr) {
         MS_LOG(INFO) << "Convert Tensor call node " << call_function_node->DebugString()
@@ -1872,10 +1865,6 @@ AnfNodePtr Parser::ParseCall(const FunctionBlockPtr &block, const py::object &no
         call_cnode->set_interpret_internal_type(true);
       }
     }
-  }
-  if (class_tensor_type == CLASS_INSTANCE_TYPE_ADAPTER_TENSOR) {
-    MS_LOG(DEBUG) << "Current adapter tensor node: " << call_cnode->DebugString();
-    call_cnode->set_user_data<bool>(fallback::kAdapterTensor, std::make_shared<bool>(true));
   }
   return call_cnode;
 }
@@ -2012,21 +2001,11 @@ AnfNodePtr Parser::ParseMsTensor(const FunctionBlockPtr &block, const py::object
     if (global_dict.contains(module_name)) {
       py::object module_obj = global_dict[py::str(module_name)];
       std::string module_str = py::cast<std::string>(py::str(module_obj));
-      // The module of Tensor imported from MsAdapter could be:
-      // module 'msadapter' or module 'msadapter.pytorch' and so on.
-      if (module_str.find("module 'mindspore'") != std::string::npos ||
-          module_str.find("module 'mindtorch") != std::string::npos ||
-          module_str.find("module 'msadapter") != std::string::npos) {
+      if (module_str.find("module 'mindspore'") != std::string::npos) {
         std::string script_text = py::cast<std::string>(ast()->GetAstNodeText(node));
         AnfNodePtr interpret_node = MakeInterpretNode(block, value_node, script_text);
         interpret_node->set_interpret(true);
         interpret_node->set_interpret_internal_type(true);
-        if ((module_str.find("module 'mindtorch") != std::string::npos ||
-             module_str.find("module 'msadapter") != std::string::npos) &&
-            py::hasattr(module_obj, "Tensor")) {
-          py::object tensor_obj = py::getattr(module_obj, "Tensor");
-          interpret_node->set_user_data<py::object>(kClassTensorObject, std::make_shared<py::object>(tensor_obj));
-        }
         return interpret_node;
       }
     }
@@ -2564,13 +2543,7 @@ AnfNodePtr Parser::ParseSubscript(const FunctionBlockPtr &block, const py::objec
   if (!py::isinstance<py::none>(value_id) && !value_id_is_builtins) {
     value_obj = GetValuePythonObject(value_id);
   }
-  bool is_adapter = false;
   if (!py::isinstance<py::none>(value_obj)) {
-    if (py::hasattr(value_obj, "adapter_flag")) {
-      is_adapter = py::cast<bool>(py::getattr(value_obj, "adapter_flag"));
-    }
-  }
-  if (!py::isinstance<py::none>(value_obj) && !is_adapter) {
     AnfNodePtr getitem_node =
       block->func_graph()->NewCNodeInOrder({NewValueNode(prim::kPrimGetAttr), value, NewValueNode(str_getitem)});
     new_node = block->func_graph()->NewCNodeInOrder({getitem_node, slice});

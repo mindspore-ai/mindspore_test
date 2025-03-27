@@ -77,10 +77,6 @@ AbstractBasePtr InferImplShard(const AnalysisEnginePtr &, const PrimitivePtr &pr
                                const AbstractBasePtrList &args_abs_list);
 AbstractBasePtr InferImplVmap(const AnalysisEnginePtr &, const PrimitivePtr &primitive,
                               const AbstractBasePtrList &args_abs_list);
-AbstractBasePtr InferImplConvertToAdapterTensor(const AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                const AbstractBasePtrList &args_abs_list);
-AbstractBasePtr InferImplConvertToMsTensor(const AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                           const AbstractBasePtrList &args_abs_list);
 AbstractBasePtr InferImplDtypeToEnum(const AnalysisEnginePtr &, const PrimitivePtr &primitive,
                                      const AbstractBasePtrList &args_abs_list);
 AbstractBasePtr InferImplAddAttr(const AnalysisEnginePtr &, const PrimitivePtr &primitive,

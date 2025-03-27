@@ -42,7 +42,6 @@ from mindspore.common.api import _JitExecutor
 from mindspore.common import dtype as mstype
 from mindspore.common.parameter import Parameter
 from mindspore.common import mutable
-from mindspore.common._register_for_adapter import ms_adapter_registry
 from mindspore._checkparam import is_stub_tensor
 from .namespace import Namespace, ModuleNamespace, ClosureNamespace, ClassMemberNamespace
 from .resources import parse_object_map, ops_symbol_map, convert_object_map, convert_class_to_function_map, trope_ns
@@ -71,7 +70,6 @@ CLASS_INSTANCE_TYPE_CELL = 0            # Class instance type is Cell
 CLASS_INSTANCE_TYPE_PRIMITIVE = 1       # Class instance type is Primitive
 CLASS_INSTANCE_TYPE_NUMPY_ARRAY = 2     # Class instance type is Numpy Array
 CLASS_INSTANCE_TYPE_TENSOR = 3          # Class instance type is Tensor
-CLASS_INSTANCE_TYPE_ADAPTER_TENSOR = 4  # Class instance type is Adapter Tensor
 CLASS_INSTANCE_TYPE_INVALID = 0xFF
 
 # Ast main type
@@ -133,12 +131,6 @@ _fallback_unsupported_python_builtin_type = (
 )
 
 _global_params = {}
-
-
-def _convert_map():
-    """Get convert object map"""
-    adapter_convert_map = ms_adapter_registry.convert_map
-    return adapter_convert_map if adapter_convert_map else convert_object_map
 
 
 def create_slice_obj(start, end, step):
@@ -258,9 +250,8 @@ def resolve_symbol(namespace, symbol):
             return resolve_
 
         # If need trope the obj
-        convert_map = _convert_map()
-        if resolve_ in convert_map:
-            resolve_ = convert_map.get(resolve_)
+        if resolve_ in convert_object_map:
+            resolve_ = convert_object_map.get(resolve_)
             logger.debug("Convert resolve: %r", resolve_)
     except Exception as e:
         if isinstance(e, NotImplementedError):
@@ -491,7 +482,7 @@ def convert_class_to_function(cls_str, cls_obj):
                          f"supported in 'construct' or @jit decorated function. Try to create {cls_str} "
                          f"instances external such as initialized in the method '__init__' before assigning. "
                          f"For more details, please refer to "
-                         f"https://www.mindspore.cn/docs/zh-CN/master/model_train/program_form/static_graph.html \n")
+                         f"https://www.mindspore.cn/tutorials/zh-CN/master/compile/static_graph.html \n")
     return convert_class_to_function_map.get(cls_str)
 
 
@@ -596,28 +587,6 @@ def get_obj_defined_from_obj_type(obj_type):
 def is_class_type(cls):
     """Check if cls is a class type."""
     return isinstance(cls, type)
-
-
-def get_adapter_tensor_attr(name):
-    """Get the method or @property modified function of the class, excluding those inherited from parent class."""
-    cls = ms_adapter_registry.tensor
-    properties = [key for key, value in vars(cls).items() if isinstance(value, property)]
-    if name in properties:
-        return getattr(cls, name).fget, True
-    methods = [key for key, value in vars(cls).items() if inspect.isfunction(value)]
-    if name in methods:
-        return getattr(cls, name), False
-    return None, False
-
-
-def is_adapter_tensor_class(cls):
-    """Check if cls is adapter tensor type."""
-    return cls in (Tensor, ms_adapter_registry.tensor)
-
-
-def is_adapter_parameter_class(cls):
-    """Check if cls is adapter parameter type."""
-    return cls in (Parameter, ms_adapter_registry.parameter)
 
 
 def get_ms_class_name(cls):
@@ -1005,7 +974,7 @@ class Parser:
     @staticmethod
     def is_unsupported_namespace(value):
         """To check if not supported for namespace"""
-        unsupported = isinstance(value, _builtin_function_or_method_type) and value not in _convert_map()
+        unsupported = isinstance(value, _builtin_function_or_method_type) and value not in convert_object_map
         logger.debug(f"'{value}' unsupported: {unsupported}.")
         if unsupported and value in _fallback_unsupported_python_builtin_type:
             raise TypeError(f"'{value}' is not supported both in JIT Fallback and graph mode.")
@@ -1023,17 +992,7 @@ class Parser:
         """To check if is class Tensor type"""
         if value == Tensor:
             return CLASS_INSTANCE_TYPE_TENSOR
-        if issubclass(value, ms_adapter_registry.tensor):
-            return CLASS_INSTANCE_TYPE_ADAPTER_TENSOR
         return CLASS_INSTANCE_TYPE_INVALID
-
-    @staticmethod
-    def get_adapter_convert_function(class_object):
-        """Get convert function for adapter tensor"""
-        class_object_name = class_object.__name__
-        if class_object_name in ms_adapter_registry.convert_adapter_tensor_map:
-            return ms_adapter_registry.convert_adapter_tensor_map[class_object_name]
-        return None
 
     @staticmethod
     def is_unsupported_internal_type(value):
@@ -1043,8 +1002,6 @@ class Parser:
         if value == Tensor:
             logger.debug(f"Found unsupported internal type: '{value}'.")
             return True
-        if ms_adapter_registry.is_registered and issubclass(value, ms_adapter_registry.tensor):
-            return True
         return False
 
     @staticmethod
@@ -1053,7 +1010,7 @@ class Parser:
         # The value may not be supported to do ConvertData such as api 'mutable',
         # and we get its converted object from python.
         if inspect.isfunction(value) and value in (mutable,):
-            return _convert_map().get(value)
+            return convert_object_map.get(value)
         return value
 
     def get_syntax_support_type(self, value):

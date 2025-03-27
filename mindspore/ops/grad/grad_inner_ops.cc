@@ -306,16 +306,6 @@ REG_BPROP_BUILDER("MatmulDDS").SetUnusedInputs({i2, i3}).SetBody(BODYFUNC(ib) {
   return {dq, dk, ib->OutZeros(local_mask), ib->OutZeros(global_mask)};
 });
 
-REG_BPROP_BUILDER("ConvertToAdapterTensor").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
-  auto dout = ib->GetInput(kIndex2);
-  return {dout};
-});
-
-REG_BPROP_BUILDER("ConvertToMsTensor").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
-  auto dout = ib->GetInput(kIndex2);
-  return {dout};
-});
-
 REG_BPROP_BUILDER("MatrixDiag").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
   auto y = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex3);

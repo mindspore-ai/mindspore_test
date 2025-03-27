@@ -30,7 +30,6 @@ namespace pijit {
 std::pair<AbstractBasePtr, bool> InferAndCheck(const ValuePtr &value, const AbstractBasePtrList &input_abs_list);
 AbstractBasePtr BuildNodeAbstract(const AnfNodePtr &node);
 
-bool IsSpecialCallableObject(const py::object &obj);
 bool IsObjectCallable(const py::object &obj);
 bool IsSideEffectPrimitive(const PrimitivePtr &prim);
 bool IsValidOutputAbstractScalar(const AbstractBasePtr &abs);

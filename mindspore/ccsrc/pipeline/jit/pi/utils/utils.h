@@ -179,9 +179,7 @@ bool IsNoGradExitFunc(const py::object &handle);
 bool IsPartialFunc(const py::object &handle);
 const char *GetFuncName(const py::object &handle);
 
-bool CheckAdapterTensor(const py::object &tensor);
 py::object ConvertToMsTensor(const py::object &tensor);
-py::object ConvertToAdapterTensor(const py::object &tensor);
 py::object ConvertCppTensorToMsTensor(const py::object &tensor);
 
 std::string GetTopModule(const py::object &o);
