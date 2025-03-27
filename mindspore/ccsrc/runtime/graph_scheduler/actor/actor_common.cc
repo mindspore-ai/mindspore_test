@@ -1080,6 +1080,8 @@ void SyncDeviceTensorsInParameterStore(size_t outer_index, size_t inner_index, c
       MS_LOG(DEBUG) << from_aid.Name() << " do not use input outer index: " << outer_index
                     << ", inner index: " << inner_index << ", address: " << device_tensor
                     << " from graph parameter store.";
+      static std::string store_name = "Parameter store no used";
+      device_tensor->IncreaseNewRefCount(store_name);
       continue;
     }
     if (device_tensor == tensor_address.get()) {
@@ -1109,6 +1111,16 @@ void SyncDeviceTensorsInParameterStore(size_t outer_index, size_t inner_index, c
     if (!in_callback) {
       graph_parameter_store->InsertDeviceTensorIntoCallback(tensor_address);
       in_callback = true;
+    }
+  }
+}
+
+void SetMaxRefCountByStoreIndex(size_t outer_index, size_t inner_index) {
+  auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
+  for (const auto &address : graph_parameter_store->Fetch(outer_index, inner_index)) {
+    if (address != nullptr) {
+      address->set_new_ref_count(SIZE_MAX);
+      MS_LOG(DEBUG) << "Set new ref count to max for device address:" << address;
     }
   }
 }
@@ -1163,6 +1175,7 @@ DeviceTensorPtr PrepareForNonTensorAddress(const std::pair<KernelWithIndex, size
     tensor->set_device_address(device_tensor);
     device_tensor->set_new_ref_count(SIZE_MAX);
     MS_LOG(DEBUG) << "Set new ref count to max for device address:" << device_tensor;
+    SetMaxRefCountByStoreIndex(outer_index, inner_index);
   }
   graph_parameter_store->SetDeviceTensorPrepared(outer_index, inner_index, true);
   return device_tensor;
@@ -1193,6 +1206,11 @@ void SetNodeIndexForTensorAddress(const DeviceTensorPtr &device_tensor, const De
       tensor_address->SetNodeIndex(old_addr_info.second.first, old_addr_info.second.second);
     }
   }
+}
+
+bool IsParameter(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
+  return node->isa<Parameter>() && common::AnfAlgo::IsParameterWeight(node->cast<ParameterPtr>());
 }
 
 DeviceTensor *PrepareParameter(const std::pair<KernelWithIndex, size_t> &parameter_index,
@@ -1253,7 +1271,9 @@ DeviceTensor *PrepareParameter(const std::pair<KernelWithIndex, size_t> &paramet
         device_tensor = tensor_address;
       }
       SyncDeviceTensorsInParameterStore(outer_index, inner_index, tensor_address, tensor, context, from_aid);
-
+      if (IsParameter(front_node.first)) {
+        SetMaxRefCountByStoreIndex(outer_index, inner_index);
+      }
       // Address type of tensor is different from address type of node, set node address to tensor.
       if (tensor_address != nullptr && tensor_address->GetDeviceType() != device_tensor->GetDeviceType() &&
           front_node.first->isa<Parameter>() &&
@@ -1261,6 +1281,7 @@ DeviceTensor *PrepareParameter(const std::pair<KernelWithIndex, size_t> &paramet
         MS_LOG(DEBUG) << "The device type is not equal, host tensor type: " << tensor_address->GetDeviceType()
                       << ", device tensor type: " << device_tensor->GetDeviceType();
         UpdateRefCount(device_tensor.get(), true);
+        device_tensor->set_new_ref_count(SIZE_MAX);
         tensor->set_device_address(device_tensor);
         return device_tensor.get();
       }

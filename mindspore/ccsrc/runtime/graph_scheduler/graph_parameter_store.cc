@@ -49,6 +49,10 @@ void GraphParameterStore::ResetAddrRefCount(size_t outer_index, size_t inner_ind
   CheckIndexValid(outer_index, inner_index);
   std::unique_lock<std::shared_mutex> lock(param_mutex_);
   auto &device_tensor_with_info = parameter_device_tensors_[outer_index][inner_index];
+  auto &heter_device_tensor_with_info = heter_device_tensors_[outer_index][inner_index];
+  bool is_ref_count_max =
+    (device_tensor_with_info.second.first == SIZE_MAX || heter_device_tensor_with_info.second == SIZE_MAX);
+
   auto &device_tensor = device_tensor_with_info.first;
   if (device_tensor != nullptr && device_tensor->GetDeviceType() == value_type) {
     auto user_cnt = device_tensor_with_info.second.first;
@@ -56,12 +60,13 @@ void GraphParameterStore::ResetAddrRefCount(size_t outer_index, size_t inner_ind
     device_tensor->ResetRefCount();
     if (user_cnt > 0) {
       // When allocate memory, the ref count would be increase, so it should be decrease here.
-      if (user_cnt == SIZE_MAX) {
+      if (is_ref_count_max) {
         device_tensor->set_new_ref_count(SIZE_MAX);
       } else {
         static std::string name = "Parameter store";
         device_tensor->IncreaseNewRefCount(name, user_cnt - 1);
       }
+      device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
       MS_LOG(DEBUG) << "Parameter store set new ref count:" << user_cnt - 1
                     << " for device address:" << device_tensor->PrintInfo();
     } else {
@@ -71,7 +76,6 @@ void GraphParameterStore::ResetAddrRefCount(size_t outer_index, size_t inner_ind
     return;
   }
 
-  auto &heter_device_tensor_with_info = heter_device_tensors_[outer_index][inner_index];
   auto &heter_device_tensor = heter_device_tensor_with_info.first;
   if (heter_device_tensor != nullptr && heter_device_tensor->GetDeviceType() == value_type) {
     auto user_cnt = heter_device_tensor_with_info.second;
@@ -79,13 +83,13 @@ void GraphParameterStore::ResetAddrRefCount(size_t outer_index, size_t inner_ind
     heter_device_tensor->ResetRefCount();
     if (user_cnt > 0) {
       // When allocate memory, the ref count would be increase, so it should be decrease here.
-      if (user_cnt == SIZE_MAX) {
+      if (is_ref_count_max) {
         heter_device_tensor->set_new_ref_count(SIZE_MAX);
       } else {
         static std::string name = "Parameter store";
         heter_device_tensor->IncreaseNewRefCount(name, user_cnt - 1);
       }
-
+      device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
       MS_LOG(DEBUG) << "Parameter store set new ref count:" << user_cnt - 1
                     << " for device address:" << heter_device_tensor->PrintInfo();
     } else {
