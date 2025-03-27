@@ -882,12 +882,20 @@ class AfterOptARewriter : public BaseRewriter {
   static bool NeedConvertToPyExecute(const PrimitivePtr &prim, const AbstractBasePtrList &args_abs_list,
                                      const AbstractBasePtr &output_abs) {
     if (seq_prim_set_.find(prim) != seq_prim_set_.end()) {
-      return NeedConvertSequenceOpToPyExecute(args_abs_list, output_abs);
+      return !CanBeConstantFolded(output_abs) && NeedConvertSequenceOpToPyExecute(args_abs_list, output_abs);
     }
     return false;
   }
 
  protected:
+  static bool CanBeConstantFolded(const AbstractBasePtr &output_abs) {
+    if (output_abs == nullptr) {
+      return false;
+    }
+    auto value = output_abs->BuildValue();
+    return value != nullptr && !value->ContainsValueAny();
+  }
+
   static bool NeedConvertSequenceOpToPyExecute(const AbstractBasePtrList &inputs_abs,
                                                const AbstractBasePtr &output_abs) {
     return CheckAndConvertUtils::CheckContainNestedOrIrregularSequence(inputs_abs) ||
@@ -2962,12 +2970,6 @@ bool OrderPyExecuteAfterRewriter(const FuncGraphPtr &root, const pipeline::Resou
 
 bool ShouldRunWithJitFallback(const PrimitivePtr &prim, const AbstractBasePtrList &args_abs_list,
                               const AbstractBasePtr &output_abs) {
-  if (output_abs != nullptr) {
-    auto value = output_abs->BuildValue();
-    if (value != nullptr && !value->ContainsValueAny()) {
-      return false;  // Can be constant-folded.
-    }
-  }
   return AfterOptARewriter::NeedConvertToPyExecute(prim, args_abs_list, output_abs);
 }
 }  // namespace opt
