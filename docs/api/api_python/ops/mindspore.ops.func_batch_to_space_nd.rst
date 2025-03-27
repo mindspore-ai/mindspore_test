@@ -17,18 +17,9 @@ mindspore.ops.batch_to_space_nd
             \end{array}
 
     参数：
-        - **input_x** (Tensor) - 输入Tensor，必须大于或者等于二维（Ascend平台必须为四维）。批次维度需能被 `block_shape` 整除。
+        - **input_x** (Tensor) - 输入tensor，必须大于或者等于二维（Ascend平台必须为四维）。批次维度需能被 `block_shape` 整除。
         - **block_shape** (Union[list(int), tuple(int), int]) - 分割批次维度的块的数量，取值需大于或者等于1。如果 `block_shape` 为list或者tuple，其长度 `M` 为空间维度的长度。如果 `block_shape` 为整数，那么所有空间维度分割的个数均为 `block_shape` 。在Ascend后端 `M` 必须为2。
-        - **crops** (Union[list(int), tuple(int)]) - 空间维度的裁剪大小，包含 `M` 个长度为2的list，取值需大于或等于0。`crops[i]` 为对空间维度 `i` 的填充，对应输入Tensor的维度 `i+offset` ， `offset` 为空间维度在输入Tensor维度中的偏移量，其中 `offset=N-M` ， `N` 是输入维度数。同时要求 :math:`input\_shape[i+offset]*block\_shape[i] > crops[i][0]+crops[i][1]` 。
+        - **crops** (Union[list(int), tuple(int)]) - 空间维度的裁剪大小，包含 `M` 个长度为2的list，取值需大于或等于0。`crops[i]` 为对空间维度 `i` 的填充，对应输入tensor的维度 `i+offset` ， `offset` 为空间维度在输入tensor维度中的偏移量，其中 `offset=N-M` ， `N` 是输入维度数。同时要求 :math:`input\_shape[i+offset]*block\_shape[i] > crops[i][0]+crops[i][1]` 。
 
     返回：
-        Tensor，经过划分排列之后的结果。
-
-    异常：
-        - **TypeError** - `block_shape` 不是 list、tuple 或者 int。
-        - **TypeError** - `crops` 不是 list 或者 tuple。
-        - **ValueError** - 当 `block_shape` 为list或tuple时， `block_shape` 不是一维。
-        - **ValueError** - Ascend 平台上 `block_shape` 长度不是2。
-        - **ValueError** - `block_shape` 的元素不是大于或者等于一的整数。
-        - **ValueError** - `crops` 的shape不是 (M, 2)，其中 M 为 `block_shape` 的长度。
-        - **ValueError** - `crops` 的元素不是非负的整数。
+        Tensor

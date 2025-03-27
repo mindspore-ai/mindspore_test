@@ -67,41 +67,28 @@ def _set_prim_op_user_data(prim, key, value):
 @_function_forbid_reuse
 def random_gamma(shape, alpha, seed=None):
     r"""
-    Outputs random values from the Gamma distribution(s) described by alpha.
+    Generate random numbers from the Gamma distribution(s).
 
 
     Args:
         shape (Tensor): The shape of random tensor to be generated.
-            Must be one of the following types: int32, int64. 1-D integer tensor.
         alpha (Tensor): The :math:`\alpha` distribution parameter.
-            A Tensor. Must be one of the following types: half, float32, float64.
-        seed (int, optional): Seed is used as entropy source for Random number engines generating pseudo-random numbers.
-            Default: ``None`` , which will be treated as 0.
+        seed (int, optional): Random seed, must be non-negative. Default ``None`` .
 
     Returns:
-        Tensor. The shape should be equal to the concat shape between the input `shape` and the broadcast
-        of `alpha`.
-        The dtype is the same type as alpha.
-
-    Raises:
-        TypeError: If `shape` is not a Tensor.
-        TypeError: If `alpha` is not a Tensor.
-        TypeError: If `seed` is not an int.
-        TypeError: If dtype of `alpha` is not half, float32 or float64.
+        Tensor, the shape is `mindspore.ops.concat([shape, rate.shape], axis=0)`.
+        The data type is the same as `alpha`.
 
     Supported Platforms:
         ``CPU``
 
     Examples:
-        >>> import numpy as np
         >>> import mindspore
-        >>> from mindspore import Tensor, ops
-        >>> shape = Tensor(np.array([7, 5]), mindspore.int32)
-        >>> alpha = Tensor(np.array([0.5, 1.5]), mindspore.float32)
-        >>> output = ops.random_gamma(shape, alpha, seed=5)
-        >>> result = output.shape
-        >>> print(result)
-        (7, 5, 2)
+        >>> shape = mindspore.tensor([7, 5], mindspore.int32)
+        >>> alpha = mindspore.tensor([0.5, 1.5], mindspore.float32)
+        >>> output = mindspore.ops.random_gamma(shape, alpha, seed=5)
+        >>> print(output.shape, output.dtype)
+        (7, 5, 2) Float32
     """
     seed1, seed2 = _get_seed(seed, "random_gamma")
     random_gamma_op = P.RandomGamma(seed1, seed2)
@@ -515,7 +502,7 @@ def uniform_candidate_sampler(true_classes,
 @_function_forbid_reuse
 def random_poisson(shape, rate, seed=None, dtype=mstype.float32):
     r"""
-    Generates random number Tensor with shape `shape` according to a Poisson distribution with mean `rate`.
+    Generate random number Tensor with `shape` according to a Poisson distribution with mean `rate`.
 
 
     .. math::
@@ -527,50 +514,31 @@ def random_poisson(shape, rate, seed=None, dtype=mstype.float32):
         the `seed` parameter has no effect.
 
     Args:
-        shape (Tensor): The shape of random tensor to be sampled from each poisson distribution, 1-D `Tensor` whose
-            dtype is mstype.int32 or mstype.int64.
+        shape (Tensor): The shape of random tensor to be sampled from each poisson distribution, 1-D integer tensor.
         rate (Tensor): The :math:`μ` parameter the distribution is constructed with.
             It represents the mean of poisson distribution
-            and also the variance of the distribution. It should be a `Tensor` whose dtype is mstype.int64,
-            mstype.int32, mstype.float64, mstype.float32 or mstype.float16.
-        seed (int, optional): Seed is used as entropy source for the random number engines to generate pseudo-random
-            numbers and must be non-negative. Default: ``None`` , which will be treated as 0.
-        dtype (mindspore.dtype): The data type of output: ``mstype.int64``, ``mstype.int32``,
-            ``mstype.float64``, ``mstype.float32`` or ``mstype.float16``. Default: ``mstype.float32``.
+            and also the variance of the distribution.
+        seed (int, optional): Random seed, must be non-negative. Default ``None`` .
+        dtype (mindspore.dtype): The data type returned. Default ``mstype.float32``.
 
     Returns:
-        A Tensor whose shape is `mindspore.concat(['shape', mindspore.shape('rate')], axis=0)` and data type is equal to
-        argument `dtype`.
-
-    Raises:
-        TypeError: If `shape` is not a Tensor.
-        TypeError: If datatype of `shape` is not mstype.int64 nor mstype.int32.
-        ValueError: If shape of `shape` is not 1-D.
-        TypeError: If `rate` is not a Tensor nor a scalar.
-        TypeError: If datatype of `rate` is not in [mstype.int64, mstype.int32,
-            mstype.float64, mstype.float32 or mstype.float16].
-        TypeError: If `seed` is not a non-negtive int.
-        TypeError: If `dtype` is not in [mstype.int64, mstype.int32, mstype.float64,
-            mstype.float32 nor mstype.float16].
-        ValueError: If any element of input `shape` tensor is not positive.
+        Tensor, the shape is `mindspore.ops.concat([shape, rate.shape], axis=0)`.
 
     Supported Platforms:
         ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
         >>> # case 1: 1-D shape, 2-D rate, float64 output
-        >>> shape = Tensor(np.array([2, 2]), mindspore.int64)
-        >>> rate = Tensor(np.array([[5.0, 10.0], [5.0, 1.0]]), mindspore.float32)
-        >>> output = ops.random_poisson(shape, rate, seed=5, dtype=mindspore.float64)
+        >>> shape = mindspore.tensor([2, 2], mindspore.int64)
+        >>> rate = mindspore.tensor([[5.0, 10.0], [5.0, 1.0]], mindspore.float32)
+        >>> output = mindspore.ops.random_poisson(shape, rate, seed=5, dtype=mindspore.float64)
         >>> print(output.shape, output.dtype)
         (2, 2, 2, 2) Float64
         >>> # case 2: 1-D shape, scalar rate, int64 output
-        >>> shape = Tensor(np.array([2, 2]), mindspore.int64)
-        >>> rate = Tensor(5.0, mindspore.float64)
-        >>> output = ops.random_poisson(shape, rate, seed=5, dtype=mindspore.int64)
+        >>> shape = mindspore.tensor([2, 2], mindspore.int64)
+        >>> rate = mindspore.tensor(5.0, mindspore.float64)
+        >>> output = mindspore.ops.random_poisson(shape, rate, seed=5, dtype=mindspore.int64)
         >>> print(output.shape, output.dtype)
         (2, 2) Int64
     """
@@ -1106,35 +1074,29 @@ def _generate_shapes(shape):
 @_function_forbid_reuse
 def rand(*size, dtype=None, seed=None):
     r"""
-    Returns a new tensor that fills numbers from the uniform distribution over an interval :math:`[0, 1)`
-    based on the given shape and dtype.
+    Return a new tensor that fills numbers from the uniform distribution over an interval :math:`[0, 1)`
+    based on the given `size` and `dtype`.
 
     .. warning::
         The Ascend backend does not support the reproducibility of random numbers, so
         the `seed` parameter has no effect.
 
     Args:
-        size (Union[int, tuple(int), list(int)]): Shape of the new tensor, e.g. :math:`(2, 3)` or :math:`2`.
+        size (Union[int, tuple(int), list(int)]): The shape of the output tensor.
 
     Keyword Args:
-        dtype (:class:`mindspore.dtype`, optional): Designated tensor dtype, it must be float type. If None,
-            `mindspore.float32` will be applied. Default: ``None`` .
-        seed (int, optional): Random seed, must be greater or equal to 0. Default: ``None`` , and ``0`` will be used.
+        dtype (:class:`mindspore.dtype`, optional): The data type returned. Default ``None`` .
+        seed (int, optional): Random seed, must be greater or equal to 0. Default ``None`` .
 
     Returns:
-        Tensor, with the designated shape and dtype, filled with random numbers from the uniform distribution on
-        the interval :math:`[0, 1)`.
-
-    Raises:
-        TypeError: `seed` is not a non-negative integer.
-        ValueError: If `dtype` is not a `mstype.float_type` type.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> from mindspore import ops
-        >>> print(ops.rand((2,3)))
+        >>> import mindspore
+        >>> print(mindspore.ops.rand((2,3)))
         [[4.1702199e-01 9.9718481e-01 7.2032452e-01]
          [9.3255734e-01 1.1438108e-04 1.2812445e-01]]
     """
@@ -1154,37 +1116,31 @@ def rand(*size, dtype=None, seed=None):
 @_function_forbid_reuse
 def rand_like(input, seed=None, *, dtype=None):
     r"""
-    Returns a new tensor that fills numbers from the uniform distribution over an interval :math:`[0, 1)`
-    based on the given shape and dtype.
+    Return a tensor with the same shape as `input` that is filled with random numbers from a uniform distribution
+    on the interval :math:`[0, 1)`.
 
     .. warning::
         The Ascend backend does not support the reproducibility of random numbers, so
         the `seed` parameter has no effect.
 
     Args:
-        input (Tensor): Input Tensor to specify the output shape and its default dtype.
-        seed (int, optional): Random seed, must be greater or equal to 0. Default: ``None`` , and ``0`` will be used.
+        input (Tensor): The input tensor.
+        seed (int, optional): Random seed, must be greater or equal to 0. Default ``None`` .
 
     Keyword Args:
-        dtype (:class:`mindspore.dtype`, optional): Designated tensor dtype, it must be float type. If None,
-            the same dtype of `input` will be applied. Default: ``None`` .
+        dtype (:class:`mindspore.dtype`, optional): The data type returned.
+            Default ``None`` .
 
     Returns:
-        Tensor, with the designated shape and dtype, filled with random numbers from the uniform distribution on
-        the interval :math:`[0, 1)`.
-
-    Raises:
-        TypeError: If `seed` is not a non-negative integer.
-        ValueError: If `dtype` is not a `mstype.float_type` type.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import mindspore as ms
-        >>> from mindspore import Tensor, ops
-        >>> a = Tensor([[2, 3, 4], [1, 2, 3]])
-        >>> print(ops.rand_like(a, dtype=ms.float32))
+        >>> import mindspore
+        >>> a = mindspore.tensor([[2, 3, 4], [1, 2, 3]])
+        >>> print(mindspore.ops.rand_like(a, dtype=mindspore.float32))
         [[4.1702199e-01 9.9718481e-01 7.2032452e-01]
          [9.3255734e-01 1.1438108e-04 1.2812445e-01]]
     """
@@ -1497,7 +1453,7 @@ def random_(input, from_=0, to=None, *, generator=None):
 @_function_forbid_reuse
 def randn(*size, dtype=None, seed=None):
     r"""
-    Returns a new Tensor with given shape and dtype, filled with a sample (or samples)
+    Return a new tensor with given shape and dtype, filled with random numbers
     from the standard normal distribution.
 
     .. warning::
@@ -1505,28 +1461,22 @@ def randn(*size, dtype=None, seed=None):
         the `seed` parameter has no effect.
 
     Args:
-        size (Union[int, tuple(int), list(int)]): Shape of the new tensor, e.g., :math:`(2, 3)` or :math:`2`.
+        size (Union[int, tuple(int), list(int)]): Shape of the output tensor.
 
     Keyword Args:
-        dtype (:class:`mindspore.dtype`, optional): Designated tensor dtype, it must be float type. If None,
-            `mindspore.float32` will be used. Default: ``None`` .
-        seed (int, optional): Random seed, must be greater or equal to 0. Default: ``None`` , and 0 will be used.
+        dtype (:class:`mindspore.dtype`, optional): The data type returned.
+            Default ``None`` .
+        seed (int, optional): Random seed, must be non-negative. Default ``None`` .
 
     Returns:
-        Tensor, with the designated shape and dtype, filled with a sample (or samples) from the
-        "standard normal" distribution.
-
-    Raises:
-        TypeError: `seed` is not a non-negative integer.
-        ValueError: If `dtype` is not a `mstype.float_type`.
-        ValueError: If `size` contains invalid number.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> from mindspore import ops
-        >>> print(ops.randn((2, 2)))
+        >>> import mindspore
+        >>> print(mindspore.ops.randn((2, 2)))
         [[ 0.30639967 -0.42438635]
          [-0.4287376   1.3054721 ]]
     """
@@ -1546,7 +1496,7 @@ def randn(*size, dtype=None, seed=None):
 @_function_forbid_reuse
 def randn_like(input, seed=None, *, dtype=None):
     r"""
-    Returns a new Tensor with given shape and dtype, filled with a sample (or samples) from the standard normal
+    Return a tensor with the same shape as `input`, filled with random numbers from the standard normal
     distribution.
 
     .. warning::
@@ -1554,29 +1504,22 @@ def randn_like(input, seed=None, *, dtype=None):
         the `seed` parameter has no effect.
 
     Args:
-        input (Tensor): Input Tensor to specify the output shape and its default dtype.
-        seed (int, optional): Random seed, must be greater or equal to 0. Default: ``None`` , and 0 will be used.
+        input (Tensor): The input tensor.
+        seed (int, optional): Random seed, must be non-negative. Default ``None`` .
 
     Keyword Args:
-        dtype (:class:`mindspore.dtype`, optional): Designated tensor dtype, it must be float type. If None,
-            `mindspore.float32` will be used. Default: ``None`` .
+        dtype (:class:`mindspore.dtype`, optional): The data type returned. Default ``None`` .
 
     Returns:
-        Tensor, with the designated shape and dtype, filled with a sample (or samples) from the
-        "standard normal" distribution.
-
-    Raises:
-        TypeError: `seed` is not a non-negative integer.
-        ValueError: If `dtype` is not a `mstype.float_type`.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import mindspore as ms
-        >>> from mindspore import Tensor, ops
-        >>> a = Tensor([[1, 2, 3], [4, 5, 6]])
-        >>> print(ops.randn_like(a, dtype=ms.float32))
+        >>> import mindspore
+        >>> a = mindspore.tensor([[1, 2, 3], [4, 5, 6]])
+        >>> print(mindspore.ops.randn_like(a, dtype=mindspore.float32))
         [[ 0.30639967 -0.42438635 -0.20454668]
          [-0.4287376   1.3054721   0.64747655]]
     """
@@ -1599,7 +1542,7 @@ def randn_like(input, seed=None, *, dtype=None):
 @_function_forbid_reuse
 def randint(low, high, size, seed=None, *, dtype=None):
     r"""
-    Returns a Tensor whose elements are random integers in the range of [ `low` , `high` ) .
+    Return a tensor whose elements are random integers in the range of [ `low` , `high` ) .
 
     .. warning::
         The Ascend backend does not support the reproducibility of random numbers, so
@@ -1608,30 +1551,22 @@ def randint(low, high, size, seed=None, *, dtype=None):
     Args:
         low (int): Start value of interval.
         high (int): End value of interval.
-        size (tuple): Shape of the new tensor.
-        seed (int, optional): Random seed, must be greater or equal to 0. Default: ``None`` , and ``0`` will be used.
+        size (tuple): Shape of the output tensor.
+        seed (int, optional): Random seed, must be non-negative. Default ``None`` .
 
     Keyword Args:
-        dtype (:class:`mindspore.dtype`, optional): Designated tensor dtype, it must be int type. If ``None`` ,
-            `mindspore.int64` will be used. Default: ``None`` .
+        dtype (:class:`mindspore.dtype`, optional): The data type returned.
+            Default ``None`` .
 
     Returns:
-        Tensor, with the designated shape and dtype, filled with random integers from low (inclusive)
-        to high (exclusive).
-
-    Raises:
-        TypeError: `seed` is not a non-negative integer.
-        TypeError: `size` is not a tuple.
-        TypeError: `low` or `high` is not an integer.
-        ValueError: If `dtype` is not a `mstype.int_type`.
-
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> from mindspore import ops
-        >>> print(ops.randint(1, 10, (2,3)))
+        >>> import mindspore
+        >>> print(mindspore.ops.randint(1, 10, (2,3)))
         [[4 9 7]
          [9 1 2]]
     """
@@ -1661,7 +1596,7 @@ def randint(low, high, size, seed=None, *, dtype=None):
 @_function_forbid_reuse
 def randint_like(input, low, high, seed=None, *, dtype=None):
     r"""
-    Returns a tensor with the same shape as Tensor `input` whose elements are random integers in the range
+    Returns a tensor with the same shape as `input` whose elements are random integers in the range
     of [ `low` , `high` ) .
 
     .. warning::
@@ -1669,31 +1604,25 @@ def randint_like(input, low, high, seed=None, *, dtype=None):
         the `seed` parameter has no effect.
 
     Args:
-        input (Tensor): Input Tensor to specify the output shape and its default dtype.
+        input (Tensor): The input tensor.
         low(int): Start value of interval.
         high(int): End value of interval.
-        seed (int, optional): Random seed, must be greater or equal to 0. Default: ``None`` , and 0 will be used.
+        seed (int, optional): Random seed, must be non-negative. Default ``None`` .
 
     Keyword Args:
-        dtype (:class:`mindspore.dtype`, optional): Designated tensor dtype, it must be int type. If ``None`` ,
-            the same dtype of `input` will be applied. Default: ``None`` .
+        dtype (:class:`mindspore.dtype`, optional): The data type returned.
+            Default ``None`` .
 
     Returns:
-        Tensor, with the designated shape and dtype, filled with random integers from low (inclusive)
-        to high (exclusive).
-
-    Raises:
-        TypeError: `seed` is not a non-negative integer.
-        TypeError: `low` or `high` is not an integer.
-        ValueError: If `dtype` is not a `mstype.int_type`.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-       >>> from mindspore import Tensor, ops
-       >>> a = Tensor([[1, 2, 3], [3, 2, 1]])
-       >>> print(ops.randint_like(a, 1, 10))
+       >>> import mindspore
+       >>> a = mindspore.tensor([[1, 2, 3], [3, 2, 1]])
+       >>> print(mindspore.ops.randint_like(a, 1, 10))
        [[4 9 7]
         [9 1 2]]
     """

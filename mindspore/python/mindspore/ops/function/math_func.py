@@ -454,43 +454,36 @@ def addcmul_ext(input, tensor1, tensor2, *, value=1):
 
 def bincount(input, weights=None, minlength=0):
     """
-    Counts the number of occurrences of each value in `input`.
+    Count the frequency of each value in the input tensor of non-negative ints.
 
-    If you don't specify `minlength`, the length of output Tensor will be
-    the maximum value of the input `input` plus one.
+    If you don't specify `minlength`, the length of output tensor the length of the output tensor is max( `input` ) + 1.
 
-    If `minlength` is specified, the length of output Tensor is the value of maximum of `input` plus 1 and `minlength`.
+    If `minlength` is specified, the length of the output tensor is max([max( `input` ) + 1, `minlength`]).
 
-    Each value in the output Tensor marks the number of occurrences of that index in `input`.
-    If 'weights' is specified, the output results are weighted, i.e ``out[n] += weight[i]`` instead of ``out[n] += 1``.
+    If 'weights' is specified, the output results are weighted. If `n` is the value at position `i`,
+    i.e ``out[n] += weight[i]`` instead of ``out[n] += 1``.
 
     Note:
         If `input` contains negative value, the result will be undefined.
 
     Args:
-        input (Tensor): 1-d input tensor.
-        weights (Tensor, optional): Weights, a tensor of the same shape as `input`. Default: ``None`` .
-        minlength (int, optional): A minimum number of bins for the output tensor. Default: ``0`` .
+        input (Tensor): 1-D input tensor.
+        weights (Tensor, optional): Weights. Default ``None`` .
+        minlength (int, optional): A minimum number of bins for the output tensor. Default ``0`` .
 
     Returns:
         Tensor, a tensor of shape [max(input)+1] if input is non-empty, otherwise, the shape is [0].
-
-    Raises:
-        TypeError: If `input` or `weights` is not a tensor.
-        ValueError: If `input` is not one-dimensional, or if `input` and `weights` do not have the same shape.
-        ValueError: If `minlength` is a negative integer.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> from mindspore import Tensor, ops
-        >>> from mindspore import dtype as mstype
-        >>> x = Tensor([2, 4, 1, 0, 0], dtype=mstype.int64)
-        >>> print(ops.bincount(x, minlength=7))
+        >>> import mindspore
+        >>> x = mindspore.tensor([2, 4, 1, 0, 0], dtype=mindspore.int64)
+        >>> print(mindspore.ops.bincount(x, minlength=7))
         [2. 1. 1. 0. 1. 0. 0.]
-        >>> weights = Tensor([0, 0.25, 0.5, 0.75, 1], dtype=mstype.float32)
-        >>> print(ops.bincount(x, weights=weights))
+        >>> weights = mindspore.tensor([0, 0.25, 0.5, 0.75, 1], dtype=mindspore.float32)
+        >>> print(mindspore.ops.bincount(x, weights=weights))
         [1.75 0.5  0.   0.   0.25]
     """
     if not isinstance(input, Tensor):
@@ -5805,32 +5798,27 @@ def sparse_segment_mean(x, indices, segment_ids):
 
 def block_diag(*inputs):
     r"""
-    Creates a block diagonal matrix from the provided Tensor.
+    Creates a block diagonal matrix from the provided tensor.
 
     Args:
-        inputs (Tensor): One or more tensors, the dimension of Tensor should be 0, 1 or 2.
+        inputs (Tensor): One or more tensors, the dimension of tensor should be 0, 1 or 2.
 
     Returns:
-        Tensor, two-dimensional with all input tensors arranged in
+        2-D Tensor, with all input tensors arranged in
         order so that their top left and bottom right corners are
         diagonally adjacent. All other elements are set to 0.
-
-    Raises:
-        TypeError: If the input is not a Tensor.
-        ValueError: If the dimension of Tensor is not 0, 1 or 2.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> from mindspore import Tensor, ops
-        >>> from mindspore import dtype as mstype
-        >>> x1 = Tensor([[4], [3], [2]], mstype.int32)
-        >>> x2 = Tensor([7, 6, 5], mstype.int32)
-        >>> x3 = Tensor(1, mstype.int32)
-        >>> x4 = Tensor([[5, 4, 3], [2, 1, 0]], mstype.int32)
-        >>> x5 = Tensor([[8, 7], [7, 8]], mstype.int32)
-        >>> out = ops.block_diag(x1, x2, x3, x4, x5)
+        >>> import mindspore
+        >>> x1 = mindspore.tensor([[4], [3], [2]], mindspore.int32)
+        >>> x2 = mindspore.tensor([7, 6, 5], mindspore.int32)
+        >>> x3 = mindspore.tensor(1, mindspore.int32)
+        >>> x4 = mindspore.tensor([[5, 4, 3], [2, 1, 0]], mindspore.int32)
+        >>> x5 = mindspore.tensor([[8, 7], [7, 8]], mindspore.int32)
+        >>> out = mindspore.ops.block_diag(x1, x2, x3, x4, x5)
         >>> print(out.asnumpy())
         [[4 0 0 0 0 0 0 0 0 0]
          [3 0 0 0 0 0 0 0 0 0]
