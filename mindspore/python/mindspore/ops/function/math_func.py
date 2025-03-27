@@ -3199,8 +3199,7 @@ def gt(input, other):
             \end{cases}
 
     Note:
-        - Inputs of `input` and `other` comply with the implicit type conversion rules to make the data types
-          consistent.
+        - Support implicit type conversion.
         - The inputs must be two tensors or one tensor and one scalar.
         - When the inputs are two tensors, dtypes of them cannot be bool at the same time,
           and the shapes of them can be broadcast.
