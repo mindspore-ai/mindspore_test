@@ -251,6 +251,7 @@ bool PipelineTransformer::MainGraph() {
     }
   }
   if (!shared_cell_) {
+    MS_LOG(WARNING) << "Pipeline Parallel with no 'lazy_inline' is deprecated, '@lazy_inline' should be enabled";
     return true;
   }
   auto value_nodes = main_graph_->value_nodes();
