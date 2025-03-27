@@ -456,6 +456,9 @@ class TupleListGetitemDependReorder : public AnfVisitor {
     auto depend = node->cast<CNodePtr>()->input(1);
     auto depend_cnode = depend->cast<CNodePtr>();
     auto fg = node->func_graph();
+    if (fg != depend_cnode->func_graph()) {
+      return nullptr;
+    }
     // Avoid generating redundant depend nodes.
     if (ExistUpdateStateUser(mgr, depend)) {
       auto inputs = node->cast<CNodePtr>()->inputs();

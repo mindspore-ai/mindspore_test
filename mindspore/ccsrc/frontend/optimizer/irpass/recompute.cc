@@ -123,9 +123,7 @@ AnfNodePtr GetPrimalFromFprop(const FuncGraphPtr &k_fg) {
   return k_fg_outputs[kIndex1];
 }
 
-bool ShouldAddNewPrimalOutput(const AnfNodePtr &node, bool recompute_cell) {
-  return !IsGradNode(node) || recompute_cell;
-}
+bool ShouldAddNewPrimalOutput(const AnfNodePtr &node) { return !IsGradNode(node); }
 
 bool IsForwardDepend(const AnfNodePtr &node) {
   return IsPrimitiveCNode(node, prim::kPrimDepend) && !node->cast_ptr<CNode>()->HasAttr(kRecomputeInsert);
@@ -140,7 +138,7 @@ bool AddNewPrimalNode(const FuncGraphManagerPtr &manager, const FuncGraphPtr &fg
     auto user = node_and_idx.first;
     MS_EXCEPTION_IF_NULL(user);
     // The forward part may have multiple outputs.
-    if (IsPrimitiveCNode(user, prim::kPrimTupleGetItem) && ShouldAddNewPrimalOutput(user, recompute_cell)) {
+    if (IsPrimitiveCNode(user, prim::kPrimTupleGetItem) && ShouldAddNewPrimalOutput(user)) {
       // Make new tuple_getitem to get corresponding output.
       auto new_primal_getitem = fg->NewCNode({NewValueNode(prim::kPrimTupleGetItem), new_primal,
                                               user->cast_ptr<CNode>()->input(kInputNodeOutputIndexInTupleGetItem)});
@@ -148,7 +146,7 @@ bool AddNewPrimalNode(const FuncGraphManagerPtr &manager, const FuncGraphPtr &fg
         AddNewPrimalNode(manager, fg, user, new_primal_getitem, recompute_cell, origin_to_new_primal) || changed;
       continue;
     }
-    if (IsForwardDepend(user) && ShouldAddNewPrimalOutput(user, recompute_cell)) {
+    if (IsForwardDepend(user) && ShouldAddNewPrimalOutput(user)) {
       // Make new depend node in forward to get corresponding output.
       auto new_depend = fg->NewCNode(user->cast_ptr<CNode>()->inputs());
       new_depend->set_input(IntToSize(node_and_idx.second), new_primal);
@@ -156,8 +154,7 @@ bool AddNewPrimalNode(const FuncGraphManagerPtr &manager, const FuncGraphPtr &fg
       continue;
     }
     // The op like concat will have a make_tuple input.
-    if (IsPrimitiveCNode(user, prim::kPrimMakeTuple) && !IsFpropReturn(user) &&
-        ShouldAddNewPrimalOutput(user, recompute_cell)) {
+    if (IsPrimitiveCNode(user, prim::kPrimMakeTuple) && !IsFpropReturn(user) && ShouldAddNewPrimalOutput(user)) {
       auto user_cnode = user->cast<CNodePtr>();
       MS_EXCEPTION_IF_NULL(user_cnode);
       if (user_cnode->HasAttr(kAttrRecomputeMakeTuple)) {
