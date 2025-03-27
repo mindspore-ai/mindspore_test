@@ -1369,22 +1369,18 @@ def signbit(input):
     the corresponding output position is True; otherwise, it is False.
 
     Args:
-        input (Tensor): The input value.
+        input (Tensor): The input tensor.
 
     Returns:
-        Tensor, the signbit of input.
-
-    Raises:
-        TypeError: If input is not a Tensor.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import mindspore as ms
-        >>> from mindspore import ops
-        >>> input = ms.Tensor([0.3, 1.2, 0., -2.5])
-        >>> output = ops.signbit(input)
+        >>> import mindspore
+        >>> input = mindspore.tensor([0.3, 1.2, 0., -2.5])
+        >>> output = mindspore.ops.signbit(input)
         >>> print(output)
         [False False False  True]
     """
@@ -1407,22 +1403,18 @@ def sgn(input):
                         \end{cases}
 
     Args:
-        input (Tensor): The input value.
+        input (Tensor): The input tensor.
 
     Returns:
-        Tensor, the sgn of input.
-
-    Raises:
-        TypeError: If input is not a Tensor.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import mindspore as ms
-        >>> from mindspore import ops
-        >>> input = ms.Tensor([[3 + 4j, 7 - 24j, 0, 6 + 8j, 8], [15 + 20j, 7 - 24j, 0, 3 + 4j, 20]], dtype=ms.complex64)
-        >>> output = ops.sgn(input)
+        >>> import mindspore
+        >>> input = mindspore.tensor([[3+4j, 7-24j, 0, 6+8j, 8], [15+20j, 7-24j, 0, 3+4j, 20]], mindspore.complex64)
+        >>> output = mindspore.ops.sgn(input)
         >>> print(output)
         [[0.6 +0.8j  0.28-0.96j 0.  +0.j   0.6 +0.8j  1.  +0.j  ]
          [0.6 +0.8j  0.28-0.96j 0.  +0.j   0.6 +0.8j  1.  +0.j  ]]
@@ -4801,20 +4793,15 @@ def reciprocal(input):
         input (Tensor): The input tensor.
 
     Returns:
-        Tensor, has the same shape as the `input`.
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import mindspore as ms
-        >>> from mindspore import ops
-        >>> import numpy as np
-        >>> input = ms.Tensor(np.array([1.0, 2.0, 4.0]), ms.float32)
-        >>> output = ops.reciprocal(input)
+        >>> import mindspore
+        >>> input = mindspore.tensor([1.0, 2.0, 4.0], mindspore.float32)
+        >>> output = mindspore.ops.reciprocal(input)
         >>> print(output)
         [1.   0.5  0.25]
     """
@@ -5663,21 +5650,15 @@ def rad2deg(x):
         x (Tensor): The input tensor.
 
     Returns:
-        Tensor, has the same shape and dtype as the `x`.
-
-    Raises:
-        TypeError: If `x` is not a Tensor.
-        TypeError: If dtype of `x` isn't float16, float32 or float64.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import Tensor
-        >>> from mindspore import ops
-        >>> x = Tensor([[6.283, -3.142],[1.570, -6.283],[3.142, -1.570]], mindspore.float32)
-        >>> output = ops.rad2deg(x)
+        >>> x = mindspore.tensor([[6.283, -3.142],[1.570, -6.283],[3.142, -1.570]], mindspore.float32)
+        >>> output = mindspore.ops.rad2deg(x)
         >>> print(output)
         [[ 359.98935 -180.02333]
          [  89.95438 -359.98935]
@@ -9237,34 +9218,43 @@ def rot90(input, k, dims):
     and from the second towards the first for k < 0.
 
     Args:
-        input (Tensor): Input tensor.
+        input (Tensor): The input tensor.
         k (int): Number of times to rotate.
         dims (Union[list(int), tuple(int)]): Axis to rotate.
 
     Returns:
-        Tensor.
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
-        TypeError: If `k` is not integer.
-        TypeError: If `dims` is not tuple of integers or list of ints.
-        ValueError: If the length of `dims` is not `2`.
-        ValueError: If any dims is out of Tensor's range [-input.ndim, input.ndim).
-        RuntimeError: If rotation dims are not different.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([[0, 1], [2, 3]])).astype(np.float32)
-        >>> k = 1
-        >>> dims = [0, 1]
-        >>> output = ops.rot90(x, k, dims)
+        >>> import mindspore
+        >>> x = mindspore.tensor([[1, 2, 3],
+        ...                       [4, 5, 6]], mindspore.float32)
+        >>> output = mindspore.ops.rot90(x, k=1, dims=(0, 1))
         >>> print(output)
-        [[1. 3.]
-        [0. 2.]]
+        [[3. 6.]
+         [2. 5.]
+         [1. 4.]]
+        >>> mindspore.ops.rot90(x, k=1, dims=(1, 0)) == mindspore.ops.rot90(x, k=-1, dims=(0,1))
+        Tensor(shape=[3, 2], dtype=Bool, value=
+        [[ True,  True],
+         [ True,  True],
+         [ True,  True]])
+        >>> # when input array has ndim>2
+        >>> x = mindspore.tensor([[[1, 2, 3],
+        ...                       [4, 5, 6]],
+        ...                      [[7, 8, 9],
+        ...                       [10, 11, 12]]], mindspore.float32)
+        >>> output = mindspore.ops.rot90(x, k=1, dims=(2, 1))
+        >>> print(output)
+        [[[ 4.  1.]
+         [ 5.  2.]
+         [ 6.  3.]]
+        [[10.  7.]
+         [11.  8.]
+         [12.  9.]]]
     """
 
     if not isinstance(input, (Tensor, Tensor_)):
@@ -9528,12 +9518,9 @@ def any(input, axis=None, keep_dims=False):
 
 def remainder(input, other):
     r"""
-    Computes the remainder of dividing the first input tensor by the second input tensor element-wise.
+    Compute the remainder of division for the input tensor element-wise.
 
-    Inputs of `input` and `other` comply with the implicit type conversion rules to make the data types consistent.
-    The inputs must be two tensors or one tensor and one scalar. When the inputs are two tensors,
-    both dtypes cannot be bool, and the shapes of them could be broadcast. When the inputs are one tensor
-    and one scalar, the scalar could only be a constant.
+    Support implicit type conversion and type promotion.
 
     .. code:: python
 
@@ -9545,30 +9532,29 @@ def remainder(input, other):
         - If shape is expressed as (D1,D2... ,Dn), then D1\*D2... \*DN<=1000000,n<=8.
 
     Args:
-        input (Union[Tensor, numbers.Number, bool]): The first input is a number, a bool
-            or a tensor whose data type is number.
-        other (Union[Tensor, numbers.Number, bool]): When the first input is a tensor, the second input
-            could be a number, a bool or a tensor whose data type is number.
+        input (Union[Tensor, numbers.Number, bool]): The first input.
+        other (Union[Tensor, numbers.Number, bool]): The second input.
 
     Returns:
-        Tensor, the shape is the same as the one after broadcasting,
-        and the data type is the one with higher precision.
-
-    Raises:
-        TypeError: If neither `input` nor `other` is one of the following: Tensor, number, bool.
-        ValueError: If the shapes of `input` and `other` cannot be broadcasted to each other.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([-4.0, 5.0, 6.0]).astype(np.float16))
-        >>> y = Tensor(np.array([3.0, 2.0, 3.0]).astype(np.float16))
-        >>> output = ops.remainder(x, y)
+        >>> import mindspore
+        >>> # case 1: The shape of two inputs are different
+        >>> x = mindspore.tensor([-4.0, 5.0, 6.0], mindspore.float16)
+        >>> y = mindspore.tensor([3.0], mindspore.float16)
+        >>> output = mindspore.ops.remainder(x, y)
         >>> print(output)
-        [2.  1.  0.]
+        [2. 2. 0.]
+        >>> # case 2: The shape of two inputs are the same
+        >>> x = mindspore.tensor([-4.0, 5.0, 6.0], mindspore.float16)
+        >>> y = mindspore.tensor([3.0, 2.0, 3.0], mindspore.float16)
+        >>> output = mindspore.ops.remainder(x, y)
+        >>> print(output)
+        [2. 1. 0.]
     """
 
     out = input - tensor_floordiv(input, other) * other
@@ -12733,7 +12719,7 @@ def batch_dot(x1, x2, axes=None):
 
 def round(input, *, decimals=0):
     r"""
-    Returns half to even of a tensor element-wise.
+    Round elements of input to the nearest integer.
 
     .. math::
         out_i \approx input_i
@@ -12746,33 +12732,35 @@ def round(input, *, decimals=0):
         input (Tensor): The input tensor.
 
     Keyword Args:
-        decimals (int, optional): Number of decimal places to round to (default: ``0``). If decimals is negative,
-            it specifies the number of positions to the left of the decimal point. It supports converting the
-            single-element tensor to an int. When `input` type is int32 or int64, the `decimals` should be 0.
+        decimals (int, optional): Number of decimal places to round. If decimals is negative,
+            it specifies the number of positions to the left of the decimal point. Default ``0`` .
 
     Returns:
-        Tensor, has the same shape and type as the `input`.
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
-        RuntimeError: If `input` type is int32 or int64, the `decimals` is not 0.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input = Tensor(np.array([0.8, 1.5, 2.3, 2.5, -4.5]), mindspore.float32)
-        >>> output = ops.round(input)
+        >>> output = mindspore.ops.round(mindspore.tensor([4.7, -2.3, 9.1, -7.7]))
         >>> print(output)
-        [ 1.  2.  2.  2. -4.]
-        >>> input = Tensor(np.array([0.81, 1.52, 2.35, 2.53, -4.57]), mindspore.float32)
-        >>> output = ops.round(input, decimals=1)
+        [ 5. -2.  9. -8.]
+        >>> # Values equidistant from two integers are rounded towards the
+        >>> # the nearest even value (zero is treated as even)
+        >>> output = mindspore.ops.round(mindspore.tensor([-0.5, 0.5, 1.5, 2.5]))
         >>> print(output)
-        [ 0.8  1.5  2.4  2.5 -4.6]
+        [0. 0.  2.  2.]
+        >>> # A positive decimals argument rounds to the to that decimal place
+        >>> output = mindspore.ops.round(mindspore.tensor([0.1234567]), decimals=3)
+        >>> print(output)
+        [0.123]
+        >>> # A negative decimals argument rounds to the left of the decimal
+        >>> output = mindspore.ops.round(mindspore.tensor([1200.1234567]), decimals=-3)
+        >>> print(output)
+        [1000.]
     """
+
     return round_op(input, decimals)
 
 
