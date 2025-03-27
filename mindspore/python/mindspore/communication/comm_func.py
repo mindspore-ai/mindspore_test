@@ -30,7 +30,7 @@ from mindspore.ops.auto_generate.gen_ops_prim import (inner_comm_all_reduce_op, 
 from mindspore._c_expression import CommHandle as CommHandle_
 from mindspore._c_expression.typing import Type
 from mindspore import jit_class
-from mindspore.common.api import _pynative_executor
+import mindspore as ms
 
 __all__ = [
     'all_reduce',
@@ -63,6 +63,10 @@ class CommHandle(CommHandle_):
     handles will be created using Python.
     """
 
+    def __init__(self, handle=None, exec_sync=False):
+        super(CommHandle, self).__init__()
+        self.handle = handle
+        self.exec_sync = exec_sync
     def wait(self):
         r"""
         The wait for asynchronous handles will not take effect for handles created on the Python side.
@@ -80,6 +84,10 @@ class CommHandle(CommHandle_):
         [[2. 2. 2. 2. 2. 2. 2. 2.]
          [2. 2. 2. 2. 2. 2. 2. 2.]]
         """
+        if self.handle:
+            self.handle.wait()
+        if self.exec_sync:
+            ms.runtime.synchronize()
 
 
 default_handle = CommHandle()
@@ -888,9 +896,9 @@ def _deal_comm_outputs(output, async_op, exec_sync=False):
         if not async_op:
             output[1].wait()
             if exec_sync:
-                _pynative_executor.sync()
+                ms.runtime.synchronize()
             return (output[0], None)
-        return output
+        return (output[0], CommHandle(output[1], exec_sync))
 
     if not async_op:
         return (output, None)
