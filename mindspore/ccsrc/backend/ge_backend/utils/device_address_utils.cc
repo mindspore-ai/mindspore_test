@@ -529,12 +529,19 @@ bool DeviceAddressUtils::IsContiguousTensor(const tensor::BaseTensorPtr &tensor)
   }
 
   auto new_storage_info = tensor->storage_info();
-  if (new_storage_info && old_storage_info->is_contiguous && new_storage_info->is_contiguous) {
+  if (new_storage_info->shape == new_storage_info->ori_shape) {
     MS_LOG(INFO) << "It is a contiguous tensor, tensor: " << tensor;
     return true;
   }
 
-  MS_LOG(ERROR) << "It is not a contiguous tensor, tensor: " << tensor;
+  if (new_storage_info->storage_offset == 0 && new_storage_info->is_contiguous) {
+    MS_LOG(INFO) << "It is a contiguous tensor, tensor: " << tensor;
+    return true;
+  }
+
+  MS_LOG(ERROR) << "It is not a contiguous tensor, tensor: " << tensor
+                << ", new_storage_info: " << new_storage_info->ToString()
+                << ", old_storage_info: " << old_storage_info->ToString();
   return false;
 }
 }  // namespace ge_backend
