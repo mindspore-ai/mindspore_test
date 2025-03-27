@@ -102,7 +102,7 @@ from mindspore.ops.auto_generate import exp2
 # 24
 
 # 25
-from mindspore.ops.functional import greater, gt
+from mindspore.ops.functional_overload import greater, gt
 # 26
 from mindspore.ops.functional import eq
 # 27

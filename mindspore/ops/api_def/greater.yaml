@@ -1,7 +1,21 @@
 greater:
-  op_yaml: greater_op.yaml
-  py_method: tensor_greater
-  Ascend: pyboost
-  CPU: pyboost
-  GPU: pyboost
-  interface: tensor
+  - op_yaml: greater_scalar_op.yaml
+    py_method: tensor_greater
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor, function
+
+  - op_yaml: greater_op.yaml
+    py_method: tensor_greater
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: tensor, function
+
+  - op_yaml: deprecated/greater_method.yaml
+    py_method: deprecated_tensor_greater
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

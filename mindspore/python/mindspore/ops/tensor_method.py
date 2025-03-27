@@ -722,6 +722,10 @@ def tensor_greater(input, other):
     return greater(input, other)
 
 
+def deprecated_tensor_greater(input, other):
+    return greater(input, other)
+
+
 # 40 greater_equal
 def tensor_greater_equal(input, other):
     return greater_equal(input, other)
@@ -732,6 +736,8 @@ def deprecated_tensor_greater_equal(input, other):
 
 
 # 41 gt
+def tensor_gt_(input, other):
+    raise ValueError("should not come here for gt_ method.")
 
 # 42 half
 

@@ -1,0 +1,20 @@
+#operator inplace_greater_scalar
+inplace_greater_scalar:
+  args:
+    input:
+      dtype: tensor
+    value:
+      dtype: number
+  args_signature:
+    rw_write: input
+  returns:
+    out:
+      dtype: tensor
+      inplace: input
+  labels:
+    side_effect_mem: True
+  function:
+    disable: True
+  dispatch:
+    enable: True
+    Ascend: InplaceGreaterScalarAscend

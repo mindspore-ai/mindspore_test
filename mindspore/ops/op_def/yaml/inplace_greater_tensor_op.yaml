@@ -1,0 +1,20 @@
+#operator inplace_greater_tensor
+inplace_greater_tensor:
+  args:
+    input:
+      dtype: tensor
+    value:
+      dtype: tensor
+  args_signature:
+    rw_write: input
+  returns:
+    out:
+      dtype: tensor
+      inplace: input
+  labels:
+    side_effect_mem: True
+  function:
+    disable: True
+  dispatch:
+    enable: True
+    Ascend: InplaceGreaterTensorAscend

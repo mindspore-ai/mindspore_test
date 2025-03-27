@@ -14,15 +14,45 @@
 # ============================================================================
 import numpy as np
 import pytest
-from tests.mark_utils import arg_mark
 import mindspore as ms
-import mindspore.nn as nn
 from mindspore import Tensor
+from mindspore.mint import gt
+import tests.st.utils.test_utils as test_utils
+from tests.mark_utils import arg_mark
+
+def generate_random_input(shape, dtype):
+    return np.random.randn(*shape).astype(dtype)
 
 
-class Net(nn.Cell):
-    def construct(self, x, y):
-        return x.gt(y)
+def _count_unequal_element(data_expected, data_me, rtol, atol):
+    assert data_expected.shape == data_me.shape
+    total_count = len(data_expected.flatten())
+    error = np.abs(data_expected - data_me)
+    greater = np.greater(error, atol + np.abs(data_me) * rtol)
+    loss_count = np.count_nonzero(greater)
+    assert (
+        loss_count / total_count
+    ) < rtol, "\ndata_expected_std:{0}\ndata_me_error:{1}\nloss:{2}".format(
+        data_expected[greater], data_me[greater], error[greater]
+    )
+
+
+def allclose_nparray(data_expected, data_me, rtol, atol, equal_nan=True):
+    if np.any(np.isnan(data_expected)):
+        assert np.allclose(data_expected, data_me, rtol, atol, equal_nan=equal_nan)
+    elif not np.allclose(data_expected, data_me, rtol, atol, equal_nan=equal_nan):
+        _count_unequal_element(data_expected, data_me, rtol, atol)
+    else:
+        assert True
+
+
+@test_utils.run_with_cell
+def gt_forward_func(x, other):
+    return gt(x, other)
+
+
+def gt_froword_numpy(x, other):
+    return np.greater(x, other)
 
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
@@ -36,10 +66,15 @@ def test_tensor_gt(mode):
     Description: Verify the result of tensor when dims argument is tuple.
     Expectation: success
     """
-    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
-    net = Net()
-    x = Tensor(np.array([1, 2, 3]), ms.int32)
-    y = Tensor(np.array([1, 1, 4]), ms.int32)
-    output = net(x, y)
-    expect_output = Tensor([False, True, False])
-    assert np.allclose(output.asnumpy(), expect_output.asnumpy())
+    ms.set_context(mode=mode, jit_level='O0')
+    x_np = generate_random_input((3, 4, 5, 6), np.float32)
+    y_np = generate_random_input((3, 4, 5, 6), np.float32)
+    x = Tensor(x_np)
+    y = Tensor(y_np)
+    output = gt_forward_func(x, y)
+    expect_output = gt_froword_numpy(x_np, y_np)
+    allclose_nparray(output.asnumpy(), expect_output, 0, 0)
+    y2 = 0.5
+    output2 = gt_forward_func(x, y2)
+    expect_output2 = gt_froword_numpy(x_np, y2)
+    allclose_nparray(output2.asnumpy(), expect_output2, 0, 0)

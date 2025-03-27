@@ -1,4 +1,4 @@
-# Copyright 2024 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-import pytest
 import numpy as np
+import pytest
 import mindspore as ms
-from mindspore import Tensor, mint
-
+from mindspore import Tensor
 import tests.st.utils.test_utils as test_utils
 from tests.mark_utils import arg_mark
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+
 
 
 def generate_random_input(shape, dtype):
@@ -49,8 +49,9 @@ def allclose_nparray(data_expected, data_me, rtol, atol, equal_nan=True):
 
 
 @test_utils.run_with_cell
-def gt_forward_func(x, other):
-    return mint.gt(x, other)
+def gt__forward_func(x, other):
+    x = x.clone()
+    return x.gt_(other)
 
 
 def gt_froword_numpy(x, other):
@@ -62,23 +63,23 @@ def gt_froword_numpy(x, other):
           card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE, ms.GRAPH_MODE])
-def test_ops_gt_normal(mode):
+def test_tensor_gt__normal(mode):
     """
-    Feature: pyboost function.
-    Description: test function gt forward.
-    Expectation: expect correct resugt.
+    Feature: tensor.gt_
+    Description: Verify the result of tensor.gt_.
+    Expectation: success
     """
     ms.set_context(mode=mode, jit_level='O0')
     x_np = generate_random_input((3, 4, 5, 6), np.float32)
     y_np = generate_random_input((3, 4, 5, 6), np.float32)
     x = Tensor(x_np)
     y = Tensor(y_np)
-    output = gt_forward_func(x, y)
-    expect_output = gt_froword_numpy(x_np, y_np)
+    output = gt__forward_func(x, y)
+    expect_output = gt_froword_numpy(x_np, y_np).astype(np.float32)
     allclose_nparray(output.asnumpy(), expect_output, 0, 0)
     y2 = 0.5
-    output2 = gt_forward_func(x, y2)
-    expect_output2 = gt_froword_numpy(x_np, y2)
+    output2 = gt__forward_func(x, y2)
+    expect_output2 = gt_froword_numpy(x_np, y2).astype(np.float32)
     allclose_nparray(output2.asnumpy(), expect_output2, 0, 0)
 
 
@@ -86,19 +87,19 @@ def test_ops_gt_normal(mode):
           level_mark='level1',
           card_mark='onecard',
           essential_mark='unessential')
-def test_ops_gt_dynamic():
+def test_ops_gt__dynamic():
     """
     Feature: pyboost function.
-    Description: test function gt forward with dynamic shape.
-    Expectation: expect correct resugt.
+    Description: test function tensor.gt_ forward with dynamic shape.
+    Expectation: expect correct result.
     """
     x = ms.Tensor(generate_random_input((3, 4, 5, 6), np.float16))
     y = ms.Tensor(generate_random_input((3, 4, 5, 6), np.float16))
     x2 = ms.Tensor(generate_random_input((3, 4), np.float16))
     y2 = ms.Tensor(generate_random_input((3, 4), np.float16))
-    TEST_OP(gt_forward_func, [[x, y], [x2, y2]], '',
+    TEST_OP(gt__forward_func, [[x, y], [x2, y2]], 'InplaceGreaterTensor',
             disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
     y3 = 1
     y4 = 2
-    TEST_OP(gt_forward_func, [[x, y3], [x2, y4]], '',
+    TEST_OP(gt__forward_func, [[x, y3], [x2, y4]], 'InplaceGreaterScalar',
             disable_yaml_check=True, disable_mode=['GRAPH_MODE'])

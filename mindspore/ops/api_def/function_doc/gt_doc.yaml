@@ -1,0 +1,5 @@
+gt:
+  description: |
+    gt(input, other) -> Tensor
+
+    Alias for :func:`mindspore.mint.greater`.
