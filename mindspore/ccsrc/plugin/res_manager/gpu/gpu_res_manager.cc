@@ -91,7 +91,7 @@ float GetCudaCap(const uint32_t device_id) {
   (void)cudaGetDeviceProperties(&prop, device_id);
   auto major = prop.major;
   auto minor = prop.minor;
-  return static_cast<float>(major * 10 + minor) / 10.0;
+  return static_cast<float>(major * 10.0 + minor) / 10.0;
 }
 }  // namespace
 
@@ -109,13 +109,13 @@ bool GPUResManager::InitDevice() {
   }
   // Check the Cuda capability
   const float cuda_cap = GetCudaCap(res_key_.device_id_);
-  if (cuda_cap < 5.3) {
+  if (cuda_cap < SUPPORTED_CAP) {
     MS_LOG(WARNING) << "The device with Cuda compute capability " << cuda_cap
-                    << " is lower than the minimum required capability " << 5.3
+                    << " is lower than the minimum required capability " << SUPPORTED_CAP
                     << ", this may cause some unexpected problems and severely affect the results. "
                     << "Eg: the outputs are all zeros.\n"
-                    << "Device with a compute capability > " << 5.3 << " is required, "
-                    << "and it is recommended to use devices with a compute capability >= " << 7;
+                    << "Device with a compute capability > " << SUPPORTED_CAP << " is required, "
+                    << "and it is recommended to use devices with a compute capability >= " << RECOMMEND_SM;
   }
 
   // Initialize device resource, such as stream, cudnn and cublas handle.
@@ -350,13 +350,11 @@ std::unordered_map<std::string, std::size_t> GPUResManager::GetBlockUnitSizeStat
   MS_EXCEPTION_IF_NULL(mem_manager_);
   return mem_manager_->GetBlockUnitSizeStatistics();
 }
-std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>
-GPUResManager::GetCommonMemBlocksInfoStatistics() const {
+DeviceMemInfo GPUResManager::GetCommonMemBlocksInfoStatistics() const {
   MS_EXCEPTION_IF_NULL(mem_manager_);
   return mem_manager_->GetCommonMemBlocksInfoStatistics();
 }
-std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>
-GPUResManager::GetPersistentMemBlocksInfoStatistics() const {
+DeviceMemInfo GPUResManager::GetPersistentMemBlocksInfoStatistics() const {
   MS_EXCEPTION_IF_NULL(mem_manager_);
   return mem_manager_->GetPersistentMemBlocksInfoStatistics();
 }

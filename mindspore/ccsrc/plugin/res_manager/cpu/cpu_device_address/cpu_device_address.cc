@@ -17,7 +17,6 @@
 #include <vector>
 #include <memory>
 #include "runtime/device/res_manager/utils/convert_tensor_utils.h"
-// #include "runtime/hardware/device_context_manager.h"
 #include "plugin/res_manager/cpu/cpu_mem_manager/cpu_memory_pool.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_synchronizer.h"
 #include "plugin/device/cpu/hal/device/cpu_hash_table_util.h"
