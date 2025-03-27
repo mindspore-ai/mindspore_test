@@ -525,7 +525,7 @@ class SyncBatchNorm(_BatchNorm):
             Here, examples use msrun to pull multi-process distributed tasks across nodes with a single command
             line instruction.
             Please see the `Ascend tutorial
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with multiple devices.

@@ -68,6 +68,13 @@ class PipelineGradReducer(Cell):
 
     Examples:
         .. note::
+            Before running the following examples, you need to configure the communication environment variables.
+
+            For the Ascend devices, users need to prepare the rank table, set rank_id and device_id.
+            Please see the `rank table Startup
+            <https://www.mindspore.cn/tutorials/en/master/parallel/rank_table.html>`_
+            for more details.
+
             This example should be run with multiple devices.
 
         >>> import numpy as np
