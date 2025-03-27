@@ -531,7 +531,8 @@ std::string MsContext::GetJitLevel() const {
   }
 
   // If use rank table startup method, set jit level to O2.
-  if (!common::UseDynamicCluster() && !common::GetEnv("RANK_TABLE_FILE").empty() && jit_level != kAttrJitLevelO2) {
+  if (!common::UseDynamicCluster() && !common::GetEnv("RANK_TABLE_FILE").empty() && jit_level != kAttrJitLevelO2 &&
+      device_target == kAscendDevice) {
     if (first_call) {
       MS_LOG(WARNING) << "Set jit level to O2 for rank table startup method.";
     }
