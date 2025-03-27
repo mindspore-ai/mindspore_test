@@ -2318,9 +2318,7 @@ def invert(x):
 
 def bessel_j0(x):
     r"""
-    Computes Bessel function of the first kind, order 0 element-wise.
-
-    The formula is defined as:
+    Computes the zeroth order Bessel function of the first kind for each element input.
 
     .. math::
         \begin{array}{ll} \\
@@ -2329,24 +2327,18 @@ def bessel_j0(x):
         \end{array}
 
     Args:
-        x (Tensor): The input tensor. The data type must be float16, float32 or float64.
+        x (Tensor): The input tensor.
 
     Returns:
-        Tensor, has the same shape and dtype as the `x`.
-
-    Raises:
-        TypeError: If `x` is not a Tensor.
-        TypeError: If dtype of `x` is not float16, float32 or float64.
+        Tensor
 
     Supported Platforms:
-        ``GPU`` ``CPU``
+        ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([0.5, 1., 2., 4.]), mindspore.float32)
-        >>> output = ops.bessel_j0(x)
+        >>> x = mindspore.tensor([0.5, 1., 2., 4.])
+        >>> output = mindspore.ops.bessel_j0(x)
         >>> print(output)
         [0.93846981  0.76519769  0.22389078  -0.39714981]
     """
@@ -2355,9 +2347,7 @@ def bessel_j0(x):
 
 def bessel_j1(x):
     r"""
-    Computes Bessel function of the first kind, order 1 element-wise.
-
-    The formula is defined as:
+    Computes the first order Bessel function of the first kind for each element input.
 
     .. math::
         \begin{array}{ll} \\
@@ -2366,24 +2356,18 @@ def bessel_j1(x):
         \end{array}
 
     Args:
-        x (Tensor): The input tensor. The data type must be float16, float32 or float64.
+        x (Tensor): The input tensor.
 
     Returns:
-        Tensor, has the same shape and dtype as the `x`.
-
-    Raises:
-        TypeError: If `x` is not a Tensor.
-        TypeError: If dtype of `x` is not float16, float32 or float64.
+        Tensor
 
     Supported Platforms:
-        ``GPU`` ``CPU``
+         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([0.5, 1., 2., 4.]), mindspore.float32)
-        >>> output = ops.bessel_j1(x)
+        >>> x = mindspore.tensor([0.5, 1., 2., 4.])
+        >>> output = mindspore.ops.bessel_j1(x)
         >>> print(output)
         [0.24226846  0.44005059  0.57672481 -0.06604333]
     """
@@ -2392,7 +2376,7 @@ def bessel_j1(x):
 
 def bessel_i0(x):
     r"""
-    Computes modified Bessel function of the first kind, order 0 element-wise.
+    Computes the zeroth order modified Bessel function of the first kind for each element input.
 
     .. math::
         \begin{array}{ll} \\
@@ -2400,27 +2384,19 @@ def bessel_i0(x):
             \frac{x^{2 m}}{2^{2 m} (m !)^{2}}
         \end{array}
 
-    where :math:`J_{0}` is Bessel function of the first kind, order 0.
-
     Args:
-        x (Tensor): The input tensor. The data type must be float16, float32 or float64.
+        x (Tensor): The input tensor.
 
     Returns:
-        Tensor, has the same shape and dtype as the `x`.
-
-    Raises:
-        TypeError: If `x` is not a Tensor.
-        TypeError: If dtype of `x` is not float16, float32 or float64.
+        Tensor
 
     Supported Platforms:
-        ``GPU`` ``CPU``
+        ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([-1, -0.5, 0.5, 1]), mindspore.float32)
-        >>> output = ops.bessel_i0(x)
+        >>> x = mindspore.tensor([-1., -0.5, 0.5, 1.])
+        >>> output = mindspore.ops.bessel_i0(x)
         >>> print(output)
         [1.266066  1.0634835 1.0634835 1.266066]
     """
@@ -2429,9 +2405,8 @@ def bessel_i0(x):
 
 def bessel_i0e(x):
     r"""
-    Computes exponential scaled modified Bessel function of the first kind, order 0 element-wise.
-
-    The formula is defined as:
+    Computes the exponentially scaled zeroth order modified Bessel function of the
+    first kind for each element input.
 
     .. math::
         \begin{array}{ll} \\
@@ -2439,27 +2414,19 @@ def bessel_i0e(x):
             {\infty} \frac{x^{2 m}}{2^{2 m} (m !)^{2}}
         \end{array}
 
-    where :math:`I_{0}` is modified Bessel function of the first kind, order 0.
-
     Args:
-        x (Tensor): The input tensor. The data type must be float16, float32 or float64.
+        x (Tensor): The input tensor.
 
     Returns:
-        Tensor, has the same shape and dtype as the `x`.
-
-    Raises:
-        TypeError: If `x` is not a Tensor.
-        TypeError: If dtype of `x` is not float16, float32 or float64.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([-1, -0.5, 0.5, 1]), mindspore.float32)
-        >>> output = ops.bessel_i0e(x)
+        >>> x = mindspore.tensor([-1., -0.5, 0.5, 1.])
+        >>> output = mindspore.ops.bessel_i0e(x)
         >>> print(output)
         [0.46575961  0.64503527  0.64503527  0.46575961]
     """
@@ -2468,9 +2435,7 @@ def bessel_i0e(x):
 
 def bessel_k0(x):
     r"""
-    Computes modified Bessel function of the second kind, order 0 element-wise.
-
-    The formula is defined as:
+    Computes the zeroth order modified Bessel function of the second kind for each element input.
 
     .. math::
         \begin{array}{ll} \\
@@ -2478,27 +2443,19 @@ def bessel_k0(x):
             {I_{-\nu}(x)-I_{\nu}(x)}{\sin (\nu \pi)} = \int_{0}^{\infty} e^{-x \cosh t} d t
         \end{array}
 
-    where :math:`I_{0}` is modified Bessel function of the first kind, order 0.
-
     Args:
-        x (Tensor): The input tensor. The data type must be float16, float32 or float64.
+        x (Tensor): The input tensor.
 
     Returns:
-        Tensor, has the same shape and dtype as the `x`.
-
-    Raises:
-        TypeError: If `x` is not a Tensor.
-        TypeError: If dtype of `x` is not float16, float32 or float64.
+        Tensor
 
     Supported Platforms:
-        ``GPU`` ``CPU``
+        ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([0.5, 1., 2., 4.]), mindspore.float32)
-        >>> output = ops.bessel_k0(x)
+        >>> x = mindspore.tensor([0.5, 1., 2., 4.])
+        >>> output = mindspore.ops.bessel_k0(x)
         >>> print(output)
         [0.92441907  0.42102444  0.11389387  0.01115968]
     """
@@ -2507,9 +2464,8 @@ def bessel_k0(x):
 
 def bessel_k0e(x):
     r"""
-    Computes exponential scaled modified Bessel function of the second kind, order 0 element-wise.
-
-    The formula is defined as:
+    Computes the exponentially scaled zeroth order modified Bessel function of the
+    second kind for each element input.
 
     .. math::
         \begin{array}{ll} \\
@@ -2517,27 +2473,19 @@ def bessel_k0e(x):
             {\infty} e^{-x \cosh t} d t
         \end{array}
 
-    where :math:`K_{0}` is modified Bessel function of the second kind, order 0.
-
     Args:
-        x (Tensor): The input tensor. The data type must be float16, float32 or float64.
+        x (Tensor): The input tensor.
 
     Returns:
-        Tensor, has the same shape and dtype as the `x`.
-
-    Raises:
-        TypeError: If `x` is not a Tensor.
-        TypeError: If dtype of `x` is not float16, float32 or float64.
+        Tensor
 
     Supported Platforms:
-        ``GPU`` ``CPU``
+        ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([0.5, 1., 2., 4.]), mindspore.float32)
-        >>> output = ops.bessel_k0e(x)
+        >>> x = mindspore.tensor([0.5, 1., 2., 4.])
+        >>> output = mindspore.ops.bessel_k0e(x)
         >>> print(output)
         [1.52410939  1.14446308  0.84156822  0.60929767]
     """
@@ -2546,36 +2494,26 @@ def bessel_k0e(x):
 
 def bessel_y0(x):
     r"""
-    Computes Bessel function of the second kind, order 0 element-wise.
-
-    The formula is defined as:
+    Computes the zeroth order Bessel function of the second kind for each element input.
 
     .. math::
         \begin{array}{ll} \\
             Y_{0}(x)=\lim_{n \to 0} \frac{J_{n}(x) \cos n \pi-J_{-n}(x)}{\sin n \pi}
         \end{array}
 
-    where :math:`J_{0}` is Bessel function of the first kind, order 0.
-
     Args:
-        x (Tensor): The input tensor. The data type must be float16, float32 or float64.
+        x (Tensor): The input tensor.
 
     Returns:
-        Tensor, has the same shape and dtype as the `x`.
-
-    Raises:
-        TypeError: If `x` is not a Tensor.
-        TypeError: If dtype of `x` is not float16, float32 or float64.
+        Tensor
 
     Supported Platforms:
-        ``GPU`` ``CPU``
+        ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([0.5, 1., 2., 4.]), mindspore.float32)
-        >>> output = ops.bessel_y0(x)
+        >>> x = mindspore.tensor([0.5, 1., 2., 4.])
+        >>> output = mindspore.ops.bessel_y0(x)
         >>> print(output)
         [-0.44451874  0.08825696  0.51037567  -0.01694074]
     """
@@ -2584,36 +2522,26 @@ def bessel_y0(x):
 
 def bessel_y1(x):
     r"""
-    Computes Bessel function of the second kind, order 1 element-wise.
-
-    The formula is defined as:
+    Computes the first order Bessel function of the second kind for each element input.
 
     .. math::
         \begin{array}{ll} \\
             Y_{1}(x)=\lim_{n \to 1} \frac{J_{n}(x) \cos n \pi-J_{-n}(x)}{\sin n \pi}
         \end{array}
 
-    where :math:`J_{1}` is Bessel function of the first kind, order 1.
-
     Args:
-        x (Tensor): The input tensor. The data type must be float16, float32 or float64.
+        x (Tensor): The input tensor.
 
     Returns:
-        Tensor, has the same shape and dtype as the `x`.
-
-    Raises:
-        TypeError: If `x` is not a Tensor.
-        TypeError: If dtype of `x` is not float16, float32 or float64.
+        Tensor
 
     Supported Platforms:
-        ``GPU`` ``CPU``
+        ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([0.5, 1., 2., 4.]), mindspore.float32)
-        >>> output = ops.bessel_y1(x)
+        >>> x = mindspore.tensor([0.5, 1., 2., 4.])
+        >>> output = mindspore.ops.bessel_y1(x)
         >>> print(output)
         [-1.47147239  -0.78121282  -0.10703243  0.39792571]
     """
@@ -5314,7 +5242,7 @@ def bernoulli_ext(input, *, generator=None):
 
 def bessel_i1(x):
     r"""
-    Computes modified Bessel function of the first kind, order 1 element-wise.
+    Computes the first order modified Bessel function of the first kind for each element input.
 
     .. math::
         \begin{array}{ll} \\
@@ -5322,27 +5250,19 @@ def bessel_i1(x):
             {\infty} \frac{x^{2m+1}}{2^{2m+1} m ! (m+1) !}
         \end{array}
 
-    where :math:`J_{1}` is Bessel function of the first kind, order 1.
-
     Args:
-        x (Tensor): The input tensor. The data type must be float16, float32 or float64.
+        x (Tensor): The input tensor.
 
     Returns:
-        Tensor, has the same shape and dtype as the `x`.
-
-    Raises:
-        TypeError: If `x` is not a Tensor.
-        TypeError: If dtype of `x` is not float16, float32 or float64.
+        Tensor
 
     Supported Platforms:
-        ``GPU`` ``CPU``
+        ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([-1, -0.5, 0.5, 1]), mindspore.float32)
-        >>> output = ops.bessel_i1(x)
+        >>> x = mindspore.tensor([-1., -0.5, 0.5, 1.])
+        >>> output = mindspore.ops.bessel_i1(x)
         >>> print(output)
         [-0.5651591  -0.25789431  0.25789431  0.5651591]
     """
@@ -5351,9 +5271,8 @@ def bessel_i1(x):
 
 def bessel_i1e(x):
     r"""
-    Computes exponential scaled modified Bessel function of the first kind, order 1 element-wise.
-
-    The formula is defined as:
+    Computes the exponentially scaled first order modified Bessel function of the
+    first kind for each element input.
 
     .. math::
         \begin{array}{ll} \\
@@ -5361,27 +5280,19 @@ def bessel_i1e(x):
             {\infty} \frac{x^{2m+1}}{2^{2m+1} m ! (m+1) !}
         \end{array}
 
-    where :math:`I_{1}` is  modified Bessel function of the first kind, order 1.
-
     Args:
-        x (Tensor): The input tensor. The data type must be float16, float32 or float64.
+        x (Tensor): The input tensor.
 
     Returns:
-        Tensor, has the same shape and dtype as the `x`.
-
-    Raises:
-        TypeError: If `x` is not a Tensor.
-        TypeError: If dtype of `x` is not float16, float32 or float64.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([-1, -0.5, 0.5, 1]), mindspore.float32)
-        >>> output = ops.bessel_i1e(x)
+        >>> x = mindspore.tensor([-1., -0.5, 0.5, 1.])
+        >>> output = mindspore.ops.bessel_i1e(x)
         >>> print(output)
         [-0.20791042  -0.15642083  0.15642083  0.20791042]
     """
@@ -5390,9 +5301,7 @@ def bessel_i1e(x):
 
 def bessel_k1(x):
     r"""
-    Computes modified Bessel function of the second kind, order 1 element-wise.
-
-    The formula is defined as:
+    Computes the first order modified Bessel function of the second kind for each element input.
 
     .. math::
         \begin{array}{ll} \\
@@ -5400,27 +5309,19 @@ def bessel_k1(x):
             I_{\nu}(x)}{\sin (\nu \pi)} = \int_{0}^{\infty} e^{-x \cosh t} \cosh (t) d t
         \end{array}
 
-    where :math:`I_{1}` is modified Bessel function of the first kind, order 1.
-
     Args:
-        x (Tensor): The input tensor. The data type must be float16, float32 or float64.
+        x (Tensor): The input tensor.
 
     Returns:
-        Tensor, has the same shape and dtype as the `x`.
-
-    Raises:
-        TypeError: If `x` is not a Tensor.
-        TypeError: If dtype of `x` is not float16, float32 or float64.
+        Tensor
 
     Supported Platforms:
-        ``GPU`` ``CPU``
+        ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([0.5, 1., 2., 4.]), mindspore.float32)
-        >>> output = ops.bessel_k1(x)
+        >>> x = mindspore.tensor([0.5, 1., 2., 4.])
+        >>> output = mindspore.ops.bessel_k1(x)
         >>> print(output)
         [1.65644112  0.60190723  0.13986588  0.0124835]
     """
@@ -5429,9 +5330,8 @@ def bessel_k1(x):
 
 def bessel_k1e(x):
     r"""
-    Computes exponential scaled modified Bessel function of the second kind, order 1 element-wise.
-
-    The formula is defined as:
+    Computes the exponentially scaled first order modified Bessel function of the
+    second kind for each element input.
 
     .. math::
         \begin{array}{ll} \\
@@ -5439,27 +5339,19 @@ def bessel_k1e(x):
             ^{\infty} e^{-x \cosh t} \cosh (t) d t
         \end{array}
 
-    where :math:`K_{1}` is modified Bessel function of the second kind, order 1.
-
     Args:
-        x (Tensor): The input tensor. The data type must be float16, float32 or float64.
+        x (Tensor): The input tensor.
 
     Returns:
-        Tensor, has the same shape and dtype as the `x`.
-
-    Raises:
-        TypeError: If `x` is not a Tensor.
-        TypeError: If dtype of `x` is not float16, float32 or float64.
+        Tensor
 
     Supported Platforms:
-        ``GPU`` ``CPU``
+        ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([0.5, 1., 2., 4.]), mindspore.float32)
-        >>> output = ops.bessel_k1e(x)
+        >>> x = mindspore.tensor([0.5, 1., 2., 4.])
+        >>> output = mindspore.ops.bessel_k1e(x)
         >>> print(output)
         [2.73100971  1.63615349  1.03347685  0.68157595]
     """
