@@ -1,0 +1,18 @@
+#operator SwiGLUDynamicQuant
+swiglu_dynamic_quant:
+  args:
+    x:
+      dtype: tensor
+    smooth_scale:
+      dtype: tensor
+      default: None
+  returns:
+    quant:
+      dtype: tensor
+    scale:
+      dtype: tensor
+  function:
+    disable: True
+  class:
+    name: SwiGLUDynamicQuant
+    disable: True
