@@ -269,6 +269,13 @@ bool MultiStreamController::WaitEvent(int64_t task_id_on_stream, uint32_t user_s
 
 bool MultiStreamController::DispatchRecordWaitEvent(uint32_t user_stream_id, uint32_t memory_stream_id) {
   LockGuard lock(lock_);
+  if (event_pool_ == nullptr) {
+    MS_LOG(WARNING) << "Event pool is not initialized.";
+    event_pool_ = std::make_shared<EventPool>([&]() {
+      // Event in pool need to do synchronization between streams, need to enable blocking.
+      return device_res_base_->CreateRuntimeEvent(true, false);
+    });
+  }
   auto event = event_pool_->Get();
   // Note : record event on memory stream id and wait event on user stream id to make sure memory is safe.
   event->RecordEvent(memory_stream_id);
@@ -306,6 +313,13 @@ bool MultiStreamController::WaitMultiStream(size_t wait_stream_id) {
   LockGuard lock(lock_);
   MS_LOG(INFO) << "Wait multi stream on wait stream id : " << wait_stream_id << ".";
   const auto &stream_ids = device_res_base_->GetStreamIds();
+  if (event_pool_ == nullptr) {
+    MS_LOG(WARNING) << "Event pool is not initialized.";
+    event_pool_ = std::make_shared<EventPool>([&]() {
+      // Event in pool need to do synchronization between streams, need to enable blocking.
+      return device_res_base_->CreateRuntimeEvent(true, false);
+    });
+  }
   auto event = event_pool_->Get();
   device_res_base_->BindDeviceToCurrentThread(true);
   for (auto stream_id : stream_ids) {

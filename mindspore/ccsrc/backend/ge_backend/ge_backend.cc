@@ -1100,6 +1100,11 @@ BackendGraphId GEBackend::CompileWholeGraph(const FuncGraphPtr &func_graph,
   root_graph_map_[cur_backend_graph_id] = func_graph;
   MS_LOG(INFO) << "Status record: end compile graph. backend_graph_id: " << cur_backend_graph_id
                << ", kernel graph id: " << root_graph->graph_id();
+
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  std::string device_target = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  device::HalResManager::GetInstance().GetMultiStreamController(device_target)->Refresh();
   return cur_backend_graph_id;
 }
 
