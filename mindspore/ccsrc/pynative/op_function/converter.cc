@@ -939,7 +939,13 @@ bool TypeCheck(const py::object &obj, const ops::OP_DTYPE &type, int &idx, Conve
     case OP_DTYPE::DT_NUMBER:
       return py::isinstance<py::float_>(obj) || py::isinstance<py::bool_>(obj) || py::isinstance<py::int_>(obj);
     case OP_DTYPE::DT_FLOAT:
-      return py::isinstance<py::float_>(obj) || py::isinstance<py::int_>(obj);
+      if (py::isinstance<py::float_>(obj)) {
+        return true;
+      } else if (py::isinstance<py::int_>(obj)) {
+        convert_type.first = OP_DTYPE::DT_INT;
+        return true;
+      }
+      return false;
     case OP_DTYPE::DT_INT:
       return py::isinstance<py::int_>(obj);
     case OP_DTYPE::DT_BOOL:
