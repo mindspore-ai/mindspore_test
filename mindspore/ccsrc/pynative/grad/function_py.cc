@@ -238,6 +238,7 @@ py::object FunctionBase::apply(const py::object &cls, const py::args &inputs) {
   std::vector<bool> is_tensor_input;
   is_tensor_input.reserve(inputs.size());
   py::tuple need_grad_input = py::tuple(inputs.size());
+  runtime::Pipeline::Get().WaitFrontend();
   runtime::Pipeline::Get().WaitBpropStage();  // wait to get inputs value
   for (size_t i = 0; i < inputs.size(); ++i) {
     auto base_tensor = tensor::ConvertToBaseTensor(inputs[i]);
