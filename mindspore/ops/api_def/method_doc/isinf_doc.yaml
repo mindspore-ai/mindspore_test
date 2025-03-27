@@ -2,35 +2,7 @@ isinf:
   description: |
     isinf() -> Tensor
     
-    Determines which elements are inf or -inf for each position.
-
-    .. math::
-
-        out_i = \begin{cases}
-          & \ True,\ \text{ if } self_{i} = \text{Inf} \\
-          & \ False,\ \text{ if } self_{i} \ne  \text{Inf}
-        \end{cases}
-
-    where :math:`Inf` means value is infinite.
-
-    .. warning::
-        - For Ascend, it is only supported on platforms above Atlas A2.
-
-    Returns:
-        Tensor, has the same shape of `self`, and the dtype is bool.
+    For details, please refer to :func:`mindspore.ops.isinf`.
 
     Supported Platforms:
         ``Ascend`` ``CPU`` ``GPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor
-        >>> x = Tensor(np.array([np.log(-1), 1, np.log(0)]), mindspore.float32)
-        >>> output = x.isinf()
-        >>> print(output)
-        [False False True]
-        >>> x = Tensor(2.1, mindspore.float64)
-        >>> output = x.isinf()
-        >>> print(output)
-        False

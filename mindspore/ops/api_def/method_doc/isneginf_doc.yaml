@@ -2,22 +2,4 @@ isneginf:
   description: |
     isneginf() -> Tensor
 
-    Determines which elements are -inf for each position.
-
-    .. warning::
-        - For Ascend, it is only supported on platforms above Atlas A2.
-
-    Returns:
-        Tensor with the same shape as the `self`, where elements are `True` if the corresponding element in the `self` is negative infinity, and `False` otherwise.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> from mindspore import Tensor
-        >>> from mindspore import dtype as mstype
-        >>> x = Tensor([[-float("inf"), float("inf")], [1, -float("inf")]], mstype.float32)
-        >>> output = x.isneginf()
-        >>> print(output)
-        [[ True False]
-         [False  True]]
+    For details, please refer to :func:`mindspore.ops.isneginf`.

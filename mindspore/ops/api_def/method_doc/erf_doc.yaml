@@ -2,37 +2,4 @@ erf:
     description: |
         erf() -> Tensor
 
-        Computes the Gauss error function of `self` element-wise.
-
-        .. math::
-
-            \text{erf}(x)=\frac{2} {\sqrt{\pi}} \int\limits_0^{x} e^{-t^{2}} dt
-
-        .. note::
-            The input tensor `self` of Gaussian error function. :math:`x` in the following formula.
-            Supported dtypes: 
-
-            - GPU/CPU: float16, float32, float64.
-            - Ascend: float16, float32, float64, int64, bool, bfloat16.
-
-        Returns:
-            Tensor, has the same shape as the `self`. 
-            The dtype of output is float32 when dtype of `self` is in
-            [bool, int64]. Otherwise output has the same dtype as the `self`.
-
-        :raise TypeError: If `self` is not a Tensor.
-        :raise TypeError:
-            * GPU/CPU: If dtype of `self` is not float16, float32, float64.
-            * Ascend: If dtype of `self` is not float16, float32, float64, int64, bool, bfloat16.
-
-        Supported Platforms:
-            ``Ascend`` ``GPU`` ``CPU``
-
-        Examples:
-            >>> import mindspore
-            >>> import numpy as np
-            >>> from mindspore import Tensor
-            >>> input = Tensor(np.array([-1, 0, 1, 2, 3]), mindspore.float32)
-            >>> output = Tensor.erf(input)
-            >>> print(output)
-            [-0.8427168   0.          0.8427168   0.99530876  0.99997765]
+        For details, please refer to :func:`mindspore.ops.erf`.

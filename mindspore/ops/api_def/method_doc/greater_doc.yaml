@@ -2,27 +2,4 @@ greater:
   description: |
     greater(other) -> Tensor
     
-    Compare the value of the input parameters :math:`self > other` element-wise, and the output result is a bool value.
-
-    Refer to :func:`mindspore.ops.gt` for more details.
-
-    Args:
-        other (Union[Tensor, Number]): It is a Number or a tensor whose data type is
-            `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
-            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
-
-    Returns:
-        Tensor, the shape is the same as the one after broadcasting, and the data type is bool.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor
-        >>> input = Tensor(np.array([1, 2, 3]), mindspore.int32)
-        >>> other = Tensor(np.array([1, 1, 4]), mindspore.int32)
-        >>> output = input.greater(other)
-        >>> print(output)
-        [False True False]
+    For details, please refer to :func:`mindspore.ops.greater`.
