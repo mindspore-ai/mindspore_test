@@ -62,9 +62,6 @@ class LeNet5(nn.Cell):
         if not self.include_top:
             return x
         x = self.flatten(x)
-        x = self.relu(self.fc1(x))
-        x = self.relu(self.fc2(x))
-        x = self.fc3(x)
         return x
 
 
