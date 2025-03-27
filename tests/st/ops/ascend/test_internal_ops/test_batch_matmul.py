@@ -53,7 +53,7 @@ def compare(out, expect, dtype):
     print("[SUCCESS] err_cnt = ", err_cnt, "/", limit_cnt)
     return True
 
-def batchMatmul(m, k, n, b0=0, b1=0, trans_a=False, trans_b=False, mstype=ms.float16, profiling=False):
+def _test_batch_matmul(m, k, n, b0=0, b1=0, trans_a=False, trans_b=False, mstype=ms.float16, profiling=False):
     if b0 == 0 or b1 == 0:
         raise ValueError("this is batch matmul testcase, b can't be 0")
 
@@ -96,8 +96,12 @@ def batchMatmul(m, k, n, b0=0, b1=0, trans_a=False, trans_b=False, mstype=ms.flo
     net = BatchMatMulCustom(trans_a, trans_b)
 
     if profiling:
+        profiler = Profiler(start_profile=False, output_path="profiler")
+        profiler.start()
         for _ in range(50):
             output = net(input1, input2)
+        profiler.stop()
+        profiler.analyse()
         return
 
     output = net(input1, input2)
@@ -107,22 +111,52 @@ def batchMatmul(m, k, n, b0=0, b1=0, trans_a=False, trans_b=False, mstype=ms.flo
     assert res, "matmul compare fail."
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('ms_dtype', [ms.bfloat16])
-@pytest.mark.parametrize('shape', [[16, 32, 64], [256, 256, 256], [1024, 4096, 4096]])
+@pytest.mark.parametrize('shape', [[16, 32, 64]])
 @pytest.mark.parametrize('batch_size_list', [[1, 1], [5, 1], [8, 8]])
 @pytest.mark.parametrize('trans_b', [True, False])
-def test_batchMatmul_3_3(ms_dtype, shape, batch_size_list, trans_b):
+def test_batch_matmul_small(ms_dtype, shape, batch_size_list, trans_b):
     """
-    Feature: test batchMatmul
-    Description: test batchMatmul. One of the input's batch dim must be equal to another input's peer batch dim, or
+    Feature: test BatchMatmul with small shape
+    Description: test BatchMatmul. One of the input's batch dim must be equal to another input's peer batch dim, or
     be equal to 1, or be empty.
     Expectation: the result is correct
     """
     m, k, n = shape
     b0, b1 = batch_size_list
-    profiler = Profiler(start_profile=False, output_path="profiler")
-    profiler.start()
-    batchMatmul(m, k, n, b0, b1, trans_a=False, trans_b=trans_b, mstype=ms_dtype, profiling=False)
-    profiler.stop()
-    profiler.analyse()
+    _test_batch_matmul(m, k, n, b0, b1, trans_a=False, trans_b=trans_b, mstype=ms_dtype, profiling=False)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('ms_dtype', [ms.bfloat16])
+@pytest.mark.parametrize('shape', [[256, 256, 256]])
+@pytest.mark.parametrize('batch_size_list', [[1, 1], [5, 1], [8, 8]])
+@pytest.mark.parametrize('trans_b', [True, False])
+def test_batch_matmul_medium(ms_dtype, shape, batch_size_list, trans_b):
+    """
+    Feature: test BatchMatmul with medium shape
+    Description: test BatchMatmul. One of the input's batch dim must be equal to another input's peer batch dim, or
+    be equal to 1, or be empty.
+    Expectation: the result is correct
+    """
+    m, k, n = shape
+    b0, b1 = batch_size_list
+    _test_batch_matmul(m, k, n, b0, b1, trans_a=False, trans_b=trans_b, mstype=ms_dtype, profiling=False)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('ms_dtype', [ms.bfloat16])
+@pytest.mark.parametrize('shape', [[1024, 4096, 4096]])
+@pytest.mark.parametrize('batch_size_list', [[1, 1], [5, 1], [8, 8]])
+@pytest.mark.parametrize('trans_b', [True, False])
+def test_batch_matmul_large(ms_dtype, shape, batch_size_list, trans_b):
+    """
+    Feature: test BatchMatmul with large shape
+    Description: test BatchMatmul. One of the input's batch dim must be equal to another input's peer batch dim, or
+    be equal to 1, or be empty.
+    Expectation: the result is correct
+    """
+    m, k, n = shape
+    b0, b1 = batch_size_list
+    _test_batch_matmul(m, k, n, b0, b1, trans_a=False, trans_b=trans_b, mstype=ms_dtype, profiling=False)
