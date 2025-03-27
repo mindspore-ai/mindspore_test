@@ -1,4 +1,4 @@
-# Copyright 2024 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ from mindspore.ops import operations as P
 from mindspore.common.parameter import Parameter
 from mindspore.common.initializer import initializer
 from mindspore.nn import PipelineGradReducer
+from mindspore.parallel.nn import Pipeline
+from mindspore.parallel.nn import PipelineGradReducer as PipelineGradReducerNew
 from mindspore.nn.utils import no_init_parameters
 from mindspore.parallel.auto_parallel import AutoParallel
 from hccl_test.manage.api import Hccl
@@ -185,17 +187,16 @@ def test_pipeline_functional_shard_stage0_1():
     strategy2 = ((8, 1), (1, 1))
 
     with no_init_parameters():
-        net = nn.PipelineCell(Net(strategy1, strategy2), 4)
+        net = Pipeline(Net(strategy1, strategy2), 4)
         params = net.network.cell1.trainable_params()
         optimizer = nn.SGD(params, learning_rate=0.01)
-        pp_grad_reducer = PipelineGradReducer(optimizer.parameters, opt_shard=True)
+        pp_grad_reducer = PipelineGradReducerNew(optimizer.parameters, opt_shard=True)
 
     def forward_fn(inputs, target):
         loss = net(inputs, target)
         return loss
     grad_fn = ops.value_and_grad(forward_fn, None, params)
 
-    @ms.jit
     def train_one_step(inputs, target):
         loss, grads = grad_fn(inputs, target)
         grads = pp_grad_reducer(grads)
@@ -209,3 +210,4 @@ def test_pipeline_functional_shard_stage0_1():
     dataset = DatasetLenet(data, label, 3)
     for data, label in dataset:
         parallel_net.compile(data, label)
+        break

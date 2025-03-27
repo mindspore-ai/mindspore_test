@@ -23,7 +23,7 @@ from mindspore.common.api import _cell_graph_executor
 from mindspore.ops import composite as C
 from mindspore.ops import operations as P
 from mindspore.ops.operations.comm_ops import _VirtualDataset
-from mindspore.parallel.shard import Layout
+from mindspore.parallel import Layout
 from tests.ut.python.ops.test_math_ops import VirtualLoss
 from parallel.utils.utils import ParallelValidator
 
@@ -435,6 +435,7 @@ def test_dataset_strategy_with_layout_using_autoparallel_cell():
     """
     from mindspore.parallel.auto_parallel import AutoParallel
     from hccl_test.manage.api import Hccl
+    from mindspore.nn.utils import no_init_parameters
     hccl = Hccl()
     hccl.rank_id = 0
     hccl.rank_size = 8
@@ -443,7 +444,8 @@ def test_dataset_strategy_with_layout_using_autoparallel_cell():
     strategy1 = ((2, 2), (2, 2))
     strategy2 = ((2, 2), (2, 2))
     strategy3 = ((2, 4),)
-    net = GradWrap(NetWithLoss(Net1(strategy1, strategy2, strategy3)))
+    with no_init_parameters():
+        net = GradWrap(NetWithLoss(Net1(strategy1, strategy2, strategy3)))
     parallel_net = AutoParallel(net, parallel_mode="seme_auto")
     parallel_net.dataset_strategy(strategy0)
     x = Tensor(np.ones([128 // 4, 32 // 2]), dtype=ms.float32)

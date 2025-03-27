@@ -1,4 +1,4 @@
-# Copyright 2024 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,10 +18,10 @@ import mindspore.nn as nn
 from mindspore import Tensor
 from mindspore.train import Model
 from mindspore.parallel.nn import Pipeline
-from mindspore.ops import operations as P
 from mindspore import lazy_inline
 from mindspore.nn.utils import no_init_parameters
 from mindspore.parallel.auto_parallel import AutoParallel
+from mindspore.parallel import build_searched_strategy
 from hccl_test.manage.api import Hccl
 from .test_pipeline_split import DatasetLenet, MatMulCell
 
@@ -54,18 +54,6 @@ class PipelineSplit(nn.Cell):
         x = self.cell(x)
         return x
 
-class PipelineSplitWithScalarLoss(nn.Cell):
-    @lazy_inline
-    def __init__(self, strategy1, strategy2, dtype=ms.float32):
-        super().__init__()
-        self.cell = Net(strategy1, strategy2, dtype=dtype)
-        self.cell.block[0].matmul.add_prim_attr("parameter_start", 0)
-        self.loss = P.ReduceSum()
-
-    def construct(self, x, label):
-        x = self.cell(x)
-        x = self.loss(x)
-        return x
 
 def test_pipeline_split_stage1_save_stra():
     '''
@@ -91,5 +79,5 @@ def test_pipeline_split_stage1_save_stra():
     dataset = DatasetLenet(data, label, 3)
     model = Model(parallel_net, optimizer=optimizer)
     model.train(2, dataset, dataset_sink_mode=False)
-    stra = ms.build_searched_strategy("./strategy_freeze_stage1.ckpt")
+    stra = build_searched_strategy("./strategy_freeze_stage1.ckpt")
     assert "cell.block.1.param" in stra

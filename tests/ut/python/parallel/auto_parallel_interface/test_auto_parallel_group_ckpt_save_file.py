@@ -21,6 +21,8 @@ import mindspore.nn as nn
 from mindspore.ops import composite as C
 from mindspore.ops import operations as P
 from mindspore.common.api import _cell_graph_executor
+from mindspore.nn.utils import no_init_parameters
+from mindspore.common.initializer import initializer
 from tests.ut.python.ops.test_math_ops import VirtualLoss
 from parallel.auto_parallel_interface._utils import init_hccl, set_parallel_mode, remove_files
 
@@ -68,12 +70,12 @@ class Net(nn.Cell):
         self.matmul4 = P.MatMul().shard(strategy4)
         self.matmul5 = P.MatMul().shard(strategy5)
         self.matmul6 = P.MatMul().shard(strategy6)
-        self.weight1 = Parameter(Tensor(np.ones([32, 64]), dtype=ms.float32), name="weight1")
-        self.weight2 = Parameter(Tensor(np.ones([64, 64]), dtype=ms.float32), name="weight2")
-        self.weight3 = Parameter(Tensor(np.ones([64, 128]), dtype=ms.float32), name="weight3")
-        self.weight4 = Parameter(Tensor(np.ones([128, 64]), dtype=ms.float32), name="weight4")
-        self.weight5 = Parameter(Tensor(np.ones([64, 128]), dtype=ms.float32), name="weight5")
-        self.weight6 = Parameter(Tensor(np.ones([32, 128]), dtype=ms.float32), name="weight6")
+        self.weight1 = Parameter(initializer("ones", [32, 64], dtype=ms.float32), name="weight1")
+        self.weight2 = Parameter(initializer("ones", [64, 64], dtype=ms.float32), name="weight2")
+        self.weight3 = Parameter(initializer("ones", [64, 128], dtype=ms.float32), name="weight3")
+        self.weight4 = Parameter(initializer("ones", [128, 64], dtype=ms.float32), name="weight4")
+        self.weight5 = Parameter(initializer("ones", [64, 128], dtype=ms.float32), name="weight5")
+        self.weight6 = Parameter(initializer("ones", [32, 128], dtype=ms.float32), name="weight6")
 
     def construct(self, x1, x6):
         out = self.matmul1(x1, self.weight1)
@@ -102,7 +104,8 @@ def test_six_matmul_group_ckpt_save_file_true():
     strategy4 = ((1, 1), (1, 8))
     strategy5 = ((4, 2), (2, 1))
     strategy6 = ((4, 1), (1, 2))
-    net = GradWrap(NetWithLoss(Net(strategy1, strategy2, strategy3, strategy4, strategy5, strategy6)))
+    with no_init_parameters():
+        net = GradWrap(NetWithLoss(Net(strategy1, strategy2, strategy3, strategy4, strategy5, strategy6)))
     x1 = Tensor(np.ones([32, 32]), dtype=ms.float32)
     x6 = Tensor(np.ones([128, 32]), dtype=ms.float32)
     net.set_train()
@@ -134,7 +137,8 @@ def test_six_matmul_not_group_ckpt_save_file_false():
     strategy4 = ((1, 1), (1, 8))
     strategy5 = ((4, 2), (2, 1))
     strategy6 = ((4, 1), (1, 2))
-    net = GradWrap(NetWithLoss(Net(strategy1, strategy2, strategy3, strategy4, strategy5, strategy6)))
+    with no_init_parameters():
+        net = GradWrap(NetWithLoss(Net(strategy1, strategy2, strategy3, strategy4, strategy5, strategy6)))
     x1 = Tensor(np.ones([32, 32]), dtype=ms.float32)
     x6 = Tensor(np.ones([128, 32]), dtype=ms.float32)
     net.set_train()
