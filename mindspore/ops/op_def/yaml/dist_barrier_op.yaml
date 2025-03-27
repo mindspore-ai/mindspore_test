@@ -12,3 +12,4 @@ dist_comm_barrier:
         enable: True
         is_comm_op: True
         Ascend: DistCommBarrierAscend
+        CPU: DistCommBarrierCPU
