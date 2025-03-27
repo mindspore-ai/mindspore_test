@@ -32,6 +32,7 @@ from safetensors import safe_open
 
 import mindspore as ms
 from mindspore import log as logger
+from mindspore.common import dtype as mstype
 from mindspore.log import vlog_print
 from mindspore.parallel._parallel_serialization import _get_device_num_from_strategy, _make_dir, \
     _extract_layout_map, _extract_src_dst_layout_map, _parameter_not_in_local_stage, _extract_pipeline_stage_num, \
@@ -43,6 +44,7 @@ from mindspore.parallel._tensor import _get_tensor_strategy, _construct_from_to_
 from mindspore.parallel._parallel_serialization import _build_searched_strategy, _load_protobuf_strategy, \
     _convert_to_list
 
+safetensors_to_mstype = {'Int4': mstype.qint4x2}
 
 def _progress_bar(iterable, total=None):
     """
@@ -1072,6 +1074,14 @@ def _cal_param_name_map_and_param_list(file_list, total_safetensors_dir, json_fi
         param_list = param_name_map.keys()
     return param_name_map, param_list, dst_strategy_list
 
+def _get_tensor_shape(tensor_shape, param_strategy, from_opt_shard_size):
+    origin_tensor_shape = ()
+    for i, item in enumerate(tensor_shape):
+        if i == 0 and from_opt_shard_size > 0:
+            origin_tensor_shape += (item * param_strategy[i] * from_opt_shard_size,)
+            continue
+        origin_tensor_shape += (item * param_strategy[i],)
+    return origin_tensor_shape
 
 def _load_parallel_checkpoint(file_info):
     """load parallel safetensors by merged file."""
@@ -1100,7 +1110,11 @@ def _load_parallel_checkpoint(file_info):
             if cur_param_name not in f.keys():
                 continue
             sf_obj = f.get_slice(cur_param_name)
-
+            qint4 = False
+            if f.metadata() is not None and param_name in f.metadata().keys():
+                qint4 = True
+                sf_dtype = f.metadata()[param_name]
+                ms_dtype = safetensors_to_mstype[sf_dtype]
         tensor_shape = sf_obj.get_shape()
         from_dev_matrix = [1]
         from_tensor_map = [-1] * len(tensor_shape)
@@ -1111,19 +1125,11 @@ def _load_parallel_checkpoint(file_info):
                 continue
             to_dev_matrix_origin, to_tensor_map_origin, to_opt_shard_step, to_opt_shard_size = _extract_layout_item(
                 dst_strategy_list.get(param_name))
-
             device_num = np.prod(from_dev_matrix)
             param_strategy = _get_tensor_strategy(from_dev_matrix, from_tensor_map)
-            origin_tensor_shape = ()
-            for i, item in enumerate(tensor_shape):
-                if i == 0 and from_opt_shard_size > 0:
-                    origin_tensor_shape += (item * param_strategy[i] * from_opt_shard_size,)
-                    continue
-                origin_tensor_shape += (item * param_strategy[i],)
-
+            origin_tensor_shape = _get_tensor_shape(tensor_shape, param_strategy, from_opt_shard_size)
             has_layout_from = any(isinstance(i, (list, tuple)) for i in from_tensor_map)
             has_layout_to = any(isinstance(i, (list, tuple)) for i in to_tensor_map_origin)
-
             from_dev_matrix, from_tensor_map, from_full_tensor_shape = _construct_tensor_layout_for_opt_shard(
                 from_dev_matrix, from_tensor_map, from_opt_shard_step, from_opt_shard_size, origin_tensor_shape)
             to_dev_matrix, to_tensor_map, to_full_tensor_shape = _construct_tensor_layout_for_opt_shard(
@@ -1134,12 +1140,10 @@ def _load_parallel_checkpoint(file_info):
                                                                                     from_tensor_map,
                                                                                     to_full_tensor_shape,
                                                                                     to_dev_matrix, to_tensor_map)
-
             # when the from_layout is less devices, the safetensor_map for map[device_num] should using map[0]
             device_list = list(range(0, np.prod(from_tensor_layout[0])))
             param_rank_map = _get_needed_rank_transform_operator_map_by_layouts(from_tensor_layout, to_tensor_layout,
                                                                                 device_list, local_rank_id)
-
             from_info_tuple = (from_opt_shard_size, from_dev_matrix, from_tensor_map, from_full_tensor_shape)
             to_info_tuple = (to_opt_shard_size, to_dev_matrix_origin, to_tensor_map_origin, origin_tensor_shape)
             _insert_opt_shard_reshape(param_rank_map, from_info_tuple, to_info_tuple)
@@ -1157,7 +1161,10 @@ def _load_parallel_checkpoint(file_info):
             end_time = time.time()
             cost_time = end_time - start_time
             total_io_cost_time += cost_time
-        total_param[param_name] = ms.Parameter(ms.Tensor.from_numpy(slice_param))
+        if qint4:
+            total_param[param_name] = ms.Parameter(ms.Tensor(slice_param, dtype=ms_dtype))
+        else:
+            total_param[param_name] = ms.Parameter(ms.Tensor.from_numpy(slice_param))
     vlog_print("1", "ME", __file__, sys._getframe().f_lineno,
                f"load distributed safetensors io cost time:{total_io_cost_time}.")
     total_param = _process_hyper_params(file_list, total_safetensors_dir, total_param)
