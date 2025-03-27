@@ -155,32 +155,32 @@ bool IsNeededAllGatherReduceScatter(const CNodePtr &cnode, const std::string &pp
 }
 
 bool IsNeededShape(const CNodePtr &cnode) {
-  if (cnode->input(kIndex1)->abstract() && cnode->input(kIndex1)->abstract()->GetShape()) {
-    auto a2a_shape = cnode->input(kIndex1)->abstract()->GetShape()->GetShapeVector();
-    auto a2a_size = std::accumulate(a2a_shape.begin(), a2a_shape.end(), 1, std::multiplies<int64_t>());
-    if (std::find(a2a_shape.begin(), a2a_shape.end(), -1) != a2a_shape.end()) {
-      auto input_node = GetInputNode(cnode->input(kIndex1), [&](const CNodePtr &cnode) {
-        bool filter = IsPrimitiveCNode(cnode, prim::kPrimDepend) || IsPrimitiveCNode(cnode, prim::kPrimLoad) ||
-                      IsPrimitiveCNode(cnode, prim::kPrimReshape) || IsPrimitiveCNode(cnode, prim::kPrimCast);
-        return std::make_pair(filter, 1);
-      });
-      if (!input_node->isa<CNode>()) {
+  if (!(cnode->input(kIndex1)->abstract() && cnode->input(kIndex1)->abstract()->GetShape())) {
+    return true;
+  }
+  auto a2a_shape = cnode->input(kIndex1)->abstract()->GetShape()->GetShapeVector();
+  auto a2a_size = std::accumulate(a2a_shape.begin(), a2a_shape.end(), 1, std::multiplies<int64_t>());
+  if (std::find(a2a_shape.begin(), a2a_shape.end(), -1) != a2a_shape.end()) {
+    auto input_node = GetInputNode(cnode->input(kIndex1), [&](const CNodePtr &cnode) {
+      bool filter = IsPrimitiveCNode(cnode, prim::kPrimDepend) || IsPrimitiveCNode(cnode, prim::kPrimLoad) ||
+                    IsPrimitiveCNode(cnode, prim::kPrimReshape) || IsPrimitiveCNode(cnode, prim::kPrimCast);
+      return std::make_pair(filter, 1);
+    });
+    if (!input_node->isa<CNode>()) {
+      return true;
+    }
+    auto input_cnode = input_node->cast<CNodePtr>();
+    if (input_cnode->input(kIndex1)->abstract() && input_cnode->input(kIndex1)->abstract()->GetShape()) {
+      auto a2a_input_shape = input_cnode->input(kIndex1)->abstract()->GetShape()->GetShapeVector();
+      auto a2a_input_size =
+        std::accumulate(a2a_input_shape.begin(), a2a_input_shape.end(), 1, std::multiplies<int64_t>());
+      if (std::find(a2a_input_shape.begin(), a2a_input_shape.end(), -1) != a2a_input_shape.end()) {
         return true;
       }
-      auto input_cnode = input_node->cast<CNodePtr>();
-      if (input_cnode->input(kIndex1)->abstract() && input_cnode->input(kIndex1)->abstract()->GetShape()) {
-        auto a2a_input_shape = input_cnode->input(kIndex1)->abstract()->GetShape()->GetShapeVector();
-        auto a2a_input_size =
-          std::accumulate(a2a_input_shape.begin(), a2a_input_shape.end(), 1, std::multiplies<int64_t>());
-        if (std::find(a2a_input_shape.begin(), a2a_input_shape.end(), -1) != a2a_input_shape.end()) {
-          return true;
-        }
-        return a2a_input_size >= kAll2AllSize;
-      }
+      return a2a_input_size >= kAll2AllSize;
     }
-    return a2a_size >= kAll2AllSize;
   }
-  return true;
+  return a2a_size >= kAll2AllSize;
 }
 
 bool IsNeededCNode(const CNodePtr &cnode) {
