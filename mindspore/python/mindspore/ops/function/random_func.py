@@ -553,28 +553,22 @@ def random_poisson(shape, rate, seed=None, dtype=mstype.float32):
 @_function_forbid_reuse
 def shuffle(x, seed=None):
     r"""
-    Randomly shuffles a Tensor along its first dimension.
+    Randomly shuffle a tensor along its first dimension.
 
     Args:
-        x (Tensor): The Tensor need be shuffled.
-        seed (int, optional): Random seed used for random number generation, must be non-negative. If `seed` is 0,
-            which will be replaced with a randomly generated value. Default: ``None`` , which will be treated as 0.
+        x (Tensor): The input tensor.
+        seed (int, optional): Random seed. Default ``None`` , which is equivalent to 0.
 
     Returns:
-        Tensor. The shape and type are the same as the input `x`.
-
-    Raises:
-        TypeError: If data type of `seed` is not None or non-negative int.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> from mindspore import dtype as mstype
-        >>> x = Tensor(np.array([1, 2, 3, 4]), mstype.float32)
-        >>> output = ops.shuffle(x, seed=1)
+        >>> import mindspore
+        >>> x = mindspore.tensor([1, 2, 3, 4], mindspore.float32)
+        >>> output = mindspore.ops.shuffle(x, seed=1)
         >>> print(output)
         [3. 4. 2. 1.]
     """

@@ -1678,29 +1678,21 @@ def ger(input, vec2):
 
 def size(input_x):
     r"""
-    Returns a Scalar of type int that represents the size of the input Tensor and the total number of elements in the
-    Tensor.
+    Count the total number of elements in `input_x` .
 
     Args:
-        input_x (Tensor): Input parameters, the shape of tensor is :math:`(x_1, x_2, ..., x_R)`. The data type is
-            `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
+        input_x (Tensor): The input tensor.
 
     Returns:
-        int. A scalar representing the elements' size of `input_x`, tensor is the number of elements
-        in a tensor, :math:`size=x_1*x_2*...x_R`. The data type is an int.
-
-    Raises:
-        TypeError: If `input_x` is not a Tensor.
+        int
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input_x = Tensor(np.array([[2, 2], [2, 2]]), mindspore.float32)
-        >>> output = ops.size(input_x)
+        >>> input_x = mindspore.tensor([[2, 2], [2, 2]], mindspore.float32)
+        >>> output = mindspore.ops.size(input_x)
         >>> print(output)
         4
     """
@@ -1709,27 +1701,21 @@ def size(input_x):
 
 def shape(input_x):
     """
-    Returns the shape of the input tensor.
+    Return the shape of the input tensor.
 
     Args:
-        input_x (Tensor): The shape of tensor is :math:`(x_1, x_2, ..., x_R)`.
+        input_x (Tensor): The input tensor.
 
     Returns:
-        tuple[int], the output tuple is constructed by multiple integers,
-        :math:`(x_1, x_2, ..., x_R)`.
-
-    Raises:
-        TypeError: If `input_x` is not a Tensor.
+        tuple[int]
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input_x = Tensor(np.ones(shape=[3, 2, 1]), mindspore.float32)
-        >>> output = ops.shape(input_x)
+        >>> input_x = mindspore.ops.ones(shape=[3, 2, 1])
+        >>> output = mindspore.ops.shape(input_x)
         >>> print(output)
         (3, 2, 1)
     """
@@ -1931,11 +1917,7 @@ def flatten(input, order='C', *, start_dim=1, end_dim=-1):
 
 def slice(input_x, begin, size):
     r"""
-    Slices a tensor in the specified shape.
-
-    Slice the tensor `input_x` in shape of `size` and starting at the location specified by `begin`.
-    The slice `begin` represents the offset in each dimension of `input_x`.
-    The slice `size` represents the size of the output tensor.
+    Slice a tensor in the specified shape.
 
     Note:
         `begin` is zero-based and `size` is one-based.
@@ -1944,39 +1926,34 @@ def slice(input_x, begin, size):
     This is equivalent to setting :math:`size[i] = input\_x.shape(i) - begin[i]`.
 
     Args:
-        input_x (Tensor): The target tensor.
-        begin (Union[tuple, list]): The beginning of the slice. Only constant value(>=0) is allowed.
-        size (Union[tuple, list]): The size of the slice. Only constant value is allowed.
+        input_x (Tensor): The input tensor.
+        begin (Union[tuple, list]): The beginning of the slice which represents the offset in each dimension.
+        size (Union[tuple, list]): The size of the slice.
 
     Returns:
-        Tensor, the shape is input `size`, the data type is the same as `input_x`.
-
-    Raises:
-        TypeError: If `begin` or `size` is neither tuple nor list.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> from mindspore import Tensor
-        >>> from mindspore import ops
-        >>> import numpy as np
-        >>> data = Tensor(np.array([[[1, 1, 1], [2, 2, 2]],
+        >>> import mindspore
+        >>> data = mindspore.tensor([[[1, 1, 1], [2, 2, 2]],
         ...                         [[3, 3, 3], [4, 4, 4]],
-        ...                         [[5, 5, 5], [6, 6, 6]]]).astype(np.int32))
-        >>> output = ops.slice(data, (1, 0, 0), (1, 1, 3))
+        ...                         [[5, 5, 5], [6, 6, 6]]], mindspore.int32)
+        >>> output = mindspore.ops.slice(data, (1, 0, 0), (1, 1, 3))
         >>> print(output)
         [[[3 3 3]]]
-        >>> output = ops.slice(data, (1, 0, 0), (1, 1, 2))
+        >>> output = mindspore.ops.slice(data, (1, 0, 0), (1, 1, 2))
         >>> print(output)
         [[[3 3]]]
-        >>> output = ops.slice(data, (1, 0, 0), (1, 1, 1))
+        >>> output = mindspore.ops.slice(data, (1, 0, 0), (1, 1, 1))
         >>> print(output)
         [[[3]]]
-        >>> output = ops.slice(data, (1, 1, 0), (1, 1, 3))
+        >>> output = mindspore.ops.slice(data, (1, 1, 0), (1, 1, 3))
         >>> print(output)
         [[[4 4 4]]]
-        >>> output = ops.slice(data, (1, 0, 1), (1, 1, 2))
+        >>> output = mindspore.ops.slice(data, (1, 0, 1), (1, 1, 2))
         >>> print(output)
         [[[3 3]]]
     """
@@ -1985,36 +1962,23 @@ def slice(input_x, begin, size):
 
 def stack(tensors, axis=0):
     r"""
-    Stacks a list of tensors in specified axis.
-
-    Stacks the list of input tensors with the same rank `R`, output is a tensor of rank `(R+1)`.
-
-    Given input tensors of shape :math:`(x_1, x_2, ..., x_R)`. Set the number of input tensors as `N`.
-    If :math:`axis \ge 0`, the shape of the output tensor is
-    :math:`(x_1, x_2, ..., x_{axis}, N, x_{axis+1}, ..., x_R)`.
+    Stack input tensors in specified axis.
 
     Args:
-        tensors (Union[tuple, list]): A Tuple or list of Tensor objects with the same shape and type.
-        axis (int): Dimension to stack. The range is [-(R+1), R+1). Default: ``0`` .
+        tensors (Union[tuple, list]): The input tensors.
+        axis (int): Axis to stack. Default ``0`` .
 
     Returns:
-        Tensor. A stacked Tensor with the same type as `tensors`.
-
-    Raises:
-        TypeError: If the data types of elements in `tensors` are not the same.
-        ValueError: If the length of `tensors` is not greater than zero;
-                    or if axis is out of the range [-(R+1), R+1);
-                    or if the shapes of elements in tensors are not the same.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input_x1 = Tensor(np.array([0, 1]).astype(np.float32))
-        >>> input_x2 = Tensor(np.array([2, 3]).astype(np.float32))
-        >>> output = ops.stack((input_x1, input_x2), 0)
+        >>> import mindspore
+        >>> input_x1 = mindspore.tensor([0, 1], mindspore.float32)
+        >>> input_x2 = mindspore.tensor([2, 3], mindspore.float32)
+        >>> output = mindspore.ops.stack((input_x1, input_x2), 0)
         >>> print(output)
         [[0. 1.]
          [2. 3.]]
@@ -2167,17 +2131,10 @@ def unsqueeze(input, dim):
 
 def squeeze(input, axis=None):
     """
-    Return the Tensor after deleting the dimension of size 1 in the specified `axis`.
-
-    If :math:`axis=None`, it will remove all the dimensions of size 1.
-    If `axis` is specified, it will remove the dimensions of size 1 in the given `axis`.
-    For example, if the dimension is not specified :math:`axis=None`, input shape is (A, 1, B, C, 1, D),
-    then the shape of the output Tensor is (A, B, C, D). If the dimension is specified, the squeeze operation
-    is only performed in the specified dimension. If input shape is (A, 1, B), when :math:`axis=0` or :math:`axis=2`,
-    the input tensor is not changed, while when :math:`axis=1`, the input tensor shape is changed to (A, B).
+    Remove length one axes from input tensor.
 
     Note:
-        - Please note that in dynamic graph mode, the output Tensor will share data with the input Tensor,
+        - Please note that in dynamic graph mode, the output tensor will share data with the input tensor,
           and there is no Tensor data copy process.
         - The dimension index starts at 0 and must be in the range `[-input.ndim, input.ndim]`.
         - In GE mode, only support remove dimensions of size 1 from the shape of input tensor.
@@ -2186,28 +2143,19 @@ def squeeze(input, axis=None):
         This is an experimental API that is subject to change or deletion.
 
     Args:
-        input (Tensor): The shape of tensor is :math:`(x_1, x_2, ..., x_R)`.
-        axis (Union[int, tuple(int), list(int)]): Specifies the dimension indexes of shape to be removed, which will
-            remove all the dimensions of size 1 in the given axis parameter. If specified, it must be int32 or int64.
-            Default: ``None`` , an empty tuple will be used.
+        input (Tensor): The input tensor.
+        axis (Union[int, tuple(int), list(int)]): The axis to be removed. Default: ``None`` .
 
     Returns:
-        Tensor, the shape of tensor is :math:`(x_1, x_2, ..., x_S)`.
-
-    Raises:
-        TypeError: If `input` is not a tensor.
-        TypeError: If `axis` is not an int, tuple or list.
-        TypeError: If `axis` is a tuple or list whose elements are not all int.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input = Tensor(np.ones(shape=[3, 2, 1]), mindspore.float32)
-        >>> output = ops.squeeze(input)
+        >>> input = mindspore.ops.ones(shape=[3, 2, 1])
+        >>> output = mindspore.ops.squeeze(input)
         >>> print(output)
         [[1. 1.]
          [1. 1.]
@@ -2916,41 +2864,31 @@ def scatter_nd_min(input_x, indices, updates, use_locking=False):
 
 def sort(input_x, axis=-1, descending=False):
     r"""
-    Sorts the elements of the input tensor along the given dimension in the specified order.
+    Sort the elements of the input tensor along the given axis.
+
+    .. note::
+        The Ascend backend only supports sorting the last dimension.
 
     Args:
-        input_x(Tensor): The input tensor to sort.
-            The shape is :math:`(N,*)` where :math:`*` means, any number of additional dimensions.
-        axis (int, optional): The dimension to sort along. Default: ``-1``, means the last dimension.
-            The Ascend backend only supports sorting the last dimension.
-        descending (bool, optional): Controls the sort order. If `descending` is True, the elements
-            are sorted in descending order, or else sorted in ascending order. Default: ``False`` .
+        input_x(Tensor): The input tensor.
+        axis (int, optional): The axis to sort along. Default ``-1`` , means the last dimension.
+        descending (bool, optional): Sorting method. ``True`` means the elements
+            are sorted in descending order, or else sorted in ascending order. Default ``False`` .
 
     .. warning::
         Currently, the data types of float16, uint8, int8, int16, int32, int64 are well supported.
         If use float32, it may cause loss of accuracy.
 
     Returns:
-
-        - y1, a tensor whose values are the sorted values, with the same shape and data type as input.
-        - y2, a tensor that consists of the indices of the elements in the original input tensor.
-          Data type is int32.
-
-    Raises:
-        TypeError: If `axis` is not an int.
-        TypeError: If `descending` is not a bool.
-        TypeError: If dtype of `input_x` is neither float16, float32, uint8, int8, int16, int32, int64.
-        ValueError: If `axis` is not in range of [-len(input_x.shape), len(input_x.shape)).
+        Tuple(sorted_tensor, indices) of 2 tensors.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([[8, 2, 1], [5, 9, 3], [4, 6, 7]]), mindspore.float16)
-        >>> output = ops.sort(x)
+        >>> x = mindspore.tensor([[8, 2, 1], [5, 9, 3], [4, 6, 7]], mindspore.float16)
+        >>> output = mindspore.ops.sort(x)
         >>> # The output below is based on the Ascend platform.
         >>> print(output)
         (Tensor(shape=[3, 3], dtype=Float16, value=
@@ -3547,39 +3485,29 @@ def _get_slice_scatter_const(x_shape, axis, start, end, step):
 
 def slice_scatter(input, src, axis=0, start=None, end=None, step=1):
     r"""
-    Slice the input Tensor in the specified dimension and overlay the slice results with the source Tensor.
-    The `input` is sliced along the specified dimension. The start position of the slice is `start` ,
-    the end position is `end` , and the step size is `step` .
-    Then the slicing result is overwritten with `src` to get the output Tensor.
+    Embed `src` into the sliced `input` along the specified `axis` .
 
     Args:
-        input (Tensor): The target Tensor.
-        src (Tensor): The source Tensor.
-        axis (int, optional): The dimension of `input` to be sliced. Default: ``0`` .
-        start (int, optional): The start index to slice in the specified dimension.
-            Default: ``None``, `start` is ``0`` .
-        end (int, optional): The end index to slice in the specified dimension.
-            Default: ``None``, `end` is the length of `input` in the specified dimension.
-        step (int, optional): Step size. Default: ``1``, the distance from the next slice element is ``1`` .
+        input (Tensor): The input tensor.
+        src (Tensor): The source tensor to be embedded into `input` .
+        axis (int, optional): The axis of `input` to be sliced. Default ``0`` .
+        start (int, optional): The start index for embedding in the specified axis.
+            Default ``None`` , which means `start` is ``0`` .
+        end (int, optional): The end index for embedding in the specified axis.
+            Default ``None`` , which means `end` is the length of `input` in the specified axis.
+        step (int, optional): The step size to skip during embedding. Default ``1`` .
 
     Returns:
-        Tensor after embedding, has the same shape and type as `input` .
-
-    Raises:
-        ValueError: The shape of `src` is not the same as the shape of `input` slice.
-        TypeError: If `input` is not a Tensor.
-        TypeError: If `src` is not a Tensor.
-        TypeError: If `axis` or `step` is not an integer.
-        TypeError: If `start` or `end` is not ``None`` or an integer.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import mindspore as ms
-        >>> a = ms.ops.zeros((4, 6))
-        >>> b = ms.ops.ones((4, 3))
-        >>> output = ms.ops.slice_scatter(a, b, axis=1, start=0, end=5, step=2)
+        >>> import mindspore
+        >>> a = mindspore.ops.zeros((4, 6))
+        >>> b = mindspore.ops.ones((4, 3))
+        >>> output = mindspore.ops.slice_scatter(input=a, src=b, axis=1, start=0, end=5, step=2)
         >>> print(output)
         [[1. 0. 1. 0. 1. 0.]
          [1. 0. 1. 0. 1. 0.]
@@ -4908,43 +4836,42 @@ def _split_sub_tensors(x, split_size_or_sections, axis):
 
 def split(tensor, split_size_or_sections, axis=0):
     """
-    Splits the Tensor into chunks along the given axis.
+    Split the tensor into chunks along the given axis.
 
     Args:
-        tensor (Tensor): A Tensor to be divided.
-        split_size_or_sections (Union[int, tuple(int), list(int)]):
+        tensor (Tensor): The input tensor.
+        split_size_or_sections (Union[int, tuple(int), list(int)]): The size of chunks after splited.
+        axis (int, optional): The axis along which to split. Default ``0`` .
 
-            - If `split_size_or_sections` is an int type, `tensor` will be split into equally sized chunks,
-              each chunk with size `split_size_or_sections`. Last chunk will be smaller than `split_size_or_sections`
-              if `tensor.shape[axis]` is not divisible by `split_size_or_sections`.
-            - If `split_size_or_sections` is a list type, then `tensor` will be split into len(split_size_or_sections)
-              chunks with sizes `split_size_or_sections` along the given `axis`.
-
-        axis (int, optional): The axis along which to split. Default: ``0`` .
+    .. note::
+        - If `split_size_or_sections` is an int type, the input tensor will be evenly divided into chunks of
+          size `split_size_or_sections` . The last chunk will have a size equal to the remainder if tensor.shape[axis]
+          is not divisible by `split_size_or_sections` .
+        - If `split_size_or_sections` is a tuple or list, `tensor` will be split along `axis` into
+          len( `split_size_or_sections` ) chunks with sizes specified by `split_size_or_sections` .
 
     Returns:
-        A tuple of sub-tensors.
-
-    Raises:
-        TypeError: If argument `tensor` is not Tensor.
-        TypeError: If argument `axis` is not int.
-        ValueError: If argument `axis` is out of range of :math:`[-tensor.ndim, tensor.ndim)` .
-        TypeError: If each element in `split_size_or_sections` is not integer.
-        TypeError: If argument `split_size_or_sections` is not int, tuple(int) or list(int).
-        ValueError: The sum of `split_size_or_sections` is not equal to tensor.shape[axis].
+        Tuple of tensors.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import ops, Tensor
-        >>> input_x = np.arange(9).astype("float32")
-        >>> output = ops.split(Tensor(input_x), 3)
+        >>> import mindspore
+        >>> # case1: `split_size_or_sections` is an int type
+        >>> input_x = mindspore.ops.arange(10).astype("float32")
+        >>> output = mindspore.ops.split(tensor=input_x, split_size_or_sections=3)
         >>> print(output)
-        (Tensor(shape=[3], dtype=Float32, value= [ 0.00000000e+00,  1.00000000e+00,  2.00000000e+00]),
-         Tensor(shape=[3], dtype=Float32, value= [ 3.00000000e+00,  4.00000000e+00,  5.00000000e+00]),
-         Tensor(shape=[3], dtype=Float32, value= [ 6.00000000e+00,  7.00000000e+00,  8.00000000e+00]))
+        (Tensor(shape=[3], dtype=Float32, value=[0.00000000e+00, 1.00000000e+00, 2.00000000e+00]),
+         Tensor(shape=[3], dtype=Float32, value=[3.00000000e+00, 4.00000000e+00, 5.00000000e+00]),
+         Tensor(shape=[3], dtype=Float32, value=[6.00000000e+00, 7.00000000e+00, 8.00000000e+00]),
+         Tensor(shape=[1], dtype=Float32, value=[9.00000000e+00]))
+        >>> # case2: `split_size_or_sections` is a list type
+        >>> output = mindspore.ops.split(tensor=input_x, split_size_or_sections=[3, 3, 4])
+        >>> print(output)
+        (Tensor(shape=[3], dtype=Float32, value=[0.00000000e+00, 1.00000000e+00, 2.00000000e+00]),
+         Tensor(shape=[3], dtype=Float32, value=[3.00000000e+00, 4.00000000e+00, 5.00000000e+00]),
+         Tensor(shape=[4], dtype=Float32, value=[6.00000000e+00, 7.00000000e+00, 8.00000000e+00, 9.00000000e+00]))
     """
     if not isinstance(tensor, Tensor):
         raise TypeError(f'expect `tensor` is a Tensor, but got {type(tensor)}')
@@ -6595,27 +6522,20 @@ def swapaxes(input, axis0, axis1):
     Interchange two axes of a tensor.
 
     Args:
-        input(Tensor): Input tensor.
+        input(Tensor): The input tensor.
         axis0 (int): First axis.
         axis1 (int): Second axis.
 
     Returns:
-        Transposed tensor, has the same data type as `input`.
-
-    Raises:
-        TypeError: If argument `input` is not Tensor.
-        TypeError: If `axis0` or `axis1` is not integer.
-        ValueError: If `axis0` or `axis1` is not in the range of :math:`[-ndim, ndim-1]`.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import ops
-        >>> from mindspore import Tensor
-        >>> input = Tensor(np.ones((2,3,4), dtype=np.float32))
-        >>> output = ops.swapaxes(input, 0, 2)
+        >>> import mindspore
+        >>> input = mindspore.tensor(mindspore.ops.ones(([2, 3, 4])))
+        >>> output = mindspore.ops.swapaxes(input, 0, 2)
         >>> print(output.shape)
         (4, 3, 2)
     '''
@@ -6646,27 +6566,20 @@ def swapdims(input, dim0, dim1):
     This function is equivalent to :func:`mindspore.ops.swapaxes` function.
 
     Args:
-        input(Tensor): Input tensor.
+        input(Tensor): The input tensor.
         dim0 (int): First dim.
         dim1 (int): Second dim.
 
     Returns:
-        Transposed tensor, has the same data type as `input`.
-
-    Raises:
-        TypeError: If argument `input` is not Tensor.
-        TypeError: If `dim0` or `dim1` is not integer.
-        ValueError: If `dim0` or `dim1` is not in the range of :math:`[-ndim, ndim-1]`.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import ops
-        >>> from mindspore import Tensor
-        >>> input = Tensor(np.ones((2,3,4), dtype=np.float32))
-        >>> output = ops.swapdims(input, 0, 2)
+        >>> import mindspore
+        >>> input = mindspore.tensor(mindspore.ops.ones([2, 3, 4]))
+        >>> output = mindspore.ops.swapdims(input, 0, 2)
         >>> print(output.shape)
         (4, 3, 2)
     '''
