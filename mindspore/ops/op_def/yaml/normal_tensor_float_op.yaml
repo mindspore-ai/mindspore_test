@@ -4,7 +4,7 @@ normal_tensor_float:
         mean:
             dtype: tensor
         std:
-            dtype: float
+            dtype: number
         seed:
             dtype: tensor
         offset:
