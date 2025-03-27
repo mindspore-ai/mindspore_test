@@ -722,6 +722,8 @@ def _transform_parallel_safetensor(rank_id, param_total_dict, param_attr_dict, s
                 continue
         if param_name not in transform_param_dict:
             transform_para = param_total_dict[param_name][rank_id % device_num]
+            if str(type(transform_para)) == "<class 'builtins.PySafeSlice'>":
+                transform_para = transform_para[:]
             transform_param_dict[param_name] = transform_para
     return transform_param_dict
 
