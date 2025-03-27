@@ -66,7 +66,7 @@ class CPUResManager : public HalResBase {
 
  private:
   std::shared_ptr<CPUMemoryManager> mem_manager_{nullptr};
-  CollectiveCommunicationLib *collective_comm_lib_;
+  CollectiveCommunicationLib *collective_comm_lib_{nullptr};
 };
 }  // namespace cpu
 }  // namespace device
