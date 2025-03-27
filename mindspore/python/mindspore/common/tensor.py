@@ -2583,6 +2583,52 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('uniform_')(self, from_=from_, to=to, generator=generator)
 
+
+    def exponential_(self, lambd=1, *, generator=None):
+        r"""
+        Fills `self` tensor with elements drawn from the exponential distribution:
+
+        .. math::
+            P(x)= \frac{1}{to - from\_}
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Args:
+            from\_ (Union[number.Number, Tensor], optional): The lower bound of the uniform distribution, it can be a
+                scalar value or a tensor of any dimension with a single element. Default: ``0``.
+            to (Union[number.Number, Tensor], optional): The upper bound of the uniform distribution, it can be a
+                scalar value or a tensor of any dimension with a single element. Default: ``1``.
+
+        Keyword Args:
+            generator (:class:`mindspore.Generator`, optional): a pseudorandom number generator.
+                Default: ``None``, uses the default pseudorandom number generator.
+
+        Returns:
+            Return `self` Tensor.
+
+        Raises:
+            TypeError: If `from_` or `to` is neither a number nor a Tensor.
+            TypeError: If dtype of `from` or `to` is not one of: bool, int8, int16, int32, int64, uint8, float32,
+                float64.
+            ValueError: If `from_` or `to` is Tensor but contains multiple elements.
+            RuntimeError: If `from_` is larger than `to`.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import mindspore
+            >>> x = mindspore.ops.ones((4, 2))
+            >>> generator = mindspore.Generator()
+            >>> generator.manual_seed(100)
+            >>> output = x.uniform_(1., 2., generator=generator)
+            >>> print(output.shape)
+            (4, 2)
+        """
+        return tensor_operator_registry.get('exponential_')(self, lambd=lambd, generator=generator)
+
+
     def sum_to_size(self, *size):
         r"""
         Sum self Tensor to the `size`. `size` must be expandable to the Tensor size.

@@ -32,7 +32,7 @@ from mindspore.common.generator import default_generator
 from mindspore.ops.auto_generate import UniformExt, NormalTensorTensor, \
     NormalTensorFloat, NormalFloatTensor, NormalFloatFloat, RandExt, RandLikeExt, MultinomialExt, \
     Randn, RandnLike, RandInt, RandIntLike, RandpermExt, InplaceRandom, InplaceNormal
-from mindspore.ops.auto_generate.gen_ops_prim import inplace_uniform_op
+from mindspore.ops.auto_generate.gen_ops_prim import inplace_uniform_op, inplace_exponential_op
 
 inplace_normal_ = InplaceNormal()
 normal_tensor_tensor_op = NormalTensorTensor()
@@ -431,6 +431,18 @@ def uniform(shape, minval, maxval, seed=None, dtype=mstype.float32):
         uniform_real = uniform_real(shape)
         value = uniform_real * (maxval - minval) + minval
     return value
+
+
+
+@_function_forbid_reuse
+def exponential_(input, lambd=1, *, generator=None):
+    r"""
+    exponential
+    """
+    if generator is None:
+        generator = default_generator
+    seed, offset = generator._step(generator_step_)  # pylint: disable=protected-access
+    return inplace_exponential_op(input, lambd, seed, offset)
 
 
 @_function_forbid_reuse
