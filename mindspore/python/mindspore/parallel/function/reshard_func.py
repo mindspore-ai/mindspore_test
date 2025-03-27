@@ -61,7 +61,7 @@ def reshard(tensor, layout):
         TypeError: Reshard only support type mindspore.Layout but got: `type(layout)`.
 
     Supported Platforms:
-        ``Ascend`` ``GPU``
+        ``Ascend``
 
     Examples:
         >>> import numpy as np

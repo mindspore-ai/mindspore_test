@@ -690,10 +690,12 @@ def sync_pipeline_shared_parameters(net):
     to perform synchronization after `embedding table` changes.
 
     Note:
-        The network should be compiled before synchronize pipeline parallel stage shared parameters.
-
+        The network should be compiled before shared parameters are synchronized in the pipeline parallel stage.
     Args:
         net (nn.Cell): the inference network.
+
+    Raises:
+        TypeError: `net` is not in Cell type.
 
     Supported Platforms:
         ``Ascend``
@@ -913,6 +915,9 @@ def build_searched_strategy(strategy_filename):
     Raises:
         ValueError: Strategy file is incorrect.
         TypeError: `strategy_filename` is not a string.
+
+    Supported Platforms:
+        ``Ascend``
 
     Examples:
         >>> from mindspore.parallel import build_searched_strategy
@@ -1256,6 +1261,9 @@ def restore_group_info_list(group_info_file_name):
     Raises:
         ValueError: group information file is incorrect.
         TypeError: `group_info_file_name` is not str.
+
+    Supported Platforms:
+        ``Ascend``
 
     Examples:
         >>> import mindspore as ms

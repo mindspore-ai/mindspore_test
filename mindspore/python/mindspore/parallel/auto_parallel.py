@@ -43,7 +43,7 @@ class AutoParallel(Cell):
               recursive program analysis.
 
     Supported Platforms:
-        ``Ascend`` ``GPU``
+        ``Ascend``
 
     Examples:
         >>> import os
