@@ -827,7 +827,7 @@ def div(input, other, *, rounding_mode=None):
 
 def true_divide(dividend, divisor):
     r"""
-    Alias for :func:`mindspore.ops.div` with :math:`rounding\_mode=None`.
+    Alias for :func:`mindspore.ops.div` with  ``rounding_mode=None`` .
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -1578,27 +1578,33 @@ def cov(input, *, correction=1, fweights=None, aweights=None):
 
 def t(input):
     r"""
-    Transposes a 2-D Tensor. 1-D Tensor are returned as it is.
+    Transpose a 2-D tensor. 0-D and 1-D tensor are returned as it is.
 
     Args:
-        input (Tensor): The input Tensor.
+        input (Tensor): The input tensor.
 
     Returns:
-        Tensor, the transpose of `input` .
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import Tensor, ops
-        >>> from mindspore import dtype as mstype
-        >>> x = Tensor([[1, 2, 3], [2, 3, 4]], mstype.float32)
-        >>> output = ops.t(x)
-        >>> print(output)
-        [[1. 2.]
-         [2. 3.]
-         [3. 4.]]
+        >>> # case 1: Input is a 0-D tensor
+        >>> mindspore.ops.t(mindspore.tensor(6))
+        Tensor(shape=[], dtype=Int64, value= 6)
+        >>>
+        >>> # case 2: Input is a 1-D tensor
+        >>> mindspore.ops.t(mindspore.tensor([1, 2]))
+        Tensor(shape=[2], dtype=Int64, value= [1, 2])
+        >>>
+        >>> # case 3: Input is a 2-D tensor
+        >>> mindspore.ops.t(mindspore.tensor([[1, 2, 3], [2, 3, 4]]))
+        Tensor(shape=[3, 2], dtype=Int64, value=
+        [[1, 2],
+         [2, 3],
+         [3, 4]])
     """
     if input.ndim == 2:
         return transpose_(input, (1, 0))
@@ -2933,56 +2939,35 @@ def slogdet(input):
 
 def truncate_div(x, y):
     """
-    Divides the first input tensor by the second input tensor element-wise and rounds the results
-    of division towards zero. Equivalent to C-style integer division.
-
-    Inputs of `x` and `y` comply with the implicit type conversion rules to make the data types consistent.
-    When the inputs are two tensors,
-    dtypes of them cannot be bool at the same time, and the shapes of them could be broadcast.
-    When the inputs are one tensor and one scalar,
-    the scalar could only be a constant.
+    Divide the first input tensor `x` by the second input tensor `y` element-wise and rounds the results
+    of division towards zero.
 
     Note:
-        Broadcasting is supported.
+        Support implicit type conversion and broadcasting.
 
     Args:
-        x(Union[Tensor, Number, bool]): The first input is a number, or a bool,
-            or a tensor whose data type is number or bool.
-        y(Union[Tensor, Number, bool]): The second input is a number, or a bool when the first input
-            is a tensor, or a tensor whose data type is number or bool.
+        x(Union[Tensor, Number, bool]): The first input tensor.
+        y(Union[Tensor, Number, bool]): The second input tensor.
 
     Returns:
-        Tensor, the shape is the same as the one after broadcasting,
-        and the data type is the one with higher precision or higher digits among the two inputs.
-
-    Raises:
-        TypeError: If `x` and `y` is not one of the following: Tensor, Number, bool.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([2, 4, -1]), mindspore.int32)
-        >>> y = Tensor(np.array([3, 3, 3]), mindspore.int32)
-        >>> output = ops.truncate_div(x, y)
-        >>> print(output)
-        [0 1 0]
+        >>> mindspore.ops.truncate_div(mindspore.tensor([2, 4, -1]), mindspore.tensor([3, 3, 3]))
+        Tensor(shape=[3], dtype=Int64, value= [0, 1, 0])
     """
     return truncate_div_(x, y)
 
 
 def truncate_mod(x, y):
     r"""
-    Returns the remainder of division element-wise.
+    Return the remainder of division element-wise.
 
-    Inputs of `x` and `y` comply with the implicit type conversion rules to make the data types consistent.
-    When the inputs are two tensors,
-    dtypes of them cannot be bool at the same time, and the shapes of them could be broadcast.
-    When the inputs are one tensor and one scalar,
-    the scalar could only be a constant.
+    Support implicit type conversion and broadcasting.
 
     .. warning::
         - The input data does not support 0.
@@ -2992,32 +2977,20 @@ def truncate_mod(x, y):
         - If shape is expressed as (D1,D2... ,Dn), then D1\*D2... \*DN<=1000000,n<=8.
 
     Args:
-        x (Union[Tensor, numbers.Number, bool]): The first input is a number, or a bool,
-            or a tensor whose data type is number or bool.
-        y (Union[Tensor, numbers.Number, bool]): The second input is a number, or a bool when the first input
-            is a tensor, or a tensor whose data type is number or bool.
+        x(Union[Tensor, Number, bool]): The first input tensor.
+        y(Union[Tensor, Number, bool]): The second input tensor.
 
     Returns:
-        Tensor, the shape is the same as the one after broadcasting,
-        and the data type is the one with higher precision among the two inputs.
-
-    Raises:
-        TypeError: If neither `x` nor `y` is one of the following: Tensor, number, bool.
-        TypeError: If neither `x` nor `y` is a Tensor.
-        ValueError: If the shape `x` and `y` cannot be broadcasted to each other.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([2, 4, -1]), mindspore.int32)
-        >>> y = Tensor(np.array([3, 3, 3]), mindspore.int32)
-        >>> output = ops.truncate_mod(x, y)
+        >>> output = mindspore.ops.truncate_mod(mindspore.tensor([2., 4., -1.]), mindspore.tensor([3., 3., 3.]))
         >>> print(output)
-        [ 2  1 -1]
+        [ 2.  1. -1.]
     """
     return truncate_mod_(x, y)
 
@@ -6086,12 +6059,9 @@ def diff_ext(input, n=1, dim=-1, prepend=None, append=None):
 
 def tril_indices(row, col, offset=0, *, dtype=mstype.int64):
     r"""
-    Calculates the indices of the lower triangular elements in a `row` * `col` matrix
-    and returns them as a 2-by-N Tensor. The first row of the Tensor contains
-    row coordinates, and the second row contains column coordinates. The coordinates are
-    sorted by row and then by column.
-
-    The lower triangular part of the matrix consists of all elements on and below the diagonal.
+    Return a 2-by-N tensor containing the indices of the lower triangular elements of a `row` * `col` matrix.
+    The first row of the Tensor contains row coordinates, and the second row contains column coordinates.
+    The coordinates are sorted by rows and then columns.
 
     Note:
         When running on CUDA, row * col must be less than 2^59 to prevent overflow during calculation.
@@ -6099,34 +6069,40 @@ def tril_indices(row, col, offset=0, *, dtype=mstype.int64):
     Args:
         row (int): number of rows in the 2-D matrix.
         col (int): number of columns in the 2-D matrix.
-        offset (int, optional): diagonal offset from the main diagonal. Default: ``0`` .
+        offset (int, optional): Diagonal offset. Default ``0`` .
+
+            - When `offset` is a positive integer, the diagonal is shifted upward.
+            - When `offset` is a negative integer, the diagonal is shifted downward.
 
     Keyword Args:
         dtype (:class:`mindspore.dtype`, optional): The specified type of output tensor.
-            An optional data type of `mindspore.int32` and `mindspore.int64`. Default: ``mstype.int64`` .
+            An optional data type of `mindspore.int32` and `mindspore.int64`. Default ``mstype.int64`` .
 
     Returns:
-        - **y** (Tensor) - indices of the elements in lower triangular part of matrix. The type is specified by `dtype`.
-          The shape of output is :math:`(2, tril\_size)`, where :math:`tril\_size` is the number of elements in the
-          lower triangular matrix.
-
-    Raises:
-        TypeError: If `row`, `col` or `offset` is not an int.
-        TypeError: If `dtype` is neither int32 nor int64.
-        ValueError: If `row` or `col` < 0.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import ops
-        >>> output = ops.tril_indices(4, 3, -1, dtype=mindspore.int64)
-        >>> print(output)
-        [[1 2 2 3 3 3]
-         [0 0 1 0 1 2]]
-        >>> print(output.dtype)
-        Int64
+        >>> # case 1: By default, offset=0, all elements on and below the main diagonal are retained.
+        >>> mindspore.ops.tril_indices(3, 2, 0)
+        Tensor(shape=[2, 5], dtype=Int64, value=
+        [[0, 1, 1, 2, 2],
+         [0, 0, 1, 0, 1]])
+        >>>
+        >>> # case 2: Offset=1, the indices on and below the first sub-diagonal above the main diagonal are returned.
+        >>> mindspore.ops.tril_indices(3, 2, 1)
+        Tensor(shape=[2, 6], dtype=Int64, value=
+        [[0, 0, 1, 1, 2, 2],
+         [0, 1, 0, 1, 0, 1]])
+        >>>
+        >>> # case 3: Offset=-1, the indices on and below the first sub-diagonal below the main diagonal are returned.
+        >>> mindspore.ops.tril_indices(3, 2, -1)
+        Tensor(shape=[2, 3], dtype=Int64, value=
+        [[1, 2, 2],
+         [0, 0, 1]])
     """
 
     tril_indices_ = TrilIndices(row=row, col=col, offset=offset, dtype=dtype)
@@ -6135,12 +6111,9 @@ def tril_indices(row, col, offset=0, *, dtype=mstype.int64):
 
 def triu_indices(row, col, offset=0, *, dtype=mstype.int64):
     r"""
-    Calculates the indices of the upper triangular elements in a `row` * `col` matrix
-    and returns them as a 2-by-N Tensor. The first row of the Tensor contains
-    row coordinates, and the second row contains column coordinates. The coordinates are
-    sorted by row and then by column.
-
-    The upper triangular part of the matrix consists of all elements on and above the diagonal.
+    Return a 2-by-N tensor containing the indices of the upper triangular elements of a `row` * `col` matrix.
+    The first row of the Tensor contains row coordinates, and the second row contains column coordinates.
+    The coordinates are sorted by rows and then columns.
 
     Note:
         When running on CUDA, row * col must be less than 2^59 to prevent overflow during calculation.
@@ -6148,34 +6121,40 @@ def triu_indices(row, col, offset=0, *, dtype=mstype.int64):
     Args:
         row (int): number of rows in the 2-D matrix.
         col (int): number of columns in the 2-D matrix.
-        offset (int, optional): diagonal offset from the main diagonal. Default: ``0`` .
+        offset (int, optional): Diagonal offset. Default ``0`` .
+
+            - When `offset` is a positive integer, the diagonal is shifted upward.
+            - When `offset` is a negative integer, the diagonal is shifted downward.
 
     Keyword Args:
         dtype (:class:`mindspore.dtype`, optional): The specified type of output tensor.
-            An optional data type of `mindspore.int32` and `mindspore.int64`. Default: ``mstype.int64``.
+            An optional data type of `mindspore.int32` and `mindspore.int64`. Default ``mstype.int64`` .
 
     Returns:
-        - **y** (Tensor) - indices of the elements in upper triangular part of matrix. The type is specified by `dtype`.
-          The shape of output is :math:`(2, triu\_size)`, where :math:`triu\_size` is the number of elements in the
-          upper triangular matrix.
-
-    Raises:
-        TypeError: If `row`, `col` or `offset` is not an int.
-        TypeError: If `dtype` is neither int32 nor int64.
-        ValueError: If `row` or `col` < 0.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import ops
-        >>> output = ops.triu_indices(4, 4, 2, dtype=mindspore.int64)
-        >>> print(output)
-        [[0 0 1]
-         [2 3 3]]
-        >>> print(output.dtype)
-        Int64
+        >>> # case 1: By default, offset=0, all elements on and below the main diagonal are retained.
+        >>> mindspore.ops.triu_indices(3, 2, 0)
+        Tensor(shape=[2, 3], dtype=Int64, value=
+        [[0, 0, 1],
+         [0, 1, 1]])
+        >>>
+        >>> # case 2: If offset=1, the indices on and above the first sub-diagonal above the main diagonal are returned.
+        >>> mindspore.ops.triu_indices(3, 2, 1)
+        Tensor(shape=[2, 1], dtype=Int64, value=
+        [[0],
+         [1]])
+        >>>
+        >>> # case 3: If offset=-1, the indices on and above the first sub-diagonal below the main diagonal are returned.
+        >>> mindspore.ops.triu_indices(3, 2, -1)
+        Tensor(shape=[2, 5], dtype=Int64, value=
+        [[0, 0, 1, 1, 2],
+         [0, 1, 0, 1, 1]])
     """
 
     triu_indices_ = TriuIndices(row=row, col=col, offset=offset, dtype=dtype)
@@ -9671,50 +9650,43 @@ def _select(feat, dim, index):
 
 def trapz(y, x=None, *, dx=1.0, dim=-1):
     r"""
-    Integrates `y(x)` along given dim using trapezoidal rule.
-    By default x-dim distances between points will be 1.0,
-    alternatively they can be provided with `x` array or with `dx` scalar.
+    Compute the trapezoidal rule along dim.
+
+    The spacing between elements is specified by the tensor `x` or the scalar `dx` ,
+    default ``1`` .
 
     .. math::
 
         \mathop{ \int }\nolimits_{{}}^{{}}{y}{ \left( {x} \right) } \text{d} x
 
     Args:
-        y (Tensor): Input tensor to integrate.
-        x (Tensor, optional): The sample points corresponding to the `y` values. If `x` is None,
-            the sample points are assumed to be evenly spaced `dx` apart. Default: ``None`` .
-            If `x` is not None, after subtracting 1 from the axis specified by `dim`, the shape of `x`
-            should be same as `y` or can broadcast to `y`.
+        y (Tensor): The input tensor to integrate.
+        x (Tensor, optional): If specified, defines spacing between values.
 
     Keyword Args:
-        dx (float, optional): The spacing between sample points when `x` is None. If `x` is specified,
-            `dx` does not take effect. Default: ``1.0`` .
-        dim (int, optional): The dim along which to integrate. Default: ``-1`` .
+        dx (float, optional): The spacing between elements. Default ``1.0`` .
+                              If `x` is specified, `dx` does not take effect.
+        dim (int, optional): The dimension along which to compute the trapezoidal rule. Default ``-1`` .
 
     Returns:
-        Tensor of float, definite integral as approximated by trapezoidal rule.
-        If `y` is a one-dimensional array, the result is a floating-point number. If `y` is
-        an n-dimensional array, the result is an N-1 dimensional array.
-
-    Raises:
-        RuntimeError: If dim of `x` is 1, and x.shape[0] is not equal to y.shape[dim].
-        ValueError: If `dim` is out of range of :math:`[-y.ndim, y.ndim)`.
-        TypeError: If `y` is not a Tensor.
-        TypeError: If `x` is not None and is not a Tensor.
-        TypeError: If `dx` is not a float number.
-        TypeError: If `dim` is not an integer.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> y = Tensor(np.array([[1., 1., 1.], [1., 1., 1.], [1., 1., 1.]]).astype(np.float32))
-        >>> x = Tensor(np.array([[1, 2, 3], [1, 3, 5], [1, 4, 7]]).astype(np.float32))
-        >>> output = ops.trapz(y, x)
+        >>> import mindspore
+        >>> y = mindspore.tensor([[1., 2., 3.], [2., 3., 4.], [3., 2., 1.]])
+        >>> # case 1: Integrate over a regular grid, with spacing 1.
+        >>> output = mindspore.ops.trapz(y, dx=1.)
         >>> print(output)
-        [2. 4. 6.]
+        [4. 6. 4.]
+        >>>
+        >>> # case 2: Integrate over an irregular grid.
+        >>> x = mindspore.tensor([[1, 2, 3], [1, 3, 5], [1, 4, 7]])
+        >>> output = mindspore.ops.trapz(y, x)
+        >>> print(output)
+        [ 4. 12. 12.]
     """
 
     if not isinstance(y, (Tensor, Tensor_)):
@@ -11098,21 +11070,26 @@ def sum(input, dim=None, keepdim=False, *, dtype=None):
 
 def tanhshrink(input):
     '''
-    Tanhshrink Activation, :math:`Tanhshrink(x)=x-Tanh(x)` , where :math:`x` corresponds to `input` .
-    See :class:`mindspore.nn.Tanhshrink` for more details.
+    Apply the element-wise Tanhshrink function.
+
+    .. math::
+
+        Tanhshrink(x) = x - Tanh(x)
+
+    Args:
+        input (Tensor): The input tensor.
+
+    Returns:
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import mindspore as ms
-        >>> from mindspore import ops
-        >>> from mindspore import Tensor
-        >>> import numpy as np
-        >>> input = Tensor(np.array([1, 2, 3, 2, 1]), ms.float16)
-        >>> output = ops.tanhshrink(input)
+        >>> import mindspore
+        >>> output = mindspore.ops.tanhshrink(mindspore.tensor([1., 2., 3., 2., 1.]))
         >>> print(output)
-        [0.2383 1.036  2.004  1.036  0.2383]
+        [0.23840582 1.0359724  2.0049443  1.0359724  0.23840582]
     '''
     if not isinstance(input, Tensor):
         raise TypeError(f"For tanhshrink, the input must be a Tensor, but got {type(input)}.")
