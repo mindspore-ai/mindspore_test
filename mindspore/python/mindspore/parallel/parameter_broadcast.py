@@ -47,6 +47,9 @@ def parameter_broadcast(net, layout, cur_rank=0, initial_rank=0):
         ValueError: Parameter name in `layout` can not be found in
             :func:`mindspore.nn.Cell.parameters_dict`.
 
+    Supported Platforms:
+        ``Ascend``
+
     Examples:
         >>> import os
         >>> import mindspore as ms
