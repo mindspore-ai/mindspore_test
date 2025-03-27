@@ -920,22 +920,33 @@ bool GraphBackwardNode::FilterGradOutput(const std::vector<bool> &need_grad) {
   const auto &graph_output_element = graph_output->inputs();
   MS_EXCEPTION_IF_CHECK_FAIL(graph_output_element.size() - 1 == need_grad.size(), "Size not match");
   AnfNodePtrList new_graph_output_element = {NewValueNode(prim::kPrimMakeTuple)};
+  AbstractBasePtrList new_graph_output_abstract_element;
   bool need_filter = false;
+  std::vector<Edge> new_edge;
   for (size_t i = 0; i < need_grad.size(); ++i) {
+    auto cur_node = graph_output_element[i + 1];
+    MS_EXCEPTION_IF_NULL(cur_node);
+    auto cur_abstract = cur_node->abstract();
+    MS_EXCEPTION_IF_NULL(cur_abstract);
     if (need_grad[i]) {
-      (void)new_graph_output_element.emplace_back(graph_output_element[i + 1]);
+      (void)new_graph_output_element.emplace_back(cur_node);
+      (void)new_graph_output_abstract_element.emplace_back(cur_abstract);
+      (void)new_edge.emplace_back(next_edges_[i]);
       continue;
     }
-    (void)new_graph_output_element.emplace_back(func_graph_->parameters()[i]);
     need_filter = true;
   }
   func_graph_->set_flag("is_filtered", true);
+  func_graph_->set_attr("need_grad", MakeValue<std::vector<bool>>(need_grad));
   if (!need_filter) {
     return need_filter;
   }
+  MS_LOG(INFO) << "Cut edge number from " << next_edges_.size() << " to " << new_edge.size();
+  next_edges_ = new_edge;
   MS_LOG(INFO) << "Do filter for grad function graph output";
   auto new_graph_output = func_graph_->NewCNode(new_graph_output_element);
-  new_graph_output->set_abstract(graph_output->abstract());
+  auto new_graph_output_abstract = std::make_shared<abstract::AbstractTuple>(new_graph_output_abstract_element);
+  new_graph_output->set_abstract(new_graph_output_abstract);
   func_graph_->set_output(new_graph_output);
   if (MsContext::GetInstance()->CanDump(kIntroductory)) {
     DumpIR("filtered_output_grad_fg.ir", func_graph_);
@@ -1023,6 +1034,16 @@ std::pair<std::vector<bool>, int> GraphBackwardNode::CollectFilterMsg() const {
 
 void GraphBackwardNode::FilterGraph() {
   if (func_graph_->has_flag("is_filtered")) {
+    const auto &need_grad_value = func_graph_->attrs()["need_grad"];
+    const auto &need_grad = GetValue<std::vector<bool>>(need_grad_value);
+    std::vector<Edge> new_edge;
+    MS_EXCEPTION_IF_CHECK_FAIL(need_grad.size() == next_edges_.size(), "size not match");
+    for (size_t i = 0; i < need_grad.size(); ++i) {
+      if (need_grad[i]) {
+        (void)new_edge.emplace_back(std::move(next_edges_[i]));
+      }
+    }
+    next_edges_ = std::move(new_edge);
     return;
   }
   MS_LOG(INFO) << "Start to filter grad jit graph.";
