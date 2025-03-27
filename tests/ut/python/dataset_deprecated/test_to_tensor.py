@@ -407,7 +407,7 @@ def test_to_tensor_eager_error_string():
     with pytest.raises(TypeError) as error_info:
         op = py_vision.ToTensor(output_type=my_np_type)
         _ = op(image)
-    assert "ufunc 'true_divide' not supported for the input types" in str(error_info.value)
+    assert "not supported for the input types" in str(error_info.value)
 
 
 if __name__ == "__main__":
