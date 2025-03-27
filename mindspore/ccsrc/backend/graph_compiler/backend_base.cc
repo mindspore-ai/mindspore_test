@@ -50,6 +50,7 @@
 #include "utils/log_adapter.h"
 #include "utils/llm_manager.h"
 #include "utils/ms_utils.h"
+#include "utils/info.h"
 #ifdef ENABLE_DEBUGGER
 #include "include/backend/debug/debugger/debugger.h"
 #endif
@@ -75,6 +76,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+
 namespace mindspore {
 namespace compile {
 bool Backend::GetCond(const BaseRef &c, bool *value) {
@@ -494,6 +496,7 @@ void CheckNodeValid(const AnfNodePtr &node) {
   if (node_abs != nullptr && node_abs->isa<abstract::AbstractJoinedAny>()) {
     auto abs_joined_any = node_abs->cast<abstract::AbstractJoinedAnyPtr>();
     if (abs_joined_any != nullptr) {
+      TraceGuard guard(MakeTraceInfo<TraceTypeJoin>(node->debug_info()));
       abs_joined_any->ThrowException();
     }
   }

@@ -202,3 +202,30 @@ def test_control_flow_with_fix_length_input_2():
         assert "Cannot join the return values of different branches" in str(TypeError.value)
         assert "if x == 1:" in str(TypeError.value)
         assert "return x, y" in str(TypeError.value)
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_type_join_error_msg():
+    """
+    Feature: Control flow with different type in two branches.
+    Description: Abstract type AbstractScalar(Type: Int64) cannot join with AbstractScalar(Type: String).
+    Expectation: Catch exception, no core dump.
+    """
+    @jit
+    def func(input_x):
+        """
+        if_if_if分支都包含return
+        """
+        if input_x < 10:
+            if input_x > 0:
+                if input_x > 1:
+                    return '2'
+                return 1
+            return [1]
+        return 1, 2
+
+    input_x = Tensor(9)
+    with pytest.raises(TypeError) as exec_info:
+        func(input_x)
+    error_info = str(exec_info.value)
+    assert "Cannot join the return values of different branches" in error_info
+    assert "if input_x > 1:" in error_info
