@@ -2389,32 +2389,24 @@ def inverse_ext(input):
 
 def invert(x):
     r"""
-    Flips all bits of input tensor element-wise.
+    Flip all bits of input tensor element-wise. For example, 01010101 becomes 10101010.
 
     .. math::
         out_i = \sim x_{i}
 
     Args:
-        x (Tensor): The input Tensor of shape :math:`(x_1, x_2, ..., x_R)`.
-            The data type should be one of the following types: int16, uint16.
+        x (Tensor): The input tensor.
 
     Returns:
-        Tensor, has the same shape as `x`.
-
-    Raises:
-        TypeError: If dtype of `x` is neither int16 nor uint16.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([25, 4, 13, 9]), mindspore.int16)
-        >>> output = ops.invert(x)
-        >>> print(output)
-        [-26 -5 -14 -10]
+        >>> mindspore.ops.invert(mindspore.tensor([25, 4, 13, 9]))
+        Tensor(shape=[4], dtype=Int64, value= [-26,  -5, -14, -10])
     """
     return invert_(x)
 
@@ -4920,29 +4912,22 @@ def mv(mat, vec):
     """
     Multiplies matrix `mat` and vector `vec`.
 
-    If `mat` is a Tensor with :math:`(N, M)`, `vec` is a 1-D Tensor of size :math:`M`,
-    out will be 1-D of size :math:`N`.
+    If `mat` is a :math:`(N, M)` tensor, `vec` is a 1-D :math:`M` tensor,
+    out will be a 1-D :math:`N` tensor.
 
     Args:
-        mat (Tensor): Input matrix of shape :math:`(N, M)`.
-        vec (Tensor): Input vector of shape :math:`(M,)`.
+        mat (Tensor): Input matrix.
+        vec (Tensor): Input vector.
 
     Returns:
-        Tensor, the shape of the output Tensor is :math:`(N,)`.
-
-    Raises:
-        TypeError: If `mat` or `vec` is not a Tensor.
-        ValueError: If `mat` is not a 2-D Tensor or `vec` is not a 1-D Tensor.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> mat = Tensor(np.array([[3., 4.], [1., 6.], [1., 3.]]).astype(np.float32))
-        >>> vec = Tensor(np.array([1., 2.]).astype(np.float32))
-        >>> output = ops.mv(mat, vec)
+        >>> import mindspore
+        >>> output = mindspore.ops.mv(mindspore.tensor([[3., 4.], [1., 6.], [1., 3.]]), mindspore.tensor([1., 2.]))
         >>> print(output)
         [11. 13. 7.]
     """
@@ -5374,32 +5359,23 @@ def addr(x, vec1, vec2, *, beta=1, alpha=1):
 def lcm(input, other):
     """
     Computes least common multiplier of input tensors element-wise.
-    The shape of two inputs should be broadcastable, and data type of them should be
-    one of: int32, int64
+
+    Support broadcast, support implicit type conversion and type promotion.
 
     Args:
         input (Tensor): The first input tensor.
         other (Tensor): The second input tensor.
 
     Returns:
-        Tensor, the shape is the same as the one after broadcasting, and the data type is one
-        with higher digits in the two inputs.
-
-    Raises:
-        TypeError: If data type `input` or `other` is not int32 or int64.
-        ValueError: If shapes of two inputs are not broadcastable.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input = Tensor(np.array([7, 8, 9]))
-        >>> other = Tensor(np.array([14, 6, 12]))
-        >>> y = ops.lcm(input, other)
-        >>> print(y)
-        [14 24 36]
+        >>> import mindspore
+        >>> mindspore.ops.lcm(mindspore.tensor([7, 8, 9]), mindspore.tensor([14, 6, 12]))
+        Tensor(shape=[3], dtype=Int64, value= [14, 24, 36])
     """
     return lcm_(input, other)
 
@@ -8888,61 +8864,41 @@ def _broadcast_to(x, shape_cur, shape_to, ndim_to):
 
 def matmul(input, other):
     """
-    Returns the matrix product of two tensors.
+    Return the matrix product of two tensors.
 
     Note:
-        Numpy arguments `out`, `casting`, `order`, `subok`, `signature`, and `extobj` are
-        not supported.
-        The dtype of `input` and `other` must be same.
-        On Ascend, the rank of `input` or `other` must be between 1 and 6.
+        - The dtype of `input` and `other` must be same.
+        - On Ascend, the rank of `input` or `other` must be between 1 and 6.
 
     Args:
-        input (Tensor): Input tensor, scalar not allowed.
-            The last dimension of `input` must be the same size as the second last dimension of `other`.
-            And the shape of input and other could be broadcast.
-        other (Tensor): Input tensor, scalar not allowed.
-            The last dimension of `input` must be the same size as the second last dimension of `other`.
-            And the shape of input and other could be broadcast.
+        input (Tensor): The first input tensor.
+        other (Tensor): The second input tensor.
 
     Returns:
-        Tensor or scalar, the matrix product of the inputs. This is a scalar only
-        when both `input`, `other` are 1-d vectors.
-
-    Raises:
-        TypeError: If the dtype of `input` and the dtype of `other` are not the same.
-        ValueError: If the last dimension of `input` is not the same size as the
-            second-to-last dimension of `other`, or if a scalar value is passed in.
-        ValueError: If the shape of `input` and `input` could not broadcast together.
-        RuntimeError: If the rank of `input` or `other` is less than 1 or greater than 6 on the Ascend platform.
+        Tensor or scalar
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> # case 1 : Reasonable application of broadcast mechanism
-        >>> input = Tensor(np.arange(2*3*4).reshape(2, 3, 4), mindspore.float32)
-        >>> other = Tensor(np.arange(4*5).reshape(4, 5), mindspore.float32)
-        >>> output = ops.matmul(input, other)
-        >>> print(output)
-        [[[  70.   76.   82.   88.   94.]
-        [ 190.  212.  234.  256.  278.]
-        [ 310.  348.  386.  424.  462.]]
-        [[ 430.  484.  538.  592.  646.]
-        [ 550.  620.  690.  760.  830.]
-        [ 670.  756.  842.  928. 1014.]]]
-        >>> print(output.shape)
-        (2, 3, 5)
-        >>> # case 2 : the rank of `input` is 1
-        >>> input = Tensor(np.ones([1, 2]), mindspore.float32)
-        >>> other = Tensor(np.ones([2,]), mindspore.float32)
-        >>> output = ops.matmul(input, other)
-        >>> print(output)
-        [2.]
-        >>> print(output.shape)
-        (1,)
+        >>> # case 1 : Reasonable application of broadcast mechanism.
+        >>> input = mindspore.ops.arange(24).reshape(2, 3, 4)
+        >>> other = mindspore.ops.arange(20).reshape(4, 5)
+        >>> mindspore.ops.matmul(input, other)
+        Tensor(shape=[2, 3, 5], dtype=Int64, value=
+        [[[  70,   76,   82,   88,   94],
+          [ 190,  212,  234,  256,  278],
+          [ 310,  348,  386,  424,  462]],
+         [[ 430,  484,  538,  592,  646],
+          [ 550,  620,  690,  760,  830],
+          [ 670,  756,  842,  928, 1014]]])
+        >>>
+        >>> # case 2 : The rank of `input` is 1.
+        >>> input = mindspore.ops.ones(([1, 2]))
+        >>> other = mindspore.ops.ones(([2]))
+        >>> mindspore.ops.matmul(input, other)
+        Tensor(shape=[1], dtype=Float32, value= [ 2.00000000e+00])
     """
     return auto_generate.matmul_ext(input, other)
 
