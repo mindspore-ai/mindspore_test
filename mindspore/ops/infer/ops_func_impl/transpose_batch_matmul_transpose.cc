@@ -113,13 +113,6 @@ void CheckBMMInputSize(const std::string &op_name, const std::string &input_name
   }
 }
 
-void CheckBMMTranspose(const std::string &op_name, bool transpose_a, bool transpose_b) {
-  if (transpose_a || transpose_b) {
-    MS_EXCEPTION(ValueError) << "For '" << op_name << "', the transpose of batch_matmul must be False, but got "
-                             << transpose_a << " and " << transpose_b;
-  }
-}
-
 void CheckTransposeInputAndOutputPerm(const std::string &op_name, const std::string &input_name_in,
                                       const ArrayValue<int64_t> &perm_in, const std::string &input_name_out,
                                       const ArrayValue<int64_t> &perm_out) {
@@ -217,7 +210,6 @@ abstract::BaseShapePtr TransposeBatchMatmulTransposeFuncImpl::InferShape(
   if (!dynamic_shape) {
     CheckBMMInputSize(prim_name, "x", x_shp);
     CheckBMMInputSize(prim_name, "w", w_shp);
-    CheckBMMTranspose(prim_name, transpose_a, transpose_b);
     CheckTransposePerm(prim_name, "perm_in", x_rank, perm_in);
     CheckTransposePerm(prim_name, "perm_out", x_rank, perm_out);
     CheckTransposeInputAndOutputPerm(prim_name, "perm_in", perm_in, "perm_out", perm_out);
