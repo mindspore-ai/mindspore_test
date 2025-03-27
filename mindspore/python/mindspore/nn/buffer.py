@@ -42,8 +42,10 @@ class Buffer(Tensor, metaclass=_BufferMeta):
 
     Args:
         data (Tensor): buffer tensor.
+
+    Keyword Args:
         persistent (bool, optional): whether the buffer is part of the Cell's
-            :attr:`state_dict`. Default: ``True``.
+            :attr:`state_dict`. Default ``True``.
     """
 
     def __new__(cls, data=None, *, persistent=True):
