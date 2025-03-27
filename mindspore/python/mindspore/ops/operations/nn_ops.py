@@ -7402,9 +7402,8 @@ class ApplyAdagradDA(Primitive):
         >>> global_step = Tensor(2, mstype.int32)
         >>> output = net(grad, lr, l1, l2, global_step)
         >>> print(output)
-        (Tensor(shape=[2, 2], dtype=Float32, value=
         [[-0.00073906, -0.00136889],
-         [-0.00059699, -0.00142478]]))
+         [-0.00059699, -0.00142478]]
     """
 
     __mindspore_signature__ = (
