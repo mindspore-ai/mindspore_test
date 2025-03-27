@@ -502,8 +502,10 @@ ValuePtrList HookBackwardNode::CallBackward(const ValuePtrList &grads) {
   const auto &device_target = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
   // Python grad func can not process None, we need to convert None to zero tensor.
   auto func_builder = FuncBuilder(name_, device_target, nullptr);
-  auto filled_zeros_grad = func_builder.FillZeros(gradient, out_abstract_);
-  (void)args_.emplace_back(filled_zeros_grad);
+  if (name_ != kCellBackwardHookName) {
+    gradient = func_builder.FillZeros(gradient, out_abstract_);
+  }
+  (void)args_.emplace_back(gradient);
   py::gil_scoped_acquire gil_acquire;
   auto out = RunHookFunction(prim_, args_);
   ValuePtrList gradient_values;
