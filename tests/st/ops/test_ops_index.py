@@ -121,7 +121,8 @@ def test_ops_index_backward(context_mode):
     tmp = np.zeros(x.shape)
     expect_b = np.zeros(x.shape)
     ### The original value does not exist.When the value of grads is 1,It can be avoided.
-    tmp[[indices1, indices2]] = grads
+    indices2 = np.broadcast_to(indices2, indices1.shape)
+    tmp[indices1, indices2] = grads
     for i in np.nditer([indices1, indices2]):
         expect_b[i] += tmp[i]
     np.testing.assert_allclose(output_b.asnumpy(), expect_b, rtol=1e-3)
