@@ -5,7 +5,7 @@ correlate:
       dtype: tensor
     v:
       dtype: tensor
-    mode:
+    pad_mode:
       dtype: int
       arg_handler: str_to_enum
       default: "'valid'"
