@@ -3044,15 +3044,8 @@ def tensor_scatter_add(input_x, indices, updates):
 
 def tensor_scatter_sub(input_x, indices, updates):
     r"""
-    Creates a new tensor by subtracting the values from the positions in `input_x` indicated by
-    `indices`, with values from `updates`. When multiple values are provided for the same
-    index, the result of the update will be to subtract these values respectively. This operation is almost
-    equivalent to using :class:`mindspore.ops.ScatterNdSub` , except that the updates are applied on output `Tensor`
-    instead of input `Parameter`.
-
-    The last axis of `indices` is the depth of each index vectors. For each index vector,
-    there must be a corresponding value in `updates`. The shape of `updates` should be
-    equal to the shape of `input_x[indices]`. For more details, see Examples.
+    Return a new tensor by performing a subtraction update on `input_x` at the specified indices with the given update
+    values.
 
     .. math::
         output[indices] = input\_x - update
@@ -3064,35 +3057,25 @@ def tensor_scatter_sub(input_x, indices, updates):
         not supported, if some values of the `indices` are out of bound, unknown errors may be caused.
 
     Args:
-        input_x (Tensor): The input tensor. The dimension of input_x must be no less than indices.shape[-1].
-        indices (Tensor): The index of input tensor whose data type is int32 or int64.
-            The rank must be at least 2.
-        updates (Tensor): The tensor to update the input tensor, has the same type as `input_x`,
-            and the shape of `updates` should be equal to indices.shape[:-1] + input_x.shape[indices.shape[-1]:].
+        input_x (Tensor): The input tensor.
+        indices (Tensor): The specified indices. The rank must be at least 2.
+        updates (Tensor): The update values.
 
     Returns:
-        Tensor, has the same shape and type as `input_x`.
-
-    Raises:
-        TypeError: If dtype of `indices` is neither int32 nor int64.
-        ValueError: If length of shape of `input_x` is less than the last dimension of shape of `indices`.
-        RuntimeError: If a value of `indices` is not in `input_x`.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor
-        >>> from mindspore import ops
-        >>> input_x = Tensor(np.array([[-0.1, 0.3, 3.6], [0.4, 0.5, -3.2]]), mindspore.float32)
-        >>> indices = Tensor(np.array([[0, 0], [0, 0]]), mindspore.int32)
-        >>> updates = Tensor(np.array([1.0, 2.2]), mindspore.float32)
-        >>> output = ops.tensor_scatter_sub(input_x, indices, updates)
-        >>> print(output)
-        [[-3.3000002  0.3        3.6      ]
-         [ 0.4        0.5       -3.2      ]]
+        >>> input = mindspore.tensor([[1, 2, 3], [4, 5, 6]])
+        >>> indices = mindspore.tensor([[0, 0], [1, 1]])
+        >>> updates = mindspore.tensor([5, 5])
+        >>> mindspore.ops.tensor_scatter_sub(input, indices, updates)
+        Tensor(shape=[2, 3], dtype=Int64, value=
+        [[-4,  2,  3],
+         [ 4,  0,  6]])
     """
 
     return tensor_scatter_sub_(input_x, indices, updates)
@@ -3100,12 +3083,8 @@ def tensor_scatter_sub(input_x, indices, updates):
 
 def tensor_scatter_max(input_x, indices, updates):
     r"""
-    By comparing the value at the position indicated by `indices` in `input_x` with the value in the `updates`,
-    the value at the index will eventually be equal to the largest one to create a new tensor.
-
-    The last axis of the index is the depth of each index vector. For each index vector,
-    there must be a corresponding value in `updates`. The shape of `updates` should be
-    equal to the shape of input_x[indices].
+    Return a new tensor by performing a maximum update on `input_x` at the specified indices with the given update
+    values.
 
     .. math::
         output\left [indices  \right ] = \max(input\_x, update)
@@ -3118,55 +3097,33 @@ def tensor_scatter_max(input_x, indices, updates):
           unknown errors may be caused.
 
     Args:
-        input_x (Tensor): The input tensor. The dimension of `input_x` must be no less than indices.shape[-1].
-        indices (Tensor): The index of input tensor whose data type must be int32 or int64.
-            The rank must be at least 2.
-        updates (Tensor): The tensor to update the `input_x` tensor, has the same type as input,
-            and updates.shape should be equal to :math:`indices.shape[:-1] + input\_x.shape[indices.shape[-1]:]`.
+        input_x (Tensor): The input tensor.
+        indices (Tensor): The specified indices. The rank must be at least 2.
+        updates (Tensor): The update values.
 
     Returns:
-        Tensor, has the same shape and type as `input_x`.
-
-    Raises:
-        TypeError: If dtype of `indices` is neither int32 nor int64.
-        ValueError: If length of shape of `input_x` is less than the last dimension of shape of `indices`.
-        RuntimeError: If a value of `indices` is not in `input_x` on CPU backend.
+        Tensor
 
     Supported Platforms:
         ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input_x = Tensor(np.array([[-0.1, 0.3, 3.6], [0.4, 0.5, -3.2]]), mindspore.float32)
-        >>> indices = Tensor(np.array([[0, 0], [0, 0]]), mindspore.int32)
-        >>> updates = Tensor(np.array([1.0, 2.2]), mindspore.float32)
-        >>> # Next, demonstrate the approximate operation process of this operator:
-        >>> # 1, indices[0] = [0, 0], indices[1] = [0, 0]
-        >>> # 2, And input_x[0, 0] = -0.1
-        >>> # 3, So input_x[indices] = [-0.1, -0.1]
-        >>> # 4, Satisfy the above formula: input_x[indices].shape=(2) == updates.shape=(2)
-        >>> output = ops.tensor_scatter_max(input_x, indices, updates)
-        >>> # 5, Perform the max operation for the first time:
-        >>> #      first_input_x = Max(input_x[0][0], updates[0]) = [[1.0, 0.3, 3.6], [0.4, 0.5, -3.2]]
-        >>> # 6, Perform the max operation for the second time:
-        >>> #      second_input_x = Max(input_x[0][0], updates[1]) = [[2.2, 0.3, 3.6], [0.4, 0.5, -3.2]]
-        >>> print(output)
-        [[ 2.2  0.3  3.6]
-         [ 0.4  0.5 -3.2]]
+        >>> input_x = mindspore.tensor([[1, 2, 3], [4, 5, 6]])
+        >>> indices = mindspore.tensor([[0, 0], [1, 1]])
+        >>> updates = mindspore.tensor([5, 5])
+        >>> mindspore.ops.tensor_scatter_max(input_x, indices, updates)
+        Tensor(shape=[2, 3], dtype=Int64, value=
+        [[5, 2, 3],
+         [4, 5, 6]])
     """
     return tensor_scatter_max_(input_x, indices, updates)
 
 
 def tensor_scatter_min(input_x, indices, updates):
     r"""
-    By comparing the value at the position indicated by `indices` in `input_x` with the value in the `updates`,
-    the value at the index will eventually be equal to the smallest one to create a new tensor.
-
-    The last axis of the index is the depth of each index vector. For each index vector,
-    there must be a corresponding value in `updates`. The shape of `updates` should be
-    equal to the shape of `input_x[indices]`. For more details, see case below.
+    Return a new tensor by performing a minimum update on `input_x` at the specified indices with the given update
+    values.
 
     .. math::
         output\left [indices  \right ] = \min(input\_x, update)
@@ -3179,49 +3136,37 @@ def tensor_scatter_min(input_x, indices, updates):
           unknown errors may be caused.
 
     Args:
-        input_x (Tensor): The input tensor. The dimension of `input_x` must be no less than indices.shape[-1].
-        indices (Tensor): The index of input tensor whose data type is int32 or int64.
-            The rank must be at least 2.
-        updates (Tensor): The tensor to update the input tensor, has the same type as `input_x`
-            And the shape of `updates` should be
-            equal to :math:`indices.shape[:-1] + input\_x.shape[indices.shape[-1]:]`.
+        input_x (Tensor): The input tensor.
+        indices (Tensor): The specified indices. The rank must be at least 2.
+        updates (Tensor): The update values.
 
     Returns:
-        Tensor, has the same shape and type as `input_x`.
-
-    Raises:
-        TypeError: If dtype of `indices` is neither int32 nor int64.
-        ValueError: If length of shape of `input_x` is less than the last dimension of shape of `indices`.
-        RuntimeError: If a value of `indices` is not in `input_x` on CPU backend.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor
-        >>> from mindspore import ops
-        >>> input_x = Tensor(np.array([[-0.1, 0.3, 3.6], [0.4, 0.5, -3.2]]), mindspore.float32)
-        >>> indices = Tensor(np.array([[0, 0], [0, 0]]), mindspore.int32)
-        >>> updates = Tensor(np.array([1.0, 2.2]), mindspore.float32)
-        >>> output = ops.tensor_scatter_min(input_x, indices, updates)
-        >>> print(output)
-        [[ -0.1  0.3  3.6]
-        [ 0.4  0.5 -3.2]]
+        >>> input_x = mindspore.tensor([[1, 2, 3], [4, 5, 6]])
+        >>> indices = mindspore.tensor([[0, 0], [1, 1]])
+        >>> updates = mindspore.tensor([5, 1])
+        >>> mindspore.ops.tensor_scatter_min(input_x, indices, updates)
+        Tensor(shape=[2, 3], dtype=Int64, value=
+        [[1, 2, 3],
+         [4, 1, 6]])
     """
     return tensor_scatter_min_(input_x, indices, updates)
 
 
 def tensor_scatter_elements(input_x, indices, updates, axis=0, reduction="none"):
     """
-    Write all elements in `updates` to the index specified by `indices` in `input_x` according to the reduction
-    operation specified by `reduction`.
-    `axis` controls the direction of the scatter operation.
+    Return a new tensor by performing a specified operation update on `input_x` at the specified indices with the given
+    update values.
 
-    `tensor_scatter_elements` takes three inputs `input_x`, `updates` and `indices` of the same rank r >= 1.
+    Not support implicit type conversion.
 
-    For a 3-D tensor, the output is:
+    For example:  the output of a 3-D tensor is
 
     .. code-block::
 
@@ -3245,51 +3190,32 @@ def tensor_scatter_elements(input_x, indices, updates, axis=0, reduction="none")
         The backward is supported only for the case `updates.shape == indices.shape`.
 
     Args:
-        input_x (Tensor): The target tensor. The rank must be at least 1.
-        indices (Tensor): The index of `input_x` to do scatter operation whose data type must be mindspore.int32 or
-            mindspore.int64. Same rank as  `input_x`. And accepted range is [-s, s) where s is the size along axis.
-        updates (Tensor): The tensor doing the scatter operation with `input_x`.
-        axis (int): Which axis to scatter. Accepted range is [-r, r) where r = rank(input_x). Default: ``0``.
-        reduction (str): Which reduction operation to scatter, supports ``"none"`` , ``"add"`` . Default: ``"none"``.
-            When `reduction` is set to ``"none"``, `updates` will be assigned to `input_x` according to  `indices`.
-            When `reduction` is set to ``"add"``, `updates` will be added to `input_x` according to  `indices`.
+        input_x (Tensor): The input tensor. The rank must be at least 1.
+        indices (Tensor): The specified indices.
+        updates (Tensor): The update values.
+        axis (int): The axis along which to index. Default ``0``.
+        reduction (str): The specified operation, supports ``none`` , ``add`` .
+
+          - If ``none``, `updates` will be assigned to `input_x` according to  `indices`.
+          - If ``add``, `updates` will be added to `input_x` according to  `indices`. Default ``none``.
 
     Returns:
-        Tensor, has the same shape and type as `input_x`.
-
-    Raises:
-        TypeError: If `indices` is neither int32 nor int64.
-        ValueError: If anyone of the rank among `input_x`, `indices` and `updates` less than 1.
-        ValueError: If the rank of `updates` is not equal to the rank of `input_x`.
-        RuntimeError: If the data type of `input_x` and `updates` conversion of Parameter
-            is required when data type conversion of Parameter is not supported.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import Tensor, ops
-        >>> from mindspore import Parameter
-        >>> import numpy as np
-        >>> input_x = Parameter(Tensor(np.array([[1, 2, 3, 4, 5]]), mindspore.int32), name="x")
-        >>> indices = Tensor(np.array([[2, 4]]), mindspore.int32)
-        >>> updates = Tensor(np.array([[8, 8]]), mindspore.int32)
-        >>> axis = 1
-        >>> reduction = "none"
-        >>> output = ops.tensor_scatter_elements(input_x, indices, updates, axis, reduction)
+        >>> input_x = mindspore.tensor([[1, 2, 3, 4, 5]])
+        >>> indices = mindspore.tensor([[2, 4]])
+        >>> updates = mindspore.tensor([[8, 8]])
+        >>> output = mindspore.ops.tensor_scatter_elements(input_x, indices, updates, axis=1, reduction="none")
         >>> print(output)
         [[1 2 8 4 8]]
-        >>> input_x = Parameter(Tensor(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]), mindspore.int32), name="x")
-        >>> indices = Tensor(np.array([[1, -1, 2], [0, 2, 1]]), mindspore.int32)
-        >>> updates = Tensor(np.array([[1, 2, 2], [4, 5, 8]]), mindspore.int32)
-        >>> axis = 0
-        >>> reduction = "add"
-        >>> output = ops.tensor_scatter_elements(input_x, indices, updates, axis, reduction)
+        >>> output = mindspore.ops.tensor_scatter_elements(input_x, indices, updates, axis=1, reduction="add")
         >>> print(output)
-        [[ 5  2  3]
-         [ 5  5 14]
-         [ 7 15 11]]
+        [[ 1  2 11  4 13]]
     """
     return tensor_scatter_elements_ext(input_x, indices, updates, axis, reduction)
 
@@ -4437,14 +4363,8 @@ def is_nonzero(input):
 
 def tensor_scatter_mul(input_x, indices, updates):
     r"""
-    Creates a new tensor by multiplying the values from the positions in `input_x` indicated by
-    `indices`, with values from `updates`. When divided values are provided for the same
-    index, the result of the update will multiply these values respectively. Except that
-    the updates are applied on output `Tensor` instead of input `Parameter`.
-
-    The last axis of `indices` is the depth of each index vectors. For each index vector,
-    there must be a corresponding value in `updates`. The shape of `updates` should be
-    equal to the shape of `input_x[indices]`. For more details, see Examples.
+    Return a new tensor by performing a multiplication update on `input_x` at the specified indices with the given
+    update values.
 
     .. math::
         output\left [indices  \right ] = input\_x\times  update
@@ -4454,43 +4374,25 @@ def tensor_scatter_mul(input_x, indices, updates):
           the corresponding `updates` will not be updated to `input_x`.
 
     Args:
-        input_x (Tensor): The input tensor. The dimension of `input_x` must be no less than indices.shape[-1].
-        indices (Tensor): The index of input tensor whose data type is int32 or int64. The rank must be at least 2.
-        updates (Tensor): The tensor to update the input tensor, has the same type as `input_x`,
-            and the shape of `updates` should be equal to
-            :math:`indices.shape[:-1] + input\_x.shape[indices.shape[-1]:]`.
+        input_x (Tensor): The input tensor.
+        indices (Tensor): The specified indices. The rank must be at least 2.
+        updates (Tensor): The update values.
 
     Returns:
-        Tensor, has the same shape and type as `input_x`.
-
-    Raises:
-        TypeError: If dtype of `indices` is neither int32 nor int64.
-        ValueError: If length of shape of `input_x` is less than the last dimension of shape of `indices`.
-        RuntimeError: If a value of `indices` is not in `input_x` on CPU backend.
+        Tensor
 
     Supported Platforms:
         ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input_x = Tensor(np.array([[-0.1, 0.3, 3.6], [0.4, 0.5, -3.2]]), mindspore.float32)
-        >>> indices = Tensor(np.array([[0, 0], [0, 0]]), mindspore.int32)
-        >>> updates = Tensor(np.array([1.0, 2.2]), mindspore.float32)
-        >>> # Next, demonstrate the approximate operation process of this operator:
-        >>> # 1, indices[0] = [0, 0], indices[1] = [0, 0]
-        >>> # 2, And input_x[0, 0] = -0.1
-        >>> # 3, So input_x[indices] = [-0.1, -0.1]
-        >>> # 4, Satisfy the above formula: input_x[indices].shape=(2) == updates.shape=(2)
-        >>> # 5, Perform the multiply operation for the first time:
-        >>> #      first_input_x = input_x[0][0] * updates[0] = [[-0.1, 0.3, 3.6], [0.4, 0.5, -3.2]]
-        >>> # 6, Perform the multiply operation for the second time:
-        >>> #      second_input_x = input_x[0][0] * updates[1] = [[-0.22, 0.3, 3.6], [0.4, 0.5, -3.2]]
-        >>> output = ops.tensor_scatter_mul(input_x, indices, updates)
-        >>> print(output)
-        [[-0.22  0.3   3.6  ]
-         [ 0.4   0.5   -3.2 ]]
+        >>> input_x = mindspore.tensor([[1, 2, 3], [4, 5, 6]])
+        >>> indices = mindspore.tensor([[0, 0], [1, 1]])
+        >>> updates = mindspore.tensor([5, 5])
+        >>> mindspore.ops.tensor_scatter_mul(input_x, indices, updates)
+        Tensor(shape=[2, 3], dtype=Int64, value=
+        [[ 5,  2,  3],
+         [ 4, 25,  6]])
     """
     return tensor_scatter_mul_(input_x, indices, updates)
 
