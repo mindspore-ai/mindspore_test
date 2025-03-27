@@ -16,6 +16,8 @@
 #include "plugin/res_manager/ascend/device_context_conf/op_debug_conf.h"
 #include <map>
 #include <fstream>
+#include <memory>
+#include <string>
 #include "include/common/debug/common.h"
 #include <nlohmann/json.hpp>
 #include "utils/log_adapter.h"
@@ -88,15 +90,15 @@ std::string OpDebugConf::debug_option() const {
   return debug_option;
 }
 
-bool OpDebugConf::GenerateAclInitJson(const std::string &file_path) {
+bool OpDebugConf::GenerateAclInitJson(const std::string &file_path, std::string *json_str) {
   // write to file
-  std::string json_file_str = acl_init_json_.dump();
+  *json_str = acl_init_json_.dump();
   std::ofstream json_file(file_path);
   if (!json_file.is_open()) {
     MS_LOG(WARNING) << "Open file [" << file_path << "] failed!";
     return false;
   }
-  json_file << json_file_str;
+  json_file << *json_str;
   json_file.close();
   return true;
 }
