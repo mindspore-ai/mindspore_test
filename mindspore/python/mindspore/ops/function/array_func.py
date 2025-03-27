@@ -1619,9 +1619,9 @@ def searchsorted(sorted_sequence, values, *, out_int32=False, right=False, side=
 
     Examples:
         >>> import mindspore
-        >>> input = mindspore.tensor([1, 2, 2, 3, 4, 5, 5])
+        >>> sorted_sequence = mindspore.tensor([1, 2, 2, 3, 4, 5, 5])
         >>> values = mindspore.tensor([2])
-        >>> mindspore.ops.searchsorted(input, values)
+        >>> mindspore.ops.searchsorted(sorted_sequence, values)
         Tensor(shape=[1], dtype=Int64, value= [1])
     """
 
@@ -4108,7 +4108,7 @@ def affine_grid(theta, size, align_corners=False):
 
 def unsorted_segment_min(x, segment_ids, num_segments):
     r"""
-    Computes the minimum of a tensor along segments.
+    Compute the minimum of the input tensor along segments.
 
     The following figure shows the calculation process of unsorted_segment_min:
 
@@ -4126,38 +4126,32 @@ def unsorted_segment_min(x, segment_ids, num_segments):
         - The `segment_ids` must be non-negative tensor.
 
     Args:
-        x (Tensor): The shape is :math:`(x_1, x_2, ..., x_R)`. With float16, float32 or int32 data type.
-        segment_ids (Tensor): TThe label indicates the segment to which each element belongs.
-            Set the shape as :math:`(x_1, x_2, ..., x_N)`, where 0 < N <= R.
-        num_segments (Union[int, Tensor], optional): Set :math:`z` as num_segments, it can be an int or 0-D Tensor.
+        x (Tensor): The input tensor.
+        segment_ids (Tensor): Indicate the segment to which each element belongs.
+        num_segments (Union[int, Tensor], optional): Number of segments, it can be an int or 0-D tensor.
 
     Returns:
-        Tensor, the shape is :math:`(z, x_{N+1}, ..., x_R)`.
-
-    Raises:
-        TypeError: If `num_segments` is not an int.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> from mindspore import Tensor
-        >>> from mindspore import ops
-        >>> import numpy as np
-        >>> x = Tensor(np.array([[1, 2, 3], [4, 5, 6], [4, 2, 1]]).astype(np.float32))
-        >>> segment_ids = Tensor(np.array([0, 1, 1]).astype(np.int32))
+        >>> import mindspore
+        >>> x = mindspore.tensor([[1, 2, 3], [4, 5, 6], [4, 2, 1]])
+        >>> segment_ids = mindspore.tensor([0, 1, 1])
         >>> num_segments = 2
-        >>> output = ops.unsorted_segment_min(x, segment_ids, num_segments)
-        >>> print(output)
-        [[1. 2. 3.]
-         [4. 2. 1.]]
+        >>> mindspore.ops.unsorted_segment_min(x, segment_ids, num_segments)
+        Tensor(shape=[2, 3], dtype=Int64, value=
+        [[1, 2, 3],
+         [4, 2, 1]])
     """
     return unsorted_segment_min_(x, segment_ids, num_segments)
 
 
 def unsorted_segment_max(x, segment_ids, num_segments):
     r"""
-    Computes the maximum along segments of a tensor.
+    Compute the maximum of the input tensor along segments.
 
     The following figure shows the calculation process of unsorted_segment_max:
 
@@ -4175,38 +4169,33 @@ def unsorted_segment_max(x, segment_ids, num_segments):
         - The `segment_ids` must be non-negative tensor.
 
     Args:
-        x (Tensor): The shape is :math:`(x_1, x_2, ..., x_R)`. With float16, float32 or int32 data type.
-        segment_ids (Tensor): TThe label indicates the segment to which each element belongs.
+        x (Tensor): The input tensor.
+        segment_ids (Tensor): Indicate the segment to which each element belongs.
             Set the shape as :math:`(x_1, x_2, ..., x_N)`, where 0 < N <= R.
-        num_segments (Union[int, Tensor]): Set :math:`z` as num_segments, it can be an int or 0-D Tensor.
+        num_segments (Union[int, Tensor]): Number of segments, it can be an int or 0-D tensor.
 
     Returns:
-        Tensor, the shape is :math:`(z, x_{N+1}, ..., x_R)`.
-
-    Raises:
-        TypeError: If `num_segments` is not an int.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> from mindspore import Tensor
-        >>> from mindspore import ops
-        >>> import numpy as np
-        >>> x = Tensor(np.array([[1, 2, 3], [4, 5, 6], [4, 2, 1]]).astype(np.float32))
-        >>> segment_ids = Tensor(np.array([0, 1, 1]).astype(np.int32))
+        >>> import mindspore
+        >>> x = mindspore.tensor([[1, 2, 3], [4, 5, 6], [4, 2, 1]])
+        >>> segment_ids = mindspore.tensor([0, 1, 1])
         >>> num_segments = 2
-        >>> output = ops.unsorted_segment_max(x, segment_ids, num_segments)
-        >>> print(output)
-        [[1. 2. 3.]
-         [4. 5. 6.]]
+        >>> mindspore.ops.unsorted_segment_max(x, segment_ids, num_segments)
+        Tensor(shape=[2, 3], dtype=Int64, value=
+        [[1, 2, 3],
+         [4, 5, 6]])
     """
     return unsorted_segment_max_(x, segment_ids, num_segments)
 
 
 def unsorted_segment_prod(x, segment_ids, num_segments):
     r"""
-    Computes the product of a tensor along segments.
+    Compute the product of the input tensor along segments.
 
     The following figure shows the calculation process of unsorted_segment_prod:
 
@@ -4217,31 +4206,25 @@ def unsorted_segment_prod(x, segment_ids, num_segments):
         - The `segment_ids` must be non-negative tensor.
 
     Args:
-        x (Tensor): The shape is :math:`(x_1, x_2, ..., x_R)`. With float16, float32 or int32 data type.
-        segment_ids (Tensor): TThe label indicates the segment to which each element belongs.
-            Set the shape as :math:`(x_1, x_2, ..., x_N)`, where 0 < N <= R. The data type must be int32.
-        num_segments (Union[int, Tensor], optional): Set :math:`z` as num_segments, it can be an int or 0-D Tensor.
+        x (Tensor): The input tensor.
+        segment_ids (Tensor): Indicate the segment to which each element belongs.
+        num_segments (Union[int, Tensor], optional): Number of segments, it can be an int or 0-D tensor.
 
     Returns:
-        Tensor, the shape is :math:`(z, x_{N+1}, ..., x_R)`.
-
-    Raises:
-        TypeError: If `num_segments` is not an int.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> from mindspore import Tensor
-        >>> from mindspore import ops
-        >>> import numpy as np
-        >>> x = Tensor(np.array([[1, 2, 3], [4, 5, 6], [4, 2, 1]]).astype(np.float32))
-        >>> segment_ids = Tensor(np.array([0, 1, 0]).astype(np.int32))
+        >>> import mindspore
+        >>> x = mindspore.tensor([[1, 2, 3], [4, 5, 6], [4, 2, 1]])
+        >>> segment_ids = mindspore.tensor([0, 1, 0])
         >>> num_segments = 2
-        >>> output = ops.unsorted_segment_prod(x, segment_ids, num_segments)
-        >>> print(output)
-        [[4. 4. 3.]
-         [4. 5. 6.]]
+        >>> mindspore.ops.unsorted_segment_prod(x, segment_ids, num_segments)
+        Tensor(shape=[2, 3], dtype=Int64, value=
+        [[4, 4, 3],
+         [4, 5, 6]])
     """
     return unsorted_segment_prod_(x, segment_ids, num_segments)
 
