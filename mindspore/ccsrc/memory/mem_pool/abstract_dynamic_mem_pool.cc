@@ -945,7 +945,7 @@ void SplitAndDumpLog(const std::string &log_str) {
   size_t count = 0;
   const size_t max_count = 1000;
   while (token && (count++ < max_count)) {
-    MS_LOG(INFO) << token;
+    MS_LOG(WARNING) << token;
 #ifdef _MSC_VER
     token = strtok_s(NULL, delim, &next_token);
 #else
