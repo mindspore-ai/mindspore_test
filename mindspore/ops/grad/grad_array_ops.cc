@@ -1881,6 +1881,14 @@ REG_BPROP_BUILDER("InplaceMaskedFillScalar").SetUnusedInputs({i0, i2, i3}).SetBo
   return {input_grad, ib->OutZeros(ib->GetInput(kIndex1)), ib->OutZeros(ib->GetInput(kIndex2))};
 });
 
+REG_BPROP_BUILDER("MaskedFillScalar").SetUnusedInputs({i0, i2, i3}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto mask = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex4);
+  auto input_grad = ib->Emit("MaskedFillScalar", {dout, mask, ib->Value<float>(0)});
+  return {input_grad, ib->OutZeros(ib->GetInput(kIndex1)), ib->OutZeros(ib->GetInput(kIndex2))};
+});
+
 REG_BPROP_BUILDER("InplaceMaskedFillTensor").SetUnusedInputs({i0, i2, i3}).SetBody(BODYFUNC(ib) {
   auto input = ib->GetInput(kIndex0);
   auto mask = ib->GetInput(kIndex1);
@@ -3180,6 +3188,74 @@ REG_BPROP_BUILDER("MaskedScatter").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
     dupdates = ib->OutZeros(updates);
   }
   return {dx, ib->OutZeros(mask), dupdates};
+});
+
+DEF_PURE_SHAPE_CALC(inplace_masked_scatter)
+  .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
+    auto source_shape = inputs[0];
+    auto mask_selected_shape = inputs[1];
+    int64_t source_numel = 1;
+    int64_t mask_selected_numel = 1;
+    for (auto size : source_shape) {
+      source_numel *= size;
+    }
+    for (auto size : mask_selected_shape) {
+      mask_selected_numel *= size;
+    }
+    return {{source_numel - mask_selected_numel}};
+  })
+  .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &unknown_inputs) -> std::vector<int64_t> {
+    return {1};
+  });
+
+REG_BPROP_BUILDER("InplaceMaskedScatter").FreeUselessValues_IO({i0, i2}, {}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto mask = ib->GetInput(kIndex1);
+  auto source = ib->GetInput(kIndex2);
+  auto dout = ib->GetInput(kIndex4);
+  NodePtr dx = nullptr;
+  if (x->need_compute_grad_out()) {
+    dx = ib->Emit("MaskedFillScalar", {dout, mask, ib->Value<float>(0)});
+  } else {
+    dx = ib->OutZeros(x);
+  }
+  NodePtr dsource = nullptr;
+  if (source->need_compute_grad_out()) {
+    auto mask_selected = ib->Emit("MaskedSelect", {dout, mask});
+    auto mask_selected_shape = ib->GetShape(mask_selected);
+    auto source_shape = ib->GetShape(source);
+    auto dout_type = ib->GetDtypeId(dout);
+    if (IsDynamic(mask_selected_shape) || IsDynamic(source_shape)) {
+      auto diff_nelem_tuple = ib->ShapeCalc(inplace_masked_scatter, {source, mask_selected})[0];
+      auto diff_nelem = ib->TupleGetItem(diff_nelem_tuple, kIndex0);
+      auto true_branch = [&](Emitter *e) -> NodePtrList {
+        auto zeros_fillin = e->Zeros(diff_nelem_tuple, e->Value(static_cast<int64_t>(dout_type)));
+        auto true_dsource = e->Emit("Concat", {e->MakeTuple({mask_selected, zeros_fillin}), e->Value<int64_t>(0)});
+        return {true_dsource};
+      };
+      auto false_branch = [&](Emitter *e) -> NodePtrList { return {mask_selected}; };
+      auto gt_true = ib->Emit("ScalarGt", {diff_nelem, ib->Value<int64_t>(0)});
+      mask_selected = ib->Conditional(gt_true, true_branch, false_branch);
+    } else {
+      int64_t source_numel = 1;
+      int64_t mask_selected_numel = 1;
+      for (auto size : source_shape) {
+        source_numel *= size;
+      }
+      for (auto size : mask_selected_shape) {
+        mask_selected_numel *= size;
+      }
+      auto diff_nelem = source_numel - mask_selected_numel;
+      if (diff_nelem > 0) {
+        auto zeros_fillin = ib->Zeros(ib->Value<ShapeVector>({diff_nelem}), ib->Value(static_cast<int64_t>(dout_type)));
+        mask_selected = ib->Emit("Concat", {ib->MakeTuple({mask_selected, zeros_fillin}), ib->Value<int64_t>(0)});
+      }
+    }
+    dsource = ib->Reshape(mask_selected, ib->Shape(source));
+  } else {
+    dsource = ib->OutZeros(source);
+  }
+  return {dx, ib->OutZeros(mask), dsource};
 });
 
 REG_BPROP_BUILDER("CountNonZero").SetUnusedInputs({i0, i1, i2}).SetBody(ReturnZeros);

@@ -2015,3 +2015,7 @@ def tensor_triangular_solve(
         transpose=False,  #pylint: disable=W0621
         unitriangular=False):
     return triangular_solve(input, A, upper, transpose, unitriangular)
+
+
+def tensor_inplace_masked_scatter(input, mask, source):
+    return F.inplace_masked_scatter(input, mask, source)

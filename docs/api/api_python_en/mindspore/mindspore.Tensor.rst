@@ -9,7 +9,7 @@ mindspore.Tensor
         - If `init` interface is used to initialize `Tensor`, the `Tensor.init_data` API needs to be called to load the
           actual data to `Tensor`.
         - All modes of CPU and GPU, and Atlas training series with `graph mode (mode=mindspore.GRAPH_MODE)
-          <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html>`_  do not supported
+          <https://www.mindspore.cn/tutorials/en/master/compile/static_graph.html>`_  do not supported
           in-place operations yet.
         - The default value ``None`` of `input_data` works as a placeholder,
           it does not mean that we can create a NoneType Tensor.
@@ -295,6 +295,7 @@ mindspore.Tensor
     mindspore.Tensor.masked_fill
     mindspore.Tensor.masked_fill_
     mindspore.Tensor.masked_scatter
+    mindspore.Tensor.masked_scatter_
     mindspore.Tensor.masked_select
     mindspore.Tensor.matmul
     mindspore.Tensor.max
