@@ -495,3 +495,16 @@ def test_resnet_infer_compile_cache():
     """
     run_twice_with_same_network("run_resnet_infer.py", "./resnet_infer", "resnet_infer_first.txt",
                                 "resnet_infer_second.txt")
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_compile_cache_control_flow_partial_without_inputs():
+    """
+    Feature: Compile cache.
+    Description: Test whether the compile cache function can run successfully for the graph with a partial node
+                 without inputs.
+    Expectation: success.
+    """
+    run_twice_with_same_network("control_flow.py", "./control_flow_partial_without_inputs",
+                                "control_flow_partial_without_inputs_first.txt",
+                                "control_flow_partial_without_inputs_second.txt")
