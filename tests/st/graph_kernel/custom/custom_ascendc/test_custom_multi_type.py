@@ -139,13 +139,15 @@ def test_custom_topk():
                 .target("Ascend") \
                 .get_op_info()
 
+            self.k = 2
             self.moe_softmax_topk_custom = ops.Custom(func=func, out_shape=out_shape,
                                                       out_dtype=[mstype.float32, mstype.int32], func_type="aot",
                                                       bprop=None, reg_info=reg_info)
             self.moe_softmax_topk_custom.add_prim_attr("custom_inputs_type", "tensor,int")
+            self.moe_softmax_topk_custom.add_prim_attr("attr_k", self.k)
 
         def construct(self, x):
-            res = self.moe_softmax_topk_custom(x, 2)
+            res = self.moe_softmax_topk_custom(x, self.k)
             return res
 
     ms.set_context(mode=ms.GRAPH_MODE, save_graphs=False, save_graphs_path="./graph",
@@ -154,6 +156,6 @@ def test_custom_topk():
 
     input_x = ms.Tensor(np.ones([1024, 16]), ms.float32)
     # 通过lambda实现infer shape函数
-    net = MoeSoftMaxTopkNet("./infer_file/custom_callback.cc:MoeSoftMaxTopk", lambda x, _: [[x[0], 2], [x[0], 2]])
+    net = MoeSoftMaxTopkNet("./infer_file/custom_topk.cc:MoeSoftMaxTopk", None)
     output = net(input_x)
     print(output)

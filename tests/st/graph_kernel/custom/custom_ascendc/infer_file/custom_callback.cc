@@ -36,16 +36,6 @@ extern "C" int aclnnMulGetWorkSpaceSize(void *func_ptr, std::vector<void *> inpu
   return func(input0, input1, output, workspace_size, executor);
 }
 
-extern "C" int MoeSoftMaxTopkGetWorkSpaceSize(void *func_ptr, std::vector<void *> inputs, std::vector<void *> outputs,
-                                              uint64_t *workspace_size, aclOpExecutor **executor) {
-  using FuncType = int (*)(aclTensor *, int64_t, aclTensor *, aclTensor *, uint64_t *, aclOpExecutor **);
-  auto func = reinterpret_cast<FuncType>(func_ptr);
-  aclTensor *input0 = static_cast<aclTensor *>(inputs[0]);
-  int64_t *input1 = static_cast<int64_t *>(inputs[1]);
-  aclTensor *output0 = static_cast<aclTensor *>(outputs[0]);
-  aclTensor *output1 = static_cast<aclTensor *>(outputs[1]);
-  return func(input0, *input1, output0, output1, workspace_size, executor);
-}
 
 extern "C" int aclnnArgMinGetWorkSpaceSize(void *func_ptr, std::vector<void *> inputs, std::vector<void *> outputs,
                                            uint64_t *workspace_size, aclOpExecutor **executor) {
