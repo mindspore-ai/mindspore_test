@@ -60,7 +60,6 @@ from mindspore.parallel._utils import _init_auto_parallel_context, _clear_auto_p
 
 # Store ms_function class compiled pipeline cache.
 ms_compile_cache = set()
-predict_phase_compile_cache = {}
 # Store cell compiled pipeline cache.
 cells_compile_cache = {}
 # Store function compiled times information.
@@ -622,7 +621,7 @@ class _JitExecutor:
         if self.obj is not None:
             args_list = args_list[1:]
 
-        if predict_phase not in predict_phase_compile_cache:
+        if predict_phase not in self.obj.phase_cache:
             try:
                 predict_phase = self.compile(self.fn.__name__, *args_list, **kwargs)
             except Exception as err:
@@ -642,7 +641,7 @@ class _JitExecutor:
         new_inputs = self._generate_run_args(args_list, kwargs)
         output = self._graph_executor(
             tuple(new_inputs),
-            predict_phase_compile_cache[self.obj.phase]
+            self.obj.phase_cache[self.obj.phase]
         )
         res = _convert_python_data(output)
         return True, res
@@ -785,7 +784,7 @@ class _JitExecutor:
         set_parameter_hook_updated(False)
         ms_compile_cache.add(phase)
         if hasattr(self.obj, "phase"):
-            predict_phase_compile_cache[self.obj.phase] = phase
+            self.obj.phase_cache[self.obj.phase] = phase
 
         return phase
 
@@ -1066,9 +1065,9 @@ def jit(
         capture_mode (str, optional): The method to create a callable MindSpore graph. The value of capture_mode
             should be ``ast`` , ``bytecode`` or ``trace`` . Default: ``ast`` .
 
-            - `ast <https://www.mindspore.cn/tutorials/en/master/compile/static_graph.html>`_ :
+            - `ast <https://www.mindspore.cn/docs/en/r2.5.0/model_train/program_form/static_graph.html>`_ :
               Parse Python ast to build graph.
-            - `bytecode` :
+            - `bytecode <https://www.mindspore.cn/docs/en/r2.5.0/model_train/program_form/pynative.html#pijit>`_ :
               Parse Python bytecode to build graph at runtime. This is an experimental prototype that is subject to
               change and/or deletion.
             - `trace` : Trace the execution of Python code to build graph. This is an experimental prototype that is
