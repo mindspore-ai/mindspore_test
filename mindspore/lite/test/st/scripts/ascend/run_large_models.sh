@@ -311,7 +311,7 @@ version=${file_name_array[2]}
 
 echo "installing mslite whl..."
 python3 -m pip uninstall -y mindspore_lite || exit 1
-python3 -m pip install *.whl --user
+python3 -m pip install *.whl 
 echo "install mslite success !"
 
 echo "Running MSLite Large Model on ${backend}, release file path is $release_file_path, working dir is: $benchmark_test_path"

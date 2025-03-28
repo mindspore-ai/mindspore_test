@@ -25,13 +25,13 @@ function TryInstallWhl() {
 
     if [[ -f "${ms_whl_path}" ]]; then
       pip uninstall mindspore -y || exit 1
-      pip install ${ms_whl_path} --user || exit 1
+      pip install ${ms_whl_path}  || exit 1
       echo "install mindspore python whl success."
     fi
 
     if [[ -f "${mslite_whl_path}" ]]; then
       pip uninstall mindspore-lite -y || exit 1
-      pip install ${mslite_whl_path} --user || exit 1
+      pip install ${mslite_whl_path}  || exit 1
       echo "install mindspore_lite python whl success."
     fi
 }

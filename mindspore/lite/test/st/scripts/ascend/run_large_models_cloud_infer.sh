@@ -151,7 +151,7 @@ ConfigAscend
 cd $release_path
 echo "installing mslite whl..."
 python3 -m pip uninstall -y mindspore_lite || exit 1
-python3 -m pip install *.whl --user
+python3 -m pip install *.whl 
 echo "install mslite success !"
 
 run_infer_parallel
