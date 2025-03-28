@@ -71,7 +71,7 @@ def _tensor_mul_scalar(x, y):
     Outputs:
         Tensor, has the same dtype as x.
     """
-    return F.tensor_mul(x, y)
+    return F.tensor_muls(x, y)
 
 
 @mul.register("Number", "String")

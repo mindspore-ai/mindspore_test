@@ -227,6 +227,7 @@ from .math_func import (
     sqrt,
     square,
     tensor_mul,
+    tensor_muls,
     mul,
     multiply,
     digamma,

@@ -71,6 +71,17 @@ class Activation : public ActivationBase {
   Status CheckStrategy(const StrategyPtr &strategy) override;
 };
 
+class MulsInfo : public Activation {
+ public:
+  MulsInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+           const PrimitiveAttrs &attrs)
+      : Activation(name, inputs_shape, outputs_shape, attrs, std::make_shared<ActivationInfoCost>()) {}
+  ~MulsInfo() override = default;
+
+ protected:
+  Status GetAttrs() override;
+};
+
 class ActivationInfo : public Activation {
  public:
   ActivationInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,

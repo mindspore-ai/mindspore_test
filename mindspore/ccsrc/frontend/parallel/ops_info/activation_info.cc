@@ -38,6 +38,8 @@ Status Activation::SetCostUnderStrategy(const StrategyPtr &strategy) { return Se
 
 Status Activation::CheckStrategy(const StrategyPtr &strategy) { return CheckStrategyValue(strategy, inputs_shape_); }
 
+Status MulsInfo::GetAttrs() { return SUCCESS; }
+
 Status ActivationInfo::GetAttrs() {
   if (attrs_.size() < ACTIVATION_ATTR_SIZE) {
     MS_LOG(ERROR) << name_ << " : The size of attrs small than 1.";
@@ -1407,6 +1409,7 @@ Status SwigluInfo::InferOutputTensorInfo() {
   return SUCCESS;
 }
 
+REGISTER(MulsInfo);
 REGISTER(ActivationInfo);
 REGISTER(GeLUInfo);
 REGISTER(ClampScalarInfo);
