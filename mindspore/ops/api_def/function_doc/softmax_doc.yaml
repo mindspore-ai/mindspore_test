@@ -1,0 +1,35 @@
+softmax:
+    description: |
+        Applies the Softmax operation to the input tensor on the specified axis.
+        Suppose a slice in the given axis :math:`dim`, then for each element :math:`input_i`,
+        the Softmax function is shown as follows:
+
+        .. math::
+            \text{output}(input_i) = \frac{\exp(input_i)}{\sum_{j = 0}^{N-1}\exp(input_j)},
+
+        where :math:`N` is the length of the tensor.
+
+        Args:
+            input (Tensor): Tensor of shape :math:`(N, *)`, where :math:`*` means, any number of
+                additional dimensions.
+            dim (int, optional): The dim to perform the Softmax operation. Default: ``None`` .
+            dtype (:class:`mindspore.dtype`, optional): When set, `input` will be converted to the specified type,
+                `dtype`, before execution, and dtype of returned Tensor will also be `dtype`. Default: ``None`` .
+
+        Returns:
+            Tensor, with the same type and shape as the `input`.
+
+        Raises:
+            TypeError: If `dim` is not an int.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import mindspore
+            >>> import numpy as np
+            >>> from mindspore import Tensor, ops
+            >>> input = Tensor(np.array([1, 2, 3, 4, 5]), mindspore.float32)
+            >>> output = mint.softmax(input, 0)
+            >>> print(output)
+            [0.01165623 0.03168492 0.08612854 0.23412167 0.6364086 ]

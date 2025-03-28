@@ -1,0 +1,15 @@
+softmax:
+  - op_yaml: softmax_ext_op.yaml
+    py_method: tensor_softmax
+    kwonlyargs: dtype
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor, function
+
+  - op_yaml: softmax_op.yaml
+    py_method: deprecated_tensor_softmax
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

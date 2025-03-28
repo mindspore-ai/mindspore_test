@@ -88,7 +88,7 @@ from mindspore.ops.function.nn_func import conv3d_ext as conv3d
 # 30
 
 # 31
-from mindspore.ops.function.nn_func import softmax_ext as softmax
+from mindspore.ops.functional_overload import softmax
 
 # 32
 
