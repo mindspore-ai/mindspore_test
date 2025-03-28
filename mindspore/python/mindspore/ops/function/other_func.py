@@ -209,7 +209,7 @@ def moe_init_routing_v2(x, expert_idx, active_num, expert_capacity, expert_num, 
         [ 0  2  3  4 -1 -1  1 -1 -1 ]
     """
     expanded_x, expanded_row_idx, \
-    expert_tokens_count_or_cumsum,\
+    expert_tokens_count_or_cumsum, \
     expert_tokens_before_capacity = moe_init_routing_v2_op(x, expert_idx, active_num, expert_capacity,
                                                            expert_num, drop_pad_mode,
                                                            expert_tokens_count_or_cumsum_flag,
