@@ -32,7 +32,8 @@ def set_dump(target, enabled=True):
     a :class:`mindspore.nn.Cell` or :class:`mindspore.ops.Primitive` is False.
 
     Note:
-        1. This API is only effective for GRAPH_MODE whose graph compilation level is O0/O1 with Ascend backend.
+        1. This API is only effective for GRAPH_MODE whose graph compilation level is O0/O1 with Ascend backend,
+           and can not work for fusion Primitive operators.
         2. This API only supports being called before training starts.
            If you call this API during training, it may not be effective.
         3. After using `set_dump(Cell, True)` , operators in forward and backward
