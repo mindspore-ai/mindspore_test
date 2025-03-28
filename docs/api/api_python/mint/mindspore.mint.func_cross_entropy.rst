@@ -1,7 +1,7 @@
-﻿mindspore.ops.cross_entropy_ext
+﻿mindspore.mint.cross_entropy
 ================================
 
-.. py:function:: mindspore.ops.cross_entropy_ext(input, target, weight=None, ignore_index=-100, reduction='mean', label_smoothing=0.0)
+.. py:function:: mindspore.mint.cross_entropy(input, target, weight=None, ignore_index=-100, reduction='mean', label_smoothing=0.0)
 
     获取预测值和目标值之间的交叉熵损失。
 

@@ -473,7 +473,7 @@ class Conv2d(_Conv):
         >>> x = Tensor(np.ones([1, 120, 1024, 640]), mindspore.float32)
         >>> output = net(x).shape
         >>> print(output)
-        (1, 240, 1024, 640)
+        (1, 240, 1021, 637)
     """
     @cell_attr_register
     def __init__(self,

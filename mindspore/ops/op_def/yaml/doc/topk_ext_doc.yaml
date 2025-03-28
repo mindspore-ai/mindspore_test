@@ -52,12 +52,12 @@ topk_ext:
             >>> output = ops.topk_ext(x, 2, dim=1)
             >>> print(output)
             (Tensor(shape=[3, 2], dtype=Float32, value=
-            [[ 9.67299998e-01,  5.36800027e-01],
-             [ 6.52499974e-01,  4.68499988e-01],
-             [ 9.67499971e-01,  8.23000014e-01]]), Tensor(shape=[3, 2], dtype=Int32, value=
+            [[ 9.67285156e-01,  5.36621094e-01],
+             [ 6.52343750e-01,  4.68505859e-01],
+             [ 9.67285156e-01,  8.23242188e-01]]), Tensor(shape=[3, 2], dtype=Int64, value=
             [[3, 0],
-             [1, 2],
-             [2, 3]]))
+            [1, 2],
+            [2, 3]]))
             >>> output2 = ops.topk_ext(x, 2, dim=1, largest=False)
             >>> print(output2)
             (Tensor(shape=[3, 2], dtype=Float32, value=

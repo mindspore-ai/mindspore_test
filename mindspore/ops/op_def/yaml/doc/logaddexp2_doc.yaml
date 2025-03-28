@@ -29,4 +29,4 @@ logaddexp2:
             >>> x2 = Tensor(np.array(2).astype(np.float16))
             >>> output = mint.logaddexp2(x1, x2)
             >>> print(output)
-            [2.312 2.693 3.312]
+            [2.586 3. 3.586]

@@ -4476,7 +4476,7 @@ def nll_loss_ext(input, target, weight=None, ignore_index=-100, reduction='mean'
     return _nllloss_nd(input, target, weight, ignore_index, reduction)
 
 
-def _nllloss_nd(input, target, weight=None, ingore_index=-100, reduction='mean'):
+def _nllloss_nd(input, target, weight=None, ignore_index=-100, reduction='mean'):
     """nllloss_nd inner function"""
     input_dim = input.ndim
     class_dim = 0 if input_dim == 1 else 1
@@ -4489,9 +4489,9 @@ def _nllloss_nd(input, target, weight=None, ingore_index=-100, reduction='mean')
         raise ValueError(f"input bacth_size should be equal to target batch_size, but got {input.shape[0]} and "
                          f"{target.shape[0]}")
     if input_dim == 1 or input_dim == 2:
-        return nllloss_impl(input, target, weight, reduction, ingore_index)[0]
+        return nllloss_impl(input, target, weight, reduction, ignore_index)[0]
     if input_dim == 4:
-        return nllloss_2d_op(input, target, weight, reduction, ingore_index)[0]
+        return nllloss_2d_op(input, target, weight, reduction, ignore_index)[0]
     # input_dim==3 or input_dim>4
     n = input.shape[0]
     c = input.shape[1]
@@ -4505,8 +4505,8 @@ def _nllloss_nd(input, target, weight=None, ingore_index=-100, reduction='mean')
     else:
         target = target.view((n, 0, 0))
     if reduction != 'none':
-        return nllloss_2d_op(input, target, weight, reduction, ingore_index)[0]
-    ret = nllloss_2d_op(input, target, weight, reduction, ingore_index)[0]
+        return nllloss_2d_op(input, target, weight, reduction, ignore_index)[0]
+    ret = nllloss_2d_op(input, target, weight, reduction, ignore_index)[0]
     return ret.view(out_size)
 
 
@@ -4534,10 +4534,10 @@ def _cross_entropy_for_probabilities(input, target, weight, reduction, label_smo
     raise ValueError(f"redution value {reduction} not valid.")
 
 
-def _cross_entropy_for_class_indices(input, target, weight, ingore_index, reduction, label_smoothing, class_dim,
+def _cross_entropy_for_class_indices(input, target, weight, ignore_index, reduction, label_smoothing, class_dim,
                                      n_classes):
     """cross_entropy inner function for class indices"""
-    nllloss = _nllloss_nd(input, target, weight, ingore_index, reduction)
+    nllloss = _nllloss_nd(input, target, weight, ignore_index, reduction)
     if label_smoothing > 0.0:
         if weight is not None:
             weight_ = weight
@@ -4551,7 +4551,7 @@ def _cross_entropy_for_class_indices(input, target, weight, ingore_index, reduct
             smooth_loss = -loss.sum(class_dim)
         else:
             smooth_loss = -input.sum(class_dim)
-        ignore_mask = ops.eq(target, ingore_index)
+        ignore_mask = ops.eq(target, ignore_index)
         smooth_loss = masked_fill_op(smooth_loss, ignore_mask, 0)
         if reduction == "mean":
             true_mask = ~ignore_mask
@@ -4577,7 +4577,7 @@ def _cross_entropy_for_class_indices(input, target, weight, ingore_index, reduct
     return nllloss
 
 
-def cross_entropy_ext(input, target, weight=None, ingore_index=-100, reduction='mean', label_smoothing=0.0):
+def cross_entropy_ext(input, target, weight=None, ignore_index=-100, reduction='mean', label_smoothing=0.0):
     r"""
     The cross entropy loss between input and target.
 
@@ -4700,7 +4700,7 @@ def cross_entropy_ext(input, target, weight=None, ingore_index=-100, reduction='
         return _cross_entropy_for_probabilities(input, target, weight, reduction, label_smoothing, class_dim,
                                                 n_classes)
     # for class indices
-    return _cross_entropy_for_class_indices(input, target, weight, ingore_index, reduction, label_smoothing,
+    return _cross_entropy_for_class_indices(input, target, weight, ignore_index, reduction, label_smoothing,
                                             class_dim, n_classes)
 
 
@@ -7684,9 +7684,6 @@ def glu_ext(input, dim=-1):
 
     Here :math:`\sigma` is the sigmoid function, and :math:`\otimes` is the Hadamard product.
     See `Language Modeling with Gated Convluational Networks <https://arxiv.org/abs/1612.08083>`_.
-
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
 
     Args:
         input (Tensor): Tensor to be calculated. Dtype is floating point and the shape
