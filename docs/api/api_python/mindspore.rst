@@ -108,7 +108,6 @@ mindspore
     mindspore.merge_pipeline_strategys
     mindspore.merge_sliced_parameter
     mindspore.parse_print
-    mindspore.rank_list_for_transform
     mindspore.safetensors_to_ckpt
     mindspore.save_checkpoint
     mindspore.save_mindir
