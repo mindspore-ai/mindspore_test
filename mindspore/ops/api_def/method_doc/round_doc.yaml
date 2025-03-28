@@ -2,31 +2,4 @@ round:
   description: |
     round(decimals=0) -> Tensor
 
-    Returns half to even of a tensor element-wise.
-
-    .. math::
-        out_i \approx self_i
-
-    .. note::
-        The self data types supported by the Ascend platform include 
-        bfloat16 (Atlas training series products are not supported), float16, float32, float64, int32, and int64.
-
-    Args:
-        decimals (int, optional): Number of decimal places to round to (default: ``0``). If decimals is 
-            negative, it specifies the number of positions to the left of the decimal point. It supports 
-            converting the single-element tensor to an int.
-
-    Returns:
-        Tensor, has the same shape and type as the `self`.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor
-        >>> input = Tensor(np.array([0.8, 1.5, 2.3, 2.5, -4.5]), mindspore.float32)
-        >>> output = input.round()
-        >>> print(output)
-        [ 1.  2.  2.  2. -4.]
+    For details, please refer to :func:`mindspore.ops.round`.

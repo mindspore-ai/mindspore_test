@@ -1109,7 +1109,7 @@ def tile(input, dims):
 
     Returns:
         Tensor
-tril
+
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 

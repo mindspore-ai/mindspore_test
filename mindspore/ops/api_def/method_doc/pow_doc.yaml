@@ -2,38 +2,5 @@ pow:
   description: |
     pow(exponent) -> Tensor
 
-    Calculates the `exponent` power of each element in `self`.
+    For details, please refer to :func:`mindspore.ops.pow`.
 
-    When `exponent` is a Tensor, the shapes of `self` and `exponent` must be broadcastable.
-
-    .. math::
-
-        out_{i} = self_{i} ^{ exponent_{i}}
-
-    Args:
-        exponent (Union[Tensor, Number]): The second self is a Number or a tensor whose data type is
-            `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
-            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
-
-    Returns:
-        Tensor, the shape is the same as the one after broadcasting,
-        and the data type is the one with higher precision or higher digits among the two inputs.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor
-        >>> input = Tensor(np.array([1.0, 2.0, 4.0]), mindspore.float32)
-        >>> exponent = 3.0
-        >>> output = input.pow(exponent)
-        >>> print(output)
-        [ 1.  8. 64.]
-        >>>
-        >>> input = Tensor(np.array([1.0, 2.0, 4.0]), mindspore.float32)
-        >>> exponent = Tensor(np.array([2.0, 4.0, 3.0]), mindspore.float32)
-        >>> output = input.pow(exponent)
-        >>> print(output)
-        [ 1. 16. 64.]

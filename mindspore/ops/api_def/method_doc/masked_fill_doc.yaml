@@ -2,33 +2,4 @@ masked_fill:
   description: |
     masked_fill(mask, value) -> Tensor
     
-    Fills elements of Tensor with value where mask is True.
-    The shapes of this tensor and `mask` need to be the same or broadcastable.
-
-    Args:
-        mask (Tensor[bool]): The boolean mask.
-        value (Union[Number, Tensor]): The value to fill in with, which dtype is the same as this tensor.
-
-    Returns:
-        Tensor, has the same type and shape as this tensor.
-
-    Raises:
-        TypeError: If dtype of `mask` is not bool.
-        TypeError: If `mask` is not a Tensor.
-        ValueError: If the shapes of this tensor and `mask` could not be broadcast.
-        TypeError: If dtype of this tensor or `value` is not one of bool, int8, int32, int64, float16, float32, bfloat16.
-        TypeError: If dtype of `value` is different from that of this tensor.
-        TypeError: If `value` is neither float number nor Tensor.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor
-        >>> input_x = Tensor(np.array([1., 2., 3., 4.]), mindspore.float32)
-        >>> mask = Tensor(np.array([True, True, False, True]), mindspore.bool_)
-        >>> output = Tensor.masked_fill(input_x, mask, 0.5)  #input_x.masked_fill(mask, 0.5)
-        >>> print(output)
-        [0.5 0.5 3.  0.5]
+    For details, please refer to :func:`mindspore.ops.masked_fill`.

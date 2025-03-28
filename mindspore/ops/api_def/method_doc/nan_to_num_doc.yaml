@@ -2,31 +2,7 @@ nan_to_num:
   description: |
     nan_to_num(nan=None, posinf=None, neginf=None) -> Tensor
     
-    Replace the `NaN`, positive infinity and negative infinity values of the `self` with the
-    specified values in `nan`, `posinf` and `neginf` respectively.
-
-    .. warning::
-        For Ascend, it is only supported on Atlas A2 Training Series Products.
-        This is an experimental API that is subject to change or deletion.
-
-    Args:
-        nan (number, optional): The replace value of `NaN`. Default: ``None``.
-        posinf (number, optional): the value to replace positive infinity values with. Default: ``None``,
-            replacing positive infinity with the maximum value supported by the data type of `self`.
-        neginf (number, optional): the value to replace negative infinity values with. Default: ``None``,
-            replacing negative infinity with the minimum value supported by the data type of `self`.
-
-    Returns:
-        Tensor, has the same shape and dtype as `self`.
+    For details, please refer to :func:`mindspore.ops.nan_to_num`.
 
     Supported Platforms:
         ``Ascend`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor
-        >>> input = Tensor(np.array([float('nan'), float('inf'), -float('inf'), 5.0]), mindspore.float32)
-        >>> output = input.nan_to_num(1.0, 2.0, 3.0)
-        >>> print(output)
-        [1.  2.  3.  5.0]
