@@ -1,7 +1,7 @@
 mindspore.parallel.nn.Pipeline
 ============================================================================
 
-.. py:function:: mindspore.parallel.nn.Pipeline(net, micro_size, stage_config=None)
+.. py:class:: mindspore.parallel.nn.Pipeline(net, micro_size, stage_config=None)
 
     指定流水线并行（pp）的micro_batch个数以及网络中各cell放到哪个stage去执行。
 

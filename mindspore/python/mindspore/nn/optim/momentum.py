@@ -103,7 +103,7 @@ class Momentum(Optimizer):
               If `order_params` in the keys, other keys will be ignored and the element of 'order_params' must be in
               one group of `params`.
 
-        learning_rate (Union[float, int, Tensor, Iterable, LearningRateSchedule]):
+        learning_rate (Union[float, int, Tensor, Iterable, LearningRateSchedule], optional):
 
             - float: The fixed learning rate value. Must be equal to or greater than 0.
 
@@ -119,10 +119,10 @@ class Momentum(Optimizer):
               <https://www.mindspore.cn/docs/en/master/api_python/mindspore.nn.html#learningrateschedule-class>`_
               with step as the input to get the learning rate of current step.
 
-        momentum (float): Hyperparameter of type float, means momentum for the moving average.
+        momentum (float, optional): Hyperparameter of type float, means momentum for the moving average.
             It must be at least 0.0.
 
-        weight_decay (Union[float, int, Cell]): Weight decay (L2 penalty). Default: ``0.0`` .
+        weight_decay (Union[float, int, Cell], optional): Weight decay (L2 penalty). Default: ``0.0`` .
 
             - float: The fixed weight decay value. Must be equal to or greater than 0.
 
@@ -131,12 +131,13 @@ class Momentum(Optimizer):
             - Cell: Weight decay is dynamic. During training, the optimizer calls the instance of
               the Cell with step as the input to get the weight decay value of current step.
 
-        loss_scale (float): A floating point value for the loss scale. It must be greater than 0.0. In general, use the
+        loss_scale (float, optional): A floating point value for the loss scale. It must be greater than 0.0.
+            In general, use the
             default value. Only when `FixedLossScaleManager` is used for training and the `drop_overflow_update` in
             `FixedLossScaleManager` is set to ``False`` , then this value needs to be the same as the `loss_scale` in
             `FixedLossScaleManager`. Refer to class :class:`mindspore.amp.FixedLossScaleManager` for more details.
             Default: ``1.0`` .
-        use_nesterov (bool): Enable Nesterov momentum. Default: ``False`` .
+        use_nesterov (bool, optional): Enable Nesterov momentum. Default: ``False`` .
 
     Inputs:
         - **gradients** (tuple[Tensor]) - The gradients of `params`, the shape is the same as `params`.

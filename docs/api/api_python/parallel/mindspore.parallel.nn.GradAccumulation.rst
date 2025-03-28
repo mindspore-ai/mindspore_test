@@ -1,7 +1,7 @@
 mindspore.parallel.nn.GradAccumulation
 ============================================================================
 
-.. py:function:: mindspore.parallel.nn.GradAccumulation(net, micro_size)
+.. py:class:: mindspore.parallel.nn.GradAccumulation(net, micro_size)
 
     使能GradAccumulation实现梯度累加。
 

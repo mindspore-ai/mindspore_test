@@ -5551,7 +5551,7 @@ def sparse_segment_mean(x, indices, segment_ids):
     Note:
         - On CPU, values in `segment_ids` must be sorted and `indices` must be within range[0, x.shape[0]).
         - On GPU, unsorted `segment_ids` may result in undefined but safe behavior.Out-of-range `indices` will
-            be ignored.
+          be ignored.
 
     Args:
         x (Tensor): The input tensor with at least one dimension.

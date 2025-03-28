@@ -58,7 +58,7 @@
 
         在图模式下使用，用于标识是否使用自定义的反向传播函数。
 
-    .. py:method:: buffers(recurse=True)
+    .. py:method:: buffers(recurse: bool = True)
 
         返回Cell缓冲区的迭代器，只包含缓冲区本身。
 
@@ -171,7 +171,7 @@
 
         为网络中的每个Cell对象生成NameSpace。
 
-    .. py:method:: get_buffer(target)
+    .. py:method:: get_buffer(target: str)
 
         返回给定 `target` 的缓冲区，如果不存在则抛出错误。
 
@@ -234,7 +234,7 @@
         返回：
             String类型，网络的作用域。
 
-    .. py:method:: get_sub_cell(target)
+    .. py:method:: get_sub_cell(target: str)
 
         返回给定 `target` 的子Cell，如果不存在则抛出错误。
 
@@ -251,7 +251,7 @@
                 )
             )
 
-        （该图显示了 `nn.Cell` `A` 。 `A` 有一个嵌套的子Cell`net_b`，
+        （该图显示了 `nn.Cell` `A` 。 `A` 有一个嵌套的子Cell `net_b`，
         而后者本身又有两个子Cell `net_c` 和 `dense` 。 `net_c` 则有一个子Cell `conv` 。）
 
         要检查是否拥有子Cell `dense` ，我们将调用 `get_sub_cell("net_b.dense")` 。要检查是否拥有子Cell `conv` ，我们将调用 `get_sub_cell("net_b.net_c.conv")` 。
@@ -319,7 +319,7 @@
             - **KeyError** - 如果参数名称为空或包含"."。
             - **TypeError** - 如果参数的类型不是Parameter。
 
-    .. py:method:: load_state_dict(state_dict, strict=True)
+    .. py:method:: load_state_dict(state_dict: Mapping[str, Any], strict: bool=True)
 
         将 :attr:`state_dict` 中的参数和缓冲区复制到当前Cell及其子Cell中。
 
@@ -348,7 +348,7 @@
         返回：
             Dict[String, Cell]，Cell中的所有子Cell及其名称。
 
-    .. py:method:: named_buffers(prefix="", recurse=True, remove_duplicate=True)
+    .. py:method:: named_buffers(prefix: str = "", recurse: bool = True, remove_duplicate: bool = True)
 
         返回Cell中缓冲区的迭代器，包含缓冲区的名称以及缓冲区本身。
 
@@ -491,7 +491,7 @@
         异常：
             - **TypeError** - 如果 `hook_fn` 不是Python函数。
 
-    .. py:method:: register_buffer(name, tensor, persistent=True)
+    .. py:method:: register_buffer(name: str, tensor: Optional[Tensor], persistent: bool = True)
 
         在Cell添加一个缓冲区 `buffer` 。
 
@@ -675,7 +675,7 @@
 
         .. note:: 仅在图模式，使用auto_parallel_context = ParallelMode.AUTO_PARALLEL生效。
 
-    .. py:method:: set_extra_state(state)
+    .. py:method:: set_extra_state(state: Any)
 
         设置加载的 `state_dict` 中包含的额外状态。
 
@@ -683,7 +683,7 @@
         如果您的 Cell 需要在 `state_dict` 中存储额外状态，请实现此方法及相应的
         `get_extra_state` 方法。
 
-        参数:
+        参数：
             - **state** (dict) - `state_dict` 的额外状态。
 
     .. py:method:: set_grad(requires_grad=True)
@@ -790,7 +790,7 @@
 
         参数：
             - **destination** (dict，可选) - 如果提供，Cell的状态将更新到此字典中，并返回相同的对象。否则，将创建并返回 `OrderedDict` 。默认 ``None`` 。
-            - **prefix** (bool，可选) - 添加到参数和缓冲区名称的前缀，用于组成state_dict中的键。默认 ``""`` 。
+            - **prefix** (str，可选) - 添加到参数和缓冲区名称的前缀，用于组成state_dict中的键。默认 ``""`` 。
             - **keep_vars** (bool，可选) - 状态字典返回值是否为拷贝。默认 ``False`` ，返回引用。
 
         返回：

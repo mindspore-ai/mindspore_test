@@ -443,11 +443,11 @@ def shard(fn, in_strategy, out_strategy=None, parameter_plan=None, device="Ascen
                                             has been set, the parameter setting will be ignored.
                                             Default: ``None`` .
         device (str, optional): Select a certain `device` target. It is not in use right now.
-                                 Support ["CPU", "GPU", "Ascend"]. Default: ``"Ascend"`` .
+                                Support ["CPU", "GPU", "Ascend"]. Default: ``"Ascend"`` .
         level (int, optional): Option for parallel strategy infer algorithm, namely the object function,
-                               maximize computation
-                     over communication ratio, maximize speed performance, minimize memory usage etc. It is not in
-                     use right now. Support [0, 1, 2]. Default: ``0`` .
+            maximize computation
+            over communication ratio, maximize speed performance, minimize memory usage etc. It is not in
+            use right now. Support [0, 1, 2]. Default: ``0`` .
 
     Returns:
         Function, return the function that will be executed under auto parallel process.

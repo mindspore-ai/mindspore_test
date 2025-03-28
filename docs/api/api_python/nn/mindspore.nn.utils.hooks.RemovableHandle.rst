@@ -1,7 +1,7 @@
 mindspore.nn.utils.hooks.RemovableHandle
 ========================================
 
-.. py:class:: mindspore.nn.utils.hooks.RemovableHandle(hooks_dict, extra_dict=None)
+.. py:class:: mindspore.nn.utils.hooks.RemovableHandle(hooks_dict: Any, *, extra_dict: Any = None)
 
     提供一个移除钩子功能的句柄。
 

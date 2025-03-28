@@ -10,7 +10,7 @@ mindspore.ops.inplace_index_add
     .. math::
         x[:, \text{indices}[i, ..., j], :] \mathrel{+}= v[:, i, ..., j, :]
 
-    其中 `i` 是 `indices` 中元素的下标， `indices[i]`所在的轴由输入 `axis` 决定。
+    其中 `i` 是 `indices` 中元素的下标， `indices[i]` 所在的轴由输入 `axis` 决定。
 
     参数：
         - **var** (Union[Parameter, Tensor]) - 输入的parameter或tensor。

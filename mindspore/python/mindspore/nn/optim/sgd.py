@@ -90,7 +90,7 @@ class SGD(Optimizer):
               If `order_params` in the keys, other keys will be ignored and the element of 'order_params' must be in
               one group of `params`.
 
-        learning_rate (Union[float, int, Tensor, Iterable, LearningRateSchedule]): Default: ``0.1`` .
+        learning_rate (Union[float, int, Tensor, Iterable, LearningRateSchedule], optional): Default: ``0.1`` .
 
             - float: The fixed learning rate value. Must be equal to or greater than 0.
 
@@ -106,12 +106,15 @@ class SGD(Optimizer):
               <https://www.mindspore.cn/docs/en/master/api_python/mindspore.nn.html#learningrateschedule-class>`_
               with step as the input to get the learning rate of current step.
 
-        momentum (float): A floating point value the momentum. must be at least 0.0. Default: ``0.0`` .
-        dampening (float): A floating point value of dampening for momentum. must be at least 0.0. Default: ``0.0`` .
-        weight_decay (float): Weight decay (L2 penalty). It must be equal to or greater than 0. Default: ``0.0`` .
-        nesterov (bool): Enables the Nesterov momentum. If use nesterov, momentum must be positive,
+        momentum (float, optional): A floating point value the momentum. must be at least 0.0. Default: ``0.0`` .
+        dampening (float, optional): A floating point value of dampening for momentum. must be at least 0.0.
+            Default: ``0.0`` .
+        weight_decay (float, optional): Weight decay (L2 penalty). It must be equal to or greater than 0.
+            Default: ``0.0`` .
+        nesterov (bool, optional): Enables the Nesterov momentum. If use nesterov, momentum must be positive,
                          and dampening must be equal to 0.0. Default: ``False`` .
-        loss_scale (float): A floating point value for the loss scale, which must be larger than 0.0. In general, use
+        loss_scale (float, optional): A floating point value for the loss scale, which must be larger than 0.0.
+            In general, use
             the default value. Only when `FixedLossScaleManager` is used for training and the `drop_overflow_update` in
             `FixedLossScaleManager` is set to ``False`` , then this value needs to be the same as the `loss_scale` in
             `FixedLossScaleManager`. Refer to class :class:`mindspore.amp.FixedLossScaleManager` for more details.
