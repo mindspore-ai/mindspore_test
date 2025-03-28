@@ -1164,7 +1164,7 @@ void DynamicMemPoolBestFit::DumpDynamicMemPoolStateInfo() {
     if (is_enable_memory_statistics) {
       std::cout << "[MS_RUNTIME_PROF]" << oss_buf.str() << std::endl;
     }
-    MS_LOG(WARNING) << oss_buf.str();
+    MS_LOG(INFO) << oss_buf.str();
   };
 
   fn(common_mem_, std::string(kCommonMem));
@@ -1196,7 +1196,7 @@ void DynamicMemPoolBestFit::DumpDynamicMemPoolStateInfo() {
   if (is_enable_memory_statistics) {
     std::cout << "[MS_RUNTIME_PROF]" << oss_mem.str() << std::endl;
   }
-  MS_LOG(WARNING) << oss_mem.str();
+  MS_LOG(INFO) << oss_mem.str();
 }
 
 void DynamicMemPoolBestFit::DumpDynamicMemPoolDebugInfo() {
