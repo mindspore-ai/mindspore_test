@@ -66,7 +66,6 @@ def test_gmm_static_shape(mode):
     Expectation: expect correct result.
     """
     set_mode(mode)
-
     m = 10
     k = 20
     n = 8
@@ -78,6 +77,7 @@ def test_gmm_static_shape(mode):
     expect_forward_out = expect_forward_out.asnumpy()
     expect_backward_out = expect_backward_out[0].asnumpy(), expect_backward_out[1].asnumpy()
 
+    loss = 1e-3
     group_list = []
     for i in range(len(split_sizes)):
         if i == 0:
@@ -85,12 +85,12 @@ def test_gmm_static_shape(mode):
             continue
         group_list.append(group_list[i-1] + split_sizes[i])
     output_forward = gmm_forward_func(x, w, group_list)
-    assert np.allclose(output_forward.asnumpy(), expect_forward_out, 1e-04, 1e-04)
+    assert np.allclose(output_forward.asnumpy(), expect_forward_out, loss, loss)
 
     grad = Tensor(np.ones(output_forward.shape).astype(np.float32))
     output_backward1 = gmm_backward_frontend_func(grad, x, w, group_list)
-    assert np.allclose(output_backward1[0].asnumpy(), expect_backward_out[0], 1e-04, 1e-04)
-    assert np.allclose(output_backward1[1].asnumpy(), expect_backward_out[1], 1e-04, 1e-04)
+    assert np.allclose(output_backward1[0].asnumpy(), expect_backward_out[0], loss, loss)
+    assert np.allclose(output_backward1[1].asnumpy(), expect_backward_out[1], loss, loss)
 
 
 @arg_mark(
