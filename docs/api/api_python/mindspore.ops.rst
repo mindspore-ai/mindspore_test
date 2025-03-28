@@ -627,7 +627,6 @@ Array操作
     mindspore.ops.unfold
     mindspore.ops.unique
     mindspore.ops.unique_consecutive
-    mindspore.ops.unique_with_pad
     mindspore.ops.unsorted_segment_max
     mindspore.ops.unsorted_segment_min
     mindspore.ops.unsorted_segment_prod
