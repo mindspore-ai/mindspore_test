@@ -1300,6 +1300,68 @@ class UpsamplingBilinear2d(Cell):
         return upsample_bilinear2d_op(input, self.size, self.scale_factor, True)
 
 
+class CosineEmbeddingLoss(Cell):
+    r"""
+    CosineEmbeddingLoss creates a criterion to measure the similarity between two tensors using cosine distance.
+
+    Given two tensors :math:`x1`, :math:`x2`, and a Tensor label :math:`y` with values 1 or -1,
+    the formula is as follows:
+
+    .. math::
+        loss(x_1, x_2, y) = \begin{cases}
+        1-cos(x_1, x_2), & \text{if } y = 1\\
+        \max(0, cos(x_1, x_2)-margin), & \text{if } y = -1\\
+        \end{cases}
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        margin (float, optional): Should be in [-1.0, 1.0]. Default: ``0.0`` .
+        reduction (str, optional): Apply specific reduction method to the output: ``'none'`` , ``'mean'`` ,
+            ``'sum'`` . Default: ``'mean'`` .
+
+            - ``'none'``: no reduction will be applied.
+            - ``'mean'``: compute and return the mean of elements in the output.
+            - ``'sum'``: the output elements will be summed.
+
+    Inputs:
+        - **input1** (Tensor) - Tensor of shape :math:`(N, D)` or :math:`(D)`,
+          where :math:`N` is the batch size and :math:`D` is the embedding dimension.
+        - **input2** (Tensor) - Tensor of shape :math:`(N, D)` or :math:`(D)`, same shape and dtype as `input1`.
+        - **target** (Tensor) - Tensor of shape :math:`(N)` or :math:`()`, contains value 1 or -1.
+
+    Outputs:
+        Tensor or Scalar, if `reduction` is ``"none"``, its shape is the same as `target`.
+        Otherwise, a scalar value will be returned.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore as ms
+        >>> import numpy as np
+        >>> from mindspore import mint
+        >>> input1 = ms.Tensor(np.array([[0.3, 0.8], [0.4, 0.3]]), ms.float32)
+        >>> input2 = ms.Tensor(np.array([[0.4, 1.2], [-0.4, -0.9]]), ms.float32)
+        >>> target = ms.Tensor(np.array([1, -1]), ms.int32)
+        >>> cosine_embedding_loss = mint.nn.CosineEmbeddingLoss()
+        >>> output = cosine_embedding_loss(input1, input2, target)
+        >>> print(output)
+        0.0003425479
+    """
+
+    def __init__(self, margin=0.0, reduction='mean'):
+        """Initialize ReLCosineEmbeddingLossU6"""
+        super(CosineEmbeddingLoss, self).__init__()
+        self.margin = margin
+        self.reduction = reduction
+
+    def construct(self, input1, input2, target):
+        return F.cosine_embedding_loss(input1, input2, target, self.margin,
+                                       self.reduction)
+
+
 __all__ = [
     # 1
     'BCEWithLogitsLoss',
@@ -1580,6 +1642,8 @@ __all__ = [
     'InstanceNorm3d',
     'UpsamplingNearest2d',
     'UpsamplingBilinear2d',
+    # 745
+    'CosineEmbeddingLoss',
     # 768
     'Softsign',
 ]
