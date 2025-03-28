@@ -1120,6 +1120,22 @@ AbstractBasePtr InferImplDtypeToEnum(const AnalysisEnginePtr &, const PrimitiveP
   return std::make_shared<AbstractScalar>(type_id);
 }
 
+AbstractBasePtr InferImplEnumToDtype(const AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                     const AbstractBasePtrList &args_abs_list) {
+  constexpr size_t args_num = 1;
+  CheckArgsSize(primitive->name(), args_abs_list, args_num);
+  auto abs_input = args_abs_list[ops::kInputIndex0];
+  if (abs_input->isa<abstract::AbstractNone>()) {
+    return abs_input;
+  }
+  if (!abs_input->isa<abstract::AbstractScalar>() || !abs_input->BuildValue()->isa<Int64Imm>()) {
+    MS_EXCEPTION(TypeError) << "For '" << primitive->name() << "', the input should be Int64Imm, but got "
+                            << abs_input->ToString();
+  }
+  auto type_id = GetValue<int64_t>(abs_input->BuildValue());
+  return std::make_shared<AbstractType>(TypeIdToType(static_cast<TypeId>(type_id)));
+}
+
 AbstractBasePtr InferImplCellBackwardHook(const AnalysisEnginePtr &, const PrimitivePtr &primitive,
                                           const AbstractBasePtrList &args_abs_list) {
   AbstractBasePtrList abs_out;
@@ -1172,6 +1188,7 @@ REGISTER_PRIMITIVE_FRONT_EVAL_IMPL(ConvertToAdapterTensor, prim::kPrimConvertToA
 REGISTER_PRIMITIVE_FRONT_EVAL_IMPL(ConvertToMsTensor, prim::kPrimConvertToMsTensor, InferImplConvertToMsTensor,
                                    nullptr);
 REGISTER_PRIMITIVE_FRONT_EVAL_IMPL(DtypeToEnum, prim::kPrimDtypeToEnum, InferImplDtypeToEnum, nullptr);
+REGISTER_PRIMITIVE_FRONT_EVAL_IMPL(EnumToDtype, prim::kPrimEnumToDtype, InferImplEnumToDtype, nullptr);
 REGISTER_PRIMITIVE_FRONT_EVAL_IMPL(CellBackwardHook, prim::kPrimCellBackwardHook, InferImplCellBackwardHook, nullptr)
 #else
 void RegPrimitiveFrontEval() {
@@ -1238,6 +1255,8 @@ void RegPrimitiveFrontEval() {
                                                 prim::kPrimConvertToMsTensor, InferImplConvertToMsTensor, nullptr);
   abstract::RegisterStandardPrimitiveEvalHelper(abstract::GetFrontendPrimitiveInferMapPtr(), prim::kPrimDtypeToEnum,
                                                 InferImplDtypeToEnum, nullptr);
+  abstract::RegisterStandardPrimitiveEvalHelper(abstract::GetFrontendPrimitiveInferMapPtr(), prim::kPrimEnumToDtype,
+                                                InferImplEnumToDtype, nullptr);
 }  // namespace abstract
 #endif
 }  // namespace abstract

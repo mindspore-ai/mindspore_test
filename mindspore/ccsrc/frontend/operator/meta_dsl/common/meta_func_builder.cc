@@ -25,7 +25,7 @@
 #include "mindspore/ccsrc/frontend/operator/meta_dsl/common/meta_impl.h"
 
 namespace mindspore::prim {
-void MetaFuncBuilder::BeginFunc(size_t params_size) {
+void MetaFuncBuilder::BeginFunc() {
   MS_LOG(DEBUG) << "Begin function for " << name_;
   graph_->set_flag(FUNC_GRAPH_FLAG_CORE, true);
   MS_EXCEPTION_IF_NULL(graph_->debug_info());

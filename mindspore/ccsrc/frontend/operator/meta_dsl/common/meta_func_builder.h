@@ -27,7 +27,7 @@ class MetaFuncBuilder {
   explicit MetaFuncBuilder(const std::string &name) : name_(name), graph_(std::make_shared<FuncGraph>()) {}
   ~MetaFuncBuilder() = default;
 
-  void BeginFunc(size_t params_size);
+  void BeginFunc();
   FuncGraphPtr EndFunc() const;
   AnfNodePtr AddParameter(const std::string &name);
   AnfNodePtr CreateNode(const AnfNodePtrList &nodes);

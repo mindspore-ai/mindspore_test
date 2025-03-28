@@ -23,7 +23,9 @@
 #include <stack>
 #include <vector>
 #include <memory>
+#include <algorithm>
 #include <unordered_map>
+#include "ir/manager.h"
 #include "ops/op_def.h"
 #include "frontend/operator/meta_dsl/common/utils.h"
 #include "frontend/operator/meta_dsl/common/meta_func_builder.h"
@@ -40,6 +42,7 @@ class MetaImpl : public MetaFuncGraph {
   ~MetaImpl() override = default;
   MS_DECLARE_PARENT(MetaImpl, MetaFuncGraph)
   void set_prim(const PrimitivePtr &prim);
+  void set_manager(const FuncGraphManagerPtr &manager);
   PrimitivePtr prim() const;
   FuncGraphPtr GenerateFuncGraph(const AbstractBasePtrList &input_args) override;
   virtual void GenerateFunction() = 0;
@@ -58,7 +61,7 @@ class MetaImpl : public MetaFuncGraph {
   ///
   /// \note Example: Value(0), Value(1.0), Value(true), Value("valid"), Value<int32_t>(100), Value(kNone)
   ///
-  /// \param[in] value Supports int, float, bool, char*,  and other types allowed by MakeValue.
+  /// \param[in] value Supports int, float, bool, char*, and other types allowed by MakeValue.
   ///
   /// \return ValueNode.
   template <typename S, typename U = typename ImmTraits<S>::type::element_type>
@@ -68,6 +71,12 @@ class MetaImpl : public MetaFuncGraph {
       return NewValueNode(std::make_shared<Int64Imm>(static_cast<int64_t>(value)));
     }
     return NewValueNode(std::make_shared<U>(value));
+  }
+  template <typename T, typename U = typename std::enable_if<is_vector<T>::value, typename T::value_type>::type>
+  ValueNodePtr Value(const T &vec) {
+    std::vector<ValuePtr> list;
+    (void)std::transform(vec.begin(), vec.end(), std::back_inserter(list), [](U ele) { return MakeValue(ele); });
+    return NewValueNode(std::make_shared<ValueTuple>(list));
   }
   inline ValueNodePtr Value(const ValuePtr &value) { return NewValueNode(value); }
   inline ValueNodePtr Value(const std::vector<ValuePtr> &v) { return NewValueNode(std::make_shared<ValueTuple>(v)); }
@@ -120,6 +129,62 @@ class MetaImpl : public MetaFuncGraph {
   ///
   /// \return The result node of if-else expression.
 #define If(cond, true_case, false_case, params) IF_IMPL(cond, true_case, false_case, params)
+
+  /// \brief for-loop. Refer to `mindspore.ops.ForiLoop` for more details.
+  ///
+  /// \note Example:
+  ///         # python                                      // cpp
+  ///         for i in range(lower, upper):                 auto loop_func =
+  ///           init_val = loop_func(i, init_val)    -->      [&](const NodePtr &index, const NodePtr &res) { ... };
+  ///         return init_val                               auto out = For(cond_func, loop_func, init_val);
+  ///
+  /// \param[in] lower The start index of loop.
+  /// \param[in] upper The end index of loop.
+  /// \param[in] loop_func The loop function, takes two arguments.
+  /// \param[in] init_val The init value. Supports Tensor, number, str, bool, list, tuple, dict.
+  ///
+  /// \return The result node of while-loop expression.
+  NodePtr For(const NodePtr &lower, const NodePtr &upper,
+              const std::function<void(const NodePtr &, const NodePtr &)> &loop_func, const NodePtr &init_val);
+
+  /// \brief while-loop. Refer to `mindspore.ops.WhileLoop` for more details.
+  ///
+  /// \note Example:
+  ///         # python                                       // cpp
+  ///         while(cond_func(init_val)):                    auto cond_func = [&](const NodePtr &x) { ... };
+  ///           init_val = loop_func(init_val)      -->      auto loop_func = [&](const NodePtr &x) { ... };
+  ///         return init_val                                auto out = While(cond_func, loop_func, init_val);
+  ///
+  /// \param[in] cond_func The condition function.
+  /// \param[in] loop_func The loop function, take one argument and return value has the same type with input argument.
+  /// \param[in] init_val The initial value. Supports Tensor, number, str, bool, list, tuple, dict.
+  ///
+  /// \return The result node of while-loop expression.
+  NodePtr While(const std::function<void(const NodePtr &)> &cond_func,
+                const std::function<void(const NodePtr &)> &loop_func, const NodePtr &init_val);
+
+  /// \brief Scan a function over an array while the processing of the current element depends on the execution result
+  ///        of the previous element. Refer to `mindspore.ops.Scan` for more details.
+  ///
+  /// \note Example:
+  ///         # python                                  // cpp
+  ///         if xs is None:                            auto loop_func = [&](const NodePtr &x, const NodePtr &elem) {
+  ///           xs = [None] * length           -->        ...
+  ///         carry = init                              };
+  ///         ys = []                                   auto [carry, ys] = Scan(loop_func, init, xs, length);
+  ///         for x in xs:
+  ///           carry, y = loop_func(carry, x)
+  ///           ys.append(y)
+  ///         return carry, ys
+  ///
+  /// \param[in] loop_func The loop function.
+  /// \param[in] init An initial loop carry value. Supports Tensor, number, str, bool, list, tuple, dict.
+  /// \param[in] xs The value over which to scan.
+  /// \param[in] length Optional. The size of xs.
+  ///
+  /// \return The result node of scan.
+  NodePtr Scan(const std::function<void(const NodePtr &, const NodePtr &)> &loop_func, const NodePtr &init,
+               const NodePtr &xs, const NodePtr &length = NewValueNode(kNone));
 
   /// \brief Create a new tuple, such as (x, y).
   ///
@@ -371,24 +436,42 @@ class MetaImpl : public MetaFuncGraph {
   /// \return Node with prim::kPrimRaise.
   NodePtr Raise(const std::string &exception_type, const std::string &exception_msg);
 
+  /// \brief isinstance(x, int), isinstance(x, (int, Tensor))
+  ///
+  /// \note Example: IsInstance(x, TypeId::kNumberTypeInt),
+  ///                IsInstance(x, {TypeId::kNumberTypeInt, kObjectTypeTensorType})
+  ///
+  /// \param[in] x Input node.
+  /// \param[in] type Type to be compared.
+  ///
+  /// \return Node with prim::kPrimIsInstance.
+  NodePtr IsInstance(const NodePtr &x, const TypeId &type);
+  NodePtr IsInstance(const NodePtr &x, const std::vector<TypeId> &types);
+
   // Tools for implementing macro definitions, and they are basically not used during development.
   NodePtr NewParam(const std::string &name);
   NodePtr IfCond(const NodePtr &condition, const BlockFunc &true_branch, const BlockFunc &false_branch,
                  const NodePtrList &args);
   void set_check_func(const CheckFunc &check_func);
+  void set_bprop_func(const std::function<std::shared_ptr<MetaImpl>()> &bprop_func);
 
  private:
-  void BeginFunc(size_t params_size, const std::string &func_name = "anonymous");
+  void BeginFunc(const std::string &func_name = "anonymous");
   FuncGraphPtr EndFunc();
   NodePtr NewNode(const NodePtrList &nodes);
   void CheckInputs(const AbstractBasePtrList &input_args) const;
-  FuncGraphPtr BuildSubFunction(const std::string &func_name, const BlockFunc &sub_func, size_t n_args);
+  FuncGraphPtr BuildSubFunction(const std::string &func_name, const BlockFunc &sub_func);
+  void DefineCustomBprop(const FuncGraphPtr &graph);
+  void ConvertTypeIdToType(NodePtrList *nodes);
   void DumpIRForMetaDsl(const FuncGraphPtr &graph) const;
 
   PrimitivePtr prim_{nullptr};
   std::string name_;
   CheckFunc check_func_{nullptr};
+  FuncGraphPtr bprop_graph_{nullptr};
+  FuncGraphManagerPtr manager_{nullptr};
   std::stack<MetaFuncBuilderPtr> func_builder_stack_;
+  std::function<std::shared_ptr<MetaImpl>()> bprop_func_{nullptr};
 };
 using MetaImplPtr = std::shared_ptr<MetaImpl>;
 using CreateFunc = std::function<std::shared_ptr<MetaImpl>()>;
@@ -402,15 +485,5 @@ class MetaImplRegHelper {
   MetaImplRegHelper(const std::string &name, const CreateFunc &creator) { AddMetaImpl(name, creator); }
   ~MetaImplRegHelper() = default;
 };
-
-#define REGISTER_FUNCTION_OP(name, check_func)                                  \
-  class name##MetaImpl : public MetaImpl {                                      \
-   public:                                                                      \
-    explicit name##MetaImpl() : MetaImpl(#name) { set_check_func(check_func); } \
-    ~name##MetaImpl() override = default;                                       \
-    MS_DECLARE_PARENT(name##MetaImpl, MetaImpl)                                 \
-    void GenerateFunction() override;                                           \
-  };                                                                            \
-  static const MetaImplRegHelper meta_impl_helper_##name(#name, []() { return std::make_shared<name##MetaImpl>(); });
 }  // namespace mindspore::prim
 #endif  // MINDSPORE_CCSRC_FRONTEND_OPERATOR_META_DSL_COMMON_META_IMPL_H_
