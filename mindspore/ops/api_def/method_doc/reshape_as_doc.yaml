@@ -5,7 +5,7 @@ reshape_as:
         Change the shape of the Tensor to the shape of `other` without changing the data.
 
         Args:
-            other(Tensor): The result tensor has the same shape as `other`.
+            other (Tensor): The result tensor has the same shape as `other`.
 
         Returns:
             Tensor, has the same shape as `other`.
