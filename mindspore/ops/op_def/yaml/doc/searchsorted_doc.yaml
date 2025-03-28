@@ -19,8 +19,8 @@ searchsorted:
               on the innermost dimension.
             - **values** (Tensor) - The value that need to be inserted.
             - **sorter** (Tensor, optional) - An index sequence sorted in ascending order along the innermost dimension of
-            `sorted_sequence` , which is used together with the unsorted `sorted_sequence` . CPU and GPU only support
-            ``None``. Default ``None`` .
+              `sorted_sequence` , which is used together with the unsorted `sorted_sequence` . CPU and GPU only support
+              ``None``. Default ``None`` .
 
         Outputs:
             Tensor
