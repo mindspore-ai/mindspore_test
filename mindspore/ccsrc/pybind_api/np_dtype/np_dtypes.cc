@@ -1514,9 +1514,10 @@ void RegisterNumpyTypes() {
   std::string numpy_version = GetNumpyVersion();
   std::string minimum_numpy_version = GetMinimumSupportedNumpyVersion();
   if (!NumpyVersionValid(numpy_version)) {
-    MS_LOG(INFO) << "For asnumpy, the numpy bfloat16 data type is supported in Numpy versions " << minimum_numpy_version
-                 << " to " << minimum_numpy_version[0] << ".x.x, but got " << numpy_version
-                 << ", please upgrade numpy version.";
+    MS_LOG(INFO) << "The Numpy bfloat16 data type is supported only when the "
+                 << "current Numpy version is not less than the version when the mindspore "
+                 << "is compiled, but got current Numpy version :" << numpy_version
+                 << ", Numpy version when the mindspore is compiled:" << minimum_numpy_version;
     return;
   }
   if (!RegisterNumpyType<bfloat16>()) {
@@ -1535,9 +1536,10 @@ bool IsNumpyVersionValid(bool show_warning = false) {
   std::string minimum_numpy_version = np_dtypes::GetMinimumSupportedNumpyVersion();
   if (!np_dtypes::NumpyVersionValid(numpy_version)) {
     if (show_warning) {
-      MS_LOG(WARNING) << "For asnumpy, the numpy bfloat16 data type is supported in Numpy versions "
-                      << minimum_numpy_version << " to " << minimum_numpy_version[0] << ".x.x, but got "
-                      << numpy_version << ", please upgrade numpy version.";
+      MS_LOG(WARNING) << "The Numpy bfloat16 data type is supported only when the "
+                      << "current Numpy version is not less than the version when the mindspore "
+                      << "is compiled, but got current Numpy version :" << numpy_version
+                      << ", Numpy version when the mindspore is compiled:" << minimum_numpy_version;
     }
     return false;
   }
