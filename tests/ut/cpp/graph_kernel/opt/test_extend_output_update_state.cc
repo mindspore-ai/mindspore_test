@@ -82,4 +82,50 @@ TEST_F(GraphKernelCommonTestSuite, opt_update_state) {
   ASSERT_EQ(gk_nodes.size(), 1);
   ASSERT_FALSE(IsPrimitiveCNode(GetCNodeFuncGraph(gk_nodes[0])->output(), prim::kPrimMakeTuple));
 }
+
+FuncGraphPtr ConstructSubGraph_two_same_getitem_idx() {
+  test::ConstructGraph c;
+  auto p1 = c.NewTensorInput("p1", kFloat32, {64128, 4096});
+  auto p2 = c.NewTensorInput("p2", kFloat32, {64128, 4096});
+  auto p3 = c.NewTensorInput("p3", kFloat32, {64128, 4096});
+  auto const1 = c.NewValueNode(std::make_shared<tensor::Tensor>((float)(0.00099987)));
+  auto node0 = c.NewCNodeWithBuildInfo("Mul", {p2, p2});
+  auto node1 = c.NewCNodeWithBuildInfo("Mul", {const1, node0});
+  auto node2 = c.NewCNodeWithBuildInfo("Add", {p1, node1});
+  auto node3 = c.NewCNodeWithBuildInfo("Assign", {p3, node2});
+  auto node4 = c.NewCNodeWithBuildInfo("MakeTuple", {node2, node3});
+  c.SetOutput(node4);
+  return c.GetGraph();
+}
+
+FuncGraphPtr ConstructGraph_two_same_getitem_idx() {
+  test::ConstructGraph c;
+  auto p1 = c.NewTensorInput("p1", kFloat32, {64128, 4096});
+  auto p2 = c.NewTensorInput("p2", kFloat32, {64128, 4096});
+  auto p3 = c.NewTensorInput("p3", kFloat32, {64128, 4096});
+  auto sub_fg = ConstructSubGraph_two_same_getitem_idx();
+  sub_fg->set_attr("graph_kernel", MakeValue<std::string>("GraphKernel_Addcmul_Assign_fusion"));
+  auto call = c.GetGraph()->NewCNode({NewValueNode(sub_fg), p1, p2, p3});
+  call->set_abstract(sub_fg->output()->abstract());
+  auto item_a = c.NewCNode("TupleGetItem", {call, c.NewValueNode<int64_t>(1)});
+  auto out0 = c.NewCNode("UpdateState", {c.NewValueNode(kUMonad), item_a});
+  auto item_b = c.NewCNode("TupleGetItem", {call, c.NewValueNode<int64_t>(1)});
+  auto out1 = c.NewCNode("UpdateState", {c.NewValueNode(kUMonad), item_b});
+  auto mt = c.NewCNode("MakeTuple", {out0, out1});
+  c.SetOutput(mt);
+  return c.GetGraph();
+}
+
+/// Feature: ExtendOutputForUpdateState
+/// Description: Issue #IBUN8R. There are two getitem of same index for a subgraph.
+/// Expectation: After this pass, the output_0 of subgraph and getitem nodes are eliminated.
+TEST_F(GraphKernelCommonTestSuite, two_same_getitem_idx) {
+  auto fg = ConstructGraph_two_same_getitem_idx();
+  RunPass(fg, {std::make_shared<graphkernel::ExtendOutputForUpdateState>()});
+  ASSERT_EQ(GetAllGKNodes(fg).size(), 1);
+  auto nodes = GetAllNodes(fg);
+  auto getitem_count = std::count_if(
+    nodes.begin(), nodes.end(), [](const AnfNodePtr &node) { return IsPrimitiveCNode(node, prim::kPrimTupleGetItem); });
+  ASSERT_EQ(getitem_count, 0);
+}
 }  // namespace mindspore::graphkernel::test

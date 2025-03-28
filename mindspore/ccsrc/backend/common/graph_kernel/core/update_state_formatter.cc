@@ -135,7 +135,7 @@ bool ExtendOutputForUpdateState::Run(const FuncGraphPtr &func_graph) {
   MS_EXCEPTION_IF_NULL(mng);
   bool changed = false;
   for (const auto &node : todos) {
-    (void)GetGraphKernelGetitemList(mng, node, &getitems_, false);
+    changed = GetGraphKernelGetitemList(mng, node, &getitems_, true) || changed;
     if (getitems_.empty()) {
       continue;
     }
