@@ -285,6 +285,11 @@ AbstractActor *AbstractActor::FetchSubActorInFusionActor(const std::string &sub_
   return (parent_fusion_actor_->sub_actors_[sub_actor_name]).get();
 }
 
+void AbstractActor::HandleWaitMessage(OpContext<DeviceTensor> *const context, const AID &from_aid) {
+  MS_LOG(DEBUG) << "Actor:" << GetAID() << " receive wait message from actor:" << from_aid;
+  ActorDispatcher::Send(from_aid, &AbstractActor::HandleNotifyMessage, context, GetAID());
+}
+
 bool AbstractActor::IsOutputAddressPersisted(const DeviceTensor *output_device_tensor,
                                              const KernelWithIndex &output_node) {
   MS_EXCEPTION_IF_NULL(output_node.first);

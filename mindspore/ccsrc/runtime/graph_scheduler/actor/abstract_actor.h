@@ -110,7 +110,8 @@ class AbstractActor : public OpActor<DeviceTensor> {
 
   // Get the position of node in the actor.
   virtual size_t FetchNodePosition(const KernelWithIndex &node) const { return 0; }
-
+  virtual void HandleWaitMessage(OpContext<DeviceTensor> *const context, const AID &from_aid);
+  virtual void HandleNotifyMessage(OpContext<DeviceTensor> *const context, const AID &from_aid) {}
   // Get the member.
   KernelTransformType type() const { return type_; }
   int64_t actor_id() const { return actor_id_; }
