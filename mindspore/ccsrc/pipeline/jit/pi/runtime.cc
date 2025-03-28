@@ -655,38 +655,44 @@ static bool CheckGuard(JitCompileResults *c, const PyFrameWrapper &f) {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kCapture, runtime::ProfilerEvent::kCaptureGuard,
                                      "PIJitGuard");
 
-  StaticAnalysisExceptionCleaner exception_cleaner;
-  CaptureContext::DisableScope compiler_disable_scope;
-
-  OptOptionPtr opt = OptOption::CreateOptionByPoint(c);
-  OptCodeSet set;
-  const auto &ref = c->codehub()->GetOptTarget(opt, set);
-  if (ref.empty()) {
+  if (c->code() == nullptr) {
     return false;
   }
+  CaptureContext::DisableScope compiler_disable_scope;
+  GuardContext context;
+
+  bool log_perf = c->conf()->GetBoolConfig(GraphJitConfig::kLogGuardPerf);
+  bool print_guard = c->conf()->GetBoolConfig(GraphJitConfig::kPrintGuard);
+  if (c->code()->GetGuard()->Check(f, print_guard, log_perf)) {
+    return true;
+  }
+
+  OptOptionPtr opt = OptOption::CreateOptionByPoint(c);
+  OptCodeSet defaults;
+  const auto &set = c->codehub()->GetOptTarget(opt, defaults);
+  OptCodePtr skip = c->code();
   c->set_code(nullptr);
-  std::map<size_t, PyObject *> cache;
-  std::map<size_t, bool> success;
-  std::map<size_t, bool> fail;
-  set = OptStrategy::MakeGuardListStrategyByFrame(ref);
   for (size_t i = set.size(); i != 0; i--) {
-    auto oc = set[i - 1];
+    const OptCodePtr &oc = set[i - 1];
+    if (oc == skip) {
+      continue;
+    }
     OptGuardPtr guard = oc->GetGuard();
-    bool print_guard = c->conf()->GetBoolConfig(GraphJitConfig::kPrintGuard);
-    if (guard != nullptr && guard->Check(f, print_guard, &cache, &success, &fail,
-                                         c->conf()->GetBoolConfig(GraphJitConfig::kLogGuardPerf))) {
+    if (guard != nullptr && guard->Check(f, print_guard, log_perf)) {
       c->set_code(oc);
-      c->codehub()->UpdateOptTarget(opt, oc);
+      MS_LOG(DEBUG) << "select the compiled code due to guard is match: "
+                    << (oc->GetPythonCode() != nullptr
+                          ? std::string(py::str(reinterpret_cast<PyObject *>(oc->GetPythonCode())))
+                          : "")
+                    << (oc->GetPhase().empty() ? "" : oc->GetPhase()) << std::endl
+                    << "generated guard:" << std::endl
+                    << oc->GetGuard()->ToString();
       break;
     }
-  }
-  for (auto item : cache) {
-    Py_XDECREF(item.second);
   }
   if (c->code() == nullptr) {  // recompiled
     c->CacheFailGuard();
   }
-  MS_LOG(INFO) << "Check guard" << (c->code() != nullptr ? " success!" : " failed!");
   return c->code() != nullptr;
 }
 

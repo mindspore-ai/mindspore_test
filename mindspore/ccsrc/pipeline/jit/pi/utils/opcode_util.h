@@ -78,6 +78,7 @@ class Opcode {
   bool MayDelete(int oparg = 0) const;
   bool IsExcMatch(int oparg = 0) const;
   int InstrSize(int oparg = 0) const;
+  const char *BinaryMathString(int arg);
 
   bool HasJump() const { return IsJRel() || IsJAbs(); }
   bool IsCall() const { return class_ == Class::kCall; }

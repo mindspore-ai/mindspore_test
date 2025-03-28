@@ -85,7 +85,10 @@ void OptCode::SetPythonCode(const py::object &code) {
 
 PyCodeObject *OptCode::GetPythonCode() const { return reinterpret_cast<PyCodeObject *>(compiled_code_.ptr()); }
 
-void OptCode::SetGuard(OptGuardPtr guard) { guard_ = guard; }
+void OptCode::SetGuard(OptGuardPtr guard) {
+  guard->set_code_hub(guard_->code_hub());
+  guard_ = guard;
+}
 
 OptGuardPtr OptCode::GetGuard() { return guard_; }
 
@@ -120,11 +123,13 @@ OptCodePtr OptCodeHub::AddOptTarget(OptOptionPtr option) {
   for (auto &item : codeMap_) {
     if (*(item.first.get()) == *(option.get())) {
       ret = std::make_shared<OptCode>();
+      ret->GetGuard()->set_code_hub(shared_from_this());
       item.second.push_back(ret);
       return ret;
     }
   }
   ret = std::make_shared<OptCode>();
+  ret->GetGuard()->set_code_hub(shared_from_this());
   codeMap_[option].push_back(ret);
   ret->SetOption(option);
   return ret;
@@ -275,6 +280,27 @@ void CodeCache::Clear() {
   code_ = nullptr;
   code_hub_->codeMap_[jcr_].clear();
   fail_guard_.clear();
+}
+
+GuardContext::Data *GuardContext::Data::GetInstance() {
+  static GuardContext::Data instance;
+  return &instance;
+}
+
+GuardContext::~GuardContext() {
+  auto &guard_cache = Data::GetInstance()->guard_cache();
+  auto &trace_cache = Data::GetInstance()->trace_cache();
+  for (const auto &item : guard_cache) {
+    item->set_faile_count(0);
+    item->set_perf(false);
+    item->set_checked(false);
+    item->GetTrace()->ClearCache();
+  }
+  for (const auto &item : trace_cache) {
+    item->ClearCache();
+  }
+  guard_cache.clear();
+  trace_cache.clear();
 }
 
 }  // namespace pijit

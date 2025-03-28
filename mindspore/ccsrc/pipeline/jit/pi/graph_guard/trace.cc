@@ -21,6 +21,7 @@
 #include <functional>
 #include <utility>
 #include <regex>
+#include <algorithm>
 #include "pipeline/jit/pi/graph_guard/guard.h"
 #include "pipeline/jit/pi/graph_guard/guard_utils.h"
 #include "pybind11/pybind11.h"
@@ -138,14 +139,15 @@ class TracePerf {
 };
 
 Trace::Trace(PyObject *pObj, std::shared_ptr<Trace> pOrigin)
-    : obj_(pObj),
+    : obj_(py::reinterpret_borrow<py::object>(pObj)),
       origin_(pOrigin),
       info_(nullptr),
-      is_const_(false),
       relax_count_(-1),
       relax_limit_(0),
+      depth_(0),
+      is_const_(false),
       is_specialized_(false),
-      depth_(0) {
+      retrieved_(false) {
   if (pOrigin != nullptr) {
     originType_ = pOrigin->GetOriginType();
     curType_ = pOrigin->GetTraceType();
@@ -153,16 +155,9 @@ Trace::Trace(PyObject *pObj, std::shared_ptr<Trace> pOrigin)
     originType_ = Unknown;
     curType_ = Unknown;
   }
-  if (obj_ != Py_None && obj_ != NULL) {
-    Py_INCREF(obj_);
-  }
 }
 
-Trace::~Trace() {
-  if (obj_ != Py_None && obj_ != NULL) {
-    Py_DECREF(obj_);
-  }
-}
+Trace::~Trace() {}
 
 TracePtr Trace::GetOrigin() {
   if (origin_ != nullptr) {
@@ -172,7 +167,7 @@ TracePtr Trace::GetOrigin() {
   }
 }
 
-PyObject *Trace::GetObject() { return obj_; }
+PyObject *Trace::GetObject() { return obj_.ptr(); }
 
 TraceType Trace::GetTraceType() const { return curType_; }
 
@@ -197,63 +192,24 @@ bool Trace::operator==(const Trace &trace) {
 }
 
 void Trace::Detach() {
-  if (obj_ != Py_None && obj_ != nullptr && !is_const_ && !PyLong_Check(obj_) && !PyType_Check(obj_)) {
-    Py_DECREF(obj_);
-    obj_ = nullptr;
+  if (!is_const_) {
+    obj_ = {};
   }
   if (origin_ != nullptr) {
     origin_->Detach();
   }
 }
 
-PyObject *Trace::Retrieve(PTraceContext context, bool perf) {
-  TracePerf tp(this, perf, true);
-  if (is_const_) {
-    Py_XINCREF(obj_);
-    return obj_;
-  }
-  if (context->cache != nullptr) {
-    size_t szTrace = this->Info().Id();
-    auto cache = context->cache;
-    auto iter = cache->find(szTrace);
-    if (iter != cache->end()) {
-      auto item = iter->second;
-      Py_XINCREF(item);
-      return item;
-    }
-  }
-  return nullptr;
+void Trace::Cache(PTraceContext context, const py::object &obj) {
+  retrieve_cache_ = obj;
+  retrieved_ = true;
+  GuardContext::Data::GetInstance()->trace_cache().push_back(shared_from_this());
 }
 
-void Trace::Cache(PTraceContext context, PyObject *obj) {
-  if (context->cache != nullptr && obj != nullptr) {
-    size_t szTrace = this->Info().Id();
-    Py_XINCREF(obj);
-    auto iter = context->cache->find(szTrace);
-    if (iter != context->cache->end()) {
-      Py_XDECREF(iter->second);
-      iter->second = obj;
-    } else {
-      (*(context->cache))[szTrace] = obj;
-    }
-  }
-  if (RelaxEnabled() && obj != nullptr) {
-    if (obj_ != nullptr) {
-      auto cmp = RichCompare(obj_, obj, Py_EQ);
-      if (cmp != Py_True) {
-        relax_count_ = -1;
-      } else if (relax_count_ < relax_limit_) {
-        relax_count_++;
-      } else {
-        is_const_ = true;
-      }
-      Py_XDECREF(cmp);
-    }
-    if (obj_ == nullptr) {
-      Py_XINCREF(obj);
-      obj_ = obj;
-    }
-  }
+void Trace::ClearCache() {
+  this->Detach();
+  retrieved_ = false;
+  retrieve_cache_ = {};
 }
 
 bool Trace::IsConst() const { return is_const_; }
@@ -313,11 +269,11 @@ void RootTrace::GetParam(int *index, std::string *name, std::string *module_name
   *module_name = module_name_;
 }
 
-PyObject *RootTrace::Retrieve(PTraceContext context, bool perf) {
-  PyObject *ret = Trace::Retrieve(context, perf);
-  if (ret != nullptr) {
-    return ret;
+py::object RootTrace::Retrieve(PTraceContext context, bool perf) {
+  if (is_const_ || retrieved_) {
+    return is_const_ ? obj_ : retrieve_cache_;
   }
+  py::object ret;
   TracePerf tp(this, perf, false);
   switch (curType_) {
     case TraceType::Global: {
@@ -338,11 +294,9 @@ PyObject *RootTrace::Retrieve(PTraceContext context, bool perf) {
     }
     case TraceType::Local:
       ret = RetrieveLocal(context);
-      Py_XINCREF(ret);
       break;
     case TraceType::Param:
       ret = RetrieveParam(context);
-      Py_XINCREF(ret);
       break;
     case TraceType::Name: {
       ret = RetrieveName(context);
@@ -355,13 +309,11 @@ PyObject *RootTrace::Retrieve(PTraceContext context, bool perf) {
     default:
       break;
   }
-  if (ret != Py_None && ret != NULL) {
-    Cache(context, ret);
-  }
+  Cache(context, ret);
   return ret;
 }
 
-PyObject *RootTrace::RetrieveGlobal(PTraceContext context) {
+py::object RootTrace::RetrieveGlobal(PTraceContext context) {
   MS_EXCEPTION_IF_CHECK_FAIL(name_.size() > 0, "check trace");
   PyObject *globals = context->f_globals_.ptr();
   if (!module_name_.empty()) {
@@ -384,10 +336,10 @@ PyObject *RootTrace::RetrieveGlobal(PTraceContext context) {
     }
   }
   Py_DECREF(key);
-  return ret;
+  return py::reinterpret_steal<py::object>(ret);
 }
 
-PyObject *RootTrace::RetrieveDeref(PTraceContext context) {
+py::object RootTrace::RetrieveDeref(PTraceContext context) {
   PyObject *ret = nullptr;
   int index = context->f_code_.FastLocalIndex(PyCodeWrapper::kCoFastCell, idx_);
   MS_EXCEPTION_IF_CHECK_FAIL(index >= 0, "Error trace");
@@ -405,11 +357,10 @@ PyObject *RootTrace::RetrieveDeref(PTraceContext context) {
 #else
   ret = PyCell_GET(cell);
 #endif
-  Py_XINCREF(ret);
-  return ret;
+  return py::reinterpret_borrow<py::object>(ret);
 }
 
-PyObject *RootTrace::RetrieveClosure(PTraceContext context) {
+py::object RootTrace::RetrieveClosure(PTraceContext context) {
   PyObject *ret = nullptr;
   int index = context->f_code_.FastLocalIndex(PyCodeWrapper::kCoFastCell, idx_);
   MS_EXCEPTION_IF_CHECK_FAIL(index >= 0, "Error trace");
@@ -429,10 +380,10 @@ PyObject *RootTrace::RetrieveClosure(PTraceContext context) {
   Py_XINCREF(ret);
 #endif
 
-  return ret;
+  return py::reinterpret_steal<py::object>(ret);
 }
 
-PyObject *RootTrace::RetrieveBuiltin(PTraceContext context) {
+py::object RootTrace::RetrieveBuiltin(PTraceContext context) {
   MS_EXCEPTION_IF_CHECK_FAIL(name_.size() > 0, "check trace");
   PyObject *key = PyUnicode_FromString(name_.c_str());
   PyObject *ret = PyObject_GetItem(context->f_builtins_.ptr(), key);
@@ -444,38 +395,37 @@ PyObject *RootTrace::RetrieveBuiltin(PTraceContext context) {
     }
   }
   Py_DECREF(key);
-  return ret;
+  return py::reinterpret_steal<py::object>(ret);
 }
 
-PyObject *RootTrace::RetrieveLocal(PTraceContext context) { return context->f_locals_.ptr(); }
+py::object RootTrace::RetrieveLocal(PTraceContext context) {
+  return py::reinterpret_borrow<py::object>(context->f_locals_.ptr());
+}
 
-PyObject *RootTrace::RetrieveParam(PTraceContext context) {
+py::object RootTrace::RetrieveParam(PTraceContext context) {
   int index = context->f_code_.FastLocalIndex(PyCodeWrapper::kCoFastLocal, idx_);
-  return context->frame_.FastLocal()[index];
+  return py::reinterpret_borrow<py::object>(context->frame_.FastLocal()[index]);
 }
 
-PyObject *RootTrace::RetrieveName(PTraceContext context) {
+py::object RootTrace::RetrieveName(PTraceContext context) {
   PyObject *ret = nullptr;
   PyObject *name = PyTuple_GetItem(context->f_code_.ptr()->co_names, idx_);
   PyObject *locals = context->f_locals_.ptr();
   ret = PyDict_GetItem(locals, name);
-  Py_XINCREF(ret);
   if (ret == nullptr) {
     ret = PyDict_GetItem(context->f_globals_.ptr(), name);
-    Py_XINCREF(ret);
   }
   if (ret == nullptr) {
     if (PyDict_CheckExact(context->f_builtins_.ptr())) {
       ret = PyDict_GetItem(context->f_builtins_.ptr(), name);
-      Py_XINCREF(ret);
     } else {
-      ret = PyObject_GetItem(context->f_builtins_.ptr(), name);
+      return py::reinterpret_steal<py::object>(PyObject_GetItem(context->f_builtins_.ptr(), name));
     }
   }
-  return ret;
+  return py::reinterpret_borrow<py::object>(ret);
 }
 
-PyObject *RootTrace::RetrieveClassDeref(PTraceContext context) {
+py::object RootTrace::RetrieveClassDeref(PTraceContext context) {
   // this opcode is removed from python 3.12...
   return RetrieveDeref(context);
 }
@@ -488,7 +438,7 @@ std::string RootTrace::ToString(bool include_param) {
   switch (curType_) {
     case TraceType::Global:
       if (!module_name_.empty()) {
-        ret = "(global " + module_name_ + ".__dict__[" + name_ + "])";
+        ret = "(global " + module_name_ + "." + name_ + ")";
       } else {
         ret = "f_globals[" + name_ + "]";
       }
@@ -530,9 +480,18 @@ std::string RootTrace::ToString(bool include_param) {
   return ret;
 }
 
+void Trace::SimpleString(std::ostream *s) const { (*s) << "<?>"; }
+void RootTrace::SimpleString(std::ostream *s) const {
+  if (curType_ == TraceType::Global && !module_name_.empty()) {
+    (*s) << module_name_ << ".";
+  }
+  (*s) << name_;
+}
+
 const InfoPack &RootTrace::Info() {
   if (info_ == nullptr) {
-    InfoPack info;
+    info_ = std::make_shared<InfoPack>();
+    InfoPack &info = *info_;
     info << uint8_t(curType_);
     info.Begin();
     switch (curType_) {
@@ -559,7 +518,6 @@ const InfoPack &RootTrace::Info() {
         break;
     }
     info.End();
-    info_ = std::make_shared<InfoPack>(info);
     info_->Update();
   }
   return *info_;
@@ -593,313 +551,35 @@ bool RootTrace::Support(TraceType tt) {
   }
 }
 
-ItemTrace::ItemTrace(PyObject *pObj, TracePtr pOrigin, TracePtr pItem) : Trace(pObj, pOrigin), item_(pItem) {
-  curType_ = TraceType::Item;
-  if (origin_ != nullptr && item_ != nullptr) {
-    if (origin_->IsConst() && item_->IsConst()) {
-      is_const_ = true;
-    }
-    if (!origin_->IsSpecialized() && !item_->IsSpecialized()) {
-      is_specialized_ = false;
-    }
-  }
-  if (origin_ != nullptr) {
-    depth_ = origin_->GetDepth() + 1;
-  } else {
-    depth_ = 1;
-  }
-  if (item_ != nullptr) {
-    auto d = item_->GetDepth() + 1;
-    if (d > depth_) {
-      depth_ = d;
-    }
-  }
-}
-
-TracePtr ItemTrace::GetItem() { return item_; }
-
-void ItemTrace::Replace(std::shared_ptr<Trace> dst, std::shared_ptr<Trace> src) {
-  Trace::Replace(dst, src);
-  if (item_ != nullptr) {
-    if (*item_ == *src) {
-      item_ = dst;
-    } else {
-      item_->Replace(dst, src);
-    }
-  }
-}
-
-PyObject *ItemTrace::Retrieve(PTraceContext context, bool perf) {
-  PyObject *ret = Trace::Retrieve(context, perf);
-  if (ret != nullptr) {
-    return ret;
-  }
-  if (origin_ != nullptr && item_ != nullptr) {
-    PyObject *pSet = origin_->Retrieve(context, perf);
-    PyObject *pItem = item_->Retrieve(context, perf);
-    if (pSet != NULL && pItem != NULL) {
-      TracePerf tp(this, perf, false);
-      if (PyDict_CheckExact(pSet)) {
-        ret = PyDict_GetItem(pSet, pItem);
-        Py_INCREF(ret);
-      } else {
-        ret = PyObject_GetItem(pSet, pItem);
-      }
-      Cache(context, ret);
-    }
-    Py_XDECREF(pSet);
-    Py_XDECREF(pItem);
-  }
-  return ret;
-}
-
-std::string ItemTrace::ToString(bool include_param) {
-  if (strTrace_.size() > 0) {
-    return strTrace_;
-  }
-  std::string ret;
-  if (origin_ != nullptr && item_ != nullptr) {
-    std::string ori = origin_->ToString(include_param);
-    std::string itm = item_->ToString(include_param);
-    ret = ori + "[" + itm + "]";
-  }
-  ret = (is_const_ ? std::string("const:") : std::string("var:")) + ret;
-  ret = std::regex_replace(ret, std::regex("(\n)"), "");
-  strTrace_ = ret;
-  return ret;
-}
-
-const InfoPack &ItemTrace::Info() {
-  if (info_ == nullptr) {
-    InfoPack info;
-    info << uint8_t(curType_);
-    info.Begin();
-    info << (origin_ != nullptr && item_ != nullptr);
-    if (origin_ != nullptr && item_ != nullptr) {
-      auto ori = origin_->Info();
-      auto itm = item_->Info();
-      info << ori << itm;
-    }
-    info.End();
-    info_ = std::make_shared<InfoPack>(info);
-    info_->Update();
-  }
-  return *info_;
-}
-
-TracePtr ItemTrace::Optimize() {
-  bool need_update = false;
-  origin_ = OptimizeTrace(origin_, &need_update);
-  item_ = OptimizeTrace(item_, &need_update);
-  if (need_update) {
-    if (origin_ != nullptr && item_ != nullptr && origin_->IsConst() && item_->IsConst()) {
-      is_const_ = true;
-    }
-    info_ = nullptr;
-    strTrace_ = "";
-    Info();
-    return shared_from_this();
-  } else {
-    return nullptr;
-  }
-}
-
-void ItemTrace::SetRelaxCount(int cnt) {
-  Trace::SetRelaxCount(cnt);
-  if (origin_ != nullptr) {
-    origin_->SetRelaxCount(cnt);
-  }
-  if (item_ != nullptr) {
-    item_->SetRelaxCount(cnt);
-  }
-}
-
-bool ItemTrace::operator==(const Trace &trace) {
-  if (Trace::operator==(trace)) {
-    const ItemTrace &t = (const ItemTrace &)trace;
-    if (!item_ && !(t.item_)) {
-      return true;
-    } else if (item_ != nullptr && t.item_ != nullptr) {
-      return *item_ == *(t.item_);
-    }
-  }
-  return false;
-}
-
-void ItemTrace::Detach() {
-  Trace::Detach();
-  if (item_ != nullptr) {
-    item_->Detach();
-  }
-}
-
-bool ItemTrace::Support(TraceType tt) { return tt == TraceType::Item; }
-
-AttrTrace::AttrTrace(PyObject *pObj, TracePtr pOrigin, std::string strAttr) : Trace(pObj, pOrigin), attr_(strAttr) {
-  curType_ = TraceType::Attr;
-  if (origin_ != nullptr && origin_->IsConst()) {
-    is_const_ = true;
-  }
-  if (origin_ != nullptr) {
-    depth_ = origin_->GetDepth() + 1;
-  } else {
-    depth_ = 1;
-  }
-}
-
-std::string AttrTrace::GetAttribute() { return attr_; }
-
-PyObject *AttrTrace::Retrieve(PTraceContext context, bool perf) {
-  PyObject *ret = Trace::Retrieve(context, perf);
-  if (ret != nullptr) {
-    return ret;
-  }
-  if (origin_ != nullptr) {
-    PyObject *pOrigin = origin_->Retrieve(context, perf);
-    if (pOrigin != NULL) {
-      TracePerf tp(this, perf, false);
-      PyObject *itemName = PyUnicode_FromString(attr_.c_str());
-      if (PyDict_CheckExact(pOrigin)) {
-        ret = PyDict_GetItem(pOrigin, itemName);
-        Py_INCREF(ret);
-      } else {
-        ret = PyObject_GetItem(pOrigin, itemName);
-      }
-      Py_DECREF(itemName);
-      Py_DECREF(pOrigin);
-      Cache(context, ret);
-    }
-  }
-  return ret;
-}
-
-std::string AttrTrace::ToString(bool include_param) {
-  if (strTrace_.size() > 0) {
-    return strTrace_;
-  }
-  std::string ret;
-  if (origin_ != nullptr) {
-    std::string ori = origin_->ToString(include_param);
-    ret = ori + "." + attr_;
-  }
-  ret = (is_const_ ? std::string("const:") : std::string("var:")) + ret;
-  ret = std::regex_replace(ret, std::regex("(\n)"), "");
-  strTrace_ = ret;
-  return ret;
-}
-
-const InfoPack &AttrTrace::Info() {
-  if (info_ == nullptr) {
-    InfoPack info;
-    info << uint8_t(curType_);
-    info.Begin();
-    info << (origin_ != nullptr);
-    if (origin_ != nullptr) {
-      auto ori = origin_->Info();
-      info << ori;
-    }
-    info << attr_;
-    info.End();
-    info_ = std::make_shared<InfoPack>(info);
-    info_->Update();
-  }
-  return *info_;
-}
-
-TracePtr AttrTrace::Optimize() {
-  bool need_update = false;
-  origin_ = OptimizeTrace(origin_, &need_update);
-  if (need_update) {
-    if (origin_ != nullptr && origin_->IsConst()) {
-      is_const_ = true;
-    }
-    info_ = nullptr;
-    strTrace_ = "";
-    Info();
-    return shared_from_this();
-  } else {
-    return nullptr;
-  }
-}
-
-void AttrTrace::SetRelaxCount(int cnt) {
-  Trace::SetRelaxCount(cnt);
-  if (origin_ != nullptr) {
-    origin_->SetRelaxCount(cnt);
-  }
-}
-
-bool AttrTrace::operator==(const Trace &trace) {
-  if (Trace::operator==(trace)) {
-    const AttrTrace &t = (const AttrTrace &)trace;
-    return attr_ == t.attr_;
-  }
-  return false;
-}
-
-bool AttrTrace::Support(TraceType tt) { return tt == TraceType::Attr; }
-
 ConstTrace::ConstTrace(PyObject *pObj, int iIndex) : Trace(pObj, nullptr), index_(iIndex) {
   curType_ = TraceType::Const;
   originType_ = TraceType::Const;
-  if (index_ == -1) {
-    is_const_ = true;
-  }
+  is_const_ = true;
   depth_ = 1;
 }
 
 int ConstTrace::GetIndex() { return index_; }
 
-PyObject *ConstTrace::Retrieve(PTraceContext context, bool perf) {
-  PyObject *ret = Trace::Retrieve(context, perf);
-  if (ret != nullptr) {
-    return ret;
-  }
-  if (obj_ != NULL) {
-    Py_INCREF(obj_);
-    return obj_;
-  }
-  PyObject *co_consts = context->f_code_.ptr()->co_consts;
-  if (index_ >= 0 && index_ < PyTuple_GET_SIZE(co_consts)) {
-    TracePerf tp(this, perf, false);
-    ret = PyTuple_GET_ITEM(co_consts, index_);
-    Py_INCREF(ret);
-    Cache(context, ret);
-  } else {
-    ret = obj_;
-    Py_INCREF(ret);
-  }
-  return ret;
-}
+py::object ConstTrace::Retrieve(PTraceContext context, bool perf) { return obj_; }
 
 std::string ConstTrace::ToString(bool include_param) {
   if (strTrace_.size() > 0) {
     return strTrace_;
   }
-  std::string ret = "co_consts";
-  if (index_ != -1) {
-    ret = ret + "[" + std::to_string(index_) + "]";
-  } else {
-    ret = ret + "[-1](" + std::string(py::str(obj_)) + ")";
-  }
-  ret = (is_const_ ? std::string("const:") : std::string("var:")) + ret;
-  ret = std::regex_replace(ret, std::regex("(\n)"), "");
+  std::string ret = "const:" + std::string(py::str(obj_));
   strTrace_ = ret;
   return ret;
 }
+void ConstTrace::SimpleString(std::ostream *s) const { (*s) << "const:" << std::string(py::repr(obj_)); }
 
 const InfoPack &ConstTrace::Info() {
   if (info_ == nullptr) {
-    InfoPack info;
+    info_ = std::make_shared<InfoPack>();
+    InfoPack &info = *info_;
     info << uint8_t(curType_);
     info.Begin();
-    if (index_ != -1) {
-      info << index_;
-    } else {
-      info << index_ << obj_;
-    }
+    info << ToString();
     info.End();
-    info_ = std::make_shared<InfoPack>(info);
     info_->Update();
   }
   return *info_;
@@ -916,121 +596,6 @@ bool ConstTrace::operator==(const Trace &trace) {
 void ConstTrace::Detach() {}
 
 bool ConstTrace::Support(TraceType tt) { return tt == TraceType::Const; }
-
-TypeTrace::TypeTrace(PyObject *pObj, TracePtr pOrigin) : Trace(pObj, pOrigin) {
-  pType_ = Py_TYPE(pObj);
-  curType_ = TraceType::Type;
-  if (origin_ != nullptr && origin_->IsConst()) {
-    is_const_ = true;
-  }
-  if (origin_ != nullptr) {
-    depth_ = origin_->GetDepth() + 1;
-  } else {
-    depth_ = 1;
-  }
-}
-
-PyTypeObject *TypeTrace::GetType() { return pType_; }
-
-PyObject *TypeTrace::Retrieve(PTraceContext context, bool perf) {
-  if (is_const_) {
-    auto rt = reinterpret_cast<PyObject *>(pType_);
-    Py_INCREF(rt);
-    return rt;
-  }
-  PyObject *ret = Trace::Retrieve(context, perf);
-  if (ret != nullptr) {
-    return ret;
-  }
-  if (origin_ != NULL) {
-    PyObject *pOrigin = origin_->Retrieve(context, perf);
-    if (pOrigin != NULL) {
-      TracePerf tp(this, perf, false);
-      ret = reinterpret_cast<PyObject *>(Py_TYPE(pOrigin));
-      Py_INCREF(ret);
-      Py_DECREF(pOrigin);
-      Cache(context, ret);
-      return ret;
-    }
-  }
-  return ret;
-}
-
-std::string TypeTrace::ToString(bool include_param) {
-  if (strTrace_.size() > 0) {
-    return strTrace_;
-  }
-  std::string ret = "type(type:";
-  ret += std::string(py::str(reinterpret_cast<PyObject *>(pType_)));
-  if (origin_ != NULL) {
-    ret += ", origin:" + origin_->ToString(include_param);
-  }
-  ret += ")";
-  ret = (is_const_ ? std::string("const:") : std::string("var:")) + ret;
-  ret += std::regex_replace(ret, std::regex("(\n)"), "");
-  strTrace_ = ret;
-  return ret;
-}
-
-const InfoPack &TypeTrace::Info() {
-  if (info_ == nullptr) {
-    InfoPack info;
-    info << uint8_t(curType_);
-    info.Begin();
-    info << reinterpret_cast<PyObject *>(pType_);
-    info << (origin_ != nullptr);
-    if (origin_ != nullptr) {
-      info << origin_->Info();
-    }
-    info.End();
-    info_ = std::make_shared<InfoPack>(info);
-    info_->Update();
-  }
-  return *info_;
-}
-
-TracePtr TypeTrace::Optimize() {
-  bool need_update = false;
-  origin_ = OptimizeTrace(origin_, &need_update);
-  if (need_update) {
-    if (origin_ != nullptr && origin_->IsConst()) {
-      is_const_ = true;
-    }
-    info_ = nullptr;
-    strTrace_ = "";
-    Info();
-    return shared_from_this();
-  } else {
-    return nullptr;
-  }
-}
-
-void TypeTrace::SetRelaxCount(int cnt) {
-  Trace::SetRelaxCount(cnt);
-  if (origin_ != nullptr) {
-    origin_->SetRelaxCount(cnt);
-  }
-}
-
-bool TypeTrace::operator==(const Trace &trace) {
-  if (Trace::operator==(trace)) {
-    const TypeTrace &t = (const TypeTrace &)trace;
-    return pType_ == t.pType_;
-  }
-  return false;
-}
-
-void TypeTrace::Detach() {
-  if (is_const_) {
-    is_const_ = false;
-    Trace::Detach();
-    is_const_ = true;
-  } else {
-    Trace::Detach();
-  }
-}
-
-bool TypeTrace::Support(TraceType tt) { return tt == TraceType::Type; }
 
 static PyObject *RichCompare(PyObject *left, PyObject *right, int oparg) {
   bool invert;
@@ -1848,11 +1413,10 @@ OpTrace::OpTrace(PyObject *obj, int opcode, int opargs, TraceVector params, std:
   CheckSpecialize();
 }
 
-int OpTrace::GetOpCode() { return opcode_; }
+int OpTrace::GetOpCode() const { return opcode_; }
+int OpTrace::GetOpArgs() const { return opargs_; }
 
-int OpTrace::GetOpArgs() { return opargs_; }
-
-TracePtr OpTrace::GetParam(size_t idx) {
+TracePtr OpTrace::GetParam(size_t idx) const {
   if (params_.size() > idx) {
     return params_[idx];
   } else {
@@ -1860,20 +1424,16 @@ TracePtr OpTrace::GetParam(size_t idx) {
   }
 }
 
-size_t OpTrace::GetParamCount() { return params_.size(); }
+size_t OpTrace::GetParamCount() const { return params_.size(); }
 
-std::string OpTrace::GetName() { return name_; }
+const std::string &OpTrace::GetName() const { return name_; }
 
-PyObject *OpTrace::Retrieve(PTraceContext context, bool perf) {
-  PyObject *ret = Trace::Retrieve(context, perf);
-  if (ret != nullptr) {
-    return ret;
-  }
-  std::vector<PyObject *> params;
-  auto iter = std::find_if(params_.begin(), params_.end(), [&params, &context, perf](const TracePtr &p) {
+bool OpTrace::RetrieveParams(PTraceContext context, bool perf, std::vector<py::object> *p) {
+  auto &params = *p;
+  for (const auto &p : params_) {
     auto param = p->Retrieve(context, perf);
     if (param == nullptr) {
-      return true;
+      return false;
     }
     if (mindspore::tensor::IsTensorPy(py::cast<py::object>(param))) {
       mindspore::tensor::TensorPtr tensor_ptr = mindspore::tensor::ConvertToTensor(py::cast<py::object>(param));
@@ -1882,40 +1442,43 @@ PyObject *OpTrace::Retrieve(PTraceContext context, bool perf) {
       }
     }
     params.push_back(param);
-    return params.back() == nullptr;
-  });
-  if (iter != params_.end()) {
-    MS_LOG(DEBUG) << "Guard Check Retrieve fail for " + (*iter)->ToString();
-    std::for_each(params.begin(), params.end(), [](PyObject *p) { Py_XDECREF(p); });
-    return nullptr;
   }
+  return true;
+}
+
+py::object OpTrace::Retrieve(PTraceContext context, bool perf) {
+  if (retrieved_) {
+    return retrieve_cache_;
+  }
+  if (is_const_) {
+    return obj_;
+  }
+  std::vector<py::object> inputs;
+  if (!RetrieveParams(context, perf, &inputs)) {
+    MS_LOG(DEBUG) << "Guard Check Retrieve fail for " << params_[inputs.size()]->ToString();
+    return py::object();
+  }
+  std::vector<PyObject *> params;
+  std::transform(inputs.begin(), inputs.end(), std::back_inserter(params), [](const auto &i) { return i.ptr(); });
+
+  py::object ret;
   TracePerf tp(this, perf, false);
   if (kBytecodeExecuter.find(opcode_) != kBytecodeExecuter.end() && kBytecodeExecuter[opcode_].first(opargs_, params) &&
       kBytecodeExecuter[opcode_].second != nullptr) {
-    ret = kBytecodeExecuter[opcode_].second(opargs_, params, context);
+    ret = py::reinterpret_steal<py::object>(kBytecodeExecuter[opcode_].second(opargs_, params, context));
   } else if (opcode_ == LOAD_ATTR) {
-    MS_EXCEPTION_IF_CHECK_FAIL(name_.size(), "check trace");
-    ret = PyObject_GetAttrString(params[0], name_.c_str());
+    ret = py::getattr(params[0], name_.c_str(), nullptr);
   } else if (Opcode(opcode_).IsCall()) {
     int argc = params.size() - 1;
-    MS_EXCEPTION_IF_CHECK_FAIL(argc == opargs_ || argc == opargs_ + 1, "invalid call trace");
+    // assert argc == opargs_  or argc == opargs_ + 1
     PyObject *kw_names = opcode_ != CALL_FUNCTION_EX && argc != opargs_ ? params.back() : nullptr;
-    ret = DoCall(params.data(), opcode_, opargs_, kw_names);
+    ret = py::reinterpret_steal<py::object>(DoCall(params.data(), opcode_, opargs_, kw_names));
   }
-  for (auto p : params) {
-    Py_DECREF(p);
-  }
-  if (PyErr_Occurred()) {
-    PyErr_Clear();
-  }
-  Cache(context, ret);
+  ret.ptr() == nullptr ? (void)PyErr_Clear() : Cache(context, ret);
   return ret;
 }
 
 std::string OpTrace::ToString(bool include_param) {
-  if (strTrace_.size() > 0) {
-    return strTrace_;
-  }
   std::string ret = "operation ";
   ret += Opcode(opcode_).name();
   ret += "(arg:";
@@ -1938,7 +1501,6 @@ std::string OpTrace::ToString(bool include_param) {
   ret = ret + ")";
   ret = (is_const_ ? std::string("const:") : std::string("var:")) + ret;
   ret = std::regex_replace(ret, std::regex("(\n)"), "");
-  strTrace_ = ret;
   return ret;
 }
 
@@ -1963,9 +1525,10 @@ std::string OpTrace::FormatString(std::map<Trace *, size_t> *cache) {
   return s.str();
 }
 
-const InfoPack &OpTrace::Info() {
+void OpTrace::InitInfo() {
   if (info_ == nullptr) {
-    InfoPack info;
+    info_ = std::make_shared<InfoPack>();
+    InfoPack &info = *info_;
     info << uint8_t(curType_);
     info.Begin();
     info << opcode_;
@@ -1981,7 +1544,11 @@ const InfoPack &OpTrace::Info() {
       }
     }
     info.End();
-    info_ = std::make_shared<InfoPack>(info);
+  }
+}
+const InfoPack &OpTrace::Info() {
+  if (info_ == nullptr) {
+    InitInfo();
     info_->Update();
   }
   return *info_;
@@ -2031,8 +1598,7 @@ TracePtr OpTrace::RemovePrimOutIsTensorPass() {
       py::isinstance<mindspore::PrimitivePyAdapter>(param_op->GetObject())) {
     is_const_ = true;
     if (obj_ == nullptr) {
-      obj_ = Py_True;
-      Py_INCREF(obj_);
+      obj_ = py::reinterpret_borrow<py::object>(Py_True);
     }
     return shared_from_this();
   }
@@ -2475,13 +2041,12 @@ CustomizedTrace::CustomizedTrace(PyObject *obj, RetrieveFunc rfunc, ToStringFunc
   depth_ = 1;
 }
 
-PyObject *CustomizedTrace::Retrieve(PTraceContext context, bool perf) {
-  PyObject *ret = Trace::Retrieve(context, perf);
-  if (ret != nullptr) {
-    return ret;
+py::object CustomizedTrace::Retrieve(PTraceContext context, bool perf) {
+  if (retrieved_) {
+    return retrieve_cache_;
   }
   TracePerf tp(this, perf, false);
-  ret = retrieve_(context);
+  py::object ret = py::reinterpret_steal<py::object>(retrieve_(context));
   Cache(context, ret);
   return ret;
 }
@@ -2528,41 +2093,7 @@ UnsupportedTrace::UnsupportedTrace(PyObject *obj, TraceVector params, int op, in
   });
 }
 
-PyObject *UnsupportedTrace::Retrieve(PTraceContext context, bool perf) {
-  PyObject *ret = Trace::Retrieve(context, perf);
-  if (ret != nullptr) {
-    return ret;
-  }
-  std::vector<PyObject *> params;
-  bool fail = false;
-  for (auto p : params_) {
-    auto obj = p->Retrieve(context, perf);
-    params.push_back(obj);
-    if (p->GetTraceType() != TraceType::Unsupported) {
-      // compare obj with original obj in trace for inputs of unsupported trace
-      auto orig = p->GetObject();
-      if (!IsPyObjectEqual(obj, orig)) {
-        fail = true;
-        break;
-      }
-    }
-    if (params.back() == nullptr) {
-      MS_LOG(DEBUG) << "Guard Check Retrieve fail for " + p->ToString();
-      fail = true;
-      break;
-    }
-  }
-  TracePerf tp(this, perf, false);
-  for (auto p : params) {
-    Py_XDECREF(p);
-  }
-  if (fail) {
-    return nullptr;
-  } else {
-    Cache(context, obj_);
-    return obj_;
-  }
-}
+py::object UnsupportedTrace::Retrieve(PTraceContext context, bool perf) { return py::object(); }
 
 std::string UnsupportedTrace::ToString(bool include_param) {
   if (strTrace_.size() > 0) {
@@ -2644,13 +2175,15 @@ void UnsupportedTrace::Detach() {
 
 bool UnsupportedTrace::Support(TraceType tt) { return tt == TraceType::Unsupported; }
 
-PyObject *GetObjectFromTrace(PyFrameWrapper frame, TracePtr trace, std::map<size_t, PyObject *> *cache, bool perf) {
+py::object GetObjectFromTrace(PyFrameWrapper frame, TracePtr trace) {
   PyFrameWrapper w = frame;
-  TraceContext context = {w, w.GetCode(), w.Globals(), w.Builtins(), w.Locals(), cache};
+  TraceContext context = {w, w.GetCode(), w.Globals(), w.Builtins(), w.Locals()};
   if (trace != nullptr) {
-    return trace->Retrieve(&context, perf);
+    py::object ret = trace->Retrieve(&context, false);
+    return ret;
   }
-  return nullptr;
+  return {};
 }
+
 }  // namespace pijit
 }  // namespace mindspore

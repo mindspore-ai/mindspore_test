@@ -121,15 +121,38 @@ class OptCodeHub : public std::enable_shared_from_this<OptCodeHub> {
   virtual void DelOptTarget(OptOptionPtr option, OptCodePtr code);
   virtual void DelOptTarget(OptCodePtr code);
   virtual std::vector<OptCodeSet> GetAllOptTarget();
+
   static void Register(std::string key, OptCodePtr code);
   static OptCodePtr Filter(std::string key, OptCodeFilterFunc filter);
+
+  auto &guard_map() { return guard_map_; }
+  const auto &guard_map() const { return guard_map_; }
 
  protected:
   // use OptOption instead of OptOptionPtr ...
   std::map<OptOptionPtr, OptCodeSet, OptOption::Less> codeMap_;
+  std::map<size_t, GuardItemPtr> guard_map_;
 };
 
 using OptCodeHubPtr = std::shared_ptr<OptCodeHub>;
+
+class GuardContext {
+ public:
+  class Data {
+   public:
+    static Data *GetInstance();
+    auto &guard_cache() { return guard_cache_; }
+    auto &trace_cache() { return trace_cache_; }
+
+   private:
+    Data() = default;
+    std::vector<GuardItemPtr> guard_cache_;
+    std::vector<TracePtr> trace_cache_;
+  };
+
+  GuardContext() = default;
+  ~GuardContext();
+};
 
 class CodeCache {
  public:

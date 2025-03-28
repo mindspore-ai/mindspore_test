@@ -149,7 +149,8 @@ class ItemData {
 
   virtual const InfoPack &Info() {
     if (info_ == nullptr) {
-      InfoPack info;
+      info_ = std::make_shared<InfoPack>();
+      InfoPack &info = *info_;
       info << uint8_t(tp_);
       info.Begin();
       if (tp_ != ItemType::PyNull && tp_ != ItemType::PyUnknown) {
@@ -157,7 +158,6 @@ class ItemData {
       }
       SubInfo(&info);
       info.End();
-      info_ = std::make_shared<InfoPack>(info);
       info_->Update();
     }
     return *info_;
@@ -1130,12 +1130,18 @@ class NumpyData : public ItemData {
     for (size_t i = 0; i < shape_.size(); ++i) {
       numpy += DESC_INDEX_V(shape_, i) + DESC_INDEX_V(strides_, i);
     }
+    if (specialized_) {
+      numpy += ",data_ptr:" + std::to_string(reinterpret_cast<intptr_t>(buf_.get()));
+    }
     return DESC(numpy) + DESC_END;
   }
 
  protected:
   void SubInfo(InfoPack *info) override {
     (*info) << dtype_.kind() << size_ << itemsize_ << ndim_ << nbytes_ << shape_ << strides_;
+    if (specialized_) {  // hash numpy data
+      (*info) << static_cast<void *>(buf_.get());
+    }
   }
   py::dtype dtype_;
   uint64_t size_;
@@ -1662,6 +1668,9 @@ class TensorData : public MetaTensorData {
     for (size_t i = 0; i < quant_params_.size(); ++i) {
       ret += DESC_INDEX(quant_params_, i);
     }
+    if (specialized_) {
+      ret += ",data_ptr:" + std::to_string(reinterpret_cast<intptr_t>(data_ptr_.get()));
+    }
     return ret;
   }
   bool CheckTensorAndParam(const mindspore::tensor::TensorPtr &tensor_ptr) const {
@@ -1753,6 +1762,9 @@ class TensorData : public MetaTensorData {
     (*info) << uint64_t(quant_params_.size());
     for (auto qp : quant_params_) {
       (*info) << qp;
+    }
+    if (specialized_) {  // hash tensor data. use the real data ?
+      (*info) << static_cast<void *>(data_ptr_.get());
     }
   }
 
@@ -2121,11 +2133,19 @@ class TensorDataData : public ItemData {
 
   std::string ToString() override {
     std::string tensor_data = DESC_STRING(size_) + DESC_STRING(itemsize_) + DESC_STRING(nbytes_) + DESC_STRING(ndim_);
+    if (specialized_) {
+      tensor_data += ",data_ptr:" + std::to_string(reinterpret_cast<intptr_t>(data_ptr_.get()));
+    }
     return DESC(tensor_data) + DESC_END;
   }
 
  protected:
-  void SubInfo(InfoPack *info) override { (*info) << size_ << itemsize_ << nbytes_ << ndim_; }
+  void SubInfo(InfoPack *info) override {
+    (*info) << size_ << itemsize_ << nbytes_ << ndim_;
+    if (specialized_) {
+      (*info) << data_ptr_.get();
+    }
+  }
   std::unique_ptr<uint8_t[]> data_ptr_;
   uint64_t size_;
   uint64_t itemsize_;
@@ -2282,10 +2302,10 @@ class CellData : public ItemData {
   }
 
  protected:
-  void SubInfo(InfoPack *info) override { (*info) << static_cast<void *>(cell_) << training_ << requires_grad_; }
+  void SubInfo(InfoPack *info) override { (*info) << cell_ << training_ << requires_grad_; }
 
  private:
-  PyObject *cell_;
+  void *cell_;
   std::string type_;  // Only used in ToString(), no need to compare.
   bool training_ = false;
   bool requires_grad_ = false;
@@ -2294,13 +2314,11 @@ class CellData : public ItemData {
 class UnknownData : public ItemData {
  public:
   UnknownData(PyObject *obj, bool needSpecialize, int recurseDepth)
-      : ItemData(ItemType::PyUnknown, needSpecialize, recurseDepth) {
-    refId_ = obj;
-  }
+      : ItemData(ItemType::PyUnknown, needSpecialize, recurseDepth), refId_(py::reinterpret_borrow<py::object>(obj)) {}
 
   bool operator==(const ItemData &obj) const override {
     if (ItemData::operator==(obj)) {
-      return refId_ == (static_cast<const UnknownData &>(obj)).refId_;
+      return refId_.ptr() == (static_cast<const UnknownData &>(obj)).refId_.ptr();
     }
     return false;
   }
@@ -2308,12 +2326,14 @@ class UnknownData : public ItemData {
   bool operator==(PyObject *obj) const override { return refId_ == obj; }
 
   std::string ToString() override {
-    std::string ret = "unknown";
-    return ret + ItemData::ToString();
+    std::string ret = "unknown:";
+    return ret + std::to_string(reinterpret_cast<intptr_t>(refId_.ptr())) + ItemData::ToString();
   }
 
  protected:
-  PyObject *refId_;
+  void SubInfo(InfoPack *info) override { (*info_) << refId_.ptr(); }
+
+  py::object refId_;  // strong reference avoid memory address reuse
 };
 
 ListData::ListData(PyObject *obj, bool needSpecialize, int recurseDepth)
@@ -2426,7 +2446,8 @@ static ItemDataPtr CreateItem(PyObject *obj, bool need_specialize, int recurse_d
   return dp;
 }
 
-GuardItem::GuardItem(TracePtr tt) : var_(tt), type_(GIType::GTUnknown), info_(nullptr), fail_count_(0) {}
+GuardItem::GuardItem(TracePtr tt)
+    : var_(tt), type_(GIType::GTUnknown), info_(nullptr), fail_count_(0), perf_(false), checked_(false) {}
 
 void GuardItem::Replace(TracePtr dst, TracePtr src) {
   if (!var_) {
@@ -2459,30 +2480,20 @@ static constexpr int kGuardItemTotalStage = 2;
 static constexpr int kGuardItemRetrieveStage = 0;
 static constexpr int kGuardItemCompareStage = 1;
 
-static void GuardItemPerfStart(bool enable, int total) {
-  if (enable) {
-    OptGuardPerf::GetGuardPerf()->LogItemPerfStart(total);
-  }
-}
-
-static void GuardItemPerfStage(bool enable, GuardItem *item, int stage) {
-  if (enable) {
-    OptGuardPerf::GetGuardPerf()->LogItemPerfEnd(item, stage);
-  }
-}
-
 class EqGuard : public GuardItem {
  public:
   EqGuard(TracePtr obj, bool needSpecialize, int recurseDepth)
       : GuardItem(obj),
         dp_(CreateItem(obj->GetObject(), needSpecialize, recurseDepth)),
         specialized_(needSpecialize),
-        recurse_(recurseDepth) {
+        recurse_(recurseDepth),
+        last_(obj->obj()) {
     type_ = GIType::GTEqual;
-    last_ = obj->GetObject();
+
+    MS_EXCEPTION_IF_CHECK_FAIL(last_.ptr() != nullptr, "Equal guard got null python object");
   }
 
-  virtual bool Check(PyFrameWrapper frame, std::map<size_t, PyObject *> *cache, bool perf) {
+  bool Check(PyFrameWrapper frame) override {
     if (var_->IsConst()) {
       return true;
     }
@@ -2491,18 +2502,12 @@ class EqGuard : public GuardItem {
       // it just needs to guard inputs instead of leaf node
       return true;
     }
-    GuardItemPerfStart(perf, kGuardItemTotalStage);
-    PyObject *obj = GetObjectFromTrace(frame, var_, cache, perf);
-    GuardItemPerfStage(perf, this, kGuardItemRetrieveStage);
-    bool ret = Check(obj);
-    GuardItemPerfStage(perf, this, kGuardItemCompareStage);
-    if (obj != NULL) {
-      Py_DECREF(obj);
-    }
+    py::object obj = GetObjectFromTrace(frame, var_);
+    bool ret = Check(obj.ptr());
     return ret;
   }
 
-  virtual bool Check(PyObject *obj) {
+  bool Check(PyObject *obj) override {
     if (obj != nullptr && py::isinstance<mindspore::Cell>(obj)) {
       return obj == last_ && CheckData(obj);
     }
@@ -2525,12 +2530,12 @@ class EqGuard : public GuardItem {
 
   virtual const InfoPack &Info() {
     if (info_ == nullptr) {
-      InfoPack info;
+      info_ = std::make_shared<InfoPack>();
+      InfoPack &info = *info_;
       info << uint8_t(type_);
       info.Begin();
       info << var_->Info() << dp_->Info();
       info.End();
-      info_ = std::make_shared<InfoPack>(info);
       info_->Update();
     }
     return *info_;
@@ -2572,7 +2577,7 @@ class EqGuard : public GuardItem {
   ItemDataPtr dp_;
   bool specialized_;
   int recurse_;
-  PyObject *last_;
+  py::object last_;
 };
 
 class TypeGuard : public GuardItem {
@@ -2580,11 +2585,7 @@ class TypeGuard : public GuardItem {
   explicit TypeGuard(TracePtr obj) : GuardItem(obj) {
     type_ = GIType::GTType;
     is_const_ = false;
-    if (obj->GetTraceType() == TraceType::Type) {
-      refType_ = std::dynamic_pointer_cast<TypeTrace>(obj)->GetType();
-    } else {
-      refType_ = Py_TYPE(obj->GetObject());
-    }
+    refType_ = Py_TYPE(obj->GetObject());
     is_tensor_ = IsTensorOrStubTensor(refType_);
     if (obj->GetRelaxCount() > 0) {
       check_count_ = 0;
@@ -2593,18 +2594,12 @@ class TypeGuard : public GuardItem {
     }
   }
 
-  virtual bool Check(PyFrameWrapper frame, std::map<size_t, PyObject *> *cache, bool perf) {
+  bool Check(PyFrameWrapper frame) override {
     if (var_->IsConst() || is_const_) {
       return true;
     }
-    GuardItemPerfStart(perf, kGuardItemTotalStage);
-    PyObject *obj = GetObjectFromTrace(frame, var_, cache, perf);
-    GuardItemPerfStage(perf, this, kGuardItemRetrieveStage);
-    bool ret = Check(obj);
-    GuardItemPerfStage(perf, this, kGuardItemCompareStage);
-    if (var_->GetTraceType() != TraceType::Type && obj != NULL) {
-      Py_DECREF(obj);
-    }
+    py::object obj = GetObjectFromTrace(frame, var_);
+    bool ret = Check(obj.ptr());
     if (check_count_ >= 0) {
       if (!ret) {
         check_count_ = -1;
@@ -2618,7 +2613,7 @@ class TypeGuard : public GuardItem {
     return ret;
   }
 
-  virtual bool Check(PyObject *obj) {
+  bool Check(PyObject *obj) override {
     if (obj == NULL) {
       return false;
     }
@@ -2683,27 +2678,18 @@ class TypeGuard : public GuardItem {
 
 class IdGuard : public GuardItem {
  public:
-  explicit IdGuard(TracePtr obj) : GuardItem(obj) {
-    type_ = GIType::GTId;
-    refId_ = obj->GetObject();
-  }
+  explicit IdGuard(TracePtr obj) : GuardItem(obj), refId_(obj->obj()) { type_ = GIType::GTId; }
 
-  virtual bool Check(PyFrameWrapper frame, std::map<size_t, PyObject *> *cache, bool perf) {
+  bool Check(PyFrameWrapper frame) override {
     if (var_->IsConst()) {
       return true;
     }
-    GuardItemPerfStart(perf, kGuardItemTotalStage);
-    PyObject *obj = GetObjectFromTrace(frame, var_, cache, perf);
-    GuardItemPerfStage(perf, this, kGuardItemRetrieveStage);
-    bool ret = Check(obj);
-    GuardItemPerfStage(perf, this, kGuardItemCompareStage);
-    if (obj != NULL) {
-      Py_DECREF(obj);
-    }
+    py::object obj = GetObjectFromTrace(frame, var_);
+    bool ret = Check(obj.ptr());
     return ret;
   }
 
-  virtual bool Check(PyObject *obj) {
+  bool Check(PyObject *obj) override {
     bool ret = false;
     if (obj == NULL) {
       return ret;
@@ -2720,8 +2706,9 @@ class IdGuard : public GuardItem {
     if (strGuard_.size() > 0) {
       return strGuard_;
     }
-    strGuard_ = std::string("id(") + var_->ToString() + std::string(")==") + std::to_string((size_t)refId_);
-    strGuard_ = std::regex_replace(strGuard_, std::regex("(\n)"), "");
+    std::stringstream s;
+    s << "id(" << var_->ToString() << ")==" << refId_.ptr();
+    strGuard_ = s.str();
     return strGuard_;
   }
 
@@ -2730,7 +2717,7 @@ class IdGuard : public GuardItem {
       InfoPack info;
       info << uint8_t(type_);
       info.Begin();
-      info << var_->Info() << reinterpret_cast<void *>(refId_);
+      info << var_->Info() << reinterpret_cast<void *>(refId_.ptr());
       info.End();
       info_ = std::make_shared<InfoPack>(info);
       info_->Update();
@@ -2746,7 +2733,8 @@ class IdGuard : public GuardItem {
   }
 
  protected:
-  PyObject *refId_;
+  // strong reference avoid memory reused
+  py::object refId_;
 };
 
 class ReprGuard : public GuardItem {
@@ -2758,22 +2746,16 @@ class ReprGuard : public GuardItem {
 
   virtual ~ReprGuard() { Py_XDECREF(refRepr_); }
 
-  virtual bool Check(PyFrameWrapper frame, std::map<size_t, PyObject *> *cache, bool perf) {
+  bool Check(PyFrameWrapper frame) override {
     if (var_->IsConst()) {
       return true;
     }
-    GuardItemPerfStart(perf, kGuardItemTotalStage);
-    PyObject *obj = GetObjectFromTrace(frame, var_, cache, perf);
-    GuardItemPerfStage(perf, this, kGuardItemRetrieveStage);
-    bool ret = Check(obj);
-    GuardItemPerfStage(perf, this, kGuardItemCompareStage);
-    if (obj != nullptr) {
-      Py_DECREF(obj);
-    }
+    py::object obj = GetObjectFromTrace(frame, var_);
+    bool ret = Check(obj.ptr());
     return ret;
   }
 
-  virtual bool Check(PyObject *obj) {
+  bool Check(PyObject *obj) override {
     bool ret = false;
     if (obj == nullptr) {
       return ret;
@@ -2842,123 +2824,6 @@ class ReprGuard : public GuardItem {
   PyObject *refRepr_;
 };
 
-class AttrGuard : public GuardItem {
- public:
-  explicit AttrGuard(TracePtr pObj) : GuardItem(pObj) {
-    type_ = GIType::GTAttr;
-    AttrTracePtr t = std::dynamic_pointer_cast<AttrTrace>(pObj);
-    PyObject *obj = t->GetOrigin()->GetObject();
-    nameAttr_ = t->GetAttribute();
-    if (PyObject_HasAttrString(obj, nameAttr_.c_str()) != 0) {
-      hasAttr_ = true;
-    } else {
-      hasAttr_ = false;
-      bool is_dict = PyDict_CheckExact(obj);
-      PyObject *itemName = PyUnicode_FromString(nameAttr_.c_str());
-      PyObject *attr = NULL;
-      if (is_dict) {
-        attr = PyDict_GetItem(obj, itemName);
-        if (attr != NULL) {
-          Py_INCREF(attr);
-        }
-      } else if (PyMapping_Check(obj) || PySequence_Check(obj)) {
-        attr = PyObject_GetItem(obj, itemName);
-      }
-      hasAttr_ = attr != NULL;
-      Py_DECREF(itemName);
-      if (attr != NULL) {
-        Py_DECREF(attr);
-      }
-    }
-  }
-
-  ~AttrGuard() = default;
-
-  virtual bool Check(PyFrameWrapper frame, std::map<size_t, PyObject *> *cache, bool perf) {
-    if (var_->IsConst()) {
-      return true;
-    }
-    GuardItemPerfStart(perf, kGuardItemTotalStage);
-    PyObject *obj = GetObjectFromTrace(frame, var_, cache, perf);
-    GuardItemPerfStage(perf, this, kGuardItemRetrieveStage);
-    bool ret = CheckIntern(obj);
-    GuardItemPerfStage(perf, this, kGuardItemCompareStage);
-    if (obj != NULL) {
-      Py_DECREF(obj);
-    }
-    return ret;
-  }
-
-  virtual bool Check(PyObject *obj) {
-    bool ret;
-    if (PyObject_HasAttrString(obj, nameAttr_.c_str()) != 0) {
-      ret = hasAttr_;
-    } else {
-      bool is_dict = PyDict_CheckExact(obj);
-      PyObject *itemName = PyUnicode_FromString(nameAttr_.c_str());
-      PyObject *attr = NULL;
-      if (is_dict) {
-        attr = PyDict_GetItem(obj, itemName);
-        if (attr != NULL) {
-          Py_INCREF(attr);
-        }
-      } else if (PyMapping_Check(obj) || PySequence_Check(obj)) {
-        attr = PyObject_GetItem(obj, itemName);
-      }
-      ret = CheckIntern(attr);
-      Py_DECREF(itemName);
-      if (attr != NULL) {
-        Py_DECREF(attr);
-      }
-    }
-    return ret;
-  }
-
-  virtual bool CheckIntern(PyObject *obj) {
-    bool ret;
-    if ((obj == NULL && !hasAttr_) || (obj != NULL && hasAttr_)) {
-      ret = true;
-    } else {
-      ret = false;
-    }
-    return ret;
-  }
-
-  virtual std::string ToString() {
-    if (strGuard_.size() > 0) {
-      return strGuard_;
-    }
-    strGuard_ = std::string("exist(") + var_->ToString() + std::string(".") + nameAttr_ +
-                "==" + std::to_string(hasAttr_) + std::string(")");
-    strGuard_ = std::regex_replace(strGuard_, std::regex("(\n)"), "");
-    return strGuard_;
-  }
-
-  bool operator==(const GuardItem &obj) const override {
-    if (GuardItem::operator==(obj)) {
-      return hasAttr_ == (static_cast<const AttrGuard &>(obj)).hasAttr_ &&
-             nameAttr_ == (static_cast<const AttrGuard &>(obj)).nameAttr_;
-    }
-    return false;
-  }
-
- protected:
-  virtual const InfoPack &Info() {
-    if (info_ == nullptr) {
-      InfoPack info;
-      info << uint8_t(type_);
-      info.Begin();
-      info << var_->Info() << nameAttr_ << hasAttr_;
-      info.End();
-      info_ = std::make_shared<InfoPack>(info);
-      info_->Update();
-    }
-    return *info_;
-  }
-  bool hasAttr_;
-  std::string nameAttr_;
-};
-
 /* ======================================= MatchIDGuard ======================================= */
 
 class MatchIDGuard : public GuardItem {
@@ -2967,7 +2832,7 @@ class MatchIDGuard : public GuardItem {
     type_ = GIType::kMatchIDS;
     items_.push_back(tr);
   }
-  bool Check(PyFrameWrapper frame, std::map<size_t, PyObject *> *cache, bool perf) override;
+  bool Check(PyFrameWrapper frame) override;
   bool Check(PyObject *obj) override { return false; }
   std::string ToString() override;
   const InfoPack &Info() override;
@@ -2978,22 +2843,17 @@ class MatchIDGuard : public GuardItem {
   std::vector<TracePtr> items_;
 };
 
-bool MatchIDGuard::Check(PyFrameWrapper frame, std::map<size_t, PyObject *> *cache, bool perf) {
+bool MatchIDGuard::Check(PyFrameWrapper frame) {
   size_t index = 0;
   size_t items_size = items_.size();
 
-  GuardItemPerfStart(perf, kGuardItemTotalStage);
   // all items has same object id
-  PyObject *object_p = GetObjectFromTrace(frame, items_[index++], cache, perf);
-  void *expected = object_p;
-  Py_XDECREF(object_p);
-  for (; object_p != nullptr && object_p == expected && index < items_size; ++index) {
-    object_p = GetObjectFromTrace(frame, items_[index], cache, perf);
-    Py_XDECREF(object_p);
+  py::object object_p = GetObjectFromTrace(frame, items_[index++]);
+  void *expected = object_p.ptr();
+  for (; object_p.ptr() != nullptr && object_p.ptr() == expected && index < items_size; ++index) {
+    object_p = GetObjectFromTrace(frame, items_[index]);
   }
-  GuardItemPerfStage(perf, this, kGuardItemRetrieveStage);
-  bool ret = expected == object_p && index == items_size;
-  GuardItemPerfStage(perf, this, kGuardItemCompareStage);
+  bool ret = expected == object_p.ptr() && index == items_size;
   return ret;
 }
 
@@ -3053,14 +2913,6 @@ GuardItemPtr GuardType(TracePtr obj) { return std::make_shared<TypeGuard>(obj); 
 GuardItemPtr GuardId(TracePtr obj) { return std::make_shared<IdGuard>(obj); }
 
 GuardItemPtr GuardRepr(TracePtr obj) { return std::make_shared<ReprGuard>(obj); }
-
-GuardItemPtr GuardAttr(TracePtr obj) {
-  if (obj->GetTraceType() != TraceType::Attr) {
-    return nullptr;
-  } else {
-    return std::make_shared<AttrGuard>(obj);
-  }
-}
 
 bool IsPyObjectEqual(PyObject *src, PyObject *dst) {
   if (src == dst) {

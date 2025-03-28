@@ -44,8 +44,7 @@ class GuardItem : public std::enable_shared_from_this<GuardItem> {
  public:
   explicit GuardItem(TracePtr var);
   virtual ~GuardItem() = default;
-  virtual bool Check(PyFrameWrapper frame, std::map<size_t, PyObject *> *cache = nullptr,
-                     bool perf = false) = 0;
+  virtual bool Check(PyFrameWrapper frame) = 0;
   virtual bool Check(PyObject *obj) = 0;
   virtual std::string ToString() = 0;
   virtual const InfoPack &Info() = 0;
@@ -59,6 +58,9 @@ class GuardItem : public std::enable_shared_from_this<GuardItem> {
   virtual std::shared_ptr<GuardItem> This() { return shared_from_this(); }
   int fail_count() const { return fail_count_; }
   void set_faile_count(int c) { fail_count_ = c; }
+  void set_perf(bool perf) { perf_ = perf; }
+  void set_checked(bool check) { checked_ = check; }
+  bool checked() const { return checked_; }
 
  protected:
   TracePtr var_;
@@ -66,6 +68,8 @@ class GuardItem : public std::enable_shared_from_this<GuardItem> {
   InfoPackPtr info_;
   std::string strGuard_;
   int fail_count_;  // retrieve_count_ same as call count
+  bool perf_;
+  bool checked_;
 };
 using GuardItemPtr = std::shared_ptr<GuardItem>;
 
@@ -76,7 +80,6 @@ using GuardItemPtr = std::shared_ptr<GuardItem>;
 GuardItemPtr GuardEqual(TracePtr obj, bool needSpecialize = true, int recurseDepth = INT_MAX);
 GuardItemPtr GuardType(TracePtr obj);
 GuardItemPtr GuardId(TracePtr obj);
-GuardItemPtr GuardAttr(TracePtr obj);
 GuardItemPtr GuardRepr(TracePtr obj);
 GuardItemPtr GuardIDS(const TracePtr &tv, const GuardItemPtr &reused);
 bool IsPyObjectEqual(PyObject *src, PyObject *dst);
