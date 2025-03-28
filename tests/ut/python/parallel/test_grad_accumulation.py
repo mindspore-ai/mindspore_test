@@ -81,7 +81,7 @@ def test_grad_accumulation_base():
     model = Model(net, optimizer=optimizer)
     model.train(2, dataset, dataset_sink_mode=False)
 
-@pytest.mark.skip
+
 def test_grad_accumulation_auto_parallel():
     '''
     Feature: grad_accumulation base
@@ -102,7 +102,7 @@ def test_grad_accumulation_auto_parallel():
     model.train(2, dataset, dataset_sink_mode=False)
     assert True
 
-@pytest.mark.skip
+
 def test_grad_accumulation_with_auto_parallel_check():
     '''
     Feature: grad_accumulation base

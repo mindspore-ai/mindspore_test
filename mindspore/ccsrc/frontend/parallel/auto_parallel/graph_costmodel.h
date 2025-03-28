@@ -242,6 +242,8 @@ class CostGraph {
                      const StrategyPtr &curr_op_stra, int64_t curr_depth);
   void AddSwcUnderPrevOpDevMatrix(const OperatorInfoPtr &curr_op, const OperatorInfoPtr &next_op,
                                   const std::shared_ptr<Edge> &edge);
+  void AddSwcUnderNextOpDevMatrix(const OperatorInfoPtr &prev_op, const OperatorInfoPtr &curr_op,
+                                  const std::shared_ptr<Edge> &edge);
 
   bool CheckVisitedEdgeConsistency(const EdgePtr &edge) const;
   bool CheckConfiguredSuccEdgeConsistency(const EdgePtr &edge) const;
