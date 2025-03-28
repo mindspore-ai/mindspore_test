@@ -278,6 +278,7 @@ bool GetTensorFromForwardOutputParameter(const AnfNodePtr &input_node, std::vect
     MS_EXCEPTION_IF_NULL(parameter);
     if (parameter->has_user_data(kForwardOutput)) {
       auto value = parameter->user_data<Value>(kForwardOutput);
+      MS_EXCEPTION_IF_NULL(value);
       auto tensor = value->cast<tensor::TensorPtr>();
       MS_EXCEPTION_IF_NULL(tensor);
       (void)input_tensors->emplace_back(tensor);

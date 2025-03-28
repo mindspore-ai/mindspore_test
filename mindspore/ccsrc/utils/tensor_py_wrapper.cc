@@ -72,7 +72,7 @@ const MetaTensorPtr GetMetaTensorFromValue(const ValuePtr &value) {
     auto tensorpy = value->cast<TensorPyWrapperPtr>();
     auto tensorPyWrapper = tensorpy->GetTensorWrapper();
     PyObject *py_obj = tensorPyWrapper.ptr();
-    PyType<TensorPy> *tensor = (PyType<TensorPy> *)py_obj;
+    PyType<TensorPy> *tensor = reinterpret_cast<PyType<TensorPy> *>(py_obj);
     return (tensor->value.GetBaseTensor())->cast<MetaTensorPtr>();
   }
 

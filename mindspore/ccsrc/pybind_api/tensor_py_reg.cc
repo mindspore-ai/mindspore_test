@@ -1607,7 +1607,8 @@ static PyMethodDef Tensor_methods[] = {
                                    1
                                )mydelimiter"},
   {"_tolist", (PyCFunction)TensorPython_ToList, METH_VARARGS, R"mydelimiter(
-                                Convert a Tensor to List. If the input is Tensor scalar, a Python scalar will be returned.
+                                Convert a Tensor to List. If the input is Tensor scalar,
+                                a Python scalar will be returned.
 
                                 Returns:
                                     List or Python scalar.
