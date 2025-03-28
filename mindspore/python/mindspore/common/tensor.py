@@ -3683,6 +3683,12 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('sign')(self)
 
+    def sign_(self):
+        """
+        Tensor In-place version of sign(), for details, please refer to :func:`mindspore.mint.sign`.
+        """
+        return tensor_operator_registry.get('sign_')(self)
+
     def signbit(self):
         """
         For details, please refer to :func:`mindspore.ops.signbit`.
