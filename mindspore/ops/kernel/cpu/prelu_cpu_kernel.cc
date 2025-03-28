@@ -57,6 +57,7 @@ int PReluCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const s
   }
 
   input_length_ = std::accumulate(input_shape.begin(), input_shape.end(), size_t(1), std::multiplies<>());
+  MS_EXCEPTION_IF_ZERO("The input shape cannot be 0.", input_shape[kIndex0] * input_shape[kIndex1]);
   per_channel_length_ =
     input_shape.size() <= 1 ? input_length_ : input_length_ / (input_shape[kIndex0] * input_shape[kIndex1]);
   weight_length_ = weight_shape[0];
