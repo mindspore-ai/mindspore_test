@@ -489,3 +489,29 @@ def test_jit_grad_with_custom_bprop():
                           [4.2, 2.4, 6.6]]).astype(np.float32)
     assert np.allclose(output[0].asnumpy(), expect_dx)
     assert np.allclose(output[1].asnumpy(), expect_dy)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_grad_jit_output_list():
+    """
+    Feature: Gradjit with list output.
+    Description: Test grad jit scene with list output.
+    Expectation: Success.
+    """
+    class Net(nn.Cell):
+        @jit
+        def construct(self, x, y):
+            x = x+2
+            y = y+3
+            a = x*y
+            return (a, [a + x, a], (x, y))
+
+    def func(x, y, net):
+        return ops.value_and_grad(net, grad_position=1)(x, y)
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    x = Tensor([1])
+    y = Tensor([4])
+    net = Net()
+    value_grads = func(x, y, net)
+    assert isinstance(value_grads[0][1], list)
