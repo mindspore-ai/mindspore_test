@@ -196,7 +196,6 @@ def test_internal_exception_log_with_node_1():
     net = GradWrap(
         NetWithLoss(NetWithAdd2(bias, add_layout)))
     with pytest.raises(RuntimeError) as exec_info:
-        net.set_auto_parallel()
         compile_net(net, x)
     error_info = str(exec_info.value)
     index = error_info.find('self.add(y, self.bias)')
@@ -219,7 +218,6 @@ def test_internal_exception_log_with_node_2():
     indices = Tensor(np.array([[[0, 0], [1, 1]], [[0, 0], [1, 1]]]).astype(np.int32))
     update = Tensor(np.ones((2, 2, 3)).astype(np.float32))
     with pytest.raises(RuntimeError) as exec_info:
-        net.set_auto_parallel()
         compile_net(net, input_x, indices, update)
     error_info = str(exec_info.value)
     index = error_info.find('self.tensor_scatter_update(out, indices, update)')

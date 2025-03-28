@@ -43,16 +43,6 @@
         返回：
             Cell类型，Cell本身。
 
-    .. py:method:: auto_cast_inputs(inputs)
-
-        在混合精度下，自动对输入进行类型转换。
-
-        参数：
-            - **inputs** (tuple) - construct方法的输入。
-
-        返回：
-            Tuple类型，经过类型转换后的输入。
-
     .. py:method:: bprop_debug
         :property:
 
@@ -72,24 +62,11 @@
 
         将输入转换为指定类型。
 
-        参数：
-            - **inputs** (tuple[Tensor]) - 输入。
-            - **dst_type** (mindspore.dtype) - 指定的数据类型。
+        .. warning::
+            此接口将在后续版本中废弃。
 
         返回：
             tuple[Tensor]类型，转换类型后的结果。
-
-    .. py:method:: cast_param(param)
-
-        在PyNative模式下，根据自动混合精度的精度设置转换Cell中参数的类型。
-
-        该接口目前在自动混合精度场景下使用。
-
-        参数：
-            - **param** (Parameter) - 需要被转换类型的输入参数。
-
-        返回：
-            Parameter类型，转换类型后的参数。
 
     .. py:method:: cells()
 
@@ -264,19 +241,6 @@
 
         返回：
             Cell
-
-    .. py:method:: infer_param_pipeline_stage()
-
-        推导Cell中当前 `pipeline_stage` 的参数。
-
-        .. note::
-            - 这个接口在2.3版本废弃，并且会在未来版本移除。
-
-        返回：
-            属于当前 `pipeline_stage` 的参数。
-
-        异常：
-            - **RuntimeError** - 如果参数不属于任何stage。
 
     .. py:method:: init_parameters_data(auto_parallel_mode=False)
 
@@ -647,7 +611,8 @@
 
         删除冗余参数。
 
-        这个接口通常不需要显式调用。
+        .. warning::
+            此接口将在后续版本中废弃。
 
     .. py:method:: run_construct(cast_inputs, kwargs)
 

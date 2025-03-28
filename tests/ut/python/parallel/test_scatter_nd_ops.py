@@ -128,7 +128,6 @@ class Net4(nn.Cell):
 
 
 def compile_net(net, *inputs):
-    net.set_auto_parallel()
     net.set_train(False)
     phase, _ = _cell_graph_executor.compile(net, *inputs)
     context.reset_auto_parallel_context()

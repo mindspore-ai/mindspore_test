@@ -26,7 +26,6 @@ from parallel.utils.utils import check_layout_config
 from tests.ut.python.ops.test_math_ops import VirtualLoss
 
 def compile_net(net, input_x):
-    net.set_auto_parallel()
     net.set_train()
     phase, _ = _cell_graph_executor.compile(net, input_x)
     return phase

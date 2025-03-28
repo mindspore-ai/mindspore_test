@@ -1963,7 +1963,7 @@ class _CellGraphExecutor:
             _clear_auto_parallel_context(obj)
             return phase, False
 
-        full_function_name = obj.__class__.__name__ + '.' + str(obj.instance_count) + '.' + str(id(type(obj)))
+        full_function_name = obj.__class__.__name__ + '.' + str(obj.total_instance_count) + '.' + str(id(type(obj)))
         echo_function_name = obj.__class__.__name__
         _check_recompile(obj, args, kwargs, full_function_name, obj.create_time, echo_function_name)
 
