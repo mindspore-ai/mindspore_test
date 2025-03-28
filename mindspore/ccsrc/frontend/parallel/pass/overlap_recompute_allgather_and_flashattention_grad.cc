@@ -198,14 +198,14 @@ void OverlapRecomputeAllGatherAndFlashAttentionGrad(const FuncGraphPtr &graph) {
   if (soc_version != "ascend910" && soc_version != "ascend910b" && soc_version != "ascend910_93") {
     return;
   }
+  auto is_enable = ms_context->get_param<bool>(MS_CTX_RECOMPUTE_ALLGATHER_OVERLAP_FAGRAD);
+  if (!is_enable) {
+    return;
+  }
   const auto cell_reuse = ms_context->CellReuseLevel() != CellReuseLevel::kNoCellReuse;
   if (!cell_reuse) {
     MS_LOG(WARNING)
       << "Currently, duplicated allgather overlap with flashattention grad only support in lazy_line mode.";
-    return;
-  }
-  auto is_enable = ms_context->get_param<bool>(MS_CTX_RECOMPUTE_ALLGATHER_OVERLAP_FAGRAD);
-  if (!is_enable) {
     return;
   }
   auto manager = graph->manager();
