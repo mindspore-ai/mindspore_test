@@ -576,7 +576,7 @@ void DataPrepareActor::PrepareDataBeforeInputOptimize(const std::vector<std::vec
   // Input optimize performance is not good for inference, so weights only prepare once. However, for offload,
   // memory of device address for tensor in heterogeneous is not free.
   // This will be removed after input optimize performance improved.
-  if (first_step_ || (is_enable_infer_boost_ && !tensors_need_reprepare_.empty())) {
+  if (first_step_ || (is_enable_infer_boost_ && !tensors_need_reprepare_[this].empty())) {
     PrepareDataForDeviceTensorStore(input_tensors, args, context);
     tensors_need_reprepare_[this].clear();
   }
