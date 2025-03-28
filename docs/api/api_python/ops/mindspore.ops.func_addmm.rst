@@ -3,22 +3,22 @@
 
 .. py:function:: mindspore.ops.addmm(input, mat1, mat2, *, beta=1, alpha=1)
 
-    对 `mat1` 和 `mat2` 应用矩阵乘法，然后将结果与矩阵 `input` 相加。 `alpha` 是 `mat1` 和 `mat2` 矩阵乘法的乘数，`beta` 是 `input` 的乘数。如果 `beta` 为0，那么 `input` 将会被忽略。
+    对 `mat1` 和 `mat2` 矩阵乘，再将结果与 `input` 相加。
+    
+    .. note::
+        - 若 `beta` 为0，那么 `input` 将会被忽略。
 
     .. math::
         output = \beta input + \alpha (mat1 @ mat2)
 
     参数：
-        - **input** (Tensor) - 被添加的Tensor。
-        - **mat1** (Tensor) - 矩阵乘法中的第一个Tensor。
-        - **mat2** (Tensor) - 矩阵乘法中的第二个Tensor。
+        - **input** (Tensor) - 输入tensor。
+        - **mat1** (Tensor) - 第一个矩阵。
+        - **mat2** (Tensor) - 第二个矩阵。
 
     关键字参数：
-        - **beta** (Union[int, float]，可选) - `input` 的乘数。默认值： ``1`` 。
-        - **alpha** (Union[int, float]，可选) - `mat1` @ `mat2` 的乘数。默认值： ``1`` 。
+        - **beta** (Union[int, float]，可选) - `input` 的尺度因子。默认 ``1`` 。
+        - **alpha** (Union[int, float]，可选) - （ `mat1` @ `mat2` ）的尺度因子。默认 ``1`` 。
 
     返回：
-        Tensor，和 `input` 具有相同的dtype。
-
-    异常：
-        - **ValueError** - 如果 `mat1` 和 `mat2` 不能进行矩阵乘法。
+        Tensor
