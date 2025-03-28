@@ -3401,40 +3401,31 @@ def is_complex(input):
 
 def fmax(input, other):
     r"""
-    Computes the maximum of input tensors element-wise.
+    Compute the maximum of input tensors element-wise.
 
     .. math::
         output_i = \max(x1_i, x2_i)
 
     Note:
-        - Inputs of `input` and `other` comply with the implicit type conversion rules to make the data types
-          consistent.
+        - Support implicit type conversion and type promotion.
         - Shapes of `input` and `other` should be able to broadcast.
         - If one of the elements to be compared is NaN, another element is returned.
 
     Args:
-        input (Tensor): The first tensor. The supported dtypes are: float16, float32, float64, int32, int64.
-        other (Tensor): The second tensor. The supported dtypes are: float16, float32, float64, int32, int64.
+        input (Tensor): The first input.
+        other (Tensor): The second input.
 
     Returns:
-        A Tensor, the shape is the same as the one after broadcasting,
-        and the data type is the one with higher precision or higher digits among the two inputs.
-
-    Raises:
-        TypeError: If `input` or `other` is not Tensor.
-        TypeError: If dtype of `input` or `other` is not one of: float16, float32, float64, int32, int64.
-        ValueError: If the shape of  `input` and `other` can not broadcast.
+        Tensor
 
     Supported Platforms:
         ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x1 = Tensor(np.array([1.0, 5.0, 3.0]), mindspore.float32)
-        >>> x2 = Tensor(np.array([4.0, 2.0, 6.0]), mindspore.float32)
-        >>> output = ops.fmax(x1, x2)
+        >>> x1 = mindspore.tensor([1.0, 5.0, 3.0], mindspore.float32)
+        >>> x2 = mindspore.tensor([4.0, 2.0, 6.0], mindspore.float32)
+        >>> output = mindspore.ops.fmax(x1, x2)
         >>> print(output)
         [4. 5. 6.]
     """
@@ -11650,58 +11641,50 @@ def _check_validate_keepdims(keep_dims, name):
 
 def count_nonzero(x, axis=(), keep_dims=False, dtype=mstype.int32):
     r"""
-    Count number of nonzero elements across axis of input tensor.
+    Counts the number of non-zero values in the input tensor along the given axis.
+    If no axis is specified then all non-zeros in the tensor are counted.
 
     Args:
-        x (Tensor): Input data is used to count non-zero numbers. With shape
-            :math:`(*)` where :math:`*` means, any number of additional dimensions.
-        axis (Union[int, tuple(int), list(int)], optional): The dimensions to reduce.
-            Default: ``()`` , reduce all dimensions.
+        x (Tensor): The input tensor.
+        axis (Union[int, tuple(int), list(int)], optional): Specify the axis for computation.
+            Default ``()`` , which counts all non-zero elements.
         keep_dims (bool, optional): Whether to maintain dimensions specified by `axis`.
-            If true, keep these reduced dimensions and the length is 1.
-            If false, don't keep these dimensions. Default: ``False`` .
-        dtype (Union[Number, mindspore.bool\_], optional): The data type of the output tensor.
-            Default: ``mstype.int32`` .
+            Default ``False`` , don't keep these dimensions.
+        dtype (Union[Number, mindspore.bool\_], optional): The data type returned.
+            Default ``mstype.int32`` .
 
 
     Returns:
-          Tensor, number of nonzero element across axis specified by `axis`.
-          The data type is specified by `dtype`.
-
-    Raises:
-        TypeError: If `axis` is not int, tuple or list.
-        ValueError: If any value in `axis` is not in range [-x.ndim, x.ndim).
+          Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> from mindspore import Tensor, ops
-        >>> import numpy as np
         >>> import mindspore
         >>> # case 1: each value specified.
-        >>> x = Tensor(np.array([[0, 1, 0], [1, 1, 0]]).astype(np.float32))
-        >>> nonzero_num = ops.count_nonzero(x=x, axis=[0, 1], keep_dims=True, dtype=mindspore.int32)
+        >>> x = mindspore.tensor([[0, 1, 0], [1, 1, 0]], mindspore.float32)
+        >>> nonzero_num = mindspore.ops.count_nonzero(x=x, axis=[0, 1], keep_dims=True, dtype=mindspore.int32)
         >>> print(nonzero_num)
         [[3]]
         >>> # case 2: all value is default.
-        >>> nonzero_num = ops.count_nonzero(x=x)
+        >>> nonzero_num = mindspore.ops.count_nonzero(x=x)
         >>> print(nonzero_num)
         3
         >>> # case 3: axis value was specified 0.
-        >>> nonzero_num = ops.count_nonzero(x=x, axis=[0,])
+        >>> nonzero_num = mindspore.ops.count_nonzero(x=x, axis=[0,])
         >>> print(nonzero_num)
         [1 2 0]
         >>> # case 4: axis value was specified 1.
-        >>> nonzero_num = ops.count_nonzero(x=x, axis=[1,])
+        >>> nonzero_num = mindspore.ops.count_nonzero(x=x, axis=[1,])
         >>> print(nonzero_num)
         [1 2]
         >>> # case 5: keep_dims value was specified.
-        >>> nonzero_num = ops.count_nonzero(x=x,  keep_dims=True)
+        >>> nonzero_num = mindspore.ops.count_nonzero(x=x,  keep_dims=True)
         >>> print(nonzero_num)
         [[3]]
         >>> # case 6: keep_dims and axis value was specified.
-        >>> nonzero_num = ops.count_nonzero(x=x, axis=[0,], keep_dims=True)
+        >>> nonzero_num = mindspore.ops.count_nonzero(x=x, axis=[0,], keep_dims=True)
         >>> print(nonzero_num)
         [[1 2 0]]
     """

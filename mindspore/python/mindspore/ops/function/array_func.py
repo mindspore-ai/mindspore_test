@@ -979,34 +979,26 @@ def full_like_ext(input, fill_value, *, dtype=None):
 
 def chunk(input, chunks, axis=0):
     """
-    Cut the input Tensor into `chunks` sub-tensors along the specified axis.
+    Split the input tensor into multiple sub-tensors along the specified axis.
 
     Note:
         This function may return less than the specified number of chunks!
 
     Args:
-        input (Tensor): A Tensor to be cut.
-        chunks (int): Number of sub-tensors to cut.
-        axis (int, optional): Specify the dimensions that you want to split. Default: ``0`` .
+        input (Tensor): A tensor to be split.
+        chunks (int): The number of splits.
+        axis (int, optional): The axis along which to split. Default ``0`` .
 
     Returns:
-        A tuple of sub-tensors.
-
-    Raises:
-        TypeError: If argument `input` is not Tensor.
-        TypeError: The sum of `chunks` is not int.
-        TypeError: If argument `axis` is not int.
-        ValueError: If argument `axis` is out of range of :math:`[-input.ndim, input.ndim)` .
-        ValueError: If argument `chunks` is not positive number.
+        Tuple of tensors.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import ops, Tensor
-        >>> input_x = np.arange(9).astype("float32")
-        >>> output = ops.chunk(Tensor(input_x), 3)
+        >>> import mindspore
+        >>> input = mindspore.ops.arange(0, 9, dtype=mindspore.float32)
+        >>> output = mindspore.ops.chunk(input, 3)
         >>> print(output)
         (Tensor(shape=[3], dtype=Float32, value= [ 0.00000000e+00,  1.00000000e+00,  2.00000000e+00]),
          Tensor(shape=[3], dtype=Float32, value= [ 3.00000000e+00,  4.00000000e+00,  5.00000000e+00]),
@@ -1669,23 +1661,18 @@ def dyn_shape(input_x):
     Returns the shape of the input tensor.
 
     Args:
-        input_x (Tensor): The input Tensor.
+        input_x (Tensor): The input tensor.
 
     Returns:
-        Tensor, the shape of `input_x` .
-
-    Raises:
-        TypeError: If `input_x` is not a Tensor.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input_x = Tensor(np.ones(shape=[3, 2, 1]), mindspore.float32)
-        >>> output = ops.dyn_shape(input_x)
+        >>> input_x = mindspore.tensor(mindspore.ops.ones(shape=[3, 2, 1]), mindspore.float32)
+        >>> output = mindspore.ops.dyn_shape(input_x)
         >>> print(output)
         [3 2 1]
     """
@@ -6002,29 +5989,23 @@ def argwhere(input):
 
 def column_stack(tensors):
     """
-    Stacks 1-D tensors as columns into a 2-D tensor. Tensors of other dimension are stacked as-is,
-    like :func:`mindspore.ops.hstack`.
+    Creates a new tensor by horizontally stacking the tensors in `tensors`.
+    Similar to :func:`mindspore.ops.hstack`.
 
     Args:
-        tensors (Union[tuple[Tensor], list[Tensor]]): A tuple or list containing multiple Tensors. All
-            of them must have the same shape except the axis to be concatenated.
+        tensors (Union[tuple[Tensor], list[Tensor]]): The tensors to be concatenated.
 
     Returns:
-        2-D Tensor, formed by stacking the given tensors.
-
-    Raises:
-        TypeError: If `tensors` is not list or tuple.
-        TypeError: If element in `tensors` is not Tensor.
-        ValueError: If `tensors` is empty.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> from mindspore import Tensor, ops
-        >>> x1 = Tensor([1, 1, 1])
-        >>> x2 = Tensor([2, 2, 2])
-        >>> output = ops.column_stack((x1, x2))
+        >>> import mindspore
+        >>> x1 = mindspore.tensor([1, 1, 1])
+        >>> x2 = mindspore.tensor([2, 2, 2])
+        >>> output = mindspore.ops.column_stack((x1, x2))
         >>> print(output)
         [[1 2]
          [1 2]
