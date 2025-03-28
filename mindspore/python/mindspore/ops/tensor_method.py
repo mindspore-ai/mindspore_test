@@ -792,6 +792,10 @@ def tensor_less(input, other):
     return F.less(input, other)
 
 
+def deprecated_tensor_less(input, other):
+    return F.less(input, other)
+
+
 # 54 less_equal
 
 # 55 log
@@ -822,7 +826,8 @@ def tensor_logical_or(input, other):
 # 60 long
 
 # 61 lt
-
+def tensor_lt_(input, other):
+    raise ValueError("should not come here for le_ method.")
 # 62 masked_fill
 
 # 63 masked_select

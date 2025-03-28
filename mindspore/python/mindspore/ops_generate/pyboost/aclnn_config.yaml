@@ -121,7 +121,7 @@ ArgSort: 'aclnnArgsort'
 # 11
 GeluExt: 'aclnnGeluV2'
 # 12
-
+LessScalar: "aclnnLtScalar"
 # 13
 
 # 14

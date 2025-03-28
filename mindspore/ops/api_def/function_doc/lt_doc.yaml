@@ -1,0 +1,5 @@
+lt:
+  description: |
+    lt(input, other) -> Tensor
+
+    Alias for :func:`mindspore.mint.less`.

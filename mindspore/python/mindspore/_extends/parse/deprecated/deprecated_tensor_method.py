@@ -123,7 +123,7 @@ deprecated_tensor_method_map = {
     # 52 le
 
     # 53 less
-
+    "less": "deprecated_tensor_less",
     # 54 less_equal
 
     # 55 log
