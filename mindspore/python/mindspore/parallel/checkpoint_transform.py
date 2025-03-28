@@ -839,6 +839,9 @@ def load_segmented_checkpoints(ckpt_file_dir, net=None, strict_load=False, filte
         then the return value obtained by loading checkpoint is string, and in other cases the return value is
         Parameter.
 
+    Supported Platforms:
+        ``Ascend``
+
     Raises:
         TypeError: Input ckpt_file_dir is not a string.
         ValueError: Checkpoint file directory doesn't exist. Or it's not a directory
@@ -977,7 +980,7 @@ def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_stra
         ValueError: Failed to load checkpoint into net.
 
     Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
+        ``Ascend``
 
     Examples:
         .. note::
