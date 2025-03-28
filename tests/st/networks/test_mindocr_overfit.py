@@ -204,7 +204,7 @@ def main_test_process(args, cfg):
     return loss_start, loss_end, average_step_time, time_compile
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_db_r50_1p():
     """
     Feature: MindOCR dbnet-resnet50 1p test
