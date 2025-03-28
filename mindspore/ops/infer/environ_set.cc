@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,16 +53,21 @@ class OPS_API EnvironSetInfer : public abstract::OpInferBase {
     // args: Three objects of a subclass of AbstractBase, env, key, value.
     CheckArgsSize(primitive->name(), input_args, kSize3);
 
-    auto key = input_args[kIndex1];
-    ValuePtr key_value_ptr = key->GetValueTrack();
-    MS_EXCEPTION_IF_NULL(key_value_ptr);
-    auto key_value_track = key_value_ptr->cast<SymbolicKeyInstancePtr>();
-    if (key_value_track == nullptr) {
-      MS_LOG(EXCEPTION) << "EnvironSet evaluator args[1] expected should be able to cast to SymbolicKeyInstancePtrbut: "
-                        << key_value_ptr->ToString();
+    const auto &key = input_args[kIndex1];
+    // After the EnvironConversion pass is processed, the abstract of the key will become a Tensor.
+    // So the key must be SymbolicKey or Tensor.
+    if (!key->isa<abstract::AbstractTensor>()) {
+      ValuePtr key_value_ptr = key->GetValueTrack();
+      MS_EXCEPTION_IF_NULL(key_value_ptr);
+      auto key_value_track = key_value_ptr->cast<SymbolicKeyInstancePtr>();
+      if (key_value_track == nullptr) {
+        MS_LOG(EXCEPTION) << "EnvironSet evaluator args[1] expected should be able to cast to SymbolicKeyInstancePtr"
+                             " or Tensor, but: "
+                          << key_value_ptr->ToString();
+      }
+      auto expected = key_value_track->abstract();
+      MS_EXCEPTION_IF_NULL(expected);
     }
-    auto expected = key_value_track->abstract();
-    MS_EXCEPTION_IF_NULL(expected);
 
     auto value = input_args[kIndex2];
     MS_LOG(DEBUG) << "key: " << key->ToString() << ", value: " << value->ToString();
