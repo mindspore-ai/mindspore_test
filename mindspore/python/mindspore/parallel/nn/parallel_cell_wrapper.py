@@ -37,7 +37,7 @@ class PipelineCell(Cell):
         stage_config (dict, optional): The stage configuration for each cell's execution in pipeline parallel.
 
     Supported Platforms:
-        ``Ascend`` ``GPU``
+        ``Ascend``
 
     Examples:
         >>> import mindspore.nn as nn
@@ -127,7 +127,7 @@ class Pipeline(PipelineCell):
         stage_config (dict): The stage configuration for each cell's execution in pipeline parallel.
 
     Supported Platforms:
-        ``Ascend`` ``GPU``
+        ``Ascend``
 
     Examples:
         >>> from mindspore.parallel.nn import Pipeline
@@ -156,7 +156,7 @@ class MicroBatchInterleaved(Cell):
         The wrapped input. The output of the input `network` should be a Tensor.
 
     Supported Platforms:
-        ``Ascend`` ``GPU``
+        ``Ascend``
 
     Examples:
         >>> import mindspore.nn as nn
@@ -201,7 +201,7 @@ class GradAccumulation(Cell):
         micro_size (int): MicroBatch size.
 
     Supported Platforms:
-        ``Ascend`` ``GPU``
+        ``Ascend``
 
     Examples:
         >>> from mindspore.parallel.nn import GradAccumulation
