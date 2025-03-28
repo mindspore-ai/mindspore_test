@@ -38,9 +38,15 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "pipeline/jit/ps/parse/function_block.h"
+#include "pipeline/jit/ps/parse/data_converter.h"
 
 namespace py = pybind11;
 namespace mindspore {
+constexpr size_t kPrimResultIndex = 0;
+constexpr size_t kFileNameIndex = 1;
+constexpr size_t kLineNumberIndex = 2;
+constexpr size_t kArgsIndex = 3;
 namespace trace {
 namespace {
 abstract::AbstractBasePtr GetAbstract(const py::object &obj) {
@@ -119,7 +125,7 @@ DebugInfoPtr GenerateDebugInfos(const py::list &file_names, const py::list &line
   return debug_info;
 }
 
-AnfNodePtr GetInt(const py::object &obj, bool set_abstract) {
+AnfNodePtr GetInt(const py::object &obj, const DebugInfoPtr &, bool set_abstract) {
   MS_LOG(DEBUG) << "Constant int64_t: " << py::str(obj);
   const auto &value_node = NewValueNode(py::cast<int64_t>(obj));
   if (set_abstract) {
@@ -128,7 +134,7 @@ AnfNodePtr GetInt(const py::object &obj, bool set_abstract) {
   return value_node;
 }
 
-AnfNodePtr GetFloat(py::object obj, bool set_abstract) {
+AnfNodePtr GetFloat(const py::object &obj, const DebugInfoPtr &, bool set_abstract) {
   MS_LOG(DEBUG) << "Constant float: " << py::str(obj);
   auto data = py::cast<float>(obj);
   const auto &value_node = NewValueNode(data);
@@ -143,7 +149,7 @@ AnfNodePtr GetFloat(py::object obj, bool set_abstract) {
   return value_node;
 }
 
-AnfNodePtr GetStr(py::object obj, bool set_abstract) {
+AnfNodePtr GetStr(const py::object &obj, const DebugInfoPtr &, bool set_abstract) {
   MS_LOG(DEBUG) << "Constant str: " << py::str(obj);
   const auto &value_node = NewValueNode(py::cast<std::string>(obj));
   if (set_abstract) {
@@ -152,7 +158,7 @@ AnfNodePtr GetStr(py::object obj, bool set_abstract) {
   return value_node;
 }
 
-AnfNodePtr GetNone(py::object obj, bool set_abstract) {
+AnfNodePtr GetNone(const py::object &obj, const DebugInfoPtr &, bool set_abstract) {
   MS_LOG(DEBUG) << "Constant none: " << py::str(obj);
   const auto &value_node = NewValueNode(kNone);
   if (set_abstract) {
@@ -161,7 +167,7 @@ AnfNodePtr GetNone(py::object obj, bool set_abstract) {
   return value_node;
 }
 
-AnfNodePtr GetEllipsis(py::object obj, bool set_abstract) {
+AnfNodePtr GetEllipsis(const py::object &obj, const DebugInfoPtr &, bool set_abstract) {
   MS_LOG(DEBUG) << "Constance ellipsis: " << py::str(obj);
   const auto &value_node = NewValueNode(kEllipsis);
   if (set_abstract) {
@@ -170,7 +176,7 @@ AnfNodePtr GetEllipsis(py::object obj, bool set_abstract) {
   return value_node;
 }
 
-AnfNodePtr GetType(py::object obj, bool set_abstract) {
+AnfNodePtr GetType(const py::object &obj, const DebugInfoPtr &, bool set_abstract) {
   MS_LOG(DEBUG) << "Constance type: " << py::str(obj);
   const auto &type_node = NewValueNode(obj.cast<TypePtr>());
   if (set_abstract) {
@@ -178,7 +184,81 @@ AnfNodePtr GetType(py::object obj, bool set_abstract) {
   }
   return type_node;
 }
+
+AnfNodePtr GetBool(const py::object &obj, const DebugInfoPtr &, bool set_abstract) {
+  MS_LOG(DEBUG) << "Constant bool: " << py::str(obj);
+  const auto &value_node = NewValueNode(py::cast<bool>(obj));
+  if (set_abstract) {
+    value_node->set_abstract(GetAbstract(obj));
+  }
+  return value_node;
+}
+
+AnfNodePtr GetSlice(const py::object &obj, const DebugInfoPtr &, bool set_abstract) {
+  MS_LOG(DEBUG) << "Constant slice: " << py::str(obj);
+  const auto &value_node = NewValueNode(parse::ConvertSlice(obj));
+  if (set_abstract) {
+    value_node->set_abstract(GetAbstract(obj));
+  }
+  return value_node;
+}
+
+// Convert the data according to instance type
+using InstanceCheckFunc = std::function<bool(const py::object &)>;
+using InstanceConvertFunc = std::function<AnfNodePtr(const py::object &, const DebugInfoPtr &, bool)>;
+class DataConvertFunc {
+ public:
+  explicit DataConvertFunc(InstanceConvertFunc convert_func) : convert_func_(std::move(convert_func)) {}
+
+  virtual ~DataConvertFunc() = default;
+
+  virtual bool Matched(const py::object &obj) = 0;
+
+  AnfNodePtr GetConstNode(const py::object &obj, const DebugInfoPtr &debug_info, bool set_abstract) {
+    if (convert_func_ == nullptr) {
+      MS_LOG(INTERNAL_EXCEPTION) << "convert func is null";
+    }
+    return convert_func_(obj, debug_info, set_abstract);
+  }
+
+ private:
+  InstanceConvertFunc convert_func_ = nullptr;
+};
+
+// Convert the data according to instance type
+template <typename T>
+class ByTypeDataConvertFunc : public DataConvertFunc {
+ public:
+  explicit ByTypeDataConvertFunc(const InstanceConvertFunc &convert_func)
+      : DataConvertFunc(convert_func), check_func_(py::isinstance<T>) {}
+
+  ~ByTypeDataConvertFunc() override = default;
+
+  bool Matched(const py::object &obj) override { return check_func_ != nullptr ? check_func_(obj) : false; }
+
+ private:
+  InstanceCheckFunc check_func_ = nullptr;
+};
+
+using DataConvertFuncPtr = std::shared_ptr<DataConvertFunc>;
+
+static const std::vector<DataConvertFuncPtr> &GetDataConvertFuncs() {
+  // Convert data by python object type.
+  static const std::vector<DataConvertFuncPtr> data_convert_funcs{
+    std::make_shared<ByTypeDataConvertFunc<py::bool_>>(GetBool),
+    std::make_shared<ByTypeDataConvertFunc<py::int_>>(GetInt),
+    std::make_shared<ByTypeDataConvertFunc<py::float_>>(GetFloat),
+    std::make_shared<ByTypeDataConvertFunc<py::str>>(GetStr),
+    std::make_shared<ByTypeDataConvertFunc<py::none>>(GetNone),
+    std::make_shared<ByTypeDataConvertFunc<py::ellipsis>>(GetEllipsis),
+    std::make_shared<ByTypeDataConvertFunc<py::slice>>(GetSlice),
+    std::make_shared<ByTypeDataConvertFunc<Type>>(GetType),
+  };
+  return data_convert_funcs;
+}
 }  // namespace
+
+py::object DefaultOutput() { return PackTensorToPyObject(std::make_shared<mindspore::tensor::Tensor>(0.0)); }
 
 void Capture(const py::args &args, py::object *res) {
   if (!IsTracing()) {
@@ -187,26 +267,45 @@ void Capture(const py::args &args, py::object *res) {
   *res = CaptureRun(py::args(py::tuple(args[1])), *res, args[0]);
 }
 
-void Capture(const py::list &args, const std::string &class_name, py::object *res) {
+void Capture(const py::list &args, const PrimitivePtr &prim, py::object *res) {
   if (!IsTracing()) {
     return;
   }
-  static std::string ops_module_name = "mindspore.ops";
-  static std::string auto_gen_module_name = "mindspore.ops.auto_generate";
-  py::module ops_mod = py::module::import(ops_module_name.c_str());
-  py::module auto_gen_mod = py::module::import(auto_gen_module_name.c_str());
-  py::object prim_py;
-  if (py::hasattr(ops_mod, class_name.c_str())) {
-    prim_py = python_adapter::CallPyFn(ops_module_name, class_name);
-  } else if (py::hasattr(auto_gen_mod, class_name.c_str())) {
-    prim_py = python_adapter::CallPyFn(auto_gen_module_name, class_name);
-  } else {
-    MS_LOG(EXCEPTION) << "Cannot find primitive for op: " << class_name;
-  }
-  *res = CaptureRun(py::args(py::tuple(args)), *res, prim_py);
+  auto jit_context = python_adapter::CallPyFn("mindspore.common.jit_context", "jit_context");
+  std::string method = "prepare_op";
+  py::tuple op_info = jit_context.attr(method.c_str())(prim->name(), res, *args);
+  const py::object &prim_res = op_info[kPrimResultIndex];
+  const py::list &file_names = op_info[kFileNameIndex];
+  const py::list &linenos = op_info[kLineNumberIndex];
+  const py::tuple &inputs = op_info[kArgsIndex];
+  const auto debug_info = GenerateDebugInfos(file_names, linenos);
+  trace::TraceRecorder::GetInstance()->ProcessNewNode(prim, prim_res, debug_info, py::args(inputs), false);
+  *res = prim_res;
 }
 
-void Capture(const std::vector<py::object> &args_vec, const std::string &class_name, py::object *res) {
+void CaptureResolveOperation(const py::tuple &args, const std::string &named_primitive, py::object *res) {
+  if (!IsTracing()) {
+    return;
+  }
+  auto jit_context = python_adapter::CallPyFn("mindspore.common.jit_context", "jit_context");
+  std::string method = "prepare_op";
+  py::tuple op_info = jit_context.attr(method.c_str())(named_primitive, res, *args);
+  const py::object &prim_res = op_info[kPrimResultIndex];
+  const py::list &file_names = op_info[kFileNameIndex];
+  const py::list &linenos = op_info[kLineNumberIndex];
+  const py::tuple &inputs = op_info[kArgsIndex];
+  auto trope =
+    python_adapter::GetPyObjAttr(python_adapter::GetPyModule("mindspore._extends.parse.resources"), "trope_ns");
+  parse::NameSpacePtr name_space = std::make_shared<parse::NameSpace>("CommonOPS", trope);
+  parse::SymbolPtr symbol = std::make_shared<parse::Symbol>(named_primitive);
+  MS_LOG(DEBUG) << "name_space: " << name_space->ToString() << ", symbol: " << symbol->ToString();
+  const auto debug_info = GenerateDebugInfos(file_names, linenos);
+  trace::TraceRecorder::GetInstance()->ProcessNewResolveNode(name_space, symbol, prim_res, debug_info, py::args(inputs),
+                                                             false);
+  *res = prim_res;
+}
+
+void Capture(const std::vector<py::object> &args_vec, const PrimitivePtr &prim, py::object *res) {
   if (!IsTracing()) {
     return;
   }
@@ -214,19 +313,16 @@ void Capture(const std::vector<py::object> &args_vec, const std::string &class_n
   for (size_t i = 0; i < args_vec.size(); i++) {
     args[i] = args_vec[i];
   }
-  static std::string ops_module_name = "mindspore.ops";
-  static std::string auto_gen_module_name = "mindspore.ops.auto_generate";
-  py::module ops_mod = py::module::import(ops_module_name.c_str());
-  py::module auto_gen_mod = py::module::import(auto_gen_module_name.c_str());
-  py::object prim_py;
-  if (py::hasattr(ops_mod, class_name.c_str())) {
-    prim_py = python_adapter::CallPyFn(ops_module_name, class_name);
-  } else if (py::hasattr(auto_gen_mod, class_name.c_str())) {
-    prim_py = python_adapter::CallPyFn(auto_gen_module_name, class_name);
-  } else {
-    MS_LOG(EXCEPTION) << "Cannot find primitive for op: " << class_name;
-  }
-  *res = CaptureRun(py::args(args), *res, prim_py);
+  auto jit_context = python_adapter::CallPyFn("mindspore.common.jit_context", "jit_context");
+  std::string method = "prepare_op";
+  py::tuple op_info = jit_context.attr(method.c_str())(prim->name(), res, *args);
+  const py::object &prim_res = op_info[kPrimResultIndex];
+  const py::list &file_names = op_info[kFileNameIndex];
+  const py::list &linenos = op_info[kLineNumberIndex];
+  const py::tuple &inputs = op_info[kArgsIndex];
+  const auto debug_info = GenerateDebugInfos(file_names, linenos);
+  trace::TraceRecorder::GetInstance()->ProcessNewNode(prim, prim_res, debug_info, py::args(inputs), false);
+  *res = prim_res;
 }
 
 py::object CaptureRun(const py::args &args, const py::object &res, const py::object &prim_py) {
@@ -237,6 +333,16 @@ py::object CaptureRun(const py::args &args, const py::object &res, const py::obj
 }
 
 bool IsTracing() { return trace::TraceRecorder::GetInstance()->BuildingTraceGraph(); }
+
+bool Compiled() {
+  auto jit_context = python_adapter::CallPyFn("mindspore.common.jit_context", "jit_context");
+  if (py::isinstance<py::none>(jit_context)) {
+    return false;
+  }
+  std::string compile_flag = "compiled";
+  py::bool_ compiled = jit_context.attr(compile_flag.c_str());
+  return py::cast<bool>(compiled);
+}
 
 void TraceRecorder::Clear() {
   // Clear the AnfNode in python object.
@@ -399,42 +505,25 @@ AnfNodePtr TraceRecorder::ConvertParameterObj(const py::object &input_obj) {
 }
 
 void TraceRecorder::NewFuncGraphNode(const py::tuple &info, const py::args &inputs) {
-  const py::bool_ &is_nested = info[4];
+  constexpr size_t kPhaseIndex = 3;
+  constexpr size_t kIsNested = 4;
+  const py::bool_ &is_nested = info[kIsNested];
   if (is_nested) {
     Clear();
     (void)python_adapter::CallPyFn("mindspore.common.jit_context", "set_jit_context", py::none());
     MS_LOG(EXCEPTION) << "The maximum nesting level for using the jit trace and jit ast decorators is one."
                       << " Please check the current code for its nesting usage.";
   }
-  const py::object &phase = info[0];
-  const py::object &prim_res = info[1];
-  const py::list &file_names = info[2];
-  const py::list &linenos = info[3];
+  const py::object &phase = info[kPhaseIndex];
+  const py::object &prim_res = info[kPrimResultIndex];
+  const py::list &file_names = info[kFileNameIndex];
+  const py::list &linenos = info[kLineNumberIndex];
   auto graph_executor = pipeline::GetExecutor();
   MS_EXCEPTION_IF_NULL(graph_executor);
   FuncGraphPtr jit_fg = graph_executor->GetFuncGraph(py::cast<std::string>(phase));
   const auto debug_info = GenerateDebugInfos(file_names, linenos);
-  AnfNodePtrList node_inputs;
-  AbstractBasePtrList abs_inputs;
-  for (size_t i = 0; i < inputs.size(); ++i) {
-    AnfNodePtr node;
-    auto input_obj = inputs[i];
-    bool is_parameter = py::hasattr(input_obj, "__parameter__") && tensor::IsTensorPy(input_obj);
-    // When the input of a cnode is a weight, add it to the top graph.
-    if (is_parameter) {
-      node = ConvertParameterObj(input_obj);
-    } else {
-      node = GetNode(inputs[i], debug_info);
-      MS_EXCEPTION_IF_NULL(node);
-    }
-    (void)node_inputs.emplace_back(node);
-    if (node->abstract() != nullptr) {
-      (void)abs_inputs.emplace_back(node->abstract());
-    } else {
-      (void)abs_inputs.emplace_back(GetAbstract(input_obj));
-    }
-    MS_LOG(DEBUG) << "Add input, " << node->DebugString();
-  }
+  std::pair<AnfNodePtrList, AbstractBasePtrList> input_pair = GenerateInputs(inputs, debug_info);
+  AnfNodePtrList node_inputs = input_pair.first;
   const size_t fv_param_count = jit_fg->fv_param_count();
   if (fv_param_count > 0) {
     const auto &parameters = jit_fg->parameters();
@@ -453,12 +542,20 @@ void TraceRecorder::NewFuncGraphNode(const py::tuple &info, const py::args &inpu
   MS_LOG(DEBUG) << "New cnode: " << cnode->DebugString();
   SetNode(prim_res, cnode, debug_info);
 }
-void TraceRecorder::NewNode(const py::object &prim_obj, const py::object &prim_res, const py::list &file_names,
-                            const py::list &linenos, const py::object &do_signature, const py::args &inputs) {
-  MS_LOG(DEBUG) << "NewNode, prim_obj: " << py::str(prim_obj) << ", prim_res: [" << py::str(prim_res.get_type()) << "] "
-                << GetPyObjId(prim_res) << "/" << py::str(prim_res) << ", inputs size: " << inputs.size()
-                << ", inputs: " << py::str(py::cast<py::object>(inputs));
+void TraceRecorder::NewNode(const py::object &prim_obj, const py::tuple &op_info, const py::args &inputs) {
+  constexpr size_t kDoSignatureIndex = 3;
+  const py::object &prim_res = op_info[kPrimResultIndex];
+  const py::list &file_names = op_info[kFileNameIndex];
+  const py::list &linenos = op_info[kLineNumberIndex];
+  const py::bool_ &do_signature = op_info[kDoSignatureIndex];
+  const auto &prim_py = std::make_shared<PrimitivePy>(prim_obj);
+  bool signature = py::cast<bool>(do_signature);
   const auto debug_info = GenerateDebugInfos(file_names, linenos);
+  ProcessNewNode(prim_py, prim_res, debug_info, inputs, signature);
+}
+
+std::pair<AnfNodePtrList, AbstractBasePtrList> TraceRecorder::GenerateInputs(const py::args &inputs,
+                                                                             const DebugInfoPtr &debug_info) {
   AnfNodePtrList node_inputs;
   AbstractBasePtrList abs_inputs;
   for (size_t i = 0; i < inputs.size(); ++i) {
@@ -480,46 +577,63 @@ void TraceRecorder::NewNode(const py::object &prim_obj, const py::object &prim_r
     }
     MS_LOG(DEBUG) << "Add input, " << node->DebugString();
   }
-  const auto &prim_py = std::make_shared<PrimitivePy>(prim_obj);
+  return std::make_pair(node_inputs, abs_inputs);
+}
+
+void TraceRecorder::ProcessNewNode(const PrimitivePtr &prim, const py::object &prim_res, const DebugInfoPtr &debug_info,
+                                   const py::args &inputs, bool do_signature) {
+  MS_LOG(DEBUG) << "NewNode, prim: " << prim->name() << ", prim_res: [" << py::str(prim_res.get_type()) << "] "
+                << GetPyObjId(prim_res) << "/" << py::str(prim_res) << ", inputs size: " << inputs.size()
+                << ", inputs: " << py::str(py::cast<py::object>(inputs));
+  std::pair<AnfNodePtrList, AbstractBasePtrList> input_pair = GenerateInputs(inputs, debug_info);
+  AnfNodePtrList node_inputs = input_pair.first;
+  AbstractBasePtrList abs_inputs = input_pair.second;
   AnfNodePtr cnode;
-  if (py::cast<bool>(do_signature)) {
-    cnode = prim::GenerateCNodeBySignatures(graph_stack_.top(), prim_py->name(), prim_py, abs_inputs, node_inputs);
+  if (do_signature) {
+    cnode = prim::GenerateCNodeBySignatures(graph_stack_.top(), prim->name(), prim, abs_inputs, node_inputs);
   } else {
-    cnode = GenerateCNode(graph_stack_.top(), prim_py, node_inputs);
+    cnode = GenerateCNode(graph_stack_.top(), prim, node_inputs);
   }
   if (cnode->debug_info() != nullptr) {
     cnode->debug_info()->set_trace_info(MakeTraceInfo<TraceOpt>(debug_info));
   }
   MS_LOG(DEBUG) << "New cnode: " << cnode->DebugString();
-  if (GetPrimEffectInfo(prim_py).HasEffect()) {
+  if (GetPrimEffectInfo(prim).HasEffect()) {
     side_effect_nodes_.add(cnode);
     return;
   }
   SetNode(prim_res, cnode, debug_info);
 }
 
+void TraceRecorder::ProcessNewResolveNode(const parse::NameSpacePtr &name_space, const parse::SymbolPtr &resolve_symbol,
+                                          const py::object &prim_res, const DebugInfoPtr debug_info,
+                                          const py::args &inputs, bool do_signature) {
+  MS_LOG(DEBUG) << "NewNode, prim: " << resolve_symbol->symbol() << ", prim_res: [" << py::str(prim_res.get_type())
+                << "] " << GetPyObjId(prim_res) << "/" << py::str(prim_res) << ", inputs size: " << inputs.size()
+                << ", inputs: " << py::str(py::cast<py::object>(inputs));
+  std::pair<AnfNodePtrList, AbstractBasePtrList> input_pair = GenerateInputs(inputs, debug_info);
+  AnfNodePtrList node_inputs = input_pair.first;
+  ValueNodePtr module_node = NewValueNode(name_space);
+  ValueNodePtr symbol_node = NewValueNode(resolve_symbol);
+  auto operation = graph_stack_.top()->NewCNodeInOrder({NewValueNode(prim::kPrimResolve), module_node, symbol_node});
+  (void)node_inputs.insert(node_inputs.cbegin(), operation);
+  AnfNodePtr cnode = graph_stack_.top()->NewCNodeInOrder(node_inputs);
+  if (cnode->debug_info() != nullptr) {
+    cnode->debug_info()->set_trace_info(MakeTraceInfo<TraceOpt>(debug_info));
+  }
+  MS_LOG(DEBUG) << "New cnode: " << cnode->DebugString();
+  SetNode(prim_res, cnode, debug_info);
+}
+
 AnfNodePtr TraceRecorder::GetNode(const py::object &obj, const DebugInfoPtr &debug_info, bool set_abstract) {
+  const auto &convert_funcs = GetDataConvertFuncs();
+  for (auto &convert_func : convert_funcs) {
+    if (convert_func->Matched(obj)) {
+      return convert_func->GetConstNode(obj, debug_info, set_abstract);
+    }
+  }
   if (tensor::IsTensorPy(obj)) {
     return GetTensorNode(obj, debug_info, set_abstract);
-  } else if (py::isinstance<py::bool_>(obj)) {
-    MS_LOG(DEBUG) << "Constant bool: " << py::str(obj);
-    const auto &value_node = NewValueNode(py::cast<bool>(obj));
-    if (set_abstract) {
-      value_node->set_abstract(GetAbstract(obj));
-    }
-    return value_node;
-  } else if (py::isinstance<py::int_>(obj)) {
-    return GetInt(obj, set_abstract);
-  } else if (py::isinstance<py::float_>(obj)) {
-    return GetFloat(obj, set_abstract);
-  } else if (py::isinstance<py::str>(obj)) {
-    return GetStr(obj, set_abstract);
-  } else if (py::isinstance<py::none>(obj)) {
-    return GetNone(obj, set_abstract);
-  } else if (py::isinstance<py::ellipsis>(obj)) {
-    return GetEllipsis(obj, set_abstract);
-  } else if (py::isinstance<Type>(obj)) {
-    return GetType(obj, set_abstract);
   } else if (py::isinstance<py::tuple>(obj)) {
     const py::tuple &tuple_obj = py::cast<py::tuple>(obj);
     return GetTupleNode(tuple_obj, debug_info, set_abstract);
@@ -527,7 +641,7 @@ AnfNodePtr TraceRecorder::GetNode(const py::object &obj, const DebugInfoPtr &deb
     const py::list &list_obj = py::cast<py::list>(obj);
     return GetListNode(list_obj, debug_info, set_abstract);
   } else if (py::isinstance<py::dict>(obj)) {
-    const py::list &dict_obj = py::cast<py::list>(obj);
+    const py::dict &dict_obj = py::cast<py::dict>(obj);
     return GetDictNode(dict_obj, debug_info, set_abstract);
   }
   Clear();
@@ -638,7 +752,8 @@ void TraceRecorder::SetNode(const py::object &obj, const AnfNodePtr &node, const
     }
     return;
   } else if (py::isinstance<py::bool_>(obj) || py::isinstance<py::int_>(obj) || py::isinstance<py::float_>(obj) ||
-             py::isinstance<py::str>(obj) || py::isinstance<py::none>(obj) || py::isinstance<py::ellipsis>(obj)) {
+             py::isinstance<py::str>(obj) || py::isinstance<py::none>(obj) || py::isinstance<py::ellipsis>(obj) ||
+             py::isinstance<TensorType>(obj)) {
     MS_LOG(DEBUG) << "Get Constant value: " << py::str(obj);
     if (set_abstract) {
       node->set_abstract(GetAbstract(obj));
@@ -655,12 +770,6 @@ void TraceRecorder::SetNode(const py::object &obj, const AnfNodePtr &node, const
   } else if (py::isinstance<py::dict>(obj)) {
     const py::dict &dict_obj = py::cast<py::dict>(obj);
     SetDictNode(dict_obj, node, debug_info, set_abstract);
-    return;
-  } else if (py::isinstance<TensorType>(obj)) {
-    MS_LOG(DEBUG) << "Constance TensorType: " << py::str(obj);
-    if (set_abstract) {
-      node->set_abstract(GetAbstract(obj));
-    }
     return;
   }
   Clear();

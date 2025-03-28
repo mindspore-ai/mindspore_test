@@ -33,6 +33,7 @@
 #include "include/common/utils/pyobj_manager.h"
 #include "runtime/pipeline/pipeline.h"
 #include "runtime/pynative/op_executor.h"
+#include "pipeline/jit/trace/trace_recorder.h"
 
 namespace mindspore {
 namespace tensor {
@@ -1056,12 +1057,16 @@ static py::object TensorGetItemImpl(const py::object &self, const py::object &py
 
 static PyObject *TensorPython_GetItem(PyObject *self, PyObject *args) {
   HANDLE_MS_EXCEPTION
+
   PyObject *py_index = NULL;
   if (!PyArg_ParseTuple(args, "O", &py_index)) {
     return nullptr;
   }
   py::object result =
     TensorGetItemImpl(py::reinterpret_borrow<py::object>(self), py::reinterpret_borrow<py::object>(py_index));
+  trace::CaptureResolveOperation(
+    py::make_tuple(py::reinterpret_borrow<py::object>(self), py::reinterpret_borrow<py::object>(py_index)), "getitem",
+    &result);
   return result.release().ptr();
   HANDLE_MS_EXCEPTION_END
 }
@@ -1086,6 +1091,7 @@ static PyObject *TensorPython_SetItem(PyObject *self, PyObject *args) {
   py::object py_index_obj = py::reinterpret_borrow<py::object>(py_index);
   py::object py_value_obj = py::reinterpret_borrow<py::object>(py_value);
   py::object result = TensorSetItemImpl(self_obj, py_index_obj, py_value_obj);
+  trace::CaptureResolveOperation(py::make_tuple(self_obj, py_index_obj, py_value_obj), "setitem", &result);
   if (result.is(py::none())) {
     return nullptr;
   }

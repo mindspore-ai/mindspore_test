@@ -226,6 +226,35 @@ FuncGraphPtr ConvertToBpropCut(const py::object &obj) {
   return bprop_graph;
 }
 
+ValuePtr ConvertSlice(const py::object &obj) {
+  MS_LOG(DEBUG) << "Converting slice object";
+
+  auto convert_func = [obj](const std::string &attr) -> ValuePtr {
+    auto py_attr = py::getattr(obj, attr.c_str());
+    if (py::isinstance<py::none>(py_attr)) {
+      return kNone;
+    }
+    if (py::isinstance<py::int_>(py_attr)) {
+      auto value = py::cast<int64_t>(py_attr);
+      return MakeValue(value);
+    }
+
+    if (tensor::IsTensorPy(py_attr)) {
+      return tensor::ConvertToTensor(py_attr);
+    }
+
+    if (IsStubTensor(py_attr)) {
+      return ConvertStubTensor(py_attr);
+    }
+    MS_LOG(EXCEPTION) << "Attribute '" << attr << "' of " << py::str(obj)
+                      << " should be int or Tensor with Int type but got " << py::str(py_attr);
+  };
+  ValuePtr start = convert_func(kSliceStart);
+  ValuePtr stop = convert_func(kSliceStop);
+  ValuePtr step = convert_func(kSliceStep);
+  return std::make_shared<ValueSlice>(start, stop, step);
+}
+
 namespace {
 ValuePtr ConvertTuple(const py::object &obj, bool use_signature) {
   MS_LOG(DEBUG) << "Converting python tuple";
@@ -480,35 +509,6 @@ ValuePtr ConvertFuncGraph(const py::object &obj) {
   }
   func_graph->set_attr("is_load", MakeValue(true));
   return func_graph;
-}
-
-ValuePtr ConvertSlice(const py::object &obj) {
-  MS_LOG(DEBUG) << "Converting slice object";
-
-  auto convert_func = [obj](const std::string &attr) -> ValuePtr {
-    auto py_attr = py::getattr(obj, attr.c_str());
-    if (py::isinstance<py::none>(py_attr)) {
-      return kNone;
-    }
-    if (py::isinstance<py::int_>(py_attr)) {
-      auto value = py::cast<int64_t>(py_attr);
-      return MakeValue(value);
-    }
-
-    if (tensor::IsTensorPy(py_attr)) {
-      return tensor::ConvertToTensor(py_attr);
-    }
-
-    if (IsStubTensor(py_attr)) {
-      return ConvertStubTensor(py_attr);
-    }
-    MS_LOG(EXCEPTION) << "Attribute '" << attr << "' of " << py::str(obj)
-                      << " should be int or Tensor with Int type but got " << py::str(py_attr);
-  };
-  ValuePtr start = convert_func(kSliceStart);
-  ValuePtr stop = convert_func(kSliceStop);
-  ValuePtr step = convert_func(kSliceStep);
-  return std::make_shared<ValueSlice>(start, stop, step);
 }
 
 FuncGraphPtr ConvertHookToFuncGraph(const py::object &obj, const std::string &cb_name) {

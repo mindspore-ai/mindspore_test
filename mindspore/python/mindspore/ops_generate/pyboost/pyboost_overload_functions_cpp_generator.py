@@ -71,7 +71,7 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
             '${arg_handler_processor}\n'
             'MS_LOG(INFO) << "Call Tensor${class_name}";\n'
             'auto res = ${pyboost_base_func_name}_OP(${prim_name}, parse_args.src_types_, ${convert_args});\n'
-            'trace::Capture(parse_args.arg_list_, "${class_name}", &res);\n'
+            'trace::Capture(parse_args.arg_list_, mindspore::prim::kPrim${class_name}, &res);\n'
             'return res;\n'
         )
         self.callback_python_template = Template(

@@ -318,7 +318,7 @@ class OpPrimPyGenerator(BaseGenerator):
             call_method_body_str += f"""
         # Add for jit context.
         if jit_context() and jit_context().compiled:
-            return None"""
+            return jit_context().default_output()"""
             pyboost_func_name = pyboost_utils.get_pyboost_name(op_proto.op_name)
             call_method_body_str += f"""
         res = {pyboost_func_name}(self, [{call_args_list_str}])"""

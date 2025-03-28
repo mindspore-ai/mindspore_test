@@ -108,6 +108,7 @@ ValuePtr ConvertSequence(const py::object &obj) {
   return std::make_shared<TD>(value_list);
 }
 FRONTEND_EXPORT tensor::TensorPtr ConvertTensorValue(const py::object &obj);
+FRONTEND_EXPORT ValuePtr ConvertSlice(const py::object &obj);
 }  // namespace parse
 }  // namespace mindspore
 

@@ -76,7 +76,7 @@ class PYNATIVE_EXPORT ${class_name}PrimAdapter: public PrimitiveFunctionAdapter 
      runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunOp,
                                         "${class_name}", false, true);
      auto res = ${func_name}_Base(prim::kPrim${class_name}, args);
-     trace::Capture(args, "${class_name}", &res);
+     trace::Capture(args, prim::kPrim${class_name}, &res);
      return res;
    }
 };

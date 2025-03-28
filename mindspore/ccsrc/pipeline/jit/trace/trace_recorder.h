@@ -23,20 +23,27 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <utility>
 
 #include "pybind11/pybind11.h"
 #include "frontend/ir/primitive_py.h"
 #include "include/common/visible.h"
 #include "ir/func_graph.h"
 #include "ir/anf.h"
+#include "pipeline/jit/ps/parse/resolve.h"
 
 namespace mindspore {
 namespace trace {
 FRONTEND_EXPORT void Capture(const py::args &args, py::object *res);
-FRONTEND_EXPORT void Capture(const py::list &args, const std::string &class_name, py::object *res);
-FRONTEND_EXPORT void Capture(const std::vector<py::object> &args_vec, const std::string &class_name, py::object *res);
+FRONTEND_EXPORT void Capture(const py::list &args, const PrimitivePtr &prim, py::object *res);
+FRONTEND_EXPORT void Capture(const std::vector<py::object> &args_vec, const PrimitivePtr &prim, py::object *res);
+FRONTEND_EXPORT void CaptureResolveOperation(const py::tuple &args, const std::string &named_primitive,
+                                             py::object *res);
 py::object CaptureRun(const py::args &args, const py::object &res, const py::object &prim_py);
 bool IsTracing();
+FRONTEND_EXPORT py::object DefaultOutput();
+FRONTEND_EXPORT bool Compiled();
+
 class TraceRecorder {
  public:
   TraceRecorder() = default;
@@ -56,8 +63,13 @@ class TraceRecorder {
                   const py::list &linenos, const py::args &args);
   void EndGraph(const py::list &file_names, const py::list &linenos, const py::args &output_args);
   void NewFuncGraphNode(const py::tuple &info, const py::args &inputs);
-  void NewNode(const py::object &prim_obj, const py::object &prim_res, const py::list &file_names,
-               const py::list &linenos, const py::object &do_signature, const py::args &inputs);
+  void NewNode(const py::object &prim_obj, const py::tuple &op_info, const py::args &inputs);
+  void ProcessNewNode(const PrimitivePtr &prim, const py::object &prim_res, const DebugInfoPtr &debug_info,
+                      const py::args &inputs, bool do_signature);
+  void ProcessNewResolveNode(const parse::NameSpacePtr &name_space, const parse::SymbolPtr &resolve_symbol,
+                             const py::object &prim_res, const DebugInfoPtr debug_info, const py::args &inputs,
+                             bool do_signature);
+  std::pair<AnfNodePtrList, AbstractBasePtrList> GenerateInputs(const py::args &inputs, const DebugInfoPtr &debug_info);
   py::object RunGraph(const py::object &phase, const py::tuple &args);
 
   void SyncTensorNode(const py::object &old_tensor_obj, const py::object &new_tensor_obj);

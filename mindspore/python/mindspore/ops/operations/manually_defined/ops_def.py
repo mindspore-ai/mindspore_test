@@ -1057,7 +1057,7 @@ class Tile(Primitive):
     def __call__(self, input, dims):
         # Add for jit context.
         if jit_context() and jit_context().compiled:
-            return None
+            return jit_context().default_output()
         res = _convert_stub(pyboost_tile(self, [input, dims]))
         # Add for jit context.
         if jit_context():
@@ -1230,7 +1230,7 @@ class Cast(Primitive):
     def __call__(self, input_x, dtype):
         # Add for jit context.
         if jit_context() and jit_context().compiled:
-            return None
+            return jit_context().default_output()
         should_elim, output = self.check_elim(input_x, dtype)
         if should_elim:
             return output
@@ -2070,7 +2070,7 @@ class Ones(Primitive):
     def __call__(self, size, type=None):
         # Add for jit context.
         if jit_context() and jit_context().compiled:
-            return None
+            return jit_context().default_output()
         res = _convert_stub(pyboost_ones(self, [size, type if type is None \
             else handler.dtype_to_type_id('Ones', 'type', type)]))
         # Add for jit context.
@@ -2130,7 +2130,7 @@ class Zeros(Primitive):
     def __call__(self, size, type=None):
         # Add for jit context.
         if jit_context() and jit_context().compiled:
-            return None
+            return jit_context().default_output()
         res = _convert_stub(pyboost_zeros(self, [size, type if type is None else \
             handler.dtype_to_type_id('Zeros', 'type', type)]))
         # Add for jit context.

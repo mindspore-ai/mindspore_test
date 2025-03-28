@@ -901,3 +901,63 @@ def test_trace_8():
     assert res == 6
     res = foo(inputs)
     assert res == 6
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_trace_setitem():
+    """
+    Feature: JIT trace function
+    Description: JIT trace function
+    Expectation: No exception
+    """
+    class TraceNet(ms.nn.Cell):
+        def __init__(self):
+            super(TraceNet, self).__init__()
+            self.x = ms.Tensor(1)
+
+        @ms.jit(capture_mode="trace")
+        def construct(self, x, y):
+            a = ms.Tensor(2)
+            x[0] = y[2]
+            z = x + a
+            z = z + self.x
+            z = z * y
+            return z
+
+    trace_net = TraceNet()
+    res = trace_net(ms.Tensor([1, 2, 3]), ms.Tensor([4, 5, 6]))
+    expected = ms.Tensor([36, 25, 36])
+    assert np.allclose(res.asnumpy(), expected.asnumpy())
+    res = trace_net(ms.Tensor([1, 2, 3]), ms.Tensor([4, 5, 6]))
+    assert np.allclose(res.asnumpy(), expected.asnumpy())
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_trace_ops_with_init_inputs():
+    """
+    Feature: JIT trace function
+    Description: JIT trace function
+    Expectation: No exception
+    """
+    class TraceNet(ms.nn.Cell):
+        def __init__(self):
+            super(TraceNet, self).__init__()
+            self.x = ms.Tensor(1)
+
+        @ms.jit(capture_mode="trace")
+        def construct(self, x, y):
+            a = ms.Tensor(2)
+            shape = (2, 3)
+            x[0] = y[2]
+            x = ms.ops.broadcast_to(x, shape)
+            z = x + a
+            z = z + self.x
+            z = z * y
+            return z
+
+    trace_net = TraceNet()
+    res = trace_net(ms.Tensor([1, 2, 3]), ms.Tensor([4, 5, 6]))
+    expected = ms.Tensor([[36, 25, 36], [36, 25, 36]])
+    assert np.allclose(res.asnumpy(), expected.asnumpy())
+    res = trace_net(ms.Tensor([1, 2, 3]), ms.Tensor([4, 5, 6]))
+    assert np.allclose(res.asnumpy(), expected.asnumpy())

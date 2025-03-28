@@ -44,17 +44,27 @@ class TraceJitContext(JitContext):
     def is_nested(self):
         return self._is_nested
 
-    def run_op(self, prim, prim_res, *args):
-        """Capture op"""
-        logger.debug(f'prim: {prim}, args: {args}, prim_res: {prim_res}')
+    def args_preprocess(self, prim_name, prim_res, *args):
         if isinstance(prim_res, TensorNode):
             prim_res = prim_res.get_value()
         prim_res = _sync_stub_tensor(prim_res)
         args = tuple(_sync_stub_tensor(arg) for arg in args)
-        args = tuple(_convert_arg_for_operators(arg, prim.name) for arg in args)
+        args = tuple(_convert_arg_for_operators(arg, prim_name)
+                     for arg in args)
         file_names, linenos = _get_caller_lines()
-        tr.get_instance().new_node(prim, prim_res, file_names, linenos, False, *args)
+        return prim_res, file_names, linenos, args
+
+    def run_op(self, prim, prim_res, *args):
+        """Capture op"""
+        logger.debug(f'prim: {prim}, args: {args}, prim_res: {prim_res}')
+        prim_res, file_names, linenos, args = self.args_preprocess(prim.name, prim_res, *args)
+        tr.get_instance().new_node(prim, (prim_res, file_names, linenos, False), *args)
         return prim_res
+
+    def prepare_op(self, prim_name, prim_res, *args):
+        """Prepare op"""
+        logger.debug(f'prim: {prim_name}, args: {args}, prim_res: {prim_res}')
+        return self.args_preprocess(prim_name, prim_res, *args)
 
     def run_graph(self, phase, prim_res, *args):
         """Capture func_graph generated from ast"""
@@ -64,8 +74,11 @@ class TraceJitContext(JitContext):
         prim_res = _sync_stub_tensor(prim_res)
         args = tuple(_sync_stub_tensor(arg) for arg in args)
         file_names, linenos = _get_caller_lines()
-        tr.get_instance().new_fg_node((phase, prim_res, file_names, linenos, self._is_nested), *args)
+        tr.get_instance().new_fg_node((prim_res, file_names, linenos, phase, self._is_nested), *args)
         return prim_res
+
+    def default_output(self):
+        return PythonTensor(0)
 
 
 _compile_only = False
