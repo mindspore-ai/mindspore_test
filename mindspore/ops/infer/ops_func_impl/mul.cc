@@ -29,18 +29,16 @@ BaseShapePtr MulFuncImpl::InferShape(const PrimitivePtr &primitive,
 }
 
 TypePtr MulFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
-  std::map<std::string, TypePtr> types;
-  (void)types.emplace("x", input_args[kInputIndex0]->GetType());
-  (void)types.emplace("y", input_args[kInputIndex1]->GetType());
-  return CheckAndConvertUtils::CheckMathBinaryOpTensorType(types, common_valid_types_with_complex_and_bool,
-                                                           primitive->name());
+  return std::make_shared<TensorType>(
+    PromoteType(input_args[kInputIndex0]->GetType(), input_args[kInputIndex1]->GetType(), primitive->name()));
 }
 
 TypePtrList MulFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
   const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &y_tensor = input_values[kIndex1]->cast<tensor::BaseTensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
-  const auto &input_type = x_tensor->Dtype();
-  return {input_type};
+  MS_EXCEPTION_IF_NULL(y_tensor);
+  return {PromoteType(x_tensor->Dtype(), y_tensor->Dtype(), primitive->name())};
 }
 ShapeArray MulFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
   return {BroadCastInferShape(primitive->name(), input_values)};
