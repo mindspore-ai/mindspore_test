@@ -403,4 +403,6 @@ deprecated_tensor_method_map = {
 
     # 1028
     "var": "deprecated_tensor_var",
+    # 1100
+    "reshape_as": "deprecated_tensor_reshape_as",
 }

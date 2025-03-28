@@ -13,6 +13,9 @@ void DoGrad${class_name}Inner(${grad_args_with_type}, const ValuePtr &output_val
 void DoGrad${class_name}(${grad_args_with_type}) {
   static bool is_inplace_op = kernel::pyboost::GetOpTypeFromOpdef(ops::${op_def_name}) == OperatorType::kInplaceOp;
   static bool bprop_expander = ${bprop_expander};
+  if (!bprop_expander) {
+    return;
+  }
   bool require_grad = kernel::pyboost::OpRunStatus::Get().RequireGrad();
 
   auto output_value = PyNativeAlgo::AutoGradUtil::Make${is_multi}Output(
@@ -22,7 +25,7 @@ void DoGrad${class_name}(${grad_args_with_type}) {
       ? PyNativeAlgo::Common::GetPyNativeExecutor()->grad_executor()->top_cell()->op_index()
       : 0${view_arg});
 
-  if (bprop_expander && NeedAutoGrad()) {
+  if (NeedAutoGrad()) {
     DoGrad${class_name}Inner(op, ${grad_input_args_with_optional}, output_value);
   } else if (is_inplace_op) {
     PyNativeAlgo::PyBoost::BumpVersionAsync(op->outputs()[0]);
