@@ -23,6 +23,7 @@ from common.gen_utils import safe_load_yaml_from_dir
 from resources.resource_loader import ResourceLoader
 from resources.resource_list import ResourceType
 
+
 class OpApiProto:
     """
     Represents a tensor function prototype with associated function name, operation prototype, and target devices.
