@@ -29,8 +29,14 @@ internal::InternalOpPtr InternalAddRmsNormQuant::CreateKernel(const internal::In
   param.eps = ms_inputs[kIndex5]->GetValueWithCheck<float>();
   param.need_rms_norm_out =
     primitive_->HasAttr("need_rms_norm_out") ? GetValue<bool>(primitive_->GetAttr("need_rms_norm_out")) : false;
+  need_rms_norm_out_ = param.need_rms_norm_out;
   return internal::CreateAddRmsNormQuantOp(inputs_ii, outputs_ii, param, internal::kInternalAddRmsNormQuantOpName);
 }
+
+uint64_t InternalAddRmsNormQuant::GenerateTilingKey(const std::vector<KernelTensor *> &inputs) {
+  return InternalTilingCache::GenerateKey(kernel_name_, inputs, need_rms_norm_out_);
+}
+
 MS_INTERNAL_KERNEL_FACTORY_REG(AddRmsNormQuantV2, internal::kInternalAddRmsNormQuantOpName, InternalAddRmsNormQuant);
 REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(AddRmsNormQuantV2, INPUT_NUM_5, INDEX_0, INDEX_1, INDEX_2, INDEX_3, INDEX_4);
 REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(AddRmsNormQuantV2, OUTPUT_NUM_3, INDEX_0, INDEX_1, INDEX_2);
