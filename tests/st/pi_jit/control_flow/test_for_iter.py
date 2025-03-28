@@ -107,7 +107,7 @@ def test_not_implement_for_iter(func, param):
 jit_cfg = {"loop_unrolling": True, "compile_with_try": False}
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_for_zip_iter_1():
     """
     Feature: Test zip iter.
