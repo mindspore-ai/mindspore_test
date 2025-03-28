@@ -48,9 +48,12 @@ OP_FUNC_IMPL_TEST_CASES(
       ValuePtr start_value;
       ValuePtr end_value;
       ValuePtr step_value;
+      AbstractBasePtr dtype_value;
       tensor::TensorPtr out;
     };
     
+    static auto arange_dtype_int64 = std::make_shared<Int64Imm>(kNumberTypeInt64)->ToAbstract();
+
     class TestArangeInferValue : public TestOps, public testing::WithParamInterface<ArangeInferValueParams> {};
     
     TEST_P(TestArangeInferValue, dyn_shape_infer_value) {
@@ -61,7 +64,7 @@ OP_FUNC_IMPL_TEST_CASES(
       ASSERT_NE(start, nullptr);
       ASSERT_NE(end, nullptr);
       ASSERT_NE(step, nullptr);
-      auto input_args = abstract::AbstractBasePtrList{start, end, step};
+      auto input_args = abstract::AbstractBasePtrList{start, end, step, param.dtype_value};
       auto value_opt = abstract::InferValueByFuncImpl(prim::kPrimArange, input_args);
       if (!value_opt.has_value()) {
         MS_LOG(ERROR) << "Log have no infer value implement!";
@@ -79,7 +82,7 @@ OP_FUNC_IMPL_TEST_CASES(
     
     INSTANTIATE_TEST_CASE_P(
       TestArangeInferValue, TestArangeInferValue,
-      testing::Values(ArangeInferValueParams{CreateScalar<int64_t>(1), CreateScalar<int64_t>(5), CreateScalar<int64_t>(1),
+      testing::Values(ArangeInferValueParams{CreateScalar<int64_t>(1), CreateScalar<int64_t>(5), CreateScalar<int64_t>(1), arange_dtype_int64,
                                              CreateArangeTensor<int64_t>(kNumberTypeInt64, ShapeVector{4}, std::vector<int64_t>{1, 2, 3, 4})}));
     
 }  // namespace ops
