@@ -5523,13 +5523,13 @@ def cumsum(x, axis, dtype=None):
     Examples:
         >>> import mindspore
         >>> input = mindspore.tensor([[1, 2, 3],
-        ...                           [4, 5, 6]])
+        ...                           [4, 5, 6]], mindspore.int32)
         >>> mindspore.ops.cumsum(input, axis=0)
-        Tensor(shape=[2, 3], dtype=Int64, value=
+        Tensor(shape=[2, 3], dtype=Int32, value=
         [[1, 2, 3],
          [5, 7, 9]])
         >>> mindspore.ops.cumsum(input, axis=1)
-        Tensor(shape=[2, 3], dtype=Int64, value=
+        Tensor(shape=[2, 3], dtype=Int32, value=
         [[ 1,  3,  6],
          [ 4,  9, 15]])
     """
