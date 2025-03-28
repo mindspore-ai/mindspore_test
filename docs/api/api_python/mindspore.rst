@@ -105,11 +105,9 @@ mindspore
     mindspore.load_checkpoint_async
     mindspore.load_mindir
     mindspore.load_param_into_net
-    mindspore.load_segmented_checkpoints
     mindspore.merge_pipeline_strategys
     mindspore.merge_sliced_parameter
     mindspore.parse_print
-    mindspore.restore_group_info_list
     mindspore.rank_list_for_transform
     mindspore.safetensors_to_ckpt
     mindspore.save_checkpoint
