@@ -9,5 +9,4 @@ mindspore.ops.rad2deg
         - **x** (Tensor) - 输入tensor。
 
     返回：
-
         Tensor

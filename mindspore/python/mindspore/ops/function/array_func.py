@@ -2090,6 +2090,7 @@ def scatter_mul(input_x, indices, updates):
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
+        >>> import numpy as np
         >>> import mindspore
         >>> input_x = mindspore.Parameter(mindspore.tensor([[1.0, 1.0, 1.0],
         ...                               [2.0, 2.0, 2.0]], mindspore.float32), name="x")
@@ -2300,6 +2301,7 @@ def scatter_div(input_x, indices, updates):
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
+        >>> import numpy as np
         >>> import mindspore
         >>> input_x = mindspore.Parameter(mindspore.tensor([[6.0, 6.0, 6.0], [2.0, 2.0, 2.0]],
         ...                               mindspore.float32), name="x")
@@ -2598,6 +2600,7 @@ def scatter_nd_div(input_x, indices, updates, use_locking=False):
         ``GPU`` ``CPU``
 
     Examples:
+        >>> import numpy as np
         >>> import mindspore
         >>> input_x = mindspore.Parameter(mindspore.tensor([1, 2, 3, 4, 5, 6, 7, 8],
         ...                               mindspore.float32), name="x")
@@ -3524,6 +3527,7 @@ def matrix_diag(x, k=0, num_rows=-1, num_cols=-1, padding_value=0, align="RIGHT_
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
+        >>> import numpy as np
         >>> import mindspore
         >>> x = mindspore.tensor([[8., 9., 0.],
         ...                      [1., 2., 3.],
@@ -3611,7 +3615,7 @@ def matrix_set_diag(x, diagonal, k=0, align="RIGHT_LEFT"):  # pylint: disable=re
         k (Union[int, Tensor], optional): Diagonal offsets. Positive value means superdiagonal, and negative value
             means subdiagonals. When `k` is a pair of integers specifying the low and high ends of a matrix band.
             Default ``0`` .
-       align (str, optional): specifies how superdiagonals and subdiagonals should be aligned.
+        align (str, optional): specifies how superdiagonals and subdiagonals should be aligned.
             Supported values ``"RIGHT_LEFT"`` , ``"LEFT_RIGHT"`` , ``"LEFT_LEFT"`` , ``"RIGHT_RIGHT"`` .
             Default ``"RIGHT_LEFT"`` .
 

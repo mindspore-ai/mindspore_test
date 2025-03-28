@@ -203,11 +203,11 @@ def adaptive_avg_pool2d(input, output_size):
     .. math::
 
         out\_shape = \begin{cases}
-        input\_shape[-2] + output\_size[1], & \text{if } output\_size text{ is (None, w);}\\
-        output\_size[0] + input\_shape[-1], & \text{if } output\_size text{ is (h, None);}\\
-        input\_shape[-2:], & \text{if } output\_size text{ is (None, None);}\\
-        (h, h), & \text{if } output\_size text{ is h;}\\
-        (h, w), & \text{if } output\_size text{ is (h, w)}
+        input\_shape[-2] + output\_size[1], & \text{if } output\_size \text{ is (None, w);}\\
+        output\_size[0] + input\_shape[-1], & \text{if } output\_size \text{ is (h, None);}\\
+        input\_shape[-2:], & \text{if } output\_size \text{ is (None, None);}\\
+        (h, h), & \text{if } output\_size \text{ is h;}\\
+        (h, w), & \text{if } output\_size \text{ is (h, w)}
         \end{cases}
 
     Raises:

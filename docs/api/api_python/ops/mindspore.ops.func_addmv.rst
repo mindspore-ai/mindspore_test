@@ -15,7 +15,7 @@ mindspore.ops.addmv
     参数：
         - **input** (Tensor) - 输入tensor。
         - **mat** (Tensor) - 将被乘的矩阵tensor。
-        - **vec** (Tensor) -将被乘的向量tensor。
+        - **vec** (Tensor) - 将被乘的向量tensor。
 
     关键字参数：
         - **beta** (scalar[int, float, bool], 可选) - `input` 的尺度因子，默认 ``1`` 。

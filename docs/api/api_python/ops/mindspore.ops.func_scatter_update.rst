@@ -5,7 +5,7 @@ mindspore.ops.scatter_update
 
     根据指定输入索引和更新值更新输入tensor的值。
 
-   .. note::
+    .. note::
         - 支持隐式类型转换、类型提升。
         - 因Parameter对象不支持类型转换，当 `input_x` 为低精度数据类型时，会抛出异常。
         - 参数 `updates` 的shape为 `indices.shape + input_x.shape[1:]` 。
