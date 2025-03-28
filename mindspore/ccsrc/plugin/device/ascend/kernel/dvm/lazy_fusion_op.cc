@@ -42,6 +42,9 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 #include "mindspore/ccsrc/pyboost/auto_generate/copy.h"
+#include "plugin/res_manager/ascend/ascend_device_address/ascend_device_address.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
 namespace kernel {
@@ -265,6 +268,82 @@ tensor::BaseTensorPtr ToContiguous(const BaseTensorPtr &tensor, const std::strin
   return copy_op->Call(tensor);
 }
 }  // namespace
+
+tensor::BaseTensorPtr ConcatAscendDvm::Call(const ValueTuplePtr &tensors_tensor_list, const Int64ImmPtr &axis) {
+  // Concat elimination, limit: 1. axis is 0 2. all inputs are view op
+  const auto &lst = tensors_tensor_list->value();
+  if (lst.empty()) {
+    return ConcatAscend::Call(tensors_tensor_list, axis);
+  }
+  std::vector<BaseTensorPtr> tensors_tensor_list_vector(lst.size());
+  auto axis_imm = GetValue<int64_t>(axis);
+  ShapeVector output_shape;
+  TypeId output_type{kTypeUnknown};
+  for (size_t i = 0; i < lst.size(); ++i) {
+    auto input_i = GetValue<BaseTensorPtr>(lst[i]);
+    // check if input is view
+    if (input_i->is_contiguous()) {
+      return ConcatAscend::Call(tensors_tensor_list, axis);
+    }
+    if (i == 0) {
+      output_shape = input_i->shape();
+      // check if axis is 0
+      if (output_shape.empty() || (axis_imm != 0 && axis_imm != -static_cast<int64_t>(output_shape.size()))) {
+        return ConcatAscend::Call(tensors_tensor_list, axis);
+      }
+      output_type = input_i->data_type();
+    } else {
+      const auto &shape_i = input_i->shape();
+      if (input_i->data_type() != output_type || input_i->shape().size() != output_shape.size()) {
+        return ConcatAscend::Call(tensors_tensor_list, axis);
+      }
+      output_shape[0] += shape_i[0];
+    }
+    tensors_tensor_list_vector[i] = input_i;
+  }
+  MS_LOG(INFO) << op_name() << " call start";
+  // create output tensor
+  auto output_tensor = std::make_shared<tensor::Tensor>(output_type, output_shape);
+  output_tensor->set_need_pipeline_sync(true);
+  outputs_.push_back(output_tensor);
+  PyBoostUtils::PrepareOpInputs(device_context_, stream_id_, tensors_tensor_list_vector);
+  PyBoostUtils::PrepareOpOutputs(device_context_, stream_id_, outputs_);
+  ProfileTrackerTask();
+  // Async
+  auto op = get_op();
+  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([op, tensors_tensor_list_vector]() {
+    MS_LOG(INFO) << "Run device task " << op_name() << " end";
+    auto device_context = op->device_context();
+    const auto &outputs = op->outputs();
+    // Malloc for input tensors
+    PyBoostUtils::MallocOpInputs(device_context, tensors_tensor_list_vector);
+    // Malloc for output tensors
+    PyBoostUtils::MallocOpOutputs(device_context, outputs);
+    auto device_address = std::static_pointer_cast<device::DeviceAddress>(outputs[0]->device_address());
+    auto device_ptr = reinterpret_cast<uint8_t *>(const_cast<void *>(device_address->GetPtr()));
+    auto device_size = device_address->GetSize();
+    size_t offset = 0;
+    for (size_t i = 0; i < tensors_tensor_list_vector.size(); ++i) {
+      auto output_tensor_i =
+        std::make_shared<tensor::Tensor>(outputs[0]->data_type(), tensors_tensor_list_vector[i]->shape());
+      auto sz = LongToSize(output_tensor_i->data().nbytes());
+      device_address->set_ptr(device_ptr + offset);
+      device_address->SetSize(sz);
+      output_tensor_i->set_device_address(device_address);
+      LAUNCH_ACLNN(aclnnInplaceCopy, device_context, op->stream_id(), output_tensor_i, tensors_tensor_list_vector[i]);
+      offset += sz;
+    }
+    // Recover device_address
+    device_address->set_ptr(device_ptr);
+    device_address->SetSize(device_size);
+    MS_LOG(INFO) << "Run device task " << op_name() << " end";
+  }));
+  CreateOutputSimpleInfo();
+  ProfileTrackerInput(tensors_tensor_list, axis);
+  ProfileTrackerOutput(outputs_[0]);
+  MS_LOG(INFO) << op_name() << " call end";
+  return outputs_[0];
+}
 
 tensor::BaseTensorPtr CastAscendDvm::Call(const BaseTensorPtr &input_tensor, const Int64ImmPtr &dtype) {
   auto dst_type = static_cast<TypeId>(GetValue<int64_t>(dtype));
@@ -919,7 +998,7 @@ tensor::BaseTensorPtr LinalgVectorNormAscendDvm::Call(const BaseTensorPtr &x_ten
                                                       const std::optional<Int64ImmPtr> &dtype) {
   auto input_type = x_tensor->data_type();
   auto output_type = dtype.has_value() ? static_cast<TypeId>(GetValue<int64_t>(dtype.value())) : x_tensor->data_type();
-  if (!IsFloatType(input_type) || !IsFloatType(output_type)) {
+  if (!InputCheck(x_tensor) || !IsFloatType(output_type)) {
     return LinalgVectorNormAscend::Call(x_tensor, ord, dim, keepdim, dtype);
   }
   // if current reduce not fuse with its input, flush here to avoid generating a huge dvm kernel(e.g. global norm)
@@ -1494,6 +1573,7 @@ BaseTensorPtr BatchNormElemtAscendDvm::Call(const BaseTensorPtr &input_tensor,
 void RegisterLazyFusionOp() {
   const auto &disable_ops = LazyFusionFlags::GetInstance().disable_ops;
   const auto &enable_ops_only = LazyFusionFlags::GetInstance().enable_ops_only;
+  MS_REPLACE_DVM_OP(Concat);
   MS_REPLACE_DVM_OP(Cast);
   MS_REPLACE_DVM_OP(Abs);
   MS_REPLACE_DVM_OP(Neg);
