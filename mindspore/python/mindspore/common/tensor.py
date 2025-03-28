@@ -2905,8 +2905,8 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         For details, please refer to :func:`mindspore.ops.unique_consecutive`.
         """
-        output, idx, counts = tensor_operator_registry.get("unique_consecutive")\
-            (return_inverse, return_counts, dim)(self)
+        output, idx, counts =\
+            tensor_operator_registry.get("unique_consecutive")(return_inverse, return_counts, dim)(self)
         if return_inverse and return_counts:
             return output, idx, counts
         if return_inverse:
