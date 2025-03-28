@@ -127,9 +127,6 @@ const AnfNodePtr AddRmsNormQuantFusion::Process(const FuncGraphPtr &graph, const
   auto kernel_graph = graph->cast<KernelGraphPtr>();
   kernel_graph->AddValueNodeToGraph(scale_fp32);
   kernel_graph->AddValueNodeToGraph(offset_int32);
-  auto sqrt_mode = GetValueNode(utils::cast<AnfNodePtr>((*equiv)[sqrt_mode_]));
-  auto rounding_mode = GetValueNode(utils::cast<AnfNodePtr>((*equiv)[rounding_mode_]));
-  auto dst_type = GetValueNode(utils::cast<AnfNodePtr>((*equiv)[dst_type_]));
 
   auto prim = std::make_shared<Primitive>("AddRmsNormQuantV2");
 
