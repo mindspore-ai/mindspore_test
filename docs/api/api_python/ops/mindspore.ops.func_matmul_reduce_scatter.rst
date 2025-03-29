@@ -20,11 +20,11 @@ mindspore.ops.matmul_reduce_scatter
         - **world_size** (int) - 通信组的总进程数，要求与实际运行的卡数一致，支持 ``2`` 、 ``4`` 、 ``8`` 。
 
     关键字参数：
-        - **reduce_op** (str, 可选) - reduce 操作类型。当前仅支持 ``'sum'`` 。默认值： ``'sum'`` 。
-        - **bias** (Tensor, 可选) - 当前仅支持 ``None`` 。默认值： ``None`` 。
-        - **comm_turn** (int, 可选) - 表示进程间通信切分粒度。当前仅支持 ``0`` 。默认值： ``0`` 。
-        - **trans_input** (bool, 可选) - 表示 ``input`` 是否转置。当前仅支持 ``False`` 。默认值： ``False`` 。
-        - **trans_x2** (bool, 可选) - 表示 ``x2`` 是否转置。默认值： ``False`` 。
+        - **reduce_op** (str, 可选) - reduce 操作类型。当前仅支持 ``'sum'`` 。默认 ``'sum'`` 。
+        - **bias** (Tensor, 可选) - 当前仅支持 ``None`` 。默认 ``None`` 。
+        - **comm_turn** (int, 可选) - 表示进程间通信切分粒度。当前仅支持 ``0`` 。默认 ``0`` 。
+        - **trans_input** (bool, 可选) - 表示 ``input`` 是否转置。当前仅支持 ``False`` 。默认 ``False`` 。
+        - **trans_x2** (bool, 可选) - 表示 ``x2`` 是否转置。默认 ``False`` 。
 
     返回：
         - **output** (Tensor) - matmul 和 reducescatter 融合计算的结果。

@@ -7,7 +7,7 @@ mindspore.ops.min
 
     参数：
         - **input** (Tensor) - 输入tensor。
-        - **axis** (int) - 指定计算轴。如果为 ``None`` ，计算 `input` 中的所有元素。默认 ``None`` 。
+        - **axis** (int) - 指定轴。如果为 ``None`` ，计算 `input` 中的所有元素。默认 ``None`` 。
         - **keepdims** (bool) - 输出tensor是否保留维度。默认 ``False`` 。
 
     关键字参数：

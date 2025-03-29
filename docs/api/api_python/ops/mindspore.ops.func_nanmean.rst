@@ -7,11 +7,11 @@ mindspore.ops.nanmean
 
     参数：
         - **input** (Tensor) - 输入tensor。
-        - **axis** (int, 可选) - 指定计算轴，默认 ``None`` 。
+        - **axis** (int, 可选) - 指定轴，默认 ``None`` 。
         - **keepdims** (bool, 可选) - 输出tensor是否保留维度，默认 ``False`` 。
 
     关键字参数：
-        - **dtype** (:class:`mindspore.dtype`, 可选) - 返回的数据类型，默认 ``None`` 。
+        - **dtype** (:class:`mindspore.dtype`, 可选) - 指定数据类型，默认 ``None`` 。
 
     返回：
         Tensor

@@ -7,7 +7,7 @@ mindspore.ops.mean
 
     参数：
         - **x** (Tensor[Number]) - 输入tensor。
-        - **axis** (Union[int, tuple(int), list(int), Tensor]) - 指定计算轴。如果为 ``None`` ，计算 `input` 中的所有元素。默认 ``None`` 。
+        - **axis** (Union[int, tuple(int), list(int), Tensor]) - 指定轴。如果为 ``None`` ，计算 `input` 中的所有元素。默认 ``None`` 。
         - **keep_dims** (bool) - 输出tensor是否保留维度。默认 ``False`` 。
 
     返回：

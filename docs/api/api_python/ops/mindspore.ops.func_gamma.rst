@@ -11,7 +11,7 @@ mindspore.ops.gamma
         Ascend后端不支持随机数重现功能， `seed` 参数不起作用。
 
     参数：
-        - **shape** (tuple) - 指定的shape。
+        - **shape** (tuple) - 指定shape。
         - **alpha** (Tensor) - shape参数。
         - **beta** (Tensor) - 逆尺度参数。
         - **seed** (int，可选) - 随机种子，默认 ``None`` 。

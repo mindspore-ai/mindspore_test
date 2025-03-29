@@ -14,7 +14,7 @@ mindspore.ops.cosine_similarity
     参数：
         - **x1** (Tensor) - 第一个输入tensor。
         - **x2** (Tensor) - 第二个输入tensor。
-        - **dim** (int, 可选) - 计算余弦相似度的轴。默认 ``1`` 。
+        - **dim** (int, 可选) - 指定维度。默认 ``1`` 。
         - **eps** (float, 可选) - 极小值，用于避免除零的情况。默认 ``1e-08`` 。
 
     返回：

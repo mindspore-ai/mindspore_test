@@ -13,7 +13,7 @@ mindspore.ops.full
         - **fill_value** (number.Number) - 指定值。
 
     关键字参数：
-        - **dtype** (mindspore.dtype) - 指定的数据类型。默认 ``None`` 。
+        - **dtype** (mindspore.dtype) - 指定数据类型。默认 ``None`` 。
 
     返回：
         Tensor

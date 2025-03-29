@@ -9,4 +9,4 @@ mindspore.ops.argwhere
         - **input** (Tensor) - 输入tensor。
 
     返回：
-        2-D Tensor
+        二维tensor

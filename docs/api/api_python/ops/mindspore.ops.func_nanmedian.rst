@@ -10,7 +10,7 @@ mindspore.ops.nanmedian
 
     参数：
         - **input** (Tensor) - 输入tensor。
-        - **axis** (int, 可选) - 指定计算轴，默认 ``-1`` 。
+        - **axis** (int, 可选) - 指定轴，默认 ``-1`` 。
         - **keepdims** (bool, 可选) - 输出tensor是否保持维度，默认 ``False`` 。
 
     返回：

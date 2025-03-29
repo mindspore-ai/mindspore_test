@@ -12,7 +12,7 @@ mindspore.ops.standard_normal
         Ascend后端不支持随机数重现功能， `seed` 参数不起作用。
 
     参数：
-        - **shape** (Union[tuple, Tensor]) - 返回tensor的shape。
+        - **shape** (Union[tuple, Tensor]) - 指定生成随机数的shape。
         - **seed** (int, 可选) - 随机数种子。默认 ``None`` 。
 
     返回：

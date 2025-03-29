@@ -9,7 +9,7 @@
         Ascend后端不支持随机数重现功能， `seed` 参数不起作用。
 
     参数：
-        - **shape** (tuple) - 返回tensor的shape。
+        - **shape** (tuple) - 指定shape。
         - **mean** (Union[Tensor, int, float]) - 返回tensor的正态分布平均值。
         - **stddev** (Union[Tensor, int, float]) - 返回tensor的正态分布标准差。
         - **seed** (int，可选) - 随机种子，默认 ``None`` ，等同于 ``0`` 。

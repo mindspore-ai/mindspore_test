@@ -18,7 +18,7 @@ mindspore.ops.logspace
         - **base** (int，可选) - 对数函数的底数。默认 ``10`` 。
 
     关键字参数：
-        - **dtype** (mindspore.dtype，可选) - 指定的数据类型。默认 ``mstype.float32`` 。
+        - **dtype** (mindspore.dtype，可选) - 指定数据类型。默认 ``mstype.float32`` 。
 
     返回：
         Tensor

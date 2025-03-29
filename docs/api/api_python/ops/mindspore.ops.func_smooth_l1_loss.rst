@@ -39,11 +39,11 @@ mindspore.ops.smooth_l1_loss
           
           - CPU/Ascend：与 `input` 的shape相同， `input` 和 `target` 遵循隐式类型转换规则，使数据类型一致。
           - GPU：与 `input` 的shape和数据类型相同。
-        - **beta** (number，可选) - 控制损失函数在L1Loss和L2Loss间变换的阈值，默认值： ``1.0`` 。
+        - **beta** (number，可选) - 控制损失函数在L1Loss和L2Loss间变换的阈值，默认 ``1.0`` 。
           
           - Ascend：该值必须大于等于0。
           - CPU/GPU：该值必须大于0。 
-        - **reduction** (str，可选) - 指定应用于输出结果的规约计算方式，可选 ``'none'`` 、 ``'mean'`` 、 ``'sum'`` ，默认值： ``'none'`` 。
+        - **reduction** (str，可选) - 指定应用于输出结果的规约计算方式，可选 ``'none'`` 、 ``'mean'`` 、 ``'sum'`` ，默认 ``'none'`` 。
 
           - ``"none"``：不应用规约方法。
           - ``"mean"``：计算输出元素的平均值。

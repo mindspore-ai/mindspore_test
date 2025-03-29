@@ -7,7 +7,7 @@ mindspore.ops.narrow
 
     参数：
         - **input** (Tensor) - 输入tensor。
-        - **axis** (int) - 指定的轴。
+        - **axis** (int) - 指定轴。
         - **start** (int) - 指定起始位置。
         - **length** (int) - 指定长度。
 

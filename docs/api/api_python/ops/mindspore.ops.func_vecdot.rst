@@ -22,7 +22,7 @@ mindspore.ops.vecdot
         - **y** (Tensor) - 第二批tensor。
 
     关键字参数：
-        - **axis** (int) - 指定计算轴。默认 ``-1`` 。
+        - **axis** (int) - 指定轴。默认 ``-1`` 。
 
     返回：
         Tensor

@@ -11,7 +11,7 @@
     参数：
         - **input** (Tensor) - 第一个输入tensor。
         - **other** (Tensor) - 第二个输入tensor。
-        - **dim** (int，可选) - 指定计算维度。默认 ``None`` 。
+        - **dim** (int，可选) - 指定维度。默认 ``None`` 。
 
     返回：
         Tensor

@@ -8,7 +8,7 @@ mindspore.ops.select_scatter
     参数：
         - **input** (Tensor) - 输入tensor。
         - **src** (Tensor) - 源tensor。
-        - **axis** (int) - 要嵌入的 `input` 的维度。
+        - **axis** (int) - 指定轴。
         - **index** (int) - 在指定轴上散布的位置。
 
     返回：

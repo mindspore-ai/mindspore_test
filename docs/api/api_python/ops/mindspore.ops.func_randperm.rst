@@ -13,7 +13,7 @@ mindspore.ops.randperm
         - **n** (Union[Tensor, int]) - 输入上界（不包含）。
         - **seed** (int, 可选) - 随机种子。默认 ``0`` 。当seed为-1时，offset为0，随机数由时间决定。
         - **offset** (int, 可选) - 偏移量。生成随机数，优先级高于随机种子。必须是非负数，默认 ``0`` 。
-        - **dtype** (mindspore.dtype, 可选) - 返回的数据类型。默认 ``mstype.int64`` 。
+        - **dtype** (mindspore.dtype, 可选) - 指定数据类型。默认 ``mstype.int64`` 。
 
     返回：
         Tensor，shape由参数 `n` 决定。

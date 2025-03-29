@@ -5,7 +5,7 @@ mindspore.ops.remainder
 
     逐元素计算输入tensor的除法余数。
 
-    支持隐式类型转换，类型提升。
+    支持隐式类型转换、类型提升。
 
     .. code:: python
 

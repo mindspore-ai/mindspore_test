@@ -7,9 +7,9 @@ mindspore.ops.interpolate
 
     参数：
         - **input** (Tensor) - 被调整大小的Tensor。输入向量必须为三维、四维或五维，shape为 :math:`(N, C, [optional D], [optional H], W)` ，数据类型为float。
-        - **size** (Union[int, tuple[int], list[int]], 可选) - 目标大小。如果 `size` 为tuple或list，那么其长度应该和 `input` 去掉 `N, C` 的维度相同。 `size` 和 `scale_factor` 同时只能指定一个。默认值： ``None`` 。
-        - **scale_factor** (Union[float, tuple[float], list[float]]，可选) - 每个维度的缩放系数。如果 `scale_factor` 为tuple或list，那么其长度应该和 `input` 去掉 `N, C` 的维度相同。 `size` 和 `scale_factor` 同时只能指定一个。默认值： ``None`` 。
-        - **mode** (str，可选) - 采样算法。默认值： ``"nearest"`` 。可采用以下采样方式的一种：
+        - **size** (Union[int, tuple[int], list[int]], 可选) - 目标大小。如果 `size` 为tuple或list，那么其长度应该和 `input` 去掉 `N, C` 的维度相同。 `size` 和 `scale_factor` 同时只能指定一个。默认 ``None`` 。
+        - **scale_factor** (Union[float, tuple[float], list[float]]，可选) - 每个维度的缩放系数。如果 `scale_factor` 为tuple或list，那么其长度应该和 `input` 去掉 `N, C` 的维度相同。 `size` 和 `scale_factor` 同时只能指定一个。默认 ``None`` 。
+        - **mode** (str，可选) - 采样算法。默认 ``"nearest"`` 。可采用以下采样方式的一种：
 
           - 'nearest'：最近邻插值。
           - 'linear' ：线性插值，仅三维。
@@ -29,9 +29,9 @@ mindspore.ops.interpolate
 
           其中， :math:`ori\_length` 与 :math:`new\_length` 分别表示Tensor在x轴方向上转换前、后的长度， :math:`new\_i` 表示转换后沿x轴第i个元素的坐标， :math:`ori\_i` 表示沿x轴原始数据的对应坐标。
 
-          此选项只对 ``'linear'`` 、 ``'bilinear'`` 和 ``'bicubic'`` 模式有效，默认值： ``False``。
+          此选项只对 ``'linear'`` 、 ``'bilinear'`` 和 ``'bicubic'`` 模式有效，默认 ``False``。
 
-        - **recompute_scale_factor** (bool, 可选) - 重计算 `scale_factor` 。默认值： ``None`` 。
+        - **recompute_scale_factor** (bool, 可选) - 重计算 `scale_factor` 。默认 ``None`` 。
         
           - 如果为True，会使用参数 `scale_factor` 计算参数 `size`，最终使用 `size` 的值进行缩放。
           - 如果为False，将使用 `size` 或 `scale_factor` 直接进行插值。

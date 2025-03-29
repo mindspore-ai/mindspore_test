@@ -22,13 +22,13 @@ mindspore.ops.all_gather_matmul
         - **world_size** (int) - 通信组的总进程数，要求与实际运行的卡数一致，支持 ``2`` 、 ``4`` 、 ``8`` 。
 
     关键字参数：
-        - **bias** (Tensor, 可选) - 当前仅支持 ``None`` 。默认值： ``None`` 。
+        - **bias** (Tensor, 可选) - 当前仅支持 ``None`` 。默认 ``None`` 。
         - **gather_index** (int, 可选) - 表示 allgather 操作对象， ``0`` 表示对 ``input`` 做 gather， ``1`` 表示对 ``x2`` 做 gather。当前仅支持
-          ``0`` 。默认值： ``0``。
-        - **gather_output** (bool, 可选) - 表示是否需要 gather 输出。默认值： ``True`` 。
-        - **comm_turn** (int, 可选) - 表示进程间通信切分粒度。当前仅支持 ``0`` 。默认值： ``0`` 。
-        - **trans_input** (bool, 可选) - 表示 ``input`` 是否转置。当前仅支持 ``False`` 。默认值： ``False`` 。
-        - **trans_x2** (bool, 可选) - 表示 ``x2`` 是否转置。默认值： ``False`` 。
+          ``0`` 。默认 ``0``。
+        - **gather_output** (bool, 可选) - 表示是否需要 gather 输出。默认 ``True`` 。
+        - **comm_turn** (int, 可选) - 表示进程间通信切分粒度。当前仅支持 ``0`` 。默认 ``0`` 。
+        - **trans_input** (bool, 可选) - 表示 ``input`` 是否转置。当前仅支持 ``False`` 。默认 ``False`` 。
+        - **trans_x2** (bool, 可选) - 表示 ``x2`` 是否转置。默认 ``False`` 。
 
     返回：
         - **output** (Tensor) - allgather 和 matmul 融合计算的结果。

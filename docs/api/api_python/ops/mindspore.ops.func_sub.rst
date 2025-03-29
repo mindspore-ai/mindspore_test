@@ -12,7 +12,7 @@ mindspore.ops.sub
     .. note::
         - 当两个输入具有不同的shape时，它们的shape必须要能广播为一个共同的shape。
         - 两个输入不能同时为bool类型。[True, Tensor(True, bool\_), Tensor(np.array([True]), bool\_)]等都为bool类型。
-        - 支持隐式类型转换，类型提升。
+        - 支持隐式类型转换、类型提升。
 
     参数：
         - **input** (Union[Tensor, number.Number, bool]) - 第一个输入。
