@@ -835,6 +835,12 @@ void MemoryTrackerEnabled::Dump(size_t rank_id) {
   }
   has_dump = true;
 
+  // Check if need dump
+  if (task_list_.empty() && !graph::GraphTracker::getInstance().NeedDump()) {
+    MS_LOG(WARNING) << "MemoryTracker skip Dump, since no data has been collected";
+    return;
+  }
+
   auto [block_csv_path, task_csv_path, graph_path] = GetPath(rank_id);
   if (block_csv_path.empty() || task_csv_path.empty() || graph_path.empty()) {
     MS_LOG(ERROR) << "Get realpath failed, block_csv_path:" << block_csv_path << ", task_csv_path:" << task_csv_path

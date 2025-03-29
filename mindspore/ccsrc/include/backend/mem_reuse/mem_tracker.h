@@ -366,6 +366,8 @@ class BACKEND_EXPORT GraphTracker {
   void CacheLastTask();
   void EmptyCache();
 
+  bool NeedDump() { return !operators_.empty(); }
+
  private:
   GraphTracker() = default;
   void InitStreamSize();
