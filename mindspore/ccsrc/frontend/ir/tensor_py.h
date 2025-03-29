@@ -96,6 +96,35 @@ template <>
 struct type_caster<bfloat16> : public npy_scalar_caster<bfloat16> {
   static constexpr auto name = "bfloat16";
 };
+
+template <>
+struct type_caster<mindspore::tensor::BaseTensorPtr> {
+  PYBIND11_TYPE_CASTER(mindspore::tensor::BaseTensorPtr, _("Tensor"));
+  bool load(handle src, bool) {
+    if (mindspore::tensor::IsTensorPy(src)) {
+      value = mindspore::tensor::ConvertToBaseTensor(src);
+      return true;
+    }
+    return false;
+  }
+  static handle cast(const mindspore::tensor::BaseTensorPtr &src, return_value_policy, handle) {
+    return handle(mindspore::tensor::Wrap(src));
+  }
+};
+template <>
+struct type_caster<mindspore::tensor::TensorPtr> {
+  PYBIND11_TYPE_CASTER(mindspore::tensor::TensorPtr, _("Tensor"));
+  bool load(handle src, bool) {
+    if (mindspore::tensor::IsTensorPy(src)) {
+      value = mindspore::tensor::ConvertToTensor(src);
+      return true;
+    }
+    return false;
+  }
+  static handle cast(const mindspore::tensor::TensorPtr &src, return_value_policy, handle) {
+    return handle(mindspore::tensor::Wrap(src));
+  }
+};
 }  // namespace detail
 }  // namespace pybind11
 

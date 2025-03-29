@@ -184,18 +184,3 @@ ValuePtrList GradPostProcess(const BaseTensorPtrList &outputs, std::vector<bool>
   return PyNativeAlgo::DataConvert::TensorListToValueList(result);
 }
 }  // namespace mindspore::pynative::autograd
-
-namespace pybind11::detail {
-bool type_caster<mindspore::tensor::BaseTensorPtr>::load(handle src, bool) {
-  if (mindspore::tensor::IsTensorPy(src)) {
-    value = mindspore::tensor::ConvertToBaseTensor(src);
-    return true;
-  }
-  return false;
-}
-
-handle type_caster<mindspore::tensor::BaseTensorPtr>::cast(const mindspore::tensor::BaseTensorPtr &src,
-                                                           return_value_policy, handle) {
-  return handle(mindspore::tensor::Wrap(src));
-}
-}  // namespace pybind11::detail

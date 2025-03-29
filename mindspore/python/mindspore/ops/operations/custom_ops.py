@@ -39,8 +39,7 @@ from mindspore.communication.management import get_rank, GlobalComm
 from ._ms_kernel import determine_variable_usage
 from ._custom_grad import autodiff_bprop
 from ._pyfunc_registry import add_pyfunc
-
-from ._custom_ops_utils import ExtensionLoader
+from ._custom_ops_utils import ExtensionBuilder
 
 if platform.system() != "Windows":
     import fcntl
@@ -1156,16 +1155,27 @@ class CustomOpBuilder:
             self.ascend_cann_path = os.getenv("ASCEND_OPP_PATH").split('opp')[0]
 
     def get_sources(self):
-        """source files"""
+        """
+        Get the source files for the custom operator.
+
+        Returns:
+            str or list[str]: The source file(s) for the operator.
+        """
         return self.source
 
     def get_include_paths(self):
-        """include paths"""
+        """
+        Get the include paths required for compiling the custom operator.
+
+        Returns:
+            list[str]: A list of include paths.
+        """
         include_list = self.include_paths if self.include_paths is not None else []
         include_list.append(CustomOpBuilder._mindspore_path)
         include_list.append(os.path.join(CustomOpBuilder._mindspore_path, "include"))
         include_list.append(os.path.join(CustomOpBuilder._mindspore_path, "include/third_party"))
         include_list.append(os.path.join(CustomOpBuilder._mindspore_path, "include/third_party/robin_hood_hashing"))
+        include_list.append(os.path.join(CustomOpBuilder._mindspore_path, "include/third_party/securec/include"))
 
         if self.backend == "Ascend":
             include_list.append(os.path.join(self.ascend_cann_path, "include"))
@@ -1187,9 +1197,13 @@ class CustomOpBuilder:
         return include_list
 
     def get_cflags(self):
-        """cxx flags"""
-        flags = ['-fstack-protector-all', '-Wl,-z,relro,-z,now,-z,noexecstack', '-fPIC', '-pie',
-                 '-Wl,--disable-new-dtags,--rpath', '-s']
+        """
+        Get the C++ compiler flags for building the custom operator.
+
+        Returns:
+            list[str]: A list of C++ compiler flags.
+        """
+        flags = ['-fstack-protector-all', '-fPIC', '-pie']
         flags += ['-DENABLE_FAST_HASH_TABLE=1']
         if self.backend == "Ascend":
             flags.append('-DCUSTOM_ASCEND_OP')
@@ -1198,8 +1212,14 @@ class CustomOpBuilder:
         return flags
 
     def get_ldflags(self):
-        """extra ld flags"""
-        flags = [
+        """
+        Get the linker flags for building the custom operator.
+
+        Returns:
+            list[str]: A list of linker flags.
+        """
+        flags = ['-Wl,-z,relro,-z,now,-z,noexecstack', '-Wl,--disable-new-dtags,--rpath', '-s']
+        flags += [
             '-L' + os.path.abspath(os.path.join(CustomOpBuilder._mindspore_path, 'lib')),
             '-lmindspore_core',
             '-lmindspore_ms_backend',
@@ -1214,16 +1234,37 @@ class CustomOpBuilder:
             flags.append(self.ldflags)
         return flags
 
-    def load(self):
-        """load module"""
-        if self.name in CustomOpBuilder._loaded_ops:
-            return CustomOpBuilder._loaded_ops[self.name]
+    def build(self):
+        """
+        Build the custom operator module.
 
-        op_module = ExtensionLoader().load(
+        Returns:
+            str: The path to the compiled module.
+        """
+        return ExtensionBuilder().build(
             module_name=self.name,
             sources=self.get_sources(),
             extra_include_paths=self.get_include_paths(),
             extra_cflags=self.get_cflags(),
             extra_ldflags=self.get_ldflags())
-        mod = CustomOpBuilder._loaded_ops[self.name] = op_module
+
+    def load(self):
+        """
+        Build and load the custom operator module.
+
+        Returns:
+            Module: The loaded custom operator module.
+        """
+        if self.name in CustomOpBuilder._loaded_ops:
+            return CustomOpBuilder._loaded_ops[self.name]
+        module_path = self.build()
+        mod = self._import_module(module_path)
+        CustomOpBuilder._loaded_ops[self.name] = mod
         return mod
+
+    def _import_module(self, module_path):
+        """Import module from library."""
+        spec = importlib.util.spec_from_file_location(self.name, module_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
