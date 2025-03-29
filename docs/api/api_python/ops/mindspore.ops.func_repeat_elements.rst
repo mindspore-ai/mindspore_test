@@ -11,7 +11,7 @@ mindspore.ops.repeat_elements
     参数：
         - **x** (Tensor) - 输入tensor。
         - **rep** (int) - 复制次数，为正数。
-        - **axis** (int) - 指定复制轴，默认 ``0`` 。
+        - **axis** (int) - 指定轴，默认 ``0`` 。
 
     返回：
         Tensor

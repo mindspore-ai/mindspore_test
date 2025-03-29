@@ -10,7 +10,7 @@ mindspore.ops.sort
 
     参数：
         - **input_x** (Tensor) - 输入tensor。
-        - **axis** (int，可选) - 指定排序的轴，默认 ``-1`` ，表示指定最后一维。
+        - **axis** (int，可选) - 指定轴，默认 ``-1`` ，表示指定最后一维。
         - **descending** (bool，可选) - 排序方式。 ``True`` 表示按降序排列，否则按升序排列，默认 ``False`` 。
 
     .. warning::

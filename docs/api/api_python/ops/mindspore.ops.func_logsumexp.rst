@@ -11,7 +11,7 @@ mindspore.ops.logsumexp
 
     参数：
         - **input** (Tensor) - 输入tensor。
-        - **dim** (Union[int, tuple(int), list(int)]) - 指定计算轴。如果为 ``()`` ，计算 `input` 中的所有元素。
+        - **dim** (Union[int, tuple(int), list(int)]) - 指定维度。如果为 ``()`` ，计算 `input` 中的所有元素。
         - **keepdim** (bool，可选) - 输出tensor是否保留维度。默认 ``False`` 。
 
     返回：

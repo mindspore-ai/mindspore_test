@@ -9,7 +9,7 @@ mindspore.ops.scatter_mul
         \text{input_x}[\text{indices}[i, ..., j], :] \mathrel{*}= \text{updates}[i, ..., j, :]
 
     .. note::
-        - 支持隐式类型转换，类型提升。
+        - 支持隐式类型转换、类型提升。
         - 因Parameter对象不支持类型转换，当 `input_x` 为低精度数据类型时，会抛出异常。
         - `updates` 的shape为 `indices.shape + input_x.shape[1:]` 。
 

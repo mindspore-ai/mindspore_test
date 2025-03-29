@@ -11,8 +11,8 @@ mindspore.ops.lu_unpack
     参数：
         - **LU_data** (Tensor) - 打包的LU分解数据，秩大于等于2。
         - **LU_pivots** (Tensor) - 打包的LU分解枢轴。
-        - **unpack_data** (bool，可选) - 是否解压缩 `LU_data` 。如果为False，则返回的L和U为 ``None`` 。默认值： ``True`` 。
-        - **unpack_pivots** (bool，可选) - 是否将 `LU_pivots` 解压缩为置换矩阵P。如果为 ``False`` ，则返回的P为 ``None`` 。默认值： ``True`` 。
+        - **unpack_data** (bool，可选) - 是否解压缩 `LU_data` 。如果为False，则返回的L和U为 ``None`` 。默认 ``True`` 。
+        - **unpack_pivots** (bool，可选) - 是否将 `LU_pivots` 解压缩为置换矩阵P。如果为 ``False`` ，则返回的P为 ``None`` 。默认 ``True`` 。
 
     返回：
         由tensor组成的tuple。分别为：LU分解的置换矩阵、LU分解的L矩阵、LU分解的U矩阵。

@@ -10,7 +10,7 @@ mindspore.ops.ones
 
     参数：
         - **shape** (Union[tuple[int], list[int], int, Tensor]) - 指定的shape。
-        - **dtype** (:class:`mindspore.dtype`) - 指定的数据类型，默认 ``None`` 。
+        - **dtype** (:class:`mindspore.dtype`) - 指定数据类型，默认 ``None`` 。
 
     返回：
         Tensor

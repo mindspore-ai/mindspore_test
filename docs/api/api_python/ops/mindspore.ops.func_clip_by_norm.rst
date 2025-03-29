@@ -11,8 +11,8 @@
     参数：
         - **x** (Union[Tensor, list[Tensor], tuple[Tensor]]) - 需要裁剪的输入。
         - **max_norm** (Union[float, int]) - 该组网络参数的范数上限。
-        - **norm_type** (Union[float, int]，可选) - 范数类型。默认值： ``2.0`` 。
-        - **error_if_nonfinite** (bool，可选) - 若为 ``True`` ，当 `x` 中元素的总范数为nan、inf或-inf时抛出异常；若为 ``False`` ，则不抛出异常。默认值： ``False`` 。
+        - **norm_type** (Union[float, int]，可选) - 范数类型。默认 ``2.0`` 。
+        - **error_if_nonfinite** (bool，可选) - 若为 ``True`` ，当 `x` 中元素的总范数为nan、inf或-inf时抛出异常；若为 ``False`` ，则不抛出异常。默认 ``False`` 。
 
     返回：
         Tensor、Tensor的列表或元组，表示裁剪后的Tensor。

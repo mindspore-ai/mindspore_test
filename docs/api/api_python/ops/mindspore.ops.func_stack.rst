@@ -7,7 +7,7 @@
 
     参数：
         - **tensors** (Union[tuple, list]) - 输入tensors。
-        - **axis** (int) - 指定堆叠运算的轴，默认 ``0`` 。
+        - **axis** (int) - 指定轴，默认 ``0`` 。
 
     返回：
         Tensor

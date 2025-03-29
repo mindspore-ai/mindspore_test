@@ -7,7 +7,7 @@ mindspore.ops.std
         
     参数：
         - **input** (Tensor[Number]) - 输入Tensor。
-        - **axis** (Union[int, tuple(int)]，可选) - 指定计算轴。如果为 ``None`` ，计算 `input` 中的所有元素。默认 ``None`` 。
+        - **axis** (Union[int, tuple(int)]，可选) - 指定轴。如果为 ``None`` ，计算 `input` 中的所有元素。默认 ``None`` 。
         - **ddof** (Union[int, bool]，可选) - δ自由度。默认 ``0`` 。
             
           - 如果为整数，计算中使用的除数是 :math:`N - ddof` ，其中 :math:`N` 表示元素的数量。

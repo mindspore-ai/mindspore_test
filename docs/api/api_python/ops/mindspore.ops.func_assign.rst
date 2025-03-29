@@ -5,7 +5,7 @@ mindspore.ops.assign
 
     为网络参数或者tensor赋值。
 
-    支持隐式类型转换，类型提升。
+    支持隐式类型转换、类型提升。
 
     参数：
         - **variable** (Union[Parameter, Tensor]) - 输入的网络参数或者tensor。

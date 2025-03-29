@@ -11,6 +11,6 @@ mindspore.ops.cumsum
     参数：
         - **x** (Tensor) - 输入tensor。
         - **axis** (int) - 指定计算的轴。
-        - **dtype** (:class:`mindspore.dtype`, 可选) - 返回的数据类型。默认 ``None`` 。
+        - **dtype** (:class:`mindspore.dtype`, 可选) - 指定数据类型。默认 ``None`` 。
     返回：
         Tensor

@@ -16,11 +16,11 @@ mindspore.ops.avg_pool1d
 
     参数：
         - **input_x** (Tensor) - 输入shape为 :math:`(N, C_{in}, L_{in})` 的Tensor。
-        - **kernel_size** (int，可选) - 指定池化核尺寸大小。默认值： ``1`` 。
-        - **stride** (Union(int, tuple[int])，可选) - 池化操作的移动步长。可以是一个整数或者包含一个整数的tuple。默认值： ``1`` 。
-        - **padding** (Union(int, tuple[int])，可选) - 池化填充长度。可以是一个整数或者包含一个整数的tuple。默认值： ``0`` 。
-        - **ceil_mode** (bool，可选) - 如果为 ``True`` ，用ceil代替floor来计算输出的shape。默认值： ``False`` 。
-        - **count_include_pad** (bool，可选) - 如果为 ``True`` ，平均计算将包括零填充。默认值： ``True`` 。
+        - **kernel_size** (int，可选) - 指定池化核尺寸大小。默认 ``1`` 。
+        - **stride** (Union(int, tuple[int])，可选) - 池化操作的移动步长。可以是一个整数或者包含一个整数的tuple。默认 ``1`` 。
+        - **padding** (Union(int, tuple[int])，可选) - 池化填充长度。可以是一个整数或者包含一个整数的tuple。默认 ``0`` 。
+        - **ceil_mode** (bool，可选) - 如果为 ``True`` ，用ceil代替floor来计算输出的shape。默认 ``False`` 。
+        - **count_include_pad** (bool，可选) - 如果为 ``True`` ，平均计算将包括零填充。默认 ``True`` 。
 
     返回：
         Tensor，shape为 :math:`(N, C_{out}, L_{out})` 。

@@ -8,7 +8,7 @@ mindspore.ops.split
     参数：
         - **tensor** (Tensor) - 输入tensor。
         - **split_size_or_sections** (Union[int, tuple(int), list(int)]) - 切分后子tensor的大小。
-        - **axis** (int，可选) - 指定分割轴，默认 ``0`` 。
+        - **axis** (int，可选) - 指定轴，默认 ``0`` 。
 
     .. note::
         - 如果 `split_size_or_sections` 是int类型， `tensor` 将被均匀切分成块，每块大小为 `split_size_or_sections` ，若 `tensor.shape[axis]` 不能被 `split_size_or_sections` 整除，则最后一块大小为余数；

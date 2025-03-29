@@ -36,7 +36,7 @@ mindspore.ops.norm
         - **keepdim** (bool) - 输出tensor是否保留维度。默认 ``False`` 。
 
     关键字参数：
-        - **dtype** (:class:`mindspore.dtype`, 可选) - 返回的数据类型。如果设置此参数，则会在计算前将 `A` 转换为指定的类型。默认 ``None`` 。
+        - **dtype** (:class:`mindspore.dtype`, 可选) - 指定数据类型。如果设置此参数，则会在计算前将 `A` 转换为指定的类型。默认 ``None`` 。
 
     返回：
         Tensor

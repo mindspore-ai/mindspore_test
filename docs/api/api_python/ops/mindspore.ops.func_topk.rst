@@ -11,9 +11,9 @@ mindspore.ops.topk
     参数：
         - **input** (Tensor) - 输入tensor。
         - **k** (int) - 返回的元素数量。
-        - **dim** (int, 可选) - 指定排序的维度。如果为 ``None``，则会按最后一个维度排序。默认 ``None`` 。
+        - **dim** (int, 可选) - 指定维度。如果为 ``None``，则会按最后一个维度排序。默认 ``None`` 。
         - **largest** (bool, 可选) - 如果为 ``True`` ，返回最大元素。如果为 ``False`` ，返回最小元素。默认 ``True`` 。
-        - **sorted** (bool, 可选) - 如果为 ``True`` ，则返回的元素按降序排序。如果为 ``False`` ，则不对获取的元素进行排序。默认值： ``True`` 。
+        - **sorted** (bool, 可选) - 如果为 ``True`` ，则返回的元素按降序排序。如果为 ``False`` ，则不对获取的元素进行排序。默认 ``True`` 。
 
     返回：
         两个tensor组成的tuple(values, indices)

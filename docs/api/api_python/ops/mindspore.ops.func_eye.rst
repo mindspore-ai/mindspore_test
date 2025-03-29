@@ -8,6 +8,6 @@ mindspore.ops.eye
     参数：
         - **n** (int) - 返回的行数。
         - **m** (int，可选) - 返回的列数。如果为None，与n相等。默认 ``None`` 。
-        - **dtype** (mindspore.dtype，可选) - 返回的数据类型。默认 ``None`` 。
+        - **dtype** (mindspore.dtype，可选) - 指定数据类型。默认 ``None`` 。
     返回：
         Tensor

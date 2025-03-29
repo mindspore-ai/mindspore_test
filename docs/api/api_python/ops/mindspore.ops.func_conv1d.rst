@@ -35,18 +35,18 @@ mindspore.ops.conv1d
     参数：
         - **input** (Tensor) - 输入Tensor，shape为 :math:`(N, C_{in}, L_{in})`。
         - **weight** (Tensor) - 卷积核的值，其shape为 :math:`(C_{out}, C_{in}/ \text{groups}, \text{kernel_size})` 。
-        - **bias** (Tensor，可选) - 偏置Tensor，shape为 :math:`(C_{out})` 的Tensor。如果 `bias` 是None，将不会添加偏置。默认值： ``None`` 。
-        - **stride** (Union(int, tuple[int])，可选) - 卷积核移动的步长，数据类型为int或1个int组成的tuple。表示在宽度方向的移动步长。默认值： ``1`` 。
-        - **pad_mode** (str，可选) - 指定填充模式。取值为 ``"same"`` ， ``"valid"`` ，或 ``"pad"`` 。默认值： ``"valid"`` 。
+        - **bias** (Tensor，可选) - 偏置Tensor，shape为 :math:`(C_{out})` 的Tensor。如果 `bias` 是None，将不会添加偏置。默认 ``None`` 。
+        - **stride** (Union(int, tuple[int])，可选) - 卷积核移动的步长，数据类型为int或1个int组成的tuple。表示在宽度方向的移动步长。默认 ``1`` 。
+        - **pad_mode** (str，可选) - 指定填充模式。取值为 ``"same"`` ， ``"valid"`` ，或 ``"pad"`` 。默认 ``"valid"`` 。
 
           - ``"same"``：输出的宽度与输入整除 `stride` 后的值相同。填充将被均匀地添加到两侧，剩余填充量将被添加到维度末端。若设置该模式，`padding` 的值必须为0。
           - ``"valid"``：在不填充的前提下返回有效计算所得的输出。不满足计算的多余像素会被丢弃。如果设置此模式，则 `padding` 的值必须为0。
           - ``"pad"``：对输入 `input` 进行填充。在输入上填充 `padding` 大小的0。如果设置此模式， `padding` 必须大于或等于0。
 
-        - **padding** (Union(int, tuple[int], list[int])，可选) - 当 `pad_mode` 为 ``"pad"`` 时，指定在输入 `input` 的宽度方向上填充的数量。数据类型为int或包含1个int组成的tuple。表示宽度方向的 `padding` 数量（左右两边均为该值）。值必须大于等于0，默认值： ``0`` 。
+        - **padding** (Union(int, tuple[int], list[int])，可选) - 当 `pad_mode` 为 ``"pad"`` 时，指定在输入 `input` 的宽度方向上填充的数量。数据类型为int或包含1个int组成的tuple。表示宽度方向的 `padding` 数量（左右两边均为该值）。值必须大于等于0，默认 ``0`` 。
         - **dilation** (Union(int, tuple[int])，可选) - 卷积核膨胀尺寸。可以为单个int，或者由一个int组成的tuple。
-          假设 :math:`dilation=(d0,)`，则卷积核在宽度方向间隔 :math:`d0-1` 个元素进行采样。取值范围为[1, L]。默认值： ``1`` 。
-        - **groups** (int，可选) - 将过滤器拆分为组。默认值： ``1`` 。
+          假设 :math:`dilation=(d0,)`，则卷积核在宽度方向间隔 :math:`d0-1` 个元素进行采样。取值范围为[1, L]。默认 ``1`` 。
+        - **groups** (int，可选) - 将过滤器拆分为组。默认 ``1`` 。
 
     返回：
         Tensor，卷积后的值。shape为 :math:`(N, C_{out}, L_{out})` 。

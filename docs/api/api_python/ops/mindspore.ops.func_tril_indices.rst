@@ -18,7 +18,7 @@ mindspore.ops.tril_indices
           - 当 `offset` 是负整数时，对角线向下方偏移。
 
     关键字参数：
-        - **dtype** (:class:`mindspore.dtype`, 可选) - 输出tensor数据类型，支持 `mstype.int32` 和 `mstype.int64` ，默认 ``mstype.int64`` 。
+        - **dtype** (:class:`mindspore.dtype`, 可选) - 指定数据类型，支持 `mstype.int32` 和 `mstype.int64` ，默认 ``mstype.int64`` 。
 
     返回：
         Tensor

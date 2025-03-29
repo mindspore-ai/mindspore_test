@@ -11,7 +11,7 @@ mindspore.ops.hstack
         - 对于维度大于一的tensor，除了第二个轴外，所有tensor的shape必须相同。对于一维tensor，可拥有任意的长度。
 
     参数：
-        - **tensors** (Union[tuple[Tensor], list[Tensor]]) - 由多个tensor组成的tuple或list。
+        - **tensors** (Union[tuple[Tensor], list[Tensor]]) - 输入tensors。
 
     返回：
         Tensor

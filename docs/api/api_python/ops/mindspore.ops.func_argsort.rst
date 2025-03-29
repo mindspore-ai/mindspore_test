@@ -10,7 +10,7 @@ mindspore.ops.argsort
 
     参数：
         - **input** (Tensor) - 输入tensor。
-        - **axis** (int) - 指定排序的轴。默认 ``-1`` 。
+        - **axis** (int) - 指定轴。默认 ``-1`` 。
         - **descending** (bool) - 指定排序（升序或降序）。默认 ``False`` 。
 
     返回：

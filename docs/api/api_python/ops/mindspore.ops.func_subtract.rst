@@ -5,7 +5,7 @@
 
     从 `input` 中减去经 `alpha` 缩放的 `other`。
 
-    支持隐式类型转换，类型提升。
+    支持隐式类型转换、类型提升。
 
     .. math::
         output[i] = input[i] - alpha * other[i]

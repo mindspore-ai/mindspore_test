@@ -7,7 +7,7 @@ mindspore.ops.flip
 
     参数：
         - **input** (Tensor) - 输入tensor。
-        - **dims** (Union[list[int], tuple[int]]) - 翻转的维度。
+        - **dims** (Union[list[int], tuple[int]]) - 指定维度。
 
     返回：
         Tensor

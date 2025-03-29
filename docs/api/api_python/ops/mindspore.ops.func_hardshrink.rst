@@ -23,7 +23,7 @@ mindspore.ops.hardshrink
 
           - Ascend：float16、float32、bfloat16。
           - CPU/GPU：float16、float32。
-        - **lambd** (number，可选) - Hard Shrink公式定义的阈值 :math:`\lambda` 。默认值： ``0.5`` 。
+        - **lambd** (number，可选) - Hard Shrink公式定义的阈值 :math:`\lambda` 。默认 ``0.5`` 。
 
     返回：
         Tensor，shape和数据类型与输入 `input` 相同。

@@ -9,7 +9,7 @@ mindspore.ops.vstack
     一维tensor :math:`(N,)` 重新排列为 :math:`(1, N)` ，然后按第一个轴进行拼接。
 
     参数：
-        - **inputs** (Union(List[tensor], Tuple[tensor])) - 一维或二维输入。
+        - **inputs** (Union(List[tensor], Tuple[tensor])) - 一维或二维输入tensors。
 
     返回：
         Tensor

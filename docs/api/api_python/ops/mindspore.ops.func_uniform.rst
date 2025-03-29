@@ -9,11 +9,11 @@
         广播后，任意位置上tensor的最小值必须小于最大值。
 
     参数：
-        - **shape** (Union[tuple, Tensor]) - 返回tensor的shape。
+        - **shape** (Union[tuple, Tensor]) - 指定生成随机数的shape。
         - **minval** (Tensor) - 指定生成随机值的最小值。
         - **maxval** (Tensor) - 指定生成随机值的最大值。
         - **seed** (int) - 随机数种子。默认 ``None`` 。
-        - **dtype** (mindspore.dtype) - 返回tensor的数据类型。
+        - **dtype** (mindspore.dtype) - 指定数据类型。
 
     返回：
         Tensor

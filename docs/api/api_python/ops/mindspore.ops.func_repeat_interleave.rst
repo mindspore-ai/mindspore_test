@@ -9,7 +9,7 @@ mindspore.ops.repeat_interleave
     参数：
         - **input** (Tensor) - 输入tensor。
         - **repeats** (Union[int, tuple, list, Tensor]) - 复制次数，为正数。
-        - **axis** (int，可选) - 指定复制轴，默认 ``None`` 。如果为 ``None`` ，输入和输出tensor会被展平为一维。
+        - **axis** (int，可选) - 指定轴，默认 ``None`` 。如果为 ``None`` ，输入和输出tensor会被展平为一维。
 
     返回：
         Tensor

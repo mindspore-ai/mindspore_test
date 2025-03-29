@@ -13,7 +13,7 @@ mindspore.ops.rotary_position_embedding
         - **x** (Tensor) - 4维Tensor，数据类型float16、bfloat16、float32。
         - **cos** (Tensor) - 4维常量，数据类型和 `x` 一致。取值范围为[-1,1]。
         - **sin** (Tensor) - 和 `cos` 相同。
-        - **mode** (int) - 可选属性，选择计算模式。0表示rotate_half（GPT-NeoX style）， 1表示rotate_interleaved（GPT-J style）。默认值： ``0`` 。
+        - **mode** (int) - 可选属性，选择计算模式。0表示rotate_half（GPT-NeoX style）， 1表示rotate_interleaved（GPT-J style）。默认 ``0`` 。
 
     .. list-table:: Layout配置约束
         :widths: 5 20 20

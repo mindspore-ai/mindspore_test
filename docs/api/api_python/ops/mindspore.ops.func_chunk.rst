@@ -11,7 +11,7 @@ mindspore.ops.chunk
     参数：
         - **input** (Tensor) - 被切分的tensor。
         - **chunks** (int) - 切分的数量。
-        - **axis** (int，可选) - 切分的轴。默认 ``0`` 。
+        - **axis** (int，可选) - 指定轴。默认 ``0`` 。
 
     返回：
         由tensor组成的tuple。
