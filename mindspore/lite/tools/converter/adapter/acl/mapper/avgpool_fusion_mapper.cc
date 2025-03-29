@@ -34,7 +34,7 @@ constexpr const char *kDivisorOverride = "divisor_override";
 constexpr const char *kExclusive = "exclusive";
 constexpr int kSizeHW = 20;
 constexpr int kSizeHWMul = 255;
-enum AvgPoolType {
+enum class AvgPoolType {
   INVALID = 0,
   AVGPOOL_2D = 1,
   AVGPOOL_3D = 2,
@@ -45,15 +45,15 @@ AvgPoolType JudgeAvgPoolType(const std::vector<int> &kernel_size) {
   for (auto dim : kernel_size) {
     size_mul *= dim;
     if ((dim > kSizeHW) || (size_mul > kSizeHWMul)) {
-      return INVALID;
+      return AvgPoolType::INVALID;
     }
   }
   if (kernel_size.size() == kDim2) {
-    return AVGPOOL_2D;
+    return AvgPoolType::AVGPOOL_2D;
   } else if (kernel_size.size() == kDim3) {
-    return AVGPOOL_3D;
+    return AvgPoolType::AVGPOOL_3D;
   }
-  return INVALID;
+  return AvgPoolType::INVALID;
 }
 }  // namespace
 
@@ -120,9 +120,9 @@ void AvgPoolFusionMapper::CreateTargetPrim(const PrimitivePtr &src_prim, int fmk
     } else {
       auto kernel_size = opt::CastToInt(val_ptr);
       MS_CHECK_TRUE_RET_VOID(kernel_size.size() == kDim2 || kernel_size.size() == kDim3);
-      if (JudgeAvgPoolType(kernel_size) == AVGPOOL_2D) {
+      if (JudgeAvgPoolType(kernel_size) == AvgPoolType::AVGPOOL_2D) {
         *dst_prim = std::make_shared<acl::AvgPoolV2>();
-      } else if (JudgeAvgPoolType(kernel_size) == AVGPOOL_3D) {
+      } else if (JudgeAvgPoolType(kernel_size) == AvgPoolType::AVGPOOL_3D) {
         *dst_prim = std::make_shared<acl::AvgPool3D>();
         *is_3d = true;
       }
