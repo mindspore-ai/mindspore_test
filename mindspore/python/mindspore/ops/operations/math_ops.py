@@ -4044,7 +4044,10 @@ class Median(Primitive):
         axis (int, optional): The specified dimension to compute median. Default: ``0`` .
         keep_dims (bool, optional): Whether the output tensor need to retain `axis` dimension or not.
             Default: ``False`` .
-        ignore_nan (bool, optional): Whether to ignore the NaN values in input Tensor. Default: ``False`` .
+        ignore_nan (bool, optional): Whether to ignore the ``NaN`` values in input Tensor. When ``False``, if the
+            input range (determined by `global_median`) contains a ``NaN`` value, the corresponding element of
+            `values` is ``NaN``. When ``True``, calculates the median of the remaining elements after excluding
+            ``NaN``. Default: ``False`` .
 
     Inputs:
         - **x** (Tensor) - A Tensor to calculate median with.

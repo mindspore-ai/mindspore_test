@@ -680,6 +680,19 @@ inline NodePtr ReduceExtOpGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr
   return {dx};
 }
 
+// This grad function uses value of all inputs and outputs.
+NodePtr EvenlyDistributeBackward(BpropBuilder *ib) {
+  const NodePtr &x = ib->GetInput(kIndex0);
+  const NodePtr &out = ib->GetInput(kIndex1);
+  const NodePtr &dout = ib->GetInput(kIndex2);
+  auto mask = ReduceExtOpGetMask(ib, x, out);
+  auto x_zeros = ib->ZerosLikeExt(x, ib->EmitValue(kNone));
+  auto mask_sum = ib->SumExt(mask, ib->EmitValue(kNone), ib->Value(false), ib->EmitValue(kNone));
+  auto grad_div_mask_sum = ib->Div(dout, ib->Cast(mask_sum, ib->GetDtype(dout)));
+  auto dx = ib->Depend(x_zeros, ib->Emit("InplaceMaskedFillTensor", {x_zeros, mask, grad_div_mask_sum}));
+  return dx;
+}
+
 class DiagonalShapeCalc : public ShapeCalcFunctor {
  public:
   // cppcheck-suppress unknownMacro
@@ -3160,6 +3173,9 @@ REG_BPROP_BUILDER("MedianExt").SetBody(BODYFUNC(ib) {
   auto dx = ReduceExtOpGrad(ib, ib->GetInput(kIndex0), ib->GetInput(kIndex1), ib->GetInput(kIndex2));
   return {dx};
 });
+
+REG_BPROP_BUILDER("NanMedian").SetBody(BODYFUNC(ib) { return {EvenlyDistributeBackward(ib)}; });
+
 REG_BPROP_BUILDER("Max").SetBody(BODYFUNC(ib) {
   auto dx = ReduceExtOpGrad(ib, ib->GetInput(kIndex0), ib->GetInput(kIndex1), ib->GetInput(kIndex2));
   return {dx};
@@ -3177,6 +3193,16 @@ REG_BPROP_BUILDER("MedianDim").SetBody(BODYFUNC(ib) {
   auto dout = ib->GetInput(kIndex4);
   auto dx = MeidanDimGrad(ib, x, axis, keep_dims, out, dout);
   return {dx, ib->OutZeros(axis), ib->OutZeros(keep_dims)};
+});
+
+REG_BPROP_BUILDER("NanMedianDim").FreeUselessValues_IO({i0}, {i0}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);  // only depends on x.shape
+  auto dim = ib->GetInput(kIndex1);
+  auto keepdim = ib->GetInput(kIndex2);
+  auto indices = ib->TupleGetItem(ib->GetInput(kIndex3), kIndex1);
+  auto d_values = ib->TupleGetItem(ib->GetInput(kIndex4), kIndex0);
+  auto dx = ValueSelectingReductionBackward(ib, x, dim, indices, d_values, keepdim);
+  return {dx, ib->OutZeros(dim), ib->OutZeros(keepdim)};
 });
 
 REG_BPROP_BUILDER("Trace").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {

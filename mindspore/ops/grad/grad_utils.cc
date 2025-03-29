@@ -19,6 +19,7 @@
 #include <limits>
 #include <memory>
 #include <set>
+#include <tuple>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -720,17 +721,18 @@ NodePtr MeidanDimGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &axis, c
   return ReduceCommonOpGrad(ib, x, axis, keep_dims, out, dout, kIndex0, kIndex1);
 }
 
-inline NodePtr ReduceCommonOpGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &axis, const NodePtr &keep_dims,
-                                  const NodePtr &out, const NodePtr &dout, int64_t dout_index, int64_t indices_index) {
+std::tuple<NodePtr, NodePtr> ReduceCommonOpGradReshape(BpropBuilder *ib, const NodePtr &x, const NodePtr &axis,
+                                                       const NodePtr &keep_dims, const NodePtr &indices,
+                                                       const NodePtr &dout_value) {
+  NodePtr reshaped_indices{};
+  NodePtr reshaped_dout{};
   auto input_shape = ib->GetShape(x);
-  NodePtr dout_value = ib->TupleGetItem(dout, dout_index);
-  NodePtr indices = ib->TupleGetItem(out, indices_index);
   auto keep_dims_value = keep_dims->BuildValue();
   if (IsValueKnown(keep_dims_value) && !IsDynamicRank(input_shape)) {
     auto is_zero_dim = input_shape.size() == 0;
     auto keep_dims_bool = GetValue<bool>(keep_dims_value);
-    indices = (keep_dims_bool || is_zero_dim) ? indices : ib->Emit("ExpandDims", {indices, axis});
-    dout_value = (keep_dims_bool || is_zero_dim) ? dout_value : ib->Emit("ExpandDims", {dout_value, axis});
+    reshaped_indices = (keep_dims_bool || is_zero_dim) ? indices : ib->Emit("ExpandDims", {indices, axis});
+    reshaped_dout = (keep_dims_bool || is_zero_dim) ? dout_value : ib->Emit("ExpandDims", {dout_value, axis});
   } else {
     auto rank = ib->Emit("Rank", {x});
     auto rank_is_zero = ib->Emit("scalar_eq", {rank, ib->Value<int64_t>(0)});
@@ -739,13 +741,20 @@ inline NodePtr ReduceCommonOpGrad(BpropBuilder *ib, const NodePtr &x, const Node
       return {e->Emit("ExpandDims", {indices, axis})};
     };
     auto indices_ori = [&indices](Emitter *e) -> NodePtrList { return {indices}; };
-    indices = ib->Conditional(cond, indices_ori, indices_expand);
+    reshaped_indices = ib->Conditional(cond, indices_ori, indices_expand);
     auto dout_expand = [&dout_value, &axis](Emitter *e) -> NodePtrList {
       return {e->Emit("ExpandDims", {dout_value, axis})};
     };
     auto dout_ori = [&dout_value](Emitter *e) -> NodePtrList { return {dout_value}; };
-    dout_value = ib->Conditional(cond, dout_ori, dout_expand);
+    reshaped_dout = ib->Conditional(cond, dout_ori, dout_expand);
   }
+  return std::make_tuple(reshaped_indices, reshaped_dout);
+}
+
+inline NodePtr ReduceCommonOpGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &axis, const NodePtr &keep_dims,
+                                  const NodePtr &out, const NodePtr &dout, int64_t dout_index, int64_t indices_index) {
+  const auto [indices, dout_value] = ReduceCommonOpGradReshape(
+    ib, x, axis, keep_dims, ib->TupleGetItem(out, indices_index), ib->TupleGetItem(dout, dout_index));
   NodePtr dx_zeros = ib->Zeros(x);
   auto reduce_value = ib->Value(static_cast<int64_t>(Reduce::REDUCE_NONE));
   auto dx = ScatterOrTensorScatterElements(ib, dx_zeros, axis, indices, dout_value, reduce_value);
@@ -759,6 +768,13 @@ TypeId PromoteBinaryDtype(TypeId t1, TypeId t2) {
   static std::unordered_set<TypeId> complex_types{kNumberTypeComplex64, kNumberTypeComplex128};
   return GetOutputDtype(
     t1, t2, (complex_types.find(t1) != complex_types.end() || complex_types.find(t2) != complex_types.end()));
+}
+
+NodePtr ValueSelectingReductionBackward(BpropBuilder *ib, const NodePtr &x, const NodePtr &dim, const NodePtr &indices,
+                                        const NodePtr &d_values, const NodePtr &keepdim) {
+  const auto [reshaped_indices, reshaped_d_value] = ReduceCommonOpGradReshape(ib, x, dim, keepdim, indices, d_values);
+  auto dx = ib->ZerosLikeExt(x, ib->EmitValue(kNone));
+  return ib->Depend(dx, ib->Emit("InplaceScatterSrc", {dx, dim, reshaped_indices, reshaped_d_value}));
 }
 
 NodePtr LGamma(BpropBuilder *ib, const NodePtr &x) {

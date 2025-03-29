@@ -2633,12 +2633,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('nanmean')(self, axis, keepdims, dtype=dtype)
 
-    def nanmedian(self, axis=-1, keepdims=False):
-        r"""
-        For details, please refer to :func:`mindspore.ops.nanmedian`.
-        """
-        return tensor_operator_registry.get('nanmedian')(self, axis, keepdims)
-
     def bernoulli(self, *, generator=None):
         r"""
         For details, please refer to :func:`mindspore.mint.bernoulli`.

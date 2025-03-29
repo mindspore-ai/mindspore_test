@@ -102,10 +102,18 @@ std::pair<ShapeVector, ShapeVector> SplitShapeIndex(const ShapeVector &input_sha
 NodePtr ArgminOrArgmaxGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &axis, const NodePtr &keep_dims,
                            const NodePtr &out, const NodePtr &dout, const bool is_max,
                            const bool is_minmax_dim = false);
+// This grad function use value of: axis(int), keep_dims(bool), out[1](Tensor), dout[0](Tensor)
+// and shape/dtype of: x(Tensor)
 NodePtr MeidanDimGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &axis, const NodePtr &keep_dims,
                       const NodePtr &out, const NodePtr &dout);
+// This grad function use value of: axis(int), keep_dims(bool), out[indices_index](Tensor), dout[dout_index](Tensor)
+// and shape/dtype of: x(Tensor)
 inline NodePtr ReduceCommonOpGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &axis, const NodePtr &keep_dims,
                                   const NodePtr &out, const NodePtr &dout, int64_t dout_index, int64_t indices_index);
+// This grad function use value of: dim(int), keepdim(bool), indices(out, Tensor), d_values(grad, Tensor)
+// and shape/dtype of: x(Tensor)
+NodePtr ValueSelectingReductionBackward(BpropBuilder *ib, const NodePtr &x, const NodePtr &dim, const NodePtr &indices,
+                                        const NodePtr &d_values, const NodePtr &keepdim);
 TypeId PromoteBinaryDtype(TypeId t1, TypeId t2);
 NodePtr LGamma(BpropBuilder *ib, const NodePtr &x);
 bool CheckType(const TypePtr &check_type, const std::set<TypePtr> &template_types);

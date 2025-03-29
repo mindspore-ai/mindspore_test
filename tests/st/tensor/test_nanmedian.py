@@ -23,7 +23,7 @@ import mindspore.nn as nn
 
 class Net(nn.Cell):
     def construct(self, x):
-        return x.nanmedian(axis=0, keepdims=True)
+        return x.nanmedian(dim=0, keepdim=True)
 
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'],
@@ -42,6 +42,6 @@ def test_tensor_nanmedian(mode):
     net = Net()
     output = net(x)
     expect_output = [[float("nan"), 128.1, -256.9]]
-    expect_index = [[0, 1, 0]]
+    expect_index = [[0, 1, 0]]  # note: index[0, 0] may be different on ascend
     assert np.allclose(output[0].asnumpy(), expect_output, equal_nan=True)
     assert np.allclose(output[1].asnumpy(), expect_index, equal_nan=True)

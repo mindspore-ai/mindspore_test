@@ -72,6 +72,8 @@ class MedianCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<M
   template <typename T>
   bool MedianComputeIgnoreNan(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                               const std::vector<KernelTensor *> &outputs);
+  template <typename T, typename... CompFunc>
+  inline T CopyAndCalcMedian(const T *const input_begin, int64_t median_pos, CompFunc... comp);
 };
 }  // namespace kernel
 }  // namespace mindspore

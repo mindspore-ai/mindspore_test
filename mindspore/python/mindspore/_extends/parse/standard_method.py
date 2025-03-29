@@ -2185,12 +2185,12 @@ def nanmean(input, axis=None, keepdims=False, *, dtype=None):
     return F.nanmean(input, axis, keepdims, dtype=dtype)
 
 
-def nanmedian(input, axis=-1, keepdims=False):
+def nanmedian(input, dim, keepdim=False):
     r"""
     Computes the median and indices of input tensor, ignoring NaN.
     If all elements in the specified dimensions are NaN, the result will be NaN.
     """
-    return F.nanmedian(input, axis, keepdims)
+    return F.nanmedian(input, dim, keepdim)
 
 
 def repeat(x, *args, repeats=None):
