@@ -31,10 +31,13 @@ RuntimeConf::RuntimeConf()
     : launch_blocking_(false),
       dispatch_threads_num_(kDefaultDispatchThreadsNum),
       op_threads_num_(kDefaultOpThreadsNum),
+      group_launch_thread_num_(0),
+      kernel_group_num_(0),
       mem_init_size_(kDefaultMemInitSize),
       mem_block_increase_size_(kDefaultMemBlockIncreaseSize),
       mem_max_size_(kDefaultMemMaxSize),
-      mem_optimize_level_(0) {}
+      mem_optimize_level_(0),
+      mem_huge_page_reserve_size_(0.0) {}
 
 RuntimeConf::~RuntimeConf() = default;
 

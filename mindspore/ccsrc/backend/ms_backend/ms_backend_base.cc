@@ -805,7 +805,7 @@ bool IsGraphOutputValueNodeOrParameter(const AnfNodePtr &graph_output, const Vec
     if (it == params.end()) {
       MS_EXCEPTION(UnknownError) << "When graph output is Parameter, it should be found in graph parameters";
     }
-    size_t index = it - params.cbegin();
+    size_t index = static_cast<size_t>(it - params.cbegin());
     if (index >= args.size()) {
       MS_EXCEPTION(UnknownError) << "Index " << index << " equal or larger than args size " << args.size();
     }
@@ -839,7 +839,7 @@ void PushTupleTensor(const VectorRef &args, const std::vector<AnfNodePtr> &param
   MS_EXCEPTION_IF_NULL(flatten_values);
 
   const auto &iter = std::find(parameters.begin(), parameters.end(), front_node);
-  const size_t position = iter - parameters.begin();
+  const size_t position = static_cast<size_t>(iter - parameters.begin());
   // If the parameter is not found in the parameters of the root graph, it means that it is the input of the subgraph,
   // and there is no need to input a tensor.
   if (position >= args.size()) {
@@ -2008,7 +2008,6 @@ MSBackendBase::MSBackendBase() {
 }
 
 BackendGraphId MSBackendBase::Build(const FuncGraphPtr &func_graph, const BackendJitConfig &backend_jit_config) {
-  // TODO(pynative)
   WaitTaskFinish();
   MS_EXCEPTION_IF_NULL(graph_compiler_);
   MS_EXCEPTION_IF_NULL(func_graph);
@@ -2027,7 +2026,6 @@ BackendGraphId MSBackendBase::Build(const FuncGraphPtr &func_graph, const Backen
   MS_EXCEPTION_IF_NULL(device_context);
   device_context->Initialize();
   device_context->device_res_manager_->BindDeviceToCurrentThread(false);
-  // auto run_mode = device_context->GetRunMode(func_graph);
 
   auto root_graph = compile::WrapPrimitives(func_graph);
   MS_EXCEPTION_IF_NULL(root_graph);
@@ -2039,7 +2037,6 @@ BackendGraphId MSBackendBase::Build(const FuncGraphPtr &func_graph, const Backen
   (void)distributed::collective::CollectiveManager::instance()->WaitAllCommInitDone();
   PROF_END(WaitAllCommInit);
 
-  // TODO(pynative)
   bool pynative_with_jit_call_graph = func_graph->has_flag(kFlagPyNativeWithJitCallGraph);
   if (!pynative_with_jit_call_graph) {
     UnifyMindIR(root_graph);
@@ -2050,7 +2047,6 @@ BackendGraphId MSBackendBase::Build(const FuncGraphPtr &func_graph, const Backen
   // Register a summary callback function, which is called in the final stages of summary.
   graph_compiler_->RegisterSummaryCallBackFunc(callbacks::SummarySaveCallback);
 
-  // TODO(pynative)
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
   auto ms_execution_mode = context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE);
