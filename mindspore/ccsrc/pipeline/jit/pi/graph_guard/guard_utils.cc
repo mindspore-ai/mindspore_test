@@ -992,7 +992,7 @@ class TypeData : public ItemData {
   }
 
   void set_ambiguous_tensor_type(bool value) {
-    if (value && (IsTensorType<true>(refType_) || IsStubTensorType<true>(refType_))) {
+    if (value && (IsTensorType<true>(refType_))) {
       ambiguous_tensor_type_ = true;
     }
   }
@@ -1008,10 +1008,10 @@ class TypeData : public ItemData {
       // if exactly type check failed, check ambiguous tensor type if necessary
       if (!ret) {
         if (ambiguous_tensor_type_) {
-          ret = IsTensorType<true>(otherType) || IsStubTensorType<true>(otherType);
+          ret = IsTensorType<true>(otherType);
         } else {
-          bool isSelfTensor = IsTensorType<true>(refType_) || IsStubTensorType<true>(refType_);
-          bool isOtherTensor = IsTensorType<true>(otherType) || IsStubTensorType<true>(otherType);
+          bool isSelfTensor = IsTensorType<true>(refType_);
+          bool isOtherTensor = IsTensorType<true>(otherType);
           ret = isSelfTensor && isOtherTensor;
         }
       }
@@ -1033,10 +1033,10 @@ class TypeData : public ItemData {
         refType_ == otherType || PyType_IsSubtype(refType_, otherType) || PyType_IsSubtype(otherType, refType_);
       if (!ret) {
         if (ambiguous_tensor_type_) {
-          ret = IsTensorType<true>(otherType) || IsStubTensorType<true>(otherType);
+          ret = IsTensorType<true>(otherType);
         } else {
-          bool isSelfTensor = IsTensorType<true>(refType_) || IsStubTensorType<true>(refType_);
-          bool isOtherTensor = IsTensorType<true>(otherType) || IsStubTensorType<true>(otherType);
+          bool isSelfTensor = IsTensorType<true>(refType_);
+          bool isOtherTensor = IsTensorType<true>(otherType);
           ret = isSelfTensor && isOtherTensor;
         }
       }
@@ -1055,7 +1055,7 @@ class TypeData : public ItemData {
   PyTypeObject *refType_;
 
   // mix the tensor type.
-  // only set true if _c_expression.Tensor type, common.Tensor type, StubTensor type and all subtype of them
+  // only set true if _c_expression.Tensor type, common.Tensor type and all subtype of them
   bool ambiguous_tensor_type_;
 };
 
@@ -1350,7 +1350,7 @@ class MetaTensorData : public ItemData {
     if (obj == nullptr) {
       return false;
     }
-    if (tensor::IsTensorPy(py::cast<py::object>(obj)) || IsStubTensor(py::cast<py::object>(obj))) {
+    if (tensor::IsTensorPy(py::cast<py::object>(obj))) {
       mindspore::tensor::MetaTensorPtr tensor_ptr = nullptr;
       PyObject *stub = nullptr;
       bool is_stubtensor = GetStubInfo(obj, &stub, &tensor_ptr);
@@ -1622,7 +1622,7 @@ class TensorData : public MetaTensorData {
     if (obj == nullptr) {
       return false;
     }
-    if (tensor::IsTensorPy(py::cast<py::object>(obj)) || IsStubTensor(py::cast<py::object>(obj))) {
+    if (tensor::IsTensorPy(py::cast<py::object>(obj))) {
       bool ret = MetaTensorData::operator==(obj);
       mindspore::tensor::MetaTensorPtr mtensor_ptr = nullptr;
       PyObject *stub = nullptr;
@@ -2347,9 +2347,7 @@ ItemDataPtr CreateMutablePyData(PyObject *obj, bool need_specialize, int recurse
 }
 static bool CheckMetaTensorObject(PyObject *obj) { return tensor::IsTensorPy(py::cast<py::object>(obj)); }
 
-static bool CheckTensorObject(PyObject *obj) {
-  return tensor::IsTensorPy(py::cast<py::object>(obj)) || IsStubTensor(py::cast<py::object>(obj));
-}
+static bool CheckTensorObject(PyObject *obj) { return tensor::IsTensorPy(py::cast<py::object>(obj)); }
 
 static bool CheckDictKeyValueItemObject(PyObject *obj) {
   return !!PyDict_Check(obj) || !!PyDictKeys_Check(obj) || !!PyDictValues_Check(obj) || !!PyDictItems_Check(obj);
@@ -2411,11 +2409,7 @@ static ItemDataPtr CreateItem(PyObject *obj, bool need_specialize, int recurse_d
     if (obj != NULL && obj != Py_None) {
       PyObject *py_type;
       py::object py_obj = py::reinterpret_borrow<py::object>(obj);
-      if (IsStubTensor(py_obj)) {
-        py_type = GetMsTensorType();
-      } else {
-        py_type = reinterpret_cast<PyObject *>(Py_TYPE(obj));
-      }
+      py_type = reinterpret_cast<PyObject *>(Py_TYPE(obj));
       return std::make_shared<TypeData>(py_type, false, 0);
     } else {
       return std::make_shared<ItemData>(ItemType::PyNull, false, 0);
@@ -2677,9 +2671,7 @@ class TypeGuard : public GuardItem {
   }
 
  private:
-  static bool IsTensorOrStubTensor(PyTypeObject *type) {
-    return type != nullptr && (IsTensorType<true>(type) || IsStubTensorType<true>(type));
-  }
+  static bool IsTensorOrStubTensor(PyTypeObject *type) { return type != nullptr && IsTensorType<true>(type); }
 
  protected:
   PyTypeObject *refType_;

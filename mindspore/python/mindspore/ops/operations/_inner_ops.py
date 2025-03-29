@@ -34,7 +34,6 @@ from mindspore._c_expression import pyboost_generator
 from mindspore import _checkparam as validator
 from mindspore.common import dtype as mstype
 from mindspore.common.parameter import Parameter
-from mindspore.common._stub_tensor import _convert_stub
 from mindspore.communication.management import GlobalComm, get_rank, _get_group, get_group_size
 from mindspore.common.api import _pynative_executor
 from ..auto_generate import TensorCopySlices, SiLU, Cummin, TopKRouter, TopPRouter, ExtractImagePatches, DecoderKVCache, \
@@ -78,7 +77,7 @@ class Generator(Primitive):
     def __call__(self, cmd, inputs):
         if cmd == 0:  # step cmd
             return inputs[0], inputs[1]
-        return _convert_stub(pyboost_generator(self, [cmd, inputs]))
+        return pyboost_generator(self, [cmd, inputs])
 
 
 class Quant(PrimitiveWithInfer):

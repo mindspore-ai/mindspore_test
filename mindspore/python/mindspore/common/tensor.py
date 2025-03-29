@@ -94,13 +94,6 @@ def _set_symbolic_shape(shape):
     return shape, symbolic_shape
 
 
-def _convert_stub_tensor(input_data):
-    """Convert input to stub tensor"""
-    if not is_stub_tensor(input_data):
-        return input_data
-    return input_data.stub_sync()
-
-
 def _convert_numpy_array(input_data):
     """Convert inpyt to numpy array"""
     if not isinstance(input_data, np_types):
@@ -144,8 +137,6 @@ def _init(input_data=None, dtype=None, shape=None, init=None, const_arg=False, d
         logger.info("It is suggested to use 'Tensor.astype()' to convert the dtype of a Tensor.")
         _cast = tensor_operator_registry.get("cast")
         input_data = _cast(input_data, dtype)
-
-    input_data = _convert_stub_tensor(input_data)
 
     if input_data is None and shape is None and init is None and dtype is not None:
         validator.check_type_name('dtype', dtype, mstype.number_type + (mstype.bool_, mstype.string), "Tensor")

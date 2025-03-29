@@ -47,6 +47,11 @@ class COMMON_EXPORT TensorPy {
   /// \param[in] input [TensorPtr] The input base tensor.
   explicit TensorPy(const TensorPtr &input);
 
+  /// \brief Create TensorPy with StubNode.
+  ///
+  /// \param[in] input [StubNodePtr] stub_node.
+  explicit TensorPy(const stub::StubNodePtr &stub_node);
+
   /// \brief Create 0 dimension tensorpy from an int64_t scalar.
   ///
   /// \param[in] input [int64_t] The data for tensorpy.
@@ -554,6 +559,7 @@ COMMON_EXPORT py::object PackTensorToPyObject(TensorPtr tensor);
 COMMON_EXPORT py::object GetPythonTensor();
 
 COMMON_EXPORT PyObject *PackTensor(const TensorPtr &tensor);
+COMMON_EXPORT PyObject *PackStubTensor(const stub::StubNodePtr &stub_node);
 COMMON_EXPORT PyObject *Wrap(const TensorPtr &tensor);
 COMMON_EXPORT PyObject *Wrap(const std::vector<TensorPtr> &tensors);
 template <typename... Args>

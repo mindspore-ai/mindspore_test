@@ -60,7 +60,6 @@ namespace tensor {
 ${CPyWrapper_defs}
 
 extern PyMethodDef *TensorMethods;
-void RegStubTensorMethods();
 }  // namespace tensor
 }  // namespace mindspore
 #endif  // TENSOR_PY_GEN_H

@@ -48,7 +48,7 @@ std::vector<py::object> LlmBoostBinder::Forward(const py::list &py_inputs, const
   MS_LOG(INFO) << "TransformerBoost forward";
   std::vector<tensor::TensorPtr> inputs;
   for (auto &obj : py_inputs) {
-    auto tensor = IsStubTensor(obj) ? ConvertStubTensor(obj) : tensor::ConvertToTensor(obj);
+    auto tensor = tensor::ConvertToTensor(obj);
     inputs.emplace_back(tensor);
   }
   std::vector<tensor::TensorPtr> outputs = impl_->Forward(inputs, param);
@@ -63,11 +63,11 @@ int64_t LlmBoostBinder::SetKVCache(const py::list &py_kcache, const py::list &py
   std::vector<tensor::TensorPtr> msKCacheTensors;
   std::vector<tensor::TensorPtr> msVCacheTensors;
   for (auto &obj : py_kcache) {
-    auto tensor = IsStubTensor(obj) ? ConvertStubTensor(obj) : tensor::ConvertToTensor(obj);
+    auto tensor = tensor::ConvertToTensor(obj);
     msKCacheTensors.emplace_back(tensor);
   }
   for (auto &obj : py_vcache) {
-    auto tensor = IsStubTensor(obj) ? ConvertStubTensor(obj) : tensor::ConvertToTensor(obj);
+    auto tensor = tensor::ConvertToTensor(obj);
     msVCacheTensors.emplace_back(tensor);
   }
   return impl_->SetKVCache(msKCacheTensors, msVCacheTensors);
@@ -77,7 +77,7 @@ int64_t LlmBoostBinder::SetWeight(const py::list &py_weights) {
   MS_LOG(INFO) << "LlmBoostBinder::SetWeight";
   std::vector<tensor::TensorPtr> weights;
   for (auto &obj : py_weights) {
-    auto tensor = IsStubTensor(obj) ? ConvertStubTensor(obj) : tensor::ConvertToTensor(obj);
+    auto tensor = tensor::ConvertToTensor(obj);
     weights.emplace_back(tensor);
   }
   return impl_->SetWeight(weights);

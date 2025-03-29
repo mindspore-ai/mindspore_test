@@ -26,7 +26,6 @@ from mindspore.ops._primitive_cache import _get_cache_prim
 from mindspore.ops._utils import arg_handler as handler
 from mindspore.ops._utils.arg_dtype_cast import DtypeToEnum
 from mindspore.common import Tensor, CSRTensor, COOTensor
-from mindspore.common._stub_tensor import _convert_stub
 from mindspore._c_expression import typing
 from mindspore._c_expression import TensorPy as Tensor_
 from mindspore._c_expression import pyboost_cast, pyboost_tile, pyboost_zeros, pyboost_ones, pyboost_type_as
@@ -1058,7 +1057,7 @@ class Tile(Primitive):
         # Add for jit context.
         if jit_context() and jit_context().compiled:
             return jit_context().default_output()
-        res = _convert_stub(pyboost_tile(self, [input, dims]))
+        res = pyboost_tile(self, [input, dims])
         # Add for jit context.
         if jit_context():
             if validator.is_stub_tensor(res):
@@ -1234,7 +1233,7 @@ class Cast(Primitive):
         should_elim, output = self.check_elim(input_x, dtype)
         if should_elim:
             return output
-        res = _convert_stub(pyboost_cast(self, [input_x, dtype_to_type_id('Cast', 'dtype', dtype)]))
+        res = pyboost_cast(self, [input_x, dtype_to_type_id('Cast', 'dtype', dtype)])
         # Add for jit context.
         if jit_context():
             if validator.is_stub_tensor(res):
@@ -1293,7 +1292,7 @@ class TypeAs(Primitive):
     def __call__(self, input, other):
         if input.dtype == other.dtype:
             return input
-        return _convert_stub(pyboost_type_as(self, [input, other]))
+        return pyboost_type_as(self, [input, other])
 
 
 def to_sequence(val):
@@ -2071,8 +2070,8 @@ class Ones(Primitive):
         # Add for jit context.
         if jit_context() and jit_context().compiled:
             return jit_context().default_output()
-        res = _convert_stub(pyboost_ones(self, [size, type if type is None \
-            else handler.dtype_to_type_id('Ones', 'type', type)]))
+        res = pyboost_ones(self, [size, type if type is None \
+            else handler.dtype_to_type_id('Ones', 'type', type)])
         # Add for jit context.
         if jit_context():
             if validator.is_stub_tensor(res):
@@ -2131,8 +2130,8 @@ class Zeros(Primitive):
         # Add for jit context.
         if jit_context() and jit_context().compiled:
             return jit_context().default_output()
-        res = _convert_stub(pyboost_zeros(self, [size, type if type is None else \
-            handler.dtype_to_type_id('Zeros', 'type', type)]))
+        res = pyboost_zeros(self, [size, type if type is None else \
+            handler.dtype_to_type_id('Zeros', 'type', type)])
         # Add for jit context.
         if jit_context():
             if validator.is_stub_tensor(res):

@@ -102,10 +102,10 @@ void MarkArgumentMutableWithParams(const py::tuple &args, const AnfNodePtrList &
   }
 }
 
-py::tuple EliminateStubTensor(const py::tuple &args) {
+py::tuple MakeNewArgsTuple(const py::tuple &args) {
   py::tuple new_args = py::reinterpret_steal<py::tuple>(PyTuple_New(args.size()));
   for (size_t idx = 0; idx < args.size(); idx++) {
-    new_args[idx] = IsStubTensor(args[idx]) ? python_adapter::CallPyObjMethod(args[idx], "stub_sync") : args[idx];
+    new_args[idx] = args[idx];
   }
   return new_args;
 }
@@ -139,7 +139,7 @@ PyObject *RunGraph(const std::string &phase, const py::tuple &args, const std::s
   auto graph_executor = pipeline::GetExecutor();
   MS_EXCEPTION_IF_NULL(graph_executor);
   py::tuple args_tuple = EliminateSelf(args, name);
-  args_tuple = EliminateStubTensor(args_tuple);
+  args_tuple = MakeNewArgsTuple(args_tuple);
   auto origin_fg = graph_executor->GetFuncGraph(phase);
   const auto &params = origin_fg->parameters();
   MarkArgumentMutableWithParams(args_tuple, params);
@@ -205,7 +205,7 @@ CallableGraph GraphCompiler::Compile(const FuncGraphPtr &func_graph, const py::t
   if (func_graph == nullptr) {
     return nullptr;
   }
-  py::tuple new_arg = EliminateStubTensor(args);
+  py::tuple new_arg = MakeNewArgsTuple(args);
   new_arg = EliminateSelf(new_arg, compile_info.co_name_);
   MarkArgumentMutable(new_arg);
   if (MsContext::GetInstance()->CanDump(kIntroductory)) {

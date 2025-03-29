@@ -242,8 +242,8 @@ py::object TensorIndex::DeepList(const py::object &array_like, int64_t dim_size)
 }
 
 py::object TensorIndex::DeepTensorToNdArray(const py::object &array_like) {
-  if (IsTensorPy(array_like) || IsStubTensor(array_like)) {
-    auto tensor_index = IsStubTensor(array_like) ? ConvertStubTensor(array_like) : ConvertToTensor(array_like);
+  if (IsTensorPy(array_like)) {
+    auto tensor_index = ConvertToTensor(array_like);
     MS_EXCEPTION_IF_NULL(tensor_index);
     return TensorPybind::AsNumpy(*tensor_index);
   }
@@ -434,13 +434,9 @@ std::tuple<int64_t, py::object, ShapeVector> TensorIndex::GetValueTransferType(c
       return std::make_tuple(static_cast<int>(value_transfer_type), value_transfer_arg, value_shape);
     }
     value_transfer_arg = py::none();
-    if (IsStubTensor(TensorIndex::py_value_handle_)) {
-      value_shape = GetStubTensorInfo(TensorIndex::py_value_handle_).first;
-    } else {
-      auto value_ptr = ConvertToTensor(TensorIndex::py_value_handle_);
-      MS_EXCEPTION_IF_NULL(value_ptr);
-      value_shape = value_ptr->shape();
-    }
+    auto value_ptr = ConvertToTensor(TensorIndex::py_value_handle_);
+    MS_EXCEPTION_IF_NULL(value_ptr);
+    value_shape = value_ptr->shape();
   } else if (CheckTypeIsInstance(py_value_type,
                                  {TensorIndexType::Float, TensorIndexType::Integer, TensorIndexType::Boolean})) {
     value_transfer_type = ValueTransferType::kNumberToTensor;
@@ -452,8 +448,8 @@ std::tuple<int64_t, py::object, ShapeVector> TensorIndex::GetValueTransferType(c
       (void)value_shape.emplace_back(SizeToLong(py_value_list.size()));
       const py::object &first_py_ele = py_value_list[0];
       TensorPtr ele;
-      if (IsTensorPy(first_py_ele) || IsStubTensor(first_py_ele)) {
-        ele = IsStubTensor(first_py_ele) ? ConvertStubTensor(first_py_ele) : ConvertToTensor(first_py_ele);
+      if (IsTensorPy(first_py_ele)) {
+        ele = ConvertToTensor(first_py_ele);
       } else {
         ele = TensorPybind::MakeTensor(py_value_list[0], data_type);
       }
@@ -1314,17 +1310,6 @@ py::object TensorIndex::SetitemByTupleWithTensor(const ShapeVector &data_shape, 
                         VectorToPyTuple<py::object>(tensor_update_args));
 }
 
-ValuePtr GetStubTensorValue(const py::handle &obj) {
-  auto py_stub = py::getattr(obj, stub::PY_ATTR_STUB);
-  ValuePtr stub = py_stub.cast<stub::StubNodePtr>();
-  if (stub == nullptr) {
-    auto tensor_ptr = ConvertToTensor(py::getattr(obj, stub::PY_ATTR_TENSOR));
-    MS_EXCEPTION_IF_NULL(tensor_ptr);
-    stub = tensor_ptr;
-  }
-  return stub;
-}
-
 ValuePtr SqueezeRDataValue(const TensorPtr &tensor, const py::handle &py_value, const ValuePtr &rdata_value) {
   auto rdata_shape = tensor->shape();
   if (rdata_shape.size() >= 1 && (rdata_shape.at(0) > 1 || rdata_shape.size() > 1)) {
@@ -1334,7 +1319,7 @@ ValuePtr SqueezeRDataValue(const TensorPtr &tensor, const py::handle &py_value, 
   } else if (rdata_shape.size() == 1 && rdata_shape.at(0) == 1) {
     auto new_value = py::cast<py::list>(py_value);
     auto first_value = new_value[0];
-    ValuePtr result = IsStubTensor(first_value) ? GetStubTensorValue(first_value) : ConvertToTensor(first_value);
+    ValuePtr result = ConvertToTensor(first_value);
     return result;
   }
   return rdata_value;
@@ -1361,13 +1346,7 @@ static inline py::object SetitemCopyView(std::vector<pynative::SliceOpInfoPtr> *
   (void)slice_op_infos->emplace_back(copy_op_info);
   ValuePtr rdata_value;
 
-  if (IsStubTensor(py_value)) {
-    rdata_value = GetStubTensorValue(py_value);
-    if (new_data_shape.size() == 0) {
-      auto tensor = ConvertStubTensor(py_value);
-      rdata_value = SqueezeRDataValue(tensor, py_value, rdata_value);
-    }
-  } else if (IsTensorPy(py_value)) {
+  if (IsTensorPy(py_value)) {
     auto tensor = ConvertToTensor(py_value);
     MS_EXCEPTION_IF_NULL(tensor);
     rdata_value = tensor;
@@ -1970,17 +1949,7 @@ py::object TensorIndex::GetItemIndexInfo(const py::object &py_data, const py::ob
                                          const py::bool_ &is_ascend) {
   ShapeVector data_shape;
   ValuePtr data_value;
-  if (IsStubTensor(py_data)) {
-    auto value = GetStubTensorValue(py_data);
-    MS_EXCEPTION_IF_NULL(value);
-    auto abs = value->ToAbstract();
-    MS_EXCEPTION_IF_NULL(abs);
-    data_shape = dyn_cast<abstract::Shape>(abs->BuildShape())->shape();
-
-    if (EnableView()) {
-      data_value = value;
-    }
-  } else if (IsTensorPy(py_data)) {
+  if (IsTensorPy(py_data)) {
     auto tensor = ConvertToTensor(py_data);
     MS_EXCEPTION_IF_NULL(tensor);
     if (EnableView()) {
@@ -2007,8 +1976,7 @@ py::object TensorIndex::GetItemIndexInfo(const py::object &py_data, const py::ob
   }
   MS_LOG(INFO) << "(Tensor) Get item datashape is: " << data_shape << ", index is: " << py_index
                << ", index type: " << py_index.get_type();
-  py::object new_py_index =
-    IsStubTensor(py_index) ? py::reinterpret_borrow<py::object>(ConvertPyObject2StubTensor(py_index)) : py_index;
+  py::object new_py_index = py_index;
   MS_EXCEPTION_IF_NULL(new_py_index);
   TensorIndex::py_index_handle_ = new_py_index;
   TensorIndex::is_ascend_ = is_ascend;
@@ -2307,41 +2275,28 @@ py::object TensorIndex::SetItemBySlice(const ShapeVector &data_shape, const Type
 
 py::object TensorIndex::SetItemIndexInfo(const py::object &py_data, const py::object &py_index,
                                          const py::object &py_value, const py::bool_ &is_ascend) {
-  if (!IsTensorPy(py_data) && !IsStubTensor(py_data)) {
+  if (!IsTensorPy(py_data)) {
     MS_EXCEPTION(TypeError) << "First input of Tensor index must be tensor but got " << py_data;
   }
   ShapeVector data_shape;
   TypePtr data_type;
   bool is_parameter = false;
   ValuePtr data_value;
-  if (IsStubTensor(py_data)) {  // PackTensor have not real Tensor.
-    auto value = GetStubTensorValue(py_data);
-    MS_EXCEPTION_IF_NULL(value);
-    auto abs = value->ToAbstract();
-    MS_EXCEPTION_IF_NULL(abs);
-    data_shape = dyn_cast<abstract::Shape>(abs->BuildShape())->shape();
-    data_type = abs->BuildType();
-    MS_EXCEPTION_IF_NULL(data_type);
-    if (EnableView(true)) {
-      data_value = value;
-    }
-  } else {
-    TensorPtr data = ConvertToTensor(py_data);
-    MS_EXCEPTION_IF_NULL(data);
-    if (EnableView(true)) {
-      data_value = data;
-    }
-    data_shape = data->shape();
-    data_type = data->Dtype();
-    is_parameter = data->is_parameter();
+  TensorPtr data = ConvertToTensor(py_data);
+  MS_EXCEPTION_IF_NULL(data);
+  if (EnableView(true)) {
+    data_value = data;
   }
+  data_shape = data->shape();
+  data_type = data->Dtype();
+  is_parameter = data->is_parameter();
 
   TensorIndex::py_value_handle_ = py_value;
   TensorIndex::np_module_ = py::module::import("numpy");
   TensorIndex::py_index_handle_ = py_index;
   TensorIndex::is_ascend_ = is_ascend;
   TensorIndex::index_op_type_ = IndexOpType::SetItem;
-  const TensorIndexType value_type = IsStubTensor(py_value) ? TensorIndexType::Tensor : TensorIndex(py_value).type();
+  const TensorIndexType value_type = TensorIndex(py_value).type();
   bool valid = CheckTypeIsInstance<TensorIndexType>(
     value_type, {TensorIndexType::Integer, TensorIndexType::Float, TensorIndexType::Boolean, TensorIndexType::Tensor,
                  TensorIndexType::List, TensorIndexType::Tuple});
@@ -2433,22 +2388,4 @@ py::object TensorIndex::SetItemIndexByIndexType(const TensorIndex &index, const 
 
   return output;
 }
-
-const py::handle TensorIndex::ConvertPyObject2StubTensor(const py::handle &obj) {
-  auto pyStub = py::getattr(obj, stub::PY_ATTR_STUB);
-  auto stub = pyStub.cast<stub::StubNodePtr>();
-  if (stub == nullptr) {
-    py::handle tensorpy = tensor::ConvertToTensorPy(py::getattr(obj, stub::PY_ATTR_TENSOR));
-    MS_EXCEPTION_IF_NULL(tensorpy);
-    return tensorpy;
-  }
-  auto funcSync = obj.attr(stub::PY_ATTR_SYNC);
-  auto res = funcSync();
-
-  const py::handle tensorpy = ConvertToTensorPy(res);
-
-  MS_EXCEPTION_IF_NULL(tensorpy);
-  return tensorpy;
-}
-
 }  // namespace mindspore::tensor

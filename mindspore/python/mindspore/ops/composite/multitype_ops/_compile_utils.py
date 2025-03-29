@@ -34,7 +34,6 @@ from mindspore.common import Tensor, CSRTensor, COOTensor, mutable
 from mindspore import ops
 from mindspore.ops.primitive import _primexpr
 from mindspore import _checkparam as validator
-from mindspore.common._stub_tensor import _convert_stub
 from mindspore.ops.auto_generate.gen_ops_prim import select_ext_view_op, slice_ext_op, inplace_copy_op, \
     index_op, inplace_index_put_op
 
@@ -109,7 +108,7 @@ def data_update(transfer_types, args, data, new_index, value=None):
         if transfer_type <= ValueTransferType.kScatterND:
             data = data_update_by_ops(transfer_type, arg, data, new_index, origin_data, value)
         if transfer_type == ValueTransferType.kJustReturn:
-            return _convert_stub(arg)
+            return arg
         if transfer_type == ValueTransferType.kSetItemByBool:
             return tensor_setitem_by_bool(data, new_index, value)
         if transfer_type == ValueTransferType.kCopySlice:

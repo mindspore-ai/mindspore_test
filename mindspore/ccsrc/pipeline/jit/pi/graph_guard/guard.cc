@@ -357,10 +357,6 @@ bool OptGuard::GuardOn(TracePtr var, GuardLevel tp, bool needSpecialize, int rec
   GuardItemPtr item = nullptr;
   if (obj != nullptr) {
     py::object py_obj = py::reinterpret_borrow<py::object>(obj);
-    if (IsStubTensor(py_obj)) {
-      py_obj = python_adapter::CallPyObjMethod(py_obj, "stub_sync");
-      obj = py_obj.ptr();
-    }
     if (tp == GuardLevel::GDeduce) {
       item = GuardOnGDeduce(var, obj, bool_config_);
     } else if (tp == GuardLevel::GId) {

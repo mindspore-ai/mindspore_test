@@ -121,7 +121,6 @@ void ClearResPart1() {
   // When the python process exits, the kernels on the device may not have finished executing.
   device::KernelRuntimeManager::Instance().WaitTaskFinishOnDevice();
   device::DeviceContextManager::GetInstance().WaitTaskFinishOnDevice();
-  tensor::StubTensorConverter::GetInstance().Clear();
   RecordExitStatus();
 #ifdef ENABLE_DUMP_IR
   mindspore::RDR::Snapshot();

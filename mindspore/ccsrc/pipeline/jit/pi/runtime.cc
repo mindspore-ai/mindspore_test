@@ -801,14 +801,6 @@ static bool JitCompileWithTry(PyThreadState *tstate, JitCompileResults *c) {
   return compiled;
 }
 
-py::tuple EliminateStubTensor(const py::tuple &args) {
-  py::tuple new_args = py::reinterpret_steal<py::tuple>(PyTuple_New(args.size()));
-  for (size_t idx = 0; idx < args.size(); idx++) {
-    new_args[idx] = IsStubTensor(args[idx]) ? python_adapter::CallPyObjMethod(args[idx], "stub_sync") : args[idx];
-  }
-  return new_args;
-}
-
 // bellowing code is used for debugging code generate, and will be remove soon
 py::object test_graph_ir_code_gen(const PyFrameWrapper &f) {
   auto co_wrapper = f.GetCode();
@@ -831,7 +823,6 @@ py::object test_graph_ir_code_gen(const PyFrameWrapper &f) {
   py::tuple args = py::reinterpret_steal<py::tuple>(PyList_AsTuple(PyList_GetSlice(locals.ptr(), 0, arg_cnt)));
   py::dict kwargs = has_kw_va ? py::dict() : py::cast<py::dict>(locals[arg_cnt]);
 
-  args = EliminateStubTensor(args);
   mindspore::pijit::AbstractTypeDeducer::Deduce(func_node, args, kwargs);
   func_node->Sort();
   std::cout << func_node->ToString() << std::endl;

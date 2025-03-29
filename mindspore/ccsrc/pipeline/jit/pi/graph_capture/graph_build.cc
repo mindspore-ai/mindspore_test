@@ -275,8 +275,7 @@ Graph *GraphBuilder::NewGraph(PyCodeObject *co, PyObject *globals) {
 
 static bool CheckValueValid(AObject *obj) {
   if (obj->GetType() == AObject::kTypeTensor) {
-    AbstractTensor *tensor = static_cast<AbstractTensor *>(obj);
-    return tensor->IsStubTensor() || CheckTensorDataInitialized(obj->GetPyObject());
+    return CheckTensorDataInitialized(obj->GetPyObject());
   } else {
     return true;
   }
@@ -2378,7 +2377,7 @@ ValueNode *GraphBuilder::BuildCallClassNode(CallNode *call_node) {
   const auto &params = call_node->getInputs();
   AObject *instance = nullptr;
   bool support_create_instance = CheckSupportCreateInstance(call_node);
-  bool constant = type == AObject::kTypePrimitive || type == AObject::kTypeTensor || type == AObject::kTypeStubTensor ||
+  bool constant = type == AObject::kTypePrimitive || type == AObject::kTypeTensor ||
                   IsMsClass(t->GetPyObject().ptr());
   // create instance
   if (support_create_instance || constant) {

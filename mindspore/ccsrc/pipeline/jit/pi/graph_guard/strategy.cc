@@ -163,36 +163,6 @@ static OptStrategy::CalcKind TensorComputable(PyObject *obj, ssize_t max_dim) {
   return OptStrategy::CalcKind::kCalcShape;
 }
 
-static OptStrategy::CalcKind StubTensorComputable(PyObject *obj, ssize_t max_dim) {
-  auto stub = PyObject_GetAttrString(obj, "stub");
-  if (stub != nullptr && stub != Py_None) {
-    auto pyObj = py::cast<py::object>(stub);
-    auto ptr = pyObj.cast<mindspore::stub::StubNodePtr>();
-    auto base = ptr->ToAbstract();
-    auto shape = base->BuildShape()->cast<abstract::ShapePtr>();
-    Py_DECREF(stub);
-    if (shape && !shape->IsDynamic()) {
-      if (!std::any_of(shape->shape().begin(), shape->shape().end(),
-                       [max_dim](const int64_t dim) { return dim > max_dim; })) {
-        return OptStrategy::CalcKind::kCalcValue;
-      }
-    } else {
-      return OptStrategy::CalcKind::kCalcUnsupported;
-    }
-  } else {
-    obj = PyObject_GetAttrString(obj, "tensor");
-    auto pyObj = py::cast<py::object>(obj);
-    Py_DECREF(obj);
-    auto tensor_ptr = tensor::ConvertToTensor(pyObj);
-    MS_EXCEPTION_IF_NULL(tensor_ptr);
-    auto shape = tensor_ptr->shape();
-    if (!std::any_of(shape.begin(), shape.end(), [max_dim](const int64_t dim) { return dim > max_dim; })) {
-      return OptStrategy::CalcKind::kCalcValue;
-    }
-  }
-  return OptStrategy::CalcKind::kCalcShape;
-}
-
 static OptStrategy::CalcKind ObjectComputable(PyObject *obj, ssize_t max_dim = kMaxCalcDim) {
   static const std::vector<bool (*)(PyObject *)> computable = {
     [](PyObject *op) { return op == Py_None || op == Py_True || op == Py_False || op == Py_Ellipsis; },
@@ -207,8 +177,6 @@ static OptStrategy::CalcKind ObjectComputable(PyObject *obj, ssize_t max_dim = k
     return OptStrategy::CalcKind::kCalcValue;
   } else if (IsTensorPyObject(obj)) {
     return TensorComputable(obj, max_dim);
-  } else if (IsStubTensor(py::cast<py::object>(obj))) {
-    return StubTensorComputable(obj, max_dim);
   } else {
     return OptStrategy::CalcKind::kCalcUnsupported;
   }

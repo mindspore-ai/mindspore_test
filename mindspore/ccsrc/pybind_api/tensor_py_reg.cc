@@ -1663,7 +1663,6 @@ void RegPyTensorMethods() {
   TensorPyType->tp_methods = merged;
 }
 void RegPyTensor(py::module *m) {
-  m->def("addStubTensorMethods", &RegStubTensorMethods, "add StubTensorMethods");
   PyHeapTypeObject *heap_type = reinterpret_cast<PyHeapTypeObject *>(PyType_Type.tp_alloc(&PyType_Type, 0));
   if (!heap_type) {
     MS_LOG(ERROR) << "heap_type is null";

@@ -26,18 +26,5 @@ PyMethodDef Tensor_methods[] = {
   {NULL, NULL, 0, NULL}};
 
 PyMethodDef *TensorMethods = Tensor_methods;
-
-void RegStubTensorMethods() {
-  py::module module = py::module::import("mindspore.common._stub_tensor");
-  if (module == nullptr) {
-    return;
-  }
-  py::object stubTensorClass = module.attr("StubTensor");
-  if (stubTensorClass == nullptr) {
-    return;
-  }
-  ${stubtensor_api_defs}
-}
-
 }  // namespace tensor
 }  // namespace mindspore

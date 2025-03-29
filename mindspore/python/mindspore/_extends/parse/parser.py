@@ -784,32 +784,6 @@ def get_arg_spec_and_default_values(func):
     return arg_spec, defaults
 
 
-def _convert_stub_tensor(data):
-    """Convert stub tensor output to tensor"""
-    if is_stub_tensor(data):
-        return data.stub_sync()
-    if isinstance(data, tuple):
-        # Handle namedtuple since its type is tuple.
-        if hasattr(data, "_fields"):
-            type_name = data.__class__.__name__
-            data_dict = data._asdict()
-            fields = data_dict.keys()
-            return namedtuple(type_name, fields)(**_convert_stub_tensor(data_dict))
-        return tuple(_convert_stub_tensor(x) for x in data)
-    if data.__class__ is list:
-        # Keep the list object not change.
-        for i in range(len(data)):
-            data[i] = _convert_stub_tensor(data[i])
-        return data
-    if data.__class__ is dict:
-        # Keep the dict object not change.
-        keys = tuple(data.keys())
-        for key in keys:
-            data[_convert_stub_tensor(key)] = _convert_stub_tensor(data.pop(key))
-        return data
-    return data
-
-
 def eval_script(exp_str, params):
     """Evaluate a python expression."""
     if not isinstance(params, tuple):
@@ -823,7 +797,6 @@ def eval_script(exp_str, params):
     try:
         local_params = _convert_python_data(local_params)
         res = eval(exp_str, global_params, local_params)
-        res = _convert_stub_tensor(res)
     except Exception as e:
         error_info = f"When eval '{exp_str}' by using JIT Fallback feature, an error occurred: " + str(e)
         logger.debug(error_info)

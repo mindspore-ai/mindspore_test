@@ -242,10 +242,6 @@ ValuePtr ConvertSlice(const py::object &obj) {
     if (tensor::IsTensorPy(py_attr)) {
       return tensor::ConvertToTensor(py_attr);
     }
-
-    if (IsStubTensor(py_attr)) {
-      return ConvertStubTensor(py_attr);
-    }
     MS_LOG(EXCEPTION) << "Attribute '" << attr << "' of " << py::str(obj)
                       << " should be int or Tensor with Int type but got " << py::str(py_attr);
   };
@@ -918,7 +914,6 @@ ValuePtr ObjCast(const py::object &obj) {
 static const std::vector<DataConvertFuncPtr> &GetDataConvertFuncs() {
   // Convert data by python object type.
   static const std::vector<DataConvertFuncPtr> data_convert_funcs{
-    std::make_shared<ByFuncDataConvertFunc>(IsStubTensor, ConvertStubTensor),
     std::make_shared<ByFuncDataConvertFunc>(IsNamedTuple, ConvertNamedTuple),
     std::make_shared<ByFuncDataConvertFunc>(tensor::IsTensorPy, ConvertTensorAndSyncCompiling),
     std::make_shared<ByAttrDataConvertFunc>(ConvertMsClass, PYTHON_MS_CLASS),
@@ -956,8 +951,6 @@ static const std::vector<DataConvertFuncPtr> &GetDataConvertFuncs() {
 static const std::vector<DataConvertFuncPtr> &GetStubDataConvertFuncs() {
   // Convert data by python object type.
   static const std::vector<DataConvertFuncPtr> data_convert_funcs{
-    std::make_shared<ByFuncDataConvertFunc>([](const py::object &obj) -> bool { return IsStubTensor(obj); },
-                                            PyStubNodeCast),
     std::make_shared<ByTypeDataConvertFunc<stub::TensorNode>>(ObjCast<std::shared_ptr<stub::TensorNode>>),
     std::make_shared<ByTypeDataConvertFunc<py::tuple>>(ConvertStubTuple),
     std::make_shared<ByTypeDataConvertFunc<py::list>>(ConvertStubList),
@@ -1395,34 +1388,10 @@ ValuePtr ConvertTensor(const py::object &obj) {
     return tensor::ConvertToValue(obj);
   }
 
-  if (IsStubTensor(obj)) {
-    return PyStubNodeCast(obj);
-  }
-
   return nullptr;
 }
 
 TensorPtr ConvertTensorValue(const py::object &obj) {
-  // The difference between the new ConvertTensorValue function and the existing ConvertTensor is:
-  // If the obj a StubNode, it must be called the WaitValue to convert to a Tensor.
-  if (IsStubTensor(obj)) {
-    auto py_stub = py::getattr(obj, stub::PY_ATTR_STUB);
-    auto stub = py_stub.cast<stub::StubNodePtr>();
-    if (stub == nullptr) {
-      return tensor::ConvertToTensor(py::getattr(obj, stub::PY_ATTR_TENSOR));
-    }
-    auto value = stub->WaitValue();
-    auto tensor = value->cast<TensorPtr>();
-    if (tensor == nullptr) {
-      // Tensor should convert to Tensor for Graph mode
-      auto base_tensor = value->cast<TensorPtr>();
-      auto real_tensor = std::make_shared<Tensor>(*base_tensor);
-      stub->SetValue(real_tensor);
-      return real_tensor;
-    }
-    return tensor;
-  }
-
   if (tensor::IsTensorPy(obj)) {
     return tensor::ConvertToTensor(obj);
   }
