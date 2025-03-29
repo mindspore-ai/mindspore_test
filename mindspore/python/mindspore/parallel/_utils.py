@@ -123,13 +123,21 @@ def _get_auto_parallel_net(net):
             return cell
     return net
 
+
 def _parallel_mode_map(parallel_mode):
+    """Map parallel mode."""
     parallel_mode_map = {
         "sharding_propagation": "auto_parallel",
         "recursive_programming": "auto_parallel",
         "semi_auto": "semi_auto_parallel"
     }
-    return parallel_mode_map[parallel_mode]
+    parallel_mode_res = parallel_mode_map.get(parallel_mode, 'Not Exits')
+    if parallel_mode_res == 'Not Exits':
+        raise ValueError("Invalid parallel_mode input, expect one of 'semi_auto', 'sharding_propagation', "
+                         "'recursive_programming', but got the value: {}.".format(parallel_mode))
+    return parallel_mode_res
+
+
 
 def _get_parallel_mode():
     """Get parallel mode."""
