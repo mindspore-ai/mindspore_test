@@ -178,7 +178,8 @@ def check_parameter_available(func):
         Wrapper. If not available, raise Error.
     """
     def wrapper(*args, **kargs):
-        # This function list indicates these functions will return 0 or 1 value in standalone mode or not calling 'init' method.
+        # This function list indicates these functions will return 0 or 1 value in standalone mode or
+        # not calling 'init' method.
         standalone_bypass_check_func_list = [
             "_get_rank_helper",
             "_get_local_rank_helper",
