@@ -21,7 +21,7 @@ mindspore.ops.cholesky_solve
     参数：
         - **input** (Tensor) - shape为 :math:`(*, N, M)` 的输入tensor。
         - **input2** (Tensor) - shape为 :math:`(*, N, N)` 的tensor，Cholesky因子。
-        - **upper** (bool, 可选) - 是否视为上三角矩阵。默认``False`` 。
+        - **upper** (bool, 可选) - 是否视为上三角矩阵。默认 ``False`` 。
 
     返回：
         Tensor

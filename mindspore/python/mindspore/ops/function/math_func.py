@@ -4829,7 +4829,7 @@ def addmv(input, mat, vec, *, beta=1, alpha=1):
 
     .. note::
         - If mat is a :math:`(N, M)` tensor, vec is a 1-D tensor of size :math:`M`, then `input` must
-        be broadcastable with a 1-D tensor of size :math:`N`, `out` will be a 1-D tensor of size :math:`N`.
+          be broadcastable with a 1-D tensor of size :math:`N`, `out` will be a 1-D tensor of size :math:`N`.
         - If `beta` is 0, `input` will be ignored.
 
     .. math::
@@ -8490,8 +8490,8 @@ def inner(input, other):
     For higher dimensions, return a sum product over the last axis.
 
     Note:
-         If `input` or `other` is a Tensor scalar, :func:`mindspore.ops.inner` will be the same as
-         :func:`mindspore.ops.mul` .
+        If `input` or `other` is a Tensor scalar, :func:`mindspore.ops.inner` will be the same as
+        :func:`mindspore.ops.mul` .
 
     Args:
         input (Tensor): The first input.

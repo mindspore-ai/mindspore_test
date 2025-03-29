@@ -12,7 +12,7 @@ mindspore.parallel提供了大量的自动并行接口，包括并行配置基�
 并行配置基本单元
 ----------------------------------------------------------------
 
-.. mscnplatwarnautosummary::
+.. mscnautosummary::
     :toctree: parallel
     :nosignatures:
     :template: classtemplate.rst
@@ -27,7 +27,7 @@ mindspore.parallel提供了大量的自动并行接口，包括并行配置基�
 模型保存与加载
 ----------------------------------------------------------------
 
-.. mscnplatwarnautosummary::
+.. mscnautosummary::
     :toctree: parallel
     :nosignatures:
     :template: classtemplate.rst
@@ -42,7 +42,7 @@ mindspore.parallel提供了大量的自动并行接口，包括并行配置基�
 并行切分策略接口
 ----------------------------------------------------------------
 
-.. mscnplatwarnautosummary::
+.. mscnautosummary::
     :toctree: parallel
     :nosignatures:
     :template: classtemplate.rst
@@ -56,7 +56,7 @@ mindspore.parallel提供了大量的自动并行接口，包括并行配置基�
 其他
 ----------------------------------------------------------------
 
-.. mscnplatwarnautosummary::
+.. mscnautosummary::
     :toctree: parallel
     :nosignatures:
     :template: classtemplate.rst

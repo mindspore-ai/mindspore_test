@@ -10,7 +10,7 @@ sinc:
             input (Tensor): The input tensor.
 
         Returns:
-            Tensor.
+            Tensor
 
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``

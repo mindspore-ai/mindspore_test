@@ -45,5 +45,5 @@ mindspore.Tensor.sum
         - **TypeError** - input不是Tensor， `axis` 不是整数、整数元组、整数列表或Tensor， `keepdims` 不是整数，或者 `initial` 不是标量。
         - **ValueError** - 任意 `axis` 超出范围或存在重复的 `axis` 。
 
-    其他API参考：
+    .. seealso::
         - :func:`mindspore.Tensor.cumsum` ：返回沿给定 `axis` 的元素累加和。

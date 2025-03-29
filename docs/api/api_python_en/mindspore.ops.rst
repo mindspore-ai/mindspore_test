@@ -587,7 +587,6 @@ Array Operation
     mindspore.ops.repeat_elements
     mindspore.ops.repeat_interleave
     mindspore.ops.reshape
-    mindspore.ops.reverse
     mindspore.ops.reverse_sequence
     mindspore.ops.roll
     mindspore.ops.row_stack
@@ -650,7 +649,6 @@ Type Cast
 
     mindspore.ops.cast
     mindspore.ops.is_tensor
-    mindspore.ops.scalar_cast
     mindspore.ops.scalar_to_tensor
     mindspore.ops.tuple_to_array
 

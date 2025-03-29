@@ -72,7 +72,7 @@ mindspore.Tensor.repeat
         - **RuntimeError** - `repeats` 的元素个数或 `self` 的维度数超过8。
         - **TypeError** - `repeats` 参数类型错误。
 
-    其他API参考：
+    .. seealso::
         - :func:`mindspore.Tensor.reshape` ：为Tensor指定新的shape，不更改Tensor的数据。
         - :func:`mindspore.Tensor.resize` ：就地改变Tensor的shape和size。
         - :func:`mindspore.Tensor.repeat_interleave` ：将一个Tensor指定轴上的每个元素按指定次数进行重复。

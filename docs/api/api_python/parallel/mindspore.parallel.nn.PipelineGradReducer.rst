@@ -1,7 +1,7 @@
 mindspore.parallel.nn.PipelineGradReducer
 ============================================================================
 
-.. py:class:: mindspore.parallel.nn.PipelineGradReducer(optimizer.parameters, scale_sense=1.0, opt_shard=True)
+.. py:class:: mindspore.parallel.nn.PipelineGradReducer(parameters, scale_sense=1.0, opt_shard=True)
 
     流水线并行（pp）梯度累加的GradReducer。
 

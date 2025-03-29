@@ -11,13 +11,13 @@ mindspore.ops.cholesky
         A = U^TU
 
     如果 `upper` 为False，则返回的矩阵 :math:`L` 为下三角矩阵，分解形式为：
-   
+
     .. math::
-        A = LL^T 
+        A = LL^T
 
     参数：
-        - **input_x** (Tensor) - shape大小为 :math:`(*, N, N)` 的输入tensor, 公式中的:math:`A` 。
-        - **upper** (bool，可选) - 是否返回上三角矩阵, 默认``False`` 。
+        - **input_x** (Tensor) - shape大小为 :math:`(*, N, N)` 的输入tensor, 公式中的 :math:`A` 。
+        - **upper** (bool，可选) - 是否返回上三角矩阵, 默认 ``False`` 。
 
     返回：
         Tensor

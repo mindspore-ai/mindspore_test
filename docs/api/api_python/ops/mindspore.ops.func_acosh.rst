@@ -12,7 +12,7 @@ mindspore.ops.acosh
         给定一个输入tensor `input` ，该函数计算每个元素的反双曲余弦。输入范围为[1, inf]。
 
     参数：
-        - **input** (tensor) - 输入tensor。
+        - **input** (Tensor) - 输入tensor。
 
     返回：
         Tensor
