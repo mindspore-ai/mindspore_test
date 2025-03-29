@@ -839,7 +839,7 @@ CompileType GEBackend::CheckGraph(const FuncGraphPtr &func_graph) const {
       }
 
       if (common::AnfAlgo::GetGraphSplitGroup(node) == kKernelGroup) {
-        MS_LOG(ERROR) << "Ge bacend do not support kernel group.";
+        MS_LOG(ERROR) << "Ge backend do not support kernel group.";
         return CompileType::NotSupport;
       }
     }
@@ -1593,11 +1593,12 @@ bool GEBackend::Copy(const mindspore::device::DeviceAddress *dst_device_tensor,
   if (src_device_tensor->GetSize() != dst_device_tensor->GetSize()) {
     MS_LOG(INFO) << "Copy size is not equal, input size:" << src_device_tensor->GetSize()
                  << ", output size:" << dst_device_tensor->GetSize();
-    auto new_address_size =
-      GetTypeByte(TypeIdToType(src_device_tensor->type_id())) * SizeOf(src_device_tensor->GetShapeVector());
-    src_device_tensor->SetSize(new_address_size);
+    if (src_device_tensor->format() == dst_device_tensor->format()) {
+      auto new_address_size =
+        GetTypeByte(TypeIdToType(src_device_tensor->type_id())) * SizeOf(src_device_tensor->GetShapeVector());
+      src_device_tensor->SetSize(new_address_size);
+    }
   }
-
   // Exist the size alignment in some device, so get the min device size.
   size_t copy_size = std::min(src_device_tensor->GetSize(), dst_device_tensor->GetSize());
 
