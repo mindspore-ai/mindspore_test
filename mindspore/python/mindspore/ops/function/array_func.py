@@ -2801,7 +2801,7 @@ def sort(input_x, axis=-1, descending=False):
     return _sort(input_x)
 
 
-def sort_ext(input, dim=-1, descending=False, stable=False):
+def sort_ext(input, *, dim=-1, descending=False, stable=False):
     r"""
     Sorts the elements of the input tensor along the given dimension in the specified order.
 
@@ -2812,6 +2812,8 @@ def sort_ext(input, dim=-1, descending=False, stable=False):
     Args:
         input(Tensor): The input tensor to sort.
             The shape is :math:`(N,*)` where :math:`*` means, any number of additional dimensions.
+
+    Keyword Args:
         dim (int, optional): The dimension to sort along. Default: ``-1``, means the last dimension.
         descending (bool, optional): Controls the sort order. If `descending` is True, the elements
             are sorted in descending order, or else sorted in ascending order. Default: ``False`` .
