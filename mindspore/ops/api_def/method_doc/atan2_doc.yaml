@@ -2,36 +2,4 @@ atan2:
   description: |
     atan2(other) -> Tensor
     
-    Returns arctangent of self/other element-wise.
-
-    It returns :math:`\theta\ \in\ [-\pi, \pi]`
-    such that :math:`self = r*\sin(\theta), other = r*\cos(\theta)`, where :math:`r = \sqrt{self^2 + other^2}`.
-
-    Note:
-        - `self` and arg `other` comply with the implicit type conversion rules to make the data types consistent.
-          If they have different data types, the lower prechision data type will be converted to relatively the
-          highest precision data type.
-
-    Args:
-        other (Tensor, Number.number): The input tensor or scalar. It has the same shape with `self` or
-            its shape is able to broadcast with `self`.
-
-    Returns:
-        Tensor, the shape is the same as the one after broadcasting, and the data type is same as `self`.
-
-    Raises:
-        TypeError: If `other` is not a Tensor or scalar.
-        RuntimeError: If dtype conversion between `self` and `other` is not supported.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor
-        >>> input = Tensor(np.array([0, 1]), mindspore.float32)
-        >>> other = Tensor(np.array([1, 1]), mindspore.float32)
-        >>> output = Tensor.atan2(input, other)  # input.atan2(other)
-        >>> print(output)
-        [0.        0.7853982]
+    For details, please refer to :func:`mindspore.ops.atan2`.

@@ -2,28 +2,4 @@ exp:
     description: |
         exp() -> Tensor
 
-        Returns exponential of a tensor element-wise.
-
-        .. math::
-            out_i = e^{x_i}
-
-        .. note::
-            The input tensor. :math:`x` in the following formula.
-
-        Returns:
-            Tensor, has the same shape as the `self`.
-
-        Raises:
-            TypeError: If `self` is not a Tensor.
-
-        Supported Platforms:
-            ``Ascend`` ``GPU`` ``CPU``
-
-        Examples:
-            >>> import mindspore
-            >>> import numpy as np
-            >>> from mindspore import Tensor
-            >>> input = Tensor(np.array([0.0, 1.0, 3.0]), mindspore.float32)
-            >>> output = Tensor.exp(input)
-            >>> print(output)
-            [ 1.        2.7182817 20.085537]
+        For details, please refer to :func:`mindspore.ops.exp`.
