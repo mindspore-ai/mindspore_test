@@ -21,9 +21,17 @@ import numpy as np
 import mindspore as ms
 from mindspore.communication import get_rank, create_group, get_group_size
 from mindspore.parallel._utils import _get_auto_parallel_net, _parallel_mode_map
-
 # disable pylint too broad Exception
 # pylint: disable=W0212
+
+
+def check_rank(cur_rank, initial_rank, pipeline_stages):
+    if cur_rank != get_rank():
+        raise ValueError(f"For parameter broadcast, the cur_rank: {cur_rank} is wrong.")
+    if initial_rank % (get_group_size() / pipeline_stages) != 0:
+        raise ValueError(f"For parameter broadcast, the initial_rank: {initial_rank} is wrong.")
+
+
 def parameter_broadcast(net, layout, cur_rank=0, initial_rank=0):
     """
     Broadcast parameter to other rank in data parallel dimension.
@@ -123,10 +131,7 @@ def parameter_broadcast(net, layout, cur_rank=0, initial_rank=0):
     else:
         origin_parallel_mode = ms.get_auto_parallel_context("parallel_mode")
         pipeline_stages = ms.get_auto_parallel_context("pipeline_stages")
-    if cur_rank != get_rank():
-        raise ValueError(f"For parameter broadcast, the cur_rank: {cur_rank} is wrong.")
-    if initial_rank % (get_group_size() / pipeline_stages) != 0:
-        raise ValueError(f"For parameter broadcast, the initial_rank: {initial_rank} is wrong.")
+    check_rank(cur_rank, initial_rank, pipeline_stages)
     param_redundancy = get_parameter_redundancy(layout, initial_rank)
     if not param_redundancy:
         return
