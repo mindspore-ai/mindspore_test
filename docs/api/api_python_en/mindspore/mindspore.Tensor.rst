@@ -229,6 +229,7 @@ mindspore.Tensor
     mindspore.Tensor.greater
     mindspore.Tensor.greater_equal
     mindspore.Tensor.gt
+    mindspore.Tensor.gt_
     mindspore.Tensor.H
     mindspore.Tensor.half
     mindspore.Tensor.hardshrink
@@ -291,6 +292,7 @@ mindspore.Tensor
     mindspore.Tensor.log_normal
     mindspore.Tensor.long
     mindspore.Tensor.lt
+    mindspore.Tensor.lt_
     mindspore.Tensor.lu_solve
     mindspore.Tensor.masked_fill
     mindspore.Tensor.masked_fill_
