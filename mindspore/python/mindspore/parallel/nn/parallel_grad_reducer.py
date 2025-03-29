@@ -58,7 +58,7 @@ class PipelineGradReducer(Cell):
     Args:
         parameters (list): the parameters to be updated.
         scale_sense (float, optional): the scale sense of the gradient. Default: 1.0.
-        opt_shard(bool, optional): if use parallel optimizer, set opt_shard True. Default: ``None``.
+        opt_shard(bool, optional): if use parallel optimizer, set opt_shard True.
 
     Raise:
         RuntimeError: If the mode is not graph mode.
