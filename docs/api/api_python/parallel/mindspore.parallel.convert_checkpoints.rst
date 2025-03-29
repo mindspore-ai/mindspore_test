@@ -1,7 +1,7 @@
-mindspore.transform_checkpoints
+mindspore.parallel.convert_checkpoints
 ======================================
 
-.. py:function:: mindspore.transform_checkpoints(src_checkpoints_dir, dst_checkpoints_dir, ckpt_prefix, src_strategy_file=None, dst_strategy_file=None, process_num=1, output_format="ckpt")
+.. py:function:: mindspore.parallel.convert_checkpoints(src_checkpoints_dir, dst_checkpoints_dir, ckpt_prefix, src_strategy_file=None, dst_strategy_file=None, process_num=1, output_format="ckpt")
 
     将一个分布式网络的Checkpoint由源切分策略转换到目标切分策略。
 
