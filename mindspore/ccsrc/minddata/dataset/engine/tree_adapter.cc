@@ -54,6 +54,7 @@
 #include "runtime/hardware/device_context_manager.h"
 #include "utils/ms_context.h"
 #endif
+#include "minddata/utils.h"
 
 namespace mindspore {
 namespace dataset {
@@ -722,6 +723,10 @@ Status TreeAdapter::Launch() {
       RETURN_STATUS_UNEXPECTED("Create an independent dataset process failed.");
     } else if (fpid == 0) {  // in sub-process
       PyOS_AfterFork_Child();
+
+      // Bind independent dataset process to the core
+      int64_t sud_process_id = static_cast<int64_t>(getpid());
+      BindThreadCoreForMindDataOp("dataset::independent", sud_process_id, false);
 
       // get the message queue
       if (tree_->root()->Name() != kSendBridgeOp) {

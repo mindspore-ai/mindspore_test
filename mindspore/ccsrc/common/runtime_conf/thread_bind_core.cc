@@ -211,6 +211,39 @@ void ThreadBindCore::bind_thread_core(const std::vector<int> &cpu_list) {
 #endif  // BIND_CORE
 }
 
+void ThreadBindCore::bind_thread_core(const std::vector<int> &cpu_list, int64_t thread_or_process_id, bool is_thread) {
+#if defined(BIND_CORE)
+  if (!is_enable_thread_bind_core_) {
+    MS_LOG(EXCEPTION) << "Cannot bind core to this thread if 'set_cpu_affinity' is turned off.";
+  }
+
+  cpu_set_t cpuset;
+  CPU_ZERO(&cpuset);
+
+  for (const auto &cpu_id : cpu_list) {
+    CPU_SET(static_cast<size_t>(cpu_id), &cpuset);
+  }
+
+  if (is_thread) {
+    MS_LOG(INFO) << "Start binding thread [" << thread_or_process_id << "] to cores";
+    int result = pthread_setaffinity_np(static_cast<pthread_t>(thread_or_process_id), sizeof(cpu_set_t), &cpuset);
+    if (result != 0) {
+      MS_LOG(ERROR) << "Failed to bind thread to core list.";
+      return;
+    }
+    MS_LOG(INFO) << "Enable bind thread [" << thread_or_process_id << "] to core list: " << cpu_list;
+  } else {
+    MS_LOG(INFO) << "Start binding process [" << thread_or_process_id << "] to cores";
+    int result = sched_setaffinity(static_cast<pid_t>(thread_or_process_id), sizeof(cpu_set_t), &cpuset);
+    if (result != 0) {
+      MS_LOG(ERROR) << "Failed to bind process to core list.";
+      return;
+    }
+    MS_LOG(INFO) << "Enable bind process [" << thread_or_process_id << "] to core list: " << cpu_list;
+  }
+#endif  // BIND_CORE
+}
+
 bool ThreadBindCore::unbind_thread_core(const std::string &thread_name) { return true; }
 }  // namespace runtime
 }  // namespace mindspore

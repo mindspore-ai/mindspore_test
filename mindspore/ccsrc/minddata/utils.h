@@ -77,6 +77,34 @@ inline void BindThreadCoreForMindDataOp(std::string name) {
 #endif
   }
 }
+
+inline void BindThreadCoreForMindDataOp(std::string name, int64_t id, bool is_thread = false) {
+  std::string prefix_word = "dataset::";
+  if (name.rfind(prefix_word, 0) != 0) {
+    name = prefix_word + name;
+  }
+  auto &bind_core_manager = runtime::ThreadBindCore::GetInstance();
+  if (!bind_core_manager.is_enable_thread_bind_core_) {
+    MS_LOG(INFO) << "[" << name << "]: Core binding is not enabled.";
+    return;
+  } else {
+    MS_LOG(INFO) << "[" << name << "]: Start core binding.";
+  }
+
+  const auto &core_list = bind_core_manager.get_thread_bind_core_list(runtime::kBindCoreModule::kMINDDATA);
+  if (core_list.empty()) {
+    MS_LOG(WARNING) << "[" << name
+                    << "]: Failed to get core list, please check if core binding is enabled by 'set_cpu_affinity'.";
+    return;
+  } else {
+    bind_core_manager.bind_thread_core(core_list, id, is_thread);
+    if (is_thread) {
+      MS_LOG(INFO) << "[" << name << "]: Current thread [" << id << "] has been bound to core list.";
+    } else {
+      MS_LOG(INFO) << "[" << name << "]: Current process [" << id << "] has been bound to core list.";
+    }
+  }
+}
 }  // namespace dataset
 }  // namespace mindspore
 

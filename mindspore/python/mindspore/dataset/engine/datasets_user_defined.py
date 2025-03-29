@@ -220,6 +220,7 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
 
         self.ppid = os.getpid()
         self.pids = []
+        self.thread_ids = []
         self.check_interval = get_multiprocessing_timeout_interval()  # the interval of check queue's size
 
         if self.multi_process is True:
@@ -277,11 +278,31 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
                 worker = _GeneratorWorkerMt(self.dataset, self.eof, worker_id)
                 worker.daemon = True
                 self.need_join = True
+                worker.start()
+                self.thread_ids.append(worker.ident)
                 self.workers.append(worker)
 
         # Register a termination function using weakref to avoid the object from unable to properly destruct.
         atexit.register(lambda cleanup: cleanup()() if cleanup() is not None else None,
                         weakref.WeakMethod(self.terminate))
+
+    def get_worker_ids(self):
+        """
+        Get dict of worker's ids
+
+        Returns:
+            dict of strings
+        """
+        if not self.is_mp_enabled():
+            return {}
+        worker_ids = {}
+        if self.multi_process is True:
+            worker_ids["is_thread"] = False
+            worker_ids["worker_id"] = self.pids
+        else:
+            worker_ids["is_thread"] = True
+            worker_ids["worker_id"] = self.thread_ids
+        return worker_ids
 
     def terminate(self):
         self._stop_subprocess()

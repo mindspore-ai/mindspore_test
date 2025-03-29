@@ -77,6 +77,71 @@ def test_dataset_bind_core_configuration(cleanup_temporary_files):
     assert bind_str in output_log
 
 
+@pytest.mark.parametrize("cleanup_temporary_files", ["./dataset_bind_out_3.log"], indirect=True)
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0',
+          card_mark='onecard', essential_mark='essential')
+def test_dataset_bind_core_py_process(cleanup_temporary_files):
+    """
+    Feature: Dataset bind core
+    Description: Verify the python side of the process thread binding kernel functionality
+    Expectation: Output is equal to the expected output
+    """
+    os.environ['GLOG_v'] = str(1)
+    real_path = os.path.realpath(os.getcwd())
+    script = real_path + "/dataset_bind_core_base.py"
+    output = real_path + "/dataset_bind_out_3.log"
+    assert os.path.exists(script)
+
+    cmd = (f"python {script} third_function > {output} 2>&1")
+    os.system(cmd)
+
+    assert os.path.exists(output)
+
+    bind_logs = ["Start binding process",
+                 "[dataset::GeneratorOp]: Current process",
+                 "[dataset::MapOp]: Current process",
+                 "[dataset::BatchOp]: Current process"]
+
+    with open(output, "r") as f:
+        output_log = f.read()
+
+    for bind_log in bind_logs:
+        assert bind_log in output_log
+
+
+@pytest.mark.parametrize("cleanup_temporary_files", ["./dataset_bind_out_4.log"], indirect=True)
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0',
+          card_mark='onecard', essential_mark='essential')
+def test_dataset_bind_core_independent_dataset_process(cleanup_temporary_files):
+    """
+    Feature: Dataset bind core
+    Description: Verify the independent dataset process binding kernel functionality
+    Expectation: Output is equal to the expected output
+    """
+    os.environ['GLOG_v'] = str(1)
+    os.environ["MS_INDEPENDENT_DATASET"] = "true"
+    real_path = os.path.realpath(os.getcwd())
+    script = real_path + "/dataset_bind_core_base.py"
+    output = real_path + "/dataset_bind_out_4.log"
+    assert os.path.exists(script)
+
+    cmd = (f"python {script} fourth_function > {output} 2>&1")
+    os.system(cmd)
+
+    assert os.path.exists(output)
+
+    bind_logs = ["Start binding process",
+                 "[dataset::independent]: Current process"]
+
+    with open(output, "r") as f:
+        output_log = f.read()
+
+    for bind_log in bind_logs:
+        assert bind_log in output_log
+
+
 if __name__ == "__main__":
     test_dataset_bind_core(cleanup_temporary_files)
     test_dataset_bind_core_configuration(cleanup_temporary_files)
+    test_dataset_bind_core_py_process(cleanup_temporary_files)
+    test_dataset_bind_core_independent_dataset_process(cleanup_temporary_files)

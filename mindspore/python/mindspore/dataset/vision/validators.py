@@ -351,6 +351,7 @@ def check_resize_interpolation(method):
 
     return new_method
 
+
 def check_device_target(method):
     """A wrapper that wraps a parameter checker"""
 
