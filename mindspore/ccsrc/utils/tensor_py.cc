@@ -232,7 +232,10 @@ std::vector<int64_t> TensorPy::GetStride() const { return GetBaseTensor()->strid
 
 const int64_t TensorPy::GetStorageOffset() const { return GetBaseTensor()->storage_offset(); }
 
-std::string TensorPy::ToString() const { return GetBaseTensor()->ToString(); }
+std::string TensorPy::ToString() const {
+  DataSync(true);
+  return GetBaseTensor()->ToStringRepr();
+}
 
 std::string TensorPy::ToStringRepr() const { return GetBaseTensor()->ToStringRepr(); }
 

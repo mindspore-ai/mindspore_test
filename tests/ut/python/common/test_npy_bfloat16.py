@@ -194,7 +194,7 @@ def test_bf16_str():
     Expectation: Success.
     """
     x = ms.Tensor([1, 2, 3], dtype=ms.bfloat16)
-    assert str(x) == "[1.000000 2.000000 3.000000]"
+    assert str(x) == "Tensor(shape=[3], dtype=BFloat16, value= [1, 2, 3])"
 
 def test_bf16_item():
     """

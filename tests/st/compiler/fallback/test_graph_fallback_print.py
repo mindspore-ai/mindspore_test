@@ -307,7 +307,7 @@ def test_print_format_tensor():
         x = Tensor(np.array([1, 2, 3, 4, 5]))
         y = Tensor(np.array([1, 2, 3, 4, 5]))
         tensor_sum = x + y
-        print("tensor_sum: {}".format(tensor_sum))
+        print("tensor_sum: {}".format(tensor_sum.asnumpy()))
         return tensor_sum
 
     cap = Capture()

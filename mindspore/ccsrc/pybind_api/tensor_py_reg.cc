@@ -427,10 +427,10 @@ static PyGetSetDef PyTensorPython_getseters[] = {
    NULL},
   {"_dtype", (getter)TensorPython_get_dtype, (setter)TensorPython_set_dtypeObj, R"mydelimiter(
                                 Get the tensor's data type.
-   
+
                                 Returns:
                                     type, the data type of tensor.
-   
+
                                 Examples:
                                     >>> data = mindspore.Tensor(np.ones((2, 1), np.int32))
                                     >>> data.dtype
@@ -442,10 +442,10 @@ static PyGetSetDef PyTensorPython_getseters[] = {
   {"shape", (getter)TensorPython_getShape, nullptr, "Get the MetaTensor's shape.", NULL},
   {"_size", (getter)TensorPython_get_size, nullptr, R"mydelimiter(
                                 Get tensor's data size.
-   
+
                                 Returns:
                                     size_t, the size of tensor.
-   
+
                                 Examples:
                                     >>> data = mindspore.Tensor(np.ones((2, 3)))
                                     >>> data.size
@@ -454,10 +454,10 @@ static PyGetSetDef PyTensorPython_getseters[] = {
    nullptr},
   {"_itemsize", (getter)TensorPython_get_itemsize, nullptr, R"mydelimiter(
                                 Get the tensor's length of one element in bytes.
-   
+
                                 Returns:
                                     itemsize, length of one element in bytes.
-   
+
                                 Examples:
                                     >>> data = mindspore.Tensor(np.ones((2, 1), np.int32))
                                     >>> data.itemsize
@@ -466,10 +466,10 @@ static PyGetSetDef PyTensorPython_getseters[] = {
    nullptr},
   {"_nbytes", (getter)TensorPython_get_nbytes, nullptr, R"mydelimiter(
                                 Get the tensor's total number of bytes.
-   
+
                                 Returns:
                                     nbytes, total number of bytes taken by the tensor.
-   
+
                                 Examples:
                                     >>> data = mindspore.Tensor(np.ones((2, 1), np.int32))
                                     >>> data.nbytes
@@ -479,10 +479,10 @@ static PyGetSetDef PyTensorPython_getseters[] = {
   {"_strides", (getter)TensorPython_get_strides, nullptr, R"mydelimiter(
                                 Get the tensor's tuple of bytes to step in each dimension
                                 when traversing an array.
-   
+
                                 Returns:
                                     tuple[int], the strides of the tensor.
-   
+
                                 Examples:
                                     >>> data = mindspore.Tensor(np.ones((2, 1), np.int32))
                                     >>> data.strides
@@ -1013,6 +1013,9 @@ static PyObject *RemoveTensorBackwardHook(PyObject *self, PyObject *args) {
 static PyObject *TensorPython_ToString(PyObject *self, PyObject *) {
   HANDLE_MS_EXCEPTION
   PyType<TensorPy> *tensor = (PyType<TensorPy> *)self;
+  if (tensor->value.GetDtype() == kTypeNone) {
+    return PyUnicode_FromString("Unknown Tensor type!");
+  }
   std::string result = tensor->value.ToString();
   return PyUnicode_FromString(result.c_str());
   HANDLE_MS_EXCEPTION_END
@@ -1338,10 +1341,10 @@ static PyMethodDef Tensor_methods[] = {
   {"set_param_info", (PyCFunction)TensorPython_set_paramInfo_, METH_STATIC | METH_VARARGS, "set param info"},
   {"asnumpy", (PyCFunction)TensorPython_asnumpy, METH_VARARGS, R"mydelimiter(
                                 Convert tensor to numpy.ndarray.
-   
+
                                 Returns:
                                     numpy.ndarray.
-   
+
                                 Examples:
                                     >>> data = mindspore.Tensor(np.ones((2, 3)))
                                     >>> array = data.asnumpy()
@@ -1353,13 +1356,13 @@ static PyMethodDef Tensor_methods[] = {
   {"__repr__", (PyCFunction)TensorPython_repr, METH_NOARGS, "Return the string representation of the tensor."},
   {"from_numpy", TensorPython_from_numpy, METH_STATIC | METH_VARARGS, R"mydelimiter(
                                 Creates a Tensor from a numpy.ndarray without copy.
-   
+
                                 Arg:
                                     array (numpy.ndarray): The input ndarray.
-   
+
                                 Returns:
                                     Tensor, tensor with shared data to input ndarray.
-   
+
                                 Examples:
                                     >>> a = np.ones((2, 3))
                                     >>> t = mindspore.Tensor.from_numpy(a)
@@ -1372,24 +1375,24 @@ static PyMethodDef Tensor_methods[] = {
    R"mydelimiter(
                                 Creates a Tensor from a numpy.ndarray without copy.
                                 Use persistent data tensor.
-   
+
                                 Arg:
                                     array (numpy.ndarray): The input ndarray.
                                     slice_num (int): The slice num of persistent data tensor.
-   
+
                                 Returns:
                                     Tensor, tensor with shared data to input ndarray.
-   
+
                                 Examples:
                                     >>> a = np.ones((2, 3))
                                     >>> t = mindspore.Tensor.persistent_data_from_numpy(a, 1)
                                 )mydelimiter"},
   {"get_bytes", TensorPython_get_bytes, METH_VARARGS, R"mydelimiter(
                                 Get raw data of tensor with type of bytes.
-   
+
                                 Returns:
                                     Bytes of tensor.
-   
+
                                 Examples:
                                     >>> import mindspore as ms
                                     >>> from mindspore import Tensor
@@ -1400,10 +1403,10 @@ static PyMethodDef Tensor_methods[] = {
   {"convert_bytes_to_tensor", TensorPy_convert_bytes_to_tensor, METH_STATIC | METH_VARARGS,
    R"mydelimiter(
                                 Convert raw data to tensor.
-   
+
                                 Returns:
                                     Tensor.
-   
+
                                 Examples:
                                     >>> import mindspore as ms
                                     >>> from mindspore import Tensor
@@ -1414,20 +1417,20 @@ static PyMethodDef Tensor_methods[] = {
                                 )mydelimiter"},
   {"_flush_from_cache", TensorPython_flush_from_cache, METH_NOARGS, R"mydelimiter(
                                 Flush Cache data to Host if tensor is cache enable.
-   
+
                                 Returns:
                                     None.
-   
+
                                 Examples:
                                     >>> data = mindspore.Tensor(np.ones((2, 3)))
                                     >>> data._flush_from_cache()
                                 )mydelimiter"},
   {"is_persistent_data", TensorPython_is_persistent_data, METH_NOARGS, R"mydelimiter(
                                 Check if tensor have persistent data.
-   
+
                                 Returns:
                                     Bool.
-   
+
                                 Examples:
                                     >>> data = mindspore.Tensor(np.ones((2, 3)))
                                     >>> data.is_persistent_data()
@@ -1435,20 +1438,20 @@ static PyMethodDef Tensor_methods[] = {
   {"asnumpy_of_slice_persistent_data", TensorPython_asnumpy_of_slice_persistent_data, METH_VARARGS,
    R"mydelimiter(
                                 Convert tensor to numpy.ndarray of a slice.
-   
+
                                 Returns:
                                     numpy.ndarray.
-   
+
                                 Examples:
                                     >>> data = mindspore.Tensor(np.ones((2000000000, 256)))
                                     >>> data.asnumpy_of_slice_persistent_data(0, 1)
                                 )mydelimiter"},
   {"is_init", TensorPython_is_init, METH_NOARGS, R"mydelimiter(
                                 Get tensor init_flag.
-   
+
                                 Returns:
                                     bool, whether the tensor init.
-   
+
                                 Examples:
                                     >>> data = mindspore.Tensor(np.ones((2, 3)))
                                     >>> data.is_init()
@@ -1456,17 +1459,17 @@ static PyMethodDef Tensor_methods[] = {
                                 )mydelimiter"},
   {"set_init_flag", TensorPython_set_initFlag, METH_VARARGS, R"mydelimiter(
                                 Set tensor init_flag.
-   
+
                                 Examples:
                                     >>> data = mindspore.Tensor(np.ones((2, 3)))
                                     >>> data.set_init_flag(True)
                                 )mydelimiter"},
   {"dim", TensorPython_data_dim, METH_VARARGS, R"mydelimiter(
                                 Get tensor's data dimension.
-   
+
                                 Returns:
                                     int, the dimension of tensor.
-   
+
                                 Examples:
                                     >>> data = mindspore.Tensor(np.ones((2, 3)))
                                     >>> data.dim()
@@ -1474,10 +1477,10 @@ static PyMethodDef Tensor_methods[] = {
                                 )mydelimiter"},
   {"assign_value_cpp", TensorPython_assign_value, METH_VARARGS, R"mydelimiter(
                                 Assign another tensor value to this.
-   
+
                                 Arg:
                                     value (:class:`mindspore.tensor`): The value tensor.
-   
+
                                 Examples:
                                     >>> data = mindspore.Tensor(np.ones((1, 2), np.float32))
                                     >>> data2 = mindspore.Tensor(np.ones((2, 2), np.float32))
@@ -1487,10 +1490,10 @@ static PyMethodDef Tensor_methods[] = {
                                 )mydelimiter"},
   {"set_dtype", TensorPython_set_dtype, METH_VARARGS, R"mydelimiter(
                                  Set the tensor's data type.
-   
+
                                  Arg:
                                      dtype (:class:`mindspore.dtype`): The type of output tensor.
-   
+
                                  Examples:
                                      >>> data = mindspore.Tensor(np.ones((1, 2), np.float32))
                                      >>> data.set_dtype(mindspore.int32)
@@ -1498,7 +1501,7 @@ static PyMethodDef Tensor_methods[] = {
                                  )mydelimiter"},
   {"offload", TensorPython_offload, METH_VARARGS, R"mydelimiter(
                                  Offload tensor data to file.
-   
+
                                  Arg:
                                      str : file path to save tensor data.
                                  Returns:
@@ -1510,7 +1513,7 @@ static PyMethodDef Tensor_methods[] = {
                                  )mydelimiter"},
   {"offload_file_path", TensorPython_get_offload_file_path, METH_NOARGS, R"mydelimiter(
                                  Offload file path for tensor.
-   
+
                                  Returns:
                                     str, offload file path for tensor.
                                  Examples:
@@ -1523,14 +1526,14 @@ static PyMethodDef Tensor_methods[] = {
                                   Copy tensor between host and device asynchronously if blocking=False,
                                   otherwise synchronously. if the arg `to`=`CPU`, means D2H copy;
                                   if the arg `to`=`GPU` or `to`=`ASCEND`, means H2D copy.
-   
+
                                   Args:
                                       str: A string, "CPU" or "ASCEND" or "GPU".
                                       bool: A bool type value, Default: ``True`` .
-   
+
                                   Returns:
                                          Tensor, with the same type and shape as the "self".
-   
+
                                  Examples:
                                      >>> data = mindspore.Tensor(np.ones((1, 2), np.float32))
                                      >>> ret = data.move_to("CPU")
@@ -1595,10 +1598,10 @@ static PyMethodDef Tensor_methods[] = {
   {"_item", (PyCFunction)TensorPython_GetNewItem, METH_VARARGS | METH_KEYWORDS, R"mydelimiter(
                                Return the value of this tensor as standard Python number.
                                This only works for tensors with one element.
-   
+
                                Returns:
                                    A scalar, type is defined by the dtype of the Tensor.
-   
+
                                Examples:
                                    # index is None:
                                    >>> t = mindspore.Tensor([1])
@@ -1607,10 +1610,10 @@ static PyMethodDef Tensor_methods[] = {
                                )mydelimiter"},
   {"_tolist", (PyCFunction)TensorPython_ToList, METH_VARARGS, R"mydelimiter(
                                 Convert a Tensor to List. If the input is Tensor scalar, a Python scalar will be returned.
-    
+
                                 Returns:
                                     List or Python scalar.
-    
+
                                 Examples:
                                     >>> x = ms.Tensor([[1, 2, 3], [4, 5, 6]])
                                     >>> out1 = x.tolist()

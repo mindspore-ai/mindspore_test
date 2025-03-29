@@ -393,7 +393,7 @@ def test_sampler_list():
 
 def check_result(expected, result):
     for index, item in enumerate(result):
-        assert str(expected[index][0]) == item
+        assert item in str(expected[index][0])
 
 
 def test_sampler_when_less_and_larger_index_ids():
