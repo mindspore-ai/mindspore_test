@@ -71,7 +71,8 @@ bool AscendCommunicationGroup::Initialize(void *root_info) {
 
   bool ret = false;
   std::string rank_table_file_path = common::GetEnv("RANK_TABLE_FILE");
-  if (!rank_table_file_path.empty() && !distributed::cluster::ClusterContext::instance()->enable_cross_cluster()) {
+  if (!rank_table_file_path.empty() && common::GetEnv(kSimulationLevel).empty() &&
+      !distributed::cluster::ClusterContext::instance()->enable_cross_cluster()) {
     ret = InitializeByRankTable(rank_table_file_path, group_size, group_rank);
   } else {
     ret = InitializeByRootInfoConfig(root_info, group_size, group_rank);
@@ -88,7 +89,7 @@ bool AscendCommunicationGroup::Initialize(void *root_info) {
   initialized_ = true;
 
   // Initialize watch dog for global communication group.
-  if (ms_context->get_param<bool>(MS_CTX_ENABLE_HCCL_WATCHDOG)) {
+  if (ms_context->get_param<bool>(MS_CTX_ENABLE_HCCL_WATCHDOG) && common::GetEnv(kSimulationLevel).empty()) {
     MS_LOG(INFO) << "Start initializing hccl watchdog on device side for group: " << name_
                  << ", rank: " << global_rank_;
     HcclWatchDogManager::GetInstance().AddHandler(std::make_unique<HcclWatchDogHandler>(global_rank_, name_, comm_));
