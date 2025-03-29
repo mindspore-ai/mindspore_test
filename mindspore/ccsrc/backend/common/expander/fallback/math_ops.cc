@@ -136,7 +136,7 @@ REG_FALLBACK_BUILDER("SubExt").SetBody(BODYFUNC(ib) {
 REG_FALLBACK_BUILDER("Muls").SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto y = ib->GetInput(kIndex1);
-  auto promote_type = mindspore::ops::PromoteType(ib->GetDtype(x), ib->GetDtype(x), "Muls");
+  auto promote_type = mindspore::ops::PromoteType(ib->GetDtype(x), ib->GetDtype(y), "Muls");
   MS_EXCEPTION_IF_NULL(promote_type);
   auto y_tensor = ib->ScalarToTensor(y, y->dtype());
   auto x_cast = ib->Cast(x, promote_type);
