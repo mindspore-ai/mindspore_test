@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,38 +26,6 @@
 
 namespace mindspore {
 namespace ops {
-namespace {
-template <typename T>
-int64_t OneHotGetScalarValue(const ValuePtr &value) {
-  auto value_opt = GetScalarValue<T>(value);
-  if (MS_UNLIKELY(!value_opt.has_value())) {
-    return abstract::Shape::kShapeDimAny;
-  }
-  return static_cast<int64_t>(value_opt.value());
-}
-}  // namespace
-int64_t OneHotFuncImpl::GetDepthValue(const PrimitivePtr &primitive, const AbstractBasePtr &depth_abs) const {
-  auto depth_value_ptr = depth_abs->GetValue();
-  if (MS_UNLIKELY(depth_value_ptr->isa<None>() || depth_value_ptr->ContainsValueAny())) {
-    return abstract::Shape::kShapeDimAny;
-  }
-
-  auto depth_type = depth_abs->GetType()->type_id();
-  int64_t depth_value{abstract::Shape::kShapeDimAny};
-  if (depth_type == kNumberTypeInt64) {
-    depth_value = OneHotGetScalarValue<int64_t>(depth_value_ptr);
-  } else if (depth_type == kNumberTypeInt32) {
-    depth_value = OneHotGetScalarValue<int32_t>(depth_value_ptr);
-  } else {
-    MS_EXCEPTION(TypeError) << "For " << primitive->name() << ", depth should be int32 or int64.";
-  }
-  if (depth_value != abstract::Shape::kShapeDimAny) {
-    MS_CHECK_VALUE(depth_value >= 0, CheckAndConvertUtils::FormatCheckIntegerMsg("depth value", depth_value,
-                                                                                 kGreaterEqual, 0, primitive));
-  }
-  return depth_value;
-}
-
 BaseShapePtr OneHotFuncImpl::InferShape(const PrimitivePtr &primitive,
                                         const std::vector<AbstractBasePtr> &input_args) const {
   const auto &in_shape = input_args[kInputIndex0]->GetShape()->GetShapeVector();
@@ -69,8 +37,16 @@ BaseShapePtr OneHotFuncImpl::InferShape(const PrimitivePtr &primitive,
   if (IsDynamicRank(output_shape)) {
     return std::make_shared<abstract::Shape>(output_shape);
   }
+  auto depth_opt = GetScalarValue<int64_t>(input_args[kInputIndex1]->GetValue());
+  int64_t depth_value;
+  if (!depth_opt.has_value()) {
+    depth_value = abstract::Shape::kShapeDimAny;
+  } else {
+    depth_value = depth_opt.value();
+    MS_CHECK_VALUE(depth_value >= 0, CheckAndConvertUtils::FormatCheckIntegerMsg("depth value", depth_value,
+                                                                                 kGreaterEqual, 0, primitive));
+  }
 
-  auto depth_value = GetDepthValue(primitive, input_args[kInputIndex1]);
   auto axis_opt = GetScalarValue<int64_t>(input_args[kInputIndex4]->GetValue());
   if (!axis_opt.has_value()) {
     output_shape = ShapeVector(in_shape.size() + 1, abstract::Shape::kShapeDimAny);
