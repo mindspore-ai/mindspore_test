@@ -137,7 +137,7 @@ class COMMON_EXPORT RuntimeConf {
   float mem_block_increase_size_;
   float mem_max_size_;
   int mem_optimize_level_;
-  float mem_huge_page_reserve_size_{0.0f};
+  float mem_huge_page_reserve_size_;
   std::map<std::string, bool> conf_status_;
 };
 

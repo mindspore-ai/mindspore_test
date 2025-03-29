@@ -449,7 +449,9 @@ void MSBackend::RunActorSet(BackendGraphId graph_id, runtime::ActorSet *actor_se
   graph_compiler_->Summary(graph_compiler_info.graphs_);
 
   auto output = graph_compiler_info.root_func_graph_->output();
-  MS_LOG(DEBUG) << "Current out " << output->DebugString();
+  if (output != nullptr) {
+    MS_LOG(DEBUG) << "Current out " << output->DebugString();
+  }
   if (graph_compiler_info.root_func_graph_->has_flag(kFlagIsPyNativeBpropKernelGraph)) {
     MS_EXCEPTION_IF_NULL(graph_compiler_info.origin_output_node_);
     MS_LOG(DEBUG) << "Origin out:" << graph_compiler_info.origin_output_node_->DebugString();
