@@ -1584,21 +1584,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
 
     def numel(self):
         r"""
-        Returns a Scalar of type int that represents the total number of elements in the Tensor.
-
-        Returns:
-            int. A scalar representing the total of elements in the Tensor.
-
-        Supported Platforms:
-            ``Ascend`` ``GPU`` ``CPU``
-
-        Examples:
-            >>> import mindspore
-            >>> import numpy as np
-            >>> from mindspore import Tensor
-            >>> input_x = Tensor(np.array([[2, 2], [2, 2]]), mindspore.float32)
-            >>> print(input_x.numel())
-            4
+        For details, please refer to :func:`mindspore.ops.numel`.
         """
         return self.size
 
@@ -1934,48 +1920,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
 
     def scatter_sub(self, indices, updates):
         """
-        Creates a new tensor by subtracting the values from the positions in self tensor indicated by
-        `indices`, with values from `updates`. When multiple values are provided for the same
-        index, the result of the update will be to subtract these values respectively. This operation is almost
-        equivalent to using :class:`mindspore.ops.ScatterNdSub` , except that the updates are applied on output `Tensor`
-        instead of input `Parameter`.
-
-        The last axis of `indices` is the depth of each index vectors. For each index vector,
-        there must be a corresponding value in `updates`. The shape of `updates` should be
-        equal to the shape of `self[indices]`. For more details, see Examples.
-
-        Note:
-            On GPU, if some values of the `indices` are out of bound, instead of raising an index error,
-            the corresponding `updates` will not be updated to self tensor. On CPU, if some values of
-            the `indices` are out of bound, raising an index error. On Ascend, out of bound checking is
-            not supported, if some values of the `indices` are out of bound, unknown errors may be caused.
-
-        Args:
-            indices (Tensor): The index of input tensor whose data type is int32 or int64.
-                The rank must be at least 2.
-            updates (Tensor): The tensor to update the input tensor, has the same type as input,
-                and updates.shape should be equal to indices.shape[:-1] + self.shape[indices.shape[-1]:].
-
-        Returns:
-            Tensor, has the same shape and type as self tensor.
-
-        Raises:
-            TypeError: If dtype of `indices` is neither int32 nor int64.
-            ValueError: If length of shape of self tensor is less than the last dimension of shape of `indices`.
-
-        Supported Platforms:
-            ``Ascend`` ``GPU`` ``CPU``
-
-        Examples:
-            >>> import numpy as np
-            >>> from mindspore import Tensor
-            >>> x = Tensor(np.array([[-0.1, 0.3, 3.6], [0.4, 0.5, -3.2]]).astype('float32'))
-            >>> indices = Tensor(np.array([[0, 0], [0, 0]]).astype('int32'))
-            >>> updates = Tensor(np.array([1.0, 2.2]).astype('float32'))
-            >>> output = x.scatter_sub(indices, updates)
-            >>> print(output)
-            [[-3.3000002  0.3        3.6      ]
-            [ 0.4        0.5       -3.2      ]]
+        For details, please refer to :func:`mindspore.ops.tensor_scatter_sub`.
         """
         return tensor_operator_registry.get('tensor_scatter_sub')(self, indices, updates)
 
@@ -2439,34 +2384,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
 
     def searchsorted(self, v, side='left', sorter=None):
         """
-        Finds indices where elements should be inserted to maintain order.
-
-        Args:
-            v (Union[int, float, bool, list, tuple, Tensor]): Values to insert into the tensor.
-            side (str, optional): If ``left``, the index of the first suitable
-                location found is given. If ``right``, return the last such index. If there is
-                no suitable index, return either 0 or N (where N is the length of the tensor).
-                Default: ``left`` .
-            sorter (Union[int, list, tuple, Tensor], optional): optional tensor of
-                integer indices that sort the tensor into ascending order on the innermost dimension
-                and the type must be int64. They are typically the result of argsort. Default: ``None`` .
-                CPU and GPU can only use default values
-
-        Returns:
-            Tensor, array of insertion points with the same shape as `v`.
-
-        Raises:
-            ValueError: If argument for `side` or `sorter` is invalid.
-
-        Supported Platforms:
-            ``Ascend`` ``GPU`` ``CPU``
-
-        Examples:
-            >>> import numpy as np
-            >>> from mindspore import Tensor
-            >>> x = Tensor(np.array([1, 2, 3, 4, 5]))
-            >>> print(x.searchsorted(3))
-            2
+        For details, please refer to :func:`mindspore.ops.searchsorted`.
         """
         if side not in ('left', 'right'):
             raise ValueError(f"For 'Tensor.searchsorted', the argument 'side' should be one of in "

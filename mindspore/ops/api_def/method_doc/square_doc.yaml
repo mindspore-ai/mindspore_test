@@ -2,23 +2,4 @@ square:
   description: |
     square() -> Tensor
     
-    Returns square of `self` element-wise.
-
-    .. math::
-
-        out_i = self_i ^ 2
-
-    Returns:
-        Tensor, has the same shape and dtype as `self`.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor
-        >>> input = Tensor(np.array([1.0, 2.0, 3.0]), mindspore.float32)
-        >>> output = Tensor.square(input)  # input.square()
-        >>> print(output)
-        [1. 4. 9.]
+    For details, please refer to :func:`mindspore.ops.square`.

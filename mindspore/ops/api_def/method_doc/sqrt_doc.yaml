@@ -2,26 +2,4 @@ sqrt:
   description: |
     sqrt() -> Tensor
     
-    Returns sqrt of `self` element-wise.
-    
-    Note:
-        When there are some negative number, it will return a Tensor whose specific position is nan.
-    
-    .. math::
-
-        out_{i} = \sqrt{self_{i}}
-
-    Returns:
-        Tensor, has the same shape as `self`.
-
-    Supported Platforms:
-       ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor
-        >>> x = Tensor(np.array([1.0, 4.0, 9.0]), mindspore.float32)
-        >>> output = Tensor.sqrt(x)  # x.sqrt()
-        >>> print(output)
-        [1. 2. 3.]
+    For details, please refer to :func:`mindspore.ops.sqrt`.
