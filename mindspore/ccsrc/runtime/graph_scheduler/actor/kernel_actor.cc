@@ -1321,11 +1321,14 @@ void KernelActor::DispatchDebugActor(OpContext<DeviceTensor> *const context) {
 
 bool KernelActor::LaunchKernelWithDebug(OpContext<DeviceTensor> *const context, const bool skip_launch) {
   MS_LOG(DEBUG) << "Begin launch kernel: " << kernel_->fullname_with_scope();
-  if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
+  static bool is_enable_mem_tracker = device::tracker::MemTrackerManager::GetInstance().IsEnabled();
+  if (is_enable_mem_tracker) {
     AddNodeToGraphTracker(kernel_, GetAID().Name());
     TrackInputOutputMemory(input_device_tensors_, output_device_tensors_, GetAID().Name(), depend_shape_input_list_);
   } else {
-    AddNodeMemTrackerInfo(kernel_, GetAID().Name(), is_stream_recv_actor_);
+    if (device::tracker::MemTrackerManager::GetInstance().enable_memory_debug_info()) {
+      AddNodeMemTrackerInfo(kernel_, GetAID().Name(), is_stream_recv_actor_);
+    }
   }
   bool ret = true;
   if (!skip_launch) {
@@ -1347,14 +1350,17 @@ bool KernelActor::LaunchKernel(OpContext<DeviceTensor> *const context, bool is_s
     auto &execute_order_tracker = ExecuteOrderTracker::GetInstance();
     execute_order_tracker.ProcessNode(kernel_);
   }
+  static bool is_enable_mem_tracker = device::tracker::MemTrackerManager::GetInstance().IsEnabled();
   if (skip_launch_shape_related_op_) {
     MS_LOG(DEBUG) << "Skip launch real make tuple kernel: " << kernel_->fullname_with_scope()
                   << " input kernel tensor: " << input_kernel_tensors_;
-    if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
+    if (is_enable_mem_tracker) {
       AddNodeToGraphTracker(kernel_, GetAID().Name());
       TrackInputOutputMemory(input_device_tensors_, output_device_tensors_, GetAID().Name(), depend_shape_input_list_);
     } else {
-      AddNodeMemTrackerInfo(kernel_, GetAID().Name(), is_stream_recv_actor_);
+      if (device::tracker::MemTrackerManager::GetInstance().enable_memory_debug_info()) {
+        AddNodeMemTrackerInfo(kernel_, GetAID().Name(), is_stream_recv_actor_);
+      }
     }
     return true;
   }
@@ -1367,12 +1373,14 @@ bool KernelActor::LaunchKernel(OpContext<DeviceTensor> *const context, bool is_s
     if (input_device_tensors_[0]->GetPtr() == output_device_tensors_[0]->GetPtr()) {
       MS_LOG(DEBUG) << "Skipped launch kernel: " << kernel_->fullname_with_scope();
       DispatchDebugActor(context);
-      if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
+      if (is_enable_mem_tracker) {
         AddNodeToGraphTracker(kernel_, GetAID().Name());
         TrackInputOutputMemory(input_device_tensors_, output_device_tensors_, GetAID().Name(),
                                depend_shape_input_list_);
       } else {
-        AddNodeMemTrackerInfo(kernel_, GetAID().Name(), is_stream_recv_actor_);
+        if (device::tracker::MemTrackerManager::GetInstance().enable_memory_debug_info()) {
+          AddNodeMemTrackerInfo(kernel_, GetAID().Name(), is_stream_recv_actor_);
+        }
       }
       return true;
     } else {
