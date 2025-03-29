@@ -213,12 +213,12 @@ RunMode GeDeviceContext::GetRunMode(const FuncGraphPtr &func_graph) const {
   }
 }
 
-void GeDeviceContext::GeInitialize() const {
+void GeDeviceContext::ContextInitGe() const {
   if (ge_initialized_) {
     return;
   }
   if (!UseSimulationApi()) {
-    dynamic_cast<backend::ge_backend::GeGraphExecutor *>(graph_executor_.get())->InitializeGe();
+    dynamic_cast<backend::ge_backend::GeGraphExecutor *>(graph_executor_.get())->GraphInitGe();
   }
   // should be called after ge initialize.
   SetAclOpDebugOption();
@@ -263,8 +263,8 @@ void GeDeviceContext::Initialize() {
     graph_executor_->Initialize();
   }
 
-  if (ms_context->GetJitLevel() == "O2" || ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
-    GeInitialize();
+  if (ms_context->GetBackend() == kBackendGE) {
+    ContextInitGe();
   }
 
   MS_EXCEPTION_IF_NULL(GetKernelExecutor(false));

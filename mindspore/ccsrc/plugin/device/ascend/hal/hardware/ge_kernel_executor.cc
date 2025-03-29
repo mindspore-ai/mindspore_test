@@ -270,9 +270,13 @@ void SetAclOpPrecisionMode() {
   }
 }
 
-void SelectKernelInfo(const KernelGraphPtr &kernel_graph, const CNodePtr &kernel,
+void SelectKernelInfo(const KernelGraphPtr &kernel_graph, const CNodePtr &kernel, bool *is_aclop = nullptr,
                       std::vector<size_t> *op_selected_num = nullptr) {
-  auto [select_res, msg, etype] = device::ascend::SelectKernelInfoWithMsg(kernel_graph, kernel, op_selected_num);
+  auto [select_res, msg, etype, is_aclop_local] =
+    device::ascend::SelectKernelInfoWithMsg(kernel_graph, kernel, op_selected_num);
+  if (is_aclop != nullptr) {
+    *is_aclop = is_aclop_local;
+  }
   if (!select_res) {
     MS_LOG(INFO) << "node is " << kernel->fullname_with_scope() << " should backoff";
     std::pair<std::string, ExceptionType> failure_info = std::make_pair(msg, etype);
@@ -281,7 +285,7 @@ void SelectKernelInfo(const KernelGraphPtr &kernel_graph, const CNodePtr &kernel
 }
 
 void SelectKernel(const KernelGraphPtr &kernel_graph, std::set<KernelGraphPtr> *const memo,
-                  std::vector<size_t> *op_selected_num) {
+                  std::vector<size_t> *op_selected_num, bool *has_aclop = nullptr) {
   // select kernel
   MS_EXCEPTION_IF_NULL(memo);
   PROF_START(SelectKernel);
@@ -292,7 +296,12 @@ void SelectKernel(const KernelGraphPtr &kernel_graph, std::set<KernelGraphPtr> *
   kernel_graph->SetExecOrderByDefault();
   const auto &kernels = kernel_graph->execution_order();
   for (const auto &kernel : kernels) {
-    SelectKernelInfo(kernel_graph, kernel, op_selected_num);
+    bool is_aclop = false;
+    SelectKernelInfo(kernel_graph, kernel, &is_aclop, op_selected_num);
+    if (has_aclop != nullptr) {
+      // cppcheck-suppress useStlAlgorithm
+      *has_aclop |= is_aclop;
+    }
   }
   if (!kernel_graph->is_from_single_op()) {
     kernel_graph->SetKernelObjectTypesForUnrealNodes();
@@ -1035,7 +1044,16 @@ void GeKernelExecutor::OptimizeGraph(const FuncGraphPtr &graph) const {
   GEGraphOptimization::GetInstance().OptimizeACLGraph(kernel_graph, &memo);
   memo.clear();
   std::vector<size_t> op_selected_num(device::ascend::SelectedKernelType::NUM_KERNLE_TYPE, 0);
-  SelectKernel(kernel_graph, &memo, &op_selected_num);
+  bool has_aclop = false;
+  SelectKernel(kernel_graph, &memo, &op_selected_num, &has_aclop);
+  if (has_aclop) {
+    static std::once_flag ge_init_flag_ = {};
+    std::call_once(ge_init_flag_, [&]() {
+      dynamic_cast<GeDeviceContext *>(device_context_)->ContextInitGe();
+      SetAclOpPrecisionMode();
+      res_manager_->SetAclDeterministic();
+    });
+  }
   PrintOpSelectedNum(op_selected_num);
   memo.clear();
   GEGraphOptimization::GetInstance().OptimizeACLGraphAfterKernelSelect(kernel_graph, &memo);
@@ -1370,13 +1388,6 @@ bool GeKernelExecutor::LaunchKernel(const CNodePtr &kernel, const std::vector<Ke
         // skip execute TensorReport op at the end of optimzer, it is just used as a tag
         return true;
       }
-    }
-    if (!acl_option_initialized_ && dynamic_cast<kernel::AclKernelMod *>(kernel_mod) != nullptr) {
-      dynamic_cast<GeDeviceContext *>(device_context_)->GeInitialize();
-      // not check graph executor, may use in ascend device context
-      SetAclOpPrecisionMode();
-      res_manager_->SetAclDeterministic();
-      acl_option_initialized_ = true;
     }
 
     bool ret = kernel_mod->Launch(inputs, workspace, outputs, stream);

@@ -862,7 +862,7 @@ void GeGraphExecutor::AddRefCorrespondPairs(const KernelGraphPtr &graph,
 
 bool GeGraphExecutor::CompileGraph(const FuncGraphPtr &graph, const std::map<string, string> &compile_options) {
   MS_EXCEPTION_IF_NULL(graph);
-  dynamic_cast<device::ascend::GeDeviceContext *>(device_context_)->GeInitialize();
+  dynamic_cast<device::ascend::GeDeviceContext *>(device_context_)->ContextInitGe();
 
   auto graph_name = GetGraphName(graph);
   uint64_t start_time = profiler::GetClockSyscnt();
@@ -1338,7 +1338,7 @@ void GeGraphExecutor::RunInitGraph(const std::string &graph_name) {
   }
 }
 
-void GeGraphExecutor::InitializeGe() {
+void GeGraphExecutor::GraphInitGe() {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
 

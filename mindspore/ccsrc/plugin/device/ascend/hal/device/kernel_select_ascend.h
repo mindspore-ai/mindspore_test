@@ -42,8 +42,8 @@ enum SelectedKernelType {
 void HandleKernelSelectFailure(const KernelGraphPtr &graph, const CNodePtr &node,
                                const std::pair<std::string, ExceptionType> &failure_info);
 
-std::tuple<bool, std::string, ExceptionType> SelectKernelInfoWithMsg(const KernelGraphPtr &graph, const CNodePtr &node,
-                                                                     std::vector<size_t> *op_selected_num = nullptr);
+std::tuple<bool, std::string, ExceptionType, bool> SelectKernelInfoWithMsg(
+  const KernelGraphPtr &graph, const CNodePtr &node, std::vector<size_t> *op_selected_num = nullptr);
 
 bool IsEnableAclnn(const KernelGraphPtr &kernel_graph, const AnfNodePtr &node);
 
