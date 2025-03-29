@@ -1,7 +1,7 @@
 mindspore.nn.Buffer
 ===================
 
-.. py:class:: mindspore.nn.Buffer(data, persistent=True)
+.. py:class:: mindspore.nn.Buffer(data, *, persistent=True)
 
     一种不被视为模型参数的Tensor。例如，BatchNorm的 `running_mean` 不是参数，而是Cell状态的一部分。
 
@@ -11,4 +11,6 @@ mindspore.nn.Buffer
 
     参数：
         - **data** (Tensor) - buffer的张量数据。
+
+    关键字参数：
         - **persistent** (bool, 可选) - buffer是否作为Cell的 :attr:`state_dict` 的一部分。默认 ``True`` 。
