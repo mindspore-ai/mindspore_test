@@ -784,6 +784,19 @@ void DeviceAddressUtils::UpdateDeviceAddressForInplaceNode(const KernelGraphPtr 
   }
 }
 
+void DeviceAddressUtils::UpdateDeviceAddressMonadFlag(const session::AnfWithOutIndex &cur_pair,
+                                                      const session::AnfWithOutIndex &origin_pair) {
+  MS_EXCEPTION_IF_NULL(cur_pair.first);
+  MS_EXCEPTION_IF_NULL(origin_pair.first);
+  // If the output of ref node is parameter, need add the monad attr(for example Transdata/Cast node to ref
+  // parameter).
+  if (!common::AnfAlgo::HasMonadInput(cur_pair.first) && origin_pair.first->isa<Parameter>()) {
+    MS_LOG(INFO) << cur_pair.first->fullname_with_scope() << "with index " << cur_pair.second
+                 << " ref node to parameter " << origin_pair.first->fullname_with_scope() << " and add the monad attr.";
+    common::AnfAlgo::SetNodeAttr(kAttrRefNodeMonadOutputIdx, MakeValue(cur_pair.second), cur_pair.first);
+  }
+}
+
 void DeviceAddressUtils::UpdateDeviceAddress(const session::AnfWithOutIndex &cur_pair,
                                              const session::AnfWithOutIndex &origin_pair) {
   MS_EXCEPTION_IF_NULL(cur_pair.first);
@@ -793,12 +806,7 @@ void DeviceAddressUtils::UpdateDeviceAddress(const session::AnfWithOutIndex &cur
                << cur_pair.second;
   // If the output of ref node is parameter, need add the monad attr(for example Transdata/Cast node to ref
   // parameter).
-  if (!common::AnfAlgo::HasMonadInput(cur_pair.first) && origin_pair.first->isa<Parameter>()) {
-    MS_LOG(INFO) << cur_pair.first->fullname_with_scope() << "with index " << cur_pair.second
-                 << " ref node to parameter " << origin_pair.first->fullname_with_scope() << " and add the monad attr.";
-    common::AnfAlgo::SetNodeAttr(kAttrRefNodeMonadOutputIdx, MakeValue(cur_pair.second), cur_pair.first);
-  }
-
+  UpdateDeviceAddressMonadFlag(cur_pair, origin_pair);
   auto origin_node_output_addr = AnfAlgo::GetMutableOutputAddr(origin_pair.first, origin_pair.second, false);
   MS_EXCEPTION_IF_NULL(origin_node_output_addr);
   auto cur_node_output_addr = AnfAlgo::GetMutableOutputAddr(cur_pair.first, cur_pair.second, false);
@@ -861,6 +869,37 @@ void DeviceAddressUtils::UpdateDeviceAddressForRefNode(const KernelGraphPtr &gra
     const auto &out_pair = ref_pair.first;
     const auto &origin_pair = ref_pair.second;
     const auto &recursive_origin_pair = graph->GetRefNodeRecursive(out_pair);
+    UpdateDeviceAddressMonadFlag(out_pair, recursive_origin_pair);
+    //  Update ref map in kernel info which will be used in kernel actor on swap scenario.
+    for (size_t input_index = 0; input_index < common::AnfAlgo::GetInputTensorNum(out_pair.first); ++input_index) {
+      const auto &prev_node_output = common::AnfAlgo::GetPrevNodeOutput(out_pair.first, input_index, false);
+      if (prev_node_output == origin_pair) {
+        auto kernel_info = dynamic_cast<device::KernelInfo *>(out_pair.first->kernel_info());
+        MS_EXCEPTION_IF_NULL(kernel_info);
+        kernel_info->AddRefMap(out_pair.second, input_index);
+        break;
+      }
+    }
+  }
+}
+
+void DeviceAddressUtils::UpdateDeviceAddressForRefNodeForSingleOp(const KernelGraphPtr &graph) {
+  MS_EXCEPTION_IF_NULL(graph);
+
+  if (graph->memory_managed_by_ge()) {
+    return;
+  }
+
+  AnfAlgo::UpdateGraphValidRefPair(graph);
+  for (const auto &pair : graph->GetRefMap()) {
+    MS_LOG(DEBUG) << "Ref node pair for node:" << pair.first.first->DebugString() << " index:" << pair.first.second
+                  << " and node:" << pair.second.first->DebugString() << " index:" << pair.second.second;
+  }
+  for (const auto &ref_pair : graph->GetRefMap()) {
+    const auto &out_pair = ref_pair.first;
+    const auto &origin_pair = ref_pair.second;
+    const auto &recursive_origin_pair = graph->GetRefNodeRecursive(out_pair);
+    UpdateDeviceAddress(out_pair, recursive_origin_pair);
     //  Update ref map in kernel info which will be used in kernel actor on swap scenario.
     for (size_t input_index = 0; input_index < common::AnfAlgo::GetInputTensorNum(out_pair.first); ++input_index) {
       const auto &prev_node_output = common::AnfAlgo::GetPrevNodeOutput(out_pair.first, input_index, false);

@@ -78,7 +78,7 @@ void CreateDeviceAddressWithoutWorkspace(const KernelGraphPtr &graph, const Devi
   DeviceAddressUtils::CreateValueNodeDeviceAddress(device_context, graph);
   DeviceAddressUtils::CreateKernelOutputDeviceAddress(device_context, graph, is_gradient_out);
   DeviceAddressUtils::UpdateDeviceAddressForInplaceNode(graph);
-  DeviceAddressUtils::UpdateDeviceAddressForRefNode(graph);
+  DeviceAddressUtils::UpdateDeviceAddressForRefNodeForSingleOp(graph);
 }
 
 void SetIgnoreSyncHostToDeviceList(const SimpleGraphPtr &simple_graph, const DeviceContext *device_context) {
