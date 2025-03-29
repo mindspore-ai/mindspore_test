@@ -44,9 +44,9 @@ const BaseRef ConvScaleFusion::DefinePattern() const {
 }
 int ConvScaleFusion::InitTransParam(const CNodePtr &scale_node, int kernel_num, float *trans_scale,
                                     float *trans_bias) const {
-  MS_ASSERT(scale_node != nullptr);
-  MS_ASSERT(trans_bias != nullptr);
-  MS_ASSERT(trans_scale != nullptr);
+  MS_CHECK_TRUE_RET(scale_node != nullptr, lite::RET_ERROR);
+  MS_CHECK_TRUE_RET(trans_bias != nullptr, lite::RET_ERROR);
+  MS_CHECK_TRUE_RET(trans_scale != nullptr, lite::RET_ERROR);
   AnfNodePtr scale_weight_node;
   AnfNodePtr scale_bias_node;
   if (scale_node->size() == kScaleNoBiasLen) {
@@ -69,7 +69,7 @@ int ConvScaleFusion::InitTransParam(const CNodePtr &scale_node, int kernel_num, 
     MS_LOG(DEBUG) << "scale bias input is dynamic.";
     return lite::RET_NO_CHANGE;
   }
-  MS_ASSERT(scale_weight_node->cast<ParameterPtr>() != nullptr);
+  MS_CHECK_TRUE_RET(scale_weight_node->cast<ParameterPtr>() != nullptr, lite::RET_ERROR);
   auto scale_weight_param = scale_weight_node->cast<ParameterPtr>()->default_param();
   MS_CHECK_TRUE_RET(scale_weight_param != nullptr, lite::RET_ERROR);
   auto weight_value = std::dynamic_pointer_cast<tensor::Tensor>(scale_weight_param);
@@ -83,7 +83,7 @@ int ConvScaleFusion::InitTransParam(const CNodePtr &scale_node, int kernel_num, 
   }
 
   if (scale_bias_node != nullptr) {
-    MS_ASSERT(scale_bias_node->cast<ParameterPtr>() != nullptr);
+    MS_CHECK_TRUE_RET(scale_bias_node->cast<ParameterPtr>() != nullptr, lite::RET_ERROR);
     auto scale_bias_param = scale_bias_node->cast<ParameterPtr>()->default_param();
     MS_CHECK_TRUE_RET(scale_bias_param != nullptr, lite::RET_ERROR);
     auto bias_value = std::dynamic_pointer_cast<tensor::Tensor>(scale_bias_param);

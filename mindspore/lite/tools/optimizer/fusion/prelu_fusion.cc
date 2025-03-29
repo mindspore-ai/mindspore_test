@@ -106,7 +106,10 @@ bool PReluFusion::CheckPattern(const EquivPtr &equiv, std::vector<float> *slope)
   if (!mul_const_cnode->isa<Parameter>()) {
     return false;
   }
-  auto mul_const_param = mul_const_cnode->cast<ParameterPtr>()->default_param();
+
+  auto mul_param = mul_const_cnode->cast<ParameterPtr>();
+  MS_CHECK_TRUE_RET(mul_param != nullptr, false);
+  auto mul_const_param = mul_param->default_param();
   MS_CHECK_TRUE_RET(mul_const_param != nullptr, false);
   auto mul_const_tensor = mul_const_param->cast<tensor::TensorPtr>();
   MS_CHECK_TRUE_RET(mul_const_tensor != nullptr, false);
