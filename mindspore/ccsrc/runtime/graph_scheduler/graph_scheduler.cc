@@ -3847,7 +3847,7 @@ void GraphScheduler::LinkKernelActorsForSubGraphExecute(const ActorSet *actor_se
                           << " for actor:" << super_kernel_actor->GetAID();
             continue;
           }
-          size_t output_index = arrow_iter - from_super_kernel_actor->output_data_arrows_.begin();
+          size_t output_index = LongToSize(arrow_iter - from_super_kernel_actor->output_data_arrows_.begin());
           const auto &from_kernel = from_super_kernel_actor->output_data_nodes_[output_index];
           if (from_kernel == nullptr || !from_kernel->isa<CNode>() ||
               from_super_kernel_actor->cnode_to_kernel_actor_.find(from_kernel) ==

@@ -106,7 +106,6 @@ class LoopCountActor : public DebugAwareActor {
   // Only need sync stream in DR scenarios.
   bool is_need_sync_stream_{true};
   // Input num of signal message.
-  size_t input_signal_num_;
   std::vector<AID> notify_messages_;
 };
 
