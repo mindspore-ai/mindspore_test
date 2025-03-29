@@ -1979,7 +1979,7 @@ void SuperKernelActor::SetInputFreePositionForKernelActor(
         MS_LOG(EXCEPTION) << "Failed to find parameter:" << input_node->DebugString()
                           << " in graph:" << graph_->ToString();
       }
-      size_t input_position = iter - graph_->input_nodes().begin();
+      size_t input_position = LongToSize(iter - graph_->input_nodes().begin());
       is_input_used_[input_position] = true;
     }
     kernel_actor->input_free_index_.emplace_back(i);
