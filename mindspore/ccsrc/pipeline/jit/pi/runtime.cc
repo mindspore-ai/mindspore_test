@@ -783,6 +783,8 @@ PyObject *CallCodeHook(PyThreadState *tstate, PyFrameWrapper f, JitCompileResult
     e.restore();
   } catch (py::builtin_exception &e) {
     e.set_error();
+  } catch (std::exception &e) {
+    PyErr_SetString(PyExc_RuntimeError, e.what());
   }
   return res.inc_ref().ptr();
 }
