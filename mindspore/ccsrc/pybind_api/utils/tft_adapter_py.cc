@@ -214,6 +214,12 @@ void RegTFT(py::module *m) {
     "_tft_sem_post", []() { mindspore::debug::tft::TFTWaitSem::GetInstance().Post(); }, "TFT sem start post");
   (void)m->def(
     "_tft_sem_enable", []() { mindspore::debug::tft::TFTWaitSem::Enable(); }, "TFT enable sem feature");
+  (void)m->def(
+    "_tft_start_record_threads", []() { mindspore::debug::tft::TFTWaitSem::GetInstance().StartRecordThreads(); },
+    "TFT start recording newly created threads");
+  (void)m->def(
+    "_tft_finish_record_threads", []() { mindspore::debug::tft::TFTWaitSem::GetInstance().FinishRecordThreads(); },
+    "TFT finish recording newly created threads");
   (void)m->def("_finalize_comm", &FinalizeCommunication, "Finalize comm.");
   (void)m->def("_rebuild_sub_group", &RebuildSubCommunication, "Rebuild comm.");
   (void)m->def("_rebuild_world_group", &RebuildHcclWorldGroup, "Rebuild comm.");
