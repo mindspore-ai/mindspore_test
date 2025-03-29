@@ -748,6 +748,22 @@ void SetOperatorToCNode(const OperatorInfoPtr &current_op_ptr, const PrimitivePt
   }
 }
 
+bool Need_Create_New_Op(const std::map<std::string, OperatorInfoPtr>::iterator &search_cnode, const CNodePtr &cnode,
+                        const PrimitivePtr &prim, bool op_in_map) {
+  bool use_sp = ParallelContext::GetInstance()->strategy_search_mode() == kShardingPropagation;
+  if (!use_sp) {
+    return !op_in_map;
+  }
+  bool is_same_graph = false;
+  if (op_in_map) {
+    auto &op_created = search_cnode->second;
+    if (op_created->cnode()->func_graph() != nullptr && cnode->func_graph() != nullptr) {
+      is_same_graph = op_created->cnode()->func_graph() == cnode->func_graph();
+    }
+  }
+  return !op_in_map || is_same_graph;
+}
+
 // Using CNode's UniqueIdThroughCopys to construct nodes
 Status ConstructCostGraphNodesByUniqueIdTC(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphPtr &) {
   MS_LOG(INFO) << "Constructing nodes for cost graph begins.";
@@ -782,20 +798,10 @@ Status ConstructCostGraphNodesByUniqueIdTC(const std::vector<AnfNodePtr> &all_no
       continue;
     }
     auto prim = GetValueNode<PrimitivePtr>(prim_anf_node);
-
-    // Find the operatorInfo if it exists
     auto search_cnode = from_cnode_to_info.find(cnode->UniqueIdThroughCopy() + prim->name());
     bool op_in_map = search_cnode != from_cnode_to_info.cend();
-    bool is_same_graph = false;
-    if (op_in_map) {
-      auto &op_created = search_cnode->second;
-      is_same_graph = op_created->cnode()->func_graph() == cnode->func_graph();
-    }
-    MS_LOG(INFO) << "The CNode with UniqueId: " << cnode->UniqueId()
-                 << " and UniqueIdThroughCopy: " << cnode->UniqueIdThroughCopy()
-                 << ", CNode fullname_with_scope: " << cnode->fullname_with_scope() << " op_in_map: " << op_in_map
-                 << ", is_same_graph: " << is_same_graph;
-    if (!op_in_map || is_same_graph) {
+
+    if (Need_Create_New_Op(search_cnode, cnode, prim, op_in_map)) {
       size_t loop_index = 0;
       bool is_in_loop = GetLoopIndexFromCNode(cnode, &loop_index);
       const auto single_loop = CostModelContext::GetInstance()->dp_algo_single_loop();
