@@ -16,7 +16,6 @@
 Testing dataset serialize and deserialize in DE
 """
 import filecmp
-import glob
 import json
 import os
 import pytest
@@ -32,18 +31,8 @@ from mindspore.dataset.vision import Border, Inter
 from util import config_get_set_num_parallel_workers, config_get_set_seed
 
 
-@pytest.fixture(scope="function", autouse=True)
-def cleanup_fixture(request):
-    def cleanup_data_files():
-        files = glob.glob("*.json")
-        for file in files:
-            if os.path.exists(file):
-                os.remove(file)
-
-    request.addfinalizer(cleanup_data_files)
-
-
-def test_serdes_imagefolder_dataset():
+@pytest.mark.parametrize("cleanup_tmp_file", ["imagenet_dataset_pipeline*.json"], indirect=True)
+def test_serdes_imagefolder_dataset(cleanup_tmp_file):
     """
     Feature: Serialize and Deserialize Support
     Description: Test serialize and deserialize with dataset pipeline that simulates ResNet50
@@ -118,7 +107,8 @@ def test_serdes_imagefolder_dataset():
     ds.config.set_num_parallel_workers(original_num_parallel_workers)
 
 
-def test_serdes_mnist_dataset():
+@pytest.mark.parametrize("cleanup_tmp_file", ["mnist_dataset_pipeline*.json"], indirect=True)
+def test_serdes_mnist_dataset(cleanup_tmp_file):
     """
     Feature: Serialize and Deserialize Support
     Description: Test serialize and deserialize with MnistDataset pipeline
@@ -164,7 +154,8 @@ def test_serdes_mnist_dataset():
     ds.config.set_num_parallel_workers(original_num_parallel_workers)
 
 
-def test_serdes_cifar10_dataset():
+@pytest.mark.parametrize("cleanup_tmp_file", ["cifar10_dataset_pipeline*.json"], indirect=True)
+def test_serdes_cifar10_dataset(cleanup_tmp_file):
     """
     Feature: Serialize and Deserialize Support
     Description: Test serialize and deserialize with Cifar10Dataset pipeline
@@ -206,7 +197,8 @@ def test_serdes_cifar10_dataset():
     ds.config.set_num_parallel_workers(original_num_parallel_workers)
 
 
-def test_serdes_celeba_dataset():
+@pytest.mark.parametrize("cleanup_tmp_file", ["celeba_dataset_pipeline*.json"], indirect=True)
+def test_serdes_celeba_dataset(cleanup_tmp_file):
     """
     Feature: Serialize and Deserialize Support
     Description: Test serialize and deserialize with CelebADataset pipeline
@@ -231,7 +223,8 @@ def test_serdes_celeba_dataset():
     assert num_samples == 8
 
 
-def test_serdes_csv_dataset():
+@pytest.mark.parametrize("cleanup_tmp_file", ["csv_dataset_pipeline*.json"], indirect=True)
+def test_serdes_csv_dataset(cleanup_tmp_file):
     """
     Feature: Serialize and Deserialize Support
     Description: Test serialize and deserialize with CSVDataset pipeline
@@ -259,7 +252,8 @@ def test_serdes_csv_dataset():
     assert num_samples == 3
 
 
-def test_serdes_voc_dataset():
+@pytest.mark.parametrize("cleanup_tmp_file", ["voc_dataset_pipeline*.json"], indirect=True)
+def test_serdes_voc_dataset(cleanup_tmp_file):
     """
     Feature: Serialize and Deserialize Support
     Description: Test serialize and deserialize with VOCDataset pipeline
@@ -295,7 +289,8 @@ def test_serdes_voc_dataset():
     ds.config.set_num_parallel_workers(original_num_parallel_workers)
 
 
-def test_serdes_zip_dataset():
+@pytest.mark.parametrize("cleanup_tmp_file", ["zip_dataset_pipeline*.json"], indirect=True)
+def test_serdes_zip_dataset(cleanup_tmp_file):
     """
     Feature: Serialize and Deserialize Support
     Description: Test serialize and deserialize with zipped pipeline
@@ -460,7 +455,8 @@ def test_serdes_pyop_fill_value_parm():
     ds.config.set_num_parallel_workers(original_num_parallel_workers)
 
 
-def test_serdes_device_que():
+@pytest.mark.parametrize("cleanup_tmp_file", ["transfer_dataset_pipeline*.json"], indirect=True)
+def test_serdes_device_que(cleanup_tmp_file):
     """
     Feature: Serialize and Deserialize Support
     Description: Test serialize and deserialize on pipeline with device_que op
@@ -473,7 +469,8 @@ def test_serdes_device_que():
     util_check_serialize_deserialize_file(data1, "transfer_dataset_pipeline")
 
 
-def test_serdes_pyvision():
+@pytest.mark.parametrize("cleanup_tmp_file", ["pyvision_dataset_pipeline*.json"], indirect=True)
+def test_serdes_pyvision(cleanup_tmp_file):
     """
     Feature: Serialize and Deserialize Support
     Description: Test serialize and deserialize on pipelines with Python implementation selected for vision ops
@@ -504,7 +501,8 @@ def test_serdes_pyvision():
     ds.config.set_num_parallel_workers(original_num_parallel_workers)
 
 
-def test_serdes_pyfunc_exception():
+@pytest.mark.parametrize("cleanup_tmp_file", ["pyfunc_dataset_pipeline.json"], indirect=True)
+def test_serdes_pyfunc_exception(cleanup_tmp_file):
     """
     Feature: Serialize and Deserialize Support
     Description: Test serialize on pipeline with user-defined Python function
@@ -530,7 +528,8 @@ def test_serdes_pyfunc_exception():
     assert "Failed to find key 'tensor_op_params' in PyFuncOp' JSON file or input dict" in str(error_info.value)
 
 
-def test_serdes_pyfunc_exception2():
+@pytest.mark.parametrize("cleanup_tmp_file", ["pyfunc2_dataset_pipeline.json"], indirect=True)
+def test_serdes_pyfunc_exception2(cleanup_tmp_file):
     """
     Feature: Serialize and Deserialize Support
     Description: Test serialize on pipeline with user-defined Python function
@@ -569,7 +568,8 @@ def test_serdes_pyfunc_exception2():
     assert "Failed to find key 'tensor_op_params' in PyFuncOp' JSON file or input dict" in str(error_info.value)
 
 
-def test_serdes_inter_mixed_map():
+@pytest.mark.parametrize("cleanup_tmp_file", ["inter_mixed_map_pipeline*.json"], indirect=True)
+def test_serdes_inter_mixed_map(cleanup_tmp_file):
     """
     Feature: Serialize and Deserialize Support
     Description: Test serialize and deserialize on pipelines in which each map op has the same
@@ -599,7 +599,8 @@ def test_serdes_inter_mixed_map():
     ds.config.set_num_parallel_workers(original_num_parallel_workers)
 
 
-def test_serdes_inter_mixed_enum_parms_map():
+@pytest.mark.parametrize("cleanup_tmp_file", ["inter_mixed_enum_parms_map_pipeline*.json"], indirect=True)
+def test_serdes_inter_mixed_enum_params_map(cleanup_tmp_file):
     """
     Feature: Serialize and Deserialize Support
     Description: Test serialize and deserialize on pipelines in which each map op has the same
@@ -650,7 +651,8 @@ def test_serdes_inter_mixed_enum_parms_map():
     ds.config.set_num_parallel_workers(original_num_parallel_workers)
 
 
-def test_serdes_intra_mixed_py2c_map():
+@pytest.mark.parametrize("cleanup_tmp_file", ["intra_mixed_py2c_map_pipeline*.json"], indirect=True)
+def test_serdes_intra_mixed_py2c_map(cleanup_tmp_file):
     """
     Feature: Serialize and Deserialize Support
     Description: Test serialize and deserialize on pipelines in which each map op has a mix of Python implementation
@@ -691,7 +693,8 @@ def test_serdes_intra_mixed_py2c_map():
     ds.config.set_num_parallel_workers(original_num_parallel_workers)
 
 
-def test_serdes_intra_mixed_c2py_map():
+@pytest.mark.parametrize("cleanup_tmp_file", ["intra_mixed_c2py_map_pipeline*.json"], indirect=True)
+def test_serdes_intra_mixed_c2py_map(cleanup_tmp_file):
     """
     Feature: Serialize and Deserialize Support
     Description: Test serialize and deserialize on pipelines in which each map op has a mix of C++ implementation
@@ -730,7 +733,8 @@ def test_serdes_intra_mixed_c2py_map():
     ds.config.set_num_parallel_workers(original_num_parallel_workers)
 
 
-def test_serdes_totensor_normalize():
+@pytest.mark.parametrize("cleanup_tmp_file", ["totensor_normalize_pipeline*.json"], indirect=True)
+def test_serdes_totensor_normalize(cleanup_tmp_file):
     """
     Feature: Serialize and Deserialize Support
     Description: Test serialize and deserialize on pipelines in which each map op has common scenario with
@@ -769,7 +773,8 @@ def test_serdes_totensor_normalize():
     ds.config.set_num_parallel_workers(original_num_parallel_workers)
 
 
-def test_serdes_tonumpy():
+@pytest.mark.parametrize("cleanup_tmp_file", ["tonumpy_pipeline*.json"], indirect=True)
+def test_serdes_tonumpy(cleanup_tmp_file):
     """
     Feature: Serialize and Deserialize Support
     Description: Test serialize and deserialize on pipelines with ToNumpy op
@@ -807,7 +812,8 @@ def test_serdes_tonumpy():
     ds.config.set_num_parallel_workers(original_num_parallel_workers)
 
 
-def test_serdes_uniform_augment():
+@pytest.mark.parametrize("cleanup_tmp_file", ["uniform_augment_pipeline*.json"], indirect=True)
+def test_serdes_uniform_augment(cleanup_tmp_file):
     """
     Feature: Serialize and Deserialize Support
     Description: Test serialize and deserialize on pipeline with UniformAugment op
@@ -836,7 +842,8 @@ def test_serdes_uniform_augment():
     ds.config.set_num_parallel_workers(original_num_parallel_workers)
 
 
-def test_serdes_complex1_pipeline():
+@pytest.mark.parametrize("cleanup_tmp_file", ["complex1_dataset_pipeline*.json"], indirect=True)
+def test_serdes_complex1_pipeline(cleanup_tmp_file):
     """
     Feature: Serialize and Deserialize Support
     Description: Test serialize on complex pipeline with mix of C++ implementation ops and Python implementation ops
@@ -875,7 +882,8 @@ def test_serdes_complex1_pipeline():
     ds.config.set_num_parallel_workers(original_num_parallel_workers)
 
 
-def test_serdes_fill():
+@pytest.mark.parametrize("cleanup_tmp_file", ["fill_pipeline*.json"], indirect=True)
+def test_serdes_fill(cleanup_tmp_file):
     """
     Feature: Serialize and Deserialize Support
     Description: Test serialize and deserialize on pipeline with Fill op
@@ -895,7 +903,8 @@ def test_serdes_fill():
     util_check_serialize_deserialize_file(data, "fill_pipeline")
 
 
-def test_serdes_padded_batch():
+@pytest.mark.parametrize("cleanup_tmp_file", ["serdes_padded_batch*.json"], indirect=True)
+def test_serdes_padded_batch(cleanup_tmp_file):
     """
     Feature: Batch Padding
     Description: Test batch padding and serdes operation
@@ -946,7 +955,8 @@ def test_serdes_exception():
     assert "Invalid data, unsupported operation type: Filter" in str(msg)
 
 
-def test_serdes_not_implemented_op_exception():
+@pytest.mark.parametrize("cleanup_tmp_file", ["not_implemented_serdes_fail_1.json"], indirect=True)
+def test_serdes_not_implemented_op_exception(cleanup_tmp_file):
     """
     Feature: Serialize and Deserialize Support
     Description: Test serialize on pipeline with op that does not have proper serdes support
@@ -1087,28 +1097,28 @@ def validate_jsonfile(filepath):
 
 
 if __name__ == '__main__':
-    test_serdes_imagefolder_dataset()
-    test_serdes_mnist_dataset()
-    test_serdes_cifar10_dataset()
-    test_serdes_celeba_dataset()
-    test_serdes_csv_dataset()
-    test_serdes_voc_dataset()
-    test_serdes_zip_dataset()
+    test_serdes_imagefolder_dataset(cleanup_tmp_file)
+    test_serdes_mnist_dataset(cleanup_tmp_file)
+    test_serdes_cifar10_dataset(cleanup_tmp_file)
+    test_serdes_celeba_dataset(cleanup_tmp_file)
+    test_serdes_csv_dataset(cleanup_tmp_file)
+    test_serdes_voc_dataset(cleanup_tmp_file)
+    test_serdes_zip_dataset(cleanup_tmp_file)
     test_serdes_random_crop()
     test_serdes_pyop_fill_value_parm()
-    test_serdes_device_que()
-    test_serdes_pyvision()
-    test_serdes_pyfunc_exception()
-    test_serdes_pyfunc_exception2()
-    test_serdes_inter_mixed_map()
-    test_serdes_inter_mixed_enum_parms_map()
-    test_serdes_intra_mixed_py2c_map()
-    test_serdes_intra_mixed_c2py_map()
-    test_serdes_totensor_normalize()
-    test_serdes_tonumpy()
-    test_serdes_uniform_augment()
-    test_serdes_complex1_pipeline()
-    test_serdes_fill()
-    test_serdes_not_implemented_op_exception()
+    test_serdes_device_que(cleanup_tmp_file)
+    test_serdes_pyvision(cleanup_tmp_file)
+    test_serdes_pyfunc_exception(cleanup_tmp_file)
+    test_serdes_pyfunc_exception2(cleanup_tmp_file)
+    test_serdes_inter_mixed_map(cleanup_tmp_file)
+    test_serdes_inter_mixed_enum_params_map(cleanup_tmp_file)
+    test_serdes_intra_mixed_py2c_map(cleanup_tmp_file)
+    test_serdes_intra_mixed_c2py_map(cleanup_tmp_file)
+    test_serdes_totensor_normalize(cleanup_tmp_file)
+    test_serdes_tonumpy(cleanup_tmp_file)
+    test_serdes_uniform_augment(cleanup_tmp_file)
+    test_serdes_complex1_pipeline(cleanup_tmp_file)
+    test_serdes_fill(cleanup_tmp_file)
+    test_serdes_not_implemented_op_exception(cleanup_tmp_file)
     test_serdes_exception()
-    test_serdes_padded_batch()
+    test_serdes_padded_batch(cleanup_tmp_file)
