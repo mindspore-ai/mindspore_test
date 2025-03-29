@@ -154,7 +154,11 @@ STATUS DeleteRedundantTranspose::DoTransTransFusion(const FuncGraphPtr &func_gra
       MS_LOG(ERROR) << "replace old node failed, please check.";
       return lite::RET_ERROR;
     }
-    if (CopyQuantParam(cnode, pre_cnode, node_users) != RET_OK) {
+    auto ret = CopyQuantParam(cnode, pre_cnode, node_users);
+    if (ret == lite::RET_SUCCESS_EXIT) {
+      return lite::RET_SUCCESS_EXIT;
+    }
+    if (ret != lite::RET_OK) {
       MS_LOG(ERROR) << "Copy quant param failed, please check.";
       return lite::RET_ERROR;
     }
@@ -178,13 +182,21 @@ STATUS DeleteRedundantTranspose::TransTransFusion(const FuncGraphPtr &func_graph
     if (CheckPrimitiveType(cnode, prim::kPrimIf) || CheckPrimitiveType(cnode, prim::kPrimWhile)) {
       auto sub_func_graph = GetValueNode<FuncGraphPtr>(cnode->input(1));
       MS_CHECK_TRUE_MSG(sub_func_graph != nullptr, lite::RET_NULL_PTR, "find a subgraph is a nullptr.");
-      if (TransTransFusion(sub_func_graph) != lite::RET_OK) {
+      auto ret = TransTransFusion(sub_func_graph);
+      if (ret == lite::RET_SUCCESS_EXIT) {
+        return lite::RET_SUCCESS_EXIT;
+      }
+      if (ret != lite::RET_OK) {
         MS_LOG(ERROR) << "delete transpose failed.";
         return lite::RET_ERROR;
       }
       sub_func_graph = GetValueNode<FuncGraphPtr>(cnode->input(kInputIndexTwo));
       MS_CHECK_TRUE_MSG(sub_func_graph != nullptr, lite::RET_NULL_PTR, "find a subgraph is a nullptr.");
-      if (TransTransFusion(sub_func_graph) != lite::RET_OK) {
+      ret = TransTransFusion(sub_func_graph);
+      if (ret == lite::RET_SUCCESS_EXIT) {
+        return lite::RET_SUCCESS_EXIT;
+      }
+      if (ret != lite::RET_OK) {
         MS_LOG(ERROR) << "delete transpose failed.";
         return lite::RET_ERROR;
       }
@@ -256,7 +268,11 @@ bool DeleteRedundantTranspose::Run(const FuncGraphPtr &func_graph) {
     MS_LOG(ERROR) << "manager is nullptr.";
     return false;
   }
-  if (TransTransFusion(func_graph) != lite::RET_OK) {
+  auto ret = TransTransFusion(func_graph);
+  if (ret == lite::RET_SUCCESS_EXIT) {
+    return true;
+  }
+  if (ret != lite::RET_OK) {
     MS_LOG(ERROR) << "ranspose and transpose fusion failed.";
     return false;
   }
@@ -311,6 +327,9 @@ STATUS DeleteRedundantTranspose::CopyQuantParam(const CNodePtr &cnode, const CNo
     if (pre_cnode_primitive->HasAttr(lite::quant::kQuantParam)) {
       input_primitive->AddAttr(lite::quant::kQuantParam, pre_cnode_primitive->GetAttr(lite::quant::kQuantParam));
     }
+  } else if ((input_node->isa<Parameter>() && input_node->cast<ParameterPtr>()->has_default()) ||
+             input_node->isa<ValueNode>()) {
+    return lite::RET_SUCCESS_EXIT;
   } else {
     MS_LOG(ERROR) << input_node->fullname_with_scope() << " Not supported type.";
     return RET_ERROR;
