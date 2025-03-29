@@ -17,23 +17,32 @@
 #define MINDSPORE_PI_JIT_UTILS_STOP_TRACE_REASON_H
 
 // stop trace reason enum
-#define STOP_TRACE_REASON_ENUM                                                              \
-  STOP_TRACE_REASON_KIND(NonStopTrace, "NonStopTrace")                                      \
-  STOP_TRACE_REASON_KIND(StopTraceReasonUnknown, "Unknown Reason")                          \
-  STOP_TRACE_REASON_KIND(StopTraceInfer_Fail, "Infer_Fail")                                 \
-  STOP_TRACE_REASON_KIND(StopTraceLoop_Unsupported, "Loop_Unsupported")                     \
-  STOP_TRACE_REASON_KIND(StopTraceIf_Unsupported, "If_Unsupported")                         \
-  STOP_TRACE_REASON_KIND(StopTraceFunc_ArgType_Unsupported, "Func_ArgType_Unsupported")     \
-  STOP_TRACE_REASON_KIND(StopTraceFunc_ArgHandle_Unsupported, "Func_ArgHandle_Unsupported") \
-  STOP_TRACE_REASON_KIND(StopTraceFunc_Type_Unsupported, "Func_Type_Unsupported")           \
-  STOP_TRACE_REASON_KIND(StopTraceRecurse_Unsupported, "Recurse_Unsupported")               \
-  STOP_TRACE_REASON_KIND(StopTraceByteCode_Unsupported, "ByteCode_Unsupported")             \
-  STOP_TRACE_REASON_KIND(StopTraceDataDependsOnGraphOut, "DataDependsOnGraphOut")           \
-  STOP_TRACE_REASON_KIND(Trace_Fail, "Trace_Fail")                                          \
-  STOP_TRACE_REASON_KIND(StopTraceSkip_Exception, "Skip_exception")                         \
-  STOP_TRACE_REASON_KIND(StopTraceTensorHook, "StopTraceTensorHook")                        \
-  STOP_TRACE_REASON_KIND(StopTraceUDReset, "UD_Reset")                                      \
-  STOP_TRACE_REASON_KIND(StopTraceUDAnalyzeError, "UDAnalyzeError")                         \
+#define STOP_TRACE_REASON_ENUM                                                                                      \
+  STOP_TRACE_REASON_KIND(NonStopTrace, "NonStopTrace")                                                              \
+  STOP_TRACE_REASON_KIND(StopTraceReasonUnknown, "Cannot infer the execution result")                               \
+  STOP_TRACE_REASON_KIND(StopTraceLoop_Unsupported, "Loop control flow is not supported")                           \
+  STOP_TRACE_REASON_KIND(StopTraceLoop_Failed, "Trace loop control flow failed")                                    \
+  STOP_TRACE_REASON_KIND(StopTraceLoop_IterableType_Unsupported, "Unsupported iterable type for loop control flow") \
+  STOP_TRACE_REASON_KIND(StopTraceIf_Unsupported, "Data-dependent conditional control flow is not supported")       \
+  STOP_TRACE_REASON_KIND(StopTraceFunc_ArgHandle_Unsupported, "Unsupported function argument")                      \
+  STOP_TRACE_REASON_KIND(StopTraceFunc_Type_Unsupported, "Unsupported function")                                    \
+  STOP_TRACE_REASON_KIND(StopTraceFunc_Trace_Fail, "Trace function call failed")                                    \
+  STOP_TRACE_REASON_KIND(StopTraceByteCode_Unsupported, "Unsupported bytecode")                                     \
+  STOP_TRACE_REASON_KIND(StopTraceFreeVar_Modify_Unsupported,                                                       \
+                         "Assignment or deletion of free variables is not supported")                               \
+  STOP_TRACE_REASON_KIND(StopTraceNoGraphCaptured, "No graph captured")                                             \
+  STOP_TRACE_REASON_KIND(StopTraceSkip_Exception,                                                                   \
+                         "with blocks, try-except-finally blocks, and exception raising are not supported")         \
+  STOP_TRACE_REASON_KIND(StopTraceGraphOutput_Type_Unsupported,                                                     \
+                         "This data type is not supported as an output of graph")                                   \
+  STOP_TRACE_REASON_KIND(StopTraceUDAnalyze_Error, "Framework error in the UD analysis")                            \
+  STOP_TRACE_REASON_KIND(StopTraceConstantFold_Failed, "Constant-fold failed")                                      \
+  STOP_TRACE_REASON_KIND(StopTraceNamedtuple_Getattr_Failed, "Namedtuple getattr failed")                           \
+  STOP_TRACE_REASON_KIND(StopTraceReadDeletedGlobalVariable, "Attempt to read a deleted global variable")           \
+  STOP_TRACE_REASON_KIND(StopTraceReadDeletedAttr, "Attempt to read a deleted attribute")                           \
+  STOP_TRACE_REASON_KIND(StopTraceYieldFromIterator_Unsupported, "Yield from iterator is not supported")            \
+  STOP_TRACE_REASON_KIND(StopTraceDataType_Unsupported, "Unsupported data type in graph")                           \
+  STOP_TRACE_REASON_KIND(StopTraceCanNotCreateCell, "Can not create nn.Cell in graph")                              \
   STOP_TRACE_REASON_KIND(StopTrace_Reason_Count, "StopTrace_Reason_Count")
 
 enum StopTraceReason {

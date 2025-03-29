@@ -191,8 +191,8 @@ def assert_graph_compile_status(func, break_count=None, call_count=None, compile
     assert has_graph(jcr)
 
 
-def pi_jit_with_config(function=None, jit_config=None):
-    wrap_func = PIJitCaptureContext(jit_config)
+def pi_jit_with_config(function=None, jit_config=None, *, fullgraph=False):
+    wrap_func = PIJitCaptureContext(jit_config=jit_config, fullgraph=fullgraph)
     if function is not None:
         return wrap_func(function)
     return wrap_func

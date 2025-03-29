@@ -17,8 +17,8 @@ mindspore.jit
     关键字参数：
         - **capture_mode** (str, 可选) - 创建一张可调用的MindSpore图的方式，可选值有 ``"ast"`` 、 ``"bytecode"`` 和 ``"trace"`` 。默认值： ``"ast"``。
 
-          - `ast <https://www.mindspore.cn/tutorials/zh-CN/master/compile/static_graph.html>`_ ：解析Python的ast以构建静态图。
-          - `bytecode` ：在运行时解析Python字节码以构建静态图。这是一个实验特性，可能会被更改或者删除。
+          - `ast <https://www.mindspore.cn/docs/zh-CN/master/features/compile/graph_construction.html#ast>`_ ：解析Python的ast以构建静态图。
+          - `bytecode <https://www.mindspore.cn/docs/zh-CN/master/features/compile/graph_construction.html#bytecode>`_ ：在运行时解析Python字节码以构建静态图。这是一个实验特性，可能会被更改或者删除。
           - `trace` ：追踪Python代码的执行以构建静态图。这是一个实验特性，可能会被更改或者删除。
 
         - **jit_level** (str, 可选) - 控制编译优化的级别。目前仅在使用ms_backend后端时生效。可选值有 ``"O0"`` 和 ``"O1"`` 。默认值： ``"O0"``。
@@ -31,7 +31,7 @@ mindspore.jit
           - 0: 不进行动态shape编译。
           - 1: 使能动态shape编译，自动检测shape的变化。
 
-        - **fullgraph** (bool, 可选) - 是否捕获整个函数来编译成图。如果为False，jit会尽可能地尝试兼容函数中的所有Python语法。如果为True，则需要整个函数都可以被捕获成图，否则（即有不支持的Python语法），会抛出一个异常。当前只对capture_mode为 ``"ast"`` 时生效。默认值： ``False``。
+        - **fullgraph** (bool, 可选) - 是否捕获整个函数来编译成图。如果为False，jit会尽可能地尝试兼容函数中的所有Python语法。如果为True，则需要整个函数都可以被捕获成图，否则（即有不支持的Python语法），会抛出一个异常。当前只对capture_mode为 ``"ast"`` 或 ``"bytecode"`` 时生效。默认值： ``False``。
         - **backend** (str, 可选) - 使用的编译后端。如果该参数未被设置，框架默认Atlas训练系列产品为 ``GE`` 后端 ，默认其他产品包括Atlas A2训练系列产品为 ``ms_backend`` 后端。
 
           - ms_backend: 使用逐算子执行的执行方式。

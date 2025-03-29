@@ -16,6 +16,7 @@
 #ifndef MINDSPORE_PI_JIT_GRAPH_CAPTURE_GRAPH_H
 #define MINDSPORE_PI_JIT_GRAPH_CAPTURE_GRAPH_H
 
+#include <exception>
 #include <map>
 #include <memory>
 #include <string>
@@ -144,10 +145,8 @@ class Graph {
   PyCodeObject *GetCodeObj() const { return reinterpret_cast<PyCodeObject *>(co_.ptr()); }
   const py::object &GetGlobals() const { return f_globals_; }
 
-  void StopTraceAt(int bci, StopTraceReason reason) {
-    break_info_.bci_ = bci;
-    break_info_.reason_ = reason;
-  }
+  /// @throws GraphBreakException if fullgraph=true (graph break is not allowed)
+  void StopTraceAt(int bci, StopTraceReason reason, const std::vector<std::string> &hints = {});
   int GetStopTraceBci() const { return break_info_.bci_; }
   StopTraceReason GetStopTraceReason() const { return break_info_.reason_; }
   const char *GetModuleName() const { return module_name_; }
@@ -268,6 +267,15 @@ class Graph {
   std::unique_ptr<GuardBuilder> guard_builder_;
 
   std::shared_ptr<FuncGraphBuilder> func_graph_builder_;
+};
+
+// If using @jit(fullgraph=true), will throw this exception when graph break occurs.
+class GraphBreakException : public std::runtime_error {
+ public:
+  explicit GraphBreakException(const std::string &msg) : std::runtime_error(msg) {}
+  explicit GraphBreakException(const char *msg) : std::runtime_error(msg) {}
+  // Similar to py::builtin_exception::set_error(), call PyErr_SetString() to throw an exception to the Python side.
+  void set_error() const;
 };
 
 // Return the file path of python code.

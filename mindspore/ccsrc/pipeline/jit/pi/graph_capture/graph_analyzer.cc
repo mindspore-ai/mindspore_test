@@ -222,7 +222,7 @@ void GraphAnalyzer::Analyze() {
     if (graph_break_info_.is_break_at_call && !graph_break_info_.captured_subgraphs.empty()) {
       GetCaptureInfo().captured_.clear();
     } else {
-      graph_->StopTraceAt(origin_stop_bci, StopTraceReason::kStopTraceDataDependsOnGraphOut);
+      graph_->StopTraceAt(origin_stop_bci, StopTraceReason::kStopTraceNoGraphCaptured);
       UpdateBreakInfo(graph_);
       need_interpret_ = true;
       GetCaptureInfo().clear();
@@ -846,7 +846,7 @@ void GraphAnalyzer::AnalyzeSubGraphBreakRecursive(CallNode *root) {
       break;
     }
     const std::vector<ValueNode *> &alive_nodes = SubGraphUseDefAnalyze(sub_graph);
-    if (sub_graph->GetStopTraceReason() == kStopTraceUDAnalyzeError) {
+    if (sub_graph->GetStopTraceReason() == kStopTraceUDAnalyze_Error) {
       MS_LOG(INFO) << "UD analyze failed, can not capture subgraph: " << GetNameAndLocation(sub_graph);
       break;
     }
@@ -980,14 +980,14 @@ bool GraphAnalyzer::AnalyzeSubGraphAliveNodes(const std::vector<ValueNode *> &al
     }
     MS_LOG(INFO) << "Add subgraph output failed: " << node->ToString();
     if (!CheckNewBreakBci(graph, node)) {
-      graph->StopTraceAt(graph->GetStopTraceBci(), StopTraceReason::kStopTraceUDAnalyzeError);
+      graph->StopTraceAt(graph->GetStopTraceBci(), StopTraceReason::kStopTraceUDAnalyze_Error);
       fg_builder->ClearOutputNodes();
       graph_outputs->clear();
       return true;
     }
     MS_LOG(INFO) << "Reset subgraph break bci: " << node->ToString() << " at: \""
                  << pijit::GetFileName(node->GetGraph()) << ":" << node->GetLineNo() << "\"";
-    graph->StopTraceAt(node->bci(), StopTraceReason::kStopTraceUDReset);
+    graph->StopTraceAt(node->bci(), StopTraceReason::kStopTraceGraphOutput_Type_Unsupported);
     return false;
   }
   // Status que: The nodes used to optimize the outputs of the top graph have been put into info_.outputs_optimize

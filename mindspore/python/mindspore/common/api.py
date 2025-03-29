@@ -1112,9 +1112,9 @@ def jit(
         capture_mode (str, optional): The method to create a callable MindSpore graph. The value of capture_mode
             should be ``ast`` , ``bytecode`` or ``trace`` . Default: ``ast`` .
 
-            - `ast <https://www.mindspore.cn/docs/en/r2.5.0/model_train/program_form/static_graph.html>`_ :
+            - `ast <https://www.mindspore.cn/docs/en/master/features/compile/graph_construction.html#ast>`_ :
               Parse Python ast to build graph.
-            - `bytecode <https://www.mindspore.cn/docs/en/r2.5.0/model_train/program_form/pynative.html#pijit>`_ :
+            - `bytecode <https://www.mindspore.cn/docs/en/master/features/compile/graph_construction.html#bytecode>`_ :
               Parse Python bytecode to build graph at runtime. This is an experimental prototype that is subject to
               change and/or deletion.
             - `trace` : Trace the execution of Python code to build graph. This is an experimental prototype that is
@@ -1136,8 +1136,8 @@ def jit(
         fullgraph (bool, optional): Whether to capture the entire function into graph. If False, jit attempts to
             be compatible with all Python syntax in the function as much as possible. If True, we require that the
             entire function can be captured into graph. If this is not possible (that is, if there is Python syntax
-            not supported), then it will raise an exception. This currently only applies when capture_mode is ast.
-            Default: ``False``.
+            not supported), then it will raise an exception. This currently only applies when capture_mode is ``ast``
+            or ``bytecode``. Default: ``False``.
         backend (str, optional): The compilation backend to be used. If this parameter is not set, the framework will
             use ``GE`` backend for Atlas training series products and ``ms_backend`` backend for others including Atlas
             A2 training series products by default.
@@ -1278,7 +1278,7 @@ def jit(
     if capture_mode == "ast":
         wrap_func = _jit_ast(hash_obj, dynamic, jit_config)
     elif capture_mode == "bytecode":
-        wrap_func = PIJitCaptureContext(jit_config)
+        wrap_func = PIJitCaptureContext(fullgraph=fullgraph, jit_config=jit_config)
     else:
         wrap_func = _jit_trace()
 

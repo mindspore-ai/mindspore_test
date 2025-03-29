@@ -345,7 +345,7 @@ class GraphBuilder {
   ValueNode *MakePrimCastNode(ValueNode *node, const py::handle &dst_dtype);
   bool DoMixedPrecisionLocalAccess(const Instr &instr, ValueNode *node);
   ValueNode *DoMixedPrecisionAttrAccess(const Instr &instr, ValueNode *node, ValueNode *attr);
-  bool ResolveNoGrad(CallNode *call_node, StopTraceReason *stop_reason);
+  bool ResolveNoGrad(CallNode *call_node);
 
   void FGAddTopInputsWithExpander();
   void FGAddTopInputs();

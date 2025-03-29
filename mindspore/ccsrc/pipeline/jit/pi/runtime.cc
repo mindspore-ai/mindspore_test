@@ -720,6 +720,8 @@ static bool JitCompileWithTry(PyThreadState *tstate, JitCompileResults *c) {
   bool compiled = false;
   try {
     compiled = JitCompile(tstate, c);
+  } catch (pijit::GraphBreakException &e) {
+    throw;  // Throw the exception to the python side.
   } catch (std::exception &e) {
     MS_LOG(ERROR) << "got an unexpected c++ error [" << e.what() << "]";
   }
@@ -784,6 +786,8 @@ PyObject *CallCodeHook(PyThreadState *tstate, PyFrameWrapper f, JitCompileResult
   py::object res;
   try {
     res = CodeHook(tstate, c, f);
+  } catch (pijit::GraphBreakException &e) {
+    e.set_error();
   } catch (py::error_already_set &e) {
     e.restore();
   } catch (py::builtin_exception &e) {

@@ -49,9 +49,9 @@ def jit(fn=None, mode="PSJit", input_signature=None, hash_args=None, jit_config=
         fn (Function): The Python function that will be run as a graph. Default: ``None`` .
         mode (str): The type of jit used, the value of mode should be ``PIJit`` or ``PSJit``. Default: ``PSJit`` .
 
-            - PSJit:
+            - `PSJit <https://www.mindspore.cn/docs/en/master/features/compile/graph_construction.html#ast>`_ :
               Parse python ast to build graph.
-            - PIJit:
+            - `PIJit <https://www.mindspore.cn/docs/en/master/features/compile/graph_construction.html#bytecode>`_ :
               Parse python bytecode to build graph at runtime.
 
         input_signature (Union[Tuple, List, Dict, Tensor]): The Tensor which describes the input arguments. The
@@ -191,7 +191,7 @@ def jit(fn=None, mode="PSJit", input_signature=None, hash_args=None, jit_config=
 
     wrap_func = wrap_mindspore
     if mode == "PIJit":
-        wrap_func = PIJitCaptureContext(jit_config, input_signature)
+        wrap_func = PIJitCaptureContext(jit_config=jit_config, input_signature=input_signature)
 
     if fn is not None:
         return wrap_func(fn)

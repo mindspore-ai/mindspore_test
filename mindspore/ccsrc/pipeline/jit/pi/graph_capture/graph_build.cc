@@ -18,6 +18,7 @@
 #include <memory>
 #include <optional>
 #include <set>
+#include <sstream>
 #include <string>
 #include <vector>
 #include <utility>
@@ -113,7 +114,6 @@ const std::unordered_map<int, bool (GraphBuilder::*)(const Instr &)> GraphBuilde
   {CONTAINS_OP, &GraphBuilder::DoContainsOp},
   {BUILD_TUPLE, &GraphBuilder::DoBuildOp},
   {BUILD_LIST, &GraphBuilder::DoBuildOp},
-  {BUILD_SET, &GraphBuilder::DoBuildOp},
   {BUILD_MAP, &GraphBuilder::DoBuildOp},
   {BUILD_SLICE, &GraphBuilder::DoBuildOp},
   {BUILD_CONST_KEY_MAP, &GraphBuilder::DoBuildOp},
@@ -640,6 +640,7 @@ bool GraphBuilder::DoGetYieldFromIter(const Instr &instr) {
     DoGetIter(instr);
   } else {
     MS_LOG(INFO) << "not support yield iterator yet!";
+    graph_->StopTraceAt(cur_bci_, StopTraceReason::kStopTraceYieldFromIterator_Unsupported);
     return false;
   }
   return true;
@@ -802,7 +803,7 @@ bool GraphBuilder::DoCellAccess(const Instr &instr) {
   } else if (opcode == STORE_DEREF) {
     if (IsFreeVar(graph_->GetCodeObj(), oparg) && !IsTopGraph()) {
       // The side-effect of free-variable STORE_DEREF in subgraph will be supported later.
-      graph_->StopTraceAt(cur_bci_, kStopTraceByteCode_Unsupported);
+      graph_->StopTraceAt(cur_bci_, kStopTraceFreeVar_Modify_Unsupported);
       return false;
     }
     value = pop();
@@ -811,7 +812,7 @@ bool GraphBuilder::DoCellAccess(const Instr &instr) {
     closure_node->AddCellOper(node);
   } else if (opcode == DELETE_DEREF) {
     if (IsFreeVar(graph_->GetCodeObj(), oparg) && !IsTopGraph()) {
-      graph_->StopTraceAt(cur_bci_, kStopTraceByteCode_Unsupported);
+      graph_->StopTraceAt(cur_bci_, kStopTraceFreeVar_Modify_Unsupported);
       return false;
     }
     node = NewValueNode(nullptr, instr, {});
@@ -1166,6 +1167,8 @@ bool GraphBuilder::DoGlobalAccess(const Instr &instr) {
 #endif
     auto cache_result = graph_->GetSideEffect()->LoadGlobal(graph_->GetModuleName(), instr.name());
     if (cache_result.is_deleted_value_) {
+      graph_->StopTraceAt(cur_bci_, StopTraceReason::kStopTraceReadDeletedGlobalVariable,
+                          {"Might be a bug in user code."});
       return false;  // name error
     } else if (cache_result.cache_value_ != nullptr) {
       push(cache_result.cache_value_);
@@ -1301,7 +1304,10 @@ bool GraphBuilder::DoLoadName(const mindspore::pijit::Instr &instr) {
   if (instr.name() == "__name__") {
     this->graph_->FoundInnerClass();
   }
-
+  std::ostringstream oss;
+  oss << "ByteCode " << Opcode(instr.op()).name() << "(" << instr.name() << ") is not supported.";
+  graph_->StopTraceAt(cur_bci_, StopTraceReason::kStopTraceByteCode_Unsupported,
+                      {oss.str(), "See https://docs.python.org/3/library/dis.html for bytecode semantics."});
   return false;
 }
 
@@ -1326,13 +1332,13 @@ bool GraphBuilder::DoAttrAccess(const Instr &instr) {
     }
     auto cache_result = graph_->GetSideEffect()->LoadAttr(o, instr.name());
     if (cache_result.is_deleted_value_) {  // attribute error
+      graph_->StopTraceAt(cur_bci_, StopTraceReason::kStopTraceReadDeletedAttr, {"Might be a bug in user code."});
       return false;
     } else if (cache_result.cache_value_ != nullptr) {
       push(cache_result.cache_value_);
     } else {
       ValueNode *node = HandleGetattr(o, instr);
       if (node == nullptr) {
-        graph_->StopTraceAt(cur_bci_, StopTraceReason::kTrace_Fail);
         return false;
       }
       push(node);
@@ -2050,6 +2056,7 @@ bool GraphBuilder::DoImport(const Instr &instr) {
 }
 
 bool GraphBuilder::DoByteCode(const Instr &instr) {
+  TraceGuard trace_guard(GetLocation(instr));
   MS_LOG(INFO) << "Do bytecode " << instr.ToString() << " at \"" << GetFileName(graph_) << ":" << instr.line() << "\"";
   if (current_block_->is_loop_head() && !graph_->Config().GetBoolConfig(GraphJitConfig::kLoopUnrolling)) {
     graph_->StopTraceAt(cur_bci_, StopTraceReason::kStopTraceLoop_Unsupported);
@@ -2058,15 +2065,13 @@ bool GraphBuilder::DoByteCode(const Instr &instr) {
 
   auto func_iter = bytecode_meth_map_.find(instr.op());
   if (func_iter == bytecode_meth_map_.end()) {
-    graph_->StopTraceAt(cur_bci_, StopTraceReason::kStopTraceByteCode_Unsupported);
-    MS_LOG(INFO) << "ByteCode " << Opcode(instr.op()).name() << " is not supported yet.";
+    std::string msg = std::string("ByteCode ") + Opcode(instr.op()).name() + " is not supported.";
+    MS_LOG(INFO) << msg;
+    graph_->StopTraceAt(cur_bci_, StopTraceReason::kStopTraceByteCode_Unsupported,
+                        {msg, "See https://docs.python.org/3/library/dis.html for bytecode semantics."});
     return false;
   }
-  bool infer_succ = false;
-  {
-    TraceGuard trace_guard(GetLocation(instr));
-    infer_succ = (this->*(func_iter->second))(instr);
-  }
+  bool infer_succ = (this->*(func_iter->second))(instr);
 
   const auto &nodes = graph_->GetTracedNodes();
   for (auto i = nodes.rbegin(); i != nodes.rend() && (*i)->GetBlock() == nullptr; ++i) {
@@ -2074,8 +2079,10 @@ bool GraphBuilder::DoByteCode(const Instr &instr) {
   }
 
   if (!infer_succ && graph_->GetStopTraceBci() == -1) {
-    graph_->StopTraceAt(cur_bci_, StopTraceReason::kStopTraceReasonUnknown);
     MS_LOG(INFO) << "Set Unknown Reason to " << instr.ToString() << " at bci " << cur_bci_;
+    graph_->StopTraceAt(cur_bci_, StopTraceReason::kStopTraceReasonUnknown,
+                        {"The exact cause of graph break is unknown (may be unsupported scenarios or framework issue). "
+                         "Needs further debugging."});
   }
 
   if (instr.op() == RETURN_VALUE) {
@@ -2295,7 +2302,12 @@ bool GraphBuilder::WhiteListFuncCheckAndInfer(CallNode *call_node, const py::obj
 
 bool UnsupportedCodeTypeCheck(PyCodeObject *co) {
   if (co->co_flags & (CO_GENERATOR | CO_COROUTINE | CO_ASYNC_GENERATOR)) {
-    MS_LOG(DEBUG) << "generator is unsupported";
+    MS_LOG(INFO) << "Generator, coroutine or async-generator is unsupported";
+    return true;
+  }
+  const std::string &name = PyCodeWrapper(co).Name();
+  if (name == "<listcomp>" || name == "<dictcomp>" || name == "<setcomp>" || name == "<genexpr>") {
+    MS_LOG(INFO) << "List comprehension, dict comprehension, set comprehension or generator-expression is unsupported";
     return true;
   }
   /**
@@ -2636,7 +2648,9 @@ bool HasPyObj(const ValueNode *node) {
 void UpdateNodeInfo(const AbstractWrapperPtr &res, CallNode *call_node, StopTraceReason *stop_reason) {
   if (res == nullptr || res->abstract() == nullptr) {
     MS_LOG(INFO) << "Add node fail for call node " << call_node->ToString();
-    *stop_reason = StopTraceReason::kTrace_Fail;
+    if (*stop_reason == StopTraceReason::kNonStopTrace) {
+      *stop_reason = StopTraceReason::kStopTraceFunc_Trace_Fail;
+    }
   } else {
     MS_LOG(INFO) << "Add node succ for call node " << call_node->ToString();
     auto node = AObject::Convert(res);
@@ -2742,7 +2756,7 @@ StopTraceReason GraphBuilder::BuildSubGraph(CallNode *call_node, const py::objec
 
     const FuncGraphPtr &sub_graph = BuildSubFuncGraph(sg, call_node);
     if (sub_graph == nullptr) {
-      return StopTraceReason::kTrace_Fail;
+      return StopTraceReason::kStopTraceFunc_Trace_Fail;
     }
     auto callable_obj = GetPyObject(call_node->input(0));
     if (py::isinstance<Cell>(callable_obj)) {
@@ -3026,7 +3040,7 @@ bool GraphBuilder::HandleCallParameters(const py::object &func_info, CallNode *c
   return true;
 }
 
-bool GraphBuilder::ResolveNoGrad(CallNode *call_node, StopTraceReason *stop_reason) {
+bool GraphBuilder::ResolveNoGrad(CallNode *call_node) {
   AObject *callable = call_node->input(0)->GetVobj();
   py::object callable_info = callable->GetPyObject();
   bool is_nograd_enter = IsNoGradEnterFunc(callable_info);
@@ -3034,7 +3048,6 @@ bool GraphBuilder::ResolveNoGrad(CallNode *call_node, StopTraceReason *stop_reas
   if (is_nograd_enter || is_nograd_exit) {
     call_node->SetVobj(AObject::Convert(Py_True));
     call_node->SetSubGraph(nullptr);
-    *stop_reason = StopTraceReason::kNonStopTrace;
     no_grad_ = is_nograd_enter;
     return true;
   }
@@ -3045,9 +3058,10 @@ bool GraphBuilder::ResolveNoGrad(CallNode *call_node, StopTraceReason *stop_reas
 py::object GraphBuilder::ResolveCallableWithByteCode(CallNode *call_node, StopTraceReason *stop_reason) {
   AObject *callable = call_node->input(0)->GetVobj();
   py::object callable_info;
-  *stop_reason = StopTraceReason::kStopTraceInfer_Fail;
+  *stop_reason = StopTraceReason::kNonStopTrace;
   call_node->SetInlineReason(InlineReason::kInlineInfer_Fail);
   if (!callable) {
+    *stop_reason = StopTraceReason::kStopTraceFunc_Type_Unsupported;
     return callable_info;
   }
   callable_info = callable->GetPyObject();
@@ -3057,19 +3071,19 @@ py::object GraphBuilder::ResolveCallableWithByteCode(CallNode *call_node, StopTr
 
   AObject::Type callable_type = callable->GetType();
   if (callable_info.ptr() == nullptr) {
+    *stop_reason = StopTraceReason::kStopTraceFunc_Type_Unsupported;
     return py::object();
   }
 
-  if (ResolveNoGrad(call_node, stop_reason)) {
+  if (ResolveNoGrad(call_node)) {
     return py::object();
   }
 
-  *stop_reason = StopTraceReason::kNonStopTrace;
   if (callable_type == AObject::kTypeType) {
     call_node->SetInlineReason(InlineReason::kInlineFunc_ArgType_IsClass);
     HandleCallClass(call_node);
     if (static_cast<AbstractType *>(callable)->GetTypeType() == AObject::kTypeCell) {
-      *stop_reason = StopTraceReason::kStopTraceInfer_Fail;
+      *stop_reason = StopTraceReason::kStopTraceCanNotCreateCell;
     }
     return py::object();
   }
@@ -3659,10 +3673,12 @@ bool GraphBuilder::TraceRunForIter(const Instr &instr) {
   ValueNode *iter_node = seek(0);
   AObject *iterable = iter_node->getInputs().empty() ? nullptr : iter_node->input(0)->GetVobj();
   bool succ;
-  if (iter_node->GetOpcode() != GET_ITER) {
+  if (iter_node->GetOpcode() != GET_ITER) {  // might be a bug
     MS_LOG(INFO) << "FOR_ITER without GET_ITER";
-    succ = false;
-  } else if (iterable == nullptr) {
+    graph_->StopTraceAt(cur_bci_, StopTraceReason::kStopTraceLoop_Failed);
+    return false;
+  }
+  if (iterable == nullptr) {
     MS_LOG(INFO) << "iterable is null!";
     succ = false;
   } else if (iterable->GetTypeObject() == &PyEnum_Type) {
@@ -3677,15 +3693,17 @@ bool GraphBuilder::TraceRunForIter(const Instr &instr) {
   } else if (iterable->GetPyObject().ptr() != nullptr && PySequence_Check(iterable->GetPyObject().ptr())) {
     succ = TraceRunForIterSequence(instr.extra_jump()->bci());
   } else {
-    MS_LOG(INFO) << "Unsupported iterable type: "
-                 << (iterable->GetTypeObject() != nullptr ? iterable->GetTypeObject()->tp_name : "NULL");
-    succ = false;
+    std::string type = iterable->GetTypeObject() != nullptr ? iterable->GetTypeObject()->tp_name : "<NULL>";
+    MS_LOG(INFO) << "Unsupported iterable type: " << type;
+    graph_->StopTraceAt(cur_bci_, StopTraceReason::kStopTraceLoop_IterableType_Unsupported,
+                        {"Unsupported iterable type: " + type});
+    return false;
   }
   if (!succ) {
     if (graph_->Config().GetBoolConfig(GraphJitConfig::kLogGraphBreak)) {
       GRAPH_JIT_LOG_F("loop unsupported by trace, iter node is [%s]", iter_node->ToString().c_str());
     }
-    graph_->StopTraceAt(cur_bci_, StopTraceReason::kStopTraceLoop_Unsupported);
+    graph_->StopTraceAt(cur_bci_, StopTraceReason::kStopTraceLoop_Failed);
   }
   return succ;
 }
@@ -3880,7 +3898,8 @@ bool GraphBuilder::TraceRunControl(const Instr &instr) {
   } else if (ConditionJump(instr, &cond, &jump_to, &cond_node)) {
     MS_LOG(DEBUG) << "condition jump: " << instr.ToString();
   } else {
-    graph_->StopTraceAt(cur_bci_, StopTraceReason::kStopTraceByteCode_Unsupported);
+    graph_->StopTraceAt(cur_bci_, StopTraceReason::kStopTraceByteCode_Unsupported,
+                        {std::string("ByteCode ") + Opcode(instr.op()).name() + " is not supported."});
     return false;
   }
 
@@ -4670,8 +4689,9 @@ static void MarkPIJitSpecializedCall(const FuncGraphBuilderPtr &fg_builder, Call
 
 py::object GraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReason *stop_reason) {
   py::object callable_info = GetPyObject(call_node->input(0));
-  *stop_reason = StopTraceReason::kStopTraceInfer_Fail;
+  *stop_reason = StopTraceReason::kStopTraceFunc_Trace_Fail;
   if (!FGBuilder()->ValidateCallableObject(callable_info)) {
+    *stop_reason = StopTraceReason::kStopTraceFunc_Type_Unsupported;
     return py::object();
   }
   const auto &helper = GetCallNodeGraphBuildHelper(call_node);
@@ -4734,11 +4754,15 @@ py::object GraphBuilder::HandleConstantFoldFunc(const std::vector<py::object> &a
   py::object result = call_node->GetVobj()->GetPyObject();
   if (result.ptr() != nullptr) {
     const AbstractWrapperPtr &abs_wrapper = FGBuilder()->AddLocalVariable(result);
-    call_node->set_abstract_wrapper(abs_wrapper);
-    *stop_reason = StopTraceReason::kNonStopTrace;
+    if (abs_wrapper == nullptr || abs_wrapper->abstract() == nullptr) {
+      *stop_reason = StopTraceReason::kStopTraceDataType_Unsupported;
+    } else {
+      call_node->set_abstract_wrapper(abs_wrapper);
+      *stop_reason = StopTraceReason::kNonStopTrace;
+    }
   } else {
     MS_LOG(INFO) << "Constant fold failed, result is null";
-    *stop_reason = StopTraceReason::kStopTraceInfer_Fail;
+    *stop_reason = StopTraceReason::kStopTraceConstantFold_Failed;
   }
   return py::object();
 }
@@ -5133,6 +5157,7 @@ ValueNode *GraphBuilder::HandleNamedtupleGetElem(const Instr &instr, ValueNode *
 
   if (abs == nullptr || abs->abstract() == nullptr) {
     MS_LOG(INFO) << "Failed to do namedtuple getitem, idx=" << idx << ", node: " << node->ToString();
+    graph_->StopTraceAt(cur_bci_, StopTraceReason::kStopTraceNamedtuple_Getattr_Failed);
     return nullptr;
   }
   ValueNode *ret = NewValueNode(AObject::Convert(abs), instr, {node});
@@ -5155,6 +5180,7 @@ ValueNode *GraphBuilder::BuildMultiOpValueNode(const Instr &instr, const std::ve
 AbstractWrapperPtr GraphBuilder::HandleMultiOp(const Instr &instr, const std::vector<ValueNode *> &p, bool is_compare) {
   int opcode = instr.op();
   int oparg = instr.arg();
+  bool has_arg = true;
   std::string op_name;
   if (is_compare) {
     op_name = GraphUtils::OpCompareArgToGraphName(oparg);
@@ -5164,10 +5190,16 @@ AbstractWrapperPtr GraphBuilder::HandleMultiOp(const Instr &instr, const std::ve
     op_name = GraphUtils::BinaryOpToGraphName(oparg);
   } else {
     op_name = GraphUtils::OpCodeToGraphName(opcode);
+    has_arg = false;
   }
   MS_LOG(DEBUG) << "operation name is " << op_name;
-  if (op_name == "") {
+  if (op_name.empty()) {
     MS_LOG(INFO) << "Can not find operation for " << instr.ToString();
+    std::ostringstream oss;
+    oss << "ByteCode " << Opcode(instr.op()).name() << (has_arg ? "(" + std::to_string(oparg) + ")" : "")
+        << " is not supported.";
+    graph_->StopTraceAt(cur_bci_, StopTraceReason::kStopTraceByteCode_Unsupported,
+                        {oss.str(), "See https://docs.python.org/3/library/dis.html for bytecode semantics."});
     return nullptr;
   }
   auto wrapper = FGBuilder()->AddMultiNode(op_name, HandleInputArgs(p));

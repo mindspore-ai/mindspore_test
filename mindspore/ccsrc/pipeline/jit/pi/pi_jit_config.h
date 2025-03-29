@@ -53,6 +53,7 @@ class GraphJitConfig {
     kExpandGraphOutput,
     kReCaptureLoopBody,
     kSubgraphBreakOpt,
+    kFullGraph,
     /* ------------------------------ */
     kIntConf,
     kSymbolic,

@@ -16,6 +16,7 @@
 #include "pipeline/jit/pi/graph_capture/graph.h"
 #include <algorithm>
 #include <memory>
+#include <sstream>
 #include <string>
 #include <regex>
 #include <utility>
@@ -252,6 +253,27 @@ ParamNode *Graph::NewParamNode(AObject *obj_info, int index, const std::string &
   AddNodeInfo(node, obj_info, name);
   params_.push_back(node);
   return node;
+}
+
+void Graph::StopTraceAt(int bci, StopTraceReason reason, const std::vector<std::string> &hints) {
+  break_info_.bci_ = bci;
+  break_info_.reason_ = reason;
+
+  if (bci != -1 && conf_.GetBoolConfig(GraphJitConfig::kFullGraph)) {
+    std::ostringstream oss;
+    oss << GetStopTraceReasonDesc(reason);
+    if (!hints.empty()) {
+      std::for_each(hints.begin(), hints.end(), [&oss](const auto &hint) { oss << "\n  Hint: " << hint; });
+    }
+    oss << "\n\nFrom user code:\n";
+    const auto &trace_ctx_stack = TraceManager::trace_context_stack();
+    for (const auto &ctx : trace_ctx_stack) {
+      if (ctx.location() != nullptr) {
+        oss << ctx.location()->ToString();
+      }
+    }
+    throw GraphBreakException(oss.str());
+  }
 }
 
 /**
@@ -941,6 +963,16 @@ std::string FrameStates::ToString() const {
   std::for_each(cell_free.begin(), cell_free.end(), [&s](ValueNode *i) { s << i->ToString() << "\n"; });
   s << "\n";
   return s.str();
+}
+
+void GraphBreakException::set_error() const {
+  py::object exception_type = py::module::import("mindspore.common._pijit_context").attr("Unsupported");
+  if (exception_type.ptr() == nullptr || !PyType_Check(exception_type.ptr())) {
+    MS_LOG(WARNING) << "Cannot import 'Unsupported' from 'mindspore.common._pijit_context', use RuntimeError instead";
+    PyErr_SetString(PyExc_RuntimeError, what());
+  } else {
+    PyErr_SetString(exception_type.ptr(), what());
+  }
 }
 
 std::string GetFileName(const Graph *graph) { return PyUnicode_AsUTF8(graph->GetCodeObj()->co_filename); }
