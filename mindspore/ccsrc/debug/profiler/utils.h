@@ -61,23 +61,6 @@ class Utils {
     return (access(path.c_str(), W_OK) == 0) ? true : false;
   }
 
-  static int SafeStringCopy(char *dest, const char *src, size_t destSize) {
-    const char kNullChar = '\0';
-    if (dest == nullptr || src == nullptr || destSize == 0) {
-      return -1;
-    }
-    size_t i = 0;
-    for (; i < destSize - 1 && src[i] != kNullChar; ++i) {
-      dest[i] = src[i];
-    }
-    dest[i] = kNullChar;
-    if (src[i] != kNullChar) {
-      dest[0] = kNullChar;
-      return -1;
-    }
-    return 0;
-  }
-
   static bool IsDir(const std::string &path) {
     if (path.empty() || path.size() > PATH_MAX) {
       return false;
@@ -255,7 +238,6 @@ class Utils {
  public:
   static bool IsFileExist(const std::string &path) { return true; }
   static bool IsFileWritable(const std::string &path) { return true; }
-  static int SafeStringCopy(char *dest, const char *src, size_t destSize) { return -1; }
   static bool IsDir(const std::string &path) { return true; }
   static bool CreateDir(const std::string &path) { return true; }
   static std::string RealPath(const std::string &path) { return ""; }
