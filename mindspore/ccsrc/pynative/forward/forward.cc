@@ -242,17 +242,6 @@ BackendOpRunInfoPtr CreateBackendOpRunInfo(const FrontendOpRunInfoPtr &op_run_in
   return backend_op_run_info;
 }
 
-void UpdateStubTensor(const FrontendOpRunInfoPtr &op_run_info) {
-  // Some operators do not have StubNodes, such as Cast inserted for automatic mixed precision.
-  if (op_run_info->stub_output != nullptr) {
-    if (op_run_info->base_op_run_info.has_dynamic_output ||
-        OpCompiler::GetInstance().IsInvalidInferResultOp(op_run_info->base_op_run_info.op_name)) {
-      UpdateOutputStubNodeAbs(op_run_info);
-    }
-    op_run_info->stub_output->SetValue(op_run_info->real_out);
-  }
-}
-
 runtime::KernelTaskType GetViewOpTaskType(const std::string &op_name) {
   if (op_name == kCopyWithSliceOpName) {
     return runtime::KernelTaskType::kCOPY_TASK;
@@ -682,7 +671,6 @@ void ForwardExecutor::RunOpBackendSync(const FrontendOpRunInfoPtr &op_run_info) 
   RunOpBackend(op_run_info, backend_op_run_info);
   if (!op_run_info->requires_grad) {
     MS_LOG(DEBUG) << "Grad flag is false";
-    UpdateStubTensor(op_run_info);
     return;
   }
 
@@ -690,8 +678,6 @@ void ForwardExecutor::RunOpBackendSync(const FrontendOpRunInfoPtr &op_run_info) 
   op_run_info->op_grad_info->out_abs = op_run_info->base_op_run_info.abstract;
   // Do op grad and record op info
   ForwardOpGradImpl(op_run_info->op_grad_info, op_run_info->async_status);
-  // output is dynamic shape. Need to update abstract and value.
-  UpdateStubTensor(op_run_info);
 }
 
 void ForwardExecutor::OpRunInfoUsePrimC(const FrontendOpRunInfoPtr &op_run_info) const {

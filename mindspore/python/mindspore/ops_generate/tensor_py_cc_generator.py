@@ -37,15 +37,6 @@ class TensorPyCppGenerator(BaseGenerator):
             '{"${snake_api_name}"'
             ', (PyCFunction)TensorMethod${pascal_api_name}_CPyWrapper, METH_VARARGS | METH_KEYWORDS},'
         )
-        self.stubtensor_api_def_template = Template(
-            'py::cpp_function TensorMethod${snake_api_name}_wrapper(\n'
-            '  [](const py::object& self, const py::args& args, const py::kwargs& kwargs) {\n'
-            '      return  TensorMethod${pascal_api_name}(self, args, kwargs);\n'
-            '  },\n'
-            '  py::is_method(stubTensorClass)\n'
-            ');\n'
-            'stubTensorClass.attr("${snake_api_name}") = TensorMethod${snake_api_name}_wrapper;'
-        )
 
     def generate(self, work_path, tensor_method_protos, alias_func_mapping):
         """
@@ -61,19 +52,12 @@ class TensorPyCppGenerator(BaseGenerator):
         """
         wrapper_defs = []
         tensor_api_defs = []
-        stubtensor_api_defs = []
         for api_name, _ in tensor_method_protos.items():
             pascal_api_name = pyboost_utils.format_func_api_name(api_name)
             snake_api_name = api_name
             wrapper_defs.append(self.cpy_wrapper_template.replace(pascal_api_name=pascal_api_name))
             tensor_api_defs.append(
                 self.tensor_api_def_template.replace(
-                    snake_api_name=snake_api_name,
-                    pascal_api_name=pascal_api_name
-                )
-            )
-            stubtensor_api_defs.append(
-                self.stubtensor_api_def_template.replace(
                     snake_api_name=snake_api_name,
                     pascal_api_name=pascal_api_name
                 )
@@ -88,19 +72,12 @@ class TensorPyCppGenerator(BaseGenerator):
                             pascal_api_name=pascal_api_name
                         )
                     )
-                    stubtensor_api_defs.append(
-                        self.stubtensor_api_def_template.replace(
-                            snake_api_name=snake_api_name,
-                            pascal_api_name=pascal_api_name
-                        )
-                    )
 
         # delete the ' \' for the last wrapper macro definition
         wrapper_defs[-1] = wrapper_defs[-1][:-2]
 
         file_str = self.TENSOR_PY_CC_TEMPLATE.replace(
-            tensor_api_defs=tensor_api_defs,
-            stubtensor_api_defs=stubtensor_api_defs
+            tensor_api_defs=tensor_api_defs
         )
         save_file(
             os.path.join(work_path, K.TENSOR_PY_CC_PATH),

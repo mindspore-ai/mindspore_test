@@ -65,26 +65,6 @@ struct PyExecuteUserDataCatcherRegister {
 }  // namespace pyexecute_user_data_catcher
 }  // namespace abstract
 
-bool ContainStubTensor(const py::object &obj) {
-  if (py::isinstance<py::list>(obj)) {
-    auto list_obj = py::cast<py::list>(obj);
-    return std::any_of(list_obj.begin(), list_obj.end(),
-                       [](const auto &e) { return ContainStubTensor(py::cast<py::object>(e)); });
-  }
-  if (py::isinstance<py::tuple>(obj)) {
-    auto tuple_obj = py::cast<py::tuple>(obj);
-    return std::any_of(tuple_obj.begin(), tuple_obj.end(),
-                       [](const auto &e) { return ContainStubTensor(py::cast<py::object>(e)); });
-  }
-  if (py::isinstance<py::dict>(obj)) {
-    auto dict_obj = py::cast<py::dict>(obj);
-    return std::any_of(dict_obj.begin(), dict_obj.end(), [](const auto &e) {
-      return ContainStubTensor(py::cast<py::object>(e.first)) || ContainStubTensor(py::cast<py::object>(e.second));
-    });
-  }
-  return IsStubTensor(obj);
-}
-
 class PyExecuteInitializer {
  public:
   PyExecuteInitializer() {
@@ -226,8 +206,8 @@ class PyExecuteInitializer {
   }
 
   static abstract::AbstractBasePtr GenerateAbstract(const py::object &output) {
-    if (tensor::IsTensorPy(output) || IsStubTensor(output)) {
-      const auto &tensor = IsStubTensor(output) ? ConvertStubTensor(output) : tensor::ConvertToTensor(output);
+    if (tensor::IsTensorPy(output)) {
+      const auto &tensor = tensor::ConvertToTensor(output);
       const auto &infer_shape = std::make_shared<abstract::Shape>(tensor->shape());
       return tensor->ToAbstract();
     } else if (py::isinstance<py::bool_>(output)) {
@@ -306,9 +286,6 @@ class PyExecuteInitializer {
     try {
       mindspore::ScopedFallbackRunning fallback_running;
       const auto &output = parse::data_converter::CallPythonScript(py_script, params);
-      if (ContainStubTensor(output)) {
-        MS_EXCEPTION(TypeError) << "PyExecute node output can not contain stub tensor.";
-      }
       MS_LOG(DEBUG) << "Python output type: " << py::str(output.get_type()) << ", output: " << output;
       primitive->set_attr(kAttrPyExecuteOutput, std::make_shared<parse::PyObjectWrapper>(output, "graph python obj"));
       const auto &abstract = GenerateAbstract(output);

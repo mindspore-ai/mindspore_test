@@ -218,8 +218,8 @@ bool CheckArgValid(const py::handle &arg) {
     return std::all_of(dict_arg.begin(), dict_arg.end(), [](const auto &pair) { return CheckArgValid(pair.second); });
   }
 
-  if (tensor::IsTensorPy(arg) || IsStubTensor(arg)) {
-    auto tensor = IsStubTensor(arg) ? ConvertStubTensor(arg) : tensor::ConvertToTensor(arg);
+  if (tensor::IsTensorPy(arg)) {
+    auto tensor = tensor::ConvertToTensor(arg);
     if (tensor->data_type() == kNumberTypeBool) {
       MS_LOG(INFO) << "It is not recommended to use a tensor of bool data type as network input, which may cause "
                    << "operator compilation failure. For more details, please refer to the FAQ at "
@@ -227,7 +227,7 @@ bool CheckArgValid(const py::handle &arg) {
     }
   }
 
-  return IsStubTensor(arg) || py::isinstance<py::int_>(arg) || py::isinstance<py::float_>(arg) ||
+  return py::isinstance<py::int_>(arg) || py::isinstance<py::float_>(arg) ||
          py::isinstance<py::none>(arg) || py::isinstance<Number>(arg) || py::isinstance<py::str>(arg) ||
          tensor::IsTensorPy(arg) || py::isinstance<CSRTensor>(arg) || py::isinstance<COOTensor>(arg);
 }
@@ -274,8 +274,8 @@ kernel::PyExecuteOutputUserDataPtr GetUserDataFromAddress(const py::object &res)
     return nullptr;
   }
 
-  if (tensor::IsTensorPy(res) || IsStubTensor(res)) {
-    auto res_tensor = IsStubTensor(res) ? ConvertStubTensor(res) : tensor::ConvertToTensor(res);
+  if (tensor::IsTensorPy(res)) {
+    auto res_tensor = tensor::ConvertToTensor(res);
     MS_EXCEPTION_IF_NULL(res_tensor);
     if (res_tensor->device_address() != nullptr) {
       auto tensor_address = std::dynamic_pointer_cast<DeviceTensor>(res_tensor->device_address());
@@ -729,9 +729,6 @@ py::bool_ VerifyInputSignature(const py::list &input_signature, const py::tuple 
     bool is_tensor = false;
     if (tensor::IsTensorPy(arg_obj)) {
       m_tensor = tensor::ConvertToTensor(arg_obj);
-      is_tensor = true;
-    } else if (IsStubTensor(arg_obj)) {
-      m_tensor = ConvertStubTensor(arg_obj);
       is_tensor = true;
     }
     if (is_tensor && m_tensor == nullptr) {
@@ -1962,9 +1959,6 @@ void GraphExecutorPy::ConvertObjectToTensors(const py::dict &dict,
     } else if (tensor::IsTensorPy(item.second.attr("data"))) {
       // cast tensor
       tensor = tensor::ConvertToTensor(item.second.attr("data"));
-    } else if (IsStubTensor(item.second.attr("data"))) {
-      // cast stub_tensor
-      tensor = ConvertStubTensor(item.second.attr("data"));
     }
 
     if (tensor == nullptr) {
