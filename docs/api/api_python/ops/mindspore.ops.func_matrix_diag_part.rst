@@ -9,8 +9,8 @@ mindspore.ops.matrix_diag_part
 
     参数：
         - **x** (Tensor) - 输入tensor，其秩不小于2。
-        - **k** (Union[int, Tensor], 可选) - 对角线偏移。正值表示超对角线，负值表示次对角线。当k是2个整数，表示子对角线的上界和下界。默认 ``0`` 。
-        - **padding_value** (Tensor) - 填充对角线带外区域的数值。默认 ``0`` 。
+        - **k** (Union[int, Tensor], 可选) - 对角线偏移。正值表示超对角线，负值表示次对角线。当k是2个整数，表示子对角线的上界和下界。
+        - **padding_value** (Tensor) - 填充对角线带外区域的数值。
         - **align** (str, 可选) - 指定超对角线和次对角线的对齐方式。
           可选 ``"RIGHT_LEFT"`` 、 ``"LEFT_RIGHT"`` 、 ``"LEFT_LEFT"`` 、 ``"RIGHT_RIGHT"`` 。
           默认 ``"RIGHT_LEFT"`` 。

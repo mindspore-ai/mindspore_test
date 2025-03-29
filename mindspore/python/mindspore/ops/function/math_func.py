@@ -8717,8 +8717,6 @@ def baddbmm(input, batch1, batch2, beta=1, alpha=1):
         input (Tensor): The input tensor.
         batch1 (Tensor): The first batch of matrices to be multiplied.
         batch2 (Tensor): The second batch of matrices to be multiplied.
-
-    Keyword Args:
         beta (Union[float, int], optional): Scale factor for `input`. Default ``1`` .
         alpha (Union[float, int], optional): Scale factor for ( `batch1` @ `batch2` ). Default ``1`` .
 

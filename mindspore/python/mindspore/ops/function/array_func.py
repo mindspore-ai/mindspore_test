@@ -3564,7 +3564,8 @@ def matrix_diag_part(x, k, padding_value, align="RIGHT_LEFT"):
         x (Tensor): The input tensor with rank r, where r >= 2.
         k (Union[int, Tensor], optional): Diagonal offsets. Positive value means superdiagonal, and negative value
             means subdiagonals. When `k` is a pair of integers specifying the low and high ends of a matrix band.
-            Default ``0`` .
+        padding_value (Union[int, float, Tensor], optional): The number to fill the area outside the specified
+            diagonal band.
         align (str, optional): specifies how superdiagonals and subdiagonals should be aligned.
             Supported values ``"RIGHT_LEFT"`` , ``"LEFT_RIGHT"`` , ``"LEFT_LEFT"`` , ``"RIGHT_RIGHT"`` .
             Default ``"RIGHT_LEFT"`` .
