@@ -1071,6 +1071,77 @@ def test_lazy_inline():
     grad_net(x, y)
 
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_lazy_inline_with_control_flow():
+    """
+    Feature: Switch inline with lazy inline.
+    Description: All inline in single graph.
+    Expectation: Run successfully and the memory usage is reduced.
+    """
+    class Grad(Cell):
+        def __init__(self, net):
+            super(Grad, self).__init__()
+            self.grad = ops.GradOperation()
+            self.net = net
+
+        def construct(self, x):
+            grad_net = self.grad(self.net)
+            return grad_net(x)
+
+    class Block(Cell):
+        def __init__(self):
+            super(Block, self).__init__()
+            self.batch_matmul = P.BatchMatMul()
+            self.expand_dims = P.ExpandDims()
+            self.y = Parameter(Tensor(np.ones((8)).astype(np.float32)))
+
+        def construct(self, x):
+            z1 = self.batch_matmul(x, x)
+            z2 = self.expand_dims(self.y, 1)
+            return z1 + z2
+
+    class BaseBlock(Cell):
+        @lazy_inline
+        def __init__(self):
+            super(BaseBlock, self).__init__()
+            self.block = Block()
+
+        def construct(self, x):
+            return self.block(x)
+
+    class Net(Cell):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.blocks = nn.CellList()
+            b = BaseBlock()
+            self.blocks.append(b)
+
+        def construct(self, x):
+            out = x
+            for _ in range(5):
+                out = self.blocks[0](out)
+            return out
+    class GradNet(Cell):
+        def __init__(self, net):
+            super(GradNet, self).__init__()
+            self.grad_net = Grad(net)
+            self.a = Parameter(Tensor(np.ones((8)).astype(np.float32)))
+            self.b = Parameter(Tensor(np.ones((8)).astype(np.float32)))
+
+        def construct(self, x, y):
+            out = self.grad_net(x)
+            if y > 3:
+                return out * 2, self.a
+            return out, self.b
+
+
+    context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"})
+    x = Tensor(np.ones((8, 8)).astype(np.float32))
+    y = Tensor(6)
+    net = Net()
+    grad_net = GradNet(net)
+    grad_net(x, y)
+
 class TupleParaNet(Cell):
     def __init__(self):
         super(TupleParaNet, self).__init__()
