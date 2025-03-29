@@ -375,7 +375,7 @@ class Shard(Shard_):
         for stra in strategy:
             if not isinstance(stra, (tuple, Layout)):
                 raise TypeError(
-                    f"The '{log_info}' should be a tuple(tuple(int)) or tuple(mindspore.Layout), "
+                    f"The '{log_info}' should be a tuple(tuple(int)) or tuple(mindspore.parallel.Layout), "
                     f"but got {type(stra).__name__}")
             if isinstance(stra, Layout):
                 strategy_set.add("layout")
@@ -429,7 +429,7 @@ def shard(fn, in_strategy, out_strategy=None, parameter_plan=None, device="Ascen
                                     If `fn` is a Cell with parameters, `fn` needs to be an instantiated object,
                                     otherwise its arguments cannot be accessed.
         in_strategy (tuple): Define the layout of inputs, each element of the tuple should be a tuple(int) or
-                             tuple(mindspore.Layout).
+                             tuple(mindspore.parallel.Layout).
                              Tuple defines the layout of the corresponding input.
         out_strategy (Union[tuple, None], optional): Define the layout of outputs similar with `in_strategy`.
                                            Default: ``None`` .
@@ -437,7 +437,7 @@ def shard(fn, in_strategy, out_strategy=None, parameter_plan=None, device="Ascen
                                             Each element in dict
                                             defines the layout of the parameter like "param_name: layout".
                                             The key is a parameter name of type 'str'.
-                                            The value is a 1-D integer tuple or a 1-D mindspore.Layout tuple,
+                                            The value is a 1-D integer tuple or a 1-D mindspore.parallel.Layout tuple,
                                             indicating the corresponding layout.
                                             If the parameter name is incorrect or the corresponding parameter
                                             has been set, the parameter setting will be ignored.
@@ -457,11 +457,11 @@ def shard(fn, in_strategy, out_strategy=None, parameter_plan=None, device="Ascen
         AssertionError: If device_target it not "Ascend" or "GPU".
         TypeError: If `in_strategy` is not a tuple.
         TypeError: If `out_strategy` is not a tuple or None.
-        TypeError: If any element in `in_strategy` is not a tuple(int) or tuple(mindspore.Layout).
-        TypeError: If any element in `out_strategy` is not a tuple(int) or tuple(mindspore.Layout).
+        TypeError: If any element in `in_strategy` is not a tuple(int) or tuple(mindspore.parallel.Layout).
+        TypeError: If any element in `out_strategy` is not a tuple(int) or tuple(mindspore.parallel.Layout).
         TypeError: If `parameter_plan` is not a dict or None.
         TypeError: If any key in `parameter_plan` is not a str.
-        TypeError: If any value in `parameter_plan` is not a tuple(int) or a tuple(mindspore.Layout).
+        TypeError: If any value in `parameter_plan` is not a tuple(int) or a tuple(mindspore.parallel.Layout).
         TypeError: If `device` is not a str.
         TypeError: If `level` is not an integer.
 
@@ -560,9 +560,6 @@ def shard(fn, in_strategy, out_strategy=None, parameter_plan=None, device="Ascen
         >>> print(output.shape)
         (32, 10)
 
-    Tutorial Examples:
-        - `mindspore.Layout
-          <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.Layout.html>`_
     """
     if not isinstance(fn, (ms.nn.Cell)):
         logger.warning("'fn' is not a mindspore.nn.Cell, and its definition cannot involve Parameter; "
