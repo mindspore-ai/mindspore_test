@@ -77,6 +77,10 @@ AnfNodePtr AddAssignNodeToGraph(const FuncGraphPtr &func_graph, const AnfNodePtr
     func_graph->NewCNode({NewValueNode(std::make_shared<Primitive>(prim::kPrimAssign->name())), input1, input2});
   MS_EXCEPTION_IF_NULL(assign);
   assign->set_abstract(input1->abstract()->Clone());
+  auto kernel_graph = func_graph->cast<KernelGraphPtr>();
+  if (kernel_graph != nullptr) {
+    kernel_graph->AddRefCorrespondPairs(std::make_pair(assign, 0), common::AnfAlgo::VisitKernel(input1, 0));
+  }
 
   // set kernel build info
   kernel::KernelBuildInfo::KernelBuildInfoBuilder builder;
