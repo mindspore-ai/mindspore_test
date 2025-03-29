@@ -625,7 +625,8 @@ void CostGraph::ParamPropagation(const OperatorInfoPtr &curr_op, const std::shar
   if ((configured_ops.find(next_op) != configured_ops.end())) {
     auto consistency = CheckConfiguredSuccEdgeConsistency(edge);
     if (!consistency) {
-      MS_LOG(EXCEPTION) << "Incorrect strategy configuration.";
+      MS_LOG(EXCEPTION)
+        << "Incorrect strategy configuration, it may be caused by configuring inconsistent strategies for operators.";
     }
     return;
   }
