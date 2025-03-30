@@ -30,8 +30,8 @@ COMM_TENSOR_CELL_CACHE = {}
 # pylint: disable=W0212
 def reshard(tensor, layout):
     r"""
-    Specify the tensor by the given layout. The given layout must be type mindspore.Layout,
-    can check :class:`mindspore.Layout` for reference.
+    Specify the tensor by the given layout. The given layout must be type mindspore.parallel.Layout,
+    can check :class:`mindspore.parallel.Layout` for reference.
 
     - In the Graph mode, this function can set the sharding propagation strategy of a tensor.
       For those tensor do not manually be set, their strategies are decided by the sharding
@@ -45,7 +45,7 @@ def reshard(tensor, layout):
         - In the semi-auto parallel mode, the parallel mode will automatically switch to auto
           parallel mode with the search mode be set to "sharding_propagation".
         - Currently, configuring multi-dimension and multi-copy reshard strategy in
-          mindspore.Layout is not supported.
+          mindspore.parallel.Layout is not supported.
 
     Args:
         tensor (Tensor): The tensor to be set the sharding strategy.
@@ -58,7 +58,7 @@ def reshard(tensor, layout):
 
     Raises:
         TypeError: Reshard takes in Tensor type as the first input param, but got: `type(tensor)`.
-        TypeError: Reshard only support type mindspore.Layout but got: `type(layout)`.
+        TypeError: Reshard only support type mindspore.parallel.Layout but got: `type(layout)`.
 
     Supported Platforms:
         ``Ascend``
@@ -93,7 +93,7 @@ def reshard(tensor, layout):
     if not isinstance(tensor, Tensor):
         raise TypeError(f"Reshard takes in Tensor type as the first input param, but got: {type(tensor)}.")
     if not isinstance(layout, Layout):
-        raise TypeError(f"Reshard only support type mindspore.Layout, but got: {type(layout)}.")
+        raise TypeError(f"Reshard only support type mindspore.parallel.Layout, but got: {type(layout)}.")
 
     def layout_to_tuple(layout):
         layout_dict = layout.to_dict()
