@@ -1240,7 +1240,13 @@ DeviceTensor *PrepareParameter(const std::pair<KernelWithIndex, size_t> &paramet
         DeviceAddressUtils::CreateKernelTensor(tensor_address, tensor);
       }
       if (tensor_address->GetPtr() == nullptr) {
-        MS_LOG(EXCEPTION) << "Tensor address:" << tensor_address << " is not null, but got device ptr null.";
+        // Tensor address may not from runtime, sync data with tensor.
+        SyncHostToDeviceFromTensor(outer_index, inner_index, tensor, context, from_aid);
+        MS_EXCEPTION_IF_NULL(device_tensor);
+        tensor->set_device_address(device_tensor);
+        UpdateRefCount(device_tensor.get(), true);
+        device_tensor->set_new_ref_count(SIZE_MAX);
+        return device_tensor.get();
       }
       if (IsNeedSync(tensor)) {
         if (!tensor_address->AsyncHostToDevice(LongToSize(tensor->data().nbytes()), tensor->data_type(),
