@@ -35,6 +35,7 @@ const char kOpThreadsNumConf[] = "OpThreadsNumConf";
 const char kLaunchBlocking[] = "launch_blocking";
 const char kThreadBindCore[] = "thread_bind_core";
 const char kKernelLaunchGroupConf[] = "KernelLaunchGroupConf";
+const char kSimulationLevelKey[] = "MS_SIMULATION_LEVEL";
 
 class COMMON_EXPORT RuntimeConf {
  public:
@@ -49,6 +50,10 @@ class COMMON_EXPORT RuntimeConf {
     launch_blocking_ = true;
   }
   bool launch_blocking() {
+    if (common::GetEnv(kSimulationLevelKey) == "3") {
+      MS_LOG(INFO) << "Run in simulation level 3, always run in blocking";
+      return true;
+    }
     auto ms_context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(ms_context);
     return launch_blocking_ || ms_context->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE);
