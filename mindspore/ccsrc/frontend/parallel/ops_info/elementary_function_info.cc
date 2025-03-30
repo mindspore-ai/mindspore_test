@@ -15,6 +15,9 @@
  */
 
 #include "frontend/parallel/ops_info/elementary_function_info.h"
+
+#include <ostream>
+
 #include "frontend/parallel/dynamic_creator.h"
 
 namespace mindspore {
@@ -124,22 +127,22 @@ Status RepeatInterleaveInfo::CheckStrategy(const mindspore::parallel::StrategyPt
   return SUCCESS;
 }
 
+void log_func_ele(const std::ostringstream &oss, bool is_in_layout_propagation) {
+  if (is_in_layout_propagation) {
+    MS_LOG(WARNING) << oss.str();
+  } else {
+    MS_LOG(ERROR) << oss.str();
+  }
+}
+
 Status RepeatInterleaveInfo::CheckInputLayout() {
   if (inputs_tensor_info_.size() != inputs_shape_.size()) {
-    if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << "For distributed operator " << name_
-                      << ", the size of inputs_tensor_info should be equal to the "
-                      << "num of tensor inputs, but the inputs_tensor_info.size() is " << inputs_tensor_info_.size()
-                      << " "
-                      << "and the num of tensor inputs is " << inputs_shape_.size() << ".";
-    } else {
-      MS_LOG(ERROR) << "For distributed operator " << name_
-                    << ", the size of inputs_tensor_info should be equal to the "
-                    << "num of tensor inputs, but the inputs_tensor_info.size() is " << inputs_tensor_info_.size()
-                    << " "
-                    << "and the num of tensor inputs is " << inputs_shape_.size() << ".";
-    }
-    return FAILED;
+    std::ostringstream oss;
+    oss << "For distributed operator " << name_
+        << ", the size of inputs_tensor_info should be equal to the num of tensor inputs, but the "
+        << "inputs_tensor_info.size() is " << inputs_tensor_info_.size() << " and the num of tensor inputs is "
+        << inputs_shape_.size() << ".";
+    log_func_ele(oss, is_in_layout_propagation_);
   }
 
   auto input_tensor_layout = inputs_tensor_info_[kIndex0].tensor_layout();
@@ -147,11 +150,9 @@ Status RepeatInterleaveInfo::CheckInputLayout() {
 
   // when 'dim' is None, all dimensions cannot be split
   if (dim_ == kInvalidDimValue) {
-    if (is_in_layout_propagation_) {
-      MS_LOG(INFO) << "For distributed operator " << name_ << ", all dimensions cannot be split when 'dim' is None.";
-    } else {
-      MS_LOG(ERROR) << "For distributed operator " << name_ << ", all dimensions cannot be split when 'dim' is None.";
-    }
+    std::ostringstream oss;
+    oss << "For distributed operator " << name_ << ", all dimensions cannot be split when 'dim' is None.";
+    log_func_ele(oss, is_in_layout_propagation_);
     return FAILED;
   }
 
@@ -159,42 +160,34 @@ Status RepeatInterleaveInfo::CheckInputLayout() {
   if (is_tensor_repeat_) {
     auto input_tensor_map = input_tensor_layout.tensor_map_before();
     if (input_tensor_map[dim_].empty()) {
-      if (is_in_layout_propagation_) {
-        MS_LOG(INFO) << "For distributed operator " << name_ << ", the layout of inputs' dimension 'dim' is empty.";
-      } else {
-        MS_LOG(ERROR) << "For distributed operator " << name_ << ", the layout of inputs' dimension 'dim' is empty.";
-      }
+      std::ostringstream oss;
+      oss << "For distributed operator " << name_ << ", the layout of inputs' dimension 'dim' is empty.";
+      log_func_ele(oss, is_in_layout_propagation_);
       return FAILED;
     }
     auto device_dims = SizeToLong(dev_matrix_shape_.size());
     auto shard_idx = device_dims - 1 - input_tensor_map[dim_][kIndex0];
     if (input_tensor_map[dim_].size() != kSizeOne || dev_matrix_shape_[shard_idx] != NO_SPLIT_STRATEGY) {
-      if (is_in_layout_propagation_) {
-        MS_LOG(INFO) << "For distributed operator " << name_ << ", the input's dimension 'dim' can not be split.";
-      } else {
-        MS_LOG(ERROR) << "For distributed operator " << name_ << ", the input's dimension 'dim' can not be split.";
-      }
+      std::ostringstream oss;
+      oss << "For distributed operator " << name_ << ", the input's dimension 'dim' can not be split.";
+      log_func_ele(oss, is_in_layout_propagation_);
       return FAILED;
     }
     auto repeat_tensor_layout = inputs_tensor_info_[kIndex1].tensor_layout();
     auto repeat_tensor_map = repeat_tensor_layout.tensor_map_before();
     if (repeat_tensor_map[kIndex0].empty()) {
-      if (is_in_layout_propagation_) {
-        MS_LOG(INFO) << "For distributed operator " << name_ << ", the layout of input 'repeats' is empty.";
-      } else {
-        MS_LOG(ERROR) << "For distributed operator " << name_ << ", the layout of input 'repeats' is empty.";
-      }
+      std::ostringstream oss;
+      oss << "For distributed operator " << name_ << ", the layout of input 'repeats' is empty.";
+      log_func_ele(oss, is_in_layout_propagation_);
       return FAILED;
     }
     shard_idx = device_dims - 1 - repeat_tensor_map[kIndex0][kIndex0];
     // the layout of 'repeats' such as ("a", "b") and (("a", "b")) is invalid
     if (repeat_tensor_map.size() != kSizeOne || repeat_tensor_map[kIndex0].size() != kSizeOne ||
         dev_matrix_shape_[shard_idx] != NO_SPLIT_STRATEGY) {
-      if (is_in_layout_propagation_) {
-        MS_LOG(INFO) << "For distributed operator " << name_ << ", the input 'repeat' cannot be split.";
-      } else {
-        MS_LOG(ERROR) << "For distributed operator " << name_ << ", the input 'repeat' cannot be split.";
-      }
+      std::ostringstream oss;
+      oss << "For distributed operator " << name_ << ", the input 'repeat' cannot be split.";
+      log_func_ele(oss, is_in_layout_propagation_);
       return FAILED;
     }
   }

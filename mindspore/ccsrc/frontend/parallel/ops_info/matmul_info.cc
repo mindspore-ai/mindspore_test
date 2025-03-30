@@ -598,6 +598,14 @@ Status MatMul::Check3DTPInputLayout(const TensorLayout &a_in_layout, const Tenso
   return SUCCESS;
 }
 
+void log_func_mm(const std::ostringstream &oss, bool is_in_layout_propagation) {
+  if (is_in_layout_propagation) {
+    MS_LOG(WARNING) << oss.str();
+  } else {
+    MS_LOG(ERROR) << oss.str();
+  }
+}
+
 Status MatMul::CheckInputLayout() {
   // Check all device matrix should be the same
   if (inputs_tensor_info_.size() != kSizeTwo) {
@@ -613,8 +621,10 @@ Status MatMul::CheckInputLayout() {
   auto in_layout0 = inputs_tensor_info_[kIndex0].tensor_layout();
   auto in_layout1 = inputs_tensor_info_[kIndex1].tensor_layout();
   if (in_layout0.device_arrangement_origin().array() != in_layout1.device_arrangement_origin().array()) {
-    MS_LOG(ERROR) << "The device_matrix of input0 " << in_layout0.device_arrangement_origin().array()
-                  << " dose not equal to device_matrix of input1 " << in_layout1.device_arrangement_origin().array();
+    std::ostringstream oss;
+    oss << "The device_matrix of input0 " << in_layout0.device_arrangement_origin().array()
+        << " dose not equal to device_matrix of input1 " << in_layout1.device_arrangement_origin().array();
+    log_func_mm(oss, is_in_layout_propagation_);
     return FAILED;
   }
 
@@ -641,16 +651,20 @@ Status MatMul::CheckInputLayout() {
   (void)std::copy(n_v.begin(), n_v.end(), std::back_inserter(map_verify));
 
   if (in_layout0.tensor_map_before()[axis0] != in_layout1.tensor_map_before()[axis1]) {
-    MS_LOG(ERROR) << "The shard size of reduce_dim is not equal for input0 and input1";
+    std::ostringstream oss;
+    oss << "The shard size of reduce_dim is not equal for input0 and input1";
+    log_func_mm(oss, is_in_layout_propagation_);
     return FAILED;
   }
 
   std::sort(map_verify.begin(), map_verify.end());
   for (size_t i = 0; i + 1 < map_verify.size(); ++i) {
     if (map_verify[i] == map_verify[i + 1] && map_verify[i] > 0) {
-      MS_LOG(ERROR) << "The device_matrix " << in_layout0.device_arrangement_origin().array() << " axis "
-                    << in_layout0.device_arrangement_origin().array().size() - 1 - LongToSize(map_verify[i])
-                    << " has been shard for more than once and not sharding the reduce_dim for matmul.";
+      std::ostringstream oss;
+      oss << "The device_matrix " << in_layout0.device_arrangement_origin().array() << " axis "
+          << in_layout0.device_arrangement_origin().array().size() - 1 - LongToSize(map_verify[i])
+          << " has been shard for more than once and not sharding the reduce_dim for matmul.";
+      log_func_mm(oss, is_in_layout_propagation_);
       return FAILED;
     }
   }
@@ -658,7 +672,9 @@ Status MatMul::CheckInputLayout() {
     auto tensor_map_interleaved0 = in_layout0.tensor_map_before();
     auto reduce_axis_map = tensor_map_interleaved0[axis0];
     if (std::find(reduce_axis_map.begin(), reduce_axis_map.end(), 0) != reduce_axis_map.end()) {
-      MS_LOG(ERROR) << "Only support splitting micro interleaved in batch axis for matmul.";
+      std::ostringstream oss;
+      oss << "Only support splitting micro interleaved in batch axis for matmul.";
+      log_func_mm(oss, is_in_layout_propagation_);
       return FAILED;
     }
   }
@@ -666,7 +682,9 @@ Status MatMul::CheckInputLayout() {
     auto tensor_map_intereaved1 = in_layout1.tensor_map_before();
     if (std::any_of(tensor_map_intereaved1.begin(), tensor_map_intereaved1.end(),
                     [](const auto &map1) { return std::find(map1.begin(), map1.end(), 0) != map1.end(); })) {
-      MS_LOG(ERROR) << "Only support splitting micro interleaved in batch axis for matmul.";
+      std::ostringstream oss;
+      oss << "Only support splitting micro interleaved in batch axis for matmul.";
+      log_func_mm(oss, is_in_layout_propagation_);
       return FAILED;
     }
   }
