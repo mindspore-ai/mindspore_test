@@ -556,6 +556,10 @@ static void SliceCacheParameterObj(const ParameterPtr &parameter, const py::dict
   }
   py::tuple param_layout =
     py::make_tuple(device_arrangement, tensor_map, slice_shape, field_size, uniform_split, opt_shard_group, full_shape);
+
+  // param init in parallel mode
+  param_info->set_is_param_init(true);
+
   // Call Python _slice_parameter Fn to slice python parameter obj
   (void)python_adapter::CallPyFn(SLICE_PARAMETER_FN_PATH, SLICE_PARAMETER_FN_NAME, py_obj, py::str(phase),
                                  param_layout);
@@ -617,6 +621,10 @@ void InitPynativeNoShardParams(const FuncGraphPtr &root) {
       MS_LOG(WARNING) << "Parameter: " << parameter->DebugString() << " can't find python obj.";
       continue;
     }
+
+    // param init in parallel mode
+    param_info->set_is_param_init(true);
+
     (void)python_adapter::CallPyFn(SLICE_PARAMETER_FN_PATH, INIT_OPTIMIZER_STATE_FN, py_obj, py::str(phase));
   }
 }
