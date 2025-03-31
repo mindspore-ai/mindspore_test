@@ -2,9 +2,9 @@
 normal_float_float:
     args:
         mean:
-            dtype: float
+            dtype: number
         std:
-            dtype: float
+            dtype: number
         size:
             dtype: tuple[int]
         seed:
