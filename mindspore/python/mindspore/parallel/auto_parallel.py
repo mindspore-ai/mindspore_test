@@ -513,25 +513,25 @@ class AutoParallel(Cell):
 
         Args:
             config (dict): A dict contains the types and configurations for setting the communication fusion. Each
-            communication fusion config has two keys: "mode" and "config".
-            It supports following communication fusion types and configurations:
+                communication fusion config has two keys: "mode" and "config".
+                It supports following communication fusion types and configurations:
 
-             - openstate: Whether turn on the communication fusion or not. If `openstate` is `True`, turn on
-               the communication fusion, otherwise, turn off the communication fusion. Default: `True`.
+                - openstate: Whether turn on the communication fusion or not. If `openstate` is `True`, turn on
+                  the communication fusion, otherwise, turn off the communication fusion. Default: `True`.
 
-             - allreduce: if communication fusion type is `allreduce`. The `mode` contains: `auto`, `size`
-               and `index`. In `auto` mode, allreduce fusion is configured by gradients size, and the default
-               fusion threshold is `64` MB. In 'size' mode, allreduce fusion is configured by gradients size
-               manually, and the fusion threshold must be larger than `0` MB. In `index` mode, it is same as
-               `all_reduce_fusion_config`.
+                - allreduce: if communication fusion type is `allreduce`. The `mode` contains: `auto`, `size`
+                  and `index`. In `auto` mode, allreduce fusion is configured by gradients size, and the default
+                  fusion threshold is `64` MB. In 'size' mode, allreduce fusion is configured by gradients size
+                  manually, and the fusion threshold must be larger than `0` MB. In `index` mode, it is same as
+                  `all_reduce_fusion_config`.
 
-             - allgather: If communication fusion type is `allgather`. The `mode` contains: `auto`, `size`.
-               In `auto` mode, AllGather fusion is configured by gradients size, and the default fusion
-               threshold is `64` MB. In 'size' mode, AllGather fusion is configured by gradients size
-               manually, and the fusion threshold must be larger than `0` MB.
+                - allgather: If communication fusion type is `allgather`. The `mode` contains: `auto`, `size`.
+                  In `auto` mode, AllGather fusion is configured by gradients size, and the default fusion
+                  threshold is `64` MB. In 'size' mode, AllGather fusion is configured by gradients size
+                  manually, and the fusion threshold must be larger than `0` MB.
 
-             - reducescatter: If communication fusion type is `reducescatter`. The `mode` contains: `auto`
-               and `size`. Config is same as `allgather`.
+                - reducescatter: If communication fusion type is `reducescatter`. The `mode` contains: `auto`
+                  and `size`. Config is same as `allgather`.
 
         Raises:
             TypeError: If the type of config is not dict.

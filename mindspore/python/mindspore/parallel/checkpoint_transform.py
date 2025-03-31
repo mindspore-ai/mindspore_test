@@ -691,8 +691,9 @@ def sync_pipeline_shared_parameters(net):
 
     Note:
         The network should be compiled before shared parameters are synchronized in the pipeline parallel stage.
+
     Args:
-        net (nn.Cell): the inference network.
+        net (Cell): the inference network.
 
     Raises:
         TypeError: `net` is not in Cell type.
@@ -841,15 +842,15 @@ def load_segmented_checkpoints(ckpt_file_dir, net=None, strict_load=False, filte
         then the return value obtained by loading checkpoint is string, and in other cases the return value is
         Parameter.
 
-    Supported Platforms:
-        ``Ascend``
-
     Raises:
         TypeError: Input ckpt_file_dir is not a string.
         ValueError: Checkpoint file directory doesn't exist. Or it's not a directory
         ValueError: Checkpoint file's format is incorrect.
         ValueError: Parameter's dict is None after load checkpoint file.
         TypeError: The type of `specify_prefix` or `filter_prefix` is incorrect.
+
+    Supported Platforms:
+        ``Ascend``
     """
     if not isinstance(ckpt_file_dir, str):
         raise TypeError("The ckpt_file_dir should be a str.")

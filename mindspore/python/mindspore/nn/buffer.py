@@ -41,7 +41,7 @@ class Buffer(Tensor, metaclass=_BufferMeta):
     the :func:`mindspore.nn.Cell.register_buffer` function.
 
     Args:
-        data (Tensor): buffer tensor.
+        data (Tensor): buffer tensor. Default ``None``.
 
     Keyword Args:
         persistent (bool, optional): whether the buffer is part of the Cell's

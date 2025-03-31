@@ -164,14 +164,11 @@ Parallel
     :nosignatures:
     :template: classtemplate.rst
 
-    mindspore.Layout
     mindspore.parameter_broadcast
     mindspore.recompute
-    mindspore.reshard
-    mindspore.shard
     mindspore.sync_pipeline_shared_parameters
     mindspore.parallel.set_op_strategy_config
-    
+
 JIT
 ---
 

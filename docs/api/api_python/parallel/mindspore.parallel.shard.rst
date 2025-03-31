@@ -13,7 +13,7 @@
         - **in_strategy** (tuple) - 指定各输入的切分策略，输入元组的每个元素可以为整数元组或 `mindspore.parallel.Layout` 的元组。元组即具体指定输入每一维的切分策略。
         - **out_strategy** (Union[tuple, None]，可选) - 指定各输出的切分策略，用法同 `in_strategy` ，目前未使能。默认值： ``None`` 。
         - **parameter_plan** (Union[dict, None]，可选) - 指定各参数的切分策略，传入字典时，格式为 "参数名: 布局"。键是 str 类型的参数名，值是一维整数 `tuple` 或一维 `mindspore.parallel.Layout` 的 `tuple` 表示相应的切分策略。 如果参数名错误或对应参数已经设置了切分策略，该参数的设置会被跳过。默认值： ``None`` 。
-        - **device** (string，可选) - 指定执行设备，可以为["CPU", "GPU", "Ascend"]中任意一个，目前未使能。默认值： ``Ascend`` 。
+        - **device** (str，可选) - 指定执行设备，可以为["CPU", "GPU", "Ascend"]中任意一个，目前未使能。默认值： ``Ascend`` 。
         - **level** (int，可选) - 指定搜索切分策略的目标函数，即是最大化计算通信比、最小化内存消耗、最大化执行速度等。可以为[0, 1, 2]中任意一个，默认值： ``0`` 。目前仅支持最大化计算通信比，其余模式未使能。
 
     返回：
