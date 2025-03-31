@@ -174,7 +174,7 @@
 
     .. py:method:: transformer_opt(file_path)
 
-        并行加速配置文件，配置项可以参考 parallel_speed_up.json。当设置为None时，表示不启用。
+        并行加速配置文件，配置项可以参考 `parallel_speed_up.json <https://gitee.com/mindspore/mindspore/blob/master/config/parallel_speed_up.json>`_。当设置为None时，表示不启用。
 
         参数：
             - **file_path** (Union[str, None]): 并行加速配置文件，配置项可以参考 `parallel_speed_up.json <https://gitee.com/mindspore/mindspore/blob/master/config/parallel_speed_up.json>`_ 。
@@ -188,7 +188,7 @@
               - **computation_allgather_overlap** (bool): 为 ``True`` 时表示开启正向计算与优化器并行的AllGather通信的掩盖，暂时不支持 `O2 <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.JitConfig.html>`_ 编译模式下开启。注意在权重聚合通信和计算掩盖良好的情况下，开启该选项后性能不一定有提升，请根据实际场景确定是否开启。默认值： ``False`` 。
               - **enable_concat_eliminate_opt** (bool): 为 ``True`` 时表示开启Concat消除优化，当前在开启细粒度双副本优化时有收益。默认值： ``False`` 。
               - **enable_begin_end_inline_opt** (bool): 为 ``True`` 时表示开启首尾micro_batch子图的内联，用于半自动并行子图模式，流水线并行场景，一般需要和其他通信计算掩盖优化一起使用。默认值： ``False`` 。
-              - **computation_communication_fusion_level** (int): 控制通算融合的级别。默认值： ``0`` 。注：此功能需要配套Ascend Training Solution 24.0.RC2以上版本使用。
+              - **computation_communication_fusion_level** (int): 控制通算融合的级别。默认值： ``0`` 。注：需要配套Ascend Training Solution 24.0.RC2以上版本使用。该参数属于实验性质参数，个别场景精度有损失，未来可能变更或移除。
 
                 - 0: 不启用通算融合。
 

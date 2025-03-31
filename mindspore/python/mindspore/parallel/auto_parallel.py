@@ -638,7 +638,9 @@ class AutoParallel(Cell):
 
     def transformer_opt(self, file_path):
         r"""
-        Check and set speedup config for auto parallel. If this parameter is set to None, it is disabled.
+        Check and set speedup config for auto parallel, configuration can refer to `parallel_speed_up.json
+        <https://gitee.com/mindspore/mindspore/blob/master/config/parallel_speed_up.json>`_ .
+        If this parameter is set to None, it is disabled.
 
         Args:
             file_path(Union[str, None]): The path to the parallel speed up json file, configuration can refer to
@@ -667,6 +669,8 @@ class AutoParallel(Cell):
                   Default: False.
                 - computation_communication_fusion_level (int): Enable the fusion between compute and communicate.
                   Default: ``0``. Note: This function must be used with Ascend Training Solution 24.0.RC2 or later.
+                  This is an experimental configuration, it might cause accuracy degradation in specific use cases,
+                  may be changed or canceled in the future.
 
                   - 0: Disable fusion.
 
