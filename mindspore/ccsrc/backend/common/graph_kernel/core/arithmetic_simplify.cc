@@ -431,6 +431,31 @@ inner::NodePtr PatternTree::AlterGraph(const std::shared_ptr<ParaMap> &para_to_r
   return alter_graph.back();
 }
 
+class ConstantFoldingPatternTree : public PatternTree {
+ public:
+  explicit ConstantFoldingPatternTree(const std::string &pattern_str) : PatternTree(pattern_str) {}
+  ~ConstantFoldingPatternTree() override = default;
+
+ protected:
+  bool CheckInputsAndAttrs(const inner::NodePtr &origin_root) const override {
+    auto lhs = origin_root->input(0);
+    auto rhs = origin_root->input(1);
+    auto lhs_shape = lhs->shape;
+    auto rhs_shape = rhs->shape;
+    auto out_shape = origin_root->shape;
+    if (IsDynamic(lhs_shape) || IsDynamic(rhs_shape)) {
+      return false;
+    }
+    if (lhs->NodeType() == inner::NType::Tensor) {
+      return rhs_shape == out_shape;
+    }
+    if (rhs->NodeType() == inner::NType::Tensor) {
+      return lhs_shape == out_shape;
+    }
+    return true;
+  }
+};
+
 // Add(A,Neg(A))=BroadcastTo(0,B)
 class NegAddPatternTree : public PatternTree {
  public:
@@ -1039,14 +1064,14 @@ struct Expression {
 
 static std::vector<Expression> expressions = {
   // add
-  {"Add(A,0)=A", EXPR_PATTERN(PatternTree)},
+  {"Add(A,0)=A", EXPR_PATTERN(ConstantFoldingPatternTree)},
   {"Add(Mul(A,C),Mul(A,B))=Mul(A,Add(B,C))", EXPR_PATTERN(PatternTree)},
   {"Add(Add(A,const1),const2)=Add(A,Add(const1,const2))", EXPR_PATTERN(PatternTree)},
   {"Add(A,Neg(A))=BroadcastTo(0,B)", EXPR_PATTERN(NegAddPatternTree)},
   {"Add(Add(A,B),Neg(A))=B", EXPR_PATTERN(PatternTree)},
   {"Add(Add(A,B),Add(Neg(A),C))=Add(B,C)", EXPR_PATTERN(PatternTree)},
   // sub
-  {"Sub(A,0)=A", EXPR_PATTERN(PatternTree)},
+  {"Sub(A,0)=A", EXPR_PATTERN(ConstantFoldingPatternTree)},
   {"Sub(A,const1)=Add(A,Neg(const1))", EXPR_PATTERN(PatternTree)},
   {"Sub(Mul(A,C),Mul(A,B))=Mul(A,Sub(B,C))", EXPR_PATTERN(PatternTree)},
   {"Sub(Mul(A,C),Mul(B,C))=Mul(Sub(A,B),C)", EXPR_PATTERN(PatternTree)},
@@ -1056,21 +1081,20 @@ static std::vector<Expression> expressions = {
   {"Log(Sqrt(A))=Mul(0.5,Log(A))", EXPR_PATTERN(PatternTree)},
   {"Log(Rsqrt(A))=Mul(-0.5,Log(A))", EXPR_PATTERN(PatternTree)},
   // pow
-  {"Pow(A,1)=A", EXPR_PATTERN(PatternTree)},
+  {"Pow(A,1)=A", EXPR_PATTERN(ConstantFoldingPatternTree)},
   {"Pow(Exp(A),B)=Exp(Mul(A,B))", EXPR_PATTERN(PatternTree)},
-  {"Pow(A,2)=Mul(A,A)", EXPR_PATTERN(PatternTree)},
-  {"Pow(A,-1)=Reciprocal(A)", EXPR_PATTERN(PatternTree)},
+  {"Pow(A,2)=Mul(A,A)", EXPR_PATTERN(ConstantFoldingPatternTree)},
+  {"Pow(A,-1)=Reciprocal(A)", EXPR_PATTERN(ConstantFoldingPatternTree)},
   // sqrt
   {"Sqrt(Mul(A,A))=Abs(A)", EXPR_PATTERN(PatternTree)},
-  {"Rsqrt(Pow(A,-2))=Abs(A)", EXPR_PATTERN(PatternTree)},
-  {"Rsqrt(RealDiv(1,A))=Sqrt(A)", EXPR_PATTERN(PatternTree)},
+  {"Rsqrt(Pow(A,-2))=Abs(A)", EXPR_PATTERN(ConstantFoldingPatternTree)},
   {"Rsqrt(Reciprocal(A))=Sqrt(A)", EXPR_PATTERN(PatternTree)},
   // select
   {"Select(A,B,B)=B", EXPR_PATTERN(PatternTree)},
   // Neg
   {"Neg(Neg(A))=A", EXPR_PATTERN(PatternTree)},
   // mul
-  {"Mul(A,1)=A", EXPR_PATTERN(PatternTree)},
+  {"Mul(A,1)=A", EXPR_PATTERN(ConstantFoldingPatternTree)},
   {"Mul(Mul(A,const1),Mul(B,const2))=Mul(Mul(A,B),Mul(const1,const2))", EXPR_PATTERN(PatternTree)},
   {"Mul(Mul(A,const1),const2)=Mul(A,Mul(const1,const2))", EXPR_PATTERN(PatternTree)},
   {"Mul(Exp(A),Exp(B))=Exp(Add(A,B))", EXPR_PATTERN(PatternTree)},
@@ -1090,7 +1114,8 @@ static std::vector<Expression> expressions = {
   {"Mul(Mul(Abs(A),C),Mul(Abs(B),D))=Mul(Abs(Mul(A,B)),Mul(C,D))", EXPR_PATTERN(PatternTree)},
   {"Mul(Neg(A),const1)=Mul(A,Neg(const1))", EXPR_PATTERN(PatternTree)},
   // realdiv
-  {"RealDiv(A,1)=A", EXPR_PATTERN(PatternTree)},
+  {"RealDiv(1,A)=Reciprocal(A)", EXPR_PATTERN(ConstantFoldingPatternTree)},
+  {"RealDiv(A,1)=A", EXPR_PATTERN(ConstantFoldingPatternTree)},
   {"RealDiv(Exp(A),Exp(B))=Exp(Sub(A,B))", EXPR_PATTERN(PatternTree)},
   {"RealDiv(A,Exp(B))=Mul(A,Exp(Neg(B)))", EXPR_PATTERN(PatternTree)},
   {"RealDiv(A,Pow(B,const1))=Mul(A,Pow(B,Neg(const1)))", EXPR_PATTERN(PatternTree)},
