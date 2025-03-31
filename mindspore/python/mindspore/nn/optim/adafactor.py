@@ -406,7 +406,7 @@ class AdaFactor(Optimizer):
         """
         return False
 
-    @jit
+    @jit(backend="ms_backend")
     def construct(self, gradients):
         gradients = self.flatten_gradients(gradients)
         lr = self.get_lr()
