@@ -33,6 +33,7 @@ from pyboost.pyboost_utils import get_convert_type_str, is_optional_param, is_op
 
 from .op_template_parser import OpTemplateParser
 
+
 class PyboostFunctionsGenerator(BaseGenerator):
     """
     Generates PyBoost functions based on operator prototypes.

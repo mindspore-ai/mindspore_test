@@ -358,6 +358,7 @@ class FunctionalMapCppGenerator(BaseGenerator):
         """
 
         op_inc_set = set()
+
         def get_mint_func_list(func_protos):
             """
             Retrieves a sorted list of operator primitives, prioritizing deprecated operators.
