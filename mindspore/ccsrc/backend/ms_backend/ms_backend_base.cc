@@ -51,6 +51,7 @@
 #include "utils/log_adapter.h"
 #include "utils/llm_manager.h"
 #include "utils/ms_utils.h"
+#include "utils/info.h"
 #ifdef ENABLE_DEBUGGER
 #include "include/backend/debug/debugger/debugger.h"
 #endif
@@ -326,6 +327,7 @@ void CheckNodeValid(const AnfNodePtr &node) {
   if (node_abs != nullptr && node_abs->isa<abstract::AbstractJoinedAny>()) {
     auto abs_joined_any = node_abs->cast<abstract::AbstractJoinedAnyPtr>();
     if (abs_joined_any != nullptr) {
+      TraceGuard guard(MakeTraceInfo<TraceTypeJoin>(node->debug_info()));
       abs_joined_any->ThrowException();
     }
   }

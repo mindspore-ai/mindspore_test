@@ -31,6 +31,7 @@
 #include "debug/profiler/profiler.h"
 #include "common/device_address.h"
 #include "utils/file_utils.h"
+#include "utils/info.h"
 #ifndef ENABLE_SECURITY
 #include "backend/ge_backend/dump/hook_debugger.h"
 #include "backend/ge_backend/dump/deprecated_env.h"
@@ -109,6 +110,7 @@ void CheckNodeValid(const AnfNodePtr &node) {
   if (node_abs != nullptr && node_abs->isa<abstract::AbstractJoinedAny>()) {
     auto abs_joined_any = node_abs->cast<abstract::AbstractJoinedAnyPtr>();
     if (abs_joined_any != nullptr) {
+      TraceGuard guard(MakeTraceInfo<TraceTypeJoin>(node->debug_info()));
       abs_joined_any->ThrowException();
     }
   }

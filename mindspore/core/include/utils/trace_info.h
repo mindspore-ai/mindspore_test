@@ -508,6 +508,14 @@ class TraceInplace : public TraceInfo {
   TraceInfoPtr clone() override { return std::make_shared<TraceInplace>(*this); }
 };
 
+class TraceTypeJoin : public TraceInfo {
+ public:
+  explicit TraceTypeJoin(const DebugInfoPtr &info) : TraceInfo(info) {}
+  ~TraceTypeJoin() override = default;
+  MS_DECLARE_TRACE_NAME_SYMBOL("type_join", "");
+  TraceInfoPtr clone() override { return std::make_shared<TraceTypeJoin>(*this); }
+};
+
 template <typename T, typename U>
 TraceInfoPtr MakeTraceInfo(const U &info) {
   if (DebugMode::IsDebug()) {
