@@ -1,7 +1,7 @@
 mindspore.mint.sort
 ====================
 
-.. py:function:: mindspore.mint.sort(input, dim=-1, descending=False, stable=False)
+.. py:function:: mindspore.mint.sort(input, *, dim=-1, descending=False, stable=False)
 
     按指定顺序对输入Tensor的指定维上的元素进行排序。
 
@@ -10,6 +10,8 @@ mindspore.mint.sort
 
     参数：
         - **input** (Tensor) - 进行排序的Tensor，shape为 :math:`(N,*)` ，其中 :math:`*` 表示任意数量的的额外维度。
+
+    关键字参数：
         - **dim** (int，可选) - 指定排序的轴。默认值： ``-1`` ，表示指定最后一维。
         - **descending** (bool，可选) - 按降序还是升序。如果为 ``True`` ，则元素按降序排列，否则按升序排列。默认值： ``False`` 。
         - **stable** (bool，可选) - 按稳定排序还是非稳定排序。如果为 ``True`` ，则是稳定排序，否则为非稳定排序。默认值： ``False`` 。
