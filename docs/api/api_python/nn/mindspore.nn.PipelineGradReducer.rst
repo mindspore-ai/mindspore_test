@@ -5,6 +5,9 @@ mindspore.nn.PipelineGradReducer
 
     用于流水线并行的梯度聚合。
 
+    .. note::
+        接口即将废弃，请使用接口 :class:`mindspore.parallel.nn.PipelineGradReducer` 代替。
+
     参数：
         - **parameters** (list) - 需要更新的参数。
         - **scale_sense** (float, 可选) - 梯度的放缩系数，默认为 ``1.0``。

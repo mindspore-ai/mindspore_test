@@ -7,7 +7,8 @@ mindspore.sync_pipeline_shared_parameters
     在流水线并行推理时， `embedding table` 变更后，有必要在stage之间进行权重同步。
 
     .. note::
-        网络需要先编译，再执行stage之间权重同步。
+        - 网络需要先编译，再执行stage之间权重同步。
+        - 接口即将废弃，请使用接口 :func:`mindspore.parallel.sync_pipeline_shared_parameters` 代替。
 
     参数：
         - **net** (nn.Cell) - 推理网络。

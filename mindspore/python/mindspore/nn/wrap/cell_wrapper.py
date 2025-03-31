@@ -591,6 +591,9 @@ class GradAccumulationCell(Cell):
     """
     Wrap the network with Micro Batch to enable the grad accumulation in semi_auto_parallel/auto_parallel mode.
 
+    Note:
+        The api will be deprecated, please use the api :class:`mindspore.parallel.nn.GradAccumulation` instead.
+
     Args:
         network (Cell): The target network to wrap.
         micro_size (int): MicroBatch size.
@@ -880,7 +883,8 @@ class PipelineCell(Cell):
     Slice MiniBatch into finer-grained MicroBatch for use in pipeline-parallel training.
 
     Note:
-        micro_size must be greater or equal to pipeline stages.
+        - micro_size must be greater or equal to pipeline stages.
+        - The api will be deprecated, please use the api :class:`mindspore.parallel.nn.Pipeline` instead.
 
     Args:
         network (Cell): The target network to wrap.

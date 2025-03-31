@@ -6,7 +6,8 @@ mindspore.nn.PipelineCell
     将MiniBatch切分成更细粒度的MicroBatch，用于流水线并行的训练中。
 
     .. note::
-        micro_size必须大于或等于流水线stage的个数。
+        - micro_size必须大于或等于流水线stage的个数。
+        - 接口即将废弃，请使用接口 :class:`mindspore.parallel.nn.Pipeline` 代替。
 
     参数：
         - **network** (Cell) - 要修饰的目标网络。
