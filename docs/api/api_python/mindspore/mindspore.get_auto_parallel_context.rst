@@ -5,6 +5,9 @@ mindspore.get_auto_parallel_context
 
     根据key获取自动并行的配置。
 
+    .. note::
+        该接口即将废弃。
+
     参数：
         - **attr_key** (str) - 配置的key。
 

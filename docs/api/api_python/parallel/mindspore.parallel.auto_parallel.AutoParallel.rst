@@ -13,13 +13,13 @@
 
     参数：
         - **network** (Cell或Function，必选) - 待封装的前向网络的顶层Cell或函数，定义了将被并行化的核心网络结构。
-        - **parallel_mode** (str，可选) - 并行模式，指定并行策略，可选项： `semi_auto`、 `sharding_propagation`、 `recursive_programming`。默认为 `semi_auto`，支持：
+        - **parallel_mode** (str，可选) - 并行模式，指定并行策略，可选项： ``"semi_auto"``、 ``"sharding_propagation"``、 ``"recursive_programming"``。默认为 ``"semi_auto"``，支持：
 
-          - ``"semi_auto"``: 半自动化并行模式，支持数据并行、算子级并行、优化器并行和流水线并行场景，默认开启该模式
+          - ``"semi_auto"``: 半自动化并行模式，支持数据并行、算子级并行、优化器并行和流水线并行场景，默认开启该模式。
 
-          - ``"sharding_propagation"``: 策略传播搜索模式
+          - ``"sharding_propagation"``: 策略传播搜索模式。
 
-          - ``"recursive_programming"``: 递归编程搜索模式
+          - ``"recursive_programming"``: 递归编程搜索模式。
 
     样例：
 
