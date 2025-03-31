@@ -381,10 +381,10 @@ def test_flash_attention_with_load_balance(input_layout, use_mqa, with_real_shif
     Expectation: compile success
     """
     config = {"enable_flash_attention_load_balance": True,}
-    with open("./parallel_speed_up_for_fa.json", "w") as file:
+    with open("./parallel_speed_up_for_fa_1.json", "w") as file:
         json.dump(config, file, indent=4, separators=(',', ': '))
     context.set_context(
-        ascend_config={"parallel_speed_up_json_path": "./parallel_speed_up_for_fa.json"})
+        ascend_config={"parallel_speed_up_json_path": "./parallel_speed_up_for_fa_1.json"})
     set_auto_parallel_context(device_num=8, global_rank=0)
     context.set_auto_parallel_context(parallel_mode='semi_auto_parallel')
     dp = 2
@@ -398,10 +398,10 @@ def test_flash_attention_with_load_balance(input_layout, use_mqa, with_real_shif
               dp=dp, mp=mp, sp=sp)
     compile_net(net, query, key, value, real_shift, attn_mask)
     config = {"enable_flash_attention_load_balance": False,}
-    with open("./parallel_speed_up_for_fa.json", "w") as file:
+    with open("./parallel_speed_up_for_fa_1.json", "w") as file:
         json.dump(config, file, indent=4, separators=(',', ': '))
     context.set_context(
-        ascend_config={"parallel_speed_up_json_path": "./parallel_speed_up_for_fa.json"})
+        ascend_config={"parallel_speed_up_json_path": "./parallel_speed_up_for_fa_1.json"})
 
 
 @pytest.mark.parametrize('input_layout', ["BSH", "SBH", "BNSD", "BSND"])
@@ -414,10 +414,10 @@ def test_flash_attention_compressed_mask_with_load_balance(input_layout, sparse_
     Expectation: compile success
     """
     config = {"enable_flash_attention_load_balance": True,}
-    with open("./parallel_speed_up_for_fa.json", "w") as file:
+    with open("./parallel_speed_up_for_fa_2.json", "w") as file:
         json.dump(config, file, indent=4, separators=(',', ': '))
     context.set_context(
-        ascend_config={"parallel_speed_up_json_path": "./parallel_speed_up_for_fa.json"})
+        ascend_config={"parallel_speed_up_json_path": "./parallel_speed_up_for_fa_2.json"})
     set_auto_parallel_context(device_num=8, global_rank=0)
     context.set_auto_parallel_context(parallel_mode='semi_auto_parallel')
     dp = 2
@@ -431,10 +431,10 @@ def test_flash_attention_compressed_mask_with_load_balance(input_layout, sparse_
               dp=dp, mp=mp, sp=sp)
     compile_net(net, query, key, value, real_shift, attn_mask)
     config = {"enable_flash_attention_load_balance": False,}
-    with open("./parallel_speed_up_for_fa.json", "w") as file:
+    with open("./parallel_speed_up_for_fa_2.json", "w") as file:
         json.dump(config, file, indent=4, separators=(',', ': '))
     context.set_context(
-        ascend_config={"parallel_speed_up_json_path": "./parallel_speed_up_for_fa.json"})
+        ascend_config={"parallel_speed_up_json_path": "./parallel_speed_up_for_fa_2.json"})
 
 
 def generate_dynamic_inputs(B, N, S, D):
@@ -548,10 +548,10 @@ def test_flash_attention_dynamic_with_strategy(enable_load_balance, with_real_sh
     set_auto_parallel_context(device_num=dp * sp * mp, global_rank=0)
     if enable_load_balance:
         config = {"enable_flash_attention_load_balance": True,}
-        with open("./parallel_speed_up_for_fa.json", "w") as file:
+        with open("./parallel_speed_up_for_fa_3.json", "w") as file:
             json.dump(config, file, indent=4, separators=(',', ': '))
         context.set_context(
-            ascend_config={"parallel_speed_up_json_path": "./parallel_speed_up_for_fa.json"})
+            ascend_config={"parallel_speed_up_json_path": "./parallel_speed_up_for_fa_3.json"})
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
     keep_prob = 1.0
     B, N, S, D1, D2 = shape
