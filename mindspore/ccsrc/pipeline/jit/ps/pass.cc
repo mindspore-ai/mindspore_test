@@ -47,6 +47,7 @@
 #include "frontend/parallel/pipeline_transformer/pipeline_interleave.h"
 #include "frontend/parallel/pipeline_transformer/gpipe_interleave_scheduler.h"
 #include "frontend/parallel/pass/merge_comm.h"
+#include "frontend/parallel/pass/merge_send_recv.h"
 #include "frontend/parallel/pass/set_forward_comm_id_for_comm_node.h"
 #include "frontend/parallel/cache_embedding/cache_embedding.h"
 #include "frontend/parallel/cache_embedding/ps_embedding_cache_inserter.h"
@@ -630,6 +631,7 @@ OptPassGroupMap GetOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass, cons
      {"shard", opt::OptPassConfig(parallel::Shard)},
      {"meta_shard_fg_expand", opt::OptPassConfig(opt::irpass::ExpandMetaShardFg())},
      {"shard_inline", opt::OptPassConfig({irpass.inline_})},
+     {"merge_send_recv", opt::OptPassConfig(parallel::MergeSendReceive)},
      {"auto_parallel", opt::OptPassConfig(parallel::StepAutoParallel)},
      {"parallel", opt::OptPassConfig(parallel::StepParallel)},
      {"flash_sp", opt::OptPassConfig(FlashSPFrontPass)},
