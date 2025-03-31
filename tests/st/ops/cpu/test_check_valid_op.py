@@ -15,7 +15,6 @@
 from tests.mark_utils import arg_mark
 
 import numpy as np
-import pytest
 
 import mindspore.context as context
 import mindspore.nn as nn
@@ -44,7 +43,7 @@ def check_valid_modes(nptype):
     image_metas = np.array([768, 1280, 1], nptype)
     anchor_box = Tensor(anchor)
     image_metas_box = Tensor(image_metas)
-    expect = np.array([True, False, False], np.bool)
+    expect = np.array([True, False, False], np.bool_)
 
     context.set_context(mode=context.GRAPH_MODE, device_target='CPU')
     boundingbox_decode = NetCheckValid()
@@ -102,7 +101,7 @@ def test_check_valid_uint8():
     image_metas = np.array([76, 128, 1], np.uint8)
     anchor_box = Tensor(anchor)
     image_metas_box = Tensor(image_metas)
-    expect = np.array([True, True, False], np.bool)
+    expect = np.array([True, True, False], np.bool_)
 
     context.set_context(mode=context.GRAPH_MODE, device_target='CPU')
     boundingbox_decode = NetCheckValid()

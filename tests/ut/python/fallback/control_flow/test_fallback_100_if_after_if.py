@@ -33,10 +33,10 @@ def test_if_after_if_numpy():
             y = np.array([1, 2, 3, 4])
         else:
             y = np.array([4, 5, 6])
-        if np.all(y == np.array([1, 2, 3, 4])):
+        if np.all(y == np.array([4, 5, 6])):
             ret = Tensor(1)
         else:
             ret = Tensor(2)
         return ret
     res = control_flow_if_after_if()
-    assert res == 2
+    assert res == 1

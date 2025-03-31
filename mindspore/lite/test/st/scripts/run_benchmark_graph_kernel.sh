@@ -338,7 +338,7 @@ tar -zxf $release_file_path  || exit 1
 echo "installing akg..."
 python3 -m pip uninstall -y mindspore_lite || exit 1
 python3 -m pip uninstall -y akg || exit 1
-python3 -m pip install ./mindspore-lite-${version}-linux-${arch}/tools/akg/*.whl --user || exit 1
+python3 -m pip install ./mindspore-lite-${version}-linux-${arch}/tools/akg/*.whl  || exit 1
 
 # install ascend custom op
 if [[ ${backend} =~ "ascend" ]]; then

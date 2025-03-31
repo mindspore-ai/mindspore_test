@@ -80,7 +80,7 @@ def test_greater_equal_op_vmap(mode):
     y = Tensor(np.array([[2, 2, 2], [2, 2, 2]]).astype(np.float32))
     net = GreaterEqualNet()
     out = ops.vmap(net, in_axes=0, out_axes=0)(x, y)
-    expect_out = np.array([[False, True, True], [True, True, False]]).astype(np.bool)
+    expect_out = np.array([[False, True, True], [True, True, False]]).astype(np.bool_)
     np.testing.assert_array_equal(out.asnumpy(), expect_out)
 
 

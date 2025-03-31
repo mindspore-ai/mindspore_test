@@ -255,7 +255,7 @@ def test_tril_triu_graph_bool():
     Description: test cases for Tril and Triu
     Expectation: the result match to numpy
     """
-    tril_triu(np.bool, 6)
+    tril_triu(np.bool_, 6)
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -375,4 +375,4 @@ def test_tril_triu_pynative_bool():
     Description: test cases for Tril and Triu
     Expectation: the result match to numpy
     """
-    tril_triu_pynative(np.bool, 6)
+    tril_triu_pynative(np.bool_, 6)

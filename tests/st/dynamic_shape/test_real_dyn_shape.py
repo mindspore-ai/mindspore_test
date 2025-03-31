@@ -42,9 +42,9 @@ def test_real_forward(mode):
     Expectation: output the real part of the input.
     """
     context.set_context(mode=mode)
-    x = Tensor(np.asarray(np.complex(1.3 + 0.4j)).astype(np.complex64))
+    x = Tensor(np.asarray(np.complex_(1.3 + 0.4j)).astype(np.complex64))
     output = real_forward_func(x)
-    expect_output = np.asarray(np.complex(1.3)).astype(np.float32)
+    expect_output = np.asarray(np.complex_(1.3)).astype(np.float32)
     np.testing.assert_equal(output.asnumpy(), expect_output)
 
 
@@ -59,9 +59,9 @@ def test_real_backward(mode):
     Expectation: output the right grad.
     """
     context.set_context(mode=mode)
-    x = Tensor(np.asarray(np.complex(1.3 + 0.4j)).astype(np.complex64))
+    x = Tensor(np.asarray(np.complex_(1.3 + 0.4j)).astype(np.complex64))
     output = real_backward_func(x)
-    expect_output = np.asarray(np.complex(1. + 0j)).astype(np.complex64)
+    expect_output = np.asarray(np.complex_(1. + 0j)).astype(np.complex64)
     np.testing.assert_equal(output.asnumpy(), expect_output)
 
 
@@ -78,12 +78,12 @@ def test_real_dynamic(mode):
     x_dyn = Tensor(shape=None, dtype=ms.complex64)
     test_cell = test_utils.to_cell_obj(ops.real)
     test_cell.set_inputs(x_dyn)
-    x1 = Tensor(np.asarray(np.complex(1.3 + 0.4j)).astype(np.complex64))
+    x1 = Tensor(np.asarray(np.complex_(1.3 + 0.4j)).astype(np.complex64))
     output1 = test_cell(x1)
     expect_output1 = np.asarray(1.3).astype(np.float32)
     np.testing.assert_equal(output1.asnumpy(), expect_output1)
-    x2 = Tensor(np.asarray([[np.complex(1.4 + 0.4j), np.complex(2.5 + 0.6j)],
-                            [np.complex(3.6 + 0.7j), np.complex(4.7 + 0.8j)]]).astype(np.complex64))
+    x2 = Tensor(np.asarray([[np.complex_(1.4 + 0.4j), np.complex_(2.5 + 0.6j)],
+                            [np.complex_(3.6 + 0.7j), np.complex_(4.7 + 0.8j)]]).astype(np.complex64))
     output2 = test_cell(x2)
     expect_output2 = np.asarray([[1.4, 2.5],
                                  [3.6, 4.7]]).astype(np.float32)
