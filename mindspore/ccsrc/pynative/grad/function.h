@@ -241,15 +241,5 @@ void CppFunctionNode<T>::Release() {
   context_.to_save_.clear();
   context_.saved_data.clear();
 }
-
 }  // namespace mindspore::pynative::autograd
-
-namespace pybind11::detail {
-template <>
-struct PYNATIVE_EXPORT type_caster<mindspore::tensor::BaseTensorPtr> {
-  PYBIND11_TYPE_CASTER(mindspore::tensor::BaseTensorPtr, _("Tensor"));
-  bool load(handle src, bool);
-  static handle cast(const mindspore::tensor::BaseTensorPtr &src, return_value_policy, handle);
-};
-}  // namespace pybind11::detail
 #endif  // MINDSPORE_CCSRC_PIPELINE_PYNATIVE_GRAD_FUNCTION_H_

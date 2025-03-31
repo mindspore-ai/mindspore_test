@@ -15,7 +15,6 @@
 
 """compile custom kernel with ninja"""
 
-import importlib
 import os
 import shlex
 import subprocess
@@ -121,11 +120,11 @@ class FileLocker:
             time.sleep(0.5)
 
 
-class ExtensionLoader:
-    """ExtensionLoader"""
+class ExtensionBuilder:
+    """ExtensionBuilder"""
 
     def __init__(self):
-        """ExtensionLoader"""
+        """ExtensionBuilder"""
 
     def _get_build_directory(self, module_name):
         """Get build directory."""
@@ -151,15 +150,6 @@ class ExtensionLoader:
             else:
                 locker.wait()
         logger.info(f'Loading extension module {name}...')
-        return self._import_module(name, build_dir)
-
-    def _import_module(self, module_name, path):
-        """Import module from library."""
-        filepath = os.path.join(path, f"{module_name}.so")
-        spec = importlib.util.spec_from_file_location(module_name, filepath)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        return module
 
     def _verify_ninja_availability(self):
         """Check ninja is available."""
@@ -249,8 +239,9 @@ class ExtensionLoader:
                 os.remove(so_file)
             raise RuntimeError(msg) from e
 
-    def load(self, module_name, sources, extra_cflags=None, extra_ldflags=None, extra_include_paths=None):
-        """Build and load module."""
+    def build(self, module_name, sources, extra_cflags=None, extra_ldflags=None, extra_include_paths=None):
+        """Build module."""
         src = [sources] if isinstance(sources, str) else sources
         build_dir = self._get_build_directory(module_name)
-        return self._compile(module_name, src, extra_cflags, extra_ldflags, extra_include_paths, build_dir)
+        self._compile(module_name, src, extra_cflags, extra_ldflags, extra_include_paths, build_dir)
+        return os.path.join(build_dir, f"{module_name}.so")
