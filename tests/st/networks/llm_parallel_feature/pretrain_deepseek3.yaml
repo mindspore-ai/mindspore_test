@@ -188,7 +188,7 @@ moe_config:
   aux_loss_types: ["expert"]
   z_loss_factor: 0.0
   expert_model_parallel: 1
-  use_gmm: True
+  use_gmm: False
   use_gating_sigmoid: True
   enable_deredundency: False
   npu_nums_per_device: 8
