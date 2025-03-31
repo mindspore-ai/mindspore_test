@@ -337,7 +337,7 @@
             - `unexpected_keys` 是一个包含字符串的列表，表示state_dict中存在但当前Cell不需要的键。
 
         .. note::
-            如果某个参数或缓冲区被注册为 ``None`` ，但其对应的键在 :attr:`state_dict` 中存在，则 :func:`mindspore.nn.Cell.load_state_dict` 将会抛出 ``RuntimeError`` 。
+            如果 `strict` 为 ``True`` 且某个参数或缓冲区被注册为 ``None`` ，但其对应的键在 :attr:`state_dict` 中存在，则 :func:`mindspore.nn.Cell.load_state_dict` 将会抛出 ``RuntimeError`` 。
 
     .. py:method:: name_cells()
 

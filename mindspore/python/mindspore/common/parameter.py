@@ -32,7 +32,7 @@ from mindspore.common import dtype as mstype
 from mindspore import context
 from mindspore.common._utils import get_slice_num, get_slice_shape
 from mindspore.common.initializer import initializer
-from mindspore.common.tensor import Tensor
+from mindspore.common.tensor import Tensor, _TensorMeta
 from mindspore import _checkparam as Validator
 from mindspore._check_jit_forbidden_api import jit_forbidden_register
 from mindspore._c_expression import TensorPy as Tensor_
@@ -1049,6 +1049,47 @@ class Parameter(Tensor_):
             >>> x._load()
         """
         return Tensor_._load(self)
+
+
+# Metaclass to combine _TensorMeta and the instance check override for Buffer.
+class _BufferMeta(_TensorMeta):
+    # Make `isinstance(t, Buffer)` return True for custom tensor instances that have the _is_buffer flag.
+    def __instancecheck__(cls, instance):
+        if cls is _Buffer:
+            if isinstance(instance, Tensor) and getattr(instance, "_is_buffer", False):
+                return True
+        return super().__instancecheck__(instance)
+
+
+class _Buffer(Tensor, metaclass=_BufferMeta):
+    r"""A kind of Tensor that should not be considered a model
+    parameter. For example, BatchNorm's `running_mean` is not a parameter, but is part of the Cell's state.
+
+    Buffers are :class:`~mindspore.Tensor` subclasses, that have a
+    very special property when used with :class:`~.nn.Cell` s: when they're
+    assigned as Cell attributes they are automatically added to the list of
+    its buffers, and will appear e.g. in :func:`mindspore.nn.Cell.buffers` iterator.
+    Assigning a tensor doesn't have such effect. One can still assign a tensor as a buffer explicitly by using
+    the :func:`mindspore.nn.Cell.register_buffer` function.
+
+    Args:
+        data (Tensor): buffer tensor.
+
+    Keyword Args:
+        persistent (bool, optional): whether the buffer is part of the Cell's
+            :attr:`state_dict`. Default ``True``.
+    """
+
+    def __new__(cls, data, *, persistent=True):
+        if data is None:
+            raise ValueError('For create Buffer, input data should not be None')
+        if not isinstance(data, Tensor):
+            raise TypeError('For create Buffer, type of input data should be Tensor')
+        from mindspore.ops import stop_gradient
+        t = stop_gradient(data)
+        t._is_buffer = True  # pylint: disable=W0212
+        t.persistent = persistent
+        return t
 
 
 class ParameterTuple(tuple):

@@ -17,10 +17,8 @@ from collections import OrderedDict
 import weakref
 from typing import Any, Tuple
 
-__all__ = ["RemovableHandle"]
 
-
-class RemovableHandle:
+class _RemovableHandle:
     r"""
     A handle which provides the capability to remove a hook.
 
@@ -38,8 +36,8 @@ class RemovableHandle:
 
     def __init__(self, hooks_dict: Any, *, extra_dict: Any = None) -> None:
         self.hooks_dict_ref = weakref.ref(hooks_dict)
-        self.id = RemovableHandle.next_id
-        RemovableHandle.next_id += 1
+        self.id = _RemovableHandle.next_id
+        _RemovableHandle.next_id += 1
 
         self.extra_dict_ref: Tuple = ()
         if isinstance(extra_dict, dict):
@@ -69,14 +67,14 @@ class RemovableHandle:
         else:
             self.hooks_dict_ref = weakref.ref(state[0])
         self.id = state[1]
-        RemovableHandle.next_id = max(RemovableHandle.next_id, self.id + 1)
+        _RemovableHandle.next_id = max(_RemovableHandle.next_id, self.id + 1)
 
         if len(state) < 3 or state[2] is None:
             self.extra_dict_ref = ()
         else:
             self.extra_dict_ref = tuple(weakref.ref(d) for d in state[2])
 
-    def __enter__(self) -> "RemovableHandle":
+    def __enter__(self) -> "_RemovableHandle":
         return self
 
     def __exit__(self, type: Any, value: Any, tb: Any) -> None:
