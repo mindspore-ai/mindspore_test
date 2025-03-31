@@ -72,7 +72,8 @@ void DebugActor::DebugPostLaunch(const AnfNodePtr &node, const std::vector<Devic
   }
   const auto &cnode = node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(cnode);
-  MS_LOG(DEBUG) << "kernel by kernel debug for node: " << cnode->fullname_with_scope() << ".";
+  MS_LOG(INFO) << "kernel by kernel debug for node: " << cnode->fullname_with_scope() << ", device type is "
+               << device_context->GetDeviceType();
   if (device_context->GetDeviceType() == device::DeviceType::kAscend) {
 #ifdef ENABLE_DEBUGGER
     AscendKbkDump(cnode, input_device_tensors, output_device_tensors, device_context);
