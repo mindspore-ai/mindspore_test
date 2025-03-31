@@ -25,6 +25,7 @@ from mindspore.ops import functional as F
 from mindspore.ops import operations as P
 from mindspore.parallel._recovery_context import _set_recovery_context
 from mindspore.common.api import jit_class
+from mindspore._c_expression import _tft_start_record_threads, _tft_finish_record_threads
 
 
 @jit_class
@@ -170,9 +171,11 @@ class TftHandle:
             logger.info("Finish start tft controller.")
 
         logger.info("Begin to start tft processor.")
+        _tft_start_record_threads()
         self.tft.tft_init_processor(cur_rank, world_size, enable_local_copy, enable_tls, tls_key_dir,
                                     enable_arf=enable_arf)
         self.tft.tft_start_processor(self._controller_ip, self._controller_port)
+        _tft_finish_record_threads()
         logger.info("Finished start tft processor.")
         if self.tft.tft_is_reboot_node():
             logger.warning("tft report reboot init finish ")

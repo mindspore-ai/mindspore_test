@@ -16,6 +16,7 @@
 
 #ifndef MINDSPORE_CCSRC_DEBUG_TFT_ADAPTER_TFT_WAIT_SEM_H_
 #define MINDSPORE_CCSRC_DEBUG_TFT_ADAPTER_TFT_WAIT_SEM_H_
+#include <unordered_set>
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && !defined(ANDROID) && !defined(__APPLE__)
 #include <semaphore.h>
 #endif
@@ -34,6 +35,9 @@ class BACKEND_COMMON_EXPORT TFTWaitSem {
   void Wait();
   void Post();
   void Clear();
+  void StartRecordThreads();
+  void FinishRecordThreads();
+  bool HasThreadsExited();
   static void Enable();
   static bool IsEnable();
 
@@ -41,8 +45,10 @@ class BACKEND_COMMON_EXPORT TFTWaitSem {
   TFTWaitSem();
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && !defined(ANDROID) && !defined(__APPLE__)
   sem_t waitSem_;
+  std::unordered_set<pid_t> tft_thread_ids_;
 #endif
   static bool isEnable_;
+  void RecordThreads(bool is_start);
 };
 }  // namespace tft
 }  // namespace debug
