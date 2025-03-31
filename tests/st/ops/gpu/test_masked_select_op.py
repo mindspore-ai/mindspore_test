@@ -15,7 +15,6 @@
 from tests.mark_utils import arg_mark
 
 import numpy as np
-import pytest
 
 import mindspore.context as context
 import mindspore.nn as nn
@@ -27,27 +26,27 @@ from mindspore.ops.functional import vmap
 
 def maskedselect():
     x = np.array([1, 2, 3, 4]).astype(np.int32)
-    mask = np.array([[[0], [1], [0], [1]], [[0], [1], [0], [1]]]).astype(np.bool)
+    mask = np.array([[[0], [1], [0], [1]], [[0], [1], [0], [1]]]).astype(np.bool_)
     net = P.MaskedSelect()
     return net(Tensor(x), Tensor(mask))
 
 
 def maskedselect_func():
     x = np.array([1, 2, 3, 4]).astype(np.int32)
-    mask = np.array([[[0], [1], [0], [1]], [[0], [1], [0], [1]]]).astype(np.bool)
+    mask = np.array([[[0], [1], [0], [1]], [[0], [1], [0], [1]]]).astype(np.bool_)
     return F.masked_select(Tensor(x), Tensor(mask))
 
 
 def maskedselect_tensor():
     x = np.array([1, 2, 3, 4]).astype(np.int32)
-    mask = np.array([[[0], [1], [0], [1]], [[0], [1], [0], [1]]]).astype(np.bool)
+    mask = np.array([[[0], [1], [0], [1]], [[0], [1], [0], [1]]]).astype(np.bool_)
     return Tensor(x).masked_select(Tensor(mask))
 
 
 def maskedselect_dynamic_shape():
     x = np.array([0, 1, 1, 1]).astype(np.int32)
-    mask = np.array([1, 1, 0, 0]).astype(np.bool)
-    mask2 = np.array([1, 1]).astype(np.bool)
+    mask = np.array([1, 1, 0, 0]).astype(np.bool_)
+    mask2 = np.array([1, 1]).astype(np.bool_)
     out = F.masked_select(Tensor(x), Tensor(mask))
     out = F.masked_select(out, Tensor(mask2))
     return out
@@ -80,7 +79,7 @@ def vmap_case():
     # batch dimension of x is 0, and batch dimension of y is None
     # the shape of x is (2, 3), and the mask is [False, True, True], bdim is 0, so the shape of output is (2, 2)
     x = Tensor(np.array([[1, 2, 3], [4, 5, 6]], dtype=np.float32))
-    y = Tensor(np.array([False, True, True], dtype=np.bool))
+    y = Tensor(np.array([False, True, True], dtype=np.bool_))
     output = WrapNet(Net(), (0, None), 0)(x, y)
     expect = np.array([[2, 3], [5, 6]], dtype=np.float32)
     assert np.allclose(output.asnumpy(), expect)
@@ -110,7 +109,7 @@ def vmap_case_nested():
     # the shape of output is (4, 3, 1)
     x = Tensor(np.array([[[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]],
                          [[13, 14, 15, 16], [17, 18, 19, 20], [21, 22, 23, 24]]], dtype=np.float32))
-    y = Tensor(np.array([[False, False], [False, True]], dtype=np.bool))
+    y = Tensor(np.array([[False, False], [False, True]], dtype=np.bool_))
     output = WrapNet2(Net2(), (-1, None), 0)(x, y)
     expect = np.array([[[13], [17], [21]], [[14], [18], [22]], [[15], [19], [23]], [[16], [20], [24]]],
                       dtype=np.float32)
@@ -173,8 +172,8 @@ def test_maskedselect_bool_type():
     Expectation: the result match with expect
     """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
-    x = np.array([0, 0, 1, 1]).astype(np.bool)
-    mask = np.array([1, 0, 1, 0]).astype(np.bool)
+    x = np.array([0, 0, 1, 1]).astype(np.bool_)
+    mask = np.array([1, 0, 1, 0]).astype(np.bool_)
     y = maskedselect_for_type(x, mask)
     expect = [False, True]
     assert (y.asnumpy() == expect).all()
@@ -189,7 +188,7 @@ def test_maskedselect_complex64_type():
     """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     x = np.array([1 + 2j, 2 + 3j, 3 + 4j, 4 + 5j]).astype(np.complex64)
-    mask = np.array([1, 0, 1, 0]).astype(np.bool)
+    mask = np.array([1, 0, 1, 0]).astype(np.bool_)
     y = maskedselect_for_type(x, mask)
     expect = np.array([1 + 2j, 3 + 4j]).astype(np.complex64)
     assert (y.asnumpy() == expect).all()
@@ -204,7 +203,7 @@ def test_maskedselect_complex128_type():
     """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     x = np.array([1 + 2j, 2 + 3j, 3 + 4j, 4 + 5j]).astype(np.complex128)
-    mask = np.array([1, 0, 1, 0]).astype(np.bool)
+    mask = np.array([1, 0, 1, 0]).astype(np.bool_)
     y = maskedselect_for_type(x, mask)
     expect = np.array([1 + 2j, 3 + 4j]).astype(np.complex128)
     assert (y.asnumpy() == expect).all()

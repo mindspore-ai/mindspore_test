@@ -52,7 +52,7 @@ def get_tensor(is_scalar, input_type):
             return Tensor(np.array([[-1, 2, -3], [-4, 5, -6]]), dtype=input_type)
         if input_type in [mindspore.float16, mindspore.float32, mindspore.float64]:
             return Tensor(np.array([[1.0, -2.0, 3.0], [4.0, -5.0, 6.0]]), dtype=input_type)
-    return Tensor(False, np.bool)
+    return Tensor(False, np.bool_)
 
 
 def run_net():

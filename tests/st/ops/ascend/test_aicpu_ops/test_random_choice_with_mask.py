@@ -44,9 +44,9 @@ def test_random_choice_with_mask_check_value(mode):
     context.set_context(mode=mode, device_target="Ascend")
     # Sample all
     x = np.array([[1, 1],
-                  [1, 1]]).astype(np.bool)
+                  [1, 1]]).astype(np.bool_)
     expect_coordinate = set([(0, 0), (0, 1), (1, 0), (1, 1)])
-    expect_mask = np.array([True, True, True, True], np.bool)
+    expect_mask = np.array([True, True, True, True], np.bool_)
     net = RandomChoiceWithMaskNet(4)
     coordinate, mask = net(Tensor(x))
     coordinate_set = set(tuple(coord) for coord in coordinate.asnumpy())
@@ -64,7 +64,7 @@ def test_random_choice_with_mask(mode):
     """
     context.set_context(mode=mode, device_target="Ascend")
     x = np.array([[1, 0, 1],
-                  [1, 1, 0]]).astype(np.bool)
+                  [1, 1, 0]]).astype(np.bool_)
     count = 3
     net = RandomChoiceWithMaskNet(count)
     coordinate, mask = net(Tensor(x))

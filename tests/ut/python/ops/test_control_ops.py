@@ -668,8 +668,8 @@ def test_tensor_cond():
     class Net(nn.Cell):
         def __init__(self):
             super(Net, self).__init__()
-            self.t = Tensor(np.array(0, np.bool))
-            self.t1 = Tensor(np.array([True], np.bool))
+            self.t = Tensor(np.array(0, np.bool_))
+            self.t1 = Tensor(np.array([True], np.bool_))
 
         def construct(self, x, y):
             t = 0
@@ -693,7 +693,7 @@ def test_tensor_cond_exception():
     class Net(nn.Cell):
         def __init__(self):
             super(Net, self).__init__()
-            self.t = Tensor(np.array([True, False], np.bool))
+            self.t = Tensor(np.array([True, False], np.bool_))
 
         def construct(self, x, y):
             t = 0
@@ -1024,8 +1024,8 @@ def test_grad_tensor_bool():
                 x = y
             return out
 
-    x = Tensor(np.array(False).astype(np.bool))
-    y = Tensor(np.array(False).astype(np.bool))
+    x = Tensor(np.array(False).astype(np.bool_))
+    y = Tensor(np.array(False).astype(np.bool_))
     z = Tensor(np.ones([2, 3], dtype=np.float32))
     net = grad_all(Net())
     net(x, y, z)
