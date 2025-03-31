@@ -142,13 +142,6 @@ static PyObject *TensorPython_get_init_flag(PyObject *self, void *) {
   HANDLE_MS_EXCEPTION_END
 }
 
-static PyObject *TensorPython_get_adapter_flag(PyObject *self, void *) {
-  HANDLE_MS_EXCEPTION
-  PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
-  return PyBool_FromLong(obj->value.GetTensor()->is_adapter() ? 1 : 0);
-  HANDLE_MS_EXCEPTION_END
-}
-
 static PyObject *TensorPython_get_dtype(PyObject *self, void *) {
   HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
@@ -266,18 +259,6 @@ static int TensorPython_set_init_flag(PyObject *self, PyObject *value, void *) {
     return -1;
   }
   obj->value.GetTensor()->set_init_flag(value == Py_True);
-  return 0;
-  HANDLE_MS_EXCEPTION_RET_FAIL_END
-}
-
-static int TensorPython_set_adapter_flag(PyObject *self, PyObject *value, void *) {
-  HANDLE_MS_EXCEPTION
-  PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
-  if (!PyBool_Check(value)) {
-    PyErr_SetString(PyExc_TypeError, "The adapter_flag property value must be a boolean.");
-    return -1;
-  }
-  obj->value.GetTensor()->set_adapter_flag(value == Py_True);
   return 0;
   HANDLE_MS_EXCEPTION_RET_FAIL_END
 }
@@ -422,8 +403,6 @@ static PyGetSetDef PyTensorPython_getseters[] = {
    "If current Tensor is an index value of another Tensor, set to another Tensor.", NULL},
   {"index_of_parent_", (getter)TensorPython_get_IndexOfParent, (setter)TensorPython_set_IndexOfParent,
    "index_of_parent_ will set to the index.", NULL},
-  {"adapter_flag", (getter)TensorPython_get_adapter_flag, (setter)TensorPython_set_adapter_flag, "Get the adapter flag",
-   NULL},
   {"init_flag", (getter)TensorPython_get_init_flag, (setter)TensorPython_set_init_flag, "Get the initialization flag",
    NULL},
   {"_dtype", (getter)TensorPython_get_dtype, (setter)TensorPython_set_dtypeObj, R"mydelimiter(

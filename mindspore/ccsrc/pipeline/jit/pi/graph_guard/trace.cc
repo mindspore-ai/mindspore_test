@@ -54,9 +54,6 @@ static const char kShapePrimName[] = "Shape";
 static const char kShape_Name[] = "shape_";
 static const char kShapeName[] = "shape";
 static const char kRankPrimName[] = "Rank";
-static const char kCastToMSTensor[] = "cast_to_ms_tensor";
-static const char kCastToAdapterTensor[] = "cast_to_adapter_tensor";
-static const std::vector<std::string> kCastFunc = {kCastToMSTensor, kCastToAdapterTensor};
 static const char kIsInstance[] = "isinstance";
 static const char kTensorName[] = "Tensor";
 static const char kDTypeAttrName[] = "dtype";
@@ -66,19 +63,13 @@ static const char kCodeName[] = "__code__";
 static const char kFuncName[] = "__func__";
 static const char kIsSeqValUnknown[] = "is_sequence_value_unknown";
 static const char kIsSeqShapeUnknown[] = "is_sequence_shape_unknown";
-static const char kMindTorchFlag[] = "mindtorch";
 static const char kTrainingFlag[] = "training";
 static const char kMindSporePackPrefix[] = "mindspore.";
-static const char kMindtorchPackPrefix[] = "mindtorch.";
 
 constexpr const char *kFuncWhiteListModuleName = "mindspore._extends.pijit.pijit_func_white_list";
 constexpr const char *kGuardFuncMapName = "_guard_func_map";
 
 static PyObject *RichCompare(PyObject *left, PyObject *right, int oparg);
-
-static bool IsCastFunc(std::string name) {
-  return std::find(kCastFunc.begin(), kCastFunc.end(), name) != kCastFunc.end();
-}
 
 static TracePtr OptimizeTrace(TracePtr trace, bool *update) {
   if (trace != nullptr) {
@@ -302,8 +293,7 @@ RootTrace::RootTrace(PyObject *pObj, TraceType tt, int index, std::string name, 
       break;
     }
   }
-  if (!is_const_ && (module_name.find(kMindSporePackPrefix) == 0 || module_name.find(kMindtorchPackPrefix) == 0 ||
-                     name.find(kCastToAdapterTensor) == 0 || name.find(kCastToMSTensor) == 0)) {
+  if (!is_const_ && module_name.find(kMindSporePackPrefix) == 0) {
     is_const_ = true;
   }
   if (curType_ == TraceType::Deref) {
@@ -1980,8 +1970,7 @@ TracePtr OpTrace::RemoveCastDuplicatePatternPass() {
   TracePtr next_op;
   TracePtr this_op;
   TracePtr ret_op;
-  if (opcode_ != CALL_FUNCTION || !IsCastFunc(name_) ||
-      (cast_op = CastTrace<OpTrace>(GetParam(kParamIndexTwo))) == nullptr || !IsCastFunc(cast_op->GetName()) ||
+  if (opcode_ != CALL_FUNCTION || (cast_op = CastTrace<OpTrace>(GetParam(kParamIndexTwo))) == nullptr ||
       (next_op = cast_op->GetParam(kParamIndexTwo)) == nullptr) {
     return nullptr;
   }
@@ -2016,9 +2005,8 @@ TracePtr OpTrace::RemovePrimOutIsTensorPass() {
   std::string module_name;
   global_op->GetParam(&idx, &name, &module_name);
   // isinstance(cast_to_mstensor(...) or Primitive) should be Tensor
-  if ((name == kTensorName) && ((call_op->GetName() == kCastToMSTensor) ||
-                                (CastTrace<ConstTrace>(param_op) != nullptr &&
-                                 py::isinstance<mindspore::PrimitivePyAdapter>(param_op->GetObject())))) {
+  if (name == kTensorName && CastTrace<ConstTrace>(param_op) != nullptr &&
+      py::isinstance<mindspore::PrimitivePyAdapter>(param_op->GetObject())) {
     is_const_ = true;
     if (obj_ == nullptr) {
       obj_ = Py_True;
@@ -2029,22 +2017,8 @@ TracePtr OpTrace::RemovePrimOutIsTensorPass() {
   return nullptr;
 }
 
-TracePtr OpTrace::RemoveCastPass() {
-  TracePtr next_op;
-  if (opcode_ == CALL_FUNCTION && name_ == kCastToMSTensor && (next_op = GetParam(kParamIndexTwo)) != nullptr) {
-    auto new_ret = next_op->Optimize();
-    if (new_ret != nullptr) {
-      return new_ret;
-    } else {
-      return next_op;
-    }
-  }
-  return nullptr;
-}
-
 TracePtr OpTrace::RemoveEmptyTensorPass() {
   OpTracePtr subscr_op;
-  OpTracePtr loadattr_op;
   ConstTracePtr const_op;
   ConstTracePtr const2_op;
   if (opcode_ != COMPARE_OP || params_.size() < kParamCountTwo) {
@@ -2061,8 +2035,7 @@ TracePtr OpTrace::RemoveEmptyTensorPass() {
   }
   if (subscr_op == nullptr || const_op == nullptr ||
       (const2_op = CastConstTrace(subscr_op->GetParam(kParamIndexTwo))) == nullptr ||
-      (loadattr_op = CastOpTrace(subscr_op->GetParam(kParamIndexOne), kShapeName)) == nullptr ||
-      CastOpTrace(loadattr_op->GetParam(kParamIndexOne), kCastToAdapterTensor) == nullptr) {
+      CastOpTrace(subscr_op->GetParam(kParamIndexOne), kShapeName) == nullptr) {
     return nullptr;
   }
   // make judgement shape[0] == 0 as const
@@ -2145,19 +2118,6 @@ void OpTrace::JudgeCodeChangePass() {
   }
   if (params_[kParamIndexOne]->IsConst()) {
     EnableRelax();
-  } else {
-    auto p1 = CastOpTrace(params_[kParamIndexOne], LOAD_ATTR);
-    if (p1 == nullptr) {
-      return;
-    }
-    auto p2 = p1->GetParam(kParamIndexOne)->GetObject();
-    std::string type_name;
-    if (p2 != nullptr) {
-      type_name = std::string(py::str(reinterpret_cast<PyObject *>(Py_TYPE(p2))));
-    }
-    if (type_name.find(kMindTorchFlag) != std::string::npos) {
-      EnableRelax();
-    }
   }
 }
 
@@ -2323,8 +2283,7 @@ void OpTrace::CheckSpecialize() {
     }
   }
   if (opcode_ == CALL_FUNCTION) {
-    if ((name_ == kShape_Name || name_ == kCastToAdapterTensor || name_ == kCastToMSTensor) &&
-        !any_params_specialized) {
+    if (name_ == kShape_Name && !any_params_specialized) {
       is_specialized_ = true;
     } else if (params_.size() > kParamCountOne &&
                py::isinstance<mindspore::PrimitivePyAdapter>(params_[kParamIndexOne]->GetObject())) {
@@ -2350,7 +2309,7 @@ TracePtr OpTrace::Optimize() {
   }
   TracePtr ret;
   if ((ret = RemoveCastDuplicatePatternPass()) != nullptr || (ret = RemoveEmptyTensorPass()) != nullptr ||
-      (ret = RemovePrimOutIsTensorPass()) != nullptr || (ret = RemoveCastPass()) != nullptr) {
+      (ret = RemovePrimOutIsTensorPass()) != nullptr) {
     return ret;
   }
   if (relax_limit_ > 0) {

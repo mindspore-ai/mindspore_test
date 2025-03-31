@@ -171,17 +171,9 @@ void SyncStubTensor(const py::handle &obj) {
   tensor->data_sync();
 }
 
-bool IsSpecialCallableObject(const py::object &obj) {
-  static mindspore::HashSet<std::string> func_names{"cast_to_adapter_tensor", "cast_to_ms_tensor"};
-  if (!py::hasattr(obj, "__name__")) {
-    return false;
-  }
-  return func_names.find(py::cast<std::string>(obj.attr("__name__"))) != func_names.end();
-}
-
 bool IsObjectCallable(const py::object &obj) {
   static constexpr auto check_list = {IsPrimitiveObject, IsPrimitiveFunctionalObject, IsMsClassObject,
-                                      IsMetaFuncGraphObject, IsSpecialCallableObject};
+                                      IsMetaFuncGraphObject};
   return std::any_of(check_list.begin(), check_list.end(), [&obj](const auto &func) { return func(obj); });
 }
 

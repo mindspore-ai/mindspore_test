@@ -126,19 +126,6 @@ T CheckAbstractElementsSize(const AbstractBasePtr &abs_value, size_t value_size)
   return abs;
 }
 
-py::object SetAdaptedAttrToTensor(const py::object &tensor, const AbstractBasePtr &abs) {
-  if (abs == nullptr || !abs->isa<abstract::AbstractTensor>()) {
-    return tensor;
-  }
-  auto tensor_abs = abs->cast<abstract::AbstractTensorPtr>();
-  if (tensor_abs->is_adapter()) {
-    py::setattr(tensor, "adapter_flag", py::bool_(true));
-  } else {
-    py::setattr(tensor, "adapter_flag", py::bool_(false));
-  }
-  return tensor;
-}
-
 py::object CheckAndConvertToScalar(const tensor::BaseTensorPtr &tensor, const AbstractBasePtr &abs) {
   if (abs == nullptr || !abs->isa<abstract::AbstractScalar>()) {
     return py::none();
@@ -201,7 +188,7 @@ py::object TensorToPyData(const tensor::BaseTensorPtr &tensor, const AbstractBas
     return scalar_obj;
   }
   py::object py_tensor_obj = PackTensorToPyObject(tensor);
-  return SetAdaptedAttrToTensor(py_tensor_obj, abs);
+  return py_tensor_obj;
 }
 
 py::object ScalarPtrToPyData(const ScalarPtr &value) {
@@ -778,7 +765,6 @@ bool IsGraphOutputValueNodeOrParameter(const AnfNodePtr &output, const py::tuple
       auto tensorpy = tensor::GetTensorPyFromValue(param->default_param_raw());
       *ret_val = tensorpy;
     }
-    *ret_val = SetAdaptedAttrToTensor(*ret_val, output->abstract());
     auto abs = output->abstract();
     MS_EXCEPTION_IF_NULL(abs);
     if (abs->isa<abstract::AbstractTensor>()) {

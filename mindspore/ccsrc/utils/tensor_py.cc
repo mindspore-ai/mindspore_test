@@ -199,10 +199,6 @@ bool TensorPy::IsInit() const { return GetTensor()->is_init(); }
 
 void TensorPy::SetInitFlag(bool flag) { GetTensor()->set_init_flag(flag); }
 
-bool TensorPy::IsAdapter() const { return GetTensor()->is_adapter(); }
-
-void TensorPy::SetAdapterFlag(bool flag) { GetTensor()->set_adapter_flag(flag); }
-
 void TensorPy::SetShape(const ShapeVector &shape) { GetBaseTensor()->set_shape(shape); }
 
 bool TensorPy::IsPersistentData() const { return GetTensor()->is_persistent_data(); }

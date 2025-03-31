@@ -178,7 +178,6 @@ Tensor &Tensor::operator=(const Tensor &tensor) {
   pin_mem_register_ = tensor.pin_mem_register_;
   compression_type_ = tensor.compression_type_;
   tensor_name_ = tensor.tensor_name_;
-  adapter_flag_ = tensor.adapter_flag_;
   cast_dtype_ = tensor.cast_dtype_;
   graph_output_ = tensor.graph_output_;
   quant_params_ = tensor.quant_params_;
@@ -266,13 +265,7 @@ Tensor &Tensor::AssignValue(const Tensor &tensor) {
   return *this;
 }
 
-abstract::AbstractBasePtr Tensor::ToAbstract() {
-  auto abs_tensor = BaseTensor::ToAbstract()->cast<abstract::AbstractTensorPtr>();
-  if (is_adapter()) {
-    abs_tensor->set_is_adapter(true);
-  }
-  return abs_tensor;
-}
+abstract::AbstractBasePtr Tensor::ToAbstract() { return BaseTensor::ToAbstract()->cast<abstract::AbstractTensorPtr>(); }
 
 void Tensor::data_sync(bool need_wait) const { BaseTensor::data_sync(need_wait); }
 

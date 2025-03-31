@@ -1717,12 +1717,6 @@ AnfNodePtr SetTypeForGetAttr(const AnfNodePtr &getattr_node, const AbstractBaseP
     auto shape = value_abs->BuildShape();
     fallback::SetRealType<AnfNode, Type>(getattr_node, type);
     fallback::SetRealShape<AnfNode, abstract::BaseShape>(getattr_node, shape);
-    auto abs_tensor = value_abs->cast_ptr<abstract::AbstractTensor>();
-    if (abs_tensor != nullptr) {
-      if (abs_tensor != nullptr && abs_tensor->is_adapter()) {
-        getattr_node->set_user_data<bool>(fallback::kIsAdapter, std::make_shared<bool>(true));
-      }
-    }
   }
   return getattr_node;
 }
@@ -1857,10 +1851,6 @@ EvalResultPtr InterpretSetAttrNode(const AbstractBasePtrList &args_abs_list, con
     auto shape = value_abs->BuildShape();
     fallback::SetRealType<AnfNode, Type>(setattr_node, type);
     fallback::SetRealShape<AnfNode, abstract::BaseShape>(setattr_node, shape);
-    auto abs_tensor = value_abs->cast_ptr<abstract::AbstractTensor>();
-    if (abs_tensor != nullptr && abs_tensor->is_adapter()) {
-      setattr_node->set_user_data<bool>(fallback::kIsAdapter, std::make_shared<bool>(true));
-    }
   }
 
   auto eng = out_conf->engine();
@@ -2157,53 +2147,6 @@ EvalResultPtr GetEvaluatedValueForPrimitiveAttr(const AbstractBasePtrList &args_
     return nullptr;
   }
   return std::make_shared<EvalResult>(value->ToAbstract(), nullptr);
-}
-
-EvalResultPtr GetEvaluatedValueForAdapterTensorAttrOrMethod(const AnalysisEnginePtr &engine,
-                                                            const AbstractBasePtr &data_args,
-                                                            const AbstractBasePtr &item_args,
-                                                            const ConfigPtr &data_conf,
-                                                            const AnfNodeConfigPtr &out_conf) {
-  MS_EXCEPTION_IF_NULL(data_args);
-  MS_EXCEPTION_IF_NULL(item_args);
-  // Check whether it is AdapterTensor or AdapterParameter.
-  auto abs = data_args->cast_ptr<abstract::AbstractTensor>();
-  if (abs == nullptr || !abs->is_adapter()) {
-    return nullptr;
-  }
-
-  // Get the name of attr/method.
-  ValuePtr item_value = item_args->BuildValue();
-  MS_EXCEPTION_IF_NULL(item_value);
-  if (!item_value->isa<StringImm>()) {
-    MS_LOG(EXCEPTION) << "Expect a string, but got: " << item_value->ToString();
-  }
-  std::string item_name = item_value->cast_ptr<StringImm>()->value();
-
-  constexpr size_t attr_index = 0;
-  constexpr size_t flag_index = 1;
-  constexpr size_t info_required_size = 2;
-  py::module mod = python_adapter::GetPyModule(parse::PYTHON_MOD_PARSE_MODULE);
-  py::tuple attr_info = python_adapter::CallPyModFn(mod, parse::PYTHON_MOD_GET_ADAPTER_TENSOR_ATTR, py::str(item_name));
-  if (attr_info.size() != info_required_size) {
-    MS_EXCEPTION(NameError) << "attr info size should be 2, but got " << attr_info.size();
-  }
-  // If func is none, it means there is no such attr or method.
-  py::object func = attr_info[attr_index];
-  if (py::isinstance<py::none>(func)) {
-    return nullptr;
-  }
-  ValuePtr converted_value = nullptr;
-  bool success = parse::ConvertData(func, &converted_value);
-  if (!success || converted_value == nullptr || !converted_value->isa<FuncGraph>()) {
-    return nullptr;
-  }
-  AddToManager(engine, converted_value->cast<FuncGraphPtr>());
-
-  // Check whether it is an attribute or a method.
-  bool is_attr = attr_info[flag_index].cast<bool>();
-  REQUIRE_TYPE require_type = is_attr ? REQUIRE_TYPE::ATTR : REQUIRE_TYPE::METHOD;
-  return StaticGetterInferred(converted_value, data_conf, out_conf, require_type);
 }
 
 EvalResultPtr GetEvaluatedValueForFunctionalMethod(const AnalysisEnginePtr &engine, const ValuePtr &method_value,
@@ -2539,11 +2482,6 @@ EvalResultPtr StaticGetter(const AnalysisEnginePtr &engine, const AbstractBasePt
     return res;
   }
 
-  // Get attribute or method of AdapterTensor object.
-  res = GetEvaluatedValueForAdapterTensorAttrOrMethod(engine, data_args, item_args, data_conf, out_conf);
-  if (res != nullptr) {
-    return res;
-  }
   // Try to search method map, if not found, the data_type should be External type.
   TypePtr data_type = data_args->BuildType();
   MS_EXCEPTION_IF_NULL(data_type);
@@ -3414,10 +3352,6 @@ AbstractBasePtr CreateRealAbstract(const TypePtr &preset_type, const BaseShapePt
     MS_EXCEPTION_IF_NULL(tensor_type);
     auto element = std::make_shared<abstract::AbstractScalar>(kValueAny, tensor_type->element());
     res = std::make_shared<abstract::AbstractTensor>(element, shape);
-    auto abs_tensor = res->cast_ptr<abstract::AbstractTensor>();
-    if (node->has_user_data(fallback::kIsAdapter)) {
-      abs_tensor->set_is_adapter(true);
-    }
   } else {
     const auto any_abstract = std::make_shared<AbstractAny>();
     // If no annotation dtype, try to use unique tensor dtype.
@@ -3504,11 +3438,6 @@ EvalResultPtr PyExecuteEvaluator::EvalPrim(const AnalysisEnginePtr &, const Abst
   if (fallback::HasRealShape(node)) {
     const auto &real_shape = fallback::GetRealShape<AnfNode, BaseShape>(node);
     fallback::SetRealShape<AbstractBase, BaseShape>(res, real_shape);
-  }
-  if (res->isa<AbstractTensor>() && node->has_user_data(fallback::kAdapterTensor) &&
-      *node->user_data<bool>(fallback::kAdapterTensor)) {
-    auto res_tensor = res->cast<AbstractTensorPtr>();
-    res_tensor->set_is_adapter(true);
   }
   auto infer_result = std::make_shared<EvalResult>(res, std::make_shared<AttrValueMap>());
   evaluator_cache_mgr_->SetValue(args_abs_list, infer_result);

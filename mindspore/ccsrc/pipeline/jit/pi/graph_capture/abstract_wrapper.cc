@@ -34,24 +34,15 @@
 
 namespace mindspore {
 namespace pijit {
-constexpr auto kAdapterFlag = "adapter_flag";
 constexpr auto kTensorModule = "mindspore.common";
-constexpr auto kInnerOpsModule = "mindspore.ops.operations._inner_ops";
 
 namespace {
 py::object ConvertCppTensorToPyTensor(const py::object &cpp_tensor) {
   if (cpp_tensor.ptr() == nullptr || !tensor::IsTensorPy(cpp_tensor)) {
     return py::object();
   }
-  bool is_adapter_tensor =
-    py::hasattr(cpp_tensor, kAdapterFlag) && py::cast<bool>(py::getattr(cpp_tensor, kAdapterFlag));
   py::module mod = python_adapter::GetPyModule(kTensorModule);
-  auto py_tensor = python_adapter::CallPyModFn(mod, "Tensor", cpp_tensor, py::none(), py::none(), py::none(), true);
-  if (is_adapter_tensor) {
-    mod = python_adapter::GetPyModule(kInnerOpsModule);
-    py_tensor = python_adapter::CallPyModFn(mod, "convert_to_adapter_tensor", py_tensor);
-  }
-  return py_tensor;
+  return python_adapter::CallPyModFn(mod, "Tensor", cpp_tensor, py::none(), py::none(), py::none(), true);
 }
 
 py::object ConvertToPyTensorOrParameter(const py::object &cpp_tensor) {

@@ -62,7 +62,6 @@
 #include "frontend/optimizer/irpass/switch_or_switch_layer_defer_inline.h"
 #include "frontend/optimizer/irpass/call_graph_tuple_transform.h"
 #include "frontend/optimizer/irpass/recompute_prepare.h"
-#include "frontend/optimizer/irpass/convert_tensor_eliminate.h"
 #include "frontend/optimizer/irpass/recompute.h"
 #include "frontend/optimizer/irpass/grad_partial_transform.h"
 #include "frontend/optimizer/irpass/symbol_engine_optimizer.h"
@@ -176,11 +175,6 @@ OptimizeIRPassLib::OptimizeIRPassLib() {
   depend_value_elim_ = MakeSubstitution(std::make_shared<DependValueElim>(), "depend_value_elim", prim::kPrimDepend);
   all_reduce_const_elim_ =
     MakeSubstitution(std::make_shared<AllReduceConstElim>(), "reduce_all_const_elim", prim::kPrimAllReduce);
-  convert_tensor_eliminate_ = MakeSubstitution(std::make_shared<ConvertTensorEliminate>(), "convert_tensor_eliminate",
-                                               {prim::kPrimConvertToAdapterTensor, prim::kPrimConvertToMsTensor});
-  convert_tensor_all_eliminate_ =
-    MakeSubstitution(std::make_shared<ConvertTensorAllEliminate>(), "convert_tensor_all_eliminate",
-                     {prim::kPrimConvertToAdapterTensor, prim::kPrimConvertToMsTensor});
 
   // Environ Item Eliminate
   environ_get_eliminate_ =

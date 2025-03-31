@@ -50,7 +50,6 @@ from mindspore import _checkparam as Validator
 from mindspore._checkparam import is_stub_tensor
 from mindspore.common._utils import is_shape_unknown
 from mindspore.common.mutable import mutable, _check_element_type
-from mindspore.common._register_for_adapter import ms_adapter_registry
 from mindspore.common.auto_dynamic_shape import get_auto_dynamic_shape_args, update_auto_dynamic_shape_phase, \
     get_auto_dynamic_shape_args_with_check_input_signature, update_auto_dynamic_shape_phase_with_check_input_signature
 from mindspore.common._pijit_context import PIJitCaptureContext
@@ -121,14 +120,6 @@ def _check_recompile(obj, compile_args, kwargs, full_function_name, create_time,
     else:
         function_phases[full_function_name] = set()
     function_phases[full_function_name].add(create_time)
-
-
-def _ms_adapter_tensor_as_parameter_output(data):
-    """Check whether the data is an output from a parameter which is a ms_adapter tensor.
-       Pylint: disable=unidiomatic-typecheck.
-    """
-    return ms_adapter_registry.is_registered and isinstance(data, ms_adapter_registry.tensor) \
-           and hasattr(data, "__ms_parameter_output__") and getattr(data, "__ms_parameter_output__")
 
 
 def _convert_python_data(data):
@@ -1349,28 +1340,6 @@ def jit_class(cls):
         raise TypeError(f"Decorator jit_class is used for user-defined classes and cannot be used for nn.Cell: {cls}.")
     setattr(cls, '__ms_class__', True)
     return cls
-
-
-def set_adapter_config(config):
-    """
-    Register configuration information for MSAdapter.
-
-    Args:
-        config (dict): Configuration information.
-    """
-    if not isinstance(config, dict):
-        raise TypeError(f"The input argument of 'set_adapter_config' should be a dict, but got {config}.")
-    for key, value in config.items():
-        if key == "Tensor":
-            ms_adapter_registry.register_tensor(value)
-        elif key == "Parameter":
-            ms_adapter_registry.register_parameter(value)
-        elif key == "convert_object_map":
-            ms_adapter_registry.register_convert_map(value)
-        elif key == "convert_adapter_tensor_map":
-            ms_adapter_registry.register_convert_adapter_tensor_map(value)
-        else:
-            raise ValueError(f"Unsupported key in adapter config: {key}")
 
 
 def _function_forbid_reuse(func):

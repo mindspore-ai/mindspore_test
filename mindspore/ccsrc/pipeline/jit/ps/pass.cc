@@ -488,7 +488,6 @@ opt::OptPassConfig GetOptPassA1(const opt::irpass::OptimizeIRPassLib &irpass) {
     irpass.redundant_stopgrad_eliminater_,
     irpass.partial_eliminate_,
     irpass.replace_applicator_,
-    irpass.convert_tensor_eliminate_,
 
     // Miscellaneous
     irpass.list_to_tuple_eliminator_,
@@ -682,7 +681,6 @@ opt::OptPassConfig GetJitOptPassA1(const opt::irpass::OptimizeIRPassLib &irpass)
     irpass.redundant_stopgrad_eliminater_,
     irpass.partial_eliminate_,
     irpass.replace_applicator_,
-    irpass.convert_tensor_eliminate_,
 
     // Miscellaneous
     irpass.list_to_tuple_eliminator_,
@@ -1630,13 +1628,9 @@ bool OptAfterJitGradPass(const ResourcePtr &resource) {
   opt::OptPassConfig mutable_op_eliminate = opt::OptPassConfig({
     irpass.mutable_op_eliminate_,
   });
-  opt::OptPassConfig convert_tensor_op_eliminate = opt::OptPassConfig({
-    irpass.convert_tensor_all_eliminate_,
-  });
   OptPassGroupMap map({
     {"ad_related_special_op_eliminate", ad_related_special_op_eliminate},
     {"mutable_op_eliminate", mutable_op_eliminate},
-    {"convert_tensor_op_eliminate", convert_tensor_op_eliminate},
   });
   if (pynative::GradState::Get().RequiresGrad()) {
     opt::OptPassConfig inline_after_jit_grad =

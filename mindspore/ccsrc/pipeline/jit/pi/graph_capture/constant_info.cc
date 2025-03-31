@@ -333,14 +333,6 @@ void MakeConstantInfoOfPrimIsShapeUnKnown(ValueNode *node) {
   node->SetConstantValue(true);
 }
 
-static void MakeConvertToMsTensorInfo(ValueNode *node) {
-  const auto &cnst = node->input(1)->GetConstantInfo();
-  if (cnst == nullptr) {
-    return;
-  }
-  *node->MakeConstantInfo() = *cnst;
-}
-
 static void MakeReshapeInfo(ValueNode *node) {
   const auto &shape_cnst = node->input(2)->GetConstantInfo();
   if (shape_cnst == nullptr || shape_cnst->value().ptr() == nullptr) {
@@ -366,8 +358,6 @@ static const std::map<std::string, void (*)(ValueNode *)> &GetConstantPrimitiveM
     {"IsShapeUnKnown", MakeConstantInfoOfPrimIsShapeUnKnown},
     {"Shape", MakeShapeInfoOfTensor},
     {"Reshape", MakeReshapeInfo},
-    {"ConvertToMsTensor", MakeConvertToMsTensorInfo},
-    {"ConvertToAdapterTensor", MakeConvertToMsTensorInfo},
   };
   return cnst_prim;
 }

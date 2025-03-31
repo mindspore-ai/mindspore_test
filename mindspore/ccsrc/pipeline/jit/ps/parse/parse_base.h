@@ -79,9 +79,6 @@ const char PYTHON_MOD_GET_CLASS_INSTANCE_TYPE[] = "get_class_instance_type";
 const char PYTHON_MOD_CREATE_INSTANCE[] = "create_instance";
 const char PYTHON_MOD_IS_SUPPORTED_CREATE_INSTANCE_TYPE[] = "is_supported_create_instance_type";
 const char PYTHON_MOD_IS_CLASS_TYPE[] = "is_class_type";
-const char PYTHON_MOD_GET_ADAPTER_TENSOR_ATTR[] = "get_adapter_tensor_attr";
-const char PYTHON_MOD_IS_ADAPTER_TENSOR_CLASS[] = "is_adapter_tensor_class";
-const char PYTHON_MOD_IS_ADAPTER_PARAMETER_CLASS[] = "is_adapter_parameter_class";
 const char PYTHON_MOD_GET_MS_CLASS_NAME[] = "get_ms_class_name";
 const char PYTHON_MOD_GET_MODULE_NAMESPACE[] = "get_module_namespace";
 const char PYTHON_MOD_GET_MEMBER_NAMESPACE_SYMBOL[] = "get_class_member_namespace_symbol";
@@ -234,11 +231,10 @@ enum ResolveType : int64_t {
 
 // Define the class instance detail type When the type is RESOLVE_TYPE_CLASS_INSTANCE.
 enum ClassInstanceType {
-  CLASS_INSTANCE_TYPE_CELL = 0,            // Class instance type is Cell.
-  CLASS_INSTANCE_TYPE_PRIMITIVE = 1,       // Class instance type is Primitive.
-  CLASS_INSTANCE_TYPE_NUMPY_ARRAY = 2,     // Class instance type is Numpy Array.
-  CLASS_INSTANCE_TYPE_TENSOR = 3,          // Class instance type is Tensor
-  CLASS_INSTANCE_TYPE_ADAPTER_TENSOR = 4,  // Class instance type is Adapter Tensor
+  CLASS_INSTANCE_TYPE_CELL = 0,         // Class instance type is Cell.
+  CLASS_INSTANCE_TYPE_PRIMITIVE = 1,    // Class instance type is Primitive.
+  CLASS_INSTANCE_TYPE_NUMPY_ARRAY = 2,  // Class instance type is Numpy Array.
+  CLASS_INSTANCE_TYPE_TENSOR = 3,       // Class instance type is Tensor
   CLASS_INSTANCE_TYPE_INVALID = 0xFF
 };
 

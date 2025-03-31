@@ -42,11 +42,6 @@ namespace mindspore {
 namespace pijit {
 namespace {
 constexpr auto kPiJitPyObjKey = "pi_jit_py_obj";
-constexpr auto kGradFuncPyObject = "grad_func_py_obj";
-constexpr auto kGradNetInputs = "grad_net_inputs";
-constexpr auto kTensorModule = "mindspore.common";
-constexpr auto kAdapterFlag = "adapter_flag";
-constexpr auto kInnerOpsModule = "mindspore.ops.operations._inner_ops";
 constexpr auto kCandidateIsolatedFlag = "candidate_isolated";
 
 bool Mutable(const py::object &obj, const ValuePtr &value = nullptr) {
@@ -610,11 +605,6 @@ AbstractWrapperPtr FuncGraphBuilder::AddNode(const py::object &callable_obj,
     MS_LOG(INFO) << "Convert python object " << py::str(callable_obj) << " to value failed.";
     return nullptr;
   }
-
-  if (IsSpecialCallableObject(callable_obj)) {
-    return TryToAddNode(callable_value, inputs_abstract_wrapper);
-  }
-
   return AddNode(callable_value, inputs_abstract_wrapper);
 }
 

@@ -1542,12 +1542,7 @@ AbstractBasePtr PyObjectToAbstract(const py::object &arg) {
   if (!success) {
     MS_LOG(EXCEPTION) << "Fail to convert the object: " << py::str(arg);
   }
-  auto res = GraphUtils::ArgsToAbstract(arg, converted, false);
-  if (res->isa<mindspore::abstract::AbstractTensor>()) {
-    bool check = CheckAdapterTensor(arg);
-    dyn_cast_ptr<mindspore::abstract::AbstractTensor>(res)->set_is_adapter(check);
-  }
-  return res;
+  return GraphUtils::ArgsToAbstract(arg, converted, false);
 }
 
 bool TensorInferBinarySupport(int opcode) {
@@ -1622,12 +1617,7 @@ py::object AbstractTensor::Binary(int op, const py::object &l_tensor, const py::
   auto left = PyObjectToAbstract(l_tensor);
   auto right = PyObjectToAbstract(r_tensor);
   auto res = TensorInferBinary(left, right, op);
-  if (CheckAdapterTensor(l_tensor)) {
-    res = ConvertToAdapterTensor(res);
-  } else {
-    res = ConvertToMsTensor(res);
-  }
-  return res;
+  return ConvertToMsTensor(res);
 }
 
 AObject *AbstractTensor::Binary(AObject *other, int op) {
@@ -1663,11 +1653,7 @@ AObject *AbstractTensor::Binary(AObject *other, int op) {
     right = PyObjectToAbstract(other->GetPyObject());
   }
   auto res = TensorInferBinary(left, right, op);
-  if (CheckAdapterTensor(value_)) {
-    res = ConvertToAdapterTensor(res);
-  } else {
-    res = ConvertToMsTensor(res);
-  }
+  res = ConvertToMsTensor(res);
   return Convert(res);
 }
 
@@ -1683,11 +1669,7 @@ AObject *AbstractTensor::GetItem(AObject *key) {
     return MakeAObject(kTypeAnyValue);
   }
   py::object res = py::reinterpret_steal<py::object>(t);
-  if (CheckAdapterTensor(value_)) {
-    res = ConvertToAdapterTensor(res);
-  } else {
-    res = ConvertToMsTensor(res);
-  }
+  res = ConvertToMsTensor(res);
   auto vobj = Convert(res);
   vobj->AddUser(this);
   return vobj;
@@ -1748,7 +1730,6 @@ static const std::unordered_map<std::string, AObject::Type> tensor_attr_type = {
   {"_nbytes", AObject::kTypeInt},
   {"_strides", AObject::kTypeTuple},
   {"init_flag", AObject::kTypeBool},
-  {"adapter_flag", AObject::kTypeBool},
   {"param_info", AObject::kTypeAnyValue},
 };
 

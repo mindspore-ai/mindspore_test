@@ -234,7 +234,6 @@ class OpTrace : public Trace {
   virtual TracePtr RemoveCastDuplicatePatternPass();
   virtual TracePtr RemovePrimOutIsTensorPass();
   virtual TracePtr RemoveEmptyTensorPass();
-  virtual TracePtr RemoveCastPass();
   virtual void JudgeDTypeChangePass();
   virtual void JudgeDTypeScopePass();
   virtual void JudgeCodeChangePass();
