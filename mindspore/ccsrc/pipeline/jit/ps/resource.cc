@@ -295,6 +295,7 @@ BuiltInTypeMap &GetMethodMap() {
        {"fill_diagonal", std::string("fill_diagonal")},                    // P.FillDiagonal()
        {"uniform", std::string("uniform")},                                // P.UniformExt()
        {"uniform_", std::string("uniform_")},                              // inplace_uniform_op()
+       {"exponential_", std::string("exponential_")},                      // inplace_exponential_op()
        {"ptp", std::string("ptp")},                                        // P.reduce_max() - P.reduce_min()
        {"clamp", std::string("clamp")},                                    // clamp()
        {"clamp_", std::string("clamp_")},                                  // clamp_()
