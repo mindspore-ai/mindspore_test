@@ -493,7 +493,7 @@ void DataPrepareActor::UpdateDeviceAddressForDataNode(const AnfNodePtr &input_no
   if (tensor_address == device_address) {
     if (is_kv_cache) {
       MS_LOG(EXCEPTION) << "The tensor address can not set into input node for kv cache: "
-                        << input_node->fullname_with_scope();
+                        << input_node->fullname_with_scope() << " address:" << tensor_address->PrintInfo();
     }
     tensor_address->SetNodeIndex(input_node, 0);
     tensor_address->set_original_ref_count(SIZE_MAX);
