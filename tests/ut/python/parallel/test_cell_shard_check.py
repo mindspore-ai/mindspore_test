@@ -104,7 +104,7 @@ def test_in_strategy_format_check():
     set_context(mode=context.PYNATIVE_MODE)
     in_strategy = ([8, 1], (1, 1))
     out_strategy = None
-    error_log = "The 'in_strategy' should be a tuple(tuple(int)) or tuple(mindspore.Layout), but got list"
+    error_log = "The 'in_strategy' should be a tuple(tuple(int)) or tuple(mindspore.parallel.Layout), but got list"
     with pytest.raises(Exception) as err:
         net = NetMul()
         net.shard(in_strategy=in_strategy, out_strategy=out_strategy)

@@ -241,12 +241,12 @@ def test_reshard_with_tuple_as_input():
     """
     Feature: Reshard input must be type Layout.
     Description: Test reshard with tuple as input.
-    Expectation: Throw exception includes "Reshard only support type mindspore.Layout".
+    Expectation: Throw exception includes "Reshard only support type mindspore.parallel.Layout".
     """
     net, x, _ = before_test("test_reshard_with_tuple_as_input")
     with pytest.raises(TypeError) as err:
         compile_net(net, x, ((2, 1),), layout2)
-    assert "Reshard only support type mindspore.Layout" in str(err.value)
+    assert "Reshard only support type mindspore.parallel.Layout" in str(err.value)
 
 
 def test_parameter_plan_with_strategy_4x1_pynative():
