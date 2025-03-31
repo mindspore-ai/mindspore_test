@@ -864,7 +864,7 @@ def normal(shape, mean, stddev, seed=None):
         shape (tuple): The shape of returned tensor.
         mean (Union[Tensor, int, float]): The mean of the normal distribution for the returned tensor.
         stddev (Union[Tensor, int, float]): The standard deviation of the normal distribution for the returned tensor.
-        seed (int): Random seed. Default: ``None`` , which is equivalent to 0.
+        seed (int, optional): Random seed. Default: ``None`` , which is equivalent to 0.
 
     Returns:
         Tensor

@@ -49,7 +49,6 @@ Wrapper Layer
     mindspore.nn.ForwardValueAndGrad
     mindspore.nn.GetNextSingleOp
     mindspore.nn.GradAccumulationCell
-    mindspore.nn.MicroBatchInterleaved
     mindspore.nn.ParameterUpdate
     mindspore.nn.PipelineCell
     mindspore.nn.PipelineGradReducer

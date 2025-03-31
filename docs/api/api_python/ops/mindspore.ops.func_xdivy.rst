@@ -3,7 +3,7 @@
 
 .. py:function:: mindspore.ops.xdivy(x, y)
 
-     `x` 和 `y` 逐元素相除。
+    `x` 和 `y` 逐元素相除。
 
     .. note::
         - 支持广播，支持隐式类型转换、类型提升。

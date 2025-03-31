@@ -14,8 +14,8 @@ mul:
             - Support implicit type conversion and type promotion.
     
         Args:
-            input (Union[Tensor, Number, bool]): The first input.
-            other (Union[Tensor, Number, bool]): The second input.
+            input (Union[Tensor, number.Number, bool]): The first input.
+            other (Union[Tensor, number.Number, bool]): The second input.
     
         Returns:
             Tensor

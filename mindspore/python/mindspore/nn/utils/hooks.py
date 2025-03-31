@@ -28,9 +28,9 @@ class RemovableHandle:
         hooks_dict (dict): A dictionary of hooks, indexed by hook `id`.
 
     Keyword Args:
-        extra_dict (Union[dict, List[dict]]): An additional dictionary or list of
+        extra_dict (Union[dict, List[dict]], optional): An additional dictionary or list of
             dictionaries whose keys will be deleted when the same keys are
-            removed from `hooks_dict`.
+            removed from `hooks_dict`. Default ``None``.
     """
 
     id: int
