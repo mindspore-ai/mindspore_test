@@ -30,6 +30,8 @@ tensor::BaseTensorPtr InplaceGroupedMatmulAddAscendCustomize(const std::shared_p
                                                              const BaseTensorPtr &x, const BaseTensorPtr &weight,
                                                              const BaseTensorPtr &group_list,
                                                              const BaseTensorPtr &out) {
+  MS_EXCEPTION(RuntimeError)
+    << "For now, the api of 'InplaceGroupedMatmulAdd' has not been supported on pynative mode.";
   return op->output(0);
 }
 }  // namespace pyboost
