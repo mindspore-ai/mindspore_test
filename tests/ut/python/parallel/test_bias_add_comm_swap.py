@@ -79,7 +79,7 @@ def test_bias_add_comm_swap():
 
     context.set_auto_parallel_context(
         device_num=8, global_rank=0)
-    context.set_context(save_graphs=True, save_graphs_path="./")
+    context.set_context(save_graphs=True, save_graphs_path="./test_bias_add_comm_swap")
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
     if os.path.exists("./speed_up.json"):
         os.remove("./speed_up.json")
@@ -97,12 +97,12 @@ def test_bias_add_comm_swap():
     x = Tensor(np.ones([128, 32]), dtype=ms.float16)
     w = Tensor(np.ones([32, 64]), dtype=ms.float16)
     b = Tensor(np.ones([64]), dtype=ms.float16)
-    if os.path.exists("./rank_0"):
-        shutil.rmtree("./rank_0")
+    if os.path.exists("./test_bias_add_comm_swap"):
+        shutil.rmtree("./test_bias_add_comm_swap")
     # compile
     compile_net(net, x, w, b)
 
-    file = "./rank_0/*validate*.ir"
+    file = "./test_bias_add_comm_swap/rank_0/*validate*.ir"
     prim_name = "ReduceScatter"
     para = "bias_add_comm_swap"
     output = subprocess.check_output(
@@ -110,8 +110,8 @@ def test_bias_add_comm_swap():
         shell=True)
     out = str(output, 'utf-8').strip()
     assert out == "1"
-    if os.path.exists("./rank_0"):
-        shutil.rmtree("./rank_0")
+    if os.path.exists("./test_bias_add_comm_swap"):
+        shutil.rmtree("./test_bias_add_comm_swap")
     if os.path.exists("./speed_up.json"):
         os.remove("./speed_up.json")
 
