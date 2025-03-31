@@ -1248,7 +1248,7 @@ class AdamOffload(Optimizer):
         self.opt = P.AdamNoUpdateParam(use_locking, use_nesterov)
         self.opt.set_device("CPU")
 
-    @jit
+    @jit(backend="ms_backend")
     def construct(self, gradients):
         params = self._parameters
         moment1 = self.moment1

@@ -739,85 +739,6 @@ std::string GetUniqueNodeId(const AnfNodePtr &node, bool must_have_unique_name =
   return name != nullptr ? *name : "node is nullptr";
 }
 
-void TensorValueToVector(const ValuePtr &value, VectorRef *outputs) {
-  MS_EXCEPTION_IF_NULL(value);
-  MS_EXCEPTION_IF_NULL(outputs);
-  if (value->isa<ValueSequence>()) {
-    auto value_tuple = value->cast<ValueSequencePtr>();
-    MS_EXCEPTION_IF_NULL(value_tuple);
-    for (size_t i = 0; i < value_tuple->size(); ++i) {
-      ValuePtr element = value_tuple->value()[i];
-      MS_EXCEPTION_IF_NULL(element);
-      if (element->isa<tensor::Tensor>()) {
-        auto tensor = element->cast<tensor::TensorPtr>();
-        MS_EXCEPTION_IF_NULL(tensor);
-        outputs->emplace_back(tensor);
-      } else if (element->isa<Scalar>()) {
-        auto scalar = element->cast<ScalarPtr>();
-        MS_EXCEPTION_IF_NULL(scalar);
-        outputs->emplace_back(ScalarToTensor(scalar));
-      } else if (element->isa<ValueSequence>()) {
-        VectorRef tuple;
-        TensorValueToVector(element, &tuple);
-        outputs->emplace_back(tuple);
-      }
-    }
-  } else if (value->isa<tensor::Tensor>()) {
-    auto tensor = value->cast<tensor::TensorPtr>();
-    MS_EXCEPTION_IF_NULL(tensor);
-    outputs->emplace_back(tensor);
-  } else if (value->isa<Scalar>()) {
-    auto scalar = value->cast<ScalarPtr>();
-    MS_EXCEPTION_IF_NULL(scalar);
-    outputs->emplace_back(ScalarToTensor(scalar));
-  }
-}
-
-bool IsGraphOutputValueNodeOrParameter(const AnfNodePtr &graph_output, const VectorRef &args, VectorRef *outputs) {
-  MS_EXCEPTION_IF_NULL(graph_output);
-  MS_EXCEPTION_IF_NULL(outputs);
-  if (graph_output->isa<ValueNode>()) {
-    MS_LOG(INFO) << "Graph's output is a constant. No need to execute.";
-    VectorRef output_tmp;
-    ValuePtr value = GetValueNode(graph_output);
-    TensorValueToVector(value, &output_tmp);
-    MS_EXCEPTION_IF_NULL(value);
-    if (value->isa<ValueSequence>()) {
-      outputs->emplace_back(output_tmp);
-    } else if (value->isa<tensor::Tensor>() || value->isa<Scalar>()) {
-      *outputs = output_tmp;
-    } else {
-      MS_LOG(INFO) << "Graph output is empty!";
-    }
-    return true;
-  }
-
-  if (graph_output->isa<Parameter>()) {
-    MS_LOG(INFO) << "Graph's output is a parameter. If all params are inputs, no need to execute.";
-    // Find the right parameter as ret_val.
-    auto func_graph = graph_output->func_graph();
-    MS_EXCEPTION_IF_NULL(func_graph);
-    auto params = func_graph->parameters();
-    if (args.size() != params.size()) {
-      MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Runtime error info:#dmsg#Input size " << args.size()
-                                 << " is not equal to graph input size " << params.size();
-    }
-
-    auto it = std::find(params.begin(), params.end(), graph_output);
-    if (it == params.end()) {
-      MS_EXCEPTION(UnknownError) << "When graph output is Parameter, it should be found in graph parameters";
-    }
-    size_t index = static_cast<size_t>(it - params.cbegin());
-    if (index >= args.size()) {
-      MS_EXCEPTION(UnknownError) << "Index " << index << " equal or larger than args size " << args.size();
-    }
-
-    outputs->emplace_back(args[index]);
-    return true;
-  }
-  return false;
-}
-
 // Insert the front_node related tensor in the input_tensor.
 void PushTensor(const VectorRef &args, const std::vector<AnfNodePtr> &parameters, const AnfNodePtr &front_node,
                 std::vector<tensor::TensorPtr> *input_tensors) {
@@ -2220,7 +2141,7 @@ RunningStatus MSBackendBase::Run(BackendGraphId graph_id, const VectorRef &input
   auto root_graph = graph_compiler_info.root_func_graph_;
   MS_EXCEPTION_IF_NULL(root_graph);
 
-  if (IsGraphOutputValueNodeOrParameter(root_graph->output(), inputs, outputs)) {
+  if (AnfAlgo::IsGraphOutputValueNodeOrParameter(root_graph->output(), inputs, outputs)) {
     return kRunningSuccess;
   }
 
