@@ -423,7 +423,7 @@ def _transform_parallel_checkpoint(rank_id, param_total_dict, param_attr_dict, s
         from_opt_shard_size = 0
         if src_strategy_list is not None:
             if param_name not in src_strategy_list:
-                ms.log.warning("The parameter {} is not in src_strategy.".format(param_name))
+                ms.log.info("The parameter {} is not in src_strategy.".format(param_name))
                 continue
             from_dev_matrix, from_tensor_map, from_opt_shard_step, from_opt_shard_size = _extract_layout_item(
                 src_strategy_list.get(param_name))
@@ -433,7 +433,7 @@ def _transform_parallel_checkpoint(rank_id, param_total_dict, param_attr_dict, s
         to_opt_shard_size = 0
         if dst_strategy_list is not None:
             if param_name not in dst_strategy_list:
-                ms.log.warning("The parameter {} is not in dst_strategy.".format(param_name))
+                ms.log.info("The parameter {} is not in dst_strategy.".format(param_name))
                 continue
             to_dev_matrix_origin, to_tensor_map_origin, to_opt_shard_step, to_opt_shard_size = _extract_layout_item(
                 dst_strategy_list.get(param_name))
