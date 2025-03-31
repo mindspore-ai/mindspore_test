@@ -53,7 +53,7 @@ def tensorboard_trace_handler(dir_name: str = None, worker_name: str = None,
         >>> import mindspore
         >>> import mindspore.dataset as ds
         >>> from mindspore import context, nn
-        >>> from mindspore.profiler import schedule, tensorboard_trace_handler
+        >>> from mindspore.profiler import ProfilerLevel, AicoreMetrics, ExportType, ProfilerActivity
         >>>
         >>> class Net(nn.Cell):
         ...     def __init__(self):
@@ -149,9 +149,11 @@ class Profiler:
             - ProfilerActivity.NPU: Collect CANN software stack and NPU data.
             - ProfilerActivity.GPU: Collect GPU data.
         schedule (schedule, optional): Sets the action strategy for the capture, defined by the schedule class,
-            to be used with the step interface. Default: ``None``.
+            to be used with the step interface. Default: ``None``. Performance data of all steps is collected.
+            For details, see :class:`mindspore.profiler.schedule` .
         on_trace_ready (Callable, optional): Sets the callback function to be executed when the performance data
-            is collected. Default: ``None``.
+            is collected. Default: ``None``. It indicates that only performance data is collected, but not resolved.
+            For details, see :func:`mindspore.profiler.tensorboard_trace_handler` .
         profile_memory (bool, optional): (Ascend only) Whether to collect tensor memory data, collect when ``True`` .
             When using this parameter, `activities` must set to ``[ProfilerActivity.CPU, ProfilerActivity.NPU]``.
             Collecting operator memory data when the graph compilation level is O2 requires collecting from the
@@ -187,11 +189,11 @@ class Profiler:
             data is presented in the form of a flame graph in the timeline. When using this parameter, `activities` must
             include ``ProfilerActivity.CPU``. Default value: ``False`` .
         data_simplification (bool, optional): (Ascend only) Whether to remove FRAMEWORK data and other redundant data.
-            If set to True, only the delivery of profiler and the original performance data in the PROF_XXX
-            directory are retained to save disk space.
-            Default value: ``True`` .
+            If set to True, only the profiler deliverables and raw performance data under the PROF_XXX directory are
+            kept to save space. Default value: ``True`` .
         l2_cache (bool, optional): (Ascend only) Whether to collect l2 cache data, collect when True.
-            Default: ``False`` . The l2_cache.csv file is generated in the ASCEND_PROFILER_OUTPUT folder.
+            Default: ``False`` . The l2_cache.csv file is generated in the ASCEND_PROFILER_OUTPUT folder.In O2 mode,
+            only wait and skip_first parameters in schedule configuration can be set to 0.
         hbm_ddr (bool, optional): (Ascend only) Whether to collect On-Chip Memory/DDR read and write rate data,
             collect when True. Default: ``False`` .
         pcie (bool, optional): (Ascend only) Whether to collect PCIe bandwidth data, collect when True.
@@ -490,7 +492,8 @@ class Profiler:
             >>> import mindspore as ms
             >>> import mindspore.dataset as ds
             >>> from mindspore import context, nn, Profiler
-            >>> from mindspore.profiler import schedule, tensorboard_trace_handler
+            >>> from mindspore.profiler import schedule, tensorboard_trace_handler, ProfilerLevel, AicoreMetrics,
+            >>> ExportType, ProfilerActivity
             >>>
             >>> class Net(nn.Cell):
             ...     def __init__(self):
@@ -554,7 +557,7 @@ class Profiler:
             >>> # Call Profiler add_metadata
             >>> profiler.add_metadata("test_key", "test_value")
             >>> # Profiler end
-            >>> profiler.analyse()
+            >>> profiler.stop()
         """
         if not isinstance(key, str) or not isinstance(value, str):
             logger.warning("The key and value of metadata must be string. Skip this metadata.")
@@ -585,7 +588,7 @@ class Profiler:
             >>> # Call Profiler add_metadata_json
             >>> profiler.add_metadata_json("test_key", json.dumps({"key1": 1, "key2": 2}))
             >>> # Profiler end, metadata will be saved in profiler_metadata.json
-            >>> profiler.analyse()
+            >>> profiler.stop()
         """
         if not isinstance(key, str) or not isinstance(value, str):
             logger.warning("The key and value of metadata must be string. Skip this metadata.")
@@ -697,9 +700,11 @@ class Profile:
             - ProfilerActivity.NPU: Collect CANN software stack and NPU data.
             - ProfilerActivity.GPU: Collect GPU data.
         schedule (schedule, optional): Sets the action strategy for the capture, defined by the schedule class,
-            to be used with the step interface. Default: ``None``.
+            to be used with the step interface. Default: ``None``. Performance data of all steps is collected.
+            For details, see :class:`mindspore.profiler.schedule` .
         on_trace_ready (Callable, optional): Sets the callback function to be executed when the performance data
-            is collected. Default: ``None``.
+            is collected. Default: ``None``. It indicates that only performance data is collected, but not resolved.
+            For details, see :func:`mindspore.profiler.tensorboard_trace_handler` .
         profile_memory (bool, optional): (Ascend only) Whether to collect tensor memory data, collect when ``True`` .
             When using this parameter, `activities` must set to ``[ProfilerActivity.CPU, ProfilerActivity.NPU]``.
             Collecting operator memory data when the graph compilation level is O2 requires collecting from the
@@ -727,7 +732,7 @@ class Profile:
             - False: The asynchronous way. The duration of the operator is that of sending from the CPU to the GPU.
               This method can reduce the impact of adding profiler on overall training time.
         experimental_config (_ExperimentalConfig, optional): expandable parameters can be configured in this
-              configuration item.
+              configuration item. For details, see :class:`mindspore.profiler._ExperimentalConfig` .
     Raises:
         RuntimeError: When the version of CANN does not match the version of MindSpore,
             MindSpore cannot parse the generated ascend_job_id directory structure.
@@ -1089,9 +1094,8 @@ def analyse(profiler_path: str, max_process_number: int = os.cpu_count() // 2, p
         pretty (bool, optional): Format the JSON file. Default: ``False``,
             indicating that the formatting is not performed.
         step_list (list, optional): Only the performance data of the specified step is parsed. The specified step must
-            be a consecutive integer. Only the GRAPH mode is supported. In O0 and O1 mode, only when schedule
-            parameters wait and skip_first are 0 and warm_up is greater than or equal to 0 are supported.
-            Default: ``None``, indicating that full resolution.
+            be a consecutive integer. It supports CallBack collection only in GRAPH mode, and can only slice the CANN
+            layer and the following information. Default value: ``None``, that is, full resolution.
         data_simplification (bool, optional): Whether to enable data simplification. Default: ``True``,
             indicating the data simplification is enabled.
 

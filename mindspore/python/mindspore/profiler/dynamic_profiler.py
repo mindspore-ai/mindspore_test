@@ -432,27 +432,30 @@ class DynamicProfilerMonitorBase(Callback):
             >>>
             >>> if __name__ == '__main__':
             ...      # set json configuration file
-            ...      cfg_json = {
+            ...      context.set_context(mode=mindspore.PYNATIVE_MODE)
+            ...      mindspore.set_device("Ascend")
+            ...      data_cfg = {
             ...          "start_step": 2,
             ...          "stop_step": 5,
             ...          "aic_metrics": -1,
             ...          "profiler_level": 0,
             ...          "activities": 0,
-            ...          "analyse_mode": -1,
+            ...          "export_type": 0,
+            ...          "profile_memory": False,
+            ...          "mstx": False,
+            ...          "analyse_mode": 0,
             ...          "parallel_strategy": False,
             ...          "with_stack": False,
             ...          "data_simplification": True,
             ...          }
-            ...      context.set_context(mode=mindspore.PYNATIVE_MODE)
-            ...      mindspore.set_device("Ascend")
-            ...      cfg_path = os.path.join("./cfg_path", "profiler_config.json")
+            ...      output_path = "./cfg_path"
+            ...      cfg_path = os.path.join(output_path, "profiler_config.json")
+            ...      os.makedirs(output_path, exist_ok=True)
             ...      # set cfg file
             ...      with open(cfg_path, 'w') as f:
-            ...           json.dump(cfg_json, f, indent=4)
-            ...      # Assume the user has correctly configured the environment variable (RANK_ID is not a non-numeric type)
-            ...      rank_id = int(os.getenv('RANK_ID')) if os.getenv('RANK_ID') else 0
+            ...           json.dump(data_cfg, f, indent=4)
             ...      # cfg_path contains the json configuration file path, and output_path is the output path
-            ...      dp = DynamicProfilerMonitor(cfg_path=cfg_path, output_path=cfg_path)
+            ...      dp = DynamicProfilerMonitor(cfg_path=output_path, output_path=output_path)
             ...      STEP_NUM = 15
             ...      # Define a network of training models
             ...      net = Net()
@@ -460,11 +463,11 @@ class DynamicProfilerMonitorBase(Callback):
             ...          print(f"step {i}")
             ...          train(net)
             ...          # Modify the configuration file after step 7. For example, change start_step to 8 and stop_step to 10
-            ...          if i == 7:
+            ...          if i == 5:
             ...             # Modify parameters in the JSON file
-            ...             change_cfg_json(os.path.join(cfg_path, "profiler_config.json"))
-            ...             # Call step collection
-            ...             dp.step()
+            ...             change_cfg_json(os.path.join(output_path, "profiler_config.json"))
+            ...          # Call step collection
+            ...          dp.step()
         """
 
         self._step_num += 1
