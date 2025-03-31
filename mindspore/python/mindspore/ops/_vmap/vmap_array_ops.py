@@ -141,6 +141,7 @@ def _get_prefix(indices_shape, axis_size, indices_dtype):
     the generated prefix is a Tensor([[[0], [0]],
                                       [[1], [1]]])
     """
+    cast_op = P.Cast()
     def _check(indices_shape):
         if not indices_shape:
             raise ValueError("indices_shape is empty in _get_prefix.")
@@ -148,8 +149,8 @@ def _get_prefix(indices_shape, axis_size, indices_dtype):
     _check(indices_shape)
     indices_len = len(indices_shape)
     if indices_len == 1:
-        prefix = P.Range()(Tensor(0, indices_dtype), Tensor(axis_size, indices_dtype), Tensor(1, indices_dtype))
-        return prefix
+        prefix = P.Range()(0, axis_size, 1)
+        return cast_op(prefix, indices_dtype)
 
     indices_end = indices_len - 1
     prefix_shape = ()
@@ -164,9 +165,8 @@ def _get_prefix(indices_shape, axis_size, indices_dtype):
         else:
             expand_shape = expand_shape + (1,)
 
-    prefix = P.BroadcastTo(prefix_shape)(P.Reshape()(P.Range()(Tensor(
-        0, indices_dtype), Tensor(axis_size, indices_dtype), Tensor(1, indices_dtype)), expand_shape))
-    return prefix
+    prefix = P.BroadcastTo(prefix_shape)(P.Reshape()(P.Range()(0, axis_size, 1), expand_shape))
+    return cast_op(prefix, indices_dtype)
 
 
 @vmap_rules_getters.register(P.Transpose)

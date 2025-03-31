@@ -140,12 +140,11 @@ def test_ops_index_bf16(context_mode):
     ms.context.set_context(mode=context_mode)
     if context_mode == ms.GRAPH_MODE:
         ms.set_context(jit_level='O0')
-    x = generate_random_input((5, 6, 4, 3, 2, 4), np.float64)
-    indices1 = np.array([[0, 1], [1, 3], [2, 1]], dtype=np.int32)
-    indices2 = np.array([[0, 4]], dtype=np.int32)
-
-    output = index_forward_func(ms.Tensor(x, dtype=ms.bfloat16), [ms.Tensor(indices1), ms.Tensor(indices2)])
-    expect = x[[indices1, indices2]]
+    x1 = x_np = generate_random_input((5, 6, 4, 3, 2, 4), np.float64)
+    indices1 = indices1_np = np.array([[0, 1], [1, 3], [2, 1]], dtype=np.int32)
+    indices2 = indices2_np = np.array([[0, 4]], dtype=np.int32)
+    output = index_forward_func(ms.Tensor(x1, dtype=ms.bfloat16), [ms.Tensor(indices1), ms.Tensor(indices2)])
+    expect = np.squeeze(x_np[indices1_np, indices2_np[:, np.newaxis]], axis=0)
     np.testing.assert_allclose(output.float().asnumpy(), expect, rtol=4e-3, atol=4e-3)
 
 
