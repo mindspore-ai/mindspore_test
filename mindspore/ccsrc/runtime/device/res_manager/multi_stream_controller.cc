@@ -320,8 +320,8 @@ bool MultiStreamController::WaitMultiStream(size_t wait_stream_id) {
       return device_res_base_->CreateRuntimeEvent(true, false);
     });
   }
-  auto event = event_pool_->Get();
   device_res_base_->BindDeviceToCurrentThread(true);
+  auto event = event_pool_->Get();
   for (auto stream_id : stream_ids) {
     if (stream_id != wait_stream_id) {
       event->RecordEvent(stream_id);
