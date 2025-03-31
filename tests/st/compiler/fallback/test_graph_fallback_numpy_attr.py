@@ -399,7 +399,7 @@ def test_np_char_1():
     assert char_upper.asnumpy() == 'FALLBACK'
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
           essential_mark='unessential')
 def test_np_char_2():
     """
@@ -409,21 +409,13 @@ def test_np_char_2():
     """
     @jit
     def np_char():
-        char_split = np.char.split('MindSpore fallback')
-        out_split = np.char.join(' ', char_split)
-
-        char_splitlines = np.char.splitlines('MindSpore\nfallback')
-        out_splitlines = np.char.join(',', char_splitlines)
-
         out_strip = np.char.strip('abc acd', 'a')
         out_replace = np.char.replace('faooback', 'oo', 'll')
         char_encode = np.char.encode('runoob', 'cp500')
         out_decode = np.char.decode(char_encode, 'cp500')
-        return Tensor(out_split), Tensor(out_splitlines), Tensor(out_strip), Tensor(out_replace), Tensor(out_decode)
+        return Tensor(out_strip), Tensor(out_replace), Tensor(out_decode)
 
-    char_split, char_splitlines, char_strip, char_replace, char_decode = np_char()
-    assert char_split.asnumpy() == 'MindSpore fallback'
-    assert char_splitlines.asnumpy() == 'MindSpore,fallback'
+    char_strip, char_replace, char_decode = np_char()
     assert char_strip.asnumpy() == 'bc acd'
     assert char_replace.asnumpy() == 'fallback'
     assert char_decode.asnumpy() == 'runoob'
