@@ -93,8 +93,12 @@ std::map<size_t, size_t> GetActionTensors(const std::shared_ptr<device::SwapActi
   MS_EXCEPTION_IF_NULL(fixed_device_address);
   MS_EXCEPTION_IF_NULL(real_parameter_index);
   MS_EXCEPTION_IF_NULL(store_key);
+  constexpr size_t kGroupSize = 3;
+  constexpr size_t kWeightIdx = 2;
+  constexpr size_t kTensorIdx = 1;
+  constexpr size_t kFormalParameterIdx = 0;
   std::map<size_t, size_t> tensor_indexes_map;
-  std::vector<std::vector<size_t>> tensor_ids_group(3, std::vector<size_t>());
+  std::vector<std::vector<size_t>> tensor_ids_group(kGroupSize, std::vector<size_t>());
   for (const auto &tensor_action : swap_action->actions_) {
     MS_EXCEPTION_IF_NULL(tensor_action);
     if (tensor_action->tensor_id_ >= swap_strategy->tensor_infos_.size()) {
@@ -127,16 +131,16 @@ std::map<size_t, size_t> GetActionTensors(const std::shared_ptr<device::SwapActi
                             << "'s front node is not a parameter: " << front_node.first->DebugString()
                             << ", index: " << front_node.second;
           } else {
-            tensor_ids_group[2].emplace_back(real_tensor_id);
+            tensor_ids_group[kWeightIdx].emplace_back(real_tensor_id);
             store_key->emplace_back(front_node.first);
           }
         } else {
           const auto &output_addr = AnfAlgo::GetMutableOutputAddr(node, real_tensor_info->index_, false);
-          tensor_ids_group[0].emplace_back(real_tensor_id);
+          tensor_ids_group[kFormalParameterIdx].emplace_back(real_tensor_id);
           (void)fixed_device_address->emplace_back(output_addr.get());
         }
       } else {
-        tensor_ids_group[1].emplace_back(real_tensor_id);
+        tensor_ids_group[kTensorIdx].emplace_back(real_tensor_id);
         (void)real_parameter_index->emplace_back(real_parameter_iter->second);
       }
     }
