@@ -14,8 +14,8 @@ mindspore.ops.pow
         out_{i} = input_{i} ^{ exponent_{i}}
 
     参数：
-        - **input** (Union[Tensor, Number, bool]) - 第一个输入。
-        - **exponent** (Union[Tensor, Number, bool]) - 第二个输入。
+        - **input** (Union[Tensor, Number]) - 第一个输入。
+        - **exponent** (Union[Tensor, Number]) - 第二个输入。
 
     返回：
         Tensor

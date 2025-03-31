@@ -3044,8 +3044,8 @@ def gt(input, other):
           in another input by copying the value of the dimension.
 
     Args:
-        input (Union[Tensor, Number, bool]): The first input.
-        other (Union[Tensor, Number, bool]): The second input.
+        input (Union[Tensor, number.Number, bool]): The first input.
+        other (Union[Tensor, number.Number, bool]): The second input.
 
     Returns:
         Tensor
