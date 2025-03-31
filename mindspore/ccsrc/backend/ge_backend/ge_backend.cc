@@ -1591,6 +1591,8 @@ void GEBackend::ConstructInputsRefMode(const KernelGraphPtr &func_graph, const V
   }
   // clear every step
   weights_need_reprepare_.clear();
+  // GEBackend is only cerated once in new backend.
+  is_weight_init_.clear();
 }
 
 void GEBackend::ConstructInputs(const KernelGraphPtr &func_graph, const VectorRef &args,
