@@ -51,6 +51,11 @@ class PipelineInterleave {
 
  private:
   void CreateSendReceiveGroup();
+  std::shared_ptr<NodeStageInfo> GetStageInfoByGraph(const FuncGraphPtr &fg);
+  void InsertSendReceiveForParameter(const AnfNodePtr &param, const AnfNodePtr &node, int64_t src_stage,
+                                     int64_t dst_stage, int64_t chunk, int64_t index, int64_t order);
+  void InsertSendReceiveForSharedParam(const AnfNodePtr &parameter, const AnfNodePtr &argument, int64_t *order);
+  void HandleSharedParam(int64_t *order);
   void RedundancyNode(const AnfNodePtr &node, mindspore::HashMap<CNodePtr, std::vector<AnfNodePtr>> *make_tuple_map);
   bool IsRedundancyParameter(const AnfNodePtr &parameter, const std::vector<AnfNodePtr> &non_cloned_parameters);
   void InsertSendReceive(const AnfNodePtr &node, const AnfNodePtr &user_node, int64_t order, int64_t index);
