@@ -175,6 +175,60 @@ class CustomInplaceMulOp : public Function<CustomInplaceMulOp> {
   }
 };
 
+class CustomMulPyboost : public Function<CustomMulPyboost> {
+ public:
+  static BaseTensorPtr Forward(AutogradContext *ctx, const BaseTensorPtr &x, const BaseTensorPtr &y) {
+    auto output = std::make_shared<BaseTensor>(x->data_type(), BroadcastInferShape(x, y));
+
+    auto p = std::make_shared<Primitive>("CustomLaunchAclnn");
+    auto op = std::make_shared<kernel::pyboost::OpRunner>(p, runtime::OpRunner::GetDeviceContext("Ascend"));
+    op->set_stream_id(kernel::pyboost::PyBoostUtils::cur_stream_id());
+    op->set_outputs({output});
+    // No need to convert input
+    kernel::pyboost::PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), x, y);
+    kernel::pyboost::PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
+
+    // Async
+    kernel::pyboost::PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([op, x, y]() {
+      MS_LOG(DEBUG) << "Run device task Add start";
+      auto device_context = op->device_context();
+      const auto &outputs = op->outputs();
+      // Malloc for input tensors
+      kernel::pyboost::PyBoostUtils::MallocOpInputs(device_context, x, y);
+      // Malloc for output tensors
+      kernel::pyboost::PyBoostUtils::MallocOpOutputs(device_context, outputs);
+      LAUNCH_ACLNN(aclnnMul, device_context, op->stream_id(), x, y, outputs[0]);
+      MS_LOG(DEBUG) << "Run device task Add end";
+    }));
+
+    bool x_require_grad = ctx->NeedGrad(x);
+    bool y_require_grad = ctx->NeedGrad(y);
+    if (x_require_grad || y_require_grad) {
+      ctx->SaveForBackward({x_require_grad ? y : nullptr, y_require_grad ? x : nullptr});
+    }
+    return output;
+  }
+
+  static BaseTensorPtrList Backward(AutogradContext *ctx, BaseTensorPtrList grad_outputs) {
+    auto saved = ctx->GetSavedTensors();
+    auto dout = grad_outputs[0];
+
+    BaseTensorPtr grad_x = nullptr;
+    BaseTensorPtr grad_y = nullptr;
+
+    if (ctx->NeedsInputGrad(0)) {
+      grad_x = std::make_shared<BaseTensor>(dout->data_type(), BroadcastInferShape(dout, saved[0]));
+      custom::CustomLaunchAclnn("aclnnMul", {dout, saved[0]}, {grad_x});
+    }
+    if (ctx->NeedsInputGrad(1)) {
+      grad_y = std::make_shared<BaseTensor>(dout->data_type(), BroadcastInferShape(dout, saved[1]));
+      custom::CustomLaunchAclnn("aclnnMul", {dout, saved[1]}, {grad_y});
+    }
+
+    return {grad_x, grad_y};
+  }
+};
+
 BaseTensorPtr run_custom_add(const tensor::BaseTensorPtr &x, const tensor::BaseTensorPtr &y) {
   return CustomAdd::Apply(x, y);
 }
@@ -202,6 +256,10 @@ BaseTensorPtr run_mul_mark_no_diff_output(const tensor::BaseTensorPtr &input, co
 BaseTensorPtrList run_mul_mark_no_diff_input(const tensor::BaseTensorPtr &input) {
   return CustomMulNoGradInput::Apply(input);
 }
+
+BaseTensorPtr run_custom_mul_pyboost(const tensor::BaseTensorPtr &x, const tensor::BaseTensorPtr &y) {
+  return CustomMulPyboost::Apply(x, y);
+}
 }  // namespace autograd
 }  // namespace mindspore::pynative
 
@@ -213,4 +271,5 @@ PYBIND11_MODULE(MS_EXTENSION_NAME, m) {
   m.def("inplace_mul", &mindspore::pynative::autograd::run_inplace_mul_op, "x = x * y");
   m.def("mul_no_diff_out", &mindspore::pynative::autograd::run_mul_mark_no_diff_output, "out = x * y, no diff output");
   m.def("mul_no_diff_in", &mindspore::pynative::autograd::run_mul_mark_no_diff_input, "out = x * y, no diff input");
+  m.def("pyboost_mul", &mindspore::pynative::autograd::run_custom_mul_pyboost, "out = x * y");
 }
