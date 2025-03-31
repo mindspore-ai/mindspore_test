@@ -5,6 +5,7 @@ if(CMAKE_SYSTEM_NAME MATCHES "Windows")
         "thread_pool.cc"
         "fallback.cc"
         "profiler.cc"
+        "python_utils.cc"
         "pynative/*.cc"
     )
 else()
@@ -14,6 +15,7 @@ else()
         "thread_pool.cc"
         "fallback.cc"
         "profiler.cc"
+        "python_utils.cc"
         "pynative/*.cc"
     )
 endif()
