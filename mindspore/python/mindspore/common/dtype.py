@@ -279,8 +279,11 @@ def dtype_to_nptype(type_):
         complex64: np.complex64,
         complex128: np.complex128,
     }
-    if np_version_valid(False):
-        _dtype_nptype_dict.update({bfloat16: np_bfloat16})
+    if type_ == bfloat16:
+        if not np_version_valid(True):
+            raise TypeError("The Numpy bfloat16 data type is not supported now, please ensure that the current "
+                            "Numpy version is not less than the version when the mindspore is compiled.")
+        return np_bfloat16
     return _dtype_nptype_dict[type_]
 
 
