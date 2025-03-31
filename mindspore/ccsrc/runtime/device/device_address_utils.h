@@ -63,6 +63,9 @@ class BACKEND_EXPORT DeviceAddressUtils {
   static void UpdateDeviceAddress(const session::AnfWithOutIndex &cur_pair,
                                   const session::AnfWithOutIndex &origin_pair);
   static void UpdateDeviceAddressForRefNode(const KernelGraphPtr &graph);
+  static void UpdateDeviceAddressForRefNodeForSingleOp(const KernelGraphPtr &graph);
+  static void UpdateDeviceAddressMonadFlag(const session::AnfWithOutIndex &cur_pair,
+                                           const session::AnfWithOutIndex &origin_pair);
   static device::DeviceAddressPtr CloneEmptyDeviceAddress(const device::DeviceAddressPtr &old_device_address,
                                                           const DeviceContext *device_context);
   static void CreateGraphOutputDeviceAddress(const DeviceContext *device_context, const KernelGraphPtr &graph);
