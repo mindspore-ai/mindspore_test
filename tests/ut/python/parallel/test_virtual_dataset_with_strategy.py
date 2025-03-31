@@ -23,7 +23,7 @@ from mindspore.common.api import _cell_graph_executor
 from mindspore.ops import composite as C
 from mindspore.ops import operations as P
 from mindspore.ops.operations.comm_ops import _VirtualDataset
-from mindspore.parallel.shard import Layout
+from mindspore.parallel import Layout
 from tests.ut.python.ops.test_math_ops import VirtualLoss
 from parallel.utils.utils import ParallelValidator
 
@@ -169,6 +169,24 @@ def test_virtual_dataset_model_parallel_auto_parallel():
     b = Tensor(np.ones([64, 2048 // 8]), dtype=ms.float32)
     compile_net(net, x, y, b)
 
+def test_virtual_dataset_model_parallel_auto_parallel_with_strategy():
+    """
+    Feature: distribute operator virtual_dataset in auto parallel.
+    Description: virtual_dataset/model_parallel/fully shard/repeat in left.
+    Expectation: compile done without error.
+    """
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
+    context.set_auto_parallel_context(device_num=8, global_rank=0)
+    strategy0 = ((1, 8), (1, 8), (1, 8))
+    context.set_auto_parallel_context(dataset_strategy=strategy0)
+    strategy1 = ((2, 2), (2, 2))
+    strategy2 = ((2, 2), (2, 2))
+    strategy3 = ((2, 4),)
+    net = GradWrap(NetWithLoss(Net1(strategy1, strategy2, strategy3)))
+    x = Tensor(np.ones([128, 32 // 8]), dtype=ms.float32)
+    y = Tensor(np.ones([32, 64 // 8]), dtype=ms.float32)
+    b = Tensor(np.ones([64, 2048 // 8]), dtype=ms.float32)
+    compile_net(net, x, y, b)
 
 def test_virtual_dataset_model_parallel_semi_auto_parallel_diff_input_dim():
     """
@@ -417,6 +435,7 @@ def test_dataset_strategy_with_layout_using_autoparallel_cell():
     """
     from mindspore.parallel.auto_parallel import AutoParallel
     from hccl_test.manage.api import Hccl
+    from mindspore.nn.utils import no_init_parameters
     hccl = Hccl()
     hccl.rank_id = 0
     hccl.rank_size = 8
@@ -425,7 +444,8 @@ def test_dataset_strategy_with_layout_using_autoparallel_cell():
     strategy1 = ((2, 2), (2, 2))
     strategy2 = ((2, 2), (2, 2))
     strategy3 = ((2, 4),)
-    net = GradWrap(NetWithLoss(Net1(strategy1, strategy2, strategy3)))
+    with no_init_parameters():
+        net = GradWrap(NetWithLoss(Net1(strategy1, strategy2, strategy3)))
     parallel_net = AutoParallel(net, parallel_mode="seme_auto")
     parallel_net.dataset_strategy(strategy0)
     x = Tensor(np.ones([128 // 4, 32 // 2]), dtype=ms.float32)
@@ -433,7 +453,7 @@ def test_dataset_strategy_with_layout_using_autoparallel_cell():
     b = Tensor(np.ones([64 // 4, 2048 // 2]), dtype=ms.float32)
     phase = compile_net(parallel_net, x, y, b)
     validator = ParallelValidator(parallel_net, phase)
-    assert validator.check_node_inputs_has('MatMul-0', ['Reshape-2', 'StridedSlice-1'])
+    assert validator.check_node_inputs_has('MatMul-0', ['Reshape-1', 'Reshape-3', False, False])
 
 if __name__ == '__main__':
     context.reset_auto_parallel_context()

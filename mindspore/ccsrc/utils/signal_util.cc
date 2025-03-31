@@ -48,13 +48,13 @@ bool RegisterGlobalSignalHandler(IntHandlerFunc handler) {
   struct sigaction int_action;
   struct sigaction old_int_action;
 
-  MS_LOG(WARNING) << "MSCONTEXT_REGISTER_INIT_FUNC register int handler";
+  MS_LOG(INFO) << "MSCONTEXT_REGISTER_INIT_FUNC register int handler";
   if (sigaction(SIGINT, nullptr, &old_int_action) == -1) {
     MS_LOG(ERROR) << "Failed to retrieve current SIGINT handler";
     return false;
   }
   if (old_int_action.sa_sigaction != nullptr) {
-    MS_LOG(WARNING) << "The signal has been registered";
+    MS_LOG(INFO) << "The signal has been registered";
   }
 
   int_action.sa_sigaction = handler;

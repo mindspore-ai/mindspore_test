@@ -2,31 +2,4 @@ ceil:
   description: |
     ceil() -> Tensor
     
-    Rounds a tensor up to the closest integer element-wise.
-    
-    .. math::
-        out_i = \lceil self_i \rceil = \lfloor self_i \rfloor + 1
-    
-    Returns:
-        Tensor, has the same shape as `self`.
-    
-    :raise TypeError: If dtype of `self` is not float16, float32, float64 or bfloat16.
-
-        - Ascend: float16, float32, float64 or bfloat16.
-        - GPU/CPU: float16, float32, float64.
-    
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-    
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor
-        >>> input = Tensor(np.array([1.1, 2.5, -1.5]), mindspore.float32)
-        >>> output = input.ceil()
-        >>> print(output)
-        [ 2.  3. -1.]
-        >>> input = Tensor(2.1, mindspore.float32)
-        >>> output = input.ceil()
-        >>> print(output)
-        3.0
+    For details, please refer to :func:`mindspore.ops.ceil`.

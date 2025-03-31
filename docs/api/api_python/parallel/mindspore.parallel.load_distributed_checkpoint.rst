@@ -1,9 +1,9 @@
-mindspore.load_distributed_checkpoint
-======================================
+mindspore.parallel.load_distributed_checkpoint
+==============================================
 
-.. py:function:: mindspore.load_distributed_checkpoint(network, checkpoint_filenames=None, predict_strategy=None, train_strategy_filename=None, strict_load=False, dec_key=None, dec_mode='AES-GCM', format='ckpt', unified_safetensors_dir=None, dst_safetensors_dir=None, rank_id=None, output_format='safetensors', name_map=None, max_process_num=64, return_param_dict=False)
+.. py:function:: mindspore.parallel.load_distributed_checkpoint(network, checkpoint_filenames=None, predict_strategy=None, train_strategy_filename=None, strict_load=False, dec_key=None, dec_mode='AES-GCM', format='ckpt', unified_safetensors_dir=None, dst_safetensors_dir=None, rank_id=None, output_format='safetensors', name_map=None, max_process_num=64, return_param_dict=False)
 
-    给分布式预测加载checkpoint文件到网络。用于分布式推理。
+    加载分布式checkpoint参数到网络，用于分布式推理。
 
     .. note::
         只有 `format` 设置为 `safetensors` 并且 `network` 为 `None` 时，output_format才会生效。

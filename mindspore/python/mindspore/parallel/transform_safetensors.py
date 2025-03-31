@@ -722,6 +722,8 @@ def _transform_parallel_safetensor(rank_id, param_total_dict, param_attr_dict, s
                 continue
         if param_name not in transform_param_dict:
             transform_para = param_total_dict[param_name][rank_id % device_num]
+            if str(type(transform_para)) == "<class 'builtins.PySafeSlice'>":
+                transform_para = transform_para[:]
             transform_param_dict[param_name] = transform_para
     return transform_param_dict
 
@@ -1055,9 +1057,10 @@ def _cal_param_name_map_and_param_list(file_list, total_safetensors_dir, json_fi
             values = len(keys) * [file_list[0]]
             param_name_map = dict(zip(keys, values))
     else:
-        if len(json_files) != 1:
-            raise ValueError(f"For 'load_parallel_checkpoint', the number of json files in 'total_safetensors_dir' "
-                             f"must be 1, but got {len(json_files)}.")
+        if not json_files:
+            raise ValueError(
+                f"For 'load_parallel_checkpoint', there must be a JSON file named 'param_name_map.json' in "
+                f"the 'total_safetensors_dir'.")
         param_name_json = os.path.join(total_safetensors_dir, json_files[0])
         with open(param_name_json, 'r') as f:
             param_name_map = json.load(f)

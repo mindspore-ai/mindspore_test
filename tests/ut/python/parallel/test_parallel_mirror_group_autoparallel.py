@@ -1,4 +1,4 @@
-# Copyright 2021 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,37 +16,21 @@
 import os
 import numpy as np
 
+import mindspore as ms
 import mindspore.nn as nn
-from mindspore import Tensor, Parameter
+from mindspore import Tensor
 from mindspore.nn.utils import no_init_parameters
 from mindspore.parallel.auto_parallel import AutoParallel
-from mindspore.ops import operations as P
 from mindspore import context
 from mindspore import restore_group_info_list
+from mindspore.train import Model
+from mindspore.parallel.nn import Pipeline
 from hccl_test.manage.api import Hccl
+from .test_pipeline_split import PipelineSplit, DatasetLenet
 
 def setup_function():
     context.set_auto_parallel_context(dataset_strategy="full_batch")
 
-
-class Net3(nn.Cell):
-    """Net definition"""
-
-    def __init__(self, strategy1, strategy2, strategy3):
-        super(Net3, self).__init__()
-        self.fc1 = P.MatMul().shard(strategy1)
-        self.fc2 = P.MatMul().shard(strategy2)
-        self.fc3 = P.MatMul().shard(strategy3)
-        self.p1 = Parameter(Tensor(np.ones([48, 64]).astype(np.float32)), name="weight1")
-        self.p2 = Parameter(Tensor(np.ones([64, 16]).astype(np.float32)), name="weight2", parallel_optimizer=False)
-        self.p3 = Parameter(Tensor(np.ones([16, 16]).astype(np.float32)), name="weight3")
-
-    def construct(self, x, y):
-        x = self.fc1(x, self.p1)
-        x = self.fc2(x, self.p2)
-        z = x - y
-        z = self.fc3(z, self.p3)
-        return z
 
 def test_pipeline_split_stage1_mirror_group():
     """
@@ -54,10 +38,6 @@ def test_pipeline_split_stage1_mirror_group():
     Description: semi-auto parallel, pipeline parallel.
     Expectation: group info list match expectation value.
     """
-    import mindspore as ms
-    from mindspore.train import Model
-    from mindspore.parallel.nn import Pipeline
-    from .test_pipeline_split import PipelineSplit, DatasetLenet
     hccl = Hccl()
     hccl.rank_id = 63
     hccl.rank_size = 64

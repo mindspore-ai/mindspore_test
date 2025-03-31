@@ -37,5 +37,5 @@ pixel_shuffle:
             >>> from mindspore import mint
             >>> input = mint.randn(1, 9, 4, 4)
             >>> output = mint.nn.functional.pixel_shuffle(input, 3)
-            >>> print(output.shape())
-                [1, 1, 12, 12]
+            >>> print(output.shape)
+                (1, 1, 12, 12)

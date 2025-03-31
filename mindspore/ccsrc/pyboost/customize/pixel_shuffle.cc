@@ -84,8 +84,11 @@ tensor::BaseTensorPtr PixelShuffleCustomize(const std::shared_ptr<OpRunner> &op,
   std::vector<int64_t> permutation(input_shape.begin(), input_shape_batch_end);
   // std::iota is used to maintain the batch dims within the permutation.
   std::iota(permutation.begin(), permutation.end(), 0);
-  permutation.insert(permutation.end(),
-                     {-5 /* oc */, -2 /* h */, -4 /* 1st upscale_factor */, -1 /* w */, -3 /* 2nd upscale_factor */});
+  permutation.insert(permutation.end(), {-5,   /* oc */
+                                         -2,   /* h */
+                                         -4,   /* 1st upscale_factor */
+                                         -1,   /* w */
+                                         -3}); /* 2nd upscale_factor */
   const auto input_permuted = transpose(input_reshaped, MakeValueTuple(permutation));
 
   // Finally, upscale by collapsing (h, upscale_factor) -> a single dim (oh)

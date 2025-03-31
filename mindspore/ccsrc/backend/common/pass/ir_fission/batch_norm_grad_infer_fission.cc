@@ -99,7 +99,7 @@ AnfNodePtr BatchNormGradInferFission::CreateBNInferGrad(const FuncGraphPtr &func
   }
   bn_infer_grad->set_abstract(bn_grad_abstract_tuple->elements()[0]);
   bn_infer_grad->set_scope(bn_grad->scope());
-
+  MS_EXCEPTION_IF_NULL(bn_grad->cast<CNodePtr>());
   auto epsilon = GetNodeScalarValue<float>(bn_grad->cast<CNodePtr>()->input(kElsilonIdx));
   common::AnfAlgo::SetNodeAttr(kAttrEpsilon, MakeValue<float>(epsilon), bn_infer_grad);
 
@@ -151,7 +151,7 @@ AnfNodePtr BatchNormGradInferFission::CreateBNTrainingUpdateGrad(const FuncGraph
   auto abstract_tuple = std::make_shared<abstract::AbstractTuple>(abstract_list);
   bn_training_update_grad->set_abstract(abstract_tuple);
   bn_training_update_grad->set_scope(bn_grad->scope());
-
+  MS_EXCEPTION_IF_NULL(bn_grad);
   auto epsilon = GetNodeScalarValue<float>(bn_grad->cast<CNodePtr>()->input(kElsilonIdx));
   common::AnfAlgo::SetNodeAttr(kAttrEpsilon, MakeValue<float>(epsilon), bn_training_update_grad);
 

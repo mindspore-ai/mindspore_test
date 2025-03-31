@@ -357,15 +357,26 @@ Status ArithmeticBase::InferOutputTensorInfo() {
 Status ArithmeticBase::CheckInputLayout() {
   // Check all device matrix should be the same
   if (inputs_tensor_info_.size() != kSizeTwo) {
-    MS_LOG(ERROR) << "The size of input_tensor_layout for " << name_ << " is " << inputs_tensor_info_.size()
-                  << " rather than 2.";
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << "The size of input_tensor_layout for " << name_ << " is " << inputs_tensor_info_.size()
+                      << " rather than 2.";
+    } else {
+      MS_LOG(ERROR) << "The size of input_tensor_layout for " << name_ << " is " << inputs_tensor_info_.size()
+                    << " rather than 2.";
+    }
     return FAILED;
   }
   auto in_layout0 = inputs_tensor_info_[kIndex0].tensor_layout();
   auto in_layout1 = inputs_tensor_info_[kIndex1].tensor_layout();
   if (in_layout0.device_arrangement_origin().array() != in_layout1.device_arrangement_origin().array()) {
-    MS_LOG(ERROR) << "The device_matrix of input0 " << in_layout0.device_arrangement_origin().array()
-                  << " dose not equal to device_matrix of input1 " << in_layout1.device_arrangement_origin().array();
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << "The device_matrix of input0 " << in_layout0.device_arrangement_origin().array()
+                      << " dose not equal to device_matrix of input1 "
+                      << in_layout1.device_arrangement_origin().array();
+    } else {
+      MS_LOG(ERROR) << "The device_matrix of input0 " << in_layout0.device_arrangement_origin().array()
+                    << " dose not equal to device_matrix of input1 " << in_layout1.device_arrangement_origin().array();
+    }
     return FAILED;
   }
 
@@ -383,10 +394,17 @@ Status ArithmeticBase::CheckInputLayout() {
 
   for (size_t i = 0; i < input_shape_0.size(); ++i) {
     if (tensormap0[i] != tensormap1[i] && input_shape_0[i] != 1 && input_shape_1[i] != 1) {
-      MS_LOG(ERROR) << name_ << " : Invalid strategy. The " << i << "th dim of input 0 tensor map is " << tensormap0[i]
-                    << " is not equal to input 1 tensor map " << tensormap1[i] << ", also " << i
-                    << "th input_shape0 and input_shape1 are not equal to 1 which is " << input_shape_0[i] << " and "
-                    << input_shape_1[i];
+      if (is_in_layout_propagation_) {
+        MS_LOG(WARNING) << name_ << " : Invalid strategy. The " << i << "th dim of input 0 tensor map is "
+                        << tensormap0[i] << " is not equal to input 1 tensor map " << tensormap1[i] << ", also " << i
+                        << "th input_shape0 and input_shape1 are not equal to 1 which is " << input_shape_0[i]
+                        << " and " << input_shape_1[i];
+      } else {
+        MS_LOG(ERROR) << name_ << " : Invalid strategy. The " << i << "th dim of input 0 tensor map is "
+                      << tensormap0[i] << " is not equal to input 1 tensor map " << tensormap1[i] << ", also " << i
+                      << "th input_shape0 and input_shape1 are not equal to 1 which is " << input_shape_0[i] << " and "
+                      << input_shape_1[i];
+      }
       return FAILED;
     }
   }
@@ -426,8 +444,13 @@ TensorLayout ArithmeticBase::InferOutputLayout() {
 
 Status ArithmeticBase::CheckOutputLayout() {
   if (outputs_tensor_info_.size() != kSizeOne) {
-    MS_LOG(ERROR) << "The size of output_tensor_layout for " << name_ << " is " << outputs_tensor_info_.size()
-                  << " rather than 1.";
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << "The size of output_tensor_layout for " << name_ << " is " << outputs_tensor_info_.size()
+                      << " rather than 1.";
+    } else {
+      MS_LOG(ERROR) << "The size of output_tensor_layout for " << name_ << " is " << outputs_tensor_info_.size()
+                    << " rather than 1.";
+    }
     return FAILED;
   }
 
@@ -545,8 +568,13 @@ bool TensorMapHasRepeatElem(const std::vector<Shape> &input_tensor_map, const st
 
 Status OuterInfo::CheckInputLayout() {
   if (inputs_tensor_info_.size() != kSizeTwo) {
-    MS_LOG(ERROR) << "For distributed operator " << name_ << ", the size of inputs_tensor_info should be 2, but got "
-                  << inputs_tensor_info_.size() << ".";
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << "For distributed operator " << name_
+                      << ", the size of inputs_tensor_info should be 2, but got " << inputs_tensor_info_.size() << ".";
+    } else {
+      MS_LOG(ERROR) << "For distributed operator " << name_ << ", the size of inputs_tensor_info should be 2, but got "
+                    << inputs_tensor_info_.size() << ".";
+    }
     return FAILED;
   }
   auto input_tensor_layout = inputs_tensor_info_[kIndex0].tensor_layout();
@@ -554,8 +582,13 @@ Status OuterInfo::CheckInputLayout() {
   auto input_tensor_map = input_tensor_layout.tensor_map_before();
   auto vec2_tensor_map = vec2_tensor_layout.tensor_map_before();
   if (TensorMapHasRepeatElem(input_tensor_map, vec2_tensor_map)) {
-    MS_LOG(ERROR) << "For distributed operator " << name_ << ", there cannot be duplicate elements in input_tensor_map "
-                  << "and vec2_tensor_map.";
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << "For distributed operator " << name_ << ", there cannot be duplicate elements in "
+                      << "input_tensor_map and vec2_tensor_map.";
+    } else {
+      MS_LOG(ERROR) << "For distributed operator " << name_ << ", there cannot be duplicate elements in "
+                    << "input_tensor_map and vec2_tensor_map.";
+    }
     return FAILED;
   }
   dev_matrix_shape_ = input_tensor_layout.device_arrangement_origin().array();
@@ -1109,7 +1142,11 @@ Status AddcmulExtInfo::CheckLayoutConfig() {
 Status AddcmulExtInfo::CheckInputLayout() {
   // check if all device matrix are same
   if (inputs_tensor_info_.size() != kSizeThree) {
-    MS_LOG(ERROR) << name_ << ": input_tensor_layout size should be 3, but get " << inputs_tensor_info_.size();
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << name_ << ": input_tensor_layout size should be 3, but get " << inputs_tensor_info_.size();
+    } else {
+      MS_LOG(ERROR) << name_ << ": input_tensor_layout size should be 3, but get " << inputs_tensor_info_.size();
+    }
     return FAILED;
   }
   auto in_layout0 = inputs_tensor_info_[kIndex0].tensor_layout();
@@ -1119,8 +1156,14 @@ Status AddcmulExtInfo::CheckInputLayout() {
   auto dev_matrix1 = in_layout1.device_arrangement_origin().array();
   auto dev_matrix2 = in_layout2.device_arrangement_origin().array();
   if (dev_matrix0 != dev_matrix1 || dev_matrix0 != dev_matrix2) {
-    MS_LOG(ERROR) << name_ << ": Inputs device matrix are not equal. dev_matrix0: " << ShapeToString(dev_matrix0)
-                  << " dev_matrix1: " << ShapeToString(dev_matrix1) << " dev_matrix2: " << ShapeToString(dev_matrix2);
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << name_ << ": Inputs device matrix are not equal. dev_matrix0: " << ShapeToString(dev_matrix0)
+                      << " dev_matrix1: " << ShapeToString(dev_matrix1)
+                      << " dev_matrix2: " << ShapeToString(dev_matrix2);
+    } else {
+      MS_LOG(ERROR) << name_ << ": Inputs device matrix are not equal. dev_matrix0: " << ShapeToString(dev_matrix0)
+                    << " dev_matrix1: " << ShapeToString(dev_matrix1) << " dev_matrix2: " << ShapeToString(dev_matrix2);
+    }
     return FAILED;
   }
 

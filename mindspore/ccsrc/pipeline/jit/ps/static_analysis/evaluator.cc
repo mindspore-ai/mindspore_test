@@ -17,6 +17,7 @@
 #include "pipeline/jit/ps/static_analysis/evaluator.h"
 
 #include <algorithm>
+#include <ostream>
 #include <utility>
 
 #include "mindspore/ops/op_def/sequence_ops.h"
@@ -25,6 +26,7 @@
 #include "utils/hash_set.h"
 #include "ir/func_graph_cloner.h"
 #include "abstract/utils.h"
+#include "include/common/fallback.h"
 #include "pipeline/jit/ps/debug/trace.h"
 #include "utils/ms_context.h"
 #include "utils/compile_config.h"
@@ -33,6 +35,7 @@
 #include "pipeline/jit/ps/pipeline.h"
 #include "frontend/expander/bprop/bprop_meta_func_graph.h"
 #include "frontend/operator/composite/unpack_call.h"
+#include "frontend/optimizer/fallback_rewriter.h"
 #include "frontend/optimizer/ad/dfunctor.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
@@ -735,6 +738,21 @@ EvalResultPtr TrivialPrimEvaluator::Run(AnalysisEnginePtr engine, const ConfigPt
     } catch (std::exception &e) {
       MS_LOG(ERROR) << "Primitive: <" << ToString() << "> infer failed, failed info: " << e.what();
       std::rethrow_exception(std::current_exception());
+    }
+    auto prim = standard_prim_eval != nullptr ? standard_prim_eval->prim() : nullptr;
+    if (prim != nullptr && fallback::GetJitSyntaxLevel() == kStrict) {
+      auto output_abs = res != nullptr ? res->abstract() : nullptr;
+      if (opt::ShouldRunWithJitFallback(prim, args_abs_list, output_abs)) {
+        std::ostringstream oss;
+        for (size_t i = 0; i < args_abs_list.size(); ++i) {
+          oss << "Arg[" << i << "]: " << (args_abs_list[i] != nullptr ? args_abs_list[i]->ToString() : "NULL") << "\n";
+        }
+        MS_EXCEPTION(TypeError)
+          << "In JIT strict mode, the primitive '" << prim->name()
+          << "' does not support the following argument types. You can use os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2' "
+             "to enable the JIT lax mode to support the current syntax. Arguments are:\n"
+          << oss.str();
+      }
     }
   }
   return res;

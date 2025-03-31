@@ -33,6 +33,7 @@ def match_array(actual, expected, error=0, err_msg=''):
     else:
         onp.testing.assert_equal(actual, expected, err_msg=err_msg)
 
+
 def match_value(actual, expected, error=0, err_msg=''):
     if isinstance(actual, (tuple, list)) and isinstance(expected, (tuple, list)):
         assert len(actual) == len(expected)
@@ -43,6 +44,7 @@ def match_value(actual, expected, error=0, err_msg=''):
         match_value(tuple(actual.values()), tuple(expected.values()), error, err_msg)
     else:
         match_array(actual, expected, error, err_msg)
+
 
 def assert_equal(expected, actual, decimal=7, err_msg=''):
     if isinstance(expected, (list, tuple)):
@@ -153,7 +155,8 @@ def assert_executed_by_graph_mode(func, *, call_count: int = None):
     assert jcr['break_count_'] == 0, f'break_count expect: 0, actual: {jcr["break_count_"]}'
     assert has_graph(jcr)
     if call_count is not None:
-        assert jcr['code']['call_count_'] == call_count
+        assert jcr['code']['call_count_'] == call_count, \
+            f'call_count expect: {call_count}, actual: {jcr["code"]["call_count_"]}'
 
 
 def assert_no_graph_break(func, *, call_count: int = None):
@@ -162,7 +165,8 @@ def assert_no_graph_break(func, *, call_count: int = None):
     assert jcr['stat'] == 'GRAPH_CALLABLE'
     assert jcr['break_count_'] == 0, f'break_count expect: 0, actual: {jcr["break_count_"]}'
     if call_count is not None:
-        assert jcr['code']['call_count_'] == call_count
+        assert jcr['code']['call_count_'] == call_count, \
+            f'call_count expect: {call_count}, actual: {jcr["code"]["call_count_"]}'
 
 
 def assert_has_graph_break(func, *, break_count: int = 1, call_count: int = None):
@@ -171,16 +175,20 @@ def assert_has_graph_break(func, *, break_count: int = 1, call_count: int = None
     assert jcr['stat'] == 'GRAPH_CALLABLE'
     assert jcr['break_count_'] == break_count, f'break_count expect: {break_count}, actual: {jcr["break_count_"]}'
     if call_count is not None:
-        assert jcr['code']['call_count_'] == call_count
+        assert jcr['code']['call_count_'] == call_count, \
+            f'call_count expect: {call_count}, actual: {jcr["code"]["call_count_"]}'
 
 
 def assert_graph_compile_status(func, break_count=None, call_count=None, compile_count=None):
     jcr = get_code_extra(getattr(func, "__wrapped__", func))
     assert jcr is not None
     assert jcr['stat'] == 'GRAPH_CALLABLE'
-    assert break_count is None or jcr['break_count_'] == break_count
-    assert call_count is None or jcr['code']['call_count_'] == call_count
-    assert compile_count is None or jcr['compile_count_'] == compile_count
+    assert break_count is None or jcr['break_count_'] == break_count, \
+        f'break_count expect: {break_count}, actual: {jcr["break_count_"]}'
+    assert call_count is None or jcr['code']['call_count_'] == call_count, \
+        f'call_count expect: {call_count}, actual: {jcr["code"]["call_count_"]}'
+    assert compile_count is None or jcr['compile_count_'] == compile_count, \
+        f'compile_count expect: {compile_count}, actual: {jcr["compile_count_"]}'
     assert has_graph(jcr)
 
 

@@ -13,7 +13,7 @@
 # limitations under the License.
 # ============================================================================
 import math
-import pytest 
+import pytest
 from mindspore import jit, context, Tensor
 from ..share.utils import match_array, assert_executed_by_graph_mode
 from tests.mark_utils import arg_mark
@@ -91,7 +91,7 @@ def test_builtin_function():
     assert math.isclose(out_float, 2.0, abs_tol=1e-5)
     assert out_int == 2
     assert out_bool == True
-    assert out_str == '2.0'
+    assert out_str == 'Tensor(shape=[], dtype=Float32, value= 2)'
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')

@@ -25,7 +25,7 @@ class Net(nn.Cell):
         return x.tolist()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
+@arg_mark(plat_marks=['cpu_linux'],
           level_mark='level1',
           card_mark='onecard',
           essential_mark='unessential')

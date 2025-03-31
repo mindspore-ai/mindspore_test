@@ -115,8 +115,13 @@ Status TileInfo::CheckStrategy(const StrategyPtr &strategy) {
 Status TileInfo::CheckInputLayout() {
   // Check all device matrix should be the same
   if (inputs_tensor_info_.size() != kSizeOne) {
-    MS_LOG(ERROR) << "The size of input_tensor_layout for matmul is " << inputs_tensor_info_.size()
-                  << " rather than 1.";
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << "The size of input_tensor_layout for tile is " << inputs_tensor_info_.size()
+                      << " rather than 1.";
+    } else {
+      MS_LOG(ERROR) << "The size of input_tensor_layout for tile is " << inputs_tensor_info_.size()
+                    << " rather than 1.";
+    }
     return FAILED;
   }
   auto in_layout0 = inputs_tensor_info_[kIndex0].tensor_layout();
@@ -139,8 +144,13 @@ Status TileInfo::CheckInputLayout() {
       }
       MS_EXCEPTION_IF_ZERO("axis_shard", axis_shard);
       if (axis_shard > 1) {
-        MS_LOG(ERROR) << "The dimension " << i - pre_offset
-                      << " of input should not be split, because the multiple and shape are both greater than 1.";
+        if (is_in_layout_propagation_) {
+          MS_LOG(WARNING) << "The dimension " << i - pre_offset
+                          << " of input should not be split, because the multiple and shape are both greater than 1.";
+        } else {
+          MS_LOG(ERROR) << "The dimension " << i - pre_offset
+                        << " of input should not be split, because the multiple and shape are both greater than 1.";
+        }
         return FAILED;
       }
     }
@@ -150,8 +160,13 @@ Status TileInfo::CheckInputLayout() {
 
 Status TileInfo::CheckOutputLayout() {
   if (outputs_tensor_info_.size() != kSizeOne) {
-    MS_LOG(ERROR) << "The size of output_tensor_layout for tile is " << outputs_tensor_info_.size()
-                  << " rather than 1.";
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << "The size of output_tensor_layout for tile is " << outputs_tensor_info_.size()
+                      << " rather than 1.";
+    } else {
+      MS_LOG(ERROR) << "The size of output_tensor_layout for tile is " << outputs_tensor_info_.size()
+                    << " rather than 1.";
+    }
     return FAILED;
   }
   auto in_layout0 = inputs_tensor_info_[kIndex0].tensor_layout();
@@ -161,8 +176,13 @@ Status TileInfo::CheckOutputLayout() {
   auto out_shape = out_layout.tensor_shape_before().array();
   auto offset = out_shape.size() - full_multiples_.size();
   if (offset < 0) {
-    MS_LOG(ERROR) << "The size of output shape is " << out_shape.size()
-                  << " rather than greater than or equal to the size of multiples.";
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << "The size of output shape is " << out_shape.size()
+                      << " rather than greater than or equal to the size of multiples.";
+    } else {
+      MS_LOG(ERROR) << "The size of output shape is " << out_shape.size()
+                    << " rather than greater than or equal to the size of multiples.";
+    }
     return FAILED;
   }
 

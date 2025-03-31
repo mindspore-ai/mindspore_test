@@ -7402,9 +7402,8 @@ class ApplyAdagradDA(Primitive):
         >>> global_step = Tensor(2, mstype.int32)
         >>> output = net(grad, lr, l1, l2, global_step)
         >>> print(output)
-        (Tensor(shape=[2, 2], dtype=Float32, value=
-        [[-7.39064650e-04, -1.36888528e-03],
-         [-5.96988888e-04, -1.42478070e-03]]))
+        [[-0.00073906, -0.00136889],
+         [-0.00059699, -0.00142478]]
     """
 
     __mindspore_signature__ = (
@@ -7933,7 +7932,7 @@ class ApplyAdamWithAmsgradV2(Primitive):
 
     Args:
         use_locking (bool): If ``True`` , updating of the `var`, `m`, and `v` tensors will
-            be protected by a lock; Otherwise the behavior is undefined, but may exhibit less contention.
+            be protected by a lock; Otherwise some contention may occur.
             Default: ``False`` .
 
     Inputs:

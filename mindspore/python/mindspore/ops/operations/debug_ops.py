@@ -458,6 +458,7 @@ class InsertGradientOf(Primitive):
         self.add_prim_attr('side_effect_backprop', True)
         self.f = f
 
+
 class Morph(PrimitiveWithInfer):
     """
     The `Morph` Primitive is used to encapsulate a user-defined function `fn`, allowing it to be used as a custom
@@ -558,6 +559,7 @@ class Morph(PrimitiveWithInfer):
     def __call__(self, *args):
         raise RuntimeError("Morph is only supported in GRAPH_MODE.")
 
+
 class HookBackward(PrimitiveWithInfer):
     """
     This operation is used as a tag to hook gradient in intermediate variables. Note that this function
@@ -619,8 +621,7 @@ class HookBackward(PrimitiveWithInfer):
     def __init__(self, hook_fn, cell_id=""):
         """Initialize HookBackward."""
         super(HookBackward, self).__init__(self.__class__.__name__)
-        if not check_hook_fn("HookBackward", hook_fn):
-            return
+        check_hook_fn(hook_fn)
         if cell_id != "":
             logger.warning(f"The args 'cell_id' of HookBackward will be removed in a future version. If the value of "
                            f"'cell_id' is set, the hook function will not work.")

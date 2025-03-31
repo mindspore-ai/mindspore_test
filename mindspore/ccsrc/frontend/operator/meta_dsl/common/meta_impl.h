@@ -25,6 +25,7 @@
 #include <memory>
 #include <algorithm>
 #include <unordered_map>
+#include "ir/manager.h"
 #include "ops/op_def.h"
 #include "frontend/operator/meta_dsl/common/utils.h"
 #include "frontend/operator/meta_dsl/common/meta_func_builder.h"
@@ -42,6 +43,7 @@ class MetaImpl : public MetaFuncGraph {
   ~MetaImpl() override = default;
   MS_DECLARE_PARENT(MetaImpl, MetaFuncGraph)
   void set_prim(const PrimitivePtr &prim);
+  void set_manager(const FuncGraphManagerPtr &manager);
   PrimitivePtr prim() const;
   FuncGraphPtr GenerateFuncGraph(const AbstractBasePtrList &input_args) override;
   virtual void GenerateFunction() = 0;
@@ -461,12 +463,14 @@ class MetaImpl : public MetaFuncGraph {
   void CheckInputs(const AbstractBasePtrList &input_args) const;
   FuncGraphPtr BuildSubFunction(const std::string &func_name, const BlockFunc &sub_func);
   void DefineCustomBprop(const FuncGraphPtr &graph);
+  void ConvertTypeIdToType(NodePtrList *nodes);
   void DumpIRForMetaDsl(const FuncGraphPtr &graph) const;
 
   PrimitivePtr prim_{nullptr};
   std::string name_;
   CheckFunc check_func_{nullptr};
   FuncGraphPtr bprop_graph_{nullptr};
+  FuncGraphManagerPtr manager_{nullptr};
   std::stack<MetaFuncBuilderPtr> func_builder_stack_;
   std::function<std::shared_ptr<MetaImpl>()> bprop_func_{nullptr};
 };

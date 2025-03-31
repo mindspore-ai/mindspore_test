@@ -587,7 +587,6 @@ Array操作
     mindspore.ops.repeat_elements
     mindspore.ops.repeat_interleave
     mindspore.ops.reshape
-    mindspore.ops.reverse
     mindspore.ops.reverse_sequence
     mindspore.ops.roll
     mindspore.ops.row_stack
@@ -627,7 +626,6 @@ Array操作
     mindspore.ops.unfold
     mindspore.ops.unique
     mindspore.ops.unique_consecutive
-    mindspore.ops.unique_with_pad
     mindspore.ops.unsorted_segment_max
     mindspore.ops.unsorted_segment_min
     mindspore.ops.unsorted_segment_prod
@@ -651,7 +649,6 @@ Array操作
 
     mindspore.ops.cast
     mindspore.ops.is_tensor
-    mindspore.ops.scalar_cast
     mindspore.ops.scalar_to_tensor
     mindspore.ops.tuple_to_array
 

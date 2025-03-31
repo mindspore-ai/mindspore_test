@@ -314,7 +314,7 @@ def rank_list_for_transform(rank_id, src_strategy_file=None, dst_strategy_file=N
     Examples:
         >>> import mindspore as ms
         >>> rank_id = 0
-        >>> rank_list = ms.rank_list_for_transform(rank_id, "./src_strategy.ckpt", "./dst_strategy.ckpt")
+        >>> rank_list = ms.parallel.rank_list_for_transform(rank_id, "./src_strategy.ckpt", "./dst_strategy.ckpt")
         >>> checkpoint_files_map = {}
         >>> for rank in rank_list:
         ...     checkpoint_files_map[rank] = "./pangu{}-100_2.ckpt".format(rank)
@@ -690,10 +690,12 @@ def sync_pipeline_shared_parameters(net):
     to perform synchronization after `embedding table` changes.
 
     Note:
-        The network should be compiled before synchronize pipeline parallel stage shared parameters.
-
+        The network should be compiled before shared parameters are synchronized in the pipeline parallel stage.
     Args:
         net (nn.Cell): the inference network.
+
+    Raises:
+        TypeError: `net` is not in Cell type.
 
     Supported Platforms:
         ``Ascend``
@@ -703,7 +705,7 @@ def sync_pipeline_shared_parameters(net):
             Before running the following examples, you need to configure the communication environment variables.
 
             For the Ascend device, users need to write a dynamic cluster startup script, please see the `Dynamic Cluster
-            Startup <https://www.mindspore.cn/docs/en/master/model_train/parallel/dynamic_cluster.html>`_ .
+            Startup <https://www.mindspore.cn/tutorials/en/master/parallel/dynamic_cluster.html>`_ .
 
         >>> import numpy as np
         >>> import mindspore as ms
@@ -839,6 +841,9 @@ def load_segmented_checkpoints(ckpt_file_dir, net=None, strict_load=False, filte
         then the return value obtained by loading checkpoint is string, and in other cases the return value is
         Parameter.
 
+    Supported Platforms:
+        ``Ascend``
+
     Raises:
         TypeError: Input ckpt_file_dir is not a string.
         ValueError: Checkpoint file directory doesn't exist. Or it's not a directory
@@ -917,9 +922,12 @@ def build_searched_strategy(strategy_filename):
         ValueError: Strategy file is incorrect.
         TypeError: `strategy_filename` is not a string.
 
+    Supported Platforms:
+        ``Ascend``
+
     Examples:
-        >>> import mindspore as ms
-        >>> strategy = ms.build_searched_strategy("./strategy_train.ckpt")
+        >>> from mindspore.parallel import build_searched_strategy
+        >>> strategy = build_searched_strategy("./strategy_train.ckpt")
     """
     return _build_searched_strategy(strategy_filename)
 
@@ -977,7 +985,7 @@ def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_stra
         ValueError: Failed to load checkpoint into net.
 
     Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
+        ``Ascend``
 
     Examples:
         .. note::
@@ -985,14 +993,11 @@ def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_stra
 
             For the Ascend devices, users need to prepare the rank table, set rank_id and device_id.
             Please see the `rank table startup
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/rank_table.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/rank_table.html>`_
             for more details.
 
-            For the GPU devices, users need to prepare the host file and mpi, please see the `mpirun startup
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/mpirun.html>`_ .
-
             For the CPU device, users need to write a dynamic cluster startup script, please see the `Dynamic Cluster
-            Startup <https://www.mindspore.cn/docs/en/master/model_train/parallel/dynamic_cluster.html>`_ .
+            Startup <https://www.mindspore.cn/tutorials/en/master/parallel/dynamic_cluster.html>`_ .
 
         >>> import os
         >>> import numpy as np
@@ -1000,16 +1005,18 @@ def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_stra
         >>> import mindspore.dataset as ds
         >>> from mindspore import nn, ops, train
         >>> from mindspore.communication import init
+        >>> from mindspore.parallel import load_distributed_checkpoint
+        >>> from mindspore.parallel.auto_parallel import AutoParallel
+        >>> from mindspore.nn.utils import no_init_parameters
+        >>> from mindspore.common.initializer import initializer, One
         >>>
         >>> step_per_epoch = 4
-        >>> device_num = 8
         >>>
         >>> # Define the network structure.
         >>> class Net(nn.Cell):
         ...     def __init__(self, matmul_size, strategy=None):
         ...         super().__init__()
-        ...         matmul_np = np.full(matmul_size, 0.5, dtype=np.float32)
-        ...         self.matmul_weight = ms.Parameter(ms.Tensor(matmul_np))
+        ...         self.matmul_weight = ms.Parameter(initializer(One(), matmul_size, ms.float32))
         ...         self.matmul = ops.MatMul()
         ...         self.neg = ops.Neg()
         ...         if strategy is not None:
@@ -1039,31 +1046,35 @@ def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_stra
         ...
         ...     # Set parallel strategy.
         ...     strategy = ((1, 4), (4, 1))
-        ...     ms.set_auto_parallel_context(parallel_mode=ms.ParallelMode.SEMI_AUTO_PARALLEL, device_num=device_num,
-        ...                                  strategy_ckpt_save_file="./train_strategy.ckpt")
-        ...     network = Net(matmul_size=(96, 16), strategy=strategy)
-        ...     net_opt = nn.Momentum(network.trainable_params(), 0.01, 0.9)
+        ...     with no_init_parameters():
+        ...         network = Net(matmul_size=(96, 16), strategy=strategy)
+        ...         net_opt = nn.Momentum(network.trainable_params(), 0.01, 0.9)
+        ...
         ...     net_loss = nn.SoftmaxCrossEntropyWithLogits(reduction="mean")
+        ...     network = AutoParallel(network, parallel_mode="semi_auto")
+        ...     network.save_param_strategy_file(file_path="./train_strategy.ckpt")
         ...     model = ms.Model(network=network, loss_fn=net_loss, optimizer=net_opt)
         ...     ckpt_config = train.CheckpointConfig(keep_checkpoint_max=1, integrated_save=False)
         ...     global_rank_id = int(os.getenv("RANK_ID"))
         ...     ckpt_path = "./rank_{}_ckpt".format(global_rank_id)
         ...     ckpt_callback = train.ModelCheckpoint(prefix="parallel", directory=ckpt_path, config=ckpt_config)
         ...     model.train(epoch=2, train_dataset=dataset, callbacks=[ckpt_callback], dataset_sink_mode=False)
-        ...     ms.reset_auto_parallel_context()
         >>>
         >>> # Load distributed checkpoint and test.
         >>> def load_model():
         ...     ms.set_context(mode=ms.GRAPH_MODE)
         ...     init()
-        ...     ms.set_auto_parallel_context(full_batch=True, parallel_mode="semi_auto_parallel",
-        ...                                  strategy_ckpt_load_file="./train_strategy.ckpt", device_num=device_num)
         ...     predict_data = ms.Tensor(np.random.randn(128, 96).astype(np.float32))
-        ...     network = Net(matmul_size=(96, 16))
+        ...     with no_init_parameters():
+        ...         network = Net(matmul_size=(96, 16))
+        ...         network = AutoParallel(network, parallel_mode="semi_auto")
+        ...     network.dataset_strategy(config="full_batch")
+        ...     train_strategy_file = "./train_strategy.ckpt"
+        ...     network.save_param_strategy_file(file_path=train_strategy_file)
         ...     model = ms.Model(network)
         ...     predict_layout = model.infer_predict_layout(ms.Tensor(predict_data))
         ...     ckpt_file_list = ["./rank_{}_ckpt/parallel-2_4.ckpt".format(i) for i in range(0, device_num)]
-        ...     ms.load_distributed_checkpoint(network, ckpt_file_list, predict_layout)
+        ...     load_distributed_checkpoint(network, ckpt_file_list, predict_layout, None)
         ...     predict_result = model.predict(predict_data)
         ...     print(predict_result)
         >>>
@@ -1265,8 +1276,12 @@ def restore_group_info_list(group_info_file_name):
         ValueError: group information file is incorrect.
         TypeError: `group_info_file_name` is not str.
 
+    Supported Platforms:
+        ``Ascend``
+
     Examples:
         >>> import mindspore as ms
+        >>> from mindspore.parallel import restore_group_info_list
         >>> ms.restore_list = restore_group_info_list("./group_info.pb")
     """
     if not isinstance(group_info_file_name, str):

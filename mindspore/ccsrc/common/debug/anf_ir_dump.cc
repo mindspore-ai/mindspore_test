@@ -43,10 +43,13 @@
 #include "frontend/operator/composite/map.h"
 #include "mindspore/ccsrc/frontend/operator/meta_dsl/common/meta_impl.h"
 #include "frontend/operator/composite/functional_overload.h"
+#include "include/common/utils/parallel_context.h"
 
 using MetaFuncGraph = mindspore::MetaFuncGraph;
 using MetaFuncGraphPtr = std::shared_ptr<MetaFuncGraph>;
 namespace mindspore {
+
+constexpr auto kDumpIrParallelDetail = "1";
 
 enum FormatLevel : int {
   // When setting to basic level, ir will only contains operator and operands of nodes and title of subgraph with
@@ -705,16 +708,21 @@ void DumpParallelInfo(const CNodePtr &node, const std::shared_ptr<SubGraphIRInfo
     gsub->buffer << out_tmp->ToString();
   }
 
-  ValueTuplePtr in_layout_tmp = AnfDumpHandler::InLayoutValue(node);
-  if (in_layout_tmp != nullptr) {
-    gsub->buffer << ", in_layout: ";
-    gsub->buffer << in_layout_tmp->ToString();
-  }
+  // dump IR detail in sharding_propagation mode
+  std::string env_var = common::GetEnv("MS_DEV_DUMP_IR_PARALLEL_DETAIL");
+  auto strategy_search_mode = parallel::ParallelContext::GetInstance()->strategy_search_mode();
+  if (!env_var.empty() && env_var == kDumpIrParallelDetail && strategy_search_mode == "sharding_propagation") {
+    ValueTuplePtr in_layout_tmp = AnfDumpHandler::InLayoutValue(node);
+    if (in_layout_tmp != nullptr) {
+      gsub->buffer << ", in_layout: ";
+      gsub->buffer << in_layout_tmp->ToString();
+    }
 
-  ValueTuplePtr out_layout_tmp = AnfDumpHandler::OutLayoutValue(node);
-  if (out_layout_tmp != nullptr) {
-    gsub->buffer << ", out_layout: ";
-    gsub->buffer << out_layout_tmp->ToString();
+    ValueTuplePtr out_layout_tmp = AnfDumpHandler::OutLayoutValue(node);
+    if (out_layout_tmp != nullptr) {
+      gsub->buffer << ", out_layout: ";
+      gsub->buffer << out_layout_tmp->ToString();
+    }
   }
 
   gsub->buffer << "}";

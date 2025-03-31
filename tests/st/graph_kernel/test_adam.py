@@ -46,19 +46,21 @@ def get_output(var, m, v, grad, enable_graph_kernel=False):
 
 
 def run_basic(dtype):
-    var = Tensor(np.array([[1, 2], [3, 4]]), dtype=dtype)
-    m = Tensor(np.array([[5, 6], [7, 8]]), dtype=dtype)
-    v = Tensor(np.array([[3, 1], [7, 4]]), dtype=dtype)
-    grad = Tensor(np.array([[2, 3], [1, 5]]), dtype=dtype)
+    np.random.seed(42)
+    shape = [10, 10]
+    var = Tensor(np.random.random(shape), dtype=dtype)
+    m = Tensor(np.random.random(shape), dtype=dtype)
+    v = Tensor(np.random.random(shape), dtype=dtype)
+    grad = Tensor(np.random.random(shape), dtype=dtype)
     expect = get_output(var, m, v, grad, False)
     output = get_output(var, m, v, grad, True)
 
     expect_np = expect[0].asnumpy().copy()
     output_np = output[0].asnumpy().copy()
-    assert np.allclose(expect_np, output_np, 0.0001, 0.0001)
+    assert np.allclose(expect_np, output_np)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_adam_expander_float32(nptype=np.float32, mstype=None):
     """
     Feature: test O1 adam expander float32.
@@ -69,7 +71,7 @@ def test_adam_expander_float32(nptype=np.float32, mstype=None):
     run_basic(mindspore.float32)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_adam_expander_float16():
     """
     Feature: test O1 adam expander float16.

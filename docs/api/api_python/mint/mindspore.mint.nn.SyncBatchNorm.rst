@@ -44,7 +44,7 @@ mindspore.mint.nn.SyncBatchNorm
         对于Ascend设备，用户需要准备rank table，设置rank_id和device_id。
         这里，示例使用msrun通过单个命令跨节点拉取多进程分布式任务行指令。
         请参阅 `Ascend教程
-        <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+        <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
         了解更多详情。
 
         此示例应在多个设备上运行。

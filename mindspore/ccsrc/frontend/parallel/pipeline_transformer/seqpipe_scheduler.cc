@@ -514,7 +514,7 @@ BorderPair SeqsmartvppScheduler::GetBorderNodeRecv(size_t index) {
       is_in_full_1f1b_range ? bp_index - LongToSize(stage_num_ / INT64_TWO) : bp_index - LongToSize(stage_num_);
     MS_LOG(INFO) << "first_stage_send_node_index:" << first_stage_send_node_index << ", index:" << index;
     // Assure the first_stage_send_node_index is correct.
-    if ((is_in_full_1f1b_range || index + 1 >= calm_down_index_stage0 + stage_num_) &&
+    if ((is_in_full_1f1b_range || index + 1 >= calm_down_index_stage0 + LongToSize(stage_num_)) &&
         bp_index >= LongToSize(stage_num_ / INT64_TWO) && bp_execute_order_[first_stage_send_node_index].chunk > 0) {
       recv_node_index = GetOrderIndex(bp_execute_order_[first_stage_send_node_index].seq_chunk,
                                       bp_execute_order_[first_stage_send_node_index].micro,

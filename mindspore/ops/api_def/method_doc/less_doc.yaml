@@ -2,35 +2,4 @@ less:
   description: |
     less(other) -> Tensor
 
-    Computes the boolean value of :math:`self < other` element-wise.
-
-    The inputs of `self` and `other` follow implicit type conversion rules to ensure consistent data types.
-    When the `other` is Scalar, it can only be a constant.
-
-    .. math::
-        out_{i} =\begin{cases}
-            & \text{True,    if } self_{i}<other_{i} \\
-            & \text{False,   if } self_{i}>=other_{i}
-            \end{cases}
-
-    Args:
-        other (Union[Tensor, Number, bool]): The values to be compared. Supports Number, bool, or Tensor[Number/bool].
-
-    Returns:
-        Tensor, the shape is the same as the one after broadcasting, and the data type is bool.
-
-    Raises:
-        TypeError: If `self` and `other` is not one of the following: Tensor, Number, bool.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor
-        >>> input = Tensor(np.array([1, 2, 3]), mindspore.int32)
-        >>> other = Tensor(np.array([1, 1, 4]), mindspore.int32)
-        >>> output = input.less(other)
-        >>> print(output)
-        [False False True]
+    For details, please refer to :func:`mindspore.ops.less`.

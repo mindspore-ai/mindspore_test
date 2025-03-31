@@ -901,7 +901,9 @@ device::DeviceAddressPtr DeviceAddressUtils::CloneEmptyDeviceAddress(const devic
 void DeviceAddressUtils::CreateInputTensorAddress(const DeviceContext *device_context, size_t stream_id, size_t index,
                                                   const tensor::BaseTensorPtr &tensor) {
   MS_EXCEPTION_IF_NULL(device_context);
-  MS_EXCEPTION_IF_NULL(tensor);
+  if (tensor == nullptr) {
+    return;
+  }
 
   auto addr = tensor->device_address();
   if (addr != nullptr) {
@@ -945,7 +947,9 @@ void DeviceAddressUtils::CreateInputTensorAddress(const DeviceContext *device_co
 
 void DeviceAddressUtils::MallocForInput(const DeviceContext *device_context, const tensor::BaseTensorPtr &tensor,
                                         bool is_view) {
-  MS_EXCEPTION_IF_NULL(tensor);
+  if (tensor == nullptr) {
+    return;
+  }
   const auto &device_sync = tensor->device_address();
   auto device_address = std::static_pointer_cast<device::DeviceAddress>(device_sync);
   MS_EXCEPTION_IF_NULL(device_address);

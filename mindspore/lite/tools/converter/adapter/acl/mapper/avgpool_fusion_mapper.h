@@ -32,8 +32,7 @@ class AvgPoolFusionMapper : public PrimitiveMapper {
   STATUS Mapper(const CNodePtr &cnode) override;
 
  private:
-  void CreateTargetPrim(const PrimitivePtr &src_prim, PrimitivePtr *dst_prim, int fmk_type);
-  bool is_3d_ = false;
+  void CreateTargetPrim(const PrimitivePtr &src_prim, int fmk_type, PrimitivePtr *dst_prim, bool *is_3d);
 };
 }  // namespace lite
 }  // namespace mindspore

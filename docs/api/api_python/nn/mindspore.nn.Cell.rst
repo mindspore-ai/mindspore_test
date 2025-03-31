@@ -58,9 +58,15 @@
 
         在图模式下使用，用于标识是否使用自定义的反向传播函数。
 
-        教程样例：
-            - `自定义神经网络层 - 自定义Cell反向
-              <https://mindspore.cn/docs/zh-CN/master/model_train/custom_program/network_custom.html#自定义cell反向>`_
+    .. py:method:: buffers(recurse: bool = True)
+
+        返回Cell缓冲区的迭代器，只包含缓冲区本身。
+
+        参数：
+            - **recurse** (bool，可选) - 如果为 ``True`` ，则生成此Cell及其子Cell的缓冲区。否则，仅生成此Cell的缓冲区。默认 ``True`` 。
+
+        返回：
+            Iterator[Tensor]，缓冲区的迭代器。
 
     .. py:method:: cast_inputs(inputs, dst_type)
 
@@ -165,6 +171,32 @@
 
         为网络中的每个Cell对象生成NameSpace。
 
+    .. py:method:: get_buffer(target: str)
+
+        返回给定 `target` 的缓冲区，如果不存在则抛出错误。
+
+        请参阅 `get_sub_cell` 的文档，了解有关此方法功能的更详细说明以及如何正确指定 `target`。
+
+        参数：
+            - **target** (str) - 要查找的缓冲区的完全限定字符串名称。（请参阅 `get_sub_cell` 了解如何指定完全限定字符串。）
+
+        返回：
+            Tensor
+
+    .. py:method:: get_extra_state()
+
+        返回要包含在Cell的 `state_dict` 中的任何额外状态。
+
+        当构建Cell的 `state_dict()` 时，将调用此函数。
+        如果您需要存储额外状态，实现此方法，并为您的Cell实现相应的 :func:`set_extra_state` 。
+
+        请注意，额外状态应为可序列化对象（picklable），以确保state_dict的序列化可用性。
+        仅对tensor的序列化提供向后兼容性保证；
+        对于其他对象，如果其序列化的pickled形式发生变化，可能会导致向后兼容性问题。
+
+        返回：
+            object，要存储在Cell的state_dict中的额外状态。
+
     .. py:method:: get_flags()
 
         获取该Cell的自定义属性，自定义属性通过 `add_flags` 方法添加。
@@ -201,6 +233,37 @@
 
         返回：
             String类型，网络的作用域。
+
+    .. py:method:: get_sub_cell(target: str)
+
+        返回给定 `target` 的子Cell，如果不存在则抛出错误。
+
+        例如，假设你有一个 `nn.Cell` `A`，如下所示：
+
+        .. code-block:: text
+
+            A(
+                (net_b): NetB(
+                    (net_c): NetC(
+                        (conv): Conv2d(16, 33, kernel_size=(3, 3), stride=(2, 2))
+                    )
+                    (dense): Dense(in_features=100, out_features=200, bias=True)
+                )
+            )
+
+        （该图显示了 `nn.Cell` `A` 。 `A` 有一个嵌套的子Cell `net_b`，
+        而后者本身又有两个子Cell `net_c` 和 `dense` 。 `net_c` 则有一个子Cell `conv` 。）
+
+        要检查是否拥有子Cell `dense` ，我们将调用 `get_sub_cell("net_b.dense")` 。要检查是否拥有子Cell `conv` ，我们将调用 `get_sub_cell("net_b.net_c.conv")` 。
+
+        `get_sub_cell` 的运行时间受 `target` 中Cell嵌套程度的限制。使用 `name_cells` 的查询可获得相同的结果，但传递的Cell的数量级为O(N)。
+        因此，为了简单检查是否存在某些子Cell，应始终使用 `get_sub_cell` 。
+
+        参数：
+            - **target** (str) - 要查找的子Cell的完全限定字符串名称。（请参阅上述示例以了解如何指定完全限定字符串。）
+
+        返回：
+            Cell
 
     .. py:method:: infer_param_pipeline_stage()
 
@@ -256,6 +319,26 @@
             - **KeyError** - 如果参数名称为空或包含"."。
             - **TypeError** - 如果参数的类型不是Parameter。
 
+    .. py:method:: load_state_dict(state_dict: Mapping[str, Any], strict: bool=True)
+
+        将 :attr:`state_dict` 中的参数和缓冲区复制到当前Cell及其子Cell中。
+
+        如果 `strict` 设置为 ``True`` ，则 :attr:`state_dict` 的键必须与该Cell的 :func:`mindspore.nn.Cell.state_dict` 方法返回的键完全匹配。
+
+        参数：
+            - **state_dict** (dict) - 包含参数和持久缓冲区的字典。
+            - **strict** (bool，可选) - 是否严格要求输入 `state_dict` 中的键必须与当前Cell的 :func:`mindspore.nn.Cell.state_dict` 方法返回的键匹配。默认 ``True`` 。
+
+        返回：
+            一个包含 `missing_keys` 和 `unexpected_keys` 字段的namedtuple，
+
+            - `missing_keys` 是一个包含字符串的列表，表示当前Cell需要但在state_dict中缺失的键。
+
+            - `unexpected_keys` 是一个包含字符串的列表，表示state_dict中存在但当前Cell不需要的键。
+
+        .. note::
+            如果某个参数或缓冲区被注册为 ``None`` ，但其对应的键在 :attr:`state_dict` 中存在，则 :func:`mindspore.nn.Cell.load_state_dict` 将会抛出 ``RuntimeError`` 。
+
     .. py:method:: name_cells()
 
         递归地获取一个Cell中所有子Cell的迭代器。
@@ -264,6 +347,18 @@
 
         返回：
             Dict[String, Cell]，Cell中的所有子Cell及其名称。
+
+    .. py:method:: named_buffers(prefix: str = "", recurse: bool = True, remove_duplicate: bool = True)
+
+        返回Cell中缓冲区的迭代器，包含缓冲区的名称以及缓冲区本身。
+
+        参数：
+            - **prefix** (str，可选) - 添加到所有缓冲区名称前面的前缀。默认 ``""`` 。
+            - **recurse** (bool，可选) - 如果为 ``True`` ，则生成此Cell和所有子Cell的缓冲区。否则，仅生成此Cell的缓冲区。默认 ``True`` 。
+            - **remove_duplicate** (bool，可选) - 是否删除结果中的重复缓冲区。默认 ``True`` 。
+
+        返回：
+            Iterator[Tuple[str, Tensor]]，包含名称和缓冲区的元组的迭代器。
 
     .. py:method:: offload(backward_prefetch="Auto")
 
@@ -396,6 +491,21 @@
         异常：
             - **TypeError** - 如果 `hook_fn` 不是Python函数。
 
+    .. py:method:: register_buffer(name: str, tensor: Optional[Tensor], persistent: bool = True)
+
+        在Cell添加一个缓冲区 `buffer` 。
+
+        这通常用于注册不应被视为模型参数的缓冲区。例如，BatchNorm的 `running_mean` 不是参数，而是Cell状态的一部分。
+        默认情况下，缓冲区是持久的，将与参数一起保存。可以通过将 `persistent` 设置为 ``False`` 来更改此行为。
+        持久缓冲区和非持久缓冲区之间的唯一区别是后者不会成为此Cell的 :attr:`state_dict` 的一部分。
+
+        可以使用指定的名称将缓冲区作为属性访问。
+
+        参数：
+            - **name** (str) - 缓冲区的名字。可以使用给定的名称访问此Cell的缓冲区 。
+            - **tensor** (Tensor) - 待注册的缓冲区。如果为 ``None`` ，则此Cell的 :attr:`state_dict` 不会包括该缓冲区。
+            - **persistent** (bool, 可选) - 缓冲区是否是此Cell的 :attr:`state_dict` 的一部分。默认 ``True`` 。
+
     .. py:method:: register_forward_hook(hook_fn)
 
         设置Cell对象的正向hook函数。
@@ -435,6 +545,74 @@
 
         异常：
             - **TypeError** - 如果 `hook_fn` 不是Python函数。
+
+    .. py:method:: register_load_state_dict_post_hook(hook)
+
+        为 :func:`mindspore.nn.Cell.load_state_dict` 方法注册一个后钩子。
+
+        它应该具有以下签名:
+
+        hook(cell, incompatible_keys) -> None
+
+        参数 `cell` 是此钩子注册的当前cell，参数 `incompatible_keys` 是一个 `NamedTuple` ，由属性 `missing_keys` 和 `unexpected_keys` 组成。`missing_keys` 是包含缺失键的 `list` ，
+        而 `unexpected_keys` 是包含意外键的 `list` 。
+
+        请注意，正如预期的那样，在使用 `strict=True` 调用：func: `load_state_dict` 时执行的检查会受到钩子对 `missing_keys` 或 `unexpected_keys` 所做修改的影响。
+        当 `strict=True` 时，添加任何一组键都会导致抛出错误，而清除缺失和意外的键将避免错误。
+
+        参数：
+            - **hook** (Callable) - 在调用load_state_dict之后执行的钩子。
+
+        返回：
+            RemovableHandle，一个句柄，可以通过调用 `handle.remove()` 来移除已添加的钩子。
+
+    .. py:method:: register_load_state_dict_pre_hook(hook)
+
+        为 :func:`mindspore.nn.Cell.load_state_dict` 方法注册一个预钩子。
+
+        它应该具有以下签名:
+
+        hook(cell, state_dict, prefix, local_metadata, strict, missing_keys, expected_keys, error_msgs) -> None
+
+        注册的钩子可以就地修改 `state_dict` 。
+
+        参数：
+            - **hook** (Callable) - 在调用load_state_dict之前执行的钩子。
+
+        返回：
+            RemovableHandle，一个句柄，可以通过调用 `handle.remove()` 来移除已添加的钩子。
+
+    .. py:method:: register_state_dict_post_hook(hook)
+
+        为 :func:`mindspore.nn.Cell.state_dict` 方法注册一个后钩子。
+
+        它应该具有以下签名:
+
+        hook(cell, state_dict, prefix, local_metadata) -> None
+
+        注册的钩子可用于在调用 `state_dict` 之后执行后处理。
+
+        参数：
+            - **hook** (Callable) - 在调用state_dict之后执行的钩子。
+
+        返回：
+            RemovableHandle，一个句柄，可以通过调用 `handle.remove()` 来移除已添加的钩子。
+
+    .. py:method:: register_state_dict_pre_hook(hook)
+
+        为 :func:`mindspore.nn.Cell.state_dict` 方法注册一个预钩子。
+
+        它应该具有以下签名:
+
+        hook(cell, prefix, keep_vars) -> None
+
+        注册的钩子可用于在调用 `state_dict` 之前执行预处理。
+
+        参数：
+            - **hook** (Callable) - 在调用state_dict之前执行的钩子。
+
+        返回：
+            RemovableHandle，一个句柄，可以通过调用 `handle.remove()` 来移除已添加的钩子。
 
     .. py:method:: remove_redundant_parameters()
 
@@ -496,6 +674,17 @@
         在非自动策略搜索的情况下，如果此Cell的所有算子（包括此Cell内含嵌套的cell）未指定并行策略，则将为这些基本算子设置为数据并行策略。
 
         .. note:: 仅在图模式，使用auto_parallel_context = ParallelMode.AUTO_PARALLEL生效。
+
+    .. py:method:: set_extra_state(state: Any)
+
+        设置加载的 `state_dict` 中包含的额外状态。
+
+        此方法由 `load_state_dict` 调用，以处理 `state_dict` 中的任何额外状态。
+        如果您的 Cell 需要在 `state_dict` 中存储额外状态，请实现此方法及相应的
+        `get_extra_state` 方法。
+
+        参数：
+            - **state** (dict) - `state_dict` 的额外状态。
 
     .. py:method:: set_grad(requires_grad=True)
 
@@ -585,6 +774,27 @@
 
         返回：
             Function，返回一个在自动并行流程下执行的函数。
+
+    .. py:method:: state_dict(*args, destination=None, prefix="", keep_vars=False)
+
+        返回一个包含对Cell整个状态的引用的字典。
+
+        参数和持久缓冲区（例如运行平均值）都包括在内。键是相应的参数和缓冲区名称。设置为 `None` 的参数和缓冲区不包括在内。
+
+        .. note::
+            返回的对象是一个浅拷贝。它包含对该Cell的参数和缓冲区的引用。
+
+        .. warning::
+            - 目前 `state_dict()` 还按顺序接受 `destination` 、`prefix` 和 `keep_vars` 的位置参数。但是这即将被弃用，关键字参数将在未来的版本中强制执行。
+            - 请避免使用参数 `destination` ，因为它不是为最终用户设计的。
+
+        参数：
+            - **destination** (dict，可选) - 如果提供，Cell的状态将更新到此字典中，并返回相同的对象。否则，将创建并返回 `OrderedDict` 。默认 ``None`` 。
+            - **prefix** (str，可选) - 添加到参数和缓冲区名称的前缀，用于组成state_dict中的键。默认 ``""`` 。
+            - **keep_vars** (bool，可选) - 状态字典返回值是否为拷贝。默认 ``False`` ，返回引用。
+
+        返回：
+            Dict，包含整个Cell状态的字典。
 
     .. py:method:: to_float(dst_type)
 

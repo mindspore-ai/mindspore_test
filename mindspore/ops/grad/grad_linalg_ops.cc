@@ -521,8 +521,7 @@ REG_BPROP_BUILDER("LinalgQr").SetBody(BODYFUNC(ib) {
       // So, here we should do convert: [x * r^T = dx] => [(r^T)^T * x^T = dx^T] => [r * x^T = dx^T]
       auto dx_T = ib->TupleGetItem(
         ib->Emit("TriangularSolve", {ib->Emit("TransposeExt", {dx, ib->Value<int64_t>(-1), ib->Value<int64_t>(-2)}),
-                                     r_mat, /*upper*/ ib->Value(true),
-                                     /*transpose*/ ib->Value(false), /*unit_diagonal*/ ib->Value(false)}),
+                                     r_mat, ib->Value(true), ib->Value(false), ib->Value(false)}),
         0);
       dx = ib->Emit("TransposeExt", {dx_T, ib->Value<int64_t>(-1), ib->Value<int64_t>(-2)});
     } else {
@@ -535,8 +534,7 @@ REG_BPROP_BUILDER("LinalgQr").SetBody(BODYFUNC(ib) {
       // [x * r_narrow^T = dx] => [r_narrow * x^T = dx^T]
       auto dx_T = ib->TupleGetItem(
         ib->Emit("TriangularSolve", {ib->Emit("TransposeExt", {dx, ib->Value<int64_t>(-1), ib->Value<int64_t>(-2)}),
-                                     r_narrow, /*upper*/ ib->Value(true),
-                                     /*transpose*/ ib->Value(false), /*unit_diagonal*/ ib->Value(false)}),
+                                     r_narrow, ib->Value(true), ib->Value(false), ib->Value(false)}),
         0);
       dx = ib->Emit("TransposeExt", {dx_T, ib->Value<int64_t>(-1), ib->Value<int64_t>(-2)});
 

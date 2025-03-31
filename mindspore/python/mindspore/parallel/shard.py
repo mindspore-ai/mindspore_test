@@ -98,7 +98,7 @@ class Layout:
         alias_name (tuple): The alias name for each axis of device_matrix, its length shoits element type is string.
                             When using "interleaved_parallel" as an alias name, the tensor would be split into multiple
                             copies on the corresponding partition dimension on a single card.
-        rank_list (list): Data is allocated to the device according to rank_list. Default: None.
+        rank_list (list, optional): Data is allocated to the device according to rank_list. Default: ``None``.
 
     Raises:
         TypeError: `device_matrix` is not a tuple type.
@@ -113,10 +113,10 @@ class Layout:
         ValueError: `alias_name` contains repeated element.
 
     Supported Platforms:
-        ``Ascend`` ``GPU``
+        ``Ascend``
 
     Examples:
-        >>> from mindspore import Layout
+        >>> from mindspore.parallel import Layout
         >>> layout = Layout((2, 2, 2), ("dp", "sp", "mp"))
         >>> layout0 = layout("dp", "mp")
         >>> print(layout0.to_dict())
@@ -419,7 +419,7 @@ def shard(fn, in_strategy, out_strategy=None, parameter_plan=None, device="Ascen
     The parallel strategies of remaining operators are derived from the strategy specified by the input and output.
 
     Note:
-        If ms.shard is called, the parallel mode in `set_auto_parallel_context` (parallel_mode) will be set to
+        If shard is called, the parallel mode in `set_auto_parallel_context` (parallel_mode) will be set to
         "auto_parallel" and the search mode (search_mode) to "sharding_propagation".
         If the input contain Parameter, its strategy should be set in `in_strategy`.
 
@@ -431,9 +431,10 @@ def shard(fn, in_strategy, out_strategy=None, parameter_plan=None, device="Ascen
         in_strategy (tuple): Define the layout of inputs, each element of the tuple should be a tuple(int) or
                              tuple(mindspore.Layout).
                              Tuple defines the layout of the corresponding input.
-        out_strategy (Union[tuple, None]): Define the layout of outputs similar with `in_strategy`.
+        out_strategy (Union[tuple, None], optional): Define the layout of outputs similar with `in_strategy`.
                                            Default: ``None`` .
-        parameter_plan (Union[dict, None]): Define the layout for the specified parameters. Each element in dict
+        parameter_plan (Union[dict, None], optional): Define the layout for the specified parameters.
+                                            Each element in dict
                                             defines the layout of the parameter like "param_name: layout".
                                             The key is a parameter name of type 'str'.
                                             The value is a 1-D integer tuple or a 1-D mindspore.Layout tuple,
@@ -441,11 +442,12 @@ def shard(fn, in_strategy, out_strategy=None, parameter_plan=None, device="Ascen
                                             If the parameter name is incorrect or the corresponding parameter
                                             has been set, the parameter setting will be ignored.
                                             Default: ``None`` .
-        device (str): Select a certain `device` target. It is not in use right now.
-                         Support ["CPU", "GPU", "Ascend"]. Default: ``"Ascend"`` .
-        level (int): Option for parallel strategy infer algorithm, namely the object function, maximize computation
-                     over communication ratio, maximize speed performance, minimize memory usage etc. It is not in
-                     use right now. Support [0, 1, 2]. Default: ``0`` .
+        device (str, optional): Select a certain `device` target. It is not in use right now.
+                                Support ["CPU", "GPU", "Ascend"]. Default: ``"Ascend"`` .
+        level (int, optional): Option for parallel strategy infer algorithm, namely the object function,
+            maximize computation
+            over communication ratio, maximize speed performance, minimize memory usage etc. It is not in
+            use right now. Support [0, 1, 2]. Default: ``0`` .
 
     Returns:
         Function, return the function that will be executed under auto parallel process.
@@ -464,17 +466,19 @@ def shard(fn, in_strategy, out_strategy=None, parameter_plan=None, device="Ascen
         TypeError: If `level` is not an integer.
 
     Supported Platforms:
-        ``Ascend`` ``GPU``
+        ``Ascend``
 
     Examples:
         >>> import numpy as np
         >>> import mindspore as ms
-        >>> from mindspore import Tensor, nn
+        >>> from mindspore import Tensor, nn, ops
         >>> from mindspore.communication import init
+        >>> from mindspore.parallel import shard
+        >>> from mindspore.parallel import Layout
+        >>> from mindspore.nn.utils import no_init_parameters
+        >>> from mindspore.parallel.auto_parallel import AutoParallel
         >>> ms.set_context(mode=ms.GRAPH_MODE)
         >>> init()
-        >>> ms.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation",
-        ...                              device_num=8)
         >>>
         >>> # Case 1: cell uses functional
         >>> class BasicBlock(nn.Cell):
@@ -486,7 +490,7 @@ def shard(fn, in_strategy, out_strategy=None, parameter_plan=None, device="Ascen
         >>>             x = ops.abs(x)
         >>>             return x + y
         >>>         # shard a function with tuple(int) strategies
-        >>>         self.shard_my_add = ms.shard(my_add, in_strategy=((2, 2), (1, 4)), out_strategy=((4, 1),))
+        >>>         self.shard_my_add = shard(my_add, in_strategy=((2, 2), (1, 4)), out_strategy=((4, 1),))
         >>>
         >>>     def construct(self, x, u):
         >>>         x = self.gelu(x)
@@ -514,7 +518,7 @@ def shard(fn, in_strategy, out_strategy=None, parameter_plan=None, device="Ascen
         >>>         super(Net, self).__init__()
         >>>         # setting cell sharding strategy and parameter_plan by tuple(int)
         >>>         self.layer_net1 = NetForward()
-        >>>         self.layer_net1_shard = ms.shard(self.layer_net1, in_strategy=((4, 2), (2, 1)),
+        >>>         self.layer_net1_shard = shard(self.layer_net1, in_strategy=((4, 2), (2, 1)),
         ...                                          parameter_plan={"self.layer_net1.block1.weight": (4, 1)})
         >>>
         >>>         # setting cell sharding strategy and parameter_plan by tuple(ms.Layout)
@@ -522,7 +526,7 @@ def shard(fn, in_strategy, out_strategy=None, parameter_plan=None, device="Ascen
         >>>         layout = Layout((4, 2, 1), ("dp", "mp", "sp"))
         >>>         in_layout = (layout("dp", "mp"), layout("mp", "sp"))
         >>>         param_layout = layout("dp", "sp")
-        >>>         self.layer_net2_shard = ms.shard(self.layer_net2, in_strategy=in_layout,
+        >>>         self.layer_net2_shard = shard(self.layer_net2, in_strategy=in_layout,
         ...                                          parameter_plan={"self.layer_net2.block2.weight": param_layout})
         >>>         self.flatten = nn.Flatten()
         >>>         self.layer1 = nn.Dense(64, 64)
@@ -540,17 +544,19 @@ def shard(fn, in_strategy, out_strategy=None, parameter_plan=None, device="Ascen
         >>>         x = self.matmul(x, Tensor(np.ones(shape=(32, 32)), dtype=ms.float32))
         >>>         return x
         >>>
-        >>> net = Net()
+        >>> with no_init_parameters():
+        >>>     net = Net()
         >>> x = Tensor(np.ones(shape=(64, 1, 8, 8)), dtype=ms.float32)
         >>> y = Tensor(np.ones(shape=(64, 1, 8, 8)), dtype=ms.float32)
-        >>> net(x, y)
+        >>> parallel_net = AutoParallel(net, parallel_mode='sharding_propagation')
+        >>> parallel_net(x, y)
         >>>
         >>> # Case 2: function uses functional sharding
         >>> def test_shard(x, y):
         ...     return x + y
         >>> x = Tensor(np.ones(shape=(32, 10)), dtype=ms.float32)
         >>> y = Tensor(np.ones(shape=(32, 10)), dtype=ms.float32)
-        >>> output = ms.shard(test_shard, in_strategy=((4, 2), (4, 2)))(x, y)
+        >>> output = shard(test_shard, in_strategy=((4, 2), (4, 2)))(x, y)
         >>> print(output.shape)
         (32, 10)
 

@@ -3,9 +3,9 @@ mindspore.train.ReduceLROnPlateau
 
 .. py:class:: mindspore.train.ReduceLROnPlateau(monitor='eval_loss', factor=0.1, patience=10, verbose=False, mode='auto', min_delta=1e-4, cooldown=0, min_lr=0)
 
-    当 `monitor` 停止改进时，降低学习率。
+    动态调整学习率，当 `monitor` 停止改进时，降低学习率。
 
-    一旦学习停止，模型通常受益于降低2-10倍的学习率。此回调监控训练过程，当在 `patience` 个epoch范围内指标效果没有变好时，学习率就会降低。
+    训练中一旦学习停滞（loss不再降低或acc不再提高），会降低2-10倍的学习率使模型继续学习。此回调监控训练过程，当在 `patience` 个epoch范围内指标效果没有变好时，学习率就会降低。
 
     .. note::
         暂不支持分组学习率场景。

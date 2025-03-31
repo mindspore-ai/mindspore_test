@@ -69,5 +69,3 @@ https://mindspore.cn*/r2.3.1/*
 https://www.mindspore.cn*/r2.3.1/*
 https://mindspore.cn*/r2.4.0/*
 https://www.mindspore.cn*/r2.4.0/*
-https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore.dataset.loading.html*
-https://www.mindspore.cn/docs/en/master/api_python/mindspore.dataset.loading.html*

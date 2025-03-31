@@ -46,7 +46,6 @@ from mindspore.communication import (
 from mindspore.communication.comm_func import (
     _deal_comm_outputs,
     _check_all_tensors,
-    _contiguous,
     _check_all_tensor_same_dtype,
     _is_split_sizes_empty,
     _get_size,
@@ -76,6 +75,8 @@ _pickler = pickle.Pickler
 _unpickler = pickle.Unpickler
 BACKEND_HCCL = "hccl"
 BACKEND_MCCL = "mccl"
+_GROPU_SIZE_CACHE = {}
+_GROPU_RANK_CACHE = {}
 
 safe_builtins = {
     'range',
@@ -84,6 +85,24 @@ safe_builtins = {
     'frozenset',
     'slice',
 }
+
+
+def get_cache_group_size(group=GlobalComm.WORLD_COMM_GROUP):
+    """get cache group size."""
+    global _GROPU_SIZE_CACHE
+    if group not in _GROPU_SIZE_CACHE:
+        _GROPU_SIZE_CACHE[group] = _get_size_helper(group)
+    group_size = _GROPU_SIZE_CACHE[group]
+    return group_size
+
+
+def get_cache_group_rank(group=GlobalComm.WORLD_COMM_GROUP):
+    """get cache rank id."""
+    global _GROPU_RANK_CACHE
+    if group not in _GROPU_RANK_CACHE:
+        _GROPU_RANK_CACHE[group] = _get_rank_helper(group)
+    group_rank = _GROPU_RANK_CACHE[group]
+    return group_rank
 
 
 class RestrictedUnpickler(pickle.Unpickler):
@@ -138,7 +157,7 @@ def is_available():
             For Ascend devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
         >>> import mindspore as ms
@@ -167,7 +186,7 @@ def is_initialized():
             For Ascend devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
         >>> import mindspore as ms
@@ -231,7 +250,7 @@ def init_process_group(backend="hccl",
             For Ascend devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
         >>> import mindspore as ms
@@ -295,7 +314,7 @@ def destroy_process_group(group=None):
             For Ascend devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
         >>> import mindspore as ms
@@ -345,7 +364,7 @@ def get_rank(group=None):
             For Ascend devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
         >>> import mindspore as ms
@@ -402,7 +421,7 @@ def get_world_size(group=None):
             For Ascend devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 8 devices.
@@ -470,7 +489,7 @@ def new_group(ranks=None,
             For Ascend devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
         >>> import mindspore as ms
@@ -528,7 +547,7 @@ def get_backend(group=None):
             For Ascend devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
         >>> import mindspore as ms
@@ -586,7 +605,7 @@ def get_global_rank(group, group_rank):
             without any third-party or configuration file dependencies.
 
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 8 devices.
@@ -651,7 +670,7 @@ def get_group_rank(group, global_rank):
             For Ascend devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 8 devices.
@@ -712,7 +731,7 @@ def get_process_group_ranks(group=None):
             without any third-party or configuration file dependencies.
 
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 4 devices.
@@ -803,7 +822,7 @@ def all_reduce(tensor, op=ReduceOp.SUM, group=None, async_op=False):
             For Ascend devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -883,7 +902,7 @@ def all_gather_into_tensor(output_tensor, input_tensor, group=None, async_op=Fal
             For Ascend devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -923,7 +942,7 @@ def all_gather_into_tensor(output_tensor, input_tensor, group=None, async_op=Fal
         raise TypeError(
             f"The argument 'async_op' must be a bool, but got {type(async_op)}."
         )
-    group_size = get_group_size(group)
+    group_size = get_cache_group_size(group)
     result = dist_comm_all_gather_into_tensor_op(
         output_tensor, input_tensor, group_size, group
     )
@@ -970,7 +989,7 @@ def reduce_scatter_tensor(output, input, op=ReduceOp.SUM, group=None, async_op=F
             For Ascend devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -1015,7 +1034,7 @@ def reduce_scatter_tensor(output, input, op=ReduceOp.SUM, group=None, async_op=F
         raise TypeError(
             f"The argument 'async_op' must be a bool, but got {type(async_op)}."
         )
-    rank_size = get_group_size(group)
+    rank_size = get_cache_group_size(group)
     result = dist_comm_reduce_scatter_tensor_op(output, input, rank_size, op, group)
     _, handle = _deal_comm_outputs(result, async_op)
     return handle
@@ -1060,7 +1079,7 @@ def reduce(tensor, dst, op=ReduceOp.SUM, group=None, async_op=False):
             without any third-party or configuration file dependencies.
 
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 4 devices.
@@ -1218,7 +1237,7 @@ def batch_isend_irecv(p2p_op_list):
             For Ascend devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -1331,7 +1350,7 @@ def scatter_tensor(output_tensor, input_tensor, src=0, group=None, async_op=Fals
             For Ascend devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -1372,8 +1391,8 @@ def scatter_tensor(output_tensor, input_tensor, src=0, group=None, async_op=Fals
             f"The argument 'async_op' must be a bool, but got {type(async_op)}."
         )
     src = get_group_rank_from_world_rank(src, group)
-    rank_size = get_group_size(group)
-    rank_id = get_rank(group)
+    rank_size = get_cache_group_size(group)
+    rank_id = get_cache_group_rank(group)
     output = dist_comm_scatter_tensor_op(
         output_tensor, input_tensor, rank_size, src, rank_id, group
     )
@@ -1420,7 +1439,7 @@ def gather_into_tensor(output_tensor, input_tensor, dst=0, group=None, async_op=
             For Ascend devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -1464,9 +1483,9 @@ def gather_into_tensor(output_tensor, input_tensor, dst=0, group=None, async_op=
         raise TypeError(
             f"The argument 'async_op' must be a bool, but got {type(async_op)}."
         )
-    group_size = get_group_size(group)
+    group_size = get_cache_group_size(group)
     dst = get_group_rank_from_world_rank(dst, group)
-    rank_id = get_rank(group)
+    rank_id = get_cache_group_rank(group)
     output = dist_comm_gather_into_tensor_op(
         output_tensor, input_tensor, group_size, dst, rank_id, group
     )
@@ -1510,7 +1529,7 @@ def broadcast(tensor, src, group=None, async_op=False):
             For Ascend devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -1543,7 +1562,7 @@ def broadcast(tensor, src, group=None, async_op=False):
             f"The argument 'async_op' must be a bool, but got {type(async_op)}."
         )
     src_rank = get_group_rank_from_world_rank(src, group)
-    rank_id = get_rank(group)
+    rank_id = get_cache_group_rank(group)
     output = dist_comm_broadcast_op(tensor, src_rank, rank_id, group)
     _, handle = _deal_comm_outputs(output, async_op)
     return handle
@@ -1579,7 +1598,7 @@ def barrier(group=None, async_op=False, device_ids=None):
             For Ascend devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -1637,7 +1656,7 @@ def send(tensor, dst=0, group=None, tag=0):
             For Ascend devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -1672,7 +1691,7 @@ def send(tensor, dst=0, group=None, tag=0):
             "The argument 'group' must be type of string, "
             "but got 'group' type : {}.".format(type(group))
         )
-    if get_rank() == dst:
+    if get_cache_group_rank() == dst:
         raise ValueError(
             "Invalid destination rank: destination rank should not be the same as "
             "the rank of the current process."
@@ -1715,7 +1734,7 @@ def recv(tensor, src=0, group=None, tag=0):
             For Ascend devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -1789,7 +1808,7 @@ def isend(tensor, dst=0, group=None, tag=0):
             For Ascend devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -1826,7 +1845,7 @@ def isend(tensor, dst=0, group=None, tag=0):
             "The argument 'group' must be type of string, "
             "but got 'group' type : {}.".format(type(group))
         )
-    if get_rank() == dst:
+    if get_cache_group_rank() == dst:
         raise ValueError(
             "Invalid destination rank: destination rank should not be the same as "
             "the rank of the current process."
@@ -1870,7 +1889,7 @@ def irecv(tensor, src=0, group=None, tag=0):
             For Ascend devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -1947,7 +1966,7 @@ def all_to_all(output_tensor_list, input_tensor_list, group=None, async_op=False
             For Ascend devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -2006,9 +2025,8 @@ def all_to_all(output_tensor_list, input_tensor_list, group=None, async_op=False
         recv_shape_list.append(tensor.shape)
 
     send_flatten_tensor = cat(send_flatten_tensor)
-    send_flatten_tensor = _contiguous(send_flatten_tensor)
 
-    rank_size = get_group_size(group)
+    rank_size = get_cache_group_size(group)
     output = dist_comm_all_to_all_v_op(
         output_tensor_list,
         send_flatten_tensor,
@@ -2025,7 +2043,7 @@ def _get_all_to_all_single_numel_list(tensor, output, output_split_sizes,
                                       input_split_sizes, group):
     """get numel list for all_to_all_single."""
     if _is_split_sizes_empty(input_split_sizes):
-        _world_size = get_group_size(group)
+        _world_size = get_cache_group_size(group)
         if tensor.shape[0] % _world_size != 0:
             raise ValueError(
                 "input shape at dim 0 must be divided by world_size, "
@@ -2034,7 +2052,7 @@ def _get_all_to_all_single_numel_list(tensor, output, output_split_sizes,
         _split_size = tensor.shape[0] // _world_size
         input_split_sizes = (_split_size,) * _world_size
     if _is_split_sizes_empty(output_split_sizes):
-        _world_size = get_group_size(group)
+        _world_size = get_cache_group_size(group)
         shape_dim_0 = output.shape[0]
 
         if shape_dim_0 % _world_size != 0:
@@ -2098,7 +2116,7 @@ def all_to_all_single(output,
             For Ascend devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -2149,7 +2167,7 @@ def all_to_all_single(output,
     send_numel_list, recv_numel_list, _ = \
         _get_all_to_all_single_numel_list(input, output, output_split_sizes, input_split_sizes, group)
     _input = input.reshape(-1)
-    rank_size = get_group_size(group)
+    rank_size = get_cache_group_size(group)
     result = dist_comm_all_to_all_v_single_op(
         output,
         _input,
@@ -2214,7 +2232,7 @@ def all_gather(tensor_list, tensor, group=None, async_op=False):
             For Ascend devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -2254,7 +2272,7 @@ def all_gather(tensor_list, tensor, group=None, async_op=False):
         raise TypeError(
             f"The argument 'async_op' must be a bool, but got {type(async_op)}."
         )
-    group_size = get_group_size(group)
+    group_size = get_cache_group_size(group)
     _check_tensor_list(tensor_list, tensor, group_size)
     result = dist_comm_all_gather_op(tensor_list, tensor, group_size, group)
     _, handle = _deal_comm_outputs(result, async_op)
@@ -2299,7 +2317,7 @@ def reduce_scatter(output, input_list, op=ReduceOp.SUM, group=None, async_op=Fal
             For Ascend devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -2342,7 +2360,7 @@ def reduce_scatter(output, input_list, op=ReduceOp.SUM, group=None, async_op=Fal
         raise TypeError(
             "For reduce_scatter, the input op value must be one of sum, prod, min, max"
         )
-    rank_size = get_group_size(group)
+    rank_size = get_cache_group_size(group)
     _check_tensor_list(input_list, output, rank_size)
     result = dist_comm_reduce_scatter_op(output, input_list, rank_size, op, group)
     _, handle = _deal_comm_outputs(result, async_op)
@@ -2389,7 +2407,7 @@ def scatter(tensor, scatter_list, src=0, group=None, async_op=False):
             For Ascend devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -2429,8 +2447,8 @@ def scatter(tensor, scatter_list, src=0, group=None, async_op=False):
             f"The argument 'async_op' must be a bool, but got {type(async_op)}."
         )
     src = get_group_rank_from_world_rank(src, group)
-    rank_size = get_group_size(group)
-    rank_id = get_rank(group)
+    rank_size = get_cache_group_size(group)
+    rank_id = get_cache_group_rank(group)
     if src == rank_id:
         _check_tensor_list(scatter_list, tensor, rank_size)
     output = dist_comm_scatter_op(tensor, scatter_list, rank_size, src, rank_id, group)
@@ -2479,7 +2497,7 @@ def gather(tensor, gather_list, dst=0, group=None, async_op=False):
             For Ascend devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -2529,9 +2547,9 @@ def gather(tensor, gather_list, dst=0, group=None, async_op=False):
         )
     if not isinstance(async_op, bool):
         raise TypeError(f"The argument 'async_op' must be a bool, but got {type(async_op)}.")
-    group_size = get_group_size(group)
+    group_size = get_cache_group_size(group)
     dst = get_group_rank_from_world_rank(dst, group)
-    rank_id = get_rank(group)
+    rank_id = get_cache_group_rank(group)
     if dst == rank_id:
         _check_tensor_list(gather_list, tensor, group_size)
     output = dist_comm_gather_op(tensor, gather_list, group_size, dst, rank_id, group)
@@ -2573,7 +2591,7 @@ def scatter_object_list(scatter_object_output_list, scatter_object_input_list, s
             For Ascend devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -2600,8 +2618,8 @@ def scatter_object_list(scatter_object_output_list, scatter_object_input_list, s
         raise TypeError(f"The scatter_object_output_list can not be empty.")
     if not isinstance(src, int):
         raise TypeError("For scatter_object_list, the src must be int")
-    group_size = get_group_size(group)
-    rank_id = get_rank()
+    group_size = get_cache_group_size(group)
+    rank_id = get_cache_group_rank()
     tensor_sizes = []
     tensor_list = []
     if rank_id == src:
@@ -2665,7 +2683,7 @@ def gather_object(obj, object_gather_list=None, dst=0, group=None):
             For Ascend devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -2689,8 +2707,8 @@ def gather_object(obj, object_gather_list=None, dst=0, group=None):
         )
     if not isinstance(dst, int):
         raise TypeError("For gather_object, the dst must be int")
-    group_size = get_group_size(group)
-    rank_id = get_rank()
+    group_size = get_cache_group_size(group)
+    rank_id = get_cache_group_rank()
     if rank_id == dst:
         if not isinstance(object_gather_list, list) or len(object_gather_list) != group_size:
             raise TypeError(
@@ -2744,7 +2762,7 @@ def broadcast_object_list(object_list, src=0, group=None, device=None):
             For Ascend devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -2770,7 +2788,7 @@ def broadcast_object_list(object_list, src=0, group=None, device=None):
         raise TypeError("For broadcast_object_list, the src must be int")
     if not isinstance(object_list, list) or not object_list:
         raise TypeError(f"The object_list can not be empty.")
-    rank_id = get_rank()
+    rank_id = get_cache_group_rank()
     tensor_sizes = []
     tensor_list = []
     size = 0
@@ -2825,7 +2843,7 @@ def all_gather_object(object_list, obj, group=None):
             For Ascend devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -2850,7 +2868,7 @@ def all_gather_object(object_list, obj, group=None):
             "For 'all_gather_object', the argument 'group' must be type of string, "
             "but got 'group' type : {}.".format(type(group))
         )
-    group_size = get_group_size(group)
+    group_size = get_cache_group_size(group)
     if not isinstance(object_list, list) or len(object_list) != group_size:
         raise TypeError(
             f"The len of argument object_list must be equal to group rank size, but got {len(object_list)}."

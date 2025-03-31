@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License
 
-import numpy as np
-
 import mindspore as ms
 from mindspore import context, Tensor, Parameter
 from mindspore.ops import operations as P
 from mindspore.parallel.shard import Layout
 from mindspore.common.api import _cell_graph_executor
 from mindspore.nn import Cell, TrainOneStepCell, Momentum
+from mindspore.nn.utils import no_init_parameters
+from mindspore.common.initializer import initializer
 from parallel.utils.utils import ParallelValidator
 from parallel.auto_parallel_interface._utils import init_hccl, set_parallel_mode, remove_files
 
@@ -44,7 +44,7 @@ class DynamicMulNet(Cell):
         layout1 = (layout("None", "None", "None"),)
 
         self.gelu = P.GeLU().shard(layout1)
-        self.w = Parameter(Tensor(np.ones([8]), dtype=ms.float32), "w2")
+        self.w = Parameter(initializer("ones", [8], dtype=ms.float32), "w2")
 
     def construct(self, x, y):
         out = self.mul(x, self.w)
@@ -62,11 +62,12 @@ def test_layout_redistribution_gradient_mean_true():
     context.set_context(save_graphs=True, save_graphs_path=graph_path)
 
     strategy1 = ((8, 1, 1), (1,))
-    net = DynamicMulNet(strategy1)
+    with no_init_parameters():
+        net = DynamicMulNet(strategy1)
+        optimizer = Momentum(net.trainable_params(), learning_rate=0.1, momentum=0.9)
     x = Tensor(shape=[16, None, 8], dtype=ms.float32)
     y = Tensor(shape=[None, None, None], dtype=ms.float32)
     net.set_inputs(x, y)
-    optimizer = Momentum(net.trainable_params(), learning_rate=0.1, momentum=0.9)
     train_net = TrainOneStepCell(net, optimizer)
     train_net.set_train()
     train_net.set_inputs(x, y)
@@ -93,11 +94,12 @@ def test_layout_redistribution_gradient_mean_false():
     context.set_context(save_graphs=True, save_graphs_path=graph_path)
 
     strategy1 = ((8, 1, 1), (1,))
-    net = DynamicMulNet(strategy1)
+    with no_init_parameters():
+        net = DynamicMulNet(strategy1)
+        optimizer = Momentum(net.trainable_params(), learning_rate=0.1, momentum=0.9)
     x = Tensor(shape=[16, None, 8], dtype=ms.float32)
     y = Tensor(shape=[None, None, None], dtype=ms.float32)
     net.set_inputs(x, y)
-    optimizer = Momentum(net.trainable_params(), learning_rate=0.1, momentum=0.9)
     train_net = TrainOneStepCell(net, optimizer)
     train_net.set_train()
     train_net.set_inputs(x, y)

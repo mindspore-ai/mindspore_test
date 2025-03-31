@@ -54,7 +54,7 @@ def test_dynamic_check_valid(dtype):
     image_metas_box = Tensor(image_metas)
     indices_anchor_box = Tensor(np.array([i for i in range(anchor_box.shape[0])])).astype(np.int32)
     indices_image_metas_box = Tensor(np.array([i for i in range(image_metas_box.shape[0])])).astype(np.int32)
-    expect = np.array([True, True, False], np.bool)
+    expect = np.array([True, True, False], np.bool_)
 
     context.set_context(mode=context.PYNATIVE_MODE)
     boundingbox_decode = CheckValidDynNet()

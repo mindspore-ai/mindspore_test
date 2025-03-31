@@ -100,7 +100,7 @@ def test_with_no_bprop():
     assert grad_all(with_no_bprop)(x, y) == (2, 1)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_grad_in_bprop_1():
     """
     Feature: grad multiple add
@@ -127,7 +127,7 @@ def test_grad_in_bprop_1():
 
         def bprop(self, x, y, out, dout):
             grads = grad_all(self.f)(x, y)
-            return out[1][0], grads[1]
+            return out[1][0] + 10, grads[1] + 10
 
     class GradInBprop_3(nn.Cell):
         def __init__(self):
@@ -141,8 +141,8 @@ def test_grad_in_bprop_1():
     grad_in_bprop = GradInBprop_3()
     grads = grad_all(grad_in_bprop)(Tensor(np.ones([2, 2]).astype(np.float32)),
                                     Tensor(np.ones([2, 2]).astype(np.float32)))
-    assert (grads[0].asnumpy() == np.ones([2, 2]).astype(np.float32)).all()
-    assert (grads[1].asnumpy() == np.zeros([2, 2]).astype(np.float32)).all()
+    assert (grads[0].asnumpy() == (np.ones([2, 2]) + 10).astype(np.float32)).all()
+    assert (grads[1].asnumpy() == (np.zeros([2, 2]) + 10).astype(np.float32)).all()
 
 
 @pytest.mark.skip

@@ -358,8 +358,8 @@ GradPartialPassLib::GradPartialPassLib() {
 }
 
 AdjustGraphAfterValidatePassLib::AdjustGraphAfterValidatePassLib() {
-  make_tuple_from_fprop_eliminater_ =
-    MakeSubstitution(std::make_shared<make_tuple_from_fprop_eliminater>(), "make_tuple_from_fprop_eliminater", IsCNode);
+  make_tuple_from_fprop_eliminate_ =
+    MakeSubstitution(std::make_shared<MakeTupleFromFpropEliminate>(), "make_tuple_from_fprop_eliminate", IsCNode);
 }
 }  // namespace irpass
 }  // namespace opt

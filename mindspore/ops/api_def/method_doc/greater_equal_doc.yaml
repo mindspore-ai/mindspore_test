@@ -2,34 +2,4 @@ greater_equal:
   description: |
     greater_equal(other) -> Tensor
     
-    Computes the boolean value of :math:`self >= other` element-wise.
-
-    .. math::
-
-        out_{i} =\begin{cases}
-            & \text{True,    if } self_{i}>=other_{i} \\
-            & \text{False,   if } self_{i}<other_{i}
-            \end{cases}
-
-    Args:
-        other (Union[Tensor, Number]): `other` should be a Number or Tensor with data type number or bool.
-
-    Returns:
-        Tensor, the shape is the same as the one after broadcasting, and the data type is bool.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor
-        >>> input = Tensor(np.array([1, 2, 3]), mindspore.int32)
-        >>> other = Tensor(np.array([1, 1, 4]), mindspore.int32)
-        >>> output = input.greater_equal(other)
-        >>> print(output)
-        [True True False]
-        >>> other = 2.1
-        >>> output = input.greater_equal(other)
-        >>> print(output)
-        [False False True]
+    For details, please refer to :func:`mindspore.ops.greater_equal`.

@@ -3,12 +3,12 @@ mindspore.ops.pinv
 
 .. py:function:: mindspore.ops.pinv(x, *, atol=None, rtol=None, hermitian=False)
 
-    计算矩阵的（Moore-Penrose）伪逆。
+    计算矩阵的伪逆（Moore-Penrose）。
 
     本函数通过SVD计算。如果 :math:`x=U*S*V^{T}` ，则x的伪逆为 :math:`x^{+}=V*S^{+}*U^{T}` ，:math:`S^{+}` 为对S的对角线上的每个非零元素取倒数，零保留在原位。
 
     支持批量矩阵。若x是批量矩阵，当atol或rtol为float时，则输出具有相同的批量维度。
-    若atol或rtol为Tensor，则其shape必须可广播到 `x.svd() <https://www.mindspore.cn/docs/zh-CN/master/api_python/ops/mindspore.ops.svd.html>`_ 返回的奇异值的shape。
+    若atol或rtol为tensor，则其shape必须可广播到 `x.svd() <https://www.mindspore.cn/docs/zh-CN/master/api_python/ops/mindspore.ops.svd.html>`_ 返回的奇异值的shape。
     若x.shape为 :math:`(B, M, N)` ，atol或rtol的shape为 :math:`(K, B)` ，则输出shape为 :math:`(K, B, N, M)` 。
 
     当hermitian为True时，暂时仅支持实数域，默认输入x为实对称矩阵，因此不会在内部检查x，并且在计算中仅使用下三角部分。
@@ -23,19 +23,12 @@ mindspore.ops.pinv
         所以和这些函数具有相同问题，详细信息请参阅svd()和eigh()中的警告。
 
     参数：
-        - **x** (Tensor) - 要计算的矩阵。支持数据类型为float32或float64。shape为 :math:`(*, M, N)` ，其中*为零或多个批量维度。
-
-          - `hermitian` 为 ``True`` 时，暂不支持多个批量维度。
+        - **x** (Tensor) - 输入tensor。shape为 :math:`(*, M, N)` ，其中*为零或多个批量维度。 `hermitian` 为 ``True`` 时，暂不支持多个批量维度。
 
     关键字参数：
-        - **atol** (float, Tensor) - 绝对公差值。默认值： ``None`` 。
-        - **rtol** (float, Tensor) - 相对公差值。默认值： ``None`` 。
-        - **hermitian** (bool) - 为 ``True`` 时求解x为实对称的矩阵。默认值： ``False`` 。
+        - **atol** (float, Tensor) - 绝对容差值。默认 ``None`` 。
+        - **rtol** (float, Tensor) - 相对容差值。默认 ``None`` 。
+        - **hermitian** (bool) - 是否求解x为实对称的矩阵。默认 ``False`` 。
 
     输出：
-        - **output** (Tensor): 类型与输入相同。shape为 :math:`(*, N, M)` ，其中*为零或多个批量维度。
-
-    异常：
-        - **TypeError** - `hermitian` 不是bool。
-        - **TypeError** - `x` 不是Tensor。
-        - **ValueError** - `x` 的维度小于2。
+        一个shape为 :math:`(*, N, M)` 的tensor。

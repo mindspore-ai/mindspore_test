@@ -25,7 +25,6 @@ from mindspore.profiler.common.constant import (
 )
 from mindspore.profiler.schedule import Schedule
 
-
 class ProfilerParameters:
     """
     Profiler parameters manage all parameters, parameters validation and type conversion.
@@ -60,10 +59,7 @@ class ProfilerParameters:
         self.is_set_schedule: bool = False
         self._set_schedule(**kwargs)
         self._check_deprecated_params(**kwargs)
-        # Initialize parameters with kwargs
-        for param, (_, default_value) in self.PARAMS.items():
-            setattr(self, param, kwargs.get(param) if kwargs.get(param) is not None else default_value)
-
+        self._init_params(kwargs)
         self._check_params_type()
         self._handle_compatibility()
 
@@ -113,6 +109,17 @@ class ProfilerParameters:
             "npu_trace": ProfilerActivity.NPU in self.activities,
         }
 
+    def _init_params(self, kwargs):
+        """
+        Initialize parameters with kwargs
+        """
+        for param, (_, default_value) in self.PARAMS.items():
+            if param == "schedule" and kwargs.get(param) is None:
+                kwargs["schedule"] = Schedule(wait=0, active=1)
+            if param == "on_trace_ready" and kwargs.get(param) is None:
+                kwargs["on_trace_ready"] = lambda *args, **kwargs: None
+            setattr(self, param, kwargs.get(param) if kwargs.get(param) is not None else default_value)
+
     def _check_params_type(self) -> None:
         """
         Check profiler input params type, if type is invalid reset to default value.
@@ -126,9 +133,15 @@ class ProfilerParameters:
                 if key == "on_trace_ready":
                     if not callable(value):
                         setattr(self, key, default_value)
+                        logger.warning(
+                            f"For Profiler, on_trace_ready value is Invalid, reset to {default_value}."
+                        )
                 elif key == "schedule":
                     if not isinstance(value, Schedule):
                         setattr(self, key, Schedule(wait=0, active=1))
+                        logger.warning(
+                            f"For Profiler, schedule value is Invalid, reset to {Schedule(wait=0, active=1)}"
+                        )
                 elif key == "export_type":
                     setattr(self, key, self._check_and_get_export_type(value))
                 # 检查可迭代类型

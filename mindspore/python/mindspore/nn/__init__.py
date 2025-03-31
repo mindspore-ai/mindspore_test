@@ -19,6 +19,8 @@ Pre-defined building blocks or computing units to construct neural networks.
 """
 from __future__ import absolute_import
 
+__all__ = ["Buffer", "Cell", "GraphCell", "PipelineGradReducer", "PipelineCell", "MicroBatchInterleaved"]
+
 from mindspore.nn import layer, loss, optim, wrap, grad, metrics, probability, sparse, dynamic_lr, reinforcement
 from mindspore.parallel.nn.parallel_grad_reducer import PipelineGradReducer
 from mindspore.parallel.nn.parallel_cell_wrapper import PipelineCell, MicroBatchInterleaved
@@ -36,7 +38,6 @@ from mindspore.nn.sparse import *
 from mindspore.nn.reinforcement import *
 from mindspore.nn.utils import *
 
-__all__ = ["Cell", "GraphCell", "PipelineGradReducer", "PipelineCell", "MicroBatchInterleaved", "Buffer"]
 __all__.extend(layer.__all__)
 __all__.extend(loss.__all__)
 __all__.extend(optim.__all__)

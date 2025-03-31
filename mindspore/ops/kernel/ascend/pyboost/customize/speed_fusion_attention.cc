@@ -79,7 +79,7 @@ tensor::BaseTensorPtr RecordRandomStateBeforeGenMask(const BaseTensorPtr &tensor
   if (0 < keep_prob_value && 1. > keep_prob_value) {
     tensor->data_sync();
     int64_t value = *static_cast<int64_t *>(tensor->data_c());
-    return std::make_shared<BaseTensor>(value);
+    return std::make_shared<tensor::Tensor>(value);
   }
   return tensor;
 }
@@ -179,7 +179,7 @@ void SpeedFusionAttentionAscendCustomize(
   // Set host outputs
   device_outputs.emplace_back(ori_seed);
   device_outputs.emplace_back(ori_offset);
-  device_outputs.emplace_back(std::make_shared<BaseTensor>(numels));
+  device_outputs.emplace_back(std::make_shared<tensor::Tensor>(numels));
   op->set_outputs(device_outputs);
 }
 }  // namespace pyboost

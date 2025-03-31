@@ -41,7 +41,7 @@ def tensorboard_trace_handler(dir_name: str = None, worker_name: str = None,
     Args:
         dir_name (str, optional): Specifies the directory path to save the analysis results. The default is ``None``.
             The default save path is ``"./data"``.
-        worker_name (int, optional): Specifies the system version name. The default is ``None``. The default project
+        worker_name (str, optional): Specifies the system version name. The default is ``None``. The default project
             thread name is ``"Name of the current operating system + process ID"``.
         analyse_flag (bool, optional): Whether to enable online analysis. The default value is ``True``.
             Indicates online analysis.
@@ -1088,8 +1088,10 @@ def analyse(profiler_path: str, max_process_number: int = os.cpu_count() // 2, p
             The default value is ``os.cpu_count() // 2``.
         pretty (bool, optional): Format the JSON file. Default: ``False``,
             indicating that the formatting is not performed.
-        step_list (list, optional): A list of steps that need to be analyzed, the steps must be
-            consecutive integers. Default: ``None``. By default, all steps will be analyzed.
+        step_list (list, optional): Only the performance data of the specified step is parsed. The specified step must
+            be a consecutive integer. Only the GRAPH mode is supported. In O0 and O1 mode, only when schedule
+            parameters wait and skip_first are 0 and warm_up is greater than or equal to 0 are supported.
+            Default: ``None``, indicating that full resolution.
         data_simplification (bool, optional): Whether to enable data simplification. Default: ``True``,
             indicating the data simplification is enabled.
 
@@ -1097,6 +1099,11 @@ def analyse(profiler_path: str, max_process_number: int = os.cpu_count() // 2, p
         >>> from mindspore.profiler.profiler import analyse
         >>> analyse(profiler_path="./profiling_path")
     """
+    if not isinstance(max_process_number, int) or isinstance(max_process_number, bool) or max_process_number <= 0:
+        logger.warning(f"Parameter 'max_process_number' should be of type int, but got "
+                       f"{type(max_process_number).__name__}. reset to int {os.cpu_count() // 2}.")
+        max_process_number = os.cpu_count() // 2
+
     real_path = PathManager.get_real_path(profiler_path)
     PathManager.check_input_directory_path(real_path)
     ascend_ms_path_list = PathManager.get_ascend_ms_path_list(real_path)

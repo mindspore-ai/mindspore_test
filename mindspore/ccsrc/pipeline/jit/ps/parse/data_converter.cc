@@ -1794,7 +1794,7 @@ ValuePtr ConvertTensorToNumber(const py::object &obj) {
     case kNumberTypeInt64:
       return std::make_shared<Int64Imm>(static_cast<int64_t *>(GetTensorDataPtr(tensor))[0]);
     case kNumberTypeInt32:
-      return std::make_shared<Int32Imm>(static_cast<int32_t *>(GetTensorDataPtr(tensor))[0]);
+      return std::make_shared<Int64Imm>(static_cast<int32_t *>(GetTensorDataPtr(tensor))[0]);
     case kNumberTypeInt16:
       return std::make_shared<Int64Imm>(static_cast<int16_t *>(GetTensorDataPtr(tensor))[0]);
     case kNumberTypeInt8:

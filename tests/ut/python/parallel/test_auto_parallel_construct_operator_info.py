@@ -1,4 +1,4 @@
-# Copyright 2019 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -66,7 +66,7 @@ def compile_graph_two_input(net, device_num, x, y):
     _cell_graph_executor.compile(net, x, y)
 
 
-def test_mint_rma():
+def test_construct_two_matmul_info():
     """
     Feature: Operator construction for auto parallel.
     Description: set strategy for matmul1 and gelu

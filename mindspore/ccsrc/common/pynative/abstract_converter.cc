@@ -43,6 +43,13 @@ AbstractBasePtr AbstractConverter::ConvertAbstract(const BaseTensorPtr &t) {
   return abs;
 }
 
+AbstractBasePtr AbstractConverter::ConvertAbstract(const tensor::TensorPtr &t) {
+  MS_EXCEPTION_IF_NULL(t);
+  auto abs = t->ToAbstract();
+  abs->set_value(kValueAny);
+  return abs;
+}
+
 AbstractBasePtr AbstractConverter::ConvertAbstract(const ValueTuplePtr &t) {
   MS_EXCEPTION_IF_NULL(t);
   AbstractBasePtrList abs_list(t->value().size());

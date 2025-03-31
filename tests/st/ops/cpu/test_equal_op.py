@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+import numpy as np
 import mindspore.context as context
 import mindspore.nn as nn
-import numpy as np
 from mindspore.common import dtype as mstype
 from mindspore.common.initializer import initializer
 from mindspore.common.parameter import Parameter
@@ -30,8 +30,8 @@ class NetEqBool(nn.Cell):
     def __init__(self):
         super(NetEqBool, self).__init__()
         self.equal = P.Equal()
-        x = Tensor(np.array([True, True, False]).astype(np.bool))
-        y = Tensor(np.array([True, False, True]).astype(np.bool))
+        x = Tensor(np.array([True, True, False]).astype(np.bool_))
+        y = Tensor(np.array([True, False, True]).astype(np.bool_))
         self.x = Parameter(initializer(x, x.shape), name="x")
         self.y = Parameter(initializer(y, y.shape), name="y")
 
@@ -45,7 +45,7 @@ def test_equal_bool():
     equal_net = NetEqBool()
     output = equal_net()
     print("================================")
-    expect = np.array([True, False, False]).astype(np.bool)
+    expect = np.array([True, False, False]).astype(np.bool_)
     print(output)
     assert (output.asnumpy() == expect).all()
 
@@ -69,7 +69,7 @@ def test_equal_int():
     equal_net = NetEqInt()
     output = equal_net()
     print("================================")
-    expect = np.array([False, True, True]).astype(np.bool)
+    expect = np.array([False, True, True]).astype(np.bool_)
     print(output)
     assert (output.asnumpy() == expect).all()
 
@@ -93,7 +93,7 @@ def test_equal_float():
     equal_net = NetEqFloat()
     output = equal_net()
     print("================================")
-    expect = np.array([True, False, False]).astype(np.bool)
+    expect = np.array([True, False, False]).astype(np.bool_)
     print(output)
     assert (output.asnumpy() == expect).all()
 

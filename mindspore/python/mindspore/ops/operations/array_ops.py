@@ -1169,7 +1169,7 @@ class TupleToArray(PrimitiveWithInfer):
 
     Inputs:
         - **input_x** (tuple) - A tuple of numbers. These numbers have the same type.
-          The shape is :math:`(N,*)` where :math:`*` means any number of additional dimensions.
+          The shape is :math:`(N,)`.
 
     Outputs:
         Tensor, if the input tuple contains `N` numbers, then the shape of the output tensor is :math:`(N,)`.

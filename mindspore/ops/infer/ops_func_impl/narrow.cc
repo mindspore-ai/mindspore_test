@@ -49,6 +49,9 @@ BaseShapePtr NarrowFuncImpl::InferShape(const PrimitivePtr &primitive,
   auto axis_value = axis_value_opt.value();
   if (!begin_value_opt.has_value() || !length_value_opt.has_value()) {
     auto out_shape = input_x_shape;
+    if (axis_value < 0) {
+      axis_value += x_rank;
+    }
     out_shape[axis_value] = abstract::Shape::kShapeDimAny;
     return std::make_shared<abstract::TensorShape>(out_shape);
   }

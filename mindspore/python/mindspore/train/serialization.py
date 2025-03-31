@@ -1914,6 +1914,7 @@ def _get_merged_param_data(net, parameter_layout_dict, param_name, param_data, i
 
     dev_mat = layout[0]
     tensor_map = layout[1]
+    uniform_split = layout[4]
     opt_shard_group = layout[5]
     before_reshape_slice_shape = layout[2]
     before_reshape_full_shape = layout[6]
@@ -1934,6 +1935,7 @@ def _get_merged_param_data(net, parameter_layout_dict, param_name, param_data, i
     else:
         logger.info("Need to create allgather net for %s", param_name)
         if integrated_save:
+            _check_param_for_integrate_save(context.get_auto_parallel_context("pipeline_stages"), uniform_split)
             # while any dim is not equal to -1, means param is split and needs to be merged
             # pipeline parallel need to be supported here later
             if mp_weight:

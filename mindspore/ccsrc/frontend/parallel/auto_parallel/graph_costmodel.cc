@@ -210,6 +210,17 @@ bool IsOpNotPropagate(const OperatorInfoPtr &op1, const OperatorInfoPtr &op2) {
   return false;
 }
 
+void CostGraph::AddSwcUnderNextOpDevMatrix(const OperatorInfoPtr &prev_op, const OperatorInfoPtr &curr_op,
+                                           const std::shared_ptr<Edge> &edge) {
+  if (curr_op->IsReshape() || prev_op->IsReshape() || prev_op->IsMultiInput()) {
+    return;
+  }
+
+  if (prev_op->AddSwcUnderNextOpDevMatrixSingle(curr_op, edge) != SUCCESS) {
+    MS_LOG(INFO) << "AddSwcUnderNextOpDevMatrix failed. curr_op:" << curr_op->name();
+  }
+}
+
 void CostGraph::BFSPrevNodeIfPrevIsReshape(const std::shared_ptr<Edge> &edge, int64_t curr_depth) {
   MS_EXCEPTION_IF_NULL(edge);
   const auto &curr_op = edge->next_operator();
@@ -260,6 +271,11 @@ void CostGraph::BFSPrevNode(const std::shared_ptr<Edge> &edge, int64_t curr_dept
   if (IsOpNotPropagate(prev_op, curr_op)) {
     return;
   }
+
+  if (!is_has_stra_op) {
+    AddSwcUnderNextOpDevMatrix(prev_op, curr_op, edge);
+  }
+
   if (edge->InitEdgeCost() != SUCCESS && !is_has_stra_op) {
     MS_LOG(EXCEPTION) << "Edge cost initialization failed.";
   }
@@ -358,6 +374,9 @@ void CostGraph::SetOpStrategy(const OperatorInfoPtr &curr_op, const std::shared_
 
 void CostGraph::AddSwcUnderPrevOpDevMatrix(const OperatorInfoPtr &curr_op, const OperatorInfoPtr &next_op,
                                            const std::shared_ptr<Edge> &edge) {
+  if (curr_op->IsReshape() || next_op->IsReshape()) {
+    return;
+  }
   if (next_op->IsMultiInput()) {
     next_op->AddVisitedEdge(edge);
     if (next_op->AllInputsVisited()) {
@@ -374,7 +393,6 @@ void CostGraph::AddSwcUnderPrevOpDevMatrix(const OperatorInfoPtr &curr_op, const
       }
     }
   }
-  return;
 }
 
 bool CostGraph::BFSNextNodeInitEdgeAndCheck(const std::shared_ptr<Edge> &edge, const OperatorInfoPtr &curr_op,
@@ -456,7 +474,7 @@ void CostGraph::BFSNextNode(const std::shared_ptr<Edge> &edge, int64_t curr_dept
                  << " cnode name: " << next_op->cnode()->fullname_with_scope();
     if (next_op->AllInputsVisited()) {
       MS_LOG(INFO) << "next_op AllInputsVisited";
-      candidate_swc = edge->GetNextOpStrategyByCurMultiInput(&waitting_list_, curr_depth);
+      candidate_swc = edge->GetNextOpStrategyByCurMultiInput(curr_depth, &waitting_list_);
     } else {
       // There is input of next_op not visited.
       MS_LOG(INFO) << "next_op_visited_edges size: " << next_op->get_visited_edges().size();

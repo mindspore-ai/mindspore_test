@@ -233,8 +233,13 @@ Status RmsNormInfo::InitShapes() {
 Status RmsNormInfo::CheckInputLayout() {
   // Check all device matrix should be the same
   if (inputs_tensor_info_.size() != kSizeTwo) {
-    MS_LOG(ERROR) << "The size of input_tensor_layout for rmsnorm is " << inputs_tensor_info_.size()
-                  << " rather than 2.";
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << "The size of input_tensor_layout for rmsnorm is " << inputs_tensor_info_.size()
+                      << " rather than 2.";
+    } else {
+      MS_LOG(ERROR) << "The size of input_tensor_layout for rmsnorm is " << inputs_tensor_info_.size()
+                    << " rather than 2.";
+    }
     return FAILED;
   }
   auto in_layout = inputs_tensor_info_[kIndex0].tensor_layout();
@@ -255,8 +260,13 @@ Status RmsNormInfo::CheckInputLayout() {
   size_t gamma_diff = in_layout.tensor_map_before().size() - gamma_layout.tensor_map_before().size();
   for (size_t j = 0; j < gamma_layout.tensor_map_before().size(); ++j) {
     if (gamma_layout.tensor_map_before()[j] != in_layout.tensor_map_before()[gamma_diff + j]) {
-      MS_LOG(ERROR) << "RmsNorm Invalid gamma layout " << gamma_layout.tensor_map_before() << ", " << j
-                    << "th tensor map in gamma must equal to input layout";
+      if (is_in_layout_propagation_) {
+        MS_LOG(WARNING) << "RmsNorm Invalid gamma layout " << gamma_layout.tensor_map_before() << ", " << j
+                        << "th tensor map in gamma must equal to input layout";
+      } else {
+        MS_LOG(ERROR) << "RmsNorm Invalid gamma layout " << gamma_layout.tensor_map_before() << ", " << j
+                      << "th tensor map in gamma must equal to input layout";
+      }
       return FAILED;
     }
   }
@@ -267,8 +277,13 @@ Status RmsNormInfo::CheckInputLayout() {
 Status RmsNormInfo::CheckOutputLayout() {
   // Check all device matrix should be the same
   if (outputs_tensor_info_.size() != kSizeTwo) {
-    MS_LOG(ERROR) << "The size of output_tensor_layout for rmsnorm is " << outputs_tensor_info_.size()
-                  << " rather than 2.";
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << "The size of output_tensor_layout for rmsnorm is " << outputs_tensor_info_.size()
+                      << " rather than 2.";
+    } else {
+      MS_LOG(ERROR) << "The size of output_tensor_layout for rmsnorm is " << outputs_tensor_info_.size()
+                    << " rather than 2.";
+    }
     return FAILED;
   }
   if (output_infer_tensor_layout_.tensor_shape_before().array().empty()) {

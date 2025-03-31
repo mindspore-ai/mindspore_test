@@ -31,12 +31,12 @@ bincount_ext:
         ``Ascend``
 
     Examples:
-        >>> from mindspore import mint
-        >>> print(mint.bincount(np.arange(5)))
-        [1. 1. 1. 1. 1.]
-        >>> print(mint.bincount(np.array([0, 1, 1, 3, 2, 1, 7])))
-        [1. 3. 1. 1. 0. 0. 0. 1.]
-        >>> w = np.array([0.3, 0.5, 0.2, 0.7, 1., -0.6]) # weights
-        >>> x = np.array([0, 1, 1, 2, 2, 2])
+        >>> from mindspore import mint, Tensor
+        >>> print(mint.bincount(Tensor(np.arange(5))))
+        [1 1 1 1 1]
+        >>> print(mint.bincount(Tensor(np.array([0, 1, 1, 3, 2, 1, 7]))))
+        [1 3 1 1 0 0 0 1]
+        >>> w = Tensor(np.array([0.3, 0.5, 0.2, 0.7, 1., -0.6])) # weights
+        >>> x = Tensor(np.array([0, 1, 1, 2, 2, 2]))
         >>> print(mint.bincount(x,  weights=w, minlength=5))
-        [0.3 0.7 1.1 0.0 0.0]
+        [0.3 0.7 1.1 0.  0. ]

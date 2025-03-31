@@ -20,6 +20,8 @@ import mindspore
 from mindspore import context
 from mindspore import Profiler
 from mindspore import Tensor
+from mindspore.profiler import ExportType
+from mindspore.profiler.profiler import analyse
 from mindspore.profiler.profiler_interface import ProfilerInterface
 
 from tests.mark_utils import arg_mark
@@ -79,12 +81,74 @@ def test_ascend_profiler_offline_analyse_with_multi_devices():
         check_ascend_offline_analyse_files(copy_ascend_ms_dir)
 
 
-def check_ascend_offline_analyse_files(ascend_ms_dir: str):
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_new_profiler_offline_analyse_with_single_device():
+    """
+    Feature: Ascend Offline Profiler Analysis with Single Device
+    Description: Execute offline analysis with the Ascend profiler in PyNative mode for a single device, using a simple
+                 addition network.
+    Expectation: The profiler successfully performs offline analysis, and the expected analysis files are generated in
+                 the temporary directory.
+    """
+    context.set_context(mode=context.PYNATIVE_MODE, device_target="Ascend")
+    with tempfile.TemporaryDirectory() as tmpdir:
+        experimental_config = mindspore.profiler._ExperimentalConfig(export_type=[ExportType.Text, ExportType.Db])
+        profile = mindspore.profiler.profile(experimental_config=experimental_config,
+                                             on_trace_ready=mindspore.profiler.tensorboard_trace_handler(
+                                                 tmpdir, analyse_flag=False))
+        net = TinyAddNet()
+        t0 = Tensor(dtype=mindspore.float32, shape=[32, None])
+        t1 = Tensor(dtype=mindspore.float32, shape=[32, None])
+        net(t0, t1)
+        profile.stop()
+        ProfilerInterface.finalize()
+        ProfilerInterface.clear()
+        analyse(profiler_path=tmpdir, data_simplification=False)
+        ascend_ms_dir = glob.glob(f"{tmpdir}/*_ascend_ms")[0]
+        check_ascend_offline_analyse_files(ascend_ms_dir, True)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_new_profiler_offline_analyse_with_multi_devices():
+    """
+    Feature: Ascend Offline Profiler Analysis with Multi Devices
+    Description: Test the Ascend profiler offline analysis capability in PyNative mode with multiple devices, using
+                 a simple addition network.
+    Expectation: Profiler offline analysis should successfully process data from multiple devices, with results
+                 properly generated in the corresponding rank directories.
+    """
+    context.set_context(mode=context.PYNATIVE_MODE, device_target="Ascend")
+    with tempfile.TemporaryDirectory() as tmpdir:
+        experimental_config = mindspore.profiler._ExperimentalConfig(export_type=[ExportType.Text, ExportType.Db])
+        profile = mindspore.profiler.profile(experimental_config=experimental_config,
+                                             on_trace_ready=mindspore.profiler.tensorboard_trace_handler(
+                                                 tmpdir, analyse_flag=False))
+        net = TinyAddNet()
+        t0 = Tensor(dtype=mindspore.float32, shape=[32, None])
+        t1 = Tensor(dtype=mindspore.float32, shape=[32, None])
+        net(t0, t1)
+        profile.stop()
+        ProfilerInterface.finalize()
+        ProfilerInterface.clear()
+        # copy profiler data to rank0 and rank1
+        raw_ascend_ms_dir = glob.glob(f"{tmpdir}/*_ascend_ms")[0]
+        copy_ascend_ms_dir = os.path.join(tmpdir, 'copy_ascend_ms')
+        shutil.copytree(raw_ascend_ms_dir, copy_ascend_ms_dir)
+        analyse(profiler_path=tmpdir, data_simplification=False)
+        check_ascend_offline_analyse_files(raw_ascend_ms_dir, True)
+        check_ascend_offline_analyse_files(copy_ascend_ms_dir, True)
+
+
+def check_ascend_offline_analyse_files(ascend_ms_dir: str, with_db: bool = False):
     """
     Check the Ascend offline analysis files.
     """
     ascend_profiler_output_path = os.path.join(ascend_ms_dir, "ASCEND_PROFILER_OUTPUT")
 
+    if with_db:
+        db_files = glob.glob(os.path.join(ascend_profiler_output_path, 'ascend_mindspore_profiler*.db'))
+        assert len(db_files) >= 1
+        FileChecker.check_file_exists(db_files[0])
     # Check trace_view.json
     trace_view_path = os.path.join(ascend_profiler_output_path, "trace_view.json")
     FileChecker.check_timeline_values(

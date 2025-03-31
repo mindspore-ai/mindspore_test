@@ -189,11 +189,11 @@ def tensor(input_data=None, dtype=None, shape=None, init=None, const_arg=False):
     based on the `dtype` argument.
 
     Please refer to `Creating and Using Tensor
-    <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html#mindspore-user-defined-data-types>`_ .
+    <https://www.mindspore.cn/tutorials/en/master/compile/static_graph.html#mindspore-user-defined-data-types>`_ .
 
     The difference between it and the Tensor class is that it adds
     `Annotation
-    <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html#annotation-type>`_
+    <https://www.mindspore.cn/tutorials/en/master/compile/static_graph.html#annotation-type>`_
     which can prevent the generation of AnyType compared to the Tensor class.
 
     The arguments and return values are the same as the Tensor class. Also see: :class:`mindspore.Tensor`.
@@ -230,7 +230,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         - If `init` interface is used to initialize `Tensor`, the `Tensor.init_data` API needs to be called to load the
           actual data to `Tensor`.
         - All modes of CPU and GPU, and Atlas training series with `graph mode (mode=mindspore.GRAPH_MODE)
-          <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html>`_  do not supported
+          <https://www.mindspore.cn/tutorials/en/master/compile/static_graph.html>`_  do not supported
           in-place operations yet.
 
     Warning:
@@ -378,26 +378,26 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
     def __int__(self):
         try:
             data = self._item()
+            return int(data)
         except ValueError:
             raise ValueError("Only one element tensors can be converted to Python scalars")
-        except TypeError as e:
-            raise TypeError(str(e))
-        else:
-            return int(data)
+
 
     def __float__(self):
-        data = self.asnumpy()
-        return self._convert_scalar_(data, float, "Only one element tensors can be converted to Python scalars")
+        try:
+            data = self._item()
+            return float(data)
+        except ValueError:
+            raise ValueError("Only one element tensors can be converted to Python scalars")
 
     def __index__(self):
         try:
             data = self._item()
+            if not isinstance(data, (int, bool)):
+                raise ValueError
+            return int(data)
         except ValueError:
             raise ValueError("Only integer tensors of a single element can be converted to an index.")
-        else:
-            if not isinstance(data, (int, bool)):
-                raise ValueError("Only integer tensors of a single element can be converted to an index.")
-            return int(data)
 
     def __pos__(self):
         return self
@@ -465,11 +465,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         if out:
             return out[0]
         raise TypeError("Not support len of a 0-D tensor")
-
-    def __str__(self):
-        if self.dtype == mstype.type_none:
-            return "Unknown Tensor type!"
-        return str(self.asnumpy())
 
     def __getstate__(self):
         state = self.__dict__.copy()
@@ -1202,8 +1197,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
             >>> print(output)
             (Tensor(shape=[], dtype=Float32, value=8), Tensor(shape=[], dtype=Float32, value=6))
         """
-        if not check_hook_fn("register_hook", hook):
-            return _TensorHookHandle(self)
+        check_hook_fn(hook)
         handle = _TensorHookHandle(self)
         handle.id = TensorPy_.register_hook(self, hook)
         return handle
@@ -1590,21 +1584,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
 
     def numel(self):
         r"""
-        Returns a Scalar of type int that represents the total number of elements in the Tensor.
-
-        Returns:
-            int. A scalar representing the total of elements in the Tensor.
-
-        Supported Platforms:
-            ``Ascend`` ``GPU`` ``CPU``
-
-        Examples:
-            >>> import mindspore
-            >>> import numpy as np
-            >>> from mindspore import Tensor
-            >>> input_x = Tensor(np.array([[2, 2], [2, 2]]), mindspore.float32)
-            >>> print(input_x.numel())
-            4
+        For details, please refer to :func:`mindspore.ops.numel`.
         """
         return self.size
 
@@ -1940,48 +1920,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
 
     def scatter_sub(self, indices, updates):
         """
-        Creates a new tensor by subtracting the values from the positions in self tensor indicated by
-        `indices`, with values from `updates`. When multiple values are provided for the same
-        index, the result of the update will be to subtract these values respectively. This operation is almost
-        equivalent to using :class:`mindspore.ops.ScatterNdSub` , except that the updates are applied on output `Tensor`
-        instead of input `Parameter`.
-
-        The last axis of `indices` is the depth of each index vectors. For each index vector,
-        there must be a corresponding value in `updates`. The shape of `updates` should be
-        equal to the shape of `self[indices]`. For more details, see Examples.
-
-        Note:
-            On GPU, if some values of the `indices` are out of bound, instead of raising an index error,
-            the corresponding `updates` will not be updated to self tensor. On CPU, if some values of
-            the `indices` are out of bound, raising an index error. On Ascend, out of bound checking is
-            not supported, if some values of the `indices` are out of bound, unknown errors may be caused.
-
-        Args:
-            indices (Tensor): The index of input tensor whose data type is int32 or int64.
-                The rank must be at least 2.
-            updates (Tensor): The tensor to update the input tensor, has the same type as input,
-                and updates.shape should be equal to indices.shape[:-1] + self.shape[indices.shape[-1]:].
-
-        Returns:
-            Tensor, has the same shape and type as self tensor.
-
-        Raises:
-            TypeError: If dtype of `indices` is neither int32 nor int64.
-            ValueError: If length of shape of self tensor is less than the last dimension of shape of `indices`.
-
-        Supported Platforms:
-            ``Ascend`` ``GPU`` ``CPU``
-
-        Examples:
-            >>> import numpy as np
-            >>> from mindspore import Tensor
-            >>> x = Tensor(np.array([[-0.1, 0.3, 3.6], [0.4, 0.5, -3.2]]).astype('float32'))
-            >>> indices = Tensor(np.array([[0, 0], [0, 0]]).astype('int32'))
-            >>> updates = Tensor(np.array([1.0, 2.2]).astype('float32'))
-            >>> output = x.scatter_sub(indices, updates)
-            >>> print(output)
-            [[-3.3000002  0.3        3.6      ]
-            [ 0.4        0.5       -3.2      ]]
+        For details, please refer to :func:`mindspore.ops.tensor_scatter_sub`.
         """
         return tensor_operator_registry.get('tensor_scatter_sub')(self, indices, updates)
 
@@ -2445,34 +2384,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
 
     def searchsorted(self, v, side='left', sorter=None):
         """
-        Finds indices where elements should be inserted to maintain order.
-
-        Args:
-            v (Union[int, float, bool, list, tuple, Tensor]): Values to insert into the tensor.
-            side (str, optional): If ``left``, the index of the first suitable
-                location found is given. If ``right``, return the last such index. If there is
-                no suitable index, return either 0 or N (where N is the length of the tensor).
-                Default: ``left`` .
-            sorter (Union[int, list, tuple, Tensor], optional): optional tensor of
-                integer indices that sort the tensor into ascending order on the innermost dimension
-                and the type must be int64. They are typically the result of argsort. Default: ``None`` .
-                CPU and GPU can only use default values
-
-        Returns:
-            Tensor, array of insertion points with the same shape as `v`.
-
-        Raises:
-            ValueError: If argument for `side` or `sorter` is invalid.
-
-        Supported Platforms:
-            ``Ascend`` ``GPU`` ``CPU``
-
-        Examples:
-            >>> import numpy as np
-            >>> from mindspore import Tensor
-            >>> x = Tensor(np.array([1, 2, 3, 4, 5]))
-            >>> print(x.searchsorted(3))
-            2
+        For details, please refer to :func:`mindspore.ops.searchsorted`.
         """
         if side not in ('left', 'right'):
             raise ValueError(f"For 'Tensor.searchsorted', the argument 'side' should be one of in "
@@ -2906,8 +2818,8 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         For details, please refer to :func:`mindspore.ops.unique_consecutive`.
         """
-        output, idx, counts = tensor_operator_registry.get("unique_consecutive")\
-            (return_inverse, return_counts, dim)(self)
+        output, idx, counts =\
+            tensor_operator_registry.get("unique_consecutive")(return_inverse, return_counts, dim)(self)
         if return_inverse and return_counts:
             return output, idx, counts
         if return_inverse:

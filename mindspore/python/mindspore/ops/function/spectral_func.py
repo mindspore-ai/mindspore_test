@@ -22,15 +22,9 @@ from .._primitive_cache import _get_cache_prim
 
 def blackman_window(window_length, periodic=True, *, dtype=None):
     r"""
-    Blackman window function, usually used to extract finite signal segment for FFT.
+    Blackman window function.
 
-    The `window_length` is a input tensor which determines the returned window size, and its data should be
-    an integer. In particular, if `window_length` is equal to `1`, only a single value `1` exists in the
-    returned window.
-
-    Attr `periodic` determines whether the returned window removes the last duplicate value
-    from the symmetric window and prepares to be a periodic window with functions.
-    Therefore, if attr `periodic` is ``True``, the :math:`N` in formula is :math:`window\_length + 1`.
+    Usually used to extract finite signal segment for FFT.
 
     .. math::
 
@@ -39,35 +33,23 @@ def blackman_window(window_length, periodic=True, *, dtype=None):
     where :math:`N` is the full window size, and n is natural number less than :math:`N` :[0, 1, ..., N-1].
 
     Args:
-        window_length (Tensor): The size of returned window, with data type int32, int64.
-            The input data should be an integer with a value of [0, 1000000].
-        periodic (bool, optional): Indicates whether to returns a window to be used as periodic function or
-            a symmetric window. Default: ``True`` .
+        window_length (Tensor): The size of window.
+        periodic (bool, optional): If ``True`` , return a periodic window. If ``False``, return a symmetric window.
+            Default ``True`` .
 
     Keyword Args:
-        dtype (mindspore.dtype, optional): The data type of returned tensor.
-            Only float16, float32 and float64 is allowed. Default: ``None`` .
+        dtype (mindspore.dtype, optional): The data type specified. Default ``None`` .
 
     Returns:
-        A 1-D tensor of size `window_length` containing the window. Its datatype is set by the attr `dtype`.
-        If 'dtype' is None, output datatype is float32.
-
-    Raises:
-        TypeError: If `window_length` is not a Tensor.
-        TypeError: If `periodic` is not a bool.
-        TypeError: If `dtype` is not one of: float16, float32, float64.
-        TypeError: If the type of `window_length` is not one of: int32, int64.
-        ValueError: If the value range of `window_length` is not [0, 1000000].
-        ValueError: If the dimension of `window_length` is not 0.
+        A 1-D tensor.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import Tensor, ops
-        >>> window_length = Tensor(10, mindspore.int32)
-        >>> output = ops.blackman_window(window_length, periodic=True, dtype=mindspore.float32)
+        >>> window_length = mindspore.tensor(10)
+        >>> output = mindspore.ops.blackman_window(window_length)
         >>> print(output)
         [-2.9802322e-08  4.0212840e-02  2.0077014e-01  5.0978714e-01
           8.4922993e-01  1.0000000e+00  8.4922981e-01  5.0978690e-01
@@ -82,18 +64,10 @@ def blackman_window(window_length, periodic=True, *, dtype=None):
 
 def bartlett_window(window_length, periodic=True, *, dtype=None):
     r"""
-    Bartlett window function is a triangular-shaped weighting function used for smoothing or frequency analysis of
-    signals in digital signal processing.
+    Bartlett window function.
 
-    The `window_length` is a input tensor which determines the returned window size, and its data should be
-    an integer. In particular, if `window_length` is equal to `1`, only a single value 1 exists in the
-    returned window.
-
-    Attr `periodic` determines whether the returned window removes the last duplicate value from the symmetric
-    window and prepares to be a periodic window with functions. Therefore, if attr `periodic` is true,
-    the :math:`N` in formula is :math:`window\_length + 1`.
-
-    The formula is as follows:
+    A triangular-shaped weighting function used for smoothing or frequency analysis of signals in digital signal
+    processing.
 
     .. math::
 
@@ -102,40 +76,31 @@ def bartlett_window(window_length, periodic=True, *, dtype=None):
         2 - \frac{2n}{N - 1} & \text{if } \frac{N - 1}{2} < n < N \\
         \end{cases},
 
-    where N is the full window size.
+    where :math:`N` is the full window size, and n is natural number less than :math:`N` :[0, 1, ..., N-1].
 
     Args:
-        window_length (Tensor): The size of returned window, with data type int32, int64.
-            The input data should be an integer with a value of [0, 1000000].
-        periodic (bool, optional): Indicates whether to returns a window to be used as periodic function or
-            a symmetric window. Default: ``True`` , indicating that the returned window is a periodic function.
+        window_length (Tensor): The size of window.
+        periodic (bool, optional): If ``True`` , return a periodic window. If ``False``, return a symmetric window.
+            Default ``True`` .
 
     Keyword Args:
-        dtype (mindspore.dtype, optional): The datatype of returned tensor.
-            Only float16, float32 and float64 are allowed. Default: ``None`` .
+        dtype (mindspore.dtype, optional): The data type specified. Default ``None`` .
 
     Returns:
-        A 1-D tensor of size `window_length` containing the window. Its datatype is set by the attr `dtype`.
-        If `dtype` is None, output datatype is float32.
-
-    Raises:
-        TypeError: If `window_length` is not a Tensor.
-        TypeError: If the type of `window_length` is not one of: int32, int64.
-        TypeError: If `periodic` is not a bool.
-        TypeError: If `dtype` is not one of: float16, float32, float64.
-        ValueError: If the value range of `window_length` is not [0, 1000000].
-        ValueError: If the dimension of `window_length` is not 0.
+        A 1-D tensor.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> from mindspore import Tensor, ops
-        >>> from mindspore import dtype as mstype
-        >>> window_length = Tensor(5, mstype.int32)
-        >>> output = ops.bartlett_window(window_length, periodic=True, dtype=mstype.float32)
+        >>> import mindspore
+        >>> window_length = mindspore.tensor(5)
+        >>> output = mindspore.ops.bartlett_window(window_length)
         >>> print(output)
-        [0. 0.4 0.8 0.8 0.4]
+        [0.  0.4 0.8 0.8 0.4]
+        >>> output = mindspore.ops.bartlett_window(window_length, periodic=False)
+        >>> print(output)
+        [0.  0.5 1.  0.5 0. ]
     """
     if dtype is None:
         dtype = mstype.float32

@@ -12,7 +12,7 @@ The module import method is as follows:
 Parallel Configuration Units
 ----------------------------------------------------------------
 
-.. mscnplatwarnautosummary::
+.. autosummary::
     :toctree: parallel
     :nosignatures:
     :template: classtemplate.rst
@@ -24,10 +24,10 @@ Parallel Configuration Units
     mindspore.parallel.nn.MicroBatchInterleaved
 
 
-Model Serialization
+Model Serialization
 ----------------------------------------------------------------
 
-.. mscnplatwarnautosummary::
+.. autosummary::
     :toctree: parallel
     :nosignatures:
     :template: classtemplate.rst
@@ -42,7 +42,7 @@ Model Serialization
 Parallel Partitioning Strategy
 ----------------------------------------------------------------
 
-.. mscnplatwarnautosummary::
+.. autosummary::
     :toctree: parallel
     :nosignatures:
     :template: classtemplate.rst
@@ -50,13 +50,13 @@ Parallel Partitioning Strategy
     mindspore.parallel.build_searched_strategy
     mindspore.parallel.function.reshard
     mindspore.parallel.shard
-    mindspore.parallel.layout
+    mindspore.parallel.Layout
 
 
 others
 ----------------------------------------------------------------
 
-.. mscnplatwarnautosummary::
+.. autosummary::
     :toctree: parallel
     :nosignatures:
     :template: classtemplate.rst

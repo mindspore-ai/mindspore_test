@@ -734,12 +734,13 @@ AObject *AbstractString::GetItem(AObject *index) {
   if (subscript.empty()) {
     return AObject::MakeAObject(kTypeAnyValue);
   }
-  if ((subscript[0] + subscript[2]) >= SizeToInt(str_.size())) {
+  constexpr int subscr_idx_two = 2;
+  if ((subscript[0] + subscript[subscr_idx_two]) >= SizeToInt(str_.size())) {
     MS_LOG(ERROR) << "The range should be in [0, " << str_.size() << "), but got [" << subscript[0] << ", "
-                  << (subscript[0] + subscript[2]) << ").";
+                  << (subscript[0] + subscript[subscr_idx_two]) << ").";
     return AObject::MakeAObject(kTypeAnyValue);
   }
-  return Convert(py::str(str_.substr(subscript[0], subscript[2])).ptr());
+  return Convert(py::str(str_.substr(subscript[0], subscript[subscr_idx_two])).ptr());
 }
 
 static AObject::Type BinaryIntOp(AObject::Type l, AObject::Type r) {
@@ -983,7 +984,7 @@ py::object AbstractType::BuildInstance(const std::vector<py::object> &args, int 
 }
 
 AbstractSequence::AbstractSequence(Type type, const std::vector<AObject *> &elements)
-    : AbstractObject(type, py::object()), elements_(elements) {
+    : AbstractObject(type, py::object()), element_type_(kTypeUnknown), elements_(elements) {
   std::for_each(elements_.begin(), elements_.end(), [this](auto element) {
     if (element_type_ == kTypeUnknown) {
       element_type_ = element->GetType();
@@ -1206,13 +1207,14 @@ std::string AbstractSequence::ToString() const {
 
 AbstractNamedTuple::AbstractNamedTuple(const py::object &o, PyTypeObject *tp)
     : AbstractObject(kTypeNamedTuple, o), type_name_(tp->tp_name), keys_() {
-  py::object fields = py::getattr(reinterpret_cast<PyObject *>(tp), "_fields", nullptr);
-  if (fields.ptr() == nullptr || !PyTuple_Check(fields.ptr())) {
+  py::object fields = py::getattr(py::cast<py::object>(reinterpret_cast<PyObject *>(tp)), "_fields", py::none());
+  if (fields.is_none() || !py::tuple::check_(fields)) {
     MS_LOG(INFO) << type_name_ << "._fields is not a tuple";
     return;
   }
-  for (Py_ssize_t i = 0; i < PyTuple_GET_SIZE(fields.ptr()); ++i) {
-    const auto &name = py::cast<std::string>(PyTuple_GET_ITEM(fields.ptr(), i));
+  auto tuple = py::cast<py::tuple>(fields);
+  for (const auto &item : tuple) {
+    const auto &name = py::cast<std::string>(item);
     keys_.push_back(name);
   }
 }
@@ -1220,11 +1222,15 @@ AbstractNamedTuple::AbstractNamedTuple(const py::object &o, PyTypeObject *tp)
 bool AbstractNamedTuple::IsNamedTuple(PyTypeObject *tp) {
   // Currently, a subclass that extends namedtuple is not supported, so we add the restrict:
   // PyTuple_GET_SIZE(tp->tp_bases) == 1
-  if (PyType_IsSubtype(tp, &PyTuple_Type) && PyTuple_GET_SIZE(tp->tp_bases) == 1) {
-    auto *obj = reinterpret_cast<PyObject *>(tp);
-    return py::hasattr(obj, "_fields") && py::hasattr(obj, "_make");
+  if (!PyType_IsSubtype(tp, &PyTuple_Type)) {
+    return false;
   }
-  return false;
+  auto tuple = py::cast<py::tuple>(tp->tp_bases);
+  if (tuple.size() != 1) {
+    return false;
+  }
+  auto obj = py::cast<py::object>(reinterpret_cast<PyObject *>(tp));
+  return py::hasattr(obj, "_fields") && py::hasattr(obj, "_make");
 }
 
 int AbstractNamedTuple::GetIndexOfKey(const std::string &name) const {
@@ -1281,9 +1287,10 @@ AbstractTuple *AbstractList::ListToTuple() {
 }
 
 AObjectPairList CreateAbstractPairList(const std::vector<AObject *> &elements) {
-  std::map<AObject *, int> keys_2_index;
+  std::map<AObject *, size_t> keys_2_index;
   std::vector<AObjectPair> key_values;
-  for (size_t index = 0; index < elements.size(); index += 2) {
+  constexpr int step = 2;
+  for (size_t index = 0; index < elements.size(); index += step) {
     if (keys_2_index.find(elements[index]) != keys_2_index.end()) {
       key_values[keys_2_index.at(elements[index])].second = elements[index + 1];
     } else {

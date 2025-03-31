@@ -7,11 +7,10 @@ mindspore.nn.PipelineGradReducer
 
     参数：
         - **parameters** (list) - 需要更新的参数。
-        - **scale_sense** (float) - 梯度的放缩系数，默认为 ``1.0``。
+        - **scale_sense** (float, 可选) - 梯度的放缩系数，默认为 ``1.0``。
 
     异常：
         - **RuntimeError** - 如果当前模式不是图模式。
-        - **RuntimeError** - 如果并行模式不是半自动并行或者自动并行。
 
     样例：
 

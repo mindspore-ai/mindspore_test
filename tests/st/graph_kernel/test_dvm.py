@@ -282,3 +282,20 @@ def test_fuse_pow():
     output = get_output(NetPow, [x0_ms, x1_ms], enable_graph_kernel=True)
     output = output.asnumpy()
     assert np.allclose(expect, output, 1e-4, 1e-4, equal_nan=True)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_hsigmoid():
+    """
+    Feature: HSigmoid
+    Description: test O1 HSigmoid precision
+    Expectation: the result match with expect
+    """
+    np.random.seed(1)
+    context.set_context(mode=context.GRAPH_MODE)
+    x0 = np.random.randn(2, 20, 10, 22, 35, 8, 10).astype(np.float32)
+    expect = np.maximum(np.minimum(x0 / 6.0 + 0.5, 1.0), 0.0)
+    x0_ms = Tensor(x0)
+    output = get_output(nn.HSigmoid, [x0_ms], enable_graph_kernel=True)
+    output = output.asnumpy()
+    assert np.allclose(expect, output, 1e-4, 1e-4, equal_nan=True)

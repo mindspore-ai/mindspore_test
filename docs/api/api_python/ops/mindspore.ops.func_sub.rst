@@ -3,7 +3,7 @@ mindspore.ops.sub
 
 .. py:function:: mindspore.ops.sub(input, other)
 
-    逐元素用第一个输入Tensor减去第二个输入Tensor。
+    逐元素计算第一个输入减去第二个输入的值。
 
     .. math::
 
@@ -12,14 +12,11 @@ mindspore.ops.sub
     .. note::
         - 当两个输入具有不同的shape时，它们的shape必须要能广播为一个共同的shape。
         - 两个输入不能同时为bool类型。[True, Tensor(True, bool\_), Tensor(np.array([True]), bool\_)]等都为bool类型。
-        - 两个输入遵循隐式类型转换规则，使数据类型保持一致。
+        - 支持隐式类型转换，类型提升。
 
     参数：
-        - **input** (Union[Tensor, number.Number, bool]) - 第一个输入，是一个number.Number、bool值或数据类型为 `number <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html#mindspore.dtype>`_ 或 `bool_ <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html#mindspore.dtype>`_ 的Tensor。
-        - **other** (Union[Tensor, number.Number, bool]) - 第二个输入，当第一个输入是Tensor时，第二个输入应该是一个number.Number或bool值，或数据类型为number或bool的Tensor。
+        - **input** (Union[Tensor, number.Number, bool]) - 第一个输入。
+        - **other** (Union[Tensor, number.Number, bool]) - 第二个输入。
 
     返回：
-        Tensor，shape与广播后的shape相同，数据类型为两个输入中精度较高的类型。
-
-    异常：
-        - **TypeError** - `input` 和 `other` 不是Tensor、number.Number或bool。
+        Tensor

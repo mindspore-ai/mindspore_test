@@ -20,6 +20,7 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/ops_utils/op_constants.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_z.h"
@@ -145,4 +146,15 @@ BeginFunction(TestOr, x, y) {
   Return(out);
 }
 EndFunction(TestOr)
+
+/** Python code:
+ *  def func(x, y, dtype):
+ *    out = x + y
+ *    return ops.cast(out, dtype)
+ */
+BeginFunction(TestDtype, x, y, dtype) {
+  auto out = Call(Prim(Add), x, y);
+  Return(Call(Prim(Cast), out, dtype));
+}
+EndFunction(TestDtype)
 }  // namespace mindspore::prim

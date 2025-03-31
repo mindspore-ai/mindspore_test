@@ -27,6 +27,9 @@ class OPS_API OneHotFuncImpl : public OpFuncImpl {
   BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
   TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
   int32_t CheckValidation(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+
+ private:
+  int64_t GetDepthValue(const PrimitivePtr &primitive, const AbstractBasePtr &depth_abs) const;
 };
 }  // namespace ops
 }  // namespace mindspore

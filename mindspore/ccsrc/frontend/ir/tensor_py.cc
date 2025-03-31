@@ -603,35 +603,30 @@ py::object GetItemForToList(void *data, const TypeId &data_type, const int &inde
   return py::none();
 }
 
-py::object RecursiveToList(void *data, const size_t &size, const std::vector<int64_t> &stride,
-                           const std::vector<int64_t> &shape, const size_t &element_size, const TypeId &data_type,
-                           int cur_dim, int index) {
-  int ndim = shape.size();
+py::object RecursiveToList(void *data, const std::vector<int64_t> &shape, const TypeId &data_type, int *index,
+                           int cur_dim) {
+  int ndim = static_cast<int>(shape.size());
   py::list res_list;
-  if (size == 0 && cur_dim + 1 == ndim) {
-    return res_list;
-  }
   if (cur_dim == ndim) {
-    return GetItemForToList(data, data_type, index);
+    auto elem = GetItemForToList(data, data_type, *index);
+    (*index) += 1;
+    return elem;
   }
   for (int i = 0; i < shape[cur_dim]; ++i) {
-    py::object obj = RecursiveToList(data, ndim, stride, shape, element_size, data_type, cur_dim + 1, index);
+    py::object obj = RecursiveToList(data, shape, data_type, index, cur_dim + 1);
     res_list.append(obj);
-    index += stride[cur_dim];
   }
   return res_list;
 }
 
 py::object TensorPybind::ToList(const BaseTensorPtr &tensor) {
   tensor->data_sync();
-  auto tensor_element_count = tensor->data().size();
-  auto tensor_stride = tensor->stride();
   auto tensor_shape = tensor->shape();
-  auto element_size = tensor->data().itemsize();
   auto data = tensor->data_c();
   auto data_type = tensor->data_type();
+  int index = 0;
 
-  return RecursiveToList(data, tensor_element_count, tensor_stride, tensor_shape, element_size, data_type, 0, 0);
+  return RecursiveToList(data, tensor_shape, data_type, &index, 0);
 }
 
 py::object TensorPybind::Item(const BaseTensorPtr &tensor) {

@@ -453,10 +453,20 @@ def _construct_tensor_layout_for_opt_shard_by_layout(dev_matrix, tensor_map, opt
     if not repeated_dim:
         raise ValueError("The device_matrix {} and tensor_map {} cannot sharding opt_shard".
                          format(dev_matrix, tensor_map))
+    return _construct_tensor_layout_helper(dev_matrix, tensor_map, opt_shard_size, origin_full_tensor_shape,
+                                           tensor_strategy, repeated_dim)
+
+
+def _construct_tensor_layout_helper(dev_matrix, tensor_map, opt_shard_size, origin_full_tensor_shape,
+                                    tensor_strategy, repeated_dim):
+    """
+    helper function to assign repeated device_matrix dim for opt shard.
+    """
     new_dev_matrix = list(copy.deepcopy(dev_matrix))
     new_dev_matrix_map = [i for i in range(len(dev_matrix))]
     opt_shard_dim = []
-    remained_opt_shard_size = opt_shard_size
+    remained_opt_shard_size = opt_shard_size if opt_shard_size != -1 else \
+        int(np.prod([dev_matrix[i] for i in repeated_dim]))
     for dim in repeated_dim[::-1]:
         opt_sharding_size = dev_matrix[dim]
         if remained_opt_shard_size // opt_sharding_size == 0:
@@ -544,18 +554,8 @@ def _construct_tensor_layout_for_opt_shard(dev_matrix, tensor_map, opt_shard_ste
                          format(opt_shard_step, np.prod(dev_matrix[repeated_dim[0] + 1:])))
     first_dim_no_sharding_size = origin_full_tensor_shape[0] // tensor_strategy[0]
     if (len(repeated_dim) < len(dev_matrix) and len(repeated_dim) > 1) or repeated_dim[0] > 0:
-        tensor_shape_new = list(origin_full_tensor_shape)
-        tensor_shape_new[0] = tensor_strategy[0]
-        accu_shp = 1
-        for i in range(len(repeated_dim) - 1):
-            opt_sharding_size = dev_matrix[repeated_dim[i]]
-            tensor_shape_new.insert(i + 1, opt_sharding_size)
-            accu_shp = accu_shp * opt_sharding_size
-        tensor_shape_new.insert(len(repeated_dim), first_dim_no_sharding_size // accu_shp)
-        tensor_map_new = list(copy.deepcopy(tensor_map))
-        for index, r_dim in enumerate(repeated_dim):
-            tensor_map_new.insert(index + 1, len(dev_matrix) - r_dim - 1)
-        return list(dev_matrix), tensor_map_new, tensor_shape_new
+        return _construct_tensor_layout_helper(dev_matrix, tensor_map, opt_shard_size, origin_full_tensor_shape,
+                                               tensor_strategy, repeated_dim)
 
     full_tensor_shape = list(origin_full_tensor_shape)
     full_tensor_shape[0] = tensor_strategy[0]

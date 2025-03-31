@@ -165,7 +165,7 @@ def test_strided_slice_uint8():
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_strided_slice_bool():
-    strided_slice(np.bool)
+    strided_slice(np.bool_)
     x = Tensor(np.arange(0, 4 * 4 * 4).reshape(4, 4, 4).astype(np.float32))
     y = x[-8:, :8]
     expect = np.array([[[0., 1., 2., 3.],
@@ -192,7 +192,7 @@ def test_strided_slice_bool():
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("dtype",
-                         [np.bool, np.int8, np.uint8, np.int16, np.uint16, np.int32, np.uint32, np.int64,
+                         [np.bool_, np.int8, np.uint8, np.int16, np.uint16, np.int32, np.uint32, np.int64,
                           np.uint64, np.float16, np.float32, np.float64, np.complex64, np.complex128])
 def test_slice_functional_with_attr_int32(dtype):
     """
@@ -212,7 +212,7 @@ def test_slice_functional_with_attr_int32(dtype):
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("dtype",
-                         [np.bool, np.int8, np.uint8, np.int16, np.uint16, np.int32, np.uint32, np.int64,
+                         [np.bool_, np.int8, np.uint8, np.int16, np.uint16, np.int32, np.uint32, np.int64,
                           np.uint64, np.float16, np.float32, np.float64, np.complex64, np.complex128])
 def test_slice_functional_with_attr_int64(dtype):
     """

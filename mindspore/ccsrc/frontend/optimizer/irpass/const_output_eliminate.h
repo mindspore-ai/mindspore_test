@@ -25,10 +25,11 @@
 #include "frontend/optimizer/irpass.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "include/common/utils/anfalgo.h"
+#include "utils/ordered_map.h"
 
 namespace mindspore::opt::irpass {
 // {a=makeTule(0, 0, 0);return a;} --> {a=makeTuple(0,0,0); b=depend(0, a); return b;}
-// {a=makeTule(0, 0, 0, grad);return a;} --> {a=makeTuple(0,0,0);b=depend(0, a); c=makeTuple(b, grad); return c;}
+// {a=makeTule(0, 0, 0, grad);return a;} --> {a=makeTuple(0,0,0); c=makeTuple(0, grad); b=depend(c, a); return b;}
 class ConstOutputEliminater : public AnfVisitor {
  public:
   AnfNodePtr operator()(const OptimizerPtr &, const AnfNodePtr &node) override {
@@ -94,13 +95,13 @@ class ConstOutputEliminater : public AnfVisitor {
   bool grad_mode_ = false;
   size_t grad_index_ = 0;
   AbstractBasePtr new_out_abstract_ = nullptr;
-  TypePtr element_type_ = nullptr;
+  OrderedMap<TypeId, AnfNodePtr> type_node_pair_;
 
   void Reset() {
     grad_mode_ = false;
     grad_index_ = 0;
     new_out_abstract_ = nullptr;
-    element_type_ = nullptr;
+    type_node_pair_.clear();
   }
 
   AbstractBasePtr GetTupleAbstract(const std::vector<AnfNodePtr> &inputs) const {
@@ -271,20 +272,27 @@ class ConstOutputEliminater : public AnfVisitor {
       if (!IsPrimitiveCNode(user.first, prim::kPrimTupleGetItem)) {
         return false;
       }
+      AnfNodePtr new_node;
+      const auto element = user.first->abstract();
+      if (element->isa<abstract::AbstractTensor>()) {
+        const auto &tensor_abstract = element->cast<abstract::AbstractTensorPtr>();
+        MS_EXCEPTION_IF_NULL(tensor_abstract);
+        const auto &tensor_type = tensor_abstract->element()->BuildType();
+        auto iter = type_node_pair_.find(tensor_type->type_id());
+        bool find = iter != type_node_pair_.end();
+        if (!find) {
+          const auto const_data = Tensor0Builder(tensor_type);
+          new_out_abstract_ = const_data->ToAbstract();
+          new_node = NewValueNode(const_data);
+          new_node->set_abstract(const_data->ToAbstract());
+          type_node_pair_.emplace(tensor_type->type_id(), new_node);
+        } else {
+          new_node = iter->second;
+        }
+      }
 
       if (!is_replace) {
         // Check
-        const auto element = user.first->abstract();
-        if (element->isa<abstract::AbstractTensor>()) {
-          const auto &tensor_abstract = element->cast<abstract::AbstractTensorPtr>();
-          MS_EXCEPTION_IF_NULL(tensor_abstract);
-          const auto &tensor_type = tensor_abstract->BuildType();
-          if (element_type_ == nullptr) {
-            element_type_ = tensor_type;
-          } else if (tensor_type != element_type_) {
-            return false;
-          }
-        }
         auto ret = RealUserCallerCheck(user.first, user.first->func_graph());
         if (!ret) {
           return false;
@@ -294,15 +302,25 @@ class ConstOutputEliminater : public AnfVisitor {
       if (is_replace) {
         // Real caller
         if (!grad_mode_) {
-          mng->Replace(user.first, node);
+          auto depend = func->NewCNode({NewValueNode(prim::kPrimDepend), new_node, node});
+          MS_EXCEPTION_IF_NULL(depend);
+          depend->set_abstract(new_node->abstract());
+          mng->Replace(user.first, depend);
         } else {
           auto index = common::AnfAlgo::GetTupleGetItemOutIndex(user.first->cast<CNodePtr>());
           auto real_input = common::AnfAlgo::GetTupleGetItemRealInput(user.first->cast<CNodePtr>());
           size_t new_index = index == grad_index_ ? 1 : 0;
-          auto new_index_value = NewValueNode(MakeValue(SizeToLong(new_index)));
-          auto new_node = func->NewCNode({NewValueNode(prim::kPrimTupleGetItem), real_input, new_index_value});
-          new_node->set_abstract(user.first->abstract());
-          mng->Replace(user.first, new_node);
+          if (new_index == 1) {
+            auto new_index_value = NewValueNode(MakeValue(SizeToLong(new_index)));
+            auto new_grad_node = func->NewCNode({NewValueNode(prim::kPrimTupleGetItem), real_input, new_index_value});
+            new_grad_node->set_abstract(user.first->abstract());
+            mng->Replace(user.first, new_grad_node);
+          } else {
+            auto depend = func->NewCNode({NewValueNode(prim::kPrimDepend), new_node, node});
+            MS_EXCEPTION_IF_NULL(depend);
+            depend->set_abstract(new_node->abstract());
+            mng->Replace(user.first, depend);
+          }
         }
       }
     }
@@ -310,7 +328,13 @@ class ConstOutputEliminater : public AnfVisitor {
     return true;
   }
 
-  tensor::TensorPtr Tensor0Builder() const { return std::make_shared<tensor::Tensor>(0.0, element_type_); }
+  tensor::TensorPtr Tensor0Builder(TypePtr element_type = nullptr) const {
+    if (element_type != nullptr) {
+      return std::make_shared<tensor::Tensor>(0.0, element_type);
+    } else {
+      return std::make_shared<tensor::Tensor>(0.0);
+    }
+  }
 
   bool RealUserCallerCheck(const AnfNodePtr &node, const FuncGraphPtr &func) {
     MS_EXCEPTION_IF_NULL(node);

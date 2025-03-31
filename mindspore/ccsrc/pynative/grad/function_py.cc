@@ -238,6 +238,7 @@ py::object FunctionBase::apply(const py::object &cls, const py::args &inputs) {
   std::vector<bool> is_tensor_input;
   is_tensor_input.reserve(inputs.size());
   py::tuple need_grad_input = py::tuple(inputs.size());
+  runtime::Pipeline::Get().WaitFrontend();
   runtime::Pipeline::Get().WaitBpropStage();  // wait to get inputs value
   for (size_t i = 0; i < inputs.size(); ++i) {
     auto base_tensor = tensor::ConvertToBaseTensor(inputs[i]);
@@ -300,7 +301,7 @@ py::object FunctionBase::apply(const py::object &cls, const py::args &inputs) {
       bool is_diff = non_diff_tensors.count(base_tensor) == 0;
       if (!is_diff) {
         // For tensor not need grad, we should clean grad meta data.
-        base_tensor = std::make_shared<tensor::BaseTensor>(*base_tensor);
+        base_tensor = std::make_shared<tensor::Tensor>(*base_tensor);
         base_tensor->set_auto_grad_meta_data(nullptr);
         output_ret[i] = CValueToPybindObj(base_tensor);
       } else {

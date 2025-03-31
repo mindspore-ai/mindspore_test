@@ -53,7 +53,7 @@
         定义算子是否支持 DynamicRank（动态维度）。
 
         参数：
-            - **dynamic_rank_support** (bool) - 该算子是否支持 DynamicRank（动态维度）的标识。
+            - **dynamic_rank_support** (bool，可选) - 该算子是否支持 DynamicRank（动态维度）的标识。
               ``True``：表示算子支持DynamicRank。
               ``False``：表示算子不支持DynamicRank。
               默认值： ``False`` 。

@@ -22,8 +22,8 @@ __all__ = ["Buffer"]
 # Metaclass to combine _TensorMeta and the instance check override for Buffer.
 class _BufferMeta(_TensorMeta):
     # Make `isinstance(t, Buffer)` return True for custom tensor instances that have the _is_buffer flag.
-    def __instancecheck__(self, instance):  # pylint: disable=C0203
-        if self is Buffer:
+    def __instancecheck__(cls, instance):
+        if cls is Buffer:
             if isinstance(instance, Tensor) and getattr(instance, "_is_buffer", False):
                 return True
         return super().__instancecheck__(instance)
@@ -31,19 +31,19 @@ class _BufferMeta(_TensorMeta):
 
 class Buffer(Tensor, metaclass=_BufferMeta):
     r"""A kind of Tensor that should not be considered a model
-    parameter. For example, BatchNorm's ``running_mean`` is not a parameter, but is part of the Cell's state.
+    parameter. For example, BatchNorm's `running_mean` is not a parameter, but is part of the Cell's state.
 
     Buffers are :class:`~mindspore.Tensor` subclasses, that have a
-    very special property when used with :class:`Cell` s -- when they're
+    very special property when used with :class:`~.nn.Cell` s: when they're
     assigned as Cell attributes they are automatically added to the list of
-    its buffers, and will appear e.g. in :meth:`~mindspore.nn.Cell.buffers` iterator.
-    Assigning a Tensor doesn't have such effect. One can still assign a Tensor as explicitly by using
-    the :meth:`~mindspore.nn.Cell.register_buffer` function.
+    its buffers, and will appear e.g. in :func:`mindspore.nn.Cell.buffers` iterator.
+    Assigning a tensor doesn't have such effect. One can still assign a tensor as a buffer explicitly by using
+    the :func:`mindspore.nn.Cell.register_buffer` function.
 
     Args:
         data (Tensor): buffer tensor.
         persistent (bool, optional): whether the buffer is part of the Cell's
-            :attr:`state_dict`. Default: ``True``
+            :attr:`state_dict`. Default: ``True``.
     """
 
     def __new__(cls, data=None, *, persistent=True):

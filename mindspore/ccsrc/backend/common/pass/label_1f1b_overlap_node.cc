@@ -25,6 +25,8 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "include/backend/anf_runtime_algorithm.h"
 
 namespace mindspore {
@@ -40,6 +42,25 @@ void LabelBpBegin(const std::vector<CNodePtr> &begin_cnodes, const std::string &
       begin_cnodes[middle_cnode_index - 1]->AddAttr(kCNodeAttr1f1bIndexBpBegin, MakeValue(true));
     }
   }
+}
+
+AnfNodePtr GetInputNode(const AnfNodePtr &node, std::function<std::pair<bool, size_t>(const CNodePtr &)> check_filter) {
+  std::queue<AnfNodePtr> node_queue;
+  node_queue.push(node);
+  while (!node_queue.empty()) {
+    auto end = node_queue.front();
+    node_queue.pop();
+    if (!end->isa<CNode>()) {
+      return end;
+    }
+    auto cnode_queue_end = end->cast<CNodePtr>();
+    auto check_res = check_filter(cnode_queue_end);
+    if (!check_res.first) {
+      return end;
+    }
+    node_queue.push(cnode_queue_end->input(check_res.second));
+  }
+  return node;
 }
 
 void LabelOutputNodesWithCheck(const AnfNodePtr &node, std::function<bool(const AnfNodePtr &)> check) {
@@ -133,18 +154,44 @@ bool IsNeededAllGatherReduceScatter(const CNodePtr &cnode, const std::string &pp
   return is_target;
 }
 
+bool IsNeededShape(const CNodePtr &cnode) {
+  if (!(cnode->input(kIndex1)->abstract() && cnode->input(kIndex1)->abstract()->GetShape())) {
+    return true;
+  }
+  auto a2a_shape = cnode->input(kIndex1)->abstract()->GetShape()->GetShapeVector();
+  auto a2a_size = std::accumulate(a2a_shape.begin(), a2a_shape.end(), 1, std::multiplies<int64_t>());
+  if (std::find(a2a_shape.begin(), a2a_shape.end(), -1) != a2a_shape.end()) {
+    auto input_node = GetInputNode(cnode->input(kIndex1), [&](const CNodePtr &cnode) {
+      bool filter = IsPrimitiveCNode(cnode, prim::kPrimDepend) || IsPrimitiveCNode(cnode, prim::kPrimLoad) ||
+                    IsPrimitiveCNode(cnode, prim::kPrimReshape) || IsPrimitiveCNode(cnode, prim::kPrimCast);
+      return std::make_pair(filter, 1);
+    });
+    if (!input_node->isa<CNode>()) {
+      return true;
+    }
+    auto input_cnode = input_node->cast<CNodePtr>();
+    if (input_cnode->input(kIndex1)->abstract() && input_cnode->input(kIndex1)->abstract()->GetShape()) {
+      auto a2a_input_shape = input_cnode->input(kIndex1)->abstract()->GetShape()->GetShapeVector();
+      auto a2a_input_size =
+        std::accumulate(a2a_input_shape.begin(), a2a_input_shape.end(), 1, std::multiplies<int64_t>());
+      if (std::find(a2a_input_shape.begin(), a2a_input_shape.end(), -1) != a2a_input_shape.end()) {
+        return true;
+      }
+      return a2a_input_size >= kAll2AllSize;
+    }
+  }
+  return a2a_size >= kAll2AllSize;
+}
+
 bool IsNeededCNode(const CNodePtr &cnode) {
   if (!common::AnfAlgo::IsCommunicationOp(cnode)) {
     return false;
   }
-  auto pp_1f1b_value = MsContext::GetInstance()->get_param<std::string>(MS_CTX_PP_1F1B_OVERLAP);
-  if (cnode->input(kIndex1)->abstract() && cnode->input(kIndex1)->abstract()->GetShape()) {
-    auto a2a_shape = cnode->input(kIndex1)->abstract()->GetShape()->GetShapeVector();
-    auto a2a_size = std::accumulate(a2a_shape.begin(), a2a_shape.end(), 1, std::multiplies<int64_t>());
-    if (std::find(a2a_shape.begin(), a2a_shape.end(), -1) == a2a_shape.end() && a2a_size < kAll2AllSize) {
-      return false;
-    }
+  if (!IsNeededShape(cnode)) {
+    return false;
   }
+  auto pp_1f1b_value = MsContext::GetInstance()->get_param<std::string>(MS_CTX_PP_1F1B_OVERLAP);
+
   bool is_target = false;
   if (pp_1f1b_value.find("AlltoAll") != std::string::npos) {
     is_target =

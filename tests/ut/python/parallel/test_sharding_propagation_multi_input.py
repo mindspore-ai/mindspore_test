@@ -241,7 +241,7 @@ def test_mint_matmul_layout_222():
 
 def test_mint_add_layout_222():
     """
-    Feature: Sharding propagation for mint.matmul.
+    Feature: Sharding propagation for mint.add.
     Description: identity(2, 1)->add identity(2, 1)->add
     Expectation: add gets right strategy.
     """
@@ -569,3 +569,43 @@ def test_mint_rma_softmaxcrossentropywithlogits():
         elif re.search('MatMulExt-op0', k) is not None:
             print("check MatMulExt-op0")
             assert v == [[4, 2], [2, 1]]
+
+
+def test_mint_relu_layout_propagate_back():
+    """
+    Feature: Sharding propagation for mint.nn.ReLU.
+    Description: identity(2, 1)->relu
+    Expectation: relu gets right strategy.
+    """
+    device_num = 8
+    class MatMulReLUNet(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.matmul = mint.matmul
+            self.relu = mint.nn.ReLU()
+            ly = ms.Layout((4, 2), ("axis0", "axis1"))
+            self.matmul_shard = ms.shard(self.matmul, in_strategy=(ly("axis0", "axis1"), ly("axis1", "None")))
+
+        def construct(self, input_x, input_y):
+            out1 = self.relu(input_y)
+            out2 = self.matmul_shard(input_x, out1)
+            return out2
+
+    context.set_auto_parallel_context(device_num=device_num, global_rank=0, parallel_mode="auto_parallel",
+                                      search_mode="sharding_propagation")
+
+    net = GradWrapTwoInput(NetWithLossTwoInput(MatMulReLUNet()))
+    net.set_train()
+
+    x = Tensor(np.ones([128, 96]), dtype=ms.float32)
+    y = Tensor(np.ones([96, 96]), dtype=ms.float32)
+
+
+    _cell_graph_executor.compile(net, x, y, phase='train')
+    strategies = _cell_graph_executor._get_shard_strategy(net)
+    context._reset_auto_parallel_context()
+    for (k, v) in strategies.items():
+        print("cnode: {} strategy: {}".format(k, v))
+        if re.search('ReLU-op0', k) is not None:
+            print("check ReLU-op0")
+            assert v == [[2, 1]]

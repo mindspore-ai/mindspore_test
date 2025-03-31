@@ -3,17 +3,14 @@ mindspore.ops.dstack
 
 .. py:function:: mindspore.ops.dstack(tensors)
 
-    将多个Tensor沿着第三维度进行堆叠。
+    将多个tensor沿着第三维度进行堆叠。
 
-    1-D Tensor :math:`(N,)` 重新排列为 :math:`(1,N,1)` ，2-D Tensor :math:`(M,N)` 重新排列为 :math:`(M,N,1)` 。
+    .. note::
+        - 一维tensor :math:`(N,)` 重新排列为 :math:`(1,N,1)` ，二维tensor :math:`(M,N)` 重新排列为 :math:`(M,N,1)` 。
+        - 除了第三个轴外，所有的tensor必须有相同的shape。如果是1-D或2-D的tensor，则它们的shape必须相同。
 
     参数：
-        - **tensors** (Union(List[Tensor], Tuple[Tensor])) - 一个Tensor序列。除了第三个轴外，所有的\
-          Tensor必须有相同的shape。如果是1-D或2-D的Tensor，则它们的shape必须相同。
+        - **tensors** (Union(List[Tensor], Tuple[Tensor])) - 由多个tensor组成的list或tuple。
 
     返回：
-        堆叠后的Tensor，其维度至少为3。输出shape与 `numpy.dstack()` 类似。
-
-    异常：
-        - **TypeError** - 如果 `tensors` 不是list或tuple。
-        - **ValueError** - 如果 `tensors` 为空。
+        Tensor

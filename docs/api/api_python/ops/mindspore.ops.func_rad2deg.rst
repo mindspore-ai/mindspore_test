@@ -3,14 +3,10 @@ mindspore.ops.rad2deg
 
 .. py:function:: mindspore.ops.rad2deg(x)
 
-    逐元素地将 `x` 从弧度制转换为度数制。
+    逐元素将 `x` 从弧度转换为度数。
 
     参数：
-        - **x** (Tensor) - 输入的Tensor。
+        - **x** (Tensor) - 输入tensor。
 
     返回：
-        Tensor，其数据类型和shape与 `x` 相同。
-
-    异常：
-        - **TypeError** - `x` 不是一个Tensor。
-        - **TypeError** - `x` 的数据类型不是float16、float32或float64。
+        Tensor

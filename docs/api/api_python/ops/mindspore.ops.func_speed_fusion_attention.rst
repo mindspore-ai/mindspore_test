@@ -33,7 +33,7 @@ mindspore.ops.speed_fusion_attention
         - 只支持 `Atlas A2` 训练系列产品。
 
     .. note::
-        不支持在 `图模式(mode=mindspore.GRAPH_MODE) <https://www.mindspore.cn/docs/zh-CN/master/model_train/program_form/static_graph.html>`_ 下执行。
+        不支持在 `图模式(mode=mindspore.GRAPH_MODE) <https://www.mindspore.cn/tutorials/zh-CN/master/compile/static_graph.html>`_ 下执行。
 
     参数：
         - **query** (Tensor) - query Tensor，shape支持： :math:`(B, S1, H1)`、 :math:`(B, N1, S1, D)`、 :math:`(S1, B, H1)`、 :math:`(B, S1, N1, D)` 或 :math:`(T1, N1, D)` 。

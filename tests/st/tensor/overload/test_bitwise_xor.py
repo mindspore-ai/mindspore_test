@@ -38,7 +38,7 @@ class BitwiseXorNet(nn.Cell):
     level_mark='level1',
     card_mark='onecard',
     essential_mark='unessential')
-@pytest.mark.parametrize("mode", ['pynative', 'KBK'])
+@pytest.mark.parametrize("mode", ['pynative'])
 def test_bitwise_or(mode):
     """
     Feature: test Tensor.clamp

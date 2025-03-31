@@ -557,9 +557,6 @@ def all(input, dim=None, keepdim=False):
 
     Tests if all element in `input` evaluates to `True` along the given axes.
 
-    Note:
-        The `dim` with tensor type is only used for compatibility with older versions and is not recommended.
-
     Args:
         input (Tensor): The input tensor.
         dim (Union[int, tuple(int), list(int), Tensor]): The dimensions to reduce. If ``None`` ,

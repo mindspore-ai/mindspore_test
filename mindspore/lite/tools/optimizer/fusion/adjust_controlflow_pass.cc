@@ -80,7 +80,7 @@ int32_t AdjustControlflowPass::AdjustControlflow(const CNodePtr &cnode, const Fu
 
   auto branch_else = GetValue<FuncGraphPtr>(else_value_node->value());
   if (branch_else == nullptr) {
-    MS_LOG(ERROR) << "Value of then branch is null!";
+    MS_LOG(ERROR) << "Value of else branch is null!";
     return lite::RET_ERROR;
   }
   auto new_param = std::make_shared<ConverterPara>();

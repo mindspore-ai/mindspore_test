@@ -1383,6 +1383,13 @@ bool IrExportBuilder::SetTensorTypeToAttributeProto(const ValuePtr &value, mind_
       return false;
     }
     tensor_proto->set_data_type(data_type);
+  } else if (elem_type->isa<BFloat>()) {
+    auto bfloat_value = elem_type->cast<BFloatPtr>();
+    auto data_type = GetMindirDataBitsBFloatType(bfloat_value->nbits());
+    if (data_type == mind_ir::TensorProto_DataType_UNDEFINED) {
+      return false;
+    }
+    tensor_proto->set_data_type(data_type);
   } else {
     MS_LOG(ERROR) << "Unsupported type " << elem_type->type_name();
     return false;
@@ -1601,6 +1608,15 @@ bool IrExportBuilder::SetTypeToAttributeProto_irs(const ValuePtr &value, mind_ir
     mind_ir::TensorProto *tensor_proto = attr_proto->add_tensors();
     auto float_value = value->cast<FloatPtr>();
     auto data_type = GetMindirDataBitsFloatType(float_value->nbits());
+    if (data_type == mind_ir::TensorProto_DataType_UNDEFINED) {
+      return false;
+    }
+    tensor_proto->set_data_type(data_type);
+  } else if (value->isa<BFloat>()) {
+    attr_proto->set_type(mind_ir::AttributeProto_AttributeType_TENSORS);
+    mind_ir::TensorProto *tensor_proto = attr_proto->add_tensors();
+    auto bfloat_value = value->cast<BFloatPtr>();
+    auto data_type = GetMindirDataBitsBFloatType(bfloat_value->nbits());
     if (data_type == mind_ir::TensorProto_DataType_UNDEFINED) {
       return false;
     }

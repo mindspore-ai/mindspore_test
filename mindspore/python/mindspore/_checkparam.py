@@ -1371,7 +1371,7 @@ def args_type_check(*type_args, **type_kwargs):
     return type_check
 
 
-def check_hook_fn(hook_type, hook_fn):
+def check_hook_fn(hook_fn):
     """Check hook fn"""
     if not isinstance(hook_fn, (FunctionType, MethodType)):
         raise TypeError(f"When using 'hook_type(hook_fn)', the type of 'hook_fn' must be python "
@@ -1379,36 +1379,6 @@ def check_hook_fn(hook_type, hook_fn):
 
     if hook_fn.__code__.co_name == "staging_specialize":
         raise TypeError(f"Decorating hook function {hook_fn.__name__} with '@jit' is not supported.")
-
-    tensor_hook_func_args_num = 1
-    pre_hook_func_args_num = 2
-    forward_hook_and_backward_hook_func_args_num = 3
-    # Real args number, exclude class method self param
-    hook_fn_args_num = len(inspect.signature(hook_fn).parameters)
-
-    if hook_type == "register_hook" and hook_fn_args_num != tensor_hook_func_args_num:
-        raise TypeError(f"Tensor hook function {hook_fn.__name__} arg num should be {tensor_hook_func_args_num}, but "
-                        f"got {hook_fn_args_num}")
-
-    if hook_type == "register_forward_pre_hook" and hook_fn_args_num != pre_hook_func_args_num:
-        raise TypeError(f"forward_pre_hook function {hook_fn.__name__} args num should be {pre_hook_func_args_num}, "
-                        f"but got {hook_fn_args_num}")
-
-    if (hook_type == "register_forward_hook" and
-            hook_fn_args_num != forward_hook_and_backward_hook_func_args_num):
-        raise TypeError(f"forward_hook function {hook_fn.__name__} args num should be "
-                        f"{forward_hook_and_backward_hook_func_args_num}, but got {hook_fn_args_num}")
-
-    if hook_type == "register_backward_pre_hook" and hook_fn_args_num != pre_hook_func_args_num:
-        raise TypeError(f"backward_pre_hook function {hook_fn.__name__} args num should be {pre_hook_func_args_num},"
-                        f" but got {hook_fn_args_num}")
-
-    if (hook_type == "register_backward_hook" and
-            hook_fn_args_num != forward_hook_and_backward_hook_func_args_num):
-        raise TypeError(f"backward_hook function {hook_fn.__name__} args num should be "
-                        f"{forward_hook_and_backward_hook_func_args_num}, but got {hook_fn_args_num}")
-
-    return True
 
 
 _set_record = {}

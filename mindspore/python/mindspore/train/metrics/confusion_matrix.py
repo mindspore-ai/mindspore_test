@@ -88,7 +88,7 @@ class ConfusionMatrix(Metric):
 
         Raises:
             ValueError: If the number of inputs is not 2.
-            ValueError: If the dim of y_pred and y are not equal.
+            ValueError: If the dims of `y_pred` and `y` are not equal.
         """
         if len(inputs) != 2:
             raise ValueError("For 'ConfusionMatrix.update', it needs 2 inputs (predicted value, true value), "

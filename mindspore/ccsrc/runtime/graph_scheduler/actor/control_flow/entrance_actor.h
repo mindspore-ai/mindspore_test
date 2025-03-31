@@ -44,6 +44,7 @@ class EntranceActor : public ControlActor {
   ~EntranceActor() override = default;
 
   void RunOpControl(AID *const input_control, OpContext<DeviceTensor> *const context) override;
+  void HandleWaitMessage(OpContext<DeviceTensor> *const context, const AID &from_aid) override;
 
   void RunOpRealParameterWithBranchID(const OpRealParameterWithBranchID &real_parameter_with_branch_id,
                                       OpContext<DeviceTensor> *const context);
@@ -51,7 +52,7 @@ class EntranceActor : public ControlActor {
   void SendMemoryFreeReq(OpContext<DeviceTensor> *const context) override;
 
   // Clear the data which are generated in the loop body execution.
-  void ClearDataOnStepEnd(AID *const input_control, OpContext<DeviceTensor> *const context);
+  void ClearDataOnStepEnd(const AID &input_control, OpContext<DeviceTensor> *const context);
 
   const std::vector<AID> &loop_body_input_control_arrow_aids() const { return loop_body_input_control_arrow_aids_; }
 

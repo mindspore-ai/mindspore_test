@@ -107,8 +107,11 @@ class RUNTIME_PIPELINE_EXPORT AsyncRQueue {
   void BindCoreForThread();
 
   std::unique_ptr<RingQueue<AsyncTaskPtr, kQueueCapacity>> tasks_queue_;
-
+#if defined(__APPLE__)
+  bool disable_multi_thread_{true};
+#else
   bool disable_multi_thread_{false};
+#endif
 
   std::map<std::string, int> thread_to_core_idx = {
     {"frontend_queue", 0}, {"backend_queue", 1}, {"launch_queue", 2}, {"bprop_queue", 3}};

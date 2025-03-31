@@ -328,7 +328,7 @@ class TrainOneStepCell(Cell):
 
     Args:
         network (Cell): The training network. The network only supports single output.
-        optimizer (Union[Cell], optional): Optimizer for updating the network parameters.
+        optimizer (Union[Cell]): Optimizer for updating the network parameters.
         sens (numbers.Number, optional): The scaling number to be filled as the input of backpropagation.
             Default value is
             ``None`` , which is ``1.0`` .
@@ -540,6 +540,9 @@ def _pipeline_clear_grad(accu_grad, grad):
 def grad_scale(scale, grad):
     """grad_scale"""
     new_grad = scale * grad
+    grad = ops.depend(grad, new_grad)
+    zeros = F.zeros_like(grad)
+    new_grad = ops.depend(new_grad, F.assign(grad, zeros))
     return new_grad
 
 @_primexpr
@@ -882,6 +885,8 @@ class PipelineCell(Cell):
     Args:
         network (Cell): The target network to wrap.
         micro_size (int): MicroBatch size.
+        stage_config (dict, optional): The stage configuration for each cell's execution in pipeline parallel.
+            Default ``None``.
 
     Supported Platforms:
         ``Ascend`` ``GPU``

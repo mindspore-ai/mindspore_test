@@ -3,13 +3,9 @@ mindspore.ops.bartlett_window
 
 .. py:function:: mindspore.ops.bartlett_window(window_length, periodic=True, *, dtype=None)
 
-    Bartlett窗口函数是一种三角形状的加权函数，通常用于平滑处理或频域分析信号。
+    巴特利特窗口函数。
 
-    `window_length` 是一个Tensor，控制返回的窗口大小，其数据类型必须是整数。特别的，当 `window_length` 为1时，返回的窗口只包含一个值，为 `1` 。 
-    
-    `periodic` 决定返回的窗口是否会删除对称窗口的最后一个重复值，并准备成为一个具备函数功能的周期性窗口。因此，如果 `periodic` 为True， :math:`N` 为 :math:`window\_length + 1`。
-
-    计算公式如下：
+    是一种三角形状的加权函数，通常用于平滑处理或频域分析信号。
 
     .. math::
 
@@ -18,22 +14,14 @@ mindspore.ops.bartlett_window
         2 - \frac{2n}{N - 1} & \text{if } \frac{N - 1}{2} < n < N \\
         \end{cases},
 
-    其中，N是总的窗口长度 `window_length` 。
+    其中， :math:`N` 是总的窗口长度 `window_length` ，n为小于 :math:`N` 的自然数 [0, 1, ..., N-1]。
 
     参数：
-        - **window_length** (Tensor) - 返回窗口的大小，数据类型为int32或int64。输入数据的值为[0, 1000000]的整数。
-        - **periodic** (bool，可选) - 决定返回的窗口作为周期函数还是对称窗口。默认值： ``True`` ，表示返回的窗口为周期函数。
+        - **window_length** (Tensor) - 窗口的大小。 
+        - **periodic** (bool，可选) - 如果为 ``True`` ，表示返回周期窗口。如果为 ``False`` ，表示返回对称窗口。默认 ``True`` 。
 
     关键字参数：
-        - **dtype** (mindspore.dtype，可选) - 输出数据类型，目前只支持float16、float32和float64。默认值： ``None`` 。
+        - **dtype** (mindspore.dtype，可选) - 指定数据类型。默认 ``None`` 。
 
     返回：
-        一维Tensor，大小为 `window_length` ，数据类型与 `dtype` 一致。如果 `dtype` 为None，则数据类型为float32。
-
-    异常：
-        - **TypeError** - `window_length` 不是Tensor。
-        - **TypeError** - `window_length` 的数据类型不是int32、int64。
-        - **TypeError** - `periodic` 不是bool。
-        - **TypeError** - `dtype` 不是float16、float32、float64。
-        - **ValueError** - `window_length` 的值不在[0, 1000000]。
-        - **ValueError** - `window_length` 的维度不等于0。
+        一维tensor。

@@ -2019,6 +2019,9 @@ BackendGraphId MSBackendBase::Build(const FuncGraphPtr &func_graph, const Backen
   uint64_t start_time = profiler::GetClockSyscnt();
   PROF_START(compile_backend_graph);
 
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  device_name_ = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
   const auto &device_context =
     device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_name_, device_id_});
   MS_EXCEPTION_IF_NULL(device_context);

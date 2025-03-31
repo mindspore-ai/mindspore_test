@@ -31,7 +31,6 @@
 #include "utils/anf_utils.h"
 #include "utils/compile_config.h"
 #include "ops/op_def.h"
-#include "ir/tensor_py_base.h"
 #include "ir/tensor_py_wrapperbase.h"
 
 namespace mindspore {

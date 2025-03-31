@@ -1,7 +1,7 @@
 mindspore.profiler._ExperimentalConfig
 =======================================
 
-.. py:class:: mindspore.profiler._ExperimentalConfig(profiler_level: ProfilerLevel = ProfilerLevel.Level0, aic_metrics: AicoreMetrics = AicoreMetrics.AiCoreNone, l2_cache: bool = False, mstx: bool = False, data_simplification: bool = True)
+.. py:class:: mindspore.profiler._ExperimentalConfig(profiler_level: ProfilerLevel = ProfilerLevel.Level0, aic_metrics: AicoreMetrics = AicoreMetrics.AiCoreNone, l2_cache: bool = False, mstx: bool = False, data_simplification: bool = True, export_type: list = None)
 
     在使用profile进行模型性能数据采集时，配置可扩展的参数。
 

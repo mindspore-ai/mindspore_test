@@ -26,7 +26,7 @@ mindspore.Tensor.var
         - **TypeError** - 如果 `keepdims` 不是bool类型。
         - **ValueError** - 如果 `axis` 不在 :math:`[-self.ndim, self.ndim)` 范围内。
 
-    其他API参考：
+    .. seealso::
         - :func:`mindspore.Tensor.mean` ：通过对Tensor中的所有元素求平均值来减少Tensor的维数。
         - :func:`mindspore.Tensor.std` ：计算沿指定轴的标准差。
 

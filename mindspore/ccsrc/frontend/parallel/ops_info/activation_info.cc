@@ -38,6 +38,8 @@ Status Activation::SetCostUnderStrategy(const StrategyPtr &strategy) { return Se
 
 Status Activation::CheckStrategy(const StrategyPtr &strategy) { return CheckStrategyValue(strategy, inputs_shape_); }
 
+Status MulsInfo::GetAttrs() { return SUCCESS; }
+
 Status ActivationInfo::GetAttrs() {
   if (attrs_.size() < ACTIVATION_ATTR_SIZE) {
     MS_LOG(ERROR) << name_ << " : The size of attrs small than 1.";
@@ -70,8 +72,13 @@ Status ActivationInfo::GetAttrs() {
 
 Status ActivationBase::CheckInputLayout() {
   if (inputs_tensor_info_.size() != kSizeOne) {
-    MS_LOG(ERROR) << "The size of input_tensor_layout for " << name_ << " is " << inputs_tensor_info_.size()
-                  << " rather than 1.";
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << "The size of input_tensor_layout for " << name_ << " is " << inputs_tensor_info_.size()
+                      << " rather than 1.";
+    } else {
+      MS_LOG(ERROR) << "The size of input_tensor_layout for " << name_ << " is " << inputs_tensor_info_.size()
+                    << " rather than 1.";
+    }
     return FAILED;
   }
   return SUCCESS;
@@ -79,8 +86,13 @@ Status ActivationBase::CheckInputLayout() {
 
 Status ActivationBase::CheckOutputLayout() {
   if (outputs_tensor_info_.size() != outputs_size_) {
-    MS_LOG(ERROR) << "The size of output_tensor_layout for " << name_ << " is " << outputs_tensor_info_.size()
-                  << " rather than 1.";
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << "The size of output_tensor_layout for " << name_ << " is " << outputs_tensor_info_.size()
+                      << " rather than 1.";
+    } else {
+      MS_LOG(ERROR) << "The size of output_tensor_layout for " << name_ << " is " << outputs_tensor_info_.size()
+                    << " rather than 1.";
+    }
     return FAILED;
   }
   if (output_infer_tensor_layout_.tensor_shape_before().array().empty()) {
@@ -356,8 +368,13 @@ std::vector<StrategyPtr> Softmax::GenerateOpStrategies(int64_t stage_id) {
 
 Status Softmax::CheckInputLayout() {
   if (inputs_tensor_info_.size() != kSizeOne) {
-    MS_LOG(ERROR) << "The size of input_tensor_layout for " << name_ << " is " << inputs_tensor_info_.size()
-                  << " rather than 1.";
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << "The size of input_tensor_layout for " << name_ << " is " << inputs_tensor_info_.size()
+                      << " rather than 1.";
+    } else {
+      MS_LOG(ERROR) << "The size of input_tensor_layout for " << name_ << " is " << inputs_tensor_info_.size()
+                    << " rather than 1.";
+    }
     return FAILED;
   }
   auto tensor_layout = inputs_tensor_info_[kIndex0].tensor_layout();
@@ -373,7 +390,11 @@ Status Softmax::CheckInputLayout() {
     if (corresponding_tensor_map.size() == 1 && corresponding_tensor_map[0] == -1) {
       return SUCCESS;
     } else {
-      MS_LOG(ERROR) << "Calculate axis can not be split";
+      if (is_in_layout_propagation_) {
+        MS_LOG(WARNING) << "Calculate axis can not be split";
+      } else {
+        MS_LOG(ERROR) << "Calculate axis can not be split";
+      }
       return FAILED;
     }
   }
@@ -1251,8 +1272,13 @@ Status SortExtInfo::GetAttrs() {
 
 Status SortExtInfo::CheckInputLayout() {
   if (inputs_tensor_info_.size() != kSizeOne) {
-    MS_LOG(ERROR) << "For distributed operator " << name_ << ", the size of inputs_tensor_info should be 1, but got "
-                  << inputs_tensor_info_.size() << ".";
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << "For distributed operator " << name_
+                      << ", the size of inputs_tensor_info should be 1, but got " << inputs_tensor_info_.size() << ".";
+    } else {
+      MS_LOG(ERROR) << "For distributed operator " << name_ << ", the size of inputs_tensor_info should be 1, but got "
+                    << inputs_tensor_info_.size() << ".";
+    }
     return FAILED;
   }
   auto input_tensor_layout = inputs_tensor_info_[kIndex0].tensor_layout();
@@ -1272,8 +1298,15 @@ Status SortExtInfo::CheckInputLayout() {
   if (input_shard_strategy[axis_[kIndex0]].size() == 1 && input_shard_strategy[axis_[kIndex0]][kIndex0] == 1) {
     return SUCCESS;
   } else {
-    MS_LOG(ERROR) << "For distributed operator " << name_ << ", the input's dimension 'dim' can not be split, the 'dim'"
-                  << " is " << axis_[kIndex0] << " and the input shard strategy is " << input_shard_strategy << ".";
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << "For distributed operator " << name_
+                      << ", the input's dimension 'dim' can not be split, the 'dim'"
+                      << " is " << axis_[kIndex0] << " and the input shard strategy is " << input_shard_strategy << ".";
+    } else {
+      MS_LOG(ERROR) << "For distributed operator " << name_
+                    << ", the input's dimension 'dim' can not be split, the 'dim'"
+                    << " is " << axis_[kIndex0] << " and the input shard strategy is " << input_shard_strategy << ".";
+    }
     return FAILED;
   }
   return SUCCESS;
@@ -1376,6 +1409,7 @@ Status SwigluInfo::InferOutputTensorInfo() {
   return SUCCESS;
 }
 
+REGISTER(MulsInfo);
 REGISTER(ActivationInfo);
 REGISTER(GeLUInfo);
 REGISTER(ClampScalarInfo);

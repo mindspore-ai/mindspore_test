@@ -69,6 +69,12 @@ COMMON_EXPORT TensorPyWrapperPtr ConvertToTensorPyWrapper(const py::handle &obj)
 COMMON_EXPORT py::object GetTensorPyFromValue(const ValuePtr &value);
 
 COMMON_EXPORT py::object GetTensorFromTensorPyWrapper(const TensorPyWrapperPtr &self);
+/// \brief Make default_parameter of Parameter to MetaTensor.
+///
+/// \param[in] value [ValuePtr] The given input parameter.
+///
+/// \return A MetaTensor.
+COMMON_EXPORT const MetaTensorPtr GetMetaTensorFromValue(const ValuePtr &value);
 }  // namespace tensor
 }  // namespace mindspore
 

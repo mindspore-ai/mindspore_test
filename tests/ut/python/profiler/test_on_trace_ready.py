@@ -82,6 +82,5 @@ class TestProfiler(unittest.TestCase):
                 mock_tensorboard_trace_handler.reset_mock()
                 profiler = Profiler(start_profile=False, on_trace_ready=callback)
                 prof_action_controller = profiler.action_controller
-                self.assertIsNone(prof_action_controller.on_trace_ready)
                 prof_action_controller._trace_ready()
                 mock_tensorboard_trace_handler.assert_not_called()

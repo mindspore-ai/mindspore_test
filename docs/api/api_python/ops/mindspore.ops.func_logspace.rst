@@ -3,7 +3,7 @@ mindspore.ops.logspace
 
 .. py:function:: mindspore.ops.logspace(start, end, steps, base=10, *, dtype=mstype.float32)
 
-    返回一个大小为 `steps` 的1-D Tensor，其值从 :math:`base^{start}` 到 :math:`base^{end}` ，以 `base` 为底数。
+    返回一个 `steps` 个元素的，在 [ :math:`base^{start}` , :math:`base^{end}` ] 区间内均匀分布的一维tensor。
 
     .. math::
         \begin{aligned}
@@ -12,21 +12,14 @@ mindspore.ops.logspace
         \end{aligned}
 
     参数：
-        - **start** (Union[float, Tensor]) - 间隔的起始值。
-        - **end** (Union[float, Tensor]) - 间隔的结束值。
-        - **steps** (int) - `steps` 必须为非负整数。
-        - **base** (int，可选) - `base` 必须为非负整数。默认值： ``10`` 。
+        - **start** (Union[float, Tensor]) - 区间的起始值。
+        - **end** (Union[float, Tensor]) - 区间的末尾值。
+        - **steps** (int) - 元素数量。
+        - **base** (int，可选) - 对数函数的底数。默认 ``10`` 。
 
     关键字参数：
-        - **dtype** (mindspore.dtype，可选) - 输出的数据类型。默认值： ``mstype.float32`` 。
+        - **dtype** (mindspore.dtype，可选) - 指定的数据类型。默认 ``mstype.float32`` 。
 
     返回：
-        Tensor，shape为 :math:`(step, )` ，数据类型由属性 `dtype` 设置。
+        Tensor
 
-    异常：
-        - **TypeError** - `start` 不是一个float或Tensor。
-        - **TypeError** - `end` 不是一个float或Tensor。
-        - **TypeError** - `steps` 不是一个整数。
-        - **TypeError** - `base` 不是一个整数。
-        - **ValueError** - `steps` 不是非负整数。
-        - **ValueError** - `base` 不是非负整数。

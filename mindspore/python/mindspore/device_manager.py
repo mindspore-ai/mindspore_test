@@ -24,6 +24,7 @@ from mindspore.parallel._ps_context import _need_reset_device_target_for_ps
 
 __all__ = ['set_device', 'set_deterministic', 'get_current_device']
 
+
 class DeviceInfo(tuple):
     """
     DeviceInfo class. Store the current device target and the corresponding device id.
@@ -50,7 +51,7 @@ def set_device(device_target, device_id=None):
 
     Args:
         device_target (str): The target device to run, only support "Ascend", "GPU", and "CPU".
-        device_id (int): ID of the target device, the value must be in [0, device_num_per_host-1],
+        device_id (int, optional): ID of the target device, the value must be in [0, device_num_per_host-1],
             where device_num_per_host refers to the total number of devices on the host. Default: ``None`` .
             The frame will set different default behaviours according to the scenario:
             if it is a single-card scenario, the frame will be set to 0.

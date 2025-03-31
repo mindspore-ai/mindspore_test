@@ -98,6 +98,7 @@ def gen_cc(kernelmod_name, aclnn_name, op_proto, kernelmod_cc_path, need_update_
                                                                     auto_gen=auto_gen) + "    "
     gen_utils.save_file(os.path.dirname(file_path), os.path.basename(file_path), aclnn_kernel_cc_str)
 
+
 def generate(kernelmod_name, class_name, op_proto, h_and_cc, need_update_shape):
     """generate cc and h files"""
     aclnn_name = AclnnUtils.get_aclnn_interface(class_name)

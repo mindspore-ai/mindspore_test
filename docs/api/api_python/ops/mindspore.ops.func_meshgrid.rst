@@ -3,19 +3,19 @@ mindspore.ops.meshgrid
 
 .. py:function:: mindspore.ops.meshgrid(*inputs, indexing='xy')
 
-    从给定的Tensor生成网格矩阵。
+    从一维输入生成多维坐标网格。
 
-    给定N个一维Tensor，对每个Tensor做扩张操作，返回N个N维的Tensor。
+    .. note::
+        - graph mode下的 `inputs` 为N个一维tensor，N应大于1。
+        - pynative mode下的 `inputs` 为N个零维或一维tensor，N应大于0。数据类型为Number。
+        - 对于长度为 `M` 和 `N` 的二维输入，取值为 ``'xy'`` 时，输出的shape为 :math:`(N, M)` ，取值为 ``'ij'`` 时，输出的shape为 :math:`(M, N)` 。
+        - 对于长度为 `M` ， `N` 和 `P` 的三维输入，取值为 ``'xy'`` 时，输出的shape为 :math:`(N, M, P)` ，取值为 ``'ij'`` 时，输出的shape为 :math:`(M, N, P)` 。
 
     参数：
-        - **inputs** (Union[tuple[Tensor], list[Tensor]]) - 静态图下为N个一维Tensor，输入的Tensor个数应大于1。动态图下为N个零维或一维Tensor，输入的Tensor个数应大于0。数据类型为Number。
+        - **inputs** (Union[tuple[Tensor], list[Tensor]]) - 由多个tensor组成的tuple或list。
 
     关键字参数：
-        - **indexing** (str, 可选) - 影响输出的网格矩阵的size。可选值为： ``'xy'`` 或 ``'ij'`` 。对于长度为 `M` 和 `N` 的二维输入，取值为 ``'xy'`` 时，输出的shape为 :math:`(N, M)` ，取值为 ``'ij'`` 时，输出的shape为 :math:`(M, N)` 。以长度为 `M` ， `N` 和 `P` 的三维输入，取值为 ``'xy'`` 时，输出的shape为 :math:`(N, M, P)` ，取值为 ``'ij'`` 时，输出的shape为 :math:`(M, N, P)` 。默认值： ``'xy'`` 。
+        - **indexing** (str, 可选) - 输出的网格矩阵的size。可选 ``'xy'`` 或 ``'ij'`` 。默认 ``'xy'`` 。
 
     返回：
-        Tensor，N个N维Tensor对象的元组。数据类型与输入相同。
-
-    异常：
-        - **TypeError** - `indexing` 不是str或 `inputs` 不是元组。
-        - **ValueError** - `indexing` 的取值既不是 ``'xy'`` 也不是 ``'ij'`` 。
+        由N个N维tensor组成的元组。

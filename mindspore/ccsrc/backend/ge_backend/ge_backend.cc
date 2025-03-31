@@ -54,6 +54,9 @@
 #include "include/common/runtime_conf/runtime_conf.h"
 #include "backend/ge_backend/runtime/control_node_parser.h"
 #include "include/common/utils/parallel_context.h"
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
+#include "include/common/utils/signal_util.h"
+#endif
 #include "runtime/device/res_manager/hal_res_manager.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
@@ -410,7 +413,6 @@ mindspore::HashSet<const tensor::Tensor *> GEBackend::weights_need_reprepare_ = 
 BackendGraphId GEBackend::backend_graph_id_ = 0;
 
 GEBackend::GEBackend() {
-  // Init();
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
   std::string device_target = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
@@ -651,6 +653,11 @@ bool GEBackend::CloseTsd(bool force) {
 }
 
 BackendGraphId GEBackend::Build(const FuncGraphPtr &func_graph, const BackendJitConfig &backend_jit_config) {
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
+  if (!RegisterGlobalSignalHandler(DefaultIntHandler)) {
+    MS_EXCEPTION(RuntimeError) << "Failed to register the callback signal handling.";
+  }
+#endif
   WaitTaskFinish();
   MS_EXCEPTION_IF_NULL(func_graph);
   // Clear the temp members of last graph.
@@ -1093,6 +1100,11 @@ BackendGraphId GEBackend::CompileWholeGraph(const FuncGraphPtr &func_graph,
   root_graph_map_[cur_backend_graph_id] = func_graph;
   MS_LOG(INFO) << "Status record: end compile graph. backend_graph_id: " << cur_backend_graph_id
                << ", kernel graph id: " << root_graph->graph_id();
+
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  std::string device_target = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  device::HalResManager::GetInstance().GetMultiStreamController(device_target)->Refresh();
   return cur_backend_graph_id;
 }
 
@@ -1117,10 +1129,6 @@ void GEBackend::WaitMultiStream() {
 RunningStatus GEBackend::Run(BackendGraphId graph_id, const VectorRef &inputs, VectorRef *outputs) {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kRuntime, runtime::ProfilerEvent::kBackendGraphRunInner,
                                      "graph_" + std::to_string(graph_id), true);
-
-  // if (IsGraphOutputValueNodeOrParameter(root_graph_->output(), args, outputs)) {
-  //   return;
-  // }
 
   const auto &context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
@@ -2019,7 +2027,6 @@ void GEBackend::CompileGraphFromSegment(const GraphSegmentPtr &segment, const Ba
     auto new_fg = graph_compiler_->Fetch(graph_id);
     MS_EXCEPTION_IF_NULL(new_fg);
 
-    // CacheFuncGraphWithKernelGraphId(segment->nodes_[0]->func_graph(), graph_id, device_context);
     graph_ids_.insert(graph_id);
     if (func_graph_to_kernel_graph_ids_.find(segment->nodes_[0]->func_graph()) ==
         func_graph_to_kernel_graph_ids_.end()) {

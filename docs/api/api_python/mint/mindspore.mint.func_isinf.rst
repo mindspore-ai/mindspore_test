@@ -3,26 +3,14 @@ mindspore.mint.isinf
 
 .. py:function:: mindspore.mint.isinf(input)
 
-    确定输入Tensor每个位置上的元素是否为正无穷或负无穷。
-
-    .. math::
-
-        out_i = \begin{cases}
-          & \ True,\ \text{ if } x_{i} = \text{Inf} \\
-          & \ False,\ \text{ if } x_{i} \ne  \text{Inf}
-        \end{cases}
-
-    其中Inf表示无穷大。
+    返回一个布尔型tensor，指示哪些元素是正负无穷数。
 
     .. warning::
         - 这是一个实验性API，后续可能修改或删除。
         - 该API目前只支持在Atlas A2训练系列产品上使用。
 
     参数：
-        - **input** (Tensor) - 输入Tensor。
+        - **input** (Tensor) - 输入tensor。
 
     返回：
-        Tensor，shape与相同的输入，数据的类型为bool。
-
-    异常：
-        - **TypeError** - 如果 `input` 不是Tensor。
+        Tensor

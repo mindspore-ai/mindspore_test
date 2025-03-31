@@ -605,6 +605,7 @@ scalar_usub = ScalarUsub()
 scalar_max = ScalarMax()
 scalar_min = ScalarMin()
 
+
 class BatchNorm(Primitive):
     r"""
     Batch Normalization for input data and updated parameters.
@@ -851,29 +852,21 @@ class Rank(Primitive):
 
 def rank(input_x):
     """
-    Returns the rank of a tensor.
-
-    Returns a 0-D int32 Tensor representing the rank of input; the rank of a tensor
-    is the number of indices required to uniquely select each element of the tensor.
+    Return the rank of a tensor.
 
     Args:
-        input_x (Tensor): The shape of tensor is :math:`(x_1, x_2, ..., x_R)`. The data type is Number.
+        input_x (Tensor): The input tensor.
 
     Returns:
-        Tensor. 0-D int32 Tensor representing the rank of input, i.e., :math:`R`. The data type is an int.
-
-    Raises:
-        TypeError: If `input_x` is not a Tensor.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input_tensor = Tensor(np.array([[2, 2], [2, 2]]), mindspore.float32)
-        >>> output = ops.rank(input_tensor)
+        >>> input_tensor = mindspore.tensor([[2, 2], [2, 2]], mindspore.float32)
+        >>> output = mindspore.ops.rank(input_tensor)
         >>> print(output)
         2
         >>> print(type(output))
@@ -1092,26 +1085,14 @@ class Tile(Primitive):
 
 def tile(input, dims):
     r"""
-    Creates a new tensor by repeating `input` `dims` times. The i'th dimension of
-    output tensor has `input.shape[i] * dims[i]` elements, and the values of `input`
+    Creates a new tensor by repeating the elements in the input tensor `dims` times.
+
+    The i'th dimension of output tensor has `input.shape[i] * dims[i]` elements, and the values of `input`
     are repeated `dims[i]` times along the i'th dimension.
 
     Note:
-        On Ascend, the number of `dims` should not exceed 8, and currently does not support scenarios
-        where more than 4 dimensions are repeated simultaneously.
-
-    Args:
-        input (Tensor): The tensor whose elements need to be repeated. Set the shape of input tensor as
-            :math:`(x_1, x_2, ..., x_S)` .
-
-        dims (tuple[int]): The parameter that specifies the number of replications,
-            the parameter type is tuple, and the data type is int, i.e., :math:`(y_1, y_2, ..., y_S)`.
-            Only constant value is allowed.
-
-    Returns:
-        Tensor, has the same data type as the `input`. Suppose the length of `dims` is `d`,
-        the dimension of `input` is `input.dim`, and the shape of `input` is :math:`(x_1, x_2, ..., x_S)`.
-
+        - On Ascend, the number of `dims` should not exceed 8, and currently does not support scenarios
+          where more than 4 dimensions are repeated simultaneously.
         - If `input.dim = d`, then the shape of their corresponding positions can be multiplied, and
           the shape of Outputs is :math:`(x_1*y_1, x_2*y_2, ..., x_S*y_S)`.
         - If `input.dim < d`, prepend 1 to the shape of `input` until their lengths are consistent.
@@ -1122,40 +1103,39 @@ def tile(input, dims):
           `dims` as :math:`(1, ..., y_1, y_2, ..., y_S)`, then the shape of their corresponding positions
           can be multiplied, and the shape of Outputs is :math:`(x_1*1, ..., x_R*y_R, x_S*y_S)`.
 
-    Raises:
-        TypeError: If `dims` is not a tuple or its elements are not all int.
-        ValueError: If the elements of `dims` are not all greater than or equal to 0.
+    Args:
+        input (Tensor): The input tensor.
+        dims (tuple[int]): The specified number of repetitions in each dimension.
+
+    Returns:
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input = Tensor(np.array([[1, 2], [3, 4]]), mindspore.float32)
-        >>> dims = (2, 3)
-        >>> output = ops.tile(input, dims)
-        >>> print(output)
-        [[1.  2.  1.  2.  1.  2.]
-         [3.  4.  3.  4.  3.  4.]
-         [1.  2.  1.  2.  1.  2.]
-         [3.  4.  3.  4.  3.  4.]]
-        >>> dims = (2, 3, 2)
-        >>> output = ops.tile(input, dims)
-        >>> print(output)
-        [[[1. 2. 1. 2.]
-          [3. 4. 3. 4.]
-          [1. 2. 1. 2.]
-          [3. 4. 3. 4.]
-          [1. 2. 1. 2.]
-          [3. 4. 3. 4.]]
-         [[1. 2. 1. 2.]
-          [3. 4. 3. 4.]
-          [1. 2. 1. 2.]
-          [3. 4. 3. 4.]
-          [1. 2. 1. 2.]
-          [3. 4. 3. 4.]]]
+        >>> input = mindspore.tensor([[1, 2], [3, 4]])
+        >>> mindspore.ops.tile(input, (2, 3))
+        Tensor(shape=[4, 6], dtype=Int64, value=
+        [[1, 2, 1, 2, 1, 2],
+         [3, 4, 3, 4, 3, 4],
+         [1, 2, 1, 2, 1, 2],
+         [3, 4, 3, 4, 3, 4]])
+        >>> mindspore.ops.tile(input, (2, 3, 2))
+        Tensor(shape=[2, 6, 4], dtype=Int64, value=
+        [[[1, 2, 1, 2],
+          [3, 4, 3, 4],
+          [1, 2, 1, 2],
+          [3, 4, 3, 4],
+          [1, 2, 1, 2],
+          [3, 4, 3, 4]],
+         [[1, 2, 1, 2],
+          [3, 4, 3, 4],
+          [1, 2, 1, 2],
+          [3, 4, 3, 4],
+          [1, 2, 1, 2],
+          [3, 4, 3, 4]]])
     """
     tile_op = _get_cache_prim(Tile)()
     return tile_op(input, dims)

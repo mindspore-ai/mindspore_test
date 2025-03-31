@@ -38,6 +38,9 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#ifdef ENABLE_AKG
+#include "kernel/graph_kernel/graph_kernel_builder.h"
+#endif
 
 namespace mindspore::graphkernel {
 // find outputs of nodes
@@ -315,6 +318,14 @@ void EliminateRedundantParameters(const FuncGraphPtr &func_graph, AnfNodePtrList
 std::tuple<FuncGraphPtr, AnfNodePtrList, AnfNodePtrList> BuildGraphFromNodes(const AnfNodePtrList &nodes) {
   return BuildGraphFromNodesInner(nodes, {});
 }
+
+#ifdef ENABLE_AKG
+class RegGraphKernelBuilder {
+ public:
+  RegGraphKernelBuilder() { kernel::GraphKernelBuilder::build_func_ = BuildGraphFromNodes; }
+} g_reg_graph_kernel_builder;
+#endif
+
 std::tuple<FuncGraphPtr, AnfNodePtrList, AnfNodePtrList> BuildGraphFromNodesInner(const AnfNodePtrList &nodes,
                                                                                   const ClusterConfig &config) {
   FuncGraphPtr fg = nullptr;

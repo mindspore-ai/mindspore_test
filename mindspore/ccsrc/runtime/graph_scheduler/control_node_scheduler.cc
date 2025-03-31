@@ -1854,7 +1854,7 @@ void ControlNodeScheduler::LinkControlArrowForEntranceActor(ActorSet *const acto
   MS_EXCEPTION_IF_NULL(control_actor_set);
   const auto &parser = graph_compiler_info.control_node_parser_;
   MS_EXCEPTION_IF_NULL(parser);
-
+  const auto &loop_count_actor = actor_set->loop_count_actor_;
   // Since only one set of real parameters are allowed to be executed in funcgraph at the same time, when the funcgraph
   // stops running, it is necessary to send the control arrow to the corresponding entrance actor at the exit of the
   // graph to run the next set of real parameters. The corresponding nodes of the actors that need to send the control
@@ -1879,6 +1879,9 @@ void ControlNodeScheduler::LinkControlArrowForEntranceActor(ActorSet *const acto
       auto from_actor = dynamic_cast<ControlActor *>(FetchActor(actor_name));
       MS_EXCEPTION_IF_NULL(from_actor);
       SchedulerHelper::AddLoopBodyControlArrow(from_actor, entrance_actor);
+      if (loop_count_actor != nullptr) {
+        loop_count_actor->first_control_aids_.emplace_back(from_actor->GetAID());
+      }
     }
   }
 
@@ -1899,6 +1902,9 @@ void ControlNodeScheduler::LinkControlArrowForEntranceActor(ActorSet *const acto
       auto from_actor = FetchActor(actor_name);
       MS_EXCEPTION_IF_NULL(from_actor);
       SchedulerHelper::AddLoopBodyControlArrow(from_actor, entrance_actor);
+      if (loop_count_actor != nullptr) {
+        loop_count_actor->first_control_aids_.emplace_back(from_actor->GetAID());
+      }
     }
   }
 }
@@ -2037,8 +2043,12 @@ std::set<AnfNodePtr> CollectInvalidStackControlInput(const std::set<AnfNodePtr> 
     if (!common::AnfAlgo::IsCallNode(depend_node)) {
       continue;
     }
-    const auto func_graphs = parser->call_node_to_func_graphs().find(depend_node);
-    for (const auto &func_graph : func_graphs->second) {
+    const auto func_graph_iter = parser->call_node_to_func_graphs().find(depend_node);
+    if (func_graph_iter == parser->call_node_to_func_graphs().end()) {
+      MS_LOG(DEBUG) << "Skip check for call node:" << depend_node->DebugString();
+      continue;
+    }
+    for (const auto &func_graph : func_graph_iter->second) {
       if (func_graph == nullptr) {
         continue;
       }

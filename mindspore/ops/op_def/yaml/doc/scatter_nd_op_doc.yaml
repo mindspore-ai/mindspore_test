@@ -23,34 +23,28 @@ scatter_nd:
         .. image:: ScatterNd.png
     
         Args:
-            indices (Tensor): Define the index of scattering in the new tensor with int32 or int64 data type.
+            indices (Tensor): The index of scattering in the new tensor.
                 The rank of `indices` must be at least 2 and `indices.shape[-1] <= len(shape)`.
-            updates (Tensor): Define the source Tensor to be updated.
+            updates (Tensor): The source tensor to be updated.
                 It has shape `indices.shape[:-1] + shape[indices.shape[-1]:]`.
-            shape (tuple[int]): Define the shape of the output tensor, has the same data type as indices.
-                `shape` can not be empty, and the elements in `shape` must be greater than or equal to 1.
+            shape (tuple[int]): The shape of the output tensor. `shape` can not be empty, and the elements
+                in `shape` must be greater than or equal to 1.
     
         Returns:
-            Tensor, the new tensor, has the same type as `update` and the same shape as `shape`.
-    
-        Raises:
-            TypeError: If `shape` is not a tuple.
-            ValueError: If any element of `shape` is less than 1.
+            Tensor
     
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``
     
         Examples:
             >>> import mindspore
-            >>> import numpy as np
-            >>> from mindspore import Tensor, ops
-            >>> indices = Tensor(np.array([[0], [2]]), mindspore.int32)
-            >>> updates = Tensor(np.array([[[1, 1, 1, 1], [2, 2, 2, 2],
+            >>> indices = mindspore.tensor([[0], [2]], mindspore.int32)
+            >>> updates = mindspore.tensor([[[1, 1, 1, 1], [2, 2, 2, 2],
             ...                             [3, 3, 3, 3], [4, 4, 4, 4]],
             ...                            [[1, 1, 1, 1], [2, 2, 2, 2],
-            ...                             [3, 3, 3, 3], [4, 4, 4, 4]]]), mindspore.float32)
+            ...                             [3, 3, 3, 3], [4, 4, 4, 4]]], mindspore.float32)
             >>> shape = (4, 4, 4)
-            >>> output = ops.scatter_nd(indices, updates, shape)
+            >>> output = mindspore.ops.scatter_nd(indices, updates, shape)
             >>> print(output)
             [[[1. 1. 1. 1.]
               [2. 2. 2. 2.]
@@ -68,10 +62,10 @@ scatter_nd:
               [0. 0. 0. 0.]
               [0. 0. 0. 0.]
               [0. 0. 0. 0.]]]
-            >>> indices = Tensor(np.array([[0, 1], [1, 1]]), mindspore.int32)
-            >>> updates = Tensor(np.array([3.2, 1.1]), mindspore.float32)
+            >>> indices = mindspore.tensor([[0, 1], [1, 1]], mindspore.int32)
+            >>> updates = mindspore.tensor([3.2, 1.1], mindspore.float32)
             >>> shape = (3, 3)
-            >>> output = ops.scatter_nd(indices, updates, shape)
+            >>> output = mindspore.ops.scatter_nd(indices, updates, shape)
             >>> # In order to facilitate understanding, explain the operator pseudo-operation process step by step:
             >>> # Step 1: Generate an empty Tensor of the specified shape according to the shape
             >>> # [

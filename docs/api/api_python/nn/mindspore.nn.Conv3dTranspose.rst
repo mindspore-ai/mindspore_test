@@ -26,7 +26,7 @@ mindspore.nn.Conv3dTranspose
         - **padding** (Union(int, tuple[int])，可选) - 输入的深度、高度和宽度方向上填充的数量。数据类型为int，或包含六个整数的tuple。若 `padding` 是一个整数，则前部、后部、顶部，底部，左边和右边的填充都等于 `padding` ；若 `padding` 是包含六个整数的tuple，则前部、尾部、顶部、底部、左边和右边的填充分别等于填充padding[0]、padding[1]、padding[2]、padding[3]、padding[4]和padding[5]。值要大于等于0，默认值： ``0`` 。
         - **dilation** (Union[int, tuple[int]]，可选) - 三维卷积核的膨胀尺寸。数据类型为int，或包含三个整数的tuple。若为一个整数，则表示在深度、高度和宽度方向的膨胀尺寸均为该整数值；若为包含三个整数的tuple，则分别表示在深度、高度和宽度方向的膨胀尺寸。
           假设 :math:`dilation=(d0, d1, d2)`, 则卷积核在深度方向间隔 :math:`d0-1` 个元素进行采样，在高度方向间隔 :math:`d1-1` 个元素进行采样，在宽度方向间隔 :math:`d2-1` 个元素进行采样。深度、高度和宽度上取值范围分别为[1, D]、[1, H]和[1, W]。默认值： ``1`` 。
-        - **group** (int) - 将过滤器拆分为组， `in_channels` 和 `out_channels` 必须可被 `group` 整除。当 `group` 大于1时，暂不支持Ascend平台。默认值： ``1`` 。
+        - **group** (int，可选) - 将过滤器拆分为组， `in_channels` 和 `out_channels` 必须可被 `group` 整除。当 `group` 大于1时，暂不支持Ascend平台。默认值： ``1`` 。
         - **output_padding** (Union(int, tuple[int])，可选) - 输出的深度、高度和宽度方向上填充的数量。数据类型为int，或包含3个整数的tuple。如果 `output_padding` 是一个整数，则深度、高度和宽度方向的填充都等于 `output_padding` ；如果 `output_padding` 是包含三个整数的tuple，则深度、高度和宽度方向的填充分别等于填充output_padding[0]、output_padding[1]和output_padding[2]。值要大于等于0，默认值： ``0`` 。
         - **has_bias** (bool，可选) - Conv3dTranspose层是否添加偏置参数。默认值： ``False`` 。
         - **weight_init** (Union[Tensor, str, Initializer, numbers.Number]，可选) - 权重参数的初始化方法。它可以是Tensor、str、Initializer或numbers.Number。当使用str时，可选 ``"TruncatedNormal"`` ， ``"Normal"`` ， ``"Uniform"`` ， ``"HeUniform"`` 和 ``"XavierUniform"`` 分布以及常量 ``"One"`` 和 ``"Zero"`` 分布的值，可接受别名 ``"xavier_uniform"`` ， ``"he_uniform"`` ， ``"ones"`` 和 ``"zeros"`` 。上述字符串大小写均可。更多细节请参考Initializer的值。默认值： ``None`` ，即权重使用HeUniform初始化。

@@ -15,6 +15,9 @@
  */
 
 #include "backend/backend_manager/backend_manager.h"
+#ifndef _WIN32
+#include <libgen.h>
+#endif
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 #include "utils/dlopen_macro.h"
@@ -63,6 +66,20 @@ BackendType GetBackendType(const std::string &backend_name) {
   } else {
     return kGEBackend;
   }
+}
+
+std::string GetCurrentDir() {
+#ifndef _WIN32
+  Dl_info dl_info;
+  if (dladdr(reinterpret_cast<void *>(GetCurrentDir), &dl_info) == 0) {
+    MS_LOG(WARNING) << "Get dladdr error";
+    return "";
+  }
+  std::string curr_so_path = dl_info.dli_fname;
+  return dirname(curr_so_path.data());
+#else
+  return "";
+#endif
 }
 }  // namespace
 
@@ -136,11 +153,14 @@ void BackendManager::LoadBackend(BackendType backend_type) {
     MS_LOG(EXCEPTION) << "Only the ge backend support the dynamic load. ";
   }
 
-  auto backend_lib_name = GetBackendLibNameByType(backend_type);
+  std::string backend_lib_name = GetBackendLibNameByType(backend_type);
+  MS_LOG(INFO) << "Backendmanager dlopen backend lib name: " << backend_lib_name;
   void *handle;
   std::string err_msg = "";
 #ifndef _WIN32
-  handle = dlopen(backend_lib_name.c_str(), RTLD_LAZY);
+  std::string cur_backend_lib_name = GetCurrentDir() + "/" + backend_lib_name;
+  MS_LOG(INFO) << "Backendmanager dlopen current backend lib name: " << cur_backend_lib_name;
+  handle = dlopen(cur_backend_lib_name.c_str(), RTLD_LAZY);
   err_msg = GetDlErrorMsg();
 #else
   handle = LoadLibrary(backend_lib_name.c_str());

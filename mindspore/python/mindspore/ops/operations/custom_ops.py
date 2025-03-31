@@ -1197,6 +1197,8 @@ class CustomOpBuilder:
         flags = ['-fstack-protector-all', '-Wl,-z,relro,-z,now,-z,noexecstack', '-fPIC', '-pie',
                  '-Wl,--disable-new-dtags,--rpath', '-s']
         flags += ['-DENABLE_FAST_HASH_TABLE=1']
+        if self.backend == "Ascend":
+            flags.append('-DCUSTOM_ASCEND_OP')
         if self.cflags is not None:
             flags.append(self.cflags)
         return flags

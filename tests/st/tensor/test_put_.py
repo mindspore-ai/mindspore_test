@@ -90,4 +90,4 @@ def test_put_dynamic_shape():
     accumulate2 = True
     TEST_OP(put_forward_func_with_x_mul_1, [
         [tensor_x1, index1, source1, accumulate1],
-        [tensor_x2, index2, source2, accumulate2]], 'inplace_put', disable_mode=['GRAPH_MODE'])
+        [tensor_x2, index2, source2, accumulate2]], 'inplace_put', disable_mode=['GRAPH_MODE'], inplace_update=True)

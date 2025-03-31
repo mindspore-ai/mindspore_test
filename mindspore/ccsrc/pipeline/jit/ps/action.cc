@@ -36,6 +36,7 @@
 #include "include/common/utils/python_adapter.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
+#include "include/common/utils/tensor_py_wrapper.h"
 #include "include/common/utils/parallel_context.h"
 #include "include/common/fallback.h"
 #include "abstract/abstract_value.h"
@@ -1811,7 +1812,7 @@ void SetRunMode(const ResourcePtr &resource) {
     MS_LOG(INTERNAL_EXCEPTION) << "Current execution mode is 'kernelbykernel', reason: " << kbk_reason
                                << ", but you're launching job using 'ranktable', which "
                                   "does not support 'kernelbykernel' mode.\n Please refer to link: "
-                                  "https://www.mindspore.cn/docs/en/master/model_train/parallel/startup_method.html "
+                                  "https://www.mindspore.cn/tutorials/zh-CN/master/parallel/startup_method.html "
                                   "and use 'Dynamic cluster'(suggested) or 'mpirun' to launch your job.";
   }
 }

@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 #include "ops/ops_frontend_func_impl.h"
+#include "ops_utils/op_constants.h"
+#include "abstract/abstract_value.h"
+#include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace ops {
@@ -24,6 +27,13 @@ constexpr auto kArange = "Arange";
 class ArangeFrontendFuncImpl : public OpFrontendFuncImpl {
  public:
   ValuePtr InferValue(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override {
+    auto dtype_ptr = GetScalarValue<int64_t>(input_args[kIndex3]->GetValue());
+    if (dtype_ptr.has_value()) {
+      auto res_type = TypeIdToType(static_cast<TypeId>(dtype_ptr.value()))->type_id();
+      if (res_type == kNumberTypeFloat16 || res_type == kNumberTypeBFloat16) {
+        return nullptr;
+      }
+    }
     return InferValueCallback::GetInstance().CallPyInferValue(kArange, input_args);
   }
 };

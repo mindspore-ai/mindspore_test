@@ -166,7 +166,6 @@ int InplaceCopyCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
 
   mode_ = static_cast<int>(self_dtype_ != value_dtype_) + (static_cast<int>(self_shape_ != value_shape_) << 1);
   is_empty_ = std::any_of(self_shape_.begin(), self_shape_.end(), [](auto dim) { return dim == 0; });
-
   if (!is_empty_ && self_shape_ != value_shape_) {
     size_t value_rank = value_shape_.size();
     size_t self_rank = self_shape_.size();
@@ -277,7 +276,6 @@ void InplaceCopyCpuKernelMod::InplaceCopyBroadcastTo(T *input, T *output, const 
   auto pad_input_shape = input_shape;
   auto input_rank = input_shape.size();
   auto output_rank = output_shape.size();
-
   if (input_rank != output_rank) {
     std::vector<int64_t> padding_dims(SizeToLong(output_rank) - SizeToLong(input_rank), 1);
     pad_input_shape.insert(pad_input_shape.begin(), padding_dims.begin(), padding_dims.end());

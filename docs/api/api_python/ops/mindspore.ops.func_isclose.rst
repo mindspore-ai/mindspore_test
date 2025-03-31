@@ -3,25 +3,19 @@ mindspore.ops.isclose
 
 .. py:function:: mindspore.ops.isclose(input, other, rtol=1e-05, atol=1e-08, equal_nan=False)
 
-    返回一个bool型Tensor，表示 `input` 的每个元素与 `other` 的对应元素在给定容忍度内是否“接近”。其中“接近”的数学公式为：
+    返回一个布尔型tensor，表示两个tensor在容忍度内是否逐元素相等。数学公式为：
 
     .. math::
         |input-other| ≤ atol + rtol × |other|
 
+    如果inf值具有相同的符号，则认为它们相等；如果 `equal_nan` 为 ``True`` ，NaN值被认为相等 。
+
     参数：
-        - **input** (Tensor) - 对比的第一个输入，支持的类型有float16、float32、float64、int8、int16、int32、int64、uint8，Ascend平台额外支持bfloat16和bool类型。
-        - **other** (Tensor) - 对比的第二个输入，数据类型必须与 `input` 相同。
-        - **rtol** (Union[float, int, bool], 可选) - 相对容忍度。默认值： ``1e-05``。
-        - **atol** (Union[float, int, bool], 可选) - 绝对容忍度。默认值： ``1e-08``。
-        - **equal_nan** (bool, 可选) - 若为True，则两个NaN被视为相同。默认值： ``False`` 。
+        - **input** (Tensor) - 第一个输入tensor。
+        - **other** (Tensor) - 第二个输入tensor。
+        - **rtol** (Union[float, int, bool], 可选) - 相对容忍度。默认 ``1e-05`` 。
+        - **atol** (Union[float, int, bool], 可选) - 绝对容忍度。默认 ``1e-08`` 。
+        - **equal_nan** (bool, 可选) - 两个NaN是否被视为相等。 默认 ``False`` 。
 
     返回：
-        Tensor，shape与广播后的shape相同，数据类型是bool型。
-
-    异常：
-        - **TypeError** - `input` 和 `other` 中的任何一个不是Tensor。
-        - **TypeError** - `input` 和 `other` 的数据类型不在支持的类型列表中。
-        - **TypeError** - `atol` 和 `rtol` 中的任何一个不是float、int或bool。
-        - **TypeError** - `equal_nan` 不是bool。
-        - **TypeError** - `input` 和 `other` 的数据类型不同。
-        - **ValueError** - `input` 和 `other` 无法广播。
+        Tensor

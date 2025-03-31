@@ -240,26 +240,14 @@ static CNodePtr InsertIdentityCNode(const AnfNodePtr &parameter, const FuncGraph
                                     const CNodePtr &to_insert_cnode, const int execution_mode) {
   CNodePtr identity_cnode = nullptr;
   FuncGraphManagerPtr manager = func_graph->manager();
-  if (execution_mode == kGraphMode) {
-    // Setting strategy by insert identity CNode directly using inputs in GraphMode.
-    // e.g TupleGetItem(parameter, index) -> func{identity{input_strategy[i], input_i}}.
-    identity_cnode = func_graph->NewCNode({NewValueNode(prim::kPrimAShardIdentity), parameter});
-    AnfNodePtrList node_inputs_list(to_insert_cnode->inputs().begin(), to_insert_cnode->inputs().end());
-    auto input_index =
-      std::distance(node_inputs_list.begin(),
-                    std::find(node_inputs_list.begin(), node_inputs_list.end(), parameter->cast<AnfNodePtr>()));
-    identity_cnode->set_abstract(parameter->abstract());
-    manager->SetEdge(to_insert_cnode, input_index, identity_cnode);
-  }
-  if (execution_mode == kPynativeMode) {
-    // Setting strategy by insert identity after TupleGetItem in PynativeMode.
-    // e.g TupleGetItem(parameter, index) -> identity{in_strategy=[input_strategy[index], TupleGetItem_i}
-    identity_cnode = func_graph->NewCNode({NewValueNode(prim::kPrimAShardIdentity), to_insert_cnode});
-    auto to_insert_cnode_abstract = to_insert_cnode->abstract();
-    MS_EXCEPTION_IF_NULL(to_insert_cnode_abstract);
-    identity_cnode->set_abstract(to_insert_cnode_abstract->Clone());
-    (void)manager->Replace(to_insert_cnode, identity_cnode);
-  }
+  // Setting strategy by insert identity CNode directly using inputs.
+  // e.g TupleGetItem(parameter, index) -> func{identity{input_strategy[i], input_i}}.
+  identity_cnode = func_graph->NewCNode({NewValueNode(prim::kPrimAShardIdentity), parameter});
+  AnfNodePtrList node_inputs_list(to_insert_cnode->inputs().begin(), to_insert_cnode->inputs().end());
+  auto input_index = std::distance(node_inputs_list.begin(), std::find(node_inputs_list.begin(), node_inputs_list.end(),
+                                                                       parameter->cast<AnfNodePtr>()));
+  identity_cnode->set_abstract(parameter->abstract());
+  manager->SetEdge(to_insert_cnode, input_index, identity_cnode);
   return identity_cnode;
 }
 
@@ -327,7 +315,8 @@ static void SetOutputLayout(const FuncGraphPtr &func_graph, const AnfNodePtr &ou
   PreCheckStrategy(out_strategy_tuple, &need_default_strategy, &out_strategy_size);
 
   if (out_strategy_size != 1) {
-    MS_LOG_WITH_NODE(EXCEPTION, out_strategy) << "Numbers of out strategy should be 1.";
+    MS_LOG(WARNING) << "Numbers of out strategy should be 1.";
+    return;
   }
 
   // Get strategy in ValueTuple.
@@ -428,12 +417,6 @@ static void SetInputLayout(const FuncGraphPtr &func_graph, const AnfNodePtr &in_
     auto to_insert_nodes_set = manager->node_users()[parameter];
 
     auto execution_mode = MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE);
-    if (execution_mode == kPynativeMode) {
-      // In PyNative mode, to_insert_nodes_set are TupleGetItem Prims.
-      to_insert_nodes_set = FindAnfNodeIndexSetToInsertStrategy(
-        func_graph, parameter, [](const CNodePtr &cnode) { return IsPrimitiveCNode(cnode, prim::kPrimTupleGetItem); });
-    }
-
     if (to_insert_nodes_set.empty()) {
       MS_LOG_WITH_NODE(EXCEPTION, parameter)
         << "For input: \"" << parameter->fullname_with_scope() << "\", failed to find node to insert strategy.";
@@ -446,13 +429,6 @@ static void SetInputLayout(const FuncGraphPtr &func_graph, const AnfNodePtr &in_
       }
       CNodePtr identity_cnode = InsertIdentityCNode(parameter, func_graph, to_insert_cnode, execution_mode);
       int64_t layout_index = static_cast<int64_t>(i);
-      if (execution_mode == kPynativeMode) {
-        // Get corresponding param_layout index in PynativeMode.
-        auto tuple_index = to_insert_cnode->input(2);
-        auto value_node = tuple_index->cast<ValueNodePtr>();
-        MS_EXCEPTION_IF_NULL(value_node);
-        layout_index = GetValue<int64_t>(value_node->value());
-      }
       if (!input_strategy.empty()) {
         Shapes current_layout = {input_strategy[layout_index]};
         SetStrategyToCNode(identity_cnode, current_layout);

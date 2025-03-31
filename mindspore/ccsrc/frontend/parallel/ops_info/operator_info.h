@@ -335,6 +335,7 @@ class OperatorInfo {
                             const std::vector<std::shared_ptr<TensorLayout>> &in_tensor_layouts,
                             const std::vector<std::shared_ptr<TensorLayout>> &out_tensor_layouts);
   Status SetCostUnderStrategyWithCost(const std::shared_ptr<StrategyWithCost> &swc);
+  void SetDefaultLayoutInfo();
   std::vector<std::shared_ptr<StrategyWithCost>> GetStrategyCost() { return strategy_cost_; }
   void SetStrategyCost(const std::vector<std::shared_ptr<StrategyWithCost>> &stra_cost);
   // In the training phase, when the input of a operator contains WEIGHT or a output from other operators involving
@@ -484,6 +485,8 @@ class OperatorInfo {
 
   Status AddSwcUnderPrevOpDevMatrixSingle(const Shape &prev_op_dev_matrix, const std::vector<Shape> &prev_op_tensor_map,
                                           size_t layout_index);
+  Status AddSwcUnderNextOpDevMatrixSingle(const std::shared_ptr<OperatorInfo> &next_op,
+                                          const std::shared_ptr<Edge> &edge);
   std::vector<std::shared_ptr<TensorLayout>> InferLayoutsByStrategy(const StrategyPtr &strategy_ptr,
                                                                     const std::vector<Shape> &prev_op_tensor_map,
                                                                     size_t layout_index);
@@ -770,6 +773,7 @@ AnfNodePtr CreateValueTupleAnfNodePtr(const std::vector<int64_t> &value_tuple);
 AnfNodePtr CreateTensorTupleAnfNodePtr(const tensor::TensorPtrList &tensor_tuple);
 
 ForwardOp CreateReduceMeanForwardOp(const std::vector<Group> &forward_group, const TypePtr &dtype);
+ForwardOp CreateMeanExtForwardOp(const Group &forward_group, const TypePtr &dtype);
 Operator CreateDivOpWithType(float divisor, const TypePtr &dtype);
 std::vector<int64_t> GetTensorValue(const ValuePtr &ori_value);
 
@@ -828,7 +832,9 @@ T GetInputValueFromCNodeWithDefaultValue(const CNodePtr &cnode, size_t index, T 
                                    << ") is not a value node. Return default value: " << default_value;
     return default_value;
   }
-  auto value = input_node->cast<ValueNodePtr>()->value();
+  auto value_ptr = input_node->cast<ValueNodePtr>();
+  MS_EXCEPTION_IF_NULL(value_ptr);
+  auto value = value_ptr->value();
   MS_EXCEPTION_IF_NULL(value);
   return GetValue<T>(value);
 }

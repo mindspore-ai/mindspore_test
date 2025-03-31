@@ -413,6 +413,32 @@ def test_jit_grad_with_dynamic_shape_change_param():
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_jit_grad_with_out_cell_custom_bprop():
+    """
+    Feature: Custom cell bprop.
+    Description: Test grad jit scene for custom cell bprop.
+    Expectation: Success.
+    """
+    class Net(nn.Cell):
+        @jit
+        def construct(self, x, y):
+            z = x * y
+            z = z * y
+            return z
+
+        def bprop(self, x, y, out, dout):
+            x_dout = x + y
+            y_dout = x * y
+            return x_dout, y_dout, out, dout
+
+    context.set_context(mode=1)
+    grad_all = ops.GradOperation(get_all=True)
+    output = grad_all(Net())(Tensor(1, mstype.float32), Tensor(2, mstype.float32))
+    result = (Tensor(3, mstype.float32), Tensor(2, mstype.float32))
+    assert output == result
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_jit_grad_with_custom_bprop():
     """
     Feature: Custom cell bprop.
@@ -463,3 +489,29 @@ def test_jit_grad_with_custom_bprop():
                           [4.2, 2.4, 6.6]]).astype(np.float32)
     assert np.allclose(output[0].asnumpy(), expect_dx)
     assert np.allclose(output[1].asnumpy(), expect_dy)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_grad_jit_output_list():
+    """
+    Feature: Gradjit with list output.
+    Description: Test grad jit scene with list output.
+    Expectation: Success.
+    """
+    class Net(nn.Cell):
+        @jit
+        def construct(self, x, y):
+            x = x+2
+            y = y+3
+            a = x*y
+            return (a, [a + x, a], (x, y))
+
+    def func(x, y, net):
+        return ops.value_and_grad(net, grad_position=1)(x, y)
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    x = Tensor([1])
+    y = Tensor([4])
+    net = Net()
+    value_grads = func(x, y, net)
+    assert isinstance(value_grads[0][1], list)

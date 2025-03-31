@@ -19,6 +19,7 @@ MindSpore中 `mindspore.nn` 接口与上一版本相比，新增、删除和支�
 
     mindspore.nn.Cell
     mindspore.nn.GraphCell
+    mindspore.nn.Buffer
     mindspore.nn.LossBase
     mindspore.nn.Optimizer
 
@@ -48,7 +49,6 @@ MindSpore中 `mindspore.nn` 接口与上一版本相比，新增、删除和支�
     mindspore.nn.ForwardValueAndGrad
     mindspore.nn.GetNextSingleOp
     mindspore.nn.GradAccumulationCell
-    mindspore.nn.MicroBatchInterleaved
     mindspore.nn.ParameterUpdate
     mindspore.nn.PipelineCell
     mindspore.nn.PipelineGradReducer
@@ -406,3 +406,4 @@ Dynamic LR函数
     :template: classtemplate.rst
 
     mindspore.nn.utils.no_init_parameters
+    mindspore.nn.utils.hooks.RemovableHandle

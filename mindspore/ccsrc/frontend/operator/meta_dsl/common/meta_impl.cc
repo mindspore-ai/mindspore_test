@@ -109,6 +109,8 @@ void MetaImpl::set_prim(const PrimitivePtr &prim) { prim_ = prim; }
 
 PrimitivePtr MetaImpl::prim() const { return prim_; }
 
+void MetaImpl::set_manager(const FuncGraphManagerPtr &manager) { manager_ = manager; }
+
 void MetaImpl::set_check_func(const CheckFunc &check_func) { check_func_ = check_func; }
 
 void MetaImpl::set_bprop_func(const std::function<std::shared_ptr<MetaImpl>()> &bprop_func) {
@@ -142,6 +144,9 @@ FuncGraphPtr MetaImpl::EndFunc() {
   }
   auto graph = func_builder_stack_.top()->EndFunc();
   func_builder_stack_.pop();
+  // Add graph to manager.
+  MS_EXCEPTION_IF_NULL(manager_);
+  manager_->AddFuncGraph(graph);
   // Process top graph.
   if (func_builder_stack_.empty()) {
     // Define custom bprop for current op.
@@ -175,6 +180,9 @@ void MetaImpl::DefineCustomBprop(const FuncGraphPtr &graph) {
     (void)bprop_graph_->transforms().emplace("primal", FuncGraphTransform(graph));
     graph->set_flag(FUNC_GRAPH_FLAG_DEFER_INLINE, true);
     graph->set_flag(FUNC_GRAPH_FLAG_PRIMAL_OF_BPROP, true);
+    // Add bprop_graph to manager.
+    MS_EXCEPTION_IF_NULL(manager_);
+    manager_->AddFuncGraph(bprop_graph_);
   }
 }
 
@@ -190,7 +198,34 @@ void MetaImpl::Return(const NodePtr &output) { func_builder_stack_.top()->SetOut
 
 NodePtr MetaImpl::NewParam(const std::string &name) { return func_builder_stack_.top()->AddParameter(name); }
 
-NodePtr MetaImpl::NewNode(const NodePtrList &nodes) { return func_builder_stack_.top()->CreateNode(nodes); }
+void MetaImpl::ConvertTypeIdToType(NodePtrList *nodes) {
+  constexpr size_t index_prim = 0;
+  auto do_trans = GetValueNode<prim::DoTransPrimitiveFunctionPtr>(nodes->at(index_prim));
+  if (do_trans == nullptr) {
+    return;
+  }
+  const auto &op_name = do_trans->function()->name();
+  const auto &op_def = mindspore::ops::GetOpDef(op_name);
+  MS_EXCEPTION_IF_NULL(op_def);
+  const auto &op_args = op_def->args_;
+  if (op_args.size() != nodes->size() - 1) {
+    MS_LOG(INTERNAL_EXCEPTION) << "Operator[" << op_name << "] expects " << op_args.size() << " arguments, but got "
+                               << nodes->size() - 1;
+  }
+  for (size_t i = 0; i < op_args.size(); ++i) {
+    const auto &op_arg = op_args[i];
+    if (!op_arg.arg_handler_.empty() && op_arg.arg_handler_ == "dtype_to_type_id") {
+      NodePtrList convert_node_list = {NewValueNode(prim::kPrimEnumToDtype), (*nodes)[i + 1]};
+      (*nodes)[i + 1] = func_builder_stack_.top()->CreateNode(convert_node_list);
+    }
+  }
+}
+
+NodePtr MetaImpl::NewNode(const NodePtrList &nodes) {
+  NodePtrList node_list = nodes;
+  ConvertTypeIdToType(&node_list);
+  return func_builder_stack_.top()->CreateNode(node_list);
+}
 
 FuncGraphPtr MetaImpl::BuildSubFunction(const std::string &func_name, const BlockFunc &sub_func) {
   BeginFunc(func_name);

@@ -26,7 +26,9 @@ def test_lccl_allreduce():
     Expectation: success
     """
     os.environ['MS_ENABLE_LCCL'] = "on"
-    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+    os.environ['GLOG_v'] = str(1)
+    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend",
+                        jit_config={"jit_level": "O0", "infer_boost": "on"})
     return_code = os.system(
         "msrun --worker_num=8 --local_worker_num=8 --join=True --log_dir=./output_allreduce "\
         "pytest -s test_lccl_allreduce.py"
@@ -44,7 +46,8 @@ def test_lccl_allgather():
     Expectation: success
     """
     os.environ['MS_ENABLE_LCCL'] = "on"
-    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend",
+                        jit_config={"jit_level": "O0", "infer_boost": "on"})
     return_code = os.system(
         "msrun --worker_num=8 --local_worker_num=8 --join=True pytest -s test_lccl_allgather.py")
     assert return_code == 0
@@ -58,7 +61,8 @@ def test_lccl_reducescatter():
     Expectation: success
     """
     os.environ['MS_ENABLE_LCCL'] = "on"
-    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend",
+                        jit_config={"jit_level": "O0", "infer_boost": "on"})
     return_code = os.system("msrun --worker_num=8 --local_worker_num=8 --join=True "
                             "pytest -s test_lccl_reduce_scatter.py")
     assert return_code == 0
@@ -72,13 +76,14 @@ def test_lccl_broadcast():
     Expectation: success
     """
     os.environ['MS_ENABLE_LCCL'] = "on"
-    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend",
+                        jit_config={"jit_level": "O0", "infer_boost": "on"})
     return_code = os.system(
         "msrun --worker_num=8 --local_worker_num=8 --join=True pytest -s test_lccl_broadcast.py")
     assert return_code == 0
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level2', card_mark='allcards', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='allcards', essential_mark='unessential')
 def test_lccl_matmul_allreduce():
     """
     Feature: lccl MatMulAllReduce fustion operator test.
@@ -87,6 +92,8 @@ def test_lccl_matmul_allreduce():
     """
     os.environ['MS_ENABLE_LCCL'] = "on"
     os.environ['MS_ENABLE_INTERNAL_KERNELS'] = 'on'
+    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend",
+                        jit_config={"jit_level": "O0", "infer_boost": "on"})
     return_code = os.system(
         "msrun --worker_num=8 --local_worker_num=8 --join=True pytest -s test_lccl_matmul_allreduce.py")
     assert return_code == 0

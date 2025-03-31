@@ -133,6 +133,17 @@ REG_FALLBACK_BUILDER("SubExt").SetBody(BODYFUNC(ib) {
   return {x - y * alpha_tensor};
 });
 
+REG_FALLBACK_BUILDER("Muls").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto y = ib->GetInput(kIndex1);
+  auto promote_type = mindspore::ops::PromoteType(ib->GetDtype(x), ib->GetDtype(x), "Muls");
+  MS_EXCEPTION_IF_NULL(promote_type);
+  auto y_tensor = ib->ScalarToTensor(y, y->dtype());
+  auto x_cast = ib->Cast(x, promote_type);
+  auto y_cast = ib->Cast(y_tensor, promote_type);
+  return {ib->Mul(x_cast, y_cast)};
+});
+
 REG_FALLBACK_BUILDER("BatchMatMulExt").SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto y = ib->GetInput(kIndex1);

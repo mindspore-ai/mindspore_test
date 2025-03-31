@@ -2,25 +2,4 @@ acos:
   description: |
     acos() -> Tensor
 
-    Computes arccosine of `self` element-wise.
-
-    .. math::
-        out_i = \cos^{-1}(self_i)
-
-    Returns:
-        Tensor, has the same shape as `self`. The dtype of output is float32 when dtype of `self` is in bool, int8, uint8, int16, int32, int64. Otherwise output has the same dtype as `self`.
-
-    Raises:
-        TypeError: If `self` is not a Tensor.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor
-        >>> x = Tensor(np.array([0.74, 0.04, 0.30, 0.56]), mindspore.float32)
-        >>> output = Tensor.acos(x)  # x.acos()
-        >>> print(output)
-        [0.7377037  1.5307857 1.2661037 0.9764114]
+    For details, please refer to :func:`mindspore.ops.acos`.

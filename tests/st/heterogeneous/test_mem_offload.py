@@ -70,9 +70,10 @@ def test_resnet():
     Description: Test mem offload
     Expectation: Run resnet success
     '''
+    os.environ['MS_ALLOC_CONF'] = "enable_vmm:true"
     context.set_context(jit_level='O0')
     context.set_context(memory_offload='ON')
-    context.set_context(max_device_memory='0.2GB')
+    context.set_context(max_device_memory='0.25GB')
     num_classes = 10
     epoch = 8
     batch_size = 1
@@ -94,6 +95,7 @@ def test_resnet():
         loss = train_network(data, label)
         losses.append(loss)
     assert losses[-1].asnumpy() < 1
+    os.unsetenv("MS_ALLOC_CONF")
 
 
 @arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
@@ -156,6 +158,7 @@ def test_1024_batch_size_resnet():
     Description: Test memory offload.
     Expectation: Run resnet with 1024 batch size successfully.
     """
+    os.environ['MS_ALLOC_CONF'] = "enable_vmm:true"
     context.set_context(jit_level='O0')
     num_classes = 10
     epoch = 6
@@ -182,3 +185,4 @@ def test_1024_batch_size_resnet():
         loss = train_network(data, label)
         losses.append(loss)
     assert losses[-1].asnumpy() < 1.5
+    os.unsetenv("MS_ALLOC_CONF")

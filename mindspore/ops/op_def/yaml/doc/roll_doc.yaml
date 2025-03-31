@@ -1,32 +1,28 @@
 roll:
     description: |
-        Rolls the elements of a tensor along an axis.
+        Roll the elements of a tensor along a dimension.
 
         Args:
-            input (Tensor): Input tensor.
-            shifts (Union[list(int), tuple(int), int]): Specifies the number of places by which elements are shifted
-                positively (towards larger indices) along the specified dimension. Negative shifts will roll the elements
-                in the opposite direction.
-            dims (Union[list(int), tuple(int), int], optional): Specifies the dimension indexes of shape to be rolled.
-                Default: ``None``. If dims is None, the Tensor will be flattened before rolling and then restored to the
-                original shape.
+            input (Tensor): The input tensor.
+            shifts (Union[list(int), tuple(int), int]): The amount of element shifting.
+            dims (Union[list(int), tuple(int), int], optional): Specify the dimension to move. Default ``None`` ,
+                which means the input tensor will be flattened before computation, and the result will be reshaped back
+                to the original input shape.
 
         Returns:
-            Tensor, has the same shape and type as `input`.
-
-        Raises:
-            TypeError: If `shifts` is not an int, a tuple or a list.
-            TypeError: If `dims` is not an int, a tuple or a list.
+            Tensor
 
         Supported Platforms:
             ``Ascend`` ``GPU``
 
         Examples:
-            >>> import numpy as np
-            >>> import mindspore as ms
-            >>> from mindspore import ops
-            >>> from mindspore import Tensor
-            >>> input = Tensor(np.array([0, 1, 2, 3, 4]).astype(np.float32))
-            >>> output = ops.roll(input, shifts=2, dims=0)
+            >>> import mindspore
+            >>> input = mindspore.tensor([0, 1, 2, 3, 4], mindspore.float32)
+            >>> # case1: Parameter `shifts` is positive
+            >>> output = mindspore.ops.roll(input, shifts=2, dims=0)
             >>> print(output)
             [3. 4. 0. 1. 2.]
+            >>> # case2: Parameter `shifts` is negative
+            >>> output = mindspore.ops.roll(input, shifts=-2, dims=0)
+            >>> print(output)
+            [2. 3. 4. 0. 1.]

@@ -44,7 +44,7 @@ sub:
         >>> x = Tensor(np.array([4, 5, 6]).astype(np.float32))
         >>> y = Tensor(1, mindspore.int32)
         >>> alpha = 0.5
-        >>> output = mint.sub(x, y, alpha)
+        >>> output = mint.sub(x, y, alpha=alpha)
         >>> print(output)
         [3.5 4.5 5.5]
         >>> # the data type of x is float32, the data type of y is int32,

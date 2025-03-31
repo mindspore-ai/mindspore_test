@@ -2,19 +2,4 @@ trunc:
   description: |
     trunc() -> Tensor
 
-    Returns a new tensor with the truncated integer values of the elements of the input tensor.
-
-    Returns:
-        Tensor, the same shape and data type as the `self`.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor
-        >>> x = Tensor(np.array([3.4742, 0.5466, -0.8008, -3.9079]),mindspore.float32)
-        >>> output = x.trunc()
-        >>> print(output)
-        [3. 0. 0. -3.]
+    For details, please refer to :func:`mindspore.ops.trunc`.

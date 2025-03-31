@@ -86,6 +86,7 @@ def set_simulation():
     StubTensor.__str__ = no_inject_traceback_for_print
     Tensor.tolist = obj.inject(Tensor.tolist)
     Tensor.__int__ = obj.inject(Tensor.__int__)
+    Tensor.__float__ = obj.inject(Tensor.__float__)
 
 
 def mock(mock_val, *args):

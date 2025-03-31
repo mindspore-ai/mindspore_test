@@ -136,8 +136,7 @@ class _BatchNorm(_NormBase):
 
         if self.training and self.track_running_stats:
             if self.num_batches_tracked is not None:
-                num_batches_tracked_one = Tensor(1, dtype=ms.int64)
-                self.num_batches_tracked += num_batches_tracked_one
+                self.num_batches_tracked += 1
                 if self.momentum is None:
                     exponential_average_factor = 1.0 / float(self.num_batches_tracked)
                 else:
@@ -525,7 +524,7 @@ class SyncBatchNorm(_BatchNorm):
             Here, examples use msrun to pull multi-process distributed tasks across nodes with a single command
             line instruction.
             Please see the `Ascend tutorial
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with multiple devices.
@@ -595,8 +594,7 @@ class SyncBatchNorm(_BatchNorm):
             exponential_average_factor = self.momentum
 
         if self.training and self.track_running_stats:
-            one_tensor = Tensor(1, dtype=ms.int64)
-            ops.assign_add(self.num_batches_tracked, one_tensor)
+            self.num_batches_tracked += 1
             if self.momentum is None:  # use cumulative moving average
                 exponential_average_factor = 1.0 / float(self.num_batches_tracked.value())
             else:  # use exponential moving average

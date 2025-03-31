@@ -68,16 +68,23 @@ void LoopCountActor::IncreaseLoopCount(OpContext<DeviceTensor> *const context) {
   // Debug actor is blocked, must wait debug actor callback message to process continue.
   if (debug_aid_ != nullptr) {
     SendDebugReq(context);
-    return;
   }
 
   if (profiler_aid_ != nullptr) {
     MS_LOG(INFO) << "Sync stream in the step end by profiler.";
     ProfilerRecorder profiler(ProfilerModule::kKernel, ProfilerEvent::kStreamSync, GetAID().Name());
     SendProfilerReq(context);
-    return;
   }
 
+  if (first_control_aids_.empty() && entrance_aids_.empty()) {
+    RealRun(context);
+    return;
+  }
+  HandleNotifyOnePhase(context);
+}
+
+void LoopCountActor::RealRun(OpContext<DeviceTensor> *const context) {
+  notify_messages_.clear();
   // Sync device stream.
   if ((strategy_ == GraphExecutionStrategy::kPipeline) && is_need_sync_stream_) {
     MS_LOG(INFO) << "Sync stream in the step end.";
@@ -106,13 +113,63 @@ void LoopCountActor::IncreaseLoopCount(OpContext<DeviceTensor> *const context) {
 void LoopCountActor::SendDebugReq(OpContext<DeviceTensor> *const context) {
   ActorDispatcher::SendSync(*debug_aid_, &DebugActor::DebugOnStepEnd, context, &GetAID(), total_running_count_,
                             sink_size_);
-  OnDebugFinish(context);
 }
 
 void LoopCountActor::SendProfilerReq(OpContext<DeviceTensor> *const context) {
   ActorDispatcher::SendSync(*profiler_aid_, &ProfilerActor::ProfilerOnStepEnd, context, &GetAID(),
                             total_running_count_);
-  OnDebugFinish(context);
+}
+
+void LoopCountActor::HandleNotifyOnePhase(OpContext<DeviceTensor> *const context) {
+  if (first_control_aids_.empty()) {
+    HandleNotifyTwoPhase(context);
+    return;
+  }
+  for (auto &first_control_aid : first_control_aids_) {
+    ActorDispatcher::Send(first_control_aid, &AbstractActor::HandleWaitMessage, context, GetAID());
+  }
+}
+
+void LoopCountActor::HandleNotifyTwoPhase(OpContext<DeviceTensor> *const context) {
+  if (entrance_aids_.empty()) {
+    RealRun(context);
+    return;
+  }
+  // Send to EntranceActor to clear the data which are generated in the loop body execution.
+  for (auto &entrance_aid : entrance_aids_) {
+    ActorDispatcher::Send(entrance_aid, &AbstractActor::HandleWaitMessage, context, GetAID());
+  }
+  return;
+}
+
+void LoopCountActor::HandleNotifyMessage(OpContext<DeviceTensor> *const context, const AID &from_aid) {
+  notify_messages_.emplace_back(from_aid);
+  MS_LOG(DEBUG) << "Actor:" << GetAID() << " receive signal message from actor:" << from_aid
+                << " current size:" << notify_messages_.size() << " need size:" << first_control_aids_.size() << " and"
+                << entrance_aids_.size() << " for actor:" << GetAID();
+  if (notify_messages_.size() < first_control_aids_.size() ||
+      (notify_messages_.size() < first_control_aids_.size() + entrance_aids_.size() &&
+       notify_messages_.size() > first_control_aids_.size())) {
+    return;
+  }
+
+  if (notify_messages_.size() == first_control_aids_.size()) {
+    MS_LOG(DEBUG) << "Handle first control aid finish for actor:" << GetAID();
+    HandleNotifyTwoPhase(context);
+    return;
+  }
+
+  if (notify_messages_.size() == first_control_aids_.size() + entrance_aids_.size()) {
+    MS_LOG(DEBUG) << "Handle first control aid and entrance aid finish for actor:" << GetAID();
+    RealRun(context);
+    return;
+  }
+
+  std::stringstream ofs;
+  ofs << "Invalid input signals size:" << notify_messages_.size()
+      << " first control aid size:" << first_control_aids_.size() << " entrance aid size:" << entrance_aids_.size()
+      << " for actor:" << GetAID();
+  SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), ofs.str());
 }
 
 void LoopCountActor::SendOutput(OpContext<DeviceTensor> *const context) {
@@ -126,11 +183,6 @@ void LoopCountActor::SendOutput(OpContext<DeviceTensor> *const context) {
   for (auto &output_control : output_control_arrows_) {
     MS_EXCEPTION_IF_NULL(output_control);
     ActorDispatcher::Send(output_control->to_op_id_, &OpActor::RunOpControl, from_aid, context);
-  }
-
-  // Send to EntranceActor to clear the data which are generated in the loop body execution.
-  for (auto &entrance_aid : entrance_aids_) {
-    ActorDispatcher::Send(entrance_aid, &EntranceActor::ClearDataOnStepEnd, from_aid, context);
   }
 
 #if defined(__linux__) && defined(WITH_BACKEND)

@@ -3,19 +3,13 @@ mindspore.ops.select_scatter
 
 .. py:function:: mindspore.ops.select_scatter(input, src, axis, index)
 
-    将 `src` 中的值散布到 `input` 指定维度 `axis` 的指定位置 `index` 上。
+    将 `src` 中的值散布到 `input` 指定轴 `axis` 的指定位置 `index` 上。
 
     参数：
-        - **input** (Tensor) - 目标Tensor。
-        - **src** (Tensor) - 源Tensor。
+        - **input** (Tensor) - 输入tensor。
+        - **src** (Tensor) - 源tensor。
         - **axis** (int) - 要嵌入的 `input` 的维度。
-        - **index** (int) - 在指定维度上散布的位置。
+        - **index** (int) - 在指定轴上散布的位置。
 
     返回：
-        嵌入后的Tensor，与 `input` 有相同的shape和类型。
-
-    异常：
-        - **ValueError** - `src` 的shape与散布在 `input` 上的shape不一样。
-        - **TypeError** - `input` 不是一个Tensor。
-        - **TypeError** - `src` 不是一个Tensor。
-        - **TypeError** - `axis` 或 `index` 不是整数。
+        Tensor

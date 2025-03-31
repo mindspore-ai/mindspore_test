@@ -443,8 +443,7 @@ class Dataset:
         .. image:: bucket_batch_by_length_en.png
 
         Note:
-            - When using `Data Sinking <https://www.mindspore.cn/docs/en/master/model_train/train_process/optimize/
-              sink_mode.html#data-sinking>`_ in Graph mode, the input shape of the network should keep consistent.
+            - When using Data Sinking in Graph mode, the input shape of the network should keep consistent.
               You should set `drop_remainder` to "True" to discard the last incomplete batch of data,
               or supplement/remove samples to ensure the dataset size is divisible by `batch_size`.
 
@@ -520,8 +519,7 @@ class Dataset:
         Note:
             - The order of using repeat and batch reflects the number of batches and per_batch_map.
               It is recommended that the repeat operation applied after the batch operation finished.
-            - When using `Data Sinking <https://www.mindspore.cn/docs/en/master/model_train/train_process/optimize/
-              sink_mode.html#data-sinking>`_ in Graph mode, the input shape of the network should keep consistent.
+            - When using Data Sinking in Graph mode, the input shape of the network should keep consistent.
               You should set `drop_remainder` to "True" to discard the last incomplete batch of data,
               or supplement/remove samples to ensure the dataset size is divisible by `batch_size`.
 
@@ -623,8 +621,7 @@ class Dataset:
         Note:
             - The order of using repeat and padded_batch reflects the number of batches.
               It is recommended that the repeat operation applied after the padded_batch operation finished.
-            - When using `Data Sinking <https://www.mindspore.cn/docs/en/master/model_train/train_process/optimize/
-              sink_mode.html#data-sinking>`_ in Graph mode, the input shape of the network should keep consistent.
+            - When using Data Sinking in Graph mode, the input shape of the network should keep consistent.
               You should set `drop_remainder` to "True" to discard the last incomplete batch of data,
               or supplement/remove samples to ensure the dataset size is divisible by `batch_size`.
 
@@ -3371,6 +3368,7 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
         # cache thread (get_ident()) to worker_id mapping in Python layer
         self.python_threads_to_workers = {}
         self.eof = None
+        self.running = False
 
     def __del__(self):
         try:
@@ -3511,17 +3509,20 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
 
         # Launch a clean process and register worker processes to be monitored by the watch dog.
         self._launch_monitor()
+        self.running = True
 
         # Register a termination function using weakref to avoid the object from unable to properly destruct.
         atexit.register(lambda cleanup: cleanup()() if cleanup() is not None else None,
                         weakref.WeakMethod(self.terminate))
 
     def terminate(self):
-        # abort the monitor first and then close all the workers
-        self._abort_monitor()
-        self.close_all_workers()
-        if hasattr(self, "warning_ctl"):
-            del self.warning_ctl
+        if self.running:
+            # abort the monitor first and then close all the workers
+            self._abort_monitor()
+            self.close_all_workers()
+            if hasattr(self, "warning_ctl"):
+                del self.warning_ctl
+            self.running = False
 
     def get_pids(self):
         """

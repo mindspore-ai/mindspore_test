@@ -34,7 +34,8 @@
       ".gitignore",
       "requirements.txt",
       "mindspore/lite/tools/kernel_builder/ascend/scripts",
-      "third_party/patch"
+      "third_party/patch",
+      "config"
     ],
     "ENVIRONMENT": "BASE"
   },

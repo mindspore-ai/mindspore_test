@@ -204,16 +204,6 @@ py::object TensorToPyData(const tensor::BaseTensorPtr &tensor, const AbstractBas
   return SetAdaptedAttrToTensor(py_tensor_obj, abs);
 }
 
-py::object TensorPyToPyData(const tensor::TensorPyPtr &tensorpy, const AbstractBasePtr &abs) {
-  MS_EXCEPTION_IF_NULL(tensorpy);
-  auto scalar_obj = CheckAndConvertToScalar(tensorpy->GetBaseTensor(), abs);
-  if (!py::isinstance<py::none>(scalar_obj)) {
-    return scalar_obj;
-  }
-  py::object py_tensor_obj = PackTensorToPyObject(tensorpy->GetBaseTensor());
-  return SetAdaptedAttrToTensor(py_tensor_obj, abs);
-}
-
 py::object ScalarPtrToPyData(const ScalarPtr &value) {
   constexpr double eps = 1e-6;
   py::int_ int_v;
@@ -363,12 +353,6 @@ static ValueNameToConverterVector value_name_to_converter = {
   {Scalar::kTypeId,
    [](const ValuePtr &value, const AbstractBasePtr &) -> py::object {
      return ScalarPtrToPyData(value->cast<ScalarPtr>());
-   }},
-  // TensorPy
-  {tensor::TensorPy::kTypeId,
-   [](const ValuePtr &value, const AbstractBasePtr &abs) -> py::object {
-     auto tensorpy = value->cast<tensor::TensorPyPtr>();
-     return TensorPyToPyData(tensorpy, abs);
    }},
   // Tensor
   {tensor::Tensor::kTypeId,
@@ -1062,6 +1046,8 @@ ValuePtr ConvertPyObjectToCObject(const py::object &input_object, bool is_base_t
     output = py::cast<tensor::CSRTensorPtr>(input_object);
   } else if (py::isinstance<tensor::COOTensor>(input_object)) {
     output = py::cast<tensor::COOTensorPtr>(input_object);
+  } else if (IsStubTensor(input_object)) {
+    output = ConvertStubTensor(input_object);
   } else {
     MS_EXCEPTION(TypeError) << "Unreasonable data type: " << input_object.get_type() << ".";
   }

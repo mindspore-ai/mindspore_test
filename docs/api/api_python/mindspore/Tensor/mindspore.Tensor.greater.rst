@@ -3,12 +3,5 @@ mindspore.Tensor.greater
 
 .. py:method:: mindspore.Tensor.greater(other)
 
-    按元素比较输入参数 :math:`self > other` 的值，输出比较结果的bool值。
+    详情请参考 :func:`mindspore.ops.greater`。
 
-    更多参考详见 :func:`mindspore.ops.gt()`。
-
-    参数：
-        - **other** (Union[Tensor, Number]) - 是一个Number或数据类型为 `number <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html#mindspore.dtype>`_ 或 `bool_ <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html#mindspore.dtype>`_ 的Tensor。
-
-    返回：
-        Tensor，shape与广播后的shape相同，数据类型为bool。

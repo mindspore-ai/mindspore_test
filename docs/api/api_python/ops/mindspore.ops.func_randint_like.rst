@@ -3,24 +3,19 @@ mindspore.ops.randint_like
 
 .. py:function:: mindspore.ops.randint_like(input, low, high, *, dtype=None, seed=None)
 
-    返回一个Tensor，其元素为 [ `low` , `high` ) 区间的随机整数，shape和dtype由 `input` 决定。
+    返回一个与输入shape相同的tensor，其元素为 [ `low` , `high` ) 区间的随机整数。
 
     .. warning::
         Ascend后端不支持随机数重现功能， `seed` 参数不起作用。
 
     参数：
-        - **input** (Tensor) - 输入的Tensor，用来决定输出Tensor的shape和默认的dtype。
+        - **input** (Tensor) - 输入tensor。
         - **low** (int) - 随机区间的起始值。
-        - **high** (int) - 随机区间的结束值。
-        - **seed** (int，可选) - 随机种子，必须大于或等于0。默认值： ``None`` ，此时值将取 ``0`` 。
+        - **high** (int) - 随机区间的末尾值。
+        - **seed** (int，可选) - 随机种子，必须大于或等于0。默认 ``None`` 。
 
     关键字参数：
-        - **dtype** (:class:`mindspore.dtype`，可选) - 指定的Tensor dtype，必须是int类型。如果为 ``None`` ，将会使用 `input` 的dtype。默认值： ``None`` 。
+        - **dtype** (:class:`mindspore.dtype`，可选) - 返回的数据类型。默认 ``None`` 。
 
     返回：
-        Tensor，shape和dtype由输入指定，其元素为 [ `low` , `high` ) 区间的随机整数。
-
-    异常：
-        - **TypeError** - 如果 `seed` 不是非负整数。
-        - **TypeError** - 如果 `low` 或 `high` 不是整数。
-        - **ValueError** - 如果 `dtype` 不是 `mstype.int_type` 类型。
+        Tensor

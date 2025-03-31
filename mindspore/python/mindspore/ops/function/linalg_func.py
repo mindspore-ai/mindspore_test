@@ -37,7 +37,7 @@ slice_ = P.Slice()
 
 def cond(A, p=None):
     r"""
-    Returns the matrix norm or vector norm of a given tensor.
+    Return the matrix norm or vector norm of a given tensor.
 
     `p` is the calculation mode of norm. The following norm modes are supported.
 
@@ -61,28 +61,22 @@ def cond(A, p=None):
         Currently, complex numbers are not supported.
 
     Args:
-        A (Tensor): Tensor of shape :math:`(*, n)` or :math:`(*, m, n)`
-            where :math:`*` is zero or more batch dimensions.
-        p (Union[int, float, inf, -inf, 'fro', 'nuc'], optional): norm's mode. Refer to the table above for
-            behavior. Default: ``None``.
+        A (Tensor): The input tensor which is zero or more batch dimensions.
+        p (Union[int, float, inf, -inf, 'fro', 'nuc'], optional): Norm's mode. Refer to the table above for
+            behavior. Default ``None``.
 
     Returns:
-        Tensor, the result of norm calculation on the specified dimension, `dim`, has the same dtype as `A`.
-
-    Raises:
-        TypeError: If `A` is a vector and `p` is a str.
-        ValueError: If `A` is a matrices and `p` is not in valid mode.
-        ValueError: If `A` is a matrix and `p` is an integer that is not in [1, -1, 2, -2].
+        Tensor
 
     Supported Platforms:
         ``GPU`` ``CPU``
 
     Examples:
-        >>> import mindspore as ms
-        >>> x = ms.Tensor([[1.0, 0.0, -1.0], [0.0, 1.0, 0.0], [1.0, 0.0, 1.0]])
-        >>> print(ms.ops.cond(x))
+        >>> import mindspore
+        >>> x = mindspore.tensor([[1.0, 0.0, -1.0], [0.0, 1.0, 0.0], [1.0, 0.0, 1.0]])
+        >>> print(mindspore.ops.cond(x))
         1.4142
-        >>> print(ms.ops.cond(x, 'fro'))
+        >>> print(mindspore.ops.cond(x, 'fro'))
         3.1622777
     """
     matrix_inverse = _get_cache_prim(P.MatrixInverse)(adjoint=False)
@@ -147,35 +141,24 @@ def eig(A):
 
 def eigvals(A):
     """
-    Computes the eigenvalues of a square matrix(batch square matrices).
+    Compute the eigenvalues of a square matrix.
 
     .. warning::
         This is an experimental API that is subject to change or deletion.
 
     Args:
-        A (Tensor): Square matrices of shape :math:`(*, N, N)`,
-            with float32, float64, complex64 or complex128 data type.
+        A (Tensor): Square matrices with shape :math:`(*, N, N)` .
 
     Returns:
-        **eigen_values** (Tensor) - Shape :math:`(*, N)`. Returns the eigenvalues of
-        the corresponding matrix, which may not have an order.
-
-    Raises:
-        TypeError: If dtype of `A` is not one of: float64, float32, complex64 or complex128.
-        TypeError: If `A` is not a Tensor.
-        ValueError: If `A` is not a square(batch squares).
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import Tensor, ops
-        >>> import numpy as np
-        >>> input_x = Tensor(np.array([[1.0, 0.0], [0.0, 2.0]]), mindspore.float32)
-        >>> u = ops.eigvals(input_x)
-        >>> print(u)
-        [1.+0.j 2.+0.j]
+        >>> mindspore.ops.eigvals(mindspore.tensor([[1.0, 0.0], [0.0, 2.0]]))
+        Tensor(shape=[2], dtype=Complex64, value= [1+0j, 2+0j])
     """
     u, _ = _get_cache_prim(P.Eig)(compute_v=False)(A)
     return u
@@ -192,47 +175,39 @@ def svd(input, full_matrices=False, compute_uv=True):
         A=U*diag(S)*V^{T}
 
     Args:
-        input (Tensor): Tensor of the matrices to be decomposed. The shape should be :math:`(*, M, N)`.
+        input (Tensor): The input tensor, shape is :math:`(*, M, N)`.
         full_matrices (bool, optional): If ``True`` , compute full-sized :math:`U` and :math:`V`. If ``False``, compute
                                         only the leading P singular vectors, with P is the minimum of M and N.
-                                        Default: ``False`` .
+                                        Default ``False`` .
         compute_uv (bool, optional): If ``True`` , compute the left and right singular vectors.
-                                     If ``False``, compute only the singular values. Default: ``True`` .
+                                     If ``False``, compute only the singular values. Default ``True`` .
 
     Returns:
-        If compute_uv is ``True`` , a tuple of tensors containing `s` , `u` and `v` will be returned. Otherwise, only
-        a single tensor `s` will be returned.
+        If compute_uv is ``True`` , a tuple( `s` , `u` , `v` ) of tensors will be returned. Otherwise, only
+        a single tensor -> `s` will be returned.
 
         - `s` is the singular value tensor. The shape is :math:`(*, P)`.
-        - `u` is the left singular vector tensor. If `compute_uv` is ``False`` , `u` will not be returned.
+        - `u` is the left singular tensor. If `compute_uv` is ``False`` , `u` will not be returned.
           The shape is :math:`(*, M, P)`. If `full_matrices` is ``True`` , the shape will be :math:`(*, M, M)`.
-        - `v` is the right singular vector tensor. If `compute_uv` is ``False`` , `v` will not be returned.
+        - `v` is the right singular tensor. If `compute_uv` is ``False`` , `v` will not be returned.
           The shape is :math:`(*, N, P)`. If `full_matrices` is ``True`` , the shape will be :math:`(*, N, N)`.
-
-    Raises:
-        TypeError: If `full_matrices` or `compute_uv` is not the type of bool.
-        TypeError: If the rank of input less than 2.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> import mindspore as ms
-        >>> from mindspore import Tensor
-        >>> from mindspore import ops
-        >>> ms.set_device(device_target="CPU")
-        >>> input = Tensor(np.array([[1, 2], [-4, -5], [2, 1]]).astype(np.float32))
-        >>> s, u, v = ops.svd(input, full_matrices=True, compute_uv=True)
+        >>> import mindspore
+        >>> input = mindspore.tensor([[1, 2], [-4, -5], [2, 1]], mindspore.float32)
+        >>> s, u, v = mindspore.ops.svd(input, full_matrices=True, compute_uv=True)
         >>> print(s)
         [7.0652843 1.040081 ]
         >>> print(u)
-        [[ 0.30821905 -0.48819482 0.81649697]
-         [-0.90613353  0.11070572 0.40824813]
-         [ 0.2896955   0.8656849  0.4082479 ]]
+        [[ 0.30821905 -0.48819482  0.81649697]
+         [-0.90613353  0.11070572  0.40824813]
+         [ 0.2896955   0.8656849   0.4082479 ]]
         >>> print(v)
-        [[ 0.63863593 0.769509  ]
-         [ 0.769509  -0.63863593]]
+        [[ 0.63863593  0.769509  ]
+         [ 0.769509   -0.63863593]]
     """
     svd_ = _get_cache_prim(linalg_ops.Svd)(full_matrices=full_matrices, compute_uv=compute_uv)
 
@@ -246,6 +221,7 @@ def svd(input, full_matrices=False, compute_uv=True):
 def pinv(x, *, atol=None, rtol=None, hermitian=False):
     r"""
     Computes the (Moore-Penrose) pseudo-inverse of a matrix.
+
     This function is computed using SVD. If :math:`x=U*S*V^{T}` ,Than the pseudo-inverse of x is:
     :math:`x^{+}=V*S^{+}*U^{T}` , :math:`S^{+}` is the reciprocal of each non-zero element on
     the diagonal of S, and zero remains in place.
@@ -273,32 +249,24 @@ def pinv(x, *, atol=None, rtol=None, hermitian=False):
         see the warnings in svd() and eigh().
 
     Args:
-        x (Tensor): A matrix to be calculated. Only `float32`, `float64` are supported Tensor dtypes.
-            shape is :math:`(*, M, N)`, * is zero or more batch dimensions.
-
-            - When `hermitian` is ``True``, batch dimensions are not supported temporarily.
+        x (Tensor): The input tensor whose shape is :math:`(*, M, N)`, * is zero or more batch dimensions.
+            When `hermitian` is ``True``, batch dimensions are not supported temporarily.
 
     Keyword args:
-        atol (float, Tensor): absolute tolerance value. Default: ``None`` .
-        rtol (float, Tensor): relative tolerance value. Default: ``None`` .
-        hermitian (bool): An optional bool. x is assumed to be symmetric if real. Default: ``False`` .
+        atol (float, Tensor): The absolute tolerance value. Default ``None`` .
+        rtol (float, Tensor): The relative tolerance value. Default ``None`` .
+        hermitian (bool): Whether `x` is assumed to be symmetric if real. Default ``False`` .
 
     Outputs:
-        - **output** (Tensor) - same type as input. Shape is :math:`(*, N, M)`, * is zero or more batch dimensions.
-
-    Raises:
-        TypeError: If `hermitian` is not a bool.
-        TypeError: If `x` is not a Tensor.
-        ValueError: If the dimension of `x` is less than 2.
+        A tensor whose shape is :math:`(*, N, M)`, * is zero or more batch dimensions.
 
     Supported Platforms:
         ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor([[4., 0.], [0., 5.]], mindspore.float32)
-        >>> output = ops.pinv(x)
+        >>> x = mindspore.tensor([[4., 0.], [0., 5.]], mindspore.float32)
+        >>> output = mindspore.ops.pinv(x)
         >>> print(output)
         [[0.25 0.  ]
          [0.   0.2 ]]

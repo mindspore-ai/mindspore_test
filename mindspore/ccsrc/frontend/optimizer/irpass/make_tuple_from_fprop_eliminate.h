@@ -32,7 +32,7 @@ namespace mindspore {
 namespace opt {
 namespace irpass {
 // {MakeTuple{MakeTuple{loss0, loss1}, Partial{fg, args}}} -> {MakeTuple{loss0, loss1, Partial{fg, args}}}
-class make_tuple_from_fprop_eliminater : public AnfVisitor {
+class MakeTupleFromFpropEliminate : public AnfVisitor {
  public:
   AnfNodePtr operator()(const OptimizerPtr &opt, const AnfNodePtr &node) override {
     if (!IsPrimitiveCNode(node, prim::kPrimMakeTuple)) {
@@ -44,23 +44,32 @@ class make_tuple_from_fprop_eliminater : public AnfVisitor {
       return nullptr;
     }
     auto cnode = dyn_cast<CNode>(node);
+    MS_EXCEPTION_IF_NULL(cnode);
     auto &inputs = cnode->inputs();
     // {prim::kPrimMakeTuple, MakeTupleCNode, PartialCNode}
-    if (inputs.size() != 3) {
+    constexpr auto expected_input_size = 3;
+    if (inputs.size() < expected_input_size) {
       return nullptr;
     }
     const auto &sub_tuple = inputs[1];
-    const auto &sub_partial = inputs[2];
-    if (!IsPrimitiveCNode(sub_tuple, prim::kPrimMakeTuple) || !IsPrimitiveCNode(sub_partial, prim::kPrimPartial)) {
+    if (!IsPrimitiveCNode(sub_tuple, prim::kPrimMakeTuple)) {
       return nullptr;
+    }
+    for (size_t i = 2; i < inputs.size(); ++i) {
+      if (!IsPrimitiveCNode(inputs[i], prim::kPrimPartial)) {
+        return nullptr;
+      }
     }
     std::vector<AnfNodePtr> new_tuple_element{NewValueNode(prim::kPrimMakeTuple)};
     const auto &sub_tuple_cnode = dyn_cast<CNode>(sub_tuple);
+    MS_EXCEPTION_IF_NULL(sub_tuple_cnode);
     const auto &sub_tuple_elements = sub_tuple_cnode->inputs();
     for (size_t i = 1; i < sub_tuple_elements.size(); i++) {
       (void)new_tuple_element.emplace_back(sub_tuple_elements[i]);
     }
-    (void)new_tuple_element.emplace_back(sub_partial);
+    for (size_t i = 2; i < inputs.size(); ++i) {
+      (void)new_tuple_element.emplace_back(inputs[i]);
+    }
     const auto &new_node = func_graph->NewCNode(new_tuple_element);
     const auto &manager = opt->resource()->manager();
     ModifyAllUser(node, manager, sub_tuple_elements.size() - 1);
@@ -119,13 +128,11 @@ class make_tuple_from_fprop_eliminater : public AnfVisitor {
       }
       const auto &new_node = fg->NewCNode(new_tuple_element);
       manager->Replace(use_node, new_node);
-    } else if (index == 1) {
-      const auto &new_node = fg->NewCNode(
-        {NewValueNode(prim::kPrimTupleGetItem), source_node, NewValueNode(MakeValue(SizeToLong(tuple_size)))});
+    } else {
+      const auto &new_node = fg->NewCNode({NewValueNode(prim::kPrimTupleGetItem), source_node,
+                                           NewValueNode(MakeValue(SizeToLong(tuple_size + index - 1)))});
       (void)visit_.emplace_back(new_node);
       manager->Replace(use_node, new_node);
-    } else {
-      MS_LOG(EXCEPTION) << "Tuple Getitem out of index.";
     }
   }
 

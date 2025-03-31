@@ -203,11 +203,11 @@ def adaptive_avg_pool2d(input, output_size):
     .. math::
 
         out\_shape = \begin{cases}
-        input\_shape[-2] + output\_size[1], & \text{if } output\_size text{ is (None, w);}\\
-        output\_size[0] + input\_shape[-1], & \text{if } output\_size text{ is (h, None);}\\
-        input\_shape[-2:], & \text{if } output\_size text{ is (None, None);}\\
-        (h, h), & \text{if } output\_size text{ is h;}\\
-        (h, w), & \text{if } output\_size text{ is (h, w)}
+        input\_shape[-2] + output\_size[1], & \text{if } output\_size \text{ is (None, w);}\\
+        output\_size[0] + input\_shape[-1], & \text{if } output\_size \text{ is (h, None);}\\
+        input\_shape[-2:], & \text{if } output\_size \text{ is (None, None);}\\
+        (h, h), & \text{if } output\_size \text{ is h;}\\
+        (h, w), & \text{if } output\_size \text{ is (h, w)}
         \end{cases}
 
     Raises:
@@ -2286,33 +2286,23 @@ def _check_input_tensor(arg_name, *tensors):
 
 def flip(input, dims):
     """
-    Reverses the order of elements in a tensor along the given axis.
-
-    The shape of the tensor is preserved, but the elements are reordered.
+    Reverses elements in a tensor along the given dims.
 
     Args:
-        input (Tensor): Input tensor.
-        dims (Union[list[int], tuple[int]]): Axis or axes along which to flip over.
-            Flipping is performed on all of the axes specified in the tuple,
-            If `dims` is a tuple of integers contains negative, it counts from the last to the first axis.
+        input (Tensor): The input tensor.
+        dims (Union[list[int], tuple[int]]): The dimension to flip.
 
     Returns:
-        Tensor, with the entries of `dims` reversed.
-
-    Raises:
-        TypeError: If the input is not a tensor.
-        ValueError: If `dims` is None.
-        ValueError: If `dims` is not a list/tuple of ints.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import ops
         >>> import numpy as np
-        >>> input = mindspore.Tensor(np.arange(1, 9).reshape((2, 2, 2)))
-        >>> output = ops.flip(input, (0, 2))
+        >>> input = mindspore.tensor(np.arange(1, 9).reshape((2, 2, 2)))
+        >>> output = mindspore.ops.flip(input, (0, 2))
         >>> print(output)
         [[[6 5]
           [8 7]]
@@ -2325,26 +2315,22 @@ def flip(input, dims):
 
 def flipud(input):
     """
-    Flips the elements of each column in the up/down direction, while preserving the rows of the input tensor.
+    Flip the input tensor in up/down direction.
 
     Args:
-        input (Tensor): Input array.
+        input (Tensor): The input tensor, the dimension must be at least 2.
 
     Returns:
-        Tensor, the result after the flip.
-
-    Raises:
-        TypeError: If the input is not a tensor.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import mindspore as ms
-        >>> from mindspore import ops
+        >>> import mindspore
         >>> import numpy as np
-        >>> input = ms.Tensor(np.arange(1, 9).reshape((2, 2, 2)))
-        >>> output = ops.flipud(input)
+        >>> input = mindspore.tensor(np.arange(1, 9).reshape((2, 2, 2)))
+        >>> output = mindspore.ops.flipud(input)
         >>> print(output)
         [[[5 6]
           [7 8]]
@@ -2356,26 +2342,22 @@ def flipud(input):
 
 def fliplr(input):
     """
-    Flips the elements of each row in the left/right direction, while preserving the columns of the input tensor.
+    Flip the input tensor in left/right direction.
 
     Args:
-        input (Tensor): Input tensor.
+        input (Tensor): The input tensor, the dimension must be at least 2.
 
     Returns:
-        Tensor after the flip.
-
-    Raises:
-        TypeError: If the input is not a tensor.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import mindspore as ms
-        >>> from mindspore import ops
+        >>> import mindspore
         >>> import numpy as np
-        >>> input = ms.Tensor(np.arange(1, 9).reshape((2, 2, 2)))
-        >>> output = ops.fliplr(input)
+        >>> input = mindspore.tensor(np.arange(1, 9).reshape((2, 2, 2)))
+        >>> output = mindspore.ops.fliplr(input)
         >>> print(output)
         [[[3 4]
           [1 2]]
@@ -2387,29 +2369,33 @@ def fliplr(input):
 
 def is_floating_point(input):
     """
-    Judge whether the data type of `input` is a floating point data type i.e., one of mindspore.float64,
-    mindspore.float32, mindspore.float16.
+    If the data type of the tensor is a floating point data type, return True. Otherwise return False.
 
     Args:
         input (Tensor): The input Tensor.
 
     Returns:
-        Bool. If the dtype of `input` is a floating point data type, return ``True`` . Otherwise, return ``False`` .
+        Bool
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import mindspore as ms
-        >>> from mindspore import ops
-        >>> from mindspore import Tensor
-        >>> x = ms.Tensor([1, 2, 3], ms.float32)
-        >>> y = ms.Tensor([1, 2, 3], ms.int64)
-        >>> output = ops.is_floating_point(x)
-        >>> output2 = ops.is_floating_point(y)
-        >>> print(output)
+        >>> import mindspore
+        >>> input = mindspore.tensor([False, 0j, 1, 2.1, 1+2j], mindspore.float64)
+        >>> mindspore.ops.is_floating_point(input)
         True
-        >>> print(output2)
+        >>>
+        >>> input = mindspore.tensor([False, 0j, 1, 2.1, 1+2j], mindspore.float32)
+        >>> mindspore.ops.is_floating_point(input)
+        True
+        >>>
+        >>> input = mindspore.tensor([False, 0j, 1, 2.1, 1+2j], mindspore.float16)
+        >>> mindspore.ops.is_floating_point(input)
+        True
+        >>>
+        >>> input = mindspore.tensor([False, 0j, 1, 2.1, 1+2j], mindspore.int32)
+        >>> mindspore.ops.is_floating_point(input)
         False
     """
     return input.dtype in [mstype.float32, mstype.bfloat16, mstype.float16, mstype.float64]
@@ -4490,7 +4476,7 @@ def nll_loss_ext(input, target, weight=None, ignore_index=-100, reduction='mean'
     return _nllloss_nd(input, target, weight, ignore_index, reduction)
 
 
-def _nllloss_nd(input, target, weight=None, ingore_index=-100, reduction='mean'):
+def _nllloss_nd(input, target, weight=None, ignore_index=-100, reduction='mean'):
     """nllloss_nd inner function"""
     input_dim = input.ndim
     class_dim = 0 if input_dim == 1 else 1
@@ -4503,9 +4489,9 @@ def _nllloss_nd(input, target, weight=None, ingore_index=-100, reduction='mean')
         raise ValueError(f"input bacth_size should be equal to target batch_size, but got {input.shape[0]} and "
                          f"{target.shape[0]}")
     if input_dim == 1 or input_dim == 2:
-        return nllloss_impl(input, target, weight, reduction, ingore_index)[0]
+        return nllloss_impl(input, target, weight, reduction, ignore_index)[0]
     if input_dim == 4:
-        return nllloss_2d_op(input, target, weight, reduction, ingore_index)[0]
+        return nllloss_2d_op(input, target, weight, reduction, ignore_index)[0]
     # input_dim==3 or input_dim>4
     n = input.shape[0]
     c = input.shape[1]
@@ -4519,8 +4505,8 @@ def _nllloss_nd(input, target, weight=None, ingore_index=-100, reduction='mean')
     else:
         target = target.view((n, 0, 0))
     if reduction != 'none':
-        return nllloss_2d_op(input, target, weight, reduction, ingore_index)[0]
-    ret = nllloss_2d_op(input, target, weight, reduction, ingore_index)[0]
+        return nllloss_2d_op(input, target, weight, reduction, ignore_index)[0]
+    ret = nllloss_2d_op(input, target, weight, reduction, ignore_index)[0]
     return ret.view(out_size)
 
 
@@ -4548,10 +4534,10 @@ def _cross_entropy_for_probabilities(input, target, weight, reduction, label_smo
     raise ValueError(f"redution value {reduction} not valid.")
 
 
-def _cross_entropy_for_class_indices(input, target, weight, ingore_index, reduction, label_smoothing, class_dim,
+def _cross_entropy_for_class_indices(input, target, weight, ignore_index, reduction, label_smoothing, class_dim,
                                      n_classes):
     """cross_entropy inner function for class indices"""
-    nllloss = _nllloss_nd(input, target, weight, ingore_index, reduction)
+    nllloss = _nllloss_nd(input, target, weight, ignore_index, reduction)
     if label_smoothing > 0.0:
         if weight is not None:
             weight_ = weight
@@ -4565,7 +4551,7 @@ def _cross_entropy_for_class_indices(input, target, weight, ingore_index, reduct
             smooth_loss = -loss.sum(class_dim)
         else:
             smooth_loss = -input.sum(class_dim)
-        ignore_mask = ops.eq(target, ingore_index)
+        ignore_mask = ops.eq(target, ignore_index)
         smooth_loss = masked_fill_op(smooth_loss, ignore_mask, 0)
         if reduction == "mean":
             true_mask = ~ignore_mask
@@ -4591,7 +4577,7 @@ def _cross_entropy_for_class_indices(input, target, weight, ingore_index, reduct
     return nllloss
 
 
-def cross_entropy_ext(input, target, weight=None, ingore_index=-100, reduction='mean', label_smoothing=0.0):
+def cross_entropy_ext(input, target, weight=None, ignore_index=-100, reduction='mean', label_smoothing=0.0):
     r"""
     The cross entropy loss between input and target.
 
@@ -4648,7 +4634,7 @@ def cross_entropy_ext(input, target, weight=None, ingore_index=-100, reduction='
     Note:
         Dynamic shape, dynamic rank and variable constant input are not supported in `strict graph mode
         (jit_syntax_level=mindspore.STRICT)
-        <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html>`_.
+        <https://www.mindspore.cn/tutorials/en/master/compile/static_graph.html>`_.
 
     Args:
         input (Tensor): :math:`(N)` or :math:`(N, C)` where `C = number of classes` or :math:`(N, C, H, W)`
@@ -4714,7 +4700,7 @@ def cross_entropy_ext(input, target, weight=None, ingore_index=-100, reduction='
         return _cross_entropy_for_probabilities(input, target, weight, reduction, label_smoothing, class_dim,
                                                 n_classes)
     # for class indices
-    return _cross_entropy_for_class_indices(input, target, weight, ingore_index, reduction, label_smoothing,
+    return _cross_entropy_for_class_indices(input, target, weight, ignore_index, reduction, label_smoothing,
                                             class_dim, n_classes)
 
 
@@ -4971,37 +4957,25 @@ def leaky_relu(input, alpha=0.2):
 
 def intopk(x1, x2, k):
     r"""
-    Determines whether the targets are in the top `k` predictions.
+    Return whether the elements in second input tensor exist among the top `k` elements of the first input tensor.
 
     Args:
-        x1 (Tensor): A 2D Tensor defines the predictions of a batch of samples with float16 or float32
-          data type.
-        x2 (Tensor): A 1D Tensor defines the labels of a batch of samples with int32 data type. The size of `x2`
-          must be equal to the first dimension of `x1`. The values of `x2` can not be negative and
-          must be equal to or less than index of x1's second dimension.
-        k (int): Specifies the number of top elements to be used for computing precision along the last dimension.
+        x1 (Tensor): The 2-D input tensor.
+        x2 (Tensor): The 1-D input tensor, should satisfy :math:`x2.shape[0] = x1.shape[0]` .
+        k (int): Top `k` elements.
 
     Returns:
-        Tensor has 1 dimension of type bool and the same shape with `x2`. For labeling sample `i` in `x2`,
-        if the label in the first `k` predictions for sample `i` is in `x1`, then the value is True, otherwise False.
-
-    Raises:
-        TypeError: If `k` is not an int.
-        TypeError: If `x1` or `x2` is not a Tensor.
-        TypeError: If dtype of `x1` is neither float16 nor float32.
+        A 1-D tensor whose data type is bool, has the same shape with `x2`.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x1 = Tensor(np.array([[1, 8, 5, 2, 7], [4, 9, 1, 3, 5]]), mindspore.float32)
-        >>> x2 = Tensor(np.array([1, 3]), mindspore.int32)
-        >>> output = ops.intopk(x1, x2, 3)
-        >>> print(output)
-        [ True  False]
+        >>> x1 = mindspore.tensor([[1, 8, 5, 2, 7], [4, 9, 1, 3, 5]], mindspore.float32)
+        >>> x2 = mindspore.tensor([1, 3], mindspore.int32)
+        >>> mindspore.ops.intopk(x1, x2, 3)
+        Tensor(shape=[2], dtype=Bool, value= [ True, False])
     """
     _in_topk = _get_cache_prim(P.InTopK)(k)
     return _in_topk(x1, x2)
@@ -7711,9 +7685,6 @@ def glu_ext(input, dim=-1):
     Here :math:`\sigma` is the sigmoid function, and :math:`\otimes` is the Hadamard product.
     See `Language Modeling with Gated Convluational Networks <https://arxiv.org/abs/1612.08083>`_.
 
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
     Args:
         input (Tensor): Tensor to be calculated. Dtype is floating point and the shape
             is :math:`(\ast_1, N, \ast_2)` where `*` means, any number of additional dimensions. :math:`N`
@@ -8024,30 +7995,19 @@ def channel_shuffle(x, groups):
     shape in the final output.
 
     Args:
-        x (Tensor): Tensor to be divided, it has shape :math:`(*, C, H, W)`,
-          with float16, float32, int8, int16, int32, int64, uint8, uint16, uint32, uint64 data type.
+        x (Tensor): The input tensor.
         groups (int): Number of groups to divide channels in.
 
     Returns:
-        A Tensor, has the same type as the `x`, and has the shape :math:`(*, C, H, W)`.
-
-    Raises:
-        TypeError: If data type of `x` is not one of the following:
-                   float16, float32, int8, int16, int32, int64, uint8, uint16, uint32, uint64.
-        TypeError: If dim of `x` is < 4.
-        TypeError: If `groups` is not a positive number.
-        ValueError: If channel number of `x` is not divisible by `groups`.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> group = 2
-        >>> x = Tensor(np.arange(1* 4 * 2 * 2).reshape(1, 4, 2, 2).astype(np.int16))
-        >>> y = mindspore.ops.channel_shuffle(x, group)
+        >>> x = mindspore.tensor(mindspore.ops.arange(0, 16, dtype=mindspore.int16).reshape(1, 4, 2, 2))
+        >>> y = mindspore.ops.channel_shuffle(x, groups=2)
         >>> print(y)
         [[[[ 0  1]
            [ 2  3]]
@@ -9465,7 +9425,7 @@ def speed_fusion_attention(query, key, value, head_num, input_layout, *, pse=Non
 
     Note:
         This interface is not supported in `graph mode (mode=mindspore.GRAPH_MODE)
-        <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html>`_.
+        <https://www.mindspore.cn/tutorials/en/master/compile/static_graph.html>`_.
 
     Args:
         query (Tensor): The query tensor. Input tensor of shape :math:`(B, S1, H1)`,

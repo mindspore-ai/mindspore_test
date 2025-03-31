@@ -54,4 +54,5 @@ def _register_mindio_file_system(fs: FileSystem):
     fs.open = mindio.open_file
     fs.open_args = ()
     fs.backend = "mindio"
+    logger.info("The weights are stored using MindIO as the backend.")
     return True

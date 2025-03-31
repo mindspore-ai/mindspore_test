@@ -29,7 +29,7 @@ namespace pyboost {
 class OpRunner;
 using OpPtr = std::shared_ptr<OpRunner>;
 struct PYBOOST_API OpStatus {
-  OpStatus() = default;
+  OpStatus();
   OpStatus(bool _disable_mix_precision, bool _is_jit_compiling, size_t _custom_bprop_cell_count,
            std::string device_target)
       : disable_mix_precision(_disable_mix_precision),

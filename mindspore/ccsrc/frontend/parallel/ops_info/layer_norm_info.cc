@@ -326,8 +326,13 @@ Status LayerNormInfo::InitShapes() {
 Status LayerNormInfo::CheckInputLayout() {
   // Check all device matrix should be the same
   if (inputs_tensor_info_.size() != kSizeThree) {
-    MS_LOG(ERROR) << "The size of input_tensor_layout for layernorm is " << inputs_tensor_info_.size()
-                  << " rather than 3.";
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << "The size of input_tensor_layout for layernorm is " << inputs_tensor_info_.size()
+                      << " rather than 3.";
+    } else {
+      MS_LOG(ERROR) << "The size of input_tensor_layout for layernorm is " << inputs_tensor_info_.size()
+                    << " rather than 3.";
+    }
     return FAILED;
   }
   auto in_layout = inputs_tensor_info_[kIndex0].tensor_layout();
@@ -339,27 +344,43 @@ Status LayerNormInfo::CheckInputLayout() {
   const std::vector<int64_t> np_split_map = {-1};
   for (size_t i = begin_norm_axis_; i < in_layout.tensor_map_before().size(); ++i) {
     if (in_layout.tensor_map_before()[i] != np_split_map) {
-      MS_LOG(ERROR) << name_
-                    << ": The dimensions starting form begin_norm_axis cannot be split, but the tensor map of input is "
-                    << ShapesToString(in_layout.tensor_map_before());
+      if (is_in_layout_propagation_) {
+        MS_LOG(WARNING) << name_ << ": The dimensions starting form begin_norm_axis cannot be split, "
+                        << "but the tensor map of input is " << ShapesToString(in_layout.tensor_map_before());
+      } else {
+        MS_LOG(ERROR) << name_ << ": The dimensions starting form begin_norm_axis cannot be split, "
+                      << "but the tensor map of input is " << ShapesToString(in_layout.tensor_map_before());
+      }
       return FAILED;
     }
   }
 
   // check gamma and beta layout
   if (gamma_layout.tensor_map_before() != beta_layout.tensor_map_before()) {
-    MS_LOG(ERROR) << name_ << ": The tensor map of gamma " << ShapesToString(gamma_layout.tensor_map_before())
-                  << " dose not equal to tensor map of beta " << ShapesToString(beta_layout.tensor_map_before());
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << name_ << ": The tensor map of gamma " << ShapesToString(gamma_layout.tensor_map_before())
+                      << " dose not equal to tensor map of beta " << ShapesToString(beta_layout.tensor_map_before());
+    } else {
+      MS_LOG(ERROR) << name_ << ": The tensor map of gamma " << ShapesToString(gamma_layout.tensor_map_before())
+                    << " dose not equal to tensor map of beta " << ShapesToString(beta_layout.tensor_map_before());
+    }
     return FAILED;
   }
 
   size_t gamma_diff = in_layout.tensor_map_before().size() - gamma_layout.tensor_map_before().size();
   for (size_t j = 0; j < gamma_layout.tensor_map_before().size(); ++j) {
     if (gamma_layout.tensor_map_before()[j] != in_layout.tensor_map_before()[gamma_diff + j]) {
-      MS_LOG(ERROR) << name_
-                    << ": The strategies of input and gamma must be right aligned, but the tensor map of input is "
-                    << ShapesToString(in_layout.tensor_map_before()) << ", the tensor map of gamma is "
-                    << ShapesToString(gamma_layout.tensor_map_before());
+      if (is_in_layout_propagation_) {
+        MS_LOG(WARNING) << name_
+                        << ": The strategies of input and gamma must be right aligned, but the tensor map of input is "
+                        << ShapesToString(in_layout.tensor_map_before()) << ", the tensor map of gamma is "
+                        << ShapesToString(gamma_layout.tensor_map_before());
+      } else {
+        MS_LOG(ERROR) << name_
+                      << ": The strategies of input and gamma must be right aligned, but the tensor map of input is "
+                      << ShapesToString(in_layout.tensor_map_before()) << ", the tensor map of gamma is "
+                      << ShapesToString(gamma_layout.tensor_map_before());
+      }
       return FAILED;
     }
   }
@@ -367,10 +388,17 @@ Status LayerNormInfo::CheckInputLayout() {
   size_t beta_diff = in_layout.tensor_map_before().size() - beta_layout.tensor_map_before().size();
   for (size_t j = 0; j < beta_layout.tensor_map_before().size(); ++j) {
     if (beta_layout.tensor_map_before()[j] != in_layout.tensor_map_before()[beta_diff + j]) {
-      MS_LOG(ERROR) << name_
-                    << ": The strategies of input and beta must be right aligned, but the tensor map of input is "
-                    << ShapesToString(in_layout.tensor_map_before()) << ", the tensor map of beta is "
-                    << ShapesToString(beta_layout.tensor_map_before());
+      if (is_in_layout_propagation_) {
+        MS_LOG(WARNING) << name_
+                        << ": The strategies of input and beta must be right aligned, but the tensor map of input is "
+                        << ShapesToString(in_layout.tensor_map_before()) << ", the tensor map of beta is "
+                        << ShapesToString(beta_layout.tensor_map_before());
+      } else {
+        MS_LOG(ERROR) << name_
+                      << ": The strategies of input and beta must be right aligned, but the tensor map of input is "
+                      << ShapesToString(in_layout.tensor_map_before()) << ", the tensor map of beta is "
+                      << ShapesToString(beta_layout.tensor_map_before());
+      }
       return FAILED;
     }
   }
@@ -381,8 +409,13 @@ Status LayerNormInfo::CheckInputLayout() {
 Status LayerNormInfo::CheckOutputLayout() {
   // Check all device matrix should be the same
   if (outputs_tensor_info_.size() != kSizeThree) {
-    MS_LOG(ERROR) << "The size of output_tensor_layout for layernorm is " << outputs_tensor_info_.size()
-                  << " rather than 3.";
+    if (is_in_layout_propagation_) {
+      MS_LOG(WARNING) << "The size of output_tensor_layout for layernorm is " << outputs_tensor_info_.size()
+                      << " rather than 3.";
+    } else {
+      MS_LOG(ERROR) << "The size of output_tensor_layout for layernorm is " << outputs_tensor_info_.size()
+                    << " rather than 3.";
+    }
     return FAILED;
   }
   if (output_infer_tensor_layout_.tensor_shape_before().array().empty()) {

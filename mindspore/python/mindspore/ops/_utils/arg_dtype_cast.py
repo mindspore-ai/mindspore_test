@@ -26,6 +26,7 @@ from mindspore._c_expression import op_enum
 from mindspore.ops.primitive import Primitive, prim_attr_register, prim_arg_register
 
 tensor_to_tuple_ = TensorToTuple()
+tensor_to_scalar_ = TensorToScalar()
 
 
 class TupleToList(Primitive):
@@ -302,7 +303,7 @@ def get_support_dtype_list(src_type, dst_type):
     return support_list
 
 
-def to_py_number(data, dst_type):
+def tensor_to_number(data, dst_type):
     """Convert tensor to python number"""
     if dst_type == DT_INT_VAL:
         data = ops.cast(data, ms.int64)
@@ -315,7 +316,7 @@ def to_py_number(data, dst_type):
             data = ops.cast(data, ms.int64)
         elif src_type in (ms.bfloat16, ms.float16, ms.float32, ms.float64):
             data = ops.cast(data, ms.float32)
-    return TensorToScalar()(data)
+    return tensor_to_scalar_(data)
 
 
 def do_type_cast(data, dst_type):
@@ -348,7 +349,7 @@ def do_type_cast(data, dst_type):
             return list_to_tensor(data)
     elif is_number(dst_type):
         if isinstance(data, Tensor):
-            return to_py_number(data, dst_type)
+            return tensor_to_number(data, dst_type)
     raise TypeError("Type conversion failed.")
 
 

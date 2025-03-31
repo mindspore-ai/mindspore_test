@@ -201,7 +201,7 @@ class ProximalAdagrad(Optimizer):
         self.opt = P.ApplyProximalAdagrad(use_locking=use_locking)
         self.sparse_opt = P.SparseApplyProximalAdagrad(use_locking=use_locking)
 
-    @jit
+    @jit(backend="ms_backend")
     def construct(self, grads):
         params = self._parameters
         accum = self.accum

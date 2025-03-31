@@ -2,38 +2,4 @@ erfc:
     description: |
         erfc() -> Tensor
 
-        Computes the complementary error function of `self` element-wise.
-
-        .. math::
-
-            \text{erfc}(x) = 1 - \frac{2} {\sqrt{\pi}} \int\limits_0^{x} e^{-t^{2}} dt
-
-        .. note::
-            The input tensor `self` of the complementary error function, :math:`x` in the above formula. 
-            Supported dtypes:
-
-            - Ascend: float16, float32, float64, int64, bool, bfloat16.
-            - GPU/CPU: float16, float32, float64.
-
-        Returns:
-            Tensor.
-            The dtype of output is float32 when dtype of `self` is in
-            [bool, int64]. Otherwise output has the same dtype as the `self`.
-
-        :raise TypeError: If `self` is not a Tensor.
-        :raise TypeError: If dtype of `self` is not the following:
-        
-                * Ascend: float16, float32, float64, int64, bool, bfloat16.
-                * GPU/CPU: float16, float32, float64.
-
-        Supported Platforms:
-            ``Ascend`` ``GPU`` ``CPU``
-
-        Examples:
-            >>> import mindspore
-            >>> import numpy as np
-            >>> from mindspore import Tensor
-            >>> input = Tensor(np.array([-1, 0, 1, 2, 3]), mindspore.float32)
-            >>> output = input.erfc()
-            >>> print(output)
-            [1.8427008e+00 1.0000000e+00 1.5729921e-01 4.6777348e-03 2.2090497e-05]
+        For details, please refer to :func:`mindspore.ops.erfc`.

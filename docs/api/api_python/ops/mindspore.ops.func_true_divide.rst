@@ -3,4 +3,4 @@
 
 .. py:function:: mindspore.ops.true_divide(dividend, divisor)
 
-    :func:`mindspore.ops.div` 在 :math:`rounding\_mode=None` 时的别名。
+    :func:`mindspore.ops.div` 在 ``rounding_mode=None`` 时的别名。
