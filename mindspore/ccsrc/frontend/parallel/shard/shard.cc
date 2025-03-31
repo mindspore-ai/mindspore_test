@@ -656,7 +656,7 @@ static std::vector<std::pair<std::string, ValuePtr>> GetPrimAttrFromAddAttrNode(
       continue;
     }
     auto pair_value_tuple = GetValueSequence(val);
-    if (pair_value_tuple.size() != 2) {
+    if (pair_value_tuple.size() != kSizeTwo) {
       MS_LOG(EXCEPTION) << "attr key-value pair length should be 2, but got: " << pair_value_tuple.size();
     }
     auto primitive_key_value = pair_value_tuple.at(kIndex0);
