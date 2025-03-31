@@ -21,7 +21,6 @@ import subprocess
 import pytest
 import numpy as np
 from numpy import logspace
-import scipy
 from scipy.linalg import qr
 
 import mindspore as ms
@@ -140,9 +139,9 @@ def test_np_logspace_func():
     assert np.allclose(out, expect)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
           essential_mark='unessential')
-def test_scipy_concatenate():
+def test_numpy_concatenate():
     """
     Feature: JIT Fallback
     Description: Test scipy.linalg in graph mode.
@@ -152,7 +151,7 @@ def test_scipy_concatenate():
     def func():
         x = np.array([1, 2, 3])
         y = np.array([4, 5, 6])
-        return scipy.concatenate((x, y))
+        return np.concatenate((x, y))
 
     out = func()
     expect = np.array([1, 2, 3, 4, 5, 6])
