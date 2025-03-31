@@ -86,7 +86,7 @@ class PyBackwardNode : public BackwardNode {
         backward_fn_(std::move(backward_fn)),
         obj_(std::move(obj)),
         out_abstract_(std::move(out_abstract)) {}
-  ~PyBackwardNode() = default;
+  ~PyBackwardNode() override;
   ValuePtrList CallBackward(const ValuePtrList &grads) override;
   void Release() override;
 
