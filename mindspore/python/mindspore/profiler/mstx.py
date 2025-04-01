@@ -79,7 +79,7 @@ class Mstx:
             ...     ms.set_device(device_target="Ascend", device_id=0)
             ...     # Init Profiler
             ...     with Profiler(profiler_level=ProfilerLevel.LevelNone,
-            ...                   on_trace_ready=tensorboard_trace_handler,
+            ...                   on_trace_ready=tensorboard_trace_handler("./data"),
             ...                   activities=[ProfilerActivity.CPU, ProfilerActivity.NPU],
             ...                   schedule=schedule(wait=0, warmup=0, active=3, repeat=1, skip_first=0),
             ...                   mstx=True) as profiler:
@@ -158,7 +158,7 @@ class Mstx:
             ...     ms.set_context(mode=ms.PYNATIVE_MODE)
             ...     ms.set_device(device_target="Ascend", device_id=0)
             ...     with Profiler(profiler_level=ProfilerLevel.LevelNone,
-            ...                   on_trace_ready=tensorboard_trace_handler,
+            ...                   on_trace_ready=tensorboard_trace_handler("./data"),
             ...                   activities=[ProfilerActivity.CPU, ProfilerActivity.NPU],
             ...                   schedule=schedule(wait=0, warmup=0, active=3, repeat=1, skip_first=0),
             ...                   mstx=True) as profiler:

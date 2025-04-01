@@ -28,8 +28,8 @@ class _ExperimentalConfig:
         profiler_level (ProfilerLevel, optional): (Ascend only) The level of profiling.
             Default: ``ProfilerLevel.Level0``.
 
-            - ProfilerLevel.LevelNone: Data controlled by all levels is not collected. That is,
-              profiler_level is disabled.
+            - ProfilerLevel.LevelNone: This setting takes effect only when mstx is enabled, indicating that no
+              operator data is collected on the device side.
             - ProfilerLevel.Level0: Leanest level of profiling data collection, collects information about the elapsed
               time of the computational operators on the NPU and communication large operator information.
             - ProfilerLevel.Level1: Collect more CANN layer AscendCL data and AICore performance metrics and
@@ -58,15 +58,16 @@ class _ExperimentalConfig:
             - AicoreMetrics.MemoryAccess: Statistics on storage access bandwidth and storage capacity of main
               storage and l2 cache etc.
         l2_cache (bool, optional): (Ascend only) Whether to collect l2 cache data, collect when True.
-            Default: ``False`` . The l2_cache.csv file is generated in the ASCEND_PROFILER_OUTPUT folder.
+            Default: ``False`` . The l2_cache.csv file is generated in the ASCEND_PROFILER_OUTPUT folder.In O2 mode,
+            only wait and skip_first parameters in schedule configuration can be set to 0.
         mstx (bool, optional): (Ascend only) Whether to collect light weight profiling data, collect when True.
             Default: ``False`` .
         data_simplification (bool, optional): (Ascend only) Whether to remove FRAMEWORK data and other redundant data.
-            If set to True, only the delivery of profiler and the original performance data in the PROF_XXX
-            directory are retained to save disk space.
-            Default value: ``True`` .
+            If set to True, only the profiler deliverables and raw performance data under the PROF_XXX directory are
+            kept to save space. Default value: ``True`` .
         export_type (list, optional): (Ascend only) The data type to export.
-            Default value: ``None`` . Only export text type data.
+            The db and text formats can be exported at the same time. The default value is ``None``,
+            indicating that data of the text type is exported.
 
             - ExportType.Text: Export text type data.
             - ExportType.Db: Export db type data.

@@ -74,10 +74,19 @@ class Schedule:
 
     Keyword Args:
         wait (int): The number of steps to wait before starting the warm-up phase.
+            must be greater than or equal to 0. If the wait parameter is not set externally,
+            it is set to ``0`` when the schedule class is initialized.
         active (int): The number of steps to record data during the active phase.
-        warmup (int, optional): The number of steps to perform the warm-up phase. Default: ``0``.
-        repeat (int, optional): The number of times to repeat the cycle. Default: ``0``.
-        skip_first (int, optional): The number of steps to skip at the beginning. Default: ``0``.
+            must be greater than or equal to 1. If the active parameter is not set externally,
+            it is set to ``1`` when the schedule class is initialized.
+        warmup (int, optional): The number of steps to perform the warm-up phase.
+            must be greater than or equal to 0. Default value: ``0``.
+        repeat (int, optional): The number of times to repeat the cycle.
+            If repeat is set to 0, the Profiler will determine the repeat value based on the number of times the model
+            is trained, which will generate one more performance data with incomplete collection. The data in the last
+            step is abnormal data that users do not need to pay attention to. Default value: ``0``.
+        skip_first (int, optional): The number of steps to skip at the beginning. Must be greater than or equal to 0.
+            Default value: ``0``
 
     Raises:
         ValueError: When the parameter step is less than 0.
@@ -90,7 +99,7 @@ class Schedule:
         >>> import mindspore
         >>> import mindspore.dataset as ds
         >>> from mindspore import context, nn
-        >>> from mindspore.profiler import schedule, tensorboard_trace_handler
+        >>> from mindspore.profiler import ProfilerLevel, AicoreMetrics, ExportType, ProfilerActivity
         >>>
         >>> class Net(nn.Cell):
         ...     def __init__(self):

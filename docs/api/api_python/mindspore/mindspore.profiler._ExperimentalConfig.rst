@@ -8,7 +8,7 @@ mindspore.profiler._ExperimentalConfig
     参数：
         - **profiler_level** (ProfilerLevel, 可选) - （仅限Ascend）表示采集性能数据级别。默认值：``ProfilerLevel.Level0`` 。
 
-          - ProfilerLevel.LevelNone：不采集所有Level层级控制的数据，即关闭profiler_level。
+          - ProfilerLevel.LevelNone：该设置仅在开启mstx时生效，表示不采集device侧的任何算子数据。
           - ProfilerLevel.Level0：最精简的采集性能数据级别，采集计算类算子的耗时数据和通信类大算子的基础数据。
           - ProfilerLevel.Level1：在Level0的基础上额外采集CANN层中AscendCL数据、AICORE性能数据以及通信类小算子数据。
           - ProfilerLevel.Level2：在Level1的基础上额外采集CANN层中GE和Runtime数据。
@@ -23,10 +23,10 @@ mindspore.profiler._ExperimentalConfig
           - AicoreMetrics.MemoryUB：包含ub\_read/write_bw_mte、 ub\_read/write_bw_vector、 ub\_/write_bw_scalar等。
           - AicoreMetrics.L2Cache：包含write_cache_hit、 write_cache_miss_allocate、 r0_read_cache_hit、 r1_read_cache_hit等。本功能仅支持Atlas A2 训练系列产品。
           - AicoreMetrics.MemoryAccess：主存以及L2 Cache的存访带宽和存量统计。
-        - **l2_cache** (bool, 可选) - （仅限Ascend）是否收集L2 Cache数据，当值为 ``True`` 时，收集这些数据。默认值： ``False`` 。该采集项在ASCEND_PROFILER_OUTPUT文件夹下生成l2_cache.csv文件。
+        - **l2_cache** (bool, 可选) - （仅限Ascend）是否收集L2 Cache数据，当值为 ``True`` 时，收集这些数据。默认值： ``False`` 。该采集项在ASCEND_PROFILER_OUTPUT文件夹下生成l2_cache.csv文件。在O2模式下，仅支持schedule配置中wait和skip_first参数都为0的场景。
         - **mstx** (bool, 可选) - （仅限Ascend）是否收集MSTX数据，当值为 ``True`` 时，收集这些数据。默认值： ``False`` 。
-        - **data_simplification** (bool, 可选) - （仅限Ascend）是否开启数据精简，开启后将在导出性能数据后删除FRAMEWORK目录数据以及其他多余数据，仅保留profiler的交付件以及PROF_XXX目录下的原始性能数据，以节省空间。默认值: ``True`` 。
-        - **export_type** (list, 可选) - （仅限Ascend）要导出的数据类型。默认值： ``None``，以text类型导出数据。
+        - **data_simplification** (bool, 可选) - （仅限Ascend）是否开启数据精简，开启后仅保留profiler的交付件以及PROF_XXX目录下的原始性能数据，以节省空间。默认值: ``True`` 。
+        - **export_type** (list, 可选) - （仅限Ascend）要导出的数据类型，支持同时导出db和text格式，默认值： ``None``，表示导出text类型数据。
 
           - ExportType.Text：导出text类型的数据。
           - ExportType.Db：导出db类型的数据。
