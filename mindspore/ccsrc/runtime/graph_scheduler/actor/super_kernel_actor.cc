@@ -1033,7 +1033,6 @@ void SuperKernelActor::DispatchParallelLaunchKernels(size_t index, OpContext<Dev
         auto ret = device_contexts_[0]->GetKernelExecutor(false)->LaunchKernel(
           kernel_actor->kernel_, kernel_actor->input_kernel_tensors_, kernel_actor->workspace_kernel_tensors_,
           kernel_actor->output_kernel_tensors_, kernel_actor->kernel_mod_, real_stream);
-
         if (!ret) {
           MS_LOG(EXCEPTION) << "Launch kernel failed, kernel name: " << kernel_actor->kernel_->fullname_with_scope();
         }
