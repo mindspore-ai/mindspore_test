@@ -71,9 +71,14 @@ void LabelOutputNodesWithCheck(const AnfNodePtr &node, std::function<bool(const 
   const auto &node_users = manager->node_users();
   std::queue<AnfNodePtr> anf_queue;
   anf_queue.push(node);
+  std::unordered_set<AnfNodePtr> visited;
   while (!anf_queue.empty()) {
     auto queue_end = anf_queue.front();
     anf_queue.pop();
+    if (visited.find(queue_end) != visited.end()) {
+      continue;
+    }
+    (void)visited.insert(queue_end);
     if (node_users.count(queue_end) == 0) {
       continue;
     }

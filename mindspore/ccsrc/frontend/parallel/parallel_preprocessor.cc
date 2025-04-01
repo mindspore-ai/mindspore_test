@@ -305,6 +305,7 @@ std::shared_ptr<TensorLayout> FindPrevLayout(const AnfNodePtr &node, bool *is_in
   if (prim->name() == prim::kPrimTupleGetItem->name()) {
     auto tuple_index = GetTupleGetItemIndex(cnode);
     auto tuple_getitem_input = cnode->input(1)->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(tuple_getitem_input);
     if (IsValueNode<FuncGraph>(tuple_getitem_input->input(0))) {
       auto fg = GetValueNode<FuncGraphPtr>(tuple_getitem_input->input(0));
       auto pre_node = GetRealKernelNode(fg->output(), tuple_index, nullptr).first;
