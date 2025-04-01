@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 
+import os
 import numpy as np
 import mindspore.context as context
 from mindspore import mint
@@ -38,6 +39,14 @@ def test_fuse():
     Description: pynative mode
     Expectation: the result match with the expected result
     """
+
+    def _remove_file(file_path):
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+            except OSError:
+                pass
+
     context.set_context(mode=context.PYNATIVE_MODE, device_target="Ascend")
     np.random.seed(1)
     x0 = np.random.normal(0, 1, (32, 128)).astype(np.float32)
@@ -50,4 +59,15 @@ def test_fuse():
     net = Net(alpha, axis)
     output = net(x0_ms, x1_ms)
     output = output.asnumpy()
-    np.testing.assert_allclose(expect, output, 1e-4, 1e-4)
+    dump_file = "./lazy_fusion_dump/lazy_fusion_{}.txt".format(os.getpid())
+    try:
+        np.testing.assert_allclose(expect, output, 1e-4, 1e-4)
+    except Exception as ex:
+        if os.path.isfile(dump_file):
+            print("dump_file", dump_file)
+            with open(dump_file, 'r') as f:
+                for line in f:
+                    print(line)
+            _remove_file(dump_file)
+        raise RuntimeError("Precision compare failed!\n{}".format(ex))
+    _remove_file(dump_file)
