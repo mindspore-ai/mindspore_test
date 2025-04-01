@@ -18,7 +18,7 @@ mindspore.ops.AlltoAllV
         - **recv_numel_list** (Union[tuple[int], list[int], Tensor]) - 从每张卡聚合的数据量。实际聚合数据量为 :math:`(send\_numel\_list * block\_size * input\_x.dtype)` 。
 
     输出：
-        Tensor，从每张卡上聚合的一维数据结果。如果结果为空，则范围无意义的数值0。
+        Tensor，从每张卡上聚合的一维数据结果。如果结果为空，则返回空张量，且张量数值无意义。
 
     样例：
 

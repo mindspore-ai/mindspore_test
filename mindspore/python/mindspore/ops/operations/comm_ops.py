@@ -1946,7 +1946,7 @@ class AlltoAllV(PrimitiveWithInfer):
 
     Outputs:
         Tensor, flattened and concatenated tensor gather from remote ranks.
-        If gather result is empty, it will return a Tensor with value 0, which has no actual meaning.
+        If gather result is empty, it will return a Tensor with shape `()`, and value has no actual meaning.
 
     Supported Platforms:
         ``Ascend``

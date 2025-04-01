@@ -1373,8 +1373,8 @@ def all_to_all_single_with_output_shape(output_shape, tensor, output_split_sizes
 
     Returns:
         Tuple(Tensor, CommHandle), the output tensor is gathered concatenated from remote ranks.
-        If the numel of tensor gathered from remote is zero, it will return a Tensor will value 0,
-        which has no actual meanning. CommHandle is an async work handle, if `async_op` is set to True.
+        If the numel of tensor gathered from remote is zero, it will return a Tensor with shape `()`,
+        and value has no actual meanning. CommHandle is an async work handle, if `async_op` is set to True.
         CommHandle will be None, when `async_op` is False.
 
     Raises:
