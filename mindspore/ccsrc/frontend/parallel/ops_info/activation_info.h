@@ -622,6 +622,10 @@ class RemainderScalarTensorInfo : public ActivationOther {
                             const PrimitiveAttrs &attrs)
       : ActivationOther(name, inputs_shape, outputs_shape, attrs, std::make_shared<RemainderCost>()) {}
   ~RemainderScalarTensorInfo() = default;
+
+ protected:
+  Status InferTensorInfo() override;
+  Status InferMirrorOpsByLayout() override;
 };
 
 class SwigluInfo : public Softmax {
