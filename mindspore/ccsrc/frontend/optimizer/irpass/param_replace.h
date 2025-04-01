@@ -18,6 +18,7 @@
 #define MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_IRPASS_PARAM_REPLACE_H_
 
 #include <memory>
+#include <string>
 
 #include "frontend/optimizer/optimizer.h"
 #include "frontend/optimizer/irpass.h"
@@ -48,6 +49,14 @@ class ReplaceOldParam : public AnfVisitor {
     for (const auto &tnode : top_graph->parameters()) {
       auto para = tnode->cast<ParameterPtr>();
       if (para != nullptr && para->name() == para_name) {
+        const auto &param_node_fg = param_node->func_graph();
+        const auto &param_node_fg_name = param_node_fg->ToString();
+        if (param_node_fg_name.find("_CR_") != string::npos) {
+          std::string new_param_name = para_name + "_CR";
+          MS_LOG(INFO) << "Fix param_node name from " << para_name << " to " << new_param_name;
+          param_node->set_name(new_param_name);
+          return nullptr;
+        }
         return para;
       }
     }
