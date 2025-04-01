@@ -1599,17 +1599,11 @@ AnfNodePtr PipelineTransformer::GenNewSendFromOld(const AnfNodePtr &node, const 
   OperatorAttrs attrs = {attr_tag, attr_rank, attr_group, attr_group_back};
   std::vector<AnfNodePtr> send_input{input};
   auto send = CreateCNodeByInputsAndAttr(main_graph_, SEND, SEND, send_input, attrs);
-  AnfNodePtr care_node;
-  bool is_param = true;
-  auto op_info_pair = GetOpInfoPair(input, input, &care_node, &is_param);
-  auto tensor_info = GetTensorInfo(op_info_pair, is_param);
-  auto op_info = op_info_pair.first;
-  auto index = op_info_pair.second;
-  auto slice_shape = tensor_info.slice_shape();
-  auto shape_type_pair = GetShapeType(input, slice_shape, 0);
+  bool is_param = old->HasPrimalAttr(PIPELINE_END) ? false : true;
   auto prim = GetCNodePrimitive(send);
-  prim->set_attr(SHAPE, shape_type_pair.first);
-  prim->set_attr(DTYPE, shape_type_pair.second);
+  auto old_prim = GetCNodePrimitive(old);
+  prim->set_attr(SHAPE, old_prim->GetAttr(SHAPE));
+  prim->set_attr(DTYPE, old_prim->GetAttr(DTYPE));
   if (!is_param) {
     if (old_is_pipeline_param) {
       MS_LOG_WITH_NODE(EXCEPTION, send) << "The old send is pipeline_param, but new send is not pipeline_param.";
@@ -1619,15 +1613,12 @@ AnfNodePtr PipelineTransformer::GenNewSendFromOld(const AnfNodePtr &node, const 
     if (!old_is_pipeline_param) {
       MS_LOG_WITH_NODE(EXCEPTION, send) << "The old send is not pipeline_param, but new send is pipeline_param.";
     }
-    send->AddPrimalAttr(PARAM_INDEX, MakeValue(index));
+    send->AddPrimalAttr(PARAM_INDEX, old->GetPrimalAttr(PARAM_INDEX));
     send->AddPrimalAttr(PIPELINE_PARAM, value);
-    send->set_user_data<OperatorInfo>(op_info);
+    send->set_user_data<OperatorInfo>(old->user_data<OperatorInfo>());
   }
   send->AddPrimalAttr(MICRO, value);
-  auto abstract = input->abstract();
-  if (care_node) {
-    abstract = care_node->abstract();
-  }
+  const auto &abstract = old->abstract();
   if (old->HasPrimalAttr(FREEZE)) {
     send->AddPrimalAttr(FREEZE, old->GetPrimalAttr(FREEZE));
   }
