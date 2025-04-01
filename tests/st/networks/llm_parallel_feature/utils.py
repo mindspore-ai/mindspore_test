@@ -144,7 +144,7 @@ def find_graph_file_name(graph_path, file_name_keyword):
 def check_log(file_path, check_pairs=None):
     # check the number of key in check_pairs in log file is equal to the value
     log_error_count = subprocess.check_output(
-        ["grep -r '%s' %s | wc -l" % ("ERROR", file_path)],
+        ["grep -rE '%s' %s | wc -l" % ("ERROR|Traceback", file_path)],
         shell=True)
     log_cnt = str(log_error_count, 'utf-8').strip()
     if log_cnt != "0":
@@ -562,7 +562,9 @@ class MixtralConfig:
                  use_ring_attention=False,
                  group_wise_a2a=False,
                  jit_level="O1",
-                 use_fused_ops_topkrouter=False):
+                 use_fused_ops_topkrouter=False,
+                 enable_deredundency=False,
+                 npu_nums_per_device=8):
         # output dir
         self.output_dir = output_dir
 
@@ -614,6 +616,8 @@ class MixtralConfig:
         # moe config
         self.group_wise_a2a = group_wise_a2a
         self.use_fused_ops_topkrouter = use_fused_ops_topkrouter
+        self.enable_deredundency = enable_deredundency
+        self.npu_nums_per_device = npu_nums_per_device
 
 
 def prepare_mixtral_testcase_env(testcase_name, net_config):
@@ -623,7 +627,7 @@ def prepare_mixtral_testcase_env(testcase_name, net_config):
     # 2. clear folder (if exist)
     clear_directory(f"{sh_path}/{testcase_name}")
     # 3. copy yaml to testcase folder
-    os.system(f"cp {sh_path}/mindformers/research/mixtral/pretrain_mixtral-8x7b.yaml ./{testcase_name}")
+    os.system(f"cp {sh_path}/mindformers/research/mixtral/mixtral_8x7b/pretrain_mixtral-8x7b.yaml ./{testcase_name}")
     # 4. replace config in yaml
     file_path = f'{sh_path}/{testcase_name}/pretrain_mixtral-8x7b.yaml'
     status = replace_mixtral_config(net_config, file_path)
@@ -764,4 +768,100 @@ def replace_mixtral_config(net_config, file_path):
         if status != 0:
             print(f"Failed to insert optimizer_weight_shard_size in {file_path}")
 
+    return True
+
+def prepare_deepseekv3_testcase_env(testcase_name, net_config):
+    sh_path = os.path.split(os.path.realpath(__file__))[0]
+    # 1. create testcase folder
+    os.makedirs(os.path.join(sh_path, testcase_name), exist_ok=True)
+    # 2. clear folder (if exist)
+    clear_directory(f"{sh_path}/{testcase_name}")
+    # 3. copy yaml to testcase folder
+    os.system(f"cp {sh_path}/pretrain_deepseek3.yaml ./{testcase_name}")
+    # 4. replace config in yaml
+    file_path = f'{sh_path}/{testcase_name}/pretrain_deepseek3.yaml'
+    status = replace_deepseekv3_config(net_config, file_path)
+    run_mindformers_path = f'{sh_path}/mindformers/run_mindformer.py'
+    # 5. mock tiktoken
+    mock_third_party_pkg("tiktoken", run_mindformers_path)
+    # 6. update parallel_speed_up.json if needed
+    if net_config.parallel_speed_up_json is not None:
+        if not update_parallel_speed_up_json(testcase_name, net_config, file_path):
+            raise ValueError("Failed to update parallel_speed_up.json")
+    if not status:
+        raise Exception("Failed to replace config in {}".format(file_path))
+    output_file = f"./{testcase_name}_output.log"
+    return output_file, file_path
+
+
+def replace_deepseekv3_config(net_config, file_path):
+    old_list = [
+        'enable_parallel_optimizer: True', 'vocab_emb_dp: True',
+        'full_batch: True', 'num_layers 61', 'micro_batch_num 2',
+        'data_parallel: 2', 'model_parallel: 2', 'pipeline_stage: 2', 'expert_parallel: 2', 'recompute: True',
+        'select_recompute: False', 'offset: 0', "enable_deredundency: False", "npu_nums_per_device: 8"
+    ]
+
+    new_list = [
+        f'enable_parallel_optimizer: {net_config.enable_parallel_optimizer}',
+        f'vocab_emb_dp: {net_config.vocab_emb_dp}', f'full_batch: {net_config.full_batch}',
+        f'num_layers {net_config.num_layers}',
+        f'micro_batch_num {net_config.micro_batch_num}',
+        f'data_parallel: {net_config.data_parallel}',
+        f'model_parallel: {net_config.model_parallel}',
+        f'pipeline_stage: {net_config.pipeline_stage}',
+        f'expert_parallel: {net_config.expert_parallel}',
+        f'recompute: {net_config.recompute}',
+        f'select_recompute: {net_config.select_recompute}',
+        f'offset: {net_config.offset}',
+        f'enable_deredundency: {net_config.enable_deredundency}',
+        f'npu_nums_per_device: {net_config.npu_nums_per_device}'
+    ]
+
+    if len(old_list) != len(new_list):
+        print(f"Old list and new list have different lengths: {len(old_list)} and {len(new_list)}")
+        return False
+    for i in range(len(old_list)):
+        if "'" in old_list[i]:
+            sed_cmd = """sed -i "s#{}#{}#g" {}""".format(old_list[i], new_list[i], file_path)
+        else:
+            sed_cmd = """sed -i 's#{}#{}#g' {}""".format(old_list[i], new_list[i], file_path)
+        status, _ = subprocess.getstatusoutput(sed_cmd)
+        if status != 0:
+            print(f"Failed to replace {old_list[i]} with {new_list[i]} in {file_path}")
+            return False
+
+    # add num_samples of dataset to control the total steps
+    insert_num_samples = r"sed -i '/shuffle:/a\    num_samples: {}' {}".format(net_config.num_samples, file_path)
+    status, _ = subprocess.getstatusoutput(insert_num_samples)
+    if status != 0:
+        print(f"Failed to insert num_samples to {file_path}")
+        return False
+
+    # insert gradient accumulation steps
+    if net_config.gradient_accumulation_steps:
+        insert_gradient_accumulation_steps = r"sed -i '/runner_config:/a\  gradient_accumulation_steps: {}' {}".format(
+            net_config.gradient_accumulation_steps, file_path
+        )
+        status, _ = subprocess.getstatusoutput(insert_gradient_accumulation_steps)
+        if status != 0:
+            print(f"Failed to insert gradient_accumulation_steps in {file_path}")
+
+    # insert pipeline interleaved
+    if net_config.pipeline_interleave:
+        if net_config.pipeline_scheduler is None or net_config.pp_interleave_num == -1:
+            print("pipeline_scheduler and pp_interleave_num should be set together")
+            return False
+        insert_pipeline_config = r"sed -i '/full_batch:/i\  pipeline_config:' {}".format(file_path)
+        insert_pipeline_interleave = r"sed -i '/full_batch:/i\    pipeline_interleave: {}' {}".format(
+            net_config.pipeline_interleave, file_path)
+        insert_pipeline_scheduler = r"""sed -i '/full_batch:/i\    pipeline_scheduler: "{}"' {}""".format(
+            net_config.pipeline_scheduler, file_path)
+        insert_pp_interleave_num = r"""sed -i '/model_config:/a\    pp_interleave_num: {}' {}""".format(
+            net_config.pp_interleave_num, file_path)
+        for cmd in [insert_pipeline_config, insert_pipeline_interleave, insert_pipeline_scheduler,
+                    insert_pp_interleave_num]:
+            status, _ = subprocess.getstatusoutput(cmd)
+            if status != 0:
+                print(f"Failed to execute cmd {cmd} in {file_path}")
     return True

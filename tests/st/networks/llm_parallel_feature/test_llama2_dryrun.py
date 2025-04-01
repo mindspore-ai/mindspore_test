@@ -162,6 +162,13 @@ def test_llama2_cell_dp2mp4pp2vpp4op_1f1b():
     output_file, file_path = prepare_testcase_env(case_name, llama2_config)
     sh_path = os.path.split(os.path.realpath(__file__))[0]
     os.system(f"bash {sh_path}/run_llm_dryrun.sh 16 {rank_list} {file_path} {output_file} {case_name} pp")
+    check_pair = {"Training Over": 1}
+    real_log_path = log_path_preprocess(output_file, rank_list, case_name)
+    for log_path in real_log_path:
+        check_log(log_path, check_pair)
+        check_compile_time(log_path, 15)
+    check_peak_memory(real_log_path[0], "8200")
+    check_peak_memory(real_log_path[1], "8200")
     graph_path = graph_path_preprocess(llama2_config.save_graphs_path, rank_list)
     # stage 0
     ops_check_pairs_0 = {"VirtualAssignAdd": 74}
@@ -193,13 +200,6 @@ def test_llama2_cell_dp2mp4pp2vpp4op_1f1b():
     # dependency_list_1_1 = ["CNode_1237", 3, "_MicroStepAllGather"]
     # check_node_dependency_backward_search(graph_path[1], step_parallel_end_name_1, 100, dependency_list_1_0)
     # check_node_dependency_backward_search(graph_path[1], step_parallel_end_name_1, 100, dependency_list_1_1)
-    check_pair = {"Training Over": 1}
-    real_log_path = log_path_preprocess(output_file, rank_list, case_name)
-    for log_path in real_log_path:
-        check_log(log_path, check_pair)
-        check_compile_time(log_path, 15)
-    check_peak_memory(real_log_path[0], "8200")
-    check_peak_memory(real_log_path[1], "8200")
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
@@ -698,6 +698,14 @@ def test_llama2_cell_dp2mp2pp2vpp4opcp2_1f1b():
     sh_path = os.path.split(os.path.realpath(__file__))[0]
     os.system(f"bash {sh_path}/run_llm_dryrun.sh 16 {rank_list} {file_path} {output_file} {case_name} pp")
 
+    check_pair = {"Training Over": 1}
+    real_log_path = log_path_preprocess(output_file, rank_list, case_name)
+    log_path = None
+    for log_path in real_log_path:
+        check_log(log_path, check_pair)
+    check_peak_memory(log_path, "9250")
+    check_compile_time(log_path, 15)
+
     real_graph_path = graph_path_preprocess(llama2_config.save_graphs_path, rank_list)
     graph_path = real_graph_path[0]
     # stage 0
@@ -743,14 +751,6 @@ def test_llama2_cell_dp2mp2pp2vpp4opcp2_1f1b():
     # dependency_list_1_1 = ["CNode_1455", 3, "_MicroStepAllGather"]
     # check_node_dependency_backward_search(real_graph_path[1], step_parallel_end_name_1, 100, dependency_list_1_0)
     # check_node_dependency_backward_search(real_graph_path[1], step_parallel_end_name_1, 100, dependency_list_1_1)
-
-    check_pair = {"Training Over": 1}
-    real_log_path = log_path_preprocess(output_file, rank_list, case_name)
-    log_path = None
-    for log_path in real_log_path:
-        check_log(log_path, check_pair)
-    check_peak_memory(log_path, "9250")
-    check_compile_time(log_path, 15)
 
 
 @pytest.mark.skip(reason="has bug")
