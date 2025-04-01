@@ -463,7 +463,7 @@ def _construct_tensor_layout_helper(dev_matrix, tensor_map, opt_shard_size, orig
     helper function to assign repeated device_matrix dim for opt shard.
     """
     new_dev_matrix = list(copy.deepcopy(dev_matrix))
-    new_dev_matrix_map = [i for i in range(len(dev_matrix))]
+    new_dev_matrix_map = list(range(len(dev_matrix)))
     opt_shard_dim = []
     remained_opt_shard_size = opt_shard_size if opt_shard_size != -1 else \
         int(np.prod([dev_matrix[i] for i in repeated_dim]))
