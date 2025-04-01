@@ -72,7 +72,7 @@ void EntranceActor::ClearDataOnStepEnd(const AID &input_control, OpContext<Kerne
 }
 
 void EntranceActor::Run(OpContext<KernelTensor> *const context) {
-  MS_LOG(DEBUG) << "Begin run actor:" << GetAID();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR) << "Entrance actor:" << GetAID() << " start run.";
   // The begin execution of step is false and the others execution of step is true.
   is_loop_body_execution_ = true;
 
@@ -86,7 +86,7 @@ void EntranceActor::Run(OpContext<KernelTensor> *const context) {
 
   EraseInput(context);
   SendOutput(context);
-  MS_LOG(DEBUG) << "End run actor:" << GetAID();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR) << "Entrance actor:" << GetAID() << " end run.";
 }
 
 void EntranceActor::FetchInput(OpContext<KernelTensor> *const context) {

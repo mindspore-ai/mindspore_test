@@ -62,11 +62,11 @@ void KernelAsyncLaunchActor::Wait() {
   if (thread_id_ == std::this_thread::get_id()) {
     return;
   }
-  MS_LOG(DEBUG) << "Begin wait kernel launch finish";
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Begin wait kernel launch finish";
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kWaitKernelsLaunchFinish, GetAID().Name());
   Future<bool> f = Async(this->GetAID(), &KernelAsyncLaunchActor::OnTaskFinish);
   f.Wait();
-  MS_LOG(DEBUG) << "End wait kernel launch finish";
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "End wait kernel launch finish";
 }
 
 Future<bool> KernelAsyncLaunchActor::OnTaskFinish() { return Future<bool>(true); }

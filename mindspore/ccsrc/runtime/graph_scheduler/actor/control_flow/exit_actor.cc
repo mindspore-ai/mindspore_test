@@ -45,8 +45,9 @@ void ExitActor::Init() {
   if (device_contexts_.size() != input_kernel_tensors_.size()) {
     MS_LOG(EXCEPTION) << "The device contexts number is wrong.";
   }
-  MS_LOG(DEBUG) << "Exit actor:" << GetAID() << " init, is need copy:" << is_need_copy_device_tensors_
-                << " is dynamic check:" << is_need_dynamic_checks_;
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR) << "Exit actor:" << GetAID()
+                                      << " init, is need copy:" << is_need_copy_device_tensors_
+                                      << " is dynamic check:" << is_need_dynamic_checks_;
 }
 
 void ClearDeviceTensorCopyStore(const std::map<KernelWithIndex, KernelWithIndex> &ref_out_in_map,
@@ -58,16 +59,18 @@ void ClearDeviceTensorCopyStore(const std::map<KernelWithIndex, KernelWithIndex>
     if (pair.first.first->isa<CNode>() && AnfAlgo::OutputAddrExist(pair.first.first, pair.first.second, false)) {
       DeviceTensorCopyStore::GetInstance().Clear(
         AnfAlgo::GetMutableOutputAddr(pair.first.first, pair.first.second, false).get());
-      MS_LOG(DEBUG) << "Device tensor copy store clear device address:"
-                    << AnfAlgo::GetMutableOutputAddr(pair.first.first, pair.first.second, false)
-                    << " node:" << pair.first.first->fullname_with_scope() << " in actor:" << actor_name;
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+        << "Device tensor copy store clear device address:"
+        << AnfAlgo::GetMutableOutputAddr(pair.first.first, pair.first.second, false)
+        << " node:" << pair.first.first->fullname_with_scope() << " in actor:" << actor_name;
     }
     if (pair.second.first->isa<CNode>() && AnfAlgo::OutputAddrExist(pair.second.first, pair.second.second, false)) {
       DeviceTensorCopyStore::GetInstance().Clear(
         AnfAlgo::GetMutableOutputAddr(pair.second.first, pair.second.second, false).get());
-      MS_LOG(DEBUG) << "Device tensor copy store clear device address:"
-                    << AnfAlgo::GetMutableOutputAddr(pair.second.first, pair.second.second, false)
-                    << " node:" << pair.second.first->fullname_with_scope() << " in actor:" << actor_name;
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+        << "Device tensor copy store clear device address:"
+        << AnfAlgo::GetMutableOutputAddr(pair.second.first, pair.second.second, false)
+        << " node:" << pair.second.first->fullname_with_scope() << " in actor:" << actor_name;
     }
   }
 }
@@ -98,7 +101,7 @@ void ExitActor::FetchInput(OpContext<KernelTensor> *const context) {
     }
   } else {
     // The branch id need merge device address.
-    MS_LOG(DEBUG) << "Exit actor:" << GetAID() << " merge output";
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR) << "Exit actor:" << GetAID() << " merge output";
     MergeDynamiclenDeviceAddress(context);
   }
 }
@@ -346,16 +349,17 @@ bool ExitActor::IsNeedCopyDeviceAddress(DeviceTensor *const input_device_tensor,
     const auto &node = input_device_tensor->GetNodeIndex().first;
     if (node != nullptr) {
       if (!node->isa<CNode>()) {
-        MS_LOG(DEBUG) << "Input device address:" << input_device_tensor << " ptr:" << input_device_tensor->GetPtr()
-                      << " for node:" << node->DebugString() << " is not need replace ptr for actor:" << GetAID();
+        MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+          << "Input device address:" << input_device_tensor << " ptr:" << input_device_tensor->GetPtr()
+          << " for node:" << node->DebugString() << " is not need replace ptr for actor:" << GetAID();
         return false;
       }
       const auto &iter = ref_out_in_map_.find(input_device_tensor->GetNodeIndex());
       if (iter != ref_out_in_map_.end() && iter->second.first != nullptr && (!iter->second.first->isa<CNode>())) {
-        MS_LOG(DEBUG) << "Input device address:" << input_device_tensor << " ptr:" << input_device_tensor->GetPtr()
-                      << " for node:" << node->DebugString()
-                      << " is a ref node of:" << iter->second.first->DebugString()
-                      << " not need replace ptr for actor:" << GetAID();
+        MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+          << "Input device address:" << input_device_tensor << " ptr:" << input_device_tensor->GetPtr()
+          << " for node:" << node->DebugString() << " is a ref node of:" << iter->second.first->DebugString()
+          << " not need replace ptr for actor:" << GetAID();
         return false;
       }
     }

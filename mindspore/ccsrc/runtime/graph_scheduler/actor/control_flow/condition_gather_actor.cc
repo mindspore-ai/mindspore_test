@@ -35,7 +35,7 @@ ConditionGatherActor::~ConditionGatherActor() {
 }
 
 void ConditionGatherActor::RunBranchName(const std::string &branch_name, OpContext<KernelTensor> *const context) {
-  MS_LOG(DEBUG) << "Condition gather actor:" << GetAID() << " branch name:" << branch_name;
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR) << "Condition gather actor:" << GetAID() << " branch name:" << branch_name;
   current_branch_name_ = branch_name;
   if (branch_name_to_input_data_num_.find(current_branch_name_) == branch_name_to_input_data_num_.end()) {
     input_datas_num_ = 0;
@@ -57,9 +57,9 @@ void ConditionGatherActor::RunBranchName(const std::string &branch_name, OpConte
 
 void ConditionGatherActor::ExecuteInferShapeTask(OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(kernel_);
-  MS_LOG(DEBUG) << "Begin InferShape for kernel: " << kernel_->fullname_with_scope();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Begin InferShape for kernel: " << kernel_->fullname_with_scope();
   Async(kernel_async_resize_aid_, &KernelAsyncResizeActor::ResizeKernelMod, context, this);
-  MS_LOG(DEBUG) << "End InferShape for kernel: " << kernel_->fullname_with_scope();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "End InferShape for kernel: " << kernel_->fullname_with_scope();
 }
 
 void ConditionGatherActor::ExecuteResizeKernelModTask(OpContext<KernelTensor> *const context) {
@@ -68,7 +68,7 @@ void ConditionGatherActor::ExecuteResizeKernelModTask(OpContext<KernelTensor> *c
 
 void ConditionGatherActor::ExecuteLaunchKernelTask(OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(kernel_);
-  MS_LOG(DEBUG) << "Begin launch kernel: " << kernel_->fullname_with_scope();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Begin launch kernel: " << kernel_->fullname_with_scope();
   new_memory_free_list_.clear();
   for (size_t i = 0; i < branch_names_.size(); ++i) {
     branch_flags_.get()[i] = false;
@@ -97,8 +97,9 @@ void ConditionGatherActor::ExecuteLaunchKernelTask(OpContext<KernelTensor> *cons
                         << " for node:" << kernel_->DebugString() << " for actor:" << GetAID();
     }
     new_memory_free_list_.emplace_back(input_kernel_tensors_[input_index]);
-    MS_LOG(DEBUG) << "Add decrease new ref count for device address:" << input_kernel_tensors_[input_index]
-                  << " in actor:" << GetAID();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "Add decrease new ref count for device address:" << input_kernel_tensors_[input_index]
+      << " in actor:" << GetAID();
   }
 
   for (size_t output_index : output_free_index_) {
@@ -107,13 +108,14 @@ void ConditionGatherActor::ExecuteLaunchKernelTask(OpContext<KernelTensor> *cons
                         << "total size:" << output_kernel_tensors_.size() << " for actor:" << GetAID();
     }
     new_memory_free_list_.emplace_back(output_kernel_tensors_[output_index]);
-    MS_LOG(DEBUG) << "Add decrease new ref count for device address:" << output_kernel_tensors_[output_index]
-                  << " in actor:" << GetAID();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "Add decrease new ref count for device address:" << output_kernel_tensors_[output_index]
+      << " in actor:" << GetAID();
   }
   if (new_memory_free_list_.size() > 0) {
     SendMemoryFreeReq(context);
   }
-  MS_LOG(DEBUG) << "End launch kernel: " << kernel_->fullname_with_scope();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "End launch kernel: " << kernel_->fullname_with_scope();
 }
 
 void ConditionGatherActor::Init() {
@@ -169,8 +171,9 @@ void ConditionGatherActor::Init() {
     auto &output_address = output_kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(output_address);
     if (output_address->stream_id() != kernel_info_->stream_id()) {
-      MS_LOG(DEBUG) << "Output address : " << output_address << " stream id :" << output_address->stream_id()
-                    << " is not equal kernel info stream id : " << kernel_info_->stream_id() << ".";
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+        << "Output address : " << output_address << " stream id :" << output_address->stream_id()
+        << " is not equal kernel info stream id : " << kernel_info_->stream_id() << ".";
     }
     (void)output_kernel_tensors_.emplace_back(output_kernel_tensor);
     // The output taken over by soma does not need to allocate memory.
@@ -183,7 +186,8 @@ void ConditionGatherActor::Init() {
       }
       // Used to keep graph output address when somas block memory free, and reused by the ref conut in other graphs.
       if (somas_graph_output_indexes_.count(i) > 0) {
-        MS_LOG(DEBUG) << "Somas keep output device address:" << output_address << " ptr:" << output_address->GetPtr();
+        MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+          << "Somas keep output device address:" << output_address << " ptr:" << output_address->GetPtr();
         MS_EXCEPTION_IF_NULL(somas_info_);
         (void)somas_info_->InsertGraphOutputInfo(output_address.get(), somas_outputs[i].first, somas_outputs[i].second);
         output_address->set_from_mem_pool(true);
@@ -263,10 +267,11 @@ void ConditionGatherActor::UpdateRefDeviceAddress(OpContext<KernelTensor> *const
       output_kernel_tensors_[i]->set_heterogeneous_info(std::make_shared<HeterogeneousInfo>());
       *(output_kernel_tensors_[i]->heterogeneous_info()) = *(input_kernel_tensors_[input_index]->heterogeneous_info());
     }
-    MS_LOG(DEBUG) << "Actor:" << GetAID()
-                  << " increase new ref count:" << output_kernel_tensors_[i]->device_address()->new_ref_count()
-                  << " and set ref device address:" << output_kernel_tensors_[i]->PrintInfo()
-                  << " ref input device address:" << input_kernel_tensors_[input_index]->PrintInfo();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "Actor:" << GetAID()
+      << " increase new ref count:" << output_kernel_tensors_[i]->device_address()->new_ref_count()
+      << " and set ref device address:" << output_kernel_tensors_[i]->PrintInfo()
+      << " ref input device address:" << input_kernel_tensors_[input_index]->PrintInfo();
   }
   new_memory_free_list_.resize(input_free_index_.size() + output_free_index_.size());
 }
@@ -369,13 +374,14 @@ void ConditionGatherActor::FetchInput(OpContext<KernelTensor> *const context) {
 void ConditionGatherActor::Run(OpContext<KernelTensor> *const context) {
   try {
     MS_EXCEPTION_IF_NULL(kernel_);
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR) << "Condition gather actor:" << GetAID() << " start run.";
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, GetAID().Name(), kernel_->fullname_with_scope(),
                                                    kernel_->func_graph()->ToString(), false);
     FetchInput(context);
     if (memory_free_list_.size() > 0) {
       SendMemoryFreeReq(context);
     }
-    MS_LOG(DEBUG) << "Launch kernel:" << kernel_->fullname_with_scope();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Launch kernel:" << kernel_->fullname_with_scope();
     EraseInput(context);
     for (const auto &output_kernel_tensor : output_kernel_tensors_) {
       output_kernel_tensor->device_address()->set_ptr(nullptr);
@@ -388,6 +394,8 @@ void ConditionGatherActor::Run(OpContext<KernelTensor> *const context) {
       "#umsg#Kernel error:#umsg#run kernel[" + kernel_->fullname_with_scope() + "] failed, exception: " + e.what();
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(GraphExecutionStrategy::kPipeline, (*context), error_info);
   }
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "End Launch kernel:" << kernel_->fullname_with_scope();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR) << "Condition gather actor:" << GetAID() << " end run.";
 }
 }  // namespace runtime
 }  // namespace mindspore

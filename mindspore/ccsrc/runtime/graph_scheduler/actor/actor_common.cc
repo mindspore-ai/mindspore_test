@@ -500,11 +500,11 @@ void UpdateRefCount(DeviceTensor *const device_tensor, bool is_max_ref_count) {
   MS_EXCEPTION_IF_NULL(device_tensor);
   if (is_max_ref_count) {
     device_tensor->set_original_ref_count(SIZE_MAX);
-    MS_LOG(DEBUG) << "Set origin ref count max for device address:" << device_tensor;
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Set origin ref count max for device address:" << device_tensor;
   } else {
     device_tensor->IncreaseOriginalRefCount();
-    MS_LOG(DEBUG) << "Add origin ref count for device address:" << device_tensor
-                  << " origin ref count:" << device_tensor->original_ref_count();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Add origin ref count for device address:" << device_tensor
+                                                 << " origin ref count:" << device_tensor->original_ref_count();
   }
   device_tensor->ResetRefCount();
 }
@@ -593,7 +593,7 @@ KernelTransformType FetchKernelTransformType(const AnfNodePtr &node, const Kerne
     type = KernelTransformType::kDeviceTensorStore;
   } else {
     // May exist the from kernel that no need link in the pynative mode.
-    MS_LOG(DEBUG) << "Invalid from kernel: " << node->DebugString();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Invalid from kernel: " << node->DebugString();
   }
 
   return type;
@@ -994,8 +994,9 @@ void UpdateDynamicShapeAndSize(tensor::Tensor *input_tensor, const KernelTensorP
   };
   if (kNormalFormat.find(device_format) != kNormalFormat.end()) {
     auto tensor_data_size = input_tensor->data().nbytes();
-    MS_LOG(DEBUG) << "Set device address:" << device_tensor << " size from:" << device_tensor->GetSize()
-                  << " to:" << tensor_data_size;
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "Set device address:" << device_tensor << " size from:" << device_tensor->GetSize()
+      << " to:" << tensor_data_size;
     device_tensor->SetSize(tensor_data_size);
   } else {
     MS_LOG(EXCEPTION) << "Can not Update size for 5D format device address";
@@ -1019,25 +1020,27 @@ void SyncHostToDeviceFromTensor(size_t outer_index, size_t inner_index, tensor::
     const auto &device_tensor = kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(device_tensor);
     if (graph_parameter_store->GetUserCnt(outer_index, inner_index, device_tensor->GetDeviceType()) == 0) {
-      MS_LOG(DEBUG) << "Skip sync host to device for device tensor:" << device_tensor->PrintInfo()
-                    << " outer index:" << outer_index << " inner index:" << inner_index << " for user count:0.";
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+        << "Skip sync host to device for device tensor:" << device_tensor->PrintInfo() << " outer index:" << outer_index
+        << " inner index:" << inner_index << " for user count:0.";
       continue;
     }
     UpdateDynamicShapeAndSize(tensor, kernel_tensor, outer_index, inner_index);
     graph_parameter_store->ResetAddrRefCount(outer_index, inner_index, device_tensor->GetDeviceType());
     if (TEST_FLAG(device_tensor->flag(), device::kDeviceAddressFlagNotUsed)) {
       device_tensor->IncreaseNewRefCount(from_aid.Name());
-      MS_LOG(DEBUG) << from_aid.Name() << " do not use input outer index: " << outer_index
-                    << ", inner index: " << inner_index << ", address: " << device_tensor
-                    << " from graph parameter store.";
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+        << from_aid.Name() << " do not use input outer index: " << outer_index << ", inner index: " << inner_index
+        << ", address: " << device_tensor << " from graph parameter store.";
       continue;
     }
     if (device_tensor->GetSize() == 0) {
       // The device tensor will not allocate a valid ptr, but it would be send to actor to decrease the ref count,
       // so the ref count should be add.
       device_tensor->IncreaseNewRefCount(from_aid.Name());
-      MS_LOG(DEBUG) << from_aid.Name() << " input size is 0, outer index" << outer_index
-                    << ", inner index: " << inner_index << ", address: " << device_tensor << ".";
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+        << from_aid.Name() << " input size is 0, outer index" << outer_index << ", inner index: " << inner_index
+        << ", address: " << device_tensor << ".";
       continue;
     }
 
@@ -1088,9 +1091,9 @@ void SyncDeviceTensorsInParameterStore(size_t outer_index, size_t inner_index, c
     const auto &device_tensor = kernel_tensor->device_address().get();
     MS_EXCEPTION_IF_NULL(device_tensor);
     if (TEST_FLAG(device_tensor->flag(), device::kDeviceAddressFlagNotUsed)) {
-      MS_LOG(DEBUG) << from_aid.Name() << " do not use input outer index: " << outer_index
-                    << ", inner index: " << inner_index << ", address: " << device_tensor
-                    << " from graph parameter store.";
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+        << from_aid.Name() << " do not use input outer index: " << outer_index << ", inner index: " << inner_index
+        << ", address: " << device_tensor << " from graph parameter store.";
       static std::string store_name = "Parameter store no used";
       device_tensor->IncreaseNewRefCount(store_name);
       continue;
@@ -1142,7 +1145,7 @@ void SetMaxRefCountByStoreIndex(size_t outer_index, size_t inner_index) {
     auto address = kernel_tensor->device_address().get();
     if (address != nullptr) {
       address->set_new_ref_count(SIZE_MAX);
-      MS_LOG(DEBUG) << "Set new ref count to max for device address:" << address;
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Set new ref count to max for device address:" << address;
     }
   }
 }
@@ -1178,9 +1181,10 @@ KernelTensorPtr PrepareForNonTensorAddress(const std::pair<KernelWithIndex, size
     auto new_kernel_tensor =
       std::make_shared<kernel::KernelTensor>(new_device_tensor, shape, type, nullptr, ShapeVector{});
     new_kernel_tensor->set_size(LongToSize(tensor->data().nbytes()));
-    MS_LOG(DEBUG) << "Refresh store device tensor, from: " << new_device_tensor.get() << ", to null,"
-                  << ", outer index: " << outer_index << ", inner index: " << inner_index
-                  << ", device type: " << device::GetDeviceNameByType(new_device_tensor->GetDeviceType());
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "Refresh store device tensor, from: " << new_device_tensor.get() << ", to null,"
+      << ", outer index: " << outer_index << ", inner index: " << inner_index
+      << ", device type: " << device::GetDeviceNameByType(new_device_tensor->GetDeviceType());
     new_device_tensor->SetNodeIndex(old_addr_info.second.first, old_addr_info.second.second);
     new_device_tensor->set_from_persistent_mem(true);
     kernel_tensor->set_device_address(new_device_tensor);
@@ -1195,7 +1199,7 @@ KernelTensorPtr PrepareForNonTensorAddress(const std::pair<KernelWithIndex, size
        common::AnfAlgo::HasAbstractRef(front_node.first))) {
     tensor->set_device_address(device_tensor);
     device_tensor->set_new_ref_count(SIZE_MAX);
-    MS_LOG(DEBUG) << "Set new ref count to max for device address:" << device_tensor;
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Set new ref count to max for device address:" << device_tensor;
     SetMaxRefCountByStoreIndex(outer_index, inner_index);
   }
   graph_parameter_store->SetDeviceTensorPrepared(outer_index, inner_index, true);
@@ -1281,7 +1285,7 @@ KernelTensorPtr PrepareParameter(const std::pair<KernelWithIndex, size_t> &param
       }
 
       tensor_address->set_new_ref_count(SIZE_MAX);
-      MS_LOG(DEBUG) << "Set new ref count to max for device address:" << tensor_address;
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Set new ref count to max for device address:" << tensor_address;
       MS_EXCEPTION_IF_NULL(kernel_tensor);
       auto device_tensor = kernel_tensor->device_address();
       if (tensor_address == device_tensor) {
@@ -1294,10 +1298,10 @@ KernelTensorPtr PrepareParameter(const std::pair<KernelWithIndex, size_t> &param
       }
       // Set tensor address to graph parameter store.
       if (device_tensor == nullptr || IsSimilarDeviceAddress(tensor_address, device_tensor)) {
-        MS_LOG(DEBUG) << "Refresh store device tensor, from: " << tensor_address.get()
-                      << ", to: " << device_tensor.get() << ", outer index: " << outer_index
-                      << ", inner index: " << inner_index
-                      << ", device type: " << device::GetDeviceNameByType(tensor_address->GetDeviceType());
+        MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+          << "Refresh store device tensor, from: " << tensor_address.get() << ", to: " << device_tensor.get()
+          << ", outer index: " << outer_index << ", inner index: " << inner_index
+          << ", device type: " << device::GetDeviceNameByType(tensor_address->GetDeviceType());
         kernel_tensor->set_device_address(tensor_address);
         SetNodeIndexForTensorAddress(device_tensor, tensor_address, outer_index, inner_index, device_context);
         // device tensor may be null.

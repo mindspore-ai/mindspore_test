@@ -54,7 +54,8 @@ void MemoryManagerActor::AllocateMemory(const std::vector<KernelTensorPtr> *allo
       } else {
         device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), "ContinuousMemory", "", false);
 
-        MS_LOG(DEBUG) << "Allocate continuous memory, device address : " << device_tensor << ".";
+        MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+          << "Allocate continuous memory, device address : " << device_tensor << ".";
         success = AllocateContinuousMemory(kernel_tensor.get(), device_context, from_aid);
       }
 
@@ -174,7 +175,8 @@ void MemoryManagerActor::AllocateContinuousMemory(const std::vector<std::vector<
           device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
         kernel_tensor->set_stream_id(old_dev_addr->stream_id());
         auto new_dev_addr = kernel_tensor->device_address();
-        MS_LOG(DEBUG) << "Create device tensor:" << new_dev_addr << " type:" << new_dev_addr->type_id();
+        MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+          << "Create device tensor:" << new_dev_addr << " type:" << new_dev_addr->type_id();
         (void)new_dev_addr->SyncDeviceToDevice(old_dev_addr.get());
         device_context->device_res_manager_->FreeMemory(old_dev_addr.get());
       }
@@ -358,8 +360,9 @@ void MemoryManagerActor::FreeSomasMemory(SomasInfo *const somas_info, const Devi
   std::vector<void *> keep_addrs;
   for (auto &output_address : somas_info->graph_output_device_addresses_) {
     MS_EXCEPTION_IF_NULL(output_address);
-    MS_LOG(DEBUG) << "Keep address:" << output_address << " ptr:" << output_address->GetPtr()
-                  << " size:" << output_address->GetSize() << " for actor:" << from_aid;
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "Keep address:" << output_address << " ptr:" << output_address->GetPtr()
+      << " size:" << output_address->GetSize() << " for actor:" << from_aid;
     (void)keep_addrs.emplace_back(output_address->GetMutablePtr());
   }
 
@@ -394,7 +397,7 @@ void MemoryManagerActor::FreeSomasMemory(SomasInfo *const somas_info, const Devi
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), "SomasOutput", "", false);
   for (auto &output_address : somas_info->graph_output_device_addresses_) {
     output_address->set_from_mem_pool(true);
-    MS_LOG(DEBUG) << "Set from mem pool for device address:" << output_address;
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Set from mem pool for device address:" << output_address;
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, from_aid.Name(), memory::mem_pool::MemType::kSomasOutput,
                                                    output_address->GetSize(), output_address);
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(BindDevicePtr, output_address, output_address->GetPtr());
@@ -426,13 +429,16 @@ void MemoryManagerActor::FreeMemoryByRefCount(DeviceTensor *const device_tensor,
                         << " index:" << node_with_index.second << " actor:" << op_name;
     }
 
-    MS_LOG(DEBUG) << "Op:" << op_name << " decrease new ref count for:" << device_tensor->PrintInfo();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "Op:" << op_name << " decrease new ref count for:" << device_tensor->PrintInfo();
     if ((device_tensor->DecreaseNewRefCount(op_name) == 0) && device_tensor->IsPtrValid()) {
       device_tensor->ClearUserData();
-      MS_LOG(DEBUG) << "Op:" << op_name
-                    << " free memory by the new reference count, device address:" << device_tensor->GetPtr() << ".";
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+        << "Op:" << op_name << " free memory by the new reference count, device address:" << device_tensor->GetPtr()
+        << ".";
       if (device_tensor->deleter() != nullptr) {
-        MS_LOG(DEBUG) << "Free ptr:" << device_tensor->GetPtr() << " for device address:" << device_tensor;
+        MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+          << "Free ptr:" << device_tensor->GetPtr() << " for device address:" << device_tensor;
         device_tensor->deleter()(static_cast<uint8_t *>(device_tensor->GetMutablePtr()));
         device_tensor->set_deleter(nullptr);
         device_tensor->set_ptr(nullptr);

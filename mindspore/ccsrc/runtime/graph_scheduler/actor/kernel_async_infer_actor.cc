@@ -62,11 +62,11 @@ void KernelAsyncInferActor::Wait() {
   if (thread_id_ == std::this_thread::get_id()) {
     return;
   }
-  MS_LOG(DEBUG) << "Begin wait kernel infer finish";
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Begin wait kernel infer finish";
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kWaitKernelsInferFinish, GetAID().Name());
   Future<bool> f = Async(this->GetAID(), &KernelAsyncInferActor::OnTaskFinish);
   f.Wait();
-  MS_LOG(DEBUG) << "End wait kernel infer finish";
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "End wait kernel infer finish";
 }
 
 Future<bool> KernelAsyncInferActor::OnTaskFinish() { return Future<bool>(true); }

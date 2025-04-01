@@ -208,8 +208,9 @@ KernelActor::KernelActor(const std::string &name, const CNodePtr &kernel, const 
   std::vector<bool> is_output_kernel(AnfAlgo::GetOutputAddressNum(kernel), false);
   is_output_kernel_.swap(is_output_kernel);
   std::iota(output_free_index_.begin(), output_free_index_.end(), 0);
-  MS_LOG(DEBUG) << "Input free index:" << input_free_index_ << " output free index:" << output_free_index_
-                << " for actor:" << GetAID() << " kernel:" << kernel->DebugString();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Input free index:" << input_free_index_
+                                       << " output free index:" << output_free_index_ << " for actor:" << GetAID()
+                                       << " kernel:" << kernel->DebugString();
 
   // shape depend need kernel is cnode.
   SetShapeDependInfo();
@@ -286,8 +287,8 @@ void KernelActor::InitMultiStreamInfo() {
   // cpu kernel does not need multi stream process, and gpu kernel has not adapt it currently.
   if (device_context->GetDeviceType() == device::DeviceType::kCPU ||
       device_context->GetDeviceType() == device::DeviceType::kGPU) {
-    MS_LOG(DEBUG) << "Kernel : " << kernel_->fullname_with_scope() << " device type is "
-                  << device_context->GetDeviceType() << ", will skip multi stream process.";
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Kernel : " << kernel_->fullname_with_scope() << " device type is "
+                                         << device_context->GetDeviceType() << ", will skip multi stream process.";
     is_multi_stream_process_skipped_ = true;
   }
 
@@ -319,7 +320,7 @@ void KernelActor::InitMultiStreamInfo() {
   auto multi_stream_safe_value = cnode->GetAttr(kAttrInputMultiStreamSafe);
   if (multi_stream_safe_value != nullptr) {
     is_multi_stream_safe_ = GetValue<bool>(multi_stream_safe_value);
-    MS_LOG(DEBUG) << "cnode : " << cnode->DebugString() << " is thread safe.";
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "cnode : " << cnode->DebugString() << " is thread safe.";
   }
 }
 
@@ -400,10 +401,10 @@ void ResetNewRefCountForRefOutputInSomas(const CNodePtr &node, size_t index) {
   const auto &input_device_tensor =
     AnfAlgo::GetMutableOutputAddr(input_node_with_index.first, input_node_with_index.second, false);
   input_device_tensor->set_new_ref_count(0);
-  MS_LOG(DEBUG) << "Set new ref count to 0 for device tensor:" << input_device_tensor->PrintInfo()
-                << " for node:" << input_node_with_index.first->fullname_with_scope()
-                << " debug string:" << input_node_with_index.first->DebugString()
-                << " index:" << input_node_with_index.second;
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+    << "Set new ref count to 0 for device tensor:" << input_device_tensor->PrintInfo()
+    << " for node:" << input_node_with_index.first->fullname_with_scope()
+    << " debug string:" << input_node_with_index.first->DebugString() << " index:" << input_node_with_index.second;
   ResetNewRefCountForRefOutputInSomas(input_node_with_index.first->cast<CNodePtr>(), input_node_with_index.second);
 }
 }  // namespace
@@ -420,16 +421,17 @@ void KernelActor::InitOutputInfo() {
     MS_EXCEPTION_IF_NULL(output_address);
 
     if (output_address->stream_id() != kernel_info_->stream_id()) {
-      MS_LOG(DEBUG) << "Output address : " << output_address << " stream id :" << output_address->stream_id()
-                    << " is not equal kernel info stream id : " << kernel_info_->stream_id() << ".";
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+        << "Output address : " << output_address << " stream id :" << output_address->stream_id()
+        << " is not equal kernel info stream id : " << kernel_info_->stream_id() << ".";
     }
 
     (void)output_kernel_tensors_.emplace_back(output_kernel_tensor);
     (void)output_launch_tensors_.emplace_back(output_kernel_tensor.get());
-    MS_LOG(DEBUG) << "Init output[" << i << "] info for node:" << kernel_->fullname_with_scope()
-                  << " addr:" << output_address << " type:" << output_address->type_id()
-                  << ", kernel tensor addr:" << output_kernel_tensor.get()
-                  << ", kernel tensor: " << output_kernel_tensor->ToString();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "Init output[" << i << "] info for node:" << kernel_->fullname_with_scope() << " addr:" << output_address
+      << " type:" << output_address->type_id() << ", kernel tensor addr:" << output_kernel_tensor.get()
+      << ", kernel tensor: " << output_kernel_tensor->ToString();
     if (recorder_aid_ != nullptr) {
       (void)mem_info_.outputs_.emplace_back(std::make_shared<Address>());
     }
@@ -446,7 +448,8 @@ void KernelActor::InitOutputInfo() {
       }
       // Used to keep graph output address when somas block memory free, and reused by the ref conut in other graphs.
       if (somas_graph_output_indexes_.count(i) > 0) {
-        MS_LOG(DEBUG) << "Somas keep output device address:" << output_address << " ptr:" << output_address->GetPtr();
+        MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+          << "Somas keep output device address:" << output_address << " ptr:" << output_address->GetPtr();
         (void)somas_info_->InsertGraphOutputInfo(output_address.get(), somas_outputs[i].first, somas_outputs[i].second);
         ResetNewRefCountForRefOutputInSomas(kernel_, i);
       } else {
@@ -646,6 +649,7 @@ void KernelActor::Run(OpContext<KernelTensor> *const context) {
   try {
     MS_EXCEPTION_IF_NULL(kernel_);
     MS_EXCEPTION_IF_NULL(kernel_->func_graph());
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR) << "Kernel actor:" << GetAID() << " start run.";
     if (NeedRunMemTracker()) {
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, GetAID().Name(), kernel_->fullname_with_scope(),
                                                      kernel_->func_graph()->ToString(), false);
@@ -679,6 +683,7 @@ void KernelActor::Run(OpContext<KernelTensor> *const context) {
       "#umsg#Kernel error:#umsg#run kernel[" + kernel_->fullname_with_scope() + "] failed, exception: " + e.what();
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(strategy_, (*context), error_info);
   }
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR) << "Kernel actor:" << GetAID() << " end run.";
 }
 
 void KernelActor::RunWithMultiPipeline(OpContext<KernelTensor> *const context) {
@@ -688,12 +693,13 @@ void KernelActor::RunWithMultiPipeline(OpContext<KernelTensor> *const context) {
   // If the kernel need user data and is dynamic, maybe need input kernel's output user data to infer shape, this value
   // depend case can not handle in KernelTensor auto sync phase currently.
   if (kernel_mod_->need_user_data() && has_dynamic_) {
-    MS_LOG(DEBUG) << "Begin wait runtime pipeline for kernel: " << kernel_->fullname_with_scope();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Begin wait runtime pipeline for kernel: "
+                                         << kernel_->fullname_with_scope();
     if (!WaitRuntimePipelineFinish(context, GetAID().Name())) {
       MS_LOG(INFO) << "Run failed and early stop for kernel: " << kernel_->fullname_with_scope();
       return;
     }
-    MS_LOG(DEBUG) << "End wait runtime pipeline for kernel: " << kernel_->fullname_with_scope();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "End wait runtime pipeline for kernel: " << kernel_->fullname_with_scope();
   }
 
   // 2. Push run task to pipeline.
@@ -708,12 +714,13 @@ void KernelActor::RunWithMultiPipeline(OpContext<KernelTensor> *const context) {
 
   // The computed depend kernel should wait output shape update after kernel launch.
   if (kernel_mod_->IsNeedUpdateOutputShapeAndSize()) {
-    MS_LOG(DEBUG) << "Begin wait runtime pipeline for kernel: " << kernel_->fullname_with_scope();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Begin wait runtime pipeline for kernel: "
+                                         << kernel_->fullname_with_scope();
     if (!WaitRuntimePipelineFinish(context, GetAID().Name())) {
       MS_LOG(INFO) << "Run failed and early stop for kernel: " << kernel_->fullname_with_scope();
       return;
     }
-    MS_LOG(DEBUG) << "End wait runtime pipeline for kernel: " << kernel_->fullname_with_scope();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "End wait runtime pipeline for kernel: " << kernel_->fullname_with_scope();
   }
 
   // 3. Post run.
@@ -730,12 +737,13 @@ void KernelActor::RunWithAsyncLaunchKernel(OpContext<KernelTensor> *const contex
   }
 
   if (kernel_mod_->IsNeedUpdateOutputShapeAndSize()) {
-    MS_LOG(DEBUG) << "Begin wait runtime pipeline for kernel: " << kernel_->fullname_with_scope();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Begin wait runtime pipeline for kernel: "
+                                         << kernel_->fullname_with_scope();
     if (!WaitRuntimePipelineFinish(context, GetAID().Name())) {
       MS_LOG(INFO) << "Run failed and early stop for kernel: " << kernel_->fullname_with_scope();
       return;
     }
-    MS_LOG(DEBUG) << "End wait runtime pipeline for kernel: " << kernel_->fullname_with_scope();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "End wait runtime pipeline for kernel: " << kernel_->fullname_with_scope();
   }
 
   // PostLaunchKernel
@@ -771,8 +779,8 @@ void KernelActor::FetchWorkspaceDeviceTensor() {
       kernel_tensor->set_stream_id(kernel_info_->stream_id());
       auto device_address = kernel_tensor->device_address();
       MS_EXCEPTION_IF_NULL(device_address);
-      MS_LOG(DEBUG) << "Create addr for node:" << common::AnfAlgo::GetNodeDebugString(kernel_)
-                    << " addr:" << device_address;
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+        << "Create addr for node:" << common::AnfAlgo::GetNodeDebugString(kernel_) << " addr:" << device_address;
       AnfAlgo::SetWorkspaceAddr(device_address, i, kernel_);  // set to kernel_info
       (void)workspace_kernel_tensors_.emplace_back(kernel_tensor);
       if (recorder_aid_ != nullptr) {
@@ -821,13 +829,13 @@ void KernelActor::SetSomasMemory(OpContext<KernelTensor> *const context) const {
           device_contexts_[0]->device_res_manager_->FreeMemory(output_device_tensor);
         }
       }
-      MS_LOG(DEBUG) << "Set ptr:" << device_ptr << " to device address:" << output_device_tensor
-                    << " in actor:" << GetAID();
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+        << "Set ptr:" << device_ptr << " to device address:" << output_device_tensor << " in actor:" << GetAID();
       output_device_tensor->set_ptr(device_ptr);
       if (somas_graph_output_indexes_.count(i) || output_device_tensor->new_ref_count() != SIZE_MAX) {
         output_device_tensor->IncreaseNewRefCount(GetAID().Name());
-        MS_LOG(DEBUG) << "Add new ref count for somas output address:" << output_device_tensor
-                      << " in kernel actor:" << GetAID();
+        MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+          << "Add new ref count for somas output address:" << output_device_tensor << " in kernel actor:" << GetAID();
       }
     }
   }
@@ -928,8 +936,9 @@ void KernelActor::SendMemoryFreeReq(OpContext<KernelTensor> *const context) {
     }
     const auto &copy_input_device_tensor = copy_input_kernel_tensor->device_address();
     if ((copy_input_device_tensor != nullptr) && (copy_input_device_tensor->GetPtr() != nullptr)) {
-      MS_LOG(DEBUG) << "Free memory by ref count for device address:" << copy_input_device_tensor->PrintInfo()
-                    << " for actor:" << GetAID();
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+        << "Free memory by ref count for device address:" << copy_input_device_tensor->PrintInfo()
+        << " for actor:" << GetAID();
       MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(copy_input_device_tensor.get(), device_contexts_[0],
                                                               GetAID().Name());
     }
@@ -997,9 +1006,10 @@ void KernelActor::SetMemInfoForRdr() {
 void KernelActor::UpdateDeviceTensorCopyStore(DeviceTensor *const new_device_tensor,
                                               DeviceTensor *const input_device_tensor, size_t input_index) {
   UpdateRefCount(new_device_tensor, true);
-  MS_LOG(DEBUG) << "Add device tensor copy store for device address:" << new_device_tensor
-                << " type:" << new_device_tensor->GetDeviceType() << " and " << input_device_tensor
-                << " type:" << input_device_tensor->GetDeviceType() << " for copy actor:" << GetAID();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+    << "Add device tensor copy store for device address:" << new_device_tensor
+    << " type:" << new_device_tensor->GetDeviceType() << " and " << input_device_tensor
+    << " type:" << input_device_tensor->GetDeviceType() << " for copy actor:" << GetAID();
   DeviceTensorCopyStore::GetInstance().Insert(new_device_tensor, input_device_tensor);
 }
 
@@ -1056,12 +1066,12 @@ void KernelActor::CopyInputDeviceTensor(KernelTensorPtr kernel_tensor, size_t in
     auto pre_stream_id = pre_kernel_tensor->stream_id();
     if (pre_stream_id == UINT32_MAX) {
       auto stream_id = kernel_info_->stream_id();
-      MS_LOG(DEBUG) << "Rewrite kernel tensor : " << new_kernel_tensor
-                    << " stream id with kernel info stream id : " << stream_id << ".";
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Rewrite kernel tensor : " << new_kernel_tensor
+                                           << " stream id with kernel info stream id : " << stream_id << ".";
       new_kernel_tensor->set_stream_id(stream_id);
     } else {
-      MS_LOG(DEBUG) << "Rewrite kernel tensor : " << new_kernel_tensor
-                    << " stream id with pre kernel tensor stream id : " << pre_stream_id << ".";
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Rewrite kernel tensor : " << new_kernel_tensor
+                                           << " stream id with pre kernel tensor stream id : " << pre_stream_id << ".";
       new_kernel_tensor->set_stream_id(pre_stream_id);
     }
 
@@ -1097,7 +1107,8 @@ void KernelActor::CopyInputDeviceTensor(KernelTensorPtr kernel_tensor, size_t in
       SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(strategy_, *context, *(device_contexts_[0]), GetAID().Name(),
                                                   new_device_tensor->GetSize());
     }
-    MS_LOG(DEBUG) << "Increase new ref count for device address:" << new_device_tensor << " in actor:" << GetAID();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "Increase new ref count for device address:" << new_device_tensor << " in actor:" << GetAID();
   }
 
   MS_LOG(INFO) << GetAID().Name() << " the input position:" << input_index
@@ -1205,10 +1216,11 @@ void KernelActor::UpdateMemoryFreeList(OpContext<KernelTensor> *const context) {
     new_memory_free_list_[free_list_index] =
       (pre_input_kernel_tensors_[input_list_index] == nullptr ? input_kernel_tensors_[input_list_index]
                                                               : pre_input_kernel_tensors_[input_list_index]);
-    MS_LOG(DEBUG) << "Add new memory free list for input index:" << input_list_index
-                  << " input kernel tensor:" << input_kernel_tensors_[input_list_index]
-                  << " and pre input kernel tensor:" << pre_input_kernel_tensors_[input_list_index]
-                  << " for kernel actor:" << GetAID();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "Add new memory free list for input index:" << input_list_index
+      << " input kernel tensor:" << input_kernel_tensors_[input_list_index]
+      << " and pre input kernel tensor:" << pre_input_kernel_tensors_[input_list_index]
+      << " for kernel actor:" << GetAID();
     pre_input_kernel_tensors_[input_list_index] = nullptr;
   }
 }
@@ -1237,9 +1249,9 @@ void KernelActor::UpdateRefDeviceAddress(OpContext<KernelTensor> *const context,
     output_device_tensor->set_pointer_ref_count(input_device_tensor->pointer_ref_count());
     output_device_tensor->IncreaseNewRefCount(GetAID().Name());
 
-    MS_LOG(DEBUG) << "Actor:" << GetAID()
-                  << " increase new ref count for device address:" << output_device_tensor->PrintInfo()
-                  << " and input device address:" << input_device_tensor->PrintInfo();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "Actor:" << GetAID() << " increase new ref count for device address:" << output_device_tensor->PrintInfo()
+      << " and input device address:" << input_device_tensor->PrintInfo();
   }
 }
 
@@ -1272,8 +1284,9 @@ void KernelActor::PreLaunchKernel(OpContext<KernelTensor> *) {
     }
     auto &input_device_tensor = input_kernel_tensors_[i]->device_address();
     if (input_device_tensor == nullptr || !input_device_tensor->GetValidPtr(kernel_info_->stream_id())) {
-      MS_LOG(DEBUG) << "For kernel: " << kernel_->fullname_with_scope() << ", input device tensor "
-                    << input_device_tensor << " has no device ptr.";
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+        << "For kernel: " << kernel_->fullname_with_scope() << ", input device tensor " << input_device_tensor
+        << " has no device ptr.";
     }
   }
 
@@ -1283,8 +1296,9 @@ void KernelActor::PreLaunchKernel(OpContext<KernelTensor> *) {
     }
     auto &output_device_tensor = output_kernel_tensors_[i]->device_address();
     if (!output_device_tensor->GetValidPtr(kernel_info_->stream_id())) {
-      MS_LOG(DEBUG) << "For kernel: " << kernel_->fullname_with_scope() << ", output device tensor "
-                    << output_device_tensor << " has no device ptr.";
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+        << "For kernel: " << kernel_->fullname_with_scope() << ", output device tensor " << output_device_tensor
+        << " has no device ptr.";
     }
   }
 
@@ -1294,8 +1308,9 @@ void KernelActor::PreLaunchKernel(OpContext<KernelTensor> *) {
     }
     auto workspace_device_tensor = workspace_kernel_tensors_[i]->device_address().get();
     if (!workspace_device_tensor->GetValidPtr(kernel_info_->stream_id())) {
-      MS_LOG(DEBUG) << "For kernel: " << kernel_->fullname_with_scope() << ", workspace device tensor "
-                    << workspace_device_tensor << " has no device ptr.";
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+        << "For kernel: " << kernel_->fullname_with_scope() << ", workspace device tensor " << workspace_device_tensor
+        << " has no device ptr.";
     }
   }
 }
@@ -1303,7 +1318,8 @@ void KernelActor::PreLaunchKernel(OpContext<KernelTensor> *) {
 void KernelActor::ExecuteInferShapeTask(OpContext<KernelTensor> *const context) {
   ProfilerRecorder profiler(ProfilerModule::kKernel, ProfilerEvent::kKernelInfer, GetAID().Name());
   if (IsRunningFailed(context)) {
-    MS_LOG(DEBUG) << "Run failed and early stop infer shape for kernel: " << kernel_->fullname_with_scope();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Run failed and early stop infer shape for kernel: "
+                                         << kernel_->fullname_with_scope();
     return;
   }
 
@@ -1320,7 +1336,8 @@ void KernelActor::ExecuteInferShapeTask(OpContext<KernelTensor> *const context) 
 void KernelActor::ExecuteResizeKernelModTask(OpContext<KernelTensor> *const context) {
   ProfilerRecorder profiler(ProfilerModule::kKernel, ProfilerEvent::kKernelResize, GetAID().Name());
   if (IsRunningFailed(context)) {
-    MS_LOG(DEBUG) << "Run failed and early stop resize for kernel: " << kernel_->fullname_with_scope();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Run failed and early stop resize for kernel: "
+                                         << kernel_->fullname_with_scope();
     return;
   }
   bool view_input = false;
@@ -1347,7 +1364,8 @@ void KernelActor::ExecuteResizeKernelModTask(OpContext<KernelTensor> *const cont
 
 void KernelActor::ExecuteLaunchKernelTask(OpContext<KernelTensor> *const context) {
   if (IsRunningFailed(context)) {
-    MS_LOG(DEBUG) << "Run failed and early stop launch kernel: " << kernel_->fullname_with_scope();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Run failed and early stop launch kernel: "
+                                         << kernel_->fullname_with_scope();
     return;
   }
   // 1. Allocate memory.
@@ -1362,7 +1380,8 @@ void KernelActor::ExecuteLaunchKernelTask(OpContext<KernelTensor> *const context
   }
 
   if (IsRunningFailed(context)) {
-    MS_LOG(DEBUG) << "Run failed and early stop launch kernel: " << kernel_->fullname_with_scope();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Run failed and early stop launch kernel: "
+                                         << kernel_->fullname_with_scope();
     return;
   }
   // For performance, Only kernel need user data (such as PyExecute op) need call 'PreLaunchKernel', the
@@ -1472,26 +1491,26 @@ void KernelActor::InferAndResize(OpContext<KernelTensor> *const context) {
 }
 
 void KernelActor::InferShapeAndType() {
-  MS_LOG(DEBUG) << "Begin InferShapeAnyType for kernel: " << kernel_->fullname_with_scope()
-                << ", inputs: " << input_kernel_tensors_for_infer_;
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Begin InferShapeAnyType for kernel: " << kernel_->fullname_with_scope()
+                                       << ", inputs: " << input_kernel_tensors_for_infer_;
   // 1. Infer operator's output's Shape and Type.
   auto abstract = opt::dynamic_shape::InferShapeAndType(kernel_mod_->primitive(), input_kernel_tensors_for_infer_);
   MS_EXCEPTION_IF_NULL(abstract);
-  MS_LOG(DEBUG) << "End InferShapeAnyType for kernel: " << kernel_->fullname_with_scope()
-                << ", abstract: " << abstract->ToString();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "End InferShapeAnyType for kernel: " << kernel_->fullname_with_scope()
+                                       << ", abstract: " << abstract->ToString();
   // 2. Update shape of output kernel tensor.
   opt::dynamic_shape::UpdateKernelTensorType(abstract->GetType(), output_launch_tensors_);
   opt::dynamic_shape::UpdateKernelTensorShape(abstract->GetShape(), output_launch_tensors_);
 }
 
 void KernelActor::InferShape() {
-  MS_LOG(DEBUG) << "Begin InferShape for kernel: " << kernel_->fullname_with_scope()
-                << ", inputs: " << input_kernel_tensors_for_infer_;
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Begin InferShape for kernel: " << kernel_->fullname_with_scope()
+                                       << ", inputs: " << input_kernel_tensors_for_infer_;
   // 1. Infer operator's output's Shape.
   auto base_shape = opt::dynamic_shape::InferShape(kernel_mod_->primitive(), input_kernel_tensors_for_infer_);
   MS_EXCEPTION_IF_NULL(base_shape);
-  MS_LOG(DEBUG) << "End InferShape for kernel: " << kernel_->fullname_with_scope()
-                << ", shape: " << base_shape->ToString();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "End InferShape for kernel: " << kernel_->fullname_with_scope()
+                                       << ", shape: " << base_shape->ToString();
 
   // 2. Update shape of output kernel tensor.
   opt::dynamic_shape::UpdateKernelTensorShape(base_shape, output_launch_tensors_);
@@ -1499,11 +1518,11 @@ void KernelActor::InferShape() {
 
 void KernelActor::ResizeKernelMod() {
   ProfilerRecorder profiler(ProfilerModule::kKernel, ProfilerEvent::kKernelResizeInner, GetAID().Name(), true);
-  MS_LOG(DEBUG) << "Begin Resize kernel mod for kernel: " << kernel_->fullname_with_scope();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Begin Resize kernel mod for kernel: " << kernel_->fullname_with_scope();
   int ret = kernel_mod_->Resize(input_launch_tensors_, output_launch_tensors_);
-  MS_LOG(DEBUG) << "End Resize kernel mod for kernel: " << kernel_->fullname_with_scope()
-                << ", the output size list: " << kernel_mod_->GetOutputSizeList()
-                << ", workspace size list: " << kernel_mod_->GetWorkspaceSizeList();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "End Resize kernel mod for kernel: " << kernel_->fullname_with_scope()
+                                       << ", the output size list: " << kernel_mod_->GetOutputSizeList()
+                                       << ", workspace size list: " << kernel_mod_->GetWorkspaceSizeList();
   if (ret != kernel::KRET_OK) {
     MS_LOG_WITH_NODE(EXCEPTION, kernel_) << "Resize failed for kernel: " << kernel_->fullname_with_scope();
   }
@@ -1518,7 +1537,7 @@ void KernelActor::DispatchDebugActor(OpContext<KernelTensor> *const context) {
 }
 
 bool KernelActor::LaunchKernelWithDebug(OpContext<KernelTensor> *const context, const bool skip_launch) {
-  MS_LOG(DEBUG) << "Begin launch kernel: " << kernel_->fullname_with_scope();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Begin launch kernel: " << kernel_->fullname_with_scope();
   static bool is_enable_mem_tracker = device::tracker::MemTrackerManager::GetInstance().IsEnabled();
   if (is_enable_mem_tracker) {
     AddNodeToGraphTracker(kernel_, GetAID().Name());
@@ -1533,7 +1552,7 @@ bool KernelActor::LaunchKernelWithDebug(OpContext<KernelTensor> *const context, 
     ret = device_contexts_[0]->GetKernelExecutor(false)->LaunchKernel(
       kernel_, input_launch_tensors_, workspace_launch_tensors_, output_launch_tensors_, kernel_mod_, stream_);
   }
-  MS_LOG(DEBUG) << "End launch kernel: " << kernel_->fullname_with_scope();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "End launch kernel: " << kernel_->fullname_with_scope();
   DispatchDebugActor(context);
   return ret;
 }
@@ -1560,8 +1579,8 @@ bool KernelActor::LaunchKernel(OpContext<KernelTensor> *const context, bool is_s
   }
   static bool is_enable_mem_tracker = device::tracker::MemTrackerManager::GetInstance().IsEnabled();
   if (skip_launch_shape_related_op_) {
-    MS_LOG(DEBUG) << "Skip launch real make tuple kernel: " << kernel_->fullname_with_scope()
-                  << " input kernel tensor: " << input_kernel_tensors_;
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Skip launch real make tuple kernel: " << kernel_->fullname_with_scope()
+                                         << " input kernel tensor: " << input_kernel_tensors_;
     if (is_enable_mem_tracker) {
       AddNodeToGraphTracker(kernel_, GetAID().Name());
       TrackInputOutputMemory(input_launch_tensors_, output_launch_tensors_, GetAID().Name(), depend_shape_input_list_);
@@ -1582,7 +1601,7 @@ bool KernelActor::LaunchKernel(OpContext<KernelTensor> *const context, bool is_s
     MS_EXCEPTION_IF_NULL(input_device_tensor);
     auto &output_device_tensor = output_kernel_tensors_[0]->device_address();
     if (input_device_tensor->GetPtr() == output_device_tensor->GetPtr()) {
-      MS_LOG(DEBUG) << "Skipped launch kernel: " << kernel_->fullname_with_scope();
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Skipped launch kernel: " << kernel_->fullname_with_scope();
       DispatchDebugActor(context);
       if (is_enable_mem_tracker) {
         AddNodeToGraphTracker(kernel_, GetAID().Name());
@@ -1689,17 +1708,18 @@ void KernelActor::ProcessMultiStreamBeforeKernelLaunch(OpContext<KernelTensor> *
       continue;
     }
     if (input_kernel_tensor->task_id_on_stream() == nullptr) {
-      MS_LOG(DEBUG) << "Input_kernel_tensor : " << input_kernel_tensor
-                    << " task id on stream is nullptr, will skip multi stream process.";
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Input_kernel_tensor : " << input_kernel_tensor
+                                           << " task id on stream is nullptr, will skip multi stream process.";
       continue;
     }
     if (input_kernel_tensor->managed_by_somas()) {
-      MS_LOG(DEBUG) << "Input_kernel_tensor : " << input_kernel_tensor << " is managed by somas.";
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL)
+        << "Input_kernel_tensor : " << input_kernel_tensor << " is managed by somas.";
       continue;
     }
     // Nullptr device ptr is normal case, here need skip these inputs.
     if (input_kernel_tensor->device_ptr() == nullptr) {
-      MS_LOG(DEBUG) << "Input kernel tensor device ptr is nullptr.";
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Input kernel tensor device ptr is nullptr.";
       continue;
     }
     (void)cross_stream_addresses_.emplace_back(kDefaultStreamIndex, input_kernel_tensor->device_ptr());
@@ -1759,8 +1779,8 @@ void KernelActor::ProcessMultiStreamAfterKernelLaunch(OpContext<KernelTensor> *c
 
     // Record event.
     if (!cross_stream_addresses_.empty()) {
-      MS_LOG(DEBUG) << "Record event for kernel : " << kernel_->fullname_with_scope()
-                    << ", addresses size : " << cross_stream_addresses_.size() << ".";
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Record event for kernel : " << kernel_->fullname_with_scope()
+                                           << ", addresses size : " << cross_stream_addresses_.size() << ".";
       // Record event on stream.
       auto device_context = device_contexts_[0];
       auto &multi_stream_controller =
@@ -1817,7 +1837,8 @@ void KernelActor::RefreshDeviceTensorCopyStore(OpContext<KernelTensor> *const co
     auto input_device_tensor = input_kernel_tensor->device_address().get();
     MS_EXCEPTION_IF_NULL(input_device_tensor);
     auto need_refreshed_device_tensors = DeviceTensorCopyStore::GetInstance().Fetch(input_device_tensor);
-    MS_LOG(DEBUG) << "Fetch input copy device tensor:" << input_device_tensor << " for actor:" << GetAID();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "Fetch input copy device tensor:" << input_device_tensor << " for actor:" << GetAID();
     if (need_refreshed_device_tensors == nullptr) {
       continue;
     }
@@ -1847,7 +1868,8 @@ void KernelActor::RefreshDeviceTensorCopyStore(OpContext<KernelTensor> *const co
     auto output_device_tensor = output_kernel_tensor->device_address().get();
     MS_EXCEPTION_IF_NULL(output_device_tensor);
     auto need_refreshed_device_tensors = DeviceTensorCopyStore::GetInstance().Fetch(output_device_tensor);
-    MS_LOG(DEBUG) << "Fetch output copy device tensor:" << output_device_tensor << " for actor:" << GetAID();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "Fetch output copy device tensor:" << output_device_tensor << " for actor:" << GetAID();
     if (need_refreshed_device_tensors == nullptr) {
       continue;
     }

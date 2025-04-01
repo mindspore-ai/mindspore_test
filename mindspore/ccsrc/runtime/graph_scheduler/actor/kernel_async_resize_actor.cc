@@ -62,11 +62,11 @@ void KernelAsyncResizeActor::Wait() {
   if (thread_id_ == std::this_thread::get_id()) {
     return;
   }
-  MS_LOG(DEBUG) << "Begin wait kernel resize finish";
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Begin wait kernel resize finish";
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kWaitKernelsResizeFinish, GetAID().Name());
   Future<bool> f = Async(this->GetAID(), &KernelAsyncResizeActor::OnTaskFinish);
   f.Wait();
-  MS_LOG(DEBUG) << "End wait kernel resize finish";
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "End wait kernel resize finish";
 }
 
 Future<bool> KernelAsyncResizeActor::OnTaskFinish() { return Future<bool>(true); }

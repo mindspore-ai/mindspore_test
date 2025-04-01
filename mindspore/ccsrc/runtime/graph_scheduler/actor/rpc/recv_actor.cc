@@ -238,6 +238,7 @@ void RecvActor::EraseInput(const OpContext<KernelTensor> *context) {
 void RecvActor::Run(OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);
   MS_EXCEPTION_IF_NULL(kernel_info_);
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR) << "Recv actor:" << GetAID() << " start run.";
   auto recv_kernel_mod = dynamic_cast<kernel::RpcKernelMod *>(kernel_info_->MutableKernelMod());
   MS_EXCEPTION_IF_NULL(recv_kernel_mod);
   auto remote_input = recv_kernel_mod->GetRemoteInput();
@@ -248,6 +249,7 @@ void RecvActor::Run(OpContext<KernelTensor> *const context) {
     return;
   }
   KernelActor::Run(context);
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR) << "Recv actor:" << GetAID() << " end run.";
 }
 
 void *RecvActor::AllocateMessage(size_t size) {

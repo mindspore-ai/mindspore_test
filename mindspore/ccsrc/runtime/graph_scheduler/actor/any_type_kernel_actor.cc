@@ -82,9 +82,10 @@ void AnyTypeKernelActor::FetchInputDeviceTensor(OpContext<KernelTensor> *const c
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
     }
     input_kernel_tensors_[device_tensor_store_key.first] = kernel_tensor;
-    MS_LOG(DEBUG) << "Fetch device tensor store:" << kernel_tensor->PrintInfo()
-                  << " by key:" << device_tensor_store_key.second->DebugString()
-                  << " index:" << device_tensor_store_key.first << " for actor:" << GetAID();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "Fetch device tensor store:" << kernel_tensor->PrintInfo()
+      << " by key:" << device_tensor_store_key.second->DebugString() << " index:" << device_tensor_store_key.first
+      << " for actor:" << GetAID();
   }
 }
 
@@ -236,9 +237,10 @@ void InferParameterAbstractForModelGraph(const KernelGraphPtr &graph,
     MS_LOG(DEBUG) << "Infer parameter by abstract:" << abstract->ToString();
     if (!abstract->isa<abstract::AbstractSequence>()) {
       MS_EXCEPTION_IF_NULL(kernel_tensor->device_address());
-      MS_LOG(DEBUG) << "Set abstract:" << abstract->ToString() << " for input node:" << input_node->DebugString()
-                    << " device tensor:" << kernel_tensor->device_address()
-                    << " type id:" << kernel_tensor->device_address()->type_id();
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+        << "Set abstract:" << abstract->ToString() << " for input node:" << input_node->DebugString()
+        << " device tensor:" << kernel_tensor->device_address()
+        << " type id:" << kernel_tensor->device_address()->type_id();
       input_node->set_abstract(abstract);
       continue;
     }
@@ -253,8 +255,9 @@ void InferParameterAbstractForModelGraph(const KernelGraphPtr &graph,
       seq_abstract->set_dynamic_len_element_abs(seq_abstract->elements()[0]->Clone());
     }
     MS_EXCEPTION_IF_NULL(kernel_tensor->device_address());
-    MS_LOG(DEBUG) << "Set abstract:" << seq_abstract->ToString() << " for input node:" << input_node->DebugString()
-                  << kernel_tensor->device_address() << " type id:" << kernel_tensor->device_address()->type_id();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "Set abstract:" << seq_abstract->ToString() << " for input node:" << input_node->DebugString()
+      << kernel_tensor->device_address() << " type id:" << kernel_tensor->device_address()->type_id();
     input_node->set_abstract(seq_abstract);
   }
 }
@@ -323,9 +326,10 @@ void AnyTypeKernelActor::UpdataDynamicShapeParameterForGraphInput(OpContext<Kern
       MS_EXCEPTION_IF_NULL(abstract);
       MS_EXCEPTION_IF_NULL(abstract->BuildType());
       MS_EXCEPTION_IF_NULL(abstract->BuildShape());
-      MS_LOG(DEBUG) << "actor:" << GetAID() << " set shape by abstract:" << abstract->ToString()
-                    << " shape:" << abstract->BuildShape()->ToString() << " type:" << abstract->BuildType()->ToString()
-                    << " for device address:" << input_kernel_tensors_[i]->device_address();
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+        << "actor:" << GetAID() << " set shape by abstract:" << abstract->ToString()
+        << " shape:" << abstract->BuildShape()->ToString() << " type:" << abstract->BuildType()->ToString()
+        << " for device address:" << input_kernel_tensors_[i]->device_address();
       input_kernel_tensors_[i]->SetType(abstract->BuildType());
       input_kernel_tensors_[i]->SetShape(abstract->BuildShape());
       MS_LOG(DEBUG) << "Infer abstract:" << abstract->ToString();
@@ -373,11 +377,13 @@ void PrepareValueNode(const AnfNodePtr &node, KernelTensor *kernel_tensor) {
     if (!device_context->device_res_manager_->AllocateMemory(device_tensor)) {
       MS_LOG(EXCEPTION) << "Failed to allocate memory for device tensor store:" << device_tensor;
     }
-    MS_LOG(DEBUG) << "Device address:" << device_tensor << " allocate ptr:" << device_tensor->GetPtr()
-                  << " for value node:" << node->DebugString();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "Device address:" << device_tensor << " allocate ptr:" << device_tensor->GetPtr()
+      << " for value node:" << node->DebugString();
   } else {
-    MS_LOG(DEBUG) << "Device address:" << device_tensor << " already has ptr:" << device_tensor->GetPtr()
-                  << " for value node:" << node->DebugString();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "Device address:" << device_tensor << " already has ptr:" << device_tensor->GetPtr()
+      << " for value node:" << node->DebugString();
   }
 
   if (!device_tensor->SyncHostToDevice(kernel_tensor->GetShapeVector(), kernel_tensor->size(),
@@ -385,8 +391,9 @@ void PrepareValueNode(const AnfNodePtr &node, KernelTensor *kernel_tensor) {
     MS_LOG_WITH_NODE(EXCEPTION, node) << "Failed to sync data for value node:" << node->DebugString();
   }
 
-  MS_LOG(DEBUG) << "Device address:" << device_tensor << " ptr:" << device_tensor->GetPtr()
-                << " for value node:" << node->DebugString();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+    << "Device address:" << device_tensor << " ptr:" << device_tensor->GetPtr()
+    << " for value node:" << node->DebugString();
 }
 
 void PersisitValueNode(const KernelGraphPtr &graph, const DeviceContext *device_context) {
@@ -441,8 +448,8 @@ void PersisitValueNode(const KernelGraphPtr &graph, const DeviceContext *device_
     if (real_device_context == device_context) {
       continue;
     }
-    MS_LOG(DEBUG) << "Handle device tensor store for backoff kernel:" << kernel->fullname_with_scope()
-                  << " in graph:" << graph->ToString();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Handle device tensor store for backoff kernel:"
+                                         << kernel->fullname_with_scope() << " in graph:" << graph->ToString();
     MS_EXCEPTION_IF_NULL(real_device_context);
     for (size_t i = 0; i < common::AnfAlgo::GetInputNum(kernel); ++i) {
       auto input_node = common::AnfAlgo::GetInputNode(kernel, i);
@@ -688,7 +695,7 @@ void AnyTypeKernelActor::Run(OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);
   MS_EXCEPTION_IF_NULL(model_graph_);
   actor_state_ = AnyTypeKernelActorState::kAnyTypeKernelActorSendInput;
-  MS_LOG(DEBUG) << "Any type kernel actor:" << GetAID() << " run.";
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR) << "Any type kernel actor:" << GetAID() << " run.";
   FetchInputDeviceTensor(context);
   if (!WaitRuntimePipelineFinish(context, GetAID().Name())) {
     MS_LOG(INFO) << "Run failed and early stop.";
@@ -708,6 +715,7 @@ void AnyTypeKernelActor::Run(OpContext<KernelTensor> *const context) {
   }
   EraseInput(context);
   PostRun(context);
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR) << "Any type kernel actor:" << GetAID() << " end run.";
 }
 
 void AnyTypeKernelActor::RunForGraphInput(OpContext<KernelTensor> *const context) {
@@ -947,7 +955,8 @@ void FreeMemory(DeviceTensor *device_tensor) {
   if (device_context == nullptr || device_context->device_res_manager_ == nullptr) {
     return;
   }
-  MS_LOG(DEBUG) << "Device tensor:" << device_tensor << " release memory:" << device_tensor->GetMutablePtr();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+    << "Device tensor:" << device_tensor << " release memory:" << device_tensor->GetMutablePtr();
   device_context->device_res_manager_->FreeMemory(device_tensor->GetMutablePtr());
   device_tensor->set_ptr(nullptr);
 }
@@ -1074,9 +1083,9 @@ void AnyTypeKernelActor::UpdateOutputData(OpData<KernelTensor> *const output_dat
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info.str());
   }
   output_data->data_ = AnfAlgo::GetOutputKernelTensor(output_node, data_arrow->from_output_index_, false);
-  MS_LOG(DEBUG) << "Set output address:" << output_data->data_
-                << " to output data, output index:" << data_arrow->from_output_index_ << " node:" << output_node
-                << " in actor:" << GetAID();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+    << "Set output address:" << output_data->data_ << " to output data, output index:" << data_arrow->from_output_index_
+    << " node:" << output_node << " in actor:" << GetAID();
 }
 }  // namespace runtime
 }  // namespace mindspore

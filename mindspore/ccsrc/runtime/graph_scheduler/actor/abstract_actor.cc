@@ -59,16 +59,17 @@ void AbstractActor::RunOpData(OpData<KernelTensor> *const input_data, OpContext<
   (void)input_op_datas_[sequential_num].emplace_back(input_data);
 
   auto is_run = CheckRunningCondition(context);
-  MS_LOG(DEBUG) << "Actor(" << GetAID().Name() << ") receive the input op data and check running condition:" << is_run
-                << ", sequential num:" << sequential_num << ", the input data:" << input_data->data_
-                << ", device address:" << device_tensor << " input index:" << input_data->index_
-                << ", size:" << device_tensor->GetSize() << " ptr:" << device_tensor->GetMutablePtr()
-                << ", origin ref count:" << device_tensor->original_ref_count()
-                << ", current ref count:" << device_tensor->ref_count()
-                << ", dynamic ref count:" << device_tensor->dynamic_ref_count()
-                << ", new ref count:" << device_tensor->new_ref_count() << ", flag:" << device_tensor->flag()
-                << " user data:" << device_tensor->user_data() << " from memory pool:" << device_tensor->from_mem_pool()
-                << " device type:" << device_tensor->GetDeviceType();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+    << "Actor(" << GetAID().Name() << ") receive the input op data and check running condition:" << is_run
+    << ", sequential num:" << sequential_num << ", the input data:" << input_data->data_
+    << ", device address:" << device_tensor << " input index:" << input_data->index_
+    << ", size:" << device_tensor->GetSize() << " ptr:" << device_tensor->GetMutablePtr()
+    << ", origin ref count:" << device_tensor->original_ref_count()
+    << ", current ref count:" << device_tensor->ref_count()
+    << ", dynamic ref count:" << device_tensor->dynamic_ref_count()
+    << ", new ref count:" << device_tensor->new_ref_count() << ", flag:" << device_tensor->flag()
+    << " user data:" << device_tensor->user_data() << " from memory pool:" << device_tensor->from_mem_pool()
+    << " device type:" << device_tensor->GetDeviceType();
   if (is_run) {
     Run(context);
   }
@@ -79,9 +80,10 @@ void AbstractActor::RunOpControl(AID *const input_control, OpContext<KernelTenso
   (void)input_op_controls_[sequential_num].emplace_back(input_control);
 
   auto is_run = CheckRunningCondition(context);
-  MS_LOG(DEBUG) << "Actor(" << GetAID().Name()
-                << ") receive the input op control from:" << (input_control == nullptr ? "null" : input_control->Name())
-                << " and check running condition:" << is_run << ", sequential num:" << sequential_num;
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR_MSG)
+    << "Actor(" << GetAID().Name()
+    << ") receive the input op control from:" << (input_control == nullptr ? "null" : input_control->Name())
+    << " and check running condition:" << is_run << ", sequential num:" << sequential_num;
   if (is_run) {
     Run(context);
   }
@@ -91,8 +93,8 @@ void AbstractActor::RunBatchOpData(std::vector<OpData<KernelTensor> *> *const ba
                                    OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);
   MS_EXCEPTION_IF_NULL(batch_input_data);
-  MS_LOG(DEBUG) << "Actor(" << GetAID().Name()
-                << ") receive the batch input op data, sequential num:" << context->sequential_num_;
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR_MSG)
+    << "Actor(" << GetAID().Name() << ") receive the batch input op data, sequential num:" << context->sequential_num_;
   for (auto &input_data : *batch_input_data) {
     RunOpData(input_data, context);
   }
@@ -273,6 +275,7 @@ void AbstractActor::SendOutputData(
       }
     }
   }
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR) << "SendOutputData End";
 }
 
 void AbstractActor::SendOutput(OpContext<KernelTensor> *const context) {
@@ -328,9 +331,9 @@ bool AbstractActor::IsOutputAddressPersisted(const DeviceTensor *output_device_t
                                              const KernelWithIndex &output_node) {
   MS_EXCEPTION_IF_NULL(output_node.first);
   MS_EXCEPTION_IF_NULL(output_device_tensor);
-  MS_LOG(DEBUG) << "Check persist for device address:" << output_device_tensor
-                << " for node:" << output_node.first->DebugString()
-                << " full name:" << output_node.first->fullname_with_scope() << " index:" << output_node.second;
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+    << "Check persist for device address:" << output_device_tensor << " for node:" << output_node.first->DebugString()
+    << " full name:" << output_node.first->fullname_with_scope() << " index:" << output_node.second;
   // The persisted address can't be replaced.
   if (output_device_tensor->is_ptr_persisted()) {
     return true;
@@ -356,17 +359,20 @@ bool AbstractActor::IsOutputAddressPersisted(const DeviceTensor *output_device_t
     }
   }
   if (output_device_tensor->new_ref_count() == SIZE_MAX) {
-    MS_LOG(DEBUG) << "Ref count of device address:" << output_device_tensor << " is max, should copy output.";
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "Ref count of device address:" << output_device_tensor << " is max, should copy output.";
     return true;
   }
   return false;
 }
 
 void AbstractActor::InsertParameterIndexs(size_t to_kernel_idx, ParameterInfo cur_front_node_info) {
-  MS_LOG(DEBUG) << "Actor: " << GetAID().Name() << ", insert parameter index, to index: " << to_kernel_idx
-                << ", parameter info.first, kernel with index: " << cur_front_node_info.first.first->DebugString()
-                << ", " << cur_front_node_info.first.second
-                << ", parameter info.second: " << cur_front_node_info.second;
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Actor: " << GetAID().Name()
+                                       << ", insert parameter index, to index: " << to_kernel_idx
+                                       << ", parameter info.first, kernel with index: "
+                                       << cur_front_node_info.first.first->DebugString() << ", "
+                                       << cur_front_node_info.first.second
+                                       << ", parameter info.second: " << cur_front_node_info.second;
   parameter_indexs_.push_back({to_kernel_idx, cur_front_node_info});
 }
 }  // namespace runtime

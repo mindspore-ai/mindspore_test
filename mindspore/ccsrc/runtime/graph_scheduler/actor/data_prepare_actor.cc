@@ -468,8 +468,9 @@ void DataPrepareActor::UpdateDynamicShapeAndSize(const AnfNodePtr &input_node, c
   };
   if (kNormalFormat.find(device_format) != kNormalFormat.end()) {
     auto tensor_data_size = input_tensor->data().nbytes();
-    MS_LOG(DEBUG) << "Set device address:" << device_address << " size from:" << device_address->GetSize()
-                  << " to:" << tensor_data_size;
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "Set device address:" << device_address << " size from:" << device_address->GetSize()
+      << " to:" << tensor_data_size;
     device_address->SetSize(tensor_data_size);
   } else {
     MS_LOG(DEBUG) << "Update data node device address size";
@@ -509,8 +510,8 @@ void DataPrepareActor::UpdateDeviceAddressForDataNode(const AnfNodePtr &input_no
 
   tensor_address->set_flag(device_address->flag());
   AnfAlgo::SetOutputAddr(tensor_address, 0, input_node);
-  MS_LOG(DEBUG) << "Update device address of " << input_node->DebugString() << " to " << tensor_address.get()
-                << " ptr:" << tensor_address->GetPtr();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Update device address of " << input_node->DebugString() << " to "
+                                               << tensor_address.get() << " ptr:" << tensor_address->GetPtr();
   tensor_address->SetNodeIndex(input_node, 0);
   tensor_address->set_original_ref_count(SIZE_MAX);
   tensor_address->ResetRefCount();
@@ -523,9 +524,9 @@ void DataPrepareActor::UpdateDeviceAddressForDataNode(const AnfNodePtr &input_no
       continue;
     }
     ref_address->set_pointer_ref_count(tensor_address->pointer_ref_count());
-    MS_LOG(DEBUG) << "Set pointer ref count:" << tensor_address->pointer_ref_count()
-                  << " from node:" << input_node->DebugString() << " device address:" << tensor_address
-                  << " to device address:" << ref_address;
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "Set pointer ref count:" << tensor_address->pointer_ref_count() << " from node:" << input_node->DebugString()
+      << " device address:" << tensor_address << " to device address:" << ref_address;
   }
 }
 
@@ -1047,8 +1048,9 @@ void DataPrepareActor::PrepareDataForValueNodeTensor(const ValueNodePtr &node, c
   UpdateRefCount(device_tensor.get(), true);
 
   SyncTensorData(tensor, kernel_tensor, node, device_context, context, real_strategy_);
-  MS_LOG(DEBUG) << "Prepare device data for value node: " << node->DebugString() << ", output index: " << 0
-                << " device address:" << device_tensor << " ptr:" << device_tensor->GetPtr();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+    << "Prepare device data for value node: " << node->DebugString() << ", output index: " << 0
+    << " device address:" << device_tensor << " ptr:" << device_tensor->GetPtr();
   CopyDataFromDeviceTensorStore(front_node, node, device_tensor, device_context, context);
 }
 
@@ -1402,7 +1404,8 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
         host_kernel_tensor = kernel_tensor;
         host_tensor_address = host_kernel_tensor->device_address();
         MS_EXCEPTION_IF_NULL(host_tensor_address);
-        MS_LOG(DEBUG) << "Create device tensor:" << host_tensor_address << " type:" << host_tensor_address->type_id();
+        MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+          << "Create device tensor:" << host_tensor_address << " type:" << host_tensor_address->type_id();
         host_tensor_address->set_from_persistent_mem(tensor->is_parameter());
       } else {
         host_tensor_address = device_tensor;
