@@ -548,6 +548,7 @@ void TraceRecorder::NewFuncGraphNode(const py::tuple &info, const py::args &inpu
       (void)node_inputs.emplace_back(new_param);
     }
   }
+  parse::ClearCNodeAbstract(jit_fg);
   (void)node_inputs.insert(node_inputs.cbegin(), NewValueNode(jit_fg));
   AnfNodePtr cnode = graph_stack_.top()->NewCNodeInOrder(node_inputs);
   if (cnode->debug_info() != nullptr) {

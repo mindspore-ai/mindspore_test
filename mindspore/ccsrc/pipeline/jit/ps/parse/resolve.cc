@@ -165,15 +165,6 @@ ValuePtr GetParameterValue(const py::object &param_obj) {
   return tensor::ConvertToTensorPyWrapper(param_obj);
 }
 
-namespace {
-std::string GetPyObjId(const py::object &obj) {
-  py::object out = python_adapter::CallPyFn(parse::PYTHON_MOD_PARSE_MODULE, parse::PYTHON_MOD_GET_OBJ_ID, obj);
-  if (py::isinstance<py::none>(out)) {
-    MS_LOG(INTERNAL_EXCEPTION) << "Get pyobj failed";
-  }
-  return out.cast<std::string>();
-}
-
 void ClearCNodeAbstract(const FuncGraphPtr &func_graph) {
   std::vector<AnfNodePtr> nodes = TopoSort(func_graph->get_return(), SuccDeeperSimple, AlwaysInclude);
   static const auto enable_eliminate_unused_element = (common::GetCompileConfig("ENABLE_DDE") != "0");
@@ -204,6 +195,15 @@ void ClearCNodeAbstract(const FuncGraphPtr &func_graph) {
       MS_LOG(DEBUG) << "Abstract of node " << node->DebugString() << " is set to nullptr";
     }
   }
+}
+
+namespace {
+std::string GetPyObjId(const py::object &obj) {
+  py::object out = python_adapter::CallPyFn(parse::PYTHON_MOD_PARSE_MODULE, parse::PYTHON_MOD_GET_OBJ_ID, obj);
+  if (py::isinstance<py::none>(out)) {
+    MS_LOG(INTERNAL_EXCEPTION) << "Get pyobj failed";
+  }
+  return out.cast<std::string>();
 }
 
 bool HasConstArgAttr(const py::object &obj) {
