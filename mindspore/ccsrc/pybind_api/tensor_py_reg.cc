@@ -31,6 +31,7 @@
 #include "include/common/pynative/adapter.h"
 #include "include/common/utils/exception.h"
 #include "include/common/utils/pyobj_manager.h"
+#include "runtime/pipeline/pipeline.h"
 
 namespace mindspore {
 namespace tensor {
@@ -839,6 +840,7 @@ static PyObject *TensorPython_offload(PyObject *self, PyObject *args) {
   if (!PyArg_ParseTuple(args, "s", &file_path)) {
     return nullptr;
   }
+  runtime::Pipeline::Get().WaitForward();
   PyType<TensorPy> *tensor = (PyType<TensorPy> *)self;
   bool success = tensor->value.Offload(file_path);
   return PyBool_FromLong(success);
@@ -1008,6 +1010,7 @@ static PyObject *TensorPython_SetOffload(PyObject *self, PyObject *args) {
   if (!PyArg_ParseTuple(args, "OO", &tensor_obj, &releaseObj)) {
     return nullptr;
   }
+  runtime::Pipeline::Get().WaitForward();
   PyType<TensorPy> *tensor = (PyType<TensorPy> *)tensor_obj;
   bool release = (PyObject_IsTrue(releaseObj) == 1);
   auto tensorTmp = tensor->value.GetBaseTensor();
