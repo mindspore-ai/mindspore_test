@@ -43,6 +43,8 @@ class COMMON_EXPORT SilentCheckerBase {
 
   virtual void Clear() {}
 
+  virtual void ClearCheckObjects() {}
+
   virtual bool IsNpuAsdEnable() { return false; }
 
   virtual void SetBackProp(bool is_back_prop) {}
