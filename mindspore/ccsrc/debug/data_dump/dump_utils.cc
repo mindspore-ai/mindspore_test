@@ -291,6 +291,10 @@ bool LoadMemToHost(const device::DeviceAddress &addr, const std::string &tensor_
     MS_LOG(INFO) << tensor_name << " size is 0, skip it.";
     return true;
   }
+  if (addr.GetPtr() == nullptr) {
+    MS_LOG(INFO) << tensor_name << " device address ptr is null, skip it.";
+    return true;
+  }
   auto debugger = Debugger::GetInstance();
   MS_EXCEPTION_IF_NULL(debugger);
   if (debugger->TensorExistsInCurrent(tensor_name) && !force_update) {

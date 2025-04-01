@@ -90,9 +90,11 @@ std::vector<size_t> CheckRealOutput(const std::string &node_name, const size_t &
  * Description: Get Valid Tensor indexes.
  */
 std::vector<size_t> GetValidDumpIndex(const CNodePtr &cnode, size_t index_size, bool is_input,
-                                      const DeviceContext *device_context) {
-  std::vector<size_t> valid_indexes;
+                                      const DeviceContext *device_context,
+                                      const std::vector<device::DeviceAddress *> &tensors) {
+  std::vector<size_t> valid_indexes, temp_indexes;
   valid_indexes.reserve(index_size);
+  temp_indexes.reserve(index_size);
   if (is_input) {
     std::vector<size_t> ignored_address;
     auto kernel_mod = AnfAlgo::GetKernelMod(cnode);
@@ -107,11 +109,19 @@ std::vector<size_t> GetValidDumpIndex(const CNodePtr &cnode, size_t index_size, 
       if (ignored_address_set.find(index) != ignored_address_set.end()) {
         continue;
       }
-      valid_indexes.push_back(index);
+      temp_indexes.push_back(index);
     }
   } else {
     auto node_name = common::AnfAlgo::GetCNodeName(cnode);
-    valid_indexes = CheckRealOutput(node_name, index_size);
+    temp_indexes = CheckRealOutput(node_name, index_size);
+  }
+  for (size_t index : temp_indexes) {
+    if (tensors.size() > index && tensors[index]->GetPtr() == nullptr) {
+      MS_LOG(INFO) << cnode->fullname_with_scope() << (is_input ? " input" : " output") << ", index " << index
+                   << " deviceaddress is nullptr.";
+      continue;
+    }
+    valid_indexes.push_back(index);
   }
   return valid_indexes;
 }
@@ -221,13 +231,9 @@ void LoadInputs(const CNodePtr &cnode, std::vector<device::DeviceAddress *> devi
   }
 
   auto input_size = device_tensors.size();
-  for (size_t j = 0; j < input_size; ++j) {
-    // Ignore the input address that is not used in the kernel launch.
-    if (std::find(ignored_address.begin(), ignored_address.end(), j) != ignored_address.end()) {
-      MS_LOG(INFO) << "Ignore dump input data for kernel:" << cnode->fullname_with_scope() << " with input index:" << j;
-      continue;
-    }
-    auto input_kernel = cnode->input(j + 1);
+  std::vector<size_t> valid_indexes = GetValidDumpIndex(cnode, input_size, true, device_context, device_tensors);
+  for (size_t index : valid_indexes) {
+    auto input_kernel = cnode->input(index + 1);
     std::string input_kernel_name = GetKernelNodeName(input_kernel);
     auto type = GetInputKernelType(input_kernel, trans_flag);
     // For example, this happens with the Depend op
@@ -239,9 +245,9 @@ void LoadInputs(const CNodePtr &cnode, std::vector<device::DeviceAddress *> devi
       E2eDump::IsDeviceTargetGPU() ? kOpFormat_DEFAULT : AnfAlgo::GetOutputFormat(input_kernel, kParameterOutputIndex);
 
     string input_tensor_name = input_kernel_name + ':' + "0";
-    auto device_addr = device_tensors[j];
+    auto device_addr = device_tensors[index];
 
-    auto dump_shape = GetInputKernelShapeVec(input_kernel, device_addr, j, trans_flag);
+    auto dump_shape = GetInputKernelShapeVec(input_kernel, device_addr, index, trans_flag);
 
     auto ret = LoadMemToHost(*device_addr, input_tensor_name, UintToInt(exec_order), host_format, dump_shape, type, 0,
                              true, root_graph_id, false, trans_flag, async_copy);
@@ -264,23 +270,23 @@ void LoadOutputs(const CNodePtr &cnode, std::vector<device::DeviceAddress *> dev
   auto output_size = AnfAlgo::GetOutputTensorNum(cnode);
   auto node_name = common::AnfAlgo::GetCNodeName(cnode);
   std::string kernel_name = GetKernelNodeName(cnode);
-  std::vector<size_t> real_outputs = CheckRealOutput(node_name, output_size);
-  for (size_t j : real_outputs) {
-    auto type = GetOutputKernelType(cnode, j, trans_flag);
+  std::vector<size_t> valid_indexes = GetValidDumpIndex(cnode, output_size, false, device_context, device_tensors);
+  for (size_t index : valid_indexes) {
+    auto type = GetOutputKernelType(cnode, index, trans_flag);
     // For example, this happens with the Depend op
     if (type == kMetaTypeNone) {
       continue;
     }
 
     auto host_format = kOpFormat_DEFAULT;
-    auto device_format = E2eDump::IsDeviceTargetGPU() ? kOpFormat_DEFAULT : AnfAlgo::GetOutputFormat(cnode, j);
+    auto device_format = E2eDump::IsDeviceTargetGPU() ? kOpFormat_DEFAULT : AnfAlgo::GetOutputFormat(cnode, index);
 
-    string tensor_name = kernel_name + ':' + std::to_string(j);
-    auto device_addr = device_tensors[j];
-    auto dump_shape = GetOutputKernelShapeVec(cnode, device_addr, j, trans_flag);
+    string tensor_name = kernel_name + ':' + std::to_string(index);
+    auto device_addr = device_tensors[index];
+    auto dump_shape = GetOutputKernelShapeVec(cnode, device_addr, index, trans_flag);
 
-    auto ret = LoadMemToHost(*device_addr, tensor_name, UintToInt(exec_order), host_format, dump_shape, type, j, false,
-                             root_graph_id, false, trans_flag);
+    auto ret = LoadMemToHost(*device_addr, tensor_name, UintToInt(exec_order), host_format, dump_shape, type, index,
+                             false, root_graph_id, false, trans_flag);
     if (!ret) {
       MS_LOG(WARNING) << "LoadMemToHost failed: tensor_name:" << tensor_name << ", host_format:" << host_format
                       << ", device_format:" << device_format << ".!";
@@ -357,7 +363,8 @@ void ReadDataAndDump(const CNodePtr &cnode, std::vector<device::DeviceAddress *>
   auto &dump_json_parser = DumpJsonParser::GetInstance();
   if (dump_json_parser.op_debug_mode() == DumpJsonParser::DUMP_BOTH_OVERFLOW) {
     auto output_size = output_device_tensors.size();
-    std::vector<size_t> valid_indexes = CheckRealOutput(common::AnfAlgo::GetCNodeName(cnode), output_size);
+    std::vector<size_t> valid_indexes =
+      GetValidDumpIndex(cnode, output_size, false, device_context, output_device_tensors);
     std::vector<device::DeviceAddress *> valid_output_tensors;
     std::transform(valid_indexes.begin(), valid_indexes.end(), std::back_inserter(valid_output_tensors),
                    [&output_device_tensors](auto index) { return output_device_tensors[index]; });
@@ -567,25 +574,14 @@ void LaunchDumpCallback(const std::vector<TensorInfoForDump> &tensor_info_list, 
 void PrepareInputDataViaCallback(const CNodePtr &cnode, const DeviceContext *device_context,
                                  const std::vector<device::DeviceAddress *> &input_device_tensors,
                                  std::vector<TensorInfoForDump> *tensor_info_list) {
-  auto kernel_mod = AnfAlgo::GetKernelMod(cnode);
   bool trans_flag = GetTransFlag();
 
-  std::vector<size_t> ignored_address;
-  if (kernel_mod != nullptr) {
-    MS_EXCEPTION_IF_NULL(device_context);
-    auto kernel_executor = device_context->GetKernelExecutor(false);
-    MS_EXCEPTION_IF_NULL(kernel_executor);
-    ignored_address = kernel_executor->GetLaunchIgnoredInputAddressIdx(cnode);
-  }
+  std::vector<size_t> valid_indexes =
+    GetValidDumpIndex(cnode, input_device_tensors.size(), true, device_context, input_device_tensors);
 
-  for (size_t j = 0; j < input_device_tensors.size(); ++j) {
-    // Ignore the input address that is not used in the kernel launch.
-    if (std::find(ignored_address.begin(), ignored_address.end(), j) != ignored_address.end()) {
-      MS_LOG(INFO) << "Ignore dump input data for kernel:" << cnode->fullname_with_scope() << " with input index:" << j;
-      continue;
-    }
-    auto input_kernel = cnode->input(j + 1);
-    auto &device_tensor = input_device_tensors[j];
+  for (size_t index : valid_indexes) {
+    auto input_kernel = cnode->input(index + 1);
+    auto &device_tensor = input_device_tensors[index];
     MS_EXCEPTION_IF_NULL(device_tensor);
 
     auto type = GetInputKernelType(input_kernel, trans_flag);
@@ -594,16 +590,16 @@ void PrepareInputDataViaCallback(const CNodePtr &cnode, const DeviceContext *dev
       continue;
     }
 
-    auto dump_shape = GetInputKernelShapeVec(input_kernel, device_tensor, j, trans_flag);
+    auto dump_shape = GetInputKernelShapeVec(input_kernel, device_tensor, index, trans_flag);
     auto host_format = kOpFormat_DEFAULT;
     auto format = trans_flag ? host_format : device_tensor->format();
 
     tensor_info_list->emplace_back(
-      TensorInfoForDump(kInput, j, format, type, dump_shape, device_tensor->GetSize(), device_tensor));
+      TensorInfoForDump(kInput, index, format, type, dump_shape, device_tensor->GetSize(), device_tensor));
   }
 }
 
-void PrepareOutputDataViaCallback(const CNodePtr &cnode,
+void PrepareOutputDataViaCallback(const CNodePtr &cnode, const DeviceContext *device_context,
                                   const std::vector<device::DeviceAddress *> &output_device_tensors,
                                   std::vector<TensorInfoForDump> *tensor_info_list) {
   auto output_size = AnfAlgo::GetOutputTensorNum(cnode);
@@ -611,23 +607,24 @@ void PrepareOutputDataViaCallback(const CNodePtr &cnode,
   bool trans_flag = GetTransFlag();
 
   std::string kernel_name = GetKernelNodeName(cnode);
-  std::vector<size_t> real_outputs = CheckRealOutput(node_name, output_size);
-  for (size_t j : real_outputs) {
-    auto type = GetOutputKernelType(cnode, j, trans_flag);
+  std::vector<size_t> valid_indexes =
+    GetValidDumpIndex(cnode, output_size, false, device_context, output_device_tensors);
+  for (size_t index : valid_indexes) {
+    auto type = GetOutputKernelType(cnode, index, trans_flag);
     // For example, this happens with the Depend op
     if (type == kMetaTypeNone) {
       continue;
     }
 
-    auto &device_tensor = output_device_tensors[j];
+    auto &device_tensor = output_device_tensors[index];
     MS_EXCEPTION_IF_NULL(device_tensor);
 
-    auto dump_shape = GetOutputKernelShapeVec(cnode, device_tensor, j, trans_flag);
+    auto dump_shape = GetOutputKernelShapeVec(cnode, device_tensor, index, trans_flag);
 
     auto host_format = kOpFormat_DEFAULT;
     auto format = trans_flag ? host_format : device_tensor->format();
     tensor_info_list->emplace_back(
-      TensorInfoForDump(kOutput, j, format, type, dump_shape, device_tensor->GetSize(), device_tensor));
+      TensorInfoForDump(kOutput, index, format, type, dump_shape, device_tensor->GetSize(), device_tensor));
   }
 }
 
@@ -798,7 +795,7 @@ void DumpDataViaCallback(const CNodePtr &cnode, const std::vector<device::Device
     PrepareInputDataViaCallback(cnode, device_context, input_device_tensors, &tensor_info_list);
   }
   if (DumpJsonParser::GetInstance().OutputNeedDump()) {
-    PrepareOutputDataViaCallback(cnode, output_device_tensors, &tensor_info_list);
+    PrepareOutputDataViaCallback(cnode, device_context, output_device_tensors, &tensor_info_list);
   }
   bool calc_device_stat = DumpJsonParser::GetInstance().IsDeviceCalcStats();
   if (calc_device_stat) {

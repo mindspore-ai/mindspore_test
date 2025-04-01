@@ -55,7 +55,7 @@ namespace datadump {
 TensorStat GetKernelTensorStats(const DumpTensorInfo &tensor_info, const std::vector<string> &stat_name_list,
                                 const std::uint32_t stream_id) {
   auto tensor = tensor_info.tensor;
-  if (tensor == nullptr) {
+  if (tensor == nullptr || tensor->device_ptr() == nullptr) {
     MS_LOG(WARNING) << "Tensor is nullptr, returning empty tensor statistics.";
     return TensorStat();
   }
@@ -108,7 +108,7 @@ void DumpKernelTensorStats(const DeviceContext *device_context, std::vector<devi
   CsvWriter csv;
   std::lock_guard<std::mutex> lock(CsvFileMutexManager::GetInstance().GetCsvMutex(filename));
 
-  auto valid_index = GetValidDumpIndex(node, tensors.size(), is_input, device_context);
+  auto valid_index = GetValidDumpIndex(node, tensors.size(), is_input, device_context, tensors);
   if (!valid_index.empty()) {
     if (!csv.OpenFile(filename, csv_header)) {
       MS_LOG(WARNING) << "filename is " << filename;

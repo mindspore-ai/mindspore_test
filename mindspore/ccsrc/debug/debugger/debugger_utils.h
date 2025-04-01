@@ -32,7 +32,8 @@ namespace mindspore {
 std::vector<size_t> CheckRealOutput(const std::string &node_name, const size_t &output_size);
 
 std::vector<size_t> GetValidDumpIndex(const CNodePtr &cnode, size_t index_size, bool is_input,
-                                      const DeviceContext *device_context);
+                                      const DeviceContext *device_context,
+                                      const std::vector<device::DeviceAddress *> &tensors = {});
 
 // when used in abnormal dump, the async_copy should set to false
 void LoadInputs(const CNodePtr &cnode, std::vector<device::DeviceAddress *> device_tensors, uint32_t exec_order,
