@@ -5447,7 +5447,7 @@ def cummin(input, axis):
         out1, out2 = cummin_op(input)
         out1 = transpose_(out1, prem)
         out2 = transpose_(out2, prem)
-    return [out1, out2]
+    return (out1, out2)
 
 
 def cumsum(x, axis, dtype=None):
