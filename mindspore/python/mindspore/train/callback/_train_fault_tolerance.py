@@ -289,7 +289,7 @@ class TrainFaultTolerance(Callback):
         >>> optimizer_wrapper = nn.OptTFTWrapper(optimizer)
         >>> loss_fn = nn.CrossEntropyLoss()
         >>>
-        >>> net_with_loss = nn.PipelineCell(nn.WithLossCell(net, loss_fn), 4)
+        >>> net_with_loss = nn.Pipeline(nn.WithLossCell(net, loss_fn), 4)
         >>> net_with_loss.set_train()
         >>> model = Model(net_with_loss, optimizer=optimizer_wrapper)
         >>> tft_cb = TrainFaultTolerance()

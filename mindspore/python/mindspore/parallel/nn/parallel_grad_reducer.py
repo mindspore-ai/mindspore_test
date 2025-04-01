@@ -113,7 +113,7 @@ class PipelineGradReducer(Cell):
         >>> net.layer3.pipeline_stage = 1
         >>> loss_fn = nn.CrossEntropyLoss()
         >>> optimizer = nn.SGD(net.trainable_params(), 1e-2)
-        >>> net_with_loss = nn.PipelineCell(nn.WithLossCell(net, loss_fn), 2)
+        >>> net_with_loss = nn.Pipeline(nn.WithLossCell(net, loss_fn), 2)
         >>> net_with_loss.set_train()
         >>> def forward_fn(inputs, target):
         ...     loss = net_with_loss(inputs, target)
