@@ -184,6 +184,11 @@ void PyBackwardNode::Release() {
   obj_ = py::object();
 }
 
+PyBackwardNode::~PyBackwardNode() {
+  py::gil_scoped_acquire gil_acquire;
+  backward_fn_ = py::object();
+  obj_ = py::object();
+}
 }  // namespace autograd
 }  // namespace pynative
 }  // namespace mindspore
