@@ -608,8 +608,9 @@ bool Jit::GetJitGradGraph(const pipeline::ResourcePtr &resource, const std::stri
   static bool enable_valuenode_replace = (common::GetCompileConfig("PYNATIVE_JIT_GRAD_MODE") == "1");
   set_eliminate_forward(!is_control_flow && !jit_output_has_dict && enable_valuenode_replace);
   // Using adgrad to generate fprop func graph for jit function in pynative mode
-  auto grad_graph =
-    ad::Grad(is_control_flow ? primal_fg : jit_forward_graph, opt::Optimizer::MakeEmptyOptimizer(resource));
+  // Using cloned jit_forward_graph --> primal_fg as input
+  // Ensure that the primal graph found by fprop in GradJit is not affected by subsequent compilation passes.
+  auto grad_graph = ad::Grad(primal_fg, opt::Optimizer::MakeEmptyOptimizer(resource));
   MS_EXCEPTION_IF_NULL(grad_graph);
   graph_executor->SetJitGradGraph(grad_graph, graph_phase_);
   // Set jit compile info
