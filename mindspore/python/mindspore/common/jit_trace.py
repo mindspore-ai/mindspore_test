@@ -219,6 +219,8 @@ def _get_args_for_run(args):
             new_args.append(arg)
         elif isinstance(arg, dict) and hasattr(arg, "__ms_mutable__"):
             new_args.append(tuple(arg.values()))
+        elif isinstance(arg, (tuple, list)) and hasattr(arg, "__ms_mutable__"):
+            new_args.append(arg)
     return tuple(new_args)
 
 
