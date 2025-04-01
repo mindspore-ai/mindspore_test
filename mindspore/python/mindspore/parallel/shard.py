@@ -425,7 +425,7 @@ def shard(fn, in_strategy, out_strategy=None, parameter_plan=None, device="Ascen
 
     Args:
         fn (Union[Cell, Function]): Function to be executed in parallel.
-                                    Its arguments and return value must be Tensor or Parameter.
+                                    Its arguments and return value must be Tensor.
                                     If `fn` is a Cell with parameters, `fn` needs to be an instantiated object,
                                     otherwise its arguments cannot be accessed.
         in_strategy (tuple): Define the layout of inputs, each element of the tuple should be a tuple(int) or
@@ -440,7 +440,8 @@ def shard(fn, in_strategy, out_strategy=None, parameter_plan=None, device="Ascen
                                             The value is a 1-D integer tuple or a 1-D mindspore.parallel.Layout tuple,
                                             indicating the corresponding layout.
                                             If the parameter name is incorrect or the corresponding parameter
-                                            has been set, the parameter setting will be ignored.
+                                            has been set, the parameter setting will be ignored. Supported
+                                            only when `fn` is a Cell with parameters.
                                             Default: ``None`` .
         device (str, optional): Select a certain `device` target. It is not in use right now.
                                 Support ["CPU", "GPU", "Ascend"]. Default: ``"Ascend"`` .
