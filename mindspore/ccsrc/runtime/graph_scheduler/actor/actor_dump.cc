@@ -21,6 +21,7 @@
 #include <utility>
 
 #include "runtime/graph_scheduler/scheduler_helper.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 
 namespace mindspore {
 namespace runtime {
@@ -43,6 +44,18 @@ void DumpBaseInputInfo(const AbstractActor *actor, std::ofstream &ofs) {
       ofs << "\t\t\tto_input_index:" << device_tensor_store_key.first
           << "\tfrom_node_name:" << device_tensor_store_key.second->fullname_with_scope()
           << ", debug_name: " << device_tensor_store_key.second->DebugString() << "\n";
+    }
+  }
+
+  // Dump parameter store.
+  if (actor->parameter_indexs().size() > 0) {
+    ofs << "\t\tparameter index:" << actor->parameter_indexs().size() << "\n ";
+    for (const auto &parameter_index : actor->parameter_indexs()) {
+      ofs << "\t\t\tto_input_index:" << parameter_index.first << "\tfrom_node_name:"
+          << (parameter_index.second.first.first == nullptr ? "null"
+                                                            : parameter_index.second.first.first->DebugString())
+          << " outer index:" << parameter_index.second.second << " inner index:" << parameter_index.second.second
+          << "\n";
     }
   }
 
@@ -224,6 +237,59 @@ void DumpDSActor(const DataSourceActor *actor, std::ofstream &ofs) {
   ofs << "\n";
 }
 
+void DumpConditionSwitchActor(const ConditionSwitchActor *actor, std::ofstream &ofs) {
+  MS_EXCEPTION_IF_NULL(actor);
+  ofs << "\t\tbranch names:";
+  std::for_each(actor->branch_names().begin(), actor->branch_names().end(),
+                [&ofs](const auto &name) { ofs << name << "\t"; });
+  ofs << "\n";
+  ofs << "\t\tbranch output free index\n";
+  for (const auto &pair : actor->branch_output_free_index()) {
+    ofs << "\t\t\tbranch name:" << pair.first << " index:";
+    std::for_each(pair.second.begin(), pair.second.end(), [&ofs](const auto &index) { ofs << index << " "; });
+    ofs << "\n";
+  }
+}
+
+void DumpConditionGatherActor(const ConditionGatherActor *actor, std::ofstream &ofs) {
+  MS_EXCEPTION_IF_NULL(actor);
+  ofs << "\t\tbranch names:";
+  std::for_each(actor->branch_names().begin(), actor->branch_names().end(),
+                [&ofs](const auto &name) { ofs << name << "\t"; });
+  ofs << "\n";
+  ofs << "\t\tbranch output num:" << actor->branch_output_num() << "\n";
+}
+
+void DumpKernelActorVectorElement(const KernelActor *actor, std::ofstream &ofs) {
+  MS_EXCEPTION_IF_NULL(actor);
+  ofs << "\t\tis output kernel:";
+  std::for_each(actor->is_output_kernel().begin(), actor->is_output_kernel().end(),
+                [&ofs](const auto &element) { ofs << element << " "; });
+  ofs << "\tis monad input:";
+  std::for_each(actor->is_monad_input().begin(), actor->is_monad_input().end(),
+                [&ofs](const auto &element) { ofs << element << " "; });
+  ofs << "\tdepend shape input list:";
+  std::for_each(actor->depend_shape_input_list().begin(), actor->depend_shape_input_list().end(),
+                [&ofs](const auto &element) { ofs << element << " "; });
+  ofs << "\tis weight:";
+  std::for_each(actor->is_weight().begin(), actor->is_weight().end(),
+                [&ofs](const auto &element) { ofs << element << " "; });
+  ofs << "\tinput free index:";
+  std::for_each(actor->input_free_index().begin(), actor->input_free_index().end(),
+                [&ofs](const auto &element) { ofs << element << " "; });
+  ofs << "\toutput free index:";
+  std::for_each(actor->output_free_index().begin(), actor->output_free_index().end(),
+                [&ofs](const auto &element) { ofs << element << " "; });
+  ofs << "\n";
+  if (!actor->increase_ref_count_size().empty()) {
+    ofs << " increase ref count size:";
+    for (const auto &pair : actor->increase_ref_count_size()) {
+      ofs << "(" << pair.first << ", " << pair.second << ")  ";
+    }
+  }
+  ofs << "\n";
+}
+
 void DumpKernelActor(const KernelActor *actor, std::ofstream &ofs) {
   MS_EXCEPTION_IF_NULL(actor);
   ofs << "\tactor_name:" << actor->GetAID().Name() << "\tactor_id:" << actor->actor_id() << "\n";
@@ -232,11 +298,14 @@ void DumpKernelActor(const KernelActor *actor, std::ofstream &ofs) {
   MS_EXCEPTION_IF_NULL(kernel);
   auto kernel_info = dynamic_cast<KernelInfo *>(kernel->kernel_info());
   MS_EXCEPTION_IF_NULL(kernel_info);
+
   ofs << "\t\tkernel_name:" << kernel->fullname_with_scope() << "\tstream id:" << kernel_info->stream_id()
       << "\tinputs_num:" << common::AnfAlgo::GetInputTensorNum(kernel) << "\tignored_input_addresses_num:"
       << SchedulerHelper::GetIgnoredInputAddressCount(kernel, actor->device_contexts()[0])
       << "\toutputs_num:" << AnfAlgo::GetOutputTensorNum(kernel) << "\tis_dynamic_shape:" << actor->is_dynamic_shape()
       << "\tis_launch_skipped:" << actor->is_launch_skipped() << "\n";
+  DumpKernelActorVectorElement(actor, ofs);
+
   const auto &somas_outputs = kernel_info->somas_output_result();
   const auto &somas_graph_output_indexes = actor->somas_graph_output_indexes();
   const auto &copy_output_device_tensors = actor->copy_output_device_tensors();
@@ -255,7 +324,8 @@ void DumpKernelActor(const KernelActor *actor, std::ofstream &ofs) {
     ofs << "\t\t\toutput_index:" << i << "\tptr:" << device_tensor->GetPtr() << "\tsize:" << device_tensor->GetSize()
         << "\tstream id:" << device_tensor->stream_id()
         << "\toriginal_ref_count:" << device_tensor->original_ref_count()
-        << "\tdynamic_ref_count:" << device_tensor->dynamic_ref_count() << "\tflag:" << device_tensor->flag()
+        << "\tdynamic_ref_count:" << device_tensor->dynamic_ref_count()
+        << "\tnew_ref_count:" << device_tensor->new_ref_count() << "\tflag:" << device_tensor->flag()
         << "\tis_somas_enable:" << kernel_info->IsTensorEnableSomas(somas_outputs, i)
         << "\tsomas_offset:" << kernel_info->GetTensorSomasOffset(somas_outputs, i)
         << "\tsomas_aligned_size:" << kernel_info->GetTensorSomasAlignedSize(somas_outputs, i)
@@ -289,6 +359,18 @@ void DumpKernelActor(const KernelActor *actor, std::ofstream &ofs) {
       ofs << "\t\t\tmodifiable_ref_output_index:" << ref_output_index << "\n ";
     }
   }
+  if (!kernel_info->out_in_ref_map().empty()) {
+    ofs << "\t\t\tref index:";
+    for (const auto &pair : kernel_info->out_in_ref_map()) {
+      ofs << "(" << pair.first << ", " << pair.second << ") ";
+    }
+    ofs << "\n";
+  }
+  if (common::AnfAlgo::CheckPrimitiveType(kernel, prim::kPrimConditionSwitch)) {
+    DumpConditionSwitchActor(dynamic_cast<const ConditionSwitchActor *>(actor), ofs);
+  } else if (common::AnfAlgo::CheckPrimitiveType(kernel, prim::kPrimConditionGather)) {
+    DumpConditionGatherActor(dynamic_cast<const ConditionGatherActor *>(actor), ofs);
+  }
 }
 
 void DumpCustomActor(const CustomActor *actor, std::ofstream &ofs) {
@@ -315,7 +397,8 @@ void DumpSuperKernelActor(const SuperKernelActor *actor, std::ofstream &ofs) {
   ofs << "\t\tgraph_id:" << graph->graph_id() << "\tgraph_name:" << graph->ToString()
       << "\tis_graph_run_mode:" << graph->is_graph_run_mode() << "\tis_loop_count_sink:" << graph->is_loop_count_sink()
       << "\tinputs_num:" << (graph->input_nodes()).size() << "\tkernels_num:" << (graph->execution_order()).size()
-      << "\tis enable zero copy:" << graph->has_flag(kFlagEnableZeroCopyInGraph) << "\n";
+      << "\tis enable zero copy:" << graph->has_flag(kFlagEnableZeroCopyInGraph)
+      << "\t is enable control flow:" << actor->enable_inline_control_flow() << "\n";
 
   DumpAbstractActor(actor, ofs);
   ofs << "\n";
@@ -325,6 +408,7 @@ void DumpSuperKernelActor(const SuperKernelActor *actor, std::ofstream &ofs) {
   if (kernel_num == 0) {
     return;
   }
+
   ofs << "\t\t[All parameter of SuperKernelActor:" << actor->GetAID().Name() << "]:\n";
   const auto &input_nodes = graph->input_nodes();
   size_t input_num = input_nodes.size();
@@ -348,6 +432,15 @@ void DumpSuperKernelActor(const SuperKernelActor *actor, std::ofstream &ofs) {
         << "\n";
   }
   ofs << "\n";
+  if (!actor->input_params_no_user().empty()) {
+    ofs << "\t\tno user input store parameter size " << actor->input_params_no_user().size() << ":";
+    for (const auto &pair : actor->input_params_no_user()) {
+      ofs << "\t\t\tparameter:"
+          << (pair.second.first.first == nullptr ? "null" : pair.second.first.first->fullname_with_scope())
+          << "\tgraph input index:" << pair.first << " parameter store outer index:" << pair.second.second
+          << " inner index:" << pair.second.first.second;
+    }
+  }
 
   ofs << "\t\t[All kernels by execution order of SuperKernelActor:" << actor->GetAID().Name() << "]:\n";
   for (size_t i = 0; i < kernel_num; i++) {
@@ -745,11 +838,11 @@ void DumpStackActors(const std::vector<StackActorPtr> &actors, std::ofstream &of
 }  // namespace
 
 void DumpContinuousMemoryNodes(const ActorSet *actor_set, std::ofstream &ofs) {
-  ofs << "\tcontinuous_memory_nodes:" << actor_set->continuous_memory_nodes_.size() << "\n ";
+  ofs << "\n\n[continuous memory nodes:" << actor_set->continuous_memory_nodes_.size() << "]\n";
   for (const auto &iter : actor_set->continuous_memory_nodes_) {
     MS_EXCEPTION_IF_NULL(iter.first.first);
     MS_EXCEPTION_IF_NULL(iter.first.second);
-    ofs << "\t\tnode_name:" << iter.first.first->fullname_with_scope()
+    ofs << "\tnode_name:" << iter.first.first->fullname_with_scope()
         << "\tdevice_context:" << iter.first.second->device_context_key().ToString()
         << "\tis_input_need:" << iter.second.first << "\tis_output_need:" << iter.second.second << "\n";
   }
@@ -826,6 +919,39 @@ void DumpSwapActors(const std::vector<std::vector<MemSwapActorPtr>> &actors, std
         continue;
       }
       DumpSwapActor(swap_actor.get(), ofs);
+    }
+  }
+}
+
+void DumpParameterStore(std::ofstream &ofs) {
+  if (!EnableInputOptimize()) {
+    return;
+  }
+  ofs << "[Parameter Store]\n";
+  ofs << "\tparameter device tensor:\n";
+  const auto &graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
+  MS_EXCEPTION_IF_NULL(graph_parameter_store);
+  const auto &parameter_device_tensors = graph_parameter_store->GetAll();
+  for (size_t outer_index = 0; outer_index < parameter_device_tensors.size(); ++outer_index) {
+    for (size_t inner_index = 0; inner_index < parameter_device_tensors[outer_index].size(); ++inner_index) {
+      ofs << "\t\touter_index:" << outer_index << " inner index:" << inner_index
+          << " user cnt:" << parameter_device_tensors[outer_index][inner_index].second.first << " device tensor:"
+          << (parameter_device_tensors[outer_index][inner_index].first == nullptr
+                ? "null"
+                : parameter_device_tensors[outer_index][inner_index].first->PrintInfo())
+          << "\n";
+    }
+  }
+  ofs << "\theter device tensor:\n";
+  const auto &heter_device_tensors = graph_parameter_store->GetAllHeter();
+  for (size_t outer_index = 0; outer_index < heter_device_tensors.size(); ++outer_index) {
+    for (size_t inner_index = 0; inner_index < heter_device_tensors[outer_index].size(); ++inner_index) {
+      ofs << "\t\touter_index:" << outer_index << " inner index:" << inner_index
+          << " user cnt:" << heter_device_tensors[outer_index][inner_index].second << " device tensor:"
+          << (heter_device_tensors[outer_index][inner_index].first == nullptr
+                ? "null"
+                : heter_device_tensors[outer_index][inner_index].first->PrintInfo())
+          << "\n";
     }
   }
 }

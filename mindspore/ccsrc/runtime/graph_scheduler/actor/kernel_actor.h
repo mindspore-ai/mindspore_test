@@ -103,6 +103,14 @@ class KernelActor : public DebugAwareActor {
   const std::set<size_t> &somas_graph_output_indexes() const { return somas_graph_output_indexes_; }
   size_t get_stream() const { return kernel_info_->stream_id(); }
 
+  const mindspore::HashMap<size_t, size_t> &increase_ref_count_size() const { return increase_ref_count_size_; }
+  const std::vector<bool> &is_output_kernel() const { return is_output_kernel_; }
+  const std::vector<bool> &is_monad_input() const { return is_monad_input_; }
+  const std::vector<size_t> &input_free_index() const { return input_free_index_; }
+  const std::vector<size_t> &output_free_index() const { return output_free_index_; }
+  const std::vector<bool> &depend_shape_input_list() const { return depend_shape_input_list_; }
+  const std::vector<bool> &is_weight() const { return is_weight_; }
+
   void set_enable_async_infer(bool enable_async_infer) { enable_async_infer_ = enable_async_infer; }
 
   // Really do infer shape and update kernel tensor shape.
