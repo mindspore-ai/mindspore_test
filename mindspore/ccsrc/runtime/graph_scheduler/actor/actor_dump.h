@@ -47,6 +47,7 @@
 
 namespace mindspore {
 namespace runtime {
+void DumpParameterStore(std::ofstream &ofs);
 void DumpContinuousMemoryNodes(const ActorSet *actor_set, std::ofstream &ofs);
 void DumpDataPrepareActor(const DataPrepareActorPtr &actor, std::ofstream &ofs);
 void DumpLoopCountActor(const LoopCountActorPtr &actor, std::ofstream &ofs);

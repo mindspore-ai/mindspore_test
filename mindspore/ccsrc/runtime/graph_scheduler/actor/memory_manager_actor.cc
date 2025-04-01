@@ -406,8 +406,14 @@ void MemoryManagerActor::FreeMemoryByRefCount(DeviceTensor *const device_tensor,
   }
   if (device_tensor->new_ref_count() != SIZE_MAX) {
     if (device_tensor->new_ref_count() == 0) {
-      MS_LOG(EXCEPTION) << "Invalid new ref count:0 for decrease for device address:" << device_tensor
-                        << " actor:" << op_name;
+      const auto &node_with_index = device_tensor->GetNodeIndex();
+      MS_LOG(EXCEPTION) << "Invalid new ref count:0 for decrease for device address:" << device_tensor->PrintInfo()
+                        << " node:"
+                        << (node_with_index.first == nullptr
+                              ? "null"
+                              : node_with_index.first->fullname_with_scope() +
+                                  " debug string:" + node_with_index.first->DebugString())
+                        << " index:" << node_with_index.second << " actor:" << op_name;
     }
 
     MS_LOG(DEBUG) << "Op:" << op_name << " decrease new ref count for:" << device_tensor->PrintInfo();

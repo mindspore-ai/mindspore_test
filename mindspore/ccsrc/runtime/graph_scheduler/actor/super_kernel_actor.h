@@ -94,6 +94,19 @@ class SuperKernelActor : public DebugAwareActor {
   const std::vector<size_t> &input_param_static_use_cnt() const { return input_params_use_cnt_; }
   const std::vector<bool> &is_input_used() const { return is_input_used_; }
   bool enable_kbk_sub_graph_execute() const { return enable_kbk_sub_graph_execute_; }
+
+  bool enable_inline_control_flow() const { return enable_inline_control_flow_; }
+  bool enable_infer_boost() const { return enable_infer_boost_; }
+  const mindspore::HashMap<AnfNode *, std::vector<std::pair<size_t, size_t>>> &kernel_input_to_graph_input_indices()
+    const {
+    return kernel_input_to_graph_input_indices_;
+  }
+  const mindspore::HashMap<AnfNode *, std::vector<std::pair<size_t, std::vector<size_t>>>>
+    &kernel_input_to_actor_output_indices() const {
+    return kernel_input_to_actor_output_indices_;
+  }
+  const std::set<std::pair<size_t, ParameterInfo>> &input_params_no_user() const { return input_params_no_user_; }
+
   void IncreaseNewRefCounts(OpContext<DeviceTensor> *const context) override;
   // Get the release position of the device address in the graph through static analysis of the input-output
   // relationship in the graph.
@@ -227,14 +240,10 @@ class SuperKernelActor : public DebugAwareActor {
   // Record the graph parameter without user.
   std::set<std::pair<size_t, ParameterInfo>> input_params_no_user_;
 
-  std::vector<size_t> input_free_index_;
-  std::vector<size_t> output_free_index_;
   std::vector<DeviceTensor *> new_memory_free_list_;
 
   // Record whether the input is used by kernel actor.
   std::vector<bool> is_input_used_;
-  // Record the ref count should be increase for output of kernel actor.
-  mindspore::HashMap<KernelActor *, mindspore::HashMap<size_t, size_t>> kernel_actor_to_increase_new_ref_count_;
   // Record every param first used kernel actor to correct the ref count.
   mindspore::HashMap<KernelActorPtr, std::vector<std::pair<size_t, size_t>>> kernel_actor_to_graph_parameters_map_;
   // Record which kernel actor should insert event when fetch parameter on non-default stream.

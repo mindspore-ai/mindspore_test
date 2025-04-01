@@ -44,6 +44,8 @@ class ConditionGatherActor : public KernelActor {
   void ExecuteResizeKernelModTask(OpContext<DeviceTensor> *const context) override;
   void ExecuteLaunchKernelTask(OpContext<DeviceTensor> *const context) override;
   void UpdateRefDeviceAddress(OpContext<DeviceTensor> *const context, bool increase_ref_count) override;
+  size_t branch_output_num() const { return branch_output_num_; }
+  const std::vector<std::string> &branch_names() const { return branch_names_; }
 
  protected:
   void Init() override;

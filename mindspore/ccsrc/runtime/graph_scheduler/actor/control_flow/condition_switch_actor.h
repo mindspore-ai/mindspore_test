@@ -38,6 +38,10 @@ class ConditionSwitchActor : public KernelActor {
                        const std::set<size_t> &modifiable_ref_output_indexes,
                        const KernelTransformType &type = KernelTransformType::kConditionSwitchActor);
   ~ConditionSwitchActor() override = default;
+  const std::vector<std::string> &branch_names() const { return branch_names_; }
+  const mindspore::HashMap<std::string, std::vector<size_t>> &branch_output_free_index() const {
+    return branch_output_free_index_;
+  }
 
  protected:
   void Init() override;

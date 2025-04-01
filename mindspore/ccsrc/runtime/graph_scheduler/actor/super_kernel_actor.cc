@@ -2054,8 +2054,6 @@ void SuperKernelActor::SetFreePositionForKernelActor() {
   // 1. Clear free index in actors.
   std::vector<bool> disable_inputs(graph_->input_nodes().size(), false);
   is_input_used_.swap(disable_inputs);
-  input_free_index_.clear();
-  output_free_index_.clear();
 
   for (const auto &kernel_actor : kernel_actors_) {
     if (kernel_actor == nullptr) {
