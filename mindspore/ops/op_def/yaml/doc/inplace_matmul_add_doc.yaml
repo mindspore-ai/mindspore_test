@@ -5,7 +5,7 @@ inplace_matmul_add:
         .. warning::
             - This is an experimental API that is subject to change or deletion.
             - This API is only supported in Atlas A2 training series for now.
-            - This API is only supported on GRAPH mode.
+            - This API is only supported on KBK mode.
 
         Args:
             x (Tensor): Matrix A in matrix multiplication, with shape :math:`(k, m)` or :math:`(batch, k, m)`,
@@ -38,4 +38,4 @@ inplace_matmul_add:
             >>> C = Tensor(np.random.randn(20, 8), mindspore.float32)
             >>> output = Net()(x, weight, C)
             >>> print(output.shape)
-            (20, 8)
+            [20, 8]
