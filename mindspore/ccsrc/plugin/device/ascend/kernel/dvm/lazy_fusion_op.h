@@ -20,6 +20,7 @@
 #include <utility>
 #include <tuple>
 #include "plugin/device/ascend/kernel/dvm/lazy_fusion_kernel.h"
+#include "kernel/ascend/pyboost/auto_generate/concat.h"
 #include "kernel/ascend/pyboost/auto_generate/abs.h"
 #include "kernel/ascend/pyboost/auto_generate/add.h"
 #include "kernel/ascend/pyboost/auto_generate/cast.h"
@@ -78,6 +79,15 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
+class ConcatAscendDvm : public ConcatAscend {
+ public:
+  ConcatAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
+      : ConcatAscend(std::move(primitive), device_context) {}
+  ~ConcatAscendDvm() = default;
+  mindspore::tensor::BaseTensorPtr Call(const mindspore::ValueTuplePtr &tensors_tensor_list,
+                                        const mindspore::Int64ImmPtr &axis) override;
+};
+
 class CastAscendDvm : public CastAscend {
  public:
   CastAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
