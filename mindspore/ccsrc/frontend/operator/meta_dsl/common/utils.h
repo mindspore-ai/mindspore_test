@@ -119,13 +119,12 @@ namespace mindspore::prim {
   NAME
 
 // DECLARE_PARAMS support 1 to 20 parameters.
-#define DECLARE_PARAMS(...)                                                                                          \
-  GET_DECLARE_PARAMS_MACRO(__VA_ARGS__, DECLARE_PARAMS_20, DECLARE_PARAMS_19, DECLARE_PARAMS_18, DECLARE_PARAMS_17,  \
-                           DECLARE_PARAMS_16, DECLARE_PARAMS_15, DECLARE_PARAMS_14, DECLARE_PARAMS_13,               \
-                           DECLARE_PARAMS_12, DECLARE_PARAMS_11, DECLARE_PARAMS_10, DECLARE_PARAMS_9,                \
-                           DECLARE_PARAMS_8, DECLARE_PARAMS_7, DECLARE_PARAMS_6, DECLARE_PARAMS_5, DECLARE_PARAMS_4, \
-                           DECLARE_PARAMS_3, DECLARE_PARAMS_2, DECLARE_PARAMS_1, DECLARE_PARAMS_0)                   \
-  (__VA_ARGS__)
+#define DECLARE_PARAMS(...)                                                                                           \
+  _EXPAND(GET_DECLARE_PARAMS_MACRO(                                                                                   \
+    __VA_ARGS__, DECLARE_PARAMS_20, DECLARE_PARAMS_19, DECLARE_PARAMS_18, DECLARE_PARAMS_17, DECLARE_PARAMS_16,       \
+    DECLARE_PARAMS_15, DECLARE_PARAMS_14, DECLARE_PARAMS_13, DECLARE_PARAMS_12, DECLARE_PARAMS_11, DECLARE_PARAMS_10, \
+    DECLARE_PARAMS_9, DECLARE_PARAMS_8, DECLARE_PARAMS_7, DECLARE_PARAMS_6, DECLARE_PARAMS_5, DECLARE_PARAMS_4,       \
+    DECLARE_PARAMS_3, DECLARE_PARAMS_2, DECLARE_PARAMS_1, DECLARE_PARAMS_0)(__VA_ARGS__))
 
 // There are variable length elements in params.
 #define IF_IMPL_0(cond, true_case, false_case, ...) \
@@ -198,7 +197,7 @@ namespace mindspore::prim {
 #define BeginFunction(name, ...)            \
   void name##MetaImpl::GenerateFunction() { \
     do {                                    \
-      DECLARE_PARAMS(__VA_ARGS__);
+    _EXPAND(DECLARE_PARAMS(__VA_ARGS__))
 
 #define EndFunction(name)       \
   /* Used with BeginFunction */ \
