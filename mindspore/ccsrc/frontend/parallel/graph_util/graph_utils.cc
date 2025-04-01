@@ -960,8 +960,8 @@ Status GetDistributeOperatorFromCNode(const CNodePtr &cnode, TensorInfo *tensor_
       (*tensor_info) = root_tensor_info[output_index];
       return Status::SUCCESS;
     }
-    MS_LOG(WARNING) << "Outputs number cannot be larger than 1, but " << target_cnode->fullname_with_scope() << " has "
-                    << root_tensor_info.size() << " outputs.";
+    MS_LOG(INFO) << "Outputs number cannot be larger than 1, but " << target_cnode->fullname_with_scope() << " has "
+                 << root_tensor_info.size() << " outputs.";
   }
   (*tensor_info) = root_tensor_info[0];
   return Status::SUCCESS;
