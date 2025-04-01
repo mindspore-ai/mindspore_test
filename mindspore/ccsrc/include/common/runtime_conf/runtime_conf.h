@@ -50,7 +50,7 @@ class COMMON_EXPORT RuntimeConf {
     launch_blocking_ = true;
   }
   bool launch_blocking() {
-    if (common::GetEnv(kSimulationLevelKey) == "3") {
+    if (is_sim_level_three_) {
       MS_LOG(INFO) << "Run in simulation level 3, always run in blocking";
       return true;
     }
@@ -133,6 +133,7 @@ class COMMON_EXPORT RuntimeConf {
   static std::shared_ptr<RuntimeConf> inst_context_;
 
   bool launch_blocking_;
+  bool is_sim_level_three_ = (common::GetEnv(kSimulationLevelKey) == "3");
   uint32_t dispatch_threads_num_;
   uint32_t op_threads_num_;
   uint32_t group_launch_thread_num_;
