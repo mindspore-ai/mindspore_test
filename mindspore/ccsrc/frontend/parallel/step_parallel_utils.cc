@@ -1487,10 +1487,8 @@ std::pair<std::vector<NewShapes>, std::vector<Symbols>> ExtractNewShapeAndSymbol
     if (input->Shape() == nullptr) {
       MS_LOG(DEBUG) << "The " << i << "th input shape of " << node->DebugString() << " is null";
       continue;
-    } else {
-      MS_LOG(DEBUG) << "The " << i << "th input shape of " << node->DebugString() << " is "
-                    << input->Shape()->ToString();
     }
+    MS_LOG(DEBUG) << "The " << i << "th input shape of " << node->DebugString() << " is " << input->Shape()->ToString();
     if (HasAbstractMonad(input) || IsPrimitiveCNode(input, prim::kPrimTensorToScalar)) {
       continue;
     }
@@ -1516,13 +1514,9 @@ std::pair<std::vector<NewShapes>, std::vector<Symbols>> ExtractNewShapeAndSymbol
       }
 
       NewShapes local_new_shapes;
-      if (IsPrimitiveCNode(input, prim::kPrimShape)) {
-        local_new_shapes = GetNodeNewShape(input->cast<CNodePtr>()->input(1));
-        input_symbols = GetNodeSymbol(input->cast<CNodePtr>()->input(1));
-      } else {
-        local_new_shapes = GetNodeNewShape(input);
-        input_symbols = GetNodeSymbol(input);
-      }
+      auto anode = IsPrimitiveCNode(input, prim::kPrimShape) ? input->cast<CNodePtr>()->input(1) : input;
+      local_new_shapes = GetNodeNewShape(anode);
+      input_symbols = GetNodeSymbol(anode);
       ObtainRealShape(input, local_new_shapes, &input_new_shapes);
     } else if (IsValueSequence(input)) {
       // Not in INPUT_IS_TUPLE_OR_LIST_OPS but has tuple input, like virtual data set
