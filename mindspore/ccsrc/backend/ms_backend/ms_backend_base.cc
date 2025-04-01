@@ -67,6 +67,9 @@
 #include "include/common/utils/stub_tensor.h"
 #include "include/common/runtime_conf/runtime_conf.h"
 #include "include/common/runtime_conf/thread_bind_core.h"
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
+#include "include/common/utils/signal_util.h"
+#endif
 
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "include/backend/distributed/collective/collect_hccl_init_info.h"
@@ -1931,6 +1934,11 @@ MSBackendBase::MSBackendBase() {
 }
 
 BackendGraphId MSBackendBase::Build(const FuncGraphPtr &func_graph, const BackendJitConfig &backend_jit_config) {
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
+  if (!RegisterGlobalSignalHandler(DefaultIntHandler)) {
+    MS_EXCEPTION(RuntimeError) << "Failed to register the callback signal handling.";
+  }
+#endif
   WaitTaskFinish();
   MS_EXCEPTION_IF_NULL(graph_compiler_);
   MS_EXCEPTION_IF_NULL(func_graph);

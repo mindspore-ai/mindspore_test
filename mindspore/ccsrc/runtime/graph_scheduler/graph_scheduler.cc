@@ -57,7 +57,6 @@
 #include "utils/phase.h"
 #include "common/common_utils.h"
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
-#include "include/common/utils/signal_util.h"
 #include "include/backend/distributed/cluster/topology/compute_graph_node.h"
 #endif
 #include "include/backend/debug/data_dump/dump_json_parser.h"
@@ -859,11 +858,6 @@ void GraphScheduler::BuildAndScheduleGlobalActor() {
 }
 
 ActorSet *GraphScheduler::Transform(const GraphCompilerInfo &graph_compiler_info) {
-#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
-  if (!RegisterGlobalSignalHandler(DefaultIntHandler)) {
-    MS_EXCEPTION(RuntimeError) << "Failed to register the callback signal handling.";
-  }
-#endif
   struct ScopeCleaner {
     GraphScheduler *const scheduler_;
     explicit ScopeCleaner(GraphScheduler *scheduler) : scheduler_(scheduler) {}
