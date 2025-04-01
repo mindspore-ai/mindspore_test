@@ -38,10 +38,6 @@ py::object RunHook(uint64_t tensor_id, const py::function &hook, const py::objec
   if (MS_UNLIKELY(py::isinstance<py::tuple>(res) || py::isinstance<py::list>(res))) {
     MS_LOG(EXCEPTION) << "Tensor hook should be return None or a single value";
   }
-
-  if (!tensor::IsTensorPy(res)) {
-    MS_LOG(EXCEPTION) << "Tensor hook should be return Tensor";
-  }
   return res;
 }
 }  // namespace
@@ -55,7 +51,15 @@ ValuePtr TensorBackwardHook::operator()(const ValuePtr &grad) {
   py::gil_scoped_acquire acquire_gil;
   const auto py_arg = CValueToPybindObj(grad);
   const auto ret = RunHook(tensor_id_, hook_, py_arg);
-  auto val = tensor::ConvertToBaseTensor(ret);
+  ValuePtr val;
+  if (IsStubTensor(ret)) {
+    val = ConvertStubTensor(ret);
+  } else if (tensor::IsTensorPy(ret)) {
+    val = tensor::ConvertToBaseTensor(ret);
+  } else {
+    MS_LOG(EXCEPTION) << "Tensor hook should be return Tensor, but get type: "
+                      << py::str(ret.get_type().attr("__name__")).cast<std::string>() << ".";
+  }
   return val;
 }
 }  // namespace mindspore
