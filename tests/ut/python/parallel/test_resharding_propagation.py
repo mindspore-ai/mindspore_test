@@ -163,12 +163,12 @@ def test_parameter_plan_with_strategy_4x1():
     net, x, ir_graph_path = before_test("test_parameter_plan_with_strategy_4x1")
     compile_net(net, x, layout1, layout2)
     file1 = f"{ir_graph_path}/rank_0/step_parallel_begin_*"
-    para1 = "PrimFunc_AShardIdentity(%28)"
+    para1 = "PrimFunc_AShardIdentity(%6)"
     in_strategy1 = "in_strategy: ((4, 1))"
     check_layout_config(para1, file1, in_strategy1)
     file2 = f"{ir_graph_path}/rank_0/step_parallel_begin_*"
     para2 = "PrimFunc_MatMul(%25"
-    in_strategy2 = "in_strategy: ((1, 1), (4, 1))"
+    in_strategy2 = "in_strategy: ((4, 1), (1, 1))"
     check_layout_config(para2, file2, in_strategy2)
 
 
@@ -188,7 +188,7 @@ def test_parameter_plan_with_layout_4x1():
     check_layout_config(para1, file1, in_strategy1)
     file2 = f"{ir_graph_path}/rank_0/step_parallel_begin_*"
     para2 = "PrimFunc_MatMul(%7, %11"
-    in_strategy2 = "in_strategy: ((1, 1), (4, 1))"
+    in_strategy2 = "in_strategy: ((4, 1), (1, 1))"
     check_layout_config(para2, file2, in_strategy2)
 
 
