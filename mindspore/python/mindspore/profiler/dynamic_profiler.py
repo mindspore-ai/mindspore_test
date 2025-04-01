@@ -503,8 +503,10 @@ class DynamicProfilerMonitorBase(Callback):
                              "greater than or equal to 0, and stop step should not be less than start step",
                              self._rank_id, self._start_step, self._stop_step)
 
-        if self._profiler:
+        if self._profiler and self._start_step <= step_num <= self._stop_step + 1:
             self._profiler.step()
+        else:
+            self._profiler = None
 
     @no_exception_func()
     def on_train_end(self, run_context):
@@ -778,7 +780,7 @@ if sys.version_info >= (3, 8):
                 logger.info("Rank %s process stop", self._rank_id)
 
             # clear shared memory
-            if self._shm:
+            if self._shm and self._is_create_process:
                 try:
                     self._shm.close()
                     self._shm.unlink()
