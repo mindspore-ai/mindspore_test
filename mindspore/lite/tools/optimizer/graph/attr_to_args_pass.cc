@@ -171,7 +171,16 @@ int ConvertAttrToArgsForNode(const AnfNodePtr &node, const FuncGraphManagerPtr &
     return AdjustInputsAndAttrsForSqueeze(manager, cnode, origin_prim);
   }
   if (prim_name == kCustomOpName) {
-    prim_name = GetValue<std::string>(origin_prim->GetAttr("type"));
+    auto attr_type = origin_prim->GetAttr("type");
+    auto attr_reg_op_name = origin_prim->GetAttr("reg_op_name");
+    if (attr_type != nullptr) {
+      prim_name = GetValue<std::string>(attr_type);
+    } else if (attr_reg_op_name != nullptr) {
+      prim_name = GetValue<std::string>(attr_reg_op_name);
+    } else {
+      MS_LOG(ERROR) << "Custom op has no attribute type or reg_op_name!";
+      return RET_ERROR;
+    }
     if (kAttrMapNeedAdjust.find(prim_name) == kAttrMapNeedAdjust.end()) {
       MS_LOG(INFO) << "Custom with type: '" << prim_name << "' does not need to do attr_to_args conversion.";
       return RET_OK;
