@@ -2170,6 +2170,7 @@ static std::vector<ActionItem> CommonPipeline(bool trace_flag) {
   (void)actions.emplace_back(std::make_pair("insert-virtual-dataset", ParallelVirtualDatasetAction));
   (void)actions.emplace_back(std::make_pair("parallel-infer-symbol-second", AutoParallelSymbolWithReNormalizeAction));
   (void)actions.emplace_back(std::make_pair("dataset_repeat_opt", DatasetRepeatReaderOptAction));
+
   // Do PipelineSplit action.
   (void)actions.emplace_back(std::make_pair(kPipelineSplit, PipelineSplitAction));
 

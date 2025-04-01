@@ -1601,7 +1601,9 @@ AnfNodePtr PipelineTransformer::GenNewSendFromOld(const AnfNodePtr &node, const 
   auto send = CreateCNodeByInputsAndAttr(main_graph_, SEND, SEND, send_input, attrs);
   bool is_param = old->HasPrimalAttr(PIPELINE_END) ? false : true;
   auto prim = GetCNodePrimitive(send);
+  MS_EXCEPTION_IF_NULL(prim);
   auto old_prim = GetCNodePrimitive(old);
+  MS_EXCEPTION_IF_NULL(old_prim);
   prim->set_attr(SHAPE, old_prim->GetAttr(SHAPE));
   prim->set_attr(DTYPE, old_prim->GetAttr(DTYPE));
   if (!is_param) {

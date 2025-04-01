@@ -48,8 +48,6 @@ class DatasetReaderOptimizer {
                                        std::set<int64_t> *const data_used_stage);
   RankList InferRepeatRankList(const RankList &within_stage, const RankList &between_stage);
   void InsertBroadcast(const RankList &rank_list);
-  bool CreateZeroNode(const Shapes &shapes, const std::vector<TypePtr> &types,
-                      std::vector<AnfNodePtr> *const input_vec);
   std::vector<CNodePtr> broadcast_ops;
   int64_t opt_level_ = 0;
   FuncGraphManagerPtr manager_ = nullptr;
@@ -57,6 +55,8 @@ class DatasetReaderOptimizer {
   AnfNodePtr virtual_dataset_ = nullptr;
   AnfNodePtr get_next_ = nullptr;
 };
+void FreezeParallelOptimizerCommOrder(const FuncGraphPtr &graph);
+void ReplaceGetnextWithBroadcast(const FuncGraphPtr &graph);
 void ControlOptShardCommAndDataBroadcastOrder(const FuncGraphPtr &graph);
 void ControlPipelineCommAndDataBroadcastOrder(const FuncGraphPtr &graph);
 }  // namespace parallel

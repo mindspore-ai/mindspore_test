@@ -1493,6 +1493,8 @@ bool ControlDataBroadcastOrderPass(const ResourcePtr &resource) {
   auto graph = resource->func_graph();
   parallel::ControlOptShardCommAndDataBroadcastOrder(graph);
   parallel::ControlPipelineCommAndDataBroadcastOrder(graph);
+  parallel::FreezeParallelOptimizerCommOrder(graph);
+  parallel::ReplaceGetnextWithBroadcast(graph);
   return true;
 }
 
