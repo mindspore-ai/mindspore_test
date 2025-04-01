@@ -1613,7 +1613,7 @@ REG_BPROP_BUILDER("Divs").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
   return {dinput, ib->OutZeros(other)};
 });
 
-REG_BPROP_BUILDER("DivMod").FreeUselessValues_I({i0}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("DivMod").FreeUselessValues_O().SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto y = ib->GetInput(kIndex1);
   auto rounding_mode = ib->GetInput(kIndex2);
@@ -1624,17 +1624,21 @@ REG_BPROP_BUILDER("DivMod").FreeUselessValues_I({i0}).SetBody(BODYFUNC(ib) {
   if (mode_type->isa<TypeNone>()) {
     auto out = ib->GetInput(kIndex3);
     auto dout = ib->GetInput(kIndex4);
+
     NodePtr bc_dx = nullptr;
     NodePtr bc_dy = nullptr;
-    auto x_dtype_id = ib->GetDtypeId(x);
-    bc_dx = ib->Div(dout, y);
+    if (x->need_compute_grad_out()) {
+      bc_dx = ib->Div(dout, y);
+    }
     if (y->need_compute_grad_out()) {
-      bc_dy = -(bc_dx * out);
+      bc_dy = ib->Mul(-dout, ib->Div(ib->Div(x, y), y));
     }
     std::vector<NodePtr> result = BinopGradCommon(ib, x, y, bc_dx, bc_dy);
+
+    auto x_dtype_id = ib->GetDtypeId(x);
     bool is_complex = (x_dtype_id == kNumberTypeComplex64 || x_dtype_id == kNumberTypeComplex128);
     if (is_complex) {
-      result[kIndex0] = ib->Conj(result[kIndex0]);
+      result[kIndex0] = x->need_compute_grad_out() ? ib->Conj(result[kIndex0]) : ib->OutZeros(x);
       result[kIndex1] = y->need_compute_grad_out() ? ib->Conj(result[kIndex1]) : ib->OutZeros(y);
     }
     result.emplace_back(ib->OutZeros(rounding_mode));
