@@ -45,11 +45,10 @@ def index_add(x, indices, y, axis, use_lock=True, check_index_bound=True):
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> x = mindspore.Parameter(mindspore.tensor(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]), mindspore.float32),
+        >>> x = mindspore.Parameter(mindspore.tensor([[1, 2, 3], [4, 5, 6], [7, 8, 9]], mindspore.float32),
         ...                         name="name_x")
-        >>> indices = mindspore.tensor(np.array([0, 2]), mindspore.int32)
-        >>> y = mindspore.tensor(np.array([[0.5, 1.0], [1.0, 1.5], [2.0, 2.5]]), mindspore.float32)
+        >>> indices = mindspore.tensor([0, 2], mindspore.int32)
+        >>> y = mindspore.tensor([[0.5, 1.0], [1.0, 1.5], [2.0, 2.5]], mindspore.float32)
         >>> output = mindspore.ops.index_add(x, indices, y, 1)
         >>> print(output)
         [[ 1.5  2.   4. ]

@@ -2090,7 +2090,6 @@ def scatter_mul(input_x, indices, updates):
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
         >>> import mindspore
         >>> input_x = mindspore.Parameter(mindspore.tensor([[1.0, 1.0, 1.0],
         ...                               [2.0, 2.0, 2.0]], mindspore.float32), name="x")
@@ -2101,8 +2100,8 @@ def scatter_mul(input_x, indices, updates):
         [[2. 2. 2.]
          [4. 4. 4.]]
         >>> # for input_x will be updated after the operation is completed. input_x need to be re-initialized.
-        >>> input_x = mindspore.Parameter(mindspore.tensor(np.array([[1.0, 1.0, 1.0],
-        ...                                                [2.0, 2.0, 2.0]]), mindspore.float32), name="x")
+        >>> input_x = mindspore.Parameter(mindspore.tensor([[1.0, 1.0, 1.0],
+        ...                                                [2.0, 2.0, 2.0]], mindspore.float32), name="x")
         >>> # for indices = [[0, 1], [1, 1]]
         >>> # step 1: [0, 1]
         >>> # input_x[0] = [1.0, 1.0, 1.0] * [1.0, 1.0, 1.0] = [1.0, 1.0, 1.0]
@@ -2110,16 +2109,16 @@ def scatter_mul(input_x, indices, updates):
         >>> # step 2: [1, 1]
         >>> # input_x[1] = [6.0, 6.0, 6.0] * [7.0, 7.0, 7.0] = [42.0, 42.0, 42.0]
         >>> # input_x[1] = [42.0, 42.0, 42.0] * [9.0, 9.0, 9.0] = [378.0, 378.0, 378.0]
-        >>> indices = mindspore.tensor(np.array([[0, 1], [1, 1]]), mindspore.int32)
-        >>> updates = mindspore.tensor(np.array([[[1.0, 1.0, 1.0], [3.0, 3.0, 3.0]],
-        ...                            [[7.0, 7.0, 7.0], [9.0, 9.0, 9.0]]]), mindspore.float32)
+        >>> indices = mindspore.tensor([[0, 1], [1, 1]], mindspore.int32)
+        >>> updates = mindspore.tensor([[[1.0, 1.0, 1.0], [3.0, 3.0, 3.0]],
+        ...                            [[7.0, 7.0, 7.0], [9.0, 9.0, 9.0]]], mindspore.float32)
         >>> output = mindspore.ops.scatter_mul(input_x, indices, updates)
         >>> print(output)
         [[  1.   1.   1.]
          [378. 378. 378.]]
         >>> # for input_x will be updated after the operation is completed. input_x need to be re-initialized.
-        >>> input_x = mindspore.Parameter(mindspore.tensor(np.array([[1.0, 1.0, 1.0],
-        ...                                                [2.0, 2.0, 2.0]]), mindspore.float32), name="x")
+        >>> input_x = mindspore.Parameter(mindspore.tensor([[1.0, 1.0, 1.0],
+        ...                                                [2.0, 2.0, 2.0]], mindspore.float32), name="x")
         >>> # for indices = [[1, 0], [1, 1]]
         >>> # step 1: [1, 0]
         >>> # input_x[0] = [1.0, 1.0, 1.0] * [3.0, 3.0, 3.0] = [3.0, 3.0, 3.0]
@@ -2127,16 +2126,16 @@ def scatter_mul(input_x, indices, updates):
         >>> # step 2: [1, 1]
         >>> # input_x[1] = [2.0, 2.0, 2.0] * [7.0, 7.0, 7.0] = [14.0, 14.0, 14.0]
         >>> # input_x[1] = [14.0, 14.0, 14.0] * [9.0, 9.0, 9.0] = [126.0, 126.0, 126.0]
-        >>> indices = mindspore.tensor(np.array([[1, 0], [1, 1]]), mindspore.int32)
-        >>> updates = mindspore.tensor(np.array([[[1.0, 1.0, 1.0], [3.0, 3.0, 3.0]],
-        ...                            [[7.0, 7.0, 7.0], [9.0, 9.0, 9.0]]]), mindspore.float32)
+        >>> indices = mindspore.tensor([[1, 0], [1, 1]], mindspore.int32)
+        >>> updates = mindspore.tensor([[[1.0, 1.0, 1.0], [3.0, 3.0, 3.0]],
+        ...                            [[7.0, 7.0, 7.0], [9.0, 9.0, 9.0]]], mindspore.float32)
         >>> output = mindspore.ops.scatter_mul(input_x, indices, updates)
         >>> print(output)
         [[  3.   3.   3.]
          [126. 126. 126.]]
         >>> # for input_x will be updated after the operation is completed. input_x need to be re-initialized.
-        >>> input_x = mindspore.Parameter(mindspore.tensor(np.array([[1.0, 1.0, 1.0],
-        ...                                                [2.0, 2.0, 2.0]]), mindspore.float32), name="x")
+        >>> input_x = mindspore.Parameter(mindspore.tensor([[1.0, 1.0, 1.0],
+        ...                                                [2.0, 2.0, 2.0]], mindspore.float32), name="x")
         >>> # for indices = [[0, 1], [0, 1]]
         >>> # step 1: [0, 1]
         >>> # input_x[0] = [1.0, 1.0, 1.0] * [1.0, 1.0, 1.0] = [1.0, 1.0, 1.0]
@@ -2144,9 +2143,9 @@ def scatter_mul(input_x, indices, updates):
         >>> # step 2: [0, 1]
         >>> # input_x[0] = [1.0, 1.0, 1.0] * [7.0, 7.0, 7.0] = [7.0, 7.0, 7.0]
         >>> # input_x[1] = [6.0, 6.0, 6.0] * [9.0, 9.0, 9.0] = [54.0, 54.0, 54.0]
-        >>> indices = mindspore.tensor(np.array([[0, 1], [0, 1]]), mindspore.int32)
-        >>> updates = mindspore.tensor(np.array([[[1.0, 1.0, 1.0], [3.0, 3.0, 3.0]],
-        ...                            [[7.0, 7.0, 7.0], [9.0, 9.0, 9.0]]]), mindspore.float32)
+        >>> indices = mindspore.tensor([[0, 1], [0, 1]], mindspore.int32)
+        >>> updates = mindspore.tensor([[[1.0, 1.0, 1.0], [3.0, 3.0, 3.0]],
+        ...                            [[7.0, 7.0, 7.0], [9.0, 9.0, 9.0]]], mindspore.float32)
         >>> output = mindspore.ops.scatter_mul(input_x, indices, updates)
         >>> print(output)
         [[ 7.  7.  7.]
@@ -2183,11 +2182,10 @@ def scatter_max(input_x, indices, updates):
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
         >>> input_x = mindspore.Parameter(mindspore.tensor([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]],
         ...                               mindspore.float32), name="input_x")
         >>> indices = mindspore.tensor([[0, 0], [1, 1]], mindspore.int32)
-        >>> updates = mindspore.tensor(np.ones([2, 2, 3]) * 88, mindspore.float32)
+        >>> updates = mindspore.tensor(mindspore.ops.ones([2, 2, 3]) * 88, mindspore.float32)
         >>> output = mindspore.ops.scatter_max(input_x, indices, updates)
         >>> print(output)
         [[88. 88. 88.]
@@ -2263,10 +2261,10 @@ def scatter_min(input_x, indices, updates):
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> input_x = mindspore.Parameter(mindspore.tensor(np.zeros((2, 3)), mindspore.float32), name="input_x")
+        >>> input_x = mindspore.Parameter(mindspore.tensor(mindspore.ops.zeros((2, 3)),
+        ...                               mindspore.float32), name="input_x")
         >>> indices = mindspore.tensor([1, 0], mindspore.int32)
-        >>> update = mindspore.tensor(np.arange(6).reshape((2, 3)), mindspore.float32)
+        >>> update = mindspore.tensor(mindspore.ops.arange(0, 6).reshape((2, 3)), mindspore.float32)
         >>> output = mindspore.ops.scatter_min(input_x, indices, update)
         >>> print(output)
         [[0. 0. 0.]
@@ -2301,7 +2299,6 @@ def scatter_div(input_x, indices, updates):
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
         >>> import mindspore
         >>> input_x = mindspore.Parameter(mindspore.tensor([[6.0, 6.0, 6.0], [2.0, 2.0, 2.0]],
         ...                               mindspore.float32), name="x")
@@ -2312,8 +2309,8 @@ def scatter_div(input_x, indices, updates):
         [[3. 3. 3.]
          [1. 1. 1.]]
         >>> # for input_x will be updated after the operation is completed. input_x need to be re-initialized.
-        >>> input_x = mindspore.Parameter(mindspore.tensor(np.array([[105.0, 105.0, 105.0],
-        ...                                                [315.0, 315.0, 315.0]]), mindspore.float32), name="x")
+        >>> input_x = mindspore.Parameter(mindspore.tensor([[105.0, 105.0, 105.0],
+        ...                                                [315.0, 315.0, 315.0]], mindspore.float32), name="x")
         >>> # for indices = [[0, 1], [1, 1]]
         >>> # step 1: [0, 1]
         >>> # input_x[0] = [105.0, 105.0, 105.0] / [1.0, 1.0, 1.0] = [105.0, 105.0, 105.0]
@@ -2321,16 +2318,16 @@ def scatter_div(input_x, indices, updates):
         >>> # step 2: [1, 1]
         >>> # input_x[1] = [105.0, 105.0, 105.0] / [5.0, 5.0, 5.0] = [21.0, 21.0, 21.0]
         >>> # input_x[1] = [21.0, 21.0, 21.0] / [7.0, 7.0, 7.0] = [3.0, 3.0, 3.0]
-        >>> indices = mindspore.tensor(np.array([[0, 1], [1, 1]]), mindspore.int32)
-        >>> updates = mindspore.tensor(np.array([[[1.0, 1.0, 1.0], [3.0, 3.0, 3.0]],
-        ...                            [[5.0, 5.0, 5.0], [7.0, 7.0, 7.0]]]), mindspore.float32)
+        >>> indices = mindspore.tensor([[0, 1], [1, 1]], mindspore.int32)
+        >>> updates = mindspore.tensor([[[1.0, 1.0, 1.0], [3.0, 3.0, 3.0]],
+        ...                            [[5.0, 5.0, 5.0], [7.0, 7.0, 7.0]]], mindspore.float32)
         >>> output = mindspore.ops.scatter_div(input_x, indices, updates)
         >>> print(output)
         [[105. 105. 105.]
          [  3.   3.   3.]]
         >>> # for input_x will be updated after the operation is completed. input_x need to be re-initialized.
-        >>> input_x = mindspore.Parameter(mindspore.tensor(np.array([[105.0, 105.0, 105.0],
-        ...                                                [315.0, 315.0, 315.0]]), mindspore.float32), name="x")
+        >>> input_x = mindspore.Parameter(mindspore.tensor([[105.0, 105.0, 105.0],
+        ...                                                [315.0, 315.0, 315.0]], mindspore.float32), name="x")
         >>> # for indices = [[1, 0], [1, 1]]
         >>> # step 1: [1, 0]
         >>> # input_x[0] = [105.0, 105.0, 105.0] / [3.0, 3.0, 3.0] = [35.0, 35.0, 35.0]
@@ -2338,9 +2335,9 @@ def scatter_div(input_x, indices, updates):
         >>> # step 2: [1, 1]
         >>> # input_x[1] = [315.0, 315.0, 315.0] / [5.0, 5.0, 5.0] = [63.0 63.0 63.0]
         >>> # input_x[1] = [63.0 63.0 63.0] / [7.0, 7.0, 7.0] = [9.0, 9.0, 9.0]
-        >>> indices = mindspore.tensor(np.array([[1, 0], [1, 1]]), mindspore.int32)
-        >>> updates = mindspore.tensor(np.array([[[1.0, 1.0, 1.0], [3.0, 3.0, 3.0]],
-        ...                            [[5.0, 5.0, 5.0], [7.0, 7.0, 7.0]]]), mindspore.float32)
+        >>> indices = mindspore.tensor([[1, 0], [1, 1]], mindspore.int32)
+        >>> updates = mindspore.tensor([[[1.0, 1.0, 1.0], [3.0, 3.0, 3.0]],
+        ...                            [[5.0, 5.0, 5.0], [7.0, 7.0, 7.0]]], mindspore.float32)
         >>> output = mindspore.ops.scatter_div(input_x, indices, updates)
         >>> print(output)
         [[35. 35. 35.]
@@ -2418,7 +2415,6 @@ def scatter_nd_add(input_x, indices, updates, use_locking=False):
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
         >>> input_x = mindspore.Parameter(mindspore.tensor([1, 2, 3, 4, 5, 6, 7, 8],
         ...                               mindspore.float32), name="x")
         >>> indices = mindspore.tensor([[2], [4], [1], [7]], mindspore.int32)
@@ -2426,7 +2422,7 @@ def scatter_nd_add(input_x, indices, updates, use_locking=False):
         >>> output = mindspore.ops.scatter_nd_add(input_x, indices, updates, False)
         >>> print(output)
         [ 1. 10.  9.  4. 12.  6.  7. 17.]
-        >>> input_x = mindspore.Parameter(mindspore.tensor(np.zeros((4, 4, 4)), mindspore.int32))
+        >>> input_x = mindspore.Parameter(mindspore.tensor(mindspore.ops.zeros((4, 4, 4)), mindspore.int32))
         >>> indices = mindspore.tensor([[0], [2]], mindspore.int32)
         >>> updates = mindspore.tensor([[[1, 1, 1, 1], [2, 2, 2, 2], [3, 3, 3, 3], [4, 4, 4, 4]],
         ...                            [[5, 5, 5, 5], [6, 6, 6, 6], [7, 7, 7, 7], [8, 8, 8, 8]]], mindspore.int32)
@@ -2479,7 +2475,6 @@ def scatter_nd_sub(input_x, indices, updates, use_locking=False):
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
         >>> input_x = mindspore.Parameter(mindspore.tensor([1, 2, 3, 4, 5, 6, 7, 8],
         ...                               mindspore.float32), name="x")
         >>> indices = mindspore.tensor([[2], [4], [1], [7]], mindspore.int32)
@@ -2487,7 +2482,7 @@ def scatter_nd_sub(input_x, indices, updates, use_locking=False):
         >>> output = mindspore.ops.scatter_nd_sub(input_x, indices, updates, False)
         >>> print(output)
         [ 1. -6. -3.  4. -2.  6.  7. -1.]
-        >>> input_x = mindspore.Parameter(mindspore.tensor(np.zeros((4, 4, 4)), mindspore.int32))
+        >>> input_x = mindspore.Parameter(mindspore.tensor(mindspore.ops.zeros((4, 4, 4)), mindspore.int32))
         >>> indices = mindspore.tensor([[0], [2]], mindspore.int32)
         >>> updates = mindspore.tensor([[[1, 1, 1, 1], [2, 2, 2, 2], [3, 3, 3, 3], [4, 4, 4, 4]],
         ...                            [[5, 5, 5, 5], [6, 6, 6, 6], [7, 7, 7, 7], [8, 8, 8, 8]]], mindspore.int32)
@@ -2540,7 +2535,6 @@ def scatter_nd_mul(input_x, indices, updates, use_locking=False):
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
         >>> input_x = mindspore.Parameter(mindspore.tensor([1, 2, 3, 4, 5, 6, 7, 8],
         ...                               mindspore.float32), name="x")
         >>> indices = mindspore.tensor([[2], [4], [1], [7]], mindspore.int32)
@@ -2548,7 +2542,7 @@ def scatter_nd_mul(input_x, indices, updates, use_locking=False):
         >>> output = mindspore.ops.scatter_nd_mul(input_x, indices, updates)
         >>> print(output)
         [ 1. 16. 18.  4. 35.  6.  7. 72.]
-        >>> input_x = mindspore.Parameter(mindspore.tensor(np.ones((4, 4, 4)), mindspore.int32))
+        >>> input_x = mindspore.Parameter(mindspore.tensor(mindspore.ops.ones((4, 4, 4)), mindspore.int32))
         >>> indices = mindspore.tensor([[0], [2]], mindspore.int32)
         >>> updates = mindspore.tensor([[[1, 1, 1, 1], [2, 2, 2, 2], [3, 3, 3, 3], [4, 4, 4, 4]],
         ...                            [[5, 5, 5, 5], [6, 6, 6, 6], [7, 7, 7, 7], [8, 8, 8, 8]]], mindspore.int32)
@@ -2600,7 +2594,6 @@ def scatter_nd_div(input_x, indices, updates, use_locking=False):
         ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
         >>> import mindspore
         >>> input_x = mindspore.Parameter(mindspore.tensor([1, 2, 3, 4, 5, 6, 7, 8],
         ...                               mindspore.float32), name="x")
@@ -2610,10 +2603,10 @@ def scatter_nd_div(input_x, indices, updates, use_locking=False):
         >>> print(output)
         [1.         0.25       0.5        4.         0.71428573 6.
          7.         0.8888889 ]
-        >>> input_x = mindspore.Parameter(mindspore.tensor(np.ones((4, 4, 4)), mindspore.float32))
-        >>> indices = mindspore.tensor(np.array([[0], [2]]), mindspore.int32)
-        >>> updates = mindspore.tensor(np.array([[[1, 1, 1, 1], [2, 2, 2, 2], [3, 3, 3, 3], [4, 4, 4, 4]],
-        ...                            [[5, 5, 5, 5], [6, 6, 6, 6], [7, 7, 7, 7], [8, 8, 8, 8]]]), mindspore.float32)
+        >>> input_x = mindspore.Parameter(mindspore.tensor(mindspore.ops.ones((4, 4, 4)), mindspore.float32))
+        >>> indices = mindspore.tensor([[0], [2]], mindspore.int32)
+        >>> updates = mindspore.tensor([[[1, 1, 1, 1], [2, 2, 2, 2], [3, 3, 3, 3], [4, 4, 4, 4]],
+        ...                            [[5, 5, 5, 5], [6, 6, 6, 6], [7, 7, 7, 7], [8, 8, 8, 8]]], mindspore.float32)
         >>> output = mindspore.ops.scatter_nd_div(input_x, indices, updates, False)
         >>> print(output)
         [[[1.         1.         1.         1.        ]
@@ -2664,7 +2657,6 @@ def scatter_nd_max(input_x, indices, updates, use_locking=False):
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
         >>> input_x = mindspore.Parameter(mindspore.tensor([1, 2, 3, 4, 5, 6, 7, 8],
         ...                               mindspore.float32), name="x")
         >>> indices = mindspore.tensor([[2], [4], [1], [7]], mindspore.int32)
@@ -2672,7 +2664,7 @@ def scatter_nd_max(input_x, indices, updates, use_locking=False):
         >>> output = mindspore.ops.scatter_nd_max(input_x, indices, updates, False)
         >>> print(output)
         [1. 8. 6. 4. 7. 6. 7. 9.]
-        >>> input_x = mindspore.Parameter(mindspore.tensor(np.ones((4, 4, 4)), mindspore.int32))
+        >>> input_x = mindspore.Parameter(mindspore.tensor(mindspore.ops.ones((4, 4, 4)), mindspore.int32))
         >>> indices = mindspore.tensor([[0], [2]], mindspore.int32)
         >>> updates = mindspore.tensor([[[1, 1, 1, 1], [2, 2, 2, 2], [3, 3, 3, 3], [4, 4, 4, 4]],
         ...                            [[5, 5, 5, 5], [6, 6, 6, 6], [7, 7, 7, 7], [8, 8, 8, 8]]], mindspore.int32)
@@ -2726,14 +2718,13 @@ def scatter_nd_min(input_x, indices, updates, use_locking=False):
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> input_x = mindspore.Parameter(mindspore.tensor(np.ones(8) * 10, mindspore.float32), name="x")
+        >>> input_x = mindspore.Parameter(mindspore.tensor(mindspore.ops.ones(8) * 10, mindspore.float32), name="x")
         >>> indices = mindspore.tensor([[2], [4], [1], [7]], mindspore.int32)
         >>> updates = mindspore.tensor([6, 7, 8, 9], mindspore.float32)
         >>> output = mindspore.ops.scatter_nd_min(input_x, indices, updates, False)
         >>> print(output)
         [10.  8.  6. 10.  7. 10. 10.  9.]
-        >>> input_x = mindspore.Parameter(mindspore.tensor(np.ones((4, 4, 4)) * 10, mindspore.int32))
+        >>> input_x = mindspore.Parameter(mindspore.tensor(mindspore.ops.ones((4, 4, 4)) * 10, mindspore.int32))
         >>> indices = mindspore.tensor([[0], [2]], mindspore.int32)
         >>> updates = mindspore.tensor([[[1, 1, 1, 1], [2, 2, 2, 2], [3, 3, 3, 3], [4, 4, 4, 4]],
         ...                            [[5, 5, 5, 5], [6, 6, 6, 6], [7, 7, 7, 7], [8, 8, 8, 8]]], mindspore.int32)
@@ -2923,9 +2914,8 @@ def gather_elements(input, dim, index):
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> x = mindspore.tensor(np.array([[1, 2], [3, 4]]), mindspore.int32)
-        >>> index = mindspore.tensor(np.array([[0, 0], [1, 0]]), mindspore.int32)
+        >>> x = mindspore.tensor([[1, 2], [3, 4]], mindspore.int32)
+        >>> index = mindspore.tensor([[0, 0], [1, 0]], mindspore.int32)
         >>> dim = 1
         >>> output = mindspore.ops.gather_elements(x, dim, index)
         >>> print(output)
@@ -2963,10 +2953,9 @@ def tensor_scatter_add(input_x, indices, updates):
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> input_x = mindspore.tensor(np.array([[-0.1, 0.3, 3.6], [0.4, 0.5, -3.2]]), mindspore.float32)
-        >>> indices = mindspore.tensor(np.array([[0, 0], [0, 0]]), mindspore.int32)
-        >>> updates = mindspore.tensor(np.array([1.0, 2.2]), mindspore.float32)
+        >>> input_x = mindspore.tensor([[-0.1, 0.3, 3.6], [0.4, 0.5, -3.2]], mindspore.float32)
+        >>> indices = mindspore.tensor([[0, 0], [0, 0]], mindspore.int32)
+        >>> updates = mindspore.tensor([1.0, 2.2], mindspore.float32)
         >>> output = mindspore.ops.tensor_scatter_add(input_x, indices, updates)
         >>> print(output)
         [[ 3.1  0.3  3.6]
@@ -3421,10 +3410,9 @@ def space_to_batch_nd(input_x, block_size, paddings):
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
         >>> block_size = [2, 2]
         >>> paddings = [[0, 0], [0, 0]]
-        >>> input_x = mindspore.tensor(np.array([[[[1, 2], [3, 4]]]]), mindspore.float32)
+        >>> input_x = mindspore.tensor([[[[1, 2], [3, 4]]]], mindspore.float32)
         >>> output = mindspore.ops.space_to_batch_nd(input_x, block_size, paddings)
         >>> print(output)
         [[[[1.]]]
@@ -3779,10 +3767,9 @@ def meshgrid(*inputs, indexing='xy'):
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> x = mindspore.tensor(np.array([1, 2, 3, 4]).astype(np.int32))
-        >>> y = mindspore.tensor(np.array([5, 6, 7]).astype(np.int32))
-        >>> z = mindspore.tensor(np.array([8, 9, 0, 1, 2]).astype(np.int32))
+        >>> x = mindspore.tensor([1, 2, 3, 4], mindspore.int32)
+        >>> y = mindspore.tensor([5, 6, 7], mindspore.int32)
+        >>> z = mindspore.tensor([8, 9, 0, 1, 2], mindspore.int32)
         >>> output = mindspore.ops.meshgrid(x, y, z, indexing='xy')
         >>> print(output)
         (Tensor(shape=[3, 4, 5], dtype=Int32, value=
@@ -4117,8 +4104,7 @@ def index_select(input, axis, index):
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> input = mindspore.tensor(np.arange(16).astype(np.float32).reshape(2, 2, 4))
+        >>> input = mindspore.tensor(mindspore.ops.arange(0, 16).reshape(2, 2, 4), mindspore.float32)
         >>> print(input)
         [[[ 0.  1.  2.  3.]
           [ 4.  5.  6.  7.]]
@@ -4289,10 +4275,9 @@ def tensor_scatter_div(input_x, indices, updates):
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> input_x = mindspore.tensor(np.array([[-0.1, 0.3, 3.6], [0.4, 0.5, -3.2]]), mindspore.float32)
-        >>> indices = mindspore.tensor(np.array([[0, 0], [0, 0]]), mindspore.int32)
-        >>> updates = mindspore.tensor(np.array([1.0, 2.0]), mindspore.float32)
+        >>> input_x = mindspore.tensor([[-0.1, 0.3, 3.6], [0.4, 0.5, -3.2]], mindspore.float32)
+        >>> indices = mindspore.tensor([[0, 0], [0, 0]], mindspore.int32)
+        >>> updates = mindspore.tensor([1.0, 2.0], mindspore.float32)
         >>> output = mindspore.ops.tensor_scatter_div(input_x, indices, updates)
         >>> print(output)
         [[-0.05  0.3  3.6  ]
@@ -5041,9 +5026,8 @@ def hsplit(input, indices_or_sections):
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> input_x = np.arange(6).reshape((2, 3)).astype('float32')
-        >>> output = mindspore.ops.hsplit(mindspore.tensor(input_x), 3)
+        >>> input_x = mindspore.ops.arange(0, 6).reshape((2, 3))
+        >>> output = mindspore.ops.hsplit(mindspore.tensor(input_x, mindspore.float32), 3)
         >>> print(output)
         (Tensor(shape=[2, 1], dtype=Float32, value=[[ 0.00000000e+00], [ 3.00000000e+00]]),
          Tensor(shape=[2, 1], dtype=Float32, value=[[ 1.00000000e+00], [ 4.00000000e+00]]),
