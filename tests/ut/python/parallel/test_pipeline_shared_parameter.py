@@ -492,7 +492,7 @@ def test_pipeline_split_stage0_flops_ma():
     model.train(2, dataset, dataset_sink_mode=False, callbacks=[
                 FlopsUtilizationCollector(dataset.get_dataset_size(), enable_ma_collector=True)])
     file = "flops_rank_0.txt"
-    para = "flops{type=\"model_flops\", rank_id=\"0\"} 1.6800"
+    para = "flops{type=\"model_flops\", rank_id=\"0\"} 1.680053"
     output = subprocess.check_output(
         ["grep '%s' %s | wc -l" % (para, file)],
         shell=True)
