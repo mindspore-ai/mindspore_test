@@ -50,6 +50,25 @@ def test_is_contiguous_false(mode):
           level_mark='level2',
           card_mark='onecard',
           essential_mark='unessential')
+@pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
+def test_is_contiguous_false_call_twice(mode):
+    """
+    Feature: is_contiguous
+    Description: Verify the result of output
+    Expectation: success
+    """
+    ms.set_context(mode=mode)
+    x = ms.Tensor([[1, 2, 3], [4, 5, 6]], dtype=ms.float32)
+    y = ops.transpose(x, (1, 0))
+    assert np.allclose(y.is_contiguous(), False)
+    y.__repr__()
+    assert np.allclose(y.is_contiguous(), False)
+
+
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
+          level_mark='level2',
+          card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_is_contiguous_true(mode):
     """

@@ -1034,6 +1034,10 @@ class MS_CORE_API BaseTensor : public MetaTensor {
   ///
   void ExecuteLazyTask() const;
 
+  /// \brief Execute contiguous callback.
+  ///
+  DeviceSyncPtr CallContiguousCallback() const;
+
  protected:
   bool is_forward_output_{false};
   bool used_in_bprop_graph_{true};

@@ -295,9 +295,17 @@ void Tensor::data_sync_directly(const DeviceSync *const device_sync, bool need_w
   std::vector<size_t> shape_tmp;
   (void)std::transform(shape().begin(), shape().end(), std::back_inserter(shape_tmp), IntToSize);
   auto size = abstract::ShapeSize(shape_tmp) * abstract::TypeIdSize(data_type());
-  if (size != 0 && !device_sync->SyncDeviceToHost(shape(), size, data_type(), data_c())) {
-    MS_LOG(INTERNAL_EXCEPTION) << "SyncDeviceToHost failed.";
+  auto contiguous_address = CallContiguousCallback();
+  if (contiguous_address == nullptr) {
+    if (size != 0 && !device_sync->SyncDeviceToHost(shape(), size, data_type(), data_c())) {
+      MS_LOG(INTERNAL_EXCEPTION) << "SyncDeviceToHost failed.";
+    }
+  } else {
+    if (size != 0 && !contiguous_address->SyncDeviceToHost(shape(), size, data_type(), data_c())) {
+      MS_LOG(INTERNAL_EXCEPTION) << "SyncDeviceToHost failed.";
+    }
   }
+
   sync_status_ = kNeedSyncHostToDevice;
 }
 
