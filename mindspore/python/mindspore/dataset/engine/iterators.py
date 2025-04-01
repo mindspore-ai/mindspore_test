@@ -220,7 +220,7 @@ class Iterator:
         dataset: Dataset to be iterated over
     """
 
-    def __init__(self, dataset, num_epochs=-1, output_numpy=False, do_copy=True):
+    def __init__(self, dataset, num_epochs=-1, output_numpy=False, do_copy=False):
         self._col_names = None
 
         # create a copy of tree and work on it.
@@ -493,7 +493,7 @@ class TupleIterator(Iterator):
     The derived class of Iterator with list type.
     """
 
-    def __init__(self, dataset, columns=None, num_epochs=-1, output_numpy=False, do_copy=True):
+    def __init__(self, dataset, columns=None, num_epochs=-1, output_numpy=False, do_copy=False):
         if columns is not None:
             if not isinstance(columns, list):
                 columns = [columns]
