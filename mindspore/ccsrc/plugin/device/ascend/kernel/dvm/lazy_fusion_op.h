@@ -75,6 +75,7 @@
 #include "kernel/ascend/pyboost/auto_generate/batch_norm_stats.h"
 #include "kernel/ascend/pyboost/auto_generate/batch_norm_gather_stats_with_counts.h"
 #include "kernel/ascend/pyboost/auto_generate/batch_norm_elemt.h"
+#include "kernel/ascend/pyboost/auto_generate/batch_norm_elemt_grad.h"
 
 namespace mindspore {
 namespace kernel {
@@ -554,6 +555,22 @@ class BatchNormElemtAscendDvm : public BatchNormElemtAscend {
                                         const std::optional<mindspore::tensor::BaseTensorPtr> &mean_tensor_opt,
                                         const std::optional<mindspore::tensor::BaseTensorPtr> &invstd_tensor_opt,
                                         const mindspore::FP32ImmPtr &eps) override;
+};
+
+class BatchNormElemtGradAscendDvm : public BatchNormElemtGradAscend {
+ public:
+  BatchNormElemtGradAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
+      : BatchNormElemtGradAscend(std::move(primitive), device_context) {}
+  ~BatchNormElemtGradAscendDvm() = default;
+
+  mindspore::tensor::BaseTensorPtr Call(const mindspore::tensor::BaseTensorPtr &dout_tensor,
+                                        const mindspore::tensor::BaseTensorPtr &input_tensor,
+                                        const mindspore::tensor::BaseTensorPtr &mean_tensor,
+                                        const mindspore::tensor::BaseTensorPtr &invstd_tensor,
+                                        const mindspore::tensor::BaseTensorPtr &weight_tensor,
+                                        const mindspore::tensor::BaseTensorPtr &sumd_dy_tensor,
+                                        const mindspore::tensor::BaseTensorPtr &sum_dy_xmu_tensor,
+                                        const mindspore::tensor::BaseTensorPtr &count_tensor) override;
 };
 }  // namespace pyboost
 }  // namespace kernel
