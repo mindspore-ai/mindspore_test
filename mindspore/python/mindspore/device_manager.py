@@ -40,6 +40,7 @@ class DeviceInfo(tuple):
     def device_id(self):
         return self[1]
 
+
 @args_type_check(device_target=str, device_id=int)
 def set_device(device_target, device_id=None):
     """
