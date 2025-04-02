@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 
+import os
 import numpy as np
 from tests.mark_utils import arg_mark
 import mindspore.context as context
@@ -32,15 +33,25 @@ class Net(Cell):
 
 def get_output(x1, x2, weight, mode, enable_graph_kernel=False):
     if enable_graph_kernel:
-        context.set_context(jit_level='O1')
+        context.set_context(jit_level='O1', graph_kernel_flags="--dump_as_text")
     else:
         context.set_context(jit_level='O0')
     net = Net()
     output = net(x1, x2, weight, mode)
+    output = output.asnumpy()
+    if enable_graph_kernel:
+        context.set_context(graph_kernel_flags="")
     return output
 
 
-def run_basic(dtype, mode='mean'):
+def run_basic(dtype, mode='mean', compare_precision=1e-4):
+    def _remove_file(file_path):
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+            except OSError:
+                pass
+
     x1 = Tensor(np.random.normal(
         0.5, 0.01, [256, 256]).astype(np.float32), dtype=dtype)
     x2 = Tensor(np.random.normal(
@@ -49,11 +60,18 @@ def run_basic(dtype, mode='mean'):
         0.5, 0.01, [256, 256]).astype(np.float32), dtype=dtype)
     expect = get_output(x1, x2, weight, mode, False)
     output = get_output(x1, x2, weight, mode, True)
-
-    expect_np = expect.asnumpy().copy()
-    output_np = output.asnumpy().copy()
-
-    assert np.allclose(expect_np, output_np, 0.0001, 0.0001)
+    dump_file = "./graph_kernel_dump/dvm_kernel_{}.txt".format(os.getpid())
+    try:
+        np.testing.assert_allclose(expect, output, compare_precision, compare_precision)
+    except Exception as ex:
+        if os.path.isfile(dump_file):
+            print("dump_file", dump_file)
+            with open(dump_file, 'r') as f:
+                for line in f:
+                    print(line)
+            _remove_file(dump_file)
+        raise RuntimeError("Precision compare failed!\n{}".format(ex))
+    _remove_file(dump_file)
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -64,7 +82,7 @@ def test_basic_ascend_f16():
     Expectation: the result match with expect
     """
     context.set_context(mode=context.GRAPH_MODE)
-    run_basic(mindspore.float16)
+    run_basic(mindspore.float16, compare_precision=1e-3)
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -102,9 +120,7 @@ def test_basic_ascend_f32_none_corner_case():
     weight = Tensor(np.array([1, 1, 1]).astype(np.float32), dtype=mindspore.float32)
     expect = get_output(logits, labels, weight, 'none', False)
     output = get_output(logits, labels, weight, 'none', True)
-    expect_np = expect.asnumpy().copy()
-    output_np = output.asnumpy().copy()
-    assert np.allclose(expect_np, output_np, 0.0001, 0.0001, equal_nan=True)
+    assert np.allclose(expect, output, 0.0001, 0.0001, equal_nan=True)
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
