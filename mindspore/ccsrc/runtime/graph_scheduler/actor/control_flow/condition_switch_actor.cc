@@ -27,7 +27,9 @@ ConditionSwitchActor::ConditionSwitchActor(const std::string &name, const CNodeP
                                            const std::set<size_t> &modifiable_ref_output_indexes,
                                            const KernelTransformType &type)
     : KernelActor(name, kernel, device_context, memory_manager_aid, debug_aid, recorder_aid, strategy,
-                  modifiable_ref_input_indexes, modifiable_ref_output_indexes, type) {}
+                  modifiable_ref_input_indexes, modifiable_ref_output_indexes, type) {
+  need_wait_pipeline_ = true;
+}
 
 void ConditionSwitchActor::Init() {
   // Check device contexts number.

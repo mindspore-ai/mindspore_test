@@ -152,16 +152,16 @@ class KernelActor : public DebugAwareActor {
 
   // Do kernel launching in this method after 'PreLaunchKernel' and 'PostLaunchKernel'.
   virtual bool LaunchKernel(OpContext<DeviceTensor> *const context, bool is_skip_launch = false);
-  // Execute kernel actor multi stream produre to make sure safety of memory before kernel launch.
-  virtual void ProcessMultiStreamBeforeKernelLaunch(OpContext<DeviceTensor> *const context);
-  // Execute kernel actor multi stream produre to make sure safety of memory after kernel launch.
-  virtual void ProcessMultiStreamAfterKernelLaunch(OpContext<DeviceTensor> *const context);
-  // Handle the ref op, set input addr to outpu addr.
+  // Handle the ref op, set input addr to output addr.
   virtual void UpdateRefDeviceAddress(OpContext<DeviceTensor> *const context, bool increase_ref_count);
+  // Execute kernel actor multi stream produre to make sure safety of memory before kernel launch.
+  void ProcessMultiStreamBeforeKernelLaunch(OpContext<DeviceTensor> *const context);
+  // Execute kernel actor multi stream produre to make sure safety of memory after kernel launch.
+  void ProcessMultiStreamAfterKernelLaunch(OpContext<DeviceTensor> *const context);
   // Update the output ref count of graph output kernel.
-  virtual void UpdateGraphOutputRefCount(OpContext<DeviceTensor> *const context);
+  void UpdateGraphOutputRefCount(OpContext<DeviceTensor> *const context);
   // Update the input device tensors to the memory free list.
-  virtual void UpdateMemoryFreeList(OpContext<DeviceTensor> *const context);
+  void UpdateMemoryFreeList(OpContext<DeviceTensor> *const context);
   // Execute infer shape, resize and launch kernel by runtime pipeline which executes by KernelAsyncInferActor,
   // KernelAsyncResizeActor and KernelAsyncLaunchActor.
   void RunWithMultiPipeline(OpContext<DeviceTensor> *const context);
@@ -348,6 +348,7 @@ class KernelActor : public DebugAwareActor {
   // the flag of the control branch in the condition switch actor. When the switch confirms the execution of a branch,
   // it sets the flag of the branch to true to enable the actor in this branch.
   bool *is_enable_{nullptr};
+  bool need_wait_pipeline_{false};
 };
 
 using KernelActorPtr = std::shared_ptr<KernelActor>;

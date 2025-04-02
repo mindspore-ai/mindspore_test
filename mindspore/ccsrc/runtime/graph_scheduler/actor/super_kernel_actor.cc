@@ -961,8 +961,7 @@ bool SuperKernelActor::LaunchAllKernels(OpContext<DeviceTensor> *const context) 
       kernel_actor->ExecuteLaunchKernelTask(context);
     }
 
-    if (enable_inline_control_flow_ &&
-        common::AnfAlgo::CheckPrimitiveType(kernel_actor->kernel_, prim::kPrimConditionSwitch)) {
+    if (enable_inline_control_flow_ && kernel_actor->need_wait_pipeline_) {
       if (!WaitRuntimePipelineFinish(context, kernel_actor->kernel_mod_->kernel_name())) {
         MS_LOG(INFO) << "Run failed and early stop.";
         return false;
