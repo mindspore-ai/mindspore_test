@@ -194,7 +194,7 @@ bool CPUDumpMemToFile(const device::DeviceAddress &addr, const std::string &file
     return true;
   }
   if (addr.GetPtr() == nullptr) {
-    MS_LOG(WARNING) << "Data is nullptr for file: " << path << ", skip it.";
+    MS_LOG(INFO) << "Data is nullptr for file: " << path << ", skip it.";
     return true;
   }
   ret = DumpJsonParser::DumpToFile(path, addr.GetPtr(), addr.GetSize(), host_shape, host_type);
@@ -213,6 +213,10 @@ bool AscendDumpMemToFile(const device::DeviceAddress &addr, const std::string &f
   }
   if (addr.GetSize() == 0) {
     MS_LOG(INFO) << "the operator in filepath: " << filepath << ", size == 0";
+    return true;
+  }
+  if (addr.GetPtr() == nullptr) {
+    MS_LOG(INFO) << "Data is nullptr for file: " << filepath << ", skip it.";
     return true;
   }
   if (trans_flag) {
