@@ -541,26 +541,159 @@ bool PipelineInterleave::GetStageByArgument(const CNodePtr &node, size_t index,
   const auto &param = parameters.at(pos);
   MS_EXCEPTION_IF_NULL(param);
   auto loads = GetLoadNodeByParam(param);
-  const auto &iter = node_users_map.find(loads.back());
-  if (iter == node_users_map.end()) {
-    return true;
-  }
-  const auto &users = (*iter).second;
-  for (auto &user : users) {
-    auto user_cnode = user.first->cast<CNodePtr>();
-    MS_EXCEPTION_IF_NULL(user_cnode);
-    auto stage_info = user_cnode->user_data<NodeStageInfo>();
-    if (stage_info != nullptr && stage_info->stage() != -1) {
-      (void)((*parameter_stage).insert(stage_info->stage()));
-    } else {
-      auto graph = user_cnode->func_graph();
-      MS_EXCEPTION_IF_NULL(graph);
-      if (graph != root_ && graph != main_graph_ && graph != shared_cell_ && graph->stage() != -1) {
-        (void)((*parameter_stage).insert(graph->stage()));
+  for (const auto &load : loads) {
+    const auto &iter = node_users_map.find(load);
+    if (iter == node_users_map.end()) {
+      return true;
+    }
+    const auto &users = (*iter).second;
+    for (auto &user : users) {
+      auto user_cnode = user.first->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(user_cnode);
+      auto stage_info = user_cnode->user_data<NodeStageInfo>();
+      if (stage_info != nullptr && stage_info->stage() != -1) {
+        (void)((*parameter_stage).insert(stage_info->stage()));
+      } else {
+        auto graph = user_cnode->func_graph();
+        MS_EXCEPTION_IF_NULL(graph);
+        if (graph != root_ && graph != main_graph_ && graph != shared_cell_ && graph->stage() != -1) {
+          (void)((*parameter_stage).insert(graph->stage()));
+        }
       }
     }
   }
   return true;
+}
+
+void PipelineInterleave::InsertSendReceiveForParameter(const AnfNodePtr &param, const AnfNodePtr &node,
+                                                       int64_t src_stage, int64_t dst_stage, int64_t chunk,
+                                                       int64_t index, int64_t order) {
+  if (src_stage != stage_ && dst_stage != stage_) {
+    return;
+  }
+  Attr attr_tag = std::make_pair(SR_TAG, MakeValue(0));
+  Attr attr_rank = std::make_pair(DEST_RANK, MakeValue(dst_stage));
+  Attr attr_group = std::make_pair(GROUP, MakeValue(group_[0]));
+  Attr attr_group_back = std::make_pair(GROUP_BACK, MakeValue(group_[1]));
+  OperatorAttrs attrs = {attr_tag, attr_rank, attr_group, attr_group_back};
+  auto send_op = CreateOpInstance(attrs, SEND, SEND);
+  auto send_node = NewValueNode(send_op);
+  std::vector<AnfNodePtr> send_input = {send_node, param};
+  auto graph = shared_cell_;
+  auto send = graph->NewCNode(send_input);
+  send->set_abstract(param->abstract());
+  send->AddPrimalAttr(CHUNK, MakeValue(chunk));
+  send->AddPrimalAttr(STAGE, MakeValue(src_stage));
+  send->AddPrimalAttr(ORDER, MakeValue(order));
+
+  attr_rank = std::make_pair(SRC_RANK, MakeValue(src_stage));
+  auto shape_type_pair = GetShapeType(node, {1}, 0);
+  Attr attr_shape = std::make_pair(SHAPE, shape_type_pair.first);
+  Attr attr_dtype = std::make_pair(DTYPE, shape_type_pair.second);
+  auto send_prim = GetCNodePrimitive(send);
+  auto rank_list = g_device_manager->GetDeviceListBetweenStage();
+  send_prim->set_attr(DST_GLOBAL_RANK, MakeValue(rank_list[dst_stage]));
+  send_prim->set_attr(DTYPE, shape_type_pair.second);
+  OperatorAttrs attrs_recv = {attr_tag, attr_rank, attr_shape, attr_dtype, attr_group, attr_group_back};
+  auto recv_op = CreateOpInstance(attrs_recv, RECEIVE, RECEIVE);
+  std::vector<AnfNodePtr> recv_input = {NewValueNode(recv_op), send};
+  auto recv = graph->NewCNode(recv_input);
+  auto recv_prim = GetCNodePrimitive(recv);
+  recv_prim->set_attr(SRC_GLOBAL_RANK, MakeValue(rank_list[src_stage]));
+  recv->set_abstract(node->abstract());
+  recv->AddPrimalAttr(CHUNK, MakeValue(chunk));
+  recv->AddPrimalAttr(STAGE, MakeValue(dst_stage));
+  recv->AddPrimalAttr(ORDER, MakeValue(order));
+  manager_->SetEdge(node, index, recv);
+}
+
+std::shared_ptr<NodeStageInfo> PipelineInterleave::GetStageInfoByGraph(const FuncGraphPtr &fg) {
+  auto fg_users = fg->func_graph_cnodes_index();
+  for (const auto &fg_user : fg_users) {
+    if (fg_user.first->second != 0) {
+      continue;
+    }
+    auto call_node = fg_user.first->first->cast<CNodePtr>();
+    auto stage_info = call_node->user_data<NodeStageInfo>();
+    if (stage_info != nullptr) {
+      return stage_info;
+    }
+  }
+  return nullptr;
+}
+
+void PipelineInterleave::InsertSendReceiveForSharedParam(const AnfNodePtr &parameter, const AnfNodePtr &argument,
+                                                         int64_t *order) {
+  auto stage_set = parameter_color_map_.at(parameter);
+  if (stage_set.size() <= 1) {
+    return;
+  }
+  auto src_stage = *stage_set.begin();
+  auto loads = GetLoadNodeByParam(argument);
+  auto node_users_map = manager_->node_users();
+  for (const auto &load : loads) {
+    auto param_users = node_users_map.at(load);
+    for (const auto &param_user : param_users) {
+      auto cuser = param_user.first->cast<CNodePtr>();
+      auto stage_info = cuser->user_data<NodeStageInfo>();
+      if (cuser->func_graph() == shared_cell_ && stage_info == nullptr) {
+        continue;
+      }
+      if (stage_info != nullptr) {
+        auto stage = stage_info->stage();
+        if (stage == src_stage) {
+          continue;
+        }
+        auto chunk = stage_info->chunk();
+        InsertSendReceiveForParameter(parameter, cuser, src_stage, stage, chunk, param_user.second, *order);
+        (*order) += 1;
+        continue;
+      }
+      if (cuser->func_graph() != shared_cell_) {
+        auto stage = cuser->func_graph()->stage();
+        int64_t chunk = 0;
+        stage_info = GetStageInfoByGraph(cuser->func_graph());
+        if (stage_info != nullptr) {
+          stage = stage_info->stage();
+          chunk = stage_info->chunk();
+        }
+        if (stage != src_stage) {
+          InsertSendReceiveForParameter(parameter, cuser, src_stage, stage, chunk, param_user.second, *order);
+          (*order) += 1;
+        }
+      }
+    }
+  }
+}
+
+void PipelineInterleave::HandleSharedParam(int64_t *order) {
+  auto parameters = shared_cell_->parameters();
+  auto fg_users = shared_cell_->func_graph_cnodes_index();
+  CNodePtr call_node;
+  auto node_users_map = manager_->node_users();
+  for (const auto &fg_user : fg_users) {
+    if (fg_user.first->second != 0) {
+      continue;
+    }
+    call_node = fg_user.first->first->cast<CNodePtr>();
+    if (call_node->func_graph() != main_graph_) {
+      call_node = nullptr;
+      continue;
+    }
+    break;
+  }
+  MS_EXCEPTION_IF_NULL(call_node);
+  for (size_t i = 1; i < call_node->inputs().size(); ++i) {
+    auto real_node = GetRealKernelNode(call_node->input(i), -1, nullptr, false).first;
+    if (real_node == nullptr) {
+      continue;
+    }
+    if (!real_node->isa<Parameter>() || real_node->func_graph() != root_) {
+      continue;
+    }
+    auto param = parameters[i - 1];
+    InsertSendReceiveForSharedParam(real_node, param, order);
+  }
 }
 
 void PipelineInterleave::ParameterColoring() {
@@ -873,6 +1006,7 @@ void PipelineInterleave::CutBorder() {
     // Modify for lizard cyclomatic complexity.
     CutBorderForNode(shared_cell_, node, &order);
   }
+  HandleSharedParam(&order);
   RemoveMonadNode();
 }
 
@@ -1009,6 +1143,7 @@ std::vector<AnfNodePtr> PipelinePostProcess::GenerateMainGraphSend(const std::ve
                                                                    const ValuePtr &index) {
   std::vector<AnfNodePtr> sends;
   auto index_value = GetValue<int64_t>(index);
+  int64_t send_input_idx = 0;
   for (size_t i = 0; i < nodes.size(); ++i) {
     auto send = nodes[i];
     auto csend = send->cast<CNodePtr>();
@@ -1023,7 +1158,7 @@ std::vector<AnfNodePtr> PipelinePostProcess::GenerateMainGraphSend(const std::ve
       continue;
     }
     auto micro_value = GetValue<int64_t>(micro);
-    auto send_input = CreateTupleGetItemNode(main_graph_, node, i);
+    auto send_input = CreateTupleGetItemNode(main_graph_, node, send_input_idx);
     if (node->cast<CNodePtr>()->HasPrimalAttr(SEQ_CHUNK)) {
       send->cast<CNodePtr>()->AddPrimalAttr(SEQ_CHUNK, node->cast<CNodePtr>()->GetPrimalAttr(SEQ_CHUNK));
     }
@@ -1035,6 +1170,7 @@ std::vector<AnfNodePtr> PipelinePostProcess::GenerateMainGraphSend(const std::ve
       new_send->AddPrimalAttr(SEQ_CHUNK, node->cast<CNodePtr>()->GetPrimalAttr(SEQ_CHUNK));
     }
     sends.emplace_back(new_send);
+    send_input_idx += 1;
   }
   return sends;
 }
