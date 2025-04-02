@@ -498,6 +498,9 @@ void RegBackpropStageHook(bool is_in_bprop) {
     return;
   }
   MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Register gradient execution hook " << (is_in_bprop ? "begin" : "end");
+  if (is_in_bprop) {
+    checker->ClearCheckObjects();
+  }
   auto task = std::make_shared<runtime::PyBoostDeviceTask>([checker, is_in_bprop]() {
     auto launch_task = std::make_shared<runtime::DeviceLaunchTask>([checker, is_in_bprop]() {
       MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Execute backprop calculation " << (is_in_bprop ? "start" : "finish");

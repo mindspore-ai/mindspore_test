@@ -97,6 +97,8 @@ class DynamicSilentChecker : public SilentCheckerBase {
 
   ~DynamicSilentChecker() override = default;
 
+  void ClearCheckObjects() override { check_objects_.clear(); }
+
   void Clear() override {
     check_objects_.clear();
     states_.clear();
@@ -106,12 +108,7 @@ class DynamicSilentChecker : public SilentCheckerBase {
 
   bool IsBackProp() { return is_back_prop_; }
 
-  void SetBackProp(bool is_back_prop) override {
-    is_back_prop_ = is_back_prop;
-    if (is_back_prop) {
-      check_objects_.clear();
-    }
-  }
+  void SetBackProp(bool is_back_prop) override { is_back_prop_ = is_back_prop; }
 
   void DoSilentCheck(const std::string &op_name, const std::string &comm_group,
                      const BaseTensorPtr &input_grad) override;
