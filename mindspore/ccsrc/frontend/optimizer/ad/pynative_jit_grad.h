@@ -72,6 +72,11 @@ FRONTEND_EXPORT std::pair<bool, FuncGraphPtr> GetBpropGraph(const pynative::Grad
 FRONTEND_EXPORT void CheckBpropGraphHasInvalidDout(const std::string &cache_key, const std::vector<bool> &need_grads);
 FRONTEND_EXPORT void ClearGradCache();
 FRONTEND_EXPORT std::pair<FuncGraphPtr, FuncGraphPtr> GetGradAndForwardGraph(const std::string &key);
+FRONTEND_EXPORT void StoreOriginGradGraph(const std::string &key, const FuncGraphPtr &fg);
+FRONTEND_EXPORT FuncGraphPtr GetOriginGradGraph(const std::string &key);
+FRONTEND_EXPORT bool HasOriginGradGraph(const std::string &key);
+FRONTEND_EXPORT void StoreFilteredGradGraph(const std::string &cache_key, size_t hash_key, const FuncGraphPtr &fg);
+FRONTEND_EXPORT FuncGraphPtr GetFilteredGradGraph(const std::string &cache_key, size_t hash_key);
 }  // namespace ad
 }  // namespace mindspore
 
