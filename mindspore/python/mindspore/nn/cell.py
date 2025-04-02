@@ -594,7 +594,7 @@ class Cell(Cell_):
             >>> net_a = NetA(net_b)
             >>> buffer_c = net_a.get_buffer("net_b.net_c.buffer_c")
             >>> print(f'buffer_c is {buffer_c}')
-            buffer_c is [0, 0, 0]
+            buffer_c is [0 0 0]
 
         """
         cell_path, _, buffer_name = target.rpartition(".")
@@ -656,9 +656,9 @@ class Cell(Cell_):
             >>> net_a = NetA(net_b)
             >>>
             >>> for name, buffer in net_a.named_buffers():
-            >>>     print(f'buffer name is {name}, buffer is {buffer}')
-            buffer name is buffer_a, buffer is [4, 5, 6]
-            buffer name is net_b.buffer_b, buffer is [1, 2, 3]
+            ...     print(f'buffer name is {name}, buffer is {buffer}')
+            buffer name is buffer_a, buffer is [4 5 6]
+            buffer name is net_b.buffer_b, buffer is [1 2 3]
 
         """
         gen = self._named_members(
@@ -708,9 +708,9 @@ class Cell(Cell_):
             >>> net_a = NetA(net_b)
             >>>
             >>> for buffer in net_a.buffers():
-            >>>     print(f'buffer is {buffer}')
-            buffer is [4, 5, 6]
-            buffer is [1, 2, 3]
+            ...     print(f'buffer is {buffer}')
+            buffer is [4 5 6]
+            buffer is [1 2 3]
 
         """
         for _, buf in self.named_buffers(recurse=recurse):
@@ -1071,6 +1071,7 @@ class Cell(Cell_):
             >>> import mindspore.nn as nn
             >>> from mindspore import ops
             >>> from mindspore.common import Tensor, Parameter
+            >>> from mindspore.common.lazy_inline import lazy_inline
             >>>
             >>> class Block(nn.Cell):
             ...     def __init__(self):

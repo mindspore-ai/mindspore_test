@@ -37,6 +37,7 @@ Model Serialization
     mindspore.parallel.load_distributed_checkpoint
     mindspore.parallel.load_segmented_checkpoints
     mindspore.parallel.rank_list_for_convert
+    mindspore.parallel.unified_safetensors
 
 
 Parallel Partitioning Strategy

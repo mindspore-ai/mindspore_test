@@ -123,7 +123,6 @@ Serialization
     mindspore.safetensors_to_ckpt
     mindspore.save_checkpoint
     mindspore.save_mindir
-    mindspore.unified_safetensors
 
 Automatic Differentiation
 ---------------------------------
