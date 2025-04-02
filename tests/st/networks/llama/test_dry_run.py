@@ -81,7 +81,7 @@ def run_command_compile(cmd, log_path, backend_time, compile_time):
         os.remove(log_path)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='allcards', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='allcards', essential_mark='unessential')
 def test_train_compile():
     """
     Feature: Trainer.train()
