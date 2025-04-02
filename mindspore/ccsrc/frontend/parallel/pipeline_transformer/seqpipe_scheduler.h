@@ -103,6 +103,7 @@ class SeqpipeScheduler : public PipelineScheduler {
   virtual void ComputeBias();
   void ComputePrefetchInfo();
   void Reorder1f1bOverlap();
+  void ReorderShardedParam();
   void Add1f1bAttr(const BorderPair &recv, const std::string &tag, size_t index_1f1b);
   std::pair<Border, Border> SeqpipeBorder(const std::vector<Border> &borders, int64_t seq_chunk, int64_t chunk,
                                           int64_t micro);
