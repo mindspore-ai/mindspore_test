@@ -949,7 +949,11 @@ void GradExecutor::EndGraphInner(const py::object &obj, const py::object &out, c
   }
   // Get top cell endgraph
   if (input_args_info->cell_id == top_cell()->cell_id()) {
-    runtime::Pipeline::Get().WaitAll();
+    {
+      GilReleaseWithCheck no_gil;
+      runtime::Pipeline::Get().frontend_stage()->Wait();
+      runtime::Pipeline::Get().bprop_stage()->Wait();
+    }
     if (input_args_info->out_value == nullptr) {
       input_args_info->out_value = parse::data_converter::PyObjToValue(out, false);
     }
