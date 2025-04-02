@@ -1,7 +1,7 @@
-mindspore.unified_safetensors
-==============================
+mindspore.parallel.unified_safetensors
+======================================
 
-.. py:function:: mindspore.unified_safetensors(src_dir, src_strategy_file, dst_dir, merge_with_redundancy=True, file_suffix=None, max_process_num=64, choice_func=None, split_dst_file=())
+.. py:function:: mindspore.parallel.unified_safetensors(src_dir, src_strategy_file, dst_dir, merge_with_redundancy=True, file_suffix=None, max_process_num=64, choice_func=None, split_dst_file=())
 
     将多个safetensors文件合并为一系列统一的safetensors文件。
 

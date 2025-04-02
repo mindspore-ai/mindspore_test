@@ -859,7 +859,7 @@ def unified_safetensors(src_dir, src_strategy_file, dst_dir, merge_with_redundan
         >>> src_dir = "/usr/safetensors/llama31B/4p_safetensors/"
         >>> src_strategy_file = "/usr/safetensors/llama31B/strategy_4p.ckpt"
         >>> dst_dir = "/usr/safetensors/llama31B/merge_llama31B_4p/"
-        >>> ms.unified_safetensors(src_dir, src_strategy_file, dst_dir)
+        >>> ms.parallel.unified_safetensors(src_dir, src_strategy_file, dst_dir)
     """
     pid = os.getpid()
     total_cores = os.cpu_count()

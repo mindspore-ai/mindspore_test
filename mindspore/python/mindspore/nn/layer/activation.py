@@ -1813,7 +1813,7 @@ def get_activation(name, prim_name=None):
         >>> import mindspore.nn as nn
         >>> sigmoid = nn.get_activation('sigmoid')
         >>> print(sigmoid)
-        Sigmoid<>
+        Sigmoid()
     """
     msg_prefix = f"For '{prim_name}', the" if prim_name else "The"
     if name is None:
