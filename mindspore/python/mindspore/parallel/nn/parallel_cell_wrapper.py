@@ -21,8 +21,11 @@ from mindspore import nn
 from mindspore.ops import operations as P
 from mindspore.nn.cell import Cell
 from mindspore.nn.wrap.cell_wrapper import _MicroBatch
+from mindspore import log as logger
+
 
 __all__ = ['PipelineCell', 'Pipeline', 'MicroBatchInterleaved', 'GradAccumulation']
+
 
 class PipelineCell(Cell):
     """
@@ -93,13 +96,13 @@ class PipelineCell(Cell):
             # if there are any config elements left, print them
             if config_dict:
                 for config_cell_name, config_stage_num in config_dict.items():
-                    print("pipeline_cell stage_config set pipeline_stage fail!")
-                    print("config cell name:" + str(config_cell_name) +
-                          " config stage num:" + str(config_stage_num))
-                print("network:" + str(self.network))
-                print("cell name available:")
+                    logger.error("pipeline_cell stage_config set pipeline_stage fail!")
+                    logger.warning("config cell name:" + str(config_cell_name) +
+                                   " config stage num:" + str(config_stage_num))
+                logger.warning("network:" + str(self.network))
+                logger.warning("cell name available:")
                 for cell_name, cell in self.network.cells_and_names():
-                    print(cell_name)
+                    logger.warning(cell_name)
                 raise KeyError("For 'PipelineCell', the argument 'stage_config' : {} is not "
                                "found in 'network' : {}".format(config_dict, network))
 
@@ -113,6 +116,7 @@ class PipelineCell(Cell):
             else:
                 ret = output
         return ret
+
 
 class Pipeline(PipelineCell):
     """
@@ -136,6 +140,7 @@ class Pipeline(PipelineCell):
         >>> net = LeNet5()
         >>> net = Pipeline(net, 4, stage_config={"cell_name_0": 0, "cell_name_1": 1})
     """
+
 
 class MicroBatchInterleaved(Cell):
     """

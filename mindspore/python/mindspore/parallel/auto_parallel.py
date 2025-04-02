@@ -724,5 +724,5 @@ class AutoParallel(Cell):
         self._transformer_opt_config = file_path
         ctx.ascend_config['parallel_speed_up_json_path'] = file_path
 
-    def construct(self, *inputs):
-        return self.network(*inputs)
+    def construct(self, *args, **kwargs):
+        return self.network(*args, **kwargs)
