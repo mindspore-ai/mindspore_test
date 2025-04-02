@@ -347,9 +347,29 @@ class AutoParallel(Cell):
             KeyError: When 'file_path' does not end in ``".json"`` .
 
         Examples:
-            >>> # Define the network structure of ParallelNetwork. Refer to
-            >>> the example of 'AutoParallel.save_operator_strategy_file(file_path)'
+            >>> import math
+            >>> import mindspore as ms
+            >>> import numpy as np
+            >>> from mindspore import nn, ops
+            >>> from mindspore.communication.management import init
             >>> from mindspore.parallel.auto_parallel import AutoParallel
+            >>> from mindspore.common.initializer import initializer, HeUniform
+            >>>
+            >>> class ParallelNetwork(nn.Cell):
+            ...     def __init__(self, strategy=None):
+            ...         super().__init__()
+            ...         self.flatten = ops.Flatten()
+            ...         self.fc1_weight = ms.Parameter(initializer(HeUniform(math.sqrt(5)), shape=[
+            ...             16, 10], dtype=ms.float32), name="fc1")
+            ...         self.matmul1 = ops.MatMul().shard(strategy)
+            ...         self.relu1 = ops.ReLU()
+            ...
+            ...     def construct(self, x):
+            ...         x = self.flatten(x)
+            ...         x = self.matmul1(x, self.fc1_weight)
+            ...         x = self.relu1(x)
+            ...         return x
+            >>>
             >>> init(backend_name='hccl')
             >>> strategy = ((1, 1), (1, 2))
             >>> net = ParallelNetwork(strategy)
@@ -444,10 +464,6 @@ class AutoParallel(Cell):
             ValueError: If the `shard_size` is not a positive integer or -1.
             ValueError: If `threshold` is not a positive integer or 0.
             ValueError: If `optimizer_level` is not one of the [ ``level1``, ``level2``, ``level3`` ].
-
-        Examples:
-            >>> parallel_net = AutoParallel(net, parallel_mode="semi_auto")
-            >>> parallel_net.hsdp(shard_size=-1, threshold=64, optimizer_level="level1")
         """
         self._enable_parallel_optimizer = True
         if not isinstance(shard_size, int) or (shard_size <= 0 and shard_size != -1):
@@ -607,32 +623,18 @@ class AutoParallel(Cell):
     def enable_gradients_mean(self):
         """
         Perform mean operator after allreduce of gradients in parallel mode.
-
-        Examples:
-            >>> parallel_net = AutoParallel(net, parallel_mode="semi_auto")
-            >>> parallel_net.enable_gradients_mean()
         """
         self._gradients_mean = True
 
     def disable_gradient_fp32_sync(self):
         """
         Disable convert tensor type from fp16 to fp32 before parameter gradients allreduce.
-
-        Examples:
-            >>> net = Network()
-            >>> parallel_net = AutoParallel(net, parallel_mode="semi_auto")
-            >>> parallel_net.disable_gradient_fp32_sync()
         """
         self._gradient_fp32_sync = False
 
     def disable_loss_repeated_mean(self):
         """
         The mean operator is not executed backwards when the calculation is repeated.
-
-        Examples:
-            >>> net = Network()
-            >>> parallel_net = AutoParallel(net, parallel_mode="semi_auto")
-            >>> parallel_net.disable_loss_repeated_mean()
         """
         self._loss_repeated_mean = False
 

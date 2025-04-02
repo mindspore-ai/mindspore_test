@@ -963,12 +963,8 @@ def set_auto_parallel_context(**kwargs):
     Set auto parallel context, only data parallel supported on CPU.
 
     Note:
-        Attribute name is required for setting attributes.
-        If a program has tasks on different parallel modes, before setting a new parallel mode for the
-        next task, interface :func:`mindspore.reset_auto_parallel_context` should be called to reset
-        the configuration.
-        Setting or changing parallel modes must be called before creating any Initializer, otherwise,
-        it may have RuntimeError when compiling the network.
+        Global parallel configuration. This interface will be deprecated in future versions, please use
+        the api :class:`mindspore.parallel.auto_parallel.AutoParallel` instead.
 
     Some configurations are parallel mode specific, see the below table for details:
 
@@ -1205,6 +1201,9 @@ def get_auto_parallel_context(attr_key):
     """
     Get auto parallel context attribute value according to the key.
 
+    Note:
+        This interface will be deprecated in future versions.
+
     Args:
         attr_key (str): The key of the attribute.
 
@@ -1224,7 +1223,8 @@ def get_auto_parallel_context(attr_key):
 
 def reset_auto_parallel_context():
     """
-    Reset auto parallel context attributes to the default values.
+    Reset auto parallel context attributes to the default values. This interface will be deprecated in future
+    versions, please use the api :class:`mindspore.parallel.auto_parallel.AutoParallel` instead.
 
     - device_num: 1.
     - global_rank: 0.

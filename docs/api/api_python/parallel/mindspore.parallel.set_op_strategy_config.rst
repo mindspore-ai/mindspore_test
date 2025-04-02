@@ -6,7 +6,8 @@ mindspore.parallel.set_op_strategy_config
     自动并行策略传播模式下，通过此接口设置保存或加载算子级策略。
 
     .. warning::
-        这是一个实验性API，后续可能修改或删除；该接口暂不支持保存或加载Layout形式的算子策略。
+        - 这是一个实验性API，后续可能修改或删除，推荐使用新接口 :func:`mindspore.parallel.auto_parallel.AutoParallel.load_operator_strategy_file` 和 :func:`mindspore.parallel.auto_parallel.AutoParallel.save_operator_strategy_file`；
+        - 该接口暂不支持保存或加载Layout形式的算子策略。
     
     .. note::
         - 仅在自动并行模式且搜索模式为策略传播时有效。

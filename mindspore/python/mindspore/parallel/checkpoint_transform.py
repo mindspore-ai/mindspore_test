@@ -873,8 +873,10 @@ def set_op_strategy_config(mode="SAVE", path=""):
     Set strategy json configuration when using sharding propagation.
 
     .. warning::
-        This is an experimental interface, may be changed or canceled in the future;
-        This interface currently doesn't support saving or loading strategies using layout.
+        - This is an experimental interface, may be changed or canceled in the future, please use the api
+          :func:`mindspore.parallel.auto_parallel.AutoParallel.load_operator_strategy_file` or
+          :func:`mindspore.parallel.auto_parallel.AutoParallel.save_operator_strategy_file` instead;
+        - This interface currently doesn't support saving or loading strategies using layout.
 
     Note:
         - It only works when `parallel_mode=ParallelMode.AUTO_PARALLEL` and `search_mode='sharding_propagation'`.

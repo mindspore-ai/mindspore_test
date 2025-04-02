@@ -119,8 +119,6 @@ Serialization
     mindspore.load_checkpoint_async
     mindspore.load_mindir
     mindspore.load_param_into_net
-    mindspore.merge_pipeline_strategys
-    mindspore.merge_sliced_parameter
     mindspore.parse_print
     mindspore.safetensors_to_ckpt
     mindspore.save_checkpoint
@@ -156,7 +154,7 @@ Automatic Vectorization
 
     mindspore.vmap
 
-Parallel
+Recompute
 ^^^^^^^^^^
 
 .. autosummary::
@@ -164,11 +162,8 @@ Parallel
     :nosignatures:
     :template: classtemplate.rst
 
-    mindspore.parameter_broadcast
     mindspore.recompute
-    mindspore.sync_pipeline_shared_parameters
-    mindspore.parallel.set_op_strategy_config
-
+    
 JIT
 ---
 

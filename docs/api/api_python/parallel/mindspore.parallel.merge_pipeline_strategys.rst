@@ -1,7 +1,7 @@
-mindspore.merge_pipeline_strategys
-======================================
+mindspore.parallel.merge_pipeline_strategys
+================================================================
 
-.. py:function:: mindspore.merge_pipeline_strategys(src_strategy_dirs, dst_strategy_file)
+.. py:function:: mindspore.parallel.merge_pipeline_strategys(src_strategy_dirs, dst_strategy_file)
 
     流水线并行模式下，汇聚所有流水线并行子图的切分策略文件。
 
