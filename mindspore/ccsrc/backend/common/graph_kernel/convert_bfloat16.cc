@@ -125,9 +125,16 @@ AnfNodePtr NewCastNode(const FuncGraphPtr &func_graph, const AnfNodePtr &input_n
 const HashMap<std::string, std::vector<size_t>> kNeedKeepBF16Ops = {
   {ops::kNameAssign, {kIndex2}}, {ops::kNameMatMul, {kIndex1, kIndex2}}, {ops::kNameBatchMatMul, {kIndex1, kIndex2}}};
 
+const HashSet<std::string> kCanKeepBF16Ops = {ops::kNameReshape, kTransposeOpName};
+
 inline bool NeedKeepBF16(const CNodePtr &cnode) {
   const auto &prim = GetCNodePrimitive(cnode);
   return prim != nullptr && kNeedKeepBF16Ops.find(prim->name()) != kNeedKeepBF16Ops.end();
+}
+
+inline bool CanKeepBF16(const CNodePtr &cnode) {
+  const auto &prim = GetCNodePrimitive(cnode);
+  return prim != nullptr && kCanKeepBF16Ops.find(prim->name()) != kCanKeepBF16Ops.end();
 }
 }  // namespace
 
@@ -256,13 +263,21 @@ bool ConvertBFloat16::Process(const FuncGraphPtr &func_graph) {
       continue;
     }
     // For other nodes, add cast for its input and update its abstract and build info
-    //   add cast for node's output if node is sub-graph's output
+    // add cast for node's output if node is sub-graph's output
     bool need_update = false;
+    bool can_keep_bf16 = CanKeepBF16(cnode);
     for (size_t i = 0; i < common::AnfAlgo::GetInputTensorNum(cnode); ++i) {
-      auto orig_input_type = cb->GetInputType(cnode, i);
-      if (orig_input_type == kNumberTypeBFloat16) {
-        need_update = true;
-        changed = true;
+      auto ori_input_type = cb->GetInputType(cnode, i);
+      if (ori_input_type != kNumberTypeBFloat16) {
+        continue;
+      }
+      if (can_keep_bf16) {
+        auto cur_input_type = cb->GetOutputType(cnode->input(i + 1), 0);
+        if (cur_input_type != ori_input_type) {
+          need_update = changed = true;
+        }
+      } else {
+        need_update = changed = true;
         CastInput(cnode, i, func_graph);
       }
     }

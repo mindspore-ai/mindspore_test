@@ -213,6 +213,9 @@ class FuseMatMul : public FusePattern {
       if (current_size + a->area_outputs().size() > MAX_FUSE_NUM) {
         break;
       }
+      if (a->size() == 1 && a->dom()->op() == kReshapeOpName) {
+        continue;
+      }
       bool fuse_flag = (dom->dom()->op() == kMatMulOpName && a->pattern() <= NodePattern::BROADCAST) ||
                        (dom->dom()->op() == kBatchMatMulOpName && a->pattern() < NodePattern::BROADCAST);
       if (fuse_flag && !HasCircle(dom, a) && IsSameShapeSize(matmul_output_size, a->area_outputs())) {
