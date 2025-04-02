@@ -64,6 +64,36 @@ std::set<std::string> bp_primitive_set = {prim::kPrimMatMul->name(), prim::kPrim
                                           prim::kPrimConv2DBackpropFilter->name()};
 constexpr size_t k_double_expand_ratio = 2;
 
+std::string DoubleToString(double d, int precision) {
+  std::ostringstream out;
+  out << std::fixed << std::setprecision(precision) << d;
+  return out.str();
+}
+
+std::string AddBigNums(const std::string &num1, double double_num2) {
+  string num2 = DoubleToString(double_num2, 0);
+  std::string result;
+  int carry = 0;
+  int i = num1.length() - 1;
+  int j = num2.length() - 1;
+
+  while (i >= 0 || j >= 0 || carry) {
+    int sum = carry;
+    if (i >= 0) {
+      sum += num1[i] - '0';
+      i--;
+    }
+    if (j >= 0) {
+      sum += num2[j] - '0';
+      j--;
+    }
+    carry = sum / 10;
+    result.push_back((sum % 10) + '0');
+  }
+  std::reverse(result.begin(), result.end());
+  return result;
+}
+
 int64_t CalFAFlops(const std::vector<ShapeVector> &input_shapes, int64_t input_layout) {
   (void)CheckAndConvertUtils::CheckInteger("rank of 'flash attention inputs'", input_shapes.size(), kGreaterEqual,
                                            kIndex2, "FA");
@@ -380,10 +410,10 @@ void GetCalOps(const FuncGraphPtr &graph, size_t *op_id, std::unordered_map<std:
 py::tuple FlopsCollection(const FuncGraphPtr &graph) {
   MS_LOG(INFO) << "cal model flops.";
   size_t op_id = 0;
-  double full_mfu = 0;
-  double full_hfu = 0;
-  double shard_mfu = 0;
-  double shard_hfu = 0;
+  string full_mfu_s = "0";
+  string full_hfu_s = "0";
+  string shard_mfu_s = "0";
+  string shard_hfu_s = "0";
   bool is_dynamic_shape = false;
   std::unordered_map<std::string, OpInfoPtr> op_info_map_dx_dw_map;
   std::unordered_map<CNodePtr, OpInfoPtr> bprop_info_map_dx_dw_map;
@@ -401,22 +431,23 @@ py::tuple FlopsCollection(const FuncGraphPtr &graph) {
         is_dynamic_shape = true;
         break;
       }
-      full_hfu += full_op_flops * expand_ratio_fa_bp;
-      shard_hfu += shard_op_flops * expand_ratio_fa_bp;
+      full_hfu_s = AddBigNums(full_hfu_s, full_op_flops * expand_ratio_fa_bp);
+      shard_hfu_s = AddBigNums(shard_hfu_s, shard_op_flops * expand_ratio_fa_bp);
     } else {
       if (shard_op_flops < 0) {
         is_dynamic_shape = true;
         break;
       }
-      full_hfu += full_op_flops;
-      shard_hfu += shard_op_flops;
+      full_hfu_s = AddBigNums(full_hfu_s, full_op_flops);
+      shard_hfu_s = AddBigNums(shard_hfu_s, shard_op_flops);
     }
     if (!op_info->is_recompute) {
-      full_mfu += full_op_flops;
-      shard_mfu += shard_op_flops;
+      full_mfu_s = AddBigNums(full_mfu_s, full_op_flops);
+      shard_mfu_s = AddBigNums(shard_mfu_s, shard_op_flops);
     }
   }
-  return py::make_tuple(full_mfu, full_hfu, shard_mfu, shard_hfu, is_dynamic_shape);
+  return py::make_tuple(std::stod(full_mfu_s), std::stod(full_hfu_s), std::stod(shard_mfu_s), std::stod(shard_hfu_s),
+                        is_dynamic_shape);
 }
 }  // namespace parallel
 }  // namespace mindspore
