@@ -506,7 +506,7 @@ class DynamicProfilerMonitorBase(Callback):
                              "greater than or equal to 0, and stop step should not be less than start step",
                              self._rank_id, self._start_step, self._stop_step)
 
-        if self._profiler and self._start_step <= step_num <= self._stop_step + 1:
+        if self._profiler and self._start_step <= self._step_num <= self._stop_step + 1:
             self._profiler.step()
         else:
             self._profiler = None
