@@ -34,6 +34,7 @@
 #include "mindspore/ops/op_def/other_ops.h"
 #include "pipeline/jit/ps/pipeline.h"
 #include "frontend/optimizer/fallback_rewriter.h"
+#include "frontend/optimizer/irpass/check_invalid_view_inplace_dout.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
@@ -46,6 +47,7 @@ namespace ad {
 mindspore::HashMap<std::string, std::pair<FuncGraphPtr, FuncGraphPtr>> pass_grad_graph_param_;
 mindspore::HashMap<std::string, FuncGraphPtr> pass_grad_graph_valuenode_;
 mindspore::HashMap<std::string, pipeline::ResourcePtr> jit_forward_resource;
+mindspore::HashMap<std::string, FuncGraphPtr> original_bprop_graph;
 
 namespace {
 static const std::vector<PrimitivePtr> UNREUSED_PRIM_LIST = {
@@ -349,6 +351,10 @@ std::pair<bool, FuncGraphPtr> GetBpropGraphWithParamalization(const pynative::Gr
     after_opt_fg = jit_adgrad_processer->GenerateBpropGraph();
     MS_LOG(INFO) << "Start optimizing brop graph.";
     pynative::CommonUtils::DumpGraphIR("opt_backward_before_opt.ir", after_opt_fg);
+    auto check_invalid_dout_level = common::GetCompileConfig("CHECK_INVALID_VIEW_INPLACE_DOUT_LEVEL");
+    if (check_invalid_dout_level == "" || check_invalid_dout_level == opt::irpass::kCheckDoutLevelSceneOne) {
+      original_bprop_graph[grad_param->graph_cache_key] = BasicClone(after_opt_fg);
+    }
     after_opt_fg = OptimizeBpropGraph(after_opt_fg, grad_param);
     MS_LOG(INFO) << "Bprop graph generated successfully.";
     if (grad_param->is_jit_graph) {
@@ -430,6 +436,18 @@ void ClearGradCache() {
   pass_grad_graph_valuenode_.clear();
   pass_grad_graph_param_.clear();
   jit_forward_resource.clear();
+  original_bprop_graph.clear();
+}
+
+void CheckBpropGraphHasInvalidDout(const std::string &cache_key, const VectorRef &args) {
+  const auto it = original_bprop_graph.find(cache_key);
+  if (it == original_bprop_graph.end()) {
+    return;
+  }
+  auto original_bprop = it->second;
+  MS_EXCEPTION_IF_NULL(original_bprop);
+  mindspore::opt::irpass::CheckBpropGraphHasInvalidDoutHelper(original_bprop, args);
+  original_bprop_graph.erase(cache_key);
 }
 
 void BpropGenerator::Init() {

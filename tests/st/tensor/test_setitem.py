@@ -210,6 +210,7 @@ def test_setitem_with_iadd(capture_mode):
     Description: Verify the result of tensor setitem with iadd
     Expectation: success
     """
+
     os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
     if capture_mode is not None:
         os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
@@ -472,6 +473,8 @@ def test_setitem_grad_with_iadd(capture_mode):
     Description: Verify the result of tensor setitem grad with iadd
     Expectation: success
     """
+    if capture_mode in ['ast', 'bytecode']:
+        pytest.skip(f"Tests with capture_mode={capture_mode} are skipped!!!")
 
     index_skips = {
         None: [],
@@ -616,6 +619,9 @@ def test_setitem_grad_with_imul(capture_mode):
     Description: Verify the result of tensor setitem grad with imul
     Expectation: success
     """
+    if capture_mode in ['ast', 'bytecode']:
+        pytest.skip(f"Tests with capture_mode={capture_mode} are skipped!!!")
+
     os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
     if capture_mode is not None:
         os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'

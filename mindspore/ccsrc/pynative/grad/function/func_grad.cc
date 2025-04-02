@@ -905,6 +905,7 @@ ValuePtrList GraphBackwardNode::CallBackward(const ValuePtrList &grads) {
                                      name(), false);
   MS_LOG(DEBUG) << "Begin GraphBackwardNode CallBackward ";
   MS_LOG(DEBUG) << PyNativeAlgo::Common::PrintDebugInfo(grads, "bprop cut input grads: ");
+  mindspore::ad::CheckBpropGraphHasInvalidDout(cache_key_, args_);
   auto graph_call_back = AutoGradUtil::CreateGraphCallBack(func_graph_, cache_key_, graph_call_condition_);
   // Add graph din
   const auto &device_target = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);

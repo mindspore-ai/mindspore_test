@@ -360,6 +360,17 @@ Value Range:
 """
 CHECK_PASS_NODE_SCOPE = ''
 
+"""
+Name: CHECK_INVALID_VIEW_INPLACE_DOUT_LEVEL
+Function: The level of check invalid dout under view+inplace scene
+Value Range:
+    1: Only check scenario 1
+    2: Only check scenario 2
+    Default(""): Check all invalid dout for view inplace scene
+    Others: No invalid dout check for view inplace scene
+"""
+CHECK_INVALID_VIEW_INPLACE_DOUT_LEVEL = ''
+
 __all__ = [
     "COMPILE_PROFILE",
     "COMPILE_PROFILE_FINISH_ACTION",
@@ -399,4 +410,5 @@ __all__ = [
     "ENABLE_ELIMINATE_UNUSED_PARAMS",
     "PUT_ALL_CNODE_INTO_ORDER_LIST",
     "CHECK_PASS_NODE_SCOPE",
+    "CHECK_INVALID_VIEW_INPLACE_DOUT_LEVEL"
 ]

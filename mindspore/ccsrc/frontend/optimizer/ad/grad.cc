@@ -23,6 +23,7 @@
 #include "frontend/optimizer/irpass.h"
 #include "frontend/optimizer/inplace_input_replace.h"
 #include "frontend/operator/composite/composite.h"
+#include "frontend/optimizer/irpass/check_invalid_view_inplace_dout.h"
 #include "ir/func_graph_cloner.h"
 #include "utils/ms_context.h"
 #include "utils/symbolic.h"
@@ -376,6 +377,18 @@ void SetFlagForInplaceNodesUpdateStateUseOnly(const FuncGraphPtr &func_graph,
   auto cnode = output->cast<CNodePtr>();
   SetFlagInner(cnode, need_grad_map);
 }
+
+bool NeedCheckInvalidViewInplaceDout(const std::string &scene) {
+  //  1: Only check scenario 1
+  //  2: Only check scenario 2
+  //  Default(""): Check all invalid dout for view inplace scene
+  //  Others: No invalid dout check for view inplace scene
+  auto check_invalid_dout_level = common::GetCompileConfig("CHECK_INVALID_VIEW_INPLACE_DOUT_LEVEL");
+  if (check_invalid_dout_level == "") {
+    return true;
+  }
+  return check_invalid_dout_level == scene;
+}
 }  // namespace
 
 FuncGraphPtr GradOneFuncGraph(const FuncGraphPtr &func_graph, const opt::OptimizerPtr &optimizer, bool is_top,
@@ -386,7 +399,9 @@ FuncGraphPtr GradOneFuncGraph(const FuncGraphPtr &func_graph, const opt::Optimiz
   mindspore::opt::DoInplaceInputReplace(func_graph, optimizer);
 
   if (is_view_inplace) {
-    CheckViewInplaceOutput(func_graph);
+    if (NeedCheckInvalidViewInplaceDout(opt::irpass::kCheckDoutLevelSceneTwo)) {
+      CheckViewInplaceOutput(func_graph);
+    }
     std::map<AnfNodePtr, AnfNodePtr> need_grad_map{};
     GetNeedGradMapForUpdateStateUseOnlyNodes(func_graph, &need_grad_map);
     SetFlagForInplaceNodesUpdateStateUseOnly(func_graph, need_grad_map);
@@ -429,6 +444,12 @@ FuncGraphPtr GradOneFuncGraph(const FuncGraphPtr &func_graph, const opt::Optimiz
     auto get_real_bprop_out = std::make_shared<prim::GetRealBpropOut>("get_real_bprop_out");
     AnfNodePtr bout = tape->NewCNodeInOrder({NewValueNode(get_real_bprop_out), tape->output()});
     tape->set_output(bout);
+  }
+
+  // In the view + inplace scenario, ensure that the input corresponding to the inplace op that has not been updated in
+  // place must not require gradient.
+  if (is_view_inplace && NeedCheckInvalidViewInplaceDout(opt::irpass::kCheckDoutLevelSceneOne)) {
+    mindspore::opt::irpass::MarkInvalidInplaceOpDout(res);
   }
 
   multi_graph_sink(res);
