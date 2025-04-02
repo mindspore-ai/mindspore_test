@@ -8,7 +8,7 @@ mindspore.nn.KLDivLoss
     对于相同shape的Tensor :math:`x` 和 :math:`target` ，KLDivLoss的计算公式如下：
 
     .. math::
-        L(x, target) = target \cdot (\log target - x)
+        L(x, target) = target \cdot (\log target - \log x)
 
     输出
 

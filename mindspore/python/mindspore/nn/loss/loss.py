@@ -2579,7 +2579,7 @@ class KLDivLoss(LossBase):
     the updating formulas of KLDivLoss algorithm are as follows,
 
     .. math::
-        L(x, target) = target \cdot (\log target - x)
+        L(x, target) = target \cdot (\log target - \log x)
 
     Then,
 
