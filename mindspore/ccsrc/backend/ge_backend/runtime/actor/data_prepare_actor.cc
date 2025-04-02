@@ -461,6 +461,11 @@ void DataPrepareActor::PrepareDataForDeviceTensorStore(const std::vector<std::ve
   MS_EXCEPTION_IF_NULL(parser);
   for (size_t i = 0; i < graph_compiler_info_->graphs_.size(); ++i) {
     const auto &graph = graph_compiler_info_->graphs_[i];
+    const auto &graph_executor = graph_compiler_info_->graph_executor_;
+    // alloc graph fixed memory
+    if (graph_executor != nullptr) {
+      graph_executor->AllocGEFixMemory();
+    }
     MS_EXCEPTION_IF_NULL(graph);
     MS_LOG(DEBUG) << "prepare data for graph:" << graph->ToString();
     // Prepare the data of device tensor store(value nodes of graph).
