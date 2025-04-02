@@ -550,7 +550,7 @@ REG_BPROP_BUILDER("LinalgQr").SetBody(BODYFUNC(ib) {
         dx = dx + ib->MatMulExt(q_mat, dr);
       }
     }
-  } else {  // dynamic shape.
+  } else {
     auto real_m_n = ib->ShapeCalc(dynamic_cal_m_n, {a_mat})[0];
     auto m_ = ib->TupleGetItem(real_m_n, 0);
     auto n_ = ib->TupleGetItem(real_m_n, 1);
@@ -565,8 +565,7 @@ REG_BPROP_BUILDER("LinalgQr").SetBody(BODYFUNC(ib) {
 
       auto dx_T = e->TupleGetItem(
         e->Emit("TriangularSolve", {e->Emit("TransposeExt", {ret, e->Value<int64_t>(-1), e->Value<int64_t>(-2)}), r_mat,
-                                    /*upper*/ e->Value(true),
-                                    /*transpose*/ e->Value(false), /*unit_diagonal*/ e->Value(false)}),
+                                    e->Value(true), e->Value(false), e->Value(false)}),
         0);
       ret = e->Emit("TransposeExt", {dx_T, e->Value<int64_t>(-1), e->Value<int64_t>(-2)});
 
@@ -580,8 +579,7 @@ REG_BPROP_BUILDER("LinalgQr").SetBody(BODYFUNC(ib) {
         e->Emit("Narrow", {r_mat, e->EmitValue(MakeValue<int64_t>(-1)), e->EmitValue(MakeValue<int64_t>(0)), m_});
       auto dx_T = e->TupleGetItem(
         e->Emit("TriangularSolve", {e->Emit("TransposeExt", {ret, e->Value<int64_t>(-1), e->Value<int64_t>(-2)}),
-                                    r_narrow, /*upper*/ e->Value(true),
-                                    /*transpose*/ e->Value(false), /*unit_diagonal*/ e->Value(false)}),
+                                    r_narrow, e->Value(true), e->Value(false), e->Value(false)}),
         0);
       ret = e->Emit("TransposeExt", {dx_T, e->Value<int64_t>(-1), e->Value<int64_t>(-2)});
       auto r_reshape = e->ShapeCalc(dynamic_resize_r_shape, {r_mat, m_, n_}, {1, 2})[0];
