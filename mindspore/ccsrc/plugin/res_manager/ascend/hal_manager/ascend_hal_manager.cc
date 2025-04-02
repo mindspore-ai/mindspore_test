@@ -21,6 +21,7 @@
 #include <string>
 #include "include/common/debug/common.h"
 #include "acl/acl_rt.h"
+#include "utils/distributed_meta.h"
 #include "utils/log_adapter.h"
 #include "utils/convert_utils_base.h"
 #include "utils/temp_file_manager.h"
@@ -36,6 +37,17 @@ namespace ascend {
 namespace {
 constexpr auto kSaturationMode = "Saturation";
 constexpr auto kINFNANMode = "INFNAN";
+
+std::string GenerateAclInitJsonPath() {
+  const pid_t pid = getpid();
+  std::string rankid_str = common::GetEnv("RANK_ID");
+  if (mindspore::DistributedMeta::GetInstance()->initialized()) {
+    rankid_str = std::to_string(mindspore::DistributedMeta::GetInstance()->global_rank_id());
+  }
+  constexpr size_t random_len = 12;
+  auto rand_str = Common::GetRandomStr(random_len);
+  return "./aclinit_" + rankid_str + "_" + std::to_string(pid) + "_" + rand_str + ".json";
+}
 }  // namespace
 static thread_local aclrtContext thread_local_rt_context{nullptr};
 
@@ -179,8 +191,7 @@ void AscendHalManager::InitializeAcl() {
     return;
   }
   acl_initialized_ = true;
-  pid_t pid = getpid();
-  std::string file_name = "./aclinit_" + std::to_string(pid) + ".json";
+  std::string file_name = GenerateAclInitJsonPath();
   std::string json_str;
   auto realpath = Common::CreatePrefixPath(file_name);
   if (!realpath.has_value()) {
