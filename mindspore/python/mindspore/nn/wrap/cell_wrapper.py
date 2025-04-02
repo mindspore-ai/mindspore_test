@@ -545,6 +545,7 @@ def grad_scale(scale, grad):
     new_grad = ops.depend(new_grad, F.assign(grad, zeros))
     return new_grad
 
+
 @_primexpr
 def _check_shape_value_on_axis_divided_by_target_value(input_shape, micro_size):
     if F.isconstant(input_shape[0]) is False:
