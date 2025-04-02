@@ -517,9 +517,12 @@ CNodePtr QuantBatchMatmulAllReduceFusion::CreateFusionCNode(const FuncGraphPtr &
   MS_CHECK_TRUE_RET(qbmm_reduce_prim, {});
 
   auto transpose_a_node = qbmm_cnode->input(kIndex7)->cast<ValueNodePtr>();
+  MS_CHECK_TRUE_RET(transpose_a_node != nullptr, {});
   auto transpose_b_node = qbmm_cnode->input(kIndex8)->cast<ValueNodePtr>();
+  MS_CHECK_TRUE_RET(transpose_b_node != nullptr, {});
   // add attr
   auto allreduce_prim = GetCNodePrimitive(allreduce_cnode);
+  MS_CHECK_TRUE_RET(allreduce_prim != nullptr, {});
   qbmm_reduce_prim->AddAttr(kAttrGroup, allreduce_prim->GetAttr(kAttrGroup));
   qbmm_reduce_prim->AddAttr(kAttrFusion, allreduce_prim->GetAttr(kAttrFusion));
   qbmm_reduce_prim->AddAttr(kAttrOp, allreduce_prim->GetAttr(kAttrOp));
