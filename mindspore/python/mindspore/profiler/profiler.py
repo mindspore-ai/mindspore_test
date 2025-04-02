@@ -1056,8 +1056,8 @@ class Profile:
             >>> import mindspore
             >>> # Profiler init.
             >>> with mindspore.profiler.profile() as prof:
-            >>>     # Call Profiler add_metadata
-            >>>     prof.add_metadata("test_key", "test_value")
+            ...     # Call Profiler add_metadata
+            ...     prof.add_metadata("test_key", "test_value")
         """
 
         self._profiler.add_metadata(key, value)
@@ -1075,8 +1075,8 @@ class Profile:
             >>> import mindspore
             >>> # Profiler init.
             >>> with mindspore.profiler.profile() as prof:
-            >>>     # Call Profiler add_metadata_json
-            >>>     prof.add_metadata_json("test_key", json.dumps({"key1": 1, "key2": 2}))
+            ...     # Call Profiler add_metadata_json
+            ...     prof.add_metadata_json("test_key", json.dumps({"key1": 1, "key2": 2}))
         """
         self._profiler.add_metadata_json(key, value)
 
