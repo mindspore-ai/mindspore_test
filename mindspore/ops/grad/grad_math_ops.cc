@@ -1033,10 +1033,9 @@ DEF_PURE_SHAPE_CALC(g_matmul_ext_bprop_shapecalc)
     return {input_rank, weight_rank, output_grad_rank, input_permutation_rank, weight_permutation_rank};
   });
 
-REG_BPROP_BUILDER("MatMulExt").SetUnusedInputs({}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("MatMulExt").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   auto x_origin = ib->GetInput(kIndex0);
   auto w_origin = ib->GetInput(kIndex1);
-  auto y_origin = ib->GetInput(kIndex2);
   auto dout_origin = ib->GetInput(kIndex3);
   auto x_origin_shape = x_origin->shape();
   bool is_empty_tensor =
