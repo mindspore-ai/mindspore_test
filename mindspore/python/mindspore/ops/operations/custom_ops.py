@@ -303,7 +303,8 @@ class Custom(ops.PrimitiveWithInfer):
                  b) Ascend platform.
                  Before using Custom operators on the Ascend platform, users must first develop custom operators
                  based on Ascend C and compile them. The complete development and usage process can refer to the
-                 tutorial `AOT-Type Custom Operators(Ascend) <https://www.mindspore.cn/tutorials/en/master/custom_program/operation/op_custom_ascendc.html>`_.
+                 tutorial `AOT-Type Custom Operators(Ascend)
+                 <https://www.mindspore.cn/tutorials/en/master/custom_program/operation/op_custom_ascendc.html>`_.
                  By passing the name of the operator through the input parameter `func`, there are two usage methods
                  based on the implementation of the infer function:
 
