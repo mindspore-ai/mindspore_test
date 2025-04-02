@@ -138,7 +138,7 @@ def test_ops_all_vmap(context_mode):
     Expectation: expect correct result.
     """
     context.set_context(mode=context_mode)
-    x = generate_random_input((2, 3, 4, 5), np.bool)
+    x = generate_random_input((2, 3, 4, 5), np.bool_)
     axis = (1, 2)
     keep_dims = True
     output = all_vmap_func(ms.Tensor(x), axis, keep_dims)
