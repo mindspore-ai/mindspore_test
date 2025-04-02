@@ -1728,7 +1728,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
               [0]]))
             >>>
             >>> # case 4: If axis=None, compute the maximum of all elements.
-            >>> x.argmax_with_value(axis=1, keep_dims=True)
+            >>> x.argmax_with_value(axis=None, keep_dims=True)
             (Tensor(shape=[], dtype=Int64, value= 9),
              Tensor(shape=[], dtype=Int64, value= 0))
         """
@@ -1778,7 +1778,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
               [1]]))
             >>>
             >>> # case 4: If axis=None, compute the minimum of all elements.
-            >>> x.argmin_with_value(axis=1, keep_dims=True)
+            >>> x.argmin_with_value(axis=None, keep_dims=True)
             (Tensor(shape=[], dtype=Int64, value= -7),
              Tensor(shape=[], dtype=Int64, value= 0))
         """

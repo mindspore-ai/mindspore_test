@@ -416,7 +416,6 @@ def standard_normal(shape, seed=None):
         >>> output = mindspore.ops.standard_normal(shape, seed=5)
         >>> print(f'output shape is {output.shape}')
         output shape is (4, 4)
-        (4, 4)
     """
     seed1, seed2 = _get_seed(seed, "standard_normal")
     standard_normal_op = P.StandardNormal(seed=seed1, seed2=seed2)

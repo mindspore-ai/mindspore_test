@@ -1126,11 +1126,6 @@ def ones_like(input, *, dtype=None):
         >>> input = mindspore.ops.arange(4)
         >>> mindspore.ops.ones_like(input)
         Tensor(shape=[4], dtype=Int64, value= [1, 1, 1, 1])
-        >>> mindspore.ops.ones_like(x, dtype=mindspore.float32)
-        Tensor(shape=[3, 2], dtype=Float32, value=
-        [[ 1.00000000e+00,  1.00000000e+00],
-         [ 1.00000000e+00,  1.00000000e+00],
-         [ 1.00000000e+00,  1.00000000e+00]])
     """
     output = ones_like_(input)
     _dtype = input.dtype if dtype is None else dtype
@@ -1160,11 +1155,6 @@ def zeros_like(input, *, dtype=None):
         >>> input = mindspore.ops.arange(4)
         >>> mindspore.ops.zeros_like(input)
         Tensor(shape=[4], dtype=Int64, value= [0, 0, 0, 0])
-        >>> mindspore.ops.zeros_like(x, dtype=mindspore.float32)
-        Tensor(shape=[3, 2], dtype=Float32, value=
-        [[ 0.00000000e+00,  0.00000000e+00],
-         [ 0.00000000e+00,  0.00000000e+00],
-         [ 0.00000000e+00,  0.00000000e+00]])
     """
     _dtype = input.dtype if dtype is None else dtype
     output = zeros_like_(input)
@@ -3003,13 +2993,13 @@ def tensor_scatter_sub(input_x, indices, updates):
 
     Examples:
         >>> import mindspore
-        >>> input = mindspore.tensor([[1, 2, 3], [4, 5, 6]])
+        >>> input = mindspore.tensor([[1, 2, 3], [4, 5, 6]], mndspore.float32)
         >>> indices = mindspore.tensor([[0, 0], [1, 1]])
-        >>> updates = mindspore.tensor([5, 5])
+        >>> updates = mindspore.tensor([5, 5], mindspore.float32)
         >>> mindspore.ops.tensor_scatter_sub(input, indices, updates)
-        Tensor(shape=[2, 3], dtype=Int64, value=
-        [[-4,  2,  3],
-         [ 4,  0,  6]])
+        Tensor(shape=[2, 3], dtype=Float32, value=
+        [[-4.00000000e+00,  2.00000000e+00,  3.00000000e+00],
+         [ 4.00000000e+00,  0.00000000e+00,  6.00000000e+00]])
     """
 
     return tensor_scatter_sub_(input_x, indices, updates)
@@ -3082,13 +3072,13 @@ def tensor_scatter_min(input_x, indices, updates):
 
     Examples:
         >>> import mindspore
-        >>> input_x = mindspore.tensor([[1, 2, 3], [4, 5, 6]])
+        >>> input_x = mindspore.tensor([[1, 2, 3], [4, 5, 6]], mindspore.float32)
         >>> indices = mindspore.tensor([[0, 0], [1, 1]])
-        >>> updates = mindspore.tensor([5, 1])
+        >>> updates = mindspore.tensor([5, 1], mindspore.float32)
         >>> mindspore.ops.tensor_scatter_min(input_x, indices, updates)
-        Tensor(shape=[2, 3], dtype=Int64, value=
-        [[1, 2, 3],
-         [4, 1, 6]])
+        Tensor(shape=[2, 3], dtype=Float32, value=
+        [[ 1.00000000e+00,  2.00000000e+00,  3.00000000e+00],
+         [ 4.00000000e+00,  1.00000000e+00,  6.00000000e+00]])
     """
     return tensor_scatter_min_(input_x, indices, updates)
 
@@ -5381,8 +5371,8 @@ def aminmax(input, *, axis=0, keepdims=False):
     Examples:
         >>> import mindspore
         >>> input = mindspore.tensor([[9, 3, 4, 5],
-        >>>                           [5, 2, 7, 4],
-        >>>                           [8, 1, 3, 6]])
+        ...                           [5, 2, 7, 4],
+        ...                           [8, 1, 3, 6]])
         >>>
         >>> # case 1: By default, compute along axis 0.
         >>> mindspore.ops.aminmax(input)
@@ -5391,8 +5381,8 @@ def aminmax(input, *, axis=0, keepdims=False):
         >>>
         >>> # case 2: Disregard NaN (Not a Number) values present in the input during computation.
         >>> input = mindspore.tensor([[9, 3, 4, 5],
-        >>>                           [5, 2, 7, 4],
-        >>>                           [8, 1, 3, float('nan')]])
+        ...                           [5, 2, 7, 4],
+        ...                           [8, 1, 3, float('nan')]])
         >>> mindspore.ops.aminmax(input, axis=None)
         (Tensor(shape=[], dtype=Float32, value= 1),
          Tensor(shape=[], dtype=Float32, value= 9))

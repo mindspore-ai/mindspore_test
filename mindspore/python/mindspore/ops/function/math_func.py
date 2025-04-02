@@ -1009,7 +1009,7 @@ def fmod(input, other):
         >>> other = mindspore.tensor([-1., 1, 2, 2.5, 1.5, 1.7])
         >>> output = mindspore.ops.fmod(input, other)
         >>> print(output)
-        [ 0.   0.  -1.   1.   0.5  1.3]
+        [ 0.         0.        -1.         0.5        1.         1.5999999]
     """
     if not (isinstance(input, (Tensor, Tensor_)) or isinstance(other, (Tensor, Tensor_))):
         raise TypeError("At least one of the types of inputs must be tensor, " + \
@@ -1900,11 +1900,6 @@ def bitwise_and(input, other):
         >>> # Same as calling via the | operator:
         >>> input & other
         Tensor(shape=[3], dtype=Int64, value= [1, 0, 3])
-        >>> # When inputs are boolean:
-        >>> input = mindspore.tensor([True, True, False])
-        >>> other = mindspore.tensor([False, True, False])
-        >>> mindspore.ops.bitwise_and(input, other)
-        Tensor(shape=[3], dtype=Bool, value= [False,  True, False])
     """
     return bitwise_and_(input, other)
 
@@ -1974,11 +1969,6 @@ def bitwise_or(input, other):
         >>> # Same as calling via the | operator:
         >>> input | other
         Tensor(shape=[3], dtype=Int64, value= [-1, -2,  3])
-        >>> # When inputs are boolean:
-        >>> input = mindspore.tensor([True, True, False])
-        >>> other = mindspore.tensor([False, True, False])
-        >>> mindspore.ops.bitwise_or(input, other)
-        Tensor(shape=[3], dtype=Bool, value= [ True,  True, False])
     """
     return bitwise_or_(input, other)
 
@@ -2048,11 +2038,6 @@ def bitwise_xor(input, other):
         >>> # Same as calling via the ^ operator:
         >>> input ^ other
         Tensor(shape=[3], dtype=Int64, value= [-2, -2,  0])
-        >>> # When inputs are boolean:
-        >>> input = mindspore.tensor([True, True, False])
-        >>> other = mindspore.tensor([False, True, False])
-        >>> mindspore.ops.bitwise_xor(input, other)
-        Tensor(shape=[3], dtype=Bool, value= [ True, False, False])
     """
     return bitwise_xor_(input, other)
 
@@ -3301,7 +3286,7 @@ def isclose(input, other, rtol=1e-05, atol=1e-08, equal_nan=False):
         >>> import mindspore
         >>> mindspore.ops.isclose(mindspore.tensor([2e6, float("inf"), float("-inf"), float("inf"), float("nan")]),
         ...                       mindspore.tensor([2e7, float("inf"), float("-inf"), float("-inf"), float("nan")]))
-        Tensor(shape=[6], dtype=Bool, value= [ True, False,  True,  True, False, False])
+        Tensor(shape=[5], dtype=Bool, value= [False,  True,  True, False, False])
         >>>
         >>> mindspore.ops.isclose(mindspore.tensor([1e6, 2e6, 3e6]),
         ...                       mindspore.tensor([1.00008e6, 2.00008e7, 3.00008e8]), rtol=1e3)
@@ -6243,7 +6228,7 @@ def combinations(input, r=2, with_replacement=False):
 
     Examples:
         >>> import mindspore
-        >>> input = mindspore.tensor(input)
+        >>> input = mindspore.tensor([1, 2, 3])
         >>> mindspore.ops.combinations(input)
         Tensor(shape=[3, 2], dtype=Int64, value=
         [[1, 2],
@@ -6476,7 +6461,7 @@ def hann_window(window_length, periodic=True, *, dtype=None):
         [0.        0.3454915 0.9045085 0.9045085 0.3454915]
         >>> output = mindspore.ops.hann_window(5, periodic=False)
         >>> print(output)
-        [0.08000001 0.54       1.         0.54       0.08000001]
+        [0.  0.5 1.  0.5 0. ]
     """
     if not isinstance(window_length, int):
         raise TypeError(
@@ -10490,7 +10475,7 @@ def isposinf(input):
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> from mindspore
+        >>> import mindspore
         >>> input = mindspore.tensor([-1, 3, float("inf"), float("-inf"), float("nan")])
         >>> mindspore.ops.isposinf(input)
         Tensor(shape=[5], dtype=Bool, value= [False, False,  True, False, False])
