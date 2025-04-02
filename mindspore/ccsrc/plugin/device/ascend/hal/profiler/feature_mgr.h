@@ -24,7 +24,7 @@
 #include "acl/acl_prof.h"
 
 #include "utils/singleton.h"
-#include "debug/profiler/utils.h"
+#include "securec/include/securec.h"
 namespace mindspore {
 namespace profiler {
 namespace ascend {
@@ -57,7 +57,7 @@ struct FeatureInfo {
       const char *src = std::get<0>(copyNode);
       char *dest = std::get<1>(copyNode);
       size_t destSize = std::get<2>(copyNode);
-      if (mindspore::profiler::Utils::SafeStringCopy(dest, src, destSize) != 0) {
+      if (strcpy_s(dest, destSize, src) != 0) {
         return false;
       }
       return true;
