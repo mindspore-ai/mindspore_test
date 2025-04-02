@@ -26,7 +26,7 @@ erfinv:
         >>> # Otherwise, the return value type is the same as the input type.
         >>> input = mindspore.tensor([0, 0.5, -0.9], mindspore.float32)
         >>> mindspore.ops.erfinv(input)
-        Tensor(shape=[3], dtype=Float64, value= [ 0.00000000e+00,  4.76936132e-01, -1.16308689e+00])
+        Tensor(shape=[3], dtype=Float32, value= [ 0.00000000e+00,  4.76936132e-01, -1.16308689e+00])
 
         
         
