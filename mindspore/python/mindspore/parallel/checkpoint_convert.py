@@ -129,11 +129,11 @@ def convert_checkpoints(src_checkpoints_dir, dst_checkpoints_dir, ckpt_prefix, s
         dst_checkpoints_dir (str): The destination checkpoints directory to save the converted checkpoints.
         ckpt_prefix (str): The destination checkpoint name prefix.
         src_strategy_file (str, optional): Name of source sharding strategy file which saved by
-                        'mindspore.parallel.auto_parallel.AutoParallel(cell).save_param_strategy_file(file_path)'.
+                        'mindspore.parallel.auto_parallel.AutoParallel.save_param_strategy_file'.
                         when the 'src_strategy_file' is None, it means that the source sharding strategy is
                         without any sharing for each parameter. Default:None.
         dst_strategy_file (str, optional): Name of destination sharding strategy file which saved by
-                        'mindspore.parallel.auto_parallel.AutoParallel(cell).save_param_strategy_file(file_path)'.
+                        'mindspore.parallel.auto_parallel.AutoParallel.save_param_strategy_file'.
                         when the 'dst_strategy_file' is None, it means that the destination sharding strategy
                         is without any sharing for each parameter. Default:None.
         process_num (int, optional): Number of processes to use for parallel processing. Defaults: 1.

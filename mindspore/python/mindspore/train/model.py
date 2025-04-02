@@ -2141,7 +2141,9 @@ class Model:
 
     def infer_train_layout(self, train_dataset, dataset_sink_mode=True, sink_size=-1):
         """
-        Generate parameter layout for the train network in 'AUTO_PARALLEL' or 'SEMI_AUTO_PARALLEL' mode.
+        Generate parameter layout for the train network when using `AutoParallel(cell)`
+        to enable parallel mode.
+
         Only dataset sink mode is supported for now.
 
         .. warning::
@@ -2176,10 +2178,10 @@ class Model:
             >>> from mindspore import Tensor, nn
             >>> from mindspore.train import Model
             >>> from mindspore.communication import init
+            >>> from mindspore.parallel.auto_parallel import AutoParallel
             >>>
             >>> ms.set_context(mode=ms.GRAPH_MODE)
             >>> init()
-            >>> ms.set_auto_parallel_context(parallel_mode=ms.ParallelMode.SEMI_AUTO_PARALLEL)
             >>>
             >>> # Create the dataset taking MNIST as an example. Refer to
             >>> # https://gitee.com/mindspore/docs/blob/master/docs/mindspore/code/mnist.py
@@ -2187,10 +2189,11 @@ class Model:
             >>> # Define the network structure of LeNet5. Refer to
             >>> # https://gitee.com/mindspore/docs/blob/master/docs/mindspore/code/lenet.py
             >>> net = LeNet5()
+            >>> parallel_net = AutoParallel(net)
             >>> loss = nn.SoftmaxCrossEntropyWithLogits()
             >>> loss_scale_manager = ms.FixedLossScaleManager()
             >>> optim = nn.Momentum(params=net.trainable_params(), learning_rate=0.1, momentum=0.9)
-            >>> model = Model(net, loss_fn=loss, optimizer=optim, metrics=None,
+            >>> model = Model(parallel_net, loss_fn=loss, optimizer=optim, metrics=None,
             ...                  loss_scale_manager=loss_scale_manager)
             >>> layout_dict = model.infer_train_layout(dataset)
         """
@@ -2211,7 +2214,8 @@ class Model:
 
     def infer_predict_layout(self, *predict_data, skip_backend_compile=False):
         """
-        Generate parameter layout for the predict network in 'AUTO_PARALLEL' or 'SEMI_AUTO_PARALLEL' mode.
+        Generate parameter layout for the predict network when using `AutoParallel(cell)`
+        to enable parallel mode.
 
         Data could be a single tensor or multiple tensors.
 
@@ -2234,20 +2238,45 @@ class Model:
             RuntimeError: If not in GRAPH_MODE.
 
         Examples:
-            >>> # This example should be run with multiple devices. Refer to the tutorial > Distributed Training on
-            >>> # mindspore.cn.
             >>> import numpy as np
-            >>> import mindspore as ms
+            >>> import mindspore.nn as nn
             >>> from mindspore import Tensor
             >>> from mindspore.train import Model
+            >>> from mindspore.ops import operations as P
+            >>> from mindspore import context
             >>> from mindspore.communication import init
+            >>> from mindspore.parallel.auto_parallel import AutoParallel
+            >>>
+            >>> class Net(nn.Cell):
+            >>>     def __init__(self):
+            >>>         super(Net, self).__init__()
+            >>>         self.fc1 = nn.Dense(128, 768, activation='relu')
+            >>>         self.fc2 = nn.Dense(128, 768, activation='relu')
+            >>>         self.fc3 = nn.Dense(128, 768, activation='relu')
+            >>>         self.fc4 = nn.Dense(768, 768, activation='relu')
+            >>>         self.relu4 = nn.ReLU()
+            >>>         self.relu5 = nn.ReLU()
+            >>>         self.transpose = P.Transpose()
+            >>>         self.matmul1 = P.MatMul()
+            >>>         self.matmul2 = P.MatMul()
+            >>>
+            >>>     def construct(self, x):
+            >>>         q = self.fc1(x)
+            >>>         k = self.fc2(x)
+            >>>         v = self.fc3(x)
+            >>>         k = self.transpose(k, (1, 0))
+            >>>         c = self.relu4(self.matmul1(q, k))
+            >>>         s = self.relu5(self.matmul2(c, v))
+            >>>         s = self.fc4(s)
+            >>>         return s
             >>>
             >>> ms.set_context(mode=ms.GRAPH_MODE)
             >>> init()
-            >>> ms.set_auto_parallel_context(full_batch=True, parallel_mode=ms.ParallelMode.SEMI_AUTO_PARALLEL)
-            >>> input_data = Tensor(np.random.randint(0, 255, [1, 1, 32, 32]), ms.float32)
-            >>> model = Model(Net())
-            >>> predict_map = model.infer_predict_layout(input_data)
+            >>> inputs = Tensor(np.ones([32, 128]).astype(np.float32))
+            >>> net = Net()
+            >>> parallel_net = AutoParallel(net, parallel_mode='semi_auto')
+            >>> model = Model(parallel_net)
+            >>> predict_map = model.infer_predict_layout(inputs)
         """
         _init_auto_parallel_context(self._network)
         if context.get_context("mode") != context.GRAPH_MODE:
