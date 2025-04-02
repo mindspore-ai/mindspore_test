@@ -297,7 +297,7 @@ def test_tiny_transformer_o2_with_dynamic_profiler():
                 "mindspore/nn/*",  # check stack trace
                 "Kernel::*",  # check host trace
                 "Model@ModelLoad",  # check CANN trace
-                "model-Transformer",  # check scope layer
+                # "model-Transformer",  # check scope layer, 910a not support
                 "*MatMul*",  # check kernel on Ascend Hardware
                 "Free",  # check overlay analysis
                 "HostToDevice*",  # check HostToDevice flow

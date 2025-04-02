@@ -106,7 +106,7 @@ class TestEnvEnableProfiler:
         ascend_profiler_output_path = glob.glob(f"{self.output_path}/*_ascend_ms/ASCEND_PROFILER_OUTPUT")[0]
         CheckProfilerFiles(self.device_id, self.rank_id, ascend_profiler_output_path, "Ascend", "time")
         # Check profiler.log
-        profiler_log_paths = glob.glob(f"{tmpdir}/*_ascend_ms/"
+        profiler_log_paths = glob.glob(f"{self.output_path}/*_ascend_ms/"
                                        f"logs/profiler_*.log")
         for profiler_log_path in profiler_log_paths:
             FileChecker.check_file_for_keyword(profiler_log_path, "error")
