@@ -20,6 +20,7 @@
 #include <string>
 #include <vector>
 #include "ir/graph_utils.h"
+#include "ir/func_graph_cloner.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "include/common/utils/primitive_utils.h"
 #include "include/common/utils/hook.h"
@@ -936,9 +937,12 @@ bool GraphBackwardNode::FilterGradOutput(const std::vector<bool> &need_grad) {
     }
     need_filter = true;
   }
-  func_graph_->set_flag("is_filtered", true);
-  func_graph_->set_attr("need_grad", MakeValue<std::vector<bool>>(need_grad));
+  constexpr auto need_grad_key = "need_grad";
+  func_graph_->set_attr(need_grad_key, MakeValue<std::vector<bool>>(need_grad));
   if (!need_filter) {
+    if (MsContext::GetInstance()->CanDump(kIntroductory)) {
+      DumpIR("filtered_output_grad_fg.ir", func_graph_);
+    }
     return need_filter;
   }
   MS_LOG(INFO) << "Cut edge number from " << next_edges_.size() << " to " << new_edge.size();
@@ -1009,7 +1013,8 @@ void GraphBackwardNode::FilterForwardOutput(const std::vector<bool> &need_filter
   auto new_forward_output = forward_graph->NewCNode(new_forward_output_elements);
   new_forward_output->set_abstract(std::make_shared<abstract::AbstractTuple>(new_forward_output_abstract_elements));
   forward_graph->set_output(new_forward_output);
-  forward_graph->set_flag("need_repeat_task_emit", true);
+  constexpr auto need_repeat_task_emit_key = "need_repeat_task_emit";
+  forward_graph->set_flag(need_repeat_task_emit_key, true);
   if (MsContext::GetInstance()->CanDump(kIntroductory)) {
     DumpIR("filtered_forward_fg.ir", forward_graph);
   }
@@ -1032,18 +1037,46 @@ std::pair<std::vector<bool>, int> GraphBackwardNode::CollectFilterMsg() const {
   return std::make_pair(need_filter, skip_filter_size);
 }
 
-void GraphBackwardNode::FilterGraph() {
-  if (func_graph_->has_flag("is_filtered")) {
-    const auto &need_grad_value = func_graph_->attrs()["need_grad"];
-    const auto &need_grad = GetValue<std::vector<bool>>(need_grad_value);
-    std::vector<Edge> new_edge;
-    MS_EXCEPTION_IF_CHECK_FAIL(need_grad.size() == next_edges_.size(), "size not match");
-    for (size_t i = 0; i < need_grad.size(); ++i) {
-      if (need_grad[i]) {
-        (void)new_edge.emplace_back(std::move(next_edges_[i]));
-      }
+void GraphBackwardNode::UpdateNextEdge() {
+  constexpr auto need_grad_key = "need_grad";
+  const auto &need_grad_value = func_graph_->attrs()[need_grad_key];
+  const auto &need_grad = GetValue<std::vector<bool>>(need_grad_value);
+  std::vector<Edge> new_edge;
+  MS_EXCEPTION_IF_CHECK_FAIL(need_grad.size() == next_edges_.size(), "size not match");
+  for (size_t i = 0; i < need_grad.size(); ++i) {
+    if (need_grad[i]) {
+      (void)new_edge.emplace_back(std::move(next_edges_[i]));
     }
-    next_edges_ = std::move(new_edge);
+  }
+  next_edges_ = std::move(new_edge);
+}
+
+void GraphBackwardNode::FilterGraphOutput(bool is_filtered) {
+  const auto &need_grad = GetNeedGradIndexes(args_);
+  size_t need_grad_hash = std::hash<std::vector<bool>>()(need_grad);
+  if (is_filtered) {
+    auto cache_filtered_graph = ad::GetFilteredGradGraph(cache_key_, need_grad_hash);
+    if (cache_filtered_graph != nullptr) {
+      MS_LOG(INFO) << "Found cached filtered grad graph for hash key " << need_grad_hash;
+      func_graph_ = cache_filtered_graph;
+      UpdateNextEdge();
+      return;
+    }
+    MS_LOG(INFO) << "Cache find graph failed, filter grad graph again.";
+    func_graph_ = BasicClone(ad::GetOriginGradGraph(cache_key_));
+  }
+  MS_LOG(INFO) << "Start to filter grad jit graph output.";
+  (void)FilterGradOutput(need_grad);
+  ad::StoreFilteredGradGraph(cache_key_, need_grad_hash, func_graph_);
+  constexpr auto need_grad_hash_key = "need_grad_hash";
+  func_graph_->set_attr(need_grad_hash_key, MakeValue<size_t>(need_grad_hash));
+  MS_LOG(INFO) << "Finish to filter grad jit graph output.";
+}
+
+void GraphBackwardNode::FilterGraphInputOutput(bool is_filtered) {
+  if (is_filtered) {
+    MS_LOG(INFO) << "Grad graph is filtered.";
+    UpdateNextEdge();
     return;
   }
   MS_LOG(INFO) << "Start to filter grad jit graph.";
@@ -1054,7 +1087,6 @@ void GraphBackwardNode::FilterGraph() {
     return;
   }
   MS_LOG(INFO) << "Finish filter grad jit graph.";
-
   const auto &filter_msg = CollectFilterMsg();
   const auto &need_filter = filter_msg.first;
   auto skip_filter_size = filter_msg.second;
@@ -1065,11 +1097,29 @@ void GraphBackwardNode::FilterGraph() {
     return;
   }
   MS_LOG(INFO) << "Start to filter grad input.";
-
   FilterGradInput(need_filter, add_args_size, skip_filter_size);
   RefreshAddedArgs(need_filter, add_args_size);
   FilterForwardOutput(need_filter, add_args_size);
   MS_LOG(INFO) << "Finish filter grad input.";
+}
+
+void GraphBackwardNode::FilterGraph() {
+  const auto &filter_level = common::GetCompileConfig("GRAD_JIT_FILTER");
+  if (filter_level != "1" && filter_level != "2") {
+    return;
+  }
+  bool is_filtered = ad::HasOriginGradGraph(cache_key_);
+  if (!is_filtered) {
+    MS_LOG(INFO) << "Store origin bprop graph for jit.";
+    ad::StoreOriginGradGraph(cache_key_, BasicClone(func_graph_));
+  }
+  if (filter_level == "1") {
+    MS_LOG(INFO) << "Filter grad graph output.";
+    FilterGraphOutput(is_filtered);
+  } else if (filter_level == "2") {
+    MS_LOG(INFO) << "Filter grad graph input and output.";
+    FilterGraphInputOutput(is_filtered);
+  }
 }
 
 ValuePtrList GraphBackwardNode::CallBackward(const ValuePtrList &grads) {
@@ -1079,9 +1129,7 @@ ValuePtrList GraphBackwardNode::CallBackward(const ValuePtrList &grads) {
   MS_LOG(DEBUG) << PyNativeAlgo::Common::PrintDebugInfo(grads, "bprop cut input grads: ");
   const auto &need_grad_indexes = GetNeedGradIndexes(args_);
   mindspore::ad::CheckBpropGraphHasInvalidDout(cache_key_, need_grad_indexes);
-  if (common::GetCompileConfig("GRAD_JIT_FILTER") == "1") {
-    FilterGraph();
-  }
+  FilterGraph();
   auto graph_call_back = AutoGradUtil::CreateGraphCallBack(func_graph_, cache_key_, graph_call_condition_);
   // Add graph din
   const auto &device_target = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);

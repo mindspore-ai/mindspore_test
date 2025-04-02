@@ -734,6 +734,22 @@ void AutoGradUtil::BuildFakeBpropCNode(const CNodePtr &cnode, std::vector<CNodeP
   }
 }
 
+namespace {
+std::string GenerateCacheKeyWithGradInfo(const FuncGraphPtr &call_graph, const std::string &cache_key) {
+  if (common::GetCompileConfig("GRAD_JIT_FILTER") != "1") {
+    return cache_key;
+  }
+  constexpr auto need_grad_hash = "need_grad_hash";
+  const auto &call_graph_attrs = call_graph->attrs();
+  auto need_hash_iter = call_graph_attrs.find(need_grad_hash);
+  if (need_hash_iter == call_graph_attrs.end()) {
+    MS_LOG(WARNING) << "Failed to find need_grad_hash for graph " << call_graph->ToString();
+    return cache_key;
+  }
+  return cache_key + "_" + std::to_string(GetValue<size_t>(need_hash_iter->second));
+}
+}  // namespace
+
 CallBackFn AutoGradUtil::CreateGraphCallBack(const FuncGraphPtr &call_graph, const std::string &cache_key,
                                              const GraphCallCondition &graph_call_condition) {
   // kFlagJitCallGraph is set true to avoid compilig call_graph whe compiling the main graph
@@ -744,7 +760,10 @@ CallBackFn AutoGradUtil::CreateGraphCallBack(const FuncGraphPtr &call_graph, con
   call_graph->set_flag(kFlagIsPynativeBpropGraph, true);
   pipeline::ResourcePtr resource;
   constexpr auto kNeedCompile = "NeedCompile";
-  const auto it = jit_call_graph_compile_cache_.find(cache_key);
+
+  const std::string &cache_key_with_grad_info = GenerateCacheKeyWithGradInfo(call_graph, cache_key);
+  MS_LOG(INFO) << "cache_key_with_grad_info: " << cache_key_with_grad_info;
+  const auto it = jit_call_graph_compile_cache_.find(cache_key_with_grad_info);
   bool need_compile = (it == jit_call_graph_compile_cache_.end());
   if (need_compile) {
     resource = std::make_shared<pipeline::Resource>();
@@ -759,7 +778,7 @@ CallBackFn AutoGradUtil::CreateGraphCallBack(const FuncGraphPtr &call_graph, con
       }
     }
     if (graph_call_condition.is_jit_graph_) {
-      (void)jit_call_graph_compile_cache_.emplace(cache_key, resource);
+      (void)jit_call_graph_compile_cache_.emplace(cache_key_with_grad_info, resource);
     }
     resource->SetResult(kNeedCompile, true);
   } else {

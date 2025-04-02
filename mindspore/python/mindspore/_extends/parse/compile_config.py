@@ -366,7 +366,8 @@ JIT_ENABLE_AUGASSIGN_INPLACE = '0'
 Name: GRAD_JIT_FILTER
 Function: Whether to filter grad jit graph.
 Value Range:
-    1: Enable
+    1: Enable filter grad jit output
+    2: Enable filter grad jit input and output. May cause error when input gradient information changed.
     Default: Disable.
 """
 GRAD_JIT_FILTER = '1'
