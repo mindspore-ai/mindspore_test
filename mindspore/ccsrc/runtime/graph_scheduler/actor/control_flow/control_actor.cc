@@ -177,6 +177,7 @@ size_t ControlActor::FetchNodePosition(const KernelWithIndex &node) const {
 
 void ControlActor::Run(OpContext<DeviceTensor> *const context) {
   try {
+    MS_LOG(DEBUG) << "Begin run actor:" << GetAID();
     // The exit actor is the output of kernel graph when the node_ is null.
     if (type_ == KernelTransformType::kExitActor && node_ == nullptr) {
       double end_time = GetTime();
@@ -199,6 +200,7 @@ void ControlActor::Run(OpContext<DeviceTensor> *const context) {
 
     EraseInput(context);
     SendOutput(context);
+    MS_LOG(DEBUG) << "End run actor:" << GetAID();
   } catch (const std::exception &e) {
     MsException::Instance().SetException();
     std::string error_info = "Actor fun failed:" + GetAID().Name();
