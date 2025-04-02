@@ -32,6 +32,7 @@
 #include "include/backend/debug/execute_order_tracker/execute_order_tracker.h"
 #include "utils/log_adapter.h"
 #include "utils/info.h"
+#include "utils/llm_manager.h"
 #include "include/common/utils/comm_manager.h"
 #include "utils/interpret_node_recorder.h"
 #include "include/common/debug/dump_proto.h"
@@ -212,6 +213,7 @@ void ClearResPart3() {
   pynative::ParserDefaultObjects::GetInstance().ClearRes();
   MS_LOG(INFO) << "End clear ParserDefaultObjects...";
 
+  LLMManager::GetInstance().Clear();
   PyObjManager::Get().Clear();
 
   // ResetPythonScope after all py::object is freed.
