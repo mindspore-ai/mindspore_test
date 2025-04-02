@@ -29,6 +29,7 @@ namespace device {
 namespace gpu {
 #define SUPPORTED_CAP 5.3
 #define RECOMMEND_SM 7
+#define BASE 10.0
 using DeviceMemInfo = std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>;
 
 class GPUResManager : public HalResBase {
