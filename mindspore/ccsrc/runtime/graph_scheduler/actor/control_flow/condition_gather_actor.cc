@@ -56,12 +56,19 @@ void ConditionGatherActor::RunBranchName(const std::string &branch_name, OpConte
 }
 
 void ConditionGatherActor::ExecuteInferShapeTask(OpContext<DeviceTensor> *const context) {
-  ExecuteLaunchKernelTask(context);
+  MS_EXCEPTION_IF_NULL(kernel_);
+  MS_LOG(DEBUG) << "Begin InferShape for kernel: " << kernel_->fullname_with_scope();
+  Async(kernel_async_resize_aid_, &KernelAsyncResizeActor::ResizeKernelMod, context, this);
+  MS_LOG(DEBUG) << "End InferShape for kernel: " << kernel_->fullname_with_scope();
 }
 
-void ConditionGatherActor::ExecuteResizeKernelModTask(OpContext<DeviceTensor> *const context) {}
+void ConditionGatherActor::ExecuteResizeKernelModTask(OpContext<DeviceTensor> *const context) {
+  Async(kernel_async_launch_aid_, &KernelAsyncLaunchActor::LaunchKernel, context, this);
+}
 
 void ConditionGatherActor::ExecuteLaunchKernelTask(OpContext<DeviceTensor> *const context) {
+  MS_EXCEPTION_IF_NULL(kernel_);
+  MS_LOG(DEBUG) << "Begin launch kernel: " << kernel_->fullname_with_scope();
   new_memory_free_list_.clear();
   for (size_t i = 0; i < branch_names_.size(); ++i) {
     branch_flags_.get()[i] = false;
@@ -106,6 +113,7 @@ void ConditionGatherActor::ExecuteLaunchKernelTask(OpContext<DeviceTensor> *cons
   if (new_memory_free_list_.size() > 0) {
     SendMemoryFreeReq(context);
   }
+  MS_LOG(DEBUG) << "End launch kernel: " << kernel_->fullname_with_scope();
 }
 
 void ConditionGatherActor::Init() {

@@ -103,13 +103,20 @@ void ConditionSwitchActor::UpdateRefDeviceAddress(OpContext<DeviceTensor> *const
 }
 
 void ConditionSwitchActor::ExecuteInferShapeTask(OpContext<DeviceTensor> *const context) {
-  ExecuteLaunchKernelTask(context);
+  MS_EXCEPTION_IF_NULL(kernel_);
+  MS_LOG(DEBUG) << "Begin InferShape for kernel: " << kernel_->fullname_with_scope();
+  Async(kernel_async_resize_aid_, &KernelAsyncResizeActor::ResizeKernelMod, context, this);
+  MS_LOG(DEBUG) << "End InferShape for kernel: " << kernel_->fullname_with_scope();
 }
 
-void ConditionSwitchActor::ExecuteResizeKernelModTask(OpContext<DeviceTensor> *const context) {}
+void ConditionSwitchActor::ExecuteResizeKernelModTask(OpContext<DeviceTensor> *const context) {
+  Async(kernel_async_launch_aid_, &KernelAsyncLaunchActor::LaunchKernel, context, this);
+}
 
 void ConditionSwitchActor::ExecuteLaunchKernelTask(OpContext<DeviceTensor> *const context) {
   ProfilerRecorder profiler(ProfilerModule::kKernel, ProfilerEvent::kKernelLaunch, GetAID().Name());
+  MS_EXCEPTION_IF_NULL(kernel_);
+  MS_LOG(DEBUG) << "Begin launch kernel: " << kernel_->fullname_with_scope();
   if (!WaitRuntimePipelineFinish(context, GetAID().Name())) {
     MS_LOG(INFO) << "Run failed and early stop.";
     return;
@@ -159,6 +166,7 @@ void ConditionSwitchActor::ExecuteLaunchKernelTask(OpContext<DeviceTensor> *cons
   if (new_memory_free_list_.size() > 0) {
     SendMemoryFreeReq(context);
   }
+  MS_LOG(DEBUG) << "End launch kernel: " << kernel_->fullname_with_scope();
 }
 
 void ConditionSwitchActor::SendOutput(OpContext<DeviceTensor> *const context, size_t index) {

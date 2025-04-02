@@ -72,6 +72,7 @@ void EntranceActor::ClearDataOnStepEnd(const AID &input_control, OpContext<Devic
 }
 
 void EntranceActor::Run(OpContext<DeviceTensor> *const context) {
+  MS_LOG(DEBUG) << "Begin run actor:" << GetAID();
   // The begin execution of step is false and the others execution of step is true.
   is_loop_body_execution_ = true;
 
@@ -85,6 +86,7 @@ void EntranceActor::Run(OpContext<DeviceTensor> *const context) {
 
   EraseInput(context);
   SendOutput(context);
+  MS_LOG(DEBUG) << "End run actor:" << GetAID();
 }
 
 void EntranceActor::FetchInput(OpContext<DeviceTensor> *const context) {

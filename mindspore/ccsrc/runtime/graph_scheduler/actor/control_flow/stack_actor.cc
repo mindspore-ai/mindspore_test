@@ -137,8 +137,11 @@ void StackActor::RunOpControl(AID *const input_control, OpContext<DeviceTensor> 
   } else {
     (void)input_op_controls_[sequential_num].emplace_back(input_control);
   }
-
-  if (CheckRunningCondition(context)) {
+  bool is_run = CheckRunningCondition(context);
+  MS_LOG(DEBUG) << "Actor(" << GetAID().Name()
+                << ") receive the input op control from:" << (input_control == nullptr ? "null" : input_control->Name())
+                << " and check running condition:" << is_run << ", sequential num:" << sequential_num;
+  if (is_run) {
     Run(context);
   }
 }
