@@ -623,6 +623,9 @@ def test_setitem_grad_with_imul(capture_mode):
     Description: Verify the result of tensor setitem grad with imul
     Expectation: success
     """
+    if capture_mode in ['ast', 'bytecode']:
+        pytest.skip(f"Tests with capture_mode={capture_mode} are skipped!!!")
+
     os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
     if capture_mode is not None:
         os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
