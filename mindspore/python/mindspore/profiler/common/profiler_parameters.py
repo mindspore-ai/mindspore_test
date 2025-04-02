@@ -25,6 +25,7 @@ from mindspore.profiler.common.constant import (
 )
 from mindspore.profiler.schedule import Schedule
 
+
 class ProfilerParameters:
     """
     Profiler parameters manage all parameters, parameters validation and type conversion.
@@ -117,7 +118,7 @@ class ProfilerParameters:
             if param == "schedule" and kwargs.get(param) is None:
                 kwargs["schedule"] = Schedule(wait=0, active=1)
             if param == "on_trace_ready" and kwargs.get(param) is None:
-                kwargs["on_trace_ready"] = lambda *args, **kwargs: None
+                kwargs["on_trace_ready"] = lambda *args, **kwargs: None #pylint: disable=lambda-assign
             setattr(self, param, kwargs.get(param) if kwargs.get(param) is not None else default_value)
 
     def _check_params_type(self) -> None:

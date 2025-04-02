@@ -254,7 +254,8 @@ class NPUProfilerAnalysis:
         task_mgr = cls._construct_task_mgr(**kwargs)
         task_mgr.run()
         ProfilerLogger.get_instance().info(json.dumps(task_mgr.cost_time, indent=4))
-        if ProfilerActivity.NPU.value in kwargs.get("activities"):  # pylint: disable=too-many-function-args
+        activities = kwargs.get("activities")
+        if activities and ProfilerActivity.NPU.value in activities:
             ProfilerPathManager().move_db_file()
         if kwargs.get("data_simplification") and ProfilerActivity.NPU.value in kwargs.get("activities"):
             ProfilerPathManager().simplify_data()
