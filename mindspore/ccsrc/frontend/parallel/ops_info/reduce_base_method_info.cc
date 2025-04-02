@@ -380,7 +380,12 @@ Status MeanExtInfo::InferForwardCommunicationByLayout() {
     return FAILED;
   }
 
-  auto element_type = outputs_dtype_->cast<mindspore::TensorTypePtr>()->element();
+  auto tensor_type_ptr = outputs_dtype_->cast<mindspore::TensorTypePtr>();
+  if (tensor_type_ptr == nullptr) {
+    MS_LOG(ERROR) << name_ << ": Failed to cast outputs_dtype_ to TensorTypePtr. The pointer is null.";
+    return FAILED;
+  }
+  auto element_type = tensor_type_ptr->element();
   forward_op_ = CreateMeanExtForwardOp(comm_group, element_type);
   MS_LOG(INFO) << "For distributed operator " << name_ << ", the group name of forward communication is "
                << comm_group.name() << ".";

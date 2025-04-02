@@ -1346,6 +1346,82 @@ ReplaceGraphPtr SortExtInfo::replace_graph(const CNodePtr &cnode) {
 
 Status GeLUInfo::InferForwardCommunicationByLayout() { return SUCCESS; }
 
+Status RemainderScalarTensorInfo::InferMirrorOpsByLayout() {
+  mirror_ops_.clear();
+  if (inputs_shape_.empty()) {
+    MS_LOG(INFO) << name_ << ": The inputs size is empty";
+    return SUCCESS;
+  }
+
+  bool group_is_empty = true;
+  for (size_t i = 0; i < inputs_tensor_info_.size(); ++i) {
+    auto input_tensor_layout = inputs_tensor_info_[i].tensor_layout();
+    auto repeated_rank_list = input_tensor_layout.InferRepeatedGroup();
+
+    OperatorVector mirror_op;
+    if (repeated_rank_list.size() == 1) {
+      MS_LOG(INFO) << name_ << ": The mirror group is empty, the input index is " << i;
+      mirror_ops_.push_back(mirror_op);
+      continue;
+    }
+
+    Group mirror_group;
+    if (g_device_manager->CreateGroup(repeated_rank_list, &mirror_group) != SUCCESS) {
+      MS_LOG(ERROR) << name_
+                    << ": Create communication group by tensor_map failed, the rank_list is: " << repeated_rank_list
+                    << ", the full_name of node is: " << cnode_->fullname_with_scope();
+      return FAILED;
+    }
+    group_is_empty = false;
+    mirror_op = CreateMirrorOps(mirror_group.name(), mirror_group.GetDevNum());
+    mirror_ops_.push_back(mirror_op);
+  }
+
+  if (group_is_empty) {
+    mirror_ops_.clear();
+    MS_LOG(INFO) << name_ << ": No need to insert mirror ops";
+  }
+
+  inputs_tensor_info_.insert(inputs_tensor_info_.begin(), TensorInfo());
+  return SUCCESS;
+}
+
+Status RemainderScalarTensorInfo::InferTensorInfo() {
+  if (!inputs_shape_new_.empty()) {
+    return InferTensorInfoNew();
+  }
+  if (inputs_shape_.empty() || outputs_shape_.empty() || inputs_tensor_map_.empty() || outputs_tensor_map_.empty()) {
+    MS_LOG(ERROR) << name_ << ": Invalid args";
+    return FAILED;
+  }
+
+  size_t real_input_index = 0;
+  for (size_t i = 0; i < inputs_tensor_map_.size(); ++i) {
+    // Insert placeholder TensorInfo for optional input
+    inputs_tensor_info_.push_back(TensorInfo());
+    TensorLayout input_layout;
+    if (input_layout.InitFromVector(dev_matrix_shape_, inputs_tensor_map_[i], inputs_shape_[i]) != SUCCESS) {
+      MS_LOG(ERROR) << name_ << ": Infer input tensor layout failed, the index is " << i;
+      return FAILED;
+    }
+    MS_LOG(DEBUG) << name_ << ": The input_layout is " << input_layout.ToString();
+    TensorInfo input_tensor_info(input_layout);
+    inputs_tensor_info_.push_back(input_tensor_info);
+    ++real_input_index;
+  }
+  MS_LOG(DEBUG) << name_ << ": The inputs tensor info size is " << inputs_tensor_info_.size();
+  for (size_t i = 0; i < outputs_tensor_map_.size(); ++i) {
+    TensorLayout output_layout;
+    if (output_layout.InitFromVector(dev_matrix_shape_, outputs_tensor_map_[i], outputs_shape_[i]) != SUCCESS) {
+      MS_LOG(ERROR) << name_ << ": Infer output tensor layout failed, the index is " << i;
+      return FAILED;
+    }
+    TensorInfo output_tensor_info(output_layout);
+    outputs_tensor_info_.push_back(output_tensor_info);
+  }
+  return SUCCESS;
+}
+
 Status SwigluInfo::GetAttrs() {
   auto input = GetInputValueFromCNode<int64_t>(cnode_, kIndex2);
   axis_.push_back(input);
@@ -1457,9 +1533,9 @@ REGISTER(LeakyReLUExtInfo);
 REGISTER(NanToNumInfo);
 REGISTER(SoftplusExtInfo);
 REGISTER(RemainderTensorScalarInfo);
-REGISTER(RemainderScalarTensorInfo);
-REGISTER(InvertInfo);           // has not bprop
-REGISTER(PopulationCountInfo);  // has not bprop
+REGISTER(RemainderScalarTensorInfo);  // has not bprop
+REGISTER(InvertInfo);                 // has not bprop
+REGISTER(PopulationCountInfo);        // has not bprop
 REGISTER(SwigluInfo);
 }  // namespace parallel
 }  // namespace mindspore
