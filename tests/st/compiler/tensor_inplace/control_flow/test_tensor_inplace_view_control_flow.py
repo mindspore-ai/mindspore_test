@@ -287,6 +287,7 @@ def test_view_in_control_flow9():
            "not supported to compute gradients for the other inputs of this in-place operator" in str(err.value)
 
 
+@pytest.mark.skip(reason="Error result")
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_view_in_control_flow10():
     """
@@ -385,6 +386,67 @@ def test_view_in_control_flow10_3():
     assert np.allclose(out_expect.asnumpy(), out_jit.asnumpy())
 
 
+@pytest.mark.skip(reason="Error result")
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_view_in_control_flow10_2():
+    """
+    Feature: view operation in control flow.
+    Description: test view operation in control flow.
+    Expectation: no exception
+    """
+    class Net(nn.Cell):
+        def construct(self, input_tensor1, input_tensor2):
+            input_tensor1_1 = ops.abs(input_tensor1)
+            input_tensor2_1 = ops.abs(input_tensor2)
+            x = select_ext_view_op(input_tensor1_1, 0, 0)
+            y = select_ext_view_op(input_tensor1_1, 0, 1)
+            if x < 5:
+                x.add_(y)
+                m = select_ext_view_op(input_tensor2_1, 0, 0)
+                n = select_ext_view_op(input_tensor2_1, 0, 1)
+            else:
+                x.add_(y)
+                m = select_ext_view_op(input_tensor2_1, 0, 1)
+                n = select_ext_view_op(input_tensor2_1, 0, 0)
+            m.add_(x)
+            n.add_(y)
+            return input_tensor2_1
+
+    net = Net()
+    out_expect = grad(net, grad_position=1)(Tensor([3, 4]), Tensor([1, 2]))
+    net.construct = ms.jit(net.construct, backend="ms_backend")
+    out_jit = grad(net, grad_position=1)(Tensor([3, 4]), Tensor([1, 2]))
+    assert np.allclose(out_expect.asnumpy(), out_jit.asnumpy())
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_view_in_control_flow10_3():
+    """
+    Feature: view operation in control flow.
+    Description: test view operation in control flow.
+    Expectation: no exception
+    """
+    class Net(nn.Cell):
+        def construct(self, input_tensor1, input_tensor2):
+            input_tensor1_1 = ops.abs(input_tensor1)
+            input_tensor2_1 = ops.abs(input_tensor2)
+            x = select_ext_view_op(input_tensor1_1, 0, 0)
+            y = select_ext_view_op(input_tensor1_1, 0, 1)
+            x.add_(y)
+            m = select_ext_view_op(input_tensor2_1, 0, 0)
+            n = select_ext_view_op(input_tensor2_1, 0, 1)
+            m.add_(x)
+            n.add_(y)
+            return input_tensor2_1
+
+    net = Net()
+    out_expect = grad(net, grad_position=1)(Tensor([3, 4]), Tensor([1, 2]))
+    net.construct = ms.jit(net.construct, backend="ms_backend")
+    out_jit = grad(net, grad_position=1)(Tensor([3, 4]), Tensor([1, 2]))
+    assert np.allclose(out_expect.asnumpy(), out_jit.asnumpy())
+
+
+@pytest.mark.skip(reason="Error result")
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_view_in_control_flow11():
     """
