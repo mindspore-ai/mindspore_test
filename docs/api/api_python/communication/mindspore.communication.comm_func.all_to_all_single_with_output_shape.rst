@@ -19,7 +19,7 @@ mindspore.communication.comm_func.all_to_all_single_with_output_shape
 
     返回：
         Tuple(Tensor, CommHandle)，其中Tensor为从远端设备接收分块并合并的结果。
-        如果从其他设备接收的Tensor为空，它将返回一个没有实际意义的、值为0的Tensor。
+        如果从其他设备接收的Tensor为空，则返回空张量，且张量数值无意义。
         若 `async_op` 是True，CommHandle是一个异步工作句柄。若 `async_op` 是False，CommHandle将返回None。
 
     异常：
