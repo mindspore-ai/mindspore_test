@@ -25,7 +25,6 @@
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "frontend/parallel/step_parallel_utils.h"
-#include "include/common/utils/utils.h"
 #include "utils/hash_set.h"
 #include "utils/tensor_construct_utils.h"
 #include "frontend/parallel/pass/overlap_opt_shard_in_pipeline.h"
@@ -479,13 +478,22 @@ void ControlOptShardCommAndDataBroadcastOrder(const FuncGraphPtr &graph) {
   if (opt_shard_comm_list.empty()) {
     return;
   }
-  for (const auto &opt_shard_comm : opt_shard_comm_list) {
-    std::vector<AnfNodePtr> depend_inputs{NewValueNode(prim::kPrimDepend), opt_shard_comm->input(1), broadcast_op};
-    auto depend_node = graph->NewCNode(depend_inputs);
-    depend_node->set_abstract(opt_shard_comm->input(1)->abstract()->Clone());
-    (void)manager->Replace(opt_shard_comm->input(1), depend_node);
+  if (opt_level == 2) {
+    for (const auto &opt_shard_comm : opt_shard_comm_list) {
+      std::vector<AnfNodePtr> depend_inputs{NewValueNode(prim::kPrimDepend), opt_shard_comm->input(1), broadcast_op};
+      auto depend_node = graph->NewCNode(depend_inputs);
+      depend_node->set_abstract(opt_shard_comm->input(1)->abstract()->Clone());
+      (void)manager->Replace(opt_shard_comm->input(1), depend_node);
+    }
+    return;
   }
-  return;
+  std::vector<AnfNodePtr> make_tuple_inputs{NewValueNode(prim::kPrimMakeTuple)};
+  (void)std::copy(opt_shard_comm_list.begin(), opt_shard_comm_list.end(), std::back_inserter(make_tuple_inputs));
+  std::vector<AnfNodePtr> depend_inputs{NewValueNode(prim::kPrimDepend), broadcast_op->input(1),
+                                        graph->NewCNode(make_tuple_inputs)};
+  auto depend_node = graph->NewCNode(depend_inputs);
+  depend_node->set_abstract(broadcast_op->input(1)->abstract()->Clone());
+  (void)manager->Replace(broadcast_op->input(1), depend_node);
 }
 
 static std::vector<CNodePtr> GetPPComms(const AnfNodePtrList &nodes) {
@@ -500,9 +508,6 @@ static std::vector<CNodePtr> GetPPComms(const AnfNodePtrList &nodes) {
     }
     auto cnode = node->cast<CNodePtr>();
     if (!cnode->HasPrimalAttr(PIPELINE_PARAM)) {
-      continue;
-    }
-    if (cnode->HasPrimalAttr(kPrimalAttrForwardNodeName)) {
       continue;
     }
     pp_comms.emplace_back(cnode);
