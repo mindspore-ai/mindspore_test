@@ -45,3 +45,10 @@
 	path = tests/st/networks/llm_parallel_feature/mindformers
 	url = https://gitee.com/mindspore/mindformers.git
 	shallow = true
+[submodule "tests/st/mindrlhf/mindformers"]
+	path = tests/st/mindrlhf/mindformers
+	url = https://gitee.com/mindspore/mindformers.git
+	branch = dev
+[submodule "tests/st/mindrlhf/mindrlhf"]
+	path = tests/st/mindrlhf/mindrlhf
+	url = https://gitee.com/mindspore/mindrlhf.git

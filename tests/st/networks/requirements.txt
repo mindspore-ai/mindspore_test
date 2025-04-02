@@ -28,3 +28,5 @@ jinja2
 setproctitle
 safetensors
 tensorboardX
+jsonlines
+word2number
