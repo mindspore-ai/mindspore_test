@@ -34,7 +34,7 @@ def test_custom_cpp_function_scalar():
         def __init__(self):
             super().__init__()
             self.p = Parameter(2.0, requires_grad=True)
-            self.my_ops = CustomOpBuilder("my_ops", ['./custom_src/function_ops.cpp'], backend="Ascend").load()
+            self.my_ops = CustomOpBuilder("my_function_ops", ['./custom_src/function_ops.cpp'], backend="Ascend").load()
 
         def construct(self, x, y):
             z = self.my_ops.add(x, y)
@@ -62,7 +62,7 @@ def test_custom_cpp_function_tuple_tensor_input():
     class MyNet(nn.Cell):
         def __init__(self):
             super().__init__()
-            self.my_ops = CustomOpBuilder("my_ops", ['./custom_src/function_ops.cpp'], backend="Ascend").load()
+            self.my_ops = CustomOpBuilder("my_function_ops", ['./custom_src/function_ops.cpp'], backend="Ascend").load()
 
         def construct(self, x, y):
             return self.my_ops.index(x, y)
@@ -85,7 +85,7 @@ def test_custom_cpp_function_tuple_int_input():
     class MyNet(nn.Cell):
         def __init__(self):
             super().__init__()
-            self.my_ops = CustomOpBuilder("my_ops", ['./custom_src/function_ops.cpp'], backend="Ascend").load()
+            self.my_ops = CustomOpBuilder("my_function_ops", ['./custom_src/function_ops.cpp'], backend="Ascend").load()
 
         def construct(self, x, y):
             return self.my_ops.broadcast_to(x, y)
@@ -108,7 +108,7 @@ def test_custom_cpp_function_multi_input():
         def __init__(self):
             super().__init__()
             self.p = Parameter(2.0, requires_grad=True)
-            self.my_ops = CustomOpBuilder("my_ops", ['./custom_src/function_ops.cpp'], backend="Ascend").load()
+            self.my_ops = CustomOpBuilder("my_function_ops", ['./custom_src/function_ops.cpp'], backend="Ascend").load()
 
         def construct(self, x, y):
             z = self.my_ops.mul(x, y)
@@ -136,7 +136,7 @@ def test_custom_cpp_function_mark_no_diff():
     class MyNet(nn.Cell):
         def __init__(self):
             super().__init__()
-            self.my_ops = CustomOpBuilder("my_ops", ['./custom_src/function_ops.cpp'], backend="Ascend").load()
+            self.my_ops = CustomOpBuilder("my_function_ops", ['./custom_src/function_ops.cpp'], backend="Ascend").load()
 
         def construct(self, x, y):
             z = x * y
@@ -161,7 +161,7 @@ def test_custom_cpp_function_mark_input_no_diff():
     class MyNet(nn.Cell):
         def __init__(self):
             super().__init__()
-            self.my_ops = CustomOpBuilder("my_ops", ['./custom_src/function_ops.cpp'], backend="Ascend").load()
+            self.my_ops = CustomOpBuilder("my_function_ops", ['./custom_src/function_ops.cpp'], backend="Ascend").load()
 
         def construct(self, x):
             x_no_diff, _ = self.my_ops.mul_no_diff_in(x)
@@ -184,7 +184,7 @@ def test_custom_cpp_function_dirty_tensor_is_need_grad_leaf():
     class MyNet(nn.Cell):
         def __init__(self):
             super().__init__()
-            self.my_ops = CustomOpBuilder("my_ops", ['./custom_src/function_ops.cpp'], backend="Ascend").load()
+            self.my_ops = CustomOpBuilder("my_function_ops", ['./custom_src/function_ops.cpp'], backend="Ascend").load()
 
         def construct(self, x, y):
             return self.my_ops.inplace_mul(x, y)
@@ -209,7 +209,7 @@ def test_custom_cpp_function_tensor_hook():
     class MyNet(nn.Cell):
         def __init__(self):
             super().__init__()
-            self.my_ops = CustomOpBuilder("my_ops", ['./custom_src/function_ops.cpp'], backend="Ascend").load()
+            self.my_ops = CustomOpBuilder("my_function_ops", ['./custom_src/function_ops.cpp'], backend="Ascend").load()
 
         def construct(self, x, y):
             z = self.my_ops.mul(x, y)
@@ -225,3 +225,32 @@ def test_custom_cpp_function_tensor_hook():
     grad = grad_op(MyNet())(x, y)
     assert np.allclose(grad[0].asnumpy(), np.array([6.0, 6.0], dtype=np.float32), 0.00001, 0.00001)
     assert np.allclose(grad[1].asnumpy(), np.array([4.0, 4.0], dtype=np.float32), 0.00001, 0.00001)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_custom_launch_aclnn_macro():
+    """
+    Feature: Custom cpp autograd function.
+    Description: use LAUNCH_ACLNN macro to launch aclnn op.
+    Expectation: success.
+    """
+
+    class MyNet(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.p = Parameter(2.0, requires_grad=True)
+            self.my_ops = CustomOpBuilder("my_function_ops", ['./custom_src/function_ops.cpp'], backend="Ascend").load()
+
+        def construct(self, x, y):
+            z = self.my_ops.mul(x, y)
+            return self.my_ops.mul(z, self.p)
+
+    x = Tensor(1.0, ms.float32) * 2
+    y = Tensor(1.0, ms.float32) * 3
+    net = MyNet()
+    grad_op = ms.value_and_grad(net, grad_position=(0, 1), weights=net.trainable_params())
+    out, grads = grad_op(x, y)
+    assert np.allclose(out.asnumpy(), np.array([12.0], dtype=np.float32), 0.00001, 0.00001)
+    assert np.allclose(grads[0][0].asnumpy(), np.array([6.0], dtype=np.float32), 0.00001, 0.00001)
+    assert np.allclose(grads[0][1].asnumpy(), np.array([4.0], dtype=np.float32), 0.00001, 0.00001)
+    assert np.allclose(grads[1][0].asnumpy(), np.array([6.0], dtype=np.float32), 0.00001, 0.00001)
