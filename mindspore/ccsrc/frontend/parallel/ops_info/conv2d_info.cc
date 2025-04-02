@@ -999,7 +999,9 @@ ReplaceGraphPtr Conv2DInfo::replace_graph(const CNodePtr &cnode) {
     if (!out_channel_shard_) {
       return nullptr;
     }
+    MS_EXCEPTION_IF_NULL(cnode);
     auto prim = GetValueNode<PrimitivePtr>(cnode->input(0));
+    MS_EXCEPTION_IF_NULL(prim);
     prim->set_attr(OUT_CHANNEL, MakeValue(new_out_channel_));
     return nullptr;
   }
