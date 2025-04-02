@@ -520,6 +520,8 @@ void SliceTensorObj(const ParameterPtr &parameter, const TensorLayoutPtr &tensor
 
 static void SliceCacheParameterObj(const ParameterPtr &parameter, const py::dict &layout_dict) {
   auto param_info = parameter->param_info();
+  constexpr int64_t SLICE_SHAPE_INDEX = 12;
+  constexpr size_t MIN_LENGTH = 13;
   if (param_info == nullptr) {
     MS_LOG(WARNING) << "parameter: " << parameter->DebugString() << " doesn't have param_info.";
     return;
@@ -538,7 +540,7 @@ static void SliceCacheParameterObj(const ParameterPtr &parameter, const py::dict
     return;
   }
   auto layout = layout_dict[py::str(name)];
-  if (py::len(layout) < 13) {
+  if (py::len(layout) < MIN_LENGTH) {
     MS_LOG(WARNING) << "The length of layout must be larger than 13, but got " << py::len(layout)
                     << ". Parameter:" << parameter->DebugString();
     return;
@@ -552,7 +554,7 @@ static void SliceCacheParameterObj(const ParameterPtr &parameter, const py::dict
   auto full_shape = layout[py::cast<size_t>(6)];
   auto grad_accumulation_shard = ParallelContext::GetInstance()->grad_accumulation_shard();
   if (!opt_shard_group.cast<std::string>().empty()) {
-    slice_shape = layout[py::cast<size_t>(12)];
+    slice_shape = layout[py::cast(SLICE_SHAPE_INDEX)];
   }
   py::tuple param_layout =
     py::make_tuple(device_arrangement, tensor_map, slice_shape, field_size, uniform_split, opt_shard_group, full_shape);
@@ -566,7 +568,6 @@ static void SliceCacheParameterObj(const ParameterPtr &parameter, const py::dict
 
   // handle cloned parameter, like accu_grad and optimizer param
   auto cloned_py_obj = GetPyParameterObj(param_info, CLONED_OBJ);
-
   if (!py::isinstance<py::none>(cloned_py_obj)) {
     if (!py::isinstance<py::list>(cloned_py_obj)) {
       MS_LOG_WITH_NODE(EXCEPTION, parameter)
@@ -578,7 +579,7 @@ static void SliceCacheParameterObj(const ParameterPtr &parameter, const py::dict
       auto cloned_param_slice_shape = layout[py::cast<size_t>(2)];
       if (!opt_shard_group.cast<std::string>().empty()) {
         if (!IsAccuGradObj(each_cloned_obj) || grad_accumulation_shard) {
-          cloned_param_slice_shape = layout[py::cast<size_t>(12)];
+          cloned_param_slice_shape = layout[py::cast(SLICE_SHAPE_INDEX)];
         }
       }
       py::tuple cloned_param_layout = py::make_tuple(device_arrangement, tensor_map, cloned_param_slice_shape,
