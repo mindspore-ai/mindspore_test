@@ -91,7 +91,7 @@ float GetCudaCap(const uint32_t device_id) {
   (void)cudaGetDeviceProperties(&prop, device_id);
   auto major = prop.major;
   auto minor = prop.minor;
-  return static_cast<float>(major * 10.0 + minor) / 10.0;
+  return static_cast<float>(major * BASE + minor) / BASE;
 }
 }  // namespace
 
