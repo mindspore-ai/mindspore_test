@@ -5988,9 +5988,8 @@ def argwhere(input):
         >>> x = mindspore.tensor([[[1,  0], [-5, 0]]], mindspore.int32)
         >>> output = mindspore.ops.argwhere(x)
         >>> print(output)
-        Tensor(shape=[2, 3], dtype=Int64, value=
-        [[0, 0, 0],
-        [0, 1, 0]])
+        [[0 0 0]
+         [0 1 0]]
     """
     return nonzero(input)
 
