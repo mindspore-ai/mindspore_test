@@ -51,6 +51,8 @@ class MS_CORE_API LLMManager {
 
   bool need_force_resize(const std::string &kernel_name);
 
+  void Clear();
+
  private:
   bool force_resize_kernel_{false};
   std::map<std::string, tensor::TensorDataPtr> graph_inputs_map_;
