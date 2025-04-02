@@ -92,7 +92,8 @@ std::vector<size_t> CheckRealOutput(const std::string &node_name, const size_t &
 std::vector<size_t> GetValidDumpIndex(const CNodePtr &cnode, size_t index_size, bool is_input,
                                       const DeviceContext *device_context,
                                       const std::vector<device::DeviceAddress *> &tensors) {
-  std::vector<size_t> valid_indexes, temp_indexes;
+  std::vector<size_t> valid_indexes;
+  std::vector<size_t> temp_indexes;
   valid_indexes.reserve(index_size);
   temp_indexes.reserve(index_size);
   if (is_input) {
