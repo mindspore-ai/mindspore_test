@@ -80,6 +80,7 @@ tensor::TensorPtr CreateTensorWithValueTuple(const ValueSequencePtr &value_tuple
     MS_EXCEPTION_IF_NULL(v);
     if (v->isa<Scalar>()) {
       ScalarPtr scalar = v->cast<ScalarPtr>();
+      MS_EXCEPTION_IF_NULL(scalar);
       auto cur_type = scalar->type()->type_id();
       if (cur_type != first_type) {
         MS_EXCEPTION(TypeError) << "the tuple elements type must be same, first element type = " << first_type

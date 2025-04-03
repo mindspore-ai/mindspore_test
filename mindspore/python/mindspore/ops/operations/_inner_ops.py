@@ -21,7 +21,6 @@ import weakref
 import numpy as np
 
 from mindspore.common import Tensor
-from mindspore.common._stub_tensor import StubTensor
 from mindspore.ops import composite as C
 from mindspore.ops.operations.array_ops import Cast
 from mindspore.ops.operations._scalar_ops import bit_or, bit_and

@@ -6108,8 +6108,7 @@ def _get_moved_perm(ndim, source, destination):
     Helper function for movedim, returns permutation after moving axis
     from source to destination.
     """
-    dest_sorted_idx = [i for i, _ in sorted(
-        enumerate(destination), key=operator.itemgetter(1))]
+    dest_sorted_idx = [i for i, _ in sorted(enumerate(destination), key=operator.itemgetter(1))]
     axis_orig = [i for i in builtins.range(0, ndim) if i not in source]
 
     k = 0

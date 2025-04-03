@@ -1829,6 +1829,7 @@ def infer_value_for_Svd(input_x, full_matrices, compute_uv):
     s = np.linalg.svd(input_x.asnumpy(), full_matrices=full_matrices, compute_uv=False)
     return Tensor(s), np.zeros(1), np.zeros(1)
 
+
 def infer_value_for_Div(input_x, other_x):
     """Infer value for Div op."""
     if input_x is None or other_x is None:
