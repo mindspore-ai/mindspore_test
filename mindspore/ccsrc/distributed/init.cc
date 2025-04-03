@@ -105,7 +105,7 @@ bool InitializeCluster() {
 
   // Set the callback for the cluster node.
   auto callback = std::make_shared<std::function<void(void)>>([]() {
-    MS_LOG(INFO) << "Callback on exception is called.";
+    MS_LOG(WARNING) << "Callback on exception is called.";
     if (TFTWaitSem::IsEnable()) {
       MS_LOG(INFO) << "Start waiting for TFT.";
       TFTWaitSem::GetInstance().Wait();
@@ -122,6 +122,7 @@ bool InitializeCluster() {
       gDistributedCallbackMap[kStopSchedulerFunc]();
     }
 
+    MS_LOG(WARNING) << "Kill this process with SIGTERM.";
     // Forcibly Kill this process.
     (void)kill(getpid(), SIGTERM);
   });
