@@ -740,6 +740,7 @@ void SeqpipeScheduler::Reorder() {
   Reorder1f1bOverlap();
   SchedulerOrder();
   OptimizerShardCommReorder();
+  ReorderShardedParam();
 }
 
 AbstractBasePtr SeqpipeScheduler::GenerateTupleAbstract(const std::vector<AnfNodePtr> &nodes) {
@@ -920,6 +921,22 @@ void SeqpipeScheduler::SchedulerOrder() {
   if (stage_ != 0) {
     MS_LOG(INFO) << "(node, micro, chunk, seq_chunk, is_bp): (send, " << micro_size_ - 1 << ", 0, 0, 1)";
   }
+}
+
+void SeqpipeScheduler::ReorderShardedParam() {
+  if (fwd_params_.empty()) {
+    return;
+  }
+  auto fwd_begin_info = execute_order_.front();
+  auto bwd_end_info = execute_order_.back();
+  std::sort(fwd_params_.begin(), fwd_params_.end(), SortFuncInsideMicro);
+  std::sort(bwd_params_.begin(), bwd_params_.end(), SortFuncInsideMicro);
+  auto prior = fwd_params_.back();
+  auto last = sorted_fwd_begin_[fwd_begin_info.chunk][fwd_begin_info.micro][fwd_begin_info.seq_chunk];
+  ControlOrder(prior, last.first);
+  auto prior2 = sorted_bwd_end_[bwd_end_info.chunk][bwd_end_info.micro][bwd_end_info.seq_chunk];
+  auto last2 = bwd_params_.front();
+  ControlOrder(prior2.second, last2);
 }
 
 void SeqpipeScheduler::OptimizerShardCommReorder() {
