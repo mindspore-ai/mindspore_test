@@ -17,7 +17,7 @@ erf:
 
         Examples:
             >>> import mindspore
-            >>> # The dtype of output is float32 when dtype of input is int64.
+            >>> # The datatype of output will be float32 when datatype of input is in [int64, bool](Datatype only supported on Ascend).
             >>> input = mindspore.tensor([-1, 0, 1, 2, 3], mindspore.int64)
             >>> mindspore.ops.erf(input)
             Tensor(shape=[5], dtype=Float32, value= [-8.42700793e-01,  0.00000000e+00,  8.42700793e-01,  9.95322265e-01,  9.99977910e-01])
