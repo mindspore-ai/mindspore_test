@@ -708,6 +708,7 @@ void SeqpipeScheduler::Reorder() {
       auto prior_recv = GetBorderNode(kReceive, index);
       Add1f1bAttr(prior_recv, kCNodeAttr1f1bIndexRecv, index_1f1b);
       Add1f1bAttr(post_recv, kCNodeAttr1f1bIndexInterRecv, index_1f1b);
+      ControlOrder(prior_cell.second, next_cell.first, kPrimalAttr1b1fCallCall);
       ++index_1f1b;
     }
     if (IsPrimitiveCNode(post_recv.first.border, prim::kPrimReceive)) {

@@ -95,6 +95,7 @@ constexpr auto kPrimalAttrUniqueId = "unique_id";
 constexpr auto kPrimalAttrForwardUniqueId = "forward_unique_id";
 constexpr auto kPrimalAttrForwardCommNodeUniqueId = "forward_comm_node_unique_id";
 constexpr auto kPrimalAttrMirrorUserId = "mirror_user_id";
+constexpr auto kPrimalAttr1b1fCallCall = "1b1f_call_call";
 constexpr auto kCNodeAttr1f1bIndexBp = "1f1b_index_bp";
 constexpr auto kCNodeAttr1f1bIndexFp = "1f1b_index_fp";
 constexpr auto kCNodeAttr1f1bIndexRecv = "1f1b_index_recv";
