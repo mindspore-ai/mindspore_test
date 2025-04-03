@@ -15,7 +15,6 @@
 
 import os
 import numpy as np
-from tests.mark_utils import arg_mark
 import mindspore.context as context
 import mindspore
 from mindspore import Tensor, mint
@@ -33,7 +32,7 @@ class Net(Cell):
 
 def get_output(x1, x2, weight, mode, pos_weight, enable_graph_kernel=False):
     if enable_graph_kernel:
-        context.set_context(jit_level='O1', graph_kernel_flags="--dump_as_text")
+        context.set_context(jit_level='O1', graph_kernel_flags="--dump_as_text --enable_expand_ops=BCEWithLogitsLoss")
     else:
         context.set_context(jit_level='O0')
     net = Net()
@@ -77,7 +76,6 @@ def run_basic(dtype, mode='mean', compare_precision=1e-4):
     _remove_file(dump_file)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_basic_ascend_f16():
     """
     Feature: test graph kernel mint.BCEWithLogitsLoss
@@ -88,7 +86,6 @@ def test_basic_ascend_f16():
     run_basic(mindspore.float16, compare_precision=1e-3)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_basic_ascend_f32():
     """
     Feature: test graph kernel mint.BCEWithLogitsLoss
@@ -99,7 +96,6 @@ def test_basic_ascend_f32():
     run_basic(mindspore.float32)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_basic_ascend_f32_none():
     """
     Feature: test graph kernel mint.BCEWithLogitsLoss
@@ -110,7 +106,6 @@ def test_basic_ascend_f32_none():
     run_basic(mindspore.float32, 'none')
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_basic_ascend_f32_sum():
     """
     Feature: test graph kernel mint.BCEWithLogitsLoss
