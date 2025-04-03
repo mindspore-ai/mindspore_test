@@ -305,9 +305,16 @@ bool MultiStreamController::SyncNotDefaultStreams() {
 bool MultiStreamController::WaitMultiStream(size_t wait_stream_id) {
   LockGuard lock(lock_);
   MS_LOG(INFO) << "Wait multi stream on wait stream id : " << wait_stream_id << ".";
-  const auto &stream_ids = device_res_base_->GetStreamIds();
-  auto event = event_pool_->Get();
   device_res_base_->BindDeviceToCurrentThread(true);
+  if (event_pool_ == nullptr) {
+    MS_LOG(WARNING) << "Event pool is not initialized.";
+    event_pool_ = std::make_shared<EventPool>([&]() {
+      // Event in pool need to do synchronization between streams, need to enable blocking.
+      return device_res_base_->CreateRuntimeEvent(true, false);
+    });
+  }
+  auto event = event_pool_->Get();
+  const auto &stream_ids = device_res_base_->GetStreamIds();
   for (auto stream_id : stream_ids) {
     if (stream_id != wait_stream_id) {
       event->RecordEvent(stream_id);
