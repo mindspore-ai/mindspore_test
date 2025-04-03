@@ -184,8 +184,8 @@ AbstractBasePtr AddRefKeyForArgs(const AbstractBasePtr &output_abs, const Abstra
     const auto &output_args = output_abs->cast<AbstractSequencePtr>()->elements();
     if (inplace_indexes.size() > output_args.size()) {
       MS_LOG(EXCEPTION) << "The number of outputs must be greater than the inplace_indexes."
-                        << " But got the number of outputs: " << output_args.size() << ". the number of inplace_indexes"
-                        << inplace_indexes.size();
+                        << " But got the number of outputs: " << output_args.size()
+                        << ", the number of inplace_indexes: " << inplace_indexes.size();
     }
     for (size_t i = 0; i < inplace_indexes.size(); ++i) {
       auto inplace_index = inplace_indexes[i];

@@ -347,6 +347,18 @@ class MS_CORE_API Primitive : public Named {
   /// \return Rw_write input indexes of the primitive.
   const std::vector<size_t> &rw_write_input_indexes() const { return rw_write_input_indexes_; }
 
+  /// \brief Set inplace input index for primitive.
+  ///
+  /// \param inplace_input_indexes The inplace input index of the primitive to be set.
+  void set_inplace_input_indexes(const std::vector<int64_t> &inplace_input_indexes) {
+    inplace_input_indexes_ = inplace_input_indexes;
+  }
+
+  /// \brief Inplace input index of the primitive.
+  ///
+  /// \return Inplace input indexes of the primitive.
+  const std::vector<int64_t> &inplace_input_indexes() const { return inplace_input_indexes_; }
+
   /// \brief Enable primitive read/write lock.
   void EnableSharedMutex() {
     if (shared_mutex_ == nullptr) {
@@ -377,6 +389,7 @@ class MS_CORE_API Primitive : public Named {
   bool graph_view_prim_;
   std::vector<size_t> const_input_indexes_;
   std::vector<size_t> rw_write_input_indexes_;
+  std::vector<int64_t> inplace_input_indexes_;
   uint64_t id_{0};
   std::shared_ptr<std::shared_mutex> shared_mutex_{nullptr};
 };
