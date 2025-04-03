@@ -49,7 +49,7 @@ from mindspore.common.api import _cell_graph_executor, _pynative_executor, _get_
     _no_grad
 from mindspore.common.api import _convert_python_data, _get_args_for_run_predict
 from mindspore.common.api import _process_dyn_args, _generate_dyn_compile_args
-from mindspore.common.parameter import Parameter, ParameterTuple
+from mindspore.common.parameter import _Buffer, Parameter, ParameterTuple
 from mindspore.common.tensor import Tensor
 from mindspore.ops.operations import Cast
 from mindspore.ops.primitive import Primitive
@@ -59,8 +59,6 @@ from mindspore.parallel._utils import _init_auto_parallel_context, _clear_auto_p
 from mindspore._check_jit_forbidden_api import jit_forbidden_register
 from mindspore.common._decorator import deprecated
 from mindspore.common._register_for_recompute import recompute_registry
-from mindspore.nn.utils.hooks import RemovableHandle
-from mindspore.nn.buffer import Buffer
 
 
 __all__ = [
@@ -80,7 +78,7 @@ class _IncompatibleKeys(namedtuple("IncompatibleKeys", ["missing_keys", "unexpec
     __str__ = __repr__
 
 
-def register_cell_buffer_registration_hook(hook: Callable[..., None],) -> RemovableHandle:
+def register_cell_buffer_registration_hook(hook: Callable[..., None],):
     r"""Register a buffer registration hook common to all cells.
 
     .. warning ::
@@ -95,11 +93,11 @@ def register_cell_buffer_registration_hook(hook: Callable[..., None],) -> Remova
     The hook can modify the input or return a single modified value in the hook.
 
     Returns:
-        :class:`mindspore.utils.hooks.RemovableHandle`:
-            a handle that can be used to remove the added hook by calling
-            ``handle.remove()``
+        A handle that can be used to remove the added hook by calling
+        `handle.remove()`.
     """
-    handle = RemovableHandle(_global_buffer_registration_hooks)
+    from mindspore.utils.hooks import _RemovableHandle
+    handle = _RemovableHandle(_global_buffer_registration_hooks)
     _global_buffer_registration_hooks[handle.id] = hook
     return handle
 
@@ -506,9 +504,9 @@ class Cell(Cell_):
             ...        return x + self.net_buffer
             ...
             >>> net = Net()
-            >>> net.register_buffer(mindspore.tensor("buffer0", [4, 5, 6]))
+            >>> net.register_buffer("buffer0", mindspore.tensor([4, 5, 6]))
             >>> print(net.buffer0)
-            [1 2 3]
+            [4 5 6]
         """
 
         if "_buffers" not in self.__dict__:
@@ -563,7 +561,7 @@ class Cell(Cell_):
             >>> class NetC(mindspore.nn.Cell):
             ...     def __init__(self):
             ...         super().__init__()
-            ...         self.buffer_c = mindspore.nn.Buffer(mindspore.tensor([0, 0, 0]))
+            ...         self.register_buffer("buffer_c", mindspore.tensor([0, 0, 0]))
             ...
             ...     def construct(self, x):
             ...         return x + self.buffer_c
@@ -573,7 +571,7 @@ class Cell(Cell_):
             ...     def __init__(self, net_c):
             ...         super().__init__()
             ...         self.net_c = net_c
-            ...         self.buffer_b = mindspore.nn.Buffer(mindspore.tensor([1, 2, 3]))
+            ...         self.register_buffer("buffer_b", mindspore.tensor([1, 2, 3]))
             ...
             ...     def construct(self, x):
             ...         return self.net_c(x) + self.buffer_b
@@ -583,7 +581,7 @@ class Cell(Cell_):
             ...     def __init__(self, net_b):
             ...         super().__init__()
             ...         self.net_b = net_b
-            ...         self.buffer_a = mindspore.nn.Buffer(mindspore.tensor([4, 5, 6]))
+            ...         self.register_buffer("buffer_a", mindspore.tensor([4, 5, 6]))
             ...
             ...     def construct(self, x):
             ...         return self.net_b(x) + self.buffer_a
@@ -636,7 +634,7 @@ class Cell(Cell_):
             >>> class NetB(mindspore.nn.Cell):
             ...     def __init__(self):
             ...         super().__init__()
-            ...         self.buffer_b = mindspore.nn.Buffer(mindspore.tensor([1, 2, 3]))
+            ...         self.register_buffer("buffer_b", mindspore.tensor([1, 2, 3]))
             ...
             ...     def construct(self, x):
             ...         return x + self.buffer_b
@@ -646,7 +644,7 @@ class Cell(Cell_):
             ...     def __init__(self, net_b):
             ...         super().__init__()
             ...         self.net_b = net_b
-            ...         self.buffer_a = mindspore.nn.Buffer(mindspore.tensor([4, 5, 6]))
+            ...         self.register_buffer("buffer_a", mindspore.tensor([4, 5, 6]))
             ...
             ...     def construct(self, x):
             ...         return self.net_b(x) + self.buffer_a
@@ -688,7 +686,7 @@ class Cell(Cell_):
             >>> class NetB(mindspore.nn.Cell):
             ...     def __init__(self):
             ...         super().__init__()
-            ...         self.buffer_b = mindspore.nn.Buffer(mindspore.tensor([1, 2, 3]))
+            ...         self.register_buffer("buffer_b", mindspore.tensor([1, 2, 3]))
             ...
             ...     def construct(self, x):
             ...         return x + self.buffer_b
@@ -698,7 +696,7 @@ class Cell(Cell_):
             ...     def __init__(self, net_b):
             ...         super().__init__()
             ...         self.net_b = net_b
-            ...         self.buffer_a = mindspore.nn.Buffer(mindspore.tensor([4, 5, 6]))
+            ...         self.register_buffer("buffer_a", mindspore.tensor([4, 5, 6]))
             ...
             ...     def construct(self, x):
             ...         return self.net_b(x) + self.buffer_a
@@ -783,7 +781,7 @@ class Cell(Cell_):
             >>> class NetC(mindspore.nn.Cell):
             ...     def __init__(self):
             ...         super().__init__()
-            ...         self.buffer_c = mindspore.nn.Buffer(mindspore.tensor([0, 0, 0]))
+            ...         self.register_buffer("buffer_c", mindspore.tensor([0, 0, 0]))
             ...         self.dense_c = mindspore.nn.Dense(5, 3)
             ...
             ...     def construct(self, x):
@@ -794,7 +792,7 @@ class Cell(Cell_):
             ...     def __init__(self, net_c):
             ...         super().__init__()
             ...         self.net_c = net_c
-            ...         self.buffer_b = mindspore.nn.Buffer(mindspore.tensor([1, 2, 3]))
+            ...         self.register_buffer("buffer_b", mindspore.tensor([1, 2, 3]))
             ...
             ...     def construct(self, x):
             ...         return self.net_c(x) + self.buffer_b
@@ -804,7 +802,7 @@ class Cell(Cell_):
             ...     def __init__(self, net_b):
             ...         super().__init__()
             ...         self.net_b = net_b
-            ...         self.buffer_a = mindspore.nn.Buffer(mindspore.tensor([4, 5, 6]))
+            ...         self.register_buffer("buffer_a", mindspore.tensor([4, 5, 6]))
             ...
             ...     def construct(self, x):
             ...         return self.net_b(x) + self.buffer_a
@@ -1468,7 +1466,7 @@ class Cell(Cell_):
             self._set_attr_for_parameter_in_list_or_tuple(name, value)
         elif isinstance(value, Cell):
             self._set_attr_for_cell(name, value)
-        elif isinstance(value, Buffer):
+        elif isinstance(value, _Buffer):
             if name in self.__dict__:
                 del self.__dict__[name]
             self.register_buffer(name, value)
@@ -2982,11 +2980,11 @@ class Cell(Cell_):
             hook (Callable): The hook function after `state_dict` is called.
 
         Returns:
-            :class:`~mindspore.nn.utils.hooks.RemovableHandle`,
-            a handle that can be used to remove the added hook by calling
+            A handle that can be used to remove the added hook by calling
             `handle.remove()`.
         """
-        handle = RemovableHandle(self._state_dict_hooks)
+        from mindspore.utils.hooks import _RemovableHandle
+        handle = _RemovableHandle(self._state_dict_hooks)
         self._state_dict_hooks[handle.id] = hook
         return handle
 
@@ -3005,10 +3003,8 @@ class Cell(Cell_):
             hook (Callable): The hook function before `state_dict` is called.
 
         Returns:
-            :class:`~mindspore.nn.utils.hooks.RemovableHandle`,
-            a handle that can be used to remove the added hook by calling
+            A handle that can be used to remove the added hook by calling
             `handle.remove()`.
-        Examples:
 
         Examples:
             >>> import mindspore
@@ -3017,7 +3013,7 @@ class Cell(Cell_):
             >>> class NetA(mindspore.nn.Cell):
             ...     def __init__(self):
             ...         super().__init__()
-            ...         self.buffer_a = mindspore.nn.Buffer(mindspore.tensor([1, 2, 3]))
+            ...         self.register_buffer("buffer_a", mindspore.tensor([1, 2, 3]))
             ...         self.param_a = mindspore.Parameter(mindspore.tensor([1, 2, 3]))
             ...
             ...     def construct(self, x):
@@ -3035,7 +3031,8 @@ class Cell(Cell_):
             >>> print("extra_param" in net_state_dict)
             True
         """
-        handle = RemovableHandle(self._state_dict_pre_hooks)
+        from mindspore.utils.hooks import _RemovableHandle
+        handle = _RemovableHandle(self._state_dict_pre_hooks)
         self._state_dict_pre_hooks[handle.id] = hook
         return handle
 
@@ -3109,7 +3106,7 @@ class Cell(Cell_):
             >>> class Model(mindspore.nn.Cell):
             ...     def __init__(self):
             ...         super().__init__()
-            ...         self.buffer_a = mindspore.nn.Buffer(mindspore.tensor([4, 5, 6]))
+            ...         self.register_buffer("buffer_a", mindspore.tensor([4, 5, 6]))
             ...         self.param_a = mindspore.Parameter(mindspore.tensor([1, 2, 3]))
             ...
             ...     def construct(self, x):
@@ -3180,11 +3177,11 @@ class Cell(Cell_):
             hook (Callable): The hook function before `load_state_dict` is called.
 
         Returns:
-            :class:`~mindspore.nn.utils.hooks.RemovableHandle`,
-            a handle that can be used to remove the added hook by calling
+            A handle that can be used to remove the added hook by calling
             `handle.remove()`.
         """
-        handle = RemovableHandle(self._load_state_dict_pre_hooks)
+        from mindspore.utils.hooks import _RemovableHandle
+        handle = _RemovableHandle(self._load_state_dict_pre_hooks)
         self._load_state_dict_pre_hooks[handle.id] = hook
         return handle
 
@@ -3214,11 +3211,11 @@ class Cell(Cell_):
             hook (Callable): The hook function after `load_state_dict` is called.
 
         Returns:
-            :class:`~mindspore.nn.utils.hooks.RemovableHandle`,
-            a handle that can be used to remove the added hook by calling
+            A handle that can be used to remove the added hook by calling
             `handle.remove()`.
         """
-        handle = RemovableHandle(self._load_state_dict_post_hooks)
+        from mindspore.utils.hooks import _RemovableHandle
+        handle = _RemovableHandle(self._load_state_dict_post_hooks)
         self._load_state_dict_post_hooks[handle.id] = hook
         return handle
 
@@ -3362,9 +3359,8 @@ class Cell(Cell_):
               expected by this cell but present in the provided ``state_dict``.
 
         Note:
-            If a parameter or buffer is registered as ``None`` and its corresponding key
-            exists in :attr:`state_dict`, :func:`mindspore.nn.Cell.load_state_dict` will raise a
-            ``RuntimeError``.
+            If `strict` is ``True`` and a parameter or buffer is registered as ``None``, but its corresponding key
+            exists in :attr:`state_dict`, and :func:`mindspore.nn.Cell.load_state_dict` will raise a ``RuntimeError``.
 
         Examples:
             >>> import mindspore
@@ -3372,7 +3368,7 @@ class Cell(Cell_):
             >>> class Model(mindspore.nn.Cell):
             ...     def __init__(self):
             ...         super().__init__()
-            ...         self.buffer_a = mindspore.nn.Buffer(mindspore.tensor([4, 5, 6]))
+            ...         self.register_buffer("buffer_a", mindspore.tensor([4, 5, 6]))
             ...         self.param_a = mindspore.Parameter(mindspore.tensor([1, 2, 3]))
             ...
             ...     def construct(self, x):

@@ -20,14 +20,14 @@ import pytest
 from tests.mark_utils import arg_mark
 import mindspore as ms
 import mindspore.nn as nn
-from mindspore.nn.buffer import Buffer
 from mindspore import Tensor
+from mindspore.common.parameter import _Buffer
 
 
 class SimpleNet(nn.Cell):
     def __init__(self):
         super(SimpleNet, self).__init__()
-        self.buffer_0 = Buffer(Tensor(np.array([1, 2, 3]).astype(np.float32)))
+        self.buffer_0 = _Buffer(Tensor(np.array([1, 2, 3]).astype(np.float32)))
         self.param_0 = ms.Parameter(Tensor(np.array([10, 20, 30]).astype(np.float32)))
         self.dense = nn.Dense(5, 3)
 
@@ -39,7 +39,7 @@ class ComplexNet(nn.Cell):
     def __init__(self, sub_net):
         super(ComplexNet, self).__init__()
         self.sub_net = sub_net
-        self.buffer_1 = Buffer(Tensor(np.array([6, 6, 6]).astype(np.float32)))
+        self.buffer_1 = _Buffer(Tensor(np.array([6, 6, 6]).astype(np.float32)))
         self.register_buffer('buffer_2', Tensor(np.array([7, 7, 7]).astype(np.float32)))
         self.param_1 = ms.Parameter(Tensor(np.array([8, 8, 8]).astype(np.float32)))
 

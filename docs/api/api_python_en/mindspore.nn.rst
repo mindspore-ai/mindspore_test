@@ -19,7 +19,6 @@ Basic Block
 
     mindspore.nn.Cell
     mindspore.nn.GraphCell
-    mindspore.nn.Buffer
     mindspore.nn.LossBase
     mindspore.nn.Optimizer
 
@@ -409,4 +408,3 @@ Tools
     :template: classtemplate.rst
 
     mindspore.nn.utils.no_init_parameters
-    mindspore.nn.utils.hooks.RemovableHandle
