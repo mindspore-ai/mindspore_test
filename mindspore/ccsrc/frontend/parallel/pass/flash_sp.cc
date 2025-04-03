@@ -2215,6 +2215,7 @@ CNodePtr DynCreateReplaceRingAttentionGraphByAllToAllv(const FuncGraphManagerPtr
   std::shared_ptr<OperatorInfo> operator_info = fa_score_node->user_data<parallel::OperatorInfo>();
   auto flash_score_info_ptr = std::dynamic_pointer_cast<FlashAttentionScoreInfo>(operator_info);
   auto input_layout = flash_score_info_ptr->input_layout();
+  MS_EXCEPTION_IF_NULL(operator_info);
   auto kv_shape = operator_info->inputs_tensor_info()[kIndex1].tensor_layout().base_slice_shape().array();
   auto output_type_id = common::AnfAlgo::GetOutputInferDataType(fa_score_node, kIndex3);
 
