@@ -23,6 +23,7 @@ import mindspore.communication._comm_helper as comm_helper
 from mindspore.profiler.common.file_manager import FileManager
 from mindspore import log as logger
 
+
 class ProfilerMetaData:
     """
         Profiler MetaData

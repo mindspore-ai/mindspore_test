@@ -90,58 +90,38 @@ class DynamicProfilerArgs:
         self._check_params_type()
 
     def _check_params_type(self):
-        """ check params type."""
-        if not isinstance(self._start_step, int):
-            logger.warning("start_step should be int type, start_step will be reset to -1.")
-            self._start_step = -1
+        """Check and enforce parameter types with lower complexity."""
+        # Define a parameter check rule. {Parameter name: (expected type, default value)}
+        param_rules = {
+            '_start_step': (int, -1),
+            '_stop_step': (int, -1),
+            '_aic_metrics': (int, -1),
+            '_profiler_level': (int, 0),
+            '_analyse_mode': (int, -1),
+            '_activities': (int, 0),
+            '_export_type': (int, 0),
+            '_profile_memory': (bool, False),
+            '_mstx': (bool, False),
+            '_parallel_strategy': (bool, False),
+            '_with_stack': (bool, False),
+            '_data_simplification': (bool, True),
+            '_is_valid': (bool, False)
+        }
 
-        if not isinstance(self._stop_step, int):
-            logger.warning("stop_step should be int type, stop_step will be reset to -1.")
-            self._stop_step = -1
+        for param, (expected_type, default) in param_rules.items():
+            value = getattr(self, param)
+            if not self._is_valid_type(value, expected_type):
+                logger.warning(
+                    f"{param[1:]} should be {expected_type.__name__} type, "
+                    f"will be reset to {default}."
+                )
+                setattr(self, param, default)
 
-        if type(self._aic_metrics) != int: # pylint: disable=C0123
-            logger.warning("aic_metrics should be int type, aic_metrics will be reset to -1.")
-            self._aic_metrics = -1
-
-        if not isinstance(self._profiler_level, int):
-            logger.warning("profiler_level should be int type, profiler_level will be reset to 0.")
-            self._profiler_level = 0
-
-        if not isinstance(self._analyse_mode, int):
-            logger.warning("analyse_mode should be int type, analyse_mode will be reset to -1.")
-            self._analyse_mode = -1
-
-        if not isinstance(self._activities, int):
-            logger.warning("activities should be int type, activities will be reset to 0.")
-            self._activities = 0
-
-        if type(self._export_type) != int: # pylint: disable=C0123
-            logger.warning("export_type should be int type, export_type will be reset to 0.")
-            self._export_type = 0
-
-        if not isinstance(self._profile_memory, bool):
-            logger.warning("profile_memory should be bool type, profile_memory will be reset to False.")
-            self._profile_memory = False
-
-        if not isinstance(self._mstx, bool):
-            logger.warning("mstx should be bool type, mstx will be reset to False.")
-            self._mstx = False
-
-        if not isinstance(self._parallel_strategy, bool):
-            logger.warning("parallel_strategy should be bool type, parallel_strategy will be reset to False.")
-            self._parallel_strategy = False
-
-        if not isinstance(self._with_stack, bool):
-            logger.warning("with_stack should be bool type, with_stack will be reset to False.")
-            self._with_stack = False
-
-        if not isinstance(self._data_simplification, bool):
-            logger.warning("data_simplification should be bool type, data_simplification will be reset to True.")
-            self._data_simplification = True
-
-        if not isinstance(self._is_valid, bool):
-            logger.warning("is_valid should be bool type, is_valid will be reset to False.")
-            self._is_valid = False
+    def _is_valid_type(self, value, expected_type):
+        """Helper method for type checking."""
+        if expected_type is int and isinstance(value, bool):
+            return False
+        return isinstance(value, expected_type)
 
     @property
     def start_step(self):
