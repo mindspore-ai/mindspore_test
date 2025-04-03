@@ -53,4 +53,6 @@ bool LLMManager::need_force_resize(const std::string &kernel_name) {
   auto it = std::find(force_resize_kernel_set_.begin(), force_resize_kernel_set_.end(), kernel_name);
   return it != force_resize_kernel_set_.end();
 }
+
+void LLMManager::Clear() { graph_inputs_map_.clear(); }
 }  // namespace mindspore
