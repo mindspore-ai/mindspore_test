@@ -1322,8 +1322,8 @@ bool GeKernelExecutor::MemoryCopyAsync(const CNodePtr &node, const std::vector<K
 }
 
 void GeKernelExecutor::DoAsyncCkpt(const CNodePtr &kernel) const {
-  static std::string env = common::GetEnv("MS_ENABLE_CKPT_D2H_ASYNC");
-  if (env != "1") {
+  static bool disable_ckpt_d2h_async = common::GetEnv("MS_ENABLE_CKPT_D2H_ASYNC") != "1";
+  if (disable_ckpt_d2h_async) {
     return;
   }
   auto ms_context = MsContext::GetInstance();
