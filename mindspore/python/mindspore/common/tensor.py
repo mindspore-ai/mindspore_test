@@ -1158,6 +1158,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
               which may be modified by returning a new output gradient.
             - The `hook` should have the following signature:
               hook(grad) -> New output gradient, but can not return None or not set return value.
+            - Higher-order differentiation does not support tensor `register_hook`.
             - The following constraints must be met under graph mode:
 
               - The `hook` must satisfy the syntax constraints of the graph mode.
