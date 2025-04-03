@@ -211,14 +211,14 @@ const std::vector<OpWithLevel> expand_ops_with_level_dvm = {
   {kAscendDevice, OpLevel_0, prim::kPrimHShrink},
   {kAscendDevice, OpLevel_0, prim::kPrimHSigmoid},
   {kAscendDevice, OpLevel_0, prim::kPrimHSwish},
-  {kAscendDevice, OpLevel_0, prim::kPrimBinaryCrossEntropy},
+  {kAscendDevice, OpLevel_1, prim::kPrimBinaryCrossEntropy},  // will split to multiple sub graphs
   {kAscendDevice, OpLevel_0, prim::kPrimErf},
   {kAscendDevice, OpLevel_0, prim::kPrimTanh},
   {kAscendDevice, OpLevel_0, prim::kPrimCosh},
   {kAscendDevice, OpLevel_0, prim::kPrimSinh},
   {kAscendDevice, OpLevel_0, prim::kPrimClampScalar},
   {kAscendDevice, OpLevel_0, prim::kPrimDivMod},
-  {kAscendDevice, OpLevel_0, prim::kPrimBCEWithLogitsLoss},
+  {kAscendDevice, OpLevel_1, prim::kPrimBCEWithLogitsLoss},  // will split to multiple sub graphs
   // mint ops
   {kAscendDevice, OpLevel_0, prim::kPrimAddExt},
   {kAscendDevice, OpLevel_0, prim::kPrimSubExt},
