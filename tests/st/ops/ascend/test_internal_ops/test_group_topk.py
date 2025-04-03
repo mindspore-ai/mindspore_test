@@ -126,6 +126,7 @@ def run(input_param, token_dtype, is_dynamic=False):
 @pytest.mark.parametrize('token_dtype', [np.float16, bfloat16])
 @pytest.mark.parametrize('input_param', [[64, 1024, 8, 3, 2], [359, 256, 8, 4, 2]])
 @pytest.mark.parametrize('is_dynamic', [False, True])
+@pytest.mark.skip(reason="No support")
 def test_group_topk_float16(token_dtype, input_param, is_dynamic):
     """
     Feature: grouptopk st

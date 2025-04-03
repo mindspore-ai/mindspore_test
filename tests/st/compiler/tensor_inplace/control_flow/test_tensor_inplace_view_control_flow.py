@@ -275,7 +275,7 @@ def test_view_in_control_flow9():
             while m < 10:
                 n = foo(input_tensor1)
                 m.add_(n)
-            while m > 1 and m < 5:
+            while 1 < m < 5:
                 n = foo(input_tensor1)
                 m.add_(n)
             return input_tensor1

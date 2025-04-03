@@ -18,6 +18,8 @@
 #define MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_IRPASS_INPLACE_INPUT_REPLACE_H_
 
 #include <map>
+#include <string>
+#include <vector>
 
 #include "frontend/optimizer/optimizer.h"
 #include "frontend/optimizer/irpass.h"
@@ -38,6 +40,46 @@ class InplaceInputReplace {
   }
 
  private:
+  std::vector<int64_t> inplace_input_indexes(const PrimitivePtr &prim) const {
+    auto op_def = mindspore::ops::GetOpDef(prim->name());
+    std::vector<int64_t> indexes;
+    if (op_def != nullptr) {
+      // Get inplace_indexes for a primtive defined by yaml.
+      size_t output_size = op_def->returns_.size();
+      for (size_t index = 0; index < output_size; ++index) {
+        auto inplace_index = op_def->returns_[index].inplace_input_index_;
+        (void)indexes.emplace_back(inplace_index);
+      }
+      MS_LOG(DEBUG) << "For Primitive '" << prim->name() << "', the inplace_input_indexes is " << indexes;
+      return indexes;
+    }
+    // Try to get inplace_indexes for a Python primitive.
+    auto input_names = prim->GetAttr("input_names");
+    auto output_names = prim->GetAttr("output_names");
+    if ((input_names == nullptr) || (output_names == nullptr)) {
+      return indexes;
+    }
+    const auto &input_name_list = GetValue<std::vector<std::string>>(input_names);
+    std::vector<std::string> output_name_list{};
+    if (output_names->isa<StringImm>()) {
+      (void)output_name_list.emplace_back(GetValue<std::string>(output_names));
+    } else {
+      output_name_list = GetValue<std::vector<std::string>>(output_names);
+    }
+    for (const auto &output : output_name_list) {
+      const auto &rw_write_indexes = prim->rw_write_input_indexes();
+      auto iter = std::find(input_name_list.begin(), input_name_list.end(), output);
+      auto index = std::distance(input_name_list.begin(), iter);
+      // Record the ref index when output's name is one of inputs' names and this input is rw_write.
+      bool is_ref = (iter != input_name_list.end()) &&
+                    (std::find(rw_write_indexes.begin(), rw_write_indexes.end(), index) != rw_write_indexes.end());
+      auto inplace_index = is_ref ? index : -1;
+      (void)indexes.emplace_back(inplace_index);
+    }
+    MS_LOG(DEBUG) << "For Primitive '" << prim->name() << "', the inplace_input_indexes is " << indexes;
+    return indexes;
+  }
+
   // Change from:
   // %0 = InplaceOp(param_x, param_y)
   // %1 = UpdataState(U, %0)
@@ -76,9 +118,12 @@ class InplaceInputReplace {
         change = true;
       }
       const auto &prim = GetCNodePrimitive(cnode);
-      if (prim != nullptr && prim->inplace_prim() && prim->rw_write_input_indexes().size() == 1) {
-        size_t index = prim->rw_write_input_indexes()[0];
-        inplace_input[cnode->input(index + 1)] = cnode;
+      if (prim != nullptr && prim->inplace_prim()) {
+        const auto &indexes = inplace_input_indexes(prim);
+        if (indexes.size() != 1) {
+          continue;
+        }
+        inplace_input[cnode->input(LongToSize(indexes[0] + 1))] = cnode;
         MS_LOG(INFO) << "Record cnode as inplace node: " << cnode->DebugString();
       }
     }
