@@ -936,6 +936,7 @@ def build_searched_strategy(strategy_filename):
     """
     return _build_searched_strategy(strategy_filename)
 
+
 # disable pylint too broad Exception
 # pylint: disable=W0212
 def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_strategy=None,

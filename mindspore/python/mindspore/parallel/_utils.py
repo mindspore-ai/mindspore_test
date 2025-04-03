@@ -34,6 +34,7 @@ from mindspore.parallel._tensor import _load_tensor_by_layout, _load_tensor_shap
 
 SUPPORTED_TUPLE_IN_TUPLE_STRATEGY = ["GroupedMatmul", "FusedInferAttentionScore", "Custom", "Index"]
 
+
 # disable pylint too broad Exception
 # pylint: disable=W0212
 def _init_auto_parallel_context(net):
