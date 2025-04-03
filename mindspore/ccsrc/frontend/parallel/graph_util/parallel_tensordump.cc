@@ -206,17 +206,14 @@ void ParallelTensorDumpHandler::InsertNewTensorDump(const CNodePtr &dump_cnode,
   MS_EXCEPTION_IF_NULL(dump_cnode_prim);
   auto new_dump_prim = dump_cnode_prim->Clone();
   if (is_side_effect_tensordump) {
-    auto monad_node = NewValueNode(kIOMonad);
-    monad_node->set_abstract(kIOMonad->ToAbstract());
-    new_dump_node =
-      func_graph->NewCNode({NewValueNode(new_dump_prim), name_value, last_insert_redistribution_op, monad_node});
+    new_dump_node = func_graph->NewCNode(
+      {NewValueNode(new_dump_prim), name_value, last_insert_redistribution_op, NewValueNode(kIOMonad)});
   } else {
     new_dump_node = func_graph->NewCNode({NewValueNode(new_dump_prim), name_value, last_insert_redistribution_op});
   }
 
   // ops of update_state and depend are used to keep sequence
   auto monad_node = NewValueNode(kIOMonad);
-  monad_node->set_abstract(kIOMonad->ToAbstract());
   auto new_update_state_node = func_graph->NewCNode({NewValueNode(prim::kPrimUpdateState), monad_node, new_dump_node});
   auto depend_prev = node->input(pos_u);
   auto new_depend_kIndex2_input = is_side_effect_tensordump ? new_update_state_node : new_dump_node;
