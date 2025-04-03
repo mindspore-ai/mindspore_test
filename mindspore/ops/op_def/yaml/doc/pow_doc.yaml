@@ -23,7 +23,7 @@ pow:
         Examples:
             >>> import mindspore
             >>> input = mindspore.tensor([1.0, 2.0, 4.0], mindspore.float32)
-            >>> output = ops.pow(input, exponent=3.0)
+            >>> output = mindspore.ops.pow(input, exponent=3.0)
             >>> print(output)
             [ 1.  8. 64.]
             >>>

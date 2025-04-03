@@ -1346,9 +1346,9 @@ def unique(input):
         >>> x = mindspore.tensor([1, 2, 5, 2], mindspore.int32)
         >>> output, indices = mindspore.ops.unique(x)
         >>> print(output)
-        [1, 2, 5]
+        [1 2 5]
         >>> print(indices)
-        [0, 1, 2, 1]
+        [0 1 2 1]
     """
     shape_x = input.shape
     length_x = get_x_shape(shape_x)

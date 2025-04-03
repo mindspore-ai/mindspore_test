@@ -536,8 +536,8 @@ def bucketize(input, boundaries, *, right=False):
         >>> output = mindspore.ops.bucketize(input, boundaries, right=True)
         >>> output
         Tensor(shape=[2, 3], dtype=Int32, value=
-        [[2 3 5],
-         [2 3 5]])
+        [[2, 3, 5],
+         [2, 3, 5]])
     """
 
     bucketize_op = _get_cache_prim(P.Bucketize)
