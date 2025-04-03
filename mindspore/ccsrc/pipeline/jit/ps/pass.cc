@@ -1725,6 +1725,11 @@ bool AddEmbeddingCachePass(const ResourcePtr &resource) {
 }
 
 bool BackendPass(const ResourcePtr &resource) {
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  if (context_ptr->CellReuseLevel() != CellReuseLevel::kLazyInline) {
+    return true;
+  }
   MS_EXCEPTION_IF_NULL(resource);
   auto func_graph = resource->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);
@@ -1738,6 +1743,7 @@ bool BackendPass(const ResourcePtr &resource) {
   });
   auto backend_pass = opt::Optimizer::MakeOptimizer("backend_pass", resource, map, false, true);
   (void)backend_pass->step(func_graph, false);
+  (void)EnvironConversionPass(resource);
   return true;
 }
 
