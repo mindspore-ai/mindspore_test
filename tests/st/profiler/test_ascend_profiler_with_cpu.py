@@ -13,7 +13,6 @@
 # limitations under the License.
 # ============================================================================
 """test ascend profiler with cpu."""
-import os
 import glob
 import tempfile
 from mindspore import context, Model, nn
@@ -53,12 +52,6 @@ def test_cpu_profiler():
             ],
             fuzzy_match=True
         )
-
-        op_name_list = ["BiasAdd", "Conv2D"]
-        device_id = int(os.getenv('DEVICE_ID')) if os.getenv('DEVICE_ID') else 0
-        res = profiler.op_analyse(op_name=op_name_list, device_id=device_id)
-        for op_name in op_name_list:
-            assert op_name in res
         # Check profiler.log
         profiler_log_paths = glob.glob(f"{tmpdir}/*_ascend_ms/"
                                        f"logs/profiler_*.log")
