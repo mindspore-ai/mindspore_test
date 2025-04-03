@@ -389,7 +389,8 @@ def addcmul(input, tensor1, tensor2, value=1):
         >>> x = mindspore.tensor(([1, 1, 1]), mindspore.float32)
         >>> x1 = mindspore.tensor([[1], [2], [3]], mindspore.float32)
         >>> x2 = mindspore.tensor([[1, 2, 3]], mindspore.float32)
-        >>> y = mindspore.ops.addcmul(x, x1, x2, 1)
+        >>> value = mindspore.tensor([1], mindspore.float32)
+        >>> y = mindspore.ops.addcmul(x, x1, x2, value)
         >>> print(y)
         [[ 2.  3.  4.]
          [ 3.  5.  7.]
@@ -2283,8 +2284,8 @@ def invert(x):
 
     Examples:
         >>> import mindspore
-        >>> mindspore.ops.invert(mindspore.tensor([25, 4, 13, 9]))
-        Tensor(shape=[4], dtype=Int64, value= [-26,  -5, -14, -10])
+        >>> mindspore.ops.invert(mindspore.tensor([25, 4, 13, 9], mindspore.int16))
+        Tensor(shape=[4], dtype=Int16, value= [-26,  -5, -14, -10])
     """
     return invert_(x)
 
@@ -2306,7 +2307,7 @@ def bessel_j0(x):
         Tensor
 
     Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
+        ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
@@ -2335,7 +2336,7 @@ def bessel_j1(x):
         Tensor
 
     Supported Platforms:
-         ``Ascend`` ``GPU`` ``CPU``
+        ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
@@ -2364,7 +2365,7 @@ def bessel_i0(x):
         Tensor
 
     Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
+        ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
@@ -2394,7 +2395,7 @@ def bessel_i0e(x):
         Tensor
 
     Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
+        ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
@@ -2423,7 +2424,7 @@ def bessel_k0(x):
         Tensor
 
     Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
+        ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
@@ -2453,7 +2454,7 @@ def bessel_k0e(x):
         Tensor
 
     Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
+        ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
@@ -2481,7 +2482,7 @@ def bessel_y0(x):
         Tensor
 
     Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
+        ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
@@ -2509,7 +2510,7 @@ def bessel_y1(x):
         Tensor
 
     Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
+        ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
@@ -4983,7 +4984,7 @@ def addr(x, vec1, vec2, *, beta=1, alpha=1):
         >>> import mindspore
         >>> x = mindspore.tensor([[2., 2.], [3., 2.], [3., 4.]])
         >>> vec1 = mindspore.tensor([2., 3., 2.])
-        >>> vec2 = mindspore.tensor([3, 4])
+        >>> vec2 = mindspore.tensor([3., 4.])
         >>> output = mindspore.ops.addr(x, vec1, vec2)
         >>> print(output)
         [[ 8. 10.]
@@ -5185,7 +5186,7 @@ def bessel_i1(x):
         Tensor
 
     Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
+        ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
@@ -5215,7 +5216,7 @@ def bessel_i1e(x):
         Tensor
 
     Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
+        ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
@@ -5244,7 +5245,7 @@ def bessel_k1(x):
         Tensor
 
     Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
+        ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
@@ -5274,7 +5275,7 @@ def bessel_k1e(x):
         Tensor
 
     Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
+        ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
@@ -5964,13 +5965,7 @@ def triu_indices(row, col, offset=0, *, dtype=mstype.int64):
         [[0, 0, 1],
          [0, 1, 1]])
         >>>
-        >>> # case 2: If offset=1, the indices on and above the first sub-diagonal above the main diagonal are returned.
-        >>> mindspore.ops.triu_indices(3, 2, 1)
-        Tensor(shape=[2, 1], dtype=Int64, value=
-        [[0],
-         [1]])
-        >>>
-        >>> # case 3: If offset=-1, the indices on and above the first sub-diagonal below the main diagonal are returned.
+        >>> # case 2: If offset=-1, the indices on and above the first sub-diagonal below the main diagonal are returned.
         >>> mindspore.ops.triu_indices(3, 2, -1)
         Tensor(shape=[2, 5], dtype=Int64, value=
         [[0, 0, 1, 1, 2],
@@ -8463,16 +8458,16 @@ def matmul(input, other):
     Examples:
         >>> import mindspore
         >>> # case 1 : Reasonable application of broadcast mechanism.
-        >>> input = mindspore.ops.arange(24).reshape(2, 3, 4)
-        >>> other = mindspore.ops.arange(20).reshape(4, 5)
-        >>> mindspore.ops.matmul(input, other)
-        Tensor(shape=[2, 3, 5], dtype=Int64, value=
+        >>> input = mindspore.ops.arange(24, dtype=mindspore.float32).reshape(2, 3, 4)
+        >>> other = mindspore.ops.arange(20, dtype=mindspore.float32).reshape(4, 5)
+        >>> output = mindspore.ops.matmul(input, other)
+        >>> print(>>> output)
         [[[  70,   76,   82,   88,   94],
           [ 190,  212,  234,  256,  278],
           [ 310,  348,  386,  424,  462]],
          [[ 430,  484,  538,  592,  646],
           [ 550,  620,  690,  760,  830],
-          [ 670,  756,  842,  928, 1014]]])
+          [ 670,  756,  842,  928, 1014]]]
         >>>
         >>> # case 2 : The rank of `input` is 1.
         >>> input = mindspore.ops.ones(([1, 2]))
@@ -8566,10 +8561,10 @@ def bmm(input_x, mat2):
 
     Examples:
         >>> import mindspore
-        >>> input_x = mindspore.ops.arange(24).reshape(2, 4, 1, 3)
-        >>> mat2 = mindspore.ops.arange(72).reshape(2, 4, 3, 3)
-        >>> mindspore.ops.bmm(input_x, mat2)
-        Tensor(shape=[2, 4, 1, 3], dtype=Int64, value=
+        >>> input_x = mindspore.ops.arange(24, dtype=mindspore.float32).reshape(2, 4, 1, 3)
+        >>> mat2 = mindspore.ops.arange(72, dtype=mindspore.float32).reshape(2, 4, 3, 3)
+        >>> out = mindspore.ops.bmm(input_x, mat2)
+        >>> print(out)
         [[[[  15,   18,   21]],
          [[ 150,  162,  174]],
          [[ 447,  468,  489]],
@@ -8577,7 +8572,7 @@ def bmm(input_x, mat2):
          [[[1527, 1566, 1605]],
          [[2310, 2358, 2406]],
          [[3255, 3312, 3369]],
-         [[4362, 4428, 4494]]]])
+         [[4362, 4428, 4494]]]]
     """
     return batch_matmul_(input_x, mat2)
 
@@ -9240,8 +9235,8 @@ def accumulate_n(x):
 
     Examples:
         >>> import mindspore
-        >>> x = mindspore.tensor([1, 2, 3]), mindspore.float32)
-        >>> y = mindspore.tensor([4, 5, 6]), mindspore.float32)
+        >>> x = mindspore.tensor([1, 2, 3], mindspore.float32)
+        >>> y = mindspore.tensor([4, 5, 6], mindspore.float32)
         >>> output = mindspore.ops.accumulate_n([x, y, x, y])
         >>> print(output)
         [10. 14. 18.]
@@ -12159,8 +12154,8 @@ def batch_dot(x1, x2, axes=None):
           [3. 3.]]]
         >>> print(output.shape)
         (2, 2, 2)
-        >>> x1 = mindspore.ops.ones([2, 2]), mindspore.float32)
-        >>> x2 = mindspore.ops.ones([2, 3, 2]), mindspore.float32)
+        >>> x1 = mindspore.ops.ones([2, 2], mindspore.float32)
+        >>> x2 = mindspore.ops.ones([2, 3, 2], mindspore.float32)
         >>> axes = (1, 2)
         >>> output = ops.batch_dot(x1, x2, axes)
         >>> print(output)

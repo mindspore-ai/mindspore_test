@@ -18,6 +18,6 @@ atan2:
 
         Examples:
             >>> import mindspore
-            >>> output = mindspore.ops.atan2(mindspore.tensor([0, 1]), mindspore.tensor([1, 1]))
+            >>> output = mindspore.ops.atan2(mindspore.tensor([0., 1.]), mindspore.tensor([1., 1.]))
             >>> print(output)
             [0.        0.7853982]
