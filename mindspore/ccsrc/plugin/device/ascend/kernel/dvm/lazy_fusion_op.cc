@@ -1453,23 +1453,26 @@ std::tuple<BaseTensorPtr, BaseTensorPtr> BatchNormGatherStatsWithCountsAscendDvm
   auto eps_imm = GetValue<float>(eps);
   auto k = g_lazy_fusion_manager.Get(device_context_, stream_id_);
   MS_LOG(INFO) << op_name() << " call start, kernel id is " << k->id();
-  PyBoostUtils::PrepareOpInputs(device_context_, stream_id_, x, sum_all, square_sum_all, running_mean_tensor_opt,
-                                running_var_tensor_opt, counts_tensor_opt);
+  PyBoostUtils::PrepareOpInputs(device_context_, stream_id_, x, sum_all, square_sum_all, running_mean_tensor,
+                                running_var_tensor, counts_tensor);
 
   ShapeVector counts_axis;
   for (int64_t i = 0; i < static_cast<int64_t>(counts_tensor->shape().size()); ++i) {
     counts_axis.push_back(i);
   }
   auto count_axis_ref = k->GetShapeRef(counts_axis);
-  auto global_counts = k->Reduce(dvm::ReduceOpType::kSum, k->Input(counts_tensor), count_axis_ref, false);
+  auto x_dtype = k->TransType(input_tensor->data_type());
+  auto global_counts =
+    k->Reduce(dvm::ReduceOpType::kSum, k->Cast(k->Input(counts_tensor), x_dtype), count_axis_ref, false);
 
   ShapeVector mean_axis;
   for (int64_t i = 0; i < static_cast<int64_t>(sum_all->shape().size()) - 1; ++i) {  // last aixs is C channel
     mean_axis.push_back(i);
   }
   auto mean_axis_ref = k->GetShapeRef(mean_axis);
-  auto global_sum = k->Reduce(dvm::ReduceOpType::kSum, k->Input(sum_all), mean_axis_ref, false);
-  auto global_square_sum = k->Reduce(dvm::ReduceOpType::kSum, k->Input(square_sum_all), mean_axis_ref, false);
+  auto global_sum = k->Reduce(dvm::ReduceOpType::kSum, k->Cast(k->Input(sum_all), x_dtype), mean_axis_ref, false);
+  auto global_square_sum =
+    k->Reduce(dvm::ReduceOpType::kSum, k->Cast(k->Input(square_sum_all), x_dtype), mean_axis_ref, false);
   auto global_mean = k->Binary(dvm::BinaryOpType::kDiv, global_sum, global_counts);
   auto global_mean_tensor = k->Output(global_mean, x->data_type(), k->GetShape(global_mean));
   auto global_var =
@@ -1482,8 +1485,10 @@ std::tuple<BaseTensorPtr, BaseTensorPtr> BatchNormGatherStatsWithCountsAscendDvm
   // update running_mean
   if (running_mean_tensor != nullptr) {
     auto running_mean_new = k->Binary(
-      dvm::BinaryOpType::kAdd, k->Binary(dvm::BinaryOpType::kMul, k->Input(running_mean_tensor), momentum_imm_reverse),
+      dvm::BinaryOpType::kAdd,
+      k->Binary(dvm::BinaryOpType::kMul, k->Cast(k->Input(running_mean_tensor), x_dtype), momentum_imm_reverse),
       k->Binary(dvm::BinaryOpType::kMul, global_mean, momentum_imm));
+    running_mean_new = k->Cast(running_mean_new, k->TransType(running_mean_tensor->data_type()));
     k->Output(running_mean_tensor, running_mean_new);
   }
   // update running_var
@@ -1492,8 +1497,10 @@ std::tuple<BaseTensorPtr, BaseTensorPtr> BatchNormGatherStatsWithCountsAscendDvm
       dvm::BinaryOpType::kMul, global_var,
       k->Binary(dvm::BinaryOpType::kDiv, global_counts, k->Binary(dvm::BinaryOpType::kSub, global_counts, 1.0f)));
     auto running_var_new = k->Binary(
-      dvm::BinaryOpType::kAdd, k->Binary(dvm::BinaryOpType::kMul, k->Input(running_var_tensor), momentum_imm_reverse),
+      dvm::BinaryOpType::kAdd,
+      k->Binary(dvm::BinaryOpType::kMul, k->Cast(k->Input(running_var_tensor), x_dtype), momentum_imm_reverse),
       k->Binary(dvm::BinaryOpType::kMul, global_var1, momentum_imm));
+    running_var_new = k->Cast(running_var_new, k->TransType(running_var_tensor->data_type()));
     k->Output(running_var_tensor, running_var_new);
   }
   outputs_.push_back(global_mean_tensor);
@@ -1540,24 +1547,84 @@ BaseTensorPtr BatchNormElemtAscendDvm::Call(const BaseTensorPtr &input_tensor,
     [&](LazyFusionKernelAscend *k) -> BaseTensorPtr {
       // (x - mean) * invstd * weight + bias
       auto input_obj = k->Input(x);
+      auto input_dtype = k->GetDType(input_obj);
       ShapeVector new_shape(x->shape().size(), 1);
       new_shape[1] = x->shape()[1];
       if (mean_tensor != nullptr) {
-        input_obj = k->Binary(dvm::BinaryOpType::kSub, input_obj, k->Input(mean_tensor, true, new_shape));
+        input_obj =
+          k->Binary(dvm::BinaryOpType::kSub, input_obj, k->Cast(k->Input(mean_tensor, true, new_shape), input_dtype));
       }
       if (invstd_tensor != nullptr) {
-        auto scale = weight_tensor == nullptr
-                       ? k->Input(invstd_tensor, true, new_shape)
-                       : k->Binary(dvm::BinaryOpType::kMul, k->Input(invstd_tensor, true, new_shape),
-                                   k->Input(weight_tensor, true, new_shape));
+        auto scale =
+          weight_tensor == nullptr
+            ? k->Cast(k->Input(invstd_tensor, true, new_shape), input_dtype)
+            : k->Binary(dvm::BinaryOpType::kMul, k->Cast(k->Input(invstd_tensor, true, new_shape), input_dtype),
+                        k->Cast(k->Input(weight_tensor, true, new_shape), input_dtype));
         input_obj = k->Binary(dvm::BinaryOpType::kMul, input_obj, scale);
       }
       if (bias_tensor != nullptr) {
-        input_obj = k->Binary(dvm::BinaryOpType::kAdd, input_obj, k->Input(bias_tensor, true, new_shape));
+        input_obj =
+          k->Binary(dvm::BinaryOpType::kAdd, input_obj, k->Cast(k->Input(bias_tensor, true, new_shape), input_dtype));
       }
       return k->Output(input_obj, x->data_type(), x->shape());
     },
-    x, weight_tensor_opt, bias_tensor_opt, mean_tensor_opt, invstd_tensor_opt);
+    x, weight_tensor, bias_tensor, mean_tensor, invstd_tensor);
+  return outputs_.front();
+}
+
+BaseTensorPtr BatchNormElemtGradAscendDvm::Call(const BaseTensorPtr &dout_tensor, const BaseTensorPtr &input_tensor,
+                                                const BaseTensorPtr &mean_tensor, const BaseTensorPtr &invstd_tensor,
+                                                const BaseTensorPtr &weight_tensor, const BaseTensorPtr &sumd_dy_tensor,
+                                                const BaseTensorPtr &sum_dy_xmu_tensor,
+                                                const BaseTensorPtr &count_tensor) {
+  // input check
+  if (NeedSync() || input_tensor->data_type() != kNumberTypeFloat32) {
+    return BatchNormElemtGradAscend::Call(dout_tensor, input_tensor, mean_tensor, invstd_tensor, weight_tensor,
+                                          sumd_dy_tensor, sum_dy_xmu_tensor, count_tensor);
+  }
+  auto dout_tensor_c = ToContiguous(dout_tensor, device_context_->device_context_key_.device_name_, stream_id_);
+  auto input_tensor_c = ToContiguous(input_tensor, device_context_->device_context_key_.device_name_, stream_id_);
+  auto mean_tensor_c = ToContiguous(mean_tensor, device_context_->device_context_key_.device_name_, stream_id_);
+  auto invstd_tensor_c = ToContiguous(invstd_tensor, device_context_->device_context_key_.device_name_, stream_id_);
+  auto weight_tensor_c = ToContiguous(weight_tensor, device_context_->device_context_key_.device_name_, stream_id_);
+  auto sumd_dy_tensor_c = ToContiguous(sumd_dy_tensor, device_context_->device_context_key_.device_name_, stream_id_);
+  auto sum_dy_xmu_tensor_c =
+    ToContiguous(sum_dy_xmu_tensor, device_context_->device_context_key_.device_name_, stream_id_);
+  auto count_tensor_c = ToContiguous(count_tensor, device_context_->device_context_key_.device_name_, stream_id_);
+  FlushLazyFusion();  // forward fusion not allowed, because inputs need reshape
+  DvmCall(
+    op_name_, this,
+    [&](LazyFusionKernelAscend *k) -> BaseTensorPtr {
+      auto x_obj = k->Input(input_tensor_c);
+      auto x_dtype = k->GetDType(x_obj);
+      ShapeVector new_shape(input_tensor_c->shape().size(), 1);
+      new_shape[1] = input_tensor_c->shape()[1];
+      ShapeVector counts_axis;
+      for (int64_t i = 0; i < static_cast<int64_t>(count_tensor_c->shape().size()); ++i) {
+        counts_axis.push_back(i);
+      }
+      auto count_axis_ref = k->GetShapeRef(counts_axis);
+      auto global_counts =
+        k->Reduce(dvm::ReduceOpType::kSum, k->Cast(k->Input(count_tensor_c), x_dtype), count_axis_ref, false);
+      auto invstd_obj = k->Cast(k->Input(invstd_tensor_c, true, new_shape), x_dtype);
+      auto invstd_dy_xmu =
+        k->Binary(dvm::BinaryOpType::kMul, k->Binary(dvm::BinaryOpType::kMul, invstd_obj, invstd_obj),
+                  k->Binary(dvm::BinaryOpType::kDiv, k->Cast(k->Input(sum_dy_xmu_tensor_c, true, new_shape), x_dtype),
+                            global_counts));
+      auto x_sub_mean =
+        k->Binary(dvm::BinaryOpType::kSub, x_obj, k->Cast(k->Input(mean_tensor_c, true, new_shape), x_dtype));
+      auto x_invstd = k->Binary(dvm::BinaryOpType::kMul, x_sub_mean, invstd_dy_xmu);
+      auto t1 = k->Binary(dvm::BinaryOpType::kSub, k->Cast(k->Input(dout_tensor_c), x_dtype),
+                          k->Binary(dvm::BinaryOpType::kDiv,
+                                    k->Cast(k->Input(sumd_dy_tensor_c, true, new_shape), x_dtype), global_counts));
+      auto t2 = k->Binary(dvm::BinaryOpType::kSub, t1, x_invstd);
+      auto obj = k->Binary(
+        dvm::BinaryOpType::kMul, t2,
+        k->Binary(dvm::BinaryOpType::kMul, invstd_obj, k->Cast(k->Input(weight_tensor_c, true, new_shape), x_dtype)));
+      return k->Output(obj, input_tensor_c->data_type(), input_tensor_c->shape());
+    },
+    dout_tensor_c, input_tensor_c, mean_tensor_c, invstd_tensor_c, weight_tensor_c, sumd_dy_tensor_c,
+    sum_dy_xmu_tensor_c, count_tensor_c);
   return outputs_.front();
 }
 
@@ -1628,6 +1695,7 @@ void RegisterLazyFusionOp() {
   MS_REPLACE_DVM_OP(BatchNormStats);
   MS_REPLACE_DVM_OP(BatchNormGatherStatsWithCounts);
   MS_REPLACE_DVM_OP(BatchNormElemt);
+  MS_REPLACE_DVM_OP(BatchNormElemtGrad);
 }
 
 void LazyFusionAscendInit() {
