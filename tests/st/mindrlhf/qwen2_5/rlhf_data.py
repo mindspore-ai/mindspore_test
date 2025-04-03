@@ -150,9 +150,9 @@ def get_args():
         "--output_path", required=True, help="file path to output mindrecord file."
     )
     parser.add_argument(
-        "--max_prompt_length", default=2048, help="max prompt encode length."
+        "--max_prompt_length", default=64, help="max prompt encode length."
     )
-    parser.add_argument("--seq_length", default=4096,
+    parser.add_argument("--seq_length", default=128,
                         help="encoded sequence length.")
     parser.add_argument("--pad_token_id", default=None, help="pad token id.")
     parser.add_argument("--is_dataset_gsm8k", default=False,

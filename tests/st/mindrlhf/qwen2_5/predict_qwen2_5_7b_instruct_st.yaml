@@ -35,7 +35,7 @@ model:
   model_config:
     type: LlamaConfig
     batch_size: 1
-    seq_length: 8192
+    seq_length: 128
     hidden_size: 3584
     num_layers: 2
     num_heads: 28
@@ -63,9 +63,9 @@ model:
     offset: 0
     checkpoint_name_or_path: ""
     repetition_penalty: 1.0
-    max_decode_length: 2048
+    max_decode_length: 4
     temperature: 1.2
-    top_k: 50
+    top_k: 2
     top_p: 1.0
     do_sample: True
     is_dynamic: True
