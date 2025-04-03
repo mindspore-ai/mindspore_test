@@ -1693,7 +1693,7 @@ def test_multi_abs_add_assign():
 
 
 @security_off_wrap
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_print_assign_print():
     """
     Feature: Auto Monad
@@ -1706,7 +1706,7 @@ def test_print_assign_print():
             super().__init__()
             self.print = P.Print()
             self.assign = P.Assign()
-            self.param = Parameter(Tensor(1, dtype=ms.int32), name='param')
+            self.param = Parameter(Tensor(1, dtype=ms.int64), name='param')
 
         def func(self):
             self.assign(self.param, self.param * 5)
@@ -1724,17 +1724,17 @@ def test_print_assign_print():
 
     cap = Capture()
     with capture(cap):
-        input_x = Tensor(3, dtype=ms.int32)
-        expect = Tensor(10, dtype=ms.int32)
+        input_x = Tensor(3, dtype=ms.int64)
+        expect = Tensor(10, dtype=ms.int64)
         net = Print()
         out = net(input_x)
         sys.stdout.flush()
         time.sleep(2.0)
 
-    patterns = {'param_1:\nTensor(shape=[], dtype=Int32, value=1)\n'
-                'res:\nTensor(shape=[], dtype=Int32, value=10)\n'
-                'param_2:\nTensor(shape=[], dtype=Int32, value=5)\n'
-                'param_3:\nTensor(shape=[], dtype=Int32, value=3)\n'}
+    patterns = {'param_1:\nTensor(shape=[], dtype=Int64, value=1)\n'
+                'res:\nTensor(shape=[], dtype=Int64, value=10)\n'
+                'param_2:\nTensor(shape=[], dtype=Int64, value=5)\n'
+                'param_3:\nTensor(shape=[], dtype=Int64, value=3)\n'}
     check_output(cap.output, patterns)
     np.testing.assert_array_equal(out.asnumpy(), expect.asnumpy())
 
