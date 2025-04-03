@@ -794,3 +794,13 @@ def _grads_divided_by_device_num_if_recomputation(grads):
         device_num_tensor = Tensor(device_num, grads.dtype)
         new_grads = grads / device_num_tensor
     return new_grads
+
+
+def _check_rank(cur_rank, initial_rank, pipeline_stages):
+    """
+    Check parameter for parameter_broadcast.
+    """
+    if cur_rank != get_rank():
+        raise ValueError(f"For parameter broadcast, the cur_rank: {cur_rank} is wrong.")
+    if initial_rank % (get_group_size() / pipeline_stages) != 0:
+        raise ValueError(f"For parameter broadcast, the initial_rank: {initial_rank} is wrong.")
