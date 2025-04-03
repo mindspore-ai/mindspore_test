@@ -170,6 +170,17 @@ void AddNodeToGraphTracker(const CNodePtr cnode, const std::string &actor_name) 
   }
   return;
 }
+bool IsEnableMemTracker() {
+  static bool is_enable_mem_tracker = device::tracker::MemTrackerManager::GetInstance().IsEnabled();
+  return is_enable_mem_tracker;
+}
+
+inline bool NeedRunMemTracker() {
+  if (IsEnableMemTracker()) {
+    return true;
+  }
+  return device::tracker::MemTrackerManager::GetInstance().enable_memory_debug_info();
+}
 }  // namespace
 
 using distributed::collective::CollectiveManager;
@@ -520,8 +531,10 @@ void KernelActor::Run(OpContext<DeviceTensor> *const context) {
   try {
     MS_EXCEPTION_IF_NULL(kernel_);
     MS_EXCEPTION_IF_NULL(kernel_->func_graph());
-    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, GetAID().Name(), kernel_->fullname_with_scope(),
-                                                   kernel_->func_graph()->ToString(), false);
+    if (NeedRunMemTracker()) {
+      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, GetAID().Name(), kernel_->fullname_with_scope(),
+                                                     kernel_->func_graph()->ToString(), false);
+    }
     FetchInputDeviceTensor(context);
     UpdateRefDeviceAddress(context, true);
     if (ActorDispatcher::enable_runtime_multi_pipeline()) {
