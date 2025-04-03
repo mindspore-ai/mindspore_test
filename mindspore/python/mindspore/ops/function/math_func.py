@@ -1077,10 +1077,9 @@ def inplace_update(x, v, indices):
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
         >>> indices = (0, 1)
-        >>> x = mindspore.tensor(np.array([[1, 2], [3, 4], [5, 6]]), mindspore.float32)
-        >>> v = mindspore.tensor(np.array([[0.5, 1.0], [1.0, 1.5]]), mindspore.float32)
+        >>> x = mindspore.tensor([[1, 2], [3, 4], [5, 6]], mindspore.float32)
+        >>> v = mindspore.tensor([[0.5, 1.0], [1.0, 1.5]], mindspore.float32)
         >>> output = mindspore.ops.inplace_update(x, v, indices)
         >>> print(output)
         [[0.5 1. ]
@@ -1113,10 +1112,9 @@ def inplace_add(x, v, indices):
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
         >>> indices = (0, 1)
-        >>> x = mindspore.tensor(np.array([[1, 2], [3, 4], [5, 6]]), mindspore.float32)
-        >>> input_v = mindspore.tensor(np.array([[0.5, 1.0], [1.0, 1.5]]), mindspore.float32)
+        >>> x = mindspore.tensor([[1, 2], [3, 4], [5, 6]], mindspore.float32)
+        >>> input_v = mindspore.tensor([[0.5, 1.0], [1.0, 1.5]], mindspore.float32)
         >>> output = mindspore.ops.inplace_add(x, input_v, indices)
         >>> print(output)
         [[1.5 3. ]
@@ -1152,10 +1150,9 @@ def inplace_index_add(var, indices, updates, axis):  # pylint: disable=redefined
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> var = mindspore.Parameter(mindspore.tensor(np.array([[1, 2], [3, 4], [5, 6]]), mindspore.float32))
-        >>> indices = mindspore.tensor(np.array([0, 1]), mindspore.int32)
-        >>> updates = mindspore.tensor(np.array([[0.5, 1.0], [1.0, 1.5]]), mindspore.float32)
+        >>> var = mindspore.Parameter(mindspore.tensor([[1, 2], [3, 4], [5, 6]], mindspore.float32))
+        >>> indices = mindspore.tensor([0, 1], mindspore.int32)
+        >>> updates = mindspore.tensor([[0.5, 1.0], [1.0, 1.5]], mindspore.float32)
         >>> mindspore.ops.inplace_index_add(var, indices, updates, axis=0)
         >>> print(var.asnumpy())
         [[1.5 3. ]
@@ -1189,10 +1186,9 @@ def inplace_sub(x, v, indices):
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
         >>> indices = (0, 1)
-        >>> x = mindspore.tensor(np.array([[1, 2], [3, 4], [5, 6]]), mindspore.float32)
-        >>> input_v = mindspore.tensor(np.array([[0.5, 1.0], [1.0, 1.5]]), mindspore.float32)
+        >>> x = mindspore.tensor([[1, 2], [3, 4], [5, 6]], mindspore.float32)
+        >>> input_v = mindspore.tensor([[0.5, 1.0], [1.0, 1.5]], mindspore.float32)
         >>> output = mindspore.ops.inplace_sub(x, input_v, indices)
         >>> print(output)
         [[0.5 1. ]
@@ -5635,9 +5631,8 @@ def dstack(tensors):
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> x1 = mindspore.tensor(np.arange(1, 7).reshape(2, 3))
-        >>> x2 = mindspore.tensor(np.arange(7, 13).reshape(2, 3))
+        >>> x1 = mindspore.tensor(mindspore.ops.arange(1, 7).reshape(2, 3))
+        >>> x2 = mindspore.tensor(mindspore.ops.arange(7, 13).reshape(2, 3))
         >>> out = mindspore.ops.dstack([x1, x2])
         >>> print(out.asnumpy())
         [[[ 1.  7.]
@@ -9675,44 +9670,43 @@ def einsum(equation, *operands):
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> x = mindspore.tensor(np.array([1.0, 2.0, 4.0]), mindspore.float32)
+        >>> x = mindspore.tensor([1.0, 2.0, 4.0], mindspore.float32)
         >>> equation = "i->"
         >>> output = mindspore.ops.einsum(equation, x)
         >>> print(output)
         [7.]
-        >>> x = mindspore.tensor(np.array([1.0, 2.0, 4.0]), mindspore.float32)
-        >>> y = mindspore.tensor(np.array([2.0, 4.0, 3.0]), mindspore.float32)
+        >>> x = mindspore.tensor([1.0, 2.0, 4.0], mindspore.float32)
+        >>> y = mindspore.tensor([2.0, 4.0, 3.0], mindspore.float32)
         >>> equation = "i,i->i"
         >>> output = mindspore.ops.einsum(equation, x, y)
         >>> print(output)
         [ 2. 8. 12.]
-        >>> x = mindspore.tensor(np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]), mindspore.float32)
-        >>> y = mindspore.tensor(np.array([[2.0, 3.0], [1.0, 2.0], [4.0, 5.0]]), mindspore.float32)
+        >>> x = mindspore.tensor([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], mindspore.float32)
+        >>> y = mindspore.tensor([[2.0, 3.0], [1.0, 2.0], [4.0, 5.0]], mindspore.float32)
         >>> equation = "ij,jk->ik"
         >>> output = mindspore.ops.einsum(equation, x, y)
         >>> print(output)
         [[16. 22.]
          [37. 52.]]
-        >>> x = mindspore.tensor(np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]), mindspore.float32)
+        >>> x = mindspore.tensor([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], mindspore.float32)
         >>> equation = "ij->ji"
         >>> output = mindspore.ops.einsum(equation, x)
         >>> print(output)
         [[1. 4.]
          [2. 5.]
          [3. 6.]]
-        >>> x = mindspore.tensor(np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]), mindspore.float32)
+        >>> x = mindspore.tensor([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], mindspore.float32)
         >>> equation = "ij->j"
         >>> output = mindspore.ops.einsum(equation, x)
         >>> print(output)
         [5. 7. 9.]
-        >>> x = mindspore.tensor(np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]), mindspore.float32)
+        >>> x = mindspore.tensor([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], mindspore.float32)
         >>> equation = "...->"
         >>> output = mindspore.ops.einsum(equation, x)
         >>> print(output)
         [21.]
-        >>> x = mindspore.tensor(np.array([1.0, 2.0, 3.0]), mindspore.float32)
-        >>> y = mindspore.tensor(np.array([2.0, 4.0, 1.0]), mindspore.float32)
+        >>> x = mindspore.tensor([1.0, 2.0, 3.0], mindspore.float32)
+        >>> y = mindspore.tensor([2.0, 4.0, 1.0], mindspore.float32)
         >>> equation = "j,i->ji"
         >>> output = mindspore.ops.einsum(equation, x, y)
         >>> print(output)

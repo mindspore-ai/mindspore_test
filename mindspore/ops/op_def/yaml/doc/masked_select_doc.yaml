@@ -16,9 +16,8 @@ masked_select:
         
         Examples:
             >>> import mindspore
-            >>> import numpy as np
-            >>> x = mindspore.tensor(np.array([1, 2, 3, 4]), mindspore.int64)
-            >>> mask = mindspore.tensor(np.array([1, 0, 1, 0]), mindspore.bool_)
+            >>> x = mindspore.tensor([1, 2, 3, 4], mindspore.int64)
+            >>> mask = mindspore.tensor([1, 0, 1, 0], mindspore.bool_)
             >>> output = mindspore.ops.masked_select(x, mask)
             >>> print(output)
             [1 3]

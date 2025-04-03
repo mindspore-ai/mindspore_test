@@ -564,7 +564,7 @@
             - **hook** (Callable) - 在调用load_state_dict之后执行的钩子。
 
         返回：
-            RemovableHandle，一个句柄，可以通过调用 `handle.remove()` 来移除已添加的钩子。
+            一个句柄，可以通过调用 `handle.remove()` 来移除已添加的钩子。
 
     .. py:method:: register_load_state_dict_pre_hook(hook)
 
@@ -580,7 +580,7 @@
             - **hook** (Callable) - 在调用load_state_dict之前执行的钩子。
 
         返回：
-            RemovableHandle，一个句柄，可以通过调用 `handle.remove()` 来移除已添加的钩子。
+            一个句柄，可以通过调用 `handle.remove()` 来移除已添加的钩子。
 
     .. py:method:: register_state_dict_post_hook(hook)
 
@@ -596,7 +596,7 @@
             - **hook** (Callable) - 在调用state_dict之后执行的钩子。
 
         返回：
-            RemovableHandle，一个句柄，可以通过调用 `handle.remove()` 来移除已添加的钩子。
+            一个句柄，可以通过调用 `handle.remove()` 来移除已添加的钩子。
 
     .. py:method:: register_state_dict_pre_hook(hook)
 
@@ -612,7 +612,7 @@
             - **hook** (Callable) - 在调用state_dict之前执行的钩子。
 
         返回：
-            RemovableHandle，一个句柄，可以通过调用 `handle.remove()` 来移除已添加的钩子。
+            一个句柄，可以通过调用 `handle.remove()` 来移除已添加的钩子。
 
     .. py:method:: remove_redundant_parameters()
 

@@ -2300,8 +2300,7 @@ def flip(input, dims):
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> input = mindspore.tensor(np.arange(1, 9).reshape((2, 2, 2)))
+        >>> input = mindspore.tensor(mindspore.ops.arange(1, 9).reshape((2, 2, 2)))
         >>> output = mindspore.ops.flip(input, (0, 2))
         >>> print(output)
         [[[6 5]
@@ -2328,8 +2327,7 @@ def flipud(input):
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> input = mindspore.tensor(np.arange(1, 9).reshape((2, 2, 2)))
+        >>> input = mindspore.tensor(mindspore.ops.arange(1, 9).reshape((2, 2, 2)))
         >>> output = mindspore.ops.flipud(input)
         >>> print(output)
         [[[5 6]
@@ -2355,8 +2353,7 @@ def fliplr(input):
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> input = mindspore.tensor(np.arange(1, 9).reshape((2, 2, 2)))
+        >>> input = mindspore.tensor(mindspore.ops.arange(1, 9).reshape((2, 2, 2)))
         >>> output = mindspore.ops.fliplr(input)
         >>> print(output)
         [[[3 4]

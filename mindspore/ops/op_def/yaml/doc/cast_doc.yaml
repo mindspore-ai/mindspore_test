@@ -18,12 +18,10 @@ cast:
 
         Examples:
             >>> import mindspore
-            >>> import numpy as np
-            >>> input_np = np.random.randn(2, 3, 4, 5).astype(np.float32)
-            >>> input = mindspore.tensor(input_np)
-            >>> dtype = mindspore.int32
+            >>> input = mindspore.tensor([1, 2, 3], mindspore.int32)
+            >>> dtype = mindspore.float64
             >>> output = mindspore.ops.cast(input, dtype)
             >>> print(output.dtype)
-            Int32
-            >>> print(output.shape)
-            (2, 3, 4, 5)
+            Float64
+            >>> print(output)
+            [1. 2. 3.]
