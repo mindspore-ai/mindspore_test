@@ -112,16 +112,20 @@ Status TileInfo::CheckStrategy(const StrategyPtr &strategy) {
   return CheckStrategyValue(strategy, multiples);
 }
 
+void log_func_tile(std::ostringstream &oss, bool is_in_layout_propagation) {
+  if (is_in_layout_propagation) {
+    MS_LOG(WARNING) << oss.str();
+  } else {
+    MS_LOG(ERROR) << oss.str();
+  }
+}
+
 Status TileInfo::CheckInputLayout() {
   // Check all device matrix should be the same
   if (inputs_tensor_info_.size() != kSizeOne) {
-    if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << "The size of input_tensor_layout for tile is " << inputs_tensor_info_.size()
-                      << " rather than 1.";
-    } else {
-      MS_LOG(ERROR) << "The size of input_tensor_layout for tile is " << inputs_tensor_info_.size()
-                    << " rather than 1.";
-    }
+    std::ostringstream oss;
+    oss << name_ << ": The size of input_tensor_layout for tile is " << inputs_tensor_info_.size() << " rather than 1.";
+    log_func_tile(oss, is_in_layout_propagation_);
     return FAILED;
   }
   auto in_layout0 = inputs_tensor_info_[kIndex0].tensor_layout();
@@ -144,13 +148,10 @@ Status TileInfo::CheckInputLayout() {
       }
       MS_EXCEPTION_IF_ZERO("axis_shard", axis_shard);
       if (axis_shard > 1) {
-        if (is_in_layout_propagation_) {
-          MS_LOG(WARNING) << "The dimension " << i - pre_offset
-                          << " of input should not be split, because the multiple and shape are both greater than 1.";
-        } else {
-          MS_LOG(ERROR) << "The dimension " << i - pre_offset
-                        << " of input should not be split, because the multiple and shape are both greater than 1.";
-        }
+        std::ostringstream oss;
+        oss << name_ << ": The dimension " << i - pre_offset
+            << " of input should not be split, because the multiple and shape are both greater than 1.";
+        log_func_tile(oss, is_in_layout_propagation_);
         return FAILED;
       }
     }
@@ -160,13 +161,10 @@ Status TileInfo::CheckInputLayout() {
 
 Status TileInfo::CheckOutputLayout() {
   if (outputs_tensor_info_.size() != kSizeOne) {
-    if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << "The size of output_tensor_layout for tile is " << outputs_tensor_info_.size()
-                      << " rather than 1.";
-    } else {
-      MS_LOG(ERROR) << "The size of output_tensor_layout for tile is " << outputs_tensor_info_.size()
-                    << " rather than 1.";
-    }
+    std::ostringstream oss;
+    oss << name_ << ": The size of output_tensor_layout for tile is " << outputs_tensor_info_.size()
+        << " rather than 1.";
+    log_func_tile(oss, is_in_layout_propagation_);
     return FAILED;
   }
   auto in_layout0 = inputs_tensor_info_[kIndex0].tensor_layout();
@@ -176,13 +174,10 @@ Status TileInfo::CheckOutputLayout() {
   auto out_shape = out_layout.tensor_shape_before().array();
   auto offset = out_shape.size() - full_multiples_.size();
   if (offset < 0) {
-    if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << "The size of output shape is " << out_shape.size()
-                      << " rather than greater than or equal to the size of multiples.";
-    } else {
-      MS_LOG(ERROR) << "The size of output shape is " << out_shape.size()
-                    << " rather than greater than or equal to the size of multiples.";
-    }
+    std::ostringstream oss;
+    oss << name_ << ": The size of output shape is " << out_shape.size()
+        << " rather than greater than or equal to the size of multiples.";
+    log_func_tile(oss, is_in_layout_propagation_);
     return FAILED;
   }
 
@@ -204,7 +199,9 @@ Status TileInfo::CheckOutputLayout() {
       MS_EXCEPTION_IF_ZERO("axis_shard", axis_shard);
       // slice_multiples_[i] should be divided by the axis_shard
       if (slice_multiples_[i] % axis_shard != 0) {
-        MS_LOG(ERROR) << "The multiple of output dimension " << i << " should be divisible by axis_shard ";
+        std::ostringstream oss;
+        oss << "The multiple of output dimension " << i << " should be divisible by axis_shard ";
+        log_func_tile(oss, is_in_layout_propagation_);
         return FAILED;
       }
       slice_multiples_[i] = slice_multiples_[i] / axis_shard;
@@ -217,7 +214,9 @@ Status TileInfo::CheckOutputLayout() {
       // when the multiple <= 1, the output tensor map should be the same as the input tensor map
       auto input_offset = out_tensor_map.size() - in_tensor_map.size();
       if (i > input_offset && out_tensor_map[i] != in_tensor_map[i - input_offset]) {
-        MS_LOG(ERROR) << "When the dim <= 1, the output tensor map should be the same as the input tensor map.";
+        std::ostringstream oss;
+        oss << "When the dim <= 1, the output tensor map should be the same as the input tensor map.";
+        log_func_tile(oss, is_in_layout_propagation_);
         return FAILED;
       }
     }
