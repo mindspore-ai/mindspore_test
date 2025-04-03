@@ -72,12 +72,24 @@ void PreLaunchComm::Launch(std::vector<LaunchCommNode> &launch_hccl_nodes, Sorte
     const auto &kernel_info_b = std::get<kIndex2>(b);
 
     if (sorted == SORTED_BY_SEND_SEQUENTAIL) {
+      if (kernel_info_a.dest_rank == kernel_info_b.dest_rank) {
+        return kernel_info_a.group < kernel_info_b.group;
+      }
       return kernel_info_a.dest_rank < kernel_info_b.dest_rank;
     } else if (sorted == SORTED_BY_SEND_REVERSE) {
+      if (kernel_info_a.dest_rank == kernel_info_b.dest_rank) {
+        return kernel_info_a.group < kernel_info_b.group;
+      }
       return kernel_info_a.dest_rank > kernel_info_b.dest_rank;
     } else if (sorted == SORTED_BY_RECV_SEQUENTAIL) {
+      if (kernel_info_a.src_rank == kernel_info_b.src_rank) {
+        return kernel_info_a.group < kernel_info_b.group;
+      }
       return kernel_info_a.src_rank < kernel_info_b.src_rank;
     } else {
+      if (kernel_info_a.src_rank == kernel_info_b.src_rank) {
+        return kernel_info_a.group < kernel_info_b.group;
+      }
       return kernel_info_a.src_rank > kernel_info_b.src_rank;
     }
   };
