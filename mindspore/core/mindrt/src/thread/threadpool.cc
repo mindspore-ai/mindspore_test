@@ -17,6 +17,11 @@
 #include <sched.h>
 #include <unistd.h>
 #endif
+#include <iostream>
+#include <vector>
+#include <cstdlib>
+#include <cstring>
+#include <algorithm>
 #include <sstream>
 #include "thread/threadpool.h"
 #include "thread/core_affinity.h"
@@ -94,6 +99,70 @@ void Worker::SetAffinity() {
   return;
 #endif
 #endif
+#endif
+}
+
+std::vector<int> parse_cpu_list(const std::string &cpu_str) {
+  std::vector<int> cpus;
+  std::stringstream ss(cpu_str);
+  std::string item;
+
+  while (std::getline(ss, item, ',')) {
+    cpus.push_back(std::stoi(item));
+  }
+  return cpus;
+}
+
+void ThreadPool::ThreadPoolSetAffinity() {
+  MS_LOG(INFO) << "Start to bind core for actor thread.";
+#if defined(BIND_CORE) && !defined(__ANDROID__) && !defined(__APPLE__) && !defined(_MSC_VER) && !defined(_WIN32)
+  auto env_runtime_reserved = std::getenv("CONFIG_BIND_RUNTIME_LIST");
+  if (env_runtime_reserved == nullptr) {
+    return;
+  }
+
+  MS_LOG(WARNING) << "Start to bind core base on CONFIG_BIND_RUNTIME_LIST.";
+
+  std::vector<int> cpu_list = parse_cpu_list(std::string(env_runtime_reserved));
+  if (cpu_list.empty()) {
+    MS_LOG(WARNING) << "Cpu list is empty, bind core is not enabled.";
+    return;
+  }
+  int ret;
+  auto env_enable_fix = std::getenv("ACTOR_THREAD_FIX_BIND");
+  if (env_enable_fix != nullptr && (std::string(env_enable_fix) == "false" || std::string(env_enable_fix) == "False")) {
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+
+    for (const auto &cpu_id : cpu_list) {
+      CPU_SET(static_cast<size_t>(cpu_id), &cpuset);
+    }
+
+    for (size_t i = 0; i < kDefaultActorThread; i++) {
+      ret = pthread_setaffinity_np(workers_[i]->handle(), sizeof(cpu_set_t), &cpuset);
+
+      if (ret != 0) {
+        MS_LOG(WARNING) << "Fail to bind core to " << cpu_list << " for thread " << workers_[i]->thread_id();
+      } else {
+        MS_LOG(WARNING) << "Success to bind core to " << cpu_list << " for thread " << workers_[i]->thread_id();
+      }
+    }
+  } else {
+    for (size_t i = 0; i < kDefaultActorThread; i++) {
+      cpu_set_t cpuset;
+      CPU_ZERO(&cpuset);
+      CPU_SET(cpu_list[i % cpu_list.size()], &cpuset);
+
+      ret = pthread_setaffinity_np(workers_[i]->handle(), sizeof(cpu_set_t), &cpuset);
+      if (ret != 0) {
+        MS_LOG(WARNING) << "Fail to bind core to " << cpu_list[i % cpu_list.size()] << " for thread "
+                        << workers_[i]->thread_id();
+      } else {
+        MS_LOG(WARNING) << "Success to bind core to " << cpu_list[i % cpu_list.size()] << " for thread "
+                        << workers_[i]->thread_id();
+      }
+    }
+  }
 #endif
 }
 

@@ -101,6 +101,9 @@ const char kRuntimeCopyAsync[] = "copy_async";
 const char kRuntimeClusterThreadNum[] = "cluster_thread_num";
 const char kRuntimeThreadLoadCache[] = "multi_thread_load_cache";
 const char kRuntimeAsyncInitComm[] = "async_init_comm";
+const char kRuntimeCpuAffinityList[] = "cpu_affinity_list";
+const char kRuntimeCpuAffinityMoudule[] = "cpu_affinity_module";
+const char kRuntimeActorThreadFixBind[] = "actor_thread_fix_bind";
 const char kRuntimeInputOptimize[] = "input_optimize";
 const char kRuntimeCommInitLcclOnly[] = "comm_init_lccl_only";
 // Runtime debug config.
