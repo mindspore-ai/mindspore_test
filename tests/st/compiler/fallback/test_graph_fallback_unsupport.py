@@ -66,7 +66,7 @@ def test_raise_error_in_variable_scene():
     assert output == Tensor([1])
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
           essential_mark='unessential')
 def test_str_format_in_variable_scene():
     """
@@ -80,7 +80,7 @@ def test_str_format_in_variable_scene():
         return "{}, {}".format(x, y)
 
     output = foo(Tensor([2]), Tensor([1]))
-    assert output == "[2], [1]"
+    assert output == "Tensor(shape=[1], dtype=Int64, value= [2]), Tensor(shape=[1], dtype=Int64, value= [1])"
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard',

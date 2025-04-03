@@ -44,7 +44,7 @@ def test_joinedstr_basic_variable_gpu():
     assert out == f"res: {result_tensor}"
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_joinedstr_basic_variable_ascend():
     """
     Feature: Support joinedstr.
@@ -62,11 +62,11 @@ def test_joinedstr_basic_variable_ascend():
 
     input_x = Tensor(np.array([1, 2, 3, 4, 5]))
     out = joined_net(input_x, input_x)
-    assert out == "res: [1 2 3 4 5]"
+    assert out == "res: Tensor(shape=[5], dtype=Int64, value= [1, 2, 3, 4, 5])"
 
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
           essential_mark='unessential')
 def test_joinedstr_basic_variable_2():
     """
@@ -84,7 +84,7 @@ def test_joinedstr_basic_variable_2():
 
     input_x = Tensor(np.array([1, 2, 3, 4, 5]))
     out = joined_net(input_x, input_x)
-    assert str(out) == "[1 2 3 4 5]"
+    assert str(out) == "Tensor(shape=[5], dtype=Int64, value= [1, 2, 3, 4, 5])"
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard',
