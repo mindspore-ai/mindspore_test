@@ -371,7 +371,6 @@ mindspore.Tensor
     mindspore.Tensor.uniform_
     mindspore.Tensor.unique
     mindspore.Tensor.unique_consecutive
-    mindspore.Tensor.unique_with_pad
     mindspore.Tensor.unsorted_segment_max
     mindspore.Tensor.unsorted_segment_min
     mindspore.Tensor.unsorted_segment_prod

@@ -51,7 +51,7 @@ def print_(*input_x):
         >>> import mindspore
         >>> x = mindspore.tensor(mindspore.ops.ones([2, 1], mindspore.int32))
         >>> y = mindspore.tensor(mindspore.ops.ones([2, 2], mindspore.int32))
-        >>> result = ops.print_('Print Tensor x and Tensor y:', x, y)
+        >>> result = mindspore.ops.print_('Print Tensor x and Tensor y:', x, y)
         Print Tensor x and Tensor y:
         Tensor(shape=[2, 1], dtype=Int32, value=
         [[1],
