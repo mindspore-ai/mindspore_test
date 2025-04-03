@@ -25,6 +25,7 @@
 #include "frontend/optimizer/optimizer.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "tests/ut/cpp/operator/meta_dsl/api_test/api_define.h"
+#include "operator/meta_dsl/meta_dsl_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
@@ -41,24 +42,6 @@ using AbstractListPtr = abstract::AbstractListPtr;
 class TestMetaDslApi : public UT::Common {
  public:
   TestMetaDslApi() {}
-
-  FuncGraphPtr NewFuncGraph(const MetaImplPtr &meta, const AbstractBasePtrList &abs_list) {
-    // Create FuncGraph.
-    FuncGraphPtr fg = std::make_shared<FuncGraph>();
-    std::vector<FuncGraphPtr> graphs{fg};
-    auto func_graph_manager = std::make_shared<FuncGraphManager>(graphs);
-    meta->set_manager(func_graph_manager);
-    AnfNodePtrList inputs{NewValueNode(meta)};
-    for (size_t i = 0; i < abs_list.size(); ++i) {
-      auto param = fg->add_parameter();
-      (void)inputs.emplace_back(param);
-    }
-    CNodePtr cnode = fg->NewCNode(inputs);
-    fg->set_output(cnode);
-    // Renormalize.
-    pipeline::ResourcePtr resource = std::make_shared<pipeline::Resource>();
-    return pipeline::Renormalize(resource, fg, abs_list);
-  }
 
   size_t GetPrimitiveSize(const FuncGraphPtr &fg, const PrimitivePtr &prim) {
     auto all_nodes = TopoSort(fg->return_node(), SuccDeeperSimple, AlwaysInclude);

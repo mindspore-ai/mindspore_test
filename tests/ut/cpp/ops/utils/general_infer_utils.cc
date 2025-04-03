@@ -23,6 +23,7 @@
 #include "common/common_test.h"
 #include "ops/utils/general_infer_param.h"
 #include "ops/test_value_utils.h"
+#include "operator/meta_dsl/meta_dsl_utils.h"
 #include "ir/anf.h"
 #include "ir/tensor.h"
 #include "ir/value.h"
@@ -34,7 +35,11 @@
 #include "ops/infer_info/abstract_infer_info_adapter.h"
 #include "ops/infer_info/value_infer_info_adapter.h"
 #include "ops_utils/op_utils.h"
+#include "mindspore/ccsrc/frontend/operator/meta_dsl/common/meta_impl.h"
 
+namespace UT {
+void InitPythonPath();
+}
 namespace mindspore::ops {
 static bool is_sequence_input(const InferInfoParam &param) { return param.shape.index() == kSequenceParamVaIndex; }
 
@@ -49,7 +54,7 @@ static AbstractBasePtr MakeAbstract(const ShapeVector &shape, const TypeId type,
   return abs;
 }
 
-InferInfoPtr param_to_abstract_info(InferInfoParam param, const std::string &op_type, const std::string &arg_name) {
+AbstractBasePtr param_to_abstract(InferInfoParam param) {
   AbstractBasePtr abs;
   if (is_sequence_input(param)) {
     AbstractBasePtrList abs_list;
@@ -71,6 +76,14 @@ InferInfoPtr param_to_abstract_info(InferInfoParam param, const std::string &op_
     abs =
       MakeAbstract(std::get<ShapeVector>(param.shape), std::get<TypeId>(param.type), std::get<ValuePtr>(param.value));
   }
+  if (!abs) {
+    throw std::runtime_error("Failed to create abstract from param: " + ToString(param));
+  }
+  return abs;
+}
+
+InferInfoPtr param_to_abstract_info(InferInfoParam param, const std::string &op_type, const std::string &arg_name) {
+  const auto &abs = param_to_abstract(param);
   return std::make_unique<AbstractInferInfoAdapter>(abs, op_type, arg_name);
 }
 
@@ -217,6 +230,33 @@ static bool is_dynamic_case(const std::vector<InferInfoParam> &arg_params) {
   return false;
 }
 
+std::vector<AbstractBasePtr> params_to_abstracts(const std::vector<InferInfoParam> &arg_params) {
+  std::vector<AbstractBasePtr> abstracts;
+  for (const auto &arg_param : arg_params) {
+    abstracts.push_back(param_to_abstract(arg_param));
+  }
+  return abstracts;
+}
+
+void get_shape_and_type_from_abs(const AbstractBasePtr &out_abs, ShapeArray &infer_shapes,
+                                 std::vector<TypeId> &infer_types, const std::string &op_type) {
+  std::vector<AbstractBasePtr> abs_list{};
+  if (out_abs->isa<abstract::AbstractTuple>()) {
+    abs_list = out_abs->cast<abstract::AbstractTuplePtr>()->elements();
+  } else {
+    abs_list.push_back(out_abs);
+  }
+  std::vector<AbstractInferInfoAdapterPtr> infer_infos{};
+  const auto &name = "MetaOpOutput - " + op_type;
+  for (size_t i = 0; i < abs_list.size(); ++i) {
+    infer_infos.push_back(std::make_shared<AbstractInferInfoAdapter>(abs_list[i], name, "output-" + std::to_string(i)));
+  }
+  for (const auto &infer_info : infer_infos) {
+    infer_shapes.push_back(infer_info->GetShape());
+    infer_types.push_back(infer_info->GetType());
+  }
+}
+
 TEST_P(GeneralInferTest, test_infer) {
   const ::testing::TestInfo *test_info = ::testing::UnitTest::GetInstance()->current_test_info();
   const std::string &test_suite_name = test_info->test_suite_name();  // Foo/GeneralInferTest
@@ -226,6 +266,21 @@ TEST_P(GeneralInferTest, test_infer) {
   const auto &expect_shapes = param.expected_output.shapes;
   const auto &expect_types = ToTypeName(param.expected_output.types);
   const bool expect_throw = param.expect_throw;
+
+  // MetaOp infer test
+  bool is_meta_impl = prim::IsMetaImpl(op_type);
+  if (is_meta_impl) {
+    UT::InitPythonPath();  // required by RunMetaImpl();
+    const auto &abstracts = params_to_abstracts(arg_params);
+    const auto &out_abs = prim::RunMetaImpl(abstracts, op_type);
+    ASSERT_NE(out_abs, nullptr) << "MetaImpl returns nullptr as output for" << op_type;
+    ShapeArray infer_shapes;
+    std::vector<TypeId> infer_types;
+    get_shape_and_type_from_abs(out_abs, infer_shapes, infer_types, op_type);
+    EXPECT_EQ(expect_shapes, infer_shapes) << "Inferred wrong shape for MetaOp infer.";
+    EXPECT_EQ(expect_types, ToTypeName(infer_types)) << "Inferred wrong type for MetaOp infer.";
+    GTEST_SKIP() << "MetaOp infer test case end.";
+  }
 
   const auto prim = std::make_shared<Primitive>(op_type);
   const auto op_def = GetOpDef(op_type);
@@ -241,7 +296,7 @@ TEST_P(GeneralInferTest, test_infer) {
     << "Convert param to InferInfo failed.";
 
   try {
-    (void) op_func.CheckValidation(prim, abstract_infos);
+    (void)op_func.CheckValidation(prim, abstract_infos);
     const auto &abstract_infer_shapes = op_func.InferShape(prim, abstract_infos);
     const auto &abstract_infer_types = ToTypeName(op_func.InferType(prim, abstract_infos));
     if (expect_throw) {
@@ -255,7 +310,7 @@ TEST_P(GeneralInferTest, test_infer) {
 
   if (!is_dynamic) {
     try {
-      (void) op_func.CheckValidation(prim, value_infos);
+      (void)op_func.CheckValidation(prim, value_infos);
       const auto &value_infer_shapes = op_func.InferShape(prim, value_infos);
       const auto &value_infer_types = ToTypeName(op_func.InferType(prim, value_infos));
       if (expect_throw) {
