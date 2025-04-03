@@ -616,10 +616,8 @@ void PipelineInterleave::RemoveMonadNode() {
       auto node_users = node_users_map[node];
       for (auto &user_node : node_users) {
         auto monad_node = NewValueNode(kUMonad);
-        monad_node->set_abstract(kUMonad->ToAbstract());
         if (abs->isa<abstract::AbstractIOMonad>()) {
           monad_node = NewValueNode(kIOMonad);
-          monad_node->set_abstract(kIOMonad->ToAbstract());
         }
         manager_->SetEdge(user_node.first, user_node.second, monad_node);
       }
@@ -746,7 +744,6 @@ void PipelineInterleave::RedundancyNode(const AnfNodePtr &node,
     }
     if (IsPrimitiveCNode(cnode, prim::kPrimUpdateState)) {
       auto u_node = NewValueNode(kUMonad);
-      u_node->set_abstract(kUMonad->ToAbstract());
       manager_->SetEdge(cnode, node_user_pair.second, u_node);
       continue;
     }
