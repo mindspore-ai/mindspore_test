@@ -17,6 +17,6 @@ abs:
 
         Examples:
             >>> import mindspore
-            >>> output = mindspore.ops.abs(mindspore.tensor([-1.0, 1.0, 0.0])))
+            >>> output = mindspore.ops.abs(mindspore.tensor([-1.0, 1.0, 0.0]))
             >>> print(output)
             [1. 1. 0.]

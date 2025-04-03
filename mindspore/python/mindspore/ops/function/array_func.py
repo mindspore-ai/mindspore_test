@@ -3507,14 +3507,15 @@ def matrix_diag(x, k=0, num_rows=-1, num_cols=-1, padding_value=0, align="RIGHT_
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
         >>> import mindspore
         >>> x = mindspore.tensor([[8., 9., 0.],
         ...                      [1., 2., 3.],
         ...                      [0., 4., 5.]])
-        >>> k = mindspore.tensor(np.array([-1, 1])
-        >>> padding_value = mindspore.tensor(11)
-        >>> output = ops.matrix_diag(x, k, mindspore.tensor(3), mindspore.tensor(3), padding_value, align='LEFT_RIGHT')
+        >>> k = mindspore.tensor([-1, 1], mindspore.int32)
+        >>> padding_value = mindspore.tensor(11.)
+        >>> num_rows = mindspore.tensor(3, mindspore.int32)
+        >>> num_cols = mindspore.tensor(3, mindspore.int32)
+        >>> output = ops.matrix_diag(x, k, num_rows, num_cols, padding_value, align='LEFT_RIGHT')
         >>> print(output)
         [[ 1.  8. 11.]
          [ 4.  2.  9.]
