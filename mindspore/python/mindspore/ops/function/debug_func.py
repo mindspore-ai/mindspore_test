@@ -126,6 +126,8 @@ def tensordump(file_name, tensor, mode='out'):
         >>> import mindspore
         >>> from mindspore import nn, context
         >>> from mindspore.communication import init, get_rank
+        >>> from mindspore.parallel.auto_parallel import AutoParallel
+        >>> from mindspore.nn.utils import no_init_parameters
         >>> init()
         >>> rank_id = get_rank()
         >>> dump_path = f'rank_{rank_id}_mul1_mul2.npy'
@@ -143,14 +145,16 @@ def tensordump(file_name, tensor, mode='out'):
         ...
         >>> mindspore.set_context(mode=mindspore.GRAPH_MODE)
         >>> os.environ["MS_DEV_SAVE_GRAPHS"] = "2"
-        >>> context.set_auto_parallel_context(parallel_mode='semi_auto_parallel', full_batch=True)
         >>> strategy1 = ((1, 2), (2, 1))
         >>> strategy2 = ((1, 2), (2, 1))
-        >>> net = Net(strategy1, strategy2)
+        >>> with no_init_parameters():
+        >>>     net = Net(strategy1, strategy2)
         >>> x = mindspore.tensor(0.1 * mindspore.ops.randn(64, 64), mindspore.float32)
         >>> y = mindspore.tensor(0.1 * mindspore.ops.randn(64, 64), mindspore.float32)
         >>> b = mindspore.tensor(0.1 * mindspore.ops.randn(64, 64), mindspore.float32)
-        >>> out = net(x, y, b)
+        >>> parallel_net = Autoparallel(net, parallel_mode="semi_auto")
+        >>> parallel_net.dataset_strategy(config="full_batch")
+        >>> out = parallel_net(x, y, b)
         >>> print(f"out shape is: {out.shape}")
         >>> # out shape is (64, 64)
         >>> matmul1_output_slice = np.load(f'rank_{rank_id}_mul1_mul2_float32_0.npy')      # load matmul1's output slice
