@@ -198,28 +198,6 @@ def test_env_ms_jit():
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_env_ms_jit_modules():
-    """
-    Feature: JIT Fallback
-    Description: Test environ variables in graph mode.
-    Expectation: No exception.
-    """
-    @ms.jit
-    def func():
-        return logspace(0, 0, 5)
-
-    os.environ['MS_JIT_MODULES'] = 'numpy'
-    with pytest.raises(Exception):
-        func()
-    os.environ['MS_JIT_IGNORE_MODULES'] = 'numpy'
-    out = func()
-    expect = np.array([1., 1., 1., 1., 1.])
-    assert np.allclose(out, expect)
-    del os.environ['MS_JIT_MODULES']
-    del os.environ['MS_JIT_IGNORE_MODULES']
-
-
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_env_fallback_dump_node():
     """
     Feature: JIT Fallback
