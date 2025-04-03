@@ -147,7 +147,7 @@ ValuePtrList PyBackwardNode::CallBackward(const ValuePtrList &grads) {
   auto grad_tuple = py::cast<py::tuple>(grads_obj);
   size_t num_backward_out = grad_tuple.size();
   size_t num_forward_in = ctx->is_tensor_input().size();
-  if (num_backward_out != num_forward_in) {
+  if (num_backward_out < num_forward_in) {
     MS_LOG(EXCEPTION) << "Function backward return a wrong number of gradients, expect: " << num_forward_in
                       << "but: " << num_backward_out;
   }
