@@ -491,7 +491,7 @@ def bincount(input, weights=None, minlength=0):
         return Tensor_([])
     if minlength < 0:
         raise ValueError(f"For 'bincount', 'minlength' should be >= 0 but got {minlength}.")
-    if input.astype(mstype.float32).max().item() > minlength - 1:
+    if input.astype(mstype.float32).max() > minlength - 1:
         length = (input.astype(mstype.float32).max() + 1).astype(mstype.int32)
     else:
         length = cast_(minlength, mstype.int32)
