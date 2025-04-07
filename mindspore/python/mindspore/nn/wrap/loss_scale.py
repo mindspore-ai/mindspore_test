@@ -506,7 +506,7 @@ class TrainOneStepWithLossScaleCell(TrainOneStepCell):
         overflow = AllFinite()(compute_output)
 
         if self.is_distributed:
-            overflow = P.Cast()(overflow, mstype.int8)
+            overflow = P.Cast()(overflow, mstype.float32)
             overflow = P.Cast()(self.allreduce(overflow), mstype.bool_)
         return overflow
 
