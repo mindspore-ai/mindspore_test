@@ -22,9 +22,16 @@ from mindspore.common.tensor import Tensor
 from mindspore.communication.management import get_group_size, get_rank
 from mindspore.parallel.shard import Layout, _DistributedTensorInfo
 from mindspore.parallel._auto_parallel_context import _get_all_auto_parallel_context, _recover_auto_parallel_context
+from mindspore.ops.primitive import constexpr
+
 
 REDIST_CELL_CACHE = {}
 COMM_TENSOR_CELL_CACHE = {}
+
+
+@constexpr
+def group_size():
+    return get_group_size()
 
 
 # pylint: disable=W0212
@@ -90,6 +97,8 @@ def reshard(tensor, layout):
         >>> tensor = Tensor(np.ones(shape=(128, 128)), dtype=ms.float32)
         >>> out = parallel_net(tensor, input_layout)
     """
+    if group_size() == 1:
+        return tensor
     if not isinstance(tensor, Tensor):
         raise TypeError(f"Reshard takes in Tensor type as the first input param, but got: {type(tensor)}.")
     if not isinstance(layout, Layout):
