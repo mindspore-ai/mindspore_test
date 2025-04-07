@@ -1927,10 +1927,13 @@ ValueNode *GraphBuilder::ReplaceMergeOp(int opcode, const std::vector<ValueNode 
     opcode = BUILD_LIST;
     div = 1;
   } else if (opcode == DICT_MERGE || opcode == DICT_UPDATE) {
-    if (arg->GetOpcode() != BUILD_MAP) {
+    size_t size = frame_.GetStacks().size();
+    if (!UnpackDict(arg)) {
+      MS_LOG(DEBUG) << "Unpack failed for argument [" << arg->ToString() << "]";
       return nullptr;
     }
-    build_inputs.insert(build_inputs.end(), arg->getInputs().begin(), arg->getInputs().end());
+    build_inputs.insert(build_inputs.end(), frame_.GetStacks().begin() + size, frame_.GetStacks().end());
+    frame_.Popn(frame_.GetStacks().size() - size);
     opcode = BUILD_MAP;
   } else if (opcode == MAP_ADD) {
     build_inputs.push_back(arg);
