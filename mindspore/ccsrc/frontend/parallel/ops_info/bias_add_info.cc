@@ -123,8 +123,8 @@ Status BiasAddInfo::CheckInputLayout() {
   // Check all device matrix should be the same
   if (inputs_tensor_info_.size() != kSizeTwo) {
     if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << "The size of input_tensor_layout for bias_add is " << inputs_tensor_info_.size()
-                      << " rather than 2.";
+      MS_LOG(INFO) << "The size of input_tensor_layout for bias_add is " << inputs_tensor_info_.size()
+                   << " rather than 2.";
     } else {
       MS_LOG(ERROR) << "The size of input_tensor_layout for bias_add is " << inputs_tensor_info_.size()
                     << " rather than 2.";
@@ -135,9 +135,8 @@ Status BiasAddInfo::CheckInputLayout() {
   auto in_layout1 = inputs_tensor_info_[kIndex1].tensor_layout();
   if (in_layout0.device_arrangement_origin().array() != in_layout1.device_arrangement_origin().array()) {
     if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << "The device_matrix of input0 " << in_layout0.device_arrangement_origin().array()
-                      << " dose not equal to device_matrix of input1 "
-                      << in_layout1.device_arrangement_origin().array();
+      MS_LOG(INFO) << "The device_matrix of input0 " << in_layout0.device_arrangement_origin().array()
+                   << " dose not equal to device_matrix of input1 " << in_layout1.device_arrangement_origin().array();
     } else {
       MS_LOG(ERROR) << "The device_matrix of input0 " << in_layout0.device_arrangement_origin().array()
                     << " dose not equal to device_matrix of input1 " << in_layout1.device_arrangement_origin().array();
@@ -147,7 +146,7 @@ Status BiasAddInfo::CheckInputLayout() {
 
   if (in_layout0.tensor_map_before().back() != in_layout1.tensor_map_before()[0]) {
     if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << "The shard size of bias_add is not equal for last dim of input0 and input1";
+      MS_LOG(INFO) << "The shard size of bias_add is not equal for last dim of input0 and input1";
     } else {
       MS_LOG(ERROR) << "The shard size of bias_add is not equal for last dim of input0 and input1";
     }
@@ -171,8 +170,8 @@ Status BiasAddInfo::InferOutputTensorInfo() {
 Status BiasAddInfo::CheckOutputLayout() {
   if (outputs_tensor_info_.size() != kSizeOne) {
     if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << "The size of output_tensor_layout for bias_add is " << outputs_tensor_info_.size()
-                      << " rather than 1.";
+      MS_LOG(INFO) << "The size of output_tensor_layout for bias_add is " << outputs_tensor_info_.size()
+                   << " rather than 1.";
     } else {
       MS_LOG(ERROR) << "The size of output_tensor_layout for bias_add is " << outputs_tensor_info_.size()
                     << " rather than 1.";
@@ -183,7 +182,7 @@ Status BiasAddInfo::CheckOutputLayout() {
   auto in_layout0 = inputs_tensor_info_[kIndex0].tensor_layout();
   if (out_layout.tensor_map_before() != in_layout0.tensor_map_before()) {
     if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << "output layout of bias_add does not match the layout of first input";
+      MS_LOG(INFO) << "output layout of bias_add does not match the layout of first input";
     } else {
       MS_LOG(ERROR) << "output layout of bias_add does not match the layout of first input";
     }

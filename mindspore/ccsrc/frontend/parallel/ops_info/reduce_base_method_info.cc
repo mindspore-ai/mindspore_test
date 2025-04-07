@@ -271,8 +271,8 @@ std::vector<StrategyPtr> MeanExtInfo::GenerateOpStrategies(int64_t stage_id) {
 Status MeanExtInfo::CheckInputLayout() {
   if (inputs_tensor_info_.size() != kSizeOne) {
     if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << "For distributed operator " << name_
-                      << ", the size of inputs_tensor_info should be 1, but got " << inputs_tensor_info_.size() << ".";
+      MS_LOG(INFO) << "For distributed operator " << name_ << ", the size of inputs_tensor_info should be 1, but got "
+                   << inputs_tensor_info_.size() << ".";
     } else {
       MS_LOG(ERROR) << "For distributed operator " << name_ << ", the size of inputs_tensor_info should be 1, but got "
                     << inputs_tensor_info_.size() << ".";
@@ -323,8 +323,8 @@ Status MeanExtInfo::InferOutputTensorInfo() {
 Status MeanExtInfo::CheckOutputLayout() {
   if (outputs_tensor_info_.size() != kSizeOne) {
     if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << "For distributed operator " << name_ << ", the size of output_tensor_layout for " << name_
-                      << " is " << outputs_tensor_info_.size() << " rather than 1.";
+      MS_LOG(INFO) << "For distributed operator " << name_ << ", the size of output_tensor_layout for " << name_
+                   << " is " << outputs_tensor_info_.size() << " rather than 1.";
     } else {
       MS_LOG(ERROR) << "For distributed operator " << name_ << ", the size of output_tensor_layout for " << name_
                     << " is " << outputs_tensor_info_.size() << " rather than 1.";
@@ -333,8 +333,8 @@ Status MeanExtInfo::CheckOutputLayout() {
   }
   if (!is_infer_out_layout_) {
     if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << "For distributed operator " << name_ << ", parameter of output tensor layout for " << name_
-                      << " is not allowed to be set by users.";
+      MS_LOG(INFO) << "For distributed operator " << name_ << ", parameter of output tensor layout for " << name_
+                   << " is not allowed to be set by users.";
     } else {
       MS_LOG(ERROR) << "For distributed operator " << name_ << ", parameter of output tensor layout for " << name_
                     << " is not allowed to be set by users.";
@@ -541,8 +541,8 @@ std::vector<StrategyPtr> SumExtInfo::GenerateOpStrategies(int64_t stage_id) {
 Status SumExtInfo::CheckInputLayout() {
   if (inputs_tensor_info_.size() != kSizeOne) {
     if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << "For distributed operator " << name_
-                      << ", the size of inputs_tensor_info should be 1, but got " << inputs_tensor_info_.size() << ".";
+      MS_LOG(INFO) << "For distributed operator " << name_ << ", the size of inputs_tensor_info should be 1, but got "
+                   << inputs_tensor_info_.size() << ".";
     } else {
       MS_LOG(ERROR) << "For distributed operator " << name_ << ", the size of inputs_tensor_info should be 1, but got "
                     << inputs_tensor_info_.size() << ".";
@@ -593,8 +593,8 @@ Status SumExtInfo::InferOutputTensorInfo() {
 Status SumExtInfo::CheckOutputLayout() {
   if (outputs_tensor_info_.size() != kSizeOne) {
     if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << "For distributed operator " << name_ << ", the size of output_tensor_layout for " << name_
-                      << " is " << outputs_tensor_info_.size() << " rather than 1.";
+      MS_LOG(INFO) << "For distributed operator " << name_ << ", the size of output_tensor_layout for " << name_
+                   << " is " << outputs_tensor_info_.size() << " rather than 1.";
     } else {
       MS_LOG(ERROR) << "For distributed operator " << name_ << ", the size of output_tensor_layout for " << name_
                     << " is " << outputs_tensor_info_.size() << " rather than 1.";
@@ -603,8 +603,8 @@ Status SumExtInfo::CheckOutputLayout() {
   }
   if (!is_infer_out_layout_) {
     if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << "For distributed operator " << name_ << ", parameter of output tensor layout for " << name_
-                      << " is not allowed to be set by users.";
+      MS_LOG(INFO) << "For distributed operator " << name_ << ", parameter of output tensor layout for " << name_
+                   << " is not allowed to be set by users.";
     } else {
       MS_LOG(ERROR) << "For distributed operator " << name_ << ", parameter of output tensor layout for " << name_
                     << " is not allowed to be set by users.";
@@ -705,8 +705,8 @@ Status MaxInfo::InferForwardCommunicationByLayout() {
 Status MaxInfo::CheckInputLayout() {
   if (inputs_tensor_info_.size() != kSizeOne) {
     if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << "For distributed operator " << name_
-                      << ", the size of inputs_tensor_info should be 1, but got " << inputs_tensor_info_.size() << ".";
+      MS_LOG(INFO) << "For distributed operator " << name_ << ", the size of inputs_tensor_info should be 1, but got "
+                   << inputs_tensor_info_.size() << ".";
     } else {
       MS_LOG(ERROR) << "For distributed operator " << name_ << ", the size of inputs_tensor_info should be 1, but got "
                     << inputs_tensor_info_.size() << ".";
@@ -742,8 +742,8 @@ Status MaxInfo::InferOutputTensorInfo() {
 Status MaxInfo::CheckOutputLayout() {
   if (outputs_tensor_info_.size() != kSizeOne) {
     if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << "For distributed operator " << name_ << ", the size of output_tensor_layout for " << name_
-                      << " is " << outputs_tensor_info_.size() << " rather than 1.";
+      MS_LOG(INFO) << "For distributed operator " << name_ << ", the size of output_tensor_layout for " << name_
+                   << " is " << outputs_tensor_info_.size() << " rather than 1.";
     } else {
       MS_LOG(ERROR) << "For distributed operator " << name_ << ", the size of output_tensor_layout for " << name_
                     << " is " << outputs_tensor_info_.size() << " rather than 1.";
@@ -752,8 +752,8 @@ Status MaxInfo::CheckOutputLayout() {
   }
   if (!is_infer_out_layout_) {
     if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << "For distributed operator " << name_ << ", parameter of output tensor layout for " << name_
-                      << " is not allowed to be set by users.";
+      MS_LOG(INFO) << "For distributed operator " << name_ << ", parameter of output tensor layout for " << name_
+                   << " is not allowed to be set by users.";
     } else {
       MS_LOG(ERROR) << "For distributed operator " << name_ << ", parameter of output tensor layout for " << name_
                     << " is not allowed to be set by users.";

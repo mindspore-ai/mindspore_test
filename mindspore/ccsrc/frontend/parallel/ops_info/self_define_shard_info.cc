@@ -105,7 +105,7 @@ Status SelfDefineShardInfo::CheckInputLayout() {
                      "will only do basic check.";
   if (CheckLayout(inputs_shape_new_, inputs_tensor_info_new_, "input") != SUCCESS) {
     if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << name_ << " check input layout failed";
+      MS_LOG(INFO) << name_ << " check input layout failed";
     } else {
       MS_LOG(ERROR) << name_ << " check input layout failed";
     }
@@ -117,7 +117,7 @@ Status SelfDefineShardInfo::CheckInputLayout() {
 Status SelfDefineShardInfo::CheckOutputLayout() {
   if (CheckLayout(outputs_shape_new_, outputs_tensor_info_new_, "output") != SUCCESS) {
     if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << name_ << " check output layout failed";
+      MS_LOG(INFO) << name_ << " check output layout failed";
     } else {
       MS_LOG(ERROR) << name_ << " check output layout failed";
     }
@@ -298,7 +298,7 @@ Status CustomInfo::CheckInputLayout() {
   }
   if (CheckLayout(inputs_shape_new_, inputs_tensor_info_new_, "input") != SUCCESS) {
     if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << name_ << " check input layout failed";
+      MS_LOG(INFO) << name_ << " check input layout failed";
     } else {
       MS_LOG(ERROR) << name_ << " check input layout failed";
     }

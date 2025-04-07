@@ -566,10 +566,10 @@ Status FlashAttentionScoreInfo::CheckInputLayout() {
   if (s1_split_num_ > 1 && is_flatten_batch_seq_ &&
       (sparse_mode_ != ops::kSparseRightDownCausal || query_shape[0] != key_shape[0])) {
     if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << name_ << ": When input_layout is TND, sparse_mode is 3, "
-                      << "and the T-dimension of query and key are the same, "
-                      << "the T-dimension of query can be sliced. query_shape: " << query_shape
-                      << ", key_shape: " << key_shape << ", sparse_mode: " << sparse_mode_;
+      MS_LOG(INFO) << name_ << ": When input_layout is TND, sparse_mode is 3, "
+                   << "and the T-dimension of query and key are the same, "
+                   << "the T-dimension of query can be sliced. query_shape: " << query_shape
+                   << ", key_shape: " << key_shape << ", sparse_mode: " << sparse_mode_;
     } else {
       MS_LOG(ERROR) << name_ << ": When input_layout is TND, sparse_mode is 3, "
                     << "and the T-dimension of query and key are the same, "

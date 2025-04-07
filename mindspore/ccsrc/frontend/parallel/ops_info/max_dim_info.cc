@@ -175,8 +175,8 @@ std::vector<StrategyPtr> MaxDimInfo::GenerateOpStrategies(int64_t stage_id) {
 Status MaxDimInfo::CheckInputLayout() {
   if (inputs_tensor_info_.size() != kSizeOne) {
     if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << "For distributed operator " << name_
-                      << ", the size of inputs_tensor_info should be 1, but got " << inputs_tensor_info_.size() << ".";
+      MS_LOG(INFO) << "For distributed operator " << name_ << ", the size of inputs_tensor_info should be 1, but got "
+                   << inputs_tensor_info_.size() << ".";
     } else {
       MS_LOG(ERROR) << "For distributed operator " << name_ << ", the size of inputs_tensor_info should be 1, but got "
                     << inputs_tensor_info_.size() << ".";
@@ -210,9 +210,9 @@ Status MaxDimInfo::CheckInputLayout() {
     return SUCCESS;
   } else {
     if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << "For distributed operator " << name_
-                      << ", the input's dimension 'dim' can not be split, the 'dim'"
-                      << " is " << dim_ << " and the input shard strategy is " << input_shard_strategy << ".";
+      MS_LOG(INFO) << "For distributed operator " << name_
+                   << ", the input's dimension 'dim' can not be split, the 'dim'"
+                   << " is " << dim_ << " and the input shard strategy is " << input_shard_strategy << ".";
     } else {
       MS_LOG(ERROR) << "For distributed operator " << name_
                     << ", the input's dimension 'dim' can not be split, the 'dim'"
@@ -259,8 +259,8 @@ Status MaxDimInfo::InferOutputTensorInfo() {
 Status MaxDimInfo::CheckOutputLayout() {
   if (outputs_tensor_info_.size() != kSizeTwo) {
     if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << "For distributed operator " << name_
-                      << ", the size of outputs_tensor_info should be 2, but got " << outputs_tensor_info_.size();
+      MS_LOG(INFO) << "For distributed operator " << name_ << ", the size of outputs_tensor_info should be 2, but got "
+                   << outputs_tensor_info_.size();
     } else {
       MS_LOG(ERROR) << "For distributed operator " << name_ << ", the size of outputs_tensor_info should be 2, but got "
                     << outputs_tensor_info_.size();
@@ -269,8 +269,8 @@ Status MaxDimInfo::CheckOutputLayout() {
   }
   if (!is_infer_out_layout_) {
     if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << "For distributed operator " << name_
-                      << ", the output tensor layout is not allowed to be set by users.";
+      MS_LOG(INFO) << "For distributed operator " << name_
+                   << ", the output tensor layout is not allowed to be set by users.";
     } else {
       MS_LOG(ERROR) << "For distributed operator " << name_
                     << ", the output tensor layout is not allowed to be set by users.";

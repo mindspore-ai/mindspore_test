@@ -342,9 +342,8 @@ Status MatMul::CheckOutputStrategy(const StrategyPtr &out_strategy) {
   int64_t out_shard_c = output_strategy[1];
   if (out_shard_c != in_shard_c) {
     if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << name_ << ": The input strategy is (" << x_strategy << ", " << w_strategy << ")"
-                      << ", the second dimension of output strategy must be " << in_shard_c << ", but got "
-                      << out_shard_c;
+      MS_LOG(INFO) << name_ << ": The input strategy is (" << x_strategy << ", " << w_strategy << ")"
+                   << ", the second dimension of output strategy must be " << in_shard_c << ", but got " << out_shard_c;
       return FAILED;
     }
     MS_LOG(ERROR) << name_ << ": The input strategy is (" << x_strategy << ", " << w_strategy << ")"
@@ -358,9 +357,9 @@ Status MatMul::CheckOutputStrategy(const StrategyPtr &out_strategy) {
     forward_reduce_scatter_ = true;
   } else {
     if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << name_ << ": The input strategy is (" << x_strategy << ", " << w_strategy << ")"
-                      << ", the first dimension of output strategy must be " << in_shard_a << " or "
-                      << in_shard_a * in_shard_b << ", but got " << out_shard_a_or_ab;
+      MS_LOG(INFO) << name_ << ": The input strategy is (" << x_strategy << ", " << w_strategy << ")"
+                   << ", the first dimension of output strategy must be " << in_shard_a << " or "
+                   << in_shard_a * in_shard_b << ", but got " << out_shard_a_or_ab;
       return FAILED;
     }
     MS_LOG(ERROR) << name_ << ": The input strategy is (" << x_strategy << ", " << w_strategy << ")"
@@ -600,7 +599,7 @@ Status MatMul::Check3DTPInputLayout(const TensorLayout &a_in_layout, const Tenso
 
 void log_func_mm(const std::ostringstream &oss, bool is_in_layout_propagation) {
   if (is_in_layout_propagation) {
-    MS_LOG(WARNING) << oss.str();
+    MS_LOG(INFO) << oss.str();
   } else {
     MS_LOG(ERROR) << oss.str();
   }
@@ -610,8 +609,8 @@ Status MatMul::CheckInputLayout() {
   // Check all device matrix should be the same
   if (inputs_tensor_info_.size() != kSizeTwo) {
     if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << ": The size of input_tensor_layout for matmul is " << inputs_tensor_info_.size()
-                      << " rather than 2.";
+      MS_LOG(INFO) << ": The size of input_tensor_layout for matmul is " << inputs_tensor_info_.size()
+                   << " rather than 2.";
     } else {
       MS_LOG(ERROR) << "The size of input_tensor_layout for matmul is " << inputs_tensor_info_.size()
                     << " rather than 2.";
@@ -696,8 +695,8 @@ Status MatMul::CheckOutputLayout() {
   // Check all device matrix should be the same
   if (outputs_tensor_info_.size() != kSizeOne) {
     if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << name_ << ": The size of output_tensor_layout for matmul is " << outputs_tensor_info_.size()
-                      << " rather than 1.";
+      MS_LOG(INFO) << name_ << ": The size of output_tensor_layout for matmul is " << outputs_tensor_info_.size()
+                   << " rather than 1.";
     } else {
       MS_LOG(ERROR) << "The size of output_tensor_layout for matmul is " << outputs_tensor_info_.size()
                     << " rather than 1.";
@@ -734,7 +733,7 @@ Status MatMul::CheckOutputLayout() {
                                                  output_infer_tensor_layout_.tensor_shape_before().array());
   if (reduce_scatter_out_layout != out_layout) {
     if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << name_ << ": The user configured output layout dose not match the inferred output layout";
+      MS_LOG(INFO) << name_ << ": The user configured output layout dose not match the inferred output layout";
       return FAILED;
     }
     MS_LOG(ERROR) << "The user configured output layout { device_matrix:"
