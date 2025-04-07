@@ -13,8 +13,8 @@ mindspore.parallel.convert_checkpoints
         - **src_checkpoints_dir** (str) - 源Checkpoint文件所在的目录。
         - **dst_checkpoints_dir** (str) - 目标Checkpoint文件存储的目录。
         - **ckpt_prefix** (str) - 目标Checkpoint前缀名。
-        - **src_strategy_file** (str, 可选) - 源切分策略proto文件名，由mindspore.set_auto_parallel_context(strategy_ckpt_save_file)接口存储下来的文件。当其为 ``None`` 时，表示切分策略为不切分。默认值： ``None`` 。
-        - **dst_strategy_file** (str, 可选) - 目标切分策略proto文件名，由mindspore.set_auto_parallel_context(strategy_ckpt_save_file)接口存储下来的文件。当其为 ``None`` 时，表示切分策略为不切分。默认值： ``None`` 。
+        - **src_strategy_file** (str, 可选) - 源切分策略proto文件名，由 :func:`mindspore.parallel.auto_parallel.AutoParallel.save_param_strategy_file` 接口存储下来的文件。当其为 ``None`` 时，表示切分策略为不切分。默认值： ``None`` 。
+        - **dst_strategy_file** (str, 可选) - 目标切分策略proto文件名，由 :func:`mindspore.parallel.auto_parallel.AutoParallel.save_param_strategy_file` 接口存储下来的文件。当其为 ``None`` 时，表示切分策略为不切分。默认值： ``None`` 。
         - **process_num** (int, 可选) - 控制并行处理的进程数量。默认值： ``1``。
         - **output_format** (str, 可选) - 控制转换后输出的 checkpoint 格式。可以设置为 ``"ckpt"`` 或 ``"safetensors"`` 。默认值： ``"ckpt"`` 。
 

@@ -57,7 +57,7 @@ def merge_pipeline_strategys(src_strategy_dirs, dst_strategy_file):
 
     Args:
         src_strategy_dirs (str): The directory of strategy files including all pipeline stage which is saved by
-                                 'mindspore.set_auto_parallel_context(strategy_ckpt_save_file)'.
+                                 'mindspore.parallel.auto_parallel.AutoParallel.save_param_strategy_file'.
         dst_strategy_file (str): The file merged strategy to save.
 
     Raises:
@@ -66,7 +66,7 @@ def merge_pipeline_strategys(src_strategy_dirs, dst_strategy_file):
     Examples:
         >>> import mindspore as ms
         >>> # src_strategy_dir/stra0.ckpt, src_strategy_dir/stra1.ckpt ... src_strategy_dir/stra127.ckpt
-        >>> ms.merge_pipeline_strategys("./src_strategy_dir", "./dst_strategy.ckpt")
+        >>> ms.parallel.merge_pipeline_strategys("./src_strategy_dir", "./dst_strategy.ckpt")
 
     """
     dst_strategy_dir, _ = os.path.split(dst_strategy_file)

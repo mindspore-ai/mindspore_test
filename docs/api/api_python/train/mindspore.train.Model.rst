@@ -99,7 +99,7 @@
 
     .. py:method:: infer_predict_layout(*predict_data, skip_backend_compile=False)
 
-        在 `AUTO_PARALLEL` 或 `SEMI_AUTO_PARALLEL` 模式下，为预测网络生成参数layout。数据可以是单个或多个张量。
+        在 `AutoParallel(Cell)` 使能的自动并行模式下，为预测网络生成参数layout。数据可以是单个或多个张量。
 
         .. note:: 同一批次数据应放在一个张量中。
 
@@ -115,7 +115,7 @@
 
     .. py:method:: infer_train_layout(train_dataset, dataset_sink_mode=True, sink_size=-1)
 
-        在 `AUTO_PARALLEL` 或 `SEMI_AUTO_PARALLEL` 模式下，为训练网络生成参数layout。当前仅支持在数据下沉模式下使用。
+        在 `AutoParallel(Cell)` 使能的自动并行模式下，为训练网络生成参数layout。当前仅支持在数据下沉模式下使用。
 
         .. warning:: 这是一个实验性API，后续可能修改或删除。
 

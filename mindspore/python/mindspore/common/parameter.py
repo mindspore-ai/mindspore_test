@@ -154,7 +154,7 @@ class Parameter(Tensor_):
     the list of its parameters, and will appear, e.g. in `cell.get_parameters()` iterator.
 
     Note:
-        - In auto_parallel mode of `SEMI_AUTO_PARALLEL` and `AUTO_PARALLEL`, if init `Parameter` by
+        - When using `AutoParallel(cell)` to enable parallel mode, if init `Parameter` by
           a `Tensor`, the type of Parameter will be `Tensor`. `Tensor` will save the shape and type info of a tensor
           with no memory usage.
 
@@ -214,9 +214,8 @@ class Parameter(Tensor_):
         requires_grad (bool): True if the parameter requires gradient. Default: ``True`` .
         layerwise_parallel (bool): When `layerwise_parallel` is true in data/hybrid parallel mode,
             broadcast and gradients communication would not be applied to the `Parameter`. Default: ``False`` .
-        parallel_optimizer (bool): It is used to filter the weight shard operation in `SEMI_AUTO_PARALLEL` or
-            `AUTO_PARALLEL` mode. It works only when enable parallel optimizer in
-            :func:`mindspore.set_auto_parallel_context`. Default: ``True`` .
+        parallel_optimizer (bool): It is used to filter the weight shard operation in parallel mode. It works only when
+            enable parallel optimizer in :func:`mindspore.parallel.auto_parallel.AutoParallel.hsdp`. Default: ``True`` .
         storage_format (str): Only Ascend device target is supported. It is used to specify the format of the weight
             loaded to the device. By default, the format is not changed. The optional values are ``"FRACTAL_NZ"`` ,
             ``"NC1HWC0"`` , ``"FRACTAL_Z"`` , etc. Default: ``""`` .
@@ -538,8 +537,8 @@ class Parameter(Tensor_):
         """
         Get the fusion type (int) for communication operators corresponding to this parameter.
 
-        In `AUTO_PARALLEL` and `SEMI_AUTO_PARALLEL` mode, some communication operators used for parameters or
-        gradients aggregation are inserted automatically.
+        When using `AutoParallel(cell)` to enable parallel mode, some communication operators used
+        for parameters or gradients aggregation are inserted automatically.
         The value of `comm_fusion` must be greater than or equal to 0.
         When the value of `comm_fusion` is ``0`` , operators will not be fused together.
 
@@ -563,7 +562,7 @@ class Parameter(Tensor_):
         """
         Get the communication recompute status(bool) of optimizer parallel for the parameter.
 
-        In `AUTO_PARALLEL` and `SEMI_AUTO_PARALLEL` mode, when applying parallel optimizer,
+        When using `AutoParallel(cell)` to enable parallel mode, and applying parallel optimizer,
         some :class:`mindspore.ops.AllGather` operators
         used for parameters gathering are inserted automatically. It is used to control the recompute attr for those
         :class:`mindspore.ops.AllGather` operators.
@@ -688,8 +687,9 @@ class Parameter(Tensor_):
         """
         Get the optimizer parallel status(bool) of the parameter.
 
-        It is used to filter the weight shard operation in `AUTO_PARALLEL` and `SEMI_AUTO_PARALLEL` mode. It works only
-        when enable parallel optimizer in :func:`mindspore.set_auto_parallel_context`.
+        When using `AutoParallel(cell)` to enable parallel mode, it is used to filter the weight
+        shard operation. It works only when enable parallel optimizer in
+        :func:`mindspore.parallel.auto_parallel.AutoParallel.hsdp`.
 
         Examples:
             >>> from mindspore import Tensor, Parameter
@@ -948,7 +948,7 @@ class Parameter(Tensor_):
             layout (Union[None, tuple]): The parameter's layout info.
                 layout [dev_mat, tensor_map, slice_shape, filed_size, uniform_split, opt_shard_group].
                 Default: ``None``.
-                It's not None only in 'SEMI_AUTO_PARALLEL' or 'AUTO_PARALLEL' mode.
+                It's not None only when using `AutoParallel(cell)` to enable parallel mode.
 
                 - dev_mat (list(int)): The parameter's device matrix.
                 - tensor_map (list(int)): The parameter's tensor map.
