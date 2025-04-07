@@ -30,3 +30,9 @@ safetensors
 tensorboardX
 jsonlines
 word2number
+tensordict        # for st test
+hydra-core        # for st test
+codetiming        # for st test
+ray==2.10.0        # for st test
+latex2sympy2        # for st test
+tokenizers>=0.21,<0.22        # for st test
