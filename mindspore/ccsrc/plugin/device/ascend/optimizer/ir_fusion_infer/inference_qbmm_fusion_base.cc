@@ -55,7 +55,7 @@ void QbmmFusionBase::SetNodes(const EquivPtr &equiv) const {
   scale_node_ = utils::cast<AnfNodePtr>((*equiv)[scale_]);
   MS_ASSERT(scale_node_ != nullptr);
   offset_node_ = utils::cast<AnfNodePtr>((*equiv)[offset_]);
-  MS_ASSERT(offset_node != nullptr);
+  MS_ASSERT(offset_node_ != nullptr);
   bias_node_ = utils::cast<AnfNodePtr>((*equiv)[bias_]);
   MS_ASSERT(bias_node_ != nullptr);
   pertoken_scale_node_ = utils::cast<AnfNodePtr>((*equiv)[pertoken_scale_]);
@@ -82,12 +82,14 @@ bool QbmmFusionBase::PassEnable(const std::string &op_name) const {
 }
 
 bool QbmmFusionBase::CheckValid() const {
-  if (!CheckSupportDataType(bias_tensor_node_, {kNumberTypeFloat16}) ||
-      !CheckSupportDataType(scale_node_, {kNumberTypeInt64}) || !CheckSupportDataType(bias_node_, {kMetaTypeNone})) {
+  if (!CheckSupportDataType(bias_tensor_node_, {kNumberTypeFloat16, kNumberTypeBFloat16}) ||
+      !CheckSupportDataType(scale_node_, {kNumberTypeInt64, kNumberTypeFloat32}) ||
+      !CheckSupportDataType(bias_node_, {kMetaTypeNone})) {
     return false;
   }
   auto dtype_value = GetValue<int64_t>(out_dtype_node_->cast<ValueNodePtr>()->value());
-  if (dtype_value != static_cast<int64_t>(kNumberTypeFloat16)) {
+  if (dtype_value != static_cast<int64_t>(kNumberTypeFloat16) &&
+      dtype_value != static_cast<int64_t>(kNumberTypeBFloat16)) {
     return false;
   }
   auto bias_shape = common::AnfAlgo::GetOutputInferShape(bias_tensor_node_, kIndex0);
