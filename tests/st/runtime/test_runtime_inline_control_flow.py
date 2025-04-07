@@ -29,7 +29,7 @@ def test_single_if():
     Expectation: Not throw exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         if x > y:
             z = x + 1
@@ -54,7 +54,7 @@ def test_single_if_twice_same_branch():
     """
     rt.set_memory(optimize_level="O1")
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         if x > y:
             z = x + 1
@@ -81,7 +81,7 @@ def test_single_if_twice_same_branch_multi_output():
     """
     rt.set_memory(optimize_level="O1")
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         if x > y:
             z = x + 1
@@ -108,7 +108,7 @@ def test_single_if_twice_diff_branch_multi_output():
     """
     rt.set_memory(optimize_level="O1")
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         if x > y:
             z = x + 1
@@ -134,7 +134,7 @@ def test_single_if_triple_diff_branch_multi_output():
     """
     rt.set_memory(optimize_level="O1")
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         if x > y:
             z = x + 1
@@ -162,7 +162,7 @@ def test_single_if_return_parameter():
     param_a = Parameter(Tensor(5, mstype.int32), name='a')
     param_b = Parameter(Tensor(4, mstype.int32), name='b')
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, param_a, param_b):
         if param_a > param_b:
             param_b += 1
@@ -229,7 +229,7 @@ def test_return_valuenode():
     Expectation: AttributeError.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x):
         if x < 3:
             return 1
@@ -247,7 +247,7 @@ def test_return_input():
     Expectation: AttributeError.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, z):
         if x < 3:
             return y
@@ -265,7 +265,7 @@ def test_value_node_output_in_single_branch():
     Expectation: Not throw exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def BranchReturnTensor(x, y):
         x = x + Tensor(2, mstype.int32)
         y = x + y
@@ -290,7 +290,7 @@ def test_diff_ref_count_in_branch():
     Expectation: Not throw exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def BranchDiffRefCount(x, y):
         x = x + Tensor(2, mstype.int32)
         y = x + y
@@ -351,7 +351,7 @@ def test_update_parameter():
 
     param_a = Parameter(Tensor(5))
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, param_a):
         x = x + param_a
         if x < 3:
@@ -379,7 +379,7 @@ def test_update_and_return_parameter():
     param_a = Parameter(Tensor(5))
     param_b = Parameter(Tensor(5))
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, param_a, param_b):
         x = x + param_a
         if x < 3:
@@ -409,7 +409,7 @@ def test_return_switch_input_in_branch():
     param_a = Parameter(Tensor(5))
     param_b = Parameter(Tensor(5))
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, param_a, param_b):
         x = x + param_a
         if x < 3:
@@ -439,7 +439,7 @@ def test_return_switch_input():
     param_a = Parameter(Tensor(5))
     param_b = Parameter(Tensor(5))
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, param_a, param_b):
         x = x + param_a
         if x < 3:
@@ -542,7 +542,7 @@ def test_return_condition():
     Expectation: AttributeError.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, cond):
         if cond:
             x = x * 2
@@ -566,7 +566,7 @@ def test_return_include_other_output():
     Expectation: AttributeError.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         y = y + 2
         y = y * 3
@@ -620,7 +620,7 @@ def test_branch_output_include_refnode_true():
     Expectation: AttributeError.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         if x < 3:
             y = ops.expand_dims(y, 1)
@@ -644,7 +644,7 @@ def test_branch_output_include_refnode_false():
     Expectation: AttributeError.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         if x > 3:
             y = ops.expand_dims(y, 1)
@@ -672,7 +672,7 @@ def test_branch_output_include_refnode_output_ref():
     Expectation: AttributeError.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         if x > 3:
             y = ops.expand_dims(y, 1)
@@ -699,7 +699,7 @@ def test_branch_output_include_refnode_twice():
     Expectation: AttributeError.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         if x > 3:
             y = ops.expand_dims(y, 1)
@@ -762,7 +762,7 @@ def test_control_arrow_from_switch_to_gather():
     param_a = Parameter(Tensor(5))
     param_b = Parameter(Tensor(5))
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, param_a, param_b):
         x = x + param_a
         if x < 3:
@@ -883,7 +883,7 @@ def test_if_after_if():
     param_a = Parameter(Tensor(5, mstype.int32), name='a')
     param_b = Parameter(Tensor(4, mstype.int32), name='b')
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, param_a, param_b):
         if param_a > param_b:
             param_b += 1
@@ -908,7 +908,7 @@ def test_if_in_if():
     param_a = Parameter(Tensor(5, mstype.int32), name='a')
     param_b = Parameter(Tensor(4, mstype.int32), name='b')
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, param_a, param_b):
         if param_a > param_b:
             param_b += 1
@@ -932,7 +932,7 @@ def test_output_ref_of_parameter():
     """
     param_a = Parameter(Tensor(5, mstype.int32), name='a')
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, param_a):
         if x > y:
             out = ops.addn([x, x, param_a])
@@ -957,7 +957,7 @@ def test_gather_switch_gather_output():
     """
     param_a = Parameter(Tensor(5, mstype.int32), name='a')
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, param_a):
         if x > y:
             out = param_a
@@ -983,7 +983,7 @@ def test_if_in_if_directly():
     param_a = Parameter(Tensor(5, mstype.int32), name='a')
     param_b = Parameter(Tensor(4, mstype.int32), name='b')
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, param_a, param_b):
         x = x + 2
         if param_a > param_b:
@@ -1180,7 +1180,7 @@ def test_call_same_graph():
     """
     param_a = Parameter(Tensor(5, mstype.float32), name='a')
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, param_a):
         out = Tensor(1, mstype.float32)
         for i in range(0, 2):
