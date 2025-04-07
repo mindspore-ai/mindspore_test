@@ -207,16 +207,18 @@ class _ProcessManager:
 
         self.proc_rank_map = {}
         self.enable_mindx = False
-        try:
-            from taskd.python.framework.agent.ms_mgr.msrun_plugin import MSRunPlugin
-            self.msmgr = MSRunPlugin()
-            self.msmgr.register_callbacks("KILL_WORKER", self.kill_workers)
-            self.msmgr.register_callbacks("START_ALL_WORKER", self.start_all_workers)
-            self.msmgr.register_callbacks("MONITOR", self.monitor_rank_status)
-            self.enable_mindx = True
-            os.environ["MS_ENABLE_RECOVERY"] = str(1)
-        except Exception as e:  # pylint: disable=broad-except
-            logger.warning(f"mindx is not installed, using original mindspore recovery strategy.: {str(e)}")
+        tft_env = os.getenv("MS_ENABLE_TFT", "")
+        if ("TTP:1" in tft_env) or ("UCE:1" in tft_env) or ("ARF:1" in tft_env):
+            try:
+                from taskd.python.framework.agent.ms_mgr.msrun_plugin import MSRunPlugin
+                self.msmgr = MSRunPlugin()
+                self.msmgr.register_callbacks("KILL_WORKER", self.kill_workers)
+                self.msmgr.register_callbacks("START_ALL_WORKER", self.start_all_workers)
+                self.msmgr.register_callbacks("MONITOR", self.monitor_rank_status)
+                self.enable_mindx = True
+                os.environ["MS_ENABLE_RECOVERY"] = str(1)
+            except Exception as e:  # pylint: disable=broad-except
+                logger.warning(f"mindx is not installed, using original mindspore recovery strategy.: {str(e)}")
 
     def run(self):
         """
