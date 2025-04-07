@@ -888,7 +888,14 @@ AnfNodeIndexSet PipelineTransformer::GetParameterLoadUsers(const AnfNodePtr &nod
           continue;
         }
         const auto &param_users = param_iter->second;
-        users.insert(param_users.begin(), param_users.end());
+        for (const auto &u : param_users) {
+          if (IsPrimitiveCNode(u.first, prim::kPrimLoad)) {
+            const auto &load_users = node_users_map.at(u.first);
+            users.insert(load_users.begin(), load_users.end());
+          } else {
+            users.insert(u);
+          }
+        }
       } else {
         users.insert(user);
       }
