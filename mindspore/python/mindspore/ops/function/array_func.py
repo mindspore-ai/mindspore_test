@@ -3515,7 +3515,7 @@ def matrix_diag(x, k=0, num_rows=-1, num_cols=-1, padding_value=0, align="RIGHT_
         >>> padding_value = mindspore.tensor(11.)
         >>> num_rows = mindspore.tensor(3, mindspore.int32)
         >>> num_cols = mindspore.tensor(3, mindspore.int32)
-        >>> output = ops.matrix_diag(x, k, num_rows, num_cols, padding_value, align='LEFT_RIGHT')
+        >>> output = mindspore.ops.matrix_diag(x, k, num_rows, num_cols, padding_value, align='LEFT_RIGHT')
         >>> print(output)
         [[ 1.  8. 11.]
          [ 4.  2.  9.]
