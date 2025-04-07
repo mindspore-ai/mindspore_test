@@ -218,7 +218,9 @@ class Cell(Cell_):
 
         # hook
         self._forward_pre_hook = OrderedDict()
+        self._forward_pre_hook_with_kwargs = OrderedDict()
         self._forward_hook = OrderedDict()
+        self._forward_hook_with_kwargs = OrderedDict()
         self._backward_pre_hook = OrderedDict()
         self._cell_backward_pre_hook = None
         self._backward_hook = OrderedDict()
@@ -940,29 +942,29 @@ class Cell(Cell_):
         output = self._run_construct(cast_inputs, kwargs)
         return output
 
-    def _run_construct(self, *inputs, **kwargs):
+    def _run_construct(self, *args, **kwargs):
         """Run the construct function"""
         if self._forward_pre_hook:
-            inputs = self._run_forward_pre_hook(inputs)
+            args, kwargs = self._run_forward_pre_hook(args, kwargs)
 
         if self._shard_fn is not None:
-            output = self._shard_fn(*inputs, **kwargs)
+            output = self._shard_fn(*args, **kwargs)
         elif _pynative_executor.requires_grad():
             if self._backward_hook:
-                output = self._backward_hook_construct(*inputs, **kwargs)
+                output = self._backward_hook_construct(*args, **kwargs)
             elif self._recompute_cell is not None:
-                output = self._recompute_cell(*inputs, **kwargs)
+                output = self._recompute_cell(*args, **kwargs)
             elif self.has_bprop:
-                output = self._call_custom_bprop(*inputs, **kwargs)
+                output = self._call_custom_bprop(*args, **kwargs)
             else:
-                output = self.construct(*inputs, **kwargs)
+                output = self.construct(*args, **kwargs)
         else:
-            output = self.construct(*inputs, **kwargs)
+            output = self.construct(*args, **kwargs)
 
         if self._forward_hook:
-            output = self._run_forward_hook(inputs, output)
+            output = self._run_forward_hook(args, kwargs, output)
 
-        if self._backward_pre_hook:
+        if self._backward_pre_hook and _pynative_executor.requires_grad():
             output = self._run_backward_pre_hook(output)
 
         return output
@@ -2645,25 +2647,38 @@ class Cell(Cell_):
             raise ValueError(f"Negative 'fusion_size' {fusion_size} is invalid.")
         Tensor._flatten_tensors(self.trainable_params(), fusion_size)  # pylint: disable=W0212
 
-    def register_forward_pre_hook(self, hook_fn):
+    def register_forward_pre_hook(self, hook_fn, with_kwargs=False):
         """
         Register forward pre hook function for Cell object.
 
+        The hook will be called before :func:`mindspore.nn.Cell.construct` is invoked.
+
+        The hook function should be one of the following signatures:
+
+        - `hook_fn(cell, args) -> None or new_args` , when `with_kwargs` is ``Flase`` .
+        - `hook_fn(cell, args, kwargs) -> None or (new_args, new_kwargs)` , when `with_kwargs` is ``True`` .
+
+        where:
+
+        - `cell` (Cell): Cell object on which the hook is registered.
+        - `args` (tuple): Positional arguments passed to the `construct` function.
+        - `kwargs` (dict): Keyword arguments passed to the `construct` function. Only passed to `hook_fn` when
+          `with_kwargs` is ``True`` .
+
         Note:
-            - The `register_forward_pre_hook(hook_fn)` does not work in graph mode or functions decorated with 'jit'.
-            - 'hook_fn' must be defined as the following code.
-              `cell` is the object of registered Cell. `inputs` is the forward
-              input objects passed to the Cell. The 'hook_fn' can modify the forward input objects by returning new
-              forward input objects.
-            - It should have the following signature:
-              hook_fn(cell, inputs) -> new input objects or none.
-            - In order to prevent running failed when switching to graph mode, it is not recommended to write it in the
-              `construct` function of Cell object. In the pynative mode, if the `register_forward_pre_hook` function is
-              called in the `construct` function of the Cell object, a hook function will be added at each run time of
-              Cell object.
+            - The feature does not take effect in graph mode or in PyNative mode with functions decorated by jit.
+            - The `hook_fn` can modify the forward inputs by returning new inputs. If `with_kwargs` is ``Flase`` , a
+              single value (whick will be wrapped into a tuple unless already a tuple) or a tuple of args should be
+              returned. If `with_kwargs` is ``True`` , both `args` and `kwargs` should be returned.
+            - In order to prevent running failed when switching to graph mode, it is not recommended to call it in the
+              `construct` function of Cell object.
+            - In the pynative mode, if this method is called inside the `construct` function of the Cell object, a
+              `hook_fn` will be added at each run time of Cell object.
 
         Args:
             hook_fn (function): Python function. Forward pre hook function.
+            with_kwargs (bool, optional): Specifies whether hook_fn will be passed the kwargs given to the `construct`
+                function. Default: ``False`` .
 
         Returns:
             A handle corresponding to the `hook_fn` . The handle can be used to remove the added `hook_fn` by calling
@@ -2705,60 +2720,66 @@ class Cell(Cell_):
         if context._get_mode() == context.GRAPH_MODE:
             return HookHandle()
         check_hook_fn(hook_fn)
-        handle = HookHandle(self._forward_pre_hook)
+        handle = HookHandle(self._forward_pre_hook, extra_dict=self._forward_pre_hook_with_kwargs)
         self._forward_pre_hook[handle.handle_id] = hook_fn
+        if with_kwargs:
+            self._forward_pre_hook_with_kwargs[handle.handle_id] = True
         return handle
 
-    def _run_forward_pre_hook(self, inputs):
+    def _run_forward_pre_hook(self, args, kwargs):
         """
         Running forward pre hook function registered on Cell object.
-
-        Args:
-            inputs: The input objects of cell object.
-
-        Returns:
-            - **outputs** - New input objects or none.
-
-        Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
         """
-        forward_pre_hook_inputs = inputs
-        for fn in self._forward_pre_hook.values():
-            ret = fn(self, forward_pre_hook_inputs)
-            if ret is not None:
-                if not isinstance(ret, tuple):
-                    forward_pre_hook_inputs = (ret,)
-                else:
-                    forward_pre_hook_inputs = ret
+        for hook_id, hook_fn in self._forward_pre_hook.items():
+            if hook_id in self._forward_pre_hook_with_kwargs:
+                ret = hook_fn(self, args, kwargs)
+                if ret is not None:
+                    if isinstance(ret, tuple) and len(ret) == 2:
+                        args, kwargs = ret
+                    else:
+                        raise RuntimeError(
+                            "forward pre hook with kwargs must return None or a tuple of (new_args, new_kwargs), "
+                            f"but got {ret}"
+                        )
+            else:
+                ret = hook_fn(self, args)
+                if ret is not None:
+                    if not isinstance(ret, tuple):
+                        ret = (ret,)
+                    args = ret
+        return args, kwargs
 
-        if isinstance(inputs, tuple):
-            if not isinstance(forward_pre_hook_inputs, tuple):
-                forward_pre_hook_inputs = (forward_pre_hook_inputs,)
-            if len(forward_pre_hook_inputs) != len(inputs):
-                raise TypeError(
-                    "The forward pre hook return value size is {} not equal to input size {}".format(
-                        len(forward_pre_hook_inputs), len(inputs)))
-        return forward_pre_hook_inputs
-
-    def register_forward_hook(self, hook_fn):
+    def register_forward_hook(self, hook_fn, with_kwargs=False):
         """
-        Set the Cell forward hook function.
+        Register forward hook function for Cell object.
+
+        This hook will be called after :func:`mindspore.nn.Cell.construct` has computed an output.
+
+        The hook function should be one of the following signatures:
+
+        - `hook_fn(cell, args, output) -> None or new_output` , when `with_kwargs` is ``False`` .
+        - `hook_fn(cell, args, kwargs, output) -> None or new_output` , when `with_kwargs` is ``True`` .
+
+        where:
+
+        - `cell` (Cell): Cell object on which the hook is registered.
+        - `args` (tuple): Positional arguments passed to the `construct` function.
+        - `kwargs` (dict): Keyword arguments passed to the `construct` function. Only passed to `hook_fn` when
+          `with_kwargs` is ``True`` .
+        - `output`: Output generated by the `construct` function.
 
         Note:
-            - The `register_forward_hook(hook_fn)` does not work in graph mode or functions decorated with 'jit'.
-            - 'hook_fn' must be defined as the following code.
-              `cell` is the object of registered Cell. `inputs` is the forward
-              input objects passed to the Cell. `output` is the forward output object of the Cell. The 'hook_fn' can
-              modify the forward output object by returning new forward output object.
-            - It should have the following signature:
-              hook_fn(cell, inputs, output) -> new output object or none.
-            - In order to prevent running failed when switching to graph mode, it is not recommended to write it in the
-              `construct` function of Cell object. In the pynative mode, if the `register_forward_hook` function is
-              called in the `construct` function of the Cell object, a hook function will be added at each run time of
-              Cell object.
+            - The feature does not take effect in graph mode or in PyNative mode with functions decorated by jit.
+            - The `hook_fn` can modify the forward outputs by returning new outputs.
+            - In order to prevent running failed when switching to graph mode, it is not recommended to call it in the
+              `construct` function of Cell object.
+            - In the pynative mode, if this method is called inside the `construct` function of the Cell object, a
+              `hook_fn` will be added at each run time of Cell object.
 
         Args:
             hook_fn (function): Python function. Forward hook function.
+            with_kwargs (bool, optional): Specifies whether hook_fn will be passed the kwargs given to the `construct`
+                function. Default: ``False`` .
 
         Returns:
             A handle corresponding to the `hook_fn` . The handle can be used to remove the added `hook_fn` by calling
@@ -2804,38 +2825,24 @@ class Cell(Cell_):
         if context._get_mode() == context.GRAPH_MODE:
             return HookHandle()
         check_hook_fn(hook_fn)
-        handle = HookHandle(self._forward_hook)
+        handle = HookHandle(self._forward_hook, extra_dict=self._forward_hook_with_kwargs)
         self._forward_hook[handle.handle_id] = hook_fn
+        if with_kwargs:
+            self._forward_hook_with_kwargs[handle.handle_id] = True
         return handle
 
-    def _run_forward_hook(self, inputs, output):
+    def _run_forward_hook(self, args, kwargs, output):
         """
         Running forward hook function registered on Cell object.
-
-        Args:
-            inputs: The input objects of Cell object.
-            output: The output object of Cell object.
-
-        Returns:
-            - **output** - New output object or none.
-
-        Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
         """
-        forward_hook_output = output
-        for fn in self._forward_hook.values():
-            ret = fn(self, inputs, forward_hook_output)
+        for hook_id, hook_fn in self._forward_hook.items():
+            if hook_id in self._forward_hook_with_kwargs:
+                ret = hook_fn(self, args, kwargs, output)
+            else:
+                ret = hook_fn(self, args, output)
             if ret is not None:
-                forward_hook_output = ret
-
-        if isinstance(output, tuple):
-            if not isinstance(forward_hook_output, tuple):
-                forward_hook_output = (forward_hook_output,)
-            if len(forward_hook_output) != len(output):
-                raise TypeError(
-                    "The forward hook return value size is {} not equal to output size {}".format(
-                        len(forward_hook_output), len(output)))
-        return forward_hook_output
+                output = ret
+        return output
 
     def register_backward_pre_hook(self, hook_fn):
         """
