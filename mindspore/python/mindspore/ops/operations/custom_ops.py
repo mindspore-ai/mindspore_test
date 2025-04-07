@@ -1110,27 +1110,37 @@ class CustomOpBuilder:
     r"""
     CustomOpBuilder is used to initialize and configure custom operators for MindSpore.
 
+    In most cases, users only need to provide the source files and additional compilation options in the constructor
+    and call the `load` method to complete the compilation and loading of the operator.
+    If users have specific customization requirements, they can inherit this class and override certain methods.
+    It is important to note that if methods are overridden, some parameters passed to the constructor may be ignored.
+
+    .. warning::
+        This is an experimental API that is subject to change.
+
     Args:
         name (str): The unique name of the custom operator module, used to identify the operator.
-        sources (str or list[str]): The source file(s) of the custom operator. It can be a single file path or
+        sources (Union[str, list[str]]): The source file(s) of the custom operator. It can be a single file path or
                                     a list of file paths.
         backend (str, optional): The target backend for the operator, such as "CPU" or "Ascend". Default: ``None``.
-        include_paths (list[str], optional): Additional include paths needed during compilation. Default: ``None``.
+        include_paths (list[str], optional): Additionally included paths needed during compilation. Default: ``None``.
         cflags (str, optional): Extra C++ compiler flags to be used during compilation. Default: ``None``.
         ldflags (str, optional): Extra linker flags to be used during linking. Default: ``None``.
+        kwargs (dict, optional): Additional keyword arguments for future extensions or specific custom requirements.
 
     .. note::
-        If the `backend` argument is provided, additional default flags will be automatically added to
-        the compilation and linking steps to support the operator's target backend.
-        The `sources` argument must point to valid source files for the custom operator.
-        If `include_paths`, `cflags`, or `ldflags` are not provided, default values will be used.
-        The `load()` method will use the provided arguments to compile and load the custom operator.
+        - If the `backend` argument is provided, additional default flags will be automatically added to
+          the compilation and linking steps to support the operator's target backend. The default options
+          can be referenced in the implementation of the `get_cflags` and `get_ldflags` methods in the `CustomOpBuilder
+          <https://gitee.com/mindspore/mindspore/blob/master/mindspore/python/mindspore/ops/operations/custom_ops.py>`_.
+        - The `sources` argument must point to valid source files for the custom operator.
 
     Supported Platforms:
         ``Ascend`` ``CPU``
 
     Examples:
-        >>> builder = CustomOpBuilder(
+        >>> from mindspore import ops
+        >>> builder = ops.CustomOpBuilder(
         ...     name="custom_op_cpu",
         ...     sources="custom_ops_impl/pybind_op_cpu.cpp",
         ...     backend="CPU"
@@ -1141,7 +1151,7 @@ class CustomOpBuilder:
     _loaded_ops = {}
     _ms_code_base = None
 
-    def __init__(self, name, sources, backend=None, include_paths=None, cflags=None, ldflags=None):
+    def __init__(self, name, sources, backend=None, include_paths=None, cflags=None, ldflags=None, **kwargs):
         self.name = name
         self.source = sources
         self.backend = backend
@@ -1159,7 +1169,7 @@ class CustomOpBuilder:
         Get the source files for the custom operator.
 
         Returns:
-            str or list[str]: The source file(s) for the operator.
+            str or list[str], The source file(s) for the operator.
         """
         return self.source
 
@@ -1168,7 +1178,7 @@ class CustomOpBuilder:
         Get the include paths required for compiling the custom operator.
 
         Returns:
-            list[str]: A list of include paths.
+            list[str], A list of include paths.
         """
         include_list = self.include_paths if self.include_paths is not None else []
         include_list.append(CustomOpBuilder._mindspore_path)
@@ -1201,7 +1211,7 @@ class CustomOpBuilder:
         Get the C++ compiler flags for building the custom operator.
 
         Returns:
-            list[str]: A list of C++ compiler flags.
+            list[str], A list of C++ compiler flags.
         """
         flags = ['-fstack-protector-all', '-fPIC', '-pie']
         flags += ['-DENABLE_FAST_HASH_TABLE=1']
@@ -1216,7 +1226,7 @@ class CustomOpBuilder:
         Get the linker flags for building the custom operator.
 
         Returns:
-            list[str]: A list of linker flags.
+            list[str], A list of linker flags.
         """
         flags = ['-Wl,-z,relro,-z,now,-z,noexecstack', '-Wl,--disable-new-dtags,--rpath', '-s']
         flags += [
@@ -1239,7 +1249,7 @@ class CustomOpBuilder:
         Build the custom operator module.
 
         Returns:
-            str: The path to the compiled module.
+            str, The path to the compiled module.
         """
         return ExtensionBuilder().build(
             module_name=self.name,
@@ -1253,7 +1263,7 @@ class CustomOpBuilder:
         Build and load the custom operator module.
 
         Returns:
-            Module: The loaded custom operator module.
+            Module, The loaded custom operator module.
         """
         if self.name in CustomOpBuilder._loaded_ops:
             return CustomOpBuilder._loaded_ops[self.name]
