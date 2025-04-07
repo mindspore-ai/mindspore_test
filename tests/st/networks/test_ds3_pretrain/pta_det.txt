@@ -1,0 +1,36 @@
+building GPT model ...
+ > number of parameters on (tensor, pipeline) model parallel rank (0, 1): 3178459136
+ > number of parameters on (tensor, pipeline) model parallel rank (0, 0): 1917599744
+> learning rate decay style: cosine
+ loading checkpoint from /home/workspace/mindspore_dataset/msadapter/test_input/net/test_ds3_pretrain/load_old at iteration 10
+could not find arguments in the checkpoint ...
+ checkpoint version 3.0
+  successfully loaded checkpoint from /home/workspace/mindspore_dataset/msadapter/test_input/net/test_ds3_pretrain/load_old [ t 0, p 0 ] at iteration 0
+(min, max) time across ranks (ms):
+    load-checkpoint ................................: (6825.01, 6826.84)
+[after model, optimizer, and learning rate scheduler are built] datetime: 2025-03-24 18:49:28 
+> building train, validation, and test datasets ...
+ > datasets target sizes (minimum size):
+    train:      80
+    validation: 0
+    test:       0
+[after dataloaders are built] datetime: 2025-03-24 18:49:28 
+done with setup ...
+(min, max) time across ranks (ms):
+    model-and-optimizer-setup ......................: (18469.84, 18481.97)
+    train/valid/test-data-iterators-setup ..........: (154.60, 264.61)
+training ...
+[before the start of training step] datetime: 2025-03-24 18:49:28 
+WARNING:megatron.core.models.common.embeddings.rotary_pos_embedding:Setting apply_rope_fusion to false because its implementation is not included in Apex. Try upgrading to the latest version
+Number of parameters in transformer layers in billions:  26.19
+Number of parameters in embedding layers in billions: 1.85
+Total number of parameters in billions: 28.04
+Number of parameters in most loaded shard in billions: 14.0214
+Number of parameters in other shards in billions: 13.0947
+Theoretical memory footprints: weight and optimizer=120346.30 MB
+ [2025-03-24 18:49:41] iteration        1/      10 | consumed samples:            8 | elapsed time per iteration (ms): 12445.0 | learning rate: 9.757730E-06 | global batch size:     8 | lm loss: 13.4216022491455078 | loss scale: 1.0 | grad norm: 11.1814639468165140 | num zeros: 0.0 | number of skipped iterations:   0 | number of nan iterations:   0 |
+ [2025-03-24 18:49:44] iteration        2/      10 | consumed samples:           16 | elapsed time per iteration (ms): 3072.9 | learning rate: 9.054634E-06 | global batch size:     8 | lm loss: 13.4041652679443359 | loss scale: 1.0 | grad norm: 10.5262057848251906 | num zeros: 0.0 | number of skipped iterations:   0 | number of nan iterations:   0 |
+ [2025-03-20 14:27:50] iteration        3/      10 | consumed samples:          128 | elapsed time per iteration (ms): 18062.4 | throughput per GPU (TFLOP/s/GPU): 379.4 | learning rate: 1.235606E-06 | global batch size:   128 | lm loss: 9.7951211929321289 | loss scale: 1.0 | grad norm: 20.1497642787274636 | number of skipped iterations:   0 | number of nan iterations:   0 |
+ [2025-03-20 14:27:54] iteration        4/      10 | consumed samples:          256 | elapsed time per iteration (ms): 4235.8 | throughput per GPU (TFLOP/s/GPU): 1617.9 | learning rate: 1.166872E-06 | global batch size:   128 | lm loss: 9.7579383850097656 | loss scale: 1.0 | grad norm: 23.7711511490950933 | number of skipped iterations:   0 | number of nan iterations:   0 |
+ [2025-03-20 14:27:50] iteration        5/      10 | consumed samples:          128 | elapsed time per iteration (ms): 18062.4 | throughput per GPU (TFLOP/s/GPU): 379.4 | learning rate: 1.235606E-06 | global batch size:   128 | lm loss: 9.7951211929321289 | loss scale: 1.0 | grad norm: 20.1497642787274636 | number of skipped iterations:   0 | number of nan iterations:   0 |
+[after training is done] datetime: 2025-03-24 18:50:08

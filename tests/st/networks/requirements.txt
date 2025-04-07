@@ -7,3 +7,32 @@ pandas              # for st test
 imagesize           # for st test
 toolz               # for st test
 tqdm                # for st test
+Deprecated>=1.2.0
+setuptools
+sentencepiece>=0.2.0
+ftfy>=6.1.1
+regex>=2022.10.31
+pyyaml>=6.0
+jieba>=0.42.1
+rouge_chinese>=1.0.3
+nltk>=2.0
+mindpet==1.0.4
+opencv-python-headless
+pyarrow==19.0.0
+tokenizers==0.21.0
+astunparse>=1.6.3
+numpy<2.0.0
+datasets==2.18.0
+tiktoken
+jinja2
+setproctitle
+safetensors
+tensorboardX
+jsonlines
+word2number
+tensordict        # for st test
+hydra-core        # for st test
+codetiming        # for st test
+ray==2.10.0        # for st test
+latex2sympy2        # for st test
+tokenizers>=0.21,<0.22        # for st test
