@@ -1,4 +1,4 @@
-# Copyright 2021-2024 Huawei Technologies Co., Ltd
+# Copyright 2021-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -137,42 +137,60 @@ def run_twice_with_same_network(file_name, cache_path, log_file_name_first, log_
 
 
 def run_compile_cache_mp(file_name, cache_path, log_file_name_first, log_file_name_second):
+    exec_path = os.path.dirname(os.path.realpath(__file__))
+    file_name = os.path.join(exec_path, file_name)
+    temp_dir = os.path.join(exec_path, "test_run_compile_cache_mp")
+    cache_path = os.path.join(temp_dir, cache_path)
+    log_file_name_first = os.path.join(temp_dir, log_file_name_first)
+    log_file_name_second = os.path.join(temp_dir, log_file_name_second)
+
     # Clear compile cache folder and log files
-    if os.path.exists(cache_path):
-        shutil.rmtree(cache_path)
+    if os.path.exists(temp_dir):
+        shutil.rmtree(temp_dir)
+    os.makedirs(temp_dir, exist_ok=True)
     assert not os.path.exists(cache_path)
 
     # First run without compile cache
-    cmd = "bash run_compile_cache_mp.sh {} {} {} {}".format(file_name, cache_path, log_file_name_first,
-                                                            utils.rank_table_path)
+    bash_file = os.path.join(exec_path, "run_compile_cache_mp.sh")
+    cmd = "bash {} {} {} {}".format(bash_file, file_name, cache_path, log_file_name_first)
     os.system(cmd)
     check_cmd = "ps -ef | grep python | grep run_compile_cache_mp.py | grep -v grep"
+
     # wait for net train finish
     ret = utils.process_check(150, check_cmd)
     print("check first train.", flush=True)
     assert ret
     print("check cache file.", flush=True)
     assert os.path.exists(cache_path)
-    log_fullname = 'worker_0.log'
+
+    # First run log file
+    from mindspore.communication.management import get_rank
+    first_cur_rank_log = os.path.join(log_file_name_first, f'worker_{get_rank()}.log')
     print("check first log.", flush=True)
-    assert os.path.exists(log_fullname)
-    with open(log_fullname, "r") as f_first:
+    assert os.path.exists(first_cur_rank_log)
+    with open(first_cur_rank_log, "r") as f_first:
         data_first = f_first.read()
     print("check first compile result.", flush=True)
     assert "Check the consistency of dependency files hash failed. Execute all the compilation actions." in data_first
-    for i in range(8):
-        os.remove(f'worker_{i}.log')
-    cmd = "bash run_compile_cache_mp.sh {} {} {} {}".format(file_name, cache_path, log_file_name_second,
-                                                            utils.rank_table_path)
+
+    # check param status
+    no_init = "Before train, the param is inited in parallel_mode, it is False." in data_first
+    is_init = "After train, the param is inited in parallel_mode, it is True." in data_first
+    assert no_init
+    assert is_init
+
+    # Second run
+    cmd = "bash {} {} {} {}".format(bash_file, file_name, cache_path, log_file_name_second)
     os.system(cmd)
     ret = utils.process_check(150, check_cmd)
     print("check second train.", flush=True)
     assert ret
 
-    log_fullname = 'worker_0.log'
+    # Second run log file
+    second_cur_rank_log = os.path.join(log_file_name_second, f'worker_{get_rank()}.log')
     print("check second log.", flush=True)
-    assert os.path.exists(log_fullname)
-    with open(log_fullname, "r") as f_second:
+    assert os.path.exists(second_cur_rank_log)
+    with open(second_cur_rank_log, "r") as f_second:
         data_second = f_second.read()
 
     has_log = "Use the compilation cache and execute the backend actions only. Be aware of correctness risks." in \
@@ -183,9 +201,7 @@ def run_compile_cache_mp(file_name, cache_path, log_file_name_first, log_file_na
     assert has_log
 
     # Clean files
-    shutil.rmtree(cache_path)
-    for i in range(8):
-        os.remove(f'worker_{i}.log')
+    shutil.rmtree(temp_dir)
 
 
 def run_twice_with_different_networks(file_name_first, file_name_second, cache_path, log_file_name_first,
@@ -472,8 +488,8 @@ def test_compile_cache_pipeline_parallel_and_recompute():
     Description: Test whether pipeline parallel and recompute can successfullty with compile cache.
     Expectation: success.
     """
-    run_compile_cache_mp("run_compile_cache_mp.py", "./pp_recompute", "pp_recompute_first",
-                         "pp_recompute_second")
+    run_compile_cache_mp("run_compile_cache_mp.py::test_compile_cache_in_parallel_mode", "./pp_recompute", \
+                         "pp_recompute_first", "pp_recompute_second")
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
