@@ -1158,6 +1158,7 @@ class CustomOpBuilder:
         self.include_paths = include_paths
         self.cflags = cflags
         self.ldflags = ldflags
+        self.build_dir = kwargs.get("build_dir")
         if CustomOpBuilder._mindspore_path is None:
             CustomOpBuilder._mindspore_path = os.path.dirname(os.path.abspath(ms.__file__))
             CustomOpBuilder._ms_code_base = os.path.join(CustomOpBuilder._mindspore_path, "include")
@@ -1251,7 +1252,7 @@ class CustomOpBuilder:
         Returns:
             str, The path to the compiled module.
         """
-        return ExtensionBuilder().build(
+        return ExtensionBuilder(self._get_build_directory()).build(
             module_name=self.name,
             sources=self.get_sources(),
             extra_include_paths=self.get_include_paths(),
@@ -1278,3 +1279,15 @@ class CustomOpBuilder:
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         return module
+
+    def _get_build_directory(self):
+        """Get build directory."""
+        if self.build_dir is None:
+            build_root = os.path.realpath(os.getenv('MS_COMPILER_CACHE_PATH', "./kernel_meta"))
+            self.build_dir = os.path.join(build_root, self.name)
+        else:
+            self.build_dir = os.path.realpath(self.build_dir)
+        logger.info(f'Build {self.name} in directory {self.build_dir}')
+        if not os.path.exists(self.build_dir):
+            os.makedirs(self.build_dir, exist_ok=True)
+        return self.build_dir
