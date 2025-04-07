@@ -31,13 +31,11 @@ function_stream_status = {'record_event': False, 'wait_event': False, 'wait_stre
 
 class Stream(Stream_):
     r"""
-    Wrapper around a device stream.
+    Wrapper around a device stream, this api will be deprecated and removed in future versions, please use
+    the api :class:`mindspore.runtime.Stream` instead.
 
     A device stream is a linear sequence of execution that belongs to a specific device,
     independent from other streams.
-
-    Note:
-        - The api will be deprecated, please use the api :class:`mindspore.runtime.Stream`.
 
     Args:
         priority (int, optional): priority of the stream, lower numbers represent higher priorities.
@@ -60,7 +58,7 @@ class Stream(Stream_):
 
     def record_event(self, event=None):
         r"""
-        Records an event.
+        Record an event.
 
         Args:
             event (Event, optional): event to record. If not given, a new one
@@ -69,21 +67,16 @@ class Stream(Stream_):
         Returns:
             Event, recorded event. If this argument is ``None``, a new one will be allocated. Default is ``None``.
 
-        Raises:
-            TypeError: If 'event' is neither a :class:`mindspore.hal.Event` nor a ``None``.
-
         Examples:
-            >>> import mindspore as ms
-            >>> import numpy as np
-            >>> from mindspore import Tensor, ops
-            >>> a = Tensor(np.ones([3, 3]), ms.float32)
-            >>> b = Tensor(np.ones([3, 3]), ms.float32)
-            >>> s1 = ms.hal.Stream()
-            >>> with ms.hal.StreamCtx(s1):
+            >>> import mindspore
+            >>> a = mindspore.tensor(mindspore.ops.ones([3, 3]), mindspore.float32)
+            >>> b = mindspore.tensor(mindspore.ops.ones([3, 3]), mindspore.float32)
+            >>> s1 = mindspore.hal.Stream()
+            >>> with mindspore.hal.StreamCtx(s1):
             ...     c = a + b
             ...     event = s1.record_event()
             ...     d = a * b
-            >>> cur_stream = ms.hal.current_stream()
+            >>> cur_stream = mindspore.hal.current_stream()
             >>> cur_stream.wait_event(event)
             >>> e = c + 3
             >>> print(e)
@@ -107,26 +100,21 @@ class Stream(Stream_):
 
     def wait_event(self, event):
         r"""
-        Makes all future work submitted to the stream wait for an event.
+        Make all future work submitted to the stream wait for an event.
 
         Args:
             event (Event): an event to wait for.
 
-        Raises:
-            TypeError: If 'event' is not a :class:`mindspore.hal.Event`.
-
         Examples:
-            >>> import mindspore as ms
-            >>> import numpy as np
-            >>> from mindspore import Tensor, ops
-            >>> a = Tensor(np.ones([3, 3]), ms.float32)
-            >>> b = Tensor(np.ones([3, 3]), ms.float32)
-            >>> s1 = ms.hal.Stream()
-            >>> with ms.hal.StreamCtx(s1):
+            >>> import mindspore
+            >>> a = mindspore.tensor(mindspore.ops.ones([3, 3]), mindspore.float32)
+            >>> b = mindspore.tensor(mindspore.ops.ones([3, 3]), mindspore.float32)
+            >>> s1 = mindspore.hal.Stream()
+            >>> with mindspore.hal.StreamCtx(s1):
             ...     c = a + b
             ...     event = s1.record_event()
             ...     d = a * b
-            >>> cur_stream = ms.hal.current_stream()
+            >>> cur_stream = mindspore.hal.current_stream()
             >>> cur_stream.wait_event(event)
             >>> e = c + 3
             >>> print(e)
@@ -147,7 +135,7 @@ class Stream(Stream_):
 
     def wait_stream(self, stream):
         r"""
-        Synchronizes with another stream.
+        Synchronize with another stream.
 
         All future work submitted to this stream will wait until all kernels
         submitted to a given stream at the time of call complete.
@@ -155,23 +143,18 @@ class Stream(Stream_):
         Args:
             stream (Stream): a stream to synchronize.
 
-        Raises:
-            TypeError: If 'stream' is not a :class:`mindspore.hal.Stream`.
-
         Examples:
-            >>> import mindspore as ms
-            >>> import numpy as np
-            >>> from mindspore import Tensor, ops
-            >>> s1 = ms.hal.Stream()
-            >>> s2 = ms.hal.Stream()
-            >>> a = Tensor(np.ones([1, 2]), ms.float32)
-            >>> b = Tensor(np.ones([2, 2]), ms.float32)
-            >>> with ms.hal.StreamCtx(s1):
-            ...     c = ops.matmul(a, b)
-            >>> with ms.hal.StreamCtx(s2):
+            >>> import mindspore
+            >>> s1 = mindspore.hal.Stream()
+            >>> s2 = mindspore.hal.Stream()
+            >>> a = mindspore.tensor(mindspore.ops.ones([1, 2]), mindspore.float32)
+            >>> b = mindspore.tensor(mindspore.ops.ones([2, 2]), mindspore.float32)
+            >>> with mindspore.hal.StreamCtx(s1):
+            ...     c = mindspore.ops.matmul(a, b)
+            >>> with mindspore.hal.StreamCtx(s2):
             ...     s2.wait_stream(s1)
-            ...     d = ops.matmul(c, b)
-            >>> ms.hal.synchronize()
+            ...     d = mindspore.ops.matmul(c, b)
+            >>> mindspore.hal.synchronize()
             >>> print(d)
             [[4. 4.]]
         """
@@ -191,14 +174,12 @@ class Stream(Stream_):
         Wait for all the kernels in this stream to complete.
 
         Examples:
-            >>> import mindspore as ms
-            >>> import numpy as np
-            >>> from mindspore import Tensor, ops
-            >>> a = Tensor(np.ones([1024, 2048]), ms.float32)
-            >>> b = Tensor(np.ones([2048, 4096]), ms.float32)
-            >>> s1 = ms.hal.Stream()
-            >>> with ms.hal.StreamCtx(s1):
-            ...     c = ops.matmul(a, b)
+            >>> import mindspore
+            >>> a = mindspore.tensor(mindspore.ops.ones([1024, 2048]), mindspore.float32)
+            >>> b = mindspore.tensor(mindspore.ops.ones([2048, 4096]), mindspore.float32)
+            >>> s1 = mindspore.hal.Stream()
+            >>> with mindspore.hal.StreamCtx(s1):
+            ...     c = mindspore.ops.matmul(a, b)
             >>> s1.synchronize()
             >>> assert s1.query()
         """
@@ -207,20 +188,18 @@ class Stream(Stream_):
 
     def query(self):
         r"""
-        Checks if all the work submitted has been completed.
+        Check if all the work submitted has been completed.
 
         Returns:
             A boolean indicating if all kernels in this stream are completed.
 
         Examples:
-            >>> import mindspore as ms
-            >>> import numpy as np
-            >>> from mindspore import Tensor, ops
-            >>> a = Tensor(np.ones([1024, 2048]), ms.float32)
-            >>> b = Tensor(np.ones([2048, 4096]), ms.float32)
-            >>> s1 = ms.hal.Stream()
-            >>> with ms.hal.StreamCtx(s1):
-            ...     c = ops.matmul(a, b)
+            >>> import mindspore
+            >>> a = mindspore.tensor(mindspore.ops.ones([1024, 2048]), mindspore.float32)
+            >>> b = mindspore.tensor(mindspore.ops.ones([2048, 4096]), mindspore.float32)
+            >>> s1 = mindspore.hal.Stream()
+            >>> with mindspore.hal.StreamCtx(s1):
+            ...     c = mindspore.ops.matmul(a, b)
             >>> s1.synchronize()
             >>> assert s1.query()
         """
@@ -250,21 +229,17 @@ class Stream(Stream_):
 
 def synchronize():
     r"""
-    Synchronize all streams on current device.(Each MindSpore process only occupies one device)
-
-    Note:
-        - The api will be deprecated, please use the api :func:`mindspore.runtime.synchronize` instead.
+    Synchronize all streams on current device, this api will be deprecated and removed in future versions, please use
+    the api :func:`mindspore.runtime.synchronize` instead.
 
     Examples:
-        >>> import mindspore as ms
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> a = Tensor(np.ones([1024, 2048]), ms.float32)
-        >>> b = Tensor(np.ones([2048, 4096]), ms.float32)
-        >>> s1 = ms.hal.Stream()
-        >>> with ms.hal.StreamCtx(s1):
-        ...     c = ops.matmul(a, b)
-        >>> ms.hal.synchronize()
+        >>> import mindspore
+        >>> a = mindspore.tensor(mindspore.ops.ones([1024, 2048]), mindspore.float32)
+        >>> b = mindspore.tensor(mindspore.ops.ones([2048, 4096]), mindspore.float32)
+        >>> s1 = mindspore.hal.Stream()
+        >>> with mindspore.hal.StreamCtx(s1):
+        ...     c = mindspore.ops.matmul(a, b)
+        >>> mindspore.hal.synchronize()
         >>> assert s1.query()
     """
     if not function_stream_status['synchronize']:
@@ -278,27 +253,21 @@ def synchronize():
 
 def set_cur_stream(stream):
     r"""
-    Sets the current stream. This is a wrapper API to set the stream.
-    It is recommended to use the `StreamCtx` context manager, instead of using this function directly.
-
-    Note:
-        - The api will be deprecated, please use the api :func:`mindspore.runtime.set_cur_stream` instead.
+    Set the current stream, this api will be deprecated and removed in future versions, please use
+    the api :func:`mindspore.runtime.set_cur_stream` instead.
 
     Args:
         stream (Stream): selected stream. This function is a no-op
             if this argument is ``None``.
 
-    Raises:
-        TypeError: If 'stream' is neither a :class:`mindspore.hal.Stream` nor a ``None``.
-
     Examples:
-        >>> import mindspore as ms
-        >>> cur_stream = ms.hal.current_stream()
-        >>> assert cur_stream == ms.hal.default_stream()
-        >>> s1 = ms.hal.Stream()
-        >>> ms.hal.set_cur_stream(s1)
-        >>> assert ms.hal.current_stream() == s1
-        >>> ms.hal.set_cur_stream(ms.hal.default_stream())
+        >>> import mindspore
+        >>> cur_stream = mindspore.hal.current_stream()
+        >>> assert cur_stream == mindspore.hal.default_stream()
+        >>> s1 = mindspore.hal.Stream()
+        >>> mindspore.hal.set_cur_stream(s1)
+        >>> assert mindspore.hal.current_stream() == s1
+        >>> mindspore.hal.set_cur_stream(mindspore.hal.default_stream())
     """
     if not function_stream_status['set_cur_stream']:
         function_stream_status['set_cur_stream'] = True
@@ -316,18 +285,16 @@ def set_cur_stream(stream):
 
 def current_stream():
     r"""
-    Return current stream used on this device.
-
-    Note:
-        - The api will be deprecated, please use the api :func:`mindspore.runtime.current_stream` instead.
+    Return current stream used on this device, this api will be deprecated and removed in future versions, please use
+    the api :func:`mindspore.runtime.current_stream` instead.
 
     Returns:
         stream (Stream), current stream.
 
     Examples:
-        >>> import mindspore as ms
-        >>> cur_stream = ms.hal.current_stream()
-        >>> assert cur_stream == ms.hal.default_stream()
+        >>> import mindspore
+        >>> cur_stream = mindspore.hal.current_stream()
+        >>> assert cur_stream == mindspore.hal.default_stream()
     """
     if not function_stream_status['current_stream']:
         function_stream_status['current_stream'] = True
@@ -340,18 +307,16 @@ def current_stream():
 
 def default_stream():
     r"""
-    Return default stream on this device.
-
-    Note:
-        - The api will be deprecated, please use the api :func:`mindspore.runtime.default_stream` instead.
+    Return default stream on this device, this api will be deprecated and removed in future versions, please use
+    the api :func:`mindspore.runtime.default_stream` instead.
 
     Returns:
         stream (Stream), default stream.
 
     Examples:
-        >>> import mindspore as ms
-        >>> cur_stream = ms.hal.current_stream()
-        >>> assert cur_stream == ms.hal.default_stream()
+        >>> import mindspore
+        >>> cur_stream = mindspore.hal.current_stream()
+        >>> assert cur_stream == mindspore.hal.default_stream()
     """
     if not function_stream_status['default_stream']:
         function_stream_status['default_stream'] = True
@@ -364,17 +329,15 @@ def default_stream():
 
 def communication_stream():
     r"""
-    Return communication stream on this device.
-
-    Note:
-        - The api will be deprecated, please use the api :func:`mindspore.runtime.communication_stream` instead.
+    Return communication stream on this device, this api will be deprecated and removed in future versions, please use
+    the api :func:`mindspore.runtime.communication_stream` instead.
 
     Returns:
         stream (Stream), communication stream.
 
     Examples:
-        >>> import mindspore as ms
-        >>> ms.hal.communication_stream()
+        >>> import mindspore
+        >>> mindspore.hal.communication_stream()
         Stream(device_name=Ascend, device_id:0, stream id:1)
     """
     if not function_stream_status['communication_stream']:
@@ -388,10 +351,8 @@ def communication_stream():
 
 class StreamCtx():
     r"""
-    Context-manager that selects a given stream.
-
-    Note:
-        - The api will be deprecated, please use the api :class:`mindspore.runtime.StreamCtx`.
+    Context-manager that selects a given stream, this api will be deprecated and removed in future versions, please use
+    the api :class:`mindspore.runtime.StreamCtx`instead.
 
     All kernels queued within its context will be enqueued on a selected
     stream.
@@ -399,19 +360,14 @@ class StreamCtx():
     Args:
         ctx_stream (Stream): selected stream. This manager is a no-op if it's ``None``.
 
-    Raises:
-        TypeError: If 'stream' is neither a :class:`mindspore.hal.Stream` nor a ``None``.
-
     Examples:
-        >>> import mindspore as ms
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> a = Tensor(np.ones([1024, 2048]), ms.float32)
-        >>> b = Tensor(np.ones([2048, 4096]), ms.float32)
-        >>> s1 = ms.hal.Stream()
-        >>> with ms.hal.StreamCtx(s1):
-        ...     c = ops.matmul(a, b)
-        >>> ms.hal.synchronize()
+        >>> import mindspore
+        >>> a = mindspore.tensor(mindspore.ops.ones([1024, 2048]), mindspore.float32)
+        >>> b = mindspore.tensor(mindspore.ops.ones([2048, 4096]), mindspore.float32)
+        >>> s1 = mindspore.hal.Stream()
+        >>> with mindspore.hal.StreamCtx(s1):
+        ...     c = mindspore.ops.matmul(a, b)
+        >>> mindspore.hal.synchronize()
         >>> assert s1.query()
     """
 
