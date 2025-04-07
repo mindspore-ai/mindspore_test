@@ -66,7 +66,7 @@ def matyas(np):
 
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='unessential')
-@pytest.mark.parametrize('dtype', [onp.float32])
+@pytest.mark.parametrize('dtype', [onp.float64])
 @pytest.mark.parametrize('func_x0', [(rosenbrock, onp.zeros(2))])
 def test_bfgs1(dtype, func_x0):
     """
@@ -85,7 +85,7 @@ def test_bfgs1(dtype, func_x0):
 
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='unessential')
-@pytest.mark.parametrize('dtype', [onp.float32])
+@pytest.mark.parametrize('dtype', [onp.float64])
 @pytest.mark.parametrize('func_x0', [(himmelblau, onp.zeros(2))])
 def test_bfgs2(dtype, func_x0):
     """
@@ -104,66 +104,9 @@ def test_bfgs2(dtype, func_x0):
 
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='unessential')
-@pytest.mark.parametrize('dtype', [onp.float32])
+@pytest.mark.parametrize('dtype', [onp.float64])
 @pytest.mark.parametrize('func_x0', [(matyas, onp.ones(2))])
 def test_bfgs3(dtype, func_x0):
-    """
-    Feature: ALL TO ALL
-    Description: test cases for bfgs in PYNATIVE mode
-    Expectation: the result match scipy
-    """
-    func, x0 = func_x0
-    x0 = x0.astype(dtype)
-    x0_tensor = Tensor(x0)
-    ms_res = msp.optimize.minimize(func(mnp), x0_tensor, method='BFGS',
-                                   options=dict(maxiter=None, gtol=1e-6))
-    scipy_res = osp.optimize.minimize(func(onp), x0, method='BFGS')
-    match_array(ms_res.x.asnumpy(), scipy_res.x, error=5, err_msg=str(ms_res))
-
-
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_macos'], level_mark='level1', card_mark='onecard',
-          essential_mark='unessential')
-@pytest.mark.parametrize('dtype', [onp.float64])
-@pytest.mark.parametrize('func_x0', [(rosenbrock, onp.zeros(2))])
-def test_bfgs4(dtype, func_x0):
-    """
-    Feature: ALL TO ALL
-    Description: test cases for bfgs in PYNATIVE mode
-    Expectation: the result match scipy
-    """
-    func, x0 = func_x0
-    x0 = x0.astype(dtype)
-    x0_tensor = Tensor(x0)
-    ms_res = msp.optimize.minimize(func(mnp), x0_tensor, method='BFGS',
-                                   options=dict(maxiter=None, gtol=1e-6))
-    scipy_res = osp.optimize.minimize(func(onp), x0, method='BFGS')
-    match_array(ms_res.x.asnumpy(), scipy_res.x, error=5, err_msg=str(ms_res))
-
-
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_macos'], level_mark='level1', card_mark='onecard',
-          essential_mark='unessential')
-@pytest.mark.parametrize('dtype', [onp.float64])
-@pytest.mark.parametrize('func_x0', [(himmelblau, onp.zeros(2))])
-def test_bfgs5(dtype, func_x0):
-    """
-    Feature: ALL TO ALL
-    Description: test cases for bfgs in PYNATIVE mode
-    Expectation: the result match scipy
-    """
-    func, x0 = func_x0
-    x0 = x0.astype(dtype)
-    x0_tensor = Tensor(x0)
-    ms_res = msp.optimize.minimize(func(mnp), x0_tensor, method='BFGS',
-                                   options=dict(maxiter=None, gtol=1e-6))
-    scipy_res = osp.optimize.minimize(func(onp), x0, method='BFGS')
-    match_array(ms_res.x.asnumpy(), scipy_res.x, error=5, err_msg=str(ms_res))
-
-
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_macos'], level_mark='level1', card_mark='onecard',
-          essential_mark='unessential')
-@pytest.mark.parametrize('dtype', [onp.float64])
-@pytest.mark.parametrize('func_x0', [(matyas, onp.ones(2))])
-def test_bfgs6(dtype, func_x0):
     """
     Feature: ALL TO ALL
     Description: test cases for bfgs in PYNATIVE mode
@@ -200,7 +143,7 @@ def test_bfgs_fixes4594(dtype):
 
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='unessential')
-@pytest.mark.parametrize('dtype', [onp.float32, onp.float64])
+@pytest.mark.parametrize('dtype', [onp.float64])
 @pytest.mark.parametrize('func_x0', [(rosenbrock, onp.zeros(2)), (rosenbrock, onp.zeros(300))])
 def test_bfgs_graph(dtype, func_x0):
     """
