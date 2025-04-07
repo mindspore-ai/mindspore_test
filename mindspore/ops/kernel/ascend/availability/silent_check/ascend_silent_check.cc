@@ -22,6 +22,7 @@
 #include <cstdint>
 #include <cmath>
 #include <ios>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <vector>
@@ -205,13 +206,12 @@ bool IsCheckTypeSupported(const BaseTensorPtr &input_tensor) {
 bool DynamicSilentChecker::IsNpuAsdEnable() { return IsAsdEnable(); }
 
 CheckObject::CheckObject() {
+  norm_op_ = CREATE_PYBOOST_OP(Norm, kAscendDevice);
   if (HasApiSilentCheckV3()) {
     square_op_ = CREATE_PYBOOST_OP(Square, kAscendDevice);
-    max_op_ = CREATE_PYBOOST_OP(Max, kAscendDevice);
     inplace_copy_op_ = CREATE_PYBOOST_OP(InplaceCopy, kAscendDevice);
     silent_check_v3_op_ = CREATE_PYBOOST_OP(SilentCheckV3, kAscendDevice);
   } else {
-    norm_op_ = CREATE_PYBOOST_OP(Norm, kAscendDevice);
     silent_check_op_ = CREATE_PYBOOST_OP(SilentCheckV2, kAscendDevice);
   }
 }
@@ -230,8 +230,8 @@ void CheckObject::DoSilentCheckV2(const BaseTensorPtr &input_grad, const Dynamic
 }
 
 void CheckObject::DoSilentCheckV3(const BaseTensorPtr &input_grad, const DynamicCheckStatePtr &state) {
-  LaunchSquare(input_grad);
-  LaunchMax();
+  LaunchNorm(input_grad, false);
+  LaunchSquare();
   if (state->is_first_call) {
     state->is_first_call = false;
     LaunchInplaceCopy(state);
@@ -239,11 +239,11 @@ void CheckObject::DoSilentCheckV3(const BaseTensorPtr &input_grad, const Dynamic
   LaunchSilentCheckV3(input_grad, state);
 }
 
-void CheckObject::LaunchNorm(const BaseTensorPtr &input_grad) {
+void CheckObject::LaunchNorm(const BaseTensorPtr &input_grad, bool is_l2_norm) {
   auto &op = norm_op_;
   MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Call " << op->primitive()->name() << " start";
 
-  auto p = std::make_shared<FP32Imm>(2.0);
+  auto p = std::make_shared<FP32Imm>(is_l2_norm ? 2.0 : std::numeric_limits<float>::infinity());
   auto dim = std::make_shared<ValueTuple>(std::vector<ValuePtr>{});
   auto keepdim = std::make_shared<BoolImm>(false);
   auto dtype = std::make_shared<Int64Imm>(input_grad->Dtype()->type_id());
@@ -314,10 +314,10 @@ void CheckObject::LaunchSilentCheckV3(const BaseTensorPtr &input_grad, const Dyn
   auto &op = silent_check_v3_op_;
   MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Call " << op->primitive()->name() << " start";
 
-  max_op_->outputs()[0]->set_shape(ShapeVector{1});
+  square_op_->outputs()[0]->set_shape(ShapeVector{1});
 
-  auto val = max_op_->outputs()[0];
-  auto max = max_op_->outputs()[0];
+  auto val = square_op_->outputs()[0];
+  auto max = square_op_->outputs()[0];
   auto avg = state->avg;
   auto step = state->step;
   auto upper_thresh = parse_thresh(kVarNpuAsdUpperThresh, kSigmaThreshDefaultVal, kThreshMinimalVal);
@@ -350,9 +350,11 @@ void CheckObject::LaunchSilentCheckV3(const BaseTensorPtr &input_grad, const Dyn
   MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Call " << op->primitive()->name() << " end";
 }
 
-void CheckObject::LaunchSquare(const BaseTensorPtr &x_tensor) {
+void CheckObject::LaunchSquare() {
   auto &op = square_op_;
   MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Call " << op->primitive()->name() << " start";
+
+  auto &x_tensor = norm_op_->outputs()[kIndex0];
 
   OpRunner::InferOpOutput(op, x_tensor);
   // No need to convert input
@@ -371,34 +373,11 @@ void CheckObject::LaunchSquare(const BaseTensorPtr &x_tensor) {
   MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Call " << op->primitive()->name() << " end";
 }
 
-void CheckObject::LaunchMax() {
-  auto &op = max_op_;
-  MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Call " << op->primitive()->name() << " start";
-
-  auto &input_tensor = square_op_->outputs()[kIndex0];
-
-  OpRunner::InferOpOutput(op, input_tensor);
-
-  PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor);
-  PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
-
-  auto device_context = op->device_context();
-  const auto &outputs = op->outputs();
-  // Malloc for input tensors
-  PyBoostUtils::MallocOpInputs(device_context, input_tensor);
-  // Malloc for output tensors
-  PyBoostUtils::MallocOpOutputs(device_context, outputs);
-
-  LAUNCH_ACLNN(aclnnMax, device_context, op->stream_id(), input_tensor, outputs[0]);
-
-  MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Call " << op->primitive()->name() << " end";
-}
-
 void CheckObject::LaunchInplaceCopy(const DynamicCheckStatePtr &state) {
   auto &op = inplace_copy_op_;
   MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Call " << op->primitive()->name() << " start";
 
-  auto &src_tensor = max_op_->outputs()[kIndex0];
+  auto &src_tensor = square_op_->outputs()[kIndex0];
 
   OpRunner::InferOpOutput(op, state->avg, src_tensor);
 

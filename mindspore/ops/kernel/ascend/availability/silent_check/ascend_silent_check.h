@@ -65,22 +65,22 @@ class CheckObject {
   void DoSilentCheckV2(const BaseTensorPtr &input_grad, const DynamicCheckStatePtr &state);
   void DoSilentCheckV3(const BaseTensorPtr &input_grad, const DynamicCheckStatePtr &state);
 
-  void LaunchNorm(const BaseTensorPtr &input_grad);
+  void LaunchNorm(const BaseTensorPtr &input_grad, bool is_l2_norm = true);
   void LaunchSilentCheckV2(const BaseTensorPtr &input_grad, const DynamicCheckStatePtr &state);
 
-  void LaunchSquare(const BaseTensorPtr &input_grad);
-  void LaunchMax();
+  void LaunchSquare();
   void LaunchInplaceCopy(const DynamicCheckStatePtr &state);
   void LaunchSilentCheckV3(const BaseTensorPtr &input_grad, const DynamicCheckStatePtr &state);
 
  private:
-  // operators for aclnnSilentCheck
+  // operators for both aclnnSilentCheck and aclnnSilentCheckV2
   std::shared_ptr<OpRunner> norm_op_ = nullptr;
+
+  // operators for aclnnSilentCheck
   std::shared_ptr<OpRunner> silent_check_op_ = nullptr;
 
   // operators for aclnnSilentCheckV2
   std::shared_ptr<OpRunner> square_op_ = nullptr;
-  std::shared_ptr<OpRunner> max_op_ = nullptr;
   std::shared_ptr<OpRunner> silent_check_v3_op_ = nullptr;
   // operators only used for aclnnSilentCheckV2 first time call
   std::shared_ptr<OpRunner> inplace_copy_op_ = nullptr;
