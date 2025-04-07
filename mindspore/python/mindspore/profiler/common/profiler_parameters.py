@@ -117,8 +117,6 @@ class ProfilerParameters:
         for param, (_, default_value) in self.PARAMS.items():
             if param == "schedule" and kwargs.get(param) is None:
                 kwargs["schedule"] = Schedule(wait=0, active=1)
-            if param == "on_trace_ready" and kwargs.get(param) is None:
-                kwargs["on_trace_ready"] = lambda *args, **kwargs: None #pylint: disable=lambda-assign
             setattr(self, param, kwargs.get(param) if kwargs.get(param) is not None else default_value)
 
     def _check_params_type(self) -> None:
@@ -132,7 +130,7 @@ class ProfilerParameters:
 
                 # Callable特殊处理
                 if key == "on_trace_ready":
-                    if not callable(value):
+                    if value is not None and not callable(value):
                         setattr(self, key, default_value)
                         logger.warning(
                             f"For Profiler, on_trace_ready value is Invalid, reset to {default_value}."

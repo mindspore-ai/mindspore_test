@@ -107,21 +107,20 @@ class DynamicProfilerArgs:
             '_data_simplification': (bool, True),
             '_is_valid': (bool, False)
         }
+        def _is_valid_type(value, expected_type):
+            """Helper method for type checking."""
+            if expected_type is int and isinstance(value, bool):
+                return False
+            return isinstance(value, expected_type)
 
         for param, (expected_type, default) in param_rules.items():
             value = getattr(self, param)
-            if not self._is_valid_type(value, expected_type):
+            if not _is_valid_type(value, expected_type):
                 logger.warning(
                     f"{param[1:]} should be {expected_type.__name__} type, "
                     f"will be reset to {default}."
                 )
                 setattr(self, param, default)
-
-    def _is_valid_type(self, value, expected_type):
-        """Helper method for type checking."""
-        if expected_type is int and isinstance(value, bool):
-            return False
-        return isinstance(value, expected_type)
 
     @property
     def start_step(self):
@@ -486,10 +485,8 @@ class DynamicProfilerMonitorBase(Callback):
                              "greater than or equal to 0, and stop step should not be less than start step",
                              self._rank_id, self._start_step, self._stop_step)
 
-        if self._profiler and self._start_step <= self._step_num <= self._stop_step + 1:
+        if self._profiler:
             self._profiler.step()
-        else:
-            self._profiler = None
 
     @no_exception_func()
     def on_train_end(self, run_context):
