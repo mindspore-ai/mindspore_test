@@ -701,6 +701,7 @@ Parameter操作算子
     :template: classtemplate.rst
 
     mindspore.ops.Custom
+    mindspore.ops.CustomOpBuilder
     mindspore.ops.custom_info_register
     mindspore.ops.kernel
 
