@@ -155,7 +155,7 @@ void Remove1b1fCallCall(const KernelGraphPtr &kernel_graph) {
   for (const auto &cnode : execution_order) {
     if (IsPrimitiveCNode(cnode, prim::kPrimDepend) && cnode->HasPrimalAttr(kPrimalAttr1b1fCallCall)) {
       auto depend_input = cnode->input(kIndex1);
-      manager->Replace(cnode, depend_input);
+      (void)manager->Replace(cnode, depend_input);
     }
   }
 }
