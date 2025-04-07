@@ -288,6 +288,7 @@
 "mindspore/tests/st/ops/test_ops_norm.py"                                                               "not-callable"
 "mindspore/tests/st/ops/test_ops_all.py"                                                                "not-callable"
 "mindspore/tests/st/nn/test_mint_conv3d_ext.py"
+"mindspore/tests/st/tensor/test_offload.py"                                                             "protected-access"
 
 #MindSpore Lite
 "mindspore/mindspore/ops/kernel/cpu/nnacl/experimental/HPC-generator/generator.py"                                         "redefined-builtin"
