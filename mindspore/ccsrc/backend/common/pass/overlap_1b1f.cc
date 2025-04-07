@@ -147,9 +147,22 @@ void OverlapAll2All(const KernelGraphPtr &kernel_graph, const CNodeMapMap &forwa
     }
   }
 }
+
+void Remove1b1fCallCall(const KernelGraphPtr &kernel_graph) {
+  auto order_cnodes = kernel_graph->GetOrderedCnodes();
+  CNodePtrList execution_order(order_cnodes.cbegin(), order_cnodes.cend());
+  FuncGraphManagerPtr manager = kernel_graph->manager();
+  for (const auto &cnode : execution_order) {
+    if (IsPrimitiveCNode(cnode, prim::kPrimDepend) && cnode->HasPrimalAttr(kPrimalAttr1b1fCallCall)) {
+      auto depend_input = cnode->input(kIndex1);
+      manager->Replace(cnode, depend_input);
+    }
+  }
+}
 }  // namespace
 
 bool Overlap1b1f::DoOverlap1b1f(const KernelGraphPtr &kernel_graph) {
+  Remove1b1fCallCall(kernel_graph);
   auto order_cnodes = kernel_graph->GetOrderedCnodes();
   CNodePtrList execution_order(order_cnodes.cbegin(), order_cnodes.cend());
   auto manager = kernel_graph->manager();
