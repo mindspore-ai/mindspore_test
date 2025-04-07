@@ -169,7 +169,6 @@ const std::vector<std::pair<KernelAttr, GatherDGradV2CpuKernelMod::KernelRunFunc
     GATHER_D_GRAD_V2_CPU_REGISTER(kNumberTypeComplex128, std::complex<double>),
     GATHER_D_GRAD_V2_CPU_REGISTER(kNumberTypeFloat64, double),
     GATHER_D_GRAD_V2_CPU_REGISTER(kNumberTypeFloat32, float),
-    GATHER_D_GRAD_V2_CPU_REGISTER(kNumberTypeFloat16, float16),
     GATHER_D_GRAD_V2_CPU_REGISTER(kNumberTypeUInt8, uint8_t),
     GATHER_D_GRAD_V2_CPU_REGISTER(kNumberTypeInt8, int8_t),
     GATHER_D_GRAD_V2_CPU_REGISTER(kNumberTypeUInt16, uint16_t),
