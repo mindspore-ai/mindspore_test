@@ -60,6 +60,11 @@ def test_interfaces_used_in_mstt():
     assert (grads[0] - target_grads[0]).abs().sum().item() < 0.001
     assert (grads[1] - target_grads[1]).abs().sum().item() < 0.001
 
+    # check acldumpRegCallback in libmindspore_ascend.so.2
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    command = os.path.join(script_dir, 'check_adump_so.sh')
+    assert os.system(f"bash {command}") == 0
+
     if os.path.isdir('./data'):
         shutil.rmtree('./data')
     os.mkdir('./data')
