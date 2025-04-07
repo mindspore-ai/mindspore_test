@@ -24,4 +24,4 @@ mindspore.ops.ReduceOp
     .. note::
         .. include:: mindspore.ops.comm_note.rst
 
-        该样例需要在多卡环境下运行。
+        该样例为2卡运行示例。
