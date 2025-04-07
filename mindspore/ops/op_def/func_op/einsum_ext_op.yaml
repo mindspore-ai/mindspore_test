@@ -1,0 +1,17 @@
+#operator einsum_ext
+einsum_ext:
+    args:
+        equation:
+            dtype: str
+        operands:
+            dtype: tuple[tensor]
+            type_cast: list[tensor]
+    returns:
+        output:
+            dtype: tensor
+    bprop_expander: False
+    dispatch:
+        enable: True
+        Ascend: EinsumExtAscend
+    function:
+        disable: True

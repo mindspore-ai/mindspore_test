@@ -1744,6 +1744,10 @@ def deprecated_tensor_diag(input):
     return F.diag(input)
 
 
+def deprecated_einsum(equation, operands):
+    raise NotImplementedError('einsum only supports Ascend.')
+
+
 # 916 index_add
 @constexpr
 def _check_index_add_alpha(alpha):

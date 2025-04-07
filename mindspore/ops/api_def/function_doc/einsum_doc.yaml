@@ -1,0 +1,93 @@
+einsum:
+  description: |
+    According to the Einstein summation Convention (Einsum),
+    the product of the input tensor elements is summed along the specified dimension.
+    You can use this operator to perform diagonal, reducesum, transpose, matmul, mul, inner product operations, etc.
+
+    Note:
+        The sublist format is also supported. For example, einsum_ext(op1, sublist1, op2, sublist2, ..., sublist_out).
+        In this format, equation can be derived by the sublists which are made up of Python's Ellipsis and list of
+        integers in [0, 52). Each operand is followed by a sublist and an output sublist is at the end.
+        Dynamic shape, dynamic rank input is not supported in `graph mode (mode=mindspore.GRAPH_MODE)
+        <https://www.mindspore.cn/tutorials/en/master/compile/static_graph.html>`_.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        equation (str): Notation based on the Einstein summation convention, represent the operation you want to do.
+            the value can contain only letters, commas, ellipsis and arrow. The letters(must be in [a-zA-Z]) represent
+            input tensor dimension, commas(,) represent separate tensors, ellipsis indicates the tensor dimension that
+            you do not care about, the left of the arrow indicates the input tensors, and the right of it indicates the
+            desired output dimension. If there are no arrows in the equation, the letters that appear exactly once in
+            the equation will be part of the output, sorted in increasing alphabetical order. The output is computed by
+            multiplying the input operands element-wise, with their dimensions aligned based on the letters, and then
+            summing out the dimensions whose letters are not part of the output. If there is one arrow in the equation,
+            the output letters must appear at least once for some input operand and at most once for the output.
+        operands (Tensor): Input tensor used for calculation. The dtype of the tensor must be the same.
+
+    Returns:
+        Tensor, the shape of it can be obtained from the `equation` , and the dtype is the same as input tensors.
+
+    Raises:
+        TypeError: If `equation` is invalid, or the `equation` does not match the input tensor.
+        ValueError: If the number in sublist is not in [0, 52) in sublist format.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> x = Tensor(np.array([1.0, 2.0, 4.0]), mindspore.float32)
+        >>> equation = "i->"
+        >>> output = ops.einsum_ext(equation, x)
+        >>> print(output)
+        7.0
+        >>> x = Tensor(np.array([1.0, 2.0, 4.0]), mindspore.float32)
+        >>> y = Tensor(np.array([2.0, 4.0, 3.0]), mindspore.float32)
+        >>> equation = "i,i->i"
+        >>> output = ops.einsum_ext(equation, x, y)
+        >>> print(output)
+        [ 2. 8. 12.]
+        >>> x = Tensor(np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]), mindspore.float32)
+        >>> y = Tensor(np.array([[2.0, 3.0], [1.0, 2.0], [4.0, 5.0]]), mindspore.float32)
+        >>> equation = "ij,jk->ik"
+        >>> output = ops.einsum_ext(equation, x, y)
+        >>> print(output)
+        [[16. 22.]
+         [37. 52.]]
+        >>> x = Tensor(np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]), mindspore.float32)
+        >>> equation = "ij->ji"
+        >>> output = ops.einsum_ext(equation, x)
+        >>> print(output)
+        [[1. 4.]
+         [2. 5.]
+         [3. 6.]]
+        >>> x = Tensor(np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]), mindspore.float32)
+        >>> equation = "ij->j"
+        >>> output = ops.einsum_ext(equation, x)
+        >>> print(output)
+        [5. 7. 9.]
+        >>> x = Tensor(np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]), mindspore.float32)
+        >>> equation = "...->"
+        >>> output = ops.einsum_ext(equation, x)
+        >>> print(output)
+        21.0
+        >>> x = Tensor(np.array([1.0, 2.0, 3.0]), mindspore.float32)
+        >>> y = Tensor(np.array([2.0, 4.0, 1.0]), mindspore.float32)
+        >>> equation = "j,i->ji"
+        >>> output = ops.einsum_ext(equation, x, y)
+        >>> print(output)
+        [[ 2. 4. 1.]
+         [ 4. 8. 2.]
+         [ 6. 12. 3.]]
+        >>> x = mindspore.Tensor([1, 2, 3, 4], mindspore.float32)
+        >>> y = mindspore.Tensor([1, 2], mindspore.float32)
+        >>> output = ops.einsum_ext(x, [..., 1], y, [..., 2], [..., 1, 2])
+        >>> print(output)
+        [[1. 2.]
+         [2. 4.]
+         [3. 6.]
+         [4. 8.]]
