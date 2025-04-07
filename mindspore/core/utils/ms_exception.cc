@@ -60,7 +60,7 @@ void UCEException::ProcessApiUceError(const FuncInfo &fn_info, int error_code,
                                       FuncGetRecentErrMsg fn_get_recent_err_msg, UCEError error_type,
                                       bool throw_exception) {
   const std::string &api_func = fn_info.api_msg;
-  if (api_func == "aclrtProcessReport" || api_func == "acltdtReceiveTensor") {
+  if (api_func == "aclrtProcessReport" || api_func == "acltdtReceiveTensor" || api_func == "aclDestroyDataBuffer") {
     MS_LOG(DEBUG) << "Call ascend api <" << api_func << "> in <" << fn_info.caller_func << "> at "
                   << fn_info.caller_file << ":" << fn_info.caller_line << " failed, error code [" << error_code << "].";
   } else {
