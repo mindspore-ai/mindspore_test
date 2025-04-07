@@ -89,7 +89,7 @@ void GraphParameterStore::ResetAddrRefCount(size_t outer_index, size_t inner_ind
         static std::string name = "Parameter store";
         heter_device_tensor->IncreaseNewRefCount(name, user_cnt - 1);
       }
-      device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
+      heter_device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
       MS_LOG(DEBUG) << "Parameter store set new ref count:" << user_cnt - 1
                     << " for device address:" << heter_device_tensor->PrintInfo();
     } else {
