@@ -58,7 +58,7 @@ class ReduceOp:
             <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
-            This example should be run with multiple devices.
+            This example runs with 2 devices.
 
         >>> import numpy as np
         >>> import mindspore
