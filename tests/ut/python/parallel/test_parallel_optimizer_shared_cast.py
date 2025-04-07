@@ -83,7 +83,7 @@ def auto_parallel_compile_net(mode, dev_num, net, strategy1=None, strategy2=None
     if stages > 1:
         net = PipelineCell(net, micro_size=micro_size)
     net = _VirtualDatasetCell(net)
-    parameters = net.trainable_params() if stages == 1 else net.infer_param_pipeline_stage()
+    parameters = net.trainable_params()
     optimizer = Momentum(parameters, learning_rate=0.1, momentum=0.9)
     train_network = TrainOneStepCell(net, optimizer).set_comm_fusion(4)
     train_network.set_train()

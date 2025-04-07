@@ -533,7 +533,7 @@ def run_pipeline_split_function(pipeline_net, micro_batch_interleaved=1):
         net = PipelineCell(MicroBatchInterleaved(pipeline_net, micro_batch_interleaved), 4)
     else:
         net = PipelineCell(pipeline_net, 4)
-    params = net.infer_param_pipeline_stage()
+    params = net.trainable_params()
     dataset = DatasetLenet(data, label, 3)
     optimizer = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optimizer)

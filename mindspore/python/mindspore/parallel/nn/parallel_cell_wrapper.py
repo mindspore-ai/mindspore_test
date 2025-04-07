@@ -130,6 +130,13 @@ class Pipeline(PipelineCell):
         micro_size (int): MicroBatch size.
         stage_config (dict, optional): Stage configuration for cell's execution in pipeline parallel. Default ``None``.
 
+    Raises:
+        TypeError: The type of `net` is not cell.
+        TypeError: If the type of `micro_size` is not int.
+        ValueError: When `micro_size` is 0 or negative value.
+        KeyError: `dict` cell name matching exception,
+            there are remaining configuration items after traversing all `cell` under the current net.
+
     Supported Platforms:
         ``Ascend``
 
@@ -204,6 +211,11 @@ class GradAccumulation(Cell):
     Args:
         network (Cell): The target network to wrap.
         micro_size (int): MicroBatch size.
+
+    Raises:
+        TypeError: The type of `network` is not cell.
+        TypeError: If the type of `micro_size` is not int.
+        ValueError: When `micro_size` is 0 or negative value.
 
     Supported Platforms:
         ``Ascend``

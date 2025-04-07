@@ -682,7 +682,7 @@ def _sync_params(name, param, layout):
                                           shape=param.shape,
                                           dtype=param.dtype)(param))
 
-
+# pylint: disable=W0212
 def sync_pipeline_shared_parameters(net):
     """synchronize pipeline parallel stage shared parameters.
     Parameters may be shared between different stages. For example, `embedding table` is
@@ -714,6 +714,7 @@ def sync_pipeline_shared_parameters(net):
         >>> import mindspore as ms
         >>> import mindspore.communication.management as D
         >>> from mindspore import lazy_inline, context, nn, ops, Parameter, Tensor
+        >>> from mindspore.parallel.auto_parallel import AutoParallel
         >>> context.set_context(mode=context.GRAPH_MODE)
         >>> class Embedding(nn.Cell):
         ...     def __init__(self, shape):
@@ -761,14 +762,16 @@ def sync_pipeline_shared_parameters(net):
         ...         ret = self.concat(ret)
         ...         return ret
         >>> D.init()
-        >>> context.set_auto_parallel_context(parallel_mode='semi_auto_parallel', full_batch=True, pipeline_stages=2)
         >>> net = Network()
         >>> net = PipelineCellInference(net, 2)
         >>> net.set_train(False)
         >>> x = Tensor(np.ones((2, 4)), ms.float32)
         >>> net.compile(x)
-        >>> ms.sync_pipeline_shared_parameters(net)
-        >>> print(net.network.word_embedding.w.asnumpy())
+        >>> pp_net = AutoParallel(net, parallel_mode="semi_auto")
+        >>> pp_net.full_batch = True
+        >>> pp_net.pipeline(stages=2, scheduler="1f1b")
+        >>> ms.sync_pipeline_shared_parameters(pp_net)
+        >>> print(pp_net.network.network.word_embedding.w.asnumpy())
         [[1. 1. 1. 1.]
          [1. 1. 1. 1.]
          [1. 1. 1. 1.]
@@ -781,18 +784,25 @@ def sync_pipeline_shared_parameters(net):
                "but got {}.".format(type(net)))
         raise TypeError(msg)
 
-    if _get_pipeline_stages() < 2:
+    parallel_net = _get_auto_parallel_net(net)
+    pipeline_stages = 1
+    if type(parallel_net).__name__ != 'AutoParallel':
+        pipeline_stages = _get_pipeline_stages()
+    else:
+        pipeline_stages = parallel_net._pipeline_stages
+    if pipeline_stages < 2:
         return
 
     layout_dict = net.parameter_layout_dict
-    if _is_in_auto_parallel_mode() and not layout_dict:
+    if (_is_in_auto_parallel_mode() or (type(parallel_net).__name__ == 'AutoParallel')) and not layout_dict:
         from mindspore.common.api import _get_parameter_layout
         layout_dict = _get_parameter_layout()
 
     # switch to standalone mode
-    parallel_mode = ms.context.get_auto_parallel_context("parallel_mode")
-    full_batch = ms.context.get_auto_parallel_context("full_batch")
-    ms.context.set_auto_parallel_context(parallel_mode="stand_alone", full_batch=False)
+    if type(parallel_net).__name__ != 'AutoParallel':
+        parallel_mode = ms.context.get_auto_parallel_context("parallel_mode")
+        full_batch = ms.context.get_auto_parallel_context("full_batch")
+        ms.context.set_auto_parallel_context(parallel_mode="stand_alone", full_batch=False)
 
     # synchronize shared parameter
     for name, param in net.parameters_and_names():
@@ -800,7 +810,8 @@ def sync_pipeline_shared_parameters(net):
             _sync_params(name, param, layout_dict[name])
 
     # restore parallel context
-    ms.context.set_auto_parallel_context(parallel_mode=parallel_mode, full_batch=full_batch)
+    if type(parallel_net).__name__ != 'AutoParallel':
+        ms.context.set_auto_parallel_context(parallel_mode=parallel_mode, full_batch=full_batch)
 
 
 def load_segmented_checkpoints(ckpt_file_dir, net=None, strict_load=False, filter_prefix=None,
