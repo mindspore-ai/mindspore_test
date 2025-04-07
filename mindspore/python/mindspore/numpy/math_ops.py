@@ -5845,13 +5845,13 @@ def correlate(a, v, mode='valid'):
         >>> from mindspore import Tensor
         >>> output = mnp.correlate(Tensor([1., 2., 3.]), Tensor([0., 1., 0.5]))
         >>> print(output)
-        [3.5]
+        Tensor(shape=[1], dtype=Float32, value= [ 3.50000000e+00])
         >>> output = mnp.correlate(Tensor([1., 2., 3.]), Tensor([0., 1., 0.5]), mode="same")
         >>> print(output)
-        [2.  3.5 3. ]
-        >>> output = mnp.correlate(Tensor([1., 2., 3., 4., 5.]), Tensor([1., 2.]), mode="full")
+        Tensor(shape=[3], dtype=Float32, value= [ 2.00000000e+00,  3.50000000e+00,  3.00000000e+00])
+        >>> output = mnp.correlate(Tensor([1., 2., 3.]), Tensor([1., 2.]), mode="full")
         >>> print(output)
-        [ 2.  5.  8. 11. 14.  5.]
+        Tensor(shape=[4], dtype=Float32, value= [ 2.00000000e+00,  5.00000000e+00,  8.00000000e+00,  3.00000000e+00])
     """
     if isinstance(a, list):
         a = ops.auto_generate.list_to_tuple(a)
