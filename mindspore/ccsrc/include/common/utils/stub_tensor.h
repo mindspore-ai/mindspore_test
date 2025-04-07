@@ -81,7 +81,7 @@ class COMMON_EXPORT TensorNode : public StubNode {
   py::object GetDtype();
 };
 
-class SequenceNode : public StubNode {
+class COMMON_EXPORT SequenceNode : public StubNode {
  public:
   explicit SequenceNode(size_t size = 0) : elements_(size), is_elements_build_(size > 0) {}
   MS_DECLARE_PARENT(SequenceNode, StubNode);

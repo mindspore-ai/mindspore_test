@@ -951,21 +951,6 @@ tensor::TensorPtr ConvertTensorAndSyncCompiling(const py::handle &obj) {
   return tensor;
 }
 
-tensor::TensorPtr StubNodeToTensor(const py::object &obj) {
-  ValuePtr tensor = nullptr;
-  if (tensor == nullptr) {
-    MS_LOG(EXCEPTION) << "The obj should be a tensor, but got " << py::str(obj);
-  }
-  if (utils::isa<stub::StubNode>(tensor)) {
-    auto stub = utils::cast<stub::StubNodePtr>(tensor);
-    return stub->WaitValue()->cast<tensor::TensorPtr>();
-  }
-  if (tensor->isa<tensor::Tensor>()) {
-    return tensor->cast<tensor::TensorPtr>();
-  }
-  MS_LOG(EXCEPTION) << "It should be stub tensor, but got " << tensor->ToString();
-}
-
 py::object CValueToPybindObj(const ValuePtr &val) {
   const auto obj = tensor::Wrap(val);
   return py::reinterpret_steal<py::object>(obj);

@@ -55,8 +55,6 @@ class PyRecursionScope {
 py::object AnyToPyData(const Any &value);
 COMMON_EXPORT py::object BaseRefToPyData(const BaseRef &value, const AbstractBasePtr &abs = nullptr);
 COMMON_EXPORT py::object ValueToPyData(const ValuePtr &value, const AbstractBasePtr &abs = nullptr);
-// Convert sub node to base tensor, for pynative output tensor.
-COMMON_EXPORT tensor::TensorPtr StubNodeToTensor(const py::object &obj);
 COMMON_EXPORT py::object CValueToPybindObj(const ValuePtr &val);
 COMMON_EXPORT ValuePtr PyStubNodeCast(const py::handle &obj);
 COMMON_EXPORT ValuePtr ConvertTensorNode(const py::object &obj);
