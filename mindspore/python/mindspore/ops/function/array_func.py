@@ -2982,7 +2982,7 @@ def tensor_scatter_sub(input_x, indices, updates):
 
     Examples:
         >>> import mindspore
-        >>> input = mindspore.tensor([[1, 2, 3], [4, 5, 6]], mndspore.float32)
+        >>> input = mindspore.tensor([[1, 2, 3], [4, 5, 6]], mindspore.float32)
         >>> indices = mindspore.tensor([[0, 0], [1, 1]])
         >>> updates = mindspore.tensor([5, 5], mindspore.float32)
         >>> mindspore.ops.tensor_scatter_sub(input, indices, updates)
@@ -4675,60 +4675,56 @@ def tril(input, diagonal=0):  # pylint: disable=redefined-outer-name
 
 def tril_ext(input, diagonal=0):
     """
-    Returns the lower triangle part of `input` (elements that contain the diagonal and below),
-    and set the other elements to zeros.
+    Zero the input tensor above the diagonal specified.
 
     Args:
-        input (Tensor): A Tensor with shape :math:`(x_1, x_2, ..., x_R)`. The rank must be at least 2.
-            Supporting all number types including bool.
-        diagonal (int, optional): An optional attribute indicates the diagonal to consider, default: ``0``,
-            indicating the main diagonal.
+        input (Tensor): The input tensor. The rank must be at least 2.
+        diagonal (int, optional): The diagonal specified of 2-D tensor. Default ``0`` represents the main diagonal.
 
     Returns:
-        Tensor, the same shape and data type as the `input`.
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
-        TypeError: If `diagonal` is not an int.
-        TypeError: If the type of `input` is neither number nor bool.
-        ValueError: If the rank of `input` is less than 2.
+        Tensor
 
     Supported Platforms:
         ``Ascend``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([[ 1,  2,  3,  4],
-        ...                      [ 5,  6,  7,  8],
-        ...                      [10, 11, 12, 13],
-        ...                      [14, 15, 16, 17]]))
-        >>> result = ops.function.array_func.tril_ext(x)
-        >>> print(result)
-        [[ 1  0  0  0]
-         [ 5  6  0  0]
-         [10 11 12  0]
-         [14 15 16 17]]
-        >>> x = Tensor(np.array([[ 1,  2,  3,  4],
-        ...                      [ 5,  6,  7,  8],
-        ...                      [10, 11, 12, 13],
-        ...                      [14, 15, 16, 17]]))
-        >>> result = ops.function.array_func.tril_ext(x, diagonal=1)
-        >>> print(result)
-        [[ 1  2  0  0]
-         [ 5  6  7  0]
-         [10 11 12 13]
-         [14 15 16 17]]
-        >>> x = Tensor(np.array([[ 1,  2,  3,  4],
-        ...                      [ 5,  6,  7,  8],
-        ...                      [10, 11, 12, 13],
-        ...                      [14, 15, 16, 17]]))
-        >>> result = ops.function.array_func.tril_ext(x, diagonal=-1)
-        >>> print(result)
-        [[ 0  0  0  0]
-         [ 5  0  0  0]
-         [10 11  0  0]
-         [14 15 16  0]]
+        >>> import mindspore
+        >>> input = mindspore.tensor([[ 1,  2,  3,  4],
+        ...                           [ 5,  6,  7,  8],
+        ...                           [10, 11, 12, 13],
+        ...                           [14, 15, 16, 17]])
+        >>> mindspore.ops.function.array_func.tril_ext(input)
+        Tensor(shape=[4, 4], dtype=Int64, value=
+        [[ 1,  0,  0,  0],
+         [ 5,  6,  0,  0],
+         [10, 11, 12,  0],
+         [14, 15, 16, 17]])
+        >>> mindspore.ops.function.array_func.tril_ext(input, 1)
+        Tensor(shape=[4, 4], dtype=Int64, value=
+        [[ 1,  2,  0,  0],
+         [ 5,  6,  7,  0],
+         [10, 11, 12, 13],
+         [14, 15, 16, 17]])
+        >>> mindspore.ops.function.array_func.tril_ext(input, -1)
+        Tensor(shape=[4, 4], dtype=Int64, value=
+        [[ 0,  0,  0,  0],
+         [ 5,  0,  0,  0],
+         [10, 11,  0,  0],
+         [14, 15, 16,  0]])
+        >>> input = mindspore.tensor([[[ 1,  2,  3],
+        ...                            [ 5,  6,  7],
+        ...                            [10, 11, 12]],
+        ...                           [[ 1,  2,  3],
+        ...                            [ 5,  6,  7],
+        ...                            [10, 11, 12]]])
+        >>> mindspore.ops.function.array_func.tril_ext(input)
+        Tensor(shape=[2, 3, 3], dtype=Int64, value=
+        [[[ 1,  0,  0],
+          [ 5,  6,  0],
+          [10, 11, 12]],
+         [[ 1,  0,  0],
+          [ 5,  6,  0],
+          [10, 11, 12]]])
     """
     return tril_ext_op(input, diagonal)
 
