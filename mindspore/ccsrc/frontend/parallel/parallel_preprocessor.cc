@@ -676,7 +676,7 @@ void InsertParallelOpt(const FuncGraphManagerPtr &manager, const AnfNodeIndexSet
           MS_LOG(INFO) << "Parallel optimizer is shared between " << parameter->ToString() << " and "
                        << GetPrimName(cnode);
         } else {
-          MS_LOG(ERROR) << "Can not find the shared AllGather with multiple node users.";
+          MS_LOG(WARNING) << "Can not find the shared AllGather with multiple node users.";
         }
       } else {
         InsertAllGatherOp(root, opt_shard_group, param_pair, parameter, op_name, is_shared_param);

@@ -74,8 +74,8 @@ std::string AddBigNums(const std::string &num1, double double_num2) {
   string num2 = DoubleToString(double_num2, 0);
   std::string result;
   int carry = 0;
-  int i = num1.length() - 1;
-  int j = num2.length() - 1;
+  int i = SizeToInt(num1.size()) - 1;
+  int j = SizeToInt(num2.size()) - 1;
 
   while (i >= 0 || j >= 0 || carry) {
     int sum = carry;
@@ -87,8 +87,9 @@ std::string AddBigNums(const std::string &num1, double double_num2) {
       sum += num2[j] - '0';
       j--;
     }
-    carry = sum / 10;
-    result.push_back((sum % 10) + '0');
+    const int carry_len = 10;
+    carry = sum / carry_len;
+    result.push_back((sum % carry_len) + '0');
   }
   std::reverse(result.begin(), result.end());
   return result;

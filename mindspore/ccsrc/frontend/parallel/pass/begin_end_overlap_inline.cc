@@ -95,6 +95,11 @@ void InlineExpandPartialFuncGraph(const CNodePtr &expanding_node, const FuncGrap
 
 bool SkipBeginEndOverlapInline(const FuncGraphPtr &graph, FuncGraphPtr *fg, FuncGraphPtr *bg, CNodePtrList *fg_call,
                                CNodePtrList *bg_call) {
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  if (ms_context->backend_policy() != "ge") {
+    return true;
+  }
   std::list<CNodePtr> graph_orders = graph->GetOrderedCnodes();
   for (auto &node : graph_orders) {
     MS_EXCEPTION_IF_NULL(node);
