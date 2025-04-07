@@ -70,7 +70,9 @@ def reshard(tensor, layout):
         >>> from mindspore.parallel.function import reshard
         >>> from mindspore.nn.utils import no_init_parameters
         >>> from mindspore.parallel.auto_parallel import AutoParallel
+        >>> from mindspore.communication import init
         >>> context.set_context(mode=ms.GRAPH_MODE)
+        >>> init()
         >>> class Network(nn.Cell):
         ...     def __init__(self):
         ...         super().__init__()
