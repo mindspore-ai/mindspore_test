@@ -43,6 +43,7 @@ class Mstx:
         Examples:
             >>> import numpy as np
             >>> import mindspore as ms
+            >>> import mindspore
             >>> from mindspore import nn
             >>> import mindspore.dataset as ds
             >>> from mindspore import Profiler
@@ -78,11 +79,16 @@ class Mstx:
             ...     ms.set_context(mode=ms.PYNATIVE_MODE)
             ...     ms.set_device(device_target="Ascend", device_id=0)
             ...     # Init Profiler
-            ...     with Profiler(profiler_level=ProfilerLevel.LevelNone,
-            ...                   on_trace_ready=tensorboard_trace_handler("./data"),
-            ...                   activities=[ProfilerActivity.CPU, ProfilerActivity.NPU],
-            ...                   schedule=schedule(wait=0, warmup=0, active=3, repeat=1, skip_first=0),
-            ...                   mstx=True) as profiler:
+            ...     experimental_config = mindspore.profiler._ExperimentalConfig(
+            ...                                 profiler_level=ProfilerLevel.LevelNone,
+            ...                                 mstx=True)
+            ...     # Note that the Profiler should be initialized before model.train
+            ...     with mindspore.profiler.profile(
+            ...         activities=[ProfilerActivity.CPU, ProfilerActivity.NPU],
+            ...         schedule=schedule(wait=0, warmup=0, active=3, repeat=1, skip_first=0),
+            ...         on_trace_ready=mindspore.profiler.tensorboard_trace_handler("./data"),
+            ...         experimental_config=experimental_config
+            ...     ) as profiler:
             ...         net = Net()
             ...         for i in range(5):
             ...             train(net)
@@ -123,6 +129,7 @@ class Mstx:
         Examples:
             >>> import numpy as np
             >>> import mindspore as ms
+            >>> import mindspore
             >>> from mindspore import nn
             >>> import mindspore.dataset as ds
             >>> from mindspore import Profiler
@@ -157,11 +164,17 @@ class Mstx:
             ...     # when in mindspore.GRAPH_MODE
             ...     ms.set_context(mode=ms.PYNATIVE_MODE)
             ...     ms.set_device(device_target="Ascend", device_id=0)
-            ...     with Profiler(profiler_level=ProfilerLevel.LevelNone,
-            ...                   on_trace_ready=tensorboard_trace_handler("./data"),
-            ...                   activities=[ProfilerActivity.CPU, ProfilerActivity.NPU],
-            ...                   schedule=schedule(wait=0, warmup=0, active=3, repeat=1, skip_first=0),
-            ...                   mstx=True) as profiler:
+            ...     # Init Profiler
+            ...     experimental_config = mindspore.profiler._ExperimentalConfig(
+            ...                                 profiler_level=ProfilerLevel.LevelNone,
+            ...                                 mstx=True)
+            ...     # Note that the Profiler should be initialized before model.train
+            ...     with mindspore.profiler.profile(
+            ...         activities=[ProfilerActivity.CPU, ProfilerActivity.NPU],
+            ...         schedule=schedule(wait=0, warmup=0, active=3, repeat=1, skip_first=0),
+            ...         on_trace_ready=mindspore.profiler.tensorboard_trace_handler("./data"),
+            ...         experimental_config=experimental_config
+            ...     ) as profiler:
             ...         net = Net()
             ...         for i in range(5):
             ...             train(net)
