@@ -82,7 +82,7 @@ def test_recompute_op_recompute2():
     Description: Each block is set recompute by the primitive recompute api.
     Expectation: Run successfully and the memory usage is reduced.
     """
-    run_testcase("test_recompute_op_recompute2", 50)
+    run_testcase("test_recompute_op_recompute2", 54)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
