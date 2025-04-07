@@ -41,7 +41,7 @@ using TensorPtr = tensor::TensorPtr;
 
 class StatisticKernel {
  public:
-  StatisticKernel(const DeviceContext *device_context, const string &kernel_name, const std::set<TypeId> &dtype_id)
+  StatisticKernel(const DeviceContext *device_context, const string &kernel_name, std::set<TypeId> dtype_id)
       : device_context_(device_context), kernel_name_(kernel_name), supported_dtype_(dtype_id) {
     MS_EXCEPTION_IF_NULL(device_context);
     MS_EXCEPTION_IF_NULL(device_context_->device_res_manager_);
@@ -64,7 +64,7 @@ class StatisticKernel {
   virtual std::vector<KernelTensorPtr> GetExtraInputsDeviceAddress(KernelTensor *);
   const DeviceContext *device_context_{nullptr};
   string kernel_name_;
-  const std::set<TypeId> &supported_dtype_;
+  std::set<TypeId> supported_dtype_;
   uint32_t stream_id_ = kDefaultStreamIndex;
   kernel::KernelModPtr kernel_mod_;
 };
