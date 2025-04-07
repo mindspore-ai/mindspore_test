@@ -247,7 +247,7 @@ bool IrExportBuilder::BuildPrimitives() {
 std::string IrExporter::GetDumpString(const FuncGraphPtr &func_graph) {
   auto dump_proto = GetDumpProto(func_graph);
   if (dump_proto == nullptr) {
-    MS_LOG(EXCEPTION) << "Get dump proto for graph " << func_graph->ToString() << " failed.";
+    MS_LOG(EXCEPTION) << "Failed to export MindIR: " << func_graph->ToString();
   }
   return builder_->GetProtoString();
 }
@@ -377,7 +377,7 @@ bool IrExportBuilder::BuildModel(const FuncGraphPtr &func_graph) {
   top_graph = true;
 
   if (!BuildFuncGraph(func_graph, graph_proto)) {
-    MS_LOG(ERROR) << "Build func_graph " << func_graph->ToString() << " failed.";
+    MS_LOG(ERROR) << "Failed to export MindIR: " << func_graph->ToString();
     return false;
   }
 
@@ -682,7 +682,7 @@ bool IrExportBuilder::SetValueInfoProto(const AnfNodePtr &node, mind_ir::ValueIn
   } else {
     mind_ir::AttributeProto *attribute = value_proto->mutable_attr_info();
     if (!SetAbstractToNodeProto(node->abstract(), attribute)) {
-      MS_LOG(ERROR) << "Set shape to Proto for " << node->DebugString() << " failed.";
+      MS_LOG(ERROR) << "Failed to export data: " << node->DebugString();
       return false;
     }
     value_proto->set_denotation(type->type_name());
@@ -923,7 +923,7 @@ bool IrExportBuilder::BuildNodes(const FuncGraphPtr &func_graph, mind_ir::GraphP
     auto cnode = node->cast<CNodePtr>();
     if (cnode == func_graph->get_return()) {
       if (!BuildOutput(cnode, graph_proto)) {
-        MS_LOG(ERROR) << "Build output for graph " << func_graph->ToString() << " failed.";
+        MS_LOG_WITH_NODE(ERROR, cnode) << "Failed to export MindIR, this data type is not supported as a return value";
         return false;
       }
     } else {
@@ -1188,7 +1188,7 @@ bool IrExportBuilder::SetAbstractToNodeProto(const AbstractBasePtr &abs, mind_ir
   } else if (type->isa<MapTensorType>()) {
     return ConvertAbstractMapTensorToAttrProto(abs, attr_proto);
   } else {
-    MS_LOG(ERROR) << "Type of cnode need to be supported: " << type->type_name();
+    MS_LOG(ERROR) << "mindspore.export() cannot export data of this type: " << type->type_name();
     return false;
   }
 

@@ -80,7 +80,6 @@ from mindspore._c_expression import load_mindir, _encrypt, _decrypt, _is_cipher_
     split_mindir, split_dynamic_mindir
 from mindspore.common.generator import Generator
 
-
 tensor_to_ms_type = {"Int8": mstype.int8, "UInt8": mstype.uint8, "Int16": mstype.int16, "UInt16": mstype.uint16,
                      "Int32": mstype.int32, "UInt32": mstype.uint32, "Int64": mstype.int64, "UInt64": mstype.uint64,
                      "Float16": mstype.float16, "Float32": mstype.float32, "Float64": mstype.float64,
@@ -2432,8 +2431,10 @@ def _save_together(net_dict, model):
         if name in net_dict.keys():
             data_total += sys.getsizeof(net_dict[name].data.get_bytes()) / 1024
         else:
-            raise ValueError("The parameter '{}' is not belongs to any cell,"
-                             "the data of parameter cannot be exported.".format(param_proto.name))
+            raise ValueError("There's a mindspore.Parameter that wasn't created in nn.Cell, and mindspore.export() "
+                             f"does not support exporting such Parameters. The parameter name is: {name}.\n"
+                             "You can find the supported syntax range for mindspore.export() at the following link:\n"
+                             "https://www.mindspore.cn/tutorials/zh-CN/master/beginner/save_load.html")
         if data_total > TOTAL_SAVE:
             return False
     return True
