@@ -16,6 +16,8 @@
 
 #include "frontend/parallel/pass/dataset_reader_optimizer.h"
 #include <algorithm>
+#include <memory>
+#include <list>
 #include <stack>
 #include <queue>
 #include <string>
@@ -36,9 +38,100 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_v.h"
+#include "include/common/utils/anfalgo.h"
 
 namespace mindspore {
 namespace parallel {
+constexpr auto kRankList = "rank_list";
+constexpr auto kDatasetBroadcast = "dataset_broadcast";
+void ControlOrder(const CNodePtr &prior, const CNodePtr &last, const FuncGraphPtr &graph,
+                  const FuncGraphManagerPtr &manager, const std::string &tags) {
+  std::vector<AnfNodePtr> depend_input = {NewValueNode(prim::kPrimDepend), last->input(1), prior};
+  auto depend = graph->NewCNode(depend_input);
+  depend->set_abstract(last->input(1)->abstract());
+  depend->AddPrimalAttr(tags, MakeValue(true));
+  manager->SetEdge(last, 1, depend);
+}
+
+bool CreateBroadcastInput(const Shapes &shapes, const std::vector<TypePtr> &types, const FuncGraphPtr &graph,
+                          AnfNodePtr *make_tuple) {
+  auto data_stra = ParallelContext::GetInstance()->dataset_strategy();
+  // ((2, 2, 2),)
+  auto all_dev_mat = ParallelContext::GetInstance()->dataset_strategy_devmat();
+  // (((2), (1), (0)),)
+  auto all_tensor_map = ParallelContext::GetInstance()->dataset_strategy_tensormap();
+  if (shapes.size() != types.size()) {
+    return false;
+  }
+  std::vector<AnfNodePtr> make_tuple_input = {NewValueNode(prim::kPrimMakeTuple->Clone())};
+  AbstractBasePtrList make_tuple_abstract;
+  for (size_t i = 0; i < shapes.size(); ++i) {
+    tensor::TensorPtr zero_tensor = nullptr;
+    auto cur_input_shape = shapes.at(i);
+    auto cur_input_type = types.at(i);
+    Shape slice_shape;
+    if (!data_stra.empty()) {
+      if (data_stra.size() != shapes.size()) {
+        return false;
+      }
+      auto cur_input_stra = data_stra.at(i);
+      if (cur_input_stra.size() != cur_input_shape.size()) {
+        return false;
+      }
+      for (size_t j = 0; j < cur_input_stra.size(); ++j) {
+        slice_shape.emplace_back(cur_input_shape.at(j) / cur_input_stra.at(j));
+      }
+    } else if (!all_dev_mat.empty() && !all_tensor_map.empty()) {
+      if (all_tensor_map.size() != shapes.size()) {
+        MS_LOG(ERROR) << "layout size is not equal to input size, layout size " << all_tensor_map.size()
+                      << ", input size " << shapes.size();
+        return false;
+      }
+      auto cur_tensor_map = all_tensor_map.at(i);
+      auto cur_dev_mat = all_dev_mat.at(i);
+      if (cur_tensor_map.size() != cur_input_shape.size()) {
+        MS_LOG(ERROR) << "for " << i << " input, shape size is " << cur_input_shape.size() << ", tensor map size is "
+                      << cur_tensor_map.size();
+        return false;
+      }
+      for (size_t j = 0; j < cur_tensor_map.size(); ++j) {
+        size_t shard_size = 1;
+        for (size_t k = 0; k < cur_tensor_map.at(j).size(); ++k) {
+          auto val = cur_tensor_map.at(j).at(k);
+          if (val != -1) {
+            auto real_idx = cur_dev_mat.size() - LongToSize(val) - 1;
+            shard_size *= LongToSize(cur_dev_mat.at(real_idx));
+          }
+        }
+        slice_shape.emplace_back(cur_input_shape.at(j) / SizeToLong(shard_size));
+      }
+    } else {
+      slice_shape = cur_input_shape;
+      auto full_batch = ParallelContext::GetInstance()->full_batch();
+      if (!full_batch) {
+        auto dev_num = g_device_manager->stage_device_num();
+        slice_shape[0] = slice_shape[0] / dev_num;
+      }
+    }
+
+    zero_tensor = TensorConstructUtils::CreateZerosTensor(cur_input_type, slice_shape);
+    if (zero_tensor == nullptr) {
+      return false;
+    }
+    auto abs = zero_tensor->ToAbstract();
+    auto zero_node = NewValueNode(zero_tensor);
+    zero_node->set_abstract(abs->Clone());
+    make_tuple_input.emplace_back(zero_node);
+    make_tuple_abstract.emplace_back(abs);
+  }
+  if (make_tuple_input.size() == 1) {
+    return false;
+  }
+  *make_tuple = graph->NewCNode(make_tuple_input);
+  (*make_tuple)->set_abstract(std::make_shared<abstract::AbstractTuple>(make_tuple_abstract));
+  return true;
+}
+
 bool DatasetReaderOptimizer::Init() {
   auto ms_context = MsContext::GetInstance();
   if (ms_context == nullptr) {
@@ -265,75 +358,6 @@ RankList DatasetReaderOptimizer::InferRepeatRankList(const RankList &within_stag
   return rank_list;
 }
 
-bool DatasetReaderOptimizer::CreateZeroNode(const Shapes &shapes, const std::vector<TypePtr> &types,
-                                            std::vector<AnfNodePtr> *const input_vec) {
-  auto data_stra = ParallelContext::GetInstance()->dataset_strategy();
-  // ((2, 2, 2),)
-  auto all_dev_mat = ParallelContext::GetInstance()->dataset_strategy_devmat();
-  // (((2), (1), (0)),)
-  auto all_tensor_map = ParallelContext::GetInstance()->dataset_strategy_tensormap();
-  if (shapes.size() != types.size()) {
-    return false;
-  }
-  for (size_t i = 0; i < shapes.size(); ++i) {
-    tensor::TensorPtr zero_tensor = nullptr;
-    auto cur_input_shape = shapes.at(i);
-    auto cur_input_type = types.at(i);
-    Shape slice_shape;
-    if (!data_stra.empty()) {
-      if (data_stra.size() != shapes.size()) {
-        return false;
-      }
-      auto cur_input_stra = data_stra.at(i);
-      if (cur_input_stra.size() != cur_input_shape.size()) {
-        return false;
-      }
-      for (size_t j = 0; j < cur_input_stra.size(); ++j) {
-        slice_shape.emplace_back(cur_input_shape.at(j) / cur_input_stra.at(j));
-      }
-    } else if (!all_dev_mat.empty() && !all_tensor_map.empty()) {
-      if (all_tensor_map.size() != shapes.size()) {
-        MS_LOG(ERROR) << "layout size is not equal to input size, layout size " << all_tensor_map.size()
-                      << ", input size " << shapes.size();
-        return false;
-      }
-      auto cur_tensor_map = all_tensor_map.at(i);
-      auto cur_dev_mat = all_dev_mat.at(i);
-      if (cur_tensor_map.size() != cur_input_shape.size()) {
-        MS_LOG(ERROR) << "for " << i << " input, shape size is " << cur_input_shape.size() << ", tensor map size is "
-                      << cur_tensor_map.size();
-        return false;
-      }
-      for (size_t j = 0; j < cur_tensor_map.size(); ++j) {
-        size_t shard_size = 1;
-        for (size_t k = 0; k < cur_tensor_map.at(j).size(); ++k) {
-          auto val = cur_tensor_map.at(j).at(k);
-          if (val != -1) {
-            auto real_idx = cur_dev_mat.size() - LongToSize(val) - 1;
-            shard_size *= LongToSize(cur_dev_mat.at(real_idx));
-          }
-        }
-        slice_shape.emplace_back(cur_input_shape.at(j) / SizeToLong(shard_size));
-      }
-    } else {
-      slice_shape = cur_input_shape;
-      auto full_batch = ParallelContext::GetInstance()->full_batch();
-      if (!full_batch) {
-        auto dev_num = g_device_manager->stage_device_num();
-        slice_shape[0] = slice_shape[0] / dev_num;
-      }
-    }
-
-    zero_tensor = TensorConstructUtils::CreateZerosTensor(cur_input_type, slice_shape);
-    if (zero_tensor == nullptr) {
-      return false;
-    }
-    input_vec->emplace_back(NewValueNode(zero_tensor));
-  }
-
-  return true;
-}
-
 void DatasetReaderOptimizer::InsertBroadcast(const RankList &rank_list) {
   auto global_rank = g_device_manager->global_rank();
   auto iter = std::find(rank_list.begin(), rank_list.end(), global_rank);
@@ -341,44 +365,11 @@ void DatasetReaderOptimizer::InsertBroadcast(const RankList &rank_list) {
     return;
   }
   std::vector<AnfNodePtr> broadcast_input = {NewValueNode(prim::kPrimBroadcast->Clone())};
-  AnfNodePtr broadcast;
-  if (iter == rank_list.begin()) {
-    (void)broadcast_input.emplace_back(get_next_);
-    broadcast = root_->NewCNode(broadcast_input);
-    std::vector<AnfNodePtr> depend_input = {NewValueNode(prim::kPrimDepend), get_next_, broadcast};
-    auto depend = root_->NewCNode(depend_input);
-    (void)manager_->Replace(get_next_, depend);
-  } else {
-    auto prim = GetCNodePrimitive(get_next_);
-    auto shape_attr = prim->GetAttr(SHAPES);
-    auto type_attr = prim->GetAttr(TYPES);
-    if (shape_attr == nullptr || type_attr == nullptr) {
-      return;
-    }
-    std::vector<ValuePtr> shape = shape_attr->isa<ValueTuple>() ? shape_attr->cast<ValueTuplePtr>()->value()
-                                                                : shape_attr->cast<ValueListPtr>()->value();
-    Shapes shapes;
-    for (const auto &element : shape) {
-      std::vector<ValuePtr> element_list =
-        element->isa<ValueTuple>() ? element->cast<ValueTuplePtr>()->value() : element->cast<ValueListPtr>()->value();
-      Shape shape_vec;
-      (void)std::transform(element_list.begin(), element_list.end(), std::back_inserter(shape_vec),
-                           [](const ValuePtr &v) -> int64_t { return GetValue<int64_t>(v); });
-      shapes.emplace_back(shape_vec);
-    }
-    auto types = GetValue<std::vector<TypePtr>>(type_attr);
-    std::vector<AnfNodePtr> make_tuple_input = {NewValueNode(prim::kPrimMakeTuple->Clone())};
-    if (!CreateZeroNode(shapes, types, &make_tuple_input)) {
-      return;
-    }
-    if (make_tuple_input.size() == 1) {
-      return;
-    }
-    auto make_tuple = root_->NewCNode(make_tuple_input);
-    (void)broadcast_input.emplace_back(make_tuple);
-    broadcast = root_->NewCNode(broadcast_input);
-    (void)manager_->Replace(get_next_, broadcast);
-  }
+  (void)broadcast_input.emplace_back(get_next_);
+  auto broadcast = root_->NewCNode(broadcast_input);
+  std::vector<AnfNodePtr> depend_input = {NewValueNode(prim::kPrimDepend), get_next_, broadcast};
+  auto depend = root_->NewCNode(depend_input);
+  (void)manager_->Replace(get_next_, depend);
   Group data_repeat_group;
   if (g_device_manager->CreateGroup(rank_list, &data_repeat_group) != SUCCESS) {
     MS_LOG(WARNING) << "Create dataset repeat group failed, rank list is: " << rank_list;
@@ -391,6 +382,15 @@ void DatasetReaderOptimizer::InsertBroadcast(const RankList &rank_list) {
   prim->set_attr(ROOT_RANK, MakeValue(BROADCAST_ROOT_RANK));
   prim->set_attr(GROUP, MakeValue(data_repeat_group.name()));
   prim->set_attr(DATASET_BROADCAST, MakeValue(True));
+
+  broadcast->AddAttr(kDatasetBroadcast, MakeValue<bool>(true));
+  depend->AddAttr(kDatasetBroadcast, MakeValue<bool>(true));
+
+  auto rank_list_ptr = std::make_shared<RankList>(rank_list);
+  broadcast->set_user_data<RankList>(kRankList, rank_list_ptr);
+  CNodePtr get_next_c = get_next_->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(get_next_c);
+  get_next_c->AddAttr(kDatasetBroadcast, MakeValue<bool>(true));
 }
 
 void DatasetReaderOptimizer::BroadcastDataset() {
@@ -424,6 +424,129 @@ void DatasetReaderOptimizer::BroadcastDataset() {
     return;
   }
   InsertBroadcast(rank_list);
+}
+
+void InsertDepend(const std::vector<CNodePtr> &nodes, const FuncGraphPtr &graph, const FuncGraphManagerPtr &manager) {
+  size_t size = nodes.size();
+  if (size <= 1) {
+    return;
+  }
+  for (size_t i = 0; i < size - 1; i++) {
+    const auto &prior = nodes[i];
+    const auto &last = nodes[i + 1];
+    ControlOrder(prior, last, graph, manager, kDatasetBroadcast);
+  }
+}
+
+void FreezeParallelOptimizerCommOrder(const FuncGraphPtr &graph) {
+  bool find_dataset_broadcast = false;
+  auto all_nodes = TopoSort(graph->get_return(), SuccDeeperSimple);
+  for (const auto &node : all_nodes) {
+    if (!node->isa<CNode>()) {
+      continue;
+    }
+    auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
+    if (!cnode->HasAttr(kDatasetBroadcast)) {
+      continue;
+    }
+    auto attr = cnode->GetAttr(kDatasetBroadcast);
+    MS_EXCEPTION_IF_NULL(attr);
+    if (GetValue<bool>(attr)) {
+      find_dataset_broadcast = true;
+      break;
+    }
+  }
+  if (!find_dataset_broadcast) {
+    return;
+  }
+  auto manager = graph->manager();
+  MS_EXCEPTION_IF_NULL(manager);
+  std::vector<CNodePtr> allgather_vec;
+  std::vector<CNodePtr> reducescatter_vec;
+  std::list<CNodePtr> graph_orders = graph->GetOrderedCnodes();
+  std::vector<CNodePtr> origin_nodes_topological(graph_orders.begin(), graph_orders.end());
+  for (const auto &node : origin_nodes_topological) {
+    if (IsPrimitiveCNode(node, prim::kPrimAllGather) && common::AnfAlgo::IsFromParallelOptimizer(node)) {
+      allgather_vec.push_back(node);
+      continue;
+    }
+    if (IsPrimitiveCNode(node, prim::kPrimReduceScatter) && common::AnfAlgo::IsFromParallelOptimizer(node)) {
+      reducescatter_vec.push_back(node);
+    }
+  }
+  InsertDepend(allgather_vec, graph, manager);
+  InsertDepend(reducescatter_vec, graph, manager);
+}
+
+void ReplaceGetnextWithBroadcast(const FuncGraphPtr &graph) {
+  auto all_nodes = TopoSort(graph->get_return(), SuccDeeperSimple);
+  CNodePtr broadcast = nullptr;
+  for (const auto &node : all_nodes) {
+    if (!node->isa<CNode>()) {
+      continue;
+    }
+    auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
+    if (!cnode->HasAttr(kDatasetBroadcast)) {
+      continue;
+    }
+    if (IsPrimitiveCNode(cnode, prim::kPrimBroadcast)) {
+      broadcast = cnode;
+      break;
+    }
+  }
+  if (broadcast == nullptr) {
+    return;
+  }
+  if (!broadcast->has_user_data(kRankList)) {
+    return;
+  }
+  auto rank_list = broadcast->user_data<RankList>(kRankList);
+  MS_EXCEPTION_IF_NULL(rank_list);
+  auto global_rank = g_device_manager->global_rank();
+  auto iter = std::find(rank_list->begin(), rank_list->end(), global_rank);
+  if (iter == rank_list->begin()) {
+    return;
+  }
+  CNodePtr get_next = broadcast->input(1)->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(get_next);
+  if (!IsPrimitiveCNode(get_next, prim::kPrimGetNext)) {
+    MS_LOG(EXCEPTION) << "For ReplaceGetnextWithBroadcast: found Broadcast, but not GetNext. ";
+  }
+  const auto &manager = graph->manager();
+  MS_EXCEPTION_IF_NULL(manager);
+  const auto &node_users_map = manager->node_users();
+  auto users = node_users_map.at(broadcast);
+  CNodePtr depend = users.front().first->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(depend);
+
+  auto prim = GetCNodePrimitive(get_next);
+  auto shape_attr = prim->GetAttr(SHAPES);
+  auto type_attr = prim->GetAttr(TYPES);
+  if (shape_attr == nullptr || type_attr == nullptr) {
+    return;
+  }
+  std::vector<ValuePtr> shape = shape_attr->isa<ValueTuple>() ? shape_attr->cast<ValueTuplePtr>()->value()
+                                                              : shape_attr->cast<ValueListPtr>()->value();
+  Shapes shapes;
+  for (const auto &element : shape) {
+    std::vector<ValuePtr> element_list =
+      element->isa<ValueTuple>() ? element->cast<ValueTuplePtr>()->value() : element->cast<ValueListPtr>()->value();
+    Shape shape_vec;
+    (void)std::transform(element_list.begin(), element_list.end(), std::back_inserter(shape_vec),
+                         [](const ValuePtr &v) -> int64_t { return GetValue<int64_t>(v); });
+    shapes.emplace_back(shape_vec);
+  }
+  auto types = GetValue<std::vector<TypePtr>>(type_attr);
+  AnfNodePtr real_input = nullptr;
+  if (!CreateBroadcastInput(shapes, types, graph, &real_input)) {
+    return;
+  }
+  manager->SetEdge(broadcast, 1, real_input);
+  broadcast->set_abstract(get_next->abstract()->Clone());
+  manager->Replace(get_next, broadcast);
+  manager->Replace(depend, depend->input(1));
 }
 
 void ControlOptShardCommAndDataBroadcastOrder(const FuncGraphPtr &graph) {
