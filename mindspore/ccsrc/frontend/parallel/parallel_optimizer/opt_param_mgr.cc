@@ -38,8 +38,8 @@ class OptParamMgrImpl : public OptParamMgr {
 
     Status ret = tensor_layout->GenerateOptShardSliceShape();
     if (ret != Status::SUCCESS) {
-      MS_LOG(INFO) << parameter->ToString() << "'s distributed shape " << tensor_layout->slice_shape().ToString()
-                   << " does not satisfy the conditions.";
+      MS_LOG(WARNING) << parameter->ToString() << "'s distributed shape " << tensor_layout->slice_shape().ToString()
+                      << " does not satisfy the conditions, thus not apply optimizer shard.";
       return "";
     }
     // get the shard tensor slice shape if the weight is repeated on devices

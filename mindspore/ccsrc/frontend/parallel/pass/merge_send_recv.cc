@@ -44,15 +44,16 @@ std::unordered_map<AnfNodePtr, std::vector<CNodePtr>> ReceiveInputMap(const std:
       continue;
     }
     auto recv_cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(recv_cnode);
     auto send_node = GetInputNodeWithFilter(recv_cnode->input(kIndex1), [&](const CNodePtr &cnode) {
       bool filter = IsPrimitiveCNode(cnode, prim::kPrimLoad);
       return std::make_pair(filter, 1);
     });
-
     if (!IsPrimitiveCNode(send_node, prim::kPrimSend)) {
       continue;
     }
     auto send_cnode = send_node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(send_cnode);
     auto pre_node = GetInputNodeWithFilter(send_cnode->input(kIndex1), [&](const CNodePtr &cnode) {
       bool filter = IsPrimitiveCNode(cnode, prim::kPrimLoad);
       return std::make_pair(filter, 1);
@@ -64,6 +65,8 @@ std::unordered_map<AnfNodePtr, std::vector<CNodePtr>> ReceiveInputMap(const std:
 
 template <typename S>
 bool CheckPrimAttr(const PrimitivePtr &prim1, const PrimitivePtr &prim2, const std::string &attr) {
+  MS_EXCEPTION_IF_NULL(prim1);
+  MS_EXCEPTION_IF_NULL(prim2);
   auto attr_v1 = prim1->GetAttr(attr);
   auto attr_v2 = prim2->GetAttr(attr);
   if (!attr_v1 || !attr_v2) {
@@ -74,6 +77,8 @@ bool CheckPrimAttr(const PrimitivePtr &prim1, const PrimitivePtr &prim2, const s
 
 template <typename S>
 bool CheckPrimalAttr(const CNodePtr &cnode1, const CNodePtr &cnode2, const std::string &attr) {
+  MS_EXCEPTION_IF_NULL(cnode1);
+  MS_EXCEPTION_IF_NULL(cnode2);
   auto attr_v1 = cnode1->GetPrimalAttr(attr);
   auto attr_v2 = cnode2->GetPrimalAttr(attr);
   if (!attr_v1 && !attr_v2) {
@@ -88,6 +93,8 @@ bool CheckPrimalAttr(const CNodePtr &cnode1, const CNodePtr &cnode2, const std::
 bool CheckSendReceive(const CNodePtr &cnode1, const CNodePtr &cnode2) {
   auto prim1 = GetCNodePrimitive(cnode1);
   auto prim2 = GetCNodePrimitive(cnode2);
+  MS_EXCEPTION_IF_NULL(cnode1);
+  MS_EXCEPTION_IF_NULL(cnode2);
   if (cnode1->func_graph() != cnode2->func_graph()) {
     return false;
   }
@@ -130,7 +137,6 @@ void MergeSR(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphManagerPtr
         bool filter = IsPrimitiveCNode(cnode, prim::kPrimLoad);
         return std::make_pair(filter, 1);
       });
-
       if (!IsPrimitiveCNode(send_node1, prim::kPrimSend)) {
         return false;
       }
@@ -139,7 +145,6 @@ void MergeSR(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphManagerPtr
         bool filter = IsPrimitiveCNode(cnode, prim::kPrimLoad);
         return std::make_pair(filter, 1);
       });
-
       if (!IsPrimitiveCNode(send_node2, prim::kPrimSend)) {
         return false;
       }
@@ -156,7 +161,7 @@ void MergeSR(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphManagerPtr
     }
     auto recv0 = recv_list.front();
     for (const auto &recv : recv_list) {
-      manager->Replace(recv, recv0);
+      (void)manager->Replace(recv, recv0);
     }
   }
 }
