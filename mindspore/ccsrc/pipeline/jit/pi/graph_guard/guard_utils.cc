@@ -2408,7 +2408,6 @@ static ItemDataPtr CreateItem(PyObject *obj, bool need_specialize, int recurse_d
   if (recurse_depth < -1) {
     if (obj != NULL && obj != Py_None) {
       PyObject *py_type;
-      py::object py_obj = py::reinterpret_borrow<py::object>(obj);
       py_type = reinterpret_cast<PyObject *>(Py_TYPE(obj));
       return std::make_shared<TypeData>(py_type, false, 0);
     } else {
