@@ -50,7 +50,6 @@ Wrapper Layer
     mindspore.nn.GradAccumulationCell
     mindspore.nn.ParameterUpdate
     mindspore.nn.PipelineCell
-    mindspore.nn.PipelineGradReducer
     mindspore.nn.TimeDistributed
     mindspore.nn.TrainOneStepCell
     mindspore.nn.TrainOneStepWithLossScaleCell
