@@ -3388,9 +3388,8 @@ class Imag(Primitive):
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.asarray(np.complex(1.3+0.4j)), mindspore.complex64)
+        >>> from mindspore import ops
+        >>> x = mindspore.tensor(1.3+0.4j, mindspore.complex64)
         >>> imag = ops.Imag()
         >>> output = imag(x)
         >>> print(output)
