@@ -2672,10 +2672,10 @@ REG_BPROP_BUILDER("MaskedFill").FreeUselessValues_IO({i0, i2}, {}).SetBody(BODYF
 
   dinput = input_data->need_compute_grad_out() ? ib->Cast(bout[0], ib->GetDtype(input_data)) : ib->OutZeros(input_data);
   if (value->need_compute_grad_out()) {
-    auto dvalue_shape = dvalue->shape();
-    if (IsDynamicRank(dvalue_shape)) {
-      auto dvalue_rank = ib->Shape(ib->Shape(dvalue, true), true);
-      auto axis_node = ib->Range(ib->TensorToScalar(dvalue_rank));
+    auto mask_shape = mask->shape();
+    if (IsDynamicRank(mask_shape)) {
+      auto mask_rank = ib->Shape(ib->Shape(mask, true), true);
+      auto axis_node = ib->Range(ib->TensorToScalar(mask_rank));
       dvalue = ib->SumExt(bout[1], ib->TensorToTuple(axis_node), ib->Value(false));
     } else {
       dvalue = ib->SumExt(bout[1], ib->EmitValue(kNone), ib->Value(false));
