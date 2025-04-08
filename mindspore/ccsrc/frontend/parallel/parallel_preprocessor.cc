@@ -181,6 +181,11 @@ static void MicroBatchPreProcess(const FuncGraphPtr &root, const FuncGraphManage
   MS_EXCEPTION_IF_NULL(context);
   const auto no_cell_reuse = context->CellReuseLevel() == CellReuseLevel::kNoCellReuse;
   bool enable_grad_accu = ParallelContext::GetInstance()->grad_accumulation_step() > 1;
+  bool is_optimizer_level_2 = ParallelContext::GetInstance()->grad_accumulation_shard();
+  bool is_optimizer_level_3 = ParallelContext::GetInstance()->zero3();
+  if (enable_grad_accu && no_cell_reuse && (is_optimizer_level_2 || is_optimizer_level_3)) {
+    MS_LOG(EXCEPTION) << "For optimizer level 2/3, only support with lazy_inline mode.";
+  }
   if (no_cell_reuse && enable_grad_accu) {
     TagMicroBatchBpEndPrim(root);
     TagMicroBatchBpEnd(root);
