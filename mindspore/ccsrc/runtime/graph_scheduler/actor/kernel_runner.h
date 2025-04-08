@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2024 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_RUNTIME_FRAMEWORK_ACTOR_KERNEL_ACTOR_H_
-#define MINDSPORE_CCSRC_RUNTIME_FRAMEWORK_ACTOR_KERNEL_ACTOR_H_
+#ifndef MINDSPORE_CCSRC_RUNTIME_FRAMEWORK_ACTOR_KERNEL_RUNNER_H_
+#define MINDSPORE_CCSRC_RUNTIME_FRAMEWORK_ACTOR_KERNEL_RUNNER_H_
 
 #include <vector>
 #include <set>
@@ -51,46 +51,26 @@ using mindspore::tensor::TensorPtr;
 
 class SuperKernelActor;
 
-// The kernel actor is used to receive the device tensors and control info to luanch kernel.
-// The processing flow is RunOpData/RunOpControl -> CheckRunningCondition -> SendMemoryAllocReq
-// -> OnMemoryAllocFinish -> LaunchKernel -> SendMemoryFreeReq -> SendOutput.
-class KernelActor : public DebugAwareActor {
+class KernelRunner {
  public:
-  KernelActor(const std::string &name, const CNodePtr &kernel, const DeviceContext *device_context,
-              const AID &memory_manager_aid, const AID *debug_aid, const AID *recorder_aid,
-              GraphExecutionStrategy strategy, const std::set<size_t> &modifiable_ref_input_indexes,
-              const std::set<size_t> &modifiable_ref_output_indexes,
-              const KernelTransformType &type = KernelTransformType::kKernelActor);
+  KernelRunner(const std::string &name, const CNodePtr &kernel, const DeviceContext *device_context,
+               const AID &memory_manager_aid, const AID *debug_aid, const AID *recorder_aid,
+               GraphExecutionStrategy strategy, const std::set<size_t> &modifiable_ref_input_indexes,
+               const std::set<size_t> &modifiable_ref_output_indexes,
+               const KernelTransformType &type = KernelTransformType::kKernelActor);
 
-  ~KernelActor() override = default;
+  ~KernelRunner() = default;
 
   // The memory related operation interface.
-  void SendMemoryAllocReq(OpContext<KernelTensor> *const context) override;
-  void SendMemoryFreeReq(OpContext<KernelTensor> *const context) override;
-  // The callback after memory alloc finished.
-  void OnMemoryAllocFinish(OpContext<KernelTensor> *const context) override;
+  void SendMemoryAllocReq(OpContext<KernelTensor> *const context);
+  void SendMemoryFreeReq(OpContext<KernelTensor> *const context);
 
   const CNodePtr &kernel() const { return kernel_; }
   KernelLaunchInfoWithStream kernel_launch_info() const {
     return KernelLaunchInfoWithStream(input_launch_tensors_, output_launch_tensors_, workspace_launch_tensors_,
                                       stream_);
   }
-  const std::set<size_t> &modifiable_ref_input_indexes() const { return modifiable_ref_input_indexes_; }
-  const std::set<size_t> &modifiable_ref_output_indexes() const { return modifiable_ref_output_indexes_; }
-  bool is_dynamic_shape() const { return is_dynamic_shape_; }
-  bool is_launch_skipped() const { return is_launch_skipped_; }
-  bool inputs_continuous_memory() const { return inputs_continuous_memory_; }
-  SomasInfo *somas_info() const { return somas_info_; }
-  const std::set<size_t> &somas_graph_output_indexes() const { return somas_graph_output_indexes_; }
   size_t get_stream() const { return kernel_info_->stream_id(); }
-
-  const mindspore::HashMap<size_t, size_t> &increase_ref_count_size() const { return increase_ref_count_size_; }
-  const std::vector<bool> &is_output_kernel() const { return is_output_kernel_; }
-  const std::vector<bool> &is_monad_input() const { return is_monad_input_; }
-  const std::vector<size_t> &input_free_index() const { return input_free_index_; }
-  const std::vector<size_t> &output_free_index() const { return output_free_index_; }
-  const std::vector<bool> &depend_shape_input_list() const { return depend_shape_input_list_; }
-  const std::vector<bool> &is_weight() const { return is_weight_; }
 
   void set_enable_async_infer(bool enable_async_infer) { enable_async_infer_ = enable_async_infer; }
 
@@ -101,7 +81,7 @@ class KernelActor : public DebugAwareActor {
   // Really do launch kernel with memory allocate and free.
   virtual void ExecuteLaunchKernelTask(OpContext<KernelTensor> *const context);
 
-  void set_stream_send_actor(KernelActor *stream_send_actor) { stream_send_actor_ = stream_send_actor; }
+  void set_stream_send_actor(KernelRunner *stream_send_actor) { stream_send_actor_ = stream_send_actor; }
 
   void SetInputDeviceTensor(const KernelTensorPtr &input_kernel_tensor, size_t input_index);
 
@@ -120,16 +100,11 @@ class KernelActor : public DebugAwareActor {
   std::vector<KernelTensor *> GetOutputDeviceTensors() { return output_launch_tensors_; }
 
   // Reset state for UCE.
-  void ResetState() override;
-
-  const std::vector<KernelTensorPtr> &workspace_kernel_tensors() { return workspace_kernel_tensors_; }
-  const std::vector<KernelTensorPtr> &output_kernel_tensors() { return output_kernel_tensors_; }
-  const std::vector<KernelTensorPtr> &input_kernel_tensors() { return input_kernel_tensors_; }
+  void ResetState();
 
  protected:
-  void Init() override;
-  void Run(OpContext<KernelTensor> *const context) override;
-  void SendRecorderInfo(OpContext<KernelTensor> *const context) const override;
+  void Init();
+  void SendRecorderInfo(OpContext<KernelTensor> *const context) const;
 
   // Do kernel launching in this method after 'PreLaunchKernel' and 'PostLaunchKernel'.
   virtual bool LaunchKernel(OpContext<KernelTensor> *const context, bool is_skip_launch = false);
@@ -143,11 +118,8 @@ class KernelActor : public DebugAwareActor {
   void UpdateGraphOutputRefCount(OpContext<KernelTensor> *const context);
   // Update the input device tensors to the memory free list.
   void UpdateMemoryFreeList(OpContext<KernelTensor> *const context);
-  // Execute infer shape, resize and launch kernel by runtime pipeline which executes by KernelAsyncInferActor,
-  // KernelAsyncResizeActor and KernelAsyncLaunchActor.
-  void RunWithMultiPipeline(OpContext<KernelTensor> *const context);
-  // Execute launch kernel asynchronously in KernelAsyncLaunchActor.
-  void RunWithAsyncLaunchKernel(OpContext<KernelTensor> *const context);
+
+  void ResizeKernelMod();
 
   // Infer shape(and type) and resize kernel mod for dynamic shape or dynamic value, and update memory size from kernel
   // mod to output/workspace device tensors.
@@ -162,11 +134,6 @@ class KernelActor : public DebugAwareActor {
   // Re-InferShape and resize before kernel launch in dynamic scenarios.
   void InferShape();
 
-  void ResizeKernelMod();
-
-  // Update input_device_tensors by input op data.
-  void UpdateInputDeviceTensor(const OpData<KernelTensor> *input_data, OpContext<KernelTensor> *const context);
-
   // Record the output and workspace memory pointer and size to optimize memory allocate/free performance in next step.
   // Note: only use in inference case.
   void TraceDynamicMemory();
@@ -176,6 +143,41 @@ class KernelActor : public DebugAwareActor {
 
   // Recover the inputs with contiguous.
   void RecoverInputs();
+
+  inline const AID &GetAID() const { return id; }
+
+  // Fetch input data from the device tensor store.
+  void FetchInputByTensorStore(std::vector<KernelTensor *> *const input_launch_tensors,
+                               std::vector<KernelTensorPtr> *const input_kernel_tensors,
+                               std::vector<abstract::AbstractBasePtr> *const input_kernel_tensors_for_infer,
+                               std::vector<KernelTensorPtr> *const memory_free_tensors,
+                               OpContext<KernelTensor> *const context) const;
+
+  std::vector<const DeviceContext *> device_contexts_;
+
+  AID id;
+
+  // The id of recorder actor. Send message to it for recording info.
+  const AID *recorder_aid_;
+
+  // Auto increment id for actor.
+  int64_t actor_id_;
+
+  // The second of pair indicates the output data flag. See constant prefixed with kOutputDataFalg for details.
+  std::vector<std::pair<OpDataUniquePtr<KernelTensor>, size_t>> output_data_;
+  // Record the fusion output index for output data arrow.
+  mindspore::HashMap<DataArrow *, size_t> data_arrow_to_fusion_actor_indexs_;
+
+  // Whether use input optimize.
+  bool enable_input_optimize_;
+
+  // The dependent device tensor stores, the dependent expression is pair<index, AnfNode>.
+  // Index is the input position, AnfNode is the key of the device tensor store.
+  std::vector<std::pair<size_t, AnfNodePtr>> device_tensor_store_keys_;
+
+  // The dependent parameter stores, the dependent expression is pair<index, ParameterInfo>.
+  // Index is the input position, ParameterInfo is used to fetch args and device tensor.
+  std::vector<std::pair<size_t, ParameterInfo>> parameter_indexs_;
 
   // The info of kernel.
   CNodePtr kernel_;
@@ -246,7 +248,7 @@ class KernelActor : public DebugAwareActor {
   // Task id on stream, use for events.
   std::shared_ptr<int64_t> task_id_on_stream_ = std::make_shared<int64_t>(0L);
   // Send actor ref, point to the send actor when current actor is recv actor.
-  KernelActor *stream_send_actor_{nullptr};
+  KernelRunner *stream_send_actor_{nullptr};
   // Flag for stream recv actor.
   bool is_stream_recv_actor_{false};
   // Flag for indicating if current actor is multi-thread safe, which was generate at compile time.
@@ -261,9 +263,6 @@ class KernelActor : public DebugAwareActor {
   friend class ControlNodeScheduler;
   friend class InlineControlFlowScheduler;
   friend class SchedulerHelper;
-#ifdef ENABLE_RPC_ACTOR
-  friend class RpcNodeScheduler;
-#endif
   friend class SuperKernelActor;
 
   // Init the device tensors and kernel launch info.
@@ -274,17 +273,14 @@ class KernelActor : public DebugAwareActor {
   void InitIsMonadInput();
 
   // Fetch the device tensor for launch.
-  void FetchInputDeviceTensor(OpContext<KernelTensor> *const context);
   void FetchOutputDeviceTensor(OpContext<KernelTensor> *const context);
   void FetchWorkspaceDeviceTensor();
   // Need copy when the data type or format between real parameters and formal parameters are inconsistent.
-  void CopyInputDeviceTensor(KernelTensorPtr kernel_tensor, size_t input_index, OpContext<KernelTensor> *const context);
+  void CopyInputDeviceTensor(KernelTensorPtr device_tensor, size_t input_index, OpContext<KernelTensor> *const context);
   void UpdateDeviceTensorCopyStore(DeviceTensor *const new_device_tensor, DeviceTensor *const input_device_tensor,
                                    size_t input_index);
   // The processing before kernel launch: update the info of kernel launch.
   void PreLaunchKernel(OpContext<KernelTensor> *const context);
-  // The processing after kernel launch: 1.erase input, 2.free memory, 3.send output.
-  void PostLaunchKernel(OpContext<KernelTensor> *const context);
   // Back refresh the dynamic device tensor stores that have been triggered copy.
   void RefreshDeviceTensorCopyStore(OpContext<KernelTensor> *const context);
 
@@ -343,10 +339,14 @@ class KernelActor : public DebugAwareActor {
   // it sets the flag of the branch to true to enable the actor in this branch.
   bool *is_enable_{nullptr};
   bool need_wait_pipeline_{false};
+
+  // The id of debug actor. Send message to it for debug.
+  const AID *debug_aid_;
+  const AID *profiler_aid_;
 };
 
-using KernelActorPtr = std::shared_ptr<KernelActor>;
+using KernelRunnerPtr = std::shared_ptr<KernelRunner>;
 }  // namespace runtime
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_RUNTIME_FRAMEWORK_ACTOR_KERNEL_ACTOR_H_
+#endif  // MINDSPORE_CCSRC_RUNTIME_FRAMEWORK_ACTOR_KERNEL_RUNNER_H_
