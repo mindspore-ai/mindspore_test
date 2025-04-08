@@ -937,6 +937,8 @@ AnfNodePtr DFunctor::MapFuncGraphToK(const AnfNodePtr &primal) {
   auto k_user_defined = KUserDefined(func_graph);
   if (k_user_defined != nullptr) {
     MS_LOG(DEBUG) << "K graph functor user defined bprop " << func_graph->ToString() << ".";
+    (void)func_graph->transforms().emplace("grad", FuncGraphTransform(k_user_defined));
+    (void)k_user_defined->transforms().emplace("custom_bprop_primal", FuncGraphTransform(func_graph));
     return NewValueNode(k_user_defined);
   }
   auto functor = std::make_shared<DFunctor>(func_graph, resources_, false, is_view_inplace_);
