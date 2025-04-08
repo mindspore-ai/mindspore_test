@@ -677,14 +677,13 @@ static bool CheckGuard(JitCompileResults *c, const PyFrameWrapper &f) {
     if (oc == skip) {
       continue;
     }
-    OptGuardPtr guard = oc->GetGuard();
-    if (guard != nullptr && guard->Check(f, print_guard, log_perf)) {
+    if (oc->GetGuard()->Check(f, print_guard, log_perf)) {
       c->set_code(oc);
       MS_LOG(DEBUG) << "select the compiled code due to guard is match: "
                     << (oc->GetPythonCode() != nullptr
                           ? std::string(py::str(reinterpret_cast<PyObject *>(oc->GetPythonCode())))
-                          : "")
-                    << (oc->GetPhase().empty() ? "" : oc->GetPhase()) << std::endl
+                          : oc->GetPhase())
+                    << std::endl
                     << "generated guard:" << std::endl
                     << oc->GetGuard()->ToString();
       break;

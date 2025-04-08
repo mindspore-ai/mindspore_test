@@ -30,42 +30,14 @@
 namespace mindspore {
 namespace pijit {
 
-static PyObject *kPyAttrStub = nullptr;
-static PyObject *kPyAttrTensor = nullptr;
 static PyObject *kPyAttrReprCache = nullptr;
 static const char kPyAttrReprCacheStr[] = "__repr_cache__";
-static const char kPyMethodStubSync[] = "stub_sync";
-static PyObject *GetAttrStubStr() {
-  if (kPyAttrStub == nullptr) {
-    kPyAttrStub = PyUnicode_FromString(stub::PY_ATTR_STUB);
-  }
-  return kPyAttrStub;
-}
-static PyObject *GetAttrTensorStr() {
-  if (kPyAttrTensor == nullptr) {
-    kPyAttrTensor = PyUnicode_FromString(stub::PY_ATTR_TENSOR);
-  }
-  return kPyAttrTensor;
-}
+
 static PyObject *GetAttrReprCacheStr() {
   if (kPyAttrReprCache == nullptr) {
     kPyAttrReprCache = PyUnicode_FromString(kPyAttrReprCacheStr);
   }
   return kPyAttrReprCache;
-}
-
-static std::string GetObjectString(PyObject *objName) {
-  std::string ret = "";
-  if (objName == NULL) {
-    return ret;
-  }
-  PyObject *pyName = PyUnicode_AsEncodedString(objName, "utf-8", NULL);
-  char *strName = PyBytes_AsString(pyName);
-  if (strName != nullptr) {
-    ret = strName;
-  }
-  Py_DECREF(pyName);
-  return ret;
 }
 
 #define DESC(op) (std::string("{") + std::string(#op) + std::string(":") + (op) + std::string("}"))
@@ -134,7 +106,7 @@ class ItemData {
 
   virtual ~ItemData() = default;
 
-  virtual bool operator==(const ItemData &obj) const { return obj.tp_ == tp_; }
+  virtual bool operator==(const ItemData &obj) const { return obj.tp_ == tp_ && specialized_ == obj.specialized_; }
 
   virtual bool operator==(PyObject *obj) const { return tp_ != ItemType::PyNull || obj == nullptr || obj == Py_None; }
 
@@ -163,7 +135,7 @@ class ItemData {
     return *info_;
   }
 
-  virtual ItemType GetItemType() { return tp_; }
+  ItemType GetItemType() const { return tp_; }
 
   virtual bool MatchDynamicShape(std::shared_ptr<ItemData> other) { return false; }
 
@@ -182,7 +154,6 @@ class IntData : public ItemData {
  public:
   IntData(PyObject *obj, bool needSpecialize, int recurseDepth)
       : ItemData(ItemType::PyLong, needSpecialize, recurseDepth) {
-    tp_ = ItemType::PyLong;
     intVar_ = PyLong_AsLong(obj);
   }
 
@@ -191,10 +162,7 @@ class IntData : public ItemData {
   }
 
   bool operator==(PyObject *obj) const override {
-    if (obj == nullptr) {
-      return false;
-    }
-    if (PyLong_Check(obj) && !PyBool_Check(obj)) {
+    if (PyLong_Check(obj)) {
       return !specialized_ || PyLong_AsLong(obj) == intVar_;
     }
     return false;
@@ -219,10 +187,7 @@ class FloatData : public ItemData {
   }
 
   bool operator==(PyObject *obj) const override {
-    if (obj == nullptr) {
-      return false;
-    }
-    if (!!PyFloat_Check(obj)) {
+    if (PyFloat_Check(obj)) {
       return !specialized_ || PyFloat_AsDouble(obj) == floatVar_;
     }
     return false;
@@ -246,15 +211,7 @@ class BoolData : public ItemData {
     return ItemData::operator==(obj) && (!specialized_ || (static_cast<const BoolData &>(obj)).boolVar_ == boolVar_);
   }
 
-  bool operator==(PyObject *obj) const override {
-    if (obj == nullptr) {
-      return false;
-    }
-    if (!!PyBool_Check(obj)) {
-      return !specialized_ || (obj == Py_True) == boolVar_;
-    }
-    return false;
-  }
+  bool operator==(PyObject *obj) const override { return (obj == Py_True) == boolVar_; }
 
   std::string ToString() override { return DESC_STRING(boolVar_) + DESC_END; }
 
@@ -296,9 +253,6 @@ class BytesData : public ItemData {
   }
 
   bool operator==(PyObject *obj) const override {
-    if (obj == nullptr) {
-      return false;
-    }
     if (!!PyBytes_Check(obj)) {
       char *pBuf = PyBytes_AS_STRING(reinterpret_cast<PyBytesObject *>(obj));
       return len_ == PyBytes_Size(obj) &&
@@ -324,21 +278,17 @@ class StringData : public ItemData {
   StringData(PyObject *obj, bool needSpecialize, int recurseDepth)
       : ItemData(ItemType::PyStr, needSpecialize, recurseDepth) {
     if (needSpecialize) {
-      strVal_ = GetObjectString(obj);
+      strVal_ = PyUnicode_AsUTF8(obj);
     }
   }
 
   bool operator==(const ItemData &obj) const override {
-    return ItemData::operator==(obj) &&
-           ((specialized_ && (static_cast<const StringData &>(obj)).strVal_.compare(strVal_) == 0) || (!specialized_));
+    return ItemData::operator==(obj) && (!specialized_ || strVal_ == (static_cast<const StringData &>(obj)).strVal_);
   }
 
   bool operator==(PyObject *obj) const override {
-    if (obj == nullptr) {
-      return false;
-    }
-    if (!!PyUnicode_Check(obj)) {
-      return !specialized_ || GetObjectString(obj).compare(strVal_) == 0;
+    if (PyUnicode_Check(obj)) {
+      return !specialized_ || strVal_ == PyUnicode_AsUTF8(obj);
     }
     return false;
   }
@@ -365,14 +315,11 @@ class ListData : public ItemData {
   }
 
   bool operator==(PyObject *obj) const override {
-    if (obj == nullptr) {
-      return false;
-    }
-    if (!!PyList_Check(obj)) {
+    if (PyList_Check(obj)) {
       return CheckList(obj);
-    } else if (!!PyTuple_Check(obj)) {
+    } else if (PyTuple_Check(obj)) {
       return CheckTuple(obj);
-    } else if (!!PySet_Check(obj) || !!PyFrozenSet_Check(obj)) {
+    } else if (PySet_Check(obj) || PyFrozenSet_Check(obj)) {
       return CheckSet(obj);
     }
     return false;
@@ -416,12 +363,11 @@ class ListData : public ItemData {
     }
   }
   bool CheckList(PyObject *obj) const {
-    auto list = py::cast<py::list>(obj);
-    if (tp_ != ItemType::PyList || listVar_.size() != list.size()) {
+    if (listVar_.size() != static_cast<size_t>(Py_SIZE(obj))) {
       return false;
     }
-    for (size_t idx = 0; idx < listVar_.size(); ++idx) {
-      if (!(*(listVar_[idx]) == list[idx].ptr())) {
+    for (size_t idx = 0, size = listVar_.size(); idx < size; ++idx) {
+      if (!(*(listVar_[idx]) == PyList_GET_ITEM(obj, idx))) {
         return false;
       }
     }
@@ -429,12 +375,11 @@ class ListData : public ItemData {
   }
 
   bool CheckTuple(PyObject *obj) const {
-    auto tuple = py::cast<py::tuple>(obj);
-    if (tp_ != ItemType::PyTuple || listVar_.size() != tuple.size()) {
+    if (listVar_.size() != static_cast<size_t>(Py_SIZE(obj))) {
       return false;
     }
-    for (size_t idx = 0; idx < listVar_.size(); ++idx) {
-      if (!(*(listVar_[idx]) == tuple[idx].ptr())) {
+    for (size_t idx = 0, size = listVar_.size(); idx < size; ++idx) {
+      if (!(*(listVar_[idx]) == PyTuple_GET_ITEM(obj, idx))) {
         return false;
       }
     }
@@ -1218,7 +1163,7 @@ class ParamInfoData : public ItemData {
   }
 
   static bool Equal(ParamInfoPtr a, ParamInfoPtr b) {
-    if (a == nullptr && b == nullptr) {
+    if (a == b) {
       return true;
     } else if (a == nullptr || b == nullptr) {
       return false;
@@ -1305,141 +1250,58 @@ class MetaTensorData : public ItemData {
 
   MetaTensorData(PyObject *obj, bool needSpecialize, int recurseDepth)
       : ItemData(ItemType::MetaTensor, needSpecialize, recurseDepth) {
-    mindspore::tensor::MetaTensorPtr tensor_ptr = nullptr;
-    PyObject *stubattr = GetAttrStubStr();
-    PyObject *stub = PyObject_HasAttr(obj, stubattr) ? PyObject_GetAttr(obj, stubattr) : nullptr;
-    if (stub != nullptr) {
-      if (stub != Py_None) {
-        is_stubtensor_ = true;
-      } else {
-        PyObject *tensorattr = GetAttrTensorStr();
-        obj = PyObject_GetAttr(obj, tensorattr);
-        tensor_ptr = tensor::ConvertToTensor(obj);
-        Py_DECREF(obj);
-      }
-    } else if (py::isinstance<mindspore::tensor::MapTensor>(obj)) {
-      tensor_ptr = py::cast<mindspore::tensor::MapTensorPtr>(obj);
-    } else {
-      tensor_ptr = tensor::ConvertToTensor(py::cast<py::object>(obj));
-    }
-    if (tensor_ptr != nullptr) {
-      StoreTensor(tensor_ptr);
-    } else {
-      auto ptr = py::cast<mindspore::stub::StubNodePtr>(stub);
-      StoreStubTensor(ptr);
-    }
-    Py_XDECREF(stub);
+    StoreTensor(GetStubInfo(obj));
   }
 
   bool operator==(const ItemData &obj) const override {
     if (ItemData::operator==(obj)) {
       const MetaTensorData &other = static_cast<const MetaTensorData &>(obj);
-      bool ret;
-      if (is_stubtensor_ || other.is_stubtensor_) {
-        ret = CheckShape(shape_, other.shape_) && CheckDataType(other);
-      } else {
-        ret = tid_ == other.tid_ && CheckShape(shape_, other.shape_) && is_parameter_ == other.is_parameter_ &&
-              CheckDataType(other);
-      }
-      if (ret) {
-        if (is_parameter_ == true) {
-          ret = ((param_ == nullptr && other.param_ == nullptr) ||
-                 (param_ != nullptr && other.param_ != nullptr && ParamInfoData::Equal(param_, other.param_)));
-        }
+      bool ret = tid_ == other.tid_ && CheckShape(shape_, other.shape_) && is_parameter_ == other.is_parameter_ &&
+                 CheckDataType(other);
+      if (ret && is_parameter_) {
+        ret = ParamInfoData::Equal(param_, other.param_);
       }
       return ret;
     }
     return false;
   }
 
-  bool operator==(PyObject *obj) const override {
-    if (obj == nullptr) {
-      return false;
-    }
-    if (tensor::IsTensorPy(py::cast<py::object>(obj))) {
-      mindspore::tensor::MetaTensorPtr tensor_ptr = nullptr;
-      PyObject *stub = nullptr;
-      bool is_stubtensor = GetStubInfo(obj, &stub, &tensor_ptr);
-      bool ret;
-      bool is_parameter = is_stubtensor ? false : tensor_ptr->is_parameter();
-      mindspore::ParamInfoPtr param;
-      if (!is_stubtensor) {
-        param = tensor_ptr->param_info();
-      }
-      if (is_stubtensor_ || is_stubtensor) {
-        ret = CheckTypeAndShape(is_stubtensor ? GetStubDataType(stub) : tensor_ptr->Dtype(),
-                                is_stubtensor ? GetStubShape(stub) : tensor_ptr->shape());
-      } else {
-        ret = tid_ == tensor_ptr->data_type() && is_parameter_ == is_parameter &&
-              CheckTypeAndShape(tensor_ptr->Dtype(), tensor_ptr->shape());
-      }
-      Py_XDECREF(stub);
-      return ret && ((is_parameter_ != true) || ParamInfoData::Equal(param_, param));
+  bool EqualInternal(const tensor::BaseTensorPtr &tensor_ptr) const {
+    if (tid_ == tensor_ptr->data_type() && is_parameter_ == tensor_ptr->is_parameter() &&
+        CheckTypeAndShape(tensor_ptr->Dtype(), tensor_ptr->shape())) {
+      return !is_parameter_ || ParamInfoData::Equal(param_, tensor_ptr->param_info());
     }
     return false;
   }
 
-  bool GetStubInfo(PyObject *obj, PyObject **pstub, mindspore::tensor::MetaTensorPtr *tp) const {
-    bool is_stubtensor = false;
-    mindspore::tensor::MetaTensorPtr tensor_ptr = nullptr;
-    PyObject *stubattr = GetAttrStubStr();
-    PyObject *stub = nullptr;
-    if (PyObject_HasAttr(obj, stubattr)) {
-      stub = PyObject_GetAttr(obj, stubattr);
+  bool operator==(PyObject *obj) const override {
+    if (tensor::IsTensorPy(py::cast<py::object>(obj)) || IsStubTensor(py::cast<py::object>(obj))) {
+      return EqualInternal(GetStubInfo(obj));
     }
-    if (stub != nullptr) {
-      if (stub != Py_None) {
-        is_stubtensor = true;
-      } else {
-        PyObject *tensorattr = GetAttrTensorStr();
-        obj = PyObject_GetAttr(obj, tensorattr);
-        tensor_ptr = tensor::ConvertToTensor(py::cast<py::object>(obj));
-        Py_DECREF(obj);
+    return false;
+  }
+
+  tensor::BaseTensorPtr GetStubInfo(PyObject *obj) const {
+    py::object py_tensor = py::reinterpret_borrow<py::object>(obj);
+    if (!tensor::IsTensorPy(obj)) {
+      // stub tensor is deprecated and will be remove
+      auto py_stub = py::getattr(obj, stub::PY_ATTR_STUB, Py_None);
+      if (py_stub.ptr() != Py_None) {
+        return std::static_pointer_cast<tensor::BaseTensor>(py_stub.cast<stub::StubNodePtr>()->WaitValue());
       }
-    } else if (py::isinstance<mindspore::tensor::MapTensor>(obj)) {
-      tensor_ptr = py::cast<mindspore::tensor::MapTensorPtr>(obj);
-    } else {
-      tensor_ptr = tensor::ConvertToTensor(py::cast<py::object>(obj));
+      py_tensor = py::getattr(obj, stub::PY_ATTR_TENSOR, nullptr);
+      MS_EXCEPTION_IF_CHECK_FAIL(py_tensor.ptr() != nullptr && tensor::IsTensorPy(py_tensor),
+                                 std::string() + "unexpected tensor type: " + Py_TYPE(obj)->tp_name);
     }
-    *tp = tensor_ptr;
-    *pstub = stub;
-    return is_stubtensor;
-  }
-
-  ShapeVector GetStubShape(PyObject *stub) const {
-    mindspore::stub::StubNodePtr stub_ptr = py::cast<mindspore::stub::StubNodePtr>(stub);
-    auto base = stub_ptr->ToAbstract();
-    auto shape = base->BuildShape()->cast<abstract::ShapePtr>();
-    ShapeVector res;
-    if (shape && !shape->IsDynamic()) {
-      res = shape->shape();
-    } else {
-      res = {};
-    }
-    return res;
-  }
-
-  TypePtr GetStubDataType(PyObject *stub) const {
-    mindspore::stub::StubNodePtr stub_ptr = py::cast<mindspore::stub::StubNodePtr>(stub);
-    auto base = stub_ptr->ToAbstract();
-    auto dt = base->BuildType();
-    TypePtr data_type;
-    if (dt->isa<mindspore::TensorType>()) {
-      data_type = dt->cast<std::shared_ptr<mindspore::TensorType>>()->element();
-    } else {
-      data_type = dt;
-    }
-    return data_type;
+    auto value_ptr = tensor::ConvertToBaseTensor(py_tensor);
+    return value_ptr;
   }
 
   py::object MakeTensor() {
     return PackTensorToPyObject(std::make_shared<mindspore::tensor::Tensor>(data_type_->type_id(), shape_));
   }
 
-  bool IsDynamicShape() const {
-    return std::any_of(shape_.begin(), shape_.end(),
-                       [](ShapeValueDType dim) { return dim == kDynamicDim || dim == kDynamicShape; });
-  }
+  bool IsDynamicShape() const { return is_dynamic_shape_; }
 
   std::string ToString() override {
     std::string meta_tensor = ToStringIntern();
@@ -1476,9 +1338,7 @@ class MetaTensorData : public ItemData {
     for (size_t i = 0; i < shape_.size(); ++i) {
       shape += DESC_INDEX_V(shape_, i);
     }
-    std::string is_stubtensor = is_stubtensor_ ? "true" : "false";
-    return DESC_STRING(tid_) + DESC_TOSTRING(data_type_) + DESC_STRING(is_parameter_) + DESC(param_desc) + DESC(shape) +
-           DESC(is_stubtensor);
+    return DESC_STRING(tid_) + DESC_TOSTRING(data_type_) + DESC_STRING(is_parameter_) + DESC(param_desc) + DESC(shape);
   }
   bool CheckTypeAndShape(const TypePtr &tp, const ShapeVector &sv) const {
     return CheckShape(shape_, sv) && ((data_type_ == nullptr && tp == nullptr) ||
@@ -1496,26 +1356,12 @@ class MetaTensorData : public ItemData {
     data_type_ = tensor_ptr->Dtype();
     is_parameter_ = tensor_ptr->is_parameter();
     param_ = tensor_ptr->param_info();
-  }
-
-  void StoreStubTensor(mindspore::stub::StubNodePtr stub_ptr) {
-    auto base = stub_ptr->ToAbstract();
-    auto shape = base->BuildShape()->cast<abstract::ShapePtr>();
-    if (shape && !shape->IsDynamic()) {
-      shape_ = shape->shape();
-    } else {
-      shape_ = {};
-    }
-    auto dt = base->BuildType();
-    if (dt->isa<mindspore::TensorType>()) {
-      data_type_ = dt->cast<std::shared_ptr<mindspore::TensorType>>()->element();
-    } else {
-      data_type_ = dt;
-    }
+    is_dynamic_shape_ = std::any_of(shape_.begin(), shape_.end(),
+                                    [](ShapeValueDType dim) { return dim == kDynamicDim || dim == kDynamicShape; });
   }
 
   void SubInfo(InfoPack *info) override {
-    (*info) << uint8_t(tid_) << data_type_ << is_parameter_ << shape_ << is_stubtensor_;
+    (*info) << uint8_t(tid_) << data_type_ << is_parameter_ << shape_;
     ParamInfoData::SubInfo(info, param_);
   }
 
@@ -1523,7 +1369,7 @@ class MetaTensorData : public ItemData {
   ShapeVector shape_;
   TypePtr data_type_;
   bool is_parameter_ = false;
-  bool is_stubtensor_ = false;
+  bool is_dynamic_shape_ = false;
   mindspore::ParamInfoPtr param_;
 };
 
@@ -1535,51 +1381,14 @@ class TensorData : public MetaTensorData {
     StoreTensor(tensor_ptr);
   }
 
-  TensorData(mindspore::tensor::TensorPyPtr tensorpy, bool needSpecialize, int recurseDepth)
-      : MetaTensorData(needSpecialize, recurseDepth) {
-    tp_ = ItemType::Tensor;
-    tensor::TensorPtr tensor = tensorpy->GetTensor();
-    StoreTensor(tensor);
-  }
-
   TensorData(PyObject *obj, bool needSpecialize, int recurseDepth) : MetaTensorData(needSpecialize, recurseDepth) {
-    is_stubtensor_ = false;
+    tensor_type_ = Py_TYPE(obj);
     tp_ = ItemType::Tensor;
-    mindspore::tensor::TensorPtr tensor_ptr = nullptr;
-    PyObject *stubattr = GetAttrStubStr();
-    PyObject *stub = PyObject_HasAttr(obj, stubattr) ? PyObject_GetAttr(obj, stubattr) : nullptr;
-    if (stub != nullptr) {
-      if (stub != Py_None) {
-        specialized_ = false;
-      }
-      if (specialized_) {
-        auto pyObj = python_adapter::CallPyObjMethod(py::cast<py::object>(obj), kPyMethodStubSync);
-        tensor_ptr = tensor::ConvertToTensor(pyObj);
-      } else {
-        if (stub != Py_None) {
-          is_stubtensor_ = true;
-        } else {
-          PyObject *tensorattr = GetAttrTensorStr();
-          obj = PyObject_GetAttr(obj, tensorattr);
-          tensor_ptr = tensor::ConvertToTensor(obj);
-          Py_DECREF(obj);
-        }
-      }
-    } else if (py::isinstance<mindspore::tensor::MapTensor>(obj)) {
-      tensor_ptr = py::cast<mindspore::tensor::MapTensorPtr>(obj);
-    } else {
-      tensor_ptr = tensor::ConvertToTensor(py::cast<py::object>(obj));
+    tensor::BaseTensorPtr tensor_ptr = GetStubInfo(obj);
+    if (OptStrategy::MakeCalcStrategyByShape(tensor_ptr->shape()) != OptStrategy::CalcKind::kCalcValue) {
+      specialized_ = false;
     }
-    if (tensor_ptr != nullptr) {
-      if (OptStrategy::MakeCalcStrategyByShape(tensor_ptr->shape()) != OptStrategy::CalcKind::kCalcValue) {
-        specialized_ = false;
-      }
-      StoreTensor(tensor_ptr);
-    } else {
-      auto ptr = py::cast<mindspore::stub::StubNodePtr>(stub);
-      StoreStubTensor(ptr);
-    }
-    Py_XDECREF(stub);
+    StoreTensor(tensor_ptr);
   }
 
   ~TensorData() override { data_ptr_.release(); }
@@ -1601,13 +1410,10 @@ class TensorData : public MetaTensorData {
     }
     bool ret = MetaTensorData::operator==(obj);
     const TensorData &other = static_cast<const TensorData &>(obj);
-    if (is_stubtensor_ || other.is_stubtensor_) {
-      return ret;
-    }
-    ret = ret && other.init_flag_ == init_flag_ && other.is_forward_output_ == is_forward_output_ &&
-          other.graph_output_ == graph_output_ && other.specialized_ == specialized_ && IsBaseShapePtr(other) &&
-          IsCastDtype(other) && other.compression_type_ == compression_type_ &&
-          other.quant_params_.size() == quant_params_.size() && other.tensor_name_.compare(tensor_name_) == 0;
+    ret = ret && other.is_forward_output_ == is_forward_output_ && other.graph_output_ == graph_output_ &&
+          other.specialized_ == specialized_ && IsBaseShapePtr(other) && IsCastDtype(other) &&
+          other.compression_type_ == compression_type_ && other.quant_params_.size() == quant_params_.size() &&
+          other.tensor_name_.compare(tensor_name_) == 0;
     if (!ret) {
       return ret;
     }
@@ -1625,33 +1431,28 @@ class TensorData : public MetaTensorData {
     }
   }
 
+  // how to fast check tensor equal ?
   bool operator==(PyObject *obj) const override {
-    if (obj == nullptr) {
+    bool type_match = Py_IS_TYPE(obj, tensor_type_);
+    if (!type_match) {
+      type_match = tensor::IsTensorPy(py::cast<py::object>(obj)) || IsStubTensor(py::cast<py::object>(obj));
+    }
+    if (!type_match) {
       return false;
     }
-    if (tensor::IsTensorPy(py::cast<py::object>(obj))) {
-      bool ret = MetaTensorData::operator==(obj);
-      mindspore::tensor::MetaTensorPtr mtensor_ptr = nullptr;
-      PyObject *stub = nullptr;
-      bool is_stubtensor = GetStubInfo(obj, &stub, &mtensor_ptr);
-      Py_XDECREF(stub);
-      if (is_stubtensor_ || is_stubtensor) {
-        return ret;
-      }
-      mindspore::tensor::TensorPtr tensor_ptr = std::static_pointer_cast<mindspore::tensor::Tensor>(mtensor_ptr);
-      ret = ret && CheckTensorAndParam(tensor_ptr);
-      if (!ret) {
-        return ret;
-      }
-      if (IsDynamicShape() ||
-          std::any_of(tensor_ptr->shape().begin(), tensor_ptr->shape().end(),
-                      [](ShapeValueDType dim) { return dim == kDynamicDim || dim == kDynamicShape; })) {
-        return true;
-      } else {
-        return CheckTensorData(tensor_ptr);
-      }
+    tensor::BaseTensorPtr tensor_ptr = GetStubInfo(obj);
+    if (!MetaTensorData::EqualInternal(tensor_ptr)) {
+      return false;
     }
-    return false;
+    if (!CheckTensorAndParam(tensor_ptr)) {
+      return false;
+    }
+    if (IsDynamicShape() ||
+        std::any_of(tensor_ptr->shape().begin(), tensor_ptr->shape().end(),
+                    [](ShapeValueDType dim) { return dim == kDynamicDim || dim == kDynamicShape; })) {
+      return true;
+    }
+    return CheckTensorData(tensor_ptr);
   }
 
   std::string ToString() override {
@@ -1662,7 +1463,7 @@ class TensorData : public MetaTensorData {
  protected:
   std::string ToStringIntern() override {
     std::string ret = MetaTensorData::ToStringIntern();
-    ret += DESC_STRING(is_forward_output_) + DESC_STRING(init_flag_) + DESC_STRING(graph_output_);
+    ret += DESC_STRING(is_forward_output_) + DESC_STRING(graph_output_);
     ret +=
       DESC_TOSTRING(cast_dtype_) + DESC_TOSTRING(base_shape_ptr_) + DESC_STRING(compression_type_) + DESC(tensor_name_);
     for (size_t i = 0; i < quant_params_.size(); ++i) {
@@ -1673,16 +1474,26 @@ class TensorData : public MetaTensorData {
     }
     return ret;
   }
-  bool CheckTensorAndParam(const mindspore::tensor::TensorPtr &tensor_ptr) const {
-    bool ret = tensor_ptr->is_init() == init_flag_ && tensor_ptr->is_forward_output() == is_forward_output_ &&
-               tensor_ptr->IsGraphOutput() == graph_output_ && tensor_ptr->compression_type() == compression_type_ &&
-               tensor_ptr->quant_params().size() == quant_params_.size() &&
-               tensor_ptr->name().compare(tensor_name_) == 0;
+
+  bool CheckTensorAndParam(const mindspore::tensor::BaseTensorPtr &tensor_ptr) const {
+    // tensor_ptr->base_shape_ptr_ should check ?
+    if (tensor_ptr->is_forward_output() != is_forward_output_) {
+      return false;
+    }
+    auto tensor_tensor_ptr = std::dynamic_pointer_cast<tensor::Tensor>(tensor_ptr);
+    if (tensor_tensor_ptr == nullptr) {
+      return true;
+    }
+    // tensor_tensor_ptr->cast_dtype_ should check ?
+    const bool ret = tensor_tensor_ptr->IsGraphOutput() == graph_output_ &&
+                     tensor_tensor_ptr->compression_type() == compression_type_ &&
+                     tensor_tensor_ptr->quant_params().size() == quant_params_.size() &&
+                     tensor_tensor_ptr->name() == tensor_name_;
     if (!ret) {
-      return ret;
+      return false;
     }
     for (size_t i = 0; i < quant_params_.size(); ++i) {
-      if (*(quant_params_[i]) == *(tensor_ptr->quant_params()[i])) {
+      if (*(quant_params_[i]) == *(tensor_tensor_ptr->quant_params()[i])) {
         continue;
       } else {
         return false;
@@ -1691,22 +1502,22 @@ class TensorData : public MetaTensorData {
     return true;
   }
 
-  bool CheckTensorData(const mindspore::tensor::TensorPtr &tensor_ptr) const {
-    bool ret = false;
-    if (specialized_) {
-      auto data = tensor_ptr->data_ptr();
-      if (data_ptr_ == nullptr || reinterpret_cast<uint8_t *>(data->data()) == nullptr) {
-        ret = data_len_ == size_t(data->nbytes());
-      } else if (data_len_ == size_t(data->nbytes())) {
-        ret = memcmp(data_ptr_.get(), reinterpret_cast<uint8_t *>(data->data()), data_len_) == 0;
-      } else {
-        ret = false;
-      }
-    } else {
-      auto data = tensor_ptr->data_ptr();
-      ret = data_len_ == size_t(data->nbytes());
+  bool CheckTensorData(const mindspore::tensor::BaseTensorPtr &tensor_ptr) const {
+    if (!specialized_) {
+      return true;
     }
-    return ret;
+    // BaseTensor::data_sync need WaitAll pipeline, it's too expensive
+    auto data = tensor_ptr->data_ptr();
+    if (data_ptr_ == nullptr || reinterpret_cast<const uint8_t *>(data->const_data()) == nullptr) {
+      // If not data_sync, check data size, but shape and dtype is checked, here return true.
+      // Got a tensor which is guard to constant value, but actually it's not synchronized and maybe not constant.
+      // return false and mutable it as graph parameter if need.
+      return data_len_ == size_t(data->nbytes());
+    } else if (data_len_ == size_t(data->nbytes())) {
+      // if has data_sync, check data
+      return memcmp(data_ptr_.get(), reinterpret_cast<const uint8_t *>(data->const_data()), data_len_) == 0;
+    }
+    return false;
   }
 
   bool CheckData(const TensorData &other) const {
@@ -1725,21 +1536,26 @@ class TensorData : public MetaTensorData {
     return ret;
   }
 
-  void StoreTensor(mindspore::tensor::TensorPtr tensor_ptr) {
-    MetaTensorData::StoreTensor(tensor_ptr);
-    init_flag_ = tensor_ptr->is_init();
+  void StoreTensor(mindspore::tensor::BaseTensorPtr tensor_ptr) {
+    MetaTensorData::StoreTensor(std::static_pointer_cast<tensor::MetaTensor>(tensor_ptr));
     is_forward_output_ = tensor_ptr->is_forward_output();
     id_ = tensor_ptr->id();
-    graph_output_ = tensor_ptr->IsGraphOutput();
     base_shape_ptr_ = tensor_ptr->base_shape_ptr() == nullptr ? nullptr : tensor_ptr->base_shape_ptr()->Clone();
-    cast_dtype_ = (tensor_ptr->cast_dtype() == nullptr) ? nullptr : tensor_ptr->cast_dtype()->Clone();
-    compression_type_ = tensor_ptr->compression_type();
-    const std::vector<std::shared_ptr<mindspore::QuantizationParam>> &qp = tensor_ptr->quant_params();
-    tensor_name_ = tensor_ptr->name();
-    for (auto quant : qp) {
-      QuantizationParamPtr qptr = std::make_shared<mindspore::QuantizationParam>(quant->quant_algo_name());
-      quant_params_.push_back(qptr);
-      qptr->set_attrs(quant->attrs());
+
+    auto tensor_tensor_ptr = std::dynamic_pointer_cast<tensor::Tensor>(tensor_ptr);
+    if (tensor_tensor_ptr != nullptr) {
+      graph_output_ = tensor_tensor_ptr->IsGraphOutput();
+      cast_dtype_ = (tensor_tensor_ptr->cast_dtype() == nullptr) ? nullptr : tensor_tensor_ptr->cast_dtype()->Clone();
+      compression_type_ = tensor_tensor_ptr->compression_type();
+      const std::vector<std::shared_ptr<mindspore::QuantizationParam>> &qp = tensor_tensor_ptr->quant_params();
+      tensor_name_ = tensor_tensor_ptr->name();
+      for (auto quant : qp) {
+        QuantizationParamPtr qptr = std::make_shared<mindspore::QuantizationParam>(quant->quant_algo_name());
+        quant_params_.push_back(qptr);
+        qptr->set_attrs(quant->attrs());
+      }
+    } else {
+      compression_type_ = TensorCompressionType::kNoCompression;
     }
     if (specialized_) {
       tensor_ptr->data_sync(true);
@@ -1757,8 +1573,8 @@ class TensorData : public MetaTensorData {
 
   void SubInfo(InfoPack *info) override {
     MetaTensorData::SubInfo(info);
-    (*info) << is_forward_output_ << init_flag_ << graph_output_ << cast_dtype_ << base_shape_ptr_
-            << uint8_t(compression_type_) << tensor_name_;
+    (*info) << is_forward_output_ << graph_output_ << cast_dtype_ << base_shape_ptr_ << uint8_t(compression_type_)
+            << tensor_name_;
     (*info) << uint64_t(quant_params_.size());
     for (auto qp : quant_params_) {
       (*info) << qp;
@@ -1768,7 +1584,7 @@ class TensorData : public MetaTensorData {
     }
   }
 
-  bool init_flag_{false};
+  PyTypeObject *tensor_type_;
   bool is_forward_output_{false};
   std::unique_ptr<uint8_t[]> data_ptr_{nullptr};
   size_t data_len_{0};
@@ -2250,51 +2066,71 @@ class PrimitiveData : public ItemData {
 class CellData : public ItemData {
  public:
   CellData(PyObject *obj, bool needSpecialize, int recurseDepth)
-      : ItemData(ItemType::Cell, needSpecialize, recurseDepth), cell_(obj) {
-    auto cell = py::reinterpret_borrow<py::object>(obj);
-    type_ = py::getattr(cell.get_type(), "__name__").cast<std::string>();
-    if (py::hasattr(cell, "training")) {
-      training_ = py::getattr(cell, "training").cast<bool>();
+      : ItemData(ItemType::Cell, needSpecialize, recurseDepth),
+        cell_ref_(obj),
+        training_name_("training"),
+        requires_grad_name_("requires_grad"),
+        training_(false),
+        requires_grad_(false) {
+    auto training_attr = py::getattr(obj, training_name_, nullptr);
+    auto requires_grad_attr = py::getattr(obj, requires_grad_name_, nullptr);
+    PyObject *self_dict = PyObject_GenericGetDict(obj, nullptr);
+    py::object scope_ref = py::reinterpret_steal<py::object>(self_dict);
+    if (scope_ref.ptr() == nullptr) {
+      throw py::error_already_set();  // no self.__dict__
     }
-    if (py::hasattr(cell, "requires_grad")) {
-      requires_grad_ = py::getattr(cell, "requires_grad").cast<bool>();
+    if (training_attr.ptr() != nullptr) {
+      if (training_attr.ptr() != PyDict_GetItem(self_dict, training_name_.ptr())) {
+        MS_LOG(ERROR) << "self.training is not self.__dict__[\"training\"]";
+      }
+      training_ = training_attr.cast<bool>();
+    }
+    if (requires_grad_attr.ptr() != nullptr) {
+      if (requires_grad_attr.ptr() != PyDict_GetItem(self_dict, requires_grad_name_.ptr())) {
+        MS_LOG(ERROR) << "self.requires_grad is not self.__dict__[\"requires_grad\"]";
+      }
+      requires_grad_ = requires_grad_attr.cast<bool>();
     }
   }
 
   bool operator==(const ItemData &obj) const override {
     if (ItemData::operator==(obj)) {
       const auto &other = static_cast<const CellData &>(obj);
-      return cell_ == other.cell_ && training_ == other.training_ && requires_grad_ == other.requires_grad_;
+      void *this_cell = PyWeakref_GET_OBJECT(this->cell_ref_.ptr());
+      void *other_cell = PyWeakref_GET_OBJECT(other.cell_ref_.ptr());
+      return this_cell == other_cell && training_ == other.training_ && requires_grad_ == other.requires_grad_;
     }
     return false;
   }
 
   bool operator==(PyObject *obj) const override {
-    if (obj == nullptr) {
+    py::object strong_ref = py::reinterpret_borrow<py::object>(PyWeakref_GET_OBJECT(cell_ref_.ptr()));
+    if (strong_ref.ptr() == Py_None || strong_ref.ptr() != obj) {
+      return false;  // always false if cell object is freed, or id not match
+    }
+    // id match. obj is a mindspore::Cell
+    PyObject *self_dict = PyObject_GenericGetDict(strong_ref.ptr(), nullptr);
+    py::object scope_ref = py::reinterpret_steal<py::object>(self_dict);
+    if (scope_ref.ptr() == nullptr) {
+      PyErr_Clear();
       return false;
     }
-    if (py::isinstance<mindspore::Cell>(obj)) {
-      auto cell = py::reinterpret_borrow<py::object>(obj);
-      bool training = false;
-      if (py::hasattr(cell, "training")) {
-        training = py::getattr(cell, "training").cast<bool>();
-      }
-      bool requires_grad = false;
-      if (py::hasattr(cell, "requires_grad")) {
-        requires_grad = py::getattr(cell, "requires_grad").cast<bool>();
-      }
-      return cell_ == obj && training_ == training && requires_grad_ == requires_grad;
-    }
-    return false;
+    // assume self.training and self.requires_grad is in self.__dict__
+    return (PyDict_GetItem(self_dict, training_name_.ptr()) == Py_True) == training_ &&
+           (PyDict_GetItem(self_dict, requires_grad_name_.ptr()) == Py_True) == requires_grad_;
   }
 
   std::string ToString() override {
+    PyObject *weak_ref = PyWeakref_GET_OBJECT(cell_ref_.ptr());
+    PyObject *py_type = reinterpret_cast<PyObject *>(Py_TYPE(weak_ref));
+    std::string type = weak_ref == Py_None ? "(freed)" : py::getattr(py_type, "__name__").cast<std::string>();
+
     std::stringstream ss;
-    ss << cell_;
+    ss << static_cast<void *>(weak_ref);
     const std::string &ptr = ss.str();
 
     std::string cell;
-    cell += DESC(type_);
+    cell += DESC(type);
     cell += DESC(ptr);
     cell += DESC_STRING(training_);
     cell += DESC_STRING(requires_grad_);
@@ -2302,13 +2138,17 @@ class CellData : public ItemData {
   }
 
  protected:
-  void SubInfo(InfoPack *info) override { (*info) << cell_ << training_ << requires_grad_; }
+  void SubInfo(InfoPack *info) override {
+    void *ptr = PyWeakref_GET_OBJECT(cell_ref_.ptr());
+    (*info) << ptr << training_ << requires_grad_;
+  }
 
  private:
-  void *cell_;
-  std::string type_;  // Only used in ToString(), no need to compare.
-  bool training_ = false;
-  bool requires_grad_ = false;
+  py::weakref cell_ref_;
+  py::str training_name_;
+  py::str requires_grad_name_;
+  bool training_;
+  bool requires_grad_;
 };
 
 class UnknownData : public ItemData {
@@ -2333,7 +2173,13 @@ class UnknownData : public ItemData {
  protected:
   void SubInfo(InfoPack *info) override { (*info_) << refId_.ptr(); }
 
-  py::object refId_;  // strong reference avoid memory address reuse
+  /**
+   * strong reference avoid memory address reuse
+   * guard live time is same as function.__code__, which meaning object is not released until code object release.
+   * remove unknown data and all unknown data must be transformed known data by trace. if not, check guard
+   * generated
+   */
+  py::object refId_;
 };
 
 ListData::ListData(PyObject *obj, bool needSpecialize, int recurseDepth)
@@ -2449,15 +2295,17 @@ static ItemDataPtr CreateItem(PyObject *obj, bool need_specialize, int recurse_d
 GuardItem::GuardItem(TracePtr tt)
     : var_(tt), type_(GIType::GTUnknown), info_(nullptr), fail_count_(0), perf_(false), checked_(false) {}
 
-void GuardItem::Replace(TracePtr dst, TracePtr src) {
-  if (!var_) {
-    return;
-  }
-  if (*var_ == *src) {
-    var_ = dst;
-  } else {
-    var_->Replace(dst, src);
-  }
+void GuardItem::UpdateTrace(std::map<size_t, TracePtr> *unique_cache) { this->var_ = var_->UniqueAll(unique_cache); }
+
+void GuardItem::Cache(bool success) {
+  checked_ = true;
+  fail_count_ = fail_count_ + !success;
+  GuardContext::Data::GetInstance()->guard_cache().push_back(this);
+}
+
+void GuardItem::ClearCache() {
+  fail_count_ = 0;
+  checked_ = false;
 }
 
 GuardItemPtr GuardItem::Optimize() {
@@ -2485,12 +2333,14 @@ class EqGuard : public GuardItem {
   EqGuard(TracePtr obj, bool needSpecialize, int recurseDepth)
       : GuardItem(obj),
         dp_(CreateItem(obj->GetObject(), needSpecialize, recurseDepth)),
+        last_(py::reinterpret_borrow<py::object>(obj->GetObject())),
         specialized_(needSpecialize),
-        recurse_(recurseDepth),
-        last_(obj->obj()) {
+        recurse_(recurseDepth) {
     type_ = GIType::GTEqual;
-
-    MS_EXCEPTION_IF_CHECK_FAIL(last_.ptr() != nullptr, "Equal guard got null python object");
+    if (dp_->GetItemType() == ItemType::Tensor || dp_->GetItemType() == ItemType::Cell ||
+        dp_->GetItemType() == ItemType::PyUnknown) {
+      last_ = {};  // reference release
+    }
   }
 
   bool Check(PyFrameWrapper frame) override {
@@ -2508,8 +2358,8 @@ class EqGuard : public GuardItem {
   }
 
   bool Check(PyObject *obj) override {
-    if (obj != nullptr && py::isinstance<mindspore::Cell>(obj)) {
-      return obj == last_ && CheckData(obj);
+    if (obj == nullptr) {
+      return false;
     }
     return obj == last_ || CheckData(obj);
   }
@@ -2575,9 +2425,10 @@ class EqGuard : public GuardItem {
 
  protected:
   ItemDataPtr dp_;
+  // strong reference
+  py::object last_;
   bool specialized_;
   int recurse_;
-  py::object last_;
 };
 
 class TypeGuard : public GuardItem {
@@ -2617,12 +2468,7 @@ class TypeGuard : public GuardItem {
     if (obj == NULL) {
       return false;
     }
-    PyTypeObject *tp;
-    if (var_->GetTraceType() == TraceType::Type) {
-      tp = reinterpret_cast<PyTypeObject *>(obj);
-    } else {
-      tp = Py_TYPE(obj);
-    }
+    PyTypeObject *tp = Py_TYPE(obj);
     if (tp != refType_) {
       if (is_tensor_) {
         return IsTensorOrStubTensor(tp);
@@ -2678,7 +2524,9 @@ class TypeGuard : public GuardItem {
 
 class IdGuard : public GuardItem {
  public:
-  explicit IdGuard(TracePtr obj) : GuardItem(obj), refId_(obj->obj()) { type_ = GIType::GTId; }
+  explicit IdGuard(TracePtr obj) : GuardItem(obj), refId_(py::reinterpret_borrow<py::object>(obj->GetObject())) {
+    type_ = GIType::GTId;
+  }
 
   bool Check(PyFrameWrapper frame) override {
     if (var_->IsConst()) {

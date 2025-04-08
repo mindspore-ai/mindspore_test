@@ -69,18 +69,15 @@ class Trace : public std::enable_shared_from_this<Trace> {
   Trace(PyObject *obj, std::shared_ptr<Trace> origin);
   virtual ~Trace();
   virtual std::shared_ptr<Trace> GetOrigin();
-  /// \brief Get the borrow reference for the object and call Py_INCREF/Py_DECREF by yourself.
-  /// \param[out] borrow reference for PyObject
-  virtual PyObject *GetObject();
   virtual TraceType GetTraceType() const;
   virtual TraceType GetOriginType();
-  virtual void Replace(std::shared_ptr<Trace> dst, std::shared_ptr<Trace> src);
+
+  // return old trace of unique_cache if `this` is in the cache. or update cache and all trace referenced by this
+  virtual std::shared_ptr<Trace> UniqueAll(std::map<size_t, std::shared_ptr<Trace>> *unique_cache);
   virtual bool operator==(const Trace &trace);
   virtual void Detach();
-  /// \brief Get the reference for the object by Py_INCREF and call Py_DECREF by yourself.
-  /// \param[in] context for trace
-  /// \param[in] perf for performance of trace
-  /// \param[out] borrow reference for PyObject
+
+  // trace new object by python runtime
   virtual py::object Retrieve(PTraceContext context, bool perf = false) = 0;
   virtual std::string ToString(bool include_param = true) = 0;
   virtual void SimpleString(std::ostream *s) const;
@@ -98,7 +95,7 @@ class Trace : public std::enable_shared_from_this<Trace> {
 
   void Cache(PTraceContext context, const py::object &obj);
   void ClearCache();
-  const auto &obj() const { return obj_; }
+  PyObject *GetObject() const { return obj_.ptr(); }
 
  protected:
   py::object obj_;
@@ -174,7 +171,7 @@ class OpTrace : public Trace {
   size_t GetParamCount() const;
   const std::string &GetName() const;
 
-  virtual void Replace(std::shared_ptr<Trace> dst, std::shared_ptr<Trace> src);
+  std::shared_ptr<Trace> UniqueAll(std::map<size_t, std::shared_ptr<Trace>> *unique_cache) override;
   virtual py::object Retrieve(PTraceContext context, bool perf = false);
   virtual std::string ToString(bool include_param = true);
   virtual bool operator==(const Trace &trace);

@@ -23,9 +23,6 @@ namespace pijit {
 
 namespace {
 
-// used to test, remove later
-static bool kDisableFastTrace = std::getenv("_DISABLE_PIJIT_FAST_GUARD") != nullptr;
-
 struct EmptyData {};
 class FastTraceBase;
 using FastTraceBasePtr = std::shared_ptr<FastTraceBase>;
@@ -217,8 +214,8 @@ TracePtr OptimizePyObjectLength(const OpTracePtr &tr) {
     {GenSignature({&PyDict_Type}), FoldTupleLengthTrace},
   };
   TracePtr new_tr = tr;
-  bool fold = tr->GetParam(0)->GetTraceType() == TraceType::Const || !kDisableFastTrace;
-  if (!kDisableFastTrace) {
+  bool fold = tr->GetParam(0)->GetTraceType() == TraceType::Const;
+  if (!fold) {
     MS_LOG(INFO) << "got a length trace without constant len func, skip guard global len is builtin function len";
   }
   if (fold) {
@@ -259,8 +256,8 @@ TracePtr FoldTupleGetItem(const OpTracePtr &trace) {
   }
   TracePtr src = trace->GetParam(0);
   if (src->GetTraceType() == TraceType::Const) {
-    MS_LOG(ERROR) << "should be fold while graph builing, but generated a guard trace: " << std::endl
-                  << trace->ToString();
+    MS_LOG(INFO) << "should be fold while graph builing, but generated a guard trace: " << std::endl
+                 << trace->ToString();
     return std::make_shared<ConstTrace>(trace->GetObject(), -1);
   }
   if (src->GetTraceType() != TraceType::Operation) {
@@ -278,8 +275,8 @@ TracePtr FoldTupleAdd(const OpTracePtr &trace) {
   TracePtr left = trace->GetParam(0);
   TracePtr right = trace->GetParam(1);
   if (left->GetTraceType() == TraceType::Const || right->GetTraceType() == TraceType::Const) {
-    MS_LOG(ERROR) << "should be fold while graph builing, but generated a guard trace: " << std::endl
-                  << trace->ToString();
+    MS_LOG(INFO) << "should be fold while graph builing, but generated a guard trace: " << std::endl
+                 << trace->ToString();
     return std::make_shared<ConstTrace>(trace->GetObject(), -1);
   }
   if (left->GetTraceType() != TraceType::Operation || right->GetTraceType() != TraceType::Operation) {
@@ -311,7 +308,7 @@ TracePtr FoldTupleLengthTrace(const OpTracePtr &trace) {
   if (!code.IsBuildOp()) {
     return trace;
   }
-  MS_LOG(ERROR) << "should be fold while graph builing, but generated a trace: " << std::endl << trace->ToString();
+  MS_LOG(INFO) << "should be fold while graph builing, but generated a trace: " << std::endl << trace->ToString();
   return std::make_shared<ConstTrace>(trace->GetObject(), -1);
 }
 
@@ -493,9 +490,6 @@ py::object FastTraceBase::Attr4MsCell(FastTraceBase *this_p, PTraceContext conte
 // ======== creator  ==========
 
 TracePtr FastTraceBase::CreateFastLen(const OpTracePtr &tr) {
-  if (kDisableFastTrace) {
-    return tr;
-  }
   TracePtr obj_trace = tr->GetParam(1);
   PyObject *obj_object = obj_trace->GetObject();
   bool check_func;
@@ -520,9 +514,6 @@ TracePtr FastTraceBase::CreateFastLen(const OpTracePtr &tr) {
 }
 
 TracePtr FastTraceBase::CreateFastItem(const OpTracePtr &tr) {
-  if (kDisableFastTrace) {
-    return tr;
-  }
   bool is_call = Opcode(tr->GetOpCode()).IsCall();
   TracePtr src_trace = tr->GetParam(is_call);
   TracePtr index_trace = tr->GetParam(1 + is_call);
@@ -567,9 +558,6 @@ static bool ValidateFastAttr4MsCell(PyTypeObject *tp) {
 }
 
 TracePtr FastTraceBase::CreateFastAttr(const OpTracePtr &tr) {
-  if (kDisableFastTrace) {
-    return tr;
-  }
   bool is_call = Opcode(tr->GetOpCode()).IsCall();
   TracePtr self_trace = tr->GetParam(is_call);
   PyObject *self_object = self_trace->GetObject();

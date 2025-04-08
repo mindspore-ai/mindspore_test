@@ -215,22 +215,11 @@ CodeCache::CodeCache(void *jcr)
     : jcr_(OptOption::CreateOptionByPoint(jcr)), code_hub_(std::make_shared<OptCodeHub>()) {}
 
 void CodeCache::CollectFailGuard() {
-  auto iter = code_hub_->codeMap_.find(jcr_);
-  if (iter == code_hub_->codeMap_.end()) {
-    return;
-  }
-  GuardItemSet set;
-  for (const auto &i : iter->second) {
-    for (const auto &j : i->GetGuard()->guard_list()) {
-      if (j->fail_count() != 0) {
-        set.emplace(j);
-        j->set_faile_count(0);
-      }
-    }
-  }
-  for (const auto &i : set) {
-    fail_guard_[i].count_++;
-  }
+  const auto &c = GuardContext::Data::GetInstance()->guard_cache();
+  // reverse iteration, most likely a last one
+  auto iter = std::find_if(c.rbegin(), c.rend(), [](const auto &i) { return i->fail_count(); });
+  MS_EXCEPTION_IF_CHECK_FAIL(iter != c.rend(), "can't find failed item");
+  fail_guard_[GuardItemKey((*iter)->shared_from_this())].count_++;
 }
 
 static bool MatchTracePath(const TracePtr &left, const TracePtr &right) {
@@ -291,10 +280,7 @@ GuardContext::~GuardContext() {
   auto &guard_cache = Data::GetInstance()->guard_cache();
   auto &trace_cache = Data::GetInstance()->trace_cache();
   for (const auto &item : guard_cache) {
-    item->set_faile_count(0);
-    item->set_perf(false);
-    item->set_checked(false);
-    item->GetTrace()->ClearCache();
+    item->ClearCache();
   }
   for (const auto &item : trace_cache) {
     item->ClearCache();

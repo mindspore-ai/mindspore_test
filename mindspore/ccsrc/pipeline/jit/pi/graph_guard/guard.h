@@ -68,10 +68,7 @@ class OptGuard : public std::enable_shared_from_this<OptGuard> {
   /// \param[out] whether to guard successfully
   virtual bool GuardOn(TracePtr var, GuardLevel tp = GuardLevel::GDeduce, bool needSpecialize = true,
                        int recurseDepth = 0);
-  /// \brief add trace from guard, traces to replace in other guard
-  /// \param[in] traces to replace in other guard
-  /// \param[in] other guard with traces
-  virtual void AddTraceFromGuard(const std::vector<TracePtr> &traces, std::shared_ptr<OptGuard> other);
+
   /// \brief return the description for the guard
   virtual std::string GetDescript();
   virtual void UpdateConfig(const std::map<std::string, bool> &bool_config,

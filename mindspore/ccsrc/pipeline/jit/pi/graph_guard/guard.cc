@@ -297,7 +297,7 @@ static std::string GuardCheckFailInfo(const GuardItemPtr &item, const py::handle
 bool OptGuard::Check(PyFrameWrapper frame, bool print, bool perf) {
   // see `OptGuard::Record`, no duplicate item
   const auto &list = guardList_;
-  for (size_t i = 0; i < list.size(); ++i) {
+  for (size_t i = 0, size = list.size(); i < size; ++i) {
     const auto &item = list[i];
     if (item->fail_count()) {
       return false;
@@ -310,8 +310,7 @@ bool OptGuard::Check(PyFrameWrapper frame, bool print, bool perf) {
       item->set_perf(perf);
     }
     bool result = item->Check(frame);
-    item->set_checked(true);
-    GuardContext::Data::GetInstance()->guard_cache().push_back(item);
+    item->Cache(result);
     if (perf) {
       g_guard_perf.LogGuardPerfEnd(item.get(), result);
       item->set_perf(false);
@@ -319,7 +318,6 @@ bool OptGuard::Check(PyFrameWrapper frame, bool print, bool perf) {
     if (result) {
       continue;
     }
-    item->set_faile_count(item->fail_count() + 1);
     MS_LOG(DEBUG) << "Guard check fail:" << item->ToString();
     if (print) {
       auto trace = item->GetTrace();
@@ -371,26 +369,29 @@ bool OptGuard::Record(const GuardItemPtr &new_item) {
   auto cur_item = &guard_map[hash];
   if (*cur_item == nullptr) {
     *cur_item = item;
-  } else {
-    MS_LOG(DEBUG) << "find duplicate guard item in the global compile cache: " << std::endl
-                  << item.get() << ": [ " << item->ToString() << " ]" << std::endl
-                  << cur_item->get() << ": [ " << (*cur_item)->ToString() << " ]";
-    if (item->ToString() != (*cur_item)->ToString()) {
+    item->UpdateTrace(&code_hub()->trace_map());
+  } else if (*cur_item != item) {
+    bool is_match = item->operator==(**cur_item);
+    MS_LOG(DEBUG) << "find duplicate guard item in the global compile cache, current == reused: "
+                  << (is_match ? "true" : "false, id conflict, not reuse") << std::endl
+                  << "current: " << item.get() << ": [ " << item->ToString() << " ]" << std::endl
+                  << "reused : " << cur_item->get() << ": [ " << (*cur_item)->ToString() << " ]";
+    if (!is_match) {
       cur_item = &item;
-      MS_LOG(DEBUG) << "id conflict fix later";
     }
   }
   auto &list = guardList_;
   auto iter = std::find_if(list.begin(), list.end(), [hash](const auto &p) { return p->Info().Id() == hash; });
   if (iter == list.end()) {
     list.push_back(*cur_item);
-  } else {
-    MS_LOG(DEBUG) << "find duplicate guard item for the function: " << std::endl
-                  << iter->get() << ": [ " << (*iter)->ToString() << " ]" << std::endl
-                  << cur_item->get() << ": [ " << (*cur_item)->ToString() << " ]";
-    if ((*iter)->ToString() != (*cur_item)->ToString()) {
+  } else if (*cur_item != *iter) {
+    bool is_match = (*iter)->operator==(**cur_item);
+    MS_LOG(DEBUG) << "find duplicate guard item for the function, current == reused: "
+                  << (is_match ? "true" : "false, id conflict, not reuse") << std::endl
+                  << "current: " << iter->get() << ": [ " << (*iter)->ToString() << " ]" << std::endl
+                  << "reused : " << cur_item->get() << ": [ " << (*cur_item)->ToString() << " ]";
+    if (!is_match) {
       list.push_back(*cur_item);
-      MS_LOG(DEBUG) << "id conflict fix later";
     }
   }
   return true;
@@ -411,13 +412,7 @@ bool OptGuard::GuardIDS(const TracePtr &tr) {
   }
   auto new_item = pijit::GuardIDS(tr, item);
   if (new_item != item) {
-    MS_EXCEPTION_IF_NULL(code_hub());
-    auto &guard_map = code_hub()->guard_map();
-
-    guardList_.push_back(new_item);
-    GuardItemPtr *ref = &guard_map[new_item->Info().Id()];
-    *ref != nullptr ? (void)(MS_LOG(ERROR) << "guard hash conflict") : ((void)0);
-    *ref = new_item;
+    Record(new_item);
   }
   return true;
 }
@@ -427,14 +422,7 @@ bool OptGuard::Erase(const GuardItemPtr &last) {
   if (iter == guardList_.rend()) {
     return false;
   }
-
-  MS_EXCEPTION_IF_NULL(code_hub());
-  auto &guard_map = code_hub()->guard_map();
-
   guardList_.erase(guardList_.begin() + std::distance(iter, guardList_.rend()) - 1);
-  auto m_iter = guard_map.find(last->Info().Id());
-  MS_EXCEPTION_IF_CHECK_FAIL(m_iter != guard_map.end() && m_iter->second == last, "id conflict !");
-  guard_map.erase(m_iter);
   return true;
 }
 
@@ -604,19 +592,6 @@ static GuardItemPtr GuardOnDynamicLenContainer(TracePtr var) {
     }
   }
   return item;
-}
-
-void OptGuard::AddTraceFromGuard(const std::vector<TracePtr> &traces, OptGuardPtr other) {
-  for (size_t i = 0; i < traces.size(); ++i) {
-    auto dst = traces[i];
-    auto src = std::make_shared<RootTrace>(dst->GetObject(), TraceType::Param, i);
-    for (auto item : other->guardList_) {
-      item->Replace(dst, src);
-    }
-  }
-  for (auto item : other->guardList_) {
-    guardList_.push_back(item);
-  }
 }
 
 std::string OptGuard::GetDescript() {
@@ -800,7 +775,7 @@ void OptGuard::RevertDynamicShape(EvalFrameObject *f, const std::vector<PyObject
 std::string OptGuard::ToString() const {
   std::stringstream s;
   for (const auto &i : guardList_) {
-    s << "  guard [" << i.get() << "] [" << i->ToString() << " ]" << std::endl;
+    s << "  guard [" << i.get() << "] " << i->Info().Id() << " [" << i->ToString() << " ]" << std::endl;
   }
   return s.str();
 }

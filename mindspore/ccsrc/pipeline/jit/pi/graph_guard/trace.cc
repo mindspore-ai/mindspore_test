@@ -167,29 +167,31 @@ TracePtr Trace::GetOrigin() {
   }
 }
 
-PyObject *Trace::GetObject() { return obj_.ptr(); }
-
 TraceType Trace::GetTraceType() const { return curType_; }
 
 TraceType Trace::GetOriginType() { return originType_; }
 
-void Trace::Replace(std::shared_ptr<Trace> dst, std::shared_ptr<Trace> src) {
-  if (origin_ != nullptr) {
-    if (*origin_ == *src) {
-      origin_ = dst;
-    } else {
-      origin_->Replace(dst, src);
-    }
+TracePtr Trace::UniqueAll(std::map<size_t, TracePtr> *unique_cache) {
+  TracePtr &ref = (*unique_cache)[this->Info().Id()];
+  if (ref.get() == this) {
+    return shared_from_this();
   }
+  if (ref == nullptr) {
+    ref = shared_from_this();
+    return ref;
+  }
+  bool is_match = *ref == *this;
+  MS_LOG(DEBUG) << "reuse unique trace, reused == current: " << (is_match ? "true" : "false, maybe id conflict")
+                << std::endl
+                << "current: " << this << " [" << this->ToString() << std::endl
+                << "reused : " << ref.get() << " [" << ref->ToString();
+  if (is_match) {
+    return ref;
+  }
+  return shared_from_this();
 }
 
-bool Trace::operator==(const Trace &trace) {
-  if (curType_ == trace.curType_ && obj_ == trace.obj_) {
-    return true;
-  } else {
-    return false;
-  }
-}
+bool Trace::operator==(const Trace &trace) { return curType_ == trace.curType_; }
 
 void Trace::Detach() {
   if (!is_const_) {
@@ -203,7 +205,7 @@ void Trace::Detach() {
 void Trace::Cache(PTraceContext context, const py::object &obj) {
   retrieve_cache_ = obj;
   retrieved_ = true;
-  GuardContext::Data::GetInstance()->trace_cache().push_back(shared_from_this());
+  GuardContext::Data::GetInstance()->trace_cache().push_back(this);
 }
 
 void Trace::ClearCache() {
@@ -527,10 +529,7 @@ bool RootTrace::operator==(const Trace &trace) {
   bool ret = false;
   if (Trace::operator==(trace)) {
     const RootTrace &t = (const RootTrace &)trace;
-    ret = idx_ == t.idx_;
-    if (ret && idx_ == -1) {
-      ret = name_ == t.name_ && module_name_ == t.module_name_;
-    }
+    return curType_ == TraceType::Global ? name_ == t.name_ && module_name_ == t.module_name_ : idx_ == t.idx_;
   }
   return ret;
 }
@@ -566,7 +565,7 @@ std::string ConstTrace::ToString(bool include_param) {
   if (strTrace_.size() > 0) {
     return strTrace_;
   }
-  std::string ret = "const:" + std::string(py::str(obj_));
+  std::string ret = std::string() + "const:(" + Py_TYPE(obj_.ptr())->tp_name + ")" + std::string(py::str(obj_));
   strTrace_ = ret;
   return ret;
 }
@@ -578,7 +577,8 @@ const InfoPack &ConstTrace::Info() {
     InfoPack &info = *info_;
     info << uint8_t(curType_);
     info.Begin();
-    info << ToString();
+    info << Py_TYPE(obj_.ptr());
+    info << obj_.ptr();
     info.End();
     info_->Update();
   }
@@ -586,9 +586,12 @@ const InfoPack &ConstTrace::Info() {
 }
 
 bool ConstTrace::operator==(const Trace &trace) {
-  if (Trace::operator==(trace)) {
-    const ConstTrace &t = (const ConstTrace &)trace;
-    return index_ == t.index_;
+  if (Trace::operator==(trace) && Py_TYPE(obj_.ptr()) == Py_TYPE(trace.GetObject())) {
+    int ret = PyObject_RichCompareBool(obj_.ptr(), trace.GetObject(), Py_EQ);
+    if (ret < 0) {
+      PyErr_Clear();
+    }
+    return ret > 0;
   }
   return false;
 }
@@ -1533,15 +1536,10 @@ void OpTrace::InitInfo() {
     info.Begin();
     info << opcode_;
     info << opargs_;
-    info << (name_.size() != 0);
-    if (name_.size() != 0) {
-      info << name_;
-    }
-    info << (params_.size() != 0);
-    if (params_.size() > 0) {
-      for (auto t : params_) {
-        info << t->Info();
-      }
+    info << name_;
+    info << params_.size();
+    for (auto t : params_) {
+      info << t->Info();
     }
     info.End();
   }
@@ -1957,15 +1955,15 @@ bool OpTrace::operator==(const Trace &trace) {
   return ret;
 }
 
-void OpTrace::Replace(std::shared_ptr<Trace> dst, std::shared_ptr<Trace> src) {
-  Trace::Replace(dst, src);
-  for (size_t i = 0; i < params_.size(); ++i) {
-    if (*params_[i] == *src) {
-      params_[i] = dst;
-    } else {
-      params_[i]->Replace(dst, src);
-    }
+TracePtr OpTrace::UniqueAll(std::map<size_t, TracePtr> *unique_cache) {
+  TracePtr reused = Trace::UniqueAll(unique_cache);
+  if (reused.get() != this) {
+    return reused;
   }
+  for (size_t i = 0; i < params_.size(); ++i) {
+    params_[i] = params_[i]->UniqueAll(unique_cache);
+  }
+  return shared_from_this();
 }
 
 void OpTrace::Detach() {

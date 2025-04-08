@@ -127,11 +127,14 @@ class OptCodeHub : public std::enable_shared_from_this<OptCodeHub> {
 
   auto &guard_map() { return guard_map_; }
   const auto &guard_map() const { return guard_map_; }
+  auto &trace_map() { return trace_map_; }
+  const auto &trace_map() const { return trace_map_; }
 
  protected:
   // use OptOption instead of OptOptionPtr ...
   std::map<OptOptionPtr, OptCodeSet, OptOption::Less> codeMap_;
   std::map<size_t, GuardItemPtr> guard_map_;
+  std::map<size_t, TracePtr> trace_map_;
 };
 
 using OptCodeHubPtr = std::shared_ptr<OptCodeHub>;
@@ -146,8 +149,8 @@ class GuardContext {
 
    private:
     Data() = default;
-    std::vector<GuardItemPtr> guard_cache_;
-    std::vector<TracePtr> trace_cache_;
+    std::vector<GuardItem *> guard_cache_;
+    std::vector<Trace *> trace_cache_;
   };
 
   GuardContext() = default;

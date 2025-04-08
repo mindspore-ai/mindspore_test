@@ -48,19 +48,20 @@ class GuardItem : public std::enable_shared_from_this<GuardItem> {
   virtual bool Check(PyObject *obj) = 0;
   virtual std::string ToString() = 0;
   virtual const InfoPack &Info() = 0;
-  virtual void Replace(TracePtr dst, TracePtr src);
   virtual TracePtr GetTrace() const;
   virtual bool operator==(const GuardItem &obj) const;
   virtual GIType GetType() const { return type_; }
+  virtual void UpdateTrace(std::map<size_t, TracePtr> *unique_cache);
   virtual bool MatchDynamicShape(std::shared_ptr<GuardItem> other) { return false; }
   virtual PyObject *ApplyDynamicShape(PyObject *obj) { return nullptr; }
   virtual std::shared_ptr<GuardItem> Optimize();
   virtual std::shared_ptr<GuardItem> This() { return shared_from_this(); }
   int fail_count() const { return fail_count_; }
-  void set_faile_count(int c) { fail_count_ = c; }
   void set_perf(bool perf) { perf_ = perf; }
-  void set_checked(bool check) { checked_ = check; }
   bool checked() const { return checked_; }
+
+  void Cache(bool success);
+  void ClearCache();
 
  protected:
   TracePtr var_;
