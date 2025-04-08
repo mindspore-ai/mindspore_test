@@ -1491,10 +1491,10 @@ bool ControlDataBroadcastOrderPass(const ResourcePtr &resource) {
     return true;
   }
   auto graph = resource->func_graph();
-  parallel::ControlOptShardCommAndDataBroadcastOrder(graph);
-  parallel::ControlPipelineCommAndDataBroadcastOrder(graph);
   parallel::FreezeParallelOptimizerCommOrder(graph);
   parallel::ReplaceGetnextWithBroadcast(graph);
+  parallel::ControlOptShardCommAndDataBroadcastOrder(graph);
+  parallel::ControlPipelineCommAndDataBroadcastOrder(graph);
   return true;
 }
 

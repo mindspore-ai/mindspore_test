@@ -55,11 +55,6 @@ void ControlOrder(const CNodePtr &prior, const CNodePtr &last, const FuncGraphPt
 
 bool CreateBroadcastInput(const Shapes &shapes, const std::vector<TypePtr> &types, const FuncGraphPtr &graph,
                           AnfNodePtr *make_tuple) {
-  auto data_stra = ParallelContext::GetInstance()->dataset_strategy();
-  // ((2, 2, 2),)
-  auto all_dev_mat = ParallelContext::GetInstance()->dataset_strategy_devmat();
-  // (((2), (1), (0)),)
-  auto all_tensor_map = ParallelContext::GetInstance()->dataset_strategy_tensormap();
   if (shapes.size() != types.size()) {
     return false;
   }
@@ -69,52 +64,7 @@ bool CreateBroadcastInput(const Shapes &shapes, const std::vector<TypePtr> &type
     tensor::TensorPtr zero_tensor = nullptr;
     auto cur_input_shape = shapes.at(i);
     auto cur_input_type = types.at(i);
-    Shape slice_shape;
-    if (!data_stra.empty()) {
-      if (data_stra.size() != shapes.size()) {
-        return false;
-      }
-      auto cur_input_stra = data_stra.at(i);
-      if (cur_input_stra.size() != cur_input_shape.size()) {
-        return false;
-      }
-      for (size_t j = 0; j < cur_input_stra.size(); ++j) {
-        slice_shape.emplace_back(cur_input_shape.at(j) / cur_input_stra.at(j));
-      }
-    } else if (!all_dev_mat.empty() && !all_tensor_map.empty()) {
-      if (all_tensor_map.size() != shapes.size()) {
-        MS_LOG(ERROR) << "layout size is not equal to input size, layout size " << all_tensor_map.size()
-                      << ", input size " << shapes.size();
-        return false;
-      }
-      auto cur_tensor_map = all_tensor_map.at(i);
-      auto cur_dev_mat = all_dev_mat.at(i);
-      if (cur_tensor_map.size() != cur_input_shape.size()) {
-        MS_LOG(ERROR) << "for " << i << " input, shape size is " << cur_input_shape.size() << ", tensor map size is "
-                      << cur_tensor_map.size();
-        return false;
-      }
-      for (size_t j = 0; j < cur_tensor_map.size(); ++j) {
-        size_t shard_size = 1;
-        for (size_t k = 0; k < cur_tensor_map.at(j).size(); ++k) {
-          auto val = cur_tensor_map.at(j).at(k);
-          if (val != -1) {
-            auto real_idx = cur_dev_mat.size() - LongToSize(val) - 1;
-            shard_size *= LongToSize(cur_dev_mat.at(real_idx));
-          }
-        }
-        slice_shape.emplace_back(cur_input_shape.at(j) / SizeToLong(shard_size));
-      }
-    } else {
-      slice_shape = cur_input_shape;
-      auto full_batch = ParallelContext::GetInstance()->full_batch();
-      if (!full_batch) {
-        auto dev_num = g_device_manager->stage_device_num();
-        slice_shape[0] = slice_shape[0] / dev_num;
-      }
-    }
-
-    zero_tensor = TensorConstructUtils::CreateZerosTensor(cur_input_type, slice_shape);
+    zero_tensor = TensorConstructUtils::CreateZerosTensor(cur_input_type, cur_input_shape);
     if (zero_tensor == nullptr) {
       return false;
     }
