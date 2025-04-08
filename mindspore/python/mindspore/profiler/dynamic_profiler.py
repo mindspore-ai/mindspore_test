@@ -107,6 +107,7 @@ class DynamicProfilerArgs:
             '_data_simplification': (bool, True),
             '_is_valid': (bool, False)
         }
+
         def _is_valid_type(value, expected_type):
             """Helper method for type checking."""
             if expected_type is int and isinstance(value, bool):
