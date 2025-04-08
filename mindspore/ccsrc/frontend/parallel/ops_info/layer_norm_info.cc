@@ -327,8 +327,8 @@ Status LayerNormInfo::CheckInputLayout() {
   // Check all device matrix should be the same
   if (inputs_tensor_info_.size() != kSizeThree) {
     if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << "The size of input_tensor_layout for layernorm is " << inputs_tensor_info_.size()
-                      << " rather than 3.";
+      MS_LOG(INFO) << "The size of input_tensor_layout for layernorm is " << inputs_tensor_info_.size()
+                   << " rather than 3.";
     } else {
       MS_LOG(ERROR) << "The size of input_tensor_layout for layernorm is " << inputs_tensor_info_.size()
                     << " rather than 3.";
@@ -345,8 +345,8 @@ Status LayerNormInfo::CheckInputLayout() {
   for (size_t i = begin_norm_axis_; i < in_layout.tensor_map_before().size(); ++i) {
     if (in_layout.tensor_map_before()[i] != np_split_map) {
       if (is_in_layout_propagation_) {
-        MS_LOG(WARNING) << name_ << ": The dimensions starting form begin_norm_axis cannot be split, "
-                        << "but the tensor map of input is " << ShapesToString(in_layout.tensor_map_before());
+        MS_LOG(INFO) << name_ << ": The dimensions starting form begin_norm_axis cannot be split, "
+                     << "but the tensor map of input is " << ShapesToString(in_layout.tensor_map_before());
       } else {
         MS_LOG(ERROR) << name_ << ": The dimensions starting form begin_norm_axis cannot be split, "
                       << "but the tensor map of input is " << ShapesToString(in_layout.tensor_map_before());
@@ -358,8 +358,8 @@ Status LayerNormInfo::CheckInputLayout() {
   // check gamma and beta layout
   if (gamma_layout.tensor_map_before() != beta_layout.tensor_map_before()) {
     if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << name_ << ": The tensor map of gamma " << ShapesToString(gamma_layout.tensor_map_before())
-                      << " dose not equal to tensor map of beta " << ShapesToString(beta_layout.tensor_map_before());
+      MS_LOG(INFO) << name_ << ": The tensor map of gamma " << ShapesToString(gamma_layout.tensor_map_before())
+                   << " dose not equal to tensor map of beta " << ShapesToString(beta_layout.tensor_map_before());
     } else {
       MS_LOG(ERROR) << name_ << ": The tensor map of gamma " << ShapesToString(gamma_layout.tensor_map_before())
                     << " dose not equal to tensor map of beta " << ShapesToString(beta_layout.tensor_map_before());
@@ -371,10 +371,10 @@ Status LayerNormInfo::CheckInputLayout() {
   for (size_t j = 0; j < gamma_layout.tensor_map_before().size(); ++j) {
     if (gamma_layout.tensor_map_before()[j] != in_layout.tensor_map_before()[gamma_diff + j]) {
       if (is_in_layout_propagation_) {
-        MS_LOG(WARNING) << name_
-                        << ": The strategies of input and gamma must be right aligned, but the tensor map of input is "
-                        << ShapesToString(in_layout.tensor_map_before()) << ", the tensor map of gamma is "
-                        << ShapesToString(gamma_layout.tensor_map_before());
+        MS_LOG(INFO) << name_
+                     << ": The strategies of input and gamma must be right aligned, but the tensor map of input is "
+                     << ShapesToString(in_layout.tensor_map_before()) << ", the tensor map of gamma is "
+                     << ShapesToString(gamma_layout.tensor_map_before());
       } else {
         MS_LOG(ERROR) << name_
                       << ": The strategies of input and gamma must be right aligned, but the tensor map of input is "
@@ -389,10 +389,10 @@ Status LayerNormInfo::CheckInputLayout() {
   for (size_t j = 0; j < beta_layout.tensor_map_before().size(); ++j) {
     if (beta_layout.tensor_map_before()[j] != in_layout.tensor_map_before()[beta_diff + j]) {
       if (is_in_layout_propagation_) {
-        MS_LOG(WARNING) << name_
-                        << ": The strategies of input and beta must be right aligned, but the tensor map of input is "
-                        << ShapesToString(in_layout.tensor_map_before()) << ", the tensor map of beta is "
-                        << ShapesToString(beta_layout.tensor_map_before());
+        MS_LOG(INFO) << name_
+                     << ": The strategies of input and beta must be right aligned, but the tensor map of input is "
+                     << ShapesToString(in_layout.tensor_map_before()) << ", the tensor map of beta is "
+                     << ShapesToString(beta_layout.tensor_map_before());
       } else {
         MS_LOG(ERROR) << name_
                       << ": The strategies of input and beta must be right aligned, but the tensor map of input is "
@@ -410,8 +410,8 @@ Status LayerNormInfo::CheckOutputLayout() {
   // Check all device matrix should be the same
   if (outputs_tensor_info_.size() != kSizeThree) {
     if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << "The size of output_tensor_layout for layernorm is " << outputs_tensor_info_.size()
-                      << " rather than 3.";
+      MS_LOG(INFO) << "The size of output_tensor_layout for layernorm is " << outputs_tensor_info_.size()
+                   << " rather than 3.";
     } else {
       MS_LOG(ERROR) << "The size of output_tensor_layout for layernorm is " << outputs_tensor_info_.size()
                     << " rather than 3.";
@@ -420,7 +420,7 @@ Status LayerNormInfo::CheckOutputLayout() {
   }
   if (output_infer_tensor_layout_.tensor_shape_before().array().empty()) {
     if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << "Parameter of output tensor layout for layernorm is not allowed to be set by users.";
+      MS_LOG(INFO) << "Parameter of output tensor layout for layernorm is not allowed to be set by users.";
     } else {
       MS_LOG(ERROR) << "Parameter of output tensor layout for layernorm is not allowed to be set by users.";
     }

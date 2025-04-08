@@ -321,8 +321,8 @@ Status SplitInfo::InferTensorMap() {
 Status SplitInfo::CheckInputLayout() {
   if (inputs_tensor_info_.size() != kSizeOne) {
     if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << "The size of input_tensor_layout for " << name_ << " is " << inputs_tensor_info_.size()
-                      << " rather than 1.";
+      MS_LOG(INFO) << "The size of input_tensor_layout for " << name_ << " is " << inputs_tensor_info_.size()
+                   << " rather than 1.";
     } else {
       MS_LOG(ERROR) << "The size of input_tensor_layout for " << name_ << " is " << inputs_tensor_info_.size()
                     << " rather than 1.";
@@ -332,7 +332,7 @@ Status SplitInfo::CheckInputLayout() {
   auto stra = inputs_tensor_info_.front().InferStrategy();
   if (axis_ >= stra.size()) {
     if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << name_ << ": The axis is out of range, the axis is " << axis_;
+      MS_LOG(INFO) << name_ << ": The axis is out of range, the axis is " << axis_;
     } else {
       MS_LOG(ERROR) << name_ << ": The axis is out of range, the axis is " << axis_;
     }
@@ -343,7 +343,7 @@ Status SplitInfo::CheckInputLayout() {
     auto tensor_map_axis = input_layout.tensor_map_before()[axis_];
     if (std::find(tensor_map_axis.begin(), tensor_map_axis.end(), 0) != tensor_map_axis.end()) {
       if (is_in_layout_propagation_) {
-        MS_LOG(WARNING) << name_ << ": The axis can not be split by interleaved_parallel.";
+        MS_LOG(INFO) << name_ << ": The axis can not be split by interleaved_parallel.";
       } else {
         MS_LOG(ERROR) << name_ << ": The axis can not be split by interleaved_parallel.";
       }
@@ -352,7 +352,7 @@ Status SplitInfo::CheckInputLayout() {
   }
   if (stra[axis_] != 1 && !skip_redistribution_) {
     if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << name_ << ": The axis can not be split";
+      MS_LOG(INFO) << name_ << ": The axis can not be split";
     } else {
       MS_LOG(ERROR) << name_ << ": The axis can not be split";
     }
@@ -364,7 +364,7 @@ Status SplitInfo::CheckInputLayout() {
 Status SplitInfo::CheckOutputLayout() {
   if (output_infer_tensor_layout_.tensor_shape_before().array().empty()) {
     if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << "Parameter of output tensor layout for " << name_ << " is not allowed to be set by users.";
+      MS_LOG(INFO) << "Parameter of output tensor layout for " << name_ << " is not allowed to be set by users.";
     } else {
       MS_LOG(ERROR) << "Parameter of output tensor layout for " << name_ << " is not allowed to be set by users.";
     }

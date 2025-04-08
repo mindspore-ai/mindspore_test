@@ -129,7 +129,7 @@ Status RepeatInterleaveInfo::CheckStrategy(const mindspore::parallel::StrategyPt
 
 void log_func_ele(const std::ostringstream &oss, bool is_in_layout_propagation) {
   if (is_in_layout_propagation) {
-    MS_LOG(WARNING) << oss.str();
+    MS_LOG(INFO) << oss.str();
   } else {
     MS_LOG(ERROR) << oss.str();
   }

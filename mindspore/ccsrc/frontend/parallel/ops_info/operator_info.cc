@@ -1475,7 +1475,7 @@ Status OperatorInfo::InitForCostModelWithAutoRepeatCalc(const StrategyPtr &in_st
     set_out_strategy(out_strategy);
     if (out_strategy && CheckOutputStrategy(out_strategy) != SUCCESS) {
       if (is_in_layout_propagation_) {
-        MS_LOG(WARNING) << name_ << ": The output strategy is invalid";
+        MS_LOG(INFO) << name_ << ": The output strategy is invalid";
         return FAILED;
       }
       MS_LOG(ERROR) << name_ << ": The output strategy is invalid";
@@ -1562,7 +1562,7 @@ Status OperatorInfo::InitWithAutoRepeatCalc(const StrategyPtr &in_strategy, cons
 
 Status OperatorInfo::CheckInputLayout() {
   if (is_in_layout_propagation_) {
-    MS_LOG(WARNING)
+    MS_LOG(INFO)
       << "Current op " << name_
       << " does not support config layout. Please check "
          "https://www.mindspore.cn/docs/zh-CN/master/api_python/operator_list_parallel.html to get limitation "
@@ -1577,8 +1577,8 @@ Status OperatorInfo::CheckInputLayout() {
   // Check self_define_shard attribute
   if (!self_define_shard_) {
     if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << "Please set add_prim_attr('self_define_shard', True) to " << name_
-                      << " to config layout for this ops";
+      MS_LOG(INFO) << "Please set add_prim_attr('self_define_shard', True) to " << name_
+                   << " to config layout for this ops";
     } else {
       MS_LOG(ERROR) << "Please set add_prim_attr('self_define_shard', True) to " << name_
                     << " to config layout for this ops";
@@ -1612,7 +1612,7 @@ Status OperatorInfo::InitWithTensorLayout(const std::vector<std::shared_ptr<Tens
   DivisorsReplaceShapes();
   if (CheckInputLayout() != SUCCESS) {
     if (CheckShardingPropagation()) {
-      MS_LOG(WARNING) << name_ << ": CheckInputLayout failed.";
+      MS_LOG(INFO) << name_ << ": CheckInputLayout failed.";
     } else {
       MS_LOG(ERROR) << name_ << ": CheckInputLayout failed.";
     }
@@ -1628,14 +1628,23 @@ Status OperatorInfo::InitWithTensorLayout(const std::vector<std::shared_ptr<Tens
     outputs_tensor_info_.clear();
     // Need be override
     if (InferOutputTensorInfo() != SUCCESS) {
-      MS_LOG(ERROR) << name_ << ": InferOutputTensorLayout failed.";
+      if (is_in_layout_propagation_) {
+        MS_LOG(INFO) << name_ << ": InferOutputTensorLayout failed.";
+      } else {
+        MS_LOG(ERROR) << name_ << ": InferOutputTensorLayout failed.";
+      }
       return FAILED;
     }
   }
 
   if (outputs_tensor_info_.size() != outputs_shape_.size()) {
-    MS_LOG(ERROR) << name_ << ": the output tensor layout num " << outputs_tensor_info_.size()
-                  << " dose not match the output num " << outputs_shape_.size();
+    if (is_in_layout_propagation_) {
+      MS_LOG(INFO) << name_ << ": the output tensor layout num " << outputs_tensor_info_.size()
+                   << " dose not match the output num " << outputs_shape_.size();
+    } else {
+      MS_LOG(ERROR) << name_ << ": the output tensor layout num " << outputs_tensor_info_.size()
+                    << " dose not match the output num " << outputs_shape_.size();
+    }
     return FAILED;
   }
 
@@ -2520,7 +2529,7 @@ Status OperatorInfo::SetDevMatrixShapeByLayout() {
     TensorLayout layout = tensor_info.tensor_layout();
     Arrangement device_arrangement = layout.device_arrangement_origin();
     if (!dev_matrix_shape_.empty() && dev_matrix_shape_ != device_arrangement.array()) {
-      MS_LOG(WARNING) << "Not support different device matrix now.";
+      MS_LOG(INFO) << "Not support different device matrix now.";
       return FAILED;
     }
     dev_matrix_shape_ = device_arrangement.array();
@@ -3387,16 +3396,15 @@ Status OperatorInfo::AddSwcUnderPrevOpDevMatrixSingle(const Shape &prev_op_dev_m
                                                       const std::vector<Shape> &prev_op_tensor_map,
                                                       size_t layout_index) {
   if (prev_op_dev_matrix.empty()) {
-    MS_LOG(WARNING) << "Layout propagation prev_op_dev_matrix is empty";
+    MS_LOG(INFO) << "Layout propagation prev_op_dev_matrix is empty";
     return FAILED;
   }
   if (inputs_shape_.size() <= layout_index) {
-    MS_LOG(WARNING) << "layout_index is illegal:" << layout_index
-                    << " while inputs_shape_ size:" << inputs_shape_.size();
+    MS_LOG(INFO) << "layout_index is illegal:" << layout_index << " while inputs_shape_ size:" << inputs_shape_.size();
     return FAILED;
   }
   if (inputs_shape_[layout_index].size() != prev_op_tensor_map.size()) {
-    MS_LOG(WARNING) << "prev_op_tensor_map is illegal";
+    MS_LOG(INFO) << "prev_op_tensor_map is illegal";
     return FAILED;
   }
   if (dev_matrix_shape_ == prev_op_dev_matrix) {
@@ -3524,16 +3532,15 @@ std::vector<std::shared_ptr<TensorLayout>> OperatorInfo::InferLayoutsByStrategy(
 bool OperatorInfo::CheckPrevOpStatus(const Shape &prev_op_dev_matrix, const std::vector<Shape> &prev_op_tensor_map,
                                      size_t layout_index) {
   if (prev_op_dev_matrix.empty()) {
-    MS_LOG(WARNING) << "Layout propagation prev_op_dev_matrix is empty";
+    MS_LOG(INFO) << "Layout propagation prev_op_dev_matrix is empty";
     return false;
   }
   if (inputs_shape_.size() <= layout_index) {
-    MS_LOG(WARNING) << "layout_index is illegal:" << layout_index
-                    << " while inputs_shape_ size:" << inputs_shape_.size();
+    MS_LOG(INFO) << "layout_index is illegal:" << layout_index << " while inputs_shape_ size:" << inputs_shape_.size();
     return false;
   }
   if (inputs_shape_[layout_index].size() != prev_op_tensor_map.size()) {
-    MS_LOG(WARNING) << "prev_op_tensor_map is illegal";
+    MS_LOG(INFO) << "prev_op_tensor_map is illegal";
     return false;
   }
 

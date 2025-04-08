@@ -63,8 +63,8 @@ Status TrilInfo::CheckInputLayout() {
   auto layout_value = input_layout0.device_arrangement_origin().array();
   if (layout_value.size() < smallest_layout_len || layout_value.size() > max_layout_len) {
     if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << name_ << ": The layout value size must be greater than 2 and less than 7"
-                      << ", but got " << layout_value.size();
+      MS_LOG(INFO) << name_ << ": The layout value size must be greater than 2 and less than 7"
+                   << ", but got " << layout_value.size();
     } else {
       MS_LOG(ERROR) << name_ << ": The layout value size must be greater than 2 and less than 7"
                     << ", but got " << layout_value.size();

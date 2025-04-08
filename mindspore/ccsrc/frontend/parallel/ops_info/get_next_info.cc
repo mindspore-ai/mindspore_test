@@ -230,8 +230,8 @@ std::vector<StrategyPtr> GetNextInfo::GenerateOpStrategies(int64_t stage_id) {
 Status GetNextInfo::CheckOutputLayout() {
   if (outputs_shape_.size() != outputs_tensor_info_.size()) {
     if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << "Output size is " << outputs_shape_.size() << ", output layout size is "
-                      << outputs_tensor_info_.size() << ", they are not equal";
+      MS_LOG(INFO) << "Output size is " << outputs_shape_.size() << ", output layout size is "
+                   << outputs_tensor_info_.size() << ", they are not equal";
     } else {
       MS_LOG(ERROR) << "Output size is " << outputs_shape_.size() << ", output layout size is "
                     << outputs_tensor_info_.size() << ", they are not equal";

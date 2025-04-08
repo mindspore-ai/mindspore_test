@@ -234,8 +234,8 @@ Status RmsNormInfo::CheckInputLayout() {
   // Check all device matrix should be the same
   if (inputs_tensor_info_.size() != kSizeTwo) {
     if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << "The size of input_tensor_layout for rmsnorm is " << inputs_tensor_info_.size()
-                      << " rather than 2.";
+      MS_LOG(INFO) << "The size of input_tensor_layout for rmsnorm is " << inputs_tensor_info_.size()
+                   << " rather than 2.";
     } else {
       MS_LOG(ERROR) << "The size of input_tensor_layout for rmsnorm is " << inputs_tensor_info_.size()
                     << " rather than 2.";
@@ -261,8 +261,8 @@ Status RmsNormInfo::CheckInputLayout() {
   for (size_t j = 0; j < gamma_layout.tensor_map_before().size(); ++j) {
     if (gamma_layout.tensor_map_before()[j] != in_layout.tensor_map_before()[gamma_diff + j]) {
       if (is_in_layout_propagation_) {
-        MS_LOG(WARNING) << "RmsNorm Invalid gamma layout " << gamma_layout.tensor_map_before() << ", " << j
-                        << "th tensor map in gamma must equal to input layout";
+        MS_LOG(INFO) << "RmsNorm Invalid gamma layout " << gamma_layout.tensor_map_before() << ", " << j
+                     << "th tensor map in gamma must equal to input layout";
       } else {
         MS_LOG(ERROR) << "RmsNorm Invalid gamma layout " << gamma_layout.tensor_map_before() << ", " << j
                       << "th tensor map in gamma must equal to input layout";
@@ -278,8 +278,8 @@ Status RmsNormInfo::CheckOutputLayout() {
   // Check all device matrix should be the same
   if (outputs_tensor_info_.size() != kSizeTwo) {
     if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << "The size of output_tensor_layout for rmsnorm is " << outputs_tensor_info_.size()
-                      << " rather than 2.";
+      MS_LOG(INFO) << "The size of output_tensor_layout for rmsnorm is " << outputs_tensor_info_.size()
+                   << " rather than 2.";
     } else {
       MS_LOG(ERROR) << "The size of output_tensor_layout for rmsnorm is " << outputs_tensor_info_.size()
                     << " rather than 2.";
@@ -288,7 +288,7 @@ Status RmsNormInfo::CheckOutputLayout() {
   }
   if (output_infer_tensor_layout_.tensor_shape_before().array().empty()) {
     if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << "Parameter of output tensor layout for rmsnorm is not allowed to be set by users.";
+      MS_LOG(INFO) << "Parameter of output tensor layout for rmsnorm is not allowed to be set by users.";
     } else {
       MS_LOG(ERROR) << "Parameter of output tensor layout for rmsnorm is not allowed to be set by users.";
     }

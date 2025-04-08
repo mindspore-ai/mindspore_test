@@ -197,7 +197,7 @@ bool IsValidTensorMap(const Shape &tensor_map) {
 
 void log_func_tr(std::ostringstream &oss, bool is_in_layout_propagation) {
   if (is_in_layout_propagation) {
-    MS_LOG(WARNING) << oss.str();
+    MS_LOG(INFO) << oss.str();
   } else {
     MS_LOG(ERROR) << oss.str();
   }
@@ -305,7 +305,7 @@ Status TransposeInfo::CheckOutputLayout() {
 Status TransposeInfo::CheckInputLayout() {
   if (inputs_tensor_info_.size() != kSizeOne) {
     if (is_in_layout_propagation_) {
-      MS_LOG(WARNING) << name_ << ": The size of inputs tensor info must be 1, but got " << inputs_tensor_info_.size();
+      MS_LOG(INFO) << name_ << ": The size of inputs tensor info must be 1, but got " << inputs_tensor_info_.size();
     } else {
       MS_LOG(ERROR) << name_ << ": The size of inputs tensor info must be 1, but got " << inputs_tensor_info_.size();
     }
