@@ -990,9 +990,8 @@ class KLDivLoss(Cell):
     where :math:`x` represents `input`, :math:`y` represents `target`, and :math:`\ell(x, y)` represents the output.
 
     Note:
-        - Currently it does not support inputs that require `input` to broadcast to `target`.
-        - The output aligns with the mathematical definition of Kullback-Leibler divergence
-          only when `reduction` is set to ``'batchmean'``.
+        The output aligns with the mathematical definition of Kullback-Leibler divergence
+        only when `reduction` is set to ``'batchmean'``.
 
     Args:
         reduction (str, optional): Specifies the reduction to be applied to the output. Default: ``'mean'``.
@@ -1001,8 +1000,8 @@ class KLDivLoss(Cell):
     Inputs:
         - **input** (Tensor) - The input Tensor. The data type must be float16, float32 or bfloat16(only supported by
           Atlas A2 training series products).
-        - **target** (Tensor) - The target Tensor which has the same type as `input`. The shape of `target` must be
-          broadcastable to the shape of `input`.
+        - **target** (Tensor) - The target Tensor which has the same type as `input`. The shape of `target` and `input`
+          should be broadcastable.
 
     Outputs:
         Tensor, has the same dtype as `input`. If `reduction` is ``'none'``, then output has the shape as broadcast
@@ -1013,7 +1012,7 @@ class KLDivLoss(Cell):
         TypeError: If dtype of `input` or `target` is not float16, float32 or bfloat16.
         TypeError: If dtype of `target` is not the same as `input`.
         ValueError: If `reduction` is not one of ``'none'``, ``'mean'``, ``'sum'``, ``'batchmean'``.
-        ValueError: If shape of `target` can not be broadcast to the shape of `input`.
+        ValueError: If shape of `target` and `input` can not be broadcastable.
 
     Supported Platforms:
         ``Ascend``

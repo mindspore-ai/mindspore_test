@@ -24,6 +24,31 @@
 
 namespace mindspore {
 namespace ops {
+bool IsKLDivBroadcastable(const std::vector<int64_t> &x_shape, const std::vector<int64_t> &y_shape) {
+  if (x_shape.size() < y_shape.size()) {
+    return IsKLDivBroadcastable(y_shape, x_shape);
+  }
+
+  if (x_shape == y_shape || IsDynamicRank(x_shape) || IsDynamicRank(y_shape)) {
+    return true;
+  }
+
+  auto miss = x_shape.size() - y_shape.size();
+  for (size_t i = 0; i < y_shape.size(); i++) {
+    if (x_shape[miss + i] == y_shape[i]) {
+      continue;
+    }
+    if (x_shape[miss + i] == abstract::TensorShape::kShapeDimAny || x_shape[miss + i] == 1) {
+      continue;
+    }
+    if (y_shape[i] == abstract::TensorShape::kShapeDimAny || y_shape[i] == 1) {
+      continue;
+    }
+    return false;
+  }
+  return true;
+}
+
 ShapeArray InferBroadcastShape(const ShapeVector &x_shape, const ShapeVector &y_shape) {
   ShapeVector output_shape(x_shape);
   size_t miss = x_shape.size() - y_shape.size();
@@ -46,7 +71,9 @@ ShapeArray InferShapeReductionNone(const ShapeVector &input_shape, const ShapeVe
   if (input_shape == target_shape) {
     return {input_shape};
   }
-
+  if (input_shape.size() < target_shape.size()) {
+    return InferBroadcastShape(target_shape, input_shape);
+  }
   return InferBroadcastShape(input_shape, target_shape);
 }
 
@@ -57,9 +84,9 @@ ShapeArray KLDivFuncImpl::InferShape(const PrimitivePtr &primitive, const InferI
   const auto &input_shape = input->GetShape();
   const auto &target_shape = target->GetShape();
 
-  if (!IsBroadcastable(input_shape, target_shape)) {
+  if (!IsKLDivBroadcastable(input_shape, target_shape)) {
     MS_EXCEPTION(ValueError) << "For primitive[KLDiv]"
-                             << ", the shape of 'target' can not broadcast to the shape of 'input'.";
+                             << ", the shape of 'target' and 'input' should be broadcastable.";
   }
   if (!reduction_opt.has_value()) {
     return ShapeArray{ShapeVector({abstract::TensorShape::kShapeRankAny})};
