@@ -13,467 +13,13 @@ mindspore.ops提供了大量的function接口，包括神经网络函数、数�
 
 MindSpore中 `mindspore.ops` 接口与上一版本相比，新增、删除和支持平台的变化信息请参考 `mindspore.ops API接口变更 <https://gitee.com/mindspore/docs/blob/master/resource/api_updates/func_api_updates_cn.md>`_ 。
 
-神经网络层函数
-----------------
-
-神经网络
-^^^^^^^^
-
-.. mscnplatwarnautosummary::
-    :toctree: ops
-    :nosignatures:
-    :template: classtemplate.rst
-
-    mindspore.ops.adaptive_avg_pool1d
-    mindspore.ops.adaptive_avg_pool2d
-    mindspore.ops.adaptive_avg_pool3d
-    mindspore.ops.adaptive_max_pool1d
-    mindspore.ops.adaptive_max_pool2d
-    mindspore.ops.avg_pool1d
-    mindspore.ops.avg_pool2d
-    mindspore.ops.avg_pool3d
-    mindspore.ops.batch_norm
-    mindspore.ops.bias_add
-    mindspore.ops.bidense
-    mindspore.ops.ctc_greedy_decoder
-    mindspore.ops.conv1d
-    mindspore.ops.conv2d
-    mindspore.ops.conv3d
-    mindspore.ops.deformable_conv2d
-    mindspore.ops.dense
-    mindspore.ops.dropout
-    mindspore.ops.dropout1d
-    mindspore.ops.dropout2d
-    mindspore.ops.dropout3d
-    mindspore.ops.embedding
-    mindspore.ops.flatten
-    mindspore.ops.fold
-    mindspore.ops.fractional_max_pool3d
-    mindspore.ops.fused_infer_attention_score
-    mindspore.ops.speed_fusion_attention
-    mindspore.ops.group_norm
-    mindspore.ops.layer_norm
-    mindspore.ops.lp_pool1d
-    mindspore.ops.lp_pool2d
-    mindspore.ops.lrn
-    mindspore.ops.max_pool2d
-    mindspore.ops.max_pool3d
-    mindspore.ops.max_unpool1d
-    mindspore.ops.max_unpool2d
-    mindspore.ops.max_unpool3d
-    mindspore.ops.moe_token_permute
-    mindspore.ops.moe_token_unpermute
-    mindspore.ops.incre_flash_attention
-    mindspore.ops.prompt_flash_attention
-    mindspore.ops.flash_attention_score
-    mindspore.ops.rms_norm
-    mindspore.ops.unfold
-
-
-损失函数
-^^^^^^^^^^
-
-.. mscnplatwarnautosummary::
-    :toctree: ops
-    :nosignatures:
-    :template: classtemplate.rst
-
-    mindspore.ops.binary_cross_entropy
-    mindspore.ops.binary_cross_entropy_with_logits
-    mindspore.ops.cosine_embedding_loss
-    mindspore.ops.cross_entropy
-    mindspore.ops.ctc_loss
-    mindspore.ops.gaussian_nll_loss
-    mindspore.ops.hinge_embedding_loss
-    mindspore.ops.huber_loss
-    mindspore.ops.kl_div
-    mindspore.ops.l1_loss
-    mindspore.ops.margin_ranking_loss
-    mindspore.ops.mse_loss
-    mindspore.ops.multi_margin_loss
-    mindspore.ops.multilabel_margin_loss
-    mindspore.ops.multilabel_soft_margin_loss
-    mindspore.ops.nll_loss
-    mindspore.ops.smooth_l1_loss
-    mindspore.ops.soft_margin_loss
-    mindspore.ops.triplet_margin_loss
-
-激活函数
-^^^^^^^^^^
-
-.. mscnplatwarnautosummary::
-    :toctree: ops
-    :nosignatures:
-    :template: classtemplate.rst
-
-    mindspore.ops.celu
-    mindspore.ops.elu
-    mindspore.ops.fast_gelu
-    mindspore.ops.gelu
-    mindspore.ops.glu
-    mindspore.ops.gumbel_softmax
-    mindspore.ops.hardshrink
-    mindspore.ops.hardsigmoid
-    mindspore.ops.hardswish
-    mindspore.ops.hardtanh
-    mindspore.ops.leaky_relu
-    mindspore.ops.log_softmax
-    mindspore.ops.logsigmoid
-    mindspore.ops.mish
-    mindspore.ops.prelu
-    mindspore.ops.relu
-    mindspore.ops.relu6
-    mindspore.ops.rrelu
-    mindspore.ops.selu
-    mindspore.ops.sigmoid
-    mindspore.ops.silu
-    mindspore.ops.softmax
-    mindspore.ops.softmin
-    mindspore.ops.softshrink
-    mindspore.ops.softsign
-    mindspore.ops.swiglu
-    mindspore.ops.tanh
-    mindspore.ops.threshold
-
-距离函数
-^^^^^^^^^^
-
-.. mscnplatwarnautosummary::
-    :toctree: ops
-    :nosignatures:
-    :template: classtemplate.rst
-
-    mindspore.ops.cdist
-    mindspore.ops.dist
-    mindspore.ops.pdist
-
-采样函数
-^^^^^^^^^^
-
-.. mscnplatwarnautosummary::
-    :toctree: ops
-    :nosignatures:
-    :template: classtemplate.rst
-
-    mindspore.ops.choice_with_mask
-    mindspore.ops.random_categorical
-    mindspore.ops.log_uniform_candidate_sampler
-    mindspore.ops.uniform_candidate_sampler
-
-图像函数
-^^^^^^^^^^
-
-.. mscnplatwarnautosummary::
-    :toctree: ops
-    :nosignatures:
-    :template: classtemplate.rst
-
-    mindspore.ops.affine_grid
-    mindspore.ops.bounding_box_decode
-    mindspore.ops.bounding_box_encode
-    mindspore.ops.col2im
-    mindspore.ops.check_valid
-    mindspore.ops.crop_and_resize
-    mindspore.ops.grid_sample
-    mindspore.ops.interpolate
-    mindspore.ops.iou
-    mindspore.ops.pad
-    mindspore.ops.padding
-    mindspore.ops.pixel_shuffle
-    mindspore.ops.pixel_unshuffle
-    mindspore.ops.rotary_position_embedding
-    mindspore.ops.rotated_iou
-    mindspore.ops.upsample
-
-数学运算函数
-----------------
-
-逐元素运算
-^^^^^^^^^^^^^
-
-.. mscnplatwarnautosummary::
-    :toctree: ops
-    :nosignatures:
-    :template: classtemplate.rst
-
-    mindspore.ops.abs
-    mindspore.ops.absolute
-    mindspore.ops.accumulate_n
-    mindspore.ops.acos
-    mindspore.ops.arccos
-    mindspore.ops.acosh
-    mindspore.ops.add
-    mindspore.ops.addcdiv
-    mindspore.ops.addcmul
-    mindspore.ops.addmv
-    mindspore.ops.addn
-    mindspore.ops.angle
-    mindspore.ops.arccosh
-    mindspore.ops.arcsin
-    mindspore.ops.arcsinh
-    mindspore.ops.arctan
-    mindspore.ops.arctanh
-    mindspore.ops.arctan2
-    mindspore.ops.asin
-    mindspore.ops.asinh
-    mindspore.ops.atan
-    mindspore.ops.atan2
-    mindspore.ops.atanh
-    mindspore.ops.atleast_1d
-    mindspore.ops.atleast_2d
-    mindspore.ops.atleast_3d
-    mindspore.ops.bessel_i0
-    mindspore.ops.bessel_i0e
-    mindspore.ops.bessel_i1
-    mindspore.ops.bessel_i1e
-    mindspore.ops.bessel_j0
-    mindspore.ops.bessel_j1
-    mindspore.ops.bessel_k0
-    mindspore.ops.bessel_k0e
-    mindspore.ops.bessel_k1
-    mindspore.ops.bessel_k1e
-    mindspore.ops.bessel_y0
-    mindspore.ops.bessel_y1
-    mindspore.ops.bitwise_and
-    mindspore.ops.bitwise_left_shift
-    mindspore.ops.bitwise_or
-    mindspore.ops.bitwise_right_shift
-    mindspore.ops.bitwise_xor
-    mindspore.ops.ceil
-    mindspore.ops.clamp
-    mindspore.ops.clip
-    mindspore.ops.combinations
-    mindspore.ops.copysign
-    mindspore.ops.cos
-    mindspore.ops.cosh
-    mindspore.ops.cosine_similarity
-    mindspore.ops.cov
-    mindspore.ops.diag_embed
-    mindspore.ops.diff
-    mindspore.ops.deg2rad
-    mindspore.ops.digamma
-    mindspore.ops.div
-    mindspore.ops.divide
-    mindspore.ops.erf
-    mindspore.ops.erfc
-    mindspore.ops.erfinv
-    mindspore.ops.exp
-    mindspore.ops.exp2
-    mindspore.ops.expm1
-    mindspore.ops.floor
-    mindspore.ops.floor_div
-    mindspore.ops.floor_divide
-    mindspore.ops.floor_mod
-    mindspore.ops.float_power
-    mindspore.ops.fmod
-    mindspore.ops.frac
-    mindspore.ops.gcd
-    mindspore.ops.hypot
-    mindspore.ops.igamma
-    mindspore.ops.igammac
-    mindspore.ops.imag
-    mindspore.ops.i0
-    mindspore.ops.inv
-    mindspore.ops.invert
-    mindspore.ops.lcm
-    mindspore.ops.ldexp
-    mindspore.ops.lerp
-    mindspore.ops.log
-    mindspore.ops.log2
-    mindspore.ops.log10
-    mindspore.ops.log1p
-    mindspore.ops.logaddexp
-    mindspore.ops.logaddexp2
-    mindspore.ops.logical_and
-    mindspore.ops.logical_not
-    mindspore.ops.logical_or
-    mindspore.ops.logical_xor
-    mindspore.ops.logit
-    mindspore.ops.mul
-    mindspore.ops.multiply
-    mindspore.ops.mvlgamma
-    mindspore.ops.neg
-    mindspore.ops.negative
-    mindspore.ops.nextafter
-    mindspore.ops.polar
-    mindspore.ops.polygamma
-    mindspore.ops.positive
-    mindspore.ops.pow
-    mindspore.ops.rad2deg
-    mindspore.ops.ravel
-    mindspore.ops.real
-    mindspore.ops.reciprocal
-    mindspore.ops.remainder
-    mindspore.ops.rot90
-    mindspore.ops.round
-    mindspore.ops.rsqrt
-    mindspore.ops.sgn
-    mindspore.ops.sign
-    mindspore.ops.signbit
-    mindspore.ops.sin
-    mindspore.ops.sinc
-    mindspore.ops.sinh
-    mindspore.ops.sqrt
-    mindspore.ops.square
-    mindspore.ops.sub
-    mindspore.ops.subtract
-    mindspore.ops.t
-    mindspore.ops.tan
-    mindspore.ops.tanhshrink
-    mindspore.ops.trapz
-    mindspore.ops.tril_indices
-    mindspore.ops.triu_indices
-    mindspore.ops.true_divide
-    mindspore.ops.trunc
-    mindspore.ops.truncate_div
-    mindspore.ops.truncate_mod
-    mindspore.ops.xdivy
-    mindspore.ops.xlogy
-    mindspore.ops.zeta
-
-Reduction函数
-^^^^^^^^^^^^^
-
-.. mscnplatwarnautosummary::
-    :toctree: ops
-    :nosignatures:
-    :template: classtemplate.rst
-
-    mindspore.ops.all
-    mindspore.ops.amax
-    mindspore.ops.amin
-    mindspore.ops.aminmax
-    mindspore.ops.any
-    mindspore.ops.argmax
-    mindspore.ops.argmin
-    mindspore.ops.cummax
-    mindspore.ops.cummin
-    mindspore.ops.cumprod
-    mindspore.ops.cumsum
-    mindspore.ops.fmax
-    mindspore.ops.histc
-    mindspore.ops.logcumsumexp
-    mindspore.ops.logsumexp
-    mindspore.ops.max
-    mindspore.ops.mean
-    mindspore.ops.median
-    mindspore.ops.min
-    mindspore.ops.norm
-    mindspore.ops.prod
-    mindspore.ops.std
-    mindspore.ops.std_mean
-    mindspore.ops.var
-    mindspore.ops.var_mean
-
-比较函数
-^^^^^^^^^^^^^
-
-.. mscnplatwarnautosummary::
-    :toctree: ops
-    :nosignatures:
-    :template: classtemplate.rst
-
-    mindspore.ops.argsort
-    mindspore.ops.approximate_equal
-    mindspore.ops.bucketize
-    mindspore.ops.eq
-    mindspore.ops.equal
-    mindspore.ops.ge
-    mindspore.ops.greater
-    mindspore.ops.greater_equal
-    mindspore.ops.gt
-    mindspore.ops.intopk
-    mindspore.ops.isclose
-    mindspore.ops.isfinite
-    mindspore.ops.isinf
-    mindspore.ops.isnan
-    mindspore.ops.isneginf
-    mindspore.ops.isposinf
-    mindspore.ops.isreal
-    mindspore.ops.is_complex
-    mindspore.ops.is_floating_point
-    mindspore.ops.le
-    mindspore.ops.less
-    mindspore.ops.less_equal
-    mindspore.ops.lt
-    mindspore.ops.maximum
-    mindspore.ops.minimum
-    mindspore.ops.msort
-    mindspore.ops.ne
-    mindspore.ops.not_equal
-    mindspore.ops.searchsorted
-    mindspore.ops.topk
-
-线性代数函数
-^^^^^^^^^^^^^
-
-.. mscnplatwarnautosummary::
-    :toctree: ops
-    :nosignatures:
-    :template: classtemplate.rst
-
-    mindspore.ops.addbmm
-    mindspore.ops.addmm
-    mindspore.ops.addr
-    mindspore.ops.adjoint
-    mindspore.ops.baddbmm
-    mindspore.ops.batch_dot
-    mindspore.ops.bmm
-    mindspore.ops.cholesky
-    mindspore.ops.cholesky_solve
-    mindspore.ops.cond
-    mindspore.ops.dot
-    mindspore.ops.eigvals
-    mindspore.ops.geqrf
-    mindspore.ops.ger
-    mindspore.ops.inner
-    mindspore.ops.inverse
-    mindspore.ops.kron
-    mindspore.ops.logdet
-    mindspore.ops.lu_solve
-    mindspore.ops.lu_unpack
-    mindspore.ops.matmul
-    mindspore.ops.matrix_band_part
-    mindspore.ops.matrix_solve
-    mindspore.ops.matrix_band_part
-    mindspore.ops.matrix_diag
-    mindspore.ops.matrix_diag_part
-    mindspore.ops.matrix_set_diag
-    mindspore.ops.mm
-    mindspore.ops.mv
-    mindspore.ops.outer
-    mindspore.ops.ormqr
-    mindspore.ops.orgqr
-    mindspore.ops.ormqr
-    mindspore.ops.pinv
-    mindspore.ops.svd
-    mindspore.ops.slogdet
-    mindspore.ops.trace
-    mindspore.ops.tensor_dot
-    mindspore.ops.vander
-    mindspore.ops.vecdot
-
-谱函数
-^^^^^^^^^^^^^
-
-.. mscnplatwarnautosummary::
-    :toctree: ops
-    :nosignatures:
-    :template: classtemplate.rst
-
-    mindspore.ops.bartlett_window
-    mindspore.ops.blackman_window
-    mindspore.ops.hamming_window
-    mindspore.ops.hann_window
-    mindspore.ops.kaiser_window
-
 Tensor操作函数
 ----------------
 
 Tensor创建
 ^^^^^^^^^^^^^
 
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: ops
     :nosignatures:
     :template: classtemplate.rst
@@ -498,7 +44,7 @@ Tensor创建
 随机生成函数
 ^^^^^^^^^^^^^^^^
 
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: ops
     :nosignatures:
     :template: classtemplate.rst
@@ -524,7 +70,7 @@ Tensor创建
 Array操作
 ^^^^^^^^^^^^^^^^
 
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: ops
     :nosignatures:
     :template: classtemplate.rst
@@ -546,6 +92,7 @@ Array操作
     mindspore.ops.diagflat
     mindspore.ops.diagonal
     mindspore.ops.diagonal_scatter
+    mindspore.ops.diag_embed
     mindspore.ops.dyn_shape
     mindspore.ops.dsplit
     mindspore.ops.dstack
@@ -623,7 +170,6 @@ Array操作
     mindspore.ops.triu
     mindspore.ops.transpose
     mindspore.ops.unbind
-    mindspore.ops.unfold
     mindspore.ops.unique
     mindspore.ops.unique_consecutive
     mindspore.ops.unsorted_segment_max
@@ -642,7 +188,7 @@ Array操作
 类型转换
 ^^^^^^^^^^^^^^^^
 
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: ops
     :nosignatures:
     :template: classtemplate.rst
@@ -655,7 +201,7 @@ Array操作
 梯度剪裁
 ^^^^^^^^
 
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: ops
     :nosignatures:
     :template: classtemplate.rst
@@ -664,10 +210,460 @@ Array操作
     mindspore.ops.clip_by_value
     mindspore.ops.clip_by_norm
 
+数学运算函数
+----------------
+
+逐元素运算
+^^^^^^^^^^^^^
+
+.. mscnplatformautosummary::
+    :toctree: ops
+    :nosignatures:
+    :template: classtemplate.rst
+
+    mindspore.ops.abs
+    mindspore.ops.absolute
+    mindspore.ops.accumulate_n
+    mindspore.ops.acos
+    mindspore.ops.arccos
+    mindspore.ops.acosh
+    mindspore.ops.add
+    mindspore.ops.addcdiv
+    mindspore.ops.addcmul
+    mindspore.ops.addmv
+    mindspore.ops.addn
+    mindspore.ops.angle
+    mindspore.ops.arccosh
+    mindspore.ops.arcsin
+    mindspore.ops.arcsinh
+    mindspore.ops.arctan
+    mindspore.ops.arctanh
+    mindspore.ops.arctan2
+    mindspore.ops.asin
+    mindspore.ops.asinh
+    mindspore.ops.atan
+    mindspore.ops.atan2
+    mindspore.ops.atanh
+    mindspore.ops.atleast_1d
+    mindspore.ops.atleast_2d
+    mindspore.ops.atleast_3d
+    mindspore.ops.bessel_i0
+    mindspore.ops.bessel_i0e
+    mindspore.ops.bessel_i1
+    mindspore.ops.bessel_i1e
+    mindspore.ops.bessel_j0
+    mindspore.ops.bessel_j1
+    mindspore.ops.bessel_k0
+    mindspore.ops.bessel_k0e
+    mindspore.ops.bessel_k1
+    mindspore.ops.bessel_k1e
+    mindspore.ops.bessel_y0
+    mindspore.ops.bessel_y1
+    mindspore.ops.bitwise_and
+    mindspore.ops.bitwise_left_shift
+    mindspore.ops.bitwise_or
+    mindspore.ops.bitwise_right_shift
+    mindspore.ops.bitwise_xor
+    mindspore.ops.ceil
+    mindspore.ops.clamp
+    mindspore.ops.clip
+    mindspore.ops.combinations
+    mindspore.ops.copysign
+    mindspore.ops.cos
+    mindspore.ops.cosh
+    mindspore.ops.cosine_similarity
+    mindspore.ops.cov
+    mindspore.ops.diff
+    mindspore.ops.deg2rad
+    mindspore.ops.digamma
+    mindspore.ops.div
+    mindspore.ops.divide
+    mindspore.ops.erf
+    mindspore.ops.erfc
+    mindspore.ops.erfinv
+    mindspore.ops.exp
+    mindspore.ops.exp2
+    mindspore.ops.expm1
+    mindspore.ops.floor
+    mindspore.ops.floor_div
+    mindspore.ops.floor_divide
+    mindspore.ops.floor_mod
+    mindspore.ops.float_power
+    mindspore.ops.fmax
+    mindspore.ops.fmod
+    mindspore.ops.frac
+    mindspore.ops.gcd
+    mindspore.ops.hypot
+    mindspore.ops.igamma
+    mindspore.ops.igammac
+    mindspore.ops.imag
+    mindspore.ops.i0
+    mindspore.ops.inv
+    mindspore.ops.invert
+    mindspore.ops.lcm
+    mindspore.ops.ldexp
+    mindspore.ops.lerp
+    mindspore.ops.log
+    mindspore.ops.log2
+    mindspore.ops.log10
+    mindspore.ops.log1p
+    mindspore.ops.logaddexp
+    mindspore.ops.logaddexp2
+    mindspore.ops.logical_and
+    mindspore.ops.logical_not
+    mindspore.ops.logical_or
+    mindspore.ops.logical_xor
+    mindspore.ops.logit
+    mindspore.ops.mul
+    mindspore.ops.multiply
+    mindspore.ops.mvlgamma
+    mindspore.ops.neg
+    mindspore.ops.negative
+    mindspore.ops.nextafter
+    mindspore.ops.polar
+    mindspore.ops.polygamma
+    mindspore.ops.positive
+    mindspore.ops.pow
+    mindspore.ops.rad2deg
+    mindspore.ops.ravel
+    mindspore.ops.real
+    mindspore.ops.reciprocal
+    mindspore.ops.remainder
+    mindspore.ops.rot90
+    mindspore.ops.round
+    mindspore.ops.rsqrt
+    mindspore.ops.sgn
+    mindspore.ops.sign
+    mindspore.ops.signbit
+    mindspore.ops.sin
+    mindspore.ops.sinc
+    mindspore.ops.sinh
+    mindspore.ops.sqrt
+    mindspore.ops.square
+    mindspore.ops.sub
+    mindspore.ops.subtract
+    mindspore.ops.t
+    mindspore.ops.tan
+    mindspore.ops.tanhshrink
+    mindspore.ops.trapz
+    mindspore.ops.tril_indices
+    mindspore.ops.triu_indices
+    mindspore.ops.true_divide
+    mindspore.ops.trunc
+    mindspore.ops.truncate_div
+    mindspore.ops.truncate_mod
+    mindspore.ops.xdivy
+    mindspore.ops.xlogy
+    mindspore.ops.zeta
+
+Reduction函数
+^^^^^^^^^^^^^
+
+.. mscnplatformautosummary::
+    :toctree: ops
+    :nosignatures:
+    :template: classtemplate.rst
+
+    mindspore.ops.all
+    mindspore.ops.amax
+    mindspore.ops.amin
+    mindspore.ops.aminmax
+    mindspore.ops.any
+    mindspore.ops.argmax
+    mindspore.ops.argmin
+    mindspore.ops.cummax
+    mindspore.ops.cummin
+    mindspore.ops.cumprod
+    mindspore.ops.cumsum
+    mindspore.ops.histc
+    mindspore.ops.logcumsumexp
+    mindspore.ops.logsumexp
+    mindspore.ops.max
+    mindspore.ops.mean
+    mindspore.ops.median
+    mindspore.ops.min
+    mindspore.ops.norm
+    mindspore.ops.prod
+    mindspore.ops.std
+    mindspore.ops.std_mean
+    mindspore.ops.var
+    mindspore.ops.var_mean
+
+比较函数
+^^^^^^^^^^^^^
+
+.. mscnplatformautosummary::
+    :toctree: ops
+    :nosignatures:
+    :template: classtemplate.rst
+
+    mindspore.ops.argsort
+    mindspore.ops.approximate_equal
+    mindspore.ops.bucketize
+    mindspore.ops.eq
+    mindspore.ops.equal
+    mindspore.ops.ge
+    mindspore.ops.greater
+    mindspore.ops.greater_equal
+    mindspore.ops.gt
+    mindspore.ops.intopk
+    mindspore.ops.isclose
+    mindspore.ops.isfinite
+    mindspore.ops.isinf
+    mindspore.ops.isnan
+    mindspore.ops.isneginf
+    mindspore.ops.isposinf
+    mindspore.ops.isreal
+    mindspore.ops.is_complex
+    mindspore.ops.is_floating_point
+    mindspore.ops.le
+    mindspore.ops.less
+    mindspore.ops.less_equal
+    mindspore.ops.lt
+    mindspore.ops.maximum
+    mindspore.ops.minimum
+    mindspore.ops.msort
+    mindspore.ops.ne
+    mindspore.ops.not_equal
+    mindspore.ops.searchsorted
+    mindspore.ops.topk
+
+线性代数函数
+^^^^^^^^^^^^^
+
+.. mscnplatformautosummary::
+    :toctree: ops
+    :nosignatures:
+    :template: classtemplate.rst
+
+    mindspore.ops.addbmm
+    mindspore.ops.addmm
+    mindspore.ops.addr
+    mindspore.ops.adjoint
+    mindspore.ops.baddbmm
+    mindspore.ops.batch_dot
+    mindspore.ops.bmm
+    mindspore.ops.cholesky
+    mindspore.ops.cholesky_solve
+    mindspore.ops.cond
+    mindspore.ops.dot
+    mindspore.ops.eigvals
+    mindspore.ops.geqrf
+    mindspore.ops.ger
+    mindspore.ops.inner
+    mindspore.ops.inverse
+    mindspore.ops.kron
+    mindspore.ops.logdet
+    mindspore.ops.lu_solve
+    mindspore.ops.lu_unpack
+    mindspore.ops.matmul
+    mindspore.ops.matrix_band_part
+    mindspore.ops.matrix_solve
+    mindspore.ops.matrix_diag
+    mindspore.ops.matrix_diag_part
+    mindspore.ops.matrix_set_diag
+    mindspore.ops.mm
+    mindspore.ops.mv
+    mindspore.ops.outer
+    mindspore.ops.orgqr
+    mindspore.ops.ormqr
+    mindspore.ops.pinv
+    mindspore.ops.svd
+    mindspore.ops.slogdet
+    mindspore.ops.trace
+    mindspore.ops.tensor_dot
+    mindspore.ops.vander
+    mindspore.ops.vecdot
+
+谱函数
+^^^^^^^^^^^^^
+
+.. mscnplatformautosummary::
+    :toctree: ops
+    :nosignatures:
+    :template: classtemplate.rst
+
+    mindspore.ops.bartlett_window
+    mindspore.ops.blackman_window
+    mindspore.ops.hamming_window
+    mindspore.ops.hann_window
+    mindspore.ops.kaiser_window
+
+神经网络层函数
+----------------
+
+神经网络
+^^^^^^^^
+
+.. mscnplatformautosummary::
+    :toctree: ops
+    :nosignatures:
+    :template: classtemplate.rst
+
+    mindspore.ops.adaptive_avg_pool1d
+    mindspore.ops.adaptive_avg_pool2d
+    mindspore.ops.adaptive_avg_pool3d
+    mindspore.ops.adaptive_max_pool1d
+    mindspore.ops.adaptive_max_pool2d
+    mindspore.ops.avg_pool1d
+    mindspore.ops.avg_pool2d
+    mindspore.ops.avg_pool3d
+    mindspore.ops.batch_norm
+    mindspore.ops.bias_add
+    mindspore.ops.bidense
+    mindspore.ops.ctc_greedy_decoder
+    mindspore.ops.conv1d
+    mindspore.ops.conv2d
+    mindspore.ops.conv3d
+    mindspore.ops.deformable_conv2d
+    mindspore.ops.dense
+    mindspore.ops.dropout
+    mindspore.ops.dropout1d
+    mindspore.ops.dropout2d
+    mindspore.ops.dropout3d
+    mindspore.ops.embedding
+    mindspore.ops.flatten
+    mindspore.ops.fold
+    mindspore.ops.fractional_max_pool3d
+    mindspore.ops.fused_infer_attention_score
+    mindspore.ops.speed_fusion_attention
+    mindspore.ops.group_norm
+    mindspore.ops.layer_norm
+    mindspore.ops.lp_pool1d
+    mindspore.ops.lp_pool2d
+    mindspore.ops.lrn
+    mindspore.ops.max_pool2d
+    mindspore.ops.max_pool3d
+    mindspore.ops.max_unpool1d
+    mindspore.ops.max_unpool2d
+    mindspore.ops.max_unpool3d
+    mindspore.ops.moe_token_permute
+    mindspore.ops.moe_token_unpermute
+    mindspore.ops.incre_flash_attention
+    mindspore.ops.prompt_flash_attention
+    mindspore.ops.flash_attention_score
+    mindspore.ops.rms_norm
+    mindspore.ops.unfold
+
+损失函数
+^^^^^^^^^^
+
+.. mscnplatformautosummary::
+    :toctree: ops
+    :nosignatures:
+    :template: classtemplate.rst
+
+    mindspore.ops.binary_cross_entropy
+    mindspore.ops.binary_cross_entropy_with_logits
+    mindspore.ops.cosine_embedding_loss
+    mindspore.ops.cross_entropy
+    mindspore.ops.ctc_loss
+    mindspore.ops.gaussian_nll_loss
+    mindspore.ops.hinge_embedding_loss
+    mindspore.ops.huber_loss
+    mindspore.ops.kl_div
+    mindspore.ops.l1_loss
+    mindspore.ops.margin_ranking_loss
+    mindspore.ops.mse_loss
+    mindspore.ops.multi_margin_loss
+    mindspore.ops.multilabel_margin_loss
+    mindspore.ops.multilabel_soft_margin_loss
+    mindspore.ops.nll_loss
+    mindspore.ops.smooth_l1_loss
+    mindspore.ops.soft_margin_loss
+    mindspore.ops.triplet_margin_loss
+
+激活函数
+^^^^^^^^^^
+
+.. mscnplatformautosummary::
+    :toctree: ops
+    :nosignatures:
+    :template: classtemplate.rst
+
+    mindspore.ops.celu
+    mindspore.ops.elu
+    mindspore.ops.fast_gelu
+    mindspore.ops.gelu
+    mindspore.ops.glu
+    mindspore.ops.gumbel_softmax
+    mindspore.ops.hardshrink
+    mindspore.ops.hardsigmoid
+    mindspore.ops.hardswish
+    mindspore.ops.hardtanh
+    mindspore.ops.leaky_relu
+    mindspore.ops.log_softmax
+    mindspore.ops.logsigmoid
+    mindspore.ops.mish
+    mindspore.ops.prelu
+    mindspore.ops.relu
+    mindspore.ops.relu6
+    mindspore.ops.rrelu
+    mindspore.ops.selu
+    mindspore.ops.sigmoid
+    mindspore.ops.silu
+    mindspore.ops.softmax
+    mindspore.ops.softmin
+    mindspore.ops.softshrink
+    mindspore.ops.softsign
+    mindspore.ops.swiglu
+    mindspore.ops.tanh
+    mindspore.ops.threshold
+
+距离函数
+^^^^^^^^^^
+
+.. mscnplatformautosummary::
+    :toctree: ops
+    :nosignatures:
+    :template: classtemplate.rst
+
+    mindspore.ops.cdist
+    mindspore.ops.dist
+    mindspore.ops.pdist
+
+采样函数
+^^^^^^^^^^
+
+.. mscnplatformautosummary::
+    :toctree: ops
+    :nosignatures:
+    :template: classtemplate.rst
+
+    mindspore.ops.choice_with_mask
+    mindspore.ops.random_categorical
+    mindspore.ops.log_uniform_candidate_sampler
+    mindspore.ops.uniform_candidate_sampler
+
+图像函数
+^^^^^^^^^^
+
+.. mscnplatformautosummary::
+    :toctree: ops
+    :nosignatures:
+    :template: classtemplate.rst
+
+    mindspore.ops.affine_grid
+    mindspore.ops.bounding_box_decode
+    mindspore.ops.bounding_box_encode
+    mindspore.ops.col2im
+    mindspore.ops.check_valid
+    mindspore.ops.crop_and_resize
+    mindspore.ops.grid_sample
+    mindspore.ops.interpolate
+    mindspore.ops.iou
+    mindspore.ops.pad
+    mindspore.ops.padding
+    mindspore.ops.pixel_shuffle
+    mindspore.ops.pixel_unshuffle
+    mindspore.ops.rotary_position_embedding
+    mindspore.ops.rotated_iou
+    mindspore.ops.upsample
+
 Parameter操作函数
 --------------------
 
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: ops
     :nosignatures:
     :template: classtemplate.rst
@@ -691,7 +687,7 @@ Parameter操作函数
 微分函数
 ----------------
 
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: ops
     :nosignatures:
     :template: classtemplate.rst
@@ -703,7 +699,7 @@ Parameter操作函数
 调试函数
 ----------------
 
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: ops
     :nosignatures:
     :template: classtemplate.rst
@@ -717,7 +713,7 @@ Parameter操作函数
 .. warning::
     这些是实验性API，后续可能修改或删除。
 
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: ops
     :nosignatures:
     :template: classtemplate.rst
@@ -732,7 +728,7 @@ COO函数
 .. warning::
     这些是实验性API，后续可能修改或删除。
 
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: ops
     :nosignatures:
     :template: classtemplate.rst
@@ -777,7 +773,7 @@ CSR函数
 .. warning::
     这些是实验性API，后续可能修改或删除。
 
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: ops
     :nosignatures:
     :template: classtemplate.rst
@@ -823,7 +819,7 @@ MC2 函数
 .. warning::
     这些是实验性API，后续可能修改或删除。
 
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: ops
     :nosignatures:
     :template: classtemplate.rst
