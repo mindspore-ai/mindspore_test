@@ -441,6 +441,8 @@ std::string GeDataTypeToString(const ge::DataType datatype);
 
 std::string GeFormatToString(const ge::Format format);
 
+int64_t GetTrilSize(int64_t row, int64_t col, int64_t offset);
+
 namespace array_ops {
 bool CheckInt64MulOverflow(int64_t a, int64_t b);
 int64_t CalcMaxElementsCount(const Operator &op, const std::vector<std::pair<int64_t, int64_t>> &x_shape_range,

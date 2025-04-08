@@ -558,8 +558,7 @@ CUST_INFER_FUNC_REG(FFTWithSize, FFTWithSizeInfer);
 // ----------------ReduceOp END-------------------
 
 // ----------------Trilindices-------------------
-// ----------------Triuindices-------------------
-IMPLEMT_COMMON_INFERFUNC(TriluIndicesInfer) {
+IMPLEMT_COMMON_INFERFUNC(TrilindicesInfer) {
   int64_t row;
   int64_t col;
   int64_t offset;
@@ -568,32 +567,34 @@ IMPLEMT_COMMON_INFERFUNC(TriluIndicesInfer) {
   RETURN_IF_FAILURE(op.GetAttr("col", col));
   RETURN_IF_FAILURE(op.GetAttr("offset", offset));
   RETURN_IF_FAILURE(op.GetAttr("dtype", dtype));
-  int64_t tril_size{0};
-  if (row != 0 && col != 0) {
-    auto m_first_row = offset > 0 ? std::min<int64_t>(col, 1 + offset) : row + offset > 0;
-    auto m_last_row = std::max<int64_t>(0, std::min<int64_t>(col, row + offset));
-    auto n_row_all = std::max<int64_t>(0, std::min<int64_t>(row, row + offset));
-    auto n_row_trapezoid = (m_last_row - m_first_row + 1);
-    tril_size = (m_first_row + m_last_row) * n_row_trapezoid >> 1;
-    auto diff_row = n_row_all - n_row_trapezoid;
-    if (diff_row > 0) {
-      tril_size += diff_row * col;
-    }
-  }
+  int64_t tril_size = GetTrilSize(row, col, offset);
   auto output_desc = op.GetOutputDescByName("output");
-  if (TbeGetName(op).find("TrilIndices") != std::string::npos) {
-    output_desc.SetShape(Shape({2, tril_size}));
-  } else {  // TriuIndices
-    auto triu_size = row * col - tril_size;
-    output_desc.SetShape(Shape({2, triu_size}));
-  }
+  output_desc.SetShape(Shape({2, tril_size}));
   output_desc.SetDataType(dtype);
   return op.UpdateOutputDesc("output", output_desc);
 }
 
-CUST_COMMON_INFER_FUNC_REG(TrilIndices, TriluIndicesInfer);
-CUST_COMMON_INFER_FUNC_REG(TriuIndices, TriluIndicesInfer);
+CUST_COMMON_INFER_FUNC_REG(TrilIndices, TrilindicesInfer);
 // ----------------Trilindices End-------------------
+
+// ----------------Triuindices-------------------
+IMPLEMT_COMMON_INFERFUNC(TriuindicesInfer) {
+  int64_t row;
+  int64_t col;
+  int64_t offset;
+  DataType dtype;
+  RETURN_IF_FAILURE(op.GetAttr("row", row));
+  RETURN_IF_FAILURE(op.GetAttr("col", col));
+  RETURN_IF_FAILURE(op.GetAttr("offset", offset));
+  RETURN_IF_FAILURE(op.GetAttr("dtype", dtype));
+  auto output_desc = op.GetOutputDescByName("output");
+  auto triu_size = row * col - GetTrilSize(row, col, offset - 1);
+  output_desc.SetShape(Shape({2, triu_size}));
+  output_desc.SetDataType(dtype);
+  return op.UpdateOutputDesc("output", output_desc);
+}
+
+CUST_COMMON_INFER_FUNC_REG(TriuIndices, TriuindicesInfer);
 // ----------------Triuindices End-------------------
 
 // -----------------------CholeskyInverse---------------------

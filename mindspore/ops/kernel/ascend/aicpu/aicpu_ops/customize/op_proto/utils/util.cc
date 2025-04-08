@@ -1314,5 +1314,21 @@ bool IsSliceUnknownShape(const std::vector<int64_t> &dim_vec, const int64_t &beg
   return false;
 }
 
+int64_t GetTrilSize(int64_t row, int64_t col, int64_t offset) {
+  if (row != 0 && col != 0) {
+    auto m_first_row = offset > 0 ? std::min<int64_t>(col, 1 + offset) : row + offset > 0;
+    auto m_last_row = std::max<int64_t>(0, std::min<int64_t>(col, row + offset));
+    auto n_row_all = std::max<int64_t>(0, std::min<int64_t>(row, row + offset));
+    auto n_row_trapezoid = (m_last_row - m_first_row + 1);
+    auto tril_size = (m_first_row + m_last_row) * n_row_trapezoid >> 1;
+    auto diff_row = n_row_all - n_row_trapezoid;
+    if (diff_row > 0) {
+      tril_size += diff_row * col;
+    }
+    return tril_size;
+  }
+  return 0;
+}
+
 void SetOpInferDepends(Operator &op, const std::vector<std::string> &depend_names);
 }  // namespace ge
