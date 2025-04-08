@@ -1476,6 +1476,7 @@ class Receive(PrimitiveWithInfer):
             This example should be run with 2 devices.
 
         >>> import numpy as np
+        >>> import mindspore as ms
         >>> import mindspore.nn as nn
         >>> from mindspore.communication import init
         >>> from mindspore import Tensor
