@@ -24,6 +24,7 @@
 #include "utils/log_adapter.h"
 #include "include/common/utils/convert_utils.h"
 #include "include/common/runtime_conf/runtime_conf.h"
+#include "frontend/ir/tensor_py.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
@@ -96,6 +97,43 @@ void UpdateDataArrowRefCount(AbstractActor *const to_actor, size_t to_input_inde
     UpdateRefCount(device_tensor.get(), false);
   } else {
     device_tensor->UpdateFlag(device::kDeviceAddressFlagNullptr);
+  }
+}
+
+void SetHeteInfoForParamDeviceAddress(const AnfNodePtr &anf_node, const DeviceTensorPtr &device_tensor) {
+  constexpr auto kParamterDeviceUserDataName = "parameter_device";
+  if (!anf_node->isa<Parameter>()) {
+    return;
+  }
+  const auto &parameter = anf_node->cast<ParameterPtr>();
+  MS_EXCEPTION_IF_NULL(parameter);
+  const auto value = parameter->default_param();
+  if (value == nullptr) {
+    return;
+  }
+  const auto meta_tensor = value->cast_ptr<tensor::MetaTensor>();
+  if (meta_tensor == nullptr) {
+    return;
+  }
+  const auto &user_data = meta_tensor->user_data<tensor::TensorPybind::TensorPyUserData>(kParamterDeviceUserDataName);
+  if (user_data == nullptr) {
+    return;
+  }
+  if (!py::isinstance<py::str>(user_data->obj)) {
+    return;
+  }
+  std::string device_str = py::cast<std::string>(user_data->obj);
+  if (device_str.empty()) {
+    return;
+  }
+  const auto &kernel_tensor = device_tensor->kernel_tensor();
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  if (device_str == kToCpu) {
+    kernel_tensor->set_heterogeneous_info(std::make_shared<kernel::HeterogeneousInfo>());
+    kernel_tensor->heterogeneous_info()->need_alloc_hete_res_ = kernel::NeedAllocateHeteRes::NeedHostMem;
+  } else if (device_str == kToDisk) {
+    kernel_tensor->set_heterogeneous_info(std::make_shared<kernel::HeterogeneousInfo>());
+    kernel_tensor->heterogeneous_info()->need_alloc_hete_res_ = kernel::NeedAllocateHeteRes::NeedDiskFile;
   }
 }
 }  // namespace
@@ -212,6 +250,7 @@ void SchedulerHelper::AddDeviceTensorStore(const AnfNodePtr &anf_node, const Dev
   }
   MS_LOG(DEBUG) << "Add device tensor store:" << device_tensor << " for node:" << anf_node.get()->DebugString()
                 << " node addr:" << anf_node.get() << " device type:" << device_tensor->GetDeviceType();
+  SetHeteInfoForParamDeviceAddress(anf_node, device_tensor);
   DeviceTensorStore::GetInstance().Insert(const_cast<AnfNode *>(anf_node.get()), device_tensor);
   device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
   UpdateRefCount(device_tensor.get(), true);

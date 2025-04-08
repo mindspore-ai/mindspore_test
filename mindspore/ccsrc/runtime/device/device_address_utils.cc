@@ -49,7 +49,7 @@ namespace mindspore {
 using tensor::TensorPtr;
 namespace runtime {
 namespace {
-constexpr auto kParamterDiskUserDataName = "parameter_device";
+constexpr auto kParameterDeviceUserDataName = "parameter_device";
 
 device::DeviceAddressPtr CreateDeviceAddressForScalarAndString(const DeviceContext *device_context,
                                                                const ValueNodePtr &value_node) {
@@ -106,7 +106,7 @@ void SetHeteInfoForParamDeviceAddress(const ParameterPtr &parameter, const Kerne
   if (meta_tensor == nullptr) {
     return;
   }
-  const auto &user_data = meta_tensor->user_data<tensor::TensorPybind::TensorPyUserData>(kParamterDiskUserDataName);
+  const auto &user_data = meta_tensor->user_data<tensor::TensorPybind::TensorPyUserData>(kParameterDeviceUserDataName);
   if (user_data == nullptr) {
     return;
   }
