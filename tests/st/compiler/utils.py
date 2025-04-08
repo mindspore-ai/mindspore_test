@@ -13,7 +13,6 @@ def match_array(actual, expected, error=0, err_msg=''):
         expected = np.asarray(expected)
     if isinstance(expected, Tensor):
         expected = expected.asnumpy()
-
     if error > 0:
         np.testing.assert_almost_equal(
             actual, expected, decimal=error, err_msg=err_msg)
