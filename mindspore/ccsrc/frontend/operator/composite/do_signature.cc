@@ -446,6 +446,7 @@ std::vector<AnfNodePtr> GetNewInputsBySignatures(const FuncGraphPtr &func_graph,
   std::vector<AnfNodePtr> op_inputs;
   std::set<size_t> write_indices;
   std::vector<TypePtr> input_types;
+  bool is_inplace_prim = function->isa<Primitive>() && function->cast<PrimitivePtr>()->inplace_prim();
   auto cast_type = GetMixedPrecisionTargetType(func_graph);
   // Assume, the write input of op is always the first input. We check if any write op,
   // and add cast op on other inputs to keep the same type with assigned parameter.
@@ -461,6 +462,8 @@ std::vector<AnfNodePtr> GetNewInputsBySignatures(const FuncGraphPtr &func_graph,
         (void)write_indices.insert(i);
       }
       // If sig is SignatureEnumRW::kRWRef, not do anything.
+    } else if (is_inplace_prim && sig == SignatureEnumRW::kRWWrite) {
+      (void)write_indices.insert(i);
     } else if (IfRaiseExceptionForCheckParameter(func_name, function, sig, type)) {
       MS_EXCEPTION(TypeError) << "Function " << func_name << "'s input " << i << " should be a Parameter or a Tensor, "
                               << "but got " << type->ToString() << ".";
@@ -527,8 +530,8 @@ std::string ErrorMessageForConvertRefDtype(const ValuePtr &func, const std::stri
     buffer << " so data type ";
   }
   std::ostringstream ss;
-  ss << "Data type conversion of 'Parameter' is not supported," << buffer.str() << ref_type
-     << ", which cannot be converted to data type " << target_type << " automatically.\n";
+  ss << "Data type conversion is not supported for a 'Parameter', nor for the input tensor of an in-place operator,"
+     << buffer.str() << ref_type << ", which cannot be converted to data type " << target_type << " automatically.\n";
   return ss.str();
 }
 
