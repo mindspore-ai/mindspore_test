@@ -45,6 +45,13 @@
     :exclude-members: infer_value, infer_shape, infer_dtype, get_bprop
     :members:
 
+{% elif fullname=="mindspore.parallel.auto_parallel.AutoParallel" %}
+{{ fullname | underline }}
+
+.. autoclass:: {{ name }}
+    :exclude-members: infer_value, infer_shape, infer_dtype, get_pipeline_stages
+    :members:
+
 {% elif fullname=="mindspore.profiler.profile" %}
 {{ fullname | underline }}
 

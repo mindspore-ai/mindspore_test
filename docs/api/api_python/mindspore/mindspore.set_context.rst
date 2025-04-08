@@ -43,7 +43,7 @@ mindspore.set_context
           - **atomic_clean_policy** (int): 清理网络中atomic算子占用的内存的策略。默认 ``1`` , 不集中清理。 ``0`` 表示集中清理。此参数将在后续版本中废弃，请使用接口 :func:`mindspore.jit` 相关参数代替。
           - **exception_dump** (str): 开启Ascend算子异常dump。默认 ``"2"``。此参数已废弃，请使用接口 :func:`mindspore.device_context.ascend.op_debug.aclinit_config` 代替。
           - **host_scheduling_max_threshold** (int): 控制根图是否使用动态shape调度的最大阈值，默认 ``0`` 。此参数将在后续版本中废弃，请使用接口 :func:`mindspore.jit` 相关参数代替。
-          - **parallel_speed_up_json_path** (Union[str, None]): 并行加速配置文件，此参数将在后续版本中废弃，请使用接口 :func:`mindspore.parallel.AutoParallel.transformer_opt` 代替。
+          - **parallel_speed_up_json_path** (Union[str, None]): 并行加速配置文件，此参数将在后续版本中废弃，请使用接口 :func:`mindspore.parallel.auto_parallel.AutoParallel.transformer_opt` 代替。
           - **hccl_watchdog** (bool): 开启一个线程监控集合通信故障。默认 ``True`` 。
         - **gpu_config** (dict) - 设置GPU硬件平台专用参数，默认不设置。
 

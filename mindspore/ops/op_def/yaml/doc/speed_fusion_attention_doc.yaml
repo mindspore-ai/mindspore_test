@@ -26,7 +26,7 @@ speed_fusion_attention:
 
         Note:
             This interface is not supported in `graph mode (mode=mindspore.GRAPH_MODE)
-            <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html>`_.
+            <https://www.mindspore.cn/tutorials/en/master/compile/static_graph.html>`_.
 
         Args:
             query (Tensor): The query tensor. Input tensor of shape :math:`(B, S1, H1)`,

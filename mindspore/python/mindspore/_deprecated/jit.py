@@ -49,9 +49,9 @@ def jit(fn=None, mode="PSJit", input_signature=None, hash_args=None, jit_config=
         fn (Function): The Python function that will be run as a graph. Default: ``None`` .
         mode (str): The type of jit used, the value of mode should be ``PIJit`` or ``PSJit``. Default: ``PSJit`` .
 
-            - `PSJit <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html>`_ :
+            - PSJit:
               Parse python ast to build graph.
-            - `PIJit <https://www.mindspore.cn/docs/en/master/model_train/program_form/pynative.html#pijit>`_ :
+            - PIJit:
               Parse python bytecode to build graph at runtime.
 
         input_signature (Union[Tuple, List, Dict, Tensor]): The Tensor which describes the input arguments. The

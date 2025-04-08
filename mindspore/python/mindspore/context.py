@@ -1527,7 +1527,7 @@ def set_context(**kwargs):
               versions. Please use the related parameter of :func:`mindspore.jit` instead.
             - parallel_speed_up_json_path(Union[str, None]): The path to the parallel speed up json file.
               This parameter will be deprecated and removed in future versions. Please use the
-              api :func:`mindspore.parallel.AutoParallel.transformer_opt` instead.
+              api :func:`mindspore.parallel.auto_parallel.AutoParallel.transformer_opt` instead.
             - hccl_watchdog (bool): Enable a thread to monitor the failure of collective communication.
               Default ``True`` .
         gpu_config (dict): Set the parameters specific to gpu hardware platform. It is not set by default.
