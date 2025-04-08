@@ -2186,7 +2186,7 @@ def kl_div_ext(input, target, reduction='mean', log_target=False):
     Args:
         input (Tensor): The input Tensor. The data type must be float16, float32 or bfloat16(only supported by Atlas A2
             training series products).
-        target (Tensor): The target Tensor which has the same type as `input`. The shape of `target` and `input`
+        target (Tensor): The target Tensor which has the same type as `input`. The shapes of `target` and `input`
             should be broadcastable.
         reduction (str, optional): Specifies the reduction to be applied to the output. Default: ``'mean'``.
         log_target (bool, optional): Specifies whether `target` is passed in the log space. Default: ``False``.
@@ -2200,7 +2200,7 @@ def kl_div_ext(input, target, reduction='mean', log_target=False):
         TypeError: If dtype of `input` or `target` is not float16, float32 or bfloat16.
         TypeError: If dtype of `target` is not the same as `input`.
         ValueError: If `reduction` is not one of ``'none'``, ``'mean'``, ``'sum'``, ``'batchmean'``.
-        ValueError: If shape of `target` and `input` can not be broadcastable.
+        ValueError: If shapes of `target` and `input` can not be broadcastable.
 
     Supported Platforms:
         ``Ascend``
