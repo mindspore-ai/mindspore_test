@@ -28,6 +28,7 @@ aclprofCreateStepInfoFunObj aclprofCreateStepInfo_ = nullptr;
 aclprofGetStepTimestampFunObj aclprofGetStepTimestamp_ = nullptr;
 aclprofDestroyStepInfoFunObj aclprofDestroyStepInfo_ = nullptr;
 aclprofGetSupportedFeaturesFunObj aclprofGetSupportedFeatures_ = nullptr;
+aclprofGetSupportedFeaturesFunObj aclprofGetSupportedFeaturesV2_ = nullptr;
 
 void LoadProfApiSymbol(const std::string &ascend_path) {
   std::string profiler_plugin_path = ascend_path + "lib64/libmsprofiler.so";
@@ -46,6 +47,7 @@ void LoadProfApiSymbol(const std::string &ascend_path) {
   aclprofGetStepTimestamp_ = DlsymAscendFuncObj(aclprofGetStepTimestamp, handler);
   aclprofDestroyStepInfo_ = DlsymAscendFuncObj(aclprofDestroyStepInfo, handler);
   aclprofGetSupportedFeatures_ = DlsymAscendFuncObj(aclprofGetSupportedFeatures, handler);
+  aclprofGetSupportedFeaturesV2_ = DlsymAscendFuncObj(aclprofGetSupportedFeaturesV2, handler);
   MS_LOG(INFO) << "Load acl prof api success!";
 }
 
