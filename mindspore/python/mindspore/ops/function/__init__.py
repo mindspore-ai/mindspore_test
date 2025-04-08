@@ -784,6 +784,7 @@ from .other_func import (
     depend,
     partial,
     rotary_position_embedding,
+    move_to,
     moe_init_routing_v2
 )
 

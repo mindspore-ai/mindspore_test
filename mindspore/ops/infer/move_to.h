@@ -13,24 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "infer/ops_func_impl/move_to.h"
-#include <utility>
+
+#ifndef MINDSPORE_CORE_OPS_MOVE_TO_H_
+#define MINDSPORE_CORE_OPS_MOVE_TO_H_
+#include <map>
 #include <memory>
-#include "mindspore/ops/ops_utils/op_utils.h"
-#include "ir/dtype.h"
-#include "mindspore/ops/op_def/op_name.h"
-#include "utils/check_convert_utils.h"
-#include "ops/ops_func_impl/simple_infer.h"
+#include <string>
+
+#include "mindapi/base/types.h"
+#include "ops/base_operator.h"
 
 namespace mindspore {
 namespace ops {
-ShapeArray MoveToFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
-  return {input_infos[kInputIndex0]->GetShape()};
-}
-
-std::vector<TypeId> MoveToFuncImpl::InferType(const PrimitivePtr &primitive,
-                                              const InferInfoPtrList &input_infos) const {
-  return {input_infos[kInputIndex0]->GetType()};
-}
+constexpr auto kNameMoveTo = "MoveTo";
+/// Refer to Python API @ref mindspore.ops.MoveTo for more details.
+class OPS_API MoveTo : public BaseOperator {
+ public:
+  MIND_API_BASE_MEMBER(MoveTo);
+  /// \brief Constructor.
+  MoveTo() : BaseOperator(kNameMoveTo) {}
+  /// \brief Init. Refer to the parameters of Python API @ref mindspore.ops.MoveTo for the inputs.
+  void Init() const {}
+};
 }  // namespace ops
 }  // namespace mindspore
+
+#endif  // MINDSPORE_CORE_OPS_MOVE_TO_H_

@@ -42,11 +42,11 @@ def my_hook(x, expert_id, counter):
     sl_x = sl * hidden_size
     rl_x = rl * hidden_size
 
-    sl = ops.gen_ops_prim.MoveTo()(sl, "CPU", True)
-    rl = ops.gen_ops_prim.MoveTo()(rl, "CPU", True)
+    sl = ops.MoveTo()(sl, "CPU", True)
+    rl = ops.MoveTo()(rl, "CPU", True)
 
-    sl_x = ops.gen_ops_prim.MoveTo()(sl_x, "CPU", True)
-    rl_x = ops.gen_ops_prim.MoveTo()(rl_x, "CPU", True)
+    sl_x = ops.MoveTo()(sl_x, "CPU", True)
+    rl_x = ops.MoveTo()(rl_x, "CPU", True)
 
     # 1.AllToAllV
     x = ops.AlltoAllV()(x.reshape(-1), sl_x, rl_x).reshape(1, -1, hidden_size)

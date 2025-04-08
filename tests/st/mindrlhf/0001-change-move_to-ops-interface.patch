@@ -1,0 +1,25 @@
+From 2364da86e7b2e4e55baeb2105c045cf4c87ec919 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=E7=8E=8B=E6=8C=AF=E9=82=A6?= <wangzhenbang5@huawei.com>
+Date: Thu, 3 Apr 2025 11:44:24 +0800
+Subject: [PATCH] change move_to ops interface
+
+---
+ mindformers/modules/transformer/moev3.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/mindformers/modules/transformer/moev3.py b/mindformers/modules/transformer/moev3.py
+index 2a8f9862..82740c42 100644
+--- a/mindformers/modules/transformer/moev3.py
++++ b/mindformers/modules/transformer/moev3.py
+@@ -46,7 +46,7 @@ from mindformers.modules.transformer.moe import default_moe_config
+ from mindformers.version_control import check_moveto_op_support
+ 
+ if check_moveto_op_support():
+-    D2H = ops.gen_ops_prim.MoveTo().add_prim_attr("recompute", False)
++    D2H = ops.MoveTo().add_prim_attr("recompute", False)
+ 
+ 
+ class MoEV3(Cell):
+-- 
+2.33.1.windows.1
+
