@@ -18,7 +18,7 @@ Tensor
 创建运算
 ^^^^^^^^^^^^^^^
 
-.. mscnplataclnnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -47,7 +47,7 @@ Tensor
 索引、切分、连接、突变运算
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. mscnplataclnnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -83,7 +83,7 @@ Tensor
 随机采样
 ------------
 
-.. mscnplataclnnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -99,7 +99,7 @@ Tensor
 逐元素运算
 ^^^^^^^^^^^^^^^^^^^^^
 
-.. mscnplataclnnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -186,7 +186,7 @@ Tensor
 Reduction运算
 ^^^^^^^^^^^^^^^^^^^^^
 
-.. mscnplataclnnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -217,7 +217,7 @@ Reduction运算
 比较运算
 ^^^^^^^^^^^^^^^^^^^^^^
 
-.. mscnplataclnnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -247,7 +247,7 @@ Reduction运算
 BLAS和LAPACK运算
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. mscnplataclnnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -267,7 +267,7 @@ BLAS和LAPACK运算
 其他运算
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. mscnplataclnnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -290,7 +290,7 @@ mindspore.mint.nn
 
 卷积层
 ^^^^^^^^^^^^^^^^^^
-.. mscnplataclnnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -303,7 +303,7 @@ mindspore.mint.nn
 
 归一化层
 ^^^^^^^^^^^^^^^^^^
-.. mscnplataclnnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -318,7 +318,7 @@ mindspore.mint.nn
 非线性激活层 (加权和，非线性)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. mscnplataclnnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -345,7 +345,7 @@ mindspore.mint.nn
 嵌入层
 ^^^^^^^^^^^^^^^^^^
 
-.. mscnplataclnnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -355,7 +355,7 @@ mindspore.mint.nn
 线性层
 ^^^^^^^^^^^^^^^^^^
 
-.. mscnplataclnnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -365,7 +365,7 @@ mindspore.mint.nn
 Dropout层
 ^^^^^^^^^^^^^^^
 
-.. mscnplataclnnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -376,7 +376,7 @@ Dropout层
 池化层
 ^^^^^^^^^^^^^^
 
-.. mscnplataclnnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -392,7 +392,7 @@ Dropout层
 填充层
 ^^^^^^^^^^^^^^
 
-.. mscnplataclnnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -413,7 +413,7 @@ Dropout层
 损失函数
 ^^^^^^^^^^^^^^^
 
-.. mscnplataclnnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -430,7 +430,7 @@ Dropout层
 Vision层
 ^^^^^^^^^^^^^^^
 
-.. mscnplataclnnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -441,7 +441,7 @@ Vision层
 工具
 ^^^^^^^^^^^^^^^
 
-.. mscnplataclnnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -454,7 +454,7 @@ mindspore.mint.nn.functional
 卷积函数
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-.. mscnplataclnnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -468,7 +468,7 @@ mindspore.mint.nn.functional
 池化函数
 ^^^^^^^^^^^^^^^^^^^
 
-.. mscnplataclnnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -486,7 +486,7 @@ mindspore.mint.nn.functional
 非线性激活函数
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. mscnplataclnnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -520,7 +520,7 @@ mindspore.mint.nn.functional
 归一化函数
 ^^^^^^^^^^^^^^^^^^^
 
-.. mscnplataclnnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -530,7 +530,7 @@ mindspore.mint.nn.functional
 线性函数
 ^^^^^^^^^^^^^^^^^^^
 
-.. mscnplataclnnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -540,7 +540,7 @@ mindspore.mint.nn.functional
 Dropout函数
 ^^^^^^^^^^^^^^^^^^^
 
-.. mscnplataclnnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -551,7 +551,7 @@ Dropout函数
 稀疏函数
 ^^^^^^^^^^^^^^^^^^^
 
-.. mscnplataclnnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -562,7 +562,7 @@ Dropout函数
 损失函数
 ^^^^^^^^^^^^^^^^
 
-.. mscnplataclnnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -579,7 +579,7 @@ Dropout函数
 Vision函数
 ^^^^^^^^^^^^^^^^^^
 
-.. mscnplataclnnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -592,7 +592,7 @@ Vision函数
 mindspore.mint.optim
 ---------------------
 
-.. mscnplataclnnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -607,7 +607,7 @@ mindspore.mint.linalg
 逆数
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. mscnplataclnnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -624,7 +624,7 @@ mindspore.mint.special
 逐元素运算
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. mscnplataclnnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -640,7 +640,7 @@ mindspore.mint.special
 mindspore.mint.distributed
 --------------------------------
 
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst

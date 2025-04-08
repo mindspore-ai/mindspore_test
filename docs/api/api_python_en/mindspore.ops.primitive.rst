@@ -36,7 +36,7 @@ Neural Network Layer Operators
 Neural Network
 ^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: ops
     :nosignatures:
     :template: classtemplate.rst
@@ -77,7 +77,7 @@ Neural Network
 Loss Function
 ^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: ops
     :nosignatures:
     :template: classtemplate.rst
@@ -102,7 +102,7 @@ Loss Function
 Activation Function
 ^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: ops
     :nosignatures:
     :template: classtemplate.rst
@@ -131,7 +131,7 @@ Activation Function
 Optimizer
 ^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: ops
     :nosignatures:
     :template: classtemplate.rst
@@ -165,7 +165,7 @@ Optimizer
 Distance Function
 ^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: ops
     :nosignatures:
     :template: classtemplate.rst
@@ -178,7 +178,7 @@ Distance Function
 Sampling Operator
 ^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: ops
     :nosignatures:
     :template: classtemplate.rst
@@ -190,7 +190,7 @@ Sampling Operator
 Image Processing
 ^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: ops
     :nosignatures:
     :template: classtemplate.rst
@@ -211,7 +211,7 @@ Image Processing
 Text Processing
 ^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: ops
     :nosignatures:
     :template: classtemplate.rst
@@ -221,7 +221,7 @@ Text Processing
 Mathematical Operators
 ------------------------
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: ops
     :nosignatures:
     :template: classtemplate.rst
@@ -237,7 +237,7 @@ Mathematical Operators
 Element-wise Operator
 ^^^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: ops
     :nosignatures:
     :template: classtemplate.rst
@@ -334,7 +334,7 @@ Element-wise Operator
 Reduction Operator
 ^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: ops
     :nosignatures:
     :template: classtemplate.rst
@@ -355,7 +355,7 @@ Reduction Operator
 Comparison Operator
 ^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: ops
     :nosignatures:
     :template: classtemplate.rst
@@ -379,7 +379,7 @@ Comparison Operator
 Linear Algebraic Operator
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: ops
     :nosignatures:
     :template: classtemplate.rst
@@ -399,7 +399,7 @@ Tensor Operation Operator
 Tensor Construction
 ^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: ops
     :nosignatures:
     :template: classtemplate.rst
@@ -417,7 +417,7 @@ Tensor Construction
 Random Generation Operator
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: ops
     :nosignatures:
     :template: classtemplate.rst
@@ -440,7 +440,7 @@ Random Generation Operator
 Array Operation
 ^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: ops
     :nosignatures:
     :template: classtemplate.rst
@@ -558,7 +558,7 @@ Array Operation
 Type Conversion
 ^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: ops
     :nosignatures:
     :template: classtemplate.rst
@@ -570,7 +570,7 @@ Type Conversion
 Parameter Operation Operator
 ----------------------------
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: ops
     :nosignatures:
     :template: classtemplate.rst
@@ -593,7 +593,7 @@ Parameter Operation Operator
 Data Operation Operator
 -----------------------
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: ops
     :nosignatures:
     :template: classtemplate.rst
@@ -610,7 +610,7 @@ it is recommended to use the msrun startup method without any third-party or con
 Please see the `msrun start up \
 <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_ for more details.
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: ops
     :nosignatures:
     :template: classtemplate.rst
@@ -633,7 +633,7 @@ Please see the `msrun start up \
 Debugging Operator
 ------------------
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: ops
     :nosignatures:
     :template: classtemplate.rst
@@ -651,7 +651,7 @@ Debugging Operator
 Sparse Operator
 ---------------
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: ops
     :nosignatures:
     :template: classtemplate.rst
@@ -662,7 +662,7 @@ Sparse Operator
 Frame Operators
 ---------------
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: ops
     :nosignatures:
     :template: classtemplate.rst
@@ -697,7 +697,7 @@ Operator Information Registration
 Customizing Operator
 --------------------
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: ops
     :nosignatures:
     :template: classtemplate.rst
@@ -710,7 +710,7 @@ Customizing Operator
 Spectral Operator
 -----------------
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: ops
     :nosignatures:
     :template: classtemplate.rst

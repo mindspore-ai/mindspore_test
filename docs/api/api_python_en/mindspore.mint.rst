@@ -18,7 +18,7 @@ Tensor
 Creation Operations
 ^^^^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -47,7 +47,7 @@ Creation Operations
 Indexing, Slicing, Joining, Mutating Operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -83,7 +83,7 @@ Indexing, Slicing, Joining, Mutating Operations
 Random Sampling
 -----------------
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -99,7 +99,7 @@ Math Operations
 Pointwise Operations
 ^^^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -186,7 +186,7 @@ Pointwise Operations
 Reduction Operations
 ^^^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -217,7 +217,7 @@ Reduction Operations
 Comparison Operations
 ^^^^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -247,7 +247,7 @@ Comparison Operations
 BLAS and LAPACK Operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -267,7 +267,7 @@ BLAS and LAPACK Operations
 Other Operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -291,7 +291,7 @@ mindspore.mint.nn
 Convolution Layers
 ^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -305,7 +305,7 @@ Convolution Layers
 Normalization Layers
 ^^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -320,7 +320,7 @@ Normalization Layers
 Non-linear Activations (weighted sum, nonlinearity)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -347,7 +347,7 @@ Non-linear Activations (weighted sum, nonlinearity)
 Embedding Layers
 ^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -357,7 +357,7 @@ Embedding Layers
 Linear Layers
 ^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -367,7 +367,7 @@ Linear Layers
 Dropout Layers
 ^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -378,7 +378,7 @@ Dropout Layers
 Pooling Layers
 ^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -394,7 +394,7 @@ Pooling Layers
 Padding Layers
 ^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -415,7 +415,7 @@ Padding Layers
 Loss Functions
 ^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -432,7 +432,7 @@ Loss Functions
 Vision Layer
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -443,7 +443,7 @@ Vision Layer
 Tools
 ^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -456,7 +456,7 @@ mindspore.mint.nn.functional
 Convolution functions
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -470,7 +470,7 @@ Convolution functions
 Pooling functions
 ^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -488,7 +488,7 @@ Pooling functions
 Non-linear activation functions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -522,7 +522,7 @@ Non-linear activation functions
 Normalization functions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -532,7 +532,7 @@ Normalization functions
 Linear functions
 ^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -542,7 +542,7 @@ Linear functions
 Dropout functions
 ^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -553,7 +553,7 @@ Dropout functions
 Sparse functions
 ^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -564,7 +564,7 @@ Sparse functions
 Loss Functions
 ^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -581,7 +581,7 @@ Loss Functions
 Vision functions
 ^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -594,7 +594,7 @@ Vision functions
 mindspore.mint.optim
 ---------------------
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -609,7 +609,7 @@ mindspore.mint.linalg
 Inverses
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -626,7 +626,7 @@ mindspore.mint.special
 Pointwise Operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -642,7 +642,7 @@ Pointwise Operations
 mindspore.mint.distributed
 --------------------------------
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
