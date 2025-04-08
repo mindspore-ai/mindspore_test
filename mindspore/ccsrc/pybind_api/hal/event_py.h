@@ -98,6 +98,7 @@ class EventCnt {
   }
 
   static bool IsEventRecorded(const std::shared_ptr<DeviceEvent> &event) {
+    std::lock_guard<std::mutex> lock(unrecorded_cnt_mtx_);
     return unrecorded_cnt_.find(event) == unrecorded_cnt_.end();
   }
 
