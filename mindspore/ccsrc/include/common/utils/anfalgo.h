@@ -338,7 +338,10 @@ class COMMON_EXPORT AnfAlgo {
   static void InsertDepend(const AnfNodePtr &prior_node, const AnfNodePtr &post_node,
                            const FuncGraphManagerPtr &manager, const FuncGraphPtr &root,
                            const std::string &attr_tag = "", const size_t post_node_input_index = 1);
-
+  static bool IsNeededOverlapComm(const CNodePtr &cnode, const std::string &pp_1f1b_value);
+  static AnfNodePtr GetInputNode(const AnfNodePtr &node,
+                                 std::function<std::pair<bool, size_t>(const CNodePtr &)> check_filter);
+  static bool IsNeededShape(const CNodePtr &cnode);
   static bool IsMonadType(const TypeId &type_id);
   // check if is GE backend
   static bool IsBackendGe();

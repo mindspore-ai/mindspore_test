@@ -653,7 +653,6 @@ void MsContext::InitBoolTypeDefaultValue() {
   set_param<bool>(MS_CTX_ENABLE_RECOVERY, false);
   set_param<bool>(MS_CTX_ENABLE_GE_HETEROGENOUS, false);
   set_param<bool>(MS_CTX_DISABLE_FORMAT_TRANSFORM, false);
-  set_param<bool>(MS_CTX_RECOMPUTE_COMM_OVERLAP, false);
   set_param<bool>(MS_CTX_GRAD_COMM_OVERLAP, false);
   set_param<bool>(MS_CTX_ENABLE_OPT_SHARD_COMM_OPT, false);
   set_param<bool>(MS_CTX_ENABLE_TASK_OPT, false);
@@ -698,6 +697,7 @@ void MsContext::InitStringTypeDefaultValue() {
   set_param<std::string>(MS_CTX_PROF_MEM_OUTPUT_PATH, "");
   set_param<std::string>(MS_CTX_EXEC_ORDER, "bfs");
   set_param<std::string>(MS_CTX_PP_1F1B_OVERLAP, "");
+  set_param<std::string>(MS_CTX_RECOMPUTE_COMM_OVERLAP, "");
 }
 
 void MsContext::InitDigitalTypeDefaultValue() {
