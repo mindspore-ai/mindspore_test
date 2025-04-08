@@ -1459,6 +1459,10 @@ int BenchmarkUnifiedApi::GetBenchmarkResult() {
     if (status != RET_OK) {
       MS_LOG(ERROR) << "Run MarkAccuracy error: " << status;
       std::cout << "Run MarkAccuracy error: " << status << std::endl;
+      Status finalize_ret = ms_model_.Finalize();
+      if (finalize_ret == kSuccess) {
+        MS_LOG(INFO) << "Benchmark finalize executed success.";
+      }
       return status;
     }
   } else {
