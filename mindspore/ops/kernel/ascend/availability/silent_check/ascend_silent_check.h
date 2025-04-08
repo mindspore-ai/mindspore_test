@@ -124,7 +124,7 @@ class DynamicSilentChecker : public SilentCheckerBase {
 // silent checker implementation for static graph
 
 // SilentCheckV2 computing flow
-// [dout] --> Norm(aclnnNorm) --> aclnnSilentCheck{step, sfda} --> [comm-operator]
+// [dout] --> L2Norm(aclnnNorm) --> aclnnSilentCheck{step, sfda} --> [comm-operator]
 
 // SilentCheckV3 computing flow
 // ====================================================================
@@ -132,9 +132,9 @@ class DynamicSilentChecker : public SilentCheckerBase {
 // ---------------------------------------+----------------------------
 // [dout]                                 | [dout]
 //   v                                    |   v
-// Square(aclnnMul)                       | Square(aclnnMul)
+// InfinityNorm(aclnnNorm)                | InfinityNorm(aclnnNorm)
 //   v                                    |   v
-// Max(aclnnMax)                          | Max(aclnnMax)
+// Square(aclnnMul)                       | Square(aclnnMul)
 //   |    \                               |   |
 //   |     |                              |   |
 //   |     v                              |   |
@@ -172,7 +172,6 @@ struct CheckState {
   // kernel modules for checking
   OpExecState kernel_norm = {nullptr, nullptr, nullptr};
   OpExecState kernel_square = {nullptr, nullptr, nullptr};
-  OpExecState kernel_max = {nullptr, nullptr, nullptr};
   OpExecState kernel_copy = {nullptr, nullptr, nullptr};
 
   // used by both SilentCheckV2 and SilentCheckV3
@@ -205,9 +204,8 @@ class OPS_ASCEND_API SilentChecker {
   void LaunchNormAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr);
   void LaunchSilentCheckV2Async(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr);
 
-  void LaunchSquareAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr);
-  void LaunchMaxAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr);
-  void LaunchInplaceCopyAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr);
+  void LaunchSquareAsync(const CheckStatePtr &state, void *stream_ptr);
+  void LaunchInplaceCopyAsync(const CheckStatePtr &state, void *stream_ptr);
   void LaunchSilentCheckV3Async(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr);
 
   KernelTensorPtr GenerateKernelTensor(TypeId dtype_id, const ShapeVector &shape, const ValuePtr &value = nullptr,
@@ -232,7 +230,7 @@ class OPS_ASCEND_API SilentChecker {
   KernelTensorPtr beta1_ = nullptr;           // for silent check v3
 
   // fields for computing
-  DeviceAddrInfo out_val_ = {nullptr, 0};     // norm or max's output
+  DeviceAddrInfo out_val_ = {nullptr, 0};     // norm output
   DeviceAddrInfo out_square_ = {nullptr, 0};  // square output
   DeviceAddrInfo out_result_ = {nullptr, 0};  // silent check result
 

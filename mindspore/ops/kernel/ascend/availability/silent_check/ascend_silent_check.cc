@@ -445,7 +445,8 @@ SilentChecker::SilentChecker(const DeviceContext *device_context) : device_conte
   MS_EXCEPTION_IF_NULL(device_context_->device_res_manager_);
 
   // create constants used by aclnnNorm
-  p_scalar_ = std::make_shared<KernelTensor>(nullptr, kTypeNone, kNone);
+  float p_value = HasApiSilentCheckV3() ? std::numeric_limits<float>::infinity() : 2.0;
+  p_scalar_ = std::make_shared<KernelTensor>(nullptr, kFloat32, MakeValue<float>(p_value));
   dim_ = std::make_shared<KernelTensor>(std::make_shared<abstract::TensorShape>(std::vector<int64_t>{}), kInt64,
                                         MakeValue(std::vector<int64_t>{}));
 
@@ -485,7 +486,7 @@ void SilentChecker::RegisterCheck(const kernel::KernelModPtr &kernel_mod, const 
   if (HasApiSilentCheckV3()) {
     state->avg = GenerateKernelTensor(dout->dtype_id(), ShapeVector{1}, nullptr, true);
     state->val = GenerateKernelTensor(dout->dtype_id(), ShapeVector{1});
-    state->square = GenerateKernelTensor(dout->dtype_id(), dout->GetShapeVector());
+    state->square = GenerateKernelTensor(dout->dtype_id(), ShapeVector{1});
     out_square_.max_size = std::max(out_square_.max_size, state->square->size());
     // NOTE: Consider there are multiple graph instances, it is necessary to reset `out_square_.dev_addr` to nullptr.
     out_square_.dev_addr = nullptr;
@@ -499,21 +500,25 @@ void SilentChecker::RegisterCheck(const kernel::KernelModPtr &kernel_mod, const 
 
   // create kernel modules
   if (HasApiSilentCheckV3()) {
+    // InfinityNorm
+    state->val->SetShapeVector(ShapeVector{});
+    InitOpExecState(&state->kernel_norm, ops::kNameNorm,
+                    {const_cast<KernelTensor *>(dout), p_scalar_.get(), dim_.get(), keep_dim_.get()},
+                    {state->val.get()}, &out_val_);
     // square
-    InitOpExecState(&state->kernel_square, ops::kNameSquare, {const_cast<KernelTensor *>(dout)}, {state->square.get()},
-                    &out_square_);
-    // max
-    InitOpExecState(&state->kernel_max, ops::kNameMax, {state->square.get()}, {state->val.get()}, &out_val_);
+    state->val->SetShapeVector(ShapeVector{1});
+    InitOpExecState(&state->kernel_square, ops::kNameSquare, {const_cast<KernelTensor *>(state->val.get())},
+                    {state->square.get()}, &out_square_);
     // inplace copy
-    InitOpExecState(&state->kernel_copy, ops::kNameInplaceCopy, {state->avg.get(), state->val.get()}, {}, &out_val_);
+    InitOpExecState(&state->kernel_copy, ops::kNameInplaceCopy, {state->avg.get(), state->square.get()}, {}, nullptr);
     // silent check v3
     InitOpExecState(&state->kernel_silent_check, ops::kNameSilentCheckV3,
-                    {state->val.get(), state->val.get(), state->avg.get(), const_cast<KernelTensor *>(dout),
+                    {state->square.get(), state->square.get(), state->avg.get(), const_cast<KernelTensor *>(dout),
                      state->step.get(), c_thresh_l1_.get(), c_thresh_l2_.get(), beta1_.get(), npu_asd_detect_.get()},
-                    {state->val.get(), const_cast<KernelTensor *>(dout), state->step.get(), state->result.get()},
+                    {state->square.get(), const_cast<KernelTensor *>(dout), state->step.get(), state->result.get()},
                     &out_result_);
   } else {
-    // norm
+    // L2Norm
     InitOpExecState(&state->kernel_norm, ops::kNameNorm,
                     {const_cast<KernelTensor *>(dout), p_scalar_.get(), dim_.get(), keep_dim_.get()},
                     {state->val.get()}, &out_val_);
@@ -570,14 +575,16 @@ void SilentChecker::ExecuteCheck(const kernel::KernelMod *kernel_mod, const kern
   auto &state = iter->second;
 
   if (HasApiSilentCheckV3()) {
-    LaunchSquareAsync(dout, state, stream_ptr);
-    LaunchMaxAsync(dout, state, stream_ptr);
+    // InfinityNorm
+    LaunchNormAsync(dout, state, stream_ptr);
+    LaunchSquareAsync(state, stream_ptr);
     if (state->is_first_call) {
       state->is_first_call = false;
-      LaunchInplaceCopyAsync(dout, state, stream_ptr);
+      LaunchInplaceCopyAsync(state, stream_ptr);
     }
     LaunchSilentCheckV3Async(dout, state, stream_ptr);
   } else {
+    // L2Norm
     LaunchNormAsync(dout, state, stream_ptr);
     LaunchSilentCheckV2Async(dout, state, stream_ptr);
   }
@@ -590,11 +597,12 @@ void SilentChecker::LaunchOperator(const OpExecState *op_exec_state, const std::
   MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Launch op " << op_exec_state->op_name << " start.";
   std::vector<KernelTensor *> workspace;
 
-  if (op_exec_state->output->dev_addr == nullptr) {
-    op_exec_state->output->dev_addr = runtime::DeviceAddressUtils::CreateWorkspaceAddress(
-      device_context_, kDefaultStreamIndex, op_exec_state->output->max_size);
-  }
   if (output_tensor != nullptr) {
+    MS_EXCEPTION_IF_NULL(op_exec_state->output);
+    if (op_exec_state->output->dev_addr == nullptr) {
+      op_exec_state->output->dev_addr = runtime::DeviceAddressUtils::CreateWorkspaceAddress(
+        device_context_, kDefaultStreamIndex, op_exec_state->output->max_size);
+    }
     output_tensor->set_device_ptr(op_exec_state->output->dev_addr->GetMutablePtr());
   }
 
@@ -616,24 +624,20 @@ void SilentChecker::LaunchOperator(const OpExecState *op_exec_state, const std::
 
 void SilentChecker::LaunchNormAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr) {
   std::vector<KernelTensor *> inputs{const_cast<KernelTensor *>(dout), p_scalar_.get(), dim_.get(), keep_dim_.get()};
+  state->val->SetShapeVector(ShapeVector{});
   std::vector<KernelTensor *> outputs{state->val.get()};
   LaunchOperator(&state->kernel_norm, inputs, outputs, state->val.get(), stream_ptr);
 }
 
-void SilentChecker::LaunchSquareAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr) {
-  std::vector<KernelTensor *> inputs{const_cast<KernelTensor *>(dout)};
+void SilentChecker::LaunchSquareAsync(const CheckStatePtr &state, void *stream_ptr) {
+  state->val->SetShapeVector(ShapeVector{1});
+  std::vector<KernelTensor *> inputs{state->val.get()};
   std::vector<KernelTensor *> outputs{state->square.get()};
   LaunchOperator(&state->kernel_square, inputs, outputs, state->square.get(), stream_ptr);
 }
 
-void SilentChecker::LaunchMaxAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr) {
-  std::vector<KernelTensor *> inputs{state->square.get()};
-  std::vector<KernelTensor *> outputs{state->val.get()};
-  LaunchOperator(&state->kernel_max, inputs, outputs, state->val.get(), stream_ptr);
-}
-
-void SilentChecker::LaunchInplaceCopyAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr) {
-  std::vector<KernelTensor *> inputs{state->avg.get(), state->val.get()};
+void SilentChecker::LaunchInplaceCopyAsync(const CheckStatePtr &state, void *stream_ptr) {
+  std::vector<KernelTensor *> inputs{state->avg.get(), state->square.get()};
   std::vector<KernelTensor *> outputs{};
   LaunchOperator(&state->kernel_copy, inputs, outputs, nullptr, stream_ptr);
 }
@@ -655,10 +659,10 @@ void SilentChecker::LaunchSilentCheckV3Async(const KernelTensor *dout, const Che
   // args_name : | val | max | avg | input_grad | step | c_thresh_l1 | c_thresh_l2 | beta1 | npu_asd_detect |
   // --------------------------------------------------------------------------------------------------------
   std::vector<KernelTensor *> inputs{
-    state->val.get(),     state->val.get(),   state->avg.get(),   const_cast<KernelTensor *>(dout),
-    state->step.get(),    c_thresh_l1_.get(), c_thresh_l2_.get(), beta1_.get(),
+    state->square.get(),  state->square.get(), state->avg.get(),   const_cast<KernelTensor *>(dout),
+    state->step.get(),    c_thresh_l1_.get(),  c_thresh_l2_.get(), beta1_.get(),
     npu_asd_detect_.get()};
-  std::vector<KernelTensor *> outputs{state->val.get(), const_cast<KernelTensor *>(dout), state->step.get(),
+  std::vector<KernelTensor *> outputs{state->square.get(), const_cast<KernelTensor *>(dout), state->step.get(),
                                       state->result.get()};
   LaunchOperator(&state->kernel_silent_check, inputs, outputs, state->result.get(), stream_ptr);
 }
