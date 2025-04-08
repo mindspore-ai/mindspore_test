@@ -1017,6 +1017,7 @@ ReplaceGraphPtr Conv2DInfo::replace_graph(const CNodePtr &cnode) {
   if (all_send_lens + all_recv_lens == 0) {
     int64_t pad_mode = 0;  // 0 is "pad" mode
     auto prim = GetValueNode<PrimitivePtr>(cnode->input(0));
+    MS_EXCEPTION_IF_NULL(prim);
     prim->set_attr(OUT_CHANNEL, MakeValue(new_out_channel_));
     prim->set_attr(PAD_MODE, MakeValue(pad_mode));  // need to use int64_t to define pad_mode
     prim->set_attr(PAD, MakeValue(new_pad_list_));
