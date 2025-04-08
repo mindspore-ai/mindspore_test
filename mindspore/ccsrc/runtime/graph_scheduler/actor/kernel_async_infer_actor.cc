@@ -16,6 +16,7 @@
 
 #include "runtime/graph_scheduler/actor/kernel_async_infer_actor.h"
 #include "runtime/graph_scheduler/actor/kernel_actor.h"
+#include "runtime/graph_scheduler/actor/kernel_runner.h"
 
 namespace mindspore {
 namespace runtime {
@@ -37,6 +38,19 @@ void KernelAsyncInferActor::InferShape(OpContext<DeviceTensor> *const context, K
     if (context->error_info_.empty()) {
       MsException::Instance().SetException();
       MS_LOG(INFO) << "Failed to infer shape for kernel: " << kernel_actor->kernel()->fullname_with_scope()
+                   << " and catch exception: " << e.what();
+      SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(GraphExecutionStrategy::kPipeline, (*context), e.what());
+    }
+  }
+}
+
+void KernelAsyncInferActor::InferShapeV2(OpContext<DeviceTensor> *const context, KernelRunner *kernel_runner) {
+  try {
+    kernel_runner->ExecuteInferShapeTask(context);
+  } catch (const std::exception &e) {
+    if (context->error_info_.empty()) {
+      MsException::Instance().SetException();
+      MS_LOG(INFO) << "Failed to infer shape for kernel: " << kernel_runner->kernel()->fullname_with_scope()
                    << " and catch exception: " << e.what();
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(GraphExecutionStrategy::kPipeline, (*context), e.what());
     }

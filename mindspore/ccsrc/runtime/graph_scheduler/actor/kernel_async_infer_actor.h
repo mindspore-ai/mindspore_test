@@ -28,6 +28,7 @@
 namespace mindspore {
 namespace runtime {
 class KernelActor;
+class KernelRunner;
 
 class BACKEND_EXPORT KernelAsyncInferActor : public ActorBase {
  public:
@@ -37,6 +38,7 @@ class BACKEND_EXPORT KernelAsyncInferActor : public ActorBase {
   void Initialize();
 
   void InferShape(OpContext<DeviceTensor> *const context, KernelActor *kernel_actor);
+  void InferShapeV2(OpContext<DeviceTensor> *const context, KernelRunner *kernel_runner);
 
   void Wait();
 

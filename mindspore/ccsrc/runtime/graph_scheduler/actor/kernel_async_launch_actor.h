@@ -28,6 +28,7 @@
 namespace mindspore {
 namespace runtime {
 class KernelActor;
+class KernelRunner;
 
 class BACKEND_EXPORT KernelAsyncLaunchActor : public ActorBase {
  public:
@@ -37,6 +38,7 @@ class BACKEND_EXPORT KernelAsyncLaunchActor : public ActorBase {
   void Initialize();
 
   void LaunchKernel(OpContext<DeviceTensor> *const context, KernelActor *kernel_actor);
+  void LaunchKernelV2(OpContext<DeviceTensor> *const context, KernelRunner *kernel_runner);
 
   void Wait();
 
