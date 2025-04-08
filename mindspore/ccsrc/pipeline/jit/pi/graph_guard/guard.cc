@@ -359,7 +359,8 @@ bool OptGuard::GuardOn(TracePtr var, GuardLevel tp, bool needSpecialize, int rec
   return Record(item);
 }
 
-bool OptGuard::Record(const GuardItemPtr &item) {
+bool OptGuard::Record(const GuardItemPtr &new_item) {
+  GuardItemPtr item = new_item;
   if (item == nullptr) {
     return false;
   }
@@ -374,6 +375,10 @@ bool OptGuard::Record(const GuardItemPtr &item) {
     MS_LOG(DEBUG) << "find duplicate guard item in the global compile cache: " << std::endl
                   << item.get() << ": [ " << item->ToString() << " ]" << std::endl
                   << cur_item->get() << ": [ " << (*cur_item)->ToString() << " ]";
+    if (item->ToString() != (*cur_item)->ToString()) {
+      cur_item = &item;
+      MS_LOG(DEBUG) << "id conflict fix later";
+    }
   }
   auto &list = guardList_;
   auto iter = std::find_if(list.begin(), list.end(), [hash](const auto &p) { return p->Info().Id() == hash; });
@@ -381,8 +386,12 @@ bool OptGuard::Record(const GuardItemPtr &item) {
     list.push_back(*cur_item);
   } else {
     MS_LOG(DEBUG) << "find duplicate guard item for the function: " << std::endl
-                  << item.get() << ": [ " << item->ToString() << " ]" << std::endl
+                  << iter->get() << ": [ " << (*iter)->ToString() << " ]" << std::endl
                   << cur_item->get() << ": [ " << (*cur_item)->ToString() << " ]";
+    if ((*iter)->ToString() != (*cur_item)->ToString()) {
+      list.push_back(*cur_item);
+      MS_LOG(DEBUG) << "id conflict fix later";
+    }
   }
   return true;
 }
