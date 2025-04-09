@@ -83,11 +83,11 @@ def test_tensorarray():
     assert np.allclose(s.asnumpy(), expect_s)
     assert np.allclose(v.asnumpy(), expect_v)
     tc = nn.TensorArray(mindspore.float32, ())
-    tc.write(5, 1.)
+    tc.write(5, Tensor(1., mindspore.float32))
     s = tc.stack()
     expect_s = [0., 0., 0., 0., 0., 1.]
     assert np.allclose(s.asnumpy(), expect_s)
-    tc.write(2, 1.)
+    tc.write(2, Tensor(1., mindspore.float32))
     s = tc.stack()
     expect_s = [0., 0., 1., 0., 0., 1.]
     assert np.allclose(s.asnumpy(), expect_s)

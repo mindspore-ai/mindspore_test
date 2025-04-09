@@ -38,6 +38,7 @@
 #include "runtime/hardware/device_context_manager.h"
 #endif
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore::graphkernel {
 using kernel::OpAttr;
@@ -579,7 +580,7 @@ void GraphKernelJsonGenerator::GetAttrJson(const AnfNodePtr &anf_node, const std
   } else if (type == "bool") {
     (*attr_json)[kJsonKeyValue] = GetValue<bool>(attr_value);
   } else if (type == "float") {
-    (*attr_json)[kJsonKeyValue] = GetValue<float>(attr_value);
+    (*attr_json)[kJsonKeyValue] = static_cast<float>(GetValue<pyfloat>(attr_value));
   } else if (type == "listInt") {
     std::vector<int> list_int;
     const auto &vals = attr_value->cast<ValueSequencePtr>()->value();

@@ -29,8 +29,6 @@ void InplaceEluAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *
     MS_LOG(EXCEPTION) << "Unsupported input dtype: float64, because aclnnEluBackward does not support dtype: float64";
   }
   alpha_ = device::ascend::ConvertKernelTensor<ScalarPtr>(inputs[kIndex1]);
-  MAKE_SCALAR(1.f, inputs[kIndex0]->dtype_id(), scale_);
-  MAKE_SCALAR(1.f, inputs[kIndex0]->dtype_id(), input_scale_);
 
   GetWorkspaceForResize(inputs[kIndex0], alpha_, scale_, input_scale_);
 }

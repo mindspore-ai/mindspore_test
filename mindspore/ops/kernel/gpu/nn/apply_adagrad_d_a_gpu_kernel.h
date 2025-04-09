@@ -20,7 +20,6 @@
 #include <map>
 #include <utility>
 
-#include "mindspore/ops/infer/apply_adagrad_d_a.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "common/ms_factory.h"
 

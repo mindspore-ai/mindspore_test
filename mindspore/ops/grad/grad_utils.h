@@ -121,6 +121,5 @@ NodePtr MatrixTransposeExt(BpropBuilder *ib, const NodePtr &x);
 NodePtr Adjoint(BpropBuilder *ib, const NodePtr &x);
 NodePtr VectorNormGrad(BpropBuilder *ib, const NodePtr &input_node, const NodePtr &p, const NodePtr &dim_node,
                        const NodePtr &keepdim, const NodePtr &out_node, const NodePtr &dout_node);
-std::optional<float> GetAlpha(const NodePtr &alpha);
 }  // namespace mindspore::expander::bprop
 #endif  // MINDSPORE_OPS_GRAD_GRAD_UTILS_H_

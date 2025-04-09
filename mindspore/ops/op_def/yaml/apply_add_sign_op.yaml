@@ -1,0 +1,33 @@
+#operator apply_add_sign
+apply_add_sign:
+    args:
+        var:
+            dtype: tensor
+        m:
+            dtype: tensor
+        lr:
+            dtype: tensor
+            type_cast: float
+        alpha:
+            dtype: tensor
+            type_cast: float
+        sign_decay:
+            dtype: tensor
+            type_cast: float
+        beta:
+            dtype: tensor
+            type_cast: float
+        grad:
+            dtype: tensor
+    returns:
+        var:
+            dtype: tensor
+        m:
+            dtype: tensor
+    args_signature:
+        rw_write: var, m
+        dtype_group: (var, m, grad), (lr), (alpha), (sign_decay), (beta)
+    labels:
+        side_effect_mem: True
+    function:
+        disable: True

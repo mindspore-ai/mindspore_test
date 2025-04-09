@@ -1,0 +1,61 @@
+apply_proximal_gradient_descent:
+    description: |
+        Updates relevant entries according to the FOBOS(Forward Backward Splitting) algorithm.
+        Refer to the paper `Efficient Learning using Forward-Backward Splitting
+        <http://papers.nips.cc//paper/3793-efficient-learning-using-forward-backward-splitting.pdf>`_ for more details.
+
+        .. math::
+            \begin{array}{ll} \\
+                \text{prox_v} = var - \alpha * \delta \\
+                var = \frac{sign(\text{prox_v})}{1 + \alpha * l2} * \max(\left| \text{prox_v} \right| - \alpha * l1, 0)
+            \end{array}
+
+        where :math:`\alpha` represents `alpha`, :math:`\delta` represents `delta`.
+
+        Inputs of `var` and `delta` comply with the implicit type conversion rules to make the data types consistent.
+        If they have different data types, the lower priority data type will be converted to
+        the relatively highest priority data type.
+
+        Inputs:
+            - **var** (Union[Parameter, Tensor]) - Variable tensor to be updated. With float32 or float16 data type.
+              The shape is :math:`(N, *)` where :math:`*` means, any number of additional dimensions.
+            - **alpha** (Union[Number, Tensor]) - Scaling factor, must be a scalar. With float32 or float16 data type.
+            - **l1** (Union[Number, Tensor]) - l1 regularization strength, must be a scalar.
+              With float32 or float16 data type.
+            - **l2** (Union[Number, Tensor]) - l2 regularization strength, must be a scalar.
+              With float32 or float16 data type.
+            - **delta** (Tensor) - A tensor for the change.
+
+        Outputs:
+            Tensor, represents the updated `var`.
+
+        Raises:
+            TypeError: If dtype of `var`, `alpha`, `l1` or `l2` is neither float16 nor float32.
+            TypeError: If `alpha`, `l1` or `l2` is neither a Number nor a Tensor.
+            TypeError: If `delta` is not a Tensor.
+            TypeError: If the data type of `var`, and `delta` conversion of Parameter is not supported.
+
+        Supported Platforms:
+            ``Ascend`` ``GPU`` ``CPU``
+
+        Examples:
+            >>> import numpy as np
+            >>> from mindspore import Tensor, nn, ops, Parameter
+            >>> class Net(nn.Cell):
+            ...     def __init__(self):
+            ...         super(Net, self).__init__()
+            ...         self.apply_proximal_gradient_descent = ops.ApplyProximalGradientDescent()
+            ...         self.var = Parameter(Tensor(np.ones([2, 2]).astype(np.float32)), name="var")
+            ...         self.alpha = 0.001
+            ...         self.l1 = 0.1
+            ...         self.l2 = 0.1
+            ...     def construct(self, delta):
+            ...         out = self.apply_proximal_gradient_descent(self.var, self.alpha, self.l1, self.l2, delta)
+            ...         return out
+            ...
+            >>> net = Net()
+            >>> delta = Tensor(np.array([[0.1, 0.1], [0.1, 0.1]]).astype(np.float32))
+            >>> output = net(delta)
+            >>> print(output)
+            [[0.99969995 0.99969995]
+            [0.99969995 0.99969995]]

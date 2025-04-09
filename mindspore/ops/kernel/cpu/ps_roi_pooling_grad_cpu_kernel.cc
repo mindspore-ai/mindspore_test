@@ -21,6 +21,7 @@
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "abstract/utils.h"
 #include "kernel/cpu/atomic_add.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -225,7 +226,7 @@ int PSROIPoolingGradCpuKernelMod::Resize(const std::vector<KernelTensor *> &inpu
 
   auto spatial_scale_ptr = primitive_->GetAttr("spatial_scale");
   MS_EXCEPTION_IF_NULL(spatial_scale_ptr);
-  spatial_scale_ = GetValue<float>(spatial_scale_ptr);
+  spatial_scale_ = GetValue<pyfloat>(spatial_scale_ptr);
 
   auto input_size_ptr = primitive_->GetAttr("input_size");
   MS_EXCEPTION_IF_NULL(input_size_ptr);

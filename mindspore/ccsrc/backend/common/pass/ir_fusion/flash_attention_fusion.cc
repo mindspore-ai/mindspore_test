@@ -114,7 +114,7 @@ const BaseRef FlashAttentionFusionBase::DefinePattern() const {
 
 CNodePtr FlashAttentionFusionBase::CreatePromptFlashAttentionCnodeForBNSD(
   const FuncGraphPtr &func_graph, const AnfNodePtr &node, const AnfNodePtr &q, const AnfNodePtr &k, const AnfNodePtr &v,
-  const AnfNodePtr &atten_mask, const int64_t num_heads, const int64_t next_token, const float scale_value,
+  const AnfNodePtr &atten_mask, const int64_t num_heads, const int64_t next_token, const pyfloat scale_value,
   const int64_t num_key_value_heads) const {
   MS_LOG(INFO) << "CreatePromptFlashAttentionCnodeForBNSD";
   // create op
@@ -256,7 +256,7 @@ CNodePtr FlashAttentionFusionV1::CreateFlashAttentionNode(const FuncGraphPtr &fu
   int64_t seq_len = input_tensor_q_shape[kNumIndex2];
   const int64_t num_heads = input_tensor_q_shape[kNumIndex1];
   const int64_t next_token = 0;
-  const float scale_value = 1 / (pow(input_tensor_q_shape[kNumIndex3], 0.5));
+  const pyfloat scale_value = 1 / (pow(input_tensor_q_shape[kNumIndex3], 0.5));
   const int64_t num_key_value_heads = input_tensor_k_shape[1];
   if (seq_len != 1) {
     return CreatePromptFlashAttentionCnodeForBNSD(func_graph, node, q, k, v, atten_mask, num_heads, next_token,
@@ -370,7 +370,7 @@ CNodePtr FlashAttentionFusionV2::CreateFlashAttentionNode(const FuncGraphPtr &fu
   int64_t seq_len = input_tensor_q_shape[kNumIndex2];
   const int64_t num_heads = input_tensor_q_shape[kNumIndex1];
   const int64_t next_token = 65535;
-  const float scale_value = 1 / (pow(input_tensor_q_shape[kNumIndex3], 0.5));
+  const pyfloat scale_value = 1 / (pow(input_tensor_q_shape[kNumIndex3], 0.5));
   const int64_t num_key_value_heads = input_tensor_k_shape[1];
   if (seq_len != 1) {
     return CreatePromptFlashAttentionCnodeForBNSD(func_graph, node, q, k, v, atten_mask, num_heads, next_token,

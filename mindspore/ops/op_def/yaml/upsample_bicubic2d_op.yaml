@@ -24,3 +24,5 @@ upsample_bicubic2d:
     dispatch:
         enable: True
         Ascend: UpsampleBicubic2DAscend
+        CPU: None
+        GPU: None

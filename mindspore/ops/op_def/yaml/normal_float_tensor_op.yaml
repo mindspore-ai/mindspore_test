@@ -19,3 +19,5 @@ normal_float_tensor:
     dispatch:
         enable: True
         Ascend: NormalFloatTensorAscend
+        CPU: None
+        GPU: None

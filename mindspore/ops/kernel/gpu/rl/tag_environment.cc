@@ -23,6 +23,7 @@
 #include <utility>
 #include "plugin/res_manager/gpu/device/cuda_driver.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/cuda_common.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -55,10 +56,10 @@ bool TagEnvironment::InitGameSetting(const mindspore::PrimitivePtr &prim, GameSe
   setting_host->max_timestep = GetValue<int64_t>(prim->GetAttr(kMaxTimestepAttr));
   setting_host->map_length = GetValue<int64_t>(prim->GetAttr(kMapLengthAttr));
   setting_host->map_width = GetValue<int64_t>(prim->GetAttr(kMapWidthAttr));
-  setting_host->wall_hit_penalty = GetValue<float>(prim->GetAttr(kWallHitPenaltyAttr));
-  setting_host->catch_reward = GetValue<float>(prim->GetAttr(kCatchRewardAttr));
-  setting_host->caught_penalty = GetValue<float>(prim->GetAttr(kCaughtPenaltyAttr));
-  setting_host->step_cost = GetValue<float>(prim->GetAttr(kStepCostAttr));
+  setting_host->wall_hit_penalty = GetValue<pyfloat>(prim->GetAttr(kWallHitPenaltyAttr));
+  setting_host->catch_reward = GetValue<pyfloat>(prim->GetAttr(kCatchRewardAttr));
+  setting_host->caught_penalty = GetValue<pyfloat>(prim->GetAttr(kCaughtPenaltyAttr));
+  setting_host->step_cost = GetValue<pyfloat>(prim->GetAttr(kStepCostAttr));
   setting_host->partially_observation = GetValue<bool>(prim->GetAttr(kPartiallyObsAttr));
 
   env_num_ = GetValue<int64_t>(prim->GetAttr(kEnvNumAttr));

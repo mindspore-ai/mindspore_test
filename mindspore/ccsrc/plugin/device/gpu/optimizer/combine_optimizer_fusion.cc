@@ -185,6 +185,10 @@ bool CombineOptimizerFusion::Run(const FuncGraphPtr &graph) {
     inputs.push_back(NewValueNode(prim));
     // set inputs for combine optimizer node
     size_t input_num = common::AnfAlgo::GetInputTensorNum(optimizer_node_list[0]);
+    if (node_name == kApplyMomentumOpName) {
+      // applymomentum has 3 attrs which has been transform to inputs: use_nesterov, use_locking, gradient_scale
+      input_num = input_num - kIndex3;
+    }
     for (auto optimizer_node : optimizer_node_list) {
       for (size_t i = 0; i < input_num; i++) {
         auto cnode = utils::cast<CNodePtr>(optimizer_node);

@@ -25,6 +25,7 @@
 #include "frontend/parallel/auto_parallel/operator_costmodel.h"
 #include "frontend/parallel/ops_info/operator_info.h"
 #include "frontend/parallel/strategy.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace parallel {
@@ -72,7 +73,7 @@ class LayerNormInfo : public OperatorInfo {
  private:
   size_t begin_norm_axis_;
   size_t begin_params_axis_;
-  float epsilon_;
+  pyfloat epsilon_;
   Shape input_shape_;
   Shape gamma_shape_;
   Shape beta_shape_;

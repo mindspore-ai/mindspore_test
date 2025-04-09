@@ -17,6 +17,7 @@
 #include "kernel/cpu/crop_and_resize_cpu_kernel.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/crop_and_resize.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -36,7 +37,7 @@ bool CropAndResizeCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
   } else {  //  bilinear-v2
     method_ = BILINEAR_V2;
   }
-  extrapolation_value_ = GetValue<float>(primitive_->GetAttr(ops::kExtrapolationValue));
+  extrapolation_value_ = GetValue<pyfloat>(primitive_->GetAttr(ops::kExtrapolationValue));
 
   auto kernel_attr = GetKernelAttrFromTensors(inputs, outputs);
   auto [is_match, index] = MatchKernelAttr(kernel_attr, GetOpSupport());

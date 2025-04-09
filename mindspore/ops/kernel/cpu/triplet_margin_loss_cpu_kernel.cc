@@ -17,6 +17,7 @@
 #include "kernel/cpu/triplet_margin_loss_cpu_kernel.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/triplet_margin_loss.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -27,7 +28,7 @@ bool TripletMarginLossCPUKernelMod::Init(const std::vector<KernelTensor *> &inpu
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kOutputNumber, kernel_name_);
   p_ = GetValue<int64_t>(primitive_->GetAttr(ops::kP));
   swap_ = GetValue<bool>(primitive_->GetAttr(ops::kSwap));
-  eps_ = GetValue<float>(primitive_->GetAttr(ops::kEps));
+  eps_ = GetValue<pyfloat>(primitive_->GetAttr(ops::kEps));
   reduction_ = GetValue<std::string>(primitive_->GetAttr(ops::kReduction));
   return true;
 }

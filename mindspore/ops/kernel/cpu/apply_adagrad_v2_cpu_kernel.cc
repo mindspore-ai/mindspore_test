@@ -23,6 +23,7 @@
 #include <thread>
 #include <vector>
 #include "ops_utils/op_utils.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -30,7 +31,7 @@ namespace apply_adagrad_v2_cpu {
 namespace {
 constexpr size_t kSizeFloat16 = 2;
 constexpr size_t kSizeFloat32 = 4;
-constexpr size_t kApplyAdagradV2InputsNum = 4;
+constexpr size_t kApplyAdagradV2InputsNum = 6;
 constexpr size_t kApplyAdagradV2OutputsNum = 2;
 constexpr size_t kVarIndex = 0;
 constexpr size_t kAccumIndex = 1;
@@ -41,9 +42,6 @@ constexpr size_t kGradIndex = 3;
 bool ApplyAdagradV2CpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                       const std::vector<KernelTensor *> &outputs) {
   batch_rank_ = ops::get_batch_rank(primitive_);
-  epsilon_ = GetValue<float>(primitive_->GetAttr(ops::kEpsilon));
-  update_slots_ = GetValue<bool>(primitive_->GetAttr(ops::kUpdateSlots));
-
   auto kernel_attr = GetKernelAttrFromTensors(inputs, outputs);
   auto [is_match, index] = MatchKernelAttr(kernel_attr, GetOpSupport());
   if (!is_match) {
@@ -97,6 +95,10 @@ int ApplyAdagradV2CpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs
   if (ret != KRET_OK) {
     return ret;
   }
+
+  epsilon_ = inputs[kIndex4]->GetValueWithCheck<pyfloat>();
+  update_slots_ = inputs[kIndex5]->GetValueWithCheck<bool>();
+
   // get inner input size.
   if (inputs.empty()) {
     MS_EXCEPTION(ValueError) << "ApplyAdagradV2 input is empty";
@@ -162,6 +164,8 @@ std::vector<std::pair<KernelAttr, ApplyAdagradV2CpuKernelMod::ApplyAdagradV2Func
        .AddInputAttr(kNumberTypeFloat32)
        .AddInputAttr(kNumberTypeFloat32)
        .AddInputAttr(kNumberTypeFloat32)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
        .AddOutputAttr(kNumberTypeFloat32)
        .AddOutputAttr(kNumberTypeFloat32)
        .AddOutInRef(0, 0)

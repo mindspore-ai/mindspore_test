@@ -120,16 +120,21 @@ std::vector<KernelAttr> BroadcastExtOptGpuKernelMod::GetOpSupport() {
     MS_REG_BROADCAST_OP_SAME_TYPE_EXT(OP_TYPE, kNumberTypeInt16, int16_t, int64_t, kNumberTypeInt64),              \
     MS_REG_BROADCAST_OP_SAME_TYPE_EXT(OP_TYPE, kNumberTypeInt32, int32_t, int64_t, kNumberTypeInt64),              \
     MS_REG_BROADCAST_OP_SAME_TYPE_EXT(OP_TYPE, kNumberTypeInt64, int64_t, int64_t, kNumberTypeInt64),              \
-    MS_REG_BROADCAST_OP_SAME_TYPE_EXT(OP_TYPE, kNumberTypeFloat16, half, float, kNumberTypeFloat32),               \
-    MS_REG_BROADCAST_OP_SAME_TYPE_EXT(OP_TYPE, kNumberTypeFloat32, float, float, kNumberTypeFloat32),              \
-    MS_REG_BROADCAST_OP_SAME_TYPE_EXT(OP_TYPE, kNumberTypeFloat64, double, float, kNumberTypeFloat32),             \
     MS_REG_BROADCAST_OP_SAME_TYPE_EXT(OP_TYPE, kNumberTypeFloat16, half, int64_t, kNumberTypeInt64),               \
     MS_REG_BROADCAST_OP_SAME_TYPE_EXT(OP_TYPE, kNumberTypeFloat32, float, int64_t, kNumberTypeInt64),              \
     MS_REG_BROADCAST_OP_SAME_TYPE_EXT(OP_TYPE, kNumberTypeFloat64, double, int64_t, kNumberTypeInt64),             \
     MS_REG_BROADCAST_OP_SAME_TYPE_EXT(OP_TYPE, kNumberTypeComplex64, Complex<float>, int64_t, kNumberTypeInt64),   \
     MS_REG_BROADCAST_OP_SAME_TYPE_EXT(OP_TYPE, kNumberTypeComplex128, Complex<double>, int64_t, kNumberTypeInt64), \
+    MS_REG_BROADCAST_OP_SAME_TYPE_EXT(OP_TYPE, kNumberTypeFloat16, half, float, kNumberTypeFloat32),               \
+    MS_REG_BROADCAST_OP_SAME_TYPE_EXT(OP_TYPE, kNumberTypeFloat32, float, float, kNumberTypeFloat32),              \
+    MS_REG_BROADCAST_OP_SAME_TYPE_EXT(OP_TYPE, kNumberTypeFloat64, double, float, kNumberTypeFloat32),             \
     MS_REG_BROADCAST_OP_SAME_TYPE_EXT(OP_TYPE, kNumberTypeComplex64, Complex<float>, float, kNumberTypeFloat32),   \
-    MS_REG_BROADCAST_OP_SAME_TYPE_EXT(OP_TYPE, kNumberTypeComplex128, Complex<double>, float, kNumberTypeFloat32)
+    MS_REG_BROADCAST_OP_SAME_TYPE_EXT(OP_TYPE, kNumberTypeComplex128, Complex<double>, float, kNumberTypeFloat32), \
+    MS_REG_BROADCAST_OP_SAME_TYPE_EXT(OP_TYPE, kNumberTypeFloat16, half, double, kNumberTypeFloat64),              \
+    MS_REG_BROADCAST_OP_SAME_TYPE_EXT(OP_TYPE, kNumberTypeFloat32, float, double, kNumberTypeFloat64),             \
+    MS_REG_BROADCAST_OP_SAME_TYPE_EXT(OP_TYPE, kNumberTypeFloat64, double, double, kNumberTypeFloat64),            \
+    MS_REG_BROADCAST_OP_SAME_TYPE_EXT(OP_TYPE, kNumberTypeComplex64, Complex<float>, double, kNumberTypeFloat64),  \
+    MS_REG_BROADCAST_OP_SAME_TYPE_EXT(OP_TYPE, kNumberTypeComplex128, Complex<double>, double, kNumberTypeFloat64)
 
 std::map<std::string, std::vector<std::pair<KernelAttr, BroadcastExtOptGpuKernelMod::BroadCastFunc>>>
   BroadcastExtOptGpuKernelMod::supported_type_map_ = {

@@ -21,7 +21,6 @@
 #include <memory>
 #include <functional>
 #include <map>
-#include "mindspore/ops/infer/apply_proximal_adagrad.h"
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "common/ms_factory.h"
 
@@ -48,6 +47,7 @@ class ApplyProximalAdagradCpuKernelMod : public NativeCpuKernelMod {
                                                      .AddInputAttr(kNumberTypeFloat32)
                                                      .AddInputAttr(kNumberTypeFloat32)
                                                      .AddInputAttr(kNumberTypeFloat32)
+                                                     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                                      .AddOutputAttr(kNumberTypeFloat32)
                                                      .AddOutputAttr(kNumberTypeFloat32)
                                                      .AddOutInRef(0, 0)

@@ -47,7 +47,7 @@ class LogitGradCpuKernelMod : public NativeCpuKernelMod {
   bool LaunchKernelHalf(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) const;
   TypeId input_dtype_{kTypeUnknown};
   std::vector<int64_t> input_shape_;
-  float eps{-1.0};
+  float eps_{-1.0};
   size_t input_elements_{0};
 };
 }  // namespace logit_grad_cpu

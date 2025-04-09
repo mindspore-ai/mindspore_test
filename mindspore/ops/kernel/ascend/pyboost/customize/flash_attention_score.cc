@@ -20,6 +20,7 @@
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "runtime/device/device_address_utils.h"
 #include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 using mindspore::device::ascend::FASInputLayoutMode;
@@ -46,13 +47,13 @@ void FlashAttentionScoreAscendCall(
   const std::optional<TensorPtr> &drop_mask, const std::optional<TensorPtr> &padding_mask,
   const std::optional<TensorPtr> &attn_mask, const std::optional<ValueTuplePtr> &prefix,
   const std::optional<ValueTuplePtr> &actual_seq_qlen, const std::optional<ValueTuplePtr> &actual_seq_kvlen,
-  const Int64ImmPtr head_num, const FP32ImmPtr keep_prob, const FP32ImmPtr scale_value, const Int64ImmPtr pre_tokens,
+  const Int64ImmPtr head_num, const FP64ImmPtr keep_prob, const FP64ImmPtr scale_value, const Int64ImmPtr pre_tokens,
   const Int64ImmPtr next_tokens, const Int64ImmPtr inner_precise, const Int64ImmPtr input_layout,
   const Int64ImmPtr sparse_mode, const std::vector<tensor::TensorPtr> &outputs) {
   std::vector<int64_t> prefix_array;
   auto head_num_value = GetValue<int64_t>(head_num);
-  auto keep_prob_value = static_cast<double>(GetValue<float>(keep_prob));
-  auto scale_value_value = static_cast<double>(GetValue<float>(scale_value));
+  auto keep_prob_value = static_cast<double>(GetValue<pyfloat>(keep_prob));
+  auto scale_value_value = static_cast<double>(GetValue<pyfloat>(scale_value));
   auto pre_tokens_value = GetValue<int64_t>(pre_tokens);
   auto next_tokens_value = GetValue<int64_t>(next_tokens);
   auto inner_precise_value = GetValue<int64_t>(inner_precise);  // not used.
@@ -100,8 +101,8 @@ tensor::TensorPtr FlashAttentionScoreAscendCustomize(
   const std::optional<TensorPtr> &real_shift, const std::optional<TensorPtr> &drop_mask,
   const std::optional<TensorPtr> &padding_mask, const std::optional<TensorPtr> &attn_mask,
   const std::optional<ValueTuplePtr> &prefix, const std::optional<ValueTuplePtr> &actual_seq_qlen,
-  const std::optional<ValueTuplePtr> &actual_seq_kvlen, const Int64ImmPtr head_num, const FP32ImmPtr keep_prob,
-  const FP32ImmPtr scale_value, const Int64ImmPtr pre_tokens, const Int64ImmPtr next_tokens,
+  const std::optional<ValueTuplePtr> &actual_seq_kvlen, const Int64ImmPtr head_num, const FP64ImmPtr keep_prob,
+  const FP64ImmPtr scale_value, const Int64ImmPtr pre_tokens, const Int64ImmPtr next_tokens,
   const Int64ImmPtr inner_precise, const Int64ImmPtr input_layout, const Int64ImmPtr sparse_mode) {
   OpRunner::InferOpOutput(op, query, key, value, real_shift, drop_mask, padding_mask, attn_mask, prefix,
                           actual_seq_qlen, actual_seq_kvlen, head_num, keep_prob, scale_value, pre_tokens, next_tokens,

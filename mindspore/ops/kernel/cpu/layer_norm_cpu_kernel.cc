@@ -19,6 +19,7 @@
 #include "common/common_utils.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "include/common/thread_pool.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -38,8 +39,6 @@ constexpr size_t kLayerNormOutputVarIndex = 2;
 }  // namespace
 bool LayerNormCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                  const std::vector<KernelTensor *> &outputs) {
-  eps_ = inputs[kLayerNormInputEpsilonIndex]->GetValueWithCheck<float_t>();
-
   auto kernel_attr = GetKernelAttrFromTensors(inputs, outputs);
   auto [is_match, index] = MatchKernelAttr(kernel_attr, GetOpSupport());
   if (!is_match) {
@@ -59,6 +58,7 @@ int LayerNormCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   if (inputs.empty()) {
     MS_LOG(EXCEPTION) << "Invalid LayerNormCpuKernelMod input size!";
   }
+  eps_ = inputs[kLayerNormInputEpsilonIndex]->GetValueWithCheck<pyfloat>();
   auto x_shape = inputs[kLayerNormInputXIndex]->GetShapeVector();
   auto begin_norm_axis = inputs[kLayerNormInputBeginNormAxisIndex]->GetValueWithCheck<int64_t>();
   auto begin_params_axis = inputs[kLayerNormInputBeginParamsAxisIndex]->GetValueWithCheck<int64_t>();
@@ -171,7 +171,7 @@ std::vector<std::pair<KernelAttr, LayerNormCpuKernelMod::KernelFunc>> LayerNormC
      .AddInputAttr(kNumberTypeFloat16)
      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddOutputAttr(kNumberTypeFloat16)
      .AddOutputAttr(kNumberTypeFloat32)
      .AddOutputAttr(kNumberTypeFloat32),
@@ -182,7 +182,7 @@ std::vector<std::pair<KernelAttr, LayerNormCpuKernelMod::KernelFunc>> LayerNormC
      .AddInputAttr(kNumberTypeFloat32)
      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddOutputAttr(kNumberTypeFloat32)
      .AddOutputAttr(kNumberTypeFloat32)
      .AddOutputAttr(kNumberTypeFloat32),
@@ -193,7 +193,7 @@ std::vector<std::pair<KernelAttr, LayerNormCpuKernelMod::KernelFunc>> LayerNormC
      .AddInputAttr(kNumberTypeFloat64)
      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddOutputAttr(kNumberTypeFloat64)
      .AddOutputAttr(kNumberTypeFloat32)
      .AddOutputAttr(kNumberTypeFloat32),

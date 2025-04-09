@@ -31,6 +31,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace opt {
@@ -59,7 +60,7 @@ void BnGradSplit::CreateOutputsOfUpdateGrad(const FuncGraphPtr &graph, const CNo
   auto shapes = {AnfAlgo::GetOutputDetailShape(bn_grad_node, 1), AnfAlgo::GetOutputDetailShape(bn_grad_node, 2)};
   common::AnfAlgo::SetOutputTypeAndDetailShape(types, shapes, bn_update_grad.get());
 
-  auto epsilon = GetNodeScalarValue<float>(bn_grad_inputs[kIdxEpsilon]);
+  auto epsilon = GetNodeScalarValue<pyfloat>(bn_grad_inputs[kIdxEpsilon]);
   common::AnfAlgo::SetNodeAttr(kAttrEpsilon, MakeValue(epsilon), bn_update_grad);
 
   auto format = GetNodeFormatValue(bn_grad_inputs[kIdxFormat]);
@@ -101,7 +102,7 @@ void BnGradSplit::CreateOutputsOfReduceGrad(const FuncGraphPtr &graph, const CNo
   auto shapes = {AnfAlgo::GetOutputDetailShape(bn_grad_node, 0)};
   common::AnfAlgo::SetOutputTypeAndDetailShape(types, shapes, bn_reduce_grad.get());
 
-  auto epsilon = GetNodeScalarValue<float>(bn_grad_inputs[kIdxEpsilon]);
+  auto epsilon = GetNodeScalarValue<pyfloat>(bn_grad_inputs[kIdxEpsilon]);
   common::AnfAlgo::SetNodeAttr(kAttrEpsilon, MakeValue(epsilon), bn_reduce_grad);
 
   auto format = GetNodeFormatValue(bn_grad_inputs[kIdxFormat]);

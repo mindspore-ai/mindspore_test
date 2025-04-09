@@ -18,6 +18,7 @@
 #include <map>
 #include <utility>
 #include "mindspore/ops/infer/instance_norm.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -37,8 +38,9 @@ bool InstanceNormGpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
   if (primitive_->HasAttr(ops::kBatchRank)) {
     batch_rank_ = static_cast<size_t>(GetValue<int64_t>(primitive_->GetAttr(ops::kBatchRank)));
   }
-  exp_avg_factor_ = static_cast<double>(GetValue<float>(primitive_->GetAttr(kAttrMomentum)));
-  epsilon_ = static_cast<double>(GetValue<float>(primitive_->GetAttr(kAttrEpsilon)));
+
+  exp_avg_factor_ = GetValue<pyfloat>(primitive_->GetAttr(kAttrMomentum));
+  epsilon_ = GetValue<pyfloat>(primitive_->GetAttr(kAttrEpsilon));
 
   cudnn_data_type_ = GetCudnnDataType(TypeIdLabel(inputs[kIndex0]->dtype_id()));
 

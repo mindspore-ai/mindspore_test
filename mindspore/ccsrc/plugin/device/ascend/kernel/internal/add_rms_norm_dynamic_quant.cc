@@ -17,6 +17,8 @@
 #include "plugin/device/ascend/kernel/internal/add_rms_norm_dynamic_quant.h"
 
 #include <memory>
+
+#include "mindspore/core/include/mindapi/base/types.h"
 #include "common/kernel.h"
 
 namespace mindspore {
@@ -25,7 +27,7 @@ internal::InternalOpPtr InternalAddRmsNormDynamicQuant::CreateKernel(
   const internal::InputsImmutableInfoList &inputs_ii, const internal::OutputsImmutableInfoList &outputs_ii,
   const std::vector<KernelTensor *> &ms_inputs, const std::vector<KernelTensor *> &ms_outputs) {
   internal::NormParam param;
-  param.eps = ms_inputs[kIndex5]->GetValueWithCheck<float>();
+  param.eps = ms_inputs[kIndex5]->GetValueWithCheck<pyfloat>();
   return internal::CreateAddRmsNormDynamicQuantOp(inputs_ii, outputs_ii, param,
                                                   internal::kInternalAddRmsNormDynamicQuantOpName);
 }

@@ -33,7 +33,7 @@ void SpeedFusionAttentionGradAscendCustomize(
   const std::optional<TensorPtr> &pse, const std::optional<TensorPtr> &padding_mask,
   const std::optional<TensorPtr> &atten_mask, const std::optional<TensorPtr> &softmax_max,
   const std::optional<TensorPtr> &softmax_sum, const std::optional<TensorPtr> &softmax_in,
-  const std::optional<TensorPtr> &attention_in, const FP32ImmPtr &scale, const FP32ImmPtr &keep_prob,
+  const std::optional<TensorPtr> &attention_in, const FP64ImmPtr &scale, const FP64ImmPtr &keep_prob,
   const Int64ImmPtr &pre_tokens, const Int64ImmPtr &next_tokens, const Int64ImmPtr &inner_precise,
   const std::optional<TensorPtr> &seed, const std::optional<TensorPtr> &offset, const std::optional<TensorPtr> &numels,
   const std::optional<ValueTuplePtr> &prefix, const std::optional<ValueTuplePtr> &actual_seq_qlen,

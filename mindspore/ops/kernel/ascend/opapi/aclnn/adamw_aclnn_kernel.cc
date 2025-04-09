@@ -23,17 +23,18 @@
 #include "kernel/ascend/acl_ir/acl_helper.h"
 #include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
 namespace adamw {
 void AdamWAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                    const std::vector<KernelTensor *> &outputs) {
-  lr_ = device::ascend::ConvertKernelTensor<float>(inputs[kIndex6]);
-  beta1_ = device::ascend::ConvertKernelTensor<float>(inputs[kIndex7]);
-  beta2_ = device::ascend::ConvertKernelTensor<float>(inputs[kIndex8]);
-  decay_ = device::ascend::ConvertKernelTensor<float>(inputs[kIndex9]);
-  eps_ = device::ascend::ConvertKernelTensor<float>(inputs[kIndex10]);
+  lr_ = device::ascend::ConvertKernelTensor<pyfloat>(inputs[kIndex6]);
+  beta1_ = device::ascend::ConvertKernelTensor<pyfloat>(inputs[kIndex7]);
+  beta2_ = device::ascend::ConvertKernelTensor<pyfloat>(inputs[kIndex8]);
+  decay_ = device::ascend::ConvertKernelTensor<pyfloat>(inputs[kIndex9]);
+  eps_ = device::ascend::ConvertKernelTensor<pyfloat>(inputs[kIndex10]);
   amsgrad_ = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex11]);
   maximize_ = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex12]);
   // Infer function has confirmed the actual dtype of output

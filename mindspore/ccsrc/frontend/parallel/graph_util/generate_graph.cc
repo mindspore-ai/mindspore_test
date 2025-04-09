@@ -305,6 +305,11 @@ AnfNodePtr CreateFP32Imm(float value) {
   return ValuePtrToAnfNodePtr(value_ptr);
 }
 
+AnfNodePtr CreatePyFloatImm(pyfloat value) {
+  ValuePtr value_ptr = MakeValue(value);
+  return ValuePtrToAnfNodePtr(value_ptr);
+}
+
 AnfNodePtr CreateBoolImm(bool value) {
   ValuePtr value_ptr = MakeValue(std::make_shared<BoolImm>(value));
   return ValuePtrToAnfNodePtr(value_ptr);

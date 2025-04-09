@@ -30,6 +30,7 @@
 #include "plugin/device/ascend/optimizer/create_node_helper.h"
 #include "utils/trace_base.h"
 #include "utils/tensor_construct_utils.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
@@ -106,7 +107,7 @@ void DynamicRnnGradFissionV2::CreateTLoopNode(const FuncGraphPtr &func_graph, co
     ShapeVector output1_dims{input_i_shape[kDim1], input_i_shape[kDim2]};
     common::AnfAlgo::SetOutputInferTypeAndShape({kNumberTypeFloat16, kNumberTypeFloat32}, {output0_dims, output1_dims},
                                                 basic_lstm_cell_c_state_grad.get());
-    common::AnfAlgo::SetNodeAttr("forget_bias", MakeValue(1.0f), basic_lstm_cell_c_state_grad);
+    common::AnfAlgo::SetNodeAttr("forget_bias", MakeValue<pyfloat>(1.0), basic_lstm_cell_c_state_grad);
     common::AnfAlgo::SetNodeAttr("activation", MakeValue("Tanh"), basic_lstm_cell_c_state_grad);
 
     // Create matmul

@@ -816,47 +816,60 @@ static const std::map<size_t, TypeId> tensor_tensor_convert_map = {
 
 static const std::map<size_t, TypeId> scalar_tensor_convert_map = {
   // Scalar is bool.
-  {GetHashId(kNumberTypeBool, kNumberTypeBool), kNumberTypeBool},
-  {GetHashId(kNumberTypeBool, kNumberTypeInt8), kNumberTypeInt8},
-  {GetHashId(kNumberTypeBool, kNumberTypeInt16), kNumberTypeInt16},
-  {GetHashId(kNumberTypeBool, kNumberTypeInt32), kNumberTypeInt32},
-  {GetHashId(kNumberTypeBool, kNumberTypeInt64), kNumberTypeInt64},
-  {GetHashId(kNumberTypeBool, kNumberTypeUInt8), kNumberTypeUInt8},
-  {GetHashId(kNumberTypeBool, kNumberTypeUInt16), kNumberTypeUInt16},
-  {GetHashId(kNumberTypeBool, kNumberTypeUInt32), kNumberTypeUInt32},
-  {GetHashId(kNumberTypeBool, kNumberTypeUInt64), kNumberTypeUInt64},
-  {GetHashId(kNumberTypeBool, kNumberTypeFloat16), kNumberTypeFloat16},
-  {GetHashId(kNumberTypeBool, kNumberTypeBFloat16), kNumberTypeBFloat16},
-  {GetHashId(kNumberTypeBool, kNumberTypeFloat32), kNumberTypeFloat32},
-  {GetHashId(kNumberTypeBool, kNumberTypeFloat64), kNumberTypeFloat64},
-  {GetHashId(kNumberTypeBool, kNumberTypeComplex64), kNumberTypeComplex64},
-  {GetHashId(kNumberTypeBool, kNumberTypeComplex128), kNumberTypeComplex128},
+  {hash_combine(kNumberTypeBool, kNumberTypeBool), kNumberTypeBool},
+  {hash_combine(kNumberTypeBool, kNumberTypeInt8), kNumberTypeInt8},
+  {hash_combine(kNumberTypeBool, kNumberTypeInt16), kNumberTypeInt16},
+  {hash_combine(kNumberTypeBool, kNumberTypeInt32), kNumberTypeInt32},
+  {hash_combine(kNumberTypeBool, kNumberTypeInt64), kNumberTypeInt64},
+  {hash_combine(kNumberTypeBool, kNumberTypeUInt8), kNumberTypeUInt8},
+  {hash_combine(kNumberTypeBool, kNumberTypeUInt16), kNumberTypeUInt16},
+  {hash_combine(kNumberTypeBool, kNumberTypeUInt32), kNumberTypeUInt32},
+  {hash_combine(kNumberTypeBool, kNumberTypeUInt64), kNumberTypeUInt64},
+  {hash_combine(kNumberTypeBool, kNumberTypeFloat16), kNumberTypeFloat16},
+  {hash_combine(kNumberTypeBool, kNumberTypeBFloat16), kNumberTypeBFloat16},
+  {hash_combine(kNumberTypeBool, kNumberTypeFloat32), kNumberTypeFloat32},
+  {hash_combine(kNumberTypeBool, kNumberTypeFloat64), kNumberTypeFloat64},
+  {hash_combine(kNumberTypeBool, kNumberTypeComplex64), kNumberTypeComplex64},
+  {hash_combine(kNumberTypeBool, kNumberTypeComplex128), kNumberTypeComplex128},
   // Scalar is int.
-  {GetHashId(kNumberTypeInt64, kNumberTypeBool), kNumberTypeInt64},
-  {GetHashId(kNumberTypeInt64, kNumberTypeInt8), kNumberTypeInt8},
-  {GetHashId(kNumberTypeInt64, kNumberTypeInt16), kNumberTypeInt16},
-  {GetHashId(kNumberTypeInt64, kNumberTypeInt32), kNumberTypeInt32},
-  {GetHashId(kNumberTypeInt64, kNumberTypeInt64), kNumberTypeInt64},
-  {GetHashId(kNumberTypeInt64, kNumberTypeUInt8), kNumberTypeUInt8},
-  {GetHashId(kNumberTypeInt64, kNumberTypeFloat16), kNumberTypeFloat16},
-  {GetHashId(kNumberTypeInt64, kNumberTypeBFloat16), kNumberTypeBFloat16},
-  {GetHashId(kNumberTypeInt64, kNumberTypeFloat32), kNumberTypeFloat32},
-  {GetHashId(kNumberTypeInt64, kNumberTypeFloat64), kNumberTypeFloat64},
-  {GetHashId(kNumberTypeInt64, kNumberTypeComplex64), kNumberTypeComplex64},
-  {GetHashId(kNumberTypeInt64, kNumberTypeComplex128), kNumberTypeComplex128},
+  {hash_combine(kNumberTypeInt64, kNumberTypeBool), kNumberTypeInt64},
+  {hash_combine(kNumberTypeInt64, kNumberTypeInt8), kNumberTypeInt8},
+  {hash_combine(kNumberTypeInt64, kNumberTypeInt16), kNumberTypeInt16},
+  {hash_combine(kNumberTypeInt64, kNumberTypeInt32), kNumberTypeInt32},
+  {hash_combine(kNumberTypeInt64, kNumberTypeInt64), kNumberTypeInt64},
+  {hash_combine(kNumberTypeInt64, kNumberTypeUInt8), kNumberTypeUInt8},
+  {hash_combine(kNumberTypeInt64, kNumberTypeFloat16), kNumberTypeFloat16},
+  {hash_combine(kNumberTypeInt64, kNumberTypeBFloat16), kNumberTypeBFloat16},
+  {hash_combine(kNumberTypeInt64, kNumberTypeFloat32), kNumberTypeFloat32},
+  {hash_combine(kNumberTypeInt64, kNumberTypeFloat64), kNumberTypeFloat64},
+  {hash_combine(kNumberTypeInt64, kNumberTypeComplex64), kNumberTypeComplex64},
+  {hash_combine(kNumberTypeInt64, kNumberTypeComplex128), kNumberTypeComplex128},
+  // Scenarios where pynative number to tensor is implicitly converted and implicitly promotyped
+  {hash_combine(kNumberTypeFloat32, kNumberTypeBool), kNumberTypeFloat32},
+  {hash_combine(kNumberTypeFloat32, kNumberTypeInt8), kNumberTypeFloat32},
+  {hash_combine(kNumberTypeFloat32, kNumberTypeInt16), kNumberTypeFloat32},
+  {hash_combine(kNumberTypeFloat32, kNumberTypeInt32), kNumberTypeFloat32},
+  {hash_combine(kNumberTypeFloat32, kNumberTypeInt64), kNumberTypeFloat32},
+  {hash_combine(kNumberTypeFloat32, kNumberTypeUInt8), kNumberTypeFloat32},
+  {hash_combine(kNumberTypeFloat32, kNumberTypeFloat16), kNumberTypeFloat16},
+  {hash_combine(kNumberTypeFloat32, kNumberTypeBFloat16), kNumberTypeBFloat16},
+  {hash_combine(kNumberTypeFloat32, kNumberTypeFloat32), kNumberTypeFloat32},
+  {hash_combine(kNumberTypeFloat32, kNumberTypeFloat64), kNumberTypeFloat64},
+  {hash_combine(kNumberTypeFloat32, kNumberTypeComplex64), kNumberTypeComplex64},
+  {hash_combine(kNumberTypeFloat32, kNumberTypeComplex128), kNumberTypeComplex128},
   // Scalar is float.
-  {GetHashId(kNumberTypeFloat32, kNumberTypeBool), kNumberTypeFloat32},
-  {GetHashId(kNumberTypeFloat32, kNumberTypeInt8), kNumberTypeFloat32},
-  {GetHashId(kNumberTypeFloat32, kNumberTypeInt16), kNumberTypeFloat32},
-  {GetHashId(kNumberTypeFloat32, kNumberTypeInt32), kNumberTypeFloat32},
-  {GetHashId(kNumberTypeFloat32, kNumberTypeInt64), kNumberTypeFloat32},
-  {GetHashId(kNumberTypeFloat32, kNumberTypeUInt8), kNumberTypeFloat32},
-  {GetHashId(kNumberTypeFloat32, kNumberTypeFloat16), kNumberTypeFloat16},
-  {GetHashId(kNumberTypeFloat32, kNumberTypeBFloat16), kNumberTypeBFloat16},
-  {GetHashId(kNumberTypeFloat32, kNumberTypeFloat32), kNumberTypeFloat32},
-  {GetHashId(kNumberTypeFloat32, kNumberTypeFloat64), kNumberTypeFloat64},
-  {GetHashId(kNumberTypeFloat32, kNumberTypeComplex64), kNumberTypeComplex64},
-  {GetHashId(kNumberTypeFloat32, kNumberTypeComplex128), kNumberTypeComplex128},
+  {hash_combine(kNumberTypeFloat64, kNumberTypeBool), kNumberTypeFloat32},
+  {hash_combine(kNumberTypeFloat64, kNumberTypeInt8), kNumberTypeFloat32},
+  {hash_combine(kNumberTypeFloat64, kNumberTypeInt16), kNumberTypeFloat32},
+  {hash_combine(kNumberTypeFloat64, kNumberTypeInt32), kNumberTypeFloat32},
+  {hash_combine(kNumberTypeFloat64, kNumberTypeInt64), kNumberTypeFloat32},
+  {hash_combine(kNumberTypeFloat64, kNumberTypeUInt8), kNumberTypeFloat32},
+  {hash_combine(kNumberTypeFloat64, kNumberTypeFloat16), kNumberTypeFloat16},
+  {hash_combine(kNumberTypeFloat64, kNumberTypeBFloat16), kNumberTypeBFloat16},
+  {hash_combine(kNumberTypeFloat64, kNumberTypeFloat32), kNumberTypeFloat32},
+  {hash_combine(kNumberTypeFloat64, kNumberTypeFloat64), kNumberTypeFloat64},
+  {hash_combine(kNumberTypeFloat64, kNumberTypeComplex64), kNumberTypeComplex64},
+  {hash_combine(kNumberTypeFloat64, kNumberTypeComplex128), kNumberTypeComplex128},
 };
 
 TypeId ConvertTypeForTensorsOrScalars(const TypeId &current, const TypeId &other, const size_t hash_id) {
@@ -868,8 +881,8 @@ TypeId ConvertTypeForTensorsOrScalars(const TypeId &current, const TypeId &other
                           << TypeIdToString(other) << " is not supported.";
 }
 
-TypeId ConvertTypeBetweenTensorAndScalar(const TypeId &tensor_type_id, const TypeId &scalar_type_id,
-                                         const size_t hash_id) {
+TypeId ConvertTypeBetweenTensorAndScalar(const TypeId &tensor_type_id, const TypeId &scalar_type_id) {
+  auto hash_id = hash_combine(scalar_type_id, tensor_type_id);
   auto iter = scalar_tensor_convert_map.find(hash_id);
   if (iter != scalar_tensor_convert_map.end()) {
     return iter->second;
@@ -887,11 +900,15 @@ TypeId GetConversionType(const TypeId &current, bool current_arg_is_tensor, bool
   }
 
   if (current != kTypeUnknown && saved_type_id != kTypeUnknown) {
-    auto hash_id = GetHashId(current, saved_type_id);
-    // Tensor + Scalar, Scalar + Tensor
-    if (MS_UNLIKELY(current_arg_is_tensor ^ saved_has_tensor)) {
-      return ConvertTypeBetweenTensorAndScalar(current, saved_type_id, hash_id);
+    // Tensor + Scalar
+    if (MS_UNLIKELY(current_arg_is_tensor && !saved_has_tensor)) {
+      return ConvertTypeBetweenTensorAndScalar(current, saved_type_id);
     }
+    // Scalar + Tensor
+    if (MS_UNLIKELY(!current_arg_is_tensor && saved_has_tensor)) {
+      return ConvertTypeBetweenTensorAndScalar(saved_type_id, current);
+    }
+    auto hash_id = GetHashId(current, saved_type_id);
     // Tensor + Tensor, Scalar + Scalar
     if ((is_parameter || saved_type_id == ref_type_id) &&
         hash_id == GetHashId(kNumberTypeFloat16, kNumberTypeBFloat16)) {

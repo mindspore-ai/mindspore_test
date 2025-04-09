@@ -26,7 +26,9 @@
 #include "include/backend/optimizer/helper.h"
 #include "mindspore/ops/op_def/array_op_name.h"
 #include "mindspore/ops/op_def/sequence_op_name.h"
+#include "mindspore/ccsrc/backend/common/pass/common/get_value_helper.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/op_enum.h"
 
 namespace mindspore {
 namespace opt {
@@ -129,7 +131,11 @@ const CNodePtr ConvertBasePaddings::ProcessSliceNConcat(const FuncGraphPtr &func
                                                         const int64_t &padding_src_length) const {
   auto prim = GetCNodePrimitive(pad_node);
   MS_EXCEPTION_IF_NULL(prim);
-  auto paddings_contiguous = GetValue<bool>(prim->GetAttr("paddings_contiguous"));
+  auto cnode = pad_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
+  auto paddings_contiguous_node_index = cnode->size() - kIndex1;
+  auto paddings_contiguous_node = cnode->input(paddings_contiguous_node_index);
+  auto paddings_contiguous = GetNodeScalarValue<bool>(paddings_contiguous_node);
   std::vector<AnfNodePtr> concat_input_vec;
 
   // slice and insert to concat in reverse order
@@ -149,7 +155,8 @@ const CNodePtr ConvertBasePaddings::ProcessSliceNConcat(const FuncGraphPtr &func
       auto slice_node_1 = CreateStridedSliceNode(func_graph, input_node, i);
       concat_input_vec.insert(concat_input_vec.begin(), slice_node_1);
     }
-    prim->AddAttr("paddings_contiguous", MakeValue(True));
+    auto new_paddings_contiguous_node = CreateValueNodeWithKernelInfo(func_graph, MakeValue(true));
+    common::AnfAlgo::SetNodeInput(cnode, new_paddings_contiguous_node, paddings_contiguous_node_index);
   }
 
   if (padding_dst_length > padding_src_length) {
@@ -274,9 +281,8 @@ const AnfNodePtr ConvertBasePaddings::OptimizePaddingsValue(const FuncGraphPtr &
 
 const AnfNodePtr ConvertBasePaddings::CreateConstPaddingsNode(const FuncGraphPtr &graph,
                                                               const CNodePtr &pad_node) const {
-  auto prim = GetCNodePrimitive(pad_node);
-  MS_EXCEPTION_IF_NULL(prim);
-  auto paddings_contiguous = GetValue<bool>(prim->GetAttr("paddings_contiguous"));
+  auto paddings_contiguous_node = pad_node->input(pad_node->size() - kIndex1);
+  auto paddings_contiguous = GetNodeScalarValue<bool>(paddings_contiguous_node);
   // ge::padV3 only support that the length of `paddings` is twice than the rank of `x`
   auto input_paddings = common::AnfAlgo::GetInputNode(pad_node, kIndex1);
   MS_EXCEPTION_IF_NULL(input_paddings);
@@ -289,6 +295,34 @@ const AnfNodePtr ConvertBasePaddings::CreateConstPaddingsNode(const FuncGraphPtr
                                                      input_x_shape.size() * 2, input_paddings_type_id);
   MS_EXCEPTION_IF_NULL(paddings_value_node);
   return paddings_value_node;
+}
+
+const CNodePtr ConvertBasePaddings::CreateNewPadNode(const FuncGraphPtr &graph, const CNodePtr &cnode,
+                                                     const AnfNodePtr &paddings_value_node) const {
+  MS_EXCEPTION_IF_NULL(cnode);
+  auto node_prim = GetCNodePrimitive(cnode);
+  MS_EXCEPTION_IF_NULL(node_prim);
+  const auto &prim_name = node_prim->name();
+  auto input_num = cnode->size();
+  auto mode_node = cnode->input(input_num - kIndex2);
+  auto mode = static_cast<mindspore::ops::Mode>(GetNodeScalarValue<int64_t>(mode_node));
+  if (prim_name == "PadV3" && mode != mindspore::ops::Mode::CONSTANT && input_num < kIndex6) {
+    // insert const_value none node for PadV3 when mode is not constant
+    AnfNodePtrList inputs = {NewValueNode(node_prim)};
+    for (size_t i = kIndex1; i < input_num; i++) {
+      inputs.push_back(cnode->input(i));
+    }
+    auto none_node = CreateValueNodeWithKernelInfo(graph, mindspore::kNone);
+    (void)inputs.insert(inputs.begin() + (input_num - kIndex2), none_node);
+    auto new_pad_node = NewCNode(inputs, graph);
+    MS_EXCEPTION_IF_NULL(new_pad_node);
+    new_pad_node->set_abstract(cnode->abstract());
+    new_pad_node->set_scope(cnode->scope());
+    return new_pad_node;
+  } else {
+    common::AnfAlgo::SetNodeInput(cnode, paddings_value_node, kIndex1);
+    return cnode;
+  }
 }
 
 const AnfNodePtr ConvertBasePaddings::Process(const FuncGraphPtr &graph, const AnfNodePtr &node,
@@ -312,21 +346,22 @@ const AnfNodePtr ConvertBasePaddings::Process(const FuncGraphPtr &graph, const A
     auto node_prim = GetCNodePrimitive(node);
     MS_EXCEPTION_IF_NULL(node_prim);
     node_prim->AddAttr("is_dyn_paddings", MakeValue(true));
-    common::AnfAlgo::SetNodeInput(cnode, concat_node, kIndex1);
+    cnode = CreateNewPadNode(graph, cnode, concat_node);
   } else {
     auto paddings_value_node = CreateConstPaddingsNode(graph, cnode);
     MS_EXCEPTION_IF_NULL(paddings_value_node);
-    common::AnfAlgo::SetNodeInput(cnode, paddings_value_node, kIndex1);
     auto node_prim = GetCNodePrimitive(node);
     MS_EXCEPTION_IF_NULL(node_prim);
     node_prim->AddAttr("is_paddings_changed", MakeValue(true));
+    cnode = CreateNewPadNode(graph, cnode, paddings_value_node);
   }
+  MS_EXCEPTION_IF_NULL(cnode);
   // Not verified: for PadV3Grad, if the input tensor rand < 4, the input should be expanded to 4.
   auto is_expand = ExpandInputXDims(graph, cnode);
   if (is_expand) {
     ReduceOutputDims(graph, cnode);
   }
-  return node;
+  return cnode;
 }
 
 const AnfNodePtr ConvertPadV3GradPaddings::Process(const FuncGraphPtr &graph, const AnfNodePtr &node,

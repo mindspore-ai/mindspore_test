@@ -21,6 +21,7 @@
 #include <cuda_runtime_api.h>
 #include "kernel/gpu/cuda_impl/cuda_ops/minmax_update_impl.cuh"
 #include "kernel/gpu/quant/quant_op_const.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -30,7 +31,7 @@ MinMaxUpdatePerChannelGpuKernelMod::MinMaxUpdatePerChannelGpuKernelMod()
 bool MinMaxUpdatePerChannelGpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                               const std::vector<KernelTensor *> &outputs) {
   ema_ = GetValue<bool>(primitive_->GetAttr("ema"));
-  ema_decay_ = GetValue<float>(primitive_->GetAttr("ema_decay"));
+  ema_decay_ = GetValue<pyfloat>(primitive_->GetAttr("ema_decay"));
   return true;
 }
 

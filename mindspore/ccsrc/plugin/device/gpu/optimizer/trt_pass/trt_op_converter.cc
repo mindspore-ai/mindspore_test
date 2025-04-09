@@ -21,6 +21,7 @@
 #include "plugin/device/gpu/optimizer/trt_pass/trt_converter_context.h"
 #include "plugin/device/gpu/optimizer/trt_pass/trt_op_factory.h"
 #include "kernel/gpu/trt/trt_utils.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace opt {
@@ -663,7 +664,7 @@ MS_TRT_CONVERTER_FUNC_REG(BatchNorm) {
   auto beta = static_cast<const float *>(inputs[2].weight()->values);
   auto mean = static_cast<const float *>(inputs[3].weight()->values);
   auto var = static_cast<const float *>(inputs[4].weight()->values);
-  auto epsilon = common::AnfAlgo::GetNodeAttr<float>(node, "epsilon");
+  float epsilon = common::AnfAlgo::GetNodeAttr<pyfloat>(node, "epsilon");
 
   const TypeId &type = common::AnfAlgo::GetPrevNodeOutputInferDataType(node, 1);
   const auto &shape = common::AnfAlgo::GetPrevNodeOutputInferShape(node, 1);
@@ -937,7 +938,7 @@ MS_TRT_CONVERTER_FUNC_REG(LayerNorm) {
     param_shape[j] = 1;
   }
 
-  auto epsilon = common::AnfAlgo::GetNodeAttr<float>(node, "epsilon");
+  float epsilon = common::AnfAlgo::GetNodeAttr<pyfloat>(node, "epsilon");
   std::shared_ptr<tensor::Tensor> weight = context->CreateTempWeight(kNumberTypeFloat32, {1});
   auto value = static_cast<float *>(weight->data_c());
   value[0] = epsilon;

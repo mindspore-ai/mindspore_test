@@ -20,6 +20,7 @@
 #include <memory>
 #include "mindspore/ops/infer/ops_func_impl/isclose.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -56,8 +57,8 @@ int IsCloseCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const
   if (int ret = KernelMod::Resize(inputs, outputs); ret != KRET_OK) {
     return ret;
   }
-  rtol_ = inputs[kIndex2]->GetValueWithCheck<float>();
-  atol_ = inputs[kIndex3]->GetValueWithCheck<float>();
+  rtol_ = inputs[kIndex2]->GetValueWithCheck<pyfloat>();
+  atol_ = inputs[kIndex3]->GetValueWithCheck<pyfloat>();
   equal_nan_ = inputs[kIndex4]->GetValueWithCheck<bool>();
   auto input_shape = LongVecToSizeVec(inputs.at(kIndex0)->GetShapeVector());
   auto other_shape = LongVecToSizeVec(inputs.at(kIndex1)->GetShapeVector());
@@ -125,96 +126,96 @@ const std::vector<std::pair<KernelAttr, IsCloseCpuKernelMod::KernelRunFunc>> IsC
   {KernelAttr()
      .AddInputAttr(kNumberTypeBool)
      .AddInputAttr(kNumberTypeBool)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
      .AddOutputAttr(kNumberTypeBool),
    &IsCloseCpuKernelMod::LaunchKernel<bool>},
   {KernelAttr()
      .AddInputAttr(kNumberTypeInt8)
      .AddInputAttr(kNumberTypeInt8)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
      .AddOutputAttr(kNumberTypeBool),
    &IsCloseCpuKernelMod::LaunchKernel<int8_t>},
   {KernelAttr()
      .AddInputAttr(kNumberTypeInt16)
      .AddInputAttr(kNumberTypeInt16)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
      .AddOutputAttr(kNumberTypeBool),
    &IsCloseCpuKernelMod::LaunchKernel<int16_t>},
   {KernelAttr()
      .AddInputAttr(kNumberTypeInt32)
      .AddInputAttr(kNumberTypeInt32)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
      .AddOutputAttr(kNumberTypeBool),
    &IsCloseCpuKernelMod::LaunchKernel<int32_t>},
   {KernelAttr()
      .AddInputAttr(kNumberTypeInt64)
      .AddInputAttr(kNumberTypeInt64)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
      .AddOutputAttr(kNumberTypeBool),
    &IsCloseCpuKernelMod::LaunchKernel<int64_t>},
   {KernelAttr()
      .AddInputAttr(kNumberTypeFloat16)
      .AddInputAttr(kNumberTypeFloat16)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
      .AddOutputAttr(kNumberTypeBool),
    &IsCloseCpuKernelMod::LaunchKernel<float16>},
   {KernelAttr()
      .AddInputAttr(kNumberTypeFloat32)
      .AddInputAttr(kNumberTypeFloat32)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
      .AddOutputAttr(kNumberTypeBool),
    &IsCloseCpuKernelMod::LaunchKernel<float>},
   {KernelAttr()
      .AddInputAttr(kNumberTypeFloat64)
      .AddInputAttr(kNumberTypeFloat64)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
      .AddOutputAttr(kNumberTypeBool),
    &IsCloseCpuKernelMod::LaunchKernel<double>},
   {KernelAttr()
      .AddInputAttr(kNumberTypeUInt8)
      .AddInputAttr(kNumberTypeUInt8)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
      .AddOutputAttr(kNumberTypeBool),
    &IsCloseCpuKernelMod::LaunchKernel<uint8_t>},
   {KernelAttr()
      .AddInputAttr(kNumberTypeUInt16)
      .AddInputAttr(kNumberTypeUInt16)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
      .AddOutputAttr(kNumberTypeBool),
    &IsCloseCpuKernelMod::LaunchKernel<uint16_t>},
   {KernelAttr()
      .AddInputAttr(kNumberTypeUInt32)
      .AddInputAttr(kNumberTypeUInt32)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
      .AddOutputAttr(kNumberTypeBool),
    &IsCloseCpuKernelMod::LaunchKernel<uint32_t>},
   {KernelAttr()
      .AddInputAttr(kNumberTypeUInt64)
      .AddInputAttr(kNumberTypeUInt64)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
      .AddOutputAttr(kNumberTypeBool),
    &IsCloseCpuKernelMod::LaunchKernel<uint64_t>},

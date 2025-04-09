@@ -17,7 +17,9 @@
 #include "kernel/gpu/nn/batch_norm_grad_grad_gpu_kernel.h"
 
 #include <algorithm>
+
 #include "common/kernel_utils.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -45,7 +47,7 @@ int BatchNormGradGradGpuKernelMod::Resize(const std::vector<KernelTensor *> &inp
   }
 
   is_training_ = inputs[kIndex8]->GetValueWithCheck<bool>();
-  epsilon_ = inputs[kIndex9]->GetValueWithCheck<float>();
+  epsilon_ = inputs[kIndex9]->GetValueWithCheck<pyfloat>();
   auto format = static_cast<mindspore::Format>(inputs[kIndex10]->GetValueWithCheck<int64_t>());
   format_ = format == NCHW ? DataFormat::NCHW : DataFormat::NHWC;
 
@@ -155,7 +157,7 @@ std::vector<KernelAttr> BatchNormGradGradGpuKernelMod::GetOpSupport() {
     .AddInputAttr(kNumberTypeFloat32)                    \
     .AddInputAttr(kNumberTypeFloat32)                    \
     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)    \
-    .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32) \
+    .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat) \
     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)   \
     .AddOutputAttr(MS)                                   \
     .AddOutputAttr(MS)                                   \

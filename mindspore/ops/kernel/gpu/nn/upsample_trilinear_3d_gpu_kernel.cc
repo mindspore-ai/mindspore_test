@@ -71,9 +71,9 @@ int UpsampleTrilinear3DGpuKernelMod::Resize(const std::vector<KernelTensor *> &i
   MS_EXCEPTION_IF_NULL(type);
   auto output_size_none = type->isa<TypeNone>();
   if (!output_size_none) {
-    scales_ = std::vector<float>(kIndex3, kValueZero);
+    scales_ = std::vector<pyfloat>(kIndex3, kValueZero);
   } else {
-    auto scales_opt = inputs[kIndex2]->GetOptionalValueWithCheck<std::vector<float>>();
+    auto scales_opt = inputs[kIndex2]->GetOptionalValueWithCheck<std::vector<pyfloat>>();
     bool scales_none = !scales_opt.has_value();
     if (scales_none) {
       MS_LOG(ERROR) << "For '" << kernel_name_ << "', output_size or scales should be specified.";
@@ -109,7 +109,7 @@ bool UpsampleTrilinear3DGpuKernelMod::LaunchKernel(const std::vector<KernelTenso
   std::make_pair(KernelAttr()                                                  \
                    .AddInputAttr(M_S)                                          \
                    .AddOptionalInputAttr(kObjectTypeTuple, kNumberTypeInt64)   \
-                   .AddOptionalInputAttr(kObjectTypeTuple, kNumberTypeFloat32) \
+                   .AddOptionalInputAttr(kObjectTypeTuple, kNumberTypePyFloat) \
                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)           \
                    .AddOutputAttr(M_S),                                        \
                  &UpsampleTrilinear3DGpuKernelMod::LaunchKernel<S, T>)

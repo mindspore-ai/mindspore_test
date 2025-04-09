@@ -35,9 +35,10 @@ class EluExtAscend : public AclnnKernelMod {
 
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
-  ScalarPtr alpha_ = nullptr;
-  ScalarPtr scale_ = nullptr;
-  ScalarPtr input_scale_ = nullptr;
+
+  ScalarPtr alpha_{nullptr};
+  const ScalarPtr scale_ = std::make_shared<Int64Imm>(1);
+  const ScalarPtr input_scale_ = std::make_shared<Int64Imm>(1);
 };
 }  // namespace elu_ext
 }  // namespace kernel

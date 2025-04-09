@@ -46,8 +46,8 @@ tensor::TensorPtr EluExtAscendCustomize(const std::shared_ptr<OpRunner> &op, con
     // Malloc for output tensors
     PyBoostUtils::MallocOpOutputs(device_context, outputs);
 
-    static const ScalarPtr scale = std::make_shared<FP32Imm>(1.f);
-    static const ScalarPtr input_scale = std::make_shared<FP32Imm>(1.f);
+    static const ScalarPtr scale = std::make_shared<Int64Imm>(1);
+    static const ScalarPtr input_scale = std::make_shared<Int64Imm>(1);
     LAUNCH_ACLNN(aclnnElu, device_context, op->stream_id(), input, alpha, scale, input_scale, outputs[0]);
     MS_LOG(DEBUG) << "Run device task EluExt end";
   }));

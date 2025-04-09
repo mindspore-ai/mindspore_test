@@ -127,12 +127,7 @@ enum class LshProjectionType : int64_t {
   DENSE = 2,
 };
 
-enum PaddingMode : int64_t {
-  CONSTANT = 0,
-  REFLECT = 1,
-  SYMMETRIC = 2,
-  MODE_RESERVED = 3,
-};
+enum PaddingMode : int64_t { CONSTANT = 0, REFLECT = 1, SYMMETRIC = 2, MODE_RESERVED = 3, EDGE = 4, CIRCULAR = 5 };
 
 enum PoolMode : int64_t {
   MAX_POOLING = 0,
@@ -150,8 +145,10 @@ enum Device : int64_t {
   DEVICE_CPU_LOWER = 3,
 };
 
-// float is a float64 in python. But for some historical reason, python float is converted to float32 in
-using pyfloat = float;
-using pyint = int32_t;
+// float is a float64 in python. But for some historical reason, ge float is float32
+using pyfloat = double;
+using pyint = int64_t;
+using gefloat = float;
+using geint = int32_t;
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_MINDAPI_BASE_TYPES_H_

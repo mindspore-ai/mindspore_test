@@ -21,7 +21,6 @@
 #include <memory>
 #include <functional>
 #include <map>
-#include "mindspore/ops/infer/apply_adadelta.h"
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "common/ms_factory.h"
 

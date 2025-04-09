@@ -33,6 +33,7 @@
 #include "ops_utils/op_utils.h"
 #include "abstract/dshape.h"
 #include "utils/ms_context.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
 
@@ -40,22 +41,21 @@ namespace mindspore::expander::bprop {
 namespace {
 double PowFetchScalarValue(const ValuePtr &value_ptr, const std::string &arg_name, const std::string &op_name) {
   using value_func = std::function<double(const ValuePtr &value_ptr)>;
-  const std::unordered_map<TypeId, value_func> func_map{{kNumberTypeBool,
-                                                         [](const ValuePtr &value_ptr) -> double {
-                                                           auto value_opt = mindspore::GetScalarValue<bool>(value_ptr);
-                                                           return static_cast<double>(value_opt.value());
-                                                         }},
-                                                        {kNumberTypeInt64,
-                                                         [](const ValuePtr &value_ptr) -> double {
-                                                           auto value_opt =
-                                                             mindspore::GetScalarValue<int64_t>(value_ptr);
-                                                           return static_cast<double>(value_opt.value());
-                                                         }},
-                                                        {kNumberTypeFloat32, [](const ValuePtr &value_ptr) -> double {
-                                                           auto fp32imm_ptr = value_ptr->cast<FP32ImmPtr>();
-                                                           MS_EXCEPTION_IF_NULL(fp32imm_ptr);
-                                                           return ops::GetDoubleValueFromScalar(fp32imm_ptr);
-                                                         }}};
+  const std::unordered_map<TypeId, value_func> func_map{
+    {kNumberTypeBool,
+     [](const ValuePtr &value_ptr) -> double {
+       auto value_opt = mindspore::GetScalarValue<bool>(value_ptr);
+       return static_cast<double>(value_opt.value());
+     }},
+    {kNumberTypeInt64,
+     [](const ValuePtr &value_ptr) -> double {
+       auto value_opt = mindspore::GetScalarValue<int64_t>(value_ptr);
+       return static_cast<double>(value_opt.value());
+     }},
+    {kNumberTypeFloat64, [](const ValuePtr &value_ptr) -> double {
+       auto value_opt = mindspore::GetScalarValue<double>(value_ptr);
+       return value_opt.value();
+     }}};
 
   auto type_id = value_ptr->type()->type_id();
   auto it = func_map.find(type_id);
@@ -63,6 +63,27 @@ double PowFetchScalarValue(const ValuePtr &value_ptr, const std::string &arg_nam
     MS_LOG_EXCEPTION << "For " << op_name << ", got an invalid '" << arg_name << "' type: " << TypeIdToString(type_id);
   }
   return it->second(value_ptr);
+}
+
+std::optional<pyfloat> GetAlpha(const NodePtr &alpha) {
+  auto alpha_value = alpha->BuildValue();
+  if (alpha_value->isa<Int64Imm>()) {
+    auto imm_int64_ptr = alpha_value->cast_ptr<Int64Imm>();
+    MS_EXCEPTION_IF_NULL(imm_int64_ptr);
+    auto imm_int64 = imm_int64_ptr->value();
+    return std::make_optional(imm_int64);
+  } else if (alpha_value->isa<FP32Imm>()) {
+    auto imm_fp32_ptr = alpha_value->cast_ptr<FP32Imm>();
+    MS_EXCEPTION_IF_NULL(imm_fp32_ptr);
+    auto imm_fp32 = imm_fp32_ptr->value();
+    return std::make_optional(imm_fp32);
+  } else if (alpha_value->isa<FP64Imm>()) {
+    auto imm_fp64_ptr = alpha_value->cast_ptr<FP64Imm>();
+    MS_EXCEPTION_IF_NULL(imm_fp64_ptr);
+    auto imm_fp64 = imm_fp64_ptr->value();
+    return std::make_optional(imm_fp64);
+  }
+  return std::nullopt;
 }
 }  // namespace
 NodePtrList AddnGradFunc(BpropBuilder *ib) {
@@ -169,6 +190,9 @@ NodePtr MaybeMultiply(BpropBuilder *ib, const TypePtr &input_type, const NodePtr
       is_one = s_value == 1;
     } else if (s_type == kNumberTypeFloat32) {
       auto s_value = GetValue<float>(s_ptr);
+      is_one = s_value == 1.0f;
+    } else if (s_type == kNumberTypeFloat64) {
+      auto s_value = GetValue<double>(s_ptr);
       is_one = s_value == 1.0;
     } else if (s_type == kNumberTypeBool) {
       auto s_value = GetValue<bool>(s_ptr);
@@ -306,23 +330,6 @@ NodePtrList BpropAddcCommon(BpropBuilder *ib, const std::string &op_name) {
   return {dinput_data, dx1, dx2, dvalue};
 }
 
-std::optional<float> GetAlpha(const NodePtr &alpha) {
-  auto alpha_value = alpha->BuildValue();
-  if (alpha_value->isa<Int64Imm>()) {
-    auto imm_int64_ptr = alpha_value->cast_ptr<Int64Imm>();
-    MS_EXCEPTION_IF_NULL(imm_int64_ptr);
-    auto imm_int64 = imm_int64_ptr->value();
-    return std::make_optional(imm_int64);
-  } else if (alpha_value->isa<FP32Imm>()) {
-    auto imm_fp32_ptr = alpha_value->cast_ptr<FP32Imm>();
-    MS_EXCEPTION_IF_NULL(imm_fp32_ptr);
-    auto imm_fp32 = imm_fp32_ptr->value();
-    return std::make_optional(imm_fp32);
-  }
-
-  return std::nullopt;
-}
-
 ShapeArray ReduceStdShapeFunc(const ShapeVector &x_shape, const ShapeVector &axis) {
   ShapeVector new_axis = axis;
   if (new_axis.empty() && !x_shape.empty()) {
@@ -441,7 +448,7 @@ NodePtrList FminFmaxGrad(BpropBuilder *ib, bool if_fmin) {
 
 NodePtr StdGrad(BpropBuilder *ib, const NodePtr &input, const NodePtr &axis, const NodePtr &correction,
                 const NodePtr &keep_dims, const NodePtr &out, const NodePtr &dout) {
-  auto grad_var = ib->Emit("Div", {dout, ib->Emit("Muls", {out, ib->Value<float>(2.0)})});
+  auto grad_var = ib->Emit("Div", {dout, ib->Emit("Muls", {out, ib->Value<pyfloat>(2.0)})});
   auto equal_zero = ib->Equal(out, ib->Tensor(0, ib->GetDtype(out)));
   grad_var = ib->MaskedFill(grad_var, equal_zero, ib->Tensor(0.0, ib->GetDtype(grad_var)));
 
@@ -1579,7 +1586,7 @@ REG_BPROP_BUILDER("InplaceSubExt").SetUnusedInputs({i0, i1, i3}).SetBody(BODYFUN
       auto tolerance = 1e-9;
       auto alpha_dtype = ib->GetDtypeId(alpha);
       if ((alpha_dtype == kNumberTypeInt64 && alpha_opt.value() == 1) ||
-          (alpha_dtype == kNumberTypeFloat32 && fabs(alpha_opt.value() - 1) < tolerance)) {
+          (alpha_dtype == kNumberTypePyFloat && fabs(alpha_opt.value() - 1) < tolerance)) {
         other_bc = ib->Neg(dout);
       } else {
         other_bc = ib->Neg(dout);
@@ -3925,9 +3932,10 @@ REG_BPROP_BUILDER("LerpScalar").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
   auto end = ib->GetInput(kIndex1);
   auto weight = ib->GetInput(kIndex2);
   auto dout = ib->GetInput(kIndex4);
-  auto val = GetScalarValue<float>(weight->BuildValue());
-  NodePtr dstart = val.has_value() ? ib->Emit("Muls", {dout, ib->Value<float>(1.0 - static_cast<double>(val.value()))})
-                                   : ib->Emit("Muls", {dout, ib->ScalarSub(ib->Value<float>(1.0), weight)});
+  auto val = GetScalarValue<pyfloat>(weight->BuildValue());
+  NodePtr dstart = val.has_value()
+                     ? ib->Emit("Muls", {dout, ib->Value<pyfloat>(1.0 - static_cast<double>(val.value()))})
+                     : ib->Emit("Muls", {dout, ib->ScalarSub(ib->Value<pyfloat>(1.0), weight)});
   auto dend = ib->Emit("Muls", {dout, weight});
   auto tmp = BinopGradCommon(ib, start, end, dstart, dend);
   dstart = tmp[0];
@@ -4126,10 +4134,9 @@ REG_BPROP_BUILDER("LpNorm").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Renorm").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto p = static_cast<int64_t>(GetValue<float>(ib->GetAttr("p")));
-  float ext = 1e-07;
+  auto p = static_cast<int64_t>(GetValue<pyfloat>(ib->GetAttr("p")));
   auto dim = GetIntList(ib->GetAttr("dim"))[0];
-  auto max_norm = GetValue<float>(ib->GetAttr("maxnorm"));
+  auto max_norm = GetValue<pyfloat>(ib->GetAttr("maxnorm"));
   auto input_x = ib->GetInput(kIndex0);
   auto dout = ib->GetInput(kIndex2);
   auto shape = ib->GetShape(input_x);
@@ -4144,7 +4151,7 @@ REG_BPROP_BUILDER("Renorm").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
                        {{"keep_dims", MakeValue(true)},
                         {"axis", MakeValue(dims)},
                         {"p", MakeValue<int64_t>(p)},
-                        {"epsilon", MakeValue<float>(1e-12)}});
+                        {"epsilon", MakeValue<pyfloat>(1e-12)}});
   norm = ib->BroadcastToView(norm, input_x);
   auto grad_out = ib->Mul(input_x, dout);
   grad_out = ib->ReduceSum(grad_out, dims, true);
@@ -4166,6 +4173,7 @@ REG_BPROP_BUILDER("Renorm").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
     norm_bp = ib->Mul(input_scaled, scale_v);
   }
 
+  float ext = 1e-07;
   auto v = ib->Add(norm, ib->Tensor(ext, ib->GetDtype(norm)));
   auto inv_norm = ib->Reciprocal(v);
   auto grad_norm = ib->Mul(ib->Mul(ib->Tensor(max_norm, ib->GetDtype(inv_norm)), inv_norm),
@@ -5571,7 +5579,7 @@ REG_BPROP_BUILDER("Std").SetBody(BODYFUNC(ib) {
   auto out = ib->GetInput(kIndex4);
   auto dout = ib->GetInput(kIndex5);
 
-  auto grad_var = ib->Emit("Div", {dout, ib->Emit("Muls", {out, ib->Value<float>(2.0)})});
+  auto grad_var = ib->Emit("Div", {dout, ib->Emit("Muls", {out, ib->Value<pyfloat>(2.0)})});
   auto equal_zero = ib->Equal(out, ib->Tensor(0, ib->GetDtype(out)));
   grad_var = ib->MaskedFill(grad_var, equal_zero, ib->Tensor(0.0, ib->GetDtype(grad_var)));
 

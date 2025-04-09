@@ -20,6 +20,7 @@
 #include "ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace ops {
@@ -42,7 +43,7 @@ template <typename T>
 ValuePtr LogImpl(const ValuePtr &x_value) {
   MS_EXCEPTION_IF_NULL(x_value);
   auto x = GetValue<T>(x_value);
-  return MakeValue(static_cast<float>(log(x)));
+  return MakeValue(static_cast<pyfloat>(log(x)));
 }
 
 template <typename T>

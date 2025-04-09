@@ -13,3 +13,5 @@ lerp_scalar:
   dispatch:
     enable: True
     Ascend: LerpScalarAscend
+    CPU: None
+    GPU: None

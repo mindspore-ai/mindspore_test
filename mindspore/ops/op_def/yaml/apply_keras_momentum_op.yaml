@@ -1,0 +1,35 @@
+#operator apply_keras_momentum
+apply_keras_momentum:
+    args:
+        var:
+            dtype: tensor
+        accum:
+            dtype: tensor
+        lr:
+            dtype: tensor
+            type_cast: float
+        grad:
+            dtype: tensor
+        momentum:
+            dtype: tensor
+            type_cast: float
+        use_locking:
+            dtype: bool
+            default: False
+            prim_init: True
+        use_nesterov:
+            dtype: bool
+            default: False
+            prim_init: True
+    returns:
+        var:
+            dtype: tensor
+        accum:
+            dtype: tensor
+    args_signature:
+        rw_write: var, accum
+        dtype_group: (var, accum, grad), (lr), (momentum)
+    labels:
+        side_effect_mem: True
+    function:
+        disable: True

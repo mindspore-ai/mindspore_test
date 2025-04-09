@@ -15,8 +15,12 @@
  */
 
 #include "kernel/gpu/math/isclose_gpu_kernel.h"
+
 #include <utility>
 #include <map>
+
+#include "mindspore/core/include/mindapi/base/types.h"
+
 namespace mindspore {
 namespace kernel {
 constexpr size_t MAX_DIMS = 7;
@@ -33,64 +37,64 @@ const std::vector<std::pair<KernelAttr, IsClosePtrCreatorFunc>> kernel_attr = {
   {KernelAttr()
      .AddInputAttr(kNumberTypeFloat16)
      .AddInputAttr(kNumberTypeFloat16)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
      .AddOutputAttr(kNumberTypeBool),
    CreateIsCloseKernelPtr<half>},
   {KernelAttr()
      .AddInputAttr(kNumberTypeFloat32)
      .AddInputAttr(kNumberTypeFloat32)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
      .AddOutputAttr(kNumberTypeBool),
    CreateIsCloseKernelPtr<float>},
   {KernelAttr()
      .AddInputAttr(kNumberTypeFloat64)
      .AddInputAttr(kNumberTypeFloat64)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
      .AddOutputAttr(kNumberTypeBool),
    CreateIsCloseKernelPtr<double>},
   {KernelAttr()
      .AddInputAttr(kNumberTypeInt8)
      .AddInputAttr(kNumberTypeInt8)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
      .AddOutputAttr(kNumberTypeBool),
    CreateIsCloseKernelPtr<int8_t>},
   {KernelAttr()
      .AddInputAttr(kNumberTypeInt16)
      .AddInputAttr(kNumberTypeInt16)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
      .AddOutputAttr(kNumberTypeBool),
    CreateIsCloseKernelPtr<int16_t>},
   {KernelAttr()
      .AddInputAttr(kNumberTypeInt32)
      .AddInputAttr(kNumberTypeInt32)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
      .AddOutputAttr(kNumberTypeBool),
    CreateIsCloseKernelPtr<int32_t>},
   {KernelAttr()
      .AddInputAttr(kNumberTypeInt64)
      .AddInputAttr(kNumberTypeInt64)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
      .AddOutputAttr(kNumberTypeBool),
    CreateIsCloseKernelPtr<int64_t>},
   {KernelAttr()
      .AddInputAttr(kNumberTypeUInt8)
      .AddInputAttr(kNumberTypeUInt8)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
      .AddOutputAttr(kNumberTypeBool),
    CreateIsCloseKernelPtr<uint8_t>}};
@@ -165,8 +169,8 @@ int IsCloseGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const
       return KRET_UNKNOWN_SHAPE;
     }
   }
-  attr_ptr_->rtol = inputs[kIndex2]->GetValueWithCheck<float>();
-  attr_ptr_->atol = inputs[kIndex3]->GetValueWithCheck<float>();
+  attr_ptr_->rtol = inputs[kIndex2]->GetValueWithCheck<pyfloat>();
+  attr_ptr_->atol = inputs[kIndex3]->GetValueWithCheck<pyfloat>();
   attr_ptr_->equal_nan = inputs[kIndex4]->GetValueWithCheck<bool>();
   helper_ptr_->SetKernelParam(attr_ptr_);
 

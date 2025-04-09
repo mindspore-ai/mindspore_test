@@ -48,6 +48,7 @@ class FusedCastAdamWeightDecayCpuKernelMod : public NativeCpuKernelMod {
                                                            .AddInputAttr(kNumberTypeFloat32)
                                                            .AddInputAttr(kNumberTypeFloat16)
                                                            .AddInputAttr(kNumberTypeFloat32)
+                                                           .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                                            .AddOutputAttr(kNumberTypeFloat32)
                                                            .AddOutputAttr(kNumberTypeFloat32)
                                                            .AddOutputAttr(kNumberTypeFloat32),
@@ -62,6 +63,7 @@ class FusedCastAdamWeightDecayCpuKernelMod : public NativeCpuKernelMod {
                                                            .AddInputAttr(kNumberTypeFloat32)
                                                            .AddInputAttr(kNumberTypeFloat32)
                                                            .AddInputAttr(kNumberTypeFloat32)
+                                                           .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                                            .AddOutputAttr(kNumberTypeFloat32)
                                                            .AddOutputAttr(kNumberTypeFloat32)
                                                            .AddOutputAttr(kNumberTypeFloat32),
@@ -76,6 +78,7 @@ class FusedCastAdamWeightDecayCpuKernelMod : public NativeCpuKernelMod {
                                                            .AddInputAttr(kNumberTypeFloat32)
                                                            .AddInputAttr(kNumberTypeFloat32)
                                                            .AddInputAttr(kNumberTypeFloat32)
+                                                           .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                                            .AddOutputAttr(kNumberTypeFloat16)
                                                            .AddOutputAttr(kNumberTypeFloat32)
                                                            .AddOutputAttr(kNumberTypeFloat32),
@@ -90,6 +93,7 @@ class FusedCastAdamWeightDecayCpuKernelMod : public NativeCpuKernelMod {
                                                            .AddInputAttr(kNumberTypeFloat32)
                                                            .AddInputAttr(kNumberTypeFloat16)
                                                            .AddInputAttr(kNumberTypeFloat32)
+                                                           .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                                            .AddOutputAttr(kNumberTypeFloat16)
                                                            .AddOutputAttr(kNumberTypeFloat32)
                                                            .AddOutputAttr(kNumberTypeFloat32)};

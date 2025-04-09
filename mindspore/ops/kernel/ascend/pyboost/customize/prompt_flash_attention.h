@@ -33,7 +33,7 @@ tensor::TensorPtr PromptFlashAttentionAscendCustomize(
   const std::optional<ValueTuplePtr> &actual_seq_qlen_kv, const std::optional<TensorPtr> &pse_shift,
   const std::optional<TensorPtr> &deq_scale1, const std::optional<TensorPtr> &quant_scale1,
   const std::optional<TensorPtr> &deq_scale2, const std::optional<TensorPtr> &quant_scale2,
-  const std::optional<TensorPtr> &quant_offset2, const Int64ImmPtr num_heads, const FP32ImmPtr scale_value,
+  const std::optional<TensorPtr> &quant_offset2, const Int64ImmPtr num_heads, const FP64ImmPtr scale_value,
   const Int64ImmPtr pre_tokens, const Int64ImmPtr next_tokens, const Int64ImmPtr input_layout,
   const Int64ImmPtr num_key_value_heads, const Int64ImmPtr sparse_mode, const Int64ImmPtr inner_precise);
 }  // namespace pyboost

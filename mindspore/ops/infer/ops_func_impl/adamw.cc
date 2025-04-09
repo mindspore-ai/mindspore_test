@@ -108,14 +108,14 @@ TypePtr AdamWFuncImpl::InferType(const PrimitivePtr &prim, const std::vector<Abs
   type_dict_m_v.emplace("v", v_type);
   CheckAndConvertUtils::CheckTensorTypeSame(type_dict_m_v, number_type, prim_name);
 
-  std::set<TypePtr> float32_set = {kFloat32};
   std::map<std::string, TypePtr> type_dict1;
   type_dict1.emplace("lr", lr_type);
   type_dict1.emplace("beta1", beta1_type);
   type_dict1.emplace("beta2", beta2_type);
   type_dict1.emplace("decay", decay_type);
   type_dict1.emplace("eps", epsilon_type);
-  CheckAndConvertUtils::CheckScalarOrTensorTypesSame(type_dict1, float32_set, prim_name, true);
+  CheckAndConvertUtils::CheckScalarOrTensorTypesSame(type_dict1, {kFloat64}, prim_name, true);
+
   return std::make_shared<Tuple>(std::vector<TypePtr>{var_type, m_type, v_type});
 }
 }  // namespace ops

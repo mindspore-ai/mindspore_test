@@ -42,7 +42,7 @@ class HShrinkCpuKernelMod : public NativeCpuKernelMod {
  private:
   size_t input_elements_ = 0;
   size_t unit_size_ = 0;
-  float lambd = 0.5;
+  float lambd_ = 0.5;
 };
 }  // namespace hshrink_cpu
 }  // namespace kernel

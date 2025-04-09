@@ -18,6 +18,7 @@
 #include <memory>
 #include <vector>
 #include "backend/common/graph_kernel/expanders/op_desc_registry.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore::graphkernel::expanders {
 class LayerNormGrad : public OpDesc {
@@ -50,9 +51,9 @@ class LayerNormGrad : public OpDesc {
     auto mean = inputs[3];
     auto gamma = inputs[4];
 
-    float epsilon = 1e-12;
+    pyfloat epsilon = 1e-12;
     if (attrs_.find("epsilon") != attrs_.end()) {
-      epsilon = GetValue<float>(attrs_["epsilon"]);
+      epsilon = GetValue<pyfloat>(attrs_["epsilon"]);
     }
 
     auto ori_type = x->type;

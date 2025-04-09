@@ -27,23 +27,39 @@ namespace kernel {
 namespace sparse_apply_centered_rms_prop_cpu {
 using namespace sparse_optimizer_cpu;
 namespace {
-constexpr size_t kSparseApplyCenteredRMSPropInputsNum = 10;
+constexpr size_t kSparseApplyCenteredRMSPropInputsNum = 11;
 constexpr size_t kSparseApplyCenteredRMSPropOutputsNum = 1;
 using KernelRunFunc = SparseApplyCenteredRMSPropCpuKernelMod::KernelRunFunc;
 
-#define SPARSE_APPLY_CENTERED_RMS_PROP_ADD_KERNEL(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11) \
-  KernelAttr()                                                                                  \
-    .AddInputAttr(kNumberType##t1)                                                              \
-    .AddInputAttr(kNumberType##t2)                                                              \
-    .AddInputAttr(kNumberType##t3)                                                              \
-    .AddInputAttr(kNumberType##t4)                                                              \
-    .AddInputAttr(kNumberType##t5)                                                              \
-    .AddInputAttr(kNumberType##t6)                                                              \
-    .AddInputAttr(kNumberType##t7)                                                              \
-    .AddInputAttr(kNumberType##t8)                                                              \
-    .AddInputAttr(kNumberType##t9)                                                              \
-    .AddInputAttr(kNumberType##t10)                                                             \
-    .AddOutputAttr(kNumberType##t11)
+#define SPARSE_APPLY_CENTERED_RMS_PROP_ADD_KERNEL(T, t)                              \
+  std::make_pair(KernelAttr()                                                        \
+                   .AddInputAttr(kNumberType##T)                                     \
+                   .AddInputAttr(kNumberType##T)                                     \
+                   .AddInputAttr(kNumberType##T)                                     \
+                   .AddInputAttr(kNumberType##T)                                     \
+                   .AddInputAttr(kNumberType##T)                                     \
+                   .AddInputAttr(kNumberType##T)                                     \
+                   .AddInputAttr(kNumberType##T)                                     \
+                   .AddInputAttr(kNumberType##T)                                     \
+                   .AddInputAttr(kNumberType##T)                                     \
+                   .AddInputAttr(kNumberTypeInt32)                                   \
+                   .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)                 \
+                   .AddOutputAttr(kNumberType##T),                                   \
+                 &SparseApplyCenteredRMSPropCpuKernelMod::LaunchKernel<int32_t, t>), \
+    std::make_pair(KernelAttr()                                                      \
+                     .AddInputAttr(kNumberType##T)                                   \
+                     .AddInputAttr(kNumberType##T)                                   \
+                     .AddInputAttr(kNumberType##T)                                   \
+                     .AddInputAttr(kNumberType##T)                                   \
+                     .AddInputAttr(kNumberType##T)                                   \
+                     .AddInputAttr(kNumberType##T)                                   \
+                     .AddInputAttr(kNumberType##T)                                   \
+                     .AddInputAttr(kNumberType##T)                                   \
+                     .AddInputAttr(kNumberType##T)                                   \
+                     .AddInputAttr(kNumberTypeInt64)                                 \
+                     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)               \
+                     .AddOutputAttr(kNumberType##T),                                 \
+                   &SparseApplyCenteredRMSPropCpuKernelMod::LaunchKernel<int64_t, t>)
 }  // namespace
 
 bool SparseApplyCenteredRMSPropCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
@@ -198,70 +214,17 @@ bool SparseApplyCenteredRMSPropCpuKernelMod::LaunchKernel(const std::vector<kern
 
 const std::vector<std::pair<KernelAttr, KernelRunFunc>> &SparseApplyCenteredRMSPropCpuKernelMod::GetFuncList() const {
   static const std::vector<std::pair<KernelAttr, KernelRunFunc>> func_list = {
-    {SPARSE_APPLY_CENTERED_RMS_PROP_ADD_KERNEL(Int8, Int8, Int8, Int8, Int8, Int8, Int8, Int8, Int8, Int32, Int8),
-     &SparseApplyCenteredRMSPropCpuKernelMod::LaunchKernel<int32_t, int8_t>},
-    {SPARSE_APPLY_CENTERED_RMS_PROP_ADD_KERNEL(Int16, Int16, Int16, Int16, Int16, Int16, Int16, Int16, Int16, Int32,
-                                               Int16),
-     &SparseApplyCenteredRMSPropCpuKernelMod::LaunchKernel<int32_t, int16_t>},
-    {SPARSE_APPLY_CENTERED_RMS_PROP_ADD_KERNEL(Int32, Int32, Int32, Int32, Int32, Int32, Int32, Int32, Int32, Int32,
-                                               Int32),
-     &SparseApplyCenteredRMSPropCpuKernelMod::LaunchKernel<int32_t, int32_t>},
-    {SPARSE_APPLY_CENTERED_RMS_PROP_ADD_KERNEL(Int64, Int64, Int64, Int64, Int64, Int64, Int64, Int64, Int64, Int32,
-                                               Int64),
-     &SparseApplyCenteredRMSPropCpuKernelMod::LaunchKernel<int32_t, int64_t>},
-    {SPARSE_APPLY_CENTERED_RMS_PROP_ADD_KERNEL(UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, Int32,
-                                               UInt8),
-     &SparseApplyCenteredRMSPropCpuKernelMod::LaunchKernel<int32_t, uint8_t>},
-    {SPARSE_APPLY_CENTERED_RMS_PROP_ADD_KERNEL(UInt16, UInt16, UInt16, UInt16, UInt16, UInt16, UInt16, UInt16, UInt16,
-                                               Int32, UInt16),
-     &SparseApplyCenteredRMSPropCpuKernelMod::LaunchKernel<int32_t, uint16_t>},
-    {SPARSE_APPLY_CENTERED_RMS_PROP_ADD_KERNEL(UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32,
-                                               Int32, UInt32),
-     &SparseApplyCenteredRMSPropCpuKernelMod::LaunchKernel<int32_t, uint32_t>},
-    {SPARSE_APPLY_CENTERED_RMS_PROP_ADD_KERNEL(UInt64, UInt64, UInt64, UInt64, UInt64, UInt64, UInt64, UInt64, UInt64,
-                                               Int32, UInt64),
-     &SparseApplyCenteredRMSPropCpuKernelMod::LaunchKernel<int32_t, uint64_t>},
-    {SPARSE_APPLY_CENTERED_RMS_PROP_ADD_KERNEL(Float16, Float16, Float16, Float16, Float16, Float16, Float16, Float16,
-                                               Float16, Int32, Float16),
-     &SparseApplyCenteredRMSPropCpuKernelMod::LaunchKernel<int32_t, float16>},
-    {SPARSE_APPLY_CENTERED_RMS_PROP_ADD_KERNEL(Float32, Float32, Float32, Float32, Float32, Float32, Float32, Float32,
-                                               Float32, Int32, Float32),
-     &SparseApplyCenteredRMSPropCpuKernelMod::LaunchKernel<int32_t, float>},
-    {SPARSE_APPLY_CENTERED_RMS_PROP_ADD_KERNEL(Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64,
-                                               Float64, Int32, Float64),
-     &SparseApplyCenteredRMSPropCpuKernelMod::LaunchKernel<int32_t, double>},
-    {SPARSE_APPLY_CENTERED_RMS_PROP_ADD_KERNEL(Int8, Int8, Int8, Int8, Int8, Int8, Int8, Int8, Int8, Int32, Int8),
-     &SparseApplyCenteredRMSPropCpuKernelMod::LaunchKernel<int64_t, int8_t>},
-    {SPARSE_APPLY_CENTERED_RMS_PROP_ADD_KERNEL(Int16, Int16, Int16, Int16, Int16, Int16, Int16, Int16, Int16, Int64,
-                                               Int16),
-     &SparseApplyCenteredRMSPropCpuKernelMod::LaunchKernel<int64_t, int16_t>},
-    {SPARSE_APPLY_CENTERED_RMS_PROP_ADD_KERNEL(Int32, Int32, Int32, Int32, Int32, Int32, Int32, Int32, Int32, Int64,
-                                               Int32),
-     &SparseApplyCenteredRMSPropCpuKernelMod::LaunchKernel<int64_t, int32_t>},
-    {SPARSE_APPLY_CENTERED_RMS_PROP_ADD_KERNEL(Int64, Int64, Int64, Int64, Int64, Int64, Int64, Int64, Int64, Int64,
-                                               Int64),
-     &SparseApplyCenteredRMSPropCpuKernelMod::LaunchKernel<int64_t, int64_t>},
-    {SPARSE_APPLY_CENTERED_RMS_PROP_ADD_KERNEL(UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, Int64,
-                                               UInt8),
-     &SparseApplyCenteredRMSPropCpuKernelMod::LaunchKernel<int64_t, uint8_t>},
-    {SPARSE_APPLY_CENTERED_RMS_PROP_ADD_KERNEL(UInt16, UInt16, UInt16, UInt16, UInt16, UInt16, UInt16, UInt16, UInt16,
-                                               Int64, UInt16),
-     &SparseApplyCenteredRMSPropCpuKernelMod::LaunchKernel<int64_t, uint16_t>},
-    {SPARSE_APPLY_CENTERED_RMS_PROP_ADD_KERNEL(UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32,
-                                               Int64, UInt32),
-     &SparseApplyCenteredRMSPropCpuKernelMod::LaunchKernel<int64_t, uint32_t>},
-    {SPARSE_APPLY_CENTERED_RMS_PROP_ADD_KERNEL(UInt64, UInt64, UInt64, UInt64, UInt64, UInt64, UInt64, UInt64, UInt64,
-                                               Int64, UInt64),
-     &SparseApplyCenteredRMSPropCpuKernelMod::LaunchKernel<int64_t, uint64_t>},
-    {SPARSE_APPLY_CENTERED_RMS_PROP_ADD_KERNEL(Float16, Float16, Float16, Float16, Float16, Float16, Float16, Float16,
-                                               Float16, Int64, Float16),
-     &SparseApplyCenteredRMSPropCpuKernelMod::LaunchKernel<int64_t, float16>},
-    {SPARSE_APPLY_CENTERED_RMS_PROP_ADD_KERNEL(Float32, Float32, Float32, Float32, Float32, Float32, Float32, Float32,
-                                               Float32, Int64, Float32),
-     &SparseApplyCenteredRMSPropCpuKernelMod::LaunchKernel<int64_t, float>},
-    {SPARSE_APPLY_CENTERED_RMS_PROP_ADD_KERNEL(Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64,
-                                               Float64, Int64, Float64),
-     &SparseApplyCenteredRMSPropCpuKernelMod::LaunchKernel<int64_t, double>}};
+    SPARSE_APPLY_CENTERED_RMS_PROP_ADD_KERNEL(Int8, int8_t),
+    SPARSE_APPLY_CENTERED_RMS_PROP_ADD_KERNEL(Int16, int16_t),
+    SPARSE_APPLY_CENTERED_RMS_PROP_ADD_KERNEL(Int32, int32_t),
+    SPARSE_APPLY_CENTERED_RMS_PROP_ADD_KERNEL(Int64, int64_t),
+    SPARSE_APPLY_CENTERED_RMS_PROP_ADD_KERNEL(UInt8, uint8_t),
+    SPARSE_APPLY_CENTERED_RMS_PROP_ADD_KERNEL(UInt16, uint16_t),
+    SPARSE_APPLY_CENTERED_RMS_PROP_ADD_KERNEL(UInt32, uint32_t),
+    SPARSE_APPLY_CENTERED_RMS_PROP_ADD_KERNEL(UInt64, uint64_t),
+    SPARSE_APPLY_CENTERED_RMS_PROP_ADD_KERNEL(Float16, float16),
+    SPARSE_APPLY_CENTERED_RMS_PROP_ADD_KERNEL(Float32, float),
+    SPARSE_APPLY_CENTERED_RMS_PROP_ADD_KERNEL(Float64, double)};
   return func_list;
 }
 

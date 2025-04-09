@@ -26,6 +26,7 @@
 #include "abstract/utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/dropout_nd_impl.cuh"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -72,9 +73,9 @@ bool DropoutNDGpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
     return false;
   }
   if (kernel_name_ == prim::kPrimDropout2D->name()) {
-    keep_prob_ = GetValue<float>(primitive_->GetAttr("keep_prob"));
+    keep_prob_ = GetValue<pyfloat>(primitive_->GetAttr("keep_prob"));
   } else if (kernel_name_ == prim::kPrimDropout3D->name()) {
-    keep_prob_ = GetValue<float>(primitive_->GetAttr("keep_prob"));
+    keep_prob_ = GetValue<pyfloat>(primitive_->GetAttr("keep_prob"));
   } else {
     MS_LOG(ERROR) << "For 'DropoutNDGpuKernelMod', it's must be Dropout2D or Dropout3D but get invalid kernel name : "
                   << kernel_name_;

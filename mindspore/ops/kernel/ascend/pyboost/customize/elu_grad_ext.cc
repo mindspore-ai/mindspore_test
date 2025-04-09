@@ -45,8 +45,8 @@ tensor::TensorPtr EluGradExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
       PyBoostUtils::MallocOpOutputs(device_context, outputs);
 
       // Convert ValuePtr to c++ scalar
-      static const ScalarPtr scale = std::make_shared<FP32Imm>(1.f);
-      static const ScalarPtr input_scale = std::make_shared<FP32Imm>(1.f);
+      static const ScalarPtr scale = std::make_shared<Int64Imm>(1);
+      static const ScalarPtr input_scale = std::make_shared<Int64Imm>(1);
 
       LAUNCH_ACLNN(aclnnEluBackward, device_context, op->stream_id(), dy_tensor, alpha, scale, input_scale,
                    is_result_imm, x_or_out_tensor, outputs[0]);

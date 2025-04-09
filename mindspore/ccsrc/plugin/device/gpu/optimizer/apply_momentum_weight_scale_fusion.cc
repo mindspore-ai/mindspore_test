@@ -100,8 +100,8 @@ const BaseRef ApplyMomentumWeightDecayScaleFusion::DefinePattern() const {
     {prim::kPrimAddN,
      VectorRef({prim::kPrimMakeTuple, VectorRef({prim::kPrimMul, load_para, weight_decay_}), cast_gradient_})});
   VectorRef scale = VectorRef({prim::kPrimMul, weight, scale_});
-  VectorRef apply_momentum =
-    VectorRef({prim::kPrimApplyMomentum, variable_, accumulation_, learning_rate_, scale, momentum_, monad_state_});
+  VectorRef apply_momentum = VectorRef({prim::kPrimApplyMomentum, variable_, accumulation_, learning_rate_, scale,
+                                        momentum_, use_nesterov_, use_locking_, gradient_scale_, monad_state_});
   return apply_momentum;
 }
 

@@ -23,6 +23,7 @@
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/kernel_constants.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -108,7 +109,7 @@ class GruGradDataGpuKernelMod : public NativeGpuKernelMod {
     num_layers_ = static_cast<int>(GetValue<int64_t>(prim->GetAttr("num_layers")));
     has_bias_ = GetValue<bool>(prim->GetAttr("has_bias"));
     bidirectional_ = GetValue<bool>(prim->GetAttr("bidirectional"));
-    dropout_ = GetValue<float>(prim->GetAttr("dropout"));
+    dropout_ = GetValue<pyfloat>(prim->GetAttr("dropout"));
   }
   int Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override {
     InitResource();

@@ -33,6 +33,9 @@ class ApplyMomentumWeightDecayScaleFusion : public PatternProcessPass {
     learning_rate_ = std::make_shared<Var>();
     cast_gradient_ = std::make_shared<CondVar>(IsCast);
     momentum_ = std::make_shared<Var>();
+    use_nesterov_ = std::make_shared<Var>();
+    use_locking_ = std::make_shared<Var>();
+    gradient_scale_ = std::make_shared<Var>();
     monad_state_ = std::make_shared<Var>();
   }
   ~ApplyMomentumWeightDecayScaleFusion() override = default;
@@ -51,6 +54,9 @@ class ApplyMomentumWeightDecayScaleFusion : public PatternProcessPass {
   VarPtr learning_rate_;
   VarPtr cast_gradient_;
   VarPtr momentum_;
+  VarPtr use_nesterov_;
+  VarPtr use_locking_;
+  VarPtr gradient_scale_;
   VarPtr monad_state_;
 };
 }  // namespace opt

@@ -23,6 +23,7 @@
 #include <map>
 #include "mindspore/ops/infer/grad/lrn_grad.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -32,9 +33,9 @@ bool LrnGradCpuKernelMod::GetLrnGradAttr() {
     return false;
   }
   depth_radius_ = GetValue<int64_t>(KernelMod::primitive_->GetAttr(ops::kDepthRadius));
-  bias_ = GetValue<float>(KernelMod::primitive_->GetAttr(ops::kBias));
-  alpha_ = GetValue<float>(KernelMod::primitive_->GetAttr(ops::kAlpha));
-  beta_ = GetValue<float>(KernelMod::primitive_->GetAttr(ops::kBeta));
+  bias_ = GetValue<pyfloat>(KernelMod::primitive_->GetAttr(ops::kBias));
+  alpha_ = GetValue<pyfloat>(KernelMod::primitive_->GetAttr(ops::kAlpha));
+  beta_ = GetValue<pyfloat>(KernelMod::primitive_->GetAttr(ops::kBeta));
   dnnl_algorithm_ = dnnl::algorithm::lrn_across_channels;
   return true;
 }

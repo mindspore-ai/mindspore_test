@@ -41,6 +41,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "pipeline/jit/ps/parse/function_block.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace py = pybind11;
 namespace mindspore {
@@ -137,13 +138,8 @@ AnfNodePtr GetInt(const py::object &obj, const DebugInfoPtr &, bool set_abstract
 
 AnfNodePtr GetFloat(const py::object &obj, const DebugInfoPtr &, bool set_abstract) {
   MS_LOG(DEBUG) << "Constant float: " << py::str(obj);
-  auto data = py::cast<float>(obj);
+  auto data = py::cast<pyfloat>(obj);
   const auto &value_node = NewValueNode(data);
-  auto fp32_val = value_node->value()->cast<FP32ImmPtr>();
-  if (fp32_val != nullptr) {
-    MS_LOG(DEBUG) << "Set float64 value to FP32Imm.";
-    fp32_val->set_prim_value(py::cast<double>(obj));
-  }
   if (set_abstract) {
     value_node->set_abstract(GetAbstract(obj));
   }

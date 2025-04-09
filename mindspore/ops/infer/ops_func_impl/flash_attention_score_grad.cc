@@ -28,6 +28,7 @@
 #include "mindapi/helper.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "ops_utils/op_constants.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace ops {
@@ -304,14 +305,14 @@ TypePtr FlashAttentionScoreGradFuncImpl::InferType(const PrimitivePtr &prim,
 
   auto keep_prob_value_ptr = input_args[kFASGradInputKeepProbIndex]->GetValue();
   MS_EXCEPTION_IF_NULL(keep_prob_value_ptr);
-  auto keep_prob_opt = GetScalarValue<float>(keep_prob_value_ptr);
+  auto keep_prob_opt = GetScalarValue<pyfloat>(keep_prob_value_ptr);
   if (keep_prob_opt.has_value()) {
     auto keep_prob = keep_prob_opt.value();
     if (keep_prob > 1 || keep_prob < 0) {
       MS_LOG(EXCEPTION) << op_name << ": attribute `keep_prob` must be a floating point number in [0, 1], but got "
                         << keep_prob;
     }
-    if (common::IsFloatEqual(keep_prob, 1.0)) {
+    if (common::IsDoubleEqual(keep_prob, 1.0)) {
       if (!IsFlashAttentionScoreGradOptionalInputNotPass(input_args[kFASGradInputDropMaskIndex])) {
         MS_LOG(EXCEPTION) << op_name << ": 'drop_mask' must be None when keep_prob is 1.0.";
       }

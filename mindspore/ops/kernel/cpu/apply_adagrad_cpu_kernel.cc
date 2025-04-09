@@ -28,7 +28,7 @@ constexpr size_t kSizeFloat16 = 2;
 constexpr size_t kSizeFloat32 = 4;
 constexpr size_t kSizeComplex64 = 8;
 constexpr size_t kSizeComplex128 = 16;
-constexpr size_t kApplyAdagradInputsNum = 4;
+constexpr size_t kApplyAdagradInputsNum = 5;
 constexpr size_t kApplyAdagradOutputsNum = 2;
 }  // namespace
 using complex64 = std::complex<float>;
@@ -118,47 +118,21 @@ void ApplyAdagradCpuKernelMod::LaunchApplyAdagrad(T *var, T *accum, const T *lr,
   }
 }
 
+#define APPLY_ADAGRAD_CPU_REG(MS_S, S)                               \
+  std::make_pair(KernelAttr()                                        \
+                   .AddInputAttr(kNumberType##MS_S)                  \
+                   .AddInputAttr(kNumberType##MS_S)                  \
+                   .AddInputAttr(kNumberType##MS_S)                  \
+                   .AddInputAttr(kNumberType##MS_S)                  \
+                   .AddInputAttr(kObjectTypeNumber, kNumberTypeBool) \
+                   .AddOutputAttr(kNumberType##MS_S)                 \
+                   .AddOutputAttr(kNumberType##MS_S),                \
+                 &ApplyAdagradCpuKernelMod::LaunchKernel<S>)
+
 std::vector<std::pair<KernelAttr, ApplyAdagradCpuKernelMod::ApplyAdagradFunc>> ApplyAdagradCpuKernelMod::func_list_ = {
-  {KernelAttr()
-     .AddInputAttr(kNumberTypeFloat32)
-     .AddInputAttr(kNumberTypeFloat32)
-     .AddInputAttr(kNumberTypeFloat32)
-     .AddInputAttr(kNumberTypeFloat32)
-     .AddOutputAttr(kNumberTypeFloat32)
-     .AddOutputAttr(kNumberTypeFloat32),
-   &ApplyAdagradCpuKernelMod::LaunchKernel<float>},
-  {KernelAttr()
-     .AddInputAttr(kNumberTypeFloat16)
-     .AddInputAttr(kNumberTypeFloat16)
-     .AddInputAttr(kNumberTypeFloat16)
-     .AddInputAttr(kNumberTypeFloat16)
-     .AddOutputAttr(kNumberTypeFloat16)
-     .AddOutputAttr(kNumberTypeFloat16),
-   &ApplyAdagradCpuKernelMod::LaunchKernel<float16>},
-  {KernelAttr()
-     .AddInputAttr(kNumberTypeFloat64)
-     .AddInputAttr(kNumberTypeFloat64)
-     .AddInputAttr(kNumberTypeFloat64)
-     .AddInputAttr(kNumberTypeFloat64)
-     .AddOutputAttr(kNumberTypeFloat64)
-     .AddOutputAttr(kNumberTypeFloat64),
-   &ApplyAdagradCpuKernelMod::LaunchKernel<double>},
-  {KernelAttr()
-     .AddInputAttr(kNumberTypeComplex64)
-     .AddInputAttr(kNumberTypeComplex64)
-     .AddInputAttr(kNumberTypeComplex64)
-     .AddInputAttr(kNumberTypeComplex64)
-     .AddOutputAttr(kNumberTypeComplex64)
-     .AddOutputAttr(kNumberTypeComplex64),
-   &ApplyAdagradCpuKernelMod::LaunchKernel<complex64>},
-  {KernelAttr()
-     .AddInputAttr(kNumberTypeComplex128)
-     .AddInputAttr(kNumberTypeComplex128)
-     .AddInputAttr(kNumberTypeComplex128)
-     .AddInputAttr(kNumberTypeComplex128)
-     .AddOutputAttr(kNumberTypeComplex128)
-     .AddOutputAttr(kNumberTypeComplex128),
-   &ApplyAdagradCpuKernelMod::LaunchKernel<complex128>},
+  APPLY_ADAGRAD_CPU_REG(Float16, float16),       APPLY_ADAGRAD_CPU_REG(Float32, float),
+  APPLY_ADAGRAD_CPU_REG(Float64, double),        APPLY_ADAGRAD_CPU_REG(Complex64, complex64),
+  APPLY_ADAGRAD_CPU_REG(Complex128, complex128),
 };
 
 std::vector<KernelAttr> ApplyAdagradCpuKernelMod::GetOpSupport() {

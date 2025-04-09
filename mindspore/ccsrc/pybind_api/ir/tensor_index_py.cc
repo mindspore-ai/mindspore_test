@@ -33,6 +33,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore::tensor {
 using tensor::TensorPybind;
@@ -1356,7 +1357,7 @@ static inline py::object SetitemCopyView(std::vector<pynative::SliceOpInfoPtr> *
   } else if (py::isinstance<py::int_>(py_value)) {
     rdata_value = MakeValue(py::cast<int64_t>(py_value));
   } else if (py::isinstance<py::float_>(py_value)) {
-    rdata_value = MakeValue(py::cast<float>(py_value));
+    rdata_value = MakeValue(py::cast<pyfloat>(py_value));
   } else if (py::isinstance<py::bool_>(py_value)) {
     rdata_value = MakeValue(py::cast<bool>(py_value));
   } else {

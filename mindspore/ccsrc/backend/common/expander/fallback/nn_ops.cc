@@ -27,6 +27,8 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/core/include/mindapi/base/types.h"
+#include "mindspore/ops/op_def/op_enum.h"
 
 namespace mindspore {
 namespace expander {
@@ -329,7 +331,8 @@ REG_FALLBACK_BUILDER("ResizeLinear1D").SetBody(BODYFUNC(ib) {
   MS_EXCEPTION_IF_NULL(size_value_ptr);
   if (IsValueKnown(size_value_ptr)) {
     auto size_value = GetValue<std::vector<int64_t>>(size_value_ptr);
-    std::vector<float> scales_vec{static_cast<float>(size_value.at(kIndex0)) / static_cast<float>(x_shape.at(kIndex2))};
+    std::vector<pyfloat> scales_vec{static_cast<pyfloat>(size_value.at(kIndex0)) /
+                                    static_cast<pyfloat>(x_shape.at(kIndex2))};
     scales_node = ib->Value(scales_vec);
   } else {
     MS_LOG(EXCEPTION) << "For ResizeLinear1D, size should be const.";
@@ -488,15 +491,15 @@ REG_FALLBACK_BUILDER("ConstantPadND").SetBody(BODYFUNC(ib) {
   if (is_expand) {
     input_x = ib->Emit("ExpandDims", {input_x, ib->Value<int64_t>(0)});
   }
-  auto out = ib->Emit("PadV3", {input_x, padding_tensor, value_tensor},
-                      {{"mode", MakeValue<string>("constant")}, {"paddings_contiguous", MakeValue(true)}});
+  auto out = ib->Emit("PadV3", {input_x, padding_tensor, value_tensor,
+                                ib->Value<int64_t>(mindspore::ops::Mode::CONSTANT), ib->Value(true)});
   if (is_expand) {
     out = ib->Squeeze(out, MakeValue(ShapeVector{0}));
   }
   return {out};
 });
 
-NodePtrList PadExpanderBase(FallbackIRBuilder *ib, const string &mode) {
+NodePtrList PadExpanderBase(FallbackIRBuilder *ib, const mindspore::ops::Mode mode) {
   auto input_x = ib->GetInput(kIndex0);
   auto padding = ib->GetInput(kIndex1);
 
@@ -505,27 +508,39 @@ NodePtrList PadExpanderBase(FallbackIRBuilder *ib, const string &mode) {
   if (is_expand) {
     input_x = ib->Emit("ExpandDims", {input_x, ib->Value<int64_t>(0)});
   }
-  auto out = ib->Emit("PadV3", {input_x, padding_tensor, ib->EmitValue(kNone)},
-                      {{"mode", MakeValue<string>(mode)}, {"paddings_contiguous", MakeValue(true)}});
+  auto out =
+    ib->Emit("PadV3", {input_x, padding_tensor, ib->EmitValue(kNone), ib->Value<int64_t>(mode), ib->Value(true)});
   if (is_expand) {
     out = ib->Squeeze(out, MakeValue(ShapeVector{0}));
   }
   return {out};
 }
 
-REG_FALLBACK_BUILDER("ReflectionPad1D").SetBody(BODYFUNC(ib) { return PadExpanderBase(ib, "reflect"); });
+REG_FALLBACK_BUILDER("ReflectionPad1D").SetBody(BODYFUNC(ib) {
+  return PadExpanderBase(ib, mindspore::ops::Mode::REFLECT);
+});
 
-REG_FALLBACK_BUILDER("ReflectionPad2D").SetBody(BODYFUNC(ib) { return PadExpanderBase(ib, "reflect"); });
+REG_FALLBACK_BUILDER("ReflectionPad2D").SetBody(BODYFUNC(ib) {
+  return PadExpanderBase(ib, mindspore::ops::Mode::REFLECT);
+});
 
-REG_FALLBACK_BUILDER("ReflectionPad3D").SetBody(BODYFUNC(ib) { return PadExpanderBase(ib, "reflect"); });
+REG_FALLBACK_BUILDER("ReflectionPad3D").SetBody(BODYFUNC(ib) {
+  return PadExpanderBase(ib, mindspore::ops::Mode::REFLECT);
+});
 
-REG_FALLBACK_BUILDER("ReplicationPad1D").SetBody(BODYFUNC(ib) { return PadExpanderBase(ib, "edge"); });
+REG_FALLBACK_BUILDER("ReplicationPad1D").SetBody(BODYFUNC(ib) {
+  return PadExpanderBase(ib, mindspore::ops::Mode::EDGE);
+});
 
-REG_FALLBACK_BUILDER("ReplicationPad2D").SetBody(BODYFUNC(ib) { return PadExpanderBase(ib, "edge"); });
+REG_FALLBACK_BUILDER("ReplicationPad2D").SetBody(BODYFUNC(ib) {
+  return PadExpanderBase(ib, mindspore::ops::Mode::EDGE);
+});
 
-REG_FALLBACK_BUILDER("ReplicationPad3D").SetBody(BODYFUNC(ib) { return PadExpanderBase(ib, "edge"); });
+REG_FALLBACK_BUILDER("ReplicationPad3D").SetBody(BODYFUNC(ib) {
+  return PadExpanderBase(ib, mindspore::ops::Mode::EDGE);
+});
 
-NodePtrList PadGradExpanderBase(FallbackIRBuilder *ib, const string &mode) {
+NodePtrList PadGradExpanderBase(FallbackIRBuilder *ib, const mindspore::ops::Mode mode) {
   auto input_x = ib->GetInput(kIndex0);
   auto padding = ib->GetInput(kIndex2);
 
@@ -534,25 +549,36 @@ NodePtrList PadGradExpanderBase(FallbackIRBuilder *ib, const string &mode) {
   if (is_expand) {
     input_x = ib->Emit("ExpandDims", {input_x, ib->Value<int64_t>(0)});
   }
-  auto out = ib->Emit("PadV3Grad", {input_x, padding_tensor},
-                      {{"mode", MakeValue<string>(mode)}, {"paddings_contiguous", MakeValue(true)}});
+  auto out = ib->Emit("PadV3Grad", {input_x, padding_tensor, ib->Value<int64_t>(mode), ib->Value(true)});
   if (is_expand) {
     out = ib->Squeeze(out, MakeValue(ShapeVector{0}));
   }
   return {out};
 }
 
-REG_FALLBACK_BUILDER("ReflectionPad1DGrad").SetBody(BODYFUNC(ib) { return PadGradExpanderBase(ib, "reflect"); });
+REG_FALLBACK_BUILDER("ReflectionPad1DGrad").SetBody(BODYFUNC(ib) {
+  return PadGradExpanderBase(ib, mindspore::ops::Mode::REFLECT);
+});
 
-REG_FALLBACK_BUILDER("ReflectionPad2DGrad").SetBody(BODYFUNC(ib) { return PadGradExpanderBase(ib, "reflect"); });
+REG_FALLBACK_BUILDER("ReflectionPad2DGrad").SetBody(BODYFUNC(ib) {
+  return PadGradExpanderBase(ib, mindspore::ops::Mode::REFLECT);
+});
 
-REG_FALLBACK_BUILDER("ReflectionPad3DGrad").SetBody(BODYFUNC(ib) { return PadGradExpanderBase(ib, "reflect"); });
+REG_FALLBACK_BUILDER("ReflectionPad3DGrad").SetBody(BODYFUNC(ib) {
+  return PadGradExpanderBase(ib, mindspore::ops::Mode::REFLECT);
+});
 
-REG_FALLBACK_BUILDER("ReplicationPad1DGrad").SetBody(BODYFUNC(ib) { return PadGradExpanderBase(ib, "edge"); });
+REG_FALLBACK_BUILDER("ReplicationPad1DGrad").SetBody(BODYFUNC(ib) {
+  return PadGradExpanderBase(ib, mindspore::ops::Mode::EDGE);
+});
 
-REG_FALLBACK_BUILDER("ReplicationPad2DGrad").SetBody(BODYFUNC(ib) { return PadGradExpanderBase(ib, "edge"); });
+REG_FALLBACK_BUILDER("ReplicationPad2DGrad").SetBody(BODYFUNC(ib) {
+  return PadGradExpanderBase(ib, mindspore::ops::Mode::EDGE);
+});
 
-REG_FALLBACK_BUILDER("ReplicationPad3DGrad").SetBody(BODYFUNC(ib) { return PadGradExpanderBase(ib, "edge"); });
+REG_FALLBACK_BUILDER("ReplicationPad3DGrad").SetBody(BODYFUNC(ib) {
+  return PadGradExpanderBase(ib, mindspore::ops::Mode::EDGE);
+});
 
 REG_FALLBACK_BUILDER("Embedding").SetBody(BODYFUNC(ib) {
   auto input = ib->GetInput(kIndex0);
@@ -569,8 +595,8 @@ REG_FALLBACK_BUILDER("Embedding").SetBody(BODYFUNC(ib) {
       MS_INTERNAL_EXCEPTION(ValueError) << "For `Embedding` op, max_norm and norm_type must be constant!";
     }
 
-    auto max_norm_double = static_cast<double>(GetValue<float>(max_norm_value));
-    auto norm_type_double = static_cast<double>(GetValue<float>(norm_type_value));
+    auto max_norm_double = static_cast<double>(GetValue<pyfloat>(max_norm_value));
+    auto norm_type_double = static_cast<double>(GetValue<pyfloat>(norm_type_value));
 
     if (max_norm_double < 0) {
       MS_EXCEPTION(ValueError) << "For Embedding, the max_norm must be greater equal than 0, but got: "
@@ -581,9 +607,9 @@ REG_FALLBACK_BUILDER("Embedding").SetBody(BODYFUNC(ib) {
     auto new_input = ib->Emit(ops::kNameReshape, {input, ib->Value(std::vector<int64_t>{-1})});
     auto gather_out = ib->Emit(ops::kNameGather, {weight, new_input, ib->Value((int64_t)0), ib->Value((int64_t)0)});
     auto renorm_out = ib->Emit(ops::kNameRenorm, {gather_out},
-                               {{"p", MakeValue<float>(norm_type_double)},
+                               {{"p", MakeValue<pyfloat>(norm_type_double)},
                                 {"dim", MakeValue<int64_t>(0)},
-                                {"maxnorm", MakeValue<float>(max_norm_double)}});
+                                {"maxnorm", MakeValue<pyfloat>(max_norm_double)}});
 
     if (IsDynamic(input->shape())) {
       MS_INTERNAL_EXCEPTION(ValueError)
@@ -621,9 +647,9 @@ REG_FALLBACK_BUILDER("BatchNormExt").SetBody(BODYFUNC(ib) {
   if (!IsValueKnown(eps_ptr) || !IsValueKnown(training_ptr) || !IsValueKnown(momentum_ptr)) {
     MS_EXCEPTION(ValueError) << "For `BatchNormExt` op, the `momentum` , `training` and `eps` must be a constant!";
   }
-  auto eps_value = GetValue<float>(eps_ptr);
+  auto eps_value = GetValue<pyfloat>(eps_ptr);
   auto training_value = GetValue<bool>(training_ptr);
-  auto momentum_value = GetValue<float>(momentum_ptr);
+  auto momentum_value = GetValue<pyfloat>(momentum_ptr);
 
   NodePtrList res{};
   auto bn_update_outputs = ib->Emit(prim::kPrimBNTrainingReduce->name(), {input, format}, {});
@@ -663,7 +689,7 @@ REG_FALLBACK_BUILDER("BatchNormGradExt").SetBody(BODYFUNC(ib) {
   if (!IsValueKnown(eps_ptr) || !IsValueKnown(training_ptr)) {
     MS_EXCEPTION(ValueError) << "For `BatchNormGradExt` op, the  `training` and `eps` must be a constant!";
   }
-  auto eps_value = GetValue<float>(eps_ptr);
+  auto eps_value = GetValue<pyfloat>(eps_ptr);
   auto training_value = GetValue<bool>(training_ptr);
 
   NodePtrList res{};
@@ -700,7 +726,7 @@ REG_FALLBACK_BUILDER("GroupNorm").SetBody(BODYFUNC(ib) {
   if (!IsValueKnown(eps->BuildValue()) || !IsValueKnown(groups->BuildValue())) {
     MS_EXCEPTION(ValueError) << "For `GroupNorm` op, the  `num_groups` and `eps` must be a constant!";
   }
-  auto eps_value = ib->Tensor(GetValue<float>(eps->BuildValue()));
+  auto eps_value = ib->Tensor(GetValue<pyfloat>(eps->BuildValue()), kFloat32);
   auto num_groups = GetValue<int64_t>(groups->BuildValue());
 
   if (IsDynamic(input->shape())) {

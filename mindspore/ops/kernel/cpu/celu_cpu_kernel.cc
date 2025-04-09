@@ -19,6 +19,7 @@
 #include <utility>
 #include <algorithm>
 #include "kernel/cpu/nnacl/op_base.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -27,7 +28,7 @@ namespace {
 
 const std::vector<KernelAttr> kernel_attr = {{KernelAttr()
                                                 .AddInputAttr(kNumberTypeFloat32)
-                                                .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+                                                .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
                                                 .AddOutputAttr(kNumberTypeFloat32)}};
 }  // namespace
 
@@ -48,7 +49,7 @@ int CeluCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const st
   }
 
   input_elements_ = output_size_list_[0] / unit_size_;
-  alpha_ = static_cast<float>(inputs[kIndex1]->GetValueWithCheck<float>());
+  alpha_ = static_cast<float>(inputs[kIndex1]->GetValueWithCheck<pyfloat>());
   return KRET_OK;
 }
 

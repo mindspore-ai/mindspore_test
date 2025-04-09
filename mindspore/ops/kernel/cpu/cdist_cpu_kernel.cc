@@ -19,6 +19,8 @@
 #include <algorithm>
 #include "kernel/cpu/nnacl/op_base.h"
 #include "kernel/cpu/nnacl/fp32/cdist_fp32.h"
+#include "mindspore/core/include/mindapi/base/types.h"
+
 namespace mindspore {
 namespace kernel {
 namespace cdist_cpu {
@@ -28,7 +30,7 @@ constexpr size_t kCdistInputDimsMin = 2;
 const std::vector<KernelAttr> kernel_attr = {{KernelAttr()
                                                 .AddInputAttr(kNumberTypeFloat32)
                                                 .AddInputAttr(kNumberTypeFloat32)
-                                                .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+                                                .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
                                                 .AddOutputAttr(kNumberTypeFloat32)}};
 }  // namespace
 
@@ -55,7 +57,7 @@ int CdistCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const s
   if ((ret = KernelMod::Resize(inputs, outputs)) != 0) {
     return ret;
   }
-  p_ = inputs[kIndex2]->GetValueWithCheck<float>();
+  p_ = inputs[kIndex2]->GetValueWithCheck<pyfloat>();
   auto input_type_id = inputs[kIndex0]->dtype_id();
   switch (input_type_id) {
     case kNumberTypeFloat32:

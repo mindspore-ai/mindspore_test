@@ -94,11 +94,10 @@ TypePtr ApplyCamePart1FuncImpl::InferType(const PrimitivePtr &prim,
   auto op_name = prim->name();
   std::map<std::string, TypePtr> types;
   auto grad_type = input_args[kInputIndex0]->BuildType();
-  auto eps_type = input_args[kInputIndex1]->BuildType();
   (void)types.emplace("grad", grad_type);
   const std::set<TypePtr> valid_types = {kFloat16, kFloat32, kBFloat16};
   (void)CheckAndConvertUtils::CheckTensorTypeSame(types, valid_types, op_name);
-  auto eps_tensor_type = std::make_shared<TensorType>(eps_type);
+  auto eps_tensor_type = std::make_shared<TensorType>(kFloat32);
   return std::make_shared<Tuple>(std::vector<TypePtr>{eps_tensor_type, eps_tensor_type, eps_tensor_type});
 }
 

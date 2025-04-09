@@ -79,12 +79,12 @@ namespace {
 constexpr char kNpuAsdEnable[] = "NPU_ASD_ENABLE";
 constexpr char kNameSilentCheckV2[] = "aclnnSilentCheck";
 constexpr char kNameSilentCheckV3[] = "aclnnSilentCheckV2";
-constexpr float kSilentCheckV3Beta = 0.99;
+constexpr pyfloat kSilentCheckV3Beta = 0.99;
 constexpr char kVarNpuAsdUpperThresh[] = "NPU_ASD_UPPER_THRESH";
 constexpr char kVarNpuAsdSigmaThresh[] = "NPU_ASD_SIGMA_THRESH";
 constexpr char kUpperThreshDefaultVal[] = "1000000,10000";
 constexpr char kSigmaThreshDefaultVal[] = "100000,5000";
-constexpr float kThreshMinimalVal = 3;
+constexpr pyfloat kThreshMinimalVal = 3;
 constexpr int64_t kMinSteps = 100;
 
 std::string ltrim(const std::string &str) { return std::regex_replace(str, std::regex("^\\s+"), std::string("")); }
@@ -105,17 +105,17 @@ std::vector<std::string> split(const std::string &str, char delim) {
   return result;
 }
 
-// parse string in format "value0,value1" satisfying value0 > value1 to two int values and then convert them to float
-std::vector<float> parse_thresh(const std::string &value, float min_val) {
+// parse string in format "value0,value1" satisfying value0 > value1 to two int values and then convert them to pyfloat
+std::vector<pyfloat> parse_thresh(const std::string &value, pyfloat min_val) {
   constexpr size_t kNumAsdThreshItems = 2;
-  std::vector<float> values;
+  std::vector<pyfloat> values;
   auto items = split(value, ',');
   if (items.size() != kNumAsdThreshItems) {
     return values;
   }
   try {
     for (const auto &elem : items) {
-      float val = std::stoll(trim(elem));
+      pyfloat val = std::stoll(trim(elem));
       if (val < min_val) {
         val = min_val;
       }
@@ -130,7 +130,7 @@ std::vector<float> parse_thresh(const std::string &value, float min_val) {
   return values;
 }
 
-std::vector<float> parse_thresh(const std::string &env_var, const std::string &default_val, float min_val) {
+std::vector<pyfloat> parse_thresh(const std::string &env_var, const std::string &default_val, pyfloat min_val) {
   auto env_value = common::GetEnv(env_var);
   auto values = parse_thresh(env_value, min_val);
   if (!values.empty()) {
@@ -247,7 +247,7 @@ void CheckObject::LaunchNorm(const TensorPtr &input_grad, bool is_l2_norm) {
   auto &op = norm_op_;
   MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Call " << op->primitive()->name() << " start";
 
-  auto p = std::make_shared<FP32Imm>(is_l2_norm ? 2.0 : std::numeric_limits<float>::infinity());
+  auto p = std::make_shared<FP64Imm>(is_l2_norm ? 2.0 : std::numeric_limits<pyfloat>::infinity());
   auto dim = std::make_shared<ValueTuple>(std::vector<ValuePtr>{});
   auto keepdim = std::make_shared<BoolImm>(false);
   auto dtype = std::make_shared<Int64Imm>(input_grad->Dtype()->type_id());
@@ -256,7 +256,7 @@ void CheckObject::LaunchNorm(const TensorPtr &input_grad, bool is_l2_norm) {
   OpRunner::InferOpOutput(op, input_grad, p, dim, keepdim, dtype);
   std::vector<int64_t> dim_vector{};
   ScalarPtr p_scalar = nullptr;
-  MAKE_SCALAR(GetValue<float>(p), kNumberTypeFloat32, p_scalar);
+  MAKE_SCALAR(static_cast<float>(GetValue<pyfloat>(p)), kNumberTypeFloat32, p_scalar);
 
   const auto keepdim_imm = GetValue<bool>(keepdim);
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_grad);
@@ -285,20 +285,20 @@ void CheckObject::LaunchSilentCheckV2(const TensorPtr &input_grad, const Dynamic
   auto upper_thresh = parse_thresh(kVarNpuAsdUpperThresh, kUpperThreshDefaultVal, kThreshMinimalVal);
   auto sigma_thresh = parse_thresh(kVarNpuAsdSigmaThresh, kSigmaThreshDefaultVal, kThreshMinimalVal);
   auto c_min_steps_ptr = std::make_shared<Int64Imm>(100);
-  auto c_thresh_l1_ptr = std::make_shared<FP32Imm>(upper_thresh.front());
-  auto c_coeff_l1_ptr = std::make_shared<FP32Imm>(sigma_thresh.front());
-  auto c_thresh_l2_ptr = std::make_shared<FP32Imm>(upper_thresh.back());
-  auto c_coeff_l2_ptr = std::make_shared<FP32Imm>(sigma_thresh.back());
+  auto c_thresh_l1_ptr = std::make_shared<FP64Imm>(upper_thresh.front());
+  auto c_coeff_l1_ptr = std::make_shared<FP64Imm>(sigma_thresh.front());
+  auto c_thresh_l2_ptr = std::make_shared<FP64Imm>(upper_thresh.back());
+  auto c_coeff_l2_ptr = std::make_shared<FP64Imm>(sigma_thresh.back());
   auto npu_asd_detect_ptr = std::make_shared<Int64Imm>(GetNpuAsdDetectValue());
 
   OpRunner::InferOpOutput(op, val, input_grad, sfda, step, c_min_steps_ptr, c_thresh_l1_ptr, c_coeff_l1_ptr,
                           c_thresh_l2_ptr, c_coeff_l2_ptr, npu_asd_detect_ptr);
 
   auto c_min_steps = GetValue<int64_t>(c_min_steps_ptr);
-  auto c_thresh_l1 = GetValue<pyfloat>(c_thresh_l1_ptr);
-  auto c_coeff_l1 = GetValue<pyfloat>(c_coeff_l1_ptr);
-  auto c_thresh_l2 = GetValue<pyfloat>(c_thresh_l2_ptr);
-  auto c_coeff_l2 = GetValue<pyfloat>(c_coeff_l2_ptr);
+  float c_thresh_l1 = GetValue<pyfloat>(c_thresh_l1_ptr);
+  float c_coeff_l1 = GetValue<pyfloat>(c_coeff_l1_ptr);
+  float c_thresh_l2 = GetValue<pyfloat>(c_thresh_l2_ptr);
+  float c_coeff_l2 = GetValue<pyfloat>(c_coeff_l2_ptr);
   auto npu_asd_detect = GetValue<int64_t>(npu_asd_detect_ptr);
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), val, input_grad, sfda, step);
@@ -325,17 +325,17 @@ void CheckObject::LaunchSilentCheckV3(const TensorPtr &input_grad, const Dynamic
   auto avg = state->avg;
   auto step = state->step;
   auto upper_thresh = parse_thresh(kVarNpuAsdUpperThresh, kSigmaThreshDefaultVal, kThreshMinimalVal);
-  auto c_thresh_l1_ptr = std::make_shared<FP32Imm>(upper_thresh.front());
-  auto c_thresh_l2_ptr = std::make_shared<FP32Imm>(upper_thresh.back());
-  auto beta_ptr = std::make_shared<FP32Imm>(kSilentCheckV3Beta);
+  auto c_thresh_l1_ptr = std::make_shared<FP64Imm>(upper_thresh.front());
+  auto c_thresh_l2_ptr = std::make_shared<FP64Imm>(upper_thresh.back());
+  auto beta_ptr = std::make_shared<FP64Imm>(kSilentCheckV3Beta);
   auto npu_asd_detect_ptr = std::make_shared<Int64Imm>(GetNpuAsdDetectValue());
 
   OpRunner::InferOpOutput(op, val, max, avg, input_grad, step, c_thresh_l1_ptr, c_thresh_l2_ptr, beta_ptr,
                           npu_asd_detect_ptr);
 
-  auto c_thresh_l1 = GetValue<pyfloat>(c_thresh_l1_ptr);
-  auto c_thresh_l2 = GetValue<pyfloat>(c_thresh_l2_ptr);
-  auto beta = GetValue<pyfloat>(beta_ptr);
+  float c_thresh_l1 = GetValue<pyfloat>(c_thresh_l1_ptr);
+  float c_thresh_l2 = GetValue<pyfloat>(c_thresh_l2_ptr);
+  float beta = GetValue<pyfloat>(beta_ptr);
   auto npu_asd_detect = GetValue<int64_t>(npu_asd_detect_ptr);
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), val, max, avg, input_grad, step);
@@ -449,7 +449,7 @@ SilentChecker::SilentChecker(const DeviceContext *device_context) : device_conte
 
   // create constants used by aclnnNorm
   float p_value = HasApiSilentCheckV3() ? std::numeric_limits<float>::infinity() : 2.0;
-  p_scalar_ = std::make_shared<KernelTensor>(nullptr, kFloat32, MakeValue<float>(p_value));
+  p_scalar_ = std::make_shared<KernelTensor>(nullptr, kFloat64, MakeValue<pyfloat>(p_value));
   dim_ = std::make_shared<KernelTensor>(std::make_shared<abstract::TensorShape>(std::vector<int64_t>{}), kInt64,
                                         MakeValue(std::vector<int64_t>{}));
 
@@ -459,12 +459,12 @@ SilentChecker::SilentChecker(const DeviceContext *device_context) : device_conte
   auto upper_thresh = parse_thresh(kVarNpuAsdUpperThresh, kUpperThreshDefaultVal, kThreshMinimalVal);
   auto sigma_thresh = parse_thresh(kVarNpuAsdSigmaThresh, kSigmaThreshDefaultVal, kThreshMinimalVal);
   c_min_steps_ = std::make_shared<KernelTensor>(nullptr, kInt64, MakeValue<int64_t>(kMinSteps));
-  c_thresh_l1_ = std::make_shared<KernelTensor>(nullptr, kFloat32, MakeValue<float>(upper_thresh.front()));
-  c_coeff_l1_ = std::make_shared<KernelTensor>(nullptr, kFloat32, MakeValue<float>(sigma_thresh.front()));
-  c_thresh_l2_ = std::make_shared<KernelTensor>(nullptr, kFloat32, MakeValue<float>(upper_thresh.back()));
-  c_coeff_l2_ = std::make_shared<KernelTensor>(nullptr, kFloat32, MakeValue<float>(sigma_thresh.back()));
+  c_thresh_l1_ = std::make_shared<KernelTensor>(nullptr, kFloat64, MakeValue<pyfloat>(upper_thresh.front()));
+  c_coeff_l1_ = std::make_shared<KernelTensor>(nullptr, kFloat64, MakeValue<pyfloat>(sigma_thresh.front()));
+  c_thresh_l2_ = std::make_shared<KernelTensor>(nullptr, kFloat64, MakeValue<pyfloat>(upper_thresh.back()));
+  c_coeff_l2_ = std::make_shared<KernelTensor>(nullptr, kFloat64, MakeValue<pyfloat>(sigma_thresh.back()));
   npu_asd_detect_ = std::make_shared<KernelTensor>(nullptr, kInt64, MakeValue<int64_t>(GetNpuAsdDetectValue()));
-  beta1_ = std::make_shared<KernelTensor>(nullptr, kFloat32, MakeValue<float>(kSilentCheckV3Beta));
+  beta1_ = std::make_shared<KernelTensor>(nullptr, kFloat64, MakeValue<pyfloat>(kSilentCheckV3Beta));
 }
 
 SilentChecker &SilentChecker::GetInstance() {

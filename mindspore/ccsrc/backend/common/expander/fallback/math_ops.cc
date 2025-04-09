@@ -56,21 +56,23 @@ REG_FALLBACK_BUILDER("AddScalar").SetBody(BODYFUNC(ib) {
 
   auto x_type = ib->GetDtype(x)->type_id();
   auto y_type = ib->GetDtype(y)->type_id();
-  if ((y_type == kNumberTypeFloat32 || y_type == kNumberTypeInt64) &&
+  if ((y_type == kNumberTypePyFloat || y_type == kNumberTypeInt64) &&
       (x_type == kNumberTypeUInt16 || x_type == kNumberTypeUInt32 || x_type == kNumberTypeUInt64)) {
     MS_EXCEPTION(TypeError) << "Type implicit conversion between Tensor[" << TypeIdToString(x_type) << "] and "
                             << TypeIdToString(y_type) << " is not supported.";
   }
 
-  std::set<TypeId> kSet = {kNumberTypeUInt8, kNumberTypeInt8, kNumberTypeInt16, kNumberTypeInt32, kNumberTypeInt64};
-  auto promote_type = TypeIdToType(kNumberTypeFloat32);
-  if ((kSet.find(x_type) != kSet.end()) && y_type == kNumberTypeFloat32) {
-    promote_type = TypeIdToType(kNumberTypeFloat32);
-  } else if (x_type == kNumberTypeBool && (y_type == kNumberTypeFloat32 || y_type == kNumberTypeInt64)) {
-    promote_type = TypeIdToType(y_type);
-  } else {
+  TypePtr promote_type{nullptr};
+  if (kFloatSet.find(x_type) != kFloatSet.end()) {
     promote_type = TypeIdToType(x_type);
+  } else if (kFloatSet.find(y_type) != kFloatSet.end()) {
+    promote_type = TypeIdToType(kNumberTypeFloat32);
+  } else if (kIntergralSet.find(x_type) != kIntergralSet.end()) {
+    promote_type = TypeIdToType(x_type);
+  } else {
+    promote_type = y_type == kNumberTypeBool ? TypeIdToType(kNumberTypeInt64) : TypeIdToType(kNumberTypeBool);
   }
+
   auto x_cast = ib->Cast(x, promote_type);
   auto y_cast = ib->ScalarToTensor(y, promote_type);
 
@@ -84,21 +86,21 @@ REG_FALLBACK_BUILDER("SubScalar").SetBody(BODYFUNC(ib) {
 
   auto x_type = ib->GetDtype(x)->type_id();
   auto y_type = ib->GetDtype(y)->type_id();
-  if ((y_type == kNumberTypeFloat32 || y_type == kNumberTypeInt64) &&
+  if ((y_type == kNumberTypePyFloat || y_type == kNumberTypeInt64) &&
       (x_type == kNumberTypeUInt16 || x_type == kNumberTypeUInt32 || x_type == kNumberTypeUInt64)) {
     MS_EXCEPTION(TypeError) << "Type implicit conversion between Tensor[" << TypeIdToString(x_type) << "] and "
                             << TypeIdToString(y_type) << " is not supported.";
   }
 
-  std::set<TypeId> kSet = {kNumberTypeUInt8, kNumberTypeInt8, kNumberTypeInt16, kNumberTypeInt32, kNumberTypeInt64};
-  auto promote_type = TypeIdToType(kNumberTypeFloat32);
-  if ((kSet.find(x_type) != kSet.end()) && y_type == kNumberTypeFloat32) {
+  TypePtr promote_type{nullptr};
+  if (kFloatSet.find(x_type) != kFloatSet.end()) {
+    promote_type = TypeIdToType(x_type);
+  } else if (kFloatSet.find(y_type) != kFloatSet.end()) {
     promote_type = TypeIdToType(kNumberTypeFloat32);
-  } else if (x_type == kNumberTypeBool && (y_type == kNumberTypeFloat32 || y_type == kNumberTypeInt64)) {
-    promote_type = TypeIdToType(y_type);
   } else {
     promote_type = TypeIdToType(x_type);
   }
+
   auto x_cast = ib->Cast(x, promote_type);
   auto y_cast = ib->ScalarToTensor(y, promote_type);
 
@@ -197,18 +199,19 @@ REG_FALLBACK_BUILDER("Muls").SetBody(BODYFUNC(ib) {
   auto x_type = ib->GetDtype(x)->type_id();
   auto y_type = ib->GetDtype(y)->type_id();
   if ((x_type == kNumberTypeUInt16 || x_type == kNumberTypeUInt32 || x_type == kNumberTypeUInt64) &&
-      (y_type == kNumberTypeFloat32 || y_type == kNumberTypeInt64)) {
+      (y_type == kNumberTypePyFloat || y_type == kNumberTypeInt64)) {
     MS_EXCEPTION(TypeError) << "Type implicit conversion between Tensor[" << TypeIdToString(x_type) << "] and "
                             << TypeIdToString(y_type) << " is not supported.";
   }
-  std::set<TypeId> kSet = {kNumberTypeUInt8, kNumberTypeInt8, kNumberTypeInt16, kNumberTypeInt32, kNumberTypeInt64};
-  auto promote_type = TypeIdToType(kNumberTypeFloat32);
-  if ((kSet.find(x_type) != kSet.end()) && y_type == kNumberTypeFloat32) {
-    promote_type = TypeIdToType(kNumberTypeFloat32);
-  } else if (x_type == kNumberTypeBool && (y_type == kNumberTypeFloat32 || y_type == kNumberTypeInt64)) {
-    promote_type = TypeIdToType(y_type);
-  } else {
+  TypePtr promote_type{nullptr};
+  if (kFloatSet.find(x_type) != kFloatSet.end()) {
     promote_type = TypeIdToType(x_type);
+  } else if (kFloatSet.find(y_type) != kFloatSet.end()) {
+    promote_type = TypeIdToType(kNumberTypeFloat32);
+  } else if (kIntergralSet.find(x_type) != kIntergralSet.end()) {
+    promote_type = TypeIdToType(x_type);
+  } else {
+    promote_type = y_type == kNumberTypeBool ? TypeIdToType(kNumberTypeInt64) : TypeIdToType(kNumberTypeBool);
   }
   auto x_cast = ib->Cast(x, promote_type);
   auto y_cast = ib->ScalarToTensor(y, promote_type);

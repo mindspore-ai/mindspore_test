@@ -23,6 +23,7 @@
 #include <map>
 #include "mindspore/ops/infer/lrn.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -31,10 +32,11 @@ bool LrnCpuKernelMod::GetLrnAttr() {
     MS_LOG(ERROR) << "For 'LRN' kernel name get failed, but got " << kernel_name_;
     return false;
   }
+
   depth_radius_ = GetValue<int64_t>(KernelMod::primitive_->GetAttr(ops::kDepthRadius));
-  bias_ = GetValue<float>(KernelMod::primitive_->GetAttr(ops::kBias));
-  alpha_ = GetValue<float>(KernelMod::primitive_->GetAttr(ops::kAlpha));
-  beta_ = GetValue<float>(KernelMod::primitive_->GetAttr(ops::kBeta));
+  bias_ = GetValue<pyfloat>(KernelMod::primitive_->GetAttr(ops::kBias));
+  alpha_ = GetValue<pyfloat>(KernelMod::primitive_->GetAttr(ops::kAlpha));
+  beta_ = GetValue<pyfloat>(KernelMod::primitive_->GetAttr(ops::kBeta));
   norm_region_ = GetValue<std::string>(KernelMod::primitive_->GetAttr(ops::kNormRegion));
   if (norm_region_ != "ACROSS_CHANNELS") {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "''s attribute 'norm_region' must be ACROSS_CHANNELS but got "

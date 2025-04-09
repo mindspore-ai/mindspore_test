@@ -26,6 +26,7 @@
 #include "mindspore/ops/op_def/op_name.h"
 #include "utils/check_convert_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace ops {
@@ -149,15 +150,15 @@ AbstractBasePtr SparseApplyFtrlInfer(const abstract::AnalysisEnginePtr &, const 
   }
   auto op_name = primitive->name();
   // float lr, float l1, float l2, float lr_power
-  auto lr = GetValue<float>(primitive->GetAttr(kLr));
-  auto l1 = GetValue<float>(primitive->GetAttr(kL1));
-  auto l2 = GetValue<float>(primitive->GetAttr(kL2));
-  auto lr_power = GetValue<float>(primitive->GetAttr(kLrPower));
+  auto lr = GetValue<pyfloat>(primitive->GetAttr(kLr));
+  auto l1 = GetValue<pyfloat>(primitive->GetAttr(kL1));
+  auto l2 = GetValue<pyfloat>(primitive->GetAttr(kL2));
+  auto lr_power = GetValue<pyfloat>(primitive->GetAttr(kLrPower));
 
-  (void)CheckAndConvertUtils::CheckValue(kLr, lr, kGreaterThan, 0.0f, op_name);
-  (void)CheckAndConvertUtils::CheckValue(kL1, l1, kGreaterEqual, 0.0f, op_name);
-  (void)CheckAndConvertUtils::CheckValue(kL2, l2, kGreaterEqual, 0.0f, op_name);
-  (void)CheckAndConvertUtils::CheckValue(kLrPower, lr_power, kLessEqual, 0.0f, op_name);
+  (void)CheckAndConvertUtils::CheckValue<pyfloat>(kLr, lr, kGreaterThan, 0.0, op_name);
+  (void)CheckAndConvertUtils::CheckValue<pyfloat>(kL1, l1, kGreaterEqual, 0.0, op_name);
+  (void)CheckAndConvertUtils::CheckValue<pyfloat>(kL2, l2, kGreaterEqual, 0.0, op_name);
+  (void)CheckAndConvertUtils::CheckValue<pyfloat>(kLrPower, lr_power, kLessEqual, 0.0, op_name);
   (void)CheckAndConvertUtils::CheckInteger("input numbers",
                                            SizeToLong(CheckAndConvertUtils::GetRemoveMonadAbsNum(input_args)), kEqual,
                                            SizeToLong(sparse_apply_ftrl::kSparseApplyFtrlInputNum), op_name);

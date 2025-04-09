@@ -18,6 +18,7 @@
 #include <map>
 #include <utility>
 #include <vector>
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -37,7 +38,7 @@ bool NMSWithMaskFwdGpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                   << "output(s).";
   }
   if (primitive_->HasAttr(kAttrIouThreshold)) {
-    iou_value_ = GetValue<float>(primitive_->GetAttr(kAttrIouThreshold));
+    iou_value_ = GetValue<pyfloat>(primitive_->GetAttr(kAttrIouThreshold));
   }
   if (!MatchKernelFunc(kernel_name_, inputs, outputs)) {
     return false;

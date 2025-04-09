@@ -4285,7 +4285,7 @@ class Renorm(Primitive):
     Args:
         p (int): Power of norm calculation.
         dim (int): The dimension that expected to get the slice-tensor.
-        maxnorm (float32): Max norm.
+        maxnorm (float): Max norm.
 
     Inputs:
         - **x** (Tensor) - A Tensor, types: float32 or float16.

@@ -30,8 +30,6 @@ void EluGradExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &input
                                         const std::vector<KernelTensor *> &outputs) {
   alpha_ = device::ascend::ConvertKernelTensor<ScalarPtr>(inputs[kIndex2]);
   is_result_ = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex3]);
-  MAKE_SCALAR(1.f, inputs[kIndex0]->dtype_id(), scale_);
-  MAKE_SCALAR(1.f, inputs[kIndex0]->dtype_id(), input_scale_);
   GetWorkspaceForResize(inputs[kIndex0], alpha_, scale_, input_scale_, is_result_, inputs[kIndex1], outputs[kIndex0]);
 }
 

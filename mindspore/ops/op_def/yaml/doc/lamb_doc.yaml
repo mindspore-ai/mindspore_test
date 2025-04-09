@@ -1,0 +1,33 @@
+lamb:
+    description: |
+        LAMB optimizer algorithm.
+
+        The Lamb optimizer is proposed in `Large Batch Optimization for Deep Learning: Training BERT in 76 minutes
+        <https://arxiv.org/abs/1904.00962>`_.
+
+        Inputs:
+            - **var** (Tensor) - Weights to be updated. The shape is :math:`(N, *)` where :math:`*` means,
+              any number of additional dimensions. The data type can be float16 or float32.
+            - **m** (Tensor) - The 1st moment vector in the updating formula,
+              the shape and data type value should be the same as `var`.
+            - **v** (Tensor) - the 2nd moment vector in the updating formula,
+              the shape and data type value should be the same as `var`. Mean square gradients with the same type as `var`.
+            - **lr** (Union[float, Tensor]) - :math:`l` in the updating formula. The paper suggested value is :math:`10^{-8}`,
+              the data type value should be the same as `var`.
+            - **beta1** (Union[float, Tensor]) - The exponential decay rate for the 1st moment estimations,
+              the data type value should be the same as `var`. The paper suggested value is :math:`0.9`
+            - **beta2** (Union[float, Tensor]) - The exponential decay rate for the 2nd moment estimations,
+              the data type value should be the same as `var`. The paper suggested value is :math:`0.999`
+            - **epsilon** (Union[float, Tensor]) - Term added to the denominator to improve numerical stability.
+            - **decay** (Union[float, Tensor]) - The weight decay value, must be a scalar tensor with Union[float, Tensor] data type.
+              Default: 0.0.
+            - **global_step** (Tensor) - Tensor to record current global step.
+            - **gradient** (Tensor) - Gradient, has the same shape and data type as `var`.
+
+        Outputs:
+            Tensor, the updated parameters.
+
+            - **var** (Tensor) - The same shape and data type as `var`.
+
+        Supported Platforms:
+            ``Ascend````GPU``

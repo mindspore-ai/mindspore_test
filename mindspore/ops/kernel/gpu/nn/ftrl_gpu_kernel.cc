@@ -22,7 +22,7 @@
 namespace mindspore {
 namespace kernel {
 bool FtrlGpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
-  constexpr size_t input_num = 8;
+  constexpr size_t input_num = 9;
   constexpr size_t output_num = 1;
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), input_num, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), output_num, kernel_name_);
@@ -58,140 +58,33 @@ bool FtrlGpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
   return true;
 }
 
+#define FTRL_GPU_REG(MS_T, T)                                        \
+  std::make_pair(KernelAttr()                                        \
+                   .AddInputAttr(MS_T)                               \
+                   .AddInputAttr(MS_T)                               \
+                   .AddInputAttr(MS_T)                               \
+                   .AddInputAttr(MS_T)                               \
+                   .AddInputAttr(MS_T)                               \
+                   .AddInputAttr(MS_T)                               \
+                   .AddInputAttr(MS_T)                               \
+                   .AddInputAttr(MS_T)                               \
+                   .AddInputAttr(kObjectTypeNumber, kNumberTypeBool) \
+                   .AddOutputAttr(MS_T),                             \
+                 &FtrlGpuKernelMod::LaunchKernel<T>)
+
 std::vector<std::pair<KernelAttr, FtrlGpuKernelMod::FtrlLaunchFunc>> FtrlGpuKernelMod::func_list_ = {
-  {KernelAttr()
-     .AddInputAttr(kNumberTypeFloat16)
-     .AddInputAttr(kNumberTypeFloat16)
-     .AddInputAttr(kNumberTypeFloat16)
-     .AddInputAttr(kNumberTypeFloat16)
-     .AddInputAttr(kNumberTypeFloat16)
-     .AddInputAttr(kNumberTypeFloat16)
-     .AddInputAttr(kNumberTypeFloat16)
-     .AddInputAttr(kNumberTypeFloat16)
-     .AddOutputAttr(kNumberTypeFloat16),
-   &FtrlGpuKernelMod::LaunchKernel<half>},
-  {KernelAttr()
-     .AddInputAttr(kNumberTypeFloat32)
-     .AddInputAttr(kNumberTypeFloat32)
-     .AddInputAttr(kNumberTypeFloat32)
-     .AddInputAttr(kNumberTypeFloat32)
-     .AddInputAttr(kNumberTypeFloat32)
-     .AddInputAttr(kNumberTypeFloat32)
-     .AddInputAttr(kNumberTypeFloat32)
-     .AddInputAttr(kNumberTypeFloat32)
-     .AddOutputAttr(kNumberTypeFloat32),
-   &FtrlGpuKernelMod::LaunchKernel<float>},
-  {KernelAttr()
-     .AddInputAttr(kNumberTypeFloat64)
-     .AddInputAttr(kNumberTypeFloat64)
-     .AddInputAttr(kNumberTypeFloat64)
-     .AddInputAttr(kNumberTypeFloat64)
-     .AddInputAttr(kNumberTypeFloat64)
-     .AddInputAttr(kNumberTypeFloat64)
-     .AddInputAttr(kNumberTypeFloat64)
-     .AddInputAttr(kNumberTypeFloat64)
-     .AddOutputAttr(kNumberTypeFloat64),
-   &FtrlGpuKernelMod::LaunchKernel<double>},
-  {KernelAttr()
-     .AddInputAttr(kNumberTypeInt8)
-     .AddInputAttr(kNumberTypeInt8)
-     .AddInputAttr(kNumberTypeInt8)
-     .AddInputAttr(kNumberTypeInt8)
-     .AddInputAttr(kNumberTypeInt8)
-     .AddInputAttr(kNumberTypeInt8)
-     .AddInputAttr(kNumberTypeInt8)
-     .AddInputAttr(kNumberTypeInt8)
-     .AddOutputAttr(kNumberTypeInt8),
-   &FtrlGpuKernelMod::LaunchKernel<int8_t>},
-  {KernelAttr()
-     .AddInputAttr(kNumberTypeInt16)
-     .AddInputAttr(kNumberTypeInt16)
-     .AddInputAttr(kNumberTypeInt16)
-     .AddInputAttr(kNumberTypeInt16)
-     .AddInputAttr(kNumberTypeInt16)
-     .AddInputAttr(kNumberTypeInt16)
-     .AddInputAttr(kNumberTypeInt16)
-     .AddInputAttr(kNumberTypeInt16)
-     .AddOutputAttr(kNumberTypeInt16),
-   &FtrlGpuKernelMod::LaunchKernel<int16_t>},
-  {KernelAttr()
-     .AddInputAttr(kNumberTypeInt64)
-     .AddInputAttr(kNumberTypeInt64)
-     .AddInputAttr(kNumberTypeInt64)
-     .AddInputAttr(kNumberTypeInt64)
-     .AddInputAttr(kNumberTypeInt64)
-     .AddInputAttr(kNumberTypeInt64)
-     .AddInputAttr(kNumberTypeInt64)
-     .AddInputAttr(kNumberTypeInt64)
-     .AddOutputAttr(kNumberTypeInt64),
-   &FtrlGpuKernelMod::LaunchKernel<int64_t>},
-  {KernelAttr()
-     .AddInputAttr(kNumberTypeUInt8)
-     .AddInputAttr(kNumberTypeUInt8)
-     .AddInputAttr(kNumberTypeUInt8)
-     .AddInputAttr(kNumberTypeUInt8)
-     .AddInputAttr(kNumberTypeUInt8)
-     .AddInputAttr(kNumberTypeUInt8)
-     .AddInputAttr(kNumberTypeUInt8)
-     .AddInputAttr(kNumberTypeUInt8)
-     .AddOutputAttr(kNumberTypeUInt8),
-   &FtrlGpuKernelMod::LaunchKernel<uint8_t>},
-  {KernelAttr()
-     .AddInputAttr(kNumberTypeUInt16)
-     .AddInputAttr(kNumberTypeUInt16)
-     .AddInputAttr(kNumberTypeUInt16)
-     .AddInputAttr(kNumberTypeUInt16)
-     .AddInputAttr(kNumberTypeUInt16)
-     .AddInputAttr(kNumberTypeUInt16)
-     .AddInputAttr(kNumberTypeUInt16)
-     .AddInputAttr(kNumberTypeUInt16)
-     .AddOutputAttr(kNumberTypeUInt16),
-   &FtrlGpuKernelMod::LaunchKernel<uint16_t>},
-  {KernelAttr()
-     .AddInputAttr(kNumberTypeUInt32)
-     .AddInputAttr(kNumberTypeUInt32)
-     .AddInputAttr(kNumberTypeUInt32)
-     .AddInputAttr(kNumberTypeUInt32)
-     .AddInputAttr(kNumberTypeUInt32)
-     .AddInputAttr(kNumberTypeUInt32)
-     .AddInputAttr(kNumberTypeUInt32)
-     .AddInputAttr(kNumberTypeUInt32)
-     .AddOutputAttr(kNumberTypeUInt32),
-   &FtrlGpuKernelMod::LaunchKernel<uint32_t>},
-  {KernelAttr()
-     .AddInputAttr(kNumberTypeUInt64)
-     .AddInputAttr(kNumberTypeUInt64)
-     .AddInputAttr(kNumberTypeUInt64)
-     .AddInputAttr(kNumberTypeUInt64)
-     .AddInputAttr(kNumberTypeUInt64)
-     .AddInputAttr(kNumberTypeUInt64)
-     .AddInputAttr(kNumberTypeUInt64)
-     .AddInputAttr(kNumberTypeUInt64)
-     .AddOutputAttr(kNumberTypeUInt64),
-   &FtrlGpuKernelMod::LaunchKernel<uint64_t>},
-  {KernelAttr()
-     .AddInputAttr(kNumberTypeComplex64)
-     .AddInputAttr(kNumberTypeComplex64)
-     .AddInputAttr(kNumberTypeComplex64)
-     .AddInputAttr(kNumberTypeComplex64)
-     .AddInputAttr(kNumberTypeComplex64)
-     .AddInputAttr(kNumberTypeComplex64)
-     .AddInputAttr(kNumberTypeComplex64)
-     .AddInputAttr(kNumberTypeComplex64)
-     .AddOutputAttr(kNumberTypeComplex64),
-   &FtrlGpuKernelMod::LaunchKernel<utils::Complex<float>>},
-  {KernelAttr()
-     .AddInputAttr(kNumberTypeComplex128)
-     .AddInputAttr(kNumberTypeComplex128)
-     .AddInputAttr(kNumberTypeComplex128)
-     .AddInputAttr(kNumberTypeComplex128)
-     .AddInputAttr(kNumberTypeComplex128)
-     .AddInputAttr(kNumberTypeComplex128)
-     .AddInputAttr(kNumberTypeComplex128)
-     .AddInputAttr(kNumberTypeComplex128)
-     .AddOutputAttr(kNumberTypeComplex128),
-   &FtrlGpuKernelMod::LaunchKernel<utils::Complex<double>>},
-};
+  FTRL_GPU_REG(kNumberTypeFloat16, half),
+  FTRL_GPU_REG(kNumberTypeFloat32, float),
+  FTRL_GPU_REG(kNumberTypeFloat64, double),
+  FTRL_GPU_REG(kNumberTypeInt8, int8_t),
+  FTRL_GPU_REG(kNumberTypeInt16, int16_t),
+  FTRL_GPU_REG(kNumberTypeInt64, int64_t),
+  FTRL_GPU_REG(kNumberTypeUInt8, uint8_t),
+  FTRL_GPU_REG(kNumberTypeUInt16, uint16_t),
+  FTRL_GPU_REG(kNumberTypeUInt32, uint32_t),
+  FTRL_GPU_REG(kNumberTypeUInt64, uint64_t),
+  FTRL_GPU_REG(kNumberTypeComplex64, utils::Complex<float>),
+  FTRL_GPU_REG(kNumberTypeComplex128, utils::Complex<double>)};
 
 std::vector<KernelAttr> FtrlGpuKernelMod::GetOpSupport() {
   std::vector<KernelAttr> support_list;

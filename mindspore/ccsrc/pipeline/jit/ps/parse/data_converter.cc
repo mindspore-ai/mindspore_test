@@ -558,7 +558,7 @@ ValuePtr ConvertConstantNumpyNumber(const py::object &obj, ResolveType obj_type)
   }
   if (obj_type == RESOLVE_TYPE_NUMPY_FLOAT_NUMBER) {
     MS_LOG(INFO) << "Convert constant numpy float number::" << (std::string)py::str(obj);
-    return MakeValue(py::cast<float>(obj));
+    return MakeValue(py::cast<pyfloat>(obj));
   }
   if (obj_type == RESOLVE_TYPE_NUMPY_BOOL_NUMBER) {
     MS_LOG(INFO) << "Convert constant numpy bool_ number::" << (std::string)py::str(obj);
@@ -726,14 +726,12 @@ ValuePtr ConvertIntegerWithType(const py::object &obj, const TypePtr &dtype = nu
 }
 
 ValuePtr ConvertFloatWithType(const py::object &obj, const TypePtr &dtype = nullptr) {
-  auto obj_float32 = py::cast<pyfloat>(obj);
+  auto obj_pyfloat = py::cast<pyfloat>(obj);
   if (dtype == nullptr) {
-    auto obj_double = py::cast<double>(obj);
-    auto ret = std::make_shared<FP32Imm>(obj_float32);
-    ret->set_prim_value(obj_double);
+    auto ret = std::make_shared<FP64Imm>(obj_pyfloat);
     return ret;
   }
-  return ConvertNumberWithType<pyfloat>(obj_float32, dtype);
+  return ConvertNumberWithType<pyfloat>(obj_pyfloat, dtype);
 }
 
 ValuePtr ConvertNameSpace(const py::object &obj, bool use_signature) {
@@ -1175,11 +1173,7 @@ ValuePtr DataConverter::ConvertData(const py::object &obj) {
   return ConvertOtherObj(obj, forbid_reuse_);
 }
 
-inline ValuePtr ConvertPythonFloatToScalarValue(double value) {
-  auto ret = std::make_shared<FP32Imm>(static_cast<float>(value));
-  ret->set_prim_value(value);
-  return ret;
-}
+inline ValuePtr ConvertPythonFloatToScalarValue(double value) { return std::make_shared<FP64Imm>(value); }
 
 ValuePtr ConvertBool(const py::object &obj) {
   if (!py::isinstance<py::bool_>(obj)) {
@@ -1289,7 +1283,7 @@ ValuePtr ConvertNumberToTensor(const py::object &obj) {
   }
 
   if (py::isinstance<py::float_>(obj)) {
-    auto v = py::cast<pyfloat>(obj);
+    auto v = py::cast<gefloat>(obj);
     return std::make_shared<tensor::Tensor>(v);
   }
 
@@ -1698,24 +1692,24 @@ static const std::unordered_map<int32_t, OpDefConvertFunc> kConverters = {
 
   // TypeCast3: convert single element to Tensor
   {CombineTypesForTypeCast(mindspore::ops::DT_INT, mindspore::ops::DT_TENSOR),
-   ConvertSingleElementToTensor<py::int_, pyint>},
+   ConvertSingleElementToTensor<py::int_, geint>},
   {CombineTypesForTypeCast(mindspore::ops::DT_FLOAT, mindspore::ops::DT_TENSOR),
-   ConvertSingleElementToTensor<py::float_, pyfloat>},
+   ConvertSingleElementToTensor<py::float_, gefloat>},
   {CombineTypesForTypeCast(mindspore::ops::DT_BOOL, mindspore::ops::DT_TENSOR),
    ConvertSingleElementToTensor<py::bool_, bool>},
   {CombineTypesForTypeCast(mindspore::ops::DT_NUMBER, mindspore::ops::DT_TENSOR), ConvertNumberToTensor},
 
   // TypeCast4: convert between sequence and tensor
   {CombineTypesForTypeCast(mindspore::ops::DT_TUPLE_INT, mindspore::ops::DT_TENSOR),
-   ConvertSequenceToTensor<py::tuple, py::int_, pyint>},
+   ConvertSequenceToTensor<py::tuple, py::int_, geint>},
   {CombineTypesForTypeCast(mindspore::ops::DT_TUPLE_FLOAT, mindspore::ops::DT_TENSOR),
-   ConvertSequenceToTensor<py::tuple, py::float_, pyfloat>},
+   ConvertSequenceToTensor<py::tuple, py::float_, gefloat>},
   {CombineTypesForTypeCast(mindspore::ops::DT_TUPLE_BOOL, mindspore::ops::DT_TENSOR),
    ConvertSequenceBoolToTensor<py::tuple>},
   {CombineTypesForTypeCast(mindspore::ops::DT_LIST_INT, mindspore::ops::DT_TENSOR),
-   ConvertSequenceToTensor<py::list, py::int_, pyint>},
+   ConvertSequenceToTensor<py::list, py::int_, geint>},
   {CombineTypesForTypeCast(mindspore::ops::DT_LIST_FLOAT, mindspore::ops::DT_TENSOR),
-   ConvertSequenceToTensor<py::list, py::float_, pyfloat>},
+   ConvertSequenceToTensor<py::list, py::float_, gefloat>},
   {CombineTypesForTypeCast(mindspore::ops::DT_LIST_BOOL, mindspore::ops::DT_TENSOR),
    ConvertSequenceBoolToTensor<py::list>},
 

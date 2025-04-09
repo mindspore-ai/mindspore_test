@@ -24,6 +24,7 @@
 #include "abstract/utils.h"
 #include "infer/cxx_api/bias_dropout_add_fusion.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/bias_dropout_add_impl.cuh"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -54,7 +55,7 @@ bool BiasDropoutAddGpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
   }
   kernel_func_ = func_list_[index].second;
 
-  keep_prob_ = GetValue<float>(primitive_->GetAttr("keep_prob"));
+  keep_prob_ = GetValue<pyfloat>(primitive_->GetAttr("keep_prob"));
   int64_t seed = GetValue<int64_t>(primitive_->GetAttr("seed0"));
   if (seed == 0) {
     seed = GetValue<int64_t>(primitive_->GetAttr("seed1"));

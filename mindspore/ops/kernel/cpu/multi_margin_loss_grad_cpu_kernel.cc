@@ -17,6 +17,7 @@
 #include "kernel/cpu/multi_margin_loss_grad_cpu_kernel.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/grad/multi_margin_loss_grad.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -36,7 +37,7 @@ bool MultiMarginLossGradCPUKernelMod::Init(const std::vector<KernelTensor *> &in
                                            const std::vector<KernelTensor *> &outputs) {
   reduction = GetValue<std::string>(primitive_->GetAttr(ops::kReduction));
   p = GetValue<int64_t>(primitive_->GetAttr(ops::kP));
-  margin = GetValue<float>(primitive_->GetAttr(ops::kMargin));
+  margin = GetValue<pyfloat>(primitive_->GetAttr(ops::kMargin));
 
   dtype_ = inputs[kZero]->dtype_id();
   input_num = inputs.size();

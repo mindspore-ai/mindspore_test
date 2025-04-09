@@ -29,6 +29,7 @@
 #include <map>
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "common/ms_factory.h"
+#include "mindspore/ops/op_def/op_enum.h"
 
 namespace mindspore {
 namespace kernel {
@@ -83,7 +84,7 @@ class PadV3CpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<Pa
   int64_t parallelSliceNum_{1};
   int64_t paddings_num_{0};
   int64_t input_dim_{0};
-  std::string mode_ = "constant";
+  mindspore::ops::Mode mode_{mindspore::ops::Mode::CONSTANT};
   std::vector<int64_t> paddings_;
   std::vector<int64_t> input_shape_;
   std::vector<int64_t> output_shape_;

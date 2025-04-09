@@ -30,7 +30,7 @@ namespace kernel {
 namespace pyboost {
 std::tuple<tensor::TensorPtr, tensor::TensorPtr, tensor::TensorPtr> AddRmsNormAscendCustomize(
   const std::shared_ptr<OpRunner> &op, const TensorPtr &x1_tensor, const TensorPtr &x2_tensor,
-  const TensorPtr &gamma_tensor, const FP32ImmPtr &epsilon);
+  const TensorPtr &gamma_tensor, const FP64ImmPtr &epsilon);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

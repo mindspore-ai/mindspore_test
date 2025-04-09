@@ -21,6 +21,7 @@
 #include <utility>
 #include <vector>
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -68,7 +69,7 @@ bool NMSWithMaskCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                   << "output(s).";
   }
   if (primitive_->HasAttr(kAttrIouThreshold)) {
-    iou_value_ = GetValue<float>(primitive_->GetAttr(kAttrIouThreshold));
+    iou_value_ = GetValue<pyfloat>(primitive_->GetAttr(kAttrIouThreshold));
   }
   if (auto ret = MatchKernelFunc(kernel_name_, inputs, outputs); !ret) {
     return ret;

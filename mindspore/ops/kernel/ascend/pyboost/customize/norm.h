@@ -27,7 +27,7 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void NormAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_x_tensor, const FP32ImmPtr &p,
+void NormAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_x_tensor, const FP64ImmPtr &p,
                          const std::optional<ValueTuplePtr> &dim, const BoolImmPtr &keepdim,
                          const std::optional<Int64ImmPtr> &dtype);
 }  // namespace pyboost

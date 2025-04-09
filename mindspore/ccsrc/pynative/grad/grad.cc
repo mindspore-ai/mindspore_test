@@ -148,7 +148,8 @@ ValuePtr ConvertOutputValueToTensor(const ValuePtr &v, bool dict_convert_to_tupl
     return PyNativeAlgo::Common::FilterSensValues(v, dict_convert_to_tuple);
   }
   if (v->isa<FloatImm>()) {
-    double input_value = v->cast<FP32ImmPtr>()->value();
+    double input_value =
+      v->isa<FP32Imm>() ? static_cast<double>(v->cast<FP32ImmPtr>()->value()) : v->cast<FP64ImmPtr>()->value();
     return std::make_shared<tensor::Tensor>(input_value, kFloat32);
   }
   if (v->isa<BoolImm>()) {

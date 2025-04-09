@@ -23,6 +23,7 @@
 #include "ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace ops {
@@ -104,7 +105,7 @@ ValuePtr DivImpl(const ValuePtr &x_value, const ValuePtr &y_value, const std::st
                                << ", y: " << std::to_string(y) << ".";
     }
   }
-  return MakeValue(static_cast<float>(x) / static_cast<float>(y));
+  return MakeValue(static_cast<pyfloat>(x) / static_cast<pyfloat>(y));
 }
 
 template <typename T>
@@ -124,7 +125,7 @@ ValuePtr FloorDivImpl(const ValuePtr &x_value, const ValuePtr &y_value, const st
                                << ", y: " << std::to_string(y) << ".";
     }
   }
-  T n = std::floor(static_cast<float>(x) / static_cast<float>(y));
+  T n = std::floor(static_cast<pyfloat>(x) / static_cast<pyfloat>(y));
   T mod = x - n * y;
   T res = (x - mod) / y;
   return MakeValue(res);
@@ -147,7 +148,7 @@ ValuePtr ModImpl(const ValuePtr &x_value, const ValuePtr &y_value, const std::st
                                << ", y: " << std::to_string(y) << ".";
     }
   }
-  T n = std::floor(static_cast<float>(x) / static_cast<float>(y));
+  T n = std::floor(static_cast<pyfloat>(x) / static_cast<pyfloat>(y));
   T res = x - n * y;
   return MakeValue(res);
 }

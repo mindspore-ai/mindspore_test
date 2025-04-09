@@ -161,7 +161,7 @@ class MulsFrontendFuncImpl : public OpFrontendFuncImpl {
     auto x1_type = x1_tensor->data_type();
     auto x2_type = input_args[kIndex1]->GetType()->type_id();
     // get common type between tensor and scalar
-    TypeId common_type = ConvertTypeBetweenTensorAndScalar(x1_type, x2_type, GetHashId(x1_type, x2_type));
+    TypeId common_type = ConvertTypeBetweenTensorAndScalar(x1_type, x2_type);
     MS_LOG(DEBUG) << "For [" << primitive->name() << "], first input type: " << input_args[kIndex0]->GetType()
                   << ", typeid: " << input_args[kIndex0]->GetType()->type_id();
     MS_LOG(DEBUG) << "For [" << primitive->name() << "], second input type: " << input_args[kIndex1]->GetType()

@@ -1,0 +1,85 @@
+apply_adadelta:
+    description: |
+        Updates relevant entries according to the adadelta scheme.
+
+        The Adadelta algorithm is proposed in
+        `ADADELTA: AN ADAPTIVE LEARNING RATE METHOD <https://arxiv.org/abs/1212.5701>`_.
+
+        .. math::
+            \begin{array}{ll} \\
+                \text{accum} = \rho * \text{accum} + (1 - \rho) * \text{grad}^2 \\
+                \text{update} = \sqrt{\text{accum_update} +
+                  \epsilon} * \frac{\text{grad}}{\sqrt{\text{accum} + \epsilon}} \\
+                \text{accum_update} = \rho * \text{accum_update} + (1 - \rho) * \text{update}^2 \\
+                \text{var} = \text{var} - \text{lr} * \text{update}
+            \end{array}
+
+        where :math:`\rho` represents `rho`, :math:`\epsilon` represents `epsilon`.
+
+        Inputs of `var`, `accum`, `accum_update` and `grad` comply with the implicit type conversion rules
+        to make the data types consistent.
+        If they have different data types, the lower priority data type will be converted to
+        the relatively highest priority data type.
+
+        Inputs:
+            - **var** (Union[Parameter, Tensor]) - Weights to be updated. With float32 or float16 data type.
+              The shape is :math:`(N, *)` where :math:`*` means, any number of additional dimensions.
+            - **accum** (Union[Parameter, Tensor]) - Accumulation to be updated, has the same shape and data type as `var`.
+            - **accum_update** (Union[Parameter, Tensor]) - Accum_update to be updated, has the same shape and data type as
+              `var`.
+            - **lr** (Union[Number, Tensor]) - Learning rate, must be a scalar. With float32 or float16 data type.
+            - **rho** (Union[Number, Tensor]) - Decay rate, must be a scalar. With float32 or float16 data type.
+            - **epsilon** (Union[Number, Tensor]) - A small value added for numerical stability, must be a scalar.
+              With float32 or float16 data type.
+            - **grad** (Tensor) - Gradients, has the same shape and data type as `var`.
+
+        Outputs:
+            Tuple of 3 Tensor, the updated parameters or tensors.
+
+            - **var** (Tensor) - The same shape and data type as `var`.
+            - **accum** (Tensor) - The same shape and data type as `accum`.
+            - **accum_update** (Tensor) - The same shape and data type as `accum_update`.
+
+        Raises:
+            TypeError: If dtype of `var`, `accum`, `accum_update`, `lr`, `rho`, `epsilon` or `grad` is neither float16 nor
+                      float32.
+            TypeError: If `accum_update`, `lr`, `rho` or `epsilon` is neither a Number nor a Tensor.
+            TypeError: If the data type of `var`, `accum`, `accum_update` and `grad` conversion of Parameter
+                          is not supported.
+
+        Supported Platforms:
+            ``Ascend`` ``GPU`` ``CPU``
+
+        Examples:
+            >>> import numpy as np
+            >>> import mindspore
+            >>> from mindspore import nn, Tensor, ops, Parameter
+            >>> class Net(nn.Cell):
+            ...     def __init__(self):
+            ...         super(Net, self).__init__()
+            ...         self.apply_adadelta = ops.ApplyAdadelta()
+            ...         self.var = Parameter(Tensor(np.array([[0.6, 0.4],
+            ...                                               [0.1, 0.5]]).astype(np.float32)), name="var")
+            ...         self.accum = Parameter(Tensor(np.array([[0.6, 0.5],
+            ...                                                 [0.2, 0.6]]).astype(np.float32)), name="accum")
+            ...         self.accum_update = Parameter(Tensor(np.array([[0.9, 0.1],
+            ...                                                        [0.7, 0.8]]).astype(np.float32)),
+            ...                                                             name="accum_update")
+            ...     def construct(self, lr, rho, epsilon, grad):
+            ...         out = self.apply_adadelta(self.var, self.accum, self.accum_update, lr, rho, epsilon, grad)
+            ...         return out
+            ...
+            >>> net = Net()
+            >>> lr = Tensor(0.001, mindspore.float32)
+            >>> rho = Tensor(0.0, mindspore.float32)
+            >>> epsilon = Tensor(1e-6, mindspore.float32)
+            >>> grad = Tensor(np.array([[0.3, 0.7], [0.1, 0.8]]).astype(np.float32))
+            >>> output = net(lr, rho, epsilon, grad)
+            >>> print(output)
+            (Tensor(shape=[2, 2], dtype=Float32, value=
+            [[ 5.99051356e-01,  3.99683774e-01],
+            [ 9.91633832e-02,  4.99105573e-01]]), Tensor(shape=[2, 2], dtype=Float32, value=
+            [[ 9.00000036e-02,  4.89999980e-01],
+            [ 1.00000007e-02,  6.40000045e-01]]), Tensor(shape=[2, 2], dtype=Float32, value=
+            [[ 8.99990857e-01,  1.00000791e-01],
+            [ 6.99930906e-01,  7.99999774e-01]]))

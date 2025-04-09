@@ -39,6 +39,7 @@
 #include "utils/log_adapter.h"
 #include "ops_utils/op_constants.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace ops {
@@ -85,7 +86,7 @@ abstract::TupleShapePtr SampleDistortedBoundingBoxV2InferShape(const PrimitivePt
                                              kSize1, prim_name);
   }
 
-  auto aspect_ratio_range = GetValue<std::vector<float>>(primitive->GetAttr(kAspectRatioRange));
+  auto aspect_ratio_range = GetValue<std::vector<pyfloat>>(primitive->GetAttr(kAspectRatioRange));
   auto aspect_ratio_range_dim = aspect_ratio_range.size();
   (void)CheckAndConvertUtils::CheckInteger("aspect_ratio_range elements", SizeToLong(aspect_ratio_range_dim), kEqual,
                                            kSize2, prim_name);
@@ -99,12 +100,13 @@ abstract::TupleShapePtr SampleDistortedBoundingBoxV2InferShape(const PrimitivePt
                              << "', aspect_ratio_range[0] must less than aspect_ratio_range[1].";
   }
 
-  auto area_range = GetValue<std::vector<float>>(primitive->GetAttr(kAreaRange));
+  auto area_range = GetValue<std::vector<pyfloat>>(primitive->GetAttr(kAreaRange));
   auto area_range_dim = area_range.size();
   (void)CheckAndConvertUtils::CheckInteger("area_range elements", SizeToLong(area_range_dim), kEqual, kSize2,
                                            prim_name);
   for (size_t i = 0; i < area_range_dim; ++i) {
-    CheckAndConvertUtils::CheckInRange<float>("area_range value", area_range[i], kIncludeRight, {0.0, 1.0}, prim_name);
+    CheckAndConvertUtils::CheckInRange<pyfloat>("area_range value", area_range[i], kIncludeRight, {0.0, 1.0},
+                                                prim_name);
   }
   if (area_range[kIndex0] >= area_range[kIndex1]) {
     MS_EXCEPTION(ValueError) << "For '" << prim_name << "', area_range[0] must less than area_range[1].";

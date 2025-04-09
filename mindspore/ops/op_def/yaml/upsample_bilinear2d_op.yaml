@@ -24,3 +24,5 @@ upsample_bilinear2d:
     dispatch:
         enable: True
         Ascend: UpsampleBilinear2DAscend
+        CPU: None
+        GPU: None

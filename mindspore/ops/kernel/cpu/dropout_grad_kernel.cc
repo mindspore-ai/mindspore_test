@@ -24,6 +24,7 @@
 
 #include "kernel/cpu/nnacl/fp32_grad/dropout_grad.h"
 #include "mindspore/ops/infer/grad/dropout_grad.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -69,7 +70,7 @@ bool DropoutGradBwdCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                   << " and " << kDropoutGradOutputsNum << ", but got " << inputs.size() << " and " << outputs.size();
     return false;
   }
-  keep_prob_ = GetValue<float>(primitive_->GetAttr(ops::kKeepProb));
+  keep_prob_ = GetValue<pyfloat>(primitive_->GetAttr(ops::kKeepProb));
   if (keep_prob_ <= 0.0 || keep_prob_ > 1.0) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << ", the 'keep_prob' must be in (0.0, 1.0], but got " << keep_prob_;
   }

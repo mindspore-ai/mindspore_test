@@ -28,8 +28,9 @@ namespace mindspore::device::ascend {
 // ApplyMomentum
 INPUT_MAP(ApplyMomentum) = {
   {1, INPUT_DESC(var)}, {2, INPUT_DESC(accum)}, {3, INPUT_DESC(lr)}, {4, INPUT_DESC(grad)}, {5, INPUT_DESC(momentum)}};
-ATTR_MAP(ApplyMomentum) = {{"use_nesterov", ATTR_DESC(use_nesterov, AnyTraits<bool>())},
-                           {"use_locking", ATTR_DESC(use_locking, AnyTraits<bool>())}};
+INPUT_ATTR_MAP(ApplyMomentum) = {{6, ATTR_DESC(use_nesterov, AnyTraits<bool>())},
+                                 {7, ATTR_DESC(use_locking, AnyTraits<bool>())}};
+ATTR_MAP(ApplyMomentum) = EMPTY_ATTR_MAP;
 OUTPUT_MAP(ApplyMomentum) = {{0, OUTPUT_DESC(var)}};
 REG_ADPT_DESC(ApplyMomentum, kNameApplyMomentum, ADPT_DESC(ApplyMomentum))
 REG_ADPT_DESC(ApplyMomentumD, prim::kPrimApplyMomentumD->name(), ADPT_DESC(ApplyMomentum))
@@ -41,9 +42,10 @@ INPUT_MAP(LarsV2Update) = {{1, INPUT_DESC(w)},
                            {4, INPUT_DESC(g_square_sum)},
                            {5, INPUT_DESC(weight_decay)},
                            {6, INPUT_DESC(learning_rate)}};
-ATTR_MAP(LarsV2Update) = {{"epsilon", ATTR_DESC(epsilon, AnyTraits<float>())},
-                          {"hyperpara", ATTR_DESC(hyperpara, AnyTraits<float>())},
-                          {"use_clip", ATTR_DESC(use_clip, AnyTraits<bool>())}};
+INPUT_ATTR_MAP(LarsV2Update) = {{7, ATTR_DESC(epsilon, AnyTraits<float>())},
+                                {8, ATTR_DESC(hyperpara, AnyTraits<float>())},
+                                {9, ATTR_DESC(use_clip, AnyTraits<bool>())}};
+ATTR_MAP(LarsV2Update) = EMPTY_ATTR_MAP;
 OUTPUT_MAP(LarsV2Update) = {{0, OUTPUT_DESC(g_new)}};
 REG_ADPT_DESC(LARSUpdate, kNameLARSUpdate, ADPT_DESC(LarsV2Update))
 REG_ADPT_DESC(LarsV2Update, kLarsV2UpdateOpName, ADPT_DESC(LarsV2Update))
@@ -89,8 +91,9 @@ REG_ADPT_DESC(ApplyAdagrad, kApplyAdagradOpName, ADPT_DESC(ApplyAdagradD))
 
 // ApplyAdagradV2D
 INPUT_MAP(ApplyAdagradV2D) = {{1, INPUT_DESC(var)}, {2, INPUT_DESC(accum)}, {3, INPUT_DESC(lr)}, {4, INPUT_DESC(grad)}};
-ATTR_MAP(ApplyAdagradV2D) = {{"epsilon", ATTR_DESC(epsilon, AnyTraits<float>())},
-                             {"update_slots", ATTR_DESC(update_slots, AnyTraits<bool>())}};
+INPUT_ATTR_MAP(ApplyAdagradV2D) = {{5, ATTR_DESC(epsilon, AnyTraits<float>())},
+                                   {6, ATTR_DESC(update_slots, AnyTraits<bool>())}};
+ATTR_MAP(ApplyAdagradV2D) = EMPTY_ATTR_MAP;
 OUTPUT_MAP(ApplyAdagradV2D) = {{0, OUTPUT_DESC(var)}, {1, OUTPUT_DESC(accum)}};
 REG_ADPT_DESC(ApplyAdagradV2D, kNameApplyAdagradV2D, ADPT_DESC(ApplyAdagradV2D))
 REG_ADPT_DESC(ApplyAdagradV2, kApplyAdagradV2OpName, ADPT_DESC(ApplyAdagradV2D))
@@ -183,7 +186,8 @@ REG_ADPT_DESC(SparseApplyAdagrad, kNameSparseApplyAdagradD, ADPT_DESC(SparseAppl
 // ApplyProximalAdagradD
 INPUT_MAP(ApplyProximalAdagradD) = {{1, INPUT_DESC(var)}, {2, INPUT_DESC(accum)}, {3, INPUT_DESC(lr)},
                                     {4, INPUT_DESC(l1)},  {5, INPUT_DESC(l2)},    {6, INPUT_DESC(grad)}};
-ATTR_MAP(ApplyProximalAdagradD) = {{"use_locking", ATTR_DESC(use_locking, AnyTraits<bool>())}};
+INPUT_ATTR_MAP(ApplyProximalAdagradD) = {{7, ATTR_DESC(use_locking, AnyTraits<bool>())}};
+ATTR_MAP(ApplyProximalAdagradD) = EMPTY_ATTR_MAP;
 OUTPUT_MAP(ApplyProximalAdagradD) = {{0, OUTPUT_DESC(var)}, {1, OUTPUT_DESC(accum)}};
 REG_ADPT_DESC(ApplyProximalAdagradD, kNameApplyProximalAdagrad, ADPT_DESC(ApplyProximalAdagradD))
 
@@ -191,7 +195,8 @@ REG_ADPT_DESC(ApplyProximalAdagradD, kNameApplyProximalAdagrad, ADPT_DESC(ApplyP
 INPUT_MAP(SparseApplyProximalAdagradD) = {{1, INPUT_DESC(var)},    {2, INPUT_DESC(accum)}, {3, INPUT_DESC(lr)},
                                           {4, INPUT_DESC(l1)},     {5, INPUT_DESC(l2)},    {6, INPUT_DESC(grad)},
                                           {7, INPUT_DESC(indices)}};
-ATTR_MAP(SparseApplyProximalAdagradD) = {{"use_locking", ATTR_DESC(use_locking, AnyTraits<bool>())}};
+INPUT_ATTR_MAP(SparseApplyProximalAdagradD) = {{8, ATTR_DESC(use_locking, AnyTraits<bool>())}};
+ATTR_MAP(SparseApplyProximalAdagradD) = EMPTY_ATTR_MAP;
 OUTPUT_MAP(SparseApplyProximalAdagradD) = {{0, OUTPUT_DESC(var)}, {1, OUTPUT_DESC(accum)}};
 REG_ADPT_DESC(SparseApplyProximalAdagradD, kSparseApplyProximalAdagradDOpName, ADPT_DESC(SparseApplyProximalAdagradD))
 REG_ADPT_DESC(SparseApplyProximalAdagrad, kNameSparseApplyProximalAdagrad, ADPT_DESC(SparseApplyProximalAdagradD))
@@ -231,26 +236,18 @@ REG_ADPT_DESC(SparseApplyFtrlV2, kSparseApplyFtrlV2OpName, ADPT_DESC(SparseApply
 INPUT_MAP(ApplyFtrl) = {{1, INPUT_DESC(var)},  {2, INPUT_DESC(accum)},   {3, INPUT_DESC(linear)},
                         {4, INPUT_DESC(grad)}, {5, INPUT_DESC(lr)},      {6, INPUT_DESC(l1)},
                         {7, INPUT_DESC(l2)},   {8, INPUT_DESC(lr_power)}};
-ATTR_MAP(ApplyFtrl) = {{"use_locking", ATTR_DESC(use_locking, AnyTraits<bool>())}};
+INPUT_ATTR_MAP(ApplyFtrl) = {{9, ATTR_DESC(use_locking, AnyTraits<bool>())}};
+ATTR_MAP(ApplyFtrl) = EMPTY_ATTR_MAP;
 OUTPUT_MAP(ApplyFtrl) = {{0, OUTPUT_DESC(var)}};
 REG_ADPT_DESC(ApplyFtrl, kNameApplyFtrl, ADPT_DESC(ApplyFtrl))
 REG_ADPT_DESC(ApplyFtrlD, prim::kPrimApplyFtrlD->name(), ADPT_DESC(ApplyFtrl))
-
-// ApplyRMSPropD
-INPUT_MAP(ApplyRMSPropD) = {
-  {1, INPUT_DESC(var)}, {2, INPUT_DESC(ms)}, {3, INPUT_DESC(mom)}, {4, INPUT_DESC(lr)}, {5, INPUT_DESC(grad)}};
-INPUT_ATTR_MAP(ApplyRMSPropD) = {{6, ATTR_DESC(rho, AnyTraits<float>())},
-                                 {7, ATTR_DESC(momentum, AnyTraits<float>())},
-                                 {8, ATTR_DESC(epsilon, AnyTraits<float>())}};
-ATTR_MAP(ApplyRMSPropD) = {{"use_locking", ATTR_DESC(use_locking, AnyTraits<bool>())}};
-OUTPUT_MAP(ApplyRMSPropD) = {{0, OUTPUT_DESC(var)}, {1, OUTPUT_DESC(ms)}, {2, OUTPUT_DESC(mom)}};
-REG_ADPT_DESC(ApplyRMSPropD, kNameApplyRMSProp, ADPT_DESC(ApplyRMSPropD))
 
 // ApplyCenteredRMSProp
 INPUT_MAP(ApplyCenteredRMSProp) = {{1, INPUT_DESC(var)}, {2, INPUT_DESC(mg)},       {3, INPUT_DESC(ms)},
                                    {4, INPUT_DESC(mom)}, {5, INPUT_DESC(grad)},     {6, INPUT_DESC(lr)},
                                    {7, INPUT_DESC(rho)}, {8, INPUT_DESC(momentum)}, {9, INPUT_DESC(epsilon)}};
-ATTR_MAP(ApplyCenteredRMSProp) = {{"use_locking", ATTR_DESC(use_locking, AnyTraits<bool>())}};
+INPUT_ATTR_MAP(ApplyCenteredRMSProp) = {{10, ATTR_DESC(use_locking, AnyTraits<bool>())}};
+ATTR_MAP(ApplyCenteredRMSProp) = EMPTY_ATTR_MAP;
 OUTPUT_MAP(ApplyCenteredRMSProp) = {{0, OUTPUT_DESC(var)}};
 REG_ADPT_DESC(ApplyCenteredRMSProp, kNameApplyCenteredRMSProp, ADPT_DESC(ApplyCenteredRMSProp))
 
@@ -283,8 +280,9 @@ OUTPUT_MAP(SparseApplyAdagrad) = {{0, OUTPUT_DESC(var)}, {1, OUTPUT_DESC(accum)}
 // ApplyKerasMomentumD
 INPUT_MAP(ApplyKerasMomentumD) = {
   {1, INPUT_DESC(var)}, {2, INPUT_DESC(accum)}, {3, INPUT_DESC(lr)}, {4, INPUT_DESC(grad)}, {5, INPUT_DESC(momentum)}};
-ATTR_MAP(ApplyKerasMomentumD) = {{"use_nesterov", ATTR_DESC(use_nesterov, AnyTraits<bool>())},
-                                 {"use_locking", ATTR_DESC(use_locking, AnyTraits<bool>())}};
+INPUT_ATTR_MAP(ApplyKerasMomentumD) = {{6, ATTR_DESC(use_nesterov, AnyTraits<bool>())},
+                                       {7, ATTR_DESC(use_locking, AnyTraits<bool>())}};
+ATTR_MAP(ApplyKerasMomentumD) = EMPTY_ATTR_MAP;
 OUTPUT_MAP(ApplyKerasMomentumD) = {{0, OUTPUT_DESC(var)}, {1, OUTPUT_DESC(accum)}};
 REG_ADPT_DESC(ApplyKerasMomentumD, kApplyKerasMomentumDOpName, ADPT_DESC(ApplyKerasMomentumD))
 REG_ADPT_DESC(ApplyKerasMomentum, kApplyKerasMomentumOpName, ADPT_DESC(ApplyKerasMomentumD))
@@ -322,7 +320,8 @@ INPUT_MAP(ApplyAdagradDA) = {{1, INPUT_DESC(var)},
                              {6, INPUT_DESC(l1)},
                              {7, INPUT_DESC(l2)},
                              {8, INPUT_DESC(global_step)}};
-ATTR_MAP(ApplyAdagradDA) = {{"use_locking", ATTR_DESC(use_locking, AnyTraits<bool>())}};
+INPUT_ATTR_MAP(ApplyAdagradDA) = {{9, ATTR_DESC(use_locking, AnyTraits<bool>())}};
+ATTR_MAP(ApplyAdagradDA) = EMPTY_ATTR_MAP;
 OUTPUT_MAP(ApplyAdagradDA) = {{0, OUTPUT_DESC(var)}};
 REG_ADPT_DESC(ApplyAdagradDA, kApplyAdagradDAOpName, ADPT_DESC(ApplyAdagradDA))
 
@@ -331,7 +330,8 @@ INPUT_MAP(ApplyRMSProp) = {
   {1, INPUT_DESC(var)}, {2, INPUT_DESC(ms)},       {3, INPUT_DESC(mom)},     {4, INPUT_DESC(lr)},
   {6, INPUT_DESC(rho)}, {7, INPUT_DESC(momentum)}, {8, INPUT_DESC(epsilon)}, {5, INPUT_DESC(grad)},
 };
-ATTR_MAP(ApplyRMSProp) = {{"use_locking", ATTR_DESC(use_locking, AnyTraits<bool>())}};
+INPUT_ATTR_MAP(ApplyRMSProp) = {{9, ATTR_DESC(use_locking, AnyTraits<bool>())}};
+ATTR_MAP(ApplyRMSProp) = EMPTY_ATTR_MAP;
 OUTPUT_MAP(ApplyRMSProp) = {{0, OUTPUT_DESC(var)}};
 REG_ADPT_DESC(ApplyRMSProp, kApplyRMSPropOpName, ADPT_DESC(ApplyRMSProp))
 

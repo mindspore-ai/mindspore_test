@@ -34,7 +34,6 @@ paged_attention_mask:
       default: "'DEFAULT'"
       prim_init: True
       arg_handler: str_to_enum
-
   returns:
     attention_out:
       dtype: tensor

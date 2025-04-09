@@ -26,6 +26,7 @@
 #include "frontend/parallel/ops_info/operator_info.h"
 #include "frontend/parallel/auto_parallel/operator_costmodel.h"
 #include "frontend/parallel/strategy.h"
+#include "mindspore/ops/op_def/op_enum.h"
 
 namespace mindspore {
 namespace parallel {
@@ -47,7 +48,7 @@ class PadV3Info : public OperatorInfo {
   Status InferTensorMap() override;
   Status InferMirrorOps() override;
   void ComputePaddingsFlag();
-  std::string mode_;
+  ops::Mode mode_;
   Shape paddings_flag_;  // if flag is 1, the dimension can not be split
 };
 }  // namespace parallel

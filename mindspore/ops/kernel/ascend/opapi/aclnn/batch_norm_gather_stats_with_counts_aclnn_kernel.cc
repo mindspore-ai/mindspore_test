@@ -22,30 +22,25 @@
 #include "runtime/device/kernel_runtime.h"
 #include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
 namespace batch_norm_gather_stats_with_counts {
 void BatchNormGatherStatsWithCountsAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                             const std::vector<KernelTensor *> &outputs) {
-  auto momentum = device::ascend::ConvertKernelTensor<float>(inputs[kIndex5]);
-  auto eps = device::ascend::ConvertKernelTensor<float>(inputs[kIndex6]);
-  double momentum_d = static_cast<double>(momentum);
-  double eps_d = static_cast<double>(eps);
-  GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], inputs[kIndex3], inputs[kIndex4], momentum_d,
-                        eps_d, inputs[kIndex7], outputs[kIndex0], outputs[kIndex1]);
+  momentum_ = device::ascend::ConvertKernelTensor<pyfloat>(inputs[kIndex5]);
+  eps_ = device::ascend::ConvertKernelTensor<pyfloat>(inputs[kIndex6]);
+  GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], inputs[kIndex3], inputs[kIndex4], momentum_,
+                        eps_, inputs[kIndex7], outputs[kIndex0], outputs[kIndex1]);
 }
 
 bool BatchNormGatherStatsWithCountsAscend::Launch(const std::vector<KernelTensor *> &inputs,
                                                   const std::vector<KernelTensor *> &workspace,
                                                   const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  auto momentum = device::ascend::ConvertKernelTensor<float>(inputs[kIndex5]);
-  auto eps = device::ascend::ConvertKernelTensor<float>(inputs[kIndex6]);
-  double momentum_d = static_cast<double>(momentum);
-  double eps_d = static_cast<double>(eps);
   RunOp(stream_ptr, workspace, inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], inputs[kIndex3], inputs[kIndex4],
-        momentum_d, eps_d, inputs[kIndex7], outputs[kIndex0], outputs[kIndex1]);
+        momentum_, eps_, inputs[kIndex7], outputs[kIndex0], outputs[kIndex1]);
   return true;
 }
 

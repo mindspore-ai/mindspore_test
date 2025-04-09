@@ -17,6 +17,9 @@
 #ifndef MINDSPORE_CCSRC_TRANSFORM_GRAPH_IR_OP_ADAPTER_UTIL_H_
 #define MINDSPORE_CCSRC_TRANSFORM_GRAPH_IR_OP_ADAPTER_UTIL_H_
 
+#include <algorithm>
+#include <cstdarg>
+#include <iterator>
 #include <string>
 #include <vector>
 #include <memory>
@@ -113,6 +116,51 @@ T GetCastFloatValue(const ValuePtr &value) {
       MS_LOG(EXCEPTION) << "Get and cast value of type " << value->type()->ToString()
                         << " to floating point type fail.";
   }
+}
+
+// Get floating point value from ValuePtr and cast to floating point type T
+template <typename T, typename std::enable_if<std::is_floating_point_v<std::decay_t<T>>>::type * = nullptr>
+std::vector<T> GetCastFloatArrayValue(const ValuePtr &value) {
+  MS_EXCEPTION_IF_NULL(value);
+  auto type = value->type();
+  MS_EXCEPTION_IF_NULL(type);
+
+  TypePtrList element_types;
+  if (type->isa<Tuple>()) {
+    auto tuple_type = type->cast<TuplePtr>();
+    MS_EXCEPTION_IF_NULL(tuple_type);
+    element_types = tuple_type->elements();
+  } else if (type->isa<List>()) {
+    auto list_type = type->cast<ListPtr>();
+    MS_EXCEPTION_IF_NULL(list_type);
+    element_types = list_type->elements();
+  } else {
+    MS_LOG(EXCEPTION) << "Invalid type " << type->ToString();
+  }
+
+  std::vector<T> values;
+  if (element_types.size() == 0) {
+    return values;
+  }
+
+  auto type_id = element_types[0]->type_id();
+  switch (type_id) {
+    case kNumberTypeFloat32: {
+      auto ori_values = GetValueWithCheck<std::vector<float>>(value);
+      std::transform(ori_values.begin(), ori_values.end(), std::back_inserter(values),
+                     [](float v) { return static_cast<T>(v); });
+    } break;
+    case kNumberTypeFloat64: {
+      auto ori_values = GetValueWithCheck<std::vector<double>>(value);
+      std::transform(ori_values.begin(), ori_values.end(), std::back_inserter(values),
+                     [](double v) { return static_cast<T>(v); });
+    } break;
+    default:
+      MS_LOG(EXCEPTION) << "Get and cast value of type " << value->type()->ToString()
+                        << " to floating point type fail.";
+  }
+
+  return values;
 }
 
 template <typename P, typename Q>

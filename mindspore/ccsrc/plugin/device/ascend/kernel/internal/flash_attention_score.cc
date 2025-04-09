@@ -20,6 +20,7 @@
 #include "common/kernel.h"
 #include "utils/llm_manager.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_utils.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -73,7 +74,7 @@ internal::InternalOpPtr InternalFlashAttentionScore::CreateKernel(const internal
   param_.mask_dtype = TransInternalDataType(ms_inputs[kIndex6]->dtype_id());
   param_.mask_dims = ms_inputs[kIndex6]->GetShapeVector();
   param_.head_num = static_cast<int32_t>(ms_inputs[kIndex10]->GetValueWithCheck<int64_t>());
-  param_.tor = ms_inputs[kIndex12]->GetValueWithCheck<float>();
+  param_.tor = ms_inputs[kIndex12]->GetValueWithCheck<pyfloat>();
   param_.pre_tokens = static_cast<int32_t>(ms_inputs[kIndex13]->GetValueWithCheck<int64_t>());
   param_.next_tokens = static_cast<int32_t>(ms_inputs[kIndex14]->GetValueWithCheck<int64_t>());
   param_.inner_precise = static_cast<int32_t>(ms_inputs[kIndex15]->GetValueWithCheck<int64_t>());

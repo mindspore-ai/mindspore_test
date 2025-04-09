@@ -35,8 +35,9 @@ class InplaceEluAclnnKernelMod : public AclnnKernelMod {
 
  private:
   ScalarPtr alpha_ = nullptr;
-  ScalarPtr scale_ = nullptr;
-  ScalarPtr input_scale_ = nullptr;
+  const ScalarPtr scale_ = std::make_shared<Int64Imm>(1);
+  const ScalarPtr input_scale_ = std::make_shared<Int64Imm>(1);
+
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
 }  // namespace inplace_elu

@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include "mindspore/ops/infer/sparse_apply_centered_rms_prop.h"
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
 #include "kernel/gpu/nn/sparse_apply_centered_rms_prop_gpu_kernel.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
@@ -22,7 +21,7 @@
 namespace mindspore {
 namespace kernel {
 namespace {
-constexpr size_t kSparseApplyCenteredRMSPropInputsNum = 10;
+constexpr size_t kSparseApplyCenteredRMSPropInputsNum = 11;
 constexpr size_t kSparseApplyCenteredRMSPropOutputsNum = 1;
 constexpr size_t kVarIndex = 0;
 constexpr size_t kMgIndex = 1;
@@ -43,8 +42,6 @@ bool SparseApplyCenteredRMSPropGpuKernelMod::Init(const std::vector<KernelTensor
                   << kernel_name_;
     return false;
   }
-
-  use_locking_ = GetValue<bool>(primitive_->GetAttr("use_locking"));
 
   auto kernel_attr = GetKernelAttrFromTensors(inputs, outputs);
   auto [is_match, index] = MatchKernelAttr(kernel_attr, GetOpSupport());
@@ -71,6 +68,8 @@ int SparseApplyCenteredRMSPropGpuKernelMod::Resize(const std::vector<KernelTenso
     MS_LOG(ERROR) << "For '" << kernel_name_ << "' input size must be equal 10 but got " << inputs.size();
     return KRET_RESIZE_FAILED;
   }
+
+  use_locking_ = inputs.back()->GetValueWithCheck<bool>();
   std::vector<int64_t> var_shape = inputs[kVarIndex]->GetShapeVector();
   std::vector<int64_t> mg_shape = inputs[kMgIndex]->GetShapeVector();
   std::vector<int64_t> ms_shape = inputs[kMsIndex]->GetShapeVector();
@@ -181,295 +180,44 @@ bool SparseApplyCenteredRMSPropGpuKernelMod::LaunchKernel(const std::vector<Kern
   return true;
 }
 
+#define KERNEL_REG_FOR_SACRMSP(MS_S, S)                                              \
+  std::make_pair(KernelAttr()                                                        \
+                   .AddInputAttr(kNumberType##MS_S)                                  \
+                   .AddInputAttr(kNumberType##MS_S)                                  \
+                   .AddInputAttr(kNumberType##MS_S)                                  \
+                   .AddInputAttr(kNumberType##MS_S)                                  \
+                   .AddInputAttr(kNumberType##MS_S)                                  \
+                   .AddInputAttr(kNumberType##MS_S)                                  \
+                   .AddInputAttr(kNumberType##MS_S)                                  \
+                   .AddInputAttr(kNumberType##MS_S)                                  \
+                   .AddInputAttr(kNumberType##MS_S)                                  \
+                   .AddInputAttr(kNumberTypeInt32)                                   \
+                   .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)                 \
+                   .AddOutputAttr(kNumberType##MS_S),                                \
+                 &SparseApplyCenteredRMSPropGpuKernelMod::LaunchKernel<S, int32_t>), \
+    std::make_pair(KernelAttr()                                                      \
+                     .AddInputAttr(kNumberType##MS_S)                                \
+                     .AddInputAttr(kNumberType##MS_S)                                \
+                     .AddInputAttr(kNumberType##MS_S)                                \
+                     .AddInputAttr(kNumberType##MS_S)                                \
+                     .AddInputAttr(kNumberType##MS_S)                                \
+                     .AddInputAttr(kNumberType##MS_S)                                \
+                     .AddInputAttr(kNumberType##MS_S)                                \
+                     .AddInputAttr(kNumberType##MS_S)                                \
+                     .AddInputAttr(kNumberType##MS_S)                                \
+                     .AddInputAttr(kNumberTypeInt64)                                 \
+                     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)               \
+                     .AddOutputAttr(kNumberType##MS_S),                              \
+                   &SparseApplyCenteredRMSPropGpuKernelMod::LaunchKernel<S, int64_t>)
+
 std::vector<std::pair<KernelAttr, SparseApplyCenteredRMSPropGpuKernelMod::SparseApplyCenteredRMSPropFunc>>
   SparseApplyCenteredRMSPropGpuKernelMod::func_list_ = {
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddInputAttr(kNumberTypeInt32)
-       .AddOutputAttr(kNumberTypeFloat32),
-     &SparseApplyCenteredRMSPropGpuKernelMod::LaunchKernel<float, int32_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeFloat16)
-       .AddInputAttr(kNumberTypeFloat16)
-       .AddInputAttr(kNumberTypeFloat16)
-       .AddInputAttr(kNumberTypeFloat16)
-       .AddInputAttr(kNumberTypeFloat16)
-       .AddInputAttr(kNumberTypeFloat16)
-       .AddInputAttr(kNumberTypeFloat16)
-       .AddInputAttr(kNumberTypeFloat16)
-       .AddInputAttr(kNumberTypeFloat16)
-       .AddInputAttr(kNumberTypeInt32)
-       .AddOutputAttr(kNumberTypeFloat16),
-     &SparseApplyCenteredRMSPropGpuKernelMod::LaunchKernel<half, int32_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeFloat64)
-       .AddInputAttr(kNumberTypeFloat64)
-       .AddInputAttr(kNumberTypeFloat64)
-       .AddInputAttr(kNumberTypeFloat64)
-       .AddInputAttr(kNumberTypeFloat64)
-       .AddInputAttr(kNumberTypeFloat64)
-       .AddInputAttr(kNumberTypeFloat64)
-       .AddInputAttr(kNumberTypeFloat64)
-       .AddInputAttr(kNumberTypeFloat64)
-       .AddInputAttr(kNumberTypeInt32)
-       .AddOutputAttr(kNumberTypeFloat64),
-     &SparseApplyCenteredRMSPropGpuKernelMod::LaunchKernel<double, int32_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeInt8)
-       .AddInputAttr(kNumberTypeInt8)
-       .AddInputAttr(kNumberTypeInt8)
-       .AddInputAttr(kNumberTypeInt8)
-       .AddInputAttr(kNumberTypeInt8)
-       .AddInputAttr(kNumberTypeInt8)
-       .AddInputAttr(kNumberTypeInt8)
-       .AddInputAttr(kNumberTypeInt8)
-       .AddInputAttr(kNumberTypeInt8)
-       .AddInputAttr(kNumberTypeInt32)
-       .AddOutputAttr(kNumberTypeInt8),
-     &SparseApplyCenteredRMSPropGpuKernelMod::LaunchKernel<int8_t, int32_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeInt16)
-       .AddInputAttr(kNumberTypeInt16)
-       .AddInputAttr(kNumberTypeInt16)
-       .AddInputAttr(kNumberTypeInt16)
-       .AddInputAttr(kNumberTypeInt16)
-       .AddInputAttr(kNumberTypeInt16)
-       .AddInputAttr(kNumberTypeInt16)
-       .AddInputAttr(kNumberTypeInt16)
-       .AddInputAttr(kNumberTypeInt16)
-       .AddInputAttr(kNumberTypeInt32)
-       .AddOutputAttr(kNumberTypeInt16),
-     &SparseApplyCenteredRMSPropGpuKernelMod::LaunchKernel<int16_t, int32_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeInt32)
-       .AddInputAttr(kNumberTypeInt32)
-       .AddInputAttr(kNumberTypeInt32)
-       .AddInputAttr(kNumberTypeInt32)
-       .AddInputAttr(kNumberTypeInt32)
-       .AddInputAttr(kNumberTypeInt32)
-       .AddInputAttr(kNumberTypeInt32)
-       .AddInputAttr(kNumberTypeInt32)
-       .AddInputAttr(kNumberTypeInt32)
-       .AddInputAttr(kNumberTypeInt32)
-       .AddOutputAttr(kNumberTypeInt32),
-     &SparseApplyCenteredRMSPropGpuKernelMod::LaunchKernel<int32_t, int32_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeInt64)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddInputAttr(kNumberTypeInt32)
-       .AddOutputAttr(kNumberTypeInt64),
-     &SparseApplyCenteredRMSPropGpuKernelMod::LaunchKernel<int64_t, int32_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeUInt8)
-       .AddInputAttr(kNumberTypeUInt8)
-       .AddInputAttr(kNumberTypeUInt8)
-       .AddInputAttr(kNumberTypeUInt8)
-       .AddInputAttr(kNumberTypeUInt8)
-       .AddInputAttr(kNumberTypeUInt8)
-       .AddInputAttr(kNumberTypeUInt8)
-       .AddInputAttr(kNumberTypeUInt8)
-       .AddInputAttr(kNumberTypeUInt8)
-       .AddInputAttr(kNumberTypeInt32)
-       .AddOutputAttr(kNumberTypeUInt8),
-     &SparseApplyCenteredRMSPropGpuKernelMod::LaunchKernel<uint8_t, int32_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeUInt16)
-       .AddInputAttr(kNumberTypeUInt16)
-       .AddInputAttr(kNumberTypeUInt16)
-       .AddInputAttr(kNumberTypeUInt16)
-       .AddInputAttr(kNumberTypeUInt16)
-       .AddInputAttr(kNumberTypeUInt16)
-       .AddInputAttr(kNumberTypeUInt16)
-       .AddInputAttr(kNumberTypeUInt16)
-       .AddInputAttr(kNumberTypeUInt16)
-       .AddInputAttr(kNumberTypeInt32)
-       .AddOutputAttr(kNumberTypeUInt16),
-     &SparseApplyCenteredRMSPropGpuKernelMod::LaunchKernel<uint16_t, int32_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeUInt32)
-       .AddInputAttr(kNumberTypeUInt32)
-       .AddInputAttr(kNumberTypeUInt32)
-       .AddInputAttr(kNumberTypeUInt32)
-       .AddInputAttr(kNumberTypeUInt32)
-       .AddInputAttr(kNumberTypeUInt32)
-       .AddInputAttr(kNumberTypeUInt32)
-       .AddInputAttr(kNumberTypeUInt32)
-       .AddInputAttr(kNumberTypeUInt32)
-       .AddInputAttr(kNumberTypeInt32)
-       .AddOutputAttr(kNumberTypeUInt32),
-     &SparseApplyCenteredRMSPropGpuKernelMod::LaunchKernel<uint32_t, int32_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeUInt64)
-       .AddInputAttr(kNumberTypeUInt64)
-       .AddInputAttr(kNumberTypeUInt64)
-       .AddInputAttr(kNumberTypeUInt64)
-       .AddInputAttr(kNumberTypeUInt64)
-       .AddInputAttr(kNumberTypeUInt64)
-       .AddInputAttr(kNumberTypeUInt64)
-       .AddInputAttr(kNumberTypeUInt64)
-       .AddInputAttr(kNumberTypeUInt64)
-       .AddInputAttr(kNumberTypeInt32)
-       .AddOutputAttr(kNumberTypeUInt64),
-     &SparseApplyCenteredRMSPropGpuKernelMod::LaunchKernel<uint64_t, int32_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddOutputAttr(kNumberTypeFloat32),
-     &SparseApplyCenteredRMSPropGpuKernelMod::LaunchKernel<float, int64_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeFloat16)
-       .AddInputAttr(kNumberTypeFloat16)
-       .AddInputAttr(kNumberTypeFloat16)
-       .AddInputAttr(kNumberTypeFloat16)
-       .AddInputAttr(kNumberTypeFloat16)
-       .AddInputAttr(kNumberTypeFloat16)
-       .AddInputAttr(kNumberTypeFloat16)
-       .AddInputAttr(kNumberTypeFloat16)
-       .AddInputAttr(kNumberTypeFloat16)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddOutputAttr(kNumberTypeFloat16),
-     &SparseApplyCenteredRMSPropGpuKernelMod::LaunchKernel<half, int64_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeFloat64)
-       .AddInputAttr(kNumberTypeFloat64)
-       .AddInputAttr(kNumberTypeFloat64)
-       .AddInputAttr(kNumberTypeFloat64)
-       .AddInputAttr(kNumberTypeFloat64)
-       .AddInputAttr(kNumberTypeFloat64)
-       .AddInputAttr(kNumberTypeFloat64)
-       .AddInputAttr(kNumberTypeFloat64)
-       .AddInputAttr(kNumberTypeFloat64)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddOutputAttr(kNumberTypeFloat64),
-     &SparseApplyCenteredRMSPropGpuKernelMod::LaunchKernel<double, int64_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeInt8)
-       .AddInputAttr(kNumberTypeInt8)
-       .AddInputAttr(kNumberTypeInt8)
-       .AddInputAttr(kNumberTypeInt8)
-       .AddInputAttr(kNumberTypeInt8)
-       .AddInputAttr(kNumberTypeInt8)
-       .AddInputAttr(kNumberTypeInt8)
-       .AddInputAttr(kNumberTypeInt8)
-       .AddInputAttr(kNumberTypeInt8)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddOutputAttr(kNumberTypeInt8),
-     &SparseApplyCenteredRMSPropGpuKernelMod::LaunchKernel<int8_t, int64_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeInt16)
-       .AddInputAttr(kNumberTypeInt16)
-       .AddInputAttr(kNumberTypeInt16)
-       .AddInputAttr(kNumberTypeInt16)
-       .AddInputAttr(kNumberTypeInt16)
-       .AddInputAttr(kNumberTypeInt16)
-       .AddInputAttr(kNumberTypeInt16)
-       .AddInputAttr(kNumberTypeInt16)
-       .AddInputAttr(kNumberTypeInt16)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddOutputAttr(kNumberTypeInt16),
-     &SparseApplyCenteredRMSPropGpuKernelMod::LaunchKernel<int16_t, int64_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeInt32)
-       .AddInputAttr(kNumberTypeInt32)
-       .AddInputAttr(kNumberTypeInt32)
-       .AddInputAttr(kNumberTypeInt32)
-       .AddInputAttr(kNumberTypeInt32)
-       .AddInputAttr(kNumberTypeInt32)
-       .AddInputAttr(kNumberTypeInt32)
-       .AddInputAttr(kNumberTypeInt32)
-       .AddInputAttr(kNumberTypeInt32)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddOutputAttr(kNumberTypeInt32),
-     &SparseApplyCenteredRMSPropGpuKernelMod::LaunchKernel<int32_t, int64_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeInt64)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddOutputAttr(kNumberTypeInt64),
-     &SparseApplyCenteredRMSPropGpuKernelMod::LaunchKernel<int64_t, int64_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeUInt8)
-       .AddInputAttr(kNumberTypeUInt8)
-       .AddInputAttr(kNumberTypeUInt8)
-       .AddInputAttr(kNumberTypeUInt8)
-       .AddInputAttr(kNumberTypeUInt8)
-       .AddInputAttr(kNumberTypeUInt8)
-       .AddInputAttr(kNumberTypeUInt8)
-       .AddInputAttr(kNumberTypeUInt8)
-       .AddInputAttr(kNumberTypeUInt8)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddOutputAttr(kNumberTypeUInt8),
-     &SparseApplyCenteredRMSPropGpuKernelMod::LaunchKernel<uint8_t, int64_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeUInt16)
-       .AddInputAttr(kNumberTypeUInt16)
-       .AddInputAttr(kNumberTypeUInt16)
-       .AddInputAttr(kNumberTypeUInt16)
-       .AddInputAttr(kNumberTypeUInt16)
-       .AddInputAttr(kNumberTypeUInt16)
-       .AddInputAttr(kNumberTypeUInt16)
-       .AddInputAttr(kNumberTypeUInt16)
-       .AddInputAttr(kNumberTypeUInt16)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddOutputAttr(kNumberTypeUInt16),
-     &SparseApplyCenteredRMSPropGpuKernelMod::LaunchKernel<uint16_t, int64_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeUInt32)
-       .AddInputAttr(kNumberTypeUInt32)
-       .AddInputAttr(kNumberTypeUInt32)
-       .AddInputAttr(kNumberTypeUInt32)
-       .AddInputAttr(kNumberTypeUInt32)
-       .AddInputAttr(kNumberTypeUInt32)
-       .AddInputAttr(kNumberTypeUInt32)
-       .AddInputAttr(kNumberTypeUInt32)
-       .AddInputAttr(kNumberTypeUInt32)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddOutputAttr(kNumberTypeUInt32),
-     &SparseApplyCenteredRMSPropGpuKernelMod::LaunchKernel<uint32_t, int64_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeUInt64)
-       .AddInputAttr(kNumberTypeUInt64)
-       .AddInputAttr(kNumberTypeUInt64)
-       .AddInputAttr(kNumberTypeUInt64)
-       .AddInputAttr(kNumberTypeUInt64)
-       .AddInputAttr(kNumberTypeUInt64)
-       .AddInputAttr(kNumberTypeUInt64)
-       .AddInputAttr(kNumberTypeUInt64)
-       .AddInputAttr(kNumberTypeUInt64)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddOutputAttr(kNumberTypeUInt64),
-     &SparseApplyCenteredRMSPropGpuKernelMod::LaunchKernel<uint64_t, int64_t>},
-};
+    KERNEL_REG_FOR_SACRMSP(Float16, half),    KERNEL_REG_FOR_SACRMSP(Float32, float),
+    KERNEL_REG_FOR_SACRMSP(Float64, double),  KERNEL_REG_FOR_SACRMSP(Int8, int8_t),
+    KERNEL_REG_FOR_SACRMSP(Int16, int16_t),   KERNEL_REG_FOR_SACRMSP(Int32, int32_t),
+    KERNEL_REG_FOR_SACRMSP(Int64, int64_t),   KERNEL_REG_FOR_SACRMSP(UInt8, uint8_t),
+    KERNEL_REG_FOR_SACRMSP(UInt16, uint16_t), KERNEL_REG_FOR_SACRMSP(UInt32, uint32_t),
+    KERNEL_REG_FOR_SACRMSP(UInt64, uint64_t)};
 
 std::vector<KernelAttr> SparseApplyCenteredRMSPropGpuKernelMod::GetOpSupport() {
   std::vector<KernelAttr> support_list;

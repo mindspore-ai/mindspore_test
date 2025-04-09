@@ -1,0 +1,37 @@
+#operator apply_momentum
+apply_momentum:
+    args:
+        variable:
+            dtype: tensor
+        accumulation:
+            dtype: tensor
+        learning_rate:
+            dtype: tensor
+            type_cast: number
+        gradient:
+            dtype: tensor
+        momentum:
+            dtype: tensor
+            type_cast: number
+        use_nesterov:
+            dtype: bool
+            default: False
+            prim_init: True
+        use_locking:
+            dtype: bool
+            default: False
+            prim_init: True
+        gradient_scale:
+            dtype: float
+            default: 1.0
+            prim_init: True
+    returns:
+        output:
+            dtype: tensor
+    args_signature:
+        rw_write: variable, accumulation
+        dtype_group: (variable, accumulation, gradient), (learning_rate), (momentum)
+    labels:
+        side_effect_mem: True
+    function:
+        disable: True

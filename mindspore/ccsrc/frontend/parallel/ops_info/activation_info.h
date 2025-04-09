@@ -26,6 +26,7 @@
 #include "frontend/parallel/auto_parallel/operator_costmodel.h"
 #include "frontend/parallel/ops_info/operator_info.h"
 #include "frontend/parallel/strategy.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace parallel {
@@ -460,7 +461,7 @@ class DropoutInfo : public ActivationOther {
   Status InferAsLossDivisor() override;
 
  private:
-  float keep_prob_ = 0.5;
+  pyfloat keep_prob_ = 0.5;
   int64_t seed0_ = 0;
   int64_t seed1_ = 0;
   int64_t get_seed() const {

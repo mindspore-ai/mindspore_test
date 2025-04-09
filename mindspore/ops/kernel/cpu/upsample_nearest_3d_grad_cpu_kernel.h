@@ -26,6 +26,7 @@
 #include "common/common_utils.h"
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "common/ms_factory.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -62,7 +63,7 @@ class UpsampleNearest3DGradCpuKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> input_shape_;
   std::vector<int64_t> output_shape_;
   std::vector<int64_t> none_list_;
-  std::vector<float> scales_;
+  std::vector<pyfloat> scales_;
 };
 }  // namespace upsample_nearest_3d_grad_cpu
 }  // namespace kernel

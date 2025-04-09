@@ -15,6 +15,7 @@
  */
 
 #include "infer/ops_func_impl/speed_fusion_attention.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 #include <string>
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "ops_utils/op_constants.h"
@@ -156,7 +157,7 @@ int32_t SpeedFusionAttentionFuncImpl::CheckValidation(const PrimitivePtr &primit
 
   MS_CHECK_VALUE(padding_mask->IsNone(), "For " + op_name + ", padding_mask is not supported yet.");
 
-  auto keep_prob_opt = keep_prob->GetScalarValue<float>();
+  auto keep_prob_opt = keep_prob->GetScalarValue<pyfloat>();
   if (MS_UNLIKELY(!keep_prob_opt.has_value())) {
     return OP_CHECK_RETRY;
   }

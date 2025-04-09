@@ -23,13 +23,13 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 tensor::TensorPtr IsCloseAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
-                                         const TensorPtr &other_tensor, const FP32ImmPtr &rtol, const FP32ImmPtr &atol,
+                                         const TensorPtr &other_tensor, const FP64ImmPtr &rtol, const FP64ImmPtr &atol,
                                          const BoolImmPtr &equal_nan) {
   MS_LOG(DEBUG) << "IsCloseCustomize start";
   OpRunner::InferOpOutput(op, input_tensor, other_tensor, rtol, atol, equal_nan);
 
-  auto rtol_imm = static_cast<double>(GetValue<float>(rtol));
-  auto atol_imm = static_cast<double>(GetValue<float>(atol));
+  auto rtol_imm = static_cast<double>(rtol->value());
+  auto atol_imm = static_cast<double>(atol->value());
   auto equal_nan_imm = GetValue<bool>(equal_nan);
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor, other_tensor);

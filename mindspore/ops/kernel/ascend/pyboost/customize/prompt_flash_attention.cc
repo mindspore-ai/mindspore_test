@@ -34,14 +34,14 @@ void PromptFlashAttentionAscendCall(
   const std::optional<TensorPtr> &pse_shift, const std::optional<TensorPtr> &deq_scale1,
   const std::optional<TensorPtr> &quant_scale1, const std::optional<TensorPtr> &deq_scale2,
   const std::optional<TensorPtr> &quant_scale2, const std::optional<TensorPtr> &quant_offset2,
-  const Int64ImmPtr num_heads, const FP32ImmPtr scale_value, const Int64ImmPtr pre_tokens,
+  const Int64ImmPtr num_heads, const FP64ImmPtr scale_value, const Int64ImmPtr pre_tokens,
   const Int64ImmPtr next_tokens, const Int64ImmPtr input_layout, const Int64ImmPtr num_key_value_heads,
   const Int64ImmPtr sparse_mode, const Int64ImmPtr inner_precise, const std::vector<tensor::TensorPtr> &outputs) {
   std::vector<int64_t> actual_seq_qlen_array;
   std::vector<int64_t> actual_seq_qlen_kv_array;
 
   auto num_heads_value = GetValue<int64_t>(num_heads);
-  auto scale_value_value = static_cast<double>(GetValue<float>(scale_value));
+  auto scale_value_value = static_cast<double>(scale_value->value());
   auto pre_tokens_value = GetValue<int64_t>(pre_tokens);
   auto next_tokens_value = GetValue<int64_t>(next_tokens);
   auto input_layout_string = FASInputLayoutMode::ConvertEnumToString(GetValue<int64_t>(input_layout));
@@ -68,7 +68,7 @@ tensor::TensorPtr PromptFlashAttentionAscendCustomize(
   const std::optional<ValueTuplePtr> &actual_seq_qlen_kv, const std::optional<TensorPtr> &pse_shift,
   const std::optional<TensorPtr> &deq_scale1, const std::optional<TensorPtr> &quant_scale1,
   const std::optional<TensorPtr> &deq_scale2, const std::optional<TensorPtr> &quant_scale2,
-  const std::optional<TensorPtr> &quant_offset2, const Int64ImmPtr num_heads, const FP32ImmPtr scale_value,
+  const std::optional<TensorPtr> &quant_offset2, const Int64ImmPtr num_heads, const FP64ImmPtr scale_value,
   const Int64ImmPtr pre_tokens, const Int64ImmPtr next_tokens, const Int64ImmPtr input_layout,
   const Int64ImmPtr num_key_value_heads, const Int64ImmPtr sparse_mode, const Int64ImmPtr inner_precise) {
   OpRunner::InferOpOutput(op, query, key, value, atten_mask, actual_seq_qlen, actual_seq_qlen_kv, pse_shift, deq_scale1,

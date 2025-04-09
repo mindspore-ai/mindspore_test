@@ -1,0 +1,58 @@
+lars_update:
+    description: |
+        Conducts LARS (layer-wise adaptive rate scaling) update on the sum of squares of gradient.
+
+        For more details, please refer to :class:`mindspore.nn.LARS`.
+
+        Args:
+            epsilon (float, optional): Term added to the denominator to improve numerical stability.
+                Default: ``1e-05`` .
+            hyperpara (float, optional): Trust coefficient for calculating the local learning rate.
+                Default: ``0.001`` .
+            use_clip (bool, optional): Whether to use clip operation for calculating the local learning rate.
+                Default: ``False`` .
+
+        Inputs:
+            - **weight** (Tensor) - A tensor, representing the weight.
+              The shape is :math:`(N, *)` where :math:`*` means, any number of additional dimensions.
+            - **gradient** (Tensor) - The gradient of weight, which has the same shape and dtype with weight.
+            - **norm_weight** (Tensor) - A scalar tensor, representing the sum of squares of weight.
+            - **norm_gradient** (Tensor) - A scalar tensor, representing the sum of squares of gradient.
+            - **weight_decay** (Union[Number, Tensor]) - Weight decay. It must be a scalar tensor or number.
+            - **learning_rate** (Union[Number, Tensor]) - Learning rate. It must be a scalar tensor or number.
+
+        Outputs:
+            Tensor, represents the new gradient.
+
+        Raises:
+            TypeError: If neither `epsilon` nor `hyperpara` is a float.
+            TypeError: If `use_clip` is not a bool.
+            TypeError: If `weight`, `gradient`, `norm_weight` or `norm_gradient` is not a Tensor.
+            TypeError: If `weight_decay` or `learning_rate` is neither a Number nor a Tensor.
+            TypeError: If shape of `gradient` is not the same as `weight`.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import numpy as np
+            >>> from mindspore import Tensor, nn, ops
+            >>> class Net(nn.Cell):
+            ...     def __init__(self):
+            ...         super(Net, self).__init__()
+            ...         self.lars = ops.LARSUpdate()
+            ...         self.reduce = ops.ReduceSum()
+            ...         self.square = ops.Square()
+            ...     def construct(self, weight, gradient):
+            ...         w_square_sum = self.reduce(self.square(weight))
+            ...         grad_square_sum = self.reduce(self.square(gradient))
+            ...         grad_t = self.lars(weight, gradient, w_square_sum, grad_square_sum, 0.0, 1.0)
+            ...         return grad_t
+            ...
+            >>> weight = Tensor(np.array([[0.5, 0.8, 0.2], [0.6, 0.4, 0.2]]).astype(np.float32))
+            >>> gradient = Tensor(np.array([[0.4, 0.4, 0.5], [0.2, 0.4, 0.3]]).astype(np.float32))
+            >>> net = Net()
+            >>> output = net(Tensor(weight), Tensor(gradient))
+            >>> print(output)
+            [[0.0005265  0.0005265 0.00065813]
+            [0.00026325 0.0005265 0.00039488]]

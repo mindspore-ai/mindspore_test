@@ -25,6 +25,7 @@
 #include "kernel/gpu/cuda_impl/cuda_ops/boundingbox_decode_impl.cuh"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -58,10 +59,10 @@ class BoundingBoxDecodeGpuKernelMod : public NativeGpuKernelMod {
   size_t rois_size_;
   size_t deltas_size_;
   size_t bboxes_size_;
-  std::vector<float> means_;
-  std::vector<float> stds_;
+  std::vector<pyfloat> means_;
+  std::vector<pyfloat> stds_;
   std::vector<int> max_shape_;
-  float wh_ratio_clip_;
+  pyfloat wh_ratio_clip_;
 };
 }  // namespace kernel
 }  // namespace mindspore

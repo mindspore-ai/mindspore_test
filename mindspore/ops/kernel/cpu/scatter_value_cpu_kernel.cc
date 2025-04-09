@@ -20,6 +20,7 @@
 #include <functional>
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/ops_func_impl/tensor_scatter_elements.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore::kernel {
 namespace scatter_value_cpu {
@@ -142,7 +143,7 @@ bool ScatterValueCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTens
                                             const std::vector<kernel::KernelTensor *> &outputs) {
   auto *input = reinterpret_cast<U *>(inputs[kIndex0]->device_ptr());
   auto *indices = reinterpret_cast<V *>(inputs[kIndex2]->device_ptr());
-  auto src = static_cast<U>(inputs[kIndex3]->GetValueWithCheck<float>());
+  auto src = static_cast<U>(inputs[kIndex3]->GetValueWithCheck<pyfloat>());
   auto *output = reinterpret_cast<U *>(outputs[kIndex0]->device_ptr());
   auto buffer_size = outputs[kIndex0]->size();
   auto memcpy_task = [&](size_t start, size_t end) {
@@ -170,7 +171,7 @@ bool ScatterValueCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTens
     .AddInputAttr(MS_T)                                  \
     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)   \
     .AddInputAttr(MS_S)                                  \
-    .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32) \
+    .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat) \
     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)   \
     .AddOutputAttr(MS_T),                                \
     &ScatterValueCpuKernelMod::LaunchKernel<U, V>

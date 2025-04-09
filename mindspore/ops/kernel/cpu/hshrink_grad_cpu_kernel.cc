@@ -18,6 +18,7 @@
 #include <algorithm>
 #include "common/ms_factory.h"
 #include "kernel/cpu/nnacl/fp32_grad/activation_grad_fp32.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -29,7 +30,7 @@ constexpr size_t kHShrinkGradOutputsNum = 1;
 const std::vector<KernelAttr> kernel_attr = {{KernelAttr()
                                                 .AddInputAttr(kNumberTypeFloat32)
                                                 .AddInputAttr(kNumberTypeFloat32)
-                                                .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+                                                .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
                                                 .AddOutputAttr(kNumberTypeFloat32)}};
 }  // namespace
 
@@ -57,7 +58,7 @@ int HShrinkGradCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
     return ret;
   }
   input_elements_ = inputs[0]->size() / unit_size_;
-  lambd = inputs[kIndex2]->GetValueWithCheck<float>();
+  lambd_ = inputs[kIndex2]->GetValueWithCheck<pyfloat>();
   return static_cast<int>(KRET_OK);
 }
 
@@ -74,7 +75,7 @@ bool HShrinkGradCpuKernelMod::Launch(const std::vector<KernelTensor *> &inputs, 
   MS_ERROR_IF_NULL_W_RET_VAL(dx, false);
 
   auto task = [dy, x, dx, this](size_t start, size_t end) {
-    auto ret = HardShrinkGrad(dy + start, x + start, SizeToInt(end - start), dx + start, lambd);
+    auto ret = HardShrinkGrad(dy + start, x + start, SizeToInt(end - start), dx + start, lambd_);
     if (ret != NNACL_OK) {
       MS_LOG(ERROR) << "For '" << kernel_name_ << "', call NNACL HShrinkGrad function failed.";
       return false;

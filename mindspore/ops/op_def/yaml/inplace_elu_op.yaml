@@ -17,3 +17,5 @@ inplace_elu:
   dispatch:
     enable: True
     Ascend: InplaceEluAscend
+    CPU: None
+    GPU: None

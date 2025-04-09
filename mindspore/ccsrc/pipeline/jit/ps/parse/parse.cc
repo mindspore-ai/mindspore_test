@@ -30,6 +30,7 @@
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 #include "utils/hash_map.h"
 #include "pipeline/jit/ps/fallback.h"
 #include "pipeline/jit/ps/parse/resolve.h"
@@ -1333,14 +1334,8 @@ AnfNodePtr Parser::ParseNum(const FunctionBlockPtr &, const py::object &node) {
     return NewValueNode(data);
   } else if (py::isinstance<py::float_>(obj)) {
     MS_LOG(INFO) << "The Num is float:" << (std::string)py::str(obj);
-    auto data = py::cast<float>(obj);
-    auto res = NewValueNode(data);
-    auto fp32_val = res->value()->cast<FP32ImmPtr>();
-    if (fp32_val != nullptr) {
-      MS_LOG(DEBUG) << "Set float64 value to FP32Imm.";
-      fp32_val->set_prim_value(py::cast<double>(obj));
-    }
-    return res;
+    auto data = py::cast<pyfloat>(obj);
+    return NewValueNode(data);
   } else {
     // no else actually
     errcode_ = PARSE_NODE_TYPE_UNKNOWN;
@@ -1366,14 +1361,8 @@ AnfNodePtr Parser::ParseConstant(const FunctionBlockPtr &, const py::object &nod
     return NewValueNode(py::cast<int64_t>(obj));
   } else if (py::isinstance<py::float_>(obj)) {
     MS_LOG(INFO) << "The Constant is float:" << (std::string)py::str(obj);
-    auto data = py::cast<float>(obj);
-    auto res = NewValueNode(data);
-    auto fp32_val = res->value()->cast<FP32ImmPtr>();
-    if (fp32_val != nullptr) {
-      MS_LOG(DEBUG) << "Set float64 value to FP32Imm.";
-      fp32_val->set_prim_value(py::cast<double>(obj));
-    }
-    return res;
+    auto data = py::cast<pyfloat>(obj);
+    return NewValueNode(data);
   } else if (py::isinstance<py::str>(obj)) {
     MS_LOG(INFO) << "The Constant is string:" << (std::string)py::str(obj);
     return NewValueNode(py::cast<std::string>(obj));

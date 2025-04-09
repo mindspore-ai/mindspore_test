@@ -1,0 +1,78 @@
+apply_proximal_adagrad:
+    description: |
+        Updates relevant entries according to the proximal adagrad algorithm.
+        The proximal adagrad algorithm was proposed in `Efficient Learning using Forward-Backward Splitting
+        <http://papers.nips.cc//paper/3793-efficient-learning-using-forward-backward-splitting.pdf>`_.
+
+        .. math::
+            \begin{array}{ll} \\
+                accum += grad * grad \\
+                \text{prox_v} = var - lr * grad * \frac{1}{\sqrt{accum}} \\
+                var = \frac{sign(\text{prox_v})}{1 + lr * l2} * \max(\left| \text{prox_v} \right| - lr * l1, 0)
+            \end{array}
+
+        Inputs of `var`, `accum` and `grad` comply with the implicit type conversion rules
+        to make the data types consistent.
+        If they have different data types, the lower priority data type will be converted to
+        the relatively highest priority data type.
+
+        Args:
+            use_locking (bool, optional): If ``True`` , the var and accumulation tensors will be protected
+                from being updated. Default: ``False`` .
+
+        Inputs:
+            - **var** (Union[Parameter, Tensor]) - Variable to be updated. The data type must be float16 or float32.
+              The shape is :math:`(N, *)` where :math:`*` means, any number of additional dimensions.
+            - **accum** (Union[Parameter, Tensor]) - Accumulation to be updated, must have the same shape and dtype as
+              `var`.
+            - **lr** (Union[Number, Tensor]) - The learning rate value, must be a scalar. The data type must be
+              float16 or float32.
+            - **l1** (Union[Number, Tensor]) - l1 regularization strength, must be a scalar. The data type must be
+              float16 or float32.
+            - **l2** (Union[Number, Tensor]) - l2 regularization strength, must be a scalar. The data type must be
+              float16 or float32.
+            - **grad** (Tensor) - Gradient with the same shape and dtype as `var`.
+
+        Outputs:
+            Tuple of 2 Tensors, the updated parameters or tensors.
+
+            - **var** (Tensor) - The same shape and data type as `var`.
+            - **accum** (Tensor) - The same shape and data type as `accum`.
+
+        Raises:
+            TypeError: If `use_blocking` is not a bool.
+            TypeError: If dtype of `var`, `lr`, `l1` or `l2` is neither float16 nor float32.
+            TypeError: If `lr`, `l1` or `l2` is neither a Number nor a Tensor.
+            TypeError: If `grad` is not a Tensor.
+            TypeError: If the data type of `var`, `accum` and `grad` conversion of Parameter is not supported.
+
+        Supported Platforms:
+            ``Ascend`` ``GPU`` ``CPU``
+
+        Examples:
+            >>> import numpy as np
+            >>> from mindspore import Tensor, nn, ops, Parameter
+            >>> class Net(nn.Cell):
+            ...     def __init__(self):
+            ...         super(Net, self).__init__()
+            ...         self.apply_proximal_adagrad = ops.ApplyProximalAdagrad()
+            ...         self.var = Parameter(Tensor(np.array([[0.6, 0.4],
+            ...                                               [0.1, 0.5]]).astype(np.float32)), name="var")
+            ...         self.accum = Parameter(Tensor(np.array([[0.6, 0.5],
+            ...                                                 [0.2, 0.6]]).astype(np.float32)), name="accum")
+            ...         self.lr = 0.01
+            ...         self.l1 = 0.0
+            ...         self.l2 = 0.0
+            ...     def construct(self, grad):
+            ...         out = self.apply_proximal_adagrad(self.var, self.accum, self.lr, self.l1, self.l2, grad)
+            ...         return out
+            ...
+            >>> net = Net()
+            >>> grad = Tensor(np.array([[0.3, 0.7], [0.1, 0.8]]).astype(np.float32))
+            >>> output = net(grad)
+            >>> print(output)
+            (Tensor(shape=[2, 2], dtype=Float32, value=
+            [[ 5.96388459e-01,  3.92964751e-01],
+            [ 9.78178233e-02,  4.92815793e-01]]), Tensor(shape=[2, 2], dtype=Float32, value=
+            [[ 6.90000057e-01,  9.90000010e-01],
+            [ 2.10000008e-01,  1.24000001e+00]]))

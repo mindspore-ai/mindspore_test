@@ -112,8 +112,6 @@ class RangeGpuKernelMod : public NativeGpuKernelMod {
     if (input_count != kInputSize) {
       MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the number of inputs must be 4, but got " << input_count;
     }
-
-    max_output_length_ = inputs[kIndex3]->GetValueWithCheck<int64_t>();
     return true;
   }
 
@@ -122,6 +120,7 @@ class RangeGpuKernelMod : public NativeGpuKernelMod {
     if (ret != KRET_OK) {
       return ret;
     }
+    max_output_length_ = inputs[kIndex3]->GetValueWithCheck<int64_t>();
     workspace_size_list_.push_back(sizeof(int64_t));
     workspace_size_list_.push_back(sizeof(DynamicRangeErrorCode));
     return KRET_OK;

@@ -1,0 +1,26 @@
+#operator apply_proximal_gradient_descent
+apply_proximal_gradient_descent:
+    args:
+        var:
+            dtype: tensor
+        alpha:
+            dtype: tensor
+            type_cast: float
+        l1:
+            dtype: tensor
+            type_cast: float
+        l2:
+            dtype: tensor
+            type_cast: float
+        delta:
+            dtype: tensor
+    returns:
+        var:
+            dtype: tensor
+    args_signature:
+        rw_write: var
+        dtype_group: (var, delta), (alpha), (l1), (l2)
+    labels:
+        side_effect_mem: True
+    function:
+        disable: True

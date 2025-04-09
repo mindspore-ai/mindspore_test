@@ -25,9 +25,9 @@ namespace pyboost {
 std::tuple<tensor::TensorPtr, tensor::TensorPtr> RmsNormAscendCustomize(const std::shared_ptr<OpRunner> &op,
                                                                         const TensorPtr &x_tensor,
                                                                         const TensorPtr &gamma_tensor,
-                                                                        const FP32ImmPtr &epsilon) {
+                                                                        const FP64ImmPtr &epsilon) {
   OpRunner::InferOpOutput(op, x_tensor, gamma_tensor, epsilon);
-  auto epsilon_imm = static_cast<double>(GetValue<float>(epsilon));
+  auto epsilon_imm = static_cast<double>(epsilon->value());
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), x_tensor, gamma_tensor);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());

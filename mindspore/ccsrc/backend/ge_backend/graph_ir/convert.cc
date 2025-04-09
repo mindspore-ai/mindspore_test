@@ -65,11 +65,13 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_k.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_n.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::backend::ge_backend {
 using ::ge::Operator;
@@ -120,7 +122,8 @@ constexpr auto kIsFreeVariable = "_is_free_variable";
 static int64_t refdata_null_idx = 0;
 
 namespace {
-const std::map<TypeId, TypeId> kReduceRaiseMap = {{kNumberTypeInt64, kNumberTypeInt32}};
+const std::map<TypeId, TypeId> kReduceRaiseMap = {{kNumberTypeInt64, kNumberTypeInt32},
+                                                  {kNumberTypeFloat64, kNumberTypeFloat32}};
 mindspore::HashMap<std::string, size_t> branches_repeat_times = {};
 mindspore::HashMap<std::string, size_t> call_subgraphs_repeat_times = {};
 // {node name | {{input_index, dst_type}...}}
@@ -137,7 +140,13 @@ const std::map<std::string, std::vector<std::pair<size_t, TypeId>>> kTransInputD
   {kResizeNearestNeighborV2GradOpName, {{2, kNumberTypeInt32}}},
   {kResizeBilinearV2OpName, {{2, kNumberTypeInt32}}},
   {kCol2ImOpName, {{2, kNumberTypeInt32}}},
-  {kSplitOpName, {{2, kNumberTypeInt32}}}};
+  {kSplitOpName, {{2, kNumberTypeInt32}}},
+  {prim::kPrimApplyCamePart1->name(), {{2, kNumberTypeFloat32}}},
+  {prim::kPrimApplyCamePart2->name(), {{7, kNumberTypeFloat32}}},
+  {prim::kPrimApplyCamePart3->name(), {{3, kNumberTypeFloat32}, {4, kNumberTypeFloat32}, {5, kNumberTypeFloat32}}},
+  {prim::kPrimApplyCamePart4->name(), {{7, kNumberTypeFloat32}}},
+  {prim::kPrimFFTFreq->name(), {{2, kNumberTypeFloat32}}},
+  {prim::kPrimRFFTFreq->name(), {{2, kNumberTypeFloat32}}}};
 
 // {node name | {{attr_name, dst_type}...}}
 const std::map<std::string, std::vector<std::pair<std::string, TypeId>>> kTransAttrDTypeMap = {
@@ -173,6 +182,14 @@ ValuePtr CreateNewValue(const ValuePtr &value, const std::vector<T> &values, con
       return MakeValue(result);
     }
     return MakeValue(static_cast<int32_t>(values[0]));
+  } else if (dst_type == kNumberTypeFloat32) {
+    if (value->isa<ValueSequence>()) {
+      std::vector<float> result;
+      std::for_each(values.begin(), values.end(),
+                    [&result](const auto &elem) { result.emplace_back(static_cast<float>(elem)); });
+      return MakeValue(result);
+    }
+    return MakeValue(static_cast<float>(values[0]));
   } else {
     MS_LOG(EXCEPTION) << "Invalid dst type:" << TypeIdToString(dst_type);
   }
@@ -234,6 +251,12 @@ ValuePtr CastDstValue(const ValuePtr &value, const TypeId &dst_type) {
     }
     auto values = GetAllValues<int64_t>(value);
     return CreateNewValue<int64_t>(value, values, dst_type);
+  } else if (src_type == kNumberTypeFloat64) {
+    if (value->isa<tensor::Tensor>()) {
+      return nullptr;
+    }
+    auto values = GetAllValues<double>(value);
+    return CreateNewValue<double>(value, values, dst_type);
   } else {
     MS_LOG(EXCEPTION) << "Invalid src type:" << value->type()->ToString();
   }

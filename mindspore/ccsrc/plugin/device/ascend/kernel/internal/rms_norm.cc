@@ -17,8 +17,9 @@
 #include "plugin/device/ascend/kernel/internal/rms_norm.h"
 
 #include <memory>
-#include "common/kernel.h"
 
+#include "common/kernel.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_in_out_map.h"
 
 namespace mindspore {
@@ -28,9 +29,10 @@ internal::InternalOpPtr InternalRmsNorm::CreateKernel(const internal::InputsImmu
                                                       const std::vector<KernelTensor *> &ms_inputs,
                                                       const std::vector<KernelTensor *> &ms_outputs) {
   internal::NormParam norm_param;
-  norm_param.eps = ms_inputs[kIndex2]->GetValueWithCheck<float>();
+  norm_param.eps = ms_inputs[kIndex2]->GetValueWithCheck<pyfloat>();
   return internal::CreateRmsNormOp(inputs_ii, outputs_ii, norm_param, internal::kInternalRmsNormOpName);
 }
+
 MS_INTERNAL_KERNEL_FACTORY_REG(RmsNorm, internal::kInternalRmsNormOpName, InternalRmsNorm);
 REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(RmsNorm, INPUT_NUM_2, INDEX_0, INDEX_1);
 REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(RmsNorm, OUTPUT_NUM_2, INDEX_0, INDEX_1);

@@ -23,6 +23,8 @@
 #include <string>
 #include <map>
 
+#include "mindspore/core/include/mindapi/base/types.h"
+
 namespace mindspore {
 namespace kernel {
 namespace l2_normalize_cpu {
@@ -64,7 +66,7 @@ void L2NormalizeCpuFunc<T>::InitFunc(const PrimitivePtr &primitive, const std::v
                                      const std::vector<KernelTensor *> &outputs) {
   primitive_ = primitive;
   kernel_name_ = primitive->name();
-  auto value_ptr = GetValue<float>(primitive->GetAttr(ops::kEpsilon));
+  auto value_ptr = GetValue<pyfloat>(primitive->GetAttr(ops::kEpsilon));
   epsilon_ = static_cast<T>(value_ptr);
   if (epsilon_ == static_cast<T>(0.0)) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the parameter of 'epsilon' can not be zero.";

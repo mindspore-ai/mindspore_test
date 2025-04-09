@@ -1,0 +1,33 @@
+#operator apply_power_sign
+apply_power_sign:
+    args:
+        var:
+            dtype: tensor
+        m:
+            dtype: tensor
+        lr:
+            dtype: tensor
+            type_cast: number
+        logbase:
+            dtype: tensor
+            type_cast: number
+        sign_decay:
+            dtype: tensor
+            type_cast: number
+        beta:
+            dtype: tensor
+            type_cast: number
+        grad:
+            dtype: tensor
+    returns:
+        var:
+            dtype: tensor
+        m:
+            dtype: tensor
+    args_signature:
+        rw_write: var, m
+        dtype_group: (var, m, lr, logbase, sign_decay, beta, grad)
+    labels:
+        side_effect_mem: True
+    function:
+        disable: True

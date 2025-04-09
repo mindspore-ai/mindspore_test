@@ -45,11 +45,18 @@ bool IsNodeScalarTrueWith(const AnfNodePtr &node, const ScalarCheckingMode &chec
 
   auto scalar = value->cast<ScalarPtr>();
   if (scalar != nullptr) {
-    if (scalar->isa<FloatImm>()) {
+    if (scalar->isa<FP32Imm>()) {
       if (checking_mode == ScalarCheckingMode::GREATER_EQUAL) {
         return GetValue<float>(scalar) >= check_value;
       }
       return GetValue<float>(scalar) < check_value;
+    } else if (scalar->isa<FP64Imm>()) {
+      if (checking_mode == ScalarCheckingMode::GREATER_EQUAL) {
+        return GetValue<double>(scalar) >= static_cast<double>(check_value);
+      }
+      return GetValue<double>(scalar) < static_cast<double>(check_value);
+    } else {
+      MS_LOG(EXCEPTION) << "Scalar is neither a FP32Imm nor a FP64Imm.";
     }
   }
   // Check for Tensor [] or Tensor [1]

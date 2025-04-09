@@ -26,6 +26,7 @@
 #include "utils/trace_base.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace opt {
@@ -100,8 +101,8 @@ AnfNodePtr BatchNormGradInferFission::CreateBNInferGrad(const FuncGraphPtr &func
   bn_infer_grad->set_abstract(bn_grad_abstract_tuple->elements()[0]);
   bn_infer_grad->set_scope(bn_grad->scope());
   MS_EXCEPTION_IF_NULL(bn_grad->cast<CNodePtr>());
-  auto epsilon = GetNodeScalarValue<float>(bn_grad->cast<CNodePtr>()->input(kElsilonIdx));
-  common::AnfAlgo::SetNodeAttr(kAttrEpsilon, MakeValue<float>(epsilon), bn_infer_grad);
+  auto epsilon = GetNodeScalarValue<pyfloat>(bn_grad->cast<CNodePtr>()->input(kElsilonIdx));
+  common::AnfAlgo::SetNodeAttr(kAttrEpsilon, MakeValue<pyfloat>(epsilon), bn_infer_grad);
 
   return bn_infer_grad;
 }
@@ -154,8 +155,8 @@ AnfNodePtr BatchNormGradInferFission::CreateBNTrainingUpdateGrad(const FuncGraph
   MS_EXCEPTION_IF_NULL(bn_grad);
   auto bn_grad_ptr = bn_grad->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(bn_grad_ptr);
-  auto epsilon = GetNodeScalarValue<float>(bn_grad_ptr->input(kElsilonIdx));
-  common::AnfAlgo::SetNodeAttr(kAttrEpsilon, MakeValue<float>(epsilon), bn_training_update_grad);
+  auto epsilon = GetNodeScalarValue<pyfloat>(bn_grad_ptr->input(kElsilonIdx));
+  common::AnfAlgo::SetNodeAttr(kAttrEpsilon, MakeValue<pyfloat>(epsilon), bn_training_update_grad);
 
   return bn_training_update_grad;
 }

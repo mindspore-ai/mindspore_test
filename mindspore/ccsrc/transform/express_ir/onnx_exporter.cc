@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <iterator>
 #include <map>
 #include <memory>
 #include <utility>
@@ -37,6 +38,7 @@
 #include "utils/hash_map.h"
 #include "utils/ms_context.h"
 #include "ops_utils/op_utils.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
@@ -55,6 +57,16 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
 namespace mindspore {
+namespace {
+template <typename S, typename T>
+std::vector<T> GetTargetTypeArrayValue(const ValuePtr &v) {
+  std::vector<T> values;
+  auto ori_values = GetValue<std::vector<S>>(v);
+  (void)std::transform(ori_values.begin(), ori_values.end(), std::back_inserter(values),
+                       [](S e) { return static_cast<T>(e); });
+  return values;
+}
+}  // namespace
 const int ONNX_VERSION = 11;
 const int kZeroNum = 0;
 const int kOneNum = 1;
@@ -158,7 +170,7 @@ void SetAttrTupleValueToProto(const ValuePtr &value, onnx::AttributeProto_Attrib
       break;
     case onnx::AttributeProto_AttributeType_FLOATS:
       for (size_t i = beg_idx; i < tuple_ptr->size(); ++i) {
-        attr_proto->add_floats(GetValue<float>((*tuple_ptr)[i]));
+        attr_proto->add_floats(static_cast<float>(GetValue<pyfloat>((*tuple_ptr)[i])));
       }
       break;
     default:
@@ -1011,7 +1023,7 @@ OPERATOR_ONNX_CONVERT_DEFINE(MatMul, Gemm,
 OPERATOR_ONNX_CONVERT_DEFINE(BatchNorm, BatchNormalization,
                              OpNameInfo()
                                .Attr("epsilon", "epsilon", onnx::AttributeProto_AttributeType_FLOAT,
-                                     SetAttrValueToProto<FP32Imm>)
+                                     SetAttrValueToProto<FP64Imm>)
                                .CastOutputToInputType(0))
 
 OPERATOR_ONNX_CONVERT_DEFINE(Reshape, Reshape, OpNameInfo())
@@ -1466,7 +1478,14 @@ class OnnxExporter {
   static float_t GetFloatValue(const AnfNodePtr &node) {
     auto value_node_ptr = dyn_cast<ValueNode>(node);
     MS_EXCEPTION_IF_NULL(value_node_ptr);
-    return GetValue<float_t>(value_node_ptr->value());
+    auto value_ptr = value_node_ptr->value();
+    float_t value;
+    if (value_ptr->isa<FP32Imm>()) {
+      value = GetValue<float_t>(value_ptr);
+    } else {
+      value = GetValue<double_t>(value_ptr);
+    }
+    return value;
   }
 
   static bool GetBoolValue(const AnfNodePtr &node) {
@@ -2502,6 +2521,9 @@ void OnnxExporter::ProcessMinNode(const AnfNodePtr &min_node, bool &is_min_none,
     } else if (min_node_value->isa<FP32Imm>()) {
       auto min_scalar_float_point = dyn_cast<FP32Imm>(min_node_value);
       min_scalar_float_value = min_scalar_float_point->value();
+    } else if (min_node_value->isa<FP64Imm>()) {
+      auto min_scalar_float_point = dyn_cast<FP64Imm>(min_node_value);
+      min_scalar_float_value = min_scalar_float_point->value();
     } else {
       is_min_none = true;
       MS_LOG(EXCEPTION) << "Min value only accepts type of int or float";
@@ -2533,6 +2555,9 @@ void OnnxExporter::ProcessMaxNode(const AnfNodePtr &max_node, bool &is_max_none,
       max_scalar_int_value = max_scalar_int_point->value();
     } else if (max_node_value->isa<FP32Imm>()) {
       auto max_scalar_float_point = dyn_cast<FP32Imm>(max_node_value);
+      max_scalar_float_value = max_scalar_float_point->value();
+    } else if (max_node_value->isa<FP64Imm>()) {
+      auto max_scalar_float_point = dyn_cast<FP64Imm>(max_node_value);
       max_scalar_float_value = max_scalar_float_point->value();
     } else {
       is_max_none = true;
@@ -2646,6 +2671,9 @@ void OnnxExporter::ExportPrimConstantPadND(const FuncGraphPtr &, const CNodePtr 
       value_int_value = value_int_point->value();
     } else if (value_node_val->isa<FP32Imm>()) {
       auto value_float_point = dyn_cast<FP32Imm>(value_node_val);
+      value_float_value = value_float_point->value();
+    } else if (value_node_val->isa<FP64Imm>()) {
+      auto value_float_point = dyn_cast<FP64Imm>(value_node_val);
       value_float_value = value_float_point->value();
     }
   } else {
@@ -3184,7 +3212,10 @@ void OnnxExporter::ExportPrimUpsampleNearest2D(const FuncGraphPtr &, const CNode
     AddInt64Tensor1DInitializer(output_size_name, output_size_value, graph_proto);
     node_proto->add_input(output_size_name);
   } else if (!IsNodeNone(scales_node)) {
-    auto scales_value = GetNodeValues<float>(node->input(kThreeNum));
+    std::vector<float> scales_value;
+    auto scales_value_ori = GetNodeValues<pyfloat>(node->input(kThreeNum));
+    (void)std::transform(scales_value_ori.begin(), scales_value_ori.end(), std::back_inserter(scales_value),
+                         [](pyfloat v) { return static_cast<float>(v); });
     if (scales_value.size() != kTwoNum) {
       MS_EXCEPTION(ValueError) << "When export UpsampleNearest2D for onnx, The element number of scales "
                                << "should be 2, but got " << scales_value.size();
@@ -3971,16 +4002,16 @@ void OnnxExporter::ExportPrimBoundingBoxDecode(const FuncGraphPtr &, const CNode
   auto onnx_input_type = GetOutputType(node->input(kOneNum));
 
   auto means = GetOpAttributePtr<ValueTuple>(node, "means");
-  std::vector<float> mean_values = GetValue<std::vector<float>>(means);
+  std::vector<float> mean_values = GetTargetTypeArrayValue<pyfloat, float>(means);
   auto means_name = node_name + "means_initializer";
   AddFloatTensor1DInitializer(means_name, mean_values, onnx_input_type, graph_proto);
 
   auto stds = GetOpAttributePtr<ValueTuple>(node, "stds");
-  std::vector<float> std_values = GetValue<std::vector<float>>(stds);
+  std::vector<float> std_values = GetTargetTypeArrayValue<pyfloat, float>(stds);
   auto stds_name = node_name + "stds_initializer";
   AddFloatTensor1DInitializer(stds_name, std_values, onnx_input_type, graph_proto);
 
-  auto wh_ratio_clip = GetOpAttribute<float>(node, "wh_ratio_clip");
+  float wh_ratio_clip = GetOpAttribute<pyfloat>(node, "wh_ratio_clip");
   auto max_ratio = static_cast<float>(std::abs(std::log(wh_ratio_clip)));
 
   auto unstd_deltas_name = node_name + "unstd_deltas";
@@ -4044,7 +4075,7 @@ void OnnxExporter::ExportPrimNMSWithMask(const FuncGraphPtr &, const CNodePtr &n
   auto node_name = RegisterNodeWithUniqueName(node, node_map_ptr);
 
   auto bboxes_input_name = GetNodeInputName(node->input(kOneNum), node_map_ptr, graph_proto);
-  auto iou_threshold = GetOpAttribute<float>(node, "iou_threshold");
+  float iou_threshold = GetOpAttribute<pyfloat>(node, "iou_threshold");
   auto selected_boxes_output_name = MakeOutputName(node_name, kZeroNum);
   auto selected_idx_output_name = MakeOutputName(node_name, kOneNum);
   auto selected_mask_output_name = MakeOutputName(node_name, kTwoNum);
@@ -4241,7 +4272,7 @@ void OnnxExporter::ExportPrimROIAlign(const FuncGraphPtr &, const CNodePtr &node
   onnx::AttributeProto *scale_attr_proto = roi_align_proto->add_attribute();
   scale_attr_proto->set_name("spatial_scale");
   scale_attr_proto->set_type(onnx::AttributeProto_AttributeType_FLOAT);
-  scale_attr_proto->set_f(GetOpAttribute<float>(node, "spatial_scale"));
+  scale_attr_proto->set_f(static_cast<float>(GetOpAttribute<pyfloat>(node, "spatial_scale")));
   onnx::AttributeProto *sampling_ratio_attr_proto = roi_align_proto->add_attribute();
   sampling_ratio_attr_proto->set_name("sampling_ratio");
   sampling_ratio_attr_proto->set_type(onnx::AttributeProto_AttributeType_INT);
@@ -5252,7 +5283,8 @@ void OnnxExporter::ExportPrimCustom(const FuncGraphPtr &, const CNodePtr &node,
         int64_proto->set_type(onnx::AttributeProto_AttributeType_INT);
         int64_proto->set_i(int64_attr);
       } else if (attr_value->isa<FloatImm>()) {
-        float fp32_attr = attr_value->cast<FP32ImmPtr>()->value();
+        float fp32_attr = attr_value->isa<FP32Imm>() ? attr_value->cast<FP32ImmPtr>()->value()
+                                                     : static_cast<float>(attr_value->cast<FP64ImmPtr>()->value());
         onnx::AttributeProto *fp32_proto = node_proto->add_attribute();
         fp32_proto->set_name(input_names_vec[i]);
         fp32_proto->set_type(onnx::AttributeProto_AttributeType_FLOAT);
@@ -5695,7 +5727,7 @@ void OnnxExporter::ExportMergeBatchNorm(const FuncGraphPtr &func_graph, const CN
     AddReshapeOp(scale_input_name, reshaped_scale_name, scale_bias_shape, graph_proto);
     auto reshaped_bias_name = output_name + "_reshaped_bias";
     AddReshapeOp(bias_input_name, reshaped_bias_name, scale_bias_shape, graph_proto);
-    auto epsilon = GetOpAttribute<float>(batch_norm_node, "epsilon");
+    float epsilon = GetOpAttribute<pyfloat>(batch_norm_node, "epsilon");
 
     AddMeanVarianceNormalizationOp(input_x_name, reshaped_scale_name, reshaped_bias_name, output_name, normalize_axes,
                                    epsilon, input_shape, onnx_type, graph_proto);
@@ -5741,7 +5773,7 @@ void OnnxExporter::ExportMergeLayerNorm(const FuncGraphPtr &, const CNodePtr &no
   auto onnx_type = GetOutputType(LayerNormNode->input(kOneNum));
   auto input_shape = dyn_cast<abstract::Shape>(LayerNormNode->input(kOneNum)->Shape())->shape();
   auto node_name = RegisterNodeWithUniqueName(node, node_map_ptr);
-  auto epsilon = GetOpAttribute<float>(LayerNormNode, "epsilon");
+  float epsilon = GetOpAttribute<pyfloat>(LayerNormNode, "epsilon");
   std::vector<int64_t> reduce_axes = {static_cast<int64_t>(input_shape.size()) - 1};
 
   AddMeanVarianceNormalizationOp(layernorm_input_x, layernorm_input_gamma, layernorm_input_beta, node_name, reduce_axes,
@@ -6132,6 +6164,8 @@ void OnnxExporter::ConvertTupleToTensor(const ValuePtr &value, onnx::TensorProto
       tensor_proto->add_int64_data(dyn_cast<Int64Imm>(elem)->value());
     } else if (elem->isa<FP32Imm>()) {
       tensor_proto->add_float_data(dyn_cast<FP32Imm>(elem)->value());
+    } else if (elem->isa<FP64Imm>()) {
+      tensor_proto->add_float_data(dyn_cast<FP64Imm>(elem)->value());
     } else {
       MS_LOG(EXCEPTION) << "Convert tuple to tensor fail, unexpected tuple element type " << elem->type()->type_name()
                         << ".";

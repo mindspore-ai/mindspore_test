@@ -23,6 +23,8 @@
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/kernel_constants.h"
+#include "mindspore/core/include/mindapi/base/types.h"
+
 namespace mindspore {
 namespace kernel {
 constexpr size_t kIndexFour = 4;
@@ -111,7 +113,7 @@ class GruGradWeightGpuKernelMod : public NativeGpuKernelMod {
     num_layers_ = static_cast<int>(GetValue<int64_t>(primitive_->GetAttr("num_layers")));
     has_bias_ = GetValue<bool>(primitive_->GetAttr("has_bias"));
     bidirectional_ = GetValue<bool>(primitive_->GetAttr("bidirectional"));
-    dropout_ = GetValue<float>(primitive_->GetAttr("dropout"));
+    dropout_ = GetValue<pyfloat>(primitive_->GetAttr("dropout"));
 
     cudnnRNNInputMode_t input_mode = CUDNN_LINEAR_INPUT;
     cudnnDirectionMode_t direction = bidirectional_ ? CUDNN_BIDIRECTIONAL : CUDNN_UNIDIRECTIONAL;

@@ -25,7 +25,7 @@
 namespace mindspore {
 namespace kernel {
 namespace apply_proximal_adagrad_cpu {
-constexpr size_t kApplyProximalAdagradInputsNum = 6;
+constexpr size_t kApplyProximalAdagradInputsNum = 7;
 constexpr size_t kVarIndex = 0;
 constexpr size_t kAccIndex = 1;
 constexpr size_t kLRIndex = 2;

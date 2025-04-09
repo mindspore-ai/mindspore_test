@@ -116,14 +116,14 @@ std::string ConvertAnyUtil(const ValuePtr &value, const AnyTraits<std::vector<in
 
 std::vector<float> ConvertAnyUtil(const ValuePtr &value, const AnyTraits<std::vector<float>>, const AnyTraits<float>) {
   MS_EXCEPTION_IF_NULL(value);
-  auto vec = value->cast<ValueTuplePtr>();
+  auto vec = value->cast<ValueSequencePtr>();
   if (vec == nullptr) {
-    MS_LOG(EXCEPTION) << "not ValueTuplePtr";
+    MS_LOG(EXCEPTION) << "not ValueSequencePtr";
   }
   std::vector<float> list;
   list.resize(vec->value().size());
   (void)std::transform(vec->value().begin(), vec->value().end(), list.begin(),
-                       [](const ValuePtr &val) { return GetValueWithCheck<float>(val); });
+                       [](const ValuePtr &val) { return GetCastFloatValue<float>(val); });
   return list;
 }
 
@@ -373,6 +373,10 @@ GeTensor VectorToTensorUtil(const ValuePtr &value) {
     MS_LOG(INFO) << "convert value to tensor with data type = Float32";
     type = kNumberTypeFloat32;
     return VectorToTensorImpl<float, float>(value, type);
+  } else if (vec[0]->isa<FP64Imm>()) {
+    MS_LOG(INFO) << "convert value to tensor with data type = Float64";
+    type = kNumberTypeFloat32;
+    return VectorToTensorImpl<double, float>(value, type);
   } else if (vec[0]->isa<BoolImm>()) {
     MS_LOG(INFO) << "convert value to tensor with data type = Bool";
     type = kNumberTypeBool;

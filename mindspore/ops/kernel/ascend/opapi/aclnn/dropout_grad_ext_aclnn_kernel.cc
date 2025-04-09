@@ -16,6 +16,7 @@
 #include "kernel/ascend/opapi/aclnn/dropout_grad_ext_aclnn_kernel.h"
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -23,7 +24,7 @@ namespace dropout_grad_ext {
 void DropoutGradExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                             const std::vector<KernelTensor *> &outputs) {
   MS_EXCEPTION_IF_NULL(primitive_);
-  p_value_ = static_cast<double>(inputs[kIndex2]->GetValueWithCheck<float>());
+  p_value_ = inputs[kIndex2]->GetValueWithCheck<pyfloat>();
   GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], p_value_, outputs[kIndex0]);
 }
 

@@ -41,6 +41,7 @@
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace ops {
@@ -52,12 +53,12 @@ abstract::TupleShapePtr FractionalAvgPoolInferShape(const PrimitivePtr &primitiv
   auto op_name = primitive->name();
   MS_EXCEPTION_IF_NULL(input_args[0]);
 
-  auto pooling_ratio = GetValue<std::vector<float>>(primitive->GetAttr(kPoolingRatio));
+  auto pooling_ratio = GetValue<std::vector<pyfloat>>(primitive->GetAttr(kPoolingRatio));
   if (pooling_ratio.size() != kPoolingRatioDim) {
     MS_EXCEPTION(ValueError) << "For '" << op_name << "', the size of parameter 'pooling_ratio' must be 4, but got "
                              << std::to_string(pooling_ratio.size()) << ".";
   }
-  if (!common::IsFloatEqual(pooling_ratio[kInputIndex0], 1.0)) {
+  if (!common::IsDoubleEqual(pooling_ratio[kInputIndex0], 1.0)) {
     MS_EXCEPTION(ValueError) << "For '" << op_name
                              << "', the first element of parameter 'pooling_ratio' must be 1.0, but got "
                              << std::to_string(pooling_ratio[kInputIndex0]) << ".";
@@ -72,7 +73,7 @@ abstract::TupleShapePtr FractionalAvgPoolInferShape(const PrimitivePtr &primitiv
                              << "', the third element of pooling ratio must be greater than or equal to 1.0, but got "
                              << std::to_string(pooling_ratio[kInputIndex2]) << ".";
   }
-  if (!common::IsFloatEqual(pooling_ratio[kInputIndex3], 1.0)) {
+  if (!common::IsDoubleEqual(pooling_ratio[kInputIndex3], 1.0)) {
     MS_EXCEPTION(ValueError) << "For '" << op_name
                              << "', the forth element of parameter 'pooling_ratio' must be 1.0, but got "
                              << std::to_string(pooling_ratio[kInputIndex3]) << ".";

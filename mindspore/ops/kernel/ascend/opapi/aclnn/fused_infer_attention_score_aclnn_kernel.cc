@@ -24,6 +24,7 @@
 #include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "infer/ops_func_impl/fused_infer_attention_score.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 using mindspore::ops::FusedInferAttentionScoreInputIndex;
@@ -97,10 +98,10 @@ void FusedInferAttentionScoreAscend::GetWorkSpaceInfo(const std::vector<KernelTe
   // Convert to c++ scalar
   auto num_heads =
     device::ascend::ConvertKernelTensor<int64_t>(inputs[ops::kFusedInferAttentionScoreInputNumHeadsIndex]);
-  auto scale_value = device::ascend::ConvertKernelTensor<float>(inputs[ops::kFusedInferAttentionScoreInputScaleIndex]);
   // Note: aclnn requires the scale_value to be of type double. If a float value is passed, aclnn will internally
   // treat it as 0, which will result in incorrect computation.
-  auto scale_value_d = static_cast<double>(scale_value);
+  double scale_value =
+    device::ascend::ConvertKernelTensor<pyfloat>(inputs[ops::kFusedInferAttentionScoreInputScaleIndex]);
   auto pre_tokens =
     device::ascend::ConvertKernelTensor<int64_t>(inputs[ops::kFusedInferAttentionScoreInputPreTokensIndex]);
   auto next_tokens =
@@ -145,8 +146,8 @@ void FusedInferAttentionScoreAscend::GetWorkSpaceInfo(const std::vector<KernelTe
     inputs[ops::kFusedInferAttentionScoreInputValueAntiquantOffsetIndex],
     inputs[ops::kFusedInferAttentionScoreInputKeySharedPrefixIndex],
     inputs[ops::kFusedInferAttentionScoreInputValueSharedPrefixIndex], actual_shared_prefix_len_vector_pair, num_heads,
-    scale_value_d, pre_tokens, next_tokens, input_layout_str, num_key_value_heads, sparse_mode, inner_precise,
-    block_size, antiquant_mode, softmax_lse_flag, key_antiquant_mode, value_antiquant_mode,
+    scale_value, pre_tokens, next_tokens, input_layout_str, num_key_value_heads, sparse_mode, inner_precise, block_size,
+    antiquant_mode, softmax_lse_flag, key_antiquant_mode, value_antiquant_mode,
     outputs[ops::kFusedInferAttentionScoreOutputAttentionOutIndex],
     outputs[ops::kFusedInferAttentionScoreOutputSoftmaxLseIndex]);
 }
@@ -175,8 +176,8 @@ bool FusedInferAttentionScoreAscend::Launch(const std::vector<KernelTensor *> &i
   // Convert to c++ scalar
   auto num_heads =
     device::ascend::ConvertKernelTensor<int64_t>(inputs[ops::kFusedInferAttentionScoreInputNumHeadsIndex]);
-  auto scale_value = device::ascend::ConvertKernelTensor<float>(inputs[ops::kFusedInferAttentionScoreInputScaleIndex]);
-  auto scale_value_d = static_cast<double>(scale_value);
+  double scale_value =
+    device::ascend::ConvertKernelTensor<pyfloat>(inputs[ops::kFusedInferAttentionScoreInputScaleIndex]);
   auto pre_tokens =
     device::ascend::ConvertKernelTensor<int64_t>(inputs[ops::kFusedInferAttentionScoreInputPreTokensIndex]);
   auto next_tokens =
@@ -220,7 +221,7 @@ bool FusedInferAttentionScoreAscend::Launch(const std::vector<KernelTensor *> &i
         inputs[ops::kFusedInferAttentionScoreInputValueAntiquantOffsetIndex],
         inputs[ops::kFusedInferAttentionScoreInputKeySharedPrefixIndex],
         inputs[ops::kFusedInferAttentionScoreInputValueSharedPrefixIndex], actual_shared_prefix_len_vector_pair,
-        num_heads, scale_value_d, pre_tokens, next_tokens, input_layout_str, num_key_value_heads, sparse_mode,
+        num_heads, scale_value, pre_tokens, next_tokens, input_layout_str, num_key_value_heads, sparse_mode,
         inner_precise, block_size, antiquant_mode, softmax_lse_flag, key_antiquant_mode, value_antiquant_mode,
         outputs[ops::kFusedInferAttentionScoreOutputAttentionOutIndex],
         outputs[ops::kFusedInferAttentionScoreOutputSoftmaxLseIndex]);

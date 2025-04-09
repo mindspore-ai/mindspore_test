@@ -22,6 +22,7 @@
 #include "mindspore/ccsrc/pyboost/op_register.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -29,7 +30,7 @@ namespace pyboost {
 std::tuple<tensor::TensorPtr, tensor::TensorPtr> BatchNormGatherStatsWithCountsAscendCustomize(
   const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor, const TensorPtr &mean_tensor,
   const TensorPtr &invstd_tensor, const std::optional<TensorPtr> &running_mean_tensor,
-  const std::optional<TensorPtr> &running_var_tensor, const FP32ImmPtr &momentum, const FP32ImmPtr &eps,
+  const std::optional<TensorPtr> &running_var_tensor, const FP64ImmPtr &momentum, const FP64ImmPtr &eps,
   const std::optional<TensorPtr> &counts_tensor) {
   std::string op_name = op->primitive()->name();
   MS_LOG(DEBUG) << op_name << " call start";
@@ -38,9 +39,8 @@ std::tuple<tensor::TensorPtr, tensor::TensorPtr> BatchNormGatherStatsWithCountsA
   // ValueTuple to std::vector
 
   // Convert ValuePtr to c++ scalar
-  // Convert ValuePtr to c++ scalar
-  auto momentum_imm = GetValue<float>(momentum);
-  auto eps_imm = GetValue<float>(eps);
+  auto momentum_imm = GetValue<pyfloat>(momentum);
+  auto eps_imm = GetValue<pyfloat>(eps);
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor, mean_tensor, invstd_tensor,
                                 running_mean_tensor, running_var_tensor, counts_tensor);

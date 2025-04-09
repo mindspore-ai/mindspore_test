@@ -26,6 +26,7 @@
 #include <vector>
 #include "kernel/gpu/gpu_kernel.h"
 #include "common/ms_factory.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -72,7 +73,7 @@ class UpsampleTrilinear3DGradGpuKernelMod : public NativeGpuKernelMod {
   int64_t dinput_w_{};
 
   // only need these
-  std::vector<float> scales_{0., 0., 0.};
+  std::vector<pyfloat> scales_{0., 0., 0.};
   std::vector<int64_t> none_list_;
 };
 }  // namespace kernel

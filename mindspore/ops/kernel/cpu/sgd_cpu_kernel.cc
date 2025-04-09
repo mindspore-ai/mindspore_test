@@ -21,6 +21,7 @@
 #include <memory>
 #include <map>
 #include "infer/sgd.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -54,8 +55,8 @@ bool SGDCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std:
     return false;
   }
 
-  dampening_ = GetValue<float>(primitive_->GetAttr(ops::kDampening));
-  weight_decay_ = GetValue<float>(primitive_->GetAttr(ops::kWeightDecay));
+  dampening_ = GetValue<pyfloat>(primitive_->GetAttr(ops::kDampening));
+  weight_decay_ = GetValue<pyfloat>(primitive_->GetAttr(ops::kWeightDecay));
   nesterov_ = GetValue<bool>(primitive_->GetAttr(ops::kNesterov));
 
   if (!MatchKernelFunc(kernel_name_, inputs, outputs)) {

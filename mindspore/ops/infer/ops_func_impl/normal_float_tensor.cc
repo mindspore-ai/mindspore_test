@@ -38,7 +38,7 @@ BaseShapePtr NormalFloatTensorFuncImpl::InferShape(const PrimitivePtr &primitive
     return std::make_shared<abstract::TensorShape>(std_shape);
   } else {
     MS_EXCEPTION(TypeError) << "For '" << primitive->name()
-                            << "', mean must be a Tensor, std must be a Float, but got: "
+                            << "', mean must be a Float, std must be a Tensor, but got: "
                             << input_args[kInputIndex0]->ToString() << " and, " << input_args[kInputIndex1]->ToString()
                             << ".";
   }

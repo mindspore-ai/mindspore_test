@@ -28,7 +28,7 @@ namespace pyboost {
 void MatmulAllReduceAddRmsNormAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &x1_tensor,
                                               const TensorPtr &x2_tensor, const TensorPtr &bias_tensor,
                                               const TensorPtr &residual_tensor, const TensorPtr &gamma_tensor,
-                                              const FP32ImmPtr &epsilon, const StringImmPtr &group,
+                                              const FP64ImmPtr &epsilon, const StringImmPtr &group,
                                               const Int64ImmPtr &reduction, const Int64ImmPtr &comm_turn,
                                               const Int64ImmPtr &stream_mode) {
   MS_LOG(DEBUG) << "MatmulAllReduceAddRmsNormAscendCustomize call start.";
@@ -36,7 +36,7 @@ void MatmulAllReduceAddRmsNormAscendCustomize(const std::shared_ptr<OpRunner> &o
                           reduction, comm_turn, stream_mode);
 
   // Convert ValuePtr to c++ scalar
-  auto epsilon_imm = static_cast<double>(GetValue<float>(epsilon));
+  auto epsilon_imm = static_cast<double>(epsilon->value());
   auto group_str = GetValue<std::string>(group);
   std::string group_imm = device::ascend::OpApiUtil::GetCommName(group_str);
   auto comm_turn_imm = GetValue<int64_t>(comm_turn);

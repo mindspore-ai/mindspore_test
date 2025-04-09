@@ -18,10 +18,12 @@
 #include <utility>
 #include "include/common/utils/utils.h"
 #include "mindapi/base/type_id.h"
+#include "mindspore/core/include/mindapi/base/types.h"
+
 namespace mindspore {
 namespace kernel {
 namespace {
-constexpr size_t kPadV3ConstantModeInputsNum = 3;
+constexpr size_t kPadV3ConstantModeInputsNum = 5;
 
 template <typename T, typename S>
 std::unique_ptr<cukernel::GpuKernelHelperBase> CreatePadV3KernelPtr(const std::string &kernel_name,
@@ -31,22 +33,36 @@ std::unique_ptr<cukernel::GpuKernelHelperBase> CreatePadV3KernelPtr(const std::s
 using PadV3PtrCreatorFunc =
   std::function<std::unique_ptr<cukernel::GpuKernelHelperBase>(const std::string &, const uint32_t &)>;
 
-#define REG_PAD_V3_KERNEL(INPUT_T, T)                                                                        \
-  std::make_pair(KernelAttr().AddInputAttr(INPUT_T).AddInputAttr(kNumberTypeInt32).AddOutputAttr(INPUT_T),   \
-                 CreatePadV3KernelPtr<T, int64_t>),                                                          \
-    std::make_pair(KernelAttr().AddInputAttr(INPUT_T).AddInputAttr(kNumberTypeInt64).AddOutputAttr(INPUT_T), \
-                   CreatePadV3KernelPtr<T, int64_t>),                                                        \
-    std::make_pair(KernelAttr()                                                                              \
-                     .AddInputAttr(INPUT_T)                                                                  \
-                     .AddInputAttr(kNumberTypeInt32)                                                         \
-                     .AddOptionalInputAttr(INPUT_T)                                                          \
-                     .AddOutputAttr(INPUT_T),                                                                \
-                   CreatePadV3KernelPtr<T, int64_t>),                                                        \
-    std::make_pair(KernelAttr()                                                                              \
-                     .AddInputAttr(INPUT_T)                                                                  \
-                     .AddInputAttr(kNumberTypeInt64)                                                         \
-                     .AddOptionalInputAttr(INPUT_T)                                                          \
-                     .AddOutputAttr(INPUT_T),                                                                \
+#define REG_PAD_V3_KERNEL(INPUT_T, T)                                   \
+  std::make_pair(KernelAttr()                                           \
+                   .AddInputAttr(INPUT_T)                               \
+                   .AddInputAttr(kNumberTypeInt32)                      \
+                   .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)   \
+                   .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)    \
+                   .AddOutputAttr(INPUT_T),                             \
+                 CreatePadV3KernelPtr<T, int64_t>),                     \
+    std::make_pair(KernelAttr()                                         \
+                     .AddInputAttr(INPUT_T)                             \
+                     .AddInputAttr(kNumberTypeInt64)                    \
+                     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64) \
+                     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)  \
+                     .AddOutputAttr(INPUT_T),                           \
+                   CreatePadV3KernelPtr<T, int64_t>),                   \
+    std::make_pair(KernelAttr()                                         \
+                     .AddInputAttr(INPUT_T)                             \
+                     .AddInputAttr(kNumberTypeInt32)                    \
+                     .AddOptionalInputAttr(INPUT_T)                     \
+                     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64) \
+                     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)  \
+                     .AddOutputAttr(INPUT_T),                           \
+                   CreatePadV3KernelPtr<T, int64_t>),                   \
+    std::make_pair(KernelAttr()                                         \
+                     .AddInputAttr(INPUT_T)                             \
+                     .AddInputAttr(kNumberTypeInt64)                    \
+                     .AddOptionalInputAttr(INPUT_T)                     \
+                     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64) \
+                     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)  \
+                     .AddOutputAttr(INPUT_T),                           \
                    CreatePadV3KernelPtr<T, int64_t>)
 
 const std::vector<std::pair<KernelAttr, PadV3PtrCreatorFunc>> kernel_attr = {
@@ -84,11 +100,7 @@ bool PadV3GpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const st
   if (!is_match) {
     return false;
   }
-  MS_ERROR_IF_NULL(attr_ptr_);
-  attr_ptr_->mode = GetValue<std::string>(primitive_->GetAttr(ops::kMode));
-  attr_ptr_->paddings_contiguous = GetValue<bool>(primitive_->GetAttr("paddings_contiguous"));
-  helper_ptr_ = std::move(kernel_attr[index].second(kernel_name_, device_id_));
-  helper_ptr_->SetKernelParam(attr_ptr_);
+  helper_ptr_ = kernel_attr[index].second(kernel_name_, device_id_);
   return true;
 }
 
@@ -96,6 +108,16 @@ int PadV3GpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const s
   if (auto ret = KernelMod::Resize(inputs, outputs); ret != KRET_OK) {
     return ret;
   }
+
+  MS_ERROR_IF_NULL(attr_ptr_);
+  auto mode = static_cast<mindspore::ops::Mode>(inputs[inputs.size() - kIndex2]->GetValueWithCheck<int64_t>());
+  auto it = mode_map_.find(mode);
+  if (it == mode_map_.end()) {
+    MS_EXCEPTION(ValueError) << "For " << kernel_name_ << ", mode should be const, reflect, edge or circular.";
+  }
+  attr_ptr_->mode = it->second;
+  attr_ptr_->paddings_contiguous = inputs[inputs.size() - kIndex1]->GetValueWithCheck<bool>();
+  helper_ptr_->SetKernelParam(attr_ptr_);
 
   std::vector<int64_t> paddings_val;
   auto paddings_type = inputs[kIndex1]->dtype_id();
@@ -112,7 +134,7 @@ int PadV3GpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const s
   }
 
   int64_t paddings_size = SizeToLong(paddings_val.size());
-  if (!GetValue<bool>(primitive_->GetAttr("paddings_contiguous"))) {
+  if (!attr_ptr_->paddings_contiguous) {
     constexpr int64_t nTwo = 2;
     std::vector<int64_t> tmp = paddings_val;
     for (int64_t i = 0; i < paddings_size; ++i) {

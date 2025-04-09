@@ -24,6 +24,7 @@
 #include "include/common/utils/convert_utils.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "include/common/utils/tensor_py.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore::pyexecute {
 PyDataConverter py_data_convert_handler{nullptr};
@@ -66,7 +67,7 @@ tensor::TensorPtr ScalarToValue(const py::object &obj) {
   } else if (py::isinstance<py::int_>(obj)) {
     value = MakeValue(py::cast<int64_t>(obj));
   } else if (py::isinstance<py::float_>(obj)) {
-    value = MakeValue(py::cast<float>(obj));
+    value = MakeValue(py::cast<pyfloat>(obj));
   } else {
     MS_LOG(EXCEPTION) << "Invalid scalar py obj.";
   }
@@ -263,7 +264,7 @@ ValuePtr ConvertPyObjectToValue(const py::object &obj) {
   } else if (py::isinstance<py::int_>(obj)) {
     return MakeValue(py::cast<int64_t>(obj));
   } else if (py::isinstance<py::float_>(obj)) {
-    return MakeValue(py::cast<float>(obj));
+    return MakeValue(py::cast<pyfloat>(obj));
   }
   return nullptr;
 }
@@ -296,7 +297,7 @@ abstract::AbstractBasePtr GenerateAbstractFromPyObject(const py::object &obj) {
   } else if (py::isinstance<py::int_>(obj)) {
     return MakeValue(py::cast<int64_t>(obj))->ToAbstract();
   } else if (py::isinstance<py::float_>(obj)) {
-    return MakeValue(py::cast<float>(obj))->ToAbstract();
+    return MakeValue(py::cast<pyfloat>(obj))->ToAbstract();
   }
 
   // obj is tuple will add later.

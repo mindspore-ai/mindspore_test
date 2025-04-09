@@ -30,6 +30,7 @@
 #include "frontend/optimizer/opt.h"
 #include "frontend/parallel/strategy.h"
 #include "frontend/parallel/tensor_layout/tensor_redistribution.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace parallel {
@@ -52,6 +53,7 @@ AnfNodePtr CreateTypeInt(int64_t nbits);
 AnfNodePtr CreateTypeFloat(int64_t nbits);
 AnfNodePtr CreatInt64Imm(int64_t value);
 AnfNodePtr CreateFP32Imm(float value);
+AnfNodePtr CreatePyFloatImm(pyfloat value);
 AnfNodePtr CreateBoolImm(bool value);
 AnfNodePtr CreateInt32Tensor(int64_t value, bool int64_type = false);
 AnfNodePtr CreateFP32Tensor(float value);

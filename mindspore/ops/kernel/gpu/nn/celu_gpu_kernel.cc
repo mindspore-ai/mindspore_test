@@ -22,6 +22,7 @@
 #include <memory>
 #include "abstract/utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/celu_impl.cuh"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -45,7 +46,7 @@ int CeluGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const st
     return ret;
   }
   input_elements_ = output_size_list_[0] / unit_size_;
-  alpha_ = static_cast<double>(inputs[kIndex1]->GetValueWithCheck<float>());
+  alpha_ = inputs[kIndex1]->GetValueWithCheck<pyfloat>();
   return KRET_OK;
 }
 
@@ -64,17 +65,17 @@ const std::vector<std::pair<KernelAttr, CeluGpuKernelMod::KernelRunFunc>> &CeluG
   static const std::vector<std::pair<KernelAttr, CeluGpuKernelMod::KernelRunFunc>> func_list = {
     {KernelAttr()
        .AddInputAttr(kNumberTypeFloat16)
-       .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
        .AddOutputAttr(kNumberTypeFloat16),
      &CeluGpuKernelMod::LaunchKernel<half>},
     {KernelAttr()
        .AddInputAttr(kNumberTypeFloat32)
-       .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
        .AddOutputAttr(kNumberTypeFloat32),
      &CeluGpuKernelMod::LaunchKernel<float>},
     {KernelAttr()
        .AddInputAttr(kNumberTypeFloat64)
-       .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
        .AddOutputAttr(kNumberTypeFloat64),
      &CeluGpuKernelMod::LaunchKernel<double>},
   };

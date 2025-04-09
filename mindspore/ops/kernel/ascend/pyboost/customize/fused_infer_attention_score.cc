@@ -20,6 +20,7 @@
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 using mindspore::device::ascend::FASInputLayoutMode;
@@ -70,7 +71,7 @@ tensor::TensorPtr FusedInferAttentionScoreAscendCustomize(
   const std::optional<TensorPtr> &value_antiquant_offset_tensor,
   const std::optional<TensorPtr> &key_shared_prefix_tensor, const std::optional<TensorPtr> &value_shared_prefix_tensor,
   const std::optional<TensorPtr> &actual_shared_prefix_len_tensor, const Int64ImmPtr &num_heads,
-  const FP32ImmPtr &scale_value, const Int64ImmPtr &pre_tokens, const Int64ImmPtr &next_tokens,
+  const FP64ImmPtr &scale_value, const Int64ImmPtr &pre_tokens, const Int64ImmPtr &next_tokens,
   const Int64ImmPtr &input_layout, const Int64ImmPtr &num_key_value_heads, const Int64ImmPtr &sparse_mode,
   const Int64ImmPtr &inner_precise, const Int64ImmPtr &block_size, const Int64ImmPtr &antiquant_mode,
   const BoolImmPtr &softmax_lse_flag, const Int64ImmPtr &key_antiquant_mode, const Int64ImmPtr &value_antiquant_mode) {
@@ -103,10 +104,9 @@ tensor::TensorPtr FusedInferAttentionScoreAscendCustomize(
 
   // Convert ValuePtr to c++ scalar
   auto num_heads_imm = GetValue<int64_t>(num_heads);
-  auto scale_value_imm = GetValue<float>(scale_value);
   // Note: aclnn requires the scale_value to be of type double. If a float value is passed, aclnn will internally
   // treat it as 0, which will result in incorrect computation.
-  double scale_value_imm_d = static_cast<double>(scale_value_imm);
+  double scale_value_imm_d = GetValue<pyfloat>(scale_value);
   auto pre_tokens_imm = GetValue<int64_t>(pre_tokens);
   auto next_tokens_imm = GetValue<int64_t>(next_tokens);
   auto input_layout_imm = FASInputLayoutMode::ConvertEnumToString(GetValue<int64_t>(input_layout));

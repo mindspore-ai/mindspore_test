@@ -71,7 +71,7 @@ NodePtr Syminvadj(BpropBuilder *ib, const NodePtr &x) {
   auto diag_half = ib->Emit(
     "Muls", {ib->Emit("Diagonal", {ret, ib->EmitValue(MakeValue<int64_t>(0)), ib->EmitValue(MakeValue<int64_t>(-2)),
                                    ib->EmitValue(MakeValue<int64_t>(-1))}),
-             ib->Value<float>(0.5)});
+             ib->Value<pyfloat>(0.5)});
   ret = ib->Emit("MatrixSetDiagV3", {ret, diag_half, ib->Tensor(0, kInt32)},
                  {{"align", MakeValue("RIGHT_LEFT")}, {"max_length", MakeValue(matrix_max_length)}});
   return ret;
@@ -82,7 +82,7 @@ NodePtr Syminvadj_dyn(Emitter *e, const NodePtr &x) {
   auto diag_half =
     e->Emit("Muls", {e->Emit("Diagonal", {ret, e->EmitValue(MakeValue<int64_t>(0)),
                                           e->EmitValue(MakeValue<int64_t>(-2)), e->EmitValue(MakeValue<int64_t>(-1))}),
-                     e->Value<float>(0.5)});
+                     e->Value<pyfloat>(0.5)});
   ret = e->Emit("MatrixSetDiagV3", {ret, diag_half, e->Tensor(0, kInt32)},
                 {{"align", MakeValue("RIGHT_LEFT")}, {"max_length", MakeValue(matrix_max_length)}});
 
@@ -480,7 +480,7 @@ REG_BPROP_BUILDER("LinalgQr").SetBody(BODYFUNC(ib) {
   }
 
   int64_t mode_imm = mode.value();
-  if (mode_imm == ops::LinalgQrMode::R) {
+  if (mode_imm == ops::Mode::R) {
     MS_LOG_EXCEPTION << "In LinalgQr backward, 'r' mode is unsupported. Please use 'reduced' or 'complete'.";
   }
 
@@ -492,7 +492,7 @@ REG_BPROP_BUILDER("LinalgQr").SetBody(BODYFUNC(ib) {
   auto dr = ib->TupleGetItem(dout, 1);
   auto q_shape = ib->GetShape(q_mat);
   auto r_shape = ib->GetShape(r_mat);
-  if (!IsDynamic(a_shape) && mode_imm == ops::LinalgQrMode::COMPLETE &&
+  if (!IsDynamic(a_shape) && mode_imm == ops::Mode::COMPLETE &&
       q_shape[q_shape.size() - 2] > r_shape[r_shape.size() - 1]) {
     MS_LOG_EXCEPTION << "The QR decomposition for A(*, M, N) is not differentiable when 'mode=complete' and dimension "
                         "'M > N'. Please input 'A' which 'M <= N'.";

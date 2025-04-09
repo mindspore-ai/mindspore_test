@@ -20,6 +20,7 @@
 #include "kernel/cpu/bucketize_cpu_kernel.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "utils/convert_utils_base.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -34,7 +35,10 @@ const size_t kParallelDataNumSameShapeMid = 35 * 1024;
 bool BucketizeCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                  const std::vector<KernelTensor *> &outputs) {
   dtype_ = inputs.at(kIndex0)->dtype_id();
-  boundaries_ = GetValue<std::vector<float>>(primitive_->GetAttr(ops::kBoundaries));
+  auto boundaries = GetValue<std::vector<pyfloat>>(primitive_->GetAttr(ops::kBoundaries));
+  boundaries_.clear();
+  (void)std::transform(boundaries.begin(), boundaries.end(), std::back_inserter(boundaries_),
+                       [](pyfloat v) { return static_cast<float>(v); });
   return true;
 }
 

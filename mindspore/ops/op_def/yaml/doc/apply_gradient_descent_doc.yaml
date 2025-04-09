@@ -1,0 +1,50 @@
+apply_gradient_descent:
+    description: |
+        Updates `var` by subtracting `alpha` * `delta` from it.
+
+        .. math::
+            var = var - \alpha * \delta
+
+        where :math:`\alpha` represents `alpha`, :math:`\delta` represents `delta`.
+
+        Inputs of `var` and `delta` comply with the implicit type conversion rules to make the data types consistent.
+        If they have different data types, the lower priority data type will be converted to
+        the relatively highest priority data type.
+
+        Inputs:
+            - **var** (Union[Parameter, Tensor]) - Variable tensor to be updated. With float32 or float16 data type.
+              The shape is :math:`(N, *)` where :math:`*` means, any number of additional dimensions.
+            - **alpha** (Union[Number, Tensor]) - Scaling factor, must be a scalar. With float32 or float16 data type.
+            - **delta** (Tensor) - A tensor for the change, has the same shape as `var`.
+
+        Outputs:
+            Tensor, represents the updated `var`.
+
+        Raises:
+            TypeError: If dtype of `var` or `alpha` is neither float16 nor float32.
+            TypeError: If `delta` is not a Tensor.
+            TypeError: If `alpha` is neither a Number nor a Tensor.
+            TypeError: If the data type of `var` and `delta` conversion of Parameter is not supported.
+
+        Supported Platforms:
+            ``Ascend`` ``GPU`` ``CPU``
+
+        Examples:
+            >>> import numpy as np
+            >>> from mindspore import Tensor, nn, ops, Parameter
+            >>> class Net(nn.Cell):
+            ...     def __init__(self):
+            ...         super(Net, self).__init__()
+            ...         self.apply_gradient_descent = ops.ApplyGradientDescent()
+            ...         self.var = Parameter(Tensor(np.ones([2, 2]).astype(np.float32)), name="var")
+            ...         self.alpha = 0.001
+            ...     def construct(self, delta):
+            ...         out = self.apply_gradient_descent(self.var, self.alpha, delta)
+            ...         return out
+            ...
+            >>> net = Net()
+            >>> delta = Tensor(np.array([[0.1, 0.1], [0.1, 0.1]]).astype(np.float32))
+            >>> output = net(delta)
+            >>> print(output)
+            [[0.9999 0.9999]
+            [0.9999 0.9999]]

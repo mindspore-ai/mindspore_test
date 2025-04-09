@@ -16,6 +16,7 @@
 
 #ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_GRAD_GPU_KERNEL_NN_UPSAMPLE_NEAREST_3D_GRAD_GPU_KERNEL_H_
 #define MINDSPORE_CCSRC_PLUGIN_DEVICE_GRAD_GPU_KERNEL_NN_UPSAMPLE_NEAREST_3D_GRAD_GPU_KERNEL_H_
+
 #include <map>
 #include <memory>
 #include <string>
@@ -23,6 +24,7 @@
 #include <vector>
 #include "kernel/gpu/gpu_kernel.h"
 #include "common/ms_factory.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -62,7 +64,7 @@ class UpsampleNearest3DGradGpuKernelMod : public NativeGpuKernelMod {
   int64_t dx_h_{};
   int64_t dx_w_{};
   std::vector<int64_t> none_list_;
-  std::vector<float> scales_{0., 0., 0.};
+  std::vector<pyfloat> scales_{0., 0., 0.};
   UpsampleNearest3DGradFunc kernel_func_;
   static std::vector<std::pair<KernelAttr, UpsampleNearest3DGradFunc>> func_list_;
 };

@@ -17,6 +17,7 @@
 #include "kernel/gpu/math/cdist_gpu_kernel.h"
 #include <utility>
 #include <algorithm>
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -48,7 +49,7 @@ int CdistGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const s
       return KRET_UNKNOWN_SHAPE;
     }
   }
-  p_ = inputs[kIndex2]->GetValueWithCheck<float>();
+  p_ = inputs[kIndex2]->GetValueWithCheck<pyfloat>();
   std::vector<int64_t> in_shape_x = inputs[kIndex0]->GetShapeVector();
   std::vector<int64_t> in_shape_y = inputs[kIndex1]->GetShapeVector();
   std::vector<int64_t> output_shape = outputs[kIndex0]->GetShapeVector();
@@ -105,13 +106,13 @@ std::vector<std::pair<KernelAttr, CdistGpuKernelMod::CdistFunc>> CdistGpuKernelM
   {KernelAttr()
      .AddInputAttr(kNumberTypeFloat32)
      .AddInputAttr(kNumberTypeFloat32)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddOutputAttr(kNumberTypeFloat32),
    &CdistGpuKernelMod::LaunchKernel<float>},
   {KernelAttr()
      .AddInputAttr(kNumberTypeFloat64)
      .AddInputAttr(kNumberTypeFloat64)
-     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
      .AddOutputAttr(kNumberTypeFloat64),
    &CdistGpuKernelMod::LaunchKernel<double>}};
 

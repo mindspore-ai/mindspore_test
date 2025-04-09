@@ -20,7 +20,7 @@
 #include <vector>
 #include <memory>
 #include <string>
-#include "mindspore/ops/infer/apply_proximal_gradient_descent.h"
+
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "common/ms_factory.h"
 

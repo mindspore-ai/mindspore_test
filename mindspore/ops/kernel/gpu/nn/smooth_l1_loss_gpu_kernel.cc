@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <utility>
 #include "abstract/utils.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace {
 constexpr size_t kSmoothL1LossInputsNum = 4;
@@ -54,7 +55,7 @@ int SmoothL1LossGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
 
   auto predict_shape = inputs[kIndex0]->GetShapeVector();
   auto target_shape = inputs[kIndex1]->GetShapeVector();
-  beta_ = inputs[kIndex2]->GetValueWithCheck<float>();
+  beta_ = inputs[kIndex2]->GetValueWithCheck<pyfloat>();
   if (beta_ <= 0.0) {
     MS_EXCEPTION(RuntimeError) << "For '" << kernel_name_ << "', the values for beta should greater than 0"
                                << ", but got " << beta_ << ".";
@@ -113,7 +114,7 @@ bool SmoothL1LossGpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &i
   KernelAttr()                                           \
     .AddInputAttr(MS_T)                                  \
     .AddInputAttr(MS_T)                                  \
-    .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32) \
+    .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat) \
     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)   \
     .AddOutputAttr(MS_T),                                \
     &SmoothL1LossGpuKernelMod::LaunchKernel<T>

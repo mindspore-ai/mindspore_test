@@ -18,6 +18,7 @@
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
 #include "kernel/gpu/nn/sparse_apply_adagrad_v2_gpu_kernel.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -38,8 +39,8 @@ bool SparseApplyAdagradV2GpuKernelMod::Init(const std::vector<KernelTensor *> &i
     return false;
   }
 
-  lr_ = GetValue<float>(primitive_->GetAttr("lr"));
-  epsilon_ = GetValue<float>(primitive_->GetAttr("epsilon"));
+  lr_ = GetValue<pyfloat>(primitive_->GetAttr("lr"));
+  epsilon_ = GetValue<pyfloat>(primitive_->GetAttr("epsilon"));
   update_slots_ = GetValue<bool>(primitive_->GetAttr("update_slots"));
 
   auto kernel_attr = GetKernelAttrFromTensors(inputs, outputs);

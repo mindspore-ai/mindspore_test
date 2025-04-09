@@ -15,7 +15,11 @@
  */
 
 #include "kernel/gpu/math/bucketize_gpu_kernel.h"
+#include <algorithm>
+#include <iterator>
 #include <utility>
+#include "mindspore/core/include/mindapi/base/types.h"
+
 namespace mindspore {
 namespace kernel {
 namespace {
@@ -53,7 +57,10 @@ bool BucketizeGpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
   if (!is_match) {
     return false;
   }
-  attr_ptr_->boundaries = GetValue<std::vector<float>>(primitive_->GetAttr("boundaries"));
+  auto boundaries = GetValue<std::vector<pyfloat>>(primitive_->GetAttr("boundaries"));
+  attr_ptr_->boundaries.clear();
+  (void)std::transform(boundaries.begin(), boundaries.end(), std::back_inserter(attr_ptr_->boundaries),
+                       [](pyfloat v) { return static_cast<float>(v); });
   helper_ptr_ = std::move(kernel_attr[index].second(kernel_name_, device_id_));
   helper_ptr_->SetKernelParam(attr_ptr_);
   Resize(inputs, outputs);

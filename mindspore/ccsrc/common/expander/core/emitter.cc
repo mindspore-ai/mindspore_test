@@ -40,6 +40,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace expander {
@@ -150,8 +151,9 @@ NodePtr Emitter::EmitValue(const ValuePtr &value) {
 }
 
 NodePtr Emitter::Exp(const NodePtr &x) {
-  return Emit(kExpOpName, {x},
-              {{"base", MakeValue<float>(-1.0)}, {"scale", MakeValue<float>(1.0)}, {"shift", MakeValue<float>(0.0)}});
+  return Emit(
+    kExpOpName, {x},
+    {{"base", MakeValue<pyfloat>(-1.0)}, {"scale", MakeValue<pyfloat>(1.0)}, {"shift", MakeValue<pyfloat>(0.0)}});
 }
 
 NodePtr Emitter::Log(const NodePtr &x) {

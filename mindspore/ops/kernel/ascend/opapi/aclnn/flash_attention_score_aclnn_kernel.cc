@@ -46,10 +46,10 @@ void FlashAttentionScoreAscend::GetWorkSpaceInfo(const std::vector<KernelTensor 
   auto head_num_value = head_num->GetValueWithCheck<int64_t>();
   auto keep_prob = inputs[kIndex11];
   MS_EXCEPTION_IF_NULL(keep_prob);
-  auto keep_prob_value = static_cast<double>(keep_prob->GetValueWithCheck<float>());
+  auto keep_prob_value = static_cast<double>(keep_prob->GetValueWithCheck<pyfloat>());
   auto scale_value = inputs[kIndex12];
   MS_EXCEPTION_IF_NULL(scale_value);
-  auto scale_value_value = static_cast<double>(scale_value->GetValueWithCheck<float>());
+  auto scale_value_value = static_cast<double>(scale_value->GetValueWithCheck<pyfloat>());
   auto pre_tokens = inputs[kIndex13];
   MS_EXCEPTION_IF_NULL(pre_tokens);
   auto pre_tokens_value = pre_tokens->GetValueWithCheck<int64_t>();

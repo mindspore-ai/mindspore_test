@@ -38,6 +38,7 @@
 #include "utils/check_convert_utils.h"
 #include "utils/convert_utils_base.h"
 #include "utils/log_adapter.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_h.h"
 
 namespace mindspore {
@@ -48,10 +49,10 @@ abstract::ShapePtr HistogramInferShape(const PrimitivePtr &primitive, const std:
   MS_EXCEPTION_IF_NULL(bins_ptr);
   auto min_ptr = primitive->GetAttr(kMin);
   MS_EXCEPTION_IF_NULL(min_ptr);
-  auto min_attr = GetValue<float>(min_ptr);
+  auto min_attr = GetValue<pyfloat>(min_ptr);
   auto max_ptr = primitive->GetAttr(kMax);
   MS_EXCEPTION_IF_NULL(max_ptr);
-  auto max_attr = GetValue<float>(max_ptr);
+  auto max_attr = GetValue<pyfloat>(max_ptr);
   if (min_attr > max_attr) {
     MS_EXCEPTION(ValueError) << "For Histogram, attr 'min' value should not greater than attr 'max'. "
                              << "but get attr min = " << min_attr << ", attr max = " << max_attr << ". ";

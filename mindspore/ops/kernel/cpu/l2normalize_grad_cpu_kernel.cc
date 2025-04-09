@@ -20,6 +20,7 @@
 #include <memory>
 #include <utility>
 #include "mindspore/ops/infer/grad/l2_normalize_grad.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -59,7 +60,7 @@ template <typename T>
 void L2NormalizeGradCpuFunc<T>::InitFunc(const PrimitivePtr &primitive, const std::vector<KernelTensor *> &inputs,
                                          const std::vector<KernelTensor *> &outputs) {
   kernel_name_ = primitive->name();
-  epsilon_ = static_cast<T>(GetValue<float>(primitive->GetAttr(ops::kEpsilon)));
+  epsilon_ = static_cast<T>(GetValue<pyfloat>(primitive->GetAttr(ops::kEpsilon)));
   axis_origin_ = LongToInt(GetValue<int64_t>(primitive->GetAttr(ops::kAxis)));
 }
 

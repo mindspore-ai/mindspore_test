@@ -21,6 +21,7 @@
 #include <vector>
 #include <unordered_map>
 #include "include/backend/optimizer/optimizer.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace opt {
@@ -36,7 +37,7 @@ class BACKEND_COMMON_EXPORT FlashAttentionFusionBase : public PatternProcessPass
   CNodePtr CreatePromptFlashAttentionCnodeForBNSD(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
                                                   const AnfNodePtr &q, const AnfNodePtr &k, const AnfNodePtr &v,
                                                   const AnfNodePtr &atten_mask, const int64_t num_heads,
-                                                  const int64_t next_token, const float scale_value,
+                                                  const int64_t next_token, const pyfloat scale_value,
                                                   const int64_t num_key_value_heads) const;
 
  private:

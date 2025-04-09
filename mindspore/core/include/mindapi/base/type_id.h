@@ -77,6 +77,7 @@ enum TypeId : int {
   kNumberTypeFloat16,
   kNumberTypeFloat32,
   kNumberTypeFloat64,
+  kNumberTypePyFloat = kNumberTypeFloat64,
   kNumberTypeBFloat16,
   kNumberTypeFloat8E4M3FN,
   kNumberTypeFloat8E5M2,

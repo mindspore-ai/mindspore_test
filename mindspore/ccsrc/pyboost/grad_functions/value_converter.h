@@ -47,7 +47,7 @@ class PYBOOST_API ValueConverter {
     return GetValue<U>(t);
   }
   static Int64ImmPtr ToInt(const ValuePtr &input);
-  static FP32ImmPtr ToFloat(const ValuePtr &input);
+  static FP64ImmPtr ToFloat(const ValuePtr &input);
   static BoolImmPtr ToBool(const ValuePtr &input);
   static ScalarPtr ToScalar(const ValuePtr &input);
   static tensor::TensorPtr ToTensor(const ValuePtr &input);
@@ -79,7 +79,7 @@ class PYBOOST_API ValueConverter {
   }
 
   static std::optional<Int64ImmPtr> ToIntOptional(const ValuePtr &input);
-  static std::optional<FP32ImmPtr> ToFloatOptional(const ValuePtr &input);
+  static std::optional<FP64ImmPtr> ToFloatOptional(const ValuePtr &input);
   static std::optional<BoolImmPtr> ToBoolOptional(const ValuePtr &input);
   static std::optional<ScalarPtr> ToScalarOptional(const ValuePtr &input);
   static std::optional<tensor::TensorPtr> ToTensorOptional(const ValuePtr &input);

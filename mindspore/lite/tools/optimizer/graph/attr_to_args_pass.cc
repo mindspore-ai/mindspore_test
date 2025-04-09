@@ -28,6 +28,12 @@ namespace opt {
 namespace {
 
 static const std::map<std::string, std::vector<std::pair<std::string, size_t>>> kAttrMapNeedAdjust = {
+  {"ApplyCenteredRMSProp", {{"use_locking", 10}}},
+  {"ApplyMomentum", {{"use_nesterov", 6}, {"use_locking", 7}, {"gradient_scale", 8}}},
+  {"ApplyProximalAdagrad", {{"use_locking", 7}}},
+  {"ApplyRMSProp", {{"use_locking", 9}}},
+  {"FusedCastAdamWeightDecay", {{"use_locking", 11}}},
+  {"SparseApplyProximalAdagrad", {{"use_locking", 8}}},
   {"LogSoftmax", {{"axis", 2}}},
   {"ArgMin", {{"axis", 2}, {"output_type", 3}}},
   {"PromptFlashAttention",

@@ -17,10 +17,13 @@
 #ifndef MINDSPORE_CCSRC_UTILS_CUSTOM_AOT_EXTRA_H
 #define MINDSPORE_CCSRC_UTILS_CUSTOM_AOT_EXTRA_H
 
+#include <algorithm>
+#include <iterator>
 #include <string>
 #include <vector>
 #include "ir/anf.h"
 #include "mindspore/ccsrc/include/common/utils/anfalgo.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 class AotKernelData {
@@ -83,6 +86,7 @@ class AotExtraImpl : public AotExtra {
     }
     return GetValue<bool>(value);
   }
+
   int64_t GetAttrInt(std::string name) {
     MS_EXCEPTION_IF_NULL(prim_);
     auto value = prim_->GetAttr(name);
@@ -91,14 +95,16 @@ class AotExtraImpl : public AotExtra {
     }
     return GetValue<int64_t>(value);
   }
+
   float GetAttrFloat(std::string name) {
     MS_EXCEPTION_IF_NULL(prim_);
     auto value = prim_->GetAttr(name);
     if (value == nullptr) {
       MS_LOG(EXCEPTION) << "For '" << prim_->ToString() << ", there is no attribute called " << name << "! ";
     }
-    return GetValue<float>(value);
+    return static_cast<float>(GetValue<pyfloat>(value));
   }
+
   std::string GetAttrStr(std::string name) {
     MS_EXCEPTION_IF_NULL(prim_);
     auto value = prim_->GetAttr(name);
@@ -116,14 +122,17 @@ class AotExtraImpl : public AotExtra {
     }
     return GetValue<std::vector<int64_t>>(value);
   }
+
   std::vector<float> GetAttrFloatVec(std::string name) {
     MS_EXCEPTION_IF_NULL(prim_);
     auto value = prim_->GetAttr(name);
     if (value == nullptr) {
       MS_LOG(EXCEPTION) << "For '" << prim_->ToString() << ", there is no attribute called " << name << "! ";
     }
-    return GetValue<std::vector<float>>(value);
+    auto ori_values = GetValue<std::vector<pyfloat>>(value);
+    return CastVecFromPyFloatToFloat(ori_values);
   }
+
   std::vector<std::vector<int64_t>> GetAttrInt2DVec(std::string name) {
     MS_EXCEPTION_IF_NULL(prim_);
     auto value = prim_->GetAttr(name);
@@ -132,15 +141,30 @@ class AotExtraImpl : public AotExtra {
     }
     return GetValue<std::vector<std::vector<int64_t>>>(value);
   }
+
   std::vector<std::vector<float>> GetAttrFloat2DVec(std::string name) {
     MS_EXCEPTION_IF_NULL(prim_);
     auto value = prim_->GetAttr(name);
     if (value == nullptr) {
       MS_LOG(EXCEPTION) << "For '" << prim_->ToString() << ", there is no attribute called " << name << "! ";
     }
-    return GetValue<std::vector<std::vector<float>>>(value);
+    auto ori_values = GetValue<std::vector<std::vector<pyfloat>>>(value);
+    std::vector<std::vector<float>> values;
+    for (const auto &vec : ori_values) {
+      values.push_back(CastVecFromPyFloatToFloat(vec));
+    }
+    return values;
   }
+
   PrimitivePtr prim_;
+
+  std::vector<float> CastVecFromPyFloatToFloat(const std::vector<pyfloat> &ori_values) {
+    std::vector<float> values;
+    values.reserve(ori_values.size());
+    std::transform(ori_values.begin(), ori_values.end(), std::back_inserter(values),
+                   [](pyfloat v) { return static_cast<float>(v); });
+    return values;
+  }
 };
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_UTILS_CUSTOM_AOT_EXTRA_H

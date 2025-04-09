@@ -19,6 +19,7 @@
 #include "common/common_utils.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "include/common/thread_pool.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -50,7 +51,7 @@ bool LayerNormGradCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
   if (!primitive()->HasAttr(ops::kEpsilon)) {
     MS_LOG(WARNING) << "LayerNormGrad should have attr 'epsilon'.";
   } else {
-    eps_ = GetValue<float>(primitive()->GetAttr(ops::kEpsilon));
+    eps_ = GetValue<pyfloat>(primitive()->GetAttr(ops::kEpsilon));
   }
   return true;
 }

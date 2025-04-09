@@ -29,8 +29,8 @@ namespace kernel {
 namespace pyboost {
 std::tuple<tensor::TensorPtr, tensor::TensorPtr, tensor::TensorPtr> AdamWAscendCustomize(
   const std::shared_ptr<OpRunner> &op, const TensorPtr &var, const TensorPtr &m, const TensorPtr &v,
-  const TensorPtr &max_v, const TensorPtr &grad, const TensorPtr &step, const FP32ImmPtr &lr, const FP32ImmPtr &beta1,
-  const FP32ImmPtr &beta2, const FP32ImmPtr &decay, const FP32ImmPtr &epsilon, const BoolImmPtr &amsgrad,
+  const TensorPtr &max_v, const TensorPtr &grad, const TensorPtr &step, const FP64ImmPtr &lr, const FP64ImmPtr &beta1,
+  const FP64ImmPtr &beta2, const FP64ImmPtr &decay, const FP64ImmPtr &epsilon, const BoolImmPtr &amsgrad,
   const BoolImmPtr &maximize);
 }  // namespace pyboost
 }  // namespace kernel

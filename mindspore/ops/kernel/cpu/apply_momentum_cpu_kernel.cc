@@ -22,7 +22,7 @@ namespace mindspore {
 namespace kernel {
 namespace apply_momentum_cpu {
 namespace {
-constexpr size_t kApplyMomentumInputsNum = 5;
+constexpr size_t kApplyMomentumInputsNum = 8;
 }  // namespace
 
 bool ApplyMomentumCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
@@ -107,28 +107,35 @@ void ApplyMomentumCpuKernelMod::LaunchApplyMomentum(const std::vector<KernelTens
   ParallelLaunchAutoSearch(task, elem_num, this, &parallel_search_info_);
 }
 
-#define APPLY_MOMENTUM_ADD_KERNEL_1(dtype) \
-  {                                        \
-    KernelAttr()                           \
-      .AddInputAttr(kNumberType##dtype)    \
-      .AddInputAttr(kNumberType##dtype)    \
-      .AddInputAttr(kNumberType##dtype)    \
-      .AddInputAttr(kNumberType##dtype)    \
-      .AddInputAttr(kNumberType##dtype)    \
-      .AddOutputAttr(kNumberType##dtype)   \
-      .AddOutInRef(0, 0)                   \
+#define APPLY_MOMENTUM_ADD_KERNEL_1(dtype)                 \
+  {                                                        \
+    KernelAttr()                                           \
+      .AddInputAttr(kNumberType##dtype)                    \
+      .AddInputAttr(kNumberType##dtype)                    \
+      .AddInputAttr(kNumberType##dtype)                    \
+      .AddInputAttr(kNumberType##dtype)                    \
+      .AddInputAttr(kNumberType##dtype)                    \
+      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)    \
+      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)    \
+      .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat) \
+      .AddOutputAttr(kNumberType##dtype)                   \
+      .AddOutInRef(0, 0)                                   \
   }
-#define APPLY_MOMENTUM_ADD_KERNEL_2(dtype) \
-  {                                        \
-    KernelAttr()                           \
-      .AddInputAttr(kNumberType##dtype)    \
-      .AddInputAttr(kNumberType##dtype)    \
-      .AddInputAttr(kNumberType##dtype)    \
-      .AddInputAttr(kNumberType##dtype)    \
-      .AddInputAttr(kNumberType##dtype)    \
-      .AddOutputAttr(kNumberType##dtype)   \
-      .AddOutputAttr(kNumberType##dtype)   \
-      .AddOutInRef(0, 0)                   \
+
+#define APPLY_MOMENTUM_ADD_KERNEL_2(dtype)                 \
+  {                                                        \
+    KernelAttr()                                           \
+      .AddInputAttr(kNumberType##dtype)                    \
+      .AddInputAttr(kNumberType##dtype)                    \
+      .AddInputAttr(kNumberType##dtype)                    \
+      .AddInputAttr(kNumberType##dtype)                    \
+      .AddInputAttr(kNumberType##dtype)                    \
+      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)    \
+      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)    \
+      .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat) \
+      .AddOutputAttr(kNumberType##dtype)                   \
+      .AddOutputAttr(kNumberType##dtype)                   \
+      .AddOutInRef(0, 0)                                   \
   }
 
 std::vector<KernelAttr> ApplyMomentumCpuKernelMod::GetOpSupport() {

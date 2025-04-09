@@ -27,6 +27,7 @@
 #include "frontend/parallel/dynamic_creator.h"
 #include "frontend/parallel/graph_util/generate_graph.h"
 #include "include/common/utils/parallel_context.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/backend/distributed/embedding_cache/embedding_cache_utils.h"
 #include "include/backend/distributed/ps/ps_cache/ps_data_prefetch.h"
@@ -44,7 +45,7 @@ constexpr int64_t kPaddingIdxIndex = 2;
 constexpr int64_t kMaxNormIndex = 3;
 constexpr int64_t kNormTypeIndex = 4;
 constexpr int64_t kScaleGradByFreqIndex = 5;
-constexpr float kNormType = 2.0;
+constexpr pyfloat kNormType = 2.0;
 
 Status GatherInfo::GetManualSplitWithoutOffsetAttr() {
   auto manual_split_without_offset_iter = attrs_.find("manual_split");
@@ -1141,7 +1142,7 @@ Status ShardAxisImpl::InferReplaceGraph(const CNodePtr &cnode) {
       {gen_g.NewOpInst(replace_op_name_), gen_g.virtual_input_node(), minimum, CreatInt64Imm(axis_), CreatInt64Imm(0)});
   } else if (replace_op_name == EMBEDDING && name_.find(EMBEDDING_LOOKUP) == std::string::npos) {
     gather_v2 = gen_g.PushBack({gen_g.NewOpInst(replace_op_name_), minimum, gen_g.virtual_input_node(),
-                                NewValueNode(kNone), NewValueNode(kNone), CreateFP32Imm(2.0), CreateBoolImm(false)});
+                                NewValueNode(kNone), NewValueNode(kNone), CreatePyFloatImm(2.0), CreateBoolImm(false)});
   } else {
     gather_v2 =
       gen_g.PushBack({gen_g.NewOpInst(replace_op_name_), gen_g.virtual_input_node(), minimum, CreatInt64Imm(axis_)});
@@ -1641,14 +1642,14 @@ Status EmbeddingInfo::GetAttrs() {
   }
   auto max_norm_input_ptr = input_value_[kMaxNormIndex];
   if (!max_norm_input_ptr->isa<None>()) {
-    auto max_norm = GetScalarValueFromInputsWithCheck<float>(input_value_, name_, kNameMaxNorm);
+    auto max_norm = GetScalarValueFromInputsWithCheck<pyfloat>(input_value_, name_, kNameMaxNorm);
     MS_LOG(ERROR) << "max_norm must be none, but get " << max_norm.value() << std::endl;
     return FAILED;
   }
 
   auto norm_type_input_ptr = input_value_[kNormTypeIndex];
   if (!norm_type_input_ptr->isa<None>()) {
-    auto norm_type = GetScalarValueFromInputsWithCheck<float>(input_value_, name_, kNameNormType);
+    auto norm_type = GetScalarValueFromInputsWithCheck<pyfloat>(input_value_, name_, kNameNormType);
     if (norm_type.value() != kNormType) {
       MS_LOG(ERROR) << "norm_type must be 2.0, but get " << norm_type.value() << std::endl;
       return FAILED;

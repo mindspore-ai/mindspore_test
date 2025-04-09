@@ -19,7 +19,6 @@
 #include "abstract/utils.h"
 #include "common/common_utils.h"
 #include "include/curand.h"
-#include "mindspore/ops/infer/apply_power_sign_d.h"
 
 namespace mindspore {
 namespace kernel {

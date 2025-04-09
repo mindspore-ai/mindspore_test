@@ -16,6 +16,7 @@
 
 #include "kernel/gpu/arrays/crop_and_resize_gpu_kernel.h"
 #include "mindspore/ops/infer/crop_and_resize.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -45,7 +46,7 @@ bool CropAndResizeGpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
   } else {  //  bilinear-v2
     method_ = kMethodBilinearV2;
   }
-  extrapolation_value_ = GetValue<float>(primitive_->GetAttr("extrapolation_value"));
+  extrapolation_value_ = GetValue<pyfloat>(primitive_->GetAttr("extrapolation_value"));
   return true;
 }
 

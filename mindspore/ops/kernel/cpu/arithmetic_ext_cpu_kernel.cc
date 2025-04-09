@@ -238,370 +238,108 @@ std::shared_ptr<CpuKernelFunc> SpecializeArithFunc() {
   return std::make_shared<ArithmeticExtCpuTypeFunc<T1, T2>>();
 }
 
+#define ARITHMETIC_EXT_CPU_REG(MS_TENSOR, MS_ALPHA, TENSOR, ALPHA)                                                \
+  {                                                                                                               \
+    KernelAttr().AddInputAttr(MS_TENSOR).AddInputAttr(MS_TENSOR).AddInputAttr(MS_ALPHA).AddOutputAttr(MS_TENSOR), \
+      SpecializeArithFunc<TENSOR, ALPHA>                                                                          \
+  }
+
 using ArithmeticExtCpuFuncCreator = std::function<std::shared_ptr<CpuKernelFunc>()>;
 static std::map<std::string, std::vector<std::pair<KernelAttr, ArithmeticExtCpuFuncCreator>>> kernel_attr_list = {
   {kAddExt,
-   {{KernelAttr()
-       .AddInputAttr(kNumberTypeInt8)
-       .AddInputAttr(kNumberTypeInt8)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddOutputAttr(kNumberTypeInt8),
-     SpecializeArithFunc<int8_t, float>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeInt16)
-       .AddInputAttr(kNumberTypeInt16)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddOutputAttr(kNumberTypeInt16),
-     SpecializeArithFunc<int16_t, float>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeInt32)
-       .AddInputAttr(kNumberTypeInt32)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddOutputAttr(kNumberTypeInt32),
-     SpecializeArithFunc<int32_t, float>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddOutputAttr(kNumberTypeFloat32),
-     SpecializeArithFunc<float, float>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeInt64)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddOutputAttr(kNumberTypeInt64),
-     SpecializeArithFunc<int64_t, float>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeFloat64)
-       .AddInputAttr(kNumberTypeFloat64)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddOutputAttr(kNumberTypeFloat64),
-     SpecializeArithFunc<double, float>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeUInt8)
-       .AddInputAttr(kNumberTypeUInt8)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddOutputAttr(kNumberTypeUInt8),
-     SpecializeArithFunc<uint8_t, float>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeUInt16)
-       .AddInputAttr(kNumberTypeUInt16)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddOutputAttr(kNumberTypeUInt16),
-     SpecializeArithFunc<uint16_t, float>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeUInt32)
-       .AddInputAttr(kNumberTypeUInt32)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddOutputAttr(kNumberTypeUInt32),
-     SpecializeArithFunc<uint32_t, float>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeUInt64)
-       .AddInputAttr(kNumberTypeUInt64)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddOutputAttr(kNumberTypeUInt64),
-     SpecializeArithFunc<uint64_t, float>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeBool)
-       .AddInputAttr(kNumberTypeBool)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddOutputAttr(kNumberTypeBool),
-     SpecializeArithFunc<bool, float>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeFloat16)
-       .AddInputAttr(kNumberTypeFloat16)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddOutputAttr(kNumberTypeFloat16),
-     SpecializeArithFunc<float16, float>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeBFloat16)
-       .AddInputAttr(kNumberTypeBFloat16)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddOutputAttr(kNumberTypeBFloat16),
-     SpecializeArithFunc<bfloat16, float>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeComplex64)
-       .AddInputAttr(kNumberTypeComplex64)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddOutputAttr(kNumberTypeComplex64),
-     SpecializeArithFunc<complex64, float>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeComplex128)
-       .AddInputAttr(kNumberTypeComplex128)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddOutputAttr(kNumberTypeComplex128),
-     SpecializeArithFunc<complex128, float>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeInt8)
-       .AddInputAttr(kNumberTypeInt8)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddOutputAttr(kNumberTypeInt8),
-     SpecializeArithFunc<int8_t, int64_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeInt16)
-       .AddInputAttr(kNumberTypeInt16)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddOutputAttr(kNumberTypeInt16),
-     SpecializeArithFunc<int16_t, int64_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeInt32)
-       .AddInputAttr(kNumberTypeInt32)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddOutputAttr(kNumberTypeInt32),
-     SpecializeArithFunc<int32_t, int64_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddOutputAttr(kNumberTypeFloat32),
-     SpecializeArithFunc<float, int64_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeInt64)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddOutputAttr(kNumberTypeInt64),
-     SpecializeArithFunc<int64_t, int64_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeFloat64)
-       .AddInputAttr(kNumberTypeFloat64)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddOutputAttr(kNumberTypeFloat64),
-     SpecializeArithFunc<double, int64_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeUInt8)
-       .AddInputAttr(kNumberTypeUInt8)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddOutputAttr(kNumberTypeUInt8),
-     SpecializeArithFunc<uint8_t, int64_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeUInt16)
-       .AddInputAttr(kNumberTypeUInt16)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddOutputAttr(kNumberTypeUInt16),
-     SpecializeArithFunc<uint16_t, int64_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeUInt32)
-       .AddInputAttr(kNumberTypeUInt32)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddOutputAttr(kNumberTypeUInt32),
-     SpecializeArithFunc<uint32_t, int64_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeUInt64)
-       .AddInputAttr(kNumberTypeUInt64)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddOutputAttr(kNumberTypeUInt64),
-     SpecializeArithFunc<uint64_t, int64_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeBool)
-       .AddInputAttr(kNumberTypeBool)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddOutputAttr(kNumberTypeBool),
-     SpecializeArithFunc<bool, int64_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeFloat16)
-       .AddInputAttr(kNumberTypeFloat16)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddOutputAttr(kNumberTypeFloat16),
-     SpecializeArithFunc<float16, int64_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeBFloat16)
-       .AddInputAttr(kNumberTypeBFloat16)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddOutputAttr(kNumberTypeBFloat16),
-     SpecializeArithFunc<bfloat16, int64_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeComplex64)
-       .AddInputAttr(kNumberTypeComplex64)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddOutputAttr(kNumberTypeComplex64),
-     SpecializeArithFunc<complex64, int64_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeComplex128)
-       .AddInputAttr(kNumberTypeComplex128)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddOutputAttr(kNumberTypeComplex128),
-     SpecializeArithFunc<complex128, int64_t>}}},
+   {ARITHMETIC_EXT_CPU_REG(kNumberTypeInt8, kNumberTypeFloat32, int8_t, float),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeInt8, kNumberTypeFloat64, int8_t, double),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeInt16, kNumberTypeFloat32, int16_t, float),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeInt16, kNumberTypeFloat64, int16_t, double),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeInt32, kNumberTypeFloat32, int32_t, float),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeInt32, kNumberTypeFloat64, int32_t, double),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeInt64, kNumberTypeFloat32, int64_t, float),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeInt64, kNumberTypeFloat64, int64_t, double),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeUInt8, kNumberTypeFloat32, uint8_t, float),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeUInt8, kNumberTypeFloat64, uint8_t, double),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeUInt16, kNumberTypeFloat32, uint16_t, float),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeUInt16, kNumberTypeFloat64, uint16_t, double),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeUInt32, kNumberTypeFloat32, uint32_t, float),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeUInt32, kNumberTypeFloat64, uint32_t, double),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeUInt64, kNumberTypeFloat32, uint64_t, float),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeUInt64, kNumberTypeFloat64, uint64_t, double),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeBool, kNumberTypeFloat32, bool, float),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeBool, kNumberTypeFloat64, bool, double),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeFloat16, kNumberTypeFloat32, float16, float),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeFloat16, kNumberTypeFloat64, float16, double),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeFloat32, kNumberTypeFloat32, float, float),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeFloat32, kNumberTypeFloat64, float, double),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeFloat64, kNumberTypeFloat32, double, float),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeFloat64, kNumberTypeFloat64, double, double),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeBFloat16, kNumberTypeFloat32, bfloat16, float),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeBFloat16, kNumberTypeFloat64, bfloat16, double),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeComplex64, kNumberTypeFloat32, complex64, float),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeComplex64, kNumberTypeFloat64, complex64, double),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeComplex128, kNumberTypeFloat32, complex128, float),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeComplex128, kNumberTypeFloat64, complex128, double),
+
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeInt8, kNumberTypeInt64, int8_t, int64_t),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeInt16, kNumberTypeInt64, int16_t, int64_t),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeInt32, kNumberTypeInt64, int32_t, int64_t),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeInt64, kNumberTypeInt64, int64_t, int64_t),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeUInt8, kNumberTypeInt64, uint8_t, int64_t),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeUInt16, kNumberTypeInt64, uint16_t, int64_t),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeUInt32, kNumberTypeInt64, uint32_t, int64_t),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeUInt64, kNumberTypeInt64, uint64_t, int64_t),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeBool, kNumberTypeInt64, bool, int64_t),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeFloat16, kNumberTypeInt64, float16, int64_t),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeFloat32, kNumberTypeInt64, float, int64_t),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeFloat64, kNumberTypeInt64, double, int64_t),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeBFloat16, kNumberTypeInt64, bfloat16, int64_t),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeComplex64, kNumberTypeInt64, complex64, int64_t),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeComplex128, kNumberTypeInt64, complex128, int64_t)}},
   {kSubExt,
-   {{KernelAttr()
-       .AddInputAttr(kNumberTypeInt8)
-       .AddInputAttr(kNumberTypeInt8)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddOutputAttr(kNumberTypeInt8),
-     SpecializeArithFunc<int8_t, float>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeInt16)
-       .AddInputAttr(kNumberTypeInt16)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddOutputAttr(kNumberTypeInt16),
-     SpecializeArithFunc<int16_t, float>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeInt32)
-       .AddInputAttr(kNumberTypeInt32)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddOutputAttr(kNumberTypeInt32),
-     SpecializeArithFunc<int32_t, float>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddOutputAttr(kNumberTypeFloat32),
-     SpecializeArithFunc<float, float>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeInt64)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddOutputAttr(kNumberTypeInt64),
-     SpecializeArithFunc<int64_t, float>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeFloat64)
-       .AddInputAttr(kNumberTypeFloat64)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddOutputAttr(kNumberTypeFloat64),
-     SpecializeArithFunc<double, float>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeUInt8)
-       .AddInputAttr(kNumberTypeUInt8)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddOutputAttr(kNumberTypeUInt8),
-     SpecializeArithFunc<uint8_t, float>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeUInt16)
-       .AddInputAttr(kNumberTypeUInt16)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddOutputAttr(kNumberTypeUInt16),
-     SpecializeArithFunc<uint16_t, float>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeUInt32)
-       .AddInputAttr(kNumberTypeUInt32)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddOutputAttr(kNumberTypeUInt32),
-     SpecializeArithFunc<uint32_t, float>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeUInt64)
-       .AddInputAttr(kNumberTypeUInt64)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddOutputAttr(kNumberTypeUInt64),
-     SpecializeArithFunc<uint64_t, float>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeBool)
-       .AddInputAttr(kNumberTypeBool)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddOutputAttr(kNumberTypeBool),
-     SpecializeArithFunc<bool, float>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeFloat16)
-       .AddInputAttr(kNumberTypeFloat16)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddOutputAttr(kNumberTypeFloat16),
-     SpecializeArithFunc<float16, float>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeBFloat16)
-       .AddInputAttr(kNumberTypeBFloat16)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddOutputAttr(kNumberTypeBFloat16),
-     SpecializeArithFunc<bfloat16, float>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeComplex64)
-       .AddInputAttr(kNumberTypeComplex64)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddOutputAttr(kNumberTypeComplex64),
-     SpecializeArithFunc<complex64, float>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeComplex128)
-       .AddInputAttr(kNumberTypeComplex128)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddOutputAttr(kNumberTypeComplex128),
-     SpecializeArithFunc<complex128, float>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeInt8)
-       .AddInputAttr(kNumberTypeInt8)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddOutputAttr(kNumberTypeInt8),
-     SpecializeArithFunc<int8_t, int64_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeInt16)
-       .AddInputAttr(kNumberTypeInt16)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddOutputAttr(kNumberTypeInt16),
-     SpecializeArithFunc<int16_t, int64_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeInt32)
-       .AddInputAttr(kNumberTypeInt32)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddOutputAttr(kNumberTypeInt32),
-     SpecializeArithFunc<int32_t, int64_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddInputAttr(kNumberTypeFloat32)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddOutputAttr(kNumberTypeFloat32),
-     SpecializeArithFunc<float, int64_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeInt64)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddOutputAttr(kNumberTypeInt64),
-     SpecializeArithFunc<int64_t, int64_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeFloat64)
-       .AddInputAttr(kNumberTypeFloat64)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddOutputAttr(kNumberTypeFloat64),
-     SpecializeArithFunc<double, int64_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeUInt8)
-       .AddInputAttr(kNumberTypeUInt8)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddOutputAttr(kNumberTypeUInt8),
-     SpecializeArithFunc<uint8_t, int64_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeUInt16)
-       .AddInputAttr(kNumberTypeUInt16)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddOutputAttr(kNumberTypeUInt16),
-     SpecializeArithFunc<uint16_t, int64_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeUInt32)
-       .AddInputAttr(kNumberTypeUInt32)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddOutputAttr(kNumberTypeUInt32),
-     SpecializeArithFunc<uint32_t, int64_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeUInt64)
-       .AddInputAttr(kNumberTypeUInt64)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddOutputAttr(kNumberTypeUInt64),
-     SpecializeArithFunc<uint64_t, int64_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeBool)
-       .AddInputAttr(kNumberTypeBool)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddOutputAttr(kNumberTypeBool),
-     SpecializeArithFunc<bool, int64_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeFloat16)
-       .AddInputAttr(kNumberTypeFloat16)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddOutputAttr(kNumberTypeFloat16),
-     SpecializeArithFunc<float16, int64_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeBFloat16)
-       .AddInputAttr(kNumberTypeBFloat16)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddOutputAttr(kNumberTypeBFloat16),
-     SpecializeArithFunc<bfloat16, int64_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeComplex64)
-       .AddInputAttr(kNumberTypeComplex64)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddOutputAttr(kNumberTypeComplex64),
-     SpecializeArithFunc<complex64, int64_t>},
-    {KernelAttr()
-       .AddInputAttr(kNumberTypeComplex128)
-       .AddInputAttr(kNumberTypeComplex128)
-       .AddInputAttr(kNumberTypeInt64)
-       .AddOutputAttr(kNumberTypeComplex128),
-     SpecializeArithFunc<complex128, int64_t>}}}};
+   {ARITHMETIC_EXT_CPU_REG(kNumberTypeInt8, kNumberTypeFloat32, int8_t, float),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeInt8, kNumberTypeFloat64, int8_t, double),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeInt16, kNumberTypeFloat32, int16_t, float),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeInt16, kNumberTypeFloat64, int16_t, double),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeInt32, kNumberTypeFloat32, int32_t, float),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeInt32, kNumberTypeFloat64, int32_t, double),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeInt64, kNumberTypeFloat32, int64_t, float),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeInt64, kNumberTypeFloat64, int64_t, double),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeUInt8, kNumberTypeFloat32, uint8_t, float),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeUInt8, kNumberTypeFloat64, uint8_t, double),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeUInt16, kNumberTypeFloat32, uint16_t, float),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeUInt16, kNumberTypeFloat64, uint16_t, double),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeUInt32, kNumberTypeFloat32, uint32_t, float),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeUInt32, kNumberTypeFloat64, uint32_t, double),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeUInt64, kNumberTypeFloat32, uint64_t, float),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeUInt64, kNumberTypeFloat64, uint64_t, double),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeBool, kNumberTypeFloat32, bool, float),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeBool, kNumberTypeFloat64, bool, double),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeFloat16, kNumberTypeFloat32, float16, float),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeFloat16, kNumberTypeFloat64, float16, double),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeFloat32, kNumberTypeFloat32, float, float),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeFloat32, kNumberTypeFloat64, float, double),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeFloat64, kNumberTypeFloat32, double, float),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeFloat64, kNumberTypeFloat64, double, double),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeBFloat16, kNumberTypeFloat32, bfloat16, float),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeBFloat16, kNumberTypeFloat64, bfloat16, double),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeComplex64, kNumberTypeFloat32, complex64, float),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeComplex64, kNumberTypeFloat64, complex64, double),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeComplex128, kNumberTypeFloat32, complex128, float),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeComplex128, kNumberTypeFloat64, complex128, double),
+
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeInt8, kNumberTypeInt64, int8_t, int64_t),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeInt16, kNumberTypeInt64, int16_t, int64_t),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeInt32, kNumberTypeInt64, int32_t, int64_t),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeInt64, kNumberTypeInt64, int64_t, int64_t),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeUInt8, kNumberTypeInt64, uint8_t, int64_t),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeUInt16, kNumberTypeInt64, uint16_t, int64_t),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeUInt32, kNumberTypeInt64, uint32_t, int64_t),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeUInt64, kNumberTypeInt64, uint64_t, int64_t),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeBool, kNumberTypeInt64, bool, int64_t),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeFloat16, kNumberTypeInt64, float16, int64_t),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeFloat32, kNumberTypeInt64, float, int64_t),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeFloat64, kNumberTypeInt64, double, int64_t),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeBFloat16, kNumberTypeInt64, bfloat16, int64_t),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeComplex64, kNumberTypeInt64, complex64, int64_t),
+    ARITHMETIC_EXT_CPU_REG(kNumberTypeComplex128, kNumberTypeInt64, complex128, int64_t)}}};  // namespace
 }  // namespace
 
 bool ArithmeticExtCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,

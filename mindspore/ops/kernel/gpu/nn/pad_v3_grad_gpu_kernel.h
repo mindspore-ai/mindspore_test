@@ -24,12 +24,13 @@
 #include <algorithm>
 #include <map>
 #include <functional>
-#include "mindspore/ops/infer/grad/pad_v3_grad.h"
 #include "mindspore/ops/op_def/op_name.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_class/pad_v3_grad_helper.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
+#include "mindspore/ops/op_def/op_enum.h"
+
 namespace mindspore {
 namespace kernel {
 template <typename T>
@@ -49,6 +50,10 @@ class PadV3GradGpuKernelMod : public NativeGpuKernelMod {
  private:
   std::unique_ptr<cukernel::GpuKernelHelperBase> helper_ptr_{nullptr};
   std::shared_ptr<cukernel::PadV3GradAttr> attr_ptr_{nullptr};
+
+  const std::map<mindspore::ops::Mode, std::string> mode_map_{{mindspore::ops::Mode::REFLECT, ops::kReflect},
+                                                              {mindspore::ops::Mode::EDGE, ops::kEdge},
+                                                              {mindspore::ops::Mode::CIRCULAR, ops::kCircular}};
 };
 }  // namespace kernel
 }  // namespace mindspore

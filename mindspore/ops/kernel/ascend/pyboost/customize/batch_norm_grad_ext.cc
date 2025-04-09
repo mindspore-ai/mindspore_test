@@ -21,6 +21,7 @@
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -31,13 +32,13 @@ void BatchNormGradExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const 
                                      const std::optional<TensorPtr> &runnning_var_tensor,
                                      const std::optional<TensorPtr> &saved_mean_tensor,
                                      const std::optional<TensorPtr> &saved_rstd_tensor, const BoolImmPtr &training,
-                                     const FP32ImmPtr &eps, const ValueTuplePtr &output_mask) {
+                                     const FP64ImmPtr &eps, const ValueTuplePtr &output_mask) {
   MS_LOG(DEBUG) << "Call aclnnBatchNormBackward start";
   // Convert ValuePtr to c++ scalar
   OpRunner::InferOpOutput(op, dout_tensor, input_tensor, weight_tensor, running_mean_tensor, runnning_var_tensor,
                           saved_mean_tensor, saved_rstd_tensor, training, eps, output_mask);
   auto training_imm = GetValue<bool>(training);
-  auto eps_imm = static_cast<double>(GetValue<float>(eps));
+  auto eps_imm = static_cast<double>(GetValue<pyfloat>(eps));
   std::vector<int64_t> output_mask_vector = ConvertValueTupleToVector<int64_t>(output_mask);
   std::vector<uint8_t> output_mask_u8_vec;
   std::transform(output_mask_vector.begin(), output_mask_vector.end(), std::back_inserter(output_mask_u8_vec),

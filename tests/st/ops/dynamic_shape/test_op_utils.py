@@ -423,6 +423,12 @@ def has_nontensor(inputs):
     return False
 
 
+def convert_numerical_sequence_to_tensor(x):
+    if len(x) > 0 and isinstance(x[0], float):
+        return Tensor(x, ms.float64)
+    return Tensor(x)
+
+
 def replace_nontensor_with_help_tensor(inputs):
     """replace_nontensor_with_help_tensor"""
     nontensor_input_index = []
@@ -432,11 +438,11 @@ def replace_nontensor_with_help_tensor(inputs):
         if isinstance(x, tuple) and is_numerical_sequence(x):
             nontensor_input_type += [TUPLE]
             nontensor_input_index += [i]
-            new_inputs[i] = Tensor(x)
+            new_inputs[i] = convert_numerical_sequence_to_tensor(x)
         elif isinstance(x, list) and is_numerical_sequence(x):
             nontensor_input_type += [LIST]
             nontensor_input_index += [i]
-            new_inputs[i] = Tensor(x)
+            new_inputs[i] = convert_numerical_sequence_to_tensor(x)
         elif isinstance(x, int) and not isinstance(x, bool):
             nontensor_input_type += [INT]
             nontensor_input_index += [i]
@@ -448,7 +454,7 @@ def replace_nontensor_with_help_tensor(inputs):
         elif isinstance(x, float):
             nontensor_input_type += [FLOAT]
             nontensor_input_index += [i]
-            new_inputs[i] = Tensor(x)
+            new_inputs[i] = Tensor(x, ms.float64)
         elif x is not None and not isinstance(x, (Tensor, tuple, list, str)):
             raise TypeError(f"Unsupported type: {type(x)}")
 

@@ -53,8 +53,7 @@ double GetScalarValue(const std::shared_ptr<Scalar> &scalar) {
   } else if (scalar->isa<Int64Imm>()) {
     return GetValue<int64_t>(scalar);
   } else if (scalar->isa<FP32Imm>()) {
-    auto fp32imm_ptr = scalar->cast<FP32ImmPtr>();
-    return ops::GetDoubleValueFromScalar(fp32imm_ptr);
+    return GetValue<float>(scalar);
   } else if (scalar->isa<FP64Imm>()) {
     return GetValue<double>(scalar);
   } else if (scalar->isa<BoolImm>()) {

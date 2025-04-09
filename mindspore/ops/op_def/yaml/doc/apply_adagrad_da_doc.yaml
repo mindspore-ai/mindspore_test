@@ -1,0 +1,97 @@
+apply_adagrad_da:
+    description: |
+        Update `var` according to the proximal adagrad scheme.
+        The Adagrad algorithm was proposed in
+        `Adaptive Subgradient Methods for Online Learning and Stochastic Optimization
+        <http://www.jmlr.org/papers/volume12/duchi11a/duchi11a.pdf>`_.
+
+        .. math::
+            \begin{array}{ll} \\
+                grad\_accum += grad \\
+                grad\_squared\_accum += grad * grad \\
+                tmp\_val=
+                    \begin{cases}
+                        sign(grad\_accum) * max\left \{|grad\_accum|-l1*global\_step, 0\right \} & \text{ if } l1>0 \\
+                        grad\_accum & \text{ otherwise } \\
+                    \end{cases} \\
+                x\_value = -1 * lr * tmp\_val \\
+                y\_value = l2 * global\_step * lr + \sqrt{grad\_squared\_accum} \\
+                var = \frac{ x\_value }{ y\_value }
+            \end{array}
+
+        Inputs of `var`, `gradient_accumulator`, `gradient_squared_accumulator` and `grad`
+        comply with the implicit type conversion rules to make the data types consistent.
+        If they have different data types, the lower priority data type will be converted to
+        the relatively highest priority data type.
+
+        Args:
+            use_locking (bool): If ``True`` , updating of the `var` and `accum` tensors will be protected by a lock.
+                                Otherwise the behavior is undefined, but may exhibit less contention. Default: ``False`` .
+
+        Inputs:
+            - **var** (Union[Parameter, Tensor]) - Variable to be updated. The data type must be float16 or float32.
+              The shape is :math:`(N, *)` where :math:`*` means, any number of additional dimensions.
+            - **gradient_accumulator** (Union[Parameter, Tensor]) - The dict of mutable tensor :math:`grad\_accum`.
+              Must have the same shape as `var`.
+            - **gradient_squared_accumulator** (Union[Parameter, Tensor]) - The dict of mutable tensor
+              :math:`grad\_squared\_accum`. Must have the same shape as `var`.
+            - **grad** (Tensor) - A tensor for gradient. Must have the same shape as `var`.
+            - **lr** ([Number, Tensor]) - Scaling factor. Must be a scalar. With float32 or float16 data type.
+            - **l1** ([Number, Tensor]) -  L1 regularization. Must be a scalar. With float32 or float16 data type.
+            - **l2** ([Number, Tensor]) -  L2 regularization. Must be a scalar. With float32 or float16 data type.
+            - **global_step** ([Number, Tensor]) - Training step number. Must be a scalar. With int32 or int64 data type.
+
+        Outputs:
+            Tuple of 1 Tensors, the updated parameters or tensors.
+
+            - **var** (Tensor) - The same shape and data type as `var`.
+
+        Raises:
+            TypeError: If `var`, `gradient_accumulator` or `gradient_squared_accumulator` neither a Parameter nor a Tensor.
+            TypeError: If `grad` is not a Tensor.
+            TypeError: If `lr`, `l1`, `l2` or `global_step` is neither a Number nor a Tensor.
+            TypeError: If use_locking is not a bool.
+            TypeError: If dtype of `var`, `gradient_accumulator`, `gradient_squared_accumulator`, `grad`,
+                      `lr`, `l1` or `l2` is neither float16 nor float32.
+            TypeError: If dtype of `gradient_accumulator`, `gradient_squared_accumulator` or `grad` is not same as `var`.
+            TypeError: If dtype of `global_step` is not int32 nor int64.
+            ValueError: If the shape size of `lr`, `l1`, `l2` and `global_step` is not 0.
+            TypeError: If the data type of `var`, `gradient_accumulator`, `gradient_squared_accumulator` and `grad`
+                          conversion of Parameter is not supported.
+
+        Supported Platforms:
+            ``Ascend`` ``GPU`` ``CPU``
+
+        Examples:
+            >>> import numpy as np
+            >>> from mindspore import dtype as mstype
+            >>> from mindspore import Tensor, nn, ops, Parameter
+            >>> class ApplyAdagradDANet(nn.Cell):
+            ...     def __init__(self, use_locking=False):
+            ...         super(ApplyAdagradDANet, self).__init__()
+            ...         self.apply_adagrad_d_a = ops.ApplyAdagradDA(use_locking)
+            ...         self.var = Parameter(Tensor(np.array([[0.6, 0.4], [0.1, 0.5]]).astype(np.float32)), name="var")
+            ...         self.gradient_accumulator = Parameter(Tensor(np.array([[0.1, 0.3],
+            ...                                                                [0.1, 0.5]]).astype(np.float32)),
+            ...                                               name="gradient_accumulator")
+            ...         self.gradient_squared_accumulator = Parameter(Tensor(np.array([[0.2, 0.1],
+            ...                                                                        [0.1, 0.2]]).astype(np.float32)),
+            ...                                                       name="gradient_squared_accumulator")
+            ...         self.gradient_accumulator = Parameter(Tensor(np.array([[0.1, 0.3],
+            ...                                                                [0.1, 0.5]]).astype(np.float32)),
+            ...                                               name="gradient_accumulator")
+            ...     def construct(self, grad, lr, l1, l2, global_step):
+            ...         out = self.apply_adagrad_d_a(self.var, self.gradient_accumulator,
+            ...                                      self.gradient_squared_accumulator, grad, lr, l1, l2, global_step)
+            ...         return out
+            ...
+            >>> net = ApplyAdagradDANet()
+            >>> grad = Tensor(np.array([[0.3, 0.4], [0.1, 0.2]]).astype(np.float32))
+            >>> lr = Tensor(0.001, mstype.float32)
+            >>> l1 = Tensor(0.001, mstype.float32)
+            >>> l2 = Tensor(0.001, mstype.float32)
+            >>> global_step = Tensor(2, mstype.int32)
+            >>> output = net(grad, lr, l1, l2, global_step)
+            >>> print(output)
+            [[-0.00073906, -0.00136889],
+            [-0.00059699, -0.00142478]]

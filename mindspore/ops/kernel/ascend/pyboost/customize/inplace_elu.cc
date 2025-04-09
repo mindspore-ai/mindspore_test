@@ -41,8 +41,8 @@ tensor::TensorPtr InplaceEluAscendCustomize(const std::shared_ptr<OpRunner> &op,
     // Malloc for input tensors
     PyBoostUtils::MallocOpInputs(device_context, input_tensor);
 
-    static const ScalarPtr scale = std::make_shared<FP32Imm>(1.f);
-    static const ScalarPtr input_scale = std::make_shared<FP32Imm>(1.f);
+    static const ScalarPtr scale = std::make_shared<Int64Imm>(1);
+    static const ScalarPtr input_scale = std::make_shared<Int64Imm>(1);
     LAUNCH_ACLNN(aclnnInplaceElu, device_context, op->stream_id(), input_tensor, alpha, scale, input_scale);
     MS_LOG(DEBUG) << "Run device task InplaceElu end";
   }));

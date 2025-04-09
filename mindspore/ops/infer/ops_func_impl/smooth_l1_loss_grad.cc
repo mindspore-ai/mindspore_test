@@ -25,6 +25,7 @@
 #include "utils/log_adapter.h"
 #include "utils/shape_utils.h"
 #include "ops/ops_func_impl/simple_infer.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace ops {
@@ -32,7 +33,7 @@ ShapeArray SmoothL1LossGradFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                 const InferInfoPtrList &input_infos) const {
   auto &prediction = input_infos[kInputIndex0];
   auto &target = input_infos[kInputIndex1];
-  const auto &beta_opt = input_infos[kInputIndex3]->GetScalarValue<float>();
+  const auto &beta_opt = input_infos[kInputIndex3]->GetScalarValue<pyfloat>();
   if (beta_opt.has_value() && beta_opt.value() < 0) {
     MS_EXCEPTION(RuntimeError) << "For 'SmoothL1LossGrad'"
                                << ", the values for beta not support negative values"

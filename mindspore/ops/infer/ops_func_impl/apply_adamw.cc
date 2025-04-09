@@ -83,11 +83,9 @@ TypePtr ApplyAdamWFuncImpl::InferType(const PrimitivePtr &prim, const std::vecto
   auto v_type = input_args[kInputIndex2]->GetType();
 
   auto lr_type = input_args[kInputIndex5]->GetType();
-  auto decay_type = input_args[kInputIndex6]->GetType();
   auto beta1_type = input_args[kInputIndex7]->GetType();
   auto beta2_type = input_args[kInputIndex8]->GetType();
 
-  auto epsilon_type = input_args[kInputIndex9]->GetType();
   auto grad_type = input_args[kInputIndex10]->GetType();
 
   const std::set<TypePtr> number_type = {kInt8,   kInt16,   kInt32,   kInt64,   kUInt8,     kUInt16,    kUInt32,
@@ -107,9 +105,8 @@ TypePtr ApplyAdamWFuncImpl::InferType(const PrimitivePtr &prim, const std::vecto
   type_dict1.emplace("lr", lr_type);
   type_dict1.emplace("beta1", beta1_type);
   type_dict1.emplace("beta2", beta2_type);
-  type_dict1.emplace("decay", decay_type);
-  type_dict1.emplace("eps", epsilon_type);
   CheckAndConvertUtils::CheckScalarOrTensorTypesSame(type_dict1, float32_set, prim_name, true);
+
   return std::make_shared<Tuple>(std::vector<TypePtr>{var_type, m_type, v_type});
 }
 }  // namespace ops

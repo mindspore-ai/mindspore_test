@@ -21,6 +21,7 @@
 #include <numeric>
 #include <vector>
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -61,7 +62,7 @@ int BatchNormGradGradCpuKernelMod::Resize(const std::vector<KernelTensor *> &inp
   M_ = static_cast<float>(NHW_num_);
 
   is_training_ = inputs[kIndex8]->GetValueWithCheck<bool>();
-  epsilon_ = inputs[kIndex9]->GetValueWithCheck<float>();
+  epsilon_ = inputs[kIndex9]->GetValueWithCheck<pyfloat>();
   data_format_ = static_cast<mindspore::Format>(inputs[kIndex10]->GetValueWithCheck<int64_t>());
 
   size_t float_type_size = sizeof(float);
@@ -737,7 +738,7 @@ void BatchNormGradGradCpuKernelMod::TrainingNCHWCalculateDscale(const std::vecto
     .AddInputAttr(kNumberTypeFloat32)                    \
     .AddInputAttr(kNumberTypeFloat32)                    \
     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)    \
-    .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32) \
+    .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat) \
     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)   \
     .AddOutputAttr(MS)                                   \
     .AddOutputAttr(MS)                                   \

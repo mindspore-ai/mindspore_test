@@ -20,7 +20,6 @@
 #include "mindspore/ccsrc/pyboost/op_register.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "mindspore/ops/ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace kernel {
@@ -35,11 +34,9 @@ tensor::TensorPtr AddScalarAscendCustomize(const std::shared_ptr<OpRunner> &op, 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
 
-  auto other_scalar_real = ops::FetchRealScalar(other_scalar);
-  auto alpha_scalar_real = ops::FetchRealScalar(alpha_scalar);
   // Async
   PyBoostUtils::DispatchRun(
-    std::make_shared<runtime::PyBoostDeviceTask>([op, input_tensor, other_scalar_real, alpha_scalar_real]() {
+    std::make_shared<runtime::PyBoostDeviceTask>([op, input_tensor, other_scalar, alpha_scalar]() {
       MS_LOG(DEBUG) << "Run device task AddScalar start";
       auto device_context = op->device_context();
       const auto &outputs = op->outputs();
@@ -47,7 +44,7 @@ tensor::TensorPtr AddScalarAscendCustomize(const std::shared_ptr<OpRunner> &op, 
       PyBoostUtils::MallocOpInputs(device_context, input_tensor);
       // Malloc for output tensors
       PyBoostUtils::MallocOpOutputs(device_context, outputs);
-      LAUNCH_ACLNN(aclnnAdds, device_context, op->stream_id(), input_tensor, other_scalar_real, alpha_scalar_real,
+      LAUNCH_ACLNN(aclnnAdds, device_context, op->stream_id(), input_tensor, other_scalar, alpha_scalar,
                    outputs[0]);
       MS_LOG(DEBUG) << "Run device task AddScalar end";
     }));

@@ -28,3 +28,5 @@ batch_norm_elemt:
   dispatch:
     enable: True
     Ascend: BatchNormElemtAscend
+    CPU: None
+    GPU: None

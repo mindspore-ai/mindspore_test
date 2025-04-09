@@ -1,0 +1,72 @@
+apply_adagrad_v2:
+    description: |
+        Updates relevant entries according to the adagradv2 scheme.
+
+        .. math::
+            \begin{array}{ll} \\
+                accum += grad * grad \\
+                var -= lr * grad * \frac{1}{\sqrt{accum} + \epsilon}
+            \end{array}
+
+        where :math:`\epsilon` represents `epsilon`.
+
+        Inputs of `var`, `accum` and `grad` comply with the implicit type conversion rules
+        to make the data types consistent.
+        If they have different data types, the lower priority data type will be converted to
+        the relatively highest priority data type.
+
+        Note:
+            The difference is that `ApplyAdagradV2` has one more small constant value :math:`\epsilon` than `ApplyAdagrad`.
+
+        Args:
+            epsilon (float): A small value added for numerical stability.
+            update_slots (bool): If ``True`` , `accum` will be updated. Default: ``True`` .
+
+        Inputs:
+            - **var** (Union[Parameter, Tensor]) - Variable to be updated. With float16 or float32 data type.
+              The shape is :math:`(N, *)` where :math:`*` means, any number of additional dimensions.
+            - **accum** (Union[Parameter, Tensor]) - Accumulation to be updated. The shape must be the same as `var`.
+            - **lr** (Union[Number, Tensor]) - The learning rate value, must be a float number or
+              a scalar tensor with float16 or float32 data type.
+            - **grad** (Tensor) - A tensor for gradient. The shape must be the same as `var`.
+
+        Outputs:
+            Tuple of 2 Tensors, the updated parameters or tensors.
+
+            - **var** (Tensor) - The same shape and data type as `var`.
+            - **accum** (Tensor) - The same shape and data type as `accum`.
+
+        Raises:
+            TypeError: If dtype of `var`, `accum`, `lr` or `grad` is neither float16 nor float32.
+            TypeError: If `lr` is neither a Number nor a Tensor.
+            TypeError: If the data type of `var`, `accum` and `grad` conversion of Parameter is not supported.
+
+        Supported Platforms:
+            ``Ascend`` ``GPU`` ``CPU``
+
+        Examples:
+            >>> import mindspore
+            >>> import numpy as np
+            >>> from mindspore import Tensor, nn, ops, Parameter
+            >>> class Net(nn.Cell):
+            ...     def __init__(self):
+            ...         super(Net, self).__init__()
+            ...         self.apply_adagrad_v2 = ops.ApplyAdagradV2(epsilon=1e-6)
+            ...         self.var = Parameter(Tensor(np.array([[0.6, 0.4],
+            ...                                               [0.1, 0.5]]).astype(np.float32)), name="var")
+            ...         self.accum = Parameter(Tensor(np.array([[0.6, 0.5],
+            ...                                                 [0.2, 0.6]]).astype(np.float32)), name="accum")
+            ...     def construct(self, lr, grad):
+            ...         out = self.apply_adagrad_v2(self.var, self.accum, lr, grad)
+            ...         return out
+            ...
+            >>> net = Net()
+            >>> lr = Tensor(0.001, mindspore.float32)
+            >>> grad = Tensor(np.array([[0.3, 0.7], [0.1, 0.8]]).astype(np.float32))
+            >>> output = net(lr, grad)
+            >>> print(output)
+            (Tensor(shape=[2, 2], dtype=Float32, value=
+            [[ 5.99638879e-01,  3.99296492e-01],
+            [ 9.97817814e-02,  4.99281585e-01]]), Tensor(shape=[2, 2], dtype=Float32, value=
+            [[ 6.90000057e-01,  9.90000010e-01],
+            [ 2.10000008e-01,  1.24000001e+00]]))

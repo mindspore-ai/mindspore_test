@@ -20,6 +20,7 @@
 #include "common/kernel.h"
 #include "utils/llm_manager.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_utils.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -41,7 +42,7 @@ internal::InternalOpPtr InternalPagedAttention::CreateKernel(const internal::Inp
                       << ", but got " << ms_inputs.size();
   }
   param_.head_num = static_cast<int32_t>(ms_inputs[kIndex10]->GetValueWithCheck<int64_t>());
-  param_.tor = ms_inputs[kIndex11]->GetValueWithCheck<float>();
+  param_.tor = ms_inputs[kIndex11]->GetValueWithCheck<pyfloat>();
   param_.kv_head_num = static_cast<int32_t>(ms_inputs[kIndex12]->GetValueWithCheck<int64_t>());
   param_.kv_cache_quant_mode = ms_inputs[kIndex13]->GetValueWithCheck<int64_t>();
   param_.mask_mode =

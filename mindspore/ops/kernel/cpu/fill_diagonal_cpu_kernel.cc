@@ -21,6 +21,7 @@
 #include <memory>
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "mindspore/ops/infer/fill_diagonal.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -40,7 +41,7 @@ bool FillDiagonalCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kFillDiagonalOutputNum, kernel_name_);
 
   input_type_ = inputs[0]->dtype_id();
-  fill_value_ = GetValue<float>(primitive_->GetAttr(ops::kFillValue));
+  fill_value_ = GetValue<pyfloat>(primitive_->GetAttr(ops::kFillValue));
   wrap_ = GetValue<bool>(primitive_->GetAttr(ops::kWrap));
 
   if (IsOneOfUnsignedType(input_type_) && fill_value_ < 0) {

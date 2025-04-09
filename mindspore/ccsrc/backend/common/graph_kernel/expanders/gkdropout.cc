@@ -15,6 +15,7 @@
  */
 
 #include "backend/common/graph_kernel/expanders/op_desc_registry.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore::graphkernel::expanders {
 class GkDropout : public OpDesc {
@@ -30,9 +31,9 @@ class GkDropout : public OpDesc {
   NodePtrList Expand(const NodePtrList &inputs) override {
     const auto &input_x = inputs[0];
     const auto &input_mask = inputs[1];
-    auto keep_prob = GetValue<float>(attrs_["keep_prob"]);
+    auto keep_prob = GetValue<pyfloat>(attrs_["keep_prob"]);
     auto keep_prob_tensor = gb.Tensor(keep_prob, input_x->type);
-    auto r_keep_prob_tensor = gb.Tensor(1.0f / keep_prob, input_x->type);
+    auto r_keep_prob_tensor = gb.Tensor(1.0 / keep_prob, input_x->type);
 
     auto mask = input_mask;
     if (mask->type != input_x->type) {

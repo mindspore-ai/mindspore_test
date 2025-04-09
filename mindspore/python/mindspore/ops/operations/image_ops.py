@@ -389,12 +389,12 @@ class NonMaxSuppressionV3(Primitive):
           single score associated with each box (i.e., each row of the `boxes` Tensor).
           It is required that the number of scores in `scores` must be equal to the number of boxes in `boxes`.
           The supported data type is float32.
-        - **max_output_size** (Union[Tensor, Number.int]) - A scalar integer Tensor representing the maximum
+        - **max_output_size** (Tensor) - A scalar integer Tensor representing the maximum
           number of boxes to be selected by non max suppression. The supported data type is int32.
-        - **iou_threshold** (Union[Tensor, Number.Float]) - A scalar float Tensor represents the threshold
+        - **iou_threshold** (Tensor) - A scalar float Tensor represents the threshold
           used for determining if the intersection over union (IOU) between boxes is too high.
           Data type of `iou_threshold` is float32 and must be in range [0, 1].
-        - **score_threshold** (Union[Tensor, Number.Float]) - A scalar float Tensor represents the threshold for
+        - **score_threshold** (Tensor) - A scalar float Tensor represents the threshold for
           determining when to remove boxes based on score. The supported data type is float32.
 
     Outputs:
@@ -460,14 +460,14 @@ class NonMaxSuppressionWithOverlaps(Primitive):
           single score associated with each box (i.e., each row of the `boxes` Tensor).
           It is required that the number of scores in `scores` must be equal to the number of boxes in `boxes`.
           The supported data type is float32.
-        - **max_output_size** (Union[Tensor, Number.int]) - A scalar integer Tensor representing the maximum
+        - **max_output_size** (Tensor) - A scalar integer Tensor representing the maximum
           number of boxes to be selected by non max suppression, and max_output_size must be equal to or greater
           than 0.
           Types allowed:int32.
-        - **overlap_threshold** (Union[Tensor, Number.Float]) - A scalar value, represented by a 0-D float Tensor,
+        - **overlap_threshold** (Tensor) - A scalar value, represented by a 0-D float Tensor,
           which is used as a threshold to determine if two boxes overlap too much.
           Types allowed:float16, float32 and float64.
-        - **score_threshold** (Union[Tensor, Number.Float]) - A 0-D float Tensor representing the threshold for
+        - **score_threshold** (Tensor) - A 0-D float Tensor representing the threshold for
           deciding when to remove boxes based on score. It has the same dtype as `overlap_threshold`.
 
     Outputs:

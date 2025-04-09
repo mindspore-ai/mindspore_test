@@ -15,13 +15,13 @@
  */
 
 #include "kernel/cpu/pad_v3_cpu_kernel.h"
+#include <cstdint>
 #include <utility>
 #include "common/kernel.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/op_def/op_name.h"
-#include "mindspore/ops/infer/pad_v3.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore {
@@ -29,40 +29,18 @@ namespace kernel {
 namespace pad_v3_cpu {
 namespace {
 constexpr auto kPadV3 = "PadV3";
-constexpr const size_t kConstantInputsNum = 3;
-constexpr const size_t kOtherInputsNum = 2;
-constexpr const size_t kOutputsNum = 1;
+constexpr const size_t kConstantInputsNum = 5;
 constexpr int64_t kPadding1D = 2;
 constexpr int64_t kPadding2D = 4;
 constexpr int64_t kPadding3D = 6;
 constexpr int64_t kNum2 = 2;
 constexpr int64_t kNum3 = 3;
 constexpr int64_t kNum4 = 4;
-const std::vector<std::string> mode_list = {ops::kConstant, ops::kReflect, ops::kEdge, ops::kCircular};
+const std::set<mindspore::ops::Mode> mode_list = {mindspore::ops::Mode::CONSTANT, mindspore::ops::Mode::REFLECT,
+                                                  mindspore::ops::Mode::EDGE, mindspore::ops::Mode::CIRCULAR};
 }  // namespace
 
 bool PadV3CpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
-  mode_ = GetValue<std::string>(primitive_->GetAttr(ops::kMode));
-  const bool is_mode_available = std::find(mode_list.begin(), mode_list.end(), mode_) != mode_list.end();
-  if (is_mode_available == false) {
-    MS_LOG(ERROR) << "For '" << kernel_name_ << "', the 'mode' should be 'constant', 'reflect' or 'edge', but got "
-                  << mode_;
-    return false;
-  }
-  if (mode_ == "constant") {
-    CHECK_KERNEL_INPUTS_NUM(inputs.size(), kConstantInputsNum, kernel_name_);
-  } else {
-    // For not constant mode, the const_value argument may be none or nothing.
-    auto input_num = inputs.size();
-    if (input_num != kOtherInputsNum && input_num != kConstantInputsNum) {
-      MS_LOG(EXCEPTION) << kernel_name_ << " requires " << kOtherInputsNum << " or " << kConstantInputsNum
-                        << " inputs, but got " << input_num << ".";
-    }
-  }
-  CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kOutputsNum, kernel_name_);
-
-  paddings_contiguous_ = GetValue<bool>(primitive_->GetAttr("paddings_contiguous"));
-
   return MatchKernelFunc(kernel_name_, inputs, outputs);
 }
 
@@ -70,6 +48,13 @@ int PadV3CpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const s
   if (auto ret = KernelMod::Resize(inputs, outputs); ret != KRET_OK) {
     return ret;
   }
+
+  mode_ = static_cast<mindspore::ops::Mode>(inputs[inputs.size() - kIndex2]->GetValueWithCheck<int64_t>());
+  if (mode_list.find(mode_) == mode_list.end()) {
+    MS_EXCEPTION(ValueError) << "For " << kernel_name_ << ", mode should be constant, reflect, edge or circular.";
+  }
+  paddings_contiguous_ = inputs[inputs.size() - kIndex1]->GetValueWithCheck<bool>();
+
   auto input_shape = inputs[kIndex0]->GetShapeVector();
   input_dim_ = SizeToLong(input_shape.size());
   input_shape_ = inputs[kIndex0]->GetDeviceShapeVector();
@@ -84,15 +69,13 @@ int PadV3CpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const s
   if (inputs.size() == kConstantInputsNum) {
     auto type = inputs[kIndex2]->GetType();
     MS_ERROR_IF_NULL_W_RET_VAL(type, KRET_RESIZE_FAILED);
-    if (mode_ == ops::kConstant && type->isa<TypeNone>()) {
+    if (mode_ == mindspore::ops::Mode::CONSTANT && type->isa<TypeNone>()) {
       MS_LOG(ERROR) << "For '" << kernel_name_ << "', const value(" << inputs[kIndex2]->ToString()
                     << ") is not valid for constant mode!";
       return KRET_RESIZE_FAILED;
-    } else if (mode_ != ops::kConstant && !type->isa<TypeNone>()) {
+    } else if (mode_ != mindspore::ops::Mode::CONSTANT && !type->isa<TypeNone>()) {
       MS_LOG(ERROR) << "For '" << kernel_name_
-                    << "', the input[constant_value] is only valid when the attribute[mode] is `constant`. DO NOT set "
-                       "it in ["
-                    << mode_ << "] mode.";
+                    << "', the input[constant_value] is only valid when the attribute[mode] is `constant`.";
       return KRET_RESIZE_FAILED;
     }
   }
@@ -306,21 +289,21 @@ int64_t PadV3CpuKernelMod::IndexCalculate(int64_t pad_value, int64_t pad_end, in
                                           int64_t o_start, int64_t i_start) const {
   int64_t ip = 0;
   if (now < pad_value) {
-    if (mode_ == ops::kReflect) {
+    if (mode_ == mindspore::ops::Mode::REFLECT) {
       ip = pad_value + pad_value - now;
-    } else if (mode_ == ops::kEdge) {
+    } else if (mode_ == mindspore::ops::Mode::EDGE) {
       ip = pad_value;
-    } else if (mode_ == ops::kCircular) {
+    } else if (mode_ == mindspore::ops::Mode::CIRCULAR) {
       ip = input_value + now + std::min(int64_t(0), pad_end);
     }
   } else if (now >= pad_value && now < input_value + pad_value) {
     ip = now;
   } else {
-    if (mode_ == ops::kReflect) {
+    if (mode_ == mindspore::ops::Mode::REFLECT) {
       ip = (input_value + pad_value - 1) + (input_value + pad_value - 1) - now;
-    } else if (mode_ == ops::kEdge) {
+    } else if (mode_ == mindspore::ops::Mode::EDGE) {
       ip = input_value + pad_value - 1;
-    } else if (mode_ == ops::kCircular) {
+    } else if (mode_ == mindspore::ops::Mode::CIRCULAR) {
       ip = now - input_value - std::min(int64_t(0), pad_value);
     }
   }
@@ -336,7 +319,7 @@ bool PadV3CpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs, 
   }
   auto input_ptr = static_cast<T *>(inputs[kIndex0]->device_ptr());
   auto output_ptr = static_cast<T *>(outputs[kIndex0]->device_ptr());
-  if (mode_ == ops::kConstant) {
+  if (mode_ == mindspore::ops::Mode::CONSTANT) {
     T constant_values = *(static_cast<T *>(inputs[kIndex2]->device_ptr()));
     for (int64_t i = 0; i < input_dim_ / kNum2; ++i) {
       int64_t u = paddings_[i * kNum2];
@@ -358,17 +341,37 @@ bool PadV3CpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs, 
   return true;
 }
 
-#define PAD_V3_CPU_REG(MS_T, T)                                                                                      \
-  std::make_pair(KernelAttr().AddInputAttr(MS_T).AddInputAttr(kNumberTypeInt32).AddOutputAttr(MS_T),                 \
-                 &PadV3CpuKernelMod::LaunchKernel<T, int32_t>),                                                      \
-    std::make_pair(KernelAttr().AddInputAttr(MS_T).AddInputAttr(kNumberTypeInt64).AddOutputAttr(MS_T),               \
-                   &PadV3CpuKernelMod::LaunchKernel<T, int64_t>),                                                    \
-    std::make_pair(                                                                                                  \
-      KernelAttr().AddInputAttr(MS_T).AddInputAttr(kNumberTypeInt32).AddOptionalInputAttr(MS_T).AddOutputAttr(MS_T), \
-      &PadV3CpuKernelMod::LaunchKernel<T, int32_t>),                                                                 \
-    std::make_pair(                                                                                                  \
-      KernelAttr().AddInputAttr(MS_T).AddInputAttr(kNumberTypeInt64).AddOptionalInputAttr(MS_T).AddOutputAttr(MS_T), \
-      &PadV3CpuKernelMod::LaunchKernel<T, int64_t>)
+#define PAD_V3_CPU_REG(MS_T, T)                                         \
+  std::make_pair(KernelAttr()                                           \
+                   .AddInputAttr(MS_T)                                  \
+                   .AddInputAttr(kNumberTypeInt32)                      \
+                   .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)   \
+                   .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)    \
+                   .AddOutputAttr(MS_T),                                \
+                 &PadV3CpuKernelMod::LaunchKernel<T, int32_t>),         \
+    std::make_pair(KernelAttr()                                         \
+                     .AddInputAttr(MS_T)                                \
+                     .AddInputAttr(kNumberTypeInt64)                    \
+                     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64) \
+                     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)  \
+                     .AddOutputAttr(MS_T),                              \
+                   &PadV3CpuKernelMod::LaunchKernel<T, int64_t>),       \
+    std::make_pair(KernelAttr()                                         \
+                     .AddInputAttr(MS_T)                                \
+                     .AddInputAttr(kNumberTypeInt32)                    \
+                     .AddOptionalInputAttr(MS_T)                        \
+                     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64) \
+                     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)  \
+                     .AddOutputAttr(MS_T),                              \
+                   &PadV3CpuKernelMod::LaunchKernel<T, int32_t>),       \
+    std::make_pair(KernelAttr()                                         \
+                     .AddInputAttr(MS_T)                                \
+                     .AddInputAttr(kNumberTypeInt64)                    \
+                     .AddOptionalInputAttr(MS_T)                        \
+                     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64) \
+                     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)  \
+                     .AddOutputAttr(MS_T),                              \
+                   &PadV3CpuKernelMod::LaunchKernel<T, int64_t>)
 
 const std::vector<std::pair<KernelAttr, PadV3CpuKernelMod::KernelRunFunc>> &PadV3CpuKernelMod::GetFuncList() const {
   static const std::vector<std::pair<KernelAttr, PadV3CpuKernelMod::KernelRunFunc>> func_list = {

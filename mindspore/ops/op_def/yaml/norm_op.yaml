@@ -26,3 +26,5 @@ norm:
   dispatch:
     enable: True
     Ascend: NormAscend
+    CPU: None
+    GPU: None

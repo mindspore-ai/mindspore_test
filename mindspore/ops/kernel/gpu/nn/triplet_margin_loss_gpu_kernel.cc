@@ -16,6 +16,8 @@
 
 #include "kernel/gpu/nn/triplet_margin_loss_gpu_kernel.h"
 #include <utility>
+#include "mindspore/core/include/mindapi/base/types.h"
+
 namespace mindspore {
 namespace kernel {
 namespace {
@@ -143,7 +145,7 @@ bool TripletMarginLossGpuKernelMod::Init(const std::vector<KernelTensor *> &inpu
   }
   attr_ptr_->p = GetValue<int64_t>(primitive_->GetAttr(ops::kP));
   attr_ptr_->swap = GetValue<bool>(primitive_->GetAttr(ops::kSwap));
-  attr_ptr_->eps = GetValue<float>(primitive_->GetAttr(ops::kEps));
+  attr_ptr_->eps = GetValue<pyfloat>(primitive_->GetAttr(ops::kEps));
   attr_ptr_->reduction = GetValue<std::string>(primitive_->GetAttr(ops::kReduction));
   helper_ptr_ = std::move(kernel_attr[index].second(kernel_name_, device_id_));
   helper_ptr_->SetKernelParam(attr_ptr_);

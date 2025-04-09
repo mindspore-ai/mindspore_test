@@ -16,6 +16,7 @@
 
 #include "kernel/gpu/cuda_impl/cuda_ops/uniform_impl.cuh"
 #include "kernel/gpu/random/uniform_gpu_kernel.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -31,8 +32,8 @@ bool UniformGpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const 
     return false;
   }
   kernel_func_ = func_list_[index].second;
-  from_ = GetValue<float>(primitive_->GetAttr("from"));
-  to_ = GetValue<float>(primitive_->GetAttr("to"));
+  from_ = GetValue<pyfloat>(primitive_->GetAttr("from"));
+  to_ = GetValue<pyfloat>(primitive_->GetAttr("to"));
   uint64_t seed = static_cast<uint64_t>(GetValue<int64_t>(primitive_->GetAttr("seed")));
   uint64_t offset = static_cast<uint64_t>(GetValue<int64_t>(primitive_->GetAttr("offset")));
   seed_ = random::GetSeed(seed, offset);

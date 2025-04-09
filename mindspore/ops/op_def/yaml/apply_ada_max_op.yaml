@@ -1,0 +1,40 @@
+#operator apply_ada_max
+apply_ada_max:
+    args:
+        var:
+            dtype: tensor
+        m:
+            dtype: tensor
+        v:
+            dtype: tensor
+        beta1_power:
+            dtype: tensor
+            type_cast: float
+        lr:
+            dtype: tensor
+            type_cast: float
+        beta1:
+            dtype: tensor
+            type_cast: float
+        beta2:
+            dtype: tensor
+            type_cast: float
+        epsilon:
+            dtype: tensor
+            type_cast: float
+        grad:
+            dtype: tensor
+    returns:
+        var:
+            dtype: tensor
+        m:
+            dtype: tensor
+        v:
+            dtype: tensor
+    args_signature:
+        rw_write: var, m, v
+        dtype_group: (var, m, v, grad), (beta1_power), (lr), (beta1), (beta2), (epsilon)
+    labels:
+        side_effect_mem: True
+    function:
+        disable: True

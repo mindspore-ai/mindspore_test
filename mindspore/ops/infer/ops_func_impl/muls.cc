@@ -62,8 +62,15 @@ ShapeArray MulsFuncImpl::InferShape(const PrimitivePtr &primitive, const InferIn
 std::vector<TypeId> MulsFuncImpl::InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
   TypeId input_type_id = input_infos[kInputIndex0]->GetType();
   TypeId other_type_id = input_infos[kInputIndex1]->GetType();
-
-  auto promote_type_id = (TypeToLevel(input_type_id) < TypeToLevel(other_type_id)) ? other_type_id : input_type_id;
-  return {promote_type_id};
+  auto input_level = TypeToLevel(input_type_id);
+  auto other_level = TypeToLevel(other_type_id);
+  if (input_level == typeLevelFloat || other_level == typeLevelFloat) {
+    return {ConvertTypeBetweenTensorAndScalar(input_type_id, other_type_id)};
+  }
+  if (input_level == typeLevelInt) {
+    return {input_type_id};
+  }
+  auto out_type_id = other_level == typeLevelBool ? kNumberTypeBool : kNumberTypeInt64;
+  return {out_type_id};
 }
 }  // namespace mindspore::ops

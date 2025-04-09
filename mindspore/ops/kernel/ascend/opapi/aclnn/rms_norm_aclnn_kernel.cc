@@ -20,14 +20,14 @@
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
 #include "kernel/ascend/acl_ir/op_api_convert.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
 namespace rms_norm {
-
 void RmsNormAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                      const std::vector<KernelTensor *> &outputs) {
-  epsilon_ = static_cast<double>(device::ascend::ConvertKernelTensor<float>(inputs[kIndex2]));
+  epsilon_ = static_cast<double>(device::ascend::ConvertKernelTensor<pyfloat>(inputs[kIndex2]));
   GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], epsilon_, outputs[kIndex0], outputs[kIndex1]);
 }
 

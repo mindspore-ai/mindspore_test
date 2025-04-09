@@ -27,6 +27,7 @@
 #include "kernel/cpu/nnacl/op_base.h"
 #include "kernel/cpu/nnacl//fp32/dropout_fp32.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -71,7 +72,7 @@ bool DropoutNdCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
     return false;
   }
   // Get Self primitive attribute by primitive.
-  keep_prob_ = GetValue<float>(primitive_->GetAttr(ops::kKeepProb));
+  keep_prob_ = GetValue<pyfloat>(primitive_->GetAttr(ops::kKeepProb));
   if ((keep_prob_ < 0.0f) || (keep_prob_ > 1.0f)) {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "', the value of 'keep_prob' should be in range [0.0, 1.0], "
                   << "but got " << keep_prob_;

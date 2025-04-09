@@ -54,7 +54,7 @@ std::optional<TensorPtr> SpeedFusionAttentionDropoutGenMaskCall(
 
   std::optional<TensorPtr> dropout_mask = std::nullopt;
   if (0 < keep_prob_value && keep_prob_value < 1.) {
-    auto p = std::make_shared<FP32Imm>(static_cast<float>(1 - keep_prob_value));
+    auto p = std::make_shared<FP64Imm>(1 - keep_prob_value);
     auto shape = std::make_shared<ValueTuple>(std::vector<ValuePtr>{MakeValue<int64_t>(*numels)});
     auto dtype = std::make_shared<Int64Imm>(static_cast<int64_t>(query->Dtype()->type_id()));
     auto dropout_gen_mask_ext_op =
@@ -89,7 +89,7 @@ void SpeedFusionAttentionAscendCustomize(
   const std::shared_ptr<OpRunner> &op, const TensorPtr &query, const TensorPtr &key, const TensorPtr &value,
   const Int64ImmPtr &head_num, const Int64ImmPtr &input_layout, const TensorPtr &seed, const TensorPtr &offset,
   const std::optional<TensorPtr> &pse, const std::optional<TensorPtr> &padding_mask,
-  const std::optional<TensorPtr> &atten_mask, const FP32ImmPtr &scale, const FP32ImmPtr &keep_prob,
+  const std::optional<TensorPtr> &atten_mask, const FP64ImmPtr &scale, const FP64ImmPtr &keep_prob,
   const Int64ImmPtr &pre_tokens, const Int64ImmPtr &next_tokens, const Int64ImmPtr &inner_precise,
   const std::optional<ValueTuplePtr> &prefix, const std::optional<ValueTuplePtr> &actual_seq_qlen,
   const std::optional<ValueTuplePtr> &actual_seq_kvlen, const Int64ImmPtr &sparse_mode,
@@ -116,7 +116,7 @@ void SpeedFusionAttentionAscendCustomize(
   }
 
   auto head_num_value = GetValue<int64_t>(head_num);
-  auto keep_prob_value = static_cast<double>(GetValue<float>(keep_prob));
+  auto keep_prob_value = static_cast<double>(keep_prob->value());
   auto ori_seed = RecordRandomStateBeforeGenMask(seed, keep_prob_value);
   auto ori_offset = RecordRandomStateBeforeGenMask(offset, keep_prob_value);
   auto dropout_mask =
@@ -125,7 +125,7 @@ void SpeedFusionAttentionAscendCustomize(
 
   auto input_layout_str =
     mindspore::device::ascend::FASInputLayoutMode::ConvertEnumToString(GetValue<int64_t>(input_layout));
-  auto scale_value = static_cast<double>(GetValue<float>(scale));
+  auto scale_value = static_cast<double>(scale->value());
   auto pre_tokens_value = GetValue<int64_t>(pre_tokens);
   auto next_tokens_value = GetValue<int64_t>(next_tokens);
   auto inner_precise_value = GetValue<int64_t>(inner_precise);

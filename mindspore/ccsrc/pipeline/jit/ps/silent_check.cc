@@ -198,8 +198,7 @@ AnfNodePtr CreateNormForGE(const FuncGraphPtr &func_graph, const AnfNodePtr &nod
 }
 
 AnfNodePtr CreateNormForKBK(const FuncGraphPtr &func_graph, const AnfNodePtr &node, const AnfNodePtr &dout) {
-  auto ord =
-    CreateValueNode(func_graph, std::make_shared<FP32Imm>(2), kNumberTypeFloat32, kernel::KernelObjectType::SCALAR);
+  auto ord = CreateValueNode(func_graph, MakeValue<pyfloat>(2), kNumberTypePyFloat, kernel::KernelObjectType::SCALAR);
   auto dims = CreateValueNode(func_graph, std::make_shared<ValueTuple>(std::vector<ValuePtr>{}), kNumberTypeInt64,
                               kernel::KernelObjectType::TUPLE);
   auto keep_dims =

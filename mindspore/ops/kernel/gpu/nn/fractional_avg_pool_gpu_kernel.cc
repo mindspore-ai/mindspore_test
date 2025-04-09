@@ -15,6 +15,8 @@
  */
 
 #include "kernel/gpu/nn/fractional_avg_pool_gpu_kernel.h"
+#include <algorithm>
+#include <iterator>
 #include <utility>
 #include <iostream>
 
@@ -79,7 +81,11 @@ bool FractionalAvgPoolGpuKernelMod::Init(const std::vector<KernelTensor *> &inpu
   if (!is_match) {
     return false;
   }
-  attr_ptr_->pooling_ratio = GetValue<std::vector<float>>(primitive_->GetAttr("pooling_ratio"));
+
+  auto pooling_ratio = GetValue<std::vector<pyfloat>>(primitive_->GetAttr("pooling_ratio"));
+  attr_ptr_->pooling_ratio.clear();
+  (void)std::transform(pooling_ratio.begin(), pooling_ratio.end(), std::back_inserter(attr_ptr_->pooling_ratio),
+                       [](pyfloat v) { return static_cast<float>(v); });
   attr_ptr_->pseudo_random = GetValue<bool>(primitive_->GetAttr("pseudo_random"));
   attr_ptr_->overlapping = GetValue<bool>(primitive_->GetAttr("overlapping"));
   attr_ptr_->deterministic = GetValue<bool>(primitive_->GetAttr("deterministic"));

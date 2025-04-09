@@ -17,6 +17,7 @@
 #include "kernel/gpu/nn/l2normalize_grad_gpu_kernel.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/infer/grad/l2_normalize_grad.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -39,7 +40,7 @@ bool L2NormalizeGradGpuKernelMod::Init(const std::vector<KernelTensor *> &inputs
   }
   kernel_func_ = func_list_[index].second;
 
-  epsilon_ = GetValue<float>(primitive_->GetAttr("epsilon"));
+  epsilon_ = GetValue<pyfloat>(primitive_->GetAttr("epsilon"));
   axis_origin_ = LongToInt(GetValue<int64_t>(primitive_->GetAttr("axis")));
   return true;
 }

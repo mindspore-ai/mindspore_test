@@ -29,7 +29,7 @@ namespace pyboost {
 void AddRmsNormQuantAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &x1_tensor,
                                     const TensorPtr &x2_tensor, const TensorPtr &gamma_tensor,
                                     const TensorPtr &scale_tensor, const TensorPtr &offset_tensor,
-                                    const FP32ImmPtr &epsilon);
+                                    const FP64ImmPtr &epsilon);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

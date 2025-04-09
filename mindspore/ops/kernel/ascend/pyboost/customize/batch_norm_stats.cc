@@ -22,13 +22,13 @@
 #include "mindspore/ccsrc/pyboost/op_register.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-std::tuple<tensor::TensorPtr, tensor::TensorPtr> BatchNormStatsAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                                               const TensorPtr &input_tensor,
-                                                                               const FP32ImmPtr &eps) {
+std::tuple<tensor::TensorPtr, tensor::TensorPtr> BatchNormStatsAscendCustomize(
+  const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor, const FP64ImmPtr &eps) {
   std::string op_name = op->primitive()->name();
   MS_LOG(DEBUG) << op_name << " call start";
   OpRunner::InferOpOutput(op, input_tensor, eps);
@@ -36,7 +36,7 @@ std::tuple<tensor::TensorPtr, tensor::TensorPtr> BatchNormStatsAscendCustomize(c
 
   // Convert ValuePtr to c++ scalar
   // Convert ValuePtr to c++ scalar
-  auto eps_imm = GetValue<float>(eps);
+  auto eps_imm = GetValue<pyfloat>(eps);
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor);
 

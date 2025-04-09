@@ -22,6 +22,7 @@
 #include "include/backend/optimizer/helper.h"
 #include "ops_utils/op_utils.h"
 #include "op_def/auto_generate/gen_ops_primitive_n.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace opt {
@@ -52,8 +53,8 @@ const AnfNodePtr NanToNumForGe::Process(const FuncGraphPtr &graph, const AnfNode
   auto manager = graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
 
-  const float BFLOAT16_MAX_VALUE = 3.3895314e+38;
-  const float BFLOAT16_MIN_VALUE = -3.3895314e+38;
+  const pyfloat BFLOAT16_MAX_VALUE = 3.3895314e+38;
+  const pyfloat BFLOAT16_MIN_VALUE = -3.3895314e+38;
 
   size_t idx0 = ops::GetInputIndexByName(common::AnfAlgo::GetCNodeName(cnode), "nan");
   if (idx0 != SIZE_MAX) {
@@ -64,7 +65,7 @@ const AnfNodePtr NanToNumForGe::Process(const FuncGraphPtr &graph, const AnfNode
     auto nan_value_node_ptr = nan_node->cast<ValueNodePtr>();
     auto nan_value_ptr = utils::cast<ValuePtr>(nan_value_node_ptr->value());
     if (nan_value_ptr->isa<None>()) {
-      auto new_nan_node = opt::CreateValueNodeWithKernelInfo(graph, MakeValue(static_cast<float>(0.0)));
+      auto new_nan_node = opt::CreateValueNodeWithKernelInfo(graph, MakeValue(static_cast<pyfloat>(0.0)));
       manager->SetEdge(cnode, kIndex2, new_nan_node);
     }
   } else {
@@ -73,12 +74,12 @@ const AnfNodePtr NanToNumForGe::Process(const FuncGraphPtr &graph, const AnfNode
   }
 
   size_t idx1 = ops::GetInputIndexByName(common::AnfAlgo::GetCNodeName(cnode), "posinf");
-  ValuePtr posinf = MakeValue(std::numeric_limits<float>::max());
+  ValuePtr posinf = MakeValue(std::numeric_limits<pyfloat>::max());
   if (dtype_id == kNumberTypeBFloat16) {
     posinf = MakeValue(BFLOAT16_MAX_VALUE);
   }
   if (dtype_id == kNumberTypeFloat16) {
-    posinf = MakeValue(static_cast<float>(std::numeric_limits<float16>::max()));
+    posinf = MakeValue(static_cast<pyfloat>(std::numeric_limits<float16>::max()));
   }
   if (idx1 != SIZE_MAX) {
     auto posinf_node = common::AnfAlgo::GetInputNode(cnode, idx1);
@@ -97,12 +98,12 @@ const AnfNodePtr NanToNumForGe::Process(const FuncGraphPtr &graph, const AnfNode
   }
 
   size_t idx2 = ops::GetInputIndexByName(common::AnfAlgo::GetCNodeName(cnode), "neginf");
-  ValuePtr neginf = MakeValue(std::numeric_limits<float>::lowest());
+  ValuePtr neginf = MakeValue(std::numeric_limits<pyfloat>::lowest());
   if (dtype_id == kNumberTypeBFloat16) {
     neginf = MakeValue(BFLOAT16_MIN_VALUE);
   }
   if (dtype_id == kNumberTypeFloat16) {
-    neginf = MakeValue(static_cast<float>(std::numeric_limits<float16>::lowest()));
+    neginf = MakeValue(static_cast<pyfloat>(std::numeric_limits<float16>::lowest()));
   }
   if (idx2 != SIZE_MAX) {
     auto neginf_node = common::AnfAlgo::GetInputNode(cnode, idx2);

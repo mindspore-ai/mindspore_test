@@ -40,17 +40,17 @@ ShapeArray LinalgQrFuncImpl::InferShape(const PrimitivePtr &primitive, const Inf
   const int64_t m_index = SizeToInt(input_shape.size()) - 2;
   const int64_t n_index = SizeToInt(input_shape.size()) - 1;
 
-  if (mode == LinalgQrMode::R) {
+  if (mode == Mode::R) {
     // Just calculate R(*, k, n) in the 'reduced' mode, where k is the minimum value of m and n,
     // and Q is returned as an empty tensor.
     out_q_shape = {};
     out_r_shape[m_index] = std::min(input_shape[m_index], input_shape[n_index]);
-  } else if (mode == LinalgQrMode::REDUCED) {
+  } else if (mode == Mode::REDUCED) {
     // A(*, m, n) -> Q(*, m, k); R(*, k, n); k = min(m, n)
     auto k = std::min(input_shape[m_index], input_shape[n_index]);
     out_q_shape[n_index] = k;
     out_r_shape[m_index] = k;
-  } else if (mode == LinalgQrMode::COMPLETE) {
+  } else if (mode == Mode::COMPLETE) {
     // A(*, m, n) -> Q(*, m, m), R(*, m, n)
     out_q_shape[n_index] = input_shape[m_index];
   } else {

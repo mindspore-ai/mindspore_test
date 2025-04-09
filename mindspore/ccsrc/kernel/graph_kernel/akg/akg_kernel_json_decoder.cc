@@ -38,6 +38,7 @@
 #include "include/common/utils/convert_utils_py.h"
 #include "include/common/utils/utils.h"
 #include "kernel/graph_kernel/graph_kernel_json_flags.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
@@ -102,7 +103,7 @@ class CNodeDecoder {
       return MakeValue(value);
     } else if (type == "float") {
       float value = attr_json[kJsonKeyValue];
-      return MakeValue(value);
+      return MakeValue(static_cast<pyfloat>(value));
     } else if (type == "listInt") {
       std::vector<int64_t> value = attr_json[kJsonKeyValue];
       return MakeValue(value);

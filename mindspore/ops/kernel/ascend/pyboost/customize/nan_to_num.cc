@@ -23,8 +23,8 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-std::tuple<float, float> GetInfValues(TypeId input_type, const std::optional<FP32ImmPtr> &posinf,
-                                      const std::optional<FP32ImmPtr> &neginf, bool posinf_has_value,
+std::tuple<float, float> GetInfValues(TypeId input_type, const std::optional<FP64ImmPtr> &posinf,
+                                      const std::optional<FP64ImmPtr> &neginf, bool posinf_has_value,
                                       bool neginf_has_value) {
   const float DOUBLE_MAX_VALUE = 1.7976931348623157e+308;
   const float DOUBLE_MIN_VALUE = -1.7976931348623157e+308;
@@ -61,8 +61,9 @@ std::tuple<float, float> GetInfValues(TypeId input_type, const std::optional<FP3
   return std::make_tuple(new_posinf, new_neginf);
 }
 tensor::TensorPtr NanToNumAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
-                                          const std::optional<FP32ImmPtr> &nan, const std::optional<FP32ImmPtr> &posinf,
-                                          const std::optional<FP32ImmPtr> &neginf) {
+                                              const std::optional<FP64ImmPtr> &nan,
+                                              const std::optional<FP64ImmPtr> &posinf,
+                                              const std::optional<FP64ImmPtr> &neginf) {
   const float DEFAULT_NAN = 0.0;
 
   auto new_nan = nan.has_value() ? nan.value()->value() : DEFAULT_NAN;

@@ -15,6 +15,8 @@
  */
 
 #include "kernel/gpu/math/approximate_equal_gpu_kernel.h"
+#include "mindspore/core/include/mindapi/base/types.h"
+
 namespace mindspore {
 namespace kernel {
 bool ApproximateEqualGpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
@@ -34,7 +36,7 @@ bool ApproximateEqualGpuKernelMod::Init(const std::vector<KernelTensor *> &input
   }
   kernel_func_ = func_list_[index].second;
   unit_size_ = abstract::TypeIdSize(kernel_attr.GetInputAttr(kIndex0).dtype);
-  tolerance_ = GetValue<float>(primitive_->GetAttr("tolerance"));
+  tolerance_ = GetValue<pyfloat>(primitive_->GetAttr("tolerance"));
   return true;
 }
 

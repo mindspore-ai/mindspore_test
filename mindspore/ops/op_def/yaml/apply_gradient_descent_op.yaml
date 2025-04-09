@@ -1,0 +1,20 @@
+#operator apply_gradient_descent
+apply_gradient_descent:
+    args:
+        var:
+            dtype: tensor
+        alpha:
+            dtype: tensor
+            type_cast: float
+        delta:
+            dtype: tensor
+    returns:
+        var:
+            dtype: tensor
+    args_signature:
+        rw_write: var
+        dtype_group: (var, delta), (alpha)
+    labels:
+        side_effect_mem: True
+    function:
+        disable: True

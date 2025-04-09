@@ -354,8 +354,10 @@ tensor::TensorPtr CreateTupleTensor(const ValueTuplePtr &value_tuple) {
     tensor = CreateTensorWithValueTuple<int32_t>(value_tuple, kInt32, sizeof(int32_t));
   } else if (scalar->isa<Int64Imm>()) {
     tensor = CreateTensorWithValueTuple<int64_t>(value_tuple, kInt64, sizeof(int64_t));
-  } else if (scalar->isa<FloatImm>()) {
+  } else if (scalar->isa<FP32Imm>()) {
     tensor = CreateTensorWithValueTuple<float>(value_tuple, kFloat32, sizeof(float));
+  } else if (scalar->isa<FP64Imm>()) {
+    tensor = CreateTensorWithValueTuple<double>(value_tuple, kFloat64, sizeof(double));
   } else {
     auto type = scalar->type();
     auto type_str = (type == nullptr) ? "nullptr" : type->ToString();

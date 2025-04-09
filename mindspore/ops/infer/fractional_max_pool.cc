@@ -44,6 +44,7 @@
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace ops {
@@ -57,12 +58,12 @@ abstract::TupleShapePtr FractionalMaxPoolInferShape(const PrimitivePtr &primitiv
   auto in_shape = CheckAndConvertUtils::ConvertShapePtrToShapeMap(input_args[0]->GetShape())[kShape];
   const int64_t x_rank = 4;
   (void)CheckAndConvertUtils::CheckInteger("input_rank", SizeToLong(in_shape.size()), kEqual, x_rank, op_name);
-  auto pooling_ratio = GetValue<std::vector<float>>(primitive->GetAttr(kPoolingRatio));
+  auto pooling_ratio = GetValue<std::vector<pyfloat>>(primitive->GetAttr(kPoolingRatio));
   if (pooling_ratio.size() != kPoolingRatioDims) {
     MS_EXCEPTION(ValueError) << "For '" << op_name << "', the size of parameter 'pooling_ratio' must be 4, but got "
                              << std::to_string(pooling_ratio.size()) << ".";
   }
-  if (!common::IsFloatEqual(pooling_ratio[kInputIndex0], 1.0)) {
+  if (!common::IsDoubleEqual(pooling_ratio[kInputIndex0], 1.0)) {
     MS_EXCEPTION(ValueError) << "For '" << op_name
                              << "', the first element of parameter 'pooling_ratio' must be 1.0, but got "
                              << std::to_string(pooling_ratio[0]) << ".";
@@ -77,7 +78,7 @@ abstract::TupleShapePtr FractionalMaxPoolInferShape(const PrimitivePtr &primitiv
                              << "', the third element of pooling ratio must be greater than or equal to 1.0, but got "
                              << std::to_string(pooling_ratio[kInputIndex2]) << ".";
   }
-  if (!common::IsFloatEqual(pooling_ratio[kInputIndex3], 1.0)) {
+  if (!common::IsDoubleEqual(pooling_ratio[kInputIndex3], 1.0)) {
     MS_EXCEPTION(ValueError) << "For '" << op_name
                              << "', the forth element of parameter 'pooling_ratio' must be 1.0, but got "
                              << std::to_string(pooling_ratio[kInputIndex3]) << ".";

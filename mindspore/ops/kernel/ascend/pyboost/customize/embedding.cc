@@ -26,7 +26,7 @@ namespace kernel {
 namespace pyboost {
 tensor::TensorPtr EmbeddingAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input,
                                            const TensorPtr &weight, const std::optional<Int64ImmPtr> &padding_idx,
-                                           const std::optional<FP32ImmPtr> &max_norm, const FP32ImmPtr &norm_type,
+                                           const std::optional<FP64ImmPtr> &max_norm, const FP64ImmPtr &norm_type,
                                            const BoolImmPtr &scale_grad_by_freq) {
   MS_EXCEPTION_IF_NULL(op);
 

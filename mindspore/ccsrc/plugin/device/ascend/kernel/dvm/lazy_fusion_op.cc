@@ -130,6 +130,8 @@ std::pair<bool, T> GetScalarValue(const ScalarPtr &s) {
     return std::make_pair(true, static_cast<T>(GetValue<int64_t>(s)));
   } else if (s->isa<FP32Imm>()) {
     return std::make_pair(true, static_cast<T>(GetValue<float>(s)));
+  } else if (s->isa<FP64Imm>()) {
+    return std::make_pair(true, static_cast<T>(GetValue<double>(s)));
   } else if (s->isa<Int32Imm>()) {
     return std::make_pair(true, static_cast<T>(GetValue<int32_t>(s)));
   }
@@ -287,8 +289,8 @@ bool AddExtDvmCall(const std::string &op_name, OpRunner *op, const TensorPtr &in
   float scalar = 1.0f;
   if (alpha->isa<Int64Imm>()) {
     scalar = static_cast<float>(GetValue<int64_t>(alpha));
-  } else if (alpha->isa<FP32Imm>()) {
-    scalar = GetValue<float>(alpha);
+  } else if (alpha->isa<FloatImm>()) {
+    scalar = alpha->isa<FP32Imm>() ? GetValue<float>(alpha) : GetValue<double>(alpha);
     if (input_type == kNumberTypeBFloat16 && other_type == kNumberTypeBFloat16) {
       scalar = static_cast<float>(static_cast<bfloat16>(scalar));
       all_bf16 = true;
@@ -333,9 +335,9 @@ bool SubExtDvmCall(const std::string &op_name, OpRunner *op, const TensorPtr &in
   float scalar = 1.0f;
   if (alpha->isa<Int64Imm>()) {
     scalar = static_cast<float>(GetValue<int64_t>(alpha));
-  } else if (alpha->isa<FP32Imm>()) {
+  } else if (alpha->isa<FloatImm>()) {
     compute_type = dvm::DType::kFloat32;
-    scalar = GetValue<float>(alpha);
+    scalar = alpha->isa<FP32Imm>() ? GetValue<float>(alpha) : GetValue<double>(alpha);
   } else {
     return false;
   }
@@ -1056,11 +1058,11 @@ tensor::TensorPtr TileAscendDvm::Call(const TensorPtr &input_tensor, const Value
   return outputs_.front();
 }
 
-tensor::TensorPtr LinalgVectorNormAscendDvm::Call(const TensorPtr &x_tensor, const FP32ImmPtr &ord,
+tensor::TensorPtr LinalgVectorNormAscendDvm::Call(const TensorPtr &x_tensor, const FP64ImmPtr &ord,
                                                   const std::optional<ValueTuplePtr> &dim, const BoolImmPtr &keepdim,
                                                   const std::optional<Int64ImmPtr> &dtype) {
   auto output_type = dtype.has_value() ? static_cast<TypeId>(GetValue<int64_t>(dtype.value())) : x_tensor->data_type();
-  auto ord_value = ord->value();
+  auto ord_value = static_cast<float>(ord->value());
   if (!InputCheck(x_tensor) || output_type != kNumberTypeFloat32 ||
       (ord_value != 1.0f && ord_value != 2.0f && ord_value != 3.0f)) {
     return LinalgVectorNormAscend::Call(x_tensor, ord, dim, keepdim, dtype);
@@ -1095,18 +1097,18 @@ tensor::TensorPtr LinalgVectorNormAscendDvm::Call(const TensorPtr &x_tensor, con
 
 std::tuple<tensor::TensorPtr, tensor::TensorPtr, tensor::TensorPtr> AdamWAscendDvm::Call(
   const TensorPtr &var_tensor, const TensorPtr &m_tensor, const TensorPtr &v_tensor, const TensorPtr &max_v_tensor,
-  const TensorPtr &gradient_tensor, const TensorPtr &step_tensor, const FP32ImmPtr &lr, const FP32ImmPtr &beta1,
-  const FP32ImmPtr &beta2, const FP32ImmPtr &decay, const FP32ImmPtr &eps, const BoolImmPtr &amsgrad,
+  const TensorPtr &gradient_tensor, const TensorPtr &step_tensor, const FP64ImmPtr &lr, const FP64ImmPtr &beta1,
+  const FP64ImmPtr &beta2, const FP64ImmPtr &decay, const FP64ImmPtr &eps, const BoolImmPtr &amsgrad,
   const BoolImmPtr &maximize) {
   auto var_type = var_tensor->data_type();
   bool all_contiguous = var_tensor->is_contiguous() && m_tensor->is_contiguous() && v_tensor->is_contiguous() &&
                         max_v_tensor->is_contiguous() && gradient_tensor->is_contiguous() &&
                         step_tensor->is_contiguous();
-  const auto lr_imm = GetValue<float>(lr);
-  const auto beta1_imm = GetValue<float>(beta1);
-  const auto beta2_imm = GetValue<float>(beta2);
-  const auto decay_imm = GetValue<float>(decay);
-  const auto epsilon_imm = GetValue<float>(eps);
+  const auto lr_imm = static_cast<float>(lr->value());
+  const auto beta1_imm = static_cast<float>(beta1->value());
+  const auto beta2_imm = static_cast<float>(beta2->value());
+  const auto decay_imm = static_cast<float>(decay->value());
+  const auto epsilon_imm = static_cast<float>(eps->value());
   const auto amsgrad_imm = GetValue<bool>(amsgrad);
   const auto maximize_imm = GetValue<bool>(maximize);
   // input check
@@ -1411,7 +1413,7 @@ tensor::TensorPtr MatMulExtAscendDvm::Call(const mindspore::tensor::TensorPtr &i
 }
 
 std::tuple<TensorPtr, TensorPtr> BatchNormStatsAscendDvm::Call(const TensorPtr &input_tensor,
-                                                               const mindspore::FP32ImmPtr &eps) {
+                                                               const mindspore::FP64ImmPtr &eps) {
   // input check
   if (NeedSync() || input_tensor->data_type() != kNumberTypeFloat32) {
     return BatchNormStatsAscend::Call(input_tensor, eps);
@@ -1448,7 +1450,7 @@ std::tuple<TensorPtr, TensorPtr> BatchNormStatsAscendDvm::Call(const TensorPtr &
 std::tuple<TensorPtr, TensorPtr> BatchNormGatherStatsWithCountsAscendDvm::Call(
   const TensorPtr &input_tensor, const TensorPtr &mean_tensor, const TensorPtr &invstd_tensor,
   const std::optional<TensorPtr> &running_mean_tensor_opt, const std::optional<TensorPtr> &running_var_tensor_opt,
-  const mindspore::FP32ImmPtr &momentum, const mindspore::FP32ImmPtr &eps,
+  const mindspore::FP64ImmPtr &momentum, const mindspore::FP64ImmPtr &eps,
   const std::optional<TensorPtr> &counts_tensor_opt) {
   TensorPtr counts_tensor = counts_tensor_opt.has_value() ? counts_tensor_opt.value() : nullptr;
   TensorPtr running_mean_tensor = running_mean_tensor_opt.has_value() ? running_mean_tensor_opt.value() : nullptr;
@@ -1473,9 +1475,9 @@ std::tuple<TensorPtr, TensorPtr> BatchNormGatherStatsWithCountsAscendDvm::Call(
   auto sum_all = ToContiguous(mean_tensor, device_context_->device_context_key_.device_name_, stream_id_);
   auto square_sum_all = ToContiguous(invstd_tensor, device_context_->device_context_key_.device_name_, stream_id_);
   counts_tensor = ToContiguous(counts_tensor, device_context_->device_context_key_.device_name_, stream_id_);
-  auto momentum_imm = GetValue<float>(momentum);
+  auto momentum_imm = static_cast<float>(momentum->value());
   auto momentum_imm_reverse = 1.0f - momentum_imm;
-  auto eps_imm = GetValue<float>(eps);
+  auto eps_imm = static_cast<float>(eps->value());
   auto k = g_lazy_fusion_manager.Get(device_context_, stream_id_);
   CALL_START(op_name_, k);
   PyBoostUtils::PrepareOpInputs(device_context_, stream_id_, x, sum_all, square_sum_all, running_mean_tensor,
@@ -1544,7 +1546,7 @@ TensorPtr BatchNormElemtAscendDvm::Call(const TensorPtr &input_tensor,
                                         const std::optional<TensorPtr> &bias_tensor_opt,
                                         const std::optional<TensorPtr> &mean_tensor_opt,
                                         const std::optional<TensorPtr> &invstd_tensor_opt,
-                                        const mindspore::FP32ImmPtr &eps) {
+                                        const mindspore::FP64ImmPtr &eps) {
   TensorPtr weight_tensor = weight_tensor_opt.has_value() ? weight_tensor_opt.value() : nullptr;
   TensorPtr bias_tensor = bias_tensor_opt.has_value() ? bias_tensor_opt.value() : nullptr;
   TensorPtr mean_tensor = mean_tensor_opt.has_value() ? mean_tensor_opt.value() : nullptr;

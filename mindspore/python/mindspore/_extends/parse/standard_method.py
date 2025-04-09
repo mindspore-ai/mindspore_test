@@ -2439,11 +2439,11 @@ def float_func(*data):
             tensor_shape = F.shape(data)
             tensor_shape_len = len(tensor_shape)
             if tensor_shape_len == 0 or (tensor_shape_len == 1 and tensor_shape[0] == 1):
-                data = F.cast(data, mstype.float32)
+                data = F.cast(data, mstype.float64)
                 return TensorToScalar()(data)
             raise ValueError(f"Can not convert Tensor with more than one element to Scalar, "
                              f"while the data's shape is: {tensor_shape}")
-        return F.scalar_cast(data, mstype.float32)
+        return F.scalar_cast(data, mstype.float64)
     if isinstance(data, (CSRTensor, COOTensor, RowTensorInner)):
         const_utils.raise_type_error(
             "float() does not support sparse tensor input.")

@@ -27,7 +27,7 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 tensor::TensorPtr DropoutExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input,
-                                            const FP32ImmPtr &p, const TensorPtr &seed, const TensorPtr &offset);
+                                            const FP64ImmPtr &p, const TensorPtr &seed, const TensorPtr &offset);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

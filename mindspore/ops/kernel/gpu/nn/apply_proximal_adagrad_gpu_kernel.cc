@@ -23,7 +23,7 @@
 namespace mindspore {
 namespace kernel {
 namespace {
-constexpr size_t kApplyProximalAdagradInputsNum = 6;
+constexpr size_t kApplyProximalAdagradInputsNum = 7;
 constexpr size_t kVarIndex = 0;
 constexpr size_t kAccIndex = 1;
 constexpr size_t kLRIndex = 2;
@@ -174,6 +174,7 @@ std::vector<std::pair<KernelAttr, ApplyProximalAdagradGpuKernelMod::KernelFunc>>
                                                      .AddInputAttr(kNumberTypeFloat32)
                                                      .AddInputAttr(kNumberTypeFloat32)
                                                      .AddInputAttr(kNumberTypeFloat32)
+                                                     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                                      .AddOutputAttr(kNumberTypeFloat32)
                                                      .AddOutputAttr(kNumberTypeFloat32)
                                                      .AddOutInRef(0, 0)
@@ -186,6 +187,7 @@ std::vector<std::pair<KernelAttr, ApplyProximalAdagradGpuKernelMod::KernelFunc>>
                                                      .AddInputAttr(kNumberTypeFloat16)
                                                      .AddInputAttr(kNumberTypeFloat16)
                                                      .AddInputAttr(kNumberTypeFloat16)
+                                                     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                                      .AddOutputAttr(kNumberTypeFloat16)
                                                      .AddOutputAttr(kNumberTypeFloat16)
                                                      .AddOutInRef(0, 0)

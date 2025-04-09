@@ -27,6 +27,7 @@
 #include "common/common_utils.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -81,8 +82,8 @@ bool UniformCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const 
   if (!is_match) {
     MS_LOG(EXCEPTION) << "Uniform does not support this kernel data type: " << kernel_attr;
   }
-  from_ = GetValue<float>(primitive_->GetAttr(ops::kFrom));
-  to_ = GetValue<float>(primitive_->GetAttr(ops::kTo));
+  from_ = GetValue<pyfloat>(primitive_->GetAttr(ops::kFrom));
+  to_ = GetValue<pyfloat>(primitive_->GetAttr(ops::kTo));
   int64_t seed = GetValue<int64_t>(primitive_->GetAttr(ops::kSeed));
   int64_t offset = GetValue<int64_t>(primitive_->GetAttr(ops::kOffset));
   InitPhiloxRandom(seed, offset);

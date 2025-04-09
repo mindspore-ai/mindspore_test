@@ -23,6 +23,7 @@
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "kernel/cpu/arithmetic_cpu_kernel.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -38,8 +39,8 @@ bool HammingWindowCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kHammingWindowOutputNum, kernel_name_);
   periodic_ = GetValue<bool>(primitive_->GetAttr(ops::kPeriodic));
 
-  alpha_ = GetValue<float>(primitive_->GetAttr(ops::kAlpha));
-  beta_ = GetValue<float>(primitive_->GetAttr(ops::kBeta));
+  alpha_ = GetValue<pyfloat>(primitive_->GetAttr(ops::kAlpha));
+  beta_ = GetValue<pyfloat>(primitive_->GetAttr(ops::kBeta));
   auto kernel_attr = GetKernelAttrFromTensors(inputs, outputs);
   auto [is_match, index] = MatchKernelAttr(kernel_attr, GetOpSupport());
   if (!is_match) {

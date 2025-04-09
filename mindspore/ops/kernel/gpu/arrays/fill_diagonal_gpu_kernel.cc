@@ -15,6 +15,7 @@
  */
 
 #include "kernel/gpu/arrays/fill_diagonal_gpu_kernel.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -44,7 +45,7 @@ bool FillDiagonalGpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
   }
   kernel_func_ = func_list_[index].second;
   unit_size_ = abstract::TypeIdSize(kernel_attr.GetInputAttr(kIndex0).dtype);
-  fill_value_ = GetValue<float>(primitive_->GetAttr("fill_value"));
+  fill_value_ = GetValue<pyfloat>(primitive_->GetAttr("fill_value"));
   wrap_ = GetValue<bool>(primitive_->GetAttr("wrap"));
 
   if (IsOneOfUnsignedType(inputs.at(0)->dtype_id()) && fill_value_ < 0) {

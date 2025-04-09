@@ -29,6 +29,7 @@
 #include "kernel/gpu/math/broadcast_public.h"
 #include "kernel/gpu/kernel_constants.h"
 #include "mindspore/ops/infer/l2_normalize.h"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -159,7 +160,7 @@ class L2NormalizeGpuKernelMod : public NativeGpuKernelMod {
     InitResource();
     data_type_ = GetCudnnDataType(TypeIdLabel(inputs[kIndex0]->dtype_id()));
     (void)CheckIONumber(inputs, outputs);
-    epsilon_ = GetValue<float>(primitive_->GetAttr("epsilon"));
+    epsilon_ = GetValue<pyfloat>(primitive_->GetAttr("epsilon"));
     return true;
   }
 

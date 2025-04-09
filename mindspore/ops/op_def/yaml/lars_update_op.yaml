@@ -1,0 +1,36 @@
+#operator lars_update
+lars_update:
+  args:
+    weight:
+      dtype: tensor
+    gradient:
+      dtype: tensor
+    norm_weight:
+      dtype: tensor
+    norm_gradient:
+      dtype: tensor
+    weight_decay:
+      dtype: tensor
+      type_cast: number
+    learning_rate:
+      dtype: tensor
+      type_cast: number
+    epsilon:
+      dtype: float
+      default: 1e-5
+      prim_init: True
+    hyperpara:
+      dtype: float
+      default: 0.001
+      prim_init: True
+    use_clip:
+      dtype: bool
+      default: False
+      prim_init: True
+  returns:
+    output:
+      dtype: tensor
+  class:
+    name: LARSUpdate
+  function:
+    disable: True

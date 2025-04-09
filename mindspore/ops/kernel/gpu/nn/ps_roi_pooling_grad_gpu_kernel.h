@@ -22,6 +22,7 @@
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/psroi_pooling_impl.cuh"
+#include "mindspore/core/include/mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -80,7 +81,7 @@ class PsROIPoolingBackGpuKernelMod : public NativeGpuKernelMod {
     // Get primitive args
     batch_size_ = static_cast<int>(GetValue<int64_t>(primitive_->GetAttr("batch_size")));
     num_rois_ = static_cast<int>(GetValue<int64_t>(primitive_->GetAttr("num_rois")));
-    spatial_scale_ = static_cast<T>(GetValue<float>(primitive_->GetAttr("spatial_scale")));
+    spatial_scale_ = static_cast<T>(GetValue<pyfloat>(primitive_->GetAttr("spatial_scale")));
     channels_ = static_cast<int>(GetValue<int64_t>(primitive_->GetAttr("channels")));
     height_ = static_cast<int>(GetValue<int64_t>(primitive_->GetAttr("height")));
     width_ = static_cast<int>(GetValue<int64_t>(primitive_->GetAttr("width")));

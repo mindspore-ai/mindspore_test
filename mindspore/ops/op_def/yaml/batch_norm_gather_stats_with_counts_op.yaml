@@ -34,3 +34,5 @@ batch_norm_gather_stats_with_counts:
   dispatch:
     enable: True
     Ascend: BatchNormGatherStatsWithCountsAscend
+    CPU: None
+    GPU: None

@@ -1,0 +1,35 @@
+#operator lamb
+lamb:
+    args:
+        var:
+            dtype: tensor
+        m:
+            dtype: tensor
+        v:
+            dtype: tensor
+        lr:
+            dtype: tensor
+            type_cast: float
+        beta1:
+            dtype: tensor
+            type_cast: float
+        beta2:
+            dtype: tensor
+            type_cast: float
+        epsilon:
+            dtype: tensor
+            type_cast: float
+        decay:
+            dtype: tensor
+            type_cast: float
+        global_step:
+            dtype: tensor
+        gradient:
+            dtype: tensor
+    returns:
+        var:
+            dtype: tensor
+    labels:
+        side_effect_mem: True
+    function:
+        disable: True

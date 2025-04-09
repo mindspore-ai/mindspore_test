@@ -32,7 +32,7 @@ void BatchNormExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const Tens
                                  const std::optional<TensorPtr> &bias_tensor,
                                  const std::optional<TensorPtr> &mean_tensor,
                                  const std::optional<TensorPtr> &variance_tensor, const BoolImmPtr &training,
-                                 const FP32ImmPtr &momentum, const FP32ImmPtr &epsilon);
+                                 const FP64ImmPtr &momentum, const FP64ImmPtr &epsilon);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

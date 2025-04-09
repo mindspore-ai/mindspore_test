@@ -1,0 +1,87 @@
+apply_centered_rms_prop:
+    description: |
+        Optimizer that implements the centered RMSProp algorithm.
+        Please refer to the usage in source code of :class:`mindspore.nn.RMSProp`.
+
+        The updating formulas of ApplyCenteredRMSProp algorithm are as follows,
+
+        .. math::
+            \begin{array}{ll} \\
+                g_{t+1} = \rho g_{t} + (1 - \rho)\nabla Q_{i}(w) \\
+                s_{t+1} = \rho s_{t} + (1 - \rho)(\nabla Q_{i}(w))^2 \\
+                m_{t+1} = \beta m_{t} + \frac{\eta} {\sqrt{s_{t+1} - g_{t+1}^2 + \epsilon}} \nabla Q_{i}(w) \\
+                w = w - m_{t+1}
+            \end{array}
+
+        where :math:`w` represents `var`, which will be updated.
+        :math:`g_{t+1}` represents `mean_gradient`, :math:`g_{t}` is the last moment of :math:`g_{t+1}`.
+        :math:`s_{t+1}` represents `mean_square`, :math:`s_{t}` is the last moment of :math:`s_{t+1}`,
+        :math:`m_{t+1}` represents `moment`, :math:`m_{t}` is the last moment of :math:`m_{t+1}`.
+        :math:`\rho` represents `decay`. :math:`\beta` is the momentum term, represents `momentum`.
+        :math:`\epsilon` is a smoothing term to avoid division by zero, represents `epsilon`.
+        :math:`\eta` represents `learning_rate`. :math:`\nabla Q_{i}(w)` represents `grad`.
+
+        Note:
+            The difference between `ApplyCenteredRMSProp` and `ApplyRMSProp` is that the former
+            uses the centered RMSProp algorithm, and the centered RRMSProp algorithm uses an estimate of the centered second
+            moment(i.e., the variance) for normalization, as opposed to regular RMSProp, which uses the (uncertained)
+            second moment. This often helps with training, but is slightly more expensive in terms of computation and
+            memory.
+
+        .. warning::
+            In dense implementation of this algorithm, `mean_gradient`, `mean_square`, and `moment` will update
+            even if the `grad` is zero. But in this sparse implementation, `mean_gradient`, `mean_square`, and `moment`
+            will not update in iterations during which the `grad` is zero.
+
+        Args:
+            use_locking (bool): Whether to enable a lock to protect the variable and accumulation tensors
+                                from being updated. Default: ``False`` .
+
+        Inputs:
+            - **var** (Parameter) - Weights to be updated.
+            - **mean_gradient** (Tensor) - Mean gradients, must be the same type as `var`.
+            - **mean_square** (Tensor) - Mean square gradients, must be the same type as `var`.
+            - **moment** (Tensor) - Delta of `var`, must be the same type as `var`.
+            - **grad** (Tensor) - Gradient, must be the same type as `var`.
+            - **learning_rate** (Union[Number, Tensor]) - Learning rate. Must be a float number or
+              a scalar tensor with float16 or float32 data type.
+            - **decay** (float) - Decay rate.
+            - **momentum** (float) - Momentum.
+            - **epsilon** (float) - Ridge term.
+
+        Outputs:
+            Tensor, parameters to be updated.
+
+        Raises:
+            TypeError: If `use_locking` is not a bool.
+            TypeError: If `var`, `mean_gradient`, `mean_square`, `moment` or `grad` is not a Tensor.
+            TypeError: If `learing_rate` is neither a Number nor a Tensor.
+            TypeError: If dtype of `learing_rate` is neither float16 nor float32.
+            TypeError: If `decay`, `momentum` or `epsilon` is not a float.
+
+        Supported Platforms:
+            ``Ascend`` ``GPU`` ``CPU``
+
+        Examples:
+            >>> import numpy as np
+            >>> from mindspore import Tensor, nn, ops, Parameter
+            >>> class Net(nn.Cell):
+            ...     def __init__(self):
+            ...         super(Net, self).__init__()
+            ...         self.apply_centerd_rms_prop = ops.ApplyCenteredRMSProp()
+            ...         self.var = Parameter(Tensor(np.ones([2, 2]).astype(np.float32)), name="var")
+            ...
+            ...     def construct(self, mean_grad, mean_square, moment, grad, decay, momentum, epsilon, lr):
+            ...         out = self.apply_centerd_rms_prop(self.var, mean_grad, mean_square, moment, grad,
+            ...                                           lr, decay, momentum, epsilon)
+            ...         return out
+            ...
+            >>> net = Net()
+            >>> mean_grad = Tensor(np.ones([2, 2]).astype(np.float32))
+            >>> mean_square = Tensor(np.ones([2, 2]).astype(np.float32))
+            >>> moment = Tensor(np.ones([2, 2]).astype(np.float32))
+            >>> grad = Tensor(np.ones([2, 2]).astype(np.float32))
+            >>> output = net(mean_grad, mean_square, moment, grad, 0.0, 1e-10, 0.001, 0.01)
+            >>> print(net.var.asnumpy())
+            [[0.68377227  0.68377227]
+            [0.68377227  0.68377227]]
