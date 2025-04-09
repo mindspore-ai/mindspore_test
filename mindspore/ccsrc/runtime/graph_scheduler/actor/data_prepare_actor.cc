@@ -50,10 +50,14 @@ constexpr size_t kMapTensorValueIndex = 1;
 constexpr size_t kMapTensorStatusIndex = 2;
 constexpr size_t kPinMemThreshold = 1024 << 10;
 
-bool IsDataTakenOverByMemOffload(const DeviceContext *device_context) {
+bool IsDataTakenOverByMemOffload(const DeviceContext *device_context, const DeviceTensorPtr &device_tensor) {
   MS_EXCEPTION_IF_NULL(device_context);
   if (device_context->GetDeviceType() == device::DeviceType::kCPU) {
     return false;
+  }
+  const auto &hete_info = device_tensor->kernel_tensor()->heterogeneous_info();
+  if (hete_info != nullptr && hete_info->need_alloc_hete_res_ != kernel::NeedAllocateHeteRes::NoNeedHeteRes) {
+    return true;
   }
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
@@ -123,7 +127,7 @@ void SyncTensorData(const TensorPtr &host_tensor, const DeviceTensorPtr &device_
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
   MS_EXCEPTION_IF_NULL(context);
-  const bool taken_over_by_swap_manager = IsDataTakenOverByMemOffload(device_context);
+  const bool taken_over_by_swap_manager = IsDataTakenOverByMemOffload(device_context, device_tensor);
   bool need_alloc_memory = !taken_over_by_swap_manager && (device_tensor->GetPtr() == nullptr);
   auto graph_str = (node->func_graph() == nullptr) ? "" : node->func_graph()->ToString();
   auto mem_type =

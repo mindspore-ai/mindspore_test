@@ -97,6 +97,11 @@ void ConditionSwitchActor::UpdateRefDeviceAddress(OpContext<DeviceTensor> *const
       MS_LOG(EXCEPTION) << "Invalid input device tensor index:" << i + 1 << " for actor:" << GetAID();
     }
     output_device_tensors_[i]->set_pointer_ref_count(input_device_tensors_[i + 1]->pointer_ref_count());
+    if (input_device_tensors_[i + 1]->kernel_tensor()->heterogeneous_info() != nullptr) {
+      output_device_tensors_[i]->kernel_tensor()->set_heterogeneous_info(std::make_shared<kernel::HeterogeneousInfo>());
+      *(output_device_tensors_[i]->kernel_tensor()->heterogeneous_info()) =
+        *(input_device_tensors_[i + 1]->kernel_tensor()->heterogeneous_info());
+    }
     output_device_tensors_[i]->IncreaseNewRefCount(GetAID().Name());
     MS_LOG(DEBUG) << "Actor:" << GetAID() << " increase new ref count:" << output_device_tensors_[i]->new_ref_count()
                   << " and set ref device address:" << output_device_tensors_[i]->PrintInfo()

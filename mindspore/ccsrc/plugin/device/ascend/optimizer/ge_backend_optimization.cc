@@ -168,6 +168,7 @@ void GEBackendOptimizeACLAfterKernelSelect(const KernelGraphPtr &kernel_graph) {
     opt_acl_after_kernel_select_pm->AddPass(std::make_shared<opt::GraphViewReplacePass>());
   }
   opt_acl_after_kernel_select_pm->AddPass(std::make_shared<Label1F1BOverlapNode>());
+  opt_acl_after_kernel_select_pm->AddPass(std::make_shared<InsertMoveTo>());
   optimizer->AddPassManager(opt_acl_after_kernel_select_pm);
   (void)optimizer->Optimize(kernel_graph);
   PROF_END(GEBackendOptimizeACLAfterKernelSelect);
@@ -229,7 +230,6 @@ void GEAfterInlineOptimize(const KernelGraphPtr &kernel_graph) {
   after_inline_pm->AddFusionPass(std::make_shared<DropoutGenMaskFusion>());
   after_inline_pm->AddPass(std::make_shared<CommonSubexpressionElimination>());
   after_inline_pm->AddPass(std::make_shared<EliminateMaketupleGetitem>());
-  after_inline_pm->AddPass(std::make_shared<InsertMoveTo>());
   after_inline_pm->AddPass(std::make_shared<InsertPreFetchDepend>());
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);

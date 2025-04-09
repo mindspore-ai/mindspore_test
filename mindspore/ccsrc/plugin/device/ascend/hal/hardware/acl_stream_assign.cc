@@ -305,9 +305,7 @@ void AclStreamAssign::AddBoundarySendRecvKernel(const NotNull<KernelGraphPtr> &k
 
 void AclStreamAssign::AddDelayedSendRecvKernel(const NotNull<mindspore::KernelGraphPtr> &kernel_graph,
                                                const CNodePtr &kernel, size_t exec_idx, uint32_t record_stream_id,
-                                               const std::vector<CNodePtr> &origin_exec_order,
-                                               std::vector<CNodePtr> *exec_order,
-                                               std::map<size_t, std::set<size_t>> *no_event_streams,
+                                               size_t max_exec_idx, std::vector<CNodePtr> *exec_order,
                                                mindspore::HashMap<size_t, std::vector<CNodePtr>> *delayed_recv_nodes) {
   constexpr int64_t kDefaultDelayNum = 1;
   if (IsPrimitiveCNode(kernel, prim::kPrimMoveTo) && common::AnfAlgo::GetMoveToDstStr(kernel) == kToCpu) {
@@ -334,9 +332,8 @@ void AclStreamAssign::AddDelayedSendRecvKernel(const NotNull<mindspore::KernelGr
     common::AnfAlgo::SetNodeAttr(kAttrWaitEvent, MakeValue(reinterpret_cast<uintptr_t>(event)), recv_node);
     exec_order->push_back(send_node);
 
-    auto node_before_recv_index =
-      exec_idx + pre_fetch >= origin_exec_order.size() ? origin_exec_order.size() - 1 : exec_idx + pre_fetch;
-    while (node_before_recv_index < origin_exec_order.size() - 1) {
+    auto node_before_recv_index = exec_idx + pre_fetch >= max_exec_idx ? max_exec_idx - 1 : exec_idx + pre_fetch;
+    while (node_before_recv_index < max_exec_idx - 1) {
       const auto &node_before_recv = (*exec_order)[node_before_recv_index];
       if (AnfAlgo::GetStreamId(node_before_recv) == kDefaultStreamIndex) {
         break;
@@ -350,7 +347,6 @@ void AclStreamAssign::AddDelayedSendRecvKernel(const NotNull<mindspore::KernelGr
   if (iter != delayed_recv_nodes->end()) {
     const auto &recv_nodes = iter->second;
     std::copy(recv_nodes.begin(), recv_nodes.end(), std::back_inserter(*exec_order));
-    (*no_event_streams)[kDefaultStreamIndex].erase(record_stream_id);
   }
 }
 
@@ -462,8 +458,8 @@ void AclStreamAssign::UpdateEventsToExecutionOrder(
       }
     }
     new_exec_orders.push_back(kernel);
-    AddDelayedSendRecvKernel(kernel_graph, kernel, cur_idx, process_stream_id, exec_kernels, &new_exec_orders,
-                             &no_event_streams, &delayed_recv_nodes);
+    AddDelayedSendRecvKernel(kernel_graph, kernel, cur_idx, process_stream_id, exec_kernels.size(), &new_exec_orders,
+                             &delayed_recv_nodes);
     last_kernel = kernel;
     auto after_iter = send_after_node.find(kernel);
     if (after_iter != send_after_node.end()) {

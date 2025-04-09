@@ -50,6 +50,15 @@ void InsertMoveTo::Init(const FuncGraphPtr &graph) {
   kernel_graph_ = graph->cast<KernelGraphPtr>();
   MS_EXCEPTION_IF_NULL(kernel_graph_);
   kernel_graph_->SetExecOrderByDefault();
+  manager_ = kernel_graph_->manager();
+  MS_EXCEPTION_IF_NULL(manager_);
+}
+
+bool InsertMoveTo::BackendInlineNode(const CNodePtr &node) {
+  return common::AnfAlgo::CheckPrimitiveType(node, prim::kPrimPartial) ||
+         common::AnfAlgo::CheckPrimitiveType(node, prim::kPrimPartialInline) ||
+         common::AnfAlgo::CheckPrimitiveType(node, prim::kPrimCall) ||
+         common::AnfAlgo::CheckPrimitiveType(node, prim::kPrimCallInline);
 }
 
 void InsertMoveTo::CollectOffloadedParameter() {
@@ -57,6 +66,9 @@ void InsertMoveTo::CollectOffloadedParameter() {
   for (size_t execution_idx = 0; execution_idx < execution_order.size(); ++execution_idx) {
     auto cnode = execution_order[execution_idx];
     MS_EXCEPTION_IF_NULL(cnode);
+    if (BackendInlineNode(cnode)) {
+      continue;
+    }
     const size_t input_size = common::AnfAlgo::GetInputTensorNum(cnode);
     for (size_t idx = 1; idx <= input_size; ++idx) {
       auto kernel_with_idx = common::AnfAlgo::VisitKernelWithReturnType(cnode->input(idx), 0, true);
@@ -152,6 +164,7 @@ void InsertMoveTo::InsertParamMoveAssign(const ParameterPtr &parameter, const Of
 }
 
 bool InsertMoveTo::HandleParameter() {
+  constexpr size_t kReuseThreshold = 100;
   CollectOffloadedParameter();
   if (offloaded_parameters_.empty()) {
     return false;
@@ -173,14 +186,25 @@ bool InsertMoveTo::HandleParameter() {
     auto parameter = iter.first;
     MS_EXCEPTION_IF_NULL(parameter);
     auto parameter_abstract = parameter->abstract();
+    CNodePtr move_to = nullptr;
+    size_t pre_user_idx = kIndex0;
+    OffloadParamInfo last_size_effect_user;
     for (const auto &user : iter.second) {
-      auto move_to = InsertParamMoveTo(parameter, user);
+      if (move_to == nullptr || user.execution_order_ - pre_user_idx > kReuseThreshold) {
+        move_to = InsertParamMoveTo(parameter, user);
+      } else {
+        manager_->SetEdge(user.user_node_, SizeToInt(user.input_index_), move_to);
+      }
+      pre_user_idx = user.execution_order_;
       if (user.side_effect_) {
-        kernel_graph_->ReplaceRefPair({parameter, 0}, {move_to, 0});
-        MoveToInfo move_to_info{user, move_to, parameter};
-        move_assign_to_insert.emplace_back(move_to_info);
+        last_size_effect_user = user;
       }
       changed = true;
+    }
+    if (last_size_effect_user.user_node_ != nullptr) {
+      kernel_graph_->ReplaceRefPair({parameter, 0}, {move_to, 0});
+      MoveToInfo move_to_info{last_size_effect_user, move_to, parameter};
+      move_assign_to_insert.emplace_back(move_to_info);
     }
   }
   for (const auto &item : move_assign_to_insert) {
