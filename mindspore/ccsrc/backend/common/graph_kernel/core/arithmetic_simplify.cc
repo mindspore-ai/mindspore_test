@@ -443,14 +443,24 @@ class ConstantFoldingPatternTree : public PatternTree {
     auto lhs_shape = lhs->shape;
     auto rhs_shape = rhs->shape;
     auto out_shape = origin_root->shape;
-    if (IsDynamic(lhs_shape) || IsDynamic(rhs_shape)) {
+    // In dynamic-rank situation, it is hard to decide whether the input shape is equal to the output shape unless the
+    // shape of constant is empty
+    if (IsDynamicRank(out_shape)) {
+      if (lhs->NodeType() == inner::NType::Tensor) {
+        return lhs_shape.size() == 0;
+      }
+      if (rhs->NodeType() == inner::NType::Tensor) {
+        return rhs_shape.size() == 0;
+      }
       return false;
     }
+    // In other situations, even if the dynamic-shape situation, it is safe to say that the shape of non-constant input
+    // is equal to the shape of output if their dimensions are equal, since the input size of constant is always 1
     if (lhs->NodeType() == inner::NType::Tensor) {
-      return rhs_shape == out_shape;
+      return rhs_shape.size() == out_shape.size();
     }
     if (rhs->NodeType() == inner::NType::Tensor) {
-      return lhs_shape == out_shape;
+      return lhs_shape.size() == out_shape.size();
     }
     return true;
   }
