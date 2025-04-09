@@ -325,3 +325,51 @@ def test_dataset_broadcast_set_dataset_layout():
     log_cnt = str(log_output, 'utf-8').strip()
     match_shape = re.findall(r"shapes: (\(\(\d+, \d+\), \(\d+, \d+\)\))", log_cnt)
     assert match_shape[0] == "((8, 64), (8, 64))"
+
+
+def test_dataset_broadcast_replace_get_next():
+    """
+    Feature: opt_level 2 + set_dataset_strategy
+    Description: no pipeline, dataset_strategy=((2, 1), (2, 1)), test broadcast input shape and output shape
+    Expectation: success
+    """
+
+    def find_file_name(graph_path, file_name_keyword):
+        largest_size = 0
+        ir_name = None
+
+        for root, _, files in os.walk(graph_path):
+            for file in files:
+                if file.endswith('.ir') and file_name_keyword in file:
+                    file_path = os.path.join(root, file)
+                    size = os.path.getsize(file_path)
+
+                    if size > largest_size:
+                        largest_size = size
+                        ir_name = file
+
+        return ir_name
+
+    context.set_context(save_graphs=True, save_graphs_path='./datasink_layout_replace_get_next')
+    layout = Layout((16, 2), ("remain", "dp"))
+    context.set_auto_parallel_context(device_num=32, global_rank=6)
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel",
+                                      dataset_strategy=(layout("dp", "None"), layout("dp", "None")))
+    MSContext.get_instance().set_param(ms_ctx_param.dataset_broadcast_opt_level, 2)
+    net = StageNet2()
+    dataset = ds.GeneratorDataset(
+        GeneratorFakeData(size=1024, batch_size=8, image_size=(64,),
+                          use_parallel=True, num_classes=64), ["data", "label"])
+    opt_lamb = nn.Lamb(net.trainable_params(), learning_rate=0.01)
+    loss = nn.L1Loss()
+    loss_cell = WithLossCell(net, loss)
+    model = Model(loss_cell, optimizer=opt_lamb)
+    model.train(2, dataset, dataset_sink_mode=True)
+    optimizer_ir = find_file_name('./datasink_layout_replace_get_next/', 'optimizer')
+    log_output = subprocess.check_output(
+        ["grep -A 1 -r '%s' %s " % ('Broadcast', './datasink_layout_replace_get_next/rank_0/' + optimizer_ir)],
+        shell=True)
+    log_cnt = str(log_output, 'utf-8').strip()
+    match_shape = re.findall(r"TupleShape(\(\(\d+, \d+\), \(\d+, \d+\)\))", log_cnt)
+    assert match_shape[0] == match_shape[1]
+    assert match_shape[0] == "((8, 64), (8, 64))"
