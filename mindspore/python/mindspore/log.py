@@ -226,47 +226,9 @@ def critical(msg, *args, **kwargs):
     _get_logger().critical(msg, *args, **kwargs)
 
 
-def parse_vlog_level(s):
-    """Python parser for vlog level."""
-    if not s:
-        return False, ()
-    s = s.strip()
-    if not s.startswith('(') and not s.endswith(')'):
-        try:
-            level = int(s)
-            return True, (level, level)
-        except ValueError:
-            return False, ()
-    if s.startswith('(') and s.endswith(')'):
-        content = s[1:-1].strip()
-        parts = [p.strip() for p in content.split(',')]
-        if len(parts) != 2:
-            return False, ()
-        try:
-            if not parts[1]:
-                start = int(parts[0])
-                end = float('inf')
-            elif not parts[0]:
-                start = 1
-                end = int(parts[1])
-            else:
-                start = int(parts[0])
-                end = int(parts[1])
-            return True, (start, end)
-        except ValueError:
-            return False, ()
-    else:
-        return False, ()
-
-
-VLOG_VALID, VLOG_INDEX = parse_vlog_level(os.environ.get("VLOG_v"))
-
-
 def vlog_print(level, module, file, line, message):
     '''Read environment variable VLOG_v and print to log'''
-    global VLOG_VALID, VLOG_INDEX
-    target_level = int(level)
-    if VLOG_VALID and VLOG_INDEX[0] <= target_level <= VLOG_INDEX[1]:
+    if os.environ.get("VLOG_v") == level:
         now = datetime.now()
         formatted_time = now.strftime("%Y-%m-%d-%H:%M:%S.%f")[:-3] + f".{now.microsecond // 1000}"
         path = 'mindspore' + file.split("mindspore")[-1]
