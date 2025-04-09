@@ -432,8 +432,6 @@ class Cell(Cell_):
             raise ValueError("For 'Cell', the property 'pipeline_stage' "
                              "can not be less than 0, but got {}".format(value))
         self._pipeline_stage = value
-        for item in self.trainable_params():
-            item.add_pipeline_stage(value)
 
     @property
     def pipeline_segment(self):

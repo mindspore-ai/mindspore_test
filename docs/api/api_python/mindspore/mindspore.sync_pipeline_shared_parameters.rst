@@ -13,6 +13,9 @@ mindspore.sync_pipeline_shared_parameters
     参数：
         - **net** (nn.Cell) - 推理网络。
 
+    异常：
+        - **TypeError** - `net` 不是 `Cell` 的类型。
+
     样例：
 
     .. note::

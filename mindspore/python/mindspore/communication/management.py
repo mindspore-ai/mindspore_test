@@ -331,7 +331,6 @@ def get_local_rank(group=GlobalComm.WORLD_COMM_GROUP):
         >>> import mindspore as ms
         >>> from mindspore.communication import init, get_rank, get_local_rank
         >>> ms.set_device(device_target="Ascend")
-        >>> ms.set_auto_parallel_context(device_num=16) # 2 server, each server with 8 NPU.
         >>> init()
         >>> world_rank = get_rank()
         >>> local_rank = get_local_rank()
@@ -378,7 +377,6 @@ def get_group_size(group=GlobalComm.WORLD_COMM_GROUP):
 
         >>> import mindspore as ms
         >>> from mindspore.communication import init, get_group_size
-        >>> ms.set_auto_parallel_context(device_num=8)
         >>> init()
         >>> group_size = get_group_size()
         >>> print("group_size is: ", group_size)
@@ -426,7 +424,6 @@ def get_local_rank_size(group=GlobalComm.WORLD_COMM_GROUP):
         >>> import mindspore as ms
         >>> from mindspore.communication import init, get_local_rank_size
         >>> ms.set_device(device_target="Ascend")
-        >>> ms.set_auto_parallel_context(device_num=16) # 2 server, each server with 8 NPU.
         >>> init()
         >>> local_rank_size = get_local_rank_size()
         >>> print("local_rank_size is: ", local_rank_size)

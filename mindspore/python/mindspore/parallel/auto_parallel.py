@@ -638,6 +638,12 @@ class AutoParallel(Cell):
         """
         self._loss_repeated_mean = False
 
+    def get_pipeline_stages(self):
+        """
+        Get the stages of net.
+        """
+        return self._pipeline_stages
+
     def transformer_opt(self, file_path):
         r"""
         Check and set speedup config for auto parallel, configuration can refer to `parallel_speed_up.json

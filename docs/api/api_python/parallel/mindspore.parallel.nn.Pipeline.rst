@@ -5,6 +5,9 @@ mindspore.parallel.nn.Pipeline
 
     指定流水线并行（pp）的micro_batch个数以及网络中各cell放到哪个stage去执行。
 
+    .. note::
+        `micro_size` 必须大于等于 `pipeline_stages`。
+
     参数：
         - **network** (Cell) - 将进行pp并行的网络。
         - **micro_size** (int) - MicroBatchsize。
