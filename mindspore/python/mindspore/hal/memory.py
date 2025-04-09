@@ -27,30 +27,25 @@ function_memory_status = {'memory_stats': False, 'memory_reserved': False, 'max_
 @_check_inputs_validation
 def memory_stats(device_target=None):
     """
-    Returns status information queried from the memory pool.
+    Returns status information queried from the memory pool, this api will be deprecated and removed in future
+    versions, please use the api :func:`mindspore.runtime.memory_stats` instead.
 
     Note:
-        - The api will be deprecated, please use the api :func:`mindspore.runtime.memory_stats` instead.
-
-    Note:
-        - If `device_target` is not specified, get the device capability of the current backend set by context.
-        - For the `CPU` backend, a dictionary with empty data is always returned.
+        - For the `CPU` device, a dictionary with empty data is always returned.
 
     Args:
-        device_target (str, optional): The device name of backend, should be one of "CPU", "GPU" and "Ascend".
-            Default value: ``None``.
+        device_target (str, optional): The target device specified, should be one of ``"CPU"`` , ``"GPU"`` and
+            ``"Ascend"`` . Default ``None`` , represents the current device set by context.
 
     Returns:
         dict, the queried memory information.
 
     Examples:
-        >>> import mindspore as ms
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> a = Tensor(np.ones([1, 2]), ms.float32)
-        >>> b = Tensor(np.ones([1, 2]), ms.float32)
-        >>> c = ops.add(a, b).asnumpy()
-        >>> print(ms.hal.memory_stats())
+        >>> import mindspore
+        >>> a = mindspore.tensor(mindspore.ops.ones([1, 2]), mindspore.float32)
+        >>> b = mindspore.tensor(mindspore.ops.ones([1, 2]), mindspore.float32)
+        >>> c = mindspore.ops.add(a, b).asnumpy()
+        >>> print(mindspore.hal.memory_stats())
         {'total_reserved_memory': 1073741824, 'total_allocated_memory': 1024, 'total_idle_memory': 1073740800,
         'total_eager_free_memory': 0, 'max_reserved_memory': 1073741824, 'max_allocated_memory': 1536,
         'common_mem_pool_stats': {'block_unit_size': 1073741824, 'block_counts': 1, 'blocks_info':
@@ -72,30 +67,25 @@ def memory_stats(device_target=None):
 @_check_inputs_validation
 def memory_reserved(device_target=None):
     """
-    Returns the total amount of memory currently managed by the memory pool.
+    Returns the total amount of memory currently managed by the memory pool, this api will be deprecated and removed in
+    future versions, please use the api :func:`mindspore.runtime.memory_reserved` instead.
 
     Note:
-        - The api will be deprecated, please use the api :func:`mindspore.runtime.memory_reserved` instead.
-
-    Note:
-        - If `device_target` is not specified, get the device capability of the current backend set by context.
-        - For the `CPU` backend, 0 is always returned.
+        - For the `CPU` device, 0 is always returned.
 
     Args:
-        device_target (str, optional): The device name of backend, should be one of "CPU", "GPU" and "Ascend".
-            Default value: ``None``.
+        device_target (str, optional): The target device specified, should be one of ``"CPU"`` , ``"GPU"`` and
+            ``"Ascend"`` . Default ``None`` , represents the current device set by context.
 
     Returns:
         int, in Byte.
 
     Examples:
-        >>> import mindspore as ms
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> a = Tensor(np.ones([1, 2]), ms.float32)
-        >>> b = Tensor(np.ones([1, 2]), ms.float32)
-        >>> c = ops.add(a, b).asnumpy()
-        >>> print(ms.hal.memory_reserved())
+        >>> import mindspore
+        >>> a = mindspore.tensor(mindspore.ops.ones([1, 2]), mindspore.float32)
+        >>> b = mindspore.tensor(mindspore.ops.ones([1, 2]), mindspore.float32)
+        >>> c = mindspore.ops.add(a, b).asnumpy()
+        >>> print(mindspore.hal.memory_reserved())
         1073741824
     """
     if not function_memory_status['memory_reserved']:
@@ -111,29 +101,25 @@ def memory_reserved(device_target=None):
 def max_memory_reserved(device_target=None):
     """
     Returns the peak value of the total memory managed by the memory pool since the process was started.
+    This api will be deprecated and removed in future versions, please use
+    the api :func:`mindspore.runtime.max_memory_reserved` instead.
 
     Note:
-        - The api will be deprecated, please use the api :func:`mindspore.runtime.max_memory_reserved` instead.
-
-    Note:
-        - If `device_target` is not specified, get the device capability of the current backend set by context.
-        - For the `CPU` backend, 0 is always returned.
+        - For the `CPU` device, 0 is always returned.
 
     Args:
-        device_target (str, optional): The device name of backend, should be one of "CPU", "GPU" and "Ascend".
-            Default value: ``None``.
+        device_target (str, optional): The target device specified, should be one of ``"CPU"`` , ``"GPU"`` and
+            ``"Ascend"`` . Default ``None`` , represents the current device set by context.
 
     Returns:
         int, in Byte.
 
     Examples:
-        >>> import mindspore as ms
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> a = Tensor(np.ones([1, 2]), ms.float32)
-        >>> b = Tensor(np.ones([1, 2]), ms.float32)
-        >>> c = ops.add(a, b).asnumpy()
-        >>> print(ms.hal.max_memory_reserved())
+        >>> import mindspore
+        >>> a = mindspore.tensor(mindspore.ops.ones([1, 2]), mindspore.float32)
+        >>> b = mindspore.tensor(mindspore.ops.ones([1, 2]), mindspore.float32)
+        >>> c = mindspore.ops.add(a, b).asnumpy()
+        >>> print(mindspore.hal.max_memory_reserved())
         1073741824
     """
     if not function_memory_status['max_memory_reserved']:
@@ -149,10 +135,8 @@ def max_memory_reserved(device_target=None):
 def empty_cache():
     """
     Release all memory fragments in the memory pool, so that memory arrangement
-    will be optimized.
-
-    Note:
-        - The api will be deprecated, please use the api :func:`mindspore.runtime.empty_cache` instead.
+    will be optimized, this api will be deprecated and removed in future versions, please use
+    the api :func:`mindspore.runtime.empty_cache` instead.
 
     Note:
         Currently, the MindSpore memory pool does not have the function of releasing memory fragments.
@@ -166,33 +150,26 @@ def empty_cache():
 @_check_inputs_validation
 def reset_peak_memory_stats(device_target=None):
     """
-    Reset the "peak" stats tracked by memory manager.
-
-    Note:
-        - The api will be deprecated, please use the api :func:`mindspore.runtime.reset_peak_memory_stats` instead.
-
-    Note:
-        If `device_target` is not specified, get the device capability of the current backend set by context.
+    Reset the "peak" stats tracked by memory manager, this api will be deprecated and removed in future versions.
+    Please use the api :func:`mindspore.runtime.reset_peak_memory_stats` instead.
 
     Args:
-        device_target (str, optional): The device name of backend, should be one of "CPU", "GPU" and "Ascend".
-            Default value: ``None``.
+        device_target (str, optional): The target device specified, should be one of ``"CPU"`` , ``"GPU"`` and
+            ``"Ascend"`` . Default ``None`` , represents the current device set by context.
 
     Examples:
-        >>> import mindspore as ms
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> a = Tensor(np.ones([1, 2]), ms.float32)
-        >>> b = Tensor(np.ones([1, 2]), ms.float32)
-        >>> c = ops.add(a, b).asnumpy()
-        >>> print(ms.hal.max_memory_reserved())
+        >>> import mindspore
+        >>> a = mindspore.tensor(mindspore.ops.ones([1, 2]), mindspore.float32)
+        >>> b = mindspore.tensor(mindspore.ops.ones([1, 2]), mindspore.float32)
+        >>> c = mindspore.ops.add(a, b).asnumpy()
+        >>> print(mindspore.hal.max_memory_reserved())
         1073741824
-        >>> print(ms.hal.max_memory_allocated())
+        >>> print(mindspore.hal.max_memory_allocated())
         1536
-        >>> ms.hal.reset_peak_memory_stats()
-        >>> print(ms.hal.max_memory_reserved())
+        >>> mindspore.hal.reset_peak_memory_stats()
+        >>> print(mindspore.hal.max_memory_reserved())
         0
-        >>> print(ms.hal.max_memory_allocated())
+        >>> print(mindspore.hal.max_memory_allocated())
         0
     """
     if not function_memory_status['reset_peak_memory_stats']:
@@ -208,17 +185,12 @@ def reset_peak_memory_stats(device_target=None):
 @_check_inputs_validation
 def memory_summary(device_target=None):
     """
-    Returns readable memory pool status information.
-
-    Note:
-        - The api will be deprecated, please use the api :func:`mindspore.runtime.memory_summary` instead.
-
-    Note:
-        If `device_target` is not specified, get the device capability of the current backend set by context.
+    Returns readable memory pool status information, this api will be deprecated and removed in future versions.
+    Please use the api :func:`mindspore.runtime.memory_summary` instead.
 
     Args:
-        device_target (str, optional): The device name of backend, should be one of "CPU", "GPU" and "Ascend".
-            Default value: ``None``.
+        device_target (str, optional): The target device specified, should be one of ``"CPU"`` , ``"GPU"`` and
+            ``"Ascend"`` . Default ``None`` , represents the current device set by context.
 
     Returns:
         str, readable memory pool status information in tabular form.
@@ -270,30 +242,25 @@ def memory_summary(device_target=None):
 @_check_inputs_validation
 def memory_allocated(device_target=None):
     """
-    Returns the actual memory size currently occupied by Tensor.
+    Returns the actual memory size currently occupied by Tensor, this api will be deprecated and removed in future
+    versions, please use the api :func:`mindspore.runtime.memory_allocated` instead.
 
     Note:
-        - The api will be deprecated, please use the api :func:`mindspore.runtime.memory_allocated` instead.
-
-    Note:
-        - If `device_target` is not specified, get the device capability of the current backend set by context.
-        - For the `CPU` backend, 0 is always returned.
+        - For the `CPU` device, 0 is always returned.
 
     Args:
-        device_target (str, optional): The device name of backend, should be one of "CPU", "GPU" and "Ascend".
-            Default value: ``None``.
+        device_target (str, optional): The target device specified, should be one of ``"CPU"`` , ``"GPU"`` and
+            ``"Ascend"`` . Default ``None`` , represents the current device set by context.
 
     Returns:
         int, in Byte.
 
     Examples:
-        >>> import mindspore as ms
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> a = Tensor(np.ones([1, 2]), ms.float32)
-        >>> b = Tensor(np.ones([1, 2]), ms.float32)
-        >>> c = ops.add(a, b).asnumpy()
-        >>> print(ms.hal.memory_allocated())
+        >>> import mindspore
+        >>> a = mindspore.tensor(mindspore.ops.ones([1, 2]), mindspore.float32)
+        >>> b = mindspore.tensor(mindspore.ops.ones([1, 2]), mindspore.float32)
+        >>> c = mindspore.ops.add(a, b).asnumpy()
+        >>> print(mindspore.hal.memory_allocated())
         1024
     """
     if not function_memory_status['memory_allocated']:
@@ -308,30 +275,26 @@ def memory_allocated(device_target=None):
 @_check_inputs_validation
 def max_memory_allocated(device_target=None):
     """
-    Returns the peak memory size of the memory pool actually occupied by Tensor since the process was started.
+    Return the peak memory size of the memory pool actually occupied by Tensor since the process was started.
+    This api will be deprecated and removed in future versions, please use
+    the api :func:`mindspore.runtime.max_memory_allocated` instead.
 
     Note:
-        - The api will be deprecated, please use the api :func:`mindspore.runtime.max_memory_allocated` instead.
-
-    Note:
-        - If `device_target` is not specified, get the device capability of the current backend set by context.
-        - For the `CPU` backend, 0 is always returned.
+        - For the `CPU` device, 0 is always returned.
 
     Args:
-        device_target (str, optional): The device name of backend, should be one of "CPU", "GPU" and "Ascend".
-            Default value: ``None``.
+        device_target (str, optional): The target device specified, should be one of ``"CPU"`` , ``"GPU"`` and
+            ``"Ascend"`` . Default ``None`` , represents the current device set by context.
 
     Returns:
         int, in Byte.
 
     Examples:
-        >>> import mindspore as ms
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> a = Tensor(np.ones([1, 2]), ms.float32)
-        >>> b = Tensor(np.ones([1, 2]), ms.float32)
-        >>> c = ops.add(a, b).asnumpy()
-        >>> print(ms.hal.max_memory_allocated())
+        >>> import mindspore
+        >>> a = mindspore.tensor(mindspore.ops.ones([1, 2]), mindspore.float32)
+        >>> b = mindspore.tensor(mindspore.ops.ones([1, 2]), mindspore.float32)
+        >>> c = mindspore.ops.add(a, b).asnumpy()
+        >>> print(mindspore.hal.max_memory_allocated())
         1536
     """
     if not function_memory_status['max_memory_allocated']:
@@ -346,29 +309,22 @@ def max_memory_allocated(device_target=None):
 @_check_inputs_validation
 def reset_max_memory_reserved(device_target=None):
     """
-    Reset the peak memory size managed by the memory pool.
-
-    Note:
-        - The api will be deprecated, please use the api :func:`mindspore.runtime.reset_max_memory_reserved` instead.
-
-    Note:
-        If `device_target` is not specified, get the device capability of the current backend set by context.
+    Reset the peak memory size managed by the memory pool, this api will be deprecated and removed in future versions.
+    Please use the api :func:`mindspore.runtime.reset_max_memory_reserved` instead.
 
     Args:
-        device_target (str, optional): The device name of backend, should be one of "CPU", "GPU" and "Ascend".
-            Default value: ``None``.
+        device_target (str, optional): The target device specified, should be one of ``"CPU"`` , ``"GPU"`` and
+            ``"Ascend"`` . Default ``None`` , represents the current device set by context.
 
     Examples:
-        >>> import mindspore as ms
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> a = Tensor(np.ones([1, 2]), ms.float32)
-        >>> b = Tensor(np.ones([1, 2]), ms.float32)
-        >>> c = ops.add(a, b).asnumpy()
-        >>> print(ms.hal.max_memory_reserved())
+        >>> import mindspore
+        >>> a = mindspore.tensor(mindspore.ops.ones([1, 2]), mindspore.float32)
+        >>> b = mindspore.tensor(mindspore.ops.ones([1, 2]), mindspore.float32)
+        >>> c = mindspore.ops.add(a, b).asnumpy()
+        >>> print(mindspore.hal.max_memory_reserved())
         1073741824
-        >>> ms.hal.reset_max_memory_reserved()
-        >>> print(ms.hal.max_memory_reserved())
+        >>> mindspore.hal.reset_max_memory_reserved()
+        >>> print(mindspore.hal.max_memory_reserved())
         0
     """
     if not function_memory_status['reset_max_memory_reserved']:
@@ -383,29 +339,22 @@ def reset_max_memory_reserved(device_target=None):
 @_check_inputs_validation
 def reset_max_memory_allocated(device_target=None):
     """
-    Reset the peak memory size of the memory pool actually occupied by Tensor.
-
-    Note:
-        - The api will be deprecated, please use the api :func:`mindspore.runtime.reset_max_memory_allocated` instead.
-
-    Note:
-        If `device_target` is not specified, get the device capability of the current backend set by context.
+    Reset the peak memory size of the memory pool actually occupied by Tensor, this api will be deprecated and removed
+    in future versions, please use the api :func:`mindspore.runtime.reset_max_memory_allocated` instead.
 
     Args:
-        device_target (str, optional): The device name of backend, should be one of "CPU", "GPU" and "Ascend".
-            Default value: ``None``.
+        device_target (str, optional): The target device specified, should be one of ``"CPU"`` , ``"GPU"`` and
+            ``"Ascend"`` . Default ``None`` , represents the current device set by context.
 
     Examples:
-        >>> import mindspore as ms
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> a = Tensor(np.ones([1, 2]), ms.float32)
-        >>> b = Tensor(np.ones([1, 2]), ms.float32)
-        >>> c = ops.add(a, b).asnumpy()
-        >>> print(ms.hal.max_memory_allocated())
+        >>> import mindspore
+        >>> a = mindspore.tensor(mindspore.ops.ones([1, 2]), mindspore.float32)
+        >>> b = mindspore.tensor(mindspore.ops.ones([1, 2]), mindspore.float32)
+        >>> c = mindspore.ops.add(a, b).asnumpy()
+        >>> print(mindspore.hal.max_memory_allocated())
         1536
-        >>> ms.hal.reset_max_memory_allocated()
-        >>> print(ms.hal.max_memory_allocated())
+        >>> mindspore.hal.reset_max_memory_allocated()
+        >>> print(mindspore.hal.max_memory_allocated())
         0
     """
     if not function_memory_status['reset_max_memory_allocated']:

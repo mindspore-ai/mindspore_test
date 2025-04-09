@@ -24,41 +24,37 @@ function_event_status = {'Event': False, 'wait': False}
 
 class Event(Event_):
     r"""
-    Wrapper around a device event.
+    Wrapper around a device event, this api will be deprecated and removed in future versions, please use
+    the api :func:`mindspore.runtime.Event` instead.
 
     Device events are synchronization markers that can be used to monitor the device’s progress,
     to accurately measure timing, and to synchronize device streams.
 
     The underlying device events are lazily initialized when the event is first recorded.
 
-    Note:
-        - The api will be deprecated, please use the api :func:`mindspore.runtime.Event` instead.
-
     Args:
-        enable_timing (bool, optional): indicates if the event should measure time (default: ``False``)
-        blocking (bool, optional): if ``True``, `wait` will be blocking (default: ``False``)
+        enable_timing (bool, optional): indicates if the event should measure time. Default ``False``.
+        blocking (bool, optional): if ``True``, `wait` will be blocking. Default ``False``.
 
     Examples:
-        >>> import mindspore as ms
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> start = ms.hal.Event(enable_timing=True)
-        >>> end = ms.hal.Event(enable_timing=True)
-        >>> s1 = ms.hal.Stream()
-        >>> s2 = ms.hal.Stream()
-        >>> a = Tensor(np.ones([2, 2]), ms.float32)
-        >>> b = Tensor(np.ones([2, 2]), ms.float32)
-        >>> c = Tensor(np.ones([2, 2]), ms.float32)
-        >>> with ms.hal.StreamCtx(s1):
-        ...     d = ops.matmul(a, b)
+        >>> import mindspore
+        >>> start = mindspore.hal.Event(enable_timing=True)
+        >>> end = mindspore.hal.Event(enable_timing=True)
+        >>> s1 = mindspore.hal.Stream()
+        >>> s2 = mindspore.hal.Stream()
+        >>> a = mindspore.tensor(mindspore.ops.ones([2, 2]), mindspore.float32)
+        >>> b = mindspore.tensor(mindspore.ops.ones([2, 2]), mindspore.float32)
+        >>> c = mindspore.tensor(mindspore.ops.ones([2, 2]), mindspore.float32)
+        >>> with mindspore.hal.StreamCtx(s1):
+        ...     d = mindspore.ops.matmul(a, b)
         ...     start.record()
         >>> c += 2
         >>> end.record()
-        >>> with ms.hal.StreamCtx(s2):
+        >>> with mindspore.hal.StreamCtx(s2):
         ...     start.synchronize()
         ...     end.synchronize()
         ...     e = c + d
-        >>> ms.hal.synchronize()
+        >>> mindspore.hal.synchronize()
         >>> print(e)
         [[5. 5.]
          [5. 5.]]
@@ -78,17 +74,14 @@ class Event(Event_):
 
     def record(self, stream=None):
         r"""
-        Records the event in a given stream.
+        Record the event in a given stream.
 
         Uses :func:`mindspore.hal.current_stream()` if no `stream` is specified. The
         stream's device must match the event's device.
 
         Args:
             stream (Stream, optional): a stream to record. If this argument is ``None``,
-                current stream will be used. Default value: ``None``.
-
-        Raises:
-            TypeError: If 'stream' is neither a :class:`mindspore.hal.Stream` nor a ``None``.
+                current stream will be used. Default ``None``.
         """
         if stream is None:
             stream = current_stream_()
@@ -99,33 +92,28 @@ class Event(Event_):
 
     def wait(self, stream=None):
         r"""
-        Makes all future work submitted to the given stream wait for this
+        Make all future work submitted to the given stream wait for this
         event.
 
         Use :func:`mindspore.hal.current_stream()` if no `stream` is specified.
 
         Args:
             stream (Stream, optional): a stream to record. If this argument is ``None``,
-                current stream will be used. Default value: ``None``.
-
-        Raises:
-            TypeError: If 'stream' is neither a :class:`mindspore.hal.Stream` nor a ``None``.
+                current stream will be used. Default ``None``.
 
         Examples:
-            >>> import mindspore as ms
-            >>> import numpy as np
-            >>> from mindspore import Tensor, ops
-            >>> event = ms.hal.Event()
-            >>> s1 = ms.hal.Stream()
-            >>> s2 = ms.hal.Stream()
-            >>> a = Tensor(np.ones([2, 2]), ms.float32)
-            >>> b = Tensor(np.ones([2, 2]), ms.float32)
-            >>> with ms.hal.StreamCtx(s1):
-            ...     c = ops.matmul(a, b)
+            >>> import mindspore
+            >>> event = mindspore.hal.Event()
+            >>> s1 = mindspore.hal.Stream()
+            >>> s2 = mindspore.hal.Stream()
+            >>> a = mindspore.tensor(mindspore.ops.ones([2, 2]), mindspore.float32)
+            >>> b = mindspore.tensor(mindspore.ops.ones([2, 2]), mindspore.float32)
+            >>> with mindspore.hal.StreamCtx(s1):
+            ...     c = mindspore.ops.matmul(a, b)
             ...     event.record()
             >>> event.wait()
             >>> d = c + 2
-            >>> ms.hal.synchronize()
+            >>> mindspore.hal.synchronize()
             >>> print(d)
             [[4. 4.]
              [4. 4.]]
@@ -144,7 +132,7 @@ class Event(Event_):
 
     def synchronize(self):
         r"""
-        Waits for the event to complete.
+        Wait for the event to complete.
 
         Waits until the completion of all work currently captured in this event.
         This prevents the CPU thread from proceeding until the event completes.
@@ -154,20 +142,18 @@ class Event(Event_):
 
     def query(self):
         r"""
-        Checks if all work currently captured by event has completed.
+        Check if all work currently captured by event has completed.
 
         Returns:
             A boolean indicating if all work currently captured by event has completed.
 
         Examples:
-            >>> import mindspore as ms
-            >>> import numpy as np
-            >>> from mindspore import Tensor, ops
-            >>> a = Tensor(np.ones([1024, 2048]), ms.float32)
-            >>> b = Tensor(np.ones([2048, 4096]), ms.float32)
-            >>> s1 = ms.hal.Stream()
-            >>> with ms.hal.StreamCtx(s1):
-            ...     c = ops.matmul(a, b)
+            >>> import mindspore
+            >>> a = mindspore.tensor(mindspore.ops.ones([1024, 2048]), mindspore.float32)
+            >>> b = mindspore.tensor(mindspore.ops.ones([2048, 4096]), mindspore.float32)
+            >>> s1 = mindspore.hal.Stream()
+            >>> with mindspore.hal.StreamCtx(s1):
+            ...     c = mindspore.ops.matmul(a, b)
             ...     ev = s1.record_event()
             >>> s1.synchronize()
             >>> assert ev.query()
@@ -177,7 +163,7 @@ class Event(Event_):
 
     def elapsed_time(self, end_event):
         r"""
-        Returns the time elapsed in milliseconds after the event was
+        Return the time elapsed in milliseconds after the event was
         recorded and before the end_event was recorded.
 
         Args:
@@ -185,9 +171,6 @@ class Event(Event_):
 
         Returns:
             float, the time elapsed in milliseconds.
-
-        Raises:
-            TypeError: If 'end_event' is not a :class:`mindspore.hal.Event`.
         """
         # pylint: disable=useless-super-delegation
         if not isinstance(end_event, Event):

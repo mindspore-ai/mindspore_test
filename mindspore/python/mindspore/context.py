@@ -1429,9 +1429,9 @@ def set_context(**kwargs):
         mode (int): GRAPH_MODE(0) or PYNATIVE_MODE(1). Default ``PYNATIVE_MODE`` .
         device_id (int): ID of the target device. Default ``0`` . This parameter will be deprecated
             and removed in future versions. Please use the api :func:`mindspore.set_device` instead.
-        device_target (str): The target device to run, support "Ascend", "GPU", and "CPU". This parameter will be
-            deprecated and removed in future versions. Please use the api :func:`mindspore.set_device` instead.
-        deterministic (str): Deterministic computation of operators. Default ``OFF`` .
+        device_target (str): The target device to run, support ``"Ascend"``, ``"GPU"``, and ``"CPU"``. This parameter
+            will be deprecated and removed in future versions. Please use the api :func:`mindspore.set_device` instead.
+        deterministic (str): Deterministic computation of operators. Default ``"OFF"`` .
             This parameter will be deprecated and removed in future versions. Please use the api
             :func:`mindspore.set_deterministic` instead.
         max_call_depth (int): The maximum depth of function call. Default ``1000`` .
@@ -1442,7 +1442,7 @@ def set_context(**kwargs):
         mempool_block_size (str): Set the size of the memory pool block for devices. Default ``"1GB"`` .
             This parameter will be deprecated and removed in future versions. Please use
             the api :func:`mindspore.runtime.set_memory` instead.
-        memory_optimize_level (str): The memory optimize level. Default ``O0``.
+        memory_optimize_level (str): The memory optimize level. Default ``"O0"``.
             This parameter will be deprecated and removed in future versions. Please use
             the api :func:`mindspore.runtime.set_memory` instead.
         max_device_memory (str): Set the maximum memory available for devices.
@@ -1457,7 +1457,7 @@ def set_context(**kwargs):
         inter_op_parallel_num(int): The thread number of op parallel at the same time.
             Default ``0`` . This parameter will be deprecated and removed in future versions.
             Please use the api :func:`mindspore.runtime.dispatch_threads_num` instead.
-        memory_offload (str): Whether to enable the memory offload function. Default ``OFF`` .
+        memory_offload (str): Whether to enable the memory offload function. Default ``"OFF"`` .
             This parameter will be deprecated and removed in future versions. Please use the api
             :func:`mindspore.nn.Cell.offload` instead.
         disable_format_transform (bool): Whether to disable the automatic format transform function from NCHW
@@ -1557,9 +1557,6 @@ def set_context(**kwargs):
         enable_reduce_precision (bool): This parameter will be deprecated and removed in a future versions.
         grad_for_scalar (bool): This parameter will be deprecated and removed in future versions.
         support_binary (bool): Whether to support run .pyc or .so in graph mode.
-
-    Raises:
-        ValueError: If input key is not an attribute in context.
 
     Examples:
         >>> import mindspore as ms

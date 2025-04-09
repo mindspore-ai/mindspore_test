@@ -8,17 +8,17 @@ mindspore.set_context
     参数：
         - **mode** (int) - GRAPH_MODE（用0表示）或PYNATIVE_MODE（用1表示）。默认 ``PYNATIVE_MODE`` 。
         - **device_id** (int) - 目标设备的ID，默认 ``0`` 。此参数将在后续版本中废弃，请使用接口 :func:`mindspore.set_device` 代替。
-        - **device_target** (str) - 程序运行的目标设备，支持 'Ascend'、 'GPU'和 'CPU'。此参数将在后续版本中废弃，请使用接口 :func:`mindspore.set_device` 代替。
-        - **deterministic** (str) - 算子确定性计算，默认 ``OFF`` 。此参数将在后续版本中废弃，请使用接口 :func:`mindspore.set_deterministic` 代替。
+        - **device_target** (str) - 程序运行的目标设备，支持 ``"Ascend"``、 ``"GPU"``和 ``"CPU"``。此参数将在后续版本中废弃，请使用接口 :func:`mindspore.set_device` 代替。
+        - **deterministic** (str) - 算子确定性计算，默认 ``"OFF"`` 。此参数将在后续版本中废弃，请使用接口 :func:`mindspore.set_deterministic` 代替。
         - **max_call_depth** (int) - 函数调用最大深度，默认 ``1000`` 。此参数将在后续版本中废弃，请使用接口 :func:`mindspore.set_recursion_limit` 代替。
         - **variable_memory_max_size** (str) - 此参数将在后续版本中废弃，请使用接口 :func:`mindspore.runtime.set_memory` 代替。
         - **mempool_block_size** (str) - 设置设备内存池的块大小，默认 ``"1GB"`` 。此参数将在后续版本中废弃，请使用接口 :func:`mindspore.runtime.set_memory` 代替。
-        - **memory_optimize_level** (str) - 内存优化级别，默认 ``O0`` 。此参数将在后续版本中废弃，请使用接口 :func:`mindspore.runtime.set_memory` 代替。
+        - **memory_optimize_level** (str) - 内存优化级别，默认 ``"O0"`` 。此参数将在后续版本中废弃，请使用接口 :func:`mindspore.runtime.set_memory` 代替。
         - **max_device_memory** (str) - 设置设备可用的最大内存，默认 ``"1024GB"`` 。此参数将在后续版本中废弃，请使用接口 :func:`mindspore.runtime.set_memory` 代替。
         - **pynative_synchronize** (bool) - 是否启动设备同步执行，默认 ``False`` 。此参数将在后续版本中废弃，请使用接口 :func:`mindspore.runtime.launch_blocking` 代替。
         - **compile_cache_path** (str) - 保存编译缓存的路径，默认 ``"."`` 。此参数将在后续版本中废弃，请使用环境变量 `MS_COMPILER_CACHE_PATH` 代替。
         - **inter_op_parallel_num** (int) - 算子间并行数控制，默认 ``0`` 。此参数将在后续版本中废弃。请使用接口 :func:`mindspore.runtime.dispatch_threads_num` 代替。
-        - **memory_offload** (str) - 是否开启Offload功能，默认 ``OFF`` 。此参数将在后续版本中废弃，请使用接口 :func:`mindspore.nn.Cell.offload` 代替。
+        - **memory_offload** (str) - 是否开启Offload功能，默认 ``"OFF"`` 。此参数将在后续版本中废弃，请使用接口 :func:`mindspore.nn.Cell.offload` 代替。
         - **disable_format_transform** (bool) - 是否取消NCHW到NHWC的自动格式转换功能，默认 ``False`` 。此参数将在后续版本中废弃，请使用接口 :func:`mindspore.jit` 相关参数代替。
         - **jit_syntax_level** (int) - 设置jit语法支持级别，默认 ``LAX`` 。此参数将在后续版本中废弃，请使用接口 :func:`mindspore.jit` 相关参数代替。
         - **jit_config** (dict) - 设置全局编译选项。此参数将在后续版本中废弃，请使用接口 :func:`mindspore.jit` 相关参数代替。

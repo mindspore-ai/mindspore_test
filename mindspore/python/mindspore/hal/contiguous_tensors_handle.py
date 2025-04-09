@@ -29,7 +29,7 @@ def combine_tensor_list_contiguous(tensor_list, enable_mem_align=True):
     Args:
         tensor_list (list[Tensor], Tuple[Tensor]): The tensor list to be stored.
         enable_mem_align (bool, optional): Whether to enable the memory alignment function.
-            False is not supported. Default: ``True`` .
+            False is not supported. Default ``True`` .
 
     Returns:
             ContiguousTensorsHandle, a manager with contiguous memory.
@@ -59,7 +59,7 @@ class ContiguousTensorsHandle:
     Args:
         tensor_list (list[Tensor], Tuple[Tensor]): The tensor list to be stored.
         enable_mem_align (bool, optional): Whether to enable the memory alignment function.
-            False is not supported. Default: ``True`` .
+            False is not supported. Default ``True`` .
 
     Returns:
         ContiguousTensorsHandle, a manager with contiguous memory.
@@ -137,15 +137,11 @@ class ContiguousTensorsHandle:
         Return the tensor which is sliced by tensor index.
 
         Args:
-            start(int, None): Starting position. Default：``None``.
-            end(int, None): Deadline position. Default：``None``.
+            start(int, None): Starting position. Default ``None``.
+            end(int, None): Deadline position. Default ``None``.
 
         Returns:
-            Tensor，is sliced by tensor index.
-
-        Raises:
-            TypeError: If `start` or `end`, is neither an 'int' nor a 'none'.
-            ValueError: If values of `start` or `end` are negative, or out of the list range, or start >= end.
+            Tensor
 
         Examples:
             >>> import numpy as np

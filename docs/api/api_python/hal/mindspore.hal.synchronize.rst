@@ -3,7 +3,4 @@ mindspore.hal.synchronize
 
 .. py:function:: mindspore.hal.synchronize()
 
-    同步当前设备上的所有流。（每个MindSpore进程只占用一个设备）
-
-    .. note::
-        - 接口即将废弃，请使用接口 :func:`mindspore.runtime.synchronize` 代替。
+    同步当前设备上的所有流，此接口将在后续版本中废弃，请使用接口 :func:`mindspore.runtime.synchronize` 代替。
