@@ -15,12 +15,12 @@
  */
 
 #include <vector>
-#include "infer/move_to.h"
 #include "mindapi/helper.h"
 #include "ops/primitive_c.h"
 #include "abstract/ops/op_infer.h"
 #include "utils/check_convert_utils.h"
 #include "abstract/ops/primitive_infer_map.h"
+#include "infer/move_to.h"
 
 namespace mindspore {
 namespace ops {
