@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/optimizer/ir_fusion_infer/matmul_allreduce_fusion.h"
+#include "backend/ge_backend/pass/matmul_allreduce_fusion.h"
 #include <set>
 #include <vector>
 #include <string>

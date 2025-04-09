@@ -22,6 +22,7 @@ file(GLOB_RECURSE MS_OPTIMIZER_910B RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "./format_type/utils.cc"
         "./format_type/deal_ref_output.cc"
         "./common/gllo_utils.cc"
+        "./expander_fallback.cc"
         "./ir_fission/tensor_scatter_fission.cc"
         "./ir_fission/adam_weight_decay_fission.cc"
         "./ir_fusion/batchnorm_to_bninfer.cc"

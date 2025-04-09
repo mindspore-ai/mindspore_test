@@ -711,5 +711,55 @@ bool IsCaseNode(const AnfNodePtr &node) {
   return false;
 }
 
+bool ConvertCheck(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
+  if (!node->cast<CNodePtr>() || !AnfUtils::IsRealKernel(node)) {
+    return true;
+  }
+  PrimitivePtr prim = common::AnfAlgo::GetCNodePrimitive(node);
+  MS_EXCEPTION_IF_NULL(prim);
+  auto &adapter_map = device::ascend::OpAdapterMap::get();
+  return adapter_map.find(prim->name()) != adapter_map.end();
+}
+
+bool DynamicShapeSupportCheck(const AnfNodePtr &node, bool train) {
+  auto adpt = device::ascend::FindAdapter(node, train);
+  MS_EXCEPTION_IF_NULL(adpt);
+  return adpt->GetDynamicShapeSupport();
+}
+
+bool SinkGraphCheck(const AnfNodePtr &node, bool train) {
+  PrimitivePtr prim = common::AnfAlgo::GetCNodePrimitive(node);
+  MS_EXCEPTION_IF_NULL(prim);
+  auto adpt = device::ascend::FindAdapter(prim->name(), train);
+  MS_EXCEPTION_IF_NULL(adpt);
+  auto input_attr_map = adpt->getInputAttrMap();
+  MS_EXCEPTION_IF_NULL(node);
+  auto cnode = node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
+  auto input_size = cnode->size();
+  for (auto &it : input_attr_map) {
+    if (it.first >= input_size) {
+      continue;
+    }
+    if (!cnode->input(it.first)->isa<ValueNode>()) {
+      MS_LOG(DEBUG) << node->fullname_with_scope() << " inputs[" << it.first << "] is not a ValueNode";
+      return false;
+    }
+  }
+  auto input_map = adpt->getInputMap();
+  for (auto &it : input_map) {
+    if (static_cast<size_t>(it.first) >= input_size) {
+      continue;
+    }
+    auto abs = cnode->input(it.first)->abstract();
+    MS_EXCEPTION_IF_NULL(abs);
+    if (abs->isa<abstract::AbstractAny>()) {
+      MS_LOG(DEBUG) << node->fullname_with_scope() << " inputs[" << it.first << "] is a AbstractAny";
+      return false;
+    }
+  }
+  return true;
+}
 }  // namespace device::ascend
 }  // namespace mindspore

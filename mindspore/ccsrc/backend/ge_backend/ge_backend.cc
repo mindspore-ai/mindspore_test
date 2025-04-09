@@ -48,7 +48,7 @@
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "include/common/utils/scoped_long_running.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
-#include "backend/graph_compiler/segment_runner.h"
+#include "backend/ge_backend/runtime/segment_runner.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "backend/ge_backend/runtime/graph_scheduler.h"
@@ -73,7 +73,6 @@
 #include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
 #include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
 #include "plugin/res_manager/ascend/collective/hccl_watch_dog_thread.h"
-#include "plugin/device/ascend/hal/common/ascend_utils.h"
 
 namespace mindspore {
 namespace backend {
@@ -815,15 +814,15 @@ CompileType GEBackend::CheckGraph(const FuncGraphPtr &func_graph) const {
         continue;
       }
       if (is_dynamic_graph && common::AnfAlgo::IsDynamic(node)) {
-        if (!ConvertCheck(node)) {
+        if (!device::ascend::ConvertCheck(node)) {
           MS_LOG(ERROR) << node->fullname_with_scope() << " can not find adpt.";
           return CompileType::NotSupport;
         }
-        if (!DynamicShapeSupportCheck(node)) {
+        if (!device::ascend::DynamicShapeSupportCheck(node)) {
           MS_LOG(ERROR) << node->fullname_with_scope() << " not support dynamic shape.";
           return CompileType::NotSupport;
         }
-        if (!SinkGraphCheck(node)) {
+        if (!device::ascend::SinkGraphCheck(node)) {
           MS_LOG(ERROR) << node->fullname_with_scope() << " have attrs is not ValueNode.";
           return CompileType::NotSupport;
         }
@@ -2007,7 +2006,7 @@ void GEBackend::CompileGraph(const FuncGraphPtr &func_graph, const BackendJitCon
   // Split graph to segments.
   const std::vector<PrimitivePtr> cut_list = {prim::kPrimReturn,    prim::kPrimPartial,  prim::kPrimSwitch,
                                               prim::kPrimMakeTuple, prim::kPrimBpropCut, prim::kPrimSwitchLayer};
-  auto graph_partition = std::make_shared<compile::GraphPartition>(cut_list, "ge");
+  auto graph_partition = std::make_shared<mindspore::ge_backend::runtime::GraphPartition>(cut_list, "ge");
   MS_EXCEPTION_IF_NULL(graph_partition);
   const auto &segments = graph_partition->Partition(func_graph);
   (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph,
@@ -2035,7 +2034,7 @@ void GEBackend::CompileGraphFromSegment(const GraphSegmentPtr &segment, const Ba
     FuncGraphPtr fg;
     AnfNodePtrList inputs;
     AnfNodePtrList outputs;
-    std::tie(fg, inputs, outputs) = compile::TransformSegmentToAnfGraph(segment->nodes_);
+    std::tie(fg, inputs, outputs) = mindspore::ge_backend::runtime::TransformSegmentToAnfGraph(segment->nodes_);
 
     GraphId graph_id = graph_compiler_->CompileGraph(segment, std::make_pair(inputs, outputs), backend_jit_config,
                                                      device::RunMode::kGraphMode, false);

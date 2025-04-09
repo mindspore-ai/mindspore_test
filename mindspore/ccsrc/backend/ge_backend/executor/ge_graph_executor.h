@@ -89,7 +89,6 @@ class BACKEND_EXPORT GeGraphExecutor : public device::GraphExecutor {
  public:
   ~GeGraphExecutor() override = default;
   void Initialize() override;
-  void InitializeForGe();
   void Finalize() override;
   void OptimizeBeforeCompileGraph(const KernelGraphPtr &graph);
   bool CompileGraph(const FuncGraphPtr &graph, const std::map<string, string> &compile_options) override;

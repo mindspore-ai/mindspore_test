@@ -29,6 +29,29 @@ constexpr size_t kPathMax = 4096;
 namespace mindspore {
 namespace device {
 namespace ascend {
+namespace {
+/* Correspondence between data_type and hcom data type in Ascend */
+static std::map<int64_t, HcclDataType> kConstOpHcomDataTypeMap = {
+  {TypeId::kNumberTypeInt8, HCCL_DATA_TYPE_INT8},     {TypeId::kNumberTypeInt16, HCCL_DATA_TYPE_INT16},
+  {TypeId::kNumberTypeInt32, HCCL_DATA_TYPE_INT32},   {TypeId::kNumberTypeFloat16, HCCL_DATA_TYPE_FP16},
+  {TypeId::kNumberTypeFloat32, HCCL_DATA_TYPE_FP32},  {TypeId::kNumberTypeInt64, HCCL_DATA_TYPE_INT64},
+  {TypeId::kNumberTypeUInt64, HCCL_DATA_TYPE_UINT64}, {TypeId::kNumberTypeUInt8, HCCL_DATA_TYPE_UINT8},
+  {TypeId::kNumberTypeUInt16, HCCL_DATA_TYPE_UINT16}, {TypeId::kNumberTypeUInt32, HCCL_DATA_TYPE_UINT32},
+  {TypeId::kNumberTypeFloat64, HCCL_DATA_TYPE_FP64},  {TypeId::kNumberTypeBFloat16, HCCL_DATA_TYPE_BFP16},
+};
+
+::HcclDataType ConvertHcclType(TypeId type_id) {
+  auto iter = kConstOpHcomDataTypeMap.find(type_id);
+  if (iter == kConstOpHcomDataTypeMap.end()) {
+    if (type_id == TypeId::kNumberTypeComplex64) {
+      MS_LOG(INFO) << "HcomDataType Can't support Current Ascend Data Type : Complex64, Convert it to Float32";
+      return HCCL_DATA_TYPE_FP32;
+    }
+    MS_LOG(EXCEPTION) << "HcomDataType can't support Current Ascend Data Type : " << TypeIdLabel(type_id);
+  }
+  return iter->second;
+}
+}  // namespace
 #define HCCL_RUN_CHECK(op_name, group, op)                          \
   do {                                                              \
     auto hccl_result = static_cast<int64_t>(op);                    \
@@ -350,7 +373,7 @@ bool AscendCollectiveCommLib::AllGather(const void *send_buff, void *recv_buff, 
   MS_EXCEPTION_IF_NULL(send_buff);
   MS_EXCEPTION_IF_NULL(recv_buff);
   MS_EXCEPTION_IF_NULL(stream);
-  const auto hccl_data_type = HcomUtil::ConvertHcclType(data_type);
+  const auto hccl_data_type = ConvertHcclType(data_type);
   const auto comm = GetHcomByGroup(group_name);
   auto hccl_result = hccl::HcclAdapter::GetInstance().HcclAllGather(const_cast<void *>(send_buff), recv_buff,
                                                                     send_count, hccl_data_type, stream, comm);
@@ -366,7 +389,7 @@ bool AscendCollectiveCommLib::AllReduce(const void *send_buff, void *recv_buff, 
   MS_EXCEPTION_IF_NULL(send_buff);
   MS_EXCEPTION_IF_NULL(recv_buff);
   MS_EXCEPTION_IF_NULL(stream);
-  const auto hccl_data_type = HcomUtil::ConvertHcclType(data_type);
+  const auto hccl_data_type = ConvertHcclType(data_type);
   const auto comm = GetHcomByGroup(group_name);
   const auto &hccl_reduce_type_iter = kHcomOpReduceTypeMap.find(reduce_op);
   if (hccl_reduce_type_iter == kHcomOpReduceTypeMap.end()) {
@@ -388,7 +411,7 @@ bool AscendCollectiveCommLib::Broadcast(const void *send_buff, void *, size_t se
                                         uint32_t root_rank, const std::string &group_name, void *stream) {
   MS_EXCEPTION_IF_NULL(send_buff);
   MS_EXCEPTION_IF_NULL(stream);
-  const auto hccl_data_type = HcomUtil::ConvertHcclType(data_type);
+  const auto hccl_data_type = ConvertHcclType(data_type);
   const auto comm = GetHcomByGroup(group_name);
   auto hccl_result = hccl::HcclAdapter::GetInstance().HcclBroadcast(const_cast<void *>(send_buff), send_count,
                                                                     hccl_data_type, root_rank, stream, comm);
@@ -405,7 +428,7 @@ bool AscendCollectiveCommLib::ReduceScatter(const void *send_buff, void *recv_bu
   MS_EXCEPTION_IF_NULL(send_buff);
   MS_EXCEPTION_IF_NULL(recv_buff);
   MS_EXCEPTION_IF_NULL(stream);
-  const auto hccl_data_type = HcomUtil::ConvertHcclType(data_type);
+  const auto hccl_data_type = ConvertHcclType(data_type);
   const auto comm = GetHcomByGroup(group_name);
   const auto &hccl_reduce_type_iter = kHcomOpReduceTypeMap.find(reduce_op);
   if (hccl_reduce_type_iter == kHcomOpReduceTypeMap.end()) {
@@ -427,7 +450,7 @@ bool AscendCollectiveCommLib::Send(const void *send_buff, size_t count, TypeId d
                                    const std::string &group_name, void *stream) {
   MS_EXCEPTION_IF_NULL(send_buff);
   MS_EXCEPTION_IF_NULL(stream);
-  const auto hccl_data_type = HcomUtil::ConvertHcclType(data_type);
+  const auto hccl_data_type = ConvertHcclType(data_type);
   const auto comm = GetHcomByGroup(group_name);
   auto hccl_result =
     hccl::HcclAdapter::GetInstance().HcclSend(const_cast<void *>(send_buff), count, hccl_data_type, peer, stream, comm);
@@ -442,7 +465,7 @@ bool AscendCollectiveCommLib::Recv(void *recv_buff, size_t count, TypeId data_ty
                                    const std::string &group_name, void *stream) {
   MS_EXCEPTION_IF_NULL(recv_buff);
   MS_EXCEPTION_IF_NULL(stream);
-  const auto hccl_data_type = HcomUtil::ConvertHcclType(data_type);
+  const auto hccl_data_type = ConvertHcclType(data_type);
   const auto comm = GetHcomByGroup(group_name);
   MS_EXCEPTION_IF_NULL(comm);
   auto hccl_result = hccl::HcclAdapter::GetInstance().HcclRecv(recv_buff, count, hccl_data_type, peer, stream, comm);

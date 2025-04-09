@@ -193,6 +193,9 @@ ASCEND_RES_MANAGER_EXPORT bool IsIfNode(const AnfNodePtr &node);
 ASCEND_RES_MANAGER_EXPORT bool IsCaseNode(const AnfNodePtr &node);
 ASCEND_RES_MANAGER_EXPORT std::string GetCNodeTargetFuncName(const CNodePtr cnode);
 ASCEND_RES_MANAGER_EXPORT bool IsPartialCNode(const AnfNodePtr node);
+ASCEND_RES_MANAGER_EXPORT bool ConvertCheck(const AnfNodePtr &node);
+ASCEND_RES_MANAGER_EXPORT bool DynamicShapeSupportCheck(const AnfNodePtr &node, bool train = true);
+ASCEND_RES_MANAGER_EXPORT bool SinkGraphCheck(const AnfNodePtr &node, bool train = true);
 }  // namespace device::ascend
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_TRANSFORM_GRAPH_IR_OP_ADAPTER_UTIL_H_

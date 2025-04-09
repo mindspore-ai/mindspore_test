@@ -28,7 +28,7 @@
 #include "ir/tensor.h"
 #include "backend/common/session/kernel_graph_mgr.h"
 #include "abstract/abstract_value.h"
-#include "backend/graph_compiler/graph_partition.h"
+#include "backend/ge_backend/runtime/graph_partition.h"
 #include "backend/ge_backend/runtime/graph_compiler.h"
 #include "backend/ge_backend/runtime/actor/actor_set.h"
 

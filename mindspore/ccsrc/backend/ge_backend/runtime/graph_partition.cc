@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "backend/graph_compiler/graph_partition.h"
+#include "backend/ge_backend/runtime/graph_partition.h"
 #include <algorithm>
 #include <map>
 #include <queue>
@@ -40,7 +40,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 namespace mindspore {
-namespace compile {
+namespace ge_backend::runtime {
 namespace {
 constexpr const char kOnlySupport2DiffTarget[] = "Only support two different target";
 const size_t kMaxDiffTargetNum = 2;
@@ -249,6 +249,37 @@ std::vector<AnfNodePtr> SplitSort(const FuncGraphPtr &graph, const std::string &
   std::reverse(result.begin(), result.end());
   return result;
 }
+
+std::vector<AnfNodePtr> LazySort(const std::vector<AnfNodePtr> &nodes, const PrimitiveSet &primitive_set) {
+  std::vector<AnfNodePtr> result;
+  std::set<AnfNodePtr> visited;
+  std::vector<AnfNodePtr> lazy_sort_node;
+  for (auto &node : nodes) {
+    MS_EXCEPTION_IF_NULL(node);
+    if (IsOneOfPrimitiveCNode(node, primitive_set)) {
+      lazy_sort_node.emplace_back(node);
+    } else if (!node->isa<CNode>()) {
+      result.emplace_back(node);
+      visited.insert(node);
+    } else {
+      auto cnode = node->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cnode);
+      auto node_inputs = cnode->inputs();
+      bool all_visited = std::all_of(node_inputs.begin(), node_inputs.end(), [&visited](const AnfNodePtr &input) {
+        return visited.find(input) != visited.end();
+      });
+      if (all_visited) {
+        result.emplace_back(node);
+        visited.insert(node);
+      } else {
+        lazy_sort_node.emplace_back(node);
+      }
+    }
+  }
+  result.insert(result.end(), lazy_sort_node.begin(), lazy_sort_node.end());
+  return result;
+}
+
 struct GraphNodesDependencyInfo {
   std::stack<AnfNodePtr> independent_nodes_;
   std::map<AnfNodePtr, size_t> input_num_;
@@ -858,6 +889,11 @@ std::vector<GraphSegmentPtr> GraphPartition::Partition(const FuncGraphPtr &graph
     } else {
       nodes = SplitSort(graph, default_target);
     }
+    // Keep the cutting position as far back as possible
+    auto disable_ge_kernel = IsDisableGeKernel();
+    if (!disable_ge_kernel) {
+      nodes = LazySort(nodes, {prim::kPrimPartial});
+    }
     nodes = ReorderVirtualNode(nodes, prim::kPrimTupleGetItem);
     nodes = ReorderVirtualNode(nodes, prim::kPrimDepend);
   }
@@ -923,5 +959,5 @@ std::vector<GraphSegmentPtr> GraphPartition::Partition(const FuncGraphPtr &graph
   }
   return segments;
 }
-}  // namespace compile
+}  // namespace ge_backend::runtime
 }  // namespace mindspore

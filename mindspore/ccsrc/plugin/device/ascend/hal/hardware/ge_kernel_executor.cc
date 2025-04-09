@@ -157,8 +157,7 @@ void RegisterSilentCheckForNode(const CNodePtr &kernel, const kernel::KernelModP
   silentcheck::ascend::SilentChecker::GetInstance().RegisterCheck(kernel_mod_ptr, input_kernel_tensors[0]);
 }
 
-bool GenerateKernelMod(const std::vector<CNodePtr> &kernels,
-                       backend::ge_backend::GeGraphExecutor *graph_executor = nullptr) {
+bool GenerateKernelMod(const std::vector<CNodePtr> &kernels) {
   for (const auto &kernel : kernels) {
     MS_EXCEPTION_IF_NULL(kernel);
     if (AnfAlgo::GetKernelMod(kernel)) {

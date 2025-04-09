@@ -24,11 +24,11 @@
 
 namespace mindspore {
 namespace opt {
-class FlashAttentionFusion : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT FlashAttentionFusionBase : public PatternProcessPass {
  public:
-  explicit FlashAttentionFusion(const std::string &name = "", bool multigraph = true)
+  explicit FlashAttentionFusionBase(const std::string &name = "", bool multigraph = true)
       : PatternProcessPass(name, multigraph) {}
-  ~FlashAttentionFusion() override = default;
+  ~FlashAttentionFusionBase() override = default;
   const BaseRef DefinePattern() const override;
   const AnfNodePtr Process(const FuncGraphPtr &graph, const AnfNodePtr &node, const EquivPtr &equiv) const override;
 
@@ -45,10 +45,10 @@ class FlashAttentionFusion : public PatternProcessPass {
   virtual const VectorRef DefineFlashAttentionPattern() const = 0;
 };
 
-class FlashAttentionFusionV1 : public FlashAttentionFusion {
+class BACKEND_COMMON_EXPORT FlashAttentionFusionV1 : public FlashAttentionFusionBase {
  public:
   explicit FlashAttentionFusionV1(bool multigraph = true)
-      : FlashAttentionFusion("FlashAttentionFusionV1", multigraph) {}
+      : FlashAttentionFusionBase("FlashAttentionFusionV1", multigraph) {}
   ~FlashAttentionFusionV1() override = default;
 
  private:
@@ -57,10 +57,10 @@ class FlashAttentionFusionV1 : public FlashAttentionFusion {
   const VectorRef DefineFlashAttentionPattern() const override;
 };
 
-class FlashAttentionFusionV2 : public FlashAttentionFusion {
+class BACKEND_COMMON_EXPORT FlashAttentionFusionV2 : public FlashAttentionFusionBase {
  public:
   explicit FlashAttentionFusionV2(bool multigraph = true)
-      : FlashAttentionFusion("FlashAttentionFusionV2", multigraph) {}
+      : FlashAttentionFusionBase("FlashAttentionFusionV2", multigraph) {}
   ~FlashAttentionFusionV2() override = default;
 
  private:

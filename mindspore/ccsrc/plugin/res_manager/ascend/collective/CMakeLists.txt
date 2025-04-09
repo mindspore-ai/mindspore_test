@@ -10,7 +10,7 @@ set(ASCEND_COLLECTIVE_SRCS "ascend_collective_comm_lib.cc"
         ${CMAKE_SOURCE_DIR}/mindspore/ccsrc/runtime/collective/communication_group.cc)
 set_property(SOURCE ${ASCEND_COLLECTIVE_SRCS} PROPERTY COMPILE_DEFINITIONS
         SUBMODULE_ID=mindspore::SubModuleId::SM_DEVICE)
-add_library(d_collective STATIC ${ASCEND_COLLECTIVE_SRCS})
+add_library(d_collective SHARED ${ASCEND_COLLECTIVE_SRCS})
 find_library(HCCL hccl ${ASCEND_CANN_RUNTIME_PATH} ${ASCEND_TOOLKIT_RUNTIME_PATH})
 target_link_libraries(d_collective PRIVATE ${HCCL})
 

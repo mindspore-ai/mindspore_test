@@ -20,17 +20,17 @@
 #include <sstream>
 #include <map>
 #include <set>
-#include "backend/ge_backend/graph_ir/utils.h"
-#include "backend/ge_backend/executor/ge_graph_executor.h"
 #include "include/common/utils/utils.h"
 #include "include/common/debug/common.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/common/utils/parallel_context.h"
 #include "include/common/utils/scoped_long_running.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "plugin/res_manager/ascend/device_context_conf/op_debug_conf.h"
 #include "plugin/res_manager/ascend/device_context_conf/op_precision_conf.h"
 #include "plugin/res_manager/ascend/device_context_conf/op_tuning_conf.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_util.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "plugin/res_manager/cpu/cpu_mem_manager/cpu_memory_manager.h"
 #include "debug/profiler/profiling.h"
@@ -40,7 +40,7 @@
 #include "include/common/utils/compile_cache_context.h"
 #include "utils/file_utils.h"
 #include "utils/ms_utils.h"
-#include "backend/ge_backend/pass/ge_backend_optimization.h"
+#include "plugin/device/ascend/optimizer/ge_backend_optimization.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_base_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
@@ -104,7 +104,12 @@ void AscendDeviceContext::InitializeForAclop() const {
     return;
   }
   if (!UseSimulationApi()) {
-    dynamic_cast<backend::ge_backend::GeGraphExecutor *>(graph_executor_.get())->InitializeForGe();
+    auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    device::ResKey res_key{device::DeviceType::kAscend, device_id};
+    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+    res_manager->InitializeForGe();
   }
   // should be called after ge initialize.
   SetAclOpDebugOption();
@@ -176,10 +181,6 @@ void AscendDeviceContext::Destroy() {
     return;
   }
 
-  if (graph_executor_ == nullptr) {
-    return;
-  }
-  dynamic_cast<backend::ge_backend::GeGraphExecutor *>(graph_executor_.get())->Finalize();
   if (device_res_manager_ == nullptr) {
     return;
   }

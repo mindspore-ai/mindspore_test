@@ -25,7 +25,6 @@
 #include "utils/ms_context.h"
 #include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
 #include "plugin/device/ascend/hal/hardware/ge_kernel_executor.h"
-#include "backend/ge_backend/executor/ge_graph_executor.h"
 #include "plugin/device/ascend/hal/hardware/ascend_device_res_manager.h"
 
 namespace mindspore {
@@ -41,8 +40,7 @@ struct AscendDeviceProperties {
   size_t free_memory;
 };
 
-class AscendDeviceContext
-    : public DeviceInterface<backend::ge_backend::GeGraphExecutor, GeKernelExecutor, AscendDeviceResManager> {
+class AscendDeviceContext : public DeviceInterface<GeKernelExecutor, AscendDeviceResManager> {
  public:
   explicit AscendDeviceContext(const DeviceContextKey &device_context_key) : DeviceInterface(device_context_key) {}
   ~AscendDeviceContext() override = default;

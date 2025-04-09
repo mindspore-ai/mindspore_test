@@ -35,6 +35,7 @@
 #include "backend/ge_backend/utils/device_address_utils.h"
 #include "backend/ge_backend/executor/ge_memory_allocator.h"
 #include "backend/ge_backend/executor/ge_utils.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_memory_adapter.h"
 #include "plugin/res_manager/ascend/ascend_device_address/ascend_device_address.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
@@ -51,7 +52,6 @@ namespace mindspore {
 namespace backend {
 namespace ge_backend {
 namespace {
-static bool initialized_ge = false;
 const std::set<std::string> kIgnoreGEShapeOps = {kSoftMarginLossOpName};
 using mindspore::session::KernelWithIndex;
 
@@ -1359,37 +1359,6 @@ void GeGraphExecutor::RunInitGraph(const std::string &graph_name) {
   }
 }
 
-void GeGraphExecutor::InitializeForGe() {
-  if (initialized_ge) {
-    return;
-  }
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-
-  if (ms_context->get_param<bool>(MS_CTX_IS_PYNATIVE_GE_INIT)) {
-    return;
-  }
-
-  if (static_cast<bool>(ms_context->get_param<uint32_t>(MS_CTX_GE_REF))) {
-    ms_context->increase_param<uint32_t>(MS_CTX_GE_REF);
-    if (ge_res_manager_ == nullptr) {
-      MS_LOG(INFO) << "There exist at least two ge_graph_executor, please check.";
-    }
-    return;
-  }
-  std::map<std::string, std::string> ge_options;
-  GetGeGlobalOptions(&ge_options);
-  SetPassthroughGeOptions("global", &ge_options);
-  {
-    // Release GIL before calling into (potentially long-running) C++ code
-    GilReleaseWithCheck gil_release;
-    if (::ge::GEInitialize(ge_options) != ::ge::GRAPH_SUCCESS) {
-      MS_LOG(EXCEPTION) << "Initialize GE failed!";
-    }
-  }
-  initialized_ge = true;
-}
-
 void GeGraphExecutor::Initialize() {
   if (initialized_) {
     return;
@@ -1397,9 +1366,14 @@ void GeGraphExecutor::Initialize() {
 
   ge_res_manager_ = std::make_shared<GeDeviceResManager>();
   ge_res_manager_->Initialize();
-  InitializeForGe();
+
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  device::ResKey res_key{device::DeviceType::kAscend, device_id};
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  res_manager->InitializeForGe();
+
   CreateSessionAndGraphRunner();
   auto graph_runner = backend::ge_backend::GetGraphRunner();
   MS_EXCEPTION_IF_NULL(graph_runner);

@@ -32,8 +32,6 @@ using mindspore::backend::ge_backend::OptionMap;
 std::string GetGraphName(const FuncGraphPtr &graph);
 // session options
 void GetGeSessionOptions(backend::ge_backend::SessionOptions *options);
-// global options, for GeInitialize
-void GetGeGlobalOptions(std::map<std::string, std::string> *ge_options);
 // ge options from user setting
 void SetPassthroughGeOptions(std::string option_level, OptionMap *options);
 bool AddDFGraph(const FuncGraphPtr &anf_graph, const backend::ge_backend::TensorOrderMap &init_inputs_map,

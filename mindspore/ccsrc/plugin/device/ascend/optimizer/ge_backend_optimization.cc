@@ -40,7 +40,7 @@
 #include "plugin/device/ascend/optimizer/enhancer/eliminate_maketuple_getitem.h"
 #include "plugin/device/ascend/optimizer/format_type/deal_ref_output.h"
 #include "plugin/device/ascend/optimizer/format_type/set_fracz_group_attr.h"
-#include "backend/ge_backend/pass/expander_fallback.h"
+#include "plugin/device/ascend/optimizer/expander_fallback.h"
 #include "plugin/device/ascend/optimizer/ge/insert_identity.h"
 #include "plugin/device/ascend/optimizer/heterogeneous/insert_pre_fetch_depend.h"
 #include "backend/common/pass/other/process_call_inline.h"

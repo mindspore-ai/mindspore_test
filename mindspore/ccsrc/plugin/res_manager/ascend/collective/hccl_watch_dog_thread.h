@@ -26,11 +26,14 @@
 #include <utility>
 #include <thread>
 #include "hccl/hccl.h"
+#ifndef EXPORT_WRAPPER
+#define EXPORT_WRAPPER __attribute__((visibility("default")))
+#endif
 
 namespace mindspore {
 namespace device {
 namespace ascend {
-class HcclWatchDogHandler {
+class EXPORT_WRAPPER HcclWatchDogHandler {
  public:
   HcclWatchDogHandler(uint32_t global_rank_id, const std::string &group_name, HcclComm hcom);
   ~HcclWatchDogHandler();
@@ -59,7 +62,7 @@ class HcclWatchDogHandler {
   std::atomic<bool> exit_{false};
 };
 
-class HcclWatchDogManager {
+class EXPORT_WRAPPER HcclWatchDogManager {
  public:
   static HcclWatchDogManager &GetInstance() {
     static HcclWatchDogManager instance;

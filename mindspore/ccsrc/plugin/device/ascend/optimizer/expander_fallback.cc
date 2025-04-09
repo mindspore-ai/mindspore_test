@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "backend/ge_backend/pass/expander_fallback.h"
+#include "plugin/device/ascend/optimizer/expander_fallback.h"
 #include <vector>
 #include "backend/common/expander/fallback/expander_fallback.h"
 #include "backend/common/pass/value_graph_binder.h"
@@ -29,13 +29,18 @@ namespace opt {
 bool ExpanderFallback::Run(const FuncGraphPtr &graph) {
   auto kernel_graph = graph->cast<KernelGraphPtr>();
   MS_EXCEPTION_IF_NULL(kernel_graph);
+  auto is_kbk = kernel_graph->RunMode() == device::RunMode::kKernelMode;
+
+  auto IsEnableAclnn = [&is_kbk](const AnfNodePtr &node) {
+    return is_kbk && kernel::IsRegisteredAclnnOp(common::AnfAlgo::GetCNodeName(node));
+  };
   auto IsRegisteredAdapter = [](const AnfNodePtr &node) { return device::ascend::ConvertCheck(node); };
 
   bool changed = false;
   std::vector<AnfNodePtr> node_list = TopoSort(graph->get_return());
   for (auto &node : node_list) {
     MS_EXCEPTION_IF_NULL(node);
-    if (!IsRegisteredAdapter(node)) {
+    if (!(IsRegisteredAdapter(node) || IsEnableAclnn(node))) {
       auto f = [](const CNodePtr &n) { return true; };
       changed = expander::TryExpandCNode(node, f) || changed;
     }
