@@ -680,3 +680,4 @@ mindspore.mint.distributed
     mindspore.mint.distributed.scatter
     mindspore.mint.distributed.scatter_object_list
     mindspore.mint.distributed.send
+    mindspore.mint.distributed.TCPStore

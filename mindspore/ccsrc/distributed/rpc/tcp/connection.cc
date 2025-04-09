@@ -458,6 +458,11 @@ void Connection::FillRecvMessage() {
   size_t recvBodyLen = static_cast<size_t>(recv_msg_header.body_len);
   if (recvNameLen > MAX_KMSG_NAME_LEN || recvToLen > MAX_KMSG_TO_LEN || recvFromLen > MAX_KMSG_FROM_LEN ||
       recvBodyLen > MAX_KMSG_BODY_LEN) {
+    MS_LOG(ERROR)
+      << "FillRecvMessage is out of range, recvNameLen=" << recvNameLen << ", recvToLen=" << recvToLen
+      << ", recvFromLen=" << recvFromLen << ", recvBodyLen=" << recvBodyLen
+      << ", recvNameLen, recvToLen and recvFromLen should be less than 1024, recvBodyLen should be less than "
+      << MAX_KMSG_BODY_LEN << ".";
     MS_LOG(ERROR) << "Drop invalid tcp data, fd : " << socket_fd << ".";
     state = ConnectionState::kDisconnecting;
     return;
