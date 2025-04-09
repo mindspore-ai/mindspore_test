@@ -1735,6 +1735,8 @@ def tensor_log1p(input):
 
 
 def tensor_diag(input, diagonal=0):
+    if diagonal != 0:
+        raise ValueError(f"For 'Tensor.diag', the argument 'diagonal' should be '0', but got {diagonal}.")
     return F.diag(input)
 
 
