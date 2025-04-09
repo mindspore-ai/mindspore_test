@@ -22,6 +22,7 @@ namespace ops {
 REG_SYMBOL_OP_BUILDER("Abs").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("AllReduce").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("AllToAll").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
+REG_SYMBOL_OP_BUILDER("AShardIdentity").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("Assign").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("AssignAdd").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("BiasAdd").SetShapeDepend({DependOn::kShape, DependOn::kNone}).SetShapeFunc(TransparentInput);
@@ -95,11 +96,12 @@ REG_SYMBOL_OP_BUILDER("ReplicationPad2DGrad")
 REG_SYMBOL_OP_BUILDER("ReplicationPad3DGrad")
   .SetShapeDepend({DependOn::kNone, DependOn::kShape})
   .SetShapeFunc(TransparentInput);
+REG_SYMBOL_OP_BUILDER("ReshapeAndCache").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
+REG_SYMBOL_OP_BUILDER("Reshard").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("RotaryPositionEmbedding").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("Round").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("Rsqrt").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("RsqrtGrad").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
-REG_SYMBOL_OP_BUILDER("ReshapeAndCache").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("Scatter").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("ScatterNd")
   .SetShapeDepend({DependOn::kNone, DependOn::kNone, DependOn::kValue})
