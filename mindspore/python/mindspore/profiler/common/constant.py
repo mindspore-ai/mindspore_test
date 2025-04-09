@@ -205,3 +205,8 @@ class JitLevel:
 class ExportType(Enum):
     Db = "db"
     Text = "text"
+
+
+class CannLibName:
+    """CANN lib name"""
+    CANN_MSPTI = "libmspti.so"

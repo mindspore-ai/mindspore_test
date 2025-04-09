@@ -1,4 +1,4 @@
-# Copyright 2020-2024 Huawei Technologies Co., Ltd
+# Copyright 2020-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,13 +13,16 @@
 # limitations under the License.
 # ============================================================================
 """ Mstx class for NPU profiling """
+import os
+from os.path import basename
 import mindspore
 import mindspore._c_expression as c_expression
 
 from mindspore import context
 from mindspore import log as logging
 from mindspore.runtime import Stream
-from mindspore.profiler.common.constant import DeviceTarget
+from mindspore.profiler.common.constant import DeviceTarget, CannLibName
+from mindspore.profiler.common.path_manager import PathManager
 
 
 class Mstx:
@@ -29,6 +32,11 @@ class Mstx:
     """
 
     NPU_PROFILER = c_expression.Profiler.get_instance(DeviceTarget.NPU.value)
+    enable = any(
+        basename(path) == CannLibName.CANN_MSPTI and PathManager.check_cann_lib_valid(path)
+        for path in os.environ.get("LD_PRELOAD", "").split(":")
+        if path.strip()
+    )
 
     @staticmethod
     def mark(message: str, stream: mindspore.runtime.Stream = None) -> None:
@@ -94,6 +102,8 @@ class Mstx:
             ...             train(net)
             ...             profiler.step()
         """
+        if not Mstx.enable:
+            return
         if context.get_context('device_target') != DeviceTarget.NPU.value:
             return
         if not Mstx.NPU_PROFILER:
@@ -180,6 +190,8 @@ class Mstx:
             ...             train(net)
             ...             profiler.step()
         """
+        if not Mstx.enable:
+            return 0
         if context.get_context('device_target') != DeviceTarget.NPU.value:
             return 0
         if not Mstx.NPU_PROFILER:
@@ -215,6 +227,8 @@ class Mstx:
             >>> # model.train(1, data)
             >>> # mstx.range_end(range_id)
         """
+        if not Mstx.enable or range_id == 0:
+            return
         if context.get_context('device_target') != DeviceTarget.NPU.value:
             return
         if not Mstx.NPU_PROFILER:

@@ -57,6 +57,7 @@ from mindspore.profiler.analysis.viewer.ms_minddata_viewer import (
 )
 from mindspore.profiler.common.util import print_msg_with_pid
 from mindspore.profiler.common.log import ProfilerLogger
+from mindspore.profiler.mstx import Mstx
 
 
 @PROFILERS.register_module(DeviceTarget.NPU.value)
@@ -103,6 +104,8 @@ class NpuProfiler(BaseProfiler):
         """Start profiling."""
         self._logger.info("NpuProfiler start.")
 
+        Mstx.enable = self._prof_ctx.npu_profiler_params.get("mstx", False)
+
         if ProfilerActivity.CPU in self._prof_ctx.activities:
             _framework_profiler_enable_mi()
             self._prof_mgr.set_profile_framework("time")
@@ -118,6 +121,9 @@ class NpuProfiler(BaseProfiler):
     def stop(self) -> None:
         """Stop profiling."""
         self._logger.info("NpuProfiler stop.")
+
+        Mstx.enable = False
+
         if self._profiler:
             self._profiler.stop()
 

@@ -23,6 +23,7 @@ class TestMstx(unittest.TestCase):
 
         # Override the class attribute
         mstx.NPU_PROFILER = self.mock_profiler
+        mstx.enable = True
         context.set_context(device_target="Ascend")
 
     def test_mark_should_call_profiler_mark_when_message_provided(self):
@@ -94,6 +95,29 @@ class TestMstx(unittest.TestCase):
                 "Invalid message for mstx.range_start func. Please input return value from mstx.range_start."
             )
             self.mock_profiler.mstx_range_end.assert_not_called()
+
+    def test_mark_shoule_return_when_mstx_not_enabled(self):
+        """Should return 0 when mstx is not enabled."""
+        mstx.enable = False
+        mstx.mark('test_message')
+        self.mock_profiler.mstx_mark.assert_not_called()
+
+    def test_range_start_shoule_return_zero_when_mstx_not_enabled(self):
+        """Should return 0 when mstx is not enabled."""
+        mstx.enable = False
+        range_id = mstx.range_start("test_range")
+        self.assertEqual(range_id, 0)
+
+    def test_range_end_shoule_return_when_mstx_not_enabled(self):
+        """Should return 0 when mstx is not enabled."""
+        mstx.enable = False
+        mstx.range_end(1)
+        self.mock_profiler.mstx_range_end.assert_not_called()
+
+    def test_range_end_shoule_return_when_range_id_is_zero(self):
+        """Should return 0 when mstx is not enabled."""
+        mstx.range_end(0)
+        self.mock_profiler.mstx_range_end.assert_not_called()
 
 
 if __name__ == '__main__':
