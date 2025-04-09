@@ -57,7 +57,7 @@ def merge_pipeline_strategys(src_strategy_dirs, dst_strategy_file):
 
     Args:
         src_strategy_dirs (str): The directory of strategy files including all pipeline stage which is saved by
-                                 'mindspore.parallel.auto_parallel.AutoParallel.save_param_strategy_file'.
+                                 :func:`mindspore.parallel.auto_parallel.AutoParallel.save_param_strategy_file`.
         dst_strategy_file (str): The file merged strategy to save.
 
     Raises:
