@@ -23,7 +23,7 @@ Tensor Creation
     :toctree: ops
     :nosignatures:
     :template: classtemplate.rst
-    
+
     mindspore.ops.eps
     mindspore.ops.eye
     mindspore.ops.fill
