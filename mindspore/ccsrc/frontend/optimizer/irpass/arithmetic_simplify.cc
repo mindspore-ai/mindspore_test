@@ -81,6 +81,8 @@ AnfNodePtr ArithmeticSimplify::operator()(const OptimizerPtr &, const AnfNodePtr
   MATCH_REPLACE_IF(node, PBinOperation(mindspore::prim::kPrimMul, x.get_object(), one_.get_object(), true),
                    any_const.WithValueOf(x), !one_.CheckFunc(IsParam, node));         // Multiply by one
   MATCH_REPLACE(node, PBinOperation(prim::kPrimScalarMul, x, one_scalar_, true), x);  // Scalar Mul by one
+  // Muls Scalar by one
+  MATCH_REPLACE(node, PBinOperation(mindspore::prim::kPrimMuls, x.get_object(), one_scalar_, false), x);
 
   // Prim Eliminate (identity)
   MATCH_REPLACE(node, PPrimitive(prim::kPrimidentity, x), x);
