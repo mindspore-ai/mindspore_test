@@ -1,6 +1,7 @@
 # akg-third-party
 # file directory: mindspore/akg/third_party/incubator-tvm/
 
+https://www.mindspore.cn/docs/en/master/model_train/parallel/optimizer_parallel.html
 https://docs.tvm.ai/vta/tutorials/index.html
 http://raw.githubusercontent.com/uwsaml/web-data/master/vta/blogpost/vta_stack.png:align
 https://raw.githubusercontent.com/tvmai/tvmai.github.io/master/images/docs/inferbound/passupdomain_problem.png:align

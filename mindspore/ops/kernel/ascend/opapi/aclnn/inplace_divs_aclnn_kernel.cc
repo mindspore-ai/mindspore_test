@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "kernel/ascend/opapi/aclnn/inplace_muls_aclnn_kernel.h"
+#include "kernel/ascend/opapi/aclnn/inplace_divs_aclnn_kernel.h"
 #include <vector>
 #include <memory>
 #include <functional>
@@ -22,23 +22,20 @@
 
 namespace mindspore {
 namespace kernel {
-namespace inplace_muls {
 
-void InplaceMulsAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
-                                                 const std::vector<KernelTensor *> &outputs) {
+void InplaceDivsAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
+                                         const std::vector<KernelTensor *> &outputs) {
   auto other = device::ascend::ConvertKernelTensor<ScalarPtr>(inputs[kIndex1]);
   GetWorkspaceForResize(inputs[kIndex0], other);
 }
 
-bool InplaceMulsAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
-                                       const std::vector<KernelTensor *> &workspace,
-                                       const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
+bool InplaceDivsAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
+                               const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
   auto other = device::ascend::ConvertKernelTensor<ScalarPtr>(inputs[kIndex1]);
   RunOp(stream_ptr, workspace, inputs[kIndex0], other);
   return true;
 }
-MS_ACLNN_KERNEL_FACTORY_REG(InplaceMuls, InplaceMulsAclnnKernelMod);
-}  // namespace inplace_muls
+MS_ACLNN_KERNEL_FACTORY_REG(InplaceDivs, InplaceDivsAscend);
 }  // namespace kernel
 }  // namespace mindspore
