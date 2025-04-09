@@ -251,9 +251,15 @@ Status RmsNormInfo::CheckInputLayout() {
   for (size_t i = begin_norm_axis_; i < in_layout.tensor_map_before().size(); ++i) {
     if (in_layout.tensor_map_before()[i] != np_split_map) {
       norm_axis_splitted_ = true;
-      MS_LOG(WARNING) << "RmsNorm input layout " << in_layout.tensor_map_before() << ", " << i
-                      << "th tensor map input layout is split. The RmsNorm big Kernel is disabled to support the "
-                      << "splitting after begin_norm_axis";
+      if (is_in_layout_propagation_) {
+        MS_LOG(INFO) << "RmsNorm input layout " << in_layout.tensor_map_before() << ", " << i
+                     << "th tensor map input layout is split. The RmsNorm big Kernel is disabled to support the "
+                     << "splitting after begin_norm_axis";
+      } else {
+        MS_LOG(WARNING) << "RmsNorm input layout " << in_layout.tensor_map_before() << ", " << i
+                        << "th tensor map input layout is split. The RmsNorm big Kernel is disabled to support the "
+                        << "splitting after begin_norm_axis";
+      }
     }
   }
 
