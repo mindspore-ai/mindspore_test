@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import numpy as np
+import pytest
 
 import mindspore as ms
 from mindspore import ops, nn, context, Tensor
@@ -175,3 +176,17 @@ def test_shard_with_in_strategy_4x1_semi_auto():
 
     check_layout_config(para1, file, in_strategy1)
     check_layout_config(para2, file, in_strategy2)
+
+
+def test_shard_with_in_strategy_4x1_recursive_programming():
+    """
+    Feature: Test reshard in recursive_programming mode.
+    Description: 'search_mode' must be 'sharding_propagation' for 'Shard' when the 'parallel_mode' is 'auto_parallel'.
+    Expectation: raise RuntimeError.
+    """
+    case_name = "test_reshard_sharding_propagation"
+    net, x, _ = before_test(case_name)
+    parallel_config = {"parallel_mode": "recursive_programming"}
+    with pytest.raises(RuntimeError) as e:
+        compile_net(net, parallel_config, x, layout1, layout2)
+    assert "'search_mode' must be 'sharding_propagation' for 'Shard'" in str(e.value)
