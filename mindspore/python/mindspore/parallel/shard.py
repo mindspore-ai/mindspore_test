@@ -408,9 +408,10 @@ def shard(fn, in_strategy, out_strategy=None, parameter_plan=None, device="Ascen
     The parallel strategies of remaining operators are derived from the strategy specified by the input and output.
 
     Note:
-        If shard is called, the parallel mode in `set_auto_parallel_context` (parallel_mode) will be set to
-        "auto_parallel" and the search mode (search_mode) to "sharding_propagation".
-        If the input contain Parameter, its strategy should be set in `in_strategy`.
+        - If shard is called, the parallel mode in `set_auto_parallel_context` (parallel_mode) will be set to
+          "auto_parallel" and the search mode (search_mode) to "sharding_propagation".
+        - If the input contain Parameter, its strategy should be set in `in_strategy`.
+        - This method currently does not support dynamic shapes.
 
     Args:
         fn (Union[Cell, Function]): Function to be executed in parallel.
