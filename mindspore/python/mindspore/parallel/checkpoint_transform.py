@@ -690,9 +690,7 @@ def sync_pipeline_shared_parameters(net):
     to perform synchronization after `embedding table` changes.
 
     Note:
-        - The network should be compiled before shared parameters are synchronized in the pipeline parallel stage.
-        - The api will be deprecated, please use the api
-          :func:`mindspore.parallel.sync_pipeline_shared_parameters` instead.
+        The network should be compiled before shared parameters are synchronized in the pipeline parallel stage.
 
     Args:
         net (Cell): the inference network.
@@ -770,7 +768,7 @@ def sync_pipeline_shared_parameters(net):
         >>> pp_net = AutoParallel(net, parallel_mode="semi_auto")
         >>> pp_net.full_batch = True
         >>> pp_net.pipeline(stages=2, scheduler="1f1b")
-        >>> ms.sync_pipeline_shared_parameters(pp_net)
+        >>> ms.parallel.sync_pipeline_shared_parameters(pp_net)
         >>> print(pp_net.network.network.word_embedding.w.asnumpy())
         [[1. 1. 1. 1.]
          [1. 1. 1. 1.]
