@@ -99,7 +99,7 @@ ops_group_cases_registry_level0 = [
     [test_ops_apply_rotary_pos_emb.test_apply_rotary_pos_emb_case0, ("ascend910b",), 86, (('KBK',),)],
     [test_ops_conv2d.test_conv2d_forward, ("ascend910b",), 8, ((ms.GRAPH_MODE, ms.PYNATIVE_MODE),)],
     [test_ops_conv3d_ext.test_ops_conv3d_default, ("ascend910b",), 32, ((ms.PYNATIVE_MODE, ms.GRAPH_MODE),)],
-    # [test_ops_conv3d_ext.test_ops_conv3d_batchfy, ("ascend910b",), 32, ((ms.PYNATIVE_MODE, ms.GRAPH_MODE),)],
+    [test_ops_conv3d_ext.test_ops_conv3d_batchfy, ("ascend910b",), 32, ((ms.PYNATIVE_MODE, ms.GRAPH_MODE),)],
     [test_ops_dropout_ext.test_func_dropout_normal, ("ascend910b",), 512,
      (('kbk', 'pynative'), (np.float16, np.float32))],
     [test_ops_dropout_ext.test_nn_DropoutExt_normal, ("ascend910b",), 4, (('kbk', 'pynative'),)],
