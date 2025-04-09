@@ -319,7 +319,7 @@ class MS_CORE_API Tensor : public BaseTensor {
 
   /// \brief To synchronize data with the device, you need to wait for the data to be valid.
   ///
-  void data_sync(bool need_wait = true) const;
+  void data_sync(bool need_wait = true, bool inpalce = true) const;
 
   /// \brief To synchronize data with the device without keeping device address, you need to wait for the data to be
   /// valid.

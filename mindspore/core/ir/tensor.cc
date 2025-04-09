@@ -267,7 +267,7 @@ Tensor &Tensor::AssignValue(const Tensor &tensor) {
 
 abstract::AbstractBasePtr Tensor::ToAbstract() { return BaseTensor::ToAbstract()->cast<abstract::AbstractTensorPtr>(); }
 
-void Tensor::data_sync(bool need_wait) const { BaseTensor::data_sync(need_wait); }
+void Tensor::data_sync(bool need_wait, bool inpalce) const { BaseTensor::data_sync(need_wait, inpalce); }
 
 void Tensor::ExecuteUpdateValueCallback() const {
   if (update_value_callback_ != nullptr) {

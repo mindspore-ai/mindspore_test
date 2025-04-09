@@ -253,11 +253,7 @@ void BaseTensor::ExecuteLazyTask() const {
 
 DeviceSyncPtr BaseTensor::CallContiguousCallback() const {
   DeviceSyncPtr contiguous_device_address = nullptr;
-  auto st_info = storage_info();
-  if (st_info != nullptr && st_info->is_contiguous && st_info->storage_offset == 0) {
-    return contiguous_device_address;
-  }
-  if (contiguous_callback_ != nullptr && st_info != nullptr) {
+  if (contiguous_callback_ != nullptr && storage_info() != nullptr) {
     contiguous_device_address = contiguous_callback_(device_address());
     contiguous_device_address->set_original_ref_count(SIZE_MAX);
     contiguous_device_address->ResetRefCount();
@@ -412,7 +408,7 @@ std::string BaseTensor::ToStringRepr() const {
   return buf.str();
 }
 
-void BaseTensor::data_sync(bool need_wait) const {
+void BaseTensor::data_sync(bool need_wait, bool inpalce) const {
   if (need_wait) {
     device_sync_ = device_address();
     ExecuteLazyTask();
@@ -433,7 +429,11 @@ void BaseTensor::data_sync(bool need_wait) const {
   auto address = device_sync_;
   if (contiguous_address != nullptr) {
     address = contiguous_address;
+    if (inpalce) {
+      device_sync_ = contiguous_address;
+    }
   }
+
   if (size != 0 && address->GetMutablePtr() != nullptr &&
       !address->SyncDeviceToHost(shape(), size, data_type(), data_c())) {
     MS_LOG(INTERNAL_EXCEPTION) << "SyncDeviceToHost failed.";
