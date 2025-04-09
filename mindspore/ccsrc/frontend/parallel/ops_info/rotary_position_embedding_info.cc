@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
+#include "frontend/parallel/ops_info/rotary_position_embedding_info.h"
 #include <utility>
 #include <algorithm>
-
-#include "frontend/parallel/ops_info/rotary_position_embedding_info.h"
 #include "frontend/parallel/dynamic_creator.h"
 
 namespace mindspore {
