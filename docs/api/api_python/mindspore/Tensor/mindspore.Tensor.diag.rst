@@ -21,7 +21,8 @@ mindspore.Tensor.diag
     - 如果 `diagonal` < 0，则它位于主对角线下方。
 
     .. warning::
-        这是一个实验性API，后续可能修改或删除。
+        - 这是一个实验性API，后续可能修改或删除。
+        - 图模式和CPU、GPU后端不支持diagonal参数取非零值。
 
     参数：
         - **diagonal** (int, 可选) - 输入Tensor，默认值为 ``0``。

@@ -137,7 +137,7 @@ REG_BPROP_BUILDER("ClampScalar").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
   return {dout, ib->OutZeros(min), ib->OutZeros(max)};
 });
 
-REG_BPROP_BUILDER("InplaceClampTensor").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("InplaceClampTensor").SetUnusedInputs({i3}).CloneInplaceInput().SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto min = ib->GetInput(kIndex1);
   auto max = ib->GetInput(kIndex2);
@@ -164,7 +164,7 @@ REG_BPROP_BUILDER("InplaceClampTensor").SetUnusedInputs({i3}).SetBody(BODYFUNC(i
   return {dout, ib->OutZeros(min), ib->OutZeros(max)};
 });
 
-REG_BPROP_BUILDER("InplaceClampScalar").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("InplaceClampScalar").SetUnusedInputs({i3}).CloneInplaceInput().SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto min = ib->GetInput(kIndex1);
   auto max = ib->GetInput(kIndex2);

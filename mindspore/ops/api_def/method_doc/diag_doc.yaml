@@ -20,7 +20,8 @@ diag:
     - If `diagonal` < 0, it is below the main diagonal.
 
     .. warning::
-        This is an experimental API that is subject to change or deletion.
+        - This is an experimental API that is subject to change or deletion.
+        - The graph mode and CPU/GPU backends do not support non-zero values for the diagonal parameter.
 
     Args:
         diagonal (int, optional): the diagonal to consider. Default: ``0``.
