@@ -17,7 +17,7 @@
 
           - ``"semi_auto"``: 半自动化并行模式，支持数据并行、算子级并行、优化器并行和流水线并行场景，默认开启该模式。
 
-          - ``"sharding_propagation"``: 策略传播搜索模式。
+          - ``"sharding_propagation"``: 策略传播搜索模式。目前不支持动态shape。
 
           - ``"recursive_programming"``: 递归编程搜索模式。
 

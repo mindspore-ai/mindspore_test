@@ -40,7 +40,7 @@ class AutoParallel(Cell):
 
             - sharding_propagation:
               Automatic strategy propagation mode. Infers sharding strategies for non-annotated operators
-              based on configured operator strategies.
+              based on configured operator strategies. Dynamic shapes are not supported currently.
 
             - recursive_programming:
               Full automatic parallelization mode. Dynamically generates parallel strategies through

@@ -1014,13 +1014,15 @@ def set_auto_parallel_context(**kwargs):
                      - auto_parallel: Achieving parallelism automatically.
         search_mode (str): There are three kinds of shard strategy search modes: ``"recursive_programming"`` ,
                      ``"sharding_propagation"`` and ``"dynamic_programming"`` (Not recommended).
+                     Only works in ``"auto_parallel"`` mode.
                      Default: ``"recursive_programming"`` .
 
                      - recursive_programming: Recursive programming search mode. In order to obtain optimal performance,
                        it is recommended that users set the batch size to be greater than or equal to the product of
                        the number of devices and the number of multi-copy parallelism.
 
-                     - sharding_propagation: Propagate shardings from configured ops to non-configured ops.
+                     - sharding_propagation: Propagate shardings from configured ops to non-configured ops. Dynamic
+                       shapes are not supported currently.
 
                      - dynamic_programming: Dynamic programming search mode.
         auto_parallel_search_mode (str): This is the old version of 'search_mode'. Here, remaining this attribute is
