@@ -26,6 +26,7 @@
 #include "ir/anf.h"
 #include "ir/manager.h"
 #include "frontend/optimizer/optimizer.h"
+#include "pipeline/jit/ps/validator.h"
 #include "pipeline/jit/ps/pass_config.h"
 #include "utils/log_adapter.h"
 #include "utils/compile_config.h"
@@ -42,14 +43,15 @@ SubstitutionPtr RegisterSubstitution(const SubstitutionPtr &sub) {
 }  // namespace
 
 SubstitutionPtr MakeSubstitution(const OptimizerCallerPtr &transform, const std::string &name, const PrimitivePtr &prim,
-                                 const RenormAction &renorm_action, bool has_priority_pattern) {
+                                 const RenormAction &renorm_action, bool has_priority_pattern, bool auto_scope) {
   auto fn = [prim](const AnfNodePtr &node) -> bool { return IsPrimitiveCNode(node, prim); };
-  return RegisterSubstitution(std::make_shared<Substitution>(transform, name, fn, renorm_action, has_priority_pattern));
+  auto ret = std::make_shared<Substitution>(transform, name, fn, renorm_action, has_priority_pattern, auto_scope);
+  return RegisterSubstitution(ret);
 }
 
 SubstitutionPtr MakeSubstitution(const OptimizerCallerPtr &transform, const std::string &name,
                                  const std::vector<PrimitivePtr> &prims, const RenormAction &renorm_action,
-                                 bool has_priority_pattern) {
+                                 bool has_priority_pattern, bool auto_scope) {
   auto fn = [prims](const AnfNodePtr &node) -> bool {
     auto cnode = dyn_cast_ptr<CNode>(node);
     if (cnode == nullptr) {
@@ -65,14 +67,15 @@ SubstitutionPtr MakeSubstitution(const OptimizerCallerPtr &transform, const std:
       return (prim->Hash() == hash) && (prim->name() == name);
     });
   };
-  return RegisterSubstitution(std::make_shared<Substitution>(transform, name, fn, renorm_action, has_priority_pattern));
+  auto ret = std::make_shared<Substitution>(transform, name, fn, renorm_action, has_priority_pattern, auto_scope);
+  return RegisterSubstitution(ret);
 }
 
 SubstitutionPtr MakeSubstitution(const OptimizerCallerPtr &transform, const std::string &name,
                                  const PredicateFuncType &predicate, const RenormAction &renorm_action,
-                                 bool has_priority_pattern) {
+                                 bool has_priority_pattern, bool auto_scope) {
   return RegisterSubstitution(
-    std::make_shared<Substitution>(transform, name, predicate, renorm_action, has_priority_pattern));
+    std::make_shared<Substitution>(transform, name, predicate, renorm_action, has_priority_pattern, auto_scope));
 }
 
 AnfNodePtr Substitution::operator()(const OptimizerPtr &optimizer, const AnfNodePtr &node) {
@@ -122,8 +125,13 @@ static AnfNodePtr DoTransform(const OptimizerPtr &optimizer, const AnfNodePtr &n
   }
   if (is_match) {
     TraceGuard trace_guard(MakeTraceInfo<TraceOpt>(node->debug_info()));
-    ScopeGuard scope_guard(node->scope());
-    auto res = (*substitution)(optimizer, node);
+    AnfNodePtr res = nullptr;
+    if (substitution->auto_scope_) {
+      ScopeGuard scope_guard(node->scope());
+      res = (*substitution)(optimizer, node);
+    } else {
+      res = (*substitution)(optimizer, node);
+    }
     if (res != nullptr && res != node) {
       MsProfileStatGuard stat_guard("replace." + substitution->name_);
       MS_LOG(DEBUG) << "Replace " << node->DebugString() << " with " << res->DebugString() << ", by "
@@ -233,6 +241,9 @@ bool SubstitutionList::ApplyIRToSubstitutions(const OptimizerPtr &optimizer, con
         }
       }
       if (change) {
+        if (common::GetCompileConfig("CHECK_PASS_NODE_SCOPE") == "1" && !substitution->auto_scope_) {
+          validator::ValidateScope(res, substitution->name_);
+        }
         changes = true;
         node = res;
         break;
@@ -240,6 +251,12 @@ bool SubstitutionList::ApplyIRToSubstitutions(const OptimizerPtr &optimizer, con
     }
     UpdateTransformingListForSubstitutions(node, &todo, change);
     UpdateTransformingListWithUserNodes(manager, node, &todo, change, seen);
+  }
+  if (common::GetCompileConfig("CHECK_PASS_NODE_SCOPE") == "1") {
+    const auto &new_all_nodes = TopoSort(func_graph->return_node(), SuccDeeperSimple);
+    for (const auto &node : new_all_nodes) {
+      validator::ValidateScope(node, optimizer->name());
+    }
   }
   return changes;
 }
@@ -356,6 +373,12 @@ bool SubstitutionList::ApplySubstitutionsToIR(const OptimizerPtr &optimizer, con
 #ifdef ENABLE_DUMP_IR
       DumpIR_(sub_key, func_graph);
 #endif
+      if (common::GetCompileConfig("CHECK_PASS_NODE_SCOPE") == "1" && !substitution->auto_scope_) {
+        const auto &all_nodes = TopoSort(func_graph->return_node(), SuccDeeperSimple);
+        for (const auto &node : all_nodes) {
+          validator::ValidateScope(node, substitution->name_);
+        }
+      }
 
       // Record the status of each substitution
       if (optimizer->is_on_debug_) {

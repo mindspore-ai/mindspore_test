@@ -29,6 +29,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "ir/manager.h"
 #include "ir/dtype.h"
+#include "utils/anf_utils.h"
 #include "pipeline/jit/ps/static_analysis/prim.h"
 #include "pipeline/jit/ps/parse/resolve.h"
 #include "pipeline/jit/ps/debug/trace.h"
@@ -248,11 +249,33 @@ void ValidateTopGraphOutput(const AnfNodePtr &node) {
   CheckDeadNodeInOutputRecursively(node, abstract);
 }
 
+void ValidateScope(const AnfNodePtr &node, const std::string &pass_name) {
+  MS_EXCEPTION_IF_NULL(node);
+  if (node->isa<ValueNode>() || node->isa<Parameter>()) {
+    return;
+  }
+  if (!AnfUtils::IsRealKernel(node)) {
+    return;
+  }
+  if (node->abstract() != nullptr && node->abstract()->isa<abstract::AbstractFunction>()) {
+    return;
+  }
+  if (node->scope() == nullptr || node->scope() == kDefaultScope) {
+    MS_LOG(ERROR) << "In " << pass_name << ", failed to find scope for node " << node->DebugString(2);
+  }
+  if (node->scope() == kDefaultScopeUnderGuard) {
+    MS_LOG(INFO) << "In " << pass_name << ", encounter kDefaultScopeUnderGuard for node: " << node->DebugString(2);
+  }
+}
+
 void Validate(const FuncGraphPtr &func_graph) {
   ValidateTopGraphOutput(func_graph->output());
   const auto &all_nodes = TopoSort(func_graph->return_node(), SuccDeeperSimple);
   for (auto node : all_nodes) {
     TraceGuard guard(MakeTraceInfo<TraceCopy>(node->debug_info()));
+    if (common::GetCompileConfig("CHECK_PASS_NODE_SCOPE") == "1") {
+      ValidateScope(node, "Validate");
+    }
     CheckAssignReturnValue(node);
     while (IsPrimitiveCNode(node, prim::kPrimReturn) || IsPrimitiveCNode(node, prim::kPrimDepend)) {
       node = node->cast_ptr<CNode>()->input(1);

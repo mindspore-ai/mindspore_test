@@ -776,7 +776,7 @@ void FuncGraphManager::MoveAllCNodeDropGraph(const FuncGraphPtr &source, const F
   source->DropNode(source_return);
   for (auto &node : source->nodes()) {
     node->set_func_graph(target);
-    if (node->scope() == kDefaultScope) {
+    if (IsScopeDefault(node->scope())) {
       node->set_scope(scope);
     }
     if (update_debug_info && node->isa<CNode>()) {

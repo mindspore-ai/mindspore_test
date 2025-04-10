@@ -25,13 +25,14 @@ namespace mindspore {
 class Scope;
 using ScopePtr = std::shared_ptr<Scope>;
 MS_CORE_API extern const ScopePtr kDefaultScope;
+MS_CORE_API extern const ScopePtr kDefaultScopeUnderGuard;
 
 class MS_CORE_API Scope {
  public:
   /// \brief Constructor of Scope.
   ///
   /// \param[in] name The name of scope, usually using the default scope.
-  explicit Scope(const std::string &name) : name_(name) {}
+  explicit Scope(const std::string &name, bool under_guard = true) : name_(name), under_guard_(under_guard) {}
 
   /// \brief Destructor of Scope.
   ~Scope() = default;
@@ -41,8 +42,14 @@ class MS_CORE_API Scope {
   /// \return The name of scope.
   std::string name() const { return name_; }
 
+  /// \brief Check whether scope is under guard.
+  ///
+  /// \return Whether the scope is under guard.
+  bool under_guard() const { return under_guard_; }
+
  private:
   std::string name_;
+  bool under_guard_;
 };
 
 class MS_CORE_API ScopeManager {
@@ -87,13 +94,19 @@ class MS_CORE_API ScopeManager {
 class ScopeGuard {
  public:
   explicit ScopeGuard(const ScopePtr &scope) {
-    scope_ = scope;
-    ScopeManager::GetInstance().EnterScope(scope);
+    if (scope == kDefaultScope) {
+      scope_ = kDefaultScopeUnderGuard;
+    } else {
+      scope_ = scope;
+    }
+    ScopeManager::GetInstance().EnterScope(scope_);
   }
   ~ScopeGuard() { ScopeManager::GetInstance().LeaveScope(scope_); }
 
  private:
   ScopePtr scope_;
 };
+
+MS_CORE_API bool IsScopeDefault(const ScopePtr &scope);
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_IR_SCOPE_H_

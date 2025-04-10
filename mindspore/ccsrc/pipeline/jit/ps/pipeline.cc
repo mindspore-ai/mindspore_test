@@ -1674,6 +1674,12 @@ void Pipeline::Run() {
           MS_LOG(INFO) << "Extra status record: total func graphs: " << manager->func_graphs().size()
                        << ", total nodes: " << manager->all_nodes().size();
         }
+        if (common::GetCompileConfig("CHECK_PASS_NODE_SCOPE") == "1") {
+          const auto &new_all_nodes = TopoSort(resource_->func_graph()->return_node(), SuccDeeperSimple);
+          for (const auto &node : new_all_nodes) {
+            validator::ValidateScope(node, action.first);
+          }
+        }
       });
       (void)profiler::CollectHostInfo(kCompiler, action.first, action.first, start_time, profiler::GetClockSyscnt(), 0);
       ProcessStatus::GetInstance().RecordEnd();

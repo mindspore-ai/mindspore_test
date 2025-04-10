@@ -19,6 +19,8 @@
 #ifndef MINDSPORE_CCSRC_PIPELINE_JIT_VALIDATOR_H_
 #define MINDSPORE_CCSRC_PIPELINE_JIT_VALIDATOR_H_
 
+#include <string>
+
 #include "frontend/operator/ops.h"
 #include "ir/anf.h"
 
@@ -28,6 +30,7 @@ void Validate(const FuncGraphPtr &func_graph);
 void ValidateAbstract(const AnfNodePtr &node);
 void ValidateOperation(const AnfNodePtr &node);
 void ValidateValueNode(const AnfNodePtr &node);
+void ValidateScope(const AnfNodePtr &node, const std::string &pass_name);
 }  // namespace validator
 }  // namespace mindspore
 

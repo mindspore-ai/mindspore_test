@@ -49,14 +49,17 @@ class Substitution {
   RenormAction renorm_action_;
   // Determine whether it is a priority substitution, that is, some patterns need to be matched prior to others.
   bool has_priority_pattern_{false};
+  // Whether generate scope automatically by using ScopeGuard.
+  bool auto_scope_{true};
 
   Substitution(const OptimizerCallerPtr &transform, const std::string &name, const PredicateFuncType &predicate,
-               const RenormAction &renorm_action, bool has_priority_pattern)
+               const RenormAction &renorm_action, bool has_priority_pattern, bool auto_scope)
       : transform_(transform),
         name_(name),
         predicate_(predicate),
         renorm_action_(renorm_action),
-        has_priority_pattern_(has_priority_pattern) {}
+        has_priority_pattern_(has_priority_pattern),
+        auto_scope_(auto_scope) {}
   ~Substitution() = default;
   AnfNodePtr operator()(const OptimizerPtr &optimizer, const AnfNodePtr &node);
 };
@@ -64,13 +67,15 @@ class Substitution {
 using SubstitutionPtr = std::shared_ptr<Substitution>;
 
 SubstitutionPtr MakeSubstitution(const OptimizerCallerPtr &transform, const std::string &name, const PrimitivePtr &prim,
-                                 const RenormAction &renorm_action = CHECK_RENORM, bool has_priority_pattern = false);
+                                 const RenormAction &renorm_action = CHECK_RENORM, bool has_priority_pattern = false,
+                                 bool auto_scope = true);
 SubstitutionPtr MakeSubstitution(const OptimizerCallerPtr &transform, const std::string &name,
                                  const std::vector<PrimitivePtr> &prims,
-                                 const RenormAction &renorm_action = CHECK_RENORM, bool has_priority_pattern = false);
+                                 const RenormAction &renorm_action = CHECK_RENORM, bool has_priority_pattern = false,
+                                 bool auto_scope = true);
 SubstitutionPtr MakeSubstitution(const OptimizerCallerPtr &transform, const std::string &name,
                                  const PredicateFuncType &predicate, const RenormAction &renorm_action = CHECK_RENORM,
-                                 bool has_priority_pattern = false);
+                                 bool has_priority_pattern = false, bool auto_scope = true);
 
 enum OptTraverseSubstitutionsMode { kOptTraverseFromIRToSubstitutions = 0, kOptTraverseFromSubstitutionsToIR };
 

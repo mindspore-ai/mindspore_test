@@ -342,6 +342,15 @@ Value Range:
 """
 PUT_ALL_CNODE_INTO_ORDER_LIST = ''
 
+"""
+Name: CHECK_PASS_NODE_SCOPE
+Function: Whether to check
+Value Range:
+    1: Enable
+    Default: Disable.
+"""
+CHECK_PASS_NODE_SCOPE = ''
+
 __all__ = [
     "COMPILE_PROFILE",
     "COMPILE_PROFILE_FINISH_ACTION",
@@ -379,4 +388,5 @@ __all__ = [
     "PYNATIVE_JIT_GRAD_MODE",
     "PIJIT_SUBGRAPH_BREAK_OPTIMIZE",
     "PUT_ALL_CNODE_INTO_ORDER_LIST",
+    "CHECK_PASS_NODE_SCOPE",
 ]

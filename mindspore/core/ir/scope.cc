@@ -16,7 +16,8 @@
 
 #include "ir/scope.h"
 namespace mindspore {
-const ScopePtr kDefaultScope = std::make_shared<Scope>("Default");
+const ScopePtr kDefaultScope = std::make_shared<Scope>("Default", false);
+const ScopePtr kDefaultScopeUnderGuard = std::make_shared<Scope>("Default", true);
 
 ScopeManager &ScopeManager::GetInstance() noexcept {
   static ScopeManager instance;
@@ -46,4 +47,6 @@ void ScopeManager::ClearScope() {
     scope_stack_.pop();
   }
 }
+
+bool IsScopeDefault(const ScopePtr &scope) { return scope == kDefaultScope || scope == kDefaultScopeUnderGuard; }
 }  // namespace mindspore
