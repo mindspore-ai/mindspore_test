@@ -343,6 +343,7 @@ Non-linear Activations (weighted sum, nonlinearity)
     mindspore.mint.nn.Softmax
     mindspore.mint.nn.Softshrink
     mindspore.mint.nn.Tanh
+    mindspore.mint.nn.Threshold
 
 Embedding Layers
 ^^^^^^^^^^^^^^^^^^
@@ -518,6 +519,8 @@ Non-linear activation functions
     mindspore.mint.nn.functional.softplus
     mindspore.mint.nn.functional.softshrink
     mindspore.mint.nn.functional.tanh
+    mindspore.mint.nn.functional.threshold
+    mindspore.mint.nn.functional.threshold_
 
 Normalization functions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^

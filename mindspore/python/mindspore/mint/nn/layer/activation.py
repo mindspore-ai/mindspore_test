@@ -355,9 +355,6 @@ class Threshold(Cell):
         \text{value}, &\text{ otherwise }
         \end{cases}
 
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
     Args:
         threshold (Union[int, float]): The value of the threshold.
         value (Union[int, float]): The value to replace with when element is less than threshold.

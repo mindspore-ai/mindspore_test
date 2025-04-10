@@ -955,9 +955,6 @@ def threshold(input, threshold, value, inplace=False):  # pylint: disable=W0621
         \text{value}, &\text{ otherwise }
         \end{cases}
 
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
     Args:
         input (Tensor): The input Tensor.
         threshold (Union[int, float]): The value of the threshold.
