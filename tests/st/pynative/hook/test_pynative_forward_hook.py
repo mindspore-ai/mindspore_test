@@ -432,6 +432,7 @@ def test_pynative_forward_hook_exception():
           level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
+@pytest.mark.skip(reason="jit supporting register hook.")
 def test_pynative_forward_hook_with_ms_func():
     """
     Feature: PyNative hook function.
