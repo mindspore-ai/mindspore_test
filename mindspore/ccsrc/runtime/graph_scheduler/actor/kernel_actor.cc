@@ -726,7 +726,7 @@ void KernelActor::SetSomasMemory(OpContext<DeviceTensor> *const context) const {
       MS_LOG(DEBUG) << "Set ptr:" << device_ptr << " to device address:" << output_device_tensors_[i]
                     << " in actor:" << GetAID();
       output_device_tensors_[i]->set_ptr(device_ptr);
-      if (somas_graph_output_indexes_.count(i)) {
+      if (somas_graph_output_indexes_.count(i) || output_device_tensors_[i]->new_ref_count() != SIZE_MAX) {
         output_device_tensors_[i]->IncreaseNewRefCount(GetAID().Name());
         MS_LOG(DEBUG) << "Add new ref count for somas output address:" << output_device_tensors_[i]
                       << " in kernel actor:" << GetAID();
