@@ -146,6 +146,23 @@ bool Opcode::IsConditionJump() const {
          code_ == POP_JUMP_IF_TRUE || code_ == JUMP_IF_FALSE_OR_POP || code_ == JUMP_IF_TRUE_OR_POP;
 }
 
+bool Opcode::IsBoolConditionJump() const {
+  if (code_ == ILLEGAL_OPCODE) {
+    return false;
+  }
+  return code_ == POP_JUMP_BACKWARD_IF_FALSE || code_ == POP_JUMP_BACKWARD_IF_TRUE ||
+         code_ == POP_JUMP_FORWARD_IF_FALSE || code_ == POP_JUMP_FORWARD_IF_TRUE || code_ == POP_JUMP_IF_FALSE ||
+         code_ == POP_JUMP_IF_TRUE || code_ == JUMP_IF_FALSE_OR_POP || code_ == JUMP_IF_TRUE_OR_POP;
+}
+
+bool Opcode::IsNoneConditionJump() const {
+  if (code_ == ILLEGAL_OPCODE) {
+    return false;
+  }
+  return code_ == POP_JUMP_BACKWARD_IF_NONE || code_ == POP_JUMP_BACKWARD_IF_NOT_NONE ||
+         code_ == POP_JUMP_FORWARD_IF_NONE || code_ == POP_JUMP_FORWARD_IF_NOT_NONE;
+}
+
 // see "${PythonInclude}/internal/pycore_opcode.h"
 static uint8_t *GetOpCacheCount() {
   static uint8_t cache[256] = {0};  // memset to zero

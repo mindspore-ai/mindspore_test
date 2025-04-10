@@ -3757,31 +3757,39 @@ bool TryGuardEscape(ValueNode *cond_node) {
   return false;
 }
 
-bool IsSatisfyPruneLimit(int cond, Graph *graph_, ValueNode *cond_node) {
+bool IsPyBool(PyObject *obj) { return obj == Py_True || obj == Py_False; }
+
+bool IsPyNone(PyObject *obj) { return obj == Py_None; }
+
+bool IsSatisfyPruneLimit(int cond, Graph *graph_, ValueNode *cond_node, Opcode opcode) {
   if (cond == -1) {
     return false;
   }
-  if (IsConstantBoolValue(cond_node)) {
+  if (opcode.IsBoolConditionJump() && IsConstantBoolValue(cond_node)) {
     return true;
   }
   auto tr = graph_->TraceValueNode(cond_node);
   if (tr == nullptr) {
     if (graph_->Config().getIntConfig(GraphJitConfig::kGuardRelaxCount) > 0) {
       PyObject *bool_value = cond_node->GetVobj()->GetPyObject().ptr();
-      if ((bool_value == Py_True || bool_value == Py_False) && TryGuardEscape(cond_node)) {
+      if (IsPyBool(bool_value) && TryGuardEscape(cond_node)) {
         return true;
       }
     }
     return graph_->GuardValueNodeClosure(cond_node);
   }
-  PyObject *bool_value = cond_node->GetVobj()->GetPyObject().ptr();
-  if (bool_value != Py_True && bool_value != Py_False) {
-    bool strict = graph_->Config().GetBoolConfig(GraphJitConfig::kStrictTrace);
+  PyObject *cond_value = cond_node->GetVobj()->GetPyObject().ptr();
+  if (IsPyBool(cond_value) || IsPyNone(cond_value)) {
+    cond_node->SetConstantValue(true);
+  }
+  bool strict = graph_->Config().GetBoolConfig(GraphJitConfig::kStrictTrace);
+  if (opcode.IsBoolConditionJump() && !IsPyBool(cond_value)) {
     auto bool_type = CreateOpTrace(reinterpret_cast<PyObject *>(&PyBool_Type), LOAD_CONST, -1, {}, "", "", strict);
     tr = CreateOpTrace(cond ? Py_True : Py_False, IS_PYTHON_3_11_PLUS ? CALL : CALL_FUNCTION, 1, {bool_type, tr}, "",
                        "", strict);
-  } else {
-    cond_node->SetConstantValue(true);
+  } else if (opcode.IsNoneConditionJump() && !IsPyNone(cond_value)) {
+    auto none_type = CreateOpTrace(Py_None, LOAD_CONST, -1, {}, "", "", strict);
+    tr = CreateOpTrace(cond ? Py_False : Py_True, COMPARE_OP, Py_EQ, {none_type, tr}, "", "", strict);
   }
   graph_->GetGuardManager()->GetGuard()->GuardOn(tr, GuardLevel::GId);
   return true;
@@ -3814,16 +3822,12 @@ bool GraphBuilder::ConditionJumpPy311(const Instr &instr, int *pred, int *jump_b
   ValueNode *cond_node = nullptr;
   int cond = -1;
   int jump_to = -1;
-  bool is_if_bool = opcode == POP_JUMP_BACKWARD_IF_FALSE || opcode == POP_JUMP_BACKWARD_IF_TRUE ||
-                    opcode == POP_JUMP_FORWARD_IF_FALSE || opcode == POP_JUMP_FORWARD_IF_TRUE;
-  bool is_if_none = opcode == POP_JUMP_BACKWARD_IF_NONE || opcode == POP_JUMP_BACKWARD_IF_NOT_NONE ||
-                    opcode == POP_JUMP_FORWARD_IF_NONE || opcode == POP_JUMP_FORWARD_IF_NOT_NONE;
-  if (is_if_bool) {
+  if (opcode.IsBoolConditionJump()) {
     cond_node = pop();
     cond = CondIsTrue(cond_node);
     bool jump_if_true = (opcode == POP_JUMP_FORWARD_IF_TRUE || opcode == POP_JUMP_BACKWARD_IF_TRUE);
     jump_to = ((cond == 0) ^ jump_if_true) ? instr.extra_jump()->bci() : cur_bci_ + 1;
-  } else if (is_if_none) {
+  } else if (opcode.IsNoneConditionJump()) {
     cond_node = pop();
     cond = CondIsNotNone(cond_node);
     bool jump_if_not_none = (opcode == POP_JUMP_BACKWARD_IF_NOT_NONE || opcode == POP_JUMP_FORWARD_IF_NOT_NONE);
@@ -3881,7 +3885,7 @@ bool GraphBuilder::TraceRunControl(const Instr &instr) {
   }
 
   // if branch
-  if (!IsSatisfyPruneLimit(cond, graph_, cond_node)) {
+  if (!IsSatisfyPruneLimit(cond, graph_, cond_node, opcode)) {
     LogPrunBranch(cond_node, instr, graph_->Config());
     graph_->StopTraceAt(cur_bci_, StopTraceReason::kStopTraceIf_Unsupported);
     return false;

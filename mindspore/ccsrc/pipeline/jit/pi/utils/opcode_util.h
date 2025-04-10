@@ -89,6 +89,8 @@ class Opcode {
   bool IsLocalAccess() const { return class_ == Class::kLocal; }
   bool IsCallFunc() const;
   bool IsConditionJump() const;
+  bool IsBoolConditionJump() const;
+  bool IsNoneConditionJump() const;
 
   // python3.9 explicit IS_OP from COMPARE_OP
   bool CheckIsOp(int oparg, bool *invert = nullptr) const;
