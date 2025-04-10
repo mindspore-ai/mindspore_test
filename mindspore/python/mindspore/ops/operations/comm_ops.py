@@ -1391,26 +1391,48 @@ class Send(PrimitiveWithInfer):
 
             This example should be run with 2 devices.
 
+        >>> import os
         >>> import numpy as np
+        >>> import mindspore.ops as ops
         >>> import mindspore.nn as nn
+        >>> import mindspore as ms
         >>> from mindspore.communication import init
         >>> from mindspore import Tensor
-        >>> from mindspore import ops
         >>>
+        >>> ms.set_context(mode=ms.GRAPH_MODE, jit_level="O2")
         >>> init()
+        >>>
         >>> class SendNet(nn.Cell):
         ...     def __init__(self):
         ...         super(SendNet, self).__init__()
         ...         self.depend = ops.Depend()
-        ...         self.send = ops.Send(sr_tag=0, dest_rank=8, group="hccl_world_group")
+        ...         self.send = ops.Send(sr_tag=0, dest_rank=1, group="hccl_world_group")
         ...
         ...     def construct(self, x):
         ...         out = self.depend(x, self.send(x))
         ...         return out
         >>>
-        >>> input_ = Tensor(np.ones([2, 8]).astype(np.float32))
-        >>> net = SendNet()
-        >>> output = net(input_)
+        >>> class ReceiveNet(nn.Cell):
+        ...     def __init__(self):
+        ...         super(ReceiveNet, self).__init__()
+        ...         self.recv = ops.Receive(sr_tag=0, src_rank=0, shape=[2, 8], dtype=ms.float32,
+        ...                                 group="hccl_world_group")
+        ...
+        ...     def construct(self):
+        ...         out = self.recv()
+        ...         return out
+        >>>
+        >>> if __name__ == "__main__":
+        ...     rank_id = os.environ["RANK_ID"]
+        ...     rank_size = os.environ["RANK_SIZE"]
+        ...     if rank_id == "0":
+        ...         input_ = Tensor(np.ones([2, 8]).astype(np.float32))
+        ...         send_net = SendNet()
+        ...         output = send_net(input_)
+        ...     else:
+        ...         recv_net = ReceiveNet()
+        ...         output = recv_net()
+        ...         print(output.asnumpy())
 
     Tutorial Examples:
         - `Distributed Set Communication Primitives - Send
@@ -1475,14 +1497,27 @@ class Receive(PrimitiveWithInfer):
 
             This example should be run with 2 devices.
 
+        >>> import os
         >>> import numpy as np
-        >>> import mindspore as ms
+        >>> import mindspore.ops as ops
         >>> import mindspore.nn as nn
+        >>> import mindspore as ms
         >>> from mindspore.communication import init
         >>> from mindspore import Tensor
-        >>> from mindspore import ops
         >>>
+        >>> ms.set_context(mode=ms.GRAPH_MODE, jit_level="O2")
         >>> init()
+        >>>
+        >>> class SendNet(nn.Cell):
+        ...     def __init__(self):
+        ...         super(SendNet, self).__init__()
+        ...         self.depend = ops.Depend()
+        ...         self.send = ops.Send(sr_tag=0, dest_rank=1, group="hccl_world_group")
+        ...
+        ...     def construct(self, x):
+        ...         out = self.depend(x, self.send(x))
+        ...         return out
+        >>>
         >>> class ReceiveNet(nn.Cell):
         ...     def __init__(self):
         ...         super(ReceiveNet, self).__init__()
@@ -1493,8 +1528,17 @@ class Receive(PrimitiveWithInfer):
         ...         out = self.recv()
         ...         return out
         >>>
-        >>> net = ReceiveNet()
-        >>> output = net()
+        >>> if __name__ == "__main__":
+        ...     rank_id = os.environ["RANK_ID"]
+        ...     rank_size = os.environ["RANK_SIZE"]
+        ...     if rank_id == "0":
+        ...         input_ = Tensor(np.ones([2, 8]).astype(np.float32))
+        ...         send_net = SendNet()
+        ...         output = send_net(input_)
+        ...     else:
+        ...         recv_net = ReceiveNet()
+        ...         output = recv_net()
+        ...         print(output.asnumpy())
 
     Tutorial Examples:
         - `Distributed Set Communication Primitives - Receive
