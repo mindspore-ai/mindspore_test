@@ -606,11 +606,25 @@ bool Shard(const FuncGraphPtr &root, const opt::OptimizerPtr &) {
     MS_LOG(INFO) << "Shard Prim don't exist, skip Shard pass";
     return change;
   }
+
+  // assertion
   auto parallel_mode = ParallelContext::GetInstance()->parallel_mode();
   if (parallel_mode != kSemiAutoParallel && parallel_mode != kAutoParallel) {
     MS_LOG(INFO) << "Only auto_parallel and semi_auto_parallel support shard";
     return change;
   }
+
+  auto device_target = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  if (device_target != kAscendDevice && device_target != kGPUDevice) {
+    MS_LOG(EXCEPTION) << "'Shard' now only supports 'Ascend' and 'GPU'";
+  }
+
+  auto strategy_search_mode = ParallelContext::GetInstance()->strategy_search_mode();
+  if (parallel_mode == kAutoParallel && strategy_search_mode != kShardingPropagation) {
+    MS_LOG(EXCEPTION)
+      << "'search_mode' must be 'sharding_propagation' for 'Shard' when the 'parallel_mode' is 'auto_parallel.'";
+  }
+
   if (IsParallelDynamicShape(root)) {
     MS_LOG(WARNING) << "Sharding does not support dynamic shape, will be ignored in the following procedures.";
   }
