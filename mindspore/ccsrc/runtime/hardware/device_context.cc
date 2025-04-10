@@ -95,18 +95,7 @@ bool DeviceResManager::DestroyAllEvents() {
   return true;
 }
 
-std::shared_ptr<SwapManager> DeviceResManager::swap_manager() const {
-  if (swap_manager_ != nullptr) {
-    return swap_manager_;
-  }
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD)) {
-    MS_LOG(EXCEPTION)
-      << "Device resource has been initialized before memory_offload is set to ON, please set it at the very beginning";
-  }
-  return nullptr;
-}
+std::shared_ptr<SwapManager> DeviceResManager::swap_manager() const { return swap_manager_; }
 
 }  // namespace device
 }  // namespace mindspore
