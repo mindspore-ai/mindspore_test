@@ -19,12 +19,13 @@
 
 #include "common/device_address.h"
 #include "include/common/utils/python_adapter.h"
+#include "include/backend/visible.h"
 
 namespace mindspore {
 namespace pyexecute {
 using DeviceAddress = device::DeviceAddress;
 using PyDataConverter = bool (*)(const py::object &, ValuePtr *);
-void set_pydata_converter(const PyDataConverter &set_pydata_converter);
+BACKEND_EXPORT void set_pydata_converter(const PyDataConverter &set_pydata_converter);
 tensor::TensorPtr GetValueByPyObj(const py::object &obj);
 abstract::AbstractBasePtr GenerateAbstractFromPyObject(const py::object &obj);
 void UserDataToRawMemory(DeviceAddress *const device_address);

@@ -53,7 +53,6 @@ class AscendDeviceContext
 
   void Destroy() override;
 
-  bool PartitionGraph(const FuncGraphPtr &func_graph) const override;
   RunMode GetRunMode(const FuncGraphPtr &func_graph) const override;
 
   DeprecatedInterface *GetDeprecatedInterface() override;

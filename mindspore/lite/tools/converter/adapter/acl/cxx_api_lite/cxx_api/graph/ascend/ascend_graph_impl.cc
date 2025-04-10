@@ -76,7 +76,7 @@ Status AscendGraphImpl::InitEnv() {
     return kMCDeviceError;
   }
 
-  backend_ = std::make_shared<compile::MindRTBackend>(kMsConvert, kAscendDevice, device_id_);
+  backend_ = std::make_shared<backend::ms_backend::MSBackend>();
   if (backend_ == nullptr) {
     MS_LOG(ERROR) << "DeviceContext create failed!, please make sure target device:" << kAscendDevice
                   << " is available.";
@@ -96,8 +96,9 @@ Status AscendGraphImpl::CompileGraph(const std::shared_ptr<FuncGraph> &func_grap
     MS_EXCEPTION_IF_NULL(manager);
     manager->AddFuncGraph(func_graph);
     func_graph->set_manager(manager);
-    actor_info_ = backend_->CompileGraphs(func_graph);
-    kernel_graph_ = backend_->GetGraphById(GraphImpl::GetRootGraphIdFromActorInfo(actor_info_));
+    BackendJitConfig &backend_jit_config = backend::BackendJitConfig::ParseBackendJitConfig();
+    graph_id_ = backend_->Build(func_graph, backend_jit_config);
+    kernel_graph_ = backend_->GetGraphById(graph_id_);
     return kSuccess;
   } catch (std::exception &e) {
     MS_LOG(ERROR) << "CompileGraph failed: " << e.what();
@@ -108,7 +109,7 @@ Status AscendGraphImpl::CompileGraph(const std::shared_ptr<FuncGraph> &func_grap
 std::vector<tensor::TensorPtr> AscendGraphImpl::RunGraph(const std::vector<tensor::TensorPtr> &inputs) {
   try {
     VectorRef outputs;
-    backend_->RunGraph(actor_info_, GraphImpl::GenerateInputsRef(inputs, func_graph_.lock()), &outputs);
+    backend_->Run(graph_id_, GraphImpl::GenerateInputsRef(inputs, func_graph_.lock()), &outputs);
     return TransformVectorRefToMultiTensor(outputs);
   } catch (std::exception &e) {
     MS_LOG(ERROR) << "RunGraph failed: " << e.what();

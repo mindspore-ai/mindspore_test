@@ -416,8 +416,7 @@ void GeGraphExecutor::BuildOutputDataGeTensor(const KernelGraphPtr &kernel_graph
       continue;
     }
     auto real_index = output_node->isa<ValueNode>() ? 0 : index;
-    auto kernel_tensor =
-      kernel_graph->has_flag(kFlagGeKernel) ? nullptr : AnfAlgo::GetOutputKernelTensor(output_node, real_index, false);
+    auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(output_node, real_index, false);
     (void)kernel_tensors.emplace_back(kernel_tensor.get());
     auto shapes = AnfAlgo::GetRuntimePaddingShape(output_node, real_index);
     auto host_type = common::AnfAlgo::GetOutputInferDataType(output_node, real_index);

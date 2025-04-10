@@ -169,7 +169,6 @@ BaseRef GetGraphResult(const FuncGraphPtr &fg, const VectorRef &arg_list, bool c
     resource->set_func_graph(fg);
     auto manager = resource->manager();
     manager->AddFuncGraph(resource->func_graph(), true);
-    resource->SetBackendAsync([]() { return compile::CreateBackend(); });
     (void)TaskEmitAction(resource);
     (void)ExecuteAction(resource);
     jit_forward_resource[cache_key] = resource;

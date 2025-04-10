@@ -49,6 +49,7 @@
 #include "utils/anf_utils.h"
 #include "utils/ms_context.h"
 #include "ir/tensor_py_wrapperbase.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
@@ -1139,13 +1140,12 @@ KernelTensorPtr AnfRuntimeAlgorithm::CreateKernelTensor(const abstract::BaseShap
                                                         const std::string &format, TypeId dtype_id,
                                                         const ShapeVector &host_shape, const string &device_name,
                                                         uint32_t device_id, const UserDataPtr &user_data) {
-  const auto &device_context =
-    device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_name, device_id});
-  MS_EXCEPTION_IF_NULL(device_context);
-  MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
-  auto device_address = device_context->device_res_manager_->CreateDeviceAddress(
-    device_ptr, size, host_shape, kernel::GetFormatFromStrToEnum(format), dtype_id, device_name, device_id, 0,
-    user_data);
+  device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  MS_EXCEPTION_IF_NULL(res_manager);
+  auto device_address =
+    res_manager->CreateDeviceAddress(device_ptr, size, host_shape, kernel::GetFormatFromStrToEnum(format), dtype_id,
+                                     device_name, device_id, 0, user_data);
   // Currently, address_common and device_address are not unified. Kernel tensor may use info from address_common
   // or device_address, so all info keep to kernel tensor.
   // Only device address are keep for construct after unified.
@@ -1157,12 +1157,11 @@ KernelTensorPtr AnfRuntimeAlgorithm::CreateKernelTensor(const abstract::BaseShap
 KernelTensorPtr AnfRuntimeAlgorithm::CreateKernelTensor(void *device_ptr, size_t size, Format format, TypeId dtype_id,
                                                         const ShapeVector &host_shape, const string &device_name,
                                                         uint32_t device_id, const UserDataPtr &user_data) {
-  const auto &device_context =
-    device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_name, device_id});
-  MS_EXCEPTION_IF_NULL(device_context);
-  MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
-  auto device_address = device_context->device_res_manager_->CreateDeviceAddress(
-    device_ptr, size, host_shape, format, dtype_id, device_name, device_id, 0, user_data);
+  device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  MS_EXCEPTION_IF_NULL(res_manager);
+  auto device_address = res_manager->CreateDeviceAddress(device_ptr, size, host_shape, format, dtype_id, device_name,
+                                                         device_id, 0, user_data);
   // Currently, address_common and device_address are not unified. Kernel tensor may use info from address_common
   // or device_address, so all info keep to kernel tensor.
   // Only device address are keep for construct after unified.
@@ -2801,10 +2800,6 @@ bool AnfRuntimeAlgorithm::IsLaunchIgnoredInputAddressIdx(const AnfNodePtr &node,
         launch_ignored_input_idx.end()) {
       return true;
     }
-    return false;
-  }
-  // The input of ge graph must have addr.
-  if (common::AnfAlgo::CheckPrimitiveType(node, prim::kPrimGEGraphOp)) {
     return false;
   }
 

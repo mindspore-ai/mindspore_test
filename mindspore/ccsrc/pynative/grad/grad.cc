@@ -49,7 +49,6 @@
 #include "availability/silent_check/silent_check.h"
 #include "utils/log_adapter.h"
 #include "include/common/utils/tensor_py.h"
-#include "backend/graph_compiler/backend.h"
 #include "mindspore/ccsrc/pyboost/grad_functions/value_converter.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "backend/backend_manager/backend_manager.h"
@@ -538,12 +537,7 @@ void GradExecutor::Init() {
   auto call_func = [](runtime::OpRunnerInfo *op_runner_info, VectorRef *op_outputs) {
     runtime::PyBoostOpExecute::GetInstance().RunPyBoostCall(op_runner_info, op_outputs);
   };
-  if (UseNewBackend()) {
-    backend::BackendManager::GetInstance().SetPyBoostRegistered(func, call_func);
-  } else {
-    compile::PyBoostAdapter::SetIsPyBoostRegistered(func);
-    compile::PyBoostAdapter::SetRunPyBoostCallFunc(call_func);
-  }
+  backend::BackendManager::GetInstance().SetPyBoostRegistered(func, call_func);
 }
 
 TopCellInfoPtr GradExecutor::PopTopCellStack() {
@@ -1367,7 +1361,6 @@ void GradExecutor::GetGradGraph(const autograd::GradAttr &grad_attr, const std::
   }
   top_cell()->SaveForwardOutputTensorInfoInBpropGraph(resource->func_graph());
   CommonUtils::DumpGraphIR("launch_bprop_graph.ir", bprop_graph);
-  resource->SetBackendAsync([]() { return compile::CreateBackend(); });
   MS_LOG(DEBUG) << "Start task emit action";
   (void)TaskEmitAction(resource);
   MS_LOG(DEBUG) << "Start execute action";

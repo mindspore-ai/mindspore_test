@@ -35,6 +35,8 @@
 #include "pipeline/jit/ps/action.h"
 #include "utils/ms_context.h"
 #include "debug/profiler/profiling.h"
+#include "include/common/utils/anfalgo.h"
+#include "include/backend/anf_runtime_algorithm.h"
 
 namespace mindspore {
 namespace opt {

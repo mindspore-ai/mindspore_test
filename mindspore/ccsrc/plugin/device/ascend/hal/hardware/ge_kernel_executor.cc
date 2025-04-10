@@ -37,8 +37,6 @@
 #include "plugin/device/ascend/kernel/hccl/hccl_kernel_metadata.h"
 #include "plugin/device/ascend/kernel/hccl/hccl_kernel_build.h"
 #include "plugin/device/ascend/kernel/simu/simu_kernel_build.h"
-#include "plugin/device/ascend/kernel/ge/ge_kernel_build.h"
-#include "plugin/device/ascend/kernel/ge/ge_kernel_mod.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_build.h"
 #include "kernel/graph_kernel/kernel_packet/kernel_packet_infer_functor.h"
 #include "plugin/device/ascend/kernel/graph_kernel/kernel_packet_ascend_kernel_mod.h"
@@ -190,8 +188,6 @@ bool GenerateKernelMod(const std::vector<CNodePtr> &kernels,
       kernel_mod_ptr = kernel::RtOpBuild(kernel);
     } else if (kernel_type == KernelType::INTERNAL_KERNEL) {
       kernel_mod_ptr = kernel::InternalKernelBuild(kernel);
-    } else if (kernel_type == KernelType::GE_KERNEL) {
-      kernel_mod_ptr = kernel::GeOpBuild(kernel);
     } else if (kernel_type == KernelType::ATB_KERNEL) {
       kernel_mod_ptr = kernel::AtbKernelBuild(kernel);
     } else {
@@ -311,19 +307,14 @@ void SelectKernel(const KernelGraphPtr &kernel_graph, std::set<KernelGraphPtr> *
     kernel_graph->SetKernelObjectTypesForUnrealNodes();
   }
   for (auto &child_graph : kernel_graph->child_graph_order()) {
-    if (child_graph.lock()->has_flag(kFlagGeKernel)) {
-      continue;
-    }
     SelectKernel(child_graph.lock(), memo, op_selected_num);
   }
   PROF_END(SelectKernel);
 }
 
 inline void PrintOpSelectedNum(const std::vector<size_t> &op_selected_num) {
-  MS_LOG(INFO)
-    << "Number of GE_KERNEL, INTERNAL_KERNEL, OPAPI_KERNEL, ACL_KERNEL, ATB_KERNEL, HCCL_KERNEL, HOST_KERNEL:";
-  MS_VLOG(VL_FLOW)
-    << "Number of GE_KERNEL, INTERNAL_KERNEL, OPAPI_KERNEL, ACL_KERNEL, ATB_KERNEL, HCCL_KERNEL, HOST_KERNEL:";
+  MS_LOG(INFO) << "Number of INTERNAL_KERNEL, OPAPI_KERNEL, ACL_KERNEL, ATB_KERNEL, HCCL_KERNEL, HOST_KERNEL:";
+  MS_VLOG(VL_FLOW) << "Number of INTERNAL_KERNEL, OPAPI_KERNEL, ACL_KERNEL, ATB_KERNEL, HCCL_KERNEL, HOST_KERNEL:";
   std::stringstream ss;
   for (const auto num : op_selected_num) {
     ss << num << " ";
@@ -1037,12 +1028,6 @@ void GeKernelExecutor::OptimizeGraph(const FuncGraphPtr &graph) const {
   MS_EXCEPTION_IF_NULL(graph);
   auto kernel_graph = graph->cast<KernelGraphPtr>();
   MS_EXCEPTION_IF_NULL(kernel_graph);
-  // GE graph run mode do optimize in ProcessBeforeRun
-  if (kernel_graph->is_graph_run_mode()) {
-    std::set<KernelGraphPtr> memo;
-    GEGraphOptimization::GetInstance().OptimizeGEGraph(kernel_graph, &memo);
-    return;
-  }
   uint64_t start_time = profiler::GetClockSyscnt();
   std::set<KernelGraphPtr> memo;
   GEGraphOptimization::GetInstance().OptimizeACLGraph(kernel_graph, &memo);
@@ -1076,11 +1061,6 @@ void GeKernelExecutor::CreateKernel(const std::vector<CNodePtr> &nodes) const {
   auto func_graph = nodes[0]->func_graph();
   auto kernel_graph = std::dynamic_pointer_cast<session::KernelGraph>(func_graph);
   MS_EXCEPTION_IF_NULL(kernel_graph);
-
-  // Not create kernel when use GE
-  if (!kernel_graph->is_from_single_op() && kernel_graph->is_graph_run_mode()) {
-    return;
-  }
 
   // build kernel mod
   MS_LOG(DEBUG) << "Status record: start create kernel.";
@@ -1184,19 +1164,6 @@ void GeKernelExecutor::OptimizeExecutionOrder(const FuncGraphPtr &graph) const {
 }
 
 namespace {
-void InitGeMemory(const KernelGraphPtr &kernel_graph) {
-  auto execution_order = kernel_graph->execution_order();
-  for (const auto &node : execution_order) {
-    if (!IsPrimitiveCNode(node, prim::kPrimGEGraphOp)) {
-      continue;
-    }
-    auto stream_id = AnfAlgo::GetStreamId(node);
-    auto ge_kernel_mod = dynamic_cast<kernel::GeKernelMod *>(AnfAlgo::GetKernelMod(node));
-    MS_EXCEPTION_IF_NULL(ge_kernel_mod);
-    ge_kernel_mod->InitGeMemory(stream_id);
-  }
-}
-
 void CreateEventKernelMod(const KernelGraphPtr &kernel_graph) {
   MS_EXCEPTION_IF_NULL(kernel_graph);
   auto nodes = kernel_graph->execution_order();
@@ -1253,19 +1220,6 @@ void GeKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const {
     std::cout << "The size of all node: " << all_nodes.size() << std::endl;
   }
 
-  // use GE, delete when delete disable_ge_kernel
-  if (kernel_graph->is_graph_run_mode() && !UseNewBackend()) {
-    if (AnfAlgo::IsNoRealKernelGraph(kernel_graph)) {
-      return;
-    }
-    MS_EXCEPTION_IF_NULL(device_context_->graph_executor_);
-    dynamic_cast<backend::ge_backend::GeGraphExecutor *>(device_context_->graph_executor_.get())
-      ->CompileGraph(graph, {});
-    (void)profiler::CollectHostInfo("Ascend", "PreprocessBeforeRun", "GePreprocess", start_time,
-                                    profiler::GetClockSyscnt(), 1);
-    return;
-  }
-
   // nop op -> memcpy
   for (const auto &node : nodes) {
     auto op_name = common::AnfAlgo::GetCNodeName(node);
@@ -1291,7 +1245,6 @@ void GeKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const {
   }
   DoStreamAssign(kernel_graph, mock_exec_order);
   CreateEventKernelMod(kernel_graph);
-  InitGeMemory(kernel_graph);
   kernel_graph->PrintGraphExecuteOrder();
   DoSomas(NOT_NULL(graph));
   (void)profiler::CollectHostInfo("Ascend", "PreprocessBeforeRun", "GePreprocess", start_time,

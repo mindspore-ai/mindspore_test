@@ -568,7 +568,6 @@ bool MsContext::IsKByKExecutorMode() {
     is_jit_level_changed = true;
     jit_level_log = jit_level;
     CheckHcclBufferSize(jit_level);
-    set_param<bool>(MS_CTX_ENABLE_HYBRID_MODE, false);
   }
 
   const auto &jit_config = PhaseManager::GetInstance().jit_config();
@@ -580,19 +579,6 @@ bool MsContext::IsKByKExecutorMode() {
   if (get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD)) {
     PrintJitLevelAndExecMode(is_jit_level_changed, jit_level, "enable kernelbykernel executor by mem offload.");
     return true;
-  }
-
-  static bool is_hybrid_mode = false;
-  if (get_param<bool>(MS_CTX_ENABLE_HYBRID_MODE)) {
-    if (!is_hybrid_mode) {
-      is_hybrid_mode = true;
-      MS_LOG(INFO) << "Enable kernelbykernel executor by hybrid mode.";
-    }
-    return true;
-  }
-  if (is_hybrid_mode) {
-    MS_LOG(INFO) << "Disable hybrid mode.";
-    is_hybrid_mode = false;
   }
 
   if (mode == kPynativeMode) {
@@ -648,7 +634,6 @@ void MsContext::InitBoolTypeDefaultValue() {
   set_param<bool>(MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE, false);
   set_param<bool>(MS_CTX_ENABLE_PYNATIVE_OP_GRAPH_CACHE, true);
   set_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD, false);
-  set_param<bool>(MS_CTX_ENABLE_HYBRID_MODE, false);
   set_param<bool>(MS_CTX_ENABLE_PROF_MEM, false);
   set_param<bool>(MS_CTX_ENABLE_RECOVERY, false);
   set_param<bool>(MS_CTX_ENABLE_GE_HETEROGENOUS, false);
@@ -826,16 +811,5 @@ bool UseSimulationApi() {
   static auto kbyk = context_ptr->IsKByKExecutorMode();
   static bool use_simu_api = (simu_level == kSimulationLevel0 || (simu_level == kSimulationLevel1 && kbyk));
   return use_simu_api;
-}
-
-bool UseNewBackend() {
-  static auto backend_env = common::GetEnv("MS_OLD_BACKEND");
-  if (backend_env.empty()) {
-    MS_LOG(INFO) << "Use the new backend.";
-    return true;
-  } else {
-    MS_LOG(INFO) << "Use the old backend.";
-    return false;
-  }
 }
 }  // namespace mindspore

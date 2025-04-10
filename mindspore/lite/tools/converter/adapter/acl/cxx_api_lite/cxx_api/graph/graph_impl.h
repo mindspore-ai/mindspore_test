@@ -27,7 +27,8 @@
 #include "base/base_ref_utils.h"
 #include "include/backend/kernel_graph.h"
 #include "backend/common/session/session_basic.h"
-#include "backend/graph_compiler/backend.h"
+#include "backend/ms_backend/ms_backend.h"
+#include "backend/backend_manager/backend_jit_config.h"
 
 namespace mindspore {
 class GraphCell::GraphImpl {
@@ -36,7 +37,6 @@ class GraphCell::GraphImpl {
       : graph_(nullptr),
         graph_context_(nullptr),
         backend_(nullptr),
-        actor_info_(""),
         kernel_graph_(),
         device_id_(0),
         inputs_info_(),
@@ -160,8 +160,8 @@ class GraphCell::GraphImpl {
   std::shared_ptr<Graph> graph_;
   std::shared_ptr<Context> graph_context_;
 
-  std::shared_ptr<compile::MindRTBackend> backend_;
-  std::string actor_info_;
+  std::shared_ptr<backend::ms_backend::MSBackend> backend_;
+  uint32_t graph_id_;
   std::weak_ptr<KernelGraph> kernel_graph_;
   std::weak_ptr<FuncGraph> func_graph_;
   uint32_t device_id_;

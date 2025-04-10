@@ -34,6 +34,7 @@
 #include "ir/param_info.h"
 #include "ir/cell.h"
 #include "include/common/pynative/grad_state.h"
+#include "include/backend/py_execute_utils.h"
 #include "include/common/utils/python_adapter.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
@@ -255,60 +256,6 @@ bool IsNeedBackoffGraph(const FuncGraphPtr &func_graph) {
   std::vector<AnfNodePtr> node_list = TopoSort(func_graph->get_return(), SuccDeeperSimple);
   return std::any_of(node_list.begin(), node_list.end(),
                      [](const AnfNodePtr &node) { return common::AnfAlgo::IsNodeMutableScalar(node); });
-}
-
-// Disable mindRT in the heterogeneous scenario + dynamic_shape scenario.
-void DisableMindRT(const ResourcePtr &resource) {
-  MS_EXCEPTION_IF_NULL(resource);
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-  if (!context_ptr->get_param<bool>(MS_CTX_ENABLE_MINDRT)) {
-    return;
-  }
-#if defined(__linux__) && defined(WITH_BACKEND)
-  if (ps::PSContext::instance()->cache_enable()) {
-    return;
-  }
-#endif
-}
-
-void TaskEmitActionForMindRT(const ResourcePtr &resource) {
-  MS_EXCEPTION_IF_NULL(resource);
-  // Get the mindRT backend.
-  auto bc_ptr = resource->GetBackend();
-  // In pyexecute kernel, the input data would be stored in user data which is a python object, this converter
-  // is used to convert user data to device ptr in device address.
-  compile::set_pydata_converter([](const py::object &obj, ValuePtr *value) { return parse::ConvertData(obj, value); });
-  auto mindrt_bc_ptr = std::dynamic_pointer_cast<compile::MindRTBackend>(bc_ptr);
-  MS_EXCEPTION_IF_NULL(mindrt_bc_ptr);
-  MS_EXCEPTION_IF_NULL(resource->func_graph());
-  auto actor_info = mindrt_bc_ptr->CompileGraphs(resource->func_graph());
-  resource->SetResult(kOutput, actor_info);
-  resource->SetResult(kActorInfo, actor_info);
-}
-
-void ExecuteActionForMindRT(const ResourcePtr &resource) {
-  MS_EXCEPTION_IF_NULL(resource);
-  auto actor_info = resource->GetResult(kOutput).cast<compile::ActorInfo>();
-  // Get the mindRT backend.
-  auto bc_ptr = resource->GetBackend();
-  auto mindrt_bc_ptr = (std::dynamic_pointer_cast<compile::MindRTBackend>(bc_ptr)).get();
-  MS_EXCEPTION_IF_NULL(mindrt_bc_ptr);
-
-  // Construct the graph run function ptr.
-  compile::VmEvalFuncPtr run =
-    std::make_shared<compile::VmEvalFunc>([mindrt_bc_ptr, actor_info](const VectorRef &args) -> BaseRef {
-      MS_LOG(DEBUG) << "Execute args size " << args.size();
-      VectorRef outputs;
-      mindrt_bc_ptr->RunGraph(actor_info, args, &outputs);
-      MS_LOG(DEBUG) << "out size " << outputs.size();
-      if (outputs.empty()) {
-        return VectorRef();
-      } else {
-        return outputs[0];
-      }
-    });
-  resource->SetResult(kOutput, run);
 }
 
 FuncGraphPtr ConstructGraphForEval(const ValuePtr &func, const abstract::AbstractBasePtrList &args_abs) {
@@ -1512,24 +1459,6 @@ bool VmOptimizeAction(const ResourcePtr &resource) {
   return ret;
 }
 
-static bool IsCtrlSink() {
-  auto ms_ctx = MsContext::GetInstance();
-  if (ms_ctx->get_param<int>(MS_CTX_EXECUTION_MODE) != kGraphMode) {
-    return false;
-  }
-
-  std::string device_target = ms_ctx->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  if (device_target != kAscendDevice) {
-    return false;
-  }
-
-  if (!ms_ctx->get_param<bool>(MS_CTX_ENABLE_TASK_SINK)) {
-    return false;
-  }
-
-  return ms_ctx->get_param<bool>(MS_CTX_IS_MULTI_GRAPH_SINK);
-}
-
 bool CheckGraphOutputConstOrParameter(const FuncGraphPtr &func_graph) {
   if (func_graph != nullptr) {
     AnfNodePtr output = func_graph->output();
@@ -1671,17 +1600,15 @@ bool ExistSwitchRef(const FuncGraphPtr &func_graph, const std::vector<AnfNodePtr
   return false;
 }
 
-bool SetModeForControlFlow(const FuncGraphPtr &func_graph, const std::vector<AnfNodePtr> &all_nodes, bool pynative_mode,
-                           compile::Backend *backend_ptr) {
+bool SetModeForControlFlow(const FuncGraphPtr &func_graph, const std::vector<AnfNodePtr> &all_nodes,
+                           bool pynative_mode) {
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
   MS_EXCEPTION_IF_NULL(func_graph);
-  MS_EXCEPTION_IF_NULL(backend_ptr);
-  auto set_ctx = [&context_ptr, &backend_ptr](bool task_sink, bool is_multi_graph_sink, bool enable_loop_sink) {
+  auto set_ctx = [&context_ptr](bool task_sink, bool is_multi_graph_sink, bool enable_loop_sink) {
     context_ptr->set_param<bool>(MS_CTX_ENABLE_TASK_SINK, task_sink);
     context_ptr->set_param<bool>(MS_CTX_IS_MULTI_GRAPH_SINK, is_multi_graph_sink);
     context_ptr->set_param<bool>(MS_CTX_ENABLE_LOOP_SINK, enable_loop_sink);
-    backend_ptr->set_is_multi_graph_sink(is_multi_graph_sink);
   };
   // GRAPH | Closure\ENV\While scenario : KernelByKernel path in MindRT.
   auto graphs = func_graph->func_graphs_used_total();
@@ -1814,16 +1741,14 @@ void ProcessCanNotInline(const FuncGraphPtr &func_graph, const std::shared_ptr<M
   }
 }
 
-void SetRunMode(const FuncGraphPtr &func_graph, compile::Backend *backend_ptr, std::string *kbk_reason) {
+void SetRunMode(const FuncGraphPtr &func_graph, std::string *kbk_reason) {
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
   MS_EXCEPTION_IF_NULL(func_graph);
-  MS_EXCEPTION_IF_NULL(backend_ptr);
-  auto set_ctx = [&context_ptr, &backend_ptr](bool task_sink, bool is_multi_graph_sink, bool enable_loop_sink) {
+  auto set_ctx = [&context_ptr](bool task_sink, bool is_multi_graph_sink, bool enable_loop_sink) {
     context_ptr->set_param<bool>(MS_CTX_ENABLE_TASK_SINK, task_sink);
     context_ptr->set_param<bool>(MS_CTX_IS_MULTI_GRAPH_SINK, is_multi_graph_sink);
     context_ptr->set_param<bool>(MS_CTX_ENABLE_LOOP_SINK, enable_loop_sink);
-    backend_ptr->set_is_multi_graph_sink(is_multi_graph_sink);
   };
   ProcessCanNotInline(func_graph, context_ptr);
   auto jit_level = context_ptr->GetJitLevel();
@@ -1874,7 +1799,7 @@ void SetRunMode(const FuncGraphPtr &func_graph, compile::Backend *backend_ptr, s
     set_ctx(false, false, false);
     return;
   }
-  if (!SetModeForControlFlow(func_graph, all_nodes, pynative_mode, backend_ptr)) {
+  if (!SetModeForControlFlow(func_graph, all_nodes, pynative_mode)) {
     return;
   }
 
@@ -1895,13 +1820,11 @@ void SetRunMode(const FuncGraphPtr &func_graph, compile::Backend *backend_ptr, s
 void OriginSetRunMode(const ResourcePtr &resource) {
   FuncGraphPtr func_graph = resource->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);
-  auto bc_ptr = resource->GetBackend();
   auto context_ptr = MsContext::GetInstance();
   std::string backend = MsContext::GetInstance()->backend_policy();
   MS_EXCEPTION_IF_NULL(context_ptr);
   auto task_sink = context_ptr->get_param<bool>(MS_CTX_ENABLE_TASK_SINK);
   if (func_graph->exist_multi_target() || !task_sink) {
-    bc_ptr->set_is_multi_graph_sink(false);
     context_ptr->set_param<bool>(MS_CTX_IS_MULTI_GRAPH_SINK, false);
     context_ptr->set_param<bool>(MS_CTX_ENABLE_LOOP_SINK, false);
   } else if (context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE) != kPynativeMode) {
@@ -1915,11 +1838,9 @@ void OriginSetRunMode(const ResourcePtr &resource) {
       std::any_of(graphs.cbegin(), graphs.cend(), [](const FuncGraphPtr &fg) { return fg->recursive(); });
     if (device_target == kAscendDevice && backend != kMsVm && !exist_while) {
       MS_LOG(INFO) << "Run graph mode with multigraph sink.";
-      bc_ptr->set_is_multi_graph_sink(true);
       context_ptr->set_param<bool>(MS_CTX_IS_MULTI_GRAPH_SINK, true);
     } else {
       MS_LOG(INFO) << "Run graph mode with vm.";
-      bc_ptr->set_is_multi_graph_sink(false);
       context_ptr->set_param<bool>(MS_CTX_IS_MULTI_GRAPH_SINK, false);
       context_ptr->set_param<bool>(MS_CTX_ENABLE_LOOP_SINK, false);
     }
@@ -1933,7 +1854,7 @@ void SetRunMode(const ResourcePtr &resource) {
   // The root cause of KernelByKernel mode should be returned.
   std::string kbk_reason = "";
   if (context_ptr->get_param<bool>(MS_CTX_ENABLE_MINDRT)) {
-    SetRunMode(resource->func_graph(), resource->GetBackend().get(), &kbk_reason);
+    SetRunMode(resource->func_graph(), &kbk_reason);
   } else {
     OriginSetRunMode(resource);
   }
@@ -1960,6 +1881,7 @@ bool TaskEmitAction(const ResourcePtr &resource) {
   }
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
+  context_ptr->Refresh();
   const auto &backend = context_ptr->backend_policy();
   auto mode = context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE);
   if (mode == kGraphMode && CheckGraphOutputConstOrParameter(func_graph)) {
@@ -1976,51 +1898,23 @@ bool TaskEmitAction(const ResourcePtr &resource) {
     }
   }
 
-  // New backend
-  if (UseNewBackend()) {
-    if (backend != kMsConvert && backend != kGeVm) {
-      resource->SetResult(kNoBackend, true);
-      MS_LOG(INFO) << "No backend.";
-      return true;
-    }
-    SetRunMode(resource);
-
-    // In pyexecute kernel, the input data would be stored in user data which is a python object, this converter
-    // is used to convert user data to device ptr in device address.
-    compile::set_pydata_converter(
-      [](const py::object &obj, ValuePtr *value) { return parse::ConvertData(obj, value); });
-    const auto &backend_jit_config = backend::BackendJitConfig::ParseBackendJitConfig();
-    MS_LOG(INFO) << "Use the new backend.";
-    auto backend_ret = backend::BackendManager::GetInstance().Build(resource->func_graph(), backend_jit_config,
-                                                                    backend_jit_config.backend);
-    resource->SetResult(kBuildBackendType, backend_ret.first);
-    resource->SetResult(kBuildBackendOutput, backend_ret.second);
+  if (backend != kMsConvert && backend != kGeVm) {
+    resource->SetResult(kNoBackend, true);
+    MS_LOG(INFO) << "No backend.";
     return true;
   }
-
-  DisableMindRT(resource);
-
   SetRunMode(resource);
-  auto bc_ptr = resource->GetBackend();
-  MS_EXCEPTION_IF_NULL(bc_ptr);
-  // The graph compiling of mindRT.
-  if ((backend == kMsConvert || backend == kGeVm) && context_ptr->get_param<bool>(MS_CTX_ENABLE_MINDRT)) {
-    TaskEmitActionForMindRT(resource);
-    return true;
-  }
-  // The graph compiling of control sink.
-  if (IsCtrlSink() && (backend == kMsConvert || backend == kGeVm)) {
-    auto graph_id = bc_ptr->CompileGraph(NOT_NULL(func_graph));
-    resource->SetResult(kOutput, graph_id);
-    return true;
-  }
-  std::vector<PrimitivePtr> cut_list = compile::GetNonlinearOps();
-  if (bc_ptr->name() == kMsConvert || bc_ptr->name() == kGeVm) {
-    cut_list = compile::GetMsNonlinearOps();
-  }
-  std::shared_ptr<CompileGraphs> compile = std::make_shared<CompileGraphs>(bc_ptr, cut_list);
-  auto vm = compile->CompileAndLink(func_graph);
-  resource->SetResult(kOutput, vm);
+
+  // In pyexecute kernel, the input data would be stored in user data which is a python object, this converter
+  // is used to convert user data to device ptr in device address.
+  pyexecute::set_pydata_converter(
+    [](const py::object &obj, ValuePtr *value) { return parse::ConvertData(obj, value); });
+  const auto &backend_jit_config = backend::BackendJitConfig::ParseBackendJitConfig();
+  MS_LOG(INFO) << "Use the new backend.";
+  auto backend_ret = backend::BackendManager::GetInstance().Build(resource->func_graph(), backend_jit_config,
+                                                                  backend_jit_config.backend);
+  resource->SetResult(kBuildBackendType, backend_ret.first);
+  resource->SetResult(kBuildBackendOutput, backend_ret.second);
   return true;
 }
 
@@ -2031,50 +1925,28 @@ bool ExecuteAction(const ResourcePtr &resource) {
     return true;
   }
 
-  if (UseNewBackend()) {
-    if (resource->HasResult(kNoBackend)) {
-      MS_LOG(INFO) << "No backend.";
-      return true;
-    }
-    if (!resource->HasResult(kBuildBackendType) || !resource->HasResult(kBuildBackendOutput)) {
-      MS_LOG(INTERNAL_EXCEPTION) << "Execute args error";
-    }
-    auto backend_type = resource->GetResult(kBuildBackendType).cast<backend::BackendType>();
-    auto backend_graph_id = resource->GetResult(kBuildBackendOutput).cast<backend::BackendGraphId>();
-    // Construct the graph run function ptr.
-    compile::VmEvalFuncPtr run =
-      std::make_shared<compile::VmEvalFunc>([backend_type, backend_graph_id](const VectorRef &args) -> BaseRef {
-        MS_LOG(DEBUG) << "Execute args size " << args.size();
-        VectorRef outputs;
-        backend::BackendManager::GetInstance().Run(backend_type, backend_graph_id, args, &outputs);
-        MS_LOG(DEBUG) << "out size " << outputs.size();
-        if (outputs.empty()) {
-          return VectorRef();
-        } else {
-          return outputs[0];
-        }
-      });
-    resource->SetResult(kOutput, run);
+  if (resource->HasResult(kNoBackend)) {
+    MS_LOG(INFO) << "No backend.";
     return true;
   }
-
-  if (!resource->HasResult(kOutput)) {
+  if (!resource->HasResult(kBuildBackendType) || !resource->HasResult(kBuildBackendOutput)) {
     MS_LOG(INTERNAL_EXCEPTION) << "Execute args error";
   }
-  std::string backend = MsContext::GetInstance()->backend_policy();
-  // The graph running of mindRT.
-  if ((backend == kMsConvert || backend == kGeVm) && MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_MINDRT)) {
-    ExecuteActionForMindRT(resource);
-    return true;
-  }
-
-  compile::FinalVMPtr vm = resource->GetResult(kOutput).cast<compile::FinalVMPtr>();
-  if (vm == nullptr) {
-    MS_LOG(INFO) << "Call GE to Run the func_graph instead of VM";
-    return true;
-  }
+  auto backend_type = resource->GetResult(kBuildBackendType).cast<backend::BackendType>();
+  auto backend_graph_id = resource->GetResult(kBuildBackendOutput).cast<backend::BackendGraphId>();
+  // Construct the graph run function ptr.
   compile::VmEvalFuncPtr run =
-    std::make_shared<compile::VmEvalFunc>(std::bind(&compile::FinalVM::Eval, vm, std::placeholders::_1));
+    std::make_shared<compile::VmEvalFunc>([backend_type, backend_graph_id](const VectorRef &args) -> BaseRef {
+      MS_LOG(DEBUG) << "Execute args size " << args.size();
+      VectorRef outputs;
+      backend::BackendManager::GetInstance().Run(backend_type, backend_graph_id, args, &outputs);
+      MS_LOG(DEBUG) << "out size " << outputs.size();
+      if (outputs.empty()) {
+        return VectorRef();
+      } else {
+        return outputs[0];
+      }
+    });
   resource->SetResult(kOutput, run);
   return true;
 }

@@ -144,10 +144,6 @@ void ClearResPart1() {
   abstract::ClearPrimEvaluatorMap();
   pipeline::GetMethodMap().clear();
   pipeline::GetAttrMap().clear();
-#ifdef WITH_BACKEND
-  pipeline::GraphExecutorPy::GetInstance()->ClearInfo();
-  pipeline::JitExecutorPy::GetInstance()->ClearInfo();
-#endif
   pipeline::GraphExecutorPy::ClearRes();
   pipeline::JitExecutorPy::ClearRes();
   pipeline::ReclaimOptimizer();

@@ -421,9 +421,6 @@ void OptimizeGEGraph(const KernelGraphPtr &graph, std::set<KernelGraphPtr> *cons
   GEBackendOptimization(graph);
 
   for (auto &child_graph : graph->child_graph_order()) {
-    if (child_graph.lock()->has_flag(kFlagGeKernel)) {
-      continue;
-    }
     OptimizeGEGraph(child_graph.lock(), memo);
   }
   PROF_END(OptimizeGEGraph);

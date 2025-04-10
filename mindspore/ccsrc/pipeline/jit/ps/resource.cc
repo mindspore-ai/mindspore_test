@@ -741,10 +741,6 @@ void Resource::CacheFuncGraph() const {
 }
 
 void Resource::Clean() {
-  // Ensure that async backend creating task is finished before clean resource.
-  if (backend_ == nullptr && backend_future_.valid()) {
-    backend_ = backend_future_.get();
-  }
   // AbstractTensor->elements() will be saved in AbstractBasePtrList
   args_abs_.clear();
   arguments_.clear();
@@ -766,34 +762,6 @@ void Resource::Clean() {
   }
   trace::ClearTraceStack();
   is_cleaned_ = true;
-}
-
-compile::BackendPtr Resource::GetBackend() const {
-  if (backend_ == nullptr && backend_future_.valid()) {
-    backend_ = backend_future_.get();
-  }
-  return backend_;
-}
-
-void Resource::SetBackendAsync(std::function<compile::BackendPtr()> func) {
-  static const bool is_enable_async = (common::GetEnv("MS_DEV_ASYNC_BACKEND_INIT") == "1");
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-  static const bool is_enable_ge = context_ptr->backend_policy() == "ge";
-  if (!is_enable_async || is_enable_ge) {
-    // Disable async backend init if required.
-    std::lock_guard<std::mutex> guard(GetBackendInitMutex());
-    backend_ = func();
-    return;
-  }
-  if (backend_ == nullptr && backend_future_.valid()) {
-    (void)backend_future_.get();
-  }
-  backend_ = nullptr;
-  backend_future_ = std::async(std::launch::async, [func]() {
-    std::lock_guard<std::mutex> guard(Resource::GetBackendInitMutex());
-    return func();
-  });
 }
 }  // namespace pipeline
 }  // namespace mindspore

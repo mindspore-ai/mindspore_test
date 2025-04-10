@@ -39,6 +39,7 @@
 #include "frontend/parallel/tensor_layout/tensor_redistribution.h"
 #include "utils/log_adapter.h"
 #include "ops_utils/op_utils.h"
+#include "utils/anf_utils.h"
 
 namespace mindspore {
 namespace parallel {

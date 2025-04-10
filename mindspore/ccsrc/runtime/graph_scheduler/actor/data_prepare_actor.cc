@@ -396,12 +396,6 @@ void RecordGraphInputsForInputOptimize(const GraphCompilerInfo *graph_compiler_i
     }
   }
 }
-
-void AllocGEFixMemory(const DeviceContext *device_context) {
-  if (!UseNewBackend() && device_context->graph_executor_ != nullptr) {
-    device_context->graph_executor_->AllocGEFixMemory();
-  }
-}
 }  // namespace
 
 std::atomic<size_t> DataPrepareActor::execution_count_ = 0;
@@ -760,8 +754,6 @@ void DataPrepareActor::PrepareDataForDeviceTensorStore(const std::vector<std::ve
   for (size_t i = 0; i < graph_compiler_info_->graphs_.size(); ++i) {
     const auto &graph = graph_compiler_info_->graphs_[i];
     const auto &device_context = graph_compiler_info_->device_contexts_[i];
-    // alloc graph fixed memory
-    AllocGEFixMemory(device_context);
 
     MS_EXCEPTION_IF_NULL(graph);
     MS_LOG(DEBUG) << "prepare data for graph:" << graph->ToString();

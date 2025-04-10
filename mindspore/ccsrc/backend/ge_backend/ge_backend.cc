@@ -552,6 +552,18 @@ void GEBackend::Clear() {
   // DestroyHccl must be called before FreeDeviceMemory, watch_hccl_dog and hccl_adapter are in this function
   (void)DestroyHccl();
 
+  device::ascend::AscendStreamMng::GetInstance().DestroyAllRtEvents();
+  if (!device::ascend::AscendStreamMng::GetInstance().DestroyAllStreams()) {
+    MS_LOG(ERROR) << "Fail to destroy all streams.";
+  }
+
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  MS_EXCEPTION_IF_NULL(res_manager);
+  res_manager->Destroy();
+
   CloseTsd(true);
   is_initialized_ = false;
 }

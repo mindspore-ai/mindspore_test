@@ -1004,15 +1004,6 @@ void GraphExecutorPy::ClearRes() {
   executor_ = nullptr;
 }
 
-void ExecutorPy::ClearInfo() {
-  MS_LOG(INFO) << "Clean graph resource!";
-  for (auto &item : info_) {
-    if (item.second && item.second->resource) {
-      item.second->resource->CleanBackend();
-    }
-  }
-}
-
 void ExecutorPy::set_process_id() { process_id_ = GetCurrentPID(); }
 
 std::string ExecutorPy::get_queue_name(const std::string &dataset_phase) {
@@ -1180,18 +1171,6 @@ bool GraphExecutorPy::CompileInner(const FuncGraphPtr &graph, const py::tuple &a
   auto actions = GetActions(resource, phase, trace_flag, erase_parse);
   std::shared_ptr<Pipeline> pip = std::make_shared<Pipeline>(resource, actions);
 
-  if (pip->NeedCreateBackend()) {
-    // Create backend asynchronously.
-    resource->SetBackendAsync([]() {
-      auto backend = compile::CreateBackend();
-#ifdef ENABLE_DEBUGGER
-      // Connect session to debugger.
-      backend->SetDebugger();
-#endif
-      return backend;
-    });
-  }
-
   // Get the parameters items and add the value to args_abs.
   abstract::AbstractBasePtrList args_abs;
   std::vector<ValuePtr> arguments;
@@ -1266,17 +1245,6 @@ bool GraphExecutorPy::CompileInner(const py::object &source, const py::tuple &ar
   std::shared_ptr<Pipeline> pip = std::make_shared<Pipeline>(resource, actions);
 
   uint64_t start_time = profiler::GetClockSyscnt();
-  if (pip->NeedCreateBackend()) {
-    // Create backend asynchronously.
-    resource->SetBackendAsync([]() {
-      auto backend = compile::CreateBackend();
-#ifdef ENABLE_DEBUGGER
-      // Connect session to debugger.
-      backend->SetDebugger();
-#endif
-      return backend;
-    });
-  }
   (void)profiler::CollectHostInfo(kCompiler, kCreateBackend, kCreateBackend, start_time, profiler::GetClockSyscnt(), 0);
 
   // Get the parameters items and add the value to args_abs.
@@ -1782,11 +1750,6 @@ void Pipeline::Run() {
   MS_LOG(INFO) << "End";
 }
 
-bool Pipeline::NeedCreateBackend() {
-  return std::any_of(actions_.begin(), actions_.end(),
-                     [](const ActionItem &action) { return action.first == kTaskEmit || action.first == kExecute; });
-}
-
 void ProcessVmArgInner(const py::tuple &args, const ResourcePtr &res, VectorRef *const arg_list) {
   MS_EXCEPTION_IF_NULL(arg_list);
   bool arg_list_inited = !arg_list->empty();
@@ -1968,17 +1931,7 @@ void GraphExecutorPy::BuildGraph(const py::dict &init_params, const std::string 
 
   std::map<std::string, std::shared_ptr<Tensor>> init_tensors{};
   ConvertObjectToTensors(init_params, &init_tensors, info_.at(phase)->func_graph);
-  if (UseNewBackend()) {
-    backend::BackendManager::GetInstance().ConvertIR(info_.at(phase)->func_graph, init_tensors,
-                                                     backend::IRFormat::kAir);
-    return;
-  }
-
-  auto backend = compile::CreateBackend();
-  MS_EXCEPTION_IF_NULL(backend);
-  const auto &mindrt_backend = std::dynamic_pointer_cast<compile::MindRTBackend>(backend);
-  MS_EXCEPTION_IF_NULL(mindrt_backend);
-  (void)mindrt_backend->BuildDFGraph(info_.at(phase)->func_graph, init_tensors);
+  backend::BackendManager::GetInstance().ConvertIR(info_.at(phase)->func_graph, init_tensors, backend::IRFormat::kAir);
 }
 
 void GraphExecutorPy::ConvertObjectToTensors(const py::dict &dict,
@@ -2057,14 +2010,7 @@ py::bytes GraphExecutorPy::GetRandomStatus(const std::string &phase) const {
     MS_LOG(ERROR) << "Phase " << phase << " must compile.";
     return "";
   }
-  MS_EXCEPTION_IF_NULL(iter->second);
-  MS_EXCEPTION_IF_NULL(iter->second->resource);
-  auto &resource = iter->second->resource;
-  auto backend = resource->GetBackend();
-  const auto &mindrt_backend = std::dynamic_pointer_cast<compile::MindRTBackend>(backend);
-  MS_EXCEPTION_IF_NULL(mindrt_backend);
-  auto actor_info = resource->GetResult(kActorInfo).cast<compile::ActorInfo>();
-  auto random_status = mindrt_backend->GetRandomStatus(actor_info);
+  std::string random_status = "";
   return py::bytes(random_status.c_str(), random_status.size());
 }
 
@@ -2189,55 +2135,15 @@ bool InitExecDatasetVm(const std::string &queue_name, int64_t size, int64_t batc
   }
 #endif
 
-  if (UseNewBackend()) {
-    VectorRef args;
-    if (need_run) {
-      VectorRef outputs;
-      const auto &backend_jit_config = backend::BackendJitConfig::ParseBackendJitConfig();
-      auto backend_ret =
-        backend::BackendManager::GetInstance().Build(func_graph, backend_jit_config, backend_jit_config.backend);
-      backend::BackendManager::GetInstance().Run(backend_ret.first, backend_ret.second, args, &outputs);
-    }
-    ConfigManager::GetInstance().set_iter_num(queue_name, size);
-    return true;
-  }
-
-  auto backend = compile::CreateBackend();
-  MS_EXCEPTION_IF_NULL(backend);
-  // The data set graph compiling and running of mindRT.
-  if (context_ptr->get_param<bool>(MS_CTX_ENABLE_MINDRT)) {
-    const auto &mindrt_backend = std::dynamic_pointer_cast<compile::MindRTBackend>(backend);
-    MS_EXCEPTION_IF_NULL(mindrt_backend);
-    SetRunMode(func_graph, mindrt_backend.get());
-    auto &actor_info = mindrt_backend->CompileGraphs(func_graph);
-    VectorRef args;
-    if (need_run) {
-      VectorRef outputs;
-      mindrt_backend->RunGraph(actor_info, args, &outputs);
-    }
-    ConfigManager::GetInstance().set_iter_num(queue_name, size);
-    return true;
-  }
-
-  auto convert_fn = backend->convert_fn();
-  MS_EXCEPTION_IF_NULL(convert_fn);
-  // Convert CNodeList to LinConvertResult.
-  auto segment = std::make_shared<GraphSegment>(std::vector<AnfNodePtr>{app_init}, false);
-  auto runner = convert_fn(segment, "");
-  ConfigManager::GetInstance().set_iter_num(queue_name, size);
-
-  if (!(*runner.run)) {
-    // empty function
-    MS_LOG(EXCEPTION) << "Backend " << backend->name() << " unsupported tdt dataset.";
-  }
-
-  // launch init dataset runner without inputs and outputs
   VectorRef args;
-  auto fn = runner.run;
   if (need_run) {
-    (void)(*fn)(args);
+    VectorRef outputs;
+    const auto &backend_jit_config = backend::BackendJitConfig::ParseBackendJitConfig();
+    auto backend_ret =
+      backend::BackendManager::GetInstance().Build(func_graph, backend_jit_config, backend_jit_config.backend);
+    backend::BackendManager::GetInstance().Run(backend_ret.first, backend_ret.second, args, &outputs);
   }
-  MS_LOG(DEBUG) << "InitDataSetVm End.";
+  ConfigManager::GetInstance().set_iter_num(queue_name, size);
   PROF_END(InitExecDatasetVm);
   return true;
 }
@@ -2333,20 +2239,12 @@ void GraphExecutorPy::ExportGraph(const std::string &file_name, const std::strin
     MS_LOG(ERROR) << "Phase " << phase << " must compile.";
     return;
   }
-  auto backend = compile::CreateBackend();
-  MS_EXCEPTION_IF_NULL(backend);
-  const auto &mindrt_backend = std::dynamic_pointer_cast<compile::MindRTBackend>(backend);
-  MS_EXCEPTION_IF_NULL(mindrt_backend);
   FuncGraphPtr func_graph = info_[phase]->func_graph;
   MS_EXCEPTION_IF_NULL(func_graph);
 
   string save_str;
-  if (UseNewBackend()) {
-    save_str =
-      backend::BackendManager::GetInstance().ExportIR(func_graph, file_name, is_save_to_file, backend::IRFormat::kAir);
-  } else {
-    save_str = mindrt_backend->ExportDFGraph(file_name, func_graph, is_save_to_file);
-  }
+  save_str =
+    backend::BackendManager::GetInstance().ExportIR(func_graph, file_name, is_save_to_file, backend::IRFormat::kAir);
 
   if (is_save_to_file) {
     return;

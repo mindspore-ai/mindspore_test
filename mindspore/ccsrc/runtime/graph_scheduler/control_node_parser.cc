@@ -2434,16 +2434,6 @@ void ControlNodeParser::ParseFrontToBackendKernel(const std::vector<KernelGraphP
       MS_EXCEPTION_IF_NULL(output_pair.second.first);
       auto real_node = output_pair.second.first;
       // get realnode for callinline
-      if (common::AnfAlgo::CheckPrimitiveType(real_node, prim::kPrimGEGraphOp)) {
-        auto kg = common::AnfAlgo::GetNodeAttr<KernelGraphPtr>(real_node, kAttrKernelGraph);
-        if (kg != nullptr) {
-          std::vector<KernelWithIndex> kg_output_list;
-          common::AnfAlgo::GetRealInputs(kg->get_return(), &kg_output_list);
-          if (output_pair.second.second < kg_output_list.size()) {
-            real_node = kg_output_list[output_pair.second.second].first;
-          }
-        }
-      }
       if (real_node->isa<CNode>()) {
         front_to_backend_kernels_[output_pair.first] = {output_pair.second, device_context};
       }
@@ -2710,22 +2700,6 @@ void CollectEffectiveOutputByGraph(const KernelGraphPtr &graph, DeviceContext *c
         (void)monad_outputs->emplace(front_to_backend.first);
       }
       continue;
-    }
-
-    // check front_to_backend.second.first->isa<Parameter>() when callinline
-    if (common::AnfAlgo::CheckPrimitiveType(front_to_backend.second.first, prim::kPrimGEGraphOp)) {
-      auto kg = common::AnfAlgo::GetNodeAttr<KernelGraphPtr>(front_to_backend.second.first, kAttrKernelGraph);
-      MS_EXCEPTION_IF_NULL(kg);
-      std::vector<KernelWithIndex> kg_output_list;
-      common::AnfAlgo::GetRealInputs(kg->get_return(), &kg_output_list);
-
-      if (front_to_backend.second.second >= kg_output_list.size()) {
-        MS_LOG(EXCEPTION) << "The index " << front_to_backend.second.second
-                          << " is larger than CallInline graph output size: " << kg_output_list.size();
-      }
-      if (kg_output_list[front_to_backend.second.second].first->isa<Parameter>()) {
-        continue;
-      }
     }
 
     // Skip the function input.

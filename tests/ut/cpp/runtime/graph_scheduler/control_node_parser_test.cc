@@ -170,6 +170,7 @@ void BuildGraphs(std::vector<AnfNodePtr> *control_nodes, FuncGraphPtr *func_grap
 /// Description: Test the parse interface.
 /// Expectation: As expected.
 TEST_F(ControlNodeParserTest, Parse) {
+  MS_REGISTER_HAL_RES_MANAGER(kCPUDevice, DeviceType::kCPU, TestResManager);
   std::vector<AnfNodePtr> control_nodes;
   FuncGraphPtr func_graph;
   std::vector<KernelGraphPtr> kernel_graphs;

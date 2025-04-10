@@ -139,7 +139,7 @@ device::DeviceAddressPtr CreateOutputDeviceAddress(const KernelGraphPtr &kernel_
   // output in ref_map, mem same is input
   // ge kernel no need alloc memory
   bool need_not_alloc = (kernel_graph->has_flag(kFlagEnableZeroCopyInGraph) && !output_node->isa<ValueNode>()) ||
-                        (ref_map.find(output_with_index) != ref_map.end()) || kernel_graph->has_flag(kFlagGeKernel);
+                        (ref_map.find(output_with_index) != ref_map.end());
   MS_EXCEPTION_IF_NULL(res_manager);
   void *mem = need_not_alloc ? nullptr : res_manager->AllocateMemory(tensor_size);
 
@@ -224,9 +224,6 @@ void AllocOutputMemory(const KernelGraphPtr &kernel_graph, GeDeviceResManagerPtr
       continue;
     }
     need_alloc_output_cnt++;
-  }
-  if (kernel_graph->has_flag(kFlagGeKernel)) {
-    return;
   }
 
   for (const auto &output : outputs) {

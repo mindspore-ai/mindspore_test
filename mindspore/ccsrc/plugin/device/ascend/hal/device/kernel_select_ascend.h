@@ -28,8 +28,7 @@ namespace device {
 namespace ascend {
 enum SelectedKernelType {
   KERNEL_TYPE_BEGIN,
-  GE_KERNEL = KERNEL_TYPE_BEGIN,
-  INTERNAL_KERNEL,
+  INTERNAL_KERNEL = KERNEL_TYPE_BEGIN,
   ACLNN_KERNEL,
   ACLOP_KERNEL,
   ATB_KERNEL,

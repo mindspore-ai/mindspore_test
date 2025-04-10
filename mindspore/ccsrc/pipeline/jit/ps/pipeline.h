@@ -58,8 +58,6 @@ class Pipeline {
 
   ResourcePtr resource() { return resource_; }
 
-  bool NeedCreateBackend();
-
  private:
   ResourcePtr resource_;
   std::vector<ActionItem> actions_;
@@ -102,7 +100,6 @@ class FRONTEND_EXPORT ExecutorPy : public std::enable_shared_from_this<ExecutorP
   const std::string &obj_desc() const { return obj_desc_; }
   int32_t max_call_depth() const { return max_call_depth_; }
   void set_max_call_depth(int32_t max_call_depth) { max_call_depth_ = max_call_depth; }
-  void ClearInfo();
 
  protected:
   virtual bool CompileInner(const py::object &source, const py::tuple &args, const py::dict &kwargs,

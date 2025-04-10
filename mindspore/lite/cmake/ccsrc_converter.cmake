@@ -51,6 +51,8 @@ if(MSLITE_ENABLE_CONVERTER)
                 ${CCSRC_DIR}/backend/common/session/exec_order_builder.cc
                 ${CCSRC_DIR}/backend/common/session/kernel_graph.cc
                 ${CCSRC_DIR}/backend/common/session/anf_runtime_algorithm.cc
+                ${CCSRC_DIR}/runtime/device/res_manager/hal_res_manager.cc
+                ${CCSRC_DIR}/runtime/device/res_manager/multi_stream_controller.cc
                 ${SRC_DIR}/extendrt/utils/tensor_utils.cc
                 )
     endif()

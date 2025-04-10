@@ -204,38 +204,6 @@ FuncGraphPtr BuildGraphs() {
 }
 }  // namespace
 
-void RunTestCase(const FuncGraphPtr &func_graph) {
-  const char device_name[] = "CPU";
-  uint32_t device_id = 0;
-
-  auto ms_context = MsContext::GetInstance();
-  int last_execution_mode = ms_context->get_param<int>(MS_CTX_EXECUTION_MODE);
-  bool last_enable_mindrt = ms_context->get_param<bool>(MS_CTX_ENABLE_MINDRT);
-  uint32_t last_device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  std::string last_device_target = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-
-  ms_context->set_param<int>(MS_CTX_EXECUTION_MODE, kGraphMode);
-  ms_context->set_param<bool>(MS_CTX_ENABLE_MINDRT, true);
-  ms_context->set_param<uint32_t>(MS_CTX_DEVICE_ID, device_id);
-  ms_context->set_param<std::string>(MS_CTX_DEVICE_TARGET, device_name);
-
-  std::vector<FuncGraphPtr> graphs{func_graph};
-  FuncGraphManagerPtr manager = std::make_shared<FuncGraphManager>(graphs);
-  manager->AddFuncGraph(func_graph);
-  MS_REGISTER_DEVICE(device_name, TestDeviceContext);
-  DeviceContextKey device_context_key{device_name, device_id};
-  auto device_context = std::make_shared<TestDeviceContext>(device_context_key);
-
-  const auto backend = std::make_shared<compile::MindRTBackend>("vm", device_name, 0);
-  const auto actor_info = backend->CompileGraphs(func_graph);
-  ASSERT_EQ(actor_info.find("kernel_graph") != std::string::npos, true);
-
-  ms_context->set_param<int>(MS_CTX_EXECUTION_MODE, last_execution_mode);
-  ms_context->set_param<bool>(MS_CTX_ENABLE_MINDRT, last_enable_mindrt);
-  ms_context->set_param<uint32_t>(MS_CTX_DEVICE_ID, last_device_id);
-  ms_context->set_param<std::string>(MS_CTX_DEVICE_TARGET, last_device_target);
-}
-
 /// Feature: unify runtime.
 /// Description: test the compile graphs.
 /// Expectation: success.
