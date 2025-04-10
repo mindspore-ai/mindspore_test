@@ -37,8 +37,8 @@ def parameter_broadcast(net, layout, cur_rank=0, initial_rank=0):
         layout (Dict): Parameter layout dictionary. Come from
             :func:`mindspore.nn.Cell.parameter_layout_dict`
             or read from file(for example: "strategy.ckpt" saved by using the
-            `strategy_ckpt_config` parameter of :func:`mindspore.parallel.auto_parallel
-            .AutoParallel.save_param_strategy_file`.
+            `strategy_ckpt_config` parameter of
+            :func:`mindspore.parallel.auto_parallel.AutoParallel.save_param_strategy_file` ).
             The key is param name, the value is the layout of this parameter.
         cur_rank (int, optional): current rank id. Default: ``0``.
         initial_rank (int, optional): Start rank id for each pipeline. Default: ``0``.

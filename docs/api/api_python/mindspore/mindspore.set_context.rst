@@ -8,7 +8,7 @@ mindspore.set_context
     参数：
         - **mode** (int) - GRAPH_MODE（用0表示）或PYNATIVE_MODE（用1表示）。默认 ``PYNATIVE_MODE`` 。
         - **device_id** (int) - 目标设备的ID，默认 ``0`` 。此参数将在后续版本中废弃，请使用接口 :func:`mindspore.set_device` 代替。
-        - **device_target** (str) - 程序运行的目标设备，支持 ``"Ascend"``、 ``"GPU"``和 ``"CPU"``。此参数将在后续版本中废弃，请使用接口 :func:`mindspore.set_device` 代替。
+        - **device_target** (str) - 程序运行的目标设备，支持 ``"Ascend"``、 ``"GPU"`` 和 ``"CPU"``。此参数将在后续版本中废弃，请使用接口 :func:`mindspore.set_device` 代替。
         - **deterministic** (str) - 算子确定性计算，默认 ``"OFF"`` 。此参数将在后续版本中废弃，请使用接口 :func:`mindspore.set_deterministic` 代替。
         - **max_call_depth** (int) - 函数调用最大深度，默认 ``1000`` 。此参数将在后续版本中废弃，请使用接口 :func:`mindspore.set_recursion_limit` 代替。
         - **variable_memory_max_size** (str) - 此参数将在后续版本中废弃，请使用接口 :func:`mindspore.runtime.set_memory` 代替。

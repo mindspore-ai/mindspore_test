@@ -352,7 +352,7 @@ def communication_stream():
 class StreamCtx():
     r"""
     Context-manager that selects a given stream, this api will be deprecated and removed in future versions, please use
-    the api :class:`mindspore.runtime.StreamCtx`instead.
+    the api :class:`mindspore.runtime.StreamCtx` instead.
 
     All kernels queued within its context will be enqueued on a selected
     stream.
