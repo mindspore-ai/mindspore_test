@@ -73,11 +73,11 @@ def convert_checkpoint_by_rank(rank_id, checkpoint_files_map, save_checkpoint_fi
                                      the checkpoint file name.
         save_checkpoint_file_name (str): The file name to save the converted checkpoint.
         src_strategy_file (str): Name of source sharding strategy file which saved by
-                        'mindspore.parallel.auto_parallel.AutoParallel(cell).save_param_strategy_file(file_path)'.
+                        :func:`mindspore.parallel.auto_parallel.AutoParallel.save_param_strategy_file`.
                         when the `src_strategy_file` is None, it means that the source sharding strategy is
                         without any sharing for each parameter. Default: ``None``.
         dst_strategy_file (str): Name of destination sharding strategy file which saved by
-                        'mindspore.parallel.auto_parallel.AutoParallel(cell).save_param_strategy_file(file_path)'.
+                        :func:`mindspore.parallel.auto_parallel.AutoParallel.save_param_strategy_file`.
                         when the `dst_strategy_file` is ``None``,
                         it means that the destination sharding strategy
                         is without any sharing for each parameter. Default: ``None``.
