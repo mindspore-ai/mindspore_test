@@ -1516,7 +1516,8 @@ void RegisterNumpyTypes() {
   if (!NumpyVersionValid(numpy_version)) {
     MS_LOG(INFO) << "The Numpy bfloat16 data type is supported only when the "
                  << "current Numpy version is not less than the version when the mindspore "
-                 << "is compiled, but got current Numpy version :" << numpy_version
+                 << "is compiled, and the major versions must be same,"
+                 << "but got current Numpy version :" << numpy_version
                  << ", Numpy version when the mindspore is compiled:" << minimum_numpy_version;
     return;
   }
@@ -1538,7 +1539,8 @@ bool IsNumpyVersionValid(bool show_warning = false) {
     if (show_warning) {
       MS_LOG(WARNING) << "The Numpy bfloat16 data type is supported only when the "
                       << "current Numpy version is not less than the version when the mindspore "
-                      << "is compiled, but got current Numpy version :" << numpy_version
+                      << "is compiled, and the major versions must be same,"
+                      << "but got current Numpy version :" << numpy_version
                       << ", Numpy version when the mindspore is compiled:" << minimum_numpy_version;
     }
     return false;

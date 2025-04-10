@@ -696,7 +696,8 @@ py::array TensorPybind::SyncAsNumpy(const Tensor &tensor) {
     if (tensor.data_type() == kNumberTypeBFloat16 && !np_dtypes::NumpyVersionValid(numpy_version)) {
       MS_EXCEPTION(TypeError) << "For asnumpy, the Numpy bfloat16 data type is supported only when the "
                               << "current Numpy version is not less than the version when the mindspore "
-                              << "is compiled, but got current Numpy version :" << numpy_version
+                              << "is compiled, and the major versions must be same,"
+                              << "but got current Numpy version :" << numpy_version
                               << ", Numpy version when the mindspore is compiled:" << minimum_numpy_version;
     }
 
