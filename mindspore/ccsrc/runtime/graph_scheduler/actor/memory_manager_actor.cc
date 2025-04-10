@@ -385,6 +385,7 @@ void MemoryManagerActor::FreeSomasMemory(SomasInfo *const somas_info, const Devi
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), "SomasOutput", "", false);
   for (auto &output_address : somas_info->graph_output_device_addresses_) {
     output_address->set_from_mem_pool(true);
+    MS_LOG(DEBUG) << "Set from mem pool for device address:" << output_address;
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, from_aid.Name(), memory::mem_pool::MemType::kSomasOutput,
                                                    output_address->GetSize(), output_address);
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(BindDevicePtr, output_address, output_address->GetPtr());
