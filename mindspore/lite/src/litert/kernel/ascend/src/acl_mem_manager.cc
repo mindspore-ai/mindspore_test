@@ -54,30 +54,25 @@ STATUS AclMemManager::UpdateWorkspace(size_t work_size, size_t weight_size, int3
   return lite::RET_OK;
 }
 
-STATUS AclMemManager::UpdateWorkspace(size_t work_size, int32_t device_id, std::thread::id thread_id) {
-  if (work_mem_thread_info_map_.find(device_id) == work_mem_thread_info_map_.end()) {
+STATUS AclMemManager::UpdateWorkspace(size_t work_size, int32_t device_id) {
+  auto it = work_mem_info_map_.find(device_id);
+  if (it == work_mem_info_map_.end()) {
     AclModelMemInfo new_work_mem = {nullptr, 0};
-    MemShareInfo share_mem_info = {device_id, thread_id, "", new_work_mem, false};
-    std::map<std::thread::id, MemShareInfo> inner_map;
-    inner_map.insert(std::make_pair(thread_id, share_mem_info));
-    work_mem_thread_info_map_.insert(std::make_pair(device_id, inner_map));
-  } else if (work_mem_thread_info_map_.at(device_id).find(thread_id) == work_mem_thread_info_map_.at(device_id).end()) {
-    AclModelMemInfo new_work_mem = {nullptr, 0};
-    MemShareInfo share_mem_info = {device_id, thread_id, "", new_work_mem, false};
-    work_mem_thread_info_map_.at(device_id).insert(std::make_pair(thread_id, share_mem_info));
-  }
-  if (work_mem_thread_info_map_.at(device_id).find(thread_id) == work_mem_thread_info_map_.at(device_id).end()) {
-    MS_LOG(ERROR) << "Get device id " << device_id << " of thread_id " << thread_id << " failed!";
+    work_mem_info_map_.insert(std::make_pair(device_id, std::make_pair(new_work_mem, false)));
+  } else if (it->second.second == true) {
+    MS_LOG(ERROR) << "Device " << device_id << " has alloc memory!";
     return lite::RET_ERROR;
   }
-  auto &thread_id_info = work_mem_thread_info_map_.at(device_id).at(thread_id);
-  if (thread_id_info.allocated == true) {
-    MS_LOG(ERROR) << "Device " << device_id << " has allocated memory!";
+  MS_LOG(DEBUG) << "Get device success.";
+  it = work_mem_info_map_.find(device_id);
+  if (it == work_mem_info_map_.end()) {
+    MS_LOG(ERROR) << "Get mem failed!";
     return lite::RET_ERROR;
   }
-  if (work_size > thread_id_info.mem_info.mem_size) {
-    thread_id_info.mem_info.mem_size = work_size;
-    MS_LOG(DEBUG) << "Update work_size = " << thread_id_info.mem_info.mem_size << " successful.";
+  MS_LOG(DEBUG) << "Begin record work size.";
+  if (work_size > it->second.first.mem_size) {
+    it->second.first.mem_size = work_size;
+    MS_LOG(DEBUG) << "Update work_size = " << it->second.first.mem_size << " successful.";
   }
   return lite::RET_OK;
 }
@@ -131,33 +126,31 @@ STATUS AclMemManager::GetModelWorkMem(AclModelMemInfo *acl_work_mem_info, int32_
   return lite::RET_OK;
 }
 
-STATUS AclMemManager::GetModelWorkMem(void **work_ptr, int32_t device_id, std::thread::id thread_id) {
+STATUS AclMemManager::GetModelWorkMem(void **work_ptr, int32_t device_id) {
   MS_CHECK_TRUE_MSG(work_ptr != nullptr, lite::RET_NULL_PTR, "work_ptr is nullptr!");
   std::unique_lock<std::mutex> acl_mtx(acl_mem_alloc_mutex_);
-  if (work_mem_thread_info_map_.find(device_id) == work_mem_thread_info_map_.end()) {
-    MS_LOG(ERROR) << "Get work mem from device " << device_id << " failed!";
+
+  auto it = work_mem_info_map_.find(device_id);
+  if (it == work_mem_info_map_.end()) {
+    MS_LOG(ERROR) << "Get work mem failed!";
     return lite::RET_ERROR;
   }
-  if (work_mem_thread_info_map_.at(device_id).find(thread_id) == work_mem_thread_info_map_.at(device_id).end()) {
-    MS_LOG(ERROR) << "Get work mem from device:" << device_id << ", thread:" << thread_id << " failed!";
-    return lite::RET_ERROR;
-  }
-  auto &share_mem_info = work_mem_thread_info_map_.at(device_id).at(thread_id);
-  if (share_mem_info.mem_info.mem_addr == nullptr) {
-    if (share_mem_info.mem_info.mem_size == 0) {
-      MS_LOG(ERROR) << "The size of the work space of the model added by the ModelGroup.add_model is 0!";
+  it->second.second = true;
+  MS_LOG(DEBUG) << "Get device id success.";
+  if (it->second.first.mem_addr == nullptr) {
+    if (it->second.first.mem_size == 0) {
       return lite::RET_ERROR;
     }
-    auto acl_ret = CALL_ASCEND_API(aclrtMalloc, &(share_mem_info.mem_info.mem_addr), share_mem_info.mem_info.mem_size,
-                                   ACL_MEM_MALLOC_HUGE_FIRST);
+    MS_LOG(DEBUG) << "Begin alloc mem addr.";
+    auto acl_ret =
+      CALL_ASCEND_API(aclrtMalloc, &(it->second.first.mem_addr), it->second.first.mem_size, ACL_MEM_MALLOC_HUGE_FIRST);
     if (acl_ret != ACL_ERROR_NONE) {
       MS_LOG(ERROR) << "Call aclrtMalloc failed, err_code = " << acl_ret;
       return lite::RET_ERROR;
     }
-    share_mem_info.allocated = true;
-    MS_LOG(DEBUG) << "Malloc max work size is " << share_mem_info.mem_info.mem_size;
+    MS_LOG(DEBUG) << "Malloc work mem success, max work size is " << it->second.first.mem_size;
   }
-  *work_ptr = share_mem_info.mem_info.mem_addr;
+  *work_ptr = it->second.first.mem_addr;
   return lite::RET_OK;
 }
 
@@ -209,16 +202,32 @@ STATUS AclMemManager::GetModelWeightMem(void **weight_ptr, std::string model_pat
   return lite::RET_OK;
 }
 
+void AclMemManager::Lock(int32_t device_id) {
+  acl_execute_mutex_.lock();
+  if (device_lock_map_.find(device_id) == device_lock_map_.end()) {
+    device_lock_map_.emplace(std::piecewise_construct, std::forward_as_tuple(device_id), std::forward_as_tuple());
+  }
+  acl_execute_mutex_.unlock();
+  return device_lock_map_.at(device_id).lock();
+}
+
+void AclMemManager::Unlock(int32_t device_id) {
+  acl_execute_mutex_.lock();
+  if (device_lock_map_.find(device_id) == device_lock_map_.end()) {
+    device_lock_map_.emplace(std::piecewise_construct, std::forward_as_tuple(device_id), std::forward_as_tuple());
+  }
+  acl_execute_mutex_.unlock();
+  return device_lock_map_.at(device_id).unlock();
+}
+
 void AclMemManager::ReleaseDeviceMem(int32_t device_id, std::string model_path) {
-  for (auto &device_id_iter : work_mem_thread_info_map_) {
+  for (auto &device_id_iter : work_mem_info_map_) {
     if (device_id_iter.first != device_id) {
       continue;
     }
-    for (auto &thread_id_iter : device_id_iter.second) {
-      if (thread_id_iter.second.mem_info.mem_addr != nullptr) {
-        (void)CALL_ASCEND_API(aclrtFree, thread_id_iter.second.mem_info.mem_addr);
-        thread_id_iter.second.mem_info.mem_addr = nullptr;
-      }
+    if (device_id_iter.second.first.mem_addr != nullptr) {
+      (void)CALL_ASCEND_API(aclrtFree, device_id_iter.second.first.mem_addr);
+      device_id_iter.second.first.mem_addr = nullptr;
     }
   }
   for (auto &device_id_iter : weight_mem_info_map_) {
@@ -249,15 +258,6 @@ AclMemManager::~AclMemManager() {
     (void)CALL_ASCEND_API(aclrtFree, weight_mem_info_.mem_addr);
     weight_mem_info_.mem_addr = nullptr;
     weight_mem_info_.mem_size = 0;
-  }
-  for (auto &device_id_iter : work_mem_thread_info_map_) {
-    for (auto &thread_id_iter : device_id_iter.second) {
-      if (thread_id_iter.second.mem_info.mem_addr != nullptr) {
-        (void)CALL_ASCEND_API(aclrtFree, thread_id_iter.second.mem_info.mem_addr);
-        thread_id_iter.second.mem_info.mem_addr = nullptr;
-        thread_id_iter.second.mem_info.mem_size = 0;
-      }
-    }
   }
   for (auto &device_id_iter : weight_mem_info_map_) {
     for (auto &model_path_iter : device_id_iter.second) {

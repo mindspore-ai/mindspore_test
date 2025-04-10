@@ -569,8 +569,7 @@ bool ModelProcess::PrepareMutiModelShare(const void *om_data, size_t om_data_siz
     return false;
   }
   MS_LOG(INFO) << "work_size: " << work_size << " weight_size: " << weight_size;
-  std::thread::id thread_id = std::this_thread::get_id();
-  auto ret = AclMemManager::GetInstance().UpdateWorkspace(work_size, device_id_, thread_id);
+  auto ret = AclMemManager::GetInstance().UpdateWorkspace(work_size, device_id_);
   if (ret != lite::RET_OK) {
     MS_LOG(ERROR) << "update workspace failed, ret = " << ret;
     return false;
@@ -603,12 +602,11 @@ bool ModelProcess::ShareWeightspaceProcess(const size_t &work_size) {
 
 bool ModelProcess::ShareWorkspaceProcess(const size_t &work_size, const size_t &weight_size) {
   MS_LOG(INFO) << "Share work space.";
-  std::thread::id thread_id = std::this_thread::get_id();
   if (work_size == 0) {
     MS_LOG(WARNING) << "Dynamic input model not support share workspace.";
     work_ptr_ = nullptr;
   } else {
-    auto ret = AclMemManager::GetInstance().GetModelWorkMem(&work_ptr_, device_id_, thread_id);
+    auto ret = AclMemManager::GetInstance().GetModelWorkMem(&work_ptr_, device_id_);
     MS_CHECK_TRUE_MSG(ret == lite::RET_OK, false, "Get work mem failed!");
   }
   auto acl_ret = CALL_ASCEND_API(aclrtMalloc, &(weight_ptr_), weight_size, ACL_MEM_MALLOC_HUGE_FIRST);
@@ -622,7 +620,6 @@ bool ModelProcess::ShareWorkspaceProcess(const size_t &work_size, const size_t &
 
 bool ModelProcess::ShareWorkspaceAndWeightspaceProcess(const size_t &work_size) {
   MS_LOG(INFO) << "Share workspace and weight space.";
-  std::thread::id thread_id = std::this_thread::get_id();
   auto model_path = options_->model_path;
   auto ret = AclMemManager::GetInstance().GetModelWeightMem(&weight_ptr_, model_path, device_id_);
   MS_CHECK_TRUE_MSG(ret == lite::RET_OK, false, "Get weight mem failed!");
@@ -630,7 +627,7 @@ bool ModelProcess::ShareWorkspaceAndWeightspaceProcess(const size_t &work_size) 
     work_ptr_ = nullptr;
     MS_LOG(WARNING) << "Dynamic input model not support share workspace.";
   } else {
-    ret = AclMemManager::GetInstance().GetModelWorkMem(&work_ptr_, device_id_, thread_id);
+    ret = AclMemManager::GetInstance().GetModelWorkMem(&work_ptr_, device_id_);
     MS_CHECK_TRUE_MSG(ret == lite::RET_OK, false, "Get work mem failed!");
   }
   is_sharing_workspace_ = true;
@@ -1322,12 +1319,12 @@ bool ModelProcess::PredictFromHost(const std::vector<KernelTensor *> &inputs,
 
   if (is_sharing_workspace_) {
     MS_LOG(DEBUG) << "Need to lock before aclmdlExecute.";
-    AclMemManager::GetInstance().Lock();
+    AclMemManager::GetInstance().Lock(options_->device_id);
   }
   acl_ret = CALL_ASCEND_API(aclmdlExecute, infer_id_, inputs_, outputs_);
   if (is_sharing_workspace_) {
     MS_LOG(DEBUG) << "Unlock after aclmdlExecute.";
-    AclMemManager::GetInstance().Unlock();
+    AclMemManager::GetInstance().Unlock(options_->device_id);
   }
   if (output_timecost) {
     struct timeval end_time;
