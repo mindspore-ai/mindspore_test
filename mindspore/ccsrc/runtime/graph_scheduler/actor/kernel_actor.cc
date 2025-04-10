@@ -363,6 +363,41 @@ void KernelActor::InitInputInfo() {
   }
 }
 
+namespace {
+void ResetNewRefCountForRefOutputInSomas(const CNodePtr &node, size_t index) {
+  if (node == nullptr) {
+    return;
+  }
+  auto kernel_info = dynamic_cast<KernelInfo *>(node->kernel_info());
+  if (kernel_info == nullptr) {
+    return;
+  }
+  const auto &ref_map = kernel_info->out_in_ref_map();
+  const auto &iter = ref_map.find(index);
+  if (iter == ref_map.end()) {
+    return;
+  }
+  size_t input_index = iter->second;
+  if (index >= common::AnfAlgo::GetInputTensorNum(node)) {
+    return;
+  }
+  const auto &input_node_with_index = common::AnfAlgo::GetPrevNodeOutput(node, input_index, false);
+  if (input_node_with_index.first == nullptr || !input_node_with_index.first->isa<CNode>() ||
+      common::AnfAlgo::CheckPrimitiveType(input_node_with_index.first, prim::kPrimConditionGather) ||
+      !AnfAlgo::OutputAddrExist(input_node_with_index.first, input_node_with_index.second, false)) {
+    return;
+  }
+  const auto &input_device_tensor =
+    AnfAlgo::GetMutableOutputAddr(input_node_with_index.first, input_node_with_index.second, false);
+  input_device_tensor->set_new_ref_count(0);
+  MS_LOG(DEBUG) << "Set new ref count to 0 for device tensor:" << input_device_tensor->PrintInfo()
+                << " for node:" << input_node_with_index.first->fullname_with_scope()
+                << " debug string:" << input_node_with_index.first->DebugString()
+                << " index:" << input_node_with_index.second;
+  ResetNewRefCountForRefOutputInSomas(input_node_with_index.first->cast<CNodePtr>(), input_node_with_index.second);
+}
+}  // namespace
+
 void KernelActor::InitOutputInfo() {
   MS_EXCEPTION_IF_NULL(kernel_info_);
   const auto &output_addresses = kernel_info_->output_address_list();
@@ -401,6 +436,7 @@ void KernelActor::InitOutputInfo() {
       if (somas_graph_output_indexes_.count(i) > 0) {
         MS_LOG(DEBUG) << "Somas keep output device address:" << output_address << " ptr:" << output_address->GetPtr();
         (void)somas_info_->InsertGraphOutputInfo(output_address.get(), somas_outputs[i].first, somas_outputs[i].second);
+        ResetNewRefCountForRefOutputInSomas(kernel_, i);
       } else {
         UpdateRefCount(output_address.get(), true);
         output_address->set_new_ref_count(SIZE_MAX);
@@ -681,9 +717,11 @@ void KernelActor::SetSomasMemory(OpContext<DeviceTensor> *const context) const {
       // In order to perform performance, the pointer validity is not checked here.
       // Check the graph output address need free.
       if (somas_graph_output_indexes_.count(i) && (output_device_tensors_[i]->GetPtr() != nullptr)) {
-        MS_LOG(ERROR) << GetAID().Name() << " does not free address for graph output index: " << i
-                      << " device address:" << output_device_tensors_[i]->PrintInfo();
-        device_contexts_[0]->device_res_manager_->FreeMemory(output_device_tensors_[i]);
+        if (device_ptr != output_device_tensors_[i]->GetPtr()) {
+          MS_LOG(ERROR) << GetAID().Name() << " does not free address for graph output index: " << i
+                        << " device address:" << output_device_tensors_[i]->PrintInfo();
+          device_contexts_[0]->device_res_manager_->FreeMemory(output_device_tensors_[i]);
+        }
       }
       MS_LOG(DEBUG) << "Set ptr:" << device_ptr << " to device address:" << output_device_tensors_[i]
                     << " in actor:" << GetAID();
