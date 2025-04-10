@@ -142,6 +142,7 @@ def _get_prefix(indices_shape, axis_size, indices_dtype):
                                       [[1], [1]]])
     """
     cast_op = P.Cast()
+
     def _check(indices_shape):
         if not indices_shape:
             raise ValueError("indices_shape is empty in _get_prefix.")
