@@ -27,7 +27,7 @@ IFS=',' read -r -a array <<< "$RANK_LIST"
 
 export MS_SIMULATION_LEVEL=1
 export RANK_SIZE="$RANK_SIZE"
-export PYTHONPATH=${BASE_PATH}/mindformers:${BASE_PATH}/mindformers/research/deepseek3/:${PYTHONPATH}
+export PYTHONPATH=${BASE_PATH}/../mindformers:${BASE_PATH}/../mindformers/research/deepseek3/:${PYTHONPATH}
 export MS_DEV_DUMP_IR_PASSES="step_parallel,validate,hwopt_d_after_inline_graph"
 if [ "$CELL_REUSE" = "pp" ]; then
   echo "enable lazy inline in pp"
@@ -44,7 +44,7 @@ do
   export RANK_ID=$rank_id
   rm -rf "$BASE_PATH"/"$CASE_NAME"/rank_${RANK_ID}
   mkdir -p "$BASE_PATH"/"$CASE_NAME"/rank_${RANK_ID}
-  python "$BASE_PATH"/mindformers/run_mindformer.py \
+  python "$BASE_PATH"/../mindformers/run_mindformer.py \
         --config "$CONFIG_FILE" --register_path "./research/deepseek3/"  > "$BASE_PATH"/"$CASE_NAME"/rank_${RANK_ID}/"$OUTPUT_FILE" 2>&1
 done
 bash clear_env_compile_config.sh

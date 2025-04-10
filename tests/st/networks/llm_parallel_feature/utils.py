@@ -373,11 +373,11 @@ def prepare_testcase_env(testcase_name, net_config, commit_id="73fa80658"):
     # 2. clear folder (if exist)
     clear_directory(f"{sh_path}/{testcase_name}")
     # 3. copy yaml to testcase folder
-    os.system(f"cp {sh_path}/mindformers/configs/llama2/pretrain_llama2_7b_bf16.yaml ./{testcase_name}")
+    os.system(f"cp {sh_path}/../mindformers/configs/llama2/pretrain_llama2_7b_bf16.yaml ./{testcase_name}")
     # 4. replace config in yaml
     file_path = f'{sh_path}/{testcase_name}/pretrain_llama2_7b_bf16.yaml'
     status = replace_config(net_config, file_path)
-    run_mindformers_path = f'{sh_path}/mindformers/run_mindformer.py'
+    run_mindformers_path = f'{sh_path}/../mindformers/run_mindformer.py'
     # 5. mock tiktoken
     mock_third_party_pkg("tiktoken", run_mindformers_path)
     # 6. update parallel_speed_up.json if needed
@@ -627,11 +627,11 @@ def prepare_mixtral_testcase_env(testcase_name, net_config):
     # 2. clear folder (if exist)
     clear_directory(f"{sh_path}/{testcase_name}")
     # 3. copy yaml to testcase folder
-    os.system(f"cp {sh_path}/mindformers/research/mixtral/mixtral_8x7b/pretrain_mixtral-8x7b.yaml ./{testcase_name}")
+    os.system(f"cp {sh_path}/../mindformers/research/mixtral/mixtral_8x7b/pretrain_mixtral-8x7b.yaml ./{testcase_name}")
     # 4. replace config in yaml
     file_path = f'{sh_path}/{testcase_name}/pretrain_mixtral-8x7b.yaml'
     status = replace_mixtral_config(net_config, file_path)
-    run_mindformers_path = f'{sh_path}/mindformers/run_mindformer.py'
+    run_mindformers_path = f'{sh_path}/../mindformers/run_mindformer.py'
     # 5. mock tiktoken
     mock_third_party_pkg("tiktoken", run_mindformers_path)
     # 6. update parallel_speed_up.json if needed
@@ -781,7 +781,7 @@ def prepare_deepseekv3_testcase_env(testcase_name, net_config):
     # 4. replace config in yaml
     file_path = f'{sh_path}/{testcase_name}/pretrain_deepseek3.yaml'
     status = replace_deepseekv3_config(net_config, file_path)
-    run_mindformers_path = f'{sh_path}/mindformers/run_mindformer.py'
+    run_mindformers_path = f'{sh_path}/../mindformers/run_mindformer.py'
     # 5. mock tiktoken
     mock_third_party_pkg("tiktoken", run_mindformers_path)
     # 6. update parallel_speed_up.json if needed

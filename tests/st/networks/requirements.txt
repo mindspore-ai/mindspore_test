@@ -7,7 +7,7 @@ pandas              # for st test
 imagesize           # for st test
 toolz               # for st test
 tqdm                # for st test
-Deprecated>=1.2.0
+Deprecated>=1.2.0   # for st test from mindformers
 setuptools
 sentencepiece>=0.2.0
 ftfy>=6.1.1
@@ -23,10 +23,10 @@ tokenizers==0.21.0
 astunparse>=1.6.3
 numpy<2.0.0
 datasets==2.18.0
-tiktoken
+tiktoken            # for st test from mindformers
 jinja2
 setproctitle
 safetensors
-tensorboardX
+tensorboardX        # for st test from mindformers
 jsonlines
 word2number
