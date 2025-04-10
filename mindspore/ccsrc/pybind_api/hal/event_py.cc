@@ -198,6 +198,8 @@ bool EventPy::Query() {
     return true;
   }
 
+  runtime::Pipeline::Get().WaitForward();
+
   if (!EventCnt::IsEventRecorded(event_)) {
     // Event is dispatching, not recorded yet.
     MS_LOG(DEBUG) << "Event is dispatching by async queue";
