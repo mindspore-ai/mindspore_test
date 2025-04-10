@@ -2950,7 +2950,7 @@ REG_BPROP_BUILDER("EluExt").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   return {dx, ib->OutZeros(alpha)};
 });
 
-REG_BPROP_BUILDER("InplaceElu").SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("InplaceElu").FreeUselessValues_I({i0}).SetBody(BODYFUNC(ib) {
   auto alpha = ib->GetInput(kIndex1);
   auto out = ib->GetInput(kIndex2);
   auto dout = ib->GetInput(kIndex3);
