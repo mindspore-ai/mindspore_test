@@ -459,9 +459,9 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
     def _stop_subprocess(self):
         """Only the main process can call join. All the sub-process / sub-thread will be stopped."""
         if self.need_join is True and self.ppid == os.getpid():
+            self.need_join = False
             # abort the monitor first
             self._abort_monitor()
-            self.need_join = False
 
             # waiting for the sub-process stop
             for w in self.workers:
