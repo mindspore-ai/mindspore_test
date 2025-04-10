@@ -618,6 +618,89 @@ void MarkNoInlineForHookedCell(const AnfNodePtr &resolved_node, const py::object
   mark_when_hook_is(CELL_BACKWARD_PRE_HOOK);
   mark_when_hook_is(CELL_BACKWARD_HOOK);
 }
+AnfNodePtr GenerateHookInputNode(const FuncGraphPtr &resolved_graph) {
+  std::vector<AnfNodePtr> tuple_input{NewValueNode(prim::kPrimMakeTuple)};
+  for (size_t i = 0; i < resolved_graph->parameters().size(); ++i) {
+    (void)tuple_input.emplace_back(resolved_graph->parameters()[i]);
+  }
+  return resolved_graph->NewCNodeInOrder(tuple_input);
+}
+
+ValuePtr GenerateHookFuncGraph(const py::object &obj, const std::string &hook_attr_name,
+                               const std::string &hook_func_name) {
+  const auto &hook_obj = py::getattr(obj, hook_attr_name.c_str(), py::none());
+  if (py::isinstance<py::none>(hook_obj)) {
+    return nullptr;
+  }
+  const auto &dict = py::cast<py::dict>(hook_obj);
+  if (dict.size() == 0) {
+    return nullptr;
+  }
+  const auto &value = py::getattr(obj, hook_func_name.c_str());
+  ValuePtr res = nullptr;
+  ConvertData(value, &res);
+  return res;
+}
+
+AnfNodePtr InsertForwardPreHookFunction(const AnfNodePtr &resolved_node, const py::object &obj,
+                                        const FuncGraphManagerPtr &manager) {
+  auto resolved_graph = GetValueNode<FuncGraphPtr>(resolved_node);
+  if (resolved_graph == nullptr) {
+    return nullptr;
+  }
+  ValuePtr res = GenerateHookFuncGraph(obj, "_forward_pre_hook", "_jit_forward_pre_hook");
+  if (res == nullptr) {
+    return nullptr;
+  }
+  auto res_func = res->cast<FuncGraphPtr>();
+  res_func->set_manager(manager);
+  std::vector<AnfNodePtr> hook_input;
+  (void)hook_input.emplace_back(NewValueNode(res));
+  auto tuple_input_node = GenerateHookInputNode(resolved_graph);
+  (void)hook_input.emplace_back(tuple_input_node);
+  auto hook_cnode = resolved_graph->NewCNodeInOrder(hook_input);
+  resolved_graph->AddNode(hook_cnode);
+  resolved_graph->AddNode(tuple_input_node);
+  for (size_t i = 0; i < resolved_graph->parameters().size(); ++i) {
+    auto users_sub = manager->node_users()[resolved_graph->parameters()[i]];
+    auto getitem_cnode =
+      resolved_graph->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), hook_cnode, NewValueNode(SizeToLong(i))});
+    resolved_graph->AddNode(getitem_cnode);
+    for (const auto &user_sub : users_sub) {
+      auto user_subc = user_sub.first->cast<CNodePtr>();
+      user_subc->set_input(user_sub.second, getitem_cnode);
+    }
+  }
+  return hook_cnode;
+}
+
+void InsertForwardHookFunction(const AnfNodePtr &resolved_node, const py::object &obj,
+                               const FuncGraphManagerPtr &manager, const AnfNodePtr &pre_hook_node) {
+  auto resolved_graph = GetValueNode<FuncGraphPtr>(resolved_node);
+  if (resolved_graph == nullptr) {
+    return;
+  }
+  ValuePtr res = GenerateHookFuncGraph(obj, "_forward_hook", "_jit_forward_hook");
+  if (res == nullptr) {
+    return;
+  }
+  auto res_func = res->cast<FuncGraphPtr>();
+  res_func->set_manager(manager);
+  AnfNodePtr hook_input_node = nullptr;
+  std::vector<AnfNodePtr> hook_input;
+  if (pre_hook_node != nullptr) {
+    hook_input_node = pre_hook_node;
+  } else {
+    hook_input_node = GenerateHookInputNode(resolved_graph);
+    resolved_graph->AddNode(hook_input_node);
+  }
+  const auto &output = resolved_graph->output();
+  (void)hook_input.emplace_back(NewValueNode(res));
+  (void)hook_input.emplace_back(hook_input_node);
+  (void)hook_input.emplace_back(output);
+  auto hook_cnode = resolved_graph->NewCNodeInOrder(hook_input);
+  resolved_graph->set_output(hook_cnode);
+}
 
 AnfNodePtr Resolver::ResolveSymbol(const FuncGraphManagerPtr &manager, const NameSpacePtr &name_space,
                                    const SymbolPtr &symbol, const AnfNodePtr &node) {
@@ -676,7 +759,11 @@ AnfNodePtr Resolver::ResolveSymbol(const FuncGraphManagerPtr &manager, const Nam
       MS_LOG(DEBUG) << "Update top graph's parameters debug info with user top graph's parameters";
     }
   }
-  MarkNoInlineForHookedCell(resolved_node, obj);
+  if (name_space->module() != RESOLVE_NAMESPACE_NAME_ENTRY) {
+    auto pre_hook_node = InsertForwardPreHookFunction(resolved_node, obj, manager);
+    InsertForwardHookFunction(resolved_node, obj, manager, pre_hook_node);
+    MarkNoInlineForHookedCell(resolved_node, obj);
+  }
   return resolved_node;
 }
 

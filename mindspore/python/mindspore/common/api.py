@@ -73,6 +73,23 @@ ARG_SPECIFIED = "arg_specified_infos"
 TOTAL_ARG_LEN = "total_arg_length"
 
 
+def count_hook_num(cell):
+    hook_modify_number = 0
+    for inner_cell in cell.cells():
+        hook_modify_number += inner_cell.modify_hook
+        hook_modify_number += count_hook_num(inner_cell)
+    return hook_modify_number
+
+def check_cell_registed_new_hook(phase, cell):
+    if not cell or not isinstance(cell, ms.nn.Cell):
+        return phase
+    hook_modify_number = cell.modify_hook
+    hook_modify_number += count_hook_num(cell)
+    if hook_modify_number > 0:
+        hook_additional_phase = "hook_modify." + str(hook_modify_number)
+        phase += hook_additional_phase
+    return phase
+
 def _check_recompile_args(compile_args, kwargs):
     """Check recompile of graph"""
 
@@ -751,6 +768,8 @@ class _JitExecutor:
 
         if self.input_signature is None:
             update_auto_dynamic_shape_phase(compile_args, key_id, phase)
+
+        phase = check_cell_registed_new_hook(phase, self.obj)
 
         if phase in ms_compile_cache and self._graph_executor.has_compiled(phase) and not parameter_hook_updated():
             # Release resource should be released when CompileInner won't be executed, such as cur_convert_input_

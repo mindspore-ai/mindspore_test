@@ -89,7 +89,7 @@ class HookHandle:
     """
     unique_id = 0
 
-    def __init__(self, hook_dict=None, *, extra_dict=None):
+    def __init__(self, hook_dict=None, *, extra_dict=None, cell=None):
         self.hook_dict_ref = None
         self.extra_dict_ref = None
         if hook_dict is not None:
@@ -98,6 +98,9 @@ class HookHandle:
             HookHandle.unique_id += 1
             if extra_dict is not None:
                 self.extra_dict_ref = weakref.ref(extra_dict)
+        self.cell = None
+        if cell is not None:
+            self.cell = cell
 
     def remove(self):
         """
@@ -145,6 +148,8 @@ class HookHandle:
             (Tensor(shape=[1], dtype=Float32, value= [ 2.00000000e+00]), Tensor(shape=[1], dtype=Float32,
             value= [ 2.00000000e+00]))
         """
+        if self.cell is not None:
+            self.cell.modify_hook += 1
         if self.hook_dict_ref is not None:
             hook_dict = self.hook_dict_ref()
             if hook_dict is not None and self.handle_id in hook_dict:

@@ -196,6 +196,7 @@ class Cell(Cell_):
         super().__setattr__("_recompute_cell", None)
         super().__setattr__("mixed_precision_type", None)
         super().__setattr__("_lazy_construct_sig", None)
+        super().__setattr__("modify_hook", 0)
         init_pipeline()
 
         # call gc to release GE session resources used by non-used cell objects
@@ -2642,10 +2643,11 @@ class Cell(Cell_):
             value= [ 2.00000000e+00]))
         """
         check_hook_fn(hook_fn)
-        handle = HookHandle(self._forward_pre_hook, extra_dict=self._forward_pre_hook_with_kwargs)
+        handle = HookHandle(self._forward_pre_hook, extra_dict=self._forward_pre_hook_with_kwargs, cell=self)
         self._forward_pre_hook[handle.handle_id] = hook_fn
         if with_kwargs:
             self._forward_pre_hook_with_kwargs[handle.handle_id] = True
+        self.modify_hook += 1
         return handle
 
     @jit_forbidden_register
@@ -2671,6 +2673,34 @@ class Cell(Cell_):
                         ret = (ret,)
                     args = ret
         return args, kwargs
+
+    def _jit_forward_pre_hook(self, inputs):
+        """
+        Compile forward pre hook function registered on Cell object.
+
+        Args:
+            inputs: The input objects of cell object.
+
+        Returns:
+            - **outputs** - New input objects or none.
+
+        Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+        """
+        forward_pre_hook_inputs = inputs
+        for fn in self._forward_pre_hook.values():
+            ret = fn(self, forward_pre_hook_inputs)
+            if ret is not None:
+                if not isinstance(ret, tuple):
+                    forward_pre_hook_inputs = (ret,)
+                else:
+                    forward_pre_hook_inputs = ret
+
+        if len(forward_pre_hook_inputs) != len(inputs):
+            raise TypeError(
+                "The forward pre hook return value size is {} not equal to input size {}".format(
+                    len(forward_pre_hook_inputs), len(inputs)))
+        return forward_pre_hook_inputs
 
     def register_forward_hook(self, hook_fn, with_kwargs=False):
         """
@@ -2745,11 +2775,41 @@ class Cell(Cell_):
         if self.has_bprop:
             return HookHandle()
         check_hook_fn(hook_fn)
-        handle = HookHandle(self._forward_hook, extra_dict=self._forward_hook_with_kwargs)
+        handle = HookHandle(self._forward_hook, extra_dict=self._forward_hook_with_kwargs, cell=self)
         self._forward_hook[handle.handle_id] = hook_fn
         if with_kwargs:
             self._forward_hook_with_kwargs[handle.handle_id] = True
+        self.modify_hook += 1
         return handle
+
+    def _jit_forward_hook(self, inputs, output):
+        """
+        Compile forward hook function registered on Cell object.
+
+        Args:
+            inputs: The input objects of Cell object.
+            output: The output object of Cell object.
+
+        Returns:
+            - **output** - New output object or none.
+
+        Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+        """
+        forward_hook_output = output
+        for fn in self._forward_hook.values():
+            ret = fn(self, inputs, forward_hook_output)
+            if ret is not None:
+                forward_hook_output = ret
+
+        if isinstance(output, tuple):
+            if not isinstance(forward_hook_output, tuple):
+                forward_hook_output = (forward_hook_output,)
+            if len(forward_hook_output) != len(output):
+                raise TypeError(
+                    "The forward hook return value size is {} not equal to output size {}".format(
+                        len(forward_hook_output), len(output)))
+        return forward_hook_output
 
     @jit_forbidden_register
     def _run_forward_hook(self, args, kwargs, output):
@@ -2819,7 +2879,7 @@ class Cell(Cell_):
             (Tensor(shape=[1], dtype=Float32, value= [ 2.00000000e+00]),)
         """
         check_hook_fn(hook_fn)
-        handle = HookHandle(self._backward_pre_hook)
+        handle = HookHandle(self._backward_pre_hook, self)
         self._backward_pre_hook[handle.handle_id] = hook_fn
         if self._cell_backward_pre_hook is None:
             # Generate a CellBackwardHook prim, and add function for it
@@ -3433,7 +3493,7 @@ class Cell(Cell_):
             (Tensor(shape=[1], dtype=Float32, value= [ 2.00000000e+00]),)
         """
         check_hook_fn(hook_fn)
-        handle = HookHandle(self._backward_hook)
+        handle = HookHandle(self._backward_hook, self)
         self._backward_hook[handle.handle_id] = hook_fn
         if self._cell_backward_hook is None:
             # Generate a CellBackwardHook prim, and add function for it
