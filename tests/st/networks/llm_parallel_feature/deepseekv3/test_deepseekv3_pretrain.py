@@ -20,20 +20,20 @@ import re
 
 def extract_losses_from_log(file_path):
     """
-    从指定的日志文件中提取所有 'loss:' 后面跟随的数值，并返回一个包含这些数值的列表。
-    :param file_path: 日志文件的路径
-    :return: 包含所有提取出的损失值的列表
+    Extracts all numerical values following 'loss:' from the specified log file and returns a list containing these values.
+    :param file_path: Path to the log file
+    :return: List containing all extracted loss values
     """
-    # 正则表达式模式匹配 "loss:" 后面跟随的数字
+    #  Regular expression pattern to match numerical values after "loss:"
     pattern = re.compile(r'loss:\s*([0-9]+(?:\.[0-9]+)?)')
     losses = []
-    # 打开并读取文件内容
+    # Open the file and read its contents
     with open(file_path, 'r', encoding='utf-8') as file:
         for line in file:
-            # 在每一行中查找匹配项
+            # Search for matches in each line
             matches = pattern.findall(line)
             for match in matches:
-                # 将找到的字符串形式的损失值转换为浮点数并添加到列表中
+                # Convert found loss values from string to float and add to list
                 losses.append(float(match))
     return losses
 
