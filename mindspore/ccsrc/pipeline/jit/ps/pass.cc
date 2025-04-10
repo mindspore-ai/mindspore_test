@@ -1328,7 +1328,7 @@ bool OverlapOptShardInPipelinePass(const ResourcePtr &resource) {
 bool BeginEndOverlapInlinePass(const ResourcePtr &resource) {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  auto is_enable = ms_context->get_param<bool>(MS_CTX_ENABLE_BEGIN_END_INLINE_OPT);
+  auto is_enable = ms_context->get_param<bool>(MS_CTX_ENABLE_BEGIN_END_INLINE_OPT) && common::AnfAlgo::IsBackendGe();
   if (!is_enable) {
     return true;
   }
