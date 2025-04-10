@@ -525,6 +525,7 @@ class Depend(Primitive):
     def __call__(self, value, expr):
         return value
 
+
 class MoveTo(Primitive):
     r"""
     Copy tensor to target device synchronously or asynchronously, default synchronously.

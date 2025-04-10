@@ -109,7 +109,7 @@ def depend(value, expr):
     return depend_(value, expr)
 
 
-def move_to(input, to="CPU", blocking=True):
+def move_to(input, to="CPU", blocking=True):  # pylint: disable=redefined-outer-name
     """
     Copy tensor to target device synchronously or asynchronously, default synchronously.
 
