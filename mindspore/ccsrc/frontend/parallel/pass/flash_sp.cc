@@ -1938,6 +1938,7 @@ CNodePtr DynCreateReplaceFlashSPGraph(const FuncGraphManagerPtr &manager,
   }
   size_t sp_num = fsp_info->GetSPNum(), rank_id = fsp_info->GetRankId();
   std::shared_ptr<OperatorInfo> operator_info = fa_score_node->user_data<parallel::OperatorInfo>();
+  MS_EXCEPTION_IF_NULL(operator_info);
   auto q_shape = operator_info->inputs_tensor_info()[kIndex0].tensor_layout().base_slice_shape().array();
   auto kv_shape = operator_info->inputs_tensor_info()[kIndex1].tensor_layout().base_slice_shape().array();
   auto flash_score_info_ptr = std::dynamic_pointer_cast<FlashAttentionScoreInfo>(operator_info);
