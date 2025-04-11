@@ -496,7 +496,7 @@ ValuePtr KernelTensor::GetValue() const {
     return kNone;
   }
   if (!SetKernelTensorValue()) {
-    MS_LOG(EXCEPTION) << "Failed to set KernelTensorValue for kernel tensor:" << this;
+    MS_LOG(EXCEPTION) << "Failed to get value from kernel tensor:" << this->ToString() << ", this pointer: " << this;
   }
   return host_info_->kernel_tensor_value_ != nullptr ? host_info_->kernel_tensor_value_ : value_;
 }
@@ -510,7 +510,7 @@ const void *KernelTensor::GetValuePtr() {
     return nullptr;
   }
   if (!SetKernelTensorValue()) {
-    MS_LOG(EXCEPTION) << "Failed to set KernelTensorValue.";
+    MS_LOG(EXCEPTION) << "Failed to get value from kernel tensor:" << this->ToString() << ", this pointer: " << this;
   }
   MS_EXCEPTION_IF_NULL(host_info_->kernel_tensor_value_);
   return host_info_->kernel_tensor_value_->GetDataPtr();
@@ -541,8 +541,8 @@ bool KernelTensor::SyncDataFromDeviceToHost() const {
 
   void *device_ptr = this->device_ptr();
   if (device_ptr == nullptr) {
-    MS_LOG(ERROR) << "Not malloc device memory yet, sync data from device to host side failed, size: "
-                  << address_common_->size_;
+    MS_LOG(INFO) << "Not malloc device memory yet, sync data from device to host side failed, size: "
+                 << address_common_->size_;
     return false;
   }
 
@@ -616,7 +616,7 @@ bool KernelTensor::SetKernelTensorValue() const {
 
   // Sync value data from device.
   if (!SyncDataFromDeviceToHost()) {
-    MS_LOG(ERROR) << "Sync data from device to host side failed";
+    MS_LOG(INFO) << "Sync data from device to host side failed";
     return false;
   }
   return true;
