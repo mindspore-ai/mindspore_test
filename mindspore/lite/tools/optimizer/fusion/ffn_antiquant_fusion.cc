@@ -60,6 +60,7 @@ bool FFNAntiquantFusion::Run(const FuncGraphPtr &func_graph) {
 // Repeat Param Shape: MOE: [R, N], FFN: [1, N]
 ParameterPtr FFNAntiquantFusion::RepeatParameter(const FuncGraphPtr &func_graph, const ParameterPtr param_node,
                                                  int repeat_times) {
+  MS_CHECK_TRUE_RET(param_node != nullptr, nullptr);
   if (repeat_times == 1) {
     return param_node;
   }
