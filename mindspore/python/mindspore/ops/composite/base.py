@@ -412,14 +412,16 @@ class GradOperation(GradOperation_):
 
         # check run exclude sens
         if isinstance(fn, (FunctionType, MethodType)):
-            if not _pynative_executor.check_run(grad, fn, weights, None, *run_args):
+            if not _pynative_executor.check_run(grad, fn, weights, None, True, *run_args,
+                                                create_graph=True):
                 _pynative_executor.set_grad_flag(True)
                 _pynative_executor.new_graph(fn, *args, **kwargs)
                 output = fn(*args, **kwargs)
                 _pynative_executor.end_graph(fn, output, *args, **kwargs)
         else:
             # Check if fn has run already
-            if not _pynative_executor.check_run(grad, fn, weights, None, *run_args):
+            if not _pynative_executor.check_run(grad, fn, weights, None, True, *run_args,
+                                                create_graph=True):
                 requires_grad = fn.requires_grad
                 fn.requires_grad = True
                 fn(*args, **kwargs)
@@ -662,7 +664,8 @@ class _Grad(GradOperation_):
         outputs = ()
         run_forward = False
         if isinstance(fn, (FunctionType, MethodType)):
-            if not _pynative_executor.check_run(grad, fn, weights, self.grad_position, *run_args):
+            if not _pynative_executor.check_run(grad, fn, weights, self.grad_position, True, *run_args,
+                                                create_graph=True):
                 _pynative_executor.set_grad_flag(True)
                 _pynative_executor.new_graph(fn, *args, **kwargs)
                 outputs = fn(*args, **kwargs)
@@ -670,7 +673,8 @@ class _Grad(GradOperation_):
                 run_forward = True
         else:
             # Check if fn has run already.
-            if not _pynative_executor.check_run(grad, fn, weights, self.grad_position, *run_args):
+            if not _pynative_executor.check_run(grad, fn, weights, self.grad_position, True, *run_args,
+                                                create_graph=True):
                 requires_grad = fn.requires_grad
                 fn.requires_grad = True
                 outputs = fn(*args, **kwargs)

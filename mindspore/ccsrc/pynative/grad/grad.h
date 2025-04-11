@@ -97,7 +97,7 @@ class PYNATIVE_EXPORT GradExecutor {
   void RecordCustomBprop(const autograd::CustomContext &context) const;
   void RecordForwardGraphForInput(const ValuePtr &value, const string &input_id);
   py::object CheckAlreadyRun(const prim::GradOperationPtr &grad, const py::object &obj, const py::object &weights,
-                             const py::object &grad_position, const py::args &args);
+                             const py::object &grad_position, const py::args &args, const py::kwargs &kwargs);
   TopCellInfoPtr GetReadyRunTopCell(const std::string &ready_run_cell_id) const;
   void GetTopCellWithInputArgsRespectTo(const prim::GradOperationPtr &grad, const py::object &obj,
                                         const py::args &args);

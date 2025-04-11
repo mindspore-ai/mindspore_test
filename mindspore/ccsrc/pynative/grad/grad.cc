@@ -68,6 +68,7 @@ constexpr char kGrad[] = "grad";
 constexpr auto kNeedRecompute = "is_cell_recompute";
 constexpr auto kInternalParams = "internal_params";
 constexpr auto kUsedBpropInputs = "used_bprop_inputs";
+constexpr auto kCreateGraph = "create_graph";
 constexpr size_t kContainerRatio = 2;
 
 void ParsePyArgsToInputArgsInfo(const InputArgsInfoPtr &input_args_info, const py::object &obj, const py::args &args) {
@@ -739,7 +740,7 @@ bool GradExecutor::NeedIncreaseGradOrder(const std::string &obj_id) {
 
 py::object GradExecutor::CheckAlreadyRun(const prim::GradOperationPtr &grad, const py::object &obj,
                                          const py::object &weights, const py::object &grad_position,
-                                         const py::args &args) {
+                                         const py::args &args, const py::kwargs &kwargs) {
   const auto &obj_id = PyNativeAlgo::PyParser::GetIdByPyObj(obj);
 
   // The rule of grad order is:
@@ -752,9 +753,9 @@ py::object GradExecutor::CheckAlreadyRun(const prim::GradOperationPtr &grad, con
   // same. GradOperation information includes grad order for distinguish high-order.
   // Use a flag: call_grad_api_first_ for distinguish these two scenarios. If scenarios 1 are taken,
   // call_grad_api_first_ will not take effect, otherwise, it works.
-  bool disable_high_order = common::GetEnv("MS_DEV_DISABLE_AUTO_H2D") == "1";
+  bool high_order = kwargs.contains(kCreateGraph) ? (py::cast<bool>(kwargs[kCreateGraph])) : true;
   bool need_increase_grad_order = false;
-  if (disable_high_order) {
+  if (!high_order) {
     grad_order_ = 1;
   } else {
     need_increase_grad_order = NeedIncreaseGradOrder(obj_id);
