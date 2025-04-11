@@ -18,9 +18,11 @@ from tests.st.networks.llm_parallel_feature.utils import check_log, clear_direct
 from tests.mark_utils import arg_mark
 import re
 
+
 def extract_losses_from_log(file_path):
     """
-    Extracts all numerical values following 'loss:' from the specified log file and returns a list containing these values.
+    Extracts all numerical values following 'loss:' from the specified log file
+    and returns a list containing these values.
     :param file_path: Path to the log file
     :return: List containing all extracted loss values
     """
@@ -37,12 +39,14 @@ def extract_losses_from_log(file_path):
                 losses.append(float(match))
     return losses
 
+
 def log_path_preprocess(case_name, device_num):
     # return the log path list, combining with rank list
     log_path_list = []
     for rank in range(device_num):
         log_path_list.append(f"./{case_name}/worker_{rank}.log")
     return log_path_list
+
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='allcards', essential_mark='essential')
 def test_deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_deredundency_8p_gmm():
@@ -55,11 +59,13 @@ def test_deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_deredundency_8p_gmm():
     sh_path = os.path.split(os.path.realpath(__file__))[0]
     file_path = f"{sh_path}/pretrain_deepseek3_gmm.yaml"
     device_num = 8
+    master_port = 7123
+    hccl_if_base_port = 63334
 
     os.makedirs(os.path.join(sh_path, case_name), exist_ok=True)
     clear_directory(f"{sh_path}/{case_name}")
     os.system("export MS_DEV_GRAPH_KERNEL_FLAGS='--enable_pass=grouped_matmul_assignadd_fusion'")
-    os.system(f"bash {sh_path}/run_llm.sh {device_num} {file_path} {case_name} pp")
+    os.system(f"bash {sh_path}/run_llm.sh {device_num} {file_path} {case_name} {master_port} {hccl_if_base_port} pp")
 
     # check train over
     check_pair = {"Training Over": 1}
@@ -79,11 +85,13 @@ def test_deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_8p_bmm():
     sh_path = os.path.split(os.path.realpath(__file__))[0]
     file_path = f"{sh_path}/pretrain_deepseek3_bmm.yaml"
     device_num = 8
+    master_port = 7124
+    hccl_if_base_port = 63355
 
     os.makedirs(os.path.join(sh_path, case_name), exist_ok=True)
     clear_directory(f"{sh_path}/{case_name}")
     os.system("export MS_DEV_GRAPH_KERNEL_FLAGS='--enable_pass=grouped_matmul_assignadd_fusion'")
-    os.system(f"bash {sh_path}/run_llm.sh {device_num} {file_path} {case_name} pp")
+    os.system(f"bash {sh_path}/run_llm.sh {device_num} {file_path} {case_name} {master_port} {hccl_if_base_port} pp")
 
     # check train over
     check_pair = {"Training Over": 1}
