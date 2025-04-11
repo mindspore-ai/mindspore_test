@@ -39,8 +39,7 @@ from mindspore.communication.management import get_rank, GlobalComm
 from ._ms_kernel import determine_variable_usage
 from ._custom_grad import autodiff_bprop
 from ._pyfunc_registry import add_pyfunc
-
-from ._custom_ops_utils import ExtensionLoader
+from ._custom_ops_utils import ExtensionBuilder
 
 if platform.system() != "Windows":
     import fcntl
@@ -1111,27 +1110,37 @@ class CustomOpBuilder:
     r"""
     CustomOpBuilder is used to initialize and configure custom operators for MindSpore.
 
+    In most cases, users only need to provide the source files and additional compilation options in the constructor
+    and call the `load` method to complete the compilation and loading of the operator.
+    If users have specific customization requirements, they can inherit this class and override certain methods.
+    It is important to note that if methods are overridden, some parameters passed to the constructor may be ignored.
+
+    .. warning::
+        This is an experimental API that is subject to change.
+
     Args:
         name (str): The unique name of the custom operator module, used to identify the operator.
-        sources (str or list[str]): The source file(s) of the custom operator. It can be a single file path or
+        sources (Union[str, list[str]]): The source file(s) of the custom operator. It can be a single file path or
                                     a list of file paths.
         backend (str, optional): The target backend for the operator, such as "CPU" or "Ascend". Default: ``None``.
-        include_paths (list[str], optional): Additional include paths needed during compilation. Default: ``None``.
+        include_paths (list[str], optional): Additionally included paths needed during compilation. Default: ``None``.
         cflags (str, optional): Extra C++ compiler flags to be used during compilation. Default: ``None``.
         ldflags (str, optional): Extra linker flags to be used during linking. Default: ``None``.
+        kwargs (dict, optional): Additional keyword arguments for future extensions or specific custom requirements.
 
     .. note::
-        If the `backend` argument is provided, additional default flags will be automatically added to
-        the compilation and linking steps to support the operator's target backend.
-        The `sources` argument must point to valid source files for the custom operator.
-        If `include_paths`, `cflags`, or `ldflags` are not provided, default values will be used.
-        The `load()` method will use the provided arguments to compile and load the custom operator.
+        - If the `backend` argument is provided, additional default flags will be automatically added to
+          the compilation and linking steps to support the operator's target backend. The default options
+          can be referenced in the implementation of the `get_cflags` and `get_ldflags` methods in the `CustomOpBuilder
+          <https://gitee.com/mindspore/mindspore/blob/master/mindspore/python/mindspore/ops/operations/custom_ops.py>`_.
+        - The `sources` argument must point to valid source files for the custom operator.
 
     Supported Platforms:
         ``Ascend`` ``CPU``
 
     Examples:
-        >>> builder = CustomOpBuilder(
+        >>> from mindspore import ops
+        >>> builder = ops.CustomOpBuilder(
         ...     name="custom_op_cpu",
         ...     sources="custom_ops_impl/pybind_op_cpu.cpp",
         ...     backend="CPU"
@@ -1142,13 +1151,14 @@ class CustomOpBuilder:
     _loaded_ops = {}
     _ms_code_base = None
 
-    def __init__(self, name, sources, backend=None, include_paths=None, cflags=None, ldflags=None):
+    def __init__(self, name, sources, backend=None, include_paths=None, cflags=None, ldflags=None, **kwargs):
         self.name = name
         self.source = sources
         self.backend = backend
         self.include_paths = include_paths
         self.cflags = cflags
         self.ldflags = ldflags
+        self.build_dir = kwargs.get("build_dir")
         if CustomOpBuilder._mindspore_path is None:
             CustomOpBuilder._mindspore_path = os.path.dirname(os.path.abspath(ms.__file__))
             CustomOpBuilder._ms_code_base = os.path.join(CustomOpBuilder._mindspore_path, "include")
@@ -1156,16 +1166,27 @@ class CustomOpBuilder:
             self.ascend_cann_path = os.getenv("ASCEND_OPP_PATH").split('opp')[0]
 
     def get_sources(self):
-        """source files"""
+        """
+        Get the source files for the custom operator.
+
+        Returns:
+            str or list[str], The source file(s) for the operator.
+        """
         return self.source
 
     def get_include_paths(self):
-        """include paths"""
+        """
+        Get the include paths required for compiling the custom operator.
+
+        Returns:
+            list[str], A list of include paths.
+        """
         include_list = self.include_paths if self.include_paths is not None else []
         include_list.append(CustomOpBuilder._mindspore_path)
         include_list.append(os.path.join(CustomOpBuilder._mindspore_path, "include"))
         include_list.append(os.path.join(CustomOpBuilder._mindspore_path, "include/third_party"))
         include_list.append(os.path.join(CustomOpBuilder._mindspore_path, "include/third_party/robin_hood_hashing"))
+        include_list.append(os.path.join(CustomOpBuilder._mindspore_path, "include/third_party/securec/include"))
 
         if self.backend == "Ascend":
             include_list.append(os.path.join(self.ascend_cann_path, "include"))
@@ -1187,9 +1208,13 @@ class CustomOpBuilder:
         return include_list
 
     def get_cflags(self):
-        """cxx flags"""
-        flags = ['-fstack-protector-all', '-Wl,-z,relro,-z,now,-z,noexecstack', '-fPIC', '-pie',
-                 '-Wl,--disable-new-dtags,--rpath', '-s']
+        """
+        Get the C++ compiler flags for building the custom operator.
+
+        Returns:
+            list[str], A list of C++ compiler flags.
+        """
+        flags = ['-fstack-protector-all', '-fPIC', '-pie']
         flags += ['-DENABLE_FAST_HASH_TABLE=1']
         if self.backend == "Ascend":
             flags.append('-DCUSTOM_ASCEND_OP')
@@ -1198,8 +1223,14 @@ class CustomOpBuilder:
         return flags
 
     def get_ldflags(self):
-        """extra ld flags"""
-        flags = [
+        """
+        Get the linker flags for building the custom operator.
+
+        Returns:
+            list[str], A list of linker flags.
+        """
+        flags = ['-Wl,-z,relro,-z,now,-z,noexecstack', '-Wl,--disable-new-dtags,--rpath', '-s']
+        flags += [
             '-L' + os.path.abspath(os.path.join(CustomOpBuilder._mindspore_path, 'lib')),
             '-lmindspore_core',
             '-lmindspore_ms_backend',
@@ -1214,16 +1245,49 @@ class CustomOpBuilder:
             flags.append(self.ldflags)
         return flags
 
-    def load(self):
-        """load module"""
-        if self.name in CustomOpBuilder._loaded_ops:
-            return CustomOpBuilder._loaded_ops[self.name]
+    def build(self):
+        """
+        Build the custom operator module.
 
-        op_module = ExtensionLoader().load(
+        Returns:
+            str, The path to the compiled module.
+        """
+        return ExtensionBuilder(self._get_build_directory()).build(
             module_name=self.name,
             sources=self.get_sources(),
             extra_include_paths=self.get_include_paths(),
             extra_cflags=self.get_cflags(),
             extra_ldflags=self.get_ldflags())
-        mod = CustomOpBuilder._loaded_ops[self.name] = op_module
+
+    def load(self):
+        """
+        Build and load the custom operator module.
+
+        Returns:
+            Module, The loaded custom operator module.
+        """
+        if self.name in CustomOpBuilder._loaded_ops:
+            return CustomOpBuilder._loaded_ops[self.name]
+        module_path = self.build()
+        mod = self._import_module(module_path)
+        CustomOpBuilder._loaded_ops[self.name] = mod
         return mod
+
+    def _import_module(self, module_path):
+        """Import module from library."""
+        spec = importlib.util.spec_from_file_location(self.name, module_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def _get_build_directory(self):
+        """Get build directory."""
+        if self.build_dir is None:
+            build_root = os.path.realpath(os.getenv('MS_COMPILER_CACHE_PATH', "./kernel_meta"))
+            self.build_dir = os.path.join(build_root, self.name)
+        else:
+            self.build_dir = os.path.realpath(self.build_dir)
+        logger.info(f'Build {self.name} in directory {self.build_dir}')
+        if not os.path.exists(self.build_dir):
+            os.makedirs(self.build_dir, exist_ok=True)
+        return self.build_dir

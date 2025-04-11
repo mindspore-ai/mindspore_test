@@ -15,7 +15,6 @@
 
 """compile custom kernel with ninja"""
 
-import importlib
 import os
 import shlex
 import subprocess
@@ -121,45 +120,25 @@ class FileLocker:
             time.sleep(0.5)
 
 
-class ExtensionLoader:
-    """ExtensionLoader"""
+class ExtensionBuilder:
+    """ExtensionBuilder"""
 
-    def __init__(self):
-        """ExtensionLoader"""
+    def __init__(self, build_dir):
+        """ExtensionBuilder"""
+        self.build_dir = build_dir
 
-    def _get_build_directory(self, module_name):
-        """Get build directory."""
-        build_root = os.environ.get('MS_COMPILER_CACHE_PATH')
-        if build_root is None:
-            build_root = os.path.realpath("./kernel_meta")
-        logger.info(f'Using {build_root} as MindSpore extensions root...')
-
-        build_dir = os.path.join(build_root, module_name)
-        if not os.path.exists(build_dir):
-            os.makedirs(build_dir, exist_ok=True)
-        return build_dir
-
-    def _compile(self, name, sources, cflags, ldflags, include_paths, build_dir):
+    def _compile(self, name, sources, cflags, ldflags, include_paths):
         """Compile."""
-        if version_manager.check_version(name, sources, cflags, ldflags, include_paths, build_dir):
-            locker = FileLocker(build_dir)
+        if version_manager.check_version(name, sources, cflags, ldflags, include_paths, self.build_dir):
+            locker = FileLocker(self.build_dir)
             if locker.try_lock():
                 try:
-                    self._write_ninja_file_and_build_library(name, sources, cflags, ldflags, include_paths, build_dir)
+                    self._write_ninja_file_and_build_library(name, sources, cflags, ldflags, include_paths)
                 finally:
                     locker.release_lock()
             else:
                 locker.wait()
         logger.info(f'Loading extension module {name}...')
-        return self._import_module(name, build_dir)
-
-    def _import_module(self, module_name, path):
-        """Import module from library."""
-        filepath = os.path.join(path, f"{module_name}.so")
-        spec = importlib.util.spec_from_file_location(module_name, filepath)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        return module
 
     def _verify_ninja_availability(self):
         """Check ninja is available."""
@@ -168,16 +147,16 @@ class ExtensionLoader:
         except Exception:
             raise RuntimeError("Ninja is required to load C++ extensions")
 
-    def _write_ninja_file_and_build_library(self, module_name, sources, cflags, ldflags, include_paths, build_dir):
+    def _write_ninja_file_and_build_library(self, module_name, sources, cflags, ldflags, include_paths):
         """Write ninja file and build library."""
         self._verify_ninja_availability()
 
-        ninja_build_file = os.path.join(build_dir, 'build.ninja')
+        ninja_build_file = os.path.join(self.build_dir, 'build.ninja')
         logger.info(f'Save ninja build file {ninja_build_file}.')
         self._write_ninja_file(ninja_build_file, module_name, sources, cflags, ldflags, include_paths)
 
         logger.info(f'Building extension module {module_name}.')
-        self._run_ninja_build(build_dir, module_name)
+        self._run_ninja_build(module_name)
 
     def _write_ninja_file(self, fname, name, sources, extra_cflags, extra_ldflags, extra_include_paths):
         """Write ninja file."""
@@ -225,13 +204,13 @@ class ExtensionLoader:
         with open(fname, 'w') as source_file:
             source_file.write(content)
 
-    def _run_ninja_build(self, build_dir, module_name):
+    def _run_ninja_build(self, module_name):
         """Run ninja build."""
         cmd = ['ninja', '-v']
         env = os.environ.copy()
 
         try:
-            subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=build_dir, check=True, env=env)
+            subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=self.build_dir, check=True, env=env)
             # If the build succeeds, do nothing with the output (silent)
         except subprocess.CalledProcessError as e:
             # Capture the error details
@@ -244,13 +223,13 @@ class ExtensionLoader:
 
             # In multi-card situation, only one process build the library.
             # When building failed, the old extension library should be removed.
-            so_file = os.path.join(build_dir, f"{module_name}.so")
+            so_file = os.path.join(self.build_dir, f"{module_name}.so")
             if os.path.exists(so_file):
                 os.remove(so_file)
             raise RuntimeError(msg) from e
 
-    def load(self, module_name, sources, extra_cflags=None, extra_ldflags=None, extra_include_paths=None):
-        """Build and load module."""
+    def build(self, module_name, sources, extra_cflags=None, extra_ldflags=None, extra_include_paths=None):
+        """Build module."""
         src = [sources] if isinstance(sources, str) else sources
-        build_dir = self._get_build_directory(module_name)
-        return self._compile(module_name, src, extra_cflags, extra_ldflags, extra_include_paths, build_dir)
+        self._compile(module_name, src, extra_cflags, extra_ldflags, extra_include_paths)
+        return os.path.join(self.build_dir, f"{module_name}.so")
