@@ -446,6 +446,9 @@ class _AutoParallelContext:
             raise ValueError("The context configuration parameter 'parallel_mode' only support 'stand_alone', "
                              "'data_parallel', 'hybrid_parallel', 'semi_auto_parallel' and 'auto_parallel', "
                              "but got the value : {}.".format(parallel_mode))
+        if run_mode == context.ParallelMode.DATA_PARALLEL and self.get_enable_parallel_optimizer():
+            logger.warning("'enable_parallel_optimizer' is not suggested in 'data_parallel' mode, "
+                           "consider using 'semi_auto_parallel' or 'auto_parallel' mode.")
 
     def get_parallel_mode(self):
         """Get parallel mode."""
@@ -924,6 +927,9 @@ class _AutoParallelContext:
                             "the argument 'enable_parallel_optimizer' must be bool, but got the type : {}."
                             .format(type(enable_parallel_optimizer)))
         self._context_handle.set_enable_parallel_optimizer(enable_parallel_optimizer)
+        if enable_parallel_optimizer and self.get_parallel_mode() == context.ParallelMode.DATA_PARALLEL:
+            logger.warning("'enable_parallel_optimizer' is not suggested in 'data_parallel' mode, "
+                           "consider using 'semi_auto_parallel' or 'auto_parallel' mode.")
 
     def set_force_fp32_communication(self, force_fp32_communication):
         """
