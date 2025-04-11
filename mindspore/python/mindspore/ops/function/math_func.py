@@ -12144,8 +12144,8 @@ def batch_dot(x1, x2, axes=None):
         (2, 3)
         >>>
         >>> # case 2: axes is None
-        >>> x1 = mindspore.ops.ones([6., 2., 3., 4.])
-        >>> x2 = mindspore.ops.ones([6., 5., 4., 8.])
+        >>> x1 = mindspore.ops.ones([6, 2, 3, 4], mindspore.float32)
+        >>> x2 = mindspore.ops.ones([6, 5, 4, 8], mindspore.float32)
         >>> output = mindspore.ops.batch_dot(x1, x2)
         >>> print(output.shape)
         (6, 2, 3, 5, 8)
