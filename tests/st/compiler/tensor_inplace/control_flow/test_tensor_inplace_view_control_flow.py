@@ -472,17 +472,10 @@ def test_tensor_view_inplace_grad_with_ctr_flow():
             inplace_copy_op(y_viewed, ms.Tensor(-1, dtype=ms.float32))
             return y
 
-    class GradNet1(nn.Cell):
-        def __init__(self, net):
-            super(GradNet1, self).__init__()
-            self.grad_op = ops.grad(net)
-        def construct(self, x, a, b):
-            return self.grad_op(x, a, b)
-
-    ms.set_context(mode=ms.GRAPH_MODE, jit_config={"jit_level": "O0"})
     x_np = (np.arange(2 * 2)).reshape((2, 2)).astype(np.float32)
     x = ms.Tensor(x_np)
-    forward_net = Net()
-    grad_res = GradNet1(forward_net)(x, x, x)
-    expected_res = np.array([[0, 0], [1, 1]]).astype(np.float32)
-    assert (grad_res.asnumpy() == expected_res).all()
+    net = Net()
+    out_expect = grad(net)(x, x, x)
+    net.construct = ms.jit(net.construct, backend="ms_backend")
+    out_jit = grad(net)(x, x, x)
+    assert (out_expect.asnumpy() == out_jit.asnumpy()).all()

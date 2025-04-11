@@ -21,17 +21,6 @@ from mindspore.ops.auto_generate.gen_ops_prim import select_ext_view_op, slice_e
 from mindspore.ops.functional import grad
 from tests.mark_utils import arg_mark
 
-ms.set_context(mode=ms.GRAPH_MODE, jit_config={"jit_level": "O0"})
-
-class GradNet(nn.Cell):
-    def __init__(self, net):
-        super(GradNet, self).__init__()
-        self.grad_op = ops.grad(net)
-
-    def construct(self, x):
-        return self.grad_op(x)
-
-
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_tensor_view_inplace_grad_once():
     """
@@ -48,11 +37,11 @@ def test_tensor_view_inplace_grad_once():
             return y
 
     x = ms.Tensor([[0, 1], [2, 3]], dtype=ms.float32)
-    forward_net = Net()
-    grad_res = GradNet(forward_net)(x)
-    expected_res = np.array([[0, 0], [1, 1]]).astype(np.float32)
-    assert (grad_res.asnumpy() == expected_res).all()
-
+    net = Net()
+    out_expect = grad(net)(x)
+    net.construct = ms.jit(net.construct, backend="ms_backend")
+    out_jit = grad(net)(x)
+    assert (out_expect.asnumpy() == out_jit.asnumpy()).all()
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -73,10 +62,11 @@ def test_tensor_view_inplace_grad_twice():
 
     x_np = (np.arange(2 * 2 * 2)).reshape((2, 2, 2)).astype(np.float32)
     x = ms.Tensor(x_np)
-    forward_net = Net()
-    grad_res = GradNet(forward_net)(x)
-    expected_res = np.array([[[0, 1], [0, 0]], [[1, 1], [1, 1]]]).astype(np.float32)
-    assert (grad_res.asnumpy() == expected_res).all()
+    net = Net()
+    out_expect = grad(net)(x)
+    net.construct = ms.jit(net.construct, backend="ms_backend")
+    out_jit = grad(net)(x)
+    assert (out_expect.asnumpy() == out_jit.asnumpy()).all()
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -98,10 +88,11 @@ def test_tensor_view_grad():
 
     x_np = (np.arange(2 * 2)).reshape((2, 2)).astype(np.float32)
     x = ms.Tensor(x_np)
-    forward_net = Net()
-    grad_res = GradNet(forward_net)(x)
-    expected_res = np.array([[0, 1], [1, 1]]).astype(np.float32)
-    assert (grad_res.asnumpy() == expected_res).all()
+    net = Net()
+    out_expect = grad(net)(x)
+    net.construct = ms.jit(net.construct, backend="ms_backend")
+    out_jit = grad(net)(x)
+    assert (out_expect.asnumpy() == out_jit.asnumpy()).all()
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -123,10 +114,11 @@ def test_tensor_view_grad1():
 
     x_np = (np.arange(2 * 2)).reshape((2, 2)).astype(np.float32)
     x = ms.Tensor(x_np)
-    forward_net = Net()
-    grad_res = GradNet(forward_net)(x)
-    expected_res = np.array([[0, 0], [0, 0]]).astype(np.float32)
-    assert (grad_res.asnumpy() == expected_res).all()
+    net = Net()
+    out_expect = grad(net)(x)
+    net.construct = ms.jit(net.construct, backend="ms_backend")
+    out_jit = grad(net)(x)
+    assert (out_expect.asnumpy() == out_jit.asnumpy()).all()
 
 
 @pytest.mark.skip(reason="No support")
@@ -146,7 +138,6 @@ def test_tensor_view_inplace_grad():
             x.add_(y)
             return x
 
-    ms.context.set_context(mode=ms.PYNATIVE_MODE, jit_level="O0")
     net = Net()
     out_expect = grad(net)(Tensor([3, 4]))
     net.construct = ms.jit(net.construct, backend="ms_backend")
@@ -175,7 +166,6 @@ def test_view_and_inplace_grad_change_same_area1():
             z.mul_(2)
             return input_tensor1
 
-    ms.set_context(mode=ms.PYNATIVE_MODE, jit_level="O0")
     net = Net()
     out_expect = grad(net)(Tensor(3), Tensor([[1, 2], [3, 4]]))
     net.construct = ms.jit(net.construct, backend="ms_backend")
@@ -201,7 +191,6 @@ def test_view_and_inplace_grad_change_same_area2():
             input_tensor1.add_(input_tensor1)
             return input_tensor1
 
-    ms.set_context(mode=ms.PYNATIVE_MODE, jit_level="O0")
     net = Net()
     out_expect = grad(net)(Tensor(3), Tensor([[1, 2], [3, 4]]))
     net.construct = ms.jit(net.construct, backend="ms_backend")
@@ -227,7 +216,6 @@ def test_view_and_inplace_grad_change_same_area3():
             n.add_(n)
             return input_tensor1
 
-    ms.set_context(mode=ms.PYNATIVE_MODE, jit_level="O0")
     net = Net()
     out_expect = grad(net)(Tensor([1, 1]), Tensor([[1, 2], [3, 4]]))
     net.construct = ms.jit(net.construct, backend="ms_backend")
