@@ -810,7 +810,9 @@ T GetInputValueFromCNode(const CNodePtr &cnode, size_t index) {
   if (!input_node->isa<ValueNode>()) {
     MS_LOG_WITH_NODE(EXCEPTION, cnode) << "The input index (" << index << ") is not a value node.";
   }
-  auto value = input_node->cast<ValueNodePtr>()->value();
+  auto value_temp = input_node->cast<ValueNodePtr>();
+  MS_EXCEPTION_IF_NULL(value_temp);
+  auto value = value_temp->value();
   MS_EXCEPTION_IF_NULL(value);
   return GetValue<T>(value);
 }

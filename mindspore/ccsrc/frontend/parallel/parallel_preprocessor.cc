@@ -339,7 +339,9 @@ static void InsertShapeOp(const CNodePtr &node, const AnfNodePtr &pre_node, cons
   // shape op doesn't have params and attrs.
   OperatorParams params;
   OperatorAttrs attrs;
-  auto shape_value = GetValueNode(node->input(2))->cast<ValueSequencePtr>();
+  auto shape_value_temp = GetValueNode(node->input(2));
+  MS_EXCEPTION_IF_NULL(shape_value_temp);
+  auto shape_value = shape_value_temp->cast<ValueSequencePtr>();
   MS_EXCEPTION_IF_NULL(shape_value);
   auto shape = shape_value->value();
   if (shape.empty()) {
