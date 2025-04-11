@@ -28,6 +28,7 @@
 namespace mindspore {
 namespace runtime {
 class KernelActor;
+class KernelRunner;
 
 class BACKEND_EXPORT KernelAsyncResizeActor : public ActorBase {
  public:
@@ -37,6 +38,7 @@ class BACKEND_EXPORT KernelAsyncResizeActor : public ActorBase {
   void Initialize();
 
   void ResizeKernelMod(OpContext<DeviceTensor> *const context, KernelActor *kernel_actor);
+  void ResizeKernelModV2(OpContext<DeviceTensor> *const context, KernelRunner *kernel_runner);
 
   void Wait();
 

@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2023 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_RUNTIME_FRAMEWORK_ACTOR_KERNEL_ACTOR_H_
-#define MINDSPORE_CCSRC_RUNTIME_FRAMEWORK_ACTOR_KERNEL_ACTOR_H_
+#ifndef MINDSPORE_CCSRC_RUNTIME_FRAMEWORK_ACTOR_KERNEL_RUNNER_H_
+#define MINDSPORE_CCSRC_RUNTIME_FRAMEWORK_ACTOR_KERNEL_RUNNER_H_
 
 #include <vector>
 #include <set>
@@ -51,24 +51,21 @@ using mindspore::tensor::TensorPtr;
 
 class SuperKernelActor;
 
-// The kernel actor is used to receive the device tensors and control info to luanch kernel.
-// The processing flow is RunOpData/RunOpControl -> CheckRunningCondition -> SendMemoryAllocReq
-// -> OnMemoryAllocFinish -> LaunchKernel -> SendMemoryFreeReq -> SendOutput.
-class KernelActor : public DebugAwareActor {
+class KernelRunner {
  public:
-  KernelActor(const std::string &name, const CNodePtr &kernel, const DeviceContext *device_context,
-              const AID &memory_manager_aid, const AID *debug_aid, const AID *recorder_aid,
-              GraphExecutionStrategy strategy, const std::set<size_t> &modifiable_ref_input_indexes,
-              const std::set<size_t> &modifiable_ref_output_indexes,
-              const KernelTransformType &type = KernelTransformType::kKernelActor);
+  KernelRunner(const std::string &name, const CNodePtr &kernel, const DeviceContext *device_context,
+               const AID &memory_manager_aid, const AID *debug_aid, const AID *recorder_aid,
+               GraphExecutionStrategy strategy, const std::set<size_t> &modifiable_ref_input_indexes,
+               const std::set<size_t> &modifiable_ref_output_indexes,
+               const KernelTransformType &type = KernelTransformType::kKernelActor);
 
-  ~KernelActor() override = default;
+  ~KernelRunner() = default;
 
   // The memory related operation interface.
-  void SendMemoryAllocReq(OpContext<DeviceTensor> *const context) override;
-  void SendMemoryFreeReq(OpContext<DeviceTensor> *const context) override;
+  void SendMemoryAllocReq(OpContext<DeviceTensor> *const context);
+  void SendMemoryFreeReq(OpContext<DeviceTensor> *const context);
   // The callback after memory alloc finished.
-  void OnMemoryAllocFinish(OpContext<DeviceTensor> *const context) override;
+  void OnMemoryAllocFinish(OpContext<DeviceTensor> *const context);
 
   const CNodePtr &kernel() const { return kernel_; }
   KernelLaunchInfoWithStream kernel_launch_info() const {
@@ -101,7 +98,7 @@ class KernelActor : public DebugAwareActor {
   // Really do launch kernel with memory allocate and free.
   virtual void ExecuteLaunchKernelTask(OpContext<DeviceTensor> *const context);
 
-  void set_stream_send_actor(KernelActor *stream_send_actor) { stream_send_actor_ = stream_send_actor; }
+  void set_stream_send_actor(KernelRunner *stream_send_actor) { stream_send_actor_ = stream_send_actor; }
 
   void SetInputDeviceTensor(DeviceTensor *input_device_tensor, size_t input_index);
 
@@ -120,16 +117,16 @@ class KernelActor : public DebugAwareActor {
   std::vector<DeviceTensor *> GetOutputDeviceTensors() { return output_device_tensors_; }
 
   // Reset state for UCE.
-  void ResetState() override;
+  void ResetState();
 
   const std::vector<DeviceTensor *> &workspace_device_tensors() { return workspace_device_tensors_; }
   const std::vector<DeviceTensor *> &output_device_tensors() { return output_device_tensors_; }
   const std::vector<DeviceTensor *> &input_device_tensors() { return input_device_tensors_; }
 
  protected:
-  void Init() override;
-  void Run(OpContext<DeviceTensor> *const context) override;
-  void SendRecorderInfo(OpContext<DeviceTensor> *const context) const override;
+  void Init();
+  void Run(OpContext<DeviceTensor> *const context);
+  void SendRecorderInfo(OpContext<DeviceTensor> *const context) const;
 
   // Do kernel launching in this method after 'PreLaunchKernel' and 'PostLaunchKernel'.
   virtual bool LaunchKernel(OpContext<DeviceTensor> *const context, bool is_skip_launch = false);
@@ -170,6 +167,105 @@ class KernelActor : public DebugAwareActor {
   // Record the output and workspace memory pointer and size to optimize memory allocate/free performance in next step.
   // Note: only use in inference case.
   void TraceDynamicMemory();
+
+  /************ region Members of ActorBase and OpActor. ************/
+  inline const AID &GetAID() const { return id; }
+
+  AID id;
+
+  // The op data.
+  mindspore::HashMap<int, std::vector<OpData<DeviceTensor> *>> input_op_datas_;
+  std::vector<DataArrowPtr> output_data_arrows_;
+
+  // The op controls.
+  mindspore::HashMap<int, std::vector<AID *>> input_op_controls_;
+  std::vector<ControlArrowPtr> output_control_arrows_;
+  /************ endregion ************/
+
+  /************ region Members of AbstractActor. ************/
+
+  // Erase input data and input controls when finish actor running.
+  virtual void EraseInput(const OpContext<DeviceTensor> *context);
+
+  // Fetch input data from the device tensor store.
+  void FetchInputByTensorStore(std::vector<DeviceTensor *> *const input_device_tensors,
+                               std::vector<KernelTensor *> *const input_kernel_tensors,
+                               std::vector<abstract::AbstractBasePtr> *const input_kernel_tensors_for_infer,
+                               std::vector<DeviceTensor *> *const memory_free_tensors,
+                               OpContext<DeviceTensor> *const context) const;
+
+  // Fetch input parameter data from the device tensor store.
+  void FetchParameterByTensorStore(std::vector<DeviceTensor *> *const input_device_tensors,
+                                   std::vector<KernelTensor *> *const input_kernel_tensors,
+                                   std::vector<abstract::AbstractBasePtr> *const input_kernel_tensors_for_infer,
+                                   std::vector<DeviceTensor *> *const memory_free_tensors,
+                                   OpContext<DeviceTensor> *const context);
+
+  // Init the member output_data_ and batch_output_data_ by output data arrows.
+  void InitOutputData();
+  // Update the output data before send output data.
+  virtual void UpdateOutputData(OpData<DeviceTensor> *const output_data, const DataArrowPtr &data_arrow,
+                                const AnfNodePtr &output_node, OpContext<DeviceTensor> *const context) {}
+  // Send output to downstream actors to trigger running.
+  virtual void SendOutput(OpContext<DeviceTensor> *const context);
+  void SendOutputData(OpContext<DeviceTensor> *const context, const std::vector<AnfNodePtr> &output_data_nodes,
+                      const std::vector<DataArrowPtr> &output_data_arrows,
+                      const std::vector<std::pair<OpDataUniquePtr<DeviceTensor>, size_t>> &output_data_list,
+                      const mindspore::HashMap<DataArrow *, size_t> &data_arrow_to_fusion_actor_indexs,
+                      mindspore::HashMap<std::string, std::vector<OpData<DeviceTensor> *>> *batch_output_data);
+  // Fetch the sub actor in the fusion actor by the name.
+  AbstractActor *FetchSubActorInFusionActor(const std::string &sub_actor_name) const;
+
+  virtual void IncreaseNewRefCounts(OpContext<DeviceTensor> *const context);
+  virtual void IncreaseNewRefCount(const OpData<DeviceTensor> *op_data) const;
+
+  std::vector<const DeviceContext *> device_contexts_;
+
+  // The id of recorder actor. Send message to it for recording info.
+  const AID *recorder_aid_;
+
+  // Auto increment id for actor.
+  int64_t actor_id_;
+
+  // The output_data_nodes_ and output_data_ corresponds to the output_data_arrows_ one by one.
+  std::vector<AnfNodePtr> output_data_nodes_;
+
+  // The second of pair indicates the output data flag. See constant prefixed with kOutputDataFalg for details.
+  std::vector<std::pair<OpDataUniquePtr<DeviceTensor>, size_t>> output_data_;
+  // Record the fusion output index for output data arrow.
+  mindspore::HashMap<DataArrow *, size_t> data_arrow_to_fusion_actor_indexs_;
+
+  // The dependent inputs number.
+  size_t input_datas_num_;
+  size_t input_controls_num_;
+
+  // The dependent messages number of actor running.
+  int running_dependent_msg_num_;
+
+  // Indicates whether the actor is in fusion actor.
+  AbstractActor *parent_fusion_actor_;
+
+  // Whether use input optimize.
+  bool enable_input_optimize_;
+
+  // The dependent device tensor stores, the dependent expression is pair<index, AnfNode>.
+  // Index is the input position, AnfNode is the key of the device tensor store.
+  std::vector<std::pair<size_t, AnfNodePtr>> device_tensor_store_keys_;
+
+  // The dependent parameter stores, the dependent expression is pair<index, ParameterInfo>.
+  // Index is the input position, ParameterInfo is used to fetch args and device tensor.
+  std::vector<std::pair<size_t, ParameterInfo>> parameter_indexs_;
+
+  // Used to send batch data in the message which RunBatchOpData needs, the key is the actor name of destination actor.
+  mindspore::HashMap<std::string, std::vector<OpData<DeviceTensor> *>> batch_output_data_;
+  mindspore::HashMap<std::string, std::vector<DataArrowPtr>> batch_output_data_arrows_;
+
+  // When there is recursion in the graph, the actor will send data to the same stack actor multiple times. Since
+  // messages are sent asynchronously between actors, there will be multiple messages that remain unprocessed in
+  // the channel. In order to prevent old data from being overwritten, it is necessary to allocate a new op data,
+  // and these op data will be uniformly cleared by the scheduler after the step ends.
+  std::vector<OpDataUniquePtr<DeviceTensor>> to_stack_data_;
+  /************ endregion ************/
 
   // The info of kernel.
   CNodePtr kernel_;
@@ -235,7 +331,7 @@ class KernelActor : public DebugAwareActor {
   // Task id on stream, use for events.
   std::shared_ptr<int64_t> task_id_on_stream_ = std::make_shared<int64_t>(0L);
   // Send actor ref, point to the send actor when current actor is recv actor.
-  KernelActor *stream_send_actor_{nullptr};
+  KernelRunner *stream_send_actor_{nullptr};
   // Flag for stream recv actor.
   bool is_stream_recv_actor_{false};
   // Flag for indicating if current actor is multi-thread safe, which was generate at compile time.
@@ -282,6 +378,8 @@ class KernelActor : public DebugAwareActor {
   void SetShapeDependInfo();
   void DispatchDebugActor(OpContext<DeviceTensor> *const context);
   bool LaunchKernelWithDebug(OpContext<DeviceTensor> *const context, const bool skip_launch);
+
+  const AID &memory_manager_aid() const { return memory_manager_aid_; }
 
   // The real input number of kernel launch.
   size_t real_input_num_;
@@ -330,10 +428,17 @@ class KernelActor : public DebugAwareActor {
   // it sets the flag of the branch to true to enable the actor in this branch.
   bool *is_enable_{nullptr};
   bool need_wait_pipeline_{false};
+
+  // The id of debug actor. Send message to it for debug.
+  const AID *debug_aid_;
+  const AID *profiler_aid_;
+
+  // The id of memory manager actor. Send message to it for alloc and free memory.
+  const AID memory_manager_aid_;
 };
 
-using KernelActorPtr = std::shared_ptr<KernelActor>;
+using KernelRunnerPtr = std::shared_ptr<KernelRunner>;
 }  // namespace runtime
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_RUNTIME_FRAMEWORK_ACTOR_KERNEL_ACTOR_H_
+#endif  // MINDSPORE_CCSRC_RUNTIME_FRAMEWORK_ACTOR_KERNEL_RUNNER_H_
