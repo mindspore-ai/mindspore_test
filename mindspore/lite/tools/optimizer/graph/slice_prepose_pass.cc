@@ -1529,6 +1529,7 @@ bool SlicePreposePass::Run(const FuncGraphPtr &graph) {
         continue;
       }
       auto output_node_list = Helper::GetRealNodeUsedList(graph, utils::cast<AnfNodePtr>(preceed_node));
+      MS_CHECK_TRUE_RET(output_node_list != nullptr, false);
       if (output_node_list->size() > 1) {  // referenced by multi nodes
         if (SiblingsAreSameSlice(output_node_list) && MergeParallelSlice(graph, output_node_list)) {
           this_time_changed = true;
