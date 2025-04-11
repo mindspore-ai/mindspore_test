@@ -116,11 +116,11 @@ void SeqvppScheduler::ComputeCycleList() {
   if (stage_num_ < seq_chunk_size_) {
     MS_LOG(EXCEPTION) << "For seq vpp scheduler, pp should large than seq_chunk_size.";
   }
+  if (micro_size_ * seq_chunk_size_ < stage_num_) {
+    MS_LOG(EXCEPTION) << "For seq vpp scheduler, micro_num * seq_chunk_size should be greater than or equal to pp.";
+  }
   size_t cycle_value = LongToSize(stage_num_ / seq_chunk_size_);
   size_t cycle_size = LongToSize(micro_size_ / cycle_value);
-  if (LongToSize(micro_size_) < cycle_size) {
-    MS_LOG(EXCEPTION) << "For seq vpp scheduler, micro_num * seq_chunk_size should large than pp.";
-  }
   cycle_list_.resize(cycle_size, cycle_value);
 
   size_t cycled_index = cycle_size * cycle_value;

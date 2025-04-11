@@ -472,17 +472,35 @@ void ReplaceGetnextWithBroadcast(const FuncGraphPtr &graph) {
   MS_EXCEPTION_IF_NULL(depend);
 
   auto prim = GetCNodePrimitive(get_next);
+  MS_EXCEPTION_IF_NULL(prim);
   auto shape_attr = prim->GetAttr(SHAPES);
   auto type_attr = prim->GetAttr(TYPES);
   if (shape_attr == nullptr || type_attr == nullptr) {
     return;
   }
-  std::vector<ValuePtr> shape = shape_attr->isa<ValueTuple>() ? shape_attr->cast<ValueTuplePtr>()->value()
-                                                              : shape_attr->cast<ValueListPtr>()->value();
+
+  std::vector<ValuePtr> shape;
+  if (shape_attr->isa<ValueTuple>()) {
+    const auto &value_tuple = shape_attr->cast<ValueTuplePtr>();
+    MS_EXCEPTION_IF_NULL(value_tuple);
+    shape = value_tuple->value();
+  } else {
+    const auto &value_list = shape_attr->cast<ValueListPtr>();
+    MS_EXCEPTION_IF_NULL(value_list);
+    shape = value_list->value();
+  }
   Shapes shapes;
   for (const auto &element : shape) {
-    std::vector<ValuePtr> element_list =
-      element->isa<ValueTuple>() ? element->cast<ValueTuplePtr>()->value() : element->cast<ValueListPtr>()->value();
+    std::vector<ValuePtr> element_list;
+    if (element->isa<ValueTuple>()) {
+      const auto &value_tuple = element->cast<ValueTuplePtr>();
+      MS_EXCEPTION_IF_NULL(value_tuple);
+      element_list = value_tuple->value();
+    } else {
+      const auto &value_list = element->cast<ValueListPtr>();
+      MS_EXCEPTION_IF_NULL(value_list);
+      element_list = value_list->value();
+    }
     Shape shape_vec;
     (void)std::transform(element_list.begin(), element_list.end(), std::back_inserter(shape_vec),
                          [](const ValuePtr &v) -> int64_t { return GetValue<int64_t>(v); });
