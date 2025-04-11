@@ -31,6 +31,7 @@ COMM_TENSOR_CELL_CACHE = {}
 
 @constexpr
 def group_size():
+    """ Return the device number in the Cell's construct method. """
     return get_group_size()
 
 
