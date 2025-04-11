@@ -28,6 +28,7 @@
 #include <condition_variable>
 #include <mutex>
 #include <functional>
+#include "include/actor/log.h"
 #include "thread/threadlog.h"
 #include "thread/core_affinity.h"
 #ifndef _WIN32
@@ -49,6 +50,7 @@ constexpr int kDefaultFrequency = 1;
 constexpr float kMaxScale = 1.;
 constexpr size_t kMaxHqueueSize = 8192;
 constexpr size_t kMinActorRunOther = 2;
+constexpr int kDefaultActorThread = 5;
 /* Thread status */
 constexpr int kThreadBusy = 0;  // busy, the thread is running task
 constexpr int kThreadHeld = 1;  // held, the thread has been marked as occupied
@@ -189,6 +191,7 @@ class MS_CORE_API ThreadPool {
   void SetMinSpinCount(int spin_count);
   void ActiveWorkers();
   void SetWorkerIdMap();
+  void ThreadPoolSetAffinity();
   // init task queues
   int TaskQueuesInit(size_t thread_num);
   void ChildAfterFork();

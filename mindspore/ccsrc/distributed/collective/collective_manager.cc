@@ -17,6 +17,9 @@
 #include "include/backend/distributed/collective/collective_manager.h"
 #include <algorithm>
 #include <string>
+#include <iostream>
+#include <map>
+#include <sstream>
 #include <numeric>
 #include <vector>
 #include <functional>
@@ -629,6 +632,146 @@ bool CollectiveManager::InitDeviceCommLib() {
   return true;
 }
 
+std::map<int, std::vector<int>> ParseRangeString(const std::string &input) {
+  std::map<int, std::vector<int>> result;
+  std::string content = input.substr(1, input.size() - 2);
+  std::vector<std::string> parts;
+  std::stringstream ss(content);
+  std::string part;
+  while (std::getline(ss, part, '|')) {
+    part.erase(0, part.find_first_not_of(" \t"));
+    part.erase(part.find_last_not_of(" \t") + 1);
+    parts.push_back(part);
+  }
+
+  for (const auto &p : parts) {
+    size_t colon_pos = p.find(':');
+    int key = std::stoi(p.substr(0, colon_pos));
+
+    std::string range = p.substr(colon_pos + 1);
+    size_t tilde_pos = range.find('~');
+    int start = std::stoi(range.substr(0, tilde_pos));
+    int end = std::stoi(range.substr(tilde_pos + 1));
+
+    std::vector<int> numbers;
+    for (int i = start; i <= end; ++i) {
+      numbers.push_back(i);
+    }
+    result[key] = numbers;
+  }
+  return result;
+}
+
+std::map<std::string, std::vector<int>> ParseModuleString(const std::string &input) {
+  std::map<std::string, std::vector<int>> result;
+  std::string content = input.substr(1, input.size() - 2);
+  size_t pipe_pos = content.find('|');
+  std::vector<std::string> parts;
+  if (pipe_pos == std::string::npos) {
+    parts.push_back(content);
+  } else {
+    std::stringstream ss(content);
+    std::string part;
+    while (std::getline(ss, part, '|')) {
+      part.erase(0, part.find_first_not_of(" \t"));
+      part.erase(part.find_last_not_of(" \t") + 1);
+      parts.push_back(part);
+    }
+  }
+
+  for (const auto &p : parts) {
+    size_t colon_pos = p.find(':');
+    std::string key = p.substr(0, colon_pos);
+    std::string values_str = p.substr(colon_pos + 1);
+
+    std::vector<int> numbers;
+    std::stringstream values_ss(values_str);
+    std::string num_str;
+    while (std::getline(values_ss, num_str, '-')) {
+      numbers.push_back(std::stoi(num_str));
+    }
+    result[key] = numbers;
+  }
+  return result;
+}
+
+std::vector<int> GetSubList(const std::vector<int> &listA, const std::vector<int> &indexListB) {
+  std::vector<int> result;
+  for (int index : indexListB) {
+    if (index >= 0 && index < static_cast<int>(listA.size())) {
+      result.push_back(listA[index]);
+    }
+  }
+  return result;
+}
+
+std::string VectorToString(const std::vector<int> &vec) {
+  std::ostringstream oss;
+  for (size_t i = 0; i < vec.size(); ++i) {
+    oss << vec[i];
+    if (i != vec.size() - 1) {
+      oss << ", ";
+    }
+  }
+  return oss.str();
+}
+
+void ParseEnvCpuAffinity(const uint32_t &global_rank_id, const uint32_t &local_rank_id) {
+  const auto &cpu_affinity_list = common::GetConfigValue(common::kRuntimeConf, common::kRuntimeCpuAffinityList);
+  const auto &cpu_affinity_module = common::GetConfigValue(common::kRuntimeConf, common::kRuntimeCpuAffinityMoudule);
+  const auto &actor_thread_fix_bind = common::GetConfigValue(common::kRuntimeConf, common::kRuntimeActorThreadFixBind);
+  std::vector<int> rank_core_reserved;
+  if (cpu_affinity_list.empty()) {
+    return;
+  }
+
+  MS_LOG(INFO) << "Got cpu_affinity_list: " << cpu_affinity_list;
+  std::string env_visible_device = common::GetEnv("ASCEND_RT_VISIBLE_DEVICES");
+  uint32_t physical_device_id;
+  if (env_visible_device.empty()) {
+    physical_device_id = local_rank_id;
+  } else {
+    std::vector<uint32_t> list_visible_device;
+    std::stringstream ss(env_visible_device);
+    std::string item;
+    while (std::getline(ss, item, ',')) {
+      list_visible_device.push_back(std::stoi(item));
+    }
+    std::sort(list_visible_device.begin(), list_visible_device.end());
+    physical_device_id = list_visible_device[local_rank_id];
+  }
+
+  auto rangeMap = ParseRangeString(cpu_affinity_list);
+  rank_core_reserved = rangeMap[physical_device_id];
+
+  std::map<std::string, std::vector<int>> moduleMap;
+  if (!cpu_affinity_module.empty()) {
+    moduleMap = ParseModuleString(cpu_affinity_module);
+  } else {
+    moduleMap = {{"runtime", {0, 1, 2, 3, 4}}, {"minddata", {5, 6, 7, 8, 9, 10, 11, 12}}};
+  }
+
+  auto it = moduleMap.find("runtime");
+  if (it != moduleMap.end()) {
+    std::vector<int> runtime_idx_list = it->second;
+    std::vector<int> runtime_core_list = GetSubList(rank_core_reserved, runtime_idx_list);
+    common::SetEnv("CONFIG_BIND_RUNTIME_LIST", VectorToString(runtime_core_list).c_str());
+    common::SetEnv("ACTOR_THREAD_FIX_BIND", actor_thread_fix_bind.c_str());
+  }
+
+  it = moduleMap.find("minddata");
+  if (it != moduleMap.end()) {
+    std::vector<int> data_idx_list = it->second;
+    std::vector<int> data_core_list = GetSubList(rank_core_reserved, data_idx_list);
+    common::SetEnv("CONFIG_BIND_MINDDATA_LIST", VectorToString(data_core_list).c_str());
+  }
+
+  MS_LOG(WARNING) << "Core reserved for global rank[" << global_rank_id << "], local rank[" << local_rank_id << "] is "
+                  << rank_core_reserved << ", set env 'CONFIG_BIND_RUNTIME_LIST' to "
+                  << common::GetEnv("CONFIG_BIND_RUNTIME_LIST") << ", set env 'CONFIG_BIND_MINDDATA_LIST' to "
+                  << common::GetEnv("CONFIG_BIND_MINDDATA_LIST");
+}
+
 bool CollectiveManager::AssignLocalRank() {
   char host_name[MAX_HOSTNAME_LEN] = {0};
 #ifndef _WIN32
@@ -697,6 +840,7 @@ bool CollectiveManager::AssignLocalRank() {
     MS_LOG(INFO) << "The device_id of ms_context is set to local rank id [" << local_rank_id_ << "].";
   }
 
+  ParseEnvCpuAffinity(global_rank_id_, local_rank_id_);
   return true;
 }
 

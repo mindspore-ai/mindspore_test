@@ -19,6 +19,7 @@
 #include <vector>
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/core/mindrt/include/thread/threadpool.h"
 #include "runtime/graph_scheduler/scheduler_helper.h"
 #include "runtime/graph_scheduler/actor/memory_manager_actor.h"
 #include "runtime/graph_scheduler/actor/kernel_async_launch_actor.h"
@@ -115,6 +116,7 @@ static constexpr size_t kAsyncLaunchThreadNum = 1;
 static constexpr size_t kMultiPipelineThreadNum = 3;
 
 static constexpr size_t kMaxBindCoreThreadNum = 5;
+static const size_t kBindCoreThreadStep = 20;
 
 bool GetNeedSyncStream(const GraphCompilerInfo &graph_compiler_info) {
   auto ms_context = MsContext::GetInstance();
@@ -1365,15 +1367,22 @@ void GraphScheduler::SetActorExecutionStrategy(ActorSet *const actor_set, GraphE
                << ", execution time: " << execution_time
                << " ms in multi thread or not: " << actor_set->is_multi_thread_execution_ << ".";
 
+  MS_EXCEPTION_IF_NULL(ActorMgr::GetActorMgrRef());
+  auto thread_pool = ActorMgr::GetActorMgrRef()->GetActorThreadPool();
+  MS_EXCEPTION_IF_NULL(thread_pool);
+  static bool bind_core_flag = false;
+  static bool env_runtime_reserved_empty = common::GetEnv("CONFIG_BIND_RUNTIME_LIST").empty();
+  if (!env_runtime_reserved_empty && bind_core_flag == false && actor_set->execution_count_ == kBindCoreThreadStep) {
+    thread_pool->ThreadPoolSetAffinity();
+    bind_core_flag = true;
+  }
+
   if (!CheckSingleThreadRunningCondition(actor_set, strategy)) {
     return;
   }
 
   // When the constraint condition of single thread execution is met,
   // if the actor threads num are less than or equal to 1, it will be run in sync mode.
-  MS_EXCEPTION_IF_NULL(ActorMgr::GetActorMgrRef());
-  auto thread_pool = ActorMgr::GetActorMgrRef()->GetActorThreadPool();
-  MS_EXCEPTION_IF_NULL(thread_pool);
   if (thread_pool->GetActorThreadNum() <= 1) {
     actor_set->is_multi_thread_execution_ = false;
     return;
