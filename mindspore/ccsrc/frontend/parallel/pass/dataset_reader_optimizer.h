@@ -55,10 +55,6 @@ class DatasetReaderOptimizer {
   AnfNodePtr virtual_dataset_ = nullptr;
   AnfNodePtr get_next_ = nullptr;
 };
-<<<<<<< HEAD
-=======
-
->>>>>>> fix dataset broadcast exec order
 void FreezeParallelOptimizerCommOrder(const FuncGraphPtr &graph);
 void ReplaceGetnextWithBroadcast(const FuncGraphPtr &graph);
 void ControlOptShardCommAndDataBroadcastOrder(const FuncGraphPtr &graph);
