@@ -811,7 +811,7 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
                     data_list[key].append(dims)
                     tensor_type = str(param["data"].dtype)
                     data_list[key].append(tensor_type)
-                    data = param["data"] if async_save != "process" else param["data"].asnumpy()
+                    data = param["data"] if async_save is False else param["data"].asnumpy()
                     data_list[key].append(data)
 
     from mindspore.profiler import mstx
