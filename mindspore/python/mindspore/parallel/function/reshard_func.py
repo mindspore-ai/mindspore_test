@@ -40,19 +40,12 @@ def reshard(tensor, layout):
     Specify the tensor by the given layout. The given layout must be type mindspore.parallel.Layout,
     can check :class:`mindspore.parallel.Layout` for reference.
 
-    - In the Graph mode, this function can set the sharding propagation strategy of a tensor.
-      For those tensor do not manually be set, their strategies are decided by the sharding
-      strategy propagation algorithm automatically.
-    - In the PyNative mode, this function can set a tensor sharding strategy in a Cell that
-      runs in the Graph mode (i.e. inside the Cell processed by Cell.shard/F.shard).
-
     Note:
-        - In the auto parallel mode, an exception will throw if the search mode is not
-          "sharding_propagation".
-        - In the semi-auto parallel mode, the parallel mode will automatically switch to auto
-          parallel mode with the search mode be set to "sharding_propagation".
-        - Currently, configuring multi-dimension and multi-copy reshard strategy in
-          mindspore.parallel.Layout is not supported.
+        - In the Graph mode, this function can set the sharding propagation strategy of a tensor.
+          For those tensor do not manually be set, their strategies are decided by the sharding
+          strategy propagation algorithm automatically.
+        - In PyNative mode, you can use this method to arrange tensors in a cell (that is, cells
+          that use Cell.shard/F.shard in PyNative mode) that is executed in parallel in graph mode.
 
     Args:
         tensor (Tensor): The tensor to be set the sharding strategy.
@@ -71,6 +64,17 @@ def reshard(tensor, layout):
         ``Ascend``
 
     Examples:
+        .. note::
+            Before running the following examples, you need to configure the communication environment variables.
+
+            For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
+            without any third-party or configuration file dependencies.
+            Please see the `msrun start-up
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
+            for more details.
+
+            This example should be run with 8 devices.
+
         >>> import numpy as np
         >>> import mindspore as ms
         >>> from mindspore import ops, nn, Tensor, context, Layout
@@ -94,7 +98,7 @@ def reshard(tensor, layout):
         >>> layout = Layout((4, 2), ("dp", "mp"))
         >>> input_layout = layout("dp", "mp")
         >>> with no_init_parameters():
-        >>>     net = Network()
+        ...     net = Network()
         >>> parallel_net = AutoParallel(net, parallel_mode='sharding_propagation')
         >>> tensor = Tensor(np.ones(shape=(128, 128)), dtype=ms.float32)
         >>> out = parallel_net(tensor, input_layout)

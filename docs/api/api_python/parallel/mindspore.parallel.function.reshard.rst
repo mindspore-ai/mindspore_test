@@ -19,3 +19,12 @@
     异常：
         - **TypeError** - Reshard的第一个输入参数需要是Tensor类型，但是当前为 `type(tensor)` 类型。
         - **TypeError** - Reshard只支持输入mindspore.parallel.Layout类型作为layout参数，但当前为 `type(layout)` 类型。
+
+    样例：
+
+    .. note::
+        运行以下样例之前，需要配置好通信环境变量。
+
+        针对Ascend/GPU/CPU设备，推荐使用msrun启动方式，无第三方以及配置文件依赖。详见 `msrun启动 <https://www.mindspore.cn/tutorials/zh-CN/master/parallel/msrun_launcher.html>`_ 。
+
+        该样例需要在8卡环境下运行。
