@@ -1163,6 +1163,7 @@ Strategies PrepareStrategy(Graph::NodeType *node, const std::vector<std::shared_
     return MakeDataParallelStrategy(node, ops, iter_ops);
   } else if (type == ONEHOT) {
     auto prim_anf_node = GetValueNode<PrimitivePtr>(ops[iter_ops]->cnode()->input(0));
+    MS_EXCEPTION_IF_NULL(prim_anf_node);
     auto in_stra = prim_anf_node->GetAttr(IN_STRATEGY);
     auto in_stra_var = GetValue<std::vector<Shape>>(in_stra);
     Dimensions sub_stra = in_stra_var.at(0);
