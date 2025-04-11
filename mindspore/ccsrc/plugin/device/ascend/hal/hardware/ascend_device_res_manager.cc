@@ -246,7 +246,16 @@ std::shared_ptr<MemoryManager> AscendDeviceResManager::mem_manager() const {
 
 std::shared_ptr<SwapManager> AscendDeviceResManager::swap_manager() const {
   MS_EXCEPTION_IF_NULL(ascend_res_manager_);
-  return ascend_res_manager_->swap_manager();
+  if (ascend_res_manager_->swap_manager() != nullptr) {
+    return ascend_res_manager_->swap_manager();
+  }
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  if (ms_context->get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD)) {
+    MS_LOG(EXCEPTION)
+      << "Device resource has been initialized before memory_offload is set to ON, please set it at the very beginning";
+  }
+  return nullptr;
 }
 
 bool AscendDeviceResManager::DestroyEvent(const DeviceEventPtr &event) {

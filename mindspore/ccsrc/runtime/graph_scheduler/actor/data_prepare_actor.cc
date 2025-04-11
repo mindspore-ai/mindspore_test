@@ -52,7 +52,7 @@ constexpr size_t kPinMemThreshold = 1024 << 10;
 
 bool IsDataTakenOverByMemOffload(const DeviceContext *device_context, const DeviceTensorPtr &device_tensor) {
   MS_EXCEPTION_IF_NULL(device_context);
-  if (device_context->GetDeviceType() == device::DeviceType::kCPU) {
+  if (device_context->GetDeviceType() == device::DeviceType::kCPU || device_tensor->GetSize() == 0) {
     return false;
   }
   const auto &hete_info = device_tensor->kernel_tensor()->heterogeneous_info();
