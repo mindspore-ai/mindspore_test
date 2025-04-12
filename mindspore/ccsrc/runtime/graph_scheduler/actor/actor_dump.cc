@@ -54,7 +54,7 @@ void DumpBaseInputInfo(const AbstractActor *actor, std::ofstream &ofs) {
       ofs << "\t\t\tto_input_index:" << parameter_index.first << "\tfrom_node_name:"
           << (parameter_index.second.first.first == nullptr ? "null"
                                                             : parameter_index.second.first.first->DebugString())
-          << " outer index:" << parameter_index.second.second << " inner index:" << parameter_index.second.second
+          << " outer index:" << parameter_index.second.second << " inner index:" << parameter_index.second.first.second
           << "\n";
     }
   }

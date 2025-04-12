@@ -1213,6 +1213,12 @@ bool IsParameter(const AnfNodePtr &node) {
   return node->isa<Parameter>() && common::AnfAlgo::IsParameterWeight(node->cast<ParameterPtr>());
 }
 
+bool IsSimilarDeviceAddress(const DeviceTensorPtr &device_tensor1, const DeviceTensorPtr &device_tensor2) {
+  return device_tensor1->GetDeviceType() == device_tensor2->GetDeviceType() &&
+         AnfAlgo::IsEquivalentFormat(device_tensor1->format(), device_tensor2->format()) &&
+         device_tensor1->type_id() == device_tensor2->type_id();
+}
+
 DeviceTensor *PrepareParameter(const std::pair<KernelWithIndex, size_t> &parameter_index,
                                const DeviceContext *device_context, OpContext<DeviceTensor> *const context,
                                const AID &from_aid) {
@@ -1260,12 +1266,13 @@ DeviceTensor *PrepareParameter(const std::pair<KernelWithIndex, size_t> &paramet
       graph_parameter_store->SetDeviceTensorPrepared(outer_index, inner_index, true);
       if (tensor_address == device_tensor) {
         UpdateRefCount(tensor_address.get(), true);
+        if (graph_parameter_store->HasHeter(outer_index, inner_index)) {
+          SyncDeviceTensorsInParameterStore(outer_index, inner_index, tensor_address, tensor, context, from_aid);
+        }
         return tensor_address.get();
       }
       // Set tensor address to graph parameter store.
-      if (device_tensor == nullptr || (tensor_address->GetDeviceType() == device_tensor->GetDeviceType() &&
-                                       AnfAlgo::IsEquivalentFormat(tensor_address->format(), device_tensor->format()) &&
-                                       tensor_address->type_id() == device_tensor->type_id())) {
+      if (device_tensor == nullptr || IsSimilarDeviceAddress(tensor_address, device_tensor)) {
         MS_LOG(DEBUG) << "Refresh store device tensor, from: " << tensor_address.get()
                       << ", to: " << device_tensor.get() << ", outer index: " << outer_index
                       << ", inner index: " << inner_index
