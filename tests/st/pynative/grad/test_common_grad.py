@@ -180,6 +180,7 @@ def test_jit_network_with_multi_output_contain_dict():
     Description: Net in jit has multi out, and one element is a dict
     Expectation: Success
     """
+
     class DicNet(nn.Cell):
         def __init__(self):
             super().__init__()
@@ -196,14 +197,14 @@ def test_jit_network_with_multi_output_contain_dict():
     # No sens
     ms_grad = GradOfFirstInput(ms_net, False)
     grad_out = ms_grad(Tensor(x))
-    assert np.allclose(2*np.ones_like(x), grad_out.asnumpy())
+    assert np.allclose(2 * np.ones_like(x), grad_out.asnumpy())
 
     # Have sens
     ms_net = DicNet()
     out = ms_net(Tensor(x))
     ms_grad = GradOfFirstInput(ms_net, True)
     grad_out = ms_grad(Tensor(x), out)
-    assert np.allclose(2*x, grad_out.asnumpy())
+    assert np.allclose(2 * x, grad_out.asnumpy())
 
 
 @arg_mark(plat_marks=['cpu_linux'],
@@ -216,6 +217,7 @@ def test_jit_network_with_dict_output_has_constant_value():
     Description: Net in jit has dict out, one of the element pair has constant value
     Expectation: Success
     """
+
     class DicNet(nn.Cell):
         def __init__(self):
             super().__init__()
@@ -252,6 +254,7 @@ def test_jit_network_with_list_output():
     Description: Net out is list in jit
     Expectation: Success
     """
+
     class GradCell(nn.Cell):
         def __init__(self, network, get_all=False, get_by_list=False, sens_param=False):
             super().__init__()
@@ -266,6 +269,7 @@ def test_jit_network_with_list_output():
         def __init__(self):
             super().__init__()
             self.tensor_add = P.Add()
+
         @jit
         def construct(self, x):
             t = (l * l for l in range(10) if l > 5)
@@ -293,6 +297,7 @@ def test_jit_network_with_list_inplace():
     Description: Net out is list in jit
     Expectation: Success
     """
+
     class ListInplaceNet(nn.Cell):
         @jit
         def construct(self, input1, input2):
@@ -727,6 +732,7 @@ def test_grad_jit_with_while():
     Description: Test control flow in jit function under pynative mode.
     Expectation: No exception.
     """
+
     class InnerNet(nn.Cell):
         @ms.jit
         def construct(self, x, y):
@@ -761,10 +767,11 @@ def test_grad_jit_with_dict_input():
     Description: Test calculate grad of jit function has dict input under pynative mode.
     Expectation: No exception.
     """
+
     @ms.jit
     def dict_net(input_str):
         x = input_str["a"]
-        m = 2*x+1
+        m = 2 * x + 1
         return m
 
     x = Tensor(2)
@@ -782,10 +789,11 @@ def test_grad_jit_with_multiple_output_contain_list():
     Description: Test jit function has multiple output contain list under pynative mode.
     Expectation: No exception.
     """
+
     @ms.jit
     def func(a):
-        x = [a+1, a+2]
-        return x, a+1
+        x = [a + 1, a + 2]
+        return x, a + 1
 
     x = ms.Tensor([1])
     out = GradOperation()(func)(x)
@@ -802,9 +810,10 @@ def test_grad_jit_with_string_output():
     Description: Test jit function has multiple output contain string under pynative mode.
     Expectation: No exception.
     """
+
     @jit
     def func(x):
-        return "aaa", x+1
+        return "aaa", x + 1
 
     x = Tensor([1])
     grad1 = GradOperation()(func)(x)
@@ -821,10 +830,11 @@ def test_grad_jit_with_scalar_output():
     Description: Test jit function has multiple output contain scalar under pynative mode.
     Expectation: No exception.
     """
+
     @jit
     def fn(x):
-        m = x+1
-        z = x*(m+2) + 2*m
+        m = x + 1
+        z = x * (m + 2) + 2 * m
         return z, 1
 
     x = Tensor([1.0, 2.0])
@@ -842,6 +852,7 @@ def test_grad_jit_bprop_net():
     Description: Test jit grad custom bprop construct func
     Expectation: Success.
     """
+
     class CustomBpropNet(nn.Cell):
         @jit
         def construct(self, x):
@@ -871,6 +882,7 @@ def test_grad_jit_stop_gradient():
     Description: Test jit grad stop gradient.
     Expectation: Success.
     """
+
     class StopGradientNet(nn.Cell):
         def __init__(self):
             super(StopGradientNet, self).__init__()
@@ -1001,3 +1013,93 @@ def test_value_and_grad_has_aux():
     grad_op = ops.value_and_grad(net, 0, None, True)
     _, grads = grad_op(x)
     assert np.allclose(grads.asnumpy(), np.array([4.0], dtype=np.float32), 0.00001, 0.00001)
+
+
+class CustomFunctionAutoReduceNet(nn.Cell):
+    def construct(self, x, y):
+        x2 = x + y
+        return x2
+
+    def bprop(self, *args):
+        return Tensor([[1., 1., 1.], [1., 1., 1.], [2., 2., 2.]]), Tensor([[1., 1., 1.], [1., 1., 1.], [2., 2., 2.]])
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_custom_function_auto_reduce():
+    """
+    Feature: Custom bprop function.
+    Description: Test auto reduce.
+    Expectation: success.
+    """
+    x = Tensor([3, 3, 3], ms.float32)
+    y = Tensor([[1, 2, 3], [1, 2, 3], [1, 2, 3]], ms.float32)
+    net = CustomFunctionAutoReduceNet()
+    grad_net = C.GradOperation(get_all=True)
+    grads = grad_net(net)(x, y)
+    assert np.allclose(grads[0].asnumpy(), np.array([4., 4., 4.], dtype=np.float32), 0.00001, 0.00001)
+    assert np.allclose(grads[1].asnumpy(), np.array([[1., 1., 1.], [1., 1., 1.], [2., 2., 2.]], dtype=np.float32),
+                       0.00001, 0.00001)
+
+
+class CustomFunctionAutoCastNet(nn.Cell):
+    def construct(self, x, y):
+        x2 = x + y
+        return x2
+
+    def bprop(self, *args):
+        return Tensor([[1, 1, 1], [1, 1, 1], [2, 2, 2]], dtype=ms.int64), Tensor([[1, 1, 1], [1, 1, 1], [2, 2, 2]],
+                                                                                 dtype=ms.int64)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_custom_function_auto_cast():
+    """
+    Feature: Custom bprop function.
+    Description: Test auto cast.
+    Expectation: success.
+    """
+    x = Tensor([3, 3, 3], ms.float32)
+    y = Tensor([[1, 2, 3], [1, 2, 3], [1, 2, 3]], ms.float32)
+    net = CustomFunctionAutoCastNet()
+    grad_net = C.GradOperation(get_all=True)
+    grads = grad_net(net)(x, y)
+    assert grads[0].dtype == ms.float32
+    assert grads[1].dtype == ms.float32
+    assert np.allclose(grads[0].asnumpy(), np.array([4., 4., 4.], dtype=np.float32), 0.00001, 0.00001)
+    assert np.allclose(grads[1].asnumpy(), np.array([[1., 1., 1.], [1., 1., 1.], [2., 2., 2.]], dtype=np.float32),
+                       0.00001, 0.00001)
+
+
+class CustomFunctionBroadcastExecptionNet(nn.Cell):
+    def construct(self, x, y):
+        x2 = x + y
+        return x2
+
+    def bprop(self, *args):
+        return Tensor([[1, 1, 1, 1], [1, 1, 1, 1], [2, 2, 2, 2]], dtype=ms.int64), \
+               Tensor([[1, 1, 1], [1, 1, 1], [2, 2, 2]], dtype=ms.int64)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_custom_function_reduce_exception():
+    """
+    Feature: Custom bprop function.
+    Description: Test auto reduce.
+    Expectation: success.
+    """
+    x = Tensor([3, 3, 3], ms.float32)
+    y = Tensor([[1, 2, 3], [1, 2, 3], [1, 2, 3]], ms.float32)
+    net = CustomFunctionBroadcastExecptionNet()
+    grad_net = C.GradOperation(get_all=True)
+    with pytest.raises(RuntimeError) as err:
+        grad_net(net)(x, y)
+    assert "For custom function, grad tensor should be broadcast to" in str(err.value)

@@ -23,6 +23,8 @@
 #include "include/common/utils/convert_utils_py.h"
 #include "include/common/utils/tensor_py.h"
 #include "pynative/pynative_utils.h"
+#include "include/common/pynative/common_utils.h"
+#include "mindspore/ccsrc/pynative/grad/function/func_grad.h"
 
 namespace mindspore {
 namespace pynative {
@@ -52,6 +54,36 @@ ValuePtr ValueListToValue(const ValuePtrList &list) {
     return list[kIndex0];
   }
   return std::make_shared<ValueTuple>(list);
+}
+
+ValuePtrList AutoCastAndReduce(const ValuePtrList &gradients, const std::vector<TensorMeta> &inputs_meta) {
+  ValuePtrList grads;
+  grads.reserve(gradients.size());
+  if (gradients.size() < inputs_meta.size()) {
+    MS_LOG(EXCEPTION) << "For custom function, grad size should lager than forward inputs, but got " << gradients.size()
+                      << " vs " << inputs_meta.size();
+  }
+  for (size_t i = 0; i < inputs_meta.size(); ++i) {
+    const auto &input_info = inputs_meta[i];
+    if (input_info.is_default() || gradients[i]->isa<None>()) {
+      (void)grads.emplace_back(gradients[i]);
+      continue;
+    }
+    MS_EXCEPTION_IF_NULL(gradients[i]);
+    auto grad_tensor = gradients[i]->cast<tensor::TensorPtr>();
+    MS_EXCEPTION_IF_NULL(grad_tensor);
+    if (input_info.IsSameShape(grad_tensor->shape())) {
+      (void)grads.emplace_back(input_info.Cast(grad_tensor));
+      continue;
+    }
+    if (!input_info.IsBroadcastTo(grad_tensor->shape())) {
+      MS_LOG(EXCEPTION) << "For custom function, grad tensor should be broadcast to input shape, but got "
+                        << grad_tensor->shape() << " vs " << input_info.shape();
+    }
+    grad_tensor = input_info.Cast(input_info.ReduceGrad(grad_tensor));
+    (void)grads.emplace_back(grad_tensor);
+  }
+  return grads;
 }
 }  // namespace
 
@@ -98,6 +130,11 @@ ValuePtrList CustomBackward::CallBackward(const ValuePtrList &grads) {
   MS_LOG(DEBUG) << "End HookBackwardNode CallBackward";
   runtime::Pipeline::Get().WaitFrontend();
   return gradient_tensors;
+}
+
+ValuePtrList CustomBackward::PostProcess(const ValuePtrList &gradient_value) {
+  auto flatten_gradients = CommonUtils::FlattenTensorSeqInValueSeq(gradient_value, false);
+  return AutoCastAndReduce(flatten_gradients, input_meta_);
 }
 
 void CustomBackward::Release() {
@@ -165,6 +202,10 @@ ValuePtrList PyBackwardNode::CallBackward(const ValuePtrList &grads) {
   runtime::Pipeline::Get().WaitFrontend();
   MS_LOG(DEBUG) << "End PyBackwardNode CallBackward";
   return gradient_tensors;
+}
+
+ValuePtrList PyBackwardNode::PostProcess(const ValuePtrList &gradient_value) {
+  return AutoCastAndReduce(gradient_value, input_meta_);
 }
 
 void PyBackwardNode::Release() {

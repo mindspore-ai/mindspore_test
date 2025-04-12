@@ -217,6 +217,60 @@ InputType SetValueGradInfoForTensor(const ValuePtr &value, InputType grad_type) 
 }
 }  // namespace
 
+bool TensorMeta::IsBroadcastTo(const ShapeVector &expand_shape) const {
+  size_t rank = shape_.size();
+  size_t target_rank = expand_shape.size();
+  if (rank > target_rank) {
+    return false;
+  }
+  for (size_t i = 0; i < rank; ++i) {
+    const auto &axis_size = shape_[rank - i - 1];
+    const auto &target_axis_size = expand_shape[target_rank - i - 1];
+    if (axis_size != target_axis_size && axis_size != 1) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool TensorMeta::IsSameShape(const ShapeVector &shape) const { return shape_ == shape; }
+
+tensor::TensorPtr TensorMeta::ReduceGrad(const tensor::TensorPtr &grad) const {
+  kernel::pyboost::OpStatus status{false, false, 0,
+                                   MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET)};
+  kernel::pyboost::OpRunStatus::Get().set_run_info(std::move(status));
+  auto src_size = shape_.size();
+  auto grad_size = grad->shape().size();
+  auto keep_axis = std::make_shared<BoolImm>(false);
+  std::vector<ValuePtr> reduce_axis;
+  reduce_axis.reserve(grad_size);
+  if (src_size == 0) {
+    std::vector<ValuePtr> axes;
+    return kernel::pyboost::sum_ext(grad, std::make_shared<ValueTuple>(axes), keep_axis, std::nullopt);
+  }
+  size_t expanded_axis = grad_size - src_size;
+  for (size_t i = 0; i < expanded_axis; ++i) {
+    (void)reduce_axis.emplace_back(std::make_shared<Int64Imm>(i));
+  }
+  for (size_t i = expanded_axis; i < grad_size; ++i) {
+    if (shape()[i] != grad->shape()[i] && shape()[i] == 1) {
+      (void)reduce_axis.emplace_back(std::make_shared<Int64Imm>(i));
+    }
+  }
+  return kernel::pyboost::sum_ext(grad, std::make_shared<ValueTuple>(reduce_axis), keep_axis, std::nullopt);
+}
+
+tensor::TensorPtr TensorMeta::Cast(const tensor::TensorPtr &grad) const {
+  if (grad->data_type() != dtype_->type_id()) {
+    MS_LOG(DEBUG) << "grad dtype is not same as input, try to cast dtype";
+    kernel::pyboost::OpStatus status{false, false, 0,
+                                     MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET)};
+    kernel::pyboost::OpRunStatus::Get().set_run_info(std::move(status));
+    return kernel::pyboost::cast(grad, std::make_shared<Int64Imm>(static_cast<int64_t>(dtype_->type_id())));
+  }
+  return grad;
+}
+
 InputType AutoGradUtil::SetValueGradInfo(const ValuePtr &value, InputType grad_type) {
   MS_EXCEPTION_IF_NULL(value);
   if (value->isa<tensor::Tensor>()) {

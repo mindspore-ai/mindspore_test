@@ -55,35 +55,6 @@ def test_user_define_bprop_check_ok():
     compile_config.CHECK_BPROP = ''
 
 
-def test_user_define_bprop_no_check_dtype():
-    class Net(nn.Cell):
-        def __init__(self):
-            super(Net, self).__init__()
-            self.grad = Tensor(np.array([[1.1, 2.2, 3.3], [2.0, 3.0, 4.0]], dtype=np.float16))
-
-        def construct(self, x):
-            ret = x * 2
-            return ret
-
-        def bprop(self, x, out, dout):
-            return (self.grad * 3,)
-
-    class GradNet(nn.Cell):
-        def __init__(self, net):
-            super(GradNet, self).__init__()
-            self.net = net
-
-        def construct(self, x, sens):
-            return grad_all_with_sens(self.net)(x, sens)
-
-    x = Tensor(np.array([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]], dtype=np.float32))
-    sens = Tensor(np.array([[1.0, 2.0, 0.0], [0.0, 3.0, 4.0]], dtype=np.float32))
-    context.set_context(mode=context.PYNATIVE_MODE)
-    net = Net()
-    grad_net = GradNet(net)
-    ret = grad_net(x, sens)
-
-
 def test_user_define_bprop_check_shape():
     class Net(nn.Cell):
         def __init__(self):

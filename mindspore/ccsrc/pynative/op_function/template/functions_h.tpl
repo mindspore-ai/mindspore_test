@@ -25,6 +25,8 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 using TensorPtr = std::shared_ptr<tensor::Tensor>;
+class OpRunner;
+using OpPtr = std::shared_ptr<OpRunner>;
 using CloneFunc = void (*)(const OpPtr &inplace_op, const PrimitivePtr &prim, const std::string &device_target,
                            ValuePtrList &&inputs);
 

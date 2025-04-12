@@ -454,6 +454,20 @@ void ProcessOutputWithDict(const ValuePtrList &real_dout, size_t index, const Va
   }
 }
 
+std::vector<TensorMeta> GenerateInputsMeta(const std::vector<ValuePtr> &inputs) {
+  std::vector<TensorMeta> input_meta;
+  input_meta.reserve(inputs.size());
+  for (const auto &val : inputs) {
+    if (val->isa<tensor::Tensor>()) {
+      const auto tensor = val->cast<tensor::TensorPtr>();
+      (void)input_meta.emplace_back(TensorMeta(tensor->shape(), tensor->Dtype()));
+    } else {
+      (void)input_meta.emplace_back();
+    }
+  }
+  return input_meta;
+}
+
 OpGradInfoPtr GenerateOpGradInfoForCustomFunction(const ValuePtrList &inputs,
                                                   const std::vector<InputType> &input_value_grad_type) {
   OpGradInfoPtr info = std::make_shared<OpGradInfo>();
@@ -621,6 +635,7 @@ void CallCustomBprop(const CustomContext &context) {
   auto flatten_inputs = CommonUtils::FlattenTensorSeqInValueSeq(context.inputs);
   auto flatten_outputs = CommonUtils::FlattenTensorSeqInValue(context.output);
   UpdateCreationType(flatten_outputs);
+  auto input_meta = GenerateInputsMeta(flatten_inputs);
   {
     py::gil_scoped_acquire gil;
     py::list bprop_inputs = context.original_inputs.cast<py::list>();
@@ -629,8 +644,8 @@ void CallCustomBprop(const CustomContext &context) {
       saved_output = SavedNode::ConstructSavedNode(context.output);
     }
     custom_fn = std::make_shared<CustomBackward>("CellCustomBackward", context.bprop_fn, bprop_inputs, saved_output,
-                                                 GenerateFlattenAbs(flatten_outputs), context.is_recompute,
-                                                 flatten_outputs.size());
+                                                 std::move(input_meta), GenerateFlattenAbs(flatten_outputs),
+                                                 context.is_recompute, flatten_outputs.size());
   }
   UpdateNextEdges(custom_fn, flatten_inputs);
   SetVariable(flatten_outputs, custom_fn);
@@ -1023,11 +1038,12 @@ void CallCustomPyFunction(const std::shared_ptr<FunctionContext> &context) {
     return;
   }
   BackwardNodePtr custom_fn;
+  auto input_meta = GenerateInputsMeta(context->inputs);
   {
     py::gil_scoped_acquire gil;
-    custom_fn =
-      std::make_shared<PyBackwardNode>("FunctionCustomBackward", context->backward_fn, context->obj,
-                                       GenerateFlattenAbs(context->flatten_outputs), context->flatten_outputs.size());
+    custom_fn = std::make_shared<PyBackwardNode>("FunctionCustomBackward", context->backward_fn, context->obj,
+                                                 std::move(input_meta), GenerateFlattenAbs(context->flatten_outputs),
+                                                 context->flatten_outputs.size());
     py::cast<FunctionPtr>(context->obj)->set_weak_grad_node(custom_fn);
   }
   UpdateNextEdges(custom_fn, context->inputs);

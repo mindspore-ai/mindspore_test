@@ -815,3 +815,95 @@ def test_custom_function_with_attr():
     net = CustomFunctionWithAttr()
     grad_net = C.GradOperation(get_all=True)
     grad_net(net.apply)(x, y)
+
+
+class CustomFunctionAutoReduceNet(_Function):
+    @staticmethod
+    def forward(ctx, x, y):
+        x2 = x + y
+        return x2
+
+    @staticmethod
+    def backward(ctx, *args):
+        return Tensor([[1., 1., 1.], [1., 1., 1.], [2., 2., 2.]]), Tensor([[1., 1., 1.], [1., 1., 1.], [2., 2., 2.]])
+
+
+def test_custom_function_auto_reduce():
+    """
+    Feature: Custom autograd function.
+    Description: Test auto reduce.
+    Expectation: success.
+    """
+    x = Tensor([3, 3, 3], mindspore.float32)
+    y = Tensor([[1, 2, 3], [1, 2, 3], [1, 2, 3]], mindspore.float32)
+    net = CustomFunctionAutoReduceNet()
+    grad_net = C.GradOperation(get_all=True)
+    grads = grad_net(net.apply)(x, y)
+    assert np.allclose(grads[0].asnumpy(), np.array([4., 4., 4.], dtype=np.float32), 0.00001, 0.00001)
+    assert np.allclose(grads[1].asnumpy(), np.array([[1., 1., 1.], [1., 1., 1.], [2., 2., 2.]], dtype=np.float32),
+                       0.00001, 0.00001)
+
+
+class CustomFunctionAutoCastNet(_Function):
+    @staticmethod
+    def forward(ctx, x, y):
+        x2 = x + y
+        return x2
+
+    @staticmethod
+    def backward(ctx, *args):
+        return Tensor([[1, 1, 1], [1, 1, 1], [2, 2, 2]], dtype=mindspore.int64), \
+               Tensor([[1, 1, 1], [1, 1, 1], [2, 2, 2]], dtype=mindspore.int64)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_custom_function_auto_cast():
+    """
+    Feature: Custom autograd function.
+    Description: Test auto cast.
+    Expectation: success.
+    """
+    x = Tensor([3, 3, 3], mindspore.float32)
+    y = Tensor([[1, 2, 3], [1, 2, 3], [1, 2, 3]], mindspore.float32)
+    net = CustomFunctionAutoCastNet()
+    grad_net = C.GradOperation(get_all=True)
+    grads = grad_net(net.apply)(x, y)
+    assert grads[0].dtype == mindspore.float32
+    assert grads[1].dtype == mindspore.float32
+    assert np.allclose(grads[0].asnumpy(), np.array([4., 4., 4.], dtype=np.float32), 0.00001, 0.00001)
+    assert np.allclose(grads[1].asnumpy(), np.array([[1., 1., 1.], [1., 1., 1.], [2., 2., 2.]], dtype=np.float32),
+                       0.00001, 0.00001)
+
+
+class CustomFunctionBroadcastExecptionNet(_Function):
+    @staticmethod
+    def forward(ctx, x, y):
+        x2 = x + y
+        return x2
+
+    @staticmethod
+    def backward(ctx, *args):
+        return Tensor([[1, 1, 1, 1], [1, 1, 1, 1], [2, 2, 2, 2]], dtype=mindspore.int64), \
+               Tensor([[1, 1, 1], [1, 1, 1], [2, 2, 2]], dtype=mindspore.int64)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_custom_function_reduce_exception():
+    """
+    Feature: Custom autograd function.
+    Description: Test auto reduce.
+    Expectation: success.
+    """
+    x = Tensor([3, 3, 3], mindspore.float32)
+    y = Tensor([[1, 2, 3], [1, 2, 3], [1, 2, 3]], mindspore.float32)
+    net = CustomFunctionBroadcastExecptionNet()
+    grad_net = C.GradOperation(get_all=True)
+    with pytest.raises(RuntimeError) as err:
+        grad_net(net.apply)(x, y)
+    assert "For custom function, grad tensor should be broadcast to" in str(err.value)
