@@ -171,6 +171,14 @@ std::vector<DeviceTensorPtr> GraphParameterStore::FetchMutableAddr(size_t outer_
   return input_list;
 }
 
+bool GraphParameterStore::HasHeter(size_t outer_index, size_t inner_index) {
+  CheckIndexValid(outer_index, inner_index);
+  std::shared_lock<std::shared_mutex> lock(param_mutex_);
+  const auto &device_tensor_with_info = parameter_device_tensors_[outer_index][inner_index];
+  const auto &heter_device_tensor_with_info = heter_device_tensors_[outer_index][inner_index];
+  return device_tensor_with_info.first != nullptr && heter_device_tensor_with_info.first != nullptr;
+}
+
 std::vector<DeviceTensor *> GraphParameterStore::Fetch(size_t outer_index, size_t inner_index) {
   const auto &device_tensors = FetchMutableAddr(outer_index, inner_index);
   std::vector<DeviceTensor *> input_list;

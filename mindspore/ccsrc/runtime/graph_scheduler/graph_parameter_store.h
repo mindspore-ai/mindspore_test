@@ -52,7 +52,7 @@ class BACKEND_EXPORT GraphParameterStore {
     heter_device_tensors_.resize(front_parameter_size);
     is_dynamic_.resize(front_parameter_size);
   }
-
+  bool HasHeter(size_t outer_index, size_t inner_index);
   void ResizePosition(size_t outer_index, size_t tuple_unfold_length) {
     if (outer_index >= parameter_device_tensors_.size()) {
       MS_LOG(EXCEPTION) << "inner index is larger than the size of parameter device tensors [" << outer_index << "].";
