@@ -1,0 +1,48 @@
+building GPT model ...
+ > number of parameters on (tensor, pipeline) model parallel rank (0, 1): 1741560832
+ninja: no work to do.
+ > number of parameters on (tensor, pipeline) model parallel rank (0, 0): 1917599744
+ loading checkpoint from /home/workspace/mindspore_dataset/msadapter/test_input/net/test_ds3_sft/load at iteration 10
+could not find arguments in the checkpoint ...
+ checkpoint version 3.0
+  successfully loaded checkpoint from /home/workspace/mindspore_dataset/msadapter/test_input/net/test_ds3_sft/load [ t 0, p 0 ] at iteration 0
+(min, max) time across ranks (ms):
+    load-checkpoint ................................: (4479.85, 4480.19)
+[after model, optimizer, and learning rate scheduler are built] datetime: 2025-03-21 18:05:20 
+> building train, validation, and test datasets ...
+ > datasets target sizes (minimum size):
+    train:      80
+    validation: 0
+    test:       0
+INFO:megatron.core.datasets.blended_megatron_dataset_config:Let split_matrix = [(0, 1.0), None, None]
+> building train, validation, and test datasets for GPT ...
+ > building PretrainFromHF tokenizer. Vocab file is un-used, loading tokenizer from pre-trained model
+ > dataset split:
+    train:
+     document indices in [0, 52002) total of 52002 documents
+    validation:
+     document indices in [52002, 52002) total of 0 documents
+    test:
+     document indices in [52002, 52002) total of 0 documents
+ > loading shuffle-idx mapping from /home/workspace/mindspore_dataset/msadapter/test_input/net/test_ds3_sft/finetune_dataset/alpaca_train_indexmap_80ns_1234s_decoder_packed_shuffle_idx.npy
+    loaded indexed file in 0.001 seconds
+> finished creating GPT datasets ...
+[after dataloaders are built] datetime: 2025-03-21 18:05:21 
+done with setup ...
+(min, max) time across ranks (ms):
+    model-and-optimizer-setup ......................: (10864.72, 10868.32)
+    train/valid/test-data-iterators-setup ..........: (1461.99, 1490.64)
+training ...
+[before the start of training step] datetime: 2025-03-21 18:05:21 
+Number of parameters in transformer layers in billions:  26.19
+Number of parameters in embedding layers in billions: 1.85
+Total number of parameters in billions: 28.04
+Number of parameters in most loaded shard in billions: 14.0214
+Number of parameters in other shards in billions: 13.0947
+Theoretical memory footprints: weight and optimizer=120346.30 MB
+ [2025-03-21 18:05:34] iteration        1/      10 | consumed samples:            8 | elapsed time per iteration (ms): 12577.8 | learning rate: 1.000000E-05 | global batch size:     8 | lm loss: 2.5055196285247803 | loss scale: 1.0 | grad norm: 30.5073025200452719 | num zeros: 0.0 | number of skipped iterations:   0 | number of nan iterations:   0 |
+ [2025-03-21 18:05:35] iteration        2/      10 | consumed samples:           16 | elapsed time per iteration (ms): 606.3 | learning rate: 9.701478E-06 | global batch size:     8 | lm loss: 4.0182037353515625 | loss scale: 1.0 | grad norm: 24.5777919235020157 | num zeros: 0.0 | number of skipped iterations:   0 | number of nan iterations:   0 |
+ [2025-03-20 14:27:50] iteration        3/      10 | consumed samples:          128 | elapsed time per iteration (ms): 18062.4 | throughput per GPU (TFLOP/s/GPU): 379.4 | learning rate: 1.235606E-06 | global batch size:   128 | lm loss: 9.7951211929321289 | loss scale: 1.0 | grad norm: 20.1497642787274636 | number of skipped iterations:   0 | number of nan iterations:   0 |
+ [2025-03-20 14:27:54] iteration        4/      10 | consumed samples:          256 | elapsed time per iteration (ms): 4235.8 | throughput per GPU (TFLOP/s/GPU): 1617.9 | learning rate: 1.166872E-06 | global batch size:   128 | lm loss: 9.7579383850097656 | loss scale: 1.0 | grad norm: 23.7711511490950933 | number of skipped iterations:   0 | number of nan iterations:   0 |
+ [2025-03-20 14:27:50] iteration        5/      10 | consumed samples:          128 | elapsed time per iteration (ms): 18062.4 | throughput per GPU (TFLOP/s/GPU): 379.4 | learning rate: 1.235606E-06 | global batch size:   128 | lm loss: 9.7951211929321289 | loss scale: 1.0 | grad norm: 20.1497642787274636 | number of skipped iterations:   0 | number of nan iterations:   0 |
+[after training is done] datetime: 2025-03-21 18:05:39

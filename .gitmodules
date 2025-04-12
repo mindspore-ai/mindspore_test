@@ -34,3 +34,17 @@
 [submodule "tests/st/networks/llm_parallel_feature/mindformers"]
 	path = tests/st/networks/llm_parallel_feature/mindformers
 	url = https://gitee.com/mindspore/mindformers.git
+	shallow = true
+[submodule "tests/st/mindrlhf/mindformers"]
+	path = tests/st/mindrlhf/mindformers
+	url = https://gitee.com/mindspore/mindformers.git
+	branch = dev
+[submodule "tests/st/mindrlhf/mindrlhf"]
+	path = tests/st/mindrlhf/mindrlhf
+	url = https://gitee.com/mindspore/mindrlhf.git
+[submodule "tests/st/networks/msadapter"]
+	path = tests/st/networks/msadapter
+	url = https://gitee.com/mindspore/msadapter.git
+[submodule "tests/st/networks/MindSpeed-Core-MS"]
+	path = tests/st/networks/MindSpeed-Core-MS
+	url = https://gitee.com/ascend/MindSpeed-Core-MS.git
