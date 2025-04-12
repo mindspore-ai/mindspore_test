@@ -30,6 +30,7 @@ from mindspore.ops.operations._sequence_ops import TensorToTuple
 from mindspore.ops.auto_generate import trace_v2_op, inplace_addmm_op, inplace_index_put_op, inplace_normal_op, inplace_index_add_op
 from mindspore.ops.auto_generate import inplace_copy_op, inplace_uniform_op, inplace_erfinv_op
 from mindspore.ops.auto_generate import inplace_scatter_add as inplace_scatter_add_
+from mindspore.ops.auto_generate import inplace_exponential_op
 
 from ... import _checkparam as validator
 from ..._checkparam import check_is_number, check_reshape_shp, check_axis_in_range, \
@@ -4488,6 +4489,15 @@ def uniform_(input, from_=0, to=1, *, generator=None):
         generator = default_generator
     seed, offset = generator._step(generator_step_) # pylint: disable=protected-access
     return inplace_uniform_op(input, from_, to, seed, offset)
+
+def exponential_(input, lambd=1, *, generator=None):
+    r"""
+        Fills `self` tensor with elements drawn from the exponential distribution:
+    """
+    if generator is None:
+        generator = default_generator
+    seed, offset = generator._step(generator_step_) # pylint: disable=protected-access
+    return inplace_exponential_op(input, lambd, seed, offset)
 
 
 def amin(input, axis=None, keep_dims=False):

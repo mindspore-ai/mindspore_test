@@ -607,8 +607,50 @@ class _JitExecutor:
         self._enable_auto_dynamic = dynamic == 1
         self.jit_config_dict = jit_config.jit_config_dict if jit_config else None
 
+    def _predict(self, *args, **kwargs):
+        """Dedicated routine for predict."""
+        if not hasattr(self.obj, "phase"):
+            return False, None
+
+        predict_vailid_phase = {"prefill", 'increment'}
+        predict_phase = self.obj.phase
+        if predict_phase not in predict_vailid_phase:
+            return False, None
+
+        args_list = args
+        if self.obj is not None:
+            args_list = args_list[1:]
+
+        if predict_phase not in self.obj.phase_cache:
+            try:
+                predict_phase = self.compile(self.fn.__name__, *args_list, **kwargs)
+            except Exception as err:
+                _pynative_executor.clear_res()
+                raise err
+        else:  # get compiled args to generate run args by _generate_run_args
+            compile_args = self._generate_compile_args(args_list)
+            key_id = self._get_key_id()
+            compile_args = get_auto_dynamic_shape_args_with_check_input_signature(
+                compile_args,
+                key_id,
+                self.input_signature,
+                self._enable_auto_dynamic
+            )
+            self._compile_args = compile_args
+
+        new_inputs = self._generate_run_args(args_list, kwargs)
+        output = self._graph_executor(
+            tuple(new_inputs),
+            self.obj.phase_cache[self.obj.phase]
+        )
+        res = _convert_python_data(output)
+        return True, res
+
     @_wrap_func
     def __call__(self, *args, **kwargs):
+        predict, res = self._predict(*args, **kwargs)
+        if predict:
+            return res
         if jit_context() and jit_context().is_nested():
             return jit_context().run_graph("", None, *())
         args_list = args
@@ -674,7 +716,7 @@ class _JitExecutor:
                     f'`{self.fn.__module__}`')
             self.obj.__parse_method__ = method_name
             if isinstance(self.obj, ms.nn.Cell):
-                generate_name = generate_name + '.' + str(self.obj.create_time)
+                generate_name = generate_name + '.' + str(self.obj.create_time) + self.obj.phase
                 create_time = str(self.obj.create_time)
             else:
                 generate_name = generate_name + '.' + str(self._create_time)
@@ -741,6 +783,8 @@ class _JitExecutor:
             raise RuntimeError("Executor compile failed.")
         set_parameter_hook_updated(False)
         ms_compile_cache.add(phase)
+        if hasattr(self.obj, "phase"):
+            self.obj.phase_cache[self.obj.phase] = phase
 
         return phase
 
