@@ -409,7 +409,8 @@ class DistributedGradReducer(Cell):
             self.degree = degree
         self.degree = Tensor(1.0 / self.degree, mstype.float32)
 
-        self.allreduce_filter = tuple((x.layerwise_parallel is False) and (x.is_in_shard is False) for x in parameters)
+        self.allreduce_filter = tuple((x.layerwise_parallel is False) and
+                                      (not x.param_info.is_in_pynative_shard) for x in parameters)
         is_parallel_optimizer = context.get_auto_parallel_context("enable_parallel_optimizer")
         split_indices = auto_parallel_context().get_all_reduce_fusion_split_indices()
         if is_parallel_optimizer and split_indices:

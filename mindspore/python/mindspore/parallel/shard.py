@@ -267,7 +267,7 @@ class Shard(Shard_):
 
         if isinstance(fn, ms.nn.Cell):
             for param in fn.trainable_params():
-                param.is_in_shard = True
+                param.param_info.is_in_pynative_shard = True
 
         # Set parameter layout to corresponding parameter
         self._set_param_layout_into_parameter(fn, parameter_plan)
