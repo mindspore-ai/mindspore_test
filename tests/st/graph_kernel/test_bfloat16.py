@@ -47,14 +47,7 @@ def get_output(x0, x1, shape, enable_graph_kernel):
     return y0.float().asnumpy(), net.param.float().asnumpy()
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_convert_bfloat16():
-    """
-    Feature: test graph kernel bfloat16 data type
-    Description: input is bfloat16
-    Expectation: the result match with the expected result
-    """
-    context.set_context(mode=context.GRAPH_MODE)
+def case1():
     np.random.seed(1)
     shape = (4, 4)
     x0 = np.random.normal(0, 1, shape).astype(np.float32)
@@ -65,3 +58,37 @@ def test_convert_bfloat16():
     outputs = get_output(x0_ms, x1_ms, shape, True)
     compare_result = [np.allclose(e, o, 1.5e-3, 1.5e-3) for e, o in zip(expects, outputs)]
     assert False not in compare_result
+
+
+class Net2(Cell):
+    def construct(self, x0, x1):
+        y0 = ops.Add()(x0, x1)
+        y1 = ops.Cast()(y0, mindspore.float32)
+        return y0, y1
+
+
+def case2():
+    np.random.seed(1)
+    shape = (1, 128, 128)
+    x0 = Tensor(np.random.normal(0, 1, shape).astype(np.float32), mindspore.bfloat16)
+    x1 = Tensor(np.random.normal(0, 1, shape).astype(np.float32), mindspore.bfloat16)
+    context.set_context(jit_config={"jit_level": "O1"})
+    with AssertGKEnable(True):
+        net = Net2()
+        y0, y1 = net(x0, x1)
+    y0 = y0.float().asnumpy()
+    y1 = y1.asnumpy()
+    # bf16 output should be same as fp32 output
+    assert np.allclose(y0, y1, 0.0, 0.0)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_convert_bfloat16():
+    """
+    Feature: test graph kernel bfloat16 data type
+    Description: input is bfloat16
+    Expectation: the result match with the expected result
+    """
+    context.set_context(mode=context.GRAPH_MODE)
+    case1()
+    case2()
