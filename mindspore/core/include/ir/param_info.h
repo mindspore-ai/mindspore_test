@@ -156,6 +156,9 @@ class ParamInfo {
   bool is_param_init() const { return is_param_init_; }
   void set_is_param_init(bool is_param_init) { is_param_init_ = is_param_init; }
 
+  bool is_in_pynative_shard() const { return is_in_pynative_shard_; }
+  void set_is_in_pynative_shard(bool is_in_pynative_shard) { is_in_pynative_shard_ = is_in_pynative_shard; }
+
  private:
   std::string name_{"Parameter"};
   bool requires_grad_{true};
@@ -175,6 +178,7 @@ class ParamInfo {
   bool requires_aggr_{true};
   std::vector<int64_t> parameter_shape_;
   std::string storage_format_{""};
+  bool is_in_pynative_shard_{false};
 
   // Record the origin shape before cut huge parameter to a small one.
   std::vector<int64_t> origin_shape_;

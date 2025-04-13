@@ -299,7 +299,6 @@ class Parameter(Tensor_):
         self._cast_type = None
         self._unique = False
         self.is_in_parallel = _is_in_auto_parallel_mode()
-        self.is_in_shard = False
         self._pipeline_stage_list = []
         self.slice_num = 1
         if -1 in self.shape:

@@ -598,6 +598,48 @@ static bool SetStrategyForShard(const FuncGraphPtr &root, const std::vector<AnfN
   return set_success;
 }
 
+void CheckIsAllParameterHasTagInPynativeShard(const AnfNodePtrList &all_nodes) {
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  if (ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) != kPynativeMode) {
+    return;
+  }
+  for (const auto shard_node : all_nodes) {
+    if (!IsPrimitiveCNode(shard_node, prim::kPrimShard)) {
+      continue;
+    }
+    auto shard_cnode = shard_node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(shard_cnode);
+    auto vnode = shard_cnode->input(kIndex1)->cast<ValueNodePtr>();
+    ScopeGuard scope_guard(vnode->scope());
+    auto func_graph = GetValueNode<FuncGraphPtr>(vnode);
+    MS_EXCEPTION_IF_NULL(func_graph);
+    const auto &func_graph_nodes = func_graph->GetOrderedCnodes();
+    for (const auto &load_node : func_graph_nodes) {
+      if (!IsPrimitiveCNode(load_node, prim::kPrimLoad)) {
+        continue;
+      }
+      auto load_cnode = load_node->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(load_cnode);
+      auto param_input = load_cnode->input(kIndex1);
+      if (!param_input->isa<Parameter>() || !ParameterRequireGrad(param_input)) {
+        continue;
+      }
+      auto param_ptr = param_input->cast<ParameterPtr>();
+      MS_EXCEPTION_IF_NULL(param_ptr);
+      auto param_info = param_ptr->param_info();
+      MS_EXCEPTION_IF_NULL(param_info);
+      if (!param_info->is_in_pynative_shard()) {
+        MS_LOG(EXCEPTION)
+          << "In the pynative mode, when you call the ms.shard interface and the input 'fn' is of Function type, the "
+             "internal computation of fn cannot involve Parameter. Please modify your script to use nn.Cell instead of "
+             "Function. Parameter: "
+          << param_ptr->name();
+      }
+    }
+  }
+}
+
 bool Shard(const FuncGraphPtr &root, const opt::OptimizerPtr &) {
   MS_EXCEPTION_IF_NULL(root);
   MS_LOG(INFO) << "Shard pass starts.";
@@ -638,6 +680,7 @@ bool Shard(const FuncGraphPtr &root, const opt::OptimizerPtr &) {
   std::vector<AnfNodePtr> all_nodes = DeepScopedGraphSearch(ret);
   CheckGlobalDeviceManager();
   auto device_num_shard = g_device_manager->stage_device_num();
+  CheckIsAllParameterHasTagInPynativeShard(all_nodes);
   change = SetStrategyForShard(root, all_nodes, device_num_shard);
 #ifdef ENABLE_DUMP_IR
   auto context = MsContext::GetInstance();
