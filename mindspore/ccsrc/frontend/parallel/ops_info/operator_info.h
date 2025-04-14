@@ -44,6 +44,7 @@
 namespace mindspore {
 namespace parallel {
 using ForwardOp = OperatorVector;
+using ForwardOpList = std::vector<ForwardOp>;
 using MirrorOps = std::vector<OperatorVector>;
 using Ops = std::vector<OperatorVector>;
 using VirtualDivOp = OperatorVector;
@@ -349,6 +350,7 @@ class OperatorInfo {
   virtual int64_t ComputeOpAndPrevEdgeParameterInvolved();
 
   ForwardOp forward_op() const { return forward_op_; }
+  ForwardOpList forward_op_list() const { return forward_op_list_; }
   ForwardOp replace_op() const { return replace_op_; }
   OutPutInfoVector replace_op_info() const { return replace_op_info_; }
   virtual ReplaceGraphPtr replace_graph(const CNodePtr &) { return replace_graph_; }
@@ -646,6 +648,7 @@ class OperatorInfo {
   NewTensorMaps inputs_tensor_map_new_;
   NewTensorMaps outputs_tensor_map_new_;
   ForwardOp forward_op_;
+  ForwardOpList forward_op_list_;
   ForwardOp forward_op_interleaved_;
   Ops sub_ops_;
   ForwardOp replace_op_;

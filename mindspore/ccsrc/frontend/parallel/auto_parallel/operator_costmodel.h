@@ -601,6 +601,7 @@ class SoftmaxCrossEntropyWithLogitsCost : public OperatorCost {
   void CalculateInputsInMemory(const std::map<size_t, bool> &prev_output_in_mem) override;
 };
 
+using CrossEntropyLossCost = SoftmaxCrossEntropyWithLogitsCost;
 class ReshapeCost : public OperatorCost {
  public:
   ReshapeCost() : OperatorCost() {}

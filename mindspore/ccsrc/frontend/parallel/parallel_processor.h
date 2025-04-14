@@ -36,7 +36,8 @@ class ParallelProcessor {
 
   void Process();
 
-  static void ForwardCommunication(OperatorVector forward_op, const CNodePtr &node);
+  static void ForwardCommunication(const OperatorVector &forward_op, const ForwardOpList &forward_op_list,
+                                   const CNodePtr &node);
   static void InsertForwardOps(const OperatorInfoPtr &distribute_operator, const CNodePtr &cnode);
   static TensorLayout GetTensorInLayout(const AnfNodePtr &pre_node, std::vector<int> get_item_index);
   static void Redistribution(const std::pair<AnfNodePtr, int> &node_pair, const AnfNodePtr &pre_node,

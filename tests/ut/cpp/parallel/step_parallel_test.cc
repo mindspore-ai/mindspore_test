@@ -461,6 +461,7 @@ TEST_F(TestStepParallel, DISABLED_ForwardCommunication1) {
   OperatorArgs args = std::make_pair(attrs, operator_param);
   Operator op = std::make_pair(op_name, args);
   OperatorVector op_list = {op, op};
+  ForwardOpList forward_op_list;
   py::object context = py::module::import("mindspore.context");
   py::object set_context = context.attr("set_context");
   set_context("mode"_a = kGraphMode);
@@ -478,7 +479,7 @@ TEST_F(TestStepParallel, DISABLED_ForwardCommunication1) {
     FuncGraphPtr func_graph = node->func_graph();
     PrimitivePtr prim = cnode->input(0)->cast<ValueNodePtr>()->value()->cast<PrimitivePtr>();
     if (prim->name() == "MatMul") {
-      ParallelProcessor::ForwardCommunication(op_list, cnode);
+      ParallelProcessor::ForwardCommunication(op_list, forward_op_list, cnode);
     }
   }
   AnfNodeSet after_nodes = manager->all_nodes();
@@ -506,6 +507,7 @@ TEST_F(TestStepParallel, DISABLED_ForwardCommunication1) {
 /// Expectation: success.
 TEST_F(TestStepParallel, DISABLED_ForwardCommunication2) {
   OperatorVector op_list;
+  ForwardOpList forward_op_list;
   FuncGraphManagerPtr manager = Make_Manager();
   FuncGraphSet graphs = manager->func_graphs();
   FuncGraphPtr graph = *graphs.begin();
@@ -521,7 +523,7 @@ TEST_F(TestStepParallel, DISABLED_ForwardCommunication2) {
     func_graph->set_manager(nullptr);
     PrimitivePtr prim = GetValueNode<PrimitivePtr>(cnode->input(0));
     if (prim->name() == "MatMul") {
-      EXPECT_THROW({ ParallelProcessor::ForwardCommunication(op_list, cnode); }, std::runtime_error);
+      EXPECT_THROW({ ParallelProcessor::ForwardCommunication(op_list, forward_op_list, cnode); }, std::runtime_error);
       break;
     }
   }
@@ -532,6 +534,7 @@ TEST_F(TestStepParallel, DISABLED_ForwardCommunication2) {
 /// Expectation: success.
 TEST_F(TestStepParallel, DISABLED_ForwardCommunication3) {
   OperatorVector op_list;
+  ForwardOpList forward_op_list;
   FuncGraphManagerPtr manager = Make_Manager();
   FuncGraphSet graphs = manager->func_graphs();
   FuncGraphPtr graph = *graphs.begin();
@@ -551,7 +554,7 @@ TEST_F(TestStepParallel, DISABLED_ForwardCommunication3) {
       OperatorArgs args = std::make_pair(attrs, operator_param);
       Operator op = std::make_pair("ABC", args);
       OperatorVector op_list = {op};
-      EXPECT_THROW({ ParallelProcessor::ForwardCommunication(op_list, cnode); }, std::runtime_error);
+      EXPECT_THROW({ ParallelProcessor::ForwardCommunication(op_list, forward_op_list, cnode); }, std::runtime_error);
       break;
     }
   }

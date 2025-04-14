@@ -26,6 +26,8 @@
 #include "frontend/parallel/ops_info/activation_info.h"
 #include "frontend/parallel/ops_info/operator_info.h"
 #include "frontend/parallel/strategy.h"
+#include "frontend/parallel/auto_parallel/operator_costmodel.h"
+#include "mindapi/base/types.h"
 
 namespace mindspore {
 namespace parallel {
@@ -55,6 +57,38 @@ class SoftmaxCrossEntropyWithLogitsInfo : public OperatorInfo {
 
  private:
   int64_t axis_ = -1;  // default -1
+};
+
+// infer shape:
+// input_0 : [N, C],  input_1 : [N, ], input_2 : [C]
+// output_0 : [N, ] or [1, ], output_1 : [N, C]
+class CrossEntropyLossInfo : public SoftmaxCrossEntropyWithLogitsInfo {
+ public:
+  CrossEntropyLossInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+                       const PrimitiveAttrs &attrs)
+      : SoftmaxCrossEntropyWithLogitsInfo(name, inputs_shape, outputs_shape, attrs) {
+    set_cost(std::make_shared<CrossEntropyLossCost>());
+  }
+  ~CrossEntropyLossInfo() override = default;
+
+  void ReComputeBatchSplitFlagList() override;
+  std::vector<StrategyPtr> GenerateOpStrategies(int64_t stage_id) override;
+
+ protected:
+  Status GetAttrs() override;  // Check inputs size and parse attributes (reduction, ignore_index, label_smoothing
+  Status CheckStrategy(const StrategyPtr &strategy) override;
+  Status InferTensorMap() override;
+  Status InferForwardCommunication() override;
+
+ private:
+  int64_t axis_ = -1;  // default -1, softmax axis
+
+  Status InferGroup();
+  std::vector<Group> group_list_;
+
+  int64_t reduction_ = Reduction::MEAN;
+  int64_t ignore_index_ = -100;
+  float_t label_smoothing_ = 0.0;
 };
 }  // namespace parallel
 }  // namespace mindspore

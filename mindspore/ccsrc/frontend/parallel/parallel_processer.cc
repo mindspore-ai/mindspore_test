@@ -66,6 +66,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_v.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "include/common/utils/anfalgo.h"
+#include "include/backend/optimizer/helper.h"
 
 using mindspore::tensor::Tensor;
 
@@ -550,60 +551,106 @@ static void SetAllReduceRecomputeFlag(const std::vector<AnfNodePtr> &new_node_in
   }
 }
 
-static void ForwardCommunicationForMultiOut(OperatorVector forward_op, const CNodePtr &node) {
+static void InserForwardCommunicationForSingleOutput(const CNodePtr &node, const OperatorVector &forward_op,
+                                                     const ForwardOpList &forward_op_list) {
   MS_EXCEPTION_IF_NULL(node);
+
   // step1:get graph manager distribute_operator
-  FuncGraphPtr func_graph = node->func_graph();
+  const FuncGraphPtr &func_graph = node->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);
-  FuncGraphManagerPtr manager = func_graph->manager();
+  const auto manager = func_graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
-  auto uses_set = manager->node_users()[node];
-  // For GMM, its out always be tuplegetitem, so we need to find the real user of GMM
-  std::vector<CNodePtr> node_to_insert = {};
+  const auto &uses_set = manager->node_users()[node];
+
+  // step2: get node to insert forward communication
+  CNodePtrList node_to_insert = {};
+  bool has_tuple_getitem = false;
   for (auto &uses_pair : uses_set) {
     auto uses_cnode = uses_pair.first->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(uses_cnode);
     if (!IsValueNode<Primitive>(uses_cnode->input(0))) {
       break;
     }
+
+    // tuple_get_item node
     PrimitivePtr value_node_prim = GetValueNode<PrimitivePtr>(uses_cnode->input(0));
     MS_EXCEPTION_IF_NULL(value_node_prim);
     if (value_node_prim->name() == prim::kPrimTupleGetItem->name()) {
+      has_tuple_getitem = true;
       node_to_insert.push_back(uses_cnode);
     }
   }
-  if (node_to_insert.empty()) {
-    MS_LOG(ERROR) << "The output of " << node->DebugString()
-                  << "does not have a tuplegetitem node. Forward communication can not be inserted, the correctness of "
-                     "current op can not be ensured.";
-    return;
-  }
-  std::reverse(forward_op.begin(), forward_op.end());
 
-  // step2:traverse op_list and insert node
-  for (size_t index = 0; index < forward_op.size(); ++index) {
-    FwdCommDumpHandlerPtr fwd_dump_handler =
-      std::make_shared<FwdCommunicationParallelTensorDumpHandler>(node_to_insert[index]);
-    fwd_dump_handler->CollectDumpNodes(node_to_insert[index], true);
-    std::string instance_name_base = FORWARD_OP;
-    std::string instance_name = instance_name_base + "_" + CreateInstanceName(node, index);
-    std::vector<AnfNodePtr> forward_input = CreateInput(forward_op[index], node_to_insert[index], instance_name);
-    SetAllReduceRecomputeFlag(forward_input, node_to_insert[index]);
-    CNodePtr forward_node = func_graph->NewCNode(forward_input);  // using NewCNode to create anfnode
-    MS_EXCEPTION_IF_NULL(forward_node);
-    ScopePtr scope = node->scope();
-    MS_EXCEPTION_IF_NULL(scope);
-    forward_node->set_scope(scope);
-    forward_node->set_in_forward_flag(true);
-    forward_node->AddPrimalAttr(kPrimalAttrForwardCommNodeUniqueId, MakeValue<std::string>(forward_node->UniqueId()));
-    if (node_to_insert[index]->HasPrimalAttr(MICRO)) {
-      forward_node->AddPrimalAttr(MICRO, node_to_insert[index]->GetPrimalAttr(MICRO));
-    }
-    forward_input[0]->set_scope(scope);
-    (void)manager->Replace(node_to_insert[index], forward_node);  // using Replace function to insert node
-    (void)fwd_dump_handler->MakeInModeBwdHookBeforeFwdComm();
-    (void)fwd_dump_handler->MakeOutModeDumpBeforeFwdComm();
+  if (!has_tuple_getitem) {
+    node_to_insert.push_back(node);
   }
+
+  // get forward_op_list
+  ForwardOpList op_comm_list = forward_op_list.empty() ? ForwardOpList{forward_op} : forward_op_list;
+
+  // step2: traverse op_list and insert node
+  CNodePtr forward_node;
+  for (size_t out_idx = 0; out_idx < op_comm_list.size(); ++out_idx) {
+    ForwardOp forward_op_idx = op_comm_list[out_idx];  // op_list of output_idx, {op0, op1, op2}
+    std::reverse(forward_op_idx.begin(), forward_op_idx.end());
+    for (size_t index = 0; index < forward_op_idx.size(); ++index) {
+      std::string instance_name_base = FORWARD_OP;
+      std::string instance_name = instance_name_base + "_" + CreateInstanceName(node, index);
+      std::vector<AnfNodePtr> forward_input =
+        CreateInput(forward_op_idx[index], node_to_insert[out_idx], instance_name);
+      SetAllReduceRecomputeFlag(forward_input, node_to_insert[out_idx]);
+      forward_node = func_graph->NewCNode(forward_input);  // using NewCNode to create anfnode
+      MS_EXCEPTION_IF_NULL(forward_node);
+      ScopePtr scope = node->scope();
+      MS_EXCEPTION_IF_NULL(scope);
+      forward_node->set_scope(scope);
+      forward_node->set_in_forward_flag(true);
+      forward_node->AddPrimalAttr(kPrimalAttrForwardCommNodeUniqueId, MakeValue<std::string>(forward_node->UniqueId()));
+      if (node_to_insert[out_idx]->HasPrimalAttr(MICRO)) {
+        forward_node->AddPrimalAttr(MICRO, node_to_insert[out_idx]->GetPrimalAttr(MICRO));
+      }
+      forward_input[0]->set_scope(scope);
+      (void)manager->Replace(node_to_insert[out_idx], forward_node);  // using Replace function to insert node
+    }
+  }
+}
+
+static void ForwardCommunicationForMultiOut(const CNodePtr &node, const OperatorVector &forward_op,
+                                            const ForwardOpList &forward_op_list) {
+  MS_EXCEPTION_IF_NULL(node);
+
+  // step1: get graph manager distribute_operator
+  const FuncGraphPtr func_graph = node->func_graph();
+  MS_EXCEPTION_IF_NULL(func_graph);
+  const FuncGraphManagerPtr manager = func_graph->manager();
+  MS_EXCEPTION_IF_NULL(manager);
+
+  // step2: get_tuple_item from outputs node of distributed operator
+  // insert tuple_get_item cnode to get output_idx
+  const size_t outputs_num = forward_op_list.size();
+  const std::shared_ptr<AnfNode> node_ = node->cast<AnfNodePtr>();
+  MS_EXCEPTION_IF_NULL(node_);
+  std::vector<AnfNodePtr> tuple_outputs;
+  for (size_t output_idx = 0; output_idx < outputs_num; ++output_idx) {
+    CNodePtr node_output_idx = mindspore::opt::CreatTupleGetItemNode(func_graph, node_, output_idx);
+    const std::shared_ptr<AnfNode> node_output_idx_ = node_output_idx->cast<AnfNodePtr>();
+    MS_EXCEPTION_IF_NULL(node_output_idx_);
+    tuple_outputs.push_back(node_output_idx_);
+  }
+
+  // step3: merge all tuple_get_item nodes into tuple_node
+  CNodePtr forward_node;
+  if (!tuple_outputs.empty()) {
+    forward_node = mindspore::opt::CreateMakeTupleNode(func_graph, tuple_outputs);
+    MS_EXCEPTION_IF_NULL(forward_node);
+    MS_LOG_WITH_NODE(INFO, forward_node) << "Create MakeTuple Node: " << common::AnfAlgo::GetCNodeName(forward_node);
+  }
+
+  // step4: insert forward communication
+  (void)manager->Replace(node, forward_node);  // using replace function to insert node
+  ForwardOpList forward_op_list_reverse = forward_op_list;
+  std::reverse(forward_op_list_reverse.begin(), forward_op_list_reverse.end());
+  InserForwardCommunicationForSingleOutput(node, forward_op, forward_op_list_reverse);
 }
 
 // only used for InsertMirrorOps
@@ -1490,63 +1537,20 @@ TensorLayout ParallelProcessor::GetTensorInLayout(const AnfNodePtr &pre_node, st
   return tensorinfo_in_layout;
 }
 
-void ParallelProcessor::ForwardCommunication(OperatorVector forward_op, const CNodePtr &node) {
+void ParallelProcessor::ForwardCommunication(const OperatorVector &forward_op, const ForwardOpList &forward_op_list,
+                                             const CNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
-  if (dyn_cast<abstract::SequenceShape>(node->Shape()) != nullptr) {
-    // For Ops like GMM has multiple output
+  MS_LOG_WITH_NODE(INFO, node) << "Insert ForwardCommunication to node: " << common::AnfAlgo::GetCNodeName(node);
+
+  if (dyn_cast<abstract::SequenceShape>(node->Shape()) != nullptr && !forward_op_list.empty()) {
+    // For Ops like grouped_matmul has multiple output
     MS_LOG(INFO) << "The input node " << node->DebugString()
                  << " has multiple output, enter ForwardCommunicationForMultiOut";
-    ForwardCommunicationForMultiOut(forward_op, node);
+    ForwardCommunicationForMultiOut(node, forward_op, forward_op_list);
     return;
   }
-  // step1:get graph manager distribute_operator
-  FuncGraphPtr func_graph = node->func_graph();
-  MS_EXCEPTION_IF_NULL(func_graph);
-  FuncGraphManagerPtr manager = func_graph->manager();
-  MS_EXCEPTION_IF_NULL(manager);
-  auto uses_set = manager->node_users()[node];
-  CNodePtr node_to_insert = node;
-  for (auto &uses_pair : uses_set) {
-    auto uses_cnode = uses_pair.first->cast<CNodePtr>();
-    MS_EXCEPTION_IF_NULL(uses_cnode);
-    if (!IsValueNode<Primitive>(uses_cnode->input(0))) {
-      break;
-    }
-    PrimitivePtr value_node_prim = GetValueNode<PrimitivePtr>(uses_cnode->input(0));
-    MS_EXCEPTION_IF_NULL(value_node_prim);
-    if (value_node_prim->name() == prim::kPrimTupleGetItem->name()) {
-      if (uses_set.size() > 1) {
-        MS_LOG_WITH_NODE(EXCEPTION, uses_cnode) << "Now only support one output, but got " << uses_set.size();
-      }
-      node_to_insert = uses_cnode;
-    }
-  }
-  MS_EXCEPTION_IF_NULL(node_to_insert);
-  std::reverse(forward_op.begin(), forward_op.end());
 
-  // step2:traverse op_list and insert node
-  FwdCommDumpHandlerPtr fwd_dump_handler = std::make_shared<FwdCommunicationParallelTensorDumpHandler>(node_to_insert);
-  fwd_dump_handler->CollectDumpNodes(node_to_insert, true);
-  for (size_t index = 0; index < forward_op.size(); ++index) {
-    std::string instance_name_base = FORWARD_OP;
-    std::string instance_name = instance_name_base + "_" + CreateInstanceName(node, index);
-    std::vector<AnfNodePtr> forward_input = CreateInput(forward_op[index], node_to_insert, instance_name);
-    SetAllReduceRecomputeFlag(forward_input, node_to_insert);
-    CNodePtr forward_node = func_graph->NewCNode(forward_input);  // using NewCNode to create anfnode
-    MS_EXCEPTION_IF_NULL(forward_node);
-    ScopePtr scope = node->scope();
-    MS_EXCEPTION_IF_NULL(scope);
-    forward_node->set_scope(scope);
-    forward_node->set_in_forward_flag(true);
-    forward_node->AddPrimalAttr(kPrimalAttrForwardCommNodeUniqueId, MakeValue<std::string>(forward_node->UniqueId()));
-    if (node_to_insert->HasPrimalAttr(MICRO)) {
-      forward_node->AddPrimalAttr(MICRO, node_to_insert->GetPrimalAttr(MICRO));
-    }
-    forward_input[0]->set_scope(scope);
-    (void)manager->Replace(node_to_insert, forward_node);  // using Replace function to insert node
-  }
-  (void)fwd_dump_handler->MakeInModeBwdHookBeforeFwdComm();
-  (void)fwd_dump_handler->MakeOutModeDumpBeforeFwdComm();
+  InserForwardCommunicationForSingleOutput(node, forward_op, forward_op_list);
 }
 
 void ParallelProcessor::InsertForwardOps(const OperatorInfoPtr &distribute_operator, const CNodePtr &cnode) {
@@ -1555,12 +1559,14 @@ void ParallelProcessor::InsertForwardOps(const OperatorInfoPtr &distribute_opera
   if (IsPrimitiveCNode(cnode, prim::kPrimReceive)) {
     return;
   }
-  OperatorVector forward_op = distribute_operator->forward_op();
+  const auto &forward_op = distribute_operator->forward_op();
+  const auto &forward_op_list = distribute_operator->forward_op_list();
   // for gmm, its make tuple will inherit its op info,
   // which will lead to insert allreduce for maketuple.
-  if (!forward_op.empty() && !IsPrimitiveCNode(cnode, prim::kPrimMakeTuple)) {
+  bool has_forward_op = !forward_op.empty() || !forward_op_list.empty();
+  if (has_forward_op && !IsPrimitiveCNode(cnode, prim::kPrimMakeTuple)) {
     MS_LOG(INFO) << "Insert forward op for " << distribute_operator->name();
-    ForwardCommunication(forward_op, cnode);
+    ForwardCommunication(forward_op, forward_op_list, cnode);
   }
 }
 
