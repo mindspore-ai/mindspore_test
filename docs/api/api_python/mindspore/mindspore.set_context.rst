@@ -3,7 +3,7 @@ mindspore.set_context
 
 .. py:function:: mindspore.set_context(**kwargs)
 
-    设置运行环境的context。此接口将在后续版本中废弃，参数相关功能将通过新API接口提供。
+    设置运行环境的context，此接口将在后续版本中废弃，参数相关功能将通过新API接口提供。
 
     参数：
         - **mode** (int) - GRAPH_MODE（用0表示）或PYNATIVE_MODE（用1表示）。默认 ``PYNATIVE_MODE`` 。
