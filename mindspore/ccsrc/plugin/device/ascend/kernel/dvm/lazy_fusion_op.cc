@@ -239,6 +239,41 @@ void BinaryDvmCall(const std::string &op_name, OpRunner *op, dvm::BinaryOpType o
   MS_LOG(INFO) << op_name << " call end, kernel id is " << k->id();
 }
 
+bool BinaryInplaceDvmCall(const std::string &op_name, OpRunner *op, dvm::BinaryOpType op_type,
+                          const BaseTensorPtr &input_tensor, const BaseTensorPtr &other_tensor,
+                          const ScalarPtr &alpha) {
+  auto [succ, scalar] = GetScalarValue<float>(alpha);
+  if (!InputCheck(input_tensor) || !InputCheck(other_tensor) || !succ) {
+    return false;
+  }
+  DvmCall(
+    op_name, op,
+    [&](LazyFusionKernelAscend *k) -> BaseTensorPtr {
+      auto input_obj = k->Input(input_tensor);
+      auto other_obj = k->Input(other_tensor);
+      auto input_dtype = k->GetDType(input_obj);
+      auto other_dtype = k->GetDType(other_obj);
+      // inplace op supports different data types, should convert to same data type here
+      if (other_dtype != input_dtype) {
+        if (other_dtype == dvm::DType::kFloat32) {
+          input_obj = k->Cast(input_obj, other_dtype);
+        } else {
+          other_obj = k->Cast(other_obj, input_dtype);
+        }
+      }
+      if (alpha != nullptr && scalar != 1.0) {
+        other_obj = k->Binary(dvm::BinaryOpType::kMul, other_obj, scalar);
+      }
+      auto out_obj = k->Binary(op_type, input_obj, other_obj);
+      out_obj = k->Cast(out_obj, input_dtype);
+      // update
+      k->Output(input_tensor, out_obj);
+      return input_tensor;
+    },
+    input_tensor, other_tensor);
+  return true;
+}
+
 bool SameTensor(const BaseTensorPtr &tensor1, const BaseTensorPtr &tensor2) {
   MS_EXCEPTION_IF_NULL(tensor1);
   MS_EXCEPTION_IF_NULL(tensor2);
@@ -898,24 +933,19 @@ tensor::BaseTensorPtr ReLUAscendDvm::Call(const BaseTensorPtr &input_tensor) {
 
 tensor::BaseTensorPtr SumExtAscendDvm::Call(const BaseTensorPtr &input_tensor, const std::optional<ValueTuplePtr> &dim,
                                             const BoolImmPtr &keepdim, const std::optional<Int64ImmPtr> &dtype) {
-  auto dst_type = dtype.has_value() ? static_cast<TypeId>(GetValue<int64_t>(dtype.value())) : kMetaTypeNone;
-  if (!InputCheck(input_tensor) || (dst_type != kMetaTypeNone && !IsFloatType(dst_type))) {
+  auto input_type = input_tensor->data_type();
+  auto dst_type = dtype.has_value() ? static_cast<TypeId>(GetValue<int64_t>(dtype.value())) : input_type;
+  // the Cast after ReduceSum will has performance problem
+  if (input_type != kNumberTypeFloat32 || dst_type != input_type || !InputCheck(input_tensor)) {
     return SumExtAscend::Call(input_tensor, dim, keepdim, dtype);
   }
   DvmCall(
     op_name_, this,
     [&](LazyFusionKernelAscend *k) -> BaseTensorPtr {
-      auto input_obj = k->Cast(k->Input(input_tensor), dvm::DType::kFloat32);
       auto dim_value = GetReduceDim(dim, input_tensor->shape().size());
-      auto reduce_obj = k->Reduce(dvm::ReduceOpType::kSum, input_obj, k->GetShapeRef(dim_value), keepdim->value());
-      auto output_type = input_tensor->data_type();
-      auto dst_dtype = k->TransType(output_type);
-      if (dst_type != kMetaTypeNone) {
-        dst_dtype = k->TransType(dst_type);
-        output_type = dst_type;
-      }
-      reduce_obj = k->Cast(reduce_obj, dst_dtype);
-      return k->Output(reduce_obj, output_type, k->GetShape(reduce_obj));
+      auto reduce_obj =
+        k->Reduce(dvm::ReduceOpType::kSum, k->Input(input_tensor), k->GetShapeRef(dim_value), keepdim->value());
+      return k->Output(reduce_obj, input_type, k->GetShape(reduce_obj));
     },
     input_tensor);
   return outputs_.front();
@@ -1193,60 +1223,18 @@ tensor::BaseTensorPtr InplaceExpAscendDvm::Call(const BaseTensorPtr &input_tenso
 
 tensor::BaseTensorPtr InplaceAddExtAscendDvm::Call(const BaseTensorPtr &input_tensor, const BaseTensorPtr &other_tensor,
                                                    const ScalarPtr &alpha) {
-  auto [succ, scalar] = GetScalarValue<float>(alpha);
-  if (!succ || !InputCheck(input_tensor) || !InputCheck(other_tensor)) {
+  if (!BinaryInplaceDvmCall(op_name_, this, dvm::BinaryOpType::kAdd, input_tensor, other_tensor, alpha)) {
     return InplaceAddExtAscend::Call(input_tensor, other_tensor, alpha);
   }
-  auto k = g_lazy_fusion_manager.Get(device_context_, stream_id_);
-  MS_LOG(INFO) << op_name() << " call start, kernel id is " << k->id();
-  PyBoostUtils::PrepareOpInputs(device_context_, stream_id_, input_tensor, other_tensor);
-  auto input_obj = k->Input(input_tensor);
-  auto other_obj = k->Input(other_tensor);
-  auto input_dtype = k->GetDType(input_obj);
-  auto other_dtype = k->GetDType(other_obj);
-  if (other_dtype != input_dtype) {
-    other_obj = k->Cast(other_obj, input_dtype);
-  }
-  if (scalar != 1.0) {
-    other_obj = k->Binary(dvm::BinaryOpType::kMul, other_obj, scalar);
-  }
-  auto out_obj = k->Binary(dvm::BinaryOpType::kAdd, input_obj, other_obj);
-  // update
-  outputs_.push_back(input_tensor);
-  k->Output(outputs_[0], out_obj);
-  outputs_[0]->set_need_pipeline_sync(true);
-  CreateOutputSimpleInfo();
-  MS_LOG(INFO) << op_name() << " call end, kernel id is " << k->id();
   FlushLazyFusion();
   return outputs_[0];
 }
 
 tensor::BaseTensorPtr InplaceSubExtAscendDvm::Call(const BaseTensorPtr &input_tensor, const BaseTensorPtr &other_tensor,
                                                    const ScalarPtr &alpha) {
-  auto [succ, scalar] = GetScalarValue<float>(alpha);
-  if (!succ || !InputCheck(input_tensor) || !InputCheck(other_tensor)) {
+  if (!BinaryInplaceDvmCall(op_name_, this, dvm::BinaryOpType::kSub, input_tensor, other_tensor, alpha)) {
     return InplaceSubExtAscend::Call(input_tensor, other_tensor, alpha);
   }
-  auto k = g_lazy_fusion_manager.Get(device_context_, stream_id_);
-  MS_LOG(INFO) << op_name() << " call start, kernel id is " << k->id();
-  PyBoostUtils::PrepareOpInputs(device_context_, stream_id_, input_tensor, other_tensor);
-  auto input_obj = k->Input(input_tensor);
-  auto other_obj = k->Input(other_tensor);
-  auto input_dtype = k->GetDType(input_obj);
-  auto other_dtype = k->GetDType(other_obj);
-  if (other_dtype != input_dtype) {
-    other_obj = k->Cast(other_obj, input_dtype);
-  }
-  if (scalar != 1.0) {
-    other_obj = k->Binary(dvm::BinaryOpType::kMul, other_obj, scalar);
-  }
-  auto out_obj = k->Binary(dvm::BinaryOpType::kSub, input_obj, other_obj);
-  // update
-  outputs_.push_back(input_tensor);
-  k->Output(outputs_[0], out_obj);
-  outputs_[0]->set_need_pipeline_sync(true);
-  CreateOutputSimpleInfo();
-  MS_LOG(INFO) << op_name() << " call end, kernel id is " << k->id();
   FlushLazyFusion();
   return outputs_[0];
 }
@@ -1681,8 +1669,6 @@ void RegisterLazyFusionOp() {
   MS_REPLACE_DVM_OP(SubExt);
   MS_REPLACE_DVM_OP(Tile);
   MS_REPLACE_DVM_OP(LinalgVectorNorm);
-  MS_REPLACE_DVM_OP(AdamW);
-  MS_REPLACE_DVM_OP(InplaceCopy);
   MS_REPLACE_DVM_OP(InplaceDiv);
   MS_REPLACE_DVM_OP(InplaceExp);
   MS_REPLACE_DVM_OP(InplaceAddExt);
