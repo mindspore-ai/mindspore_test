@@ -23,6 +23,7 @@
 #include <stack>
 #include <vector>
 #include <memory>
+#include <utility>
 #include <algorithm>
 #include <unordered_map>
 #include "ir/manager.h"
@@ -121,15 +122,22 @@ class MetaImpl : public MetaFuncGraph {
   ///         # python                       // cpp
   ///         if condition:                  auto true_case = [&]() { Return(x); };
   ///           return x         -->         auto false_case = [&]() { Return(y); };
-  ///         return y                       auto out = If(condition, true_case, false_case, (x, y))
+  ///         return y                       auto out = If(condition, true_case, false_case)
   ///
   /// \param[in] cond The condition of if-else expression.
-  /// \param[in] true_case True branch.
-  /// \param[in] false_case False branch.
-  /// \param[in] params All parameters used by true branch and false branch.
+  /// \param[in] true_branch True branch.
+  /// \param[in] false_branch False branch.
   ///
   /// \return The result node of if-else expression.
-#define If(cond, true_case, false_case, params) IF_IMPL(cond, true_case, false_case, params)
+  NodePtr If(const NodePtr &condition, const BlockFunc &true_branch, const BlockFunc &false_branch);
+
+  /// \brief if-elif-else expression. If({{cond1, br1}, {cond2, br2}, ...}, else_br)
+  ///
+  /// \param[in] if_branchs If conditions and corresponding branches.
+  /// \param[in] else_branch Else branch.
+  ///
+  /// \return The result node of if-elif-else expression.
+  NodePtr If(const std::vector<std::pair<NodePtr, BlockFunc>> &if_branches, const BlockFunc &else_branch);
 
   /// \brief for-loop. Refer to `mindspore.ops.ForiLoop` for more details.
   ///
@@ -501,6 +509,8 @@ class MetaImpl : public MetaFuncGraph {
   NodePtr NewParam(const std::string &name);
   NodePtr IfCond(const NodePtr &condition, const BlockFunc &true_branch, const BlockFunc &false_branch,
                  const NodePtrList &args);
+  NodePtr IfBranchesInner(const std::vector<std::pair<NodePtr, BlockFunc>> &if_branches, const BlockFunc &else_branch,
+                          size_t index);
   void set_check_func(const CheckFunc &check_func);
   void set_bprop_func(const std::function<std::shared_ptr<MetaImpl>()> &bprop_func);
 

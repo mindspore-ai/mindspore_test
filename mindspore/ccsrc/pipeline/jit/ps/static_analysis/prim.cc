@@ -34,6 +34,7 @@
 #include "frontend/operator/composite/do_signature.h"
 #include "frontend/operator/ops.h"
 #include "frontend/operator/ops_front_infer_function.h"
+#include "frontend/parallel/ops_info/ops_utils.h"
 #include "mindspore/ccsrc/frontend/operator/meta_dsl/common/meta_impl.h"
 #include "frontend/operator/composite/unpack_call.h"
 #include "frontend/operator/composite/functional_overload.h"
@@ -3005,6 +3006,32 @@ AnfNodePtr ConvertWeakNode(const AnfNodeWeakPtr &weak_node) {
   MS_EXCEPTION_IF_NULL(node);
   return node;
 }
+
+ValuePtr GetShardStrategy(const PrimitivePtr &prim, const std::string &name) {
+  const auto &strategy = prim->GetAttr(name);
+  return strategy != nullptr ? strategy : kNone;
+}
+
+AnfNodePtr HandleShardForPrimitive(const PrimitivePtr &prim, const prim::MetaImplPtr &meta_op, const FuncGraphPtr &fg) {
+  ValuePtr in_strategy = nullptr;
+  ValuePtr out_strategy = nullptr;
+  if (prim->HasAttr(parallel::IN_STRATEGY) || prim->HasAttr(parallel::OUT_STRATEGY)) {
+    in_strategy = GetShardStrategy(prim, parallel::IN_STRATEGY);
+    out_strategy = GetShardStrategy(prim, parallel::OUT_STRATEGY);
+  } else if (prim->HasAttr(parallel::IN_LAYOUT) || prim->HasAttr(parallel::OUT_LAYOUT)) {
+    in_strategy = GetShardStrategy(prim, parallel::IN_LAYOUT);
+    out_strategy = GetShardStrategy(prim, parallel::OUT_LAYOUT);
+  } else {
+    return NewValueNode(meta_op);
+  }
+  MS_EXCEPTION_IF_NULL(in_strategy);
+  MS_EXCEPTION_IF_NULL(out_strategy);
+  MS_LOG(DEBUG) << "Set shard for Primitive[" << prim->name() << "] with in_strategy `" << in_strategy->ToString()
+                << "` and out_strategy `" << out_strategy->ToString() << "`.";
+  return fg->NewCNodeInOrder({NewValueNode(prim::kPrimShard), NewValueNode(meta_op), NewValueNode(in_strategy),
+                              NewValueNode(out_strategy), NewValueNode(MakeValue(kAscendDevice)),
+                              NewValueNode(MakeValue(int64_t(0)))});
+}
 }  // namespace
 
 EvalResultPtr PrimitiveToMetaEvaluator::EvalPrim(const AnalysisEnginePtr &engine,
@@ -3025,7 +3052,8 @@ EvalResultPtr PrimitiveToMetaEvaluator::EvalPrim(const AnalysisEnginePtr &engine
   MS_EXCEPTION_IF_NULL(meta_op);
   meta_op->set_prim(prim_);
   meta_op->set_manager(fg->manager());
-  AnfNodePtrList op_inputs{NewValueNode(meta_op)};
+  auto new_op_node = HandleShardForPrimitive(prim_, meta_op, fg);
+  AnfNodePtrList op_inputs{new_op_node};
   constexpr size_t index_data = 1;
   (void)std::transform(cnode->weak_inputs().begin() + index_data, cnode->weak_inputs().end(),
                        std::back_inserter(op_inputs), ConvertWeakNode);

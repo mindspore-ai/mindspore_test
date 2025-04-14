@@ -22,6 +22,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_z.h"
 
@@ -46,20 +47,25 @@ EndFunction(TestIsInstance)
 BeginFunction(TestIf, x) {
   auto true_branch = [&]() { Return(Value(1)); };
   auto false_branch = [&]() { Return(Value(0)); };
-  Return(If(Call(Prim(Greater), x, Value(0)), true_branch, false_branch, ()));
+  Return(If(Call(Prim(Greater), x, Value(0)), true_branch, false_branch));
 }
 EndFunction(TestIf)
 
 /** Python code:
  *  def if_exp(x, y):
- *    if x is not None:
- *      return x + y
- *    return None
+ *    if x is None:
+ *      return x
+ *    elif x < 0:
+ *      return x - y
+ *    return x + y
  */
 BeginFunction(TestIfExp, x, y) {
-  auto true_branch = [&]() { Return(Call(Prim(Add), x, y)); };
-  auto false_branch = [&]() { Return(Value(kNone)); };
-  Return(If(IsNotNone(x), true_branch, false_branch, (x, y)));
+  auto cond1 = IsNone(x);
+  auto cond2 = Call(Prim(Less), x, Value(0));
+  auto branch1 = [&]() { Return(x); };
+  auto branch2 = [&]() { Return(Call(Prim(Sub), x, y)); };
+  auto branch3 = [&]() { Return(Call(Prim(Add), x, y)); };
+  Return(If({{cond1, branch1}, {cond2, branch2}}, branch3));
 }
 EndFunction(TestIfExp)
 

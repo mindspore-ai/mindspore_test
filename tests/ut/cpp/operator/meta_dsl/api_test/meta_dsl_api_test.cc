@@ -86,7 +86,7 @@ TEST_F(TestMetaDslApi, test_if_exp) {
   MS_EXCEPTION_IF_NULL(out_abs);
   ASSERT_TRUE(out_abs->isa<AbstractTensor>());
   // Check the graph construct.
-  ASSERT_EQ(GetPrimitiveSize(fg, prim::kPrimSwitch), 1);
+  ASSERT_GE(GetPrimitiveSize(fg, prim::kPrimSwitch), 1);
   ASSERT_EQ(GetPrimitiveSize(fg, prim::kPrimAdd), 1);
 }
 

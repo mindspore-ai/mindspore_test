@@ -258,6 +258,26 @@ NodePtr MetaImpl::IfCond(const NodePtr &condition, const BlockFunc &true_branch,
   return NewNode(node_list);
 }
 
+NodePtr MetaImpl::If(const NodePtr &condition, const BlockFunc &true_branch, const BlockFunc &false_branch) {
+  return IfCond(condition, true_branch, false_branch, {});
+}
+
+NodePtr MetaImpl::If(const std::vector<std::pair<NodePtr, BlockFunc>> &if_branches, const BlockFunc &else_branch) {
+  MS_EXCEPTION_IF_CHECK_FAIL(!if_branches.empty(), "if_branches should not be empty.");
+  return IfBranchesInner(if_branches, else_branch, 0);
+}
+
+NodePtr MetaImpl::IfBranchesInner(const std::vector<std::pair<NodePtr, BlockFunc>> &if_branches,
+                                  const BlockFunc &else_branch, size_t index) {
+  constexpr auto first_index = 0;
+  const auto &[condition, true_branch] = if_branches[first_index];
+  if (index == if_branches.size() - 1) {
+    return IfCond(condition, true_branch, else_branch, {});
+  }
+  auto false_branch = [&]() { Return(IfBranchesInner(if_branches, else_branch, index + 1)); };
+  return IfCond(condition, true_branch, false_branch, {});
+}
+
 NodePtr MetaImpl::For(const NodePtr &lower, const NodePtr &upper,
                       const std::function<void(const NodePtr &, const NodePtr &)> &loop_func, const NodePtr &init_val) {
   // Build graph for loop body.
