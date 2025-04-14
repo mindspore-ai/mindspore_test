@@ -19,8 +19,11 @@ BASE_PATH=$(cd "$(dirname $0)"; pwd)
 RANK_SIZE=$1
 CONFIG_FILE=$2
 CASE_NAME=$3
-CELL_REUSE=${4:-None}
+MASTER_PORT=$4
+BASE_PORT=$5
+CELL_REUSE=${6:-None}
 
+export HCCL_IF_BASE_PORT=$BASE_PORT
 export RANK_SIZE="$RANK_SIZE"
 export MF_PATH=${BASE_PATH}/../../mindformers
 export PYTHONPATH=${MF_PATH}:${MF_PATH}/research/deepseek3/:${PYTHONPATH}
@@ -33,8 +36,8 @@ if [ "$CELL_REUSE" = "no_pp" ]; then
   echo "enable lazy inline in no pp"
   export ENABLE_LAZY_INLINE_NO_PIPELINE=1
 fi
-
-msrun --worker_num=$RANK_SIZE --local_worker_num=$RANK_SIZE --master_port=8118 --log_dir=$BASE_PATH/$CASE_NAME/ \
+sleep 10
+msrun --worker_num=$RANK_SIZE --local_worker_num=$RANK_SIZE --master_port=$MASTER_PORT --log_dir=$BASE_PATH/$CASE_NAME/ \
   --join=True --cluster_time_out=7200 \
   ${MF_PATH}/run_mindformer.py \
   --config $CONFIG_FILE \
