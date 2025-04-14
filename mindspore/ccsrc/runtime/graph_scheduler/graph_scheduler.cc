@@ -1178,6 +1178,9 @@ void GraphScheduler::ProcessUceError(ActorSet *const actor_set) {
     actor_set->output_actor_->ResetState();
     actor_set->is_execution_failed_ = false;
     ClearActorData(actor_set);
+    if (actor_set != nullptr && actor_set->control_actors_ != nullptr) {
+      control_node_scheduler_.ClearExitActorDeviceTensors(actor_set->control_actors_->exit_actors_);
+    }
     MsException::Instance().ResetException();
     MS_LOG(WARNING) << "Clear state end.";
   }
