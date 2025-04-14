@@ -17,7 +17,7 @@
 #include "plugin/device/ascend/kernel/internal/fused_add_topk_div.h"
 
 #include <memory>
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_in_out_map.h"
 
 namespace mindspore {

@@ -20,6 +20,7 @@
 #include <map>
 #include <string>
 #include <set>
+#include <functional>
 #include "abstract/abstract_value.h"
 #include "abstract/dshape.h"
 #include "ir/dtype/type.h"
