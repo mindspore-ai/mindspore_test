@@ -1424,7 +1424,7 @@ def _check_context_deprecated(key):
                  jit_enable_inplace_ops=bool, gpu_config=dict, jit_config=dict, enable_compile_cache=bool)
 def set_context(**kwargs):
     r"""
-    Set context for running environment. This interface will be deprecated in future versions, and its
+    Set context for running environment, this interface will be deprecated in future versions, and its
     parameter-related functionalities will be provided through new APIs.
 
     Args:
