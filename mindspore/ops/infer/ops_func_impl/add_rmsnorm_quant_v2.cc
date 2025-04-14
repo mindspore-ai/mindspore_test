@@ -97,7 +97,11 @@ TypePtr AddRmsNormQuantV2FuncImpl::InferType(const PrimitivePtr &prim,
   } else {
     quant_type = std::make_shared<TensorType>(kInt8);
   }
-  std::vector<TypePtr> types_list = {quant_type, quant_type, x_type};
+
+  auto out1_type = prim->HasAttr("need_rms_norm_out")
+                     ? (GetValue<bool>(prim->GetAttr("need_rms_norm_out")) ? x_type : quant_type)
+                     : quant_type;
+  std::vector<TypePtr> types_list = {quant_type, out1_type, x_type};
   return std::make_shared<Tuple>(types_list);
 }
 
@@ -117,7 +121,10 @@ TypePtrList AddRmsNormQuantV2FuncImpl::InferType(const PrimitivePtr &primitive,
   } else {
     quant_type = std::make_shared<TensorType>(kInt8);
   }
-  return {quant_type, quant_type, x_tensor->Dtype()};
+  auto out1_type = primitive->HasAttr("need_rms_norm_out")
+                     ? (GetValue<bool>(primitive->GetAttr("need_rms_norm_out")) ? x_tensor->Dtype() : quant_type)
+                     : quant_type;
+  return {quant_type, out1_type, x_tensor->Dtype()};
 }
 
 }  // namespace ops

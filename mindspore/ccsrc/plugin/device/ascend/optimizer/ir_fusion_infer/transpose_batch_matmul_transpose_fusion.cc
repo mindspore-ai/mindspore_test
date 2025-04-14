@@ -106,15 +106,12 @@ const AnfNodePtr TransposeBatchMatmulTranspose::Process(const FuncGraphPtr &func
   MS_CHECK_TRUE_RET(bmm_cnode->func_graph() == transpose_out->func_graph(), {});
   auto transpose_in = bmm_cnode->input(kIndex1)->cast<CNodePtr>();
   MS_CHECK_TRUE_RET(transpose_in != nullptr, {});
-  auto transpose_a = bmm_cnode->input(kIndex3);
-  auto transpose_b = bmm_cnode->input(kIndex4);
 
   // check transpose_perm
+  auto transpose_a = bmm_cnode->input(kIndex3);
   auto trans_a_ptr = transpose_a->cast<ValueNodePtr>();
-  auto trans_b_ptr = transpose_b->cast<ValueNodePtr>();
   auto is_transpose_a = GetValue<bool>(trans_a_ptr->value());
-  auto is_transpose_b = GetValue<bool>(trans_b_ptr->value());
-  if (is_transpose_a || is_transpose_b) {
+  if (is_transpose_a) {
     return nullptr;
   }
 
@@ -144,7 +141,7 @@ const AnfNodePtr TransposeBatchMatmulTranspose::Process(const FuncGraphPtr &func
     transpose_in->input(kIndex2),
     transpose_out->input(kIndex2),
     transpose_a,
-    transpose_b,
+    bmm_cnode->input(kIndex4),
   });
 
   fusion_cnode->set_scope(transpose_out->scope());
