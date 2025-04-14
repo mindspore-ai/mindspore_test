@@ -1279,10 +1279,18 @@ bool IsViewInplaceNode(const AnfNodePtr &node) {
   if (node->isa<CNode>() && IsInplaceOpNode(node)) {
     auto inplace_node = node->cast_ptr<CNode>();
     const AnfNodePtrList &input_nodes = inplace_node->inputs();
-    auto it = std::find_if(input_nodes.begin() + 1, input_nodes.end(), IsCreatedByViewOp);
-    if (it != input_nodes.end()) {
-      MS_LOG(DEBUG) << "Found a view+inplace node. Inplace node: " << inplace_node->DebugString()
-                    << ", and one of its input is created by view op: " << (*it)->DebugString();
+    const auto &prim = GetCNodePrimitive(node);
+    const auto &rw_write_index = prim->rw_write_input_indexes();
+    auto iter = std::find_if(rw_write_index.begin(), rw_write_index.end(), [&input_nodes](const size_t &index) {
+      if (index + 1 >= input_nodes.size()) {
+        MS_LOG(ERROR) << "Invalid rw_write index: " << index;
+        return false;
+      }
+      return IsCreatedByViewOp(input_nodes[index + 1]);
+    });
+    if (iter != rw_write_index.end()) {
+      MS_LOG(INFO) << "Found a view+inplace node. Inplace node: " << inplace_node->DebugString()
+                   << ", and one of its input is created by view op: " << input_nodes[(*iter) + 1]->DebugString();
       return true;
     }
   }
