@@ -26,3 +26,4 @@ moe_token_unpermute_grad:
       name: MoeTokenUnpermuteGrad
   dispatch:
     enable: True
+    Ascend: MoeTokenUnpermuteGradAscend
