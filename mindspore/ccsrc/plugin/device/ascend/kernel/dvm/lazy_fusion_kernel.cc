@@ -152,6 +152,10 @@ dvm::NDObject *LazyFusionKernelAscend::Input(const BaseTensorPtr &x, bool enable
 }
 
 void LazyFusionKernelAscend::Output(const BaseTensorPtr &tensor, dvm::NDObject *obj) {
+  auto tensor_type = TransType(tensor->data_type());
+  if (GetDType(obj) != tensor_type) {
+    obj = Cast(obj, tensor_type);
+  }
   auto &store = outputs_.emplace_back(obj, tensor);
   ops_map_[store.dev_addr.get()] = obj;
 }
