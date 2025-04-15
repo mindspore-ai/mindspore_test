@@ -487,7 +487,8 @@ bool AsyncCopy(const DeviceTensor *dst_device_tensor, const DeviceTensor *src_de
     return dst_device_tensor->AsyncHostToDevice(copy_size, src_device_tensor->GetPtr());
   } else if (dst_device_tensor->GetDeviceType() == device::DeviceType::kCPU) {
     // Other device tensor copy to CPU device tensor.
-    return src_device_tensor->AsyncDeviceToHost(copy_size, dst_device_tensor->GetMutablePtr());
+    // Use Sync instead of Async because cpu ops may use host ptr immediately.
+    return src_device_tensor->SyncDeviceToHost(copy_size, dst_device_tensor->GetMutablePtr());
   } else {
     MS_LOG(ERROR) << "Invalid device type, src device type: " << src_device_tensor->GetDeviceType()
                   << ", dst device type: " << dst_device_tensor->GetDeviceType();
@@ -1009,12 +1010,13 @@ void UpdateDynamicShapeAndSize(tensor::Tensor *input_tensor, DeviceTensor *devic
 }
 
 void SyncHostToDeviceFromTensor(size_t outer_index, size_t inner_index, tensor::Tensor *tensor,
-                                OpContext<DeviceTensor> *const context, const AID &from_aid) {
+                                OpContext<DeviceTensor> *const context, const AID &from_aid, const AnfNodePtr &node) {
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kKernelPrepareData, from_aid.Name());
   MS_EXCEPTION_IF_NULL(context);
   auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
   auto device_tensors = graph_parameter_store->Fetch(outer_index, inner_index);
-  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), from_aid.Name(), "", false);
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), node->fullname_with_scope(), from_aid.Name(),
+                                                 false);
   bool in_callback = false;
   for (const auto device_tensor : device_tensors) {
     // Update dynamic shape and size.
@@ -1046,8 +1048,15 @@ void SyncHostToDeviceFromTensor(size_t outer_index, size_t inner_index, tensor::
       {device_tensor->device_name(), device_tensor->device_id()});
 
     if (device_tensor->GetPtr() == nullptr) {
-      std::vector<DeviceTensor *> allocate_list = {device_tensor};
-      MemoryManagerActor::GetInstance()->AllocateMemory(&allocate_list, device_context, context, from_aid);
+      auto mem_type = device_tensor->original_ref_count() == SIZE_MAX ? memory::mem_pool::MemType::kWeight
+                                                                      : memory::mem_pool::MemType::kKernel;
+      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, from_aid.Name(), mem_type, device_tensor->GetSize(),
+                                                     device_tensor);
+      MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
+      if (!device_context->device_res_manager_->AllocateMemory(device_tensor, kDefaultStreamIndex)) {
+        MS_LOG(EXCEPTION) << "Allocate memory failed, outer index: " << outer_index << ", inner index: " << inner_index
+                          << ", for device tensor: " << device_tensor->PrintInfo();
+      }
     }
 
     auto tensor_size = LongToSize(tensor->data().nbytes());
@@ -1064,13 +1073,14 @@ void SyncHostToDeviceFromTensor(size_t outer_index, size_t inner_index, tensor::
 
 void SyncDeviceTensorsInParameterStore(size_t outer_index, size_t inner_index, const DeviceTensorPtr &tensor_address,
                                        tensor::Tensor *tensor, OpContext<DeviceTensor> *const context,
-                                       const AID &from_aid) {
+                                       const AID &from_aid, const AnfNodePtr &node) {
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kKernelPrepareData, from_aid.Name());
   MS_EXCEPTION_IF_NULL(context);
   MS_EXCEPTION_IF_NULL(tensor_address);
   auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
   auto device_tensors = graph_parameter_store->Fetch(outer_index, inner_index);
-  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), from_aid.Name(), "", false);
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), node->fullname_with_scope(), from_aid.Name(),
+                                                 false);
   bool in_callback = false;
   for (const auto device_tensor : device_tensors) {
     // Update dynamic shape and size.
@@ -1093,8 +1103,15 @@ void SyncDeviceTensorsInParameterStore(size_t outer_index, size_t inner_index, c
       {device_tensor->device_name(), device_tensor->device_id()});
 
     if (device_tensor->GetPtr() == nullptr) {
-      std::vector<DeviceTensor *> allocate_list = {device_tensor};
-      MemoryManagerActor::GetInstance()->AllocateMemory(&allocate_list, device_context, context, from_aid);
+      auto mem_type = device_tensor->original_ref_count() == SIZE_MAX ? memory::mem_pool::MemType::kWeight
+                                                                      : memory::mem_pool::MemType::kKernel;
+      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, from_aid.Name(), mem_type, device_tensor->GetSize(),
+                                                     device_tensor);
+      MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
+      if (!device_context->device_res_manager_->AllocateMemory(device_tensor, kDefaultStreamIndex)) {
+        MS_LOG(EXCEPTION) << "Allocate memory failed, outer index: " << outer_index << ", inner index: " << inner_index
+                          << ", for device tensor: " << device_tensor->PrintInfo();
+      }
     }
 
     if (device_tensor->GetSize() == 0 || tensor_address->GetSize() == 0) {
@@ -1166,9 +1183,9 @@ DeviceTensorPtr PrepareForNonTensorAddress(const std::pair<KernelWithIndex, size
   if (device_tensor->kernel_tensor() == nullptr) {
     DeviceAddressUtils::CreateKernelTensor(device_tensor, tensor);
   }
-  SyncHostToDeviceFromTensor(outer_index, inner_index, tensor, context, from_aid);
   auto front_node = parameter_index.first;
   MS_EXCEPTION_IF_NULL(front_node.first);
+  SyncHostToDeviceFromTensor(outer_index, inner_index, tensor, context, from_aid, front_node.first);
   if (front_node.first->isa<Parameter>() &&
       (common::AnfAlgo::IsParameterWeight(front_node.first->cast<ParameterPtr>()) ||
        common::AnfAlgo::HasAbstractRef(front_node.first))) {
@@ -1245,9 +1262,10 @@ DeviceTensor *PrepareParameter(const std::pair<KernelWithIndex, size_t> &paramet
       if (tensor_address->kernel_tensor() == nullptr) {
         DeviceAddressUtils::CreateKernelTensor(tensor_address, tensor);
       }
+      graph_parameter_store->SetDeviceTensorPrepared(outer_index, inner_index, true);
       if (tensor_address->GetPtr() == nullptr) {
         // Tensor address may not from runtime, sync data with tensor.
-        SyncHostToDeviceFromTensor(outer_index, inner_index, tensor, context, from_aid);
+        SyncHostToDeviceFromTensor(outer_index, inner_index, tensor, context, from_aid, front_node.first);
         MS_EXCEPTION_IF_NULL(device_tensor);
         tensor->set_device_address(device_tensor);
         UpdateRefCount(device_tensor.get(), true);
@@ -1263,11 +1281,11 @@ DeviceTensor *PrepareParameter(const std::pair<KernelWithIndex, size_t> &paramet
 
       tensor_address->set_new_ref_count(SIZE_MAX);
       MS_LOG(DEBUG) << "Set new ref count to max for device address:" << tensor_address;
-      graph_parameter_store->SetDeviceTensorPrepared(outer_index, inner_index, true);
       if (tensor_address == device_tensor) {
         UpdateRefCount(tensor_address.get(), true);
         if (graph_parameter_store->HasHeter(outer_index, inner_index)) {
-          SyncDeviceTensorsInParameterStore(outer_index, inner_index, tensor_address, tensor, context, from_aid);
+          SyncDeviceTensorsInParameterStore(outer_index, inner_index, tensor_address, tensor, context, from_aid,
+                                            front_node.first);
         }
         return tensor_address.get();
       }
@@ -1283,24 +1301,20 @@ DeviceTensor *PrepareParameter(const std::pair<KernelWithIndex, size_t> &paramet
         // device tensor may be null.
         device_tensor = tensor_address;
       }
-      SyncDeviceTensorsInParameterStore(outer_index, inner_index, tensor_address, tensor, context, from_aid);
+      SyncDeviceTensorsInParameterStore(outer_index, inner_index, tensor_address, tensor, context, from_aid,
+                                        front_node.first);
       if (IsParameter(front_node.first)) {
         SetMaxRefCountByStoreIndex(outer_index, inner_index);
       }
-      // Address type of tensor is different from address type of node, set node address to tensor.
-      if (tensor_address != nullptr && tensor_address->GetDeviceType() != device_tensor->GetDeviceType() &&
-          front_node.first->isa<Parameter>() &&
+      // use device tensor from graph.
+      UpdateRefCount(device_tensor.get(), true);
+      device_tensor->set_new_ref_count(SIZE_MAX);
+      if (device_tensor != nullptr && front_node.first->isa<Parameter>() &&
           common::AnfAlgo::IsParameterWeight(front_node.first->cast<ParameterPtr>())) {
-        MS_LOG(DEBUG) << "The device type is not equal, host tensor type: " << tensor_address->GetDeviceType()
-                      << ", device tensor type: " << device_tensor->GetDeviceType();
-        UpdateRefCount(device_tensor.get(), true);
-        device_tensor->set_new_ref_count(SIZE_MAX);
         tensor->set_device_address(device_tensor);
-        return device_tensor.get();
       }
 
-      UpdateRefCount(tensor_address.get(), true);
-      return tensor_address.get();
+      return device_tensor.get();
     }
 
     // Prepare data for device tensor not from tensor.
