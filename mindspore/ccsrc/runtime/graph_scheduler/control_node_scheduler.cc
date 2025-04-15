@@ -926,6 +926,14 @@ void ControlNodeScheduler::ClearActorData(const ControlActorSet *control_actor_s
   }
 }
 
+void ControlNodeScheduler::ClearExitActorDeviceTensors(std::vector<ExitActorPtr> exit_actors) const {
+  for (auto &exit_actor : exit_actors) {
+    MS_EXCEPTION_IF_NULL(exit_actor);
+    exit_actor->last_step_created_device_tensors_.clear();
+    exit_actor->created_device_tensors_.clear();
+  }
+}
+
 namespace {
 FuncGraphPtr GetLazyInlineFuncGraph(const StackActorPtr &stack_actor) {
   MS_EXCEPTION_IF_NULL(stack_actor);

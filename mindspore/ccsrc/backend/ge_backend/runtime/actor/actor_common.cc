@@ -264,7 +264,8 @@ bool AsyncCopy(const DeviceTensor *dst_device_tensor, const DeviceTensor *src_de
     return dst_device_tensor->AsyncHostToDevice(copy_size, src_device_tensor->GetPtr());
   } else if (dst_device_tensor->GetDeviceType() == device::DeviceType::kCPU) {
     // Other device tensor copy to CPU device tensor.
-    return src_device_tensor->AsyncDeviceToHost(copy_size, dst_device_tensor->GetMutablePtr());
+    // Use Sync instead of Async because cpu ops may use host ptr immediately.
+    return src_device_tensor->SyncDeviceToHost(copy_size, dst_device_tensor->GetMutablePtr());
   } else {
     MS_LOG(ERROR) << "Invalid device type, src device type: " << src_device_tensor->GetDeviceType()
                   << ", dst device type: " << dst_device_tensor->GetDeviceType();

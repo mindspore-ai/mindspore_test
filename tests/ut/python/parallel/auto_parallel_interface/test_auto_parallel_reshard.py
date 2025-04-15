@@ -190,3 +190,18 @@ def test_shard_with_in_strategy_4x1_recursive_programming():
     with pytest.raises(RuntimeError) as e:
         compile_net(net, parallel_config, x, layout1, layout2)
     assert "'search_mode' must be 'sharding_propagation' for 'Shard'" in str(e.value)
+
+
+def test_shard_with_data_parallel():
+    """
+    Feature: shard in data_parallel mode
+    Description: test usage of shard nested shard
+    Expectation: throw an RuntimeError
+    """
+    ms.set_auto_parallel_context(parallel_mode=ms.ParallelMode.DATA_PARALLEL, gradients_mean=True)
+    case_name = "test_reshard_data_parallel"
+    net, x, _ = before_test(case_name)
+    parallel_config = None
+    with pytest.raises(RuntimeError) as e:
+        compile_net(net, parallel_config, x, layout1, layout2)
+    assert "Only auto_parallel and semi_auto_parallel support shard." in str(e.value)

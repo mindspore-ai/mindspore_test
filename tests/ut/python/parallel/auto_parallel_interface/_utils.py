@@ -30,11 +30,11 @@ def init_hccl(global_rank, device_num):
 
 
 # set auto_parallel mode
-def set_parallel_mode(net=None, parallel_config=None):
-    if net is None or parallel_config is None:
-        raise ValueError("Both net and parallel_config must be provided")
+def set_parallel_mode(obj, parallel_config=None):
+    if parallel_config is None:
+        return obj
     parallel_mode = parallel_config.get("parallel_mode", "semi_auto")
-    net = AutoParallel(net, parallel_mode)
+    net = AutoParallel(obj, parallel_mode)
     if parallel_config.get("dataset_strategy", None) is not None:
         net.dataset_strategy(parallel_config["dataset_strategy"])
     if parallel_config.get("comm_fusion", None) is not None:
