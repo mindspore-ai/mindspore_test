@@ -62,7 +62,7 @@ def test_joinedstr_basic_variable_ascend():
 
     input_x = Tensor(np.array([1, 2, 3, 4, 5]))
     out = joined_net(input_x, input_x)
-    assert out == "res: Tensor(shape=[5], dtype=Int64, value= [1, 2, 3, 4, 5])"
+    assert out == "res: [1 2 3 4 5]"
 
 
 
@@ -84,7 +84,7 @@ def test_joinedstr_basic_variable_2():
 
     input_x = Tensor(np.array([1, 2, 3, 4, 5]))
     out = joined_net(input_x, input_x)
-    assert str(out) == "Tensor(shape=[5], dtype=Int64, value= [1, 2, 3, 4, 5])"
+    assert str(out) == "[1 2 3 4 5]"
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard',
