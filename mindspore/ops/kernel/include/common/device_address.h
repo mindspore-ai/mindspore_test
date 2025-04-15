@@ -45,7 +45,6 @@ namespace ascend {
 class AscendKernelRuntime;
 class AscendRuntimeCore;
 class AscendMemoryManager;
-class AscendDeviceContext;
 class DataDumper;
 namespace tasksink {
 class TaskGenerator;
@@ -371,7 +370,6 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   friend class mindspore::device::ascend::AscendKernelRuntime;
   friend class mindspore::device::ascend::AscendRuntimeCore;
   friend class mindspore::device::ascend::AscendMemoryManager;
-  friend class mindspore::device::ascend::AscendDeviceContext;
   friend class mindspore::device::ascend::DataDumper;
   friend class mindspore::SingleOpInferSession;
   friend class mindspore::RuntimeUtils;

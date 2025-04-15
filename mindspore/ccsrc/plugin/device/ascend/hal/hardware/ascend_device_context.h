@@ -1,5 +1,5 @@
 /**
- * Copyright 2022-2024 Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_RUNTIME_HARDWARE_ASCEND_GE_DEVICE_CONTEXT_H_
-#define MINDSPORE_CCSRC_RUNTIME_HARDWARE_ASCEND_GE_DEVICE_CONTEXT_H_
+#ifndef MINDSPORE_CCSRC_RUNTIME_HARDWARE_ASCEND_ASCEND_DEVICE_CONTEXT_H_
+#define MINDSPORE_CCSRC_RUNTIME_HARDWARE_ASCEND_ASCEND_DEVICE_CONTEXT_H_
 
 #include <memory>
 #include <string>
@@ -41,11 +41,11 @@ struct AscendDeviceProperties {
   size_t free_memory;
 };
 
-class GeDeviceContext
+class AscendDeviceContext
     : public DeviceInterface<backend::ge_backend::GeGraphExecutor, GeKernelExecutor, AscendDeviceResManager> {
  public:
-  explicit GeDeviceContext(const DeviceContextKey &device_context_key) : DeviceInterface(device_context_key) {}
-  ~GeDeviceContext() override = default;
+  explicit AscendDeviceContext(const DeviceContextKey &device_context_key) : DeviceInterface(device_context_key) {}
+  ~AscendDeviceContext() override = default;
 
   void Initialize() override;
 
@@ -67,7 +67,7 @@ class GeDeviceContext
   std::string GetPrecisionMode() override;
 
  private:
-  DISABLE_COPY_AND_ASSIGN(GeDeviceContext);
+  DISABLE_COPY_AND_ASSIGN(AscendDeviceContext);
 
   void InitDump() const;
 
@@ -78,4 +78,4 @@ class GeDeviceContext
 }  // namespace device
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_RUNTIME_HARDWARE_ASCEND_GE_DEVICE_CONTEXT_H_
+#endif  // MINDSPORE_CCSRC_RUNTIME_HARDWARE_ASCEND_ASCEND_DEVICE_CONTEXT_H_

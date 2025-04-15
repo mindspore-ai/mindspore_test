@@ -35,7 +35,7 @@
 #include "backend/ge_backend/utils/device_address_utils.h"
 #include "backend/ge_backend/executor/ge_memory_allocator.h"
 #include "backend/ge_backend/executor/ge_utils.h"
-#include "plugin/device/ascend/hal/hardware/ge_device_context.h"
+#include "plugin/device/ascend/hal/hardware/ascend_device_context.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_memory_adapter.h"
 #include "plugin/res_manager/ascend/ascend_device_address/ascend_device_address.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
@@ -862,7 +862,7 @@ void GeGraphExecutor::AddRefCorrespondPairs(const KernelGraphPtr &graph,
 
 bool GeGraphExecutor::CompileGraph(const FuncGraphPtr &graph, const std::map<string, string> &compile_options) {
   MS_EXCEPTION_IF_NULL(graph);
-  dynamic_cast<device::ascend::GeDeviceContext *>(device_context_)->ContextInitGe();
+  dynamic_cast<device::ascend::AscendDeviceContext *>(device_context_)->ContextInitGe();
 
   auto graph_name = GetGraphName(graph);
   uint64_t start_time = profiler::GetClockSyscnt();

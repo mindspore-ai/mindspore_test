@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -82,7 +82,7 @@
 #include "kernel/ascend/acl/acl_kernel_mod.h"
 #include "plugin/device/ascend/hal/hardware/ascend_device_res_manager.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
-#include "plugin/device/ascend/hal/hardware/ge_device_context.h"
+#include "plugin/device/ascend/hal/hardware/ascend_device_context.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
@@ -1053,7 +1053,7 @@ void GeKernelExecutor::OptimizeGraph(const FuncGraphPtr &graph) const {
   if (has_aclop) {
     static std::once_flag ge_init_flag_ = {};
     std::call_once(ge_init_flag_, [&]() {
-      dynamic_cast<GeDeviceContext *>(device_context_)->ContextInitGe();
+      dynamic_cast<AscendDeviceContext *>(device_context_)->ContextInitGe();
       SetAclOpPrecisionMode();
       res_manager_->SetAclDeterministic();
     });
