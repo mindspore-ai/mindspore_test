@@ -52,6 +52,7 @@ class ControlNodeScheduler {
 
   // The control flow actor will generate some data in the loop body execution, so need clear on the end of execution.
   void ClearActorData(const ControlActorSet *control_actor_set) const;
+  void ClearExitActorDeviceTensors(std::vector<ExitActorPtr> exit_actors) const;
   void Optimize(const ActorSetPtr &actor_set, const GraphCompilerInfo &graph_compiler_info) const;
   void DumpFormatControlActorSet(const ActorSet *actor_set, const GraphCompilerInfo &graph_compiler_info,
                                  const std::map<KernelWithIndex, std::pair<AbstractActor *, KernelWithIndex>,
