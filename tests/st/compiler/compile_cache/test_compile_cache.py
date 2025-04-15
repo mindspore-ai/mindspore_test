@@ -277,17 +277,38 @@ def start_ps_subprocess(script_path, cache_path, str_to_check, log_name):
     os.environ['MS_ROLE'] = 'MS_SCHED'
     cmd_first = f"cd " + cwd + "/sched && GLOG_v=2 MS_COMPILER_CACHE_ENABLE=1 MS_COMPILER_CACHE_PATH=" + \
                 cache_realpath + " python ../" + script_path + " > " + log_name + " 2>&1"
+    print(f'[INFO] start sched process: {cmd_first}')
     sched_process = subprocess.Popen(cmd_first, shell=True)
     # start server first time.
     os.environ['MS_ROLE'] = 'MS_PSERVER'
     cmd_first = f"cd " + cwd + "/server && GLOG_v=2 MS_COMPILER_CACHE_ENABLE=1 MS_COMPILER_CACHE_PATH=" + \
                 cache_realpath + " python ../" + script_path + " > " + log_name + " 2>&1"
+    print(f'[INFO] start server process: {cmd_first}')
     server_process = subprocess.Popen(cmd_first, shell=True)
     # start worker first time.
     os.environ['MS_ROLE'] = 'MS_WORKER'
     cmd_first = f"cd " + cwd + "/worker && GLOG_v=2 MS_COMPILER_CACHE_ENABLE=1 MS_COMPILER_CACHE_PATH=" + \
                 cache_realpath + " python ../" + script_path + " > " + log_name + " 2>&1"
-    subprocess.run(cmd_first, shell=True, check=True)
+    print(f'[INFO] start worker process: {cmd_first}')
+    try:
+        subprocess.run(cmd_first, shell=True, check=True)
+    except Exception:
+        print("[ERROR] Worker process Exception!!!")
+
+        def print_log(dirname: str):
+            fpath = os.path.join(dirname, log_name)
+            if not os.path.exists(fpath):
+                print(f'[ERROR] log not exist: {fpath}')
+                return
+            with open(fpath, 'r', encoding='utf-8') as f:
+                print(f'{dirname} log:')
+                print(f.read())
+                print('', flush=True)
+
+        print_log('sched')
+        print_log('server')
+        print_log('worker')
+        raise
     os.chdir(cwd)
     check_log("server", log_name, str_to_check)
     check_log("worker", log_name, str_to_check)
@@ -322,8 +343,10 @@ def run_lenet_ps_twice(file_name, cache_path, log_file_name_first, log_file_name
     os.environ['MS_SERVER_NUM'] = '1'
     os.environ['MS_WORKER_NUM'] = '1'
     # First run
+    print(f'start run first time', flush=True)
     first_str_to_check = "Check the consistency of dependency files hash failed. Execute all the compilation actions."
     start_ps_subprocess(file_name, cache_path, first_str_to_check, log_file_name_first)
+    print('end run first time', flush=True)
     assert os.path.exists(cache_path)
     check_compile_cache_files(cache_path, "MS_WORKER")
     check_compile_cache_files(cache_path, "MS_PSERVER")
@@ -331,7 +354,9 @@ def run_lenet_ps_twice(file_name, cache_path, log_file_name_first, log_file_name
     os.environ['MS_SCHED_PORT'] = '8183'
     second_str_to_check = "Use the compilation cache and execute the backend actions only. Be aware of correctness" \
                           " risks."
+    print(f'start run second time', flush=True)
     start_ps_subprocess(file_name, cache_path, second_str_to_check, log_file_name_second)
+    print(f'end run second time', flush=True)
 
     # Clear
     del os.environ['MS_SCHED_HOST']
