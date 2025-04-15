@@ -1881,6 +1881,7 @@ void GradCommon::GetUsedCNodeInBpropGraph(const CNodePtr &cnode, const mindspore
 }  // namespace PyNativeAlgo
 
 void DispatchOp(const std::shared_ptr<runtime::AsyncTask> &task) {
+  GilReleaseWithCheck no_gil;
   static bool need_sync = runtime::OpExecutor::NeedSync();
   if (need_sync && !runtime::OpExecutor::GetInstance().async_for_graph()) {
     MS_LOG(INFO) << "PyBoost sync run frontend task";
