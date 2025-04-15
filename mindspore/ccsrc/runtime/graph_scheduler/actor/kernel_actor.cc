@@ -170,17 +170,6 @@ void AddNodeToGraphTracker(const CNodePtr cnode, const std::string &actor_name) 
   }
   return;
 }
-bool IsEnableMemTracker() {
-  static bool is_enable_mem_tracker = device::tracker::MemTrackerManager::GetInstance().IsEnabled();
-  return is_enable_mem_tracker;
-}
-
-inline bool NeedRunMemTracker() {
-  if (IsEnableMemTracker()) {
-    return true;
-  }
-  return device::tracker::MemTrackerManager::GetInstance().enable_memory_debug_info();
-}
 }  // namespace
 
 using distributed::collective::CollectiveManager;
