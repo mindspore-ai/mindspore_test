@@ -89,7 +89,7 @@ class PIJitCaptureContext:
             fn.construct = self(fn.construct)
             return fn
         if isinstance(fn, mindspore.nn.Cell):
-            type(fn).construct = self(type(fn).construct)
+            fn.construct = types.MethodType(self(fn.construct.__func__), fn)
             return fn
         if isinstance(fn, types.MethodType):
             return types.MethodType(self(fn.__func__), fn.__self__)

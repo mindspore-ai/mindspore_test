@@ -17,6 +17,7 @@
 
 import inspect
 import re
+import types
 from functools import wraps
 import mindspore as ms
 from mindspore import log as logger
@@ -147,79 +148,65 @@ def nested_run(obj, cell, *args):
     return file_names, linenos, res
 
 
-def _jit_trace(fn):
-    """
-    Create a callable MindSpore graph from a Python function by trace method.
+def _jit_trace():
+    """Return the wrapped function for trace mode jit."""
+    def wrap_func(fn):
+        if hasattr(fn, "construct"):
+            if isinstance(fn, ms.nn.Cell):
+                # Bound the cell object to get the self arg.
+                fn.construct = types.MethodType(_jit_trace()(fn.construct.__func__), fn)
+            elif isinstance(fn, type) and issubclass(fn, ms.nn.Cell):
+                fn.construct = _jit_trace()(fn.construct)
+            return fn
 
-    This allows the MindSpore runtime to apply optimizations based on traced func graph.
+        if isinstance(fn, types.MethodType):
+            return types.MethodType(_jit_trace()(fn.__func__), fn.__self__)
 
-    Args:
-        fn (Function): The Python function that will be run as a graph. Default: ``None`` .
+        if not isinstance(fn, types.FunctionType):
+            logger.warning(f"The fn should be function, method or cell instance/class, but got {fn}")
+            return fn
 
-    Returns:
-        Function, if `fn` is not None, returns a callable function that will execute the compiled function; If `fn` is
-        None, returns a decorator and when this decorator invokes with a single `fn` argument, the callable function is
-        equal to the case when `fn` is not None.
+        @wraps(fn)
+        def jit_trace_wrap(*args, **kwargs):
+            # If a trace graph is already built, keep going without building a new trace graph.
+            if jit_context():
+                return fn(*args, **kwargs)
+            # Start trace process.
+            if kwargs:
+                bound_arguments = inspect.signature(fn).bind(*args, **kwargs)
+                bound_arguments.apply_defaults()
+                args = bound_arguments.args
+                kwargs = bound_arguments.kwargs
+            generate_name = fn.__module__
+            if args:
+                jit_args = args[1:] if hasattr(args[0], fn.__name__) else args
+                obj = args[0]
+                if hasattr(obj, fn.__name__):  # Add class name for Cell.
+                    generate_name = generate_name + "." + obj.__class__.__name__
+            else:
+                jit_args = args
+            generate_name = generate_name + "." + fn.__name__ + "#" + str(id(fn))
+            # Add create time for Cell.
+            if args and hasattr(obj, fn.__name__):
+                generate_name = generate_name + '#created_' + str(args[0].create_time)
+            line_str = fn.__code__.co_filename + ":" + str(fn.__code__.co_firstlineno)
+            generate_name = generate_name + '#[' + line_str + ']'
 
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
+            new_compile = _jit_trace_begin(generate_name, *jit_args)
+            if new_compile:
+                fn_res = fn(*args, **kwargs)
+                logger.debug(f'fn: {fn}, fn_res: {fn_res}, line: {line_str}')
+                # Use fn's output to build func graph's output.
+                output = _jit_trace_end(fn_res)
+            else:
+                output = _jit_trace_end(None)  # Run with compilation.
+            logger.debug(f'output: {output}')
+            return output
 
-    Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor
-        >>> from mindspore.common.jit_trace import _jit_trace as jit_trace
-        ...
-        >>> x = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
-        >>> y = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
-        ...
-        >>> # To create a callable MindSpore graph by calling decorator @jit_trace
-        >>> def tensor_add(x, y):
-        ...     z = x + y
-        ...     return z
-        ...
-        >>> tensor_add_graph = jit_trace(fn=tensor_add)
-        >>> out = tensor_add_graph(x, y)
-    """
+        jit_trace_wrap.__trace_func__ = True
+        return jit_trace_wrap
 
-    @wraps(fn)
-    def jit_trace_wrap(*args, **kwargs):
-        # If a trace graph is already built, keep going without building a new trace graph.
-        if jit_context():
-            return fn(*args, **kwargs)
-        # Start trace process.
-        if kwargs:
-            bound_arguments = inspect.signature(fn).bind(*args, **kwargs)
-            bound_arguments.apply_defaults()
-            args = bound_arguments.args
-            kwargs = bound_arguments.kwargs
-        generate_name = fn.__module__
-        if args:
-            jit_args = args[1:] if hasattr(args[0], fn.__name__) else args
-            obj = args[0]
-            if hasattr(obj, fn.__name__):  # Add class name for Cell.
-                generate_name = generate_name + "." + obj.__class__.__name__
-        else:
-            jit_args = args
-        generate_name = generate_name + "." + fn.__name__ + "#" + str(id(fn))
-        # Add create time for Cell.
-        if args and hasattr(obj, fn.__name__):
-            generate_name = generate_name + '#created_' + str(args[0].create_time)
-        line_str = fn.__code__.co_filename + ":" + str(fn.__code__.co_firstlineno)
-        generate_name = generate_name + '#[' + line_str + ']'
-
-        new_compile = _jit_trace_begin(generate_name, *jit_args)
-        if new_compile:
-            fn_res = fn(*args, **kwargs)
-            logger.debug(f'fn: {fn}, fn_res: {fn_res}, line: {line_str}')
-            # Use fn's output to build func graph's output.
-            output = _jit_trace_end(fn_res)
-        else:
-            output = _jit_trace_end(None)  # Run with compilation.
-        logger.debug(f'output: {output}')
-        return output
-
-    jit_trace_wrap.__trace_func__ = True
-    return jit_trace_wrap
+    return wrap_func
 
 
 def _get_caller_lines():
