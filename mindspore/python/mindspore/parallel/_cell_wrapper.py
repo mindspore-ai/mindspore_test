@@ -137,7 +137,7 @@ def _restore_parallel_context(origin_parallel_mode, origin_dataset_strategy):
 
 def _get_group_name(group_map, group):
     """get group name"""
-    group_name = str(group)
+    group_name = "remove_redundancy" + str(group)
     is_manual_communication_group = True
     if group_map:
         for name, rank_list in group_map.items():
@@ -145,8 +145,6 @@ def _get_group_name(group_map, group):
                 group_name = name
                 is_manual_communication_group = False
                 break
-    if is_manual_communication_group:
-        create_group(str(group), list(group))
     return group_name, is_manual_communication_group
 
 
@@ -191,6 +189,8 @@ def _single_parameter_broadcast(net, layout, param_not_load=None):
     net_param_dict = net.parameters_dict()
     _chang_parallel_context(origin_dataset_strategy)
     group_map = _get_group_map()
+    if group_map:
+        group_map = {key: group_map[key] for key in sorted(group_map.keys())}
     for group, params in param_redundancy_reversed.items():
         group_name, is_manual_communication_group = _get_group_name(group_map, group)
         allreduce_input = []
@@ -206,6 +206,8 @@ def _single_parameter_broadcast(net, layout, param_not_load=None):
             allreduce_input.append(real_param)
         if not allreduce_input:
             continue
+        if is_manual_communication_group:
+            create_group(group_name, list(group))
         allreduce_input.sort(key=lambda param: (str(param.shape), str(param.dtype)))
         communicator = SingleCommunicator(group_name)
         for real_param in allreduce_input:
