@@ -82,7 +82,7 @@ def test_fallback_print_asnumpy():
         sys.stdout.flush()
         time.sleep(2.0)
 
-    patterns = {'Tensor(shape=[4], dtype=Int64, value= [1, 2, 3, 4]) [1 2 3 4]'}
+    patterns = {'[1 2 3 4] [1 2 3 4]'}
     check_output(cap.output, patterns)
 
 
@@ -232,5 +232,5 @@ def test_print_str_format():
         assert (res.asnumpy() == [[1, 3], [5, 7]]).all()
         sys.stdout.flush()
         time.sleep(2.0)
-    patterns = {'x is Tensor(shape=[2, 2], dtype=Int64, value=\n[[2, 4],\n [6, 8]])\n'}
+    patterns = {'x is [[2 4]\n [6 8]]\n'}
     check_output(cap.output, patterns)
