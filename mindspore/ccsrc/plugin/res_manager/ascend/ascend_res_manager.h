@@ -71,6 +71,8 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public HalResBase {
   bool BindDeviceToCurrentThread(bool force_bind) const override;
   void *GetStream() const override { return AscendStreamMng::GetInstance().default_stream(); }
   void *GetCopyDataStream() const;
+  void *GetStorageDataStream() const;
+  size_t GetStorageStreamID() const;
 
   // Relevant function to allocate and free device memory of raw ptr.
   bool AllocateMemory(DeviceAddress *const &address, uint32_t stream_id = UINT32_MAX) const override;
@@ -153,6 +155,8 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public HalResBase {
   bool SyncAllEvents() override;
 
   bool LaunchCallback(std::function<void(void)> callback_func, size_t stream_id, bool is_block = false) const override;
+
+  void DeviceToDeviceCopy(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_tensor);
 
  private:
   MemUceInfo mem_uce_info_;

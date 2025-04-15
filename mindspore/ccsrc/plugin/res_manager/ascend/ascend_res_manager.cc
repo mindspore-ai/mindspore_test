@@ -51,6 +51,7 @@
 #include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
+#include "runtime/device/kernel_runtime_manager.h"
 #include "common/kernel_callback.h"
 #include "runtime/device/res_manager/tensor_array.h"
 #include "plugin/res_manager/ascend/hal_manager/ascend_err_manager.h"
@@ -955,6 +956,58 @@ void *AscendResManager::GetCopyDataStream() const {
     AscendStreamMng::GetInstance().SetCopyOutStream(copy_out_data_stream);
   }
   return copy_out_data_stream;
+}
+
+void *AscendResManager::GetStorageDataStream() const {
+  auto storage_data_stream = AscendStreamMng::GetInstance().GetStorageStream();
+  if (storage_data_stream == nullptr) {
+    auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    auto runtime_instance_ = device::KernelRuntimeManager::Instance().GetKernelRuntime(kAscendDevice, device_id);
+    MS_EXCEPTION_IF_NULL(runtime_instance_);
+    size_t &storage_stream_id = runtime_instance_->storage_stream_id();
+    AscendStreamMng::GetInstance().CreateStream(&storage_stream_id);
+    MS_LOG(INFO) << "Create ascend storage data stream, stream id: " << storage_stream_id;
+    storage_data_stream = AscendStreamMng::GetInstance().GetStream(storage_stream_id);
+    AscendStreamMng::GetInstance().SetStorageStream(storage_data_stream);
+  }
+  return storage_data_stream;
+}
+
+size_t AscendResManager::GetStorageStreamID() const {
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  auto runtime_instance_ = device::KernelRuntimeManager::Instance().GetKernelRuntime(kAscendDevice, device_id);
+  MS_EXCEPTION_IF_NULL(runtime_instance_);
+  if (runtime_instance_ == nullptr) {
+    MS_LOG(WARNING) << "runtime_instance_ is nullptr, can not get storage stream";
+    return kDefaultStreamIndex;
+  }
+  return runtime_instance_->storage_stream_id();
+}
+
+void AscendResManager::DeviceToDeviceCopy(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_tensor) {
+  auto tensor_size = static_cast<size_t>(src_tensor->Size());
+  auto stream_id = DefaultStream();
+  auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(dst_tensor->device_address());
+  if (device_address == nullptr) {
+    auto device_ptr = mem_manager_->MallocMemFromMemPool(tensor_size, false, false, stream_id);
+    if (!device_ptr) {
+      MS_LOG(EXCEPTION) << "Alloc device memory failed!";
+    }
+    char *ptr = reinterpret_cast<char *>(device_ptr);
+    auto format = GetFormat(src_tensor);
+    auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+    device_address = CreateDeviceAddress(reinterpret_cast<void *>(ptr), tensor_size, src_tensor->shape(), format,
+                                         src_tensor->data_type(), device_name, device_id, stream_id);
+  }
+  device_address->SyncDeviceToDevice(src_tensor->device_address().get());
+  dst_tensor->set_device_address(device_address);
 }
 
 bool AscendResManager::RecordEvent(int64_t task_id_on_stream, uint32_t user_stream_id,

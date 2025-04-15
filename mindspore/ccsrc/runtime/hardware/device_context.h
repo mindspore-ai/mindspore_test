@@ -303,6 +303,8 @@ class BACKEND_COMMON_EXPORT DeviceResManager {
 
   virtual void *GetStream() const { return nullptr; };
 
+  virtual size_t GetStorageStreamID() const { return kDefaultStreamIndex; };
+
   virtual size_t GetCommunicationStreamID() const { return kDefaultStreamIndex; };
 
   virtual size_t GetCommunicationStreamIDByGroup(const std::string &group) const { return GetCommunicationStreamID(); };
@@ -344,6 +346,11 @@ class BACKEND_COMMON_EXPORT DeviceResManager {
 
   // Detect stress.
   virtual int StressDetect() const { MS_LOG(EXCEPTION) << "Stress detection is not supported."; }
+
+  // Copy tensor from device to device
+  virtual void DeviceToDeviceCopy(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_tensor) {
+    MS_LOG(EXCEPTION) << "Unimplemented interface";
+  }
 
   // Send and receive parameters.
   virtual int SendRecv(const std::vector<tensor::TensorPtr> &params, int src_rank, int dst_rank) const {

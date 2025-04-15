@@ -65,7 +65,6 @@ std::string GEBackend::CompileGraph(const FuncGraphPtr &func_graph, const device
     graph->set_attrs(func_graph->attrs());
     opt::OptimizationWithoutBackend(graph);
   }
-  device_context->graph_executor_->OptimizeBeforeCompileGraph(root_graph);
 
   auto manager = MakeManager();
   MS_EXCEPTION_IF_NULL(manager);
@@ -76,6 +75,7 @@ std::string GEBackend::CompileGraph(const FuncGraphPtr &func_graph, const device
     graph->set_manager(manager);
     graph->SetInputNodes();
   }
+  device_context->graph_executor_->OptimizeBeforeCompileGraph(root_graph);
   root_graph->SetInputNodes();
 
   if (!device_context->graph_executor_->CompileGraph(root_graph, {})) {
@@ -472,6 +472,8 @@ void GEBackend::RunGraph(const std::string &graph_info, const device::DeviceCont
 
   device_context->graph_executor_->FreeGERefreshableFeatureMemory(func_graph);
   device_context->graph_executor_->FreeInputOutputMemory(func_graph);
+  (void)SkipOrResetCopyAction(true);
+  (void)SkipOrResetSyncAction(true);
 
   graph_run_iter_[func_graph]++;
   MS_LOG(INFO) << "Status record: end run graph: " << graph_info;

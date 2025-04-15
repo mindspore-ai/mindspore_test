@@ -16,6 +16,7 @@
 from __future__ import absolute_import
 
 import os
+import threading
 import stat
 import time
 
@@ -541,6 +542,19 @@ class ModelCheckpoint(Callback):
         self._d2h_async = os.environ.get("MS_ENABLE_CKPT_D2H_ASYNC") == "1"
         self._run_mode = context.get_context("mode")
 
+    def step_begin(self, run_context):
+        """
+        Waiting the checkpoint at the begin of step.
+
+        Args:
+            run_context (RunContext): Context of the train running.
+        """
+        if self._d2h_async and self._config.async_save:
+            thread_list = threading.enumerate()
+            for thread in thread_list:
+                if thread.getName() == "async_save_ckpt_cb":
+                    thread.join()
+
     def step_end(self, run_context):
         """
         Save the checkpoint at the end of step.
@@ -715,10 +729,20 @@ class ModelCheckpoint(Callback):
                                 crc_check=self._config.crc_check, format=self._config.format,
                                 incremental=self._map_param_inc, choice_func=choice_func)
             else:
-                save_checkpoint(network, cur_file, self._config.integrated_save, self._config.async_save,
-                                self._append_dict, self._config.enc_key, self._config.enc_mode,
-                                crc_check=self._config.crc_check, format=self._config.format,
-                                incremental=self._map_param_inc)
+                if self._d2h_async and self._config.async_save:
+                    thread = threading.Thread(target=save_checkpoint,
+                                              args=(network, cur_file, self._config.integrated_save,
+                                                    self._config.async_save, self._append_dict, self._config.enc_key,
+                                                    self._config.enc_mode), kwargs={"crc_check": self._config.crc_check,
+                                                                                    "format": self._config.format,
+                                                                                    "incremental": self._map_param_inc},
+                                              name="async_save_ckpt_cb")
+                    thread.start()
+                else:
+                    save_checkpoint(network, cur_file, self._config.integrated_save, self._config.async_save,
+                                    self._append_dict, self._config.enc_key, self._config.enc_mode,
+                                    crc_check=self._config.crc_check, format=self._config.format,
+                                    incremental=self._map_param_inc)
 
             self._latest_ckpt_file_name = cur_file
 

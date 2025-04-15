@@ -475,6 +475,22 @@ void *AscendDeviceResManager::GetCopyDataStream() const {
   return ascend_res_manager_->GetCopyDataStream();
 }
 
+void *AscendDeviceResManager::GetStorageDataStream() const {
+  MS_EXCEPTION_IF_NULL(ascend_res_manager_);
+  return ascend_res_manager_->GetStorageDataStream();
+}
+
+size_t AscendDeviceResManager::GetStorageStreamID() const {
+  MS_EXCEPTION_IF_NULL(ascend_res_manager_);
+  return ascend_res_manager_->GetStorageStreamID();
+}
+
+void AscendDeviceResManager::DeviceToDeviceCopy(const tensor::TensorPtr &src_tensor,
+                                                const tensor::TensorPtr &dst_tensor) {
+  MS_EXCEPTION_IF_NULL(ascend_res_manager_);
+  return ascend_res_manager_->DeviceToDeviceCopy(src_tensor, dst_tensor);
+}
+
 }  // namespace ascend
 }  // namespace device
 }  // namespace mindspore

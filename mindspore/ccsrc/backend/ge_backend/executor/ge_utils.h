@@ -17,10 +17,12 @@
 #define MINDSPORE_CCSRC_BACKEND_GE_BACKEND_EXECUTOR_GE_UTILS_H_
 
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 #include <unordered_set>
 #include "backend/ge_backend/graph_ir/types.h"
+#include "backend/ge_backend/executor/ge_device_res_manager.h"
 #include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
 #include "acl/acl_rt.h"
 
@@ -41,6 +43,13 @@ bool AddDFGraph(const FuncGraphPtr &anf_graph, const backend::ge_backend::Tensor
 bool AddFakeGraph(const FuncGraphPtr &anf_graph);
 bool IsGeTrain();
 void SavePrevStepWeight(const std::vector<AnfNodePtr> &weights, aclrtStream stream);
+void SaveCopyWeight(const std::vector<tensor::TensorPtr> &copy_weights, const std::vector<AnfNodePtr> &weights,
+                    aclrtStream stream);
+void StorageWeights(std::vector<tensor::TensorPtr> *copy_weights, const std::vector<AnfNodePtr> &weights,
+                    const std::shared_ptr<GeDeviceResManager> &ge_res_manager, bool *first_save);
+size_t GetFreeMemoryInfo();
+void SplitWeightsByFreeMemory(const std::vector<AnfNodePtr> &root_weights, std::vector<AnfNodePtr> *prev_part,
+                              std::vector<AnfNodePtr> *copy_part, const size_t &free_mem_size_for_save);
 class InferNeedUpdateParaNames {
  public:
   std::unordered_set<std::string> &GetInferParameterNames() { return infer_need_update_para_names; }

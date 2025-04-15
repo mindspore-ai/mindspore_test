@@ -36,6 +36,13 @@ namespace ascend {
 bool EnableDvmComm();
 
 void SavePrevStepWeight(const std::vector<AnfNodePtr> &weights, aclrtStream stream);
+void SaveCopyWeight(const std::vector<tensor::TensorPtr> &copy_weights, const std::vector<AnfNodePtr> &weights,
+                    aclrtStream stream);
+void StorageWeights(std::vector<tensor::TensorPtr> *copy_weights, const std::vector<AnfNodePtr> &weights,
+                    bool *first_save);
+size_t GetFreeMemoryInfo();
+void SplitWeightsByFreeMemory(const std::vector<AnfNodePtr> &root_weights, std::vector<AnfNodePtr> *prev_part,
+                              std::vector<AnfNodePtr> *copy_part, const size_t &free_mem_size_for_save);
 }  // namespace ascend
 }  // namespace device
 }  // namespace mindspore
