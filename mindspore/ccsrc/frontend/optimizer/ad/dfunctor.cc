@@ -424,9 +424,18 @@ CNodePtr DFunctor::CalDoutTuple(const CNodePtr &cnode_morph, const CNodePtr &din
     auto ori_mask =
       caller->NewCNodeInOrder({NewValueNode(prim::kPrimZerosLikeExt), din, NewValueNode(int64_t(kBool->type_id()))});
 
-    constexpr size_t index = 2;
-    AnfNodePtrList viewed_mask_nodes{cnode_morph->input(0), ori_mask};
-    std::copy_if(cnode_morph->inputs().begin() + index, cnode_morph->inputs().end(),
+    constexpr size_t input_begin_index = 2;
+    auto k = node_adjoint->k();
+    if (!IsPrimitiveCNode(k, prim::kPrimTupleGetItem)) {
+      return din_tuple;
+    }
+    auto k_cnode = k->cast<CNodePtr>();
+    auto fprop_input_cnode = k_cnode->input(1)->cast<CNodePtr>();
+    if (fprop_input_cnode == nullptr) {
+      return din_tuple;
+    }
+    AnfNodePtrList viewed_mask_nodes{NewValueNode(prim), ori_mask};
+    std::copy_if(fprop_input_cnode->inputs().begin() + input_begin_index, fprop_input_cnode->inputs().end(),
                  std::back_inserter(viewed_mask_nodes), [](const AnfNodePtr &node) { return !HasAbstractMonad(node); });
     auto mask_viewed = caller->NewCNodeInOrder(viewed_mask_nodes);
     auto mask_viewed_true = caller->NewCNodeInOrder(
