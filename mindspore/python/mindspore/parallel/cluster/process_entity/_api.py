@@ -22,7 +22,7 @@ import socket
 import psutil
 import mindspore.log as logger
 from ._utils import _generate_cmd_args_list, _generate_cmd_args_list_with_core, _generate_url, \
-    _is_local_ip, _convert_addr_to_ip, _send_scale_num, _get_local_ip
+    _is_local_ip, _convert_addr_to_ip, _send_scale_num, _get_local_ip, _generate_bind_core_policy
 
 
 class _Node:
@@ -294,13 +294,11 @@ class _ProcessManager:
                 logger.warning(f"In dryrun case, RANK_ID is assigned to {self.sim_rank_id}.")
 
             if self.bind_core:
-                cpu_num = subprocess.getoutput("cat /proc/cpuinfo|grep processor|wc -l")
-                if not cpu_num.isdigit():
-                    raise RuntimeError(f"Got cpu number from '/proc/cpuinfo' is {cpu_num}, failed to bind core.")
-                avg = int(cpu_num) // self.local_worker_num
-                cpu_start = avg * i
-                cpu_end = cpu_start + avg - 1
-                cmd = _generate_cmd_args_list_with_core(self.cmd, self.cmd_args, cpu_start, cpu_end)
+                affinity_cpu_str = _generate_bind_core_policy(i, self.local_worker_num, self.bind_core)
+                if affinity_cpu_str is not None:
+                    cmd = _generate_cmd_args_list_with_core(self.cmd, self.cmd_args, affinity_cpu_str)
+                else:
+                    cmd = _generate_cmd_args_list(self.cmd, self.cmd_args)
             else:
                 cmd = _generate_cmd_args_list(self.cmd, self.cmd_args)
             cgn = _ComputeGraphNode(self.worker_num, self.master_addr, self.master_port, self.cluster_time_out,
@@ -334,7 +332,7 @@ class _ProcessManager:
                     continue
                 elif ret_code != 0:
                     has_exception = True
-                    logger.error(f"Worker process {p.pid} exit with exception.")
+                    logger.error(f"Worker process {p.pid} exit with exception. Error code: {ret_code}.")
                     break
                 else:
                     success_cgn_processes.add(p)

@@ -14,8 +14,45 @@
 # ============================================================================
 """Entrypoint of ms_run"""
 import ast
-from argparse import REMAINDER, ArgumentParser
+import re
+import json
+from argparse import REMAINDER, ArgumentParser, ArgumentTypeError
 from .process_entity import _ProcessManager
+
+def parse_and_validate_bind_core(value):
+    """
+    Parse input argument of --bind_core.
+
+    """
+    if value.lower() == "true":
+        return True
+    if value.lower() == "false":
+        return False
+
+    try:
+        value_dict = json.loads(value)
+    except json.JSONDecodeError as e:
+        raise ArgumentTypeError(f"Failed to parse json to dict. Json error: {e}")
+
+    if isinstance(value_dict, dict):
+        range_pattern = re.compile(r'^\d+-\d+$')
+        for device_id, affinity_cpu_list in value_dict.items():
+            if not re.fullmatch(r"device\d+", device_id):
+                raise ArgumentTypeError(f"Key '{device_id}' must be in format 'deviceX' (X ≥ 0).")
+            if not isinstance(affinity_cpu_list, list):
+                raise ArgumentTypeError(f"Value for '{device_id}':{affinity_cpu_list} should be a list, "
+                                        f"but got {type(affinity_cpu_list)}.")
+
+            for cpu_range in affinity_cpu_list:
+                if not isinstance(cpu_range, str):
+                    raise ArgumentTypeError(f"CPU range '{cpu_range}' in '{affinity_cpu_list}' should be a string.")
+                if not range_pattern.match(cpu_range):
+                    raise ArgumentTypeError(f"CPU range '{cpu_range}' in '{affinity_cpu_list}' should be "
+                                            "in format 'cpuidX-cpuidY'.")
+        return value_dict
+
+    raise ArgumentTypeError(f"Type of {value} should be bool or dict, but got {type(value)}.")
+
 
 def get_args():
     """
@@ -77,9 +114,10 @@ def get_args():
     parser.add_argument(
         "--bind_core",
         default=False,
-        type=ast.literal_eval,
-        choices=[True, False],
-        help="specifies whether msrun should bind cpu cores to spawned processes."
+        type=parse_and_validate_bind_core,
+        help="specifies whether msrun should bind CPU cores to spawned processes. "
+             "If set to True, msrun will bind core based on the environment automatically, "
+             "and if passed a dict, msrun will bind core based on this dict information."
     )
     parser.add_argument(
         "--sim_level",

@@ -15,7 +15,7 @@
 
 """Executor manager interfaces."""
 from mindspore._c_expression import RuntimeConf
-from mindspore.runtime.thread_bind_core import _get_cpu_affinity_policy
+from mindspore.runtime.thread_bind_core import _get_cpu_affinity_policy, _validate_affinity_cpu_list, _validate_module_cpu_index
 from mindspore._checkparam import args_type_check
 from mindspore import _checkparam as Validator
 from mindspore import log as logger
@@ -63,18 +63,24 @@ def dispatch_threads_num(threads_num):
 
     return RuntimeConf.get_instance().set_dispatch_threads_num(threads_num)
 
-
-@args_type_check(enable_affinity=bool, affinity_cpu_list=dict)
-def set_cpu_affinity(enable_affinity, affinity_cpu_list=None):
+# TODO Remove this check until Mindformers is adapted.
+# @args_type_check(enable_affinity=bool, affinity_cpu_list=list, module_to_cpu_dict=dict)
+def set_cpu_affinity(enable_affinity, affinity_cpu_list=None, module_to_cpu_dict=None):
     """
-    Enable thread-level core binding to assign specific CPU cores to MindSpore's main modules (main thread, pynative,
-    runtime, minddata), to prevent unstable performance caused by MindSpore's threads seizing CPU.
+    Enable thread-level core binding to allocate specific CPU cores for key MindSpore modules (main thread, pynative,
+    runtime, and minddata), preventing performance instability caused by CPU core contention among MindSpore threads.
 
     Note:
-        - Provides two binding modes: 1. Automatically generates binding policies based on available CPUs, NUMA nodes,
-          and device resources in the environment to bind cores at thread level. 2. Thread-level bonding based on
-          customized bonding policies passed in by `affinity_cpu_list`.
+        - Flexible Core Binding Configuration:
 
+          1. When `affinity_cpu_list` is not specified, the process automatically determines the CPU affinity range
+             based on available CPU cores, NUMA nodes, and device resources in the environment.
+          2. When `affinity_cpu_list` is specified, the process manually binds to the CPU range defined in
+             `affinity_cpu_list`.
+          3. When `module_to_cpu_dict` is not specified, the default binding strategy assigns the CPU
+             cores to the `"main"` module.
+          4. When `module_to_cpu_dict` is specified, the process manually binds each module to CPU ranges as
+             defined in `module_to_cpu_dict`.
         - The automated bind-core policy generation scenario invokes system commands to obtain CPU, NUMA node, and
           device resources on the environment, and some commands cannot be executed successfully due to environment
           differences; the automated bind-core policy generated will vary according to the resources available on the
@@ -96,25 +102,27 @@ def set_cpu_affinity(enable_affinity, affinity_cpu_list=None):
              the device affinity.
 
     Args:
-        enable_affinity (bool): Switches on/off thread-level core binding.
-        affinity_cpu_list (dict, optional): Specifies a customized bind-core policy. The key to be passed
-            into the dict needs to be in string ``"deviceX"`` format, and the value needs to be in list
-            ``["cpuidX-cpuidY"]`` format. Default: ``None``, i.e., use the bind-core policy generated automatically
-            based on the environment. It is allowed to pass the empty dict ``{}``, in which case the bind-core
-            policy generated automatically based on the environment will be used.
+        enable_affinity (bool): Enables/disables thread-level core binding.
+        affinity_cpu_list (list, optional): Manually specifies the CPU affinity range for the process. Format:
+            `["cpuidX-cpuidY"]` (e.g., ``["0-3", "8-11"]``). Default: ``None`` (uses auto-generated binding strategy
+            based on system resources). Passing an empty list `[]` behaves the same as ``None``.
+        module_to_cpu_dict (dict, optional): Customizes core binding for specific modules. Valid keys
+            (module names) are ``"main"``, ``"runtime"``, ``"pynative"``, ``"minddata"``. Valid value is a list
+            of ``int`` indices representing CPU cores (e.g., ``{"main": [0,1], "minddata": [6,7]}``).
+            Default: ``None`` (automatically binds core for module `"main"`). Passing an empty dict `{}`
+            behaves the same as ``None``.
 
     Raises:
-        TypeError: The parameter `enable_affinity` is not a boolean.
-        TypeError: The parameter `affinity_cpu_list` is neither a dictionary nor a ``None``.
-        ValueError: The key of parameter `affinity_cpu_list` is not a string.
-        ValueError: The key of parameter `affinity_cpu_list` is not in ``"deviceX"`` format.
-        ValueError: The parameter `affinity_cpu_list` has a value that is not a list.
-        ValueError: The element in value of parameter `affinity_cpu_list` is not a string.
-        ValueError: The element in value for parameter `affinity_cpu_list` does not match ``["cpuidX-cpuidY"]``.
-        RuntimeError: Automatically generated binding policy or customized binding policy scenario where the number
-            of CPU cores assigned to each device is less than 7.
-        RuntimeError: A custom-specified binding policy scenario where the CPU assigned to a device is not
-            available in the environment.
+        TypeError: The `enable_affinity` parameter is not a boolean.
+        TypeError: The `affinity_cpu_list` parameter is neither a list nor ``None``.
+        TypeError: An element in `affinity_cpu_list` is not a string.
+        ValueError: An element in `affinity_cpu_list` does not follow the ``["cpuidX-cpuidY"]`` format.
+        TypeError: The `module_to_cpu_dict` parameter is neither a dictionary nor ``None``.
+        TypeError: A key in `module_to_cpu_dict` is not a string.
+        TypeError: A value in `module_to_cpu_dict` is not a list.
+        ValueError: An element in `module_to_cpu_dict` values is not a non-negative integer.
+        RuntimeError: In custom core binding scenarios, the specified CPU cores for a device are unavailable
+            in the environment.
         RuntimeError: The `mindspore.runtime.set_cpu_affinity` API is called repeatedly.
 
     Examples:
@@ -124,24 +132,32 @@ def set_cpu_affinity(enable_affinity, affinity_cpu_list=None):
         >>>
         >>> import mindspore as ms
         >>> ms.set_device("Ascend", 1)
-        >>> ms.runtime.set_cpu_affinity(True, {"device0":["0-9"],"device1":["10-15","20-29"],"device2":["35-45"]})
+        >>> ms.runtime.set_cpu_affinity(True, ["10-19", "23-40"])
+        >>>
+        >>> import mindspore as ms
+        >>> ms.set_device("Ascend", 1)
+        >>> ms.runtime.set_cpu_affinity(True, ["10-19", "23-40"], {"main": [0,1,2,3], "runtime": [4,5,6]})
     """
+    pass_flag = _validate_affinity_cpu_list(affinity_cpu_list)
+    _validate_module_cpu_index(module_to_cpu_dict)
+    # TODO Remove this check until Mindformers is adapted.
+    if pass_flag is False and affinity_cpu_list:
+        logger.warning("input affinity_cpu_list is a dict, which means Mindformers may not adapt to new API. "
+                       "set_cpu_affinity is not enabled.")
+        return
+
     if RuntimeConf.get_instance().is_thread_bind_core_configured():
         raise RuntimeError("The 'mindspore.runtime.set_cpu_affinity' cannot be set repeatedly.")
-    if enable_affinity:
-        module_bind_core_policy, bind_policy_flag = _get_cpu_affinity_policy(affinity_cpu_list)
-        if not module_bind_core_policy:
-            logger.warning("set_cpu_affinity is not enabled because the environment does not meet the "
-                           "basic conditions for binding core.")
-            RuntimeConf.get_instance().set_thread_bind_core_configured()
-            return
-        if bind_policy_flag:
-            RuntimeConf.get_instance().thread_bind_core_with_policy(module_bind_core_policy)
-        else:
-            RuntimeConf.get_instance().thread_bind_core(module_bind_core_policy)
-    else:
+    if not enable_affinity:
         RuntimeConf.get_instance().set_thread_bind_core_configured()
         return
+    module_bind_core_policy = _get_cpu_affinity_policy(affinity_cpu_list, module_to_cpu_dict)
+    if not module_bind_core_policy:
+        logger.warning("set_cpu_affinity is not enabled because the environment does not meet the "
+                       "basic conditions for binding core.")
+        RuntimeConf.get_instance().set_thread_bind_core_configured()
+        return
+    RuntimeConf.get_instance().thread_bind_core_with_policy(module_bind_core_policy)
 
 
 @args_type_check(thread_num=int, kernel_group_num=int)

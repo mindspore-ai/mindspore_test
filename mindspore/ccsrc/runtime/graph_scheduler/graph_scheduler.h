@@ -109,6 +109,8 @@ class BACKEND_EXPORT GraphScheduler {
   // The Global actors contain memory manager actor, recorder actor and debug actor.
   void BuildAndScheduleGlobalActor();
 
+  void BindCoreForRuntimeThread(ActorThreadPool *thread_pool, size_t thread_num) const;
+
   // Transform the nodes of graph to actors.
   ActorSetPtr Build(const GraphCompilerInfo &graph_compiler_info);
   // Link actors to DAG through the edge connection of graph and graph execution strategy.

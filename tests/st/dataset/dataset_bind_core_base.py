@@ -37,7 +37,7 @@ def binding_function():
     """
     Verify Binding functions by NumpySlicesDataset and batch operation.
     """
-    ms.runtime.set_cpu_affinity(True)
+    ms.runtime.set_cpu_affinity(True, [], {"minddata": [0, 1, 2, 3, 4, 5, 6, 7]})
 
     data = [1, 2, 3, 4, 5, 6]
     dataset = ds.NumpySlicesDataset(data=data, column_names=["data"])
@@ -50,7 +50,7 @@ def numa_and_binding():
     """
     Verify that set_cpu_affinity and set_numa_enable are set at the same time.
     """
-    ms.runtime.set_cpu_affinity(True)
+    ms.runtime.set_cpu_affinity(True, [], {"minddata": [0, 1, 2, 3, 4, 5, 6, 7]})
     ds.config.set_numa_enable(True)
 
     data = [1, 2, 3, 4, 5, 6]
@@ -63,7 +63,7 @@ def binding_python_process():
     """
     Verify Binding functions by GeneratorDataset and batch operation.
     """
-    ms.runtime.set_cpu_affinity(True)
+    ms.runtime.set_cpu_affinity(True, [], {"minddata": [0, 1, 2, 3, 4, 5, 6, 7]})
 
     def batch_func(input_data, batch_info):
         return np.array(input_data)
@@ -82,7 +82,7 @@ def binding_independent_dataset_process():
     """
     Verify the independent dataset process binding kernel functionality.
     """
-    ms.runtime.set_cpu_affinity(True)
+    ms.runtime.set_cpu_affinity(True, [], {"minddata": [0, 1, 2, 3, 4, 5, 6, 7]})
 
     generator_dataset = ds.GeneratorDataset(source=MyAccessible(), column_names='col', python_multiprocessing=False,
                                             num_parallel_workers=2, shuffle=False)
