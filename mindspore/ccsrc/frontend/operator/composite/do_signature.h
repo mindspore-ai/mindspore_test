@@ -64,7 +64,8 @@ bool IfRaiseExceptionForCheckParameter(const std::string &func_name, const Value
 
 std::vector<AnfNodePtr> GetNewInputsBySignatures(const FuncGraphPtr &func_graph, const std::string &func_name,
                                                  const ValuePtr &function, const AbstractBasePtrList &args_abs_list,
-                                                 const std::vector<AnfNodePtr> &params_list);
+                                                 const std::vector<AnfNodePtr> &params_list,
+                                                 const AnfNodePtr &old_cnode = nullptr);
 AnfNodePtr GenerateCNodeBySignatures(const FuncGraphPtr &func_graph, const std::string &func_name,
                                      const ValuePtr &function, const AbstractBasePtrList &args_abs_list,
                                      const AnfNodePtrList &old_node_inputs);

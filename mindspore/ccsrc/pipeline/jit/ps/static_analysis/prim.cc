@@ -295,7 +295,7 @@ CNodePtr DoSignatureEvaluator::GenerateNewNodeBySignatures(const ValuePtr &func,
                          MS_EXCEPTION_IF_NULL(node);
                          return node;
                        });
-  auto op_inputs = prim::GetNewInputsBySignatures(fg, prim_->ToString(), func, args_abs_list, args_inputs);
+  auto op_inputs = prim::GetNewInputsBySignatures(fg, prim_->ToString(), func, args_abs_list, args_inputs, out_cnode);
   AnfNodePtrList new_inputs{NewValueNode(func)};
   (void)std::copy(op_inputs.begin(), op_inputs.end(), std::back_inserter(new_inputs));
   return fg->NewCNodeInOrder(new_inputs);
@@ -2807,7 +2807,7 @@ bool ValidateAndConvertArgsType(const std::string &op_name, const std::vector<op
 CNodePtr CheckAndConvertPrimitiveArgs(const PrimitivePtr &prim, const FuncGraphPtr &graph,
                                       const std::pair<std::vector<AnfNodePtr>, std::vector<AnfNodePtr>> &args_pair,
                                       const std::function<AbstractBasePtr(const AnfNodePtr &)> &eval_func,
-                                      bool is_preprocessed) {
+                                      bool is_preprocessed, const AnfNodePtr &old_cnode = nullptr) {
   auto init_args_list = args_pair.first;
   auto call_args_list = args_pair.second;
   auto prim_name = prim->name();
@@ -2841,7 +2841,7 @@ CNodePtr CheckAndConvertPrimitiveArgs(const PrimitivePtr &prim, const FuncGraphP
     MS_LOG(DEBUG) << "Process signatures for Primitive[" << prim_name << "].";
     AbstractBasePtrList call_abs_list;
     (void)std::transform(call_nodes.cbegin(), call_nodes.cend(), std::back_inserter(call_abs_list), eval_func);
-    call_nodes = prim::GetNewInputsBySignatures(graph, prim_name, prim, call_abs_list, call_nodes);
+    call_nodes = prim::GetNewInputsBySignatures(graph, prim_name, prim, call_abs_list, call_nodes, old_cnode);
     // Process arg_handler.
     for (size_t i = 0; i < op_init_args.size(); ++i) {
       auto abs_node = eval_func(init_nodes[i]);
@@ -2899,7 +2899,7 @@ AnfNodePtr CheckAndConvertPrimitiveArgs(const PrimitivePtr &prim,
     return eval_result->abstract();
   };
 
-  auto new_cnode = CheckAndConvertPrimitiveArgs(prim, graph, args_pair, eval_func, is_preprocessed);
+  auto new_cnode = CheckAndConvertPrimitiveArgs(prim, graph, args_pair, eval_func, is_preprocessed, node);
   MS_LOG(DEBUG) << "Convert primitive args: " << prim->name() << ". node: " << node->DebugString()
                 << ", new_node: " << new_cnode->DebugString();
   new_cnode->set_debug_info(node->debug_info());
