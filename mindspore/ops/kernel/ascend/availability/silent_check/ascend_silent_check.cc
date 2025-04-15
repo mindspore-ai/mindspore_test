@@ -174,8 +174,12 @@ bool HasApiSilentCheckV3() {
     if (!has_v3_api) {
       MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Do not has " << kNameSilentCheckV3 << " api, use " << kNameSilentCheckV2
                                       << " instead.";
+      return false;
+    } else {
+      MS_VLOG(VL_ASCEND_SILENT_CHECK) << kNameSilentCheckV3 << " is an experimental api, use " << kNameSilentCheckV2
+                                      << " instead.";
+      return false;
     }
-    return has_v3_api;
   }();
   return has_silent_check_v3;
 }
