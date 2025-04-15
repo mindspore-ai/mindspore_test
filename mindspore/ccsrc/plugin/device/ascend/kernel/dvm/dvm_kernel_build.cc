@@ -778,17 +778,17 @@ KernelModPtr DvmOpBuild(const AnfNodePtr &anf_node) {
   if (!init) {
     auto ms_context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(ms_context);
-    bool enable_deterministic = ms_context->get_param<std::string>(MS_CTX_DETERMINISTIC) == "ON" ? true : false;
+    bool enable_deterministic = ms_context->get_param<std::string>(MS_CTX_DETERMINISTIC) == "ON";
+    bool enable_tuning = graphkernel::GraphKernelFlags::GetInstance().online_tuning > 0;
+    if (enable_tuning && enable_deterministic) {
+      enable_tuning = false;
+      MS_LOG(WARNING) << "Since the result is required to be deterministic, online tuning is disabled.";
+    }
+    dvm::SetOnlineTuning(enable_tuning);
     dvm::SetDeterministic(enable_deterministic);
     init = true;
-    MS_LOG(INFO) << "Set dvm deterministic " << (enable_deterministic ? "true" : "false");
-  }
-  static bool tuning_init = false;
-  if (!tuning_init) {
-    bool enable_tuning = graphkernel::GraphKernelFlags::GetInstance().online_tuning > 0 ? true : false;
-    dvm::SetOnlineTuning(enable_tuning);
-    tuning_init = true;
-    MS_LOG(INFO) << "Set dvm online tuning " << (enable_tuning ? "true" : "false");
+    MS_LOG(INFO) << "Set dvm deterministic " << enable_deterministic;
+    MS_LOG(INFO) << "Set dvm online tuning " << enable_tuning;
   }
   MS_EXCEPTION_IF_NULL(anf_node);
   auto scope = anf_node->fullname_with_scope();
