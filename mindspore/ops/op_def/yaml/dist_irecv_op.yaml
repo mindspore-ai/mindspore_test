@@ -18,3 +18,4 @@ dist_comm_irecv:
         enable: True
         is_comm_op: True
         Ascend: DistCommIrecvAscend
+        CPU: DistCommIrecvCPU

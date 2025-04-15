@@ -16,6 +16,7 @@ import numpy as np
 import hashlib
 import mindspore as ms
 from mindspore import context
+from mindspore.ops import ReduceOp
 from mindspore.mint.distributed.distributed import (
     init_process_group,
     get_rank,
@@ -28,6 +29,10 @@ from mindspore.mint.distributed.distributed import (
     gather,
     scatter,
     all_gather,
+    send,
+    recv,
+    barrier,
+    all_reduce,
 )
 #msrun --worker_num=8 --local_worker_num=8 --master_port=10923 --bind_core True --join True pytest -sv --disable-warnings  test_comm_cpu.py
 np.random.seed(1)
@@ -383,3 +388,166 @@ def test_cpu_scatter():
         except_output_tensor = ms.Tensor(np.ones([3, 3]).astype(np.int8))
         assert output_handle is None
         assert np.allclose(output_tensor1.asnumpy(), except_output_tensor.asnumpy())
+
+
+def test_cpu_barrier():
+    """
+    Feature: test distributed op
+    Description: test comm op in python native
+    Expectation: success
+    """
+    # 同步场景
+    name = "mccl_" + str(size) + "_" + hashlib.sha1(bytes("_".join(map(str, range(size))), "utf-8")).hexdigest()
+    group = new_group(list(range(size)), backend="mccl")
+    assert group == name
+
+    output_handle = barrier(group=group)
+    assert output_handle is None
+    # 异步场景
+    output_handle = barrier(group=group, async_op=True)
+    assert output_handle is not None
+    output_handle.wait()
+    # group场景
+    if rank == 2 or rank == 3:
+        group = new_group([2, 3], 1, backend="mccl")
+        name = "mccl_" + str(2) + "_" + hashlib.sha1(bytes("_".join(map(str, [2, 3])), "utf-8")).hexdigest()
+        assert group == name
+        output_handle = barrier(group=group)
+        assert output_handle is None
+
+def test_cpu_send():
+    """
+    Feature: test distributed op
+    Description: test comm op in python native
+    Expectation: success
+    """
+    # 同步场景
+    name = "mccl_" + str(size) + "_" + hashlib.sha1(bytes("_".join(map(str, range(size))), "utf-8")).hexdigest()
+    group = new_group(list(range(size)), backend="mccl")
+    assert group == name
+
+    input_tensor = ms.Tensor(np.arange(8).reshape([2, 4]).astype(np.float32))
+    output = ms.Tensor(np.zeros([2, 4]).astype(np.float32))
+    if rank % 2 == 0:
+        send(input_tensor, rank + 1 % size, group=group)
+    else:
+        out = recv(output, src=rank - 1, group=group)
+        assert out == 0
+        assert np.allclose(output.asnumpy(), input_tensor.asnumpy())
+    # group场景
+    if rank == 0 or rank == 1:
+        group = new_group(list(range(2)), 1, backend="mccl")
+        name = "mccl_" + str(2) + "_" + hashlib.sha1(bytes("_".join(map(str, range(2))), "utf-8")).hexdigest()
+        assert group == name
+        if rank == 1:
+            send(input_tensor, dst=0, group=group)
+        else:
+            out = recv(output, src=1, group=group)
+            assert out == 0
+            assert np.allclose(output.asnumpy(), input_tensor.asnumpy())
+
+
+def test_cpu_recv():
+    """
+    Feature: test distributed op
+    Description: test comm op in python native
+    Expectation: success
+    """
+    # 同步场景
+    name = "mccl_" + str(size) + "_" + hashlib.sha1(bytes("_".join(map(str, range(size))), "utf-8")).hexdigest()
+    group = new_group(list(range(size)), backend="mccl")
+    assert group == name
+
+    input_tensor = ms.Tensor(np.arange(8).reshape([2, 4]).astype(np.float32))
+    output = ms.Tensor(np.zeros([2, 4]).astype(np.float32))
+    if rank % 2 == 0:
+        send(input_tensor, rank + 1 % size, group=group)
+    else:
+        out = recv(output, src=rank - 1, group=group)
+        assert out == 0
+        assert np.allclose(output.asnumpy(), input_tensor.asnumpy())
+
+
+def test_cpu_all_reduce_type():
+    """
+    Feature: test distributed op
+    Description: test comm op in python native
+    Expectation: success
+    """
+    name = "mccl_" + str(size) + "_" + hashlib.sha1(bytes("_".join(map(str, range(size))), "utf-8")).hexdigest()
+    group = new_group(list(range(size)), backend="mccl")
+    assert group == name
+
+    input_tensor = ms.Tensor(np.arange(9).reshape(3, 3).astype(np.float32))
+
+    sum_input_tensor = input_tensor * (rank + 1)
+    sum_output_handle = all_reduce(sum_input_tensor, op=ReduceOp.SUM, group=group)
+    assert sum_output_handle is None
+    except_sum_output = input_tensor * (sum(list(range(1, size + 1))))
+
+    max_input_tensor = input_tensor * (rank + 1)
+    max_output_handle = all_reduce(max_input_tensor, op=ReduceOp.MAX, group=group)
+    assert max_output_handle is None
+    except_max_output = input_tensor * size
+
+    min_input_tensor = input_tensor * (rank + 1)
+    min_output_handle = all_reduce(min_input_tensor, op=ReduceOp.MIN, group=group)
+    assert min_output_handle is None
+    except_min_output = input_tensor
+
+    prod_input_tensor = input_tensor * 1
+    prod_output_handle = all_reduce(prod_input_tensor, op=ReduceOp.PROD, group=group)
+    assert prod_output_handle is None
+    except_prod_output = input_tensor ** size
+
+    assert np.allclose(sum_input_tensor.asnumpy(), except_sum_output.asnumpy())
+    assert np.allclose(max_input_tensor.asnumpy(), except_max_output.asnumpy())
+    assert np.allclose(min_input_tensor.asnumpy(), except_min_output.asnumpy())
+    assert np.allclose(prod_input_tensor.asnumpy(), except_prod_output.asnumpy())
+
+
+def test_cpu_all_reduce():
+    """
+    Feature: test distributed op
+    Description: test comm op in python native
+    Expectation: success
+    """
+    name = "mccl_" + str(size) + "_" + hashlib.sha1(bytes("_".join(map(str, range(size))), "utf-8")).hexdigest()
+    group = new_group(list(range(size)), backend="mccl")
+    assert group == name
+    input_tensor = ms.Tensor(np.arange(9).reshape(3, 3).astype(np.float32))
+    # 同步场景
+    sum_input_tensor = input_tensor * (rank + 1)
+    sum_output_handle = all_reduce(sum_input_tensor, group=group)
+    except_sum_output = input_tensor * (sum(list(range(1, size + 1))))
+    assert np.allclose(sum_input_tensor.asnumpy(), except_sum_output.asnumpy())
+    assert sum_output_handle is None
+    # 异步场景
+    sum_input_tensor = input_tensor * (rank + 1)
+    sum_output_handle = all_reduce(sum_input_tensor, group=group, async_op=True)
+    assert sum_output_handle is not None
+    sum_output_handle.wait()
+    assert np.allclose(sum_input_tensor.asnumpy(), except_sum_output.asnumpy())
+    # group场景
+    if rank == 0 or rank == 1:
+        group = new_group(list(range(2)), 1, backend="mccl")
+        name = "mccl_" + str(2) + "_" + hashlib.sha1(bytes("_".join(map(str, range(2))), "utf-8")).hexdigest()
+        assert group == name
+        input_tensor = ms.Tensor(np.arange(9).reshape(3, 3).astype(np.int32))
+        # 同步场景
+        sum_input_tensor = input_tensor * (rank + 1)
+        sum_output_handle = all_reduce(sum_input_tensor, group=group)
+        except_sum_output = input_tensor * (sum(list(range(1, 3))))
+        assert np.allclose(sum_input_tensor.asnumpy(), except_sum_output.asnumpy())
+        assert sum_output_handle is None
+    if rank == 2 or rank == 3:
+        group = new_group([2, 3], 1, backend="mccl")
+        name = "mccl_" + str(2) + "_" + hashlib.sha1(bytes("_".join(map(str, [2, 3])), "utf-8")).hexdigest()
+        assert group == name
+        input_tensor = ms.Tensor(np.arange(1024).reshape(32, 32).astype(np.int32))
+        # 同步场景
+        sum_input_tensor = input_tensor * (rank + 1)
+        sum_output_handle = all_reduce(sum_input_tensor, group=group)
+        except_sum_output = input_tensor * (sum(list(range(3, 5))))
+        assert np.allclose(sum_input_tensor.asnumpy(), except_sum_output.asnumpy())
+        assert sum_output_handle is None

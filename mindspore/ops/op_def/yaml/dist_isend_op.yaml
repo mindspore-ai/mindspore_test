@@ -18,3 +18,4 @@ dist_comm_isend:
         enable: True
         is_comm_op: True
         Ascend: DistCommIsendAscend
+        CPU: DistCommIsendCPU
