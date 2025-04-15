@@ -263,7 +263,7 @@ void GeDeviceContext::Initialize() {
     graph_executor_->Initialize();
   }
 
-  if (ms_context->GetBackend() == kBackendGE) {
+  if (ms_context->GetBackend() == kBackendGE || ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
     ContextInitGe();
   }
 
