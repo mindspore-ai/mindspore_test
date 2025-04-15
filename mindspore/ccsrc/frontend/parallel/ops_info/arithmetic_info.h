@@ -26,6 +26,7 @@
 #include "frontend/parallel/auto_parallel/operator_costmodel.h"
 #include "frontend/parallel/ops_info/operator_info.h"
 #include "frontend/parallel/strategy.h"
+#include "frontend/parallel/ops_info/activation_info.h"
 
 namespace mindspore {
 namespace parallel {
@@ -56,6 +57,33 @@ class ArithmeticBase : public OperatorInfo {
   virtual Status ComputeReplaceGraphForInterleaved(const CNodePtr &cnode);
   virtual TensorLayout InferOutputLayout();
   TensorLayout output_infer_tensor_layout_;
+};
+
+class ArithmeticScalarBase : public Activation {
+ public:
+  ArithmeticScalarBase(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+                       const PrimitiveAttrs &attrs, const OperatorCostPtr &cost)
+      : Activation(name, inputs_shape, outputs_shape, attrs, cost) {}
+  ~ArithmeticScalarBase() override = default;
+
+ protected:
+  Status GetAttrs() override { return SUCCESS; }
+};
+
+class FmodScalarInfo : public ArithmeticScalarBase {
+ public:
+  FmodScalarInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+                 const PrimitiveAttrs &attrs)
+      : ArithmeticScalarBase(name, inputs_shape, outputs_shape, attrs, std::make_shared<FmodScalarCost>()) {}
+  ~FmodScalarInfo() override = default;
+};
+
+class MulsInfo : public ArithmeticScalarBase {
+ public:
+  MulsInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+           const PrimitiveAttrs &attrs)
+      : ArithmeticScalarBase(name, inputs_shape, outputs_shape, attrs, std::make_shared<MulsCost>()) {}
+  ~MulsInfo() override = default;
 };
 
 class SubInfo : public ArithmeticBase {

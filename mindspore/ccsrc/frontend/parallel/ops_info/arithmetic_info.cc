@@ -1241,5 +1241,7 @@ REGISTER(AddcmulExtInfo);
 REGISTER(PolarInfo);
 REGISTER(IsCloseInfo);  // has not bprop
 REGISTER(RemainderTensorTensorInfo);
+REGISTER(FmodScalarInfo);
+REGISTER(MulsInfo);
 }  // namespace parallel
 }  // namespace mindspore
