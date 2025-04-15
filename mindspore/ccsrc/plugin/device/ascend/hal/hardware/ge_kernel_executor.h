@@ -114,6 +114,8 @@ class GeKernelExecutor : public KernelExecutor {
   mutable bool first_save_ = true;
   mutable size_t free_mem_size_for_save = 0;
   mutable bool acl_option_initialized_ = false;
+  mutable bool first_save_ = true;
+  mutable size_t free_mem_size_for_save = 0;
 };
 }  // namespace ascend
 }  // namespace device
