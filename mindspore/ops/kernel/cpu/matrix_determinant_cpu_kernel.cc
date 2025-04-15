@@ -104,7 +104,9 @@ void MatrixDeterminantCpuKernelMod::LaunchMatrixDeterminant(const std::vector<Ke
       *(output + k) = result;
     }
   };
-  CPUKernelUtils::ParallelFor(task, LongToSize(n));
+  if (n > 0) {
+    CPUKernelUtils::ParallelFor(task, LongToSize(n));
+  }
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, MatrixDeterminant, MatrixDeterminantCpuKernelMod);
