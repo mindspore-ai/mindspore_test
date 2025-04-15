@@ -375,6 +375,26 @@ void GraphAdapter::HandleHeterogeneousTensors(const std::vector<std::vector<tens
   }
 }
 
+namespace {
+KernelWithIndex GetFrontNodeByKernelGraph(const AnfNodePtr &backend_node, const KernelGraph *const graph) {
+  MS_EXCEPTION_IF_NULL(backend_node);
+  MS_EXCEPTION_IF_NULL(graph);
+  const auto &front_node = graph->GetFrontAnfByBackendAnf(backend_node);
+  if (front_node != nullptr) {
+    MS_LOG(DEBUG) << "Front node:" << front_node->DebugString() << " index:0"
+                  << " for backend node:" << backend_node->DebugString();
+    return {front_node, 0};
+  }
+  const auto &front_node_with_index = graph->GetFrontNodeByInternalParameter(backend_node);
+  if (front_node_with_index.first != nullptr) {
+    MS_LOG(DEBUG) << "Internal front node:" << front_node_with_index.first->DebugString()
+                  << " index:" << front_node_with_index.second << " for backend node:" << backend_node->DebugString();
+    return front_node_with_index;
+  }
+  return graph->GetElementInTupleBackendFrontIndexMap(backend_node);
+}
+}  // namespace
+
 void GraphAdapter::ReplaceGraphParameterProperties(const KernelGraphPtr &graph,
                                                    const std::vector<tensor::TensorPtr> &input_tensors,
                                                    const device::DeviceContext *device_context) {
@@ -405,7 +425,15 @@ void GraphAdapter::ReplaceGraphParameterProperties(const KernelGraphPtr &graph,
       kernel_build_info_builder->SetOutputsFormat(std::vector<std::string>{address->format()});
       kernel_build_info_builder->SetOutputsDeviceType(std::vector<TypeId>{address->type_id()});
       kernel_build_info_builder->SetOutputsReshapeType({address->padding_type()});
-      AnfAlgo::SetOutputAddr(address, 0, parameter.get());
+
+      static const bool enable_infer_boost = MsContext::GetInstance()->IsEnableInferBoost();
+      const auto &front_node_with_index = GetFrontNodeByKernelGraph(parameter, graph.get());
+      if (!enable_infer_boost || front_node_with_index.first == nullptr ||
+          (front_node_with_index.first->fullname_with_scope().find("key_cache") == std::string::npos &&
+           front_node_with_index.first->fullname_with_scope().find("value_cache") == std::string::npos)) {
+        AnfAlgo::SetOutputAddr(address, 0, parameter.get());
+        MS_LOG(DEBUG) << "Set device address:" << address->PrintInfo() << " parameter:" << parameter->DebugString();
+      }
       AnfAlgo::SetSelectKernelBuildInfo(kernel_build_info_builder->Build(), parameter.get());
 
       auto abstract = parameter->abstract();

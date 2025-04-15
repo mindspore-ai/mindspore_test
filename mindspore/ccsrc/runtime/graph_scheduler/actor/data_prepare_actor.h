@@ -163,6 +163,7 @@ class DataPrepareActor : public DebugAwareActor {
   std::set<AnfNode *> address_modified_input_nodes_;
   bool first_step_;
   std::vector<ShapeVector> host_tensors_;
+  ShapeVector kv_cache_shape_;
   bool has_parameter_input_;
 
   // The tensor of parameter(weight) maybe update host value by Python phase and need re-prepare to sync new host value
