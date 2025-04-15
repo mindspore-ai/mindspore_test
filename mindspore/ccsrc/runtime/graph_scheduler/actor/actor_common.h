@@ -36,6 +36,7 @@
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
+#include "include/backend/mem_reuse/mem_tracker.h"
 #include "debug/profiler/profiler.h"
 #include "mindspore/ops/op_def/structure_op_name.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
@@ -547,6 +548,14 @@ DeviceTensor *FetchParameter(const std::pair<KernelWithIndex, size_t> &parameter
                              OpContext<DeviceTensor> *const context, const DeviceContext *device_context,
                              const AID &from_aid);
 bool IsEmptySequenceTensor(tensor::Tensor *tensor);
+
+inline bool NeedRunMemTracker() {
+  static bool is_enable_mem_tracker = device::tracker::MemTrackerManager::GetInstance().IsEnabled();
+  if (is_enable_mem_tracker) {
+    return true;
+  }
+  return device::tracker::MemTrackerManager::GetInstance().enable_memory_debug_info();
+}
 }  // namespace runtime
 }  // namespace mindspore
 
