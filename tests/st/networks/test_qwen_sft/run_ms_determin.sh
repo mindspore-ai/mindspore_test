@@ -39,6 +39,7 @@ addSeedAll() {
 }
 
 
+cp -r /home/workspace/mindspore_dataset/msadapter/test_input/net/test_qwen_sft/dataset/ .
 backup ${MindSpeed_LLM_PATH}/posttrain_gpt.py
 addSeedAll ${MindSpeed_LLM_PATH}/posttrain_gpt.py
 export HCCL_DETERMINISTIC=true
