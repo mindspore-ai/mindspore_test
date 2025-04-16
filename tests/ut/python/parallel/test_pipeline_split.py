@@ -600,7 +600,7 @@ class TestPipelineSplitWithNoOptimizer:
         self.cat_fp16_from_ir(pattern='grad_mirror_MirrorMicroStepOperator',
                               target_count=2)
         self.cat_fp16_from_ir(pattern='Cast(',
-                              target_count=12)
+                              target_count=26)
 
     def test_pipeline_parallel_optimizer_cast_opt_lazy_inline(self):
         """

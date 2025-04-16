@@ -20,6 +20,7 @@
 #include <vector>
 #include "frontend/optimizer/ad/dfunctor.h"
 #include "frontend/optimizer/irpass.h"
+#include "frontend/optimizer/inplace_input_replace.h"
 #include "frontend/operator/composite/composite.h"
 #include "ir/func_graph_cloner.h"
 #include "utils/ms_context.h"
@@ -159,6 +160,10 @@ void AddToManage(const pipeline::ResourceBasePtr &resources, const FuncGraphPtr 
 FuncGraphPtr GradOneFuncGraph(const FuncGraphPtr &func_graph, const opt::OptimizerPtr &optimizer, bool is_top,
                               BpropAutoMonadLevel level, bool is_view_inplace) {
   MS_EXCEPTION_IF_NULL(func_graph);
+
+  // Do inplace input replacement
+  mindspore::opt::DoInplaceInputReplace(func_graph, optimizer);
+
   auto gradkv = func_graph->transforms().find("grad");
   if (gradkv != func_graph->transforms().end()) {
     return gradkv->second.func_graph();
