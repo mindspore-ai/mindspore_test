@@ -51,6 +51,31 @@ def set_mode(mode):
     essential_mark="essential",
 )
 @pytest.mark.parametrize("mode", ["KBK", "PYBOOST"])
+def test_moe_token_unpermute_empty(mode):
+    """
+    Feature: moe_token_unpermute
+    Description: test ops.moe_token_unpermute for empty tensor
+    Expectation: expect correct result.
+    """
+    set_mode(mode)
+
+    permuted_tokens = Tensor(np.random.randn(9, 20), dtype=ms.bfloat16)
+    permuted_tokens = ops.slice(permuted_tokens, (0, 0), (0, 20))
+    sorted_indices = Tensor(np.random.randn(18,), dtype=ms.int32)
+    sorted_indices = ops.slice(sorted_indices, (0,), (0,))
+    out = unpermuted_forward_func(permuted_tokens, sorted_indices, None)
+    out_grad = ms.grad(unpermuted_forward_func, (0,))(permuted_tokens, sorted_indices, None, False, None)
+    assert out.shape == (0, 20)
+    assert out_grad.shape == (0, 20)
+
+
+@arg_mark(
+    plat_marks=["platform_ascend910b"],
+    level_mark="level0",
+    card_mark="onecard",
+    essential_mark="essential",
+)
+@pytest.mark.parametrize("mode", ["KBK", "PYBOOST"])
 def test_moe_token_unpermute(mode):
     """
     Feature: moe_token_unpermute
