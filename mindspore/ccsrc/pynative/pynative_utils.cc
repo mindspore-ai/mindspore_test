@@ -1359,7 +1359,6 @@ void PyBoost::DataSyncForGraph(const kernel::pyboost::OpPtr &op) {
         continue;
       }
       runtime::DeviceAddressUtils::CreateKernelTensor(device_address, output.get());
-      output->data_sync(true);
     }
   }
 }
