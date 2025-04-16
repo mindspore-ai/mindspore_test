@@ -1067,7 +1067,14 @@ void GraphBackwardNode::FilterGraphOutput(bool is_filtered) {
   }
   MS_LOG(INFO) << "Start to filter grad jit graph output.";
   (void)FilterGradOutput(need_grad);
-  ad::StoreFilteredGradGraph(cache_key_, need_grad_hash, func_graph_);
+  auto cur_size = ad::StoreFilteredGradGraph(cache_key_, need_grad_hash, func_graph_);
+
+  auto forward_input_size = func_graph_->parameters().size() - added_args_.size() - 1;
+  constexpr size_t capacity_factor = 2;
+  if (cur_size > forward_input_size * capacity_factor) {
+    MS_LOG(WARNING) << "Cache filtered grad graph size is " << cur_size << " exceed expected maximum capacity "
+                    << forward_input_size * capacity_factor;
+  }
   constexpr auto need_grad_hash_key = "need_grad_hash";
   func_graph_->set_attr(need_grad_hash_key, MakeValue<size_t>(need_grad_hash));
   MS_LOG(INFO) << "Finish to filter grad jit graph output.";

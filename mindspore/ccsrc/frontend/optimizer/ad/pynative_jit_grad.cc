@@ -46,13 +46,10 @@ namespace mindspore {
 namespace ad {
 mindspore::HashMap<std::string, std::pair<FuncGraphPtr, FuncGraphPtr>> pass_grad_graph_;
 mindspore::HashMap<std::string, pipeline::ResourcePtr> jit_forward_resource;
-<<<<<<< HEAD
 mindspore::HashMap<std::string, FuncGraphPtr> original_bprop_graph;
 std::set<std::string> check_invalid_dout_bprop_graph;
-=======
 mindspore::HashMap<std::string, FuncGraphPtr> origin_grad_graph_;
 mindspore::HashMap<std::string, mindspore::HashMap<size_t, FuncGraphPtr>> filtered_grad_graph;
->>>>>>> 08c7592928f (Fix gradient filter cache problem)
 
 std::pair<FuncGraphPtr, FuncGraphPtr> GetGradAndForwardGraph(const std::string &key) {
   auto iter = pass_grad_graph_param_.find(key);
@@ -84,14 +81,14 @@ bool HasOriginGradGraph(const std::string &key) {
   return iter != origin_grad_graph_.end();
 }
 
-void StoreFilteredGradGraph(const std::string &cache_key, size_t hash_key, const FuncGraphPtr &fg) {
+size_t StoreFilteredGradGraph(const std::string &cache_key, size_t hash_key, const FuncGraphPtr &fg) {
   auto cache_key_iter = filtered_grad_graph.find(cache_key);
   if (cache_key_iter == filtered_grad_graph.end()) {
     mindspore::HashMap<size_t, FuncGraphPtr> new_filtered_map = {
       {hash_key, fg},
     };
     filtered_grad_graph[cache_key] = new_filtered_map;
-    return;
+    return 1;
   }
   auto &cur_filtered_map = cache_key_iter->second;
   auto iter = cur_filtered_map.find(hash_key);
@@ -99,6 +96,7 @@ void StoreFilteredGradGraph(const std::string &cache_key, size_t hash_key, const
     MS_LOG(EXCEPTION) << "Hash key " << hash_key << " has already set filtered grad graph.";
   }
   cur_filtered_map[hash_key] = fg;
+  return cur_filtered_map.size();
 }
 
 FuncGraphPtr GetFilteredGradGraph(const std::string &cache_key, size_t hash_key) {
