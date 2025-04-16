@@ -61,7 +61,7 @@ class CMUArcticDataset(MappableDataset, AudioBaseDataset):
             Default: ``None``, no dividing. When this argument is specified, `num_samples`
             reflects the max sample number of per shard.
             Used in `data parallel training <https://www.mindspore.cn/tutorials/en/master/
-            parallel/data_parallel.html#data-parallel-mode-loads-datasets>`_ .
+            parallel/data_parallel.html#loading-datasets>`_ .
         shard_id (int, optional): The shard ID within `num_shards` . Default: ``None``, will use ``0``. This
             argument can only be specified when `num_shards` is also specified.
         cache (DatasetCache, optional): Use tensor caching service to speed up dataset processing. More details:
@@ -180,7 +180,7 @@ class GTZANDataset(MappableDataset, AudioBaseDataset):
         num_shards (int, optional): Number of shards that the dataset will be divided into. Default: ``None`` .
             When this argument is specified, `num_samples` reflects the max sample number of per shard.
             Used in `data parallel training <https://www.mindspore.cn/tutorials/en/master/
-            parallel/data_parallel.html#data-parallel-mode-loads-datasets>`_ .
+            parallel/data_parallel.html#loading-datasets>`_ .
         shard_id (int, optional): The shard ID within `num_shards` . Default: ``None`` . This
             argument can only be specified when `num_shards` is also specified.
         cache (DatasetCache, optional): Use tensor caching service to speed up dataset processing. More details:
@@ -300,7 +300,7 @@ class LibriTTSDataset(MappableDataset, AudioBaseDataset):
         num_shards (int, optional): Number of shards that the dataset will be divided into. Default: ``None`` .
             When this argument is specified, `num_samples` reflects the max sample number of per shard.
             Used in `data parallel training <https://www.mindspore.cn/tutorials/en/master/
-            parallel/data_parallel.html#data-parallel-mode-loads-datasets>`_ .
+            parallel/data_parallel.html#loading-datasets>`_ .
         shard_id (int, optional): The shard ID within `num_shards` . Default: ``None`` . This
             argument can only be specified when `num_shards` is also specified.
         cache (DatasetCache, optional): Use tensor caching service to speed up dataset processing. More details:
@@ -429,7 +429,7 @@ class LJSpeechDataset(MappableDataset, AudioBaseDataset):
             Default: ``None`` . When this argument is specified, `num_samples` reflects
             the maximum sample number of per shard.
             Used in `data parallel training <https://www.mindspore.cn/tutorials/en/master/
-            parallel/data_parallel.html#data-parallel-mode-loads-datasets>`_ .
+            parallel/data_parallel.html#loading-datasets>`_ .
         shard_id (int, optional): The shard ID within `num_shards` . Default: ``None`` . This
             argument can only be specified when `num_shards` is also specified.
         cache (DatasetCache, optional): Use tensor caching service to speed up dataset processing. More details:
@@ -554,7 +554,7 @@ class SpeechCommandsDataset(MappableDataset, AudioBaseDataset):
         num_shards (int, optional): Number of shards that the dataset will be divided into. Default: ``None`` .
             When this argument is specified, `num_samples` reflects the maximum sample number of per shard.
             Used in `data parallel training <https://www.mindspore.cn/tutorials/en/master/
-            parallel/data_parallel.html#data-parallel-mode-loads-datasets>`_ .
+            parallel/data_parallel.html#loading-datasets>`_ .
         shard_id (int, optional): The shard ID within `num_shards` . Default: ``None`` .
             This argument can only be specified when `num_shards` is also specified.
         cache (DatasetCache, optional): Use tensor caching service to speed up dataset processing. More details:
@@ -669,7 +669,7 @@ class TedliumDataset(MappableDataset, AudioBaseDataset):
             into. Default: ``None`` . When this argument is specified, `num_samples` reflects
             the maximum sample number of per shard.
             Used in `data parallel training <https://www.mindspore.cn/tutorials/en/master/
-            parallel/data_parallel.html#data-parallel-mode-loads-datasets>`_ .
+            parallel/data_parallel.html#loading-datasets>`_ .
         shard_id (int, optional): The shard ID within `num_shards` . Default: ``None`` . This
             argument can only be specified when `num_shards` is also specified.
         cache (DatasetCache, optional): Use tensor caching service to speed up dataset processing. More details:
@@ -851,7 +851,7 @@ class YesNoDataset(MappableDataset, AudioBaseDataset):
         num_shards (int, optional): Number of shards that the dataset will be divided into. Default: ``None`` .
             When this argument is specified, `num_samples` reflects the maximum sample number of per shard.
             Used in `data parallel training <https://www.mindspore.cn/tutorials/en/master/
-            parallel/data_parallel.html#data-parallel-mode-loads-datasets>`_ .
+            parallel/data_parallel.html#loading-datasets>`_ .
         shard_id (int, optional): The shard ID within `num_shards` . Default: ``None`` . This argument can only
             be specified when `num_shards` is also specified.
         cache (DatasetCache, optional): Use tensor caching service to speed up dataset processing. More details:
