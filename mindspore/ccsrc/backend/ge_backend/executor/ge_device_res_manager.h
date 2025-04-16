@@ -17,6 +17,7 @@
 #define MINDSPORE_CCSRC_BACKEND_GE_BACKEND_EXECUTOR_GE_DEVICE_RES_MANAGER_H_
 
 #include <memory>
+#include <vector>
 #include <string>
 #include "external/ge/ge_allocator.h"
 #include "runtime/device/res_manager/hal_res_base.h"
@@ -38,14 +39,20 @@ class GeDeviceResManager {
   void FreeMemory(device::DeviceAddress *const &address) const;
   void FreeMemory(void *ptr) const;
   device::DeviceAddressPtr CreateDeviceAddress(const kernel::KernelTensorPtr &kernel_tensor) const;
-
+  device::DeviceAddressPtr CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector,
+                                               const Format &format, TypeId type_id, const std::string &device_name,
+                                               uint32_t device_id, uint32_t stream_id) const;
   size_t GetMaxUsedMemorySize() const;
   bool BindDeviceToCurrentThread(bool force_bind) const;
   void *GetStream() const;
   bool SyncStream(size_t stream_id = 0) const;
   bool SyncStream(void *stream) const;
   void *GetCopyDataStream() const;
+  void *GetStorageDataStream() const;
   bool SyncCopyStream() const;
+  size_t DefaultStream() const;
+  void DeviceToDeviceCopy(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_tensor);
+  std::vector<tensor::TensorPtr> copy_weights;
 
  private:
   bool initialized_ = false;

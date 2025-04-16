@@ -77,7 +77,7 @@ from mindspore.parallel.checkpoint_transform import merge_sliced_parameter as ne
 from mindspore.parallel.checkpoint_transform import build_searched_strategy as new_build_searched_strategy
 from mindspore.train._utils import read_proto, get_parameter_redundancy, _progress_bar, _load_and_transform
 from mindspore._c_expression import load_mindir, _encrypt, _decrypt, _is_cipher_file, \
-    split_mindir, split_dynamic_mindir
+    split_mindir, split_dynamic_mindir, sync_storage_stream
 from mindspore.common.generator import Generator
 
 tensor_to_ms_type = {"Int8": mstype.int8, "UInt8": mstype.uint8, "Int16": mstype.int16, "UInt16": mstype.uint16,
@@ -755,6 +755,9 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
                 value = Tensor(value)
             append_info_list.append({"name": k_name, "data": value})
         save_obj.extend(append_info_list)
+
+    if os.environ.get("MS_ENABLE_CKPT_D2H_ASYNC"):
+        sync_storage_stream()
 
     data_list = OrderedDict()
     data_list_np = OrderedDict()

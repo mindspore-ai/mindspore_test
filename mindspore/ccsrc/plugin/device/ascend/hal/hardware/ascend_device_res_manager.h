@@ -65,6 +65,8 @@ class AscendDeviceResManager : public DeviceResManager {
   bool BindDeviceToCurrentThread(bool force_bind) const override;
   void *GetStream() const { return ascend_res_manager_->GetStream(); }
   void *GetCopyDataStream() const;
+  void *GetStorageDataStream() const;
+  size_t GetStorageStreamID() const override;
 
   // Relevant function to allocate and free device memory of raw ptr.
   bool AllocateMemory(DeviceAddress *const &address, uint32_t stream_id = UINT32_MAX) const override;
@@ -136,6 +138,9 @@ class AscendDeviceResManager : public DeviceResManager {
   void UceMemRepair(int32_t device_id) override;
   void StopDevice(int32_t device_id) override;
   std::vector<std::pair<device::DeviceMemPtr, size_t>> GetMemUceAddr() override;
+
+  void DeviceToDeviceCopy(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_tensor);
+  std::vector<tensor::TensorPtr> copy_weights;
 
  private:
   bool AllocateForHete(DeviceAddress *const &address, mindspore::kernel::HeterogeneousInfoPtr hete_info) const;

@@ -92,12 +92,14 @@ class ASCEND_RES_MANAGER_EXPORT AscendStreamMng {
   uint32_t GetBusyStreamNum() const { return busy_stream_num_; }
   void SetCopyInStream(aclrtStream stream) { copy_in_stream_ = stream; }
   void SetCopyOutStream(aclrtStream stream) { copy_out_stream_ = stream; }
+  void SetStorageStream(aclrtStream stream) { storage_stream_ = stream; }
   void SetForwardSendStream(aclrtStream stream) { forward_send_stream_ = stream; }
   void SetBackwardSendStream(aclrtStream stream) { backward_send_stream_ = stream; }
   void SetForwardRecvStream(aclrtStream stream) { forward_recv_stream_ = stream; }
   void SetBackwardRecvStream(aclrtStream stream) { backward_recv_stream_ = stream; }
   aclrtStream GetCopyInStream() const { return copy_in_stream_; }
   aclrtStream GetCopyOutStream() const { return copy_out_stream_; }
+  aclrtStream GetStorageStream() const { return storage_stream_; }
   aclrtStream GetForwardSendStream() const { return forward_send_stream_; }
   aclrtStream GetBackwardSendStream() const { return backward_send_stream_; }
   aclrtStream GetForwardRecvStream() const { return forward_recv_stream_; }
@@ -132,6 +134,7 @@ class ASCEND_RES_MANAGER_EXPORT AscendStreamMng {
   std::mutex stream_mutex_;
   aclrtStream copy_in_stream_{nullptr};
   aclrtStream copy_out_stream_{nullptr};
+  aclrtStream storage_stream_{nullptr};
   aclrtStream forward_send_stream_{nullptr};
   aclrtStream backward_send_stream_{nullptr};
   aclrtStream forward_recv_stream_{nullptr};

@@ -298,6 +298,10 @@ bool AscendStreamMng::SyncStream(aclrtStream stream) const {
 bool AscendStreamMng::SyncAllStreams() const {
   for (size_t i = 0; i < streams_.size(); ++i) {
     const auto stream = streams_[i];
+    if (stream == AscendStreamMng::GetInstance().GetStorageStream()) {
+      MS_LOG(INFO) << "Skip sync storageStream.";
+      continue;
+    }
     if (stream != nullptr && !SyncStream(stream)) {
       MS_LOG(ERROR) << "SyncStream for stream id " << i << " failed.";
       return false;

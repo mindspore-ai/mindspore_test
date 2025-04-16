@@ -1145,6 +1145,18 @@ void GeGraphExecutor::DoAsyncCkpt(const FuncGraphPtr &graph) {
     if (SkipOrResetCopyAction()) {
       MS_LOG(INFO) << "Enable async d2h copy";
       SavePrevStepWeight(kg->GetRootWeights(), ge_res_manager_->GetCopyDataStream());
+      std::vector<AnfNodePtr> prev_part;
+      std::vector<AnfNodePtr> storage_part;
+      const std::vector<AnfNodePtr> &root_weights = kg->parameters();
+      if (first_save_) {
+        free_mem_size_for_save = GetFreeMemoryInfo();
+      }
+
+      SplitWeightsByFreeMemory(root_weights, &prev_part, &storage_part, free_mem_size_for_save);
+      auto &copy_weights = ge_res_manager_->copy_weights;
+      StorageWeights(&copy_weights, storage_part, ge_res_manager_, &first_save_);
+      SavePrevStepWeight(prev_part, ge_res_manager_->GetCopyDataStream());
+      SaveCopyWeight(copy_weights, storage_part, ge_res_manager_->GetStorageDataStream());
     }
     if (kg->has_attr(kIsRefGraph) && GetValue<bool>(kg->get_attr(kIsRefGraph)) && SkipOrResetSyncAction()) {
       MS_LOG(INFO) << "Ref graph sync once action";

@@ -105,6 +105,8 @@ class GeKernelExecutor : public KernelExecutor {
   // Maybe AscendDeviceResManager and GEDeviceResManager now
   DeviceResManager *res_manager_{nullptr};
   bool initialized_ = false;
+  mutable bool first_save_ = true;
+  mutable size_t free_mem_size_for_save = 0;
 };
 }  // namespace ascend
 }  // namespace device

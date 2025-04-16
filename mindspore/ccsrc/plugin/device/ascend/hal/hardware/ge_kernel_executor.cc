@@ -1344,7 +1344,18 @@ void GeKernelExecutor::DoAsyncCkpt(const CNodePtr &kernel) const {
     AscendDeviceResManager *ascend_res_manager = dynamic_cast<AscendDeviceResManager *>(res_manager_);
     if (SkipOrResetCopyAction()) {
       MS_LOG(INFO) << "Enable async d2h copy";
-      SavePrevStepWeight(kg->GetRootWeights(), ascend_res_manager->GetCopyDataStream());
+      std::vector<AnfNodePtr> prev_part;
+      std::vector<AnfNodePtr> storage_part;
+      const std::vector<AnfNodePtr> &root_weights = kg->GetRootWeights();
+      if (first_save_) {
+        free_mem_size_for_save = GetFreeMemoryInfo();
+      }
+
+      SplitWeightsByFreeMemory(root_weights, &prev_part, &storage_part, free_mem_size_for_save);
+      auto &copy_weights = ascend_res_manager->copy_weights;
+      StorageWeights(&copy_weights, storage_part, &first_save_);
+      SavePrevStepWeight(prev_part, ascend_res_manager->GetCopyDataStream());
+      SaveCopyWeight(copy_weights, storage_part, ascend_res_manager->GetStorageDataStream());
     }
     if (common::AnfAlgo::HasNodeAttr(kFromRefGraph, kernel) &&
         common::AnfAlgo::GetNodeAttr<bool>(kernel, kFromRefGraph) && SkipOrResetSyncAction()) {

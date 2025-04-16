@@ -23,10 +23,32 @@
 #include "plugin/res_manager/ascend/ascend_device_address/ascend_device_synchronizer.h"
 #include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
+#include "runtime/device/kernel_runtime_manager.h"
 
 namespace mindspore {
 namespace backend {
 namespace ge_backend {
+namespace {
+Format GetFormat(const tensor::BaseTensorPtr &tensor) {
+  MS_EXCEPTION_IF_NULL(tensor);
+  auto format = Format::DEFAULT_FORMAT;
+  if (tensor->device_address() != nullptr) {
+    const auto temp_device_address = tensor->device_address();
+    auto const device_address = std::dynamic_pointer_cast<const device::DeviceAddress>(temp_device_address);
+    MS_EXCEPTION_IF_NULL(device_address);
+    if (device_address->device_name() != "CPU") {
+      auto const src_device_address =
+        std::dynamic_pointer_cast<const device::ascend::AscendDeviceAddress>(temp_device_address);
+      MS_EXCEPTION_IF_NULL(src_device_address);
+      format = FromStrToEnum(src_device_address->format());
+    } else {
+      tensor->data_sync();
+      tensor->set_device_address(nullptr);
+    }
+  }
+  return format;
+}
+}  // namespace
 void GeDeviceResManager::Initialize() {
   if (initialized_) {
     return;
@@ -203,10 +225,35 @@ void *GeDeviceResManager::GetCopyDataStream() const {
   return copy_data_stream;
 }
 
+size_t GeDeviceResManager::DefaultStream() const {
+  if (!BindDeviceToCurrentThread(false)) {
+    MS_LOG(ERROR) << "Bind context to current thread failed";
+    return SIZE_MAX;
+  }
+  return device::ascend::AscendStreamMng::GetInstance().default_stream_id();
+}
+
 bool GeDeviceResManager::SyncCopyStream() const {
   auto copy_stream = GetCopyDataStream();
   MS_EXCEPTION_IF_NULL(copy_stream);
   return device::ascend::AscendStreamMng::GetInstance().SyncStream(copy_stream);
+}
+
+void *GeDeviceResManager::GetStorageDataStream() const {
+  auto storage_data_stream = device::ascend::AscendStreamMng::GetInstance().GetStorageStream();
+  if (storage_data_stream == nullptr) {
+    auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    auto runtime_instance_ = device::KernelRuntimeManager::Instance().GetKernelRuntime(kAscendDevice, device_id);
+    MS_EXCEPTION_IF_NULL(runtime_instance_);
+    size_t &storage_stream_id = runtime_instance_->storage_stream_id();
+    device::ascend::AscendStreamMng::GetInstance().CreateStream(&storage_stream_id);
+    MS_LOG(INFO) << "Create ascend storage data stream, stream id: " << storage_stream_id;
+    storage_data_stream = device::ascend::AscendStreamMng::GetInstance().GetStream(storage_stream_id);
+    device::ascend::AscendStreamMng::GetInstance().SetStorageStream(storage_data_stream);
+  }
+  return storage_data_stream;
 }
 
 device::DeviceAddressPtr GeDeviceResManager::CreateDeviceAddress(const kernel::KernelTensorPtr &kernel_tensor) const {
@@ -222,6 +269,36 @@ device::DeviceAddressPtr GeDeviceResManager::CreateDeviceAddress(const kernel::K
   auto device_address = std::make_shared<device::ascend::AscendDeviceAddress>(kernel_tensor);
   device_address->set_device_synchronizer(std::make_shared<device::ascend::AscendDeviceSynchronizer>());
   return device_address;
+}
+
+device::DeviceAddressPtr GeDeviceResManager::CreateDeviceAddress(void *ptr, size_t size,
+                                                                 const ShapeVector &shape_vector, const Format &format,
+                                                                 TypeId type_id, const std::string &device_name,
+                                                                 uint32_t device_id, uint32_t stream_id) const {
+  return std::make_shared<device::ascend::AscendDeviceAddress>(ptr, size, shape_vector, format, type_id, device_name,
+                                                               device_id, stream_id);
+}
+
+void GeDeviceResManager::DeviceToDeviceCopy(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_tensor) {
+  auto tensor_size = static_cast<size_t>(src_tensor->Size());
+  auto stream_id = DefaultStream();
+  auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(dst_tensor->device_address());
+  if (device_address == nullptr) {
+    auto device_ptr = mem_manager_->MallocMemFromMemPool(tensor_size, false, false, stream_id);
+    if (!device_ptr) {
+      MS_LOG(EXCEPTION) << "Alloc device memory failed!";
+    }
+    char *ptr = reinterpret_cast<char *>(device_ptr);
+    auto format = GetFormat(src_tensor);
+    auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+    device_address = CreateDeviceAddress(reinterpret_cast<void *>(ptr), tensor_size, src_tensor->shape(), format,
+                                         src_tensor->data_type(), device_name, device_id, stream_id);
+  }
+  device_address->SyncDeviceToDevice(src_tensor->device_address().get());
+  dst_tensor->set_device_address(device_address);
 }
 
 ::ge::MemBlock *GeAllocator::Malloc(size_t size) {

@@ -170,6 +170,8 @@ class BACKEND_EXPORT GeGraphExecutor : public device::GraphExecutor {
   // <graph_ptr, refreshable_feature_mem_ptr>
   std::map<KernelGraphPtr, void *> graph_refreshable_feature_mem_;
   std::shared_ptr<GeDeviceResManager> ge_res_manager_;
+  mutable bool first_save_ = true;
+  mutable size_t free_mem_size_for_save = 0;
 };
 }  // namespace ge_backend
 }  // namespace backend

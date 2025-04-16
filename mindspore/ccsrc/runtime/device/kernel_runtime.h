@@ -114,6 +114,7 @@ class BACKEND_EXPORT KernelRuntime {
   virtual DeviceType GetTargetDeviceType() const = 0;
   virtual void *compute_stream() const { return nullptr; }
   virtual void *communication_stream() const { return nullptr; }
+  virtual size_t &storage_stream_id() { return storage_stream_id_; }
   virtual size_t communication_stream_id() const { return communication_stream_id_; }
   virtual size_t GetCommunicationStreamIDByGroup(const std::string & /**/) { return communication_stream_id(); }
   void UpdateRefNodeOutputMem(const session::KernelGraph &graph) const;
@@ -204,6 +205,7 @@ class BACKEND_EXPORT KernelRuntime {
   std::shared_ptr<Debugger> debugger_;
 #endif
   size_t communication_stream_id_{kDefaultStreamIndex};
+  size_t storage_stream_id_{kDefaultStreamIndex};
   void *stream_{nullptr};
   void *communication_stream_{nullptr};
   void *swap_in_steam_{nullptr};

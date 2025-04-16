@@ -1085,8 +1085,6 @@ BackendGraphId GEBackend::CompileWholeGraph(const FuncGraphPtr &func_graph,
     opt::OptimizationWithoutBackend(graph);
   }
 
-  graph_executor_->OptimizeBeforeCompileGraph(root_graph);
-
   auto manager = MakeManager();
   MS_EXCEPTION_IF_NULL(manager);
   for (const auto &graph : all_graphs) {
@@ -1096,6 +1094,7 @@ BackendGraphId GEBackend::CompileWholeGraph(const FuncGraphPtr &func_graph,
     graph->set_manager(manager);
     graph->SetInputNodes();
   }
+  graph_executor_->OptimizeBeforeCompileGraph(root_graph);
   root_graph->SetInputNodes();
 
   if (!graph_executor_->CompileGraph(std::dynamic_pointer_cast<FuncGraph>(root_graph), {})) {
@@ -1825,6 +1824,8 @@ void GEBackend::RunWholeGraph(BackendGraphId graph_id, const VectorRef &inputs, 
   // free resource
   graph_executor_->FreeGERefreshableFeatureMemory(func_graph);
   graph_executor_->FreeInputOutputMemory(func_graph);
+  (void)SkipOrResetCopyAction(true);
+  (void)SkipOrResetSyncAction(true);
 
   graph_run_iter_[func_graph]++;
   MS_LOG(INFO) << "Status record: end run graph: " << graph_id;
