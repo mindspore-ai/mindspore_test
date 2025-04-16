@@ -46,6 +46,7 @@ else()
         PATCHES ${CMAKE_SOURCE_DIR}/third_party/patch/sqlite/CVE-2022-35737.patch
         PATCHES ${CMAKE_SOURCE_DIR}/third_party/patch/sqlite/CVE-2021-36690.patch
         PATCHES ${CMAKE_SOURCE_DIR}/third_party/patch/sqlite/CVE-2023-7104.patch
+        PATCHES ${CMAKE_SOURCE_DIR}/third_party/patch/sqlite/CVE-2025-29088.patch
         CONFIGURE_COMMAND ./configure --enable-shared=no --disable-tcl --disable-editline --enable-json1)
 endif()
 
