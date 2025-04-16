@@ -75,7 +75,7 @@ FRONTEND_EXPORT std::pair<FuncGraphPtr, FuncGraphPtr> GetGradAndForwardGraph(con
 FRONTEND_EXPORT void StoreOriginGradGraph(const std::string &key, const FuncGraphPtr &fg);
 FRONTEND_EXPORT FuncGraphPtr GetOriginGradGraph(const std::string &key);
 FRONTEND_EXPORT bool HasOriginGradGraph(const std::string &key);
-FRONTEND_EXPORT void StoreFilteredGradGraph(const std::string &cache_key, size_t hash_key, const FuncGraphPtr &fg);
+FRONTEND_EXPORT size_t StoreFilteredGradGraph(const std::string &cache_key, size_t hash_key, const FuncGraphPtr &fg);
 FRONTEND_EXPORT FuncGraphPtr GetFilteredGradGraph(const std::string &cache_key, size_t hash_key);
 }  // namespace ad
 }  // namespace mindspore
