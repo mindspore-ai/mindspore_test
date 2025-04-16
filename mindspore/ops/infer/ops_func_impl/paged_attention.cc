@@ -76,7 +76,11 @@ TypePtr PagedAttentionFuncImpl::InferType(const PrimitivePtr &primitive,
   } else {
     // else q, k, v should have same dtypes, fp16 or bf16
     (void)types.emplace("key_cache", key_type);
-    (void)types.emplace("value_cache", value_type);
+    auto mla_v_dim_value = input_args[kPagedAttentionInputMlaVDimIndex]->GetValue();
+    auto mla_v_dim = GetScalarValue<int64_t>(mla_v_dim_value).value();
+    if (mla_v_dim == 0) {
+      (void)types.emplace("value_cache", value_type);
+    }
   }
   //  check alibi_mask dtype equal to other inputs when alibi_mask is NOT None and infer_boost is ON
   if (!IsOptionalInputNone(input_args[kPagedAttentionInputAlibiMaskIndex])) {
