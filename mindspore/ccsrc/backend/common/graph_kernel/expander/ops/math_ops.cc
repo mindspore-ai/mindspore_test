@@ -415,4 +415,11 @@ NodePtrList BinaryExtCommon(const DefaultIrBuilder *ib, bool is_add) {
 REG_EXPANDER_FUNC("AddExt").SetBody(BODYFUNC(ib) { return BinaryExtCommon(ib, true); });
 
 REG_EXPANDER_FUNC("SubExt").SetBody(BODYFUNC(ib) { return BinaryExtCommon(ib, false); });
+
+REG_EXPANDER_FUNC("Muls").SetBody(BODYFUNC(ib) {
+  auto input = ib->input(kIndex0);
+  auto scalar = ib->input(kIndex1);
+  return {ib->Mul(input, ib->ScalarToTensor(scalar, input->GetDtype()))};
+});
+
 }  // namespace mindspore::graphkernel::expander
