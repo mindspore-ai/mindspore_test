@@ -72,12 +72,8 @@ BaseShapePtr ChunkFuncImpl::InferShape(const PrimitivePtr &primitive,
   std::vector<abstract::BaseShapePtr> output_list{};
   if (each_size == 0 && dim_size == 0) {
     for (int64_t i = 0; i < chunks; ++i) {
-      output_list.push_back(std::make_shared<abstract::TensorShape>(std::vector<int64_t>({0})));
+      output_list.push_back(std::make_shared<abstract::TensorShape>(input_shape));
     }
-    return std::make_shared<abstract::TupleShape>(std::move(output_list));
-  }
-  if (IsShapeNone(input_shape)) {
-    output_list.push_back(input_shape_ptr->Clone());
     return std::make_shared<abstract::TupleShape>(std::move(output_list));
   }
   auto actual_chunks = std::max<int64_t>((dim_size + each_size - 1) / each_size, 1);
