@@ -53,6 +53,7 @@ from mindspore.log import vlog_print
 from mindspore._checkparam import check_input_data, check_input_dataset
 from mindspore import _checkparam as Validator
 from mindspore.common import dtype as mstype
+from mindspore.common import np_dtype
 from mindspore.common.api import _cell_graph_executor as _executor
 from mindspore.common.api import _JitExecutor
 from mindspore.common.api import _get_parameter_layout
@@ -88,6 +89,9 @@ tensor_to_ms_type = {"Int8": mstype.int8, "UInt8": mstype.uint8, "Int16": mstype
 tensor_to_np_type = {"Int8": np.int8, "UInt8": np.uint8, "Int16": np.int16, "UInt16": np.uint16,
                      "Int32": np.int32, "UInt32": np.uint32, "Int64": np.int64, "UInt64": np.uint64,
                      "Float16": np.float16, "Float32": np.float32, "Float64": np.float64, "Bool": np.bool_, "str": "U"}
+
+if hasattr(np_dtype, "bfloat16"):
+    tensor_to_np_type["BFloat16"] = np_dtype.bfloat16
 
 np_type_convert = {"int32": np.int32, "float32": np.float32, "float16": np.float16, "float64": np.float64}
 
@@ -429,7 +433,11 @@ def _exec_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-GCM", map_
                     if isinstance(value[2], np.ndarray):
                         save_dict[name] = value[2]
                     else:
-                        save_dict[name] = value[2].asnumpy()
+                        bytes_data = value[2].get_bytes()
+                        np_type = tensor_to_np_type.get(value[1])
+                        np_array = np.frombuffer(bytes_data, np_type)
+                        new_np_array = np_array.reshape(value[0])
+                        save_dict[name] = new_np_array
 
                     if crc_check:
                         crc_num = binascii.crc32(bytes(name, encoding='utf-8'), crc_num)
