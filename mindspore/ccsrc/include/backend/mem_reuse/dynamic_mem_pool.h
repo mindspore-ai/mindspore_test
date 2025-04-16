@@ -130,6 +130,8 @@ class BACKEND_EXPORT DynamicMemPool {
     return {};
   }
 
+  virtual size_t EmptyCache() { return -1L; }
+
   // Element in vector : memory_stream_id, address
   virtual bool RecordEvent(int64_t task_id_on_stream, uint32_t user_stream_id,
                            const std::vector<std::pair<uint32_t, DeviceMemPtr>> &memory_stream_addresses,

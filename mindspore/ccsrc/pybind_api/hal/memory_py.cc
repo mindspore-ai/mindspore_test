@@ -115,12 +115,24 @@ void ResetMaxMemoryAllocated(const std::string &device_target) {
   device_ctx->device_res_manager_->ResetMaxMemoryAllocated();
 }
 
+size_t EmptyCache(const std::string &device_target) {
+  runtime::Pipeline::Get().WaitAll();
+  auto device_ctx = device::DeviceContextManager::GetInstance().GetDeviceContext(device_target);
+  if (device_ctx == nullptr) {
+    MS_LOG(INFO) << "Device context of device " << device_target << " is not created yet.";
+    return -1L;
+  }
+
+  return device_ctx->device_res_manager_->EmptyCache();
+}
+
 void RegMemory(py::module *m) {
   (void)m->def("_memory_stats", &mindspore::hal::MemoryStats, "Get memory pool's statistics.");
   (void)m->def("_reset_max_mem_reserved", &mindspore::hal::ResetMaxMemoryReserved,
                "Reset the maximum recorded memory reserved.");
   (void)m->def("_reset_max_mem_allocated", &mindspore::hal::ResetMaxMemoryAllocated,
                "Reset the maximum recorded memory allocated.");
+  (void)m->def("_empty_cache", &mindspore::hal::EmptyCache, "Empty memory pool cache.");
 }
 }  // namespace hal
 }  // namespace mindspore

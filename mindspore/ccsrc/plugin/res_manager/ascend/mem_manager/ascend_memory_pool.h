@@ -54,6 +54,8 @@ class ASCEND_RES_MANAGER_EXPORT DefaultAscendMemoryPool : public AbstractAscendM
   }
 
   const bool IsEnableEagerFree() const override { return AbstractAscendMemoryPoolSupport::IsEnableEagerFree(); }
+
+  size_t EmptyCache() override;
 };
 using DefaultAscendMemoryPoolPtr = std::shared_ptr<DefaultAscendMemoryPool>;
 
