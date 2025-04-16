@@ -7,10 +7,13 @@ paged_attention:
       dtype: tensor
     value_cache:
       dtype: tensor
+      default: None
     block_tables:
       dtype: tensor
+      default: None
     context_lens:
       dtype: tensor
+      default: None
     antiquant_scale:
       dtype: tensor
       default: None
