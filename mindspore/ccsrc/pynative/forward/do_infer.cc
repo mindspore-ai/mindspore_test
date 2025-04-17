@@ -332,6 +332,17 @@ void InferOperation::SaveOutputAbstractToCache(const FrontendOpRunInfoPtr &op_ru
   out[op_run_info->op_grad_info->input_abs].attrs = prim->evaluate_added_attrs();
 }
 
+void InferOperation::ClearHalfAbsCacheOnThreshold() {
+  // If Just call run op and have no cell or function running, node_abs_cache_ will not be clear.
+  // So, set a threshold for clear it.
+  if (node_abs_cache_.size() > kCacheThreshold) {
+    std::unique_lock lock(abs_mutex_);
+    auto half_it = node_abs_cache_.begin();
+    std::advance(half_it, kHalfThreshold);
+    node_abs_cache_.erase(node_abs_cache_.begin(), half_it);
+  }
+}
+
 void InferOperation::SetNodeAbsCacheByValue(const FrontendOpRunInfoPtr &op_run_info) {
   SetNodeAbsById(op_run_info->out_value_id,
                  CommonUtils::SetAbstractValueToAnyValue(op_run_info->base_op_run_info.abstract));
@@ -353,14 +364,7 @@ void InferOperation::SetNodeAbsCacheByValue(const FrontendOpRunInfoPtr &op_run_i
       SetNodeAbsById(PyNativeAlgo::Common::GetIdByValue(value_elems[i]), abs_elems[i]);
     }
   }
-  // If Just call run op and have no cell or function running, node_abs_cache_ will not be clear.
-  // So, set a threshold for clear it.
-  if (node_abs_cache_.size() > kCacheThreshold) {
-    std::unique_lock lock(abs_mutex_);
-    auto half_it = node_abs_cache_.begin();
-    std::advance(half_it, kHalfThreshold);
-    node_abs_cache_.erase(node_abs_cache_.begin(), half_it);
-  }
+  ClearHalfAbsCacheOnThreshold();
 }
 
 void InferOperation::SaveSpecifiedOutputToCache(const std::string &op_name, const ValuePtrList &value_list,
@@ -379,6 +383,7 @@ void InferOperation::SetNodeAbsCacheById(const std::string &id, const abstract::
 }
 
 void InferOperation::UpdateNodeAbsCacheById(const std::string &id, const abstract::AbstractBasePtr &abs) {
+  ClearHalfAbsCacheOnThreshold();
   std::unique_lock lock(abs_mutex_);
   (void)node_abs_cache_.erase(id);
   node_abs_cache_[id] = abs;
@@ -396,6 +401,7 @@ AbstractBasePtr InferOperation::GetNodeAbsById(const std::string &id) const {
 }
 
 void InferOperation::SetNodeAbsById(const std::string &id, const abstract::AbstractBasePtr &abs) {
+  ClearHalfAbsCacheOnThreshold();
   std::unique_lock lock(abs_mutex_);
   node_abs_cache_[id] = abs;
 }
