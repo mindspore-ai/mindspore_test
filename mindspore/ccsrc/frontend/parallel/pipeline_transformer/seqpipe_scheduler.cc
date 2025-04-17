@@ -738,6 +738,12 @@ void SeqpipeScheduler::Reorder() {
       ControlOrder(prior_cell.second, send.first, "call_send");
     }
   }
+  auto last_cell = GetBorderNode(kCell, execute_order_.size() - 1);
+  auto last_send = GetBorderNode(kSend, execute_order_.size() - 1);
+  if (IsPrimitiveCNode(last_send.first.border, prim::kPrimSend)) {
+    ControlOrder(last_cell.second, last_send.first, "call_send");
+  }
+
   Reorder1f1bOverlap();
   SchedulerOrder();
   OptimizerShardCommReorder();
