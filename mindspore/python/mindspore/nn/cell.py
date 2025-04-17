@@ -162,7 +162,6 @@ class Cell(Cell_):
                    'requires_grad', 'cell_type', '_parameters_forward_hook', '_parameters_backward_hook']
     total_instance_count = 0
     _buffers: Dict[str, Optional[Tensor]]
-    _non_persistent_buffers_set: Set[str]
     global_cells = weakref.WeakKeyDictionary()
 
     def __new__(cls, *args, **kwargs):
