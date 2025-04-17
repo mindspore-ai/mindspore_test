@@ -64,11 +64,11 @@ bool RaiseCpuKernelMod::Launch(const std::vector<KernelTensor *> &inputs, const 
     auto input = inputs[index];
     MS_EXCEPTION_IF_NULL(input);
     AbstractBase *object_input = input;
-    bool is_str = object_input->has_user_data("str_exception_result") || input->GetType()->ToString() == "String";
+    bool cur_is_str = object_input->has_user_data("str_exception_result") || input->GetType()->ToString() == "String";
     auto object_input_data = object_input->has_user_data("str_exception_result")
                                ? *object_input->user_data<string>("str_exception_result")
                                : ConvertAbsToStr(input);
-    object_input_data = is_str ? "'" + object_input_data + "'" : object_input_data;
+    object_input_data = cur_is_str ? "'" + object_input_data + "'" : object_input_data;
     // if is last inputs index
     object_input_data = index == inputs.size() - 2 ? object_input_data + ")" : object_input_data + ", ";
     exception_msg += object_input_data;
