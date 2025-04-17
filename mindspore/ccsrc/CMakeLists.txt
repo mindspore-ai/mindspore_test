@@ -280,25 +280,25 @@ if(CMAKE_SYSTEM_NAME MATCHES "Windows")
                 mindspore_core mindspore_frontend mindspore_res_manager mindspore_ops_kernel_common
                 mindspore_ops mindspore_common mindspore_ms_backend mindspore_pyboost mindspore_pynative
                 mindspore_backend_manager mindspore_profiler mindspore_runtime_pipeline
-                mindspore_dump)
+                mindspore_dump mindspore_backend_common)
         target_link_libraries(_c_expression PRIVATE -Wl,--no-as-needed mindspore_ops_host -Wl,--as-needed)
     else()
         target_link_libraries(_c_expression PRIVATE mindspore_core mindspore_ops mindspore_common
                 mindspore_ops_kernel_common mindspore_ms_backend mindspore_frontend mindspore_ops_grad mindspore_pyboost
                 mindspore_pynative mindspore_backend_manager mindspore_res_manager mindspore_ops_host
-                mindspore_profiler mindspore_runtime_pipeline mindspore_dump)
+                mindspore_profiler mindspore_runtime_pipeline mindspore_dump mindspore_backend_common)
         target_link_options(_c_expression PRIVATE "/WHOLEARCHIVE:mindspore_ops_grad.lib")
     endif()
 elseif(CMAKE_SYSTEM_NAME MATCHES "Darwin")
     target_link_libraries(_c_expression PRIVATE -Wl,-all_load mindspore_ops_grad proto_input -Wl,-noall_load
         mindspore_core mindspore_ops mindspore_common mindspore_ms_backend mindspore_pyboost mindspore_backend_manager
         mindspore_ops_kernel_common mindspore_res_manager mindspore_frontend mindspore_pynative mindspore_profiler
-        mindspore_runtime_pipeline mindspore_dump)
+        mindspore_runtime_pipeline mindspore_dump mindspore_backend_common)
     target_link_libraries(_c_expression PRIVATE mindspore::pybind11_module)
 else()
     target_link_libraries(_c_expression PRIVATE -Wl,--whole-archive mindspore_ops_grad proto_input
             -Wl,--no-whole-archive mindspore_core mindspore_ops mindspore_common mindspore_ops_kernel_common
-            mindspore_ms_backend mindspore_frontend mindspore_runtime_pipeline mindspore_dump
+            mindspore_ms_backend mindspore_frontend mindspore_runtime_pipeline mindspore_dump mindspore_backend_common
             mindspore_pyboost mindspore_pynative mindspore_backend_manager mindspore_res_manager mindspore_profiler)
     target_link_libraries(_c_expression PRIVATE mindspore::pybind11_module)
 endif()

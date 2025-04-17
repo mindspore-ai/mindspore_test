@@ -296,7 +296,8 @@ include_directories("${CMAKE_BINARY_DIR}/plugin/device/ascend/kernel/aicpu")
 
 add_library(_ut_obj_static STATIC ${UT_SRCS})
 target_link_libraries(_ut_obj_static PRIVATE mindspore_ms_backend mindspore_pyboost mindspore_backend_manager
-                      mindspore_res_manager mindspore_profiler mindspore_backend_common mindspore::protobuf)
+                      mindspore_res_manager mindspore_profiler mindspore_backend_common mindspore_ops_kernel_common
+                      mindspore::protobuf)
 foreach(comp ${ALL_UT_COMPS})
     add_executable(ut_${comp}_tests ${UT_${comp}_SRCS})
 
