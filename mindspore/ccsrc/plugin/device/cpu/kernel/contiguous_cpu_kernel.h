@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,19 +33,21 @@ class ContiguousCpuKernel : public NativeCpuKernelMod {
   bool LaunchContiguous(TypeId input_type_id, const device::DeviceAddressPtr &inputs,
                         const TensorStorageInfoPtr &input_storage_info, TypeId output_type_id,
                         const device::DeviceAddressPtr &outputs);
+  bool LaunchContiguous(TypeId input_type_id, device::DeviceAddress *inputs,
+                        const TensorStorageInfoPtr &input_storage_info, TypeId output_type_id,
+                        device::DeviceAddress *outputs);
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
               const std::vector<KernelTensor *> &outputs) override {
     MS_LOG(EXCEPTION) << "This api is not external";
   }
 
  private:
-  using ContiguousFunc =
-    std::function<bool(ContiguousCpuKernel *, const device::DeviceAddressPtr &, const TensorStorageInfoPtr &,
-                       const device::DeviceAddressPtr &, const int64_t &)>;
+  using ContiguousFunc = std::function<bool(ContiguousCpuKernel *, device::DeviceAddress *,
+                                            const TensorStorageInfoPtr &, device::DeviceAddress *, const int64_t &)>;
 
   template <typename T>
-  bool LaunchContiguousImpl(const device::DeviceAddressPtr &inputs, const TensorStorageInfoPtr &input_storage_info,
-                            const device::DeviceAddressPtr &outputs, const int64_t &type_size);
+  bool LaunchContiguousImpl(device::DeviceAddress *inputs, const TensorStorageInfoPtr &input_storage_info,
+                            device::DeviceAddress *outputs, const int64_t &type_size);
   static std::map<std::pair<TypeId, TypeId>, ContiguousFunc> func_list_;
 };
 }  // namespace kernel

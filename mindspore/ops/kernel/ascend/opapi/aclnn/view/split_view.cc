@@ -30,10 +30,9 @@ void SplitView::UpdateOutputTensorInfo(const std::vector<KernelTensor *> &inputs
   auto output_num = inputs[kIndex2]->GetValueWithCheck<int64_t>();
 
   info_ = ops::SplitProcess(old_info, axis, output_num);
-  for (int64_t i = 0; i < output_num; ++i) {
+  for (size_t i = 0; i < outputs.size(); i++) {
     outputs[i]->set_tensor_storage_info(info_[i]);
   }
-  GEN_EXECUTOR_FOR_VIEW(op_type_, inputs, outputs);
 }
 
 void SplitView::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,

@@ -420,3 +420,25 @@ def test_tensor_inplace_index_add():
     out = net(input_x, indices, updates)
     print("out:", out)
     assert (out.asnumpy() == [[2, 4], [10, 12], [5, 6]]).all()
+
+
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
+def test_tensor_inplace_order_list():
+    """
+    Feature: Support tensor inplace with right order.
+    Description: Support tensor inplace with right order.
+    Expectation: Run success.
+    """
+    class Net(nn.Cell):
+        def construct(self, x, y):
+            P.Assign()(y, 2)
+            P.AssignAdd()(x, y)
+            return x, y
+
+    input_x = ms.Tensor(2, dtype=ms.float32)
+    input_y = ms.Tensor(3, dtype=ms.int32)
+    net = Net()
+    out = net(input_x, input_y)
+    print(out)
+    assert out[0] == 4 and out[1] == 2

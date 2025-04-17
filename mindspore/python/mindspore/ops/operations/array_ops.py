@@ -36,13 +36,13 @@ from mindspore._c_expression import TensorPy as Tensor_
 from mindspore._c_expression import CSRTensor as CSRTensor_
 from mindspore._c_expression import COOTensor as COOTensor_
 from ..auto_generate import (
-    ExpandDims, Reshape, TensorShape, Transpose, Gather, OnesLike, ZerosLike,
+    ExpandDims, Reshape, TensorShape, Transpose, TransposeView, Gather, OnesLike, ZerosLike,
     Argmax, ArgMaxExt, ReverseV2, Diag, Eye, ScatterNd,
     ResizeNearestNeighborV2, GatherNd, GatherD, Range, MaskedFill, RightShift,
     NonZero, ResizeNearestNeighbor, Identity, Split, CumSum, CumProd,
     MaskedSelect, Cummax, Cummin, Argmin, Concat, UnsortedSegmentSum, UniqueConsecutive,
     ScalarToTensor, Triu, BroadcastTo, StridedSlice, Select, TopkExt,
-    SearchSorted, Meshgrid, Squeeze, Slice)
+    SearchSorted, Meshgrid, Squeeze, Slice, TransposeExtView)
 from .manually_defined import Rank, Shape, Tile, Cast, Ones, Zeros, TypeAs
 from ..auto_generate import ArgMaxWithValue, ArgMinWithValue
 from ..auto_generate import TensorScatterElements as TensorScatterElementsExt

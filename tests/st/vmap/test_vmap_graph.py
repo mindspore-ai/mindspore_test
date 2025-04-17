@@ -13,7 +13,6 @@
 # limitations under the License.
 # ============================================================================
 """test vmap in graph mode"""
-import pytest
 import platform
 import numpy as np
 import mindspore.nn as nn
@@ -463,20 +462,17 @@ def test_vmap_with_celllist_nested_grad():
             return out
 
     if platform.system() == "Linux":
-        with pytest.raises(RuntimeError) as info:
-            m1 = AssignNet()
-            m2 = AssignNet()
-            m3 = AssignNet()
-            mm = nn.CellList([m1, m2, m3])
-            vmap_net = F.vmap(mm)
+        m1 = AssignNet()
+        m2 = AssignNet()
+        m3 = AssignNet()
+        mm = nn.CellList([m1, m2, m3])
+        vmap_net = F.vmap(mm)
 
-            replace_tensor = Tensor([[1, 2, 3], [4, 5, 6], [7, 8, 9]], mstype.float32)
+        replace_tensor = Tensor([[1, 2, 3], [4, 5, 6], [7, 8, 9]], mstype.float32)
 
-            output_grad = F.grad(vmap_net)(replace_tensor)
+        output_grad = F.grad(vmap_net)(replace_tensor)
 
-            expect_res = Tensor([[2, 2, 2], [2, 2, 2], [2, 2, 2]], mstype.float32)
-            assert np.allclose(output_grad.asnumpy(), expect_res.asnumpy())
-        assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
-                in str(info.value))
+        expect_res = Tensor([[2, 2, 2], [2, 2, 2], [2, 2, 2]], mstype.float32)
+        assert np.allclose(output_grad.asnumpy(), expect_res.asnumpy())
     else:
         pass

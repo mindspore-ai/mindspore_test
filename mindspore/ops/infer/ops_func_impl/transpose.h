@@ -31,7 +31,5 @@ class OPS_API TransposeFuncImpl : public OpFuncImpl {
   TypePtr InferType(const PrimitivePtr &, const std::vector<AbstractBasePtr> &input_args) const override;
   std::set<int64_t> GetValueDependArgIndices() const override { return {1}; }
 };
-
-class OPS_API TransposeViewFuncImpl : public TransposeFuncImpl {};
 }  // namespace mindspore::ops
 #endif  // MINDSPORE_CORE_OPS_OP_FUNC_IMPL_TRANSPOSE_H

@@ -50,7 +50,7 @@ void Gather(mindspore::kernel::KernelTensor *tensor) {
   }
 }
 
-void Gather(const device::DeviceAddressPtr &device_address) {
+void Gather(device::DeviceAddress *device_address) {
   if (device_address == nullptr) {
     MemcpyToBuf("None", kSizeFive);
     return;
@@ -79,6 +79,8 @@ void Gather(const device::DeviceAddressPtr &device_address) {
     MemcpyToBuf(storage_info->ori_shape.data(), static_cast<int64_t>(storage_info->ori_shape.size()) * sizeof(int64_t));
   }
 }
+
+void Gather(const device::DeviceAddressPtr &device_address) { Gather(device_address.get()); }
 
 void Gather(const mindspore::tensor::BaseTensorPtr &tensor) {
   if (tensor == nullptr) {
@@ -125,6 +127,11 @@ void GatherInfo(mindspore::kernel::KernelTensor *tensor) {
 }
 
 void GatherInfo(const device::DeviceAddressPtr &device_address) {
+  Gather(device_address);
+  RefreshAddr(device_address);
+}
+
+void GatherInfo(device::DeviceAddress *device_address) {
   Gather(device_address);
   RefreshAddr(device_address);
 }
@@ -261,7 +268,7 @@ void RefreshAddr(mindspore::kernel::KernelTensor *tensor) {
   add_tensor_addr_to_cached_list_func(tensor->device_ptr());
 }
 
-void RefreshAddr(const device::DeviceAddressPtr &device_address) {
+void RefreshAddr(device::DeviceAddress *device_address) {
   if (device_address == nullptr) {
     return;
   }
@@ -276,6 +283,8 @@ void RefreshAddr(const device::DeviceAddressPtr &device_address) {
 
   add_tensor_addr_to_cached_list_func(device_address->GetMutablePtr());
 }
+
+void RefreshAddr(const device::DeviceAddressPtr &device_address) { RefreshAddr(device_address.get()); }
 
 void RefreshAddr(const mindspore::tensor::BaseTensorPtr &tensor) {
   if (tensor == nullptr) {
@@ -474,6 +483,8 @@ uint64_t calc_hash_id() {
 void GatherHash(mindspore::kernel::KernelTensor *tensor) { Gather(tensor); }
 
 void GatherHash(const device::DeviceAddressPtr &device_address) { Gather(device_address); }
+
+void GatherHash(device::DeviceAddress *device_address) { Gather(device_address); }
 
 void GatherHash(const std::pair<mindspore::kernel::KernelTensor *, bool> &tensor_and_trans) {
   auto tensor = tensor_and_trans.first;

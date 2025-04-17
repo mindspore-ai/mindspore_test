@@ -33,6 +33,7 @@
 #include "ir/func_graph_cloner.h"
 #include "ir/param_info.h"
 #include "ir/cell.h"
+#include "include/common/pynative/grad_state.h"
 #include "include/common/utils/python_adapter.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
@@ -1240,6 +1241,135 @@ void AddHookNodeForArgs(const ResourcePtr &resource, const FuncGraphPtr &new_fg)
     }
   }
 }
+
+bool IsInplaceOpNode(const AnfNodePtr &node) {
+  if (!node->isa<CNode>()) {
+    return false;
+  }
+  auto cnode = node->cast_ptr<CNode>();
+  auto prim = GetValueNode<PrimitivePtr>(cnode->input(0));
+  return prim != nullptr && prim->inplace_prim();
+}
+
+bool IsCreatedByViewOp(const AnfNodePtr &node) {
+  if (node->isa<CNode>()) {
+    auto cnode = node->cast_ptr<CNode>();
+    auto prim = GetValueNode<PrimitivePtr>(cnode->input(0));
+    if (prim != nullptr && prim->graph_view_prim()) {
+      return true;
+    }
+  }
+  auto abstract = node->abstract();
+  if (abstract != nullptr && abstract->isa<abstract::AbstractRefTensor>()) {
+    constexpr auto kViewOp = abstract::AbstractRefTensor::RefTensorType::kViewOp;
+    if (abstract->cast_ptr<abstract::AbstractRefTensor>()->ref_type() == kViewOp) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool IsViewInplaceNode(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
+  if (node->isa<CNode>() && IsInplaceOpNode(node)) {
+    auto inplace_node = node->cast_ptr<CNode>();
+    const AnfNodePtrList &input_nodes = inplace_node->inputs();
+    auto it = std::find_if(input_nodes.begin() + 1, input_nodes.end(), IsCreatedByViewOp);
+    if (it != input_nodes.end()) {
+      MS_LOG(DEBUG) << "Found a view+inplace node. Inplace node: " << inplace_node->DebugString()
+                    << ", and one of its input is created by view op: " << (*it)->DebugString();
+      return true;
+    }
+  }
+  return false;
+}
+
+bool FindViewInplaceNode(const AnfNodePtrList &nodes) {
+  bool has_view_inplace = false;
+  for (auto &node : nodes) {
+    if (IsViewInplaceNode(node)) {
+      has_view_inplace = true;
+      MS_LOG(WARNING)
+        << "There is an in-place modification to a Tensor view that requires gradients. However, computing gradients "
+           "for in-place modified Tensor views is still an experimental feature, and the results may be inaccurate. It "
+           "is recommended to replace the Tensor view here with a non-view Tensor. The code location is as follows:\n"
+        << trace::GetDebugInfoStr(node->debug_info());
+    }
+  }
+  return has_view_inplace;
+}
+
+FuncGraphPtr GetFuncFromAbstract(const abstract::AbstractBasePtr &abs) {
+  MS_EXCEPTION_IF_NULL(abs);
+  auto func_graph_abstract = dyn_cast<abstract::FuncGraphAbstractClosure>(abs);
+  MS_EXCEPTION_IF_NULL(func_graph_abstract);
+  if (!func_graph_abstract->specialized()) {
+    MS_LOG(DEBUG) << "Unspecialized func graph, partial abs: " << abs->ToString()
+                  << ", partial fn abs: " << func_graph_abstract->ToString();
+    return nullptr;
+  } else {
+    return func_graph_abstract->func_graph();
+  }
+}
+
+FuncGraphPtr GetForwardGraphFromJNode(const AnfNodePtr &j_node) {
+  MS_EXCEPTION_IF_NULL(j_node);
+  AnfNodePtr j_param = j_node->cast<CNodePtr>()->input(1);
+  AbstractBasePtr abs = j_param->abstract();
+  FuncGraphPtr forward_graph = nullptr;
+  if (IsValueNode<FuncGraph>(j_param)) {
+    forward_graph = GetValueNode<FuncGraphPtr>(j_param);
+  } else if (abs != nullptr && abs->isa<abstract::FuncGraphAbstractClosure>()) {
+    forward_graph = GetFuncFromAbstract(j_param->abstract());
+  } else {
+    MS_LOG(DEBUG) << "Unknown node: " << j_param->DebugString()
+                  << ", abstract: " << (j_param != nullptr ? j_param->abstract()->ToString() : "NULL");
+  }
+  return forward_graph;
+}
+
+bool RequireJitGrad(const std::string &phase) {
+  return phase.find("export") != 0 && pynative::GradState::Get().RequiresGrad();
+}
+
+void SetViewInplaceGradFlag(const ResourcePtr &resource) {
+  // pynative+jit
+  if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) != kGraphMode &&
+      RequireJitGrad(PhaseManager::GetInstance().phase())) {
+    const auto &all_nodes = resource->manager()->all_nodes();
+    if (FindViewInplaceNode({all_nodes.begin(), all_nodes.end()})) {
+      MS_LOG(DEBUG) << "Found a view+inplace node. Grad run new pass.";
+      resource->set_is_pynative_grad_view_inplace(true);
+    }
+    return;
+  }
+  // Graph mode
+  AnfNodePtrList j_nodes;
+  for (const auto &node : resource->manager()->all_nodes()) {
+    if (IsPrimitiveCNode(node, prim::kPrimJ)) {
+      j_nodes.push_back(node);
+    }
+  }
+  if (j_nodes.empty()) {
+    MS_LOG(DEBUG) << "No J node is found, so no need to scan for view+inplace op";
+    return;
+  }
+  for (const auto &j_node : j_nodes) {
+    FuncGraphPtr forward_graph = GetForwardGraphFromJNode(j_node);
+    if (forward_graph == nullptr) {
+      MS_LOG(DEBUG) << "Cannot find forward graph from j node: " << j_node->DebugString();
+      continue;
+    }
+    if (forward_graph->get_return() == nullptr) {
+      MS_LOG(DEBUG) << "The return node of FuncGraph is NULL! fg: " << forward_graph->ToString();
+      continue;
+    }
+    const AnfNodePtrList &all_nodes = mindspore::TopoSort(forward_graph->get_return(), SuccDeeperSimple);
+    if (FindViewInplaceNode(all_nodes)) {
+      j_node->set_user_data("has_view_inplace_grad", std::make_shared<bool>(true));
+    }
+  }
+}
 }  // namespace
 
 bool TypeInferenceAction(const ResourcePtr &resource) {
@@ -1291,6 +1421,7 @@ bool TypeInferenceAction(const ResourcePtr &resource) {
 
   UpdateFuncGraphParameter(new_fg, resource->arguments());
   SetMindIRLoadFlag(resource);
+  SetViewInplaceGradFlag(resource);
 
   AddHookNodeForArgs(resource, new_fg);
 

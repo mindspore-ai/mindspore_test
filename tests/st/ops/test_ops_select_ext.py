@@ -98,4 +98,4 @@ def test_select_ext_dynamic_shape():
     dim2 = 1
     index2 = 1
     TEST_OP(select_ext_forward_func, [[ms_data1, dim1, index1], [ms_data2, dim2, index2]],
-            'select_ext', disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])
+            'select_ext_view', disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])

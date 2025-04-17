@@ -821,13 +821,13 @@ std::vector<AnfNodePtr> TensorIndex::NormalizeTensorNext(const AnfNodePtr &data_
         {tensor_index_transfer_node, new_tensor_index, broad_cast_shape_node, final_shape_node, new_index_shape_node});
     } else {
       auto new_slice_shape_node = tuple_index_info_node[kIndex4 + slice_index_count];
-      new_tensor_index = NewCNode({MakeReshapeNode(), new_tensor_index, new_slice_shape_node}, res_graph_);
-      new_tensor_index = NewCNode({broadcast_to_node, new_tensor_index, final_shape_node}, res_graph_);
+      new_tensor_index = res_graph_->NewCNodeInOrder({MakeReshapeNode(), new_tensor_index, new_slice_shape_node});
+      new_tensor_index = res_graph_->NewCNodeInOrder({broadcast_to_node, new_tensor_index, final_shape_node});
       slice_index_count += 1;
     }
     if (!IsDynamicRank(data_shape_) || !has_ellipsis) {
       new_tensor_index =
-        res_graph_->NewCNode({MakeExpandDimsNode(), new_tensor_index, NewValueNode(static_cast<int64_t>(-1))});
+        res_graph_->NewCNodeInOrder({MakeExpandDimsNode(), new_tensor_index, NewValueNode(static_cast<int64_t>(-1))});
     }
     (void)new_normalized_tensors.emplace_back(new_tensor_index);
   }
@@ -1196,9 +1196,9 @@ AnfNodePtr TensorIndex::ExpandDimsByTupleIndex(const AnfNodePtr &input_data_node
       normalize_dim_index_prim->set_attr(kAttrExpandDimsCnt, MakeValue(SizeToLong(expand_dims_cnt)));
       normalize_dim_index_prim->set_attr(kAttrTupleIndexAxis, MakeValue(SizeToLong(i)));
       auto normalize_dim_index_node = NewValueNode(normalize_dim_index_prim);
-      auto normalize_axis_cnode = res_graph_->NewCNode({normalize_dim_index_node, data_node});
+      auto normalize_axis_cnode = res_graph_->NewCNodeInOrder({normalize_dim_index_node, data_node});
       expand_dims_cnt -= 1;
-      data_node = res_graph_->NewCNode({MakeExpandDimsNode(), data_node, normalize_axis_cnode});
+      data_node = res_graph_->NewCNodeInOrder({MakeExpandDimsNode(), data_node, normalize_axis_cnode});
     }
   }
   return data_node;

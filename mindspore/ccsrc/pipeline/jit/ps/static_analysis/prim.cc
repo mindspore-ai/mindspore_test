@@ -204,16 +204,18 @@ CNodePtr GetInputsAfterUnpackCall(const CNodePtr &source_node, const AnalysisEng
   return fg->NewCNodeInOrder(new_inputs);
 }
 
-AbstractBasePtr ConvertTensorToRef(const AbstractBasePtr &abs) {
+AbstractBasePtr ConvertTensorToRef(const AbstractBasePtr &abs, AbstractRefTensor::RefTensorType type) {
   MS_EXCEPTION_IF_NULL(abs);
   if (abs->isa<abstract::AbstractRefTensor>() || abs->isa<abstract::AbstractNone>()) {
     return abs;
   }
   auto tensor_abs = dyn_cast<abstract::AbstractTensor>(abs);
   MS_EXCEPTION_IF_NULL(tensor_abs);
+  auto ref_abs = std::make_shared<abstract::AbstractRefTensor>(tensor_abs, std::make_shared<RefKey>("None"), type);
   std::stringstream ss;
-  ss << tensor_abs.get();
-  return std::make_shared<abstract::AbstractRefTensor>(tensor_abs, std::make_shared<RefKey>(ss.str()));
+  ss << ref_abs.get();
+  ref_abs->set_ref_key_value(std::make_shared<RefKey>(ss.str()));
+  return ref_abs;
 }
 
 AbstractBasePtr AddRefKeyForArgs(const AbstractBasePtr &output_abs, const AbstractBasePtrList &input_args,
@@ -222,7 +224,8 @@ AbstractBasePtr AddRefKeyForArgs(const AbstractBasePtr &output_abs, const Abstra
   // Convert input tensor to ref if this tensor is rw_write.
   for (const auto &index : rw_write_indexes) {
     if (!input_args[index]->isa<AbstractRefTensor>()) {
-      auto ref_tensor = ConvertTensorToRef(input_args[index]);
+      constexpr auto kInplaceOp = AbstractRefTensor::RefTensorType::kInplaceOp;
+      auto ref_tensor = ConvertTensorToRef(input_args[index], kInplaceOp);
       input_args[index]->set_inplace_abstract(ref_tensor);
     }
   }
@@ -260,10 +263,9 @@ AbstractBasePtr AddRefKeyForArgs(const AbstractBasePtr &output_abs, const Abstra
       }
     }
     std::copy(output_args.begin() + inplace_indexes.size(), output_args.end(), std::back_inserter(output_list));
-    if (output_abs->isa<AbstractTuple>()) {
-      return std::make_shared<abstract::AbstractTuple>(output_list);
-    }
-    return std::make_shared<abstract::AbstractList>(output_list);
+    auto output_sequence_abs = dyn_cast_ptr<AbstractSequence>(output_abs);
+    MS_EXCEPTION_IF_NULL(output_sequence_abs);
+    output_sequence_abs->set_elements(output_list);
   }
   return output_abs;
 }
@@ -293,7 +295,7 @@ CNodePtr DoSignatureEvaluator::GenerateNewNodeBySignatures(const ValuePtr &func,
                          MS_EXCEPTION_IF_NULL(node);
                          return node;
                        });
-  auto op_inputs = prim::GetNewInputsBySignatures(fg, prim_->ToString(), func, args_abs_list, args_inputs);
+  auto op_inputs = prim::GetNewInputsBySignatures(fg, prim_->ToString(), func, args_abs_list, args_inputs, out_cnode);
   AnfNodePtrList new_inputs{NewValueNode(func)};
   (void)std::copy(op_inputs.begin(), op_inputs.end(), std::back_inserter(new_inputs));
   return fg->NewCNodeInOrder(new_inputs);
@@ -1389,16 +1391,17 @@ AbstractBasePtr UpdateViewOpsAbstract(const AbstractBasePtr &res, const Abstract
     MS_LOG(EXCEPTION) << "The abstract of view operation is exception:" << res->ToString();
   }
 
+  constexpr auto kViewOp = abstract::AbstractRefTensor::RefTensorType::kViewOp;
   // Update the abstract of first input of view operation.
   auto arg0_tensor = dyn_cast<abstract::AbstractTensor>(args[0]);
-  auto new_input_arg = ConvertTensorToRef(arg0_tensor);
+  auto new_input_arg = ConvertTensorToRef(arg0_tensor, kViewOp);
   args[0]->set_inplace_abstract(new_input_arg);
 
   // Update the abstract of view operation.
   AbstractBasePtr new_res = res;
   if (res->isa<abstract::AbstractTensor>()) {
     // The output of the view operator shares the same address with the first input of the operator.
-    new_res = ConvertTensorToRef(res);
+    new_res = ConvertTensorToRef(res, kViewOp);
   } else if (res->isa<abstract::AbstractTuple>()) {
     // Update the elements of output.
     AbstractBasePtrList output_list;
@@ -1414,28 +1417,48 @@ AbstractBasePtr UpdateViewOpsAbstract(const AbstractBasePtr &res, const Abstract
         MS_LOG(EXCEPTION) << "The abstract of view operation is exception:" << res->ToString();
       }
       auto ele_abs = dyn_cast<abstract::AbstractTensor>(ele);
-      auto new_ele_abs = ConvertTensorToRef(ele_abs);
+      auto new_ele_abs = ConvertTensorToRef(ele_abs, kViewOp);
       (void)output_list.emplace_back(new_ele_abs);
       ele->set_inplace_abstract(new_ele_abs);
     }
-    new_res = std::make_shared<abstract::AbstractTuple>(output_list);
+    auto output_sequence_abs = dyn_cast_ptr<AbstractSequence>(res);
+    MS_EXCEPTION_IF_NULL(output_sequence_abs);
+    output_sequence_abs->set_elements(output_list);
+    new_res = res;
   }
   MS_LOG(DEBUG) << "The new abstract of view operation is:" << new_res->ToString();
   return new_res;
 }
 
-AbstractBasePtr PrimitiveFunctionEvaluator::CheckAndInfer(const AbstractBasePtrList &args) {
-  if (op_def_ != nullptr) {
-    MS_LOG(DEBUG) << "prim_func_: " << prim_func_->ToString();
-    const auto &rw_write_indexes = rw_write_input_indexes();
-    const auto &inplace_indexes = inplace_input_indexes();
-    if (op_def_->func_impl_.GeneralInferRegistered()) {
-      auto res = ops::DoGeneralInfer(prim_func_, args, frontend_func_impl_);
-      if (graph_view_prim()) {
+AbstractBasePtr PrimitiveFunctionEvaluator::ProcessViewInplaceAbstract(const AbstractBasePtrList &args,
+                                                                       const AbstractBasePtr &res) {
+  if (graph_view_prim()) {
+    static const bool close_view_op = (common::GetEnv("MS_DEV_JIT_ENABLE_VIEW_OP") == "0");
+    if (close_view_op) {
+      prim_func_->set_attr(GRAPH_FLAG_SIDE_EFFECT_MEM, MakeValue(false));
+    } else {
+      auto ge_mode = common::AnfAlgo::IsBackendGe();
+      if (ge_mode) {
+        prim_func_->set_attr(GRAPH_FLAG_SIDE_EFFECT_MEM, MakeValue(false));
+        MS_LOG(WARNING) << "The view feature is not currently supported in GE mode. "
+                        << "The code utilizes the View operator: " << prim_func_->ToString();
+      } else {
         MS_LOG(DEBUG) << "View prim infer.";
         return UpdateViewOpsAbstract(res, args);
       }
-      return inplace_prim() ? AddRefKeyForArgs(res, args, rw_write_indexes, inplace_indexes) : res;
+    }
+  }
+  const auto &rw_write_indexes = rw_write_input_indexes();
+  const auto &inplace_indexes = inplace_input_indexes();
+  return inplace_prim() ? AddRefKeyForArgs(res, args, rw_write_indexes, inplace_indexes) : res;
+}
+
+AbstractBasePtr PrimitiveFunctionEvaluator::CheckAndInfer(const AbstractBasePtrList &args) {
+  if (op_def_ != nullptr) {
+    MS_LOG(DEBUG) << "prim_func_: " << prim_func_->ToString();
+    if (op_def_->func_impl_.GeneralInferRegistered()) {
+      auto res = ops::DoGeneralInfer(prim_func_, args, frontend_func_impl_);
+      return ProcessViewInplaceAbstract(args, res);
     } else {
       (void)op_def_->func_impl_.CheckValidation(prim_func_, args);
       if (frontend_func_impl_ != nullptr) {
@@ -1447,11 +1470,7 @@ AbstractBasePtr PrimitiveFunctionEvaluator::CheckAndInfer(const AbstractBasePtrL
       auto type = op_def_->func_impl_.InferType(prim_func_, args);
       auto shape = op_def_->func_impl_.InferShape(prim_func_, args);
       auto res = MakeAbstract(shape, type);
-      if (graph_view_prim()) {
-        MS_LOG(DEBUG) << "View prim infer.";
-        return UpdateViewOpsAbstract(res, args);
-      }
-      return inplace_prim() ? AddRefKeyForArgs(res, args, rw_write_indexes, inplace_indexes) : res;
+      return ProcessViewInplaceAbstract(args, res);
     }
   }
   MS_LOG(INTERNAL_EXCEPTION) << "Find infer function failed, primitive: " << prim_func_->ToString();
@@ -2788,7 +2807,7 @@ bool ValidateAndConvertArgsType(const std::string &op_name, const std::vector<op
 CNodePtr CheckAndConvertPrimitiveArgs(const PrimitivePtr &prim, const FuncGraphPtr &graph,
                                       const std::pair<std::vector<AnfNodePtr>, std::vector<AnfNodePtr>> &args_pair,
                                       const std::function<AbstractBasePtr(const AnfNodePtr &)> &eval_func,
-                                      bool is_preprocessed) {
+                                      bool is_preprocessed, const AnfNodePtr &old_cnode = nullptr) {
   auto init_args_list = args_pair.first;
   auto call_args_list = args_pair.second;
   auto prim_name = prim->name();
@@ -2822,7 +2841,7 @@ CNodePtr CheckAndConvertPrimitiveArgs(const PrimitivePtr &prim, const FuncGraphP
     MS_LOG(DEBUG) << "Process signatures for Primitive[" << prim_name << "].";
     AbstractBasePtrList call_abs_list;
     (void)std::transform(call_nodes.cbegin(), call_nodes.cend(), std::back_inserter(call_abs_list), eval_func);
-    call_nodes = prim::GetNewInputsBySignatures(graph, prim_name, prim, call_abs_list, call_nodes);
+    call_nodes = prim::GetNewInputsBySignatures(graph, prim_name, prim, call_abs_list, call_nodes, old_cnode);
     // Process arg_handler.
     for (size_t i = 0; i < op_init_args.size(); ++i) {
       auto abs_node = eval_func(init_nodes[i]);
@@ -2880,7 +2899,7 @@ AnfNodePtr CheckAndConvertPrimitiveArgs(const PrimitivePtr &prim,
     return eval_result->abstract();
   };
 
-  auto new_cnode = CheckAndConvertPrimitiveArgs(prim, graph, args_pair, eval_func, is_preprocessed);
+  auto new_cnode = CheckAndConvertPrimitiveArgs(prim, graph, args_pair, eval_func, is_preprocessed, node);
   MS_LOG(DEBUG) << "Convert primitive args: " << prim->name() << ". node: " << node->DebugString()
                 << ", new_node: " << new_cnode->DebugString();
   new_cnode->set_debug_info(node->debug_info());

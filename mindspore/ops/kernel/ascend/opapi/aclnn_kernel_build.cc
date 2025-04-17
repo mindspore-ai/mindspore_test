@@ -91,10 +91,9 @@ bool IsViewOp(const std::string &op_name) {
 }
 
 bool IsAclnnViewOp(const std::string &op_name) {
-  if (mindspore::ops::aclnn_view_to_op.find(op_name) != mindspore::ops::aclnn_view_to_op.end()) {
-    return true;
-  }
-  return false;
+  const auto &op_def = mindspore::ops::GetOpDef(op_name);
+  const auto &graph_view_prim = op_def != nullptr ? op_def->is_graph_view_ : false;
+  return graph_view_prim;
 }
 }  // namespace kernel
 }  // namespace mindspore

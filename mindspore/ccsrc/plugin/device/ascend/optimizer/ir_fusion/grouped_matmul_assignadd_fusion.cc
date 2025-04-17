@@ -139,7 +139,7 @@ void GroupedMatmulAssignaddFusion::ReplaceGMMForDepend(const FuncGraphPtr &graph
 }
 
 std::vector<std::string> GroupedMatmulAssignaddFusion::MustExistPrimitiveName() const {
-  std::vector<std::string> ret{kTransposeExtOpName, prim::kPrimGroupedMatmul->name(), kAssignAddOpName};
+  std::vector<std::string> ret{kTransposeExtViewOpName, prim::kPrimGroupedMatmul->name(), kAssignAddOpName};
   return ret;
 }
 
@@ -148,7 +148,8 @@ const BaseRef GroupedMatmulAssignaddFusion::DefinePattern() const {
   VarPtr transpose_dim2 = std::make_shared<Var>();
   VarPtr Xs = std::make_shared<SeqVar>();
   VarPtr getitem_index = std::make_shared<Var>();
-  auto transpose = VectorRef({std::make_shared<Primitive>(kTransposeExtOpName), x_, transpose_dim1, transpose_dim2});
+  auto transpose =
+    VectorRef({std::make_shared<Primitive>(kTransposeExtViewOpName), x_, transpose_dim1, transpose_dim2});
   auto maketuple = VectorRef({prim::kPrimMakeTuple, transpose});
   auto grouped_matmul = VectorRef(
     {grouped_matmul_, maketuple, weight_, Xs, group_list_, split_item_, group_type_, transpose_a_, transpose_b_});

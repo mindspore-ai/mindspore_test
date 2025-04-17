@@ -54,6 +54,8 @@ KPrim g_k_prims;
 
 namespace {
 constexpr char kLiftedUserDataKey[] = "lifted_from_fv";
+constexpr char kUMonadInOutput[] = "u_monad_in_output";
+constexpr char kIOMonadInOutput[] = "io_monad_in_output";
 
 FuncGraphPtr GetBprop(const PrimitivePtr &prim, const pipeline::ResourceBasePtr &resources, const CNodePtr &cnode) {
   // Set a child scope named "grad'PrimitiveName'" for the bprop function,
@@ -104,6 +106,62 @@ FuncGraphPtr GetBprop(const PrimitivePtr &prim, const pipeline::ResourceBasePtr 
   pipeline::ResourceBasePtr res = (resources != nullptr) ? resources : std::make_shared<pipeline::Resource>();
   (void)parse::ResolveFuncGraph(func_graph, res, false);
   return func_graph;
+}
+
+std::vector<size_t> GetNeedCloneInputIndex(const PrimitivePtr &prim) {
+  MS_EXCEPTION_IF_NULL(prim);
+  std::vector<size_t> indexes;
+  if (!prim->inplace_prim()) {
+    return indexes;
+  }
+  return prim->rw_write_input_indexes();
+}
+
+AnfNodePtr InplaceArgsClone(const FuncGraphPtr &fprop, const FuncGraphPtr &bprop, const PrimitivePtr &prim,
+                            const AnfNodePtr &umonad_arg) {
+  MS_EXCEPTION_IF_NULL(prim);
+  const auto &need_clone_input_index = GetNeedCloneInputIndex(prim);
+  if (need_clone_input_index.empty()) {
+    return umonad_arg;
+  } else {
+    // Need do input args clone for inplace ops
+    // Change From
+    // ==> primal_cnode: {kPrimInplace, args0, args1, ..., umonad}
+    // To:
+    // ==> new_load_cnode = Load(args0, umonad)
+    // ==> new_umonad_cnode = UpdateState(umonad, new_load_cnode)
+    // ==> primal_cnode: {kPrimInplace, args0, args1, ..., new_umoad_cnode}
+    MS_EXCEPTION_IF_NULL(fprop);
+    MS_EXCEPTION_IF_NULL(bprop);
+    const auto &params = fprop->parameters();
+    AnfNodePtr umonad_param = umonad_arg;
+    CNodePtr bprop_meta_funcgraph_caller = nullptr;
+    for (auto node : TopoSort(bprop->output())) {
+      if (!node->isa<CNode>()) {
+        continue;
+      }
+      auto cnode = node->cast<CNodePtr>();
+      if (IsValueNode<expander::bprop::BpropMetaFuncGraph>(cnode->input(0))) {
+        bprop_meta_funcgraph_caller = cnode;
+        break;
+      }
+    }
+    if (bprop_meta_funcgraph_caller == nullptr) {
+      MS_LOG(WARNING) << "No bprop meta funcgraph found for prim: " << prim->ToString();
+      return umonad_arg;
+    }
+    MS_EXCEPTION_IF_NULL(bprop_meta_funcgraph_caller);
+    for (size_t index : need_clone_input_index) {
+      const auto original_inplace_param = params[index];
+      auto new_load_cnode = fprop->NewCNode({NewValueNode(prim::kPrimLoad), original_inplace_param, umonad_param});
+      auto new_umonad_cnode = fprop->NewCNode({NewValueNode(prim::kPrimUpdateState), umonad_param, new_load_cnode});
+      bprop_meta_funcgraph_caller->set_input(index + 1, new_load_cnode);
+      MS_LOG(INFO) << "Clone bprop argument with index: " << std::to_string(index)
+                   << " for inplace op: " << prim->ToString();
+      umonad_param = new_umonad_cnode;
+    }
+    return umonad_param;
+  }
 }
 }  // namespace
 
@@ -168,6 +226,12 @@ MetaFuncGraphPtr KPrim::KMetaFuncGraph(const PrimitivePtr &prim, const AnfNodePt
     return meta;
   }
 
+  if (IsPrimitiveEquals(prim, prim::kPrimPrint)) {
+    MetaFuncGraphPtr meta = std::make_shared<prim::PrintGradient>("PrintGradient");
+    bprop_registry_meta_[prim::kPrimPrint] = meta;
+    return meta;
+  }
+
   MS_LOG_WITH_NODE(EXCEPTION, node) << "Fail to find bprop function for " << prim->name() << ".";
 }
 
@@ -188,15 +252,13 @@ static void AppendMonadOutput(const FuncGraphPtr &bprop_fg, const AnfNodePtr &mo
   const auto &output = bprop_fg->output();
   MS_EXCEPTION_IF_NULL(output);
   auto output_cnode = output->cast<CNodePtr>();
-  constexpr char u_monad_in_output[] = "u_monad_in_output";
-  constexpr char io_monad_in_output[] = "io_monad_in_output";
   if (output_cnode != nullptr) {
-    if (HasAbstractUMonad(monad) && !bprop_fg->has_flag(u_monad_in_output)) {
+    if (HasAbstractUMonad(monad) && !bprop_fg->has_flag(kUMonadInOutput)) {
       AddMonad(bprop_fg, output_cnode, monad);
-      bprop_fg->set_flag(u_monad_in_output, true);
-    } else if (HasAbstractIOMonad(monad) && !bprop_fg->has_flag(io_monad_in_output)) {
+      bprop_fg->set_flag(kUMonadInOutput, true);
+    } else if (HasAbstractIOMonad(monad) && !bprop_fg->has_flag(kIOMonadInOutput)) {
       AddMonad(bprop_fg, output_cnode, monad);
-      bprop_fg->set_flag(io_monad_in_output, true);
+      bprop_fg->set_flag(kIOMonadInOutput, true);
     }
     return;
   }
@@ -204,9 +266,9 @@ static void AppendMonadOutput(const FuncGraphPtr &bprop_fg, const AnfNodePtr &mo
   auto make_tuple = NewValueNode(prim::kPrimMakeTuple);
   output_cnode = bprop_fg->NewCNode({make_tuple, monad});
   if (HasAbstractUMonad(monad)) {
-    bprop_fg->set_flag(u_monad_in_output, true);
+    bprop_fg->set_flag(kUMonadInOutput, true);
   } else if (HasAbstractIOMonad(monad)) {
-    bprop_fg->set_flag(io_monad_in_output, true);
+    bprop_fg->set_flag(kIOMonadInOutput, true);
   }
   bprop_fg->set_output(output_cnode);
 }
@@ -269,7 +331,8 @@ FuncGraphPtr KPrim::KPrimitive(const CNodePtr &cnode, const ValueNodePtr &value_
     fprop->transforms().emplace("primal", FuncGraphTransform(prim::kPrimSwitchLayer));
     return fprop;
   } else if (IsPrimitiveEquals(prim, prim::kPrimMakeTuple) || IsPrimitiveEquals(prim, prim::kPrimMakeList) ||
-             IsPrimitiveEquals(prim, prim::kPrimMakeDict) || IsPrimitiveEquals(prim, prim::kPrimMutable)) {
+             IsPrimitiveEquals(prim, prim::kPrimMakeDict) || IsPrimitiveEquals(prim, prim::kPrimMutable) ||
+             IsPrimitiveEquals(prim, prim::kPrimPrint)) {
     // Return null to use Meta bprop.
     return nullptr;
   }
@@ -432,6 +495,7 @@ static void TransformNormalArgs(const FuncGraphManagerPtr &mng, const FuncGraphP
     transf_args->push_back(transf_p);
   }
 }
+
 void KPrim::TransformArgsForPrimitive(const FuncGraphManagerPtr &mng, const FuncGraphPtr &bprop_fg,
                                       const PrimitivePtr &primitive, const FuncGraphPtr &outer,
                                       std::vector<AnfNodePtr> *const transf_args) const {
@@ -441,7 +505,7 @@ void KPrim::TransformArgsForPrimitive(const FuncGraphManagerPtr &mng, const Func
   if (effect_info.memory) {
     MS_LOG(DEBUG) << "Append U monad to Fprop FuncGraph for Primitive " << primitive->ToString();
     auto transf_p = outer->add_parameter();
-    transf_args->push_back(transf_p);
+    transf_args->push_back(InplaceArgsClone(outer, bprop_fg, primitive, transf_p));
   }
   if (effect_info.io) {
     MS_LOG(DEBUG) << "Append IO monad to Fprop FuncGraph for Primitive " << primitive->ToString();
@@ -526,6 +590,12 @@ void KPrim::CheckBprop(const FuncGraphPtr &bprop_fg, const string &prim_to_check
   constexpr int brprop_offset_size = 2;
   (void)inputs.insert(inputs.cbegin() + primitive_size, bprop_fg->parameters().cbegin(),
                       bprop_fg->parameters().cend() - brprop_offset_size);
+  if (bprop_fg->has_flag(kUMonadInOutput)) {
+    (void)inputs.emplace_back(NewValueNode(kUMonad));
+  }
+  if (bprop_fg->has_flag(kIOMonadInOutput)) {
+    (void)inputs.emplace_back(NewValueNode(kIOMonad));
+  }
   AnfNodePtr params = bprop_fg->NewCNode(inputs);
 
   inputs.clear();
@@ -635,7 +705,18 @@ FuncGraphPtr KPrim::FakeBprop(const ValueNodePtr &value_node, const pipeline::Re
     auto param = func_graph->add_parameter();
     // Mock derivatives for each inputs
     if (IsPrimitiveEquals(prim, prim::kPrimUpdateState)) {
-      outputs.push_back(func_graph->NewCNode({NewValueNode(prim::GetPythonOps("zeros_like")), param}));
+      auto input = cnode_first->input(i + 1);
+      MS_EXCEPTION_IF_NULL(input);
+      auto abs = input->abstract();
+      // Only do back propagate when the input is a tensor.
+      if (i == 0 || (abs != nullptr &&
+                     (abs->isa<abstract::AbstractTuple>() || abs->IsSameTypeId(abstract::AbstractTensor::kTypeId) ||
+                      abs->IsSameTypeId(abstract::AbstractRefTensor::kTypeId)))) {
+        (void)outputs.emplace_back(func_graph->NewCNode({NewValueNode(prim::GetPythonOps("zeros_like")), param}));
+      } else {
+        // Add a placeholder.
+        (void)outputs.emplace_back(NewValueNode(MakeValue<int64_t>(0)));
+      }
     } else {
       outputs.push_back(func_graph->NewCNode({NewValueNode(fake_bprop), param}));
     }

@@ -2828,6 +2828,15 @@ REG_BPROP_BUILDER("Hardtanh").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
   return {dx, ib->OutZeros(min_val), ib->OutZeros(max_val)};
 });
 
+REG_BPROP_BUILDER("InplaceHardtanh").CloneInplaceInput().SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto min_val = ib->GetInput(kIndex1);
+  auto max_val = ib->GetInput(kIndex2);
+  auto dout = ib->GetInput(kIndex4);
+  auto dx = ib->Emit("HardtanhGrad", {dout, x, min_val, max_val});
+  return {dx, ib->OutZeros(min_val), ib->OutZeros(max_val)};
+});
+
 REG_BPROP_BUILDER("BiasAddGrad").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
   auto dy = ib->GetInput(kIndex0);
   auto format = ib->GetInput(kIndex1);

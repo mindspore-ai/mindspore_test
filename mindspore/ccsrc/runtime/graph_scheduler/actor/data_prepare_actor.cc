@@ -257,15 +257,6 @@ void UpdateDeviceAddressByRefInputNode(const std::vector<KernelGraphPtr> &graphs
       if (modified_input_nodes.count(input_pair.first.get()) == 0) {
         continue;
       }
-      // The output device tensor of ref node actor can't be changed in the running, and only the ptr of output device
-      // address can be modified. And need set `ref_count` to `SIZE_MAX` for avoiding clean. So only support the
-      // persistent device tensor.
-      if (!IsPersistentDeviceTensor(input_pair.first)) {
-        MS_LOG(INFO) << "The input parameter: " << input_pair.first->fullname_with_scope()
-                     << " isn't the ref parameter which used by the ref node: "
-                     << output_pair.first->fullname_with_scope();
-        continue;
-      }
 
       MS_LOG(INFO) << "Update the ptr of ref node: " << output_pair.first->fullname_with_scope()
                    << " by the modified ref input parameter: " << input_pair.first->fullname_with_scope();
@@ -481,7 +472,8 @@ void DataPrepareActor::UpdateDynamicShapeAndSize(const AnfNodePtr &input_node, c
 void DataPrepareActor::UpdateDeviceAddressForDataNode(const AnfNodePtr &input_node, const TensorPtr &input_tensor) {
   MS_EXCEPTION_IF_NULL(input_tensor);
   MS_EXCEPTION_IF_NULL(input_node);
-
+  // Assign tensor address to input data node and set `ref_count` to `SIZE_MAX` for avoiding clean.
+  (void)address_modified_input_nodes_.insert(input_node.get());
   auto tensor_address = std::dynamic_pointer_cast<DeviceTensor>(input_tensor->device_address());
   if (tensor_address == nullptr) {
     return;
@@ -506,8 +498,6 @@ void DataPrepareActor::UpdateDeviceAddressForDataNode(const AnfNodePtr &input_no
     return;
   }
 
-  // Assign tensor address to input data node and set `ref_count` to `SIZE_MAX` for avoiding clean.
-  (void)address_modified_input_nodes_.insert(input_node.get());
   tensor_address->set_flag(device_address->flag());
   DeviceAddressUtils::UpdateDeviceAddressHostInfoByNode(tensor_address, input_node, 0);
   AnfAlgo::SetOutputAddr(tensor_address, 0, input_node.get());
@@ -706,9 +696,6 @@ TensorPtr DataPrepareActor::FetchInputTensor(const std::vector<TensorPtr> &tenso
   if (!tensors.empty()) {
     MS_EXCEPTION_IF_CHECK_FAIL((tensor_index < tensors.size()), "The tensor index is out of range.");
     auto tensor = tensors[tensor_index];
-    // The tensor needs to be converted to contiguous before being given to the actors.
-    // After the view feature is supported in the graph mode, the following code will be deleted.
-    DeviceAddressUtils::ConvertContiguousTensorSync(tensor);
     runtime::DeviceAddressUtils::CreateKernelTensor(tensor);
     return tensor;
   }
@@ -728,6 +715,27 @@ TensorPtr DataPrepareActor::FetchInputTensor(const std::vector<TensorPtr> &tenso
   // The tensor needs to be converted to contiguous before being given to the actors.
   // After the view feature is supported in the graph mode, the following code will be deleted.
   DeviceAddressUtils::ConvertContiguousTensorSync(tensor);
+  tensor_with_graphs_[tensor.get()].insert(this);
+  if (tensor != nullptr && tensor->is_parameter()) {
+    auto callback = [](const tensor::Tensor *tensor) {
+      const auto &graph_iter = tensor_with_graphs_.find(tensor);
+      if (graph_iter != tensor_with_graphs_.end()) {
+        const auto &data_prepare_actors = graph_iter->second;
+        for (const auto &data_prepare_actor : data_prepare_actors) {
+          const auto &iter = tensors_need_reprepare_.find(data_prepare_actor);
+          if (iter != tensors_need_reprepare_.end()) {
+            tensors_need_reprepare_[data_prepare_actor].insert(tensor);
+          }
+        }
+      }
+    };
+    tensor->set_update_value_callback(callback);
+  }
+
+  if (tensor != nullptr && !tensors_need_reprepare_[this].empty() && tensor->is_parameter()) {
+    auto erased_num = tensors_need_reprepare_[this].erase(tensor.get());
+    MS_LOG(DEBUG) << "Erase " << erased_num << " tensor which is reprepared.";
+  }
   runtime::DeviceAddressUtils::CreateKernelTensor(tensor);
   return tensor;
 }

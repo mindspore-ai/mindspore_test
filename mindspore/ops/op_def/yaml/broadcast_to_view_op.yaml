@@ -1,0 +1,17 @@
+#operator broadcast_to_view
+broadcast_to_view:
+  args:
+    input:
+      dtype: tensor
+    shape:
+      dtype: tuple[int]
+      type_cast: list[int]
+  returns:
+    output:
+      dtype: tensor
+  view: True
+  graph_view: True
+  labels:
+    side_effect_mem: True
+  dispatch:
+    enable: True

@@ -2182,6 +2182,25 @@ bool AnfAlgo::CheckStridedSliceForwardOrBackWardIsNopNode(const CNodePtr &cnode)
   }
   return std::all_of(attrs_val.begin(), attrs_val.end(), [](int element) { return element == 0; });
 }
+
+namespace {
+// Read view tag from op yamls.
+// When all the view kernel support aclnn kernelmod, change is_graph_view_ to is_view
+bool CheckViewInYaml(const std::string &name) {
+  const auto &op_def = mindspore::ops::GetOpDef(name);
+  bool is_view = (op_def != nullptr ? op_def->is_graph_view_ : false);
+  return is_view;
+}
+}  // namespace
+
+bool AnfAlgo::IsViewNode(const AnfNodePtr &node) {
+  CNodePtr cnode = node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
+  auto node_name = AnfAlgo::GetCNodeName(cnode);
+  bool is_view = CheckViewInYaml(node_name);
+  return is_view;
+}
+
 bool AnfAlgo::IsNopNode(const AnfNodePtr &node) {
   static mindspore::HashSet<std::string> nop_nodes = {prim::kPrimReshape->name(),
                                                       kExpandDimsOpName,
@@ -2207,6 +2226,10 @@ bool AnfAlgo::IsNopNode(const AnfNodePtr &node) {
   auto input0 = cnode->input(0);
   MS_EXCEPTION_IF_NULL(input0);
   if (!input0->isa<ValueNode>()) {
+    return false;
+  }
+  if (cnode->HasAttr("enable_view")) {
+    // Do not skip view node when enable_view.
     return false;
   }
   bool is_nop_node = false;

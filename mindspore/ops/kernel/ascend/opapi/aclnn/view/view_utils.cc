@@ -17,6 +17,7 @@
 #include <vector>
 #include <utility>
 #include <memory>
+#include <functional>
 #include "ir/tensor_storage_info.h"
 namespace mindspore {
 namespace kernel {

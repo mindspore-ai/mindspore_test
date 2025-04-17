@@ -102,7 +102,6 @@
 #include "pipeline/jit/ps/pipeline_split.h"
 #include "pynative/pynative_execute.h"
 #include "pipeline/jit/ps/static_analysis/auto_monad.h"
-#include "pipeline/jit/ps/static_analysis/inplace_validation.h"
 #include "frontend/optimizer/irpass/branch_culling.h"
 #include "frontend/optimizer/irpass/meta_fg_eliminate.h"
 #include "frontend/optimizer/irpass/gradient_eliminate.h"
@@ -404,10 +403,6 @@ FuncGraphPtr FinalBpropGraphPass(const ResourcePtr &resource, bool has_control_f
 }
 
 namespace {
-bool InplaceValidationWrapper(const FuncGraphPtr &root, const opt::OptimizerPtr &) { return InplaceValidation(root); }
-bool InplaceValidationAfterExpandWrapper(const FuncGraphPtr &root, const opt::OptimizerPtr &) {
-  return InplaceValidationAfterExpand(root);
-}
 bool ReAutoMonadWrapper(const FuncGraphPtr &root, const opt::OptimizerPtr &) { return ReAutoMonad(root); }
 REGISTER_OPT_PASS_FUNC(ReAutoMonadWrapper)
 
@@ -650,10 +645,8 @@ OptPassGroupMap GetOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass, cons
      {"cell_reuse_recompute_pass", opt::OptPassConfig(opt::irpass::Recomputation())},
      {"cell_reuse_handle_not_recompute_node_pass", cell_reuse_handle_not_recompute_node_pass},
      {"before_grad", before_grad},
-     {"inplace_validation", opt::OptPassConfig(InplaceValidationWrapper)},
      {kSetForwardCommIdForCommNodePass, opt::OptPassConfig(parallel::SetForwardCommIdForCommNode)},
      {kMetaFgExpandFlag, opt::OptPassConfig(opt::irpass::ExpandMetaFg())},
-     {"inplace_validation_after_expand", opt::OptPassConfig(InplaceValidationAfterExpandWrapper)},
      {"flash_sp_send_recv_attached", opt::OptPassConfig(parallel::FlashSPSendRecvNodeAttach)},
      {"receive_attached", opt::OptPassConfig(parallel::IsolatedNodeAttach)},
      {"after_resolve", after_resolve_pass},
@@ -715,7 +708,6 @@ opt::OptPassConfig GetJitOptPassA1(const opt::irpass::OptimizeIRPassLib &irpass)
     irpass.accumulaten_eliminater_,
 
     // a2
-    irpass.specialize_transform_,
     irpass.merge_addn_,
     irpass.compare_switch_simplify_,
     irpass.addn_check_dump_,
@@ -743,6 +735,7 @@ OptPassGroupMap GetJitOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass, c
      {"updatestate_assign_eliminate", opt::OptPassConfig(opt::irpass::UpdatestateAssignEliminater())},
      {"updatestate_loads_eliminate", opt::OptPassConfig(opt::irpass::UpdatestateLoadsEliminater())},
      {"parameter_eliminate", opt::OptPassConfig(opt::irpass::ParameterEliminator())},
+     {"specialize_transform", opt::OptPassConfig({irpass.specialize_transform_})},
      {"updatestate_useless_node_eliminater", opt::OptPassConfig({irpass.updatestate_useless_node_eliminater_})},
      {"accelerated_algorithm", opt::OptPassConfig({irpass.less_batch_normalization_})},
      {"meta_shard_fg_expand", opt::OptPassConfig(opt::irpass::ExpandMetaShardFg())},
@@ -752,9 +745,7 @@ OptPassGroupMap GetJitOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass, c
      {"cell_reuse_handle_not_recompute_node_pass",
       opt::OptPassConfig({irpass.remove_not_recompute_node_}, false, true)},
      {"j_node_and_user_rematch", opt::OptPassConfig({irpass.j_node_and_user_rematch_})},
-     {"inplace_validation", opt::OptPassConfig(InplaceValidationWrapper)},
      {kMetaFgExpandFlag, opt::OptPassConfig(opt::irpass::ExpandMetaFg())},
-     {"inplace_validation_after_expand", opt::OptPassConfig(InplaceValidationAfterExpandWrapper)},
      {"replace_old_param", opt::OptPassConfig({irpass.replace_old_param_})},
      {"inline_without_move", opt::OptPassConfig({irpass.inline_without_move_})},
      {"renormalize", opt::OptPassConfig::Renormalize()},

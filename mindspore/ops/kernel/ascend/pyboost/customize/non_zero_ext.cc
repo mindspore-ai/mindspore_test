@@ -24,7 +24,7 @@
 #include "mindspore/ccsrc/pyboost/op_runner.h"
 #include "mindspore/ccsrc/pyboost/op_register.h"
 #include "mindspore/ccsrc/pyboost/auto_generate/non_zero.h"
-#include "mindspore/ccsrc/pyboost/auto_generate/unstack_ext.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/unstack_ext_view.h"
 #include "mindspore/ccsrc/pyboost/auto_generate/reshape.h"
 
 namespace mindspore {
@@ -35,7 +35,7 @@ std::vector<tensor::BaseTensorPtr> NonZeroExtAscendCustomize(const std::shared_p
   MS_LOG(DEBUG) << "NonZeroExt call start";
   MS_EXCEPTION_IF_NULL(input_tensor);
   auto nonzero_op = CREATE_PYBOOST_OP(NonZero, kAscendDevice);
-  auto unstack_op = CREATE_PYBOOST_OP(UnstackExt, kAscendDevice);
+  auto unstack_op = CREATE_PYBOOST_OP(UnstackExtView, kAscendDevice);
   BaseTensorPtr output_tensor = nullptr;
   if (input_tensor->shape().size() == kDim0) {
     std::vector<ValuePtr> unsqueeze_shape;

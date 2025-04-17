@@ -146,6 +146,7 @@ def test_batch_matmul_opt_with_outer_dp(has_bias):
 
     compile_add_check_output(dir_name, net, x)
 
+
 @pytest.mark.parametrize('has_bias', [False, True])
 def test_batch_matmul_opt_with_sp(has_bias):
     """

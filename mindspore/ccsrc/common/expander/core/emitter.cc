@@ -214,7 +214,7 @@ NodePtr Emitter::MatMulExt(const NodePtr &a, const NodePtr &b) {
 }
 
 NodePtr Emitter::Transpose(const NodePtr &node, int64_t dim0, int64_t dim1) {
-  return Emit(prim::kPrimTransposeExt->name(), {node, Value(dim0), Value(dim1)});
+  return Emit(prim::kPrimTransposeExtView->name(), {node, Value(dim0), Value(dim1)});
 }
 
 NodePtr Emitter::Transpose(const NodePtr &node, const NodePtr &perm) {

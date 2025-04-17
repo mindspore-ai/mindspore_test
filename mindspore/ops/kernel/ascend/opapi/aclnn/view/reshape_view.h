@@ -26,7 +26,7 @@ namespace kernel {
 
 class ReshapeView : public AclnnKernelMod {
  public:
-  ReshapeView() : AclnnKernelMod("reshapeView") {}
+  ReshapeView() : AclnnKernelMod("InnerReshapeView") {}
   ~ReshapeView() = default;
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
@@ -35,6 +35,7 @@ class ReshapeView : public AclnnKernelMod {
 
  private:
   mindspore::TensorStorageInfoPtrList info_;
+  bool is_input_not_contiguous_{false};
 };
 }  // namespace kernel
 }  // namespace mindspore

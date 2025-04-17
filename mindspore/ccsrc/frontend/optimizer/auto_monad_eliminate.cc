@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2022 Huawei Technologies Co., Ltd
+ * Copyright 2021-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,12 +45,12 @@ namespace {
 using ParamUserMap = mindspore::HashMap<std::string, std::vector<size_t>>;
 using LoadGraphMap = OrderedMap<std::string, std::vector<size_t>>;
 
-std::optional<std::string> GetRefKey(const AnfNodePtr &node) {
+std::optional<std::string> GetRefKeyForParameter(const AnfNodePtr &node) {
   auto abs = node->abstract();
   if (abs == nullptr) {
     // Abstract for some Depends node are not proper set, we follow its input.
     if (IsPrimitiveCNode(node, prim::kPrimDepend)) {
-      return GetRefKey(node->cast<CNodePtr>()->input(1));
+      return GetRefKeyForParameter(node->cast<CNodePtr>()->input(1));
     }
     // Abstract should be set except UpdateState nodes.
     if (!IsPrimitiveCNode(node, prim::kPrimUpdateState)) {
@@ -64,6 +64,11 @@ std::optional<std::string> GetRefKey(const AnfNodePtr &node) {
   }
   auto ref_key = abs_ref->ref_key_value()->cast<StringImmPtr>();
   if (ref_key == nullptr) {
+    return std::nullopt;
+  }
+  if (!abs_ref->is_parameter()) {
+    MS_LOG(INFO) << "Node with AbstractRefTensor is not a parameter: " << node->DebugString()
+                 << " , abs: " << abs_ref->ToString();
     return std::nullopt;
   }
   return ref_key->value();
@@ -86,6 +91,17 @@ bool IsSpecialNode(const CNodePtr &cnode) {
          cnode->IsApply(prim::kPrimSwitch) || cnode->IsApply(prim::kPrimSwitchLayer);
 }
 
+bool IsViewOps(const CNodePtr &cnode) {
+  auto primitive = GetCNodePrimitive(cnode);
+  if (primitive == nullptr) {
+    return false;
+  }
+  auto op_def = mindspore::ops::GetOpDef(primitive->name());
+  auto graph_view_prim = op_def != nullptr ? op_def->is_graph_view_ : false;
+  MS_LOG(DEBUG) << "The node " << cnode->DebugString() << " is view ops : " << graph_view_prim;
+  return graph_view_prim;
+}
+
 LoadGraphMap GenerateLoadGroups(const FuncGraphPtr &fg, std::vector<AnfNodePtr> *toposet,
                                 std::vector<AnfNodePtr> *need_replace_loads, ParamUserMap *param_users,
                                 std::vector<size_t> *special_op_indexes) {
@@ -103,7 +119,7 @@ LoadGraphMap GenerateLoadGroups(const FuncGraphPtr &fg, std::vector<AnfNodePtr> 
     }
     // Handle Load node.
     if (cnode->IsApply(prim::kPrimLoad)) {
-      auto ref_key = GetRefKey(cnode->input(1));
+      auto ref_key = GetRefKeyForParameter(cnode->input(1));
       if (!ref_key.has_value()) {
         MS_LOG(INFO) << "Load without ref key: " << cnode->DebugString();
         continue;
@@ -137,7 +153,7 @@ LoadGraphMap GenerateLoadGroups(const FuncGraphPtr &fg, std::vector<AnfNodePtr> 
       continue;
     }
     // Record special cnode.
-    if (IsSpecialNode(cnode)) {
+    if (IsSpecialNode(cnode) || IsViewOps(cnode)) {
       (void)special_op_indexes->emplace_back(i);
       continue;
     }
@@ -146,7 +162,7 @@ LoadGraphMap GenerateLoadGroups(const FuncGraphPtr &fg, std::vector<AnfNodePtr> 
     if (HasSideEffect(cnode) || cnode->IsApply(prim::kPrimDepend)) {
       for (size_t n = 1; n < cnode->size(); ++n) {
         const auto &input = cnode->input(n);
-        auto ref_key = GetRefKey(input);
+        auto ref_key = GetRefKeyForParameter(input);
         if (ref_key.has_value()) {
           (void)(*param_users)[ref_key.value()].emplace_back(i);
         }

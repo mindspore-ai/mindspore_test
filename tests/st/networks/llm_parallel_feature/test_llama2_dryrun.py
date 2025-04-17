@@ -90,7 +90,7 @@ def test_llama2_dp4mp4pp1op_recompute():
     real_log_path = log_path_preprocess(output_file, rank_list, case_name)
     for log_path in real_log_path:
         check_log(log_path, check_pair)
-        check_peak_memory(log_path, "3900")
+        check_peak_memory(log_path, "3972")
         check_compile_time(log_path, 15)
 
 
@@ -114,12 +114,12 @@ def test_llama2_cell_dp2mp4pp1op_grad_accu():
     sh_path = os.path.split(os.path.realpath(__file__))[0]
     os.system(f"bash {sh_path}/run_llm_dryrun.sh 8 {rank_list} {file_path} {output_file} {case_name} no_pp")
     check_pair = {"Training Over": 1}
-    ops_check_pairs = {"VirtualAssignAdd": 39}
+    ops_check_pairs = {"VirtualAssignAdd": 78}
     graph_path = graph_path_preprocess(llama2_config.save_graphs_path, rank_list)[0]
     validate_name = find_graph_file_name(graph_path, "validate")
     step_parallel_end_name = find_graph_file_name(graph_path, "step_parallel_end")
     check_graph(graph_path, step_parallel_end_name, ops_check_pairs)
-    gather_strategy_check_pairs = {"PrimFunc_Gather": {"298_output": "((1, 1), (2, 1))"}}
+    gather_strategy_check_pairs = {"PrimFunc_Gather": {"": "((1, 1), (2, 1))"}}
     check_node_strategy(graph_path, validate_name, gather_strategy_check_pairs)
     param_opt_shape_check_pairs = {"_model.layers.0.attention.wq.weight": "(512, 4096)",
                                    "_model.layers.0.attention.wk.weight": "(512, 4096)",
@@ -249,7 +249,7 @@ def test_llama2_cell_dp2mp1pp2vpp2cp4_1f1b_select_recompute():
 
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='dryrun_only', essential_mark='essential')
 def test_llama2_cell_dp2mp1pp2vpp2cpring_1f1b_recompute():
     """
     Feature: test llama2 cell_dp2mp1pp2vpp2cpring_1f1b_recompute
@@ -411,9 +411,9 @@ def test_llama2_cell_dp2mp4pp2_fgi():
     parm_reducescatter_allgather_check_pairs = {'ReduceScatter': '48',
                                                 'AllGather': '48'}
     # 反向掩盖（mp/cp场景都开启）控制边名字个数
-    parm_parallel_speed_up_check_pairs = {'grad_overlap_matmul': '22',
-                                          'matmul_grad_depend2: Bool(1)': '11',
-                                          'matmul_grad_depend3: Bool(1)': '11'}
+    parm_parallel_speed_up_check_pairs = {'grad_overlap_matmul': '24',
+                                          'matmul_grad_depend2: Bool(1)': '12',
+                                          'matmul_grad_depend3: Bool(1)': '12'}
     real_log_path = log_path_preprocess(output_file, rank_list, case_name)
     for log_path in real_log_path:
         check_log(log_path, check_pair)

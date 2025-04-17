@@ -180,7 +180,8 @@ def test_map_param_cast():
     input_me_x = Tensor(np.random.randn(2, 3, 4, 5).astype(np.float64))
 
     net = MapNet()
-    with pytest.raises(Exception, match="Data type conversion of 'Parameter' is not supported"):
+    err_msg = "Data type conversion is not supported for a 'Parameter'"
+    with pytest.raises(Exception, match=err_msg):
         ret = net(input_me_x)
         print("ret:", ret)
 

@@ -190,6 +190,11 @@ class Resource : public ResourceBase {
   // Get the mutex for backend initializing.
   static std::mutex &GetBackendInitMutex() { return backend_init_mutex_; }
 
+  void set_is_pynative_grad_view_inplace(bool is_pynative_grad_view_inplace) {
+    is_pynative_grad_view_inplace_ = is_pynative_grad_view_inplace;
+  }
+  bool is_pynative_grad_view_inplace() const { return is_pynative_grad_view_inplace_; }
+
   PiplineLevel pipeline_level() const { return pipeline_level_; }
   void set_pipeline_level(PiplineLevel pipeline_level) { pipeline_level_ = pipeline_level; }
 
@@ -215,6 +220,7 @@ class Resource : public ResourceBase {
   mutable std::future<compile::BackendPtr> backend_future_;
   // Mutex to ensure backend creating task is running exclusively.
   static std::mutex backend_init_mutex_;
+  bool is_pynative_grad_view_inplace_{false};
   PiplineLevel pipeline_level_{kLevelNone};
 };
 

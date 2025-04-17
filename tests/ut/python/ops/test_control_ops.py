@@ -742,12 +742,9 @@ def test_while_with_weight_in_condition():
                 x += 1
             return x
 
-    with pytest.raises(RuntimeError) as info:
-        net = Net()
-        x = Tensor(-1, dtype=ms.float32)
-        grad_all(net)(x)
-    assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
-            in str(info.value))
+    net = Net()
+    x = Tensor(-1, dtype=ms.float32)
+    grad_all(net)(x)
 
 
 def test_mixed_precision_cast():

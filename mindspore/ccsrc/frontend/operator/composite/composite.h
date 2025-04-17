@@ -83,11 +83,12 @@ class HyperMap : public MetaFuncGraph {
   AnfNodePtr Make(const FuncGraphPtr &func_graph, const AnfNodePtr &fn_arg, const ArgsPairList &arg_map) const;
   std::pair<std::string, std::string> GetHyperMapInputIndex(size_t num) const;
   template <typename T>
-  void CheckArgsInSequence(const ArgsPairList &arg_map, TypeId type_id, std::size_t size) const;
+  void CheckArgsInSequence(const ArgsPairList &arg_map, TypeId type_id, std::size_t size, bool *contains_dyn) const;
   AnfNodePtr HyperMapConverter(const FuncGraphPtr &func_graph, const AnfNodePtr &fn_arg, const ArgsPairList &arg_map,
                                TypeId type_id, std::size_t size) const;
+  template <typename T>
   AnfNodePtr HyperMapDynamicConverter(const FuncGraphPtr &func_graph, const AnfNodePtr &fn_arg,
-                                      const ArgsPairList &arg_map, const TypePtr &type) const;
+                                      const ArgsPairList &arg_map, const TypePtr &element_type) const;
 
   MultitypeFuncGraphPtr fn_leaf_;
   bool reverse_;
@@ -132,6 +133,16 @@ class Tail : public MetaFuncGraph {
   bool return_ids_;
 };
 using TailPtr = std::shared_ptr<Tail>;
+
+class PrintGradient : public MetaFuncGraph {
+ public:
+  explicit PrintGradient(const std::string &name) : MetaFuncGraph(name) {}
+  ~PrintGradient() override = default;
+  MS_DECLARE_PARENT(PrintGradient, MetaFuncGraph)
+  FuncGraphPtr GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) override;
+  friend bool operator==(const PrintGradient &lhs, const PrintGradient &rhs) { return lhs.name_ == rhs.name_; }
+};
+using PrintGradientPtr = std::shared_ptr<PrintGradient>;
 
 class MakeTupleGradient : public MetaFuncGraph {
  public:

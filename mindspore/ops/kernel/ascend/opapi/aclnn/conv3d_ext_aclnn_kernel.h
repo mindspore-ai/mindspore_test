@@ -38,6 +38,8 @@ class Conv3DExtAscend : public AclnnKernelMod {
                                                   const TensorStorageInfoPtr &old_tensor_storage_info);
   template <typename T>
   void SetTensorStorageInfo(T kernel_tensor, ShapeVector shape);
+  template <typename T>
+  void SetBackTensorStorageInfo(T kernel_tensor, ShapeVector shape);
 
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
@@ -49,6 +51,7 @@ class Conv3DExtAscend : public AclnnKernelMod {
   std::vector<int64_t> output_padding_ = {0, 0, 0};
   std::shared_ptr<KernelTensor> input_kernel_tensor_;
   bool _is_batchify{true};
+  ShapeVector expand_out_shape_{};
 };
 }  // namespace conv3d_ext
 }  // namespace kernel

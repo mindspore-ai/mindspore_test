@@ -86,5 +86,9 @@ class SplitWithSizeFrontendFuncImpl : public OpFrontendFuncImpl {
   }
 };
 REGISTER_PRIMITIVE_FUNCTION_FRONTEND_FUNC_IMPL("SplitWithSize", SplitWithSizeFrontendFuncImpl);
+
+// Reuse abstract infer for SplitWithSizeView kernel
+class SplitWithSizeViewFrontendFuncImpl : public SplitWithSizeFrontendFuncImpl {};
+REGISTER_PRIMITIVE_FUNCTION_FRONTEND_FUNC_IMPL("SplitWithSizeView", SplitWithSizeViewFrontendFuncImpl);
 }  // namespace ops
 }  // namespace mindspore

@@ -142,8 +142,7 @@ void DeviceAddress::set_ptr(void *ptr) {
 
 size_t DeviceAddress::GetSize() const {
   auto kt = kernel_tensor();
-  if (kt && kt->tensor_storage_info() && kt->tensor_storage_info()->is_contiguous &&
-      (kt->tensor_storage_info()->ori_size != 0)) {
+  if (kt && kt->tensor_storage_info() && kt->tensor_storage_info()->ori_size != 0) {
     return kt->tensor_storage_info()->ori_size;
   }
   return size();
