@@ -24,17 +24,12 @@
 #include <Python.h>
 #include "pybind11/pybind11.h"
 #include "pybind11/numpy.h"
+#include "include/common/fallback.h"
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 
 namespace py = pybind11;
 namespace mindspore {
 namespace kernel {
-struct PyExecuteOutputUserData {
-  py::object obj;
-  constexpr static char key[] = "PyExecuteOutputUserData";
-};
-using PyExecuteOutputUserDataPtr = std::shared_ptr<PyExecuteOutputUserData>;
-
 class PyExecuteCpuKernelMod : public NativeCpuKernelMod {
  public:
   PyExecuteCpuKernelMod() {}

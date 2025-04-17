@@ -195,7 +195,7 @@ def test_raise_empty_input_control_flow():
     with pytest.raises(ValueError) as raise_info:
         ret = foo(input_x, input_y)
         print(ret)
-    assert "" == str(raise_info.value)
+    assert str(raise_info.value) == ""
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
 
 
@@ -239,7 +239,7 @@ def test_raise_multi_input_control_flow():
     with pytest.raises(ValueError) as raise_info:
         ret = foo(input_x, input_y)
         print(ret)
-    assert "('x is bigger than y', '.')" == str(raise_info.value)
+    assert str(raise_info.value) == "('x is bigger than y', '.')"
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
 
 

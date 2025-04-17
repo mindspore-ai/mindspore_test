@@ -26,10 +26,67 @@
 #include "ir/anf.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
 #include "utils/log_adapter.h"
-#include "frontend/ir/py_execute_py.h"
+#include "include/common/utils/convert_utils_py.h"
+#include "pipeline/jit/ps/parse/resolve.h"
+#include "include/common/fallback.h"
 
 namespace mindspore {
 namespace kernel {
+namespace {
+ValuePtr GetValueByAbstract(const abstract::AbstractBase *abstract) {
+  MS_EXCEPTION_IF_NULL(abstract);
+  if (!abstract->isa<kernel::KernelTensor>()) {
+    MS_LOG(EXCEPTION) << "Invalid kernel tensor:" << abstract->ToString();
+  }
+  const auto &kernel_tensor = dynamic_cast<const kernel::KernelTensor *>(abstract);
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  if (kernel_tensor->user_data() != nullptr) {
+    return std::make_shared<parse::PyObjectWrapper>(
+      kernel_tensor->user_data()->get<kernel::PyExecuteOutputUserData>(kernel::PyExecuteOutputUserData::key)->obj,
+      "graph python obj");
+  }
+
+  if (kernel_tensor->GetValueTrack() != nullptr && !kernel_tensor->GetValueTrack()->isa<ValueAny>()) {
+    return kernel_tensor->GetValueTrack();
+  } else if (IsShapeEmpty(kernel_tensor->GetShapeVector())) {
+    auto type_id =
+      (kernel_tensor->dtype_id() == TypeId::kTypeUnknown ? TypeId::kNumberTypeInt64 : kernel_tensor->dtype_id());
+    return std::make_shared<tensor::Tensor>(type_id, kernel_tensor->GetShapeVector());
+  }
+
+  MS_LOG(DEBUG) << "Type:" << kernel_tensor->dtype_id() << " shape:" << kernel_tensor->GetShapeVector()
+                << " size:" << kernel_tensor->size();
+  auto real_value = kernel_tensor->GetValue();
+  MS_EXCEPTION_IF_NULL(real_value);
+  if (!real_value->isa<KernelTensorValue>()) {
+    MS_LOG(EXCEPTION) << "Invalid kernel tensor value:" << real_value->ToString();
+  }
+
+  auto kernel_tensor_value = real_value->cast<KernelTensorValuePtr>();
+  MS_EXCEPTION_IF_NULL(kernel_tensor_value);
+  if (kernel_tensor->GetType() != nullptr && kernel_tensor->GetType()->isa<Number>()) {
+    return common::AnfAlgo::ValueToScalar(kernel_tensor_value, kernel_tensor->GetType()->type_id());
+  }
+
+  tensor::TensorPtr tensor =
+    std::make_shared<tensor::Tensor>(kernel_tensor->dtype_id(), kernel_tensor->GetShapeVector());
+  MS_EXCEPTION_IF_NULL(tensor);
+  if (LongToSize(tensor->data().nbytes()) != kernel_tensor_value->GetDataSize()) {
+    MS_LOG(EXCEPTION) << "Invalid host tensor size:" << tensor->data().nbytes()
+                      << " and kernel tensor size:" << kernel_tensor_value->GetDataSize() << " for pyexecute.";
+  }
+  auto data_ptr = tensor->data_c();
+  MS_EXCEPTION_IF_NULL(data_ptr);
+  const auto &res = memcpy_s(data_ptr, kernel_tensor_value->GetDataSize(), kernel_tensor_value->GetDataPtr(),
+                             kernel_tensor_value->GetDataSize());
+  if (res != EOK) {
+    MS_LOG(EXCEPTION) << "memcpy failed. res: " << res << ", for tensor:" << tensor->ToString()
+                      << " size:" << kernel_tensor_value->GetDataSize();
+  }
+  return tensor;
+}
+}  // namespace
+
 bool JoinedStrCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                  const std::vector<KernelTensor *> &outputs) {
   MS_LOG(DEBUG) << "The input size is " + std::to_string(inputs.size());
@@ -38,7 +95,7 @@ bool JoinedStrCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
 }
 
 std::string ConvertAbsToStr(KernelTensor *input) {
-  auto py_tensor = ValueToPyData(PyExecuteInitializer::GetValueFromAbstract(input));
+  auto py_tensor = ValueToPyData(GetValueByAbstract(input));
   MS_EXCEPTION_IF_NULL(py_tensor);
   return py::str(py_tensor).cast<std::string>();
 }
