@@ -1041,7 +1041,7 @@ REG_BPROP_BUILDER("MatMulExt").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   bool is_empty_tensor =
     std::any_of(x_origin_shape.begin(), x_origin_shape.end(), [](const auto &element) { return element == 0; });
   if (is_empty_tensor) {
-    return {x_origin, x_origin};
+    return {x_origin, w_origin};
   }
   auto x = x_origin;
   auto w = w_origin;

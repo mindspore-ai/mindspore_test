@@ -47,7 +47,8 @@ TensorStorageInfoPtrList ChunkStridesCalc(const OldTensorInfoPtr tensor_info, Te
         storage_info = std::make_shared<TensorStorageInfo>(old_shape, old_strides, old_shape, old_strides,
                                                            IsContiguous(old_shape, old_strides));
       }
-      return {storage_info};
+      std::vector<TensorStorageInfoPtr> storage_info_list(chunks, storage_info);
+      return storage_info_list;
     }
     MS_EXCEPTION(ValueError) << "For 'Chunk', output_num must be positive, but got 0.";
   }
@@ -56,7 +57,7 @@ TensorStorageInfoPtrList ChunkStridesCalc(const OldTensorInfoPtr tensor_info, Te
   auto num_splits = std::max<int64_t>((dim_size + split_size - 1) / split_size, 1);
   auto last_split_size = split_size - (split_size * num_splits - dim_size);
   // Create a storage information list
-  std::vector<TensorStorageInfoPtr> storage_info_list;
+  std::vector<TensorStorageInfoPtr> storage_info_list{};
 
   for (int64_t idx = 0; idx < num_splits; ++idx) {
     // Calculate the shape and length of sub tensors
