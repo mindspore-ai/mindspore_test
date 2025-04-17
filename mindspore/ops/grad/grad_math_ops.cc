@@ -1825,7 +1825,7 @@ REG_BPROP_BUILDER("AssignAdd").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib
   }
 
   std::vector<NodePtr> ret = BinopGradCommon(ib, x, y, dx, dy);
-  return {ret[0], ib->Cast(ret[1], ib->GetDtype(y))};
+  return {ret[kIndex0], ib->Cast(ret[kIndex1], ib->GetDtype(y))};
 });
 
 REG_BPROP_BUILDER("AssignSub").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
@@ -1843,7 +1843,7 @@ REG_BPROP_BUILDER("AssignSub").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib
 
   std::vector<NodePtr> ret = BinopGradCommon(ib, x, y, dx, dy);
 
-  return {ret[0], ib->Cast(ret[1], ib->GetDtype(y))};
+  return {ret[kIndex0], ib->Cast(ret[kIndex1], ib->GetDtype(y))};
 });
 
 REG_BPROP_BUILDER("Sin").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {

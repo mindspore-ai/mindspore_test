@@ -205,8 +205,8 @@ class Resource : public ResourceBase {
   CompileCacheManagerPtr compile_cache_manager_{nullptr};
   // The backend related fields for async initializing.
   static std::mutex backend_init_mutex_;
-  PiplineLevel pipeline_level_{kLevelNone};
   bool is_pynative_grad_view_inplace_{false};
+  PiplineLevel pipeline_level_{kLevelNone};
 };
 
 using ResourcePtr = std::shared_ptr<pipeline::Resource>;

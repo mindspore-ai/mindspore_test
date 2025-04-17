@@ -2522,6 +2522,7 @@ FuncGraphPtr ForHalfUnrollLess::GenerateFuncGraph(const AbstractBasePtrList &arg
   return fg;
 }
 
+// Check if dout_tuple is (dout, (dout_mask, ops_type));
 bool IsDoutTupleContainsMask(const AbstractBasePtr &abs) {
   MS_EXCEPTION_IF_NULL(abs);
   constexpr size_t expected_size = 2;
@@ -2538,6 +2539,7 @@ bool IsDoutTupleContainsMask(const AbstractBasePtr &abs) {
   }
   const auto &dmask_abs = mask_tuple_abs->elements().at(0);
   const auto &ops_type_abs = mask_tuple_abs->elements().at(index_first);
+  // If Dout_tuple: (dout, (dout_mask, ops_type), (dout, (dout_mask, ops_type)))
   if (!ops_type_abs->isa<AbstractScalar>() || dmask_abs->isa<AbstractTuple>()) {
     return false;
   }
@@ -2550,7 +2552,7 @@ bool IsDoutTupleContainsMask(const AbstractBasePtr &abs) {
     return false;
   }
   auto value = GetValue<int64_t>(ops_type_value);
-  return value == 0 || value == 1 || value == 2;
+  return value == Type_Normal || value == Type_View || value == Type_Inplace;
 }
 
 FuncGraphPtr AccumulateDout::BuildAddOutputFG(const std::string &name, const AbstractBasePtrList &args_abs_list) {
@@ -2676,10 +2678,8 @@ void AccumulateDout::CheckAccumulateDoutInputAbstract(const AbstractBasePtrList 
     auto factor_value = factor_abs->BuildValue();
     if (factor_value != kValueAny) {
       auto type = GetValue<int64_t>(factor_value);
-      constexpr size_t normal_type = 0;
-      constexpr size_t inplace_type = 2;
-      if (type != normal_type && type != inplace_type) {
-        MS_LOG(INTERNAL_EXCEPTION) << input_name << " type should be " << normal_type << " or " << inplace_type
+      if (type != Type_Normal && type != Type_Inplace) {
+        MS_LOG(INTERNAL_EXCEPTION) << input_name << " type should be " << Type_Normal << " or " << Type_Inplace
                                    << " but got " << type;
       }
       types_[input_name] = type;
@@ -2697,10 +2697,10 @@ void AccumulateDout::CheckAccumulateDoutInputAbstract(const AbstractBasePtrList 
   check_abstract(factor_abs, "factor");
 }
 
-bool AccumulateDout::IsAddDout() { return types_["factor"] == 0; }
+bool AccumulateDout::IsAddDout() { return types_["factor"] == Type_Normal; }
 
 bool AccumulateDout::IsBuildSwitchNode() {
-  if (types_["dout"] != -1 && types_["factor"] != -1) {
+  if (types_["dout"] != Type_Any && types_["factor"] != Type_Any) {
     return false;
   }
   return !IsAddDout();
@@ -2740,7 +2740,7 @@ FuncGraphPtr GenerateBpropOutTuple::GenerateFuncGraph(const AbstractBasePtrList 
   if (!input_abs->isa<abstract::AbstractTuple>()) {
     auto generate_bprop_mask = std::make_shared<prim::GenerateMask>("generate_bprop_mask");
     auto dout_mask = fg->NewCNodeInOrder({NewValueNode(generate_bprop_mask), input});
-    auto ops_type = NewValueNode(int64_t(0));
+    auto ops_type = NewValueNode(int64_t(Type_Normal));
     auto bprop_inner_mask = fg->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), dout_mask, ops_type});
     auto bprop_with_mask = fg->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), input, bprop_inner_mask});
     fg->set_output(bprop_with_mask);

@@ -158,7 +158,6 @@ void AddToManage(const pipeline::ResourceBasePtr &resources, const FuncGraphPtr 
 
 FuncGraphPtr GradOneFuncGraph(const FuncGraphPtr &func_graph, const opt::OptimizerPtr &optimizer, bool is_top,
                               BpropAutoMonadLevel level, bool is_view_inplace) {
-  MS_LOG(WARNING) << "is_view_inplace: " << is_view_inplace;
   MS_EXCEPTION_IF_NULL(func_graph);
   auto gradkv = func_graph->transforms().find("grad");
   if (gradkv != func_graph->transforms().end()) {

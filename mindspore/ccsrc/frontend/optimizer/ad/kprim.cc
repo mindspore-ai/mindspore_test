@@ -175,7 +175,10 @@ AnfNodePtr InplaceArgsClone(const FuncGraphPtr &fprop, const FuncGraphPtr &bprop
   }
 }
 
-CNodePtr CalDoutWithMask(const FuncGraphPtr &fg, const AnfNodePtr &dout_node) {
+AnfNodePtr CalDoutWithMask(const FuncGraphPtr &fg, const AnfNodePtr &dout_node, bool is_view_inplace) {
+  if (!is_view_inplace) {
+    return dout_node;
+  }
   auto get_dout_tuple = std::make_shared<prim::GenerateBpropOutTuple>("get_dout_tuple");
   return fg->NewCNodeInOrder({NewValueNode(get_dout_tuple), dout_node});
 }
@@ -460,19 +463,14 @@ AnfNodePtr KPrim::BuildOutput(const FuncGraphPtr &bprop_fg, const FuncGraphPtr &
     args.push_back(NewValueNode(prim::kPrimMakeTuple));
     args.push_back(NewEnviron(bprop_fg));
     // The lifted parameters are put in front.
-    if (is_view_inplace) {
-      if (!extra_lifted_args.empty()) {
-        std::transform(extra_lifted_args.cbegin(), extra_lifted_args.cend(), std::back_inserter(args),
-                       [bprop_fg](const AnfNodePtr &arg) { return CalDoutWithMask(bprop_fg, arg); });
-      }
-      std::transform(inputs.cbegin() + 1, inputs.cend(), std::back_inserter(args),
-                     [bprop_fg](const AnfNodePtr &arg) { return CalDoutWithMask(bprop_fg, arg); });
-    } else {
-      if (!extra_lifted_args.empty()) {
-        (void)args.insert(args.cend(), extra_lifted_args.cbegin(), extra_lifted_args.cend());
-      }
-      (void)args.insert(args.cend(), inputs.cbegin() + 1, inputs.cend());
+    if (!extra_lifted_args.empty()) {
+      std::transform(
+        extra_lifted_args.cbegin(), extra_lifted_args.cend(), std::back_inserter(args),
+        [bprop_fg, is_view_inplace](const AnfNodePtr &arg) { return CalDoutWithMask(bprop_fg, arg, is_view_inplace); });
     }
+    std::transform(
+      inputs.cbegin() + 1, inputs.cend(), std::back_inserter(args),
+      [bprop_fg, is_view_inplace](const AnfNodePtr &arg) { return CalDoutWithMask(bprop_fg, arg, is_view_inplace); });
     if (!extra_monad_args.empty()) {
       (void)args.insert(args.cend(), extra_monad_args.cbegin(), extra_monad_args.cend());
     }
@@ -503,22 +501,16 @@ AnfNodePtr KPrim::BuildOutput(const FuncGraphPtr &bprop_fg, const FuncGraphPtr &
 
   std::vector<AnfNodePtr> res_args{NewValueNode(prim::kPrimMakeTuple)};
   if (!extra_lifted_args.empty()) {
-    if (is_view_inplace) {
-      std::transform(extra_lifted_args.cbegin(), extra_lifted_args.cend(), std::back_inserter(res_args),
-                     [bprop_fg](const AnfNodePtr &arg) { return CalDoutWithMask(bprop_fg, arg); });
-      auto extra_tuple = NewCNode(res_args, bprop_fg);
-      tuple_env = NewCNode({tuple_add_ops, tuple_env, extra_tuple}, bprop_fg);
-    } else {
-      (void)extra_lifted_args.insert(extra_lifted_args.cbegin(), NewValueNode(prim::kPrimMakeTuple));
-      auto extra_tuple = NewCNode(extra_lifted_args, bprop_fg);
-      tuple_env = NewCNode({tuple_add_ops, tuple_env, extra_tuple}, bprop_fg);
-    }
+    std::transform(
+      extra_lifted_args.cbegin(), extra_lifted_args.cend(), std::back_inserter(res_args),
+      [bprop_fg, is_view_inplace](const AnfNodePtr &arg) { return CalDoutWithMask(bprop_fg, arg, is_view_inplace); });
+    auto extra_tuple = NewCNode(res_args, bprop_fg);
+    tuple_env = NewCNode({tuple_add_ops, tuple_env, extra_tuple}, bprop_fg);
   }
   auto bprop_fg_output = bprop_fg->output();
   if (is_view_inplace) {
-    auto bprop_out = bprop_fg->output()->cast<CNodePtr>();
     auto generate_dout_tuple = std::make_shared<prim::GenerateBpropOutTuple>("generate_bprop_out_tuple");
-    bprop_fg_output = bprop_fg->NewCNodeInOrder({NewValueNode(generate_dout_tuple), bprop_fg->output()});
+    bprop_fg_output = bprop_fg->NewCNodeInOrder({NewValueNode(generate_dout_tuple), bprop_fg_output});
   }
   if (!extra_monad_args.empty()) {
     (void)extra_monad_args.insert(extra_monad_args.cbegin(), NewValueNode(prim::kPrimMakeTuple));

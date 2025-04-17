@@ -39,8 +39,8 @@ void Primitive::SetSideEffectFlag(const std::string &name, bool inplace_prim) {
   }
 }
 
-const std::vector<int64_t> GetInplaceIndexes(PrimitivePtr prim) {
-  auto op_def = mindspore::ops::GetOpDef(prim->name());
+std::vector<int64_t> Primitive::GetInplaceIndexes() {
+  auto op_def = mindspore::ops::GetOpDef(name());
   std::vector<int64_t> indexes{};
   if (op_def != nullptr) {
     // Get inplace_indexes for a primtive defined by yaml.
@@ -49,13 +49,13 @@ const std::vector<int64_t> GetInplaceIndexes(PrimitivePtr prim) {
       auto inplace_index = op_def->returns_[index].inplace_input_index_;
       (void)indexes.emplace_back(inplace_index);
     }
-    MS_LOG(DEBUG) << "For Primitive '" << prim->name() << "', the inplace_input_indexes is " << indexes;
+    MS_LOG(DEBUG) << "For Primitive '" << name() << "', the inplace_input_indexes is " << indexes;
     return indexes;
   }
   // Try to get inplace_indexes for a Python primitive.
-  auto input_names = prim->GetAttr("input_names");
-  auto output_names = prim->GetAttr("output_names");
-  if ((input_names == nullptr) || (output_names == nullptr)) {
+  auto input_names = GetAttr("input_names");
+  auto output_names = GetAttr("output_names");
+  if (input_names == nullptr || output_names == nullptr) {
     return indexes;
   }
   const auto &input_name_list = GetValue<std::vector<std::string>>(input_names);
@@ -66,7 +66,7 @@ const std::vector<int64_t> GetInplaceIndexes(PrimitivePtr prim) {
     output_name_list = GetValue<std::vector<std::string>>(output_names);
   }
   for (const auto &output : output_name_list) {
-    const auto &rw_write_indexes = prim->rw_write_input_indexes();
+    const auto &rw_write_indexes = rw_write_input_indexes();
     auto iter = std::find(input_name_list.begin(), input_name_list.end(), output);
     auto index = std::distance(input_name_list.begin(), iter);
     // Record the ref index when output's name is one of inputs' names and this input is rw_write.
@@ -75,7 +75,7 @@ const std::vector<int64_t> GetInplaceIndexes(PrimitivePtr prim) {
     auto inplace_index = is_ref ? index : -1;
     (void)indexes.emplace_back(inplace_index);
   }
-  MS_LOG(DEBUG) << "For Primitive '" << prim->name() << "', the inplace_input_indexes is " << indexes;
+  MS_LOG(DEBUG) << "For Primitive '" << name() << "', the inplace_input_indexes is " << indexes;
   return indexes;
 }
 
@@ -195,8 +195,8 @@ void Primitive::set_signatures(const std::vector<Signature> &signatures) {
       (void)rw_write_input_indexes_.emplace_back(i);
     }
   }
-  auto inplace_inout_indexes = GetInplaceIndexes(std::make_shared<Primitive>(*this));
-  set_inplace_input_indexes(inplace_inout_indexes);
+  auto inplace_input_indexes = GetInplaceIndexes();
+  set_inplace_input_indexes(inplace_input_indexes);
 }
 
 std::string Primitive::ToString() const {

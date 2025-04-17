@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2024 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,17 +68,6 @@ bool UpdateStateUseOnly(const AnfNodePtr &node, const NodeUsersMap &node_user_ma
   }
   return std::all_of(node_users_iter->second.begin(), node_users_iter->second.end(),
                      [](const auto &pair) { return IsPrimitiveCNode(pair.first, prim::kPrimUpdateState); });
-}
-
-std::vector<int64_t> GetInplaceIndexes(const mindspore::ops::OpDefPtr &op_def) {
-  MS_EXCEPTION_IF_NULL(op_def);
-  size_t output_size = op_def->returns_.size();
-  std::vector<int64_t> indexes;
-  for (size_t index = 0; index < output_size; ++index) {
-    auto inplace_index = op_def->returns_[index].inplace_input_index_;
-    (void)indexes.emplace_back(inplace_index);
-  }
-  return indexes;
 }
 
 // Handle bprob of op which input dtype is real number and output dtype is complex number.
@@ -369,14 +358,12 @@ CNodePtr DFunctor::CalDoutTuple(const CNodePtr &cnode_morph, const CNodePtr &din
                                 int index) {
   bool single_tensor_view = false;
   bool inplace_prim = false;
-  std::vector<int64_t> inplace_indexes;
   auto prim = GetValueNode<PrimitivePtr>(cnode_morph->input(0));
   if (prim != nullptr) {
     const auto &prim_name = prim->name();
     inplace_prim = prim->inplace_prim();
     auto op_def = mindspore::ops::GetOpDef(prim_name);
     if (op_def != nullptr) {
-      inplace_indexes = GetInplaceIndexes(op_def);
       single_tensor_view =
         op_def->is_graph_view_ && (op_def->returns_[0].arg_dtype_ == mindspore::ops::OP_DTYPE::DT_TENSOR);
     }
@@ -399,19 +386,20 @@ CNodePtr DFunctor::CalDoutTuple(const CNodePtr &cnode_morph, const CNodePtr &din
 
   if (inplace_prim) {
     // For inplace_prim, Change the ops_type when do backpropagate.
+    auto inplace_indexes = prim->inplace_input_indexes();
     auto iter = std::find(inplace_indexes.begin(), inplace_indexes.end(), (index - 1));
     if (iter != inplace_indexes.end()) {
-      auto dout_tuple = caller->NewCNodeInOrder(
-        {NewValueNode(prim::kPrimMakeTuple), din,
-         caller->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), dmask, NewValueNode(int64_t(2))})});
+      auto dout_tuple =
+        caller->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), din,
+                                 caller->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), dmask,
+                                                          NewValueNode(int64_t(prim::OpsType::Type_Inplace))})});
       return dout_tuple;
     }
     return din_tuple;
   }
 
+  // For View_ops, Just record the first input.
   if (single_tensor_view && index == 1) {
-    // For View_ops, Just record the first input.
-
     // Get Din/dmask/ops_type from node_adjoint->dout(): (din, (dmask, ops_tye));
     auto node_dout_tuple = caller->NewCNodeInOrder(
       {NewValueNode(prim::kPrimTupleGetItem), node_adjoint->real_dout(), NewValueNode(int64_t(1))});
@@ -464,7 +452,6 @@ void DFunctor::BackPropagate(const CNodePtr &cnode_morph, const AdjointPtr &node
   // Call with delimited continuation dout.
   CNodePtr bprop_app;
   if (HasSideEffectBackProp(cnode_morph)) {
-    // as MapMorphism is called recursively, so the order of bprop_app should reversed as visited order.
     bprop_app = tape_->NewCNodeInOrder({bprop, node_adjoint->dout()});
     tape_->set_flag(mindspore::kFuncGraphFlagReAutoMonad, true);
   } else {
@@ -661,7 +648,7 @@ void DFunctor::MapFreeMorphism() {
     auto cnode = dyn_cast<CNode>(node);
     auto node_adjoint_iter = anfnode_to_adjoin_.find(node);
     if (node_adjoint_iter == anfnode_to_adjoin_.end()) {
-      MS_LOG(EXCEPTION) << "Cannot find node_adjoint_iter";
+      MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, node) << "The node adjoint is null, " << node->DebugString();
     }
     auto node_adjoint = node_adjoint_iter->second;
     BackPropagate(cnode, node_adjoint);
@@ -752,7 +739,7 @@ void DFunctor::MapMorphism() {
     auto cnode = dyn_cast<CNode>(node);
     auto node_adjoint_iter = anfnode_to_adjoin_.find(node);
     if (node_adjoint_iter == anfnode_to_adjoin_.end()) {
-      MS_LOG(EXCEPTION) << "Cannot find node_adjoint_iter";
+      MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, node) << "The node adjoint is null, " << node->DebugString();
     }
     auto node_adjoint = node_adjoint_iter->second;
     BackPropagate(cnode, node_adjoint);

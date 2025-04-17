@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2020-2021 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,7 +80,7 @@ class DFunctor : public std::enable_shared_from_this<DFunctor> {
   void BackPropagateFv(const AnfNodePtr &fv, const AnfNodePtr &din);
   void BackPropagateSwitchLayer(const CNodePtr &cnode_morph, const CNodePtr &env);
   void BackPropagate(const CNodePtr &cnode_morph, const AdjointPtr &node_adjoint);
-  // Get dout_mask for view_ops when do BackPropagate.
+  // Get dout_mask for ops when do BackPropagate.
   CNodePtr CalDoutTuple(const CNodePtr &cnode_morph, const CNodePtr &din_tuple, const AdjointPtr &node_adjoint,
                         int index);
   AnfNodePtr AttachFvDoutToTape(const AnfNodePtr &grad_fv);

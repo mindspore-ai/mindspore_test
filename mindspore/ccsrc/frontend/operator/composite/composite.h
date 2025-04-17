@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,6 +48,12 @@ using ElemwiseMap = mindspore::HashMap<std::string, PrimitivePtr>;
 using ArgsPairList = std::vector<std::pair<AnfNodePtr, TypePtr>>;
 using AbstractListPtr = abstract::AbstractListPtr;
 
+typedef enum OpsType {
+  Type_Any = -1,
+  Type_Normal = 0,
+  Type_View,
+  Type_Inplace,
+} OpsType;
 class HyperMap : public MetaFuncGraph {
  public:
   explicit HyperMap(bool reverse = false, const std::shared_ptr<MultitypeFuncGraph> &fn_leaf = nullptr);
