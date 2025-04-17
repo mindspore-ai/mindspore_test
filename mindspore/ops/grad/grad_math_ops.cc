@@ -1038,10 +1038,13 @@ REG_BPROP_BUILDER("MatMulExt").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   auto w_origin = ib->GetInput(kIndex1);
   auto dout_origin = ib->GetInput(kIndex3);
   auto x_origin_shape = x_origin->shape();
-  bool is_empty_tensor =
-    std::any_of(x_origin_shape.begin(), x_origin_shape.end(), [](const auto &element) { return element == 0; });
-  if (is_empty_tensor) {
-    return {x_origin, w_origin};
+  auto w_origin_shape = w_origin->shape();
+  bool is_x_empty = IsShapeNone(x_origin_shape);
+  bool is_w_empty = IsShapeNone(w_origin_shape);
+  if (is_x_empty || is_w_empty) {
+    NodePtr dx = is_x_empty ? x_origin : ib->OutZeros(x_origin);
+    NodePtr dw = is_w_empty ? w_origin : ib->OutZeros(w_origin);
+    return {dx, dw};
   }
   auto x = x_origin;
   auto w = w_origin;
@@ -1056,8 +1059,8 @@ REG_BPROP_BUILDER("MatMulExt").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
     x = ib->Transpose(x, shapes[3]);
     w = ib->Transpose(w, shapes[4]);
 
-    NodePtr dx;
-    NodePtr dw;
+    NodePtr dx = nullptr;
+    NodePtr dw = nullptr;
 
     dx = ib->MatMulExt(dout, w);
     dw = ib->MatMulExt(x, dout);
