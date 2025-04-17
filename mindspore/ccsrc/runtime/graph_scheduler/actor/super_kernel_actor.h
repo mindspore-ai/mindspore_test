@@ -26,7 +26,7 @@
 #include <set>
 #include "runtime/graph_scheduler/actor/debug_aware_actor.h"
 #include "runtime/graph_scheduler/actor/actor_common.h"
-#include "runtime/graph_scheduler/actor/kernel_actor.h"
+#include "runtime/graph_scheduler/actor/kernel_runner.h"
 #include "runtime/graph_scheduler/actor/kernel_async_launch_actor.h"
 #include "runtime/graph_scheduler/actor/kernel_async_infer_actor.h"
 #include "runtime/graph_scheduler/actor/kernel_async_resize_actor.h"
@@ -90,7 +90,7 @@ class SuperKernelActor : public DebugAwareActor {
   const KernelGraphPtr &graph() const { return graph_; }
 
   void BuildAndLinkKernelActors();
-  const std::vector<KernelActorPtr> &kernel_actors() const { return kernel_actors_; }
+  const std::vector<KernelRunnerPtr> &kernel_actors() const { return kernel_actors_; }
   const std::vector<size_t> &input_param_static_use_cnt() const { return input_params_use_cnt_; }
   const std::vector<bool> &is_input_used() const { return is_input_used_; }
   bool enable_kbk_sub_graph_execute() const { return enable_kbk_sub_graph_execute_; }
@@ -112,18 +112,18 @@ class SuperKernelActor : public DebugAwareActor {
   // relationship in the graph.
   void SetFreePositionForKernelActor();
   void SetInputFreePositionForKernelActor(
-    const KernelActorPtr &kernel_actor,
+    const KernelRunnerPtr &kernel_actor,
     const mindspore::HashMap<AnfNodePtr, device::DeviceContextKey> &kernel_to_context_key,
     const device::DeviceContextKey &graph_device_context_key,
     std::set<std::pair<KernelWithIndex, FreeNodeInfo>> *checked_nodes);
   void SetOutputFreePositionForKernelActor(
-    const KernelActorPtr &kernel_actor,
+    const KernelRunnerPtr &kernel_actor,
     const mindspore::HashMap<AnfNodePtr, device::DeviceContextKey> &kernel_to_context_key,
     const device::DeviceContextKey &graph_device_context_key,
     std::set<std::pair<KernelWithIndex, FreeNodeInfo>> *checked_nodes);
   void GetRefCountForGraphOutput(const std::vector<AnfNodePtr> &output_data_nodes,
                                  const std::vector<DataArrowPtr> &output_data_arrows,
-                                 const mindspore::HashMap<AnfNodePtr, KernelActor *> &kernel_to_actor,
+                                 const mindspore::HashMap<AnfNodePtr, KernelRunner *> &kernel_to_actor,
                                  const std::map<uint32_t, std::vector<CNodePtr>> &inplace_groups,
                                  const std::string &actor_name);
 
@@ -147,9 +147,9 @@ class SuperKernelActor : public DebugAwareActor {
   // Generate and initialize all kernel actors by execution order of graph_ for kerkel by kernl execute a sub garph
   // mode.
   void BuildKernelActors();
-  KernelActorPtr BuildInnerControlFlowActor(const CNodePtr &kernel, const DeviceContext *device_context,
-                                            GraphExecutionStrategy strategy, const std::set<size_t> &ref_input_indexes,
-                                            const std::set<size_t> &ref_output_indexes);
+  KernelRunnerPtr BuildInnerControlFlowActor(const CNodePtr &kernel, const DeviceContext *device_context,
+                                             GraphExecutionStrategy strategy, const std::set<size_t> &ref_input_indexes,
+                                             const std::set<size_t> &ref_output_indexes);
 
   // Parse all nodes dependence of graph_, record device tensor store key of every kernel, calculate original ref
   // count of CNode and Parameter, prepare input and heterogeneous output device address of all kernels.
@@ -160,7 +160,7 @@ class SuperKernelActor : public DebugAwareActor {
   void AnalyseNodesDependence(const HashMap<size_t, AnfNodePtr> &device_tensor_store_keys_map,
                               const HashMap<size_t, ParameterInfo> &parameter_indexs_map,
                               const HashMap<AnfNodePtr, std::vector<size_t>> &output_node_to_actor_output_index,
-                              std::vector<std::pair<KernelActorPtr, size_t>> *param_first_used_kernel_actors);
+                              std::vector<std::pair<KernelRunnerPtr, size_t>> *param_first_used_kernel_actors);
 
   void LinkKernelActor(const CNodePtr &kernel, size_t input_index, const AnfNodePtr &input_node, size_t output_index);
   void LinkKernelActorByDeviceType(const CNodePtr &kernel, size_t input_index, const AnfNodePtr &input_node,
@@ -177,30 +177,30 @@ class SuperKernelActor : public DebugAwareActor {
   void FetchPersistentDeviceTensor();
 
   void UpdateMemoryTraceMangerStatus(OpContext<KernelTensor> *const context);
-  void SetTraceMemoryForKernel(const KernelActorPtr &kernel_actor, bool safe_update = false);
+  void SetTraceMemoryForKernel(const KernelRunnerPtr &kernel_actor, bool safe_update = false);
   // Allocate block memory for use trace memory (run by static shape) step.
   void AllocateTraceMemory(OpContext<KernelTensor> *const context) const;
   // Free block memory for use trace memory (run by static shape) step.
   void FreeTraceMemory() const;
-  void SetInputTraceMemory(const KernelActorPtr &kernel_actor) const;
+  void SetInputTraceMemory(const KernelRunnerPtr &kernel_actor) const;
 
   // Handle copy output for different device type kernel.
-  bool CopyHeterogeneousOutput(OpContext<KernelTensor> *const context, const KernelActorPtr &kernel_actor) const;
+  bool CopyHeterogeneousOutput(OpContext<KernelTensor> *const context, const KernelRunnerPtr &kernel_actor) const;
 
   void UpdateOutputAddress(const std::vector<std::pair<size_t, std::vector<size_t>>> &kernel_inputs_to_actor_outputs,
-                           const KernelActorPtr &kernel_actor);
+                           const KernelRunnerPtr &kernel_actor);
 
   // Launch all kernels by execution order in kernel graph: graph_.
   bool LaunchAllKernels(OpContext<KernelTensor> *const context);
 
   void TrackInputMemory();
 
-  void FetchParameterInput(const KernelActorPtr &kernel_actor, OpContext<KernelTensor> *const context);
+  void FetchParameterInput(const KernelRunnerPtr &kernel_actor, OpContext<KernelTensor> *const context);
   void FreeInputParamWithoutUser(OpContext<KernelTensor> *const context);
   void RecordKernelActorWeight();
 
   // Prepare non top cell input, such as internal parameter msg input, control flow msg input and const value.
-  bool FetchMsgInputAndConstValueForKernel(KernelActor *kernel_actor, OpContext<KernelTensor> *const context);
+  bool FetchMsgInputAndConstValueForKernel(KernelRunner *kernel_actor, OpContext<KernelTensor> *const context);
 
   void ParallelDispatchKernels(OpContext<KernelTensor> *const context);
   // Dispatch kernel which can parallel launch.
@@ -247,9 +247,9 @@ class SuperKernelActor : public DebugAwareActor {
   // Record whether the input is used by kernel actor.
   std::vector<bool> is_input_used_;
   // Record every param first used kernel actor to correct the ref count.
-  mindspore::HashMap<KernelActorPtr, std::vector<std::pair<size_t, size_t>>> kernel_actor_to_graph_parameters_map_;
+  mindspore::HashMap<KernelRunnerPtr, std::vector<std::pair<size_t, size_t>>> kernel_actor_to_graph_parameters_map_;
   // Record which kernel actor should insert event when fetch parameter on non-default stream.
-  mindspore::HashSet<KernelActor *> kernel_actors_insert_event_;
+  mindspore::HashSet<KernelRunner *> kernel_actors_insert_event_;
 
   // Record all parameter nodes of graph_ and their index positions in graph_'s input_nodes.
   mindspore::HashMap<AnfNode *, size_t> param_node_to_input_idx_;
@@ -257,8 +257,8 @@ class SuperKernelActor : public DebugAwareActor {
   // Kernel by kernel sub graph execute mode need not send actor message.
   bool enable_kbk_sub_graph_execute_;
   bool already_fetch_persistent_device_tensor_{false};
-  mindspore::HashMap<AnfNodePtr, KernelActor *> cnode_to_kernel_actor_;
-  std::vector<KernelActorPtr> kernel_actors_;
+  mindspore::HashMap<AnfNodePtr, KernelRunner *> cnode_to_kernel_actor_;
+  std::vector<KernelRunnerPtr> kernel_actors_;
   // Indices from other actor.
   mindspore::HashMap<AnfNode *, std::vector<std::pair<size_t, size_t>>> kernel_input_to_graph_input_indices_;
   mindspore::HashMap<AnfNode *, std::vector<std::pair<size_t, std::vector<size_t>>>>
@@ -273,9 +273,9 @@ class SuperKernelActor : public DebugAwareActor {
 
   // The variables for parallel dispatch kernel.
   bool enable_parallel_dispatch_{false};
-  std::vector<std::vector<KernelActorPtr>> parallel_launch_kernels_;
-  std::vector<KernelActorPtr> serial_launch_kernels_;
-  HashMap<KernelActor *, std::vector<DeviceEventPtr>> serial_launch_kernels_to_events_;
+  std::vector<std::vector<KernelRunnerPtr>> parallel_launch_kernels_;
+  std::vector<KernelRunnerPtr> serial_launch_kernels_;
+  HashMap<KernelRunner *, std::vector<DeviceEventPtr>> serial_launch_kernels_to_events_;
 
   static size_t parallel_dispatch_num_;
   static size_t parallel_slice_num_;

@@ -23,6 +23,8 @@
 #include "runtime/graph_scheduler/actor/output_actor.h"
 #include "runtime/graph_scheduler/actor/memory_manager_actor.h"
 #include "runtime/graph_scheduler/actor/debug_actor.h"
+#include "runtime/graph_scheduler/actor/control_flow/condition_switch_runner.h"
+#include "runtime/graph_scheduler/actor/control_flow/condition_gather_runner.h"
 #include "runtime/pipeline/task/batch_launch_kernel_task.h"
 #include "include/common/runtime_conf/runtime_conf.h"
 #include "async/async.h"
@@ -103,9 +105,9 @@ bool IsOnlyDependShape(const CNodePtr &kernel, size_t input_index) {
 }
 
 void SetParamFirstUsedKernelActors(
-  size_t graph_input_index, size_t actor_input_index, KernelActorPtr *kernel_actor,
-  std::vector<std::pair<KernelActorPtr, size_t>> *param_first_used_kernel_actors,
-  mindspore::HashMap<size_t, mindspore::HashMap<size_t, KernelActorPtr>> *param_first_used_actors_on_stream) {
+  size_t graph_input_index, size_t actor_input_index, KernelRunnerPtr *kernel_actor,
+  std::vector<std::pair<KernelRunnerPtr, size_t>> *param_first_used_kernel_actors,
+  mindspore::HashMap<size_t, mindspore::HashMap<size_t, KernelRunnerPtr>> *param_first_used_actors_on_stream) {
   if (!EnableInputOptimize()) {
     return;
   }
@@ -134,8 +136,8 @@ void SetParamFirstUsedKernelActors(
 }
 
 void CollectStreamFirstUsedParamKernelActors(
-  mindspore::HashMap<size_t, mindspore::HashMap<size_t, KernelActorPtr>> *param_first_used_actors_on_stream,
-  mindspore::HashSet<KernelActor *> *kernel_actors_insert_event) {
+  mindspore::HashMap<size_t, mindspore::HashMap<size_t, KernelRunnerPtr>> *param_first_used_actors_on_stream,
+  mindspore::HashSet<KernelRunner *> *kernel_actors_insert_event) {
   if (!EnableInputOptimize()) {
     return;
   }
@@ -566,7 +568,7 @@ void SuperKernelActor::UpdateMemoryTraceMangerStatus(OpContext<KernelTensor> *co
   }
 }
 
-void SuperKernelActor::SetTraceMemoryForKernel(const KernelActorPtr &kernel_actor, bool safe_update) {
+void SuperKernelActor::SetTraceMemoryForKernel(const KernelRunnerPtr &kernel_actor, bool safe_update) {
   const auto &kernel = kernel_actor->kernel();
   MS_EXCEPTION_IF_NULL(kernel);
 
@@ -604,7 +606,7 @@ void SuperKernelActor::SetTraceMemoryForKernel(const KernelActorPtr &kernel_acto
   }
 }
 
-void SuperKernelActor::SetInputTraceMemory(const KernelActorPtr &kernel_actor) const {
+void SuperKernelActor::SetInputTraceMemory(const KernelRunnerPtr &kernel_actor) const {
   const auto &merge_blocks_with_device_context = MemoryTraceManager::GetInstance().GetMergeBlocks();
   MS_EXCEPTION_IF_NULL(merge_blocks_with_device_context);
   const auto &merge_blocks = merge_blocks_with_device_context->at(kernel_actor->device_contexts_[0]);
@@ -665,7 +667,7 @@ void SuperKernelActor::FreeTraceMemory() const {
 }
 
 bool SuperKernelActor::CopyHeterogeneousOutput(OpContext<KernelTensor> *const context,
-                                               const KernelActorPtr &kernel_actor) const {
+                                               const KernelRunnerPtr &kernel_actor) const {
   if (!WaitRuntimePipelineFinish(context, kernel_actor->kernel_mod_->kernel_name())) {
     return false;
   }
@@ -730,7 +732,7 @@ bool SuperKernelActor::CopyHeterogeneousOutput(OpContext<KernelTensor> *const co
 
 void SuperKernelActor::UpdateOutputAddress(
   const std::vector<std::pair<size_t, std::vector<size_t>>> &kernel_inputs_to_actor_outputs,
-  const KernelActorPtr &kernel_actor) {
+  const KernelRunnerPtr &kernel_actor) {
   for (const auto &pair : kernel_inputs_to_actor_outputs) {
     size_t kernel_input_index = pair.first;
     KernelTensorPtr real_input = kernel_actor->input_kernel_tensors_[kernel_input_index];
@@ -748,7 +750,8 @@ void SuperKernelActor::UpdateOutputAddress(
   }
 }
 
-void SuperKernelActor::FetchParameterInput(const KernelActorPtr &kernel_actor, OpContext<KernelTensor> *const context) {
+void SuperKernelActor::FetchParameterInput(const KernelRunnerPtr &kernel_actor,
+                                           OpContext<KernelTensor> *const context) {
   if (!enable_input_optimize_) {
     return;
   }
@@ -851,7 +854,7 @@ void SuperKernelActor::FreeInputParamWithoutUser(OpContext<KernelTensor> *const 
   }
 }
 
-bool SuperKernelActor::FetchMsgInputAndConstValueForKernel(KernelActor *kernel_actor,
+bool SuperKernelActor::FetchMsgInputAndConstValueForKernel(KernelRunner *kernel_actor,
                                                            OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(kernel_actor);
   const auto &kernel = kernel_actor->kernel();
@@ -938,7 +941,7 @@ bool SuperKernelActor::LaunchAllKernels(OpContext<KernelTensor> *const context) 
       // Push run task to pipeline.
       // Note: dynamic value or static shape also need push task into infer actor to make sure correct kernel
       // execution order.
-      Async(kernel_async_infer_aid_, &KernelAsyncInferActor::InferShape, context, kernel_actor.get());
+      Async(kernel_async_infer_aid_, &KernelAsyncInferActor::InferShapeV2, context, kernel_actor.get());
 
       // The computed depend kernel should wait output shape update after kernel launch.
       if (kernel_actor->kernel_mod_->IsNeedUpdateOutputShapeAndSize()) {
@@ -960,7 +963,7 @@ bool SuperKernelActor::LaunchAllKernels(OpContext<KernelTensor> *const context) 
         kernel_actor->InferAndUpdateDeviceTensorSize(context);
       }
 
-      Async(kernel_async_launch_aid_, &KernelAsyncLaunchActor::LaunchKernel, context, kernel_actor.get());
+      Async(kernel_async_launch_aid_, &KernelAsyncLaunchActor::LaunchKernelV2, context, kernel_actor.get());
 
       // The computed depend kernel should wait output shape update after kernel launch.
       if (kernel_actor->kernel_mod_->IsNeedUpdateOutputShapeAndSize()) {
@@ -1510,7 +1513,7 @@ void SuperKernelActor::SetRelationForControlFlow() {
     return;
   }
   enable_inline_control_flow_ = true;
-  std::map<std::string, KernelActorPtr> name_to_actors;
+  std::map<std::string, KernelRunnerPtr> name_to_actors;
   for (const auto &kernel_actor : kernel_actors_) {
     MS_EXCEPTION_IF_NULL(kernel_actor);
     name_to_actors[kernel_actor->GetAID().Name()] = kernel_actor;
@@ -1533,15 +1536,15 @@ void SuperKernelActor::SetRelationForControlFlow() {
       }
       const auto &actor = switch_actor_iter->second;
       MS_EXCEPTION_IF_NULL(actor);
-      const auto &switch_actor = dynamic_cast<ConditionSwitchActor *>(actor.get());
+      const auto &switch_actor = dynamic_cast<ConditionSwitchRunner *>(actor.get());
       MS_EXCEPTION_IF_NULL(switch_actor);
-      const auto &gather_actor = dynamic_cast<ConditionGatherActor *>(kernel_actor.get());
+      const auto &gather_actor = dynamic_cast<ConditionGatherRunner *>(kernel_actor.get());
       MS_EXCEPTION_IF_NULL(gather_actor);
       switch_actor->gather_branch_name_ = &gather_actor->current_branch_name_;
       MS_EXCEPTION_IF_NULL(switch_actor->branch_flags_);
       gather_actor->branch_flags_ = switch_actor->branch_flags_;
     } else if (common::AnfAlgo::CheckPrimitiveType(kernel_actor->kernel_, prim::kPrimConditionSwitch)) {
-      const auto &switch_actor = dynamic_cast<ConditionSwitchActor *>(kernel_actor.get());
+      const auto &switch_actor = dynamic_cast<ConditionSwitchRunner *>(kernel_actor.get());
       MS_EXCEPTION_IF_NULL(switch_actor);
       std::shared_ptr<bool[]> flags(new bool[switch_actor->branch_names_.size()], std::default_delete<bool[]>());
       switch_actor->branch_flags_ = flags;
@@ -1614,11 +1617,11 @@ void SuperKernelActor::PartitionParallelDispatchKernels() {
   auto begin_iter = kernel_actors_.begin();
   for (size_t i = 0; i < parallel_launch_kernels_.size(); i++) {
     if (i < parallel_launch_kernels_.size() - 1) {
-      parallel_launch_kernels_[i] = std::vector<KernelActorPtr>(begin_iter + i * kernel_num_per_dispatcher,
-                                                                begin_iter + (i + 1) * kernel_num_per_dispatcher);
+      parallel_launch_kernels_[i] = std::vector<KernelRunnerPtr>(begin_iter + i * kernel_num_per_dispatcher,
+                                                                 begin_iter + (i + 1) * kernel_num_per_dispatcher);
     } else {
       parallel_launch_kernels_[i] =
-        std::vector<KernelActorPtr>(begin_iter + i * kernel_num_per_dispatcher, kernel_actors_.end());
+        std::vector<KernelRunnerPtr>(begin_iter + i * kernel_num_per_dispatcher, kernel_actors_.end());
     }
     MS_LOG(INFO) << "The kernel group[" << i << "] kernel num: " << parallel_launch_kernels_[i].size();
   }
@@ -1660,7 +1663,7 @@ void SuperKernelActor::PartitionParallelDispatchKernels() {
 }
 
 void SuperKernelActor::RecreateCommunicationGroup() {
-  std::vector<std::vector<KernelActorPtr>> parallel_launch_comm_kernels(parallel_dispatch_num_);
+  std::vector<std::vector<KernelRunnerPtr>> parallel_launch_comm_kernels(parallel_dispatch_num_);
   HashSet<std::string> group_set;
   // 1. Collect communication ops.
   for (size_t i = 0; i < parallel_dispatch_num_; i++) {
@@ -1744,10 +1747,11 @@ void SuperKernelActor::RecreateCommunicationGroup() {
   }
 }
 
-KernelActorPtr SuperKernelActor::BuildInnerControlFlowActor(const CNodePtr &kernel, const DeviceContext *device_context,
-                                                            GraphExecutionStrategy strategy,
-                                                            const std::set<size_t> &ref_input_indexes,
-                                                            const std::set<size_t> &ref_output_indexes) {
+KernelRunnerPtr SuperKernelActor::BuildInnerControlFlowActor(const CNodePtr &kernel,
+                                                             const DeviceContext *device_context,
+                                                             GraphExecutionStrategy strategy,
+                                                             const std::set<size_t> &ref_input_indexes,
+                                                             const std::set<size_t> &ref_output_indexes) {
   MS_EXCEPTION_IF_NULL(kernel);
   if (!common::AnfAlgo::CheckPrimitiveType(kernel, prim::kPrimConditionGather) &&
       !common::AnfAlgo::CheckPrimitiveType(kernel, prim::kPrimConditionSwitch)) {
@@ -1756,13 +1760,13 @@ KernelActorPtr SuperKernelActor::BuildInnerControlFlowActor(const CNodePtr &kern
       << " is not a inner control flow kernel.";
   }
   if (common::AnfAlgo::CheckPrimitiveType(kernel, prim::kPrimConditionSwitch)) {
-    return std::make_shared<ConditionSwitchActor>(GenerateActorIdByKernel(kernel), kernel, device_context,
-                                                  memory_manager_aid_, debug_aid_, recorder_aid_, strategy,
-                                                  ref_input_indexes, ref_output_indexes);
+    return std::make_shared<ConditionSwitchRunner>(GenerateActorIdByKernel(kernel), kernel, device_context,
+                                                   memory_manager_aid_, debug_aid_, recorder_aid_, strategy,
+                                                   ref_input_indexes, ref_output_indexes);
   }
-  return std::make_shared<ConditionGatherActor>(GenerateActorIdByKernel(kernel), kernel, device_context,
-                                                memory_manager_aid_, debug_aid_, recorder_aid_, strategy,
-                                                ref_input_indexes, ref_output_indexes);
+  return std::make_shared<ConditionGatherRunner>(GenerateActorIdByKernel(kernel), kernel, device_context,
+                                                 memory_manager_aid_, debug_aid_, recorder_aid_, strategy,
+                                                 ref_input_indexes, ref_output_indexes);
 }
 
 void SuperKernelActor::BuildKernelActors() {
@@ -1771,7 +1775,7 @@ void SuperKernelActor::BuildKernelActors() {
   size_t kernel_num = execution_order.size();
   kernel_actors_.resize(kernel_num);
 
-  mindspore::HashMap<uint32_t, std::pair<KernelActorPtr, KernelActorPtr>> send_recv_nodes;
+  mindspore::HashMap<uint32_t, std::pair<KernelRunnerPtr, KernelRunnerPtr>> send_recv_nodes;
   // 1. Create kernel actor if need.
   for (size_t i = 0; i < kernel_num; i++) {
     const auto &kernel = execution_order[i];
@@ -1796,12 +1800,12 @@ void SuperKernelActor::BuildKernelActors() {
     } else if (IsInnerControlFlowActor(kernel)) {
       kernel_actors_[i] = BuildInnerControlFlowActor(kernel, real_device_context, GraphExecutionStrategy::kPipeline,
                                                      ref_input_indexes, ref_output_indexes);
-      SchedulerHelper::AddSomasInfo(kernel_actors_[i].get());
+      SchedulerHelper::AddSomasInfoV2(kernel_actors_[i].get());
       cnode_to_kernel_actor_[kernel] = kernel_actors_[i].get();
       continue;
     }
 
-    KernelActorPtr kernel_actor = std::make_shared<KernelActor>(
+    KernelRunnerPtr kernel_actor = std::make_shared<KernelRunner>(
       GenerateActorIdByKernel(kernel), kernel, real_device_context, memory_manager_aid_, debug_aid_, recorder_aid_,
       GraphExecutionStrategy::kPipeline, ref_input_indexes, ref_output_indexes);
     MS_EXCEPTION_IF_NULL(kernel_actor);
@@ -1814,17 +1818,17 @@ void SuperKernelActor::BuildKernelActors() {
       (common::AnfAlgo::IsCommunicationOp(kernel) && common::AnfAlgo::GetCNodeName(kernel) != kMatMulAllReduceOpName) &&
       (common::AnfAlgo::GetInputTensorNum(kernel) > 1);
 
-    if (SchedulerHelper::IsSkipLaunchShapeRelatedOp(kernel_actor.get())) {
+    if (SchedulerHelper::IsSkipLaunchShapeRelatedOpV2(kernel_actor.get())) {
       kernel_actor->set_skip_launch_shape_related_op(true);
     }
 
     if (IsPrimitiveCNode(kernel, prim::kPrimStreamSend)) {
-      SchedulerHelper::ProcessStreamSendRecvEventPair(&send_recv_nodes, kernel, kernel_actor, true);
+      SchedulerHelper::ProcessStreamSendRecvEventPairV2(&send_recv_nodes, kernel, kernel_actor, true);
     } else if (IsPrimitiveCNode(kernel, prim::kPrimStreamRecv)) {
-      SchedulerHelper::ProcessStreamSendRecvEventPair(&send_recv_nodes, kernel, kernel_actor, false);
+      SchedulerHelper::ProcessStreamSendRecvEventPairV2(&send_recv_nodes, kernel, kernel_actor, false);
     }
 
-    SchedulerHelper::AddSomasInfo(kernel_actor.get());
+    SchedulerHelper::AddSomasInfoV2(kernel_actor.get());
 
     cnode_to_kernel_actor_[kernel] = kernel_actor.get();
   }
@@ -1863,7 +1867,7 @@ void SuperKernelActor::BuildKernelActors() {
     }
     const auto &output_actor = iter->second;
     MS_EXCEPTION_IF_NULL(output_actor);
-    SchedulerHelper::AddSomasInfoForGraphOutput(output_actor, output_index, graph_->graph_id());
+    SchedulerHelper::AddSomasInfoForGraphOutputV2(output_actor, output_index, graph_->graph_id());
   }
 
   // 3. Set free index for input and output address.
@@ -1922,10 +1926,10 @@ SuperKernelActor::SuperKernelActor(const std::string &name, const KernelGraphPtr
 
 void SuperKernelActor::GetRefCountForGraphOutput(const std::vector<AnfNodePtr> &output_data_nodes,
                                                  const std::vector<DataArrowPtr> &output_data_arrows,
-                                                 const mindspore::HashMap<AnfNodePtr, KernelActor *> &kernel_to_actor,
+                                                 const mindspore::HashMap<AnfNodePtr, KernelRunner *> &kernel_to_actor,
                                                  const std::map<uint32_t, std::vector<CNodePtr>> &inplace_groups,
                                                  const std::string &actor_name) {
-  mindspore::HashMap<KernelActor *, mindspore::HashMap<size_t, size_t>> kernel_actor_to_increase_new_ref_count;
+  mindspore::HashMap<KernelRunner *, mindspore::HashMap<size_t, size_t>> kernel_actor_to_increase_new_ref_count;
   if (output_data_nodes.size() != output_data_arrows.size()) {
     MS_LOG(EXCEPTION) << "Invalid output data node size:" << output_data_nodes.size()
                       << " and arrow size:" << output_data_arrows.size() << " for actor:" << actor_name;
@@ -1985,7 +1989,8 @@ void SuperKernelActor::GetRefCountForGraphOutput(const std::vector<AnfNodePtr> &
   }
 }
 
-std::string GetBranchNameByIndex(const KernelActorPtr &kernel_actor, const AnfNodePtr &input_node, size_t input_index) {
+std::string GetBranchNameByIndex(const KernelRunnerPtr &kernel_actor, const AnfNodePtr &input_node,
+                                 size_t input_index) {
   MS_EXCEPTION_IF_NULL(kernel_actor);
   MS_EXCEPTION_IF_NULL(kernel_actor->kernel());
   if (!common::AnfAlgo::CheckPrimitiveType(kernel_actor->kernel(), prim::kPrimConditionGather)) {
@@ -2025,7 +2030,7 @@ std::string GetBranchNameByIndex(const KernelActorPtr &kernel_actor, const AnfNo
 }
 
 void SuperKernelActor::SetInputFreePositionForKernelActor(
-  const KernelActorPtr &kernel_actor,
+  const KernelRunnerPtr &kernel_actor,
   const mindspore::HashMap<AnfNodePtr, device::DeviceContextKey> &kernel_to_context_key,
   const device::DeviceContextKey &graph_device_context_key,
   std::set<std::pair<KernelWithIndex, FreeNodeInfo>> *checked_nodes) {
@@ -2059,7 +2064,7 @@ void SuperKernelActor::SetInputFreePositionForKernelActor(
       const auto &output_context_iter = kernel_to_context_key.find(kernel_actor->kernel_);
       if (output_context_iter != kernel_to_context_key.end()) {
         input_info.context_key = output_context_iter->second;
-        if (SchedulerHelper::IsIgnoredInputAddress(kernel_actor.get(), i)) {
+        if (SchedulerHelper::IsIgnoredInputAddressV2(kernel_actor.get(), i)) {
           const auto &input_context_iter = kernel_to_context_key.find(input_node);
           if (input_context_iter != kernel_to_context_key.end()) {
             input_info.context_key = input_context_iter->second;
@@ -2114,7 +2119,7 @@ void SuperKernelActor::SetInputFreePositionForKernelActor(
 }
 
 void SuperKernelActor::SetOutputFreePositionForKernelActor(
-  const KernelActorPtr &kernel_actor,
+  const KernelRunnerPtr &kernel_actor,
   const mindspore::HashMap<AnfNodePtr, device::DeviceContextKey> &kernel_to_context_key,
   const device::DeviceContextKey &graph_device_context_key,
   std::set<std::pair<KernelWithIndex, FreeNodeInfo>> *checked_nodes) {
@@ -2143,7 +2148,7 @@ void SuperKernelActor::SetOutputFreePositionForKernelActor(
                     << " for actor:" << kernel_actor->GetAID();
       continue;
     }
-    const auto &switch_actor = dynamic_cast<ConditionSwitchActor *>(kernel_actor.get());
+    const auto &switch_actor = dynamic_cast<ConditionSwitchRunner *>(kernel_actor.get());
     MS_EXCEPTION_IF_NULL(switch_actor);
     if (!switch_actor->kernel_->HasAttr(kInlineSubGraphName)) {
       MS_LOG(EXCEPTION) << "Failed to get branch name by actor:" << switch_actor->GetAID();
@@ -2174,7 +2179,7 @@ void SuperKernelActor::SetOutputFreePositionForKernelActor(
 
 void SuperKernelActor::SetFreePositionForKernelActor() {
   mindspore::HashMap<AnfNodePtr, device::DeviceContextKey> kernel_to_context_key;
-  mindspore::HashMap<AnfNodePtr, KernelActor *> kernel_to_actor;
+  mindspore::HashMap<AnfNodePtr, KernelRunner *> kernel_to_actor;
   std::map<uint32_t, std::vector<CNodePtr>> inplace_groups;
 
   // 1. Clear free index in actors.
@@ -2243,7 +2248,7 @@ void SuperKernelActor::LinkKernelActors() {
   size_t input_num = input_nodes.size();
   param_node_to_input_idx_.reserve(input_num);
   // Record the parameter first used actor and actor input idx.
-  std::vector<std::pair<KernelActorPtr, size_t>> param_first_used_kernel_actors(input_num, {nullptr, 0});
+  std::vector<std::pair<KernelRunnerPtr, size_t>> param_first_used_kernel_actors(input_num, {nullptr, 0});
   for (size_t i = 0; i < input_num; i++) {
     param_node_to_input_idx_[input_nodes[i].get()] = i;
   }
@@ -2308,8 +2313,8 @@ void SuperKernelActor::LinkKernelActors() {
 }
 
 void ParamFirstUsedKernelActorsToMap(
-  const std::vector<std::pair<KernelActorPtr, size_t>> &param_first_used_kernel_actors,
-  mindspore::HashMap<KernelActorPtr, std::vector<std::pair<size_t, size_t>>> *kernel_actor_to_graph_parameters_map) {
+  const std::vector<std::pair<KernelRunnerPtr, size_t>> &param_first_used_kernel_actors,
+  mindspore::HashMap<KernelRunnerPtr, std::vector<std::pair<size_t, size_t>>> *kernel_actor_to_graph_parameters_map) {
   if (!EnableInputOptimize()) {
     return;
   }
@@ -2333,9 +2338,9 @@ void SuperKernelActor::AnalyseNodesDependence(
   const HashMap<size_t, AnfNodePtr> &device_tensor_store_keys_map,
   const HashMap<size_t, ParameterInfo> &parameter_indexs_map,
   const HashMap<AnfNodePtr, std::vector<size_t>> &output_node_to_actor_output_index,
-  std::vector<std::pair<KernelActorPtr, size_t>> *param_first_used_kernel_actors) {
+  std::vector<std::pair<KernelRunnerPtr, size_t>> *param_first_used_kernel_actors) {
   const auto &execution_order = graph_->execution_order();
-  mindspore::HashMap<size_t, mindspore::HashMap<size_t, KernelActorPtr>> param_first_used_actors_on_stream;
+  mindspore::HashMap<size_t, mindspore::HashMap<size_t, KernelRunnerPtr>> param_first_used_actors_on_stream;
   size_t kernel_num = execution_order.size();
   for (size_t i = 0; i < kernel_num; i++) {
     const auto &kernel = execution_order[i];
@@ -2490,7 +2495,7 @@ void SuperKernelActor::LinkKernelActorByDeviceType(const CNodePtr &kernel, size_
   MS_EXCEPTION_IF_NULL(input_device_tensor);
 
   bool need_not_copy_output_device_addr = (device_context->GetDeviceType() == input_device_context->GetDeviceType()) ||
-                                          SchedulerHelper::IsIgnoredInputAddress(kernel_actor, input_index);
+                                          SchedulerHelper::IsIgnoredInputAddressV2(kernel_actor, input_index);
   MS_LOG(DEBUG) << "Kernel:" << kernel->fullname_with_scope() << " input kernel:" << input_kernel->fullname_with_scope()
                 << " input index:" << input_index << " device context type:" << device_context->GetDeviceType()
                 << " input context type:" << input_device_context->GetDeviceType()

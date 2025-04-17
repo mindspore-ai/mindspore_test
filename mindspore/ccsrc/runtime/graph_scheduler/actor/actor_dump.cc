@@ -251,6 +251,20 @@ void DumpConditionSwitchActor(const ConditionSwitchActor *actor, std::ofstream &
   }
 }
 
+void DumpConditionSwitchActorV2(const ConditionSwitchRunner *actor, std::ofstream &ofs) {
+  MS_EXCEPTION_IF_NULL(actor);
+  ofs << "\t\tbranch names:";
+  std::for_each(actor->branch_names().begin(), actor->branch_names().end(),
+                [&ofs](const auto &name) { ofs << name << "\t"; });
+  ofs << "\n";
+  ofs << "\t\tbranch output free index\n";
+  for (const auto &pair : actor->branch_output_free_index()) {
+    ofs << "\t\t\tbranch name:" << pair.first << " index:";
+    std::for_each(pair.second.begin(), pair.second.end(), [&ofs](const auto &index) { ofs << index << " "; });
+    ofs << "\n";
+  }
+}
+
 void DumpConditionGatherActor(const ConditionGatherActor *actor, std::ofstream &ofs) {
   MS_EXCEPTION_IF_NULL(actor);
   ofs << "\t\tbranch names:";
@@ -260,7 +274,46 @@ void DumpConditionGatherActor(const ConditionGatherActor *actor, std::ofstream &
   ofs << "\t\tbranch output num:" << actor->branch_output_num() << "\n";
 }
 
+void DumpConditionGatherActorV2(const ConditionGatherRunner *actor, std::ofstream &ofs) {
+  MS_EXCEPTION_IF_NULL(actor);
+  ofs << "\t\tbranch names:";
+  std::for_each(actor->branch_names().begin(), actor->branch_names().end(),
+                [&ofs](const auto &name) { ofs << name << "\t"; });
+  ofs << "\n";
+  ofs << "\t\tbranch output num:" << actor->branch_output_num() << "\n";
+}
+
 void DumpKernelActorVectorElement(const KernelActor *actor, std::ofstream &ofs) {
+  MS_EXCEPTION_IF_NULL(actor);
+  ofs << "\t\tis output kernel:";
+  std::for_each(actor->is_output_kernel().begin(), actor->is_output_kernel().end(),
+                [&ofs](const auto &element) { ofs << element << " "; });
+  ofs << "\tis monad input:";
+  std::for_each(actor->is_monad_input().begin(), actor->is_monad_input().end(),
+                [&ofs](const auto &element) { ofs << element << " "; });
+  ofs << "\tdepend shape input list:";
+  std::for_each(actor->depend_shape_input_list().begin(), actor->depend_shape_input_list().end(),
+                [&ofs](const auto &element) { ofs << element << " "; });
+  ofs << "\tis weight:";
+  std::for_each(actor->is_weight().begin(), actor->is_weight().end(),
+                [&ofs](const auto &element) { ofs << element << " "; });
+  ofs << "\tinput free index:";
+  std::for_each(actor->input_free_index().begin(), actor->input_free_index().end(),
+                [&ofs](const auto &element) { ofs << element << " "; });
+  ofs << "\toutput free index:";
+  std::for_each(actor->output_free_index().begin(), actor->output_free_index().end(),
+                [&ofs](const auto &element) { ofs << element << " "; });
+  ofs << "\n";
+  if (!actor->increase_ref_count_size().empty()) {
+    ofs << " increase ref count size:";
+    for (const auto &pair : actor->increase_ref_count_size()) {
+      ofs << "(" << pair.first << ", " << pair.second << ")  ";
+    }
+  }
+  ofs << "\n";
+}
+
+void DumpKernelActorVectorElementV2(const KernelRunner *actor, std::ofstream &ofs) {
   MS_EXCEPTION_IF_NULL(actor);
   ofs << "\t\tis output kernel:";
   std::for_each(actor->is_output_kernel().begin(), actor->is_output_kernel().end(),
@@ -377,9 +430,94 @@ void DumpKernelActor(const KernelActor *actor, std::ofstream &ofs) {
   }
 }
 
+void DumpKernelActorV2(const KernelRunner *actor, std::ofstream &ofs) {
+  MS_EXCEPTION_IF_NULL(actor);
+  ofs << "\tactor_name:" << actor->GetAID().Name() << "\n";
+
+  const auto &kernel = actor->kernel();
+  MS_EXCEPTION_IF_NULL(kernel);
+  auto kernel_info = dynamic_cast<KernelInfo *>(kernel->kernel_info());
+  MS_EXCEPTION_IF_NULL(kernel_info);
+
+  ofs << "\t\tkernel_name:" << kernel->fullname_with_scope() << "\tstream id:" << kernel_info->stream_id()
+      << "\tinputs_num:" << common::AnfAlgo::GetInputTensorNum(kernel) << "\tignored_input_addresses_num:"
+      << SchedulerHelper::GetIgnoredInputAddressCount(kernel, actor->device_contexts()[0])
+      << "\toutputs_num:" << AnfAlgo::GetOutputTensorNum(kernel) << "\tis_dynamic_shape:" << actor->is_dynamic_shape()
+      << "\tis_launch_skipped:" << actor->is_launch_skipped() << "\n";
+  DumpKernelActorVectorElementV2(actor, ofs);
+
+  const auto &somas_outputs = kernel_info->somas_output_result();
+  const auto &somas_graph_output_indexes = actor->somas_graph_output_indexes();
+  const auto &copy_output_kernel_tensors = actor->copy_output_kernel_tensors();
+  for (size_t i = 0; i < AnfAlgo::GetOutputTensorNum(kernel); ++i) {
+    const auto &device_tensor = AnfAlgo::GetMutableOutputAddr(kernel, i, false);
+    MS_EXCEPTION_IF_NULL(device_tensor);
+    const auto &iter = copy_output_kernel_tensors.find(i);
+    std::string copy_output_info = "";
+    if (copy_output_kernel_tensors.end() != iter) {
+      const auto &kernel_tensor = iter->second.first;
+      MS_EXCEPTION_IF_NULL(kernel_tensor);
+      const auto &device_address = kernel_tensor->device_address();
+      MS_EXCEPTION_IF_NULL(device_address);
+      copy_output_info = std::string("\tcopy output address original_ref_count:") +
+                         std::to_string(device_address->original_ref_count()) +
+                         "\t copy dest device target:" + GetDeviceNameByType(device_address->GetDeviceType());
+    }
+    ofs << "\t\t\toutput_index:" << i << "\tptr:" << device_tensor->GetPtr() << "\tsize:" << device_tensor->GetSize()
+        << "\tstream id:" << device_tensor->stream_id()
+        << "\toriginal_ref_count:" << device_tensor->original_ref_count()
+        << "\tdynamic_ref_count:" << device_tensor->dynamic_ref_count()
+        << "\tnew_ref_count:" << device_tensor->new_ref_count() << "\tflag:" << device_tensor->flag()
+        << "\tis_somas_enable:" << kernel_info->IsTensorEnableSomas(somas_outputs, i)
+        << "\tsomas_offset:" << kernel_info->GetTensorSomasOffset(somas_outputs, i)
+        << "\tsomas_aligned_size:" << kernel_info->GetTensorSomasAlignedSize(somas_outputs, i)
+        << "\tsoams_whether_graph_output:" << somas_graph_output_indexes.count(i) << copy_output_info << "\n ";
+  }
+  const auto &somas_workspace = kernel_info->somas_workspace_result();
+  const auto &workspace_kernel_tensors = kernel_info->workspace_kernel_tensor_list();
+  for (size_t i = 0; i < workspace_kernel_tensors.size(); ++i) {
+    auto &kernel_tensor = workspace_kernel_tensors[i];
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
+    auto &device_tensor = kernel_tensor->device_address();
+    MS_EXCEPTION_IF_NULL(device_tensor);
+    ofs << "\t\t\tworkspace_index:" << i << "\tptr:" << device_tensor->GetPtr() << "\tsize:" << device_tensor->GetSize()
+        << "\tstream id:" << device_tensor->stream_id()
+        << "\toriginal_ref_count:" << device_tensor->original_ref_count()
+        << "\tdynamic_ref_count:" << device_tensor->dynamic_ref_count() << "\tflag:" << device_tensor->flag()
+        << "\tis_somas_enable:" << kernel_info->IsTensorEnableSomas(somas_workspace, i)
+        << "\tsomas_offset:" << kernel_info->GetTensorSomasOffset(somas_workspace, i)
+        << "\tsomas_aligned_size:" << kernel_info->GetTensorSomasAlignedSize(somas_workspace, i) << "\n ";
+  }
+
+  if (actor->modifiable_ref_input_indexes().size() != 0) {
+    ofs << "\t\tmodifiable_ref_input_indexes:" << actor->modifiable_ref_input_indexes().size() << "\n";
+    for (auto &ref_input_index : actor->modifiable_ref_input_indexes()) {
+      ofs << "\t\t\tmodifiable_ref_input_index:" << ref_input_index << "\n ";
+    }
+  }
+  if (actor->modifiable_ref_output_indexes().size() != 0) {
+    ofs << "\t\tmodifiable_ref_output_indexes:" << actor->modifiable_ref_output_indexes().size() << "\n";
+    for (auto &ref_output_index : actor->modifiable_ref_output_indexes()) {
+      ofs << "\t\t\tmodifiable_ref_output_index:" << ref_output_index << "\n ";
+    }
+  }
+  if (!kernel_info->out_in_ref_map().empty()) {
+    ofs << "\t\t\tref index:";
+    for (const auto &pair : kernel_info->out_in_ref_map()) {
+      ofs << "(" << pair.first << ", " << pair.second << ") ";
+    }
+    ofs << "\n";
+  }
+  if (common::AnfAlgo::CheckPrimitiveType(kernel, prim::kPrimConditionSwitch)) {
+    DumpConditionSwitchActorV2(dynamic_cast<const ConditionSwitchRunner *>(actor), ofs);
+  } else if (common::AnfAlgo::CheckPrimitiveType(kernel, prim::kPrimConditionGather)) {
+    DumpConditionGatherActorV2(dynamic_cast<const ConditionGatherRunner *>(actor), ofs);
+  }
+}
+
 void DumpCustomActor(const CustomActor *actor, std::ofstream &ofs) {
   MS_EXCEPTION_IF_NULL(actor);
-  ofs << "\tactor_name:" << actor->GetAID().Name() << "\tactor_id:" << actor->actor_id() << "\n";
+  ofs << "\tactor_name:" << actor->GetAID().Name() << "\tactor_id:" << actor->GetAID() << "\n";
   DumpAbstractActor(actor, ofs);
   ofs << "\n";
 }
@@ -453,7 +591,7 @@ void DumpSuperKernelActor(const SuperKernelActor *actor, std::ofstream &ofs) {
       continue;
     }
     ofs << "\t";
-    DumpKernelActor(kernel_actor_ptr.get(), ofs);
+    DumpKernelActorV2(kernel_actor_ptr.get(), ofs);
     const auto &kernel = kernel_actor_ptr->kernel();
     MS_EXCEPTION_IF_NULL(kernel);
     auto kernel_input_num = common::AnfAlgo::GetInputTensorNum(kernel);

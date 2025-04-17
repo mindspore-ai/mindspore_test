@@ -212,7 +212,9 @@ KernelRunner::KernelRunner(const std::string &name, const CNodePtr &kernel, cons
                            const AID &memory_manager_aid, const AID *debug_aid, const AID *recorder_aid,
                            GraphExecutionStrategy strategy, const std::set<size_t> &modifiable_ref_input_indexes,
                            const std::set<size_t> &modifiable_ref_output_indexes, const KernelTransformType &type)
-    : kernel_(kernel),
+    : type_(type),
+      id(name, ActorMgr::GetActorMgrRef()->GetUrl()),
+      kernel_(kernel),
       is_dynamic_value_(false),
       is_dynamic_type_(false),
       has_dynamic_(false),
@@ -226,6 +228,8 @@ KernelRunner::KernelRunner(const std::string &name, const CNodePtr &kernel, cons
       modifiable_ref_output_indexes_(modifiable_ref_output_indexes),
       is_launch_skipped_(false),
       inputs_continuous_memory_(false) {
+  debug_aid_ = debug_aid;
+  recorder_aid_ = recorder_aid;
   (void)device_contexts_.emplace_back(device_context);
   is_dynamic_shape_ = common::AnfAlgo::IsDynamicShape(kernel_) || common::AnfAlgo::IsDynamicSequence(kernel_);
 
@@ -1108,6 +1112,7 @@ void KernelRunner::ExecuteLaunchKernelTask(OpContext<KernelTensor> *const contex
     MS_LOG(DEBUG) << "Run failed and early stop launch kernel: " << kernel_->fullname_with_scope();
     return;
   }
+
   // 1. Allocate memory.
   if (!ActorDispatcher::enable_use_trace_memory()) {
     if (!memory_alloc_list_.empty()) {
@@ -1123,6 +1128,7 @@ void KernelRunner::ExecuteLaunchKernelTask(OpContext<KernelTensor> *const contex
     MS_LOG(DEBUG) << "Run failed and early stop launch kernel: " << kernel_->fullname_with_scope();
     return;
   }
+
   // For performance, Only kernel need user data (such as PyExecute op) need call 'PreLaunchKernel', the
   // 'PreLaunchKernel' will be removed in the future.
   if (ActorDispatcher::has_kernel_need_user_data()) {

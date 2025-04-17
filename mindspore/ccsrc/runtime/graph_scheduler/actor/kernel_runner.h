@@ -59,7 +59,7 @@ class KernelRunner {
                const std::set<size_t> &modifiable_ref_output_indexes,
                const KernelTransformType &type = KernelTransformType::kKernelActor);
 
-  ~KernelRunner() = default;
+  virtual ~KernelRunner() = default;
 
   // The memory related operation interface.
   void SendMemoryAllocReq(OpContext<KernelTensor> *const context);
@@ -70,6 +70,8 @@ class KernelRunner {
     return KernelLaunchInfoWithStream(input_launch_tensors_, output_launch_tensors_, workspace_launch_tensors_,
                                       stream_);
   }
+  bool is_dynamic_shape() const { return is_dynamic_shape_; }
+  bool is_launch_skipped() const { return is_launch_skipped_; }
   size_t get_stream() const { return kernel_info_->stream_id(); }
 
   void set_enable_async_infer(bool enable_async_infer) { enable_async_infer_ = enable_async_infer; }
@@ -102,8 +104,27 @@ class KernelRunner {
   // Reset state for UCE.
   void ResetState();
 
+  const std::set<size_t> &modifiable_ref_input_indexes() const { return modifiable_ref_input_indexes_; }
+  const std::set<size_t> &modifiable_ref_output_indexes() const { return modifiable_ref_output_indexes_; }
+  const std::vector<KernelTensorPtr> &workspace_kernel_tensors() { return workspace_kernel_tensors_; }
+  const std::vector<KernelTensorPtr> &output_kernel_tensors() { return output_kernel_tensors_; }
+  const std::vector<KernelTensorPtr> &input_kernel_tensors() { return input_kernel_tensors_; }
+  SomasInfo *somas_info() const { return somas_info_; }
+  const std::set<size_t> &somas_graph_output_indexes() const { return somas_graph_output_indexes_; }
+  const std::vector<const DeviceContext *> &device_contexts() const { return device_contexts_; }
+  const std::vector<std::pair<size_t, ParameterInfo>> &parameter_indexs() const { return parameter_indexs_; }
+  inline const AID &GetAID() const { return id; }
+  const mindspore::HashMap<size_t, size_t> &increase_ref_count_size() const { return increase_ref_count_size_; }
+  const std::vector<bool> &is_output_kernel() const { return is_output_kernel_; }
+  const std::vector<bool> &is_monad_input() const { return is_monad_input_; }
+  const std::vector<size_t> &input_free_index() const { return input_free_index_; }
+  const std::vector<size_t> &output_free_index() const { return output_free_index_; }
+  const std::vector<bool> &depend_shape_input_list() const { return depend_shape_input_list_; }
+  const std::vector<bool> &is_weight() const { return is_weight_; }
+  KernelTransformType type() const { return type_; }
+
  protected:
-  void Init();
+  virtual void Init();
   void SendRecorderInfo(OpContext<KernelTensor> *const context) const;
 
   // Do kernel launching in this method after 'PreLaunchKernel' and 'PostLaunchKernel'.
@@ -144,8 +165,6 @@ class KernelRunner {
   // Recover the inputs with contiguous.
   void RecoverInputs();
 
-  inline const AID &GetAID() const { return id; }
-
   // Fetch input data from the device tensor store.
   void FetchInputByTensorStore(std::vector<KernelTensor *> *const input_launch_tensors,
                                std::vector<KernelTensorPtr> *const input_kernel_tensors,
@@ -155,10 +174,12 @@ class KernelRunner {
 
   std::vector<const DeviceContext *> device_contexts_;
 
+  KernelTransformType type_;
+
   AID id;
 
   // The id of recorder actor. Send message to it for recording info.
-  const AID *recorder_aid_;
+  const AID *recorder_aid_{nullptr};
 
   // Auto increment id for actor.
   int64_t actor_id_;
@@ -341,8 +362,8 @@ class KernelRunner {
   bool need_wait_pipeline_{false};
 
   // The id of debug actor. Send message to it for debug.
-  const AID *debug_aid_;
-  const AID *profiler_aid_;
+  const AID *debug_aid_{nullptr};
+  const AID *profiler_aid_{nullptr};
 };
 
 using KernelRunnerPtr = std::shared_ptr<KernelRunner>;

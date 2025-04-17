@@ -23,6 +23,7 @@
 #include <vector>
 #include <set>
 #include "runtime/graph_scheduler/actor/kernel_actor.h"
+#include "runtime/graph_scheduler/actor/kernel_runner.h"
 #include "runtime/graph_scheduler/actor/actor_set.h"
 
 namespace mindspore {
@@ -48,7 +49,7 @@ enum SortedFunc {
   SORTED_BY_RECV_REVERSE
 };
 using LaunchCommNode =
-  std::tuple<runtime::KernelActorPtr, CNodePtr, CommKernelInfo, kernel::KernelLaunchInfoWithStream>;
+  std::tuple<runtime::KernelRunnerPtr, CNodePtr, CommKernelInfo, kernel::KernelLaunchInfoWithStream>;
 
 // PreLaunchComm is used to launch communication kernel before launch all kernels.
 class BACKEND_EXPORT PreLaunchComm {

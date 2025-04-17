@@ -385,6 +385,68 @@ bool SchedulerHelper::IsSkipLaunchShapeRelatedOp(KernelActor *kernel_actor) {
   return false;
 }
 
+bool SchedulerHelper::IsSkipLaunchShapeRelatedOpV2(KernelRunner *kernel_actor) {
+  MS_EXCEPTION_IF_NULL(kernel_actor);
+  if (kernel_actor->skip_launch_shape_related_op()) {
+    return true;
+  }
+
+  auto &kernel = kernel_actor->kernel();
+  MS_EXCEPTION_IF_NULL(kernel);
+
+  // RealMakeTuple --> ShapeCalc pattern:
+  // If ShapeCalc is not value depend for one input RealMakeTuple op, we can skip launch this RealMakeTuple.
+  if (IsPrimitiveCNode(kernel, prim::kPrimRealMakeTuple)) {
+    auto func_graph = kernel->func_graph();
+    MS_EXCEPTION_IF_NULL(func_graph);
+    auto manager = func_graph->manager();
+    if (manager == nullptr) {
+      manager = Manage(func_graph, true);
+      func_graph->set_manager(manager);
+    }
+
+    const auto &users_set = manager->node_users()[kernel];
+    bool can_skip_launch_real_make_tuple = true;
+    for (const auto &item : users_set) {
+      const auto &user_node = item.first;
+      if (!user_node->isa<CNode>()) {
+        can_skip_launch_real_make_tuple = false;
+        break;
+      }
+      auto user_cnode = user_node->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(user_cnode);
+      if (!IsPrimitiveCNode(user_cnode, prim::kPrimShapeCalc)) {
+        can_skip_launch_real_make_tuple = false;
+        break;
+      }
+
+      if (!common::AnfAlgo::HasNodeAttr(kAttrOnlyDependShape, user_cnode)) {
+        can_skip_launch_real_make_tuple = false;
+        break;
+      }
+      const auto &only_depend_shape = common::AnfAlgo::GetNodeAttr<std::vector<bool>>(user_cnode, kAttrOnlyDependShape);
+      auto user_input_index = item.second;
+      if (user_input_index < 1) {
+        MS_LOG(EXCEPTION) << "The input index should start from 1, but got: " << user_input_index;
+      }
+      if (IntToSize(user_input_index) > only_depend_shape.size()) {
+        MS_LOG(EXCEPTION) << "The input index[" << user_input_index
+                          << "] is out of range, input size: " << only_depend_shape.size();
+      }
+      if (!only_depend_shape[user_input_index - 1]) {
+        can_skip_launch_real_make_tuple = false;
+        break;
+      }
+    }
+
+    if (can_skip_launch_real_make_tuple) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 bool SchedulerHelper::IsIgnoredInputAddress(AbstractActor *const to_actor, size_t to_input_index) {
   MS_EXCEPTION_IF_NULL(to_actor);
   if (to_actor->type() != KernelTransformType::kKernelActor) {
@@ -396,6 +458,33 @@ bool SchedulerHelper::IsIgnoredInputAddress(AbstractActor *const to_actor, size_
   MS_EXCEPTION_IF_NULL(to_kernel);
 
   if (IsSkipLaunchShapeRelatedOp(kernel_actor)) {
+    kernel_actor->set_skip_launch_shape_related_op(true);
+    return true;
+  }
+
+  MS_EXCEPTION_IF_NULL(to_actor->device_contexts_[0]);
+  auto kernel_executor = to_actor->device_contexts_[0]->GetKernelExecutor(false);
+  MS_EXCEPTION_IF_NULL(kernel_executor);
+  if (kernel_executor->IsLaunchIgnoredInputAddressIdx(to_kernel, to_input_index)) {
+    MS_LOG(INFO) << "Ignore the input address for kernel: " << to_kernel->fullname_with_scope()
+                 << " with input index: " << to_input_index;
+    return true;
+  }
+
+  return false;
+}
+
+bool SchedulerHelper::IsIgnoredInputAddressV2(KernelRunner *const to_actor, size_t to_input_index) {
+  MS_EXCEPTION_IF_NULL(to_actor);
+  if (to_actor->type() != KernelTransformType::kKernelActor) {
+    return false;
+  }
+
+  auto kernel_actor = to_actor;
+  auto &to_kernel = kernel_actor->kernel();
+  MS_EXCEPTION_IF_NULL(to_kernel);
+
+  if (IsSkipLaunchShapeRelatedOpV2(kernel_actor)) {
     kernel_actor->set_skip_launch_shape_related_op(true);
     return true;
   }
@@ -1218,6 +1307,38 @@ void SchedulerHelper::AddSomasInfo(AbstractActor *const actor) {
   kernel_actor->somas_info_ = somas_info;
 }
 
+void SchedulerHelper::AddSomasInfoV2(KernelRunner *const actor) {
+  MS_EXCEPTION_IF_NULL(actor);
+  // Only the kernel actor supports somas.
+  if (actor->type() != KernelTransformType::kKernelActor &&
+      actor->type() != KernelTransformType::kConditionGatherActor &&
+      actor->type() != KernelTransformType::kConditionSwitchActor) {
+    return;
+  }
+  auto kernel_actor = actor;
+  MS_EXCEPTION_IF_NULL(kernel_actor);
+  if (kernel_actor->somas_info_ != nullptr) {
+    return;
+  }
+
+  MS_EXCEPTION_IF_NULL(kernel_actor->kernel());
+  auto graph = AnfAlgo::FetchKernelGraph(kernel_actor->kernel().get());
+  if (graph == nullptr) {
+    MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Runtime error info:#dmsg#No associated graph for node: "
+                               << kernel_actor->kernel()->fullname_with_scope();
+  }
+  // Somas is not work for this graph.
+  if (graph->somas_whole_block_size() == 0) {
+    return;
+  }
+
+  // Set the somas info.
+  auto somas_info = graph->MutableSomasInfo();
+  MS_EXCEPTION_IF_NULL(somas_info);
+  somas_info->graph_id_ = graph->graph_id();
+  kernel_actor->somas_info_ = somas_info;
+}
+
 void SchedulerHelper::AddSomasInfoForGraphOutput(AbstractActor *const output_actor, size_t output_index,
                                                  size_t graph_id) {
   auto ms_context = MsContext::GetInstance();
@@ -1232,6 +1353,36 @@ void SchedulerHelper::AddSomasInfoForGraphOutput(AbstractActor *const output_act
   }
 
   auto kernel_actor = dynamic_cast<KernelActor *>(output_actor);
+  MS_EXCEPTION_IF_NULL(kernel_actor);
+  const auto &kernel = kernel_actor->kernel();
+  MS_EXCEPTION_IF_NULL(kernel);
+  auto kernel_info = dynamic_cast<KernelInfo *>(kernel->kernel_info());
+  MS_EXCEPTION_IF_NULL(kernel_info);
+  const auto &somas_outputs = kernel_info->somas_output_result();
+  auto is_somas = kernel_info->IsTensorEnableSomas(somas_outputs, output_index);
+  MS_LOG(INFO) << "The graph " << graph_id << " output node:" << kernel->fullname_with_scope()
+               << " with index: " << output_index << " somas enable or not: " << is_somas
+               << ", somas offset: " << kernel_info->GetTensorSomasOffset(somas_outputs, output_index)
+               << ", aligned size: " << kernel_info->GetTensorSomasAlignedSize(somas_outputs, output_index);
+  if (is_somas) {
+    kernel_actor->somas_graph_output_indexes_.insert(output_index);
+  }
+}
+
+void SchedulerHelper::AddSomasInfoForGraphOutputV2(KernelRunner *const output_actor, size_t output_index,
+                                                   size_t graph_id) {
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  if (runtime::RuntimeConf::GetInstance()->mem_optimize_level() == kOptimizeO0) {
+    return;
+  }
+  if ((output_actor == nullptr) || (output_actor->type() != KernelTransformType::kKernelActor &&
+                                    output_actor->type() != KernelTransformType::kConditionSwitchActor &&
+                                    output_actor->type() != KernelTransformType::kConditionGatherActor)) {
+    return;
+  }
+
+  auto kernel_actor = output_actor;
   MS_EXCEPTION_IF_NULL(kernel_actor);
   const auto &kernel = kernel_actor->kernel();
   MS_EXCEPTION_IF_NULL(kernel);
@@ -1498,6 +1649,28 @@ void SchedulerHelper::DumpFormatActorSet(const ActorSet *actor_set, std::ofstrea
 void SchedulerHelper::ProcessStreamSendRecvEventPair(
   mindspore::HashMap<uint32_t, std::pair<KernelActorPtr, KernelActorPtr>> *send_recv_nodes, const CNodePtr &kernel,
   const KernelActorPtr &kernel_actor, bool is_send_node) {
+  auto primitive = common::AnfAlgo::GetCNodePrimitive(kernel);
+  MS_EXCEPTION_IF_NULL(primitive);
+  auto record_event_stream_pair_attr = primitive->GetAttr(kAttrRecordWaitEventStreamPairId);
+  if (record_event_stream_pair_attr != nullptr) {
+    auto event_pair_id = GetValue<uint32_t>(record_event_stream_pair_attr);
+    MS_LOG(DEBUG) << "Process event pair id : " << event_pair_id << ".";
+    auto &send_recv_actor = (*send_recv_nodes)[event_pair_id];
+    if (is_send_node) {
+      MS_EXCEPTION_IF_CHECK_FAIL(send_recv_actor.first == nullptr, "Stream send pair id is already set.");
+      send_recv_actor.first = kernel_actor;
+    } else {
+      MS_EXCEPTION_IF_CHECK_FAIL(send_recv_actor.second == nullptr, "Stream recv pair id is already set.");
+      send_recv_actor.second = kernel_actor;
+    }
+  } else {
+    MS_LOG(INFO) << "Stream send/recv kernel : " << kernel->DebugString() << " has no event stream pair id.";
+  }
+}
+
+void SchedulerHelper::ProcessStreamSendRecvEventPairV2(
+  mindspore::HashMap<uint32_t, std::pair<KernelRunnerPtr, KernelRunnerPtr>> *send_recv_nodes, const CNodePtr &kernel,
+  const KernelRunnerPtr &kernel_actor, bool is_send_node) {
   auto primitive = common::AnfAlgo::GetCNodePrimitive(kernel);
   MS_EXCEPTION_IF_NULL(primitive);
   auto record_event_stream_pair_attr = primitive->GetAttr(kAttrRecordWaitEventStreamPairId);
