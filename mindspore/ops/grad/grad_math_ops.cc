@@ -1042,9 +1042,7 @@ REG_BPROP_BUILDER("MatMulExt").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   bool is_x_empty = IsShapeNone(x_origin_shape);
   bool is_w_empty = IsShapeNone(w_origin_shape);
   if (is_x_empty || is_w_empty) {
-    NodePtr dx = is_x_empty ? x_origin : ib->OutZeros(x_origin);
-    NodePtr dw = is_w_empty ? w_origin : ib->OutZeros(w_origin);
-    return {dx, dw};
+    return {ib->OutZeros(x_origin), ib->OutZeros(w_origin)};
   }
   auto x = x_origin;
   auto w = w_origin;
