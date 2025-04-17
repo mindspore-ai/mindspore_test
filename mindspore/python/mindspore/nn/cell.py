@@ -163,9 +163,13 @@ class Cell(Cell_):
     total_instance_count = 0
     _buffers: Dict[str, Optional[Tensor]]
     global_cells = weakref.WeakKeyDictionary()
+    _no_auto_lazy_inline = True
 
     def __new__(cls, *args, **kwargs):
         this = Cell_.__new__(cls, *args, **kwargs)
+        if Cell._no_auto_lazy_inline:
+            return this
+
         Cell.global_cells[this] = (cls, args, kwargs)
         return this
 
