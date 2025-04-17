@@ -48,6 +48,7 @@ ValuePtr GetPyValueWithCache(const std::string &module_name, const std::string &
   if (iter != py_value_map.end()) {
     return iter->second;
   }
+  py::gil_scoped_acquire gil;
   auto value = prim::GetPythonOps(op_name, module_name);
   MS_EXCEPTION_IF_NULL(value);
   py_value_map[full_name] = value;
@@ -64,21 +65,29 @@ ValuePtr CreateCalssType(const std::string &module_name, const std::string &op_n
 }
 
 ValuePtr GetClassTypeValue(const TypeId &type) {
-  static std::map<TypeId, ValuePtr> class_type_map = {
-    {TypeId::kObjectTypeTensorType, CreateCalssType("mindspore.common.tensor", "Tensor")},
-    {TypeId::kNumberTypeInt, CreateCalssType("builtins", "int")},
-    {TypeId::kNumberTypeFloat, CreateCalssType("builtins", "float")},
-    {TypeId::kNumberTypeBool, CreateCalssType("builtins", "bool")},
-    {TypeId::kObjectTypeTuple, CreateCalssType("builtins", "tuple")},
-    {TypeId::kObjectTypeList, CreateCalssType("builtins", "list")},
-    {TypeId::kObjectTypeString, CreateCalssType("builtins", "str")},
-    {TypeId::kNumberTypeComplex, CreateCalssType("builtins", "complex")},
-    {TypeId::kObjectTypeNumber, CreateCalssType("numbers", "Number")}};
-  const auto &iter = class_type_map.find(type);
-  if (iter == class_type_map.end()) {
-    MS_LOG(INTERNAL_EXCEPTION) << "Unsupported TypeId '" << TypeIdToString(type) << "'.";
+  py::gil_scoped_acquire gil;
+  switch (type) {
+    case TypeId::kObjectTypeTensorType:
+      return CreateCalssType("mindspore.common.tensor", "Tensor");
+    case TypeId::kNumberTypeInt:
+      return CreateCalssType("builtins", "int");
+    case TypeId::kNumberTypeFloat:
+      return CreateCalssType("builtins", "float");
+    case TypeId::kNumberTypeBool:
+      return CreateCalssType("builtins", "bool");
+    case TypeId::kObjectTypeTuple:
+      return CreateCalssType("builtins", "tuple");
+    case TypeId::kObjectTypeList:
+      return CreateCalssType("builtins", "list");
+    case TypeId::kObjectTypeString:
+      return CreateCalssType("builtins", "str");
+    case TypeId::kNumberTypeComplex:
+      return CreateCalssType("builtins", "complex");
+    case TypeId::kObjectTypeNumber:
+      return CreateCalssType("numbers", "Number");
+    default:
+      MS_LOG(INTERNAL_EXCEPTION) << "Unsupported TypeId '" << TypeIdToString(type) << "'.";
   }
-  return iter->second;
 }
 }  // namespace
 
@@ -147,8 +156,9 @@ FuncGraphPtr MetaImpl::EndFunc() {
   auto graph = func_builder_stack_.top()->EndFunc();
   func_builder_stack_.pop();
   // Add graph to manager.
-  MS_EXCEPTION_IF_NULL(manager_);
-  manager_->AddFuncGraph(graph);
+  if (manager_ != nullptr) {
+    manager_->AddFuncGraph(graph);
+  }
   // Process top graph.
   if (func_builder_stack_.empty()) {
     // Define custom bprop for current op.
@@ -183,8 +193,9 @@ void MetaImpl::DefineCustomBprop(const FuncGraphPtr &graph) {
     graph->set_flag(FUNC_GRAPH_FLAG_DEFER_INLINE, true);
     graph->set_flag(FUNC_GRAPH_FLAG_PRIMAL_OF_BPROP, true);
     // Add bprop_graph to manager.
-    MS_EXCEPTION_IF_NULL(manager_);
-    manager_->AddFuncGraph(bprop_graph_);
+    if (manager_ != nullptr) {
+      manager_->AddFuncGraph(bprop_graph_);
+    }
   }
 }
 

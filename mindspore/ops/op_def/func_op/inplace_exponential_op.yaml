@@ -21,7 +21,6 @@ inplace_exponential:
         name: InplaceExponential
     function:
         disable: True
-    bprop_expander: False
     dispatch:
         enable: True
         Ascend: InplaceExponentialAscend

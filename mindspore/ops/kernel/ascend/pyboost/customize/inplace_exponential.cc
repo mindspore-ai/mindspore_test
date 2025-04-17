@@ -36,6 +36,8 @@ double GetScalarValue(const std::shared_ptr<Scalar> &scalar) {
     return GetValue<float>(scalar);
   } else if (scalar->isa<FP64Imm>()) {
     return GetValue<double>(scalar);
+  } else if (scalar->isa<BoolImm>()) {
+    return GetValue<bool>(scalar);
   } else {
     MS_EXCEPTION(TypeError) << "Unsupported type: " << scalar->type_name();
   }
@@ -50,6 +52,9 @@ tensor::BaseTensorPtr InplaceExponentialAscendCustomize(const std::shared_ptr<Op
   out = inplace_muls(out, std::make_shared<FP64Imm>(-1.0));
   out = inplace_log(out);
   double lambda_val = GetScalarValue(lambda);
+  if (lambda_val <= 0) {
+    MS_EXCEPTION(ValueError) << "exponential_ expects lambda > 0.0, but found lambda=" << lambda_val;
+  }
   out = inplace_divs(out, std::make_shared<FP64Imm>(-lambda_val));
   MS_LOG(DEBUG) << "InplaceExponentialAscendCustomize Call end";
   op->set_outputs({out});
