@@ -1,0 +1,22 @@
+#operator dynamic_ntk
+dynamic_ntk:
+  args:
+    position_ids:
+      dtype: tensor
+    inv_freq:
+      dtype: tensor
+    seq_lens:
+      dtype: tensor
+    dtype:
+      dtype: TypeId
+      default: mstype.float16
+      arg_handler: dtype_to_type_id
+  returns:
+    sin:
+      dtype: tensor
+    cos:
+      dtype: tensor
+  function:
+    disable: True
+  class:
+    name: DynamicNTK
