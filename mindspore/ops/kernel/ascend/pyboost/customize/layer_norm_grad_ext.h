@@ -27,10 +27,10 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void LayerNormGradExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &dy_tensor,
-                                     const BaseTensorPtr &x_tensor, const ValueTuplePtr &normalized_shape,
-                                     const BaseTensorPtr &mean_tensor, const BaseTensorPtr &variance_tensor,
-                                     const BaseTensorPtr &gamma_tensor, const BaseTensorPtr &beta_tensor,
+void LayerNormGradExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &dy_tensor,
+                                     const TensorPtr &x_tensor, const ValueTuplePtr &normalized_shape,
+                                     const TensorPtr &mean_tensor, const TensorPtr &variance_tensor,
+                                     const TensorPtr &gamma_tensor, const TensorPtr &beta_tensor,
                                      const ValueTuplePtr &output_mask);
 }  // namespace pyboost
 }  // namespace kernel

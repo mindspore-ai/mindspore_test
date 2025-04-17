@@ -27,11 +27,10 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr UpsampleNearest3DGradAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                           const BaseTensorPtr &gradout_tensor,
-                                                           const ValueTuplePtr &input_size,
-                                                           const std::optional<ValueTuplePtr> &output_size,
-                                                           const std::optional<ValueTuplePtr> &scale_factors);
+tensor::TensorPtr UpsampleNearest3DGradAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                                       const TensorPtr &gradout_tensor, const ValueTuplePtr &input_size,
+                                                       const std::optional<ValueTuplePtr> &output_size,
+                                                       const std::optional<ValueTuplePtr> &scale_factors);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

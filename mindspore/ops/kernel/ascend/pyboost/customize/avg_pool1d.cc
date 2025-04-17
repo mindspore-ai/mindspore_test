@@ -32,10 +32,10 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr AvgPool1DAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input,
-                                               const ValueTuplePtr &kernel_size,
-                                               const std::optional<ValueTuplePtr> &stride, const ValueTuplePtr &padding,
-                                               const BoolImmPtr &ceil_mode, const BoolImmPtr &count_include_pad) {
+tensor::TensorPtr AvgPool1DAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input,
+                                           const ValueTuplePtr &kernel_size, const std::optional<ValueTuplePtr> &stride,
+                                           const ValueTuplePtr &padding, const BoolImmPtr &ceil_mode,
+                                           const BoolImmPtr &count_include_pad) {
   MS_LOG(DEBUG) << "AvgPool1DAscendCustomize start";
 
   auto input_shape = input->shape_c();

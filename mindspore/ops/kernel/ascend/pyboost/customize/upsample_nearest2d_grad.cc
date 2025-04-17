@@ -24,10 +24,12 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-tensor::BaseTensorPtr UpsampleNearest2DGradAscendCall(
-  const std::shared_ptr<OpRunner> &op, const device::DeviceContext *device_context, const BaseTensorPtr &grad_out,
-  const std::vector<int64_t> &input_size, const std::vector<int64_t> &output_size, const std::vector<pyfloat> &scales,
-  const std::vector<tensor::BaseTensorPtr> &outputs) {
+tensor::TensorPtr UpsampleNearest2DGradAscendCall(const std::shared_ptr<OpRunner> &op,
+                                                  const device::DeviceContext *device_context,
+                                                  const TensorPtr &grad_out, const std::vector<int64_t> &input_size,
+                                                  const std::vector<int64_t> &output_size,
+                                                  const std::vector<pyfloat> &scales,
+                                                  const std::vector<tensor::TensorPtr> &outputs) {
   MS_LOG(DEBUG) << "Call start";
   double scales_h = scales[0];
   double scales_w = scales[1];
@@ -38,11 +40,10 @@ tensor::BaseTensorPtr UpsampleNearest2DGradAscendCall(
 }
 }  // namespace
 
-tensor::BaseTensorPtr UpsampleNearest2DGradAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                           const BaseTensorPtr &gradout_tensor,
-                                                           const ValueTuplePtr &input_size,
-                                                           const std::optional<ValueTuplePtr> &output_size,
-                                                           const std::optional<ValueTuplePtr> &scale_factors) {
+tensor::TensorPtr UpsampleNearest2DGradAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                                       const TensorPtr &gradout_tensor, const ValueTuplePtr &input_size,
+                                                       const std::optional<ValueTuplePtr> &output_size,
+                                                       const std::optional<ValueTuplePtr> &scale_factors) {
   MS_LOG(DEBUG) << "UpsampleNearest2DGradAscendCustomize start";
   OpRunner::InferOpOutput(op, gradout_tensor, input_size, output_size, scale_factors);
 

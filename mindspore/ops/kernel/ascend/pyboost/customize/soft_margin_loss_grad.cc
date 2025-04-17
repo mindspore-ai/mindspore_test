@@ -27,11 +27,9 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr SoftMarginLossGradAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                        const BaseTensorPtr &predict_tensor,
-                                                        const BaseTensorPtr &label_tensor,
-                                                        const BaseTensorPtr &dout_tensor,
-                                                        const Int64ImmPtr &reduction) {
+tensor::TensorPtr SoftMarginLossGradAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                                    const TensorPtr &predict_tensor, const TensorPtr &label_tensor,
+                                                    const TensorPtr &dout_tensor, const Int64ImmPtr &reduction) {
   MS_LOG(DEBUG) << "SoftMarginLossGrad call start";
   OpRunner::InferOpOutput(op, predict_tensor, label_tensor, dout_tensor, reduction);
   auto reduction_imm = static_cast<Reduction>(GetValue<int64_t>(reduction));

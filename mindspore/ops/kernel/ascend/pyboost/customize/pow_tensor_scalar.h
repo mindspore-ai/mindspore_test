@@ -26,9 +26,8 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr PowTensorScalarAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                     const BaseTensorPtr &input_tensor,
-                                                     const ScalarPtr &exponent_scalar);
+tensor::TensorPtr PowTensorScalarAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                                 const ScalarPtr &exponent_scalar);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

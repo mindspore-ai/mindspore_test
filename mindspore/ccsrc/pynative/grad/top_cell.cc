@@ -61,7 +61,7 @@ void TopCellInfo::ClearDeviceMemory() const {
   }
   const auto &value_node_list = bprop_graph->value_nodes();
   // Get all tensors obj in value node of running graph
-  std::vector<tensor::BaseTensorPtr> tensors_in_bprop_graph;
+  std::vector<tensor::TensorPtr> tensors_in_bprop_graph;
   for (const auto &elem : value_node_list) {
     auto &node = elem.first;
     MS_EXCEPTION_IF_NULL(node);
@@ -89,8 +89,8 @@ void TopCellInfo::ClearDeviceMemory() const {
 void TopCellInfo::BackUpValueMetaGradInfo(const ValuePtr &value) {
   MS_EXCEPTION_IF_NULL(value);
   MS_EXCEPTION_IF_NULL(auto_grad_cell_ptr_);
-  if (value->isa<tensor::BaseTensor>()) {
-    auto tensor_value = value->cast<tensor::BaseTensorPtr>();
+  if (value->isa<tensor::Tensor>()) {
+    auto tensor_value = value->cast<tensor::TensorPtr>();
     auto auto_grad_meta_data = autograd::impl::get_autograd_meta_impl(tensor_value);
     if (auto_grad_meta_data != nullptr) {
       auto_grad_cell_ptr_->param_meta_grad_info()[tensor_value] = auto_grad_meta_data;
@@ -109,8 +109,8 @@ void TopCellInfo::BackUpValueMetaGradInfo(const ValuePtr &value) {
 
 void TopCellInfo::ClearValueMetaGradInfo(const ValuePtr &value) {
   MS_EXCEPTION_IF_NULL(value);
-  if (value->isa<tensor::BaseTensor>()) {
-    auto tensor_value = value->cast<tensor::BaseTensorPtr>();
+  if (value->isa<tensor::Tensor>()) {
+    auto tensor_value = value->cast<tensor::TensorPtr>();
     auto auto_grad_meta = autograd::impl::get_autograd_meta_impl(tensor_value);
     // Hook register before op run
     if (auto_grad_meta != nullptr && auto_grad_meta->is_register_hook()) {
@@ -314,7 +314,7 @@ void TopCellInfo::SaveForwardOutputTensorInfoInBpropGraph(const FuncGraphPtr &fu
     MS_LOG(DEBUG) << "Top cell has bprop cut, no need to save forward output tensor info";
     const auto &value_node_list = func_graph->value_nodes();
     for (const auto &elem : value_node_list) {
-      PyNativeAlgo::DataConvert::TransformValueNodeBaseTensorToTensor(elem.first->cast<ValueNodePtr>());
+      PyNativeAlgo::DataConvert::TransformValueNodeTensorToTensor(elem.first->cast<ValueNodePtr>());
     }
   }
   MS_LOG(DEBUG) << "Save top cell forward output tensor info";
@@ -323,8 +323,8 @@ void TopCellInfo::SaveForwardOutputTensorInfoInBpropGraph(const FuncGraphPtr &fu
 
 void TopCellInfo::SetLastOutputValueForwardOutputFlag(const ValuePtr &value) {
   MS_EXCEPTION_IF_NULL(value);
-  if (value->isa<tensor::BaseTensor>()) {
-    auto tensor = value->cast<tensor::BaseTensorPtr>();
+  if (value->isa<tensor::Tensor>()) {
+    auto tensor = value->cast<tensor::TensorPtr>();
     const auto it = replace_info_.id_with_op_info.find(tensor->id());
     if (it != replace_info_.id_with_op_info.end()) {
       tensor->set_is_forward_output(true);
@@ -351,7 +351,7 @@ void TopCellInfo::ChangeTopCellInfo(const std::vector<BaseShapePtr> &args_new_sh
   is_unknown_shape_ = true;
 }
 
-bool TopCellInfo::IsOutputTensor(const tensor::BaseTensorPtr &tensor) const {
+bool TopCellInfo::IsOutputTensor(const tensor::TensorPtr &tensor) const {
   return std::any_of(output_ids().begin(), output_ids().end(),
                      [&tensor](const std::string &output_id) { return tensor->id() == output_id; });
 }

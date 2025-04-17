@@ -27,14 +27,14 @@ namespace {
 constexpr size_t kAlignSize = 512;
 }
 
-tensor::BaseTensorPtr AllFiniteAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                               const ValueTuplePtr &tensors_tensor_list) {
+tensor::TensorPtr AllFiniteAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                           const ValueTuplePtr &tensors_tensor_list) {
   MS_EXCEPTION_IF_NULL(op);
   MS_EXCEPTION_IF_NULL(tensors_tensor_list);
   MS_LOG(DEBUG) << "Start AllFinite ascend customize";
   OpRunner::InferOpOutput(op, tensors_tensor_list);
   // ValueTuple to std::vector
-  std::vector<BaseTensorPtr> tensors_tensor_list_vector = ConvertValueTupleToVector<BaseTensorPtr>(tensors_tensor_list);
+  std::vector<TensorPtr> tensors_tensor_list_vector = ConvertValueTupleToVector<TensorPtr>(tensors_tensor_list);
   auto device_context = op->device_context();
   PyBoostUtils::PrepareOpInputs(device_context, op->stream_id(), tensors_tensor_list_vector);
   PyBoostUtils::PrepareOpOutputs(device_context, op->stream_id(), op->outputs());

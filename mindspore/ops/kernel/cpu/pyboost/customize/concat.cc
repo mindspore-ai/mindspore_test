@@ -29,7 +29,7 @@ namespace kernel {
 namespace pyboost {
 void ConcatCpuCustomize(const std::shared_ptr<OpRunner> &op, const ValueTuplePtr &tensors, const Int64ImmPtr &axis) {
   OpRunner::InferOpOutput(op, tensors, axis);
-  std::vector<tensor::BaseTensorPtr> tensors_vector = ConvertValueTupleToVector<tensor::BaseTensorPtr>(tensors);
+  std::vector<tensor::TensorPtr> tensors_vector = ConvertValueTupleToVector<tensor::TensorPtr>(tensors);
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), tensors_vector);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());

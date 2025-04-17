@@ -52,9 +52,9 @@ TypePtr MSELossGradExtFuncImpl::InferType(const PrimitivePtr &primitive,
 }
 
 ShapeArray MSELossGradExtFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &input_tensor = input_values[kIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &input_tensor = input_values[kIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
-  const auto &target_tensor = input_values[kIndex2]->cast<tensor::BaseTensorPtr>();
+  const auto &target_tensor = input_values[kIndex2]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(target_tensor);
   const auto &broadcast_shape =
     CalBroadCastShapeV2(input_tensor->shape(), target_tensor->shape(), primitive->name(), "input", "target");
@@ -63,7 +63,7 @@ ShapeArray MSELossGradExtFuncImpl::InferShape(const PrimitivePtr &primitive, con
 }
 
 TypePtrList MSELossGradExtFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &input_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &input_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   return {input_tensor->Dtype()};
 }

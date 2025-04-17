@@ -37,8 +37,8 @@ namespace mindspore {
 namespace silentcheck {
 namespace ascend {
 
-using BaseTensor = tensor::BaseTensor;
-using BaseTensorPtr = tensor::BaseTensorPtr;
+using Tensor = tensor::Tensor;
+using TensorPtr = tensor::TensorPtr;
 using kernel::pyboost::OpRunner;
 
 using device::DeviceAddressPtr;
@@ -48,9 +48,9 @@ using mindspore::device::DeviceContext;
 using TensorPtr = tensor::TensorPtr;
 
 struct DynamicCheckState {
-  BaseTensorPtr sfda;  // for SilentCheckV2
-  BaseTensorPtr step;  // for SilentCheckV2 and SilentCheckV3
-  BaseTensorPtr avg;   // for SilentCheckV3
+  TensorPtr sfda;  // for SilentCheckV2
+  TensorPtr step;  // for SilentCheckV2 and SilentCheckV3
+  TensorPtr avg;   // for SilentCheckV3
 
   bool is_first_call = true;
 };
@@ -61,16 +61,16 @@ class CheckObject {
   CheckObject();
   ~CheckObject() = default;
 
-  void DoSilentCheck(const BaseTensorPtr &input_grad, const DynamicCheckStatePtr &state);
-  void DoSilentCheckV2(const BaseTensorPtr &input_grad, const DynamicCheckStatePtr &state);
-  void DoSilentCheckV3(const BaseTensorPtr &input_grad, const DynamicCheckStatePtr &state);
+  void DoSilentCheck(const TensorPtr &input_grad, const DynamicCheckStatePtr &state);
+  void DoSilentCheckV2(const TensorPtr &input_grad, const DynamicCheckStatePtr &state);
+  void DoSilentCheckV3(const TensorPtr &input_grad, const DynamicCheckStatePtr &state);
 
-  void LaunchNorm(const BaseTensorPtr &input_grad, bool is_l2_norm = true);
-  void LaunchSilentCheckV2(const BaseTensorPtr &input_grad, const DynamicCheckStatePtr &state);
+  void LaunchNorm(const TensorPtr &input_grad, bool is_l2_norm = true);
+  void LaunchSilentCheckV2(const TensorPtr &input_grad, const DynamicCheckStatePtr &state);
 
   void LaunchSquare();
   void LaunchInplaceCopy(const DynamicCheckStatePtr &state);
-  void LaunchSilentCheckV3(const BaseTensorPtr &input_grad, const DynamicCheckStatePtr &state);
+  void LaunchSilentCheckV3(const TensorPtr &input_grad, const DynamicCheckStatePtr &state);
 
  private:
   // operators for both aclnnSilentCheck and aclnnSilentCheckV2
@@ -110,10 +110,9 @@ class DynamicSilentChecker : public SilentCheckerBase {
 
   void SetBackProp(bool is_back_prop) override { is_back_prop_ = is_back_prop; }
 
-  void DoSilentCheck(const std::string &op_name, const std::string &comm_group,
-                     const BaseTensorPtr &input_grad) override;
+  void DoSilentCheck(const std::string &op_name, const std::string &comm_group, const TensorPtr &input_grad) override;
 
-  DynamicCheckStatePtr CreateDynamicCheckState(const BaseTensorPtr &input_grad);
+  DynamicCheckStatePtr CreateDynamicCheckState(const TensorPtr &input_grad);
 
  private:
   bool is_back_prop_ = false;

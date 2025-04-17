@@ -29,14 +29,13 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-std::vector<tensor::BaseTensorPtr> UnstackExtViewAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                                 const BaseTensorPtr &x_tensor,
-                                                                 const Int64ImmPtr &dim) {
+std::vector<tensor::TensorPtr> UnstackExtViewAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                                             const TensorPtr &x_tensor, const Int64ImmPtr &dim) {
   MS_LOG(DEBUG) << "View UnstackExtView Call start";
   auto primitive = op->primitive();
   auto storage_info_list = ops::UnstackExtViewCalc(primitive, {x_tensor, dim});
   if (!storage_info_list.empty()) {
-    std::vector<tensor::BaseTensorPtr> outputs;
+    std::vector<tensor::TensorPtr> outputs;
     // Create device address for input tensors
     PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), x_tensor);
     PyBoostUtils::CreateOutputTensor(op->device_context(), x_tensor, storage_info_list, &outputs);

@@ -22,9 +22,9 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr VarAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                         const std::optional<ValueTuplePtr> &dim, const Int64ImmPtr &correction,
-                                         const BoolImmPtr &keepdim) {
+tensor::TensorPtr VarAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                     const std::optional<ValueTuplePtr> &dim, const Int64ImmPtr &correction,
+                                     const BoolImmPtr &keepdim) {
   OpRunner::InferOpOutput(op, input_tensor, dim, correction, keepdim);
 
   std::vector<int64_t> dim_vector = ConvertValueTupleToVector<int64_t>(dim);

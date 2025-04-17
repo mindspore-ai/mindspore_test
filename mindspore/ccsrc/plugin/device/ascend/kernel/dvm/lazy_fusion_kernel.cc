@@ -118,15 +118,15 @@ void LazyFusionKernelAscend::DumpToFile() {
   dump_buf_.str("");
 }
 
-dvm::NDObject *LazyFusionKernelAscend::Input(const BaseTensorPtr &x, bool enable_cast,
+dvm::NDObject *LazyFusionKernelAscend::Input(const TensorPtr &x, bool enable_cast,
                                              const std::optional<ShapeVector> &shape) {
   auto input_type = TransType(x->data_type());
   bool cast_to_fp32 = (enable_cast && input_type == dvm::DType::kBFloat16);
   auto device_addr = x->device_address();
   MS_EXCEPTION_IF_NULL(device_addr);
   auto xp = device_addr.get();
-  // ops_map_ uses device_address as key, because BaseTensorPtr is not continuous, e.g. A is use by B, BaseTensorPtr
-  // of A may be different from BaseTensorPtr of B's input, which will affect the relationship of dvm NDObject.
+  // ops_map_ uses device_address as key, because TensorPtr is not continuous, e.g. A is use by B, TensorPtr
+  // of A may be different from TensorPtr of B's input, which will affect the relationship of dvm NDObject.
   auto iter = ops_map_.find(xp);
   if (iter == ops_map_.end()) {
     if (input_used_ == inputs_.size()) {
@@ -134,7 +134,7 @@ dvm::NDObject *LazyFusionKernelAscend::Input(const BaseTensorPtr &x, bool enable
     }
     auto load = inputs_[input_used_++];
     if (shape == std::nullopt) {
-      load->shape = x->shape();  // directly point to BaseTensor shape
+      load->shape = x->shape();  // directly point to Tensor shape
     } else {
       auto &item = cached_shape_.emplace_back(shape.value(), nullptr);
       load->shape = item.first;
@@ -151,7 +151,7 @@ dvm::NDObject *LazyFusionKernelAscend::Input(const BaseTensorPtr &x, bool enable
   return op;
 }
 
-void LazyFusionKernelAscend::Output(const BaseTensorPtr &tensor, dvm::NDObject *obj) {
+void LazyFusionKernelAscend::Output(const TensorPtr &tensor, dvm::NDObject *obj) {
   auto tensor_type = TransType(tensor->data_type());
   if (GetDType(obj) != tensor_type) {
     obj = Cast(obj, tensor_type);
@@ -160,7 +160,7 @@ void LazyFusionKernelAscend::Output(const BaseTensorPtr &tensor, dvm::NDObject *
   ops_map_[store.dev_addr.get()] = obj;
 }
 
-bool LazyFusionKernelAscend::HasTensor(const BaseTensorPtr &x) const {
+bool LazyFusionKernelAscend::HasTensor(const TensorPtr &x) const {
   auto device_addr = x->device_address();
   if (device_addr == nullptr) {
     return false;

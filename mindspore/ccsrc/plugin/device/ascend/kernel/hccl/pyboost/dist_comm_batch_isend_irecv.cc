@@ -31,7 +31,7 @@ void DistCommBatchIsendIrecvAscendCustomize(const std::shared_ptr<OpRunner> &op,
                                             const ValueTuplePtr &remotes_ranks) {
   const auto &op_types_list = ConvertValueTupleToVector<int64_t>(op_types);
   const auto &remotes_rank_list = ConvertValueTupleToVector<int64_t>(remotes_ranks);
-  std::vector<BaseTensorPtr> input_tensors = ConvertValueTupleToVector<BaseTensorPtr>(input_tensor);
+  std::vector<TensorPtr> input_tensors = ConvertValueTupleToVector<TensorPtr>(input_tensor);
   PyBoostUtils::PrepareOpInputs(op->device_context(), kDefaultStreamIndex, input_tensors);
   op->set_outputs({input_tensors[op_types_list.size() - 1]});
 

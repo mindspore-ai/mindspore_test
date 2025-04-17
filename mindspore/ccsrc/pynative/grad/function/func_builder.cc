@@ -77,8 +77,8 @@ std::vector<int64_t> GetIntList(const NodePtr &node) {
   if (value_ptr->isa<Int32Imm>()) {
     return {static_cast<int64_t>(GetValue<int64_t>(value_ptr))};
   }
-  if (value_ptr->isa<tensor::BaseTensor>()) {
-    auto tensor = value_ptr->cast<tensor::BaseTensorPtr>();
+  if (value_ptr->isa<tensor::Tensor>()) {
+    auto tensor = value_ptr->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(tensor);
     // In pynative mode, need data sync before get tensor value, otherwise the tensor value may be undefined.
     tensor->data_sync();
@@ -97,8 +97,8 @@ std::string PrintDebugInfo(std::vector<T> items, const std::string &info_header 
       MS_LOG(DEBUG) << "The " << i << "'th item is nullptr!";
       continue;
     }
-    if (items[i]->template isa<tensor::BaseTensor>()) {
-      auto tensor = items[i]->template cast<tensor::BaseTensorPtr>();
+    if (items[i]->template isa<tensor::Tensor>()) {
+      auto tensor = items[i]->template cast<tensor::TensorPtr>();
       auto grad = std::make_shared<tensor::Tensor>(*tensor);
       grad->data_sync();
       buf << i << "th: "
@@ -152,7 +152,7 @@ void SetDependValue(const PrimitivePtr &primitive, const NodePtrList &inputs) {
     }
     const auto abstract = inputs[index]->abstract();
     const auto value = inputs[index]->Value();
-    auto tensor = value->cast<tensor::BaseTensorPtr>();
+    auto tensor = value->cast<tensor::TensorPtr>();
     if (tensor != nullptr) {
       tensor->data_sync();
     }
@@ -166,8 +166,8 @@ bool ParseCond(const NodePtr &cond) {
   if (cond_val->isa<BoolImm>()) {
     return GetValue<bool>(cond_val);
   }
-  if (cond_val->isa<tensor::BaseTensor>()) {
-    auto tensor = cond_val->cast<tensor::BaseTensorPtr>();
+  if (cond_val->isa<tensor::Tensor>()) {
+    auto tensor = cond_val->cast<tensor::TensorPtr>();
     tensor->data_sync();
     size_t data_size = tensor->DataSize();
     auto tensor_type = tensor->Dtype();
@@ -1244,14 +1244,14 @@ NodePtr FuncBuilder::OutZeros(const NodePtr &node) {
     return NewFuncNode(kNone, nullptr, InputType::kConstant);
   }
   const auto &value = val_seq->value()[kIndexZero];
-  if (!value->isa<tensor::BaseTensor>()) {
+  if (!value->isa<tensor::Tensor>()) {
     return NewFuncNode(kNone, nullptr, InputType::kConstant);
   }
   ValuePtrList values(val_seq->size(), kNone);
   return NewFuncNode(std::make_shared<ValueTuple>(values), node->abstract(), InputType::kConstant);
 }
 
-ValuePtr FuncBuilder::Ones(const tensor::BaseTensorPtr &tensor) {
+ValuePtr FuncBuilder::Ones(const tensor::TensorPtr &tensor) {
   MS_EXCEPTION_IF_NULL(tensor);
   if (tensor->data_type() != kNumberTypeComplex64 && tensor->data_type() != kNumberTypeComplex128) {
     return Ones(Value<ShapeVector>(tensor->shape()), Value(static_cast<int64_t>(tensor->data_type())))->Value();
@@ -1261,7 +1261,7 @@ ValuePtr FuncBuilder::Ones(const tensor::BaseTensorPtr &tensor) {
   return EmitOp(prim::kPrimOnesLike, {input})->Value();
 }
 
-ValuePtr FuncBuilder::Zeros(const tensor::BaseTensorPtr &tensor) {
+ValuePtr FuncBuilder::Zeros(const tensor::TensorPtr &tensor) {
   MS_EXCEPTION_IF_NULL(tensor);
   if (tensor->data_type() != kNumberTypeComplex64 && tensor->data_type() != kNumberTypeComplex128) {
     return Zeros(Value<std::vector<int64_t>>(tensor->shape()), Value(static_cast<int64_t>(tensor->data_type())))

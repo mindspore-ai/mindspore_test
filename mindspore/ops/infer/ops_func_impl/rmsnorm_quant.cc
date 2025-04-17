@@ -68,23 +68,23 @@ abstract::BaseShapePtr RmsNormQuantFuncImpl::InferShape(const PrimitivePtr &prim
 }
 
 ShapeArray RmsNormQuantFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &gamma_tensor = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &gamma_tensor = input_values[kInputIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(gamma_tensor);
   const auto &gamma_shape = gamma_tensor->shape();
 
-  const auto &beta_tensor = input_values[kInputIndex2]->cast<tensor::BaseTensorPtr>();
+  const auto &beta_tensor = input_values[kInputIndex2]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(beta_tensor);
   const auto &beta_shape = beta_tensor->shape();
 
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   const auto &x_shape = x_tensor->shape();
 
-  const auto &scale_tensor = input_values[kInputIndex3]->cast<tensor::BaseTensorPtr>();
+  const auto &scale_tensor = input_values[kInputIndex3]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(scale_tensor);
   const auto &scale_shape = x_tensor->shape();
 
-  const auto &offset_tensor = input_values[kInputIndex4]->cast<tensor::BaseTensorPtr>();
+  const auto &offset_tensor = input_values[kInputIndex4]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(offset_tensor);
   const auto &offset_shape = x_tensor->shape();
 
@@ -128,11 +128,11 @@ TypePtr RmsNormQuantFuncImpl::InferType(const PrimitivePtr &prim,
 }
 
 TypePtrList RmsNormQuantFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
-  const auto &gamma_tensor = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>();
-  const auto &beta_tensor = input_values[kInputIndex2]->cast<tensor::BaseTensorPtr>();
-  const auto &scale_tensor = input_values[kInputIndex3]->cast<tensor::BaseTensorPtr>();
-  const auto &offset_tensor = input_values[kInputIndex4]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
+  const auto &gamma_tensor = input_values[kInputIndex1]->cast<tensor::TensorPtr>();
+  const auto &beta_tensor = input_values[kInputIndex2]->cast<tensor::TensorPtr>();
+  const auto &scale_tensor = input_values[kInputIndex3]->cast<tensor::TensorPtr>();
+  const auto &offset_tensor = input_values[kInputIndex4]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   MS_EXCEPTION_IF_NULL(gamma_tensor);
   MS_EXCEPTION_IF_NULL(beta_tensor);

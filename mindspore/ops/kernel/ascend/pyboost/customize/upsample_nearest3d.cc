@@ -24,12 +24,11 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-tensor::BaseTensorPtr UpsampleNearest3DAscendCall(const std::shared_ptr<OpRunner> &op,
-                                                  const device::DeviceContext *device_context,
-                                                  const BaseTensorPtr &input_tensor,
-                                                  const std::vector<int64_t> &output_size,
-                                                  const std::vector<pyfloat> &scales,
-                                                  const std::vector<tensor::BaseTensorPtr> &outputs) {
+tensor::TensorPtr UpsampleNearest3DAscendCall(const std::shared_ptr<OpRunner> &op,
+                                              const device::DeviceContext *device_context,
+                                              const TensorPtr &input_tensor, const std::vector<int64_t> &output_size,
+                                              const std::vector<pyfloat> &scales,
+                                              const std::vector<tensor::TensorPtr> &outputs) {
   MS_LOG(DEBUG) << "Call start";
   double scales_d = scales[0];
   double scales_h = scales[1];
@@ -41,10 +40,9 @@ tensor::BaseTensorPtr UpsampleNearest3DAscendCall(const std::shared_ptr<OpRunner
 }
 }  // namespace
 
-tensor::BaseTensorPtr UpsampleNearest3DAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                       const BaseTensorPtr &input_tensor,
-                                                       const std::optional<ValueTuplePtr> &output_size,
-                                                       const std::optional<ValueTuplePtr> &scale_factors) {
+tensor::TensorPtr UpsampleNearest3DAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                                   const std::optional<ValueTuplePtr> &output_size,
+                                                   const std::optional<ValueTuplePtr> &scale_factors) {
   MS_LOG(INFO) << "UpsampleNearest3DAscendCustomize start";
 
   OpRunner::InferOpOutput(op, input_tensor, output_size, scale_factors);

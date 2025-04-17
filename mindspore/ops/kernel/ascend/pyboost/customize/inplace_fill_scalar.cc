@@ -26,8 +26,8 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr InplaceFillScalarAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input,
-                                                       const ScalarPtr &value) {
+tensor::TensorPtr InplaceFillScalarAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input,
+                                                   const ScalarPtr &value) {
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input);
   op->set_outputs({input});
   // Async

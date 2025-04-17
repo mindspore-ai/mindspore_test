@@ -75,7 +75,7 @@ TypePtr PowTensorScalarFuncImpl::InferType(const PrimitivePtr &primitive,
 }
 
 TypePtrList PowTensorScalarFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   auto input_type_id = x_tensor->Dtype()->type_id();
   const auto &exp_type = input_values[kInputIndex1]->type();
   auto exp_type_id = exp_type->type_id();
@@ -83,7 +83,7 @@ TypePtrList PowTensorScalarFuncImpl::InferType(const PrimitivePtr &primitive, co
   return {PowCheckAndInferType(input_type_id, exp_type_id, x_tensor->Dtype(), input_values[kInputIndex1])};
 }
 ShapeArray PowTensorScalarFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   return {x_tensor->shape()};
 }

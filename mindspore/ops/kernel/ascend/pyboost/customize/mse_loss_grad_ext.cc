@@ -27,10 +27,9 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr MSELossGradExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                    const BaseTensorPtr &grad_output_tensor,
-                                                    const BaseTensorPtr &input_tensor,
-                                                    const BaseTensorPtr &target_tensor, const Int64ImmPtr &reduction) {
+tensor::TensorPtr MSELossGradExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                                const TensorPtr &grad_output_tensor, const TensorPtr &input_tensor,
+                                                const TensorPtr &target_tensor, const Int64ImmPtr &reduction) {
   MS_LOG(DEBUG) << "MSELossGradExt call start";
   OpRunner::InferOpOutput(op, grad_output_tensor, input_tensor, target_tensor, reduction);
 
@@ -43,8 +42,8 @@ tensor::BaseTensorPtr MSELossGradExtAscendCustomize(const std::shared_ptr<OpRunn
   const ValueTuplePtr &expand_shape_ptr = ops::ConvertShapeVectorToValueTuple(expand_shape);
   MS_EXCEPTION_IF_NULL(expand_shape_ptr);
 
-  BaseTensorPtr input_tensor_bd = input_tensor;
-  BaseTensorPtr target_tensor_bd = target_tensor;
+  TensorPtr input_tensor_bd = input_tensor;
+  TensorPtr target_tensor_bd = target_tensor;
 
   const std::vector<int64_t> &input_shape = input_tensor->shape();
   if (input_shape != expand_shape) {

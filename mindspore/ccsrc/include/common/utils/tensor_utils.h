@@ -98,7 +98,7 @@ auto TransformPromise(const Tuple &tuple) {
   return TransformPromiseImpl(tuple, std::make_index_sequence<tuple_size>{});
 }
 
-COMMON_EXPORT void SetPromise(const std::tuple<stub::StubNodePtr> &promises, const BaseTensorPtr &tensor);
+COMMON_EXPORT void SetPromise(const std::tuple<stub::StubNodePtr> &promises, const TensorPtr &tensor);
 
 // Helper function to set values using a compile-time loop
 template <typename... T1, typename... T2, std::size_t... I>
@@ -117,7 +117,7 @@ void SetPromise(const std::tuple<T1...> &t1, const std::tuple<T2...> &t2) {
   SetPromiseImpl(t1, t2, std::index_sequence_for<T1...>{});
 }
 
-COMMON_EXPORT void FlattenOutputs(const ValuePtr &value, std::vector<BaseTensorPtr> *outputs);
+COMMON_EXPORT void FlattenOutputs(const ValuePtr &value, std::vector<TensorPtr> *outputs);
 
 template <typename... Ts>
 std::vector<std::common_type_t<Ts...>> tuple_to_vector(const std::tuple<Ts...> &t) {
@@ -132,7 +132,7 @@ std::vector<std::common_type_t<Ts...>> tuple_to_vector(const std::tuple<Ts...> &
 template <typename... T>
 void SetPromise(const std::tuple<T...> &tuple, const ValuePtr &value) {
   MS_EXCEPTION_IF_NULL(value);
-  std::vector<BaseTensorPtr> outputs;
+  std::vector<TensorPtr> outputs;
   FlattenOutputs(value, &outputs);
   std::vector<stub::StubNodePtr> promises = tuple_to_vector(tuple);
   using TupleType = typename std::decay<decltype(tuple)>::type;

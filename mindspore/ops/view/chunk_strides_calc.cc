@@ -76,12 +76,12 @@ TensorStorageInfoPtrList ChunkStridesCalc(const OldTensorInfoPtr tensor_info, Te
 }
 
 TensorStorageInfoPtrList ChunkCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  if (!inputs[kInputIndex0]->isa<tensor::BaseTensor>()) {
+  if (!inputs[kInputIndex0]->isa<tensor::Tensor>()) {
     MS_LOG(EXCEPTION) << "For '" << prim->name()
                       << ", first inputs must be a Tensor, but got: " << inputs[kInputIndex0]->ToString();
   }
 
-  auto input_tensor = inputs[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  auto input_tensor = inputs[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   auto chunks = GetValue<int64_t>(inputs[kInputIndex1]);
   MS_CHECK_VALUE(chunks > 0, CheckAndConvertUtils::FormatCheckIntegerMsg("chunks", chunks, kGreaterEqual, 1, prim));

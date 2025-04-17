@@ -26,7 +26,7 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void DistCommBroadcastAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &tensor,
+void DistCommBroadcastAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &tensor,
                                       const Int64ImmPtr &src, const Int64ImmPtr &rank_id, const StringImmPtr &group) {
   PyBoostUtils::PrepareOpInputs(op->device_context(), kDefaultStreamIndex, tensor);
   op->set_outputs({tensor});

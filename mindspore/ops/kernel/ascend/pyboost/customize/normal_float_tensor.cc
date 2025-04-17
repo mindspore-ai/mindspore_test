@@ -24,9 +24,9 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr NormalFloatTensorAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                       const FP32ImmPtr &mean_float, const BaseTensorPtr &std_tensor,
-                                                       const BaseTensorPtr &seed, const BaseTensorPtr &offset) {
+tensor::TensorPtr NormalFloatTensorAscendCustomize(const std::shared_ptr<OpRunner> &op, const FP32ImmPtr &mean_float,
+                                                   const TensorPtr &std_tensor, const TensorPtr &seed,
+                                                   const TensorPtr &offset) {
   MS_LOG(DEBUG) << "NormalFloatTensor call start";
   OpRunner::InferOpOutput(op, mean_float, std_tensor, seed, offset);
   // ValueTuple to std::vector

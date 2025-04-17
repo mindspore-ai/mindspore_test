@@ -24,9 +24,9 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr EluGradExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &dy_tensor,
-                                                const BaseTensorPtr &x_or_out_tensor, const ScalarPtr &alpha,
-                                                const BoolImmPtr &is_result) {
+tensor::TensorPtr EluGradExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &dy_tensor,
+                                            const TensorPtr &x_or_out_tensor, const ScalarPtr &alpha,
+                                            const BoolImmPtr &is_result) {
   const auto is_result_imm = GetValue<bool>(is_result);
   OpRunner::InferOpOutput(op, dy_tensor, x_or_out_tensor, alpha, is_result);
 

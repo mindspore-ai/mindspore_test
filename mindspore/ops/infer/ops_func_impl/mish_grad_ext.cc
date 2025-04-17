@@ -40,9 +40,9 @@ TypePtr MishGradExtFuncImpl::InferType(const PrimitivePtr &primitive,
 }
 
 TypePtrList MishGradExtFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &dout_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &dout_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(dout_tensor);
-  const auto &x_tensor = input_values[kIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
 
   const auto &dout_type = dout_tensor->Dtype();
@@ -62,7 +62,7 @@ TypePtrList MishGradExtFuncImpl::InferType(const PrimitivePtr &primitive, const 
 }
 
 ShapeArray MishGradExtFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   return {x_tensor->shape()};
 }

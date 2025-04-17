@@ -110,7 +110,7 @@ TEST_P(TestReduceExtendSimpleInfer, simple_infer) {
 
   auto prim = std::make_shared<Primitive>(op_name);
   ASSERT_NE(prim, nullptr);
-  auto input = std::make_shared<tensor::BaseTensor>(param.input_type->type_id(), param.input_shape);
+  auto input = std::make_shared<tensor::Tensor>(param.input_type->type_id(), param.input_shape);
   ASSERT_NE(input, nullptr);
   ValuePtrList input_values;
   input_values.push_back(std::move(input));

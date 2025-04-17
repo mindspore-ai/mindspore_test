@@ -26,8 +26,8 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void NewOnesCPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                         const ValueTuplePtr &size, const std::optional<Int64ImmPtr> &dtype);
+void NewOnesCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor, const ValueTuplePtr &size,
+                         const std::optional<Int64ImmPtr> &dtype);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

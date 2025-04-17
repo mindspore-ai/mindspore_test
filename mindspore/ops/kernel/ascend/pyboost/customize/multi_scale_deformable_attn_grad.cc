@@ -25,12 +25,10 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr, tensor::BaseTensorPtr>
-MultiScaleDeformableAttnGradAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &value_tensor,
-                                            const BaseTensorPtr &shape_tensor, const BaseTensorPtr &offset_tensor,
-                                            const BaseTensorPtr &locations_trans_tensor,
-                                            const BaseTensorPtr &weight_tensor,
-                                            const BaseTensorPtr &grad_output_tensor) {
+std::tuple<tensor::TensorPtr, tensor::TensorPtr, tensor::TensorPtr> MultiScaleDeformableAttnGradAscendCustomize(
+  const std::shared_ptr<OpRunner> &op, const TensorPtr &value_tensor, const TensorPtr &shape_tensor,
+  const TensorPtr &offset_tensor, const TensorPtr &locations_trans_tensor, const TensorPtr &weight_tensor,
+  const TensorPtr &grad_output_tensor) {
   auto ori_type1 = value_tensor->Dtype();
   auto ori_type2 = locations_trans_tensor->Dtype();
   auto ori_type3 = weight_tensor->Dtype();

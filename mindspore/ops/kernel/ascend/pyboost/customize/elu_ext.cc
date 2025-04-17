@@ -24,8 +24,8 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr EluExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input,
-                                            const ScalarPtr &alpha) {
+tensor::TensorPtr EluExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input,
+                                        const ScalarPtr &alpha) {
   MS_LOG(DEBUG) << "Call EluExt start";
   TypeId data_type = input->data_type();
   if (data_type == kNumberTypeFloat64) {

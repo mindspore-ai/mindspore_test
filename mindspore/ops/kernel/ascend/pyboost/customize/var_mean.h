@@ -26,7 +26,7 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void VarMeanAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
+void VarMeanAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
                             const std::optional<ValueTuplePtr> &dim, const Int64ImmPtr &correction,
                             const BoolImmPtr &keepdim);
 }  // namespace pyboost

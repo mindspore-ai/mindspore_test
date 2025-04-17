@@ -22,9 +22,8 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr BernoulliExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                  const BaseTensorPtr &input_tensor, const BaseTensorPtr &seed,
-                                                  const BaseTensorPtr &offset) {
+tensor::TensorPtr BernoulliExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                              const TensorPtr &seed, const TensorPtr &offset) {
   OpRunner::InferOpOutput(op, input_tensor, seed, offset);
 
   auto [seed_imm, offset_imm] = UpdateGeneratorState(seed, offset);

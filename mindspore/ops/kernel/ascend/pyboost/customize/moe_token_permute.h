@@ -27,8 +27,8 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr> MoeTokenPermuteAscendCustomize(
-  const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &tokens, const BaseTensorPtr &indices,
+std::tuple<tensor::TensorPtr, tensor::TensorPtr> MoeTokenPermuteAscendCustomize(
+  const std::shared_ptr<OpRunner> &op, const TensorPtr &tokens, const TensorPtr &indices,
   const std::optional<Int64ImmPtr> &num_out_tokens, const BoolImmPtr &padded_mode);
 }  // namespace pyboost
 }  // namespace kernel

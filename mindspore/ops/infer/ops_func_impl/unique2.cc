@@ -93,7 +93,7 @@ TypePtr Unique2FuncImpl::InferType(const PrimitivePtr &primitive,
 }
 
 ShapeArray Unique2FuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   auto x_shape_vector = x_tensor->shape();
   auto y_max_shape = std::accumulate(x_shape_vector.begin(), x_shape_vector.end(), 1, std::multiplies<int64_t>());
@@ -102,7 +102,7 @@ ShapeArray Unique2FuncImpl::InferShape(const PrimitivePtr &primitive, const Valu
 }
 
 TypePtrList Unique2FuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   return {x_tensor->Dtype(), kInt64, kInt64};
 }

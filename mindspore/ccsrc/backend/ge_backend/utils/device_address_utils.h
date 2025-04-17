@@ -46,7 +46,7 @@ class BACKEND_EXPORT DeviceAddressUtils {
   static void UpdateDeviceAddressHostInfoByNode(const device::DeviceAddressPtr &addr, const AnfNodePtr &node,
                                                 size_t output_idx);
 
-  static bool IsContiguousTensor(const tensor::BaseTensorPtr &tensor);
+  static bool IsContiguousTensor(const tensor::TensorPtr &tensor);
 
  private:
   // Whether device address of anf node is valid and device address type

@@ -98,7 +98,7 @@ class PYNATIVE_EXPORT GradExecutor {
   TopCellIdWithTopCell &already_run_top_cell() { return already_run_top_cell_; }
   py::object RunGrad(const prim::GradOperationPtr &grad, const py::object &obj, const py::object &weights,
                      const py::object &grad_position, const py::object &has_aux, const py::args &args);
-  py::object RunGradFunc(const autograd::GradAttr &grad_attr, const std::vector<tensor::BaseTensorPtr> &w_args,
+  py::object RunGradFunc(const autograd::GradAttr &grad_attr, const std::vector<tensor::TensorPtr> &w_args,
                          const std::vector<size_t> &p_args, bool has_aux);
   py::object RunGradGraph();
   CNodePtr ConstructForwardGraph(const OpGradInfoPtr &grad_info, const std::vector<std::string> &input_value_id) const;
@@ -217,12 +217,12 @@ class PYNATIVE_EXPORT GradExecutor {
   void GetCustomBpropPrim(const py::object &obj, const py::args &args, const InputArgsInfoPtr &input_args_info);
   void DoGradForCustomBprop(const InputArgsInfoPtr &input_args_info, const std::string &out_id) const;
   void CheckNeedCompileGraph(const InputArgsInfoPtr &input_args_info);
-  void GetGradGraph(const autograd::GradAttr &grad_attr, const std::vector<tensor::BaseTensorPtr> &w_args,
+  void GetGradGraph(const autograd::GradAttr &grad_attr, const std::vector<tensor::TensorPtr> &w_args,
                     const std::vector<size_t> &p_args, bool has_aux);
-  FuncGraphPtr GetBpropGraph(const autograd::GradAttr &grad_attr, const std::vector<tensor::BaseTensorPtr> &w_args,
+  FuncGraphPtr GetBpropGraph(const autograd::GradAttr &grad_attr, const std::vector<tensor::TensorPtr> &w_args,
                              const std::vector<size_t> &p_args, bool has_aux);
-  std::vector<tensor::BaseTensorPtr> GetWeightsArgs(const py::object &weights, bool *weight_param_is_tuple) const;
-  std::vector<tensor::BaseTensorPtr> GetDefaultWeights() const;
+  std::vector<tensor::TensorPtr> GetWeightsArgs(const py::object &weights, bool *weight_param_is_tuple) const;
+  std::vector<tensor::TensorPtr> GetDefaultWeights() const;
   void CheckParamShapeAndType(const ParameterPtr &param_node, const abstract::AbstractBasePtr &input_abs,
                               const abstract::AbstractBasePtr &ir_abs) const;
   void UpdateParamAbsByArgs(const std::vector<ValuePtr> &input_args, const FuncGraphPtr &bprop_graph) const;

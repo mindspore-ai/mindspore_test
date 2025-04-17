@@ -125,15 +125,15 @@ TypePtrList SearchSortedFuncImpl::InferType(const PrimitivePtr &primitive, const
 ShapeArray SearchSortedFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
   MS_EXCEPTION_IF_NULL(primitive);
 
-  auto sequence_tensor_ptr = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  auto sequence_tensor_ptr = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(sequence_tensor_ptr);
   auto sequence_shape = sequence_tensor_ptr->shape();
 
-  auto values_tensor_ptr = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>();
+  auto values_tensor_ptr = input_values[kInputIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(values_tensor_ptr);
   auto values_shape = values_tensor_ptr->shape();
 
-  auto sorter_tensor_ptr = input_values[kInputIndex2]->cast<tensor::BaseTensorPtr>();
+  auto sorter_tensor_ptr = input_values[kInputIndex2]->cast<tensor::TensorPtr>();
   if (sorter_tensor_ptr != nullptr) {
     MS_CHECK_VALUE(sorter_tensor_ptr->Dtype()->type_id() == kNumberTypeInt64,
                    "For '" + primitive->name() + "' sorter type should be Int64");

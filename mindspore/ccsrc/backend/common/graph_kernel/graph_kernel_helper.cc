@@ -244,7 +244,7 @@ std::vector<int64_t> GetReduceAxis(const AnfNodePtr &node) {
     }
   } else if (v->isa<Int64Imm>()) {
     axis.push_back(GetValue<int64_t>(v));
-  } else if (v->isa<tensor::BaseTensor>()) {
+  } else if (v->isa<tensor::Tensor>()) {
     axis = CheckAndConvertUtils::CheckTensorIntValue("axis", v, "ReduceSum");
   } else {
     MS_LOG_WITH_NODE(EXCEPTION, node) << "Attribute 'axis' should be a list or tuple in node "

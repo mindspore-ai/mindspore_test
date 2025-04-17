@@ -97,7 +97,7 @@ const char kStageCompileGraphs[] = "CompileGraphs";
 constexpr uint32_t kDefaultHcclExecTimeout = 1800;
 std::mutex g_tsd_mutex;
 
-void CheckContiguousTensor(const tensor::BaseTensorPtr &tensor) {
+void CheckContiguousTensor(const tensor::TensorPtr &tensor) {
   if (!DeviceAddressUtils::IsContiguousTensor(tensor)) {
     MS_LOG(EXCEPTION) << "The ge backend don't support view inputs, please check.";
   }

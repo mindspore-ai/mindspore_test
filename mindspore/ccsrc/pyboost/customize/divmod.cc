@@ -26,7 +26,7 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-void FloorDivCall(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &x_tensor, const BaseTensorPtr &y_tensor) {
+void FloorDivCall(const std::shared_ptr<OpRunner> &op, const TensorPtr &x_tensor, const TensorPtr &y_tensor) {
   MS_EXCEPTION_IF_NULL(op);
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), x_tensor, y_tensor);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
@@ -51,7 +51,7 @@ void FloorDivCall(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &x_te
   }));
 }
 
-void TruncCall(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor) {
+void TruncCall(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor) {
   MS_EXCEPTION_IF_NULL(op);
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
@@ -76,8 +76,8 @@ void TruncCall(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_t
   }));
 }
 }  // namespace
-tensor::BaseTensorPtr DivModCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &x_tensor,
-                                      const BaseTensorPtr &y_tensor, const std::optional<Int64ImmPtr> &rounding_mode) {
+tensor::TensorPtr DivModCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &x_tensor,
+                                  const TensorPtr &y_tensor, const std::optional<Int64ImmPtr> &rounding_mode) {
   OpRunner::InferOpOutput(op, x_tensor, y_tensor, rounding_mode);
 
   auto mode = 0;

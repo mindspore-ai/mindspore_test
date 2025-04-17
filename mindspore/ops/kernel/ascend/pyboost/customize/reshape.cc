@@ -20,15 +20,15 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr ReshapeAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                             const ValueTuplePtr &shape) {
+tensor::TensorPtr ReshapeAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                         const ValueTuplePtr &shape) {
   auto old_storage_info = input_tensor->storage_info();
   if (old_storage_info != nullptr && !old_storage_info->is_contiguous) {
     auto primitive = op->primitive();
     auto storage_info_list = ops::ReshapeCalc(primitive, {input_tensor, shape});
     if (!storage_info_list.empty()) {
       MS_LOG(DEBUG) << "View Uncontiguous Reshape Call start";
-      tensor::BaseTensorPtrList outputs;
+      tensor::TensorPtrList outputs;
       PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor);
       PyBoostUtils::CreateOutputTensor(op->device_context(), input_tensor, storage_info_list, &outputs);
 

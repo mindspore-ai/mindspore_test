@@ -22,9 +22,9 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr RandpermExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const Int64ImmPtr &n,
-                                                 const BaseTensorPtr &seed, const BaseTensorPtr &offset,
-                                                 const std::optional<Int64ImmPtr> &dtype) {
+tensor::TensorPtr RandpermExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const Int64ImmPtr &n,
+                                             const TensorPtr &seed, const TensorPtr &offset,
+                                             const std::optional<Int64ImmPtr> &dtype) {
   OpRunner::InferOpOutput(op, n, seed, offset, dtype);
   auto [seed_imm, offset_imm] = UpdateGeneratorState(seed, offset);
   auto n_imm = GetValueWithCheck<int64_t>(n);

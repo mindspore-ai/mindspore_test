@@ -364,8 +364,8 @@ class FuncBuilder : public BpropBuilder {
   NodePtr Conditional(const NodePtr &cond, const BlockFunc &true_case, const BlockFunc &false_case) override;
   NodePtr ScalarEq(const NodePtr &lhs, const NodePtr &rhs, const TypePtr &dst_type) override;
   NodePtr OutZeros(const NodePtr &node) override;
-  ValuePtr Ones(const tensor::BaseTensorPtr &tensor);
-  ValuePtr Zeros(const tensor::BaseTensorPtr &tensor);
+  ValuePtr Ones(const tensor::TensorPtr &tensor);
+  ValuePtr Zeros(const tensor::TensorPtr &tensor);
   ValuePtr Add(const ValuePtr &input, const ValuePtr &other);
   void SetInputs(std::string instance_name, const std::vector<NodePtr> *inputs,
                  mindspore::HashMap<std::string, ValuePtr> *attrs_ptr);

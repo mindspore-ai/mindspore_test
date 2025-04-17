@@ -25,9 +25,8 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 
-tensor::BaseTensorPtr InplaceSubExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                   const BaseTensorPtr &input_tensor, const BaseTensorPtr &other_tensor,
-                                                   const ScalarPtr &alpha) {
+tensor::TensorPtr InplaceSubExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                               const TensorPtr &other_tensor, const ScalarPtr &alpha) {
   MS_LOG(DEBUG) << "Call InplaceSubExt start";
   if ((PyBoostUtils::IsBool(alpha) && (!PyBoostUtils::IsBool(input_tensor) || !PyBoostUtils::IsBool(other_tensor)))) {
     MS_EXCEPTION(TypeError) << "For " << op->primitive()->name()

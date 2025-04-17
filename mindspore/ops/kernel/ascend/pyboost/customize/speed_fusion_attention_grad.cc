@@ -28,19 +28,18 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 void SpeedFusionAttentionGradAscendCustomize(
-  const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &query, const BaseTensorPtr &key, const BaseTensorPtr &value,
-  const BaseTensorPtr &dy, const Int64ImmPtr &head_num, const Int64ImmPtr &input_layout,
-  const std::optional<BaseTensorPtr> &pse, const std::optional<BaseTensorPtr> &padding_mask,
-  const std::optional<BaseTensorPtr> &atten_mask, const std::optional<BaseTensorPtr> &softmax_max,
-  const std::optional<BaseTensorPtr> &softmax_sum, const std::optional<BaseTensorPtr> &softmax_in,
-  const std::optional<BaseTensorPtr> &attention_in, const FP32ImmPtr &scale, const FP32ImmPtr &keep_prob,
+  const std::shared_ptr<OpRunner> &op, const TensorPtr &query, const TensorPtr &key, const TensorPtr &value,
+  const TensorPtr &dy, const Int64ImmPtr &head_num, const Int64ImmPtr &input_layout,
+  const std::optional<TensorPtr> &pse, const std::optional<TensorPtr> &padding_mask,
+  const std::optional<TensorPtr> &atten_mask, const std::optional<TensorPtr> &softmax_max,
+  const std::optional<TensorPtr> &softmax_sum, const std::optional<TensorPtr> &softmax_in,
+  const std::optional<TensorPtr> &attention_in, const FP32ImmPtr &scale, const FP32ImmPtr &keep_prob,
   const Int64ImmPtr &pre_tokens, const Int64ImmPtr &next_tokens, const Int64ImmPtr &inner_precise,
-  const std::optional<BaseTensorPtr> &seed, const std::optional<BaseTensorPtr> &offset,
-  const std::optional<BaseTensorPtr> &numels, const std::optional<ValueTuplePtr> &prefix,
-  const std::optional<ValueTuplePtr> &actual_seq_qlen, const std::optional<ValueTuplePtr> &actual_seq_kvlen,
-  const Int64ImmPtr &sparse_mode, const BoolImmPtr &gen_mask_parallel, const BoolImmPtr &sync,
-  const Int64ImmPtr &pse_type, const std::optional<ValueTuplePtr> &q_start_idx,
-  const std::optional<ValueTuplePtr> &kv_start_idx) {
+  const std::optional<TensorPtr> &seed, const std::optional<TensorPtr> &offset, const std::optional<TensorPtr> &numels,
+  const std::optional<ValueTuplePtr> &prefix, const std::optional<ValueTuplePtr> &actual_seq_qlen,
+  const std::optional<ValueTuplePtr> &actual_seq_kvlen, const Int64ImmPtr &sparse_mode,
+  const BoolImmPtr &gen_mask_parallel, const BoolImmPtr &sync, const Int64ImmPtr &pse_type,
+  const std::optional<ValueTuplePtr> &q_start_idx, const std::optional<ValueTuplePtr> &kv_start_idx) {
   OpRunner::InferOpOutput(op, query, key, value, dy, head_num, input_layout, pse, padding_mask, atten_mask, softmax_max,
                           softmax_sum, softmax_in, attention_in, scale, keep_prob, pre_tokens, next_tokens,
                           inner_precise, seed, offset, numels, prefix, actual_seq_qlen, actual_seq_kvlen, sparse_mode,
@@ -50,7 +49,7 @@ void SpeedFusionAttentionGradAscendCustomize(
     MS_EXCEPTION(ValueError) << "For " << op->primitive()->name() << ", seed, offset and numels must have value.";
   }
 
-  std::optional<BaseTensorPtr> dropout_mask = std::nullopt;
+  std::optional<TensorPtr> dropout_mask = std::nullopt;
   auto numels_tensor = numels.value();
   numels_tensor->data_sync();
   int64_t numels_value = *static_cast<int64_t *>(numels_tensor->data_c());

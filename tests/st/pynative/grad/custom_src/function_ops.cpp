@@ -19,7 +19,7 @@
 
 namespace mindspore::pynative {
 namespace autograd {
-ShapeVector BroadcastInferShape(const BaseTensorPtr &t1, const BaseTensorPtr &t2) {
+ShapeVector BroadcastInferShape(const TensorPtr &t1, const TensorPtr &t2) {
   ShapeVector s1 = t1->shape();
   ShapeVector s2 = t2->shape();
   ShapeVector out_shape(std::max(s1.size(), s2.size()), 1LL);
@@ -38,13 +38,13 @@ ShapeVector BroadcastInferShape(const BaseTensorPtr &t1, const BaseTensorPtr &t2
 
 class CustomAdd : public Function<CustomAdd> {
  public:
-  static BaseTensorPtr Forward(AutogradContext *ctx, const BaseTensorPtr &x, const BaseTensorPtr &y) {
-    auto output = std::make_shared<BaseTensor>(x->data_type(), BroadcastInferShape(x, y));
+  static TensorPtr Forward(AutogradContext *ctx, const TensorPtr &x, const TensorPtr &y) {
+    auto output = std::make_shared<Tensor>(x->data_type(), BroadcastInferShape(x, y));
     custom::CustomLaunchAclnn("aclnnAdd", {x, y, MakeValue<int64_t>(1)}, {output});
     return output;
   }
 
-  static BaseTensorPtrList Backward(AutogradContext *ctx, BaseTensorPtrList grad_outputs) {
+  static TensorPtrList Backward(AutogradContext *ctx, TensorPtrList grad_outputs) {
     auto saved = ctx->GetSavedTensors();
     auto dout = grad_outputs[0];
     return {dout, dout};
@@ -53,8 +53,8 @@ class CustomAdd : public Function<CustomAdd> {
 
 class CustomIndex : public Function<CustomIndex> {
  public:
-  static BaseTensorPtr Forward(AutogradContext *ctx, const BaseTensorPtr x, const BaseTensorPtrList &index) {
-    auto output = std::make_shared<BaseTensor>(x->data_type(), ShapeVector({1}));
+  static TensorPtr Forward(AutogradContext *ctx, const TensorPtr x, const TensorPtrList &index) {
+    auto output = std::make_shared<Tensor>(x->data_type(), ShapeVector({1}));
     std::vector<ValuePtr> values;
     for (const auto &item : index) {
       (void)values.emplace_back(item->cast<ValuePtr>());
@@ -64,7 +64,7 @@ class CustomIndex : public Function<CustomIndex> {
     return output;
   }
 
-  static BaseTensorPtrList Backward(AutogradContext *ctx, BaseTensorPtrList grad_outputs) {
+  static TensorPtrList Backward(AutogradContext *ctx, TensorPtrList grad_outputs) {
     auto saved = ctx->GetSavedTensors();
     auto dout = grad_outputs[0];
     return {dout, nullptr};
@@ -73,8 +73,8 @@ class CustomIndex : public Function<CustomIndex> {
 
 class CustomBroadcastTo : public Function<CustomBroadcastTo> {
  public:
-  static BaseTensorPtr Forward(AutogradContext *ctx, const BaseTensorPtr x, const std::vector<int64_t> &shape) {
-    auto output = std::make_shared<BaseTensor>(x->data_type(), shape);
+  static TensorPtr Forward(AutogradContext *ctx, const TensorPtr x, const std::vector<int64_t> &shape) {
+    auto output = std::make_shared<Tensor>(x->data_type(), shape);
     std::vector<ValuePtr> values;
     for (const auto &item : shape) {
       (void)values.emplace_back(MakeValue<int64_t>(item));
@@ -84,7 +84,7 @@ class CustomBroadcastTo : public Function<CustomBroadcastTo> {
     return output;
   }
 
-  static BaseTensorPtrList Backward(AutogradContext *ctx, BaseTensorPtrList grad_outputs) {
+  static TensorPtrList Backward(AutogradContext *ctx, TensorPtrList grad_outputs) {
     auto saved = ctx->GetSavedTensors();
     auto dout = grad_outputs[0];
     return {dout, nullptr};
@@ -93,8 +93,8 @@ class CustomBroadcastTo : public Function<CustomBroadcastTo> {
 
 class CustomMul : public Function<CustomMul> {
  public:
-  static BaseTensorPtr Forward(AutogradContext *ctx, const BaseTensorPtr &x, const BaseTensorPtr &y) {
-    auto output = std::make_shared<BaseTensor>(x->data_type(), BroadcastInferShape(x, y));
+  static TensorPtr Forward(AutogradContext *ctx, const TensorPtr &x, const TensorPtr &y) {
+    auto output = std::make_shared<Tensor>(x->data_type(), BroadcastInferShape(x, y));
     custom::CustomLaunchAclnn("aclnnMul", {x, y}, {output});
     bool x_require_grad = ctx->NeedGrad(x);
     bool y_require_grad = ctx->NeedGrad(y);
@@ -104,19 +104,19 @@ class CustomMul : public Function<CustomMul> {
     return output;
   }
 
-  static BaseTensorPtrList Backward(AutogradContext *ctx, BaseTensorPtrList grad_outputs) {
+  static TensorPtrList Backward(AutogradContext *ctx, TensorPtrList grad_outputs) {
     auto saved = ctx->GetSavedTensors();
     auto dout = grad_outputs[0];
 
-    BaseTensorPtr grad_x = nullptr;
-    BaseTensorPtr grad_y = nullptr;
+    TensorPtr grad_x = nullptr;
+    TensorPtr grad_y = nullptr;
 
     if (ctx->NeedsInputGrad(0)) {
-      grad_x = std::make_shared<BaseTensor>(dout->data_type(), BroadcastInferShape(dout, saved[0]));
+      grad_x = std::make_shared<Tensor>(dout->data_type(), BroadcastInferShape(dout, saved[0]));
       custom::CustomLaunchAclnn("aclnnMul", {dout, saved[0]}, {grad_x});
     }
     if (ctx->NeedsInputGrad(1)) {
-      grad_y = std::make_shared<BaseTensor>(dout->data_type(), BroadcastInferShape(dout, saved[1]));
+      grad_y = std::make_shared<Tensor>(dout->data_type(), BroadcastInferShape(dout, saved[1]));
       custom::CustomLaunchAclnn("aclnnMul", {dout, saved[1]}, {grad_y});
     }
 
@@ -126,35 +126,35 @@ class CustomMul : public Function<CustomMul> {
 
 class CustomMulNoGradOutput : public Function<CustomMulNoGradOutput> {
  public:
-  static BaseTensorPtr Forward(AutogradContext *ctx, const BaseTensorPtr &x, const BaseTensorPtr &y) {
-    auto out = std::make_shared<BaseTensor>(x->data_type(), BroadcastInferShape(x, y));
+  static TensorPtr Forward(AutogradContext *ctx, const TensorPtr &x, const TensorPtr &y) {
+    auto out = std::make_shared<Tensor>(x->data_type(), BroadcastInferShape(x, y));
     custom::CustomLaunchAclnn("aclnnMul", {x, y}, {out});
     ctx->MarkNonDifferentiable({out});
     return out;
   }
 
-  static BaseTensorPtrList Backward(AutogradContext *ctx, BaseTensorPtrList grad_output) {
+  static TensorPtrList Backward(AutogradContext *ctx, TensorPtrList grad_output) {
     return {grad_output[0], grad_output[0]};
   }
 };
 
 class CustomMulNoGradInput : public Function<CustomMulNoGradInput> {
  public:
-  static BaseTensorPtrList Forward(AutogradContext *ctx, const BaseTensorPtr &input) {
-    auto out = std::make_shared<BaseTensor>(input->data_type(), input->shape());
+  static TensorPtrList Forward(AutogradContext *ctx, const TensorPtr &input) {
+    auto out = std::make_shared<Tensor>(input->data_type(), input->shape());
     custom::CustomLaunchAclnn("aclnnMul", {input, input}, {out});
     ctx->MarkNonDifferentiable({input});
     return {input, out};
   }
 
-  static BaseTensorPtrList Backward(AutogradContext *ctx, BaseTensorPtrList grad_output) {
+  static TensorPtrList Backward(AutogradContext *ctx, TensorPtrList grad_output) {
     return {grad_output[0], ctx->NeedsInputGrad(0) ? grad_output[0] : nullptr};
   }
 };
 
 class CustomInplaceMulOp : public Function<CustomInplaceMulOp> {
  public:
-  static BaseTensorPtr Forward(AutogradContext *ctx, const BaseTensorPtr &x, const BaseTensorPtr &y) {
+  static TensorPtr Forward(AutogradContext *ctx, const TensorPtr &x, const TensorPtr &y) {
     custom::CustomLaunchAclnn("aclnnMul", {x, y}, {x});
     ctx->MarkDirty({x});
     if (ctx->NeedGrad(x)) {
@@ -163,12 +163,12 @@ class CustomInplaceMulOp : public Function<CustomInplaceMulOp> {
     return x;
   }
 
-  static BaseTensorPtrList Backward(AutogradContext *ctx, BaseTensorPtrList grad_output) {
-    BaseTensorPtr grad_input = nullptr;
+  static TensorPtrList Backward(AutogradContext *ctx, TensorPtrList grad_output) {
+    TensorPtr grad_input = nullptr;
     if (ctx->NeedsInputGrad(0)) {
       auto saved_tensor = ctx->GetSavedTensors();
       grad_input =
-        std::make_shared<BaseTensor>(grad_output[0]->data_type(), BroadcastInferShape(grad_output[0], saved_tensor[0]));
+        std::make_shared<Tensor>(grad_output[0]->data_type(), BroadcastInferShape(grad_output[0], saved_tensor[0]));
       custom::CustomLaunchAclnn("aclnnMul", {grad_output[0], saved_tensor[0]}, {grad_input});
     }
     return {grad_input};
@@ -177,8 +177,8 @@ class CustomInplaceMulOp : public Function<CustomInplaceMulOp> {
 
 class CustomMulPyboost : public Function<CustomMulPyboost> {
  public:
-  static BaseTensorPtr Forward(AutogradContext *ctx, const BaseTensorPtr &x, const BaseTensorPtr &y) {
-    auto output = std::make_shared<BaseTensor>(x->data_type(), BroadcastInferShape(x, y));
+  static TensorPtr Forward(AutogradContext *ctx, const TensorPtr &x, const TensorPtr &y) {
+    auto output = std::make_shared<Tensor>(x->data_type(), BroadcastInferShape(x, y));
 
     auto p = std::make_shared<Primitive>("CustomLaunchAclnn");
     auto op = std::make_shared<kernel::pyboost::OpRunner>(p, runtime::OpRunner::GetDeviceContext("Ascend"));
@@ -209,19 +209,19 @@ class CustomMulPyboost : public Function<CustomMulPyboost> {
     return output;
   }
 
-  static BaseTensorPtrList Backward(AutogradContext *ctx, BaseTensorPtrList grad_outputs) {
+  static TensorPtrList Backward(AutogradContext *ctx, TensorPtrList grad_outputs) {
     auto saved = ctx->GetSavedTensors();
     auto dout = grad_outputs[0];
 
-    BaseTensorPtr grad_x = nullptr;
-    BaseTensorPtr grad_y = nullptr;
+    TensorPtr grad_x = nullptr;
+    TensorPtr grad_y = nullptr;
 
     if (ctx->NeedsInputGrad(0)) {
-      grad_x = std::make_shared<BaseTensor>(dout->data_type(), BroadcastInferShape(dout, saved[0]));
+      grad_x = std::make_shared<Tensor>(dout->data_type(), BroadcastInferShape(dout, saved[0]));
       custom::CustomLaunchAclnn("aclnnMul", {dout, saved[0]}, {grad_x});
     }
     if (ctx->NeedsInputGrad(1)) {
-      grad_y = std::make_shared<BaseTensor>(dout->data_type(), BroadcastInferShape(dout, saved[1]));
+      grad_y = std::make_shared<Tensor>(dout->data_type(), BroadcastInferShape(dout, saved[1]));
       custom::CustomLaunchAclnn("aclnnMul", {dout, saved[1]}, {grad_y});
     }
 
@@ -229,35 +229,35 @@ class CustomMulPyboost : public Function<CustomMulPyboost> {
   }
 };
 
-BaseTensorPtr run_custom_add(const tensor::BaseTensorPtr &x, const tensor::BaseTensorPtr &y) {
+TensorPtr run_custom_add(const tensor::TensorPtr &x, const tensor::TensorPtr &y) {
   return CustomAdd::Apply(x, y);
 }
 
-BaseTensorPtr run_custom_index(const BaseTensorPtr x, const BaseTensorPtrList &index) {
+TensorPtr run_custom_index(const TensorPtr x, const TensorPtrList &index) {
   return CustomIndex::Apply(x, index);
 }
 
-BaseTensorPtr run_custom_broadcast_to(const BaseTensorPtr x, const std::vector<int64_t> &index) {
+TensorPtr run_custom_broadcast_to(const TensorPtr x, const std::vector<int64_t> &index) {
   return CustomBroadcastTo::Apply(x, index);
 }
 
-BaseTensorPtr run_custom_mul(const tensor::BaseTensorPtr &x, const tensor::BaseTensorPtr &y) {
+TensorPtr run_custom_mul(const tensor::TensorPtr &x, const tensor::TensorPtr &y) {
   return CustomMul::Apply(x, y);
 }
 
-BaseTensorPtr run_inplace_mul_op(const tensor::BaseTensorPtr &input, const tensor::BaseTensorPtr &other) {
+TensorPtr run_inplace_mul_op(const tensor::TensorPtr &input, const tensor::TensorPtr &other) {
   return CustomInplaceMulOp::Apply(input, other);
 }
 
-BaseTensorPtr run_mul_mark_no_diff_output(const tensor::BaseTensorPtr &input, const tensor::BaseTensorPtr &other) {
+TensorPtr run_mul_mark_no_diff_output(const tensor::TensorPtr &input, const tensor::TensorPtr &other) {
   return CustomMulNoGradOutput::Apply(input, other);
 }
 
-BaseTensorPtrList run_mul_mark_no_diff_input(const tensor::BaseTensorPtr &input) {
+TensorPtrList run_mul_mark_no_diff_input(const tensor::TensorPtr &input) {
   return CustomMulNoGradInput::Apply(input);
 }
 
-BaseTensorPtr run_custom_mul_pyboost(const tensor::BaseTensorPtr &x, const tensor::BaseTensorPtr &y) {
+TensorPtr run_custom_mul_pyboost(const tensor::TensorPtr &x, const tensor::TensorPtr &y) {
   return CustomMulPyboost::Apply(x, y);
 }
 }  // namespace autograd

@@ -22,6 +22,6 @@
 
 namespace mindspore::custom {
 __attribute__((visibility("default"))) void CustomLaunchAclnn(const std::string &aclnn_api, const ValuePtrList &inputs,
-                                                              const tensor::BaseTensorPtrList &outputs);
+                                                              const tensor::TensorPtrList &outputs);
 }  // namespace mindspore::custom
 #endif  // MINDSPORE_OPS_KERNEL_ASCEND_PYBOOST_CUSTOMIZE_CUSTOM_ACLNN_LAUNCH_H_

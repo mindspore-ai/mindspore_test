@@ -74,11 +74,11 @@ class TestBCEWithLogitsBackwardSimpleInfer : public TestOps,
 
 TEST_P(TestBCEWithLogitsBackwardSimpleInfer, dyn_shape) {
   const auto &param = GetParam();
-  auto grad_output = std::make_shared<tensor::BaseTensor>(param.grad_output_type->type_id(), param.grad_output_shape);
-  auto input = std::make_shared<tensor::BaseTensor>(param.input_type->type_id(), param.input_shape);
-  auto target = std::make_shared<tensor::BaseTensor>(param.target_type->type_id(), param.target_shape);
-  auto weight = std::make_shared<tensor::BaseTensor>(param.weight_type->type_id(), param.weight_shape);
-  auto posWight = std::make_shared<tensor::BaseTensor>(param.posWeight_type->type_id(), param.posWeight_shape);
+  auto grad_output = std::make_shared<tensor::Tensor>(param.grad_output_type->type_id(), param.grad_output_shape);
+  auto input = std::make_shared<tensor::Tensor>(param.input_type->type_id(), param.input_shape);
+  auto target = std::make_shared<tensor::Tensor>(param.target_type->type_id(), param.target_shape);
+  auto weight = std::make_shared<tensor::Tensor>(param.weight_type->type_id(), param.weight_shape);
+  auto posWight = std::make_shared<tensor::Tensor>(param.posWeight_type->type_id(), param.posWeight_shape);
   ValuePtrList input_values;
   input_values.push_back(std::move(grad_output));
   input_values.push_back(std::move(input));

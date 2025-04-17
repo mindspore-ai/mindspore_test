@@ -42,7 +42,7 @@ TypePtr HSigmoidFuncImpl::InferType(const PrimitivePtr &primitive,
 }
 
 TypePtrList HSigmoidFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   const std::set<TypePtr> valid_types = {kInt8, kInt16, kInt32, kInt64, kFloat16, kFloat32, kFloat64, kBFloat16};
   const auto &input_type = x_tensor->Dtype();
@@ -51,7 +51,7 @@ TypePtrList HSigmoidFuncImpl::InferType(const PrimitivePtr &primitive, const Val
 }
 
 ShapeArray HSigmoidFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   return {x_tensor->shape()};
 }

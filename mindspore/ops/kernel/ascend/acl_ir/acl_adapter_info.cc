@@ -90,7 +90,7 @@ std::string GetGraphInfoForAscendSpecial(const std::vector<ValuePtr> &expanded_i
       std::vector<ShapeVector> input_shapes;
       (void)std::transform(expanded_input_values.begin(), expanded_input_values.end(), std::back_inserter(input_shapes),
                            [&first_dtype](const ValuePtr &value) -> ShapeVector {
-                             auto tensor = value->cast<tensor::BaseTensorPtr>();
+                             auto tensor = value->cast<tensor::TensorPtr>();
                              if (tensor != nullptr) {
                                if (first_dtype == TypeId::kTypeUnknown) {
                                  first_dtype = tensor->data_type();
@@ -103,20 +103,20 @@ std::string GetGraphInfoForAscendSpecial(const std::vector<ValuePtr> &expanded_i
       auto in_func_map = acl_info.input_selector();
       for (auto [index, in_func] : in_func_map) {
         MS_EXCEPTION_IF_NULL(in_func);
-        auto tensor = expanded_input_values[index]->cast<tensor::BaseTensorPtr>();
+        auto tensor = expanded_input_values[index]->cast<tensor::TensorPtr>();
         MS_EXCEPTION_IF_NULL(tensor);
         ascend_special_info += in_func(tensor->data_type(), input_shapes);
       }
 
       auto out_func = acl_info.output_selector();
       if (out_func != nullptr) {
-        auto tensor = expanded_input_values[0]->cast<tensor::BaseTensorPtr>();
+        auto tensor = expanded_input_values[0]->cast<tensor::TensorPtr>();
         MS_EXCEPTION_IF_NULL(tensor);
         auto out_format = out_func(tensor->data_type(), input_shapes);
         ascend_special_info += out_format;
       }
       MS_EXCEPTION_IF_NULL(out_func);
-      auto tensor = expanded_input_values[0]->cast<tensor::BaseTensorPtr>();
+      auto tensor = expanded_input_values[0]->cast<tensor::TensorPtr>();
       MS_EXCEPTION_IF_NULL(tensor);
       auto out_format = out_func(tensor->data_type(), input_shapes);
       ascend_special_info += out_format;

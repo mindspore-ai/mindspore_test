@@ -37,7 +37,7 @@ ShapeArray ReduceMaxFuncImpl::InferShape(const PrimitivePtr &primitive, const Va
 }
 
 TypePtrList ReduceMaxFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   return {x_tensor->Dtype()};
 }
 REGISTER_SIMPLE_INFER(kNameReduceMax, ReduceMaxFuncImpl)

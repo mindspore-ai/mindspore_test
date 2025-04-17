@@ -22,8 +22,8 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr MoveToAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                            const StringImmPtr &to, const BoolImmPtr &blocking) {
+tensor::TensorPtr MoveToAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                        const StringImmPtr &to, const BoolImmPtr &blocking) {
   MS_LOG(EXCEPTION) << "Not implemented.";
 }
 }  // namespace pyboost

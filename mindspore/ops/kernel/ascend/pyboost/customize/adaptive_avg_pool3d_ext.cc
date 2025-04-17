@@ -29,9 +29,8 @@ namespace {
 constexpr int kShapeDim1d = 1;
 constexpr int kShapeDim3d = 3;
 }  // namespace
-tensor::BaseTensorPtr AdaptiveAvgPool3DExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                          const BaseTensorPtr &input_tensor,
-                                                          const ValueTuplePtr &output_size) {
+tensor::TensorPtr AdaptiveAvgPool3DExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                                      const TensorPtr &input_tensor, const ValueTuplePtr &output_size) {
   OpRunner::InferOpOutput(op, input_tensor, output_size);
   std::vector<int64_t> output_size_vector = ConvertValueTupleToVector<int64_t>(output_size);
   std::vector<int64_t> axis_vector{-1, -2, -3};  // {-1, -2, -3}, fixed axis dims for aclnnMean

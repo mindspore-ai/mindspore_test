@@ -51,7 +51,7 @@ TypePtr SoftShrinkFuncImpl::InferType(const PrimitivePtr &primitive,
 }
 
 TypePtrList SoftShrinkFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   const std::set<TypePtr> valid_types = {kFloat16, kFloat32, kBFloat16};
   const auto &input_type = x_tensor->Dtype();
@@ -60,7 +60,7 @@ TypePtrList SoftShrinkFuncImpl::InferType(const PrimitivePtr &primitive, const V
 }
 
 ShapeArray SoftShrinkFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   return {x_tensor->shape()};
 }

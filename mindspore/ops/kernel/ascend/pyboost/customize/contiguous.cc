@@ -23,8 +23,7 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr ContiguousAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                const BaseTensorPtr &input_tensor) {
+tensor::TensorPtr ContiguousAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor) {
   MS_LOG(DEBUG) << "Call start";
   MS_EXCEPTION_IF_NULL(input_tensor);
 

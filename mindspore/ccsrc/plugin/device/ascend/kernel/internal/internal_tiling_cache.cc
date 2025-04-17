@@ -80,7 +80,7 @@ void Gather(const device::DeviceAddressPtr &device_address) {
   }
 }
 
-void Gather(const mindspore::tensor::BaseTensorPtr &tensor) {
+void Gather(const mindspore::tensor::TensorPtr &tensor) {
   if (tensor == nullptr) {
     return;
   }
@@ -391,22 +391,6 @@ void GatherHash(const std::optional<tensor::TensorPtr> &tensor) {
 }
 
 void GatherHash(const std::vector<tensor::TensorPtr> &tensors) {
-  for (const auto &tensor : tensors) {
-    GatherHash(tensor);
-  }
-}
-
-void GatherHash(const mindspore::tensor::BaseTensorPtr &tensor) { Gather(tensor); }
-
-void GatherHash(const std::optional<tensor::BaseTensorPtr> &tensor) {
-  // "ot" for optional tensor
-  MemcpyToBuf("ot", kSizeTwo);
-  if (tensor.has_value()) {
-    GatherHash(tensor.value());
-  }
-}
-
-void GatherHash(const std::vector<tensor::BaseTensorPtr> &tensors) {
   for (const auto &tensor : tensors) {
     GatherHash(tensor);
   }

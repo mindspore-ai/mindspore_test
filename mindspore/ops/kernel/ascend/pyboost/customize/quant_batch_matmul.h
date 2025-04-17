@@ -27,13 +27,13 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr QuantMatmulV4AscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &x1_tensor,
-                                                   const BaseTensorPtr &x2_tensor, const BaseTensorPtr &scale_tensor,
-                                                   const std::optional<BaseTensorPtr> &offset_tensor,
-                                                   const std::optional<BaseTensorPtr> &bias_tensor,
-                                                   const std::optional<BaseTensorPtr> &pertokenScaleOptional_tensor,
-                                                   const BoolImmPtr &transpose_x1, const BoolImmPtr &transpose_x2,
-                                                   const Int64ImmPtr &dtype);
+tensor::TensorPtr QuantMatmulV4AscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &x1_tensor,
+                                               const TensorPtr &x2_tensor, const TensorPtr &scale_tensor,
+                                               const std::optional<TensorPtr> &offset_tensor,
+                                               const std::optional<TensorPtr> &bias_tensor,
+                                               const std::optional<TensorPtr> &pertokenScaleOptional_tensor,
+                                               const BoolImmPtr &transpose_x1, const BoolImmPtr &transpose_x2,
+                                               const Int64ImmPtr &dtype);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

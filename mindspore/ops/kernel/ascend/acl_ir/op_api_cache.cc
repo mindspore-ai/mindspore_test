@@ -82,7 +82,7 @@ void Gather(device::DeviceAddress *device_address) {
 
 void Gather(const device::DeviceAddressPtr &device_address) { Gather(device_address.get()); }
 
-void Gather(const mindspore::tensor::BaseTensorPtr &tensor) {
+void Gather(const mindspore::tensor::TensorPtr &tensor) {
   if (tensor == nullptr) {
     return;
   }
@@ -136,26 +136,10 @@ void GatherInfo(device::DeviceAddress *device_address) {
   RefreshAddr(device_address);
 }
 
-void GatherInfo(const mindspore::tensor::BaseTensorPtr &tensor) {
+void GatherInfo(const mindspore::tensor::TensorPtr &tensor) {
   Gather(tensor);
   RefreshAddr(tensor);
 }
-
-void GatherInfo(const std::optional<tensor::BaseTensorPtr> &tensor) {
-  // "ot" for optional tensor
-  MemcpyToBuf("ot", kSizeTwo);
-  if (tensor.has_value()) {
-    GatherInfo(tensor.value());
-  }
-}
-
-void GatherInfo(const std::vector<tensor::BaseTensorPtr> &tensors) {
-  for (const auto &tensor : tensors) {
-    GatherInfo(tensor);
-  }
-}
-
-void GatherInfo(const mindspore::tensor::TensorPtr &tensor) { GatherInfo(tensor->cast<tensor::BaseTensorPtr>()); }
 
 void GatherInfo(const std::optional<tensor::TensorPtr> &tensor) {
   // "ot" for optional tensor
@@ -286,7 +270,7 @@ void RefreshAddr(device::DeviceAddress *device_address) {
 
 void RefreshAddr(const device::DeviceAddressPtr &device_address) { RefreshAddr(device_address.get()); }
 
-void RefreshAddr(const mindspore::tensor::BaseTensorPtr &tensor) {
+void RefreshAddr(const mindspore::tensor::TensorPtr &tensor) {
   if (tensor == nullptr) {
     return;
   }
@@ -515,22 +499,5 @@ void GatherHash(const std::vector<tensor::TensorPtr> &tensors) {
     GatherHash(tensor);
   }
 }
-
-void GatherHash(const mindspore::tensor::BaseTensorPtr &tensor) { Gather(tensor); }
-
-void GatherHash(const std::optional<tensor::BaseTensorPtr> &tensor) {
-  // "ot" for optional tensor
-  MemcpyToBuf("ot", kSizeTwo);
-  if (tensor.has_value()) {
-    GatherHash(tensor.value());
-  }
-}
-
-void GatherHash(const std::vector<tensor::BaseTensorPtr> &tensors) {
-  for (const auto &tensor : tensors) {
-    GatherHash(tensor);
-  }
-}
-
 void GatherHash() {}
 }  // namespace  mindspore::device::ascend

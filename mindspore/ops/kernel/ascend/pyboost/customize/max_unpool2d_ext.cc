@@ -26,12 +26,12 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 
-tensor::BaseTensorPtr MaxUnpool2DExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                    const BaseTensorPtr &input_tensor, const BaseTensorPtr &indices,
-                                                    const std::optional<ValueTuplePtr> &kernel_size,
-                                                    const std::optional<ValueTuplePtr> &stride,
-                                                    const std::optional<ValueTuplePtr> &padding,
-                                                    const std::optional<ValueTuplePtr> &ouput_size) {
+tensor::TensorPtr MaxUnpool2DExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                                const TensorPtr &indices,
+                                                const std::optional<ValueTuplePtr> &kernel_size,
+                                                const std::optional<ValueTuplePtr> &stride,
+                                                const std::optional<ValueTuplePtr> &padding,
+                                                const std::optional<ValueTuplePtr> &ouput_size) {
   OpRunner::InferOpOutput(op, input_tensor, indices, kernel_size, stride, padding, ouput_size);
   std::vector<int64_t> output_size_vector{};
   std::vector<int64_t> shape{op->output(0)->shape()};

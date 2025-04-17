@@ -24,7 +24,7 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr IdentityGPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &x_tensor) {
+tensor::TensorPtr IdentityGPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &x_tensor) {
   MS_LOG(DEBUG) << "Identity call start";
   IdentityCustomize(op, x_tensor);
   auto sync = runtime::RuntimeConf::GetInstance()->launch_blocking();

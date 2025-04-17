@@ -39,14 +39,14 @@ namespace kernel {
 namespace pyboost {
 namespace {
 void CreateTensor(const TypeId &type_id, const ShapeVector &shape_vector, const AbstractBasePtr &abstract_tensor,
-                  std::vector<tensor::BaseTensorPtr> *outputs) {
+                  std::vector<tensor::TensorPtr> *outputs) {
   auto output_tensor = std::make_shared<tensor::Tensor>(type_id, shape_vector);
   output_tensor->set_need_pipeline_sync(true);
   (void)outputs->emplace_back(output_tensor);
   MS_LOG(DEBUG) << "Create output tensor " << output_tensor->ToString();
 }
 
-void CreateTensor(const TypeId &type_id, const ShapeVector &shape_vector, std::vector<tensor::BaseTensorPtr> *outputs) {
+void CreateTensor(const TypeId &type_id, const ShapeVector &shape_vector, std::vector<tensor::TensorPtr> *outputs) {
   auto output_tensor = std::make_shared<tensor::Tensor>(type_id, shape_vector);
   output_tensor->set_need_pipeline_sync(true);
   (void)outputs->emplace_back(output_tensor);
@@ -55,14 +55,14 @@ void CreateTensor(const TypeId &type_id, const ShapeVector &shape_vector, std::v
 }  // namespace
 
 void PyBoostUtils::CreateOutputTensor(const TypeId &type_id, const ShapeVector &shape_vector,
-                                      std::vector<tensor::BaseTensorPtr> *outputs) {
+                                      std::vector<tensor::TensorPtr> *outputs) {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative,
                                      runtime::ProfilerEvent::kPyBoostCreateOutputTensor,
                                      runtime::ProfilerRecorder::kNoName, false);
   CreateTensor(type_id, shape_vector, outputs);
 }
 
-void PyBoostUtils::CreateOutputTensor(const AbstractBasePtr &abstract, std::vector<tensor::BaseTensorPtr> *outputs) {
+void PyBoostUtils::CreateOutputTensor(const AbstractBasePtr &abstract, std::vector<tensor::TensorPtr> *outputs) {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative,
                                      runtime::ProfilerEvent::kPyBoostCreateOutputTensor,
                                      runtime::ProfilerRecorder::kNoName, false);
@@ -93,14 +93,14 @@ void PyBoostUtils::CreateOutputTensor(const AbstractBasePtr &abstract, std::vect
   }
 }
 
-tensor::BaseTensorPtr PyBoostUtils::ScalarToTensor(const ScalarPtr &scalar) {
+tensor::TensorPtr PyBoostUtils::ScalarToTensor(const ScalarPtr &scalar) {
   if (scalar == nullptr) {
     MS_EXCEPTION(ArgumentError) << "Nullptr Error!";
   }
   return ScalarToTensor(scalar, scalar->type());
 }
 
-tensor::BaseTensorPtr PyBoostUtils::ScalarToTensor(const ScalarPtr &scalar, const TypePtr &tensor_dtype) {
+tensor::TensorPtr PyBoostUtils::ScalarToTensor(const ScalarPtr &scalar, const TypePtr &tensor_dtype) {
   MS_EXCEPTION_IF_NULL(scalar);
   MS_EXCEPTION_IF_NULL(tensor_dtype);
 
@@ -136,7 +136,7 @@ tensor::BaseTensorPtr PyBoostUtils::ScalarToTensor(const ScalarPtr &scalar, cons
 }
 
 void PyBoostUtils::CreateOutputTensor(const ValueSimpleInfoPtr &output_value_simple_info,
-                                      std::vector<tensor::BaseTensorPtr> *outputs) {
+                                      std::vector<tensor::TensorPtr> *outputs) {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative,
                                      runtime::ProfilerEvent::kPyBoostCreateOutputTensor,
                                      runtime::ProfilerRecorder::kNoName, false);
@@ -218,17 +218,17 @@ DeviceSyncPtr PyBoostUtils::ContiguousByDeviceAddress(const DeviceSyncPtr &devic
   return new_device_address;
 }
 
-void PyBoostUtils::CreateOutputTensor(const DeviceContext *device_context, const tensor::BaseTensorPtr &input,
+void PyBoostUtils::CreateOutputTensor(const DeviceContext *device_context, const tensor::TensorPtr &input,
                                       const TensorStorageInfoPtrList &storage_info_list,
-                                      std::vector<tensor::BaseTensorPtr> *outputs) {
+                                      std::vector<tensor::TensorPtr> *outputs) {
   for (auto &storage_info : storage_info_list) {
     CreateOutputTensor(device_context, input, storage_info, outputs);
   }
 }
 
-void PyBoostUtils::CreateOutputTensor(const DeviceContext *device_context, const tensor::BaseTensorPtr &input,
+void PyBoostUtils::CreateOutputTensor(const DeviceContext *device_context, const tensor::TensorPtr &input,
                                       const TensorStorageInfoPtr &storage_info,
-                                      std::vector<tensor::BaseTensorPtr> *outputs) {
+                                      std::vector<tensor::TensorPtr> *outputs) {
   MS_EXCEPTION_IF_NULL(input);
   MS_EXCEPTION_IF_NULL(storage_info);
   MS_EXCEPTION_IF_NULL(device_context);
@@ -305,7 +305,7 @@ void PyBoostUtils::GetKernelTensor(const DeviceContext *device_context, size_t s
                                    const abstract::AbstractBasePtr &input_abs, size_t index,
                                    std::vector<kernel::KernelTensor *> *kernel_tensor_list,
                                    std::vector<kernel::KernelTensorPtr> *kernel_tensor_ptr_list,
-                                   const BaseTensorPtr &tensor) {
+                                   const TensorPtr &tensor) {
   MS_EXCEPTION_IF_NULL(tensor);
   MS_EXCEPTION_IF_NULL(kernel_tensor_list);
   MS_EXCEPTION_IF_NULL(kernel_tensor_ptr_list);
@@ -342,7 +342,7 @@ void PyBoostUtils::GetKernelTensor(const DeviceContext *device_context, size_t s
                                    const abstract::AbstractBasePtr &input_abs, size_t index,
                                    std::vector<kernel::KernelTensor *> *kernel_tensor_list,
                                    std::vector<kernel::KernelTensorPtr> *kernel_tensor_ptr_list,
-                                   const std::vector<tensor::BaseTensorPtr> &tensors) {
+                                   const std::vector<tensor::TensorPtr> &tensors) {
   for (const auto &tensor : tensors) {
     // input_abs is not used in GetKernelTensor when value is TensorPtr.
     GetKernelTensor(device_context, stream_id, input_abs, index, kernel_tensor_list, kernel_tensor_ptr_list, tensor);
@@ -594,8 +594,8 @@ std::pair<bool, KernelAttr> PyBoostUtils::SelectKernel(const std::vector<Abstrac
                        GetOutputTypeFromAbstractBase(outputs_abs));
 }
 
-std::optional<tensor::BaseTensorPtr> PyBoostUtils::CastTensor(const std::optional<tensor::BaseTensorPtr> &tensor,
-                                                              const TypeId &type_id, const std::string &device_target) {
+std::optional<tensor::TensorPtr> PyBoostUtils::CastTensor(const std::optional<tensor::TensorPtr> &tensor,
+                                                          const TypeId &type_id, const std::string &device_target) {
   if (!tensor.has_value()) {
     return tensor;
   }
@@ -608,8 +608,8 @@ std::optional<tensor::BaseTensorPtr> PyBoostUtils::CastTensor(const std::optiona
   return cast_op->Call(tensor.value(), type_id64);
 }
 
-tensor::BaseTensorPtr PyBoostUtils::CastTensor(const tensor::BaseTensorPtr &tensor, const TypeId &type_id,
-                                               const std::string &device_target) {
+tensor::TensorPtr PyBoostUtils::CastTensor(const tensor::TensorPtr &tensor, const TypeId &type_id,
+                                           const std::string &device_target) {
   if (tensor->Dtype()->type_id() == type_id) {
     return tensor;
   }
@@ -618,13 +618,13 @@ tensor::BaseTensorPtr PyBoostUtils::CastTensor(const tensor::BaseTensorPtr &tens
   return cast_op->Call(tensor, type_id64);
 }
 
-std::vector<tensor::BaseTensorPtr> PyBoostUtils::CastTensor(const std::vector<tensor::BaseTensorPtr> &tensors,
-                                                            const std::vector<TypeId> &type_id_list,
-                                                            const std::string &device_target) {
+std::vector<tensor::TensorPtr> PyBoostUtils::CastTensor(const std::vector<tensor::TensorPtr> &tensors,
+                                                        const std::vector<TypeId> &type_id_list,
+                                                        const std::string &device_target) {
   if (tensors.size() != type_id_list.size()) {
     MS_LOG(EXCEPTION) << "before cast tensor output size is not equal after cast";
   }
-  std::vector<tensor::BaseTensorPtr> output_tensors;
+  std::vector<tensor::TensorPtr> output_tensors;
   for (size_t i = 0; i < tensors.size(); ++i) {
     const auto &output = CastTensor(tensors[i], type_id_list[i], device_target);
     (void)output_tensors.emplace_back(output);
@@ -632,10 +632,10 @@ std::vector<tensor::BaseTensorPtr> PyBoostUtils::CastTensor(const std::vector<te
   return output_tensors;
 }
 
-std::vector<tensor::BaseTensorPtr> PyBoostUtils::CastTensor(const std::vector<tensor::BaseTensorPtr> &tensors,
-                                                            TypeId type_id, const std::string &device_target) {
+std::vector<tensor::TensorPtr> PyBoostUtils::CastTensor(const std::vector<tensor::TensorPtr> &tensors, TypeId type_id,
+                                                        const std::string &device_target) {
   // tuple input
-  std::vector<tensor::BaseTensorPtr> output_tensors;
+  std::vector<tensor::TensorPtr> output_tensors;
   for (size_t i = 0; i < tensors.size(); ++i) {
     const auto &output = CastTensor(tensors[i], type_id, device_target);
     (void)output_tensors.emplace_back(output);

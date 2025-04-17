@@ -73,7 +73,7 @@ abstract::BaseShapePtr AddRmsNormQuantV2FuncImpl::InferShape(const PrimitivePtr 
 ShapeArray AddRmsNormQuantV2FuncImpl::InferShape(const PrimitivePtr &primitive,
                                                  const ValuePtrList &input_values) const {
   MS_EXCEPTION_IF_NULL(primitive);
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   const auto &x_shape = x_tensor->shape();
 
@@ -107,7 +107,7 @@ TypePtr AddRmsNormQuantV2FuncImpl::InferType(const PrimitivePtr &prim,
 
 TypePtrList AddRmsNormQuantV2FuncImpl::InferType(const PrimitivePtr &primitive,
                                                  const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   mindspore::TensorTypePtr quant_type;
   if (primitive->HasAttr("dst_type")) {

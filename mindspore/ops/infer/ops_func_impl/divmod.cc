@@ -59,7 +59,7 @@ TypePtr DivModFuncImpl::InferType(const PrimitivePtr &primitive, const std::vect
   }
 }
 TypePtrList DivModFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   const auto &x_dtype = x_tensor->Dtype();
   const auto &x_type_id = x_dtype->type_id();

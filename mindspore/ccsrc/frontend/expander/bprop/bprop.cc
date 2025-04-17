@@ -190,7 +190,7 @@ class PynativeIRBuilder : public IrBuilder {
           size_t i = LongToSize(idx);
           if (i < inputs.size() && !inputs[i]->HasAbstractValue()) {
             auto v = inputs[i]->BuildValue();
-            auto tensor = v->cast<tensor::BaseTensorPtr>();
+            auto tensor = v->cast<tensor::TensorPtr>();
             if (tensor != nullptr) {
               tensor->data_sync();
             }

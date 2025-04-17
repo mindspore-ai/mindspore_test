@@ -20,8 +20,8 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr DiagExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                             const Int64ImmPtr &diagonal) {
+tensor::TensorPtr DiagExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                         const Int64ImmPtr &diagonal) {
   MS_LOG(DEBUG) << op->primitive()->name() << " call start";
   OpRunner::InferOpOutput(op, input_tensor, diagonal);
   auto diagonal_imm = GetValue<int64_t>(diagonal);

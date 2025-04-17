@@ -38,10 +38,9 @@ void GetTypeLimit(int64_t *limit) {
 }
 }  // namespace
 
-tensor::BaseTensorPtr InplaceRandomAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                   const BaseTensorPtr &tensor_tensor, const Int64ImmPtr from,
-                                                   const std::optional<Int64ImmPtr> &to, const BaseTensorPtr &seed,
-                                                   const BaseTensorPtr &offset) {
+tensor::TensorPtr InplaceRandomAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &tensor_tensor,
+                                               const Int64ImmPtr from, const std::optional<Int64ImmPtr> &to,
+                                               const TensorPtr &seed, const TensorPtr &offset) {
   OpRunner::InferOpOutput(op, tensor_tensor, from, to, seed, offset);
   auto [seed_imm, offset_imm] = UpdateGeneratorState(seed, offset);
   auto from_imm = GetValueWithCheck<int64_t>(from);

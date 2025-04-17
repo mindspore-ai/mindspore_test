@@ -46,7 +46,7 @@ TypePtr ClampTensorFuncImpl::InferType(const PrimitivePtr &primitive,
 }
 
 TypePtrList ClampTensorFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   if (input_values[kInputIndex1] == mindspore::kNone && input_values[kInputIndex2] == mindspore::kNone) {
     MS_EXCEPTION(ValueError) << "For Clamp, at least one of 'min' or 'max' must not be None.";
@@ -93,12 +93,12 @@ ShapeArray ClampTensorFuncImpl::InferShape(const PrimitivePtr &primitive, const 
     MS_EXCEPTION(ValueError) << "For Clamp, at least one of 'min' or 'max' must not be None.";
   }
 
-  const auto &input0 = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &input0 = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input0);
   auto x_shape = input0->shape();
 
   if (input_values[kIndex1] != mindspore::kNone) {
-    const auto &input1 = input_values[kIndex1]->cast<tensor::BaseTensorPtr>();
+    const auto &input1 = input_values[kIndex1]->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(input1);
     auto min_shape = input1->shape();
     if (!IsBroadcastable(x_shape, min_shape)) {
@@ -108,7 +108,7 @@ ShapeArray ClampTensorFuncImpl::InferShape(const PrimitivePtr &primitive, const 
   }
 
   if (input_values[kIndex2] != mindspore::kNone) {
-    const auto &input2 = input_values[kIndex2]->cast<tensor::BaseTensorPtr>();
+    const auto &input2 = input_values[kIndex2]->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(input2);
     auto max_shape = input2->shape();
     if (!IsBroadcastable(x_shape, max_shape)) {

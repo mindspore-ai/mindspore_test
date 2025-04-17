@@ -36,7 +36,7 @@ constexpr int64_t kNum2 = 2;
 
 bool IsTensorTransposed(const ValueTuplePtr &tuple_tensor) {
   const auto &tensors = tuple_tensor->value();
-  auto tensor = tensors.at(kIndex0)->cast<BaseTensorPtr>();
+  auto tensor = tensors.at(kIndex0)->cast<TensorPtr>();
   MS_EXCEPTION_IF_NULL(tensor);
   const auto &tensor_storage_info = tensor->storage_info();
   if (tensor_storage_info == nullptr) {
@@ -55,7 +55,7 @@ bool IsTensorTransposed(const ValueTuplePtr &tuple_tensor) {
   return false;
 }
 
-BaseTensorPtr TransposeLastTwoDim(const BaseTensorPtr &tensor) {
+TensorPtr TransposeLastTwoDim(const TensorPtr &tensor) {
   static const auto dim0 = std::make_shared<Int64Imm>(-1);
   static const auto dim1 = std::make_shared<Int64Imm>(-2);
   return transpose_ext_view(tensor, dim0, dim1);
@@ -65,7 +65,7 @@ ValueTuplePtr ForEachTranspose(const ValueTuplePtr &tensor_list, bool to_contigu
   std::vector<ValuePtr> elements;
   const auto &tensors = tensor_list->value();
   for (const auto &tensor : tensors) {
-    auto tensor_i = tensor->cast<BaseTensorPtr>();
+    auto tensor_i = tensor->cast<TensorPtr>();
     MS_EXCEPTION_IF_NULL(tensor_i);
     auto contiguous_tensor_i = to_contiguous ? contiguous(tensor_i) : tensor_i;
     (void)elements.emplace_back(TransposeLastTwoDim(contiguous_tensor_i));
@@ -73,25 +73,25 @@ ValueTuplePtr ForEachTranspose(const ValueTuplePtr &tensor_list, bool to_contigu
   return std::make_shared<ValueTuple>(elements);
 }
 
-std::vector<BaseTensorPtr> ForEachTranspose(const std::vector<BaseTensorPtr> &tensors) {
-  std::vector<BaseTensorPtr> results;
+std::vector<TensorPtr> ForEachTranspose(const std::vector<TensorPtr> &tensors) {
+  std::vector<TensorPtr> results;
   for (const auto &tensor : tensors) {
     (void)results.emplace_back(TransposeLastTwoDim(tensor));
   }
   return results;
 }
 
-std::vector<BaseTensorPtr> Gmm(const ValueTuplePtr &x, const ValueTuplePtr &weight,
-                               const std::optional<ValueTuplePtr> &group_list, int64_t group_type_value) {
+std::vector<TensorPtr> Gmm(const ValueTuplePtr &x, const ValueTuplePtr &weight,
+                           const std::optional<ValueTuplePtr> &group_list, int64_t group_type_value) {
   static const auto split_item = std::make_shared<Int64Imm>(3);
   const auto group_type = std::make_shared<Int64Imm>(group_type_value);
   return grouped_matmul_v2(x, weight, std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt, group_list,
                            split_item, group_type);
 }
 
-std::vector<BaseTensorPtr> GmmV2(const ValueTuplePtr &x, const ValueTuplePtr &weight,
-                                 const std::optional<BaseTensorPtr> &group_list, const Int64ImmPtr &group_list_type,
-                                 int64_t group_type_value) {
+std::vector<TensorPtr> GmmV2(const ValueTuplePtr &x, const ValueTuplePtr &weight,
+                             const std::optional<TensorPtr> &group_list, const Int64ImmPtr &group_list_type,
+                             int64_t group_type_value) {
   static const auto split_item = std::make_shared<Int64Imm>(3);
   const auto group_type = std::make_shared<Int64Imm>(group_type_value);
   static const auto act_type = std::make_shared<Int64Imm>(0);
@@ -133,13 +133,13 @@ void GmmBackwardFusionAscendCustomize(const std::shared_ptr<OpRunner> &op, const
 
 void GmmV2BackwardAscendCustomize(const std::shared_ptr<OpRunner> &op, const ValueTuplePtr &grad_tenor_list,
                                   const ValueTuplePtr &x_tensor_list, const ValueTuplePtr &weight_tensor_list,
-                                  const std::optional<BaseTensorPtr> &group_list, const Int64ImmPtr &group_list_type) {
+                                  const std::optional<TensorPtr> &group_list, const Int64ImmPtr &group_list_type) {
   MS_LOG(DEBUG) << "GMMV2Backward launch start.";
 
   auto wt = ForEachTranspose(weight_tensor_list);
   auto dx = GmmV2(grad_tenor_list, wt, group_list, group_list_type, 0);
 
-  std::vector<BaseTensorPtr> dw;
+  std::vector<TensorPtr> dw;
   if (IsTensorTransposed(weight_tensor_list)) {
     auto gradt = ForEachTranspose(grad_tenor_list, true);
     auto dwt = GmmV2(gradt, x_tensor_list, group_list, group_list_type, kNum2);
@@ -158,7 +158,7 @@ void GmmV2BackwardAscendCustomize(const std::shared_ptr<OpRunner> &op, const Val
 
 void GmmV2BackwardFusionAscendCustomize(const std::shared_ptr<OpRunner> &op, const ValueTuplePtr &grad_tenor_list,
                                         const ValueTuplePtr &weight_tensor_list,
-                                        const std::optional<BaseTensorPtr> &group_list,
+                                        const std::optional<TensorPtr> &group_list,
                                         const Int64ImmPtr &group_list_type) {
   MS_LOG(DEBUG) << "GMMV2BackwardFusion launch start.";
 

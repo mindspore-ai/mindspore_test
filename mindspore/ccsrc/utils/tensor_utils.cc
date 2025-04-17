@@ -18,15 +18,15 @@
 
 namespace mindspore {
 namespace tensor {
-void SetPromise(const std::tuple<stub::StubNodePtr> &promises, const BaseTensorPtr &tensor) {
+void SetPromise(const std::tuple<stub::StubNodePtr> &promises, const TensorPtr &tensor) {
   const auto &p = std::get<0>(promises);
   p->SetValue(tensor);
 }
 
-void FlattenOutputs(const ValuePtr &value, std::vector<BaseTensorPtr> *outputs) {
+void FlattenOutputs(const ValuePtr &value, std::vector<TensorPtr> *outputs) {
   MS_EXCEPTION_IF_NULL(value);
-  if (value->isa<BaseTensor>()) {
-    outputs->emplace_back(value->cast<BaseTensorPtr>());
+  if (value->isa<Tensor>()) {
+    outputs->emplace_back(value->cast<TensorPtr>());
   } else if (value->isa<ValueSequence>()) {
     auto seq = value->cast<ValueSequencePtr>();
     const auto &elements = seq->value();

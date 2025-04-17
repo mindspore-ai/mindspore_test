@@ -52,9 +52,9 @@ TypePtr SoftShrinkGradFuncImpl::InferType(const PrimitivePtr &primitive,
 
 TypePtrList SoftShrinkGradFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
   MS_EXCEPTION_IF_NULL(primitive);
-  const auto &input_grad_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &input_grad_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_grad_tensor);
-  const auto &input_x_tensor = input_values[kIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &input_x_tensor = input_values[kIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_x_tensor);
 
   const auto &input_grad_type = input_grad_tensor->Dtype();
@@ -71,7 +71,7 @@ TypePtrList SoftShrinkGradFuncImpl::InferType(const PrimitivePtr &primitive, con
 }
 
 ShapeArray SoftShrinkGradFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   return {x_tensor->shape()};
 }

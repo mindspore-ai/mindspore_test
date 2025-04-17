@@ -370,7 +370,7 @@ inline aclTensor *ConvertType(std::pair<mindspore::kernel::KernelTensor *, bool>
 }
 
 inline std::tuple<std::vector<int64_t>, std::vector<int64_t>, int64_t, std::vector<int64_t>> GetViewShapeAndStride(
-  const tensor::BaseTensorPtr &tensor, const device::DeviceAddressPtr &device_address) {
+  const tensor::TensorPtr &tensor, const device::DeviceAddressPtr &device_address) {
   MS_EXCEPTION_IF_NULL(tensor);
   MS_EXCEPTION_IF_NULL(device_address);
 
@@ -406,7 +406,7 @@ inline std::tuple<std::vector<int64_t>, std::vector<int64_t>, int64_t, std::vect
   }
 }
 
-inline aclTensor *ConvertType(const tensor::BaseTensorPtr &tensor) {
+inline aclTensor *ConvertType(const tensor::TensorPtr &tensor) {
   MS_EXCEPTION_IF_NULL(tensor);
   static const auto aclCreateTensor = GET_OP_API_FUNC(aclCreateTensor);
   if (aclCreateTensor == nullptr) {
@@ -438,13 +438,6 @@ inline aclTensor *ConvertType(const tensor::BaseTensorPtr &tensor) {
   auto acl_tensor = aclCreateTensor(view_shape.data(), view_shape.size(), acl_data_type, strides.data(), offset, format,
                                     ori_dev_shape.data(), ori_dev_shape.size(), device_address->GetMutablePtr());
   return acl_tensor;
-}
-
-inline aclTensor *ConvertType(const std::optional<tensor::BaseTensorPtr> &value) {
-  if (value.has_value()) {
-    return ConvertType(value.value());
-  }
-  return nullptr;
 }
 
 inline aclIntArray *ConvertType(const std::optional<std::vector<int64_t>> &int_array_opt) {
@@ -480,22 +473,6 @@ inline aclBoolArray *ConvertType(const std::vector<uint8_t> &bool_array) {
   }
   static OpApiTensorConverter converter;
   return converter.CreateBoolArray(bool_array);
-}
-
-inline aclTensorList *ConvertType(const std::vector<tensor::BaseTensorPtr> &tensor_list) {
-  if (tensor_list.empty()) {
-    MS_LOG(DEBUG) << "tensor list is empty!";
-  }
-  static const auto aclCreateTensorList = GET_OP_API_FUNC(aclCreateTensorList);
-  std::vector<aclTensor *> tmp;
-  std::transform(tensor_list.begin(), tensor_list.end(), std::back_inserter(tmp),
-                 [](const tensor::BaseTensorPtr &tensor) { return ConvertType(tensor); });
-  return aclCreateTensorList(tmp.data(), tmp.size());
-}
-
-inline aclTensor *ConvertType(const tensor::TensorPtr &tensor) {
-  MS_EXCEPTION_IF_NULL(tensor);
-  return ConvertType(tensor->cast<tensor::BaseTensorPtr>());
 }
 
 inline aclTensor *ConvertType(const std::optional<tensor::TensorPtr> &value) {
@@ -587,8 +564,8 @@ inline void *ConvertType(const ValueTuplePtr &value) {
   } else if (elements[0]->isa<Int64Imm>()) {
     auto int_vector = GetValue<std::vector<int64_t>>(value);
     return ConvertType(int_vector);
-  } else if (elements[0]->isa<tensor::BaseTensor>()) {
-    auto tensor_vector = GetValue<std::vector<tensor::BaseTensorPtr>>(value);
+  } else if (elements[0]->isa<tensor::Tensor>()) {
+    auto tensor_vector = GetValue<std::vector<tensor::TensorPtr>>(value);
     return ConvertType(tensor_vector);
   } else {
     MS_LOG(EXCEPTION) << "Unsupported type: " << value->ToString();
@@ -600,8 +577,8 @@ inline void *ConvertType(const ValuePtr &value) {
     MS_LOG(DEBUG) << "Convert value is null";
     // optional input;
     return nullptr;
-  } else if (value->isa<tensor::BaseTensor>()) {
-    const auto &base_tensor = dyn_cast<tensor::BaseTensor>(value);
+  } else if (value->isa<tensor::Tensor>()) {
+    const auto &base_tensor = dyn_cast<tensor::Tensor>(value);
     return ConvertType(base_tensor);
   } else if (value->isa<Scalar>()) {
     const auto &scalar = dyn_cast<Scalar>(value);
@@ -647,37 +624,11 @@ inline std::vector<void *> GetAddr(const std::pair<KernelTensor *, bool> &tensor
   return {tensor_pair.first->device_ptr()};
 }
 
-inline std::vector<void *> GetAddr(const std::vector<tensor::BaseTensorPtr> &tensor_list) {
-  std::vector<void *> addr_list;
-  for (const auto &tensor : tensor_list) {
-    MS_EXCEPTION_IF_NULL(tensor);
-    (void)addr_list.emplace_back(tensor->device_address()->GetMutablePtr());
-  }
-  return addr_list;
-}
-
-inline std::vector<void *> GetAddr(const tensor::BaseTensorPtr &tensor) {
-  MS_EXCEPTION_IF_NULL(tensor);
-  return {tensor->device_address()->GetMutablePtr()};
-}
-
 inline std::vector<void *> GetAddr(const device::DeviceAddressPtr &device_address) {
   return {device_address->GetMutablePtr()};
 }
 
 inline std::vector<void *> GetAddr(device::DeviceAddress *device_address) { return {device_address->GetMutablePtr()}; }
-
-inline std::vector<void *> GetAddr(const std::pair<tensor::BaseTensorPtr, bool> &tensor_pair) {
-  MS_EXCEPTION_IF_NULL(tensor_pair.first);
-  return {tensor_pair.first->device_address()->GetMutablePtr()};
-}
-
-inline std::vector<void *> GetAddr(const std::optional<tensor::BaseTensorPtr> &tensor) {
-  if (tensor.has_value()) {
-    return {tensor.value()->device_address()->GetMutablePtr()};
-  }
-  return {nullptr};
-}
 
 inline std::vector<void *> GetAddr(const std::vector<tensor::TensorPtr> &tensor_list) {
   std::vector<void *> addr_list;

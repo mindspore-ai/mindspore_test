@@ -26,7 +26,7 @@ using mindspore::device::ascend::FASInputLayoutMode;
 namespace kernel {
 namespace pyboost {
 std::vector<int64_t> FiasConvertTensorToVector(const std::string &prim_name, const std::string &tensor_name,
-                                               const std::optional<tensor::BaseTensorPtr> &tensor_opt) {
+                                               const std::optional<tensor::TensorPtr> &tensor_opt) {
   if (!tensor_opt.has_value()) {
     return std::vector<int64_t>();
   }
@@ -55,24 +55,21 @@ std::vector<int64_t> FiasConvertTensorToVector(const std::string &prim_name, con
   return converted_sequence;
 }
 
-tensor::BaseTensorPtr FusedInferAttentionScoreAscendCustomize(
-  const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &query_tensor, const ValueTuplePtr &key_tensor_list,
-  const ValueTuplePtr &value_tensor_list, const std::optional<BaseTensorPtr> &pse_shift_tensor,
-  const std::optional<BaseTensorPtr> &attn_mask_tensor, const std::optional<BaseTensorPtr> &actual_seq_lengths_tensor,
-  const std::optional<BaseTensorPtr> &actual_seq_lengths_kv_tensor,
-  const std::optional<BaseTensorPtr> &dequant_scale1_tensor, const std::optional<BaseTensorPtr> &quant_scale1_tensor,
-  const std::optional<BaseTensorPtr> &dequant_scale2_tensor, const std::optional<BaseTensorPtr> &quant_scale2_tensor,
-  const std::optional<BaseTensorPtr> &quant_offset2_tensor, const std::optional<BaseTensorPtr> &antiquant_scale_tensor,
-  const std::optional<BaseTensorPtr> &antiquant_offset_tensor, const std::optional<BaseTensorPtr> &block_table_tensor,
-  const std::optional<BaseTensorPtr> &query_padding_size_tensor,
-  const std::optional<BaseTensorPtr> &kv_padding_size_tensor,
-  const std::optional<BaseTensorPtr> &key_antiquant_scale_tensor,
-  const std::optional<BaseTensorPtr> &key_antiquant_offset_tensor,
-  const std::optional<BaseTensorPtr> &value_antiquant_scale_tensor,
-  const std::optional<BaseTensorPtr> &value_antiquant_offset_tensor,
-  const std::optional<BaseTensorPtr> &key_shared_prefix_tensor,
-  const std::optional<BaseTensorPtr> &value_shared_prefix_tensor,
-  const std::optional<BaseTensorPtr> &actual_shared_prefix_len_tensor, const Int64ImmPtr &num_heads,
+tensor::TensorPtr FusedInferAttentionScoreAscendCustomize(
+  const std::shared_ptr<OpRunner> &op, const TensorPtr &query_tensor, const ValueTuplePtr &key_tensor_list,
+  const ValueTuplePtr &value_tensor_list, const std::optional<TensorPtr> &pse_shift_tensor,
+  const std::optional<TensorPtr> &attn_mask_tensor, const std::optional<TensorPtr> &actual_seq_lengths_tensor,
+  const std::optional<TensorPtr> &actual_seq_lengths_kv_tensor, const std::optional<TensorPtr> &dequant_scale1_tensor,
+  const std::optional<TensorPtr> &quant_scale1_tensor, const std::optional<TensorPtr> &dequant_scale2_tensor,
+  const std::optional<TensorPtr> &quant_scale2_tensor, const std::optional<TensorPtr> &quant_offset2_tensor,
+  const std::optional<TensorPtr> &antiquant_scale_tensor, const std::optional<TensorPtr> &antiquant_offset_tensor,
+  const std::optional<TensorPtr> &block_table_tensor, const std::optional<TensorPtr> &query_padding_size_tensor,
+  const std::optional<TensorPtr> &kv_padding_size_tensor, const std::optional<TensorPtr> &key_antiquant_scale_tensor,
+  const std::optional<TensorPtr> &key_antiquant_offset_tensor,
+  const std::optional<TensorPtr> &value_antiquant_scale_tensor,
+  const std::optional<TensorPtr> &value_antiquant_offset_tensor,
+  const std::optional<TensorPtr> &key_shared_prefix_tensor, const std::optional<TensorPtr> &value_shared_prefix_tensor,
+  const std::optional<TensorPtr> &actual_shared_prefix_len_tensor, const Int64ImmPtr &num_heads,
   const FP32ImmPtr &scale_value, const Int64ImmPtr &pre_tokens, const Int64ImmPtr &next_tokens,
   const Int64ImmPtr &input_layout, const Int64ImmPtr &num_key_value_heads, const Int64ImmPtr &sparse_mode,
   const Int64ImmPtr &inner_precise, const Int64ImmPtr &block_size, const Int64ImmPtr &antiquant_mode,
@@ -90,8 +87,8 @@ tensor::BaseTensorPtr FusedInferAttentionScoreAscendCustomize(
     sparse_mode, inner_precise, block_size, antiquant_mode, softmax_lse_flag, key_antiquant_mode, value_antiquant_mode);
 
   // Convert ValueTuple to std::vector
-  std::vector<BaseTensorPtr> key_tensor_list_vector = ConvertValueTupleToVector<BaseTensorPtr>(key_tensor_list);
-  std::vector<BaseTensorPtr> value_tensor_list_vector = ConvertValueTupleToVector<BaseTensorPtr>(value_tensor_list);
+  std::vector<TensorPtr> key_tensor_list_vector = ConvertValueTupleToVector<TensorPtr>(key_tensor_list);
+  std::vector<TensorPtr> value_tensor_list_vector = ConvertValueTupleToVector<TensorPtr>(value_tensor_list);
 
   // Convert Tensor to std::vector
   auto actual_seq_lengths_vector =

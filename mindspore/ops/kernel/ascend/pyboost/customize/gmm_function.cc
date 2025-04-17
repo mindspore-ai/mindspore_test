@@ -55,7 +55,7 @@ void GmmAscendCustomize(const std::shared_ptr<OpRunner> &op, const ValueTuplePtr
 
 void GmmV2AscendCustomize(const std::shared_ptr<OpRunner> &op, const ValueTuplePtr &x_tensor_list,
                           const ValueTuplePtr &weight_tensor_list, const std::optional<ValueTuplePtr> &bias_tensor_list,
-                          const std::optional<BaseTensorPtr> &group_list, const Int64ImmPtr &group_type,
+                          const std::optional<TensorPtr> &group_list, const Int64ImmPtr &group_type,
                           const Int64ImmPtr &group_list_type) {
   MS_LOG(DEBUG) << "GMMV2 Func Op launch start.";
   CheckGroupTypeValue(group_type, "GmmV2");

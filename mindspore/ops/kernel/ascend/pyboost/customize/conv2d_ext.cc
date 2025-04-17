@@ -41,11 +41,10 @@ bool Conv2DBatchify(const ShapeVector &input_shape, const int64_t num_spatial_di
 }
 }  // namespace
 
-tensor::BaseTensorPtr Conv2DExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                               const BaseTensorPtr &weight_tensor,
-                                               const std::optional<BaseTensorPtr> &bias_tensor,
-                                               const ValueTuplePtr &stride, const ValueTuplePtr &pad,
-                                               const ValueTuplePtr &dilation, const Int64ImmPtr &group) {
+tensor::TensorPtr Conv2DExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                           const TensorPtr &weight_tensor, const std::optional<TensorPtr> &bias_tensor,
+                                           const ValueTuplePtr &stride, const ValueTuplePtr &pad,
+                                           const ValueTuplePtr &dilation, const Int64ImmPtr &group) {
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor, weight_tensor, bias_tensor);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
   auto input_shape = input_tensor->shape();

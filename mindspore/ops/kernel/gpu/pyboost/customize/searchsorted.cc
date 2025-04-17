@@ -24,10 +24,9 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr SearchSortedGPUCustomize(const std::shared_ptr<OpRunner> &op,
-                                               const BaseTensorPtr &sorted_sequence, const BaseTensorPtr &values,
-                                               const std::optional<BaseTensorPtr> &sorter, const Int64ImmPtr &dtype,
-                                               const BoolImmPtr &right) {
+tensor::TensorPtr SearchSortedGPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &sorted_sequence,
+                                           const TensorPtr &values, const std::optional<TensorPtr> &sorter,
+                                           const Int64ImmPtr &dtype, const BoolImmPtr &right) {
   MS_LOG(DEBUG) << "SearchSorted call start";
   (void)SearchSortedCustomizeCall(op, sorted_sequence, values, sorter, dtype, right);
   auto sync = runtime::RuntimeConf::GetInstance()->launch_blocking();

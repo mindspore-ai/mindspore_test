@@ -63,9 +63,9 @@ class TestClampTensorSimpleInfer : public TestOps, public testing::WithParamInte
 
 TEST_P(TestClampTensorSimpleInfer, clamp_dyn_shape) {
   const auto &param = GetParam();
-  auto x = std::make_shared<tensor::BaseTensor>(param.x_type->type_id(), param.x_shape);
-  auto min = std::make_shared<tensor::BaseTensor>(param.min_type->type_id(), param.min_shape);
-  auto max = std::make_shared<tensor::BaseTensor>(param.max_type->type_id(), param.max_shape);
+  auto x = std::make_shared<tensor::Tensor>(param.x_type->type_id(), param.x_shape);
+  auto min = std::make_shared<tensor::Tensor>(param.min_type->type_id(), param.min_shape);
+  auto max = std::make_shared<tensor::Tensor>(param.max_type->type_id(), param.max_shape);
   ValuePtrList input_values;
   input_values.push_back(std::move(x));
   input_values.push_back(std::move(min));
@@ -121,9 +121,9 @@ class TestClampScalarSimpleInfer : public TestOps, public testing::WithParamInte
 
 TEST_P(TestClampScalarSimpleInfer, clamp_dyn_shape) {
   const auto &param = GetParam();
-  auto x = std::make_shared<tensor::BaseTensor>(param.x_type->type_id(), param.x_shape);
-  auto min = std::make_shared<tensor::BaseTensor>(param.min_type->type_id(), param.min_shape);
-  auto max = std::make_shared<tensor::BaseTensor>(param.max_type->type_id(), param.max_shape);
+  auto x = std::make_shared<tensor::Tensor>(param.x_type->type_id(), param.x_shape);
+  auto min = std::make_shared<tensor::Tensor>(param.min_type->type_id(), param.min_shape);
+  auto max = std::make_shared<tensor::Tensor>(param.max_type->type_id(), param.max_shape);
   ValuePtrList input_values;
   input_values.push_back(std::move(x));
   input_values.push_back(std::move(min));

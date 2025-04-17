@@ -160,7 +160,7 @@ bool ConvertTensorToParameter(const FuncGraphPtr &fg, AnfNodePtrList *inputs_ptr
     auto &inputs = cnode->inputs();
     for (size_t i = 1; i < inputs.size(); ++i) {
       const auto &tnode = inputs[i];
-      auto tensor = GetValueNode<tensor::BaseTensorPtr>(tnode);
+      auto tensor = GetValueNode<tensor::TensorPtr>(tnode);
       if (tensor == nullptr) {
         continue;
       }

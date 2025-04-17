@@ -27,8 +27,8 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr ReluGradAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &y_tensor,
-                                              const BaseTensorPtr &dy_tensor);
+tensor::TensorPtr ReluGradAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &y_tensor,
+                                          const TensorPtr &dy_tensor);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

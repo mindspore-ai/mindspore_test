@@ -27,9 +27,9 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr BincountExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                                 const std::optional<BaseTensorPtr> &weight_tensor,
-                                                 const Int64ImmPtr &min_length);
+tensor::TensorPtr BincountExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                             const std::optional<TensorPtr> &weight_tensor,
+                                             const Int64ImmPtr &min_length);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

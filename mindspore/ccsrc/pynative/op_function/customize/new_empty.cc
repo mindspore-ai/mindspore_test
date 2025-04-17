@@ -85,7 +85,7 @@ py::object NewEmpty(const py::list &args) {
         output_shape.push_back(shape_i);
       }
 
-      std::vector<tensor::BaseTensorPtr> outputs;
+      std::vector<tensor::TensorPtr> outputs;
       kernel::pyboost::PyBoostUtils::CreateOutputTensor(real_type, output_shape, &outputs);
       kernel::pyboost::PyBoostUtils::PrepareOpOutputs(device_ctx, 0, outputs);
       tensor::SetPromise(promises, outputs[0]);

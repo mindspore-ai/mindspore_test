@@ -24,21 +24,19 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-tensor::BaseTensorPtr UpsampleNearest2dAscendCall(const std::shared_ptr<OpRunner> &op,
-                                                  const device::DeviceContext *device_context,
-                                                  const BaseTensorPtr &input_tensor,
-                                                  const std::vector<int64_t> &output_size,
-                                                  const std::vector<tensor::BaseTensorPtr> &outputs) {
+tensor::TensorPtr UpsampleNearest2dAscendCall(const std::shared_ptr<OpRunner> &op,
+                                              const device::DeviceContext *device_context,
+                                              const TensorPtr &input_tensor, const std::vector<int64_t> &output_size,
+                                              const std::vector<tensor::TensorPtr> &outputs) {
   MS_LOG(DEBUG) << "Call start";
   LAUNCH_ACLNN(aclnnUpsampleNearest2d, device_context, op->stream_id(), input_tensor, output_size, outputs[0]);
   return outputs[0];
 }
 }  // namespace
 
-tensor::BaseTensorPtr UpsampleNearest2DAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                       const BaseTensorPtr &input_tensor,
-                                                       const std::optional<ValueTuplePtr> &output_size,
-                                                       const std::optional<ValueTuplePtr> &scale_factors) {
+tensor::TensorPtr UpsampleNearest2DAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                                   const std::optional<ValueTuplePtr> &output_size,
+                                                   const std::optional<ValueTuplePtr> &scale_factors) {
   auto input_dtype_id = input_tensor->data_type();
   if (input_dtype_id == TypeId::kNumberTypeFloat64 || input_dtype_id == TypeId::kNumberTypeDouble) {
     MS_EXCEPTION(ValueError) << "For " << op->primitive()->name()

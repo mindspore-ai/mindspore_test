@@ -25,10 +25,9 @@ namespace kernel {
 namespace pyboost {
 namespace {
 
-tensor::BaseTensorPtr ReduceAllAscendCall(const std::shared_ptr<OpRunner> &op,
-                                          const device::DeviceContext *device_context,
-                                          const BaseTensorPtr &input_tensor, const std::vector<int64_t> &axis,
-                                          const bool &keep_dims, const std::vector<tensor::BaseTensorPtr> &outputs) {
+tensor::TensorPtr ReduceAllAscendCall(const std::shared_ptr<OpRunner> &op, const device::DeviceContext *device_context,
+                                      const TensorPtr &input_tensor, const std::vector<int64_t> &axis,
+                                      const bool &keep_dims, const std::vector<tensor::TensorPtr> &outputs) {
   MS_LOG(DEBUG) << "Call start";
   LAUNCH_ACLNN(aclnnAll, device_context, op->stream_id(), input_tensor, axis, keep_dims, outputs[0]);
   MS_LOG(DEBUG) << "Launch end";
@@ -36,8 +35,8 @@ tensor::BaseTensorPtr ReduceAllAscendCall(const std::shared_ptr<OpRunner> &op,
 }
 }  // namespace
 
-tensor::BaseTensorPtr ReduceAllAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                               const std::optional<ValueTuplePtr> &axis, const BoolImmPtr &keep_dims) {
+tensor::TensorPtr ReduceAllAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                           const std::optional<ValueTuplePtr> &axis, const BoolImmPtr &keep_dims) {
   OpRunner::InferOpOutput(op, input_tensor, axis, keep_dims);
 
   std::vector<int64_t> axis_vector{};

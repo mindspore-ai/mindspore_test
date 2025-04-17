@@ -85,7 +85,7 @@ PyObject *GetMsType();
 PyObject *GetMsTensorType();
 
 ValuePtr ScalarToDstDtypeValue(const ValuePtr &src_value, const std::pair<TypeId, bool> &dst_type);
-tensor::BaseTensorPtr TensorToDstDtypeValue(const ValuePtr &src_value, const TypeId &dst_type_id);
+tensor::TensorPtr TensorToDstDtypeValue(const ValuePtr &src_value, const TypeId &dst_type_id);
 
 }  // namespace pijit
 }  // namespace mindspore

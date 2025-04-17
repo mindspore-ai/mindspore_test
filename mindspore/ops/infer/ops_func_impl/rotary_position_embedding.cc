@@ -40,14 +40,14 @@ BaseShapePtr RotaryPositionEmbeddingFuncImpl::InferShape(
 
 TypePtrList RotaryPositionEmbeddingFuncImpl::InferType(const PrimitivePtr &primitive,
                                                        const ValuePtrList &input_values) const {
-  const auto &x = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x);
   return {x->Dtype()};
 }
 
 ShapeArray RotaryPositionEmbeddingFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                        const ValuePtrList &input_values) const {
-  const auto &x = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x);
   return {x->shape()};
 }

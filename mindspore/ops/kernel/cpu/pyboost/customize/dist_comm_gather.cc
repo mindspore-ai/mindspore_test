@@ -31,7 +31,7 @@ using device::cpu::kMCCLGlobalGroupName;
 using device::cpu::MsCollectiveCommLib;
 #endif
 namespace pyboost {
-void DistCommGatherCPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
+void DistCommGatherCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
                                 const ValueTuplePtr &gather_list, const Int64ImmPtr &rank_size, const Int64ImmPtr &dst,
                                 const Int64ImmPtr &rank_id, const StringImmPtr &group) {
 #if defined(__linux__) && defined(WITH_BACKEND)
@@ -39,7 +39,7 @@ void DistCommGatherCPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseT
   auto dst_rank = GetValue<int64_t>(dst);
   auto local_rank = GetValue<int64_t>(rank_id);
   auto rank_size_imm = static_cast<size_t>(GetValue<int64_t>(rank_size));
-  std::vector<BaseTensorPtr> gather_tensors = ConvertValueTupleToVector<BaseTensorPtr>(gather_list);
+  std::vector<TensorPtr> gather_tensors = ConvertValueTupleToVector<TensorPtr>(gather_list);
   if (local_rank == dst_rank) {
     PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor, gather_tensors);
   } else {

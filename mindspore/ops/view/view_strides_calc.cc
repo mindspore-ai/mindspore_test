@@ -65,7 +65,7 @@ TensorStorageInfoPtrList ViewStridesCalc(const OldTensorInfoPtr old_tensor_info,
   return {new_storage_info};
 }
 
-TensorStorageInfoPtrList ViewCalcImpl(const PrimitivePtr &prim, const tensor::BaseTensorPtr &input_tensor,
+TensorStorageInfoPtrList ViewCalcImpl(const PrimitivePtr &prim, const tensor::TensorPtr &input_tensor,
                                       const std::vector<int64_t> &shape) {
   MS_EXCEPTION_IF_NULL(input_tensor);
   auto old_tensor_info = GetOldTensorInfo(input_tensor);
@@ -74,7 +74,7 @@ TensorStorageInfoPtrList ViewCalcImpl(const PrimitivePtr &prim, const tensor::Ba
 }
 
 TensorStorageInfoPtrList ViewCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  auto input_tensor = inputs[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  auto input_tensor = inputs[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   auto ori_storage_info = input_tensor->storage_info();
   if (ori_storage_info != nullptr && !ori_storage_info->is_contiguous) {

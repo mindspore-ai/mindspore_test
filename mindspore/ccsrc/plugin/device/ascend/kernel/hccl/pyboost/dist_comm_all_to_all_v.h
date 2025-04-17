@@ -29,7 +29,7 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 void DistCommAllToAllVAscendCustomize(const std::shared_ptr<OpRunner> &op, const ValueTuplePtr &outputs,
-                                      const BaseTensorPtr &input_tensor, const StringImmPtr &group,
+                                      const TensorPtr &input_tensor, const StringImmPtr &group,
                                       const ValueTuplePtr &send_numel_list, const ValueTuplePtr &recv_numel_list,
                                       const Int64ImmPtr &rank_size);
 }  // namespace pyboost

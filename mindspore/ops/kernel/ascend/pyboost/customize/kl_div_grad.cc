@@ -24,12 +24,9 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr KLDivGradAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                               const BaseTensorPtr &grad_output_tensor,
-                                               const BaseTensorPtr &input_tensor,
-                                               const BaseTensorPtr &target_tensor,
-                                               const Int64ImmPtr &reduction,
-                                               const BoolImmPtr &log_target) {
+tensor::TensorPtr KLDivGradAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &grad_output_tensor,
+                                           const TensorPtr &input_tensor, const TensorPtr &target_tensor,
+                                           const Int64ImmPtr &reduction, const BoolImmPtr &log_target) {
   OpRunner::InferOpOutput(op, grad_output_tensor, input_tensor, target_tensor, reduction, log_target);
 
   auto log_target_imm = GetValue<bool>(log_target);
@@ -37,22 +34,20 @@ tensor::BaseTensorPtr KLDivGradAscendCustomize(const std::shared_ptr<OpRunner> &
   // transform reduction enum value to corresponding value
   auto reduction_imm = ops::ConvertReductionForAclnn(reduction_enum);
 
-  PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), grad_output_tensor, input_tensor,
-                                target_tensor);
+  PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), grad_output_tensor, input_tensor, target_tensor);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
 
   // Async
-  PyBoostUtils::DispatchRun(
-    std::make_shared<runtime::PyBoostDeviceTask>(
-      [op, grad_output_tensor, input_tensor, target_tensor, reduction_imm, log_target_imm]() {
+  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>(
+    [op, grad_output_tensor, input_tensor, target_tensor, reduction_imm, log_target_imm]() {
       auto device_context = op->device_context();
       const auto &outputs = op->outputs();
 
       PyBoostUtils::MallocOpInputs(device_context, grad_output_tensor, input_tensor, target_tensor);
       PyBoostUtils::MallocOpOutputs(device_context, outputs);
       MS_LOG(DEBUG) << op->primitive()->name() << " Call start";
-      LAUNCH_ACLNN(aclnnKlDivBackward, device_context, op->stream_id(), grad_output_tensor, input_tensor,
-                   target_tensor, reduction_imm, log_target_imm, outputs[0]);
+      LAUNCH_ACLNN(aclnnKlDivBackward, device_context, op->stream_id(), grad_output_tensor, input_tensor, target_tensor,
+                   reduction_imm, log_target_imm, outputs[0]);
       MS_LOG(DEBUG) << op->primitive()->name() << " Launch end";
     }));
   return op->output(0);

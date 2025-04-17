@@ -92,11 +92,11 @@ int32_t RmsNormFuncImpl::CheckValidation(const PrimitivePtr &primitive,
 }
 
 ShapeArray RmsNormFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   const auto x_shape = x_tensor->shape();
   auto x_rank = x_shape.size();
-  const auto &gamma_tensor = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &gamma_tensor = input_values[kInputIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(gamma_tensor);
   const auto gamma_shape = gamma_tensor->shape();
   auto gamma_rank = gamma_shape.size();
@@ -119,7 +119,7 @@ ShapeArray RmsNormFuncImpl::InferShape(const PrimitivePtr &primitive, const Valu
 }
 
 TypePtrList RmsNormFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   const auto &x_dtype = x_tensor->Dtype();
   return {x_dtype, kFloat32};

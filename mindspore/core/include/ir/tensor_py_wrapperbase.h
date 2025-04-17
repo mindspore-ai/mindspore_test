@@ -19,7 +19,7 @@
 
 #include <memory>
 
-#include "ir/base_tensor.h"
+#include "ir/tensor.h"
 
 namespace mindspore {
 namespace tensor {
@@ -28,28 +28,28 @@ class MS_CORE_API TensorPyWrapperBase : public Value {
  public:
   TensorPyWrapperBase() = default;
 
-  /// \brief Create TensorPyWrapperBase with BaseTensor.
+  /// \brief Create TensorPyWrapperBase with Tensor.
   ///
-  /// \param[in] input [BaseTensorPtr] The given BaseTensor.
-  explicit TensorPyWrapperBase(const BaseTensorPtr input) : tensor_(input) {}
+  /// \param[in] input [TensorPtr] The given Tensor.
+  explicit TensorPyWrapperBase(const TensorPtr input) : tensor_(input) {}
 
   /// Destructor of TensorPy.
   ~TensorPyWrapperBase() = default;
 
   MS_DECLARE_PARENT(TensorPyWrapperBase, Value);
 
-  /// \brief Get the BaseTensor.
+  /// \brief Get the Tensor.
   ///
-  /// \return The created BaseTensor.
-  const BaseTensorPtr &GetBaseTensorWrapper() const { return tensor_; }
+  /// \return The created Tensor.
+  const TensorPtr &GetTensorWrapper() const { return tensor_; }
 
-  /// \brief Set the BaseTensor.
+  /// \brief Set the Tensor.
   ///
-  /// \param[in] base_tensor [BaseTensorPtr] The given BaseTensor.
-  void SetBaseTensorWrapper(const BaseTensorPtr &base_tensor) { tensor_ = base_tensor; }
+  /// \param[in] base_tensor [TensorPtr] The given Tensor.
+  void SetTensorWrapper(const TensorPtr &base_tensor) { tensor_ = base_tensor; }
 
  private:
-  BaseTensorPtr tensor_;
+  TensorPtr tensor_;
 };
 
 using TensorPyWrapperBasePtr = std::shared_ptr<TensorPyWrapperBase>;

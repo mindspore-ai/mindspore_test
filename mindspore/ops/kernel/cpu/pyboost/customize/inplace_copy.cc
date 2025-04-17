@@ -22,8 +22,7 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void InplaceCopyCPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &variable,
-                             const BaseTensorPtr &value) {
+void InplaceCopyCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &variable, const TensorPtr &value) {
   MS_LOG(DEBUG) << "InplaceCopy cpu pyboost call start";
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), variable, value);
   // Set inplace output

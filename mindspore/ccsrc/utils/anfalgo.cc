@@ -2281,7 +2281,7 @@ TypeId AnfAlgo::GetSparseTypeIdAt(const AnfNodePtr &node, size_t idx) {
                              << node->abstract()->ToString();
 }
 
-std::string AnfAlgo::GetTensorValueString(const tensor::BaseTensorPtr &tensor) {
+std::string AnfAlgo::GetTensorValueString(const tensor::TensorPtr &tensor) {
   MS_EXCEPTION_IF_NULL(tensor);
   auto dtype = tensor->Dtype();
   MS_EXCEPTION_IF_NULL(dtype);
@@ -2686,7 +2686,7 @@ ValuePtr AnfAlgo::ValueToScalar(const ValuePtr &value, TypeId type_id) {
 
 namespace {
 void FlattenValueSequence(ValuePtrList *value_list, const ValuePtr &value) {
-  if (value->isa<tensor::BaseTensor>()) {
+  if (value->isa<tensor::Tensor>()) {
     (void)value_list->emplace_back(value);
     return;
   }
@@ -2703,8 +2703,8 @@ void FlattenValueSequence(ValuePtrList *value_list, const ValuePtr &value) {
 void IterateFindTensor(ValuePtrList *value_list, const VectorRef &ref_list) {
   MS_EXCEPTION_IF_NULL(value_list);
   for (size_t i = 0; i < ref_list.size(); ++i) {
-    if (utils::isa<tensor::BaseTensorPtr>(ref_list[i])) {
-      auto tensor_ptr = utils::cast<std::shared_ptr<tensor::BaseTensor>>(ref_list[i]);
+    if (utils::isa<tensor::TensorPtr>(ref_list[i])) {
+      auto tensor_ptr = utils::cast<std::shared_ptr<tensor::Tensor>>(ref_list[i]);
       MS_EXCEPTION_IF_NULL(tensor_ptr);
       (void)value_list->emplace_back(tensor_ptr);
     } else if (utils::isa<VectorRef>(ref_list[i])) {

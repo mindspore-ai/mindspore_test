@@ -25,9 +25,9 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr AddmmAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                           const BaseTensorPtr &mat1_tensor, const BaseTensorPtr &mat2_tensor,
-                                           const ScalarPtr &beta, const ScalarPtr &alpha) {
+tensor::TensorPtr AddmmAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                       const TensorPtr &mat1_tensor, const TensorPtr &mat2_tensor,
+                                       const ScalarPtr &beta, const ScalarPtr &alpha) {
   OpRunner::InferOpOutput(op, input_tensor, mat1_tensor, mat2_tensor, beta, alpha);
 
   // No need to convert input

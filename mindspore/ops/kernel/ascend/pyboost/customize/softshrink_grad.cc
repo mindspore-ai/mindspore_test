@@ -26,9 +26,8 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr SoftShrinkGradAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                    const BaseTensorPtr &input_grad_tensor,
-                                                    const BaseTensorPtr &input_x_tensor, const ScalarPtr &lambd) {
+tensor::TensorPtr SoftShrinkGradAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_grad_tensor,
+                                                const TensorPtr &input_x_tensor, const ScalarPtr &lambd) {
   MS_LOG(DEBUG) << "SoftShrinkGrad Ascend start";
   OpRunner::InferOpOutput(op, input_grad_tensor, input_x_tensor, lambd);
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_grad_tensor, input_x_tensor);

@@ -21,7 +21,7 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void InplaceStopGradientAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor) {
+void InplaceStopGradientAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor) {
   MS_LOG(DEBUG) << "Inplace StopGradient Ascend start";
   if (OpRunStatus::Get().RequireGrad()) {
     if (input_tensor->storage_info() != nullptr) {

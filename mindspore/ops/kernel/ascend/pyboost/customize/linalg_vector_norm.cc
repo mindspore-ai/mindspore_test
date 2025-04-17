@@ -24,7 +24,7 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void LinalgVectorNormAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &x_tensor,
+void LinalgVectorNormAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &x_tensor,
                                      const FP32ImmPtr &ord, const std::optional<ValueTuplePtr> &dim,
                                      const BoolImmPtr &keepdim, const std::optional<Int64ImmPtr> &dtype) {
   MS_LOG(DEBUG) << "Call LinalgVectorNorm start";

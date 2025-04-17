@@ -24,10 +24,9 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr MultinomialExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                    const BaseTensorPtr &input_tensor, const Int64ImmPtr &num_samples,
-                                                    const BoolImmPtr &replacement, const BaseTensorPtr &seed,
-                                                    const BaseTensorPtr &offset) {
+tensor::TensorPtr MultinomialExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                                const Int64ImmPtr &num_samples, const BoolImmPtr &replacement,
+                                                const TensorPtr &seed, const TensorPtr &offset) {
   MS_LOG(DEBUG) << op->primitive()->name() << " call start";
   OpRunner::InferOpOutput(op, input_tensor, num_samples, replacement, seed, offset);
 

@@ -168,7 +168,7 @@ bool HcomUtil::GetHcomCount(const PrimitivePtr &primitive, const std::vector<Hcc
 }
 
 std::pair<uint64_t, ::HcclDataType> HcomUtil::GetHcclCountAndTypeFromTensor(
-  const PrimitivePtr &primitive, const tensor::BaseTensorPtr &tensor, const std::optional<int64_t> rank_size_opt) {
+  const PrimitivePtr &primitive, const tensor::TensorPtr &tensor, const std::optional<int64_t> rank_size_opt) {
   auto type_id = tensor->data_type();
   auto shape = tensor->shape();
 

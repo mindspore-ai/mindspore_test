@@ -54,10 +54,10 @@ TensorStorageInfoPtrList TransposeStridesCalc(const OldTensorInfoPtr old_tensor_
 }
 
 TensorStorageInfoPtrList TransposeCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  if (!inputs[kInputIndex0]->isa<tensor::BaseTensor>() || !inputs[kInputIndex1]->isa<ValueSequence>()) {
+  if (!inputs[kInputIndex0]->isa<tensor::Tensor>() || !inputs[kInputIndex1]->isa<ValueSequence>()) {
     return {};
   }
-  auto tensor = inputs[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  auto tensor = inputs[kInputIndex0]->cast<tensor::TensorPtr>();
   const auto &x_shape = tensor->shape();
   auto x_rank = x_shape.size();
   const auto &dims = GetValue<std::vector<int64_t>>(inputs[1]);

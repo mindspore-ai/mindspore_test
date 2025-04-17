@@ -318,8 +318,8 @@ device::DeviceAddressPtrList DeviceAddressUtils::CreateDeviceAddressForTensorVal
   auto node_target = AnfAlgo::FetchDeviceTarget(value_node, graph.get());
 
   device::DeviceAddressPtrList address_list;
-  if (node_value->isa<tensor::BaseTensor>()) {
-    auto tensor = node_value->cast<tensor::BaseTensorPtr>();
+  if (node_value->isa<tensor::Tensor>()) {
+    auto tensor = node_value->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(tensor);
     auto output_address = std::static_pointer_cast<device::DeviceAddress>(tensor->device_address());
     if (output_address != nullptr) {
@@ -386,7 +386,7 @@ void DeviceAddressUtils::CreateValueNodeDeviceAddress(const KernelGraphPtr &grap
     }
     const auto &node_value = value_node->value();
     MS_EXCEPTION_IF_NULL(node_value);
-    if (node_value->isa<tensor::BaseTensor>() || node_value->isa<ValueSequence>()) {
+    if (node_value->isa<tensor::Tensor>() || node_value->isa<ValueSequence>()) {
       auto address_list = CreateDeviceAddressForTensorValue(node_value, 0, value_node, graph);
       // Deal with tensor and tuple
       if (value_nodes_without_init_args.find(value_node) == value_nodes_without_init_args.end()) {
@@ -459,7 +459,7 @@ KernelTensorPtr DeviceAddressUtils::CloneEmptyKernelTensor(const KernelTensorPtr
   return new_kernel_tensor;
 }
 
-bool DeviceAddressUtils::IsContiguousTensor(const tensor::BaseTensorPtr &tensor) {
+bool DeviceAddressUtils::IsContiguousTensor(const tensor::TensorPtr &tensor) {
   if (tensor == nullptr || tensor->storage_info() == nullptr) {
     MS_LOG(DEBUG) << "It is not a view tensor, tensor: " << tensor;
     return true;

@@ -44,7 +44,7 @@ ShapeArray MeanExtFuncImpl::InferShape(const PrimitivePtr &primitive, const Valu
 
 TypePtrList MeanExtFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
   if (input_values[kIndex3] == mindspore::kNone) {
-    const auto &input = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+    const auto &input = input_values[kIndex0]->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(input);
     return {input->Dtype()};
   } else {

@@ -28,10 +28,10 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 void SpeedFusionAttentionAscendCustomize(
-  const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &query, const BaseTensorPtr &key, const BaseTensorPtr &value,
-  const Int64ImmPtr &head_num, const Int64ImmPtr &input_layout, const BaseTensorPtr &seed, const BaseTensorPtr &offset,
-  const std::optional<BaseTensorPtr> &pse, const std::optional<BaseTensorPtr> &padding_mask,
-  const std::optional<BaseTensorPtr> &atten_mask, const FP32ImmPtr &scale, const FP32ImmPtr &keep_prob,
+  const std::shared_ptr<OpRunner> &op, const TensorPtr &query, const TensorPtr &key, const TensorPtr &value,
+  const Int64ImmPtr &head_num, const Int64ImmPtr &input_layout, const TensorPtr &seed, const TensorPtr &offset,
+  const std::optional<TensorPtr> &pse, const std::optional<TensorPtr> &padding_mask,
+  const std::optional<TensorPtr> &atten_mask, const FP32ImmPtr &scale, const FP32ImmPtr &keep_prob,
   const Int64ImmPtr &pre_tokens, const Int64ImmPtr &next_tokens, const Int64ImmPtr &inner_precise,
   const std::optional<ValueTuplePtr> &prefix, const std::optional<ValueTuplePtr> &actual_seq_qlen,
   const std::optional<ValueTuplePtr> &actual_seq_kvlen, const Int64ImmPtr &sparse_mode,

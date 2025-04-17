@@ -29,8 +29,8 @@ namespace kernel {
 // namespace
 
 namespace pyboost {
-tensor::BaseTensorPtr MSELossExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                                const BaseTensorPtr &target_tensor, const Int64ImmPtr &reduction) {
+tensor::TensorPtr MSELossExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                            const TensorPtr &target_tensor, const Int64ImmPtr &reduction) {
   MS_LOG(DEBUG) << "MSELossExt call start";
   OpRunner::InferOpOutput(op, input_tensor, target_tensor, reduction);
 
@@ -50,8 +50,8 @@ tensor::BaseTensorPtr MSELossExtAscendCustomize(const std::shared_ptr<OpRunner> 
   const ValueTuplePtr &expand_shape_ptr = ops::ConvertShapeVectorToValueTuple(expand_shape);
   MS_EXCEPTION_IF_NULL(expand_shape_ptr);
 
-  BaseTensorPtr input_tensor_bd = input_tensor;
-  BaseTensorPtr target_tensor_bd = target_tensor;
+  TensorPtr input_tensor_bd = input_tensor;
+  TensorPtr target_tensor_bd = target_tensor;
 
   if (input_shape != expand_shape) {
     const auto &broadcast_to_op =

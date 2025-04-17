@@ -28,9 +28,8 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr SoftMarginLossAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                    const BaseTensorPtr &input_tensor,
-                                                    const BaseTensorPtr &target_tensor, const Int64ImmPtr &reduction);
+tensor::TensorPtr SoftMarginLossAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                                const TensorPtr &target_tensor, const Int64ImmPtr &reduction);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

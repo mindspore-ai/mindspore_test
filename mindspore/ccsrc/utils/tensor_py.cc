@@ -27,8 +27,6 @@ namespace mindspore {
 namespace tensor {
 PyTypeObject *TensorPy_Type;
 
-TensorPy::TensorPy(const BaseTensorPtr &input) { tensor_ = input; }
-
 TensorPy::TensorPy(const TensorPtr &input) { tensor_ = input; }
 
 TensorPy::TensorPy(int64_t input, const TypePtr &data_type) { tensor_ = std::make_shared<Tensor>(input, data_type); }
@@ -66,7 +64,7 @@ TensorPy::TensorPy(const TensorPy &input)
       symbolic_shape_(input.symbolic_shape_),
       device_(input.device_),
       flatten_tensor_(input.flatten_tensor_) {
-  tensor_ = input.GetBaseTensor();
+  tensor_ = input.GetTensor();
 }
 
 TensorPy::TensorPy(TypeId data_type, const ShapeVector &shape) { tensor_ = std::make_shared<Tensor>(data_type, shape); }
@@ -96,31 +94,14 @@ const std::string TensorPy::GetDevice() const { return device_; }
 
 void TensorPy::SetDevice(const std::string &dev) { device_ = dev; }
 
-const TensorPtr TensorPy::GetTensor() const {
+TensorPtr TensorPy::GetTensor() const {
   if (tensor_ == nullptr) {
-    const_cast<BaseTensorPtr &>(tensor_) = GetBaseTensor();
-  }
-  TensorPtr tensor = std::dynamic_pointer_cast<Tensor>(tensor_);
-  if (tensor == nullptr) {
-    MS_LOG(INFO) << "Copy tensor " << tensor_->id() << " and detach!";
-    auto new_tensor = std::make_shared<Tensor>(*tensor_);
-    const_cast<BaseTensorPtr &>(tensor_) = new_tensor;
-    if (stub_ != nullptr) {
-      stub_->SetValue(new_tensor);
-    }
-    return new_tensor;
-  }
-  return tensor;
-}
-
-BaseTensorPtr TensorPy::GetBaseTensor() const {
-  if (tensor_ == nullptr) {
-    return std::static_pointer_cast<BaseTensor>(stub_->WaitValue());
+    return std::static_pointer_cast<Tensor>(stub_->WaitValue());
   }
   return tensor_;
 }
 
-void TensorPy::UpdateStub(const BaseTensorPtr &tensor) { stub_->SetValue(tensor); }
+void TensorPy::UpdateStub(const TensorPtr &tensor) { stub_->SetValue(tensor); }
 
 const py::object TensorPy::GetParentTensor() {
   if (!parent_tensor_.check() || parent_tensor_.is_none()) {
@@ -150,7 +131,7 @@ const py::object TensorPy::GetSymbolicShape() const {
 void TensorPy::SetSymbolicShape(const py::object &symbolic) { symbolic_shape_ = symbolic; }
 
 py::tuple TensorPy::GetPyTupleShape() {
-  auto &shape = GetBaseTensor()->shape();
+  auto &shape = GetTensor()->shape();
   py::tuple dims(shape.size());
   for (size_t i = 0; i < dims.size(); ++i) {
     dims[i] = py::int_(shape[i]);
@@ -158,9 +139,9 @@ py::tuple TensorPy::GetPyTupleShape() {
   return dims;
 }
 
-py::int_ TensorPy::GetPyItemSize() { return GetBaseTensor()->data().itemsize(); }
+py::int_ TensorPy::GetPyItemSize() { return GetTensor()->data().itemsize(); }
 
-py::int_ TensorPy::GetPyNBytes() { return GetBaseTensor()->data().nbytes(); }
+py::int_ TensorPy::GetPyNBytes() { return GetTensor()->data().nbytes(); }
 
 static std::vector<ssize_t> GetStrides(const std::vector<ssize_t> &shape, ssize_t item_size) {
   std::vector<ssize_t> strides;
@@ -177,7 +158,7 @@ static std::vector<ssize_t> GetStrides(const std::vector<ssize_t> &shape, ssize_
 }
 
 py::tuple TensorPy::GetPyTupleStrides() {
-  auto tensor = GetBaseTensor();
+  auto tensor = GetTensor();
   std::vector<ssize_t> shape(tensor->shape().begin(), tensor->shape().end());
   std::vector<ssize_t> strides = GetStrides(shape, tensor->data().itemsize());
   py::tuple py_strides(strides.size());
@@ -187,23 +168,23 @@ py::tuple TensorPy::GetPyTupleStrides() {
   return py_strides;
 }
 
-TypePtr TensorPy::GetDtype() const { return GetBaseTensor()->Dtype(); }
+TypePtr TensorPy::GetDtype() const { return GetTensor()->Dtype(); }
 
-TypePtr TensorPy::SetDtype(const TypePtr type) { return GetBaseTensor()->SetDtype(type); }
+TypePtr TensorPy::SetDtype(const TypePtr type) { return GetTensor()->SetDtype(type); }
 
-TypeId TensorPy::GetDataType() const { return GetBaseTensor()->data_type(); }
+TypeId TensorPy::GetDataType() const { return GetTensor()->data_type(); }
 
-const ShapeVector &TensorPy::GetShape() const { return GetBaseTensor()->shape(); }
+const ShapeVector &TensorPy::GetShape() const { return GetTensor()->shape(); }
 
 bool TensorPy::IsInit() const { return GetTensor()->is_init(); }
 
 void TensorPy::SetInitFlag(bool flag) { GetTensor()->set_init_flag(flag); }
 
-void TensorPy::SetShape(const ShapeVector &shape) { GetBaseTensor()->set_shape(shape); }
+void TensorPy::SetShape(const ShapeVector &shape) { GetTensor()->set_shape(shape); }
 
 bool TensorPy::IsPersistentData() const { return GetTensor()->is_persistent_data(); }
 
-int TensorPy::DataDim() const { return GetBaseTensor()->DataDim(); }
+int TensorPy::DataDim() const { return GetTensor()->DataDim(); }
 
 TensorPy &TensorPy::AssignValue(const TensorPy &tensorpy) {
   // todo: assign value for base tensor.
@@ -218,26 +199,26 @@ const std::string TensorPy::GetOffloadFilePath() const { return GetTensor()->Get
 
 void TensorPy::SetCastDtype(const TypePtr &dtype) { GetTensor()->set_cast_dtype(dtype); }
 
-void TensorPy::DataSync(bool need_wait) const { GetBaseTensor()->data_sync(need_wait, false); }
+void TensorPy::DataSync(bool need_wait) const { GetTensor()->data_sync(need_wait, false); }
 
-void TensorPy::ExecuteLazyTask() const { GetBaseTensor()->ExecuteLazyTask(); }
+void TensorPy::ExecuteLazyTask() const { GetTensor()->ExecuteLazyTask(); }
 
-bool TensorPy::IsContiguous() const { return GetBaseTensor()->is_contiguous(); }
+bool TensorPy::IsContiguous() const { return GetTensor()->is_contiguous(); }
 
-std::vector<int64_t> TensorPy::GetStride() const { return GetBaseTensor()->stride(); }
+std::vector<int64_t> TensorPy::GetStride() const { return GetTensor()->stride(); }
 
-const int64_t TensorPy::GetStorageOffset() const { return GetBaseTensor()->storage_offset(); }
+const int64_t TensorPy::GetStorageOffset() const { return GetTensor()->storage_offset(); }
 
-std::string TensorPy::ToString() const { return GetBaseTensor()->ToString(); }
+std::string TensorPy::ToString() const { return GetTensor()->ToString(); }
 
-std::string TensorPy::ToStringRepr() const { return GetBaseTensor()->ToStringRepr(); }
+std::string TensorPy::ToStringRepr() const { return GetTensor()->ToStringRepr(); }
 
 bool TensorPy::CheckStub() { return Tensor::CheckStub(); }
 
-ParamInfoPtr TensorPy::GetParamInfo() const { return GetBaseTensor()->param_info(); }
+ParamInfoPtr TensorPy::GetParamInfo() const { return GetTensor()->param_info(); }
 
 void TensorPy::SetParamInfo(const ParamInfoPtr &param_info) {
-  auto base_tensor = GetBaseTensor();
+  auto base_tensor = GetTensor();
   MS_EXCEPTION_IF_NULL(base_tensor);
   base_tensor->set_param_info(param_info);
 }
@@ -269,7 +250,7 @@ TensorPyPtrList TensorPy::GetFlattenedTensors(const TensorPyPtrList &tensorpys) 
 }
 
 bool TensorPy::IsComplex() const {
-  auto base_tensor = GetBaseTensor();
+  auto base_tensor = GetTensor();
   TypeId type_id = base_tensor->data_type();
   switch (type_id) {
     case TypeId::kNumberTypeComplex:
@@ -283,7 +264,7 @@ bool TensorPy::IsComplex() const {
 }
 
 bool TensorPy::IsSigned() const {
-  auto base_tensor = GetBaseTensor();
+  auto base_tensor = GetTensor();
   TypeId type_id = base_tensor->data_type();
   switch (type_id) {
     case TypeId::kNumberTypeInt:
@@ -312,19 +293,19 @@ size_t TensorPy::GetFusionSize(const TensorPyPtrList &flat_tensorpys) {
   return Tensor::GetFusionSize(tensors);
 }
 
-const size_t TensorPy::GetDataSize() const { return GetBaseTensor()->DataSize(); }
+const size_t TensorPy::GetDataSize() const { return GetTensor()->DataSize(); }
 
-void *TensorPy::GetTensorDataObject() const { return GetBaseTensor()->data_c(); }
+void *TensorPy::GetTensorDataObject() const { return GetTensor()->data_c(); }
 
-const DeviceSyncPtr TensorPy::GetDeviceAddress() const { return GetBaseTensor()->device_address(); }
+const DeviceSyncPtr TensorPy::GetDeviceAddress() const { return GetTensor()->device_address(); }
 
 bool TensorPy::IsMSParameterOutput() const { return ms_parameter_output_; }
 
 void TensorPy::SetMSParameterOutput(bool flag) { ms_parameter_output_ = flag; }
 
-bool TensorPy::HasAutoGrad() const { return GetBaseTensor()->HasAutoGrad(); }
+bool TensorPy::HasAutoGrad() const { return GetTensor()->HasAutoGrad(); }
 
-bool TensorPy::NeedContiguous() const { return GetBaseTensor()->NeedContiguous(); }
+bool TensorPy::NeedContiguous() const { return GetTensor()->NeedContiguous(); }
 
 const py::object TensorPy::GetGrad() const {
   if (!grad_.check() || grad_.is_none()) {
@@ -394,18 +375,6 @@ bool IsTensorPy(const py::handle &obj) {
   return PyObject_IsInstance(raw_ptr, str_type);
 }
 
-const TensorPtr ConvertToTensor(const py::handle &obj) {
-  PyObject *raw_ptr = obj.ptr();
-  PyObject *str_type = reinterpret_cast<PyObject *>(TensorPy_Type);
-  if (PyObject_IsInstance(raw_ptr, str_type)) {
-    PyType<TensorPy> *tensor = (PyType<TensorPy> *)raw_ptr;
-    TensorPtr tensor_ptr = tensor->value.GetTensor();
-    return tensor_ptr;
-  }
-
-  return nullptr;
-}
-
 py::object GetPythonTensor() {
   auto tensor_module = PyObjManager::Get().GetTensorModule();
   return py::reinterpret_borrow<py::object>(tensor_module);
@@ -420,17 +389,17 @@ const ValuePtr ConvertToValue(const py::handle &obj) {
     if (value.has_stub()) {
       return value.stub();
     }
-    return value.GetBaseTensor();
+    return value.GetTensor();
   }
   MS_LOG(EXCEPTION) << "Not TensorPy object";
 }
 
-BaseTensorPtr ConvertToBaseTensor(const py::handle &obj) {
+TensorPtr ConvertToTensor(const py::handle &obj) {
   PyObject *raw_ptr = obj.ptr();
   PyObject *str_type = reinterpret_cast<PyObject *>(TensorPy_Type);
   if (PyObject_IsInstance(raw_ptr, str_type)) {
     PyType<TensorPy> *tensor = (PyType<TensorPy> *)raw_ptr;
-    auto tensor_ptr = tensor->value.GetBaseTensor();
+    auto tensor_ptr = tensor->value.GetTensor();
     MS_EXCEPTION_IF_NULL(tensor_ptr);
     return tensor_ptr;
   }
@@ -454,7 +423,7 @@ const py::handle ConvertToTensorPy(const py::handle &obj) {
   return nullptr;
 }
 
-PyObject *TensorPythonInit(BaseTensorPtr tensor) {
+PyObject *TensorPythonInit(TensorPtr tensor) {
   PyObject *tensorPythonClass = PyObject_GetAttrString(PyObjManager::Get().GetTensorModule(), "Tensor");
   PyObject *obj = (reinterpret_cast<PyTypeObject *>(tensorPythonClass))
                     ->tp_alloc(reinterpret_cast<PyTypeObject *>(tensorPythonClass), 0);
@@ -496,12 +465,12 @@ PyTypeObject *GetTensorPyType() { return TensorPy_Type; }
 
 void SetTensorPyType(PyTypeObject *TensorPyType) { TensorPy_Type = TensorPyType; }
 
-py::object PackTensorToPyObject(BaseTensorPtr tensor) {
+py::object PackTensorToPyObject(TensorPtr tensor) {
   PyObject *tensor_py = TensorPythonInit(tensor);
   return py::reinterpret_steal<py::object>(tensor_py);
 }
 
-PyObject *PackTensor(const BaseTensorPtr &tensor) {
+PyObject *PackTensor(const TensorPtr &tensor) {
   PyObject *python_tensor_class = PyObject_GetAttrString(PyObjManager::Get().GetTensorModule(), "Tensor");
   auto tensor_py_type = reinterpret_cast<PyTypeObject *>(python_tensor_class);
   PyObject *obj = tensor_py_type->tp_alloc(tensor_py_type, 0);
@@ -515,11 +484,9 @@ PyObject *PackTensor(const BaseTensorPtr &tensor) {
   return reinterpret_cast<PyObject *>(result);
 }
 
-PyObject *Wrap(const BaseTensorPtr &tensor) { return PackTensor(tensor); }
-
 PyObject *Wrap(const TensorPtr &tensor) { return PackTensor(tensor); }
 
-PyObject *Wrap(const std::vector<BaseTensorPtr> &tensors) {
+PyObject *Wrap(const std::vector<TensorPtr> &tensors) {
   PyObject *output = PyTuple_New(static_cast<Py_ssize_t>(tensors.size()));
   for (size_t i = 0; i < tensors.size(); ++i) {
     PyTuple_SET_ITEM(output, i, Wrap(tensors[i]));
@@ -529,8 +496,8 @@ PyObject *Wrap(const std::vector<BaseTensorPtr> &tensors) {
 
 PyObject *Wrap(const ValuePtr &value) {
   MS_EXCEPTION_IF_NULL(value);
-  if (value->isa<tensor::BaseTensor>()) {
-    return Wrap(value->cast<tensor::BaseTensorPtr>());
+  if (value->isa<tensor::Tensor>()) {
+    return Wrap(value->cast<tensor::TensorPtr>());
   } else if (value->isa<ValueSequeue>()) {
     auto sequeue = value->cast<ValueSequencePtr>();
     const auto &values = sequeue->value();

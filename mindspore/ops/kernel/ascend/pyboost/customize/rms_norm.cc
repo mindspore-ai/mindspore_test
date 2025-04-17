@@ -22,10 +22,10 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr> RmsNormAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                                                const BaseTensorPtr &x_tensor,
-                                                                                const BaseTensorPtr &gamma_tensor,
-                                                                                const FP32ImmPtr &epsilon) {
+std::tuple<tensor::TensorPtr, tensor::TensorPtr> RmsNormAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                                                        const TensorPtr &x_tensor,
+                                                                        const TensorPtr &gamma_tensor,
+                                                                        const FP32ImmPtr &epsilon) {
   OpRunner::InferOpOutput(op, x_tensor, gamma_tensor, epsilon);
   auto epsilon_imm = static_cast<double>(GetValue<float>(epsilon));
 

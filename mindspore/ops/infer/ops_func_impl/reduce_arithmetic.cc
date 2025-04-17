@@ -223,7 +223,7 @@ ShapeArray ReduceInferShape(const PrimitivePtr &primitive, const ValuePtrList &i
   MS_EXCEPTION_IF_NULL(keep_dims_opt);
   const bool &keep_dims = keep_dims_opt->value();
 
-  const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   const auto &x_shape = x_tensor->shape();
 
@@ -256,7 +256,7 @@ ShapeArray ReduceInferShape(const PrimitivePtr &primitive, const ValuePtrList &i
 }
 
 ShapeArray ReduceExtandSimpleInferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) {
-  const auto &input = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &input = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input);
   const auto &input_shape = input->shape();
   const auto input_shape_size = input_shape.size();

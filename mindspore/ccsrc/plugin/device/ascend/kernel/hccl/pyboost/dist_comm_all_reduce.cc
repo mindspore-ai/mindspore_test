@@ -26,7 +26,7 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void DistCommAllReduceAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
+void DistCommAllReduceAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
                                       const StringImmPtr &op_type, const StringImmPtr &group) {
   OpRunner::InferOpOutput(op, input_tensor, op_type, group);
 

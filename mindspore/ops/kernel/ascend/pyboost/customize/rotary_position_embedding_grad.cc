@@ -24,10 +24,9 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void RotaryPositionEmbeddingGradAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &dy_tensor,
-                                                const BaseTensorPtr &cos_tensor, const BaseTensorPtr &sin_tensor,
-                                                const std::optional<BaseTensorPtr> &dx_tensor,
-                                                const Int64ImmPtr &mode) {
+void RotaryPositionEmbeddingGradAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &dy_tensor,
+                                                const TensorPtr &cos_tensor, const TensorPtr &sin_tensor,
+                                                const std::optional<TensorPtr> &dx_tensor, const Int64ImmPtr &mode) {
   OpRunner::InferOpOutput(op, dy_tensor, cos_tensor, sin_tensor, dx_tensor, mode);
   // ValueTuple to std::vector
 

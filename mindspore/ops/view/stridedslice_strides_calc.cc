@@ -148,8 +148,8 @@ TensorStorageInfoPtrList StridedSliceCalc(const PrimitivePtr &prim, const std::v
   if (!CheckStridedSliceInputs(inputs)) {
     return {};
   }
-  if (inputs[kInputIndex1]->isa<tensor::BaseTensor>() || inputs[kInputIndex2]->isa<tensor::BaseTensor>() ||
-      inputs[kInputIndex3]->isa<tensor::BaseTensor>()) {
+  if (inputs[kInputIndex1]->isa<tensor::Tensor>() || inputs[kInputIndex2]->isa<tensor::Tensor>() ||
+      inputs[kInputIndex3]->isa<tensor::Tensor>()) {
     return {};
   }
   auto begin = GetValue<std::vector<int64_t>>(inputs[kInputIndex1]);
@@ -158,7 +158,7 @@ TensorStorageInfoPtrList StridedSliceCalc(const PrimitivePtr &prim, const std::v
   if (IsDynamic(step) || begin.size() != end.size() || begin.size() != step.size() || HasZero(step)) {
     return {};
   }
-  auto input_tensor = inputs[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  auto input_tensor = inputs[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   auto size = input_tensor->shape().size();
   auto old_tensor_info = GetOldTensorInfo(input_tensor);

@@ -28,10 +28,12 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-std::vector<tensor::BaseTensorPtr> SilentCheckV3AscendCustomize(
-  const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &val, const BaseTensorPtr &max, const BaseTensorPtr &avg,
-  const BaseTensorPtr &input_grad, const BaseTensorPtr &step, const FloatImmPtr &c_thresh_l1,
-  const FloatImmPtr &c_thresh_l2, const FloatImmPtr &beta1, const Int64ImmPtr &npu_asd_detect);
+std::vector<tensor::TensorPtr> SilentCheckV3AscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &val,
+                                                            const TensorPtr &max, const TensorPtr &avg,
+                                                            const TensorPtr &input_grad, const TensorPtr &step,
+                                                            const FloatImmPtr &c_thresh_l1,
+                                                            const FloatImmPtr &c_thresh_l2, const FloatImmPtr &beta1,
+                                                            const Int64ImmPtr &npu_asd_detect);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

@@ -244,7 +244,7 @@ def get_input_dtype(dtype: str, optional):
         'bool': 'mindspore::BoolImmPtr',
         'number': 'mindspore::ScalarPtr',
         'str': 'mindspore::StringImmPtr',
-        'tensor': 'mindspore::tensor::BaseTensorPtr',
+        'tensor': 'mindspore::tensor::TensorPtr',
         'tuple[int]': value_tuple,
         'tuple[float]': value_tuple,
         'tuple[bool]': value_tuple,
@@ -261,7 +261,7 @@ def get_input_dtype(dtype: str, optional):
         'bool': 'std::optional<mindspore::BoolImmPtr>',
         'number': 'std::optional<mindspore::ScalarPtr>',
         'str': 'std::optional<mindspore::StringImmPtr>',
-        'tensor': 'std::optional<mindspore::tensor::BaseTensorPtr>',
+        'tensor': 'std::optional<mindspore::tensor::TensorPtr>',
         'tuple[int]': value_tuple_optional,
         'tuple[float]': value_tuple_optional,
         'tuple[bool]': value_tuple_optional,
@@ -343,7 +343,7 @@ def get_tuple_input_convert(arg_name, arg_type):
     """
     cpp_type = tuple_input_to_cpp_type(arg_type)
     if cpp_type == "mindspore::tensor::TensorPtr":
-        cpp_type = "mindspore::tensor::BaseTensorPtr"
+        cpp_type = "mindspore::tensor::TensorPtr"
     return f"std::vector<{cpp_type}> {arg_name}_vector = ConvertValueTupleToVector<{cpp_type}>({arg_name});\n"
 
 

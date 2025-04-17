@@ -25,14 +25,14 @@
 #include <utility>
 #include "plugin/res_manager/ascend/ascend_device_address/ascend_device_address.h"
 #include "plugin/device/ascend/kernel/dvm/dvm.h"
-#include "mindspore/core/include/ir/base_tensor.h"
+#include "mindspore/core/include/ir/tensor.h"
 #include "mindspore/ccsrc/pyboost/op_runner.h"
 #include "runtime/pynative/lazy_fusion.h"
 
 namespace mindspore {
 namespace kernel {
 using ShapeRefPtr = std::shared_ptr<dvm::ShapeRef>;
-using BaseTensorPtr = tensor::BaseTensorPtr;
+using TensorPtr = tensor::TensorPtr;
 using OpRunnerPtr = std::shared_ptr<pyboost::OpRunner>;
 
 class LazyFusionQueue : public runtime::AsyncRQueue {
@@ -84,11 +84,11 @@ class LazyFusionKernelAscend : public dvm::Kernel {
   void set_id(size_t id) { id_ = id; }
   size_t id() const { return id_; }
 
-  dvm::NDObject *Input(const BaseTensorPtr &x, bool enable_cast = true,
+  dvm::NDObject *Input(const TensorPtr &x, bool enable_cast = true,
                        const std::optional<ShapeVector> &shape = std::nullopt);
-  void Output(const BaseTensorPtr &tensor, dvm::NDObject *obj);
+  void Output(const TensorPtr &tensor, dvm::NDObject *obj);
 
-  BaseTensorPtr Output(dvm::NDObject *obj, TypeId dtype, const ShapeVector &shape) {
+  TensorPtr Output(dvm::NDObject *obj, TypeId dtype, const ShapeVector &shape) {
     auto tensor = std::make_shared<tensor::Tensor>(dtype, shape);
     runtime::DeviceAddressUtils::CreateOutputTensorAddress(device_context_, stream_id_, tensor,
                                                            LongToSize(tensor->data().nbytes()));
@@ -129,7 +129,7 @@ class LazyFusionKernelAscend : public dvm::Kernel {
     return store.dev_addr->GetMutablePtr();
   }
 
-  bool HasTensor(const BaseTensorPtr &x) const;
+  bool HasTensor(const TensorPtr &x) const;
 
  private:
   void Launch();
@@ -159,12 +159,12 @@ class LazyFusionKernelAscend : public dvm::Kernel {
     Load() = default;
     dvm::ShapeRef shape;
     dvm::NDObject *op;
-    BaseTensorPtr tensor;
+    TensorPtr tensor;
   };
 
   struct Store {
     Store() = default;
-    Store(dvm::NDObject *p, const BaseTensorPtr &t) : op(p) {
+    Store(dvm::NDObject *p, const TensorPtr &t) : op(p) {
       dev_addr = std::static_pointer_cast<device::DeviceAddress>(t->device_address());
       MS_EXCEPTION_IF_NULL(dev_addr);
     }

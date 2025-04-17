@@ -31,7 +31,7 @@ namespace pyboost {
 namespace {
 inline const std::string &GetDeviceTarget() { return OpRunStatus::Get().device_target(); }
 
-using BaseTensorPtr = std::shared_ptr<tensor::BaseTensor>;
+using TensorPtr = std::shared_ptr<tensor::Tensor>;
 
 CloneFunc inplace_clone_func{nullptr};
 }

@@ -49,9 +49,9 @@ TypePtr HShrinkGradFuncImpl::InferType(const PrimitivePtr &primitive,
 }
 
 TypePtrList HShrinkGradFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &gradients_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &gradients_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(gradients_tensor);
-  const auto &features_tensor = input_values[kIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &features_tensor = input_values[kIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(features_tensor);
 
   const auto &gradients_type = gradients_tensor->Dtype();
@@ -68,7 +68,7 @@ TypePtrList HShrinkGradFuncImpl::InferType(const PrimitivePtr &primitive, const 
 }
 
 ShapeArray HShrinkGradFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   return {x_tensor->shape()};
 }

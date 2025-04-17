@@ -244,7 +244,7 @@ std::optional<std::vector<int64_t>> GetAxis(const NodePtr &axis) {
   if (axis->GetDtype()->type_id() != kMetaTypeNone) {
     auto axis_value = axis->GetValue();
     bool is_valid_axis =
-      axis_value->isa<ValueSequence>() || axis_value->isa<tensor::BaseTensor>() || axis_value->isa<Scalar>();
+      axis_value->isa<ValueSequence>() || axis_value->isa<tensor::Tensor>() || axis_value->isa<Scalar>();
     if (!is_valid_axis) {
       return std::nullopt;
     }

@@ -23,9 +23,9 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr ArangeAscendCustomize(const std::shared_ptr<OpRunner> &op, const ScalarPtr &start,
-                                            const ScalarPtr &end, const ScalarPtr &step,
-                                            const std::optional<Int64ImmPtr> &dtype) {
+tensor::TensorPtr ArangeAscendCustomize(const std::shared_ptr<OpRunner> &op, const ScalarPtr &start,
+                                        const ScalarPtr &end, const ScalarPtr &step,
+                                        const std::optional<Int64ImmPtr> &dtype) {
   OpRunner::InferOpOutput(op, start, end, step, dtype);
 
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());

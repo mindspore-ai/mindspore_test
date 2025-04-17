@@ -78,10 +78,10 @@ bool HasTensorWithGradData(const ValuePtr &val) {
     return std::any_of(elements.begin(), elements.end(), [](const auto &e) { return HasTensorWithGradData(e.second); });
   }
 
-  if (!val->isa<tensor::BaseTensor>()) {
+  if (!val->isa<tensor::Tensor>()) {
     return false;
   }
-  auto val_tensor = val->cast<tensor::BaseTensorPtr>();
+  auto val_tensor = val->cast<tensor::TensorPtr>();
   auto grad_data = val_tensor->auto_grad_meta_data();
   return grad_data != nullptr && grad_data->input_type() == InputType::kOpOutput;
 }

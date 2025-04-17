@@ -26,11 +26,9 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr L1LossBackwardExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                       const BaseTensorPtr &grad_output_tensor,
-                                                       const BaseTensorPtr &input_tensor,
-                                                       const BaseTensorPtr &target_tensor,
-                                                       const Int64ImmPtr &reduction);
+tensor::TensorPtr L1LossBackwardExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                                   const TensorPtr &grad_output_tensor, const TensorPtr &input_tensor,
+                                                   const TensorPtr &target_tensor, const Int64ImmPtr &reduction);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

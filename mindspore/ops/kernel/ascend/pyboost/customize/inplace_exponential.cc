@@ -65,9 +65,9 @@ double GetScalarValue(const std::shared_ptr<Scalar> &scalar) {
 }
 }  // namespace
 
-tensor::BaseTensorPtr InplaceExponentialAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input,
-                                                        const ScalarPtr lambda, const BaseTensorPtr &seed,
-                                                        const BaseTensorPtr &offset) {
+tensor::TensorPtr InplaceExponentialAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input,
+                                                    const ScalarPtr lambda, const TensorPtr &seed,
+                                                    const TensorPtr &offset) {
   MS_LOG(DEBUG) << "InplaceExponentialAscendCustomize Call start";
   kernel::pyboost::RequireGradGuard no_grad(false);
   double lambda_val = GetScalarValue(lambda);
@@ -93,7 +93,7 @@ tensor::BaseTensorPtr InplaceExponentialAscendCustomize(const std::shared_ptr<Op
   auto neg_out = inplace_muls(uniform_out, neg_one);
   auto add_out = inplace_adds_ext(neg_out, float_one, float_one);
 
-  BaseTensorPtr real_out = add_out;
+  TensorPtr real_out = add_out;
   std::set<TypeId> float_types{kNumberTypeFloat16, kNumberTypeBFloat16, kNumberTypeFloat32};
   if (float_types.find(input_type) != float_types.end()) {
     auto eps = GetEps(input_type);

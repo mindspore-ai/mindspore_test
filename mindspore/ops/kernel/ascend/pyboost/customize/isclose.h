@@ -27,9 +27,9 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr IsCloseAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                             const BaseTensorPtr &other_tensor, const FP32ImmPtr &rtol,
-                                             const FP32ImmPtr &atol, const BoolImmPtr &equal_nan);
+tensor::TensorPtr IsCloseAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                         const TensorPtr &other_tensor, const FP32ImmPtr &rtol, const FP32ImmPtr &atol,
+                                         const BoolImmPtr &equal_nan);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

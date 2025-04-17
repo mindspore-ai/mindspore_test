@@ -23,9 +23,9 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr IndexAddExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                                 const Int64ImmPtr &dim, const BaseTensorPtr &index_tensor,
-                                                 const BaseTensorPtr &source_tensor, const ScalarPtr &alpha) {
+tensor::TensorPtr IndexAddExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                             const Int64ImmPtr &dim, const TensorPtr &index_tensor,
+                                             const TensorPtr &source_tensor, const ScalarPtr &alpha) {
   OpRunner::InferOpOutput(op, input_tensor, dim, index_tensor, source_tensor, alpha);
 
   auto dim_imm = GetValue<int64_t>(dim);

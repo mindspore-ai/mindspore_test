@@ -29,9 +29,8 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 
-tensor::BaseTensorPtr BACKEND_EXPORT PixelShuffleCustomize(const std::shared_ptr<OpRunner> &op,
-                                                           const BaseTensorPtr &input,
-                                                           const Int64ImmPtr &upscale_factor_imm);
+tensor::TensorPtr BACKEND_EXPORT PixelShuffleCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input,
+                                                       const Int64ImmPtr &upscale_factor_imm);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

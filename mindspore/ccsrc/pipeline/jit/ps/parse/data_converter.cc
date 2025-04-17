@@ -55,8 +55,8 @@ struct PyDataToValueRegister {
 
 using Tensor = mindspore::tensor::Tensor;
 using TensorPtr = mindspore::tensor::TensorPtr;
-using BaseTensor = mindspore::tensor::BaseTensor;
-using BaseTensorPtr = mindspore::tensor::BaseTensorPtr;
+using Tensor = mindspore::tensor::Tensor;
+using TensorPtr = mindspore::tensor::TensorPtr;
 using MetaTensor = mindspore::tensor::MetaTensor;
 using MetaTensorPtr = mindspore::tensor::MetaTensorPtr;
 using CSRTensor = mindspore::tensor::CSRTensor;
@@ -745,7 +745,7 @@ void CheckJITForbiddenAPI(const py::object &obj) {
         << "Try to use the " << obj_type << " '" << obj_module << "." << obj_name << "' externally "
         << "such as initialized in the method '__init__' before assigning"
         << ".\nFor more details, please refer to "
-        << "https://www.mindspore.cn/docs/zh-CN/master/model_train/program_form/overview.html \n";
+        << "https://www.mindspore.cn/docs/zh-CN/master/features/program_form/overview.html \n";
     // Check if the API is decoratored by @jit_forbidden_register.
     bool is_jit_forbidden_register = data_converter::IsJITForbiddenAPI(obj);
     if (is_jit_forbidden_register) {
@@ -1414,8 +1414,8 @@ TensorPtr ConvertTensorValue(const py::object &obj) {
     auto value = stub->WaitValue();
     auto tensor = value->cast<TensorPtr>();
     if (tensor == nullptr) {
-      // BaseTensor should convert to Tensor for Graph mode
-      auto base_tensor = value->cast<BaseTensorPtr>();
+      // Tensor should convert to Tensor for Graph mode
+      auto base_tensor = value->cast<TensorPtr>();
       auto real_tensor = std::make_shared<Tensor>(*base_tensor);
       stub->SetValue(real_tensor);
       return real_tensor;

@@ -22,10 +22,10 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void BinaryCrossEntropyWithLogitsCPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                              const BaseTensorPtr &target_tensor,
-                                              const std::optional<BaseTensorPtr> &weight_tensor,
-                                              const std::optional<BaseTensorPtr> &posWeight_tensor,
+void BinaryCrossEntropyWithLogitsCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                              const TensorPtr &target_tensor,
+                                              const std::optional<TensorPtr> &weight_tensor,
+                                              const std::optional<TensorPtr> &posWeight_tensor,
                                               const Int64ImmPtr &reduction) {
   MS_EXCEPTION_IF_NULL(op);
   OpRunner::InferOpOutput(op, input_tensor, target_tensor, weight_tensor, posWeight_tensor, reduction);

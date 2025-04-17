@@ -18,13 +18,13 @@
 #define MINDSPORE_MINDSPORE_OPS_KERNEL_FUNCTIONS_AUTO_GENERATE_FUNCTIONS_H_
 
 #include <optional>
-#include "ir/base_tensor.h"
+#include "ir/tensor.h"
 #include "include/backend/visible.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-using BaseTensorPtr = std::shared_ptr<tensor::BaseTensor>;
+using TensorPtr = std::shared_ptr<tensor::Tensor>;
 using CloneFunc = void (*)(const OpPtr &inplace_op, const PrimitivePtr &prim, const std::string &device_target,
                            ValuePtrList &&inputs);
 

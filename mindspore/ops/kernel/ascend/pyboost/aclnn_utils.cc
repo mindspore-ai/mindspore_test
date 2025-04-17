@@ -27,7 +27,7 @@ int8_t GetCubeMathType(bool use_hf32) { return device::ascend::OpApiUtil::GetCub
 bool IsAllowMatmulHF32() { return device::ascend::OpApiUtil::IsAllowMatmulHF32(); }
 bool IsAllowConvHF32() { return device::ascend::OpApiUtil::IsAllowConvHF32(); }
 
-std::pair<int64_t, int64_t> UpdateGeneratorState(const tensor::BaseTensorPtr &seed, const tensor::BaseTensorPtr &offset,
+std::pair<int64_t, int64_t> UpdateGeneratorState(const tensor::TensorPtr &seed, const tensor::TensorPtr &offset,
                                                  int64_t step) {
   runtime::Pipeline::Get().WaitAll();
   auto seed_value = *static_cast<int64_t *>(seed->data_c());

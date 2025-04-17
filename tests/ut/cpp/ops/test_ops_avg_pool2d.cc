@@ -18,7 +18,7 @@
 #include <memory>
 #include "common/common_test.h"
 #include "ir/anf.h"
-#include "ir/base_tensor.h"
+#include "ir/tensor.h"
 #include "ir/dtype/number.h"
 #include "infer/ops_func_impl/avg_pool2d.h"
 #include "ir/dtype/type.h"
@@ -75,7 +75,7 @@ TEST_P(TestAvgPool2D, dyn_shape) {
 
   // if static, test simple infer
   if (param.is_static) {
-    auto input = std::make_shared<tensor::BaseTensor>(kNumberTypeFloat32, param.input_shape);
+    auto input = std::make_shared<tensor::Tensor>(kNumberTypeFloat32, param.input_shape);
     std::vector<ValuePtr> input_valus{input,           param.kernel_size, param.stride,    param.padding,
                                       param.ceil_mode, count_include_pad, divisor_override};
     auto expect_shape = ShapeArray{param.out_shape};

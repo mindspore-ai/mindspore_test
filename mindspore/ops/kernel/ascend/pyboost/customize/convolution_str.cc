@@ -27,13 +27,12 @@ namespace pyboost {
 namespace {
 void ExpandParamIfNeeded(std::vector<int64_t> *const param, size_t expect_dim);
 }  // namespace
-tensor::BaseTensorPtr ConvolutionStrAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                    const BaseTensorPtr &input_tensor,
-                                                    const BaseTensorPtr &weight_tensor,
-                                                    const std::optional<BaseTensorPtr> &bias_tensor,
-                                                    const ValueTuplePtr &stride, const Int64ImmPtr &padding_enum,
-                                                    const ValueTuplePtr &dilation, const BoolImmPtr &transposed,
-                                                    const ValueTuplePtr &output_padding, const Int64ImmPtr &group) {
+tensor::TensorPtr ConvolutionStrAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                                const TensorPtr &weight_tensor,
+                                                const std::optional<TensorPtr> &bias_tensor,
+                                                const ValueTuplePtr &stride, const Int64ImmPtr &padding_enum,
+                                                const ValueTuplePtr &dilation, const BoolImmPtr &transposed,
+                                                const ValueTuplePtr &output_padding, const Int64ImmPtr &group) {
   OpRunner::InferOpOutput(op, input_tensor, weight_tensor, bias_tensor, stride, padding_enum, dilation, transposed,
                           output_padding, group);
   // Convert ValueTuple to std::vector
@@ -50,7 +49,7 @@ tensor::BaseTensorPtr ConvolutionStrAscendCustomize(const std::shared_ptr<OpRunn
   auto group_imm = GetValue<int64_t>(group);
   auto padding_enum_imm = GetValue<int64_t>(padding_enum);
 
-  BaseTensorPtr input_tensor_new = input_tensor;
+  TensorPtr input_tensor_new = input_tensor;
   auto k = weight_tensor->data().ndim();
   auto dim = static_cast<size_t>(k - 2);
   std::vector<int64_t> pad_vector = std::vector<int64_t>(dim, 0);

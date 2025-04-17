@@ -23,8 +23,8 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr DropoutGradExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input,
-                                                    const BaseTensorPtr &mask, const FP32ImmPtr &p) {
+tensor::TensorPtr DropoutGradExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input,
+                                                const TensorPtr &mask, const FP32ImmPtr &p) {
   OpRunner::InferOpOutput(op, input, mask, p);
   // Create device address for input/output tensors.
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input, mask);

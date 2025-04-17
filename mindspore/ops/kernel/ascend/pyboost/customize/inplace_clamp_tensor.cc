@@ -22,10 +22,9 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr InplaceClampTensorAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                        const BaseTensorPtr &input_tensor,
-                                                        const std::optional<BaseTensorPtr> &min_tensor,
-                                                        const std::optional<BaseTensorPtr> &max_tensor) {
+tensor::TensorPtr InplaceClampTensorAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                                    const std::optional<TensorPtr> &min_tensor,
+                                                    const std::optional<TensorPtr> &max_tensor) {
   MS_LOG(DEBUG) << "Call InplaceClampTensor start";
   OpRunner::InferOpOutput(op, input_tensor, min_tensor, max_tensor);
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor, min_tensor, max_tensor);

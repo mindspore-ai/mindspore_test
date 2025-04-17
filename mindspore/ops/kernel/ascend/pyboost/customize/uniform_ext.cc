@@ -42,9 +42,9 @@ double GetScalarValue(const std::shared_ptr<Scalar> &scalar) {
 }
 }  // namespace
 
-tensor::BaseTensorPtr UniformExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &tensor_tensor,
-                                                const ScalarPtr &a, const ScalarPtr &b, const BaseTensorPtr &seed,
-                                                const BaseTensorPtr &offset) {
+tensor::TensorPtr UniformExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &tensor_tensor,
+                                            const ScalarPtr &a, const ScalarPtr &b, const TensorPtr &seed,
+                                            const TensorPtr &offset) {
   MS_LOG(DEBUG) << "UniformExt call start";
   OpRunner::InferOpOutput(op, tensor_tensor, a, b, seed, offset);
   // ValueTuple to std::vector

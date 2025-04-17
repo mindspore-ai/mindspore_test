@@ -28,7 +28,7 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-int64_t ConvertTensorToInt64(const BaseTensorPtr &tensor) {
+int64_t ConvertTensorToInt64(const TensorPtr &tensor) {
   if (tensor == nullptr) {
     MS_LOG(EXCEPTION) << "Bincount ops receive null tensor.";
   }
@@ -51,9 +51,9 @@ int64_t ConvertTensorToInt64(const BaseTensorPtr &tensor) {
 }
 }  // namespace
 
-tensor::BaseTensorPtr BincountExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                                 const std::optional<BaseTensorPtr> &weight_tensor,
-                                                 const Int64ImmPtr &min_length) {
+tensor::TensorPtr BincountExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                             const std::optional<TensorPtr> &weight_tensor,
+                                             const Int64ImmPtr &min_length) {
   auto output_shape = GetValue<int64_t>(min_length);
 
   // Check if null tensor

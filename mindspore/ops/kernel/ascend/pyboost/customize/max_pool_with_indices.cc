@@ -25,10 +25,10 @@ namespace kernel {
 namespace pyboost {
 namespace {
 void MaxPoolWithIndicesAscendCall(const std::shared_ptr<OpRunner> &op, const device::DeviceContext *device_context,
-                                  const BaseTensorPtr &x_tensor, const ValueTuplePtr &kernel_size,
+                                  const TensorPtr &x_tensor, const ValueTuplePtr &kernel_size,
                                   const std::optional<ValueTuplePtr> &strides, const ValueTuplePtr &pads,
                                   const ValueTuplePtr &dilation, const BoolImmPtr &ceil_mode,
-                                  const std::vector<tensor::BaseTensorPtr> &outputs) {
+                                  const std::vector<tensor::TensorPtr> &outputs) {
   std::vector<int64_t> strides_array;
   if (strides.has_value()) {
     strides_array = ConvertValueTupleToVector<int64_t>(strides.value());
@@ -42,11 +42,11 @@ void MaxPoolWithIndicesAscendCall(const std::shared_ptr<OpRunner> &op, const dev
 }
 }  // namespace
 
-tensor::BaseTensorPtr MaxPoolWithIndicesAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                        const BaseTensorPtr &x_tensor, const ValueTuplePtr &kernel_size,
-                                                        const std::optional<ValueTuplePtr> &strides,
-                                                        const ValueTuplePtr &pads, const ValueTuplePtr &dilation,
-                                                        const BoolImmPtr &ceil_mode, const Int64ImmPtr &argmax_type) {
+tensor::TensorPtr MaxPoolWithIndicesAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &x_tensor,
+                                                    const ValueTuplePtr &kernel_size,
+                                                    const std::optional<ValueTuplePtr> &strides,
+                                                    const ValueTuplePtr &pads, const ValueTuplePtr &dilation,
+                                                    const BoolImmPtr &ceil_mode, const Int64ImmPtr &argmax_type) {
   OpRunner::InferOpOutput(op, x_tensor, kernel_size, strides, pads, dilation, ceil_mode, argmax_type);
   // Create device address for input/output tensors
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), x_tensor);

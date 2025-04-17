@@ -223,7 +223,7 @@ int32_t AvgPool2DFuncImpl::CheckValidation(const PrimitivePtr &primitive,
 }
 
 ShapeArray AvgPool2DFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &input = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &input = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input);
   const auto &input_shape = input->shape();
   AvgPool2DCheckInputShape(primitive, input_shape, no_batch_rank_, batch_rank_);
@@ -263,7 +263,7 @@ ShapeArray AvgPool2DFuncImpl::InferShape(const PrimitivePtr &primitive, const Va
 }
 
 TypePtrList AvgPool2DFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &input = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &input = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input);
   auto input_type = input->Dtype();
   return {input_type};

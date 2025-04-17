@@ -80,7 +80,7 @@ int32_t LogSoftmaxExtFuncImpl::CheckValidation(const PrimitivePtr &primitive,
 
 TypePtrList LogSoftmaxExtFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
   auto prim_name = primitive->name();
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   auto dtype_ptr = input_values[kInputIndex2];
   if (dtype_ptr->isa<None>()) {
@@ -96,7 +96,7 @@ TypePtrList LogSoftmaxExtFuncImpl::InferType(const PrimitivePtr &primitive, cons
 }
 
 ShapeArray LogSoftmaxExtFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   auto dim = input_values[kInputIndex1];
   auto x_shape = x_tensor->shape();

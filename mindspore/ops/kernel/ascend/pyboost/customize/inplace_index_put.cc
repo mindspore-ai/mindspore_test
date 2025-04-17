@@ -29,12 +29,11 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-std::vector<BaseTensorPtr> InplaceIndexGetNewTensor(const std::shared_ptr<OpRunner> &op,
-                                                    const BaseTensorPtr &input_tensor,
-                                                    const std::vector<BaseTensorPtr> &tensors) {
+std::vector<TensorPtr> InplaceIndexGetNewTensor(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                                const std::vector<TensorPtr> &tensors) {
   auto device_context = op->device_context();
   const auto &device_name = device_context->device_context_key_.device_name_;
-  std::vector<BaseTensorPtr> result{};
+  std::vector<TensorPtr> result{};
   auto input_shape = input_tensor->shape();
   if (input_shape.size() == 0) {
     MS_EXCEPTION(ValueError) << "For 'InplaceIndexPut', too many indices for tensor of dimension "
@@ -98,15 +97,14 @@ std::vector<BaseTensorPtr> InplaceIndexGetNewTensor(const std::shared_ptr<OpRunn
 }
 }  // namespace
 
-tensor::BaseTensorPtr InplaceIndexPutAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                     const BaseTensorPtr &input_tensor,
-                                                     const ValueTuplePtr &indices_tensor_list,
-                                                     const BaseTensorPtr &values_tensor, const BoolImmPtr &accumulate) {
+tensor::TensorPtr InplaceIndexPutAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                                 const ValueTuplePtr &indices_tensor_list,
+                                                 const TensorPtr &values_tensor, const BoolImmPtr &accumulate) {
   MS_LOG(DEBUG) << "InplaceIndexPut Ascend start";
   op->set_outputs({input_tensor});
   const auto &input_shape = input_tensor->shape();
   const auto &values_shape = values_tensor->shape();
-  std::vector<BaseTensorPtr> indices_tensor_vector = ConvertValueTupleToVector<BaseTensorPtr>(indices_tensor_list);
+  std::vector<TensorPtr> indices_tensor_vector = ConvertValueTupleToVector<TensorPtr>(indices_tensor_list);
   auto input_numel =
     std::accumulate(input_shape.begin(), input_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
   auto values_numel =

@@ -20,14 +20,14 @@
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "runtime/device/device_address_utils.h"
-#include "ir/base_tensor.h"
+#include "ir/tensor.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr ScatterAddExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                   const BaseTensorPtr &input_tensor, const Int64ImmPtr &dim,
-                                                   const BaseTensorPtr &index_tensor, const BaseTensorPtr &src_tensor) {
+tensor::TensorPtr ScatterAddExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                               const Int64ImmPtr &dim, const TensorPtr &index_tensor,
+                                               const TensorPtr &src_tensor) {
   OpRunner::InferOpOutput(op, input_tensor, dim, index_tensor, src_tensor);
   const auto dim_imm = GetValue<int64_t>(dim);
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor, index_tensor, src_tensor);

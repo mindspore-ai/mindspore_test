@@ -92,11 +92,11 @@ BaseShapePtr BCEWithLogitsLossFuncImpl::InferShape(const PrimitivePtr &primitive
 
 ShapeArray BCEWithLogitsLossFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                  const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   auto x_shape_vector = x_tensor->shape();
 
-  const auto &target_tensor = input_values[kIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &target_tensor = input_values[kIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(target_tensor);
   auto target_shape_vector = target_tensor->shape();
   if (x_shape_vector != target_shape_vector) {
@@ -106,7 +106,7 @@ ShapeArray BCEWithLogitsLossFuncImpl::InferShape(const PrimitivePtr &primitive,
   }
 
   if (input_values[kInputIndex2] != mindspore::kNone) {
-    const auto &weight_tensor = input_values[kIndex2]->cast<tensor::BaseTensorPtr>();
+    const auto &weight_tensor = input_values[kIndex2]->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(weight_tensor);
     auto weight_shape_vector = weight_tensor->shape();
     if (!IsBroadcastable(x_shape_vector, weight_shape_vector)) {
@@ -116,7 +116,7 @@ ShapeArray BCEWithLogitsLossFuncImpl::InferShape(const PrimitivePtr &primitive,
   }
 
   if (input_values[kInputIndex3] != mindspore::kNone) {
-    const auto &pos_weight_tensor = input_values[kInputIndex3]->cast<tensor::BaseTensorPtr>();
+    const auto &pos_weight_tensor = input_values[kInputIndex3]->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(pos_weight_tensor);
     auto pos_weight_shape_vector = pos_weight_tensor->shape();
     if (!IsBroadcastable(x_shape_vector, pos_weight_shape_vector)) {
@@ -139,19 +139,19 @@ TypePtrList BCEWithLogitsLossFuncImpl::InferType(const PrimitivePtr &primitive,
                                                  const ValuePtrList &input_values) const {
   auto op_name = primitive->name();
   std::set<TypePtr> valid_types = {kFloat32, kFloat16, kBFloat16};
-  const auto &input_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &input_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   (void)CheckAndConvertUtils::CheckTypeValid("input", input_tensor->Dtype(), valid_types, op_name);
-  const auto &target_tensor = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &target_tensor = input_values[kInputIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(target_tensor);
   (void)CheckAndConvertUtils::CheckTypeValid("target", target_tensor->Dtype(), valid_types, op_name);
   if (input_values[kInputIndex2] != mindspore::kNone) {
-    const auto &weight_tensor = input_values[kInputIndex2]->cast<tensor::BaseTensorPtr>();
+    const auto &weight_tensor = input_values[kInputIndex2]->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(weight_tensor);
     (void)CheckAndConvertUtils::CheckTypeValid("weight", weight_tensor->Dtype(), valid_types, op_name);
   }
   if (input_values[kInputIndex3] != mindspore::kNone) {
-    const auto &pos_weight_tensor = input_values[kInputIndex3]->cast<tensor::BaseTensorPtr>();
+    const auto &pos_weight_tensor = input_values[kInputIndex3]->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(pos_weight_tensor);
     (void)CheckAndConvertUtils::CheckTypeValid("pos_weight", pos_weight_tensor->Dtype(), valid_types, op_name);
   }

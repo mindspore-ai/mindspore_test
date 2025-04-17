@@ -40,14 +40,14 @@ TypePtr SoftplusExtFuncImpl::InferType(const PrimitivePtr &primitive,
   return x_type;
 }
 TypePtrList SoftplusExtFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   const std::set<TypePtr> valid_types{kFloat16, kFloat32, kFloat64, kBFloat16};
   (void)CheckAndConvertUtils::CheckTypeValid("x", x_tensor->Dtype(), valid_types, primitive->name());
   return {x_tensor->Dtype()};
 }
 ShapeArray SoftplusExtFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   return {x_tensor->shape()};
 }

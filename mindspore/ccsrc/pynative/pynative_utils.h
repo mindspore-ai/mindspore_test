@@ -47,7 +47,7 @@ struct Common {
   static bool IsTensor(const ValuePtr &v, bool include_sequence = false);
   static bool IsControlFlowGraph(const FuncGraphPtr &func_graph);
   static ValuePtr FilterSensValues(const ValuePtr &value, bool dict_convert_to_tuple);
-  static tensor::BaseTensorPtr GetTensorFromParam(const AnfNodePtr &param_node);
+  static tensor::TensorPtr GetTensorFromParam(const AnfNodePtr &param_node);
   static TypeId GetTypeFromAbstract(const abstract::AbstractBasePtr &abs);
   static ShapeVector GetShapeFromAbstract(const abstract::AbstractBasePtr &abs);
   static std::pair<TypePtr, TypeId> GetTypeFromValue(const ValuePtr &v);
@@ -57,12 +57,12 @@ struct Common {
   static const std::shared_ptr<PyNativeExecutor> &GetPyNativeExecutor();
   static ValuePtr StubNodeToValue(const ValuePtr &val);
   static void StubNodeToValue(const FrontendOpRunInfoPtr &op_run_info);
-  static tensor::BaseTensorPtr StubNodeToTensor(const ValuePtr &value);
-  PYNATIVE_EXPORT static tensor::BaseTensorPtr ConvertStubNodeToTensor(const ValuePtr &v, bool need_contiguous,
-                                                                       bool requires_grad);
-  PYNATIVE_EXPORT static std::optional<tensor::BaseTensorPtr> ConvertStubNodeToTensor(const std::optional<ValuePtr> &v,
-                                                                                      bool need_contiguous,
-                                                                                      bool requires_grad);
+  static tensor::TensorPtr StubNodeToTensor(const ValuePtr &value);
+  PYNATIVE_EXPORT static tensor::TensorPtr ConvertStubNodeToTensor(const ValuePtr &v, bool need_contiguous,
+                                                                   bool requires_grad);
+  PYNATIVE_EXPORT static std::optional<tensor::TensorPtr> ConvertStubNodeToTensor(const std::optional<ValuePtr> &v,
+                                                                                  bool need_contiguous,
+                                                                                  bool requires_grad);
   static ValueTuplePtr ConvertStubNodeToValueTuple(const ValueListPtr &v, bool need_contiguous, bool requires_grad);
   static ValueTuplePtr ConvertStubNodeToValueTuple(const ValueTuplePtr &v, bool need_contiguous, bool requires_grad);
   static std::optional<ValueTuplePtr> ConvertStubNodeToValueTuple(const std::optional<ValueTuplePtr> &v,
@@ -79,7 +79,7 @@ struct Common {
   static inline bool IsConstant(InputType grad_type) { return grad_type == InputType::kConstant; }
   static void SetGraphInputAndWeightsInfo(const FrontendOpRunInfoPtr &op_run_info, const FuncGraphPtr &func_graph);
   static void FreeFuncGraphForwardNodes(const FuncGraphPtr &func_graph);
-  static tensor::BaseTensorPtr ConvertToContiguousTensor(const tensor::BaseTensorPtr &tensor, bool requires_grad);
+  static tensor::TensorPtr ConvertToContiguousTensor(const tensor::TensorPtr &tensor, bool requires_grad);
   static ValuePtr ConvertToContiguousValue(const ValuePtr &v, bool requires_grad);
   static ValuePtr CreateTensorByConstantValue(const ValuePtr &value);
 
@@ -94,8 +94,8 @@ struct Common {
         MS_LOG(DEBUG) << "The " << i << "'th item is nullptr!";
         continue;
       }
-      if (items[i]->template isa<tensor::BaseTensor>() && is_print_tensor_data) {
-        auto tensor = items[i]->template cast<tensor::BaseTensorPtr>();
+      if (items[i]->template isa<tensor::Tensor>() && is_print_tensor_data) {
+        auto tensor = items[i]->template cast<tensor::TensorPtr>();
         auto grad = std::make_shared<tensor::Tensor>(*tensor);
         grad->data_sync();
         buf << i << "th: "
@@ -159,9 +159,9 @@ struct DataConvert {
                          const TopCellInfoPtr &top_cell);
   static bool RunOpConvertConstInputToAttr(const FrontendOpRunInfoPtr &op_run_info, const ValuePtr &v,
                                            size_t input_index);
-  static void TransformValueNodeBaseTensorToTensor(const ValueNodePtr &value_node);
+  static void TransformValueNodeTensorToTensor(const ValueNodePtr &value_node);
   static ValuePtr ValueListToValue(const ValuePtrList &values, const abstract::AbstractBasePtr &abs);
-  static ValuePtrList TensorListToValueList(const tensor::BaseTensorPtrList &tensor_list);
+  static ValuePtrList TensorListToValueList(const tensor::TensorPtrList &tensor_list);
 };
 
 struct PyBoost {
@@ -209,13 +209,13 @@ struct PyBoost {
   }
   static void DataSyncForGraph(const kernel::pyboost::OpPtr &op);
   static void MarkPyBoostInputs(const OpGradInfoPtr &op_grad_info, const TopCellInfoPtr &top_cell);
-  static void BumpVersionAsync(const tensor::BaseTensorPtr &tensor);
-  static ValuePtr OutputToValue(const BaseTensorPtr &output) { return output; }
-  static ValuePtr MultiOutputToValue(const std::vector<BaseTensorPtr> &outputs) {
+  static void BumpVersionAsync(const tensor::TensorPtr &tensor);
+  static ValuePtr OutputToValue(const TensorPtr &output) { return output; }
+  static ValuePtr MultiOutputToValue(const std::vector<TensorPtr> &outputs) {
     std::vector<ValuePtr> output_values;
     output_values.reserve(outputs.size());
     (void)std::transform(outputs.begin(), outputs.end(), std::back_inserter(output_values),
-                         [](const BaseTensorPtr &value) -> ValuePtr { return value; });
+                         [](const TensorPtr &value) -> ValuePtr { return value; });
     return std::make_shared<ValueTuple>(output_values);
   }
   template <typename... Args>

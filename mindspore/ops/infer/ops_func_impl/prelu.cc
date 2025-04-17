@@ -63,9 +63,9 @@ TypePtr PReLUFuncImpl::InferType(const PrimitivePtr &primitive, const std::vecto
 
 TypePtrList PReLUFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
   auto prim_name = primitive->name();
-  const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
-  const auto &weight_tensor = input_values[kIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &weight_tensor = input_values[kIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(weight_tensor);
   auto weight_shape = weight_tensor->shape();
   auto weight_rank = weight_shape.size();
@@ -83,9 +83,9 @@ TypePtrList PReLUFuncImpl::InferType(const PrimitivePtr &primitive, const ValueP
 }
 
 ShapeArray PReLUFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
-  const auto &w_tensor = input_values[kIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &w_tensor = input_values[kIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(w_tensor);
   return {x_tensor->shape()};
 }

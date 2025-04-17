@@ -20,11 +20,11 @@
 namespace mindspore::ops {
 
 TensorStorageInfoPtrList UnsqueezeCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  if (!inputs[kInputIndex0]->isa<tensor::BaseTensor>() || !inputs[kInputIndex1]->isa<IntegerImm>()) {
+  if (!inputs[kInputIndex0]->isa<tensor::Tensor>() || !inputs[kInputIndex1]->isa<IntegerImm>()) {
     return {};
   }
 
-  auto input_tensor = inputs[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  auto input_tensor = inputs[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   auto old_tensor_info = GetOldTensorInfo(input_tensor);
   auto old_shape = old_tensor_info->old_shape;

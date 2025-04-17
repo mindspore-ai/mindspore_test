@@ -217,8 +217,8 @@ def _get_return_type_str(op_proto):
     """
     returns_type = []
     type_convert_to_base = {
-        'std::vector<mindspore::tensor::TensorPtr>': 'std::vector<mindspore::tensor::BaseTensorPtr>',
-        'mindspore::tensor::TensorPtr': 'mindspore::tensor::BaseTensorPtr'
+        'std::vector<mindspore::tensor::TensorPtr>': 'std::vector<mindspore::tensor::TensorPtr>',
+        'mindspore::tensor::TensorPtr': 'mindspore::tensor::TensorPtr'
     }
     for return_obj in op_proto.op_returns:
         temp_return = get_return_type(return_obj.arg_dtype)

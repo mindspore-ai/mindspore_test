@@ -29,8 +29,7 @@ namespace kernel {
 namespace pyboost {
 void GmmV2BackwardFusionAscendCustomize(const std::shared_ptr<OpRunner> &op, const ValueTuplePtr &grad_tenor_list,
                                         const ValueTuplePtr &weight_tensor_list,
-                                        const std::optional<BaseTensorPtr> &group_list,
-                                        const Int64ImmPtr &group_list_type);
+                                        const std::optional<TensorPtr> &group_list, const Int64ImmPtr &group_list_type);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

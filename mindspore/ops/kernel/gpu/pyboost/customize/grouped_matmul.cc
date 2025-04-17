@@ -30,7 +30,7 @@ void GroupedMatmulGPUCustomize(const std::shared_ptr<OpRunner> &op, const ValueT
                                const std::optional<ValueTuplePtr> &offset_tensor_list,
                                const std::optional<ValueTuplePtr> &antiquant_scale_tensor_list,
                                const std::optional<ValueTuplePtr> &antiquant_offset_tensor_list,
-                               const std::optional<BaseTensorPtr> &group_list, const Int64ImmPtr &split_item,
+                               const std::optional<TensorPtr> &group_list, const Int64ImmPtr &split_item,
                                const Int64ImmPtr &group_type, const mindspore::BoolImmPtr &transpose_a,
                                const mindspore::BoolImmPtr &transpose_b) {
   MS_LOG(DEBUG) << "Call start";

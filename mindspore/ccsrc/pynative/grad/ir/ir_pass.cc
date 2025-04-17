@@ -68,8 +68,8 @@ void ChangeInputToAttr(const PrimitivePtr &prim, const CNodePtr &cnode, const Va
         MS_LOG(EXCEPTION) << "Index " << i << " is larger than input names size [" << input_names_vec.size() << "]";
       }
       const auto &value = value_node->value();
-      if (value->isa<tensor::BaseTensor>()) {
-        auto tensor = value->cast<tensor::BaseTensorPtr>();
+      if (value->isa<tensor::Tensor>()) {
+        auto tensor = value->cast<tensor::TensorPtr>();
         if (tensor->data().const_data() == nullptr && !tensor->has_user_data(kTensorValueIsEmpty)) {
           return;
         }
@@ -518,7 +518,7 @@ void IrPassForward::ConvertMakeTupleInputToDynamicInput(const AnfNodePtr &node, 
 AnfNodePtr IrPassForward::PassBackwardHook(const ValuePtr &value, const AnfNodePtr &grad_node) {
   MS_EXCEPTION_IF_NULL(value);
   MS_EXCEPTION_IF_NULL(grad_node);
-  auto tensor = value->cast<tensor::BaseTensorPtr>();
+  auto tensor = value->cast<tensor::TensorPtr>();
   if (tensor == nullptr) {
     MS_LOG(DEBUG) << "Hook just work on tensor, not support value " << value->ToString();
     return grad_node;

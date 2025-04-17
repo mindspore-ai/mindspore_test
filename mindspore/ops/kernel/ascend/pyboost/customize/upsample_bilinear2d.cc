@@ -25,12 +25,11 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-tensor::BaseTensorPtr UpsampleBilinear2DAscendCall(const std::shared_ptr<OpRunner> &op,
-                                                   const device::DeviceContext *device_context,
-                                                   const BaseTensorPtr &input_tensor,
-                                                   const std::vector<int64_t> &output_size,
-                                                   const std::vector<pyfloat> &scales, const bool &align_corners,
-                                                   const std::vector<tensor::BaseTensorPtr> &outputs) {
+tensor::TensorPtr UpsampleBilinear2DAscendCall(const std::shared_ptr<OpRunner> &op,
+                                               const device::DeviceContext *device_context,
+                                               const TensorPtr &input_tensor, const std::vector<int64_t> &output_size,
+                                               const std::vector<pyfloat> &scales, const bool &align_corners,
+                                               const std::vector<tensor::TensorPtr> &outputs) {
   MS_LOG(DEBUG) << "Call start";
   double scales_h = scales[0];
   double scales_w = scales[1];
@@ -41,11 +40,10 @@ tensor::BaseTensorPtr UpsampleBilinear2DAscendCall(const std::shared_ptr<OpRunne
 }
 }  // namespace
 
-tensor::BaseTensorPtr UpsampleBilinear2DAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                        const BaseTensorPtr &input_tensor,
-                                                        const std::optional<ValueTuplePtr> &output_size,
-                                                        const std::optional<ValueTuplePtr> &scale_factors,
-                                                        const BoolImmPtr &align_corners) {
+tensor::TensorPtr UpsampleBilinear2DAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                                    const std::optional<ValueTuplePtr> &output_size,
+                                                    const std::optional<ValueTuplePtr> &scale_factors,
+                                                    const BoolImmPtr &align_corners) {
   MS_LOG(INFO) << "UpsampleBilinear2DAscendCustomize start";
 
   OpRunner::InferOpOutput(op, input_tensor, output_size, scale_factors, align_corners);

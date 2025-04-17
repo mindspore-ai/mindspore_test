@@ -20,8 +20,8 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr ReshapeGPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                          const ValueTuplePtr &shape) {
+tensor::TensorPtr ReshapeGPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                      const ValueTuplePtr &shape) {
   MS_LOG(DEBUG) << "Call start";
   return ReshapeCustomize(op, input_tensor, shape, op->device_context()->device_context_key_.device_name_);
 }

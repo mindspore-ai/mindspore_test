@@ -22,10 +22,9 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr RandIntAscendCustomize(const std::shared_ptr<OpRunner> &op, const Int64ImmPtr low,
-                                             const Int64ImmPtr high, const ValueTuplePtr &shape,
-                                             const BaseTensorPtr &seed, const BaseTensorPtr &offset,
-                                             const std::optional<Int64ImmPtr> &dtype) {
+tensor::TensorPtr RandIntAscendCustomize(const std::shared_ptr<OpRunner> &op, const Int64ImmPtr low,
+                                         const Int64ImmPtr high, const ValueTuplePtr &shape, const TensorPtr &seed,
+                                         const TensorPtr &offset, const std::optional<Int64ImmPtr> &dtype) {
   OpRunner::InferOpOutput(op, low, high, shape, seed, offset, dtype);
   auto [seed_imm, offset_imm] = UpdateGeneratorState(seed, offset);
   auto low_imm = GetValueWithCheck<int64_t>(low);

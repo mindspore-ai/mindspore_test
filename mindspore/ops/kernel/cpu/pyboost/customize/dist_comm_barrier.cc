@@ -36,7 +36,7 @@ void DistCommBarrierCPUCustomize(const std::shared_ptr<OpRunner> &op, const Stri
   MS_LOG(DEBUG) << "Call start";
   const auto &group_str = GetValue<std::string>(group);
   auto ranks = MsCollectiveCommLib::GetInstance().GetGroupRanks(group_str);
-  BaseTensorPtr input_tensor = std::make_shared<tensor::Tensor>(ShapeVector(ranks));
+  TensorPtr input_tensor = std::make_shared<tensor::Tensor>(ShapeVector(ranks));
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor);
   op->set_outputs({input_tensor});
 

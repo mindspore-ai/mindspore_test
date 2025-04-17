@@ -25,12 +25,12 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-std::vector<BaseTensorPtr> ConvertEmptyTensor(const ValueTuplePtr &tuple) {
+std::vector<TensorPtr> ConvertEmptyTensor(const ValueTuplePtr &tuple) {
   // It is temporarily used: when the shape is 9 zeros, similar to ":" in x[(1,2,..), :, (..),].
-  std::vector<BaseTensorPtr> result;
+  std::vector<TensorPtr> result;
   const auto &values = tuple->value();
   for (const auto &value : values) {
-    auto tensor = GetValue<BaseTensorPtr>(value);
+    auto tensor = GetValue<TensorPtr>(value);
     auto shape = tensor->shape();
     constexpr auto kSize9 = 9;
     if (shape.size() == kSize9 && std::all_of(shape.begin(), shape.end(), [](int i) { return i == 0; })) {
@@ -45,13 +45,13 @@ std::vector<BaseTensorPtr> ConvertEmptyTensor(const ValueTuplePtr &tuple) {
 }
 }  // namespace
 
-tensor::BaseTensorPtr InnerIndexAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                                const ValueTuplePtr &indices_tensor_list) {
+tensor::TensorPtr InnerIndexAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                            const ValueTuplePtr &indices_tensor_list) {
   MS_LOG(DEBUG) << "InnerIndex Ascend start";
   OpRunner::InferOpOutput(op, input_tensor, indices_tensor_list);
 
   // Process shape of 9 zeros
-  std::vector<BaseTensorPtr> indices_tensor_vector = ConvertEmptyTensor(indices_tensor_list);
+  std::vector<TensorPtr> indices_tensor_vector = ConvertEmptyTensor(indices_tensor_list);
 
   // Set address
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor, indices_tensor_vector);

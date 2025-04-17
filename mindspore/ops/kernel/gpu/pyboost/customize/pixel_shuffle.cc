@@ -20,8 +20,8 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr PixelShuffleGPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input,
-                                               const Int64ImmPtr &upscale_factor) {
+tensor::TensorPtr PixelShuffleGPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input,
+                                           const Int64ImmPtr &upscale_factor) {
   PixelShuffleCustomize(op, input, upscale_factor);
   return op->output(0);
 }

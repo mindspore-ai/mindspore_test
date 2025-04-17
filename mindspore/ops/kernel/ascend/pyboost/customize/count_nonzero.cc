@@ -26,9 +26,8 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 
-tensor::BaseTensorPtr CountNonZeroAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                  const BaseTensorPtr &input_tensor,
-                                                  const std::optional<ValueTuplePtr> &dims) {
+tensor::TensorPtr CountNonZeroAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                              const std::optional<ValueTuplePtr> &dims) {
   ScalarPtr other;
   TypeId other_type = input_tensor->data_type();
   if (other_type == kNumberTypeComplex || other_type == kNumberTypeComplex64 || other_type == kNumberTypeComplex128) {

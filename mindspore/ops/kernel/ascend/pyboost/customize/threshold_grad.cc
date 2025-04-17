@@ -24,8 +24,8 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr ThresholdGradAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &dy_tensor,
-                                                   const BaseTensorPtr &y_tensor, const ScalarPtr &threshold) {
+tensor::TensorPtr ThresholdGradAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &dy_tensor,
+                                               const TensorPtr &y_tensor, const ScalarPtr &threshold) {
   OpRunner::InferOpOutput(op, dy_tensor, y_tensor, threshold);
   // No need to convert input
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), dy_tensor, y_tensor);

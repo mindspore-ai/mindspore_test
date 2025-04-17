@@ -24,12 +24,11 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-tensor::BaseTensorPtr UpsampleLinear1DAscendCall(const std::shared_ptr<OpRunner> &op,
-                                                 const device::DeviceContext *device_context,
-                                                 const BaseTensorPtr &input_tensor,
-                                                 const std::vector<int64_t> &output_size,
-                                                 const std::vector<pyfloat> &scales, const bool &align_corners,
-                                                 const std::vector<tensor::BaseTensorPtr> &outputs) {
+tensor::TensorPtr UpsampleLinear1DAscendCall(const std::shared_ptr<OpRunner> &op,
+                                             const device::DeviceContext *device_context, const TensorPtr &input_tensor,
+                                             const std::vector<int64_t> &output_size,
+                                             const std::vector<pyfloat> &scales, const bool &align_corners,
+                                             const std::vector<tensor::TensorPtr> &outputs) {
   MS_LOG(DEBUG) << "Call start";
   // Python float obj would be parsed by float32 number, which should be parsed
   // to double number according to PyTorch. For example, python scale is 2.6,
@@ -46,11 +45,10 @@ tensor::BaseTensorPtr UpsampleLinear1DAscendCall(const std::shared_ptr<OpRunner>
 }
 }  // namespace
 
-tensor::BaseTensorPtr UpsampleLinear1DAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                      const BaseTensorPtr &input_tensor,
-                                                      const std::optional<ValueTuplePtr> &output_size,
-                                                      const std::optional<ValueTuplePtr> &scale_factors,
-                                                      const BoolImmPtr &align_corners) {
+tensor::TensorPtr UpsampleLinear1DAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                                  const std::optional<ValueTuplePtr> &output_size,
+                                                  const std::optional<ValueTuplePtr> &scale_factors,
+                                                  const BoolImmPtr &align_corners) {
   MS_LOG(INFO) << "UpsampleLinear1DAscendCustomize start";
 
   OpRunner::InferOpOutput(op, input_tensor, output_size, scale_factors, align_corners);

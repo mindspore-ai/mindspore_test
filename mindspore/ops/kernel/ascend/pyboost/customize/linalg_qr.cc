@@ -26,8 +26,7 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void LinalgQrAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &A_tensor,
-                             const Int64ImmPtr &mode) {
+void LinalgQrAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &A_tensor, const Int64ImmPtr &mode) {
   OpRunner::InferOpOutput(op, A_tensor, mode);
   // Convert ValuePtr to c++ scalar
   int64_t mode_imm = GetValue<int64_t>(mode);

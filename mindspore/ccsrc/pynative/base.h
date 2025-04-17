@@ -59,7 +59,7 @@ struct BaseOpRunInfo {
   AbstractBasePtr abstract;
   std::vector<size_t> output_indexes;
   std::vector<int64_t> dyn_input_sizes;
-  std::vector<tensor::BaseTensorPtr> output_tensors;
+  std::vector<tensor::TensorPtr> output_tensors;
 };
 
 struct AsyncStatus {
@@ -102,7 +102,7 @@ struct OpGradInfo {
 
   std::vector<ValuePtr> input_value{};
   ValuePtr out_value{nullptr};
-  tensor::BaseTensorPtr clone_value{nullptr};
+  tensor::TensorPtr clone_value{nullptr};
   std::vector<InputType> input_value_grad_type{};
   ValueSimpleInfoPtr output_value_simple_info{nullptr};
 };

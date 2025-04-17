@@ -21,9 +21,9 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr> CumMaxAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                                               const BaseTensorPtr &input_tensor,
-                                                                               const Int64ImmPtr &axis) {
+std::tuple<tensor::TensorPtr, tensor::TensorPtr> CumMaxAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                                                       const TensorPtr &input_tensor,
+                                                                       const Int64ImmPtr &axis) {
   MS_LOG(DEBUG) << op->primitive()->name() << " call start";
   OpRunner::InferOpOutput(op, input_tensor, axis);
   const auto &shape = input_tensor->shape();

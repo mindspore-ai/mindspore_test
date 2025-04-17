@@ -50,7 +50,7 @@ TEST_F(PyBoostConverterTest, ToTensorTest1) {
 TEST_F(PyBoostConverterTest, ToTensorTest2) {
   Converter converter(&ops::gSin);
 
-  auto tensor = std::make_shared<tensor::BaseTensor>(1);
+  auto tensor = std::make_shared<tensor::Tensor>(1);
   auto stub_tensor = NewPyStubTensor(tensor);
 
   py::list list;

@@ -381,14 +381,14 @@ TensorPtr TensorPybind::MakePersistentDataTensorOfNumpy(const py::array &input, 
   return std::make_shared<Tensor>(dtype, shape, tensor_data);
 }
 
-void TensorPybind::SetUserData(const BaseTensorPtr &tensor, const py::str &key, const py::object &value) {
+void TensorPybind::SetUserData(const TensorPtr &tensor, const py::str &key, const py::object &value) {
   const std::string name = key.cast<std::string>();
   const auto &primitive_data = std::make_shared<TensorPyUserData>();
   primitive_data->obj = value;
-  const_cast<BaseTensorPtr &>(tensor)->set_user_data<TensorPyUserData>(name, primitive_data);
+  const_cast<TensorPtr &>(tensor)->set_user_data<TensorPyUserData>(name, primitive_data);
 }
 
-py::object TensorPybind::GetUserData(const BaseTensorPtr &tensor, const py::str &key) {
+py::object TensorPybind::GetUserData(const TensorPtr &tensor, const py::str &key) {
   const std::string name = key.cast<std::string>();
   const auto primitive_data = tensor->user_data<TensorPyUserData>(name);
   if (primitive_data == nullptr) {
@@ -619,7 +619,7 @@ py::object RecursiveToList(void *data, const std::vector<int64_t> &shape, const 
   return res_list;
 }
 
-py::object TensorPybind::ToList(const BaseTensorPtr &tensor) {
+py::object TensorPybind::ToList(const TensorPtr &tensor) {
   tensor->data_sync();
   auto tensor_shape = tensor->shape();
   auto data = tensor->data_c();
@@ -629,7 +629,7 @@ py::object TensorPybind::ToList(const BaseTensorPtr &tensor) {
   return RecursiveToList(data, tensor_shape, data_type, &index, 0);
 }
 
-py::object TensorPybind::Item(const BaseTensorPtr &tensor) {
+py::object TensorPybind::Item(const TensorPtr &tensor) {
   auto tensor_element_count = tensor->data().size();
   if (tensor_element_count != 1) {
     MS_EXCEPTION(ValueError) << "The tensor should have only one element, but got " << tensor_element_count << ","
@@ -734,7 +734,7 @@ py::array TensorPybind::AsNumpy(const Tensor &tensor) {
   return py::array(np_dtype, info.shape, info.strides, info.ptr, owner);
 }
 
-void TensorPybind::Offload(const BaseTensorPtr &tensor, bool release) {
+void TensorPybind::Offload(const TensorPtr &tensor, bool release) {
   py::gil_scoped_release gil_release;
   if (release) {
     const auto &device_sync = tensor->device_address();
@@ -761,7 +761,7 @@ void TensorPybind::Offload(const BaseTensorPtr &tensor, bool release) {
   } else {
     tensor->data_sync();
     // Release device address of graph output tensor.
-    const_cast<BaseTensorPtr &>(tensor)->set_device_address(nullptr);
+    const_cast<TensorPtr &>(tensor)->set_device_address(nullptr);
   }
 }
 
@@ -792,7 +792,7 @@ void TensorPybind::Load(const Tensor &tensor) {
   device_address->SyncHostToDevice(device_address->GetSize(), tensor.data_c());
 }
 
-void TensorPybind::SetDeviceAddress(const BaseTensorPtr &tensor, uintptr_t addr, const ShapeVector &shape,
+void TensorPybind::SetDeviceAddress(const TensorPtr &tensor, uintptr_t addr, const ShapeVector &shape,
                                     const TypePtr type_ptr) {
   if (MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET) != kAscendDevice) {
     MS_LOG(EXCEPTION) << "set_device_address now only support Ascend backend!";
@@ -823,14 +823,14 @@ void TensorPybind::SetDeviceAddress(const BaseTensorPtr &tensor, uintptr_t addr,
   if (device_sync_ == nullptr) {
     auto device_address =
       std::make_shared<device::MbufDeviceAddress>(data, data_size, shape, data_type, kAscendDevice, device_id);
-    const_cast<BaseTensorPtr &>(tensor)->set_device_address(device_address);
+    const_cast<TensorPtr &>(tensor)->set_device_address(device_address);
   } else {
     auto device_address = std::dynamic_pointer_cast<device::MbufDeviceAddress>(device_sync_);
     device_address->SetData(data);
   }
 }
 
-uintptr_t TensorPybind::DataPtr(const BaseTensorPtr &tensor) {
+uintptr_t TensorPybind::DataPtr(const TensorPtr &tensor) {
   runtime::Pipeline::Get().WaitForward();
   const auto device_address = tensor->device_address();
   if (device_address == nullptr) {
@@ -1029,7 +1029,7 @@ TensorPyPtr TensorPyImpl::ConvertBytesToTensor(const py::bytes &bytes_obj, const
 }
 
 void TensorPyImpl::SetOffload(const TensorPyPtr &tensorpy, bool release) {
-  auto tensor = tensorpy->GetBaseTensor();
+  auto tensor = tensorpy->GetTensor();
   TensorPybind::Offload(tensor, release);
 }
 
@@ -1067,32 +1067,32 @@ TensorPyPtr TensorPyImpl::MoveTo(const TensorPyPtr &tensorpy, const std::string 
 
 void TensorPyImpl::SetDeviceAddress(const TensorPyPtr &tensorpy, uintptr_t addr, const ShapeVector &shape,
                                     const TypePtr type_ptr) {
-  auto tensor = tensorpy->GetBaseTensor();
+  auto tensor = tensorpy->GetTensor();
   TensorPybind::SetDeviceAddress(tensor, addr, shape, type_ptr);
 }
 
 void TensorPyImpl::SetUserData(const TensorPyPtr &tensorpy, const py::str &key, const py::object &value) {
-  auto tensor = tensorpy->GetBaseTensor();
+  auto tensor = tensorpy->GetTensor();
   TensorPybind::SetUserData(tensor, key, value);
 }
 
 const py::object TensorPyImpl::GetUserData(const TensorPyPtr &tensorpy, const py::str &key) {
-  auto tensor = tensorpy->GetBaseTensor();
+  auto tensor = tensorpy->GetTensor();
   return TensorPybind::GetUserData(tensor, key);
 }
 
 py::object TensorPyImpl::ToList(const TensorPyPtr &tensorpy) {
-  auto tensor = tensorpy->GetBaseTensor();
+  auto tensor = tensorpy->GetTensor();
   return TensorPybind::ToList(tensor);
 }
 
 py::object TensorPyImpl::Item(const TensorPyPtr &tensorpy) {
-  auto tensor = tensorpy->GetBaseTensor();
+  auto tensor = tensorpy->GetTensor();
   return TensorPybind::Item(tensor);
 }
 
 uint64_t TensorPyImpl::RegisterTensorBackwardHook(const TensorPyPtr &tensorpy, const py::function &hook) {
-  auto tensor = tensorpy->GetBaseTensor();
+  auto tensor = tensorpy->GetTensor();
   return pynative::HookAdapter::RegisterTensorBackwardHook(tensor, hook);
 }
 
@@ -1101,12 +1101,12 @@ void TensorPyImpl::RemoveTensorBackwardHook(uint64_t handle_id) {
 }
 
 py::list TensorPyImpl::GetHooks(const TensorPyPtr &tensorpy) {
-  auto tensor = tensorpy->GetBaseTensor();
+  auto tensor = tensorpy->GetTensor();
   return pynative::HookAdapter::GetHooks(tensor);
 }
 
 uintptr_t TensorPyImpl::DataPtr(const TensorPyPtr &tensorpy) {
-  auto tensor = tensorpy->GetBaseTensor();
+  auto tensor = tensorpy->GetTensor();
   return TensorPybind::DataPtr(tensor);
 }
 ShapeVector TensorPyImpl::GetShapeFromTuple(const py::tuple &tuple) {

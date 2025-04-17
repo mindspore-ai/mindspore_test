@@ -2171,7 +2171,7 @@ REG_BPROP_BUILDER("LayerNormExt").FreeUselessValues_IO({i4}, {i0}).SetBody(BODYF
   bool is_shape_mutable = true;
   if (normalized_shape_ptr != nullptr &&
       (normalized_shape_ptr->isa<ValueSequence>() || normalized_shape_ptr->isa<Scalar>() ||
-       normalized_shape_ptr->isa<tensor::BaseTensor>())) {
+       normalized_shape_ptr->isa<tensor::Tensor>())) {
     is_shape_mutable = false;
   }
   std::vector<int64_t> output_mask_vec = {x->need_compute_grad_out(), gamma->need_compute_grad_out(),

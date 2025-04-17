@@ -29,7 +29,7 @@
 #include <string>
 #include "availability/silent_check/silent_check.h"
 #include "include/common/utils/utils.h"
-#include "ir/base_tensor.h"
+#include "ir/tensor.h"
 #include "ir/primal_attr.h"
 #include "ir/scalar.h"
 #include "ir/value.h"
@@ -201,7 +201,7 @@ bool IsAsdEnable() {
   return is_npu_asd_enable;
 }
 
-bool IsCheckTypeSupported(const BaseTensorPtr &input_tensor) {
+bool IsCheckTypeSupported(const TensorPtr &input_tensor) {
   auto data_type = input_tensor->data_type();
   return (data_type == kNumberTypeBFloat16) || (data_type == kNumberTypeFloat32) || (data_type == kNumberTypeFloat16);
 }
@@ -220,7 +220,7 @@ CheckObject::CheckObject() {
   }
 }
 
-void CheckObject::DoSilentCheck(const BaseTensorPtr &input_grad, const DynamicCheckStatePtr &state) {
+void CheckObject::DoSilentCheck(const TensorPtr &input_grad, const DynamicCheckStatePtr &state) {
   if (HasApiSilentCheckV3()) {
     DoSilentCheckV3(input_grad, state);
   } else {
@@ -228,12 +228,12 @@ void CheckObject::DoSilentCheck(const BaseTensorPtr &input_grad, const DynamicCh
   }
 }
 
-void CheckObject::DoSilentCheckV2(const BaseTensorPtr &input_grad, const DynamicCheckStatePtr &state) {
+void CheckObject::DoSilentCheckV2(const TensorPtr &input_grad, const DynamicCheckStatePtr &state) {
   LaunchNorm(input_grad);
   LaunchSilentCheckV2(input_grad, state);
 }
 
-void CheckObject::DoSilentCheckV3(const BaseTensorPtr &input_grad, const DynamicCheckStatePtr &state) {
+void CheckObject::DoSilentCheckV3(const TensorPtr &input_grad, const DynamicCheckStatePtr &state) {
   LaunchNorm(input_grad, false);
   LaunchSquare();
   if (state->is_first_call) {
@@ -243,7 +243,7 @@ void CheckObject::DoSilentCheckV3(const BaseTensorPtr &input_grad, const Dynamic
   LaunchSilentCheckV3(input_grad, state);
 }
 
-void CheckObject::LaunchNorm(const BaseTensorPtr &input_grad, bool is_l2_norm) {
+void CheckObject::LaunchNorm(const TensorPtr &input_grad, bool is_l2_norm) {
   auto &op = norm_op_;
   MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Call " << op->primitive()->name() << " start";
 
@@ -274,7 +274,7 @@ void CheckObject::LaunchNorm(const BaseTensorPtr &input_grad, bool is_l2_norm) {
   MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Call " << op->primitive()->name() << " end";
 }
 
-void CheckObject::LaunchSilentCheckV2(const BaseTensorPtr &input_grad, const DynamicCheckStatePtr &state) {
+void CheckObject::LaunchSilentCheckV2(const TensorPtr &input_grad, const DynamicCheckStatePtr &state) {
   auto &op = silent_check_op_;
   MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Call " << op->primitive()->name() << " start";
 
@@ -314,7 +314,7 @@ void CheckObject::LaunchSilentCheckV2(const BaseTensorPtr &input_grad, const Dyn
   MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Call " << op->primitive()->name() << " end";
 }
 
-void CheckObject::LaunchSilentCheckV3(const BaseTensorPtr &input_grad, const DynamicCheckStatePtr &state) {
+void CheckObject::LaunchSilentCheckV3(const TensorPtr &input_grad, const DynamicCheckStatePtr &state) {
   auto &op = silent_check_v3_op_;
   MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Call " << op->primitive()->name() << " start";
 
@@ -339,14 +339,13 @@ void CheckObject::LaunchSilentCheckV3(const BaseTensorPtr &input_grad, const Dyn
   auto npu_asd_detect = GetValue<int64_t>(npu_asd_detect_ptr);
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), val, max, avg, input_grad, step);
-  PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(),
-                                 std::vector<BaseTensorPtr>{op->output(kIndex3)});
+  PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), std::vector<TensorPtr>{op->output(kIndex3)});
 
   auto device_context = op->device_context();
   // Malloc for input tensors
   PyBoostUtils::MallocOpInputs(op->device_context(), val, max, avg, input_grad, step);
   // Malloc for output tensors
-  PyBoostUtils::MallocOpOutputs(op->device_context(), std::vector<BaseTensorPtr>{op->output(kIndex3)});
+  PyBoostUtils::MallocOpOutputs(op->device_context(), std::vector<TensorPtr>{op->output(kIndex3)});
   LAUNCH_ACLNN(aclnnSilentCheckV2, device_context, op->stream_id(), val, max, avg, input_grad, step,
                input_grad->shape_c(), input_grad->stride(), ShapeVector({input_grad->storage_offset()}), c_thresh_l1,
                c_thresh_l2, beta, npu_asd_detect, op->output(kIndex3));
@@ -401,7 +400,7 @@ void CheckObject::LaunchInplaceCopy(const DynamicCheckStatePtr &state) {
 }
 
 void DynamicSilentChecker::DoSilentCheck(const std::string &op_name, const std::string &comm_group,
-                                         const BaseTensorPtr &input_grad) {
+                                         const TensorPtr &input_grad) {
   static bool is_npu_asd_enable = IsAsdEnable();
   if (!is_npu_asd_enable) {
     return;
@@ -425,7 +424,7 @@ void DynamicSilentChecker::DoSilentCheck(const std::string &op_name, const std::
   check_obj->DoSilentCheck(input_grad, states_[state_key]);
 }
 
-DynamicCheckStatePtr DynamicSilentChecker::CreateDynamicCheckState(const BaseTensorPtr &input_grad) {
+DynamicCheckStatePtr DynamicSilentChecker::CreateDynamicCheckState(const TensorPtr &input_grad) {
   auto state = std::make_shared<DynamicCheckState>();
   state->step = std::make_shared<tensor::Tensor>(kNumberTypeInt64, ShapeVector{1});
   if (HasApiSilentCheckV3()) {

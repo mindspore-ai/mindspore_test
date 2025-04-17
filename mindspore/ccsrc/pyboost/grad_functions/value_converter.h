@@ -40,7 +40,7 @@ class PYBOOST_API ValueConverter {
   static FP32ImmPtr ToFloat(const ValuePtr &input);
   static BoolImmPtr ToBool(const ValuePtr &input);
   static ScalarPtr ToScalar(const ValuePtr &input);
-  static tensor::BaseTensorPtr ToTensor(const ValuePtr &input);
+  static tensor::TensorPtr ToTensor(const ValuePtr &input);
   static StringImmPtr ToString(const ValuePtr &input);
   static TypePtr ToDtype(const ValuePtr &input);
   static ValueTuplePtr ToValueTuple(const ValuePtr &input);
@@ -58,13 +58,12 @@ class PYBOOST_API ValueConverter {
   static std::optional<FP32ImmPtr> ToFloatOptional(const ValuePtr &input);
   static std::optional<BoolImmPtr> ToBoolOptional(const ValuePtr &input);
   static std::optional<ScalarPtr> ToScalarOptional(const ValuePtr &input);
-  static std::optional<tensor::BaseTensorPtr> ToTensorOptional(const ValuePtr &input);
+  static std::optional<tensor::TensorPtr> ToTensorOptional(const ValuePtr &input);
   static std::optional<StringImmPtr> ToStringOptional(const ValuePtr &input);
   static std::optional<TypePtr> ToDtypeOptional(const ValuePtr &input);
   static std::optional<ValueTuplePtr> ToValueTupleOptional(const ValuePtr &input);
 
-  static tensor::BaseTensorPtr ContiguousTensorValue(const std::string &device_target,
-                                                     const tensor::BaseTensorPtr &tensor);
+  static tensor::TensorPtr ContiguousTensorValue(const std::string &device_target, const tensor::TensorPtr &tensor);
   static ValueTuplePtr ContiguousTensorValue(const std::string &device_target, const ValueTuplePtr &tuple);
   template <typename T>
   static std::optional<T> ContiguousTensorValue(const std::string &device_target, const std::optional<T> &val) {

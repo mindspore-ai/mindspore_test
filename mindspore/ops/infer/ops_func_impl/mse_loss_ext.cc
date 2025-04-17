@@ -62,9 +62,9 @@ ShapeArray MSELossExtFuncImpl::InferShape(const PrimitivePtr &primitive, const V
   MS_EXCEPTION_IF_NULL(reduction_opt);
   const int64_t &reduction = reduction_opt->value();
 
-  const auto &input_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &input_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
-  const auto &target_tensor = input_values[kIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &target_tensor = input_values[kIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(target_tensor);
 
   const auto &broadcast_shape =
@@ -78,9 +78,9 @@ ShapeArray MSELossExtFuncImpl::InferShape(const PrimitivePtr &primitive, const V
 }
 
 TypePtrList MSELossExtFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &input_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &input_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
-  const auto &target_tensor = input_values[kIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &target_tensor = input_values[kIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(target_tensor);
   const auto &input_type = input_tensor->Dtype();
   const auto &target_type = target_tensor->Dtype();

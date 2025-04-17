@@ -27,9 +27,9 @@ namespace pyboost {
 namespace {
 void ExpandParamIfNeeded(std::vector<int64_t> *const param, size_t expect_dim);
 }  // namespace
-std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr, tensor::BaseTensorPtr> ConvolutionGradAscendCustomize(
-  const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &dout_tensor, const BaseTensorPtr &input_tensor,
-  const BaseTensorPtr &weight_tensor, const std::optional<BaseTensorPtr> &bias_tensor, const ValueTuplePtr &stride,
+std::tuple<tensor::TensorPtr, tensor::TensorPtr, tensor::TensorPtr> ConvolutionGradAscendCustomize(
+  const std::shared_ptr<OpRunner> &op, const TensorPtr &dout_tensor, const TensorPtr &input_tensor,
+  const TensorPtr &weight_tensor, const std::optional<TensorPtr> &bias_tensor, const ValueTuplePtr &stride,
   const ValueTuplePtr &pad, const ValueTuplePtr &dilation, const BoolImmPtr &transposed,
   const ValueTuplePtr &output_padding, const Int64ImmPtr &group, const ValueTuplePtr &output_mask) {
   OpRunner::InferOpOutput(op, dout_tensor, input_tensor, weight_tensor, bias_tensor, stride, pad, dilation, transposed,

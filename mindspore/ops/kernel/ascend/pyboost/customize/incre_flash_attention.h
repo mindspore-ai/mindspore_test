@@ -26,17 +26,17 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr IncreFlashAttentionAscendCustomize(
-  const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &query_tensor, const ValueTuplePtr &key_tensor_list,
-  const ValueTuplePtr &value_tensor_list, const std::optional<BaseTensorPtr> &attn_mask_tensor,
-  const std::optional<BaseTensorPtr> &actual_seq_lengths_tensor, const std::optional<BaseTensorPtr> &pse_shift_tensor,
-  const std::optional<BaseTensorPtr> &dequant_scale1_tensor, const std::optional<BaseTensorPtr> &quant_scale1_tensor,
-  const std::optional<BaseTensorPtr> &dequant_scale2_tensor, const std::optional<BaseTensorPtr> &quant_scale2_tensor,
-  const std::optional<BaseTensorPtr> &quant_offset2_tensor, const std::optional<BaseTensorPtr> &antiquant_scale_tensor,
-  const std::optional<BaseTensorPtr> &antiquant_offset_tensor, const std::optional<BaseTensorPtr> &block_table_tensor,
-  const std::optional<BaseTensorPtr> &kv_padding_size_tensor, const Int64ImmPtr &num_heads,
-  const Int64ImmPtr &input_layout, const FP32ImmPtr &scale_value, const Int64ImmPtr &num_key_value_heads,
-  const Int64ImmPtr &block_size, const Int64ImmPtr &inner_precise);
+tensor::TensorPtr IncreFlashAttentionAscendCustomize(
+  const std::shared_ptr<OpRunner> &op, const TensorPtr &query_tensor, const ValueTuplePtr &key_tensor_list,
+  const ValueTuplePtr &value_tensor_list, const std::optional<TensorPtr> &attn_mask_tensor,
+  const std::optional<TensorPtr> &actual_seq_lengths_tensor, const std::optional<TensorPtr> &pse_shift_tensor,
+  const std::optional<TensorPtr> &dequant_scale1_tensor, const std::optional<TensorPtr> &quant_scale1_tensor,
+  const std::optional<TensorPtr> &dequant_scale2_tensor, const std::optional<TensorPtr> &quant_scale2_tensor,
+  const std::optional<TensorPtr> &quant_offset2_tensor, const std::optional<TensorPtr> &antiquant_scale_tensor,
+  const std::optional<TensorPtr> &antiquant_offset_tensor, const std::optional<TensorPtr> &block_table_tensor,
+  const std::optional<TensorPtr> &kv_padding_size_tensor, const Int64ImmPtr &num_heads, const Int64ImmPtr &input_layout,
+  const FP32ImmPtr &scale_value, const Int64ImmPtr &num_key_value_heads, const Int64ImmPtr &block_size,
+  const Int64ImmPtr &inner_precise);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

@@ -28,9 +28,9 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-std::optional<BaseTensorPtr> SpeedFusionAttentionDropoutGenMaskCall(
-  const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &query, const BaseTensorPtr &key, int64_t head_num_value,
-  int64_t input_layout_value, double keep_prob_value, const BaseTensorPtr &seed, const BaseTensorPtr &offset,
+std::optional<TensorPtr> SpeedFusionAttentionDropoutGenMaskCall(
+  const std::shared_ptr<OpRunner> &op, const TensorPtr &query, const TensorPtr &key, int64_t head_num_value,
+  int64_t input_layout_value, double keep_prob_value, const TensorPtr &seed, const TensorPtr &offset,
   const BoolImmPtr &gen_mask_parallel, const BoolImmPtr &sync, int64_t *numels) {
   auto query_shape = query->shape();
   auto key_shape = key->shape();
@@ -52,7 +52,7 @@ std::optional<BaseTensorPtr> SpeedFusionAttentionDropoutGenMaskCall(
       break;
   }
 
-  std::optional<BaseTensorPtr> dropout_mask = std::nullopt;
+  std::optional<TensorPtr> dropout_mask = std::nullopt;
   if (0 < keep_prob_value && keep_prob_value < 1.) {
     auto p = std::make_shared<FP32Imm>(static_cast<float>(1 - keep_prob_value));
     auto shape = std::make_shared<ValueTuple>(std::vector<ValuePtr>{MakeValue<int64_t>(*numels)});
@@ -74,7 +74,7 @@ std::optional<BaseTensorPtr> SpeedFusionAttentionDropoutGenMaskCall(
   return dropout_mask;
 }
 
-tensor::BaseTensorPtr RecordRandomStateBeforeGenMask(const BaseTensorPtr &tensor, double keep_prob_value) {
+tensor::TensorPtr RecordRandomStateBeforeGenMask(const TensorPtr &tensor, double keep_prob_value) {
   // seed & offset will be inplace update after dropout_gen_mask
   if (0 < keep_prob_value && 1. > keep_prob_value) {
     tensor->data_sync();
@@ -86,10 +86,10 @@ tensor::BaseTensorPtr RecordRandomStateBeforeGenMask(const BaseTensorPtr &tensor
 }  // namespace
 
 void SpeedFusionAttentionAscendCustomize(
-  const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &query, const BaseTensorPtr &key, const BaseTensorPtr &value,
-  const Int64ImmPtr &head_num, const Int64ImmPtr &input_layout, const BaseTensorPtr &seed, const BaseTensorPtr &offset,
-  const std::optional<BaseTensorPtr> &pse, const std::optional<BaseTensorPtr> &padding_mask,
-  const std::optional<BaseTensorPtr> &atten_mask, const FP32ImmPtr &scale, const FP32ImmPtr &keep_prob,
+  const std::shared_ptr<OpRunner> &op, const TensorPtr &query, const TensorPtr &key, const TensorPtr &value,
+  const Int64ImmPtr &head_num, const Int64ImmPtr &input_layout, const TensorPtr &seed, const TensorPtr &offset,
+  const std::optional<TensorPtr> &pse, const std::optional<TensorPtr> &padding_mask,
+  const std::optional<TensorPtr> &atten_mask, const FP32ImmPtr &scale, const FP32ImmPtr &keep_prob,
   const Int64ImmPtr &pre_tokens, const Int64ImmPtr &next_tokens, const Int64ImmPtr &inner_precise,
   const std::optional<ValueTuplePtr> &prefix, const std::optional<ValueTuplePtr> &actual_seq_qlen,
   const std::optional<ValueTuplePtr> &actual_seq_kvlen, const Int64ImmPtr &sparse_mode,
@@ -142,7 +142,7 @@ void SpeedFusionAttentionAscendCustomize(
   }
 
   constexpr int64_t kHostOutputNum = 3;
-  auto device_outputs = std::vector<tensor::BaseTensorPtr>(op->outputs().begin(), op->outputs().end() - kHostOutputNum);
+  auto device_outputs = std::vector<tensor::TensorPtr>(op->outputs().begin(), op->outputs().end() - kHostOutputNum);
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), query, key, value, pse, dropout_mask,
                                 padding_mask, atten_mask);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), device_outputs);

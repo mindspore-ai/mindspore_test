@@ -29,14 +29,14 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr IsInfAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor) {
+tensor::TensorPtr IsInfAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor) {
   MS_LOG(DEBUG) << "IsInfCustomize start";
   OpRunner::InferOpOutput(op, input_tensor);
 
   auto input_type = input_tensor->Dtype()->type_id();
   bool is_int_type = (input_type >= kNumberTypeBool) && (input_type < kNumberTypeFloat);
 
-  BaseTensorPtr abs_out = input_tensor;
+  TensorPtr abs_out = input_tensor;
   if (!is_int_type) {
     const auto abs_op = CREATE_PYBOOST_OP(Abs, op->device_context()->device_context_key().device_name_);
     abs_out = abs_op->Call(input_tensor);

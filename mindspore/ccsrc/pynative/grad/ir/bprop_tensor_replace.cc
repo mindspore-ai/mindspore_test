@@ -58,8 +58,8 @@ void SaveForwardTensorForReplace(const ValueNodePtr &value_node, const TensorIdW
   MS_EXCEPTION_IF_NULL(value);
   if (value->isa<tensor::Tensor>()) {
     SaveForwardTensorForReplace(value, id_with_op_info, need_save_tensor_info, op_info_with_tensor_object);
-  } else if (value->isa<tensor::BaseTensor>()) {
-    PyNativeAlgo::DataConvert::TransformValueNodeBaseTensorToTensor(value_node);
+  } else if (value->isa<tensor::Tensor>()) {
+    PyNativeAlgo::DataConvert::TransformValueNodeTensorToTensor(value_node);
     SaveForwardTensorForReplace(value_node->value(), id_with_op_info, need_save_tensor_info,
                                 op_info_with_tensor_object);
   } else {
@@ -67,12 +67,12 @@ void SaveForwardTensorForReplace(const ValueNodePtr &value_node, const TensorIdW
   }
 }
 
-tensor::BaseTensorPtr GetTensorFromOutValue(size_t index, const ValuePtr &v) {
+tensor::TensorPtr GetTensorFromOutValue(size_t index, const ValuePtr &v) {
   MS_EXCEPTION_IF_NULL(v);
   // Only one outpout
   if (index == kIndex0) {
-    if (v->isa<tensor::BaseTensor>()) {
-      return v->cast<tensor::BaseTensorPtr>();
+    if (v->isa<tensor::Tensor>()) {
+      return v->cast<tensor::TensorPtr>();
     }
   }
   // Multi output
@@ -81,10 +81,10 @@ tensor::BaseTensorPtr GetTensorFromOutValue(size_t index, const ValuePtr &v) {
   if (v_seq->size() < index) {
     MS_LOG(EXCEPTION) << "Get wrong index " << index << ", which is bigger than multi output size " << v_seq->size();
   }
-  return v_seq->value()[index - kIndex1]->cast<tensor::BaseTensorPtr>();
+  return v_seq->value()[index - kIndex1]->cast<tensor::TensorPtr>();
 }
 
-void UpdatePreTensorInfo(const tensor::BaseTensorPtr &new_tensor, const tensor::BaseTensorPtr &old_tensor) {
+void UpdatePreTensorInfo(const tensor::TensorPtr &new_tensor, const tensor::TensorPtr &old_tensor) {
   MS_EXCEPTION_IF_NULL(new_tensor);
   MS_EXCEPTION_IF_NULL(old_tensor);
   MS_LOG(DEBUG) << "Replace old tensor id " << old_tensor->id() << " device_address: " << old_tensor->device_address()
@@ -153,9 +153,9 @@ void SetIdWithOpInfo(const ValuePtr &v, const std::string &op_info, size_t out_i
                      TensorIdWithOpInfo *id_with_op_info) {
   MS_EXCEPTION_IF_NULL(v);
   MS_EXCEPTION_IF_NULL(id_with_op_info);
-  if (v->isa<tensor::BaseTensor>()) {
+  if (v->isa<tensor::Tensor>()) {
     // Only one output, index will be 0
-    const auto t = v->cast<tensor::BaseTensorPtr>();
+    const auto t = v->cast<tensor::TensorPtr>();
     (*id_with_op_info)[t->id()] = std::make_pair(op_info, out_index);
   } else if (v->isa<ValueSequence>()) {
     const auto &v_seq = v->cast<ValueSequencePtr>();

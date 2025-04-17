@@ -19,7 +19,6 @@
 
 #include <memory>
 #include "mindspore/core/include/ir/tensor.h"
-#include "mindspore/core/include/ir/base_tensor.h"
 #include "pybind_api/ir/tensor_api/auto_generate/tensor_api.h"
 #include "pybind11/pybind11.h"
 #include "include/common/utils/tensor_py.h"

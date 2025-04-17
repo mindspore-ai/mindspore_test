@@ -151,8 +151,8 @@ abstract::ShapePtr BroadCastInferShape(const std::string &op_name, const std::ve
 }
 
 ShapeVector BroadCastInferShape(const std::string &op_name, const ValuePtrList &input_values) {
-  const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
-  const auto &y_tensor = input_values[kIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
+  const auto &y_tensor = input_values[kIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   MS_EXCEPTION_IF_NULL(y_tensor);
 
@@ -240,9 +240,9 @@ TypePtr EltwiseGradInferType(const PrimitivePtr &primitive, const std::vector<Ab
 ShapeArray EltwiseGradSimpleInferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) {
   MS_EXCEPTION_IF_NULL(primitive);
   const auto &prim_name = primitive->name();
-  const auto &dout_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &dout_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(dout_tensor);
-  const auto &y_tensor = input_values[kIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &y_tensor = input_values[kIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(y_tensor);
 
   const auto &dout_shape = dout_tensor->shape();
@@ -264,9 +264,9 @@ ShapeArray EltwiseGradSimpleInferShape(const PrimitivePtr &primitive, const Valu
 
 TypePtrList EltwiseGradSimpleInferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) {
   MS_EXCEPTION_IF_NULL(primitive);
-  const auto &dout_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &dout_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(dout_tensor);
-  const auto &y_tensor = input_values[kIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &y_tensor = input_values[kIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(y_tensor);
 
   const auto &dout_type = dout_tensor->Dtype();
@@ -350,7 +350,7 @@ void CheckAndGetAxisValueFromAttr(const PrimitivePtr &primitive, std::vector<int
   auto op_name = primitive->name();
   auto axis_ptr = primitive->GetAttr("axis");
   MS_EXCEPTION_IF_NULL(axis_ptr);
-  if (axis_ptr->isa<tensor::BaseTensor>()) {
+  if (axis_ptr->isa<tensor::Tensor>()) {
     *axis_value = CheckAndConvertUtils::CheckTensorIntValue("axis", axis_ptr, op_name);
   } else {
     *axis_value = CheckAndConvertUtils::CheckIntOrTupleInt("axis", axis_ptr, op_name);
@@ -394,7 +394,7 @@ bool CheckAndGetAxisValueFromTensor(const std::vector<abstract::AbstractBasePtr>
   bool is_dynamic = false;
   (void)CheckAndConvertUtils::CheckTensorTypeValid("axis", input_args[kInputIndex1]->GetType(), {kInt32, kInt64},
                                                    op_name);
-  if (input_value->isa<tensor::BaseTensor>()) {
+  if (input_value->isa<tensor::Tensor>()) {
     *axis_value = CheckAndConvertUtils::CheckTensorIntValue("axis", input_value, op_name);
     if (axis_value->empty()) {
       *axis_shape_v = 0;

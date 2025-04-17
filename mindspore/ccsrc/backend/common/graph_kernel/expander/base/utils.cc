@@ -101,7 +101,7 @@ std::vector<int64_t> GetAxisList(const ValuePtr &value) {
   if (value->isa<ValueSequence>()) {
     const auto &vals = value->cast<ValueSequencePtr>()->value();
     (void)std::transform(vals.begin(), vals.end(), std::back_inserter(result), get_int_value);
-  } else if (value->isa<tensor::BaseTensor>()) {
+  } else if (value->isa<tensor::Tensor>()) {
     result = CheckAndConvertUtils::CheckTensorIntValue("axes value", value, "GetAxisList");
   } else if (value->isa<Int64Imm>() || value->isa<Int32Imm>()) {
     result.push_back(get_int_value(value));

@@ -231,7 +231,7 @@ void SetGraphInputArgs(const std::vector<ValuePtr> &input_vec, const pipeline::R
       if (!param_ptr->has_default()) {
         MS_LOG(EXCEPTION) << "Parameter[" << i << "] has no default param, " << param_ptr->DebugString();
       }
-      if (!param_ptr->default_param()->isa<tensor::BaseTensor>()) {
+      if (!param_ptr->default_param()->isa<tensor::Tensor>()) {
         MS_LOG(EXCEPTION) << "Parameter[" << param_ptr->DebugString()
                           << "] is not initialized, need to call `.init_data()`";
       }
@@ -278,10 +278,10 @@ void SetSensValue(const prim::GradOperationPtr &grad, const InputArgsInfoPtr &in
 std::string GetWeightsObjIdsByWeights(const py::object &weights) {
   auto is_require_grad = [](const ValuePtr &value) {
     MS_EXCEPTION_IF_NULL(value);
-    if (!value->isa<tensor::BaseTensor>()) {
+    if (!value->isa<tensor::Tensor>()) {
       return false;
     }
-    auto t = value->cast<tensor::BaseTensorPtr>();
+    auto t = value->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(t);
     if (t->is_parameter() && t->param_info() != nullptr && t->param_info()->requires_grad()) {
       return true;
@@ -411,7 +411,7 @@ void SetCustomBpropInputs(const py::object &obj, autograd::CustomContext *contex
         if (!tensor::IsTensorPy(weights_tuple[i])) {
           MS_LOG(EXCEPTION) << "For cell bprop, element of internal params should be tensor type!";
         }
-        auto tensor = tensor::ConvertToBaseTensor(weights_tuple[i]);
+        auto tensor = tensor::ConvertToTensor(weights_tuple[i]);
         (void)context->inputs.emplace_back(tensor);
         (void)context->input_value_grad_type.emplace_back(
           PyNativeAlgo::AutoGradUtil::SetValueGradInfo(tensor, InputType::kConstant));
@@ -466,7 +466,7 @@ ValuePtr GetLastGradTensor(ValuePtr grad) {
   if (grad == nullptr) {
     return nullptr;
   }
-  if (grad->isa<tensor::BaseTensor>()) {
+  if (grad->isa<tensor::Tensor>()) {
     return grad;
   }
   ValueTuplePtr grads_tuple = grad->cast<ValueTuplePtr>();
@@ -1340,7 +1340,7 @@ bool GradExecutor::ReplacePipelineTopCellForwardOutput() {
   return true;
 }
 
-void GradExecutor::GetGradGraph(const autograd::GradAttr &grad_attr, const std::vector<tensor::BaseTensorPtr> &w_args,
+void GradExecutor::GetGradGraph(const autograd::GradAttr &grad_attr, const std::vector<tensor::TensorPtr> &w_args,
                                 const std::vector<size_t> &p_args, bool has_aux) {
   // Get bprop graph of top cell
   auto bprop_graph = GetBpropGraph(grad_attr, w_args, p_args, has_aux);
@@ -1376,15 +1376,15 @@ void GradExecutor::GetGradGraph(const autograd::GradAttr &grad_attr, const std::
   resource->Clean();
 }
 
-std::vector<tensor::BaseTensorPtr> GradExecutor::GetWeightsArgs(const py::object &weights,
-                                                                bool *weight_param_is_tuple) const {
-  std::vector<tensor::BaseTensorPtr> w_args;
+std::vector<tensor::TensorPtr> GradExecutor::GetWeightsArgs(const py::object &weights,
+                                                            bool *weight_param_is_tuple) const {
+  std::vector<tensor::TensorPtr> w_args;
   if (py::hasattr(weights, "__parameter_tuple__")) {
     const auto &weights_tuple = weights.cast<py::tuple>();
     MS_LOG(DEBUG) << "Get weights tuple size " << weights_tuple.size();
     for (size_t i = 0; i < weights_tuple.size(); ++i) {
       const auto value = parse::data_converter::PyObjToValue(weights_tuple[i]);
-      auto tensor = value->cast<tensor::BaseTensorPtr>();
+      auto tensor = value->cast<tensor::TensorPtr>();
       MS_EXCEPTION_IF_NULL(tensor);
       (void)w_args.emplace_back(tensor);
     }
@@ -1394,7 +1394,7 @@ std::vector<tensor::BaseTensorPtr> GradExecutor::GetWeightsArgs(const py::object
       auto weights_tuple = py::cast<py::tuple>(weights);
       for (size_t i = 0; i < weights_tuple.size(); ++i) {
         const auto value = parse::data_converter::PyObjToValue(weights_tuple[i]);
-        auto tensor = value->cast<tensor::BaseTensorPtr>();
+        auto tensor = value->cast<tensor::TensorPtr>();
         MS_EXCEPTION_IF_NULL(tensor);
         (void)w_args.emplace_back(tensor);
       }
@@ -1402,7 +1402,7 @@ std::vector<tensor::BaseTensorPtr> GradExecutor::GetWeightsArgs(const py::object
       // Single input
       MS_LOG(DEBUG) << "Get weights params by single input weight";
       const auto value = parse::data_converter::PyObjToValue(weights);
-      auto tensor = value->cast<tensor::BaseTensorPtr>();
+      auto tensor = value->cast<tensor::TensorPtr>();
       (void)w_args.emplace_back(tensor);
       MS_EXCEPTION_IF_NULL(tensor);
       *weight_param_is_tuple = false;
@@ -1414,8 +1414,8 @@ std::vector<tensor::BaseTensorPtr> GradExecutor::GetWeightsArgs(const py::object
   return w_args;
 }
 
-std::vector<tensor::BaseTensorPtr> GradExecutor::GetDefaultWeights() const {
-  std::vector<tensor::BaseTensorPtr> w_args;
+std::vector<tensor::TensorPtr> GradExecutor::GetDefaultWeights() const {
+  std::vector<tensor::TensorPtr> w_args;
   for (const auto &params : top_cell()->auto_grad_cell_ptr()->param_meta_grad_info()) {
     const auto &tensor = params.first;
     if (tensor->is_parameter()) {
@@ -1494,7 +1494,7 @@ void GradExecutor::UpdateParamAbsByArgs(const std::vector<ValuePtr> &input_args,
 }
 
 FuncGraphPtr GradExecutor::GetBpropGraph(const autograd::GradAttr &grad_attr,
-                                         const std::vector<tensor::BaseTensorPtr> &w_args,
+                                         const std::vector<tensor::TensorPtr> &w_args,
                                          const std::vector<size_t> &p_args, bool has_aux) {
   MS_EXCEPTION_IF_NULL(top_input_args_info_);
   const auto &auto_grad_cell = std::dynamic_pointer_cast<autograd::IrGrad>(top_cell()->auto_grad_cell_ptr());
@@ -1654,8 +1654,7 @@ py::object GradExecutor::CheckAlreadyRun(const prim::GradOperationPtr &grad, con
   return BaseRefToPyData(forward_run);
 }
 
-py::object GradExecutor::RunGradFunc(const autograd::GradAttr &grad_attr,
-                                     const std::vector<tensor::BaseTensorPtr> &w_args,
+py::object GradExecutor::RunGradFunc(const autograd::GradAttr &grad_attr, const std::vector<tensor::TensorPtr> &w_args,
                                      const std::vector<size_t> &p_args, bool has_aux) {
   MS_EXCEPTION_IF_NULL(top_input_args_info_);
   ValuePtr sens = nullptr;
@@ -2067,14 +2066,14 @@ AnfNodePtr GradExecutor::GetParamInput(const ValuePtr &v, const std::string &id)
 
   // Get weight param input
   MS_EXCEPTION_IF_NULL(v);
-  if (v->isa<tensor::BaseTensor>() && v->cast<tensor::BaseTensorPtr>()->is_parameter()) {
+  if (v->isa<tensor::Tensor>() && v->cast<tensor::TensorPtr>()->is_parameter()) {
     const auto item_by_id = graph_info->weight_params.find(id);
     if (item_by_id != graph_info->weight_params.end()) {
       MS_LOG(DEBUG) << "Get weight param " << id;
       return item_by_id->second;
     }
     MS_LOG(DEBUG) << "Add new weight param " << id;
-    auto tensor = v->cast<tensor::BaseTensorPtr>();
+    auto tensor = v->cast<tensor::TensorPtr>();
     const auto &param_info = tensor->param_info();
     MS_EXCEPTION_IF_NULL(param_info);
     const auto &param_name = param_info->name();

@@ -28,11 +28,11 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-std::vector<BaseTensorPtr> IndexGetNewTensor(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                             const std::vector<BaseTensorPtr> &tensors) {
+std::vector<TensorPtr> IndexGetNewTensor(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                         const std::vector<TensorPtr> &tensors) {
   auto device_context = op->device_context();
   const auto &device_name = device_context->device_context_key_.device_name_;
-  std::vector<BaseTensorPtr> result{};
+  std::vector<TensorPtr> result{};
   auto input_shape = input_tensor->shape();
   if (input_shape.size() == 0) {
     MS_EXCEPTION(ValueError) << "For 'Index', too many indices for tensor of dimension " << input_shape.size();
@@ -87,10 +87,10 @@ std::vector<BaseTensorPtr> IndexGetNewTensor(const std::shared_ptr<OpRunner> &op
 }
 }  // namespace
 
-tensor::BaseTensorPtr IndexAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                           const ValueTuplePtr &indices_tensor_list) {
+tensor::TensorPtr IndexAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                       const ValueTuplePtr &indices_tensor_list) {
   MS_LOG(DEBUG) << "Index Ascend start";
-  std::vector<BaseTensorPtr> indices_tensor_vector = ConvertValueTupleToVector<BaseTensorPtr>(indices_tensor_list);
+  std::vector<TensorPtr> indices_tensor_vector = ConvertValueTupleToVector<TensorPtr>(indices_tensor_list);
   if (indices_tensor_vector.size() == 0) {
     MS_EXCEPTION(ValueError) << "For 'Index', 'indices' shape can't be empty.";
   }

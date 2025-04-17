@@ -20,8 +20,8 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void NewZerosCPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                          const ValueTuplePtr &size, const std::optional<Int64ImmPtr> &dtype) {
+void NewZerosCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor, const ValueTuplePtr &size,
+                          const std::optional<Int64ImmPtr> &dtype) {
   MS_LOG(DEBUG) << "NewZeros Call start";
 
   auto device_context = op->device_context();

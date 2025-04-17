@@ -111,7 +111,7 @@ void SyncDeviceInfoToValueNode(const ValueNodePtr &value_node, std::vector<std::
   MS_EXCEPTION_IF_NULL(device_formats);
   MS_EXCEPTION_IF_NULL(device_types);
   ValuePtr value = value_node->value();
-  std::vector<tensor::BaseTensorPtr> tensors;
+  std::vector<tensor::TensorPtr> tensors;
   TensorValueToTensor(value, &tensors);
   if (!tensors.empty()) {
     device_formats->clear();

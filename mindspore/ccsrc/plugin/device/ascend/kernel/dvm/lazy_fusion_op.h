@@ -85,8 +85,8 @@ class ConcatAscendDvm : public ConcatAscend {
   ConcatAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : ConcatAscend(std::move(primitive), device_context) {}
   ~ConcatAscendDvm() = default;
-  mindspore::tensor::BaseTensorPtr Call(const mindspore::ValueTuplePtr &tensors_tensor_list,
-                                        const mindspore::Int64ImmPtr &axis) override;
+  mindspore::tensor::TensorPtr Call(const mindspore::ValueTuplePtr &tensors_tensor_list,
+                                    const mindspore::Int64ImmPtr &axis) override;
 };
 
 class CastAscendDvm : public CastAscend {
@@ -94,7 +94,7 @@ class CastAscendDvm : public CastAscend {
   CastAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : CastAscend(std::move(primitive), device_context) {}
   ~CastAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &input_tensor, const Int64ImmPtr &dtype) override;
+  tensor::TensorPtr Call(const TensorPtr &input_tensor, const Int64ImmPtr &dtype) override;
 };
 
 class AbsAscendDvm : public AbsAscend {
@@ -102,7 +102,7 @@ class AbsAscendDvm : public AbsAscend {
   AbsAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : AbsAscend(std::move(primitive), device_context) {}
   ~AbsAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &input_tensor) override;
+  tensor::TensorPtr Call(const TensorPtr &input_tensor) override;
 };
 
 class NegAscendDvm : public NegAscend {
@@ -110,7 +110,7 @@ class NegAscendDvm : public NegAscend {
   NegAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : NegAscend(std::move(primitive), device_context) {}
   ~NegAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &input_tensor) override;
+  tensor::TensorPtr Call(const TensorPtr &input_tensor) override;
 };
 
 class ExpAscendDvm : public ExpAscend {
@@ -118,7 +118,7 @@ class ExpAscendDvm : public ExpAscend {
   ExpAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : ExpAscend(std::move(primitive), device_context) {}
   ~ExpAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &input_tensor) override;
+  tensor::TensorPtr Call(const TensorPtr &input_tensor) override;
 };
 
 class SqrtAscendDvm : public SqrtAscend {
@@ -126,7 +126,7 @@ class SqrtAscendDvm : public SqrtAscend {
   SqrtAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : SqrtAscend(std::move(primitive), device_context) {}
   ~SqrtAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &x_tensor) override;
+  tensor::TensorPtr Call(const TensorPtr &x_tensor) override;
 };
 
 class ReciprocalAscendDvm : public ReciprocalAscend {
@@ -134,7 +134,7 @@ class ReciprocalAscendDvm : public ReciprocalAscend {
   ReciprocalAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : ReciprocalAscend(std::move(primitive), device_context) {}
   ~ReciprocalAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &x_tensor) override;
+  tensor::TensorPtr Call(const TensorPtr &x_tensor) override;
 };
 
 class IsFiniteAscendDvm : public IsFiniteAscend {
@@ -142,7 +142,7 @@ class IsFiniteAscendDvm : public IsFiniteAscend {
   IsFiniteAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : IsFiniteAscend(std::move(primitive), device_context) {}
   ~IsFiniteAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &x_tensor) override;
+  tensor::TensorPtr Call(const TensorPtr &x_tensor) override;
 };
 
 class RoundAscendDvm : public RoundAscend {
@@ -150,7 +150,7 @@ class RoundAscendDvm : public RoundAscend {
   RoundAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : RoundAscend(std::move(primitive), device_context) {}
   ~RoundAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &input_tensor, const Int64ImmPtr &decimals) override;
+  tensor::TensorPtr Call(const TensorPtr &input_tensor, const Int64ImmPtr &decimals) override;
 };
 
 class CeilAscendDvm : public CeilAscend {
@@ -158,7 +158,7 @@ class CeilAscendDvm : public CeilAscend {
   CeilAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : CeilAscend(std::move(primitive), device_context) {}
   ~CeilAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &x_tensor) override;
+  tensor::TensorPtr Call(const TensorPtr &x_tensor) override;
 };
 
 class FloorAscendDvm : public FloorAscend {
@@ -166,7 +166,7 @@ class FloorAscendDvm : public FloorAscend {
   FloorAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : FloorAscend(std::move(primitive), device_context) {}
   ~FloorAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &x_tensor) override;
+  tensor::TensorPtr Call(const TensorPtr &x_tensor) override;
 };
 
 class TruncAscendDvm : public TruncAscend {
@@ -174,7 +174,7 @@ class TruncAscendDvm : public TruncAscend {
   TruncAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : TruncAscend(std::move(primitive), device_context) {}
   ~TruncAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &x_tensor) override;
+  tensor::TensorPtr Call(const TensorPtr &x_tensor) override;
 };
 
 class EqualAscendDvm : public EqualAscend {
@@ -182,7 +182,7 @@ class EqualAscendDvm : public EqualAscend {
   EqualAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : EqualAscend(std::move(primitive), device_context) {}
   ~EqualAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &input_tensor, const BaseTensorPtr &other_tensor) override;
+  tensor::TensorPtr Call(const TensorPtr &input_tensor, const TensorPtr &other_tensor) override;
 };
 
 class NotEqualAscendDvm : public NotEqualAscend {
@@ -190,7 +190,7 @@ class NotEqualAscendDvm : public NotEqualAscend {
   NotEqualAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : NotEqualAscend(std::move(primitive), device_context) {}
   ~NotEqualAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &input_tensor, const BaseTensorPtr &other_tensor) override;
+  tensor::TensorPtr Call(const TensorPtr &input_tensor, const TensorPtr &other_tensor) override;
 };
 
 class GreaterAscendDvm : public GreaterAscend {
@@ -198,7 +198,7 @@ class GreaterAscendDvm : public GreaterAscend {
   GreaterAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : GreaterAscend(std::move(primitive), device_context) {}
   ~GreaterAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &input_tensor, const BaseTensorPtr &other_tensor) override;
+  tensor::TensorPtr Call(const TensorPtr &input_tensor, const TensorPtr &other_tensor) override;
 };
 
 class GreaterEqualAscendDvm : public GreaterEqualAscend {
@@ -206,7 +206,7 @@ class GreaterEqualAscendDvm : public GreaterEqualAscend {
   GreaterEqualAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : GreaterEqualAscend(std::move(primitive), device_context) {}
   ~GreaterEqualAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &input_tensor, const BaseTensorPtr &other_tensor) override;
+  tensor::TensorPtr Call(const TensorPtr &input_tensor, const TensorPtr &other_tensor) override;
 };
 
 class LessAscendDvm : public LessAscend {
@@ -214,7 +214,7 @@ class LessAscendDvm : public LessAscend {
   LessAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : LessAscend(std::move(primitive), device_context) {}
   ~LessAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &input_tensor, const BaseTensorPtr &other_tensor) override;
+  tensor::TensorPtr Call(const TensorPtr &input_tensor, const TensorPtr &other_tensor) override;
 };
 
 class LessEqualAscendDvm : public LessEqualAscend {
@@ -222,7 +222,7 @@ class LessEqualAscendDvm : public LessEqualAscend {
   LessEqualAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : LessEqualAscend(std::move(primitive), device_context) {}
   ~LessEqualAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &input_tensor, const BaseTensorPtr &other_tensor) override;
+  tensor::TensorPtr Call(const TensorPtr &input_tensor, const TensorPtr &other_tensor) override;
 };
 
 class AddAscendDvm : public AddAscend {
@@ -230,7 +230,7 @@ class AddAscendDvm : public AddAscend {
   AddAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : AddAscend(std::move(primitive), device_context) {}
   ~AddAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &input_tensor, const BaseTensorPtr &other_tensor) override;
+  tensor::TensorPtr Call(const TensorPtr &input_tensor, const TensorPtr &other_tensor) override;
 };
 
 class MulAscendDvm : public MulAscend {
@@ -238,7 +238,7 @@ class MulAscendDvm : public MulAscend {
   MulAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : MulAscend(std::move(primitive), device_context) {}
   ~MulAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &input_tensor, const BaseTensorPtr &other_tensor) override;
+  tensor::TensorPtr Call(const TensorPtr &input_tensor, const TensorPtr &other_tensor) override;
 };
 
 class SubAscendDvm : public SubAscend {
@@ -246,7 +246,7 @@ class SubAscendDvm : public SubAscend {
   SubAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : SubAscend(std::move(primitive), device_context) {}
   ~SubAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &input_tensor, const BaseTensorPtr &other_tensor) override;
+  tensor::TensorPtr Call(const TensorPtr &input_tensor, const TensorPtr &other_tensor) override;
 };
 
 class DivAscendDvm : public DivAscend {
@@ -254,7 +254,7 @@ class DivAscendDvm : public DivAscend {
   DivAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : DivAscend(std::move(primitive), device_context) {}
   ~DivAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &input_tensor, const BaseTensorPtr &other_tensor) override;
+  tensor::TensorPtr Call(const TensorPtr &input_tensor, const TensorPtr &other_tensor) override;
 };
 
 class PowAscendDvm : public PowAscend {
@@ -262,7 +262,7 @@ class PowAscendDvm : public PowAscend {
   PowAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : PowAscend(std::move(primitive), device_context) {}
   ~PowAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &input_tensor, const BaseTensorPtr &other_tensor) override;
+  tensor::TensorPtr Call(const TensorPtr &input_tensor, const TensorPtr &other_tensor) override;
 };
 
 class MaximumAscendDvm : public MaximumAscend {
@@ -270,7 +270,7 @@ class MaximumAscendDvm : public MaximumAscend {
   MaximumAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : MaximumAscend(std::move(primitive), device_context) {}
   ~MaximumAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &input_tensor, const BaseTensorPtr &other_tensor) override;
+  tensor::TensorPtr Call(const TensorPtr &input_tensor, const TensorPtr &other_tensor) override;
 };
 
 class MinimumAscendDvm : public MinimumAscend {
@@ -278,7 +278,7 @@ class MinimumAscendDvm : public MinimumAscend {
   MinimumAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : MinimumAscend(std::move(primitive), device_context) {}
   ~MinimumAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &input_tensor, const BaseTensorPtr &other_tensor) override;
+  tensor::TensorPtr Call(const TensorPtr &input_tensor, const TensorPtr &other_tensor) override;
 };
 
 class LogicalNotAscendDvm : public LogicalNotAscend {
@@ -286,7 +286,7 @@ class LogicalNotAscendDvm : public LogicalNotAscend {
   LogicalNotAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : LogicalNotAscend(std::move(primitive), device_context) {}
   ~LogicalNotAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &x_tensor) override;
+  tensor::TensorPtr Call(const TensorPtr &x_tensor) override;
 };
 
 class LogicalAndAscendDvm : public LogicalAndAscend {
@@ -294,7 +294,7 @@ class LogicalAndAscendDvm : public LogicalAndAscend {
   LogicalAndAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : LogicalAndAscend(std::move(primitive), device_context) {}
   ~LogicalAndAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &input_tensor, const BaseTensorPtr &other_tensor) override;
+  tensor::TensorPtr Call(const TensorPtr &input_tensor, const TensorPtr &other_tensor) override;
 };
 
 class LogicalOrAscendDvm : public LogicalOrAscend {
@@ -302,7 +302,7 @@ class LogicalOrAscendDvm : public LogicalOrAscend {
   LogicalOrAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : LogicalOrAscend(std::move(primitive), device_context) {}
   ~LogicalOrAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &input_tensor, const BaseTensorPtr &other_tensor) override;
+  tensor::TensorPtr Call(const TensorPtr &input_tensor, const TensorPtr &other_tensor) override;
 };
 
 class MulsAscendDvm : public MulsAscend {
@@ -310,7 +310,7 @@ class MulsAscendDvm : public MulsAscend {
   MulsAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : MulsAscend(std::move(primitive), device_context) {}
   ~MulsAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &input_tensor, const ScalarPtr &other_tensor) override;
+  tensor::TensorPtr Call(const TensorPtr &input_tensor, const ScalarPtr &other_tensor) override;
 };
 
 class SigmoidAscendDvm : public SigmoidAscend {
@@ -318,7 +318,7 @@ class SigmoidAscendDvm : public SigmoidAscend {
   SigmoidAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : SigmoidAscend(std::move(primitive), device_context) {}
   ~SigmoidAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &input_tensor) override;
+  tensor::TensorPtr Call(const TensorPtr &input_tensor) override;
 };
 
 class SigmoidGradAscendDvm : public SigmoidGradAscend {
@@ -326,7 +326,7 @@ class SigmoidGradAscendDvm : public SigmoidGradAscend {
   SigmoidGradAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : SigmoidGradAscend(std::move(primitive), device_context) {}
   ~SigmoidGradAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &y_tensor, const BaseTensorPtr &dy_tensor) override;
+  tensor::TensorPtr Call(const TensorPtr &y_tensor, const TensorPtr &dy_tensor) override;
 };
 
 class SiLUAscendDvm : public SiLUAscend {
@@ -334,7 +334,7 @@ class SiLUAscendDvm : public SiLUAscend {
   SiLUAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : SiLUAscend(std::move(primitive), device_context) {}
   ~SiLUAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &input_tensor) override;
+  tensor::TensorPtr Call(const TensorPtr &input_tensor) override;
 };
 
 class SiLUGradAscendDvm : public SiLUGradAscend {
@@ -342,7 +342,7 @@ class SiLUGradAscendDvm : public SiLUGradAscend {
   SiLUGradAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : SiLUGradAscend(std::move(primitive), device_context) {}
   ~SiLUGradAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &dout_tensor, const BaseTensorPtr &x_tensor) override;
+  tensor::TensorPtr Call(const TensorPtr &dout_tensor, const TensorPtr &x_tensor) override;
 };
 
 class GeLUAscendDvm : public GeLUAscend {
@@ -350,7 +350,7 @@ class GeLUAscendDvm : public GeLUAscend {
   GeLUAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : GeLUAscend(std::move(primitive), device_context) {}
   ~GeLUAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &input_tensor) override;
+  tensor::TensorPtr Call(const TensorPtr &input_tensor) override;
 };
 
 class GeLUGradAscendDvm : public GeLUGradAscend {
@@ -358,8 +358,7 @@ class GeLUGradAscendDvm : public GeLUGradAscend {
   GeLUGradAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : GeLUGradAscend(std::move(primitive), device_context) {}
   ~GeLUGradAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &dy_tensor, const BaseTensorPtr &x_tensor,
-                             const BaseTensorPtr &y_tensor) override;
+  tensor::TensorPtr Call(const TensorPtr &dy_tensor, const TensorPtr &x_tensor, const TensorPtr &y_tensor) override;
 };
 
 class ReLUAscendDvm : public ReLUAscend {
@@ -367,7 +366,7 @@ class ReLUAscendDvm : public ReLUAscend {
   ReLUAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : ReLUAscend(std::move(primitive), device_context) {}
   ~ReLUAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &input_tensor) override;
+  tensor::TensorPtr Call(const TensorPtr &input_tensor) override;
 };
 
 class SumExtAscendDvm : public SumExtAscend {
@@ -375,8 +374,8 @@ class SumExtAscendDvm : public SumExtAscend {
   SumExtAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : SumExtAscend(std::move(primitive), device_context) {}
   ~SumExtAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &input_tensor, const std::optional<ValueTuplePtr> &dim,
-                             const BoolImmPtr &keepdim, const std::optional<Int64ImmPtr> &dtype) override;
+  tensor::TensorPtr Call(const TensorPtr &input_tensor, const std::optional<ValueTuplePtr> &dim,
+                         const BoolImmPtr &keepdim, const std::optional<Int64ImmPtr> &dtype) override;
 };
 
 class AddExtAscendDvm : public AddExtAscend {
@@ -384,8 +383,7 @@ class AddExtAscendDvm : public AddExtAscend {
   AddExtAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : AddExtAscend(std::move(primitive), device_context) {}
   ~AddExtAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &input_tensor, const BaseTensorPtr &other_tensor,
-                             const ScalarPtr &alpha) override;
+  tensor::TensorPtr Call(const TensorPtr &input_tensor, const TensorPtr &other_tensor, const ScalarPtr &alpha) override;
 };
 
 class SubExtAscendDvm : public SubExtAscend {
@@ -393,8 +391,7 @@ class SubExtAscendDvm : public SubExtAscend {
   SubExtAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : SubExtAscend(std::move(primitive), device_context) {}
   ~SubExtAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &input_tensor, const BaseTensorPtr &other_tensor,
-                             const ScalarPtr &alpha) override;
+  tensor::TensorPtr Call(const TensorPtr &input_tensor, const TensorPtr &other_tensor, const ScalarPtr &alpha) override;
 };
 
 class TileAscendDvm : public TileAscend {
@@ -402,7 +399,7 @@ class TileAscendDvm : public TileAscend {
   TileAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : TileAscend(std::move(primitive), device_context) {}
   ~TileAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &input_tensor, const ValueTuplePtr &dims) override;
+  tensor::TensorPtr Call(const TensorPtr &input_tensor, const ValueTuplePtr &dims) override;
 };
 
 class LinalgVectorNormAscendDvm : public LinalgVectorNormAscend {
@@ -410,9 +407,8 @@ class LinalgVectorNormAscendDvm : public LinalgVectorNormAscend {
   LinalgVectorNormAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : LinalgVectorNormAscend(std::move(primitive), device_context) {}
   ~LinalgVectorNormAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &x_tensor, const FP32ImmPtr &ord,
-                             const std::optional<ValueTuplePtr> &dim, const BoolImmPtr &keepdim,
-                             const std::optional<Int64ImmPtr> &dtype) override;
+  tensor::TensorPtr Call(const TensorPtr &x_tensor, const FP32ImmPtr &ord, const std::optional<ValueTuplePtr> &dim,
+                         const BoolImmPtr &keepdim, const std::optional<Int64ImmPtr> &dtype) override;
 };
 
 class AdamWAscendDvm : public AdamWAscend {
@@ -420,11 +416,11 @@ class AdamWAscendDvm : public AdamWAscend {
   AdamWAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : AdamWAscend(std::move(primitive), device_context) {}
   ~AdamWAscendDvm() = default;
-  std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr, tensor::BaseTensorPtr> Call(
-    const BaseTensorPtr &var_tensor, const BaseTensorPtr &m_tensor, const BaseTensorPtr &v_tensor,
-    const BaseTensorPtr &max_v_tensor, const BaseTensorPtr &gradient_tensor, const BaseTensorPtr &step_tensor,
-    const FP32ImmPtr &lr, const FP32ImmPtr &beta1, const FP32ImmPtr &beta2, const FP32ImmPtr &decay,
-    const FP32ImmPtr &eps, const BoolImmPtr &amsgrad, const BoolImmPtr &maximize) override;
+  std::tuple<tensor::TensorPtr, tensor::TensorPtr, tensor::TensorPtr> Call(
+    const TensorPtr &var_tensor, const TensorPtr &m_tensor, const TensorPtr &v_tensor, const TensorPtr &max_v_tensor,
+    const TensorPtr &gradient_tensor, const TensorPtr &step_tensor, const FP32ImmPtr &lr, const FP32ImmPtr &beta1,
+    const FP32ImmPtr &beta2, const FP32ImmPtr &decay, const FP32ImmPtr &eps, const BoolImmPtr &amsgrad,
+    const BoolImmPtr &maximize) override;
 };
 
 class InplaceCopyAscendDvm : public InplaceCopyAscend {
@@ -432,7 +428,7 @@ class InplaceCopyAscendDvm : public InplaceCopyAscend {
   InplaceCopyAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : InplaceCopyAscend(std::move(primitive), device_context) {}
   ~InplaceCopyAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &variable_tensor, const BaseTensorPtr &value_tensor) override;
+  tensor::TensorPtr Call(const TensorPtr &variable_tensor, const TensorPtr &value_tensor) override;
 };
 
 class InplaceDivAscendDvm : public InplaceDivAscend {
@@ -440,8 +436,8 @@ class InplaceDivAscendDvm : public InplaceDivAscend {
   InplaceDivAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : InplaceDivAscend(std::move(primitive), device_context) {}
   ~InplaceDivAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const mindspore::tensor::BaseTensorPtr &input_tensor,
-                             const mindspore::tensor::BaseTensorPtr &other_tensor) override;
+  tensor::TensorPtr Call(const mindspore::tensor::TensorPtr &input_tensor,
+                         const mindspore::tensor::TensorPtr &other_tensor) override;
 };
 
 class InplaceExpAscendDvm : public InplaceExpAscend {
@@ -449,7 +445,7 @@ class InplaceExpAscendDvm : public InplaceExpAscend {
   InplaceExpAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : InplaceExpAscend(std::move(primitive), device_context) {}
   ~InplaceExpAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const mindspore::tensor::BaseTensorPtr &input_tensor) override;
+  tensor::TensorPtr Call(const mindspore::tensor::TensorPtr &input_tensor) override;
 };
 
 class InplaceAddExtAscendDvm : public InplaceAddExtAscend {
@@ -457,8 +453,7 @@ class InplaceAddExtAscendDvm : public InplaceAddExtAscend {
   InplaceAddExtAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : InplaceAddExtAscend(std::move(primitive), device_context) {}
   ~InplaceAddExtAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &input_tensor, const BaseTensorPtr &other_tensor,
-                             const ScalarPtr &alpha) override;
+  tensor::TensorPtr Call(const TensorPtr &input_tensor, const TensorPtr &other_tensor, const ScalarPtr &alpha) override;
 };
 
 class InplaceSubExtAscendDvm : public InplaceSubExtAscend {
@@ -466,8 +461,7 @@ class InplaceSubExtAscendDvm : public InplaceSubExtAscend {
   InplaceSubExtAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : InplaceSubExtAscend(std::move(primitive), device_context) {}
   ~InplaceSubExtAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &input_tensor, const BaseTensorPtr &other_tensor,
-                             const ScalarPtr &alpha) override;
+  tensor::TensorPtr Call(const TensorPtr &input_tensor, const TensorPtr &other_tensor, const ScalarPtr &alpha) override;
 };
 
 class InplaceReLUAscendDvm : public InplaceReLUAscend {
@@ -475,7 +469,7 @@ class InplaceReLUAscendDvm : public InplaceReLUAscend {
   InplaceReLUAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : InplaceReLUAscend(std::move(primitive), device_context) {}
   ~InplaceReLUAscendDvm() = default;
-  tensor::BaseTensorPtr Call(const mindspore::tensor::BaseTensorPtr &input_tensor) override;
+  tensor::TensorPtr Call(const mindspore::tensor::TensorPtr &input_tensor) override;
 };
 
 class DenseAscendDvm : public DenseAscend {
@@ -484,8 +478,8 @@ class DenseAscendDvm : public DenseAscend {
       : DenseAscend(std::move(primitive), device_context) {}
   ~DenseAscendDvm() = default;
 
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &input_tensor, const BaseTensorPtr &weight_tensor,
-                             const std::optional<BaseTensorPtr> &bias_tensor) override;
+  tensor::TensorPtr Call(const TensorPtr &input_tensor, const TensorPtr &weight_tensor,
+                         const std::optional<TensorPtr> &bias_tensor) override;
 };
 
 class MatMulAscendDvm : public MatMulAscend {
@@ -494,8 +488,8 @@ class MatMulAscendDvm : public MatMulAscend {
       : MatMulAscend(std::move(primitive), device_context) {}
   ~MatMulAscendDvm() = default;
 
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &input_tensor, const BaseTensorPtr &mat2_tensor,
-                             const BoolImmPtr &transpose_a, const BoolImmPtr &transpose_b) override;
+  tensor::TensorPtr Call(const TensorPtr &input_tensor, const TensorPtr &mat2_tensor, const BoolImmPtr &transpose_a,
+                         const BoolImmPtr &transpose_b) override;
 };
 
 class BatchMatMulAscendDvm : public pyboost::BatchMatMulAscend {
@@ -504,8 +498,8 @@ class BatchMatMulAscendDvm : public pyboost::BatchMatMulAscend {
       : BatchMatMulAscend(std::move(primitive), device_context) {}
   ~BatchMatMulAscendDvm() = default;
 
-  tensor::BaseTensorPtr Call(const BaseTensorPtr &x_tensor, const BaseTensorPtr &y_tensor,
-                             const BoolImmPtr &transpose_a, const BoolImmPtr &transpose_b) override;
+  tensor::TensorPtr Call(const TensorPtr &x_tensor, const TensorPtr &y_tensor, const BoolImmPtr &transpose_a,
+                         const BoolImmPtr &transpose_b) override;
 };
 
 class MatMulExtAscendDvm : public MatMulExtAscend {
@@ -514,8 +508,8 @@ class MatMulExtAscendDvm : public MatMulExtAscend {
       : MatMulExtAscend(std::move(primitive), device_context) {}
   ~MatMulExtAscendDvm() = default;
 
-  tensor::BaseTensorPtr Call(const mindspore::tensor::BaseTensorPtr &input_tensor,
-                             const mindspore::tensor::BaseTensorPtr &other_tensor) override;
+  tensor::TensorPtr Call(const mindspore::tensor::TensorPtr &input_tensor,
+                         const mindspore::tensor::TensorPtr &other_tensor) override;
 };
 
 class BatchNormStatsAscendDvm : public BatchNormStatsAscend {
@@ -524,8 +518,8 @@ class BatchNormStatsAscendDvm : public BatchNormStatsAscend {
       : BatchNormStatsAscend(std::move(primitive), device_context) {}
   ~BatchNormStatsAscendDvm() = default;
 
-  std::tuple<mindspore::tensor::BaseTensorPtr, mindspore::tensor::BaseTensorPtr> Call(
-    const mindspore::tensor::BaseTensorPtr &input_tensor, const mindspore::FP32ImmPtr &eps) override;
+  std::tuple<mindspore::tensor::TensorPtr, mindspore::tensor::TensorPtr> Call(
+    const mindspore::tensor::TensorPtr &input_tensor, const mindspore::FP32ImmPtr &eps) override;
 };
 
 class BatchNormGatherStatsWithCountsAscendDvm : public BatchNormGatherStatsWithCountsAscend {
@@ -534,13 +528,12 @@ class BatchNormGatherStatsWithCountsAscendDvm : public BatchNormGatherStatsWithC
       : BatchNormGatherStatsWithCountsAscend(std::move(primitive), device_context) {}
   ~BatchNormGatherStatsWithCountsAscendDvm() = default;
 
-  std::tuple<mindspore::tensor::BaseTensorPtr, mindspore::tensor::BaseTensorPtr> Call(
-    const mindspore::tensor::BaseTensorPtr &input_tensor, const mindspore::tensor::BaseTensorPtr &mean_tensor,
-    const mindspore::tensor::BaseTensorPtr &invstd_tensor,
-    const std::optional<mindspore::tensor::BaseTensorPtr> &running_mean_tensor_opt,
-    const std::optional<mindspore::tensor::BaseTensorPtr> &running_var_tensor_opt,
-    const mindspore::FP32ImmPtr &momentum, const mindspore::FP32ImmPtr &eps,
-    const std::optional<mindspore::tensor::BaseTensorPtr> &counts_tensor_opt) override;
+  std::tuple<mindspore::tensor::TensorPtr, mindspore::tensor::TensorPtr> Call(
+    const mindspore::tensor::TensorPtr &input_tensor, const mindspore::tensor::TensorPtr &mean_tensor,
+    const mindspore::tensor::TensorPtr &invstd_tensor,
+    const std::optional<mindspore::tensor::TensorPtr> &running_mean_tensor_opt,
+    const std::optional<mindspore::tensor::TensorPtr> &running_var_tensor_opt, const mindspore::FP32ImmPtr &momentum,
+    const mindspore::FP32ImmPtr &eps, const std::optional<mindspore::tensor::TensorPtr> &counts_tensor_opt) override;
 };
 
 class BatchNormElemtAscendDvm : public BatchNormElemtAscend {
@@ -549,12 +542,12 @@ class BatchNormElemtAscendDvm : public BatchNormElemtAscend {
       : BatchNormElemtAscend(std::move(primitive), device_context) {}
   ~BatchNormElemtAscendDvm() = default;
 
-  mindspore::tensor::BaseTensorPtr Call(const mindspore::tensor::BaseTensorPtr &input_tensor,
-                                        const std::optional<mindspore::tensor::BaseTensorPtr> &weight_tensor_opt,
-                                        const std::optional<mindspore::tensor::BaseTensorPtr> &bias_tensor_opt,
-                                        const std::optional<mindspore::tensor::BaseTensorPtr> &mean_tensor_opt,
-                                        const std::optional<mindspore::tensor::BaseTensorPtr> &invstd_tensor_opt,
-                                        const mindspore::FP32ImmPtr &eps) override;
+  mindspore::tensor::TensorPtr Call(const mindspore::tensor::TensorPtr &input_tensor,
+                                    const std::optional<mindspore::tensor::TensorPtr> &weight_tensor_opt,
+                                    const std::optional<mindspore::tensor::TensorPtr> &bias_tensor_opt,
+                                    const std::optional<mindspore::tensor::TensorPtr> &mean_tensor_opt,
+                                    const std::optional<mindspore::tensor::TensorPtr> &invstd_tensor_opt,
+                                    const mindspore::FP32ImmPtr &eps) override;
 };
 
 class BatchNormElemtGradAscendDvm : public BatchNormElemtGradAscend {
@@ -563,14 +556,11 @@ class BatchNormElemtGradAscendDvm : public BatchNormElemtGradAscend {
       : BatchNormElemtGradAscend(std::move(primitive), device_context) {}
   ~BatchNormElemtGradAscendDvm() = default;
 
-  mindspore::tensor::BaseTensorPtr Call(const mindspore::tensor::BaseTensorPtr &dout_tensor,
-                                        const mindspore::tensor::BaseTensorPtr &input_tensor,
-                                        const mindspore::tensor::BaseTensorPtr &mean_tensor,
-                                        const mindspore::tensor::BaseTensorPtr &invstd_tensor,
-                                        const mindspore::tensor::BaseTensorPtr &weight_tensor,
-                                        const mindspore::tensor::BaseTensorPtr &sumd_dy_tensor,
-                                        const mindspore::tensor::BaseTensorPtr &sum_dy_xmu_tensor,
-                                        const mindspore::tensor::BaseTensorPtr &count_tensor) override;
+  mindspore::tensor::TensorPtr Call(
+    const mindspore::tensor::TensorPtr &dout_tensor, const mindspore::tensor::TensorPtr &input_tensor,
+    const mindspore::tensor::TensorPtr &mean_tensor, const mindspore::tensor::TensorPtr &invstd_tensor,
+    const mindspore::tensor::TensorPtr &weight_tensor, const mindspore::tensor::TensorPtr &sumd_dy_tensor,
+    const mindspore::tensor::TensorPtr &sum_dy_xmu_tensor, const mindspore::tensor::TensorPtr &count_tensor) override;
 };
 }  // namespace pyboost
 }  // namespace kernel

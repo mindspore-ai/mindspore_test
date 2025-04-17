@@ -98,7 +98,7 @@ ShapeArray RepeatInterleaveIntFuncImpl::InferShape(const PrimitivePtr &primitive
     MS_EXCEPTION(RuntimeError) << "For '" << primitive->name() << "', Only support on Atlas A2 training series.";
   }
 
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   const auto x_shape = x_tensor->shape();
   auto repeats_opt = GetScalarValue<int64_t>(input_values[kInputIndex1]);
@@ -117,7 +117,7 @@ ShapeArray RepeatInterleaveIntFuncImpl::InferShape(const PrimitivePtr &primitive
 
 TypePtrList RepeatInterleaveIntFuncImpl::InferType(const PrimitivePtr &primitive,
                                                    const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   const auto &input_x_type = x_tensor->Dtype();
   TypePtrList type_ptr_list{input_x_type};

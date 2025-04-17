@@ -21,9 +21,8 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr InnerCommAllReduceCPUCustomize(const std::shared_ptr<OpRunner> &op,
-                                                     const BaseTensorPtr &input_tensor, const StringImmPtr &op_type,
-                                                     const StringImmPtr &group) {
+tensor::TensorPtr InnerCommAllReduceCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                                 const StringImmPtr &op_type, const StringImmPtr &group) {
   CommonCommFunc(op, input_tensor, nullptr, nullptr);
   return op->output(0);
 }

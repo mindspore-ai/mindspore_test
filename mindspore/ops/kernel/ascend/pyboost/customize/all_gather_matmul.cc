@@ -28,7 +28,7 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace all_gather_matmul {
-ValueTuplePtr GetTransposePerm(const BaseTensorPtr &tensor) {
+ValueTuplePtr GetTransposePerm(const TensorPtr &tensor) {
   std::vector<ValuePtr> perm(tensor->shape().size());
   perm[kDim0] = MakeValue(static_cast<int64_t>(kDim1));
   perm[kDim1] = MakeValue(static_cast<int64_t>(kDim0));
@@ -36,9 +36,9 @@ ValueTuplePtr GetTransposePerm(const BaseTensorPtr &tensor) {
 }
 }  // namespace all_gather_matmul
 
-std::vector<tensor::BaseTensorPtr> AllGatherMatmulAscendCustomize(
-  const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input, const BaseTensorPtr &x2, const StringImmPtr &group,
-  const Int64ImmPtr &world_size, const std::optional<BaseTensorPtr> &bias, const Int64ImmPtr &gather_index,
+std::vector<tensor::TensorPtr> AllGatherMatmulAscendCustomize(
+  const std::shared_ptr<OpRunner> &op, const TensorPtr &input, const TensorPtr &x2, const StringImmPtr &group,
+  const Int64ImmPtr &world_size, const std::optional<TensorPtr> &bias, const Int64ImmPtr &gather_index,
   const BoolImmPtr &gather_output, const Int64ImmPtr &comm_turn, const BoolImmPtr &trans_input,
   const BoolImmPtr &trans_x2) {
   MS_LOG(DEBUG) << op->primitive()->name() << " call start";
@@ -57,8 +57,8 @@ std::vector<tensor::BaseTensorPtr> AllGatherMatmulAscendCustomize(
 
   auto hccl_inner_comm_name_imm = mindspore::device::ascend::OpApiUtil::GetCommName(group_imm);
   mindspore::device::ascend::OpApiUtil::CheckWorldSize(group_imm, world_size_imm, op->primitive()->name());
-  BaseTensorPtr input_ = input;
-  BaseTensorPtr x2_ = x2;
+  TensorPtr input_ = input;
+  TensorPtr x2_ = x2;
   const auto &device_name = op->device_context()->device_context_key_.device_name_;
   auto transpose_op = CREATE_PYBOOST_OP(Transpose, device_name);
   if (trans_input_imm) {

@@ -64,9 +64,9 @@ TypePtr ScatterFuncImpl::InferType(const PrimitivePtr &primitive,
 }
 
 ShapeArray ScatterFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &input_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &input_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
-  const auto &src_tensor = input_values[kIndex3]->cast<tensor::BaseTensorPtr>();
+  const auto &src_tensor = input_values[kIndex3]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(src_tensor);
   const auto &input_shape = input_tensor->shape();
   const auto &src_shape = src_tensor->shape();
@@ -76,9 +76,9 @@ ShapeArray ScatterFuncImpl::InferShape(const PrimitivePtr &primitive, const Valu
 }
 
 TypePtrList ScatterFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &input_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &input_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
-  const auto &src_tensor = input_values[kIndex3]->cast<tensor::BaseTensorPtr>();
+  const auto &src_tensor = input_values[kIndex3]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(src_tensor);
   const auto &input_type = input_tensor->Dtype();
   const auto &src_type = src_tensor->Dtype();

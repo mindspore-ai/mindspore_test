@@ -24,7 +24,7 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-int64_t GetDimValue(const BaseTensorPtr &input_tensor) {
+int64_t GetDimValue(const TensorPtr &input_tensor) {
   const auto &shape = input_tensor->shape();
   size_t ndim = shape.size();
   int64_t ret;
@@ -37,10 +37,9 @@ int64_t GetDimValue(const BaseTensorPtr &input_tensor) {
 }
 }  // namespace
 
-tensor::BaseTensorPtr LogSoftmaxExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                   const BaseTensorPtr &input_tensor,
-                                                   const std::optional<Int64ImmPtr> &dim,
-                                                   const std::optional<Int64ImmPtr> &dtype) {
+tensor::TensorPtr LogSoftmaxExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                               const std::optional<Int64ImmPtr> &dim,
+                                               const std::optional<Int64ImmPtr> &dtype) {
   MS_LOG(DEBUG) << op->primitive()->name() << " call start";
   OpRunner::InferOpOutput(op, input_tensor, dim, dtype);
 

@@ -27,10 +27,9 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr SmoothL1LossAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                  const BaseTensorPtr &prediction_tensor,
-                                                  const BaseTensorPtr &target_tensor, const FP32ImmPtr &beta,
-                                                  const Int64ImmPtr &reduction) {
+tensor::TensorPtr SmoothL1LossAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &prediction_tensor,
+                                              const TensorPtr &target_tensor, const FP32ImmPtr &beta,
+                                              const Int64ImmPtr &reduction) {
   MS_LOG(DEBUG) << "SmoothL1Loss call start";
   OpRunner::InferOpOutput(op, prediction_tensor, target_tensor, beta, reduction);
 

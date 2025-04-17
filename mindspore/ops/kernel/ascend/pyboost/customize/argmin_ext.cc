@@ -25,15 +25,15 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr ArgMinAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                            const std::optional<Int64ImmPtr> &dim, const BoolImmPtr &keepdim) {
+tensor::TensorPtr ArgMinAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                        const std::optional<Int64ImmPtr> &dim, const BoolImmPtr &keepdim) {
   MS_LOG(DEBUG) << "aclnnArgmin call start";
   OpRunner::InferOpOutput(op, input_tensor, dim, keepdim);
 
   int64_t real_dim = 0;
   bool dim_is_none = true;
   auto real_keepdim = false;
-  BaseTensorPtr real_input;
+  TensorPtr real_input;
   if (dim.has_value()) {
     dim_is_none = false;
     real_dim = GetValue<int64_t>(dim.value());

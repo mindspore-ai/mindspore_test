@@ -23,8 +23,8 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr OuterAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input,
-                                           const BaseTensorPtr &vec2) {
+tensor::TensorPtr OuterAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input,
+                                       const TensorPtr &vec2) {
   OpRunner::InferOpOutput(op, input, vec2);
 
   auto reshape_op = CREATE_PYBOOST_OP(Reshape, op->device_context()->device_context_key_.device_name_);

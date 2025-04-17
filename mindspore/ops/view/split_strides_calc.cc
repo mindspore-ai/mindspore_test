@@ -65,11 +65,11 @@ TensorStorageInfoPtrList SplitProcess(const OldTensorInfoPtr &old_tensor_info, c
 }
 
 TensorStorageInfoPtrList SplitCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  if (!inputs[kInputIndex0]->isa<tensor::BaseTensor>()) {
+  if (!inputs[kInputIndex0]->isa<tensor::Tensor>()) {
     MS_LOG(EXCEPTION) << "For [" << prim->name() << "], first input is not tensor.";
   }
 
-  auto input_tensor = inputs[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  auto input_tensor = inputs[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   auto axis = GetValue<int64_t>(inputs[kInputIndex1]);
   auto output_num = GetValue<int64_t>(inputs[kInputIndex2]);

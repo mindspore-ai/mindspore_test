@@ -26,8 +26,7 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr InplaceReLUAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                 const BaseTensorPtr &input_tensor) {
+tensor::TensorPtr InplaceReLUAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor) {
   MS_LOG(DEBUG) << "Call InplaceRelu start";
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor);
   op->set_outputs({input_tensor});

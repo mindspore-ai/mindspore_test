@@ -303,7 +303,7 @@ void OpBackend::RunViewKernelTask(const pynative::BaseOpRunInfo &base_op_run_inf
   view_backend_.RunViewKernelTask(base_op_run_info, task_type, enable_async);
 }
 
-void OpBackend::RunAllocMemTask(DeviceContext *device_context, const tensor::BaseTensorPtr &tensor, bool enable_async,
+void OpBackend::RunAllocMemTask(DeviceContext *device_context, const tensor::TensorPtr &tensor, bool enable_async,
                                 bool is_cpu_address_exist) const {
   view_backend_.RunAllocMemTask(device_context, tensor, enable_async, is_cpu_address_exist);
 }
@@ -323,7 +323,7 @@ void PostRunOp::UpdateOutput(const std::vector<session::KernelWithIndex> &output
   }
 }
 
-tensor::BaseTensorPtr PostRunOp::CreateOutputTensor(const AnfNodePtr &output_node, size_t output_index) const {
+tensor::TensorPtr PostRunOp::CreateOutputTensor(const AnfNodePtr &output_node, size_t output_index) const {
   MS_EXCEPTION_IF_NULL(output_node);
   auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(output_node, output_index, false);
   MS_EXCEPTION_IF_NULL(kernel_tensor);
@@ -365,7 +365,7 @@ tensor::BaseTensorPtr PostRunOp::CreateOutputTensor(const AnfNodePtr &output_nod
 
 void PostRunOp::ReleaseForwardOpOutput(const std::vector<ValuePtr> &input_values) {
   for (const auto &value : input_values) {
-    auto tensor = value->cast<tensor::BaseTensorPtr>();
+    auto tensor = value->cast<tensor::TensorPtr>();
     if (tensor == nullptr) {
       continue;
     }
@@ -461,7 +461,7 @@ void PostRunOp::ClearOpInputOutput(const OpCompilerInfoPtr &op_compiler_info) co
 void PostRunOp::UpdateOutputAbstract(const VectorRef &outputs, const session::BackendOpRunInfoPtr &op_run_info) const {
   auto output_size = outputs.size();
   if (output_size == 1 && op_run_info->base_op_run_info.op_name != kGetNextOpName) {
-    auto output_tensor = utils::cast<tensor::BaseTensorPtr>(outputs[0]);
+    auto output_tensor = utils::cast<tensor::TensorPtr>(outputs[0]);
     MS_EXCEPTION_IF_NULL(output_tensor);
     op_run_info->base_op_run_info.abstract = output_tensor->ToAbstract();
     MS_LOG(DEBUG) << "Update output abstract of " << op_run_info->base_op_run_info.op_name << " to "
@@ -470,7 +470,7 @@ void PostRunOp::UpdateOutputAbstract(const VectorRef &outputs, const session::Ba
   }
   AbstractBasePtrList elements;
   for (size_t i = 0; i < output_size; ++i) {
-    auto output_tensor = utils::cast<tensor::BaseTensorPtr>(outputs[i]);
+    auto output_tensor = utils::cast<tensor::TensorPtr>(outputs[i]);
     MS_EXCEPTION_IF_NULL(output_tensor);
     (void)elements.emplace_back(output_tensor->ToAbstract());
   }
@@ -513,10 +513,10 @@ void PostRunOp::UpdateOutputDynamic(const session::BackendOpRunInfoPtr &op_run_i
   }
 }
 
-tensor::BaseTensorPtr PostRunOp::CreateOutputTensorDynamicImpl(const OpCompilerInfoPtr &op_compiler_info,
-                                                               const AnfNodePtr &output_node, size_t output_index,
-                                                               const KernelTensorPtr &kernel_tensor,
-                                                               size_t idx_in_graph_outputs) const {
+tensor::TensorPtr PostRunOp::CreateOutputTensorDynamicImpl(const OpCompilerInfoPtr &op_compiler_info,
+                                                           const AnfNodePtr &output_node, size_t output_index,
+                                                           const KernelTensorPtr &kernel_tensor,
+                                                           size_t idx_in_graph_outputs) const {
   MS_EXCEPTION_IF_NULL(output_node);
   MS_EXCEPTION_IF_NULL(kernel_tensor);
   MS_EXCEPTION_IF_NULL(op_compiler_info);
@@ -567,7 +567,7 @@ void ViewBackend::RunViewKernelTask(const pynative::BaseOpRunInfo &base_op_run_i
   MS_EXCEPTION_IF_NULL(device_context);
 
   for (size_t idx = 0; idx < base_op_run_info.expanded_input_values.size(); idx++) {
-    auto input_tensor = base_op_run_info.expanded_input_values[idx]->cast<tensor::BaseTensorPtr>();
+    auto input_tensor = base_op_run_info.expanded_input_values[idx]->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(input_tensor);
     if (input_tensor->device_address() == nullptr) {
       if (idx == 0) {
@@ -613,7 +613,7 @@ void ViewBackend::RunViewKernelTask(const pynative::BaseOpRunInfo &base_op_run_i
   }
 }
 
-void ViewBackend::RunAllocMemTask(DeviceContext *device_context, const tensor::BaseTensorPtr &tensor, bool enable_async,
+void ViewBackend::RunAllocMemTask(DeviceContext *device_context, const tensor::TensorPtr &tensor, bool enable_async,
                                   bool is_cpu_address_exist) const {
   if (!enable_async) {
     WaitTasksFinish();
@@ -638,7 +638,7 @@ void ViewBackend::RunViewKernelTaskAsyncImpl(const runtime::KernelTaskType &task
     std::make_shared<runtime::PassthroughDeviceTask>(kernel_task_func));
 }
 
-void ViewBackend::AllocateMemForTensor(const tensor::BaseTensorPtr &tensor, DeviceContext *device_context,
+void ViewBackend::AllocateMemForTensor(const tensor::TensorPtr &tensor, DeviceContext *device_context,
                                        bool is_cpu_address_exist) const {
   MS_EXCEPTION_IF_NULL(tensor);
   MS_EXCEPTION_IF_NULL(device_context);

@@ -21,7 +21,7 @@
 #include <set>
 #include <string>
 #include "ir/anf.h"
-#include "ir/base_tensor.h"
+#include "ir/tensor.h"
 #include "utils/hash_map.h"
 #include "utils/shape_utils.h"
 #include "include/common/utils/utils.h"
@@ -112,18 +112,18 @@ class BACKEND_COMMON_EXPORT Node : public NodeBase, public std::enable_shared_fr
 
 class BACKEND_COMMON_EXPORT ConstTensorNode : public Node {
  public:
-  explicit ConstTensorNode(const tensor::BaseTensorPtr &data)
+  explicit ConstTensorNode(const tensor::TensorPtr &data)
       : Node({data->DataSize() == 1 ? DShape({1}) : data->shape(), data->data_type(), kOpFormat_DEFAULT}),
         data_(data) {}
   ~ConstTensorNode() = default;
 
   NType NodeType() override { return NType::Tensor; }
   std::string ToString() const override { return data_->data().ToString(data_->data_type(), data_->shape(), false); }
-  const tensor::BaseTensorPtr data() const { return data_; }
+  const tensor::TensorPtr data() const { return data_; }
   abstract::AbstractBasePtr ToAbstract() const override { return data_->ToAbstract(); }
 
  protected:
-  tensor::BaseTensorPtr data_;
+  tensor::TensorPtr data_;
 };
 
 class ConstScalarNode : public Node {

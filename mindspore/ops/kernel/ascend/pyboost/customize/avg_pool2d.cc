@@ -24,12 +24,11 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-tensor::BaseTensorPtr AvgPool2DAscendCall(const std::shared_ptr<OpRunner> &op,
-                                          const device::DeviceContext *device_context, const BaseTensorPtr &input,
-                                          const std::vector<int64_t> &kernel_size, const std::vector<int64_t> &stride,
-                                          const std::vector<int64_t> &padding, const bool &ceil_mode,
-                                          const bool count_include_pad, const int64_t divisor_override,
-                                          const std::vector<tensor::BaseTensorPtr> &outputs) {
+tensor::TensorPtr AvgPool2DAscendCall(const std::shared_ptr<OpRunner> &op, const device::DeviceContext *device_context,
+                                      const TensorPtr &input, const std::vector<int64_t> &kernel_size,
+                                      const std::vector<int64_t> &stride, const std::vector<int64_t> &padding,
+                                      const bool &ceil_mode, const bool count_include_pad,
+                                      const int64_t divisor_override, const std::vector<tensor::TensorPtr> &outputs) {
   MS_LOG(DEBUG) << "Call start";
   const int8_t cube_math_type = GetCubeMathType();
   LAUNCH_ACLNN(aclnnAvgPool2d, device_context, op->stream_id(), input, kernel_size, stride, padding, ceil_mode,
@@ -39,11 +38,11 @@ tensor::BaseTensorPtr AvgPool2DAscendCall(const std::shared_ptr<OpRunner> &op,
 }
 }  // namespace
 
-tensor::BaseTensorPtr AvgPool2DAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input,
-                                               const ValueTuplePtr &kernel_size, const ValueTuplePtr &stride,
-                                               const ValueTuplePtr &padding, const BoolImmPtr &ceil_mode,
-                                               const BoolImmPtr &count_include_pad,
-                                               const std::optional<Int64ImmPtr> &divisor_override) {
+tensor::TensorPtr AvgPool2DAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input,
+                                           const ValueTuplePtr &kernel_size, const ValueTuplePtr &stride,
+                                           const ValueTuplePtr &padding, const BoolImmPtr &ceil_mode,
+                                           const BoolImmPtr &count_include_pad,
+                                           const std::optional<Int64ImmPtr> &divisor_override) {
   MS_LOG(INFO) << "AvgPool2DAscendCustomize start";
   OpRunner::InferOpOutput(op, input, kernel_size, stride, padding, ceil_mode, count_include_pad, divisor_override);
 

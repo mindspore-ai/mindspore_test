@@ -21,7 +21,7 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void InnerCommIsendGPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
+void InnerCommIsendGPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
                                 const Int64ImmPtr &dst, const StringImmPtr &group, const Int64ImmPtr &tag) {
   auto pre_func = [op, input_tensor]() {
     OpRunner::InferOpOutput(op, input_tensor);

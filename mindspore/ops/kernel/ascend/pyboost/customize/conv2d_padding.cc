@@ -72,12 +72,11 @@ bool GetSymmetricPadding2D(std::vector<int64_t> &padding_l, std::vector<int64_t>
 }
 }  // namespace
 
-tensor::BaseTensorPtr Conv2DPaddingAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                   const BaseTensorPtr &input_tensor,
-                                                   const BaseTensorPtr &weight_tensor,
-                                                   const std::optional<BaseTensorPtr> &bias_tensor,
-                                                   const ValueTuplePtr &stride, const Int64ImmPtr &padding_enum,
-                                                   const ValueTuplePtr &dilation, const Int64ImmPtr &group) {
+tensor::TensorPtr Conv2DPaddingAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                               const TensorPtr &weight_tensor,
+                                               const std::optional<TensorPtr> &bias_tensor, const ValueTuplePtr &stride,
+                                               const Int64ImmPtr &padding_enum, const ValueTuplePtr &dilation,
+                                               const Int64ImmPtr &group) {
   // Convert ValueTuple to std::vector
   const auto &weight_shape = weight_tensor->shape();
   auto spatial_len = weight_shape.size() - kIndex2;
@@ -89,8 +88,8 @@ tensor::BaseTensorPtr Conv2DPaddingAscendCustomize(const std::shared_ptr<OpRunne
   auto padding_enum_imm = GetValue<int64_t>(padding_enum);
   auto input_shape = input_tensor->shape();
   auto is_batchify = Conv2DPaddingBatchify(input_shape, 2, "conv2d");
-  BaseTensorPtr input_tensor_new = input_tensor;
-  BaseTensorPtr expand_input_x_imm = input_tensor;
+  TensorPtr input_tensor_new = input_tensor;
+  TensorPtr expand_input_x_imm = input_tensor;
   if (!is_batchify) {
     std::vector<ValuePtr> expand_input_shape;
     expand_input_shape.insert(expand_input_shape.begin(), std::make_shared<Int64Imm>(1));

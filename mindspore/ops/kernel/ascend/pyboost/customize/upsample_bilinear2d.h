@@ -27,11 +27,10 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr UpsampleBilinear2DAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                        const BaseTensorPtr &input_tensor,
-                                                        const std::optional<ValueTuplePtr> &output_size,
-                                                        const std::optional<ValueTuplePtr> &scale_factors,
-                                                        const BoolImmPtr &align_corners);
+tensor::TensorPtr UpsampleBilinear2DAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                                    const std::optional<ValueTuplePtr> &output_size,
+                                                    const std::optional<ValueTuplePtr> &scale_factors,
+                                                    const BoolImmPtr &align_corners);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore
