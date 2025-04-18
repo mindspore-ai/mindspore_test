@@ -47,6 +47,7 @@ from mindspore import log as logger
 from mindspore._checkparam import check_input_data, check_input_dataset
 from mindspore import _checkparam as Validator
 from mindspore.common import dtype as mstype
+from mindspore.common import np_dtype
 from mindspore.common.api import _cell_graph_executor as _executor
 from mindspore.common.api import _MindsporeFunctionExecutor
 from mindspore.common.api import _get_parameter_layout
@@ -81,7 +82,6 @@ from safetensors.numpy import save_file
 from safetensors import safe_open
 from ..ops.operations._opaque_predicate_registry import add_opaque_predicate, clean_funcs
 
-
 tensor_to_ms_type = {"Int8": mstype.int8, "UInt8": mstype.uint8, "Int16": mstype.int16, "UInt16": mstype.uint16,
                      "Int32": mstype.int32, "UInt32": mstype.uint32, "Int64": mstype.int64, "UInt64": mstype.uint64,
                      "Float16": mstype.float16, "Float32": mstype.float32, "Float64": mstype.float64,
@@ -90,6 +90,9 @@ tensor_to_ms_type = {"Int8": mstype.int8, "UInt8": mstype.uint8, "Int16": mstype
 tensor_to_np_type = {"Int8": np.int8, "UInt8": np.uint8, "Int16": np.int16, "UInt16": np.uint16,
                      "Int32": np.int32, "UInt32": np.uint32, "Int64": np.int64, "UInt64": np.uint64,
                      "Float16": np.float16, "Float32": np.float32, "Float64": np.float64, "Bool": np.bool_, "str": "U"}
+
+if hasattr(np_dtype, "bfloat16"):
+    tensor_to_np_type["BFloat16"] = np_dtype.bfloat16
 
 np_type_convert = {"int32": np.int32, "float32": np.float32, "float16": np.float16, "float64": np.float64}
 
@@ -381,7 +384,11 @@ def _exec_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-GCM", map_
             elif format == "safetensors":
                 save_dict = {}
                 for name, value in data_list.items():
-                    save_dict[name] = value[2].asnumpy()
+                    bytes_data = value[2].get_bytes()
+                    np_type = tensor_to_np_type.get(value[1])
+                    np_array = np.frombuffer(bytes_data, np_type)
+                    new_np_array = np_array.reshape(value[0])
+                    save_dict[name] = new_np_array
                 save_file(save_dict, tmp_name)
             if not os.path.exists(tmp_name):
                 logger.warning(f"Rename failed, can't find {tmp_name}, it is possible that multiple processes have "
@@ -700,6 +707,7 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
 
     logger.info("Saving checkpoint process is finished.")
 
+
 def _handle_shared_param_for_pipeline_parallel(save_obj):
     """ Remove shared param for save_obj """
     filtered_save_obj = []
@@ -711,6 +719,7 @@ def _handle_shared_param_for_pipeline_parallel(save_obj):
         else:
             filtered_save_obj.append(param_dict)
     return filtered_save_obj
+
 
 def _convert_list_to_param_list(save_obj, choice_func):
     """Convert a list of Parameter to param_list."""

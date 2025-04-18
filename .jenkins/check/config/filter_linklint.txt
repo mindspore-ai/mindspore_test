@@ -69,3 +69,6 @@ https://mindspore.cn*/r2.3.1/*
 https://www.mindspore.cn*/r2.3.1/*
 https://mindspore.cn*/r2.4.0/*
 https://www.mindspore.cn*/r2.4.0/*
+https://www.mindspore.cn/docs/en/master/model_train/parallel/mpirun.html
+https://www.mindspore.cn/docs/en/master/model_train/parallel/dynamic_cluster.html
+https://www.mindspore.cn/docs/en/master/model_train/parallel/rank_table.html
