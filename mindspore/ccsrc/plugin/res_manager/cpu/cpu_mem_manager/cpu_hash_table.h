@@ -26,6 +26,7 @@
 #include "runtime/device/hash_table.h"
 #include "plugin/res_manager/cpu/cpu_mem_manager/cpu_memory_pool.h"
 #include "include/common/random.h"
+#include "plugin/res_manager/cpu/visible.h"
 
 namespace mindspore {
 namespace device {
@@ -41,7 +42,7 @@ using NormalDistribution = random::NormalDistribution<double>;
 
 // A hash table base on the host side cpu.
 template <typename Key, typename Value>
-class CPUHashTable : public HashTable<Key, Value> {
+class CPU_RES_MANAGER_EXPORT CPUHashTable : public HashTable<Key, Value> {
  public:
   using Status = HashTableElementStatus;
   using ValueStatusPair = std::pair<Value *, Status>;

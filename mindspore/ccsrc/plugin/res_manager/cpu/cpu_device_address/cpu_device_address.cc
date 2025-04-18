@@ -19,7 +19,7 @@
 #include "runtime/device/res_manager/utils/convert_tensor_utils.h"
 #include "plugin/res_manager/cpu/cpu_mem_manager/cpu_memory_pool.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_synchronizer.h"
-#include "plugin/device/cpu/hal/device/cpu_hash_table_util.h"
+#include "plugin/res_manager/cpu/cpu_mem_manager/cpu_hash_table_util.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 
 namespace mindspore {

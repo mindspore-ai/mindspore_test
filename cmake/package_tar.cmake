@@ -40,8 +40,13 @@ endif()
 
 if(ENABLE_D)
     install(
-        TARGETS mindspore_ge_backend mindspore_ascend_res_manager
+        TARGETS mindspore_ge_backend
         DESTINATION ${INSTALL_LIB_DIR}
+        COMPONENT mindspore
+    )
+    install(
+        TARGETS mindspore_ascend_res_manager
+        DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
         COMPONENT mindspore
     )
     install(
@@ -53,9 +58,15 @@ endif()
 
 if(ENABLE_GPU)
     install(
-        TARGETS mindspore_gpu mindspore_gpu_res_manager
+        TARGETS mindspore_gpu
         DESTINATION ${INSTALL_PLUGIN_DIR}
         COMPONENT mindspore
+    )
+    install(
+        TARGETS mindspore_gpu_res_manager LIBRARY
+        DESTINATION ${INSTALL_PLUGIN_DIR}/gpu
+        COMPONENT mindspore
+        NAMELINK_SKIP
     )
 endif()
 
@@ -147,6 +158,11 @@ if(ENABLE_CPU AND NOT WIN32)
             DESTINATION ${INSTALL_LIB_DIR}
             COMPONENT mindspore
     )
+    install(
+            TARGETS mindspore_cpu_res_manager
+            DESTINATION ${INSTALL_PLUGIN_DIR}/cpu
+            COMPONENT mindspore
+)
 endif()
 
 if(ENABLE_CPU)
