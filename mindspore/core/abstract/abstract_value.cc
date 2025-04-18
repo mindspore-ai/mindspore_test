@@ -308,7 +308,7 @@ AbstractBasePtr AbstractScalar::Join(const AbstractBasePtr &other) {
   const auto &this_value = GetValueTrack();
   const auto &value_other = other->GetValueTrack();
   if (other->isa<AbstractNegligible>() && !this_value->isa<ValueAny>()) {
-    return std::make_shared<AbstractAny>();
+    return AbstractBroaden(shared_from_base<AbstractBase>());
   }
 
   ValuePtr res_value = ValueJoin(this_value, value_other);
@@ -1863,7 +1863,7 @@ AbstractBasePtr AbstractNegligible::Join(const AbstractBasePtr &other) {
   if (other->isa<AbstractScalar>()) {
     const auto &value_other = other->GetValueTrack();
     if (!value_other->isa<ValueAny>()) {
-      return std::make_shared<AbstractAny>();
+      return AbstractBroaden(other);
     }
   }
   return other;
