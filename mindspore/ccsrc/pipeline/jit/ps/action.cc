@@ -1314,6 +1314,9 @@ FuncGraphPtr GetFuncFromAbstract(const abstract::AbstractBasePtr &abs) {
 
 FuncGraphPtr GetForwardGraphFromJNode(const AnfNodePtr &j_node) {
   MS_EXCEPTION_IF_NULL(j_node);
+  if (j_node->cast<CNodePtr>() == nullptr) {
+    return nullptr;
+  }
   AnfNodePtr j_param = j_node->cast<CNodePtr>()->input(1);
   AbstractBasePtr abs = j_param->abstract();
   FuncGraphPtr forward_graph = nullptr;
