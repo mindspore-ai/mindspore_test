@@ -31,7 +31,12 @@ class JoinedStrInfer : public abstract::OpInferBase {
     return std::make_shared<abstract::Shape>(ShapeVector({1}));
   }
 
-  TypePtr InferType(const PrimitivePtr &, const std::vector<AbstractBasePtr> &) const override {
+  TypePtr InferType(const PrimitivePtr &, const std::vector<AbstractBasePtr> &input_args) const override {
+    for (const AbstractBasePtr &abstract : input_args) {
+      if (abstract->isa<abstract::AbstractDictionary>()) {
+        MS_LOG(EXCEPTION) << "For JoinedStr, do not support dict input abstract " << abstract->ToString();
+      }
+    }
     return std::make_shared<TensorType>(kInt64);
   }
 
