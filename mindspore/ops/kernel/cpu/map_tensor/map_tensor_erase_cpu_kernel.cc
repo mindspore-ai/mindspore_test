@@ -16,7 +16,7 @@
 #include "abstract/utils.h"
 #include "common/common_utils.h"
 
-#include "plugin/device/cpu/hal/device/cpu_hash_table.h"
+#include "plugin/res_manager/cpu/cpu_mem_manager/cpu_hash_table.h"
 #include "kernel/cpu/map_tensor/map_tensor_erase_cpu_kernel.h"
 
 namespace mindspore {
