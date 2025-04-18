@@ -342,7 +342,7 @@ FuncGraphPtr KPrim::KPrimitive(const CNodePtr &cnode, const ValueNodePtr &value_
   }
 
   FuncGraphPtr bprop_fg = nullptr;
-  if (IsPrimitiveEquals(prim, prim::kPrimHookBackward) || IsPrimitiveEquals(prim, prim::kPrimCellBackwardHook)) {
+  if (IsPrimitiveEquals(prim, prim::kPrimHookBackward)) {
     if (!pynative::GradState::Get().RequiresGrad()) {
       MS_LOG_WITH_NODE(EXCEPTION, cnode)
         << "The Hook operation is not supported in graph mode, which is only supported in pynative mode.\n"

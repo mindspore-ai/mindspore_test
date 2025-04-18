@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2020-2021 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -113,6 +113,10 @@ class DFunctor : public std::enable_shared_from_this<DFunctor> {
   std::vector<AnfNodePtr> RunInputReplace(const FuncGraphPtr &bprop_graph, const FuncGraphPtr &fprop_graph,
                                           const CNodePtr &cnode_morph);
   void ReplaceEquivdout(const CNodePtr &k_app, const CNodePtr &cnode_morph);
+
+  void SetTapeOutput(AnfNodePtr &grad_fv);
+  AnfNodePtr ApplyBackwardPreHooks(const AnfNodePtr &dout);
+  AnfNodePtr ApplyBackwardHooks(const AnfNodePtr &dins);
 
   mindspore::HashMap<AnfNodePtr, AdjointPtr> anfnode_to_adjoin_;
   // Cache for indirect fv backpropagation, K o K can only do backprop layer by layer.

@@ -594,6 +594,31 @@ py::object GetSymbolObject(const NameSpacePtr &name_space, const SymbolPtr &symb
   return res;
 }
 
+void MarkNoInlineForHookedCell(const AnfNodePtr &resolved_node, const py::object &obj) {
+  if (!IsValueNode<FuncGraph>(resolved_node)) {
+    return;
+  }
+  auto resolved_graph = GetValueNode<FuncGraphPtr>(resolved_node);
+
+  auto mark_when_hook_is = [&resolved_graph, &obj](const char *hook_type) -> void {
+    MS_EXCEPTION_IF_NULL(hook_type);
+
+    if (!py::hasattr(obj, hook_type)) {
+      return;
+    }
+
+    const auto &dict = py::cast<py::dict>(py::getattr(obj, hook_type));
+    if (dict.size() == 0) {
+      return;
+    }
+
+    resolved_graph->set_flag(FUNC_GRAPH_FLAG_NO_INLINE, true);
+  };
+
+  mark_when_hook_is(CELL_BACKWARD_PRE_HOOK);
+  mark_when_hook_is(CELL_BACKWARD_HOOK);
+}
+
 AnfNodePtr Resolver::ResolveSymbol(const FuncGraphManagerPtr &manager, const NameSpacePtr &name_space,
                                    const SymbolPtr &symbol, const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
@@ -651,6 +676,7 @@ AnfNodePtr Resolver::ResolveSymbol(const FuncGraphManagerPtr &manager, const Nam
       MS_LOG(DEBUG) << "Update top graph's parameters debug info with user top graph's parameters";
     }
   }
+  MarkNoInlineForHookedCell(resolved_node, obj);
   return resolved_node;
 }
 

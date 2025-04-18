@@ -420,7 +420,6 @@
         设置Cell对象的反向hook函数。
 
         .. note::
-            - `register_backward_hook(hook_fn)` 在图模式下，或者在PyNative模式下使用 `jit` 装饰器功能时不起作用。
             - hook_fn必须有如下代码定义：`cell` 是已注册Cell对象的信息， `grad_input` 是Cell对象的反向输出梯度， `grad_output` 是反向传递给Cell对象的梯度。 用户可以在hook_fn中返回None或者返回新的梯度。
             - hook_fn返回None或者新的相应于 `grad_input` 的梯度：hook_fn(cell, grad_input, grad_output) -> New grad_input or None。
             - 为了避免脚本在切换到图模式时运行失败，不建议在Cell对象的 `construct` 函数中调用 `register_backward_hook(hook_fn)` 。
@@ -440,7 +439,6 @@
         设置Cell对象的反向pre_hook函数。
 
         .. note::
-            - `register_backward_pre_hook(hook_fn)` 在图模式下，或者在PyNative模式下使用 `jit` 装饰器功能时不起作用。
             - hook_fn必须有如下代码定义：`cell` 是已注册Cell对象的信息， `grad_output` 是反向传递给Cell对象的梯度。用户可以在hook_fn中返回None或者返回新的梯度。
             - hook_fn返回None或者新的相应于 `grad_output` 的梯度：hook_fn(cell, grad_output) -> New grad_output or None。
             - `register_backward_pre_hook(hook_fn)` 在PyThon环境中运行。为了避免脚本在切换到图模式时运行失败，不建议在Cell对象的 `construct` 函数中调用 `register_backward_pre_hook(hook_fn)` 。
@@ -489,7 +487,6 @@
         - `output` ： `construct` 函数生成的输出。
 
         .. note::
-            - 该功能在图模式下或使用 `jit` 装饰器的PyNative模式下不生效。
             - `hook_fn` 可以通过返回新的输出数据来修改前向输出。
             - 为了避免脚本在切换到图模式时运行失败，不建议在Cell对象的 `construct` 函数中调用此方法。
             - PyNative模式下，如果在Cell对象的 `construct` 函数中调用此方法，那么Cell对象每次运行都将增加一个 `hook_fn` 。
@@ -522,7 +519,6 @@
         - `kwargs` (dict)：传入 `construct` 函数的关键字参数。仅当 `with_kwargs` 为 ``True`` 时，这些参数才会传递给 `hook_fn` 。
 
         .. note::
-            - 该功能在图模式下或使用 `jit` 装饰器的PyNative模式下不生效。
             - `hook_fn` 可通过返回新的输入数据来修改前向输入。
               如果 `with_kwargs` 为 ``False`` ，可以返回单独的值（如果返回值不是元组，将自动封装为元组），也可以直接返回一个元组形式的参数列表。
               如果 `with_kwargs` 为 ``True`` ，则应该返回包含新的 `args` 和 `kwargs` 的元组。

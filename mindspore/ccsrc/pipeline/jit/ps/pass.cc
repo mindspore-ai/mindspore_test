@@ -314,9 +314,15 @@ FuncGraphPtr JitBpropGraphPass(const ResourcePtr &resource, bool need_renormaliz
     opt::OptPassConfig a_after_grad =
       opt::OptPassConfig({irpass.inline_without_move_, irpass.stack_unstack_eliminate_});
 
+    auto re_auto_monadwrapper = [](const FuncGraphPtr &root, const opt::OptimizerPtr &) -> bool {
+      return ReAutoMonad(root);
+    };
+
     (void)map.emplace_back("after_resolve", after_resolve_pass);
     (void)map.emplace_back("a_after_grad", a_after_grad);
     (void)map.emplace_back("renormalize", opt::OptPassConfig::Renormalize());
+    (void)map.emplace_back("auto_monad_grad", opt::OptPassConfig(re_auto_monadwrapper));
+    (void)map.emplace_back("auto_monad_eliminator", opt::OptPassConfig(opt::AutoMonadEliminator()));
   }
 
   opt::OptPassConfig grad_graph_opt = opt::OptPassConfig({
@@ -352,7 +358,7 @@ FuncGraphPtr JitBpropGraphPass(const ResourcePtr &resource, bool need_renormaliz
   MS_EXCEPTION_IF_NULL(context);
   bool enable_save_graphs = context->CanDump(kIntroductory);
   if (enable_save_graphs) {
-    DumpIR("jit_bprop_graph_lift_" + lifted_fg->ToString(), lifted_fg);
+    DumpIR("jit_bprop_graph_lift_" + lifted_fg->ToString() + ".ir", lifted_fg);
   }
 #endif
 
