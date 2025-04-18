@@ -20,7 +20,7 @@ mindspore.profiler._ExperimentalConfig
           - AicoreMetrics.Memory：包含ub\_read/write_bw、l1_read/write_bw、l2_read/write_bw、main_mem_read/write_bw等。
           - AicoreMetrics.MemoryL0：包含l0a_read/write_bw、l0b_read/write_bw、l0c_read/write_bw等。
           - AicoreMetrics.ResourceConflictRatio：包含vec_bankgroup/bank/resc_cflt_ratio等。
-          - AicoreMetrics.MemoryUB：包含ub\_read/write_bw_mte、 ub\_read/write_bw_vector、 ub\_/write_bw_scalar等。
+          - AicoreMetrics.MemoryUB：包含ub\_read/write_bw_mte、 ub\_read/write_bw_vector、 ub\_read/write_bw_scalar等。
           - AicoreMetrics.L2Cache：包含write_cache_hit、 write_cache_miss_allocate、 r0_read_cache_hit、 r1_read_cache_hit等。本功能仅支持Atlas A2 训练系列产品。
           - AicoreMetrics.MemoryAccess：主存以及L2 Cache的存访带宽和存量统计。
         - **l2_cache** (bool, 可选) - （仅限Ascend）是否收集L2 Cache数据，当值为 ``True`` 时，收集这些数据。默认值： ``False`` 。该采集项在ASCEND_PROFILER_OUTPUT文件夹下生成l2_cache.csv文件。在O2模式下，仅支持schedule配置中wait和skip_first参数都为0的场景。
