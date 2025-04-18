@@ -3,7 +3,7 @@ mindspore.parallel.sync_pipeline_shared_parameters
 
 .. py:function:: mindspore.parallel.sync_pipeline_shared_parameters(net)
 
-    在流水线并行场景下，部分参数可能会被不同的stage共享。例如 `embedding table` 被 `VocabEmbedding` 和 `LMHead` 两层共享，这两层通常会被切分到不同的stage上。
+    在流水线并行推理场景下，对stage间的共享权重进行同步。例如 `embedding table` 被 `VocabEmbedding` 和 `LMHead` 两层共享，这两层通常会被切分到不同的stage上。
     在流水线并行推理时， `embedding table` 变更后，有必要在stage之间进行权重同步。
 
     .. note::

@@ -3,7 +3,7 @@ mindspore.parallel.nn.GradAccumulation
 
 .. py:class:: mindspore.parallel.nn.GradAccumulation(network, micro_size)
 
-    使能GradAccumulation实现梯度累加。
+    实现静态图并行梯度累加功能。
 
     参数：
         - **network** (Cell) - 将进行梯度累加的网络。

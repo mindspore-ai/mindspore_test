@@ -1,7 +1,7 @@
 mindspore.parallel
 ==========================================================
 
-mindspore.parallel提供了大量的自动并行接口，包括并行配置基本单元、模型保存与加载、并行切分策略接口等。
+mindspore.parallel提供了大量的自动并行接口，包括并行基础配置、模型加载与转换、函数式并行切分等。
 
 模块导入方法如下：
 
@@ -9,7 +9,7 @@ mindspore.parallel提供了大量的自动并行接口，包括并行配置基�
 
     from mindspore import parallel
 
-并行配置基本单元
+并行基础配置
 ----------------------------------------------------------------
 
 .. mscnautosummary::
@@ -24,7 +24,7 @@ mindspore.parallel提供了大量的自动并行接口，包括并行配置基�
     mindspore.parallel.nn.PipelineGradReducer
 
 
-模型保存与加载
+模型加载与转换
 ----------------------------------------------------------------
 
 .. mscnautosummary::
@@ -40,7 +40,7 @@ mindspore.parallel提供了大量的自动并行接口，包括并行配置基�
     mindspore.parallel.unified_safetensors
 
 
-并行切分策略接口
+函数式并行切分
 ----------------------------------------------------------------
 
 .. mscnautosummary::
@@ -48,11 +48,8 @@ mindspore.parallel提供了大量的自动并行接口，包括并行配置基�
     :nosignatures:
     :template: classtemplate.rst
 
-    mindspore.parallel.build_searched_strategy
     mindspore.parallel.function.reshard
     mindspore.parallel.Layout
-    mindspore.parallel.merge_pipeline_strategys
-    mindspore.parallel.set_op_strategy_config
     mindspore.parallel.shard
 
 
@@ -64,6 +61,8 @@ mindspore.parallel提供了大量的自动并行接口，包括并行配置基�
     :nosignatures:
     :template: classtemplate.rst
 
+    mindspore.parallel.build_searched_strategy
+    mindspore.parallel.merge_pipeline_strategys
     mindspore.parallel.parameter_broadcast
     mindspore.parallel.restore_group_info_list
     mindspore.parallel.sync_pipeline_shared_parameters
