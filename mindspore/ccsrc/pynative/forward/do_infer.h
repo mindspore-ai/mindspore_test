@@ -36,6 +36,7 @@ class PYNATIVE_EXPORT InferOperation {
   void DoInfer(const FrontendOpRunInfoPtr &op_run_info);
   // Manage node abs cache.
   inline void ClearNodeAbsCache() { node_abs_cache_.clear(); }
+  void ClearHalfAbsCacheOnThreshold();
   void SetNodeAbsCacheByValue(const FrontendOpRunInfoPtr &op_run_info);
   void SetNodeAbsCacheById(const std::string &id, const abstract::AbstractBasePtr &abs);
   void UpdateNodeAbsCacheById(const std::string &id, const abstract::AbstractBasePtr &abs);
