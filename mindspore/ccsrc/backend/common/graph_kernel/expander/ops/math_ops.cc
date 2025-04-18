@@ -22,6 +22,23 @@
 #include "utils/value_utils.h"
 
 namespace mindspore::graphkernel::expander {
+constexpr int typeLevelBool = 0;
+constexpr int typeLevelInt = 1;
+constexpr int typeLevelFloat = 2;
+constexpr int typeLevelComplex = 3;
+
+static inline int TypeToLevel(TypeId t) {
+  static const std::unordered_map<TypeId, int> type_level_map = {
+    {kNumberTypeBool, typeLevelBool},      {kNumberTypeInt8, typeLevelInt},      {kNumberTypeInt16, typeLevelInt},
+    {kNumberTypeInt32, typeLevelInt},      {kNumberTypeInt64, typeLevelInt},     {kNumberTypeUInt8, typeLevelInt},
+    {kNumberTypeUInt16, typeLevelInt},     {kNumberTypeUInt32, typeLevelInt},    {kNumberTypeUInt64, typeLevelInt},
+    {kNumberTypeFloat16, typeLevelFloat},  {kNumberTypeFloat32, typeLevelFloat}, {kNumberTypeFloat64, typeLevelFloat},
+    {kNumberTypeBFloat16, typeLevelFloat},
+  };
+  const auto it = type_level_map.find(t);
+  return it != type_level_map.end() ? it->second : typeLevelComplex;
+}
+
 REG_EXPANDER_FUNC("AddN").SetBody(BODYFUNC(ib) {
   if (!CheckAllFormatsSame(ib, FormatDefaultNchwSame)) {
     return {};
@@ -419,7 +436,19 @@ REG_EXPANDER_FUNC("SubExt").SetBody(BODYFUNC(ib) { return BinaryExtCommon(ib, fa
 REG_EXPANDER_FUNC("Muls").SetBody(BODYFUNC(ib) {
   auto input = ib->input(kIndex0);
   auto scalar = ib->input(kIndex1);
-  return {ib->Mul(input, ib->ScalarToTensor(scalar, input->GetDtype()))};
+  auto input_type = input->GetDtype();
+  auto scalar_type = scalar->GetDtype();
+  auto scalar_value = scalar->GetValue();
+  if (scalar_value == nullptr || !IsValueKnown(scalar_value)) {
+    MS_LOG(DEBUG) << "scalar is not const value and the data type of it is not supported: "
+                  << TypeIdToString(scalar_type->type_id());
+    return {};
+  }
+  auto dst_type = TypeToLevel(input_type->type_id()) >= TypeToLevel(scalar_type->type_id()) ? input_type : scalar_type;
+  scalar = ib->ScalarToTensor(scalar, dst_type);
+  if (input_type != dst_type) {
+    input = ib->Cast(input, dst_type);
+  }
+  return {ib->Mul(input, scalar)};
 });
-
 }  // namespace mindspore::graphkernel::expander
