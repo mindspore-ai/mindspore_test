@@ -18,6 +18,7 @@
 #define MINDSPORE_CCSRC_PIPELINE_JIT_PARSE_RESOLVE_H_
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -243,6 +244,13 @@ bool ResolveAll(const FuncGraphManagerPtr &manager);
 
 py::object GetSymbolObject(const NameSpacePtr &name_space, const SymbolPtr &symbol, const AnfNodePtr &node);
 ValuePtr GetParameterValue(const py::object &param_obj);
+
+// Convert py::object to py::str, and then convert it to std::string.
+// Return std::nullopt if obj.ptr() is nullptr, or if exception is caught.
+std::optional<std::string> ToPyStr(const py::object &obj);
+// Convert py::object to py::str, and then convert it to std::string.
+// Return default_value if obj.ptr() is nullptr, or if exception is caught.
+std::string ToPyStr(const py::object &obj, const std::string &default_value);
 }  // namespace parse
 }  // namespace mindspore
 

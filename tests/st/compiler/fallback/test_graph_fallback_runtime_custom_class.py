@@ -17,9 +17,10 @@ import pytest
 import numpy as np
 import mindspore as ms
 from mindspore import context
-from mindspore import ops
+from mindspore import ops, nn, Tensor
 from mindspore import mutable
 from tests.mark_utils import arg_mark
+from tests.st.compiler.utils import match_array
 
 ms.set_context(mode=ms.GRAPH_MODE)
 
@@ -514,3 +515,35 @@ def test_kwargs_is_custom_class_attr():
     net = Net(config)
     output = net(x=ms.Tensor(3))
     assert output == 6
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_custom_class_getattr_and_custom_class_may_raise_exception():
+    """
+    Feature: attr is a custom-type object.
+    Description: self.config is a custom-type object.
+    Expectation: No error.
+    """
+
+    class Config:
+        def __init__(self):
+            self.k = 5
+
+        def __str__(self):
+            # The jit fallback may invoke the `__str__` method of a Python object.
+            # The framework should catch exceptions when calling `__str__`; otherwise, the compilation will fail.
+            raise NotImplementedError("Not support __str__")
+
+    class Model(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.config = Config()
+
+        def construct(self, x: Tensor, k=None):
+            k = k if k is not None else self.config.k  # self.config will be converted to InterpretedObject
+            return x + k
+
+    model = Model()
+    a = Tensor([1, 2, 3])
+    o = model(a)
+    match_array(o, Tensor([6, 7, 8]))

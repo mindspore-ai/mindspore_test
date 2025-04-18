@@ -18,6 +18,7 @@
 
 #include <utility>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 #include <algorithm>
@@ -98,7 +99,7 @@ struct AnfDumpHandlerRegister {
 InterpretedObject::InterpretedObject(const py::object &obj) : PyObjectWrapper(obj) {
   std::stringstream buf;
   auto type_str = python_adapter::CallPyFn(parse::PYTHON_MOD_PARSE_MODULE, parse::PYTHON_PARSE_GET_TYPE, obj);
-  buf << "PythonObject(type: " << std::string(py::str(type_str)) << ", value: " << std::string(py::str(obj)) << ")";
+  buf << "PythonObject(type: " << ToPyStr(type_str, "<unknown>") << ", value: " << ToPyStr(obj, "<unknown>") << ")";
   this->set_name(buf.str());
 }
 
@@ -1034,5 +1035,23 @@ AnfNodePtr Resolver::ResolveParameterObj(const FuncGraphPtr &func_graph, const p
   func_graph->add_parameter_obj_node(para_node);
   return para_node;
 }
+
+std::optional<std::string> ToPyStr(const py::object &obj) {
+  if (obj.ptr() == nullptr) {
+    MS_LOG(DEBUG) << "py::object is null";
+    return std::nullopt;
+  }
+  try {
+    return py::isinstance<py::str>(obj) ? obj.cast<std::string>() : py::str(obj).cast<std::string>();
+  } catch (py::error_already_set &e) {
+    MS_LOG(INFO) << "py::str() throws exception: " << e.what();
+    return std::nullopt;
+  }
+}
+
+std::string ToPyStr(const py::object &obj, const std::string &default_value) {
+  return ToPyStr(obj).value_or(default_value);
+}
+
 }  // namespace parse
 }  // namespace mindspore
