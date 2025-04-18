@@ -1,7 +1,7 @@
 mindspore.parallel
 =============================
 
-mindspore.parallel provides a comprehensive set of automatic parallel interfaces, including basic parallel configuration units, model serialization, parallel partitioning strategy interfaces, and more.
+mindspore.parallel provides a large number of interfaces for automatic parallelization, including parallel base configuration, model loading and transformation, and functional parallel slicing.
 
 The module import method is as follows:
 
@@ -9,7 +9,7 @@ The module import method is as follows:
 
     from mindspore import parallel
 
-Parallel Configuration Units
+Parallel Base Configuration
 ----------------------------------------------------------------
 
 .. autosummary::
@@ -24,7 +24,7 @@ Parallel Configuration Units
     mindspore.parallel.nn.PipelineGradReducer
 
 
-Model Serialization
+Model Loading and Transformation
 ----------------------------------------------------------------
 
 .. autosummary::
@@ -40,7 +40,20 @@ Model Serialization
     mindspore.parallel.unified_safetensors
 
 
-Parallel Partitioning Strategy
+Functional Parallel Slicing
+----------------------------------------------------------------
+
+.. autosummary::
+    :toctree: parallel
+    :nosignatures:
+    :template: classtemplate.rst
+
+    mindspore.parallel.function.reshard
+    mindspore.parallel.Layout
+    mindspore.parallel.shard
+
+
+Others
 ----------------------------------------------------------------
 
 .. autosummary::
@@ -49,21 +62,7 @@ Parallel Partitioning Strategy
     :template: classtemplate.rst
 
     mindspore.parallel.build_searched_strategy
-    mindspore.parallel.function.reshard
-    mindspore.parallel.Layout
     mindspore.parallel.merge_pipeline_strategys
-    mindspore.parallel.set_op_strategy_config
-    mindspore.parallel.shard
-
-
-others
-----------------------------------------------------------------
-
-.. autosummary::
-    :toctree: parallel
-    :nosignatures:
-    :template: classtemplate.rst
-
     mindspore.parallel.parameter_broadcast
     mindspore.parallel.restore_group_info_list
     mindspore.parallel.sync_pipeline_shared_parameters
