@@ -3,7 +3,7 @@
 
 .. py:class:: mindspore.parallel.Layout(device_matrix, alias_name, rank_list=None)
 
-    Layout描述了详细的切分信息。
+    描述集群设备的拓扑抽象，用于张量分片在集群上的放置。
 
     .. note::
         - 仅在半自动并行或自动并行模式下有效。

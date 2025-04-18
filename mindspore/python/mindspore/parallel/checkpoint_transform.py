@@ -50,7 +50,7 @@ __all__ = ["merge_pipeline_strategys", "rank_list_for_transform", "transform_che
 
 def merge_pipeline_strategys(src_strategy_dirs, dst_strategy_file):
     """
-    Merge parallel strategy between all pipeline stages in pipeline parallel mode.
+    Aggregate the sharding strategy files of all pipeline parallel subgraphs to the destination file.
 
     Note:
         Strategy file of each pipeline stage should be included in src_strategy_dirs.
@@ -684,8 +684,8 @@ def _sync_params(name, param, layout):
 
 # pylint: disable=W0212
 def sync_pipeline_shared_parameters(net):
-    """synchronize pipeline parallel stage shared parameters.
-    Parameters may be shared between different stages. For example, `embedding table` is
+    """Synchronization of shared weights between stages for pipeline parallel inference scenarios.
+    For example, `embedding table` is
     shared by `WordEmbedding` layer and `LMHead` layer, which are usually split into different stages. It is necessary
     to perform synchronization after `embedding table` changes.
 
@@ -924,7 +924,8 @@ def set_op_strategy_config(mode="SAVE", path=""):
 
 def build_searched_strategy(strategy_filename):
     """
-    Build strategy of every parameter in network. Used in the case of distributed inference.
+    Extract the sharding strategy for each parameter in the network
+    from the strategy file for distributed inference scenarios.
 
     Args:
         strategy_filename (str): Name of strategy file.
@@ -1277,8 +1278,8 @@ def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_stra
 
 def restore_group_info_list(group_info_file_name):
     """
-    Build rank list, the checkpoint of ranks in the rank list has the same contents with the local rank
-    who saves the `group_info_file_name`. To save the group info file, please export GROUP_INFO_FIL
+    Extract rank list information from communication domain files. To save the group info file,
+    please export GROUP_INFO_FIL
     environment variables like "export GROUP_INFO_FILE=/data/group_info.pb".
 
     Args:

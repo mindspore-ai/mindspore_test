@@ -3,7 +3,7 @@
 
 .. py:function:: mindspore.parallel.function.reshard(tensor, layout)
 
-    指定输入张量的精准排布。其中，传入的layout需要为mindspore.parallel.Layout类型，可参考： :class:`mindspore.parallel.Layout` 的描述。
+    将张量从一种分布式排布转换成另一种分布式排布。其中，传入的layout需要为mindspore.parallel.Layout类型，可参考： :class:`mindspore.parallel.Layout` 的描述。
 
     .. note::
         - 在图模式下，可以利用此方法设置某个张量的并行切分策略，未设置的会自动通过策略传播方式配置。

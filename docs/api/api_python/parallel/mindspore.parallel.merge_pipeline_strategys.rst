@@ -3,7 +3,7 @@ mindspore.parallel.merge_pipeline_strategys
 
 .. py:function:: mindspore.parallel.merge_pipeline_strategys(src_strategy_dirs, dst_strategy_file)
 
-    流水线并行模式下，汇聚所有流水线并行子图的切分策略文件。
+    汇聚所有流水线并行子图的切分策略文件到目的文件。
 
     .. note::
         src_strategy_dirs必须包含所有流水线并行的子图的切分策略文件。

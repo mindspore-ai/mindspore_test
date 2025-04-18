@@ -38,7 +38,8 @@ def group_size():
 # pylint: disable=W0212
 def reshard(tensor, layout):
     r"""
-    Specify the tensor by the given layout. The given layout must be type mindspore.parallel.Layout,
+    Converting a tensor from one distributed arrangement to another distributed arrangement.
+    The given layout must be type mindspore.parallel.Layout,
     can check :class:`mindspore.parallel.Layout` for reference.
 
     Note:

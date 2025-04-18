@@ -21,8 +21,7 @@ from mindspore.communication.management import get_rank, get_group_size
 
 class AutoParallel(Cell):
     """
-    AutoParallel enable auto parallel configuration for neural network cells. This class provides multiple
-    parallel strategies to optimize distributed training across Ascend devices.
+    Encapsulation of top-level Cells or functions to realize static graph parallelism for a single network.
 
     Note:
         - When using the `Model` API, the network passed to the `Model` must be wrapped with `AutoParallel`.
