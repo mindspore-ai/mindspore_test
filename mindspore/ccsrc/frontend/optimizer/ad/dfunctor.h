@@ -117,6 +117,8 @@ class DFunctor : public std::enable_shared_from_this<DFunctor> {
   void ReplaceEquivdout(const CNodePtr &k_app, const CNodePtr &cnode_morph);
 
   void AccumulateInputGradients(const CNodePtr &cnode_morph, const AdjointPtr &node_adjoint, const CNodePtr bprop_app);
+  AnfNodePtr ApplyBackwardPreHook(const AnfNodePtr &dout);
+  AnfNodePtr ApplyBackwardHook(const AdjointPtr &node_adjoint);
 
   mindspore::HashMap<AnfNodePtr, AdjointPtr> anfnode_to_adjoin_;
   // Cache for indirect fv backpropagation, K o K can only do backprop layer by layer.
