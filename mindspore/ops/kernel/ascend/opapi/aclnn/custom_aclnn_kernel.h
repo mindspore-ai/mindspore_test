@@ -113,7 +113,7 @@ class CustomAclnnKernelMod : public AclnnKernelMod {
     if (hash_id_ == 0 || !hash_map_.count(hash_id_)) {
       aclOpExecutor *executor;
       std::function<void()> release_func;
-      std::tie(std::ignore, executor, release_func) = GEN_CUSTOM_EXECUTOR(op_type_, args...);
+      std::tie(std::ignore, executor, std::ignore, release_func) = GEN_CUSTOM_EXECUTOR(op_type_, args...);
       return std::make_pair(executor, release_func);
     }
     const auto &cur_run = *hash_map_[hash_id_];
