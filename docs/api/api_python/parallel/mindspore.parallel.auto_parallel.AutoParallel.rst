@@ -3,7 +3,7 @@
 
 .. py:class:: mindspore.parallel.auto_parallel.AutoParallel(network, parallel_mode="semi_auto")
 
-    并行配置的基本单元，静态图模式下需封装顶层Cell或函数并指定并行模式。
+    对顶层Cell或函数进行封装，实现单个网络的静态图并行。
 
     .. note::
         - 使用Model高阶接口进行训练或推理时，传入Model的network必须用AutoParallel进行封装。

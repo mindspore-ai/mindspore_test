@@ -120,7 +120,7 @@ class PipelineCell(Cell):
 
 class Pipeline(PipelineCell):
     """
-    Slice MiniBatch into finer-grained MicroBatch for use in pipeline-parallel training.
+    Specify the number of micro_batch for pipeline parallelism and the division rules for stage.
 
     Note:
         micro_size must be greater or equal to pipeline stages.
@@ -151,8 +151,9 @@ class Pipeline(PipelineCell):
 
 class MicroBatchInterleaved(Cell):
     """
-    This function splits the input at the 0th into interleave_num pieces and then performs
-    the computation of the wrapped cell. Application scenario: When there is model parallelism in semi-automatic mode
+    Implement the static graph parallel multi-copy splitting function to enable concurrent computation
+    and communication.
+    Application scenario: When there is model parallelism in semi-automatic mode
     and network, if the first slice data is calculating forward, the second slice data will execute the
     communication operators at the same time, to achieve the performance acceleration of communication and computing
     concurrency.
@@ -206,7 +207,7 @@ class MicroBatchInterleaved(Cell):
 
 class GradAccumulation(Cell):
     """
-    Wrap the network with Micro Batch to enable the grad accumulation.
+    Implementation of parallel gradient accumulation for static graphs.
 
     Args:
         network (Cell): The target network to wrap.
