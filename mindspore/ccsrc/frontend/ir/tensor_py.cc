@@ -872,8 +872,11 @@ py::array TensorPybind::AsNumpyOfSlice(const Tensor &tensor, const int32_t param
 
 py::object TensorPybind::TensorGetItem(const py::object &self, const py::object &py_index) {
   static std::string config_static_shape = common::GetEnv("MS_PYNATIVE_CONFIG_STATIC_SHAPE");
-  if (MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET) != kAscendDevice ||
-      MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode || config_static_shape == "1") {
+  // Data sync will be triggered per operation if mode is graph mode and async_for_graph is false
+  bool is_data_sync_per_op = MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode &&
+                             !runtime::OpExecutor::GetInstance().async_for_graph();
+  if (MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET) != kAscendDevice || is_data_sync_per_op ||
+      config_static_shape == "1") {
     return self.attr("_getitem_origin")(py_index);
   }
   return self.attr("_getitem")(py_index);
@@ -881,8 +884,11 @@ py::object TensorPybind::TensorGetItem(const py::object &self, const py::object 
 
 py::object TensorPybind::TensorSetItem(const py::object &self, const py::object &py_index, const py::object &py_value) {
   static std::string config_static_shape = common::GetEnv("MS_PYNATIVE_CONFIG_STATIC_SHAPE");
-  if (MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET) != kAscendDevice ||
-      MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode || config_static_shape == "1") {
+  // Data sync will be triggered per operation if mode is graph mode and async_for_graph is false
+  bool is_data_sync_per_op = MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode &&
+                             !runtime::OpExecutor::GetInstance().async_for_graph();
+  if (MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET) != kAscendDevice || is_data_sync_per_op ||
+      config_static_shape == "1") {
     return self.attr("_setitem_origin")(py_index, py_value);
   }
   return self.attr("_setitem")(py_index, py_value);
