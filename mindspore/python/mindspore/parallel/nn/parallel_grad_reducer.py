@@ -53,7 +53,7 @@ def tensor_shard_grad_scale_pipeline(scale, grad, accu_grad):
 
 class PipelineGradReducer(Cell):
     """
-    PipelineGradReducer is a gradient reducer for pipeline parallelism.
+    Functional training scenarios for gradient statute and accumulation of pipeline parallel.
 
     Args:
         parameters (list): the parameters to be updated.
