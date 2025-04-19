@@ -49,16 +49,12 @@
 	path = tests/st/mindrlhf/mindformers
 	url = https://gitee.com/mindspore/mindformers.git
 	branch = dev
-	shallow = true
 [submodule "tests/st/mindrlhf/mindrlhf"]
 	path = tests/st/mindrlhf/mindrlhf
 	url = https://gitee.com/mindspore/mindrlhf.git
-	shallow = true
 [submodule "tests/st/networks/msadapter"]
 	path = tests/st/networks/msadapter
 	url = https://gitee.com/mindspore/msadapter.git
-	shallow = true
 [submodule "tests/st/networks/MindSpeed-Core-MS"]
 	path = tests/st/networks/MindSpeed-Core-MS
 	url = https://gitee.com/ascend/MindSpeed-Core-MS.git
-	shallow = true
