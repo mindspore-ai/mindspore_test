@@ -18,7 +18,6 @@
 #include <vector>
 #include "kernel/ascend/opapi/aclnn_kernel_build.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "kernel/ascend/opapi/aclnn/custom_aclnn_kernel.h"
 #include "kernel/ascend/opapi/aclnn/custom_aclnn_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"

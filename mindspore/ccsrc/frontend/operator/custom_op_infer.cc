@@ -104,6 +104,11 @@ BaseShapePtr CustomInferShapeByCPP(const PrimitivePtr &primitive, const std::vec
   std::vector<std::vector<int64_t>> shape_list;
   BaseShapePtr res_shape = nullptr;
   for (size_t idx = 0; idx < input_args.size(); idx++) {
+    auto input_arg = input_args[idx];
+    MS_EXCEPTION_IF_NULL(input_arg);
+    if (input_arg->GetType()->object_type() != kObjectTypeTensorType) {
+      continue;
+    }
     auto params_shape_ptr = CheckAndConvertUtils::GetTensorInputShape(kernel_name, input_args, idx);
     MS_EXCEPTION_IF_NULL(params_shape_ptr);
     auto params_shape = params_shape_ptr->shape();

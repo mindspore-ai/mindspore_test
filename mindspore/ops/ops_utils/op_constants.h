@@ -506,5 +506,6 @@ constexpr auto kOpFormat_NCL = "NCL";
 constexpr auto kSliceStart = "start";
 constexpr auto kSliceStop = "stop";
 constexpr auto kSliceStep = "step";
+constexpr auto kCustomInputsType = "custom_inputs_type";
 }  // namespace mindspore
 #endif
