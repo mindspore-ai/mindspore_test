@@ -19,8 +19,8 @@
 
 #include "plugin/res_manager/ascend/mem_manager/ascend_memory_adapter.h"
 #include <string>
+#include <map>
 #include <memory>
-#include <vector>
 
 namespace mindspore {
 namespace device {
@@ -30,6 +30,7 @@ class AscendDynamicMemAdapter : public AscendMemAdapter {
   bool Initialize() override;
   bool DeInitialize() override;
   uint8_t *MallocStaticDevMem(size_t size, const std::string &tag = "") override;
+  bool FreeStaticDevMem(void *addr) override;
   uint8_t *MallocDynamicDevMem(size_t size, const std::string &tag = "") override;
   void ResetDynamicMemory() override;
   std::string DevMemStatistics() const override;
@@ -38,7 +39,7 @@ class AscendDynamicMemAdapter : public AscendMemAdapter {
 
  private:
   size_t has_alloc_size = 0;
-  std::vector<std::shared_ptr<MemoryBlock>> static_memory_block_list_;
+  std::map<void *, std::shared_ptr<MemoryBlock>> static_memory_blocks_;
 };
 }  // namespace ascend
 }  // namespace device

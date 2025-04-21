@@ -127,6 +127,14 @@ uint8_t *AscendTwoPointerMemAdapter::MallocStaticDevMem(size_t size, const std::
   return memory_block_ptr;
 }
 
+bool AscendTwoPointerMemAdapter::FreeStaticDevMem(void *addr) {
+  if (common::IsDryRun()) {
+    return true;
+  }
+  MS_LOG(WARNING) << "FreeStaticDevMem addr:" << addr << " is not supported in two pointer mode.";
+  return false;
+}
+
 uint8_t *AscendTwoPointerMemAdapter::MallocDynamicDevMem(size_t size, const std::string &tag) {
   std::lock_guard<std::mutex> locker(mutex_);
   if (AscendVmmAdapter::GetInstance().IsEnabled()) {

@@ -22,6 +22,8 @@ from mindspore.common.api import _pynative_executor
 from tests.mark_utils import arg_mark
 from tests.device_utils import set_device
 
+import os
+
 class Net(nn.Cell):
     def __init__(self):
         super(Net, self).__init__()
@@ -206,3 +208,62 @@ def test_runtime_reset_max_memory_allocated():
     allocated_peak_after_reset = ms.runtime.max_memory_allocated()
     _pynative_executor.sync()
     assert allocated_before_reset == allocated_peak_after_reset
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_empty_cache_vmm():
+    """
+    Feature: runtime memory api.
+    Description: Test runtime memory empty cache api.
+    Expectation: runtime.empty_cache api performs as expected.
+    """
+    set_device()
+    os.environ['MS_ALLOC_CONF'] = "enable_vmm:true"
+
+    net = Net()
+    net(Tensor(2.0))
+    reserved_size = ms.runtime.memory_reserved()
+    assert reserved_size > 0
+    ms.runtime.empty_cache()
+    reserved_size = ms.runtime.memory_reserved()
+    assert reserved_size == 0
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_empty_cache_without_vmm():
+    """
+    Feature: runtime memory api.
+    Description: Test runtime memory empty cache api.
+    Expectation: runtime.empty_cache api performs as expected.
+    """
+    set_device()
+    os.environ['MS_ALLOC_CONF'] = "enable_vmm:false"
+
+    net = Net()
+    net(Tensor(2.0))
+    reserved_size = ms.runtime.memory_reserved()
+    assert reserved_size > 0
+    ms.runtime.empty_cache()
+    reserved_size = ms.runtime.memory_reserved()
+    assert reserved_size == 0
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_empty_cache_dryrun():
+    """
+    Feature: runtime memory api.
+    Description: Test runtime memory empty cache api.
+    Expectation: runtime.empty_cache api performs as expected.
+    """
+    set_device()
+    os.environ["MS_SIMULATION_LEVEL"] = "1"
+    os.environ["RANK_SIZE"] = "1"
+    os.environ["RANK_ID"] = "0"
+
+    net = Net()
+    net(Tensor(2.0))
+    reserved_size = ms.runtime.memory_reserved()
+    assert reserved_size > 0
+    ms.runtime.empty_cache()
+    reserved_size = ms.runtime.memory_reserved()
+    assert reserved_size == 0

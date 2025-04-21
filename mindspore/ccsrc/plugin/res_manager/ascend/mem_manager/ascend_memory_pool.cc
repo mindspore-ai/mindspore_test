@@ -71,6 +71,27 @@ DefaultAscendMemoryPool::DefaultAscendMemoryPool() {
   SetEnableVmm(AscendVmmAdapter::GetInstance().IsEnabled());
 }
 
+size_t DefaultAscendMemoryPool::EmptyCache() {
+  LockGuard lock(AbstractDynamicMemPool::lock());
+  AbstractEnhancedDynamicMemPool::WaitPipelineHelper();
+  AbstractAscendMemoryPoolSupport::SyncAllStreams();
+  if (IsEnableVmm()) {
+    AbstractEnhancedDynamicMemPool::FreeIdleMemsByEagerFree();
+    return AbstractAscendMemoryPoolSupport::EmptyCache();
+  } else if (IsEnableEagerFree()) {
+    auto ret = AbstractEnhancedDynamicMemPool::FreeIdleMemsByEagerFree();
+    MS_LOG(INFO) << "Eager free memory size is " << ret.second << ".";
+    return ret.second;
+  }
+
+  MS_LOG(INFO) << "Vmm is not enabled, try to release free blocks.";
+  // disable ge kernel use two pointer mem adapter, not support free.
+  if (IsDisableGeKernel()) {
+    return 0L;
+  }
+  return ReleaseFreeBlocks();
+}
+
 AscendMemoryTimeEvent::AscendMemoryTimeEvent(int32_t device_id, const MemoryTimeEventPtr &memory_time_event)
     : BaseReportData(device_id, static_cast<uint32_t>(profiler::ascend::ReportFileType::MEMORY_USAGE)),
       memory_time_event_(memory_time_event) {
@@ -466,6 +487,11 @@ void BestFitAscendMemoryPool::ReportMemoryTimeEvent(const MemoryTimeEventPtr &ti
   }
   FillTidAndPid(ascend_memory_time_event);
   profiler::ascend::ProfilingDataDumper::GetInstance().Report(std::move(ascend_memory_time_event));
+}
+
+size_t BestFitAscendMemoryPool::EmptyCache() {
+  MS_LOG(WARNING) << "Best fit memory pool is not supported empty cache.";
+  return 0L;
 }
 
 // Initialize static member in AscendMemoryPool.

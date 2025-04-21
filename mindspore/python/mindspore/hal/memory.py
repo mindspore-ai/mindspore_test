@@ -14,7 +14,7 @@
 # ============================================================================
 
 """Hardware memory interfaces."""
-from mindspore._c_expression import _memory_stats, _reset_max_mem_reserved, _reset_max_mem_allocated
+from mindspore._c_expression import _memory_stats, _reset_max_mem_reserved, _reset_max_mem_allocated, _empty_cache
 from mindspore import log as logger
 from .device import _check_inputs_validation, is_initialized
 
@@ -132,19 +132,27 @@ def max_memory_reserved(device_target=None):
 
 
 @_check_inputs_validation
-def empty_cache():
+def empty_cache(device_target=None):
     """
     Release all memory fragments in the memory pool, so that memory arrangement
     will be optimized, this api will be deprecated and removed in future versions, please use
     the api :func:`mindspore.runtime.empty_cache` instead.
 
     Note:
-        Currently, the MindSpore memory pool does not have the function of releasing memory fragments.
-        This interface is reserved but implemented as an empty method and prompted in log mode when using.
+        Empty cache may help reduce the fragmentation of device memory.
+        However, it may have a negative impact on network performance. Please use it with caution.
+        The api is supported on Ascend only and with limitations:
+          - Not support ``disable ge kernel``.
+
+    Returns:
+        int, in Byte.
+
+    Supported Platforms:
+        ``Ascend``
     """
     if not function_memory_status['empty_cache']:
         function_memory_status['empty_cache'] = True
-        logger.warning(f"The empty_cache operation is currently not supported.")
+    return _empty_cache(device_target)
 
 
 @_check_inputs_validation

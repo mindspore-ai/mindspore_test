@@ -181,8 +181,19 @@ size_t AbstractAscendMemoryPoolSupport::FreeDeviceMemByEagerFree(const DeviceMem
   }
 }
 
+size_t AbstractAscendMemoryPoolSupport::EmptyCache() { return AscendVmmAdapter::GetInstance().EmptyCache(); }
+
 size_t AbstractAscendMemoryPoolSupport::MmapDeviceMem(const size_t size, const DeviceMemPtr addr) {
-  return AscendVmmAdapter::GetInstance().MmapDeviceMem(size, addr, total_mem_size());
+  if (IsEnableVmm()) {
+    return AscendVmmAdapter::GetInstance().MmapDeviceMem(size, addr, total_mem_size());
+  } else if (IsEnableEagerFree()) {
+    auto ret = AscendGmemAdapter::GetInstance().MmapMemory(size, addr);
+    if (ret == nullptr) {
+      MS_LOG(EXCEPTION) << "Mmap memory failed.";
+    }
+    return size;
+  }
+  MS_LOG(EXCEPTION) << "Eager free and VMM are both disabled.";
 }
 
 bool AbstractAscendMemoryPoolSupport::FreeDeviceMem(const DeviceMemPtr &addr) {
@@ -193,6 +204,10 @@ bool AbstractAscendMemoryPoolSupport::FreeDeviceMem(const DeviceMemPtr &addr) {
   int64_t max_peak = UsedMemPeakStatistics();
   MS_LOG(INFO) << "Max peak used memory size is " << max_peak;
   AscendMemAdapter::GetInstance()->UpdateUsedPeakMemory(max_peak);
+  // disable ge kernel use two pointer mem adapter, not support free.
+  if (!IsEnableVmm() && !IsEnableEagerFree() && !IsDisableGeKernel()) {
+    return AscendMemAdapter::GetInstance()->FreeStaticDevMem(addr);
+  }
   return true;
 }
 
