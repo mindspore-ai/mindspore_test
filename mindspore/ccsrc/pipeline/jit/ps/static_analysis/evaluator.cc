@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -180,15 +180,8 @@ AbstractBasePtrList EvaluateArguments(const ConfigPtrList &args_conf_list) {
     MS_EXCEPTION_IF_NULL(result);
     const auto &abs = result->abstract();
     // Check if there's an inplace abstract and use it.
-    AbstractBasePtr real_abs;
     MS_EXCEPTION_IF_NULL(abs);
-    if (abs->inplace_abstract() == nullptr) {
-      real_abs = abs;
-    } else {
-      real_abs = abs->inplace_abstract();
-      MS_LOG(INFO) << "Use inplace abstract, " << abs->ToString() << " -> " << real_abs->ToString();
-    }
-    (void)args_abs_list.emplace_back(real_abs);
+    (void)args_abs_list.emplace_back(abs);
   }
   return args_abs_list;
 }
@@ -348,19 +341,15 @@ AbstractBasePtr BaseFuncGraphEvaluator::LaunchRecursiveEval(const AnalysisEngine
     } else {
       node_eval_result = ObtainEvalResultFromCache(node_conf);
       if (node_eval_result != nullptr) {
-        static const auto enable_eliminate_unused_element = (common::GetCompileConfig("ENABLE_DDE") != "0");
-        if (enable_eliminate_unused_element) {
-          const auto &cnode = node->cast<CNodePtr>();
-          MS_EXCEPTION_IF_NULL(cnode);
-          const auto &maybe_func = engine->GetCNodeOperatorAbstract(cnode, context, fg);
-          if (maybe_func->isa<MetaFuncGraphAbstractClosure>() || maybe_func->isa<FuncGraphAbstractClosure>()) {
-            const auto &abs_func_graph = maybe_func->cast<AbstractFunctionPtr>();
-            SynchronizeSequenceElementsUseFlagsForFuncGraphArgs(engine, fg, cnode, abs_func_graph, context);
-          }
+        const auto &cnode = node->cast<CNodePtr>();
+        MS_EXCEPTION_IF_NULL(cnode);
+        const auto &maybe_func = engine->GetCNodeOperatorAbstract(cnode, context, fg);
+        if (maybe_func->isa<MetaFuncGraphAbstractClosure>() || maybe_func->isa<FuncGraphAbstractClosure>()) {
+          const auto &abs_func_graph = maybe_func->cast<AbstractFunctionPtr>();
+          SynchronizeSequenceElementsUseFlagsForFuncGraphArgs(engine, fg, cnode, abs_func_graph, context);
         }
+
         if (engine->check_side_effect() && node_eval_result->has_side_effect_node()) {
-          auto cnode = dyn_cast_ptr<CNode>(node);
-          MS_EXCEPTION_IF_NULL(cnode);
           MS_LOG(DEBUG) << "Found side-effect, cnode: " << cnode->DebugString() << ", func_graph: " << fg->ToString();
           cnode->set_has_side_effect_node(true);
           fg->set_has_side_effect_node(true);
@@ -673,22 +662,11 @@ EvalResultPtr Evaluator::Run(AnalysisEnginePtr engine, const ConfigPtrList &args
     MS_EXCEPTION_IF_NULL(eval_result->abstract());
     MS_LOG(DEBUG) << "[" << this << "/" << evaluator_name
                   << "] cache hit. result: " << eval_result->abstract()->ToString() << ", args: " << args_abs_list;
-    // Update inputs sequence nodes info, if matched in cache.
-    static const auto enable_eliminate_unused_element = (common::GetCompileConfig("ENABLE_DDE") != "0");
-    if (enable_eliminate_unused_element) {
-      for (size_t i = 0; i < args_abs_list.size(); ++i) {
-        auto new_sequence = dyn_cast<AbstractSequence>(args_abs_list[i]);
-        auto old_sequence = dyn_cast<AbstractSequence>(iter->first[i]);
-        if (old_sequence != nullptr && new_sequence != nullptr) {
-          MS_LOG(DEBUG) << "Before synchronize sequence nodes use flags for NodeConfig: "
-                        << (out_conf ? out_conf->ToString() : "NULL") << "old_sequence: " << old_sequence->ToString()
-                        << ", new_sequence: " << new_sequence->ToString();
-          SynchronizeSequenceElementsUseFlagsRecursively(old_sequence, new_sequence);
-          MS_LOG(DEBUG) << "After synchronize sequence nodes use flags for NodeConfig: "
-                        << (out_conf ? out_conf->ToString() : "NULL") << ", old_sequence: " << old_sequence->ToString()
-                        << ", new_sequence: " << new_sequence->ToString();
-        }
-      }
+    for (size_t i = 0; i < args_abs_list.size(); ++i) {
+      const auto &old_arg = iter->first[i];
+      const auto &new_arg = args_abs_list[i];
+      // Update inputs abstract, if matched in cache.
+      SynchronizeSuccessiveInputs(old_arg, new_arg);
     }
   }
   return eval_result;
@@ -1050,10 +1028,9 @@ AbstractBasePtr GetPhysicalViewAbs(const AbstractBasePtr &logical_view_abs, cons
         MS_LOG(EXCEPTION) << "The axis in vmap's 'out_axes' should be a None or a scalar of type Int64Imm, but got a "
                           << sub_out_axes->ToString() << ".";
       });
-    if (logical_view_abs->isa<AbstractList>()) {
-      return std::make_shared<AbstractList>(physical_view_abs_list);
-    }
-    return std::make_shared<AbstractTuple>(physical_view_abs_list);
+    auto ret = logical_view_abs->Clone();
+    dyn_cast_ptr<AbstractSequence>(ret)->set_elements(physical_view_abs_list);
+    return ret;
   }
 
   // for the single output case, outputs: A, and out_axes: 1 or (1,).

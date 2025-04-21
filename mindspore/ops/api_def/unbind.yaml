@@ -1,5 +1,5 @@
 unbind:
-  - op_yaml: unstack_ext_op.yaml
+  - op_yaml: unstack_ext_view_op.yaml
     py_method: deprecated_tensor_unbind
     Ascend: pyboost
     CPU: py_method

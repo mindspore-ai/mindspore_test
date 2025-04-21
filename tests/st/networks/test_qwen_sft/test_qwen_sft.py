@@ -1,4 +1,4 @@
-# Copyright 2024 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ from tests.mark_utils import arg_mark
 
 
 class TestQWENSFT:
-    @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='allcards', essential_mark='essential')
+    @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='allcards', essential_mark='essential')
     def test_mindspore_qwen_sft_determinstic(self):
         """
         Feature: test mindspore pretrain_glm
@@ -37,7 +37,7 @@ class TestQWENSFT:
         ret = os.system(cmd)
         assert ret == 0, f"msrun failed, please check ms_det.log"
 
-    @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='allcards', essential_mark='essential')
+    @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='allcards', essential_mark='essential')
     def test_compare_res(self):
         """
         Feature: test_compare_res

@@ -1110,6 +1110,7 @@ class Custom(ops.PrimitiveWithInfer):
 class CustomOpBuilder:
     r"""
     CustomOpBuilder is used to initialize and configure custom operators for MindSpore.
+    Users can define and load custom operator modules through this class and apply them to the network.
 
     In most cases, users only need to provide the source files and additional compilation options in the constructor
     and call the `load` method to complete the compilation and loading of the operator.
@@ -1248,6 +1249,9 @@ class CustomOpBuilder:
     def build(self):
         """
         Build the custom operator module.
+
+        This method generates a dynamic library file for the custom operator based on the provided source files,
+        include paths, compilation flags, and link flags.
 
         Returns:
             str, The path to the compiled module.

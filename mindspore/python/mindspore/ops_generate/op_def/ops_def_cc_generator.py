@@ -101,9 +101,6 @@ class OpsDefCcGenerator(BaseGenerator):
                                                        is_graph_view=is_graph_view,
                                                        func_impl_declaration=func_impl_declaration_str,
                                                        func_impl_define=func_impl_define)
-            if op_proto.op_view:
-                view_op_def = op_def_cc.replace(class_name, class_name + "View")
-                op_def_cc += view_op_def
 
             if "deprecated" not in operator_name:
                 gen_cc_list.append(op_def_cc)

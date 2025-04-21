@@ -26,7 +26,7 @@ namespace kernel {
 
 class SplitView : public AclnnKernelMod {
  public:
-  SplitView() : AclnnKernelMod("splitView") {}
+  SplitView() : AclnnKernelMod("InnerSplitView") {}
   ~SplitView() = default;
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;

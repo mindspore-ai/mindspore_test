@@ -44,6 +44,8 @@
 namespace mindspore {
 namespace abstract {
 namespace {
+constexpr auto kDependInputAbs = "depend_input_abs";
+
 EvalResultPtr GetEvalResult(const AnfNodeConfigPtr &conf) {
   try {
     MS_EXCEPTION_IF_NULL(conf);
@@ -60,6 +62,52 @@ EvalResultPtr GetEvalResult(const AnfNodeConfigPtr &conf) {
       return eval_result;
     }
     MS_LOG(INTERNAL_EXCEPTION) << "Fail to get eval result with conf " << conf->ToString();
+  }
+}
+
+void SyncInplaceAbstract(const AbstractBasePtr &source_abs, const AbstractBasePtr &target_abs) {
+  // Sync for tensor.
+  if (target_abs->has_user_data(kDependInputAbs)) {
+    const auto &depend_input_abs = target_abs->user_data<abstract::AbstractBase>(kDependInputAbs);
+    SyncInplaceAbstract(source_abs, depend_input_abs);
+  }
+  if (source_abs->inplace_abstract() != nullptr) {
+    if (!(source_abs->GetShape()->IsDynamic())) {
+      target_abs->set_inplace_abstract(source_abs->inplace_abstract());
+    }
+    return;
+  }
+  // Sync for sequence.
+  auto source_sequence_abs = dyn_cast<abstract::AbstractSequence>(source_abs);
+  if (source_sequence_abs == nullptr) {
+    return;
+  }
+  auto target_sequence_abs = dyn_cast<abstract::AbstractSequence>(target_abs);
+  if (target_sequence_abs == nullptr) {
+    return;
+  }
+  if (source_sequence_abs->dynamic_len() || target_sequence_abs->dynamic_len() ||
+      source_sequence_abs->size() != target_sequence_abs->size()) {
+    return;
+  }
+  for (size_t i = 0; i < source_sequence_abs->size(); ++i) {
+    const auto &source_item = source_sequence_abs->elements()[i];
+    MS_EXCEPTION_IF_NULL(source_item);
+    const auto &target_item = target_sequence_abs->elements()[i];
+    MS_EXCEPTION_IF_NULL(target_item);
+    SyncInplaceAbstract(source_item, target_item);
+  }
+}
+
+void SyncInplaceAbstractAtJoint(const EvalResultPtr &eval_result) {
+  MS_EXCEPTION_IF_NULL(eval_result);
+  if (eval_result->joined_abs_list().size() <= 1) {
+    return;
+  }
+  const auto &abs = eval_result->abstract();
+  MS_EXCEPTION_IF_NULL(abs);
+  for (const auto &item_abs : eval_result->joined_abs_list()) {
+    SyncInplaceAbstract(abs, item_abs);
   }
 }
 
@@ -380,6 +428,29 @@ AbstractFunctionPtr ProgramSpecializer::SpecializeAbstractFuncRecursively(const 
   return new_abs;
 }
 
+namespace {
+void UpdateInplaceAbstract(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
+  const auto &old_abs = node->abstract();
+  MS_EXCEPTION_IF_NULL(old_abs);
+  // Update for inplace abstract.
+  if (old_abs->inplace_abstract() != nullptr) {
+    node->set_abstract(old_abs->inplace_abstract());
+  }
+  // Update for inplace abstract in a sequence.
+  auto sequence_abs = dyn_cast<abstract::AbstractSequence>(old_abs);
+  if (sequence_abs != nullptr) {
+    for (size_t i = 0; i < sequence_abs->elements().size(); ++i) {
+      const auto &item = sequence_abs->elements()[i];
+      MS_EXCEPTION_IF_NULL(item);
+      if (item->inplace_abstract() != nullptr) {
+        sequence_abs->SetElement(i, item->inplace_abstract());
+      }
+    }
+  }
+}
+}  // namespace
+
 void ProgramSpecializer::SpecializeFuncGraph() {
   MS_EXCEPTION_IF_NULL(manager_);
   const auto &all_nodes = manager_->all_nodes();
@@ -389,6 +460,9 @@ void ProgramSpecializer::SpecializeFuncGraph() {
     if (old_abs == nullptr) {
       continue;
     }
+    // Update for inplace abstract.
+    UpdateInplaceAbstract(node);
+
     if (!(old_abs->isa<FuncGraphAbstractClosure>() || old_abs->isa<MetaFuncGraphAbstractClosure>() ||
           old_abs->isa<AbstractFuncUnion>() || old_abs->isa<PartialAbstractClosure>())) {
       continue;
@@ -975,7 +1049,14 @@ void FuncGraphSpecializer::EliminateUnusedSequenceItem(const CNodePtr &cnode) co
   }
 }
 
-bool FuncGraphSpecializer::GetIgnoreBuildValueFlag(const AnfNodePtr &node_input) {
+bool FuncGraphSpecializer::GetIgnoreBuildValueFlag(const AnfNodePtr &node_input, const AbstractBasePtr &abs) {
+  // If node_inplace is used by the view operator or the inplace operator,
+  // don't replace it because of the constant folding.
+  if (abs != nullptr && abs->inplace_abstract() != nullptr) {
+    MS_LOG(DEBUG) << "Do not replace. The node_input is used by view operator or inplace operator: "
+                  << node_input->DebugString();
+    return true;
+  }
   bool ignore_build_value = false;
   MS_EXCEPTION_IF_NULL(specializer_->engine());
   bool back_prop = false;
@@ -996,7 +1077,7 @@ bool FuncGraphSpecializer::GetIgnoreBuildValueFlag(const AnfNodePtr &node_input)
   // Recheck input
   auto cnode = node_input->cast<CNodePtr>();
   if (IsPrimitiveCNode(cnode, prim::kPrimStopGradient)) {
-    return GetIgnoreBuildValueFlag(cnode->input(1));
+    return GetIgnoreBuildValueFlag(cnode->input(1), cnode->input(1)->abstract());
   }
   if (IsPrimitiveCNode(cnode, prim::kPrimMakeTuple)) {
     auto inner_inputs = cnode->inputs();
@@ -1029,13 +1110,8 @@ void FuncGraphSpecializer::ProcessNode(const AnfNodePtr &node) {
   }
   const EvalResultPtr &conf_eval_result = GetEvalResult(conf);
   MS_EXCEPTION_IF_NULL(conf_eval_result);
-  if (conf_eval_result->abstract() != nullptr && conf_eval_result->abstract()->inplace_abstract() != nullptr) {
-    MS_LOG(DEBUG) << "Use inplace abstract, " << conf_eval_result->abstract()->inplace_abstract()->ToString();
-    new_node->set_abstract(conf_eval_result->abstract()->inplace_abstract());
-  } else {
-    new_node->set_abstract(conf_eval_result->abstract());
-  }
-
+  SyncInplaceAbstractAtJoint(conf_eval_result);
+  new_node->set_abstract(conf_eval_result->abstract());
   MS_EXCEPTION_IF_NULL(new_node->abstract());
 
   // Update PartialAbstractClosure's bound node.
@@ -1070,32 +1146,25 @@ void FuncGraphSpecializer::ProcessNode(const AnfNodePtr &node) {
     AnfNodeConfigPtr input_conf = MakeConfig(node_input);
     MS_EXCEPTION_IF_NULL(input_conf);
     const auto &eval_result = GetEvalResult(input_conf);
+    MS_EXCEPTION_IF_NULL(eval_result);
+    SyncInplaceAbstractAtJoint(eval_result);
     const AbstractBasePtr &abs = eval_result->abstract();
-    // Check if there's an inplace abstract and use it.
-    AbstractBasePtr real_abs;
-    if (abs->inplace_abstract() == nullptr) {
-      real_abs = abs;
-    } else {
-      real_abs = abs->inplace_abstract();
-      MS_LOG(INFO) << "Use inplace abstract, " << abs->ToString() << " -> " << real_abs->ToString();
-    }
     AnfNodePtr replace_node = BuildReplacedNode(input_conf);
     MS_EXCEPTION_IF_NULL(replace_node);
-    replace_node->set_abstract(real_abs);
+    replace_node->set_abstract(abs);
     MS_LOG(DEBUG) << "Set replaced input[" << i << "]: " << replace_node->DebugString()
-                  << ", NodeConfig: " << input_conf->ToString() << ", result: " << real_abs.get() << "/"
-                  << real_abs->ToString();
-    if (!GetIgnoreBuildValueFlag(replace_node)) {
-      auto replace_value_node = BuildPossibleValueNode(replace_node, real_abs, attrs, node);
+                  << ", NodeConfig: " << input_conf->ToString() << ", result: " << abs.get() << "/" << abs->ToString();
+    if (!GetIgnoreBuildValueFlag(replace_node, abs)) {
+      auto replace_value_node = BuildPossibleValueNode(replace_node, abs, attrs, node);
       if (replace_value_node != nullptr) {
         MS_LOG(DEBUG) << "Build possible value node for node: " << replace_node->DebugString()
-                      << ", real_abs: " << real_abs->ToString()
+                      << ", real_abs: " << abs->ToString()
                       << ", replaced value node: " << replace_value_node->DebugString();
         replace_node = replace_value_node;
       }
     }
     if (enable_eliminate_unused_element) {
-      UpdateSequenceNode(replace_node, node_input, real_abs);
+      UpdateSequenceNode(replace_node, node_input, abs);
     }
     if (new_inputs[i].lock() != replace_node) {
       new_node->func_graph()->AddOwnNode(replace_node);

@@ -573,6 +573,7 @@ class GraphModeBuilder : public IrBuilder {
   NodePtrList Build(const NodePtrList &inputs, const mindspore::HashMap<std::string, ValuePtr> &attrs,
                     const BpropHandle &handle, const std::string &instance_name) {
     auto outputs = Run(inputs, attrs, handle, instance_name);
+    InsertDepend(&outputs);
     auto mt = this->MakeTuple(outputs)->get();
     func_graph_->set_output(mt);
     if (has_ctrl_flow_) {
@@ -628,10 +629,33 @@ class GraphModeBuilder : public IrBuilder {
     }
     auto node = NewIrNode(cnode->cast<AnfNodePtr>());
     infer_->Infer(node);
+    for (auto &inp : inputs) {
+      (void)isolated_nodes_.erase(inp);
+    }
+    isolated_nodes_.add(node);
     return node;
   }
 
+  void InsertDepend(NodePtrList *outputs) {
+    for (auto &out : *outputs) {
+      isolated_nodes_.erase(out);
+    }
+    if (isolated_nodes_.empty() || outputs->empty()) {
+      return;
+    }
+    if (isolated_nodes_.size() == 1) {
+      (*outputs)[0] = this->Depend((*outputs)[0], isolated_nodes_.back());
+    } else {
+      NodePtrList nodes(isolated_nodes_.begin(), isolated_nodes_.end());
+      auto mt = this->MakeTuple(nodes);
+      (*outputs)[0] = this->Depend((*outputs)[0], mt);
+    }
+  }
+
   bool has_ctrl_flow_{false};
+  // This variable is used to record isolated nodes in the graph. When the bprop graph construction is complete, all
+  // isolated nodes are connected to outputs[0] using a Depend node.
+  mindspore::OrderedSet<NodePtr> isolated_nodes_;
 };
 
 bool ExpandBpropInGraphMode(const BpropHandle *handle, const PrimitivePtr &prim, const FuncGraphPtr &graph) {

@@ -182,6 +182,7 @@ const std::vector<OpWithLevel> expand_ops_with_level_dvm = {
   {kAscendDevice, OpLevel_0, prim::kPrimSiLU},
   {kAscendDevice, OpLevel_0, prim::kPrimSiLUGrad},
   {kAscendDevice, OpLevel_0, prim::kPrimGeLUGrad},
+  {kAscendDevice, OpLevel_0, prim::kPrimMuls},
   {kAscendDevice, OpLevel_0, prim::kPrimRsqrtGrad},
   {kAscendDevice, OpLevel_0, prim::kPrimSqrtGrad},
   {kAscendDevice, OpLevel_0, prim::kPrimSquare},

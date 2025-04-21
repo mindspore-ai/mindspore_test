@@ -108,6 +108,59 @@ void CopyPrimitivePtrForFpropReplace(const FuncGraphPtr &primal_graph, const Fun
     }
   }
 }
+
+bool StopGradientForUpdateState(const CNodePtr &cnode) {
+  if (!cnode->IsApply(prim::kPrimUpdateState)) {
+    return false;
+  }
+  static const bool close_view_op = (common::GetEnv("MS_DEV_JIT_ENABLE_VIEW_OP") == "0");
+  return close_view_op;
+}
+
+bool IsUpdateStateUseOnlyTuple(const FuncGraphManagerPtr &manager, const AnfNodePtr &node) {
+  if (!IsPrimitiveCNode(node, prim::kPrimMakeTuple)) {
+    return false;
+  }
+  MS_EXCEPTION_IF_NULL(manager);
+  const auto &node_user_map = manager->node_users();
+  auto node_users_iter = node_user_map.find(node);
+  if (node_users_iter == node_user_map.end()) {
+    return false;
+  }
+  return std::all_of(node_users_iter->second.begin(), node_users_iter->second.end(),
+                     [](const auto &pair) { return IsPrimitiveCNode(pair.first, prim::kPrimUpdateState); });
+}
+
+bool IsBackPropagateFromUpdateState(const FuncGraphManagerPtr &manager, const CNodePtr &cnode) {
+  return IsPrimitiveCNode(cnode, prim::kPrimUpdateState) || IsUpdateStateUseOnlyTuple(manager, cnode);
+}
+
+bool IsTensorAbstract(const AbstractBasePtr &abs) {
+  return abs->IsSameTypeId(abstract::AbstractTensor::kTypeId) ||
+         abs->IsSameTypeId(abstract::AbstractRefTensor::kTypeId);
+}
+
+bool ShouldBackPropagateFromUpdateState(const CNodePtr &cnode, size_t input_idx) {
+  // update_state(u, x) or update_state(u, make_tuple(x, ...))
+  if (input_idx == 0) {
+    return true;
+  }
+  auto input = cnode->input(input_idx);
+  MS_EXCEPTION_IF_NULL(input);
+  auto input_abs = input->abstract();
+  if (input_abs == nullptr) {
+    return true;
+  }
+  // Check the second input of UpdateState.
+  if (IsPrimitiveCNode(cnode, prim::kPrimUpdateState)) {
+    if (input_idx == 1) {
+      return true;
+    }
+    return input_abs->isa<abstract::AbstractTuple>() || IsTensorAbstract(input_abs);
+  }
+  // Check the inputs of MakeTuple.
+  return IsTensorAbstract(input_abs);
+}
 }  // namespace
 
 DFunctor::DFunctor(const FuncGraphPtr &primal_graph, const pipeline::ResourceBasePtr &resources, bool is_top)
@@ -353,7 +406,11 @@ void DFunctor::BackPropagate(const CNodePtr &cnode_morph, const CNodePtr &k_app,
     BackPropagateSwitchLayer(cnode_morph, din);
     return;
   }
+  bool back_propagate_from_update_state = IsBackPropagateFromUpdateState(primal_graph_->manager(), cnode_morph);
   for (size_t i = 0; i < cnode_morph->size(); i++) {
+    if (back_propagate_from_update_state && !ShouldBackPropagateFromUpdateState(cnode_morph, i)) {
+      continue;
+    }
     auto din = tape_->NewCNode({NewValueNode(prim::kPrimTupleGetItem), bprop_app, NewValueNode(SizeToLong(i))});
     auto input = SkipHookNodeInBackProp(cnode_morph->input(i));
     ComplexPreprocess(input, din);
@@ -688,8 +745,7 @@ AnfNodePtr DFunctor::MapPrimitiveToK(const CNodePtr &primitive_user, size_t inde
   auto value_node = primal->cast<ValueNodePtr>();
   auto prim = GetValueNode<PrimitivePtr>(value_node);
   if ((prim->Hash() == prim::kPrimStopGradient->Hash() && prim->name() == prim::kPrimStopGradient->name()) ||
-      (prim->Hash() == prim::kPrimUpdateState->Hash() && prim->name() == prim::kPrimUpdateState->name()) ||
-      StopGradientForScalar(primitive_user)) {
+      StopGradientForUpdateState(primitive_user) || StopGradientForScalar(primitive_user)) {
     MS_LOG(DEBUG) << "Should stop gradient for " << prim->ToString();
     need_cut_ = true;
   }
@@ -944,7 +1000,7 @@ void DFunctor::BroadCastStopFlag() {
       auto cnode = dyn_cast<CNode>(node);
       if (cnode != nullptr && !cnode->stop_gradient()) {
         // Cut off the cnode only when it's not referred any more
-        if (cnode->IsApply(prim::kPrimStopGradient) || cnode->IsApply(prim::kPrimUpdateState) ||
+        if (cnode->IsApply(prim::kPrimStopGradient) || StopGradientForUpdateState(cnode) ||
             AllReferencesStopped(cnode) || StopGradientForScalar(cnode) || cnode->IsApply(prim::kPrimPyExecute)) {
           MS_LOG(DEBUG) << "Set stop gradient flag for " << cnode->ToString() << ".";
           cnode->set_stop_gradient(true);

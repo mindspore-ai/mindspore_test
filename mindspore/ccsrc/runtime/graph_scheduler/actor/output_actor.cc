@@ -17,6 +17,7 @@
 #include "runtime/graph_scheduler/actor/output_actor.h"
 #include "runtime/graph_scheduler/actor/memory_manager_actor.h"
 #include "runtime/hardware/device_context_manager.h"
+#include "runtime/device/device_address_utils.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
 #include "include/backend/distributed/recovery/recovery_context.h"
@@ -85,6 +86,17 @@ void UpdateDynamicSequenceType(const AnfNodePtr &output_node, const kernel::Kern
     return;
   }
   output_kernel_tensor->SetType(std::make_shared<List>(types));
+}
+
+device::DeviceAddressPtr MakeTensorContiguousCallback(const DeviceSyncPtr &address,
+                                                      const TensorStorageInfoPtr &storage) {
+  MS_EXCEPTION_IF_NULL(address);
+  auto dev_address = std::dynamic_pointer_cast<device::DeviceAddress>(address);
+  MS_EXCEPTION_IF_NULL(dev_address);
+  if (storage == nullptr) {
+    return dev_address;
+  }
+  return DeviceAddressUtils::ConvertContiguousDeviceAddress(nullptr, dev_address, true);
 }
 
 void OutputActor::Init() {
@@ -490,6 +502,7 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
       device_context->device_context_key().device_id_);
     kernel_tensor->SetType(output_kernel_tensor->GetType());
     kernel_tensor->SetShape(output_kernel_tensor->GetShape());
+    kernel_tensor->set_tensor_storage_info(output_kernel_tensor->tensor_storage_info());
     kernel_tensor->set_stream_id(device_tensor->stream_id());
     // SetShape will calculate a default size by host shape, need to set real device size for special format.
     kernel_tensor->set_size(device_tensor->GetSize());
@@ -505,6 +518,11 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
   }
 
   tensor->set_need_release_device_mem(true);
+  if (output_kernel_tensor->tensor_storage_info()) {
+    tensor->set_contiguous_callback([this](const DeviceSyncPtr &address) -> DeviceSyncPtr {
+      return MakeTensorContiguousCallback(address, address->GetTensorStorageInfo());
+    });
+  }
   return tensor;
 }
 
@@ -545,14 +563,7 @@ bool IsEmptySequence(const tensor::TensorPtr &tensor) {
 }
 }  // namespace
 
-void OutputActor::UpdateOutputDeviceAddress() {
-  ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kOutputProcess, "UpdateOutputDeviceAddress");
-  // In the running end, when the device ptr of graph output node is set into host tensor, the graph output node
-  // need be set new device ptr, to avoid that the device ptr context of host tensor be rewritten in the next
-  // step or next loop. But the graph output nodes corresponding to device tensor store need to be skipped, because
-  // they are fixed addresses and persistent.
-  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, GetAID().Name(), "UpdateOutputDeviceAddress", "");
-
+void OutputActor::HandleOutput() {
   auto repeat_index = GetRepeatDeviceAddressIndexPair(output_device_tensors_);
   for (size_t i = 0; i < output_nodes_.size(); ++i) {
     auto &output_node = output_nodes_[i].first;
@@ -571,11 +582,6 @@ void OutputActor::UpdateOutputDeviceAddress() {
       HandleEmptySequenceOutput(device_tensor, tensor, i, GetAID().Name());
       continue;
     }
-    if (repeat_index.find(i) != repeat_index.end() && i > repeat_index[i] && outputs_[i] != nullptr) {
-      tensor->set_device_address(outputs_[repeat_index[i]]->device_address());
-      continue;
-    }
-
     auto tensor_device_address = std::dynamic_pointer_cast<DeviceTensor>(tensor->device_address());
     MS_EXCEPTION_IF_NULL(tensor_device_address);
     // Update tensor device address by device tensor of output node.
@@ -632,6 +638,15 @@ void OutputActor::UpdateOutputDeviceAddress() {
       }
       MS_LOG(DEBUG) << "Copy graph output from device address:" << device_tensor << " to:" << tensor_device_address;
     } else {
+      if (repeat_index.find(i) != repeat_index.end() && i > repeat_index[i] && outputs_[repeat_index[i]] != nullptr) {
+        const auto &src_address = std::dynamic_pointer_cast<DeviceTensor>(outputs_[repeat_index[i]]->device_address());
+        MS_EXCEPTION_IF_NULL(src_address);
+        tensor_device_address->set_pointer_ref_count(src_address->pointer_ref_count());
+        MS_LOG(DEBUG) << "Output actor share the same pointer ref count:" << src_address->pointer_ref_count()
+                      << " between device address:" << tensor_device_address << " and:" << src_address;
+        continue;
+      }
+
       MS_LOG(DEBUG) << "Swap ptr:" << device_tensor->GetPtr() << " from device tensor:" << device_tensor
                     << " device type:" << device_tensor->GetDeviceType() << " to :" << tensor_device_address
                     << " device type:" << tensor_device_address->GetDeviceType();
@@ -648,6 +663,16 @@ void OutputActor::UpdateOutputDeviceAddress() {
       MarkTensorAsOutput, GetAID().Name(), device_tensor->device_name(), device_tensor->GetPtr(),
       device_tensor->type_id(), device_tensor->GetShapeVector(), device_tensor->GetTensorStorageInfo());
   }
+}
+
+void OutputActor::UpdateOutputDeviceAddress() {
+  ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kOutputProcess, "UpdateOutputDeviceAddress");
+  // In the running end, when the device ptr of graph output node is set into host tensor, the graph output node
+  // need be set new device ptr, to avoid that the device ptr context of host tensor be rewritten in the next
+  // step or next loop. But the graph output nodes corresponding to device tensor store need to be skipped, because
+  // they are fixed addresses and persistent.
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, GetAID().Name(), "UpdateOutputDeviceAddress", "");
+  HandleOutput();
 
   old_to_new_device_address_.clear();
   output_nodes_.clear();

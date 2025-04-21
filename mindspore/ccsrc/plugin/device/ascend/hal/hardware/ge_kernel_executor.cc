@@ -37,7 +37,6 @@
 #include "plugin/device/ascend/kernel/hccl/hccl_kernel_metadata.h"
 #include "plugin/device/ascend/kernel/hccl/hccl_kernel_build.h"
 #include "plugin/device/ascend/kernel/simu/simu_kernel_build.h"
-#include "mindspore/ops/kernel/ascend/pyboost/customize/customize_copy.h"
 #include "plugin/device/ascend/kernel/ge/ge_kernel_build.h"
 #include "plugin/device/ascend/kernel/ge/ge_kernel_mod.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_build.h"
@@ -51,6 +50,11 @@
 #include "plugin/device/ascend/kernel/dvm/dvm_kernel_build.h"
 #endif
 
+#include "mindspore/ops/kernel/ascend/pyboost/aclnn_utils.h"
+#include "runtime/pipeline/pipeline.h"
+#include "runtime/hardware/device_context_manager.h"
+#include "pyboost/pyboost_utils.h"
+#include "pyboost/op_runner.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/optimizer/helper.h"
 #include "plugin/device/ascend/hal/device/kernel_select_ascend.h"
@@ -270,13 +274,9 @@ void SetAclOpPrecisionMode() {
   }
 }
 
-void SelectKernelInfo(const KernelGraphPtr &kernel_graph, const CNodePtr &kernel, bool *is_aclop = nullptr,
+void SelectKernelInfo(const KernelGraphPtr &kernel_graph, const CNodePtr &kernel,
                       std::vector<size_t> *op_selected_num = nullptr) {
-  auto [select_res, msg, etype, is_aclop_local] =
-    device::ascend::SelectKernelInfoWithMsg(kernel_graph, kernel, op_selected_num);
-  if (is_aclop != nullptr) {
-    *is_aclop = is_aclop_local;
-  }
+  auto [select_res, msg, etype] = device::ascend::SelectKernelInfoWithMsg(kernel_graph, kernel, op_selected_num);
   if (!select_res) {
     MS_LOG(INFO) << "node is " << kernel->fullname_with_scope() << " should backoff";
     std::pair<std::string, ExceptionType> failure_info = std::make_pair(msg, etype);
@@ -285,7 +285,7 @@ void SelectKernelInfo(const KernelGraphPtr &kernel_graph, const CNodePtr &kernel
 }
 
 void SelectKernel(const KernelGraphPtr &kernel_graph, std::set<KernelGraphPtr> *const memo,
-                  std::vector<size_t> *op_selected_num, bool *has_aclop = nullptr) {
+                  std::vector<size_t> *op_selected_num) {
   // select kernel
   MS_EXCEPTION_IF_NULL(memo);
   PROF_START(SelectKernel);
@@ -296,12 +296,7 @@ void SelectKernel(const KernelGraphPtr &kernel_graph, std::set<KernelGraphPtr> *
   kernel_graph->SetExecOrderByDefault();
   const auto &kernels = kernel_graph->execution_order();
   for (const auto &kernel : kernels) {
-    bool is_aclop = false;
-    SelectKernelInfo(kernel_graph, kernel, &is_aclop, op_selected_num);
-    if (has_aclop != nullptr) {
-      // cppcheck-suppress useStlAlgorithm
-      *has_aclop |= is_aclop;
-    }
+    SelectKernelInfo(kernel_graph, kernel, op_selected_num);
   }
   if (!kernel_graph->is_from_single_op()) {
     kernel_graph->SetKernelObjectTypesForUnrealNodes();
@@ -1044,16 +1039,7 @@ void GeKernelExecutor::OptimizeGraph(const FuncGraphPtr &graph) const {
   GEGraphOptimization::GetInstance().OptimizeACLGraph(kernel_graph, &memo);
   memo.clear();
   std::vector<size_t> op_selected_num(device::ascend::SelectedKernelType::NUM_KERNLE_TYPE, 0);
-  bool has_aclop = false;
-  SelectKernel(kernel_graph, &memo, &op_selected_num, &has_aclop);
-  if (has_aclop) {
-    static std::once_flag ge_init_flag_ = {};
-    std::call_once(ge_init_flag_, [&]() {
-      dynamic_cast<GeDeviceContext *>(device_context_)->ContextInitGe();
-      SetAclOpPrecisionMode();
-      res_manager_->SetAclDeterministic();
-    });
-  }
+  SelectKernel(kernel_graph, &memo, &op_selected_num);
   PrintOpSelectedNum(op_selected_num);
   memo.clear();
   GEGraphOptimization::GetInstance().OptimizeACLGraphAfterKernelSelect(kernel_graph, &memo);
@@ -1273,8 +1259,8 @@ void GeKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const {
       is_host_reshape_op = kernel_mod->GetKernelModType() == kernel::KernelModType::HostKernelMod;
     }
     bool is_nop_op = device::ascend::AclHelper::IsNopNode(node);
-    bool is_transpose_nop = (op_name == prim::kPrimTranspose->name() || op_name == prim::kPrimTransposeD->name()) &&
-                            common::AnfAlgo::HasNodeAttr(kAttrNopOp, node);
+    bool is_transpose_nop =
+      (op_name == prim::kPrimTransposeD->name()) && common::AnfAlgo::HasNodeAttr(kAttrNopOp, node);
     if (is_transpose_nop || (is_nop_op && !is_host_reshape_op)) {
       nop_op_to_memcpy_.insert(node);
     }
@@ -1400,6 +1386,13 @@ bool GeKernelExecutor::LaunchKernel(const CNodePtr &kernel, const std::vector<Ke
         return true;
       }
     }
+    if (!acl_option_initialized_ && dynamic_cast<kernel::AclKernelMod *>(kernel_mod) != nullptr) {
+      dynamic_cast<GeDeviceContext *>(device_context_)->GeInitialize();
+      // not check graph executor, may use in ascend device context
+      SetAclOpPrecisionMode();
+      res_manager_->SetAclDeterministic();
+      acl_option_initialized_ = true;
+    }
 
     bool ret = kernel_mod->Launch(inputs, workspace, outputs, stream);
     if (!ret) {
@@ -1448,6 +1441,86 @@ void GeKernelExecutor::SetArfError() const {
   }
 }
 
+void AclrtLaunchCallback(void *user_data) {
+  CallbackFunc *callback_func = reinterpret_cast<CallbackFunc *>(user_data);
+  (*callback_func)();
+  delete callback_func;
+}
+
+bool GeKernelExecutor::LaunchCallback(CallbackFunc callback_func, size_t stream_id, bool is_block) const {
+  auto stream = AscendStreamMng::GetInstance().GetStream(stream_id);
+  if (stream == nullptr) {
+    stream_id = kDefaultStreamIndex;
+    stream = AscendStreamMng::GetInstance().GetStream(stream_id);
+  }
+  MS_EXCEPTION_IF_NULL(stream);
+  auto block_type =
+    is_block ? aclrtCallbackBlockType::ACL_CALLBACK_BLOCK : aclrtCallbackBlockType::ACL_CALLBACK_NO_BLOCK;
+  auto callback_func_ptr = new CallbackFunc(callback_func);
+  aclError ret = CALL_ASCEND_API(aclrtLaunchCallback, AclrtLaunchCallback, callback_func_ptr, block_type, stream);
+  MS_LOG(DEBUG) << "Launch callback for stream_id : " << stream_id << ", ret : " << ret << ".";
+  if (ret) {
+    delete callback_func_ptr;
+    MS_LOG(ERROR) << "Launch callback for stream_id : " << stream_id << " failed, ret : " << ret << ".";
+    if (res_manager_->SyncStream(stream_id)) {
+      callback_func();
+      return true;
+    }
+    auto arf_env = common::GetEnv("MS_ENABLE_TFT");
+    constexpr std::string_view arf = "ARF:1";
+    if (arf_env.find(arf) == std::string::npos) {
+      res_manager_->ResetStreamAndCtx();
+    }
+    return false;
+  }
+  return true;
+}
+
+void CustomizeCopyAscendInner(device::DeviceContext *device_context, const device::DeviceAddressPtr &input_addr,
+                              const device::DeviceAddressPtr &output_addr, const size_t &stream_id) {
+  // The input_addr_list address is malloc before
+  // Malloc for output tensors
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "PyNative", "Contiguous", "");
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", device::tracker::MemType::kPyNativeOutput,
+                                                 output_addr->GetSize(), output_addr.get());
+  if (output_addr->GetPtr() == nullptr) {
+    if (!device_context->device_res_manager_->AllocateMemory(output_addr.get())) {
+      MS_LOG(EXCEPTION) << "Allocate memory failed";
+    }
+  }
+  const auto &input_storage_info = input_addr->address_common()->tensor_storage_info_;
+  const auto &output_storage_info = output_addr->address_common()->tensor_storage_info_;
+  MS_LOG(DEBUG) << "Input_storage_info:" << (input_storage_info == nullptr ? "" : input_storage_info->ToString())
+                << ", output_storage_info:" << (output_storage_info == nullptr ? "" : output_storage_info->ToString())
+                << ", input address size:" << input_addr->GetSize()
+                << ", output address size:" << output_addr->GetSize();
+
+  // Inplace output need be front
+  LAUNCH_ACLNN(aclnnInplaceCopy, device_context, stream_id, output_addr, input_addr);
+  MS_LOG(DEBUG) << "Launch end";
+}
+
+// Unconventional pyboost writing. Please do not refer to this to implement other operators!
+void CustomizeCopyAscend(device::DeviceContext *device_context, const device::DeviceAddressPtr &input_addr,
+                         const device::DeviceAddressPtr &output_addr, const size_t &stream_id) {
+  MS_LOG(DEBUG) << "Call start";
+  MS_EXCEPTION_IF_NULL(input_addr);
+  MS_EXCEPTION_IF_NULL(output_addr);
+
+  if (runtime::Pipeline::Get().backend_stage()->CanPush()) {
+    MS_LOG(DEBUG) << "Dispatch inplacecopy to backend queue";
+    kernel::pyboost::PyBoostUtils::DispatchRun(
+      std::make_shared<runtime::PyBoostDeviceTask>([device_context, input_addr, output_addr, stream_id]() {
+        CustomizeCopyAscendInner(device_context, input_addr, output_addr, stream_id);
+      }));
+    return;
+  }
+
+  runtime::Pipeline::Get().WaitForward();
+  CustomizeCopyAscendInner(device_context, input_addr, output_addr, stream_id);
+  MS_LOG(DEBUG) << "Launch end";
+}
+
 bool GeKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_type,
                                          const device::DeviceAddressPtrList &input_addr_list,
                                          const device::DeviceAddressPtrList &output_addr_list,
@@ -1461,7 +1534,7 @@ bool GeKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_typ
     if (input_addr_list.size() != kCopyTaskInputsNum) {
       MS_LOG(EXCEPTION) << "input_addr_list.size() is invalid, input_addr_list.size():" << input_addr_list.size();
     }
-    kernel::pyboost::CustomizeCopyAscend(device_context_, input_addr_list[1], input_addr_list[0], stream_id);
+    CustomizeCopyAscend(device_context_, input_addr_list[1], input_addr_list[0], stream_id);
   } else {
     // For contiguous task, there must be at least one input and one output.
     if (input_addr_list.empty() || output_addr_list.empty()) {
@@ -1473,7 +1546,7 @@ bool GeKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_typ
       // for unrefmode, the output is on host, just copy the device ptr
       output_addr_list[0]->set_ptr(input_addr_list[0]->GetMutablePtr());
     } else {
-      kernel::pyboost::CustomizeCopyAscend(device_context_, input_addr_list[0], output_addr_list[0], stream_id);
+      CustomizeCopyAscend(device_context_, input_addr_list[0], output_addr_list[0], stream_id);
     }
   }
 
@@ -1484,5 +1557,47 @@ bool GeKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_typ
     ret = AscendStreamMng::GetInstance().SyncStream(stream);
   }
   return ret;
+}
+
+// Task for graph mode, which receive pointers as input, it is used for convert input contiguous by aclnnInplaceCopy.
+bool GeKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_type,
+                                         const std::vector<device::DeviceAddress *> &input_addr_list,
+                                         const std::vector<device::DeviceAddress *> &output_addr_list,
+                                         const size_t &stream_id) const {
+  MS_LOG(DEBUG) << "task_type:" << task_type;
+  MS_LOG(DEBUG) << "Graph call contiguous start";
+  auto input_addr = input_addr_list[0];
+  auto output_addr = output_addr_list[0];
+  MS_EXCEPTION_IF_NULL(input_addr);
+  MS_EXCEPTION_IF_NULL(output_addr);
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "Graph", "Contiguous", "");
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "Graph", device::tracker::MemType::kPyNativeOutput,
+                                                 output_addr->GetSize(), output_addr);
+  if (output_addr->GetPtr() == nullptr) {
+    if (!device_context_->device_res_manager_->AllocateMemory(output_addr)) {
+      MS_LOG(EXCEPTION) << "Allocate memory failed";
+    }
+  }
+  const auto &input_storage_info = input_addr->address_common()->tensor_storage_info_;
+  const auto &output_storage_info = output_addr->address_common()->tensor_storage_info_;
+  MS_LOG(DEBUG) << "Input_storage_info:" << (input_storage_info == nullptr ? "" : input_storage_info->ToString())
+                << ", output_storage_info:" << (output_storage_info == nullptr ? "" : output_storage_info->ToString())
+                << ", input address size:" << input_addr->GetSize()
+                << ", output address size:" << output_addr->GetSize();
+  auto stream_ptr = device_context_->device_res_manager_->GetStream(stream_id);
+  auto res = GEN_EXECUTOR_FOR_RESIZE(std::string("aclnnInplaceCopy"), output_addr, input_addr);
+  auto workspace_size = std::get<0>(res);
+  auto executor = std::get<1>(res);
+  std::function<void()> release_func{nullptr};
+  if (workspace_size == 0) {
+    RUN_OP_API_ASYNC(std::string("aclnnInplaceCopy"), nullptr, 0, executor, stream_ptr, release_func);
+  } else {
+    auto workspace_addr = device_context_->device_res_manager_->AllocateMemory(workspace_size);
+    RUN_OP_API_ASYNC(std::string("aclnnInplaceCopy"), workspace_addr, workspace_size, executor, stream_ptr,
+                     release_func);
+    device_context_->device_res_manager_->FreeMemory(workspace_addr);
+  }
+  MS_LOG(DEBUG) << "Graph call contiguous end";
+  return true;
 }
 }  // namespace mindspore::device::ascend

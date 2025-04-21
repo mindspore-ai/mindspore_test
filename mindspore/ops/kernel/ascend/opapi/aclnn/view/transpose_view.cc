@@ -34,7 +34,6 @@ void TransposeView::UpdateOutputTensorInfo(const std::vector<KernelTensor *> &in
   }
   info_ = ops::TransposeStridesCalc(old_info, dims);
   outputs[kIndex0]->set_tensor_storage_info(info_[0]);
-  GEN_EXECUTOR_FOR_VIEW(op_type_, inputs, outputs);
 }
 
 void TransposeView::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,

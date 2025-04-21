@@ -145,7 +145,8 @@ std::pair<std::string, std::string> HyperMap::GetHyperMapInputIndex(size_t num) 
 }
 
 template <typename T>
-void HyperMap::CheckArgsInSequence(const ArgsPairList &arg_map, TypeId type_id, std::size_t size) const {
+void HyperMap::CheckArgsInSequence(const ArgsPairList &arg_map, TypeId type_id, std::size_t size,
+                                   bool *contains_dyn) const {
   size_t num = 0;
   std::ostringstream oss;
   bool is_not_same = false;
@@ -160,6 +161,10 @@ void HyperMap::CheckArgsInSequence(const ArgsPairList &arg_map, TypeId type_id, 
       }
       MS_LOG(EXCEPTION) << "The " << error_index_res << " element in HyperMap has wrong type, expected a " << type_name
                         << ", but got " << item.second->ToString() << ".";
+    }
+    if (lhs->dynamic_len()) {
+      *contains_dyn = true;
+      continue;
     }
     size_t ele_size = lhs->elements().size();
     if (ele_size != size) {
@@ -228,15 +233,10 @@ AnfNodePtr HyperMap::HyperMapConverter(const FuncGraphPtr &func_graph, const Anf
   return NewValueNode(empty_tuple_value);
 }
 
+template <typename T>
 AnfNodePtr HyperMap::HyperMapDynamicConverter(const FuncGraphPtr &func_graph, const AnfNodePtr &fn_arg,
-                                              const ArgsPairList &arg_map, const TypePtr &type) const {
-  TypeId type_id = type->type_id();
-  TypePtr element_type;
-  if (type_id == kObjectTypeList) {
-    element_type = type->cast<ListPtr>()->dynamic_element_type();
-  } else {
-    element_type = type->cast<TuplePtr>()->dynamic_element_type();
-  }
+                                              const ArgsPairList &arg_map, const TypePtr &element_type) const {
+  TypeId type_id = std::make_shared<T>()->generic_type_id();
   MS_EXCEPTION_IF_NULL(element_type);
   if (element_type->isa<Tuple>() || element_type->isa<List>() || element_type->isa<Dictionary>()) {
     MS_EXCEPTION(TypeError) << "The HyperMap does not support scenarios involving nested dynamic " << type_id
@@ -277,11 +277,16 @@ AnfNodePtr HyperMap::FullMake(const std::shared_ptr<List> &type, const FuncGraph
                               const AnfNodePtr &fn_arg, const ArgsPairList &arg_map) const {
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_EXCEPTION_IF_NULL(type);
+  const auto list_type = type->cast<ListPtr>();
   if (type->dynamic_len()) {
-    return HyperMapDynamicConverter(func_graph, fn_arg, arg_map, type);
+    return HyperMapDynamicConverter<List>(func_graph, fn_arg, arg_map, list_type->dynamic_element_type());
   }
   size_t size = type->elements().size();
-  CheckArgsInSequence<List>(arg_map, kObjectTypeList, size);
+  bool contains_dynamic = false;
+  CheckArgsInSequence<List>(arg_map, kObjectTypeList, size, &contains_dynamic);
+  if (contains_dynamic) {
+    return HyperMapDynamicConverter<List>(func_graph, fn_arg, arg_map, list_type->elements()[0]);
+  }
   // Cannot use shared_from_base() also known as this, as it will make a reference cycle on
   // hypermap and graph generated, it will cause memory leak.
   return HyperMapConverter(func_graph, fn_arg, arg_map, kObjectTypeList, size);
@@ -291,11 +296,16 @@ AnfNodePtr HyperMap::FullMake(const std::shared_ptr<Tuple> &type, const FuncGrap
                               const AnfNodePtr &fn_arg, const ArgsPairList &arg_map) const {
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_EXCEPTION_IF_NULL(type);
+  const auto tuple_type = type->cast<TuplePtr>();
   if (type->dynamic_len()) {
-    return HyperMapDynamicConverter(func_graph, fn_arg, arg_map, type);
+    return HyperMapDynamicConverter<Tuple>(func_graph, fn_arg, arg_map, tuple_type->dynamic_element_type());
   }
   size_t size = type->elements().size();
-  CheckArgsInSequence<Tuple>(arg_map, kObjectTypeTuple, size);
+  bool contains_dynamic = false;
+  CheckArgsInSequence<Tuple>(arg_map, kObjectTypeTuple, size, &contains_dynamic);
+  if (contains_dynamic) {
+    return HyperMapDynamicConverter<Tuple>(func_graph, fn_arg, arg_map, tuple_type->elements()[0]);
+  }
   // Cannot use shared_from_base() also known as this, as it will make a reference cycle on
   // hypermap and graph generated, it will cause memory leak.
   return HyperMapConverter(func_graph, fn_arg, arg_map, kObjectTypeTuple, size);
@@ -472,6 +482,53 @@ abstract::AbstractBasePtrList HyperMap::NormalizeArgs(const AbstractBasePtrList 
                          return arg->Broaden();
                        });
   return broadened;
+}
+
+FuncGraphPtr PrintGradient::GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) {
+  size_t inputs_size = args_abs_list.size();
+  std::ostringstream ss;
+  // ▶print_
+  ss << "\u25B8print_" << inputs_size;
+  FuncGraphPtr fg = std::make_shared<FuncGraph>();
+  if (fg->debug_info() != nullptr) {
+    fg->debug_info()->set_name(ss.str());
+  }
+
+  std::vector<AnfNodePtr> params;
+  params.push_back(NewValueNode(prim::kPrimPrint));
+  for (size_t i = 0; i < inputs_size; ++i) {
+    params.push_back(fg->add_parameter());
+  }
+
+  // Make fprop first result, Print's forward result.
+  AnfNodePtr out = fg->NewCNodeInOrder(params);
+
+  // Make fprop second result, Print's backward function.
+  FuncGraphPtr bprop = std::make_shared<FuncGraph>();
+
+  ss.str(std::string());
+  ss.clear();
+  // ◀print_
+  ss << "\u25C2print_" << inputs_size;
+  if (bprop->debug_info() != nullptr) {
+    bprop->debug_info()->set_name(ss.str());
+  }
+  (void)bprop->add_parameter();
+
+  std::vector<AnfNodePtr> grads;
+  grads.push_back(NewValueNode(prim::kPrimMakeTuple));
+  grads.push_back(NewEnviron(bprop));
+  std::transform(params.begin() + 1, params.end(), std::back_inserter(grads), [&bprop](const auto &param) {
+    return bprop->NewCNodeInOrder({NewValueNode(prim::GetPythonOps("zeros_like")), param});
+  });
+
+  bprop->set_flag(FUNC_GRAPH_FLAG_CORE, true);
+  bprop->set_output(bprop->NewCNodeInOrder(grads));
+
+  fg->set_flag(FUNC_GRAPH_FLAG_CORE, true);
+  fg->set_output(fg->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), out, NewValueNode(bprop)}));
+  (void)fg->transforms().emplace("primal", FuncGraphTransform(prim::kPrimPrint));
+  return fg;
 }
 
 FuncGraphPtr MakeTupleGradient::GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) {
@@ -1486,8 +1543,6 @@ FuncGraphPtr GradOperation::GenerateFuncGraph(const AbstractBasePtrList &args_ab
     TraceGuard guard(MakeTraceInfo<TraceGradOperation>(forward_graph->debug_info()));
     k_child = GetGrad(j, weights, position, forward_graph, is_weights_empty_or_none);
     k_child->set_flag(FUNC_GRAPH_FLAG_ARGS_NO_EXPAND, true);
-    auto k_child_output = k_child->output();
-    k_child_output->set_user_data<bool>(NODE_FLAG_CHECK_INPLACE_GRAD, std::make_shared<bool>(true));
   }
   grad_fg->set_output(NewValueNode(k_child));
 

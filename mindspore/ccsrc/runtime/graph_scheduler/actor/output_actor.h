@@ -66,6 +66,8 @@ class OutputActor : public AbstractActor {
 
   void FetchParameterInput(OpContext<DeviceTensor> *const context);
 
+  void HandleOutput();
+
   // The graph output need be set new device address every step or loop, to avoid that the device address
   // context of tensor be rewritten in the next step or next loop.
   void UpdateOutputDeviceAddress();

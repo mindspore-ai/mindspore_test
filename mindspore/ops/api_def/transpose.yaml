@@ -1,5 +1,5 @@
 transpose:
-  - op_yaml: transpose_ext_op.yaml
+  - op_yaml: transpose_ext_view_op.yaml
     py_method: tensor_transpose_ext # callback to python function "def tensor_transpose_ext"
     Ascend: pyboost
     CPU: py_method

@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-import pytest
 import numpy as np
 from tests.st.compiler.control.cases_register import case_register
 from mindspore.common import dtype as mstype
@@ -84,19 +83,17 @@ def test_backward():
     Description: Test control flow in graph mode.
     Expectation: No exception.
     """
-    with pytest.raises(RuntimeError) as info:
-        x = Tensor(np.array(1), mstype.int32)
-        y = Tensor(np.array(3), mstype.int32)
-        # Graph Mode
-        context.set_context(mode=context.GRAPH_MODE)
-        graph_forward_net = ForwardNet(max_cycles=3)
-        graph_backward_net = BackwardNet(graph_forward_net)
-        graph_mode_grads = graph_backward_net(x, y)
+    x = Tensor(np.array(1), mstype.int32)
+    y = Tensor(np.array(3), mstype.int32)
+    # Graph Mode
+    context.set_context(mode=context.GRAPH_MODE)
+    graph_forward_net = ForwardNet(max_cycles=3)
+    graph_backward_net = BackwardNet(graph_forward_net)
+    graph_mode_grads = graph_backward_net(x, y)
 
-        expect = (Tensor(np.array(9), mstype.int32), Tensor(np.array(3), mstype.int32))
-        assert graph_mode_grads == expect
-    assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
-            in str(info.value))
+    expect = (Tensor(np.array(9), mstype.int32), Tensor(np.array(3), mstype.int32))
+    assert graph_mode_grads == expect
+
 
 def test_if_in_for_dict():
     """

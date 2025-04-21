@@ -1,5 +1,5 @@
 select:
-  - op_yaml: select_ext_op.yaml
+  - op_yaml: select_ext_view_op.yaml
     py_method: tensor_select_ext # callback to python function "def tensor_select_ext"
     Ascend: pyboost
     CPU: py_method

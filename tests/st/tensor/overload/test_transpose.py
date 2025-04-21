@@ -154,7 +154,7 @@ def test_method_transpose_pyboost(mode):
     with pytest.raises(ValueError) as error_info:
         net(x, 0, 3)
         _pynative_executor.sync()
-    assert "For primitive[TransposeExt], the dim1 must be in " in str(error_info.value)
+    assert "For primitive[TransposeExtView], the dim1 must be in " in str(error_info.value)
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'],
@@ -176,8 +176,8 @@ def test_tensor_transpose_dynamic():
     if ms.get_context('device_target') != 'Ascend':
         with pytest.raises(RuntimeError) as error_info:
             TEST_OP(transpose_ext_forward_func, [[ms_data1, dim0_1, dim1_1], [ms_data2, dim0_2, dim1_2]],
-                    'transpose_ext', disable_mode=['GRAPH_MODE'])
-        assert "Unsupported op [TransposeExt] on " in str(error_info.value)
+                    'transpose_ext_view', disable_mode=['GRAPH_MODE'])
+        assert "Unsupported op [TransposeExtView] on " in str(error_info.value)
 
     axes1 = (0, 1)
     axes2 = (0, 2, 1, 3)

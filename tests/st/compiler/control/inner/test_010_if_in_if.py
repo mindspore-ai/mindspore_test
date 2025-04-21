@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-import pytest
 from tests.st.compiler.control.cases_register import case_register
 from mindspore import context
 from mindspore import Tensor, nn
@@ -185,13 +184,10 @@ def test_if_in_if_01():
     Description: Test control flow in graph mode.
     Expectation: No exception.
     """
-    with pytest.raises(RuntimeError) as info:
-        x = Tensor(2, mstype.int32)
-        expect1 = Tensor(22, mstype.int32)
-        expect2 = (Tensor(1, mstype.int32),)
-        control_flow_if_in_if(IfInIfNet1, x, expect1, expect2)
-    assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
-            in str(info.value))
+    x = Tensor(2, mstype.int32)
+    expect1 = Tensor(22, mstype.int32)
+    expect2 = (Tensor(1, mstype.int32),)
+    control_flow_if_in_if(IfInIfNet1, x, expect1, expect2)
 
 
 @case_register.level1
@@ -203,13 +199,10 @@ def test_if_in_if_02():
     Description: Test control flow in graph mode.
     Expectation: No exception.
     """
-    with pytest.raises(RuntimeError) as info:
-        x = Tensor(2, mstype.int32)
-        expect1 = Tensor(5, mstype.int32)
-        expect2 = (Tensor(1, mstype.int32),)
-        control_flow_if_in_if(IfInIfNet2, x, expect1, expect2)
-    assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
-            in str(info.value))
+    x = Tensor(2, mstype.int32)
+    expect1 = Tensor(5, mstype.int32)
+    expect2 = (Tensor(1, mstype.int32),)
+    control_flow_if_in_if(IfInIfNet2, x, expect1, expect2)
 
 
 @case_register.level1
@@ -235,10 +228,7 @@ def test_if_in_if_04():
     Description: Test control flow in graph mode.
     Expectation: No exception.
     """
-    with pytest.raises(RuntimeError) as info:
-        x = Tensor(2, mstype.int32)
-        expect1 = Tensor(22, mstype.int32)
-        expect2 = (Tensor(1, mstype.int32),)
-        control_flow_if_in_if(IfInIfNet4, x, expect1, expect2)
-    assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
-            in str(info.value))
+    x = Tensor(2, mstype.int32)
+    expect1 = Tensor(22, mstype.int32)
+    expect2 = (Tensor(1, mstype.int32),)
+    control_flow_if_in_if(IfInIfNet4, x, expect1, expect2)

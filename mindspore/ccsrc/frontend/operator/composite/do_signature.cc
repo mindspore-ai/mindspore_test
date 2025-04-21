@@ -381,7 +381,8 @@ bool GetAutoMixedPrecisionType(const FuncGraphPtr &func_graph, const ValuePtr &f
 }
 
 void DoTypeCast(const FuncGraphPtr &func_graph, const ValuePtr &func, const std::set<size_t> &write_indices,
-                const std::pair<TypeInfoPair, TypeInfoPair> &type_info_pair, std::vector<AnfNodePtr> *op_inputs) {
+                const std::pair<TypeInfoPair, TypeInfoPair> &type_info_pair, std::vector<AnfNodePtr> *op_inputs,
+                const AnfNodePtr &old_cnode) {
   auto source_type_info = type_info_pair.first;
   auto target_type_info = type_info_pair.second;
   for (size_t i = 0; i < source_type_info.first.size(); ++i) {
@@ -405,15 +406,22 @@ void DoTypeCast(const FuncGraphPtr &func_graph, const ValuePtr &func, const std:
                   << ", target_is_tensor: " << target_is_tensor
                   << ", source_type_id: " << TypeIdToString(source_type_id)
                   << ", target_type_id: " << TypeIdToString(target_type_id);
+    // For generating new_cnode to replace old_cnode, we insert kPrimCast before old_cnode to maintain orderlist
     if (!source_is_tensor && target_is_tensor) {
       // Scalar needs to be converted to Tensor.
       auto source_type_node = NewValueNode(static_cast<int64_t>(source_type_id));
-      param = func_graph->NewCNodeAfter(param, {NewValueNode(prim::kPrimScalarToTensor), param, source_type_node});
+      AnfNodePtrList scalar_to_tensor_inputs = {NewValueNode(prim::kPrimScalarToTensor), param, source_type_node};
+      param = (old_cnode == nullptr ? func_graph->NewCNodeAfter(param, scalar_to_tensor_inputs)
+                                    : func_graph->NewCNodeBefore(old_cnode, scalar_to_tensor_inputs));
+      MS_LOG(DEBUG) << "Using " << (old_cnode == nullptr ? "param" : "old cnode") << " as anchor to insert cast op.";
       (*op_inputs)[i] = func_graph->NewCNodeAfter(param, {NewValueNode(prim::kPrimCast), param, target_type_node});
     } else {
       // If target type is not Tensor but scalar, use ScalarCast.
       PrimitivePtr cast_op = target_is_tensor ? prim::kPrimCast : prim::kPrimScalarCast;
-      (*op_inputs)[i] = func_graph->NewCNodeAfter(param, {NewValueNode(cast_op), param, target_type_node});
+      AnfNodePtrList cast_inputs = {NewValueNode(cast_op), param, target_type_node};
+      MS_LOG(DEBUG) << "Using " << (old_cnode == nullptr ? "param" : "old cnode") << " as anchor to insert cast op.";
+      (*op_inputs)[i] = (old_cnode == nullptr ? func_graph->NewCNodeAfter(param, cast_inputs)
+                                              : func_graph->NewCNodeBefore(old_cnode, cast_inputs));
     }
   }
 }
@@ -436,7 +444,8 @@ void InsertCastForToFloat(const FuncGraphPtr &func_graph, const TypePtr &cast_ty
 
 std::vector<AnfNodePtr> GetNewInputsBySignatures(const FuncGraphPtr &func_graph, const std::string &func_name,
                                                  const ValuePtr &function, const AbstractBasePtrList &args_abs_list,
-                                                 const std::vector<AnfNodePtr> &params_list) {
+                                                 const std::vector<AnfNodePtr> &params_list,
+                                                 const AnfNodePtr &old_cnode) {
   // args: original inputs
   auto &signature = GetSignature(function);
   std::size_t sig_size = signature.size();
@@ -446,6 +455,7 @@ std::vector<AnfNodePtr> GetNewInputsBySignatures(const FuncGraphPtr &func_graph,
   std::vector<AnfNodePtr> op_inputs;
   std::set<size_t> write_indices;
   std::vector<TypePtr> input_types;
+  bool is_inplace_prim = function->isa<Primitive>() && function->cast<PrimitivePtr>()->inplace_prim();
   auto cast_type = GetMixedPrecisionTargetType(func_graph);
   // Assume, the write input of op is always the first input. We check if any write op,
   // and add cast op on other inputs to keep the same type with assigned parameter.
@@ -461,6 +471,8 @@ std::vector<AnfNodePtr> GetNewInputsBySignatures(const FuncGraphPtr &func_graph,
         (void)write_indices.insert(i);
       }
       // If sig is SignatureEnumRW::kRWRef, not do anything.
+    } else if (is_inplace_prim && sig == SignatureEnumRW::kRWWrite) {
+      (void)write_indices.insert(i);
     } else if (IfRaiseExceptionForCheckParameter(func_name, function, sig, type)) {
       MS_EXCEPTION(TypeError) << "Function " << func_name << "'s input " << i << " should be a Parameter or a Tensor, "
                               << "but got " << type->ToString() << ".";
@@ -484,7 +496,8 @@ std::vector<AnfNodePtr> GetNewInputsBySignatures(const FuncGraphPtr &func_graph,
   bool promote_type_changed = GetImplicitPromoteType(signature, write_indices, &target_type_info);
   // Do type cast.
   if (promote_type_changed || amp_type_changed) {
-    DoTypeCast(func_graph, function, write_indices, std::make_pair(source_type_info, target_type_info), &op_inputs);
+    DoTypeCast(func_graph, function, write_indices, std::make_pair(source_type_info, target_type_info), &op_inputs,
+               old_cnode);
   }
   return op_inputs;
 }
@@ -527,8 +540,8 @@ std::string ErrorMessageForConvertRefDtype(const ValuePtr &func, const std::stri
     buffer << " so data type ";
   }
   std::ostringstream ss;
-  ss << "Data type conversion of 'Parameter' is not supported," << buffer.str() << ref_type
-     << ", which cannot be converted to data type " << target_type << " automatically.\n";
+  ss << "Data type conversion is not supported for a 'Parameter', nor for the input tensor of an in-place operator,"
+     << buffer.str() << ref_type << ", which cannot be converted to data type " << target_type << " automatically.\n";
   return ss.str();
 }
 

@@ -3,7 +3,7 @@ mindspore.ops.CustomOpBuilder
 
 .. py:class:: mindspore.ops.CustomOpBuilder(name, sources, backend=None, include_paths=None, cflags=None, ldflags=None, **kwargs)
 
-    `CustomOpBuilder` 用于初始化和配置MindSpore的自定义算子。用户可以通过该类定义和加载自定义算子模块，并将其应用到计算图中。
+    `CustomOpBuilder` 用于初始化和配置MindSpore的自定义算子。用户可以通过该类定义和加载自定义算子模块，并将其应用到网络中。
 
     一般情况下，用户仅需在类的构造函数中传入源文件和额外的编译选项，并调用 `load` 接口即可完成算子的编译和加载。但如果用户有特殊的定制需求，也可以通过继承该类并重写部分接口来实现。需要注意的是，重写接口后，构造函数中传入的部分参数可能会被忽略。
 

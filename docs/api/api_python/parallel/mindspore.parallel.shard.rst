@@ -3,7 +3,7 @@
 
 .. py:function:: mindspore.parallel.shard(fn, in_strategy, out_strategy=None, parameter_plan=None, device='Ascend', level=0)
 
-    指定输入/输出Tensor的分布策略，其余算子的策略由指定的策略推导得到。在PyNative模式下，可以利用此方法指定某个Cell以图模式进行分布式执行。 在图模式下， 可以利用此方法设置某个模块的分布式切分策略，未设置的会自动通过策略传播方式配置。 `in_strategy` 和 `out_strategy` 需要为元组类型， 其中的每一个元素指定对应的输入/输出的Tensor分布策略，可参考： :func:`mindspore.ops.Primitive.shard` 的描述。也可以设置为None，会默认以数据并行执行。 其余算子的并行策略由输入输出指定的策略推导得到。
+    指定一个Cell或函数的输入、输出切分策略。在PyNative模式下，可以利用此方法指定某个Cell以图模式进行分布式执行。 在图模式下， 可以利用此方法设置某个模块的分布式切分策略，未设置的会自动通过策略传播方式配置。 `in_strategy` 和 `out_strategy` 需要为元组类型， 其中的每一个元素指定对应的输入/输出的Tensor分布策略，可参考： :func:`mindspore.ops.Primitive.shard` 的描述。也可以设置为None，会默认以数据并行执行。 其余算子的并行策略由输入输出指定的策略推导得到。
 
     .. note::
         - 调用该方法后，并行模式(parallel_mode)会自动设置为"auto_parallel"且搜索模式(search_mode)自动设置为"sharding_propagation"。

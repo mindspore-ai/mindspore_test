@@ -758,7 +758,7 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
         num_shards (int, optional): Number of shards that the dataset will be divided into. Default: ``None`` .
             Random accessible input is required. When this argument is specified, `num_samples` reflects the maximum
             sample number of per shard. Used in `data parallel training <https://www.mindspore.cn/tutorials/en/master/
-            parallel/data_parallel.html#data-parallel-mode-loads-datasets>`_ .
+            parallel/data_parallel.html#loading-datasets>`_ .
         shard_id (int, optional): The shard ID within `num_shards` . Default: ``None`` .
             This argument must be specified only when `num_shards` is also specified.
             Random accessible input is required.
@@ -1172,7 +1172,7 @@ class NumpySlicesDataset(GeneratorDataset):
         num_shards (int, optional): Number of shards that the dataset will be divided into. Default: ``None`` .
             When this argument is specified, `num_samples` reflects the max sample number of per shard.
             Used in `data parallel training <https://www.mindspore.cn/tutorials/en/master/
-            parallel/data_parallel.html#data-parallel-mode-loads-datasets>`_ .
+            parallel/data_parallel.html#loading-datasets>`_ .
         shard_id (int, optional): The shard ID within `num_shards` . Default: ``None`` . This argument must be
             specified only when `num_shards` is also specified.
 

@@ -437,6 +437,10 @@ HcclResult HcclAdapter::HcclReduce(void *send_buf, void *recv_buf, uint64_t coun
 
 HcclResult HcclAdapter::HcclScatter(void *send_buf, void *recv_buf, uint64_t count, HcclDataType dataType,
                                     uint32_t root, HcclComm comm, aclrtStream stream) const {
+  static bool dry_run = common::IsCompileSimulation();
+  if (MS_UNLIKELY(dry_run)) {
+    return HCCL_SUCCESS;
+  }
   uint64_t rangeId = 0;
   if (MS_UNLIKELY(mindspore::profiler::MstxImpl::GetInstance().IsEnable())) {
     size_t streamId = mindspore::device::ascend::AscendStreamMng::GetInstance().GetStreamId(stream);

@@ -75,6 +75,8 @@
 #include "runtime/device/res_manager/tensor_array.h"
 #include "include/common/runtime_conf/runtime_conf.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
+#include "include/backend/mem_reuse/mem_tracker.h"
+#include "mindspore/ccsrc/plugin/device/cpu/kernel/contiguous_cpu_kernel.h"
 
 namespace mindspore {
 namespace device {
@@ -145,6 +147,19 @@ runtime::KernelTaskPtr GetTaskByTaskType(const runtime::KernelTaskType &task_typ
       MS_LOG(EXCEPTION) << "KernelTaskType is invalid, task_type:" << task_type;
   }
 }
+
+void MallocMemoryForDeviceAddress(device::DeviceAddress *device_address, const device::DeviceContext *device_context) {
+  MS_EXCEPTION_IF_NULL(device_address);
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "Graph", "Contiguous", "");
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "Graph", device::tracker::MemType::kPyNativeOutput,
+                                                 device_address->GetSize(), device_address);
+  if (device_address->GetPtr() == nullptr) {
+    if (!device_context->device_res_manager_->AllocateMemory(device_address)) {
+      MS_LOG(EXCEPTION) << "Allocate device memory failed!";
+    }
+  }
+}
+
 }  // namespace
 
 void SetCpuRefMapToKernelInfo(const CNodePtr &apply_kernel, const std::vector<kernel::KernelAttr> &apply_kernel_attrs) {
@@ -609,6 +624,36 @@ bool CPUKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_ty
     MS_LOG(EXCEPTION) << "Exec task failed, task_type:" << task_type;
   }
   return ret;
+}
+
+bool CPUKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_type,
+                                          const std::vector<device::DeviceAddress *> &input_addr_list,
+                                          const std::vector<device::DeviceAddress *> &output_addr_list,
+                                          const size_t &stream_id) const {
+  if (task_type != runtime::KernelTaskType::kCONTIGUOUS_TASK) {
+    MS_LOG(EXCEPTION) << "KernelTaskType not supported, task_type:" << task_type;
+  }
+  MS_LOG(DEBUG) << "Start Contiguous task";
+
+  const auto &input_address = input_addr_list[0];
+  const auto &output_address = output_addr_list[0];
+  const auto &input_storage_info = input_address->GetTensorStorageInfo();
+  MS_LOG(DEBUG) << "Input_storage_info:" << (input_storage_info == nullptr ? "" : input_storage_info->ToString())
+                << ", input_address size:" << input_address->GetSize()
+                << ", output_address size:" << output_address->GetSize();
+
+  MallocMemoryForDeviceAddress(input_address, device_context_);
+  MallocMemoryForDeviceAddress(output_address, device_context_);
+
+  kernel::ContiguousCpuKernel contiguous_kernel;
+  auto ret = contiguous_kernel.LaunchContiguous(input_address->type_id(), input_address, input_storage_info,
+                                                output_address->type_id(), output_address);
+  if (!ret) {
+    MS_LOG(EXCEPTION) << "CpuContiguous failed";
+  }
+
+  MS_LOG(DEBUG) << "End Contiguous task";
+  return true;
 }
 
 bool CPUKernelExecutor::LaunchKernelWithProfiling(const CNodePtr &kernel, const std::vector<KernelTensor *> &inputs,

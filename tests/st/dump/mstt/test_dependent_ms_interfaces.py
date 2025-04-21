@@ -14,12 +14,22 @@
 # ============================================================================
 
 import os
-import shutil
+import tempfile
+
+import numpy as np
+import mindspore as ms
+from mindspore._c_expression import MSContext
+
 from tests.mark_utils import arg_mark
 from tests.security_utils import security_off_wrap
 
-import mindspore as ms
-from mindspore._c_expression import MSContext
+
+def get_max_relative_error(test_value, target_value):
+    zero_mask = (target_value == 0)
+    test_value[zero_mask] += np.finfo(float).eps
+    target_value[zero_mask] += np.finfo(float).eps
+    relative_err = np.divide((test_value - target_value), target_value)
+    return np.max(np.abs(relative_err)).item()
 
 
 @arg_mark(plat_marks=['platform_ascend'],
@@ -55,38 +65,43 @@ def test_interfaces_used_in_mstt():
                     ms.Tensor([[1, 1], [1, 1]], dtype=ms.float32))
     output, vjp_fn, aux = ms.vjp(fn, x, y, has_aux=True)
     grads = vjp_fn(v)
-    assert (output - target_output).abs().sum().item() < 0.001
-    assert (aux - target_aux).abs().sum().item() < 0.001
-    assert (grads[0] - target_grads[0]).abs().sum().item() < 0.001
-    assert (grads[1] - target_grads[1]).abs().sum().item() < 0.001
+    assert get_max_relative_error(output.numpy(), target_output.numpy()) <= 0.001
+    assert get_max_relative_error(aux.numpy(), target_aux.numpy()) <= 0.001
+    assert get_max_relative_error(grads[0].numpy(), target_grads[0].numpy()) <= 0.001
+    assert get_max_relative_error(grads[1].numpy(), target_grads[1].numpy()) <= 0.001
 
     # check acldumpRegCallback in libmindspore_ascend.so.2
     script_dir = os.path.dirname(os.path.abspath(__file__))
     command = os.path.join(script_dir, 'check_adump_so.sh')
     assert os.system(f"bash {command}") == 0
 
-    if os.path.isdir('./data'):
-        shutil.rmtree('./data')
-    os.mkdir('./data')
+    with tempfile.TemporaryDirectory(dir=script_dir) as tmp_dir:
+        return_code = os.system(
+            "msrun --worker_num=4 --local_worker_num=4 --master_addr=127.0.0.1 "
+            f"--master_port=10609 --join=True --log_dir={tmp_dir}/mstt_logs "
+            f"python mstt_test_net.py {tmp_dir}"
+        )
+        assert return_code == 0
 
-    return_code = os.system(
-        "msrun --worker_num=4 --local_worker_num=4 --master_addr=127.0.0.1 "
-        "--master_port=10609 --join=True --log_dir=./mstt_logs "
-        "python mstt_test_net.py"
-    )
-    assert return_code == 0
-
-    data_types = ('forward_pre', 'forward', 'backward_pre', 'backward', 'tensor_grad', 'param_grad',
-                  'jit_forward', 'jit_backward')
-    ranks = ('0', '1', '2', '3')
-    steps = ('0', '1')
-    for rank in ranks:
-        for step in steps:
-            for data_type in data_types:
-                file_name = f'./data/rank_{rank}_step_{step}_{data_type}.npy'
-                if data_type == 'param_grad' and step == '1':
-                    assert not os.path.isfile(file_name)
-                else:
-                    assert os.path.isfile(file_name)
-
-    shutil.rmtree('./data')
+        target_values = {
+            'forward_pre': np.asarray([[0.5, 0.5], [0.5, 0.5]]),
+            'forward': np.asarray([[0.25, 0.25], [0.25, 0.25]]),
+            'backward_pre': np.asarray([[4.0, 4.0], [4.0, 4.0]]),
+            'backward': np.asarray([[2.0, 2.0], [2.0, 2.0]]),
+            'tensor_grad': np.asarray([[2.0, 2.0], [2.0, 2.0]]),
+            'param_grad': np.asarray([8.0]),
+            'jit_forward': np.asarray([[0.5, 0.5], [0.5, 0.5]]),
+            'jit_backward': np.asarray([[1.5, 1.5], [1.5, 1.5]])
+        }
+        ranks = ('0', '1', '2', '3')
+        steps = ('0', '1')
+        for rank in ranks:
+            for step in steps:
+                for data_type, target_value in target_values.items():
+                    file_name = f'{tmp_dir}/rank_{rank}_step_{step}_{data_type}.npy'
+                    if data_type == 'param_grad' and step == '1':
+                        assert not os.path.isfile(file_name)
+                    else:
+                        assert os.path.isfile(file_name)
+                        data_value = np.load(file_name)
+                        assert get_max_relative_error(data_value, target_value) <= 0.001

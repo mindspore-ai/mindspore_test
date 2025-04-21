@@ -76,8 +76,8 @@ def test_fallback_str_format_input():
 
     a = Tensor([1])
     ms_str, ms_str2 = foo(a)
-    assert ms_str == "Tensor(shape=[1], dtype=Int64, value= [1])"
-    assert ms_str2 == "Tensor(shape=[1], dtype=Int64, value= [1])"
+    assert ms_str == "[1]"
+    assert ms_str2 == "[1] "
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',

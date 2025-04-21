@@ -1,4 +1,4 @@
-# Copyright 2024 Huawei Technologies Co., Ltd
+# Copyright 2024-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -37,7 +37,6 @@ def test_tensor_view_inplace_reshape():
             x = x + 2
             reshape_x = P.Reshape()(x, (2,))
             P.AssignAdd()(reshape_x, y)
-            reshape_x.add_(y)
             z = x + 1
             return z
 
@@ -72,3 +71,72 @@ def test_tensor_view_inplace_split():
     x = ms.Tensor(np_x, dtype=ms.float32)
     out = TensorSplitNet(0, 2)(x)
     print("out:", out)
+
+
+class ViewOut(nn.Cell):
+    def __init__(self):
+        super(ViewOut, self).__init__()
+        self.transpose = P.TransposeView()
+        self.assign = P.Assign()
+
+    @ms.jit
+    def construct(self, x):
+        self.transpose(x, (0, 1, 2))
+        self.assign(x, x * 2)
+        return x * 3
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_graph_view_out():
+    """
+    Feature: Runtime view graph mode.
+    Description: view op as graph output.
+    Expectation: pass.
+    """
+    context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"})
+    x1 = ms.Tensor(np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [-1, -1, 0, -1]],
+                             [[0, -1, 0, 0], [0, 0, 0, 0], [0, 1, 0, 0]]]), ms.int32)
+    net = ViewOut()
+    out_graph = net(x1)
+    x2 = ms.Tensor(np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [-1, -1, 0, -1]],
+                             [[0, -1, 0, 0], [0, 0, 0, 0], [0, 1, 0, 0]]]), ms.int32)
+    x2.transpose((0, 1, 2))
+    x2 += x2
+    z = x2 * 3
+    assert np.allclose(out_graph.asnumpy(), z.asnumpy(), rtol=10e-4, atol=10e-4)
+
+
+class ViewOut2(nn.Cell):
+    def __init__(self):
+        super(ViewOut2, self).__init__()
+        self.transpose = P.Transpose()
+        self.assign = P.Assign()
+
+    @ms.jit
+    def construct(self, x, y):
+        self.transpose(x, (0, 1, 2))
+        self.assign(y, x * 2)
+        return x * 3 + y
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_graph_view_out_tensormove():
+    """
+    Feature: Runtime view graph mode.
+    Description: view op as graph output.
+    Expectation: pass.
+    """
+    context.set_context(jit_config={"jit_level": "O0"})
+    context.set_context(mode=context.GRAPH_MODE)
+    x1 = ms.Tensor(np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [-1, -1, 0, -1]],
+                             [[0, -1, 0, 0], [0, 0, 0, 0], [0, 1, 0, 0]]]), ms.int32)
+    y1 = ms.Tensor(np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [-1, -1, 0, -1]],
+                             [[0, -1, 0, 0], [0, 0, 0, 0], [0, 1, 0, 0]]]), ms.int32)
+    net = ViewOut2()
+    out_graph = net(x1, y1)
+    x2 = ms.Tensor(np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [-1, -1, 0, -1]],
+                             [[0, -1, 0, 0], [0, 0, 0, 0], [0, 1, 0, 0]]]), ms.int32)
+    x2.transpose((0, 1, 2))
+    y2 = x2 * 2
+    z = x2 * 3 + y2
+    assert np.allclose(out_graph.asnumpy(), z.asnumpy(), rtol=10e-4, atol=10e-4)

@@ -1302,6 +1302,8 @@ bool AbstractSequence::operator==(const AbstractBase &other) const {
 
 const AbstractBasePtrList &AbstractSequence::elements() const { return elements_; }
 
+void AbstractSequence::set_elements(const AbstractBasePtrList &elements) { elements_ = elements; }
+
 const std::shared_ptr<AnfNodeWeakPtrList> &AbstractSequence::sequence_nodes() const { return sequence_nodes_; }
 
 void AbstractSequence::set_sequence_nodes(const std::shared_ptr<AnfNodeWeakPtrList> &sequence_nodes) {
@@ -2070,8 +2072,9 @@ AbstractBasePtr AbstractJTagged::element() { return element_; }
 
 std::size_t AbstractJTagged::hash() const { return hash_combine(tid(), element_->hash()); }
 
-AbstractRefTensor::AbstractRefTensor(const AbstractTensorPtr &ref_value, const ValuePtr &ref_key_value)
-    : AbstractTensor(*ref_value), ref_key_value_(ref_key_value) {
+AbstractRefTensor::AbstractRefTensor(const AbstractTensorPtr &ref_value, const ValuePtr &ref_key_value,
+                                     RefTensorType ref_type)
+    : AbstractTensor(*ref_value), ref_key_value_(ref_key_value), ref_type_(ref_type) {
   set_type(std::make_shared<RefType>());
   MS_EXCEPTION_IF_NULL(ref_key_value);
   if (ref_key_value != kValueAny && !ref_key_value->isa<RefKey>()) {
@@ -2108,7 +2111,11 @@ AbstractBasePtr AbstractRefTensor::Join(const std::shared_ptr<AbstractRefTensor>
   // Secondly , join the tensor value.
   auto joined_tensor = AbstractTensor::Join(other)->cast<AbstractTensorPtr>();
   MS_EXCEPTION_IF_NULL(joined_tensor);
-  return std::make_shared<AbstractRefTensor>(joined_tensor, joined_ref_key);
+  if (ref_type_ != other->ref_type_) {
+    MS_LOG(INFO) << "Joining RefTensors of different types! this: " << ToString() << ", other: " << other->ToString();
+  }
+  RefTensorType joined_type = ref_type_ > other->ref_type_ ? ref_type_ : other->ref_type_;
+  return std::make_shared<AbstractRefTensor>(joined_tensor, joined_ref_key, joined_type);
 }
 
 AbstractBasePtr AbstractRefTensor::Join(const AbstractBasePtr &other) {
@@ -2131,22 +2138,25 @@ AbstractBasePtr AbstractRefTensor::Join(const AbstractBasePtr &other) {
 
 AbstractBasePtr AbstractRefTensor::Clone() const {
   auto abs_tensor = AbstractTensor::Clone()->cast<AbstractTensorPtr>();
-  return std::make_shared<AbstractRefTensor>(abs_tensor, ref_key_value_);
+  return std::make_shared<AbstractRefTensor>(abs_tensor, ref_key_value_, ref_type_);
 }
 
 AbstractBasePtr AbstractRefTensor::Broaden() const {
   // Always broaden for ref
   auto abs_tensor = AbstractTensor::Broaden()->cast<AbstractTensorPtr>();
   // Broaden the tensor value and keep the ref_key_value.
-  auto ret = std::make_shared<AbstractRefTensor>(abs_tensor, ref_key_value_);
-  return ret;
+  return std::make_shared<AbstractRefTensor>(abs_tensor, ref_key_value_, ref_type_);
+}
+
+std::string AbstractRefTensor::ToString(RefTensorType type) {
+  return type == RefTensorType::kParameter ? "Parameter" : type == RefTensorType::kInplaceOp ? "InplaceOp" : "ViewOP";
 }
 
 std::string AbstractRefTensor::ToString() const {
   std::ostringstream buffer;
   MS_EXCEPTION_IF_NULL(ref_key_value_);
-  buffer << type_name() << "("
-         << "key: " << ref_key_value_->ToString() << " ref_value: " << AbstractTensor::ToString();
+  buffer << type_name() << "(key: " << ref_key_value_->ToString() << ", ref_type: " << ToString(ref_type_)
+         << ", ref_value: " << AbstractTensor::ToString();
   auto value = GetValueTrack();
   if (value != nullptr) {
     buffer << ", value: " << value->ToString();
@@ -2881,17 +2891,24 @@ ValuePtr GetRefKeyValue(const AbstractBasePtr &abs) {
   return nullptr;
 }
 
-std::string GetRefKeyFromAbstract(const AbstractBasePtr &abs) {
-  auto abs_ref = abs->cast<abstract::AbstractRefPtr>();
-  if (abs_ref == nullptr) {
-    return "";
+void SynchronizeSuccessiveInputs(const AbstractBasePtr &old_arg, const AbstractBasePtr &new_arg) {
+  // Update inputs inplace abstract.
+  if (old_arg != nullptr && old_arg->inplace_abstract() != nullptr && new_arg != nullptr) {
+    new_arg->set_inplace_abstract(old_arg->inplace_abstract());
   }
-  MS_EXCEPTION_IF_NULL(abs_ref->ref_key_value());
-  auto ref_key = abs_ref->ref_key_value()->cast<StringImmPtr>();
-  if (ref_key == nullptr) {
-    return "";
+  // Update sequence nodes info, if matched.
+  static const auto enable_eliminate_unused_element = (common::GetCompileConfig("ENABLE_DDE") != "0");
+  if (enable_eliminate_unused_element) {
+    auto new_sequence = dyn_cast<AbstractSequence>(new_arg);
+    auto old_sequence = dyn_cast<AbstractSequence>(old_arg);
+    if (old_sequence != nullptr && new_sequence != nullptr) {
+      MS_LOG(DEBUG) << "Before synchronize sequence nodes use flags, old_sequence: " << old_sequence->ToString()
+                    << ", new_sequence: " << new_sequence->ToString();
+      SynchronizeSequenceElementsUseFlagsRecursively(old_sequence, new_sequence);
+      MS_LOG(DEBUG) << "After synchronize sequence nodes use flags, old_sequence: " << old_sequence->ToString()
+                    << ", new_sequence: " << new_sequence->ToString();
+    }
   }
-  return ref_key->value();
 }
 }  // namespace abstract
 }  // namespace mindspore

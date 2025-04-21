@@ -14,6 +14,7 @@
 # ============================================================================
 
 import os
+import sys
 
 import mindspore as ms
 from mindspore import nn, ops, jit, Tensor, Parameter, value_and_grad
@@ -27,6 +28,7 @@ import numpy as np
 iteration = 0
 param_hook_called_count = 0
 ori_mul = ops.mul
+data_path = './data'
 
 
 def empty(self, *args, **kwargs):
@@ -41,7 +43,7 @@ def save_npy(data_type, data):
             rank_id = None
     else:
         rank_id = os.environ["RANK_ID"]
-    file_name = f'./data/rank_{rank_id}_step_{iteration}_{data_type}.npy'
+    file_name = f'{data_path}/rank_{rank_id}_step_{iteration}_{data_type}.npy'
     np.save(file_name, data)
 
 
@@ -140,6 +142,10 @@ class MulAddNet(nn.Cell):
 
 
 if __name__ == "__main__":
+    assert len(sys.argv) > 1
+    assert os.path.isdir(sys.argv[1])
+    data_path = sys.argv[1]
+
     ms.set_device('Ascend')
     ms.set_context(mode=ms.PYNATIVE_MODE)
     init()

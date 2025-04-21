@@ -15,7 +15,6 @@
 import os
 import re
 import shutil
-import pytest
 import numpy as np
 from mindspore.nn import Cell
 from mindspore import context, Tensor, Parameter
@@ -90,16 +89,13 @@ def test_load_not_convert_tensormove():
         save_path = "./test_load_not_convert_tensormove"
         context.set_context(save_graphs=True, save_graphs_path=save_path)
         x = Tensor(np.array(1), ms.int32)
-        with pytest.raises(RuntimeError) as info:
-            graph_forword_net = ForwardNet()
-            graph_backword_net = BackwardNet(graph_forword_net)
-            graph_backword_net(x)
-            content = read_file(save_path)
-            tensormove_set = re.findall('= TensorMove', content)
-            try:
-                shutil.rmtree(save_path)
-            except FileNotFoundError:
-                pass
-            assert not tensormove_set
-        assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
-                in str(info.value))
+        graph_forword_net = ForwardNet()
+        graph_backword_net = BackwardNet(graph_forword_net)
+        graph_backword_net(x)
+        content = read_file(save_path)
+        tensormove_set = re.findall('= TensorMove', content)
+        try:
+            shutil.rmtree(save_path)
+        except FileNotFoundError:
+            pass
+        assert not tensormove_set

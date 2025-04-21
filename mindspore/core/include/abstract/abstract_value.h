@@ -906,6 +906,17 @@ class MS_CORE_API AbstractSequence : public AbstractBase {
   /// \return A vector of elements.
   const AbstractBasePtrList &elements() const;
 
+  /// \brief Set the stored elements.
+  ///
+  /// \param[in] elements A vector of elements to set.
+  void set_elements(const AbstractBasePtrList &elements);
+
+  /// \brief Set the element at index.
+  ///
+  /// \param[in] index The index where to set.
+  /// \param[in] item The abstract to set.
+  void SetElement(std::size_t index, const AbstractBasePtr &item) { elements_[index] = item; }
+
   /// \brief Purify the elements list, and clean unused elements.
   ///
   /// \return A boolean, which indicates whether success.
@@ -1432,11 +1443,18 @@ using AbstractEllipsisPtr = std::shared_ptr<AbstractEllipsis>;
 /// \brief Class AbstractRefTensor describes a RefTensor's abstract value.
 class MS_CORE_API AbstractRefTensor final : public AbstractTensor {
  public:
+  // The order of these enum values determines the priority in AbstractRefTensor::Join().
+  enum class RefTensorType : char { kParameter = 0, kInplaceOp, kViewOp };
+  static std::string ToString(RefTensorType type);
+
+ public:
   /// \brief Constructor of AbstractRef.
   ///
   /// \param[in] ref_value The tensor.
   /// \param[in] ref_key_value The ref key of tensor.
-  AbstractRefTensor(const AbstractTensorPtr &ref_value, const ValuePtr &ref_key_value);
+  /// \param[in] ref_type The data source of this tensor.
+  AbstractRefTensor(const AbstractTensorPtr &ref_value, const ValuePtr &ref_key_value,
+                    RefTensorType ref_type = RefTensorType::kParameter);
 
   /// \brief Destructor of AbstractEllipsis.
   ~AbstractRefTensor() override = default;
@@ -1470,6 +1488,12 @@ class MS_CORE_API AbstractRefTensor final : public AbstractTensor {
   /// \return A point to the RefKey.
   ValuePtr ref_key_value() const;
 
+  void set_ref_key_value(const ValuePtr &ref_key_value) { ref_key_value_ = ref_key_value; }
+
+  /// \brief Whether it is a Parameter.
+  bool is_parameter() const { return ref_type_ == RefTensorType::kParameter; }
+  RefTensorType ref_type() const { return ref_type_; }
+
   AbstractBasePtr Broaden() const override;
 
   virtual AbstractBasePtr Join(const std::shared_ptr<AbstractRefTensor> &other);
@@ -1480,6 +1504,7 @@ class MS_CORE_API AbstractRefTensor final : public AbstractTensor {
  private:
   // ref_key_value is the reference key of AbstractRef, the value can be a string value or kValueAny
   ValuePtr ref_key_value_;
+  RefTensorType ref_type_;
 };
 using AbstractRefPtr = std::shared_ptr<AbstractRefTensor>;
 
@@ -1763,10 +1788,13 @@ class EvalResult : public Base {
  public:
   EvalResult(const AbstractBasePtr &abs, const AttrValueMapPtr &attr)
       : abstract_(abs), attribute_(attr), has_side_effect_node_(false) {}
+  EvalResult(const AbstractBasePtr &abs, const AttrValueMapPtr &attr, const AbstractBasePtrList &joined_list)
+      : abstract_(abs), attribute_(attr), joined_abs_list_(joined_list), has_side_effect_node_(false) {}
   ~EvalResult() override = default;
   MS_DECLARE_PARENT(EvalResult, Base);
   const AbstractBasePtr &abstract() const { return abstract_; }
   const AttrValueMapPtr &attribute() const { return attribute_; }
+  const AbstractBasePtrList &joined_abs_list() const { return joined_abs_list_; }
   bool has_side_effect_node() const { return has_side_effect_node_; }
   void set_has_side_effect_node(bool has_side_effect_node) { has_side_effect_node_ = has_side_effect_node; }
 
@@ -1774,7 +1802,7 @@ class EvalResult : public Base {
   AbstractBasePtr abstract_;
   // Attribute related to PrimEvaluator;
   AttrValueMapPtr attribute_;
-
+  AbstractBasePtrList joined_abs_list_;
   bool has_side_effect_node_;
 };
 using EvalResultPtr = std::shared_ptr<EvalResult>;
@@ -1796,7 +1824,8 @@ MS_CORE_API std::string ExtractLoggingInfo(const std::string &info);
 MS_CORE_API void SynchronizeSequenceElementsUseFlagsRecursively(const AbstractSequencePtr &lhs_sequence,
                                                                 const AbstractSequencePtr &rhs_sequence);
 MS_CORE_API ValuePtr GetRefKeyValue(const AbstractBasePtr &abs);
-MS_CORE_API std::string GetRefKeyFromAbstract(const AbstractBasePtr &abs);
+
+MS_CORE_API void SynchronizeSuccessiveInputs(const AbstractBasePtr &old_arg, const AbstractBasePtr &new_arg);
 }  // namespace abstract
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_ABSTRACT_ABSTRACT_VALUE_H_
