@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "pynative/op_function/auto_generate/pyboost_functions.h"
 #include "pynative/op_function/auto_generate/pyboost_functions_impl.h"
 #include "include/common/pybind_api/api_register.h"
 #include "pynative/pynative_execute.h"
@@ -32,12 +31,18 @@
 #include "frontend/expander/bprop/bprop_irbuilder.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
-${ops_inc}
+${include_op_header}
 
 namespace mindspore::pynative {
+AsyncStatus GetAsyncStatus() {
+  const auto &op_status = kernel::pyboost::OpRunStatus::Get().op_status();
+  AsyncStatus status = {
+    op_status.disable_mix_precision,
+    op_status.is_jit_compiling,
+    op_status.custom_bprop_cell_count,
+  };
+  return status;
+}
+
 ${function_body}
-
-${register_function_body}
-
-${function_class_register}
 }// namespace mindspore::pynative

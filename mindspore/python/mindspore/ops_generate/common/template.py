@@ -120,17 +120,30 @@ REGISTER_PYBOOST_GRAD_TEMPLATE = Template("${register_func}")
 PYBOOST_FUNCTION_HEADER_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_functions_h.tpl'))
 
+PYBOOST_FUNCTION_IMPL_HEADER_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_functions_impl_h.tpl'))
+
 PYBOOST_FUNCTION_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_function.tpl'))
 
-PYBOOST_COMM_FUNCTION_TEMPLATE = Template.load_from_file(
-    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_comm_function.tpl'))
+PYBOOST_FUNCTION_IMPL_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_function_impl.tpl'))
 
-PYBOOST_FUNCTION_DYNAMIC_OUTPUT_TEMPLATE = Template.load_from_file(
-    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_function_dynamic_output.tpl'))
+PYBOOST_COMM_FUNCTION_IMPL_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_function_comm_impl.tpl'))
+
+PYBOOST_FUNCTION_DYNAMIC_OUTPUT_IMPL_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR,
+                 './mindspore/ccsrc/pynative/op_function/template/pyboost_function_dynamic_output_impl.tpl'))
 
 PYBOOST_FUNCTIONS_CC_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_functions_cc.tpl'))
+
+PYBOOST_FUNCTIONS_BASE_CC_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_functions_base_cc.tpl'))
+
+PYBOOST_FUNCTIONS_IMPL_CC_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_functions_impl_cc.tpl'))
 
 PYBOOST_OVERLOAD_FUNCTIONS_CC_TEMPLATE = Template.load_from_file(
     os.path.join(
