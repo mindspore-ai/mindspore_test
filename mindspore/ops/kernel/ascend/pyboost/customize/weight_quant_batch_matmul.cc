@@ -50,7 +50,7 @@ ValueTuplePtr GetWeightQuantBatchMatmulPerm(const BaseTensorPtr &weight_tensor) 
     perm[0] = MakeValue(zero);
     return std::make_shared<ValueTuple>(perm);
   }
-  perm[size - 1] = MakeValue(size - kDim2);
+  perm[size - 1] = MakeValue(size - SizeToLong(kDim2));
   perm[size - kDim2] = MakeValue(size - 1);
   for (int64_t i = 0; i < size - ops::kSize2; ++i) {
     perm[i] = MakeValue(i);

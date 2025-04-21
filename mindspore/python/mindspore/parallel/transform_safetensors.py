@@ -21,10 +21,12 @@ import glob
 import math
 import json
 import re
-from collections import defaultdict
+import mmap
+from collections import defaultdict, OrderedDict
 
 import time
 import multiprocessing as mp
+
 import psutil
 import numpy as np
 from safetensors.numpy import save_file, load_file
@@ -32,8 +34,10 @@ from safetensors import safe_open
 
 import mindspore as ms
 from mindspore import log as logger
-from mindspore.common import dtype as mstype
 from mindspore.log import vlog_print
+from mindspore.common.parameter import Parameter
+from mindspore.common.tensor import Tensor
+from mindspore.common import np_dtype
 from mindspore.parallel._parallel_serialization import _get_device_num_from_strategy, _make_dir, \
     _extract_layout_map, _extract_src_dst_layout_map, _parameter_not_in_local_stage, _extract_pipeline_stage_num, \
     _insert_opt_shard_reshape, _extract_src_dst_layout_map_by_src, _insert_expand_layout_reshape
@@ -43,8 +47,196 @@ from mindspore.parallel._tensor import _get_tensor_strategy, _construct_from_to_
     _extract_layout_item, _load_tensor_shape, _apply_operator
 from mindspore.parallel._parallel_serialization import _build_searched_strategy, _load_protobuf_strategy, \
     _convert_to_list
+from mindspore.common import dtype as mstype
 
 safetensors_to_mstype = {'Int4': mstype.qint4x2}
+
+np.bfloat16 = np_dtype.bfloat16
+
+MAX_HEADER_SIZE = 100 * 1000 * 1000
+
+dtype_size = {
+    "BOOL": 1,
+    "U8": 1,
+    "I8": 1,
+    "I16": 2,
+    "U16": 2,
+    "I32": 4,
+    "U32": 4,
+    "I64": 8,
+    "U64": 8,
+    "F16": 2,
+    "BF16": 2,
+    "F32": 4,
+    "F64": 8,
+}
+
+
+numpy_dtype = {
+    "BOOL": np.bool_,
+    "U8": np.uint8,
+    "I8": np.int8,
+    "I16": np.int16,
+    "U16": np.uint16,
+    "I32": np.int32,
+    "U32": np.uint32,
+    "I64": np.int64,
+    "U64": np.uint64,
+    "F16": np.float16,
+    "BF16": np.bfloat16,  # no bf16
+    "F32": np.float32,
+    "F64": np.float64,
+}
+
+
+def getSize(fileobject):
+    fileobject.seek(0, 2)  # move the cursor to the end of the file
+    size = fileobject.tell()
+    fileobject.seek(0)  # move the cursor to the start of the file
+    return size
+
+
+def metadata_validate(metadata):
+    """validation metadata"""
+    start = 0
+    for key, info in metadata.items():
+        s, e = info["data_offsets"]
+        if s != start or e < s:
+            raise ValueError(f"SafeTensorError::InvalidOffset({key})")
+        start = e
+        nelements = np.prod(info["shape"])
+        nbytes = nelements * dtype_size[info["dtype"]]
+        if (e - s) != nbytes:
+            raise ValueError("SafeTensorError::TensorInvalidInfo")
+    return start
+
+
+def read_metadata(buffer):
+    """read metadata by buffer"""
+    buffer_len = getSize(buffer)
+    if buffer_len < 8:
+        raise ValueError("SafeTensorError::HeaderTooSmall")
+
+    n = np.frombuffer(buffer.read(8), dtype=np.uint64).item()
+    if n > MAX_HEADER_SIZE:
+        raise ValueError("SafeTensorError::HeaderTooLarge")
+
+    stop = n + 8
+    if stop > buffer_len:
+        raise ValueError("SafeTensorError::InvalidHeaderLength")
+
+    tensors = json.loads(buffer.read(n), object_pairs_hook=OrderedDict)
+    metadata = tensors.pop("__metadata__", None)
+    buffer_end = metadata_validate(tensors)
+
+    if buffer_end + 8 + n != buffer_len:
+        raise ValueError("SafeTensorError::MetadataIncompleteBuffer")
+
+    return stop, tensors, metadata
+
+
+class PySafeSlice:
+    """Create PySafeSlice by file"""
+
+    def __init__(self, info, bufferfile, base_ptr, buffermmap):
+        self.info = info
+        self.bufferfile = bufferfile
+        self.buffermmap = buffermmap
+        self.base_ptr = base_ptr
+
+        self.start = [0 for dim in self.shape]
+        self.stop = [dim for dim in self.shape]
+        self.step = [1 for dim in self.shape]
+
+    @property
+    def ndim(self):
+        return len(self.shape)
+
+    def get(self, *args, **kwargs):
+        """Get tensor from buffer by data_offset"""
+        nbytes = int(np.prod(self.shape)) * np.dtype(self.dtype).itemsize
+        offset = self.start_offset
+        tensor = np.frombuffer(self.buffermmap, dtype=self.dtype, offset=offset,
+                               count=nbytes // np.dtype(self.dtype).itemsize)
+        tensor = tensor.reshape(self.shape)
+        if not tensor.flags["ALIGNED"]:
+            logger.info("This safetensors file is not aligned.")
+            tensor = tensor.copy()
+        return tensor
+
+    @property
+    def start_offset(self):
+        return self.base_ptr + self.info["data_offsets"][0]
+
+    def get_shape(self):
+        return self.shape
+
+    @property
+    def shape(self):
+        return self.info["shape"]
+
+    @property
+    def dtype(self):
+        return numpy_dtype[self.info["dtype"]]
+
+    @property
+    def nelements(self):
+        return np.prod(self.info["shape"])
+
+    @property
+    def bits(self):
+        return dtype_size[self.info["dtype"]]
+
+    @property
+    def nbytes(self):
+        return self.nelements * dtype_size[self.info["dtype"]]
+
+
+class _fast_safe_open:
+    """
+    Open a safetensors file and access its metadata and tensors efficiently.
+
+    This function is designed to work similarly to `safetensors.safe_open`,
+    providing a fast way to open and interact with safetensors files.
+    """
+
+    def __init__(self, filename, framework=None, device="cpu"):
+        self.filename = filename
+        self.framework = framework
+        self.file = open(self.filename, "rb")
+        self.file_mmap = mmap.mmap(self.file.fileno(), 0, access=mmap.ACCESS_COPY)
+        self.base, self.tensors_decs, self.__metadata__ = read_metadata(self.file)
+        self.tensors = OrderedDict()
+        for key, info in self.tensors_decs.items():
+            self.tensors[key] = PySafeSlice(info, self.file, self.base, self.file_mmap)
+            self.tensors[key].key = key
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.file.close()
+
+    def metadata(self):
+        return self.__metadata__
+
+    def keys(self):
+        return list(self.tensors.keys())
+
+    def get_tensor(self, name):
+        return self.tensors[name].get()
+
+
+def _fast_load_file(filename):
+    """
+    Load safetensors info from a specified file.
+    """
+    result = {}
+    with _fast_safe_open(filename, framework="np") as f:
+        for k in f.keys():
+            result[k] = f.get_tensor(k)
+    return result
+
 
 def _progress_bar(iterable, total=None):
     """
@@ -307,7 +499,7 @@ def _find_remove_redundancy_rank_id(pipe_param_list, single_param_dict, file_dic
                     break
         if open_file_id is not None:
             start_time = time.time()
-            output = file_dict[open_file_id].get_slice(param_name)
+            output = file_dict[open_file_id].get_tensor(param_name)
             end_time = time.time()
             cost_time = end_time - start_time
             io_time += cost_time
@@ -336,6 +528,7 @@ def _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map
     Transforms safetensors files to a specified format without using parallel processing.
     """
     io_cost_time = 0
+    meta_data = {"format": "ms"}
     if src_strategy_file is not None:
         from mindspore.train._utils import get_parameter_redundancy
         redundancy_dict_tmp = get_parameter_redundancy(src_strategy_file, initial_rank=0)
@@ -355,13 +548,15 @@ def _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map
         file_dict = {}
         single_param_dict = {}
         for file_id, _ in all_safetensor_files_map.items():
-            f = safe_open(all_safetensor_files_map.get(file_id), framework="np")
+            f = _fast_safe_open(all_safetensor_files_map.get(file_id), framework="np")
             file_dict[file_id] = f
             for param_name in f.keys():
                 if param_name not in single_param_dict.keys():
                     single_param_dict[param_name] = {file_id}
                 else:
                     single_param_dict[param_name].add(file_id)
+            if f.metadata() is not None:
+                meta_data.update(f.metadata())
     src_strategy_list_keys = _convert_to_list(src_strategy_dict).keys() if src_strategy_dict else []
     dst_strategy_list_keys = _convert_to_list(dst_strategy_dict).keys() if dst_strategy_dict else []
     for needed_rank_list_key, transform_rank_list in needed_rank_list_map.items():
@@ -377,20 +572,22 @@ def _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map
                                                               device_num, choice_func)
                     io_cost_time += io_time
                 else:
-                    with safe_open(all_safetensor_files_map.get(int(needed_rank)), framework="np") as f:
+                    with _fast_safe_open(all_safetensor_files_map.get(int(needed_rank)), framework="np") as f:
                         if not unified_flag:
                             all_param_name_set = set(f.keys())
                             src_param_name_set = set(src_strategy_list_keys)
                             dst_param_name_set = set(dst_strategy_list_keys)
                             hyper_param_set = all_param_name_set - (src_param_name_set & dst_param_name_set)
                             pipe_param_list.extend(list(hyper_param_set))
+                        if f.metadata() is not None:
+                            meta_data.update(f.metadata())
                         io_time = 0
                         for param_name in pipe_param_list:
                             if param_name not in f.keys():
                                 # param not in ckpt file, check reason
                                 continue
                             start_time = time.time()
-                            output = f.get_slice(param_name)
+                            output = f.get_tensor(param_name)
                             end_time = time.time()
                             cost_time = end_time - start_time
                             io_time += cost_time
@@ -444,11 +641,11 @@ def _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map
             else:
                 if transform_param_dict:
                     if output_format == "safetensors":
-                        save_file(transform_param_dict, save_file_name)
+                        save_file(transform_param_dict, save_file_name, metadata=meta_data)
                     else:
                         transform_param_dict = _load_and_transform(transform_param_dict,
                                                                    None, None, transform_func=
-                                                                   lambda v, name: ms.Parameter(v, name=name))
+                                                                   lambda v, name: Parameter(v, name=name))
                         ms.save_checkpoint(transform_param_dict, save_file_name)
             del param_total_dict_keys
         del param_total_dict
@@ -466,10 +663,10 @@ def _save_final_safetensors(_transform_param_list, output_format):
                 new_transform_dict[save_file_name].update(transform_param_dict)
     for save_file_name, transform_param_dict in new_transform_dict.items():
         if output_format == "safetensors":
-            save_file(transform_param_dict, save_file_name)
+            save_file(transform_param_dict, save_file_name, metadata={"format": "ms"})
         else:
             transform_param_dict = _load_and_transform(transform_param_dict, None, None,
-                                                       transform_func=lambda v, name: ms.Parameter(v, name=name))
+                                                       transform_func=lambda v, name: Parameter(v, name=name))
             ms.save_checkpoint(transform_param_dict, save_file_name)
 
 
@@ -522,7 +719,7 @@ def transform_safetensors_by_stage(src_safetensors_dir, dst_safetensors_dir, ckp
         if not os.path.exists(save_safetensor_file_dir):
             _make_dir(save_safetensor_file_dir, "path")
         save_safetensor_file_name = os.path.join(save_safetensor_file_dir, save_safetensor_file)
-        save_file(transform_param_dict, save_safetensor_file_name)
+        save_file(transform_param_dict, save_safetensor_file_name, metadata={"format": "ms"})
 
 
 def transform_safetensors_by_rank(rank_id, safetensor_files_map, save_safetensor_file_name,
@@ -574,7 +771,7 @@ def transform_safetensors_by_rank(rank_id, safetensor_files_map, save_safetensor
     transform_param_dict = _transform_parallel_safetensor(local_rank_id, param_total_dict,
                                                           param_attr_dict, src_strategy_list, dst_strategy_list,
                                                           param_type_dict)
-    save_file(transform_param_dict, save_safetensor_file_name)
+    save_file(transform_param_dict, save_safetensor_file_name, metadata={"format": "ms"})
 
 
 def _extrace_number(file_name):
@@ -630,7 +827,7 @@ def _find_needed_ranks(src_strategy_dict, dst_strategy_dict):
 
 def load_file_by_param_name(filename, parme_name_list):
     result = {}
-    with safe_open(filename, framework="np") as f:
+    with _fast_safe_open(filename, framework="np") as f:
         for k in parme_name_list:
             result[k] = f.get_tensor(k)
     return result
@@ -730,23 +927,6 @@ def _transform_parallel_safetensor(rank_id, param_total_dict, param_attr_dict, s
 
 def _cal_param_size(shape, dtype):
     """cal param size by dtype and shape"""
-    dtype_size = {
-        "BOOL": 1,
-        "U8": 1,
-        "I8": 1,
-        "F8_E5M2": 1,
-        "F8_E4M3": 1,
-        "I16": 2,
-        "U16": 2,
-        "I32": 4,
-        "U32": 4,
-        "I64": 8,
-        "U64": 8,
-        "F16": 2,
-        "BF16": 2,
-        "F32": 4,
-        "F64": 8,
-    }
     num_elements = math.prod(shape)
     element_size = dtype_size.get(dtype, 4)
     total_bytes = num_elements * element_size
@@ -769,14 +949,14 @@ def _split_weight_dict(weights, num_groups):
 def _save_hyper_param(split_dst_file, all_safetensor_files_map, name_list, dst_dir):
     """save hyper param"""
     if not split_dst_file or (split_dst_file and split_dst_file[0] == 1):
-        with safe_open(all_safetensor_files_map.get(0), framework="np") as f:
+        with _fast_safe_open(all_safetensor_files_map.get(0), framework="np") as f:
             all_key = f.keys()
             hyper_parameter = set(all_key) - set(name_list)
             if hyper_parameter:
                 hyper_dict = {}
                 for key in hyper_parameter:
                     hyper_dict[key] = f.get_tensor(key)
-                save_file(hyper_dict, os.path.join(dst_dir, "hyper_param.safetensors"))
+                save_file(hyper_dict, os.path.join(dst_dir, "hyper_param.safetensors"), metadata={"format": "ms"})
 
 
 def _save_parameter_map_json(split_list, choice_func, split_dst_file, dst_dir, param_total_size):
@@ -890,7 +1070,7 @@ def unified_safetensors(src_dir, src_strategy_file, dst_dir, merge_with_redundan
 
     actual_params = set()
     for _, file_name in all_safetensor_files_map.items():
-        with safe_open(file_name, framework="np") as f:
+        with _fast_safe_open(file_name, framework="np") as f:
             actual_params.update(f.keys())
 
     params_to_store = actual_params & set(layout_map.keys())
@@ -997,7 +1177,7 @@ def _split_list(split_list, split_num):
 def _apply_sf_obj_transform_operators(transform_operator_stack, sf_obj, device_num):
     """apply safetensors object operators"""
     if not transform_operator_stack:
-        return sf_obj[:]
+        return sf_obj
     level = transform_operator_stack[-1][1]
     level_operators = []
     while True:
@@ -1037,9 +1217,9 @@ def _process_hyper_params(file_list, total_safetensors_dir, total_param):
     """process hyper params"""
     if 'hyper_param.safetensors' in file_list:
         hyper_parameter_file_name = os.path.join(total_safetensors_dir, "hyper_param.safetensors")
-        with safe_open(hyper_parameter_file_name, framework="np") as f:
+        with _fast_safe_open(hyper_parameter_file_name, framework="np") as f:
             for key in f.keys():
-                total_param[key] = ms.Parameter(ms.Tensor.from_numpy(f.get_tensor(key)))
+                total_param[key] = Parameter(Tensor.from_numpy(f.get_tensor(key)))
     return total_param
 
 
@@ -1052,7 +1232,7 @@ def _cal_param_name_map_and_param_list(file_list, total_safetensors_dir, json_fi
         if not is_file:
             raise ValueError(f"For 'load_parallel_checkpoint', weight files must be included "
                              f"in the `unified_safetensors_dir`.")
-        with safe_open(file_name, framework="np") as f:
+        with _fast_safe_open(file_name, framework="np") as f:
             keys = f.keys()
             values = len(keys) * [file_list[0]]
             param_name_map = dict(zip(keys, values))
@@ -1074,6 +1254,7 @@ def _cal_param_name_map_and_param_list(file_list, total_safetensors_dir, json_fi
         param_list = param_name_map.keys()
     return param_name_map, param_list, dst_strategy_list
 
+
 def _get_tensor_shape(tensor_shape, param_strategy, from_opt_shard_size):
     origin_tensor_shape = ()
     for i, item in enumerate(tensor_shape):
@@ -1082,6 +1263,17 @@ def _get_tensor_shape(tensor_shape, param_strategy, from_opt_shard_size):
             continue
         origin_tensor_shape += (item * param_strategy[i],)
     return origin_tensor_shape
+
+
+def check_param_dtype(file, param_name):
+    dtype_need_changed = False
+    changed_dtype = None
+    if file.metadata() is not None and param_name in file.metadata().keys():
+        dtype_need_changed = True
+        sf_dtype = file.metadata()[param_name]
+        changed_dtype = safetensors_to_mstype[sf_dtype]
+    return dtype_need_changed, changed_dtype
+
 
 def _load_parallel_checkpoint(file_info):
     """load parallel safetensors by merged file."""
@@ -1105,17 +1297,14 @@ def _load_parallel_checkpoint(file_info):
         if param_name not in param_name_map:
             continue
         file_name = os.path.join(total_safetensors_dir, param_name_map[param_name])
-        with safe_open(file_name, framework="np") as f:
+        with _fast_safe_open(file_name, framework="np") as f:
             cur_param_name = name_map.get(param_name) if name_map is not None and param_name in name_map else param_name
             if cur_param_name not in f.keys():
                 continue
-            sf_obj = f.get_slice(cur_param_name)
-            qint4 = False
-            if f.metadata() is not None and param_name in f.metadata().keys():
-                qint4 = True
-                sf_dtype = f.metadata()[param_name]
-                ms_dtype = safetensors_to_mstype[sf_dtype]
-        tensor_shape = sf_obj.get_shape()
+            sf_obj = f.get_tensor(cur_param_name)
+            dtype_need_changed, changed_dtype = check_param_dtype(f, param_name)
+
+        tensor_shape = sf_obj.shape
         from_dev_matrix = [1]
         from_tensor_map = [-1] * len(tensor_shape)
         from_opt_shard_step = 0
@@ -1157,14 +1346,14 @@ def _load_parallel_checkpoint(file_info):
             total_io_cost_time += cost_time
         else:
             start_time = time.time()
-            slice_param = sf_obj[:]
+            slice_param = sf_obj
             end_time = time.time()
             cost_time = end_time - start_time
             total_io_cost_time += cost_time
-        if qint4:
-            total_param[param_name] = ms.Parameter(ms.Tensor(slice_param, dtype=ms_dtype))
+        if dtype_need_changed:
+            total_param[param_name] = Parameter(Tensor(slice_param, dtype=changed_dtype))
         else:
-            total_param[param_name] = ms.Parameter(ms.Tensor.from_numpy(slice_param))
+            total_param[param_name] = Parameter(Tensor.from_numpy(slice_param))
     vlog_print("1", "ME", __file__, sys._getframe().f_lineno,
                f"load distributed safetensors io cost time:{total_io_cost_time}.")
     total_param = _process_hyper_params(file_list, total_safetensors_dir, total_param)
