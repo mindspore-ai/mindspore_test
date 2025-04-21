@@ -496,6 +496,7 @@ constexpr const char kNameViewCopy[] = "ViewCopy";
 constexpr const char kNameSend[] = "Send";
 constexpr const char kNameReceive[] = "Receive";
 constexpr const char kNameIndexAdd[] = "IndexAdd";
+constexpr const char kNameIndexAddExt[] = "IndexAddExt";
 constexpr const char kNameIndexFill[] = "IndexFill";
 constexpr const char kNameUnique[] = "Unique";
 constexpr const char kNameDynamicBroadcastGradientArgs[] = "DynamicBroadcastGradientArgs";
