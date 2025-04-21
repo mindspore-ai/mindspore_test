@@ -813,7 +813,7 @@ def all_reduce(tensor, op=ReduceOp.SUM, group=None, async_op=False):
         RuntimeError: If device target is invalid, or backend is invalid, or distributed initialization fails.
 
     Supported Platforms:
-        ``Ascend``
+        ``Ascend`` ``CPU``
 
     Examples:
         .. note::
@@ -1589,7 +1589,7 @@ def barrier(group=None, async_op=False, device_ids=None):
         RuntimeError: If backend is invalid, or distributed initialization fails.
 
     Supported Platforms:
-        ``Ascend``
+        ``Ascend`` ``CPU``
 
     Examples:
         .. note::
@@ -1647,7 +1647,7 @@ def send(tensor, dst=0, group=None, tag=0):
         ValueError: If the `dst` process rank id is same as the current process.
 
     Supported Platforms:
-        ``Ascend``
+        ``Ascend`` ``CPU``
 
     Examples:
         .. note::
@@ -1725,7 +1725,7 @@ def recv(tensor, src=0, group=None, tag=0):
         ValueError: If the rank ID of the process is greater than the rank size of the communication group.
 
     Supported Platforms:
-        ``Ascend``
+        ``Ascend`` ``CPU``
 
     Examples:
         .. note::
