@@ -591,6 +591,7 @@ Status OperatorInfo::InferMirrorOpsByLayout() {
 
   bool group_is_empty = true;
   for (size_t i = 0; i < inputs_tensor_info_.size(); ++i) {
+    if (inputs_tensor_info_[i].shape().empty()) continue;
     auto input_tensor_layout = inputs_tensor_info_[i].tensor_layout();
     auto repeated_rank_list = input_tensor_layout.InferRepeatedGroup();
 

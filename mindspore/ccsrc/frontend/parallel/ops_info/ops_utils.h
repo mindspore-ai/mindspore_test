@@ -457,6 +457,7 @@ constexpr char LOG_SOFTMAX[] = "LogSoftmax";
 constexpr char ACTIVATION[] = "Activation";
 constexpr char PRELU[] = "PReLU";
 constexpr char INDEX_INFO[] = "Index";
+constexpr char INDEX_ADD_EXT[] = "IndexAddExt";
 constexpr char FLOORDIV[] = "FloorDiv";
 constexpr char MAXPOOL[] = "MaxPool";
 constexpr char AVGPOOL[] = "AvgPool";
