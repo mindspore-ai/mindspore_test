@@ -275,7 +275,7 @@ class Net(nn.Cell):
         return out
 
 
-def test_jit_ast_function_for_cell_install():
+def test_jit_ast_function_for_cell_instance():
     """
     Feature: Use jit api to create a callable MindSpore graph.
     Description: Use the jit api as a function.
@@ -289,7 +289,7 @@ def test_jit_ast_function_for_cell_install():
     assert glob.glob(os.path.join(graph_save_path, '*_validate*.ir'))
 
 
-def test_jit_bytecode_function_for_cell_install():
+def test_jit_bytecode_function_for_cell_instance():
     """
     Feature: Use jit api to create a callable MindSpore graph.
     Description: Use the jit api as a function.
@@ -303,7 +303,7 @@ def test_jit_bytecode_function_for_cell_install():
     assert glob.glob(os.path.join(graph_save_path, '*_validate*.ir'))
 
 
-def test_jit_trace_function_for_cell_install():
+def test_jit_trace_function_for_cell_instance():
     """
     Feature: Use jit api to create a callable MindSpore graph.
     Description: Use the jit api as a function.
@@ -313,5 +313,76 @@ def test_jit_trace_function_for_cell_install():
     x = Tensor([[0.5, 0.6, 0.4], [1.2, 1.3, 1.1]], dtype=mstype.float32)
     y = Tensor([[0.01, 0.3, 1.1], [0.1, 0.2, 1.3]], dtype=mstype.float32)
     net = jit(Net(), capture_mode="trace")
+    net(x, y)
+    assert glob.glob(os.path.join(graph_save_path, '*_validate*.ir'))
+
+
+def test_jit_ast_function_for_cell_class():
+    """
+    Feature: Use jit api to create a callable MindSpore graph.
+    Description: Use the jit api as a function.
+    Expectation: Success to create a callable MindSpore graph.
+    """
+    class AddNet(nn.Cell):
+        def __init__(self):
+            super(AddNet, self).__init__()
+            self.add = ops.Add()
+
+        def construct(self, x, y):
+            out = self.add(x, y)
+            return out
+
+    x = Tensor([[0.5, 0.6, 0.4], [1.2, 1.3, 1.1]], dtype=mstype.float32)
+    y = Tensor([[0.01, 0.3, 1.1], [0.1, 0.2, 1.3]], dtype=mstype.float32)
+    new_add_net = jit(AddNet)
+    net = new_add_net()
+    net(x, y)
+    assert glob.glob(os.path.join(graph_save_path, '*_validate*.ir'))
+
+
+def test_jit_bytecode_function_for_cell_class():
+    """
+    Feature: Use jit api to create a callable MindSpore graph.
+    Description: Use the jit api as a function.
+    Expectation: Success to create a callable MindSpore graph.
+    """
+
+    class AddNet(nn.Cell):
+        def __init__(self):
+            super(AddNet, self).__init__()
+            self.add = ops.Add()
+
+        def construct(self, x, y):
+            out = self.add(x, y)
+            return out
+
+    x = Tensor([[0.5, 0.6, 0.4], [1.2, 1.3, 1.1]], dtype=mstype.float32)
+    y = Tensor([[0.01, 0.3, 1.1], [0.1, 0.2, 1.3]], dtype=mstype.float32)
+    new_add_net = jit(Net, capture_mode="bytecode")
+    net = new_add_net()
+    net(x, y)
+    assert glob.glob(os.path.join(graph_save_path, '*_validate*.ir'))
+
+
+def test_jit_trace_function_for_cell_class():
+    """
+    Feature: Use jit api to create a callable MindSpore graph.
+    Description: Use the jit api as a function.
+    Expectation: Success to create a callable MindSpore graph.
+    """
+
+    class AddNet(nn.Cell):
+        def __init__(self):
+            super(AddNet, self).__init__()
+            self.add = ops.Add()
+
+        def construct(self, x, y):
+            out = self.add(x, y)
+            return out
+
+    x = Tensor([[0.5, 0.6, 0.4], [1.2, 1.3, 1.1]], dtype=mstype.float32)
+    y = Tensor([[0.01, 0.3, 1.1], [0.1, 0.2, 1.3]], dtype=mstype.float32)
+    new_add_net = jit(Net, capture_mode="trace")
+    net = new_add_net()
     net(x, y)
     assert glob.glob(os.path.join(graph_save_path, '*_validate*.ir'))

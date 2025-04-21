@@ -12,7 +12,7 @@ mindspore.jit
         - 不支持在@jit(capture_mode="ast")装饰的函数内部调用带装饰@jit(capture_mode="bytecode")的函数，该装饰@jit(capture_mode="bytecode")视为无效。
 
     参数：
-        - **function** (Function, 可选) - 要编译成图的Python函数。默认值：``None``。
+        - **function** (Callable, 可选) - 要编译成图的Python函数或者Cell。默认值：``None``。
 
     关键字参数：
         - **capture_mode** (str, 可选) - 创建一张可调用的MindSpore图的方式，可选值有 ``"ast"`` 、 ``"bytecode"`` 和 ``"trace"`` 。默认值： ``"ast"``。

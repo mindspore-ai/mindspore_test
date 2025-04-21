@@ -166,6 +166,10 @@ def _jit_trace():
             logger.warning(f"The fn should be function, method or cell instance/class, but got {fn}")
             return fn
 
+        if hasattr(fn, "__wrapped_by_jit__"):
+            logger.warning(f"The fn {fn} should be wrapped by jit only once.")
+        setattr(fn, "__wrapped_by_jit__", True)
+
         @wraps(fn)
         def jit_trace_wrap(*args, **kwargs):
             # If a trace graph is already built, keep going without building a new trace graph.

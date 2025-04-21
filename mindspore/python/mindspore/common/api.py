@@ -1057,6 +1057,10 @@ def _jit_ast(hash_obj, dynamic, jit_config):
             logger.warning(f"The func should be function, method or cell instance/class, but got {func}")
             return func
 
+        if hasattr(func, "__wrapped_by_jit__"):
+            logger.warning(f"The func {func} should be wrapped by jit only once.")
+        setattr(func, "__wrapped_by_jit__", True)
+
         if hash_obj is None or not _is_inner_func(func):
             hash_obj = int(time.time() * 1e9)
 
@@ -1107,7 +1111,7 @@ def jit(
           and the decoration @jit(capture_mode=“bytecode”) is considered invalid.
 
     Args:
-        function (Function, optional): The Python function that will be run as a graph. Default: ``None``.
+        function (Callable, optional): The Python function or Cell that will be run as a graph. Default: ``None``.
 
     Keyword Args:
         capture_mode (str, optional): The method to create a callable MindSpore graph. The value of capture_mode
