@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,28 +16,12 @@
 #include "pynative/op_function/auto_generate/pyboost_functions.h"
 #include "pynative/op_function/auto_generate/pyboost_functions_impl.h"
 #include "include/common/pybind_api/api_register.h"
-#include "pynative/pynative_execute.h"
-#include "pynative/grad/grad_utils.h"
-#include "pynative/pynative_utils.h"
 #include "pynative/op_function/converter.h"
-#include "include/common/utils/tensor_py.h"
-#include "include/common/utils/tensor_utils.h"
-#include "pybind_api/gil_scoped_long_running.h"
-#include "pynative/predict_out_type_map.h"
-#include "pynative/forward/forward_task.h"
-#include "pipeline/jit/trace/trace_recorder.h"
 #include "op_def/auto_generate/gen_ops_def.h"
-#include "pynative/op_function/comm_handle_py.h"
-#include "mindspore/ccsrc/pynative/op_function/auto_generate/tensor_func_utils.h"
 #include "frontend/expander/bprop/bprop_irbuilder.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
-${ops_inc}
 
 namespace mindspore::pynative {
-${function_body}
-
-${register_function_body}
-
-${function_class_register}
+${pyboost_op_base_body}
 }// namespace mindspore::pynative

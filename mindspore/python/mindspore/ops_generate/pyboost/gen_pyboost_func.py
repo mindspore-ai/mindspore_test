@@ -26,6 +26,7 @@ from .pyboost_inner_prim_generator import PyboostInnerPrimGenerator
 from .pyboost_functions_py_generator import PyboostFunctionsPyGenerator
 from .pyboost_functions_h_generator import PyboostFunctionsHeaderGenerator
 from .pyboost_functions_cpp_generator import PyboostFunctionsGenerator
+from .pyboost_functions_impl_cpp_generator import PyboostFunctionsImplGenerator
 from .pyboost_grad_function_cpp_generator import PyboostGradFunctionsGenerator
 from .pyboost_native_grad_functions_generator import (
     PyboostGradFunctionsHeaderGenerator,
@@ -118,6 +119,8 @@ def call_pyboost_functions_h_generator(work_path, op_protos):
 
 
 def call_pyboost_functions_cpp_generator(work_path, op_protos):
+    impl_generator = PyboostFunctionsImplGenerator()
+    impl_generator.generate(work_path, op_protos)
     generator = PyboostFunctionsGenerator()
     generator.generate(work_path, op_protos)
 
