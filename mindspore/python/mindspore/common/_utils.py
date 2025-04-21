@@ -1,6 +1,6 @@
 # This is the Python adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
 #
-# Copyright 2022 Huawei Technologies Co., Ltd
+# Copyright 2022-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 
 import os
 import math
+import types
 import ctypes
 import functools
 
@@ -44,6 +45,29 @@ def is_dim_unknown(shape):
     if -2 in shape:
         raise ValueError(f"'shape' should have only one -2 or no -2 at all but got ({shape}).")
     return False
+
+
+def setattr_with_func(func, attr_name, attr_value):
+    """Set the attribute of function."""
+    if isinstance(func, types.MethodType):
+        setattr(func.__func__, attr_name, attr_value)
+    else:
+        setattr(func, attr_name, attr_value)
+
+
+def delattr_with_func(func, attr_name):
+    """Delete the attribute of function."""
+    if isinstance(func, types.MethodType):
+        delattr(func.__func__, attr_name)
+    else:
+        delattr(func, attr_name)
+
+
+def getattr_with_func(func, attr_name):
+    """Get the attribute of function."""
+    if isinstance(func, types.MethodType):
+        return getattr(func.__func__, attr_name, None)
+    return getattr(func, attr_name, None)
 
 
 def get_slice_num(dtype, shape):

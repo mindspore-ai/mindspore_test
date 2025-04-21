@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-import pytest
 import mindspore as ms
 from mindspore import Tensor, context, nn, jit
 from mindspore.common import dtype as mstype
@@ -42,8 +41,7 @@ def test_tensor_slice_1():
     assert graph_out == pynative_out
 
 
-@pytest.mark.skip(reason="this case depending on other property")
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
           essential_mark='essential')
 def test_tensor_slice_2():
     """
@@ -53,7 +51,7 @@ def test_tensor_slice_2():
     """
     data = Tensor(np.array([[2, 3.2], [3, 4.1]]).astype(np.float32))
 
-    @jit(input_signature=(Tensor(shape=None, dtype=ms.int64), data))
+    @jit
     def my_index(x):
         out = x[3:2:1]
         return out

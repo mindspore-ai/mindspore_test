@@ -1,6 +1,6 @@
 # This is the Python adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
 #
-# Copyright 2020-2023 Huawei Technologies Co., Ltd
+# Copyright 2020-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -487,18 +487,3 @@ def update_auto_dynamic_shape_phase(compile_args, key_id, phase):
     """update auto dynamic shape phase."""
     if key_id in auto_dynamic_shape_dict:
         auto_dynamic_shape_dict[key_id].update_phase_and_compile_args(compile_args, phase, False)
-
-
-def get_auto_dynamic_shape_args_with_check_input_signature(compile_args, key_id, input_signature,
-                                                           enable_auto_dynamic=False):
-    """get auto dynamic shape args."""
-    if input_signature is None:
-        return get_auto_dynamic_shape_args(compile_args, key_id, enable_auto_dynamic)
-    return compile_args
-
-
-def update_auto_dynamic_shape_phase_with_check_input_signature(compile_args, key_id, phase, input_signature):
-    """update auto dynamic shape phase."""
-    if input_signature is None:
-        if key_id in auto_dynamic_shape_dict:
-            auto_dynamic_shape_dict[key_id].update_phase_and_compile_args(compile_args, phase, False)
