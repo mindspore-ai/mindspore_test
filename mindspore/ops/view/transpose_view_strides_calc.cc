@@ -15,9 +15,9 @@
  */
 
 #include "view/transpose_view_strides_calc.h"
-#include "view/transpose_strides_calc.h"
 #include <vector>
 #include <memory>
+#include "view/transpose_strides_calc.h"
 #include "utils/check_convert_utils.h"
 #include "ops_utils/op_utils.h"
 

@@ -352,6 +352,35 @@ py::object CreatePrimitiveFunctionAdapterPyObj(const PrimitivePtr &prim_func) {
   return prim_func_adapter_obj;
 }
 
+AnfNodePtr GenerateVampRuleFnFg(const py::function &vmap_rule_fn, const PrimitivePtr &prim,
+                                const pipeline::ResourceBasePtr &resource, const AnfNodePtr &node) {
+  FuncGraphPtr vmap_rule_fg = parse::ParsePythonCode(vmap_rule_fn);
+  if (vmap_rule_fg == nullptr) {
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, node) << "Fail to parse vmap rule function for " << prim->name() << ".";
+  }
+  vmap_rule_fg->set_flag(mindspore::kFuncGraphFlagReAutoMonad, true);
+  pipeline::ResourceBasePtr res = (resource != nullptr) ? resource : std::make_shared<pipeline::Resource>();
+  (void)parse::ResolveFuncGraph(vmap_rule_fg, res);
+  AnfNodePtr vmap_rule_node = NewValueNode(vmap_rule_fg);
+  auto manager = resource->manager();
+  MS_EXCEPTION_IF_NULL(manager);
+  const auto &users = manager->node_users()[node];
+  if (users.size() < 1) {
+    MS_EXCEPTION_WITH_NODE(ValueError, node)
+      << "vmap_node could used by at least one CNode, but got users.size() = " << users.size() << ".";
+  }
+
+  for (const auto &user : users) {
+    auto vmap_app = user.first->cast<CNodePtr>();
+    const auto &params = vmap_rule_fg->parameters();
+    // Has monad input.
+    if (vmap_app->inputs().size() - 1 == params.size() + 1 && HasAbstractMonad(vmap_app->inputs().back())) {
+      vmap_rule_fg->add_parameter();
+    }
+  }
+  return vmap_rule_node;
+}
+
 AnfNodePtr GetVmapRule(const PrimitivePtr &prim, const pipeline::ResourceBasePtr &resource, const AnfNodePtr &node,
                        int axis_size) {
   // Set a child scope named "vmap_'PrimitiveName'" for the vmap rule function,
@@ -408,30 +437,7 @@ AnfNodePtr GetVmapRule(const PrimitivePtr &prim, const pipeline::ResourceBasePtr
   }
 
   if (vmap_rule_node == nullptr) {
-    vmap_rule_fg = parse::ParsePythonCode(vmap_rule_fn);
-    if (vmap_rule_fg == nullptr) {
-      MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, node) << "Fail to parse vmap rule function for " << prim->name() << ".";
-    }
-    vmap_rule_fg->set_flag(mindspore::kFuncGraphFlagReAutoMonad, true);
-    pipeline::ResourceBasePtr res = (resource != nullptr) ? resource : std::make_shared<pipeline::Resource>();
-    (void)parse::ResolveFuncGraph(vmap_rule_fg, res);
-    vmap_rule_node = NewValueNode(vmap_rule_fg);
-    auto manager = resource->manager();
-    MS_EXCEPTION_IF_NULL(manager);
-    const auto &users = manager->node_users()[node];
-    if (users.size() < 1) {
-      MS_EXCEPTION_WITH_NODE(ValueError, node)
-        << "vmap_node could used by at least one CNode, but got users.size() = " << users.size() << ".";
-    }
-
-    for (const auto &user : users) {
-      auto vmap_app = user.first->cast<CNodePtr>();
-      const auto &params = vmap_rule_fg->parameters();
-      // Has monad input.
-      if (vmap_app->inputs().size() - 1 == params.size() + 1 && HasAbstractMonad(vmap_app->inputs().back())) {
-        vmap_rule_fg->add_parameter();
-      }
-    }
+    vmap_rule_node = GenerateVampRuleFnFg(vmap_rule_fn, prim, resource, node);
   }
 
   return vmap_rule_node;
