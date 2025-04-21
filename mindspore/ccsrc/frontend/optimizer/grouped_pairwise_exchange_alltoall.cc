@@ -422,6 +422,32 @@ const std::vector<CNodePtr> FindCNodesAmongAlltoall(const std::vector<CNodePtr> 
   return cnodes;
 }
 
+std::vector<AnfNodePtr> CloneInputs(const CNodePtr &cnode, mindspore::HashMap<CNodePtr, CNodePtr> *cnode_map) {
+  std::vector<AnfNodePtr> new_inputs;
+  auto inputs = cnode->inputs();
+  for (size_t j = 0; j < inputs.size(); j++) {
+    auto input = inputs[j];
+    if (input->isa<CNode>()) {
+      auto curr_input_cnode = input->cast<CNodePtr>();
+      CNodePtr new_cnode;
+      if (IsPrimitiveCNode(curr_input_cnode, prim::kPrimLoad) ||
+          IsPrimitiveCNode(curr_input_cnode, prim::kPrimUpdateState)) {
+        new_cnode = curr_input_cnode;
+      } else {
+        new_cnode = (*cnode_map)[curr_input_cnode];
+      }
+      auto new_anf_node = new_cnode->cast<AnfNodePtr>();
+      new_inputs.push_back(new_anf_node);
+    } else if (input->isa<ValueNode>()) {
+      ValueNodePtr new_value_node = NewValueNode(GetValueNode(input));
+      new_inputs.push_back(new_value_node);
+    } else if (input->isa<Parameter>()) {
+      new_inputs.push_back(input);
+    }
+  }
+  return new_inputs;
+}
+
 void CloneScaledGraph(const std::vector<CNodePtr> &old_cnodes, const AnfNodePtr &input_node, size_t scale_factor,
                       GpeaInfo *gpea_info, std::vector<AnfNodePtr> *new_nodes) {
   mindspore::HashMap<CNodePtr, CNodePtr> cnode_map;
@@ -442,28 +468,7 @@ void CloneScaledGraph(const std::vector<CNodePtr> &old_cnodes, const AnfNodePtr 
     }
 
     // clone inputs
-    std::vector<AnfNodePtr> new_inputs;
-    auto inputs = cnode->inputs();
-    for (size_t j = 0; j < inputs.size(); j++) {
-      auto input = inputs[j];
-      if (input->isa<CNode>()) {
-        auto curr_input_cnode = input->cast<CNodePtr>();
-        CNodePtr new_cnode;
-        if (IsPrimitiveCNode(curr_input_cnode, prim::kPrimLoad) ||
-            IsPrimitiveCNode(curr_input_cnode, prim::kPrimUpdateState)) {
-          new_cnode = curr_input_cnode;
-        } else {
-          new_cnode = cnode_map[curr_input_cnode];
-        }
-        auto new_anf_node = new_cnode->cast<AnfNodePtr>();
-        new_inputs.push_back(new_anf_node);
-      } else if (input->isa<ValueNode>()) {
-        ValueNodePtr new_value_node = NewValueNode(GetValueNode(input));
-        new_inputs.push_back(new_value_node);
-      } else if (input->isa<Parameter>()) {
-        new_inputs.push_back(input);
-      }
-    }
+    std::vector<AnfNodePtr> new_inputs = CloneInputs(cnode, &cnode_map);
 
     // scale reshape shape value
     if (IsPrimitiveCNode(cnode, prim::kPrimReshape)) {

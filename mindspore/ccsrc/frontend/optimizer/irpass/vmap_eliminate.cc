@@ -927,6 +927,7 @@ AnfNodePtr ExpandVmapPrim::PostProcessVmap(const AnfNodePtr &expanded_vmap_node,
   }
   if (IsValueNode<FuncGraph>(expanded_vmap_node)) {
     auto expanded_vmap_func = GetValueNode<FuncGraphPtr>(expanded_vmap_node);
+    MS_EXCEPTION_IF_NULL(expanded_vmap_func);
     const auto &params = expanded_vmap_func->parameters();
     if (exec_node_inputs.size() == params.size() && HasAbstractMonad(params.back())) {
       auto u_monad = NewValueNode(kUMonad);
