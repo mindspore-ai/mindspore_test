@@ -114,7 +114,7 @@ def test_llama2_cell_dp2mp4pp1op_grad_accu():
     sh_path = os.path.split(os.path.realpath(__file__))[0]
     os.system(f"bash {sh_path}/run_llm_dryrun.sh 8 {rank_list} {file_path} {output_file} {case_name} no_pp")
     check_pair = {"Training Over": 1}
-    ops_check_pairs = {"VirtualAssignAdd": 78}
+    ops_check_pairs = {"VirtualAssignAdd": 39}
     graph_path = graph_path_preprocess(llama2_config.save_graphs_path, rank_list)[0]
     validate_name = find_graph_file_name(graph_path, "validate")
     step_parallel_end_name = find_graph_file_name(graph_path, "step_parallel_end")
@@ -411,9 +411,9 @@ def test_llama2_cell_dp2mp4pp2_fgi():
     parm_reducescatter_allgather_check_pairs = {'ReduceScatter': '48',
                                                 'AllGather': '48'}
     # 反向掩盖（mp/cp场景都开启）控制边名字个数
-    parm_parallel_speed_up_check_pairs = {'grad_overlap_matmul': '24',
-                                          'matmul_grad_depend2: Bool(1)': '12',
-                                          'matmul_grad_depend3: Bool(1)': '12'}
+    parm_parallel_speed_up_check_pairs = {'grad_overlap_matmul': '22',
+                                          'matmul_grad_depend2: Bool(1)': '11',
+                                          'matmul_grad_depend3: Bool(1)': '11'}
     real_log_path = log_path_preprocess(output_file, rank_list, case_name)
     for log_path in real_log_path:
         check_log(log_path, check_pair)

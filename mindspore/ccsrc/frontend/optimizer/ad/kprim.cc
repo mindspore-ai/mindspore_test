@@ -226,12 +226,6 @@ MetaFuncGraphPtr KPrim::KMetaFuncGraph(const PrimitivePtr &prim, const AnfNodePt
     return meta;
   }
 
-  if (IsPrimitiveEquals(prim, prim::kPrimPrint)) {
-    MetaFuncGraphPtr meta = std::make_shared<prim::PrintGradient>("PrintGradient");
-    bprop_registry_meta_[prim::kPrimPrint] = meta;
-    return meta;
-  }
-
   MS_LOG_WITH_NODE(EXCEPTION, node) << "Fail to find bprop function for " << prim->name() << ".";
 }
 
@@ -331,8 +325,7 @@ FuncGraphPtr KPrim::KPrimitive(const CNodePtr &cnode, const ValueNodePtr &value_
     fprop->transforms().emplace("primal", FuncGraphTransform(prim::kPrimSwitchLayer));
     return fprop;
   } else if (IsPrimitiveEquals(prim, prim::kPrimMakeTuple) || IsPrimitiveEquals(prim, prim::kPrimMakeList) ||
-             IsPrimitiveEquals(prim, prim::kPrimMakeDict) || IsPrimitiveEquals(prim, prim::kPrimMutable) ||
-             IsPrimitiveEquals(prim, prim::kPrimPrint)) {
+             IsPrimitiveEquals(prim, prim::kPrimMakeDict) || IsPrimitiveEquals(prim, prim::kPrimMutable)) {
     // Return null to use Meta bprop.
     return nullptr;
   }
@@ -590,12 +583,6 @@ void KPrim::CheckBprop(const FuncGraphPtr &bprop_fg, const string &prim_to_check
   constexpr int brprop_offset_size = 2;
   (void)inputs.insert(inputs.cbegin() + primitive_size, bprop_fg->parameters().cbegin(),
                       bprop_fg->parameters().cend() - brprop_offset_size);
-  if (bprop_fg->has_flag(kUMonadInOutput)) {
-    (void)inputs.emplace_back(NewValueNode(kUMonad));
-  }
-  if (bprop_fg->has_flag(kIOMonadInOutput)) {
-    (void)inputs.emplace_back(NewValueNode(kIOMonad));
-  }
   AnfNodePtr params = bprop_fg->NewCNode(inputs);
 
   inputs.clear();
@@ -705,18 +692,7 @@ FuncGraphPtr KPrim::FakeBprop(const ValueNodePtr &value_node, const pipeline::Re
     auto param = func_graph->add_parameter();
     // Mock derivatives for each inputs
     if (IsPrimitiveEquals(prim, prim::kPrimUpdateState)) {
-      auto input = cnode_first->input(i + 1);
-      MS_EXCEPTION_IF_NULL(input);
-      auto abs = input->abstract();
-      // Only do back propagate when the input is a tensor.
-      if (i == 0 || (abs != nullptr &&
-                     (abs->isa<abstract::AbstractTuple>() || abs->IsSameTypeId(abstract::AbstractTensor::kTypeId) ||
-                      abs->IsSameTypeId(abstract::AbstractRefTensor::kTypeId)))) {
-        (void)outputs.emplace_back(func_graph->NewCNode({NewValueNode(prim::GetPythonOps("zeros_like")), param}));
-      } else {
-        // Add a placeholder.
-        (void)outputs.emplace_back(NewValueNode(MakeValue<int64_t>(0)));
-      }
+      outputs.push_back(func_graph->NewCNode({NewValueNode(prim::GetPythonOps("zeros_like")), param}));
     } else {
       outputs.push_back(func_graph->NewCNode({NewValueNode(fake_bprop), param}));
     }

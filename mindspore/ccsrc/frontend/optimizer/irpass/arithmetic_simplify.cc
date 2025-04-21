@@ -122,9 +122,6 @@ AnfNodePtr ArithmeticSimplify::operator()(const OptimizerPtr &, const AnfNodePtr
   MATCH_REPLACE_IF(node, PPrimitive(prim::kPrimPow, x, one_scalar_), x,
                    one_scalar_.CheckFunc(IsValueNode<Scalar>, node));
 
-  // AssignAdd(x, ZerosLike(y), u_monad) -> x
-  MATCH_REPLACE(node, PPrimitive(prim::kPrimAssignAdd, x, PPrimitive(prim::kPrimZerosLike, y), z), x);
-
   return nullptr;
 }
 
