@@ -69,7 +69,7 @@ BeginFunction(InplaceExponential, input, lambd, seed, offset) {
 EndFunction(InplaceExponential)
 
   BeginFunction(InplaceExponentialGrad, input, lambd, seed, offset, out, dout) {
-  Return(Tuple(Call(Prim(ZerosLikeExt), input, Value(kNone)), Value(kNone), Value(kNone), Value(kNone)));
+  Return(Tuple(Call(Prim(ZerosLikeExt), input, Value(kNone)), ZerosLike(lambd), ZerosLike(seed), ZerosLike(offset)));
 }
 EndFunction(InplaceExponentialGrad)
 }  // namespace mindspore::prim

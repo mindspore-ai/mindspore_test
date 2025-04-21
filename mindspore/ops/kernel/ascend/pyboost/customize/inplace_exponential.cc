@@ -22,6 +22,7 @@
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "pyboost/functions/auto_generate/functions.h"
+#include "pyboost/functions/auto_grad_guard.h"
 
 namespace mindspore {
 namespace kernel {
@@ -47,6 +48,7 @@ tensor::BaseTensorPtr InplaceExponentialAscendCustomize(const std::shared_ptr<Op
                                                         const ScalarPtr lambda, const BaseTensorPtr &seed,
                                                         const BaseTensorPtr &offset) {
   MS_LOG(DEBUG) << "InplaceExponentialAscendCustomize Call start";
+  kernel::pyboost::RequireGradGuard no_grad(false);
   auto out = inplace_uniform(input, std::make_shared<FP64Imm>(0.0), std::make_shared<FP64Imm>(1.0), seed, offset);
   out = inplace_sub_scalar(out, std::make_shared<FP64Imm>(1.0), std::make_shared<FP64Imm>(1.0));
   out = inplace_muls(out, std::make_shared<FP64Imm>(-1.0));

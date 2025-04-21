@@ -312,6 +312,10 @@ NodePtr MetaImpl::ListToTuple(const NodePtr &node) { return NewNode({NewValueNod
 
 NodePtr MetaImpl::SequenceLen(const NodePtr &node) { return NewNode({NewValueNode(prim::kPrimSequenceLen), node}); }
 
+NodePtr MetaImpl::ZerosLike(const NodePtr &x) { return NewNode({GetMultitypeOps("zeros_like"), x}); }
+
+NodePtr MetaImpl::OnesLike(const NodePtr &x) { return NewNode({GetMultitypeOps("ones_like"), x}); }
+
 NodePtr MetaImpl::Equal(const NodePtr &x, const NodePtr &y) { return NewNode({GetMultitypeOps("equal"), x, y}); }
 
 NodePtr MetaImpl::NotEqual(const NodePtr &x, const NodePtr &y) { return NewNode({GetMultitypeOps("not_equal"), x, y}); }

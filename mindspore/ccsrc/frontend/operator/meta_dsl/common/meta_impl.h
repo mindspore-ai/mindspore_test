@@ -231,6 +231,24 @@ class MetaImpl : public MetaFuncGraph {
   /// \return Node with SequenceLen.
   NodePtr SequenceLen(const NodePtr &node);
 
+  /// \brief OnesLike(x)
+  ///
+  /// \note Example: OnesLike(x)
+  ///
+  /// \param[in] x Input node.
+  ///
+  /// \return Output node of OnesLike.
+  NodePtr OnesLike(const NodePtr &x);
+
+  /// \brief ZerosLike(x)
+  ///
+  /// \note Example: ZerosLike(x)
+  ///
+  /// \param[in] x Input node.
+  ///
+  /// \return Output node of ZerosLike.
+  NodePtr ZerosLike(const NodePtr &x);
+
   /// \brief x == y
   ///
   /// \note Example: Equal(x, y)
