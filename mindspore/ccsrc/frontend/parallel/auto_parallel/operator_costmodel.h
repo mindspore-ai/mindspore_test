@@ -258,6 +258,8 @@ using SoftShrinkCost = SqrtCost;
 using NanToNumCost = SqrtCost;
 using ZerosCost = SqrtCost;
 using RemainderCost = SqrtCost;
+using FmodTensorCost = SqrtCost;
+using CopyCost = SqrtCost;
 
 class ReLU6Cost : public CastCost {
  public:

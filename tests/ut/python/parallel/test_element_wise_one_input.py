@@ -21,7 +21,7 @@ from mindspore import context, Tensor
 from mindspore.common.api import _cell_graph_executor
 from mindspore.ops.auto_generate.gen_ops_prim import SoftplusExt, ReLU, EluExt, LeakyReLUExt, \
                                                     Identity, NanToNum, RemainderTensorScalar, \
-                                                    RemainderScalarTensor, Mul
+                                                    RemainderScalarTensor, Mul, Copy
 from mindspore.parallel.shard import Layout
 
 def setup_function():
@@ -103,6 +103,17 @@ class RemainderTSNet(nn.Cell):
 
     def construct(self, input_data, scalar):
         return self.remainderts_op(input_data, scalar)
+
+class CopyNet(nn.Cell):
+    def __init__(self, strategy=None):
+        super().__init__()
+        if strategy:
+            self.copy = Copy().shard(strategy)
+        else:
+            self.copy = Copy()
+
+    def construct(self, input_data):
+        return self.copy(input_data)
 
 class RemainderSTNet(nn.Cell):
     def __init__(self, strategy=None):
@@ -393,3 +404,38 @@ def test_remainderTS_layout_extend():
     input_data = Tensor(np.ones([128, 128]), dtype=ms.int32)
     scalar = 1
     _cell_graph_executor.compile(net, input_data, scalar)
+
+def test_copy_with_default_values():
+    """
+    Feature: distribute operator copy with default values.
+    Description: basic.
+    Expectation: compile done without error.
+    """
+    context.set_context(save_graphs=True)
+    stra = ((4, 1),)
+    net = CopyNet(strategy=stra)
+    input_tensor = Tensor(np.ones([128, 128]) * 8, dtype=ms.float32)
+    compile_graph(net, input_tensor)
+
+def test_copy_other_shape_broadcast_succ():
+    """
+    Feature: test copy parallel shape.
+    Description: Valid other shape.
+    Expectation: compile done without error.
+    """
+    context.set_context(save_graphs=True)
+    stra = ((4, 1),)
+    net = CopyNet(strategy=stra)
+    input_tensor = Tensor(np.ones([128, 128]) * 8, dtype=ms.float32)
+    compile_graph(net, input_tensor)
+
+def test_copy_auto_parallel():
+    """
+    Features: test copy auto parallel
+    Description: auto parallel
+    Expectation: compile success
+    """
+    context.set_context(save_graphs=True)
+    net = CopyNet()
+    input_tensor = Tensor(np.ones([128, 128]) * 8, dtype=ms.float32)
+    compile_graph(net, input_tensor, device_num=8, parallel_mode="semi_auto_parallel")

@@ -461,6 +461,14 @@ class MaskedFillInfo : public ArithmeticBase {
   size_t input_size_ = 0;
 };
 
+class FmodTensorInfo : public XdivyInfo {
+ public:
+  FmodTensorInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+                 const PrimitiveAttrs &attrs)
+      : XdivyInfo(name, inputs_shape, outputs_shape, attrs) {}
+  ~FmodTensorInfo() override = default;
+};
+
 class PolarInfo : public XdivyInfo {
  public:
   PolarInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
