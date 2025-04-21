@@ -1592,7 +1592,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         r"""
         For details, please refer to :func:`mindspore.ops.numel`.
         """
-        return self.size
+        return self._size
 
     def permute(self, *axis):
         """
