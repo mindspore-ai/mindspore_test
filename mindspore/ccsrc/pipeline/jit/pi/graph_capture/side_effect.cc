@@ -550,26 +550,23 @@ void SideEffectHandler::InitializeVersionNodeMaps(const std::vector<ValueNode *>
   FillVersionNodeMap(nodes_, &ex_var_latest_2_node_, false);
 }
 
-void SideEffectHandler::RebaseObjectVersionInCallNode(ValueNode *node) const {
-  auto func = node->getInputs().front();
-  auto vobj = func->GetVobj();
+void SideEffectHandler::RebaseObjectVersion(CallNode *call_node) const {
+  MS_EXCEPTION_IF_NULL(call_node);
+  auto callable = call_node->getInputs().front();
+  auto vobj = callable->GetVobj();
   MS_EXCEPTION_IF_NULL(vobj);
-  auto fn = vobj->GetPyObject().ptr();
-  MS_EXCEPTION_IF_NULL(fn);
-  auto own_vobj = node->getInputs()[1]->GetOwnVobj();
-  if (PyMethod_Check(fn)) {
-    auto op = func->GetOpcode();
-    MS_EXCEPTION_IF_CHECK_FAIL(op == LOAD_ATTR || op == LOAD_METHOD, "Should be a LoadNode.");
-    own_vobj = func->getInputs().front()->GetOwnVobj();
+  auto obj = vobj->GetPyObject().ptr();
+  MS_EXCEPTION_IF_NULL(obj);
+  auto is_method = PyMethod_Check(obj) || (PyCFunction_Check(obj) && PyCFunction_GET_SELF(obj) != nullptr);
+  auto op = callable->GetOpcode();
+  auto callable_check = !is_method || op == LOAD_ATTR || op == LOAD_METHOD;
+  MS_EXCEPTION_IF_CHECK_FAIL(callable_check, "Should be a func or LoadNode, but got ." + callable->ToString());
+  auto &operand = is_method ? callable->getInputs().front() : call_node->getInputs()[1];
+  auto own_vobj = operand->GetOwnVobj();
+  if (own_vobj->IsBaseVersion()) {
+    return;
   }
-  if (!own_vobj->IsBaseVersion()) {
-    auto base = own_vobj->GetBaseVersion();
-    if (PyMethod_Check(fn)) {
-      func->getInputs()[0] = ex_var_base_2_node_.at(base);
-    } else {
-      node->getInputs()[1] = ex_var_base_2_node_.at(base);
-    }
-  }
+  operand = ex_var_base_2_node_.at(own_vobj->GetBaseVersion());
 }
 
 std::vector<ValueNode *> SideEffectHandler::RebaseObjectVersionInSideEffects(
@@ -577,7 +574,7 @@ std::vector<ValueNode *> SideEffectHandler::RebaseObjectVersionInSideEffects(
   for (auto &side_effect_node : side_effect_nodes) {
     auto opcode = side_effect_node->GetOpcode();
     if (Opcode(opcode).IsCall()) {
-      RebaseObjectVersionInCallNode(side_effect_node);
+      RebaseObjectVersion(static_cast<CallNode *>(side_effect_node));
     } else {
       auto has_obj = opcode == DELETE_ATTR || opcode == STORE_ATTR || opcode == DELETE_SUBSCR || opcode == STORE_SUBSCR;
       auto index = (opcode == DELETE_ATTR || opcode == DELETE_SUBSCR) ? 0 : 1;

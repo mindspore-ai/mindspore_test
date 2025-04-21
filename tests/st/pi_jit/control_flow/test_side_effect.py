@@ -22,7 +22,7 @@ import mindspore
 import types
 import numpy
 from tests.mark_utils import arg_mark
-from ..share.utils import match_array, assert_executed_by_graph_mode
+from ..share.utils import match_array, match_value, assert_executed_by_graph_mode
 from tests.st.pi_jit.share.utils import pi_jit_with_config
 
 jit_cfg = {"compile_with_try":False}
@@ -42,6 +42,10 @@ def assert_graph_break(func, break_count: int = 1):
     assert jcr['stat'] == 'GRAPH_CALLABLE'
     assert jcr['break_count_'] == break_count
 
+def run_sequence_pop(s):
+    s.pop()
+    s.pop()
+    return s[0] + s[1]
 
 class NetAssign0002(Cell):
 
@@ -126,6 +130,27 @@ def test_del_subscr_side_effect_3():
     assert flag
     context.set_context(mode=context.PYNATIVE_MODE)
     assert jcr["break_count_"] == 0
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('func', [run_sequence_pop])
+@pytest.mark.parametrize('x1', [Tensor([[1., 2.], [3., 4.]])])
+@pytest.mark.parametrize('x2', [Tensor([[10., 20.], [30., 40.]])])
+@pytest.mark.parametrize('y1', [Tensor([[100., 200.], [300., 400.]])])
+@pytest.mark.parametrize('y2', [Tensor([[1000., 2000.], [3000., 4000.]])])
+def test_list_pop(func, x1, x2, y1, y2):
+    """
+    Feature: LIST POP
+    Description: test cases for list in parameter and pop element in func
+    Expectation: the result match
+    """
+    context.set_context(mode=context.PYNATIVE_MODE)
+    s = [x1, x2, y1, y2]
+    wrapped_func = pi_jit_with_config(func, jit_config=jit_cfg)
+    ms_res = wrapped_func(s)
+    s1 = [x1, x2, y1, y2]
+    res = func(s1)
+    match_array(res, ms_res, error=0, err_msg=str(ms_res))
+    match_value(s, s1, error=0, err_msg=str(ms_res))
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')

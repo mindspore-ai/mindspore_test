@@ -231,8 +231,8 @@ class SideEffectHandler {
   void InitializeVersionNodeMaps(const std::vector<ValueNode *> &vars);
   /// \brief Revert the object that the call node is applied to the base version.
   ///
-  /// \param[in] node The side effect node.
-  void RebaseObjectVersionInCallNode(ValueNode *node) const;
+  /// \param[in] call_node The side effect node.
+  void RebaseObjectVersion(CallNode *call_node) const;
   /// \brief Revert the object that the side effect is applied to the base version.
   ///
   /// \param[in] side_effect_nodes The side effect nodes will be handled.
