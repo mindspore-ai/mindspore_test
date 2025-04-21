@@ -123,13 +123,12 @@ def test_dyn_tuple_case(mode):
     assert np.allclose(out_s.asnumpy(), out_d4.asnumpy())
 
 
-@pytest.mark.skip(reason="Need to implement dynamic arg for jit api.")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [context.PYNATIVE_MODE])
 def test_dyn_func_case(mode):
     """
-    Feature: input_signature in jit.
-    Description: Test input_signature in jit.
+    Feature: dynamic shape in jit.
+    Description: Test dynamic shape in jit.
     Expectation: the result match with static result.
     """
     ms.set_context(mode=mode)
@@ -137,20 +136,19 @@ def test_dyn_func_case(mode):
     x = ms.Tensor(np.random.random((2, 3, 4)).astype(np.float32))
     y = ms.Tensor(np.random.random((2, 3, 4)).astype(np.float32))
     z = ms.Tensor(np.random.random((2, 3, 4)).astype(np.float32))
-    x_dyn = ms.Tensor(shape=[None, None, None], dtype=ms.float32)
-    y_dyn = ms.Tensor(shape=[None, None, None], dtype=ms.float32)
-    z_dyn = ms.Tensor(shape=[None, None, None], dtype=ms.float32)
 
     def func_s(x, y, z):
         add1 = ms.ops.add(x, y)
         return ms.ops.mul(add1, z)
 
-    @ms.jit(input_signature=(x_dyn, y_dyn, z_dyn))
+    @ms.jit
+    @ms.dynamic_tensor_shapes([None, None, None], [None, None, None], [None, None, None])
     def func_d1(x, y, z):
         add1 = ms.ops.add(x, y)
         return ms.ops.mul(add1, z)
 
-    @ms.jit(input_signature={"y": y_dyn})
+    @ms.jit
+    @ms.dynamic_tensor_shapes(y=[None, None, None])
     def func_d2(x, y, z):
         add1 = ms.ops.add(x, y)
         return ms.ops.mul(add1, z)
@@ -247,7 +245,6 @@ def test_dyn_mul_case2(mode):
     assert np.allclose(out_s22.asnumpy(), out_d1_22.asnumpy())
 
 
-@pytest.mark.skip(reason="Need to implement dynamic arg for jit api.")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 def test_cell_jit_case(mode):
@@ -264,7 +261,8 @@ def test_cell_jit_case(mode):
             return ms.ops.add(add1, z)
 
     class InnerNetDynamic(ms.nn.Cell):
-        @ms.jit(input_signature={"y": ms.Tensor(shape=[None, None, None], dtype=ms.float32)})
+        @ms.jit
+        @ms.dynamic_tensor_shapes(y=[None, None, None])
         def construct(self, x, y, z):
             add1 = ms.ops.add(x, y)
             return ms.ops.add(add1, z)
@@ -282,7 +280,6 @@ def test_cell_jit_case(mode):
     assert np.allclose(out_s2.asnumpy(), out_d2.asnumpy())
 
 
-@pytest.mark.skip(reason="Need to implement dynamic arg for jit api.")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 def test_single_parameter_case(mode):
@@ -300,15 +297,18 @@ def test_single_parameter_case(mode):
         def construct(self, only_input):
             return ms.ops.add(only_input, 2)
 
-    @ms.jit(input_signature=(x_dyn))
+    @ms.jit
+    @ms.dynamic_tensor_shapes([None, None])
     def simple_func(only_input):
         return ms.ops.add(only_input, 2)
 
-    @ms.jit(input_signature=x_dyn)
+    @ms.jit
+    @ms.dynamic_tensor_shapes([None, None])
     def simple_func1(only_input):
         return ms.ops.add(only_input, 2)
 
-    @ms.jit(input_signature={"only_input": x_dyn})
+    @ms.jit
+    @ms.dynamic_tensor_shapes(only_input=[None, None])
     def simple_func2(only_input):
         return ms.ops.add(only_input, 2)
 

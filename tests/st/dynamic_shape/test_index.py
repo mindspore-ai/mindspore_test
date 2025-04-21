@@ -361,9 +361,9 @@ def _run_and_compare(test_func, data):
             dim_unknown_shape = ()
             for _ in data.shape:
                 dim_unknown_shape += (None,)
-            graph_out = ms.jit(input_signature=(Tensor(shape=dim_unknown_shape, dtype=data.dtype)))(test_func)(data)
+            graph_out = ms.jit(ms.dynamic_tensor_shapes(dim_unknown_shape))(test_func)(data)
         else:
-            graph_out = ms.jit(input_signature=(Tensor(shape=None, dtype=data.dtype)))(test_func)(data)
+            graph_out = ms.jit(ms.dynamic_tensor_shapes(None))(test_func)(data)
         print("graph out is")
         print(graph_out)
         print(graph_out.shape)
@@ -379,23 +379,23 @@ def _run_and_compare(test_func, data):
     if DYNAMIC_LEVEL == 0:
         graph_out = ms.jit()(test_func)(data)
     elif DYNAMIC_LEVEL == 1:
-        graph_out = ms.jit(input_signature=(Tensor(shape=dim_unknown_shape, dtype=data.dtype)))(test_func)(data)
+        graph_out = ms.jit(ms.dynamic_tensor_shapes(dim_unknown_shape))(test_func)(data)
     elif DYNAMIC_LEVEL == 100:
         print("Static_shape...")
         graph_out = ms.jit()(test_func)(data)
         _compare_result(pynative_out, graph_out, test_func.__name__)
 
         print("[dynamic_shape with known rank...]")
-        graph_out = ms.jit(input_signature=(Tensor(shape=dim_unknown_shape, dtype=data.dtype)))(test_func)(data)
+        graph_out = ms.jit(ms.dynamic_tensor_shapes(dim_unknown_shape))(test_func)(data)
         _compare_result(pynative_out, graph_out, test_func.__name__)
 
         print("[dynamic_shape with unknown rank...]")
-        graph_out = ms.jit(input_signature=(Tensor(shape=None, dtype=data.dtype)))(test_func)(data)
+        graph_out = ms.jit(ms.dynamic_tensor_shapes(None))(test_func)(data)
         _compare_result(pynative_out, graph_out, test_func.__name__)
         print(f"Test successfully for {test_func.__name__}.\n")
         return
     else:
-        graph_out = ms.jit(input_signature=(Tensor(shape=None, dtype=data.dtype)))(test_func)(data)
+        graph_out = ms.jit(ms.dynamic_tensor_shapes(None))(test_func)(data)
 
     _compare_result(pynative_out, graph_out, test_func.__name__)
     print(f"Test successfully for {test_func.__name__}.\n")
@@ -405,7 +405,6 @@ input_data = Tensor(np.arange(4 * 5).reshape((4, 5)))
 input_data_4d = Tensor(np.arange(4 * 3 * 4 * 4).reshape((4, 3, 4, 4)))
 
 
-@pytest.mark.skip(reason="Need to implement dynamic arg for jit api.")
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_tensor_index_st():
     """

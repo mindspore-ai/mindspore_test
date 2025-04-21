@@ -13,14 +13,12 @@
 # limitations under the License.
 # ============================================================================
 
-import pytest
 import platform
 import numpy as np
-import mindspore as ms
 from mindspore import nn
 from mindspore import ops
 from mindspore import context, Tensor
-from mindspore import jit
+from mindspore import jit, dynamic_tensor_shapes
 from tests.mark_utils import arg_mark
 
 
@@ -32,8 +30,8 @@ class Net(nn.Cell):
         self.addn = ops.AddN()
         self.relu = nn.ReLU()
 
-    @jit(input_signature=(Tensor(shape=[2, 3, 6, None], dtype=ms.float32),
-                          Tensor(shape=[2, 3, None, None], dtype=ms.float32)))
+    @jit
+    @dynamic_tensor_shapes([2, 3, 6, None], [2, 3, None, None])
     def construct(self, x, y):
         x = self.addn((x, y))
         x = self.log(x)
@@ -58,8 +56,8 @@ class CmpNet(nn.Cell):
         return x
 
 
-@jit(input_signature=(Tensor(shape=[2, 3, 6, None], dtype=ms.float32),
-                      Tensor(shape=[2, 3, None, None], dtype=ms.float32)))
+@jit
+@dynamic_tensor_shapes([2, 3, 6, None], [2, 3, None, None])
 def func(x, y):
     x = ops.AddN()((x, y))
     x = ops.Log()(x)
@@ -76,7 +74,6 @@ def cmp_func(x, y):
     return x
 
 
-@pytest.mark.skip(reason="Need to implement dynamic arg for jit api.")
 @arg_mark(plat_marks=['cpu_linux'],
           level_mark='level0',
           card_mark='onecard',
