@@ -2,6 +2,8 @@
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
 export HCCL_CONNECT_TIMEOUT=3600
+export HCCL_IF_BASE_PORT=60000
+sysctl -w net.ipv4.ip_local_reserved_ports=60000-60015
 
 MindSpeed_LLM_PATH=../MindSpeed-Core-MS/MindSpeed-LLM
 

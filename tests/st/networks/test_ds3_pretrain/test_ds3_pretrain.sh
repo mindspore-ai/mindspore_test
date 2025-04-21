@@ -1,7 +1,9 @@
 #!/bin/bash
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
-export HCCL_CONNECT_TIMEOUT=360
+export HCCL_CONNECT_TIMEOUT=3600
+export HCCL_IF_BASE_PORT=60000
+sysctl -w net.ipv4.ip_local_reserved_ports=60000-60015
 
 MindSpeed_LLM_PATH=../MindSpeed-Core-MS/MindSpeed-LLM
 
@@ -11,7 +13,7 @@ export NCCL_DETERMINISTIC=1
 
 NPUS_PER_NODE=8
 MASTER_ADDR=localhost
-MASTER_PORT=6000
+MASTER_PORT=6010
 NODE_RANK=0
 
 DATA_PATH="/home/workspace/mindspore_dataset/msadapter/test_input/net/test_ds3_pretrain/dataset/dataset/enwiki_text_document"
