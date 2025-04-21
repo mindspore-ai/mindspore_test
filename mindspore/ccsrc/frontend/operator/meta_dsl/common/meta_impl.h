@@ -366,6 +366,24 @@ class MetaImpl : public MetaFuncGraph {
   /// \return Output node.
   NodePtr And(const NodePtr &x, const NodePtr &y);
 
+  /// \brief all(iterable) such as all([1, 2, 3, None])
+  ///
+  /// \note Example: All(x)
+  ///
+  /// \param[in] iterable Input node.
+  ///
+  /// \return Output node of all operation.
+  NodePtr All(const NodePtr &iterable);
+
+  /// \brief any(iterable) such as any([1, 2, 3, None])
+  ///
+  /// \note Example: Any(x)
+  ///
+  /// \param[in] iterable Input node.
+  ///
+  /// \return Output node of any operation.
+  NodePtr Any(const NodePtr &iterable);
+
   /// \brief x or y
   ///
   /// \note Example: Or(x, y)
@@ -523,6 +541,7 @@ class MetaImpl : public MetaFuncGraph {
   void DefineCustomBprop(const FuncGraphPtr &graph);
   void ConvertTypeIdToType(NodePtrList *nodes);
   void DumpIRForMetaDsl(const FuncGraphPtr &graph) const;
+  NodePtr ImplAllAny(const NodePtr &input, bool is_all);
 
   PrimitivePtr prim_{nullptr};
   std::string name_;

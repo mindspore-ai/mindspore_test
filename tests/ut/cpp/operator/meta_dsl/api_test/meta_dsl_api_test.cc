@@ -180,4 +180,24 @@ TEST_F(TestMetaDslApi, test_dtype) {
   auto type_id = out_abs->cast<AbstractTensorPtr>()->element()->BuildType()->type_id();
   ASSERT_TRUE(type_id == kNumberTypeInt32);
 }
+
+/// Feature: Meta DSL
+/// Description: Test All, Any in MetaDSL.
+/// Expectation: Run successfully.
+TEST_F(TestMetaDslApi, test_all_any) {
+  auto op = CreateMetaImpl("TestAllAny");
+  AbstractBasePtrList elems = {std::make_shared<AbstractScalar>(static_cast<int64_t>(1)),
+                               std::make_shared<AbstractScalar>(static_cast<int64_t>(0))};
+  AbstractBasePtrList abs_list = {std::make_shared<AbstractList>(elems)};
+  auto fg = NewFuncGraph(op, abs_list);
+  auto out_abs = fg->return_node()->abstract();
+  MS_EXCEPTION_IF_NULL(out_abs);
+  auto out_elems = out_abs->cast<AbstractTuplePtr>()->elements();
+  ASSERT_TRUE(out_elems[0]->isa<AbstractScalar>());
+  bool all_res = GetValue<bool>(out_elems[0]->BuildValue());
+  ASSERT_TRUE(!all_res);
+  ASSERT_TRUE(out_elems[1]->isa<AbstractScalar>());
+  bool any_res = GetValue<bool>(out_elems[1]->BuildValue());
+  ASSERT_TRUE(any_res);
+}
 }  // namespace mindspore::prim

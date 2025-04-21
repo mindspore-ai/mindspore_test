@@ -394,6 +394,41 @@ NodePtr MetaImpl::Or(const NodePtr &x, const NodePtr &y) {
   return IfCond(x, true_branch, false_branch, {x, y});
 }
 
+NodePtr MetaImpl::ImplAllAny(const NodePtr &input, bool is_all) {
+  constexpr int idx_zero = 0;
+  constexpr int idx_first = 1;
+  constexpr int idx_second = 2;
+  auto cond_func = [&](const NodePtr &val) {
+    auto index = GetItem(val, Value(idx_zero));
+    auto result = GetItem(val, Value(idx_first));
+    auto iterable = GetItem(val, Value(idx_second));
+    auto len_func = NewNode({NewValueNode(prim::kPrimGetAttr), iterable, NewValueNode(MakeValue("__len__"))});
+    auto len = NewNode({len_func});
+    auto index_valid = NewNode({NewValueNode(prim::kPrimScalarLt), index, len});
+    // All: index < len(iterable) and result. Any: index < len(iterable) and not result.
+    auto check = is_all ? result : Not(result);
+    Return(And(index_valid, check));
+  };
+  auto loop_func = [&](const NodePtr &val) {
+    auto index = GetItem(val, Value(idx_zero));
+    auto result = GetItem(val, Value(idx_first));
+    auto iterable = GetItem(val, Value(idx_second));
+    // Example code: bool(iterable[index])
+    auto new_res = NewNode({NewValueNode(prim::kPrimCond), GetItem(iterable, index), NewValueNode(MakeValue(false))});
+    // Example code: (index + 1, new_res, iterable)
+    auto new_index = NewNode({NewValueNode(prim::kPrimScalarAdd), index, Value(idx_first)});
+    Return(Tuple(new_index, new_res, iterable));
+  };
+  auto default_value = is_all ? Value(true) : Value(false);
+  auto init_val = Tuple(Value(idx_zero), default_value, input);
+  auto res = While(cond_func, loop_func, init_val);
+  return GetItem(res, Value(idx_first));
+}
+
+NodePtr MetaImpl::All(const NodePtr &iterable) { return ImplAllAny(iterable, true); }
+
+NodePtr MetaImpl::Any(const NodePtr &iterable) { return ImplAllAny(iterable, false); }
+
 NodePtr MetaImpl::ScalarAdd(const NodePtr &x, const NodePtr &y) {
   return NewNode({NewValueNode(prim::kPrimScalarAdd), x, y});
 }

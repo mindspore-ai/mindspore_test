@@ -163,4 +163,13 @@ BeginFunction(TestDtype, x, y, dtype) {
   Return(Call(Prim(Cast), out, dtype));
 }
 EndFunction(TestDtype)
+
+/** Python code:
+ *  def func(iterable):
+ *    return all(iterable), any(iterable)
+ */
+BeginFunction(TestAllAny, iterable) {
+  Return(Tuple(All(iterable), Any(iterable)));
+}
+EndFunction(TestAllAny)
 }  // namespace mindspore::prim
