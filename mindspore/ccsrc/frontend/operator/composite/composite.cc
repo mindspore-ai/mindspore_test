@@ -277,15 +277,14 @@ AnfNodePtr HyperMap::FullMake(const std::shared_ptr<List> &type, const FuncGraph
                               const AnfNodePtr &fn_arg, const ArgsPairList &arg_map) const {
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_EXCEPTION_IF_NULL(type);
-  const auto list_type = type->cast<ListPtr>();
   if (type->dynamic_len()) {
-    return HyperMapDynamicConverter<List>(func_graph, fn_arg, arg_map, list_type->dynamic_element_type());
+    return HyperMapDynamicConverter<List>(func_graph, fn_arg, arg_map, type->dynamic_element_type());
   }
   size_t size = type->elements().size();
   bool contains_dynamic = false;
   CheckArgsInSequence<List>(arg_map, kObjectTypeList, size, &contains_dynamic);
   if (contains_dynamic) {
-    return HyperMapDynamicConverter<List>(func_graph, fn_arg, arg_map, list_type->elements()[0]);
+    return HyperMapDynamicConverter<List>(func_graph, fn_arg, arg_map, type->elements()[0]);
   }
   // Cannot use shared_from_base() also known as this, as it will make a reference cycle on
   // hypermap and graph generated, it will cause memory leak.
@@ -296,15 +295,14 @@ AnfNodePtr HyperMap::FullMake(const std::shared_ptr<Tuple> &type, const FuncGrap
                               const AnfNodePtr &fn_arg, const ArgsPairList &arg_map) const {
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_EXCEPTION_IF_NULL(type);
-  const auto tuple_type = type->cast<TuplePtr>();
   if (type->dynamic_len()) {
-    return HyperMapDynamicConverter<Tuple>(func_graph, fn_arg, arg_map, tuple_type->dynamic_element_type());
+    return HyperMapDynamicConverter<Tuple>(func_graph, fn_arg, arg_map, type->dynamic_element_type());
   }
   size_t size = type->elements().size();
   bool contains_dynamic = false;
   CheckArgsInSequence<Tuple>(arg_map, kObjectTypeTuple, size, &contains_dynamic);
   if (contains_dynamic) {
-    return HyperMapDynamicConverter<Tuple>(func_graph, fn_arg, arg_map, tuple_type->elements()[0]);
+    return HyperMapDynamicConverter<Tuple>(func_graph, fn_arg, arg_map, type->elements()[0]);
   }
   // Cannot use shared_from_base() also known as this, as it will make a reference cycle on
   // hypermap and graph generated, it will cause memory leak.
