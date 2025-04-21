@@ -23,6 +23,8 @@ mindspore.train.CheckpointConfig
         - **exception_save** (bool) - 当有异常发生时，是否保存当前checkpoint文件。默认值： ``False`` 。
         - **crc_check** (bool) - 是否在保存checkpoint时进行crc32计算，并将计算结果保存到ckpt尾部。默认值： ``False`` 。
         - **remove_redundancy** (bool) - 是否开启去冗余保存checkpoint。去冗余是指去除数据并行模式下的冗余数据。默认值： ``False``，不开启去冗余保存。
+        - **adaptive_save_frequency** (bool) - 是否开启自适应checkpoint保存频率计算。默认值： ``False``，不开启自适应保存频率计算。
+        - **failure_frequency_pre_device** (float) - 仅当 `adaptive_save_frequency` 为True时，该参数有效。配置单卡故障频率，单位为次/小时。默认值： ``0.00001973`` 。
         - **format** (str) - 输出文件的格式，可以是 ``"ckpt"`` 或 ``"safetensors"``。默认值： ``"ckpt"``。
         - **kwargs** (dict) - 配置选项字典。
 

@@ -22,6 +22,7 @@ import mindspore.log as logger
 from mindspore import context
 from mindspore.nn.cell import Cell
 from mindspore.ops import operations as P
+from mindspore.ops import ReduceOp
 from mindspore.ops.operations.comm_ops import AllGather
 from mindspore.communication import GlobalComm, get_rank
 from mindspore.common import jit
@@ -87,9 +88,9 @@ class SingleCommunicator(Cell):
     Used to broadcast single parameter.
     """
 
-    def __init__(self, group_name):
+    def __init__(self, group_name, op_name=ReduceOp.SUM):
         super(SingleCommunicator, self).__init__()
-        self.allreduce = P.AllReduce(group=group_name)
+        self.allreduce = P.AllReduce(op=op_name, group=group_name)
         self.add_flags(skip_auto_parallel_compile=True)
 
     def construct(self, loaded_param):
