@@ -429,6 +429,9 @@ void InsertVirtualAssignAdd(const std::pair<AnfNodePtr, int> &node_user, const F
   if (IsPrimitiveCNode(cnode, prim::kPrimReceive) || !cnode->in_forward_flag()) {
     return;
   }
+  if (IsPrimitiveCNode(cnode, prim::kPrimSend) && cnode->HasPrimalAttr(PIPELINE_PARAM) && NeededHandleShardParam()) {
+    return;
+  }
   MS_EXCEPTION_IF_NULL(ParallelContext::GetInstance());
   bool enable_parallel_optimizer = ParallelContext::GetInstance()->enable_parallel_optimizer();
   bool grad_accumulation_shard = ParallelContext::GetInstance()->grad_accumulation_shard();
@@ -596,6 +599,9 @@ void HandleReceiveParam(const FuncGraphPtr &root) {
     MS_EXCEPTION_IF_NULL(node->func_graph());
     MS_EXCEPTION_IF_NULL(node->func_graph()->manager());
     auto base_shape = accu_parameter->Shape();
+    if (NeededHandleShardParam()) {
+      base_shape = parameter_ptr->Shape();
+    }
     auto shape_ptr = dyn_cast<abstract::Shape>(base_shape);
     auto slice_shape = shape_ptr->shape();
     auto prim = GetCNodePrimitive(cnode);
@@ -620,6 +626,9 @@ void HandleReceiveParam(const FuncGraphPtr &root) {
       } else {
         InsertVirtualAssignAdd(temp_user, root->manager(), accu_parameter, node_users_map);
       }
+    }
+    if (NeededHandleShardParam()) {
+      continue;
     }
     InsertVirtualAccuGrad(node, root->manager(), accu_parameter);
   }

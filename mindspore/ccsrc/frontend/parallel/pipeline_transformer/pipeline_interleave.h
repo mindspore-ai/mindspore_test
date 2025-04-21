@@ -107,9 +107,11 @@ class PipelinePostProcess {
   void SetNodeAbstract(const std::vector<AnfNodePtr> &nodes);
   AnfNodePtr GetZeroOutputs(const FuncGraphPtr &graph);
   AnfNodePtr GenNewNodeFromOld(const AnfNodePtr &node, const AnfNodePtr &input, int64_t micro, int64_t index);
+  AnfNodePtr GenNewParamRecv(const AnfNodePtr &node, const ParameterPtr &param);
   std::vector<AnfNodePtr> GenerateMainGraphSend(const std::vector<AnfNodePtr> &nodes, const AnfNodePtr &node,
                                                 const ValuePtr &micro, const ValuePtr &index);
   AnfNodePtr GenerateMainGraphRecv(const AnfNodePtr &fg_node, const AnfNodePtr &recv);
+  void MoveSharedParamMirrorOutCall(const std::vector<AnfNodePtr> &all_nodes);
   FuncGraphManagerPtr manager_;
   int64_t stage_;
   int64_t stage_num_;
