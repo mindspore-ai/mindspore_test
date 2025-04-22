@@ -19,7 +19,9 @@ import os
 import threading
 import stat
 import time
+from scipy.optimize import minimize_scalar
 
+import mindspore
 import mindspore.context as context
 from mindspore import log as logger
 from mindspore import nn
@@ -27,7 +29,8 @@ from mindspore import _checkparam as Validator
 from mindspore.train._utils import _make_directory
 from mindspore.train.serialization import save_checkpoint, _save_graph, _wait_async_process_save_ckpt, \
     _wait_async_thread_save_ckpt, _check_async_save
-from mindspore.parallel._cell_wrapper import destroy_allgather_cell
+from mindspore.parallel._cell_wrapper import destroy_allgather_cell, SingleCommunicator, _chang_parallel_context, \
+    _restore_parallel_context
 from mindspore.parallel._recovery_context import _set_recovery_context, _get_recovery_context
 from mindspore.communication.management import get_rank, get_group_size
 from mindspore.train._utils import get_parameter_redundancy, remove_param_redundancy, _get_pp_size_from_redundancy_map
@@ -36,11 +39,21 @@ from mindspore.common.tensor import Tensor
 from mindspore.common.parameter import Parameter
 from mindspore.common.generator import Generator
 from mindspore._c_expression import collect_host_info, get_clock_syscnt
+from mindspore.ops import ReduceOp
 
 _cur_dir = os.getcwd()
 SAVE_DIR = _cur_dir
 _info_list = ["epoch_num", "step_num"]
 
+
+def _get_group_ckpt_info(data, op=ReduceOp.SUM):
+    origin_parallel_mode = context.get_auto_parallel_context("parallel_mode")
+    origin_dataset_strategy = context.get_auto_parallel_context("dataset_strategy")
+    _chang_parallel_context(origin_dataset_strategy)
+    communicator = SingleCommunicator("hccl_world_group", op)
+    global_data = communicator(data)
+    _restore_parallel_context(origin_parallel_mode, origin_dataset_strategy)
+    return global_data
 
 def _get_dp_tp_from_redundancy(redundancy_tuple):
     """From redundancy get dp and tp"""
@@ -156,6 +169,9 @@ class CheckpointConfig:
         remove_redundancy (bool): Whether to enable saving the checkpoint with redundancy removal.
             Redundancy removal refers to eliminating redundant data in data parallelism mode. Default: ``False`` , means
             redundant-free saving is not enabled.
+        adaptive_save_frequency (bool): Whether to enable ckpt adaptive save frequency. Default: ``False`` .
+        failure_frequency_pre_device (float): The failure frequency of a single machine, in times per hours.
+                                              Default: ``0.00001973`` .
         format (str): Format of the output file, can be "ckpt" or "safetensors". Default: "ckpt".
         kwargs (dict): Configuration options dictionary.
 
@@ -210,6 +226,8 @@ class CheckpointConfig:
                  exception_save=False,
                  crc_check=False,
                  remove_redundancy=False,
+                 adaptive_save_frequency=False,
+                 failure_frequency_pre_device=0.00001973,
                  format="ckpt",
                  **kwargs):
 
@@ -258,6 +276,10 @@ class CheckpointConfig:
         self._map_param_inc = kwargs.get('incremental', False)
         self.enable_redundance = kwargs.get('enable_redundance', False)
         self.remove_redundancy = Validator.check_isinstance('remove_redundancy', remove_redundancy, bool)
+        self._adaptive_save_frequency = Validator.check_isinstance('adaptive_save_frequency', adaptive_save_frequency,\
+                                                                   bool)
+        self.failure_frequency_pre_device = Validator.check_isinstance('failure_frequency_pre_device', \
+                                                                        failure_frequency_pre_device, float)
 
         _check_format_and_other_params(format, enc_key, enc_mode, crc_check, exception_save, self._map_param_inc)
 
@@ -271,6 +293,16 @@ class CheckpointConfig:
         """
         return self._save_checkpoint_steps
 
+    @save_checkpoint_steps.setter
+    def save_checkpoint_steps(self, new_steps):
+        """
+        Set the new value of steps to save checkpoint.
+        """
+        if new_steps is not None:
+            self._save_checkpoint_steps = Validator.check_non_negative_int(new_steps)
+        else:
+            self._save_checkpoint_steps = None
+
     @property
     def save_checkpoint_seconds(self):
         """Get the value of _save_checkpoint_seconds.
@@ -279,6 +311,16 @@ class CheckpointConfig:
             int, seconds to save the checkpoint file.
         """
         return self._save_checkpoint_seconds
+
+    @save_checkpoint_seconds.setter
+    def save_checkpoint_seconds(self, new_seconds):
+        """
+        Set the new value of seconds to save checkpoint.
+        """
+        if new_seconds is not None:
+            self._save_checkpoint_seconds = Validator.check_non_negative_int(new_seconds)
+        else:
+            self._save_checkpoint_seconds = None
 
     @property
     def keep_checkpoint_max(self):
@@ -319,6 +361,16 @@ class CheckpointConfig:
             (bool, str), whether or how asynchronous execution saves the checkpoint to a file.
         """
         return self._async_save
+
+    @property
+    def adaptive_save_frequency(self):
+        """
+        Get the value of whether to enable adaptive CKPT save frequency calculation.
+
+        Returns:
+            (bool, str), whether to enable adaptive CKPT save frequency calculation.
+        """
+        return self._adaptive_save_frequency
 
     @property
     def saved_network(self):
@@ -489,6 +541,13 @@ class ModelCheckpoint(Callback):
         self._last_time = time.time()
         self._last_time_for_keep = time.time()
         self._last_triggered_step = 0
+        self._step_start_time = time.time()
+        self._step_end_time = time.time()
+        self._avg_time_pre_step = 0.0
+        self._avg_extral_time_pre_save = 0.0
+        self._last_step_start_time = time.time()
+        self._avg_wait_save_time = 0.0
+        self._init_step = 0
         """a callable for users to set self-defined prefix."""
         self._prefix_func = None
         """a callable for users to set self-defined directory."""
@@ -541,6 +600,19 @@ class ModelCheckpoint(Callback):
         self._map_param_inc = self._config.map_param_inc
         self._d2h_async = os.environ.get("MS_ENABLE_CKPT_D2H_ASYNC") == "1"
         self._run_mode = context.get_context("mode")
+        if self._config.adaptive_save_frequency:
+            self._config.save_checkpoint_steps = None
+            self._config.save_checkpoint_seconds = None
+
+    def begin(self, run_context):
+        """
+        Get checkpoint info at the begin of training.
+
+        Args:
+            run_context (RunContext): Context of the train running.
+        """
+        cb_params = run_context.original_args()
+        self._init_step = cb_params.cur_step_num
 
     def step_begin(self, run_context):
         """
@@ -549,11 +621,13 @@ class ModelCheckpoint(Callback):
         Args:
             run_context (RunContext): Context of the train running.
         """
+        self._last_step_start_time = self._step_start_time
         if self._d2h_async and self._config.async_save:
             thread_list = threading.enumerate()
             for thread in thread_list:
                 if thread.getName() == "async_save_ckpt_cb":
                     thread.join()
+        self._step_start_time = time.time()
 
     def step_end(self, run_context):
         """
@@ -606,7 +680,11 @@ class ModelCheckpoint(Callback):
                 os.remove(graph_file_name)
             _save_graph(cb_params.train_network, graph_file_name)
             self._graph_saved = True
+        if self._config.adaptive_save_frequency:
+            self._warmup_record_time(cb_params)
         self._save_ckpt(cb_params)
+        if self._config.adaptive_save_frequency:
+            self._calculate_ckpt_frequency(cb_params)
 
     def end(self, run_context):
         """
@@ -624,6 +702,74 @@ class ModelCheckpoint(Callback):
         _wait_async_save_ckpt(self._config.async_save)
 
         destroy_allgather_cell()
+
+    def _warmup_record_time(self, cb_params):
+        """Record ckpt time info during warm-up time."""
+        cur_step = cb_params.cur_step_num
+        if self._init_step + 12 >= cur_step >= self._init_step + 7:
+            self._config.save_checkpoint_steps = 2
+            self._step_end_time = time.time()
+            if cur_step == self._init_step + 7:
+                self._avg_time_pre_step = self._step_end_time - self._step_start_time
+            if cur_step == self._init_step + 12:
+                self._avg_extral_time_pre_save = (self._step_end_time - self._last_step_start_time
+                                                  - 2 * self._avg_time_pre_step)
+
+    def _calculate_ckpt_frequency(self, cb_params):
+        """Calculate ckpt adaptive save frequency."""
+        if cb_params.cur_step_num == self._init_step + 12:
+            large_value = 1e10
+            device_num = 1
+            try:
+                device_num = get_group_size("hccl_world_group")
+            except RuntimeError:
+                logger.warning("Get group size failed, maybe training on single device.")
+            max_wait_save_time = self._avg_wait_save_time
+            if device_num != 1:
+                ckpt_info = Tensor([self._avg_time_pre_step, self._avg_extral_time_pre_save, self._avg_wait_save_time],\
+                                    dtype=mindspore.float32)
+                global_ckpt_info = _get_group_ckpt_info(ckpt_info, ReduceOp.SUM)
+                avg_ckpt_info = global_ckpt_info / device_num
+                avg_wait_save_time = Tensor(self._avg_wait_save_time, dtype=mindspore.float32)
+                max_wait_save_time = float(_get_group_ckpt_info(avg_wait_save_time, ReduceOp.MAX))
+
+                self._avg_time_pre_step = float(avg_ckpt_info[0])
+                self._avg_extral_time_pre_save = float(avg_ckpt_info[1])
+                self._avg_wait_save_time = float(avg_ckpt_info[2])
+
+            extral_time = self._avg_extral_time_pre_save - max_wait_save_time
+
+            device_faile = self._config.failure_frequency_pre_device / 3600 * self._avg_time_pre_step
+            whole_failure_frequency = 1 - (1 - device_faile)**device_num
+
+            def frequency_with_waiting_time(x):
+                return whole_failure_frequency * (x / 2 * self._avg_time_pre_step) + \
+                       ((extral_time + self._avg_wait_save_time - (x - 2) * self._avg_time_pre_step) / x)
+
+            def frequency_no_waiting_time(x):
+                return whole_failure_frequency * (x / 2 * self._avg_time_pre_step) + (extral_time / x)
+
+            best_save_ckpt_step = 0
+            min_ckpt_additional_time = 0
+            if self._config.async_save:
+                bound = self._avg_wait_save_time / self._avg_time_pre_step + 2
+                result1 = minimize_scalar(frequency_with_waiting_time, bounds=(1, bound), method='bounded')
+                result2 = minimize_scalar(frequency_no_waiting_time, bounds=(bound, large_value), method='bounded')
+                if result1.success and result2.success:
+                    if result1.fun < result2.fun:
+                        best_save_ckpt_step = result1.x
+                        min_ckpt_additional_time = result1.fun
+                    else:
+                        best_save_ckpt_step = result2.x
+                        min_ckpt_additional_time = result2.fun
+            else:
+                result = minimize_scalar(frequency_no_waiting_time, bounds=(1, large_value), method='bounded')
+                best_save_ckpt_step = result.x
+                min_ckpt_additional_time = result.fun
+            best_save_ckpt_step = round(best_save_ckpt_step)
+            self._config.save_checkpoint_steps = best_save_ckpt_step
+            logger.info("By adaptive frequency, effective training time ratio turn to %f.", \
+                        self._avg_time_pre_step / (self._avg_time_pre_step + min_ckpt_additional_time))
 
     def _check_save_ckpt(self, cb_params, force_to_save):
         """Check whether save checkpoint files or not."""
@@ -653,6 +799,11 @@ class ModelCheckpoint(Callback):
             step_num_in_epoch -= 1
         return step_num_in_epoch
 
+    def _recode_wait_time(self, cb_params, start_time):
+        """recode ckpt async waiting time."""
+        if self._config.adaptive_save_frequency and cb_params.cur_step_num == self._init_step + 11:
+            self._avg_wait_save_time = time.time() - start_time
+
     def _save_ckpt(self, cb_params, force_to_save=False):
         """Save checkpoint files."""
         if cb_params.cur_step_num == self._last_triggered_step:
@@ -667,7 +818,9 @@ class ModelCheckpoint(Callback):
 
         if save_ckpt:
 
+            wait_start = time.time()
             _wait_async_save_ckpt(self._config.async_save)
+            self._recode_wait_time(cb_params, wait_start)
 
             if self._prefix_func:
                 cur_ckpoint_file = self._prefix + f".{self._config.format}"

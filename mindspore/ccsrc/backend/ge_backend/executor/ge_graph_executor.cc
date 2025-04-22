@@ -1144,7 +1144,6 @@ void GeGraphExecutor::DoAsyncCkpt(const FuncGraphPtr &graph) {
   if (cur_step >= (last_triggered_step + save_steps)) {
     if (SkipOrResetCopyAction()) {
       MS_LOG(INFO) << "Enable async d2h copy";
-      SavePrevStepWeight(kg->GetRootWeights(), ge_res_manager_->GetCopyDataStream());
       std::vector<AnfNodePtr> prev_part;
       std::vector<AnfNodePtr> storage_part;
       const std::vector<AnfNodePtr> &root_weights = kg->parameters();
