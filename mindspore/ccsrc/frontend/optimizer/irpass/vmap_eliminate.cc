@@ -381,31 +381,8 @@ AnfNodePtr GenerateVampRuleFnFg(const py::function &vmap_rule_fn, const Primitiv
   return vmap_rule_node;
 }
 
-AnfNodePtr GetVmapRule(const PrimitivePtr &prim, const pipeline::ResourceBasePtr &resource, const AnfNodePtr &node,
-                       int axis_size) {
-  // Set a child scope named "vmap_'PrimitiveName'" for the vmap rule function,
-  // and add "VmapRule" to the front.
-  constexpr char vmap_rule_scope[] = "VmapRule/";
-  constexpr char vmap_op_child_scope_prefix[] = "/vmap_";
-  MS_EXCEPTION_IF_NULL(prim);
-  auto scope = std::make_shared<Scope>(vmap_rule_scope + ScopeManager::GetInstance().GetCurrentScope()->name() +
-                                       vmap_op_child_scope_prefix + prim->name());
-  ScopeGuard scope_guard(scope);
-
-  // Firstly we parse the python VmapRules function registered for specific primitive. If failed, get
-  // the vmap general rule.
-  FuncGraphPtr vmap_rule_fg = nullptr;
-  AnfNodePtr vmap_rule_node = nullptr;
+py::function GetVmapRuleFn(const PrimitivePtr &prim, const AnfNodePtr &node, int axis_size, bool is_side_effect) {
   py::function vmap_rule_fn;
-  bool is_side_effect = false;
-  if (GetPrimitiveFlag(prim, GRAPH_FLAG_SIDE_EFFECT_MEM)) {
-    is_side_effect = true;
-  } else if (GetPrimitiveFlag(prim, GRAPH_FLAG_SIDE_EFFECT_IO) && prim->name() != prim::kPrimPrint->name()) {
-    MS_LOG_WITH_NODE(EXCEPTION, node) << prim->name()
-                                      << " is a GRAPH_FLAG_SIDE_EFFECT_IO prim, vmap dont support currently.";
-  }
-
-  // Get vmap rule for specific primitive.
   if (mindspore::ops::IsPrimitiveFunction(prim->name())) {
     auto new_prim_func_adapter_py_obj = CreatePrimitiveFunctionAdapterPyObj(prim);
     vmap_rule_fn = GetVmapRuleFunctionByObj(new_prim_func_adapter_py_obj, axis_size);
@@ -424,6 +401,34 @@ AnfNodePtr GetVmapRule(const PrimitivePtr &prim, const pipeline::ResourceBasePtr
   } else {
     MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, node) << "Unexpected prim:" << prim->ToString();
   }
+  return vmap_rule_fn;
+}
+
+AnfNodePtr GetVmapRule(const PrimitivePtr &prim, const pipeline::ResourceBasePtr &resource, const AnfNodePtr &node,
+                       int axis_size) {
+  // Set a child scope named "vmap_'PrimitiveName'" for the vmap rule function,
+  // and add "VmapRule" to the front.
+  constexpr char vmap_rule_scope[] = "VmapRule/";
+  constexpr char vmap_op_child_scope_prefix[] = "/vmap_";
+  MS_EXCEPTION_IF_NULL(prim);
+  auto scope = std::make_shared<Scope>(vmap_rule_scope + ScopeManager::GetInstance().GetCurrentScope()->name() +
+                                       vmap_op_child_scope_prefix + prim->name());
+  ScopeGuard scope_guard(scope);
+
+  // Firstly we parse the python VmapRules function registered for specific primitive. If failed, get
+  // the vmap general rule.
+  FuncGraphPtr vmap_rule_fg = nullptr;
+  AnfNodePtr vmap_rule_node = nullptr;
+  bool is_side_effect = false;
+  if (GetPrimitiveFlag(prim, GRAPH_FLAG_SIDE_EFFECT_MEM)) {
+    is_side_effect = true;
+  } else if (GetPrimitiveFlag(prim, GRAPH_FLAG_SIDE_EFFECT_IO) && prim->name() != prim::kPrimPrint->name()) {
+    MS_LOG_WITH_NODE(EXCEPTION, node) << prim->name()
+                                      << " is a GRAPH_FLAG_SIDE_EFFECT_IO prim, vmap dont support currently.";
+  }
+
+  // Get vmap rule for specific primitive.
+  auto vmap_rule_fn = GetVmapRuleFn(prim, node, axis_size, is_side_effect);
 
   // If vmap rule for specific primitive not found, get vmap general rule.
   if (!vmap_rule_fn || py::isinstance<py::none>(vmap_rule_fn)) {
