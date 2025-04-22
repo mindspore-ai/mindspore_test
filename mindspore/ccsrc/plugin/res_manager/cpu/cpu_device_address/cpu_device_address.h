@@ -21,7 +21,6 @@
 #include <vector>
 #include "include/backend/visible.h"
 #include "common/device_address.h"
-#include "utils/shape_utils.h"
 
 namespace mindspore {
 namespace device {

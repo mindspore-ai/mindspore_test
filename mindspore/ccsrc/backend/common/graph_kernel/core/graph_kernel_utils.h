@@ -24,6 +24,7 @@
 #include "ir/anf.h"
 #include "ir/func_graph.h"
 #include "utils/hash_map.h"
+#include "include/common/utils/utils.h"
 #include "backend/common/graph_kernel/model/lite_graph.h"
 #include "backend/common/graph_kernel/core/graph_kernel_callback.h"
 

@@ -17,9 +17,7 @@
 #define MINDSPORE_CCSRC_BACKEND_COMMON_PASS_ADD_ATTR_TO_NODE_ADD_ATTR_TO_NODE_REGISTER_H_
 
 #include <string>
-#include "include/backend/optimizer/optimizer.h"
-#include "include/common/utils/anfalgo.h"
-#include "ir/anf.h"
+#include "base/base.h"
 #include "ops_utils/op_utils.h"
 #include "utils/hash_map.h"
 #include "utils/ms_utils.h"

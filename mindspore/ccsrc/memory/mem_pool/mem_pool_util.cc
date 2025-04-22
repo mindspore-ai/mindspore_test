@@ -16,9 +16,7 @@
 #include "include/backend/mem_reuse/mem_pool_util.h"
 
 #include "include/common/debug/common.h"
-#include "utils/convert_utils_base.h"
 #include "utils/file_utils.h"
-#include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace memory {

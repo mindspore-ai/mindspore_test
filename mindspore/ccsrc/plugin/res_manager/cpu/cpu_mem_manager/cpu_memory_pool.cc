@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +17,12 @@
 #include "plugin/res_manager/cpu/cpu_mem_manager/cpu_memory_pool.h"
 #include "utils/log_adapter.h"
 
-#include "include/common/utils/comm_manager.h"
 #include "include/common/utils/utils.h"
 #ifdef ENABLE_DEBUGGER
 #include "plugin/device/cpu/hal/profiler/cpu_profiling.h"
 #endif
 #include "include/common/runtime_conf/runtime_conf.h"
 #include "utils/convert_utils_base.h"
-#include "utils/ms_utils.h"
 #include "utils/distributed_meta.h"
 
 namespace mindspore {

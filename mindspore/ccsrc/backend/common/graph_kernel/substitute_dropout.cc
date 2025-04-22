@@ -18,7 +18,6 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
-#include "include/common/utils/utils.h"
 #include "include/backend/optimizer/helper.h"
 #include "backend/common/graph_kernel/graph_kernel_helper.h"
 #include "include/backend/anf_runtime_algorithm.h"

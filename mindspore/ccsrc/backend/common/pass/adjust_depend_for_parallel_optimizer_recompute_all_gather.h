@@ -20,8 +20,8 @@
 #include <string>
 #include <memory>
 #include "include/backend/optimizer/pass.h"
+#include "include/backend/visible.h"
 #include "ir/func_graph.h"
-#include "include/backend/optimizer/optimizer.h"
 
 namespace mindspore {
 namespace opt {

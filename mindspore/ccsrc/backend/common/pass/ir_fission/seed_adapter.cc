@@ -23,7 +23,6 @@
 #include "mindspore/ops/op_def/nn_op_name.h"
 #include "include/backend/optimizer/helper.h"
 #include "common/kernel_build_info.h"
-#include "include/common/utils/utils.h"
 #include "utils/trace_base.h"
 #include "include/backend/kernel_graph.h"
 #include "include/backend/anf_runtime_algorithm.h"

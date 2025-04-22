@@ -17,7 +17,6 @@
 #include <vector>
 #include <string>
 #include "backend/common/expander/fallback/fallback_irbuilder.h"
-#include "include/common/utils/utils.h"
 #include "utils/shape_utils.h"
 #include "utils/check_convert_utils.h"
 #include "mindapi/base/types.h"

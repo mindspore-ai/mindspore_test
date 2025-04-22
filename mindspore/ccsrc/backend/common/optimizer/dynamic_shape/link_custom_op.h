@@ -20,7 +20,7 @@
 #include <set>
 #include <utility>
 #include "ir/anf.h"
-#include "include/backend/optimizer/optimizer.h"
+#include "include/backend/optimizer/pass.h"
 
 namespace mindspore::opt::dynamic_shape {
 using DependPair = std::pair<AnfNodePtr, AnfNodePtr>;

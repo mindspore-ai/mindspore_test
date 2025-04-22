@@ -22,7 +22,6 @@
 #include "abstract/ops/primitive_infer_map.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "include/common/utils/utils.h"
 #include "ir/anf.h"
 #include "common/common_utils.h"
 #include "kernel/framework_utils.h"

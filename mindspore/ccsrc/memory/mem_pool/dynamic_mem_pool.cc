@@ -18,11 +18,7 @@
 
 #include <numeric>
 #include <ostream>
-
-#include "include/common/utils/utils.h"
-#include "utils/convert_utils_base.h"
 #include "utils/log_adapter.h"
-#include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace device {
