@@ -19,6 +19,7 @@
 
 #include <string>
 #include <memory>
+#include <shared_mutex>
 #include "utils/hash_map.h"
 #include "utils/ms_utils.h"
 #include "include/backend/visible.h"
@@ -54,6 +55,7 @@ class BACKEND_EXPORT ParameterStore {
   }
 
   void Clear() {
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     for (const auto &iter : graph_parameter_stores_) {
       auto graph_parameter_store = iter.second;
       MS_EXCEPTION_IF_NULL(graph_parameter_store);
@@ -64,6 +66,7 @@ class BACKEND_EXPORT ParameterStore {
   }
 
   void Clear(const string &graph_name) {
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     const auto &iter = graph_parameter_stores_.find(graph_name);
     if (iter == graph_parameter_stores_.end()) {
       MS_LOG(DEBUG) << "Graph " << graph_name << " has already clear.";
@@ -99,6 +102,7 @@ class BACKEND_EXPORT ParameterStore {
   std::string chosen_graph_name_;
   // The chosen graph parameter store at the step beginning.
   GraphParameterStorePtr chosen_graph_parameter_store_;
+  mutable std::shared_mutex mutex_;
 };
 }  // namespace runtime
 }  // namespace mindspore

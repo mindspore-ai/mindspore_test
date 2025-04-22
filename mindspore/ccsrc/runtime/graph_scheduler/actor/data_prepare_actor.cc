@@ -352,14 +352,15 @@ void RecordGraphInputsForInputOptimize(const GraphCompilerInfo *graph_compiler_i
       if (current_data_num == non_weight_parameter_num) {
         break;
       }
+      // The input data is front of the parameter weight.
+      if (graph_parameter_store->GetPositionWeight(i)) {
+        MS_LOG(DEBUG) << "Skip the prepare host data for parameter: "
+                      << graph_compiler_info->origin_parameters_order_[i]->fullname_with_scope();
+        continue;
+      }
       const auto &origin_parameter = graph_compiler_info->origin_parameters_order_[i];
       MS_EXCEPTION_IF_NULL(origin_parameter);
       const auto parameter = origin_parameter->cast<ParameterPtr>();
-      // The input data is front of the parameter weight.
-      if (graph_parameter_store->GetPositionWeight(i)) {
-        MS_LOG(DEBUG) << "Skip the prepare host data for parameter: " << origin_parameter->fullname_with_scope();
-        continue;
-      }
       if (i >= args.size()) {
         MS_LOG(DEBUG) << "Arg index out of args range, index is " << i << " and args size is " << args.size();
         continue;
@@ -372,19 +373,10 @@ void RecordGraphInputsForInputOptimize(const GraphCompilerInfo *graph_compiler_i
       AnfAlgo::FlattenInputArg(args[i], origin_parameter, &flatten_tensors);
       // Push flatten tensors into store buffers.
       graph_parameter_store->FillBuffer(i, flatten_tensors);
-      for (size_t j = 0; j < flatten_tensors.size(); ++j) {
-        auto tensor = flatten_tensors[j];
-        if (tensor == nullptr) {
-          MS_LOG(DEBUG) << "Fetch tensor is nullptr, outer index is " << i << " and inner index is " << j;
-          continue;
-        }
-        // The tensor needs to be converted to contiguous before being given to the actors.
-        // After the view feature is supported in the graph mode, the following code will be deleted.
-        DeviceAddressUtils::ConvertContiguousTensorSync(tensor);
-      }
     }
     auto isDyn = graph_parameter_store->RecordGraphInputsAndIsDyn(input_index, parameters);
     if (has_dynamic_shape) {
+      MS_LOG(INFO) << "The run actor set: " << graph_compiler_info->name_ << " by static shape: " << (!isDyn);
       ActorDispatcher::set_enable_static_shape(!isDyn);
       const auto &phase = graph_compiler_info->graph_phase_;
       bool is_increment_graph = (phase.find("increment") != std::string::npos);
@@ -397,6 +389,11 @@ void RecordGraphInputsForInputOptimize(const GraphCompilerInfo *graph_compiler_i
           ActorDispatcher::set_enable_trace_dynamic_memory(true);
         } else {
           ActorDispatcher::set_enable_use_trace_memory(true);
+          ActorDispatcher::set_enable_parallel_dispatch_kernel_for_cur_actor_set(EnableParallelDispatchKernel());
+          if (ActorDispatcher::enable_parallel_dispatch_kernel_for_cur_actor_set()) {
+            MS_LOG(INFO) << "Enable parallel dispatch kernel for current actor set: " << graph_compiler_info->name_
+                         << ", graph phase: " << graph_compiler_info->graph_phase_;
+          }
         }
       }
     }
@@ -508,7 +505,8 @@ void DataPrepareActor::UpdateDeviceAddressForDataNode(const AnfNodePtr &input_no
   // If tensor address and device address are different (heterogeneous scenarios), or device address is persisted
   // Update device address data in data source actor process.
   if (device_address->is_ptr_persisted() || (tensor_address->GetDeviceType() != device_address->GetDeviceType()) ||
-      (!AnfAlgo::IsEquivalentFormat(tensor_address->format(), device_address->format())) ||
+      (!AnfAlgo::IsEquivalentFormat(kernel::GetFormatFromStrToEnum(tensor_address->format()),
+                                    kernel::GetFormatFromStrToEnum(device_address->format()))) ||
       (tensor_address->type_id() != device_address->type_id())) {
     MS_LOG(DEBUG) << "Cannot update address of " << input_node->DebugString();
     return;
@@ -560,12 +558,10 @@ void DataPrepareActor::PrepareDataBeforeInputOptimize(const std::vector<std::vec
   auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
   MS_EXCEPTION_IF_NULL(graph_parameter_store);
   graph_parameter_store->ResetPrepareState();
-  // Input optimize performance is not good for inference, so weights only prepare once. However, for offload,
-  // memory of device address for tensor in heterogeneous is not free.
-  // This will be removed after input optimize performance improved.
-  if (first_step_ || (is_enable_infer_boost_ && !tensors_need_reprepare_[this].empty())) {
+  // Only prepare weight for first step, because the weight memory is not released.
+  // Allocate memory for weights in actor would have memory fragmentation.
+  if (first_step_) {
     PrepareDataForDeviceTensorStore(input_tensors, args, context);
-    tensors_need_reprepare_[this].clear();
   }
   first_step_ = false;
 
@@ -807,7 +803,7 @@ void DataPrepareActor::PrepareDataForDeviceTensorStore(const std::vector<std::ve
                     << " front is weight:" << parser->IsRootGraphPersistentDeviceTensor(front_node);
       if (IsPersistentDeviceTensor(input_node) && parser->IsRootGraphPersistentDeviceTensor(front_node)) {
         if (enable_input_optimize_) {
-          PrepareWeightForInputOptimize(std::make_pair(front_node, 0), context, real_device_context);
+          PrepareWeightForInputOptimize(std::make_pair(front_node, 0), context);
           continue;
         }
         std::vector<TensorPtr> graph_tensors = input_tensors.empty() ? std::vector<TensorPtr>() : input_tensors[i];
@@ -1432,7 +1428,8 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
       // In the scenario of training + inference , the device address of the weight node can not be changed when
       // multi-graphs sink mode is set.
       if (device_tensor->is_ptr_persisted() ||
-          !AnfAlgo::IsEquivalentFormat(host_tensor_address->format(), device_tensor->format())) {
+          !AnfAlgo::IsEquivalentFormat(kernel::GetFormatFromStrToEnum(host_tensor_address->format()),
+                                       kernel::GetFormatFromStrToEnum(device_tensor->format()))) {
         if ((device_tensor->GetPtr() == nullptr) &&
             (!device_context->device_res_manager_->AllocateMemory(device_tensor.get(), kDefaultStreamIndex))) {
           SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(real_strategy_, *context, *device_context,
@@ -1500,10 +1497,7 @@ void DataPrepareActor::PrepareDeviceTensorStoreForControlNode(const ControlNodeP
     }
 
     if (enable_input_optimize_) {
-      const auto &node_with_index_with_context =
-        control_node_parser->FetchBackendParameterWithContextByFrontParameter(control_node_parameters[i]);
-      const auto &device_context = node_with_index_with_context.second;
-      PrepareWeightForInputOptimize(control_node_parameters[i], context, device_context);
+      PrepareWeightForInputOptimize(control_node_parameters[i], context);
       continue;
     }
 
@@ -1592,14 +1586,13 @@ void DataPrepareActor::PrepareHostTensorQueueForControlNode(const std::vector<Te
 }
 
 void DataPrepareActor::PrepareWeightForInputOptimize(const KernelWithIndex &node_with_index,
-                                                     OpContext<KernelTensor> *const context,
-                                                     const DeviceContext *device_context) {
+                                                     OpContext<KernelTensor> *const context) {
   auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
   MS_EXCEPTION_IF_NULL(graph_parameter_store);
   const auto &front_node = node_with_index.first;
   MS_EXCEPTION_IF_NULL(front_node);
   auto outer_idx = graph_parameter_store->GetFrontNodeToIndex(front_node.get());
-  (void)FetchParameter(std::make_pair(node_with_index, outer_idx), context, device_context, GetAID());
+  (void)FetchParameter(std::make_pair(node_with_index, outer_idx), GetAID());
   // Record the update tensors for reprepare.
   // This will be removed after input optimization performance improved.
   if (is_enable_infer_boost_) {

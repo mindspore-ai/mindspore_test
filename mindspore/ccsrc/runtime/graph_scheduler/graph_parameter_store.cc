@@ -39,19 +39,66 @@ void GraphParameterStore::SetPositionWeight(size_t outer_index, bool is_weight) 
 
 bool GraphParameterStore::GetPositionWeight(size_t outer_index) {
   if (outer_index >= is_weights_.size()) {
-    MS_LOG(EXCEPTION) << "Outer index is larger than the size of is weights [" << is_weights_.size() << "].";
+    MS_LOG(ERROR) << "Index " << outer_index << ", is out of range of outer size: " << is_weights_.size();
+    return false;
   }
   return is_weights_[outer_index];
 }
 
+void GraphParameterStore::SetDeviceTensorPrepared(size_t outer_idx, size_t inner_idx, bool is_prepared) {
+  auto &kernel_tensor_with_info = parameter_kernel_tensors_[outer_idx][inner_idx];
+  kernel_tensor_with_info.second.second = is_prepared;
+}
+
+bool GraphParameterStore::GetDeviceTensorPrepared(size_t outer_idx, size_t inner_idx) {
+  auto &kernel_tensor_with_info = parameter_kernel_tensors_[outer_idx][inner_idx];
+  return kernel_tensor_with_info.second.second;
+}
+
 size_t GraphParameterStore::GetNonWeightParameterNum() { return is_weights_.size() - weight_num_; }
 
+void GraphParameterStore::SetPositionTensor(size_t outer_index, bool is_tensor) {
+  if (outer_index >= is_tensors_.size()) {
+    MS_LOG(ERROR) << "Index " << outer_index << ", is out of range of outer size: " << is_tensors_.size();
+    return;
+  }
+  is_tensors_[outer_index] = is_tensor;
+}
+
+bool GraphParameterStore::GetPositionTensor(size_t outer_index) { return is_tensors_[outer_index]; }
+
+void GraphParameterStore::SetParameterUsedTimes(size_t outer_index, size_t inner_index, size_t times) {
+  parameter_used_times_[outer_index][inner_index] = times;
+}
+
+bool GraphParameterStore::IsConcurrentlyUse(size_t outer_index, size_t inner_index) {
+  return parameter_used_times_[outer_index][inner_index] > 1;
+}
+
+void GraphParameterStore::SetFrontNodeToIndex(AnfNode *node, size_t index) {
+  MS_EXCEPTION_IF_NULL(node);
+  const auto &iter = front_node_to_index_.find(node);
+  if (iter != front_node_to_index_.end()) {
+    MS_LOG(INFO) << "Update index for front node " << node->DebugString() << " in graph parameter store.";
+    iter->second = index;
+  }
+  front_node_to_index_.emplace(node, index);
+  index_to_front_node_.emplace(index, node);
+}
+
 void GraphParameterStore::InsertTensorDataIntoCallback(const TensorDataPtr &tensor_data) {
+  std::unique_lock<std::shared_mutex> lock(param_mutex_);
   tensor_data_in_callback_.push_back(tensor_data);
 }
 
 void GraphParameterStore::InsertDeviceTensorIntoCallback(const DeviceTensorPtr &device_tensor) {
-  device_tensor_in_callback_.push_back(device_tensor);
+  std::unique_lock<std::shared_mutex> lock(param_mutex_);
+  device_tensor_in_callback_.emplace(device_tensor);
+}
+
+void GraphParameterStore::InsertNonWeightRefMaxInputs(size_t outer_index, size_t inner_index) {
+  std::unique_lock<std::shared_mutex> lock(param_mutex_);
+  non_weight_ref_max_inputs_.emplace(outer_index, inner_index);
 }
 
 void GraphParameterStore::ResetPrepareState() {
@@ -62,20 +109,16 @@ void GraphParameterStore::ResetPrepareState() {
     }
   }
   tensor_data_in_callback_.reserve(buffer_size_);
-  device_tensor_in_callback_.reserve(buffer_size_);
 }
 
-void GraphParameterStore::ResetAddrRefCount(size_t outer_index, size_t inner_index, DeviceTensorType value_type) {
-  CheckIndexValid(outer_index, inner_index);
+void GraphParameterStore::ResetAddrRefCount(size_t outer_index, size_t inner_index) {
   std::unique_lock<std::shared_mutex> lock(param_mutex_);
   auto &kernel_tensor_with_info = parameter_kernel_tensors_[outer_index][inner_index];
-  auto &heter_kernel_tensor_with_info = heter_kernel_tensors_[outer_index][inner_index];
-  bool is_ref_count_max =
-    (kernel_tensor_with_info.second.first == SIZE_MAX || heter_kernel_tensor_with_info.second == SIZE_MAX);
+  bool is_ref_count_max = kernel_tensor_with_info.second.first == SIZE_MAX;
 
   if (kernel_tensor_with_info.first != nullptr) {
     auto &device_tensor = kernel_tensor_with_info.first->device_address();
-    if (device_tensor != nullptr && device_tensor->GetDeviceType() == value_type) {
+    if (device_tensor != nullptr) {
       auto user_cnt = kernel_tensor_with_info.second.first;
       device_tensor->set_original_ref_count(user_cnt);
       device_tensor->ResetRefCount();
@@ -97,153 +140,68 @@ void GraphParameterStore::ResetAddrRefCount(size_t outer_index, size_t inner_ind
       return;
     }
   }
-
-  if (heter_kernel_tensor_with_info.first != nullptr) {
-    auto &heter_device_tensor = heter_kernel_tensor_with_info.first->device_address();
-    if (heter_device_tensor != nullptr && heter_device_tensor->GetDeviceType() == value_type) {
-      auto user_cnt = heter_kernel_tensor_with_info.second;
-      heter_device_tensor->set_original_ref_count(user_cnt);
-      heter_device_tensor->ResetRefCount();
-      if (user_cnt > 0) {
-        // When allocate memory, the ref count would be increase, so it should be decrease here.
-        if (is_ref_count_max) {
-          heter_device_tensor->set_new_ref_count(SIZE_MAX);
-        } else {
-          static std::string name = "Parameter store";
-          heter_device_tensor->IncreaseNewRefCount(name, user_cnt - 1);
-        }
-        heter_device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
-        MS_LOG(DEBUG) << "Parameter store set new ref count:" << user_cnt - 1
-                      << " for device address:" << heter_device_tensor->PrintInfo();
-      } else {
-        MS_LOG(DEBUG) << "User count:0 for parameter store outer index:" << outer_index
-                      << " inner index:" << inner_index << " for device address:" << heter_device_tensor;
-      }
-    }
-  }
 }
 
-KernelTensorPtr GraphParameterStore::FetchWithFreshRefMap(size_t outer_index, size_t inner_index,
-                                                          DeviceTensorType value_type) {
-  CheckIndexValid(outer_index, inner_index);
+KernelTensorPtr GraphParameterStore::Fetch(size_t outer_index, size_t inner_index) {
   std::shared_lock<std::shared_mutex> lock(param_mutex_);
   const auto &kernel_tensor_with_info = parameter_kernel_tensors_[outer_index][inner_index];
-  const auto &kernel_tensor = kernel_tensor_with_info.first;
-  const auto &heter_kernel_tensor_with_info = heter_kernel_tensors_[outer_index][inner_index];
-  const auto &heter_kernel_tensor = heter_kernel_tensor_with_info.first;
-
-  // Record non weight parameter ref map.
-  if (kernel_tensor != nullptr && heter_kernel_tensor != nullptr) {
-    const auto &iter = index_to_front_node_.find(outer_index);
-    if (iter != index_to_front_node_.end() && iter->second->isa<Parameter>() &&
-        !common::AnfAlgo::IsParameterWeight(iter->second->cast<ParameterPtr>())) {
-      const auto &device_tensor = kernel_tensor->device_address();
-      const auto &heter_device_tensor = heter_kernel_tensor->device_address();
-      if (device_tensor != nullptr && heter_device_tensor != nullptr) {
-        DeviceTensorCopyStore::GetInstance().Insert(device_tensor.get(), heter_device_tensor.get());
-      }
-    }
-  }
-
-  if (kernel_tensor != nullptr && kernel_tensor->device_address() != nullptr &&
-      kernel_tensor->device_address()->GetDeviceType() == value_type) {
-    return kernel_tensor;
-  }
-
-  if (heter_kernel_tensor != nullptr && heter_kernel_tensor->device_address() != nullptr &&
-      heter_kernel_tensor->device_address()->GetDeviceType() == value_type) {
-    return heter_kernel_tensor;
-  }
-
-  // The parameter and actor input is heterogeneous, kernel actor will use copy input kernel tensor.
-  if (heter_kernel_tensor == nullptr && kernel_tensor != nullptr) {
-    return kernel_tensor;
-  }
-  return nullptr;
+  return kernel_tensor_with_info.first;
 }
 
-KernelTensorPtr GraphParameterStore::Fetch(size_t outer_index, size_t inner_index, DeviceTensorType value_type) {
+const std::function<void(size_t)> &GraphParameterStore::GetAsyncMemcpyFun(size_t outer_index,
+                                                                          size_t inner_index) const {
+  return async_copy_funcs_[outer_index][inner_index];
+}
+
+void GraphParameterStore::SetAsyncMemcpyFun(size_t outer_index, size_t inner_index,
+                                            std::function<void(size_t)> &&func) {
+  async_copy_funcs_[outer_index][inner_index] = std::move(func);
+}
+
+void GraphParameterStore::Push(size_t outer_index, size_t inner_index, const KernelTensorPtr &value, size_t cnt) {
   CheckIndexValid(outer_index, inner_index);
-  std::shared_lock<std::shared_mutex> lock(param_mutex_);
-  const auto &kernel_tensor_with_info = parameter_kernel_tensors_[outer_index][inner_index];
-  const auto &kernel_tensor = kernel_tensor_with_info.first;
-  if (kernel_tensor != nullptr && kernel_tensor->device_address() != nullptr &&
-      kernel_tensor->device_address()->GetDeviceType() == value_type) {
-    return kernel_tensor;
-  }
-
-  const auto &heter_kernel_tensor_with_info = heter_kernel_tensors_[outer_index][inner_index];
-  const auto &heter_kernel_tensor = heter_kernel_tensor_with_info.first;
-  if (heter_kernel_tensor != nullptr && heter_kernel_tensor->device_address() != nullptr &&
-      heter_kernel_tensor->device_address()->GetDeviceType() == value_type) {
-    return heter_kernel_tensor;
-  }
-
-  // The parameter and actor input is heterogeneous, kernel actor will use copy input kernel tensor.
-  return kernel_tensor;
-}
-
-std::vector<KernelTensorPtr> GraphParameterStore::Fetch(size_t outer_index, size_t inner_index) {
-  CheckIndexValid(outer_index, inner_index);
-  std::shared_lock<std::shared_mutex> lock(param_mutex_);
-  std::vector<KernelTensorPtr> input_list;
-  const auto &kernel_tensor_with_info = parameter_kernel_tensors_[outer_index][inner_index];
-  const auto &kernel_tensor = kernel_tensor_with_info.first;
-  if (kernel_tensor != nullptr && kernel_tensor->device_address() != nullptr) {
-    input_list.push_back(kernel_tensor);
-  }
-
-  const auto &heter_kernel_tensor_with_info = heter_kernel_tensors_[outer_index][inner_index];
-  const auto &heter_kernel_tensor = heter_kernel_tensor_with_info.first;
-  if (heter_kernel_tensor != nullptr && heter_kernel_tensor->device_address() != nullptr) {
-    input_list.push_back(heter_kernel_tensor);
-  }
-  return input_list;
-}
-
-bool GraphParameterStore::HasHeter(size_t outer_index, size_t inner_index) {
-  CheckIndexValid(outer_index, inner_index);
-  std::shared_lock<std::shared_mutex> lock(param_mutex_);
-  const auto &kernel_tensor_with_info = parameter_kernel_tensors_[outer_index][inner_index];
-  const auto &kernel_tensor = kernel_tensor_with_info.first;
-  const auto &heter_kernel_tensor_with_info = heter_kernel_tensors_[outer_index][inner_index];
-  const auto &heter_kernel_tensor = heter_kernel_tensor_with_info.first;
-  return kernel_tensor != nullptr && kernel_tensor->device_address() != nullptr && heter_kernel_tensor != nullptr &&
-         heter_kernel_tensor->device_address() != nullptr;
-}
-
-void GraphParameterStore::Push(size_t outer_index, size_t inner_index, const KernelTensorPtr &value,
-                               DeviceTensorType value_type, size_t cnt) {
-  auto is_heter = CheckDeviceTensorHeter(outer_index, inner_index, value_type);
   std::unique_lock<std::shared_mutex> lock(param_mutex_);
-  if (!is_heter) {
-    auto &kernel_tensor_with_info = parameter_kernel_tensors_[outer_index][inner_index];
-    kernel_tensor_with_info.first = value;
-    kernel_tensor_with_info.second.first = cnt;
-    return;
+  auto &kernel_tensor_with_info = parameter_kernel_tensors_[outer_index][inner_index];
+  kernel_tensor_with_info.first = value;
+  kernel_tensor_with_info.second.first = cnt;
+  if (value->device_address()) {
+    parameter_device_names_[outer_index][inner_index] = value->device_address()->device_name();
   }
-
-  auto &heter_kernel_tensor_with_info = heter_kernel_tensors_[outer_index][inner_index];
-  heter_kernel_tensor_with_info.first = value;
-  heter_kernel_tensor_with_info.second = cnt;
 }
 
-Tensor *GraphParameterStore::FetchTensor(size_t args_index, const KernelWithIndex &node) const {
+std::string GraphParameterStore::GetParameterDeviceName(size_t outer_index, size_t inner_index) const {
+  return parameter_device_names_[outer_index][inner_index];
+}
+
+bool GraphParameterStore::CheckBufferSize(size_t outer_index) const {
+  std::shared_lock<std::shared_mutex> lock(param_mutex_);
+  return buffers_[outer_index].size() > 0;
+}
+
+Tensor *GraphParameterStore::FetchTensor(size_t args_index, const KernelWithIndex &node) {
+  // Process tensor types that are frequently used to speed up fetchtensor performance.
+  if (is_tensors_[args_index]) {
+    auto tensor = utils::cast<tensor::TensorPtr>((*input_args_)[args_index]);
+    MS_EXCEPTION_IF_NULL(tensor);
+    return tensor.get();
+  }
+
   if (args_index >= buffers_.size()) {
     MS_LOG(EXCEPTION) << "Index " << args_index << " is out of buffers range " << buffers_.size() << ".";
   }
-  TensorPtr tensor = nullptr;
-  if (buffers_[args_index].size() > 0) {
+  Tensor *tensor = nullptr;
+  if (CheckBufferSize(args_index)) {
+    std::shared_lock<std::shared_mutex> lock(param_mutex_);
     if (node.second >= buffers_[args_index].size()) {
       MS_LOG(EXCEPTION) << "Node position " << node.second << " is out of buffers position "
                         << buffers_[args_index].size() << " range.";
     }
-    tensor = buffers_[args_index][node.second];
+    tensor = buffers_[args_index][node.second].get();
   } else {
-    tensor = FetchInputTensorByArg(*input_args_, args_index, node);
+    tensor = FlattenInputTensorByArg(args_index, node);
   }
   MS_EXCEPTION_IF_NULL(tensor);
-  return tensor.get();
+  return tensor;
 }
 
 bool GraphParameterStore::RecordGraphInputsAndIsDyn(const std::vector<size_t> &input_index,
@@ -277,7 +235,7 @@ bool GraphParameterStore::RecordGraphInputsAndIsDyn(const std::vector<size_t> &i
 }
 
 void AddCopyDataCallBack(const std::vector<TensorDataPtr> &tensor_data_in_callback,
-                         const std::vector<DeviceTensorPtr> &device_tensor_in_callback) {
+                         const std::set<DeviceTensorPtr> &device_tensor_in_callback) {
   device::CallbackFunc callback_func = [tensor_data_in_callback, device_tensor_in_callback]() {
     // Clear buffer automatically.
   };
@@ -299,12 +257,12 @@ void AddCopyDataCallBack(const std::vector<TensorDataPtr> &tensor_data_in_callba
 void GraphParameterStore::ReleaseData() {
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kReleaseResource, "GraphParameterStore");
   // Add copy data callback to avoid release data before async copy finished.
+  std::unique_lock<std::shared_mutex> lock(param_mutex_);
   AddCopyDataCallBack(tensor_data_in_callback_, device_tensor_in_callback_);
   tensor_data_in_callback_.clear();
   device_tensor_in_callback_.clear();
 
   for (auto index : non_weight_ref_max_inputs_) {
-    CheckIndexValid(index.first, index.second);
     std::pair<size_t, size_t> position{index.first, index.second};
     auto &kernel_tensor_with_info = parameter_kernel_tensors_[index.first][index.second];
     auto &kernel_tensor = kernel_tensor_with_info.first;
@@ -314,24 +272,8 @@ void GraphParameterStore::ReleaseData() {
           !device_tensor->is_ptr_persisted()) {
         MS_LOG(DEBUG) << "Set store device tensor: " << device_tensor.get() << " ptr null, outer idx: " << index.first
                       << ", inner idx: " << index.second << ", info: " << device_tensor->PrintInfo();
-        release_data_info_[{position, device_tensor->GetDeviceType()}] = {kernel_tensor->GetType(),
-                                                                          device_tensor->GetNodeIndex()};
+        release_data_info_[{position}] = {kernel_tensor->GetType(), device_tensor->GetNodeIndex()};
         kernel_tensor->set_device_address(nullptr);
-      }
-    }
-
-    auto &heter_kernel_tensor_with_info = heter_kernel_tensors_[index.first][index.second];
-    auto &heter_kernel_tensor = heter_kernel_tensor_with_info.first;
-    if (heter_kernel_tensor != nullptr) {
-      auto &heter_device_tensor = heter_kernel_tensor->device_address();
-      if (heter_device_tensor != nullptr && heter_device_tensor->original_ref_count() == SIZE_MAX &&
-          !heter_device_tensor->is_ptr_persisted()) {
-        MS_LOG(DEBUG) << "Set store heter device tensor: " << heter_device_tensor.get()
-                      << " ptr null, outer idx: " << index.first << ", inner idx: " << index.second
-                      << ", info: " << heter_device_tensor->PrintInfo();
-        release_data_info_[{position, heter_device_tensor->GetDeviceType()}] = {heter_kernel_tensor->GetType(),
-                                                                                heter_device_tensor->GetNodeIndex()};
-        heter_kernel_tensor->set_device_address(nullptr);
       }
     }
   }
@@ -354,24 +296,63 @@ void GraphParameterStore::FillBuffer(size_t idx, const std::vector<TensorPtr> &t
   buffers_[idx] = tensors;
 }
 
-void GraphParameterStore::InsertRefDeviceTensors(const DeviceTensorPosition &key, DeviceTensor *value) {
-  const auto &iter = ref_device_tensors_.find(key);
-  if (iter == ref_device_tensors_.end()) {
-    ref_device_tensors_[key] = {value};
-    return;
-  }
-  ref_device_tensors_[key].insert(value);
-}
-
 std::pair<bool, std::pair<TypePtr, KernelWithIndex>> GraphParameterStore::GetReleasePositionInfo(
-  const std::pair<size_t, size_t> &position, DeviceTensorType type) {
-  const auto &iter = release_data_info_.find({position, type});
+  const DeviceTensorPosition &position) {
+  std::shared_lock<std::shared_mutex> lock(param_mutex_);
+  const auto &iter = release_data_info_.find({position});
   if (iter == release_data_info_.end()) {
     MS_LOG(INFO) << "Can not find type in store, where outer index: " << position.first
-                 << ", inner index: " << position.second << ", type: " << type;
+                 << ", inner index: " << position.second;
     return std::make_pair(false, std::make_pair(nullptr, std::make_pair(nullptr, 0)));
   }
   return std::make_pair(true, iter->second);
+}
+
+Tensor *GraphParameterStore::FlattenInputTensorByArg(size_t arg_index, const KernelWithIndex &front_node) {
+  if (arg_index >= (*input_args_).size()) {
+    MS_LOG(INFO) << "Arg index out of args range, index is " << arg_index << " and args size is "
+                 << (*input_args_).size();
+    return nullptr;
+  }
+  std::unique_lock<std::shared_mutex> lock(param_mutex_);
+  std::vector<tensor::TensorPtr> flatten_tensors;
+  tensor::TensorPtr tensor = nullptr;
+  if (GetPositionTensor(arg_index)) {
+    tensor = utils::cast<tensor::TensorPtr>((*input_args_)[arg_index]);
+    MS_EXCEPTION_IF_NULL(tensor);
+    flatten_tensors.emplace_back(tensor);
+  } else {
+    AnfAlgo::FlattenInputArg((*input_args_)[arg_index], front_node.first, &flatten_tensors);
+    auto input_tensor_index = FetchInputTensorIndex(front_node);
+    if (input_tensor_index >= flatten_tensors.size()) {
+      MS_LOG(INFO) << "Input tensor index out of args range, index is " << input_tensor_index << " and tensors size is "
+                   << flatten_tensors.size();
+      return nullptr;
+    }
+    tensor = flatten_tensors[input_tensor_index];
+  }
+  // Return if already push into buffers.
+  if (buffers_[arg_index].size() > 0) {
+    return tensor.get();
+  }
+  buffers_[arg_index] = flatten_tensors;
+
+  return tensor.get();
+}
+
+void GraphParameterStore::Clear() {
+  std::unique_lock<std::shared_mutex> lock(param_mutex_);
+  parameter_kernel_tensors_.clear();
+  release_data_info_.clear();
+  front_node_to_index_.clear();
+  node_to_real_front_node_.clear();
+  index_to_front_node_.clear();
+  tensor_data_in_callback_.clear();
+  device_tensor_in_callback_.clear();
+  for (auto &buffer : buffers_) {
+    buffer.clear();
+  }
+  buffers_.clear();
 }
 }  // namespace runtime
 }  // namespace mindspore

@@ -174,9 +174,9 @@ void ConditionGatherRunner::Init() {
   for (size_t i = 0; i < input_num; ++i) {
     const auto &input_device_tensor = AnfAlgo::GetPrevNodeMutableOutputAddr(kernel_, i, false);
     MS_EXCEPTION_IF_NULL(input_device_tensor);
-    (void)real_input_data_infos_.emplace_back(
-      std::make_shared<InputDataInfo>(input_device_tensor->format(), input_device_tensor->host_shape(),
-                                      input_device_tensor->GetSize(), input_device_tensor->type_id()));
+    (void)real_input_data_infos_.emplace_back(std::make_shared<InputDataInfo>(
+      kernel::GetFormatFromStrToEnum(input_device_tensor->format()), input_device_tensor->host_shape(),
+      input_device_tensor->GetSize(), input_device_tensor->type_id()));
   }
 
   for (size_t index : input_free_index_) {
