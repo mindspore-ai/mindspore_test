@@ -80,18 +80,6 @@ void CopyActor::SendMemoryFreeReq(OpContext<KernelTensor> *const context) {
   }
 }
 
-bool CheckNonWeightParameter(const std::vector<std::pair<size_t, AnfNodePtr>> &device_tensor_store_keys,
-                             const std::vector<std::pair<size_t, ParameterInfo>> &parameter_indexs) {
-  if (EnableInputOptimize()) {
-    if (parameter_indexs.size() > 0 && parameter_indexs[0].second.first.first->isa<Parameter>() &&
-        common::AnfAlgo::IsParameterWeight(parameter_indexs[0].second.first.first->cast<ParameterPtr>())) {
-      return false;
-    }
-    return true;
-  }
-  return device_tensor_store_keys.empty();
-}
-
 void CopyActor::OnMemoryAllocFinish(OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);
   MS_EXCEPTION_IF_NULL(output_kernel_tensors_[0]);
@@ -138,44 +126,6 @@ void CopyActor::OnMemoryAllocFinish(OpContext<KernelTensor> *const context) {
   PostRun(context);
 }
 
-void CopyActor::FetchParameterInput(OpContext<KernelTensor> *const context) {
-  if (!enable_input_optimize_) {
-    return;
-  }
-  if (parameter_indexs_.size() > 0) {
-    input_kernel_tensors_[0] =
-      FetchParameter(parameter_indexs_[0].second, context, device_contexts_[kInputDeviceContextIndex], GetAID());
-    if (input_kernel_tensors_[0] == nullptr) {
-      std::string error_info =
-        GetAID().Name() +
-        " get graph parameter store input failed: " + parameter_indexs_[0].second.first.first->fullname_with_scope() +
-        ", device type:" +
-        std::to_string(static_cast<int>(device_contexts_[kInputDeviceContextIndex]->GetDeviceType()));
-      SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
-    }
-
-    if (parameter_indexs_[0].second.first.first->isa<Parameter>() &&
-        !common::AnfAlgo::IsParameterWeight(parameter_indexs_[0].second.first.first->cast<ParameterPtr>())) {
-      // Get non-weight parameter addr.
-      MS_EXCEPTION_IF_NULL(output_);
-      output_kernel_tensors_[0] = output_;
-    } else {
-      // Get weight parameter addr.
-      output_kernel_tensors_[0] =
-        FetchParameter(parameter_indexs_[0].second, context, device_contexts_[kOutputDeviceContextIndex], GetAID());
-    }
-
-    if (output_kernel_tensors_[0] == nullptr) {
-      std::string error_info =
-        GetAID().Name() +
-        " get graph parameter store output failed: " + parameter_indexs_[0].second.first.first->fullname_with_scope() +
-        ", device type:" +
-        std::to_string(static_cast<int>(device_contexts_[kOutputDeviceContextIndex]->GetDeviceType()));
-      SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
-    }
-  }
-}
-
 void CopyActor::FetchKernelTensor(OpContext<KernelTensor> *const context) {
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kPreLaunch, GetAID().Name());
   MS_EXCEPTION_IF_NULL(context);
@@ -205,20 +155,16 @@ void CopyActor::FetchKernelTensor(OpContext<KernelTensor> *const context) {
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
     }
   } else {
-    if (input_op_datas_.empty()) {
-      FetchParameterInput(context);
-    } else {
-      const auto &data_iter = input_op_datas_.find(context->sequential_num_);
-      if (data_iter == input_op_datas_.end()) {
-        SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "No input data.");
-      }
-      const auto &input_data = data_iter->second[0];
-      MS_EXCEPTION_IF_NULL(input_data);
-      input_kernel_tensors_[0] = input_data->data_;
-
-      MS_EXCEPTION_IF_NULL(output_);
-      output_kernel_tensors_[0] = output_;
+    const auto &data_iter = input_op_datas_.find(context->sequential_num_);
+    if (data_iter == input_op_datas_.end()) {
+      SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "No input data.");
     }
+    const auto &input_data = data_iter->second[0];
+    MS_EXCEPTION_IF_NULL(input_data);
+    input_kernel_tensors_[0] = input_data->data_;
+
+    MS_EXCEPTION_IF_NULL(output_);
+    output_kernel_tensors_[0] = output_;
   }
 
   if (!WaitRuntimePipelineFinish(context, GetAID().Name())) {

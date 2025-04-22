@@ -187,15 +187,15 @@ bool GPUDeviceAddress::SyncDeviceToDevice(const ShapeVector &shape, size_t size,
   return GPUDeviceManager::GetInstance().SyncStream(stream);
 }
 
-bool GPUDeviceAddress::AsyncDeviceToDevice(const DeviceAddress *src_device_addr) const {
+bool GPUDeviceAddress::AsyncDeviceToDevice(const DeviceAddress *src_device_addr, size_t stream_id) const {
   MS_EXCEPTION_IF_NULL(src_device_addr);
   MS_LOG(DEBUG) << "Async gpu device address from:" << src_device_addr << " to:" << this;
   return AsyncDeviceToDevice(ShapeVector(), src_device_addr->GetSize(), src_device_addr->type_id(),
-                             src_device_addr->GetPtr(), src_device_addr->format());
+                             src_device_addr->GetPtr(), src_device_addr->format(), stream_id);
 }
 
 bool GPUDeviceAddress::AsyncDeviceToDevice(const ShapeVector &, size_t size, TypeId type, const void *src_ptr,
-                                           const std::string &format) const {
+                                           const std::string &format, size_t stream_id) const {
   MS_LOG(DEBUG) << "AsyncDeviceToDevice, dst(address:" << GetDevicePtr() << " format:" << DeviceAddress::format()
                 << ", type_id:" << TypeIdLabel(type_id()) << ", size:" << GetSize() << "), src(address:" << src_ptr
                 << "format:" << format << ", type_id:" << TypeIdLabel(type) << ", size:" << size << ")";
@@ -224,7 +224,8 @@ bool GPUDeviceAddress::AsyncDeviceToDevice(const ShapeVector &, size_t size, Typ
   MoveToDevice(false);
   MS_EXCEPTION_IF_NULL(src_ptr);
   MS_EXCEPTION_IF_NULL(GetDevicePtr());
-  auto &stream = GPUDeviceManager::GetInstance().default_stream();
+  auto stream = (stream_id == SIZE_MAX) ? GPUDeviceManager::GetInstance().default_stream()
+                                        : GPUDeviceManager::GetInstance().GetStream(stream_id);
   MS_EXCEPTION_IF_NULL(stream);
   if (!GPUDeviceManager::GetInstance().CopyDeviceMemToDeviceAsync(GetDevicePtr(), src_ptr, size, stream)) {
     MS_LOG(ERROR) << "CopyDeviceMemToDeviceAsync failed";
@@ -233,7 +234,7 @@ bool GPUDeviceAddress::AsyncDeviceToDevice(const ShapeVector &, size_t size, Typ
   return true;
 }
 
-bool GPUDeviceAddress::AsyncHostToDevice(size_t size, const void *host_ptr) const {
+bool GPUDeviceAddress::AsyncHostToDevice(size_t size, const void *host_ptr, size_t stream_id) const {
   MS_ERROR_IF_NULL(host_ptr);
   if (GetDevicePtr() == host_ptr) {
     MS_LOG(INFO) << "Dst addr is same with src addr, no need copy data.";
@@ -241,7 +242,6 @@ bool GPUDeviceAddress::AsyncHostToDevice(size_t size, const void *host_ptr) cons
   }
   auto device_res_manager = GetHalRes();
   MS_ERROR_IF_NULL(device_res_manager);
-  auto stream_id = device_res_manager->GetCurrentStreamId();
   auto stream = device_res_manager->GetStream(stream_id);
   if (stream == nullptr) {
     stream = device_res_manager->GetStream(kDefaultStreamIndex);
@@ -259,7 +259,7 @@ bool GPUDeviceAddress::AsyncHostToDevice(size_t size, const void *host_ptr) cons
   return true;
 }
 
-bool GPUDeviceAddress::AsyncDeviceToHost(size_t size, void *host_ptr) const {
+bool GPUDeviceAddress::AsyncDeviceToHost(size_t size, void *host_ptr, size_t stream_id) const {
   MS_ERROR_IF_NULL(host_ptr);
   MS_ERROR_IF_NULL(GetDevicePtr());
   if (GetDevicePtr() == host_ptr) {
@@ -268,7 +268,6 @@ bool GPUDeviceAddress::AsyncDeviceToHost(size_t size, void *host_ptr) const {
   }
   auto device_res_manager = GetHalRes();
   MS_ERROR_IF_NULL(device_res_manager);
-  auto stream_id = device_res_manager->GetCurrentStreamId();
   auto stream = device_res_manager->GetStream(stream_id);
   if (stream == nullptr) {
     stream = device_res_manager->GetStream(kDefaultStreamIndex);
@@ -280,8 +279,8 @@ bool GPUDeviceAddress::AsyncDeviceToHost(size_t size, void *host_ptr) const {
 }
 
 bool GPUDeviceAddress::AsyncHostToDevice(size_t size, TypeId type, const tensor::TensorDataPtr &tensor_data,
-                                         const std::string &format) const {
-  return AsyncHostToDevice(size, tensor_data->data());
+                                         const std::string &format, size_t stream_id) const {
+  return AsyncHostToDevice(size, tensor_data->data(), stream_id);
 }
 
 bool GPUDeviceAddress::AsyncHostToDevice(const ShapeVector &, size_t size, TypeId, const void *host_ptr,

@@ -540,14 +540,14 @@ std::string AnfRuntimeAlgorithm::GetInputFormat(const AnfNodePtr &node, size_t i
   return format;
 }
 
-bool AnfRuntimeAlgorithm::IsEquivalentFormat(const std::string &src_format, const std::string &dst_format) {
+bool AnfRuntimeAlgorithm::IsEquivalentFormat(const Format &src_format, const Format &dst_format) {
   if (src_format == dst_format) {
     return true;
   }
 
   // Equivalent default format.
-  if (((src_format == kOpFormat_DEFAULT) || (src_format == kOpFormat_NCHW) || (src_format == kOpFormat_ND)) &&
-      ((dst_format == kOpFormat_DEFAULT) || (dst_format == kOpFormat_NCHW) || (dst_format == kOpFormat_ND))) {
+  if (((src_format == DEFAULT_FORMAT) || (src_format == NCHW) || (src_format == ND)) &&
+      ((dst_format == DEFAULT_FORMAT) || (dst_format == NCHW) || (dst_format == ND))) {
     return true;
   }
 
@@ -1163,9 +1163,6 @@ KernelTensorPtr AnfRuntimeAlgorithm::CreateKernelTensor(void *device_ptr, size_t
   MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
   auto device_address = device_context->device_res_manager_->CreateDeviceAddress(
     device_ptr, size, host_shape, format, dtype_id, device_name, device_id, 0, user_data);
-  // Currently, address_common and device_address are not unified. Kernel tensor may use info from address_common
-  // or device_address, so all info keep to kernel tensor.
-  // Only device address are keep for construct after unified.
   auto kernel_tensor = std::make_shared<kernel::KernelTensor>(device_address, dtype_id, host_shape);
   return kernel_tensor;
 }

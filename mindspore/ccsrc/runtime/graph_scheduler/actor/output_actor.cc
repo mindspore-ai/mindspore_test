@@ -229,8 +229,7 @@ void OutputActor::FetchParameterInput(OpContext<KernelTensor> *const context) {
     MS_EXCEPTION_IF_NULL(tensor);
 
     const auto new_tensor = std::make_shared<tensor::Tensor>(tensor->data_type(), tensor->shape());
-    auto &device_context = device_contexts_[output_position];
-    auto parameter_kernel_tensor = FetchParameter(parameter_index.second, context, device_context, GetAID());
+    auto parameter_kernel_tensor = FetchParameter(parameter_index.second, context, GetAID());
     MS_EXCEPTION_IF_NULL(parameter_kernel_tensor);
     auto device_tensor = parameter_kernel_tensor->device_address().get();
     // Create the device address and put it into host tensor.
@@ -240,7 +239,8 @@ void OutputActor::FetchParameterInput(OpContext<KernelTensor> *const context) {
       auto kernel_tensor = AnfAlgo::CreateKernelTensor(
         nullptr, device_tensor->GetSize(), kernel::GetFormatFromStrToEnum(device_tensor->format()),
         device_tensor->type_id(), parameter_kernel_tensor->host_shape(),
-        device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
+        device_contexts_[output_position]->device_context_key().device_name_,
+        device_contexts_[output_position]->device_context_key().device_id_);
       kernel_tensor->SetType(parameter_kernel_tensor->GetType());
       kernel_tensor->SetShape(parameter_kernel_tensor->GetShape());
       kernel_tensor->set_stream_id(device_tensor->stream_id());

@@ -283,7 +283,7 @@ void ConditionSwitchActor::FetchParameterInput(OpContext<KernelTensor> *const co
   }
 
   for (auto &parameter_index : parameter_indexs_) {
-    auto kernel_tensor = FetchParameter(parameter_index.second, context, device_contexts_[0], GetAID());
+    auto kernel_tensor = FetchParameter(parameter_index.second, context, GetAID());
     if (kernel_tensor == nullptr) {
       std::string error_info =
         GetAID().Name() + " get graph parameter store failed: " + parameter_index.second.first.first->DebugString() +
