@@ -18,8 +18,11 @@
 
 #include <memory>
 #include <map>
+
+#include "pipeline/jit/ps/executor/executor_py.h"
+#include "pipeline/jit/ps/executor/graph_executor_py.h"
 #include "pipeline/jit/ps/pass.h"
-#include "pipeline/jit/ps/pipeline_jit.h"
+#include "pipeline/jit/ps/executor/jit_executor_py.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
 #include "pynative/pynative_execute.h"
 #include "pynative/op_function/converter.h"

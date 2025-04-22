@@ -70,6 +70,7 @@
 #include "utils/symbolic.h"
 #include "mindspore/ops/infer/ops_func_impl/flash_attention_score.h"
 #include "frontend/parallel/step_parallel_utils.h"
+#include "pipeline/jit/ps/executor/graph_executor_py.h"
 #include "mindspore/ccsrc/frontend/parallel/ops_info/operator_info.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"

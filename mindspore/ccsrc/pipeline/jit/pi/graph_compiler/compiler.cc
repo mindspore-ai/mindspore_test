@@ -23,7 +23,7 @@
 #include "ir/func_graph.h"
 #include "pipeline/jit/pi/graph_compiler/utils.h"
 #include "pipeline/jit/pi/graph_compiler/parser/byte_code_parser.h"
-#include "pipeline/jit/ps/pipeline_jit.h"
+#include "pipeline/jit/ps/executor/jit_executor_py.h"
 #include "pipeline/jit/pi/utils/utils.h"
 #include "include/common/pynative/grad_state.h"
 #include "include/common/pynative/adapter.h"

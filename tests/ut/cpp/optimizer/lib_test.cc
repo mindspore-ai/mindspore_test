@@ -32,6 +32,7 @@
 #include "include/common/debug/draw.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
+#include "pipeline/jit/ps/resource.h"
 #include "include/common/utils/convert_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 

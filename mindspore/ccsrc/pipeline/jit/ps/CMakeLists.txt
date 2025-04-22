@@ -1,6 +1,6 @@
 file(GLOB_RECURSE _PIPELINE_SRC_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     "pipeline.cc"
-    "pipeline_jit.cc"
+    "executor/*.cc"
     "resource.cc"
     "pass_config.cc"
     "pass.cc"
@@ -18,7 +18,7 @@ file(GLOB_RECURSE _PIPELINE_SRC_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     "load_mindir.cc"
 )
 
-file(GLOB PIPELINE_SRC_FILES "*.cc")
+file(GLOB PIPELINE_SRC_FILES "*.cc" "executor/*.cc")
 set_property(SOURCE ${PIPELINE_SRC_FILES} PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_PIPELINE)
 
 file(GLOB_RECURSE PARSER_SRC_FILES "parse/*.cc")

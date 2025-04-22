@@ -20,7 +20,8 @@
 #include <string>
 #include "common/oplib/oplib.h"
 #include "pipeline/jit/ps/pipeline.h"
-#include "pipeline/jit/ps/pipeline_jit.h"
+#include "pipeline/jit/ps/executor/graph_executor_py.h"
+#include "pipeline/jit/ps/executor/jit_executor_py.h"
 #include "frontend/operator/composite/composite.h"
 #include "frontend/operator/composite/functional_overload.h"
 #include "pynative/pynative_execute.h"
