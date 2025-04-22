@@ -33,7 +33,9 @@ function PrePareLocal() {
   fi
   if [[ ${backend} =~ "arm" ]]; then
       if [[ ${backend} =~ "_cloud" ]]; then
+          md5sum ${release_path}/linux_aarch64/cloud_fusion/*-linux-${arch}.tar.gz
           cp ${release_path}/linux_aarch64/cloud_fusion/*-linux-${arch}.tar.gz ${benchmark_test_path} || exit 1
+          md5sum ${benchmark_test_path}/*-linux-${arch}.tar.gz
           cp ${release_path}/linux_aarch64/cloud_fusion/*.whl ${benchmark_test_path} || exit 1
       else
           cp ${release_path}/linux_aarch64/ascend/*-linux-${arch}.tar.gz ${benchmark_test_path} || exit 1
