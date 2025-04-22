@@ -45,6 +45,9 @@ std::vector<std::pair<size_t, void *>> SuperKernelActor::streams_;
 std::vector<DeviceEventPtr> SuperKernelActor::events_;
 std::vector<AsyncRQueuePtr> SuperKernelActor::queues_;
 
+static SpinLock spin_lock;
+static std::mutex mtx;
+
 namespace {
 inline void UpdateShape(const AnfNodePtr &input_node, const KernelTensorPtr &node_device_kernel_tensor,
                         const KernelTensorPtr &input_kernel_tensor, const KernelTransformType &type) {
@@ -136,15 +139,15 @@ void SetParamFirstUsedKernelActors(
 }
 
 void CollectStreamFirstUsedParamKernelActors(
-  mindspore::HashMap<size_t, mindspore::HashMap<size_t, KernelRunnerPtr>> *param_first_used_actors_on_stream,
-  mindspore::HashSet<KernelRunner *> *kernel_actors_insert_event) {
+  mindspore::HashMap<size_t, mindspore::HashMap<size_t, KernelRunnerPtr>> *param_first_used_actors_on_stream) {
   if (!EnableInputOptimize()) {
     return;
   }
   for (const auto &iter : *param_first_used_actors_on_stream) {
     const auto &stream_with_kernel_actors = iter.second;
     for (const auto &stream_with_actor_iter : stream_with_kernel_actors) {
-      (*kernel_actors_insert_event).insert(stream_with_actor_iter.second.get());
+      MS_EXCEPTION_IF_NULL(stream_with_actor_iter.second);
+      stream_with_actor_iter.second->set_insert_input_event(true);
     }
   }
 }
@@ -172,6 +175,24 @@ void RecordInputParamsWithoutUser(const KernelGraphPtr &graph,
     }
   }
 }
+
+void CalculateParameterUsedTimes(const std::map<std::pair<size_t, size_t>, size_t> &parameter_used_times) {
+  if (!EnableInputOptimize() || !EnableParallelDispatchKernel()) {
+    return;
+  }
+  auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
+  for (const auto &used_times_iter : parameter_used_times) {
+    auto outer_index = used_times_iter.first.first;
+    auto inner_index = used_times_iter.first.second;
+    auto times = used_times_iter.second;
+    // If the parameter only used in this graph, but used by multiple actors when parallel dispatch.
+    // Correct the parameter use times.
+    // If not parallel dispatch and only used in this graph, there is no concurrently used.
+    if (!graph_parameter_store->IsConcurrentlyUse(outer_index, inner_index)) {
+      graph_parameter_store->SetParameterUsedTimes(outer_index, inner_index, times);
+    }
+  }
+}
 }  // namespace
 
 SuperKernelActor::~SuperKernelActor() { ClearParallelDispatchResource(); }
@@ -179,23 +200,26 @@ SuperKernelActor::~SuperKernelActor() { ClearParallelDispatchResource(); }
 void SuperKernelActor::Finalize() { ClearParallelDispatchResource(); }
 
 void SuperKernelActor::ClearParallelDispatchResource() {
-  if (!queues_.empty()) {
-    for (auto &q : queues_) {
-      q->WorkerJoin();
+  if (enable_parallel_dispatch_) {
+    std::unique_lock<std::mutex> lock(mtx);
+    if (!queues_.empty()) {
+      for (auto &q : queues_) {
+        q->WorkerJoin();
+      }
+      queues_.clear();
     }
-    queues_.clear();
-  }
-  if (!events_.empty()) {
-    events_.clear();
-  }
-  if (!serial_launch_kernels_to_events_.empty()) {
-    serial_launch_kernels_to_events_.clear();
-  }
-  if (!parallel_launch_kernels_.empty()) {
-    parallel_launch_kernels_.clear();
-  }
-  if (!serial_launch_kernels_.empty()) {
-    serial_launch_kernels_.clear();
+    if (!events_.empty()) {
+      events_.clear();
+    }
+    if (!serial_launch_kernels_to_events_.empty()) {
+      serial_launch_kernels_to_events_.clear();
+    }
+    if (!parallel_launch_kernels_.empty()) {
+      parallel_launch_kernels_.clear();
+    }
+    if (!serial_launch_kernels_.empty()) {
+      serial_launch_kernels_.clear();
+    }
   }
 }
 
@@ -752,79 +776,40 @@ void SuperKernelActor::UpdateOutputAddress(
   }
 }
 
-void SuperKernelActor::FetchParameterInput(const KernelRunnerPtr &kernel_actor,
-                                           OpContext<KernelTensor> *const context) {
+void SuperKernelActor::FetchParameterInput(const KernelRunnerPtr &kernel_actor, OpContext<KernelTensor> *const context,
+                                           size_t stream_id) {
   if (!enable_input_optimize_) {
     return;
   }
-  static bool is_disable_new_ref_count = common::IsDisableRuntimeConfig(common::kRuntimeNewRefCount);
-  ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kPreLaunch, "FetchParameterInput");
-  bool need_event = false;
+
   for (const auto &parameter_index : kernel_actor->parameter_indexs()) {
-    if (!first_step_for_inference_ && kernel_actor->is_weight_[parameter_index.first]) {
-      continue;
-    }
-    need_event = true;
-    auto device_context = (is_disable_new_ref_count ? kernel_actor->device_contexts()[0] : device_contexts_[0]);
-    auto kernel_tensor = FetchParameter(parameter_index.second, context, device_context, kernel_actor->GetAID());
+    size_t kernel_input_index = parameter_index.first;
+    bool is_first_user = kernel_actor->is_first_used_params_[kernel_input_index];
+    auto kernel_tensor = FetchParameter(parameter_index.second, kernel_actor->GetAID(), is_first_user, stream_id,
+                                        enable_parallel_dispatch_);
     const auto &device_tensor = kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(device_tensor);
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
       << "Actor: " << kernel_actor->GetAID().Name() << ", input index: " << parameter_index.first
       << ", device tensor: " << device_tensor << ", ptr: " << device_tensor->GetPtr()
       << ", ref cnt: " << device_tensor->ref_count() << " new ref count:" << device_tensor->new_ref_count()
-      << " is_disable_new_ref_count:" << is_disable_new_ref_count
       << " super kernel actor context:" << device_contexts_[0]->device_context_key().ToString()
       << " kernel actor context:" << kernel_actor->device_contexts()[0]->device_context_key().ToString();
     kernel_actor->SetInputDeviceTensor(kernel_tensor, parameter_index.first);
-  }
-
-  const auto &iter = kernel_actor_to_graph_parameters_map_.find(kernel_actor);
-  if (iter != kernel_actor_to_graph_parameters_map_.end()) {
-    for (const auto &input_pair : iter->second) {
-      auto actor_input_idx = input_pair.first;
-      if (!first_step_for_inference_ && kernel_actor->is_weight_[actor_input_idx]) {
-        continue;
-      }
-      if (memory_free_lists_.empty()) {
-        memory_free_lists_.push({});
-      }
+    if (is_first_user) {
       if (ActorDispatcher::enable_use_trace_memory()) {
-        if (kernel_actor->input_kernel_tensors_[actor_input_idx]->new_ref_count() != SIZE_MAX) {
-          memory_free_lists_.back().emplace_back(kernel_actor->input_kernel_tensors_[actor_input_idx]);
+        if (kernel_actor->input_kernel_tensors_[kernel_input_index]->new_ref_count() != SIZE_MAX) {
+          std::lock_guard<SpinLock> locker(spin_lock);
+          memory_free_lists_.back().emplace_back(kernel_actor->input_kernel_tensors_[kernel_input_index]);
           MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-            << "Add memory free list for trace:" << kernel_actor->input_kernel_tensors_[actor_input_idx]->PrintInfo()
+            << "Add memory free list for trace:" << kernel_actor->input_kernel_tensors_[kernel_input_index]->PrintInfo()
             << " in actor:" << GetAID();
         }
       }
     }
-  }
 
-  // Insert record wait pair to ensure first used parameter async copy end before launch.
-  if (need_event) {
-    const auto &insert_event_iter = kernel_actors_insert_event_.find(kernel_actor.get());
-    if (insert_event_iter != kernel_actors_insert_event_.end()) {
-      auto stream_id = kernel_actor->kernel_info_->stream_id();
-      if (stream_id != kDefaultStreamIndex) {
-        auto device_context = kernel_actor->device_contexts_[0];
-        MS_EXCEPTION_IF_NULL(device_context);
-        MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
-        auto &multi_stream_controller =
-          device::HalResManager::GetInstance().GetMultiStreamController(device_context->DeviceName());
-        MS_EXCEPTION_IF_NULL(multi_stream_controller);
-        device_context->device_res_manager_->BindDeviceToCurrentThread(false);
-        multi_stream_controller->DispatchRecordWaitEvent(stream_id, kDefaultStreamIndex);
-      }
-    }
-  }
-
-  for (const auto &parameter_index : kernel_actor->parameter_indexs()) {
-    if (!first_step_for_inference_ && kernel_actor->is_weight_[parameter_index.first]) {
-      continue;
-    }
-    kernel_actor->memory_free_list_[parameter_index.first] = kernel_actor->input_kernel_tensors_[parameter_index.first];
-    kernel_actor->CopyInputDeviceTensor(kernel_actor->input_kernel_tensors_[parameter_index.first],
-                                        parameter_index.first, context);
+    kernel_actor->CopyParameterDeviceTensor(kernel_actor->input_kernel_tensors_[parameter_index.first],
+                                            parameter_index.first, context, stream_id);
   }
 }
 
@@ -832,7 +817,7 @@ void SuperKernelActor::FreeInputParamWithoutUser(OpContext<KernelTensor> *const 
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kPreLaunch, "FreeInputParamWithoutUser");
   if (enable_input_optimize_) {
     for (const auto &iter : input_params_no_user_) {
-      auto kernel_tensor = FetchParameter(iter.second, context, device_contexts_[0], GetAID());
+      auto kernel_tensor = FetchParameter(iter.second, GetAID());
       MS_EXCEPTION_IF_NULL(kernel_tensor);
       auto device_tensor = kernel_tensor->device_address().get();
       MS_EXCEPTION_IF_NULL(device_tensor);
@@ -1009,11 +994,6 @@ bool SuperKernelActor::LaunchAllKernels(OpContext<KernelTensor> *const context) 
     }
   }
 
-  // Remove after input optimize simplify.
-  if (enable_infer_boost_) {
-    first_step_for_inference_ = false;
-  }
-
   return true;
 }
 
@@ -1046,6 +1026,7 @@ void SuperKernelActor::DispatchParallelLaunchKernels(size_t index, OpContext<Ker
       }
 
       const auto &kernel = kernel_actor->kernel_;
+      FetchParameterInput(kernel_actor, context, real_stream_id);
       if (!FetchMsgInputAndConstValueForKernel(kernel_actor.get(), context)) {
         MS_LOG(EXCEPTION) << "Failed to fetch input and const value for kernel: " << kernel->fullname_with_scope();
       }
@@ -1085,6 +1066,7 @@ void SuperKernelActor::DispatchSerialLaunchKernels(OpContext<KernelTensor> *cons
     }
 
     const auto &kernel = kernel_actor->kernel_;
+    FetchParameterInput(kernel_actor, context, 0);
     if (!FetchMsgInputAndConstValueForKernel(kernel_actor.get(), context)) {
       MS_LOG(EXCEPTION) << "Failed to fetch input and const value for kernel: " << kernel->fullname_with_scope();
     }
@@ -1177,6 +1159,9 @@ void SuperKernelActor::RunGraphKernelByKernel(OpContext<KernelTensor> *const con
   }
   if (!graph_->is_dynamic_shape()) {
     ActorDispatcher::set_enable_static_shape(false);
+  }
+  if (memory_free_lists_.empty()) {
+    memory_free_lists_.push({});
   }
 
   // 1. Fetch input data for this kernel graph and correct current ref count for input device address.
@@ -1339,12 +1324,13 @@ void SuperKernelActor::SendDebugReq(OpContext<KernelTensor> *const context) {
 }
 
 bool SuperKernelActor::CopyInputDataPersistedHandle(const DeviceContext *device_context,
-                                                    DeviceTensor *input_device_tensor,
+                                                    const KernelTensorPtr &input_kernel_tensor,
                                                     const KernelTensorPtr &node_kernel_tensor, size_t i) {
+  auto &input_device_tensor = input_kernel_tensor->device_address();
   auto &node_device_tensor = node_kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(node_device_tensor);
   if ((input_device_tensor->GetDeviceType() == node_device_tensor->GetDeviceType()) &&
-      AnfAlgo::IsEquivalentFormat(input_device_tensor->format(), node_device_tensor->format())) {
+      AnfAlgo::IsEquivalentFormat(input_kernel_tensor->format(), node_kernel_tensor->format())) {
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
       << "Not need copy for device tensor:" << node_device_tensor << " ptr:" << node_device_tensor->GetPtr()
       << " index:" << i << " for actor:" << GetAID();
@@ -1447,7 +1433,7 @@ bool SuperKernelActor::CopyInputData(const OpContext<KernelTensor> *context, con
     // If the input is not a persist device address, in a heterogeneous scenario, a new device address needs to
     // be created. And set ptr to node device address to support the zero copy of graph input nodes.
     if (!node_device_tensor->is_ptr_persisted()) {
-      if (CopyInputDataPersistedHandle(device_context, input_device_tensor, node_device_kernel_tensor, i)) {
+      if (CopyInputDataPersistedHandle(device_context, input_kernel_tensors_[i], node_device_kernel_tensor, i)) {
         continue;
       }
       copy_device_tensor = copy_input_kernel_tensors_[i]->device_address();
@@ -2331,8 +2317,7 @@ void SuperKernelActor::LinkKernelActors() {
 }
 
 void ParamFirstUsedKernelActorsToMap(
-  const std::vector<std::pair<KernelRunnerPtr, size_t>> &param_first_used_kernel_actors,
-  mindspore::HashMap<KernelRunnerPtr, std::vector<std::pair<size_t, size_t>>> *kernel_actor_to_graph_parameters_map) {
+  const std::vector<std::pair<KernelRunnerPtr, size_t>> &param_first_used_kernel_actors) {
   if (!EnableInputOptimize()) {
     return;
   }
@@ -2342,13 +2327,7 @@ void ParamFirstUsedKernelActorsToMap(
     if (kernel_actor == nullptr) {
       continue;
     }
-    const auto &iter = (*kernel_actor_to_graph_parameters_map).find(kernel_actor);
-    if (iter == (*kernel_actor_to_graph_parameters_map).end()) {
-      (*kernel_actor_to_graph_parameters_map)[kernel_actor].emplace_back(actor_input_idx, i);
-    } else {
-      auto &param_map_list = iter->second;
-      param_map_list.push_back({actor_input_idx, i});
-    }
+    kernel_actor->set_is_first_used_param(true, actor_input_idx);
   }
 }
 
@@ -2359,6 +2338,7 @@ void SuperKernelActor::AnalyseNodesDependence(
   std::vector<std::pair<KernelRunnerPtr, size_t>> *param_first_used_kernel_actors) {
   const auto &execution_order = graph_->execution_order();
   mindspore::HashMap<size_t, mindspore::HashMap<size_t, KernelRunnerPtr>> param_first_used_actors_on_stream;
+  std::map<std::pair<size_t, size_t>, size_t> parameter_used_times;
   size_t kernel_num = execution_order.size();
   for (size_t i = 0; i < kernel_num; i++) {
     const auto &kernel = execution_order[i];
@@ -2412,6 +2392,9 @@ void SuperKernelActor::AnalyseNodesDependence(
           auto &kernel_actor = kernel_actors_[i];
           MS_EXCEPTION_IF_NULL(kernel_actor);
           (void)kernel_actor->parameter_indexs_.emplace_back(j, parameter_index_iter->second);
+          auto outer_index = parameter_index_iter->second.second;
+          auto inner_index = parameter_index_iter->second.first.second;
+          parameter_used_times[{outer_index, inner_index}]++;
           SetParamFirstUsedKernelActors(input_node_idx, j, &kernel_actors_[i], param_first_used_kernel_actors,
                                         &param_first_used_actors_on_stream);
         }
@@ -2437,12 +2420,12 @@ void SuperKernelActor::AnalyseNodesDependence(
     }
   }
 
-  CollectStreamFirstUsedParamKernelActors(&param_first_used_actors_on_stream, &kernel_actors_insert_event_);
-  ParamFirstUsedKernelActorsToMap(*param_first_used_kernel_actors, &kernel_actor_to_graph_parameters_map_);
+  CollectStreamFirstUsedParamKernelActors(&param_first_used_actors_on_stream);
+  ParamFirstUsedKernelActorsToMap(*param_first_used_kernel_actors);
   RecordInputParamsWithoutUser(graph_, parameter_indexs_map, input_params_use_cnt_, &input_params_no_user_);
+  CalculateParameterUsedTimes(parameter_used_times);
 }
 
-// Record kernel actor weight position for inference input optimize.
 void SuperKernelActor::RecordKernelActorWeight() {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);

@@ -169,7 +169,7 @@ void AbstractActor::FetchParameterByTensorStore(
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kInputProcess, "FetchParameter", true);
   for (const auto &parameter_index : parameter_indexs_) {
     // Collect the input kernel tensor.
-    auto kernel_tensor = FetchParameter(parameter_index.second, context, device_contexts_[0], GetAID());
+    auto kernel_tensor = FetchParameter(parameter_index.second, GetAID());
     MS_EXCEPTION_IF_NULL(kernel_tensor);
     if (input_launch_tensors && input_kernel_tensors && input_kernel_tensors_for_infer &&
         ((*input_kernel_tensors)[parameter_index.first] != kernel_tensor)) {
