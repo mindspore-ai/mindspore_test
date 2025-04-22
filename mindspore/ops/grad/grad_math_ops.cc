@@ -2877,7 +2877,7 @@ REG_BPROP_BUILDER("RemainderTensorTensor").SetUnusedInputs({i2}).SetBody(BODYFUN
   auto input = ib->GetInput(kIndex0);
   auto other = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex3);
-  NodePtr d_input = dout;
+  NodePtr d_input = ib->Cast(dout, ib->GetDtype(input));
   NodePtr d_other = nullptr;
   if (other->need_compute_grad_out()) {
     d_other = (-dout) * (ib->DivMod(input, other, ops::RoundingMode::FLOOR));
