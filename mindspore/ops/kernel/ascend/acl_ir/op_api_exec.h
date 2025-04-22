@@ -244,9 +244,10 @@ class ApiCachePool {
     std::function<void()> release_func = nullptr;                                                                      \
     uint64_t *workspace_size_addr = &workspace_size;                                                                   \
     device::ascend::aclOpExecutor **executor_addr = &executor;                                                         \
+    auto process_cache = device::ascend::ProcessCache(nullptr);                                                        \
     if (HitCache(api_name, executor_addr, workspace_size_addr, args...)) {                                             \
       MS_LOG(DEBUG) << "gen executor aclnn cache hit.";                                                                \
-      return std::make_tuple(workspace_size, executor, release_func);                                                  \
+      return std::make_tuple(workspace_size, executor, process_cache, release_func);                                   \
     }                                                                                                                  \
     MS_LOG(DEBUG) << "gen executor aclnn cache miss.";                                                                 \
     auto init_mem_func = device::ascend::OpApiDefaultResource::GetInstance().init_mem_func();                          \
@@ -261,12 +262,14 @@ class ApiCachePool {
     }                                                                                                                  \
     auto releas_call = device::ascend::ReleaseCall(std::move(converted_params));                                       \
     release_func = std::function<void()>(releas_call);                                                                 \
+    auto graph_cache = device::ascend::GraphCache(executor, std::move(converted_params));                              \
+    process_cache = device::ascend::ProcessCache(graph_cache);                                                         \
     auto uninit_mem_func = device::ascend::OpApiDefaultResource::GetInstance().uninit_mem_func();                      \
     if (uninit_mem_func) {                                                                                             \
       uninit_mem_func(nullptr, false);                                                                                 \
     }                                                                                                                  \
     device::ascend::UninitCacheThreadLocal();                                                                          \
-    return std::make_tuple(workspace_size, executor, release_func);                                                    \
+    return std::make_tuple(workspace_size, executor, process_cache, release_func);                                     \
   }                                                                                                                    \
   (aclnn_api, aclnn_api + "GetWorkspaceSize", __VA_ARGS__)
 
