@@ -602,6 +602,13 @@ static void CheckpointStrategy(const std::vector<AnfNodePtr> &all_nodes, const F
     auto cloned_parameter = cloned_parameter_node->cast<ParameterPtr>();
     MS_EXCEPTION_IF_NULL(cloned_parameter);
 
+    auto cloned_param_info = cloned_parameter->param_info();
+    if (cloned_param_info != nullptr) {
+      if (cloned_param_info->is_pipeline_shared_param()) {
+        continue;
+      }
+    }
+
     if (!ParameterIsCloned(cloned_parameter_node) && !IsStrategySaved(cloned_parameter_node)) {
       continue;
     }
@@ -631,6 +638,45 @@ static void MicroBatchPostProcess(const FuncGraphPtr &root, const std::vector<An
   }
 }
 }  // namespace
+
+static void SetSharedAttrForOptimizerParameter(const FuncGraphPtr &root) {
+  MS_EXCEPTION_IF_NULL(root);
+  auto root_params = root->parameters();
+  AnfNodePtrList sub_root_params;
+  GetSubRootParams(root_params, &sub_root_params);
+  for (auto &cloned_parameter_node : root_params) {
+    if (ParallelContext::GetInstance()->get_redundancy_node().count(cloned_parameter_node)) {
+      continue;
+    }
+    MS_EXCEPTION_IF_NULL(cloned_parameter_node);
+    auto cloned_parameter = cloned_parameter_node->cast<ParameterPtr>();
+    MS_EXCEPTION_IF_NULL(cloned_parameter);
+
+    if (!ParameterIsCloned(cloned_parameter_node)) {
+      continue;
+    }
+    auto param_value = cloned_parameter->param_info();
+    if (param_value == nullptr) {
+      continue;
+    }
+    // get the cloned index
+    int64_t cloned_index = param_value->cloned_index();
+
+    // find the be cloned parameter
+    for (auto &be_cloned_parameter_node : sub_root_params) {
+      auto be_cloned_parameter = be_cloned_parameter_node->cast<ParameterPtr>();
+      auto param_value_in = be_cloned_parameter->param_info();
+      // get the be cloned index
+      auto &be_cloned_index = param_value_in->be_cloned_index();
+      if (std::find(be_cloned_index.begin(), be_cloned_index.end(), cloned_index) != be_cloned_index.end()) {
+        // add shared attr for cloned parameters
+        if (param_value_in->is_pipeline_shared_param()) {
+          param_value->set_is_pipeline_shared_param(true);
+        }
+      }
+    }
+  }
+}
 
 void ParallelPostprocessor::PipelinePostProcessStep1() {
   auto pipeline_processor = processor_context_->pipeline_processor;
@@ -673,6 +719,7 @@ void ParallelPostprocessor::Process() {
   }
 
   PipelinePostProcessStep1();
+  SetSharedAttrForOptimizerParameter(root);
 
   // save strategy as checkpoint for multi-train
   auto all_nodes_after_pp = TopoSort(root->get_return(), SuccDeeperSimple);
