@@ -1606,7 +1606,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
             >>> print(input_x.numel())
             4
         """
-        return self.size
+        return self._size
 
     def permute(self, *axis):
         """
@@ -2130,7 +2130,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
             opt_shard_group(str): Optimizer shard group which is used in auto or semi auto parallel mode
                 to get one shard of a parameter's slice. For more information about optimizer parallel, please refer to:
                 `Optimizer Parallel
-                <https://www.mindspore.cn/docs/en/master/model_train/parallel/optimizer_parallel.html>`_.
+                <https://www.mindspore.cn/docs/en/master/features/parallel/optimizer_parallel.html>`_.
                 Default: ``None``.
 
         Returns:
