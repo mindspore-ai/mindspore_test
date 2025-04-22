@@ -3958,13 +3958,28 @@ void GraphBuilder::AddVarInput(ValueNode *cur, bool is_var_keywords) {
 
 void GraphBuilder::AddInput(ValueNode *node) {
   auto obj = node->GetVobj()->GetPyObject();
+  if (obj.ptr() == nullptr) {
+    return;
+  }
   // tuple list is expand, this branch always false
   if (IsParameterSequence(obj)) {
     MS_LOG(WARNING) << "Get Parameter as function inputs, recompile if it's id changed";
     // delay guard
     return;
   }
-  auto ret = FGBuilder()->AddTopGraphArgInput(obj);
+  AbstractWrapperPtr ret = nullptr;
+  bool is_callable = py::isinstance<Cell>(obj) || PyFunction_Check(obj.ptr()) || PyMethod_Check(obj.ptr()) ||
+                     PyCFunction_Check(obj.ptr());
+  bool is_scalar = obj.ptr() == Py_None;
+  if (is_callable || is_scalar) {
+    MS_LOG(DEBUG) << "constant argument of func_graph, eliminate at compile: " << py::str(obj);
+    // delay guard only if it used
+    if (!is_callable) {
+      GetGraph()->GuardParameter(node);
+    }
+  } else {
+    ret = FGBuilder()->AddTopGraphArgInput(obj);
+  }
   if (ret == nullptr) {
     if (!IsParameterObject(obj)) {
       MS_LOG(INFO) << "The object can't be a runtime argument of FuncGraph, build value node: " << node->ToString();
