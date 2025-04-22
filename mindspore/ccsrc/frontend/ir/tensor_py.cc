@@ -745,6 +745,10 @@ void TensorPybind::Offload(const BaseTensorPtr &tensor, bool release) {
     if (device_address == nullptr) {
       return;
     }
+    if (device_address->GetDeviceType() == device::DeviceType::kCPU) {
+      MS_LOG(INFO) << "Tensor with CPUDeviceAddress can not be offloaded.";
+      return;
+    }
     if (device_address->GetPtr() == nullptr) {
       MS_LOG(INFO) << "For Offload, this tensor's device_ptr is nullptr, it may have been offloaded or released by"
                    << " the framework.";
