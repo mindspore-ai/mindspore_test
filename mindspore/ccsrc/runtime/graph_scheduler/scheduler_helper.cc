@@ -235,16 +235,27 @@ void SchedulerHelper::AddDeviceTensorStore(const AnfNodePtr &anf_node, const Ker
   MS_EXCEPTION_IF_NULL(kernel_tensor);
   const auto &device_tensor = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_tensor);
-  // Intercept, parameter-weight is not placed into device tensor store
   if (EnableInputOptimize()) {
-    // std::shared_ptr<AnfNode> &cur_ptr(anf_node);
     auto real_node = common::AnfAlgo::FetchRealNodeSkipMonadControl({anf_node, 0}).first;
     MS_EXCEPTION_IF_NULL(real_node);
     if (real_node->isa<Parameter>() && common::AnfAlgo::IsParameterWeight(real_node->cast<ParameterPtr>())) {
       auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
       MS_EXCEPTION_IF_NULL(graph_parameter_store);
       auto outer_idx = graph_parameter_store->GetFrontNodeToIndex(anf_node.get());
-      graph_parameter_store->Push(outer_idx, 0, kernel_tensor, kernel_tensor->GetDeviceType(), SIZE_MAX);
+      auto store_kernel_tensor = graph_parameter_store->Fetch(outer_idx, 0);
+
+      // Push kernel tensor of weight into parameter store.
+      // Push the kernel tensor if store of the position has no one.
+      // If there are heterogeneous kernel tensors, push non cpu device address into store.
+      if (store_kernel_tensor == nullptr || store_kernel_tensor->device_address() == nullptr) {
+        graph_parameter_store->Push(outer_idx, 0, kernel_tensor, SIZE_MAX);
+      } else if (store_kernel_tensor->device_address()->GetDeviceType() != device_tensor->GetDeviceType() &&
+                 device_tensor->GetDeviceType() != device::DeviceType::kCPU) {
+        graph_parameter_store->Push(outer_idx, 0, kernel_tensor, SIZE_MAX);
+      } else {
+        return;
+      }
+
       MS_LOG(DEBUG) << "Add graph parameter store:" << kernel_tensor << " for node:" << anf_node.get()->DebugString()
                     << " node addr:" << anf_node.get() << " device type:" << kernel_tensor->GetDeviceType()
                     << ", outer idx:" << outer_idx;
@@ -685,11 +696,11 @@ void SchedulerHelper::InsertParameterIndexsForActor(AbstractActor *const to_acto
   auto real_node = common::AnfAlgo::FetchRealNodeSkipMonadControl(from_kernel_with_output_idx).first;
   MS_EXCEPTION_IF_NULL(real_node);
   if (real_node->isa<Parameter>() && common::AnfAlgo::IsParameterWeight(real_node->cast<ParameterPtr>())) {
-    cur_graph_parameter_store->SetUserCnt(real_outer_idx, real_inner_idx, SIZE_MAX, cur_device_tensor->GetDeviceType());
+    cur_graph_parameter_store->SetUserCnt(real_outer_idx, real_inner_idx, SIZE_MAX);
   } else if (graph->IsRefOutputMapValue(from_kernel_with_output_idx)) {
     MS_LOG(INFO) << "Ref input: " << from_kernel_with_output_idx.first->DebugString()
                  << ", index: " << from_kernel_with_output_idx.second;
-    cur_graph_parameter_store->SetUserCnt(real_outer_idx, real_inner_idx, SIZE_MAX, cur_device_tensor->GetDeviceType());
+    cur_graph_parameter_store->SetUserCnt(real_outer_idx, real_inner_idx, SIZE_MAX);
   } else if (IsOnlyShapeDepend(to_actor, to_kernel_with_input_idx.second)) {
     MS_LOG(DEBUG) << "Is only shape depend to actor:" << to_actor->GetAID()
                   << " and skip increase user count for outer index:" << real_outer_idx
@@ -698,7 +709,7 @@ void SchedulerHelper::InsertParameterIndexsForActor(AbstractActor *const to_acto
     MS_LOG(DEBUG) << "Insert parameter store user count to actor:" << to_actor->GetAID()
                   << " front node:" << front_node_with_idx.first->DebugString() << " out index:" << real_outer_idx
                   << " inner index:" << real_inner_idx << " device address:" << cur_device_tensor->PrintInfo();
-    cur_graph_parameter_store->IncreaseUserCnt(real_outer_idx, real_inner_idx, cur_device_tensor->GetDeviceType());
+    cur_graph_parameter_store->IncreaseUserCnt(real_outer_idx, real_inner_idx);
     cur_device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
   }
   if (IsControlFlowActor(to_actor->type())) {
@@ -730,10 +741,9 @@ void SchedulerHelper::AddResultParameter(AbstractActor *const from_actor, Output
   auto outer_idx = graph_parameter_store->GetFrontNodeToIndex(from_kernel.get());
   ParameterInfo parameter_info{front_node_with_index, outer_idx};
   to_actor->InsertParameterIndexs(output_position, parameter_info);
-  graph_parameter_store->SetUserCnt(outer_idx, front_node_with_index.second, SIZE_MAX, device_context->GetDeviceType());
+  graph_parameter_store->SetUserCnt(outer_idx, front_node_with_index.second, SIZE_MAX);
 
-  const auto &kernel_tensor =
-    graph_parameter_store->Fetch(outer_idx, front_node_with_index.second, device_context->GetDeviceType());
+  const auto &kernel_tensor = graph_parameter_store->Fetch(outer_idx, front_node_with_index.second);
   if (kernel_tensor != nullptr && kernel_tensor->device_address() != nullptr) {
     auto device_tensor = kernel_tensor->device_address().get();
     device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);

@@ -196,10 +196,10 @@ void ControlNodeScheduler::BuildGraphParameterStoreForControlNode(const GraphCom
                   << " backend node:" << node_with_index.first->DebugString() << " index:" << node_with_index.second;
     size_t real_outer_idx = cur_graph_parameter_store->GetFrontNodeToIndex(parameter_with_index.first.get());
     size_t real_inner_idx = parameter_with_index.second;
-    auto cur_device_type = device_context->GetDeviceType();
-    // Do not push device tensor into graph parameter store if already have.
-    const auto old_kernel_tensor = cur_graph_parameter_store->Fetch(real_outer_idx, real_inner_idx, cur_device_type);
-    if (old_kernel_tensor != nullptr && old_kernel_tensor->GetDeviceType() == cur_device_type) {
+    // Do not push kernel tensor into graph parameter store if already have non cpu device address.
+    const auto store_kernel_tensor = cur_graph_parameter_store->Fetch(real_outer_idx, real_inner_idx);
+    if (store_kernel_tensor != nullptr && store_kernel_tensor->device_address() != nullptr &&
+        store_kernel_tensor->device_address()->GetDeviceType() != device::DeviceType::kCPU) {
       continue;
     }
     auto input_param = node_with_index.first->cast<ParameterPtr>();
@@ -232,7 +232,7 @@ void ControlNodeScheduler::BuildGraphParameterStoreForControlNode(const GraphCom
                   << " shape:"
                   << (kernel_tensor->GetShape() == nullptr ? "null" : kernel_tensor->GetShape()->ToString());
     AnfAlgo::SetOutputKernelTensor(kernel_tensor, parameter_with_index.second, parameter_with_index.first.get());
-    cur_graph_parameter_store->Push(real_outer_idx, real_inner_idx, kernel_tensor, new_address->GetDeviceType(), 0);
+    cur_graph_parameter_store->Push(real_outer_idx, real_inner_idx, kernel_tensor, 0);
     (void)front_node_position_map.emplace(parameter_with_index, real_outer_idx);
   }
 }
@@ -2526,17 +2526,14 @@ void ControlNodeScheduler::LinkArrowForRootGraphEntranceActor(const ActorSet *ac
       size_t real_outer_idx = cur_graph_parameter_store->GetFrontNodeToIndex(formal_parameter.first.get());
       // parameter-weight not support tuple
       size_t real_inner_idx = formal_parameter.second;
-      auto kernel_tensors = cur_graph_parameter_store->Fetch(real_outer_idx, real_inner_idx);
-      // input but not parameter-weight won't be heter.
-      if (kernel_tensors.empty()) {
+      auto kernel_tensor = cur_graph_parameter_store->Fetch(real_outer_idx, real_inner_idx);
+      if (kernel_tensor == nullptr) {
         continue;
       }
-      MS_EXCEPTION_IF_NULL(kernel_tensors[0]);
-      auto cur_device_tensor = kernel_tensors[0]->device_address().get();
+      auto cur_device_tensor = kernel_tensor->device_address().get();
       MS_EXCEPTION_IF_NULL(cur_device_tensor);
       cur_device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
-      cur_graph_parameter_store->SetUserCnt(real_outer_idx, real_inner_idx, SIZE_MAX,
-                                            cur_device_tensor->GetDeviceType());
+      cur_graph_parameter_store->SetUserCnt(real_outer_idx, real_inner_idx, SIZE_MAX);
       const auto parser = graph_compiler_info.control_node_parser_;
       MS_EXCEPTION_IF_NULL(parser);
       const auto &node_with_index_with_context =
