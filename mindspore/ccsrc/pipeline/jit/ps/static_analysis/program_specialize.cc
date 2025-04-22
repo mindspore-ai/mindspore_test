@@ -1052,10 +1052,13 @@ void FuncGraphSpecializer::EliminateUnusedSequenceItem(const CNodePtr &cnode) co
 bool FuncGraphSpecializer::GetIgnoreBuildValueFlag(const AnfNodePtr &node_input, const AbstractBasePtr &abs) {
   // If node_inplace is used by the view operator or the inplace operator,
   // don't replace it because of the constant folding.
-  if (abs != nullptr && abs->inplace_abstract() != nullptr) {
-    MS_LOG(DEBUG) << "Do not replace. The node_input is used by view operator or inplace operator: "
-                  << node_input->DebugString();
-    return true;
+  if (abs != nullptr) {
+    auto inplace_abs = abs->inplace_abstract();
+    if (inplace_abs != nullptr && !inplace_abs->isa<abstract::AbstractNone>()) {
+      MS_LOG(DEBUG) << "Do not replace. The node_input is used by view operator or inplace operator: "
+                    << node_input->DebugString();
+      return true;
+    }
   }
   bool ignore_build_value = false;
   MS_EXCEPTION_IF_NULL(specializer_->engine());
