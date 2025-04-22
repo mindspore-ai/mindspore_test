@@ -345,12 +345,12 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
                 start_time = int(time.time())
                 wait_count = 1
                 while self.workers[i % self.num_worker].res_queue.empty():
+                    time.sleep(0.1)
                     if self.eof.is_set():
                         logger.warning("Generator receives a termination signal, stop waiting for data "
                                        "from subprocess.")
                         self._stop_subprocess()
                         return
-                    time.sleep(0.1)
                     wait_count = self._interval_log(i, start_time, wait_count)
                 result = self.workers[i % self.num_worker].get()
                 if isinstance(result, ExceptionHandler):
