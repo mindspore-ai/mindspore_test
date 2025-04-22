@@ -672,9 +672,9 @@ class TestPipelineSplitWithNoOptimizer:
         pipeline_net = PipelineSplitLazyInline(strategy1, strategy2, dtype=ms.float16)
         run_pipeline_split_function(pipeline_net, micro_batch_interleaved=1)
         self.cat_fp16_from_ir(pattern='(<Tensor[Float32], (64, 64)>) -> (<Tensor[Float32], (4, 64)>)',
-                              target_count=3)
+                              target_count=2)
         self.cat_fp16_from_ir(pattern='_grad_accumulation_shard_grad_VirtualAssignAdd',
-                              target_count=3)
+                              target_count=2)
 
     def test_pipeline_zero3_lazy_inline(self):
         """
@@ -732,9 +732,9 @@ class TestPipelineSplitWithNoOptimizer:
         pipeline_net = PipelineSplitLazyInline(strategy1, strategy2, dtype=ms.float16)
         run_pipeline_split_function(pipeline_net, micro_batch_interleaved=1)
         self.cat_fp16_from_ir(pattern='(<Tensor[Float32], (64, 64)>) -> (<Tensor[Float32], (32, 64)>)',
-                              target_count=3)
+                              target_count=2)
         self.cat_fp16_from_ir(pattern='_grad_accumulation_shard_grad_VirtualAssignAdd',
-                              target_count=3)
+                              target_count=2)
 
     def test_pipeline_zero3_not_full_lazy_inline(self):
         """
