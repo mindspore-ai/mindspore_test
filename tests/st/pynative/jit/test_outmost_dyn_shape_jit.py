@@ -18,7 +18,7 @@ import numpy as np
 from mindspore import nn
 from mindspore import ops
 from mindspore import context, Tensor
-from mindspore import jit, dynamic_tensor_shapes
+from mindspore import jit, enable_dynamic
 from tests.mark_utils import arg_mark
 
 
@@ -31,7 +31,8 @@ class Net(nn.Cell):
         self.relu = nn.ReLU()
 
     @jit
-    @dynamic_tensor_shapes([2, 3, 6, None], [2, 3, None, None])
+    @enable_dynamic(x=Tensor(shape=[2, 3, 6, None], dtype=ms.float32),
+                    y=Tensor(shape=[2, 3, None, None], dtype=ms.float32))
     def construct(self, x, y):
         x = self.addn((x, y))
         x = self.log(x)
@@ -57,7 +58,8 @@ class CmpNet(nn.Cell):
 
 
 @jit
-@dynamic_tensor_shapes([2, 3, 6, None], [2, 3, None, None])
+@enable_dynamic(x=Tensor(shape=[2, 3, 6, None], dtype=ms.float32),
+                y=Tensor(shape=[2, 3, None, None], dtype=ms.float32))
 def func(x, y):
     x = ops.AddN()((x, y))
     x = ops.Log()(x)

@@ -343,11 +343,11 @@ def _compare_result(expect_res, actual_res, name):
         _compare(expect_res, actual_res, name, 0)
 
 
-def _run_and_compare(test_func, data):
+def _run_and_compare(test_func, data_):
     """_run_and_compare"""
     print(f"\n******************************Testing {test_func.__name__}......")
     if RUN_MODE == DEBUG_PYNATIVE:
-        pynative_out = test_func(data)
+        pynative_out = test_func(data_)
         print("pynative out is:")
         print(pynative_out)
         print(pynative_out.shape)
@@ -356,46 +356,54 @@ def _run_and_compare(test_func, data):
     if RUN_MODE == DEBUG_GRAPH:
         context.set_context(save_graphs=IR_LEVEL, save_graphs_path='./IR')
         if DYNAMIC_LEVEL == 0:
-            graph_out = ms.jit()(test_func)(data)
+            graph_out = ms.jit()(test_func)(data_)
         elif DYNAMIC_LEVEL == 1:
             dim_unknown_shape = ()
-            for _ in data.shape:
+            for _ in data_.shape:
                 dim_unknown_shape += (None,)
-            graph_out = ms.jit(ms.dynamic_tensor_shapes(dim_unknown_shape))(test_func)(data)
+            graph_out = ms.jit(
+                ms.enable_dynamic(data=Tensor(shape=dim_unknown_shape, dtype=data_.dtype))(test_func)
+            )(data_)
         else:
-            graph_out = ms.jit(ms.dynamic_tensor_shapes(None))(test_func)(data)
+            graph_out = ms.jit(
+                ms.enable_dynamic(data=Tensor(shape=None, dtype=data_.dtype))(test_func)
+            )(data_)
         print("graph out is")
         print(graph_out)
         print(graph_out.shape)
         return
 
     print("Running with pynative mode...")
-    pynative_out = test_func(data)
+    pynative_out = test_func(data_)
     print("Running with graph mode...")
     context.set_context(save_graphs=IR_LEVEL, save_graphs_path='./IR')
     dim_unknown_shape = ()
-    for _ in data.shape:
+    for _ in data_.shape:
         dim_unknown_shape += (None,)
     if DYNAMIC_LEVEL == 0:
-        graph_out = ms.jit()(test_func)(data)
+        graph_out = ms.jit()(test_func)(data_)
     elif DYNAMIC_LEVEL == 1:
-        graph_out = ms.jit(ms.dynamic_tensor_shapes(dim_unknown_shape))(test_func)(data)
+        graph_out = ms.jit(
+            ms.enable_dynamic(data=Tensor(shape=dim_unknown_shape, dtype=data_.dtype))(test_func)
+        )(data_)
     elif DYNAMIC_LEVEL == 100:
         print("Static_shape...")
-        graph_out = ms.jit()(test_func)(data)
+        graph_out = ms.jit()(test_func)(data_)
         _compare_result(pynative_out, graph_out, test_func.__name__)
 
         print("[dynamic_shape with known rank...]")
-        graph_out = ms.jit(ms.dynamic_tensor_shapes(dim_unknown_shape))(test_func)(data)
+        graph_out = ms.jit(
+            ms.enable_dynamic(data=Tensor(shape=dim_unknown_shape, dtype=data_.dtype))(test_func)
+        )(data_)
         _compare_result(pynative_out, graph_out, test_func.__name__)
 
         print("[dynamic_shape with unknown rank...]")
-        graph_out = ms.jit(ms.dynamic_tensor_shapes(None))(test_func)(data)
+        graph_out = ms.jit(ms.enable_dynamic(data=Tensor(shape=None, dtype=data_.dtype))(test_func))(data_)
         _compare_result(pynative_out, graph_out, test_func.__name__)
         print(f"Test successfully for {test_func.__name__}.\n")
         return
     else:
-        graph_out = ms.jit(ms.dynamic_tensor_shapes(None))(test_func)(data)
+        graph_out = ms.jit(ms.enable_dynamic(data=Tensor(shape=None, dtype=data_.dtype))(test_func))(data_)
 
     _compare_result(pynative_out, graph_out, test_func.__name__)
     print(f"Test successfully for {test_func.__name__}.\n")
