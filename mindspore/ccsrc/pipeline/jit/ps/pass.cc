@@ -21,6 +21,7 @@
 #include <string>
 #include <algorithm>
 
+#include "backend/graph_compiler/transform.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/hash_map.h"

@@ -15,10 +15,12 @@
  */
 
 #include "pipeline/jit/pi/graph_build/func_graph_builder.h"
+
 #include <algorithm>
 #include <utility>
 #include <set>
 #include <queue>
+
 #include "frontend/operator/composite/do_signature.h"
 #include "pipeline/jit/ps/static_analysis/static_analysis.h"
 #include "pipeline/jit/ps/action.h"
@@ -27,6 +29,7 @@
 #include "pipeline/jit/pi/pi_jit_config.h"
 #include "pipeline/jit/ps/parse/parse.h"
 #include "mindspore/ops/op_def/arithmetic_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "ir/tensor.h"
@@ -37,7 +40,6 @@
 #include "pipeline/jit/pi/graph_build/build_graph_utils.h"
 #include "pipeline/jit/pi/graph_build/parameter_manager.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
-#include "mindspore/ops/op_def/framework_ops.h"
 
 namespace mindspore {
 namespace pijit {

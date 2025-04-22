@@ -15,19 +15,22 @@
  */
 
 #include "frontend/parallel/pass/merge_send_recv.h"
+
 #include <string>
 #include <vector>
 #include <unordered_map>
 #include <utility>
 #include <memory>
-#include "mindspore/ops/op_def/other_ops.h"
-#include "mindspore/ops/op_def/array_ops.h"
+
 #include "frontend/optimizer/optimizer.h"
 #include "include/common/utils/parallel_context.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/graph_util/graph_info.h"
 #include "frontend/parallel/step_parallel.h"
 #include "utils/log_adapter.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
