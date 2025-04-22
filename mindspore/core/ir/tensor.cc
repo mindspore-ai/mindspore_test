@@ -564,7 +564,7 @@ DeviceSyncPtr Tensor::CallContiguousCallback() const {
   return contiguous_device_address;
 }
 
-void Tensor::data_sync(bool need_wait, bool inpalce) const {
+void Tensor::data_sync(bool need_wait, bool inpalce, bool sync_on_demand) const {
   if (need_wait) {
     device_sync_ = device_address();
     ExecuteLazyTask();
@@ -591,7 +591,7 @@ void Tensor::data_sync(bool need_wait, bool inpalce) const {
   }
 
   if (size != 0 && address->GetMutablePtr() != nullptr &&
-      !address->SyncDeviceToHost(shape(), size, data_type(), data_c())) {
+      !address->SyncDeviceToHost(shape(), size, data_type(), data_c(), sync_on_demand)) {
     MS_LOG(INTERNAL_EXCEPTION) << "SyncDeviceToHost failed.";
   }
   if (!data_->file_path().empty()) {

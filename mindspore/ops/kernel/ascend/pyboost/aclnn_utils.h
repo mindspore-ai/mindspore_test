@@ -211,7 +211,7 @@ using CacheTuple = std::tuple<uint64_t, mindspore::device::ascend::aclOpExecutor
       auto work_ptr = std::make_shared<kernel::pyboost::MemBlock>(device_context, ws_size, real_stream_id);   \
       LAUNCH_KERNEL(aclnn_name, work_ptr->ptr_, ws_size, executor_handle, stream_ptr, update_function);       \
     }                                                                                                         \
-    if (!device::ascend::AscendStreamMng::GetInstance().SyncAllStreams()) {                                   \
+    if (!device::ascend::AscendStreamMng::GetInstance().SyncStream(stream_ptr)) {                             \
       MS_LOG(EXCEPTION) << "SyncStream failed for op " << aclnn_name;                                         \
     }                                                                                                         \
     return return_values;                                                                                     \

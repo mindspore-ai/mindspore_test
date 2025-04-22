@@ -57,7 +57,8 @@ class CPU_RES_MANAGER_EXPORT CPUDeviceAddress : public DeviceAddress {
   DeviceSynchronizerPtr NewDeviceSynchronizer() override;
   DeviceAddressPtr CloneDeviceAddress() override;
 
-  bool SyncDeviceToHost(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr) const override;
+  bool SyncDeviceToHost(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr,
+                        bool sync_on_demand = false) const override;
   bool SyncHostToDevice(const ShapeVector &shape, size_t size, TypeId type, const void *host_ptr,
                         const std::string &format) const override;
   bool AsyncHostToDevice(size_t size, TypeId type, const void *host_ptr) const override;

@@ -897,7 +897,7 @@ class MS_CORE_API Tensor : public MetaTensor {
 
   /// \brief To synchronize data with the device, you need to wait for the data to be valid.
   ///
-  void data_sync(bool need_wait = true, bool inpalce = true) const;
+  void data_sync(bool need_wait = true, bool inpalce = true, bool sync_on_demand = false) const;
 
   /// \brief Get the internal data object.
   ///

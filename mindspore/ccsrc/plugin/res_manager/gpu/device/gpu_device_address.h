@@ -55,7 +55,8 @@ class GPUDeviceAddress : public LoadableDeviceAddress {
 
   bool SyncDeviceToHost(size_t size, void *host_ptr) const override;
   bool SyncHostToDevice(size_t size, const void *host_ptr) const override;
-  bool SyncDeviceToHost(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr) const override;
+  bool SyncDeviceToHost(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr,
+                        bool sync_on_demand = false) const override;
   bool SyncHostToDevice(const ShapeVector &shape, size_t size, TypeId type, const void *host_ptr,
                         const std::string &format) const override;
   bool SyncDeviceToDevice(const DeviceSync *src_device_addr) const override;

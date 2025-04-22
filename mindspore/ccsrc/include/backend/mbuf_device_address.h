@@ -36,7 +36,8 @@ class MbufDeviceAddress : public device::DeviceAddress {
   }
   void SetData(void *data) { set_ptr(data); }
 
-  bool SyncDeviceToHost(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr) const override {
+  bool SyncDeviceToHost(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr,
+                        bool sync_on_demand = false) const override {
     MS_LOG(ERROR) << "Mbuf address does not support sync data from device to host, please use graph mode";
     return false;
   }

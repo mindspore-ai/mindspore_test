@@ -60,7 +60,8 @@ class TestDeviceAddress : public DeviceAddress {
                     uint32_t device_id)
       : DeviceAddress(ptr, size, format, type_id, device_name, device_id) {}
   ~TestDeviceAddress() {}
-  virtual bool SyncDeviceToHost(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr) const {
+  virtual bool SyncDeviceToHost(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr,
+                                bool sync_on_demand) const {
     return true;
   }
   virtual bool SyncHostToDevice(const ShapeVector &shape, size_t size, TypeId type, const void *host_ptr,

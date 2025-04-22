@@ -635,7 +635,7 @@ py::object TensorPybind::Item(const TensorPtr &tensor) {
     MS_EXCEPTION(ValueError) << "The tensor should have only one element, but got " << tensor_element_count << ","
                              << " more than one element is ambiguous.";
   }
-  tensor->data_sync();
+  tensor->data_sync(true, true, true);
   auto data_type = tensor->data_type();
   auto data = tensor->data_c();
   switch (data_type) {
