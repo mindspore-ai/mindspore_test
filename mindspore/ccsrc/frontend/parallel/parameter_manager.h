@@ -70,6 +70,7 @@ bool HandleAdaSum(const FuncGraphPtr &root, const std::vector<AnfNodePtr> &all_n
 void HandleMirrorInAdaSum(
   const FuncGraphPtr &root,
   std::unordered_map<std::string, std::shared_ptr<TensorLayout>> *adasum_param_tensor_layout_map);
+void GetSubRootParams(const AnfNodePtrList &root_params, AnfNodePtrList *sub_root_params);
 bool ParameterIsCloned(const AnfNodePtr &parameter_node);
 bool IsStrategySaved(const AnfNodePtr &parameter_node);
 py::object GetPyParameterObj(const ParamInfoPtr &param_info, const std::string &obj);
