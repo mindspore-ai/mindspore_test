@@ -14,14 +14,18 @@
 # ============================================================================
 
 """Hardware memory interfaces."""
-from mindspore._c_expression import _memory_stats, _reset_max_mem_reserved, _reset_max_mem_allocated, _empty_cache
+from mindspore._c_expression import _memory_stats, _reset_max_mem_reserved, _reset_max_mem_allocated, _empty_cache, \
+    DeviceContextManager
 from mindspore import log as logger
+import mindspore as ms
 from .device import _check_inputs_validation, is_initialized
+
 
 function_memory_status = {'memory_stats': False, 'memory_reserved': False, 'max_memory_reserved': False,
                           'empty_cache': False, 'reset_peak_memory_stats': False, 'memory_summary': False,
                           'memory_allocated': False, 'max_memory_allocated': False,
                           'reset_max_memory_reserved': False, 'reset_max_memory_allocated': False}
+_device_context_mgr = DeviceContextManager.get_instance()
 
 
 @_check_inputs_validation
@@ -131,28 +135,37 @@ def max_memory_reserved(device_target=None):
     return _memory_stats(device_target).get("max_reserved_memory", 0)
 
 
+def _is_initialized(device_target):
+    """
+    Returns whether specified backend is initialized.
+    """
+    _device_context = _device_context_mgr.get_device_context(device_target)
+    if _device_context is None:
+        return False
+    return _device_context.initialized()
+
 @_check_inputs_validation
-def empty_cache(device_target=None):
+def empty_cache():
     """
     Release all memory fragments in the memory pool, so that memory arrangement
     will be optimized, this api will be deprecated and removed in future versions, please use
     the api :func:`mindspore.runtime.empty_cache` instead.
 
     Note:
-        Empty cache may help reduce the fragmentation of device memory.
-        However, it may have a negative impact on network performance. Please use it with caution.
-        The api is supported on Ascend only and with limitations:
-          - Not support ``disable ge kernel``.
-
-    Returns:
-        int, in Byte.
+        - Empty cache may help reduce the fragmentation of device memory. However, it may have a negative impact on
+          network performance.
+        - Not support Atlas training series products.
 
     Supported Platforms:
         ``Ascend``
     """
     if not function_memory_status['empty_cache']:
         function_memory_status['empty_cache'] = True
-    return _empty_cache(device_target)
+    device_target = ms.context.get_context("device_target")
+    if not _is_initialized(device_target):
+        logger.warning(f"Backend {device_target} is not initialized yet.")
+        return
+    _empty_cache(device_target)
 
 
 @_check_inputs_validation
