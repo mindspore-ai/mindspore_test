@@ -15,9 +15,6 @@ transpose_batch_matmul_transpose:
     transpose_b:
       dtype: bool
       default: False
-  class:
-    name: TransposeBatchMatmulTranspose
-    disable: True
   function:
     disable: True
   returns:
