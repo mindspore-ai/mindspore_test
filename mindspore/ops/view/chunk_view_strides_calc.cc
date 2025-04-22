@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#include "view/chunk_view_strides_calc.h"
 #include <algorithm>
 #include <memory>
 #include "ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
-#include "view/chunk_view_strides_calc.h"
 #include "view/chunk_strides_calc.h"
 
 namespace mindspore::ops {

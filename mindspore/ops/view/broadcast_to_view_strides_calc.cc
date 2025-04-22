@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-#include "view/broadcast_to_strides_calc.h"
 #include "view/broadcast_to_view_strides_calc.h"
 #include <memory>
 #include <string>
 #include "utils/check_convert_utils.h"
 #include "mindspore/ops/op_def/array_op_name.h"
+#include "view/broadcast_to_strides_calc.h"
 
 namespace mindspore::ops {
 TensorStorageInfoPtrList BroadcastToViewCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
