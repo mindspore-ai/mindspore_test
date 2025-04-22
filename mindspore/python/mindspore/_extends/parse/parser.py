@@ -264,7 +264,7 @@ def resolve_symbol(namespace, symbol):
     if isinstance(resolve_, _JitExecutor):
         logger.debug("Resolve class _JitExecutor, resolve fn instead.")
         resolve_ = resolve_.fn
-    logger.debug(f"Found '{symbol}' in {namespace.__str__()}, resolved: {resolve_} / {type(resolve_)}")
+    logger.debug("Found '%s' in %s, resolved: %s / %s", symbol, namespace, resolve_, type(resolve_))
     return resolve_
 
 
