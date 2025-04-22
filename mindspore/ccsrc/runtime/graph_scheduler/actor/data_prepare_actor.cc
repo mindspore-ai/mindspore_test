@@ -499,7 +499,6 @@ void DataPrepareActor::UpdateDeviceAddressForDataNode(const AnfNodePtr &input_no
   }
 
   tensor_address->set_flag(device_address->flag());
-  DeviceAddressUtils::UpdateDeviceAddressHostInfoByNode(tensor_address, input_node, 0);
   AnfAlgo::SetOutputAddr(tensor_address, 0, input_node.get());
   MS_LOG(DEBUG) << "Update device address of " << input_node->DebugString() << " to " << tensor_address.get()
                 << ", kernel tensor addr:" << tensor_address->kernel_tensor().get()
