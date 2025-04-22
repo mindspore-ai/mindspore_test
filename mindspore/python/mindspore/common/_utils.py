@@ -47,27 +47,11 @@ def is_dim_unknown(shape):
     return False
 
 
-def setattr_with_func(func, attr_name, attr_value):
-    """Set the attribute of function."""
+def get_func(func):
+    """Get function object"""
     if isinstance(func, types.MethodType):
-        setattr(func.__func__, attr_name, attr_value)
-    else:
-        setattr(func, attr_name, attr_value)
-
-
-def delattr_with_func(func, attr_name):
-    """Delete the attribute of function."""
-    if isinstance(func, types.MethodType):
-        delattr(func.__func__, attr_name)
-    else:
-        delattr(func, attr_name)
-
-
-def getattr_with_func(func, attr_name):
-    """Get the attribute of function."""
-    if isinstance(func, types.MethodType):
-        return getattr(func.__func__, attr_name, None)
-    return getattr(func, attr_name, None)
+        return func.__func__
+    return func
 
 
 def get_slice_num(dtype, shape):

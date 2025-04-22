@@ -261,7 +261,7 @@ class _AutoIdentifyDynamicShape:
                 return False
         return True
 
-    def _is_enable_auto_dynamic_shape(self, args_list, is_sink_mode):
+    def _is_enable_auto_dynamic_shape(self, args_list, is_sink_mode, enable_jit_dynamic=False):
         """is enable auto identify shape"""
         if not is_sink_mode and not args_list:
             return False
@@ -270,10 +270,12 @@ class _AutoIdentifyDynamicShape:
                 continue
             if not isinstance(elem, (list, tuple, Tensor, int, float)):
                 return False
-            if isinstance(elem, Tensor) and (is_shape_unknown(elem.shape) or (not elem.shape)):
+            if isinstance(elem, Tensor) and \
+                (is_shape_unknown(elem.shape) or (not elem.shape)) and \
+                not enable_jit_dynamic:
                 return False
             if not is_sink_mode and isinstance(elem, (list, tuple)):
-                return self._is_enable_auto_dynamic_shape(elem, is_sink_mode)
+                return self._is_enable_auto_dynamic_shape(elem, is_sink_mode, enable_jit_dynamic)
         return True
 
     @staticmethod
@@ -328,10 +330,10 @@ class _AutoIdentifyDynamicShape:
         logger.info((f'generalize with generalize shape cache, compile args shape = {res_shape}'))
         return new_generalize_shape
 
-    def auto_dynamic_generate_compile_args(self, args_list, is_sink_mode):
+    def auto_dynamic_generate_compile_args(self, args_list, is_sink_mode, enable_jit_dynamic=False):
         """generate compile args in auto dynamic shape"""
         if not self.is_enable_auto_dynamic_shape or \
-            not self._is_enable_auto_dynamic_shape(args_list, is_sink_mode) or \
+            not self._is_enable_auto_dynamic_shape(args_list, is_sink_mode, enable_jit_dynamic) or \
             not self._check_input_number_and_type(args_list):
             self.is_enable_auto_dynamic_shape = False
             return args_list
@@ -475,11 +477,13 @@ class _AutoIdentifyDynamicShape:
 _auto_dynamic_shape = _AutoIdentifyDynamicShape()
 
 
-def get_auto_dynamic_shape_args(compile_args, key_id, enable_auto_dynamic=False):
+def get_auto_dynamic_shape_args(compile_args, key_id, enable_auto_dynamic=False, enable_jit_dynamic=False):
     """get auto dynamic shape args."""
     if key_id not in auto_dynamic_shape_dict:
         auto_dynamic_shape_dict[key_id] = _AutoIdentifyDynamicShape(enable_auto_dynamic)
-    compile_args = auto_dynamic_shape_dict[key_id].auto_dynamic_generate_compile_args(compile_args, False)
+    compile_args = auto_dynamic_shape_dict[key_id].auto_dynamic_generate_compile_args(
+        compile_args, False, enable_jit_dynamic
+    )
     return compile_args
 
 

@@ -16,12 +16,14 @@
 from mindspore.nn import Cell
 from mindspore import ops, context
 from mindspore.common import Tensor
-from mindspore.common import jit, dynamic_tensor_shapes
+from mindspore.common import jit, enable_dynamic, dtype
 import numpy as np
 from tests.mark_utils import arg_mark
 
 context.set_context(mode=context.PYNATIVE_MODE, device_target="CPU")
 d = Tensor(shape=[None, None], dtype=dtype.float32)
+d1 = Tensor(shape=[None], dtype=dtype.int32)
+d3 = Tensor(shape=[None, None, None], dtype=dtype.float32)
 
 
 class ShapeFactory:
@@ -75,7 +77,7 @@ class ShapeAdd(Cell):
         self.eps = (1,)
 
     @jit
-    @dynamic_tensor_shapes([None, None], [None, None])
+    @enable_dynamic(x=d, y=d)
     def construct(self, x, y):
         return x.shape + y.shape + self.eps
 
@@ -104,7 +106,7 @@ class EmptyLess(Cell):
         self.red = ops.ReduceMean(keep_dims=False)
 
     @jit
-    @dynamic_tensor_shapes([None, None], [None])
+    @enable_dynamic(x=d, axis=d1)
     def construct(self, x, axis):
         r = self.red(x, axis)
         out = x
@@ -140,7 +142,7 @@ class ListEQ(Cell):
         self.red = ops.ReduceMean(keep_dims=False)
 
     @jit
-    @dynamic_tensor_shapes([None, None], [None])
+    @enable_dynamic(x=d, axis=d1)
     def construct(self, x, axis):
         r = self.red(x, axis)
         out = x
@@ -175,7 +177,7 @@ class ListLt(Cell):
         self.cmp_list = [6]
 
     @jit
-    @dynamic_tensor_shapes([None, None])
+    @enable_dynamic(x=d)
     def construct(self, x):
         out = x
         if list(x.shape) < self.cmp_list:
@@ -197,7 +199,6 @@ def test_set_inputs_shape_list_lt():
     """
     net = ListLt()
     x = np.ones([4, 6], np.float32)
-    net.set_inputs(d)
     fact = ShapeFactory(net)
     fact.forward_cmp(x)
     fact.grad_cmp(x)
@@ -210,7 +211,7 @@ class ListInsert(Cell):
         self.j = 1
 
     @jit
-    @dynamic_tensor_shapes([None, None])
+    @enable_dynamic(x=d)
     def construct(self, x):
         xshape = x.shape
         idx = xshape[self.i]
@@ -243,7 +244,7 @@ class NegStepSlice(Cell):
         self.s = 0
 
     @jit
-    @dynamic_tensor_shapes([None, None])
+    @enable_dynamic(x=d)
     def construct(self, x):
         xshape = x.shape
         step = xshape[self.s] - 2
@@ -273,7 +274,7 @@ class SliceNegStep(Cell):
         self.s = 1
 
     @jit
-    @dynamic_tensor_shapes([None, None])
+    @enable_dynamic(x=d)
     def construct(self, x):
         xshape = x.shape
         step = xshape[self.s] - 4
@@ -303,7 +304,7 @@ class InTuple(Cell):
         self.num = 4
 
     @jit
-    @dynamic_tensor_shapes([None, None])
+    @enable_dynamic(x=d)
     def construct(self, x):
         out = x
         xshape = x.shape
@@ -338,7 +339,7 @@ class TupleIndex(Cell):
         self.target = 3
 
     @jit
-    @dynamic_tensor_shapes([None, None])
+    @enable_dynamic(x=d)
     def construct(self, x):
         xshape = x.shape
         idx = xshape.index(self.target, 1, 2)
@@ -368,7 +369,7 @@ class SliceNeg(Cell):
         self.n = -1
 
     @jit
-    @dynamic_tensor_shapes([None, None, None])
+    @enable_dynamic(x=d3)
     def construct(self, x):
         xshape = x.shape
         a = xshape[0] * self.n
@@ -399,7 +400,7 @@ class GetItemNeg(Cell):
         self.n = -2
 
     @jit
-    @dynamic_tensor_shapes([None, None, None])
+    @enable_dynamic(x=d3)
     def construct(self, x):
         xshape = x.shape
         return xshape[self.n]
@@ -428,7 +429,7 @@ class TupleMulInt(Cell):
         self.n = 0
 
     @jit
-    @dynamic_tensor_shapes([None, None])
+    @enable_dynamic(x=d)
     def construct(self, x):
         xshape = x.shape
         t = xshape[self.n]

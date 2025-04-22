@@ -15,12 +15,12 @@
 import sys
 import numpy as np
 import mindspore as ms
-from mindspore import TensorShape
 
 
 def run_fn1():
     @ms.jit
-    @ms.dynamic_tensor_shapes(y=TensorShape([None, None]), z=TensorShape([2, None]))
+    @ms.enable_dynamic(y=ms.Tensor(shape=[None, None], dtype=ms.float32),
+                       z=ms.Tensor(shape=[2, None], dtype=ms.float32))
     def fn(x, y, z):
         return x + 1, y + 1, z + 1
 
@@ -42,7 +42,9 @@ def run_fn1():
 
 
 def run_fn2():
-    @ms.dynamic_tensor_shapes(x=TensorShape(None), a=TensorShape([2, None]), y=TensorShape(None))
+    @ms.enable_dynamic(x=ms.Tensor(shape=None, dtype=ms.float32),
+                       a=ms.Tensor(shape=[2, None], dtype=ms.float32),
+                       y=ms.Tensor(shape=None, dtype=ms.float32))
     @ms.jit
     def fn(x, y, a, b, *args, **kwargs):
         return x + 1, y + 1, a + b, args[0] + args[1]
@@ -71,7 +73,9 @@ def run_fn2():
 def run_fn3():
     def _fn(a, b, c):
         return a + 1, b + 1, c + 1
-    fn = ms.dynamic_tensor_shapes(a=TensorShape(None), b=TensorShape(None), c=TensorShape(None))(ms.jit(_fn))
+    fn = ms.enable_dynamic(a=ms.Tensor(shape=None, dtype=ms.float32),
+                           b=ms.Tensor(shape=None, dtype=ms.float32),
+                           c=ms.Tensor(shape=None, dtype=ms.float32))(ms.jit(_fn))
 
     x1 = ms.Tensor(np.random.randn(1, 1), ms.float32)
     x2 = ms.Tensor(np.random.randn(1, 2), ms.float32)
@@ -92,8 +96,8 @@ def run_fn3():
 
 def run_fn4():
     @ms.jit
-    @ms.dynamic_tensor_shapes(other=(TensorShape([None, 1]), TensorShape([2, None])))
-    def fn(input, other):
+    @ms.enable_dynamic(y=[ms.Tensor(shape=[None, 1], dtype=ms.float32), ms.Tensor(shape=[2, None], dtype=ms.float32)])
+    def fn(x, y):
         return x + 1, y[0] + 1, y[1] + 1
 
     x1 = ms.Tensor(np.random.randn(2, 3), ms.float32)
@@ -108,9 +112,9 @@ def run_fn4():
     z2 = ms.Tensor(np.random.randn(2, 2), ms.float32)
     z3 = ms.Tensor(np.random.randn(2, 3), ms.float32)
 
-    fn(x1, (y1, z1))
-    fn(x2, (y2, z2))
-    fn(x3, (y3, z3))
+    fn(x1, ms.mutable([y1, z1]))
+    fn(x2, ms.mutable([y2, z2]))
+    fn(x3, ms.mutable([y3, z3]))
 
 
 if __name__ == "__main__":

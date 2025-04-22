@@ -48,11 +48,11 @@ from mindspore.parallel._utils import _check_full_batch, _get_parameter_broadcas
     _is_parallel_mode
 from mindspore import _checkparam as Validator
 from mindspore._checkparam import is_stub_tensor
-from mindspore.common._utils import is_shape_unknown, setattr_with_func, delattr_with_func, getattr_with_func
+from mindspore.common._utils import is_shape_unknown, get_func
 from mindspore.common.mutable import mutable, _check_element_type
 from mindspore.common.dynamic_shape.auto_dynamic_shape import get_auto_dynamic_shape_args, \
     update_auto_dynamic_shape_phase
-from mindspore.common.dynamic_shape.dynamic_tensor_shapes import generate_dynamic_tensor_args, DYNAMIC_TENSOR_SHAPES
+from mindspore.common.dynamic_shape.enable_dynamic import generate_dynamic_tensor_args, ENABLE_DYNAMIC
 from mindspore.common._pijit_context import PIJitCaptureContext
 from mindspore.common.parameter import Parameter, set_parameter_hook_updated, parameter_hook_updated
 from mindspore.common.jit_context import jit_context
@@ -594,7 +594,8 @@ class _JitExecutor:
 
         self.fn = fn
         self.input_signature = input_signature
-        self.dynamic_tensor_shapes = getattr_with_func(fn, DYNAMIC_TENSOR_SHAPES)
+        self.dynamic_args_shapes = getattr(get_func(fn), ENABLE_DYNAMIC, None)
+        self.enable_jit_dynamic = self.dynamic_args_shapes is not None
         self.obj = None
         if obj and hasattr(obj, fn.__name__):
             self.obj = obj
@@ -655,7 +656,9 @@ class _JitExecutor:
         compile_args = self._generate_compile_args(args)
         key_id = self._get_key_id()
         if self.input_signature is None:
-            compile_args = get_auto_dynamic_shape_args(compile_args, key_id, self._enable_auto_dynamic)
+            compile_args = get_auto_dynamic_shape_args(
+                compile_args, key_id, self._enable_auto_dynamic, self.enable_jit_dynamic
+            )
 
         # Add mutable for compile_args for two scene:
         # 1) Origin args is mutable.
@@ -725,9 +728,9 @@ class _JitExecutor:
 
         if self.obj is None:
             # Set an attribute to fn as an identifier.
-            setattr_with_func(self.fn, "__jit_function__", True)
+            setattr(get_func(self.fn), "__jit_function__", True)
             is_compile = self._graph_executor.compile(self.fn, compile_args, kwargs, phase)
-            delattr_with_func(self.fn, "__jit_function__")
+            delattr(get_func(self.fn), "__jit_function__")
         else:
             if isinstance(self.obj, ms.nn.Cell):
                 self._graph_executor.set_weights_values(self.obj.parameters_dict())
@@ -781,9 +784,10 @@ class _JitExecutor:
         if enable_compile_cache is True or enable_compile_cache == "1":
             self._graph_executor.set_compile_cache_dep_files(_get_compile_cache_dep_files())
 
-    def _generate_compile_args_by_dynamic_tensor_shapes(self, args_list):
-        """Generate compile args by dynamic_tensor_shapes."""
-        compile_args = generate_dynamic_tensor_args(args_list, self.dynamic_tensor_shapes)
+    def _generate_compile_args_by_enable_dynamic(self, args_list):
+        """Generate compile args by enable_dynamic."""
+        compile_args = generate_dynamic_tensor_args(args_list, self.dynamic_args_shapes)
+        compile_args = _add_mutable_attr(args_list, compile_args, _pynative_executor.requires_grad())
         if self.obj is not None:
             _pynative_executor.set_dynamic_input(self.obj, *compile_args)
         else:
@@ -796,7 +800,7 @@ class _JitExecutor:
         compile_args = _generate_dyn_compile_args(args_list, self.obj.get_inputs())
         if len(compile_args) != len(args_list):
             raise ValueError(f"The number of actual input tensors: {len(args_list)} is not equal to the number of "
-                                f"dynamic shape tensors: {len(compile_args)}.")
+                             f"dynamic shape tensors: {len(compile_args)}.")
         self._graph_executor.check_argument_consistency(compile_args, args_list, "set_inputs")
         Validator.check_symbolic_shape(compile_args, args_list)
         return compile_args
@@ -810,8 +814,8 @@ class _JitExecutor:
             # Checkout whether the `sens` has been added to args_list.
             if len(compile_args) == len(args_list) - 1:
                 logger.warning(f"The number of actual input args '{len(args_list)}' is one more than the number "
-                                f"of input_signature args '{len(compile_args)}'. The last actual args may "
-                                f"be 'sens' and added it to compile args.")
+                               f"of input_signature args '{len(compile_args)}'. The last actual args may "
+                               f"be 'sens' and added it to compile args.")
                 compile_args.append(args_list[-1])
             compile_args = tuple(compile_args)
             self._graph_executor.check_argument_consistency(compile_args, args_list, "input_signature")
@@ -823,18 +827,25 @@ class _JitExecutor:
             if not verify_inputs_signature(compile_args, args_list):
                 raise ValueError("The input args is incompatible with the args in `input_signature`!")
         return compile_args
-    
+
+    def _check_set_inputs(self):
+        """Check if the `set_inputs()` of Cell object has been set."""
+        return self.fn.__name__ == 'construct' and isinstance(self.obj, ms.nn.Cell) and self.obj.get_inputs()
+
     def _generate_compile_args(self, args_list):
         """Chose dynamic shape tensors or actual input tensors as compile args."""
-        # Case: The `dynamic_tensor_shapes` is provided.
-        if self.dynamic_tensor_shapes is not None:
-            return _generate_compile_args_by_dynamic_tensor_shapes(args_list)
+        # Case: The `enable_dynamic` is provided and `set_inputs()` of Cell object has been set.
+        if self.enable_jit_dynamic and self._check_set_inputs():
+            raise ValueError("When `enable_dynamic` is provided, the `set_inputs()` cannot be set!")
+        # Case: The `enable_dynamic` is provided.
+        if self.enable_jit_dynamic:
+            return self._generate_compile_args_by_enable_dynamic(args_list)
         # Case: The `set_inputs()` of Cell object has been set, using these dynamic shape args as compile args.
-        if self.fn.__name__ == 'construct' and isinstance(self.obj, ms.nn.Cell) and self.obj.get_inputs():
-            return _generate_compile_args_by_set_inputs(args_list)
+        if self._check_set_inputs():
+            return self._generate_compile_args_by_set_inputs(args_list)
         # Case: If dynamic shape tensors have been assigned to `input_signature`, they are preferred as compile args.
         if self.input_signature is not None:
-            return _generate_compile_args_by_input_signature(args_list)
+            return self._generate_compile_args_by_input_signature(args_list)
         # Case: If the shape of input args is dynamic, get dynamic shape tensor from context and use it to compile.
         return _pynative_executor.get_dynamic_input(args_list)
 
@@ -1188,7 +1199,7 @@ def jit(
                 process_obj = args[0]
             # Handle auto mixed precision strategy.
             if not hasattr(func, "amp_strategy"):
-                setattr_with_func(func, "amp_strategy", get_curr_amp_strategy())
+                setattr(get_func(func), "amp_strategy", get_curr_amp_strategy())
 
             ms_function_executor = _JitExecutor(func, hash_obj, None, process_obj, jit_config, dynamic)
             out = ms_function_executor(*args, **kwargs)

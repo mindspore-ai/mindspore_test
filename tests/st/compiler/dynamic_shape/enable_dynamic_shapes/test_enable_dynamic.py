@@ -40,57 +40,67 @@ def generate_dyn(file_name, func_name, dyn_file_name):
 def test_keyword_arguments():
     """
     Features: Dynamic shape.
-    Description: Test dynamic_tensor_shapes.
+    Description: Test enable_dynamic.
     Expectation: No exception.
     """
-    generate_dyn("run_dynamic_tensor_shapes.py", "fn1", "dynamic_shape_fn2.log")
+    generate_dyn("run_enable_dynamic.py", "fn1", "dynamic_shape_fn1.log")
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_varargs_kwargs():
     """
     Features: Dynamic shape.
-    Description: Test dynamic_tensor_shapes.
+    Description: Test enable_dynamic.
     Expectation: No exception.
     """
-    generate_dyn("run_dynamic_tensor_shapes.py", "fn2", "dynamic_shape_fn4.log")
+    generate_dyn("run_enable_dynamic.py", "fn2", "dynamic_shape_fn2.log")
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_decorator_callable():
     """
     Features: Dynamic shape.
-    Description: Test dynamic_tensor_shapes.
+    Description: Test enable_dynamic.
     Expectation: No exception.
     """
-    generate_dyn("run_dynamic_tensor_shapes.py", "fn3", "dynamic_shape_fn5.log")
+    generate_dyn("run_enable_dynamic.py", "fn3", "dynamic_shape_fn3.log")
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_list_arguments():
+    """
+    Features: Dynamic shape.
+    Description: Test enable_dynamic.
+    Expectation: No exception.
+    """
+    generate_dyn("run_enable_dynamic.py", "fn4", "dynamic_shape_fn4.log")
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_invalid_positional_arguments():
     """
     Features: Dynamic shape.
-    Description: Test dynamic_tensor_shapes.
+    Description: Test enable_dynamic.
     Expectation: No exception.
     """
     with pytest.raises(ValueError) as raise_info:
-        ms.dynamic_tensor_shapes(1)
-    assert "Decorator dynamic_tensor_shapes only supports keyword arguments as inputs" in str(raise_info.value)
+        ms.enable_dynamic(1)
+    assert "Decorator enable_dynamic only supports keyword arguments as inputs" in str(raise_info.value)
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_invalid_args_number():
     """
     Features: Dynamic shape.
-    Description: Test dynamic_tensor_shapes.
+    Description: Test enable_dynamic.
     Expectation: Raise expected exception.
     """
     with pytest.raises(ValueError) as raise_info:
         @ms.jit
-        @ms.dynamic_tensor_shapes(x=None, y=None, z=None)
-        def func(x, y):
-            return x + y
-        func(ms.Tensor([1], ms.int32), ms.Tensor([2], ms.int32))
+        @ms.enable_dynamic(x=ms.Tensor(shape=None, dtype=ms.int32), y=ms.Tensor(shape=None, dtype=ms.int32))
+        def func(x):
+            return x + 1
+        func(ms.Tensor([1], ms.int32))
     assert "exceeds the number of function arguments" in str(raise_info.value)
 
 
@@ -98,31 +108,49 @@ def test_invalid_args_number():
 def test_invalid_args_type():
     """
     Features: Dynamic shape.
-    Description: Test dynamic_tensor_shapes.
+    Description: Test enable_dynamic.
     Expectation: Raise expected exception.
     """
     with pytest.raises(TypeError) as raise_info:
         @ms.jit
-        @ms.dynamic_tensor_shapes(a=None, b=None)
+        @ms.enable_dynamic(a=ms.Tensor(shape=None, dtype=ms.int32), b=ms.Tensor(shape=None, dtype=ms.int32))
         def func(a, b):
             return a + b
         func(ms.Tensor([1], ms.int32), 1)
-    assert "the corresponding inputs should be of type Tensor" in str(raise_info.value)
+    assert "the corresponding inputs only supports Tensor or" in str(raise_info.value)
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_invalid_args_shape():
     """
     Features: Dynamic shape.
-    Description: Test dynamic_tensor_shapes.
+    Description: Test enable_dynamic.
     Expectation: Raise expected exception.
     """
     with pytest.raises(ValueError) as raise_info:
         @ms.jit
-        @ms.dynamic_tensor_shapes(a=[2, None], b=None)
+        @ms.enable_dynamic(a=ms.Tensor(shape=[2, None], dtype=ms.float32), b=ms.Tensor(shape=None, dtype=ms.float32))
         def func(a, b):
             return a + b
         a = ms.Tensor(np.random.randn(3, 3), ms.float32)
         b = ms.Tensor(np.random.randn(3, 3), ms.float32)
         func(a, b)
-    assert "the shape of argument 'a' should match [2, None]" in str(raise_info.value)
+    assert "tensor shapes are not the same" in str(raise_info.value)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_invalid_args_dtype():
+    """
+    Features: Dynamic shape.
+    Description: Test enable_dynamic.
+    Expectation: Raise expected exception.
+    """
+    with pytest.raises(TypeError) as raise_info:
+        @ms.jit
+        @ms.enable_dynamic(a=ms.Tensor(shape=None, dtype=ms.int32), b=ms.Tensor(shape=None, dtype=ms.int32))
+        def func(a, b):
+            return a + b
+        a = ms.Tensor(np.random.randn(1, 2), ms.int32)
+        b = ms.Tensor(np.random.randn(3, 4), ms.float32)
+        func(a, b)
+    assert "tensor dtypes are not the same" in str(raise_info.value)

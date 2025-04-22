@@ -40,7 +40,7 @@ from mindspore.common.generator import (
     Generator, default_generator, seed, manual_seed, initial_seed, get_rng_state, set_rng_state)
 from mindspore.ops.function.array_func import is_tensor, from_numpy
 from mindspore.common._grad_function import _Function
-from mindspore.common.dynamic_shape.dynamic_tensor_shapes import TensorShape, dynamic_tensor_shapes
+from mindspore.common.dynamic_shape.enable_dynamic import enable_dynamic
 
 # symbols from dtype
 __all__ = [
@@ -80,7 +80,7 @@ __all__.extend([
     "ms_memory_recycle",
     "set_recursion_limit",
     "mutable", "JitConfig",
-    "TensorShape", "dynamic_tensor_shapes",
+    "enable_dynamic",
     "flops_collection",
     "lazy_inline", "load_mindir", "save_mindir",
     "no_inline",
