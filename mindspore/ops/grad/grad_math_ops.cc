@@ -2877,13 +2877,15 @@ REG_BPROP_BUILDER("RemainderTensorTensor").SetUnusedInputs({i2}).SetBody(BODYFUN
   auto input = ib->GetInput(kIndex0);
   auto other = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex3);
-  NodePtr d_input = ib->Cast(dout, ib->GetDtype(input));
+  NodePtr d_input = dout;
   NodePtr d_other = nullptr;
   if (other->need_compute_grad_out()) {
     d_other = (-dout) * (ib->DivMod(input, other, ops::RoundingMode::FLOOR));
-    d_other = ib->Cast(d_other, ib->GetDtype(other));
   }
-  return {BinopGradCommon(ib, input, other, d_input, d_other)};
+  const auto &grads = BinopGradCommon(ib, input, other, d_input, d_other);
+  d_input = input->need_compute_grad_out() ? ib->Cast(grads[kIndex0], ib->GetDtype(input)) : nullptr;
+  d_other = other->need_compute_grad_out() ? ib->Cast(grads[kIndex1], ib->GetDtype(other)) : nullptr;
+  return {d_input, d_other};
 });
 
 REG_BPROP_BUILDER("RemainderScalarTensor").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
