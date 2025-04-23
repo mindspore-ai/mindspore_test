@@ -398,6 +398,16 @@ class MetaImpl : public MetaFuncGraph {
   /// \return Output node.
   NodePtr ScalarMul(const NodePtr &x, const NodePtr &y);
 
+  /// \brief x / y
+  ///
+  /// \note Example: ScalarDiv(x, y)
+  ///
+  /// \param[in] x Input node.
+  /// \param[in] y Input node.
+  ///
+  /// \return Output node.
+  NodePtr ScalarDiv(const NodePtr &x, const NodePtr &y);
+
   /// \brief x // y
   ///
   /// \note Example: ScalarFloorDiv(x, y)

@@ -37,13 +37,13 @@ def test_exponential__randomness(mode):
     generator.manual_seed(100)
     state = generator.get_state()
 
-    input_x1 = ms.Tensor(np.random.rand(*shape), dtype=ms.float64)
+    input_x1 = ms.Tensor(np.random.rand(*shape), dtype=ms.float16)
     generator.set_state(state)
     output1 = exponential__forward_func(input_x1, lambd, generator=generator)
     _pynative_executor.sync()
     np.random.seed(10)
     generator.set_state(state)
-    input_x2 = ms.Tensor(np.random.rand(*shape), dtype=ms.float64)
+    input_x2 = ms.Tensor(np.random.rand(*shape), dtype=ms.float16)
     output2 = exponential__forward_func(input_x2, lambd, generator=generator)
 
     assert np.allclose(output1.asnumpy(), output2.asnumpy())

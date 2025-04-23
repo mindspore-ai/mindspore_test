@@ -386,6 +386,10 @@ NodePtr MetaImpl::ScalarMul(const NodePtr &x, const NodePtr &y) {
   return NewNode({NewValueNode(prim::kPrimScalarMul), x, y});
 }
 
+NodePtr MetaImpl::ScalarDiv(const NodePtr &x, const NodePtr &y) {
+  return NewNode({NewValueNode(prim::kPrimScalarDiv), x, y});
+}
+
 NodePtr MetaImpl::ScalarFloorDiv(const NodePtr &x, const NodePtr &y) {
   return NewNode({NewValueNode(prim::kPrimScalarFloorDiv), x, y});
 }
