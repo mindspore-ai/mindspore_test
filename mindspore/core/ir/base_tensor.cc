@@ -414,7 +414,7 @@ void BaseTensor::data_sync(bool need_wait, bool inpalce) const {
     ExecuteLazyTask();
   }
 
-  if (device_sync_ == nullptr) {
+  if (device_sync_ == nullptr || device_sync_->GetMutablePtr() == nullptr) {
     return;
   }
   MS_EXCEPTION_IF_NULL(data_);
