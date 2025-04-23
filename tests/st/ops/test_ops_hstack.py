@@ -27,7 +27,19 @@ def generate_expect_forward_output(inputs):
     return np.hstack(inputs)
 
 def generate_expect_backward_output(inputs):
-    return [np.ones_like(input_x) for input_x in inputs]
+    output = []
+    for input_x in inputs:
+        if isinstance(input_x, np.ndarray):
+            if np.issubdtype(input_x.dtype, np.integer) or np.issubdtype(input_x.dtype, np.bool_):
+                output.append(np.zeros_like(input_x))
+            else:
+                output.append(np.ones_like(input_x))
+        else:
+            if isinstance(input_x, (int, bool)):
+                output.append(0 if isinstance(input_x, int) else False)
+            else:
+                output.append(1.0)
+    return output
 
 @test_utils.run_with_cell
 def hstack_forward_func(tensor1, tensor2):
@@ -55,6 +67,7 @@ def test_ops_hstack_normal(mode):
     input_list = []
     input_list.append([np.random.randn(), np.random.randn()])
     input_list.append([generate_random_input((2,), np.int64), generate_random_input((5,), np.int64)])
+    input_list.append([generate_random_input((2,), np.bool_), generate_random_input((5,), np.bool_)])
     input_list.append([generate_random_input((2, 2), np.float16), generate_random_input((2, 3), np.float16)])
     input_list.append([generate_random_input((2, 1, 4), np.float32), generate_random_input((2, 3, 4), np.float32)])
     input_list.append([generate_random_input((2, 3, 4, 5), np.int32), generate_random_input((2, 3, 4, 5), np.int32)])

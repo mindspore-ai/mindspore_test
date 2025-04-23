@@ -17,6 +17,27 @@
 import numpy as np
 from mindspore import _checkparam as validator
 
+def Slice(x, begin, size):
+    """
+    Implement Mindspore slice operator using Numpy
+
+    Args:
+        x (numpy.ndarray): The input array.
+        begin (tuple or list): Start indices for each dimension.
+        size (tuple or list): Slice size for each dimension. Use -1 to select all remaining elements in a dimension.
+
+    Returns:
+        numpy.ndarray, an output array.
+    """
+    slices = []
+    for i in range(len(begin)):
+        start = begin[i]
+        if size[i] == -1:
+            end = None
+        else:
+            end = start + size[i]
+        slices.append(slice(start, end))
+    return x[tuple(slices)]
 
 def avg_pooling(x, pool_h, pool_w, stride):
     """

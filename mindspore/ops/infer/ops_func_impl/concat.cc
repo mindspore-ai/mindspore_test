@@ -169,7 +169,7 @@ ShapeArray ConcatFuncImpl::InferShape(const PrimitivePtr &primitive, const Infer
 
 std::vector<TypeId> ConcatFuncImpl::InferType(const PrimitivePtr &primitive,
                                               const InferInfoPtrList &input_infos) const {
-  std::vector<TypeId> element_types;
+  std::vector<TypePtr> element_types;
   auto &input = input_infos[kInputIndex0];
   if (input->IsSequence()) {
     if (MS_UNLIKELY(input->IsDynamicSequence())) {
@@ -180,16 +180,19 @@ std::vector<TypeId> ConcatFuncImpl::InferType(const PrimitivePtr &primitive,
     } else {
       const auto &elements = input->GetSequenceElements();
       (void)std::transform(elements.begin(), elements.end(), std::back_inserter(element_types),
-                           [](const auto &info) { return info->GetType(); });
+                           [](const auto &info) { return TypeIdToType(info->GetType()); });
     }
   } else {
     (void)std::transform(input_infos.begin(), input_infos.end() - 1, std::back_inserter(element_types),
-                         [](const auto &info) { return info->GetType(); });
+                         [](const auto &info) { return TypeIdToType(info->GetType()); });
   }
   MS_CHECK_VALUE(element_types.size() > 0, CheckAndConvertUtils::FormatCheckIntegerMsg(
                                              "elements size", element_types.size(), kGreaterThan, 0, primitive));
-  (void)CheckAndConvertUtils::CheckTypeIdsSame("tensors", element_types, primitive->name());
-  return {element_types[0]};
+  auto out_type = element_types[0];
+  for (TypePtr element_type : element_types) {
+    out_type = PromoteType(out_type, element_type, primitive->name());
+  }
+  return {out_type->type_id()};
 }
 
 }  // namespace mindspore::ops
