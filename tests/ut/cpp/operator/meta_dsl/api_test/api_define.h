@@ -22,6 +22,7 @@
 namespace mindspore::prim {
 REGISTER_FUNCTION_OP(TestIsInstance);
 REGISTER_FUNCTION_OP(TestIf);
+REGISTER_FUNCTION_OP(TestCustomBprop);
 REGISTER_FUNCTION_OP(TestIfExp, nullptr, TestCustomBprop);
 REGISTER_FUNCTION_OP(TestFor);
 REGISTER_FUNCTION_OP(TestWhile);

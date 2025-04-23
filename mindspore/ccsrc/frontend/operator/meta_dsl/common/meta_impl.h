@@ -45,6 +45,8 @@ class MetaImpl : public MetaFuncGraph {
   MS_DECLARE_PARENT(MetaImpl, MetaFuncGraph)
   void set_prim(const PrimitivePtr &prim);
   void set_manager(const FuncGraphManagerPtr &manager);
+  void set_check_func(const CheckFunc &check_func);
+  void set_bprop(const std::shared_ptr<MetaImpl> &bprop_);
   PrimitivePtr prim() const;
   FuncGraphPtr GenerateFuncGraph(const AbstractBasePtrList &input_args) override;
   virtual void GenerateFunction() = 0;
@@ -124,7 +126,7 @@ class MetaImpl : public MetaFuncGraph {
   ///           return x         -->         auto false_case = [&]() { Return(y); };
   ///         return y                       auto out = If(condition, true_case, false_case)
   ///
-  /// \param[in] cond The condition of if-else expression.
+  /// \param[in] condition The condition of if-else expression.
   /// \param[in] true_branch True branch.
   /// \param[in] false_branch False branch.
   ///
@@ -529,8 +531,6 @@ class MetaImpl : public MetaFuncGraph {
                  const NodePtrList &args);
   NodePtr IfBranchesInner(const std::vector<std::pair<NodePtr, BlockFunc>> &if_branches, const BlockFunc &else_branch,
                           size_t index);
-  void set_check_func(const CheckFunc &check_func);
-  void set_bprop_func(const std::function<std::shared_ptr<MetaImpl>()> &bprop_func);
 
  private:
   void BeginFunc(const std::string &func_name = "anonymous");
@@ -549,7 +549,7 @@ class MetaImpl : public MetaFuncGraph {
   FuncGraphPtr bprop_graph_{nullptr};
   FuncGraphManagerPtr manager_{nullptr};
   std::stack<MetaFuncBuilderPtr> func_builder_stack_;
-  std::function<std::shared_ptr<MetaImpl>()> bprop_func_{nullptr};
+  std::shared_ptr<MetaImpl> bprop_{nullptr};
 };
 using MetaImplPtr = std::shared_ptr<MetaImpl>;
 using CreateFunc = std::function<std::shared_ptr<MetaImpl>()>;

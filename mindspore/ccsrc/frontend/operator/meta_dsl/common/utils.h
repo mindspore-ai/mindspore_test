@@ -126,34 +126,57 @@ namespace mindspore::prim {
     DECLARE_PARAMS_9, DECLARE_PARAMS_8, DECLARE_PARAMS_7, DECLARE_PARAMS_6, DECLARE_PARAMS_5, DECLARE_PARAMS_4,       \
     DECLARE_PARAMS_3, DECLARE_PARAMS_2, DECLARE_PARAMS_1, DECLARE_PARAMS_0)(__VA_ARGS__))
 
+#define _REGISTER_META_IMPL_1(name) \
+  static const MetaImplRegHelper meta_impl_helper_##name(#name, [&]() { return std::make_shared<name##MetaImpl>(); });
+
+#define _REGISTER_META_IMPL_2(name, check_func)                         \
+  static const MetaImplRegHelper meta_impl_helper_##name(#name, [&]() { \
+    auto op = std::make_shared<name##MetaImpl>();                       \
+    op->set_check_func(check_func);                                     \
+    return op;                                                          \
+  });
+
+#define _REGISTER_META_IMPL_3(name, check_func, bprop)                  \
+  static const MetaImplRegHelper meta_impl_helper_##name(#name, [&]() { \
+    auto op = std::make_shared<name##MetaImpl>();                       \
+    op->set_check_func(check_func);                                     \
+    op->set_bprop(std::make_shared<bprop##MetaImpl>());                 \
+    return op;                                                          \
+  });
+
 // Definition of MetaImpl subclass.
-#define _DEFINE_FUNCTION_OP(name, check_func, bprop_func) \
-  class name##MetaImpl : public MetaImpl {                \
-   public:                                                \
-    explicit name##MetaImpl() : MetaImpl(#name) {         \
-      set_check_func(check_func);                         \
-      set_bprop_func(bprop_func);                         \
-    }                                                     \
-    ~name##MetaImpl() override = default;                 \
-    MS_DECLARE_PARENT(name##MetaImpl, MetaImpl)           \
-    void GenerateFunction() override;                     \
-  };                                                      \
-  static const MetaImplRegHelper meta_impl_helper_##name(#name, []() { return std::make_shared<name##MetaImpl>(); });
+#define _DEFINE_FUNCTION_OP(name)               \
+  class name##MetaImpl : public MetaImpl {      \
+   public:                                      \
+    name##MetaImpl() : MetaImpl(#name) {}       \
+    ~name##MetaImpl() override = default;       \
+    MS_DECLARE_PARENT(name##MetaImpl, MetaImpl) \
+    void GenerateFunction() override;           \
+  };
 
 // DEFINE_FUNCTION_OP(op_name) -> _DEFINE_FUNCTION_OP_1
-#define _DEFINE_FUNCTION_OP_1(name) _DEFINE_FUNCTION_OP(name, nullptr, nullptr)
+#define _DEFINE_FUNCTION_OP_1(name) \
+  _DEFINE_FUNCTION_OP(name)         \
+  _REGISTER_META_IMPL_1(name)
 
 // DEFINE_FUNCTION_OP(op_name, check_func) -> _DEFINE_FUNCTION_OP_2
-#define _DEFINE_FUNCTION_OP_2(name, check_func) _DEFINE_FUNCTION_OP(name, check_func, nullptr)
+#define _DEFINE_FUNCTION_OP_2(name, check_func) \
+  _DEFINE_FUNCTION_OP(name)                     \
+  _REGISTER_META_IMPL_2(name, check_func)
 
 // DEFINE_FUNCTION_OP(op_name, check_func, bprop) -> _DEFINE_FUNCTION_OP_3
-
 #define _DEFINE_FUNCTION_OP_3(name, check_func, bprop) \
-  _DEFINE_FUNCTION_OP(bprop, nullptr, nullptr)         \
-  _DEFINE_FUNCTION_OP(name, check_func, []() { return std::make_shared<bprop##MetaImpl>(); })
+  _DEFINE_FUNCTION_OP(name)                            \
+  _REGISTER_META_IMPL_3(name, check_func, bprop)
 
 #define _EXPAND(x) x
+
 #define _GET_FUNCTION_OP_MACRO(_1, _2, _3, NAME, ...) NAME
+
+// Define REGISTER_META_IMPL api.
+#define REGISTER_META_IMPL(...)                                                             \
+  _EXPAND(_GET_FUNCTION_OP_MACRO(__VA_ARGS__, _REGISTER_META_IMPL_3, _REGISTER_META_IMPL_2, \
+                                 _REGISTER_META_IMPL_1)(__VA_ARGS__))
 
 // Define REGISTER_FUNCTION_OP api.
 #define REGISTER_FUNCTION_OP(...)                                                           \

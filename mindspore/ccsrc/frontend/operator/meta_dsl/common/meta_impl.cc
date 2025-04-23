@@ -124,9 +124,7 @@ void MetaImpl::set_manager(const FuncGraphManagerPtr &manager) { manager_ = mana
 
 void MetaImpl::set_check_func(const CheckFunc &check_func) { check_func_ = check_func; }
 
-void MetaImpl::set_bprop_func(const std::function<std::shared_ptr<MetaImpl>()> &bprop_func) {
-  bprop_func_ = bprop_func;
-}
+void MetaImpl::set_bprop(const std::shared_ptr<MetaImpl> &bprop) { bprop_ = bprop; }
 
 void MetaImpl::CheckInputs(const AbstractBasePtrList &input_args) const {
   // Check inputs' number.
@@ -170,8 +168,7 @@ FuncGraphPtr MetaImpl::EndFunc() {
 }
 
 void MetaImpl::DefineCustomBprop(const FuncGraphPtr &graph) {
-  if (bprop_func_ != nullptr) {
-    auto bprop_meta_impl = bprop_func_();
+  if (bprop_ != nullptr) {
     // Create bprop graph.
     bprop_graph_ = std::make_shared<FuncGraph>();
     bprop_graph_->set_flag(FUNC_GRAPH_FLAG_CORE, true);
@@ -180,7 +177,7 @@ void MetaImpl::DefineCustomBprop(const FuncGraphPtr &graph) {
     // Implement bprop graph.
     constexpr auto extend_size = 2;
     auto params_size = graph->parameters().size() + extend_size;
-    AnfNodePtrList inputs{NewValueNode(bprop_meta_impl)};
+    AnfNodePtrList inputs{NewValueNode(bprop_)};
     for (size_t i = 0; i < params_size; ++i) {
       (void)inputs.emplace_back(bprop_graph_->add_parameter());
     }
