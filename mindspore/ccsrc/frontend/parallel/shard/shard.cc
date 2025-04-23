@@ -418,8 +418,9 @@ static void SetInputLayout(const FuncGraphPtr &func_graph, const AnfNodePtr &in_
 
     auto execution_mode = MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE);
     if (to_insert_nodes_set.empty()) {
-      MS_LOG_WITH_NODE(EXCEPTION, parameter)
-        << "For input: \"" << parameter->fullname_with_scope() << "\", failed to find node to insert strategy.";
+      MS_LOG(INFO) << "For input: \"" << parameter->fullname_with_scope()
+                   << "\", failed to find node to insert strategy. This input may not be used in computation, skip it.";
+      continue;
     }
     for (auto &node : to_insert_nodes_set) {
       auto to_insert_cnode = node.first->cast<CNodePtr>();
