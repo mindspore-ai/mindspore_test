@@ -212,24 +212,19 @@ def empty_cache():
     will be optimized.
 
     Note:
-        Empty cache may help reduce the fragmentation of device memory.
-        However, it may have a negative impact on network performance. Please use it with caution.
-        The api is supported on Ascend only and with limitations:
-          - Not support ``disable ge kernel``.
-
-    Returns:
-        int, in Byte.
+        - Empty cache may help reduce the fragmentation of device memory. However, it may have a negative impact on
+          network performance.
+        - Not support Atlas training series products.
 
     Supported Platforms:
         ``Ascend``
     """
     device_target = ms.context.get_context("device_target")
     if not _is_initialized(device_target):
-        logger.warning(f"Backend {device_target} is not initialized yet. Return 0.")
-        return 0
+        logger.warning(f"Backend {device_target} is not initialized yet.")
+        return
     release_size = _empty_cache(device_target)
     logger.info(f"The empty_cache operation is executed successfully, release size: {release_size}.")
-    return release_size
 
 
 def reset_peak_memory_stats():
