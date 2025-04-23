@@ -33,6 +33,7 @@ abstract::AbstractBasePtr MetaTensor::ToAbstract() {
     auto param_name = param_info_->name();
     auto ref_key = std::make_shared<RefKey>(param_name);
     abs_tensor = std::make_shared<abstract::AbstractRefTensor>(abs_tensor, ref_key);
+    abs_tensor->cast<abstract::AbstractRefPtr>()->set_is_parameter(true);
   } else {
     abs_tensor->set_value(shared_from_base<MetaTensor>());
   }

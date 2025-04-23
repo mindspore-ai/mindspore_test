@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2022 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 
 #include "frontend/optimizer/ad/grad.h"
+#include <map>
 #include <memory>
 #include <unordered_map>
 #include <vector>
@@ -30,6 +31,7 @@
 namespace mindspore {
 namespace ad {
 namespace {
+constexpr auto kNeedGradFlag = "need_grad";
 FuncGraphPtr PartialEliminateOptPass(const pipeline::ResourcePtr &resource, const FuncGraphPtr &func_graph) {
   MS_EXCEPTION_IF_NULL(resource);
 
@@ -155,6 +157,184 @@ void AddToManage(const pipeline::ResourceBasePtr &resources, const FuncGraphPtr 
   MS_EXCEPTION_IF_NULL(manager_ptr);
   manager_ptr->AddFuncGraph(func_graph);
 }
+
+void CheckOutputInner(const AnfNodePtr &node) {
+  constexpr auto kCheckViewInplaceGradFlag = "view_inplace_grad_validate";
+  auto has_checked = node->user_data<bool>(kCheckViewInplaceGradFlag);
+  if (has_checked != nullptr && *has_checked) {
+    MS_LOG(DEBUG) << "The node has checked: " << node->DebugString();
+    return;
+  }
+  node->set_user_data<bool>(kCheckViewInplaceGradFlag, std::make_shared<bool>(true));
+  const auto &abs = node->abstract();
+  if (abs != nullptr && abs->isa<abstract::AbstractRefTensor>()) {
+    const auto ref = abs->cast<abstract::AbstractRefPtr>();
+    if (ref->is_view_output()) {
+      MS_LOG(EXCEPTION) << "The current view inplace differentiation scenario is not supported."
+                           "The code location is as follows:\n"
+                        << trace::GetDebugInfoStr(node->debug_info());
+    }
+  }
+
+  if (!node->isa<CNode>() || IsPrimitiveCNode(node, prim::kPrimUpdateState)) {
+    return;
+  }
+  auto cnode = node->cast<CNodePtr>();
+  // call node
+  if (IsValueNode<FuncGraph>(cnode->input(0))) {
+    FuncGraphPtr sub_graph = GetValueNode<FuncGraphPtr>(cnode->input(0));
+    MS_EXCEPTION_IF_NULL(sub_graph);
+    auto sub_graph_out = sub_graph->output();
+    return CheckOutputInner(sub_graph_out);
+  }
+
+  // call switch, check func_graph, do not check the input args.
+  if (IsPrimitiveCNode(cnode->input(0), prim::kPrimSwitch)) {
+    return CheckOutputInner(cnode->input(0));
+  }
+
+  // switch node
+  if (IsPrimitiveCNode(cnode, prim::kPrimSwitch)) {
+    constexpr size_t cond_index = 1;
+    constexpr size_t true_index = 2;
+    constexpr size_t false_index = 3;
+    CheckOutputInner(cnode->input(cond_index));
+    auto true_func = GetValueNode<FuncGraphPtr>(cnode->input(true_index));
+    MS_EXCEPTION_IF_NULL(true_func);
+    auto true_func_out = true_func->output();
+    CheckOutputInner(true_func_out);
+    auto false_func = GetValueNode<FuncGraphPtr>(cnode->input(false_index));
+    MS_EXCEPTION_IF_NULL(false_func);
+    auto false_func_out = false_func->output();
+    return CheckOutputInner(false_func_out);
+  }
+
+  if (IsPrimitiveCNode(cnode, prim::kPrimDepend)) {
+    return CheckOutputInner(cnode->input(1));
+  }
+  const auto &inputs = cnode->inputs();
+  for (auto input : inputs) {
+    CheckOutputInner(input);
+  }
+}
+
+void CheckViewInplaceOutput(const FuncGraphPtr &func_graph) {
+  const auto &output = func_graph->output();
+  auto output_bas = output->abstract();
+  if (output_bas != nullptr && output_bas->isa<abstract::AbstractRefTensor>()) {
+    auto ref = output_bas->cast<abstract::AbstractRefPtr>();
+    if (ref->is_view_input()) {
+      return;
+    }
+  }
+  CheckOutputInner(output);
+}
+
+bool IsInplaceNode(const AnfNodePtr &node) {
+  if (!node->isa<CNode>()) {
+    return false;
+  }
+  auto prim = GetValueNode<PrimitivePtr>(node->cast<CNodePtr>()->input(0));
+  return prim != nullptr && prim->inplace_prim();
+}
+
+bool UpdateStateUseOnly(const AnfNodePtr &node, const NodeUsersMap &node_user_map) {
+  auto node_users_iter = node_user_map.find(node);
+  if (node_users_iter == node_user_map.end()) {
+    return false;
+  }
+  return std::all_of(node_users_iter->second.begin(), node_users_iter->second.end(),
+                     [](const auto &pair) { return IsPrimitiveCNode(pair.first, prim::kPrimUpdateState); });
+}
+
+bool IsViewOutput(const AnfNodePtr &node) {
+  auto abs = node->abstract();
+  if (abs != nullptr && abs->isa<abstract::AbstractRefTensor>()) {
+    const auto ref = abs->cast<abstract::AbstractRefPtr>();
+    if (ref->is_view_output()) {
+      return true;
+    }
+  }
+  return false;
+}
+
+std::map<AnfNodePtr, AnfNodePtr> GetNeedGradMapForUpdateStateUseOnlyNodes(const FuncGraphPtr &func_graph) {
+  auto all_nodes = TopoSort(func_graph->get_return());
+  const auto &mgr = func_graph->manager();
+  MS_EXCEPTION_IF_NULL(mgr);
+  const auto &node_users_map = mgr->node_users();
+
+  std::map<AnfNodePtr, AnfNodePtr> need_grad_map{};
+  for (size_t i = 0; i < all_nodes.size(); ++i) {
+    // is inplace node
+    if (IsInplaceNode(all_nodes[i]) && UpdateStateUseOnly(all_nodes[i], node_users_map)) {
+      auto inplace_node = all_nodes[i]->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(inplace_node);
+      auto prim_value = inplace_node->input(0)->cast<ValueNodePtr>()->value();
+      MS_EXCEPTION_IF_NULL(prim_value);
+      auto prim = GetValue<PrimitivePtr>(prim_value);
+      std::vector<size_t> rw_write_input_indexes = prim->rw_write_input_indexes();
+      for (auto index : rw_write_input_indexes) {
+        auto inplace_input = inplace_node->input(index + 1);
+        if (IsViewOutput(inplace_input)) {
+          need_grad_map[inplace_input] = all_nodes[i];
+        } else {
+          need_grad_map[inplace_node] = all_nodes[i];
+        }
+        all_nodes[i]->set_user_data<bool>(kNeedGradFlag, std::make_shared<bool>(false));
+      }
+    }
+  }
+  return need_grad_map;
+}
+
+void SetFlagInner(const AnfNodePtr &node, const std::map<AnfNodePtr, AnfNodePtr> &need_grad_map) {
+  constexpr auto kSetNeedGradFlag = "set_need_grad_flag";
+  auto already_set_flag = node->user_data<bool>(kSetNeedGradFlag);
+  if (already_set_flag != nullptr && *already_set_flag) {
+    MS_LOG(DEBUG) << "The node has checked: " << node->DebugString();
+    return;
+  }
+  node->set_user_data<bool>(kSetNeedGradFlag, std::make_shared<bool>(true));
+  auto iter = need_grad_map.find(node);
+  if (need_grad_map.find(node) != need_grad_map.end()) {
+    auto need_grad_node = iter->second;
+    need_grad_node->set_user_data<bool>(kNeedGradFlag, std::make_shared<bool>(true));
+  }
+  if (!node->isa<CNode>()) {
+    return;
+  }
+  auto cnode = node->cast<CNodePtr>();
+  auto inputs = cnode->inputs();
+  auto func_graph = cnode->func_graph();
+  const auto &mgr = func_graph->manager();
+  MS_EXCEPTION_IF_NULL(mgr);
+  const auto &node_users_map = mgr->node_users();
+
+  for (auto input : inputs) {
+    auto input_iter = need_grad_map.find(input);
+    if (input_iter != need_grad_map.end()) {
+      if (UpdateStateUseOnly(input, node_users_map)) {
+        continue;
+      }
+      auto need_grad_node = input_iter->second;
+      need_grad_node->set_user_data<bool>(kNeedGradFlag, std::make_shared<bool>(true));
+    }
+    if (input->isa<CNode>()) {
+      SetFlagInner(input, need_grad_map);
+    }
+  }
+}
+
+void SetFlagForInplaceNodesUpdateStateUseOnly(const FuncGraphPtr &func_graph,
+                                              const std::map<AnfNodePtr, AnfNodePtr> &need_grad_map) {
+  const auto &output = func_graph->output();
+  if (!output->isa<CNode>()) {
+    return;
+  }
+  auto cnode = output->cast<CNodePtr>();
+  SetFlagInner(cnode, need_grad_map);
+}
 }  // namespace
 
 FuncGraphPtr GradOneFuncGraph(const FuncGraphPtr &func_graph, const opt::OptimizerPtr &optimizer, bool is_top,
@@ -164,6 +344,11 @@ FuncGraphPtr GradOneFuncGraph(const FuncGraphPtr &func_graph, const opt::Optimiz
   // Do inplace input replacement
   mindspore::opt::DoInplaceInputReplace(func_graph, optimizer);
 
+  if (is_view_inplace) {
+    CheckViewInplaceOutput(func_graph);
+    auto need_grad_map = GetNeedGradMapForUpdateStateUseOnlyNodes(func_graph);
+    SetFlagForInplaceNodesUpdateStateUseOnly(func_graph, need_grad_map);
+  }
   auto gradkv = func_graph->transforms().find("grad");
   if (gradkv != func_graph->transforms().end()) {
     return gradkv->second.func_graph();

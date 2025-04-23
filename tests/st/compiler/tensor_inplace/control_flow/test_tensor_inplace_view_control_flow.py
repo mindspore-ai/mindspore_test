@@ -22,6 +22,8 @@ from mindspore.ops.auto_generate.gen_ops_prim import inplace_copy_op
 from mindspore.ops.functional import grad
 from tests.mark_utils import arg_mark
 
+ms.context.set_context(jit_config={"jit_level": "O0"})
+
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_view_in_control_flow1():
     """

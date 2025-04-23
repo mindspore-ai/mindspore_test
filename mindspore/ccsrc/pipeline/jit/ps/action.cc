@@ -1171,7 +1171,9 @@ AbstractBasePtr GetDefaultValueAbstract(const ParameterPtr &param) {
   auto abs_tensor = value_abs->cast<abstract::AbstractTensorPtr>();
   MS_EXCEPTION_IF_NULL(abs_tensor);
   auto ref_key = std::make_shared<RefKey>(param->name());
-  return std::make_shared<abstract::AbstractRefTensor>(abs_tensor, ref_key);
+  auto res = std::make_shared<abstract::AbstractRefTensor>(abs_tensor, ref_key);
+  res->cast<abstract::AbstractRefPtr>()->set_is_parameter(true);
+  return res;
 }
 
 namespace {
@@ -1266,10 +1268,8 @@ bool IsCreatedByViewOp(const AnfNodePtr &node) {
   }
   auto abstract = node->abstract();
   if (abstract != nullptr && abstract->isa<abstract::AbstractRefTensor>()) {
-    constexpr auto kViewOp = abstract::AbstractRefTensor::RefTensorType::kViewOp;
-    if (abstract->cast_ptr<abstract::AbstractRefTensor>()->ref_type() == kViewOp) {
-      return true;
-    }
+    const auto ref = abstract->cast_ptr<abstract::AbstractRefTensor>();
+    return ref->is_view();
   }
   return false;
 }

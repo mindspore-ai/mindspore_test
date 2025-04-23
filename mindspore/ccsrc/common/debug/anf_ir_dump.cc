@@ -338,6 +338,10 @@ void PrintNodeOutputType(std::ostringstream &buffer, const AnfNodePtr &node) {
     if (ref_key != nullptr) {
       buffer << ", ref_key=" << ref_key->value();
     }
+    if (abstract->isa<abstract::AbstractRefTensor>()) {
+      const auto &ref_tensor = abstract->cast_ptr<abstract::AbstractRefTensor>();
+      buffer << "," << ref_tensor->RefTensorTypeToString();
+    }
     PrintTupleNodeUsedFlags(buffer, sequence_abs);
     buffer << ">";
   } else if (type != nullptr) {
@@ -347,6 +351,10 @@ void PrintNodeOutputType(std::ostringstream &buffer, const AnfNodePtr &node) {
     }
     if (ref_key != nullptr) {
       buffer << ", ref_key=" << ref_key->value();
+    }
+    if (abstract->isa<abstract::AbstractRefTensor>()) {
+      const auto &ref_tensor = abstract->cast_ptr<abstract::AbstractRefTensor>();
+      buffer << "," << ref_tensor->RefTensorTypeToString();
     }
     PrintTupleNodeUsedFlags(buffer, sequence_abs);
     buffer << ">";

@@ -517,14 +517,22 @@ void DFunctor::BackPropagate(const CNodePtr &cnode_morph, const AdjointPtr &node
       auto prim = GetValueNode<PrimitivePtr>(dyn_cast<CNode>(node_input)->input(0));
       auto node_users_map = resources_->manager()->node_users();
       if (prim != nullptr && prim->inplace_prim() && UpdateStateUseOnly(node_input, node_users_map)) {
-        // Initialize a dout for the cnode used only by updatestate.
-        auto caller = input_adjoint->second->caller();
-        auto real_din = caller->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), din, NewValueNode(int64_t(0))});
-        auto dmask_tuple =
-          caller->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), din, NewValueNode(int64_t(1))});
-        auto din_ones = input_adjoint->second->caller()->NewCNodeInOrder({NewValueNode(prim::kPrimOnesLike), real_din});
-        auto din_ones_tuple = caller->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), din_ones, dmask_tuple});
-        input_adjoint->second->AccumulateDout(din_ones_tuple);
+        MS_LOG(DEBUG) << "The Inplace node only used by UpdateState: " << node_input->DebugString();
+        constexpr auto kNeedGradFlag = "need_grad";
+        bool need_grad = node_input->has_user_data(kNeedGradFlag) && *node_input->user_data<bool>(kNeedGradFlag);
+        if (need_grad) {
+          MS_LOG(DEBUG) << "The Inplace node needs to pass the gradient. The node is:" << node_input->DebugString();
+          // Initialize a dout for the cnode used only by updatestate.
+          auto caller = input_adjoint->second->caller();
+          auto real_din =
+            caller->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), din, NewValueNode(int64_t(0))});
+          auto dmask_tuple =
+            caller->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), din, NewValueNode(int64_t(1))});
+          auto din_ones =
+            input_adjoint->second->caller()->NewCNodeInOrder({NewValueNode(prim::kPrimOnesLike), real_din});
+          auto din_ones_tuple = caller->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), din_ones, dmask_tuple});
+          input_adjoint->second->AccumulateDout(din_ones_tuple);
+        }
       }
     }
     din = CalDoutTuple(cnode_morph, din, node_adjoint, i);

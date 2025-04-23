@@ -21,6 +21,14 @@ from mindspore.ops.auto_generate.gen_ops_prim import select_ext_view_op, slice_e
 from mindspore.ops.functional import grad
 from tests.mark_utils import arg_mark
 
+class GradNet(nn.Cell):
+    def __init__(self, net):
+        super(GradNet, self).__init__()
+        self.grad_op = ops.grad(net)
+
+    def construct(self, x):
+        return self.grad_op(x)
+
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_tensor_view_inplace_grad_once():
     """
@@ -121,7 +129,6 @@ def test_tensor_view_grad1():
     assert (out_expect.asnumpy() == out_jit.asnumpy()).all()
 
 
-@pytest.mark.skip(reason="No support")
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_tensor_view_inplace_grad():
     """
@@ -140,9 +147,11 @@ def test_tensor_view_inplace_grad():
 
     net = Net()
     out_expect = grad(net)(Tensor([3, 4]))
-    net.construct = ms.jit(net.construct, backend="ms_backend")
-    out_jit = grad(net)(Tensor([3, 4]))
-    assert np.allclose(out_expect.asnumpy(), out_jit.asnumpy())
+    with pytest.raises(RuntimeError) as raise_info:
+        net.construct = ms.jit(net.construct, backend="ms_backend")
+        out_jit = grad(net)(Tensor([3, 4]))
+        assert np.allclose(out_expect.asnumpy(), out_jit.asnumpy())
+    assert "The current view inplace differentiation scenario is not supported." in str(raise_info.value)
 
 
 @pytest.mark.skip(reason="No support")
@@ -221,3 +230,296 @@ def test_view_and_inplace_grad_change_same_area3():
     net.construct = ms.jit(net.construct, backend="ms_backend")
     out_jit = grad(net)(Tensor([1, 1]), Tensor([[1, 2], [3, 4]]))
     assert np.allclose(out_expect.asnumpy(), out_jit.asnumpy())
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_tensor_view_inplace_grad_check1():
+    """
+    Feature: view inplace operation in grad.
+    Description: view inplace operation in grad.
+    Expectation: no exception
+    """
+
+    class Net(nn.Cell):
+        def construct(self, input_tensor1):
+            input_tensor1_1 = ops.abs(input_tensor1)
+            x = select_ext_view_op(input_tensor1_1, 0, 0)
+            y = select_ext_view_op(x, 0, 1)
+            y.add_(2)
+            z = x * 2
+            z.add_(3)
+            return z
+
+    net = Net()
+    out_expect = grad(net)(Tensor([[1, 2], [3, 4]]))
+    with pytest.raises(RuntimeError) as raise_info:
+        net.construct = ms.jit(net.construct, backend="ms_backend")
+        out_jit = grad(net)(Tensor([[1, 2], [3, 4]]))
+        assert np.allclose(out_expect.asnumpy(), out_jit.asnumpy())
+    assert "The current view inplace differentiation scenario is not supported." in str(raise_info.value)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_tensor_view_inplace_grad_check2():
+    """
+    Feature: view inplace operation in grad.
+    Description: view inplace operation in grad.
+    Expectation: no exception
+    """
+
+    class Net(nn.Cell):
+        def construct(self, input_tensor1):
+            input_tensor1_1 = ops.abs(input_tensor1)
+            x = select_ext_view_op(input_tensor1_1, 0, 0)
+            x.add_(4)
+            z = x * 2
+            z.add_(3)
+            return z
+
+    net = Net()
+    out_expect = grad(net)(Tensor([1, 2]))
+    with pytest.raises(RuntimeError) as raise_info:
+        net.construct = ms.jit(net.construct, backend="ms_backend")
+        out_jit = grad(net)(Tensor([1, 2]))
+        assert np.allclose(out_expect.asnumpy(), out_jit.asnumpy())
+    assert "The current view inplace differentiation scenario is not supported." in str(raise_info.value)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_tensor_view_inplace_grad_check3():
+    """
+    Feature: view inplace operation in grad.
+    Description: view inplace operation in grad.
+    Expectation: no exception
+    """
+
+    class Net(nn.Cell):
+        def construct(self, input_tensor1, input_tensor2):
+            input_tensor1_1 = ops.abs(input_tensor1)
+            input_tensor2_1 = ops.abs(input_tensor2)
+            x = select_ext_view_op(input_tensor1_1, 0, 0)
+            y = select_ext_view_op(input_tensor2_1, 0, 0)
+            x.add_(3)
+            y.add_(2)
+            z = input_tensor1_1 * 2
+            z.add_(3)
+            return z
+
+    net = Net()
+    out_expect = grad(net)(Tensor([1, 2]), Tensor([3, 4]))
+    net.construct = ms.jit(net.construct, backend="ms_backend")
+    out_jit = grad(net)(Tensor([1, 2]), Tensor([3, 4]))
+    assert np.allclose(out_expect.asnumpy(), out_jit.asnumpy())
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_tensor_view_inplace_grad_check4():
+    """
+    Feature: view inplace operation in grad.
+    Description: view inplace operation in grad.
+    Expectation: no exception
+    """
+
+    class Net(nn.Cell):
+        def inner_func(self, x, y):
+            y.add_(2)
+            z = x * 2
+            z.add_(3)
+            return z
+
+        def func(self, input_tensor1_1, input_tensor2_1):
+            x = select_ext_view_op(input_tensor1_1, 0, 0)
+            y = select_ext_view_op(input_tensor2_1, 0, 0)
+            if x < y:
+                return self.inner_func(y, x)
+            return self.inner_func(x, y)
+
+        def construct(self, input_tensor1, input_tensor2):
+            input_tensor1_1 = ops.abs(input_tensor1)
+            input_tensor2_1 = ops.abs(input_tensor2)
+            return self.func(input_tensor1_1, input_tensor2_1)
+
+    net = Net()
+    out_expect = grad(net)(Tensor([1, 2]), Tensor([3, 4]))
+    with pytest.raises(RuntimeError) as raise_info:
+        net.construct = ms.jit(net.construct, backend="ms_backend")
+        out_jit = grad(net)(Tensor([1, 2]), Tensor([3, 4]))
+        assert np.allclose(out_expect.asnumpy(), out_jit.asnumpy())
+    assert "The current view inplace differentiation scenario is not supported." in str(raise_info.value)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_tensor_view_inplace_grad_check5():
+    """
+    Feature: view inplace operation in grad.
+    Description: view inplace operation in grad.
+    Expectation: no exception
+    """
+
+    class Net(nn.Cell):
+        def construct(self, input_tensor1, input_tensor2):
+            input_tensor1_1 = ops.abs(input_tensor1)
+            input_tensor2_1 = ops.abs(input_tensor2)
+            x = select_ext_view_op(input_tensor1_1, 0, 0)
+            y = select_ext_view_op(input_tensor2_1, 0, 0)
+            y.add_(2)
+            x.add_(6)
+            return x, y
+
+    net = Net()
+    out_expect = grad(net)(Tensor([1, 2]), Tensor([3, 4]))
+    with pytest.raises(RuntimeError) as raise_info:
+        net.construct = ms.jit(net.construct, backend="ms_backend")
+        out_jit = grad(net)(Tensor([1, 2]), Tensor([3, 4]))
+        assert np.allclose(out_expect.asnumpy(), out_jit.asnumpy())
+    assert "The current view inplace differentiation scenario is not supported." in str(raise_info.value)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_tensor_view_inplace_grad_check6():
+    """
+    Feature: view inplace operation in grad.
+    Description: view inplace operation in grad.
+    Expectation: no exception
+    """
+
+    class Net(nn.Cell):
+        def inner_func(self, x, y):
+            y.add_(2)
+            z = x * 2
+            z.add_(3)
+            return z
+
+        def func(self, input_tensor1_1, input_tensor2_1):
+            x = select_ext_view_op(input_tensor1_1, 0, 0)
+            y = select_ext_view_op(input_tensor2_1, 0, 0)
+            if x < self.inner_func(x, y):
+                return y
+            return x
+
+        def construct(self, input_tensor1, input_tensor2):
+            input_tensor1_1 = ops.abs(input_tensor1)
+            input_tensor2_1 = ops.abs(input_tensor2)
+            return self.func(input_tensor1_1, input_tensor2_1)
+
+    net = Net()
+    out_expect = grad(net)(Tensor([1, 2]), Tensor([3, 4]))
+    with pytest.raises(RuntimeError) as raise_info:
+        net.construct = ms.jit(net.construct, backend="ms_backend")
+        out_jit = grad(net)(Tensor([1, 2]), Tensor([3, 4]))
+        assert np.allclose(out_expect.asnumpy(), out_jit.asnumpy())
+    assert "The current view inplace differentiation scenario is not supported." in str(raise_info.value)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_tensor_view_inplace_grad_check7():
+    """
+    Feature: view inplace operation in grad.
+    Description: view inplace operation in grad.
+    Expectation: no exception
+    """
+
+    class Net(nn.Cell):
+        def construct(self, input_tensor2, input_tensor1):
+            input_tensor1_1 = ops.abs(input_tensor1)
+            input_tensor2_1 = ops.abs(input_tensor2)
+            x = select_ext_view_op(input_tensor1_1, 0, 0)
+            x.add_(3)
+            z = input_tensor1_1 * 2
+            z.add_(3)
+            input_tensor2_1.add_(2)
+            return input_tensor1_1 + z
+
+    net = Net()
+    out_expect = grad(net)(Tensor([1, 2]), Tensor([3, 4]))
+    net.construct = ms.jit(net.construct, backend="ms_backend")
+    out_jit = grad(net)(Tensor([1, 2]), Tensor([3, 4]))
+    assert np.allclose(out_expect.asnumpy(), out_jit.asnumpy())
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_tensor_view_inplace_grad_check8():
+    """
+    Feature: view inplace operation in grad.
+    Description: view inplace operation in grad.
+    Expectation: no exception
+    """
+
+    class Net(nn.Cell):
+        def func(self, input_tensor1):
+            x = select_ext_view_op(input_tensor1, 0, 0)
+            x.add_(3)
+            z = x * 2
+            z.add_(3)
+            return z
+
+        def construct(self, input_tensor1, input_tensor2):
+            input_tensor1_1 = ops.abs(input_tensor1)
+            y = select_ext_view_op(input_tensor1_1, 0, 0)
+            y.add_(2)
+            z = self.func(input_tensor1_1)
+            if (z > 3).all():
+                return input_tensor1_1 + 1
+            return z + 1
+
+    net = Net()
+    out_expect = grad(net)(Tensor([1, 2]), Tensor([3, 4]))
+    with pytest.raises(RuntimeError) as raise_info:
+        net.construct = ms.jit(net.construct, backend="ms_backend")
+        out_jit = grad(net)(Tensor([1, 2]), Tensor([3, 4]))
+        assert np.allclose(out_expect.asnumpy(), out_jit.asnumpy())
+    assert "The current view inplace differentiation scenario is not supported." in str(raise_info.value)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_tensor_view_inplace_grad_control_flow():
+    """
+    Feature: Support tensor inplace view gradient.
+    Description: Support tensor inplace view gradient.
+    Expectation: Run success.
+    """
+
+    class Net(nn.Cell):
+        def construct(self, x):
+            y = ops.abs(x)
+            if (x <= y).all():
+                y_viewed = slice_ext_view_op(y, 1, 1, 2, 1)
+            else:
+                y_viewed = y + 1
+            inplace_copy_op(y_viewed, ms.Tensor(-1, dtype=ms.float32))
+            return y
+
+    net = Net()
+    x_np = (np.arange(2 * 2 * 2)).reshape((2, 2, 2)).astype(np.float32)
+    x = ms.Tensor(x_np)
+    out_expect = grad(net)(x)
+    net.construct = ms.jit(net.construct, backend="ms_backend")
+    out_jit = grad(net)(x)
+    assert np.allclose(out_expect.asnumpy(), out_jit.asnumpy())
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_tensor_view_inplace_grad_control_flow_2():
+    """
+    Feature: Support tensor inplace view gradient.
+    Description: Support tensor inplace view gradient.
+    Expectation: Run success.
+    """
+
+    class Net(nn.Cell):
+        def construct(self, x):
+            y = ops.abs(x)
+            y_viewed = slice_ext_view_op(y, 1, 1, 2, 1)
+            if (x <= y).all():
+                inplace_copy_op(y_viewed, ms.Tensor(-1, dtype=ms.float32))
+            return y_viewed * 2
+
+    with pytest.raises(RuntimeError) as raise_info:
+        net = Net()
+        x_np = (np.arange(2 * 2 * 2)).reshape((2, 2, 2)).astype(np.float32)
+        x = ms.Tensor(x_np)
+        out_expect = grad(net)(x)
+        net.construct = ms.jit(net.construct, backend="ms_backend")
+        out_jit = grad(net)(x)
+        assert np.allclose(out_expect.asnumpy(), out_jit.asnumpy())
+    assert "The current view inplace differentiation scenario is not supported." in str(raise_info.value)
