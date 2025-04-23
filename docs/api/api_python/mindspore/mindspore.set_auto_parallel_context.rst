@@ -4,10 +4,10 @@ mindspore.set_auto_parallel_context
 
 .. py:function:: mindspore.set_auto_parallel_context(**kwargs)
 
-    配置自动并行，当前CPU仅支持数据并行。
+    配置自动并行，此接口将在后续版本中废弃，请使用接口 :class:`mindspore.parallel.auto_parallel.AutoParallel` 代替。
 
     .. note::
-        全局并行配置，该接口将在未来版本废弃，请使用接口 :class:`mindspore.parallel.auto_parallel.AutoParallel` 代替。
+        当前CPU仅支持数据并行。
 
     某些配置适用于特定的并行模式，有关详细信息，请参见下表：
 

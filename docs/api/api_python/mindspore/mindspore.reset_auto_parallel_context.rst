@@ -3,7 +3,7 @@ mindspore.reset_auto_parallel_context
 
 .. py:function:: mindspore.reset_auto_parallel_context()
 
-    重置自动并行的配置为默认值。该接口将在未来版本废弃，请使用接口 :class:`mindspore.parallel.auto_parallel.AutoParallel` 代替。
+    重置自动并行的配置为默认值，此接口将在后续版本中废弃，请使用接口 :class:`mindspore.parallel.auto_parallel.AutoParallel` 代替。
         
 
     - device_num: 1。
