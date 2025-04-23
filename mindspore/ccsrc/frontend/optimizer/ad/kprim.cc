@@ -42,6 +42,7 @@
 #include "pipeline/jit/ps/debug/trace.h"
 #include "utils/anf_utils.h"
 #include "frontend/expander/utils.h"
+#include "frontend/expander/bprop/bprop_irbuilder.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_h.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
@@ -110,11 +111,14 @@ FuncGraphPtr GetBprop(const PrimitivePtr &prim, const pipeline::ResourceBasePtr 
 
 std::vector<size_t> GetNeedCloneInputIndex(const PrimitivePtr &prim) {
   MS_EXCEPTION_IF_NULL(prim);
-  std::vector<size_t> indexes;
   if (!prim->inplace_prim()) {
-    return indexes;
+    return {};
   }
-  return prim->rw_write_input_indexes();
+  auto handle = mindspore::expander::bprop::BpropIRBuilderFactory::Instance().GetBuilder(prim->name());
+  if (handle != nullptr && handle->clone_inplace_input_func != nullptr) {
+    return prim->rw_write_input_indexes();
+  }
+  return {};
 }
 
 AnfNodePtr InplaceArgsClone(const FuncGraphPtr &fprop, const FuncGraphPtr &bprop, const PrimitivePtr &prim,
