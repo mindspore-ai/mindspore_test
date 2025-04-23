@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <functional>
 #include <unordered_map>
+#include <iterator>
 #include <unordered_set>
 #include <vector>
 #include <cmath>
@@ -822,31 +823,6 @@ void CheckValueOfInt64Scalar(const NodePtr &node, const std::string &op_name, co
   }
 }
 
-inline std::pair<size_t, size_t> GroupedMatmulBackwardParamsCheck(const NodePtr &x, const NodePtr &weight,
-                                                                  const NodePtr &split_item, const NodePtr &scale,
-                                                                  const NodePtr &offset, const NodePtr &antiquant_scale,
-                                                                  const NodePtr &antiquant_offset,
-                                                                  const NodePtr &group_type) {
-  const std::string op_name = "GroupedMatmul";
-  auto num_x = FetchNumOfSequenceTensor(x, op_name, "x");
-  auto num_w = FetchNumOfSequenceTensor(weight, op_name, "weight");
-
-  CheckValueOfInt64Scalar(split_item, op_name, "split_item", SizeToLong(kIndex3));
-  CheckValueOfInt64Scalar(group_type, op_name, "group_type", SizeToLong(kIndex0));
-
-  auto is_none_func = [](const NodePtr &node) {
-    auto type = node->abstract()->BuildType();
-    return type->isa<TypeNone>();
-  };
-  std::vector<NodePtr> none_args{scale, offset, antiquant_scale, antiquant_offset};
-  if (!std::all_of(none_args.begin(), none_args.end(), is_none_func)) {
-    MS_LOG(EXCEPTION) << "For GroupedMatmul's backward, scale, offset, antiquant_scale and antiquant_offset "
-                         "should all be None.";
-  }
-
-  return std::make_pair(num_x, num_w);
-}
-
 inline NodePtr ForEachTransposeLastTwoDim(BpropBuilder *ib, const NodePtr &node, size_t num) {
   std::vector<NodePtr> new_tensors;
   for (size_t i = 0; i < num; ++i) {
@@ -855,6 +831,17 @@ inline NodePtr ForEachTransposeLastTwoDim(BpropBuilder *ib, const NodePtr &node,
     new_tensors.push_back(tensor_i_t);
   }
   return ib->MakeTuple(new_tensors);
+}
+
+inline NodePtr ForEachReshapeAs(BpropBuilder *ib, const NodePtr &inputs, const NodePtr &targets, size_t num) {
+  std::vector<NodePtr> nodes;
+  for (size_t i = 0; i < num; i++) {
+    auto target_i = ib->TupleGetItem(targets, i);
+    auto input_i = ib->TupleGetItem(inputs, i);
+    nodes.push_back(ib->Reshape(input_i, ib->Shape(target_i)));
+  }
+  auto out = ib->MakeTuple(nodes);
+  return out;
 }
 
 inline NodePtr ForEachOutZeros(BpropBuilder *ib, const NodePtr &node) {
@@ -876,6 +863,62 @@ inline NodePtr ForEachOutZeros(BpropBuilder *ib, const NodePtr &node) {
   }
   auto zeros_node = ib->MakeTuple(new_nodes);
   return zeros_node;
+}
+
+inline std::vector<NodePtr> GMMSplitTuple(BpropBuilder *ib, const NodePtr &node, const std::vector<size_t> &nums) {
+  NodePtrList split_nodes;
+  size_t cur_begin = 0;
+  for (size_t i = 0; i < nums.size(); i++) {
+    auto cur_end = cur_begin + nums[i];
+    std::vector<NodePtr> cur_nodes;
+    for (size_t idx = cur_begin; idx < cur_end; idx++) {
+      cur_nodes.push_back(ib->TupleGetItem(node, idx));
+    }
+    split_nodes.push_back(ib->MakeTuple(cur_nodes));
+    // step
+    cur_begin = cur_end;
+  }
+  return split_nodes;
+}
+
+inline std::pair<size_t, size_t> GMMBackwardParamsCheck(const std::string &op_name, const NodePtr &x,
+                                                        const NodePtr &weight, const NodePtr &split_item,
+                                                        const NodePtr &group_type,
+                                                        const std::vector<NodePtr> &check_params,
+                                                        const std::string &none_params) {
+  auto num_x = FetchNumOfSequenceTensor(x, op_name, "x");
+  auto num_w = FetchNumOfSequenceTensor(weight, op_name, "weight");
+
+  CheckValueOfInt64Scalar(split_item, op_name, "split_item", SizeToLong(kIndex3));
+  CheckValueOfInt64Scalar(group_type, op_name, "group_type", SizeToLong(kIndex0));
+
+  auto is_none_func = [](const NodePtr &node) {
+    auto type = node->abstract()->BuildType();
+    return type->isa<TypeNone>();
+  };
+  if (!std::all_of(check_params.begin(), check_params.end(), is_none_func)) {
+    MS_LOG(EXCEPTION) << "For " << op_name << "'s backward, " << none_params << " should all be None.";
+  }
+
+  return std::make_pair(num_x, num_w);
+}
+
+inline NodePtr GMMBiasBackward(BpropBuilder *ib, const NodePtr &bias, const std::string &op_name) {
+  auto bias_abs = bias->abstract();
+  MS_EXCEPTION_IF_NULL(bias_abs);
+  auto bias_type = bias_abs->BuildType();
+  auto is_bias_none = bias_type->isa<TypeNone>();
+  if (bias->need_compute_grad_out() && !is_bias_none) {
+    MS_LOG(EXCEPTION) << "For " << op_name << "'s backward, bias was expected to be None, but got "
+                      << bias_abs->ToString();
+  }
+  NodePtr dbias{nullptr};
+  if (is_bias_none) {
+    dbias = ib->OutZeros(bias);
+  } else {
+    dbias = ForEachOutZeros(ib, bias);
+  }
+  return dbias;
 }
 
 bool CloneInplaceInputFuncForInplaceMul(const PynativeCallback &cb) {
@@ -1128,70 +1171,59 @@ REG_BPROP_BUILDER("Mm").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   return {dx, dw};
 });
 
-REG_BPROP_BUILDER("GroupedMatmul").SetUnusedInputs({i2, i12}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("GroupedMatmul").SetUnusedInputs({i2, i3, i4, i5, i6, i12}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto weight = ib->GetInput(kIndex1);
   auto bias = ib->GetInput(kIndex2);
   auto group_list = ib->GetInput(kIndex7);
+  auto split_item = ib->GetInput(kIndex8);
   auto group_type = ib->GetInput(kIndex9);
-
+  auto transpose_a = ib->GetInput(kIndex10);
+  auto transpose_b = ib->GetInput(kIndex11);
+  auto dout = ib->GetInput(kIndex13);
+  // none_params
   auto scale = ib->GetInput(kIndex3);
   auto offset = ib->GetInput(kIndex4);
   auto antiquant_scale = ib->GetInput(kIndex5);
   auto antiquant_offset = ib->GetInput(kIndex6);
 
-  auto split_item = ib->GetInput(kIndex8);
+  const std::string op_name = "GroupedMatmul";
+  auto transpose_a_opt = GetScalarValue<bool>(transpose_a->BuildValue());
+  auto transpose_b_opt = GetScalarValue<bool>(transpose_b->BuildValue());
+  if ((!transpose_a_opt.has_value() || transpose_a_opt.value()) ||
+      (!transpose_b_opt.has_value() || transpose_b_opt.value())) {
+    MS_EXCEPTION(ValueError) << "For " << op_name << "'s, backward, transpose_a and transpose_b should both be false.";
+  }
+  const std::string none_params = "scale, offset, antiquant_scale and antiquant_offset";
+  auto [num_x, num_w] = GMMBackwardParamsCheck(op_name, x, weight, split_item, group_type,
+                                               {scale, offset, antiquant_scale, antiquant_offset}, none_params);
 
-  auto transpose_a = ib->GetInput(kIndex10);
-  auto transpose_b = ib->GetInput(kIndex11);
-
-  auto dout = ib->GetInput(kIndex13);
-  auto [num_x, num_w] = GroupedMatmulBackwardParamsCheck(x, weight, split_item, scale, offset, antiquant_scale,
-                                                         antiquant_offset, group_type);
-
-  auto xt = ForEachTransposeLastTwoDim(ib, x, num_x);
-  auto wt = ForEachTransposeLastTwoDim(ib, weight, num_w);
-
-  auto none_node = ib->EmitValue(mindspore::kNone);
+  auto gmm_func = [&ib, &op_name, &transpose_a, &transpose_b](const NodePtr &x, const NodePtr &weight,
+                                                              const NodePtr &group_list, int64_t group_type) {
+    auto none_node = ib->EmitValue(mindspore::kNone);
+    auto split_item = ib->Value<int64_t>(3);
+    return ib->Emit(op_name, {x, weight, none_node, none_node, none_node, none_node, none_node, group_list, split_item,
+                              ib->Value<int64_t>(group_type), transpose_a, transpose_b});
+  };
 
   NodePtr dx{nullptr};
   if (x->need_compute_grad_out()) {
-    dx = ib->Emit("GroupedMatmul", {dout, wt, none_node, scale, offset, antiquant_scale, antiquant_offset, group_list,
-                                    split_item, ib->Value<int64_t>(0), ib->Value<bool>(false), ib->Value<bool>(false)});
+    auto wt = ForEachTransposeLastTwoDim(ib, weight, num_w);
+    dx = gmm_func(dout, wt, group_list, 0);
   } else {
     dx = ForEachOutZeros(ib, x);
   }
 
   NodePtr dw{nullptr};
   if (weight->need_compute_grad_out()) {
-    constexpr const int64_t group_type_value = 2;
-    auto dw_tmp = ib->Emit(
-      "GroupedMatmul", {xt, dout, none_node, scale, offset, antiquant_scale, antiquant_offset, group_list, split_item,
-                        ib->Value<int64_t>(group_type_value), ib->Value<bool>(false), ib->Value<bool>(false)});
-    std::vector<NodePtr> dw_nodes;
-    for (size_t i = 0; i < num_w; i++) {
-      auto weight_i = ib->TupleGetItem(weight, i);
-      auto dw_tmp_i = ib->TupleGetItem(dw_tmp, i);
-      dw_nodes.push_back(ib->Reshape(dw_tmp_i, ib->Shape(weight_i)));
-    }
-    dw = ib->MakeTuple(dw_nodes);
+    auto xt = ForEachTransposeLastTwoDim(ib, x, num_x);
+    auto dw_tmp = gmm_func(xt, dout, group_list, 2);
+    dw = ForEachReshapeAs(ib, dw_tmp, weight, num_w);
   } else {
     dw = ForEachOutZeros(ib, weight);
   }
 
-  auto bias_abs = bias->abstract();
-  MS_EXCEPTION_IF_NULL(bias_abs);
-  auto bias_type = bias_abs->BuildType();
-  auto is_bias_none = bias_type->isa<TypeNone>();
-  if (bias->need_compute_grad_out() && !is_bias_none) {
-    MS_LOG(EXCEPTION) << "For GroupedMatmul's backward, bias was expected to be None, but got " << bias_abs->ToString();
-  }
-  NodePtr dbias{nullptr};
-  if (is_bias_none) {
-    dbias = ib->OutZeros(bias);
-  } else {
-    dbias = ForEachOutZeros(ib, bias);
-  }
+  auto dbias = GMMBiasBackward(ib, bias, op_name);
 
   return {dx,
           dw,
@@ -1205,6 +1237,82 @@ REG_BPROP_BUILDER("GroupedMatmul").SetUnusedInputs({i2, i12}).SetBody(BODYFUNC(i
           ib->OutZeros(group_type),
           ib->OutZeros(transpose_a),
           ib->OutZeros(transpose_b)};
+});
+
+REG_BPROP_BUILDER("GroupedMatmulV2").SetUnusedInputs({i2, i3, i4, i5, i6, i10}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto weight = ib->GetInput(kIndex1);
+  auto bias = ib->GetInput(kIndex2);
+  auto group_list = ib->GetInput(kIndex7);
+  auto split_item = ib->GetInput(kIndex8);
+  auto group_type = ib->GetInput(kIndex9);
+  auto dout = ib->GetInput(kIndex11);
+  // none params
+  auto scale = ib->GetInput(kIndex3);
+  auto offset = ib->GetInput(kIndex4);
+  auto antiquant_scale = ib->GetInput(kIndex5);
+  auto antiquant_offset = ib->GetInput(kIndex6);
+
+  const std::string op_name = "GroupedMatmulV2";
+  const std::string none_params = "scale, offset, antiquant_scale and antiquant_offset";
+  auto [num_x, num_w] = GMMBackwardParamsCheck(op_name, x, weight, split_item, group_type,
+                                               {scale, offset, antiquant_scale, antiquant_offset}, none_params);
+
+  auto gradients = ib->Emit("GmmBackward", {dout, x, weight, group_list, ib->Value<int64_t>(0)});
+  auto split_nodes = GMMSplitTuple(ib, gradients, {num_x, num_w});
+  auto dx = split_nodes[kIndex0];
+  auto dw = split_nodes[kIndex1];
+  auto dbias = GMMBiasBackward(ib, bias, op_name);
+
+  return {dx,
+          dw,
+          dbias,
+          ib->OutZeros(scale),
+          ib->OutZeros(offset),
+          ib->OutZeros(antiquant_scale),
+          ib->OutZeros(antiquant_offset),
+          ib->OutZeros(group_list),
+          ib->OutZeros(split_item),
+          ib->OutZeros(group_type)};
+});
+
+REG_BPROP_BUILDER("GroupedMatmulV4").SetUnusedInputs({i2, i3, i4, i5, i6, i7, i9, i10, i11, i16}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto weight = ib->GetInput(kIndex1);
+  auto bias = ib->GetInput(kIndex2);
+  auto group_list = ib->GetInput(kIndex8);
+  auto split_item = ib->GetInput(kIndex12);
+  auto group_type = ib->GetInput(kIndex13);
+  auto group_list_type = ib->GetInput(kIndex14);
+  auto act_type = ib->GetInput(kIndex15);
+  auto dout = ib->GetInput(kIndex17);
+  // none params
+  std::vector<NodePtr> check_params;
+  for (size_t i = kIndex3; i < kIndex12; i++) {
+    if (i == kIndex8) {
+      continue;
+    }
+    check_params.push_back(ib->GetInput(i));
+  }
+
+  const std::string none_params =
+    "scale, offset, antiquant_scale, antiquant_offset, pre_token_scale, activation_input, activation_quant_scale and "
+    "activation_quant_offset";
+  const std::string op_name = "GroupedMatmulV4";
+  auto [num_x, num_w] = GMMBackwardParamsCheck(op_name, x, weight, split_item, group_type, check_params, none_params);
+
+  auto dx_and_dw = ib->Emit("GmmV2Backward", {dout, x, weight, group_list, group_list_type});
+  auto split_nodes = GMMSplitTuple(ib, dx_and_dw, {num_x, num_w});
+  auto dx = split_nodes[kIndex0];
+  auto dw = split_nodes[kIndex1];
+  auto dbias = GMMBiasBackward(ib, bias, op_name);
+
+  std::vector<NodePtr> gradients{dx, dw, dbias};
+  const auto &inputs = ib->GetInputs();
+  std::transform(inputs.begin() + kIndex3, inputs.begin() + kIndex16, std::back_inserter(gradients),
+                 [&ib](const NodePtr &node) { return ib->OutZeros(node); });
+
+  return gradients;
 });
 
 REG_BPROP_BUILDER("Add").FreeUselessValues_IO({}, {}).SetBody(BODYFUNC(ib) {

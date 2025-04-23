@@ -1,10 +1,7 @@
-#operator gmm_v2_backward
-gmm_v2_backward:
+#operator gmm_v2_backward_fusion
+gmm_v2_backward_fusion:
     args:
         grad:
-            dtype: tuple[tensor]
-            type_cast: list[tensor]
-        x:
             dtype: tuple[tensor]
             type_cast: list[tensor]
         weight:
@@ -19,6 +16,11 @@ gmm_v2_backward:
     returns:
         output:
             dtype: tuple[tensor]
+    bprop_expander: True
+    function:
+        disable: True
     dispatch:
         enable: True
-        Ascend: GmmV2BackwardAscend
+        Ascend: GmmV2BackwardFusionAscend
+        CPU: None
+        GPU: None

@@ -46,9 +46,9 @@ std::pair<ShapeArray, ShapeArray> GroupedMatmulBaseFuncImpl::FetchInputAndWeight
       return shapes;
     };
     // get tuple_x_shape in compile phase
-    x_shapes = FetchTupleTensorShapeFunc(input_infos[idxes_.x]);
+    x_shapes = std::move(FetchTupleTensorShapeFunc(input_infos[idxes_.x]));
     // get tuple_w_shape in compile phase
-    w_shapes = FetchTupleTensorShapeFunc(input_infos[idxes_.weight]);
+    w_shapes = std::move(FetchTupleTensorShapeFunc(input_infos[idxes_.weight]));
   } else {
     // Runtime phase: the element in input_args is KernelTensor. (tuple is expanded)
     auto tuple_len = GetValue<std::vector<int64_t>>(primitive->GetAttr("group_info"));
@@ -185,50 +185,25 @@ ShapeArray GroupedMatmulBaseFuncImpl::InferShapeForMultiOutput(const PrimitivePt
 ShapeArray GroupedMatmulBaseFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                  const InferInfoPtrList &input_infos) const {
   auto [x_shapes, w_shapes] = FetchInputAndWeightShapes(primitive, input_infos);
-  const auto group_type_idx = SizeToLong(input_infos.size()) + idxes_.group_type_offset;
+  const auto input_num = SizeToLong(input_infos.size());
+  const auto group_type_idx = input_num + idxes_.group_type_offset;
   auto group_type_opt = input_infos[group_type_idx]->GetScalarValue<int64_t>();
   MS_ASSERT(group_type_opt.has_value());
   auto group_type = group_type_opt.value();
   if (group_type == -1) {
     return InferShapeForMultiOutput(primitive, x_shapes, w_shapes);
   }
+
   auto group_list_size = FetchGroupListSize(primitive, input_infos);
-  auto transpose_b = GetTransposeValue(input_infos, idxes_.transpose_b);
+  const auto transpose_b_idx = input_num + idxes_.transpose_b_offset;
+  auto transpose_b = GetTransposeValue(input_infos, transpose_b_idx);
   return InferShapeForSingleOutput(primitive, x_shapes, w_shapes, group_list_size, group_type, transpose_b);
-}
-
-bool GroupedMatmulBaseFuncImpl::EnableInternal(const std::string &op_name) const {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  bool enable_infer_boost_310p =
-    ms_context->IsEnableInferBoost() && ms_context->ascend_soc_version() == kAscendVersion310p;
-  if (enable_infer_boost_310p) {
-    std::string disable_op_env = common::GetEnv("MS_DISABLE_INTERNAL_KERNELS_LIST");
-    std::set<std::string> disable_op_list;
-    common::SplitString(disable_op_env, ',', &disable_op_list);
-    bool disable_internal_op =
-      (std::find(disable_op_list.begin(), disable_op_list.end(), op_name) != disable_op_list.end());
-    return !disable_internal_op;
-  }
-  return false;
-}
-
-TypeIdList GroupedMatmulBaseFuncImpl::InferType(const PrimitivePtr &primitive,
-                                                const InferInfoPtrList &input_infos) const {
-  if (EnableInternal(primitive->name())) {
-    return {kNumberTypeFloat16};
-  }
-
-  const auto &x_tensors = input_infos[idxes_.x]->GetSequenceElements();
-  TypeIdList output_types;
-  std::transform(x_tensors.begin(), x_tensors.end(), std::back_inserter(output_types),
-                 [](const InferInfoPtr &info) { return info->GetType(); });
-  return output_types;
 }
 
 std::pair<int32_t, int64_t> GroupedMatmulBaseFuncImpl::CommonCheckValidation(
   const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
-  const auto group_type_idx = SizeToLong(input_infos.size()) + idxes_.group_type_offset;
+  const auto input_num = SizeToLong(input_infos.size());
+  const auto group_type_idx = input_num + idxes_.group_type_offset;
   auto group_type_opt = input_infos[group_type_idx]->GetScalarValue<int64_t>();
   if (MS_UNLIKELY(!group_type_opt.has_value())) {
     MS_EXCEPTION(RuntimeError) << "For '" << primitive->name() << "', group_type should not be dynamic.";
@@ -240,19 +215,7 @@ std::pair<int32_t, int64_t> GroupedMatmulBaseFuncImpl::CommonCheckValidation(
                              << group_type;
   }
 
-  if (group_type != kMultiOutGroupType) {
-    const auto &group_list_info = input_infos[idxes_.group_list];
-    if (MS_UNLIKELY(group_list_info->IsNone() ||
-                    (!EnableInternal(primitive->name()) && !group_list_info->IsSequence() &&
-                     group_list_info->GetType() != kNumberTypeInt64))) {
-      MS_EXCEPTION(ValueError)
-        << "For '" << primitive->name()
-        << "', when group_type is not -1, group_list should be 1-D Tensor or List with int64 elements, but got "
-        << group_list_info->DebugInfo();
-    }
-  }
-
-  const auto split_item_idx = idxes_.split_item_offset + SizeToLong(input_infos.size());
+  const auto split_item_idx = idxes_.split_item_offset + input_num;
   auto split_item_opt = input_infos[split_item_idx]->GetScalarValue<int64_t>();
   if (MS_UNLIKELY(!split_item_opt.has_value())) {
     return std::make_pair(OP_CHECK_RETRY, group_type);

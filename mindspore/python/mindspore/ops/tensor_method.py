@@ -1886,3 +1886,10 @@ def tensor_gelu(input, *, approximate):
 
 def deprecated_pixel_shuffle(input, upscale_factor):
     return F.pixel_shuffle(input, upscale_factor)
+
+
+def tensor_gmm(x, weight, *, bias=None, group_list=None, group_type=0, group_list_type=0):
+    raise NotImplementedError("gmm has not been implemented by python.")
+
+def raise_func(*args, **kwargs):
+    raise NotImplementedError("this func has not been implemented.")

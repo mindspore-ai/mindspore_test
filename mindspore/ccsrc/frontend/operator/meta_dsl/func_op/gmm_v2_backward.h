@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_GMM_BACKWARD_H_
-#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_GMM_BACKWARD_H_
+#ifndef MINDSPORE_CCSRC_FRONTEND_OPERATOR_META_DSL_FUNC_OP_GMM_V2_BACKWARD_H_
+#define MINDSPORE_CCSRC_FRONTEND_OPERATOR_META_DSL_FUNC_OP_GMM_V2_BACKWARD_H_
 
-#include "ops/ops_func_impl/op_func_impl.h"
+#include <vector>
+#include <memory>
+#include "mindspore/ccsrc/frontend/operator/meta_dsl/common/meta_impl.h"
 
-namespace mindspore {
-namespace ops {
-class OPS_API GmmBackwardFuncImpl final : public OpFuncImpl {};
-}  // namespace ops
-}  // namespace mindspore
-
-#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_GMM_BACKWARD_H_
+namespace mindspore::prim {
+void CheckGmmV2BackwardInputs(const PrimitivePtr &primitive, const AbstractBasePtrList &input_args);
+REGISTER_FUNCTION_OP(GmmV2Backward, CheckGmmV2BackwardInputs);
+}  // namespace mindspore::prim
+#endif  // MINDSPORE_CCSRC_FRONTEND_OPERATOR_META_DSL_FUNC_OP_GMM_V2_BACKWARD_H_

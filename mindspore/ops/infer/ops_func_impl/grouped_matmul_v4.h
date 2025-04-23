@@ -27,7 +27,6 @@ class OPS_API GroupedMatmulV4FuncImpl final : public GroupedMatmulBaseFuncImpl {
   GroupedMatmulV4FuncImpl() {
     idxes_.x = 0;
     idxes_.weight = 1;
-    idxes_.group_list = 8;
     idxes_.split_item_offset = -4;
     idxes_.group_type_offset = -3;
   }
@@ -38,9 +37,12 @@ class OPS_API GroupedMatmulV4FuncImpl final : public GroupedMatmulBaseFuncImpl {
  protected:
   void FetchGroupInfo(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
 
+  int64_t FetchGroupListIndex(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+
   int64_t FetchGroupListSize(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
 
  private:
+  int64_t group_list_idx_ = 8;
   int64_t group_list_type_idx_ = 14;
   int64_t per_token_scale_idx_ = 7;
   int64_t scale_idx_ = 3;

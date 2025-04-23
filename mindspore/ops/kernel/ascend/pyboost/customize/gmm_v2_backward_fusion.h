@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_CUSTOMIZE_GMM_BACKWARD_H_
-#define MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_CUSTOMIZE_GMM_BACKWARD_H_
+#ifndef MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_CUSTOMIZE_GMM_V2_BACKWARD_FUSION_H_
+#define MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_CUSTOMIZE_GMM_V2_BACKWARD_FUSION_H_
 
 #include <vector>
 #include <memory>
@@ -27,10 +27,11 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void GmmBackwardAscendCustomize(const std::shared_ptr<OpRunner> &op, const ValueTuplePtr &grad_tenor_list,
-                                const ValueTuplePtr &x_tensor_list, const ValueTuplePtr &weight_tensor_list,
-                                const std::optional<ValueTuplePtr> &group_list, const Int64ImmPtr &group_list_type);
+void GmmV2BackwardFusionAscendCustomize(const std::shared_ptr<OpRunner> &op, const ValueTuplePtr &grad_tenor_list,
+                                        const ValueTuplePtr &weight_tensor_list,
+                                        const std::optional<BaseTensorPtr> &group_list,
+                                        const Int64ImmPtr &group_list_type);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore
-#endif  // MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_CUSTOMIZE_GMM_BACKWARD_H_
+#endif  // MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_CUSTOMIZE_GMM_V2_BACKWARD_FUSION_H_

@@ -13,22 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_GROUPED_MATMUL_V4_ACLNN_KERNEL_MOD_H_
-#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_GROUPED_MATMUL_V4_ACLNN_KERNEL_MOD_H_
+#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_GROUPED_MATMUL_V2_ACLNN_KERNEL_MOD_H_
+#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_GROUPED_MATMUL_V2_ACLNN_KERNEL_MOD_H_
+
 #include <vector>
 #include <utility>
-#include "ops/base_operator.h"
+
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
 #include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
-namespace grouped_matmul_v4 {
-
-class GroupedMatmulV4Ascend : public AclnnKernelMod {
+namespace grouped_matmul_v2 {
+class GroupedMatmulV2Ascend : public AclnnKernelMod {
  public:
-  GroupedMatmulV4Ascend() : AclnnKernelMod(std::move("aclnnGroupedMatmulV4")) {}
-  ~GroupedMatmulV4Ascend() = default;
+  GroupedMatmulV2Ascend() : AclnnKernelMod(std::move("aclnnGroupedMatmulV2")) {}
+  ~GroupedMatmulV2Ascend() = default;
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
   void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
@@ -36,18 +36,14 @@ class GroupedMatmulV4Ascend : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 
-  const size_t group_list_idx_{8};
-  int64_t act_type_{0};
-  int64_t group_list_type_{0};
   int64_t group_type_{0};
   int64_t split_item_{0};
+  std::vector<int64_t> group_list_{};
   std::vector<int64_t> group_info_{};
   std::vector<int64_t> start_idxs_{};
-  const std::vector<KernelTensor *> activation_feature_out_{};
-  const std::vector<KernelTensor *> dyn_quant_scale_out_{};
 };
-}  // namespace grouped_matmul_v4
+}  // namespace grouped_matmul_v2
 }  // namespace kernel
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_GROUPED_MATMUL_V4_ACLNN_KERNEL_MOD_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_GROUPED_MATMUL_V2_ACLNN_KERNEL_MOD_H_

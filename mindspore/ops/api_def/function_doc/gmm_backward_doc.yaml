@@ -1,0 +1,5 @@
+gmm_backward:
+    description: |
+        gmm_backward(grad, x, weight, *, group_list=None, group_list_type=0) -> tuple[tuple[Tensor]]
+
+        the grad of ops.function.math_func.gmm

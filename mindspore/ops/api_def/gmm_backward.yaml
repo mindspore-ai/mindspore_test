@@ -1,0 +1,14 @@
+gmm_backward:
+  - op_yaml: gmm_backward_op.yaml
+    py_method: raise_func
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: function
+
+  - op_yaml: gmm_v2_backward_op.yaml
+    py_method: raise_func
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: function

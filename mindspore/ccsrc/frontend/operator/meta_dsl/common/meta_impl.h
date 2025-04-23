@@ -199,6 +199,8 @@ class MetaImpl : public MetaFuncGraph {
     return Call(NewValueNode(prim::kPrimMakeTuple), args...);
   }
 
+  NodePtr MakeTuple(const std::vector<NodePtr> &nodes);
+
   /// \brief Create a new list, such as [0, 1, 2].
   ///
   /// \note Example: List(NewValue(0), NewValue(1), NewValue(2))
@@ -210,6 +212,24 @@ class MetaImpl : public MetaFuncGraph {
   inline NodePtr List(const TArgs &... args) {
     return Call(NewValueNode(prim::kPrimMakeList), args...);
   }
+
+  /// \brief Create a new tuple from list, such as [0, 1, 2] -> (0, 1, 2).
+  ///
+  /// \note Example: list = List(NewValue(0), NewValue(1), NewValue(2)), ListToTuple(list)
+  ///
+  /// \param[in] node Input node.
+  ///
+  /// \return Node with ListToTuple.
+  NodePtr ListToTuple(const NodePtr &node);
+
+  /// \brief len of list or tuple
+  ///
+  /// \note Example: SequenceLen(node)
+  ///
+  /// \param[in] node Input node.
+  ///
+  /// \return Node with SequenceLen.
+  NodePtr SequenceLen(const NodePtr &node);
 
   /// \brief x == y
   ///
