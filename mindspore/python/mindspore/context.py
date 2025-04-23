@@ -960,11 +960,11 @@ def _context():
                  comm_fusion=dict, strategy_ckpt_config=dict, force_fp32_communication=bool)
 def set_auto_parallel_context(**kwargs):
     r"""
-    Set auto parallel context, only data parallel supported on CPU.
+    Set auto parallel context, this api will be deprecated and removed in future versions, please use the api
+    :class:`mindspore.parallel.auto_parallel.AutoParallel` instead.
 
     Note:
-        Global parallel configuration. This interface will be deprecated in future versions, please use
-        the api :class:`mindspore.parallel.auto_parallel.AutoParallel` instead.
+        CPU only support data parallel.
 
     Some configurations are parallel mode specific, see the below table for details:
 
@@ -1201,10 +1201,8 @@ def set_auto_parallel_context(**kwargs):
 
 def get_auto_parallel_context(attr_key):
     """
-    Get auto parallel context attribute value according to the key.
-
-    Note:
-        This interface will be deprecated in future versions.
+    Get auto parallel context attribute value according to the key, this api will be deprecated and removed in future
+    versions.
 
     Args:
         attr_key (str): The key of the attribute.
@@ -1225,7 +1223,7 @@ def get_auto_parallel_context(attr_key):
 
 def reset_auto_parallel_context():
     """
-    Reset auto parallel context attributes to the default values. This interface will be deprecated in future
+    Reset auto parallel context attributes to the default values, this api will be deprecated and removed in future
     versions, please use the api :class:`mindspore.parallel.auto_parallel.AutoParallel` instead.
 
     - device_num: 1.
@@ -1261,8 +1259,8 @@ def reset_auto_parallel_context():
 @args_type_check(offload_config=dict)
 def set_offload_context(offload_config):
     r"""
-    Configure heterogeneous training detailed parameters to adjust the offload strategy. This function is deprecated and
-    will be removed in future versions.
+    Configure heterogeneous training detailed parameters to adjust the offload strategy, this api will be deprecated
+    and removed in future versions.
 
     Note:
         The offload configuration is only used if the memory offload feature is enabled
@@ -1302,9 +1300,10 @@ def set_offload_context(offload_config):
 
 def get_offload_context():
     """
-    Gets the offload configuration parameters. Configure through interface mindspore.set_offload_context().
-    If the user is not set, the default configuration is obtained. This function is deprecated and will be removed in
-    future versions.
+    Gets the offload configuration parameters, this api will be deprecated and removed in future versions.
+
+    Configure through interface mindspore.set_offload_context(). If the user is not set, the default configuration is
+    obtained.
 
     Returns:
         Dict, heterogeneous training offload detailed configuration parameters.
@@ -1668,7 +1667,9 @@ def set_context(**kwargs):
 def get_context(attr_key):
 
     """
-    Get context attribute value according to the input key.
+    Get context attribute value according to the input key, this api will be deprecated and removed in future versions,
+    please use :func:`mindspore.get_current_device` instead.
+
     If some attributes are not set, they will be automatically obtained.
 
     Args:
@@ -1745,7 +1746,7 @@ class ParallelMode:
 @args_type_check(enable_ps=bool)
 def set_ps_context(**kwargs):
     """
-    Set parameter server training mode context.
+    Set parameter server training mode context, this api will be deprecated and removed in future versions.
 
     Note:
         Parameter server mode is only supported in graph mode.
@@ -1785,7 +1786,8 @@ def set_ps_context(**kwargs):
 
 def get_ps_context(attr_key):
     """
-    Get parameter server training mode context attribute value according to the key.
+    Get parameter server training mode context attribute value according to the key, this api will be deprecated and
+    removed in future versions.
 
     Args:
         attr_key (str): The key of the attribute:
@@ -1816,7 +1818,8 @@ def get_ps_context(attr_key):
 
 def reset_ps_context():
     """
-    Reset parameter server training mode context attributes to the default values.
+    Reset parameter server training mode context attributes to the default values, this api will be deprecated and
+    removed in future versions.
 
     Meaning of each field and its default value refer to :func:`mindspore.set_ps_context`.
 

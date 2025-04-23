@@ -3,7 +3,7 @@ mindspore.set_ps_context
 
 .. py:function:: mindspore.set_ps_context(**kwargs)
 
-    设置参数服务器训练模式的上下文。
+    设置参数服务器训练模式的上下文，此接口将在后续版本中废弃。
 
     .. note::
         参数服务器训练模式只在图模式下支持。
