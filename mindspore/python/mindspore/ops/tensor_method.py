@@ -1898,6 +1898,11 @@ def deprecated_pixel_shuffle(input, upscale_factor):
     return F.pixel_shuffle(input, upscale_factor)
 
 
+def tensor_quant_matmul(x1, x2, scale, *, offset=None, pertoken_scale=None, bias=None, output_dtype=None,
+                        x1_dtype=None, x2_dtype=None, pertoken_scale_dtype=None, scale_dtype=None, group_sizes=None):
+    raise NotImplementedError('quant_matmul only supports Ascend.')
+
+
 def tensor_gmm(x, weight, *, bias=None, group_list=None, group_type=0, group_list_type=0):
     raise NotImplementedError("gmm has not been implemented by python.")
 
