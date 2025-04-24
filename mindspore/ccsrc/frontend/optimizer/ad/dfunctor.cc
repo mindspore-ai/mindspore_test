@@ -61,7 +61,14 @@ mindspore::HashMap<AnfNodePtr, AdjointPtr> DFunctor::anfnode_to_adjoin_definitio
 bool lift_fv_before_grad = true;
 
 namespace {
-bool UpdateStateUseOnly(const AnfNodePtr &node, const NodeUsersMap &node_user_map) {
+bool InplaceUsedByUpdateStateOnly(const AnfNodePtr &node, const NodeUsersMap &node_user_map) {
+  if (!node->isa<CNode>()) {
+    return false;
+  }
+  auto prim = GetValueNode<PrimitivePtr>(dyn_cast<CNode>(node)->input(0));
+  if (prim == nullptr || !prim->inplace_prim()) {
+    return false;
+  }
   auto node_users_iter = node_user_map.find(node);
   if (node_users_iter == node_user_map.end()) {
     return false;
@@ -120,6 +127,18 @@ void CopyPrimitivePtrForFpropReplace(const FuncGraphPtr &primal_graph, const Fun
       (void)manager->SetEdge(cnode, index, new_value_node);
     }
   }
+}
+
+bool NeedGradForUpdateState(const CNodePtr &cnode, const NodeUsersMap &node_user_map, bool is_view_inplace) {
+  if (!cnode->IsApply(prim::kPrimUpdateState)) {
+    return true;
+  }
+  if (!is_view_inplace) {
+    return false;
+  }
+  return std::any_of(cnode->inputs().begin(), cnode->inputs().end(), [node_user_map](const auto &node_input) {
+    return InplaceUsedByUpdateStateOnly(node_input, node_user_map);
+  });
 }
 }  // namespace
 
@@ -513,27 +532,20 @@ void DFunctor::BackPropagate(const CNodePtr &cnode_morph, const AdjointPtr &node
       continue;
     }
     auto node_input = cnode_morph->input(i);
-    if (node_input->isa<CNode>()) {
-      auto prim = GetValueNode<PrimitivePtr>(dyn_cast<CNode>(node_input)->input(0));
-      auto node_users_map = resources_->manager()->node_users();
-      if (prim != nullptr && prim->inplace_prim() && UpdateStateUseOnly(node_input, node_users_map)) {
-        MS_LOG(DEBUG) << "The Inplace node only used by UpdateState: " << node_input->DebugString();
-        constexpr auto kNeedGradFlag = "need_grad";
-        bool need_grad = node_input->has_user_data(kNeedGradFlag) && *node_input->user_data<bool>(kNeedGradFlag);
-        if (need_grad) {
-          MS_LOG(DEBUG) << "The Inplace node needs to pass the gradient. The node is:" << node_input->DebugString();
-          // Initialize a dout for the cnode used only by updatestate.
-          auto caller = input_adjoint->second->caller();
-          auto real_din =
-            caller->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), din, NewValueNode(int64_t(0))});
-          auto dmask_tuple =
-            caller->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), din, NewValueNode(int64_t(1))});
-          auto din_ones =
-            input_adjoint->second->caller()->NewCNodeInOrder({NewValueNode(prim::kPrimOnesLike), real_din});
-          auto din_ones_tuple = caller->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), din_ones, dmask_tuple});
-          input_adjoint->second->AccumulateDout(din_ones_tuple);
-        }
-      }
+    auto node_users_map = resources_->manager()->node_users();
+    constexpr auto kNeedGradFlag = "need_grad";
+    bool need_grad = node_input->has_user_data(kNeedGradFlag) && *node_input->user_data<bool>(kNeedGradFlag);
+    if (InplaceUsedByUpdateStateOnly(node_input, node_users_map) && need_grad) {
+      // Initialize a dout for the cnode used only by updatestate.
+      MS_LOG(DEBUG) << "The Inplace node only used by UpdateState needs to pass the gradient. The node is:"
+                    << node_input->DebugString();
+      auto caller = input_adjoint->second->caller();
+      auto real_din = caller->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), din, NewValueNode(int64_t(0))});
+      auto dmask_tuple =
+        caller->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), din, NewValueNode(int64_t(1))});
+      auto din_ones = input_adjoint->second->caller()->NewCNodeInOrder({NewValueNode(prim::kPrimOnesLike), real_din});
+      auto din_ones_tuple = caller->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), din_ones, dmask_tuple});
+      input_adjoint->second->AccumulateDout(din_ones_tuple);
     }
     din = CalDoutTuple(cnode_morph, din, node_adjoint, i);
     input_adjoint->second->AccumulateDout(din);
@@ -1125,14 +1137,15 @@ FuncGraphPtr DFunctor::tape() { return tape_; }
 
 void DFunctor::BroadCastStopFlag() {
   // As stop set expanding, all directly or indirectly stopped CNode will be cut off
+  auto node_users_map = resources_->manager()->node_users();
   while (need_cut_) {
     need_cut_ = false;
     for (auto &node : primal_graph_->nodes()) {
       auto cnode = dyn_cast<CNode>(node);
       if (cnode != nullptr && !cnode->stop_gradient()) {
         // Cut off the cnode only when it's not referred any more
-        if (cnode->IsApply(prim::kPrimStopGradient) || cnode->IsApply(prim::kPrimUpdateState) ||
-            AllReferencesStopped(cnode) || StopGradientForScalar(cnode) || cnode->IsApply(prim::kPrimPyExecute)) {
+        if (cnode->IsApply(prim::kPrimStopGradient) || AllReferencesStopped(cnode) || StopGradientForScalar(cnode) ||
+            cnode->IsApply(prim::kPrimPyExecute) || !NeedGradForUpdateState(cnode, node_users_map, is_view_inplace_)) {
           MS_LOG(DEBUG) << "Set stop gradient flag for " << cnode->ToString() << ".";
           cnode->set_stop_gradient(true);
           // The stop set changed, more cut required
