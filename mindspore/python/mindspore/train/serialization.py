@@ -1704,6 +1704,8 @@ def load_param_into_net(net, parameter_dict, strict_load=False, remove_redundanc
     param_not_load = []
     ckpt_not_load = list(parameter_dict.keys())
     for _, param in net.parameters_and_names():
+        if param.param_info.is_pipeline_shared_param:
+            continue
         if param.name in parameter_dict:
             if isinstance(param, MapParameter):
                 param.import_data(parameter_dict[param.name])

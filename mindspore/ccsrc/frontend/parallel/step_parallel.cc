@@ -3046,6 +3046,13 @@ static void CheckpointStrategy(const std::vector<AnfNodePtr> &all_nodes, const F
     auto cloned_parameter = cloned_parameter_node->cast<ParameterPtr>();
     MS_EXCEPTION_IF_NULL(cloned_parameter);
 
+    auto cloned_param_info = cloned_parameter->param_info();
+    if (cloned_param_info != nullptr) {
+      if (cloned_param_info->is_pipeline_shared_param()) {
+        continue;
+      }
+    }
+
     if (!ParameterIsCloned(cloned_parameter_node) && !IsStrategySaved(cloned_parameter_node)) {
       continue;
     }
@@ -3902,6 +3909,52 @@ bool IsVirtualDatasetDynamicShape(const FuncGraphPtr &func_graph) {
   return false;
 }
 
+static void SetSharedAttrForOptimizerParameter(const FuncGraphPtr &root) {
+  MS_EXCEPTION_IF_NULL(root);
+  auto root_params = root->parameters();
+  for (auto &cloned_parameter_node : root_params) {
+    MS_EXCEPTION_IF_NULL(cloned_parameter_node);
+    auto cloned_parameter = cloned_parameter_node->cast<ParameterPtr>();
+    MS_EXCEPTION_IF_NULL(cloned_parameter);
+
+    if (!ParameterIsCloned(cloned_parameter_node)) {
+      continue;
+    }
+    auto param_value = cloned_parameter->param_info();
+    if (param_value == nullptr) {
+      continue;
+    }
+    // get the cloned index
+    int64_t cloned_index = param_value->cloned_index();
+
+    // find the be cloned parameter
+    for (auto &be_cloned_parameter_node : root_params) {
+      MS_EXCEPTION_IF_NULL(be_cloned_parameter_node);
+      auto be_cloned_parameter = be_cloned_parameter_node->cast<ParameterPtr>();
+      MS_EXCEPTION_IF_NULL(be_cloned_parameter);
+      if (!be_cloned_parameter->has_default()) {
+        continue;
+      }
+
+      auto param_value_in = be_cloned_parameter->param_info();
+      if (param_value_in == nullptr) {
+        continue;
+      }
+      if (!param_value_in->be_cloned()) {
+        continue;
+      }
+
+      // get the be cloned index
+      auto &be_cloned_index = param_value_in->be_cloned_index();
+      if (std::find(be_cloned_index.begin(), be_cloned_index.end(), cloned_index) != be_cloned_index.end()) {
+        if (param_value_in->is_pipeline_shared_param()) {
+          param_value->set_is_pipeline_shared_param(true);
+        }
+      }
+    }
+  }
+}
+
 static void ParallelPartProcess(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphPtr &root,
                                 const FuncGraphManagerPtr &manager) {
   ReshapeInit(all_nodes);
@@ -3972,6 +4025,7 @@ static void ParallelPartProcess(const std::vector<AnfNodePtr> &all_nodes, const 
   }
   parallel::ParallelContext::GetInstance()->set_fine_grained_micro_interleaved_size(-1);
   // save strategy as checkpoint for multi-train
+  SetSharedAttrForOptimizerParameter(root);
   auto all_nodes_after_pp = TopoSort(root->get_return(), SuccDeeperSimple);
   if (StrategyCheckpoint::GetInstance().SaveCheckPointOn()) {
     CheckpointStrategy(all_nodes_after_pp, root);
