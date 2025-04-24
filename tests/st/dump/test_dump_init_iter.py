@@ -122,21 +122,17 @@ def compare_multi_data(net, dtype, dump_path, init_iter=0):
     test_cases = [
         (np.array([1., 2., 3.], dtype), np.array([2., 2., -10.], dtype)),
         (np.array([3., 2., 3.], dtype), np.array([1., 2., -10.], dtype)),
-        (np.array([4., 2., 3.], dtype), np.array([4., 2., -10.], dtype)),
     ]
     continue_iter = 100
     for i, (x, y) in enumerate(test_cases):
         if i == 0:
             compare_single_data(x, y, net, Path(dump_path) /
                                 "rank_0" / "Net" / "0" / str(init_iter))
-        elif i == 1:
+        else:
             # pylint: disable=W0212
-            _c_expression._set_init_iter(continue_iter)
+            _c_expression._set_init_iter(continue_iter) # pylint: disable=W0212
             compare_single_data(x, y, net, Path(dump_path) /
                                 "rank_0" / "Net" / "0" / str(continue_iter))
-        else:
-            compare_single_data(x, y, net, Path(dump_path) /
-                                "rank_0" / "Net" / "0" / str(i + continue_iter))
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -165,5 +161,53 @@ def test_dump_init_iter():
             os.environ['MINDSPORE_DUMP_CONFIG'] = dump_config_path
             net = Net()
             compare_multi_data(net, np.float16, dump_path, initial_iteration)
+        finally:
+            del os.environ['MINDSPORE_DUMP_CONFIG']
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_dump_user_step():
+    """
+    Feature: Update steps through Calling functions
+    Description: Call enable func and update steps func
+    Expectation: iteration_id updates according to update steps func
+    """
+    context.set_context(mode=context.GRAPH_MODE,
+                        device_target="Ascend", jit_config={"jit_level": "O0"})
+
+    init_iter = 5
+    user_step = 2
+
+    def extra_json_settings(data):
+        data["e2e_dump_settings"]["stat_calc_mode"] = "host"
+        data["common_dump_settings"]["saved_data"] = "full"
+
+    with tempfile.TemporaryDirectory() as test_dir:
+        path = Path(test_dir)
+        dump_path = str(path / "dump_data")
+        dump_config_path = str(path / "config.json")
+        generate_e2edump_json(dump_path, dump_config_path, extra_json_settings)
+        try:
+            os.environ['MINDSPORE_DUMP_CONFIG'] = dump_config_path
+            net = Net()
+            # pylint: disable=W0212
+            _c_expression._set_init_iter(init_iter)
+            test_cases = [
+                (np.array([1., 2., 3.]), np.array([2., 2., -10.])),
+                (np.array([3., 2., 3.]), np.array([1., 2., -10.])),
+                (np.array([4., 2., 3.]), np.array([4., 2., -10.])),
+            ]
+            for i, (x, y) in enumerate(test_cases):
+                net(Tensor(x), Tensor(y))
+                # pylint: disable=W0212
+                _c_expression._dump_step(user_step)
+                real_dump_path = os.path.join(dump_path, 'rank_0', 'Net', '0', str(user_step * i + init_iter))
+                assert os.path.exists(os.path.join(real_dump_path, 'statistic.csv'))
+                files = os.listdir(real_dump_path)
+                npy_cnt = 0
+                for f in files:
+                    if f.endswith('.npy'):
+                        npy_cnt += 1
+                assert npy_cnt == 3
         finally:
             del os.environ['MINDSPORE_DUMP_CONFIG']

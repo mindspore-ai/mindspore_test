@@ -77,10 +77,11 @@ class BACKEND_COMMON_EXPORT DumpJsonParser {
   bool save_args_flag() const { return save_args_flag_; }
   uint32_t sample_mode() const { return sample_mode_; }
   uint32_t sample_num() const { return sample_num_; }
-  uint32_t cur_dump_iter() const { return cur_dump_iter_; }
+  uint32_t cur_dump_iter() const;
   uint32_t input_output() const { return input_output_; }
   void UpdateDumpIter() { ++cur_dump_iter_; }
   void UpdateDumpIter(int cur_step_count);
+  void UpdateUserDumpStep(const uint32_t step);
   bool GetDatasetSink() { return is_dataset_sink_; }
   void SetDatasetSink(bool is_dataset_sink) { is_dataset_sink_ = is_dataset_sink; }
   bool FileFormatIsNpy() const { return file_format_ == JsonFileFormat::FORMAT_NPY; }
@@ -153,8 +154,10 @@ class BACKEND_COMMON_EXPORT DumpJsonParser {
   uint32_t sample_mode_{0};
   uint32_t sample_num_{100};
   uint32_t cur_dump_iter_{0};
+  uint32_t cur_user_dump_iter_{0};
   uint32_t initial_dump_iter_{0};
   bool already_parsed_{false};
+  bool dump_user_step_flag_{false};
   std::string dump_layer_{""};
   std::string stat_calc_mode_{"host"};
   std::string device_stat_precision_mode_{"high"};

@@ -37,4 +37,8 @@ void DumpControl::DynamicDumpStop() {
 void DumpControl::SetInitialIteration(std::uint32_t initial_iteration) {
   DumpJsonParser::GetInstance().SetInitialIteration(initial_iteration);
 }
+
+void DumpControl::UpdateUserDumpStep(const std::uint32_t step) {
+  DumpJsonParser::GetInstance().UpdateUserDumpStep(step);
+}
 }  // namespace mindspore

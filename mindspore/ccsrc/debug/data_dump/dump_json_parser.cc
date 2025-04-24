@@ -93,7 +93,9 @@ namespace mindspore {
 
 void DumpJsonParser::SetInitialIteration(uint32_t initial_iteration) {
   Parse();
+  dump_user_step_flag_ = true;
   cur_dump_iter_ = initial_iteration;
+  cur_user_dump_iter_ = initial_iteration;
   initial_dump_iter_ = initial_iteration;
 }
 
@@ -376,8 +378,17 @@ void DumpJsonParser::CopyMSCfgJsonToDir(uint32_t rank_id) {
   }
 }
 
+uint32_t DumpJsonParser::cur_dump_iter() const { return dump_user_step_flag_ ? cur_user_dump_iter_ : cur_dump_iter_; }
+
 void DumpJsonParser::UpdateDumpIter(int cur_step_count) {
   cur_dump_iter_ = static_cast<uint32_t>(cur_step_count) + initial_dump_iter_;
+}
+
+void DumpJsonParser::UpdateUserDumpStep(const uint32_t step) {
+  if (!dump_user_step_flag_) {
+    MS_LOG(WARNING) << "Costomized step function has not enabled, step update does not work!";
+  }
+  cur_user_dump_iter_ += step;
 }
 
 bool DumpJsonParser::GetIterDumpFlag() const { return e2e_dump_enabled_ && IsDumpIter(cur_dump_iter_); }
@@ -725,6 +736,7 @@ void DumpJsonParser::ParseInitialIteration(const nlohmann::json &content) {
     CheckJsonUnsignedType(*json_iter, kInitialIteration);
     initial_dump_iter_ = *json_iter;
     cur_dump_iter_ = initial_dump_iter_;
+    cur_user_dump_iter_ = initial_dump_iter_;
   }
 }
 

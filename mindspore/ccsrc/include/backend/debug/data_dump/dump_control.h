@@ -37,6 +37,7 @@ class BACKEND_COMMON_EXPORT DumpControl {
   void DynamicDumpStart();
   void DynamicDumpStop();
   void SetInitialIteration(std::uint32_t initial_iteration);
+  void UpdateUserDumpStep(const std::uint32_t step);
 
  private:
   DumpControl() = default;
