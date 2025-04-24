@@ -378,7 +378,8 @@ void RecordGraphInputsForInputOptimize(const GraphCompilerInfo *graph_compiler_i
       }
     }
     auto isDyn = graph_parameter_store->RecordGraphInputsAndIsDyn(input_index, parameters);
-    if (has_dynamic_shape) {
+    bool is_disable_convert_static = LLMManager::GetInstance().is_disable_convert_static();
+    if (has_dynamic_shape && !is_disable_convert_static) {
       ActorDispatcher::set_enable_static_shape(!isDyn);
       const auto &phase = graph_compiler_info->graph_phase_;
       bool is_increment_graph = (phase.find("increment") != std::string::npos);
