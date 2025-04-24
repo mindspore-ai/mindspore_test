@@ -53,7 +53,7 @@ AnfNodePtr ArithmeticSimplify::operator()(const OptimizerPtr &, const AnfNodePtr
       return nullptr;
     }
   }
-  auto IsAddByZeroSimplifiable = [node](const AnfNodePtr &real_x) {
+  auto IsAddByZeroSimplifiable = [&node](const AnfNodePtr &real_x) {
     // If real_x is Load CNode, We should not simplify it as Load is a no-op at backend, after simplification, the
     // result of the Load may be incorrect.
     if (IsPrimitiveCNode(real_x, prim::kPrimLoad)) {
@@ -74,15 +74,21 @@ AnfNodePtr ArithmeticSimplify::operator()(const OptimizerPtr &, const AnfNodePtr
                   << ", node shape: " << node->abstract()->GetShapeTrack()->ToString();
     return false;
   };
+  auto IsRefTensorNode = [&node]() {
+    // If node is AbstractRefTensor, We should not simplify it, after simplification, the result may be incorrect.
+    return node->abstract() != nullptr && node->abstract()->isa<abstract::AbstractRefTensor>();
+  };
   MATCH_REPLACE_IF(node, PBinOperation(mindspore::prim::kPrimAdd, x.get_object(), zero_.get_object(), true), x,
                    x.CheckFunc(IsAddByZeroSimplifiable, node));  // Add by zero
 
   MATCH_REPLACE(node, PBinOperation(prim::kPrimScalarAdd, x, zero_scalar_, true), x);  // Scalar Add by zero
+  // Multiply by one
   MATCH_REPLACE_IF(node, PBinOperation(mindspore::prim::kPrimMul, x.get_object(), one_.get_object(), true),
-                   any_const.WithValueOf(x), !one_.CheckFunc(IsParam, node));         // Multiply by one
+                   any_const.WithValueOf(x), !one_.CheckFunc(IsParam, node) && !IsRefTensorNode());
   MATCH_REPLACE(node, PBinOperation(prim::kPrimScalarMul, x, one_scalar_, true), x);  // Scalar Mul by one
   // Muls Scalar by one
-  MATCH_REPLACE(node, PBinOperation(mindspore::prim::kPrimMuls, x.get_object(), one_scalar_, false), x);
+  MATCH_REPLACE_IF(node, PBinOperation(mindspore::prim::kPrimMuls, x.get_object(), one_scalar_, false), x,
+                   !IsRefTensorNode());
 
   // Prim Eliminate (identity)
   MATCH_REPLACE(node, PPrimitive(prim::kPrimidentity, x), x);
