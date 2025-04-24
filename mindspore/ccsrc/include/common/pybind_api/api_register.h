@@ -50,6 +50,7 @@ void RegTFT(py::module *m);
 FRONTEND_EXPORT void RegTensorDoc(py::module *m);
 void RegReuseDataPtr(py::module *m);
 void RegPreJit(py::module *m);
+void RegStorage(py::module *m);
 
 namespace hal {
 void RegStream(py::module *m);

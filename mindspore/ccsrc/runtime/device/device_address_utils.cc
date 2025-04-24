@@ -1004,6 +1004,9 @@ void DeviceAddressUtils::MallocForInput(const DeviceContext *device_context, con
       MS_LOG(EXCEPTION) << "Allocate memory failed";
     }
   } else {
+    if (device_address->size() == 0) {
+      return;
+    }
     if (!device_context->device_res_manager_->AllocateMemory(device_address.get())) {
       MS_LOG(EXCEPTION) << "Allocate memory failed";
     }
