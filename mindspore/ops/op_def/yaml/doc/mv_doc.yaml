@@ -26,9 +26,9 @@ mv:
         Examples:
             >>> import mindspore
             >>> import numpy as np
-            >>> from mindspore import Tensor, mint
+            >>> from mindspore import Tensor, ops
             >>> input = Tensor(np.array([[3., 4.], [1., 6.], [1., 3.]]).astype(np.float32))
             >>> vec = Tensor(np.array([1., 2.]).astype(np.float32))
-            >>> output = mint.mv(input, vec)
+            >>> output = ops.auto_generate.mv(input, vec)
             >>> print(output)
             [11. 13. 7.]

@@ -34,9 +34,9 @@ diag_ext:
             ``Ascend``
 
         Examples:
-            >>> from mindspore import Tensor, mint
+            >>> from mindspore import Tensor, ops
             >>> input = Tensor([1, 2, 3, 4]).astype('int32')
-            >>> output = mint.diag(input)
+            >>> output = ops.auto_generate.diag_ext(input)
             >>> print(output)
             [[1 0 0 0]
              [0 2 0 0]

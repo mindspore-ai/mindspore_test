@@ -24,10 +24,10 @@ dot:
     
         Examples:
             >>> import mindspore
-            >>> from mindspore import Tensor, mint
+            >>> from mindspore import Tensor, ops
             >>> x = Tensor([2.0, 3.0], mindspore.float32)
             >>> y = Tensor([2.0, 1.0], mindspore.float32)
-            >>> output = mint.dot(x, y)
+            >>> output = ops.auto_generate.dot(x, y)
             >>> print(output)
             7.0
             >>> print(output.dtype)
