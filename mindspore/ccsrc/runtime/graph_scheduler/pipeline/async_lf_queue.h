@@ -14,40 +14,38 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_MINDSPORE_CCSRC_RUNTIME_PIPELINE_ASYNC_ASYNC_LF_QUEUE_H_
-#define MINDSPORE_MINDSPORE_CCSRC_RUNTIME_PIPELINE_ASYNC_ASYNC_LF_QUEUE_H_
+#ifndef MINDSPORE_MINDSPORE_CCSRC_RUNTIME_GRAPH_SCHEDULER_PIPELINE_ASYNC_LF_QUEUE_H_
+#define MINDSPORE_MINDSPORE_CCSRC_RUNTIME_GRAPH_SCHEDULER_PIPELINE_ASYNC_LF_QUEUE_H_
 
 #include <memory>
 #include <thread>
-#include <atomic>
-#include <mutex>
 #include <string>
+#include <set>
 #include <utility>
 #include <functional>
-#include <condition_variable>
-#include <type_traits>
 #include <cstddef>
 
-#include "runtime/pipeline/lf_ring_queue.h"
-#include "runtime/pipeline/visible.h"
+#include "runtime/hardware/device_context.h"
+#include "runtime/graph_scheduler/pipeline/lf_ring_queue.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore {
 namespace runtime {
-constexpr size_t kLFQueueCapacity = 8192;
+constexpr uint64_t kLFQueueCapacity = 8192;
 
 // AsyncLFQueue is a lock-free asynchronous queue that supports multiple producers and a single consumer. It internally
 // starts a thread to act as the consumer, allowing concurrent pushing of elements. The elements must be of a type that
 // can be constructed into an std::function<void()> object.
-class RUNTIME_PIPELINE_EXPORT AsyncLFQueue {
+class AsyncLFQueue {
  public:
-  explicit AsyncLFQueue(std::string name) : name_(std::move(name)) {
-    worker_ = std::make_unique<std::thread>(&AsyncLFQueue::WorkerLoop, this);
-  }
+  explicit AsyncLFQueue(std::string name) : name_(std::move(name)) {}
   virtual ~AsyncLFQueue();
 
   void Init();
   bool Initialized() const { return init_; }
+
+  // Bind device and set device context for async pipeline thread.
+  void BindDevice(const std::set<const device::DeviceContext *> &device_contexts);
 
   // Push element to lock free queue, the args parameter must be of type std::function<void()> or convertible to this
   // type. Push is multi thread safety.
@@ -60,7 +58,7 @@ class RUNTIME_PIPELINE_EXPORT AsyncLFQueue {
       return;
     }
     if (!tasks_queue_.Push(std::forward<Args>(args)...)) {
-      MS_LOG(EXCEPTION) << "Failed to push task to queue.";
+      MS_LOG(EXCEPTION) << "Failed to push task to queue: " << name_;
     }
   }
 
@@ -97,4 +95,4 @@ class RUNTIME_PIPELINE_EXPORT AsyncLFQueue {
 using AsyncLFQueuePtr = std::unique_ptr<AsyncLFQueue>;
 }  // namespace runtime
 }  // namespace mindspore
-#endif  // MINDSPORE_MINDSPORE_CCSRC_RUNTIME_PIPELINE_ASYNC_ASYNC_LF_QUEUE_H_
+#endif  // MINDSPORE_MINDSPORE_CCSRC_RUNTIME_GRAPH_SCHEDULER_PIPELINE_ASYNC_LF_QUEUE_H_

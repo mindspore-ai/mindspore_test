@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-#include "runtime/pipeline/async_lf_queue.h"
+#include "runtime/graph_scheduler/pipeline/async_lf_queue.h"
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
 #include "include/common/utils/signal_util.h"
 #endif
-#include "utils/log_adapter.h"
 #include "utils/ms_exception.h"
 #include "debug/profiler/profiler.h"
 
@@ -82,6 +81,16 @@ void AsyncLFQueue::Init() {
   init_ = true;
 }
 
+void AsyncLFQueue::BindDevice(const std::set<const device::DeviceContext *> &device_contexts) {
+  auto bind_device_task = [&device_contexts]() {
+    std::for_each(device_contexts.begin(), device_contexts.end(), [](const device::DeviceContext *item) {
+      item->device_res_manager_->BindDeviceToCurrentThread(false);
+    });
+  };
+  Push(std::move(bind_device_task));
+  Wait();
+}
+
 void AsyncLFQueue::Wait() {
   if (!init_ || worker_ == nullptr) {
     return;
@@ -89,8 +98,8 @@ void AsyncLFQueue::Wait() {
   if (worker_->get_id() == std::this_thread::get_id()) {
     return;
   }
-  ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kWaitTaskFinish, name_);
 
+  ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kWaitTaskFinish, name_);
   std::atomic<bool> atomic_wait_flag = false;
   auto wait_task = [&atomic_wait_flag]() { atomic_wait_flag = true; };
   Push(std::move(wait_task));
@@ -105,6 +114,12 @@ void AsyncLFQueue::Pause() {
   if (!init_) {
     return;
   }
+
+  if (tasks_queue_.IsPaused()) {
+    // Has beed paused already.
+    return;
+  }
+
   Wait();
   tasks_queue_.Pause();
 }

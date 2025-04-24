@@ -36,6 +36,7 @@
 #include "runtime/graph_scheduler/actor/memory_manager_actor.h"
 #include "runtime/device/device_address_utils.h"
 #include "runtime/hardware/device_context_manager.h"
+#include "runtime/graph_scheduler/pipeline/runtime_pipeline.h"
 #endif
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
@@ -419,12 +420,21 @@ bool WaitRuntimePipelineFinish(const OpContext<KernelTensor> *context, const std
   PROFILER_START(start_time);
 
   if (ActorDispatcher::enable_runtime_multi_pipeline()) {
-    KernelAsyncInferActor::GetInstance()->Wait();
-    KernelAsyncResizeActor::GetInstance()->Wait();
+    if (EnableRuntimeNewPipeline()) {
+      RuntimePipeline::GetInstance().infer_queue()->Wait();
+      RuntimePipeline::GetInstance().resize_queue()->Wait();
+    } else {
+      KernelAsyncInferActor::GetInstance()->Wait();
+      KernelAsyncResizeActor::GetInstance()->Wait();
+    }
   }
 
   if (ActorDispatcher::enable_async_launch_kernel() && wait_kernel_launch_finish) {
-    KernelAsyncLaunchActor::GetInstance()->Wait();
+    if (EnableRuntimeNewPipeline()) {
+      RuntimePipeline::GetInstance().launch_queue()->Wait();
+    } else {
+      KernelAsyncLaunchActor::GetInstance()->Wait();
+    }
   }
   PROFILER_END(start_time, ProfilerModule::kRuntime, ProfilerEvent::kWaitTaskFinish, name, false);
 

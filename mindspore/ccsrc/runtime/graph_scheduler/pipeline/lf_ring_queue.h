@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_MINDSPORE_CCSRC_RUNTIME_PIPELINE_LF_RING_QUEUE_H_
-#define MINDSPORE_MINDSPORE_CCSRC_RUNTIME_PIPELINE_LF_RING_QUEUE_H_
+#ifndef MINDSPORE_MINDSPORE_CCSRC_RUNTIME_GRAPH_SCHEDULER_PIPELINE_LF_RING_QUEUE_H_
+#define MINDSPORE_MINDSPORE_CCSRC_RUNTIME_GRAPH_SCHEDULER_PIPELINE_LF_RING_QUEUE_H_
 
 #include <atomic>
 #include <array>
@@ -30,9 +30,10 @@ namespace mindspore {
 // This is a lock-free queue implementation that supports multiple producers and a single consumer, improves performance
 // through spinning, and supports inplacement construct element, pause and continue the queue, the queue is in pause
 // status after creation.
-template <typename T, size_t Capacity>
+template <typename T, uint64_t Capacity>
 class LFRingQueue {
   static_assert(Capacity > 0, "Capacity must be greater than 0 for LFRingQueue");
+  static_assert((Capacity & (Capacity - 1)) == 0, "Capacity must be a power of 2");
   static_assert(std::is_nothrow_move_constructible_v<T>, "The template type T must has nothrow move constructible");
   static_assert(std::is_nothrow_destructible_v<T>, "The template type T must has nothrow destructible");
 
@@ -53,16 +54,19 @@ class LFRingQueue {
   // creation.
   void Pause() { running_.store(false, std::memory_order_release); }
 
+  // Check the queue is on pause state.
+  bool IsPaused() const { return false == running_.load(std::memory_order_acquire); }
+
   // Continue the queue which is in pause status.
   void Continue() {
-    running_.store(true, std::memory_order_release);
+    running_.store(true);
 
     std::unique_lock<std::mutex> lock(mtx_);
     pause_cv_.notify_one();
   }
 
   void Finalize() noexcept {
-    alive_.store(false, std::memory_order_release);
+    alive_.store(false);
     std::lock_guard<std::mutex> lock(mtx_);
     pause_cv_.notify_all();
   }
@@ -76,18 +80,18 @@ class LFRingQueue {
   bool Push(Args &&... args) {
     if (!alive_.load(std::memory_order_acquire)) return false;
 
-    size_t current_tail;
-    size_t new_tail;
+    uint64_t current_tail;
     Element *current_element;
 
     while (true) {
       if (!alive_.load(std::memory_order_acquire)) return false;
 
       if (!running_.load(std::memory_order_acquire)) {
-        MS_LOG(EXCEPTION) << "The queue is in pause status, can not push task.";
+        MS_LOG(ERROR) << "The queue is in pause status, can not push task.";
+        return false;
       }
 
-      if (TryPush(current_tail, new_tail, current_element, std::forward<Args>(args)...)) {
+      if (TryPush(current_tail, current_element, std::forward<Args>(args)...)) {
         return true;
       }
     }
@@ -125,35 +129,36 @@ class LFRingQueue {
 
  private:
   template <typename... Args>
-  bool TryPush(size_t &current_tail, size_t &new_tail, Element *&element,  // NOLINT(runtime/references)
+  bool TryPush(uint64_t &current_tail, Element *&element,  // NOLINT(runtime/references)
                Args &&... args) {
     current_tail = tail_.load(std::memory_order_relaxed);
-    new_tail = current_tail + 1;
-    if (new_tail - head_.load(std::memory_order_acquire) > Capacity) {
+    auto current_head = head_.load(std::memory_order_relaxed);
+    if (current_tail < current_head || current_tail - current_head >= Capacity) {
+      return false;
+    }
+    if (current_tail == UINT64_MAX) {
+      // This is a safety check, it requires continuous pushing for millions of years to trigger an overflow.
+      MS_LOG(EXCEPTION) << "The queue is overflow and push task failed.";
+    }
+
+    if (!tail_.compare_exchange_weak(current_tail, current_tail + 1, std::memory_order_acq_rel,
+                                     std::memory_order_relaxed)) {
       return false;
     }
 
-    element = &buffer_[current_tail % Capacity];
-    if (element->ready.load(std::memory_order_acquire)) {
-      return false;
-    }
-
-    if (!tail_.compare_exchange_weak(current_tail, new_tail, std::memory_order_acq_rel, std::memory_order_relaxed)) {
-      return false;
-    }
-
+    element = &buffer_[current_tail & mask_];
     new (&element->storage) T(std::forward<Args>(args)...);
     element->ready.store(true, std::memory_order_release);
     return true;
   }
 
   bool TryPop() {
-    const size_t current_head = head_.load(std::memory_order_relaxed);
+    const uint64_t current_head = head_.load(std::memory_order_relaxed);
     if (current_head == tail_.load(std::memory_order_acquire)) {
       return false;
     }
 
-    Element &element = buffer_[current_head % Capacity];
+    Element &element = buffer_[current_head & mask_];
     if (!element.ready.load(std::memory_order_acquire)) {
       return false;
     }
@@ -165,12 +170,12 @@ class LFRingQueue {
   }
 
   T *TryFront() noexcept {
-    const size_t current_head = head_.load(std::memory_order_acquire);
+    const uint64_t current_head = head_.load(std::memory_order_relaxed);
     if (current_head == tail_.load(std::memory_order_acquire)) {
       return nullptr;
     }
 
-    Element &element = buffer_[current_head % Capacity];
+    Element &element = buffer_[current_head & mask_];
     if (!element.ready.load(std::memory_order_acquire)) {
       return nullptr;
     }
@@ -178,9 +183,11 @@ class LFRingQueue {
     return reinterpret_cast<T *>(&element.storage);
   }
 
+  // Bitmask for fast modulo.
+  static constexpr uint64_t mask_ = Capacity - 1;
   alignas(128) Element buffer_[Capacity];
-  alignas(128) std::atomic<size_t> head_{0};
-  alignas(128) std::atomic<size_t> tail_{0};
+  alignas(128) std::atomic<uint64_t> head_{0};
+  alignas(128) std::atomic<uint64_t> tail_{0};
 
   // Indicates whether the queue is currently paused or in execution state.
   alignas(128) std::atomic<bool> running_{false};
@@ -192,4 +199,4 @@ class LFRingQueue {
   std::condition_variable pause_cv_;
 };
 }  // namespace mindspore
-#endif  // MINDSPORE_MINDSPORE_CCSRC_RUNTIME_PIPELINE_LF_RING_QUEUE_H_
+#endif  // MINDSPORE_MINDSPORE_CCSRC_RUNTIME_GRAPH_SCHEDULER_PIPELINE_LF_RING_QUEUE_H_

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "runtime/pipeline/lf_ring_queue.h"
+#include "runtime/graph_scheduler/pipeline/lf_ring_queue.h"
 #include <atomic>
 #include <thread>
 #include "common/common_test.h"
@@ -30,7 +30,7 @@ class LFRingQueueTest : public UT::Common {
 /// Description: Single producer single consumer case, test Empty, Push, Front, Pop naive function.
 /// Expectation: The result is expected.
 TEST_F(LFRingQueueTest, BasicOperations) {
-  LFRingQueue<int, 3> queue;
+  LFRingQueue<int, 4> queue;
   queue.Continue();
 
   EXPECT_TRUE(queue.Empty());
@@ -76,7 +76,7 @@ TEST_F(LFRingQueueTest, PauseContinue) {
   ASSERT_TRUE(queue.Push(10));
 
   queue.Pause();
-  EXPECT_THROW(queue.Push(20), std::exception);
+  ASSERT_FALSE(queue.Push(20));
 
   queue.Continue();
   ASSERT_TRUE(queue.Push(30));
@@ -90,7 +90,7 @@ TEST_F(LFRingQueueTest, PauseContinue) {
 /// Description: Multi producer single consumer case, test parallel push function.
 /// Expectation: The result is expected.
 TEST_F(LFRingQueueTest, MultiProducer) {
-  LFRingQueue<int, 100> queue;
+  LFRingQueue<int, 128> queue;
   queue.Continue();
   std::vector<std::thread> producers;
   const int itemCount = 1000;

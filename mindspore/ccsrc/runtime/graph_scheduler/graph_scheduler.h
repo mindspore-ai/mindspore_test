@@ -108,7 +108,13 @@ class BACKEND_EXPORT GraphScheduler {
   // The Global actors contain memory manager actor, recorder actor and debug actor.
   void BuildAndScheduleGlobalActor();
 
-  void BindCoreForRuntimeThread(ActorThreadPool *thread_pool, size_t thread_num) const;
+#if defined(__linux__) && defined(BIND_CORE)
+  // Binds runtime pipeline threads to CPU cores for optimization performance.
+  void BindCoreForRuntimeThread(ActorThreadPool *thread_pool) const;
+  // Collects OS-level thread ids of all active runtime workers, including actor threads and new runtime pipeline queue
+  // threads.
+  void GetRuntimeThreadIds(ActorThreadPool *thread_pool, std::vector<pthread_t> *threads) const;
+#endif
 
   // Transform the nodes of graph to actors.
   ActorSetPtr Build(const GraphCompilerInfo &graph_compiler_info);
@@ -243,9 +249,6 @@ class BACKEND_EXPORT GraphScheduler {
   void DumpFinalActor(const ActorSet *actor_set, const GraphCompilerInfo &graph_compiler_info);
   // bind thread pool to same numa node
   void BindNumaNode();
-
-  // Refresh the context and thread pool before run model.
-  void RefreshContextAndThreadPool(ActorSet *const actor_set, ActorThreadPool *const thread_pool);
 
   // Spawn kernel async infer/resize/launch kernel in run graph phase if need.
   void SpawnMultiPipelineActor(ActorSet *const actor_set, ActorThreadPool *const thread_pool);

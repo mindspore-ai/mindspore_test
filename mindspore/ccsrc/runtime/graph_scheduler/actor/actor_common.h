@@ -509,6 +509,11 @@ bool EnableRuntimePipeline();
 
 bool EnableParallelDispatchKernel();
 
+inline bool EnableRuntimeNewPipeline() {
+  static bool disable_new_pipeline = common::IsDisableRuntimeConfig("new_pipeline");
+  return !disable_new_pipeline;
+}
+
 // If enable async launch kernel, wait all kernels launch task finish.
 // If enable infer->resize->launch pipeline, also wait all infer, resize and launch task finish.
 bool WaitRuntimePipelineFinish(const OpContext<KernelTensor> *context, const std::string &name,

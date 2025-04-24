@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "runtime/pipeline/async_lf_queue.h"
+#include "runtime/graph_scheduler/pipeline/async_lf_queue.h"
 #include <future>
 #include "common/common_test.h"
 

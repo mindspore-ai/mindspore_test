@@ -24,6 +24,7 @@
 #include "runtime/graph_scheduler/actor/kernel_async_resize_actor.h"
 #include "runtime/graph_scheduler/actor/kernel_async_launch_actor.h"
 #include "runtime/graph_scheduler/graph_scheduler.h"
+#include "runtime/graph_scheduler/pipeline/runtime_pipeline.h"
 #include "runtime/graph_scheduler/embedding_cache_scheduler.h"
 #include "debug/profiler/profiler.h"
 
@@ -42,18 +43,33 @@ void WaitAsyncResizeAndLaunchFinish() {
 
   if (runtime::ActorDispatcher::enable_runtime_multi_pipeline()) {
     const auto &cur_thread_id = std::this_thread::get_id();
-    if (cur_thread_id != runtime::KernelAsyncResizeActor::GetInstance()->actor_thread_id() &&
-        cur_thread_id != runtime::KernelAsyncLaunchActor::GetInstance()->actor_thread_id()) {
-      runtime::KernelAsyncInferActor::GetInstance()->Wait();
-    }
+    if (runtime::EnableRuntimeNewPipeline()) {
+      if (cur_thread_id != runtime::RuntimePipeline::GetInstance().resize_queue()->thread_id() &&
+          cur_thread_id != runtime::RuntimePipeline::GetInstance().launch_queue()->thread_id()) {
+        runtime::RuntimePipeline::GetInstance().infer_queue()->Wait();
+      }
 
-    if (cur_thread_id != runtime::KernelAsyncLaunchActor::GetInstance()->actor_thread_id()) {
-      runtime::KernelAsyncResizeActor::GetInstance()->Wait();
+      if (cur_thread_id != runtime::RuntimePipeline::GetInstance().launch_queue()->thread_id()) {
+        runtime::RuntimePipeline::GetInstance().resize_queue()->Wait();
+      }
+    } else {
+      if (cur_thread_id != runtime::KernelAsyncResizeActor::GetInstance()->actor_thread_id() &&
+          cur_thread_id != runtime::KernelAsyncLaunchActor::GetInstance()->actor_thread_id()) {
+        runtime::KernelAsyncInferActor::GetInstance()->Wait();
+      }
+
+      if (cur_thread_id != runtime::KernelAsyncLaunchActor::GetInstance()->actor_thread_id()) {
+        runtime::KernelAsyncResizeActor::GetInstance()->Wait();
+      }
     }
   }
 
   if (runtime::ActorDispatcher::enable_async_launch_kernel()) {
-    runtime::KernelAsyncLaunchActor::GetInstance()->Wait();
+    if (runtime::EnableRuntimeNewPipeline()) {
+      runtime::RuntimePipeline::GetInstance().launch_queue()->Wait();
+    } else {
+      runtime::KernelAsyncLaunchActor::GetInstance()->Wait();
+    }
   }
 
   PROFILER_END(start_time, runtime::ProfilerModule::kRuntime, runtime::ProfilerEvent::kWaitTaskFinish,

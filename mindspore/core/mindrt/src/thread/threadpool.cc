@@ -113,9 +113,11 @@ std::vector<int> parse_cpu_list(const std::string &cpu_str) {
   return cpus;
 }
 
-void ThreadPool::ThreadPoolSetAffinity(size_t thread_num) {
+#if defined(__linux__)
+void ThreadPool::ThreadPoolSetAffinity(const std::vector<pthread_t> &threads) {
+#if defined(BIND_CORE) && !defined(__ANDROID__)
+  auto thread_num = threads.size();
   MS_LOG(INFO) << "Start to bind core for actor thread for [" << thread_num << "] threads.";
-#if defined(BIND_CORE) && !defined(__ANDROID__) && !defined(__APPLE__) && !defined(_MSC_VER) && !defined(_WIN32)
   auto env_runtime_reserved = std::getenv("CONFIG_BIND_RUNTIME_LIST");
   if (env_runtime_reserved == nullptr) {
     return;
@@ -139,11 +141,11 @@ void ThreadPool::ThreadPoolSetAffinity(size_t thread_num) {
     }
 
     for (size_t i = 0; i < thread_num; i++) {
-      ret = pthread_setaffinity_np(workers_[i]->handle(), sizeof(cpu_set_t), &cpuset);
+      ret = pthread_setaffinity_np(threads[i], sizeof(cpu_set_t), &cpuset);
       if (ret != 0) {
-        MS_LOG(WARNING) << "Fail to bind core to " << cpu_list << " for thread " << workers_[i]->thread_id();
+        MS_LOG(WARNING) << "Fail to bind core to " << cpu_list << " for thread " << threads[i];
       } else {
-        MS_LOG(WARNING) << "Success to bind core to " << cpu_list << " for thread " << workers_[i]->thread_id();
+        MS_LOG(WARNING) << "Success to bind core to " << cpu_list << " for thread " << threads[i];
       }
     }
   } else if (env_enable_fix != nullptr && (std::string(env_enable_fix) == "cluster")) {
@@ -157,11 +159,11 @@ void ThreadPool::ThreadPoolSetAffinity(size_t thread_num) {
       for (const auto &cpu_id : sub_list) {
         CPU_SET(static_cast<size_t>(cpu_id), &cpuset);
       }
-      ret = pthread_setaffinity_np(workers_[i]->handle(), sizeof(cpu_set_t), &cpuset);
+      ret = pthread_setaffinity_np(threads[i], sizeof(cpu_set_t), &cpuset);
       if (ret != 0) {
-        MS_LOG(WARNING) << "Fail to bind core to " << sub_list << " for thread " << workers_[i]->thread_id();
+        MS_LOG(WARNING) << "Fail to bind core to " << sub_list << " for thread " << threads[i];
       } else {
-        MS_LOG(WARNING) << "Success to bind core to " << sub_list << " for thread " << workers_[i]->thread_id();
+        MS_LOG(WARNING) << "Success to bind core to " << sub_list << " for thread " << threads[i];
       }
       offset += cpus_per_thread;
     }
@@ -171,23 +173,25 @@ void ThreadPool::ThreadPoolSetAffinity(size_t thread_num) {
       CPU_ZERO(&cpuset);
       CPU_SET(cpu_list[i % cpu_list.size()], &cpuset);
 
-      ret = pthread_setaffinity_np(workers_[i]->handle(), sizeof(cpu_set_t), &cpuset);
+      ret = pthread_setaffinity_np(threads[i], sizeof(cpu_set_t), &cpuset);
       if (ret != 0) {
-        MS_LOG(WARNING) << "Fail to bind core to " << cpu_list[i % cpu_list.size()] << " for thread "
-                        << workers_[i]->thread_id();
+        MS_LOG(WARNING) << "Fail to bind core to " << cpu_list[i % cpu_list.size()] << " for thread " << threads[i];
       } else {
-        MS_LOG(WARNING) << "Success to bind core to " << cpu_list[i % cpu_list.size()] << " for thread "
-                        << workers_[i]->thread_id();
+        MS_LOG(WARNING) << "Success to bind core to " << cpu_list[i % cpu_list.size()] << " for thread " << threads[i];
       }
     }
   }
+#else
+  MS_LOG(ERROR) << "Call not implemented function.";
+  MINDRT_EXIT("Not implemented error");
 #endif
 }
 
-void ThreadPool::APIThreadPoolSetAffinity(const size_t thread_num, const std::vector<int> &cpu_list,
+void ThreadPool::APIThreadPoolSetAffinity(const std::vector<pthread_t> &threads, const std::vector<int> &cpu_list,
                                           const std::string actor_thread_fix_bind) {
+#if defined(BIND_CORE) && !defined(__ANDROID__)
+  auto thread_num = threads.size();
   MS_LOG(INFO) << "Start to bind core for actor thread for [" << thread_num << "] threads.";
-#if defined(BIND_CORE) && !defined(__ANDROID__) && !defined(__APPLE__) && !defined(_MSC_VER) && !defined(_WIN32)
   int ret;
   if (!actor_thread_fix_bind.empty() &&
       (std::string(actor_thread_fix_bind) == "true" || std::string(actor_thread_fix_bind) == "True")) {
@@ -196,13 +200,11 @@ void ThreadPool::APIThreadPoolSetAffinity(const size_t thread_num, const std::ve
       CPU_ZERO(&cpuset);
       CPU_SET(cpu_list[i % cpu_list.size()], &cpuset);
 
-      ret = pthread_setaffinity_np(workers_[i]->handle(), sizeof(cpu_set_t), &cpuset);
+      ret = pthread_setaffinity_np(threads[i], sizeof(cpu_set_t), &cpuset);
       if (ret != 0) {
-        MS_LOG(WARNING) << "Fail to bind core to " << cpu_list[i % cpu_list.size()] << " for thread "
-                        << workers_[i]->thread_id();
+        MS_LOG(WARNING) << "Fail to bind core to " << cpu_list[i % cpu_list.size()] << " for thread " << threads[i];
       } else {
-        MS_LOG(WARNING) << "Success to bind core to " << cpu_list[i % cpu_list.size()] << " for thread "
-                        << workers_[i]->thread_id();
+        MS_LOG(WARNING) << "Success to bind core to " << cpu_list[i % cpu_list.size()] << " for thread " << threads[i];
       }
     }
   } else if (!actor_thread_fix_bind.empty() && (std::string(actor_thread_fix_bind) == "cluster")) {
@@ -216,11 +218,11 @@ void ThreadPool::APIThreadPoolSetAffinity(const size_t thread_num, const std::ve
       for (const auto &cpu_id : sub_list) {
         CPU_SET(static_cast<size_t>(cpu_id), &cpuset);
       }
-      ret = pthread_setaffinity_np(workers_[i]->handle(), sizeof(cpu_set_t), &cpuset);
+      ret = pthread_setaffinity_np(threads[i], sizeof(cpu_set_t), &cpuset);
       if (ret != 0) {
-        MS_LOG(WARNING) << "Fail to bind core to " << sub_list << " for thread " << workers_[i]->thread_id();
+        MS_LOG(WARNING) << "Fail to bind core to " << sub_list << " for thread " << threads[i];
       } else {
-        MS_LOG(WARNING) << "Success to bind core to " << sub_list << " for thread " << workers_[i]->thread_id();
+        MS_LOG(WARNING) << "Success to bind core to " << sub_list << " for thread " << threads[i];
       }
       offset += cpus_per_thread;
     }
@@ -233,16 +235,20 @@ void ThreadPool::APIThreadPoolSetAffinity(const size_t thread_num, const std::ve
     }
 
     for (size_t i = 0; i < thread_num; i++) {
-      ret = pthread_setaffinity_np(workers_[i]->handle(), sizeof(cpu_set_t), &cpuset);
+      ret = pthread_setaffinity_np(threads[i], sizeof(cpu_set_t), &cpuset);
       if (ret != 0) {
-        MS_LOG(WARNING) << "Fail to bind core to " << cpu_list << " for thread " << workers_[i]->thread_id();
+        MS_LOG(WARNING) << "Fail to bind core to " << cpu_list << " for thread " << threads[i];
       } else {
-        MS_LOG(WARNING) << "Success to bind core to " << cpu_list << " for thread " << workers_[i]->thread_id();
+        MS_LOG(WARNING) << "Success to bind core to " << cpu_list << " for thread " << threads[i];
       }
     }
   }
+#else
+  MS_LOG(ERROR) << "Call not implemented function.";
+  MINDRT_EXIT("Not implemented error");
 #endif
 }
+#endif
 
 void Worker::InitWorkerMask(const std::vector<int> &core_list, const size_t workers_size) {
   core_list_ = core_list;

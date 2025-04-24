@@ -52,6 +52,7 @@
 #include "runtime/graph_scheduler/execution_order_check/kernel_cache.h"
 #include "runtime/pynative/op_executor.h"
 #include "runtime/device/stream_synchronizer.h"
+#include "runtime/graph_scheduler/pipeline/runtime_pipeline.h"
 #include "debug/profiler/profiler.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "debug/profiler/profiling.h"
@@ -123,6 +124,7 @@ void MemTrackerInstanceClear() {
 void ClearResPart1() {
   pynative::PyNativeExecutor::GetInstance()->WorkerJoin();
   runtime::OpExecutor::GetInstance().WorkerJoin();
+  runtime::RuntimePipeline::GetInstance().WorkerJoin();
   // When the python process exits, the kernels on the device may not have finished executing.
   device::KernelRuntimeManager::Instance().WaitTaskFinishOnDevice();
   device::DeviceContextManager::GetInstance().WaitTaskFinishOnDevice();

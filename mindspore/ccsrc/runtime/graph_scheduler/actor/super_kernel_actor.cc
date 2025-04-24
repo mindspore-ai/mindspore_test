@@ -26,6 +26,7 @@
 #include "runtime/graph_scheduler/actor/control_flow/condition_switch_runner.h"
 #include "runtime/graph_scheduler/actor/control_flow/condition_gather_runner.h"
 #include "runtime/pipeline/task/batch_launch_kernel_task.h"
+#include "runtime/graph_scheduler/pipeline/runtime_pipeline.h"
 #include "include/common/runtime_conf/runtime_conf.h"
 #include "runtime/graph_scheduler/graph_capture/graph_capture_manager.h"
 #include "async/async.h"
@@ -844,21 +845,46 @@ bool SuperKernelActor::FetchMsgInputAndConstValueForKernel(KernelRunner *kernel_
   return true;
 }
 
-void SuperKernelActor::DispatchKernelByCondition(OpContext<KernelTensor> *const context, KernelRunner *kernel_actor,
-                                                 bool sync_run) {
+void SuperKernelActor::AsyncLaunchKernelByCondition(OpContext<KernelTensor> *const context,
+                                                    KernelRunner *kernel_actor) {
   // Check high performance condition in SuperKernelActor.
   if (is_high_perf_mode_ && IsHighPerfModeAtExec()) {
-    if (!sync_run) {
-      Async(kernel_async_launch_aid_, &KernelAsyncLaunchActor::LaunchKernelV2HP, context, kernel_actor);
+    if (EnableRuntimeNewPipeline()) {
+      auto launch_task = [context, kernel_actor]() {
+        KernelAsyncLaunchActor::GetInstance()->LaunchKernelV2HP(context, kernel_actor);
+      };
+      RuntimePipeline::GetInstance().launch_queue()->Push(std::move(launch_task));
     } else {
-      KernelAsyncLaunchActor::GetInstance()->LaunchKernelV2HP(context, kernel_actor);
+      Async(kernel_async_launch_aid_, &KernelAsyncLaunchActor::LaunchKernelV2HP, context, kernel_actor);
     }
   } else {
-    if (!sync_run) {
-      Async(kernel_async_launch_aid_, &KernelAsyncLaunchActor::LaunchKernelV2, context, kernel_actor);
+    if (EnableRuntimeNewPipeline()) {
+      auto launch_task = [context, kernel_actor]() {
+        KernelAsyncLaunchActor::GetInstance()->LaunchKernelV2(context, kernel_actor);
+      };
+      RuntimePipeline::GetInstance().launch_queue()->Push(std::move(launch_task));
     } else {
-      KernelAsyncLaunchActor::GetInstance()->LaunchKernelV2(context, kernel_actor);
+      Async(kernel_async_launch_aid_, &KernelAsyncLaunchActor::LaunchKernelV2, context, kernel_actor);
     }
+  }
+}
+
+void SuperKernelActor::SyncDispatchKernel(OpContext<KernelTensor> *const context, KernelRunner *kernel_actor) {
+  if (!ActorDispatcher::enable_static_shape()) {
+    kernel_actor->device_contexts_[0]->device_res_manager_->BindDeviceToCurrentThread(false);
+    // Infer shape and resize for dynamic shape or dynamice value case when disable runtime multi pipeline.
+    kernel_actor->InferAndUpdateDeviceTensorSize(context);
+  } else if (LLMManager::GetInstance().need_force_resize(kernel_actor->kernel_mod_->kernel_name())) {
+    kernel_actor->ResizeKernelMod();
+    kernel_actor->FetchOutputDeviceTensor(context);
+    kernel_actor->FetchWorkspaceDeviceTensor();
+  }
+
+  // Check high performance condition in SuperKernelActor.
+  if (is_high_perf_mode_ && IsHighPerfModeAtExec()) {
+    KernelAsyncLaunchActor::GetInstance()->LaunchKernelV2HP(context, kernel_actor);
+  } else {
+    KernelAsyncLaunchActor::GetInstance()->LaunchKernelV2(context, kernel_actor);
   }
 }
 
@@ -884,7 +910,7 @@ bool SuperKernelActor::LaunchKernel(OpContext<KernelTensor> *const context, cons
   }
 
   // 2. Async/Sync Run Infer or Launch
-  if (ActorDispatcher::enable_runtime_multi_pipeline() && !ActorDispatcher::enable_static_shape()) {
+  if (ActorDispatcher::enable_runtime_multi_pipeline() && !ActorDispatcher::enable_static_shape() && !sync_run) {
     // If the kernel need user data and is dynamic, maybe need input kernel's output user data to infer shape, this
     // value depend case can not handle in KernelTensor auto sync phase currently.
     if (kernel_actor->kernel_mod_->need_user_data() && kernel_actor->has_dynamic_) {
@@ -900,8 +926,16 @@ bool SuperKernelActor::LaunchKernel(OpContext<KernelTensor> *const context, cons
     // Push run task to pipeline.
     // Note: dynamic value or static shape also need push task into infer actor to make sure correct kernel
     // execution order.
-    Async(kernel_async_infer_aid_, &KernelAsyncInferActor::InferShapeV2, context, kernel_actor.get(),
-          is_high_perf_mode_ && IsHighPerfModeAtExec());
+    if (EnableRuntimeNewPipeline()) {
+      auto infer_task = [context, kernel_actor_ptr = kernel_actor.get(),
+                         high_perf_mode = is_high_perf_mode_ && IsHighPerfModeAtExec()]() {
+        KernelAsyncInferActor::GetInstance()->InferShapeV2(context, kernel_actor_ptr, high_perf_mode);
+      };
+      RuntimePipeline::GetInstance().infer_queue()->Push(std::move(infer_task));
+    } else {
+      Async(kernel_async_infer_aid_, &KernelAsyncInferActor::InferShapeV2, context, kernel_actor.get(),
+            is_high_perf_mode_ && IsHighPerfModeAtExec());
+    }
 
     // The computed depend kernel should wait output shape update after kernel launch.
     if (kernel_actor->kernel_mod_->IsNeedUpdateOutputShapeAndSize()) {
@@ -913,7 +947,7 @@ bool SuperKernelActor::LaunchKernel(OpContext<KernelTensor> *const context, cons
       MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL)
         << "End wait runtime pipeline for kernel: " << kernel_actor->kernel_->fullname_with_scope();
     }
-  } else if (ActorDispatcher::enable_async_launch_kernel()) {
+  } else if (ActorDispatcher::enable_async_launch_kernel() && !sync_run) {
     auto &llm_manager = LLMManager::GetInstance();
     if (llm_manager.need_force_resize(kernel_actor->kernel_mod_->kernel_name())) {
       kernel_actor->ResizeKernelMod();
@@ -925,7 +959,7 @@ bool SuperKernelActor::LaunchKernel(OpContext<KernelTensor> *const context, cons
       kernel_actor->InferAndUpdateDeviceTensorSize(context);
     }
 
-    DispatchKernelByCondition(context, kernel_actor.get(), sync_run);
+    AsyncLaunchKernelByCondition(context, kernel_actor.get());
 
     // The computed depend kernel should wait output shape update after kernel launch.
     if (kernel_actor->kernel_mod_->IsNeedUpdateOutputShapeAndSize()) {
@@ -941,8 +975,7 @@ bool SuperKernelActor::LaunchKernel(OpContext<KernelTensor> *const context, cons
   } else {
     MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Sync launch kernel actor:" << kernel_actor->GetAID()
                                          << " in actor:" << GetAID();
-    kernel_actor->InferAndUpdateDeviceTensorSize(context);
-    kernel_actor->ExecuteLaunchKernelTask(context);
+    SyncDispatchKernel(context, kernel_actor.get());
   }
 
   return true;
@@ -1117,6 +1150,11 @@ void SuperKernelActor::DispatchSerialLaunchKernels(OpContext<KernelTensor> *cons
 
 void SuperKernelActor::ParallelDispatchKernels(OpContext<KernelTensor> *const context) {
   MS_LOG(INFO) << "Begin parallel dispatch kernels for graph: " << graph_->ToString();
+  if (EnableRuntimeNewPipeline()) {
+    // Not need launch queue work in spin in parallel launch step, which doesn't push launch task into launch queue.
+    RuntimePipeline::GetInstance().launch_queue()->Pause();
+    ActorDispatcher::set_enable_async_launch_kernel(false);
+  }
   // Record a event to default stream to notify parallel launch kernels execute on other stream.
   events_.front()->RecordEvent(0);
 
@@ -1848,6 +1886,7 @@ void SuperKernelActor::BuildKernelActors() {
       const_cast<device::DeviceContext *>(device::FetchRealDeviceContext(kernel, device_contexts_[0]));
     MS_EXCEPTION_IF_NULL(real_device_context);
     KernelAsyncLaunchActor::GetInstance()->AddDeviceContext(real_device_context);
+    RuntimePipeline::GetInstance().AddDeviceContext(real_device_context);
     if (IsRpcActor(kernel)) {
       MS_LOG(EXCEPTION) << "Can not launch a sub graph which contains rpc kernel by kbk.";
     } else if (IsInnerControlFlowActor(kernel)) {

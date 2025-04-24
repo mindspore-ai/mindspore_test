@@ -24,6 +24,7 @@
 #include "utils/ms_context.h"
 #include "actor/actormgr.h"
 #include "runtime/pynative/op_executor.h"
+#include "runtime/graph_scheduler/pipeline/runtime_pipeline.h"
 #include "pynative/pynative_execute.h"
 #include "pipeline/jit/ps/executor/graph_executor_py.h"
 #include "pipeline/jit/ps/pipeline.h"
@@ -65,6 +66,10 @@ void RegisterForkCallbacks() {
   ForkUtils::GetInstance().RegisterCallbacks(
     &runtime::GraphScheduler::GetInstance(), static_cast<void (runtime::GraphScheduler::*)()>(nullptr),
     static_cast<void (runtime::GraphScheduler::*)()>(nullptr), &runtime::GraphScheduler::ChildAfterFork);
+  MS_LOG(DEBUG) << "Register RuntimePipeline fork callbacks.";
+  ForkUtils::GetInstance().RegisterCallbacks(
+    &runtime::RuntimePipeline::GetInstance(), &runtime::RuntimePipeline::ParentBeforeFork,
+    static_cast<void (runtime::RuntimePipeline::*)()>(nullptr), &runtime::RuntimePipeline::ChildAfterFork);
 #endif
 }
 

@@ -84,6 +84,10 @@ class MS_CORE_API ActorThreadPool : public ThreadPool {
   virtual void PushActorToQueue(ActorBase *actor);
   virtual ActorBase *PopActorFromQueue();
 
+#if defined(__linux__)
+  int GetActorWorkerThreads(std::vector<pthread_t> *threads) const;
+#endif
+
  protected:
   ActorThreadPool() = default;
 

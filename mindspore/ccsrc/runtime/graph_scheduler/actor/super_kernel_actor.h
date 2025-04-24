@@ -195,8 +195,11 @@ class SuperKernelActor : public DebugAwareActor {
   // Launch all kernels by execution order in kernel graph: graph_.
   bool LaunchAllKernels(OpContext<KernelTensor> *const context);
 
-  // Sync or Async launch a kernel by debug mode or high performance mode.
-  void DispatchKernelByCondition(OpContext<KernelTensor> *const context, KernelRunner *kernel_actor, bool sync_run);
+  // Async launch a kernel by debug mode or high performance mode.
+  void AsyncLaunchKernelByCondition(OpContext<KernelTensor> *const context, KernelRunner *kernel_actor);
+
+  // Sync dispatch a kernel, including infer/resize/launch.
+  void SyncDispatchKernel(OpContext<KernelTensor> *const context, KernelRunner *kernel_actor);
 
   void TrackInputMemory();
 

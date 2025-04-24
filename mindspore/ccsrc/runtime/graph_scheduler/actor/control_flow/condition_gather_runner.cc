@@ -16,6 +16,7 @@
 
 #include "runtime/graph_scheduler/actor/control_flow/condition_gather_runner.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
+#include "runtime/graph_scheduler/pipeline/runtime_pipeline.h"
 
 namespace mindspore {
 namespace runtime {
@@ -37,12 +38,24 @@ ConditionGatherRunner::~ConditionGatherRunner() {
 void ConditionGatherRunner::ExecuteInferShapeTask(OpContext<KernelTensor> *const context, bool high_perf) {
   MS_EXCEPTION_IF_NULL(kernel_);
   MS_LOG(DEBUG) << "Begin InferShape for kernel: " << kernel_->fullname_with_scope();
-  Async(kernel_async_resize_aid_, &KernelAsyncResizeActor::ResizeKernelModV2, context, this, high_perf);
+  if (EnableRuntimeNewPipeline()) {
+    auto resize_task = [context, this, high_perf]() {
+      KernelAsyncResizeActor::GetInstance()->ResizeKernelModV2(context, this, high_perf);
+    };
+    RuntimePipeline::GetInstance().resize_queue()->Push(std::move(resize_task));
+  } else {
+    Async(kernel_async_resize_aid_, &KernelAsyncResizeActor::ResizeKernelModV2, context, this, high_perf);
+  }
   MS_LOG(DEBUG) << "End InferShape for kernel: " << kernel_->fullname_with_scope();
 }
 
 void ConditionGatherRunner::ExecuteResizeKernelModTask(OpContext<KernelTensor> *const context, bool) {
-  Async(kernel_async_launch_aid_, &KernelAsyncLaunchActor::LaunchKernelV2, context, this);
+  if (EnableRuntimeNewPipeline()) {
+    auto launch_task = [context, this]() { KernelAsyncLaunchActor::GetInstance()->LaunchKernelV2(context, this); };
+    RuntimePipeline::GetInstance().launch_queue()->Push(std::move(launch_task));
+  } else {
+    Async(kernel_async_launch_aid_, &KernelAsyncLaunchActor::LaunchKernelV2, context, this);
+  }
 }
 
 void ConditionGatherRunner::ExecuteLaunchKernelTask(OpContext<KernelTensor> *const context) {
