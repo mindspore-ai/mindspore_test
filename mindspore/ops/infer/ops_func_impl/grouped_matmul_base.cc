@@ -46,9 +46,9 @@ std::pair<ShapeArray, ShapeArray> GroupedMatmulBaseFuncImpl::FetchInputAndWeight
       return shapes;
     };
     // get tuple_x_shape in compile phase
-    x_shapes = std::move(FetchTupleTensorShapeFunc(input_infos[idxes_.x]));
+    x_shapes = FetchTupleTensorShapeFunc(input_infos[idxes_.x]);
     // get tuple_w_shape in compile phase
-    w_shapes = std::move(FetchTupleTensorShapeFunc(input_infos[idxes_.weight]));
+    w_shapes = FetchTupleTensorShapeFunc(input_infos[idxes_.weight]);
   } else {
     // Runtime phase: the element in input_args is KernelTensor. (tuple is expanded)
     auto tuple_len = GetValue<std::vector<int64_t>>(primitive->GetAttr("group_info"));
