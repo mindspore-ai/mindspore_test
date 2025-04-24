@@ -20,11 +20,9 @@ select_ext_view:
             ``Ascend``
         
         Examples:
-            >>> import mindspore
             >>> from mindspore import Tensor, ops
-            >>> from mindspore.ops.auto_generate import SelectExtView
             >>> input = Tensor([[2, 3, 4, 5],[3, 2, 4, 5]])
-            >>> y = SelectExtView()(input, 0, 0)
+            >>> y = ops.auto_generate.select_ext_view(input, 0, 0)
             >>> print(y)
             [2 3 4 5]
             
