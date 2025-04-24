@@ -17,7 +17,6 @@
 #define ATB_SPEED_HOSTTENSOR_BINDER_H
 #include <nlohmann/json.hpp>
 #include <atb/atb_infer.h>
-#include "atb_speed/log.h"
 
 namespace atb_speed {
 class HostTensorBinder {

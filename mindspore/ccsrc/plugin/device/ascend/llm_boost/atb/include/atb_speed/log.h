@@ -14,56 +14,132 @@
  * limitations under the License.
  */
 
-#ifndef ATB_LOG_H
-#define ATB_LOG_H
-#include "atb_speed/log/log_stream.h"
-#include "atb_speed/log/log_core.h"
-#include "atb_speed/log/log_sink.h"
-#include "atb_speed/log/log_entity.h"
+#ifndef ATB_SPEED_LOG_H
+#define ATB_SPEED_LOG_H
 
-#define ATB_LOG(level) ATB_LOG_##level
+#include <iostream>
+#include <sstream>
+#include <mutex>
 
-#define ATB_FLOG(level, format, ...) ATB_FLOG_##level(format, __VA_ARGS__)
+#include "spdlog/common.h"
+#include "spdlog/spdlog.h"
 
-#define ATB_LOG_IF(condition, level) \
-    if (condition)                   \
-    ATB_LOG(level)
+#include "log/log_config.h"
 
-#define ATB_LOG_TRACE                                                   \
-    if (atb_speed::LogLevel::TRACE >= atb_speed::LogCore::Instance().GetLogLevel()) \
-    atb_speed::LogStream(__FILE__, __LINE__, __FUNCTION__, atb_speed::LogLevel::TRACE)
-#define ATB_LOG_DEBUG                                                   \
-    if (atb_speed::LogLevel::DEBUG >= atb_speed::LogCore::Instance().GetLogLevel()) \
-    atb_speed::LogStream(__FILE__, __LINE__, __FUNCTION__, atb_speed::LogLevel::DEBUG)
-#define ATB_LOG_INFO                                                   \
-    if (atb_speed::LogLevel::INFO >= atb_speed::LogCore::Instance().GetLogLevel()) \
-    atb_speed::LogStream(__FILE__, __LINE__, __FUNCTION__, atb_speed::LogLevel::INFO)
-#define ATB_LOG_WARN                                                   \
-    if (atb_speed::LogLevel::WARN >= atb_speed::LogCore::Instance().GetLogLevel()) \
-    atb_speed::LogStream(__FILE__, __LINE__, __FUNCTION__, atb_speed::LogLevel::WARN)
-#define ATB_LOG_ERROR                                                   \
-    if (atb_speed::LogLevel::ERROR >= atb_speed::LogCore::Instance().GetLogLevel()) \
-    atb_speed::LogStream(__FILE__, __LINE__, __FUNCTION__, atb_speed::LogLevel::ERROR)
-#define ATB_LOG_FATAL                                                   \
-    if (atb_speed::LogLevel::FATAL >= atb_speed::LogCore::Instance().GetLogLevel()) \
-    atb_speed::LogStream(__FILE__, __LINE__, __FUNCTION__, atb_speed::LogLevel::FATAL)
+namespace atb_speed {
 
-#define ATB_FLOG_TRACE(format, ...)                                     \
-    if (atb_speed::LogLevel::TRACE >= atb_speed::LogCore::Instance().GetLogLevel()) \
-    atb_speed::LogStream(__FILE__, __LINE__, __FUNCTION__, atb_speed::LogLevel::TRACE).Format(format, __VA_ARGS__)
-#define ATB_FLOG_DEBUG(format, ...)                                     \
-    if (atb_speed::LogLevel::DEBUG >= atb_speed::LogCore::Instance().GetLogLevel()) \
-    atb_speed::LogStream(__FILE__, __LINE__, __FUNCTION__, atb_speed::LogLevel::DEBUG).Format(format, __VA_ARGS__)
-#define ATB_FLOG_INFO(format, ...)                                     \
-    if (atb_speed::LogLevel::INFO >= atb_speed::LogCore::Instance().GetLogLevel()) \
-    atb_speed::LogStream(__FILE__, __LINE__, __FUNCTION__, atb_speed::LogLevel::INFO).Format(format, __VA_ARGS__)
-#define ATB_FLOG_WARN(format, ...)                                     \
-    if (atb_speed::LogLevel::WARN >= atb_speed::LogCore::Instance().GetLogLevel()) \
-    atb_speed::LogStream(__FILE__, __LINE__, __FUNCTION__, atb_speed::LogLevel::WARN).Format(format, __VA_ARGS__)
-#define ATB_FLOG_ERROR(format, ...)                                     \
-    if (atb_speed::LogLevel::ERROR >= atb_speed::LogCore::Instance().GetLogLevel()) \
-    atb_speed::LogStream(__FILE__, __LINE__, __FUNCTION__, atb_speed::LogLevel::ERROR).Format(format, __VA_ARGS__)
-#define ATB_FLOG_FATAL(format, ...)                                     \
-    if (atb_speed::LogLevel::FATAL >= atb_speed::LogCore::Instance().GetLogLevel()) \
-    atb_speed::LogStream(__FILE__, __LINE__, __FUNCTION__, atb_speed::LogLevel::FATAL).Format(format, __VA_ARGS__)
+const std::map<std::string, std::string> ERROR_CODE_MAPPING = {
+    // BACKEND
+    {"BACKEND_CONFIG_VAL_FAILED", "MIE05E020000"},
+    {"BACKEND_INIT_FAILED", "MIE05E020001"},
+    // LLM_MANAGER
+    {"LLM_MANAGER_CONFIG_FAILED", "MIE05E030000"},
+    {"LLM_MANAGER_INIT_FAILED", "MIE05E030001"},
+    // TEXT_GENERATOR
+    {"TEXT_GENERATOR_PLUGIN_NAME_INVALID", "MIE05E010000"},
+    {"TEXT_GENERATOR_FEAT_COMPAT_INVALID", "MIE05E010001"},
+    {"TEXT_GENERATOR_REQ_ID_INVALID", "MIE05E010002"},
+    {"TEXT_GENERATOR_TEMP_ZERO_DIV_ERR", "MIE05E010003"},
+    {"TEXT_GENERATOR_REQ_PENALTY_ZERO_DIV_ERR", "MIE05E010004"},
+    {"TEXT_GENERATOR_ZERO_ITER_ERR", "MIE05E010005"},
+    {"TEXT_GENERATOR_ZERO_TIME_ERR", "MIE05E010006"},
+    {"TEXT_GENERATOR_REQ_ID_UNUSED", "MIE05E010007"},
+    {"TEXT_GENERATOR_GENERATOR_BACKEND_INVALID", "MIE05E010008"},
+    {"TEXT_GENERATOR_LOGITS_SHAPE_MISMATCH", "MIE05E010009"},
+    // reserved code: "MIE05E01000[A-F]"
+    {"TEXT_GENERATOR_MISSING_PREFILL_OR_INVALID_DECODE_REQ", "MIE05E010010"},
+    {"TEXT_GENERATOR_MAX_BLOCK_SIZE_INVALID", "MIE05E010011"},
+    {"TEXT_GENERATOR_EOS_TOKEN_ID_TYPE_INVALID", "MIE05E010012"},
+    // ATB_MODELS
+    {"ATB_MODELS_PARAM_OUT_OF_RANGE", "MIE05E000000"},
+    {"ATB_MODELS_MODEL_PARAM_JSON_INVALID", "MIE05E000001"},
+    {"ATB_MODELS_EXECUTION_FAILURE", "MIE05E000002"},
+};
+
+using LogLevel = spdlog::level::level_enum;
+
+class Log {
+public:
+    static Log& GetInstance();
+
+    static int CreateInstance();
+
+    static int CreateInstance(const std::string& loggerName, const std::shared_ptr<LogConfig> logConfig);
+
+    static const std::shared_ptr<LogConfig> GetLogConfig();
+
+    static int SetLogConfig(const std::shared_ptr<LogConfig> logConfig);
+
+    static void LogMessage(LogLevel level, const std::string& prefix, const std::string& message,
+                           bool validate = true);
+
+    static void Flush();
+
+    static void GetErrorCode(std::ostringstream& oss, const std::string& args);
+
+    static void FormatLog(std::ostringstream& oss, LogLevel level, bool verbose);
+    
+    static std::string GetLevelStr(const LogLevel level);
+
+    ~Log() = default;
+
+private:
+
+    explicit Log(const std::shared_ptr<LogConfig> logConfig);
+
+    void SetHandlesCallback(spdlog::file_event_handlers &handlers);
+    int Initialize(const std::string &loggerName);
+
+private:
+    static std::once_flag initFlag;
+    static Log logger;
+
+    std::shared_ptr<spdlog::logger> innerLogger_;
+    std::shared_ptr<LogConfig> logConfig_;
+};
+
+}  // namespace atb_speed
+
+template<typename T>
+inline std::ostream& operator<<(std::ostream& os, const std::vector<T>& vec)
+{
+    for (auto& el : vec) {
+        os << el << ',';
+    }
+    return os;
+}
+
+#ifndef LOG_FILENAME
+#define LOG_FILENAME (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
+#endif
+
+#define ATB_SPEED_LOG(level, msg, ...)                                                                      \
+    do {       \
+        atb_speed::Log::GetInstance(); \
+        if (atb_speed::Log::GetLogConfig()->logLevel_ <= (level)) {         \
+            std::ostringstream oss;                                          \
+            ATB_SPEED_FORMAT_LOG(oss, level, msg, ##__VA_ARGS__);           \
+            atb_speed::Log::LogMessage(level, "{}", oss.str(), false);      \
+        }                                                                    \
+    } while (0)
+
+#define ATB_SPEED_FORMAT_LOG(oss, level, msg, ...)                           \
+    do {                                                                     \
+        atb_speed::Log::FormatLog(oss, level, atb_speed::Log::GetLogConfig()->logVerbose_);      \
+        if (atb_speed::Log::GetLogConfig()->logVerbose_) {                  \
+            oss << "[" << LOG_FILENAME << ":" << __LINE__ << "] ";}           \
+        atb_speed::Log::GetErrorCode(oss, #__VA_ARGS__);                     \
+        oss << msg;                                                          \
+    } while (0)
+
+#define ATB_SPEED_LOG_DEBUG(msg, ...) ATB_SPEED_LOG(spdlog::level::debug, msg, __VA_ARGS__)
+
+#define ATB_SPEED_LOG_INFO(msg, ...) ATB_SPEED_LOG(spdlog::level::info, msg, __VA_ARGS__)
+
+#define ATB_SPEED_LOG_WARN(msg, ...) ATB_SPEED_LOG(spdlog::level::warn, msg, __VA_ARGS__)
+
+#define ATB_SPEED_LOG_ERROR(msg, ...) ATB_SPEED_LOG(spdlog::level::err, msg, __VA_ARGS__)
+
+#define ATB_SPEED_LOG_FATAL(msg, ...) ATB_SPEED_LOG(spdlog::level::critical, msg, __VA_ARGS__)
+
 #endif

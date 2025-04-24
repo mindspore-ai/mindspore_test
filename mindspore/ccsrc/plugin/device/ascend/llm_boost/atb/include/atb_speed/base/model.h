@@ -18,7 +18,6 @@
 #include <acl/acl.h>
 #include <atb/context.h>
 #include <atb/operation.h>
-#include <atb_speed/utils/timer.h>
 #include <condition_variable>
 #include <functional>
 #include <mutex>
@@ -31,13 +30,16 @@
 #include <set>
 #include <nlohmann/json.hpp>
 #include "atb_speed/utils/operation_util.h"
+#include "atb_speed/utils/check_util.h"
+#include "atb_speed/utils/ModelTaskExecutor.h"
+#include "atb_speed/base/event_manager.h"
 
 
 namespace atb_speed {
 class Model {
 public:
     using ReshapeFunc = std::function<void(const atb::Dims &oldDims, atb::Dims &newDims)>;
-    using GetWorkspaceFunc = std::function<void*(uint64_t bufferSize)>;
+    using GetWorkspaceFunc = std::function<void*(uint64_t bufferSize, uint32_t bufferKey)>;
     using CreateTensorFromTensorDescFunc = std::function<atb::Tensor(const atb::TensorDesc &tensorDesc)>;
     using Task = std::function<int()>;
     using RunTaskFunc = std::function<void(const std::string &taskName, Task task)>;
@@ -52,9 +54,10 @@ public:
         std::vector<atb::Tensor *> outTensors;
         atb::VariantPack variantPack;
         // std::vector<torch::Tensor> torchTensors;
-        atb::SVector<ReshapeFunc> inTensorReshapeFuncs;
+        std::vector<ReshapeFunc> inTensorReshapeFuncs;
         atb::SVector<TensorType> inTensorTypes;
         atb::SVector<TensorType> outTensorTypes;
+        uint32_t streamId = 0;
         uint64_t workspaceSize = 0;
         void *workspace = nullptr;
     };
@@ -89,35 +92,40 @@ public:
 
     int64_t SetWeight(const std::vector<atb::Tensor> &weightTensors);
     int64_t SetKVCache(const std::vector<atb::Tensor> &kCacheTensors, const std::vector<atb::Tensor> &vCacheTensors);
+    atb::Status SkipEvent(bool isSkipEvent);
+    atb::Status SetNodeStreamId(Node& node, uint32_t streamId) const;
     atb::Status Execute(atb::Context *context, std::vector<atb::Tensor> &inTensors,
-        std::vector<atb::Tensor> &outTensors,const std::string &param);
+        std::vector<atb::Tensor> &outTensors, const std::string &param);
 
 protected:
     virtual int64_t BuildGraph() = 0;
     virtual atb::Status ParseParam(const std::string &param);
     virtual atb::Status BindParamHostTensor(uint32_t nodeId);
+    virtual void BuildNodeVariantPack(int nodeId);
 
 protected:
     bool IsTensorDescEqual(const atb::TensorDesc &tensorDesc, const atb::Tensor &atbTensor) const;
     void ExecuteNodeView(int nodeId);
-    void BuildNodeVariantPack(int nodeId);
     atb::Status ExecuteNode(int nodeId);
     void ThreadProcessTask();
-    atb::Status ExecutePlanSync(int nodeId);
+    atb::Status ExecutePlanSync(int nodeId, bool doExecuteNormal = true);
     void ExecutePlanAsync(int nodeId);
+    atb::Status PreExecutePlanSync(int nodeId);
+    void PushPreTask(int nodeId);
     void PushTask(int nodeId);
     int PopTask();
     void WaitAsyncPlanExecuteFinish();
-    std::string GetSaveTensorDir() const;
     void ClearInternalTensors();
     atb::Tensor MallocInternalTensor(atb::Tensor* outTensor, size_t nodeId, size_t outTensorId,
         const atb::TensorDesc &tensorDesc);
-    void FreeInternalTensor(const void *tensorDeviceData);
+    void FreeInternalTensor(const atb::Tensor *tensorDeviceData, int nodeId = 0);
     void GetModelTensorNameList(nlohmann::json &modelJson,
         std::map<atb::Tensor *, std::string> &tensorNameMap);
     void GetNodeTopoInfo(nlohmann::json &nodeJson, const Node &opNode,
         const std::map<atb::Tensor *, std::string> tensorNameMap) const;
     std::string GetModelTopoInfo();
+    void BuildNodeOutTensorImpl(
+        int nodeId, atb_speed::Model::Node &node, atb::SVector<atb::TensorDesc>& inTensorDescs);
 
 protected:
     GetWorkspaceFunc getWorkSpaceFunc_;
@@ -129,39 +137,35 @@ protected:
 
     uint64_t executeCount_ = 0;
     atb::Context *context_;
-    Timer timer_;
 
     bool isUsePlanExecuteAsync_ = false;
+    bool isUsePlanPreExecuteAsync_ = false;
+    bool isSkipEvent_ = false;
     std::queue<int> taskQueue_;
     std::mutex mutex_;
     std::condition_variable cond_;
     std::thread taskProcessThread_;
     std::atomic_bool allTaskFinish_;
     int32_t currentDevId_ = 0;
-    std::vector<std::pair<atb::Tensor, bool>> internalTensors_;
-    std::vector<atb::Tensor*> nodeOutTensors_;
-
-    // Max length of param string
-    const size_t MAX_PARAM_STRING_LENGTH = 20000;
-    // Max value of tokenOffset, seqLen and qLen
-    const int MAX_PARAM_VALUE = 600000;
+    std::map<uint32_t, std::vector<std::pair<atb::Tensor, bool>>> internalTensors_;
+    std::map<uint32_t, std::vector<atb::Tensor*>> nodeOutTensors_;
+    std::vector<std::pair<atb::Operation*, atb::common::EventParam>> eventOps_;
 };
+// Max length of param string
+const size_t MAX_PARAM_STRING_LENGTH = 200000;
+// Max value of tokenOffset, seqLen and qLen
+const int MAX_PARAM_VALUE = 600000;
+// Max value of vocab_size
+const int64_t MAX_VOCAB_SIZE = 10000000;
 
-#define CHECK_PARAM_LESS_THAN_THERSHOLD(param, thershold) \
+#define CHECK_THROW(condition, message) \
     do { \
-        if ((param) > (thershold)) { \
-            ATB_LOG(ERROR) << "param should be less than " << (thershold) << ", please check"; \
-            return atb::ERROR_INVALID_PARAM; \
+        if (condition) { \
+            std::stringstream ss; \
+            ss << message << std::endl; \
+            throw std::runtime_error(ss.str()); \
         } \
     } while (0)
 
-// Param Type Size
-const size_t PACK_QUANT_TYPE_LENGTH = 2;
-const size_t LINEAR_TYPE_LENGTH = 7;
-int CheckPositive(const int &intParam);
-void CheckLinearParamsSufficient(const std::vector<std::vector<int>> &linearParam, \
-    size_t numHiddenLayers, size_t thershold);
-void CheckPackQuantParamsSufficient(const std::vector<std::vector<int>> &packQuantType, size_t numHiddenLayers);
-void CheckLinearPackParamsSufficient(const std::vector<std::vector<int>> &linearPackType, size_t numHiddenLayers);
 } // namespace atb_speed
 #endif

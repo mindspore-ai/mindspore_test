@@ -48,7 +48,7 @@ void BoostModelATB::RunTask(std::string taskName, std::function<int()> task) {
   executor.PushOpRunTask(ms_task);
 }
 
-void *BoostModelATB::GetWorkSpace(uint64_t bufferSize) {
+void *BoostModelATB::GetWorkSpace(uint64_t bufferSize, uint32_t bufferKey) {
   MS_LOG(INFO) << "Get WorkSpace, buffsize: " << bufferSize;
   void *workspace = nullptr;
   if (bufferSize > 0) {
@@ -110,7 +110,7 @@ int64_t BoostModelATB::Init(const std::string &param) {
     return RET_FAILED;
   }
 
-  auto getWorkspaceFunc = std::bind(&BoostModelATB::GetWorkSpace, this, std::placeholders::_1);
+  auto getWorkspaceFunc = std::bind(&BoostModelATB::GetWorkSpace, this, std::placeholders::_1, std::placeholders::_2);
   auto createInternalTensorFromDescFunc =
     std::bind(&BoostModelATB::CreateInternalTensorFromDesc, this, std::placeholders::_1);
 

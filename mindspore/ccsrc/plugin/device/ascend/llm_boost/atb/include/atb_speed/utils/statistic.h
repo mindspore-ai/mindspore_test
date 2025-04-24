@@ -16,6 +16,7 @@
 #ifndef ATB_SPEED_UTILS_STATISTIC_H
 #define ATB_SPEED_UTILS_STATISTIC_H
 #include <string>
+#include <cstdint>
 
 namespace atb_speed {
 struct Statistic {

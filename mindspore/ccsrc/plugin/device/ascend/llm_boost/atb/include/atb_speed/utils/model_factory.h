@@ -22,7 +22,6 @@
 #include <unordered_map>
 
 #include "atb_speed/base/model.h"
-#include "atb_speed/log.h"
 
 namespace atb_speed {
 using CreateModelFuncPtr = std::function<std::shared_ptr<atb_speed::Model>(const std::string &)>;
@@ -40,10 +39,9 @@ private:
         struct Register##_##nameSpace##_##modelName {                                             \
             inline Register##_##nameSpace##_##modelName() noexcept                                \
             {                                                                                     \
-                ATB_LOG(INFO) << "register model " << #nameSpace << "_" << #modelName;            \
                 ModelFactory::Register(MODEL_NAMESPACE_STRINGIFY(nameSpace##_##modelName),        \
                     [](const std::string &param) { return std::make_shared<modelName>(param); }); \
             }                                                                                     \
-        } static instance_##nameSpace##modelName;
+        } static instance_##nameSpace##modelName
 } // namespace atb_speed
 #endif
