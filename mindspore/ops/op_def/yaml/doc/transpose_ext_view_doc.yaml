@@ -23,10 +23,9 @@ transpose_ext_view:
 
         Examples:
             >>> import numpy as np
-            >>> from mindspore.ops.auto_generate import TransposeExtView
-            >>> from mindspore import Tensor
+            >>> from mindspore import Tensor, ops
             >>> input = Tensor(np.ones((2, 3, 4), dtype=np.float32))
-            >>> output = TransposeExtView()(input, 0, 2)
+            >>> output = ops.auto_generate.transpose_ext_view(input, 0, 2)
             >>> print(output.shape)
             (4, 3, 2)
         
