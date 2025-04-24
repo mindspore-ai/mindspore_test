@@ -185,13 +185,9 @@ def _handle_training_result_error(model, tft_obj):
     param_not_load, ckpt_not_load = load_param_into_net(train_network, new_param_dict, True, remove_redundancy)
     logger.warning(f"param_not_load: {param_not_load}")
     logger.warning(f"ckpt_not_load: {ckpt_not_load}")
-    param_list = []
-    for _, param in model.train_network.parameters_and_names():
-        if not param.sliced:
-            continue
-        param_list.append(param)
     resume_epoch = new_param_dict.get('epoch_num')
     resume_step = new_param_dict.get('step_num')
+    model._initial_step = int(resume_step.asnumpy())
     logger.warning("Process training result error end.")
     return (resume_epoch, resume_step)
 
@@ -217,6 +213,22 @@ def _calc_cb_initial_step(org_epoch, org_step, *args, **kwargs):
         dataset_helper = train_dataset._dataset_helper
         _reset_training_dataset(cb_initial_step, dataset_helper.iter.dataset.get_dataset_size())
     return cb_initial_step
+
+
+def _update_ckpt_callback_info(resume_train_step, **kwargs):
+    """
+    Update checkpoint callback internal state
+    """
+    ckpt_obj = None
+    if kwargs.get('callbacks') and isinstance(kwargs.get('callbacks'), ModelCheckpoint):
+        ckpt_obj = kwargs.get('callbacks')
+    if kwargs.get('callbacks') and isinstance(kwargs.get('callbacks'), list):
+        for item in kwargs.get('callbacks'):
+            if isinstance(item, ModelCheckpoint):
+                ckpt_obj = item
+    if not ckpt_obj is None:
+        ckpt_obj._last_triggered_step = 0
+        ckpt_obj._append_step_num = resume_train_step
 
 
 def _handle_tft(func):
@@ -245,6 +257,7 @@ def _handle_tft(func):
                     if tre_env and 'TREError' in str(e):
                         _, resume_step = _handle_training_result_error(self, obj)
                         repair_step = int(resume_step.asnumpy())
+                        _update_ckpt_callback_info(repair_step, **kwargs)
                         logger.warning(f'Resume training after TREError from step {repair_step}.')
                     else:
                         _handle_exception_info(obj, uce_env, tft, e)
@@ -259,7 +272,6 @@ def _handle_tft(func):
                     initial_step = repair_step % self.batch_num
                     kwargs["initial_epoch"] = initial_epoch
                     cb_initial_step = _calc_cb_initial_step(initial_epoch, initial_step, *args, **kwargs)
-                    kwargs["initial_step"] = cb_initial_step
                     # reset all accu grads to zero
                     obj._reset_acc_grads()
                     logger.warning(
@@ -547,6 +559,7 @@ class Model:
         self._mindspore_lite_model_group_id = id(self) & 0xFFFF
         self.batch_num = -1
         self.enable_tre = "TRE:1" in os.getenv("MS_ENABLE_TFT", "")
+        self._initial_step = None
         _clear_auto_parallel_context(self._network)
 
     def _check_for_graph_cell(self, kwargs):
@@ -1003,6 +1016,7 @@ class Model:
         cb_params.latest_ckpt_file = None
         cb_params.loss_scale_mananger = self._loss_scale_manager
         cb_params.is_arf = _get_recovery_context("is_arf")
+        cb_params.initial_step = self._initial_step
 
         # build callback list
         with _CallbackManager(callbacks) as list_callback:

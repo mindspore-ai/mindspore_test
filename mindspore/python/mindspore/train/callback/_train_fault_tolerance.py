@@ -308,6 +308,10 @@ class TrainFaultTolerance(Callback):
         self.device_id = context.get_context("device_id")
         self.cur_step_num = 0
         self.cur_epoch_num = 0
+        # For TREError(Training Result Error) scene, parameter `ckpt_load_fn` must be provided to load checkpoint
+        # from file for resuming training, the `ckpt_load_fn` is a function, prototype of which is:
+        # `def load_checkpoint() -> tuple(dict, bool)`, the return value is a tuple containing 2 values,
+        # i.e. (param_dict, remove_redundancy)
         self.ckpt_load_func = kwargs.get("ckpt_load_fn", None)
         self.tft = _tft_handler.get_tft()
         if self._only_enable_tre():
