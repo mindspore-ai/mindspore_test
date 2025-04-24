@@ -303,22 +303,34 @@ class TrainFaultTolerance(Callback):
         self.ckpt_save_path = ckpt_save_path
         if self.save_cb is None and self.ckpt_save_path is None:
             raise ValueError("TrainFaultTolerance construct need to set ckpt_save_fn or ckpt_save_path!")
+        self.cb_params = None
+        self.initial_step = kwargs.get("initial_step", 0)
+        self.device_id = context.get_context("device_id")
+        self.cur_step_num = 0
+        self.cur_epoch_num = 0
+        self.ckpt_load_func = kwargs.get("ckpt_load_fn", None)
         self.tft = _tft_handler.get_tft()
+        if self._only_enable_tre():
+            return
         self._check_init()
         self.global_step = None
         self.learning_rate = None
         self.has_init_replica = False
         self.is_uce_rank = False
-        self.cb_params = None
-        self.initial_step = kwargs.get("initial_step", 0)
-        self.device_id = context.get_context("device_id")
+
         self.assign = mindspore.ops.Assign()
         self.g_one = Parameter(Tensor([1], dtype=mstype.int32))
         self.s1 = mindspore.hal.Stream()
-        self.cur_step_num = 0
-        self.cur_epoch_num = 0
         _tft_sem_enable()
         self._tft_register()
+
+    def _only_enable_tre(self):
+        """Check if only configured MS_ENABLE_TFT='{TRE:1}'"""
+        env_enable = os.getenv("MS_ENABLE_TFT", "")
+        non_tre_flags = ["TTP:1", "UCE:1", "ARF:1"]
+        if any(flag in env_enable for flag in non_tre_flags):
+            return False
+        return "TRE:1" in env_enable
 
     def _check_init(self):
         """Check if the mindio-ttp had inited"""
@@ -428,6 +440,8 @@ class TrainFaultTolerance(Callback):
             run_context (RunContext): Context of the train running. Refer to
                                       :class:`mindspore.train.RunContext` for detail.
         """
+        if self._only_enable_tre():
+            return
         if self.has_init_replica is False:
             self.has_init_replica = True
             self._set_tft_optimizer_replica(run_context)
@@ -455,6 +469,9 @@ class TrainFaultTolerance(Callback):
                                       :class:`mindspore.train.RunContext` for detail.
         """
         cb_params = run_context.original_args()
+        if self._only_enable_tre():
+            self.cb_params = cb_params
+            return
         sink_size = cb_params.get("sink_size", 0)
         if sink_size > 1:
             raise ValueError("TFT feature doesn't support sink_size > 1.")
@@ -470,4 +487,6 @@ class TrainFaultTolerance(Callback):
             run_context (RunContext): Context of the train running. Refer to
                                       :class:`mindspore.train.RunContext` for detail.
         """
+        if self._only_enable_tre():
+            return
         _tft_handler.unregister_tft()

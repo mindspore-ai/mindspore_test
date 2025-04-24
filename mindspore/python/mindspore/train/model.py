@@ -57,8 +57,10 @@ from mindspore.dataset.engine.datasets import _set_training_dataset, _reset_trai
 from mindspore.train import amp
 from mindspore._c_expression import _framework_profiler_step_start, _framework_profiler_step_end
 from mindspore._c_expression import _get_optimzer_timestamps
+from mindspore._c_expression import clean_tdt_channel
 
 from mindspore.parallel._utils import _init_auto_parallel_context, _clear_auto_parallel_context
+from .serialization import load_param_into_net
 
 def _transfer_tensor_to_tuple(inputs):
     """
@@ -130,7 +132,8 @@ def _handle_exception_info(obj, uce_env, tft, e):
     if not uce_env:
         logger.error("uce wrapper caught RuntimeError but uce not enable, enter MindIO TTP process.",
                      exc_info=True)
-        tft.tft_report_error(tft.ReportState.RS_UNKNOWN.value)
+        if tft:
+            tft.tft_report_error(tft.ReportState.RS_UNKNOWN.value)
         raise e
     e_str = str(e)
     logger.warning("uce wrapper caught RuntimeError e_str:{}".format(e_str))
@@ -165,6 +168,57 @@ def _handle_exception_info(obj, uce_env, tft, e):
         raise e
 
 
+def _handle_training_result_error(model, tft_obj):
+    """
+    Handle training result error for resuming training.
+    """
+    ckpt_load_fn = tft_obj.ckpt_load_func
+    train_network = tft_obj.cb_params.train_network
+    logger.warning("Process training result error start.")
+    # 1. Clear tdt channel
+    logger.warning("Clean tdt channel.")
+    clean_tdt_channel()
+
+    # 2. Load checkpoint
+    logger.warning("Load checkpoint.")
+    new_param_dict, remove_redundancy = ckpt_load_fn()
+    param_not_load, ckpt_not_load = load_param_into_net(train_network, new_param_dict, True, remove_redundancy)
+    logger.warning(f"param_not_load: {param_not_load}")
+    logger.warning(f"ckpt_not_load: {ckpt_not_load}")
+    param_list = []
+    for _, param in model.train_network.parameters_and_names():
+        if not param.sliced:
+            continue
+        param_list.append(param)
+    resume_epoch = new_param_dict.get('epoch_num')
+    resume_step = new_param_dict.get('step_num')
+    logger.warning("Process training result error end.")
+    return (resume_epoch, resume_step)
+
+
+def _calc_cb_initial_step(org_epoch, org_step, *args, **kwargs):
+    """calculate initial step for callback"""
+    train_dataset = args[1]
+    dataset_sink_mode = args[3] if len(args) > 3 else kwargs.get('dataset_sink_mode', True)
+    sink_size = args[4] if len(args) > 4 else kwargs.get('sink_size', -1)
+
+    cb_initial_step = 0
+    if dataset_sink_mode:
+        train_dataset.set_init_step(org_epoch)
+        dataset_size = train_dataset.get_dataset_size()
+        if sink_size != -1:
+            cb_initial_step = org_epoch * sink_size + org_step
+        else:
+            cb_initial_step = org_epoch * dataset_size + org_step
+    else:
+        train_dataset.set_init_step(org_step)
+        cb_initial_step = org_step
+    if hasattr(train_dataset, '_dataset_helper'):
+        dataset_helper = train_dataset._dataset_helper
+        _reset_training_dataset(cb_initial_step, dataset_helper.iter.dataset.get_dataset_size())
+    return cb_initial_step
+
+
 def _handle_tft(func):
     """
     Decorator function, which starts uce handle process when an exception occurs during training.
@@ -183,38 +237,28 @@ def _handle_tft(func):
             tft = obj.tft
             tft_env = os.getenv("MS_ENABLE_TFT", "")
             uce_env = "UCE:1" in tft_env or "ARF:1" in tft_env
+            tre_env = "TRE:1" in tft_env
             while True:
                 try:
                     return func(self, *args, **kwargs)
                 except RuntimeError as e:
-                    _handle_exception_info(obj, uce_env, tft, e)
-                    ret = tft.tft_wait_next_action()
-                    if ret == tft.Action.EXIT.value:
-                        raise e
-                    repair_step = tft.tft_get_repair_step()
-                    logger.warning(
-                        "uce wrapper caught repair finish REPAIR STEP: {} batch_num:{}".format(repair_step,
-                                                                                               self.batch_num))
+                    if tre_env and 'TREError' in str(e):
+                        _, resume_step = _handle_training_result_error(self, obj)
+                        repair_step = int(resume_step.asnumpy())
+                        logger.warning(f'Resume training after TREError from step {repair_step}.')
+                    else:
+                        _handle_exception_info(obj, uce_env, tft, e)
+                        ret = tft.tft_wait_next_action()
+                        if ret == tft.Action.EXIT.value:
+                            raise e
+                        repair_step = tft.tft_get_repair_step()
+                        logger.warning(
+                            "uce wrapper caught repair finish REPAIR STEP: {} batch_num:{}".format(repair_step,
+                                                                                                   self.batch_num))
                     initial_epoch = int(repair_step / self.batch_num)
                     initial_step = repair_step % self.batch_num
                     kwargs["initial_epoch"] = initial_epoch
-
-                    train_dataset = args[1]
-                    dataset_sink_mode = args[3] if len(args) > 3 else kwargs.get('dataset_sink_mode', True)
-                    sink_size = args[4] if len(args) > 4 else kwargs.get('sink_size', -1)
-
-                    cb_initial_step = 0
-                    if dataset_sink_mode:
-                        train_dataset.set_init_step(initial_epoch)
-                        dataset_size = train_dataset.get_dataset_size()
-                        if sink_size != -1:
-                            cb_initial_step = initial_epoch * sink_size + initial_step
-                        else:
-                            cb_initial_step = initial_epoch * dataset_size + initial_step
-                    else:
-                        train_dataset.set_init_step(initial_step)
-                        cb_initial_step = initial_step
-
+                    cb_initial_step = _calc_cb_initial_step(initial_epoch, initial_step, *args, **kwargs)
                     kwargs["initial_step"] = cb_initial_step
                     # reset all accu grads to zero
                     obj._reset_acc_grads()
@@ -223,8 +267,9 @@ def _handle_tft(func):
                                                                                                      cb_initial_step))
                     continue
                 except BaseException as e:
-                    logger.error("uce wrapper caught BaseException error, enter MindIO TTP process.", exc_info=True)
-                    tft.tft_report_error(tft.ReportState.RS_UNKNOWN.value)
+                    if tft:
+                        logger.error("uce wrapper caught BaseException error, enter MindIO TTP process.", exc_info=True)
+                        tft.tft_report_error(tft.ReportState.RS_UNKNOWN.value)
                     raise e
         else:
             return func(self, *args, **kwargs)
@@ -501,6 +546,7 @@ class Model:
         self._lite_infer = True  # if backend lite infer fails, set False
         self._mindspore_lite_model_group_id = id(self) & 0xFFFF
         self.batch_num = -1
+        self.enable_tre = "TRE:1" in os.getenv("MS_ENABLE_TFT", "")
         _clear_auto_parallel_context(self._network)
 
     def _check_for_graph_cell(self, kwargs):
@@ -700,7 +746,7 @@ class Model:
             logger.info("Begin to connect network with dataset.")
             network = connect_network_with_dataset(network, dataset_helper)
 
-        if _get_recovery_context("enable_recovery") and is_train:
+        if (_get_recovery_context("enable_recovery") or self.enable_tre) and is_train:
             _set_training_dataset(dataset_helper)
 
         network.set_train(is_train)
