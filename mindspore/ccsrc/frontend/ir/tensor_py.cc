@@ -831,6 +831,22 @@ void TensorPybind::SetDeviceAddress(const TensorPtr &tensor, uintptr_t addr, con
   }
 }
 
+std::shared_ptr<StorageBase> TensorPybind::GetStorage(const TensorPtr &tensor) {
+  runtime::Pipeline::Get().WaitAll();
+  auto device_sync = tensor->device_address();
+  device::DeviceAddressPtr device_address = nullptr;
+  if (device_sync != nullptr) {
+    device_address = std::dynamic_pointer_cast<device::DeviceAddress>(device_sync);
+  } else {
+    return nullptr;
+  }
+  if (device_address->device_name() != "Ascend") {
+    MS_LOG(EXCEPTION) << "The current Storage does not yet support " << device_address->device_name();
+  }
+  auto storage_base = std::make_shared<StorageBase>(device_address);
+  return storage_base;
+}
+
 uintptr_t TensorPybind::DataPtr(const TensorPtr &tensor) {
   runtime::Pipeline::Get().WaitForward();
   const auto device_address = tensor->device_address();

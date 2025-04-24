@@ -34,6 +34,7 @@
 #include "runtime/pipeline/pipeline.h"
 #include "runtime/pynative/op_executor.h"
 #include "pipeline/jit/trace/trace_recorder.h"
+#include "pybind_api/storage_py.h"
 
 namespace mindspore {
 namespace tensor {
@@ -1245,6 +1246,23 @@ static PyObject *TensorPython_GetHooks(PyObject *self, PyObject *args, PyObject 
   HANDLE_MS_EXCEPTION_END
 }
 
+static PyObject *TensorPython_Storage(PyObject *self, PyObject *args, PyObject *kwargs) {
+  HANDLE_MS_EXCEPTION
+  PyType<TensorPy> *tensor = (PyType<TensorPy> *)self;
+  if (tensor->value.GetStorage().is_none()) {
+    auto tensorTmp = tensor->value.GetTensor();
+    std::shared_ptr<StorageBase> result = TensorPybind::GetStorage(tensorTmp);
+    if (result == nullptr) {
+      MS_LOG(EXCEPTION) << "Current Tensor has no device!";
+    }
+    Storage storage = Storage(result);
+    tensor->value.SetStorage(py::reinterpret_borrow<py::object>(CreateStorageObj(storage)));
+  }
+  Py_INCREF(tensor->value.GetStorage().ptr());
+  return tensor->value.GetStorage().ptr();
+  HANDLE_MS_EXCEPTION_END
+}
+
 static PyObject *TensorPython_GetDataPtr(PyObject *self, PyObject *args, PyObject *kwargs) {
   HANDLE_MS_EXCEPTION
   PyObject *tensor_obj;
@@ -1628,6 +1646,8 @@ static PyMethodDef Tensor_methods[] = {
                                 )mydelimiter"},
   {"_has_auto_grad", (PyCFunction)TensorPython_HasAutoGrad, METH_VARARGS | METH_KEYWORDS, "HasAutoGrad."},
   {"hooks", (PyCFunction)TensorPython_GetHooks, METH_VARARGS | METH_KEYWORDS, "get hooks."},
+  {"storage", (PyCFunction)TensorPython_Storage, METH_VARARGS | METH_KEYWORDS, "get storage."},
+  {"untyped_storage", (PyCFunction)TensorPython_Storage, METH_VARARGS | METH_KEYWORDS, "get storage."},
   {"_data_ptr", (PyCFunction)TensorPython_GetDataPtr, METH_VARARGS, "get Data ptr."},
   {"_need_contiguous", (PyCFunction)TensorPython_NeedContiguous, METH_VARARGS | METH_KEYWORDS, "need Contiguous."},
   {"_load", (PyCFunction)TensorPython_SetLoad, METH_VARARGS, "SetLoad."},
