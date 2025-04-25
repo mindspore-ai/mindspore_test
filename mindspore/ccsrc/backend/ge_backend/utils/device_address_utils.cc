@@ -23,6 +23,7 @@
 #include <memory>
 #include "ops/op_def.h"
 #include "ir/tensor.h"
+#include "utils/shape_utils.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "frontend/ir/tensor_py.h"
 #include "runtime/pipeline/pipeline.h"
@@ -534,7 +535,9 @@ bool DeviceAddressUtils::IsContiguousTensor(const tensor::BaseTensorPtr &tensor)
     return true;
   }
 
-  if (new_storage_info->storage_offset == 0 && new_storage_info->is_contiguous) {
+  auto shape_size = SizeOf(new_storage_info->shape);
+  auto ori_shape_size = SizeOf(new_storage_info->ori_shape);
+  if (new_storage_info->storage_offset == 0 && new_storage_info->is_contiguous && shape_size == ori_shape_size) {
     MS_LOG(INFO) << "It is a contiguous tensor, tensor: " << tensor;
     return true;
   }
