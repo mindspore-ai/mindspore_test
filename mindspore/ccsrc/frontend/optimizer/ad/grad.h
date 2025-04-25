@@ -36,7 +36,7 @@ enum BpropAutoMonadLevel : int {
 };
 FRONTEND_EXPORT FuncGraphPtr Grad(const FuncGraphPtr &func_graph, const opt::OptimizerPtr &optimizer,
                                   bool is_top = true, BpropAutoMonadLevel level = kLevelNone,
-                                  bool is_view_inplace = false);
+                                  bool is_view_inplace = false, bool is_grad_by_j = false);
 FuncGraphVector GradMultiFuncGraph(const FuncGraphVector &func_graphs, const opt::OptimizerPtr &optimizer,
                                    const std::vector<bool> &is_view_inplace, bool is_top = true,
                                    bool is_grad_by_j = false);

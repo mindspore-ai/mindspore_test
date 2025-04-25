@@ -572,18 +572,27 @@ void DFunctor::BackPropagate(const CNodePtr &cnode_morph, const AdjointPtr &node
     {NewValueNode(prim::kPrimTupleGetItem), node_adjoint->k_app(), NewValueNode(static_cast<int64_t>(1))});
   // Call with delimited continuation dout.
   CNodePtr bprop_app;
+
+  auto fg = GetCNodeFuncGraph(node_adjoint->primal());
+  auto hooked_dout = node_adjoint->dout();
+  bool is_backward_hook_applyed = false;
+  if (fg != nullptr && fg->has_flag(FUNC_GRAPH_FLAG_FORWARD_PRE_HOOK)) {
+    hooked_dout = ApplyBackwardHook(node_adjoint);
+    is_backward_hook_applyed = true;
+  }
+
   if (HasSideEffectBackProp(cnode_morph)) {
     if (is_view_inplace_) {
-      bprop_app = tape_->NewCNodeInOrder({bprop, node_adjoint->dout()});
+      bprop_app = tape_->NewCNodeInOrder({bprop, hooked_dout});
     } else {
-      bprop_app = tape_->NewCNodeInFront({bprop, node_adjoint->dout()});
+      bprop_app = tape_->NewCNodeInFront({bprop, hooked_dout});
     }
     tape_->set_flag(mindspore::kFuncGraphFlagReAutoMonad, true);
   } else {
     if (common::GetCompileConfig("PUT_ALL_CNODE_INTO_ORDER_LIST") == "0") {
-      bprop_app = tape_->NewCNode({bprop, node_adjoint->dout()});
+      bprop_app = tape_->NewCNode({bprop, hooked_dout});
     } else {
-      bprop_app = tape_->NewCNodeInOrder({bprop, node_adjoint->dout()});
+      bprop_app = tape_->NewCNodeInOrder({bprop, hooked_dout});
     }
   }
 
@@ -595,7 +604,11 @@ void DFunctor::BackPropagate(const CNodePtr &cnode_morph, const AdjointPtr &node
     bprop_app->AddAttr(kAttrSideEffectBpropAppPropagate, MakeValue(true));
     k_graph_->set_flag(kAttrSideEffectBpropAppPropagate, true);
   }
-  node_adjoint->RegisterDoutUser(bprop_app, 1);
+
+  if (!is_backward_hook_applyed) {
+    node_adjoint->RegisterDoutUser(bprop_app, 1);
+  }
+
   // Special case for switch_layer
   if (IsPrimitiveCNode(cnode_morph, prim::kPrimSwitchLayer)) {
     auto din =
