@@ -1,4 +1,4 @@
-# Copyright 2022 Huawei Technologies Co., Ltd
+# Copyright 2022-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+import pytest
 import numpy as np
 import mindspore.nn as nn
 from mindspore import Tensor
 from mindspore import context
 from mindspore.ops import GradOperation
 from tests.mark_utils import arg_mark
+from tests.st.pynative.hook.common import assert_jit_grad_net_by_grad_op
 
 context.set_context(mode=context.PYNATIVE_MODE)
 
@@ -56,6 +58,30 @@ class Net(nn.Cell):
         x = x + x
         return x
 
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+@pytest.mark.parametrize('hook', [backward_pre_hook_fn_with_no_return, backward_pre_hook_fn_with_old_return])
+def test_pynative_backward_pre_hook_on_net(hook):
+    """
+    Feature: PyNative hook function.
+    Description: Test PyNative backward pre hook function (reg hook for net).
+    Expectation: The calculation result is correct.
+    """
+
+    input_x = Tensor(np.ones([1]).astype(np.float32))
+    input_y = Tensor(np.ones([1]).astype(np.float32))
+    grad_op = GradOperation(get_all=True, get_by_list=False, sens_param=False)
+    net = Net()
+    net.register_backward_pre_hook(hook)
+    grad = grad_op(net)(input_x, input_y)
+    assert len(grad) == 2
+    expect_out = Tensor(np.ones([1]).astype(np.float32) * 2)
+    assert np.allclose(grad[0].asnumpy(), expect_out.asnumpy(), 0.000001, 0.000001)
+    assert np.allclose(grad[1].asnumpy(), expect_out.asnumpy(), 0.000001, 0.000001)
+
+    assert_jit_grad_net_by_grad_op(grad_op, net, grad, False, input_x, input_y)
 
 @arg_mark(plat_marks=['cpu_linux'],
           level_mark='level0',
@@ -64,7 +90,7 @@ class Net(nn.Cell):
 def test_pynative_backward_pre_hook_with_no_return():
     """
     Feature: PyNative hook function.
-    Description: Test PyNative backward pre hook function.
+    Description: Test PyNative backward pre hook function (reg hook for net.mul).
     Expectation: The calculation result is correct.
     """
     input_x = Tensor(np.ones([1]).astype(np.float32))
@@ -73,6 +99,7 @@ def test_pynative_backward_pre_hook_with_no_return():
     net = Net()
     net.mul.register_backward_pre_hook(backward_pre_hook_fn_with_no_return)
     grad = grad_op(net)(input_x, input_y)
+    assert_jit_grad_net_by_grad_op(grad_op, net, grad, False, input_x, input_y)
     assert len(grad) == 2
     expect_out = Tensor(np.ones([1]).astype(np.float32) * 2)
     assert np.allclose(grad[0].asnumpy(), expect_out.asnumpy(), 0.000001, 0.000001)
@@ -95,6 +122,7 @@ def test_pynative_backward_pre_hook_with_old_return():
     net = Net()
     net.mul.register_backward_pre_hook(backward_pre_hook_fn_with_old_return)
     grad = grad_op(net)(input_x, input_y)
+    assert_jit_grad_net_by_grad_op(grad_op, net, grad, False, input_x, input_y)
     assert len(grad) == 2
     expect_out = Tensor(np.ones([1]).astype(np.float32) * 2)
     assert np.allclose(grad[0].asnumpy(), expect_out.asnumpy(), 0.000001, 0.000001)
@@ -117,6 +145,7 @@ def test_pynative_backward_pre_hook_with_new_return():
     net = Net()
     net.mul.register_backward_pre_hook(backward_pre_hook_fn_with_new_return)
     grad = grad_op(net)(input_x, input_y)
+    assert_jit_grad_net_by_grad_op(grad_op, net, grad, False, input_x, input_y)
     assert len(grad) == 2
     expect_out = Tensor(np.ones([1]).astype(np.float32) * 6)
     assert np.allclose(grad[0].asnumpy(), expect_out.asnumpy(), 0.000001, 0.000001)
@@ -139,6 +168,8 @@ def test_pynative_backward_pre_hook_with_modify_cell():
     net = Net()
     net.mul.register_backward_pre_hook(backward_pre_hook_modify_cell)
     grad = grad_op(net)(input_x, input_y)
+    # hook with memory side effect is not supported now
+    # assert_jit_grad_net_by_grad_op(grad_op, net, grad, False, input_x, input_y)
     assert len(grad) == 2
     assert net.mul.a == 2
     expect_out = Tensor(np.ones([1]).astype(np.float32) * 4)
@@ -163,6 +194,7 @@ def test_pynative_backward_pre_hook_with_new_return_multi_register():
     net.mul.register_backward_pre_hook(backward_pre_hook_fn_with_new_return)
     net.mul.register_backward_pre_hook(backward_pre_hook_fn_with_new_return)
     grad = grad_op(net)(input_x, input_y)
+    assert_jit_grad_net_by_grad_op(grad_op, net, grad, False, input_x, input_y)
     assert len(grad) == 2
     expect_out = Tensor(np.ones([1]).astype(np.float32) * 18)
     assert np.allclose(grad[0].asnumpy(), expect_out.asnumpy(), 0.000001, 0.000001)
@@ -187,6 +219,7 @@ def test_pynative_backward_pre_hook_with_handle_remove():
     handle1 = net.mul.register_backward_pre_hook(backward_pre_hook_fn_with_new_return)
     handle2 = net.mul.register_backward_pre_hook(backward_pre_hook_fn_with_new_return)
     grad = grad_op(net)(input_x, input_y)
+    assert_jit_grad_net_by_grad_op(grad_op, net, grad, False, input_x, input_y)
     assert len(grad) == 2
     expect_out = Tensor(np.ones([1]).astype(np.float32) * 18)
     assert np.allclose(grad[0].asnumpy(), expect_out.asnumpy(), 0.000001, 0.000001)
@@ -195,6 +228,7 @@ def test_pynative_backward_pre_hook_with_handle_remove():
     # Step2: remove hook by handle1
     handle1.remove()
     grad = grad_op(net)(input_x, input_y)
+    assert_jit_grad_net_by_grad_op(grad_op, net, grad, False, input_x, input_y)
     assert len(grad) == 2
     expect_grad = Tensor(np.ones([1]).astype(np.float32) * 6)
     assert np.allclose(grad[0].asnumpy(), expect_grad.asnumpy(), 0.000001, 0.000001)
@@ -203,6 +237,7 @@ def test_pynative_backward_pre_hook_with_handle_remove():
     # Step3: remove hook by handle2
     handle2.remove()
     grad = grad_op(net)(input_x, input_y)
+    assert_jit_grad_net_by_grad_op(grad_op, net, grad, False, input_x, input_y)
     assert len(grad) == 2
     expect_grad = Tensor(np.ones([1]).astype(np.float32) * 2)
     assert np.allclose(grad[0].asnumpy(), expect_grad.asnumpy(), 0.000001, 0.000001)
@@ -227,6 +262,7 @@ def test_pynative_backward_pre_hook_with_backward_hook_and_remove():
     handle1 = net.mul.register_backward_pre_hook(backward_pre_hook_fn_with_new_return)
     handle2 = net.mul.register_backward_hook(backward_hook_with_new_return)
     grad = grad_op(net)(input_x, input_y)
+    assert_jit_grad_net_by_grad_op(grad_op, net, grad, False, input_x, input_y)
     assert len(grad) == 2
     expect_grad = Tensor(np.ones([1]).astype(np.float32) * 24)
     assert np.allclose(grad[0].asnumpy(), expect_grad.asnumpy(), 0.000001, 0.000001)
@@ -235,6 +271,7 @@ def test_pynative_backward_pre_hook_with_backward_hook_and_remove():
     # Step2: remove hook by handle1, backward hook needs work
     handle1.remove()
     grad = grad_op(net)(input_x, input_y)
+    assert_jit_grad_net_by_grad_op(grad_op, net, grad, False, input_x, input_y)
     assert len(grad) == 2
     expect_grad = Tensor(np.ones([1]).astype(np.float32) * 8)
     assert np.allclose(grad[0].asnumpy(), expect_grad.asnumpy(), 0.000001, 0.000001)
@@ -243,6 +280,7 @@ def test_pynative_backward_pre_hook_with_backward_hook_and_remove():
     # Step3: remove hook by handle2, no hook work
     handle2.remove()
     grad = grad_op(net)(input_x, input_y)
+    assert_jit_grad_net_by_grad_op(grad_op, net, grad, False, input_x, input_y)
     assert len(grad) == 2
     expect_grad = Tensor(np.ones([1]).astype(np.float32) * 2)
     assert np.allclose(grad[0].asnumpy(), expect_grad.asnumpy(), 0.000001, 0.000001)
@@ -269,6 +307,7 @@ def test_pynative_backward_pre_hook_with_backward_hook_multi_register():
     handle3 = net.mul.register_backward_hook(backward_hook_with_new_return)
     handle4 = net.mul.register_backward_hook(backward_hook_with_new_return)
     grad = grad_op(net)(input_x, input_y)
+    assert_jit_grad_net_by_grad_op(grad_op, net, grad, False, input_x, input_y)
     assert len(grad) == 2
     expect_grad = Tensor(np.ones([1]).astype(np.float32) * 288)
     assert np.allclose(grad[0].asnumpy(), expect_grad.asnumpy(), 0.000001, 0.000001)
@@ -277,6 +316,7 @@ def test_pynative_backward_pre_hook_with_backward_hook_multi_register():
     # Step2: remove backward pre hook by handle2
     handle2.remove()
     grad = grad_op(net)(input_x, input_y)
+    assert_jit_grad_net_by_grad_op(grad_op, net, grad, False, input_x, input_y)
     assert len(grad) == 2
     expect_grad = Tensor(np.ones([1]).astype(np.float32) * 96)
     assert np.allclose(grad[0].asnumpy(), expect_grad.asnumpy(), 0.000001, 0.000001)
@@ -285,6 +325,7 @@ def test_pynative_backward_pre_hook_with_backward_hook_multi_register():
     # Step3: remove hook by handle3 and handle4, no hook work
     handle4.remove()
     grad = grad_op(net)(input_x, input_y)
+    assert_jit_grad_net_by_grad_op(grad_op, net, grad, False, input_x, input_y)
     assert len(grad) == 2
     expect_grad = Tensor(np.ones([1]).astype(np.float32) * 24)
     assert np.allclose(grad[0].asnumpy(), expect_grad.asnumpy(), 0.000001, 0.000001)
@@ -294,6 +335,7 @@ def test_pynative_backward_pre_hook_with_backward_hook_multi_register():
     handle1.remove()
     handle3.remove()
     grad = grad_op(net)(input_x, input_y)
+    assert_jit_grad_net_by_grad_op(grad_op, net, grad, False, input_x, input_y)
     assert len(grad) == 2
     expect_grad = Tensor(np.ones([1]).astype(np.float32) * 2)
     assert np.allclose(grad[0].asnumpy(), expect_grad.asnumpy(), 0.000001, 0.000001)

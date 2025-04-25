@@ -789,67 +789,6 @@ AnfNodePtr DFunctor::AttachIndirectFvDoutToTape(const AnfNodePtr &grad_fv) {
   return new_grad_fv;
 }
 
-void DFunctor::SetTapeOutput(AnfNodePtr &grad_fv) {
-  auto is_origin_param = [](AnfNodePtr &node) -> bool {
-    MS_EXCEPTION_IF_NULL(node);
-    auto parameter = dyn_cast<Parameter>(node);
-    MS_EXCEPTION_IF_NULL(parameter);
-    if (parameter->has_default()) {
-      return false;
-    }
-    if (IsValueNode<Monad>(node) || HasAbstractMonad(node)) {
-      return false;
-    }
-    return true;
-  };
-
-  std::vector<AnfNodePtr> inputs{NewValueNode(prim::kPrimMakeTuple), grad_fv};
-  std::map<size_t, AnfNodePtr> origin_dins;
-  std::vector<AdjointPtr> param_adjoints;
-  for (size_t idx = 0; idx < primal_graph_->parameters().size(); ++idx) {
-    auto param = primal_graph_->parameters()[idx];
-    auto param_adjoint = anfnode_to_adjoin_.find(param);
-    auto adjoint_dout = param_adjoint->second->dout();
-    inputs.push_back(adjoint_dout);
-    param_adjoints.push_back(param_adjoint->second);
-
-    if (is_origin_param(param)) {
-      origin_dins[idx] = adjoint_dout;
-    }
-  }
-
-  AnfNodePtrList din_inputs = {NewValueNode(prim::kPrimMakeTuple)};
-  std::transform(origin_dins.begin(), origin_dins.end(), std::back_inserter(din_inputs),
-                 [](const auto &item) { return item.second; });
-
-  auto dins = tape_->NewCNodeInOrder(din_inputs);
-
-  auto hooked_dins = ApplyBackwardHooks(dins);
-  // TODO: Check return cnode size
-  constexpr size_t dins_offset = 2;
-  for (auto iter = origin_dins.begin(); iter != origin_dins.end(); ++iter) {
-    auto idx = iter->first;
-    auto distance = std::distance(origin_dins.begin(), iter);
-    auto hooked_din =
-      tape_->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), hooked_dins, NewValueNode(SizeToLong(distance))});
-    inputs[idx + dins_offset] = hooked_din;
-  }
-
-  auto tape_output = tape_->NewCNode(inputs);
-
-  for (size_t idx = 0; idx < param_adjoints.size(); ++idx) {
-    auto found = origin_dins.find(idx);
-    if (found != origin_dins.end()) {
-      auto distance = std::distance(origin_dins.begin(), found);
-      param_adjoints[idx]->RegisterDoutUser(dins, distance + 1);
-    } else {
-      param_adjoints[idx]->RegisterDoutUser(tape_output, idx + dins_offset);
-    }
-  }
-
-  tape_->set_output(tape_output);
-}
-
 void DFunctor::MapMorphism() {
   // Set stop_gradient before MapMorphism.
   BroadCastStopFlag();
@@ -903,8 +842,20 @@ void DFunctor::MapMorphism() {
     grad_fv = AttachIndirectFvDoutToTape(AttachFvDoutToTape(NewEnviron(tape_)));
   }
 
-  // set output for tape_
-  SetTapeOutput(grad_fv);
+  std::vector<AnfNodePtr> inputs{NewValueNode(prim::kPrimMakeTuple), grad_fv};
+  // Add grads wrt inputs.
+  std::vector<AdjointPtr> param_adjoints;
+  for (auto &param : primal_graph_->parameters()) {
+    auto param_adjoint = anfnode_to_adjoin_.find(param);
+    inputs.push_back(param_adjoint->second->dout());
+    param_adjoints.push_back(param_adjoint->second);
+  }
+  auto tape_output = tape_->NewCNode(inputs);
+  constexpr size_t offset_num = 2;
+  for (size_t i = 0; i < param_adjoints.size(); ++i) {
+    param_adjoints[i]->RegisterDoutUser(tape_output, i + offset_num);
+  }
+  tape_->set_output(tape_output);
 
   // Set output for k_graph_, K:: cnode->forward_app.
   auto forward_app = output_adjoint->second->k();
@@ -954,44 +905,40 @@ FuncGraphPtr DFunctor::KUserDefined(const FuncGraphPtr &primal) {
     auto functor = std::make_shared<DFunctor>(primal, resources_, false, is_view_inplace_);
     functor->Init();
     functor->k_graph_ = fg;
-    // TODO: 这种场景如何ApplyBackwardHook
+
     return fg;
   }
   return nullptr;
 }
 
 namespace {
-FuncGraphPtr GetCellHookFuncGraph(const ValuePtr &python_obj, const char *hook_dict, const char *hook_construct) {
-  MS_EXCEPTION_IF_NULL(hook_dict);
-  MS_EXCEPTION_IF_NULL(hook_construct);
-
+FuncGraphPtr ResolveCellBackwardHook(const ValuePtr &python_obj, const std::string &hook_dict_name,
+                                     const std::string &hook_func_name) {
   if (python_obj == nullptr) {
     return nullptr;
   }
 
   auto py_obj_wrapper = python_obj->cast<parse::PyObjectWrapperPtr>();
-  MS_EXCEPTION_IF_NULL(py_obj_wrapper);
+  if (py_obj_wrapper == nullptr) {
+    return nullptr;
+  }
   auto obj = py_obj_wrapper->obj();
 
-  if (!py::hasattr(obj, hook_dict)) {
-    return nullptr;
-  }
+  return parse::ResolveCellHook(obj, hook_dict_name, hook_func_name);
+}
 
-  const auto &dict = py::cast<py::dict>(py::getattr(obj, hook_dict));
-  if (dict.size() == 0) {
-    return nullptr;
-  }
-
-  const auto &value = py::getattr(obj, hook_construct);
-  auto hook_func = parse::ParsePythonCode(value);
-  MS_EXCEPTION_IF_NULL(hook_func);
-  return hook_func;
+FuncGraphPtr MakeDummyBackwardHook() {
+  auto backward_hook = std::make_shared<FuncGraph>();
+  auto din = backward_hook->add_parameter();
+  (void)backward_hook->add_parameter();
+  backward_hook->set_output(din);
+  return backward_hook;
 }
 }  // namespace
 
-AnfNodePtr DFunctor::ApplyBackwardPreHooks(const AnfNodePtr &dout) {
-  auto hook_func =
-    GetCellHookFuncGraph(primal_graph_->python_obj(), parse::CELL_BACKWARD_PRE_HOOK, parse::CELL_JIT_BACKWARD_PRE_HOOK);
+AnfNodePtr DFunctor::ApplyBackwardPreHook(const AnfNodePtr &dout) {
+  auto hook_func = ResolveCellBackwardHook(primal_graph_->python_obj(), parse::CELL_BACKWARD_PRE_HOOK,
+                                           parse::CELL_JIT_BACKWARD_PRE_HOOK);
   if (hook_func == nullptr) {
     return dout;
   }
@@ -1006,19 +953,21 @@ AnfNodePtr DFunctor::ApplyBackwardPreHooks(const AnfNodePtr &dout) {
   return hooked_dout;
 }
 
-AnfNodePtr DFunctor::ApplyBackwardHooks(const AnfNodePtr &dins) {
-  auto hook_func =
-    GetCellHookFuncGraph(primal_graph_->python_obj(), parse::CELL_BACKWARD_HOOK, parse::CELL_JIT_BACKWARD_HOOK);
+AnfNodePtr DFunctor::ApplyBackwardHook(const AdjointPtr &node_adjoint) {
+  FuncGraphPtr hook_func;
+  hook_func =
+    ResolveCellBackwardHook(primal_graph_->python_obj(), parse::CELL_BACKWARD_HOOK, parse::CELL_JIT_BACKWARD_HOOK);
   if (hook_func == nullptr) {
-    return dins;
+    hook_func = MakeDummyBackwardHook();
   }
 
   hook_func->set_manager(primal_graph_->manager());
   hook_func->set_flag(mindspore::kFuncGraphFlagBackPropEntry, true);
   hook_func->set_flag(mindspore::kFuncGraphFlagReAutoMonad, true);
 
-  AnfNodePtrList hook_inputs{NewValueNode(hook_func), dins, dout_};
+  AnfNodePtrList hook_inputs{NewValueNode(hook_func), node_adjoint->dout(), dout_};
   auto hooked_dins = tape_->NewCNodeInOrder(hook_inputs);
+  node_adjoint->RegisterDoutUser(hooked_dins, 1);
   return hooked_dins;
 }
 

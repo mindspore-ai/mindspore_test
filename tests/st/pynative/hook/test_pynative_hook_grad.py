@@ -1,4 +1,4 @@
-# Copyright 2020 Huawei Technologies Co., Ltd
+# Copyright 2020-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@ from mindspore.ops.composite import GradOperation
 from mindspore import ops as OP
 from tests.st.pynative.utils import GradOfAllInputs
 from tests.mark_utils import arg_mark
+from tests.st.pynative.hook.common import assert_jit_net, assert_jit_grad_net_by_grad_op, \
+    assert_jit_grad_net_by_grad_of_all_inputs
 
 
 class MetaFactory:
@@ -45,6 +47,7 @@ class HookBase(MetaFactory):
             self.grad_output_list.append(grad)
         for grad in grad_output:
             self.grad_input_list.append(grad)
+        return grad_input
 
     def ms_change_grad_double_hook(self, cell, grad_input, grad_output):
         y = Tensor(np.array([2.0]).astype(np.float32))
@@ -222,9 +225,11 @@ def pynative_hook_diff_hook():
     ms_net.relu.register_backward_hook(ms_net.ms_change_grad_double_hook)
     input_ms = Tensor(input_np)
     out_ms = ms_net(input_ms, Tensor(1))
+    assert_jit_net(ms_net, out_ms, input_ms, Tensor(1))
     grad_net = GradOfAllInputs(ms_net)
     grad_net.set_train()
-    grad_net(input_ms, Tensor(1), out_ms)
+    grad = grad_net(input_ms, Tensor(1), out_ms)
+    assert_jit_grad_net_by_grad_of_all_inputs(ms_net, grad, input_ms, Tensor(1), out_ms)
 
 
 def pynative_hook_outermost_cell_not_change_grad():
@@ -235,6 +240,7 @@ def pynative_hook_outermost_cell_not_change_grad():
     ms_net.register_backward_hook(ms_net.ms_record_hook)
     input_ms = Tensor(input_np)
     out_ms = ms_net(input_ms)
+    assert_jit_net(ms_net, out_ms, input_ms)
     grad_net = GradOfAllInputs(ms_net)
     grad_net.set_train()
     input_ms_grad = grad_net(input_ms, out_ms)
@@ -245,6 +251,13 @@ def pynative_hook_outermost_cell_not_change_grad():
     # hook record grad
     torch_net_grad_output = np.array([[10, 10], [10, 10]])
     torch_net_grad_input = np.array([[20, 20], [20, 20]])
+    allclose_nparray(torch_net_grad_output, ms_net.grad_input_list[0].asnumpy(), 0.001, 0.001)
+    allclose_nparray(torch_net_grad_input, ms_net.grad_output_list[0].asnumpy(), 0.001, 0.001)
+
+    # hook will run in python not graph.
+    ms_net.grad_input_list.clear()
+    ms_net.grad_output_list.clear()
+    assert_jit_grad_net_by_grad_of_all_inputs(ms_net, input_ms_grad, input_ms, out_ms)
     allclose_nparray(torch_net_grad_output, ms_net.grad_input_list[0].asnumpy(), 0.001, 0.001)
     allclose_nparray(torch_net_grad_input, ms_net.grad_output_list[0].asnumpy(), 0.001, 0.001)
 
@@ -272,9 +285,9 @@ def pynative_hook_all_cell_record_grad():
     allclose_nparray(torch_net_grad_input1, ms_net.grad_output_list[1].asnumpy(), 0.001, 0.001)
     allclose_nparray(torch_net_grad_output1, ms_net.grad_input_list[1].asnumpy(), 0.001, 0.001)
 
-    torch_net_grad_input3 = np.array([[20, 20], [20, 20]])
+    torch_net_grad_input2 = np.array([[20, 20], [20, 20]])
     torch_net_grad_output2 = np.array([[20, 20], [20, 20]])
-    allclose_nparray(torch_net_grad_input3, ms_net.grad_output_list[2].asnumpy(), 0.001, 0.001)
+    allclose_nparray(torch_net_grad_input2, ms_net.grad_output_list[2].asnumpy(), 0.001, 0.001)
     allclose_nparray(torch_net_grad_output2, ms_net.grad_input_list[2].asnumpy(), 0.001, 0.001)
 
 
@@ -286,9 +299,11 @@ def pynative_hook_mul_change_input_grad():
     ms_net.mul.register_backward_hook(ms_net.ms_change_grad_double_hook)
     input_ms = Tensor(input_np)
     out_ms = ms_net(input_ms)
+    assert_jit_net(ms_net, out_ms, input_ms)
     grad_net = GradOfAllInputs(ms_net)
     grad_net.set_train()
     input_ms_grad = grad_net(input_ms, out_ms)
+    assert_jit_grad_net_by_grad_of_all_inputs(ms_net, input_ms_grad, input_ms, out_ms)
 
     # input grad
     input_torch_grad = np.array([[40, 40], [40, 40]])
@@ -305,9 +320,11 @@ def pynative_hook_mul2_change_input_grad():
     input1_ms = Tensor(input1_np)
     input2_ms = Tensor(input2_np)
     out_ms = ms_net(input1_ms, input2_ms)
+    assert_jit_net(ms_net, out_ms, input1_ms, input2_ms)
     grad_net = GradOfAllInputs(ms_net)
     grad_net.set_train()
     input_ms_grad = grad_net(input1_ms, input2_ms, out_ms)
+    assert_jit_grad_net_by_grad_of_all_inputs(ms_net, input_ms_grad, input1_ms, input2_ms, out_ms)
 
     # input grad
     input1_torch_grad = np.array([384, 2916, 12288])
@@ -324,9 +341,11 @@ def pynative_hook_outermost_cell_change_grad():
     ms_net.register_backward_hook(ms_net.ms_change_grad_double_hook)
     input_ms = Tensor(input_np)
     out_ms = ms_net(input_ms)
+    assert_jit_net(ms_net, out_ms, input_ms)
     grad_net = GradOfAllInputs(ms_net)
     grad_net.set_train()
     input_ms_grad = grad_net(input_ms, out_ms)
+    assert_jit_grad_net_by_grad_of_all_inputs(ms_net, input_ms_grad, input_ms, out_ms)
 
     # input grad
     out_torch = np.array([[20, 20], [20, 20]])
@@ -344,6 +363,7 @@ def pynative_hook_outermost_cell_record_grad():
     ms_net.register_backward_hook(ms_net.ms_record_hook)
     input_ms = Tensor(input_np)
     out_ms = ms_net(input_ms)
+    assert_jit_net(ms_net, out_ms, input_ms)
     grad_net = GradOfAllInputs(ms_net)
     grad_net.set_train()
     input_ms_grad = grad_net(input_ms, out_ms)
@@ -356,6 +376,8 @@ def pynative_hook_outermost_cell_record_grad():
     input_torch_grad = np.array([[5, 5], [5, 5]])
     allclose_nparray(out_torch, out_ms.asnumpy(), 0.001, 0.001)
     allclose_nparray(input_torch_grad, input_ms_grad[0].asnumpy(), 0.001, 0.001)
+
+    assert_jit_grad_net_by_grad_of_all_inputs(ms_net, input_ms_grad, input_ms, out_ms)
 
 
 def pynative_hook_bprop_outermost_cell_record_grad():
@@ -408,16 +430,12 @@ def pynative_hook_child_cell_record_grad():
           level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
-def test_pynative_hook_diff_hook_ascend():
-    context.set_context(mode=context.PYNATIVE_MODE)
-    pynative_hook_diff_hook()
-
-
-@arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level1',
-          card_mark='onecard',
-          essential_mark='essential')
-def test_pynative_hook_diff_hook_gpu():
+def test_pynative_hook_diff_hook():
+    """
+    Feature: PyNative hook function.
+    Description: Test pynative hook diff hook.
+    Expectation: success.
+    """
     context.set_context(mode=context.PYNATIVE_MODE)
     pynative_hook_diff_hook()
 
@@ -426,7 +444,12 @@ def test_pynative_hook_diff_hook_gpu():
           level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
-def test_pynative_hook_outermost_cell_not_change_grad_ascend():
+def test_pynative_hook_outermost_cell_not_change_grad():
+    """
+    Feature: PyNative hook function.
+    Description: Test pynative hook outer most cell not change grad.
+    Expectation: success.
+    """
     context.set_context(mode=context.PYNATIVE_MODE)
     pynative_hook_outermost_cell_not_change_grad()
 
@@ -435,16 +458,12 @@ def test_pynative_hook_outermost_cell_not_change_grad_ascend():
           level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
-def test_pynative_hook_outermost_cell_not_change_grad_gpu():
-    context.set_context(mode=context.PYNATIVE_MODE)
-    pynative_hook_outermost_cell_not_change_grad()
-
-
-@arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
-          card_mark='onecard',
-          essential_mark='essential')
-def test_pynative_hook_all_cell_record_grad_ascend():
+def test_pynative_hook_all_cell_record_grad():
+    """
+    Feature: PyNative hook function.
+    Description: Test pynative hook all cell record grad.
+    Expectation: success.
+    """
     context.set_context(mode=context.PYNATIVE_MODE)
     pynative_hook_all_cell_record_grad()
 
@@ -453,16 +472,12 @@ def test_pynative_hook_all_cell_record_grad_ascend():
           level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
-def test_pynative_hook_all_cell_record_grad_gpu():
-    context.set_context(mode=context.PYNATIVE_MODE)
-    pynative_hook_all_cell_record_grad()
-
-
-@arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
-          card_mark='onecard',
-          essential_mark='essential')
-def test_pynative_hook_mul_change_input_grad_ascend():
+def test_pynative_hook_mul_change_input_grad():
+    """
+    Feature: PyNative hook function.
+    Description: Test pynative hook mul change input grad.
+    Expectation: success.
+    """
     context.set_context(mode=context.PYNATIVE_MODE)
     pynative_hook_mul_change_input_grad()
 
@@ -471,16 +486,12 @@ def test_pynative_hook_mul_change_input_grad_ascend():
           level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
-def test_pynative_hook_mul_change_input_grad_gpu():
-    context.set_context(mode=context.PYNATIVE_MODE)
-    pynative_hook_mul_change_input_grad()
-
-
-@arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
-          card_mark='onecard',
-          essential_mark='essential')
-def test_pynative_hook_mul2_change_input_grad_ascend():
+def test_pynative_hook_mul2_change_input_grad():
+    """
+    Feature: PyNative hook function.
+    Description: Test pynative hook mul2 change input grad.
+    Expectation: success.
+    """
     context.set_context(mode=context.PYNATIVE_MODE)
     pynative_hook_mul2_change_input_grad()
 
@@ -489,16 +500,12 @@ def test_pynative_hook_mul2_change_input_grad_ascend():
           level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
-def test_pynative_hook_mul2_change_input_grad_gpu():
-    context.set_context(mode=context.PYNATIVE_MODE)
-    pynative_hook_mul2_change_input_grad()
-
-
-@arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
-          card_mark='onecard',
-          essential_mark='essential')
-def test_pynative_hook_outermost_cell_change_grad_ascend():
+def test_pynative_hook_outermost_cell_change_grad():
+    """
+    Feature: PyNative hook function.
+    Description: Test pynative hook outer most cell change grad.
+    Expectation: success.
+    """
     context.set_context(mode=context.PYNATIVE_MODE)
     pynative_hook_outermost_cell_change_grad()
 
@@ -507,16 +514,12 @@ def test_pynative_hook_outermost_cell_change_grad_ascend():
           level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
-def test_pynative_hook_outermost_cell_change_grad_gpu():
-    context.set_context(mode=context.PYNATIVE_MODE)
-    pynative_hook_outermost_cell_change_grad()
-
-
-@arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
-          card_mark='onecard',
-          essential_mark='essential')
-def test_pynative_hook_outermost_cell_record_grad_ascend():
+def test_pynative_hook_outermost_cell_record_grad():
+    """
+    Feature: PyNative hook function.
+    Description: Test pynative hook outer most cell record grad.
+    Expectation: success.
+    """
     context.set_context(mode=context.PYNATIVE_MODE)
     pynative_hook_outermost_cell_record_grad()
 
@@ -525,16 +528,12 @@ def test_pynative_hook_outermost_cell_record_grad_ascend():
           level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
-def test_pynative_hook_outermost_cell_record_grad_gpu():
-    context.set_context(mode=context.PYNATIVE_MODE)
-    pynative_hook_outermost_cell_record_grad()
-
-
-@arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
-          card_mark='onecard',
-          essential_mark='essential')
-def test_pynative_hook_bprop_outermost_cell_record_grad_ascend():
+def test_pynative_hook_bprop_outermost_cell_record_grad():
+    """
+    Feature: PyNative hook function.
+    Description: Test pynative hook bprop outer most cell record grad.
+    Expectation: success.
+    """
     context.set_context(mode=context.PYNATIVE_MODE)
     pynative_hook_bprop_outermost_cell_record_grad()
 
@@ -543,25 +542,12 @@ def test_pynative_hook_bprop_outermost_cell_record_grad_ascend():
           level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
-def test_pynative_hook_bprop_outermost_cell_record_grad_gpu():
-    context.set_context(mode=context.PYNATIVE_MODE)
-    pynative_hook_bprop_outermost_cell_record_grad()
-
-
-@arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
-          card_mark='onecard',
-          essential_mark='essential')
-def test_pynative_hook_child_cell_record_grad_ascend():
-    context.set_context(mode=context.PYNATIVE_MODE)
-    pynative_hook_child_cell_record_grad()
-
-
-@arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
-          card_mark='onecard',
-          essential_mark='essential')
-def test_pynative_hook_child_cell_record_grad_gpu():
+def test_pynative_hook_child_cell_record_grad():
+    """
+    Feature: PyNative hook function.
+    Description: Test pynative hook child cell record grad.
+    Expectation: success.
+    """
     context.set_context(mode=context.PYNATIVE_MODE)
     pynative_hook_child_cell_record_grad()
 
@@ -607,6 +593,7 @@ def test_backward_hook_normal():
     for _ in range(5):
         grad_op = GradOperation(get_all=True, get_by_list=False, sens_param=False)
         grad = grad_op(net)(input_x, input_y)
+        assert_jit_grad_net_by_grad_op(grad_op, net, grad, False, input_x, input_y)
     assert np.allclose(grad[0].asnumpy(), Tensor(np.array([2, 3, 4, 5])).astype(np.float32).asnumpy(), 0.001, 0.001)
     assert np.allclose(grad[1].asnumpy(), Tensor(np.array([6, 7, 8, 9])).astype(np.float32).asnumpy(), 0.001, 0.001)
 
