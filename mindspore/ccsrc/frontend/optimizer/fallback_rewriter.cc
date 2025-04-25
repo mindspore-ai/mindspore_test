@@ -1870,7 +1870,7 @@ class AfterOptARewriter : public BaseRewriter {
     if (!CheckNeedConvertJoinedStrInputs(node)) {
       return nullptr;
     }
-    MS_LOG(ERROR) << "Start to flattened JoinedStr node: " << node->DebugString(2);
+    MS_LOG(INFO) << "Start to flattened JoinedStr node: " << node->DebugString(2);
     const auto &inputs = node->inputs();
     AnfNodePtrList flattened_joined_str_inputs;
     for (size_t i = 1; i < inputs.size(); ++i) {
@@ -1907,7 +1907,7 @@ class AfterOptARewriter : public BaseRewriter {
     auto fg = node->func_graph();
     MS_EXCEPTION_IF_NULL(fg);
     auto ret = fg->NewCNode(compressed_joined_str_inputs);
-    MS_LOG(ERROR) << "Result flattened JoinedStr node: " << ret->DebugString(2);
+    MS_LOG(INFO) << "Result flattened JoinedStr node: " << ret->DebugString(2);
     return ret;
   }
 

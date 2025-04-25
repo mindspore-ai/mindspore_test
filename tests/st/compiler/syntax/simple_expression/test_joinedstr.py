@@ -65,7 +65,7 @@ def test_raise_joinedstr_variable_2():
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
-def test_raise_joinedstr_variable_tuple():
+def test_raise_joinedstr_constant_tuple():
     """
     Feature: Test raise syntax in strict mode.
     Description: Test raise syntax in strict mode.
@@ -88,7 +88,7 @@ def test_raise_joinedstr_variable_tuple():
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
-def test_raise_joinedstr_variable_list():
+def test_raise_joinedstr_constant_list():
     """
     Feature: Test raise syntax in strict mode.
     Description: Test raise syntax in strict mode.
@@ -111,7 +111,7 @@ def test_raise_joinedstr_variable_list():
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
-def test_raise_joinedstr_variable_dic():
+def test_raise_joinedstr_constant_dict():
     """
     Feature: Test raise syntax in strict mode.
     Description: Test raise syntax in strict mode.
@@ -129,7 +129,168 @@ def test_raise_joinedstr_variable_dic():
     with pytest.raises(ValueError) as raise_info:
         res = func(input_x)
         print(res)
-    assert "The input can not be {'a': Tensor(shape=[1], dtype=Int64, value=[1])," in str(raise_info.value)
+    assert "The input can not be {'a': " in str(raise_info.value)
+    os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_raise_joinedstr_variable_tuple():
+    """
+    Feature: Test raise syntax in strict mode.
+    Description: Test raise syntax in strict mode.
+    Expectation: Throw correct exception when needed.
+    """
+    @jit
+    def func(x):
+        y = (x, 1)
+        if x < Tensor([2]):
+            raise ValueError(f"The input can not be {y}.")
+        return x
+    context.set_context(mode=context.PYNATIVE_MODE)
+    os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '0'
+    input_x = Tensor([1])
+    with pytest.raises(ValueError) as raise_info:
+        res = func(input_x)
+        print(res)
+    assert "The input can not be (Tensor(shape=[1], dtype=Int64, value= [1]), 1)" in str(raise_info.value)
+    os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_raise_joinedstr_variable_nested_tuple():
+    """
+    Feature: Test raise syntax in strict mode.
+    Description: Test raise syntax in strict mode.
+    Expectation: Throw correct exception when needed.
+    """
+    @jit
+    def func(x):
+        y = ((x, 0), 1)
+        if x < Tensor([2]):
+            raise ValueError(f"The input can not be {y}.")
+        return x
+    context.set_context(mode=context.PYNATIVE_MODE)
+    os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '0'
+    input_x = Tensor([1])
+    with pytest.raises(ValueError) as raise_info:
+        res = func(input_x)
+        print(res)
+    assert "The input can not be ((Tensor(shape=[1], dtype=Int64, value= [1]), 0), 1)" in str(raise_info.value)
+    os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_raise_joinedstr_variable_list():
+    """
+    Feature: Test raise syntax in strict mode.
+    Description: Test raise syntax in strict mode.
+    Expectation: Throw correct exception when needed.
+    """
+    @jit
+    def func(x):
+        y = [x, 1]
+        if x < Tensor([2]):
+            raise ValueError(f"The input can not be {y}.")
+        return x
+    context.set_context(mode=context.PYNATIVE_MODE)
+    os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '0'
+    input_x = Tensor([1])
+    with pytest.raises(ValueError) as raise_info:
+        res = func(input_x)
+        print(res)
+    assert "The input can not be [Tensor(shape=[1], dtype=Int64, value= [1]), 1]" in str(raise_info.value)
+    os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_raise_joinedstr_variable_nested_list():
+    """
+    Feature: Test raise syntax in strict mode.
+    Description: Test raise syntax in strict mode.
+    Expectation: Throw correct exception when needed.
+    """
+    @jit
+    def func(x):
+        y = [[x, 0], 1]
+        if x < Tensor([2]):
+            raise ValueError(f"The input can not be {y}.")
+        return x
+    context.set_context(mode=context.PYNATIVE_MODE)
+    os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '0'
+    input_x = Tensor([1])
+    with pytest.raises(ValueError) as raise_info:
+        res = func(input_x)
+        print(res)
+    assert "The input can not be [[Tensor(shape=[1], dtype=Int64, value= [1]), 0], 1]" in str(raise_info.value)
+    os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_raise_joinedstr_variable_nested_sequence():
+    """
+    Feature: Test raise syntax in strict mode.
+    Description: Test raise syntax in strict mode.
+    Expectation: Throw correct exception when needed.
+    """
+    @jit
+    def func(x):
+        y = ([x, 0], 1)
+        if x < Tensor([2]):
+            raise ValueError(f"The input can not be {y}.")
+        return x
+    context.set_context(mode=context.PYNATIVE_MODE)
+    os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '0'
+    input_x = Tensor([1])
+    with pytest.raises(ValueError) as raise_info:
+        res = func(input_x)
+        print(res)
+    assert "The input can not be ([Tensor(shape=[1], dtype=Int64, value= [1]), 0], 1)" in str(raise_info.value)
+    os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_raise_joinedstr_variable_dict():
+    """
+    Feature: Test raise syntax in strict mode.
+    Description: Test raise syntax in strict mode.
+    Expectation: Throw correct exception when needed.
+    """
+    @jit
+    def func(x):
+        y = {"1": x}
+        if x < Tensor([2]):
+            raise ValueError(f"The input can not be {y}.")
+        return x
+    context.set_context(mode=context.PYNATIVE_MODE)
+    os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '0'
+    input_x = Tensor([1])
+    with pytest.raises(RuntimeError) as raise_info:
+        res = func(input_x)
+        print(res)
+    assert "For JoinedStr, do not support dict input with variable elements" in str(raise_info.value)
+    os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_raise_joinedstr_variable_nested_dict():
+    """
+    Feature: Test raise syntax in strict mode.
+    Description: Test raise syntax in strict mode.
+    Expectation: Throw correct exception when needed.
+    """
+    @jit
+    def func(x):
+        y = (1, {"1": x})
+        if x < Tensor([2]):
+            raise ValueError(f"The input can not be {y}.")
+        return x
+    context.set_context(mode=context.PYNATIVE_MODE)
+    os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '0'
+    input_x = Tensor([1])
+    with pytest.raises(RuntimeError) as raise_info:
+        res = func(input_x)
+        print(res)
+    assert "For JoinedStr, do not support dict input with variable elements" in str(raise_info.value)
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
 
 
