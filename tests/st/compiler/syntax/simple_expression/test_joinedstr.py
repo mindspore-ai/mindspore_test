@@ -335,5 +335,5 @@ def test_not_raise_joinedstr_scalar_join_grad_in_graph():
     input_y = Tensor([0])
     input_z = 1
     res = grad_func(func, input_x, input_y, input_z)
-    assert res == 1
+    assert np.all(res.asnumpy() == np.array([0]))
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
