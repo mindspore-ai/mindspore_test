@@ -133,7 +133,7 @@ class HiFloat8 {
       return ExponentRange::DOT_001;
     } else if (exponent_abs <= kDot01Threshold) {
       return ExponentRange::DOT_01;
-    } else if (exponent_abs <= kDot10Threshol) {
+    } else if (exponent_abs <= kDot10Threshold) {
       return ExponentRange::DOT_10;
     } else if (exponent_abs <= kDot11Threshold) {
       return ExponentRange::DOT_11;
