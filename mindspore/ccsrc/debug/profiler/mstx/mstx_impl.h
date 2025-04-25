@@ -20,6 +20,7 @@
 #include <atomic>
 #include <mutex>
 #include <string>
+#include <vector>
 #include <unordered_map>
 #include "include/common/visible.h"
 #include "debug/profiler/mstx/mstx_symbol.h"
@@ -47,11 +48,12 @@ class PROFILER_EXPORT MstxImpl {
     return instance;
   }
 
-  void MarkAImpl(mstxDomainHandle_t domain, const char *message, void *stream);
-  uint64_t RangeStartAImpl(mstxDomainHandle_t domain, const char *message, void *stream);
-  void RangeEndImpl(mstxDomainHandle_t domain, uint64_t txTaskId);
+  void MarkAImpl(const std::string &domainName, const char *message, void *stream);
+  uint64_t RangeStartAImpl(const std::string &domainName, const char *message, void *stream);
+  void RangeEndImpl(const std::string &domainName, uint64_t txTaskId);
   mstxDomainHandle_t DomainCreateAImpl(const char *domainName);
   void DomainDestroyImpl(mstxDomainHandle_t domain);
+  void SetDomainImpl(const std::vector<std::string> &domainInclude, const std::vector<std::string> &domainExclude);
 
   void MemRegionsRegisterImpl(mstxDomainHandle_t domain, mstxMemRegionsRegisterBatch_t const *desc);
   void MemRegionsUnregisterImpl(mstxDomainHandle_t domain, mstxMemRegionsUnregisterBatch_t const *desc);
@@ -65,6 +67,8 @@ class PROFILER_EXPORT MstxImpl {
  private:
   bool IsMsptiEnable();
   bool IsSupportMstxApi(bool withDomain);
+  bool IsDomainEnable(const std::string &domainName);
+  mstxDomainHandle_t GetDomainHandle(const std::string &domainName);
 
  private:
   std::atomic<bool> isProfEnable_{false};
@@ -72,28 +76,31 @@ class PROFILER_EXPORT MstxImpl {
   bool isMstxDomainSupport_{false};
   std::mutex domainMtx_;
   std::unordered_map<std::string, mstxDomainHandle_t> domains_;
+  std::vector<std::string> domainInclude_;
+  std::vector<std::string> domainExclude_;
 };
 
-#define MSTX_START(rangeId, message, stream, domainName)                                                   \
-  do {                                                                                                     \
-    auto domainHandle = mindspore::profiler::MstxImpl::GetInstance().DomainCreateAImpl(domainName);        \
-    rangeId = mindspore::profiler::MstxImpl::GetInstance().RangeStartAImpl(domainHandle, message, stream); \
+#define MSTX_START(rangeId, message, stream, domainName)                                                 \
+  do {                                                                                                   \
+    mindspore::profiler::MstxImpl::GetInstance().DomainCreateAImpl(domainName);                          \
+    rangeId = mindspore::profiler::MstxImpl::GetInstance().RangeStartAImpl(domainName, message, stream); \
   } while (0);
 
-#define MSTX_END(rangeId, domainName)                                                               \
-  do {                                                                                              \
-    auto domainHandle = mindspore::profiler::MstxImpl::GetInstance().DomainCreateAImpl(domainName); \
-    mindspore::profiler::MstxImpl::GetInstance().RangeEndImpl(domainHandle, rangeId);               \
+#define MSTX_END(rangeId, domainName)                                               \
+  do {                                                                              \
+    mindspore::profiler::MstxImpl::GetInstance().DomainCreateAImpl(domainName);     \
+    mindspore::profiler::MstxImpl::GetInstance().RangeEndImpl(domainName, rangeId); \
   } while (0);
 
-#define MSTX_START_WITHOUT_DOMAIN(rangeId, message, stream)                                           \
-  do {                                                                                                \
-    rangeId = mindspore::profiler::MstxImpl::GetInstance().RangeStartAImpl(nullptr, message, stream); \
+#define MSTX_START_WITHOUT_DOMAIN(rangeId, message, stream)                                                          \
+  do {                                                                                                               \
+    rangeId = mindspore::profiler::MstxImpl::GetInstance().RangeStartAImpl(mindspore::profiler::MSTX_DOMAIN_DEFAULT, \
+                                                                           message, stream);                         \
   } while (0);
 
-#define MSTX_END_WITHOUT_DOMAIN(rangeId)                                         \
-  do {                                                                           \
-    mindspore::profiler::MstxImpl::GetInstance().RangeEndImpl(nullptr, rangeId); \
+#define MSTX_END_WITHOUT_DOMAIN(rangeId)                                                                          \
+  do {                                                                                                            \
+    mindspore::profiler::MstxImpl::GetInstance().RangeEndImpl(mindspore::profiler::MSTX_DOMAIN_DEFAULT, rangeId); \
   } while (0);
 
 }  // namespace profiler

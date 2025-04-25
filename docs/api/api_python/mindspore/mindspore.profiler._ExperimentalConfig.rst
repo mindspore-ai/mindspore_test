@@ -32,6 +32,8 @@ mindspore.profiler._ExperimentalConfig
           - ExportType.Db：导出db类型的数据。
         - **sys_io** (bool, 可选) - （仅限Ascend）是否收集NIC和RoCE数据，当值为 ``True`` 时，收集这些数据。默认值： ``False`` 。
         - **sys_interconnection** (bool, 可选) - （仅限Ascend）是否收集系统互连数据，包括集合通信带宽数据（HCCS）、PCIe数据以及片间传输带宽信息，当值为 ``True`` 时，收集这些数据。默认值： ``False`` 。
+        - **mstx_domain_include** (list, 可选) - （仅限Ascend）mstx开关打开时设置使能的domain名称集合，且名称必须是str类型。默认值：``[]`` ，表示不使用该参数控制domain。该参数与mstx_domain_exclude参数互斥，不能同时设置。如果都设置，只有mstx_domain_include参数生效。
+        - **mstx_domain_exclude** (list, 可选) - （仅限Ascend）mstx开关打开时设置不使能的domain名称集合，且名称必须是str类型。默认值：``[]`` ，表示不使用该参数控制domain。
 
     异常：
         - **RuntimeError** - 当CANN的版本与MindSpore版本不匹配时，MindSpore无法解析生成的ascend_job_id目录结构。

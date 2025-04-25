@@ -105,6 +105,8 @@ void AscendProfiler::InitAscendProfilerConfig(const std::string &profiling_path,
   config_.npuTrace = options["npu_trace"];
   config_.mstx = options["mstx"];
   config_.recordShapes = options["record_shapes"];
+  config_.mstxDomainInclude = options["mstx_domain_include"].get<std::vector<std::string>>();
+  config_.mstxDomainExclude = options["mstx_domain_exclude"].get<std::vector<std::string>>();
   config_.outputPath = profiling_path;
 
   is_parallel_strategy = config_.parallelStrategy;
@@ -264,6 +266,7 @@ void AscendProfiler::Start() {
     }
     if (config_.mstx) {
       MstxDispatcher::GetInstance().Enable();
+      MstxDispatcher::GetInstance().SetDomain(config_.mstxDomainInclude, config_.mstxDomainExclude);
     }
     MS_LOG(INFO) << "Start AscendProfiler npu trace";
   }
@@ -364,19 +367,19 @@ void AscendProfiler::StepStop() {
   aclStream_ = nullptr;
 }
 
-void AscendProfiler::MstxMark(const std::string &message, void *stream) {
+void AscendProfiler::MstxMark(const std::string &message, void *stream, const std::string &domain_name) {
   MS_LOG(INFO) << "Ascend mstx mark, message: " << message;
-  MstxDispatcher::GetInstance().Mark(message.c_str(), stream);
+  MstxDispatcher::GetInstance().Mark(message.c_str(), stream, domain_name);
 }
 
-int AscendProfiler::MstxRangeStart(const std::string &message, void *stream) {
+int AscendProfiler::MstxRangeStart(const std::string &message, void *stream, const std::string &domain_name) {
   MS_LOG(INFO) << "Ascend mstx range start, message: " << message;
-  return MstxDispatcher::GetInstance().RangeStart(message.c_str(), stream);
+  return MstxDispatcher::GetInstance().RangeStart(message.c_str(), stream, domain_name);
 }
 
-void AscendProfiler::MstxRangeEnd(int range_id) {
+void AscendProfiler::MstxRangeEnd(int range_id, const std::string &domain_name) {
   MS_LOG(INFO) << "Ascend mstx range end, range_id: " << range_id;
-  MstxDispatcher::GetInstance().RangeEnd(range_id);
+  MstxDispatcher::GetInstance().RangeEnd(range_id, domain_name);
 }
 
 bool AscendProfiler::EnableRecordShapes() { return config_.recordShapes; }

@@ -52,6 +52,8 @@ class ProfilerParameters:
         "record_shapes": (bool, False),
         "export_type": (list, [ExportType.Text]),
         "mstx": (bool, False),
+        "mstx_domain_include": (list, []),
+        "mstx_domain_exclude": (list, []),
         "schedule": (Schedule, None),
         "on_trace_ready": (Optional[Callable[..., Any]], None)
     }
@@ -112,6 +114,8 @@ class ProfilerParameters:
             "with_stack": self.with_stack,
             "record_shapes": self.record_shapes,
             "mstx": self.mstx,
+            "mstx_domain_include": self.mstx_domain_include,
+            "mstx_domain_exclude": self.mstx_domain_exclude,
             "cpu_trace": ProfilerActivity.CPU in self.activities,
             "npu_trace": ProfilerActivity.NPU in self.activities,
         }
@@ -149,6 +153,8 @@ class ProfilerParameters:
                         )
                 elif key == "export_type":
                     setattr(self, key, self._check_and_get_export_type(value))
+                elif key == "mstx_domain_include" or key == "mstx_domain_exclude":
+                    setattr(self, key, self._check_and_get_mstx_domain(key, value))
                 # 检查可迭代类型
                 elif isinstance(expected_type, type) and issubclass(expected_type, (list, tuple, set)):
                     if not (isinstance(value, expected_type) and
@@ -242,6 +248,13 @@ class ProfilerParameters:
             warnings.warn("when 'ProfilerActivity.CPU' is not set in 'activities', 'Record_shapes' cannot be set to "
                           "True, reset to 'False'.")
 
+        if self.__dict__.get('mstx_domain_include') and self.__dict__.get('mstx_domain_exclude'):
+            self.mstx_domain_exclude = []
+            warnings.warn(
+                f"mstx_domain_include and mstx_domain_exclude can not be set together, "
+                f"mstx_domain_exclude has been reset to {self.mstx_domain_exclude}."
+            )
+
     @staticmethod
     def _check_and_get_export_type(export_type) -> list:
         """
@@ -263,6 +276,21 @@ class ProfilerParameters:
 
         logger.warning("Invalid parameter export_type, reset it to text.")
         return [ExportType.Text]
+
+    def _check_and_get_mstx_domain(self, list_name, domain_list) -> list:
+        """
+        Check mstx domain.
+        """
+        if not domain_list:
+            return []
+        if not isinstance(domain_list, list):
+            logger.warning(f"For Profiler, {list_name} value is Invalid, reset to [].")
+            return []
+        for domain_name in domain_list:
+            if not isinstance(domain_name, str) or domain_name == "":
+                logger.warning(f"{list_name} has value {domain_name} is not str or is empty, reset to [].")
+                return []
+        return list(set(domain_list))
 
     def __getattr__(self, name):
         """

@@ -39,7 +39,7 @@ class Mstx:
     )
 
     @staticmethod
-    def mark(message: str, stream: mindspore.runtime.Stream = None) -> None:
+    def mark(message: str, stream: mindspore.runtime.Stream = None, domain: str = "default") -> None:
         """Add a marker point in profiling.
 
         Args:
@@ -47,6 +47,7 @@ class Mstx:
             stream (:class:`~.runtime.Stream`, optional): NPU stream for async execution, expected type:
                 mindspore.runtime.Stream. Default: ``None``, which means only marking on host side without
                 marking on device stream.
+            domain (str, optional): Domain name. Default: ``default``.
 
         Examples:
             >>> import numpy as np
@@ -112,19 +113,24 @@ class Mstx:
         if not message or not isinstance(message, str):
             logging.warning("Invalid message for mstx.mark func. Please input valid message string.")
             return
+        if not isinstance(domain, str) or domain == "":
+            logging.warning(
+                "Invalid domain name for mstx.mark func. Please input str and can not be empty."
+            )
+            return
         if stream:
             if isinstance(stream, Stream):
                 device_stream = stream.device_stream()
-                Mstx.NPU_PROFILER.mstx_mark(message, device_stream)
+                Mstx.NPU_PROFILER.mstx_mark(message, device_stream, domain)
             else:
                 logging.warning(
                     f"Invalid stream for mstx.mark func. Expected mindspore.runtime.Stream but got {type(stream)}.",
                 )
         else:
-            Mstx.NPU_PROFILER.mstx_mark(message)
+            Mstx.NPU_PROFILER.mstx_mark(message, None, domain)
 
     @staticmethod
-    def range_start(message: str, stream: mindspore.runtime.Stream = None) -> int:
+    def range_start(message: str, stream: mindspore.runtime.Stream = None, domain: str = "default") -> int:
         """Start a profiling range.
 
         Args:
@@ -132,6 +138,7 @@ class Mstx:
             stream (:class:`~.runtime.Stream`, optional): NPU stream for async execution, expected type:
                 mindspore.runtime.Stream. Default: ``None``, which means only starting mstx range on
                 host side without starting on device stream.
+            domain (str, optional): Domain name. Default: ``default``.
 
         Returns:
             int, range ID for range_end.
@@ -201,10 +208,15 @@ class Mstx:
             logging.warning("Invalid message for mstx.range_start func. Please input valid message string.")
             return 0
         # pylint: disable=no-else-return
+        if not isinstance(domain, str) or domain == "":
+            logging.warning(
+                "Invalid domain name for mstx.mark func. Please input str and can not be empty."
+            )
+            return 0
         if stream:
             if isinstance(stream, Stream):
                 device_stream = stream.device_stream()
-                return Mstx.NPU_PROFILER.mstx_range_start(message, device_stream)
+                return Mstx.NPU_PROFILER.mstx_range_start(message, device_stream, domain)
             else:
                 logging.warning(
                     f"Invalid stream for mstx.range_start func. "
@@ -212,14 +224,15 @@ class Mstx:
                 )
                 return 0
         else:
-            return Mstx.NPU_PROFILER.mstx_range_start(message)
+            return Mstx.NPU_PROFILER.mstx_range_start(message, None, domain)
 
     @staticmethod
-    def range_end(range_id: int) -> None:
+    def range_end(range_id: int, domain: str = "default") -> None:
         """End a profiling range.
 
         Args:
             range_id (int): Range ID from range_start.
+            domain (str, optional): Domain name. Default: ``default``.
 
         Examples:
             >>> # Please refer to the example in range_start
@@ -239,4 +252,9 @@ class Mstx:
                 "Invalid message for mstx.range_start func. Please input return value from mstx.range_start."
             )
             return
-        Mstx.NPU_PROFILER.mstx_range_end(range_id)
+        if not isinstance(domain, str) or domain == "":
+            logging.warning(
+                "Invalid domain name for mstx.range_end func. Please input str and can not be empty."
+            )
+            return
+        Mstx.NPU_PROFILER.mstx_range_end(range_id, domain)

@@ -20,6 +20,7 @@
 #include <atomic>
 #include <mutex>
 #include <string>
+#include <vector>
 #include <unordered_set>
 #include <unordered_map>
 #include <utility>
@@ -47,15 +48,16 @@ class MstxDispatcher {
     return instance;
   }
 
-  void Mark(const char *message, void *stream, mstxDomainHandle_t domain = nullptr);
-  uint64_t RangeStart(const char *message, void *stream, mstxDomainHandle_t domain = nullptr);
-  void RangeEnd(uint64_t id, mstxDomainHandle_t domain = nullptr);
+  void Mark(const char *message, void *stream, const std::string &domain_name = "default");
+  uint64_t RangeStart(const char *message, void *stream, const std::string &domain_name = "default");
+  void RangeEnd(uint64_t id, const std::string &domain_name = "default");
 
   mstxDomainHandle_t DomainCreate(const char *name);
   void DomainDestroy(mstxDomainHandle_t domain);
+  void SetDomain(const std::vector<std::string> &domainInclude, const std::vector<std::string> &domainExclude);
 
-  static void RangeStartImpl(mstxDomainHandle_t domain, const char *message, void *stream, uint64_t msRangeId);
-  static void RangeEndImpl(mstxDomainHandle_t domain, uint64_t msRangeId);
+  static void RangeStartImpl(const std::string &domain, const char *message, void *stream, uint64_t msRangeId);
+  static void RangeEndImpl(const std::string &domain, uint64_t msRangeId);
 
   void Enable();
   void Disable();
@@ -64,9 +66,9 @@ class MstxDispatcher {
   inline bool GetRangeId() { return msRangeId_++; }
 
  private:
-  void DispatchMarkTask(mstxDomainHandle_t domain, const char *message, void *stream);
-  void DispatchRangeStartTask(mstxDomainHandle_t domain, const char *message, void *stream, uint64_t msRangeId);
-  void DispatchRangeEndTask(mstxDomainHandle_t domain, uint64_t msRangeId);
+  void DispatchMarkTask(const std::string &domain_name, const char *message, void *stream);
+  void DispatchRangeStartTask(const std::string &domain_name, const char *message, void *stream, uint64_t msRangeId);
+  void DispatchRangeEndTask(const std::string &domain_name, uint64_t msRangeId);
 
  private:
   std::atomic<bool> isEnable_{false};

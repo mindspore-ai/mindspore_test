@@ -106,10 +106,12 @@ void RegProfiler(const py::module *m) {
          "enable or disable step profiling")
     .def("enable_op_time", &Profiler::EnableOpTime, "Enable op_time.")
     .def("enable_profile_memory", &Profiler::EnableProfileMemory, "Enable profile_memory.")
-    .def("mstx_mark", &Profiler::MstxMark, py::arg("message"), py::arg("stream") = py::none(), "Mark a profiling point")
+    .def("mstx_mark", &Profiler::MstxMark, py::arg("message"), py::arg("stream") = py::none(),
+         py::arg("domain") = py::str("default"), "Mark a profiling point")
     .def("mstx_range_start", &Profiler::MstxRangeStart, py::arg("message"), py::arg("stream") = py::none(),
-         "Start a profiling range")
-    .def("mstx_range_end", &Profiler::MstxRangeEnd, py::arg("range_id"), "End a profiling range");
+         py::arg("domain") = py::str("default"), "Start a profiling range")
+    .def("mstx_range_end", &Profiler::MstxRangeEnd, py::arg("range_id"), py::arg("domain") = py::str("default"),
+         "End a profiling range");
 }
 
 void RegProfilerManager(const py::module *m) {

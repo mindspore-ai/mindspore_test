@@ -74,6 +74,14 @@ class _ExperimentalConfig:
         sys_io (bool, optional): (Ascend only) Whether to collect NIC and RoCE data. Default: ``False``.
         sys_interconnection (bool, optional): (Ascend only) Whether to collect system interconnection data, including
             HCCS data, PCIe data, and Stars Chip Trans. Default: ``False``.
+        mstx_domain_include (list, optional): (Ascend only) Set the set of enabled domain names when the mstx switch
+                  is turned on. The name must be of str type. Default value: ``[]``, indicating that this parameter
+                  is not used to control the domain. This parameter is mutually exclusive with the mstx_domain_exclude
+                  parameter and cannot be set. simultaneously. If both are set, only the mstx_domain_include parameter
+                  takes effect.
+        mstx_domain_exclude (list, optional) -(Ascend only) Set the set of domain names that are not enabled when the
+                  mstx switch is turned on. The name must be of str type. Default value: ``[]``, indicating that this
+                  parameter is not used to control the domain.
 
     Raises:
         RuntimeError: When the version of CANN does not match the version of MindSpore,
@@ -143,6 +151,8 @@ class _ExperimentalConfig:
                  mstx: bool = False,
                  data_simplification: bool = True,
                  export_type: list = None,
+                 mstx_domain_include: list = None,
+                 mstx_domain_exclude: list = None,
                  sys_io: bool = False,
                  sys_interconnection: bool = False
                  ):
@@ -152,6 +162,8 @@ class _ExperimentalConfig:
         self._mstx = mstx
         self._data_simplification = data_simplification
         self._export_type = export_type
+        self._mstx_domain_include = mstx_domain_include
+        self._mstx_domain_exclude = mstx_domain_exclude
         self._sys_io = sys_io
         self._sys_interconnection = sys_interconnection
 
@@ -178,6 +190,14 @@ class _ExperimentalConfig:
     @property
     def export_type(self) -> list:
         return self._export_type
+
+    @property
+    def mstx_domain_include(self) -> list:
+        return self._mstx_domain_include
+
+    @property
+    def mstx_domain_exclude(self) -> list:
+        return self._mstx_domain_exclude
 
     @property
     def sys_io(self) -> bool:
@@ -211,6 +231,14 @@ class _ExperimentalConfig:
     @export_type.setter
     def export_type(self, value: list):
         self._export_type = value
+
+    @mstx_domain_include.setter
+    def mstx_domain_include(self, value: list):
+        self._mstx_domain_include = value
+
+    @mstx_domain_exclude.setter
+    def mstx_domain_exclude(self, value: list):
+        self._mstx_domain_exclude = value
 
     @sys_io.setter
     def sys_io(self, value: bool):

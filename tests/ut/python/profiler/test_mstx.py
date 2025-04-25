@@ -30,33 +30,33 @@ class TestMstx(unittest.TestCase):
         """Should call profiler's mstx_mark method when message is provided."""
         message = "test_message"
         mstx.mark(message)
-        self.mock_profiler.mstx_mark.assert_called_once_with(message)
+        self.mock_profiler.mstx_mark.assert_called_once_with(message, None, "default")
 
     def test_mark_should_call_profiler_mark_when_valid_stream_provided(self):
         """Should call profiler's mstx_mark method with device stream when valid stream is provided."""
         message = "test_message"
         mstx.mark(message, self.mock_stream)
-        self.mock_profiler.mstx_mark.assert_called_once_with(message, self.mock_device_stream)
+        self.mock_profiler.mstx_mark.assert_called_once_with(message, self.mock_device_stream, "default")
 
     def test_range_start_should_return_range_id_when_message_provided(self):
         """Should return range ID when valid message is provided."""
         message = "test_range"
         range_id = mstx.range_start(message)
-        self.mock_profiler.mstx_range_start.assert_called_once_with(message)
+        self.mock_profiler.mstx_range_start.assert_called_once_with(message, None, "default")
         self.assertEqual(range_id, 1)
 
     def test_range_start_should_return_range_id_when_valid_stream_provided(self):
         """Should return range ID when valid message and stream are provided."""
         message = "test_range"
         range_id = mstx.range_start(message, self.mock_stream)
-        self.mock_profiler.mstx_range_start.assert_called_once_with(message, self.mock_device_stream)
+        self.mock_profiler.mstx_range_start.assert_called_once_with(message, self.mock_device_stream, "default")
         self.assertEqual(range_id, 1)
 
     def test_range_end_should_call_profiler_range_end_when_valid_id_provided(self):
         """Should call profiler's mstx_range_end method when valid range ID is provided."""
         range_id = 1
         mstx.range_end(range_id)
-        self.mock_profiler.mstx_range_end.assert_called_once_with(range_id)
+        self.mock_profiler.mstx_range_end.assert_called_once_with(range_id, "default")
 
     def test_mark_should_log_warning_when_invalid_stream_provided(self):
         """Should log a warning when an invalid stream is provided."""

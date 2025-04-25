@@ -291,6 +291,16 @@ class ProfilerContext:
         return self._profiler_params_mgr.mstx
 
     @property
+    def mstx_domain_include(self) -> List[str]:
+        """Get the mstx domain include from ProfilerParameters."""
+        return self._profiler_params_mgr.mstx_domain_include
+
+    @property
+    def mstx_domain_exclude(self) -> List[str]:
+        """Get the mstx domain exclude from ProfilerParameters."""
+        return self._profiler_params_mgr.mstx_domain_exclude
+
+    @property
     def data_simplification(self) -> bool:
         """Get the data simplification from ProfilerParameters."""
         return self._profiler_params_mgr.data_simplification
