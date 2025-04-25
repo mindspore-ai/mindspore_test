@@ -8,7 +8,7 @@ gmm:
             - This is an experimental API that is subject to change or deletion.
             - `group_type` must be a constant.
             - Only support on Atlas A2 training series.
-            - When the type of `group_list` is tuple[int] or list[int], it should a non-negative ascending sequence,
+            - When the type of `group_list` is tuple[int] or list[int], it should a non-negative non-decreasing sequence sequence,
               indicating indexes of each group along the split axis. In this scenario, the arg `group_list_type` is useless.
 
         .. note::
@@ -31,7 +31,7 @@ gmm:
                 Supported dtypes: int64.
                 Default: ``None`` .
 
-                - If `group_list_type` is 0, it must be a non-negative ascending sequence.
+                - If `group_list_type` is 0, it must be  a non-negative non-decreasing sequence sequence.
                   And when `group_type` is 0, the last element in `group_list` should be equal to
                   the first dimension of the tensor in `x` . When `group_type` is 2, the last element
                   in `group_list` should be equal to the second dimension of the tensor in `x` .
@@ -42,7 +42,7 @@ gmm:
 
                 - If `group_type` is 0, it means that the m-axis is grouped, meaning that the shape
                   of each tensor in `x` should be :math: `(m, k)` , the shape of each tensor in `weight`
-                  should be :math: `(group_list.shape[0], k, n)` or :math: `(len(group_list), n)`,
+                  should be :math: `(group_list.shape[0], k, n)` or :math: `(len(group_list), k, n)`,
                   and the shape of each tensor in result would be :math: `(m, n)` .
 
                 - If `group_type` is 2, it means that the k-axis is grouped, meaning that
@@ -53,16 +53,11 @@ gmm:
                 result of the size of each group. If it's 1, the value in `group_list` are the size
                 of each group. Default: ``0`` .
 
-        The type constraint relationship between `x` , `weight` and `bias` :
-        +---------------+-----------+---------------+--------------+
-        |     arg       |           |               |              |
-        +===============+===========+===============+==============+
-        |     x         | float16   |    bfloat16   |   float32    |
-        +---------------+-----------+---------------+--------------+
-        |     weight    | float16   |    bfloat16   |   float32    |
-        +---------------+-----------+---------------+--------------+
-        |     bias      | float16   |    float32    |   float32    |
-        +---------------+-----------+---------------+--------------+
+        `x` , `weight` and `bias` only support the following 3 type combinations:
+
+        - x: float16, weight: float16, bias: float16
+        - x: bfloat16, weight: bfloat16, bias: float32
+        - x: float32, weight: float32, bias: float32
 
         Returns:
             tuple[Tensor], the results of grouping matrix multiplication.
@@ -78,8 +73,8 @@ gmm:
             >>> group_list = Tensor([2, 4, 2, 2])
             >>> y = ops.function.math_func.gmm([x,], [weight,], group_list=group_list, group_list_type=1)
             >>> print(y[0].shape)
-            >>> [10, 8]
+            >>> (10, 8)
             >>> group_list = [2, 6, 8, 10]
             >>> y = ops.function.math_func.gmm([x,], [weight,], group_list=group_list, group_list_type=0)
             >>> print(y[0].shape)
-            >>> [10, 8]
+            >>> (10, 8)
