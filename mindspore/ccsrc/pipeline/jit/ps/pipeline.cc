@@ -651,8 +651,17 @@ py::object ExecutorPy::GenerateArgumentsKey(const py::object &obj, const py::tup
     return py::int_(iter->second);
   }
 
+  // If the input Tensor is modified by inplace or view operators,
+  // the abstract will be converted from Tensor to RefTensor,
+  // causing the abstract in the cache to also be converted from Tensor to RefTensor.
+  // will cause cache misses and result in repeated compilation.
+  // So, clone an abstract copy in the cache first to avoid conversion to RefTensor causing lookup failures.
+  abstract::AbstractBasePtrList new_args_abs;
+  for (std::size_t i = 0; i < args_abs.size(); i++) {
+    (void)new_args_abs.emplace_back(args_abs[i]->Clone());
+  }
   static uint64_t key_counter = 0;
-  kArgsCache[args_abs] = key_counter;
+  kArgsCache[new_args_abs] = key_counter;
   if (!py::isinstance<py::none>(obj)) {
     kCellArgsMap[obj.ptr()] = args_abs;
   }
