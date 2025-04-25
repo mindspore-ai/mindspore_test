@@ -203,6 +203,10 @@ void OutputActor::FetchParameterInput(OpContext<DeviceTensor> *const context) {
       kernel_tensor->SetType(output_kernel_tensor->GetType());
       kernel_tensor->SetShape(output_kernel_tensor->GetShape());
       kernel_tensor->set_stream_id(device_tensor->stream_id());
+      kernel_tensor->set_tensor_storage_info(device_tensor->GetTensorStorageInfo());
+      if (device_tensor->GetTensorStorageInfo() != nullptr) {
+        kernel_tensor->address_common()->shape_vector_ = output_kernel_tensor->address_common()->shape_vector_;
+      }
       // SetShape will calculate a default size by host shape, need to set real device size for special format.
       kernel_tensor->set_size(device_tensor->GetSize());
       auto tensor_device_address = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
@@ -214,7 +218,11 @@ void OutputActor::FetchParameterInput(OpContext<DeviceTensor> *const context) {
       old_to_new_device_address_[device_tensor] = tensor_device_address;
       new_tensor->set_device_address(tensor_device_address);
     }
-
+    if (device_tensor->GetTensorStorageInfo() != nullptr) {
+      new_tensor->set_contiguous_callback([this](const DeviceSyncPtr &address) -> DeviceSyncPtr {
+        return MakeTensorContiguousCallback(address, address->GetTensorStorageInfo());
+      });
+    }
     outputs_[output_position] = new_tensor;
     if (outputs_[output_position] == nullptr) {
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR(*context, "Create output tensor failed.");
@@ -590,16 +598,6 @@ void OutputActor::HandleOutput() {
     tensor_device_address->SetNodeIndex(node_with_index.first, node_with_index.second);
     tensor_device_address->set_from_persistent_mem(device_tensor->from_persistent_mem());
     tensor_device_address->set_host_shape(tensor->shape());
-
-    if (repeat_index.find(i) != repeat_index.end() && i > repeat_index[i] && outputs_[i] != nullptr) {
-      tensor->set_device_address(outputs_[repeat_index[i]]->device_address());
-      const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-        {device_tensor->device_name(), device_tensor->device_id()});
-      MS_EXCEPTION_IF_NULL(device_context);
-      MS_LOG(DEBUG) << "Free device address:" << device_tensor << " for actor:" << GetAID();
-      MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(device_tensor, device_context, GetAID().Name());
-      continue;
-    }
 
     // The outputs may have the same output node, so need skip when the node has been done.
     if (tensor_device_address->GetPtr() != nullptr) {
