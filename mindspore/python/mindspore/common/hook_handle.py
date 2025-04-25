@@ -16,6 +16,7 @@
 from __future__ import absolute_import
 import weakref
 from mindspore._c_expression import TensorPy as Tensor_
+from mindspore._check_jit_forbidden_api import jit_forbidden_register
 
 
 class _TensorHookHandle:
@@ -33,6 +34,7 @@ class _TensorHookHandle:
         self.id = None
         self.tensor_weakref = weakref.ref(tensor)
 
+    @jit_forbidden_register
     def remove(self):
         """
         Remove the tensor hook function, which corresponds to this '_TensorHookHandle' object.
@@ -98,10 +100,11 @@ class HookHandle:
             HookHandle.unique_id += 1
             if extra_dict is not None:
                 self.extra_dict_ref = weakref.ref(extra_dict)
-        self.cell = None
+        self.cell_ref = None
         if cell is not None:
-            self.cell = cell
+            self.cell_ref = weakref.ref(cell)
 
+    @jit_forbidden_register
     def remove(self):
         """
         Remove the cell hook function, which corresponds to this 'HookHandle' object.
@@ -148,8 +151,11 @@ class HookHandle:
             (Tensor(shape=[1], dtype=Float32, value= [ 2.00000000e+00]), Tensor(shape=[1], dtype=Float32,
             value= [ 2.00000000e+00]))
         """
-        if self.cell is not None:
-            self.cell.modify_hook += 1
+        if self.cell_ref is not None:
+            cell = self.cell_ref()
+            if cell is not None:
+                cell.modify_hook += 1
+
         if self.hook_dict_ref is not None:
             hook_dict = self.hook_dict_ref()
             if hook_dict is not None and self.handle_id in hook_dict:

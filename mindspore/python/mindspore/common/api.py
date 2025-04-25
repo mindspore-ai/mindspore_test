@@ -73,22 +73,52 @@ ARG_SPECIFIED = "arg_specified_infos"
 TOTAL_ARG_LEN = "total_arg_length"
 
 
-def count_hook_num(cell):
-    hook_modify_number = 0
-    for inner_cell in cell.cells():
-        hook_modify_number += inner_cell.modify_hook
-        hook_modify_number += count_hook_num(inner_cell)
-    return hook_modify_number
+def _cells_hook_hash(fn, obj):
+    """
+    Generate cells hook hash.
+    """
+    fn_set = set({})
+    def collect_cell_free_var(fn, cells_set):
+        if not fn or not hasattr(fn, "__closure__") or not fn.__closure__:
+            return
+        if fn in fn_set:
+            return
 
-def check_cell_registed_new_hook(phase, cell):
-    if not cell or not isinstance(cell, ms.nn.Cell):
-        return phase
-    hook_modify_number = cell.modify_hook
-    hook_modify_number += count_hook_num(cell)
-    if hook_modify_number > 0:
-        hook_additional_phase = "hook_modify." + str(hook_modify_number)
-        phase += hook_additional_phase
-    return phase
+        fn_set.add(fn)
+        for free_var in fn.__closure__:
+            obj = free_var.cell_contents
+            if isinstance(obj, (types.FunctionType, types.MethodType)):
+                collect_cell_free_var(obj, cells_set)
+            elif isinstance(obj, ms.nn.Cell):
+                cells_set.add(obj)
+
+    cells_set = set({})
+    if isinstance(obj, ms.nn.Cell):
+        cells_set.add(obj)
+    collect_cell_free_var(fn, cells_set)
+
+    def collect_cells(cell, cells):
+        if cell in cells:
+            return
+
+        cells.add(cell)
+        for sub_cell in cell.cells():
+            collect_cells(sub_cell, cells)
+
+    cells = set({})
+    for cell in cells_set:
+        collect_cells(cell, cells)
+
+    hash_value = 0
+    for cell in cells:
+        hash_value += cell.modify_hook
+    return hash_value
+
+def _real_phase(phase, obj):
+    real_phase = phase + '.' + str(obj.create_time) + '.' + str(id(obj)) + '.' + obj.arguments_key
+    if hasattr(obj, "cells_hook_hash") and obj.cells_hook_hash:
+        real_phase += "." + str(obj.cells_hook_hash)
+    return real_phase
 
 def _check_recompile_args(compile_args, kwargs):
     """Check recompile of graph"""
@@ -705,12 +735,6 @@ class _JitExecutor:
 
     def compile(self, method_name, *args, **kwargs):
         """Returns pipeline for the given args."""
-        # Check whether hook function registered on Cell object.
-        if self.obj and hasattr(self.obj, "_hook_fn_registered"):
-            if self.obj._hook_fn_registered():
-                logger.warning(f"For 'Cell', it's not support hook function when using 'jit' decorator. "
-                               f"If you want to use hook function, please use context.set_context to set "
-                               f"pynative mode and remove 'jit' decorator.")
         # Chose dynamic shape tensors or actual input tensors as compile args.
         compile_args = self._generate_compile_args(args)
         key_id = self._get_key_id()
@@ -769,7 +793,9 @@ class _JitExecutor:
         if self.input_signature is None:
             update_auto_dynamic_shape_phase(compile_args, key_id, phase)
 
-        phase = check_cell_registed_new_hook(phase, self.obj)
+        cells_hook_hash = _cells_hook_hash(self.fn, self.obj)
+        if cells_hook_hash:
+            phase += "." + str(cells_hook_hash)
 
         if phase in ms_compile_cache and self._graph_executor.has_compiled(phase) and not parameter_hook_updated():
             # Release resource should be released when CompileInner won't be executed, such as cur_convert_input_
@@ -1988,7 +2014,8 @@ class _CellGraphExecutor:
         if parameter_ids != "":
             obj.arguments_key = obj.arguments_key + '.' + parameter_ids
         raw_phase = phase
-        phase = phase + '.' + str(obj.create_time) + '.' + str(id(obj)) + '.' + obj.arguments_key
+        obj.cells_hook_hash = _cells_hook_hash(None, obj)
+        phase = _real_phase(phase, obj)
         obj.phase_cache[raw_phase] = phase
         update_auto_dynamic_shape_phase(args, key_id, phase)
         obj.current_phase = phase
@@ -2045,15 +2072,15 @@ class _CellGraphExecutor:
         return self._graph_executor.updata_param_node_default_input(phase, new_param)
 
     def _get_shard_strategy(self, obj):
-        real_phase = obj.phase + '.' + str(obj.create_time) + '.' + str(id(obj)) + '.' + obj.arguments_key
+        real_phase = _real_phase(obj.phase, obj)
         return self._graph_executor.get_strategy(real_phase)
 
     def _get_num_parallel_ops(self, obj):
-        real_phase = obj.phase + '.' + str(obj.create_time) + '.' + str(id(obj)) + '.' + obj.arguments_key
+        real_phase = _real_phase(obj.phase, obj)
         return self._graph_executor.get_num_parallel_ops(real_phase)
 
     def _get_allreduce_fusion(self, obj):
-        real_phase = obj.phase + '.' + str(obj.create_time) + '.' + str(id(obj)) + '.' + obj.arguments_key
+        real_phase = _real_phase(obj.phase, obj)
         return self._graph_executor.get_allreduce_fusion(real_phase)
 
     def __call__(self, obj, *args, phase='predict'):
@@ -2105,10 +2132,10 @@ class _CellGraphExecutor:
             Tensor/Tuple, return execute result.
         """
         if phase == 'save':
-            exe_phase = phase + '.' + str(obj.create_time) + '.' + str(id(obj)) + '.' + obj.arguments_key
+            exe_phase = _real_phase(phase, obj)
             return self._graph_executor((), exe_phase)
 
-        phase_real = phase + '.' + str(obj.create_time) + '.' + str(id(obj)) + '.' + obj.arguments_key
+        phase_real = _real_phase(phase, obj)
         if self.has_compiled(phase_real):
             return self._exec_pip(obj, *args, phase=phase_real)
         raise KeyError('{} graph is not exist.'.format(phase_real))
@@ -2135,7 +2162,8 @@ class _CellGraphExecutor:
 
     def get_optimize_graph_proto(self, obj):
         """Return optimize graph binary proto."""
-        exec_id = obj.phase + "." + str(obj.create_time) + '.' + str(id(obj)) + '.' + obj.arguments_key
+        exec_id = obj.phase + "." + str(obj.create_time) + '.' + str(id(obj)) + '.' + obj.arguments_key + "." \
+            + str(obj.cells_hook_hash)
         if self._graph_executor.has_compiled(exec_id) is False:
             return None
         graph_proto = self._graph_executor.get_optimize_graph_proto(exec_id)
