@@ -630,23 +630,26 @@ class GraphModeBuilder : public IrBuilder {
     auto node = NewIrNode(cnode->cast<AnfNodePtr>());
     infer_->Infer(node);
     for (auto &inp : inputs) {
-      (void)isolated_nodes_.erase(inp);
+      (void)isolated_side_effect_nodes_.erase(inp);
     }
-    isolated_nodes_.add(node);
+    if ((prim->HasAttr(GRAPH_FLAG_SIDE_EFFECT_MEM) && GetValue<bool>(prim->GetAttr(GRAPH_FLAG_SIDE_EFFECT_MEM))) ||
+        (prim->HasAttr(GRAPH_FLAG_SIDE_EFFECT_IO) && GetValue<bool>(prim->GetAttr(GRAPH_FLAG_SIDE_EFFECT_IO)))) {
+      isolated_side_effect_nodes_.add(node);
+    }
     return node;
   }
 
   void InsertDepend(NodePtrList *outputs) {
     for (auto &out : *outputs) {
-      isolated_nodes_.erase(out);
+      isolated_side_effect_nodes_.erase(out);
     }
-    if (isolated_nodes_.empty() || outputs->empty()) {
+    if (isolated_side_effect_nodes_.empty() || outputs->empty()) {
       return;
     }
-    if (isolated_nodes_.size() == 1) {
-      (*outputs)[0] = this->Depend((*outputs)[0], isolated_nodes_.back());
+    if (isolated_side_effect_nodes_.size() == 1) {
+      (*outputs)[0] = this->Depend((*outputs)[0], isolated_side_effect_nodes_.back());
     } else {
-      NodePtrList nodes(isolated_nodes_.begin(), isolated_nodes_.end());
+      NodePtrList nodes(isolated_side_effect_nodes_.begin(), isolated_side_effect_nodes_.end());
       auto mt = this->MakeTuple(nodes);
       (*outputs)[0] = this->Depend((*outputs)[0], mt);
     }
@@ -655,7 +658,7 @@ class GraphModeBuilder : public IrBuilder {
   bool has_ctrl_flow_{false};
   // This variable is used to record isolated nodes in the graph. When the bprop graph construction is complete, all
   // isolated nodes are connected to outputs[0] using a Depend node.
-  mindspore::OrderedSet<NodePtr> isolated_nodes_;
+  mindspore::OrderedSet<NodePtr> isolated_side_effect_nodes_;
 };
 
 bool ExpandBpropInGraphMode(const BpropHandle *handle, const PrimitivePtr &prim, const FuncGraphPtr &graph) {

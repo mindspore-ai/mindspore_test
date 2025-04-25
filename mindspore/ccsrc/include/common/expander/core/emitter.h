@@ -277,7 +277,7 @@ class COMMON_EXPORT Emitter {
   }
 
   virtual NodePtr InplaceCopy(const NodePtr &variable, const NodePtr &value) {
-    return Emit("InplaceCopy", {variable, value});
+    return Emit("InplaceCopy", {variable, value}, {{GRAPH_FLAG_SIDE_EFFECT_MEM, MakeValue(true)}});
   }
   virtual NodePtr AsStrided(const NodePtr &input, const NodePtr &size, const NodePtr &stride,
                             const NodePtr &storage_offset) {
