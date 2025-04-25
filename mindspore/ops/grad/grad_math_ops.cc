@@ -2242,26 +2242,24 @@ REG_BPROP_BUILDER("PowTensorScalar").FreeUselessValues_O({}).SetBody(BODYFUNC(ib
 });
 
 REG_BPROP_BUILDER("Exp").FreeUselessValues_I({i0}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto g = ib->GetInput(kIndex1);
+  auto out = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex2);
-  TypeId exp_type = ib->GetDtypeId(g);
+  TypeId exp_type = ib->GetDtypeId(out);
   if (exp_type == kNumberTypeComplex64 || exp_type == kNumberTypeComplex128) {
-    g = ib->Conj(g);
+    out = ib->Conj(out);
   }
-  auto dx = ib->Mul(dout, g);
+  auto dx = ib->Mul(dout, out);
   return {dx};
 });
 
 REG_BPROP_BUILDER("InplaceExp").FreeUselessValues_I({i0}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto g = ib->GetInput(kIndex1);
+  auto out = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex2);
-  TypeId exp_type = ib->GetDtypeId(g);
+  TypeId exp_type = ib->GetDtypeId(out);
   if (exp_type == kNumberTypeComplex64 || exp_type == kNumberTypeComplex128) {
-    g = ib->Conj(g);
+    out = ib->Conj(out);
   }
-  auto dx = ib->Mul(dout, g);
+  auto dx = ib->Mul(dout, out);
   return {dx};
 });
 
