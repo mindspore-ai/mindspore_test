@@ -61,8 +61,6 @@ grouped_matmul_v4:
     returns:
         out:
             dtype: tuple[tensor]
-    function:
-        disable: True
     dispatch:
         enable: True
         Ascend: GroupedMatmulV4Ascend

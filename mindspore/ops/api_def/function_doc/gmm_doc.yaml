@@ -8,7 +8,7 @@ gmm:
             - This is an experimental API that is subject to change or deletion.
             - `group_type` must be a constant.
             - Only support on Atlas A2 training series.
-            - When the type of `group_list` is tuple[int] or list[int], it should a non-negative non-decreasing sequence sequence,
+            - When the type of `group_list` is tuple[int] or list[int], it should a non-negative non-decreasing sequence,
               indicating indexes of each group along the split axis. In this scenario, the arg `group_list_type` is useless.
 
         .. note::
@@ -31,7 +31,7 @@ gmm:
                 Supported dtypes: int64.
                 Default: ``None`` .
 
-                - If `group_list_type` is 0, it must be  a non-negative non-decreasing sequence sequence.
+                - If `group_list_type` is 0, it must be  a non-negative non-decreasing sequence.
                   And when `group_type` is 0, the last element in `group_list` should be equal to
                   the first dimension of the tensor in `x` . When `group_type` is 2, the last element
                   in `group_list` should be equal to the second dimension of the tensor in `x` .
