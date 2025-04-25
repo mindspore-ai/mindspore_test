@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2022 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1060,6 +1060,9 @@ MS_CORE_API bool HasAbstractUMonad(const AnfNodePtr &node);
 
 // Check whether the given node has IO monad abstract.
 MS_CORE_API bool HasAbstractIOMonad(const AnfNodePtr &node);
+
+// Check whether the given node is a monad node
+MS_CORE_API bool IsMonad(const AnfNodePtr &input);
 
 // Gets primitive attribute value as a bool flag.
 MS_CORE_API bool GetPrimitiveFlag(const PrimitivePtr &prim, const std::string &attr);

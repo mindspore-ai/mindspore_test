@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -89,8 +89,7 @@ void CheckCNodeInputsNum(const AnfNodeWeakPtrList &inputs) {
     size_t monad_num =
       static_cast<size_t>(std::count_if(inputs.cbegin() + 1, inputs.end(), [](const AnfNodeWeakPtr &weak_input) {
         const auto &input = weak_input.lock();
-        return HasAbstractMonad(input) || (IsPrimitiveCNode(input, prim::kPrimUpdateState) ||
-                                           IsValueNode<UMonad>(input) || IsValueNode<IOMonad>(input));
+        return IsMonad(input);
       }));
     // If monad input is parameter_monad, monad num is 0, actual monad num should be 1. And monad num is 0 if monad
     // pass has not been executed.
@@ -1029,6 +1028,10 @@ bool HasAbstractMonad(const AnfNodePtr &node) { return HasAbstract<abstract::Abs
 bool HasAbstractUMonad(const AnfNodePtr &node) { return HasAbstract<abstract::AbstractUMonad>(node); }
 
 bool HasAbstractIOMonad(const AnfNodePtr &node) { return HasAbstract<abstract::AbstractIOMonad>(node); }
+
+bool IsMonad(const AnfNodePtr &input) {
+  return HasAbstractMonad(input) || (IsPrimitiveCNode(input, prim::kPrimUpdateState) || IsValueNode<Monad>(input));
+}
 
 bool GetPrimitiveFlag(const PrimitivePtr &prim, const std::string &attr) {
   if (prim != nullptr) {

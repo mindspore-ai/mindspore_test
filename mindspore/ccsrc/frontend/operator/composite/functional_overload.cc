@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@
 #include "pipeline/jit/ps/fallback.h"
 #include "pipeline/jit/ps/parse/parse_base.h"
 #include "pipeline/jit/ps/static_analysis/prim.h"
+#include "pipeline/jit/ps/static_analysis/prim_utils.h"
 #include "frontend/operator/composite/auto_generate/functional_map.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
@@ -701,7 +702,7 @@ AnfNodePtrList GeneratePrimitivePackArgs(const std::pair<std::string, bool> &par
   std::map<std::string, AnfNodePtr> key_map;
   for (size_t idx = 0; idx < args_list.size(); ++idx) {
     auto input = args_list[idx];
-    if (abstract::IsMonad(input)) {
+    if (mindspore::IsMonad(input)) {
       --args_size;
       continue;
     }

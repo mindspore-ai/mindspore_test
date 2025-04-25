@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,6 +45,7 @@
 #include "pipeline/jit/ps/parse/data_converter.h"
 #include "include/common/utils/tensor_py.h"
 #include "pipeline/jit/ps/static_analysis/prim.h"
+#include "pipeline/jit/ps/static_analysis/prim_utils.h"
 #include "frontend/operator/composite/composite.h"
 #include "include/common/utils/hook.h"
 #include "utils/anf_utils.h"

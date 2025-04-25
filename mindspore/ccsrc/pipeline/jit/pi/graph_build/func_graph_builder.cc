@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@
 #include <queue>
 
 #include "frontend/operator/composite/do_signature.h"
+#include "pipeline/jit/ps/static_analysis/prim_utils.h"
 #include "pipeline/jit/ps/static_analysis/static_analysis.h"
 #include "pipeline/jit/ps/action.h"
 #include "pipeline/jit/ps/parse/parse_base.h"

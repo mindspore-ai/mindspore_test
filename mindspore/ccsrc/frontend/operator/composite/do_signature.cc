@@ -28,6 +28,7 @@
 #include "include/common/utils/convert_utils.h"
 #include "include/common/pybind_api/api_register.h"
 #include "pipeline/jit/ps/static_analysis/prim.h"
+#include "pipeline/jit/ps/static_analysis/prim_utils.h"
 #include "ir/anf.h"
 #include "ir/dtype.h"
 #include "ir/core_ops_primitive.h"

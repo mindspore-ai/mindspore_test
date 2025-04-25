@@ -1,5 +1,5 @@
 /**
- * Copyright 2022-2023 Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,10 +23,10 @@
 #include <utility>
 #include <stack>
 #include <vector>
+
 #include "pynative/forward/do_cast.h"
 #include "pynative/forward/do_pyboost_cast.h"
 #include "pynative/forward/do_infer.h"
-#include "backend/ms_backend/ms_backend.h"
 #include "ir/cell.h"
 #include "runtime/pipeline/async_hqueue.h"
 #include "mindspore/ops/view/view_strides_calculator.h"
@@ -109,14 +109,16 @@ class PYNATIVE_EXPORT ForwardExecutor {
     return cast_operation_;
   }
   ValuePtr RunOpInVM(const FrontendOpRunInfoPtr &op_run_info) const;
-  ValuePtr RunOpInMs(const FrontendOpRunInfoPtr &op_run_info, const BackendOpRunInfoPtr &backend_op_run_info);
-  ValuePtr RunOpInMsInner(const FrontendOpRunInfoPtr &op_run_info, const BackendOpRunInfoPtr &backend_op_run_info);
+  ValuePtr RunOpInMs(const FrontendOpRunInfoPtr &op_run_info, const compile::BackendOpRunInfoPtr &backend_op_run_info);
+  ValuePtr RunOpInMsInner(const FrontendOpRunInfoPtr &op_run_info,
+                          const compile::BackendOpRunInfoPtr &backend_op_run_info);
   ValuePtr RunOpWithBackendPolicy(const FrontendOpRunInfoPtr &op_run_info,
-                                  const BackendOpRunInfoPtr &backend_op_run_info);
-  void RunOpBackend(const FrontendOpRunInfoPtr &op_run_info, const BackendOpRunInfoPtr &backend_op_run_info);
+                                  const compile::BackendOpRunInfoPtr &backend_op_run_info);
+  void RunOpBackend(const FrontendOpRunInfoPtr &op_run_info, const compile::BackendOpRunInfoPtr &backend_op_run_info);
   void RunOpBackendSync(const FrontendOpRunInfoPtr &op_run_info);
 
-  VectorRef RunOpBackendInner(const FrontendOpRunInfoPtr &op_run_info, const BackendOpRunInfoPtr &backend_op_run_info);
+  VectorRef RunOpBackendInner(const FrontendOpRunInfoPtr &op_run_info,
+                              const compile::BackendOpRunInfoPtr &backend_op_run_info);
   // Infer output abstract
   void InferOutputAbstract(const FrontendOpRunInfoPtr &op_run_info) const;
   void PrepareOpInputs(const FrontendOpRunInfoPtr &op_run_info);

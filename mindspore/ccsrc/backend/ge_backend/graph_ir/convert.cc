@@ -377,10 +377,6 @@ bool IsMakeTupleWithNullValue(const AnfNodePtr &node, const AnfNodePtr &input) {
   return false;
 }
 
-bool IsMonad(const AnfNodePtr &node) {
-  return IsValueNode<UMonad>(node) || IsValueNode<IOMonad>(node) || HasAbstractMonad(node);
-}
-
 bool IsOverFlowNode(const AnfNodePtr &node, const AnfNodePtr &input) {
   return IsPrimitiveCNode(input, prim::kPrimNPUClearFloatStatusV2) ||
          IsPrimitiveCNode(node, prim::kPrimNPUClearFloatStatusV2) ||
@@ -2809,7 +2805,7 @@ bool DfGraphConvertor::IsDataInput(const AnfNodePtr &node, const AnfNodePtr &inp
   }
 
   // skip input of UMonad, IOMonad
-  if (IsMonad(input)) {
+  if (mindspore::IsMonad(input)) {
     return false;
   }
 

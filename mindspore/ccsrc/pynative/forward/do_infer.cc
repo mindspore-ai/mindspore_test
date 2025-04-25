@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@
 #include "ops/infer_info/infer_info_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 #include "include/common/utils/tensor_py.h"
+#include "pipeline/jit/ps/static_analysis/prim_utils.h"
 
 namespace mindspore {
 namespace pynative {

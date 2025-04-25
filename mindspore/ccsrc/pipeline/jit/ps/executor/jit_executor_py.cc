@@ -21,6 +21,7 @@
 
 #include "pipeline/jit/ps/executor/graph_executor_py.h"
 #include "pipeline/jit/ps/pass.h"
+#include "pipeline/jit/ps/pipeline.h"
 #include "pipeline/jit/ps/silent_check.h"
 #include "pipeline/jit/ps/event_message_print.h"
 #include "pipeline/jit/ps/validator.h"
