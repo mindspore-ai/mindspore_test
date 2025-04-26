@@ -95,6 +95,8 @@ void AscendProfiler::InitAscendProfilerConfig(const std::string &profiling_path,
   config_.l2Cache = options["l2_cache"];
   config_.hbmDdr = options["hbm_ddr"];
   config_.pcie = options["pcie"];
+  config_.sysIo = options["sys_io"];
+  config_.sysInterconnection = options["sys_interconnection"];
   config_.withStack = options["with_stack"];
   config_.parallelStrategy = options["parallel_strategy"];
   config_.profilerLevel = options["profiler_level"];
@@ -128,12 +130,22 @@ void AscendProfiler::InitAclConfig() {
     }
   }
 
-  if (config_.pcie) {
-    const char *pcieFreq = "50";
-    aclError pcieRet = aclprofSetConfig(ACL_PROF_SYS_INTERCONNECTION_FREQ, pcieFreq, strlen(pcieFreq));
-    if (pcieRet != ACL_SUCCESS) {
+  if (config_.sysIo) {
+    const char *sysIoFreq = "100";
+    aclError sysIoRet = aclprofSetConfig(ACL_PROF_SYS_IO_FREQ, sysIoFreq, strlen(sysIoFreq));
+    if (sysIoRet != ACL_SUCCESS) {
+      MS_LOG(EXCEPTION) << "Failed call aclprofSetConfig to ACL_PROF_SYS_IO_FREQ. error_code : "
+                        << static_cast<int>(sysIoRet);
+    }
+  }
+
+  if (config_.sysInterconnection || config_.pcie) {
+    const char *sysInterconnectionFreq = "50";
+    aclError sysInterconnectionRet =
+      aclprofSetConfig(ACL_PROF_SYS_INTERCONNECTION_FREQ, sysInterconnectionFreq, strlen(sysInterconnectionFreq));
+    if (sysInterconnectionRet != ACL_SUCCESS) {
       MS_LOG(EXCEPTION) << "Failed call aclprofSetConfig to ACL_PROF_SYS_INTERCONNECTION_FREQ. error_code : "
-                        << static_cast<int>(pcieRet);
+                        << static_cast<int>(sysInterconnectionRet);
     }
   }
 

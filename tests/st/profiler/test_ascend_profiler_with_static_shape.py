@@ -16,9 +16,10 @@ import pytest
 import os
 import glob
 import tempfile
+import mindspore
 from mindspore import context
 from mindspore import Profiler
-from mindspore.profiler import ProfilerLevel
+from mindspore.profiler import ProfilerLevel, ExportType
 from mindspore.profiler.analysis.parser.base_parser import BaseParser
 
 from tests.mark_utils import arg_mark
@@ -48,6 +49,8 @@ def test_ascend_graph_mode_profiler_with_static_shape_all_parameters_on():
             l2_cache=True,
             hbm_ddr=True,
             pcie=True,
+            sys_io=True,
+            sys_interconnection=True,
             sync_enable=True,
             data_process=True,
             data_simplification=False
@@ -70,26 +73,30 @@ def test_ascend_pynative_mode_profiler_with_static_shape_all_parameters_on():
     Expectation: The profiler collects and analyzes data successfully, and the output files are correctly generated
                  in the temporary directory.
     """
+    # pylint: disable=protected-access
     context.set_context(mode=context.PYNATIVE_MODE, device_target="Ascend")
     BaseParser.EXEC_HOOK_TIMEOUT = 3 * 60
     with tempfile.TemporaryDirectory() as tmpdir:
         rank_id = int(os.getenv('RANK_ID')) if os.getenv('RANK_ID') else 0
-        profiler = Profiler(
-            profiler_level=ProfilerLevel.Level1,
-            output_path=tmpdir,
-            profile_memory=True,
-            l2_cache=True,
-            hbm_ddr=True,
-            pcie=True,
-            sync_enable=True,
-            data_process=True,
-            data_simplification=False
-        )
-        net = TinyTransformer(d_model=2, nhead=1, num_encoder_layers=1, num_decoder_layers=1, dim_feedforward=4)
-        nlp_dataset = FakeDataset.create_fake_nlp_dataset(seq_len=1, batch_size=1, d_model=2, tgt_len=1, num_samples=1)
-        for src, tgt in nlp_dataset:
-            net(src, tgt)
-        profiler.analyse()
+        experimental_config = mindspore.profiler._ExperimentalConfig(profiler_level=ProfilerLevel.Level1,
+                                                                     l2_cache=True,
+                                                                     sys_io=True,
+                                                                     sys_interconnection=True,
+                                                                     data_simplification=False,
+                                                                     export_type=[ExportType.Text])
+        with mindspore.profiler.profile(data_process=True,
+                                        profile_memory=True,
+                                        hbm_ddr=True,
+                                        schedule=mindspore.profiler.schedule(wait=0, warmup=0,
+                                                                             active=1, repeat=1, skip_first=0),
+                                        on_trace_ready=mindspore.profiler.tensorboard_trace_handler(dir_name=tmpdir),
+                                        experimental_config=experimental_config) as prof:
+            net = TinyTransformer(d_model=2, nhead=1, num_encoder_layers=1, num_decoder_layers=1, dim_feedforward=4)
+            nlp_dataset = FakeDataset.create_fake_nlp_dataset(seq_len=1, batch_size=1,
+                                                              d_model=2, tgt_len=1, num_samples=1)
+            for src, tgt in nlp_dataset:
+                net(src, tgt)
+                prof.step()
         check_ascend_profiler_pynative_files(tmpdir, rank_id)
 
 
@@ -105,45 +112,61 @@ def test_ascend_kbk_mode_profiler_with_static_shape_all_parameters_on():
     context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
     context.set_context(jit_config={"jit_level": "O0"})
     BaseParser.EXEC_HOOK_TIMEOUT = 3 * 60
+    # pylint: disable=protected-access
     with tempfile.TemporaryDirectory() as tmpdir:
         rank_id = int(os.getenv('RANK_ID')) if os.getenv('RANK_ID') else 0
-        profiler = Profiler(
-            profiler_level=ProfilerLevel.Level1,
-            output_path=tmpdir,
-            profile_memory=True,
-            l2_cache=True,
-            hbm_ddr=True,
-            pcie=True,
-            sync_enable=True,
-            data_process=True,
-            data_simplification=False
-        )
-        net = TinyTransformer(d_model=2, nhead=1, num_encoder_layers=1, num_decoder_layers=1, dim_feedforward=4)
-        nlp_dataset = FakeDataset.create_fake_nlp_dataset(seq_len=1, batch_size=1, d_model=2, tgt_len=1, num_samples=1)
-        for src, tgt in nlp_dataset:
-            net(src, tgt)
-        profiler.analyse()
+        experimental_config = mindspore.profiler._ExperimentalConfig(profiler_level=ProfilerLevel.Level1,
+                                                                     l2_cache=True,
+                                                                     sys_io=True,
+                                                                     sys_interconnection=True,
+                                                                     data_simplification=False,
+                                                                     export_type=[ExportType.Text])
+        with mindspore.profiler.profile(data_process=True,
+                                        profile_memory=True,
+                                        hbm_ddr=True,
+                                        schedule=mindspore.profiler.schedule(wait=0, warmup=0,
+                                                                             active=1, repeat=1, skip_first=0),
+                                        on_trace_ready=mindspore.profiler.tensorboard_trace_handler(dir_name=tmpdir),
+                                        experimental_config=experimental_config) as prof:
+            net = TinyTransformer(d_model=2, nhead=1, num_encoder_layers=1, num_decoder_layers=1, dim_feedforward=4)
+            nlp_dataset = FakeDataset.create_fake_nlp_dataset(seq_len=1, batch_size=1,
+                                                              d_model=2, tgt_len=1, num_samples=1)
+            for src, tgt in nlp_dataset:
+                net(src, tgt)
+                prof.step()
         check_ascend_profiler_kbk_files(tmpdir, rank_id)
 
 
 def check_ascend_profiler_all_parameters_on_common_files(profiler_path: str, rank_id: int):
     ascend_profiler_output_path = glob.glob(f"{profiler_path}/*_ascend_ms/ASCEND_PROFILER_OUTPUT")[0]
     ascend_ms_dir = glob.glob(f"{profiler_path}/*_ascend_ms")[0]
-    msprof_path = glob.glob(f"{profiler_path}/*_ascend_ms/PROF_*/mindstudio_profiler_output")[0]
 
-    # check hbm_*.csv
-    hbm_path = glob.glob(f"{msprof_path}/hbm_*")[0]
+    # check hbm*.csv
+    hbm_path = glob.glob(f"{ascend_profiler_output_path}/hbm*")[0]
     FileChecker.check_csv_headers(hbm_path, ["Device_id", "Metric", "Read(MB/s)", "Write(MB/s)"])
 
-    # check l2_cache_*.csv
-    l2_cache_path = glob.glob(f"{msprof_path}/l2_cache_*")[0]
+    # check l2cache*.csv
+    l2_cache_path = glob.glob(f"{ascend_profiler_output_path}/l2_cache*")[0]
     FileChecker.check_csv_items(l2_cache_path, {
         "Op Name": ["*Add*", "*MatMul*", "*LayerNorm*"]
     })
 
-    # check pcie_*.csv
-    pcie_path = glob.glob(f"{msprof_path}/pcie_*")[0]
+    # check pcie*.csv
+    pcie_path = glob.glob(f"{ascend_profiler_output_path}/pcie*")[0]
     FileChecker.check_csv_headers(pcie_path, ["Device_id", "Mode", "Min", "Max", "Avg"])
+
+    # check hccs*.csv
+    hccs_path = glob.glob(f"{ascend_profiler_output_path}/hccs*")[0]
+    FileChecker.check_csv_headers(hccs_path, ["Device_id", "Mode", "Max", "Min", "Average"])
+
+    # check nic*.csv
+    nic_path = glob.glob(f"{ascend_profiler_output_path}/nic*")[0]
+    FileChecker.check_csv_headers(nic_path, ["Device_id", "Bandwidth(MB/s)",
+                                             "Rx Bandwidth efficiency(%)", "rxPacket/s"])
+
+    # check roce*.csv
+    roce_path = glob.glob(f"{ascend_profiler_output_path}/roce*")[0]
+    FileChecker.check_csv_headers(roce_path, ["Device_id", "Bandwidth(MB/s)", "Rx Bandwidth efficiency(%)"])
 
     # Check trace_view.json
     trace_view_path = os.path.join(ascend_profiler_output_path, "trace_view.json")

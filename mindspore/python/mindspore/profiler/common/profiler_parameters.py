@@ -45,6 +45,8 @@ class ProfilerParameters:
         "l2_cache": (bool, False),
         "hbm_ddr": (bool, False),
         "pcie": (bool, False),
+        "sys_io": (bool, False),
+        "sys_interconnection": (bool, False),
         "sync_enable": (bool, True),
         "data_simplification": (bool, True),
         "export_type": (list, [ExportType.Text]),
@@ -102,6 +104,8 @@ class ProfilerParameters:
             "l2_cache": self.l2_cache,
             "hbm_ddr": self.hbm_ddr,
             "pcie": self.pcie,
+            "sys_io": self.sys_io,
+            "sys_interconnection": self.sys_interconnection,
             "parallel_strategy": self.parallel_strategy,
             "profiler_level": self.profiler_level.value,
             "with_stack": self.with_stack,
@@ -163,7 +167,7 @@ class ProfilerParameters:
         """
         Check deprecated parameters.
         """
-        for key, _ in kwargs.items():
+        for key, value in kwargs.items():
             if key == "profile_communication":
                 warnings.warn(
                     "The parameter 'profile_communication' is deprecated,"
@@ -188,6 +192,11 @@ class ProfilerParameters:
             elif key == "timeline_limit":
                 warnings.warn(
                     "The parameter 'timeline_limit' is deprecated and will have no effect"
+                )
+            elif key == "pcie" and value is True:
+                warnings.warn(
+                    "The parameter 'pcie' will be deprecated in future versions. "
+                    "Please use 'sys_interconnection' in mindspore.profiler._ExperimentalConfig instead."
                 )
 
     def _set_schedule(self, **kwargs):

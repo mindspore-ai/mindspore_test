@@ -186,6 +186,8 @@ class TimelineLayerName(Enum):
     ACC_PMU = "Acc PMU"
     SIO = "SIO"
     QOS = "QoS"
+    NIC = "NIC"
+    ROCE = "RoCE"
     OVERLAP_ANALYSIS = "Overlap Analysis"
 
 
