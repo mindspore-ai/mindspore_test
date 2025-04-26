@@ -29,7 +29,7 @@ from mindspore.common.jit_context import jit_context
 from mindspore.ops.primitive import prim_attr_register, Primitive, PrimitiveWithInfer
 from mindspore._checkparam import check_hook_fn
 from mindspore.ops import operations as P
-
+from ..auto_generate import DumpGradient # pylint: disable=unused-import
 
 SUMMARY_TENSOR_CACHE = []
 
