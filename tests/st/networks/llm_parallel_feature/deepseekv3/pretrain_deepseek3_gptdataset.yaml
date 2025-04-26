@@ -1,10 +1,13 @@
 seed: 0
 output_dir: './output' # path to save checkpoint/strategy
 load_checkpoint: ''
+remove_redundancy: False
+load_ckpt_format: 'safetensors'
 src_strategy_path_or_dir: ''
 auto_trans_ckpt: False  # If true, auto transform load_checkpoint to load in distributed model
 only_save_strategy: False
 resume_training: False
+resume_by_last_timestamp_ckpt: False
 use_parallel: True
 run_mode: 'train'
 
@@ -15,7 +18,7 @@ trainer:
 
 # runner config
 runner_config:
-  epochs: 2
+  epochs: 1
   batch_size: 1
   sink_mode: True
   sink_size: 1
@@ -25,23 +28,42 @@ optimizer:
   type: AdamW
   betas: [0.9, 0.95]
   eps: 1.e-8
-  learning_rate: 3.e-4
+  learning_rate: 2.4e-4
+  weight_decay: 0.1
 
 # lr schedule
 lr_schedule:
   type: CosineWithWarmUpLR
   learning_rate: 2.e-5
   lr_end: 2.e-5
-  warmup_ratio: 0.0005
+  warmup_lr_init: 0
+  warmup_steps: 200
   total_steps: -1 # -1 means it will load the total steps of the dataset
 
 # dataset
 train_dataset: &train_dataset
   data_loader:
-    type: MindDataset
-    dataset_dir: "/home/workspace/mindspore_dataset/wiki4096/wiki4096.mindrecord"
+    type: BlendedMegatronDatasetDataLoader
+    datasets_type: "GPTDataset"
+    sizes:
+      - 24 # train dataset size
+      - 0
+      - 0
+    config:
+      random_seed: 1234
+      seq_length: 4096
+      split: "1, 0, 0"
+      reset_position_ids: False
+      reset_attention_mask: False
+      eod_mask_loss: False
+      num_dataset_builder_threads: 1
+      create_attention_mask: False
+      data_path:
+        - '1'
+        - "/home/workspace/mindspore_dataset/msadapter/test_input/net/test_ds3_pretrain/dataset/dataset/enwiki_text_document"
     shuffle: False
-  input_columns: ["input_ids"]  # "input_ids" , labels are used in instruction finetune.
+  input_columns: ["input_ids", "labels", "loss_mask", "position_ids"]
+  construct_args_key: ["input_ids", "labels"]
   num_parallel_workers: 8
   python_multiprocessing: False
   drop_remainder: True
@@ -57,59 +79,53 @@ do_eval: False
 eval_step_interval: -1        # num of step intervals between each eval, -1 means no step end eval.
 eval_epoch_interval: 50        # num of epoch intervals between each eval, 1 means eval on every epoch end.
 
-# eval dataset
-eval_dataset: &eval_dataset
-  data_loader:
-    type: MindDataset
-    dataset_dir: ""
-    shuffle: False
-  input_columns: ["input_ids"]
-  num_parallel_workers: 8
-  python_multiprocessing: False
-  drop_remainder: False
-  repeat: 1
-  numa_enable: False
-  prefetch_size: 1
-eval_dataset_task:
-  type: CausalLanguageModelDataset
-  dataset_config: *eval_dataset
-
 # mindspore context init config
 context:
   mode: 0 #0--Graph Mode; 1--Pynative Mode
   device_target: "Ascend"
   max_call_depth: 10000
-  max_device_memory: "55GB"
+  max_device_memory: "54GB"    # modify, "59GB"
+  memory_optimize_level: "O1"    # add
   save_graphs: False
-  save_graphs_path: "./graph"
+  save_graphs_path: "./output/graph"
+  deterministic: "ON"
   jit_config:
     jit_level: "O1"
+  ascend_config:    # add
+    parallel_speed_up_json_path: "./parallel_speed_up.json"    # add
+  mempool_block_size: "54GB"
+
+# default parallel of device num = 16 for Atlas 800
+parallel_config:
+  data_parallel: &dp 2    # modify, 4
+  model_parallel: 2    # modify, 8
+  pipeline_stage: 2 # 16    # modify, 2
+  expert_parallel: 2    # modify, 4
+  micro_batch_num: &micro_batch_num 2   # modify, 20
+  vocab_emb_dp: True
+  use_seq_parallel: True    # modify, False
+  gradient_aggregation_group: 4
+# when model parallel is greater than 1, we can set micro_batch_interleave_num=2, that may accelerate the train process.
+micro_batch_interleave_num: 1
 
 # parallel context config
 parallel:
   parallel_mode: 1 # 0-data parallel, 1-semi-auto parallel, 2-auto parallel, 3-hybrid parallel
   gradients_mean: False
   enable_alltoall: True
-  full_batch: True
+  #full_batch: True
+  full_batch: False    # modify, True
+  dataset_strategy:  [[*dp, 1], [*dp, 1], [*dp, 1], [*dp, 1]] #[[64, 1], [64, 1]]    # add, =dp
   search_mode: "sharding_propagation"
   enable_parallel_optimizer: True
   strategy_ckpt_save_file: "./ckpt_strategy.ckpt"
   parallel_optimizer_config:
     gradient_accumulation_shard: False
     parallel_optimizer_threshold: 64
-
-# default parallel of device num = 16 for Atlas 800
-parallel_config:
-  data_parallel: 2
-  model_parallel: 2
-  pipeline_stage: 2
-  expert_parallel: 2
-  micro_batch_num: &micro_batch_num 2
-  vocab_emb_dp: True
-  use_seq_parallel: True
-  gradient_aggregation_group: 4
-# when model parallel is greater than 1, we can set micro_batch_interleave_num=2, that may accelerate the train process.
-micro_batch_interleave_num: 1
+    optimizer_weight_shard_size: 2
+  pipeline_config:
+    pipeline_interleave: True
+    pipeline_scheduler: "seqpipe" 
 
 # recompute config
 recompute_config:
@@ -126,18 +142,17 @@ model:
     auto_register: deepseek3_config.DeepseekV3Config
     batch_size: 1 # add for increase predict
     seq_length: 4096
-    hidden_size:  2048
-    num_layers: &num_layers 61
-    num_heads: 128
+    hidden_size: 1024
+    num_layers: &num_layers 3
+    num_heads: 8
     max_position_embeddings: 4096
-    intermediate_size: 2048
-    kv_lora_rank: 512
-    n_kv_heads: 128
+    intermediate_size: 1024
+    kv_lora_rank: 128
     q_lora_rank: 1536
     qk_rope_head_dim: 64
-    v_head_dim: 128
-    qk_nope_head_dim: 128
-    vocab_size: 129280
+    v_head_dim: 64
+    qk_nope_head_dim: 64
+    vocab_size: 32000 # 152064
     multiple_of: 256
     rms_norm_eps: 1.0e-6
     bos_token_id: 100000
@@ -152,46 +167,55 @@ model:
     param_init_type: "float32"
     use_past: False
     extend_method: "None"
-    use_flash_attention: True
-    offset: 0
+    use_flash_attention: True    # modify, False
+    input_sliced_sig: True
     checkpoint_name_or_path: ""
+    repetition_penalty: 1
+    max_decode_length: 1024
+    top_k: 5
+    top_p: 1
     theta: 10000.0
+    do_sample: False
     return_extra_loss: True
     mtp_depth: &mtp_depth 1
     mtp_loss_factor: 0.3
+    use_fused_rope: True
+    use_fused_swiglu: False
+    pp_interleave_num: 2
+    enable_fa_var_len: True
   arch:
     type: DeepseekV3ForCausalLM
     auto_register: deepseek3.DeepseekV3ForCausalLM
 
-#moe
 moe_config:
-  expert_num: &expert_num 16
-  expert_group_size: 8
+  expert_num: &expert_num 4
+  expert_model_parallel: 1
+  expert_group_size: 2
   capacity_factor: 1.5
   aux_loss_factor: 0.05
-  num_experts_chosen: 8
+  num_experts_chosen: 2
   routing_policy: "TopkRouterV2"
   enable_sdrop: False
   balance_via_topk_bias: &balance_via_topk_bias True
   topk_bias_update_rate: &topk_bias_update_rate 0.0001
   use_fused_ops_topkrouter: True
-  group_wise_a2a: False
   shared_expert_num: 1
   routed_scaling_factor: 2.5
   norm_topk_prob: False
   first_k_dense_replace: 1
-  moe_intermediate_size: 1024
+  moe_intermediate_size: 512
+  use_fused_ops_permute: True
   # greedy_group_limited strategy, select topk_group from n_group
-  topk_group: 4
+  topk_group: 3
   n_group: 8
-  aux_loss_factors: [0.001]
+  aux_loss_factors: [0.0001]
   aux_loss_types: ["expert"]
   z_loss_factor: 0.0
-  expert_model_parallel: 1
-  use_gmm: False
   use_gating_sigmoid: True
+  use_gmm: True
+  enable_gmm_safe_tokens: False
   enable_deredundency: False
-  npu_nums_per_device: 8
+  npu_nums_per_device: 2
 
 processor:
   return_tensors: ms
@@ -205,12 +229,9 @@ processor:
     tokenizer_file: './path/tokenizer.json'
   type: LlamaProcessor
 
-
-# callbacks
 callbacks:
   - type: MFLossMonitor
     per_print_times: 1
-  # balance topk bias with callback
   - type: TopkBiasBalanceCallback
     balance_via_topk_bias: *balance_via_topk_bias
     topk_bias_update_rate: *topk_bias_update_rate
