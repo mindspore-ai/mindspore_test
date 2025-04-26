@@ -70,6 +70,15 @@ const AnfNodePtr QbmmAllReduceConvertBias::Process(const FuncGraphPtr &func_grap
     return nullptr;
   }
 
+  const std::string fusion_op_name = "QbmmAllReduceConvertBias";
+  auto enable_op_list = ms_context->ms_internal_enable_custom_kernel_list();
+  bool enable_convert_bias =
+    (std::find(enable_op_list.begin(), enable_op_list.end(), fusion_op_name) != enable_op_list.end());
+  if (!enable_convert_bias) {
+    MS_LOG(INFO) << "ms_context internal_enable_custom_kernel_list doesn't contain QbmmAllReduceConvertBias.";
+    return nullptr;
+  }
+
   if (func_graph == nullptr || node == nullptr || equiv == nullptr) {
     MS_LOG(INFO) << "func_graph == nullptr || node == nullptr || equiv == nullptr.";
     return nullptr;
