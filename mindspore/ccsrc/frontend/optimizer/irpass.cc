@@ -269,6 +269,9 @@ OptimizeIRPassLib::OptimizeIRPassLib() {
   virtual_dataset_eliminate_ = MakeSubstitution(std::make_shared<VirtualDatasetEliminater>(),
                                                 "virtual_dataset_eliminate", prim::kPrimVirtualDataset);
 
+  dump_gradient_eliminate_ =
+    MakeSubstitution(std::make_shared<DumpGradientEliminater>(), "dumpgradient_eliminate", prim::kPrimDumpGradient);
+
   // Virtual Output
   virtual_output_eliminate_ =
     MakeSubstitution(std::make_shared<VirtualOutputEliminater>(), "virtual_output_eliminate", prim::kPrimVirtualOutput);

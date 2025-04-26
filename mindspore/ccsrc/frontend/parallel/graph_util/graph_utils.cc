@@ -25,6 +25,7 @@
 #include "frontend/parallel/parameter_manager.h"
 #include "frontend/parallel/graph_util/generate_graph.h"
 #include "frontend/parallel/graph_util/graph_info.h"
+#include "frontend/parallel/graph_util/parallel_tensordump.h"
 #include "frontend/parallel/tensor_layout/prime_generator.h"
 #include "ir/primitive.h"
 #include "ir/func_graph.h"
@@ -917,14 +918,15 @@ CNodePtr FindPreviousCareNode(const CNodePtr &current, int32_t depth = 0) {
   if (depth == MAX_RECURSIVE_DEPTH) {
     return nullptr;
   }
-  auto prev = current->input(1);
+  size_t travel_index = IsSomePrimitive(current, DUMPGRADIENT) ? kDumpGradientSkipIndex : kIndex1;
+  auto prev = current->input(travel_index);
   // If prev is parameter maybe problem here.
   auto cnode = prev->cast<CNodePtr>();
   if (cnode == nullptr) {
     MS_LOG(INFO) << "Input of node is not a cnode: " << prev->fullname_with_scope();
     return nullptr;
   }
-  static std::set<std::string> RECURSIVE_WHITE_LIST = {CAST, TUPLE_GETITEM_OP, INSERTGRADIENTOF, DEPEND};
+  static std::set<std::string> RECURSIVE_WHITE_LIST = {CAST, TUPLE_GETITEM_OP, INSERTGRADIENTOF, DEPEND, DUMPGRADIENT};
   if (!IsParallelCareNode(cnode) && (RECURSIVE_WHITE_LIST.find(GetPrimName(cnode)) != RECURSIVE_WHITE_LIST.end())) {
     return FindPreviousCareNode(cnode, depth + 1);
   }
