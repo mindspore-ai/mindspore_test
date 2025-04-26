@@ -99,7 +99,7 @@ std::mutex g_tsd_mutex;
 
 void CheckContiguousTensor(const tensor::BaseTensorPtr &tensor) {
   if (!DeviceAddressUtils::IsContiguousTensor(tensor)) {
-    MS_LOG(EXCEPTION) << "The ge backend only support contiguous inputs, please check.";
+    MS_LOG(EXCEPTION) << "The ge backend don't support view inputs, please check.";
   }
 }
 
