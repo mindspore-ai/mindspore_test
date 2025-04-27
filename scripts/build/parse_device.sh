@@ -66,7 +66,7 @@ parse_device()
         export ENABLE_MPI="on"
         export ENABLE_INTERNAL_KERNELS="on"
       # universal ascend package, building 910b package by giving specific -V 910b instruction
-      elif [[ "X$DEVICE_VERSION" == "X910" || "X$DEVICE_VERSION" == "X910b" ]]; then
+      elif [[ "X$DEVICE_VERSION" == "X910" || "X$DEVICE_VERSION" == "X910b" || "X$DEVICE_VERSION" == "Xa5" ]]; then
         export ENABLE_D="on"
         export ENABLE_ACL="on"
         ENABLE_CPU="on"
@@ -74,6 +74,9 @@ parse_device()
         export ENABLE_INTERNAL_KERNELS="on"
         export ASCEND_GLOBAL_LOG_LEVEL=3
         export ASCEND_SLOG_PRINT_TO_STDOUT=1
+        if [[ "X$DEVICE_VERSION" == "Xa5" ]]; then
+          export EXPERIMENT_A5="on"
+        fi
       else
         echo "Invalid value ${DEVICE_VERSION} for option -V"
         usage

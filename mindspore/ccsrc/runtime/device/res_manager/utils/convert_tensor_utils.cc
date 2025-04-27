@@ -127,6 +127,18 @@ void ConvertSameType(void *const dst, const void *src, size_t size, TypeId type)
     auto dst_data = static_cast<bfloat16 *>(dst);
     auto src_data = static_cast<const bfloat16 *>(src);
     ConvertSameType(dst_data, src_data, size >> 1);
+  } else if (type == kNumberTypeHiFloat8) {
+    auto dst_data = static_cast<hifloat8 *>(dst);
+    auto src_data = static_cast<const hifloat8 *>(src);
+    ConvertSameType(dst_data, src_data, size / sizeof(hifloat8));
+  } else if (type == kNumberTypeFloat8E5M2) {
+    auto dst_data = static_cast<float8_e5m2 *>(dst);
+    auto src_data = static_cast<const float8_e5m2 *>(src);
+    ConvertSameType(dst_data, src_data, size / sizeof(float8_e5m2));
+  } else if (type == kNumberTypeFloat8E4M3FN) {
+    auto dst_data = static_cast<float8_e4m3fn *>(dst);
+    auto src_data = static_cast<const float8_e4m3fn *>(src);
+    ConvertSameType(dst_data, src_data, size / sizeof(float8_e4m3fn));
   } else if (type == kNumberTypeInt8) {
     auto dst_data = static_cast<int8_t *>(dst);
     auto src_data = static_cast<const int8_t *>(src);

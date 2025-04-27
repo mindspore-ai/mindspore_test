@@ -253,7 +253,7 @@ class PYBOOST_API PyBoostUtils {
 
   static bool IsFloat(const TensorPtr &input_tensor) {
     return input_tensor->data_type() >= TypeId::kNumberTypeFloat &&
-           input_tensor->data_type() <= TypeId::kNumberTypeBFloat16;
+           input_tensor->data_type() <= TypeId::kNumberTypeHiFloat8;
   }
 
   static bool IsFloat(const ScalarPtr &alpha) { return alpha->isa<FloatImm>(); }

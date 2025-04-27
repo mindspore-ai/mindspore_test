@@ -105,6 +105,11 @@ static std::map<MeDataType, GeDataType> datatype_trans_map = {
   {MeDataType::kNumberTypeFloat32, GeDataType::DT_FLOAT},
   {MeDataType::kNumberTypeFloat64, GeDataType::DT_DOUBLE},
   {MeDataType::kNumberTypeBFloat16, GeDataType::DT_BF16},
+#ifdef EXPERIMENT_A5
+  {MeDataType::kNumberTypeHiFloat8, GeDataType::DT_HIFLOAT8},
+  {MeDataType::kNumberTypeFloat8E5M2, GeDataType::DT_FLOAT8_E5M2},
+  {MeDataType::kNumberTypeFloat8E4M3FN, GeDataType::DT_FLOAT8_E4M3FN},
+#endif
   {MeDataType::kNumberTypeInt4, GeDataType::DT_INT4},
   {MeDataType::kNumberTypeInt8, GeDataType::DT_INT8},
   {MeDataType::kNumberTypeInt16, GeDataType::DT_INT16},
@@ -421,6 +426,14 @@ MeDataType TransformUtil::ConvertGeDataType(const GeDataType &type) {
       return MeDataType::kNumberTypeBFloat16;
     case GeDataType::DT_FLOAT:
       return MeDataType::kNumberTypeFloat32;
+#ifdef EXPERIMENT_A5
+    case GeDataType::DT_HIFLOAT8:
+      return MeDataType::kNumberTypeHiFloat8;
+    case GeDataType::DT_FLOAT8_E5M2:
+      return MeDataType::kNumberTypeFloat8E5M2;
+    case GeDataType::DT_FLOAT8_E4M3FN:
+      return MeDataType::kNumberTypeFloat8E4M3FN;
+#endif
     case GeDataType::DT_DOUBLE:
       return MeDataType::kNumberTypeFloat64;
     case GeDataType::DT_INT64:

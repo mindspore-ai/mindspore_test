@@ -2342,6 +2342,12 @@ std::string AnfAlgo::GetTensorValueString(const tensor::TensorPtr &tensor) {
     fn(reinterpret_cast<float *>(tensor->data_c()));
   } else if (dtype->type_id() == kNumberTypeBFloat16) {
     fn(reinterpret_cast<bfloat16 *>(tensor->data_c()));
+  } else if (dtype->type_id() == kNumberTypeHiFloat8) {
+    fn(reinterpret_cast<hifloat8 *>(tensor->data_c()));
+  } else if (dtype->type_id() == kNumberTypeFloat8E5M2) {
+    fn(reinterpret_cast<float8_e5m2 *>(tensor->data_c()));
+  } else if (dtype->type_id() == kNumberTypeFloat8E4M3FN) {
+    fn(reinterpret_cast<float8_e4m3fn *>(tensor->data_c()));
   } else if (dtype->type_id() == kNumberTypeComplex64) {
     fn(reinterpret_cast<complex64 *>(tensor->data_c()));
   } else if (dtype->type_id() == kNumberTypeComplex128) {

@@ -26,6 +26,7 @@ mindspore/mindspore/core/ir/dtype_extends.cc:mindspore::UnitSizeInBytes
 mindspore/mindspore/ccsrc/frontend/optimizer/irpass.cc:mindspore::opt::irpass::OptimizeIRPassLib::OptimizeIRPassLib
 mindspore/mindspore/ccsrc/frontend/parallel/ops_info/gather_v2_p_info.cc:mindspore::parallel::GatherV2PInfo::CheckStrategy
 mindspore/mindspore/ccsrc/plugin/device/gpu/hal/device/gpu_kernel_runtime.cc:mindspore::device::gpu::GPUKernelRuntime::LaunchKernelDynamic
+mindspore/mindspore/ccsrc/runtime/device/res_manager/utils/convert_tensor_utils.cc:mindspore::device::ConvertSameType
 mindspore/mindspore/ccsrc/runtime/graph_scheduler/actor/super_kernel_actor.cc:mindspore::runtime::SuperKernelActor::BuildKernelActors
 mindspore/mindspore/ccsrc/runtime/graph_scheduler/actor/super_kernel_actor.cc:mindspore::runtime::SuperKernelActor::RunGraphKernelByKernel
 mindspore/mindspore/ccsrc/runtime/graph_scheduler/actor/kernel_actor.cc:mindspore::runtime::KernelActor::ExecuteLaunchKernelTask
@@ -46,8 +47,10 @@ mindspore/mindspore/ccsrc/backend/ge_backend/graph_ir/convert.cc:mindspore::back
 mindspore/mindspore/ccsrc/runtime/graph_scheduler/actor/output_actor.cc:mindspore::runtime::OutputActor::CreateOutputTensor
 mindspore/mindspore/ccsrc/pipeline/jit/ps/static_analysis/prim.cc:mindspore::abstract::ConvertAbstractToPython
 mindspore/mindspore/ccsrc/frontend/ir/log_adapter_py.h:mindspore::PyExceptionInitializer::HandleExceptionPy
+mindspore/mindspore/ccsrc/utils/anfalgo.cc:mindspore::common::AnfAlgo::GetTensorValueString
 mindspore/mindspore/ops/kernel/gpu/math/unary_op_gpu_kernel.h:mindspore::kernel::UnaryOpGpuKernel::Launch
 mindspore/mindspore/ccsrc/plugin/device/ascend/optimizer/ir_fission/dynamic_rnn_grad_fission_v2.cc:mindspore::opt::AddLSTMInputGradNode
+mindspore/mindspore/ccsrc/plugin/res_manager/ascend/op_adapter/transform_util.cc:mindspore::device::ascend::TransformUtil::ConvertGeDataType
 mindspore/mindspore/ops/kernel/ascend/aicpu/aicpu_ops/drop_out_gen_mask_kernels.cc:aicpu::ARMDropOutGenMaskKernel
 mindspore/model_zoo/official/recommend/wide_and_deep/src/wide_and_deep.py:__init__
 mindspore/model_zoo/official/recommend/wide_and_deep_multitable/src/wide_and_deep.py:__init__
