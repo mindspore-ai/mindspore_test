@@ -32,9 +32,9 @@ linalg_qr:
         Examples:
             >>> import mindspore
             >>> import numpy as np
-            >>> from mindspore import Tensor, mint
+            >>> from mindspore import Tensor, ops
             >>> x = Tensor(np.array([[1.0, 1.0, 2.0, 4.0], [1.0, 1.0, 2.0, 4.0]]), mindspore.float32)
-            >>> output = mint.linalg.qr(x)
+            >>> output = ops.auto_generate.linalg_qr(x)
             >>> print(output)
             (Tensor(shape=[2, 2], dtype=Float32, value=
             [[-7.07106829e-01, -7.07106769e-01],

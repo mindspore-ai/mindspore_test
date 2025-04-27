@@ -27,9 +27,9 @@ adaptive_avg_pool1d:
 
         Examples:
             >>> import mindspore
-            >>> from mindspore import Tensor, mint
+            >>> from mindspore import Tensor, ops
             >>> input = Tensor([[2,3],[3,4]],dtype=mindspore.float16)
-            >>> output = mint.nn.functional.adaptive_avg_pool1d(input, 3)
+            >>> output = ops.auto_generate.adaptive_avg_pool1d(input, 3)
             >>> print(output)
             [[2.  2.5 3. ]
              [3.  3.5 4. ]]

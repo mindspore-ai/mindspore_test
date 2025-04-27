@@ -35,12 +35,12 @@ kthvalue:
         Examples:
             >>> import mindspore
             >>> import numpy as np
-            >>> from mindspore import Tensor, mint
+            >>> from mindspore import Tensor, ops
             >>> input_x = Tensor(np.array([[1.01, 2.02, 3.03], [1.04, 2.05, 3.06]]), mindspore.float32)
-            >>> out = mint.kthvalue(input_x, 2, 1, False)
+            >>> out = ops.auto_generate.kthvalue(input_x, 2, 1, False)
             >>> print(out)
             (Tensor(shape=[2], dtype=Float32, value= [ 2.01999998e+00,  2.04999995e+00]), Tensor(shape=[2], dtype=Int64, value= [1, 1]))
-            >>> out1 = mint.kthvalue(input_x, 2, 1, True)
+            >>> out1 = ops.auto_generate.kthvalue(input_x, 2, 1, True)
             >>> print(out1)
             (Tensor(shape=[2, 1], dtype=Float32, value=
             [[ 2.01999998e+00],

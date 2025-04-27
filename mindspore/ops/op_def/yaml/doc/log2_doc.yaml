@@ -25,8 +25,8 @@ log2:
         Examples:
             >>> import mindspore
             >>> import numpy as np
-            >>> from mindspore import Tensor, mint
+            >>> from mindspore import Tensor, ops
             >>> x = Tensor(np.array([3.0, 5.0, 7.0]), mindspore.float32)
-            >>> output = mint.log2(x)
+            >>> output = ops.auto_generate.log2_ext(x)
             >>> print(output)
             [1.5849625 2.321928  2.807355 ]

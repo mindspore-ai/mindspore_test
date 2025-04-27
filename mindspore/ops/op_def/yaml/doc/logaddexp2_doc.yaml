@@ -24,9 +24,9 @@ logaddexp2:
 
         Examples:
             >>> import numpy as np
-            >>> from mindspore import Tensor, mint
+            >>> from mindspore import Tensor, ops
             >>> x1 = Tensor(np.array([1, 2, 3]).astype(np.float16))
             >>> x2 = Tensor(np.array(2).astype(np.float16))
-            >>> output = mint.logaddexp2(x1, x2)
+            >>> output = ops.auto_generate.logaddexp2(x1, x2)
             >>> print(output)
             [2.586 3. 3.586]

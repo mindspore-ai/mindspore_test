@@ -28,11 +28,10 @@ argsort:
         Examples:
             >>> import mindspore
             >>> import numpy as np
-            >>> from mindspore import Tensor
-            >>> import mindspore.mint as mint
+            >>> from mindspore import Tensor, ops
             >>> x = Tensor(np.array([[8, 2, 1], [5, 9, 3], [4, 6, 7]]), mindspore.float16)
-            >>> sort = mint.argsort(x)
+            >>> sort = ops.auto_generate.argsort_ext(x)
             >>> print(sort)
             [[2 1 0]
-            [2 0 1]
-            [0 1 2]]
+             [2 0 1]
+             [0 1 2]]

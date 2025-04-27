@@ -34,6 +34,6 @@ atan2_ext:
             >>> from mindspore import Tensor, ops
             >>> input = Tensor(np.array([0, 1]), mindspore.float32)
             >>> other = Tensor(np.array([1, 1]), mindspore.float32)
-            >>> output = mint.atan2(input, other)
+            >>> output = ops.auto_generate.atan2_ext(input, other)
             >>> print(output)
             [0.        0.7853982]
