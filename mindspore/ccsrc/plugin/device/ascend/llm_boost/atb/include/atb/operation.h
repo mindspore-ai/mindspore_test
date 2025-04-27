@@ -1,20 +1,17 @@
 /*
  * Copyright (c) 2024 Huawei Technologies Co., Ltd.
- * AscendTransformerBoost is licensed under Mulan PSL v2.
- * You can use this software according to the terms and conditions of the Mulan PSL v2.
- * You may obtain a copy of Mulan PSL v2 at:
- *          http://license.coscl.org.cn/MulanPSL2
- * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
- * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
- * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
- * See the Mulan PSL v2 for more details.
+ * This file is a part of the CANN Open Software.
+ * Licensed under CANN Open Software License Agreement Version 1.0 (the "License").
+ * Please refer to the License for details. You may not use this file except in compliance with the License.
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY, OR FITNESS FOR A PARTICULAR PURPOSE.
+ * See LICENSE in the root of the software repository for the full text of the License.
  */
 #ifndef ATB_OPERATION_H
 #define ATB_OPERATION_H
 #include <cstdint>
 #include <functional>
 #include <string>
-#include <acl/acl.h>
 #include "atb/types.h"
 #include "atb/svector.h"
 #include "atb/context.h"
@@ -36,7 +33,10 @@ namespace atb {
 //!
 class Operation {
 public:
+    //! \brief 默认构造函数.
     Operation() = default;
+
+    //! \brief 默认析构函数.
     virtual ~Operation() = default;
     //!
     //! \brief 获取创建的Operation的名字
@@ -95,7 +95,7 @@ public:
     //! \return 状态值，如果成功，返回NO_ERROR
     //!
     virtual Status Execute(const VariantPack &variantPack, uint8_t *workspace, uint64_t workspaceSize,
-        Context *context) = 0;
+                           Context *context) = 0;
 };
 
 //!
@@ -139,5 +139,23 @@ template <typename OpParam> Status CloneOperationParam(const Operation *operatio
 //!
 template <typename OpParam> Status UpdateOperationParam(Operation *operation, const OpParam &opParam);
 
-}
+//!
+//! \brief 设置Operation使用的streamId
+//!
+//! \param operation 被设置的Operation指针
+//! \param streamId 需要设置的streamId
+//!
+//! \return 状态值，如果成功，返回NO_ERROR
+//!
+Status SetExecuteStreamId(Operation *operation, uint32_t streamId);
+
+//!
+//! \brief 获取Operation使用的streamId
+//!
+//! \param operation 需要获取的streamId的Operation指针
+//!
+//! \return 该Operation当前使用的streamId
+//!
+uint32_t GetExecuteStreamId(Operation *operation);
+} // namespace atb
 #endif

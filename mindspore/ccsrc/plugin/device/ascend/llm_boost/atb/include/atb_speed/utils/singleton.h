@@ -17,6 +17,13 @@
 #define ATB_SPEED_UTILS_SINGLETON_H
 
 namespace atb_speed {
+
+template <class T> T &GetThreadLocalSingleton()
+{
+    thread_local static T instance;
+    return instance;
+}
+
 template <class T> T &GetSingleton()
 {
     static T instance;

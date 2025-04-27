@@ -1,13 +1,11 @@
 /*
  * Copyright (c) 2024 Huawei Technologies Co., Ltd.
- * AscendTransformerBoost is licensed under Mulan PSL v2.
- * You can use this software according to the terms and conditions of the Mulan PSL v2.
- * You may obtain a copy of Mulan PSL v2 at:
- *          http://license.coscl.org.cn/MulanPSL2
- * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
- * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
- * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
- * See the Mulan PSL v2 for more details.
+ * This file is a part of the CANN Open Software.
+ * Licensed under CANN Open Software License Agreement Version 1.0 (the "License").
+ * Please refer to the License for details. You may not use this file except in compliance with the License.
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY, OR FITNESS FOR A PARTICULAR PURPOSE.
+ * See LICENSE in the root of the software repository for the full text of the License.
  */
 #ifndef ATB_CONTEXT_H
 #define ATB_CONTEXT_H
@@ -28,6 +26,17 @@
 namespace atb {
 
 //!
+//! \enum ExecuteType
+//!
+//! \brief 算子下发类型枚举，通过Context选择加速库算子下发的方式, 支持直接下发和使用分线程两段式下发.
+//!
+enum ExecuteType : int {
+    EXECUTE_NORMAL = 0,           //!< 直接下发
+    EXECUTE_PRELAUNCH,            //!< 用于分线程下发，第一段下发
+    EXECUTE_LAUNCH,               //!< 用于分线程下发，第二段下发
+};
+
+//!
 //! \class Context.
 //!
 //! \brief 加速库上下文类，主要用于管理Operation运行所需要的全局资源.
@@ -36,9 +45,12 @@ namespace atb {
 //!
 class Context {
 public:
+    //! \brief 默认构造函数.
     Context() = default;
+
+    //! \brief 默认析构函数.
     virtual ~Context() = default;
-    
+
     //!
     //! \brief 将传入stream队列设置为当前执行队列.
     //!
@@ -74,6 +86,34 @@ public:
     //! \return 如果获取成功，返回True.
     //!
     virtual bool GetAsyncTilingCopyStatus() const = 0;
+
+    //!
+    //! \brief 设置实际的执行流，Operation执行时会根据配置的streamId从Context匹配对应的实际执行流
+    //!
+    //! \param streams 需要设置的一组stream
+    //!
+    //! \return 状态值，如果设置成功，返回NO_ERROR
+    virtual Status SetExecuteStreams(const std::vector<aclrtStream> &streams) = 0;
+
+    //!
+    //! \brief 获取Context中当前设置的一组执行流
+    //!
+    //! \return Context当前设置的一组执行流
+    virtual std::vector<aclrtStream> GetExecuteStreams() = 0;
+
+    //!
+    //! \brief 设置Execute的类型
+    //!
+    //! \param type ExecuteType类型
+    //!
+    //! \return 状态值，如果设置成功，返回NO_ERROR
+    virtual Status SetExecuteType(ExecuteType type) = 0;
+
+    //!
+    //! \brief 获取当前context Execute的类型
+    //!
+    //! \return 获取到的ExecuteType类型
+    virtual ExecuteType GetExecuteType() = 0;
 };
 
 //!
@@ -97,5 +137,5 @@ Status CreateContext(Context **context);
 //! \return 状态值.如果设置成功，返回NO_ERROR.
 //!
 Status DestroyContext(Context *context);
-}
+} // namespace atb
 #endif

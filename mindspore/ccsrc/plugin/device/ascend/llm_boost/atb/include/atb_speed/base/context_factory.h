@@ -23,6 +23,7 @@ namespace atb_speed {
 class ContextFactory {
 public:
     static std::shared_ptr<atb::Context> GetAtbContext(void *stream);
+    static std::vector<aclrtStream> GetSubStreams();
     static void FreeAtbContext();
 };
 }
