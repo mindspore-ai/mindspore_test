@@ -81,7 +81,6 @@ def test_while_after_for_in_if_2():
     assert res_z == 1
 
 
-@pytest.mark.skip(reason="tmp skip, fix later")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_while_after_for_in_if_3():
     """

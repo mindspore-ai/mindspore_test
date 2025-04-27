@@ -110,7 +110,6 @@ def test_list_with_input_dict(func, ms_func, a):
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
 
 
-@pytest.mark.skip(reason="pynative mode mix graph mode, results has an random error in pynative")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('func', [fallback_list_with_input_numpy_array])
 @pytest.mark.parametrize('ms_func', [ms_fallback_list_with_input_numpy_array])
@@ -130,7 +129,6 @@ def test_list_with_input_array(func, ms_func, a):
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
 
 
-@pytest.mark.skip
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('func', [fallback_list_with_input_numpy_tensor])
 @pytest.mark.parametrize('ms_func', [ms_fallback_list_with_input_numpy_tensor])

@@ -134,7 +134,6 @@ def test_try_block_4():
     assert np.all(ret.asnumpy() == np.array([3, 5, 7]))
 
 
-@pytest.mark.skip(reason="tmp skip")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_with_block():
     """
@@ -210,7 +209,6 @@ def test_kw_inline():
     assert a == b
 
 
-@pytest.mark.skip(reason="tmp skip")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_cell_free():
     """
@@ -587,7 +585,6 @@ def test_stack_restore(param):
     assert res1 == res2
 
 
-@pytest.mark.skip(reason="guard fix later")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('c', [(1, 2), [1, 2], "12", {'a': 1, 'b': 2}, Tensor([[1], [2]])])
 def test_unpack(c):

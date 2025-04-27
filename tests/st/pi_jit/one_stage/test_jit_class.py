@@ -90,7 +90,6 @@ def test_create_jit_class_instance_3():
     assert np.all(ret.asnumpy() == np.array([2, 3, 4]))
 
 
-@pytest.mark.skip(reason="Fix after adjust guard for getattr")
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_call_jit_class_method():
     """
@@ -171,7 +170,6 @@ class UserDefinedTuple(tuple):
         return "UserDefinedTuple(" + str(list(self)) + ")"
 
 
-@pytest.mark.skip(reason="Jit handle instance with subclass of tuple wrong, fix later")
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_create_subclass_tuple_jit_class():
     """

@@ -22,7 +22,6 @@ from tests.st.pi_jit.share.utils import pi_jit_with_config
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
-@pytest.mark.skip(reason="Not Implement kEnableGeneratorExpressionToTuple in one stage.")
 def test_listcomp():
     """
     Feature: Generator expression unrolling
@@ -44,7 +43,6 @@ def test_listcomp():
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
-@pytest.mark.skipif(sys.version_info > (3, 9), reason="graph break at python3.10")
 @pytest.mark.parametrize("x", [(1, 2, 3), (1, 1, 1, 1)])
 def test_genexpr(x):
     """

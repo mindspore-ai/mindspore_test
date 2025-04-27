@@ -103,7 +103,6 @@ def test_forward_contain_make_dict_and_dict_getitem():
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.skip(reason="Unsupported data type for ZeroLike")
 def test_forward_return_dict():
     """
     Feature: Grad for dict.
@@ -142,7 +141,6 @@ def test_forward_return_dict():
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.skip(reason="Unsupported data type for ZeroLike")
 def test_forward_return_dict_backward_return_dict():
     """
     Feature: Grad for dict.
@@ -224,7 +222,6 @@ def test_forward_contain_make_dict_and_dict_getitem_backward_return_dict():
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.skip(reason="Unsupported data type for ZeroLike")
 def test_forward_contain_make_dict_and_dict_setitem_backward_return_dict1():
     """
     Feature: Grad for dict.

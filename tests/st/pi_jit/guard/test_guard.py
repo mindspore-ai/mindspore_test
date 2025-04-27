@@ -72,7 +72,6 @@ def test_alias_define_2():
     assert_graph_compile_status(func, 0)
 
 
-@pytest.mark.skip(reason="side-effect infer is incorrect, can't build graph, fix later")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_alias_define_3():
     """

@@ -58,7 +58,6 @@ def func(self, x):
     return {e: d, **self, "rec_tuple": x}
 
 
-@pytest.mark.skip(reason="type infer error, fix later")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_self_reference():
     """

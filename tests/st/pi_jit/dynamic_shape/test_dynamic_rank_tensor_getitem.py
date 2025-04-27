@@ -267,7 +267,6 @@ class Net10(Cell):
         return out
 
 
-@pytest.mark.skip(reason="AssertionError, result not match")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_dynamic_rank_getitem_slice_shape():
     '''
@@ -279,7 +278,7 @@ def test_dynamic_rank_getitem_slice_shape():
     '''
     ps_net = Net10()
     pi_net = Net10()
-    x = Tensor(np.random.rand(2, 3, 4), dtype=mstype.float32)
+    x = Tensor(np.random.rand(6, 3, 4), dtype=mstype.float32)
     y = Tensor(np.random.rand(2, 4), dtype=mstype.int32)
     d = Tensor(None, dtype=mstype.float32)
     dy = Tensor(shape=[None, None], dtype=mstype.int32)
@@ -357,7 +356,6 @@ class Net15(Cell):
         return out
 
 
-@pytest.mark.skip(reason="runtime error in mstorch-infer-r2.3")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_dynamic_rank_getitem_list_mutable():
     '''
@@ -476,7 +474,6 @@ class Net20(Cell):
         return out * self.n
 
 
-@pytest.mark.skip(reason="result not match in mstorch-infer-r2.3")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_dynamic_rank_getitem_tuple_tensor():
     '''

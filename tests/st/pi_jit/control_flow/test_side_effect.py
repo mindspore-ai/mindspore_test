@@ -744,7 +744,6 @@ def test_list_setitem_in_subgraph():
     assert jcr['break_count_'] == 0
 
 
-@pytest.mark.skip(reason='unsupported')
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_tensor_setitem_by_slice():
     """

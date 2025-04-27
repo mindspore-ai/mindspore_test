@@ -227,7 +227,6 @@ class Net7(Cell):
         return b
 
 
-@pytest.mark.skip(reason="mindspore/ccsrc/pipeline/jit/ps/validator.cc:216 CheckDeadNodeInOutputRecursively")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_dynamic_shape_frontend_optimize():
     '''

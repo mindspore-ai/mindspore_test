@@ -567,7 +567,6 @@ def test_handle_mutable_kwargs_args_2():
     assert ret == 12
 
 
-@pytest.mark.skip(reason="fix later")
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_use_free_variable():
     """
@@ -593,7 +592,6 @@ def test_use_free_variable():
     assert jcr["break_count_"] == 0
 
 
-@pytest.mark.skip(reason="When disable loop_unrolling, check guard failed.")
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_use_free_variable_2():
     """
@@ -1355,7 +1353,6 @@ def test_subgraph_with_primitive_output():
     assert_executed_by_graph_mode(foo)
 
 
-@pytest.mark.skip(reason="Subgraph with only load const add output failed, fix later")
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_subgraph_with_primitive_output_2():
     """

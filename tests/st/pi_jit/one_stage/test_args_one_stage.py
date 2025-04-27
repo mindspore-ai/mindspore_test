@@ -731,7 +731,6 @@ def test_parser_key_value4(func):
     func()
 
 
-@pytest.mark.skip(reason="unimplement CFunction error occurs")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('func', [parser_args_var_mixed_002])
 def test_parser_key_value5(func):

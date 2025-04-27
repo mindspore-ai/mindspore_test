@@ -74,7 +74,6 @@ def test_return_dict_2():
     assert ret == {"1": Tensor([2])}
 
 
-@pytest.mark.skip(reason="CodeHook for one stage failed")
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_break_in_subgraph():
     """
@@ -152,7 +151,6 @@ def test_break_in_subgraph_3():
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.skip
 def test_break_with_control_flow():
     """
     Feature: One stage basic operation.
@@ -171,7 +169,6 @@ def test_break_with_control_flow():
     assert np.all(ret == np.array([6, 5]))
 
 
-@pytest.mark.skip(reason="Random error occurs when run whole files")
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_break_with_control_flow_2():
     """
@@ -238,7 +235,6 @@ def test_ud_collect_capture_output():
     assert not a4
 
 
-@pytest.mark.skip # One-stage will fix it later
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_while_after_for_in_if_4():
     """

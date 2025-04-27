@@ -21,7 +21,6 @@ import pytest
 from tests.mark_utils import arg_mark
 
 
-@pytest.mark.skip
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_fallback_tuple_with_mindspore_function():
     """
