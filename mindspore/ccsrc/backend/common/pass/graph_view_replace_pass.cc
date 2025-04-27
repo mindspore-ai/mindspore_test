@@ -82,7 +82,9 @@ void MakeRefPairForNode(const CNodePtr &origin_node) {
 }
 
 void CreateViewNode(const std::string &name, const AnfNodePtr &origin_node,
-                    const mindspore::FuncGraphManagerPtr &manager, const FuncGraphPtr &func_graph) {
+                    const mindspore::FuncGraphManagerPtr &manager, const FuncGraphPtr &func_graph,
+                    mindspore::HashMap<AnfNodePtr, AnfNodePtr> *replaced_nodes) {
+  MS_EXCEPTION_IF_NULL(replaced_nodes);
   auto ops = name;
   if (ops == "Transpose") {
     if (TransposePattern(origin_node, manager)) {
@@ -106,6 +108,39 @@ void CreateViewNode(const std::string &name, const AnfNodePtr &origin_node,
   MakeRefPairForNode(view_node);
   // Replace node
   (void)manager->Replace(cnode, view_node);
+  (*replaced_nodes)[cnode] = view_node;
+}
+
+void ProcessReplacedNodes(const FuncGraphPtr &graph, const mindspore::HashMap<AnfNodePtr, AnfNodePtr> &replaced_nodes) {
+  MS_EXCEPTION_IF_NULL(graph);
+  auto kernel_graph = graph->cast<KernelGraphPtr>();
+  if (kernel_graph == nullptr) {
+    return;
+  }
+  const auto &origin_ref_map = kernel_graph->GetRefMap();
+  if (origin_ref_map.empty() || replaced_nodes.empty()) {
+    return;
+  }
+  std::map<session::AnfWithOutIndex, session::AnfWithOutIndex> new_ref_map;
+  bool updated = false;
+  for (const auto &pair : origin_ref_map) {
+    auto k = pair.first;
+    auto v = pair.second;
+    auto iter1 = replaced_nodes.find(k.first);
+    if (iter1 != replaced_nodes.end()) {
+      k.first = iter1->second;
+      updated = true;
+    }
+    auto iter2 = replaced_nodes.find(v.first);
+    if (iter2 != replaced_nodes.end()) {
+      v.first = iter2->second;
+      updated = true;
+    }
+    new_ref_map[k] = v;
+  }
+  if (updated) {
+    kernel_graph->set_ref_out_in_map(new_ref_map);
+  }
 }
 
 bool GraphViewReplacePass::Run(const FuncGraphPtr &func_graph) {
@@ -115,6 +150,7 @@ bool GraphViewReplacePass::Run(const FuncGraphPtr &func_graph) {
   MS_EXCEPTION_IF_NULL(manager);
   auto kernel_graph = func_graph->cast<KernelGraphPtr>();
   MS_EXCEPTION_IF_NULL(kernel_graph);
+  mindspore::HashMap<AnfNodePtr, AnfNodePtr> replaced_nodes;
   for (auto &node : node_list) {
     MS_EXCEPTION_IF_NULL(node);
     if (!node->cast<CNodePtr>()) {
@@ -123,7 +159,7 @@ bool GraphViewReplacePass::Run(const FuncGraphPtr &func_graph) {
     auto cnode = node->cast<CNodePtr>();
     auto kernel_name = AnfUtils::GetCNodeName(node);
 
-    // The view op list defined in yamls. Spacial case: Transpose + GroupMatmul/Matmul
+    // The view op list defined in yamls. Special case: Transpose + GroupMatmul/Matmul
     if (!(common::AnfAlgo::IsViewNode(node) || kernel_name == "Transpose")) {
       continue;
     }
@@ -132,8 +168,9 @@ bool GraphViewReplacePass::Run(const FuncGraphPtr &func_graph) {
       continue;
     }
     MS_LOG(INFO) << "Process view for " << kernel_name;
-    CreateViewNode(kernel_name, node, manager, func_graph);
+    CreateViewNode(kernel_name, node, manager, func_graph, &replaced_nodes);
   }
+  ProcessReplacedNodes(func_graph, replaced_nodes);
   return True;
 }
 }  // namespace opt
