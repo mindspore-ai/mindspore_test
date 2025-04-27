@@ -34,6 +34,7 @@ internal::InternalOpPtr InternalFusedAddTopKDiv::CreateKernel(const internal::In
   auto activate_type = ms_inputs.at(kIndex6);
   auto is_norm = ms_inputs.at(kIndex7);
   auto scale = ms_inputs.at(kIndex8);
+  auto enableExpertMapping = ms_inputs.at(kIndex11);
   if (group_num->dtype_id() == TypeId::kNumberTypeInt64 && group_topk->dtype_id() == TypeId::kNumberTypeInt64 &&
       n->dtype_id() == TypeId::kNumberTypeInt64 && k->dtype_id() == TypeId::kNumberTypeInt64 &&
       activate_type->dtype_id() == TypeId::kNumberTypeInt64 && is_norm->dtype_id() == TypeId::kNumberTypeBool &&
@@ -45,6 +46,7 @@ internal::InternalOpPtr InternalFusedAddTopKDiv::CreateKernel(const internal::In
     param.activate_type = static_cast<int32_t>(activate_type->GetValue<int64_t>().value());
     param.is_norm = is_norm->GetValue<bool>().value();
     param.scale = scale->GetValue<float>().value();
+    param.enableExpertMapping = enableExpertMapping->GetValue<bool>().value();
   } else {
     MS_LOG(EXCEPTION) << "FusedAddTopKDiv [group_num, group_topk, n, k, activate_type, is_norm, scale]'s dtype wrong";
   }
@@ -53,6 +55,7 @@ internal::InternalOpPtr InternalFusedAddTopKDiv::CreateKernel(const internal::In
 
 MS_INTERNAL_KERNEL_FACTORY_REG(FusedAddTopKDiv, internal::kInternalFusedAddTopkDivOpName, InternalFusedAddTopKDiv);
 REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(FusedAddTopKDiv, INPUT_NUM_2, INDEX_0, INDEX_1);
+REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(FusedAddTopKDiv, INPUT_NUM_4, INDEX_0, INDEX_1, INDEX_9, INDEX_10);
 REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(FusedAddTopKDiv, OUTPUT_NUM_2, INDEX_0, INDEX_1);
 }  // namespace kernel
 }  // namespace mindspore
