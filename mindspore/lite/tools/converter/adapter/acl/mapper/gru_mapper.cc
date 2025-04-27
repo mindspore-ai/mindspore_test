@@ -38,6 +38,13 @@ constexpr size_t kKeyBShapeLength = 2;
 constexpr size_t kKeySequence_lensIndex = 5;
 constexpr size_t kKeySequenceShapeLength = 1;
 constexpr size_t kKeyInitial_hIndex = 6;
+constexpr auto kGruAttrDirection = "direction";
+constexpr auto kGruAttrActivationAlpha = "activation_alpha";
+constexpr auto kGruAttrActivationBeta = "activation_beta";
+constexpr auto kGruAttrActivations = "activations";
+constexpr auto kGruAttrClip = "clip";
+constexpr auto kGruAttrHiddenSize = "hidden_size";
+constexpr auto kGruAttrLinearBeforeReset = "linear_before_reset";
 }  // namespace
 namespace lite {
 std::vector<std::vector<float>> create2DVector(int32_t rows, int32_t cols, float initValue) {
@@ -137,46 +144,40 @@ STATUS SetGruAttr(PrimitivePtr src_prim, PrimitivePtr dst_prim) {
     return lite::RET_ERROR;
   }
 
-  auto bidirectional_attr = src_prim->GetAttr("bidirectional");
-  if (bidirectional_attr == nullptr) {
-    MS_LOG(ERROR) << "bidirectional_attr is nullptr.";
+  auto direction_attr = src_prim->GetAttr(kGruAttrDirection);
+  if (direction_attr == nullptr) {
+    MS_LOG(ERROR) << "direction_attr is nullptr.";
     return lite::RET_ERROR;
   }
-  bool bidirectional = GetValue<bool>(bidirectional_attr);
-  if (!bidirectional) {
-    MS_LOG(ERROR) << "not support bidirectional is false.";
-    return lite::RET_ERROR;
-  }
-  dst_prim->SetAttrs({{"direction", MakeValue("bidirectional")}});
-
-  auto activation_alpha = src_prim->GetAttr("activation_alpha");
+  dst_prim->SetAttrs({{kGruAttrDirection, MakeValue(direction_attr)}});
+  auto activation_alpha = src_prim->GetAttr(kGruAttrActivationAlpha);
   if (activation_alpha != nullptr) {
-    dst_prim->SetAttrs({{"activation_alpha", MakeValue(activation_alpha)}});
+    dst_prim->SetAttrs({{kGruAttrActivationAlpha, MakeValue(activation_alpha)}});
   }
 
-  auto activation_beta = src_prim->GetAttr("activation_beta");
+  auto activation_beta = src_prim->GetAttr(kGruAttrActivationBeta);
   if (activation_beta != nullptr) {
-    dst_prim->SetAttrs({{"activation_beta", MakeValue(activation_beta)}});
+    dst_prim->SetAttrs({{kGruAttrActivationBeta, MakeValue(activation_beta)}});
   }
 
-  auto activations = src_prim->GetAttr("activations");
+  auto activations = src_prim->GetAttr(kGruAttrActivations);
   if (activations != nullptr) {
-    dst_prim->SetAttrs({{"activations", MakeValue(activations)}});
+    dst_prim->SetAttrs({{kGruAttrActivations, MakeValue(activations)}});
   }
 
-  auto clip = src_prim->GetAttr("clip");
+  auto clip = src_prim->GetAttr(kGruAttrClip);
   if (clip != nullptr) {
-    dst_prim->SetAttrs({{"clip", MakeValue(clip)}});
+    dst_prim->SetAttrs({{kGruAttrClip, MakeValue(clip)}});
   }
 
-  auto hidden_size = src_prim->GetAttr("hidden_size");
+  auto hidden_size = src_prim->GetAttr(kGruAttrHiddenSize);
   if (hidden_size != nullptr) {
-    dst_prim->SetAttrs({{"hidden_size", MakeValue(hidden_size)}});
+    dst_prim->SetAttrs({{kGruAttrHiddenSize, MakeValue(hidden_size)}});
   }
 
-  auto linear_before_reset = src_prim->GetAttr("linear_before_reset");
+  auto linear_before_reset = src_prim->GetAttr(kGruAttrLinearBeforeReset);
   if (linear_before_reset != nullptr) {
-    dst_prim->SetAttrs({{"linear_before_reset", MakeValue(linear_before_reset)}});
+    dst_prim->SetAttrs({{kGruAttrLinearBeforeReset, MakeValue(linear_before_reset)}});
   }
   return lite::RET_OK;
 }
