@@ -23,6 +23,15 @@ fused_add_topk_div:
     scale: 
       dtype: float
       default: 2.5
+    mapping_num:
+      dtype: tensor
+      default: None
+    mapping_table:
+      dtype: tensor
+      default: None
+    enableExpertMapping:
+      dtype: bool
+      default: False
   returns:
     weight:
       dtype: tensor

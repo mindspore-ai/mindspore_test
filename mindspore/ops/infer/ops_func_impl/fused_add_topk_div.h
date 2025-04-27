@@ -39,6 +39,9 @@ enum FusedAddTopKDivInputIndex : size_t {
   kFusedAddTopKDivActivateTypeIndex,
   kFusedAddTopKDivIsNormIndex,
   kFusedAddTopKDivScaleIndex,
+  kFusedAddTopKDivMappingNumIndex,
+  kFusedAddTopKDivMappingTableIndex,
+  kFusedAddTopKDivEnableExpertMappingIndex,
   kFusedAddTopKDivInputsNum,
 };
 
