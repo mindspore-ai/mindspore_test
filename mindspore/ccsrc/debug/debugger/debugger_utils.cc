@@ -122,6 +122,12 @@ std::vector<size_t> GetValidDumpIndex(const CNodePtr &cnode, size_t index_size, 
                    << " deviceaddress is nullptr.";
       continue;
     }
+    if (index < tensors.size() && tensors[index]->GetTensorStorageInfo()) {
+      MS_LOG(WARNING) << cnode->fullname_with_scope() << (is_input ? " input" : " output") << ", index " << index
+                      << " deviceaddress is not contiguous. Dump currently does not support non-contiguous data and is "
+                         "currently skipped.";
+      continue;
+    }
     valid_indexes.push_back(index);
   }
   return valid_indexes;
