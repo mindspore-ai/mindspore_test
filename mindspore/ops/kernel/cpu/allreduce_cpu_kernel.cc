@@ -76,9 +76,8 @@ bool AllReduceCPUKernelMod::Launch(const std::vector<kernel::KernelTensor *> &in
   for (size_t i = 0; i < inputs.size(); ++i) {
     data_size += inputs[i]->size();
   }
-  bool ret = MsCollectiveCommLib::GetInstance().AllReduce(inputs[0]->device_ptr(), outputs[0]->device_ptr(),
-                                                          data_size / sizeof(float), kNumberTypeFloat32, Reduce_Sum,
-                                                          kMCCLGlobalGroupName);
+  bool ret = MsCollectiveCommLib::GetInstance().AllReduce(inputs[0]->device_ptr(), outputs[0]->device_ptr(), data_size,
+                                                          kNumberTypeFloat32, Reduce_Sum, kMCCLGlobalGroupName);
   if (!ret) {
     MS_LOG(ERROR) << "AllReduceCPUKernelMod launch failed.";
   }
