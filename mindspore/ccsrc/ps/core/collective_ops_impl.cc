@@ -650,10 +650,6 @@ bool CollectiveOpsImpl::AllReduce(const void *sendbuff, void *recvbuff, size_t c
     MS_LOG(ERROR) << "Rank size should not be 0.";
     return false;
   }
-  if (rank_size_ == 1) {
-    MS_LOG(INFO) << "Rank size is 1. Do nothing.";
-    return true;
-  }
 
   if (count >= rank_size_) {
     return RingAllReduce<T>(sendbuff, recvbuff, count, (CollectiveOpReduceType)reduce_op, group_info);
