@@ -131,7 +131,7 @@ bool Process(const AnfNodePtrList &cnodes, bool use_jit) {
                                                 func_graph->output()->abstract()),
             cnode);
         }
-        cnode->cast<CNodePtr>()->AddAttr("to_prim", MakeValue(prim::kPrimGraphKernel->name()));
+        cnode->cast<CNodePtr>()->AddAttr(kAttrToPrim, MakeValue(AnfUtils::GetCNodeName(cnode)));
         changed = true;
       }
     }

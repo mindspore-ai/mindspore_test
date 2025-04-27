@@ -119,7 +119,7 @@ PassManagerPtr GraphKernelOptimizer::PreProcess() const {
   pm->Add(std::make_shared<SaveOutputShape>(), OptLevel_1, is_gpu);
 
   // Change Assign(p, a, U) to Assign(Depend(p, U), a)
-  pm->Add(std::make_shared<SplitAssign>(), OptLevel_1, is_gpu || is_cpu || is_dvm);
+  pm->Add(std::make_shared<SplitAssign>(), OptLevel_1);
 
   // Spread the MakeTuple input of UpdateState
   pm->Add(std::make_shared<SpreadUpdateState>(), OptLevel_1);
@@ -224,7 +224,7 @@ PassManagerPtr GraphKernelOptimizer::HighLevelOpt2() const {
   pm->Add(std::make_shared<GraphKernelRecompute>(), recompute_lv);
 
   // Enable atomic add
-  pm->Add(std::make_shared<AtomicCleanInserter>(), OptLevel_2, is_gpu || (is_ascend && !is_dvm));
+  pm->Add(std::make_shared<AtomicCleanInserter>(), OptLevel_2, is_gpu);
 
   // Enable atomic add for stitch nodes.
   auto level = GetPassLevelByFlag(GraphKernelFlags::GetInstance().enable_stitch_fusion);
@@ -283,7 +283,8 @@ PassManagerPtr GraphKernelOptimizer::Build() const {
   pm->Add(std::make_shared<SymbolEngineBuilder>(true), enable_dyn_level, !is_dvm);
   pm->Add(std::make_shared<GraphKernelSplitterWithPy>(true), enable_dyn_level, is_gpu);
 #ifdef ENABLE_AKG
-  pm->Add(std::make_shared<GraphKernelBuild>(), OptLevel_1, !is_dvm);
+  pm->Add(std::make_shared<GraphKernelExpanderBeforeBuild>(), OptLevel_1, !is_dvm);
+  pm->Add(std::make_shared<GraphKernelBuild>(), OptLevel_1, !is_ge && !is_dvm);
 #endif
   pm->Add(std::make_shared<GeneratedDependElimination>(), OptLevel_2, is_gpu || (is_ascend && !is_dvm));
   pm->Add(std::make_shared<GetitemTuple>(), OptLevel_1, !is_dvm);
@@ -311,12 +312,8 @@ PassManagerPtr GraphKernelOptimizer::PostProcess() const {
   pm->Add(std::make_shared<opt::BindValueToGraph>(), OptLevel_1);
 
   // Update side effect attr, update kernel graph ref pair(used in device address allocation)
-  pm->Add(std::make_shared<DealWithSideEffect>(), OptLevel_1, is_dvm || is_gpu);
-
-  // add some attribute to graph kernel for further optimization
-  pm->Add(std::make_shared<AddAttr>(), OptLevel_1);
-
-  pm->Add(std::make_shared<ConvertCallToPrim>(), OptLevel_1, is_dvm);
+  pm->Add(std::make_shared<DealWithSideEffect>(), OptLevel_1);
+  pm->Add(std::make_shared<ConvertCallToPrim>(), OptLevel_1);
   return pm;
 }
 

@@ -267,6 +267,7 @@ std::vector<PrimitivePtr> GraphKernelExpanderCloud::GetExpanderOps() {
 }
 
 std::vector<PrimitivePtr> GraphKernelExpanderCloud::InitOpList() { return GraphKernelExpanderCloud::GetExpanderOps(); }
+std::vector<PrimitivePtr> GraphKernelExpanderBeforeBuild::InitOpList() { return {prim::kPrimLayerNorm}; }
 
 bool GraphKernelExpanderCloud::CanExpand(const CNodePtr &node) const {
   bool is_dvm = (GraphKernelFlags::GetInstance().kernel_generator == "DVM");

@@ -20,9 +20,10 @@
 #include <unordered_map>
 #include <vector>
 #include "utils/log_adapter.h"
+#include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "plugin/device/ascend/kernel/akg/msprof.h"
 #include "acl/acl_rt.h"
-#include "debug/profiler/profiling.h"
+#include "include/backend/debug/profiler/profiling.h"
 
 namespace mindspore {
 namespace kernel {
@@ -30,7 +31,7 @@ using std::fstream;
 using std::map;
 using std::mutex;
 using std::string;
-constexpr uint32_t DEFAULT_BLOCK_DIM = 20;
+constexpr uint32_t DEFAULT_BLOCK_DIM = 40;
 constexpr size_t ARGS_REMAP_LEN = 2;
 /**
  * @brief infotable contain func_stub\blockdim\kernel file buffer
@@ -216,7 +217,7 @@ bool DynamicAkgKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
   NodeInfoPtr info = std::make_shared<NodeInfo>();
   info->op_name = kernel_name_.c_str();
   info->op_fullname = kernel_name_.c_str();
-  info->block_dim = 20;
+  info->block_dim = 40;
   auto msprof_helper_ = new MsProfHelper(info);
   msprof_helper_ ->InitReportNode();
   msprof_helper_ ->UpdateBeginTime();
