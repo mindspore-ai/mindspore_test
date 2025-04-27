@@ -518,32 +518,30 @@ void DeviceAddressUtils::CreateKernelTensor(const device::DeviceAddressPtr &devi
 
 bool DeviceAddressUtils::IsContiguousTensor(const tensor::BaseTensorPtr &tensor) {
   if (tensor == nullptr || tensor->storage_info() == nullptr) {
-    MS_LOG(INFO) << "It is a contiguous tensor, tensor: " << tensor;
+    MS_LOG(DEBUG) << "It is not a view tensor, tensor: " << tensor;
     return true;
   }
 
   auto device_address = tensor->device_address();
   const auto &old_storage_info = device_address->GetTensorStorageInfo();
   if (old_storage_info == nullptr) {
-    MS_LOG(INFO) << "It is a contiguous tensor, tensor: " << tensor;
+    MS_LOG(DEBUG) << "It is not a view tensor, tensor: " << tensor;
     return true;
   }
 
   auto new_storage_info = tensor->storage_info();
   if (new_storage_info->shape == new_storage_info->ori_shape) {
-    MS_LOG(INFO) << "It is a contiguous tensor, tensor: " << tensor;
+    MS_LOG(DEBUG) << "It is not a view tensor, tensor: " << tensor;
     return true;
   }
 
   auto shape_size = SizeOf(new_storage_info->shape);
   auto ori_shape_size = SizeOf(new_storage_info->ori_shape);
   if (new_storage_info->storage_offset == 0 && new_storage_info->is_contiguous && shape_size == ori_shape_size) {
-    MS_LOG(INFO) << "It is a contiguous tensor, tensor: " << tensor;
+    MS_LOG(DEBUG) << "It is not a view tensor, tensor: " << tensor;
     return true;
   }
-
-  MS_LOG(ERROR) << "It is not a contiguous tensor, tensor: " << tensor
-                << ", new_storage_info: " << new_storage_info->ToString()
+  MS_LOG(ERROR) << "It is a view tensor, tensor: " << tensor << ", new_storage_info: " << new_storage_info->ToString()
                 << ", old_storage_info: " << old_storage_info->ToString();
   return false;
 }
