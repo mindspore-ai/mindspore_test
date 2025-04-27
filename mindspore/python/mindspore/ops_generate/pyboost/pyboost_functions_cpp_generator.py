@@ -192,9 +192,9 @@ class PyboostFunctionsGenerator(BaseGenerator):
         for index, op_arg in enumerate(op_proto.op_args):
             is_optional = is_optional_param(op_arg)
             if op_arg.is_type_id:
-                convert_type_str = get_convert_type_str('type', is_optional)
+                convert_type_str = get_convert_type_str('type', is_optional, op_proto.op_view)
             else:
-                convert_type_str = get_convert_type_str(op_arg.arg_dtype, is_optional)
+                convert_type_str = get_convert_type_str(op_arg.arg_dtype, is_optional, op_proto.op_view)
 
             parser_func_str += self.convert_template.replace(arg_name=op_arg.arg_name, convert_func=convert_type_str,
                                                              arg_index=pyboost_utils.get_index(index))

@@ -31,6 +31,9 @@ std::vector<tensor::TensorPtr> PYBOOST_API MeshgridCustomizeCall(const std::shar
                                                                  const ValueTuplePtr &tensors_list,
                                                                  const Int64ImmPtr &indexing,
                                                                  const string &device_type);
+std::vector<tensor::TensorPtr> PYBOOST_API MeshgridCustomizeCall(const std::shared_ptr<OpRunner> &op,
+                                                                 const ValueTuplePtr &tensors_list,
+                                                                 const int64_t &indexing, const string &device_type);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

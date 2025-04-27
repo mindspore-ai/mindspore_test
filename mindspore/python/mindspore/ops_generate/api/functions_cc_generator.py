@@ -73,7 +73,7 @@ class FunctionsHeaderGenerator(BaseGenerator):
         """
         args_list = []
         for op_arg in op_proto.op_args:
-            input_dtype = get_input_dtype(op_arg.arg_dtype, is_optional_param(op_arg))
+            input_dtype = get_input_dtype(op_arg.arg_dtype, is_optional_param(op_arg), op_proto.op_view)
             args_list.append("const " + input_dtype + " &" + op_arg.arg_name)
         return args_list
 
@@ -157,7 +157,7 @@ class FunctionsGenerator(BaseGenerator):
         """
         args_list = []
         for op_arg in op_proto.op_args:
-            input_dtype = get_input_dtype(op_arg.arg_dtype, is_optional_param(op_arg))
+            input_dtype = get_input_dtype(op_arg.arg_dtype, is_optional_param(op_arg), op_proto.op_view)
             if has_type:
                 args_list.append("const " + input_dtype + " &" + op_arg.arg_name)
             else:
@@ -194,7 +194,7 @@ class FunctionsGenerator(BaseGenerator):
         """
         args_list = []
         for op_arg in op_proto.op_args:
-            input_dtype = get_input_dtype(op_arg.arg_dtype, is_optional_param(op_arg))
+            input_dtype = get_input_dtype(op_arg.arg_dtype, is_optional_param(op_arg), op_proto.op_view)
             if has_type:
                 args_list.append(f"const {input_dtype} &{op_arg.arg_name}")
             else:

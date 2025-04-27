@@ -22,7 +22,7 @@
 namespace mindspore {
 namespace ops {
 OPS_API TensorStorageInfoPtrList UnstackExtViewCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs);
-
+OPS_API TensorStorageInfoPtrList UnstackExtViewBasicTypeCalc(const tensor::TensorPtr &x_tensor, const int64_t &dim);
 }  // namespace ops
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_OPS_VIEW_UNSTACK_EXT_VIEW_STRIDES_CALC_H_

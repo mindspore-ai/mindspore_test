@@ -29,7 +29,7 @@ from common.op_proto import OpProto
 from . import pyboost_utils
 from .pyboost_utils import get_input_dtype, tuple_input_to_cpp_type, get_return_type, \
     number_input_to_cpp_type, get_const_number_convert, get_tuple_input_convert, is_optional_param, \
-    get_input_args_type_str
+    get_input_args_type_str, basic_type_convert_str
 
 
 class OpTemplateParser:
@@ -46,7 +46,7 @@ class OpTemplateParser:
     def __init__(self, op_proto: OpProto):
         self.op_proto = op_proto
 
-    def _parse_call_args_types(self, op_args):
+    def _parse_call_args_types(self, op_proto, basic_type=False):
         """
         Parses the data types of the call arguments for the operator.
 
@@ -57,13 +57,16 @@ class OpTemplateParser:
             list: A list of data types for the call arguments.
         """
         call_args_types = []
-        for op_arg in op_args:
+        if basic_type and not op_proto.op_view:
+            basic_type = False
+            raise Exception("Only view op support basic type now, please check.")
+        for op_arg in op_proto.op_args:
             is_optional = is_optional_param(op_arg)
             call_args_types.append(get_input_dtype(
-                op_arg.arg_dtype, is_optional))
+                op_arg.arg_dtype, is_optional, basic_type))
         return call_args_types
 
-    def parse_call_args_with_types(self):
+    def parse_call_args_with_types(self, basic_type=False):
         """
         Parses the original call arguments and their types for the operator.
 
@@ -71,7 +74,7 @@ class OpTemplateParser:
             list: A list of formatted strings representing the call arguments with their types.
         """
         call_args = self.parse_original_call_args(self.op_proto.op_args)
-        call_args_types = self._parse_call_args_types(self.op_proto.op_args)
+        call_args_types = self._parse_call_args_types(self.op_proto, basic_type)
         call_args_with_types = []
         for type_name, arg_name in zip(call_args_types, call_args):
             call_args_with_types.append("const " + type_name + " &" + arg_name)
@@ -223,7 +226,7 @@ class OpTemplateParser:
             list: A list of call arguments that are tensors.
         """
         call_args_tensor = []
-        call_args_types = self._parse_call_args_types(self.op_proto.op_args)
+        call_args_types = self._parse_call_args_types(self.op_proto)
         call_args = self.parse_original_call_args(self.op_proto.op_args)
         for _type, arg_name in zip(call_args_types, call_args):
             if _type in ("mindspore::tensor::TensorPtr", "std::optional<mindspore::tensor::TensorPtr>"):
@@ -500,12 +503,20 @@ parse_args.arg_list_[${idx}]))->value());\n"
         if is_tensor_api:
             self_index = self.get_input_tensor_index(op_proto)
         convert_args_str = ""
+        arg_basic_convert_template = Template("parse_args.${convert_func}(${index}), ")
         for idx, op_arg in enumerate(op_proto.op_args):
             if is_tensor_api:
                 if self_index == idx:
                     convert_args_str += "input_tensor, "
                     continue
             is_optional = is_optional_param(op_arg)
+            if op_proto.op_view:
+                convert_func = basic_type_convert_str(op_arg.arg_dtype, False)
+                if convert_func != "":
+                    arg_convert_str = arg_basic_convert_template.replace(convert_func=convert_func,
+                                                                         index=idx)
+                    convert_args_str += arg_convert_str
+                    continue
             arg_convert_template = Template("parse_args.ConvertOptional<${des_type}>(${index}), ") if is_optional \
                                    else Template("parse_args.Convert<${des_type}>(${index}), ")
             if op_arg.is_type_id:

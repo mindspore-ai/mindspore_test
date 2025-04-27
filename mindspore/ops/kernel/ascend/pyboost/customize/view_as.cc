@@ -29,12 +29,9 @@ namespace pyboost {
 void ViewAsAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
                            const TensorPtr &other_tensor) {
   MS_LOG(DEBUG) << op->primitive()->name() << " Call start";
-  std::vector<ValuePtr> shape;
   const ShapeVector &other_shape = other_tensor->shape();
-  std::transform(other_shape.begin(), other_shape.end(), std::back_inserter(shape),
-                 [](int64_t x) { return MakeValue(x); });
   auto reshape_op = CREATE_PYBOOST_OP(Reshape, op->device_context()->device_context_key_.device_name_);
-  reshape_op->Call(input_tensor, std::make_shared<ValueTuple>(shape));
+  reshape_op->Call(input_tensor, other_shape);
   op->set_outputs(reshape_op->outputs());
   MS_LOG(DEBUG) << op->primitive()->name() << " Call end";
 }

@@ -42,8 +42,7 @@ tensor::TensorPtr L1LossBackwardExtAscendCustomize(const std::shared_ptr<OpRunne
   const auto &input_shape = input_tensor->shape();
   const auto &target_shape = target_tensor->shape();
   const auto &expand_shape = op->output_value_simple_info()->shape_vector_[kIndex0];
-  const auto &expand_shape_ptr = ops::ConvertShapeVectorToValueTuple(expand_shape);
-  MS_EXCEPTION_IF_NULL(expand_shape_ptr);
+  const auto &expand_shape_ptr = expand_shape;
 
   auto expand_input_tensor = input_tensor;
   auto expand_target_tensor = target_tensor;

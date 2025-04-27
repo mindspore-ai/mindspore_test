@@ -60,14 +60,14 @@ tensor::TensorPtr ConvTranspose2DAscendCustomize(const std::shared_ptr<OpRunner>
     return output_convolution;
   } else {
     // unsqueeze dim 0
-    static auto dim = std::make_shared<Int64Imm>(0);
+    static auto dim = 0;
     auto expand_dims_op = CREATE_PYBOOST_OP(ExpandDims, op->device_context()->device_context_key_.device_name_);
     auto expand_input = expand_dims_op->Call(input_tensor, dim);
     // call convolution
     auto output_convolution = convolution_op->Call(expand_input, weight_tensor, bias_tensor, stride, padding, dilation,
                                                    transposed, output_padding, groups);
     // squeeze dim 0
-    static auto squeeze_dims = std::make_shared<ValueTuple>(std::vector<ValuePtr>{dim});
+    static std::vector<int64_t> squeeze_dims{dim};
     auto squeeze_op = CREATE_PYBOOST_OP(Squeeze, op->device_context()->device_context_key_.device_name_);
     auto squeeze_output_tensor = squeeze_op->Call(output_convolution, squeeze_dims);
     op->set_outputs(squeeze_op->outputs());

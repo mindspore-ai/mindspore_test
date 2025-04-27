@@ -22,6 +22,11 @@
 #include "ops_utils/op_utils.h"
 
 namespace mindspore::ops {
+TensorStorageInfoPtrList TransposeViewBasicTypeCalc(const PrimitivePtr &prim,
+                                                    const mindspore::tensor::TensorPtr &input_tensor,
+                                                    const std::vector<int64_t> &dims) {
+  return TransposeBasicTypeCalc(prim, input_tensor, dims);
+}
 TensorStorageInfoPtrList TransposeViewCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
   return TransposeCalc(prim, inputs);
 }

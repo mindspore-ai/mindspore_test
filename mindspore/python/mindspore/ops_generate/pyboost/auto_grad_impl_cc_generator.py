@@ -80,24 +80,34 @@ class AutoGradImplGenerator(BaseGenerator):
         Returns:
             str: The generated DoGrad function string.
         """
-        input_args_str = self._get_input_args(op_proto, False, False)
-        input_args_with_optional_str = self._get_input_args(op_proto, False, True)
-        input_args_with_type_str = self._get_input_args(op_proto, True, False)
+        input_args_str = self._get_input_args(op_proto, False, False, op_proto.op_view)
+        input_args_with_optional_str = self._get_input_args(op_proto, False, True, op_proto.op_view)
+        input_args_with_type_str = self._get_input_args(op_proto, True, False, op_proto.op_view)
+        inner_grad_args_with_type = self._get_input_args(op_proto, True, False, False)
         multi_output_str = 'Multi' if is_op_multi_output(op_proto.op_returns) else ''
         view_arg_str = self._get_view_str(op_proto.op_view, input_args_str)
         grad_args_with_type_str = self.do_grad_op_args_with_type.replace(input_args_with_type=input_args_with_type_str)
+        inner_grad_args_with_type =\
+            self.do_grad_op_args_with_type.replace(input_args_with_type=inner_grad_args_with_type)
         op_def_name_str = "g" + op_proto.op_class.name
         bprop_expander = "true" if op_proto.bprop_expander else "false"
+        if not op_proto.op_view:
+            convert_basic_to_value = ''
+        else:
+            input_args_with_optional_str, convert_basic_to_value = self._get_convert_str(op_proto,
+                                                                                         input_args_with_optional_str)
         return self.DO_GRAD_FUNCTION_BODY_TEMPLATE.replace(class_name=op_proto.op_class.name,
+                                                           inner_grad_args_with_type=inner_grad_args_with_type,
                                                            grad_args_with_type=grad_args_with_type_str,
                                                            grad_input_args=input_args_str,
                                                            grad_input_args_with_optional=input_args_with_optional_str,
                                                            is_multi=multi_output_str,
                                                            view_arg=view_arg_str,
                                                            op_def_name=op_def_name_str,
-                                                           bprop_expander=bprop_expander)
+                                                           bprop_expander=bprop_expander,
+                                                           convert_basic_to_value=convert_basic_to_value)
 
-    def _get_input_args(self, op_proto, has_type, with_optional):
+    def _get_input_args(self, op_proto, has_type, with_optional, use_basic_type=False):
         """
         Get the input arguments for the DoGrad function.
 
@@ -110,7 +120,7 @@ class AutoGradImplGenerator(BaseGenerator):
         """
         args_list = []
         for op_arg in op_proto.op_args:
-            input_dtype = get_input_dtype(op_arg.arg_dtype, is_optional_param(op_arg))
+            input_dtype = get_input_dtype(op_arg.arg_dtype, is_optional_param(op_arg), use_basic_type)
             if has_type:
                 args_list.append(f"const {input_dtype} &{op_arg.arg_name}_tensor")
             else:
@@ -119,6 +129,33 @@ class AutoGradImplGenerator(BaseGenerator):
                 else:
                     args_list.append(f"{op_arg.arg_name}_tensor")
         return args_list
+
+    def _get_convert_str(self, op_proto, args_name):
+        """
+        Get the input convert func for the DoGrad function.
+
+        Args:
+            op_proto: The operator prototype.
+            has_type (bool): Whether to include type information for the arguments.
+
+        Returns:
+            list: A list of input arguments for the DoGrad function.
+            list: A list of convert functions.
+        """
+        args_name_list = []
+        convert_funcs = []
+        convert_types = ["tuple[int]", "list[int]", "int"]
+        convert_func_template = Template("const auto &${arg_name} = PackToValue(${input_name});")
+        for op_arg, arg_name in zip(op_proto.op_args, args_name):
+            if op_arg.arg_dtype not in convert_types:
+                args_name_list.append(arg_name)
+                continue
+            out_arg_name = arg_name + "_value"
+            input_name = arg_name
+            convert_funcs.append(convert_func_template.replace(arg_name=out_arg_name,
+                                                               input_name=input_name))
+            args_name_list.append(out_arg_name)
+        return args_name_list, convert_funcs
 
     def _get_view_str(self, is_view_op: bool, grad_args: list):
         """

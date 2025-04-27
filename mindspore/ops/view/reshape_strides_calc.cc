@@ -162,5 +162,11 @@ TensorStorageInfoPtrList ReshapeCalc(const PrimitivePtr &prim, const std::vector
   return ReshapeCalcImpl(old_tensor_info, shape);
 }
 
+TensorStorageInfoPtrList ReshapeBasicTypeCalc(const tensor::TensorPtr &input_tensor,
+                                              const std::vector<int64_t> &shape) {
+  auto old_tensor_info = GetOldTensorInfo(input_tensor);
+  return ReshapeUncontiguousCalcImpl(old_tensor_info, shape);
+}
+
 REG_VIEW_STRIDES_CALC_FUN(Reshape, ReshapeCalc);
 }  // namespace mindspore::ops

@@ -37,7 +37,8 @@ namespace pynative {
     }                                                                 \
   }
 using OpDefConvertFunc = std::function<ValuePtr(const py::object &obj)>;
-
+using OpIntVectorConvertFunc = std::function<std::optional<std::vector<int64_t>>(const py::object &obj)>;
+using OpIntConvertFunc = std::function<std::optional<int64_t>(const py::object &obj)>;
 namespace {
 using OP_DTYPE = mindspore::ops::OP_DTYPE;
 template <typename T, typename U>
@@ -163,10 +164,72 @@ void EnablePipelineForTupleTensor(const ValueTuplePtr &tuple) {
     }
   }
 }
+
+std::optional<std::vector<int64_t>> ConvertIntToIntVector(const py::object &obj) {
+  if (py::isinstance<py::bool_>(obj) || py::isinstance<py::int_>(obj)) {
+    return std::vector<int64_t>({py::cast<int64_t>(obj)});
+  }
+  return std::nullopt;
+}
+
+template <typename T>
+std::optional<std::vector<int64_t>> ConvertIntVector(const py::object &obj) {
+  if (!py::isinstance<T>(obj)) {
+    return std::nullopt;
+  }
+  auto seq = py::cast<T>(obj);
+  size_t size = seq.size();
+  std::vector<int64_t> convert(size);
+  for (size_t i = 0; i < size; ++i) {
+    // bool is also an instance of py::int_
+    if (py::isinstance<py::bool_>(seq[i]) || !py::isinstance<py::int_>(seq[i])) {
+      return std::nullopt;
+    }
+    auto out = py::cast<int64_t>(seq[i]);
+    convert[i] = out;
+  }
+  return convert;
+}
 }  // namespace
 
 Converter::Converter(ops::OpDef *op_def)
     : op_def_(op_def), source_type_(std::vector<ops::OP_DTYPE>(op_def->args_.size())) {}
+
+int64_t Converter::ToBasicInt(const py::list &python_args, size_t i) {
+  const py::object &obj = python_args[i];
+  source_type_[i] = OP_DTYPE::DT_BEGIN;
+  if (py::isinstance<py::bool_>(obj) || py::isinstance<py::int_>(obj)) {
+    return py::cast<int64_t>(obj);
+  }
+  const auto &op_arg = op_def_->args_[i];
+  return ConvertIntByCastDtype(python_args, op_arg, i);
+}
+
+std::optional<int64_t> Converter::ToBasicIntOptional(const py::list &python_args, size_t i) {
+  const py::object &obj = python_args[i];
+  if (py::isinstance<py::none>(obj)) {
+    return std::nullopt;
+  }
+  return std::make_optional(ToBasicInt(python_args, i));
+}
+
+std::vector<int64_t> Converter::ToBasicIntVector(const py::list &python_args, size_t i) {
+  const py::object &obj = python_args[i];
+  auto convert = ConvertIntVector<py::tuple>(obj);
+  if (convert.has_value()) {
+    return convert.value();
+  }
+  const auto &op_arg = op_def_->args_[i];
+  return ConvertIntVectorByCastDtype(python_args, op_arg, i);
+}
+
+std::optional<std::vector<int64_t>> Converter::ToBasicIntVectorOptional(const py::list &python_args, size_t i) {
+  const py::object &obj = python_args[i];
+  if (py::isinstance<py::none>(obj)) {
+    return std::nullopt;
+  }
+  return std::make_optional(ToBasicIntVector(python_args, i));
+}
 
 void Converter::Parse(const py::list &python_args) {
   if (op_def_->args_.size() != python_args.size()) {
@@ -457,6 +520,136 @@ ValuePtr Converter::ConvertByCastDtype(const py::object &input, const ops::OpInp
     }
   }
   return nullptr;
+}
+
+std::optional<std::vector<int64_t>> ConvertTensorToIntVector(const py::object &obj) {
+  auto tensor = tensor::ConvertToTensor(obj);
+  if (tensor == nullptr) {
+    MS_LOG(INFO) << "Can not convert python object with type [" << obj.get_type() << "] to Tensor.";
+    return std::nullopt;
+  }
+
+  auto shape = tensor->shape();
+  if (shape.size() > 1) {
+    MS_LOG(ERROR) << "Only support converting 1-D Tensor or scalar Tensor to sequence. But got the shape of Tensor: "
+                  << shape;
+    return std::nullopt;
+  }
+
+  auto data_type = tensor->data_type();
+  if (data_type != kNumberTypeInt64 && data_type != kNumberTypeInt32) {
+    MS_LOG(ERROR) << "Can not convert Tensor with type " << TypeIdToString(data_type) << "to Int Sequence.";
+    return std::nullopt;
+  }
+  auto size = tensor->DataSize();
+  std::vector<int64_t> value_list;
+  if (tensor->device_address() != nullptr) {
+    tensor->data_sync();
+  }
+  auto data = static_cast<int64_t *>(tensor->data_c());
+  std::transform(data, data + size, std::back_inserter(value_list), [](int64_t num) { return num; });
+  return value_list;
+}
+
+static const std::unordered_map<int32_t, OpIntVectorConvertFunc> kIntVectorConverters = {
+  {parse::CombineTypesForTypeCast(mindspore::ops::DT_INT, mindspore::ops::DT_TUPLE_INT), ConvertIntToIntVector},
+  {parse::CombineTypesForTypeCast(mindspore::ops::DT_INT, mindspore::ops::DT_LIST_INT), ConvertIntToIntVector},
+  {parse::CombineTypesForTypeCast(mindspore::ops::DT_BEGIN, mindspore::ops::DT_TUPLE_INT), ConvertIntVector<py::tuple>},
+  {parse::CombineTypesForTypeCast(mindspore::ops::DT_LIST_INT, mindspore::ops::DT_TUPLE_INT),
+   ConvertIntVector<py::list>},
+  {parse::CombineTypesForTypeCast(mindspore::ops::DT_TENSOR, mindspore::ops::DT_TUPLE_INT), ConvertTensorToIntVector}};
+
+OpIntVectorConvertFunc GetIntVectorConverterByBaseType(int32_t dtype) {
+  auto it = kIntVectorConverters.find(dtype);
+  if (it == kIntVectorConverters.end()) {
+    return nullptr;
+  }
+  return it->second;
+}
+
+std::vector<int64_t> Converter::ConvertIntVectorByCastDtype(const py::list &python_args, const ops::OpInputArg &op_arg,
+                                                            size_t index) {
+  const auto &input = python_args[index];
+  if (!op_arg.cast_dtype_.empty()) {
+    for (auto &cast_dtype : op_arg.cast_dtype_) {
+      OpIntVectorConvertFunc convert_func =
+        GetIntVectorConverterByBaseType(parse::CombineTypesForTypeCast(cast_dtype, op_arg.arg_dtype_));
+      if (convert_func != nullptr) {
+        auto value = convert_func(input);
+        if (value.has_value()) {
+          source_type_[index] = cast_dtype;
+          return value.value();
+        }
+      }
+    }
+  }
+  MS_LOG(EXCEPTION) << "Can't find convert function for "
+                    << PyNativeAlgo::PyParser::BuilidPyInputTypeString(py::reinterpret_borrow<py::object>(input))
+                    << " to vector<int>.";
+}
+
+std::optional<int64_t> ConvertTensorToInt64(const py::object &obj) {
+  auto tensor = parse::ConvertTensorValue(obj);
+  if (tensor == nullptr) {
+    return std::nullopt;
+  }
+  if (tensor->DataSize() != 1) {
+    MS_LOG(ERROR) << "Can only convert tensor with one element to int, but got " << tensor->ToString();
+    return std::nullopt;
+  }
+  if (tensor->data_type() == kNumberTypeInt64) {
+    return static_cast<int64_t>(static_cast<int64_t *>(parse::GetTensorDataPtr(tensor))[0]);
+  } else if (tensor->data_type() == kNumberTypeInt32) {
+    return static_cast<int64_t>(static_cast<int32_t *>(parse::GetTensorDataPtr(tensor))[0]);
+  } else if (tensor->data_type() == kNumberTypeInt16) {
+    return static_cast<int64_t>(static_cast<int16_t *>(parse::GetTensorDataPtr(tensor))[0]);
+  } else if (tensor->data_type() == kNumberTypeInt8) {
+    return static_cast<int64_t>(static_cast<int8_t *>(parse::GetTensorDataPtr(tensor))[0]);
+  } else if (tensor->data_type() == kNumberTypeUInt8) {
+    return static_cast<int64_t>(static_cast<uint8_t *>(parse::GetTensorDataPtr(tensor))[0]);
+  } else {
+    MS_LOG(ERROR) << "Can not convert " << tensor->ToString() << " to int.";
+    return std::nullopt;
+  }
+}
+
+std::optional<int64_t> ConvertToInt64(const py::object &obj) {
+  if (py::isinstance<py::bool_>(obj) || py::isinstance<py::int_>(obj)) {
+    return py::cast<int64_t>(obj);
+  }
+  return std::nullopt;
+}
+
+static const std::unordered_map<int32_t, OpIntConvertFunc> kIntConverters = {
+  {parse::CombineTypesForTypeCast(mindspore::ops::DT_BEGIN, mindspore::ops::DT_INT), ConvertToInt64},
+  {parse::CombineTypesForTypeCast(mindspore::ops::DT_TENSOR, mindspore::ops::DT_INT), ConvertTensorToInt64}};
+
+OpIntConvertFunc GetInConverterByBaseType(int32_t dtype) {
+  auto it = kIntConverters.find(dtype);
+  if (it == kIntConverters.end()) {
+    return nullptr;
+  }
+  return it->second;
+}
+
+int64_t Converter::ConvertIntByCastDtype(const py::list &python_args, const ops::OpInputArg &op_arg, size_t index) {
+  const auto &input = python_args[index];
+  if (!op_arg.cast_dtype_.empty()) {
+    for (auto &cast_dtype : op_arg.cast_dtype_) {
+      OpIntConvertFunc convert_func =
+        GetInConverterByBaseType(parse::CombineTypesForTypeCast(cast_dtype, op_arg.arg_dtype_));
+      if (convert_func != nullptr) {
+        auto value = convert_func(input);
+        if (value.has_value()) {
+          source_type_[index] = cast_dtype;
+          return value.value();
+        }
+      }
+    }
+  }
+  MS_LOG(EXCEPTION) << "Can't find convert function for "
+                    << PyNativeAlgo::PyParser::BuilidPyInputTypeString(py::reinterpret_borrow<py::object>(input))
+                    << " to vector<int>.";
 }
 
 ValueTuplePtr Converter::ConvertValueTupleByCastDtype(const py::list &python_args, const ops::OpInputArg &op_arg,
@@ -1119,6 +1312,40 @@ ValuePtr ParserArgs::ConvertByParseDtype(size_t index) {
     return value;
   }
   return nullptr;
+}
+
+std::vector<int64_t> ParserArgs::ToBasicIntVector(size_t index) {
+  auto src = src_types_[index];
+  auto dst = dst_types_[index];
+  auto convert_func = GetIntVectorConverterByBaseType(parse::CombineTypesForTypeCast(src, dst));
+  if (convert_func == nullptr) {
+    MS_EXCEPTION(NotImplementedError) << "Can't find convert function for src_dtype[" << src << "] and dst_type[" << dst
+                                      << "].";
+  }
+  src_types_[index] = mindspore::ops::DT_BEGIN;
+  auto value = convert_func(arg_list_[index]);
+  if (value.has_value()) {
+    return value.value();
+  }
+  PrintConvertError(index);
+  return {};
+}
+
+int64_t ParserArgs::ToBasicInt(size_t index) {
+  auto src = src_types_[index];
+  auto dst = dst_types_[index];
+  auto convert_func = GetInConverterByBaseType(parse::CombineTypesForTypeCast(src, dst));
+  if (convert_func == nullptr) {
+    MS_EXCEPTION(NotImplementedError) << "Can't find convert function for src_dtype[" << src << "] and dst_type" << dst
+                                      << "].";
+  }
+  src_types_[index] = mindspore::ops::DT_BEGIN;
+  auto value = convert_func(arg_list_[index]);
+  if (value.has_value()) {
+    return value.value();
+  }
+  PrintConvertError(index);
+  return 0;
 }
 
 void ParserArgs::InsertInputTensor(size_t index, const py::object &input) {

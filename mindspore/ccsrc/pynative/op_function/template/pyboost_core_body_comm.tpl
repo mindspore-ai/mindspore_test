@@ -39,8 +39,7 @@ py::object ${func_name}_OP(const PrimitivePtr &prim, const std::vector<ops::OP_D
                 const auto &op_prim = op->primitive();
 
                 // Do mixed precision and implicit cast
-                static const std::vector<std::vector<size_t>> same_type_table{${same_type}};
-                auto [${cast_args}] = PyNativeAlgo::PyBoost::SetPyBoostCastForInputs<${type_num}>(op_run_info, "${class_name}", same_type_table, ${call_args});
+                ${implicit_cast}
 
                 // Run op
                 (void)op->Call(${cast_args});

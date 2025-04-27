@@ -35,14 +35,14 @@ std::tuple<tensor::TensorPtr, tensor::TensorPtr> AdaptiveMaxPool1DAscendCustomiz
   auto origin_shape_dim = SizeToLong(input_shape.size());
 
   // unsqueeze shape
-  std::vector<ValuePtr> expand_input_shape;
+  std::vector<int64_t> expand_input_shape;
   for (auto i = 0; i < origin_shape_dim - 1; i++) {
-    expand_input_shape.emplace_back(std::make_shared<Int64Imm>(input_shape[i]));
+    expand_input_shape.emplace_back(input_shape[i]);
   }
-  expand_input_shape.emplace_back(std::make_shared<Int64Imm>(1));
-  expand_input_shape.emplace_back(std::make_shared<Int64Imm>(input_shape[origin_shape_dim - 1]));
+  expand_input_shape.emplace_back(1);
+  expand_input_shape.emplace_back(input_shape[origin_shape_dim - 1]);
   auto reshape_op = CREATE_PYBOOST_OP(Reshape, op->device_context()->device_context_key_.device_name_);
-  auto input_x_imm = reshape_op->Call(input_x_tensor, std::make_shared<ValueTuple>(expand_input_shape));
+  auto input_x_imm = reshape_op->Call(input_x_tensor, expand_input_shape);
 
   auto output_size_val = ConvertValueTupleToVector<int64_t>(output_size);
   auto output_size_2d = std::make_shared<ValueTuple>(
@@ -57,19 +57,17 @@ std::tuple<tensor::TensorPtr, tensor::TensorPtr> AdaptiveMaxPool1DAscendCustomiz
   // squeeze shape
   auto shape_pool2d = output_adaptive_max_pool2d_tensor->shape();
   auto shape_pool2d_dim = shape_pool2d.size();
-  std::vector<ValuePtr> squeeze_input_shape;
+  std::vector<int64_t> squeeze_input_shape;
   if (shape_pool2d_dim <= kDim2) {
     MS_LOG(EXCEPTION) << "For AdaptiveMaxPool1DAscendCustomize, the value of shape_pool2d.size is invalid.";
   }
   constexpr size_t offset = 2;
   for (size_t i = 0; i < shape_pool2d_dim - offset; i++) {
-    squeeze_input_shape.emplace_back(std::make_shared<Int64Imm>(shape_pool2d[i]));
+    squeeze_input_shape.emplace_back(shape_pool2d[i]);
   }
-  squeeze_input_shape.emplace_back(std::make_shared<Int64Imm>(shape_pool2d[shape_pool2d_dim - 1]));
-  auto output_tensor =
-    reshape_op->Call(output_adaptive_max_pool2d_tensor, std::make_shared<ValueTuple>(squeeze_input_shape));
-  auto output_indices =
-    reshape_op->Call(output_adaptive_max_pool2d_indices, std::make_shared<ValueTuple>(squeeze_input_shape));
+  squeeze_input_shape.emplace_back(shape_pool2d[shape_pool2d_dim - 1]);
+  auto output_tensor = reshape_op->Call(output_adaptive_max_pool2d_tensor, squeeze_input_shape);
+  auto output_indices = reshape_op->Call(output_adaptive_max_pool2d_indices, squeeze_input_shape);
   op->set_outputs({output_tensor, output_indices});
   return std::make_tuple(output_tensor, output_indices);
 }

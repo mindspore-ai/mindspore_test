@@ -32,8 +32,7 @@ tensor::TensorPtr ArgMaxAscendCustomize(const std::shared_ptr<OpRunner> &op, con
   bool keepdim_imm = GetValue<bool>(keepdim);
 
   auto reshape_op = CREATE_PYBOOST_OP(Reshape, op->device_context()->device_context_key_.device_name_);
-  auto input_x_imm = reshape_op->Call(
-    input_x_tensor, std::make_shared<ValueTuple>(std::vector<ValuePtr>({std::make_shared<Int64Imm>(-1)})));
+  auto input_x_imm = reshape_op->Call(input_x_tensor, {-1});
 
   if (dim.has_value()) {
     dim_imm = GetValue<int64_t>(dim.value());

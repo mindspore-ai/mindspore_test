@@ -21,5 +21,10 @@ namespace mindspore::ops {
 TensorStorageInfoPtrList DiagonalViewCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
   return DiagonalCalc(prim, inputs);
 }
+TensorStorageInfoPtrList DiagonalViewBasicTypeCalc(const PrimitivePtr &prim,
+                                                   const mindspore::tensor::TensorPtr &input_tensor,
+                                                   const int64_t &offset, const int64_t &dim1, const int64_t &dim2) {
+  return DiagonalBasicTypeCalc(prim, input_tensor, offset, dim1, dim2);
+}
 REG_TUPLE_OUT_VIEW_STRIDES_CALC_FUN(DiagonalView, DiagonalViewCalc);
 }  // namespace mindspore::ops

@@ -29,6 +29,8 @@ namespace kernel {
 namespace pyboost {
 std::vector<tensor::TensorPtr> MeshgridGPUCustomize(const std::shared_ptr<OpRunner> &op,
                                                     const ValueTuplePtr &tensors_list, const Int64ImmPtr &indexing);
+std::vector<tensor::TensorPtr> MeshgridGPUCustomize(const std::shared_ptr<OpRunner> &op,
+                                                    const ValueTuplePtr &tensors_list, const int64_t &indexing);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

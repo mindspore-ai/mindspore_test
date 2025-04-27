@@ -240,6 +240,8 @@ PYBOOST_ASCEND_SINGLE_HCLL_OP_HEADER_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR,
                  f'./{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/template/pyboost_aclnn_single_hccl_op_header_template.tpl'))
 
+PYBOOST_CALL_FUNC_TEMPLATE = Template('${return_type} Call(${call_args_with_type}) override;')
+
 PYBOOST_ASCEND_SINGLE_OP_SOURCE_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR,
                  f'./{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/template/pyboost_aclnn_single_op_source_template.tpl'))

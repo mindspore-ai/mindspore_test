@@ -101,8 +101,8 @@ class PyboostFunctionsHeaderGenerator(BaseGenerator):
         for _, op_arg in enumerate(op_proto.op_args):
             is_optional = is_optional_param(op_arg)
             if op_arg.is_type_id:
-                arg_type_str = get_input_args_type_str('type', is_optional)
+                arg_type_str = get_input_args_type_str('type', is_optional, op_proto.op_view)
             else:
-                arg_type_str = get_input_args_type_str(op_arg.arg_dtype, is_optional)
+                arg_type_str = get_input_args_type_str(op_arg.arg_dtype, is_optional, op_proto.op_view)
             parser_func_str += self.input_args_template.replace(arg_name=op_arg.arg_name, arg_type=arg_type_str)
         return parser_func_str[:-1]
