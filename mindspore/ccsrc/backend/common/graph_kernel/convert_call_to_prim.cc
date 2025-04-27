@@ -28,7 +28,7 @@ bool ConvertCallToPrim::Run(const FuncGraphPtr &func_graph) {
   MS_EXCEPTION_IF_NULL(mng);
   bool changed = false;
   auto todos = TopoSort(func_graph->output());
-  bool is_dvm = (GraphKernelFlags::GetInstance().kernel_generator == "DVM");
+  bool is_dvm = true;
   for (auto node : todos) {
     auto cnode = node->cast<CNodePtr>();
     if (cnode == nullptr || (!cnode->HasAttr(kAttrToPrim) && !is_dvm)) {

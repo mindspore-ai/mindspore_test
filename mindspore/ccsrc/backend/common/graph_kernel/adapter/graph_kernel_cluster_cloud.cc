@@ -428,6 +428,9 @@ std::vector<PrimitivePtr> StaticShapeCluster::GetClusterOps() {
         }
       }
     }
+    if (cb->GetTargetFromContext() == kAscendDevice) {
+      clusterable_ops = clusterable_ops_with_level_dvm;
+    }
   } else if (flags.kernel_generator == "DVM") {
     clusterable_ops = clusterable_ops_with_level_dvm;
   } else {

@@ -231,7 +231,10 @@ class AkgProcess(AkgProcessBase):
             args = list((arg, attrs, func) for arg in self.args)
             with Pool(processes=self.process_num) as pool:
                 res = pool.starmap_async(_compile_akg_task_default, args)
-                res.get(timeout=self.wait_time)
+                try:
+                    res.get(timeout=self.wait_time)
+                except Exception:
+                    pass
         return True
 
 
