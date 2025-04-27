@@ -76,8 +76,7 @@ void GenerateRandomsParallel(std::uint64_t input_seed, T *buf, size_t buf_size, 
   // Generate random seed if required.
   std::uint64_t seed = input_seed;
   if (seed == 0) {
-    std::random_device rd;
-    seed = rd();
+    MS_LOG(INFO) << "The input seed for GenerateRandomsParallel is 0.";
   }
 
   if (task_num == 1) {
