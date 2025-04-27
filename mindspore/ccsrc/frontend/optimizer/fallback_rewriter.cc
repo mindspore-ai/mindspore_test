@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -2289,6 +2289,32 @@ class AfterOptARewriter : public BaseRewriter {
     return ellipsis_execute_node;
   }
 
+  // Do not convert None to PyExectue
+  // make_tuple = MakeTuple(xx, None, ...)
+  // u2 = UpdateState(u1, make_tuple)
+  bool CheckNoneUsers(const FuncGraphPtr &fg, const ValueNodePtr &value_node) {
+    MS_EXCEPTION_IF_NULL(fg);
+    auto manager = Manage(fg, false);
+    MS_EXCEPTION_IF_NULL(manager);
+    const auto &node_users = manager->node_users();
+    auto found = node_users.find(value_node);
+    if (found == node_users.end()) {
+      return false;
+    }
+    for (auto &user : found->second) {
+      auto user_node = dyn_cast<CNode>(user.first);
+      if (IsPrimitiveCNode(user_node, prim::kPrimMakeTuple)) {
+        auto node_users_iter = node_users.find(user_node);
+        if (node_users_iter == node_users.end()) {
+          return false;
+        }
+        return std::all_of(node_users_iter->second.begin(), node_users_iter->second.end(),
+                           [](const auto &pair) { return IsPrimitiveCNode(pair.first, prim::kPrimUpdateState); });
+      }
+    }
+    return false;
+  }
+
   AnfNodePtr GetPyExecuteFromValue(const FuncGraphPtr &fg, const ValueNodePtr &value_node, const ValuePtr &value,
                                    bool py_execute_input) {
     MS_EXCEPTION_IF_NULL(fg);
@@ -2298,6 +2324,10 @@ class AfterOptARewriter : public BaseRewriter {
       constexpr auto vmap_prefix = "VmapRule";
       if (value_node->scope() != nullptr &&
           value_node->scope()->name().compare(0, strlen(vmap_prefix), vmap_prefix) == 0) {
+        return value_node;
+      }
+      // None only used by MakeTuple, and is not the result of func_graph.
+      if (CheckNoneUsers(fg, value_node)) {
         return value_node;
       }
       return ConvertNoneToPyExecute(fg);
