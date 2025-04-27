@@ -59,6 +59,13 @@ class PyboostFunctionsGenerator(BaseGenerator):
             'auto ${output} = PyNativeAlgo::Common::ConvertStubNodeToValueTuple(${input}, ${need_contiguous}, '
             'op_run_info->requires_grad);\n'
         )
+        self.implicit_cast_template = Template(
+            '// Do mixed precision and implicit cast\n' \
+            'static const std::vector<std::vector<size_t>> same_type_table{${same_type}};\n' \
+            'auto [${cast_args}] =\n'\
+            '   PyNativeAlgo::PyBoost::SetPyBoostCastForInputs<${type_num}>(op_run_info, same_type_table, \
+${call_args});\n'
+        )
         self.convert_template = Template("auto $arg_name = converter.${convert_func}(args, $arg_index);\n")
         self.input_args_template = Template(" const ${arg_type}& ${arg_name},")
         self.PYBOOST_FUNCTION_TEMPLATE = template.PYBOOST_FUNCTION_TEMPLATE
@@ -109,16 +116,23 @@ class PyboostFunctionsGenerator(BaseGenerator):
             multi_ouptut_str = 'Multi' if is_op_multi_output(op_proto.op_returns) else ''
             output_num_str = len(op_proto.op_returns)
             function_tpl = self._get_function_tpl(op_proto)
+            if op_proto.op_view:
+                implicit_cast_str = ''
+                cast_args_str = call_args_str
+            else:
+                implicit_cast_str = self.implicit_cast_template.replace(cast_args=cast_args_str,
+                                                                        type_num=type_num,
+                                                                        call_args=call_args_str,
+                                                                        same_type=same_type)
             pyboost_func_str += function_tpl.replace(func_name=op_pyboost_func_name,
                                                      op_def_name=op_def_name_str,
-                                                     type_num=type_num,
-                                                     same_type=same_type,
                                                      input_args=op_input_args_str,
                                                      parser_body=parser_body_str,
                                                      op_name=op_proto.op_class.name,
                                                      class_name=op_proto.op_class.name,
                                                      op_args=op_args_str,
                                                      convert_stub=convert_stub_str,
+                                                     implicit_cast=implicit_cast_str,
                                                      optional_to_value=optional_to_value_str,
                                                      call_args=call_args_str,
                                                      grad_args=grad_args_str,
@@ -151,7 +165,7 @@ class PyboostFunctionsGenerator(BaseGenerator):
     def _get_cast_args_with_type_str(self, op_proto, cast_args_str):
         args_with_type = []
         for op_arg, cast_args_name in zip(op_proto.op_args, cast_args_str):
-            input_dtype = get_input_dtype(op_arg.arg_dtype, is_optional_param(op_arg))
+            input_dtype = get_input_dtype(op_arg.arg_dtype, is_optional_param(op_arg), op_proto.op_view)
             args_with_type.append("const " + input_dtype + " &" + cast_args_name)
         return list(args_with_type)
 
@@ -192,9 +206,9 @@ class PyboostFunctionsGenerator(BaseGenerator):
         for index, op_arg in enumerate(op_proto.op_args):
             is_optional = is_optional_param(op_arg)
             if op_arg.is_type_id:
-                convert_type_str = get_convert_type_str('type', is_optional)
+                convert_type_str = get_convert_type_str('type', is_optional, op_proto.op_view)
             else:
-                convert_type_str = get_convert_type_str(op_arg.arg_dtype, is_optional)
+                convert_type_str = get_convert_type_str(op_arg.arg_dtype, is_optional, op_proto.op_view)
 
             parser_func_str += self.convert_template.replace(arg_name=op_arg.arg_name, convert_func=convert_type_str,
                                                              arg_index=pyboost_utils.get_index(index))
@@ -215,9 +229,9 @@ class PyboostFunctionsGenerator(BaseGenerator):
         for _, op_arg in enumerate(op_proto.op_args):
             is_optional = is_optional_param(op_arg)
             if op_arg.is_type_id:
-                arg_type_str = get_input_args_type_str('type', is_optional)
+                arg_type_str = get_input_args_type_str('type', is_optional, op_proto.op_view)
             else:
-                arg_type_str = get_input_args_type_str(op_arg.arg_dtype, is_optional)
+                arg_type_str = get_input_args_type_str(op_arg.arg_dtype, is_optional, op_proto.op_view)
             parser_func_str += self.input_args_template.replace(arg_name=op_arg.arg_name, arg_type=arg_type_str)
         return parser_func_str[:-1]
 

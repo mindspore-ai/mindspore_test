@@ -28,9 +28,15 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-
 std::vector<tensor::TensorPtr> MeshgridCustomizeCall(const std::shared_ptr<OpRunner> &op,
                                                      const ValueTuplePtr &tensors_list, const Int64ImmPtr &indexing,
+                                                     const string &device_type) {
+  ops::Indexing indexing_imm = static_cast<ops::Indexing>(GetValue<int64_t>(indexing));
+  return MeshgridCustomizeCall(op, tensors_list, indexing_imm, device_type);
+}
+
+std::vector<tensor::TensorPtr> MeshgridCustomizeCall(const std::shared_ptr<OpRunner> &op,
+                                                     const ValueTuplePtr &tensors_list, const int64_t &indexing_imm,
                                                      const string &device_type) {
   MS_LOG(DEBUG) << "Meshgrid call start";
   std::vector<TensorPtr> tensors_list_vector;
@@ -51,8 +57,6 @@ std::vector<tensor::TensorPtr> MeshgridCustomizeCall(const std::shared_ptr<OpRun
                    "For Primitive [Meshgrid], all tensors should have the same type.");
   }
 
-  ops::Indexing indexing_imm = static_cast<ops::Indexing>(GetValue<int64_t>(indexing));
-
   bool swap_tensors = false;
   const size_t MIN_SWAP_SIZE = 2;
   if (indexing_imm == ops::Indexing::XY && tensors_list_vector.size() >= MIN_SWAP_SIZE) {
@@ -61,31 +65,31 @@ std::vector<tensor::TensorPtr> MeshgridCustomizeCall(const std::shared_ptr<OpRun
   }
 
   std::vector<tensor::TensorPtr> view_outputs;
-  auto view_shape_list = std::vector<ValuePtr>(tensors_list_vector.size(), std::make_shared<Int64Imm>(1));
+  auto view_shape_list = std::vector<int64_t>(tensors_list_vector.size(), 1);
   for (size_t i = 0; i < tensors_list_vector.size(); ++i) {
-    view_shape_list[i] = std::make_shared<Int64Imm>(-1);
+    view_shape_list[i] = -1;
     auto view_op = CREATE_PYBOOST_OP(View, device_type);
-    view_op->Call(tensors_list_vector[i], std::make_shared<ValueTuple>(view_shape_list));
+    view_op->Call(tensors_list_vector[i], view_shape_list);
     view_outputs.push_back(view_op->outputs()[kIndex0]);
-    view_shape_list[i] = std::make_shared<Int64Imm>(1);
+    view_shape_list[i] = 1;
   }
 
-  std::vector<ValuePtr> output_shape_list;
+  std::vector<int64_t> output_shape_list;
   const int64_t SCALAR_TO_TENSOR_SIZE = 1;
   //   ShapeVector outputs_shape;
   for (auto tensor : tensors_list_vector) {
     const auto &input_shape = tensor->shape();
     if (input_shape.empty()) {
-      output_shape_list.push_back(std::make_shared<Int64Imm>(SCALAR_TO_TENSOR_SIZE));
+      output_shape_list.push_back(SCALAR_TO_TENSOR_SIZE);
     } else {
-      output_shape_list.push_back(std::make_shared<Int64Imm>(input_shape[kIndex0]));
+      output_shape_list.push_back(input_shape[kIndex0]);
     }
   }
 
   std::vector<tensor::TensorPtr> broadcast_to_outputs;
   for (auto view_tensor : view_outputs) {
     auto broadcast_to_op = CREATE_PYBOOST_OP(BroadcastTo, device_type);
-    broadcast_to_op->Call(view_tensor, std::make_shared<ValueTuple>(output_shape_list));
+    broadcast_to_op->Call(view_tensor, output_shape_list);
     broadcast_to_outputs.push_back(broadcast_to_op->outputs()[kIndex0]);
   }
 

@@ -62,13 +62,13 @@ tensor::TensorPtr Conv1DExtAscendCustomize(const std::shared_ptr<OpRunner> &op, 
     op->set_outputs(convolution_op->outputs());
     return output_imm;
   } else {
-    std::vector<ValuePtr> expand_input_shape;
-    expand_input_shape.insert(expand_input_shape.begin(), std::make_shared<Int64Imm>(1));
+    std::vector<int64_t> expand_input_shape;
+    expand_input_shape.insert(expand_input_shape.begin(), 1);
     std::transform(input_shape.begin(), input_shape.end(), std::back_inserter(expand_input_shape),
-                   [](int64_t e) { return std::make_shared<Int64Imm>(e); });
+                   [](int64_t e) { return e; });
 
     auto reshape_op = CREATE_PYBOOST_OP(Reshape, op->device_context()->device_context_key_.device_name_);
-    auto expand_input_x_imm = reshape_op->Call(input_tensor, std::make_shared<ValueTuple>(expand_input_shape));
+    auto expand_input_x_imm = reshape_op->Call(input_tensor, expand_input_shape);
 
     auto output_imm = convolution_op->Call(expand_input_x_imm, weight_tensor, bias_tensor, stride, pad, dilation,
                                            transposed_imm, output_padding_vector_1d_imm, group);

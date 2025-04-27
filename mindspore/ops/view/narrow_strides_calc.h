@@ -22,8 +22,10 @@
 
 namespace mindspore {
 namespace ops {
-
-MS_CORE_API TensorStorageInfoPtrList NarrowCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs);
+OPS_API TensorStorageInfoPtrList NarrowBasicTypeCalc(const PrimitivePtr &prim,
+                                                     const mindspore::tensor::TensorPtr &input_tensor,
+                                                     const int64_t &dim, const int64_t &start, const int64_t &length);
+OPS_API TensorStorageInfoPtrList NarrowCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs);
 
 }  // namespace ops
 }  // namespace mindspore

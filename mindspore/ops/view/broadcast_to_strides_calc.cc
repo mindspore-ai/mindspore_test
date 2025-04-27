@@ -108,6 +108,12 @@ TensorStorageInfoPtrList BroadCastToProcess(const PrimitivePtr &prim, const tens
   return BroadCastToStrideCalc(old_tensor_info, input_x);
 }
 
+TensorStorageInfoPtrList BroadcastToBasicTypeCalc(const PrimitivePtr &prim,
+                                                  const mindspore::tensor::TensorPtr &input_tensor,
+                                                  const std::vector<int64_t> &shape) {
+  return BroadCastToProcess(prim, input_tensor, shape);
+}
+
 TensorStorageInfoPtrList BroadcastToCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
   if (!inputs[kInputIndex0]->isa<tensor::Tensor>()) {
     return {};

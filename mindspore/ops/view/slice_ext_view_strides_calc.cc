@@ -22,6 +22,11 @@
 #include "view/slice_ext_view_strides_calc.h"
 
 namespace mindspore::ops {
+TensorStorageInfoPtrList SliceExtViewBasicTypeCalc(const PrimitivePtr &prim,
+                                                   const mindspore::tensor::TensorPtr &input_tensor, const int64_t &dim,
+                                                   const int64_t &start, const int64_t &end, const int64_t &step) {
+  return SliceExtBasicTypeCalc(prim, input_tensor, dim, start, end, step);
+}
 TensorStorageInfoPtrList SliceExtViewCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
   return SliceExtCalc(prim, inputs);
 }

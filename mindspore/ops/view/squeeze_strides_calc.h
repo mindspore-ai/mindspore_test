@@ -22,6 +22,9 @@
 
 namespace mindspore {
 namespace ops {
+OPS_API TensorStorageInfoPtrList SqueezeBasicTypeCalc(const PrimitivePtr &prim,
+                                                      const mindspore::tensor::TensorPtr &input_tensor,
+                                                      const std::vector<int64_t> &axis);
 OPS_API TensorStorageInfoPtrList SqueezeCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs);
 }  // namespace ops
 }  // namespace mindspore

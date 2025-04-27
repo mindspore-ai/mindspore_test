@@ -53,17 +53,8 @@ void SliceInputsCheck(const PrimitivePtr &prim, const std::vector<int64_t> &tens
   }
 }
 
-TensorStorageInfoPtrList SliceCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  if (CheckInputsNull(inputs, kSliceInputsNum) || !inputs[kInputIndex0]->isa<tensor::Tensor>()) {
-    MS_LOG(EXCEPTION) << "inputs num is invalid, num:" << inputs.size();
-  }
-
-  if (!inputs[kInputIndex1]->isa<ValueSequence>() || !inputs[kInputIndex2]->isa<ValueSequence>()) {
-    return {};
-  }
-
-  auto input_tensor = inputs[kInputIndex0]->cast<tensor::TensorPtr>();
-  MS_EXCEPTION_IF_NULL(input_tensor);
+TensorStorageInfoPtrList SliceBasicTypeCalc(const PrimitivePtr &prim, const mindspore::tensor::TensorPtr &input_tensor,
+                                            const std::vector<int64_t> &begin, const std::vector<int64_t> &size) {
   auto input_type = input_tensor->Dtype();
   (void)CheckAndConvertUtils::CheckTypeValid("input", input_type, common_valid_types_with_complex_and_bool,
                                              prim->name());
@@ -72,9 +63,6 @@ TensorStorageInfoPtrList SliceCalc(const PrimitivePtr &prim, const std::vector<V
   auto old_shape = old_tensor_info->old_shape;
   auto old_strides = old_tensor_info->old_strides;
   auto old_storage_offset = old_tensor_info->old_offset;
-
-  auto begin = GetValue<std::vector<int64_t>>(inputs[kInputIndex1]);
-  auto size = GetValue<std::vector<int64_t>>(inputs[kInputIndex2]);
   SliceInputsCheck(prim, old_shape, begin, size);
 
   auto new_shape = size;
@@ -92,6 +80,22 @@ TensorStorageInfoPtrList SliceCalc(const PrimitivePtr &prim, const std::vector<V
     std::make_shared<TensorStorageInfo>(new_shape, new_strides, new_storage_offset, old_tensor_info->ori_shape,
                                         old_tensor_info->ori_strides, IsContiguous(new_shape, new_strides));
   return {new_storage_info};
+}
+
+TensorStorageInfoPtrList SliceCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
+  if (CheckInputsNull(inputs, kSliceInputsNum) || !inputs[kInputIndex0]->isa<tensor::Tensor>()) {
+    MS_LOG(EXCEPTION) << "inputs num is invalid, num:" << inputs.size();
+  }
+
+  if (!inputs[kInputIndex1]->isa<ValueSequence>() || !inputs[kInputIndex2]->isa<ValueSequence>()) {
+    return {};
+  }
+
+  auto input_tensor = inputs[kInputIndex0]->cast<tensor::TensorPtr>();
+  MS_EXCEPTION_IF_NULL(input_tensor);
+  auto begin = GetValue<std::vector<int64_t>>(inputs[kInputIndex1]);
+  auto size = GetValue<std::vector<int64_t>>(inputs[kInputIndex2]);
+  return SliceBasicTypeCalc(prim, input_tensor, begin, size);
 }
 
 REG_VIEW_STRIDES_CALC_FUN(Slice, SliceCalc);

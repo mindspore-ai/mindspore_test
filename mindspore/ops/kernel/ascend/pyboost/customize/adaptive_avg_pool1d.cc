@@ -39,14 +39,14 @@ tensor::TensorPtr AdaptiveAvgPool1DAscendCustomize(const std::shared_ptr<OpRunne
   auto origin_shape_dim = SizeToLong(input_shape.size());
 
   // unsqueeze shape
-  std::vector<ValuePtr> expand_input_shape;
+  std::vector<int64_t> expand_input_shape;
   for (auto i = 0; i < origin_shape_dim - 1; i++) {
-    expand_input_shape.emplace_back(std::make_shared<Int64Imm>(input_shape[i]));
+    expand_input_shape.emplace_back(input_shape[i]);
   }
-  expand_input_shape.emplace_back(std::make_shared<Int64Imm>(1));
-  expand_input_shape.emplace_back(std::make_shared<Int64Imm>(input_shape[origin_shape_dim - 1]));
+  expand_input_shape.emplace_back(1);
+  expand_input_shape.emplace_back(input_shape[origin_shape_dim - 1]);
   auto reshape_op = CREATE_PYBOOST_OP(Reshape, op->device_context()->device_context_key_.device_name_);
-  auto input_x_imm = reshape_op->Call(input_x_tensor, std::make_shared<ValueTuple>(expand_input_shape));
+  auto input_x_imm = reshape_op->Call(input_x_tensor, expand_input_shape);
 
   auto output_size_val = ConvertValueTupleToVector<int64_t>(output_size);
   auto output_size_2d = std::make_shared<ValueTuple>(

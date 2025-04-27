@@ -241,7 +241,7 @@ void PyBoostUtils::CreateOutputTensor(const DeviceContext *device_context, const
   output_tensor->set_contiguous_callback(
     [](const DeviceSyncPtr &device_address) -> DeviceSyncPtr { return ContiguousByDeviceAddress(device_address); });
 
-  auto input_device_address = std::dynamic_pointer_cast<device::DeviceAddress>(input->device_address());
+  auto input_device_address = std::static_pointer_cast<device::DeviceAddress>(input->device_address());
   MS_EXCEPTION_IF_NULL(input_device_address);
   input_device_address->set_is_view(true);
 

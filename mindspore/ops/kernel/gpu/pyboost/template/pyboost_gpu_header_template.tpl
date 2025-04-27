@@ -31,6 +31,7 @@ class ${op_name}GPU : public pyboost::${op_name} {
   ~${op_name}GPU() = default;
 
   ${return_type} Call(${call_args_with_type}) override;
+  ${basic_type_func}
 };
 }  // namespace pyboost
 }  // namespace kernel

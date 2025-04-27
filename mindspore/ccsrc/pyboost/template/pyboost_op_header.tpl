@@ -30,6 +30,7 @@ class PYBOOST_API ${op_name} : public pyboost::OpRunner {
   ~${op_name}() override = default;
 
   virtual ${return_type} Call(${call_args}) = 0;
+  ${basic_type_func}
   ${output_is_tuple}
 
  protected:

@@ -47,8 +47,7 @@ tensor::TensorPtr MSELossExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
     expand_shape = ops::CalBroadCastShapeV3(input_shape, target_shape);
   }
 
-  const ValueTuplePtr &expand_shape_ptr = ops::ConvertShapeVectorToValueTuple(expand_shape);
-  MS_EXCEPTION_IF_NULL(expand_shape_ptr);
+  const auto &expand_shape_vec = expand_shape;
 
   TensorPtr input_tensor_bd = input_tensor;
   TensorPtr target_tensor_bd = target_tensor;
@@ -56,12 +55,12 @@ tensor::TensorPtr MSELossExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
   if (input_shape != expand_shape) {
     const auto &broadcast_to_op =
       CREATE_PYBOOST_OP(BroadcastTo, op->device_context()->device_context_key_.device_name_);
-    input_tensor_bd = broadcast_to_op->Call(input_tensor, expand_shape_ptr);
+    input_tensor_bd = broadcast_to_op->Call(input_tensor, expand_shape_vec);
   }
   if (target_shape != expand_shape) {
     const auto &broadcast_to_op =
       CREATE_PYBOOST_OP(BroadcastTo, op->device_context()->device_context_key_.device_name_);
-    target_tensor_bd = broadcast_to_op->Call(target_tensor, expand_shape_ptr);
+    target_tensor_bd = broadcast_to_op->Call(target_tensor, expand_shape_vec);
   }
 
   // No need to convert input

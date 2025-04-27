@@ -15,12 +15,7 @@ py::object PYNATIVE_EXPORT ${func_name}_OP(const PrimitivePtr &prim, const std::
 
         // stub tensor to tensor.
         ${convert_stub}
-
-        // Do mixed precision and implicit cast
-        static const std::vector<std::vector<size_t>> same_type_table{${same_type}};
-        auto[${cast_args}] =
-            PyNativeAlgo::PyBoost::SetPyBoostCastForInputs<${type_num}>(op_run_info, same_type_table, ${call_args});
-
+        ${implicit_cast}
         kernel::pyboost::OpRunStatus::Get().set_run_info(
             kernel::pyboost::OpStatus(op_run_info->async_status.disable_mix_precision,
                                       op_run_info->async_status.is_jit_compiling,
@@ -61,7 +56,7 @@ py::object PYNATIVE_EXPORT ${func_name}(const py::args &args) {
   }
   const auto &prim = PyNativeAlgo::PyBoost::ConvertPrimitive(args[0]);
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunOp,
-                                     prim->name(), false, true);
+                                     "${class_name}", false, true);
   auto res = ${func_name}_Base(prim, args[1]);
   trace::Capture(args, &res);
   return res;

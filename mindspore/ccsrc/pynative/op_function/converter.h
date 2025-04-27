@@ -141,6 +141,9 @@ struct PYNATIVE_EXPORT ParserArgs {
   void ClearArgs();
   const int &GetOvertLoadIndex() { return signature_->index_; }
   void PrintConvertError(size_t index);
+  // convert to basic type
+  std::vector<int64_t> ToBasicIntVector(size_t index);
+  int64_t ToBasicInt(size_t index);
 
   template <typename T>
   std::shared_ptr<T> Convert(size_t index) {
@@ -241,7 +244,15 @@ class PYNATIVE_EXPORT Converter {
   std::optional<Int64ImmPtr> ToDtypeOptional(const py::list &python_args, size_t i);
   ValuePtr ConvertByCastDtype(const py::object &input, const ops::OpInputArg &op_arg, size_t i);
   ValueTuplePtr ConvertValueTupleByCastDtype(const py::list &python_args, const ops::OpInputArg &op_arg, size_t index);
+  std::vector<int64_t> ConvertIntVectorByCastDtype(const py::list &python_args, const ops::OpInputArg &op_arg,
+                                                   size_t index);
+  int64_t ConvertIntByCastDtype(const py::list &python_args, const ops::OpInputArg &op_arg, size_t index);
   const std::vector<ops::OP_DTYPE> &source_type() const { return source_type_; }
+  // basic type
+  int64_t ToBasicInt(const py::list &python_args, size_t i);
+  std::optional<int64_t> ToBasicIntOptional(const py::list &python_args, size_t i);
+  std::vector<int64_t> ToBasicIntVector(const py::list &python_args, size_t i);
+  std::optional<std::vector<int64_t>> ToBasicIntVectorOptional(const py::list &python_args, size_t i);
 
  private:
   ops::OpDefPtr op_def_;

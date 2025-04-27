@@ -25,7 +25,6 @@ constexpr size_t kSliceExtInputsNum = 5;
 }
 
 namespace mindspore::ops {
-
 TensorStorageInfoPtrList SliceExtStridesCalc(const OldTensorInfoPtr old_tensor_info, const int64_t ori_dim,
                                              const int64_t ori_start, const int64_t ori_end, const int64_t step) {
   MS_CHECK_VALUE(step > 0, "slice step must be positive");
@@ -67,6 +66,13 @@ TensorStorageInfoPtrList SliceExtStridesCalc(const OldTensorInfoPtr old_tensor_i
     std::make_shared<TensorStorageInfo>(new_shape, new_strides, new_storage_offset, old_tensor_info->ori_shape,
                                         old_tensor_info->ori_strides, IsContiguous(new_shape, new_strides));
   return {new_storage_info};
+}
+
+TensorStorageInfoPtrList SliceExtBasicTypeCalc(const PrimitivePtr &prim,
+                                               const mindspore::tensor::TensorPtr &input_tensor, const int64_t &dim,
+                                               const int64_t &start, const int64_t &end, const int64_t &step) {
+  auto old_tensor_info = GetOldTensorInfo(input_tensor);
+  return SliceExtStridesCalc(old_tensor_info, dim, start, end, step);
 }
 
 TensorStorageInfoPtrList SliceExtCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
