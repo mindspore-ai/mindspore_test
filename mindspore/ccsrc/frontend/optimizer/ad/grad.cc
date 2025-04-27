@@ -258,14 +258,23 @@ bool IsViewOutput(const AnfNodePtr &node) {
   return false;
 }
 
-std::map<AnfNodePtr, AnfNodePtr> GetNeedGradMapForUpdateStateUseOnlyNodes(const FuncGraphPtr &func_graph) {
+void GetNeedGradMapForUpdateStateUseOnlyNodes(const FuncGraphPtr &func_graph,
+                                              std::map<AnfNodePtr, AnfNodePtr> *need_grad_map) {
   auto all_nodes = TopoSort(func_graph->get_return());
   const auto &mgr = func_graph->manager();
   MS_EXCEPTION_IF_NULL(mgr);
   const auto &node_users_map = mgr->node_users();
 
-  std::map<AnfNodePtr, AnfNodePtr> need_grad_map{};
   for (size_t i = 0; i < all_nodes.size(); ++i) {
+    // is call func
+    auto cnode = all_nodes[i]->cast<CNodePtr>();
+    if (cnode != nullptr && IsValueNode<FuncGraph>(cnode->input(0))) {
+      FuncGraphPtr sub_graph = GetValueNode<FuncGraphPtr>(cnode->input(0));
+      MS_EXCEPTION_IF_NULL(sub_graph);
+      GetNeedGradMapForUpdateStateUseOnlyNodes(sub_graph, need_grad_map);
+      continue;
+    }
+
     // is inplace node
     if (IsInplaceNode(all_nodes[i]) && UpdateStateUseOnly(all_nodes[i], node_users_map)) {
       auto inplace_node = all_nodes[i]->cast<CNodePtr>();
@@ -277,15 +286,14 @@ std::map<AnfNodePtr, AnfNodePtr> GetNeedGradMapForUpdateStateUseOnlyNodes(const 
       for (auto index : rw_write_input_indexes) {
         auto inplace_input = inplace_node->input(index + 1);
         if (IsViewOutput(inplace_input)) {
-          need_grad_map[inplace_input] = all_nodes[i];
+          (*need_grad_map)[inplace_input] = all_nodes[i];
         } else {
-          need_grad_map[inplace_node] = all_nodes[i];
+          (*need_grad_map)[inplace_node] = all_nodes[i];
         }
         all_nodes[i]->set_user_data<bool>(kNeedGradFlag, std::make_shared<bool>(false));
       }
     }
   }
-  return need_grad_map;
 }
 
 void SetFlagInner(const AnfNodePtr &node, const std::map<AnfNodePtr, AnfNodePtr> &need_grad_map) {
@@ -323,6 +331,12 @@ void SetFlagInner(const AnfNodePtr &node, const std::map<AnfNodePtr, AnfNodePtr>
     if (input->isa<CNode>()) {
       SetFlagInner(input, need_grad_map);
     }
+    if (IsValueNode<FuncGraph>(input)) {
+      FuncGraphPtr sub_graph = GetValueNode<FuncGraphPtr>(input);
+      MS_EXCEPTION_IF_NULL(sub_graph);
+      auto sub_graph_out = sub_graph->output();
+      SetFlagInner(sub_graph_out, need_grad_map);
+    }
   }
 }
 
@@ -346,7 +360,8 @@ FuncGraphPtr GradOneFuncGraph(const FuncGraphPtr &func_graph, const opt::Optimiz
 
   if (is_view_inplace) {
     CheckViewInplaceOutput(func_graph);
-    auto need_grad_map = GetNeedGradMapForUpdateStateUseOnlyNodes(func_graph);
+    std::map<AnfNodePtr, AnfNodePtr> need_grad_map{};
+    GetNeedGradMapForUpdateStateUseOnlyNodes(func_graph, &need_grad_map);
     SetFlagForInplaceNodesUpdateStateUseOnly(func_graph, need_grad_map);
   }
   auto gradkv = func_graph->transforms().find("grad");
