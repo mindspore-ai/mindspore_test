@@ -17,8 +17,8 @@
         Tensor，与输入的tensor数学等价。
 
     异常：
-        - **TypeError** - Reshard的第一个输入参数需要是Tensor类型，但是当前为 `type(tensor)` 类型。
-        - **TypeError** - Reshard只支持输入mindspore.parallel.Layout类型作为layout参数，但当前为 `type(layout)` 类型。
+        - **TypeError** - 输入参数 `tensor` 不是mindspore.Tensor类型。
+        - **TypeError** - 输入参数 `layout` 不是mindspore.parallel.Layout类型。
 
     样例：
 
