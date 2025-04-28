@@ -272,6 +272,8 @@ def _handle_tft(func):
                     initial_step = repair_step % self.batch_num
                     kwargs["initial_epoch"] = initial_epoch
                     cb_initial_step = _calc_cb_initial_step(initial_epoch, initial_step, *args, **kwargs)
+                    if not self.enable_tre:
+                        kwargs["initial_step"] = cb_initial_step
                     # reset all accu grads to zero
                     obj._reset_acc_grads()
                     logger.warning(
