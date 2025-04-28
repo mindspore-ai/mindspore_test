@@ -169,6 +169,8 @@ class GkUtils {
   static AnfNodePtrList GetGraphKernelNodes(const FuncGraphPtr &func_graph);
 
   static bool UseAkgCceLib(const AnfNodePtr &node);
+
+  static bool InplaceWithViewInputs(const AnfNodePtr &node);
 };
 }  // namespace mindspore::graphkernel
 #endif  // MINDSPORE_CCSRC_BACKEND_OPTIMIZER_GRAPH_KERNEL_CORE_GRAPH_KERNEL_UTILS_H_

@@ -277,6 +277,9 @@ bool GraphKernelExpanderCloud::CanExpand(const CNodePtr &node) const {
   if (is_dvm && !DvmSupported(node)) {
     return false;
   }
+  if (GkUtils::InplaceWithViewInputs(node)) {
+    return false;
+  }
   if (!common::AnfAlgo::IsDynamicShape(node)) {
     // for static cases, the node can be expanded if this is complex op
     // or in the list
