@@ -13,6 +13,8 @@
 # limitations under the License.
 
 import os
+os.environ["MS_SIMULATION_LEVEL"] = "3"
+
 import numpy as np
 import mindspore.nn as nn
 import mindspore.dataset as ds
@@ -26,7 +28,6 @@ from mindspore.communication.management import init, create_group, destroy_group
 from mindspore.communication.comm_func import barrier
 from tests.mark_utils import arg_mark
 
-os.environ["MS_SIMULATION_LEVEL"] = "0"
 context.set_context(mode=context.GRAPH_MODE)
 
 
