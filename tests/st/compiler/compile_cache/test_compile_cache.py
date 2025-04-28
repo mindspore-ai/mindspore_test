@@ -18,6 +18,9 @@ import shutil
 import subprocess
 import pytest
 import numpy as np
+from mindspore import mutable, Tensor, nn, jit, ops
+from mindspore.common.api import ms_compile_cache
+from mindspore import dtype as mstype
 from tests.st.networks import utils
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
@@ -549,3 +552,46 @@ def test_compile_cache_control_flow_partial_without_inputs():
     run_twice_with_same_network("control_flow.py", "./control_flow_partial_without_inputs",
                                 "control_flow_partial_without_inputs_first.txt",
                                 "control_flow_partial_without_inputs_second.txt")
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_compile_cache_with_inplace_tensor():
+    """
+    Feature: Compile cache.
+    Description: Test whether the compile cache function can run successfully for inplace feature.
+    Expectation: success.
+    """
+    class TestNet(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.assignadd = ops.AssignAdd()
+
+        @jit(backend="ms_backend")
+        def construct(self, kv_caches):
+            k, v = kv_caches
+            self.assignadd(k, ops.ones_like(k))
+            self.assignadd(v, ops.ones_like(v))
+
+
+    kv_cache_shape = (None, 1)
+    kv_cache_dtype = mstype.int32
+    dyn_key_cache = Tensor(shape=kv_cache_shape, dtype=kv_cache_dtype)
+    dyn_value_cache = Tensor(shape=kv_cache_shape, dtype=kv_cache_dtype)
+    dyn_kv_cache = mutable((dyn_key_cache, dyn_value_cache))
+
+    model = TestNet()
+    model.set_inputs(dyn_kv_cache)
+    kv_cache_shape = (1, 1)
+    key_cache = ops.ones(kv_cache_shape, dtype=kv_cache_dtype)
+    value_cache = ops.ones(kv_cache_shape, dtype=kv_cache_dtype)
+    kv_cache = mutable((key_cache, value_cache))
+
+    model(kv_cache)
+    assert len(ms_compile_cache) == 1
+    assert kv_cache[0][0][0] == 2
+    assert kv_cache[1][0][0] == 2
+
+    model(kv_cache)
+    assert len(ms_compile_cache) == 1
+    assert kv_cache[0][0][0] == 3
+    assert kv_cache[1][0][0] == 3
