@@ -385,7 +385,7 @@ void SuperKernelActor::FetchInputDeviceTensor(OpContext<DeviceTensor> *const con
       }
 
       if (!enable_kbk_sub_graph_execute_ || ActorDispatcher::enable_use_trace_memory()) {
-        if (input_data->data_->dynamic_ref_count() != INT32_MAX) {
+        if (input_data->data_->new_ref_count() != SIZE_MAX) {
           (void)memory_free_list.emplace_back(input_data->data_);
         }
 
