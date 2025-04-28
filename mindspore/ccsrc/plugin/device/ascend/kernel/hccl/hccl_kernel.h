@@ -60,7 +60,7 @@ class HcclKernel : public KernelMod {
     MS_LOG(EXCEPTION) << "This interface is not support in hccl kernel module.";
   }
 
-  bool NeedReGetHcom(const std::string &group, const std::string &inner_name);
+  bool NeedReGetHcom();
 
  protected:
   virtual HcclDataType GetHcclDataType() const;

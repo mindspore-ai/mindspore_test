@@ -35,7 +35,7 @@ bool HcomReduceKernel::Launch(const std::vector<KernelTensor *> &inputs, const s
   MS_EXCEPTION_IF_NULL(send_buf);
   MS_EXCEPTION_IF_NULL(recv_buf);
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  if (NeedReGetHcom(group_, hccl_inner_comm_name_)) {
+  if (NeedReGetHcom()) {
     MS_LOG(WARNING) << "Hccl inner name had changed, need re-get hcom";
     comm_ = AscendCollectiveCommLib::GetInstance().GetHcomByGroup(group_);
   }

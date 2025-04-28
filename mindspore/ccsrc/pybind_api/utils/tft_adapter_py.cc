@@ -176,6 +176,7 @@ void FinalizeCommunication() {
 
 void RebuildHcclWorldGroup() {
   MS_LOG(WARNING) << "Try to rebuild hccl world group communication";
+  UCEException::GetInstance().set_rebuild_group_flag(true);
   auto ranks = distributed::collective::CollectiveManager::instance()->GetGroupRanks(kHcclWorldGroup);
   auto ret = distributed::collective::CollectiveManager::instance()->CreateCommunicationGroup(kHcclWorldGroup, ranks);
   if (!ret) {
@@ -187,6 +188,7 @@ void RebuildHcclWorldGroup() {
 void RebuildSubCommunication() {
   // rebuild sub comm
   MS_LOG(WARNING) << "Try to rebuild sub communication";
+  UCEException::GetInstance().set_rebuild_group_flag(true);
   auto group_info = distributed::collective::CollectiveManager::instance()->get_group_info();
   for (const auto &item : group_info) {
     if (item.first == kHcclWorldGroup) {
@@ -202,6 +204,7 @@ void RebuildSubCommunication() {
   UCEException::GetInstance().clear_uce_error();
   MS_LOG(WARNING) << "Rebuild communication end";
 }
+bool IsRebootNode() { return UCEException::GetInstance().is_reboot_node(); }
 
 void RegTFT(py::module *m) {
   (void)m->def("_stop_device", &mindspore::StopDevice, "Stop the device.");
@@ -223,5 +226,6 @@ void RegTFT(py::module *m) {
   (void)m->def("_finalize_comm", &FinalizeCommunication, "Finalize comm.");
   (void)m->def("_rebuild_sub_group", &RebuildSubCommunication, "Rebuild comm.");
   (void)m->def("_rebuild_world_group", &RebuildHcclWorldGroup, "Rebuild comm.");
+  (void)m->def("is_reboot_node", &IsRebootNode, "Get reboot node flag.");
 }
 }  // namespace mindspore

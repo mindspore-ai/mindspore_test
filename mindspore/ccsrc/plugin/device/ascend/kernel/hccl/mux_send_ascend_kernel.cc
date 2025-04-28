@@ -62,7 +62,7 @@ bool MuxSendAscendKernel::Launch(const std::vector<KernelTensor *> &inputs, cons
   }
   MS_EXCEPTION_IF_NULL(inputs[0]);
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  if (NeedReGetHcom(group_, hccl_inner_comm_name_)) {
+  if (NeedReGetHcom()) {
     MS_LOG(WARNING) << "Hccl inner name had changed, need re-get hcom";
     comm_ = AscendCollectiveCommLib::GetInstance().GetHcomByGroup(group_);
   }

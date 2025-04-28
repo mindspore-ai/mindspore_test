@@ -155,6 +155,8 @@ class MS_CORE_API UCEException {
   void set_is_arf(bool flag) { is_arf_ = flag; }
   bool is_arf() const { return is_arf_; }
   bool enable_arf() { return arf_env_; }
+  void set_rebuild_group_flag(bool flag) { rebuild_group_ = flag; }
+  bool rebuild_group_flag() const { return rebuild_group_; }
 
   void CheckUceARFEnv() {
     const auto tftEnv = common::GetEnv("MS_ENABLE_TFT");
@@ -195,6 +197,7 @@ class MS_CORE_API UCEException {
   bool arf_env_{false};
   bool is_reboot_node_{false};
   bool is_arf_{false};
+  bool rebuild_group_{false};
   uint64_t uce_occur_time_{0};
   UCEError uce_error_type_{UCEError::kNoneError};
 };
