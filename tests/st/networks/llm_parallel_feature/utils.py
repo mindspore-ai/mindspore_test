@@ -341,21 +341,27 @@ def mock_third_party_pkg(pkg_name, file_path):
     return True
 
 
-def update_parallel_speed_up_json(case_name, net_config, yaml_path):
-    # 1. copy the parallel_speed_up.json to the testcase folder
-    os.system(f"cp ./parallel_speed_up.json ./{case_name}")
-    # 2. update the parallel_speed_up.json
+def update_parallel_speed_up_json(case_name, net_config, yaml_path, deepseekv3=False):
     sh_path = os.path.split(os.path.realpath(__file__))[0]
-    file_path = f"{sh_path}/{case_name}/parallel_speed_up.json"
-    for key, value in net_config.parallel_speed_up_json.items():
-        if isinstance(value, int):
-            update_cmd = f"""sed -i 's#"{key}": 0#"{key}": {value}#g' {file_path}"""
-        else:
-            update_cmd = f"""sed -i 's#"{key}": false#"{key}": {value}#g' {file_path}"""
-        status, _ = subprocess.getstatusoutput(update_cmd)
-        if status != 0:
-            print(f"Failed to update {key} to {value} in {file_path}")
-            return False
+    if deepseekv3:
+        file_path = f"{sh_path}/deepseekv3/{case_name}/parallel_speed_up.json"
+        update_cmd = f"echo {net_config.parallel_speed_up_json} > \
+        {sh_path}/deepseekv3/{case_name}/parallel_speed_up.json"
+        os.system(update_cmd)
+    else:
+        # 1. copy the parallel_speed_up.json to the testcase folder
+        os.system(f"cp ./parallel_speed_up.json ./{case_name}")
+        # 2. update the parallel_speed_up.json
+        file_path = f"{sh_path}/{case_name}/parallel_speed_up.json"
+        for key, value in net_config.parallel_speed_up_json.items():
+            if isinstance(value, int):
+                update_cmd = f"""sed -i 's#"{key}": 0#"{key}": {value}#g' {file_path}"""
+            else:
+                update_cmd = f"""sed -i 's#"{key}": false#"{key}": {value}#g' {file_path}"""
+            status, _ = subprocess.getstatusoutput(update_cmd)
+            if status != 0:
+                print(f"Failed to update {key} to {value} in {file_path}")
+                return False
     # 3. insert the parallel_speed_up.json to the yaml file
     insert_json = (r"""sed -i '/memory_optimize_level:/a\  ascend_config:\n    parallel_speed_up_json_path: "{}"' {}"""
                    .format(file_path, yaml_path))
