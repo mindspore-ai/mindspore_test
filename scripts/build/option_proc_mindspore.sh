@@ -18,7 +18,7 @@ set -e
 
 build_option_proc_b()
 {
-  if [ "X$OPTARG" != "Xcpu" ]; then
+  if [[ "X$OPTARG" != "Xcpu" && "X$OPTARG" != "Xdart" ]]; then
     echo "Invalid value ${OPTARG} for option -b"
     usage
     exit 1

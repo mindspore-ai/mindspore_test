@@ -1162,6 +1162,7 @@ def jit(
             - `ms_backend`: Adopt KernelByKernel execution mode.
             - `GE`: Adopt Sink execution mode. The whole model will be sinked to device to execute, only applicable to
               the top cell of model. And only can be used in Ascend platform.
+            - `ms_infer_backend`: (Experimental) New backend optimized for inference phase.
 
         **options (dict): A dictionary of options to pass to the compilation backend.
 
@@ -1308,7 +1309,7 @@ def jit(
     fullgraph = Validator.check_bool(fullgraph, "fullgraph", "jit")
     if backend == "":
         backend = "GE" if MSContext.get_instance().get_ascend_soc_version() == "ascend910" else "ms_backend"
-    backend = Validator.check_string(backend, ["ms_backend", "GE"], "backend", "jit")
+    backend = Validator.check_string(backend, ["ms_backend", "GE", "ms_infer_backend"], "backend", "jit")
     jit_syntax_level = "LAX" if fullgraph is False else "STRICT"
     hash_obj = _get_hash_obj(options)
     _check_options(options, backend)

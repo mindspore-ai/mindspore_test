@@ -33,23 +33,29 @@ using BackendCreator = std::function<std::shared_ptr<BackendBase>()>;
 // The backend name must be equal to the backend field of api "mindspore.jit".
 const char kMSBackendName[] = "ms_backend";
 const char kGEBackendName[] = "GE";
+const char kMSInferBackendName[] = "ms_infer_backend";
 
 // The name of backend lib.
 const char kGEBackendLibName[] = "libmindspore_ge_backend.so";
+const char kMSInferBackendLibName[] = "libmindspore_ms_infer_backend.so";
 
 // The backend type enum, please add a new enumeration definition before kInvalidBackend when adding a new backend.
 enum BackendType {
   kMSBackend = 0,
   kGEBackend,
+  kMSInferBackend,
   kInvalidBackend,
 };
 
 const std::map<std::string, BackendType> backend_name_to_type = {{kMSBackendName, kMSBackend},
-                                                                 {kGEBackendName, kGEBackend}};
+                                                                 {kGEBackendName, kGEBackend},
+                                                                 {kMSInferBackendName, kMSInferBackend}};
 const std::map<BackendType, std::string> backend_type_to_name = {{kMSBackend, kMSBackendName},
-                                                                 {kGEBackend, kGEBackendName}};
+                                                                 {kGEBackend, kGEBackendName},
+                                                                 {kMSInferBackend, kMSInferBackendName}};
 
-const std::map<BackendType, std::string> backend_type_to_lib_name = {{kGEBackend, kGEBackendLibName}};
+const std::map<BackendType, std::string> backend_type_to_lib_name = {{kGEBackend, kGEBackendLibName},
+                                                                     {kMSInferBackend, kMSInferBackendLibName}};
 
 class BACKEND_MANAGER_EXPORT BackendManager {
  public:

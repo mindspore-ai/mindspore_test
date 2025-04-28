@@ -49,16 +49,21 @@ std::string GetBackendLibNameByType(BackendType backend_type) {
   return iter->second;
 }
 
+bool ShouldLoadBackendLib(BackendType backend_type) {
+  auto iter = backend_type_to_lib_name.find(backend_type);
+  return iter != backend_type_to_lib_name.end();
+}
+
 BackendType GetBackendType(const std::string &backend_name) {
+  if (!backend_name.empty()) {
+    return GetBackendTypeByName(backend_name);
+  }
+
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
   auto device_target = context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
   if (device_target != kAscendDevice) {
     return kMSBackend;
-  }
-
-  if (!backend_name.empty()) {
-    return GetBackendTypeByName(backend_name);
   }
 
   if (context->IsKByKExecutorMode()) {
@@ -153,9 +158,6 @@ void BackendManager::LoadBackend(BackendType backend_type) {
   if (backend_load_handle_.count(backend_type) > 0) {
     return;
   }
-  if (backend_type != kGEBackend) {
-    MS_LOG(EXCEPTION) << "Only the ge backend support the dynamic load. ";
-  }
 
   std::string backend_lib_name = GetBackendLibNameByType(backend_type);
   MS_LOG(INFO) << "Backendmanager dlopen backend lib name: " << backend_lib_name;
@@ -199,7 +201,7 @@ BackendBase *BackendManager::GetOrCreateBackend(BackendType backend_type) {
   }
 
   // Only the ge backend support the dynamic load.
-  if (backend_type == kGEBackend) {
+  if (ShouldLoadBackendLib(backend_type)) {
     LoadBackend(backend_type);
   }
 
