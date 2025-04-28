@@ -134,11 +134,13 @@ void Conv3DPaddingAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &in
   auto output_sizes = outputs[kIndex0]->GetShape()->GetShapeVector();
   auto &weight_sizes = inputs[kIndex1]->GetShape()->GetShapeVector();
   is_batchfy_ = (input_sizes.size() == weight_sizes.size());
+  input_kernel_tensor_ = inputs[kIndex0]->CloneKernelTensor();
+  output_kernel_tensor_ = outputs[kIndex0]->CloneKernelTensor();
   if (!is_batchfy_) {
     input_sizes.insert(input_sizes.begin(), 1);
     output_sizes.insert(output_sizes.begin(), 1);
-    SetTensorStorageInfo<KernelTensor *>(inputs[kIndex0], input_sizes);
-    SetTensorStorageInfo<KernelTensor *>(outputs[kIndex0], output_sizes);
+    input_kernel_tensor_->SetShapeVector(input_sizes);
+    output_kernel_tensor_->SetShapeVector(output_sizes);
   }
 
   auto k = SizeToLong(weight_sizes.size());
@@ -154,8 +156,9 @@ void Conv3DPaddingAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &in
     if (symmetric_padding) {
       MS_LOG(INFO) << "Conv3DPaddingAscend: symmetric padding.";
       pad_vector_ = padding_l;
-      GetWorkspaceForResizeConvolutionStr(inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], stride_, pad_vector_,
-                                          dilation_, transposed_, output_padding_, groups_, outputs[kIndex0],
+      GetWorkspaceForResizeConvolutionStr(input_kernel_tensor_.get(), inputs[kIndex1], inputs[kIndex2], stride_,
+                                          pad_vector_, dilation_, transposed_, output_padding_, groups_,
+                                          output_kernel_tensor_.get(),
                                           OpApiUtil::GetCubeMathType(OpApiUtil::IsAllowConvHF32()));
     } else {
       pad_nd_.resize(2 * dim, 0);
@@ -175,7 +178,7 @@ void Conv3DPaddingAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &in
 
       //   infer outshape
       pad_nd_shape_ = std::vector<int64_t>{};
-      std::vector<int64_t> x_shape = inputs[kIndex0]->GetShapeVector();
+      std::vector<int64_t> x_shape = input_sizes;
       auto x_rank = x_shape.size();
       size_t kScaleNum = 2;
       auto l_diff = x_rank - (pad_nd_.size() / kScaleNum);
@@ -190,10 +193,10 @@ void Conv3DPaddingAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &in
 
       SetExpandTensor(&input_expand_, inputs);
       KernelTensor *input_ptr = &input_expand_;
-      GetWorkspaceForResizeConstantPadNd(inputs[kIndex0], pad_nd_, zero_, &input_expand_);
+      GetWorkspaceForResizeConstantPadNd(input_kernel_tensor_.get(), pad_nd_, zero_, &input_expand_);
       expand_indices_.emplace_back(kIndex0);
       GetWorkspaceForResizeConvolutionStr(input_ptr, inputs[kIndex1], inputs[kIndex2], stride_, pad_vector_, dilation_,
-                                          transposed_, output_padding_, groups_, outputs[kIndex0],
+                                          transposed_, output_padding_, groups_, output_kernel_tensor_.get(),
                                           OpApiUtil::GetCubeMathType(OpApiUtil::IsAllowConvHF32()));
 
       expand_count_ = expand_indices_.size();
@@ -211,18 +214,11 @@ void Conv3DPaddingAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &in
     }
   } else if (padding_ == PadMode::VALID) {
     MS_LOG(INFO) << "Conv3DPaddingAscend: padmode is valid";
-    GetWorkspaceForResizeConvolutionStr(inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], stride_, pad_vector_,
-                                        dilation_, transposed_, output_padding_, groups_, outputs[kIndex0],
-                                        OpApiUtil::GetCubeMathType(OpApiUtil::IsAllowConvHF32()));
+    GetWorkspaceForResizeConvolutionStr(
+      input_kernel_tensor_.get(), inputs[kIndex1], inputs[kIndex2], stride_, pad_vector_, dilation_, transposed_,
+      output_padding_, groups_, output_kernel_tensor_.get(), OpApiUtil::GetCubeMathType(OpApiUtil::IsAllowConvHF32()));
   } else {
     MS_LOG(EXCEPTION) << "Input padding string must be one of {'same', 'valid'}";
-  }
-
-  if (!is_batchfy_) {
-    input_sizes.erase(input_sizes.begin());
-    SetTensorStorageInfo<KernelTensor *>(inputs[kIndex0], input_sizes);
-    output_sizes.erase(output_sizes.begin());
-    SetTensorStorageInfo<KernelTensor *>(outputs[kIndex0], output_sizes);
   }
 }
 
@@ -230,18 +226,20 @@ bool Conv3DPaddingAscend::Launch(const std::vector<KernelTensor *> &inputs,
                                  const std::vector<KernelTensor *> &workspace,
                                  const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
+  input_kernel_tensor_->set_device_ptr(inputs[kIndex0]->device_ptr());
+  output_kernel_tensor_->set_device_ptr(outputs[kIndex0]->device_ptr());
   if (need_ConstantPadNd_) {
     input_expand_.set_device_ptr(workspace[workspace.size() - expand_count_]->device_ptr());
     KernelTensor *output_ptr = &input_expand_;
     KernelTensor *input_ptr = &input_expand_;
-    RunOpConstantPadNd(stream_ptr, workspace, inputs[kIndex0], pad_nd_, zero_, output_ptr);
+    RunOpConstantPadNd(stream_ptr, workspace, input_kernel_tensor_.get(), pad_nd_, zero_, output_ptr);
 
     RunOpConvolutionStr(stream_ptr, workspace, input_ptr, inputs[kIndex1], inputs[kIndex2], stride_, pad_vector_,
-                        dilation_, transposed_, output_padding_, groups_, outputs[kIndex0],
+                        dilation_, transposed_, output_padding_, groups_, output_kernel_tensor_.get(),
                         OpApiUtil::GetCubeMathType(OpApiUtil::IsAllowConvHF32()));
   } else {
-    RunOpConvolutionStr(stream_ptr, workspace, inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], stride_, pad_vector_,
-                        dilation_, transposed_, output_padding_, groups_, outputs[kIndex0],
+    RunOpConvolutionStr(stream_ptr, workspace, input_kernel_tensor_.get(), inputs[kIndex1], inputs[kIndex2], stride_,
+                        pad_vector_, dilation_, transposed_, output_padding_, groups_, output_kernel_tensor_.get(),
                         OpApiUtil::GetCubeMathType(OpApiUtil::IsAllowConvHF32()));
   }
   return true;
