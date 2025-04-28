@@ -107,7 +107,7 @@ int32_t GroupedMatmulFuncImpl::PrivateCheckValidation(const PrimitivePtr &primit
                                << group_type;
     }
 
-    const auto &group_list_info = input_infos[FetchGroupListSize(primitive, input_infos)];
+    const auto &group_list_info = input_infos[FetchGroupListIndex(primitive, input_infos)];
     if (MS_UNLIKELY(group_list_info->IsNone() ||
                     (!group_list_info->IsSequence() && group_list_info->GetType() != kNumberTypeInt32))) {
       MS_EXCEPTION(ValueError)
