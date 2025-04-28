@@ -58,3 +58,7 @@
 [submodule "tests/st/networks/MindSpeed-Core-MS"]
 	path = tests/st/networks/MindSpeed-Core-MS
 	url = https://gitee.com/ascend/MindSpeed-Core-MS.git
+[submodule "mindspore/ccsrc/backend/ms_infer_backend/dart"]
+	path = mindspore/ccsrc/backend/ms_infer_backend/dart
+	url = https://gitee.com/ms-incubator/dart.git
+	shallow = true

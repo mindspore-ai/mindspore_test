@@ -67,6 +67,21 @@ if(ENABLE_TESTCASES)
         COMPONENT mindspore)
 endif()
 
+if(ENABLE_DART)
+    install(
+        TARGETS mindspore_ms_infer_backend LIBRARY
+        DESTINATION ${INSTALL_LIB_DIR}
+        COMPONENT mindspore
+        NAMELINK_SKIP
+    )
+    install(
+        TARGETS dalang LIBRARY
+        DESTINATION ${INSTALL_LIB_DIR}
+        COMPONENT mindspore
+        NAMELINK_SKIP
+    )
+endif()
+
 if(ENABLE_D)
     install(
         TARGETS mindspore_ge_backend

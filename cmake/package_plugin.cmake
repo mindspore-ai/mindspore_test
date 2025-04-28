@@ -47,6 +47,21 @@ if(ENABLE_CPU)
     )
 endif()
 
+if(ENABLE_DART)
+    install(
+        TARGETS mindspore_ms_infer_backend LIBRARY
+        DESTINATION ${INSTALL_LIB_DIR}
+        COMPONENT mindspore
+        NAMELINK_SKIP
+    )
+    install(
+        TARGETS dalang LIBRARY
+        DESTINATION ${INSTALL_LIB_DIR}
+        COMPONENT mindspore
+        NAMELINK_SKIP
+    )
+endif()
+
 if(ENABLE_D)
     install(
             TARGETS mindspore_ascend mindspore_ops_ascend LIBRARY
