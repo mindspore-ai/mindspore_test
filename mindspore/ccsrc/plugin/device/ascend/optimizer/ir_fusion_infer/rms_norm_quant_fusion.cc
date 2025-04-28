@@ -285,7 +285,6 @@ const AnfNodePtr RmsNormQuantFusion::Process(const FuncGraphPtr &graph, const An
   auto gamma_shape = common::AnfAlgo::GetOutputInferShape(gamma, kIndex0);
   TypeId scale_type = common::AnfAlgo::GetOutputInferDataType(scale, 0);
   auto scale_shape = common::AnfAlgo::GetOutputInferShape(scale, kIndex0);
-
   if (gamma_shape.size() != 1 || scale_shape.size() != 1) {
     MS_LOG(INFO) << "gamma_shape.size():" << gamma_shape.size() << " scale_shape.size():" << scale_shape.size()
                  << " != 1.";
@@ -297,8 +296,10 @@ const AnfNodePtr RmsNormQuantFusion::Process(const FuncGraphPtr &graph, const An
                  << "gamma_shape[0]:" << gamma_shape[0] << " scale_shape[0]:" << scale_shape[0] << " not equal.";
     return nullptr;
   }
-
-  ValueNodePtr beta, new_gamma, new_scale, new_offset;
+  ValueNodePtr beta;
+  ValueNodePtr new_gamma;
+  ValueNodePtr new_scale;
+  ValueNodePtr new_offset;
   if (gamma_type == kNumberTypeFloat16) {
     beta = CreateZeroTensor<float16>(gamma_shape, gamma_type);
     new_gamma = CreateNewGammaTensor<float16>(gamma, scale);
