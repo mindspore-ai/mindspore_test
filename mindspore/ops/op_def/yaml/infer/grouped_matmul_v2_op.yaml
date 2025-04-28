@@ -40,8 +40,6 @@ grouped_matmul_v2:
     returns:
         y:
             dtype: tuple[tensor]
-    function:
-        disable: True
     dispatch:
         enable: True
         Ascend: GroupedMatmulV2Ascend

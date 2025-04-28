@@ -40,12 +40,6 @@ void CheckGmmV2BackwardInputs(const PrimitivePtr &primitive, const AbstractBaseP
 }
 
 BeginFunction(GmmV2Backward, grad, x, weight, group_list, group_list_type) {
-  auto MakeRangeFunc = [&](const NodePtr &tensors) {
-    auto tensors_num = SequenceLen(tensors);
-    auto num_list = Call(Prim(MakeRange), tensors_num);
-    return num_list;
-  };
-
   auto ForEachTranspose = [&](const NodePtr &tensors, int64_t num) {
     std::vector<NodePtr> new_tensors;
     for (int64_t i = 0; i < num; ++i) {
@@ -56,21 +50,15 @@ BeginFunction(GmmV2Backward, grad, x, weight, group_list, group_list_type) {
     return MakeTuple(new_tensors);
   };
 
-  auto ForEachReShape = [&](const NodePtr &tensors, const NodePtr &target_tensors) {
-    auto idxes = MakeRangeFunc(tensors);
-
-    auto loop_func = [&](const NodePtr &input, const NodePtr &idx) {
-      auto ori_tensors = GetItem(input, Value(0));
-      auto tar_tensors = GetItem(input, Value(1));
-      auto ori_tensor_i = GetItem(ori_tensors, idx);
-      auto tar_tensor_i = GetItem(tar_tensors, idx);
+  auto ForEachReShape = [&](const NodePtr &ori_tensors, const NodePtr &tar_tensors, int64_t num) {
+    std::vector<NodePtr> new_tensors;
+    for (int64_t i = 0; i < num; ++i) {
+      auto ori_tensor_i = GetItem(ori_tensors, Value(i));
+      auto tar_tensor_i = GetItem(tar_tensors, Value(i));
       auto new_tensor_i = Reshape(ori_tensor_i, Shape(tar_tensor_i));
-      Return(Tuple(input, new_tensor_i));
-    };
-
-    auto out = Scan(loop_func, Tuple(tensors, target_tensors), idxes);
-
-    return ListToTuple(GetItem(out, Value(1)));
+      new_tensors.push_back(std::move(new_tensor_i));
+    }
+    return MakeTuple(new_tensors);
   };
 
   auto GmmV2 = [&](const NodePtr &x, const NodePtr &weight, const NodePtr &group_list, const NodePtr &group_list_type,
@@ -92,46 +80,20 @@ BeginFunction(GmmV2Backward, grad, x, weight, group_list, group_list_type) {
 
   auto dx = GmmV2(grad, wt, group_list, group_list_type, 0);
   auto dw = GmmV2(xt, grad, group_list, group_list_type, 2);
-  auto dw_reshape = ForEachReShape(dw, weight);
+  auto dw_reshape = ForEachReShape(dw, weight, w_num);
 
-  auto SequenceAddFunc = [&](const NodePtr &sequence0, const NodePtr &sequence1) {
-    auto sequence0_len = SequenceLen(sequence0);
-
-    auto multi_elements_branch = [&]() {
-      auto sequence1_len = SequenceLen(sequence1);
-      auto num_list = Call(Prim(MakeRange), ScalarAdd(sequence0_len, sequence1_len));
-
-      auto loop_func = [&](const NodePtr &all_inputs, const NodePtr &idx) {
-        auto sequence_left = GetItem(all_inputs, Value(0));
-        auto sequence_left_len = GetItem(all_inputs, Value(2));
-        auto sequence_right = GetItem(all_inputs, Value(1));
-
-        auto get_item = [&]() {
-          auto true_branch = [&]() { Return(GetItem(sequence_left, idx)); };
-          auto false_branch = [&]() { Return(GetItem(sequence_right, ScalarSub(idx, sequence_left_len))); };
-          auto condition = Less(idx, sequence_left_len);
-          return If(condition, true_branch, false_branch, (sequence_left, sequence_right, sequence_left_len, idx));
-        };
-        auto input_i = get_item();
-
-        Return(Tuple(all_inputs, input_i));
-      };
-
-      auto loop_out = Scan(loop_func, Tuple(sequence0, sequence1, sequence0_len), num_list);
-      auto out = ListToTuple(GetItem(loop_out, Value(1)));
-      Return(out);
-    };
-
-    auto one_element_branch = [&]() {
-      auto out = Tuple(GetItem(sequence0, Value(0)), GetItem(sequence1, Value(0)));
-      Return(out);
-    };
-
-    return If(Equal(sequence0_len, Value(1)), one_element_branch, multi_elements_branch,
-              (sequence0, sequence1, sequence0_len));
+  auto SequenceAddFunc = [&](const NodePtr &sequence0, int64_t num0, const NodePtr &sequence1, int64_t num1) {
+    std::vector<NodePtr> results;
+    for (int64_t i = 0; i < num0; ++i) {
+      results.push_back(GetItem(sequence0, Value(i)));
+    }
+    for (int64_t i = 0; i < num1; ++i) {
+      results.push_back(GetItem(sequence1, Value(i)));
+    }
+    return MakeTuple(results);
   };
 
-  Return(SequenceAddFunc(dx, dw_reshape));
+  Return(SequenceAddFunc(dx, x_num, dw_reshape, w_num));
 }
 EndFunction(GmmV2Backward)
 }  // namespace mindspore::prim

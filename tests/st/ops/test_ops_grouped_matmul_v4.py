@@ -17,7 +17,7 @@ import mindspore as ms
 from mindspore import dtype as mstype
 from mindspore import context, Tensor, ops
 from mindspore.nn import Cell
-from mindspore.ops.auto_generate import GroupedMatmulV4
+from mindspore.ops.auto_generate import grouped_matmul_v4
 
 from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
@@ -84,7 +84,7 @@ def split_w(w):
 class GroupedMatmulV4Net(Cell):
     def __init__(self):
         super().__init__()
-        self.gmm_v4 = GroupedMatmulV4()
+        self.gmm_v4 = grouped_matmul_v4
 
     def construct(self, x, weight, bias=None, scale=None, offset=None, antiquant_scale=None, antiquant_offset=None,
                   pertoken_scale=None, group_list=None, split_item=3, group_type=-1, group_list_type=0):
