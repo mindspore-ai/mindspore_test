@@ -22,6 +22,7 @@ CASE_NAME=$3
 MASTER_PORT=$4
 BASE_PORT=$5
 CELL_REUSE=${6:-None}
+GPT_DATASET=${7:-None}
 
 export HCCL_IF_BASE_PORT=$BASE_PORT
 export RANK_SIZE="$RANK_SIZE"
@@ -36,7 +37,16 @@ if [ "$CELL_REUSE" = "no_pp" ]; then
   echo "enable lazy inline in no pp"
   export ENABLE_LAZY_INLINE_NO_PIPELINE=1
 fi
-sleep 10
+
+if [ "$GPT_DATASET" = "gpt" ]; then
+  echo "using gpt dataset."
+  cd $MF_PATH/mindformers/dataset/blended_datasets/
+  make
+  cd ${BASE_PATH}
+fi
+
+source /usr/local/Ascend/nnal/atb/set_env.sh
+
 msrun --worker_num=$RANK_SIZE --local_worker_num=$RANK_SIZE --master_port=$MASTER_PORT --log_dir=$BASE_PATH/$CASE_NAME/ \
   --join=True --cluster_time_out=7200 \
   ${MF_PATH}/run_mindformer.py \

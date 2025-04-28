@@ -46,7 +46,6 @@ train_dataset: &train_dataset
     type: MindDataset
     dataset_dir: "/home/workspace/mindspore_dataset/wiki4096/wiki4096.mindrecord"
     shuffle: False
-    num_samples: 24
   input_columns: ["input_ids"]  # "input_ids" , labels are used in instruction finetune.
   num_parallel_workers: 8
   python_multiprocessing: False
@@ -126,7 +125,7 @@ model:
     seq_length: 4096
     hidden_size: 1024
     num_layers: &num_layers 3
-    num_heads: 32
+    num_heads: 8
     max_position_embeddings: 4096
     intermediate_size: 1024
     kv_lora_rank: 128
