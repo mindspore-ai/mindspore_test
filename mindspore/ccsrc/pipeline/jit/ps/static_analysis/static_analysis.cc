@@ -122,19 +122,20 @@ void ExecEvaluator(EvaluatorPtr eval, AnalysisEnginePtr engine, ConfigPtrList ar
 
     // Check the branch value to be compatible with the other branch value.
     AnalysisResultCacheMgr::GetInstance().CheckSwitchValueJoinable(out_conf, result->abstract());
-    // Not broaden here, to broaden the result of switch(c,t,f)() when use.
-    auto result_abstract = result->abstract();
+    // Broaden the result of switch(c,t,f)()
+    auto broaden_abstract = result->abstract()->Broaden();
+
     MS_EXCEPTION_IF_NULL(async_result_branch);
     MS_EXCEPTION_IF_NULL(async_result_main);
     // Notify the thread of waiting for branch value and the main thread to continue.
-    async_result_branch->set_result(result_abstract);
-    async_result_main->set_result(result_abstract);
+    async_result_branch->set_result(broaden_abstract);
+    async_result_main->set_result(broaden_abstract);
     MS_LOG(DEBUG) << GetInferThread() << " async :" << eval->ToString()
                   << " asyncResult address = " << async_result_branch.get();
-    if (async_result_branch->TryGetResult() != nullptr) {
-      MS_LOG(DEBUG) << "value: " << (async_result_branch->TryGetResult())->ToString();
+    if (async_result_branch->TryGetResult()) {
+      MS_LOG(DEBUG) << "value = " << (async_result_branch->TryGetResult())->ToString();
     } else {
-      MS_LOG(DEBUG) << "value is null.";
+      MS_LOG(DEBUG) << "value = null.";
     }
   } catch (const std::exception &ex) {
     MS_EXCEPTION_IF_NULL(out_conf->node());
@@ -176,11 +177,20 @@ AbstractBasePtr BuildAsyncAbstractRecursively(const AbstractBasePtr &orig_abs,
         new_elements.push_back(orig_elements[i]);
       }
     }
-    sequence_abs->set_elements(new_elements);
-    return orig_abs;
+    static const auto enable_eliminate_unused_element = (common::GetCompileConfig("ENABLE_DDE") != "0");
+    AbstractBasePtr new_abs;
+    if (orig_abs->isa<AbstractTuple>()) {
+      new_abs = std::make_shared<AbstractTuple>(
+        new_elements, (enable_eliminate_unused_element ? sequence_abs->sequence_nodes() : nullptr));
+    } else if (orig_abs->isa<AbstractList>()) {
+      new_abs = std::make_shared<AbstractList>(
+        new_elements, (enable_eliminate_unused_element ? sequence_abs->sequence_nodes() : nullptr));
+    } else {
+      MS_LOG(INTERNAL_EXCEPTION) << "FirstResult is not AbstractTuple or AbstractList, but: " << orig_abs->ToString();
+    }
+    return new_abs;
   }
-  MS_LOG(INTERNAL_EXCEPTION) << "Original abstract is not AbstractTuple or AbstractList, but got: "
-                             << orig_abs->ToString();
+  MS_LOG(INTERNAL_EXCEPTION) << "Orig abstract is not AbstractTuple or AbstractList, but: " << orig_abs->ToString();
 }
 
 void BuildPossibleSpecs(const AbstractBasePtr &first_result,
@@ -1624,7 +1634,7 @@ EvalResultPtr AnalysisEngine::ProcessEvalResults(const AbstractBasePtrList &out_
 
   AbstractBasePtr last_out_abs = out_abs_list[0];
   MS_EXCEPTION_IF_NULL(last_out_abs);
-  AbstractBasePtr joined_abs = out_abs_list[0]->Broaden();
+  AbstractBasePtr joined_abs = out_abs_list[0];
   for (size_t i = 1; i < out_abs_list.size(); ++i) {
     const auto &abs = out_abs_list[i];
     MS_EXCEPTION_IF_NULL(abs);
@@ -1632,7 +1642,7 @@ EvalResultPtr AnalysisEngine::ProcessEvalResults(const AbstractBasePtrList &out_
       MS_LOG(DEBUG) << "Join node: " << node->DebugString() << ", " << joined_abs->ToString() << ", and "
                     << abs->ToString();
       MS_LOG_TRY_CATCH_SCOPE;
-      joined_abs = joined_abs->Join(abs->Broaden());
+      joined_abs = joined_abs->Join(abs);
     } catch (const py::type_error &ex) {
       auto error_info = ExtractLoggingInfo(ex.what());
       const auto info = JoinBranchesFailedInfo(abs, last_out_abs, node, error_info);
@@ -1670,7 +1680,7 @@ EvalResultPtr AnalysisEngine::ProcessEvalResults(const AbstractBasePtrList &out_
   }
 
   MS_LOG(DEBUG) << "Multiple evaluators joined: " << joined_abs->ToString();
-  return std::make_shared<EvalResult>(joined_abs, std::make_shared<AttrValueMap>(), out_abs_list);
+  return std::make_shared<EvalResult>(joined_abs, std::make_shared<AttrValueMap>());
 }
 
 EvalResultPtr AnalysisEngine::ExecuteMultipleEvaluatorsMultiThread(const std::vector<EvaluatorPtr> &evaluators,
