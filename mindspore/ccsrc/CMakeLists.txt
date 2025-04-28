@@ -325,3 +325,7 @@ endif()
 if(CMAKE_SYSTEM_NAME MATCHES "Linux")
     add_subdirectory(ms_extension)
 endif()
+
+if(ENABLE_DART)
+    add_subdirectory(backend/ms_infer_backend)
+endif()

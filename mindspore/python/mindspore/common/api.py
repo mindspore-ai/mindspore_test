@@ -1189,6 +1189,7 @@ def jit(
             - GE: Utilizes the GraphEngine, a graph compilation and execution engine within CANN,
               for Ascend model compilation and execution. Note: This backend takes effect only in static graph mode
               and can be executed only on Ascend hardware.
+            - ms_infer_backend: (Experimental) New backend optimized for inference phase.
 
         **options (dict): A dictionary of options to pass to the compilation backend.
 
@@ -1334,7 +1335,7 @@ def jit(
     dynamic = Validator.check_int_range(dynamic, 0, 1, Validator.INC_BOTH, "dynamic", "jit")
     fullgraph = Validator.check_bool(fullgraph, "fullgraph", "jit")
     if backend != "":
-        backend = Validator.check_string(backend, ["ms_backend", "GE"], "backend", "jit")
+        backend = Validator.check_string(backend, ["ms_backend", "GE", "ms_infer_backend"], "backend", "jit")
     jit_syntax_level = "LAX" if fullgraph is False else "STRICT"
     hash_obj = _get_hash_obj(options)
     _check_options(options, backend)

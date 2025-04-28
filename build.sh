@@ -42,6 +42,11 @@ check_on_off()
 update_submodule()
 {
   git submodule update --init metadef
+  if [[ "X$ENABLE_BACKEND" = "XDART" ]]; then
+    cd "${BASEPATH}/mindspore/ccsrc/backend/ms_infer_backend/"
+    git submodule update --init dart
+  fi
+  cd "${BASEPATH}"
   if [[ "X$ENABLE_AKG" = "Xon" ]]; then
     if [[ "X$ENABLE_D" == "Xon" ]]; then
       git submodule update --init akg
