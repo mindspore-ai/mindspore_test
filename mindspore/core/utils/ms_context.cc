@@ -784,29 +784,23 @@ void MsContext::SetMsInternalEnableCustomKernelList() {
 }
 
 bool MsContext::IsEnableInferBoost() {
+  enable_infer_boost_ = false;
   const auto &jit_config = PhaseManager::GetInstance().jit_config();
   auto iter = jit_config.find("infer_boost");
-  if (iter != jit_config.end() && iter->second == "on") {
-    enable_infer_boost_ = true;
-    MS_LOG(INFO) << "MSContext enable ms infer boost from JitConfig";
-    SetMsInternalEnableCustomKernelList();
-    return enable_infer_boost_.value();
-  }
-
   auto global_infer_boost = get_param<std::string>(MS_CTX_INFER_BOOST);
-  if (global_infer_boost == "on") {
-    enable_infer_boost_ = true;
-    MS_LOG(INFO) << "MSContext enable ms infer boost from Global Context JitConfig";
-    SetMsInternalEnableCustomKernelList();
-    return enable_infer_boost_.value();
-  }
-
   if (common::GetEnv("MS_ENABLE_INTERNAL_KERNELS") == "on") {
     enable_infer_boost_ = true;
-    MS_LOG(INFO) << "MSContext enable ms infer boost from Env";
+    MS_LOG(INFO) << "'MS_ENABLE_INTERNAL_KERNELS' will be deprecated in the next version. Please use "
+                    "`set_context(jit_config={'jit_level': 'O0', 'infer_boost': 'on'})` instead";
+  } else if ((iter != jit_config.end() && iter->second == "on") || global_infer_boost == "on") {
+    enable_infer_boost_ = true;
+  }
+
+  if (enable_infer_boost_) {
+    MS_LOG(INFO) << "MSContext enable ms infer boost";
     SetMsInternalEnableCustomKernelList();
-  } else {
-    enable_infer_boost_ = false;
+    common::SetEnv("ASDOPS_LOG_LEVEL", "ERROR", 0);
+    common::SetEnv("ASDOPS_LOG_TO_STDOUT", "1", 0);
   }
 
   return enable_infer_boost_.value();
