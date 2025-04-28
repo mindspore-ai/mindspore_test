@@ -58,8 +58,8 @@ def reshard(tensor, layout):
         Tensor. The mathematically equivalent of the input tensor.
 
     Raises:
-        TypeError: Reshard takes in Tensor type as the first input param, but got: `type(tensor)`.
-        TypeError: Reshard only support type mindspore.parallel.Layout but got: `type(layout)`.
+        TypeError: If the type of input param `tensor` is not mindspore.Tensor.
+        TypeError: If the type of input param `layout` is not mindspore.parallel.Layout.
 
     Supported Platforms:
         ``Ascend``
