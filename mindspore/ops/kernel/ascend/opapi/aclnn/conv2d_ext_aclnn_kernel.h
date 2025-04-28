@@ -52,6 +52,7 @@ class Conv2DExtAscend : public AclnnKernelMod {
   bool is_batchify_{false};
   std::vector<int64_t> output_padding_{0, 0};
   std::shared_ptr<KernelTensor> input_kernel_tensor_;
+  std::shared_ptr<KernelTensor> output_kernel_tensor_;
 };
 }  // namespace conv2d_ext
 }  // namespace kernel

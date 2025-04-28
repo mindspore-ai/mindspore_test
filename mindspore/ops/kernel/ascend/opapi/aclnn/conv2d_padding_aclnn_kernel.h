@@ -66,6 +66,8 @@ class Conv2DPaddingAscend : public AclnnKernelMod {
 
   size_t expand_count_{0};
   std::vector<size_t> expand_indices_{};
+  std::shared_ptr<KernelTensor> input_kernel_tensor_;
+  std::shared_ptr<KernelTensor> output_kernel_tensor_;
 };
 }  // namespace conv2d_padding
 }  // namespace kernel
