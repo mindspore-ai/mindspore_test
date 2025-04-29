@@ -332,7 +332,6 @@ bool HcclAdapter::HcclWatchdogThread(HcclComm comm, std::string *error_info, boo
     return true;
   }
   MS_EXCEPTION_IF_NULL(disable);
-  CheckExcutionMode();
   if (hccl_get_comm_async_error_ == nullptr) {
     MS_LOG(INFO) << "Hccl has never been inited, skip.";
     return true;
