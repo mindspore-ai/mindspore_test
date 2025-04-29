@@ -622,7 +622,6 @@ void KernelActor::ConvertInputContiguous(OpContext<DeviceTensor> *const context)
         cross_stream_addresses_.emplace_back(0, input_device_tensors_[i]->kernel_tensor()->device_ptr());
         cross_stream_addresses_.emplace_back(0, new_device_address->kernel_tensor()->device_ptr());
       }
-      storage_store_[i] = old_storage_info;
       temp_input_device_tensors_[i] = input_device_tensors_[i];
       temp_input_kernel_tensors_[i] = input_kernel_tensors_[i];
       input_device_tensors_[i] = new_device_address.get();
@@ -1491,16 +1490,13 @@ void KernelActor::RecoverInputs() {
     for (const auto &pair : temp_input_device_tensors_) {
       input_device_tensors_[pair.first] = pair.second;
     }
+    temp_input_device_tensors_.clear();
   }
   if (!temp_input_kernel_tensors_.empty()) {
     for (const auto &pair : temp_input_kernel_tensors_) {
       input_kernel_tensors_[pair.first] = pair.second;
     }
-  }
-  if (!storage_store_.empty()) {
-    for (const auto &info : storage_store_) {
-      input_device_tensors_[info.first]->set_tensor_storage_info(info.second);
-    }
+    temp_input_kernel_tensors_.clear();
   }
 }
 
