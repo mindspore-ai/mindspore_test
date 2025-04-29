@@ -2504,7 +2504,8 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
             f(x) = \lambda \exp(-\lambda x)
 
         .. warning::
-            This is an experimental API that is subject to change or deletion.
+            - It is only supported on Atlas A2 Training Series Products.
+            - This is an experimental API that is subject to change or deletion.
 
         Args:
             lambd (float, optional): Parameters of exponential distribution. Default: ``1``.

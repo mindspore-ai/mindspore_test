@@ -36,13 +36,14 @@
 namespace mindspore::prim {
 namespace {
 double GetEps(const TypeId &type_id) {
+  const int number_two = 2;
   switch (type_id) {
     case kNumberTypeFloat16:
-      return static_cast<double>(std::numeric_limits<float16>::epsilon() / 2);
+      return static_cast<double>(std::numeric_limits<float16>::epsilon() / number_two);
     case kNumberTypeBFloat16:
-      return static_cast<double>(std::numeric_limits<BFloat16>::epsilon() / 2);
+      return static_cast<double>(std::numeric_limits<BFloat16>::epsilon() / number_two);
     case kNumberTypeFloat32:
-      return static_cast<double>(std::numeric_limits<float>::epsilon() / 2);
+      return static_cast<double>(std::numeric_limits<float>::epsilon() / number_two);
     default:
       MS_EXCEPTION(ValueError) << "unsupported type_id " << type_id;
   }
@@ -87,7 +88,9 @@ void CheckInplaceExponentialInputs(const PrimitivePtr &primitive, const Abstract
   auto input_type_ptr = input_args[kIndex0]->GetType();
   auto input_tensor_type = input_type_ptr->cast<TensorTypePtr>();
   MS_EXCEPTION_IF_NULL(input_tensor_type);
-  auto input_element_type = input_tensor_type->element()->type_id();
+  auto ele = input_tensor_type->element();
+  MS_EXCEPTION_IF_NULL(ele);
+  auto input_element_type = ele->type_id();
   primitive->AddAttr("input_type_id", MakeValue(static_cast<int64_t>(input_element_type)));
 }
 
@@ -99,7 +102,9 @@ BeginFunction(InplaceExponential, input, lambd, seed, offset) {
 
   auto normal_branch = [&]() {
     const auto &primitive = prim();
-    auto input_type = static_cast<TypeId>(GetValue<int64_t>(primitive->GetAttr("input_type_id")));
+    auto input_type_id = primitive->GetAttr("input_type_id");
+    MS_EXCEPTION_IF_NULL(input_type_id);
+    auto input_type = static_cast<TypeId>(GetValue<int64_t>(input_type_id));
     if (input_type == kNumberTypeFloat64) {
       MS_EXCEPTION(TypeError) << "For InplaceExponential, the float64 input has not been supported.";
     }
