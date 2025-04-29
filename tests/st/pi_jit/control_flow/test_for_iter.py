@@ -73,7 +73,7 @@ def test_for_iter_unrolling(func, param):
     Expectation: No exception.
     """
     if func is for_mix and param is not 1:
-        pytest.skip(reason="fix later, Tensor parameter is constant and it's incorrect constant")
+        pytest.skip("fix later, Tensor parameter is constant and it's incorrect constant")
 
     config = {"loop_unrolling": True}
     excepted = func(param)
