@@ -44,6 +44,7 @@ update_submodule()
   git submodule update --init metadef
   if [[ "X$ENABLE_BACKEND" = "XDART" ]]; then
     cd "${BASEPATH}/mindspore/ccsrc/backend/ms_infer_backend/"
+    git submodule add --force -b master https://gitee.com/ms-incubator/dart.git dart
     git submodule update --init dart
   fi
   cd "${BASEPATH}"
