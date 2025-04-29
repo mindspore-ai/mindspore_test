@@ -514,14 +514,15 @@ class SideEffectControlFlowAssignDependTwoIfNet(Cell):
         return grad_out
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
-          essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_side_effect_grad_control_flow_assign_depend_of_two_if():
     """
     Feature: Auto monad feature.
     Description: Verify control flow.
     Expectation: No exception.
     """
+    ms.set_context(jit_level='O0')
     net = SideEffectControlFlowAssignDependTwoIfNet()
     grad_ys = Tensor([18.0], ms.float32)
     inputs1 = Tensor([9.0], ms.float32)
@@ -565,6 +566,7 @@ def test_side_effect_grad_two_addn_switch():
     Description: Verify control flow.
     Expectation: No exception.
     """
+    ms.set_context(jit_level='O0')
     net = SideEffectTwoAddnSwitchNet()
     grad_ys = Tensor([18.0], ms.float32)
     inputs = Tensor([9.0], ms.float32)
@@ -608,7 +610,7 @@ def test_side_effect_grad_if():
     Description: Verify control flow.
     Expectation: No exception.
     """
-    context.set_context(mode=context.GRAPH_MODE)
+    context.set_context(mode=context.GRAPH_MODE, jit_level='O0')
     net = SideEffectGradIfNet()
     grad_ys = Tensor([18.0], ms.float32)
     inputs = Tensor([9.0], ms.float32)
@@ -711,8 +713,7 @@ def test_side_effect_grad_control_flow_assign_depend_while_net():
     Description: Verify control flow.
     Expectation: No exception.
     """
-
-    context.set_context(mode=context.GRAPH_MODE)
+    context.set_context(mode=context.GRAPH_MODE, jit_level='O0')
     net = SideEffectControlFlowAssignDependWhileNet()
     grad_ys = Tensor([18.0], ms.float32)
     inputs1 = Tensor([9.0], ms.float32)
