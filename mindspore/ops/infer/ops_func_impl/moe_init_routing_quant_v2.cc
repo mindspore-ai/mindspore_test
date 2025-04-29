@@ -20,6 +20,7 @@
 #include <algorithm>
 
 #include "mindspore/ops/ops_utils/op_utils.h"
+#include "utils/convert_utils_base.h"
 
 namespace mindspore {
 namespace ops {
@@ -33,7 +34,7 @@ void MoeInitRoutingQuantV2FuncImpl::CheckInputs(const PrimitivePtr &primitive,
 
   if (x_info->IsNone() || expert_idx_info->IsNone()) {
     MS_EXCEPTION(ShapeError) << "For op[" << op_name << "], the input_x or input expert_idx should have real "
-                     << " shape, but get None!";
+                             << " shape, but get None!";
     return;
   }
 
@@ -41,7 +42,6 @@ void MoeInitRoutingQuantV2FuncImpl::CheckInputs(const PrimitivePtr &primitive,
   CheckRank(expert_idx_info, kInputRankSize, op_name, "expert_idx");
   const auto &x_shp = x_info->GetShape();
   const auto &expert_idx_shp = expert_idx_info->GetShape();
-  auto any_dim = abstract::Shape::kShapeDimAny;
   bool is_dynamic_shape = (x_shp.front() == any_dim) || (expert_idx_shp.front() == any_dim);
   if (is_dynamic_shape && (x_shp.front() != expert_idx_shp.front())) {
     MS_EXCEPTION(ShapeError) << "For op [" << op_name << "], the first dim of x and expert_idx must be the same.";
@@ -85,7 +85,7 @@ void MoeInitRoutingQuantV2FuncImpl::CheckInputs(const PrimitivePtr &primitive,
     const auto &scale_shape = quant_scale->GetShape();
     if (scale_shape.size() != 2) {
       MS_EXCEPTION(ShapeError) << "For op [" << op_name << "], the  scale  must be the 2D tensor or None,"
-                               << "but now get scale shape is " << scale_shape->GetShapeVector();
+                               << "but now get scale shape is " << ShapeVectorToStr(scale_shape);
     }
   }
 }
