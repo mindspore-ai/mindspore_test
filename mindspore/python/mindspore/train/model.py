@@ -226,7 +226,7 @@ def _update_ckpt_callback_info(resume_train_step, **kwargs):
         for item in kwargs.get('callbacks'):
             if isinstance(item, ModelCheckpoint):
                 ckpt_obj = item
-    if not ckpt_obj is None:
+    if ckpt_obj is not None:
         ckpt_obj._last_triggered_step = 0
         ckpt_obj._append_step_num = resume_train_step
 
