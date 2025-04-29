@@ -48,6 +48,8 @@ class DynamicProfilerConfigContext:
         self._analyse = True
         self._is_valid = False
         self._prof_path = None
+        self._mstx_domain_include = []
+        self._mstx_domain_exclude = []
         self._is_dyno = DynamicProfilerUtils.is_dyno_mode()
         self._parse(json_data)
         self._check_params_type()
@@ -69,6 +71,8 @@ class DynamicProfilerConfigContext:
         self._parse_prof_path(json_data)
         self._aic_metrics = json_data.get("aic_metrics", "AiCoreNone")
         self._analyse_mode = json_data.get("analyse_mode", -1)
+        self._mstx_domain_include = json_data.get("mstx_domain_include", [])
+        self._mstx_domain_exclude = json_data.get("mstx_domain_exclude", [])
         self._parallel_strategy = json_data.get("parallel_strategy", False)
         self._is_valid = json_data.get("is_valid", False)
 
@@ -235,7 +239,9 @@ class DynamicProfilerConfigContext:
             '_parallel_strategy': (bool, False),
             '_with_stack': (bool, False),
             '_data_simplification': (bool, True),
-            '_is_valid': (bool, False)
+            '_is_valid': (bool, False),
+            '_mstx_domain_include': (list, []),
+            '_mstx_domain_exclude': (list, [])
         }
 
         def _is_valid_type(value, expected_type):
