@@ -56,7 +56,7 @@ from mindspore.ops.auto_generate import (minimum, maximum, mul, muls, sin, sinc,
                                          sum_ext_op, prod_ext_op, all, matrix_inverse_ext, atan2_ext, sign, acos_ext,
                                          acosh_ext, asin_ext, asinh_ext, atan_ext, tan, median_ext_op, median_dim_op,
                                          xlogy_op, xlogy_scalar_other_op, xlogy_scalar_self_op, trunc, histc_ext, roll,
-                                         bincount_ext, rotated_iou_op, cat, narrow_view, var_op, pow, inplace_erfinv_op,
+                                         bincount_ext, rotated_iou_op, cat, narrow, var_op, pow, inplace_erfinv_op,
                                          frac_ext, pow_tensor_scalar_op, not_equal_op, isinf, addmv_op, cdist,
                                          addbmm_op, addmm_op, pow_scalar_tensor_op)
 # 2
@@ -5784,9 +5784,9 @@ def _diff_helper(input, n, dim):
 
     for i in range(n):  # pylint: disable=unused-variable
         if is_bool:
-            result = logical_xor(narrow_view(result, dim, 1, out_len), narrow_view(result, dim, 0, out_len))
+            result = logical_xor(narrow(result, dim, 1, out_len), narrow(result, dim, 0, out_len))
         else:
-            result = sub_ext(narrow_view(result, dim, 1, out_len), narrow_view(result, dim, 0, out_len))
+            result = sub_ext(narrow(result, dim, 1, out_len), narrow(result, dim, 0, out_len))
 
         if out_len == 0:
             break
