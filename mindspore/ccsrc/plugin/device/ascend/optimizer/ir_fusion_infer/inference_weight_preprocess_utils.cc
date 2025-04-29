@@ -301,6 +301,14 @@ std::shared_ptr<ValueNode> ConvertInt32BiasForMultiRank(const AnfNodePtr &bias_n
   MS_EXCEPTION_IF_NULL(bias_param);
   void *bias_data = bias_param->data_c();
   auto global_rank_id = distributed::collective::CollectiveManager::instance()->global_rank_id();
+  auto group_map = distributed::collective::CollectiveManager::instance()->get_group_map();
+  const std::string tp_str = "tp-";
+  auto tp_itr = std::find_if(group_map.begin(), group_map.end(), [tp_str](auto &ele) {
+    return ele.first.length() >= tp_str.length() && ele.first.substr(0, tp_str.length()) == tp_str;
+  });
+  uint32_t global_rank_size = distributed::collective::CollectiveManager::instance()->global_rank_size();
+  uint32_t tp_world_size = tp_itr == group_map.end() ? global_rank_size : tp_itr->second.size();
+  global_rank_id = global_rank_id % tp_world_size;
   auto origin_shape = bias_param->shape();
   auto shape = common::AnfAlgo::GetOutputInferShape(bias_node, kIndex0);
   if (shape.size() != 1 || origin_shape.size() != 1) {
