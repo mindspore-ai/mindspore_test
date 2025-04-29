@@ -109,11 +109,11 @@ void Conv3DExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs
     auto out_shape = outputs[kIndex0]->GetShapeVector();
     expand_out_shape_ = out_shape;
     expand_out_shape_.insert(expand_out_shape_.begin(), 1);
-    SetTensorStorageInfo<KernelTensor *>(outputs[kIndex0], expand_out_shape_);
+    output_kernel_tensor_ = outputs[kIndex0]->CloneKernelTensor();
+    output_kernel_tensor_->SetShapeVector(expand_out_shape_);
     GetWorkspaceForResize(input_kernel_tensor_.get(), inputs[kIndex1], inputs[kIndex2], stride_, padding_, dilation_,
-                          transposed_, output_padding_, groups_, outputs[kIndex0],
+                          transposed_, output_padding_, groups_, output_kernel_tensor_.get(),
                           OpApiUtil::GetCubeMathType(OpApiUtil::IsAllowConvHF32()));
-    SetBackTensorStorageInfo<KernelTensor *>(outputs[kIndex0], out_shape);
   }
 }
 
@@ -126,12 +126,10 @@ bool Conv3DExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const st
           OpApiUtil::GetCubeMathType(OpApiUtil::IsAllowConvHF32()));
   } else {
     input_kernel_tensor_->set_device_ptr(inputs[kIndex0]->device_ptr());
-    auto output_shape = outputs[kIndex0]->GetShapeVector();
-    SetTensorStorageInfo<KernelTensor *>(outputs[kIndex0], expand_out_shape_);
+    output_kernel_tensor_->set_device_ptr(outputs[kIndex0]->device_ptr());
     RunOp(stream_ptr, workspace, input_kernel_tensor_.get(), inputs[kIndex1], inputs[kIndex2], stride_, padding_,
-          dilation_, transposed_, output_padding_, groups_, outputs[kIndex0],
+          dilation_, transposed_, output_padding_, groups_, output_kernel_tensor_.get(),
           OpApiUtil::GetCubeMathType(OpApiUtil::IsAllowConvHF32()));
-    SetBackTensorStorageInfo<KernelTensor *>(outputs[kIndex0], output_shape);
   }
   return true;
 }

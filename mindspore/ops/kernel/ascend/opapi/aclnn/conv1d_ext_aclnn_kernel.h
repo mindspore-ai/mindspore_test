@@ -48,7 +48,9 @@ class Conv1DExtAscend : public AclnnKernelMod {
   bool transposed_{false};
   std::vector<int64_t> output_padding_ = {0};
   std::shared_ptr<KernelTensor> input_kernel_tensor_;
+  std::shared_ptr<KernelTensor> output_kernel_tensor_;
   bool _is_batchify{true};
+  ShapeVector expand_out_shape_{};
 };
 }  // namespace conv1d_ext
 }  // namespace kernel

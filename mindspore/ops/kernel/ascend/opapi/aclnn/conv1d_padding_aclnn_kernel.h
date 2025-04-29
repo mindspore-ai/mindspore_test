@@ -59,6 +59,7 @@ class Conv1DPaddingAscend : public AclnnKernelMod {
   bool need_ConstantPadNd_{false};
   bool is_batchfy_{true};
   std::shared_ptr<KernelTensor> input_kernel_tensor_;
+  std::shared_ptr<KernelTensor> output_kernel_tensor_;
 
   std::vector<int64_t> output_padding_ = {0};
   std::vector<int64_t> pad_vector_ = {0};
