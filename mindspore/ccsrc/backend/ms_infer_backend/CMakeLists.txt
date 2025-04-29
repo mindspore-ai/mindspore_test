@@ -5,7 +5,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/dart/dalang/dair)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/dart/dalang/dart)
 
 # Add DART directories
-add_subdirectory(dart/dalang)
+add_subdirectory(dart)
 
 # Include ms_infer_backend Source files
 file(GLOB _MS_INFER_BACKEND_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cc")
