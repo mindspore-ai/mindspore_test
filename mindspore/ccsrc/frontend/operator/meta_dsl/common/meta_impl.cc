@@ -275,10 +275,91 @@ NodePtr MetaImpl::IfBranchesInner(const std::vector<std::pair<NodePtr, BlockFunc
   return IfCond(condition, true_branch, false_branch, {});
 }
 
-NodePtr MetaImpl::For(const NodePtr &lower, const NodePtr &upper,
-                      const std::function<void(const NodePtr &, const NodePtr &)> &loop_func, const NodePtr &init_val) {
+namespace {
+FuncGraphPtr BuildForBodyGraph(const FuncGraphPtr &loop_func_graph, const FuncGraphPtr &for_iter_graph) {
+  /* def body_func(sequence, result, index, len):
+   *   result = loop_func(index, sequence[index], result)
+   *   index = index + 1
+   *   return for_impl(sequence, result, index, len) */
+  auto body_graph = std::make_shared<FuncGraph>();
+  auto sequence_param = body_graph->add_parameter();
+  auto result_param = body_graph->add_parameter();
+  auto index_param = body_graph->add_parameter();
+  auto len_param = body_graph->add_parameter();
+  auto item = body_graph->NewCNodeInOrder({GetMultitypeOps("getitem"), sequence_param, index_param});
+  auto new_result = body_graph->NewCNodeInOrder({NewValueNode(loop_func_graph), index_param, item, result_param});
+  auto new_index = body_graph->NewCNodeInOrder(
+    {NewValueNode(prim::kPrimScalarAdd), index_param, NewValueNode(static_cast<int64_t>(1))});
+  auto output =
+    body_graph->NewCNodeInOrder({NewValueNode(for_iter_graph), sequence_param, new_result, new_index, len_param});
+  body_graph->set_output(output);
+  return body_graph;
+}
+
+FuncGraphPtr BuildForReturnGraph() {
+  /* def return_func(sequence, result, index, len):
+   *   return result */
+  auto return_graph = std::make_shared<FuncGraph>();
+  return_graph->debug_info()->set_name("for_return");
+  (void)return_graph->add_parameter();
+  auto result_param = return_graph->add_parameter();
+  (void)return_graph->add_parameter();
+  (void)return_graph->add_parameter();
+  return_graph->set_output(result_param);
+  return return_graph;
+}
+
+FuncGraphPtr BuildForIterGraph(const FuncGraphPtr &graph, const FuncGraphPtr &body_func_graph,
+                               const FuncGraphPtr &return_func_graph) {
+  /* def for_iter(sequence, result, index, len):
+   *   return index < len ? body_func(...) : return_func(...) */
+  graph->debug_info()->set_name("for_iter");
+  auto sequence_param = graph->add_parameter();
+  auto result_param = graph->add_parameter();
+  auto index_param = graph->add_parameter();
+  auto len_param = graph->add_parameter();
+  auto compare_node = graph->NewCNodeInOrder({NewValueNode(prim::kPrimScalarLt), index_param, len_param});
+  auto cond_node = graph->NewCNodeInOrder({NewValueNode(prim::kPrimCond), compare_node, NewValueNode(MakeValue(true))});
+  auto switch_node = graph->NewCNodeInOrder(
+    {NewValueNode(prim::kPrimSwitch), cond_node, NewValueNode(body_func_graph), NewValueNode(return_func_graph)});
+  auto output_node = graph->NewCNodeInOrder({switch_node, sequence_param, result_param, index_param, len_param});
+  graph->set_output(output_node);
+  return graph;
+}
+}  // namespace
+
+NodePtr MetaImpl::For(const std::function<void(const NodePtr &, const NodePtr &, const NodePtr &)> &loop_func,
+                      const NodePtr &sequence, const NodePtr &result, const NodePtr &lower, const NodePtr &upper) {
+  // Define for_iter(sequence, result, index, len)
+  auto for_iter_graph = std::make_shared<FuncGraph>();
+  for_iter_graph->set_manager(manager_);
+  // Define loop_func(index, item, result)
+  BeginFunc("loop_func");
+  auto param_loop_index = NewParam("index");
+  auto param_loop_item = NewParam("item");
+  auto param_loop_result = NewParam("result");
+  loop_func(param_loop_index, param_loop_item, param_loop_result);
+  auto loop_func_graph = EndFunc();
+  // Build body graph.
+  auto body_func_graph = BuildForBodyGraph(loop_func_graph, for_iter_graph);
+  body_func_graph->set_manager(manager_);
+  // Build return graph.
+  auto return_func_graph = BuildForReturnGraph();
+  return_func_graph->set_manager(manager_);
+  // Build for_iter graph.
+  BuildForIterGraph(for_iter_graph, body_func_graph, return_func_graph);
+  // Call for_iter(sequence, result, lower=0, upper=len(sequence))
+  auto new_lower = lower != nullptr ? lower : NewValueNode(static_cast<int64_t>(0));
+  auto new_upper = upper != nullptr ? upper : Len(sequence);
+  NodePtrList node_list{NewValueNode(for_iter_graph), sequence, result, new_lower, new_upper};
+  return NewNode(node_list);
+}
+
+NodePtr MetaImpl::ForiLoop(const NodePtr &lower, const NodePtr &upper,
+                           const std::function<void(const NodePtr &, const NodePtr &)> &loop_func,
+                           const NodePtr &init_val) {
   // Build graph for loop body.
-  BeginFunc("for_loop");
+  BeginFunc("ForiLoop");
   auto param_index = NewParam("index");
   auto param_value = NewParam("value");
   loop_func(param_index, param_value);
@@ -391,6 +472,11 @@ NodePtr MetaImpl::Or(const NodePtr &x, const NodePtr &y) {
   return IfCond(x, true_branch, false_branch, {x, y});
 }
 
+NodePtr MetaImpl::Len(const NodePtr &x) {
+  auto len_func = NewNode({NewValueNode(prim::kPrimGetAttr), x, NewValueNode(MakeValue("__len__"))});
+  return NewNode({len_func});
+}
+
 NodePtr MetaImpl::ImplAllAny(const NodePtr &input, bool is_all) {
   constexpr int idx_zero = 0;
   constexpr int idx_first = 1;
@@ -399,9 +485,7 @@ NodePtr MetaImpl::ImplAllAny(const NodePtr &input, bool is_all) {
     auto index = GetItem(val, Value(idx_zero));
     auto result = GetItem(val, Value(idx_first));
     auto iterable = GetItem(val, Value(idx_second));
-    auto len_func = NewNode({NewValueNode(prim::kPrimGetAttr), iterable, NewValueNode(MakeValue("__len__"))});
-    auto len = NewNode({len_func});
-    auto index_valid = NewNode({NewValueNode(prim::kPrimScalarLt), index, len});
+    auto index_valid = NewNode({NewValueNode(prim::kPrimScalarLt), index, Len(iterable)});
     // All: index < len(iterable) and result. Any: index < len(iterable) and not result.
     auto check = is_all ? result : Not(result);
     Return(And(index_valid, check));

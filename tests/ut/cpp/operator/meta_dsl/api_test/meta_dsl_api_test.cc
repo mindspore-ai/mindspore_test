@@ -23,6 +23,7 @@
 #include "pipeline/jit/ps/static_analysis/static_analysis.h"
 #include "frontend/optimizer/ad/grad.h"
 #include "frontend/optimizer/optimizer.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "tests/ut/cpp/operator/meta_dsl/api_test/api_define.h"
 #include "operator/meta_dsl/meta_dsl_utils.h"
@@ -93,8 +94,8 @@ TEST_F(TestMetaDslApi, test_if_exp) {
 /// Feature: Meta DSL
 /// Description: Test for-loop expression in MetaDSL.
 /// Expectation: Run successfully.
-TEST_F(TestMetaDslApi, test_for) {
-  auto op = CreateMetaImpl("TestFor");
+TEST_F(TestMetaDslApi, test_foriloop) {
+  auto op = CreateMetaImpl("TestForiLoop");
   auto abs_lower = std::make_shared<AbstractScalar>(static_cast<int64_t>(0));
   auto abs_upper = std::make_shared<AbstractScalar>(static_cast<int64_t>(4));
   AbstractBasePtrList abs_list{NewAbstractTensor(0, kInt32), abs_lower, abs_upper};
@@ -136,6 +137,19 @@ TEST_F(TestMetaDslApi, test_scan) {
   MS_EXCEPTION_IF_NULL(out_abs);
   ASSERT_TRUE(out_abs->isa<AbstractTuple>());
   ASSERT_EQ(GetPrimitiveSize(fg, prim::kPrimScan), 1);
+}
+
+/// Feature: Meta DSL
+/// Description: Test for-loop expression in MetaDSL.
+/// Expectation: Run successfully.
+TEST_F(TestMetaDslApi, test_for) {
+  auto op = CreateMetaImpl("TestFor");
+  AbstractBasePtrList abs_list{NewAbstractTensor(1, kInt32)};
+  auto fg = NewFuncGraph(op, abs_list);
+  auto out_abs = fg->return_node()->abstract();
+  MS_EXCEPTION_IF_NULL(out_abs);
+  ASSERT_TRUE(out_abs->isa<AbstractList>());
+  ASSERT_EQ(out_abs->cast<AbstractListPtr>()->size(), 2);
 }
 
 /// Feature: Meta DSL

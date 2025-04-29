@@ -18,6 +18,7 @@
 #include "utils/core_op_utils.h"
 #include "utils/check_convert_utils.h"
 #include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/ops_utils/op_constants.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
@@ -81,6 +82,25 @@ BeginFunction(TestCustomBprop, x, y, out, dout) {
 EndFunction(TestCustomBprop)
 
 /** Python code:
+ *  result = []
+ *  sequence = (x, x, x, x, x)
+ *  for index, item in enumerate(sequence):
+ *    result.append(item + index)
+ */
+BeginFunction(TestFor, x) {
+  auto result = List();
+  auto sequence = Tuple(x, x, x, x, x);
+  auto loop_func = [&](const NodePtr &index, const NodePtr &item, const NodePtr &result) {
+    auto arg = Call(Prim(Add), item, index);
+    auto out = Call(Prim(ListAppend), result, arg);
+    Return(out);
+  };
+  auto out = For(loop_func, sequence, result, Value(1), Value(3));
+  Return(out);
+}
+EndFunction(TestFor)
+
+/** Python code:
  *  def for_func(x, lower, upper):
  *    def cumsum(index, res):
  *      return index + res
@@ -89,12 +109,12 @@ EndFunction(TestCustomBprop)
  *      x = cumsum(i, x)
  *    return x
  */
-BeginFunction(TestFor, x, lower, upper) {
+BeginFunction(TestForiLoop, x, lower, upper) {
   auto cumsum = [&](const NodePtr &index, const NodePtr &res) { Return(Call(Prim(Add), index, res)); };
-  auto out = For(lower, upper, cumsum, x);
+  auto out = ForiLoop(lower, upper, cumsum, x);
   Return(out);
 }
-EndFunction(TestFor)
+EndFunction(TestForiLoop)
 
 /** Python code:
  *  def while_func(x):

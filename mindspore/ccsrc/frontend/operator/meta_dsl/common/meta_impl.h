@@ -141,22 +141,42 @@ class MetaImpl : public MetaFuncGraph {
   /// \return The result node of if-elif-else expression.
   NodePtr If(const std::vector<std::pair<NodePtr, BlockFunc>> &if_branches, const BlockFunc &else_branch);
 
-  /// \brief for-loop. Refer to `mindspore.ops.ForiLoop` for more details.
+  /// \brief for-loop.
+  ///
+  /// \note Example:
+  ///         # python                                         // cpp
+  ///         result = ...                                   auto loop_func = [&](const NodePtr &index,
+  ///         for index, item in enumerate(sequence):   -->                       const NodePtr &item,
+  ///           result = loop_func(index, item, result)                           const NodePtr &result) { ... };
+  ///                                                        result = For(loop_func, sequence, result, lower, upper);
+  ///
+  /// \param[in] loop_func The loop function, take 3 argument and return value has the same type with result argument.
+  /// \param[in] sequence Object that needs to be iterated.
+  /// \param[in] result The result of for-loop.
+  /// \param[in] lower The start index of loop.
+  /// \param[in] upper The end index of loop.
+  ///
+  /// \return The result node of for-loop expression.
+  NodePtr For(const std::function<void(const NodePtr &, const NodePtr &, const NodePtr &)> &loop_func,
+              const NodePtr &sequence, const NodePtr &result, const NodePtr &lower = nullptr,
+              const NodePtr &upper = nullptr);
+
+  /// \brief Refer to `mindspore.ops.ForiLoop` for more details.
   ///
   /// \note Example:
   ///         # python                                      // cpp
   ///         for i in range(lower, upper):                 auto loop_func =
   ///           init_val = loop_func(i, init_val)    -->      [&](const NodePtr &index, const NodePtr &res) { ... };
-  ///         return init_val                               auto out = For(cond_func, loop_func, init_val);
+  ///         return init_val                               auto out = ForiLoop(cond_func, loop_func, init_val);
   ///
   /// \param[in] lower The start index of loop.
   /// \param[in] upper The end index of loop.
   /// \param[in] loop_func The loop function, takes two arguments.
   /// \param[in] init_val The init value. Supports Tensor, number, str, bool, list, tuple, dict.
   ///
-  /// \return The result node of while-loop expression.
-  NodePtr For(const NodePtr &lower, const NodePtr &upper,
-              const std::function<void(const NodePtr &, const NodePtr &)> &loop_func, const NodePtr &init_val);
+  /// \return The result node of for-loop expression.
+  NodePtr ForiLoop(const NodePtr &lower, const NodePtr &upper,
+                   const std::function<void(const NodePtr &, const NodePtr &)> &loop_func, const NodePtr &init_val);
 
   /// \brief while-loop. Refer to `mindspore.ops.WhileLoop` for more details.
   ///
@@ -395,6 +415,15 @@ class MetaImpl : public MetaFuncGraph {
   ///
   /// \return Output node.
   NodePtr Or(const NodePtr &x, const NodePtr &y);
+
+  /// \brief len(x)
+  ///
+  /// \note Example: Len(x)
+  ///
+  /// \param[in] x Input node.
+  ///
+  /// \return Output node.
+  NodePtr Len(const NodePtr &x);
 
   /// \brief x + y
   ///

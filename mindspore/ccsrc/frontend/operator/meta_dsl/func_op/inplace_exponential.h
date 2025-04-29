@@ -23,6 +23,7 @@
 
 namespace mindspore::prim {
 void CheckInplaceExponentialInputs(const PrimitivePtr &primitive, const AbstractBasePtrList &input_args);
+REGISTER_FUNCTION_OP(InplaceExponentialGrad);
 REGISTER_FUNCTION_OP(InplaceExponential, CheckInplaceExponentialInputs, InplaceExponentialGrad);
 }  // namespace mindspore::prim
 #endif  // MINDSPORE_MINDSPORE_CCSRC_KERNEL_PYBOOST_CUSTOMIZE_INPLACE_EXPONENTIAL_H_
