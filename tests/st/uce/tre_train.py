@@ -124,7 +124,10 @@ class MyLossMonitor(Callback):
         cur_epoch_num = cb_params.get("cur_epoch_num", 1)
         loss = float(np.mean(cb_params.net_outputs.asnumpy()))
 
-        cur_step_in_epoch = (cb_params.cur_step_num - 1) % cb_params.batch_num + 1
+        if isinstance(cb_params.initial_step, int):
+            cur_step_in_epoch = (cb_params.initial_step + cb_params.cur_step_num - 1) % cb_params.batch_num + 1
+        else:
+            cur_step_in_epoch = (cb_params.cur_step_num - 1) % cb_params.batch_num + 1
 
         if isinstance(loss, float) and (np.isnan(loss) or np.isinf(loss)):
             raise ValueError("In epoch: {} step: {}, loss is NAN or INF, training process cannot continue, "
