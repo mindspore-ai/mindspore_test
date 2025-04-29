@@ -2137,9 +2137,8 @@ AnfNodePtr AnfAlgo::GetTupleIndexes(const AnfNodePtr &node, std::vector<size_t> 
   if (IsPrimitiveCNode(node, prim::kPrimMakeTuple)) {
     // If make_tuple in make_tuple, visit may start with inner tuple_getitem.
     if (index_stack->empty()) {
-      MS_LOG(WARNING) << "Visit make tuple: " << node->DebugString()
-                      << ", but index are empty, visit should not start with inner tuple_getitem.";
-      return nullptr;
+      MS_LOG(INFO) << "Visit make tuple: " << node->DebugString() << " with empty indexes.";
+      return node;
     }
     auto make_tuple = node->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(make_tuple);

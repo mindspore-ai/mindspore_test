@@ -2146,7 +2146,7 @@ AbstractBasePtr AbstractRefTensor::Join(const std::shared_ptr<AbstractRefTensor>
   bool is_view_input_value = is_view_input() || other->is_view_input();
   bool is_view_output_value = is_view_output() || other->is_view_output();
   bool is_inplace_value = is_inplace() || other->is_inplace();
-  RefTensorType ref_tensor_type = {is_param, is_view_input_value, is_view_output_value, is_inplace_value};
+  RefTensorType ref_tensor_type = {is_param, is_inplace_value, is_view_input_value, is_view_output_value};
 
   auto has_view_output1 = other->user_data<bool>(kHasViewOutputFlag);
   auto has_view_output2 = this->user_data<bool>(kHasViewOutputFlag);

@@ -790,9 +790,6 @@ def test_setitem_index_dynamic_rank_test(capture_mode):
     Description: Verify the result of tensor setitem with index dynamic rank
     Expectation: success
     """
-    if capture_mode in ['ast']:
-        pytest.skip(f"Tests with capture_mode={capture_mode} are skipped!!!")
-
     @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
     def func(net, x, index1, index2, cond, value):
         return net(x, index1, index2, cond, value)
@@ -845,10 +842,6 @@ def test_setitem_index_dynamic_rank_test2(capture_mode):
     Description: Verify the result of tensor setitem with index dynamic rank
     Expectation: success
     """
-
-    if capture_mode in ['ast', 'bytecode']:
-        pytest.skip("Tests with capture_mode='bytecode' are skipped!!!")
-
     @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
     def func(net, x, index1, index2, value):
         return net(x, index1, index2, value)

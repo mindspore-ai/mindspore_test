@@ -280,10 +280,22 @@ void GetNeedGradMapForUpdateStateUseOnlyNodes(const FuncGraphPtr &func_graph,
   const auto &mgr = func_graph->manager();
   MS_EXCEPTION_IF_NULL(mgr);
   const auto &node_users_map = mgr->node_users();
+  constexpr size_t true_br_index = 2;
+  constexpr size_t false_br_index = 3;
 
   for (size_t i = 0; i < all_nodes.size(); ++i) {
-    // is call func
     auto cnode = all_nodes[i]->cast<CNodePtr>();
+    // is Switch.
+    if (IsPrimitiveCNode(cnode, prim::kPrimSwitch)) {
+      auto true_br_fg = GetValueNode<FuncGraphPtr>(cnode->input(true_br_index));
+      MS_EXCEPTION_IF_NULL(true_br_fg);
+      GetNeedGradMapForUpdateStateUseOnlyNodes(true_br_fg, need_grad_map);
+      auto false_br_fg = GetValueNode<FuncGraphPtr>(cnode->input(false_br_index));
+      MS_EXCEPTION_IF_NULL(false_br_fg);
+      GetNeedGradMapForUpdateStateUseOnlyNodes(false_br_fg, need_grad_map);
+      continue;
+    }
+    // is call func
     if (cnode != nullptr && IsValueNode<FuncGraph>(cnode->input(0))) {
       FuncGraphPtr sub_graph = GetValueNode<FuncGraphPtr>(cnode->input(0));
       MS_EXCEPTION_IF_NULL(sub_graph);

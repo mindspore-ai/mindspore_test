@@ -481,3 +481,60 @@ def test_tensor_view_inplace_grad_with_ctr_flow():
     net.construct = ms.jit(net.construct, backend="ms_backend")
     out_jit = grad(net)(x, x, x)
     assert (out_expect.asnumpy() == out_jit.asnumpy()).all()
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_tensor_view_inplace_grad_with_ctr_flow2():
+    """
+    Feature: Support tensor inplace view gradient.
+    Description: Support tensor inplace view gradient.
+    Expectation: Run success.
+    """
+
+    class Net(nn.Cell):
+        def construct(self, x, a, b):
+            y = ops.abs(x)
+            if mint.equal(a, b):
+                y_viewed1 = select_ext_view_op(y, 0, 0)
+                y_viewed2 = select_ext_view_op(y, 0, 1)
+            else:
+                y_viewed1 = select_ext_view_op(y, 1, 0)
+                y_viewed2 = select_ext_view_op(y, 1, 1)
+            inplace_copy_op(y_viewed1, ms.Tensor(-1, dtype=ms.float32))
+            y_viewed2.add_(2)
+            return y
+
+    x_np = (np.arange(2 * 2)).reshape((2, 2)).astype(np.float32)
+    x = ms.Tensor(x_np)
+    net = Net()
+    out_expect = grad(net)(x, x, x)
+    net.construct = ms.jit(net.construct, backend="ms_backend")
+    out_jit = grad(net)(x, x, x)
+    assert (out_expect.asnumpy() == out_jit.asnumpy()).all()
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_tensor_view_inplace_grad_with_ctr_flow3():
+    """
+    Feature: Support tensor inplace view gradient.
+    Description: Support tensor inplace view gradient.
+    Expectation: Run success.
+    """
+
+    class Net(nn.Cell):
+        def construct(self, x, a, b):
+            y = ops.abs(x)
+            y_viewed = select_ext_view_op(y, 0, 0)
+            if mint.equal(a, b):
+                y_viewed.add_(-2)
+            else:
+                inplace_copy_op(y_viewed, ms.Tensor(-1, dtype=ms.float32))
+            return y
+
+    x_np = (np.arange(2 * 2)).reshape((2, 2)).astype(np.float32)
+    x = ms.Tensor(x_np)
+    net = Net()
+    out_expect = grad(net)(x, x, x)
+    net.construct = ms.jit(net.construct, backend="ms_backend")
+    out_jit = grad(net)(x, x, x)
+    assert (out_expect.asnumpy() == out_jit.asnumpy()).all()

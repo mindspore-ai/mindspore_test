@@ -16,6 +16,7 @@
 
 #include "frontend/optimizer/ad/dfunctor.h"
 
+#include <algorithm>
 #include <map>
 #include <memory>
 #include <string>
@@ -364,7 +365,7 @@ static AnfNodePtr SkipHookNodeInBackProp(const AnfNodePtr &node) {
   return node;
 }
 
-bool IsLastDepend(const AnfNodePtr &node, const NodeUsersMap &node_users_map) {
+bool IsLastNodeOfGraph(const AnfNodePtr &node, const NodeUsersMap &node_users_map) {
   auto node_user_iter = node_users_map.find(node);
   if (node_user_iter == node_users_map.end()) {
     return false;
@@ -373,8 +374,8 @@ bool IsLastDepend(const AnfNodePtr &node, const NodeUsersMap &node_users_map) {
                      [](const auto &pair) { return IsPrimitiveCNode(pair.first, prim::kPrimReturn); });
 }
 
-CNodePtr DFunctor::CalDoutTuple(const CNodePtr &cnode_morph, const CNodePtr &din_tuple, const AdjointPtr &node_adjoint,
-                                int index) {
+CNodePtr DFunctor::CalculateDoutTuple(const CNodePtr &cnode_morph, const CNodePtr &din_tuple,
+                                      const AdjointPtr &node_adjoint, int index) {
   bool single_tensor_view = false;
   bool inplace_prim = false;
   auto prim = GetValueNode<PrimitivePtr>(cnode_morph->input(0));
@@ -389,30 +390,55 @@ CNodePtr DFunctor::CalDoutTuple(const CNodePtr &cnode_morph, const CNodePtr &din
   }
 
   auto caller = node_adjoint->caller();
-
+  auto node_users_map = resources_->manager()->node_users();
+  // For Some ops of Framework:
   if (IsPrimitiveCNode(cnode_morph, prim::kPrimDepend) && (index == 1)) {
-    auto node_users_map = resources_->manager()->node_users();
-    if (IsLastDepend(cnode_morph, node_users_map)) {
+    if (IsLastNodeOfGraph(cnode_morph, node_users_map)) {
       auto get_depend_dout_tuple = std::make_shared<prim::GetDependDoutTuple>("get_depend_dout_tuple");
       return caller->NewCNodeInOrder({NewValueNode(get_depend_dout_tuple), din_tuple, dout_});
     }
+    return dyn_cast<CNode>(node_adjoint->real_dout());
   }
+
+  if (IsPrimitiveCNode(cnode_morph, prim::kPrimMakeTuple)) {
+    if (IsLastNodeOfGraph(cnode_morph, node_users_map)) {
+      return caller->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), dout_, NewValueNode(int64_t(index - 1))});
+    }
+    return caller->NewCNodeInOrder(
+      {NewValueNode(prim::kPrimTupleGetItem), node_adjoint->real_dout(), NewValueNode(int64_t(index - 1))});
+  }
+
+  auto k = node_adjoint->k();
+  if (!IsPrimitiveCNode(k, prim::kPrimTupleGetItem)) {
+    return din_tuple;
+  }
+  auto k_cnode = k->cast<CNodePtr>();
+  auto fprop_input_cnode = k_cnode->input(1)->cast<CNodePtr>();
+  if (fprop_input_cnode == nullptr) {
+    return din_tuple;
+  }
+
+  if (IsPrimitiveCNode(cnode_morph, prim::kPrimTupleGetItem) && (index == 1)) {
+    auto dout_temp =
+      caller->NewCNodeInOrder({NewValueNode(prim::GetPythonOps("zeros_like")), fprop_input_cnode->input(1)});
+    auto generate_dout_tuple = std::make_shared<prim::GenerateBpropOutTuple>("generate_dout_tuple");
+    generate_dout_tuple->set_ops_type(prim::OpsType::Type_Variable);
+    auto dout_tuple_tmp = caller->NewCNodeInOrder({NewValueNode(generate_dout_tuple), dout_temp});
+    return caller->NewCNodeInOrder(
+      {NewValueNode(prim::kPrimTupleSetItem), dout_tuple_tmp, fprop_input_cnode->input(2), node_adjoint->real_dout()});
+  }
+
   // Get Din/dmask/ops_type from din_tuple: (din, (dmask, ops_tye));
   auto din = caller->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), din_tuple, NewValueNode(int64_t(0))});
-  auto dmask_tuple =
-    caller->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), din_tuple, NewValueNode(int64_t(1))});
-  auto dmask = caller->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), dmask_tuple, NewValueNode(int64_t(0))});
 
   if (inplace_prim) {
     // For inplace_prim, Change the ops_type when do backpropagate.
     auto inplace_indexes = prim->inplace_input_indexes();
     auto iter = std::find(inplace_indexes.begin(), inplace_indexes.end(), (index - 1));
     if (iter != inplace_indexes.end()) {
-      auto dout_tuple =
-        caller->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), din,
-                                 caller->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), dmask,
-                                                          NewValueNode(int64_t(prim::OpsType::Type_Inplace))})});
-      return dout_tuple;
+      auto generate_inplace_dout_tuple = std::make_shared<prim::GenerateBpropOutTuple>("generate_inplace_dout_tuple");
+      generate_inplace_dout_tuple->set_ops_type(prim::OpsType::Type_Inplace);
+      return caller->NewCNodeInOrder({NewValueNode(generate_inplace_dout_tuple), din});
     }
     return din_tuple;
   }
@@ -432,18 +458,9 @@ CNodePtr DFunctor::CalDoutTuple(const CNodePtr &cnode_morph, const CNodePtr &din
       caller->NewCNodeInOrder({NewValueNode(prim::kPrimZerosLikeExt), din, NewValueNode(int64_t(kBool->type_id()))});
 
     constexpr size_t input_begin_index = 2;
-    auto k = node_adjoint->k();
-    if (!IsPrimitiveCNode(k, prim::kPrimTupleGetItem)) {
-      return din_tuple;
-    }
-    auto k_cnode = k->cast<CNodePtr>();
-    auto fprop_input_cnode = k_cnode->input(1)->cast<CNodePtr>();
-    if (fprop_input_cnode == nullptr) {
-      return din_tuple;
-    }
     AnfNodePtrList viewed_mask_nodes{NewValueNode(prim), ori_mask};
-    std::copy_if(fprop_input_cnode->inputs().begin() + input_begin_index, fprop_input_cnode->inputs().end(),
-                 std::back_inserter(viewed_mask_nodes), [](const AnfNodePtr &node) { return !HasAbstractMonad(node); });
+    std::copy(fprop_input_cnode->inputs().begin() + input_begin_index, fprop_input_cnode->inputs().end() - 1,
+              std::back_inserter(viewed_mask_nodes));
     auto mask_viewed = caller->NewCNodeInOrder(viewed_mask_nodes);
     auto mask_viewed_true = caller->NewCNodeInOrder(
       {NewValueNode(prim::kPrimOnesLikeExt), mask_viewed, NewValueNode(MakeValue<int64_t>(kBool->type_id()))});
@@ -547,7 +564,7 @@ void DFunctor::BackPropagate(const CNodePtr &cnode_morph, const AdjointPtr &node
       auto din_ones_tuple = caller->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), din_ones, dmask_tuple});
       input_adjoint->second->AccumulateDout(din_ones_tuple);
     }
-    din = CalDoutTuple(cnode_morph, din, node_adjoint, i);
+    din = CalculateDoutTuple(cnode_morph, din, node_adjoint, i);
     input_adjoint->second->AccumulateDout(din);
   }
 }

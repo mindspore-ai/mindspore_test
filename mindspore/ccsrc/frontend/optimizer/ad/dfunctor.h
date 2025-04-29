@@ -81,8 +81,8 @@ class DFunctor : public std::enable_shared_from_this<DFunctor> {
   void BackPropagateSwitchLayer(const CNodePtr &cnode_morph, const CNodePtr &env);
   void BackPropagate(const CNodePtr &cnode_morph, const AdjointPtr &node_adjoint);
   // Get dout_mask for ops when do BackPropagate.
-  CNodePtr CalDoutTuple(const CNodePtr &cnode_morph, const CNodePtr &din_tuple, const AdjointPtr &node_adjoint,
-                        int index);
+  CNodePtr CalculateDoutTuple(const CNodePtr &cnode_morph, const CNodePtr &din_tuple, const AdjointPtr &node_adjoint,
+                              int index);
   AnfNodePtr AttachFvDoutToTape(const AnfNodePtr &grad_fv);
   AnfNodePtr AttachIndirectFvDoutToTape(const AnfNodePtr &grad_fv);
   // Map CNode/Index of Primitive to K.
