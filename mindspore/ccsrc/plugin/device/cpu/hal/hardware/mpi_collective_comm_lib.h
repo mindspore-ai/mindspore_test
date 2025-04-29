@@ -31,6 +31,7 @@
 namespace mindspore {
 namespace device {
 namespace cpu {
+using GroupOptions = mindspore::device::GroupOptions;
 // Map of collective operation data type to MPI data type.
 const std::map<TypeId, MPI_Datatype> kMPIDataTypeMap = {{TypeId::kNumberTypeInt8, MPI_BYTE},
                                                         {TypeId::kNumberTypeUInt8, MPI_UNSIGNED_CHAR},
@@ -65,7 +66,8 @@ class EXPORT_MPI_WRAPPER MPICollectiveCommLib : public CollectiveCommunicationLi
 
   // Override creating method. Reuse destroying method in base class CollectiveCommunicationLib.
   bool CreateCommunicationGroup(const std::string &group_name, const std::vector<uint32_t> &group_ranks,
-                                uint32_t local_group_rank, uint32_t local_group_size) override;
+                                uint32_t local_group_rank, uint32_t local_group_size,
+                                const GroupOptions &config = {}) override;
 
  private:
   MPICollectiveCommLib();

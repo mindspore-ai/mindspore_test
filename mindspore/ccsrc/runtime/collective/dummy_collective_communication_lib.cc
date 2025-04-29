@@ -75,7 +75,8 @@ bool DummyCollectiveCommunicationLib::CreateDeviceCommunicationGroup(const std::
 
 bool DummyCollectiveCommunicationLib::CreateCommunicationGroup(const std::string &group_name,
                                                                const std::vector<uint32_t> &group_ranks,
-                                                               uint32_t local_group_rank, uint32_t local_group_size) {
+                                                               uint32_t local_group_rank, uint32_t local_group_size,
+                                                               const GroupOptions &config) {
   if (groups_.count(group_name) != 0) {
     MS_LOG(WARNING) << "The group " << group_name << " has already existed.";
     return true;

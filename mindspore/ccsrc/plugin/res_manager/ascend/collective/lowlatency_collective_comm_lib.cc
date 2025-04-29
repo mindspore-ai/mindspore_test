@@ -19,6 +19,8 @@
 namespace mindspore {
 namespace device {
 namespace ascend {
+using GroupOptions = mindspore::device::GroupOptions;
+
 LowlatencyCollectiveCommLib &LowlatencyCollectiveCommLib::GetInstance() {
   static LowlatencyCollectiveCommLib instance;
   return instance;
@@ -41,7 +43,8 @@ bool LowlatencyCollectiveCommLib::Initialize(uint32_t global_rank, uint32_t glob
 
 bool LowlatencyCollectiveCommLib::CreateCommunicationGroup(const std::string &group_name,
                                                            const std::vector<uint32_t> &group_ranks,
-                                                           uint32_t local_group_rank, uint32_t local_group_size) {
+                                                           uint32_t local_group_rank, uint32_t local_group_size,
+                                                           const GroupOptions &config) {
   CHECK_RET((groups_.count(group_name) == 0), true, "The LCCL group " + group_name + " has already existed.");
 
   LowlatencyCommunicationGroupPtr group = std::make_shared<LowlatencyCommunicationGroup>(

@@ -21,6 +21,8 @@
 namespace mindspore {
 namespace device {
 namespace ascend {
+using GroupOptions = mindspore::device::GroupOptions;
+
 std::string GetCurrentDir() {
 #ifndef _WIN32
   Dl_info dl_info;
@@ -133,7 +135,8 @@ bool MultiAscendCollectiveCommLib::CreateDeviceCommunicationGroup(const std::str
 
 bool MultiAscendCollectiveCommLib::CreateCommunicationGroup(const std::string &group_name,
                                                             const std::vector<uint32_t> &group_ranks,
-                                                            uint32_t local_group_rank, uint32_t local_group_size) {
+                                                            uint32_t local_group_rank, uint32_t local_group_size,
+                                                            const GroupOptions &config) {
   if (groups_.count(group_name) != 0) {
     MS_LOG(WARNING) << "the group:" << group_name << "already existed";
     return true;
@@ -162,9 +165,9 @@ bool MultiAscendCollectiveCommLib::CreateCommunicationGroup(const std::string &g
     group->SetDvmCommGroup(dvm_group);
     dvm_comm_enabled_groups.insert(group_name);
   }
-  RETURN_IF_FALSE_WITH_LOG(
-    ascend_collective_comm_lib_->CreateCommunicationGroup(group_name, group_ranks, local_group_rank, local_group_size),
-    "Failed to create HCCL communication group" + group_name);
+  RETURN_IF_FALSE_WITH_LOG(ascend_collective_comm_lib_->CreateCommunicationGroup(
+                             group_name, group_ranks, local_group_rank, local_group_size, config),
+                           "Failed to create HCCL communication group" + group_name);
   CommunicationGroupPtr hccl_group = ascend_collective_comm_lib_->GetGroup(group_name);
   MS_EXCEPTION_IF_NULL(hccl_group);
   group->SetHcclGroup(hccl_group);

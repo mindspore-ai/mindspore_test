@@ -37,6 +37,7 @@
 namespace mindspore {
 namespace device {
 namespace ascend {
+using GroupOptions = mindspore::device::GroupOptions;
 
 // CCOOL: Collection Communication operator orchestration
 class EXPORT_WRAPPER CcoolCollectiveCommLib : public CollectiveCommunicationLib {
@@ -46,7 +47,8 @@ class EXPORT_WRAPPER CcoolCollectiveCommLib : public CollectiveCommunicationLib 
   bool Initialize(uint32_t global_rank, uint32_t global_rank_size, uint32_t local_rank_id) override;
 
   bool CreateCommunicationGroup(const std::string &group_name, const std::vector<uint32_t> &group_ranks,
-                                uint32_t local_group_rank, uint32_t local_group_size) override;
+                                uint32_t local_group_rank, uint32_t local_group_size,
+                                const GroupOptions &config = {}) override;
 
   bool CreateDeviceCommunicationGroup(const std::string &group_name, const std::vector<uint32_t> &group_ranks) override;
 

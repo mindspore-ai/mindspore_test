@@ -144,6 +144,7 @@ def _is_initialized(device_target):
         return False
     return _device_context.initialized()
 
+
 @_check_inputs_validation
 def empty_cache():
     """

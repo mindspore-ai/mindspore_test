@@ -66,7 +66,8 @@ class BACKEND_COMMON_EXPORT DummyCollectiveCommunicationLib : public CollectiveC
   bool CreateDeviceCommunicationGroup(const std::string &group_name, const std::vector<uint32_t> &group_ranks) override;
 
   bool CreateCommunicationGroup(const std::string &group_name, const std::vector<uint32_t> &group_ranks,
-                                uint32_t local_group_rank, uint32_t local_group_size) override;
+                                uint32_t local_group_rank, uint32_t local_group_size,
+                                const GroupOptions &config = {}) override;
 
   uint32_t GetRankId(const std::string &group_name) override;
 

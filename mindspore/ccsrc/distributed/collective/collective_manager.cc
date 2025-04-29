@@ -36,6 +36,7 @@
 #include "include/backend/distributed/recovery/recovery_context.h"
 #include "include/backend/distributed/collective/collect_hccl_init_info.h"
 #include "distributed/persistent/storage/json_utils.h"
+#include "runtime/collective/collective_communication_lib.h"
 #include "runtime/collective/dummy_collective_communication_lib.h"
 #include "availability/silent_check/silent_check.h"
 
@@ -220,7 +221,7 @@ bool CollectiveManager::Initialize() {
     // Step 4: Create global communication group asynchronizely
     MS_EXCEPTION_IF_NULL(device_comm_lib_instance_);
     bool async = IsAsyncInitGlobalComm();
-    CreateGroupConfig config = {};
+    GroupOptions config = {};
     config.async = async;
     auto group_name = device_comm_lib_instance_->global_group_name();
     PROF_START(CreateGlobalCommunicationGroup);
@@ -336,8 +337,7 @@ bool CollectiveManager::GetLocalGroupRankAndSize(const std::vector<uint32_t> &gr
 }
 
 bool CollectiveManager::CreateCommunicationGroup(const std::string &group_name,
-                                                 const std::vector<uint32_t> &group_ranks,
-                                                 const CreateGroupConfig &config) {
+                                                 const std::vector<uint32_t> &group_ranks, const GroupOptions &config) {
   PROF_START(distributed_create_group);
   MS_LOG(WARNING) << "Start to create communication group: " << group_name << " " << group_ranks
                   << ", async: " << config.async << ", submit_now: " << config.submit_now;
@@ -368,16 +368,16 @@ bool CollectiveManager::CreateCommunicationGroup(const std::string &group_name,
   MS_EXCEPTION_IF_NULL(host_comm_lib_instance_);
   // Step 1: Create communication group on host side.
   PROF_START(CreateCommunicationGroupOnHostSide);
-  RETURN_IF_FALSE_WITH_LOG(
-    host_comm_lib_instance_->CreateCommunicationGroup(group_name, group_ranks, local_group_rank, local_group_size),
-    "Failed to create host communication group" + group_name);
+  RETURN_IF_FALSE_WITH_LOG(host_comm_lib_instance_->CreateCommunicationGroup(group_name, group_ranks, local_group_rank,
+                                                                             local_group_size, config),
+                           "Failed to create host communication group" + group_name);
   PROF_END(CreateCommunicationGroupOnHostSide);
 
   // Step 2: Create communication group on device side.
   PROF_START(CreateCommunicationGroupOnDeviceSide);
-  RETURN_IF_FALSE_WITH_LOG(
-    device_comm_lib_instance_->CreateCommunicationGroup(group_name, group_ranks, local_group_rank, local_group_size),
-    "Failed to create device communication group" + group_name);
+  RETURN_IF_FALSE_WITH_LOG(device_comm_lib_instance_->CreateCommunicationGroup(
+                             group_name, group_ranks, local_group_rank, local_group_size, config),
+                           "Failed to create device communication group" + group_name);
   PROF_END(CreateCommunicationGroupOnDeviceSide);
 
   // save pipeline parallel local rank for silent check

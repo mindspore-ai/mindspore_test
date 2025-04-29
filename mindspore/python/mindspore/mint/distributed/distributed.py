@@ -70,7 +70,7 @@ from mindspore.ops.auto_generate.gen_ops_prim import (
     dist_comm_barrier_op,
     dist_comm_batch_isend_irecv_op,
 )
-from mindspore._c_expression import TCPStoreClient
+from mindspore._c_expression import TCPStoreClient, GroupOptions
 
 _pickler = pickle.Pickler
 _unpickler = pickle.Unpickler
@@ -658,7 +658,19 @@ def new_group(ranks=None,
             when backend is ``"hccl"`` will use Huawei Collective Communication Library(HCCL).
             when  backend is ``"mccl"`` will use MindSpore Collective Communication Library(MCCL).
             If ``None``, which means ``"hccl"`` in Ascend. Default is ``None``.
-        pg_options (str, invalid): Currently it is a reserved parameter.
+        pg_options (GroupOptions, optional): Additional communication group configuration parameters.
+            The backend will automatically select supported parameters and apply them during group
+            initialization. i.e. for the ``HCCL`` backend, ``hccl_config`` can be specified so that
+            group initialization configurations can be applied. Default is ``None``.
+
+            `GroupOptions` is defined as a class that can be instantiated as a python object.
+
+            .. code-block::
+
+                GroupOptions {
+                    hccl_config(dict)
+                }
+
         use_local_synchronization (bool, invalid): Currently it is a reserved parameter.
         group_desc (str, invalid): Currently it is a reserved parameter.
 
@@ -699,8 +711,11 @@ def new_group(ranks=None,
     if not isinstance(backend, str) or backend not in ("hccl", "mccl"):
         raise TypeError(f"the input backend must be hccl or mccl, but got {backend}")
     group = backend + "_" + str(len(ranks)) + "_" + hashlib.sha1(bytes("_".join(map(str, ranks)), "utf-8")).hexdigest()
+    if pg_options is not None:
+        if not isinstance(pg_options, GroupOptions):
+            raise TypeError("pg_options must be type GroupOptions, but got {}".format(type(pg_options)))
     try:
-        create_group(group, ranks)
+        create_group(group, ranks, pg_options)
     except RuntimeError as e:
         logger.warning(e)
         group = ""

@@ -19,6 +19,7 @@ import json
 from argparse import REMAINDER, ArgumentParser, ArgumentTypeError
 from .process_entity import _ProcessManager
 
+
 def parse_and_validate_bind_core(value):
     """
     Parse input argument of --bind_core.
