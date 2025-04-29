@@ -410,7 +410,6 @@ def shard(fn, in_strategy, out_strategy=None, parameter_plan=None, device="Ascen
         - It is valid only in semi auto parallel or auto parallel mode.
           In other parallel modes, strategies set here will be ignored.
         - If the input contain Parameter, its strategy should be set in `in_strategy`.
-        - This method currently does not support dynamic shapes.
 
     Args:
         fn (Union[Cell, Function]): Function to be executed in parallel.
