@@ -22,12 +22,25 @@
 #include <memory>
 #include <vector>
 #include <string>
+#include <variant>
+#include <unordered_map>
 #include "ir/dtype/type_id.h"
 #include "runtime/collective/communication_group.h"
 #include "include/backend/visible.h"
 
 namespace mindspore {
 namespace device {
+// This the config passed to 'CreateCommunicationGroup' method. It controls initialization mode for communication group.
+struct BACKEND_COMMON_EXPORT GroupOptions {
+  // Whether creating communication group asynchonizely.
+  bool async = false;
+  // For sync manner, this key means whether submit init task immediately for this group. If
+  // set to false, caller has to call 'SubmitCreateDeviceCommTask' itself.
+  bool submit_now = true;
+  // Used to specify some hccl settings.
+  std::unordered_map<std::string, std::variant<uint32_t, std::string>> hccl_config = {};
+};
+
 // The reduce type of collective operations.
 enum CollectiveOpReduceType : int64_t {
   Reduce_Mean = 0,
@@ -63,7 +76,8 @@ class BACKEND_COMMON_EXPORT CollectiveCommunicationLib {
 
   // Create communication group. This is the precondition for all collective operations on both host and device side.
   virtual bool CreateCommunicationGroup(const std::string &group_name, const std::vector<uint32_t> &group_ranks,
-                                        uint32_t local_group_rank, uint32_t local_group_size) {
+                                        uint32_t local_group_rank, uint32_t local_group_size,
+                                        const GroupOptions &config = {}) {
     return true;
   }
 

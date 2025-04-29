@@ -55,13 +55,14 @@ bool DummyAscendCollectiveCommLib::Initialize(uint32_t global_rank, uint32_t glo
 
 bool DummyAscendCollectiveCommLib::CreateCommunicationGroup(const std::string &group_name,
                                                             const std::vector<uint32_t> &group_ranks,
-                                                            uint32_t local_group_rank, uint32_t local_group_size) {
+                                                            uint32_t local_group_rank, uint32_t local_group_size,
+                                                            const GroupOptions &config) {
   if (groups_.count(group_name) != 0) {
     MS_LOG(WARNING) << "The group " << group_name << " has already existed.";
     return true;
   }
-  auto group = std::make_shared<ascend::AscendCommunicationGroup>(group_name, group_ranks, GetRankId(group_name),
-                                                                  local_group_rank, local_group_size);
+  auto group = std::make_shared<ascend::AscendCommunicationGroup>(
+    group_name, group_ranks, GetRankId(group_name), local_group_rank, local_group_size, config.hccl_config);
   groups_[group_name] = group;
   return true;
 }

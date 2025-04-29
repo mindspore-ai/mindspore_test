@@ -25,7 +25,7 @@ from mindspore import context
 from mindspore.parallel._ps_context import _is_role_sched, _is_ps_mode,\
                                            _get_ps_context
 from mindspore import log as logger
-from mindspore._c_expression import CollectiveManager, set_cluster_exit_with_exception, MSContext
+from mindspore._c_expression import CollectiveManager, set_cluster_exit_with_exception, MSContext, GroupOptions
 from mindspore.common._utils import load_lib
 
 HCCL_LIB = 'libhccl_plugin.so'
@@ -470,7 +470,7 @@ def _get_group_ranks(group):
 
 
 @check_parameter_available
-def _create_group_helper(group, rank_ids):
+def _create_group_helper(group, rank_ids, options=None):
     """
     The Helper to do create_group.
 
@@ -499,10 +499,15 @@ def _create_group_helper(group, rank_ids):
                          "but got 'rank_ids' size : {}.".format(len(rank_ids)))
     if len(rank_ids) - len(list(set(rank_ids))) > 0:
         raise ValueError("List rank_ids in Group {} has duplicate data!".format(group))
+    if options is None:
+        options = GroupOptions()
+    if not isinstance(options, GroupOptions):
+        raise TypeError("For 'create_group', the argument 'options' must be type of GroupOptions, "
+                        "but got 'options' type : {}.".format(type(options)))
     if _hccl_test():
         hccl.create_group(group, rank_size, rank_ids)
     else:
-        result = CollectiveManager.get_instance().create_group(group, rank_ids)
+        result = CollectiveManager.get_instance().create_group(group, rank_ids, options)
         if not result:
             raise RuntimeError("Failed to create communication group for {} with rank ids {}. "
                                "If NCCL is used, 'export NCCL_DEBUG=INFO' "

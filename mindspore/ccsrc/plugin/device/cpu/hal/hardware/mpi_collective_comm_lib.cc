@@ -19,6 +19,8 @@
 namespace mindspore {
 namespace device {
 namespace cpu {
+using GroupOptions = mindspore::device::GroupOptions;
+
 MPICollectiveCommLib::MPICollectiveCommLib() : world_group_(MPI_GROUP_NULL) {
   global_group_name_ = kMPIGlobalGroupName;
 }
@@ -78,7 +80,7 @@ bool MPICollectiveCommLib::BroadcastUniqueID(const std::string &group_name, size
 
 bool MPICollectiveCommLib::CreateCommunicationGroup(const std::string &group_name,
                                                     const std::vector<uint32_t> &group_ranks, uint32_t local_group_rank,
-                                                    uint32_t local_group_size) {
+                                                    uint32_t local_group_size, const GroupOptions &config) {
   CHECK_RET((groups_.count(group_name) == 0), true, "The MPI group " + group_name + " has already existed.");
 
   MPICommunicationGroupPtr group = std::make_shared<MPICommunicationGroup>(group_name, group_ranks, global_rank_id_,

@@ -29,6 +29,7 @@ constexpr size_t kPathMax = 4096;
 namespace mindspore {
 namespace device {
 namespace ascend {
+using GroupOptions = mindspore::device::GroupOptions;
 namespace {
 /* Correspondence between data_type and hcom data type in Ascend */
 static std::map<int64_t, HcclDataType> kConstOpHcomDataTypeMap = {
@@ -258,7 +259,8 @@ bool AscendCollectiveCommLib::CreateDeviceCommunicationGroup(const std::string &
 
 bool AscendCollectiveCommLib::CreateCommunicationGroup(const std::string &group_name,
                                                        const std::vector<uint32_t> &group_ranks,
-                                                       uint32_t local_group_rank, uint32_t local_group_size) {
+                                                       uint32_t local_group_rank, uint32_t local_group_size,
+                                                       const GroupOptions &config) {
   HCCL_GROUP_CHECK_EMPTY(group_name);
   if (groups_.count(group_name) != 0) {
     // If this group name has already existed, return true instead of throwing exception.
@@ -267,7 +269,7 @@ bool AscendCollectiveCommLib::CreateCommunicationGroup(const std::string &group_
   }
 
   AscendCommunicationGroupPtr group = std::make_shared<AscendCommunicationGroup>(
-    group_name, group_ranks, global_rank_id_, local_group_rank, local_group_size);
+    group_name, group_ranks, global_rank_id_, local_group_rank, local_group_size, config.hccl_config);
   CHECK_IF_NULL(group);
   groups_[group_name] = group;
 

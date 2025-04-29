@@ -31,6 +31,7 @@
 namespace mindspore {
 namespace device {
 namespace ascend {
+using GroupOptions = mindspore::device::GroupOptions;
 constexpr char kLCCLGlobalGroupName[] = "hccl_world_group";
 
 // Low-latency collective communication libaray is implemented on Ascend platform. So some HCCL data types could be
@@ -42,7 +43,8 @@ class EXPORT_WRAPPER LowlatencyCollectiveCommLib : public CollectiveCommunicatio
   bool Initialize(uint32_t global_rank, uint32_t global_rank_size, uint32_t local_rank_id) override;
 
   bool CreateCommunicationGroup(const std::string &group_name, const std::vector<uint32_t> &group_ranks,
-                                uint32_t local_group_rank, uint32_t local_group_size) override;
+                                uint32_t local_group_rank, uint32_t local_group_size,
+                                const GroupOptions &config = {}) override;
 
   int AllReduce(const LcclPtr &lccl_ptr, void *send_buff, void *recv_buff, size_t count, HcclDataType dataType,
                 const HcclReduceOp op, const aclrtStream stream);
