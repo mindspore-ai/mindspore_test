@@ -496,4 +496,25 @@ bool GkUtils::UseAkgCceLib(const AnfNodePtr &node) {
   }
   return false;
 }
+
+bool GkUtils::InplaceWithViewInputs(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
+  auto cnode = node->cast<CNodePtr>();
+  if (cnode == nullptr) {
+    return false;
+  }
+  if (!common::AnfAlgo::HasNodeAttr(GRAPH_FLAG_SIDE_EFFECT_MEM, cnode)) {
+    return false;
+  }
+  for (size_t i = 1; i < cnode->inputs().size(); ++i) {
+    auto input = common::AnfAlgo::GetPrevNodeOutput(node, i - 1, true);
+    auto input_node = input.first;
+    if (input_node != nullptr && input_node->isa<CNode>() && common::AnfAlgo::IsViewNode(input_node)) {
+      MS_LOG(DEBUG) << "node " << node->fullname_with_scope() << " input[" << (i - 1) << "] is view "
+                    << input_node->fullname_with_scope();
+      return true;
+    }
+  }
+  return false;
+}
 }  // namespace mindspore::graphkernel

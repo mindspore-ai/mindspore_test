@@ -553,7 +553,7 @@ bool StaticShapeCluster::IsClusterableOp(const AnfNodePtr &node) {
     return false;
   }
 
-  return true;
+  return !GkUtils::InplaceWithViewInputs(node);
 }
 
 std::vector<PrimitivePtr> DynamicShapeCluster::GetClusterableOpList() {
