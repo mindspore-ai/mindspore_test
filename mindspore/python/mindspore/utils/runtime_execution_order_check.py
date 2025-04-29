@@ -28,6 +28,7 @@ sys.setrecursionlimit(10000)
 # support hccl group 150000 card
 csv.field_size_limit(1024 * 1024)
 
+
 class ExecuteOrder:
     """Represents a single record from the execute_order.csv file."""
 
