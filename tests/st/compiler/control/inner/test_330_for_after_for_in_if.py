@@ -22,9 +22,8 @@ from mindspore.common.parameter import Parameter
 grad_all = C.GradOperation(get_all=True)
 
 
-@case_register.level1
+@case_register.level0
 @case_register.target_gpu
-@case_register.target_ascend
 def test_for_after_for_in_if():
     """
     Feature: Control flow
