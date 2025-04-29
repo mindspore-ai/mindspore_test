@@ -82,7 +82,7 @@ class TestLlamaConfig(DictConfig):
             wdict[pref + ".ffn_norm.weight"] = Tensor(np.ones((self.hidden_size,)), dtype)
         return wdict
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+
 @pytest.mark.parametrize('batch', [1, 4])
 def test_llm_boost(batch):
     """
