@@ -112,11 +112,14 @@ static bool CheckDeviceNum(const std::vector<std::vector<int64_t>> &strategies, 
   return true;
 }
 
-static bool CheckShapeStrategy(const std::vector<int64_t> &strategy, const std::vector<int64_t> &shapes) {
+static bool CheckShapeStrategy(const std::vector<int64_t> &strategy, const std::vector<int64_t> &shapes,
+                               const AnfNodePtr parameter) {
+  auto symbols = GetNodeSymbol(parameter);
+  auto tensor_symbol = symbols[0];
   for (size_t i = 0; i < strategy.size(); ++i) {
     auto devide_num = strategy[i];
     auto shape = shapes[i];
-    if (shape % devide_num != 0) {
+    if (shape % devide_num != 0 && !(shape == -1 && tensor_symbol[i].divisor % devide_num == 0)) {
       MS_LOG(ERROR) << "dimension length: " << shape << " is not divisible by layout: " << devide_num
                     << " at index: " << i;
       return false;
@@ -277,7 +280,7 @@ static void CheckInputStrategy(const std::vector<std::vector<int64_t>> &input_st
         << "Input dimension: " << param_shape.size()
         << " is not equal to in_strategy dimension: " << input_strategy[i].size() << " at index " << i;
     }
-    if (!CheckShapeStrategy(input_strategy[i], param_shape)) {
+    if (!CheckShapeStrategy(input_strategy[i], param_shape, parameter)) {
       MS_LOG_WITH_NODE(EXCEPTION, parameter) << "Check conformance between input strategy " << input_strategy[i]
                                              << "and tensor shape " << param_shape << "failed";
     }

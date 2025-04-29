@@ -91,9 +91,11 @@ bool IsMultiDynamicReshape(const CNodePtr &node) {
          tensor_redistribution->original_reshape_shape() != nullptr;
 }
 
-std::set<FuncGraphPtr> FindForwardGraphByRootNodes(const std::vector<AnfNodePtr> &root_all_nodes) {
+std::set<FuncGraphPtr> FindForwardGraphByRootNodes(const std::vector<AnfNodePtr> &root_all_nodes,
+                                                   const FuncGraphPtr &func_graph) {
   // J->CNode->Graph
   std::set<FuncGraphPtr> graph_set;
+  bool contains_j = false;
   for (auto &node : root_all_nodes) {
     MS_EXCEPTION_IF_NULL(node);
     if (!node->isa<CNode>()) {
@@ -108,6 +110,9 @@ std::set<FuncGraphPtr> FindForwardGraphByRootNodes(const std::vector<AnfNodePtr>
     if (expect_prim->name() != J && expect_prim->name() != SHARD) {
       continue;
     }
+    if (expect_prim->name() == J) {
+      contains_j = true;
+    }
     if (IsValueNode<FuncGraph>(cnode->input(1))) {
       auto graph = GetValueNode<FuncGraphPtr>(cnode->input(1));
       MS_LOG(DEBUG) << "Find the forward graph success";
@@ -119,6 +124,9 @@ std::set<FuncGraphPtr> FindForwardGraphByRootNodes(const std::vector<AnfNodePtr>
         (void)graph_set.insert(*iter);
       }
     }
+  }
+  if (!contains_j && !graph_set.empty() && func_graph != nullptr) {
+    (void)graph_set.insert(func_graph);
   }
   return graph_set;
 }
