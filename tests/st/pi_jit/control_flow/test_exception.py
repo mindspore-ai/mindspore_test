@@ -9,7 +9,7 @@ from tests.mark_utils import arg_mark
         
 SYS_VER = (sys.version_info.major, sys.version_info.minor)
 if SYS_VER != (3, 7) and SYS_VER != (3, 9):
-    pytest.skip(reason="not implement for python" + str(SYS_VER), allow_module_level=True)
+    pytest.skip("not implement for python" + str(SYS_VER), allow_module_level=True)
 
 def fibonacci():
     a, b = 0, 1

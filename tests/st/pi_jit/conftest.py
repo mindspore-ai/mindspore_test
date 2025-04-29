@@ -25,5 +25,5 @@ from mindspore._c_expression import update_pijit_default_config
 
 def pytest_runtest_setup(item):
     if sys.version_info >= (3, 11):
-        pytest.skip(reason="Skipping PIJit tests for Python >= 3.11.")
+        pytest.skip("Skipping PIJit tests for Python >= 3.11.")
     update_pijit_default_config(compile_with_try=False)
