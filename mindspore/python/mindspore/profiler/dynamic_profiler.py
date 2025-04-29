@@ -15,9 +15,9 @@
 """Dynamic Profile Monitor"""
 import os
 import sys
+import json
 import time
 import stat
-import json
 import atexit
 import random
 import multiprocessing
@@ -82,7 +82,8 @@ class DynamicProfilerMonitorBase(Callback):
         self._create_shm()
         self._create_process()
         atexit.register(self._clean_resource)
-        atexit.register(self._finalize_dynolog)
+        if self._is_dyno:
+            atexit.register(self._finalize_dynolog)
 
     @no_exception_func()
     def step_begin(self, run_context):
@@ -445,6 +446,7 @@ if sys.version_info >= (3, 8):
     @no_exception_func()
     def write_bytes(shm, byte_data):
         """Write bytes to shared memory"""
+        shm.buf[:] = b'\x00' * len(shm.buf)
         shm.buf[:len(byte_data)] = byte_data
 else:
     @no_exception_func()
@@ -531,19 +533,30 @@ if sys.version_info >= (3, 8):
                   a relative value, with the first step of training being 1. The stop_step must be greater than or
                   equal to start_step. The default value is -1, indicating that data collection will not start during
                   the entire training process.
-                - aic_metrics (int, optional) - The range of values corresponds to the Profiler. The default value -1
-                  indicates that AI Core utilization is not collected, and 0 indicates PipeUtilization, 1 indicates
-                  ArithmeticUtilization, 2 stands for Memory, 3 stands for MemoryL0, 4 stands for MemoryUB, 5 indicates
-                  ResourceConflictRatio, 6 indicates L2Cache, 7 indicates MemoryAccess.
-                - profiler_level (int, optional) - Sets the level of performance data collection, where -1 represents
-                  ProfilerLevel.LevelNone, 0 represents ProfilerLevel.Level0, 1 represents ProfilerLevel.Level1, and
-                  2 represents ProfilerLevel.Level2. The default value is 0, indicating the ProfilerLevel.Level0
-                  collection level.
-                - activities (int, optional) - Sets the devices for performance data collection, where 0 represents
-                  CPU+NPU, 1 represents CPU, and 2 represents NPU. The default value is 0, indicating the collection
-                  of CPU+NPU performance data.
-                - export_type (int, optional) -  Sets the data type to export, where 0 represents text, 1 represents db,
-                  and 2 represents text and db. The default value is 0, indicating only export text type data.
+                - aic_metrics (int/str, optional) - Set the collection of AI Core metric data. The current version can
+                  pass in either type int or str. Later, it will be updated to only pass in the str type.
+                  Here, ``0`` and ``"PipeUtilization"`` represent PipeUtilization; ``1`` and ``"ArithmeticUtilization"``
+                  represent ArithmeticUtilization; ``2`` and ``"Memory"`` represent Memory; ``3`` and ``"MemoryL0"``
+                  represent MemoryL0; ``4`` and ``"MemoryUB"`` stand for MemoryUB; ``5`` and ``"ResourceConflictRatio"``
+                  represent ResourceConflictRatio; ``6`` and ``"L2Cache"`` represent L2Cache; ``7`` and
+                  ``"MemoryAccess"`` stand for MemoryAccess. The default value ``"AiCoreNone"`` indicates that the
+                  AI Core metric is not collected.
+                - profiler_level (int/str, optional) - Set the level for collecting performance data. The current
+                  version can pass in either type int or str, and it will be updated to only pass in str type
+                  in the future. Among them, ``-1`` and ``"LevelNone"`` represent ProfilerLevel.LevelNone, ``0``
+                  and ``"Level0"`` represent ProfilerLevel.Level0, and ``1`` and ``"Level1"`` represent
+                  ProfilerLevel.Level1. ``2`` and ``"Level2"`` stand for Profile Level.Level2.
+                  The default value ``"Level0"`` indicates the collection level of ProfilerLevel.Level0.
+                - activities (int/list, optional) - Set the device for collecting performance data.
+                  The current version can pass in either type int or list. Later, it will be updated to only
+                  pass in the list type. Among them, ``0`` and ``["CPU","NPU"]`` represent CPU+NPU, ``1`` and
+                  ``["CPU"]`` represent CPU, and ``2`` and ``["NPU"]`` represent NPU. The default values
+                  ``["CPU","NPU"]`` indicate the collection of  performance data of CPU+NPU.
+                - export_type (int/list, optional) - Set the type of the exported performance data.
+                  The current version can pass in either type int or list, and it will be updated later
+                  to only pass in the list type. Among them, ``0`` and ``["text"]`` represent text, ``1`` and ``["db"]``
+                  represent db, and ``2`` and ``["text","db"]`` represent text and db respectively. The default value
+                  ``["text"]`` indicates that only performance data of the text type is exported.
                 - profile_memory (bool, optional) - Set whether to collect memory performance data, true indicates that
                   memory performance data is collected, false indicates that memory performance data is not collected.
                   The default value is false, indicating that memory performance data is not collected.
@@ -561,6 +574,14 @@ if sys.version_info >= (3, 8):
                 - data_simplification (bool, optional) - Sets whether to enable data simplification, where true means
                   to enable and false means not to enable. The default value is true, indicating that data
                   simplification is enabled.
+                - mstx_domain_include (list, optional) - Set the set of enabled domain names when the mstx switch
+                  is turned on. The name must be of str type. Default value: ``[]``, indicating that this parameter
+                  is not used to control the domain. This parameter is mutually exclusive with the mstx_domain_exclude
+                  parameter and cannot be set. simultaneously. If both are set, only the mstx_domain_include parameter
+                  takes effect.
+                - mstx_domain_exclude (list, optional) - Set the set of domain names that are not enabled when the
+                  mstx switch is turned on. The name must be of str type. Default value: ``[]``, indicating that this
+                  parameter is not used to control the domain.
 
             output_path (str, optional): (Ascend only) Output data path. Default: ``"./dyn_profile_data"`` .
             poll_interval (int, optional): (Ascend only) The polling period of the monitoring process, in seconds.
@@ -606,7 +627,7 @@ if sys.version_info >= (3, 8):
                 cfg_path = None
 
             if not DynamicProfilerUtils.is_dyno_mode() and not isinstance(cfg_path, str):
-                raise TypeError("The cfg_path must be a string.")
+                raise TypeError("If you set 'KINETO_USE_DAEMON' to not 1, The cfg_path must be a string.")
             if not isinstance(output_path, str):
                 logger.warning(f"The output_path must be a string, "
                                f"but got type {type(output_path)}, it will be set to './dyn_profile_data'.")
@@ -759,7 +780,7 @@ else:
                 cfg_path = None
 
             if not DynamicProfilerUtils.is_dyno_mode() and not isinstance(cfg_path, str):
-                raise TypeError("If you don't set 'KINETO_USE_DAEMON' to not 1, The cfg_path must be a string.")
+                raise TypeError("If you set 'KINETO_USE_DAEMON' to not 1, The cfg_path must be a string.")
 
             if not isinstance(output_path, str):
                 logger.warning(f"The output_path must be a string, "
