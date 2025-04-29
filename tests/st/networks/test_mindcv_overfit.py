@@ -199,11 +199,11 @@ def train(args, device_id=0, rank_id=0, device_num=1):
     train_steps = 200
 
     if args.image_resize == 224:
-        data1 = ms.Tensor(np.load(os.path.join(test_datapath, "image.npy")))[: args.batch_size, :, :, :]
-        data2 = ms.Tensor(np.load(os.path.join(test_datapath, "label.npy")))[: args.batch_size]
+        data1 = ms.Tensor(np.load(os.path.join(test_datapath, "image.npy")))[: args.batch_size, :, :, :] * 1
+        data2 = ms.Tensor(np.load(os.path.join(test_datapath, "label.npy")))[: args.batch_size] * 1
     elif args.image_resize == 299:
-        data1 = ms.Tensor(np.load(os.path.join(test_datapath, "image_299.npy")))[: args.batch_size, :, :, :]
-        data2 = ms.Tensor(np.load(os.path.join(test_datapath, "label_299.npy")))[: args.batch_size]
+        data1 = ms.Tensor(np.load(os.path.join(test_datapath, "image_299.npy")))[: args.batch_size, :, :, :] * 1
+        data2 = ms.Tensor(np.load(os.path.join(test_datapath, "label_299.npy")))[: args.batch_size] * 1
     data = (data1, data2)
 
     train_net = trainer.train_network
