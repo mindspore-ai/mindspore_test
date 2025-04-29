@@ -161,7 +161,7 @@ bool CollectiveOpsImpl::RunRingAllReduce(uint32_t send_to_rank, uint32_t recv_fr
                     << "] failed.";
       return false;
     }
-
+    MS_EXCEPTION_IF_NULL(rec_ptr);
     auto tmp_recv_chunk = reinterpret_cast<T *>(rec_ptr->data());
     // Step 3: Reduce the data so we can overlap the time cost of send.
     calculate(recv_chunk, tmp_recv_chunk, recv_chunk_count, reduce_op);
@@ -494,6 +494,7 @@ bool CollectiveOpsImpl::Recv(void *recvbuff, size_t count, uint32_t root, const 
     MS_LOG(ERROR) << "CollectiveWait " << recv_req_id << " failed.";
     return false;
   }
+  MS_EXCEPTION_IF_NULL(recv_str);
   int ret = Memcpy(recvbuff, count * sizeof(T), recv_str->data(), recv_str->size());
   if (ret != EOK) {
     MS_LOG(ERROR) << "Memcpy error, errorno(" << ret << ")"
