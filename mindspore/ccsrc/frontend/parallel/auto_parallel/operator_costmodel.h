@@ -259,7 +259,7 @@ using NanToNumCost = SqrtCost;
 using ZerosCost = SqrtCost;
 using RemainderCost = SqrtCost;
 using FmodTensorCost = SqrtCost;
-using CopyCost = SqrtCost;
+using InplaceCopyCost = SqrtCost;
 
 class ReLU6Cost : public CastCost {
  public:

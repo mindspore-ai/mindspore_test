@@ -617,14 +617,6 @@ class RemainderScalarTensorInfo : public ActivationOther {
   Status InferMirrorOpsByLayout() override;
 };
 
-class CopyInfo : public ActivationOther {
- public:
-  CopyInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
-           const PrimitiveAttrs &attrs)
-      : ActivationOther(name, inputs_shape, outputs_shape, attrs, std::make_shared<RemainderCost>()) {}
-  ~CopyInfo() override = default;
-};
-
 class SwigluInfo : public Softmax {
  public:
   SwigluInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,

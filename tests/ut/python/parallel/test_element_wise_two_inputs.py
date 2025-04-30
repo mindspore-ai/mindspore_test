@@ -23,7 +23,7 @@ from mindspore import context, Tensor, Parameter
 from mindspore.common.api import _cell_graph_executor
 from mindspore.nn import Cell
 from mindspore.ops import operations as P
-from mindspore.ops.auto_generate.gen_ops_prim import Polar, IsClose, RemainderTensorTensor, FmodTensor
+from mindspore.ops.auto_generate.gen_ops_prim import Polar, IsClose, RemainderTensorTensor, FmodTensor, InplaceCopy
 from mindspore.parallel.shard import Layout
 
 
@@ -346,3 +346,52 @@ def test_FmodTensor_auto_parallel():
     input_tensor = Tensor(np.ones([128, 128]) * 8, dtype=ms.float32)
     other_tensor = Tensor(np.ones([128, 128]) * 3, dtype=ms.float32)
     compile_graph(net, input_tensor, other_tensor, device_num=8, parallel_mode="semi_auto_parallel")
+
+class CopyNet(nn.Cell):
+    def __init__(self, strategy=None):
+        super().__init__()
+        if strategy:
+            self.copy = InplaceCopy().shard(strategy)
+        else:
+            self.copy = InplaceCopy()
+
+    def construct(self, output_data, input_data):
+        return self.copy(output_data, input_data)
+
+def test_inplace_copy_with_default_values():
+    """
+    Feature: distribute operator inplace_copy with default values.
+    Description: basic.
+    Expectation: compile done without error.
+    """
+    context.set_context(save_graphs=True)
+    stra = ((4, 1), (4, 1))
+    net = CopyNet(strategy=stra)
+    input_tensor = Tensor(np.ones([128, 128]) * 8, dtype=ms.float32)
+    output_tensor = Tensor(np.ones([128, 128]), dtype=ms.float32)
+    compile_graph(net, output_tensor, input_tensor)
+
+def test_inplace_copy_auto_parallel():
+    """
+    Features: test inplace_copy auto parallel
+    Description: auto parallel
+    Expectation: compile success
+    """
+    context.set_context(save_graphs=True)
+    net = CopyNet()
+    input_tensor = Tensor(np.ones([128, 128]) * 8, dtype=ms.float32)
+    output_tensor = Tensor(np.ones([128, 128]), dtype=ms.float32)
+    compile_graph(net, output_tensor, input_tensor, device_num=8, parallel_mode="semi_auto_parallel")
+
+def test_inplace_copy_other_shape_broadcast_succ():
+    """
+    Feature: test inplace_copy parallel shape.
+    Description: Valid other shape.
+    Expectation: compile done without error.
+    """
+    context.set_context(save_graphs=True)
+    stra = ((4, 1), (4, 1))
+    net = CopyNet(strategy=stra)
+    input_tensor = Tensor(np.ones([128, 128]) * 8, dtype=ms.float32)
+    output_tensor = Tensor(np.ones([128, 1]), dtype=ms.float32)
+    compile_graph(net, output_tensor, input_tensor)

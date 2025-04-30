@@ -1244,5 +1244,6 @@ REGISTER(RemainderTensorTensorInfo);
 REGISTER(FmodScalarInfo);
 REGISTER(MulsInfo);
 REGISTER(FmodTensorInfo);
+REGISTER(InplaceCopyInfo);
 }  // namespace parallel
 }  // namespace mindspore

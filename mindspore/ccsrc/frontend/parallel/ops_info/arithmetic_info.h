@@ -469,6 +469,14 @@ class FmodTensorInfo : public XdivyInfo {
   ~FmodTensorInfo() override = default;
 };
 
+class InplaceCopyInfo : public XdivyInfo {
+ public:
+  InplaceCopyInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+                  const PrimitiveAttrs &attrs)
+      : XdivyInfo(name, inputs_shape, outputs_shape, attrs) {}
+  ~InplaceCopyInfo() override = default;
+};
+
 class PolarInfo : public XdivyInfo {
  public:
   PolarInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
