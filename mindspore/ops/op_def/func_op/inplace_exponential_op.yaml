@@ -1,0 +1,26 @@
+#operator exponential
+inplace_exponential:
+    args:
+        input:
+            dtype: tensor
+        lambd:
+            dtype: number
+        seed:
+            dtype: tensor
+        offset:
+            dtype: tensor
+    args_signature:
+        rw_write: input
+    returns:
+        output:
+            dtype: tensor
+            inplace: input
+    labels:
+        side_effect_mem: True
+    class:
+        name: InplaceExponential
+    function:
+        disable: True
+    dispatch:
+        enable: True
+        Ascend: InplaceExponentialAscend

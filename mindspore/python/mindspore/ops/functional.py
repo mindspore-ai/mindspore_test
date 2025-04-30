@@ -21,7 +21,7 @@ from mindspore.ops import _constants
 from mindspore.ops.function import *
 from mindspore.ops.function.array_func import chunk_ext, zero_
 from mindspore.ops.function.math_func import all, argmax_ext, float_power_ext, erfinv_, tanh_, bernoulli_ext
-from mindspore.ops.function.random_func import random_, uniform_ext, uniform_, normal_
+from mindspore.ops.function.random_func import random_, uniform_ext, uniform_, normal_, exponential_
 from mindspore.ops import operations as P
 from mindspore.ops.operations import array_ops
 from mindspore.ops.operations._sequence_ops import TensorToTuple
@@ -343,6 +343,7 @@ setattr(tensor_operator_registry, 'tensor_slice', tensor_slice)
 setattr(tensor_operator_registry, 'select', select)
 setattr(tensor_operator_registry, 'uniform', uniform_ext)
 setattr(tensor_operator_registry, 'uniform_', uniform_)
+setattr(tensor_operator_registry, 'exponential_', exponential_)
 setattr(tensor_operator_registry, 'gather', gather)
 setattr(tensor_operator_registry, 'gather_d', gather_d)
 setattr(tensor_operator_registry, 'gather_elements', gather_elements)

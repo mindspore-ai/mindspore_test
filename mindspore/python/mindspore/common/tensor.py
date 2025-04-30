@@ -2495,6 +2495,41 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('uniform_')(self, from_=from_, to=to, generator=generator)
 
+
+    def exponential_(self, lambd=1, *, generator=None):
+        r"""
+        Fills `self` tensor with elements drawn from the exponential distribution:
+
+        .. math::
+            f(x) = \lambda \exp(-\lambda x)
+
+        .. warning::
+            - It is only supported on Atlas A2 Training Series Products.
+            - This is an experimental API that is subject to change or deletion.
+
+        Args:
+            lambd (float, optional): Parameters of exponential distribution. Default: ``1``.
+
+        Keyword Args:
+            generator (Generator, optional): a pseudorandom number generator.
+                Default: ``None`` .
+
+        Returns:
+            Tensor, with same shape and same data type with input.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import mindspore
+            >>> x = mindspore.Tensor([1, 2, 3.0])
+            >>> out = x.exponential_(2)
+            >>> print(out.shape)
+            (3,)
+        """
+        return tensor_operator_registry.get('exponential_')(self, lambd=lambd, generator=generator)
+
+
     def sum_to_size(self, *size):
         r"""
         Sum self Tensor to the `size`. `size` must be expandable to the Tensor size.

@@ -316,6 +316,12 @@ FuncGraphPtr MultitypeFuncGraph::GenerateFromTypes(const TypePtrList &types) {
     MS_LOG(DEBUG) << "GenerateStubFunc " << buffer.str() << ", function: " << stub->ToString() << ".";
     return stub;
   }
+  if (name_ == "zeros_like" && types[0]->ToString() == "Class") {
+    auto fg = std::make_shared<FuncGraph>();
+    auto param = fg->add_parameter();
+    fg->set_output(param);
+    return fg;
+  }
 
   if (default_fn_.ptr() != nullptr && !CheckContainsAny(types)) {
     MS_LOG(DEBUG) << "Use default_fn, convert default_fn to FuncGraph";
