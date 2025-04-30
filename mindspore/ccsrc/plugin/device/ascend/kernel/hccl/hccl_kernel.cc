@@ -322,12 +322,7 @@ void HcclKernel::LoadHcclLibrary() {
   primitive_->set_attr(kAttrCollectiveCommLib, MakeValue<std::string>("HCCL"));
 }
 
-bool HcclKernel::NeedReGetHcom(const std::string &group, const std::string &inner_name) {
-  if (!mindspore::UCEException::GetInstance().enable_arf()) {
-    return false;
-  }
-  return AscendCollectiveCommLib::GetInstance().CommName(group) != inner_name;
-}
+bool HcclKernel::NeedReGetHcom() { return mindspore::UCEException::GetInstance().rebuild_group_flag(); }
 
 #ifdef ENABLE_INTERNAL_KERNELS
 void HcclKernel::LoadLcclLibrary() {

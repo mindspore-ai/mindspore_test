@@ -157,6 +157,7 @@ void RecoveryContext::SetIsArf(bool is_arf) {
   if (!is_arf) {
     // reset reboot node flag when reset arf flag at train step end
     UCEException::GetInstance().set_reboot_node(false);
+    UCEException::GetInstance().set_rebuild_group_flag(false);
   }
 }
 

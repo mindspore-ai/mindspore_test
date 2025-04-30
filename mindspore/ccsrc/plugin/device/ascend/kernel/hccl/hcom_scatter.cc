@@ -93,7 +93,7 @@ bool HcomScatterKernel::LaunchKernel(const std::vector<KernelTensor *> &inputs,
           return false;
         }
       } else {
-        if (NeedReGetHcom(group_, hccl_inner_comm_name_)) {
+        if (NeedReGetHcom()) {
           MS_LOG(WARNING) << "Hccl inner name had changed, need re-get hcom";
           comm_ = AscendCollectiveCommLib::GetInstance().GetHcomByGroup(group_);
         }
@@ -106,7 +106,7 @@ bool HcomScatterKernel::LaunchKernel(const std::vector<KernelTensor *> &inputs,
       }
     }
   } else {
-    if (NeedReGetHcom(group_, hccl_inner_comm_name_)) {
+    if (NeedReGetHcom()) {
       MS_LOG(WARNING) << "Hccl inner name had changed, need re-get hcom";
       comm_ = AscendCollectiveCommLib::GetInstance().GetHcomByGroup(group_);
     }

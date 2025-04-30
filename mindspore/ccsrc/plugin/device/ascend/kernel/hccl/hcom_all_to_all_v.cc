@@ -144,7 +144,7 @@ bool HcomAlltoAllVKernel::Launch(const std::vector<KernelTensor *> &inputs, cons
     recv_buf = recv_tensor->device_ptr();
     MS_EXCEPTION_IF_NULL(recv_buf);
   }
-  if (NeedReGetHcom(group_, hccl_inner_comm_name_)) {
+  if (NeedReGetHcom()) {
     MS_LOG(WARNING) << "Hccl inner name had changed, need re-get hcom";
     comm_ = AscendCollectiveCommLib::GetInstance().GetHcomByGroup(group_);
   }
