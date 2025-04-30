@@ -56,6 +56,9 @@ class Generator:
     A generator that manages the state of random numbers and provides seed and offset for random functions.
     When the seed and offset are fixed, the random function generates the same random sequence.
 
+    .. note::
+        Graph mode does not support the use of multiple generators at the same time for now.
+
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
