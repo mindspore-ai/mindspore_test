@@ -1,5 +1,5 @@
 /**
- * Copyright 2024-2025Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1353,9 +1353,8 @@ void ParallelProcessor::StepRedistribution(const CNodePtr &cnode, const NodeUser
   FuncGraphManagerPtr manager = cnode->func_graph()->manager();
   MS_EXCEPTION_IF_NULL(manager);
   // In pipeline parallel mode, redistribution is inserted after receive, not send.
-  if (IsOneOfPrimitiveCNode(cnode,
-                            {prim::kPrimSend, prim::kPrimMakeTuple, prim::kPrimMakeList, prim::kPrimTensorToScalar,
-                             prim::kPrimDType, prim::kPrimDtypeToEnum})) {
+  if (IsOneOfPrimitiveCNode(cnode, {prim::kPrimSend, prim::kPrimMakeTuple, prim::kPrimMakeList,
+                                    prim::kPrimTensorToScalar, prim::kPrimDType, prim::kPrimDtypeToEnum})) {
     return;
   }
   // Find Redistribution next_nodes
