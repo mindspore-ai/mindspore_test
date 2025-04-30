@@ -657,9 +657,8 @@ py::object ExecutorPy::GenerateArgumentsKey(const py::object &obj, const py::tup
   // will cause cache misses and result in repeated compilation.
   // So, clone an abstract copy in the cache first to avoid conversion to RefTensor causing lookup failures.
   abstract::AbstractBasePtrList new_args_abs;
-  for (std::size_t i = 0; i < args_abs.size(); i++) {
-    (void)new_args_abs.emplace_back(args_abs[i]->Clone());
-  }
+  std::transform(args_abs.begin(), args_abs.end(), std::back_inserter(new_args_abs),
+                 [](AbstractBasePtr abs) { return abs->Clone(); });
   static uint64_t key_counter = 0;
   kArgsCache[new_args_abs] = key_counter;
   if (!py::isinstance<py::none>(obj)) {
