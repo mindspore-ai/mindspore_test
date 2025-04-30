@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include "infer/ops_func_impl/select_ext_view.h"
+
 #include <vector>
 #include <set>
 #include <memory>
@@ -22,7 +24,6 @@
 #include "utils/ms_context.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "op_def/op_name.h"
-#include "infer/ops_func_impl/select_ext_view.h"
 #include "ops/ops_func_impl/simple_infer.h"
 
 namespace mindspore {
