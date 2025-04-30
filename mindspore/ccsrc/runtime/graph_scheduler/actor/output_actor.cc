@@ -658,6 +658,14 @@ void OutputActor::HandleOutput() {
     MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
     // If the output node whose output address ptr can't be changed, then alloc the new device memory and copy the data:
     if (IsOutputAddressPersisted(device_tensor.get(), output_nodes_[i])) {
+      if (repeat_index.find(i) != repeat_index.end() && i > repeat_index[i] && outputs_[repeat_index[i]] != nullptr) {
+        const auto &src_address = std::dynamic_pointer_cast<DeviceTensor>(outputs_[repeat_index[i]]->device_address());
+        MS_EXCEPTION_IF_NULL(src_address);
+        tensor_device_address->set_pointer_ref_count(src_address->pointer_ref_count());
+        MS_LOG(DEBUG) << "Output actor share the same pointer ref count:" << src_address->pointer_ref_count()
+                      << " between device address:" << tensor_device_address << " and:" << src_address;
+        continue;
+      }
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, GetAID().Name(), memory::mem_pool::MemType::kOther,
                                                      tensor_device_address->GetSize(), tensor_device_address.get());
       if (!device_context->device_res_manager_->AllocateMemory(tensor_device_address.get(), kDefaultStreamIndex)) {
