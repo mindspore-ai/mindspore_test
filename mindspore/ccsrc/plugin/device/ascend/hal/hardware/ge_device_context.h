@@ -49,7 +49,7 @@ class GeDeviceContext
 
   void Initialize() override;
 
-  void GeInitialize() const;
+  void ContextInitGe() const;
 
   void Destroy() override;
 

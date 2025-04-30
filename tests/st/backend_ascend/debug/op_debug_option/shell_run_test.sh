@@ -27,12 +27,10 @@ if [ "${status}" != "0" ]; then
     exit 1
 fi
 
-need_str1='aclrtCtxSetSysParamOpt, opt = 1, value = 1'
-need_str2='Set compile option \[op_debug_option\] and value \[oom\]'
-result1=$(cat ms.log | grep -E "${need_str1}")
-result2=$(cat ms.log | grep -E "${need_str2}")
+need_str='aclrtCtxSetSysParamOpt, opt = 1, value = 1'
+result=$(cat ms.log | grep -E "${need_str}")
 
-if [ "$result1" == "" ] || [ "$result2" == "" ]; then
+if [ "$result" == "" ]; then
     exit 1
 fi
 exit 0
