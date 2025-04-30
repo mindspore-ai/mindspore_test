@@ -647,6 +647,19 @@ void KernelRunner::ConvertInputContiguous(OpContext<KernelTensor> *const context
         new_kernel_tensor->set_size(address_size);
       }
       new_device_address->set_tensor_storage_info(nullptr);
+
+      if (ActorDispatcher::enable_trace_dynamic_memory() || ActorDispatcher::enable_use_trace_memory()) {
+        MS_LOG(EXCEPTION)
+          << "The input[" << i << "] of kernel(" << kernel_->fullname_with_scope()
+          << ") got a non-contiguous memory layout tensor, and framework will automatically convert it "
+             "to contiguous memory layout, which involves temporary device memory allocation."
+             " The trace memory feature can not work in this case, please find the source of "
+             "non-contiguous input and convert it to contiguous memory layout, or disable trace memory "
+             "feature by export MS_ENABLE_TRACE_MEMORY=off. Note: Disabling the trace "
+             "memory feature will degrade memory management performance. Additionally, it will automatically disable "
+             "the kernel group launch(parallel launch) and graph capture features, which may reduce network execution "
+             "performance.";
+      }
       // Launch CopyInplace to make tensor contiguous.
       if (i >= depend_shape_input_list_.size() || !depend_shape_input_list_[i]) {
         if (!device_contexts_[0]->GetKernelExecutor()->ExecuteKernelTask(runtime::KernelTaskType::kCONTIGUOUS_TASK,

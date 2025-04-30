@@ -1887,6 +1887,14 @@ void SuperKernelActor::BuildKernelActors() {
     MS_EXCEPTION_IF_NULL(real_device_context);
     KernelAsyncLaunchActor::GetInstance()->AddDeviceContext(real_device_context);
     RuntimePipeline::GetInstance().AddDeviceContext(real_device_context);
+
+    if (enable_parallel_dispatch_ && (real_device_context->GetDeviceType() != device_contexts_[0]->GetDeviceType())) {
+      // CPU kernels doesn't has stream context and can not parallel launch;
+      MS_LOG(EXCEPTION)
+        << "Find heterogeneous kernel: " << kernel->fullname_with_scope() << " in kernel graph: " << graph_->ToString()
+        << ". The kernel group launch(parallel launch) feature can not work in this case. Please eliminate "
+           "heterogeneous(cpu) kernel or disable kernel group launch feature.";
+    }
     if (IsRpcActor(kernel)) {
       MS_LOG(EXCEPTION) << "Can not launch a sub graph which contains rpc kernel by kbk.";
     } else if (IsInnerControlFlowActor(kernel)) {
@@ -1993,6 +2001,7 @@ void SuperKernelActor::BuildKernelActors() {
     }
   }
 }
+
 SuperKernelActor::SuperKernelActor(const std::string &name, const KernelGraphPtr &graph, const std::string &graph_phase,
                                    const DeviceContext *device_context, const AID &memory_manager_aid,
                                    const AID *debug_aid, const AID *recorder_aid, KernelTransformType type)
@@ -2000,8 +2009,7 @@ SuperKernelActor::SuperKernelActor(const std::string &name, const KernelGraphPtr
       graph_(graph),
       graph_phase_(graph_phase),
       is_infer_phase_(IsInferPhase(graph_phase)),
-      enable_kbk_sub_graph_execute_(EnableKbkSubGraphExecute()),
-      enable_trace_memory_(EnableTraceMemory()) {
+      enable_kbk_sub_graph_execute_(EnableKbkSubGraphExecute()) {
   (void)device_contexts_.emplace_back(device_context);
   input_kernel_tensors_.resize(graph->input_nodes().size());
   std::vector<bool> is_enable_inputs(graph->input_nodes().size(), true);
@@ -2010,7 +2018,10 @@ SuperKernelActor::SuperKernelActor(const std::string &name, const KernelGraphPtr
   kernel_async_resize_aid_ = KernelAsyncResizeActor::GetInstance()->GetAID();
   kernel_async_launch_aid_ = KernelAsyncLaunchActor::GetInstance()->GetAID();
   somas_info_ = graph_->MutableSomasInfo();
-  enable_parallel_dispatch_ = EnableParallelDispatchKernel() && (graph_phase_.find("increment") != std::string::npos);
+
+  enable_trace_memory_ = EnableTraceMemory();
+  enable_parallel_dispatch_ = EnableParallelDispatchKernel() && MsContext::GetInstance()->IsEnableInferBoost() &&
+                              (graph_phase_.find("increment") != std::string::npos) && enable_trace_memory_;
   MS_LOG(INFO) << "The kernel graph: " << graph_->ToString() << " phase: " << graph_phase_
                << ", enable parallel dispatch kernel: " << enable_parallel_dispatch_;
 
@@ -2642,6 +2653,18 @@ void SuperKernelActor::LinkKernelActorByDeviceType(const CNodePtr &kernel, size_
     kernel_actor->SetInputDeviceTensor(input_kernel_tensor, input_index);
     kernel_actor->memory_free_list_[input_index] = input_kernel_tensor;
     return;
+  }
+
+  if (enable_trace_memory_ && graph_phase_.find("increment") != std::string::npos) {
+    MS_LOG(EXCEPTION)
+      << "Find heterogeneous operators in graph: " << graph_->ToString() << ", the input[" << input_index << "] of ["
+      << device_context->device_context_key().device_name_ << "] op(" << kernel->fullname_with_scope() << ") is ["
+      << input_device_context->device_context_key().device_name_ << "] op(" << input_kernel->fullname_with_scope()
+      << "). Trace memory feature can not work in this case. Please eliminate heterogeneity(cpu "
+         "kernel), or disable trace memory feature by export MS_ENABLE_TRACE_MEMORY=off. Note: Disabling the trace "
+         "memory feature will degrade memory management performance. Additionally, it will automatically disable "
+         "the kernel group launch(parallel launch) and graph capture features, which may reduce network execution "
+         "performance.";
   }
 
   auto &copy_output_kernel_tensors = input_kernel_actor->copy_output_kernel_tensors_;

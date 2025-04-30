@@ -279,7 +279,7 @@ bool EnableTraceMemory() {
 
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  static const bool enable_infer_boost = ms_context->IsEnableInferBoost();
+  const bool enable_infer_boost = ms_context->IsEnableInferBoost();
   if (!enable_infer_boost) {
     return false;
   }
@@ -332,6 +332,7 @@ bool EnableKbkSubGraphExecute() {
   }
 
   if (!ActorDispatcher::enable_sub_graph_execute_for_cur_actor_set()) {
+    MS_LOG(DEBUG) << "Disable sub graph execute for current graph.";
     return false;
   }
 
