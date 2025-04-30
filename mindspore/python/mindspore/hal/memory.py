@@ -147,14 +147,12 @@ def _is_initialized(device_target):
 @_check_inputs_validation
 def empty_cache():
     """
-    Release all memory fragments in the memory pool, so that memory arrangement
-    will be optimized, this api will be deprecated and removed in future versions, please use
-    the api :func:`mindspore.runtime.empty_cache` instead.
+    Empty cache in the memory pool, this api will be deprecated and removed in future versions.
+    Please use the api :func:`mindspore.runtime.empty_cache` instead.
 
     Note:
-        - Empty cache may help reduce the fragmentation of device memory. However, it may have a negative impact on
-          network performance.
-        - Not support Atlas training series products.
+        - Empty cache help reduce the fragmentation of device memory.
+        - Support Atlas A2 series products.
 
     Supported Platforms:
         ``Ascend``
