@@ -81,23 +81,6 @@ std::vector<BaseTensorPtr> ForEachTranspose(const std::vector<BaseTensorPtr> &te
   return results;
 }
 
-std::vector<BaseTensorPtr> ForEachReShape(const std::vector<BaseTensorPtr> &tensors,
-                                          const ValueTuplePtr &target_tensor_list) {
-  std::vector<BaseTensorPtr> results;
-  const auto &target_tensors = target_tensor_list->value();
-  MS_ASSERT(tensors.size() == target_tensors.size());
-  for (size_t i = 0; i < tensors.size(); ++i) {
-    auto target_tensor_i = target_tensors[i]->cast<BaseTensorPtr>();
-    MS_EXCEPTION_IF_NULL(target_tensor_i);
-    const auto &target_i_shape = MakeValue<std::vector<int64_t>>(target_tensor_i->shape());
-    auto tensor_i_new_shape = target_i_shape->cast<ValueTuplePtr>();
-    MS_EXCEPTION_IF_NULL(tensor_i_new_shape);
-    auto tensor_i_t = reshape(tensors[i], tensor_i_new_shape);
-    (void)results.emplace_back(std::move(tensor_i_t));
-  }
-  return results;
-}
-
 std::vector<BaseTensorPtr> Gmm(const ValueTuplePtr &x, const ValueTuplePtr &weight,
                                const std::optional<ValueTuplePtr> &group_list, int64_t group_type_value) {
   static const auto split_item = std::make_shared<Int64Imm>(3);
@@ -127,10 +110,9 @@ void GmmBackwardAscendCustomize(const std::shared_ptr<OpRunner> &op, const Value
 
   auto dx = Gmm(grad_tenor_list, wt, group_list, 0);
   auto dw = Gmm(xt, grad_tenor_list, group_list, 2);
-  auto dw_output = ForEachReShape(dw, weight_tensor_list);
 
   auto &all_gradients = dx;
-  all_gradients.insert(all_gradients.end(), dw_output.begin(), dw_output.end());
+  all_gradients.insert(all_gradients.end(), dw.begin(), dw.end());
 
   op->set_outputs(all_gradients);
   MS_LOG(DEBUG) << "GMMBackward launch end.";
@@ -166,10 +148,9 @@ void GmmV2BackwardAscendCustomize(const std::shared_ptr<OpRunner> &op, const Val
     auto xt = ForEachTranspose(x_tensor_list);
     dw = GmmV2(xt, grad_tenor_list, group_list, group_list_type, kNum2);
   }
-  auto dw_output = ForEachReShape(dw, weight_tensor_list);
 
   auto &all_gradients = dx;
-  all_gradients.insert(all_gradients.end(), dw_output.begin(), dw_output.end());
+  all_gradients.insert(all_gradients.end(), dw.begin(), dw.end());
 
   op->set_outputs(all_gradients);
   MS_LOG(DEBUG) << "GMMV2Backward launch end.";

@@ -50,17 +50,6 @@ BeginFunction(GmmV2Backward, grad, x, weight, group_list, group_list_type) {
     return MakeTuple(new_tensors);
   };
 
-  auto ForEachReShape = [&](const NodePtr &ori_tensors, const NodePtr &tar_tensors, int64_t num) {
-    std::vector<NodePtr> new_tensors;
-    for (int64_t i = 0; i < num; ++i) {
-      auto ori_tensor_i = GetItem(ori_tensors, Value(i));
-      auto tar_tensor_i = GetItem(tar_tensors, Value(i));
-      auto new_tensor_i = Reshape(ori_tensor_i, Shape(tar_tensor_i));
-      new_tensors.push_back(std::move(new_tensor_i));
-    }
-    return MakeTuple(new_tensors);
-  };
-
   auto GmmV2 = [&](const NodePtr &x, const NodePtr &weight, const NodePtr &group_list, const NodePtr &group_list_type,
                    int64_t group_type_value) -> NodePtr {
     auto split_item = Value(3);
@@ -80,7 +69,6 @@ BeginFunction(GmmV2Backward, grad, x, weight, group_list, group_list_type) {
 
   auto dx = GmmV2(grad, wt, group_list, group_list_type, 0);
   auto dw = GmmV2(xt, grad, group_list, group_list_type, 2);
-  auto dw_reshape = ForEachReShape(dw, weight, w_num);
 
   auto SequenceAddFunc = [&](const NodePtr &sequence0, int64_t num0, const NodePtr &sequence1, int64_t num1) {
     std::vector<NodePtr> results;
@@ -93,7 +81,7 @@ BeginFunction(GmmV2Backward, grad, x, weight, group_list, group_list_type) {
     return MakeTuple(results);
   };
 
-  Return(SequenceAddFunc(dx, x_num, dw_reshape, w_num));
+  Return(SequenceAddFunc(dx, x_num, dw, w_num));
 }
 EndFunction(GmmV2Backward)
 }  // namespace mindspore::prim

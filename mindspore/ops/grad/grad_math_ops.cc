@@ -1307,9 +1307,20 @@ REG_BPROP_BUILDER("GroupedMatmulV4").SetUnusedInputs({i2, i3, i4, i5, i6, i7, i9
   auto dw = split_nodes[kIndex1];
   auto dbias = GMMBiasBackward(ib, bias, op_name);
 
+  const auto &group_list_shape = group_list->shape();
+  NodePtr dgroup_list;
+  if (!IsDynamic(group_list_shape)) {
+    dgroup_list = ib->OutZeros(group_list);
+  } else {
+    dgroup_list = ib->ZerosLikeExt(group_list, ib->Value(static_cast<int64_t>(ib->GetDtypeId(group_list))));
+  }
+
   std::vector<NodePtr> gradients{dx, dw, dbias};
   const auto &inputs = ib->GetInputs();
-  std::transform(inputs.begin() + kIndex3, inputs.begin() + kIndex16, std::back_inserter(gradients),
+  std::transform(inputs.begin() + kIndex3, inputs.begin() + kIndex8, std::back_inserter(gradients),
+                 [&ib](const NodePtr &node) { return ib->OutZeros(node); });
+  gradients.push_back(std::move(dgroup_list));
+  std::transform(inputs.begin() + kIndex9, inputs.begin() + kIndex16, std::back_inserter(gradients),
                  [&ib](const NodePtr &node) { return ib->OutZeros(node); });
 
   return gradients;
