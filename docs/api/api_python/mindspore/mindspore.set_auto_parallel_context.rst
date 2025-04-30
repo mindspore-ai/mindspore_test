@@ -86,8 +86,8 @@ mindspore.set_auto_parallel_context
 
         - **strategy_ckpt_config** (dict) - 用于设置并行策略文件的配置。包含 `strategy_ckpt_load_file` 和 `strategy_ckpt_save_file` 两个参数的功能，建议使用此参数替代这两个参数。它包含以下配置：
 
-          - load_file(str)：加载并行切分策略的路径。如果文件扩展名为 `.json`，文件以json格式加载。否则，文件以ProtoBuf格式加载。默认值： ``""``。
-          - save_file(str)：保存并行切分策略的路径。如果文件扩展名为 `.json`，文件以json格式保存。否则，文件以ProtoBuf格式保存。默认值： ``""``。
+          - load_file(str)：加载并行切分策略的路径。如果文件扩展名为 `.json`，文件以json格式加载。否则，文件以ProtoBuf格式加载，接口支持单进程处理多个模型并行策略，但需要避免覆盖，后续建议使用AutoParallel.load_param_strategy_file。默认值： ``""``。
+          - save_file(str)：保存并行切分策略的路径。如果文件扩展名为 `.json`，文件以json格式保存。否则，文件以ProtoBuf格式保存，接口支持单进程处理多个模型并行策略，但需要避免覆盖，后续建议使用AutoParallel.save_param_strategy_file。默认值： ``""``。
           - only_trainable_params(bool)：仅保存/加载可训练参数的策略信息。默认值： ``True`` 。
         - **group_ckpt_save_file** (str) - 在自动/半自动并行场景下，指定图编译过程中所创建group的保存路径。
         - **dump_local_norm** (bool) - 在自动/半自动并行场景下，指定是否打印local norm值。

@@ -1159,11 +1159,16 @@ def set_auto_parallel_context(**kwargs):
 
                         - load_file (str): The path to load parallel strategy checkpoint. If the file name extension is
                           `.json`, the file is loaded in JSON format. Otherwise, the file is loaded in ProtoBuf
-                          format.
+                          format. The interface supports single process processing of multiple model parallel
+                          strategies, but it is necessary to avoid overwriting. In the future, it is recommended to use
+                          AutoParallel.load_param_strategy_file.
                           Default: ``''``
 
                         - save_file (str): The path to save parallel strategy checkpoint. If the file name extension is
                           `.json`, the file is saved in JSON format. Otherwise, the file is saved in ProtoBuf format.
+                          The interface supports single process processing of multiple model parallel strategies,
+                          but it is necessary to avoid overwriting. In the future, it is recommended to use
+                          AutoParallel.save_param_strategy_file.
                           Default: ``''``
 
                         - only_trainable_params (bool): Only save/load the strategy information for trainable parameter.
