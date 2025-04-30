@@ -1,4 +1,4 @@
-# Copyright 2021-2024 Huawei Technologies Co., Ltd
+# Copyright 2021-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -494,16 +494,18 @@ class Custom(ops.PrimitiveWithInfer):
                 self.custom_pyboost.add_prim_attr(key, value)
 
     def set_infer_flag(self):
+        """set cpp infer attr"""
         if self.out_shape is None and self.func_type == "aot":
             self.add_prim_attr("cpp_infer_shape", True)
         if self.out_dtype is None and self.func_type == "aot":
             self.add_prim_attr("cpp_infer_type", True)
 
     def set_inputs_type(self, reg_info):
+        """set custom_inputs_type attr"""
         if not self.is_ascend_c or not reg_info.get('attr'):
             return
-        inputs_type = ["tensor"] * len(reg_info.get("inputs", [])) + [attr.get("type") for attr in
-                                                                      reg_info.get("attr", [])]
+        inputs_type = ["tensor"] * len(reg_info.get("inputs", [])) + \
+                      [attr.get("type") for attr in reg_info.get("attr", [])]
         self.add_prim_attr("custom_inputs_type", inputs_type)
 
     def __infer__(self, *args):
