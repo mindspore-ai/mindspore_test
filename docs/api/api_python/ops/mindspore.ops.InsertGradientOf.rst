@@ -4,6 +4,9 @@ mindspore.ops.InsertGradientOf
 .. py:class:: mindspore.ops.InsertGradientOf(f)
 
     为图节点附加回调函数，将在梯度计算时被调用。
+
+    .. warning::
+       在回调函数中，谨慎使用副作用算子（如TensorDump算子），副作用功能支持尚不完善。
     
     参数：
         - **f** (Function) - MindSpore Function。回调函数。

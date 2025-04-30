@@ -396,6 +396,10 @@ class InsertGradientOf(Primitive):
     """
     Attaches callback to the graph node that will be invoked on the node's gradient.
 
+    .. warning::
+        In the callback, exercise caution when using side-effect operators,
+        such as the TensorDump operator, as current support is incomplete.
+
     Args:
         f (Function): MindSpore's Function. Callback function.
 
