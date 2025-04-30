@@ -1126,16 +1126,6 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \param[in] flag Whether this Tensor is initialized.
   void set_init_flag(bool flag) { init_flag_ = flag; }
 
-  /// \brief Check whether to release device memory.
-  ///
-  /// \return Ture if need to release device memory, otherwise false.
-  bool need_release_device_mem() const { return need_release_device_mem_; }
-
-  /// \brief Set the flag to determine whether the device memory needs to be released.
-  ///
-  /// \param[in] release_device_mem If release_device_mem is ture, the device memory will to be released.
-  void set_need_release_device_mem(bool release_device_mem) { need_release_device_mem_ = release_device_mem; }
-
   /// \brief Get the cast dtype of this Tensor.
   ///
   /// \return The cast dtype of this Tensor.
@@ -1374,8 +1364,6 @@ class MS_CORE_API Tensor : public MetaTensor {
   bool init_flag_{false};
   bool graph_output_{false};
   bool updated_by_device_{false};
-  // Release device address of graph output tensor or not.
-  bool need_release_device_mem_{false};
   bool cache_enable_{false};
   bool copy_done_flag_{false};
 };

@@ -1731,7 +1731,6 @@ void GEBackend::ConstructOutputs(const KernelGraphPtr &func_graph, std::vector<t
 
     tensor_device_address->set_host_shape(out_tensor->shape());
     out_tensor->set_device_address(tensor_device_address);
-    out_tensor->set_need_release_device_mem(true);
     outputs->emplace_back(out_tensor);
     output_types->emplace_back(kernel_tensor->GetType());
   }
