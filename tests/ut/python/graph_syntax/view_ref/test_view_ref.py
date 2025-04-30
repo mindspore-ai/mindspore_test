@@ -17,6 +17,7 @@
 
 import copy
 import os
+import pytest
 
 import numpy as np
 import mindspore as ms
@@ -188,6 +189,7 @@ def diff_forward_dyn_func(input_x, n=1, dim=-1, prepend=None, append=None):
     return mint.diff(input_x, n, dim, prepend, append)
 
 
+@pytest.mark.skip(reason="Diff in graph mode not support implementation using the view op.")
 def test_view_resize_loss_ref():
     """
     Feature: View
