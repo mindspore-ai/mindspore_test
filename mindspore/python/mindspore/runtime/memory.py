@@ -208,13 +208,11 @@ def max_memory_reserved():
 
 def empty_cache():
     """
-    Release all memory fragments in the memory pool, so that memory arrangement
-    will be optimized.
+    Empty cache in the memory pool.
 
     Note:
-        - Empty cache may help reduce the fragmentation of device memory. However, it may have a negative impact on
-          network performance.
-        - Not support Atlas training series products.
+        - Empty cache help reduce the fragmentation of device memory.
+        - Support Atlas A2 series products.
 
     Supported Platforms:
         ``Ascend``
