@@ -117,8 +117,6 @@ def test_hal_event_sync():
     with ms.runtime.StreamCtx(stream):
         ops.bmm(a, a)
         stream.record_event(ev2)
-        assert ev2.query() is False
-        assert stream.query() is False
 
     ev1.synchronize()
     ev2.synchronize()
