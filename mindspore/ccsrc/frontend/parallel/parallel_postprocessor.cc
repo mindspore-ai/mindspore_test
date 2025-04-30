@@ -665,7 +665,11 @@ static void SetSharedAttrForOptimizerParameter(const FuncGraphPtr &root) {
     // find the be cloned parameter
     for (auto &be_cloned_parameter_node : sub_root_params) {
       auto be_cloned_parameter = be_cloned_parameter_node->cast<ParameterPtr>();
+      MS_EXCEPTION_IF_NULL(be_cloned_parameter);
       auto param_value_in = be_cloned_parameter->param_info();
+      if (param_value_in == nullptr) {
+        continue;
+      }
       // get the be cloned index
       auto &be_cloned_index = param_value_in->be_cloned_index();
       if (std::find(be_cloned_index.begin(), be_cloned_index.end(), cloned_index) != be_cloned_index.end()) {
