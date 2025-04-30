@@ -1025,8 +1025,10 @@ def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_stra
         >>> from mindspore.parallel.auto_parallel import AutoParallel
         >>> from mindspore.nn.utils import no_init_parameters
         >>> from mindspore.common.initializer import initializer, One
+        >>> from mindspore.communication.management import get_group_size
         >>>
         >>> step_per_epoch = 4
+        >>> device_num = get_group_size()
         >>>
         >>> # Define the network structure.
         >>> class Net(nn.Cell):
@@ -1070,7 +1072,7 @@ def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_stra
         ...     network = AutoParallel(network, parallel_mode="semi_auto")
         ...     network.save_param_strategy_file(file_path="./train_strategy.ckpt")
         ...     model = ms.Model(network=network, loss_fn=net_loss, optimizer=net_opt)
-        ...     ckpt_config = train.CheckpointConfig(keep_checkpoint_max=1, integrated_save=False)
+        ...     ckpt_config = train.CheckpointConfig(keep_checkpoint_max=1, integrated_save=True)
         ...     global_rank_id = int(os.getenv("RANK_ID"))
         ...     ckpt_path = "./rank_{}_ckpt".format(global_rank_id)
         ...     ckpt_callback = train.ModelCheckpoint(prefix="parallel", directory=ckpt_path, config=ckpt_config)
@@ -1096,10 +1098,10 @@ def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_stra
         >>>
         >>> train_net()
         >>> load_model()
-        [[-7.3259363 -7.497216  -7.398196  ... -7.374962  -7.204874  -7.234935 ]
-        [ 3.362938   3.3535435  3.3832688 ...  3.4263954  3.279045   3.3202887]
+        [[-9.62929535e+00, -9.76258755e+00, -9.70192051e+00 ... -9.67151260e+00, -9.71998310e+00, -9.64571190e+00],
+        [-4.63218540e-01, -4.07317460e-01, -3.78161550e-01 ... -3.95918339e-01, -2.87363172e-01, -3.48693460e-01],
         ...
-        [ 1.6067538  1.6244187  1.5384722 ...  1.5449994  1.6195512  1.6176052]]
+        [-4.28075647e+00, -4.36630344e+00, -4.25664043e+00 ... -4.32012939e+00, -4.30337954e+00, -4.27571440e+00]]
     """
     if format not in ['safetensors', 'ckpt'] or output_format not in ['safetensors', 'ckpt']:
         raise ValueError(
