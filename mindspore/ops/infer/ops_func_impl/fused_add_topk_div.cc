@@ -51,7 +51,7 @@ BaseShapePtr FusedAddTopKDivFuncImpl::InferShape(const PrimitivePtr &primitive,
     ShapeVector dyn_output{abstract::Shape::kShapeRankAny};
     return std::make_shared<abstract::Shape>(std::move(dyn_output));
   }
-  // output_shape = {{a, param.k}, {a, param.k}}
+
   ShapeVector weight_indices_shape{a, k.value()};
   auto output_shape = std::make_shared<abstract::TensorShape>(weight_indices_shape);
   return std::make_shared<abstract::TupleShape>(abstract::BaseShapePtrList({output_shape, output_shape}));

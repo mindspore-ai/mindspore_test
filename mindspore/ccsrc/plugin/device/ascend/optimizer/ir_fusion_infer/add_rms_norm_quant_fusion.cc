@@ -37,6 +37,8 @@
 namespace mindspore {
 namespace opt {
 namespace {
+constexpr size_t kRmsNormOutUserSize1 = 1;
+
 bool UnSupportedType(const AnfNodePtr &node, const AnfNodePtr &rms_norm_node) {
   auto rms_x_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(rms_norm_node, 0);
   auto rms_gamma_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(rms_norm_node, 1);
@@ -67,22 +69,19 @@ const BaseRef AddRmsNormQuantFusion::DefinePattern() const {
 }
 
 inline bool CheckSupport(size_t rms_norm_out0_users_size, const AnfNodePtr &node, const AnfNodePtr &tensor_add,
-                         const AnfNodePtr &rms_norm_node, const BaseShapePtr &tensor_quant_shape,
-                         bool *need_rms_norm_out) {
+                         const AnfNodePtr &rms_norm_node, const BaseShapePtr &tensor_quant_shape) {
   auto shape1 = common::AnfAlgo::GetPrevNodeOutputInferShape(tensor_add, 0);
   auto shape2 = common::AnfAlgo::GetPrevNodeOutputInferShape(tensor_add, 1);
   bool is_unsupported_type = UnSupportedType(node, rms_norm_node);
-
-  if (shape1 != shape2 || rms_norm_out0_users_size > 3 || is_unsupported_type) {
+  constexpr size_t kMaxRmsNormOutUserSize = 3;
+  if (shape1 != shape2 || rms_norm_out0_users_size > kMaxRmsNormOutUserSize || is_unsupported_type) {
     MS_LOG(INFO) << "AddRmsNormQuant fused failed. shape1: " << shape1 << ", shape2: " << shape2
                  << ", rms_norm_out0_users_size: " << rms_norm_out0_users_size
                  << ", is_unsupported_type: " << is_unsupported_type;
     return false;
   }
 
-  *need_rms_norm_out = rms_norm_out0_users_size > 1;
-
-  if (*need_rms_norm_out) {
+  if ((rms_norm_out0_users_size > kRmsNormOutUserSize1)) {
     auto shape = tensor_quant_shape->GetShapeVector();
     constexpr auto kDimLimited = 8192;
     if (shape.empty() || shape[shape.size() - 1] == abstract::Shape::kShapeDimAny ||
@@ -115,9 +114,7 @@ const AnfNodePtr AddRmsNormQuantFusion::Process(const FuncGraphPtr &graph, const
   auto rms_norm_out0_users_size = mng->node_users()[tuple_get_item_node].size();
   auto tensor_quant_shape = AnfAlgo::GetOutputDetailShape(node, 0);
 
-  bool need_rms_norm_out = false;
-  if (!CheckSupport(rms_norm_out0_users_size, node, tensor_add, rms_norm_node, tensor_quant_shape,
-                    &need_rms_norm_out)) {
+  if (!CheckSupport(rms_norm_out0_users_size, node, tensor_add, rms_norm_node, tensor_quant_shape)) {
     MS_LOG(INFO) << "AddRmsNormQuant fused failed.";
     return nullptr;
   }
@@ -165,6 +162,7 @@ const AnfNodePtr AddRmsNormQuantFusion::Process(const FuncGraphPtr &graph, const
   add_result_types.push_back(tensor_add_type);
   add_result_shapes.push_back(tensor_add_shape);
 
+  bool need_rms_norm_out = (rms_norm_out0_users_size > kRmsNormOutUserSize1);
   types[1] = need_rms_norm_out ? tensor_add_type : tensor_quant_type;
   common::AnfAlgo::SetOutputTypeAndDetailShape(types, shapes, add_rms_norm_quant.get());
   add_rms_norm_quant->set_scope(node->scope());
