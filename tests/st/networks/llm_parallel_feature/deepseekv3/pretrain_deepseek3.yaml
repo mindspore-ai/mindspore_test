@@ -74,8 +74,6 @@ context:
   deterministic: "ON"
   jit_config:
     jit_level: "O1"
-  ascend_config:    # add
-    parallel_speed_up_json_path: "./parallel_speed_up.json"    # add
   mempool_block_size: "54GB"
 
 # default parallel of device num = 16 for Atlas 800
@@ -145,7 +143,7 @@ model:
     softmax_compute_type: "float32"
     rotary_dtype: "float32"
     router_dense_type: "float32"
-    param_init_type: "float32" #"bfloat16"
+    param_init_type: "float32" # "bfloat16"
     use_past: False
     extend_method: "None"
     use_flash_attention: True    # modify, False

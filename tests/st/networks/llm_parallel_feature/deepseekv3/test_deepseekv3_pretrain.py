@@ -15,6 +15,7 @@
 
 import os
 import re
+import numpy as np
 from tests.st.networks.llm_parallel_feature.utils import check_log, check_peak_memory, clear_directory
 from tests.st.networks.llm_parallel_feature.deepseekv3.utils import DeepseekConfig, prepare_deepseekv3_testcase_env
 from tests.mark_utils import arg_mark
@@ -41,6 +42,34 @@ def extract_losses_from_log(file_path):
     return losses
 
 
+def extract_average_step_time_from_log(file_path):
+    """
+    Extracts all numerical values following 'per_step_time:' from the specified log file
+    and returns the average step time calculated by per step time.
+    :param file_path: Path to the log file
+    :return: Average time
+    """
+    # Regular expression pattern to match numerical values after "per_step_time:"
+    pattern = re.compile(r'per_step_time:\s*([0-9]+(?:\.[0-9]+)?)')
+    per_step_time_list = []
+
+    # Open the file and read its contents
+    with open(file_path, 'r', encoding='utf-8') as file:
+        for line in file:
+            # Search for matches in each line
+            matches = pattern.findall(line)
+            for match in matches:
+                # Convert found step time values from string to float and add to list
+                per_step_time_list.append(float(match))
+
+    # del the first two values.
+    per_step_time_list = per_step_time_list[2:]
+
+    # calculate the mean step time.
+    average_time = np.mean(per_step_time_list)
+    return average_time
+
+
 def log_path_preprocess(case_name, device_num):
     # return the log path list, combining with rank list
     log_path_list = []
@@ -59,8 +88,9 @@ def test_deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_deredundency_8p_gmm():
     case_name = "deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_deredundency_8p_gmm"
     sh_path = os.path.split(os.path.realpath(__file__))[0]
 
-    parallel_speed_up_json = {'matmul_grad_comm_overlap': 'true',
+    parallel_speed_up_json = {'matmul_grad_comm_overlap': True,
                               "pp_1f1b_overlap": "MorphAllGather,MorphReduceScatter"}
+
     deepseek_config = DeepseekConfig(parallel_speed_up_json=parallel_speed_up_json,
                                      use_gmm=True,
                                      enable_deredundency=True,
@@ -85,15 +115,18 @@ def test_deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_deredundency_8p_gmm():
     real_log_path = log_path_preprocess(case_name, device_num)
     for log_path in real_log_path:
         check_log(log_path, check_pair)
-        check_peak_memory(log_path, "2700")
+        # self-test results: 2614M, memory should be lower than 2614+50=2664M
+        check_peak_memory(log_path, "2664")
 
     # check loss
     # set the training log path
     log_file_path = f'{sh_path}/{case_name}/worker_7.log'
+
     # extract Training loss
     loss_list = extract_losses_from_log(log_file_path)
+
     # set golden_loss
-    golden_loss = [13.509, 13.509, 13.507, 13.507, 13.501, 13.504]
+    golden_loss = [13.509, 13.509, 13.507, 13.507, 13.501, 13.503]
     if_equal = golden_loss == loss_list
     assert if_equal, \
         f"Training loss is different from the golden loss, " \
@@ -110,7 +143,7 @@ def test_deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_8p_bmm():
     case_name = "deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_8p_bmm"
     sh_path = os.path.split(os.path.realpath(__file__))[0]
 
-    parallel_speed_up_json = {'matmul_grad_comm_overlap': 'true', "pp_1f1b_overlap": "AlltoAllV,AlltoAll"}
+    parallel_speed_up_json = {'matmul_grad_comm_overlap': True, "pp_1f1b_overlap": "AlltoAllV,AlltoAll"}
     deepseek_config = DeepseekConfig(parallel_speed_up_json=parallel_speed_up_json,
                                      use_gmm=False,
                                      num_layer=1,
@@ -133,13 +166,16 @@ def test_deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_8p_bmm():
     real_log_path = log_path_preprocess(case_name, device_num)
     for log_path in real_log_path:
         check_log(log_path, check_pair)
-        check_peak_memory(log_path, "2300")
+        # self-test results: 2182M, memory should be lower than 2182+50=2232M
+        check_peak_memory(log_path, "2232")
 
     # check loss
     # set the training log path
     log_file_path = f'{sh_path}/{case_name}/worker_7.log'
+
     # extract Training loss
     loss_list = extract_losses_from_log(log_file_path)
+
     # set golden_loss
     golden_loss = [13.511, 13.504, 13.516, 13.515, 13.503, 13.508]
 
@@ -176,13 +212,16 @@ def test_deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_8p_gptdataset():
     real_log_path = log_path_preprocess(case_name, device_num)
     for log_path in real_log_path:
         check_log(log_path, check_pair)
-        check_peak_memory(log_path, "2700")
+        # self-test results: 2614M, memory should be lower than 2614+50=2664M
+        check_peak_memory(log_path, "2664")
 
     # check loss
     # set the training log path
     log_file_path = f'{sh_path}/{case_name}/worker_7.log'
-    # extract Training loss
+
+    # extract training loss
     loss_list = extract_losses_from_log(log_file_path)
+
     # set golden_loss
     golden_loss = [12.029, 11.965, 11.790, 11.805, 11.954, 11.733]
 
@@ -190,3 +229,220 @@ def test_deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_8p_gptdataset():
     assert if_equal, \
         f"Training loss is different from the golden loss, " \
         f"where training loss: {loss_list}, golden_loss: {golden_loss}."
+
+    # check per step time
+    # self-test results: 170ms, step time should be lower than 170+20=190ms
+    excepted_average_step_time = 190
+
+    # extract training step time
+    average_step_time = extract_average_step_time_from_log(log_file_path)
+
+    # check if the step time is lower than the excepted_average_step_time
+    step_time_pass = excepted_average_step_time > average_step_time
+    assert step_time_pass, \
+        f"Training average step time is larger than the excepted average step time," \
+        f"where training average step time is {average_step_time},  excepted step time is {excepted_average_step_time}."
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='allcards', essential_mark='essential')
+def test_deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_8p_gmm_performance():
+    """
+    Feature: test deepseekv3 cell dp2mp2ep4pp2mb4gas1bs1 8p gmm performance
+    Description: test deepseekv3 cell dp2mp2ep4pp2mb4gas1bs1 8p gmm performance
+    Expectation: st pass
+    """
+    case_name = "deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_8p_gmm_performance"
+    sh_path = os.path.split(os.path.realpath(__file__))[0]
+
+    # set the speed up json
+    parallel_speed_up_json = {'matmul_grad_comm_overlap': True}
+
+    # set the config
+    deepseek_config = DeepseekConfig(num_samples=24,
+                                     hidden_size=4096,
+                                     intermediate_size=8192,
+                                     moe_intermediate_size=2048,
+                                     parallel_speed_up_json=parallel_speed_up_json,
+                                     use_gmm=True,
+                                     enable_deredundency=False,
+                                     npu_nums_per_device=2,
+                                     use_fused_ops_permute=True,
+                                     use_fused_swiglu=True,
+                                     enable_fa_var_len=True,
+                                     use_fused_rope=True,
+                                     pp_interleave_num=1,
+                                     deterministic="OFF"
+                                     )
+
+    file_path = prepare_deepseekv3_testcase_env(case_name, deepseek_config)
+
+    # set the communication parameters
+    device_num = 8
+    master_port = 7124
+    hccl_if_base_port = 63395
+
+    # set env for training
+    graph_kernel_flags = "--enable_pass=grouped_matmul_assignadd_fusion " \
+                         "--enable_cluster_ops=MatMul,BatchMatMul,Reshape --online_tuning=1"
+
+    os.system(f"bash {sh_path}/run_llm.sh {device_num} \
+    {file_path} {case_name} {master_port} {hccl_if_base_port} pp mindrecord \"{graph_kernel_flags}\"")
+
+    # check train over
+    check_pair = {"Training Over": 1}
+    real_log_path = log_path_preprocess(case_name, device_num)
+    for log_path in real_log_path:
+        check_log(log_path, check_pair)
+
+    # check per step time
+    # set the training log path
+    log_file_path = f'{sh_path}/{case_name}/worker_7.log'
+
+    # self-test results: 264ms, step time should be lower than 264+30=294ms
+    excepted_average_step_time = 294
+
+    # extract training step time
+    average_step_time = extract_average_step_time_from_log(log_file_path)
+
+    # check if the step time is lower than the excepted_average_step_time
+    step_time_pass = excepted_average_step_time > average_step_time
+    assert step_time_pass, \
+        f"Training average step time is larger than the excepted average step time," \
+        f"where training average step time is {average_step_time}, " \
+        f"excepted step time is {excepted_average_step_time}."
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='allcards', essential_mark='essential')
+def test_deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_8p_1b1f_performance():
+    """
+    Feature: test deepseekv3 cell dp2mp2ep4pp2mb4gas1bs1 8p gmm 1b1f performance
+    Description: test deepseekv3 cell dp2mp2ep4pp2mb4gas1bs1 8p gmm 1b1f performance
+    Expectation: st pass
+    """
+    case_name = "deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_8p_1b1f_performance"
+    sh_path = os.path.split(os.path.realpath(__file__))[0]
+
+    # set the speed up json
+    parallel_speed_up_json = {'matmul_grad_comm_overlap': True,
+                              'pp_1f1b_overlap': 'AlltoAllV,AlltoAll'}
+
+    # set the config
+    deepseek_config = DeepseekConfig(num_samples=24,
+                                     hidden_size=4096,
+                                     intermediate_size=8192,
+                                     moe_intermediate_size=2048,
+                                     parallel_speed_up_json=parallel_speed_up_json,
+                                     use_gmm=True,
+                                     enable_deredundency=False,
+                                     npu_nums_per_device=2,
+                                     use_fused_ops_permute=True,
+                                     use_fused_swiglu=True,
+                                     enable_fa_var_len=True,
+                                     use_fused_rope=True,
+                                     pp_interleave_num=2,
+                                     deterministic="OFF"
+                                     )
+
+    file_path = prepare_deepseekv3_testcase_env(case_name, deepseek_config)
+
+    # set the communication parameters
+    device_num = 8
+    master_port = 7125
+    hccl_if_base_port = 63415
+
+    # set env for training
+    graph_kernel_flags = "--enable_pass=grouped_matmul_assignadd_fusion " \
+                         "--enable_cluster_ops=MatMul,BatchMatMul,Reshape --online_tuning=1"
+
+    os.system(f"bash {sh_path}/run_llm.sh {device_num} \
+    {file_path} {case_name} {master_port} {hccl_if_base_port} pp mindrecord \"{graph_kernel_flags}\"")
+
+    # check train over
+    check_pair = {"Training Over": 1}
+    real_log_path = log_path_preprocess(case_name, device_num)
+    for log_path in real_log_path:
+        check_log(log_path, check_pair)
+
+    # check per step time
+    # set the training log path
+    log_file_path = f'{sh_path}/{case_name}/worker_7.log'
+
+    # set the excepted average step time
+    # self-test results: 265ms, step time should be lower than 265+30=295ms
+    excepted_average_step_time = 295
+
+    # extract training step time
+    average_step_time = extract_average_step_time_from_log(log_file_path)
+
+    # check if the step time is lower than the excepted_average_step_time
+    step_time_pass = excepted_average_step_time > average_step_time
+
+    assert step_time_pass, \
+        f"Training average step time is larger than the excepted average step time," \
+        f"where training average step time is {average_step_time},  excepted step time is {excepted_average_step_time}."
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='allcards', essential_mark='essential')
+def test_deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_8p_bmm_performance():
+    """
+    Feature: test deepseekv3 cell dp2mp2ep4pp2mb4gas1bs1 8p bmm performance
+    Description: test deepseekv3 cell dp2mp2ep4pp2mb4gas1bs1 8p bmm performance
+    Expectation: st pass
+    """
+    case_name = "deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_performance_8p_bmm_performance"
+    sh_path = os.path.split(os.path.realpath(__file__))[0]
+
+    # set the speed up json
+    parallel_speed_up_json = {'matmul_grad_comm_overlap': True,
+                              'pp_1f1b_overlap': 'AlltoAllV,AlltoAll'}
+
+    # set the config
+    deepseek_config = DeepseekConfig(num_samples=24,
+                                     hidden_size=4096,
+                                     intermediate_size=8192,
+                                     moe_intermediate_size=2048,
+                                     parallel_speed_up_json=parallel_speed_up_json,
+                                     use_gmm=False,
+                                     use_fused_swiglu=True,
+                                     enable_fa_var_len=True,
+                                     use_fused_rope=True,
+                                     pp_interleave_num=2,
+                                     deterministic="OFF"
+                                     )
+
+    file_path = prepare_deepseekv3_testcase_env(case_name, deepseek_config)
+
+    # set the communication parameters
+    device_num = 8
+    master_port = 7126
+    hccl_if_base_port = 63435
+
+    # set env for training
+    graph_kernel_flags = "--enable_cluster_ops=MatMul,BatchMatMul,Reshape --online_tuning=1"
+
+    os.system(f"bash {sh_path}/run_llm.sh {device_num} \
+    {file_path} {case_name} {master_port} {hccl_if_base_port} pp mindrecord \"{graph_kernel_flags}\"")
+
+    # check train over
+    check_pair = {"Training Over": 1}
+    real_log_path = log_path_preprocess(case_name, device_num)
+    for log_path in real_log_path:
+        check_log(log_path, check_pair)
+
+    # check per step time
+    # set the training log path
+    log_file_path = f'{sh_path}/{case_name}/worker_7.log'
+
+    # set the excepted average step time
+    # self-test results: 262ms, step time should be lower than 262+30=292ms
+    excepted_average_step_time = 292
+
+    # extract training step time
+    average_step_time = extract_average_step_time_from_log(log_file_path)
+
+    # check if the step time is lower than the excepted_average_step_time
+    step_time_pass = excepted_average_step_time > average_step_time
+
+    assert step_time_pass, \
+        f"Training average step time is larger than the excepted average step time," \
+        f"where training average step time is {average_step_time},  excepted step time is {excepted_average_step_time}."

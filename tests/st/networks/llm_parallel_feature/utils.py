@@ -17,6 +17,7 @@ import re
 import os
 import shutil
 import subprocess
+import json
 
 
 def replace_config(net_config, file_path):
@@ -345,9 +346,10 @@ def update_parallel_speed_up_json(case_name, net_config, yaml_path, deepseekv3=F
     sh_path = os.path.split(os.path.realpath(__file__))[0]
     if deepseekv3:
         file_path = f"{sh_path}/deepseekv3/{case_name}/parallel_speed_up.json"
-        update_cmd = f"echo {net_config.parallel_speed_up_json} > \
-        {sh_path}/deepseekv3/{case_name}/parallel_speed_up.json"
-        os.system(update_cmd)
+
+        # use json module:
+        with open(file_path, 'w') as f:
+            json.dump(net_config.parallel_speed_up_json, f, indent=4)
     else:
         # 1. copy the parallel_speed_up.json to the testcase folder
         os.system(f"cp ./parallel_speed_up.json ./{case_name}")
