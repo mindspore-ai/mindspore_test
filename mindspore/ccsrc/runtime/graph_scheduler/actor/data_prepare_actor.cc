@@ -1348,6 +1348,7 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
   auto param_node = backend_node->cast<ParameterPtr>();
   if (param_node != nullptr) {
     auto param_info = param_node->param_info();
+    MS_EXCEPTION_IF_NULL(param_info);
     bool used = !param_info->ignore_device_addr();
     if (!used) {
       MS_LOG(WARNING) << backend_node->DebugString()
