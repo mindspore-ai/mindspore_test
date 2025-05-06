@@ -95,12 +95,15 @@ class TraceViewContainer:
         events = mindspore_pool.get_all_events()
 
         # Filter events that contain "ProfilerStep" and create a dictionary mapping (start_ts, end_ts) to step ID
-        step_id_to_time_dict = dict(sorted(
-            (
-                event.name.split("#")[-1], (event.ts, event.dur + event.ts)
+        step_id_to_time_dict = dict(
+            sorted(
+                (
+                    (event.name.split("#")[-1], (event.ts, event.dur + event.ts))
+                    for event in events
+                    if ProfilerStepNameConstant.PROFILER_STEP in event.name
+                ),
+                key=lambda item: item[1][0]
             )
-            for event in events
-            if ProfilerStepNameConstant.PROFILER_STEP in event.name
-        ))
+        )
 
         return step_id_to_time_dict
