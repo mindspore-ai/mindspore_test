@@ -249,8 +249,20 @@ prim::MultitypeFuncGraphPtr GetFuncMultitypeFuncGraph(const CNodePtr &cnode) {
 }
 
 // The cnode is non-effect-node, and the cnode is real node, and the inputs of cnode is dynamic.
-bool IsNonEffectRealNodeAndInputIsDynamic(const CNodePtr &cnode) {
+bool IsNonEffectRealNodeAndInputIsDynamic(const CNodePtr &cnode, const FuncGraphManagerPtr &manager) {
   MS_EXCEPTION_IF_NULL(cnode);
+  MS_EXCEPTION_IF_NULL(manager);
+  if (IsPrimitiveCNode(cnode, prim::kPrimMakeDict)) {
+    const auto &node_users_map = manager->node_users();
+    auto users_iter = node_users_map.find(cnode);
+    if (users_iter == node_users_map.end()) {
+      return false;
+    }
+    return std::any_of(users_iter->second.begin(), users_iter->second.end(),
+                       [](const std::pair<AnfNodePtr, int> &node_index) {
+                         return IsPrimitiveCNode(node_index.first, prim::kPrimPyInterpret);
+                       });
+  }
   static const PrimitiveSet dynamic_input_node_prims = {prim::kPrimStack,
                                                         prim::kPrimConcat,
                                                         prim::kPrimAddN,
@@ -260,7 +272,6 @@ bool IsNonEffectRealNodeAndInputIsDynamic(const CNodePtr &cnode) {
                                                         prim::kPrimDynamicStitch,
                                                         prim::kPrimPyExecute,
                                                         prim::kPrimPyInterpret,
-                                                        prim::kPrimMakeDict,
                                                         prim::kPrimIncreFlashAttention,
                                                         prim::kPrimFusedInferAttentionScore};
   PrimitivePtr prim = cnode->empty() ? nullptr : GetValueNode<PrimitivePtr>(cnode->input(0));
@@ -1051,7 +1062,7 @@ class SideEffectFinder {
         // load is inserted inside the func_graph f.
         info.load = HasRefInput(cnode);
       }
-      if (!info.memory && IsNonEffectRealNodeAndInputIsDynamic(cnode)) {
+      if (!info.memory && IsNonEffectRealNodeAndInputIsDynamic(cnode, root_->manager())) {
         info.load = HasRefSequenceInput(cnode);
       }
       return info;
@@ -1638,7 +1649,7 @@ class AutoMonadConverter {
   void HandleLoad(const CNodePtr &cnode, bool update_state) {
     MS_EXCEPTION_IF_NULL(cnode);
     // Check if a sequence which has ref exists in the inputs of the cnode, and the cnode is a real node.
-    if (IsNonEffectRealNodeAndInputIsDynamic(cnode)) {
+    if (IsNonEffectRealNodeAndInputIsDynamic(cnode, manager_)) {
       return InsertLoadForSequenceRef(cnode, update_state);
     }
     if (IsValueNode<Primitive>(cnode->input(0))) {
