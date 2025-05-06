@@ -44,7 +44,7 @@ def test_assign_update():
     Expectation: the result match with the expected result
     """
     context.set_context(mode=context.GRAPH_MODE)
-    context.set_context(jit_config={"jit_level": "O1"})
+    context.set_context(jit_config={"jit_level": "O1"}, graph_kernel_flags="--enable_cluster_ops=Assign")
     with AssertGKEnable(True):
         net = Net()
         x0 = Tensor([3.0], dtype=mindspore.float32)

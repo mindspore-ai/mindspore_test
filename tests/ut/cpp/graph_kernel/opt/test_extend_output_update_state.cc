@@ -120,6 +120,7 @@ FuncGraphPtr ConstructGraph_two_same_getitem_idx() {
 /// Description: Issue #IBUN8R. There are two getitem of same index for a subgraph.
 /// Expectation: After this pass, the output_0 of subgraph and getitem nodes are eliminated.
 TEST_F(GraphKernelCommonTestSuite, two_same_getitem_idx) {
+  SetGraphKernelFlags("--enable_cluster_ops=Assign");
   auto fg = ConstructGraph_two_same_getitem_idx();
   RunPass(fg, {std::make_shared<graphkernel::ExtendOutputForUpdateState>()});
   ASSERT_EQ(GetAllGKNodes(fg).size(), 1);

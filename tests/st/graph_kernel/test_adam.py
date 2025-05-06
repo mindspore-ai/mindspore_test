@@ -37,7 +37,7 @@ class Net(nn.Cell):
 
 def get_output(var, m, v, grad, enable_graph_kernel=False):
     if enable_graph_kernel:
-        context.set_context(jit_level='O1')
+        context.set_context(jit_level='O1', graph_kernel_flags="--enable_expand_ops=Adam")
     else:
         context.set_context(jit_level='O0')
     net = Net(var, m, v)

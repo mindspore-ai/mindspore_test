@@ -41,6 +41,8 @@ class Net(Cell):
 def get_output(x0, x1, shape, enable_graph_kernel):
     jit_level = "O1" if enable_graph_kernel else "O0"
     context.set_context(jit_config={"jit_level": jit_level})
+    if enable_graph_kernel:
+        context.set_context(graph_kernel_flags="--enable_cluster_ops=Assign")
     with AssertGKEnable(enable_graph_kernel):
         net = Net(shape)
         y0, _ = net(x0, x1)
