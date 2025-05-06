@@ -40,11 +40,19 @@ bool ExistSummaryNode(const KernelGraph *graph);
 ParamInfoPtr GetParamDefaultValue(const AnfNodePtr &node);
 
 struct PartialFuncInfo {
-  AbstractBasePtr abstract;
-  AnfNodePtr sub_graph;
+  AnfNodePtr partial_graph;
   size_t param_begin;
   size_t param_end;
-  size_t multi_tuple;
+};
+
+struct LazyInlineFuncInfo {
+  AbstractBasePtr abstract;
+  // the number of return nodes with partial graph
+  size_t origin_output_num;
+  // the number of return nodes without partial graph
+  size_t normal_output_num;
+  // support multi partial graph in return node
+  std::vector<PartialFuncInfo> partial_func_infos;
 };
 
 class BACKEND_COMMON_EXPORT KernelGraphMgr {
@@ -86,9 +94,7 @@ class BACKEND_COMMON_EXPORT KernelGraphMgr {
     partial_target_map_.clear();
     default_param_map_.clear();
     front_backend_graph_map_.clear();
-    kernel_graph_partial_map_.clear();
-    need_flatten_.clear();
-    need_flatten_tuple_map_.clear();
+    lazy_inline_map_.clear();
   }
   virtual void UnifyMindIR(const KernelGraphPtr &graph);
   virtual ParameterPtr CreateNewParameterFromParameter(const AnfNodePtr &anf, KernelGraph *graph);
@@ -138,7 +144,6 @@ class BACKEND_COMMON_EXPORT KernelGraphMgr {
   ValueNodePtr CreateValueNodeKernelGraph(const AnfNodePtr &anf, KernelGraph *graph);
   void AddParameterToGraphInputs(const std::vector<AnfNodePtr> &parameters, KernelGraph *graph) const;
   void SetReturnNode(const AnfNodePtr &node, KernelGraph *graph);
-  void FlattenTuple(const CNodePtr &node);
   bool ParseKernelGraphNodesAndAttrs(const nlohmann::json &model_json);
   bool ParseSingleKernelGraphNodesAndAttrs(const nlohmann::json &graph_json);
 
@@ -168,9 +173,8 @@ class BACKEND_COMMON_EXPORT KernelGraphMgr {
   mindspore::HashMap<AnfNodePtr, std::string> partial_target_map_;
   mindspore::HashMap<AnfNodePtr, ParameterPtr> default_param_map_;
   mindspore::HashMap<FuncGraph *, KernelGraphPtr> front_backend_graph_map_;
-  mindspore::HashMap<KernelGraph *, PartialFuncInfo> kernel_graph_partial_map_;
-  mindspore::HashSet<AnfNodePtr> need_flatten_;
-  mindspore::HashMap<AnfNodePtr, AnfNodePtr> need_flatten_tuple_map_;
+  // lazy inline, store the partial graph and the info of partial graph
+  mindspore::HashMap<KernelGraph *, LazyInlineFuncInfo> lazy_inline_map_;
   static GraphId graph_sum_;
   static GraphId pynative_graph_sum_;
   // record all graphs's backend params unique name to its weak_ptr

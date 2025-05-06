@@ -17,6 +17,7 @@
 #include <queue>
 #include <algorithm>
 #include <iterator>
+#include <string>
 #include <utility>
 #include <vector>
 #include <memory>
@@ -24,6 +25,253 @@
 
 namespace mindspore {
 namespace parallel {
+enum class BorderType { kSend, kReceive, kCallForward, kCallBackward, kOther };
+
+void ControlOrder(const AnfNodePtr &prior, const CNodePtr &last, const FuncGraphPtr &graph,
+                  const std::string &tags = "zero_bubble_v_control") {
+  MS_EXCEPTION_IF_NULL(prior);
+  MS_EXCEPTION_IF_NULL(last);
+  if (prior == last) {
+    return;
+  }
+  const auto &manager = graph->manager();
+  MS_EXCEPTION_IF_NULL(manager);
+  std::vector<AnfNodePtr> depend_input = {NewValueNode(prim::kPrimDepend), last->input(1), prior};
+  auto depend = graph->NewCNode(depend_input);
+  depend->set_abstract(last->input(1)->abstract());
+  depend->AddPrimalAttr(tags, MakeValue(true));
+  manager->SetEdge(last, 1, depend);
+}
+
+bool CompareBorderPair(const BorderPair &bp1, const BorderPair &bp2) {
+  auto compare_border = [](const Border &b1, const Border &b2) {
+    return b1.chunk == b2.chunk && b1.micro == b2.micro && b1.seq_chunk == b2.seq_chunk && b1.border == b2.border;
+  };
+  return compare_border(bp1.first, bp2.first) && compare_border(bp1.second, bp2.second);
+}
+
+void InsertCallControlEdge(const std::vector<BorderPair> &borders, const FuncGraphPtr &graph,
+                           const std::string &tags = "zero_bubble_v_control") {
+  size_t size = borders.size();
+  if (size < kIndexThree) {
+    return;
+  }
+  for (size_t i = 0; i < size; i++) {
+    if (i + kIndexTwo >= size) {
+      continue;
+    }
+    const auto &prior = borders[i];
+    const auto &last = borders[i + kIndexTwo];
+    ControlOrder(prior.second.border, last.first.border, graph, tags);
+  }
+}
+
+void Add1b1fReceiveAttr(const BorderPair &recv, const std::string &tag, size_t index_1b1f) {
+  if (IsPrimitiveCNode(recv.second.border)) {
+    recv.second.border->AddAttr(tag, MakeValue<size_t>(index_1b1f));
+  }
+  if (IsPrimitiveCNode(recv.first.border)) {
+    recv.first.border->AddAttr(tag, MakeValue<size_t>(index_1b1f));
+  }
+}
+
+void InsertContorlOrder(const std::vector<BorderPair> &borders, const FuncGraphPtr &graph, size_t start, size_t end,
+                        const std::string &tags = "zero_bubble_v_control") {
+  while (start < end) {
+    auto prior_border = borders[start].second;
+    auto last_border = borders[start + 1].first;
+    ControlOrder(prior_border.border, last_border.border, graph, tags);
+    start++;
+  }
+}
+
+BorderType JudgeBorderType(const CNodePtr &border) {
+  if (IsPrimitiveCNode(border, prim::kPrimSend)) {
+    return BorderType::kSend;
+  }
+  if (IsPrimitiveCNode(border, prim::kPrimReceive)) {
+    return BorderType::kReceive;
+  }
+  auto input = border->input(0);
+  if (IsValueNode<FuncGraph>(input)) {
+    return BorderType::kCallForward;
+  }
+  if (input->isa<CNode>()) {
+    return BorderType::kCallBackward;
+  }
+  return BorderType::kOther;
+}
+
+void LabelFor1b1fOverlap(const std::vector<BorderPair> &borders, const std::pair<size_t, size_t> &border_step4,
+                         const std::pair<size_t, size_t> &border_step5) {
+  auto start_step4 = border_step4.first;
+  auto end_step5 = border_step5.second;
+
+  size_t index_1f1b = 0;
+  size_t inter_recv_index = start_step4;
+  size_t prior_cell_index = start_step4;
+  for (size_t i = start_step4; i < end_step5; i++) {
+    const auto &cur = borders[i];
+    auto type = JudgeBorderType(cur.first.border);
+    if (type == BorderType::kCallBackward) {
+      prior_cell_index = i;
+    }
+    if (type == BorderType::kReceive) {
+      inter_recv_index = i;
+    }
+    if (type == BorderType::kCallForward) {
+      const auto &prior_cell_border = borders[prior_cell_index].second.border;
+      MS_EXCEPTION_IF_NULL(prior_cell_border);
+      const auto &next_cell_border = cur.first.border;
+      MS_EXCEPTION_IF_NULL(next_cell_border);
+      prior_cell_border->AddAttr(kCNodeAttr1f1bIndexBp, MakeValue<size_t>(index_1f1b));
+      next_cell_border->AddAttr(kCNodeAttr1f1bIndexFp, MakeValue<size_t>(index_1f1b));
+      auto prior_recv = borders[prior_cell_index - 1];
+      const auto &prior_recv_border = prior_recv.second.border;
+      MS_EXCEPTION_IF_NULL(prior_recv_border);
+      if (JudgeBorderType(prior_recv_border) == BorderType::kReceive) {
+        Add1b1fReceiveAttr(prior_recv, kCNodeAttr1f1bIndexRecv, index_1f1b);
+      }
+
+      auto next_recv = borders[inter_recv_index];
+      const auto &next_recv_border = next_recv.second.border;
+      MS_EXCEPTION_IF_NULL(next_recv_border);
+      if (inter_recv_index > prior_cell_index) {
+        Add1b1fReceiveAttr(next_recv, kCNodeAttr1f1bIndexInterRecv, index_1f1b);
+      }
+      index_1f1b++;
+    }
+  }
+}
+
+BorderPair GetTargetBorderPair(const std::vector<BorderPair> &borders, bool is_reverse, BorderType type) {
+  std::vector<BorderPair> sorted_borders;
+  if (is_reverse) {
+    sorted_borders.insert(sorted_borders.end(), borders.rbegin(), borders.rend());
+  } else {
+    sorted_borders.insert(sorted_borders.end(), borders.begin(), borders.end());
+  }
+  BorderPair null_pair;
+  auto iter = std::find_if(sorted_borders.begin(), sorted_borders.end(),
+                           [type](const auto &border) { return JudgeBorderType(border.first.border) == type; });
+  if (iter != sorted_borders.end()) {
+    return *iter;
+  }
+  MS_LOG(EXCEPTION) << "Get target border pair failed.";
+}
+
+bool JudgeInsertControlEdge(const CNodePtr &pre, const CNodePtr &cur) {
+  const auto &pre_type = JudgeBorderType(pre);
+  const auto &cur_type = JudgeBorderType(cur);
+  // call_send
+  if (pre_type == BorderType::kCallBackward && cur_type == BorderType::kSend) {
+    return false;
+  }
+  // call_recv
+  if (pre_type == BorderType::kCallBackward && cur_type == BorderType::kReceive) {
+    return false;
+  }
+  // send_call
+  if (pre_type == BorderType::kSend && cur_type == BorderType::kCallForward) {
+    return false;
+  }
+  if (pre_type == BorderType::kCallBackward && cur_type == BorderType::kCallForward) {
+    return false;
+  }
+  return true;
+}
+
+void ReorderInnerOverlap(const FuncGraphPtr &graph, const std::vector<BorderPair> &borders,
+                         const std::vector<std::pair<size_t, size_t>> &overlap_border,
+                         const std::pair<size_t, size_t> &border_step4, const std::pair<size_t, size_t> &border_step5) {
+  auto start_step4 = border_step4.first;
+  auto end_step5 = border_step5.second;
+  auto pre_index = start_step4;
+
+  for (size_t i = 0; i < overlap_border.size(); i++) {
+    const auto &index = overlap_border[i];
+    auto start_index = index.first;
+    auto end_index = index.second;
+    const auto &start = borders[start_index];
+    const auto &end = borders[end_index];
+    MS_LOG(INFO) << "ZeroBubbleV::ReorderInnerOverlap: start_index: " << start_index << ", end_index: " << end_index
+                 << ", overlap_border size: " << overlap_border.size();
+    MS_LOG(INFO) << "ZeroBubbleV::ReorderInnerOverlap: start: " << start.second.border->ToString()
+                 << ", end: " << end.first.border->ToString();
+    ControlOrder(start.second.border, end.first.border, graph, kPrimalAttr1b1fCallCall);
+    InsertContorlOrder(borders, graph, pre_index, start_index);
+    pre_index = end_index;
+    if (end_index - start_index <= 1) {
+      continue;
+    }
+    const auto &pre_overlap = borders[start_index - 1];
+    const auto &next_overlap = borders[end_index + 1];
+    for (size_t j = start_index + 1; j <= end_index; j++) {
+      const auto &pre_cur = borders[j - 1];
+      const auto &cur = borders[j];
+      const auto &pre_cur_border = pre_cur.second.border;
+      const auto &cur_border = cur.first.border;
+      if (JudgeInsertControlEdge(pre_cur_border, cur_border)) {
+        ControlOrder(pre_cur_border, cur_border, graph, "inner_overlap");
+      }
+      const auto &cur_border_type = JudgeBorderType(cur_border);
+      if (cur_border_type == BorderType::kSend) {
+        ControlOrder(cur_border, next_overlap.first.border, graph, "send_out_1f1b");
+      }
+      if (cur_border_type == BorderType::kReceive) {
+        ControlOrder(pre_overlap.second.border, cur_border, graph, "input_recv_1f1b");
+      }
+    }
+  }
+  InsertContorlOrder(borders, graph, overlap_border.back().second, end_step5);
+}
+
+void MarkDualPipePhase(const std::vector<BorderPair> &orders, const std::string &tag, size_t start, size_t end,
+                       size_t phase_id) {
+  for (size_t i = start; i < end; i++) {
+    const auto &order = orders[i];
+    const auto &first_border = order.first.border;
+    if (first_border != nullptr) {
+      first_border->AddAttr(tag, MakeValue<size_t>(phase_id));
+    }
+    const auto &second_border = order.second.border;
+    if (second_border != nullptr) {
+      second_border->AddAttr(tag, MakeValue<size_t>(phase_id));
+    }
+  }
+}
+
+std::vector<BorderPair> FilterExecOrder(const std::vector<BorderPair> &orders) {
+  std::vector<BorderPair> unique_exec_order;
+  std::copy_if(orders.begin(), orders.end(), std::back_inserter(unique_exec_order),
+               [](const auto &item) { return item.first.border != nullptr && item.second.border != nullptr; });
+  auto iter = std::unique(unique_exec_order.begin(), unique_exec_order.end(), CompareBorderPair);
+  unique_exec_order.erase(iter, unique_exec_order.end());
+  return unique_exec_order;
+}
+
+std::pair<size_t, size_t> FindBorderIndex(const std::vector<BorderPair> &orders, const std::string &phase_tag,
+                                          size_t phase_id) {
+  std::pair<size_t, size_t> index;
+  bool has_find = false;
+  for (size_t i = 0; i < orders.size(); i++) {
+    const auto &border = orders[i].first.border;
+    MS_EXCEPTION_IF_NULL(border);
+    if (border->HasAttr(phase_tag) && GetValue<size_t>(border->GetAttr(phase_tag)) == phase_id) {
+      if (!has_find) {
+        index.first = i;
+        has_find = true;
+      }
+      index.second = i;
+    }
+  }
+  if (!has_find) {
+    MS_LOG(EXCEPTION) << "Has not find border index, phase_id: " << phase_id;
+  }
+  index.second++;
+  return index;
+}
+
 bool ZeroBubbleV::IsDetachedBackward(int64_t chunk, int64_t micro) {
   return std::any_of(need_detach_info_.begin(), need_detach_info_.end(),
                      [chunk, micro](const auto &info) { return info.chunk == chunk && info.micro == micro; });
@@ -288,6 +536,66 @@ void ZeroBubbleV::ProcessStep8(const PipelineState &state, BorderVecPtr exec_ord
   }
 }
 
+void ZeroBubbleV::ReorderFor1b1fOverlap(const std::vector<BorderPair> borders,
+                                        const std::pair<size_t, size_t> &border_step4,
+                                        const std::pair<size_t, size_t> &border_step5) {
+  // before: recv, fwd_cell
+  // after: backward, send
+  auto start_step4 = border_step4.first;
+  auto end_step4 = border_step4.second;
+  auto start_step5 = border_step5.first;
+  auto end_step5 = border_step5.second;
+  InsertContorlOrder(borders, root_, 0, start_step4, "before_overlap");
+  std::vector<BorderPair> before_overlap(borders.begin(), borders.begin() + start_step4);
+  std::vector<BorderPair> after_overlap(borders.begin() + end_step5, borders.end());
+  std::vector<BorderPair> after_step4(borders.begin() + start_step5, borders.end());
+  auto pre_cell_step4 = GetTargetBorderPair(before_overlap, true, BorderType::kCallForward);
+
+  std::vector<BorderPair> borders_step4(borders.begin() + start_step4, borders.begin() + end_step4);
+  std::vector<BorderPair> borders_step5(borders.begin() + start_step5, borders.begin() + end_step5);
+
+  BorderPair next_cell_step4 = GetTargetBorderPair(after_step4, false, BorderType::kCallBackward);
+  BorderPair pre_cell_step5 = GetTargetBorderPair(borders_step4, true, BorderType::kCallForward);
+  BorderPair next_cell_step5 = GetTargetBorderPair(after_overlap, false, BorderType::kCallBackward);
+
+  std::vector<BorderPair> call_call_step4{pre_cell_step4};
+  std::vector<BorderPair> call_call_step5{pre_cell_step5};
+
+  bool is_step4 = true;
+
+  auto call_call_control = [&call_call_step4, &call_call_step5](const BorderPair &cur, bool is_step4) {
+    if (is_step4) {
+      call_call_step4.push_back(cur);
+    } else {
+      call_call_step5.push_back(cur);
+    }
+  };
+  size_t overlap_bp_index = 0;
+  std::vector<std::pair<size_t, size_t>> overlap_border_index;
+  MS_LOG(INFO) << "ZeroBubbleV::ReorderFor1b1fOverlap: start_step4: " << start_step4 << ", end_step5: " << end_step5;
+  for (size_t i = start_step4; i < end_step5; i++) {
+    if (i >= start_step5) {
+      is_step4 = false;
+    }
+    const auto &cur = borders[i];
+    auto type = JudgeBorderType(cur.first.border);
+    if (type == BorderType::kCallBackward) {
+      overlap_bp_index = i;
+      call_call_control(cur, is_step4);
+    }
+    if (type == BorderType::kCallForward) {
+      overlap_border_index.push_back(std::make_pair(overlap_bp_index, i));
+      call_call_control(cur, is_step4);
+    }
+  }
+  ReorderInnerOverlap(root_, borders, overlap_border_index, border_step4, border_step5);
+  call_call_step4.push_back(next_cell_step4);
+  call_call_step5.push_back(next_cell_step5);
+  InsertCallControlEdge(call_call_step4, root_, "call_call_1f1b");
+  InsertCallControlEdge(call_call_step5, root_, "call_call_1f1b");
+  InsertContorlOrder(borders, root_, end_step5, borders.size() - 1, "after_overlap");
+}
+
 void ZeroBubbleV::Reorder() {
   auto fwd_begin = SortInsideMicro(fwd_begin_);
   auto fwd_end = SortInsideMicro(fwd_end_);
@@ -314,20 +622,70 @@ void ZeroBubbleV::Reorder() {
   PipelineState state(this);
   BorderVecPtr exec_order = std::make_shared<std::vector<BorderPair>>();
 
+  size_t start_index = 0;
+  const std::string phase_tag = "dual_pipe_phase";
   ProcessStep1(state, exec_order);
+  size_t end_index = exec_order->size();
+  MarkDualPipePhase(*exec_order, phase_tag, start_index, end_index, kIndex1);
+
+  start_index = exec_order->size();
   ProcessStep2(state, exec_order);
+  end_index = exec_order->size();
+  MarkDualPipePhase(*exec_order, phase_tag, start_index, end_index, kIndex2);
+
+  start_index = exec_order->size();
   ProcessStep3(state, exec_order);
+  end_index = exec_order->size();
+  MarkDualPipePhase(*exec_order, phase_tag, start_index, end_index, kIndex3);
+
+  start_index = exec_order->size();
   ProcessStep4(state, exec_order);
+  end_index = exec_order->size();
+  MarkDualPipePhase(*exec_order, phase_tag, start_index, end_index, kIndex4);
+
+  start_index = exec_order->size();
   ProcessStep5(state, exec_order);
+  end_index = exec_order->size();
+  MarkDualPipePhase(*exec_order, phase_tag, start_index, end_index, kIndex5);
+
+  start_index = exec_order->size();
   ProcessStep6(state, exec_order);
+  end_index = exec_order->size();
+  MarkDualPipePhase(*exec_order, phase_tag, start_index, end_index, kIndex6);
+
+  start_index = exec_order->size();
   ProcessStep7(state, exec_order);
+  end_index = exec_order->size();
+  MarkDualPipePhase(*exec_order, phase_tag, start_index, end_index, kIndex7);
+
+  start_index = exec_order->size();
   ProcessStep8(state, exec_order);
 
-  for (size_t i = 0; i < exec_order->size() - 1; ++i) {
-    auto prior_border = exec_order->at(i).second;
-    auto last_border = exec_order->at(i + 1).first;
-    ControlOrder(prior_border, last_border);
+  end_index = exec_order->size();
+  MarkDualPipePhase(*exec_order, phase_tag, start_index, end_index, kIndex8);
+
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  if (ms_context->get_param<std::string>(MS_CTX_PP_1F1B_OVERLAP).empty()) {
+    for (size_t i = 0; i < exec_order->size() - 1; ++i) {
+      auto prior_border = exec_order->at(i).second;
+      auto last_border = exec_order->at(i + 1).first;
+      ControlOrder(prior_border, last_border);
+    }
+    return;
   }
+  const auto &unique_exec_order = FilterExecOrder(*exec_order);
+  std::pair<size_t, size_t> border_step4 = FindBorderIndex(unique_exec_order, phase_tag, kIndex4);
+  std::pair<size_t, size_t> border_step5;
+  bool is_last_stage = ((stage_num_ - 1) == stage_);
+  if (is_last_stage) {
+    border_step5.first = border_step4.second;
+    border_step5.second = border_step4.second;
+  } else {
+    border_step5 = FindBorderIndex(unique_exec_order, phase_tag, kIndex5);
+  }
+  LabelFor1b1fOverlap(unique_exec_order, border_step4, border_step5);
+  ReorderFor1b1fOverlap(unique_exec_order, border_step4, border_step5);
 }
 
 SchedulerRegisterAction PipelineSchedulerZeroBubbleV(parallel::kPipelineZeroBubbleV,

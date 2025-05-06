@@ -17,6 +17,7 @@
 #include <vector>
 #include <algorithm>
 #include <memory>
+#include <utility>
 #include "frontend/parallel/pipeline_transformer/detach_backward.h"
 #include "ir/func_graph.h"
 #include "ir/core_ops_primitive.h"
@@ -149,7 +150,8 @@ std::vector<size_t> DetachBackward::DetachDxAndDwGraph(const FuncGraphPtr &fg, b
       manager_->SetEdge(dw_c, 1, fg_new_param);
     }
   }
-  auto no_used_index = HandleBwdGraphOutputs(dx_out_inputs, dw_out_inputs, is_dw_fg, fg, fg_params);
+  auto no_used_index = HandleBwdGraphOutputs(std::make_pair(dx_out_inputs, dw_out_inputs), is_dw_fg, fg, fg_params,
+                                             new_partial_inputs->size());
   for (size_t i = 2; i < partial_cnode->inputs().size(); ++i) {
     if (std::find(no_used_index.begin(), no_used_index.end(), i) == no_used_index.end()) {
       new_partial_inputs->emplace_back(partial_cnode->input(i));
@@ -175,15 +177,16 @@ AnfNodePtr DetachBackward::CreateTupleGetItem(const FuncGraphPtr &fg, const AnfN
   return tuple_getitem;
 }
 
-std::vector<size_t> DetachBackward::HandleBwdGraphOutputs(const std::vector<AnfNodePtr> &dx_out_inputs,
-                                                          const std::vector<AnfNodePtr> &dw_out_inputs, bool is_dw_fg,
-                                                          const FuncGraphPtr &fg,
-                                                          const std::vector<AnfNodePtr> &parameters) {
+std::vector<size_t> DetachBackward::HandleBwdGraphOutputs(
+  const std::pair<std::vector<AnfNodePtr>, std::vector<AnfNodePtr>> &out_inputs, bool is_dw_fg, const FuncGraphPtr &fg,
+  const std::vector<AnfNodePtr> &parameters, size_t partial_input_size) {
   auto output = fg->output();
+  const auto &dx_out_inputs = out_inputs.first;
   if (!is_dw_fg && dx_out_inputs.size() > 1) {
     auto make_tuple = CreateMakeTuple(fg, dx_out_inputs);
     manager_->Replace(output, make_tuple);
   }
+  const auto &dw_out_inputs = out_inputs.second;
   if (is_dw_fg && dw_out_inputs.size() > 1) {
     auto make_tuple = CreateMakeTuple(fg, dw_out_inputs);
     manager_->Replace(output, make_tuple);
@@ -194,8 +197,15 @@ std::vector<size_t> DetachBackward::HandleBwdGraphOutputs(const std::vector<AnfN
   std::vector<AnfNodePtr> parameter_used;
   std::vector<size_t> no_used_index;
   auto node_users_map = manager_->node_users();
+  auto params_size = params.size();
+  auto num_diff = params_size - partial_input_size;
+
   for (size_t i = 0; i < params.size(); ++i) {
     auto cur_param = params.at(i);
+    if (i >= (params_size - num_diff) && !is_dw_fg) {
+      parameter_used.emplace_back(cur_param);
+      continue;
+    }
     const auto &iter = node_users_map.find(cur_param);
     if (iter == node_users_map.end()) {
       no_used_index.emplace_back(i + kIndex2);

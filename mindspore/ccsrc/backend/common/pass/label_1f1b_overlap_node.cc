@@ -43,6 +43,37 @@ void LabelBpBegin(const std::vector<CNodePtr> &begin_cnodes, const std::string &
   }
 }
 
+void LabelNopLayerBeginEnd(const NodeUsersMap &node_users, const std::vector<CNodePtr> &begin_cnodes,
+                           const std::string &input_tags, const std::string &output_tags) {
+  if (begin_cnodes.size() < kSizeFour) {
+    return;
+  }
+  size_t middle_cnode_index = begin_cnodes.size() / kSizeTwo;
+  size_t first_half_half_cnode_index = begin_cnodes.size() / kSizeFour;
+  auto first_cnode = begin_cnodes[first_half_half_cnode_index];
+  first_cnode->AddAttr(output_tags, MakeValue<size_t>(0));
+  if (first_half_half_cnode_index >= 1 && output_tags == kCNodeAttrBackwardAll2AllOutput) {
+    begin_cnodes[first_half_half_cnode_index - 1]->AddAttr(kCNodeAttr1f1bIndexBpBegin, MakeValue(true));
+  }
+  auto middle_cnode = begin_cnodes[middle_cnode_index];
+  middle_cnode->AddAttr(input_tags, MakeValue<size_t>(0));
+  auto all2all_outputs = node_users.at(middle_cnode);
+  for (const auto &all2all_output_pair : all2all_outputs) {
+    if (IsPrimitiveCNode(all2all_output_pair.first)) {
+      all2all_output_pair.first->cast<CNodePtr>()->AddAttr(output_tags, MakeValue<size_t>(kIndex1));
+    }
+  }
+  size_t last_half_half_cnode = begin_cnodes.size() * kSizeThree / kSizeFour;
+  auto end_cnode = begin_cnodes[last_half_half_cnode];
+  end_cnode->AddAttr(input_tags, MakeValue<size_t>(kIndex1));
+  if (begin_cnodes.size() > last_half_half_cnode + kSizeOne && input_tags == kCNodeAttrForwardAll2AllInput) {
+    begin_cnodes[last_half_half_cnode + kSizeOne]->AddAttr(kCNodeAttr1f1bMiddleCNode, MakeValue(true));
+    for (size_t k = last_half_half_cnode + kSizeTwo; k < begin_cnodes.size(); ++k) {
+      begin_cnodes[k]->AddAttr(kCNodeAttr1f1bLastCNode, MakeValue(true));
+    }
+  }
+}
+
 void LabelOutputNodesWithCheck(const AnfNodePtr &node, std::function<bool(const AnfNodePtr &)> check) {
   auto func_graph = node->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);
@@ -163,8 +194,12 @@ void LabelAll2AllInputOutput(const FuncGraphPtr &cur_graph, const std::string &i
     }
   }
   LabelBpBegin(begin_cnodes, output_tags);
+
   if (last_a2a_index > 0) {
+    LabelBpBegin(begin_cnodes, output_tags);
     LabelEndCNode(order_cnode_list, input_tags, all2all_input_index, last_a2a_index);
+  } else {
+    LabelNopLayerBeginEnd(node_users, begin_cnodes, input_tags, output_tags);
   }
 }
 

@@ -20,6 +20,7 @@
 #include <queue>
 #include <vector>
 #include <memory>
+#include <utility>
 #include "frontend/parallel/pipeline_transformer/pipeline_scheduler.h"
 #include "frontend/parallel/pipeline_transformer/detach_backward.h"
 #include "frontend/parallel/step_parallel_utils.h"
@@ -86,6 +87,9 @@ class ZeroBubbleV : public PipelineScheduler {
   void ProcessStep6(const PipelineState &state, BorderVecPtr exec_order);
   void ProcessStep7(const PipelineState &state, BorderVecPtr exec_order);
   void ProcessStep8(const PipelineState &state, BorderVecPtr exec_order);
+  // void LabelForOverlap1b1f();
+  void ReorderFor1b1fOverlap(const std::vector<BorderPair> borders, const std::pair<size_t, size_t> &border_step4,
+                             const std::pair<size_t, size_t> &border_step5);
   std::vector<BorderPair> dw_border_;
   std::vector<PPInfo> need_detach_info_;
   BorderQueuePtr fwd_b_ph0_;
