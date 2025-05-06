@@ -7,6 +7,7 @@ approvers:
 - HulkTang
 - AllenXiao_O
 - chenyijie6
+- liuluobin
 
 options:
     no_parent_owners: true
