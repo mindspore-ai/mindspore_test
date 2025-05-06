@@ -33,17 +33,14 @@ py::object ${func_name}_OP(const PrimitivePtr &prim, const std::vector<ops::OP_D
                 // stub tensor to tensor.
                 ${convert_stub}
 
-                // Create op
-                auto op = CREATE_PYBOOST_OP(${op_name}, target);
-                op->set_comm_handle(comm_handle);
-                const auto &op_prim = op->primitive();
-
                 // Do mixed precision and implicit cast
                 static const std::vector<std::vector<size_t>> same_type_table{${same_type}};
                 auto [${cast_args}] = PyNativeAlgo::PyBoost::SetPyBoostCastForInputs<${type_num}>(op_run_info, "${class_name}", same_type_table, ${call_args});
 
                 // Run op
-                (void)op->Call(${cast_args});
+                auto outputs = kernel::pyboost::${operator_name}_inner(${cast_args}, comm_handle, target);
+                auto op = kernel::pyboost::OpRunStatus::Get().GetLastOp();
+                const auto &op_prim = op->primitive();
                 ${optional_to_value}
 
                 // Create output value
