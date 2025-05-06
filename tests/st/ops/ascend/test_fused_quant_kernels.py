@@ -179,7 +179,7 @@ class DequantBMMCell(Cell):
         return self.dbmm(x1, x2, self.scale, self.offset, bias)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', ['GE', 'KBK', 'pynative'])
 def test_weight_quant_bmm_cell_as_antiquant_1p(mode):
     """
