@@ -20,6 +20,8 @@
 #include <optional>
 #include "ir/tensor.h"
 #include "include/backend/visible.h"
+#include "mindspore/ccsrc/pyboost/comm_handle.h"
+#include "pynative/op_function/comm_handle_py.h"
 
 namespace mindspore {
 namespace kernel {
