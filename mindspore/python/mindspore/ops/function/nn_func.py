@@ -7274,11 +7274,11 @@ def conv3d(input, weight, bias=None, stride=1, pad_mode="valid", padding=0, dila
 
         .. math::
             \begin{array}{ll} \\
-                D_{out} = \left \lfloor{\frac{D_{in} - \text{dilation[0]} \times (\text{kernel_size[0]} - 1) }
+                D_{out} = \left \lfloor{\frac{D_{in} - \text{dilation[0]} \times (\text{kernel_size[0]} - 1) - 1}
                 {\text{stride[0]}} + 1} \right \rfloor \\
-                H_{out} = \left \lfloor{\frac{H_{in} - \text{dilation[1]} \times (\text{kernel_size[1]} - 1) }
+                H_{out} = \left \lfloor{\frac{H_{in} - \text{dilation[1]} \times (\text{kernel_size[1]} - 1) - 1}
                 {\text{stride[1]}} + 1} \right \rfloor \\
-                W_{out} = \left \lfloor{\frac{W_{in} - \text{dilation[2]} \times (\text{kernel_size[2]} - 1) }
+                W_{out} = \left \lfloor{\frac{W_{in} - \text{dilation[2]} \times (\text{kernel_size[2]} - 1) - 1}
                 {\text{stride[2]}} + 1} \right \rfloor \\
             \end{array}
 
@@ -7286,12 +7286,12 @@ def conv3d(input, weight, bias=None, stride=1, pad_mode="valid", padding=0, dila
 
         .. math::
             \begin{array}{ll} \\
-                D_{out} = \left \lfloor{\frac{D_{in} + padding[0] + padding[1] - (\text{dilation[0]} - 1) \times
-                \text{kernel_size[0]} - 1 }{\text{stride[0]}} + 1} \right \rfloor \\
-                H_{out} = \left \lfloor{\frac{H_{in} + padding[2] + padding[3] - (\text{dilation[1]} - 1) \times
-                \text{kernel_size[1]} - 1 }{\text{stride[1]}} + 1} \right \rfloor \\
-                W_{out} = \left \lfloor{\frac{W_{in} + padding[4] + padding[5] - (\text{dilation[2]} - 1) \times
-                \text{kernel_size[2]} - 1 }{\text{stride[2]}} + 1} \right \rfloor \\
+                D_{out} = \left \lfloor{\frac{D_{in} + padding[0] + padding[1] - \text{dilation[0]} \times
+                (\text{kernel_size[0]} - 1) - 1}{\text{stride[0]}} + 1} \right \rfloor \\
+                H_{out} = \left \lfloor{\frac{H_{in} + padding[2] + padding[3] - \text{dilation[1]} \times
+                (\text{kernel_size[1]} - 1) - 1}{\text{stride[1]}} + 1} \right \rfloor \\
+                W_{out} = \left \lfloor{\frac{W_{in} + padding[4] + padding[5] - \text{dilation[2]} \times
+                (\text{kernel_size[2]} - 1) - 1}{\text{stride[2]}} + 1} \right \rfloor \\
             \end{array}
 
     Raises:
