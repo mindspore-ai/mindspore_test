@@ -507,10 +507,7 @@ def test_call_function_graph_break_in_loop_v5():
         return f3(processed, repeat_count)
 
     def f1(input_tensor: Tensor) -> Tensor:
-        input_dict = {
-            'data': input_tensor + 1.0,
-            'count': 5
-        }
+        input_dict = {'data': input_tensor + 1.0, 'count': 5}
         result = f2(input_dict)
         return ops.relu(result)
 
@@ -585,7 +582,7 @@ def test_call_function_graph_break_in_loop_v7():
         return z
 
     def f1(a, b):
-        c = a ** 2
+        c = a**2
         d = b + 2
         return f2(c, d)
 
@@ -664,8 +661,8 @@ def test_call_function_graph_break_in_loop_v9():
         e = d / a
         return e
 
-    x = Tensor([1., 2., 3.])
-    y = Tensor([4., 5., 6.])
+    x = Tensor([1.0, 2.0, 3.0])
+    y = Tensor([4.0, 5.0, 6.0])
     o1 = f1(x, y)
 
     compiled_f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
@@ -806,10 +803,8 @@ def test_call_function_graph_break_in_loop_v13():
             result = ops.exp(result)
         return result
 
-    x = Tensor([1., 2., 3.])
-    params = {
-        'y': Tensor([4.0, 5.0, 6.0])
-    }
+    x = Tensor([1.0, 2.0, 3.0])
+    params = {'y': Tensor([4.0, 5.0, 6.0])}
     o1 = f1(x, params)
 
     compiled_f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
@@ -926,7 +921,7 @@ def test_param_is_dict_and_is_alive_local_v2():
     Expectation: The result of PIJit is same as pynative.
     """
 
-    d = {'a': Tensor([1., 2., 3.]), 'b': ops.randn(3)}
+    d = {'a': Tensor([1.0, 2.0, 3.0]), 'b': ops.randn(3)}
 
     def f2(x: Tensor):
         d2 = d
@@ -1114,21 +1109,12 @@ GLOBAL_SCALE = 2.0
 GLOBAL_TENSOR = ops.ones((4, 4))
 
 
-def f2(input_tensor: Tensor,
-       weights: Tensor,
-       params: dict,
-       sizes: tuple,
-       count: int,
-       tensors_list: list) -> tuple:
+def f2(input_tensor: Tensor, weights: Tensor, params: dict, sizes: tuple, count: int, tensors_list: list) -> tuple:
     outer_tensor = input_tensor * weights
 
-    def f3(tensor1: Tensor,
-           tensor2: Tensor,
-           scale: float,
-           config: dict,
-           dims: tuple,
-           values: list,
-           flag: bool) -> Tensor:
+    def f3(
+        tensor1: Tensor, tensor2: Tensor, scale: float, config: dict, dims: tuple, values: list, flag: bool
+    ) -> Tensor:
         scaled_tensor = tensor1 * GLOBAL_SCALE - count  # global var + free var
         print('GRAPH BREAK', end='')
         ret = ops.matmul(scaled_tensor, tensor2) + outer_tensor  # free var
@@ -1143,10 +1129,7 @@ def f2(input_tensor: Tensor,
             ret = ret + ops.mean(val)
         return ret * scale
 
-    new_config = {
-        'bias': params['bias'] * 2,
-        'scale': params['scale'] * 1.5
-    }
+    new_config = {'bias': params['bias'] * 2, 'scale': params['scale'] * 1.5}
 
     new_dims = sizes + (1,)
     if count > 5:
@@ -1155,36 +1138,17 @@ def f2(input_tensor: Tensor,
         scale_factor = 1.0
 
     print('GRAPH BREAK', end='')
-    result = f3(input_tensor,
-                weights,
-                scale_factor,
-                new_config,
-                new_dims,
-                tensors_list,
-                True)
+    result = f3(input_tensor, weights, scale_factor, new_config, new_dims, tensors_list, True)
 
     return result, new_config, new_dims
 
 
-def f1(x: Tensor,
-       y: Tensor,
-       batch_size: int,
-       shape: tuple,
-       config: dict,
-       tensor_array: list) -> Tensor:
+def f1(x: Tensor, y: Tensor, batch_size: int, shape: tuple, config: dict, tensor_array: list) -> Tensor:
     intermediate = x - ops.add(y, GLOBAL_TENSOR)
     print('GRAPH BREAK', end='')
-    new_params = {
-        'bias': 0.5,
-        'scale': config['learning_rate']
-    }
+    new_params = {'bias': 0.5, 'scale': config['learning_rate']}
 
-    result, updated_config, dims = f2(intermediate,
-                                      y,
-                                      new_params,
-                                      shape,
-                                      batch_size,
-                                      tensor_array)
+    result, updated_config, dims = f2(intermediate, y, new_params, shape, batch_size, tensor_array)
     print('GRAPH BREAK', end='')
     return result * updated_config['scale']
 
@@ -1382,7 +1346,431 @@ def test_subgraph_break_at_if_statement():
 
     match_array(o1, o2)
     assert_has_graph_break(f1, break_count=1)
+    check_ir_num('graph_before_compile', 2)
+
+
+@save_graph_ir(ir_name='graph_before_compile')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_subgraph_break_at_if_elif_else_statement():
+    """
+    Feature: test graph break in call_function.
+    Description: graph break at if-elif-else statement, each branch compares Tensor and scalar.
+    Expectation: The result of PIJit is same as pynative.
+    """
+    context.set_context(mode=context.PYNATIVE_MODE)
+
+    def f2(x: Tensor):
+        a = x + 1  # alive local
+        if a.sum() > 100:  # break!
+            a = a * 2
+        elif a.sum() > 50:  # break!
+            a = a * 3
+        else:
+            a = a * 4
+        return a + 1
+
+    def f1(x: Tensor):
+        y = x * 2  # alive local
+        z = f2(x)
+        return y + z
+
+    x = Tensor([[1, 2, 3], [4, 5, 6]])
+    o1 = f1(x)
+
+    f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
+    x = Tensor([[1, 2, 3], [4, 5, 6]])
+    o2 = f1(x)
+
+    match_array(o1, o2)
+    assert_has_graph_break(f1, break_count=1)
+    check_ir_num('graph_before_compile', 3)
+
+
+@save_graph_ir(ir_name='graph_before_compile')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_subgraph_break_at_nested_if_else_statement():
+    """
+    Feature: test graph break in call_function.
+    Description: graph break at nested if-else statement, inner and outer both compare Tensor and scalar.
+    Expectation: The result of PIJit is same as pynative.
+    """
+    context.set_context(mode=context.PYNATIVE_MODE)
+
+    def f2(x: Tensor):
+        a = x + 1
+        if a.sum() > 100:  # outer break!
+            if a.mean() > 50:
+                a = a * 2
+            else:
+                a = a * 3
+        else:
+            if a.min() > 0:  # inner break!
+                a = a * 4
+            else:
+                a = a * 5
+        return a + 1
+
+    def f1(x: Tensor):
+        y = x * 2
+        z = f2(x)
+        return y + z
+
+    x = Tensor([[1, 2, 3], [4, 5, 6]])
+    o1 = f1(x)
+
+    f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
+    x = Tensor([[1, 2, 3], [4, 5, 6]])
+    o2 = f1(x)
+
+    match_array(o1, o2)
+    assert_has_graph_break(f1, break_count=1)
+    check_ir_num('graph_before_compile', 3)
+
+
+@save_graph_ir(ir_name='graph_before_compile')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_subgraph_break_at_if_or_condition():
+    """
+    Feature: test graph break in call_function.
+    Description: graph break at if with 'or' condition (Tensor and scalar).
+    Expectation: The result of PIJit is same as pynative.
+    """
+    context.set_context(mode=context.PYNATIVE_MODE)
+
+    def f2(x: Tensor):
+        a = x + 1
+        if a.sum() > 100 or a.mean() > 50:  # break!
+            a = a * 2
+        else:
+            a = a * 3
+        return a + 1
+
+    def f1(x: Tensor):
+        y = x * 2
+        z = f2(x)
+        return y + z
+
+    x = Tensor([[1, 2, 3], [4, 5, 6]])
+    o1 = f1(x)
+
+    f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
+    x = Tensor([[1, 2, 3], [4, 5, 6]])
+    o2 = f1(x)
+
+    match_array(o1, o2)
+    assert_has_graph_break(f1, break_count=1)
+    check_ir_num('graph_before_compile', 3)
+
+
+@save_graph_ir(ir_name='graph_before_compile')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_subgraph_break_at_if_and_condition():
+    """
+    Feature: test graph break in call_function.
+    Description: graph break at if with 'and' condition (Tensor and scalar).
+    Expectation: The result of PIJit is same as pynative.
+    """
+    context.set_context(mode=context.PYNATIVE_MODE)
+
+    def f2(x: Tensor):
+        a = x + 1
+        if a.sum() > 10 and a.mean() > 2:  # break!
+            a = a * 2
+        else:
+            a = a * 3
+        return a + 1
+
+    def f1(x: Tensor):
+        y = x * 2
+        z = f2(x)
+        return y + z
+
+    x = Tensor([[1, 2, 3], [4, 5, 6]])
+    o1 = f1(x)
+
+    f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
+    x = Tensor([[1, 2, 3], [4, 5, 6]])
+    o2 = f1(x)
+
+    match_array(o1, o2)
+    assert_has_graph_break(f1, break_count=1)
+    check_ir_num('graph_before_compile', 3)
+
+
+@save_graph_ir(ir_name='graph_before_compile')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_subgraph_break_at_if_call_function_return_scalar_tensor():
+    """
+    Feature: test graph break in call_function.
+    Description: graph break at if condition where the condition is a function call returning a 1-element Tensor.
+    Expectation: The result of PIJit is same as pynative.
+    """
+    context.set_context(mode=context.PYNATIVE_MODE)
+
+    def f3(x: Tensor):
+        # Returns a Tensor with a single element
+        return ops.sum(x)
+
+    def f2(x: Tensor):
+        a = x + 1
+        if f3(a) > 10:  # break!
+            a = a * 2
+        else:
+            a = a * 3
+        return a + 1
+
+    def f1(x: Tensor):
+        y = x * 2
+        z = f2(x)
+        return y + z
+
+    x = Tensor([1, 2, 3])
+    o1 = f1(x)
+
+    f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
+    x = Tensor([1, 2, 3])
+    o2 = f1(x)
+
+    match_array(o1, o2)
+    assert_has_graph_break(f1, break_count=1)
+    check_ir_num('graph_before_compile', 2)
+
+
+@save_graph_ir(ir_name='graph_before_compile')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_subgraph_break_at_if_condition_in_nested_call():
+    """
+    Feature: test graph break in call_function.
+    Description: f1 calls f2, f2 calls f3, and f3 has a variable if-condition that triggers graph break.
+    Expectation: The result of PIJit is same as pynative.
+    """
+    context.set_context(mode=context.PYNATIVE_MODE)
+
+    def f3(x: Tensor):
+        a = x + 1
+        if a.sum() > 10:  # break!
+            a = a * 2
+        else:
+            a = a * 3
+        return a
+
+    def f2(x: Tensor):
+        b = x * 2
+        return f3(b)
+
+    def f1(x: Tensor):
+        y = x - 1
+        z = f2(y)
+        return z + x
+
+    x = Tensor([1, 2, 3])
+    o1 = f1(x)
+
+    f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
+    x = Tensor([1, 2, 3])
+    o2 = f1(x)
+
+    match_array(o1, o2)
+    assert_has_graph_break(f1, break_count=1)
+    check_ir_num('graph_before_compile', 2)
+
+
+@save_graph_ir(ir_name='graph_before_compile')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_subgraph_break_at_return_and_condition():
+    """
+    Feature: test graph break in call_function.
+    Description: f2 returns (condition-a and condition-b), both involving Tensor and scalar.
+    Expectation: The result of PIJit is same as pynative.
+    """
+    context.set_context(mode=context.PYNATIVE_MODE)
+
+    def f2(x: Tensor):
+        a = x + 1
+        # JUMP_IF_TRUE_OR_POP, break only once.
+        return (a.sum() > 10) and (a.mean() > 2)
+
+    def f1(x: Tensor):
+        cond = f2(x)
+        return cond
+
+    x = Tensor([1, 2, 3])
+    o1 = f1(x)
+
+    f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
+    x = Tensor([1, 2, 3])
+    o2 = f1(x)
+
+    assert o1 == o2
+    assert_has_graph_break(f1, break_count=1)
+    check_ir_num('graph_before_compile', 2)
+
+
+@save_graph_ir(ir_name='graph_before_compile')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_subgraph_break_at_return_or_condition():
+    """
+    Feature: test graph break in call_function.
+    Description: f2 returns (condition-a or condition-b), both involving Tensor and scalar.
+    Expectation: The result of PIJit is same as pynative.
+    """
+    context.set_context(mode=context.PYNATIVE_MODE)
+
+    def f2(x: Tensor):
+        a = x + 1
+        # JUMP_IF_TRUE_OR_POP, break only once.
+        return (a.sum() > 10) or (a.mean() > 100)
+
+    def f1(x: Tensor):
+        cond = f2(x)
+        return cond
+
+    x = Tensor([1, 2, 3])
+    o1 = f1(x)
+
+    f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
+    x = Tensor([1, 2, 3])
+    o2 = f1(x)
+
+    assert o1 == o2
+    assert_has_graph_break(f1, break_count=1)
+    check_ir_num('graph_before_compile', 2)
+
+
+@save_graph_ir(ir_name='graph_before_compile')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_subgraph_break_at_return_complex_and_or_condition():
+    """
+    Feature: test graph break in call_function.
+    Description: f2 returns a complex and/or expression, f1 returns f2(...) and another expression.
+    Expectation: The result of PIJit is same as pynative.
+    """
+    context.set_context(mode=context.PYNATIVE_MODE)
+
+    def f2(x: Tensor):
+        a = x + 1
+        # The first and: POP_JUMP_IF_FALSE (break!)
+        # or: JUMP_IF_TRUE_OR_POP (skipped! As a.sum() > 10 is False)
+        # The second and: JUMP_IF_FALSE_OR_POP (break!).
+        return ((a.sum() > 10) and (a.mean() > 2)) or ((a.amin() > 0) and (a.amax() < 100))
+
+    def f1(x: Tensor):
+        # JUMP_IF_FALSE_OR_POP (break!)
+        return f2(x) and x.sum() > 0
+
+    x = Tensor([1, 2, 3])
+    o1 = f1(x)
+
+    f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
+    x = Tensor([1, 2, 3])
+    o2 = f1(x)
+
+    assert o1 == o2
+    assert_has_graph_break(f1, break_count=1)
     check_ir_num('graph_before_compile', 4)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_subgraph_break_at_while_condition():
+    """
+    Feature: test graph break in call_function.
+    Description: while loop condition is a Tensor and scalar comparison, triggers graph break.
+    Expectation: The result of PIJit is same as pynative.
+    """
+    context.set_context(mode=context.PYNATIVE_MODE)
+
+    def f2(x: Tensor):
+        a = x + 1
+        count = 0
+        while a.sum() < 20:  # POP_JUMP_IF_FALSE, break!
+            a = a + 2
+            count += 1
+        return a, count
+
+    def f1(x: Tensor):
+        a, cnt = f2(x)
+        return a * cnt
+
+    x = Tensor([1, 2, 3])
+    o1 = f1(x)
+
+    f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
+    x = Tensor([1, 2, 3])
+    o2 = f1(x)
+
+    match_array(o1, o2)
+    assert_has_graph_break(f1, break_count=1)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_subgraph_break_at_while_condition_with_if_continue():
+    """
+    Feature: test graph break in call_function.
+    Description: while loop condition is Tensor < scalar (break), loop body has if (Tensor > scalar) + continue.
+    Expectation: The result of PIJit is same as pynative.
+    """
+    context.set_context(mode=context.PYNATIVE_MODE)
+
+    def f2(x: Tensor):
+        a = x + 1
+        count = 0
+        while a.sum() < 20:  # break!
+            if a.max() > 10:  # break!
+                a = a - 1
+                count += 1
+                continue
+            a = a + 2
+            count += 1
+        return a, count
+
+    def f1(x: Tensor):
+        a, cnt = f2(x)
+        return a * cnt
+
+    x = Tensor([1, 2, 3])
+    o1 = f1(x)
+
+    f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
+    x = Tensor([1, 2, 3])
+    o2 = f1(x)
+
+    match_array(o1, o2)
+    assert_has_graph_break(f1, break_count=1)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_subgraph_break_at_while_condition_with_if_break():
+    """
+    Feature: test graph break in call_function.
+    Description: while loop condition is Tensor < scalar (break), loop body has if (Tensor > scalar) + break.
+    Expectation: The result of PIJit is same as pynative.
+    """
+    context.set_context(mode=context.PYNATIVE_MODE)
+
+    def f2(x: Tensor):
+        a = x + 1
+        count = 0
+        while a.sum() < 20:  # break!
+            if a.max() > 10:  # break!
+                count += 1
+                break
+            a = a + 2
+            count += 1
+        return a, count
+
+    def f1(x: Tensor):
+        a, cnt = f2(x)
+        return a * cnt
+
+    x = Tensor([1, 2, 3])
+    o1 = f1(x)
+
+    f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
+    x = Tensor([1, 2, 3])
+    o2 = f1(x)
+
+    match_array(o1, o2)
+    assert_has_graph_break(f1, break_count=1)
 
 
 @save_graph_ir(ir_name='graph_before_compile')

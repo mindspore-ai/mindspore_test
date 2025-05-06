@@ -300,6 +300,10 @@ class CodeBreakGenerator {
   // generate specialize code if break point is call
   void BreakAtCall(CodeGenerator *code_gen) const;
   bool NeedHandleBreakAtCall() const;
+  // Similar to BreakAtIf(), but it breaks at conditional-statement of a callee function (or we say a subgraph).
+  void BreakAtCalleeIfCondition(CodeGenerator *code_gen) const;
+  py::object MakeUntrackedCodeForNestedCalls(const std::vector<Graph *> &call_stack, int top_argc, int untracked_bci,
+                                             int stack_effect) const;
 
   void RestoreStack(CodeGenerator *code_gen) const;
 

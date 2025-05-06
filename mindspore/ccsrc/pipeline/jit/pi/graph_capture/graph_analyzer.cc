@@ -772,11 +772,9 @@ bool CanCapturePartialGraph(const Graph *graph) {
     return false;
   }
   static const std::unordered_set<int> unsupported_break_op = {
-    JUMP_IF_FALSE_OR_POP, JUMP_IF_TRUE_OR_POP,   POP_JUMP_IF_FALSE, POP_JUMP_IF_TRUE, YIELD_VALUE,
-    YIELD_FROM,           GET_YIELD_FROM_ITER,   SETUP_WITH,        SETUP_FINALLY,    WITH_CLEANUP_START,
-    WITH_CLEANUP_FINISH,  END_FINALLY,           SETUP_EXCEPT,      POP_EXCEPT,       RERAISE,
-    RAISE_VARARGS,        JUMP_IF_NOT_EXC_MATCH, BEGIN_FINALLY,     POP_FINALLY,      CALL_FINALLY,
-    JUMP_ABSOLUTE,        JUMP_FORWARD};
+    YIELD_VALUE,           YIELD_FROM,    GET_YIELD_FROM_ITER, SETUP_WITH,   SETUP_FINALLY, WITH_CLEANUP_START,
+    WITH_CLEANUP_FINISH,   END_FINALLY,   SETUP_EXCEPT,        POP_EXCEPT,   RERAISE,       RAISE_VARARGS,
+    JUMP_IF_NOT_EXC_MATCH, BEGIN_FINALLY, POP_FINALLY,         CALL_FINALLY, JUMP_ABSOLUTE, JUMP_FORWARD};
   int break_bci = graph->GetStopTraceBci();
   const auto &instr_pool = graph->GetCFG()->instr_pool();
   MS_EXCEPTION_IF_CHECK_FAIL(break_bci >= 0 && break_bci < SizeToInt(instr_pool.size()), "Illegal break bci");
