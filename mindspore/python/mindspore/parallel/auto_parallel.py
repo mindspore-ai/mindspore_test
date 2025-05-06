@@ -436,9 +436,9 @@ class AutoParallel(Cell):
         Args:
             shard_size (int, optional): Set the optimizer weight shard group size if you want to specific the
                 maximum group size across devices when the parallel optimizer is
-                enabled. The numerical range can be (0, device_num]. Default value
+                enabled. The numerical range can be (0, device_num] or -1. Default value
                 is -1, which means the optimizer weight shard group size will
-                the data parallel group of each parameter. Default  ``-1``.
+                the data parallel group of each parameter.
             threshold (int, optional): Set the threshold of parallel optimizer. When parallel optimizer is
                 enabled, parameters with size smaller than this threshold will not be
                 sharded across the devices. Parameter size = shape[0] \* ... \*

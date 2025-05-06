@@ -1038,10 +1038,10 @@ class _AutoParallelContext:
                                                  shape[n] \* size(dtype). Non-negative. Unit: KB. Default: 64.
             - optimizer_weight_shard_size(int): Set the optimizer weight shard group size if you want to specific the
                                                 maximum group size across devices when the parallel optimizer is
-                                                enabled. The numerical range can be (0, device_num]. Default value
-                                                is -1, which means the optimizer weight shard group size will
-                                                the data parallel group of each parameter. Default -1.
-
+                                                enabled. The numerical range can be (0, device_num] or -1. If pipeline
+                                                parallelism is enabled, the numerical range is (0, device_num/stage]
+                                                or -1. Default value is -1, which means the optimizer weight shard
+                                                group size will be equal to the data parallel group of each parameter.
         """
         self.check_context_handle()
         grad_shard_name = _ParallelOptimizerConfig.GRADIENT_ACCUMULATION_SHARD
@@ -1076,8 +1076,9 @@ class _AutoParallelContext:
 
         if optimizer_weight_shard_size_name in parallel_optimizer_config:
             value = parallel_optimizer_config[optimizer_weight_shard_size_name]
-            Validator.check_positive_int(value)
-            self.set_optimizer_weight_shard_size(value)
+            if value != -1:
+                Validator.check_positive_int(value, prim_name="optimizer_weight_shard_size")
+                self.set_optimizer_weight_shard_size(value)
 
         if optimizer_level_name in parallel_optimizer_config:
             optimizer_level = parallel_optimizer_config[optimizer_level_name]
