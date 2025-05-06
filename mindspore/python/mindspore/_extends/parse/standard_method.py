@@ -4490,6 +4490,7 @@ def uniform_(input, from_=0, to=1, *, generator=None):
     seed, offset = generator._step(generator_step_) # pylint: disable=protected-access
     return inplace_uniform_op(input, from_, to, seed, offset)
 
+
 def exponential_(input, lambd=1, *, generator=None):
     r"""
         Fills `self` tensor with elements drawn from the exponential distribution:
