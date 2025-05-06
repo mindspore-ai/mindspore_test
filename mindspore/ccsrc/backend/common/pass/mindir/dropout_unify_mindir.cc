@@ -402,6 +402,7 @@ CNodePtr CreateDropoutDoMaskCNode(const FuncGraphPtr &func_graph, const CNodePtr
   }
   if (enable_keep_prob) {
     auto dropout_do_mask_primitive = common::AnfAlgo::GetCNodePrimitive(dropout_do_mask);
+    MS_EXCEPTION_IF_NULL(dropout_do_mask_primitive);
     dropout_do_mask_primitive->set_attr("enable_keep_prob", MakeValue(true));
   }
   return dropout_do_mask;

@@ -185,6 +185,7 @@ const AnfNodePtr AdaptiveMaxPool2DFusion::Process(const FuncGraphPtr &func_graph
 
 const bool IsDynamicShapeGe(const CNodePtr &adaptive_max_pool2d) {
   auto origin_primitive = GetCNodePrimitive(adaptive_max_pool2d);
+  MS_EXCEPTION_IF_NULL(origin_primitive);
   if (common::AnfAlgo::IsDynamicShape(adaptive_max_pool2d)) {
     MS_LOG(INFO) << "Exit adaptive_max_pool2d pass, due to dynamic attr:" << origin_primitive->GetAttrsText();
     return true;
