@@ -83,7 +83,6 @@ def train_model_programming_using_autoparallel_cell(strategy):
     loss_fn = nn.MSELoss(reduction='mean')
     loss_monitor = CustomLossMonitor(per_print_times=1)
     model = Model(network=parallel_net, loss_fn=loss_fn, optimizer=optimizer)
-    model.build(epoch=2, train_dataset=parallel_dataset, sink_mode=False)
     print("the loss when training using AutoParallel(cell) is :")
     model.train(epoch=2, train_dataset=parallel_dataset,
                 dataset_sink_mode=False, callbacks=[loss_monitor])
