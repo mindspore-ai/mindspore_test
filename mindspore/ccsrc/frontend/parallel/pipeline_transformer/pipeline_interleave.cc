@@ -335,6 +335,13 @@ void PipelineInterleave::LabelMicroBatch() {
         data_users = node_user_map[node_first];
       }
       auto micro_size = int64_t(MicroSize(data_users));
+      auto stage_num = g_device_manager->stage_num();
+      auto scheduler = parallel::ParallelContext::GetInstance()->pipeline_scheduler();
+      if ((scheduler == ZBV) && (micro_size < stage_num * 2)) {
+        MS_LOG(EXCEPTION)
+          << "For zero_bubble_v scheduler, micro_size must be greater than or equal to twice stage_num. Got micro_size:"
+          << micro_size << ", stage_num:" << stage_num;
+      }
       micro_size_ = micro_size;
       auto batch_axis = GetBatchAxisForInput(data_users);
       MS_LOG(INFO) << "For the "
@@ -446,6 +453,34 @@ void PipelineInterleave::BroadCastGraphStage(const FuncGraphPtr &fg) {
   }
 }
 
+void PipelineInterleave::ZBVErrorCheck(int64_t stage, int64_t chunk, int64_t user_stage, int64_t user_chunk) {
+  // case1: stage > user_stage, chunk >= user_chunk
+  constexpr int64_t MAX_CHUNK_NUM = 1;
+  if (chunk > MAX_CHUNK_NUM || user_chunk > MAX_CHUNK_NUM) {
+    MS_LOG(EXCEPTION) << "Segment only support 0 and 1 in Zero Bubble V scheduler. "
+                         "Got layer 's segment:"
+                      << chunk << ". next layer' s segment : " << user_chunk;
+  }
+  if (chunk > user_chunk) {
+    MS_LOG(EXCEPTION) << "Segment must be configured in ascending order. Got layer's segment:" << chunk
+                      << ". next layer's segment:" << user_chunk;
+  }
+  if ((stage > user_stage) && (user_chunk != 1)) {
+    MS_LOG(EXCEPTION) << "The stage and segment configuration is incorrect. When the segment is 0, the stage "
+                         "must be configured in ascending order.When the segment is 1, "
+                         "the stage must be configured in descending order.Got layer's segment:"
+                      << chunk << ", stage_id:" << stage << ". next layer's segment:" << user_chunk
+                      << ", stage_id:" << user_stage;
+  }
+  if ((stage < user_stage) && (chunk != 0)) {
+    MS_LOG(EXCEPTION) << "The stage and segment configuration is incorrect. When the segment is 0, the stage "
+                         "must be configured in ascending order.When the segment is 1, "
+                         "the stage must be configured in descending order.Got layer's segment:"
+                      << chunk << ", stage_id:" << stage << ". next layer's segment:" << user_chunk
+                      << ", stage_id:" << user_stage;
+  }
+}
+
 void PipelineInterleave::BroadCastColoring() {
   auto need_coloring = true;
   auto all_nodes = shared_cell_->nodes();
@@ -471,11 +506,12 @@ void PipelineInterleave::BroadCastColoring() {
           user_node->AddPrimalAttr(STAGE, MakeValue(stage));
           continue;
         }
-        if (is_v_shape_) {
-          continue;
-        }
         auto user_node_stage = user_stage_info->stage();
         auto user_node_chunk = user_stage_info->chunk();
+        if (is_v_shape_) {
+          ZBVErrorCheck(stage, chunk, user_node_stage, user_node_chunk);
+          continue;
+        }
         if (stage == user_node_stage) {
           if (chunk > user_node_chunk) {
             user_stage_info->set_chunk(chunk);

@@ -50,6 +50,7 @@ class PipelineInterleave {
   bool HasNoUpdateParameter();
 
  private:
+  void ZBVErrorCheck(int64_t stage, int64_t chunk, int64_t user_stage, int64_t user_chunk);
   void CreateSendReceiveGroup();
   std::shared_ptr<NodeStageInfo> GetStageInfoByGraph(const FuncGraphPtr &fg);
   void InsertSendReceiveForParameter(const AnfNodePtr &param, const AnfNodePtr &node, int64_t src_stage,

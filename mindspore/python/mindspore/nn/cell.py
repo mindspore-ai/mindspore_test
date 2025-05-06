@@ -566,10 +566,23 @@ class Cell(Cell_):
 
     @property
     def pipeline_segment(self):
+        """
+        `pipeline_segment` represents the pipeline segment of current Cell.
+        """
         return self._pipeline_segment
 
     @pipeline_segment.setter
     def pipeline_segment(self, value):
+        """
+        Set the `pipeline_segment` of a Cell. Only effective in zero_bubble_v scheduler.
+
+        Args:
+            value (int): The pipeline segment of a parameter.
+
+        Raises:
+            TypeError: If `value` is not int type or is a bool type.
+            ValueError: If `value` is not a positive integer.
+        """
         if not isinstance(value, int) or isinstance(value, bool):
             raise TypeError("For 'context.set_auto_parallel_context', the argument 'pipeline_stages' "
                             "must be int type, but got type : {}".format(type(value)))
