@@ -8440,7 +8440,7 @@ def matmul(input, other):
         >>> input = mindspore.ops.arange(24, dtype=mindspore.float32).reshape(2, 3, 4)
         >>> other = mindspore.ops.arange(20, dtype=mindspore.float32).reshape(4, 5)
         >>> output = mindspore.ops.matmul(input, other)
-        >>> print(>>> output)
+        >>> print(output)
         [[[  70,   76,   82,   88,   94],
           [ 190,  212,  234,  256,  278],
           [ 310,  348,  386,  424,  462]],
