@@ -51,6 +51,10 @@ class AscendCommunicationGroup : public CommunicationGroup {
   // Return HcclCommConfig based on users' options configuration.
   HcclCommConfig CreateHcclCommConfig();
 
+  // Set global comm information for nslb-dp feature.
+  bool SetGlobalCommInfo(uint32_t master_ip, uint32_t master_port, uint32_t total_rank_size, uint32_t group_rank,
+                         uint32_t local_rank_size) override;
+
   // Return HCCL communicator because collective operations need it as a input.
   const HcclComm &hccl_communicator() const;
 
