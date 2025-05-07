@@ -42,7 +42,7 @@
 {{ fullname | underline }}
 
 .. autoclass:: {{ name }}
-    :exclude-members: infer_value, infer_shape, infer_dtype, get_bprop
+    :exclude-members: infer_value, infer_shape, infer_dtype, get_bprop, set_infer_flag, set_inputs_type
     :members:
 
 {% elif fullname=="mindspore.parallel.auto_parallel.AutoParallel" %}
