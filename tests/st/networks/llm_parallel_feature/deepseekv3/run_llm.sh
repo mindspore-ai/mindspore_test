@@ -23,6 +23,7 @@ MASTER_PORT=$4
 BASE_PORT=$5
 CELL_REUSE=${6:-None}
 GPT_DATASET=${7:-None}
+GRAPH_KERNEL_FLAGS=${8:-None}
 
 export HCCL_IF_BASE_PORT=$BASE_PORT
 export RANK_SIZE="$RANK_SIZE"
@@ -46,6 +47,8 @@ if [ "$GPT_DATASET" = "gpt" ]; then
 fi
 
 source /usr/local/Ascend/nnal/atb/set_env.sh
+
+export MS_DEV_GRAPH_KERNEL_FLAGS=$GRAPH_KERNEL_FLAGS
 
 msrun --worker_num=$RANK_SIZE --local_worker_num=$RANK_SIZE --master_port=$MASTER_PORT --log_dir=$BASE_PATH/$CASE_NAME/ \
   --join=True --cluster_time_out=7200 \

@@ -19,18 +19,28 @@ from tests.st.networks.llm_parallel_feature.utils import update_parallel_speed_u
 
 
 class DeepseekConfig:
-    # add default config for Deepseek model.
+    # add default config for DeepSeek model.
     def __init__(self,
                  num_samples=24,
+                 hidden_size=1024,
+                 intermediate_size=1024,
+                 moe_intermediate_size=512,
                  pp_interleave_num=2,
                  first_k_dense_replace=1,
                  num_layer=3,
                  parallel_speed_up_json=None,
                  use_gmm=True,
                  enable_deredundency=True,
-                 npu_nums_per_device=2):
+                 npu_nums_per_device=2,
+                 use_fused_ops_permute=True,
+                 use_fused_swiglu=False,
+                 enable_fa_var_len=True,
+                 use_fused_rope=True,
+                 deterministic="ON"
+                 ):
         # context
         self.parallel_speed_up_json = parallel_speed_up_json
+        self.deterministic = deterministic
 
         # training parameters
         self.num_samples = num_samples
@@ -38,12 +48,20 @@ class DeepseekConfig:
 
         # model parameters
         self.num_layer = num_layer
+        self.hidden_size = hidden_size
+        self.intermediate_size = intermediate_size
+
         self.first_k_dense_replace = first_k_dense_replace
+        self.use_fused_swiglu = use_fused_swiglu
+        self.use_fused_rope = use_fused_rope
+        self.enable_fa_var_len = enable_fa_var_len
 
         # moe
         self.use_gmm = use_gmm
         self.enable_deredundency = enable_deredundency
         self.npu_nums_per_device = npu_nums_per_device
+        self.use_fused_ops_permute = use_fused_ops_permute
+        self.moe_intermediate_size = moe_intermediate_size
 
 
 def prepare_deepseekv3_testcase_env(testcase_name, net_config):
@@ -70,19 +88,35 @@ def replace_deepseekv3_config(net_config, file_path):
     old_list = [
         "use_gmm: True",
         "num_layers 3",
+        "hidden_size: 1024",
+        "intermediate_size: 1024",
+        "moe_intermediate_size: 512",
         "first_k_dense_replace: 1",
         "enable_deredundency: True",
         "npu_nums_per_device: 2",
         "pp_interleave_num: 2",
+        "use_fused_ops_permute: True",
+        "use_fused_swiglu: False",
+        "enable_fa_var_len: True",
+        "use_fused_rope: True",
+        "deterministic: \"ON\"",
     ]
 
     new_list = [
         f'use_gmm: {net_config.use_gmm}',
         f'num_layers {net_config.num_layer}',
+        f'hidden_size: {net_config.hidden_size}',
+        f'intermediate_size: {net_config.intermediate_size}',
+        f'moe_intermediate_size: {net_config.moe_intermediate_size}',
         f'first_k_dense_replace: {net_config.first_k_dense_replace}',
         f'enable_deredundency: {net_config.enable_deredundency}',
         f'npu_nums_per_device: {net_config.npu_nums_per_device}',
         f'pp_interleave_num: {net_config.pp_interleave_num}',
+        f'use_fused_ops_permute: {net_config.use_fused_ops_permute}',
+        f'use_fused_swiglu: {net_config.use_fused_swiglu}',
+        f'enable_fa_var_len: {net_config.enable_fa_var_len}',
+        f'use_fused_rope: {net_config.use_fused_rope}',
+        f'deterministic: \"{net_config.deterministic}\"'
     ]
 
     if len(old_list) != len(new_list):
