@@ -79,6 +79,7 @@ bool ActivationFusion::Run(const FuncGraphPtr &func_graph) {
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
+    MS_ASSERT(cnode != nullptr);
     if (!CheckPrimitiveType(node, prim::kPrimActivation)) {
       continue;
     }
