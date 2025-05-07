@@ -451,4 +451,29 @@ REG_EXPANDER_FUNC("Muls").SetBody(BODYFUNC(ib) {
   }
   return {ib->Mul(input, scalar)};
 });
+
+REG_EXPANDER_FUNC("TanhGrad").SetBody(BODYFUNC(ib) {
+  if (!CheckAllFormatsSame(ib)) {
+    return {};
+  }
+  auto input_y = ib->input(kIndex0);
+  auto input_dy = ib->input(kIndex1);
+  auto y_type = input_y->GetDtype();
+  auto dy_type = input_dy->GetDtype();
+  if (y_type->type_id() != dy_type->type_id()) {
+    return {};
+  }
+  // for reduced floating types like fp16 and bf16, cast is required to guarantee the precision is acceptable
+  if (y_type->type_id() == kNumberTypeFloat16 || y_type->type_id() == kNumberTypeBFloat16) {
+    auto fp32 = TypeIdToType(kNumberTypeFloat32);
+    auto input_y_fp32 = ib->Cast(input_y, fp32);
+    auto input_dy_fp32 = ib->Cast(input_dy, fp32);
+    auto const_one_fp32 = ib->Tensor(1, fp32);
+    auto output_fp32 = ib->Mul(input_dy_fp32, ib->Sub(const_one_fp32, ib->Mul(input_y_fp32, input_y_fp32)));
+    return {ib->Cast(output_fp32, y_type)};
+  } else {
+    auto const_one = ib->Tensor(1, y_type);
+    return {ib->Mul(input_dy, ib->Sub(const_one, ib->Mul(input_y, input_y)))};
+  }
+});
 }  // namespace mindspore::graphkernel::expander
