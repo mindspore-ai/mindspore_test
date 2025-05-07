@@ -84,6 +84,9 @@ class TraceRecorder {
   AnfNodePtr GetTupleNode(const py::tuple &tuple_obj, const DebugInfoPtr &debug_info, bool set_abstract);
   AnfNodePtr GetListNode(const py::list &list_obj, const DebugInfoPtr &debug_info, bool set_abstract);
   AnfNodePtr GetDictNode(const py::dict &dict_obj, const DebugInfoPtr &debug_info, bool set_abstract);
+  AnfNodePtr GetDictKeyNode(const py::object &dict_keys, const DebugInfoPtr &debug_info, bool set_abstract);
+  AnfNodePtr GetDictValueNode(const py::object &dict_values, const DebugInfoPtr &debug_info, bool set_abstract);
+  AnfNodePtr GetDictItemNode(const py::object &dict_items, const DebugInfoPtr &debug_info, bool set_abstract);
   AnfNodePtr ConvertParameterObj(const py::object &input_obj);
 
   void SetNode(const py::object &obj, const AnfNodePtr &node, const DebugInfoPtr &debug_info,
