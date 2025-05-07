@@ -144,8 +144,6 @@ CNodePtrPair FindAlltoallPair(const FuncGraphManagerPtr &manager, const CNodePtr
     return null_alltoall_pair;
   }
 
-  MS_LOG(INFO) << "check if keynode has expert_num and pe_num " << GetCNodePrimitive(marked_node)->name();
-
   CNodePtrPair alltoall_pair(front_alltoall, back_alltoall);
   return alltoall_pair;
 }
