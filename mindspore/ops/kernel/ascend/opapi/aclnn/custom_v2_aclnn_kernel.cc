@@ -30,9 +30,14 @@ void CustomV2AclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> 
                                               const std::vector<KernelTensor *> &outputs) {
   MS_LOG(DEBUG) << "Start get custom v2 workspace info, op_type: " << op_type_;
   MS_VLOG(VL_CUSTOM_OP) << "Start get custom v2 workspace info, op_type: " << op_type_;
+  GetCustomInputTypes();
   auto dynamic_inputs = GetCustomInputs(inputs);
-  InitInputOutputType(dynamic_inputs, outputs);
-  GetWorkspaceForResize(dynamic_inputs, outputs);
+  auto dynamic_outputs = GetCustomOutputs(outputs);
+  if (input_output_types_.size() != (dynamic_inputs.size() + dynamic_outputs.size())) {
+    MS_LOG(EXCEPTION) << "Custom op " << op_type_ << " inputs type size " << input_output_types_.size()
+                      << " is exceeds I/O size:" << dynamic_inputs.size() + dynamic_outputs.size();
+  }
+  GetWorkspaceForResize(dynamic_inputs, dynamic_outputs);
   MS_LOG(DEBUG) << "End get custom v2 workspace info, op_type: " << op_type_;
   MS_VLOG(VL_CUSTOM_OP) << "End get custom v2 workspace info, op_type: " << op_type_;
 }
@@ -43,7 +48,8 @@ bool CustomV2AclnnKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
   MS_LOG(DEBUG) << "Start launch custom v2, op_type: " << op_type_;
   MS_VLOG(VL_CUSTOM_OP) << "Start launch custom v2, op_type: " << op_type_;
   auto dyn_inputs = GetCustomInputs(inputs);
-  RunOp(stream_ptr, workspace, dyn_inputs, outputs);
+  auto dyn_outputs = GetCustomOutputs(outputs);
+  RunOp(stream_ptr, workspace, dyn_inputs, dyn_outputs);
   MS_LOG(DEBUG) << "End launch custom v2, op_type: " << op_type_;
   MS_VLOG(VL_CUSTOM_OP) << "End launch custom v2, op_type: " << op_type_;
   return true;
@@ -78,50 +84,58 @@ std::vector<std::vector<KernelTensor *>> CustomV2AclnnKernelMod::GetCustomInputs
   return dynamic_inputs;
 }
 
-void CustomV2AclnnKernelMod::ConvertTypes(const std::vector<std::vector<KernelTensor *>> &inputs,
-                                          const std::vector<KernelTensor *> &outputs,
-                                          std::vector<void *> *convert_inputs, std::vector<void *> *convert_outputs) {
-  MS_EXCEPTION_IF_NULL(convert_inputs);
-  MS_EXCEPTION_IF_NULL(convert_outputs);
-  if (inputs.size() > input_output_types_.size()) {
-    MS_LOG(EXCEPTION) << "Inputs size " << inputs.size()
-                      << " is greater than input_output_types_ size: " << input_output_types_.size();
+std::vector<std::vector<KernelTensor *>> CustomV2AclnnKernelMod::GetCustomOutputs(
+  const std::vector<KernelTensor *> &outputs) {
+  std::vector<std::vector<KernelTensor *>> dynamic_outputs;
+  if (input_output_types_[input_output_types_.size() - 1] == CustomSupportType::kTypeTensorList) {
+    (void)dynamic_outputs.emplace_back(outputs);
+  } else {
+    for (const auto &item : outputs) {
+      (void)dynamic_outputs.emplace_back(std::vector<KernelTensor *>({item}));
+    }
   }
+  return dynamic_outputs;
+}
 
-  inputs_bool_value_.reserve(inputs.size());
-  inputs_float_value_.reserve(inputs.size());
-  inputs_int_value_.reserve(inputs.size());
-  inputs_double_value_.reserve(inputs.size());
-
+std::vector<void *> CustomV2AclnnKernelMod::ConvertTypes(const std::vector<std::vector<KernelTensor *>> &inputs,
+                                                         size_t offset) {
+  if (input_output_types_.size() < (inputs.size() + offset)) {
+    MS_LOG(EXCEPTION) << "Custom op " << op_type_ << " inputs type size " << input_output_types_.size()
+                      << " is less than I/O size:" << inputs.size() + offset;
+  }
+  std::vector<void *> convert_inputs;
   for (size_t i = 0; i < inputs.size(); i++) {
+    KernelTensor *input;
     auto dyn_input = inputs[i];
     if (dyn_input.empty()) {
       MS_LOG(EXCEPTION) << "Custom op [" << op_type_ << "] input-" << i << " is empty!";
+    } else {
+      input = dyn_input[0];
+      MS_EXCEPTION_IF_NULL(input);
     }
-    auto input = dyn_input[0];
-    MS_EXCEPTION_IF_NULL(input);
-    auto type = input_output_types_[i];
+
+    auto type = input_output_types_[i + offset];
     MS_LOG(INFO) << "Convert custom op [" << op_type_ << "] input-" << i
                  << ", input type: " << custom_supported_type_to_string.at(type);
     MS_VLOG(VL_CUSTOM_OP) << "Convert custom op [" << op_type_ << "] input-" << i
                           << ", input type: " << custom_supported_type_to_string.at(type);
     switch (type) {
       case CustomSupportType::kTypeTensor: {
-        convert_inputs->emplace_back(device::ascend::ConvertType(input));
+        (void)convert_inputs.emplace_back(device::ascend::ConvertType(input));
         break;
       }
       case CustomSupportType::kTypeTensorList: {
-        convert_inputs->emplace_back(device::ascend::ConvertType(dyn_input));
+        (void)convert_inputs.emplace_back(device::ascend::ConvertType(dyn_input));
         break;
       }
       case CustomSupportType::kTypeBool: {
         (void)inputs_bool_value_.emplace_back(device::ascend::ConvertKernelTensor<bool>(input));
-        convert_inputs->emplace_back(&(inputs_bool_value_.back()));
+        (void)convert_inputs.emplace_back(&(inputs_bool_value_.back()));
         break;
       }
       case CustomSupportType::kTypeFloat: {
         (void)inputs_float_value_.emplace_back(device::ascend::ConvertKernelTensor<float>(input));
-        convert_inputs->emplace_back(&(inputs_float_value_.back()));
+        (void)convert_inputs.emplace_back(&(inputs_float_value_.back()));
         break;
       }
       case CustomSupportType::kTypeDouble: {
@@ -129,55 +143,70 @@ void CustomV2AclnnKernelMod::ConvertTypes(const std::vector<std::vector<KernelTe
                        ? static_cast<double>(device::ascend::ConvertKernelTensor<float>(input))
                        : device::ascend::ConvertKernelTensor<double>(input);
         (void)inputs_double_value_.emplace_back(value);
-        convert_inputs->emplace_back(&(inputs_double_value_.back()));
+        (void)convert_inputs.emplace_back(&(inputs_double_value_.back()));
         break;
       }
       case CustomSupportType::kTypeInt: {
         (void)inputs_int_value_.emplace_back(device::ascend::ConvertKernelTensor<int64_t>(input));
-        convert_inputs->emplace_back(&inputs_int_value_.back());
+        (void)convert_inputs.emplace_back(&inputs_int_value_.back());
         break;
       }
       case CustomSupportType::kTypeString: {
-        convert_inputs->emplace_back(const_cast<void *>(static_cast<const void *>(
+        (void)convert_inputs.emplace_back(const_cast<void *>(static_cast<const void *>(
           device::ascend::ConvertType(device::ascend::ConvertKernelTensor<std::string>(input)))));
         break;
       }
       case CustomSupportType::kTypeScalar: {
         auto scalar = device::ascend::ConvertKernelTensor<ScalarPtr>(input);
-        convert_inputs->emplace_back(device::ascend::ConvertType(scalar));
+        (void)convert_inputs.emplace_back(device::ascend::ConvertType(scalar));
         break;
       }
       case CustomSupportType::kTypeIntArray: {
         auto int_vector = device::ascend::ConvertKernelTensor<std::vector<int64_t>>(input);
-        convert_inputs->emplace_back(device::ascend::ConvertType(int_vector));
+        (void)convert_inputs.emplace_back(device::ascend::ConvertType(int_vector));
         break;
       }
       case CustomSupportType::kTypeBoolArray: {
         auto bool_vector = device::ascend::ConvertKernelTensor<std::vector<uint8_t>>(input);
-        convert_inputs->emplace_back(device::ascend::ConvertType(bool_vector));
+        (void)convert_inputs.emplace_back(device::ascend::ConvertType(bool_vector));
         break;
       }
       case CustomSupportType::kTypeFloatArray: {
         auto float_vector = device::ascend::ConvertKernelTensor<std::vector<float>>(input);
-        convert_inputs->emplace_back(device::ascend::ConvertType(float_vector));
+        (void)convert_inputs.emplace_back(device::ascend::ConvertType(float_vector));
         break;
+      }
+      case CustomSupportType::kTypeDType: {
+        auto value = input->GetValue();
+        MS_EXCEPTION_IF_NULL(value);
+        if (value->isa<Type>()) {
+          auto type_id = value->cast<TypePtr>()->type_id();
+          (void)inputs_type_value_.emplace_back(device::ascend::ConvertType(type_id));
+          (void)convert_inputs.emplace_back(&inputs_type_value_.back());
+          break;
+        } else {
+          MS_LOG(EXCEPTION) << "Kernel tensor' value  is not Type, but is " << value->ToString();
+        }
       }
       default:
         MS_LOG(EXCEPTION) << "Custom unsupported input type: " << static_cast<int64_t>(type);
     }
   }
-
-  std::transform(outputs.begin(), outputs.end(), std::back_inserter(*convert_outputs),
-                 [](const auto &item) { return device::ascend::ConvertType(item); });
+  return convert_inputs;
 }
 
 bool CustomV2AclnnKernelMod::CallGetWorkSpaceSize(const std::vector<std::vector<KernelTensor *>> &inputs,
-                                                  const std::vector<KernelTensor *> &outputs,
+                                                  const std::vector<std::vector<KernelTensor *>> &outputs,
                                                   uint64_t *workspace_size_addr, aclOpExecutor **executor_addr,
                                                   void *get_workspace_size_func) {
-  std::vector<void *> convert_inputs;
-  std::vector<void *> convert_outputs;
-  ConvertTypes(inputs, outputs, &convert_inputs, &convert_outputs);
+  inputs_bool_value_.reserve(inputs.size());
+  inputs_float_value_.reserve(inputs.size());
+  inputs_int_value_.reserve(inputs.size());
+  inputs_double_value_.reserve(inputs.size());
+
+  auto convert_inputs = ConvertTypes(inputs, 0);
+  auto convert_outputs = ConvertTypes(outputs, inputs.size());
+
   converted_params_.clear();
   std::copy(convert_inputs.begin(), convert_inputs.end(), std::back_inserter(converted_params_));
   std::copy(convert_outputs.begin(), convert_outputs.end(), std::back_inserter(converted_params_));
@@ -225,7 +254,7 @@ bool CustomV2AclnnKernelMod::CallGetWorkSpaceSize(const std::vector<std::vector<
 }
 
 CacheTuple CustomV2AclnnKernelMod::GenCustomExecutorForResize(const std::vector<std::vector<KernelTensor *>> &inputs,
-                                                              const std::vector<KernelTensor *> &outputs) {
+                                                              const std::vector<std::vector<KernelTensor *>> &outputs) {
   auto workspace_api_name = op_type_ + "GetWorkspaceSize";
   const auto get_workspace_size_func_ptr = device::ascend::GetOpApiFunc(workspace_api_name.c_str());
   if (get_workspace_size_func_ptr == nullptr) {
@@ -249,7 +278,7 @@ CacheTuple CustomV2AclnnKernelMod::GenCustomExecutorForResize(const std::vector<
 }
 
 void CustomV2AclnnKernelMod::GetWorkspaceForResize(const std::vector<std::vector<KernelTensor *>> &inputs,
-                                                   const std::vector<KernelTensor *> &outputs) {
+                                                   const std::vector<std::vector<KernelTensor *>> &outputs) {
   hash_id_ = device::ascend::CustomAclnnHash(op_type_, inputs, outputs, input_output_types_);
   size_t cur_workspace = 0;
   auto iter = hash_map_.find(hash_id_);
@@ -284,7 +313,7 @@ void CustomV2AclnnKernelMod::GetWorkspaceForResize(const std::vector<std::vector
 
 void CustomV2AclnnKernelMod::RunOp(void *stream_ptr, const std::vector<KernelTensor *> &workspace,
                                    const std::vector<std::vector<KernelTensor *>> &inputs,
-                                   const std::vector<KernelTensor *> &outputs) {
+                                   const std::vector<std::vector<KernelTensor *>> &outputs) {
   auto [executor, release_func] = GetExecutor(inputs, outputs);
   if (workspace_size_list_.empty()) {
     RUN_CUSTOM_OP_API_ASYNC(op_type_, nullptr, 0, executor, stream_ptr, release_func);
@@ -303,19 +332,24 @@ void CustomV2AclnnKernelMod::RunOp(void *stream_ptr, const std::vector<KernelTen
 }
 
 std::vector<std::vector<void *>> CustomV2AclnnKernelMod::GetTensorAddress(
-  const std::vector<std::vector<KernelTensor *>> &inputs, const std::vector<KernelTensor *> &outputs) {
-  if (inputs.size() > input_output_types_.size()) {
-    MS_LOG(EXCEPTION) << "Inputs size " << inputs.size()
-                      << " is greater than input_output_types_ size: " << input_output_types_.size();
+  const std::vector<std::vector<KernelTensor *>> &inputs, const std::vector<std::vector<KernelTensor *>> &outputs) {
+  if (input_output_types_.size() != (inputs.size() + outputs.size())) {
+    MS_LOG(EXCEPTION) << "Custom op " << op_type_ << " inputs type size " << input_output_types_.size()
+                      << " is exceeds I/O size:" << inputs.size() + outputs.size();
   }
+  std::vector<std::vector<KernelTensor *>> inputs_outputs;
+  std::copy(inputs.begin(), inputs.end(), std::back_inserter(inputs_outputs));
+  std::copy(outputs.begin(), outputs.end(), std::back_inserter(inputs_outputs));
   std::vector<std::vector<void *>> address_list;
-  for (size_t i = 0; i < inputs.size(); i++) {
-    auto dyn_input = inputs[i];
+  for (size_t i = 0; i < inputs_outputs.size(); i++) {
+    auto dyn_input = inputs_outputs[i];
+    KernelTensor *input;
     if (dyn_input.empty()) {
       MS_LOG(EXCEPTION) << "Custom op [" << op_type_ << "] input-" << i << " is empty!";
+    } else {
+      input = dyn_input[0];
+      MS_EXCEPTION_IF_NULL(input);
     }
-    auto input = dyn_input[0];
-    MS_EXCEPTION_IF_NULL(input);
     auto type = input_output_types_[i];
     MS_LOG(DEBUG) << "Get custom op [" << op_type_ << "] input-" << i
                   << " tensor address, input type: " << custom_supported_type_to_string.at(type);
@@ -373,25 +407,33 @@ std::vector<std::vector<void *>> CustomV2AclnnKernelMod::GetTensorAddress(
         address_list.emplace_back(device::ascend::GetAddr(float_vector));
         break;
       }
+      case CustomSupportType::kTypeDType: {
+        auto value = input->GetValue();
+        MS_EXCEPTION_IF_NULL(value);
+        if (value->isa<Type>()) {
+          auto type_id = value->cast<TypePtr>()->type_id();
+          (void)address_list.emplace_back(device::ascend::GetAddr(type_id));
+          break;
+        } else {
+          MS_LOG(EXCEPTION) << "Kernel tensor' value  is not Type, but is " << value->ToString();
+        }
+      }
       default:
         MS_LOG(EXCEPTION) << "Custom unsupported input type: " << static_cast<int64_t>(type);
     }
   }
-
-  std::transform(outputs.begin(), outputs.end(), std::back_inserter(address_list),
-                 [](const auto &output) { return device::ascend::GetAddr(output); });
   return address_list;
 }
 
 void CustomV2AclnnKernelMod::UpdateTensorForLaunch(const std::vector<std::vector<KernelTensor *>> &inputs,
-                                                   const std::vector<KernelTensor *> &outputs,
+                                                   const std::vector<std::vector<KernelTensor *>> &outputs,
                                                    const ProcessCache &cache) {
   const auto &address_list = GetTensorAddress(inputs, outputs);
   cache(device::ascend::ProcessCacheType::kUpdateTensorAddress, address_list);
 }
 
 ExecutorTuple CustomV2AclnnKernelMod::GenCustomExecutor(const std::vector<std::vector<KernelTensor *>> &inputs,
-                                                        const std::vector<KernelTensor *> &outputs) {
+                                                        const std::vector<std::vector<KernelTensor *>> &outputs) {
   auto workspace_api_name = op_type_ + "GetWorkspaceSize";
   static device::ascend::ApiCachePool api_cache_pool;
   const char *api_name = api_cache_pool.get(op_type_);
@@ -432,7 +474,7 @@ ExecutorTuple CustomV2AclnnKernelMod::GenCustomExecutor(const std::vector<std::v
 }
 
 std::pair<aclOpExecutor *, std::function<void()>> CustomV2AclnnKernelMod::GetExecutor(
-  const std::vector<std::vector<KernelTensor *>> &inputs, const std::vector<KernelTensor *> &outputs) {
+  const std::vector<std::vector<KernelTensor *>> &inputs, const std::vector<std::vector<KernelTensor *>> &outputs) {
   if (hash_id_ == 0 || !hash_map_.count(hash_id_)) {
     aclOpExecutor *executor;
     std::function<void()> release_func;
@@ -445,8 +487,7 @@ std::pair<aclOpExecutor *, std::function<void()>> CustomV2AclnnKernelMod::GetExe
   return std::make_pair(executor, nullptr);
 }
 
-void CustomV2AclnnKernelMod::InitInputOutputType(const std::vector<std::vector<KernelTensor *>> &inputs,
-                                                 const std::vector<KernelTensor *> &outputs) {
+void CustomV2AclnnKernelMod::GetCustomInputTypes() {
   input_output_types_.clear();
   if (!primitive_->HasAttr(kCustomInputsType)) {
     MS_LOG(EXCEPTION) << "Can not find attribute [custom_inputs_type] for custom " << op_type_;
@@ -460,13 +501,8 @@ void CustomV2AclnnKernelMod::InitInputOutputType(const std::vector<std::vector<K
 
   auto inputs_type_value_list = inputs_type_value->cast<ValueListPtr>();
   auto input_type_value_list_value = inputs_type_value_list->value();
-  if (input_type_value_list_value.size() <= inputs.size()) {
-    MS_LOG(EXCEPTION) << "Custom op " << op_type_ << " inputs type size " << input_type_value_list_value.size()
-                      << " is less than input tensor size:" << inputs.size();
-  }
 
-  for (size_t i = 0; i < inputs.size(); i++) {
-    auto item = input_type_value_list_value[i];
+  for (const auto &item : input_type_value_list_value) {
     auto input_type = GetValue<std::string>(item);
     MS_LOG(DEBUG) << "Custom op " << op_type_ << " input type: " << input_type;
     MS_VLOG(VL_CUSTOM_OP) << "Custom op " << op_type_ << " input type: " << input_type;
@@ -475,10 +511,6 @@ void CustomV2AclnnKernelMod::InitInputOutputType(const std::vector<std::vector<K
       MS_LOG(EXCEPTION) << "Unsupported custom input type: " << input_type;
     }
     (void)input_output_types_.emplace_back(iter->second);
-  }
-
-  for (size_t i = 0; i < outputs.size(); ++i) {
-    input_output_types_.emplace_back(CustomSupportType::kTypeTensor);
   }
 }
 

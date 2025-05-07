@@ -463,10 +463,8 @@ class Custom(ops.PrimitiveWithInfer):
             add_pyfunc(func_id, self.func)
             self.add_prim_attr("fn_id", func_id)
 
-        self.set_infer_flag()
-
-        self.multi_output = (self.reg_info is not None and (len(self.reg_info.get("outputs", [])) > 1))
-        self.add_prim_attr("multi_output", self.multi_output)
+        self._set_infer_flag()
+        self._set_multi_output_flag()
 
         self.bprop = bprop
         self.fake_output = False
@@ -497,12 +495,17 @@ class Custom(ops.PrimitiveWithInfer):
                 self.custom_pyboost.add_prim_attr(key, value)
         self._generate_get_workspace_size_func()
 
-    def set_infer_flag(self):
+    def _set_infer_flag(self):
         """set cpp infer attr"""
         if self.out_shape is None and self.func_type == "aot":
             self.add_prim_attr("cpp_infer_shape", True)
         if self.out_dtype is None and self.func_type == "aot":
             self.add_prim_attr("cpp_infer_type", True)
+
+    def _set_multi_output_flag(self):
+        outputs = self.reg_info.get("outputs", []) if self.reg_info else []
+        self.multi_output = len(outputs) > 1 or (len(outputs) == 1 and outputs[0].get("paramType") == "dynamic")
+        self.add_prim_attr("multi_output", self.multi_output)
 
     def __infer__(self, *args):
         if callable(self.out_shape):
@@ -1190,7 +1193,7 @@ class Custom(ops.PrimitiveWithInfer):
         custom_callback_func_path = _compile_aot(file_path)
         custom_callback_func = custom_callback_func_path + ":" + func_name
         self.add_prim_attr("custom_callback_func", custom_callback_func)
-        self.add_prim_attr("custom_inputs_type", input_output_types)
+        self.add_prim_attr("custom_inputs_type", input_output_types[:-2])
 
     def _generate_get_workspace_size_func(self):
         """generate custom GetWorkSpaceSize func"""
@@ -1216,7 +1219,7 @@ class Custom(ops.PrimitiveWithInfer):
         custom_callback_func_path = _compile_aot(file_path)
         custom_callback_func = custom_callback_func_path + ":" + func_name
         self.add_prim_attr("custom_callback_func", custom_callback_func)
-        self.add_prim_attr("custom_inputs_type", api_types)
+        self.add_prim_attr("custom_inputs_type", api_types[:-2])
 
     def __call__(self, *args):
         if self.is_ascend_c:

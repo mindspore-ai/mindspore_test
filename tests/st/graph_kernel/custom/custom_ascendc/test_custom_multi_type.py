@@ -290,6 +290,72 @@ def test_custom_arg_pool_2d_aclnn(context_mode):
     assert np.allclose(output.asnumpy(), expected, rtol=1e-4, atol=1e-4)
 
 
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE])
+def test_custom_cast_aclnn(context_mode):
+    """
+    Feature: Custom op testcase
+    Description: test case for Cast by custom
+    Expectation: the result match with numpy result
+    """
+
+    class CustomNet(Cell):
+        def __init__(self, func, out_dtype):
+            super(CustomNet, self).__init__()
+
+            self.custom_cast = ops.Custom(func, lambda x, dst_type: x,
+                                          out_dtype,
+                                          func_type="aot",
+                                          bprop=None, reg_info=None)
+
+        def construct(self, x, dst_type):
+            res = self.custom_cast(x, dst_type)
+            return res
+
+    context.set_context(mode=context_mode, save_graphs=False, save_graphs_path="./graphs",
+                        jit_config={"jit_level": "O0"})
+
+    x = np.random.randn(1280, 1280).astype(np.float16)
+    dtype = mstype.float32
+    net = CustomNet("aclnnCast", dtype)
+    output = net(ms.Tensor(x), dtype)
+    assert output.asnumpy().dtype == 'float32'
+    assert output.asnumpy().shape == (1280, 1280)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE])
+def test_custom_all_finite_aclnn(context_mode):
+    """
+    Feature: Custom op testcase
+    Description: test case for AllFinite by custom
+    Expectation: the result match with numpy result
+    """
+
+    class CustomNet(Cell):
+        def __init__(self, func):
+            super(CustomNet, self).__init__()
+            self.custom_all_finite = ops.Custom(func, lambda x: [1],
+                                                mstype.bool_,
+                                                func_type="aot",
+                                                bprop=None, reg_info=None)
+
+        def construct(self, x):
+            res = self.custom_all_finite(x)
+            return res
+
+    context.set_context(mode=context_mode, save_graphs=False, save_graphs_path="./graphs",
+                        jit_config={"jit_level": "O0"})
+
+    x1 = Tensor(np.full([128, 128], -np.inf, np.float16))
+    x2 = Tensor(np.full([12960, 65], 10, np.float16))
+    net = CustomNet("aclnnAllFinite")
+    out1 = net(x1)
+    out2 = net(x2)
+    assert out1.asnumpy()
+    assert not out2.asnumpy()
+
+
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level4', card_mark='onecard', essential_mark='essential')
 def test_custom_topk():
     """

@@ -231,6 +231,52 @@ def test_code_generator_batch_norm():
         assert ''.join(file_content.split()) == ''.join(callback_func.split())
 
 
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_code_generator_decode_kv_cache():
+    """
+    Feature: Custom op testcase
+    Description: Test case for generating code of BatchNorm op.
+    Expectation: The generated code matches the baseline code.
+    """
+    expect_reg_info = CustomRegOp("aclnnDecoderKvCache") \
+        .input(0, "cache", "required") \
+        .input(1, "update", "required") \
+        .input(2, "valid_seq_len", "required") \
+        .input(3, "batch_index", "required") \
+        .input(4, "seq_len_axis", "required") \
+        .input(5, "new_max_seq_len", "required") \
+        .input(6, "cur_max_seq_len", "required") \
+        .output(0, "out", "required") \
+        .dtype_format(DataType.F16_Default, DataType.F16_Default, DataType.I64_Default, DataType.I64_Default,
+                      DataType.I64_Default, DataType.I64_Default, DataType.I64_Default, DataType.F16_Default) \
+        .dtype_format(DataType.F32_Default, DataType.F32_Default, DataType.I64_Default, DataType.I64_Default,
+                      DataType.I64_Default, DataType.I64_Default, DataType.I64_Default, DataType.F32_Default) \
+        .dtype_format(DataType.I8_Default, DataType.I8_Default, DataType.I64_Default, DataType.I64_Default,
+                      DataType.I64_Default, DataType.I64_Default, DataType.I64_Default, DataType.I8_Default) \
+        .dtype_format(DataType.I16_Default, DataType.I16_Default, DataType.I64_Default, DataType.I64_Default,
+                      DataType.I64_Default, DataType.I64_Default, DataType.I64_Default, DataType.I16_Default) \
+        .dtype_format(DataType.I32_Default, DataType.I32_Default, DataType.I64_Default, DataType.I64_Default,
+                      DataType.I64_Default, DataType.I64_Default, DataType.I64_Default, DataType.I32_Default) \
+        .dtype_format(DataType.U8_Default, DataType.U8_Default, DataType.I64_Default, DataType.I64_Default,
+                      DataType.I64_Default, DataType.I64_Default, DataType.I64_Default, DataType.U8_Default) \
+        .dtype_format(DataType.U16_Default, DataType.U16_Default, DataType.I64_Default, DataType.I64_Default,
+                      DataType.I64_Default, DataType.I64_Default, DataType.I64_Default, DataType.U16_Default) \
+        .dtype_format(DataType.BF16_Default, DataType.BF16_Default, DataType.I64_Default, DataType.I64_Default,
+                      DataType.I64_Default, DataType.I64_Default, DataType.I64_Default, DataType.BF16_Default) \
+        .target("Ascend") \
+        .get_op_info()
+
+    reg_info_generator = CustomInfoGenerator("aclnnDecoderKvCache")
+    reg_info = reg_info_generator.generate_custom_reg_op()
+    assert reg_info == expect_reg_info
+
+    code_generator = CustomCodeGenerator()
+    callback_func = code_generator.generate_callback_by_reg_info("aclnnDecoderKvCache", reg_info)
+    with open("./callback_func/decoder_kv_cache_basline.cc", "r", encoding="utf-8") as file:
+        file_content = file.read()
+        assert ''.join(file_content.split()) == ''.join(callback_func.split())
+
+
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level4', card_mark='onecard', essential_mark='essential')
 def test_code_generator_topk():
     """

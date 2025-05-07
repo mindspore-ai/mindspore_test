@@ -106,15 +106,15 @@ void PrepareInferShapeParams(const std::string &kernel_name, const std::vector<A
     MS_VLOG(VL_CUSTOM_OP) << "Custom op [" << kernel_name << "], input " << idx
                           << " debug string: " << ToString(input_args);
     if (input_arg->isa<mindspore::abstract::AbstractSequence>()) {
-      auto seq_input = input_arg->cast<mindspore::abstract::AbstractSequencePtr>();
-      auto elements = seq_input->elements();
+      const auto &seq_input = input_arg->cast<mindspore::abstract::AbstractSequencePtr>();
+      const auto &elements = seq_input->elements();
       for (size_t ele_idx = 0; ele_idx < elements.size(); ele_idx++) {
         if (elements[ele_idx]->GetType()->object_type() != kObjectTypeTensorType) {
           break;
         }
         auto params_shape_ptr = CheckAndConvertUtils::GetTensorInputShape(kernel_name, elements, ele_idx);
         MS_EXCEPTION_IF_NULL(params_shape_ptr);
-        auto params_shape = params_shape_ptr->shape();
+        const auto &params_shape = params_shape_ptr->shape();
         (void)ndims->emplace_back(SizeToInt(params_shape.size()));
         (void)shape_list->emplace_back(params_shape);
       }
@@ -140,8 +140,8 @@ void PrePareInferTypeParams(const std::string &kernel_name, const std::vector<Ab
     MS_VLOG(VL_CUSTOM_OP) << "Custom op [" << kernel_name << "], input " << idx
                           << " debug string: " << ToString(input_args);
     if (input_arg->isa<mindspore::abstract::AbstractSequence>()) {
-      auto seq_input = input_arg->cast<mindspore::abstract::AbstractSequencePtr>();
-      auto elements = seq_input->elements();
+      const auto &seq_input = input_arg->cast<mindspore::abstract::AbstractSequencePtr>();
+      const auto &elements = seq_input->elements();
       for (size_t ele_idx = 0; ele_idx < elements.size(); ele_idx++) {
         if (elements[ele_idx]->GetType()->object_type() != kObjectTypeTensorType) {
           break;

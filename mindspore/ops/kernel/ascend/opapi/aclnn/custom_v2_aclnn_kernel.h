@@ -50,29 +50,30 @@ class CustomV2AclnnKernelMod : public AclnnKernelMod {
   std::vector<float> inputs_float_value_;
   std::vector<char> inputs_bool_value_;
   std::vector<double> inputs_double_value_;
-  void InitInputOutputType(const std::vector<std::vector<KernelTensor *>> &inputs,
-                           const std::vector<KernelTensor *> &outputs);
+  std::vector<aclDataType> inputs_type_value_;
   CacheTuple GenCustomExecutorForResize(const std::vector<std::vector<KernelTensor *>> &inputs,
-                                        const std::vector<KernelTensor *> &outputs);
+                                        const std::vector<std::vector<KernelTensor *>> &outputs);
   void GetWorkspaceForResize(const std::vector<std::vector<KernelTensor *>> &inputs,
-                             const std::vector<KernelTensor *> &outputs);
+                             const std::vector<std::vector<KernelTensor *>> &outputs);
   void RunOp(void *stream_ptr, const std::vector<KernelTensor *> &workspace,
-             const std::vector<std::vector<KernelTensor *>> &inputs, const std::vector<KernelTensor *> &outputs);
-  std::pair<aclOpExecutor *, std::function<void()>> GetExecutor(const std::vector<std::vector<KernelTensor *>> &inputs,
-                                                                const std::vector<KernelTensor *> &outputs);
+             const std::vector<std::vector<KernelTensor *>> &inputs,
+             const std::vector<std::vector<KernelTensor *>> &outputs);
+  std::pair<aclOpExecutor *, std::function<void()>> GetExecutor(
+    const std::vector<std::vector<KernelTensor *>> &inputs, const std::vector<std::vector<KernelTensor *>> &outputs);
   ExecutorTuple GenCustomExecutor(const std::vector<std::vector<KernelTensor *>> &inputs,
-                                  const std::vector<KernelTensor *> &outputs);
+                                  const std::vector<std::vector<KernelTensor *>> &outputs);
 
   bool CallGetWorkSpaceSize(const std::vector<std::vector<KernelTensor *>> &inputs,
-                            const std::vector<KernelTensor *> &outputs, uint64_t *workspace_size_addr,
+                            const std::vector<std::vector<KernelTensor *>> &outputs, uint64_t *workspace_size_addr,
                             aclOpExecutor **executor_addr, void *get_workspace_size_func);
   std::vector<std::vector<void *>> GetTensorAddress(const std::vector<std::vector<KernelTensor *>> &inputs,
-                                                    const std::vector<KernelTensor *> &outputs);
+                                                    const std::vector<std::vector<KernelTensor *>> &outputs);
   void UpdateTensorForLaunch(const std::vector<std::vector<KernelTensor *>> &inputs,
-                             const std::vector<KernelTensor *> &outputs, const ProcessCache &cache);
-  void ConvertTypes(const std::vector<std::vector<KernelTensor *>> &inputs, const std::vector<KernelTensor *> &outputs,
-                    std::vector<void *> *converted_inputs, std::vector<void *> *converted_outputs);
+                             const std::vector<std::vector<KernelTensor *>> &outputs, const ProcessCache &cache);
+  std::vector<void *> ConvertTypes(const std::vector<std::vector<KernelTensor *>> &inputs, size_t offset = 0);
   std::vector<std::vector<KernelTensor *>> GetCustomInputs(const std::vector<KernelTensor *> &inputs);
+  std::vector<std::vector<KernelTensor *>> GetCustomOutputs(const std::vector<KernelTensor *> &outputs);
+  void GetCustomInputTypes();
 };
 
 }  // namespace custom

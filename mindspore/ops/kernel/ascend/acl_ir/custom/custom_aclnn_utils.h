@@ -36,8 +36,10 @@ constexpr auto kTypeAclNNScalar = "aclScalar*";
 constexpr auto kTypeAclNNIntArray = "aclIntArray*";
 constexpr auto kTypeAclNNBoolArray = "aclBoolArray*";
 constexpr auto kTypeAclNNFloatArray = "aclFloatArray*";
+constexpr auto kTypeAclNNDType = "aclDataType";
 constexpr auto kTypeAclNNFloat = "float";
 constexpr auto kTypeAclNNInt = "int64_t";
+constexpr auto kTypeAclNNUInt = "uint64_t";
 constexpr auto kTypeAclNNDouble = "double";
 constexpr auto kTypeAclNNBool = "bool";
 constexpr auto kTypeAclNNString = "string";
@@ -46,6 +48,7 @@ enum CustomSupportType : int8_t {
   UNKNOWN = -1,
   kTypeTensor,
   kTypeTensorList,
+  kTypeDType,
   kTypeScalar,
   kTypeBool,
   kTypeBoolArray,
@@ -53,6 +56,7 @@ enum CustomSupportType : int8_t {
   kTypeIntArray,
   kTypeFloat,
   kTypeFloatArray,
+  kTypeUInt,
   kTypeDouble,
   kTypeString
 };
@@ -67,8 +71,10 @@ const std::unordered_map<CustomSupportType, std::string> custom_supported_type_t
   {CustomSupportType::kTypeFloat, kTypeAclNNFloat},
   {CustomSupportType::kTypeDouble, kTypeAclNNDouble},
   {CustomSupportType::kTypeInt, kTypeAclNNInt},
+  {CustomSupportType::kTypeUInt, kTypeAclNNUInt},
   {CustomSupportType::kTypeBool, kTypeAclNNBool},
-  {CustomSupportType::kTypeString, kTypeAclNNString}};
+  {CustomSupportType::kTypeString, kTypeAclNNString},
+  {CustomSupportType::kTypeDType, kTypeAclNNDType}};
 
 const std::map<std::string, CustomSupportType> string_to_custom_supported_type = {
   {kTypeAclNNTensor, CustomSupportType::kTypeTensor},
@@ -80,8 +86,10 @@ const std::map<std::string, CustomSupportType> string_to_custom_supported_type =
   {kTypeAclNNFloat, CustomSupportType::kTypeFloat},
   {kTypeAclNNDouble, CustomSupportType::kTypeDouble},
   {kTypeAclNNInt, CustomSupportType::kTypeInt},
+  {kTypeAclNNUInt, CustomSupportType::kTypeInt},
   {kTypeAclNNBool, CustomSupportType::kTypeBool},
-  {kTypeAclNNString, CustomSupportType::kTypeString}};
+  {kTypeAclNNString, CustomSupportType::kTypeString},
+  {kTypeAclNNDType, CustomSupportType::kTypeDType}};
 
 }  // namespace mindspore::kernel::custom
 #endif  // MINDSPORE_OPS_KERNEL_ASCEND_ACL_IR_CUSTOM_CUSTOM_ACLNN_UTILS_H

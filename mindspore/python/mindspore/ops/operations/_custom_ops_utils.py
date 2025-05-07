@@ -274,12 +274,12 @@ typedef struct aclTensorList aclTensorList;
 typedef struct aclScalarList aclScalarList;
                                 """.strip()
 
-        self.supported_input_scalar_type = ['int64_t', 'float', 'double', 'bool']
+        self.supported_input_scalar_type = ['int64_t', 'uint64_t', 'float', 'double', 'bool', 'aclDataType']
         self.supported_input_pointer_type = ['aclTensor*', 'aclScalar*', 'aclIntArray*', 'aclFloatArray*',
                                              'aclBoolArray*',
                                              'aclTensorList*']
         self.supported_input_type = self.supported_input_pointer_type + self.supported_input_scalar_type
-        self.supported_output_type = ["aclTensor*"]
+        self.supported_output_type = ["aclTensor*", "aclTensorList*"]
 
     def _get_input_output_types(self, reg_info):
         """
@@ -296,6 +296,7 @@ typedef struct aclScalarList aclScalarList;
         attrs = reg_info.get(REG_INFO_KEY_ATTR, [])
 
         inputs_types = []
+        outputs_types = []
         for input in inputs:
             if input.get(REG_INFO_KEY_PARAM_TYPE) == "dynamic":
                 inputs_types.append("aclTensorList*")
@@ -303,7 +304,13 @@ typedef struct aclScalarList aclScalarList;
                 inputs_types.append("aclTensor*")
         for attr in attrs:
             inputs_types.append(self._get_type_declaration(attr.get(REG_INFO_KEY_TYPE)))
-        outputs_types = ["aclTensor*"] * len(outputs)
+
+        for output in outputs:
+            if output.get(REG_INFO_KEY_PARAM_TYPE) == "dynamic":
+                outputs_types.append("aclTensorList*")
+            else:
+                outputs_types.append("aclTensor*")
+
         return inputs_types, outputs_types
 
     def get_api_types_by_reg_info(self, reg_info):
@@ -413,7 +420,7 @@ typedef struct aclScalarList aclScalarList;
             if typ not in self.supported_output_type:
                 raise RuntimeError(
                     f"Unsupported output type: {typ}, supported output types are: {self.supported_output_type}")
-            outputs_code.append(f"  aclTensor* output{i} = static_cast<{typ}>(outputs[{i}])")
+            outputs_code.append(f"  {typ} output{i} = static_cast<{typ}>(outputs[{i}])")
         return outputs_code
 
     def _generate_callback_func_params(self, inputs_types, outputs_types):

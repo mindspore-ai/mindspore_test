@@ -15,12 +15,14 @@
  */
 
 #include "kernel/ascend/acl_ir/custom/custom_op_api_cache.h"
+#include <algorithm>
 #include "kernel/ascend/acl_ir/op_api_cache.h"
 #include "kernel/ascend/acl_ir/op_api_convert.h"
 
 namespace mindspore::device::ascend {
 bool CustomHitCache(const char *aclnn_api, aclOpExecutor **executor, uint64_t *workspace_size,
-                    const std::vector<std::vector<KernelTensor *>> &inputs, const std::vector<KernelTensor *> &outputs,
+                    const std::vector<std::vector<KernelTensor *>> &inputs,
+                    const std::vector<std::vector<KernelTensor *>> &outputs,
                     const std::vector<CustomSupportType> &input_output_types) {
   static const auto get_exec_cache = device::ascend::GetOpApiFunc("PTAGetExecCache");
   static const auto init_cache_thread_local = device::ascend::GetOpApiFunc("InitPTACacheThreadLocal");
@@ -48,7 +50,7 @@ bool CustomHitCache(const char *aclnn_api, aclOpExecutor **executor, uint64_t *w
 }
 
 uint64_t CustomAclnnHash(const std::string &op_type, const std::vector<std::vector<KernelTensor *>> &inputs,
-                         const std::vector<KernelTensor *> &outputs,
+                         const std::vector<std::vector<KernelTensor *>> &outputs,
                          const std::vector<CustomSupportType> &input_output_types) {
   g_hash_offset = 0;
   GatherHash(op_type);
@@ -57,8 +59,11 @@ uint64_t CustomAclnnHash(const std::string &op_type, const std::vector<std::vect
                       << " is not equal to the sum of the sizes of the input " << inputs.size() << " and output "
                       << outputs.size();
   }
-  for (size_t i = 0; i < inputs.size(); i++) {
-    auto dyn_input = inputs[i];
+  std::vector<std::vector<KernelTensor *>> inputs_outputs;
+  std::copy(inputs.begin(), inputs.end(), std::back_inserter(inputs_outputs));
+  std::copy(outputs.begin(), outputs.end(), std::back_inserter(inputs_outputs));
+  for (size_t i = 0; i < inputs_outputs.size(); i++) {
+    auto dyn_input = inputs_outputs[i];
     KernelTensor *input;
     if (dyn_input.empty()) {
       MS_LOG(EXCEPTION) << "Custom op [" << op_type << "] input-" << i << " is empty!";
@@ -120,14 +125,22 @@ uint64_t CustomAclnnHash(const std::string &op_type, const std::vector<std::vect
         GatherHash(device::ascend::ConvertKernelTensor<std::vector<float>>(input));
         break;
       }
+      case CustomSupportType::kTypeDType: {
+        auto value = input->GetValue();
+        MS_EXCEPTION_IF_NULL(value);
+        if (value->isa<Type>()) {
+          auto type_id = value->cast<TypePtr>()->type_id();
+          GatherHash(type_id);
+          break;
+        } else {
+          MS_LOG(EXCEPTION) << "Kernel tensor' value  is not Type, but is " << value->ToString();
+        }
+      }
       default:
         MS_LOG(EXCEPTION) << "Custom unsupported input type: " << static_cast<int64_t>(type);
     }
   }
 
-  for (auto output : outputs) {
-    GatherHash(output);
-  }
   return calc_hash_id();
 }
 
