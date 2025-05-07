@@ -181,24 +181,6 @@ def test_method_min_exception():
     with pytest.raises(TypeError):
         func(ms.Tensor([1, 2, 3, 4, 5]))
 
-
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_method_reshape():
-    """
-    Feature: Functional.
-    Description: Test functional feature with Tensor.reshape.
-    Expectation: Run success
-    """
-    @ms.jit
-    def func(x):
-        return x.reshape(1, 2, 3)
-
-    x = ms.Tensor([[[1], [2]], [[3], [4]], [[5], [6]]])
-    out = func(x)
-    expect = ms.Tensor([[[1, 2, 3], [4, 5, 6]]])
-    assert np.all(out.asnumpy() == expect.asnumpy())
-
-
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_method_transpose():
     """
@@ -487,7 +469,7 @@ def test_method_wrong_type_of_keyword():
     with pytest.raises(TypeError) as raise_info:
         func(Tensor(1))
 
-    assert "max(): argumeent 'initial' must be Number but got list of Any" in str(raise_info.value)
+    assert "max(): argument 'initial' must be Number but got list of Any" in str(raise_info.value)
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_method_wrong_type_of_1_candidate():
@@ -537,3 +519,84 @@ def test_method_args_to_string():
 
     assert ("list<int, string, tuple<int, int, int>, list<int, int, string>>, tuple<int, string, tuple<int, int, int>, "
             "list<int, int, string>>") in str(raise_info.value)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_method_reshape():
+    """
+    Feature: Functional.
+    Description: Test functional feature with Tensor.reshape.
+    Expectation: Run success
+    """
+    @ms.jit
+    def func(x):
+        return x.reshape(1, 2, 3)
+
+    x = ms.Tensor([[[1], [2]], [[3], [4]], [[5], [6]]])
+    out = func(x)
+    expect = ms.Tensor([[[1, 2, 3], [4, 5, 6]]])
+    assert np.all(out.asnumpy() == expect.asnumpy())
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_method_implicit_tuple():
+    """
+    Feature: Functional.
+    Description: Test functional feature with Tensor
+    Expectation: Raise expected exception.
+    """
+    @ms.jit
+    def func(x):
+        return x.reshape(1, 1.1)
+
+    with pytest.raises(TypeError) as raise_info:
+        func(Tensor(1))
+
+    assert "reshape(): argument 'shape' (position 2) must be tuple of int, not float." in str(raise_info.value)
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_method_implicit_tuple_2():
+    """
+    Feature: Functional.
+    Description: Test functional feature with Tensor
+    Expectation: Raise expected exception.
+    """
+    @ms.jit
+    def func(x):
+        return x.reshape(1)
+
+    out = func(Tensor(1))
+    expected = Tensor(1)
+
+    assert np.all(out.asnumpy() == expected.asnumpy())
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_method_implicit_tuple_3():
+    """
+    Feature: Functional.
+    Description: Test functional feature with Tensor
+    Expectation: Raise expected exception.
+    """
+    @ms.jit
+    def func(x):
+        return x.reshape(1.1)
+
+    with pytest.raises(TypeError) as raise_info:
+        func(Tensor(1))
+
+    assert "reshape(): argument 'shape' (position 1) must be tuple of int, not float." in str(raise_info.value)
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_method_explicit_tuple():
+    """
+    Feature: Functional.
+    Description: Test functional feature with Tensor
+    Expectation: Raise expected exception.
+    """
+    @ms.jit
+    def func(x):
+        return x.reshape((1, 2, 3))
+
+    x = ms.Tensor([[[1], [2]], [[3], [4]], [[5], [6]]])
+    out = func(x)
+    expected = ms.Tensor([[[1, 2, 3], [4, 5, 6]]])
+    assert np.all(out.asnumpy() == expected.asnumpy())
