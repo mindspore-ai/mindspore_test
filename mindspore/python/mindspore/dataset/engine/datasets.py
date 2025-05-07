@@ -29,10 +29,8 @@ import atexit
 import glob
 import json
 import os
-import queue
 import signal
 import stat
-import subprocess
 import warnings
 
 import time
@@ -41,6 +39,7 @@ import multiprocessing
 from importlib import import_module
 import sys
 import threading
+from types import GeneratorType
 
 import copy
 import weakref
@@ -65,7 +64,6 @@ from mindspore.dataset.engine import samplers
 from mindspore.dataset.engine.samplers import Shuffle
 from .iterators import DictIterator, TupleIterator, DummyIterator, check_iterator_cleanup, _set_iterator_cleanup, \
     ITERATORS_LIST, _unset_iterator_cleanup, _cleanup_the_iterators_if_created
-from .queue import _SharedQueue, _Queue
 from .validators import check_batch, check_shuffle, check_map, check_filter, check_repeat, check_skip, check_zip, \
     check_rename, check_device_send, check_take, check_output_shape, check_project, \
     check_sync_wait, check_zip_dataset, check_add_column, check_concat, check_split, check_bucket_batch_by_length, \
@@ -73,7 +71,7 @@ from .validators import check_batch, check_shuffle, check_map, check_filter, che
     check_total_batch, check_sync_update
 from ..core.config import get_callback_timeout, _init_device_info, get_enable_shared_mem, get_num_parallel_workers, \
     get_enable_watchdog, get_seed, set_seed, get_debug_mode, get_multiprocessing_timeout_interval, \
-    _get_debug_hook_list, get_multiprocessing_start_method
+    _get_debug_hook_list, get_multiprocessing_start_method, get_error_samples_mode, ErrorSamplesMode
 from ..core.datatypes import mstype_to_detype
 from ..core.validator_helpers import replace_none
 from ..core.py_util_helpers import ExceptionHandler
@@ -2740,8 +2738,6 @@ class BatchDataset(UnionBaseDataset):
 
             self.process_pool = _PythonMultiprocessing(get_multiprocessing_start_method(), self.num_parallel_workers,
                                                        str(self), [self.per_batch_map], self.max_rowsize)
-            # Wrap per_batch_map into _PythonCallable
-            self.per_batch_map = _PythonCallable(self.per_batch_map, 0, self.process_pool)
         else:
             if self.per_batch_map is not None:
                 self.per_batch_map = FuncWrapper(self.per_batch_map)
@@ -3045,95 +3041,6 @@ _OP_NAME = dict()
 _OP_PROCESS = dict()
 
 
-# PythonCallable wrapper for multiprocess pyfunc
-class _PythonCallable:
-    """
-    Internal Python function wrapper for multiprocessing pyfunc.
-    """
-
-    def __init__(self, py_callable, idx, pool=None):
-        # Original Python callable from user.
-        self.py_callable = py_callable
-        # Process pool created for current iterator.
-        self.pool = pool
-        # Python callable index
-        self.idx = idx
-
-    def __call__(self, *args):
-        result = None
-        get_data_from_worker_process = False
-        while get_data_from_worker_process is False:
-            if self.pool.is_running() and check_iterator_cleanup() is False:
-                try:
-                    result = self.pool.execute(self.idx, *args)
-                except multiprocessing.TimeoutError:
-                    continue
-                get_data_from_worker_process = True
-            else:
-                # worker process is stopped
-                logger.info("The worker process of map operation is stopped. "
-                            "So return None to main thread and break the main thread.")
-                return None
-        # got value from worker process
-        if not isinstance(result, tuple) and get_data_from_worker_process is True:
-            result = (result,)
-        return result
-
-    def to_json(self):
-        return self.py_callable.to_json()
-
-
-# used when python_multiprocessing=True in map
-class Pipe:
-    """
-    Class to handle communication between the master process and the worker processes.
-    """
-
-    def __init__(self, warning_ctl, shared_memory=False, max_rowsize=(-1, -1)):
-        self.shared_memory = shared_memory
-        self.eof = multiprocessing.Event()
-        if self.shared_memory:
-            self.in_queue = _SharedQueue(1, warning_ctl, max_rowsize=max_rowsize[0])
-            self.res_queue = _SharedQueue(1, warning_ctl, max_rowsize=max_rowsize[1])
-        else:
-            self.in_queue = _Queue(1)
-            self.res_queue = _Queue(1)
-        self.in_queue.cancel_join_thread()  # Ensure that the process does not hung when exiting
-
-    def master_send(self, func_index, data):
-        self.in_queue.put_nowait((func_index, *data))
-
-    def master_receive(self):
-        if self.eof is None:
-            raise RuntimeError("EOF is none when get data from worker.")
-        if self.eof.is_set():
-            return None
-        return self.res_queue.get(timeout=1)
-
-    def master_close(self):
-        self.eof.set()
-        self.send_finish_signal_to_worker()
-        self.send_finish_signal()
-
-    def send_finish_signal(self):
-        self.worker_send(None)
-
-    def send_finish_signal_to_worker(self):
-        self.master_send(0, "QUIT")
-
-    def worker_send(self, data):
-        self.res_queue.put_until(data, timeout=1, exit_signal=self.eof)
-
-    def worker_receive(self):
-        result = self.in_queue.get_until(timeout=1, exit_signal=self.eof)
-        if result is None:
-            return result
-        if len(result) == 1:
-            raise RuntimeError(f"Corrupted data. Worker received {len(result)} elements, it should be more than 1.")
-        func_index, *data = result
-        return func_index, tuple(data)
-
-
 def _main_process_already_exit():
     """
     Judge whether main process already exit.
@@ -3146,15 +3053,15 @@ def _main_process_already_exit():
     return False
 
 
-def _worker_loop(operations, pipe, worker_id):
+def _worker_loop(quit_signal, operations, worker_id, op_type, key):
     """
     Multiprocess worker process loop.
+    The worker process(Python Layer) gets data from / sends data to map / batch thread(C++ layer) by message queue
+    and shared memory. This logic no longer uses the Python multi-process pool, in_queue, and out_queue for
+    data transferring.
     """
     # Initialize C++ side signal handlers
     cde.register_worker_handlers()
-
-    # Ensure that the process does not hang when exiting
-    pipe.res_queue.cancel_join_thread()
 
     def _ignore_sigint():
         """
@@ -3168,121 +3075,172 @@ def _worker_loop(operations, pipe, worker_id):
     if get_seed() != 5489:
         set_seed(get_seed() + worker_id)
 
+    msg_queue = cde.MessageQueue(key)
+    msg_queue.set_release_flag(False)
+    shm_queue = cde.SharedMemoryQueue(key)
+    shm_queue.set_release_flag(False)
+
+    # Scenario: when the main process is killed, worker processe needs to release shm & msg.
+    # The shm id and msg id should be released by SIGTERM in worker handler
+    cde.register_shm_id_and_msg_id(str(os.getpid()), shm_queue.get_shm_id(), msg_queue.msg_queue_id)
+
+    num_receive = 0
+    num_send = 0
     while not _main_process_already_exit():
         _ignore_sigint()
 
-        result = pipe.worker_receive()
-        if result is None:
+        # quit by close_worker
+        if quit_signal.is_set():
             return
-        (idx, input_tensors) = result
-        if input_tensors == "QUIT":
-            break
+
+        # >> receive procedure >>
+        ## 1. get message queue which contains shared memory info from map C++ thread in main process
         try:
-            output_tensors = operations[idx](*input_tensors)
+            msg_queue.msg_rcv(cde.MASTER_SEND_DATA_MSG)
+        except RuntimeError as err:
+            # the msg_queue had been released by main process, ignore it in worker process
+            if "errno: 2" in str(err):
+                # Because the worker process does not release msg and shm, continue
+                continue
+            raise err
 
-            pipe.worker_send(output_tensors)
+        ## when the message queue had been released, break the loop
+        if msg_queue.message_queue_state() == cde.MessageState.RELEASED:
+            logger.info("The message queue had been released, worker loop end.")
+            break
+
+        num_receive += 1
+
+        logger.info("Python process {} worker({}) receives {} samples from map thread.".format(op_type, worker_id,
+                                                                                               num_receive))
+
+        # the shm id & msg id maybe update
+        cde.register_shm_id_and_msg_id(str(os.getpid()), msg_queue.shm_id, msg_queue.msg_queue_id)
+
+        # convert the data from shm to python data
+        if op_type == cde.MAP_OP:
+            ## 2. construct shared memory to TensorRow which contains one / more columns
+            tensor_row = shm_queue.to_tensor_row(msg_queue.shm_id, msg_queue.shm_size)
+
+            ## 3. convert TensorRow to Python tuple which elements are a column
+            tuple_column = cde.convert_tensor_row_to_py_tuple(tensor_row)
+
+            py_func_input = tuple_column
+        elif op_type == cde.BATCH_OP:
+            ## 2. construct shard memory to TensorTable which contains one / more TensorRow & CBatchInfo
+            tensor_table, batch_info, _ = shm_queue.to_tensor_table(msg_queue.shm_id, msg_queue.shm_size)
+
+            ## 3. convert TensorTable to Python tuple tuple
+            # The tuple indicate the multi columns
+            # The list indicate the multi rows
+            tuple_list_column = cde.convert_tensor_table_to_py_tuple_list(tensor_table)
+
+            py_func_input = (*tuple_list_column, batch_info)
+        else:
+            raise RuntimeError("The op_type: {} is invalid.".format(op_type))
+
+        # execute the pyfunc
+        try:
+            # execute the first operation, the input parameter need to be unpacked
+            py_func_output = operations[0](*py_func_input)
+
+            # execute the remaining operations
+            for idx in range(len(operations) - 1):
+                py_func_output = operations[idx + 1](py_func_output)
+
+            # << send procedure <<
+            # the result is None
+            if py_func_output is None:
+                raise RuntimeError("Got None from Python Function which is defined by {}".format(op_type))
+
+            # convert the output to tuple
+            if not isinstance(py_func_output, tuple):
+                py_func_output = (py_func_output,)
+
+            if op_type == cde.MAP_OP:
+                # check if the map return Generator type
+                for item in py_func_output:
+                    if isinstance(item, GeneratorType):
+                        raise RuntimeError("Cannot pickle <class 'generator'> object, please verify pyfunc "
+                                           "return with numpy array")
+
+                ## 1. convert Python tuple to TensorRow
+                output_tensor_row = cde.convert_py_tuple_to_tensor_row(py_func_output)
+
+                ## 2. convert TensorRow to shared memory
+                shm_queue.from_tensor_row(output_tensor_row)
+            elif op_type == cde.BATCH_OP:
+                ## 1. convert Python tuple tuple to TensorTable
+                output_tensor_table, concat_batch = cde.convert_py_tuple_list_to_tensor_table(py_func_output)
+
+                ## 2. convert TensorTable to shared memory
+                shm_queue.from_tensor_table(output_tensor_table, batch_info, concat_batch)
+            else:
+                raise RuntimeError("The op_type: {} is invalid.".format(op_type))
+
+            # the shm id & msg id maybe update
+            cde.register_shm_id_and_msg_id(str(os.getpid()), shm_queue.get_shm_id(), msg_queue.msg_queue_id)
+
+            ## 3. send message queue which contains shared memory to map C++ thread in main process
+            msg_queue.msg_snd(cde.WORKER_SEND_DATA_MSG, shm_queue.get_shm_id(), shm_queue.get_shm_size())
+            num_send += 1
+            logger.info("Python process {} worker({}) sends {} samples to map thread.".format(op_type, worker_id,
+                                                                                              num_send))
         except Exception:
-            pipe.worker_send(ExceptionHandler(where="in map(or batch) worker and execute Python function"))
-            # Do not return
+            try:
+                if op_type == cde.MAP_OP:
+                    pyfunc_err = ExceptionHandler(where="in map worker and execute Python function")
+                elif op_type == cde.BATCH_OP:
+                    pyfunc_err = ExceptionHandler(where="in batch(per_batch_map) worker and execute Python function")
+                else:
+                    pyfunc_err = "The op_type: {} is invalid.".format(op_type)
+                pyfunc_err.reraise()
+            except Exception as err:
+                _, _, exc_tb = sys.exc_info()
+                fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
 
-    # release the queue when stop the worker by master
-    del pipe.in_queue
-    del pipe.res_queue
+                if op_type == cde.MAP_OP:
+                    logger.info("Got exception {} from Map Worker({})".format(str(err), worker_id))
+                elif op_type == cde.BATCH_OP:
+                    logger.info("Got exception {} from Batch Worker({})".format(str(err), worker_id))
+                else:
+                    logger.info("The op_type: {} is invalid.".format(op_type))
 
+                # err_code, lineno, filename, err_desc
+                msg_queue.serialize_status(cde.StatusCode.MD_PY_FUNC_EXCEPTION, exc_tb.tb_lineno, fname, str(err))
+                msg_queue.msg_snd(cde.WORKER_SEND_DATA_MSG, shm_queue.get_shm_id(), shm_queue.get_shm_size())
 
-def worker_target(operations, worker_id):
-    logger.info("Multiprocessing start method: {}".format(multiprocessing.get_start_method()))
-    return lambda pipe: _worker_loop(operations, pipe, worker_id)
+                # worker error
+                if get_error_samples_mode() == ErrorSamplesMode.RETURN:
+                    break
+                else:
+                    # continue the loop, when the get_error_samples_mode() is REPLACE or SKIP
+                    continue
+
+    # release the eager executor which is used by current process
+    transforms.transforms.clean_unused_executors()
+
+    while not _main_process_already_exit():
+        # quit by close_worker
+        if quit_signal.is_set():
+            return
+
+        logger.info("The worker process is waiting for the main process to exit.")
+        time.sleep(0.1)
 
 
 class WorkerTarget:
-    def __init__(self, operations, pipe, worker_id):
+    """Mulitprocess mode for dataset map or batch"""
+    def __init__(self, quit_signal, operations, worker_id, op_type, ftok_key):
+        self.quit_signal = quit_signal
         self.operations = operations
-        self.pipe = pipe
         self.worker_id = worker_id
+        self.op_type = op_type
+        self.ftok_key = ftok_key
         logger.info("Multiprocessing start method: {}".format(multiprocessing.get_start_method()))
 
     def __call__(self):
-        return _worker_loop(self.operations, self.pipe, self.worker_id)
-
-
-class _MPWorker(multiprocessing.Process):
-    """
-    Worker process for multiprocessing.
-    """
-
-    def __init__(self, operations, warning_ctl, max_rowsize=(-1, -1), worker_id=0):
-        shared_memory = get_enable_shared_mem()
-        self.pipe = Pipe(warning_ctl, shared_memory=shared_memory, max_rowsize=max_rowsize)
-        self.check_interval = get_multiprocessing_timeout_interval()
-        super().__init__(target=worker_target(operations, worker_id), name="MapWorker" + str(worker_id),
-                         args=(self.pipe,), daemon=True)
-
-    def execute(self, idx, *args):
-        """Acquiring data from a worker in an infinite loop"""
-        self.pipe.master_send(idx, args)
-        time_s = time.time()
-        wait_count = 1
-        while True:
-            cost_time = time.time() - time_s
-            if cost_time / self.check_interval >= wait_count:
-                wait_count += 1
-                logger.warning("It has been waiting for " + "%.3f" % cost_time + "s because the sub-process "
-                               "worker of the map operation is hanging. "
-                               "Check whether the user defined data transform is too slow or the "
-                               "output data is too large. You can also set the timeout interval by "
-                               "ds.config.set_multiprocessing_timeout_interval to adjust the output frequency "
-                               "of this log.")
-                pid = self.pid
-                logger.warning("Map worker subprocess ID {} is stuck.".format(pid))
-                install_status, _ = subprocess.getstatusoutput("py-spy --version")
-                if install_status == 0:
-                    stack = subprocess.getoutput("py-spy dump -p {} -l".format(pid))
-                    logger.warning("Map worker subprocess stack:\n{}".format(stack))
-                else:
-                    logger.warning("Please `pip install py-spy` to get the stacks of the stuck process.")
-            try:
-                res = self.pipe.master_receive()
-            except queue.Empty:
-                continue
-            if res is None:
-                # receive finish signal
-                return None
-            if isinstance(res, ExceptionHandler):
-                res.reraise()
-            return res
-
-    def close(self):
-        try:
-            if self.is_alive():
-                # release the eager executor which is used by current process
-                transforms.transforms.clean_unused_executors()
-
-                logger.info(f"Closing worker with PID: {self.pid}")
-                self.pipe.master_close()
-
-                process_dir = os.path.join('/proc', str(self.pid))
-                while self.is_alive() and os.path.exists(process_dir):
-                    logger.info("Waiting for worker {} closed ...".format(self.pid))
-                    time.sleep(0.001)
-
-                # del the handle which hold by master
-                del self.pipe.in_queue
-                del self.pipe.res_queue
-                super().terminate()
-                super().join()
-                super().close()
-
-        except ValueError:
-            # Process has been closed already
-            return
-        return
-
-    def is_alive(self):
-        try:
-            return super().is_alive()
-        except ValueError:
-            return False
+        return _worker_loop(self.quit_signal, self.operations, self.worker_id, self.op_type, self.ftok_key)
 
 
 def worker_is_alive(worker):
@@ -3293,24 +3251,31 @@ def worker_is_alive(worker):
         return False
 
 
-def close_worker(worker, pipe):
+def close_worker(worker, eof):
     """Close the subprocess worker in spawn mode"""
     try:
         if worker_is_alive(worker):
             # release the eager executor which is used by current process
             transforms.transforms.clean_unused_executors()
 
-            logger.info(f"Closing worker with PID: {worker.pid}")
-            pipe.master_close()
+            # let the worker exit
+            logger.info("Set eof flag for worker with PID: {}.".format(worker.pid))
+            eof.set()
+
+            # wait timeout
+            wait_timeout = 2
+            start_time = time.time()
 
             process_dir = os.path.join('/proc', str(worker.pid))
             while worker_is_alive(worker) and os.path.exists(process_dir):
                 logger.info("Waiting for worker {} closed ...".format(worker.pid))
                 time.sleep(0.5)
 
+                # maybe the worker is hung by msg_queue.MsgRcv, so break the loop and terminate it in next step
+                if time.time() - start_time > wait_timeout:
+                    break
+
             # del the handle which hold by master
-            del pipe.in_queue
-            del pipe.res_queue
             worker.terminate()
             worker.join()
             worker.close()
@@ -3367,7 +3332,8 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
         self.warning_ctl = None
         # cache thread (get_ident()) to worker_id mapping in Python layer
         self.python_threads_to_workers = {}
-        self.eof = None
+        self.eof_workers = []
+        self.eof_clean_process = None
         self.running = False
 
     def __del__(self):
@@ -3443,19 +3409,39 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
         del workers
         os.kill(os.getpid(), signal.SIGTERM)
 
-    def launch(self, op_id=-1):
+    def launch(self, op_id, op_type, ftok_keys):
         """
         Launch Python multiprocessing pool.
 
         Args:
-            op_id: ID for operation to have Python multiprocessing pool launched
+            op_id (int): ID for operation to have Python multiprocessing pool launched
+            op_type (str): Indicate MapOp / BatchOp
+            ftok_keys (list[int]): the ftok key of list for msg queue and shm queue
 
         Returns:
             Python multiprocessing pool is launched.
         """
         self.python_threads_to_workers = {}
+
+        if not isinstance(op_id, int):
+            raise RuntimeError("The op_id is not int.")
         self.op_id = op_id
-        logger.info("Launching new Python multiprocessing pool for Op: " + str(self.op_id))
+
+        valid_op_type = [cde.MAP_OP, cde.BATCH_OP]
+        if op_type not in valid_op_type:
+            raise RuntimeError("The op_type: {} is not in {}.".format(op_type, valid_op_type))
+        self.op_type = op_type
+
+        if not isinstance(ftok_keys, list):
+            raise RuntimeError("The ftok_keys is not a list.")
+        if not all(isinstance(x, int) for x in ftok_keys):
+            raise RuntimeError("The item in ftok_keys is not all int.")
+        if len(ftok_keys) != self.num_parallel_workers:
+            raise RuntimeError("The len of ftok_keys is not equal to num_parallel_workers.")
+        self.ftok_keys = ftok_keys
+
+        logger.info("Launching new Python multiprocessing pool for Op: " + self.op_type + "(" + str(self.op_id) + \
+                    "), ftok_keys: " + str(self.ftok_keys))
         if self.is_mp_enabled():
             message = "Launching a new Python multiprocessing pool while a pool already exists!" + \
                       " The existing pool will be terminated first."
@@ -3478,30 +3464,21 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
             raise Exception("Pool was already created, close it first.")
 
         self.workers = []
-        self.pipes = []
-        self.check_interval = get_multiprocessing_timeout_interval()
         self.warning_ctl = multiprocessing.Value('i', 0)
-        if self.start_method == "fork":
-            # Construct python worker processes
-            for worker_id in range(self.num_parallel_workers):
-                worker = _MPWorker(self.operations, self.warning_ctl, self.max_rowsize, worker_id)
-                worker.start()
-                self.workers.append(worker)
-        else:
-            multiprocessing.set_start_method(self.start_method, True)
 
-            # Construct python worker processes
-            for worker_id in range(self.num_parallel_workers):
-                shared_memory = get_enable_shared_mem()
-                pipe = Pipe(self.warning_ctl, shared_memory=shared_memory, max_rowsize=self.max_rowsize)
-                self.check_interval = get_multiprocessing_timeout_interval()
-                worker = multiprocessing.Process(target=WorkerTarget(self.operations, pipe, worker_id),
-                                                 name="MapWorker" + str(worker_id), daemon=True)
-                self.workers.append(worker)
-                self.pipes.append(pipe)
-                worker.start()
+        multiprocessing.set_start_method(self.start_method, True)
 
-            multiprocessing.set_start_method("fork", True)
+        # Construct python worker processes
+        for worker_id in range(self.num_parallel_workers):
+            eof = multiprocessing.Event()
+            worker = multiprocessing.Process(target=WorkerTarget(eof, self.operations, worker_id, self.op_type,
+                                                                 self.ftok_keys[worker_id]),
+                                             name="MapWorker" + str(worker_id), daemon=True)
+            self.eof_workers.append(eof)
+            self.workers.append(worker)
+            worker.start()
+
+        multiprocessing.set_start_method("fork", True)
 
         logger.info("Launch worker process(es): {}".format(self.get_pids()))
 
@@ -3514,6 +3491,20 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
         # Register a termination function using weakref to avoid the object from unable to properly destruct.
         atexit.register(lambda cleanup: cleanup()() if cleanup() is not None else None,
                         weakref.WeakMethod(self.terminate))
+
+        # Ensure that all workers are in the running state
+        start = time.time()
+        wait_time = 120  # 120s
+        while True:
+            if self.is_running():
+                logger.info("All workers has been running state.")
+                break
+            else:
+                time.sleep(0.5)
+                if time.time() - start > wait_time:
+                    logger.error("All worker processes have not reached the running state within " + str(wait_time) +
+                                 " seconds, data processing errors may occur.")
+                    break
 
     def terminate(self):
         if self.running:
@@ -3543,7 +3534,8 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
                         continue
         return self.pids
 
-    def add_new_workers(self, num_new_workers):
+    def add_new_workers(self, num_new_workers, op_type, ftok_keys):
+        """Used by AutoTune"""
         logger.info(
             "Increasing num_parallel_workers of Python Multiprocessing pool for Op:" + str(self.op_id) +
             ", old num_workers=" + str(self.num_parallel_workers) + " new num_workers=" + str(
@@ -3551,9 +3543,14 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
                 num_new_workers) + ".")
         self.terminate()
         self.num_parallel_workers += num_new_workers
-        self.launch(self.op_id)
 
-    def remove_workers(self, num_removed_workers):
+        if self.num_parallel_workers != len(ftok_keys):
+            raise RuntimeError("Add new workers failed, the num_workers is not equal size of ftok_keys.")
+
+        self.launch(self.op_id, op_type, ftok_keys)
+
+    def remove_workers(self, num_removed_workers, op_type, ftok_keys):
+        """Used by AutoTune"""
         logger.info(
             "Decreasing num_parallel_workers of Python Multiprocessing pool for Op:" + str(self.op_id) +
             ", old num_workers=" + str(self.num_parallel_workers) + " new num_workers=" + str(
@@ -3561,59 +3558,14 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
                 num_removed_workers) + ".")
         self.terminate()
         self.num_parallel_workers -= num_removed_workers
-        self.launch(self.op_id)
+
+        if self.num_parallel_workers != len(ftok_keys):
+            raise RuntimeError("Remove workers failed, the num_workers is not equal size of ftok_keys.")
+
+        self.launch(self.op_id, op_type, ftok_keys)
 
     def is_mp_enabled(self):
         return self.workers is not None
-
-    def execute(self, idx, *args):
-        """
-        Execute
-        """
-        t_id = threading.get_ident()
-        # get the worker_id from Python layer cache first, get from Cpp layer if not found.
-        worker_id = self.python_threads_to_workers.setdefault(t_id, self.get_thread_to_worker())
-        if worker_id >= len(self.workers):
-            raise RuntimeError("[Internal] worker_id value is greater than number of available workers!")
-
-        # todo check_iterator_cleanup
-        if self.is_running() and check_iterator_cleanup() is False:
-            if self.start_method == "fork":
-                return self.workers[worker_id].execute(idx, *args)
-            # spawn mode
-            self.pipes[worker_id].master_send(idx, args)
-            time_s = time.time()
-            wait_count = 1
-            while True:
-                cost_time = time.time() - time_s
-                if cost_time / self.check_interval >= wait_count:
-                    wait_count += 1
-                    logger.warning("It has been waiting for " + "%.3f" % cost_time + "s because the sub-process "
-                                   "worker of the map operation is hanging. "
-                                   "Check whether the user defined data transform is too slow or the "
-                                   "output data is too large. You can also set the timeout interval by "
-                                   "ds.config.set_multiprocessing_timeout_interval to adjust the output frequency "
-                                   "of this log.")
-                    pid = self.workers[worker_id].pid
-                    logger.warning("Map worker subprocess ID {} is stuck.".format(pid))
-                    install_status, _ = subprocess.getstatusoutput("py-spy --version")
-                    if install_status == 0:
-                        stack = subprocess.getoutput("py-spy dump -p {} -l".format(pid))
-                        logger.warning("Map worker subprocess stack:\n{}".format(stack))
-                    else:
-                        logger.warning("Please `pip install py-spy` to get the stacks of the stuck process.")
-                try:
-                    res = self.pipes[worker_id].master_receive()
-                except queue.Empty:
-                    continue
-                if res is None:
-                    # receive finish signal
-                    return None
-                if isinstance(res, ExceptionHandler):
-                    res.reraise()
-                return res
-
-        return None
 
     def _launch_monitor(self):
         """
@@ -3622,10 +3574,10 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
         The watch dog will clean up subprocesses and main process when any subprocess exited.
         """
         if platform.system().lower() != 'windows':
-            self.eof = multiprocessing.Event()
+            self.eof_clean_process = multiprocessing.Event()
             self.cleaning_process = multiprocessing.Process(target=self._clean_process,
                                                             name="MapCleanProcess",
-                                                            args=(self.ppid, self.workers, self.eof),
+                                                            args=(self.ppid, self.workers, self.eof_clean_process),
                                                             daemon=True)
             self.cleaning_process.start()
             logger.info("Launch clean process {} to monitor worker "
@@ -3640,8 +3592,9 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
         """Deregister workers monitored by the watch dog and join clean process."""
         if get_enable_watchdog():
             cde.deregister_worker_pids(id(self))
-        if hasattr(self, 'eof') and self.eof is not None:
-            self.eof.set()
+        if hasattr(self, 'eof') and self.eof_clean_process is not None:
+            logger.info("Set eof flag for cleaning_process.")
+            self.eof_clean_process.set()
         if hasattr(self, 'cleaning_process') and self.cleaning_process is not None:
             # let the quit event notify the cleaning process to exit
             self.cleaning_process.join(timeout=5)
@@ -3652,20 +3605,14 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
 
     def is_running(self):
         if hasattr(self, 'workers') and self.workers is not None:
-            if self.start_method == "fork":
-                return all([w.is_alive() for w in self.workers])
             return all([worker_is_alive(w) for w in self.workers])
         return False
 
     def close_all_workers(self):
         """Close all the subprocess workers"""
         if hasattr(self, 'workers') and self.workers is not None:
-            if self.start_method == "fork":
-                for w in self.workers:
-                    w.close()
-            else:
-                for i, w in enumerate(self.workers):
-                    close_worker(w, self.pipes[i])
+            for index in range(len(self.workers)):
+                close_worker(self.workers[index], self.eof_workers[index])
 
             check_interval = get_multiprocessing_timeout_interval()
             for w in self.workers:
@@ -3682,12 +3629,8 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
                         continue
                     raise e
                 try:
-                    if self.start_method == "fork":
-                        if w.is_alive():
-                            os.close(subprocess_file_descriptor)
-                    else:
-                        if worker_is_alive(w):
-                            os.close(subprocess_file_descriptor)
+                    if worker_is_alive(w):
+                        os.close(subprocess_file_descriptor)
                 except OSError as e:
                     # Maybe the file descriptor had been released, so ignore the 'Bad file descriptor'
                     if "Bad file descriptor" not in str(e):
@@ -3696,8 +3639,8 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
             # use clear to release the handle which is better than self.workers = None
             self.workers.clear()
             self.workers = None
-            self.pipes.clear()
-            self.pipes = None
+            self.eof_workers.clear()
+            self.eof_workers = []
             self.pids = None
 
 
@@ -3775,7 +3718,19 @@ class MapDataset(UnionBaseDataset):
 
         count_old_transforms, count_new_transforms, count_non_data_vision_transforms = \
             self.__count_transforms(operations)
+        count_py_ops = self.__count_py_ops(operations)
         count_pyfunc = self.__count_pyfuncs(operations)
+
+        # Whether to execute ops in the thread mode
+        # op_type                      python_multiprocessing  run_in_thread
+        # c_op(s)                      false                   yes
+        # c_op(s)                      true                    yes
+        # py_op(s) / PyFunc            false                   yes
+        # py_op(s) / PyFunc            true                    no
+        # c_op(s) + py_op(s) / PyFunc  false                   yes
+        # c_op(s) + py_op(s) / PyFunc  true                    no
+        run_in_thread = not self.python_multiprocessing or (count_pyfunc == 0 and count_py_ops == 0) or get_debug_mode()
+
         if count_new_transforms + count_pyfunc == len(operations):
             prev_op = None
             for op in operations:
@@ -3793,18 +3748,42 @@ class MapDataset(UnionBaseDataset):
                         op.implementation = Implementation.C
                 prev_op = op
             operations = self.__insert_debug_wrapper(operations)
-            operations = transforms.transforms.Compose.reduce(operations)
+            if run_in_thread:
+                operations = transforms.transforms.Compose.reduce(operations)
         elif count_old_transforms + count_pyfunc + count_non_data_vision_transforms == len(operations):
             operations = self.__insert_debug_wrapper(operations)
-            operations = transforms.py_transforms.Compose.reduce(operations)
+            if run_in_thread:
+                operations = transforms.py_transforms.Compose.reduce(operations)
         else:
             raise RuntimeError("Mixing old legacy c/py_transforms and new unified transforms is not allowed.")
 
-        self.operations = self.__process_final_operations(operations)
+        if run_in_thread:
+            self.operations = self.__process_final_operations(operations)
+        else:
+            self.operations = operations
         self.prepare_multiprocessing()
 
         callbacks = [cb.create_runtime_obj() for cb in self.callbacks]
-        return cde.MapNode(children[0], self.operations, self.input_columns, self.output_columns,
+
+        ## thread mode
+        if run_in_thread:
+            return cde.MapNode(children[0], self.operations, self.input_columns, self.output_columns,
+                               callbacks, OffloadToManualOffloadMode.get(self.offload), self.process_pool)
+
+        # Bind self.operations with self.process_pool
+        class _BindProcessPoolWithOperations:
+            def __init__(self, pool, operations):
+                self.pool = pool
+                self.operations = operations
+            def __call__(self):
+                pass
+
+        self.bound = _BindProcessPoolWithOperations(self.process_pool, self.operations)
+
+        ## process mode
+        # in multi process mode, we just transfer the self.bound which is not really used in c layer
+        # because when the pipeline is running, map thread transfer data through c++ shm & msg to Python Worker Process
+        return cde.MapNode(children[0], [self.bound], self.input_columns, self.output_columns,
                            callbacks, OffloadToManualOffloadMode.get(self.offload), self.process_pool)
 
     def __deepcopy__(self, memodict):
@@ -3857,9 +3836,21 @@ class MapDataset(UnionBaseDataset):
     @staticmethod
     def __count_pyfuncs(operations):
         """
-        Count the number of pyfuncs operations
+        Count the number of pyfuncs operations which is defined by user
         """
         return sum([1 if isinstance(op, FuncWrapper) else 0 for op in operations])
+
+    @staticmethod
+    def __count_py_ops(operations):
+        """
+        Count the number of python operations which is built-in
+        """
+        count = 0
+        for op in operations:
+            if hasattr(op, "implementation") and op.implementation != Implementation.C \
+                and op.implementation is not None:
+                count += 1
+        return count
 
     @staticmethod
     def __count_transforms(operations):
@@ -3924,7 +3915,6 @@ class MapDataset(UnionBaseDataset):
                            " Ignoring Python multiprocessing for map operation.")
             return
         if self.python_multiprocessing:
-            iter_specific_operations = []
             callable_list = []
 
             # If user didn't specify num_parallel_workers, set it to default
@@ -3941,18 +3931,6 @@ class MapDataset(UnionBaseDataset):
                 self.process_pool = _PythonMultiprocessing(get_multiprocessing_start_method(),
                                                            self.num_parallel_workers, str(self),
                                                            callable_list, self.max_rowsize)
-                # Pass #2
-                idx = 0
-                for op in self.operations:
-                    # our c transforms is now callable and should not be run in Python multithreading
-                    if MapDataset.__operation_valid_for_multiprocessing(op):
-                        # Wrap Python callable into _PythonCallable
-                        iter_specific_operations.append(_PythonCallable(op, idx, self.process_pool))
-                        idx += 1
-                    else:
-                        # CPP ops remain the same
-                        iter_specific_operations.append(op)
-                self.operations = iter_specific_operations
 
     def __insert_debug_wrapper(self, operations):
         """

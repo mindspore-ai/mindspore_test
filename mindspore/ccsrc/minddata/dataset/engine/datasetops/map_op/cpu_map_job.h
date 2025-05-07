@@ -34,12 +34,12 @@ class CpuMapJob : public MapJob {
   ~CpuMapJob();
 
   // A pure virtual run function to execute a cpu map job
-  Status Run(std::vector<TensorRow> in, std::vector<TensorRow> *out) override;
+  Status Run(const std::vector<TensorRow> &in, std::vector<TensorRow> *out) override;
 
 #if defined(ENABLE_D)
   // A pure virtual run function to execute a npu map job for Ascend910B DVPP
-  Status Run(std::vector<TensorRow> in, std::vector<TensorRow> *out, mindspore::device::DeviceContext *device_context,
-             const size_t &stream_id) override {
+  Status Run(const std::vector<TensorRow> &in, std::vector<TensorRow> *out,
+             mindspore::device::DeviceContext *device_context, const size_t &stream_id) override {
     RETURN_STATUS_UNEXPECTED("The run operation is not implemneted in CPU platform.");
   }
 #endif

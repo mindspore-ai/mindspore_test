@@ -39,6 +39,8 @@ PYBIND_REGISTER(CBatchInfo, 0, ([](const py::module *m) {
                 }));
 
 PYBIND_REGISTER(DatasetOp, 0, ([](const py::module *m) {
+                  (*m).attr("MAP_OP") = kMapOp;
+                  (*m).attr("BATCH_OP") = kBatchOp;
                   (void)py::class_<DatasetOp, std::shared_ptr<DatasetOp>>(*m, "DatasetOp");
                 }));
 

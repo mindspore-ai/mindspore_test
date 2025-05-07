@@ -671,8 +671,8 @@ Status TreeAdapter::LaunchSubprocess() {
     }
 
     // the message queue had been released by main process
-    MessageQueue::State state = dynamic_cast<SendBridgeOp *>(tree_->root().get())->MessageQueueState();
-    if (state == MessageQueue::State::kReleased) {
+    MessageState state = dynamic_cast<SendBridgeOp *>(tree_->root().get())->MessageQueueState();
+    if (state == MessageState::kReleased) {
       MS_LOG(INFO) << log_prefix << ". Message queue had been released by main process.";
 
       SubprocessExit(0);

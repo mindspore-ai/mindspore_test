@@ -28,8 +28,11 @@
 
 #include "minddata/dataset/api/python/python_mp.h"
 #include "minddata/dataset/core/config_manager.h"
+#include "minddata/dataset/core/shared_memory_queue.h"
+#include "minddata/dataset/core/message_queue.h"
 #include "minddata/dataset/core/tensor.h"
 #include "minddata/dataset/engine/dataset_iterator.h"
+#include "minddata/dataset/engine/datasetops/batch_info.h"
 #include "minddata/dataset/engine/datasetops/parallel_op.h"
 #include "minddata/dataset/util/status.h"
 
@@ -37,42 +40,6 @@ namespace mindspore {
 namespace dataset {
 
 using PadInfo = std::map<std::string, std::pair<TensorShape, std::shared_ptr<Tensor>>>;
-
-enum BatchCtrl : int8_t { kNoCtrl = 0, kEOE = 1, kEOF = 2, kQuit = 3, kWait = 4 };
-
-// Parameters associate with one batch.
-// This struct is used for both internal control and python callback.
-// This struct is bound to python with read-only access.
-struct CBatchInfo {
-  CBatchInfo(int64_t ep, int64_t bat, int64_t cur, BatchCtrl ctrl)
-      : epoch_num_(ep), batch_num_(bat), total_batch_num_(cur), ctrl_(ctrl) {}
-  CBatchInfo(int64_t ep, int64_t bat, int64_t cur) : CBatchInfo(ep, bat, cur, BatchCtrl::kNoCtrl) {}
-  CBatchInfo() : CBatchInfo(0, 0, 0, BatchCtrl::kNoCtrl) {}
-  explicit CBatchInfo(BatchCtrl ctrl) : CBatchInfo(0, 0, 0, ctrl) {}
-  int64_t epoch_num_;        // i-th epoch. i starts from 0
-  int64_t batch_num_;        // i-th batch since the start of current epoch. i starts from 0
-  int64_t total_batch_num_;  // i-th batch since the start of first epoch. i starts from 0
-  BatchCtrl ctrl_;           // No control=0, EOE=1, EOF=2, Quit=3
-  const int64_t get_batch_num() const { return batch_num_; }
-  const int64_t get_epoch_num() const { return epoch_num_; }
-
-  std::string FlagName() const {
-    switch (ctrl_) {
-      case BatchCtrl::kNoCtrl:
-        return "Data";
-      case BatchCtrl::kEOE:
-        return "EOE";
-      case BatchCtrl::kEOF:
-        return "EOF";
-      case BatchCtrl::kQuit:
-        return "Quit";
-      case BatchCtrl::kWait:
-        return "Wait";
-      default:
-        return "Unknown";
-    }
-  }
-};
 
 class BatchOp : public ParallelOp<std::pair<std::unique_ptr<TensorQTable>, CBatchInfo>, TensorRow> {
  public:
@@ -163,6 +130,7 @@ class BatchOp : public ParallelOp<std::pair<std::unique_ptr<TensorQTable>, CBatc
   /// \param python_multiprocessing_runtime PythonMultiprocessingRuntime
   void SetPythonMp(std::shared_ptr<PythonMultiprocessingRuntime> python_multiprocessing_runtime);
 
+#if !defined(_WIN32) && !defined(_WIN64)
   /// Return the list of PIDs of worker processes
   /// \return vector of int
   std::vector<int32_t> GetMPWorkerPIDs() const override;
@@ -170,8 +138,19 @@ class BatchOp : public ParallelOp<std::pair<std::unique_ptr<TensorQTable>, CBatc
   // @Used by independent dataset mode to stop the subprocess
   // @return Status The status code returned
   Status Terminate() override;
+#endif
 
  private:
+#if !defined(_WIN32) && !defined(_WIN64)
+  // Execute the per_batch_map with python multiprocessing worker
+  Status ComputeWithWorker(TensorTable *input, TensorTable *output, CBatchInfo info, bool *concat_batch,
+                           int32_t worker_id);
+#endif
+
+  // Execute the per_batch_map with C++ thread
+  Status ComputeWithThread(TensorTable *input, TensorTable *output, CBatchInfo info, bool *concat_batch,
+                           int32_t worker_id);
+
   // Worker thread for doing the memcpy of batch
   // @param int32_t param workerId
   // @return Status The status code returned
@@ -180,13 +159,14 @@ class BatchOp : public ParallelOp<std::pair<std::unique_ptr<TensorQTable>, CBatc
   // Generate row with batched tensors
   // @return Status The status code returned
   Status MakeBatchedRow(std::pair<std::unique_ptr<TensorQTable>, CBatchInfo> tensor_info_pair,
-                        TensorRow *batched_tensor_row);
+                        TensorRow *batched_tensor_row, int32_t worker_id = 0);
 
 #ifdef ENABLE_PYTHON
   // Function that calls pyfunc to perform map on batch
   // @param (std::pair<std::unique_ptr<TensorQTable>, batch_stats> *table_pair - contains un-batched tensor
   // @return Status The status code returned
-  Status MapColumns(std::pair<std::unique_ptr<TensorQTable>, CBatchInfo> *table_pair, bool *concat_batch);
+  Status MapColumns(std::pair<std::unique_ptr<TensorQTable>, CBatchInfo> *table_pair, bool *concat_batch,
+                    int32_t worker_id);
 #endif
 
   // @param const PadInfo &pad_info pad info to unpack
@@ -222,7 +202,8 @@ class BatchOp : public ParallelOp<std::pair<std::unique_ptr<TensorQTable>, CBatc
 
   // Invoke batch map function with current BatchInfo to generate tensors to batch.
   // @return Status The status code returned
-  Status InvokeBatchMapFunc(TensorTable *input, TensorTable *output, CBatchInfo info, bool *concat_batch);
+  Status InvokeBatchMapFunc(TensorTable *input, TensorTable *output, CBatchInfo info, bool *concat_batch,
+                            int32_t worker_id);
 #endif
 
   void UpdateCounterAndSendEOE(TensorRow *const row);
@@ -242,12 +223,20 @@ class BatchOp : public ParallelOp<std::pair<std::unique_ptr<TensorQTable>, CBatc
   py::function batch_map_func_;   // Function pointer of per batch map function
 #endif
   std::shared_ptr<PythonMultiprocessingRuntime> python_multiprocessing_runtime_;  // python multiprocessing instance
+#if !defined(_WIN32) && !defined(_WIN64)
+  std::vector<key_t> ftok_keys_;  // used to create msg queue and shm queue for per_batch_map in process mode
+  std::vector<std::shared_ptr<MessageQueue>> msg_queues_;
+  std::vector<std::shared_ptr<SharedMemoryQueue>> shm_queues_;
+  std::vector<int32_t> worker_pids_;
+#endif
 
  protected:
+#if !defined(_WIN32) && !defined(_WIN64)
   Status Launch() override;
 
   Status AddNewWorkers(int32_t num_new_workers) override;
   Status RemoveWorkers(int32_t num_workers) override;
+#endif
 
   /// \brief Gets the implementation status for operator in pull mode
   /// \return implementation status

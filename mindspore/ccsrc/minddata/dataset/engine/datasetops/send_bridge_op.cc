@@ -177,7 +177,7 @@ Status SendBridgeOp::WorkerEntry(int32_t worker_id) {
     if (ret != Status::OK()) {
       *current_step = SendBridgeOp::RowStep::kAfterReceiveMsg;
       tree_->SetFinished();  // the independent dataset process will exit
-      if (msg_queue_.state_ != MessageQueue::State::kReleased) {
+      if (msg_queue_.state_ != MessageState::kReleased) {
         return ret;
       }
       return Status::OK();
@@ -218,7 +218,7 @@ Status SendBridgeOp::GetNextRowPullMode(TensorRow *const row) {
   return Status::OK();
 }
 
-MessageQueue::State SendBridgeOp::MessageQueueState() { return msg_queue_.MessageQueueState(); }
+MessageState SendBridgeOp::MessageQueueState() { return msg_queue_.MessageQueueState(); }
 
 MessageQueue SendBridgeOp::GetMessageQueue() { return msg_queue_; }
 
