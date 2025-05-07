@@ -88,6 +88,7 @@ bool MemoryManagerActor::AllocateContinuousMemory(const DeviceTensor *device_ten
   if (device_addresses.size() == continuous_device_addresses->size()) {
     for (size_t i = 0, end = (*continuous_device_addresses).size(); i < end; ++i) {
       const auto &device_address = (*(continuous_device_addresses))[i].lock();
+      MS_EXCEPTION_IF_CHECK_FAIL(device_address->GetPtr() == nullptr, "Continuous memory conflicted.");
       device_address->set_ptr(device_addresses[i]);
       device_address->set_from_mem_pool(true);
       device_address->IncreaseNewRefCount(from_aid.Name() + " alloc continue memory");
