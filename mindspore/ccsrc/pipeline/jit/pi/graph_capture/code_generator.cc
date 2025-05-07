@@ -769,12 +769,13 @@ std::vector<std::unique_ptr<Instr>> CodeGenerator::RotStack(int stack) {
     res.push_back(std::make_unique<Instr>(ROT_FOUR));
 #endif
   } else {
-    MS_LOG(DEBUG) << ("too many stack value, will build tuple to process\n");
-    res.insert(res.begin(), std::make_unique<Instr>(BUILD_TUPLE, stack));
-    res.insert(res.begin(), std::make_unique<Instr>(UNPACK_SEQUENCE, stack));
-    res.insert(res.begin(), std::make_unique<Instr>(BUILD_TUPLE, stack));  // reverse tuple
-    res.push_back(std::make_unique<Instr>(ROT_TWO));
-    res.push_back(std::make_unique<Instr>(UNPACK_SEQUENCE, stack));
+    MS_LOG(DEBUG) << "Too many stack nodes, use BUILD_TUPLE and UNPACK_SEQUENCE";
+    // Assuming the elements on the stack are 2,3,4,5,1, where the left side is bottom and the right side is top of the
+    // stack, the goal is to transform it into 1,2,3,4,5.
+    res.insert(res.end(), std::make_unique<Instr>(BUILD_TUPLE, stack + 1));      // 2,3,4,5,1 -> (2,3,4,5,1)
+    res.insert(res.end(), std::make_unique<Instr>(UNPACK_SEQUENCE, stack + 1));  // -> 1,5,4,3,2
+    res.insert(res.end(), std::make_unique<Instr>(BUILD_TUPLE, stack));          // -> 1,(5,4,3,2)
+    res.insert(res.end(), std::make_unique<Instr>(UNPACK_SEQUENCE, stack));      // -> 1,2,3,4,5
 #endif
   }
 
