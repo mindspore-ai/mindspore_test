@@ -279,6 +279,9 @@ bool IsNeededOverlapCommA2a(const CNodePtr &cnode, const std::string &pp_1f1b_va
   if (pp_1f1b_value.find("AlltoAllV") != std::string::npos) {
     is_target = is_target || IsPrimitiveCNode(cnode, prim::kPrimAlltoAllV);
   }
+  if (pp_1f1b_value.find("AllReduce") != std::string::npos) {
+    is_target = is_target || IsPrimitiveCNode(cnode, prim::kPrimAllReduce);
+  }
   return is_target;
 }
 }  // namespace
@@ -2987,7 +2990,8 @@ AnfNodePtr AnfAlgo::GetInputNode(const AnfNodePtr &node,
 }
 
 bool AnfAlgo::IsNeededShape(const CNodePtr &cnode) {
-  if (!(cnode->input(kIndex1)->abstract() && cnode->input(kIndex1)->abstract()->GetShape())) {
+  if (!(cnode->input(kIndex1)->abstract() && cnode->input(kIndex1)->abstract()->isa<AbstractTensor>() &&
+        cnode->input(kIndex1)->abstract()->GetShape())) {
     return true;
   }
   auto a2a_shape = cnode->input(kIndex1)->abstract()->GetShape()->GetShapeVector();
@@ -3002,7 +3006,8 @@ bool AnfAlgo::IsNeededShape(const CNodePtr &cnode) {
       return true;
     }
     auto input_cnode = input_node->cast<CNodePtr>();
-    if (input_cnode->input(kIndex1)->abstract() && input_cnode->input(kIndex1)->abstract()->GetShape()) {
+    if (input_cnode->input(kIndex1)->abstract() && input_cnode->input(kIndex1)->abstract()->isa<AbstractTensor>() &&
+        input_cnode->input(kIndex1)->abstract()->GetShape()) {
       auto a2a_input_shape = input_cnode->input(kIndex1)->abstract()->GetShape()->GetShapeVector();
       auto a2a_input_size =
         std::accumulate(a2a_input_shape.begin(), a2a_input_shape.end(), 1, std::multiplies<int64_t>());
@@ -3011,6 +3016,7 @@ bool AnfAlgo::IsNeededShape(const CNodePtr &cnode) {
       }
       return a2a_input_size >= kAll2AllSize;
     }
+    return true;
   }
   return a2a_size >= kAll2AllSize;
 }

@@ -845,14 +845,14 @@ class _Context:
             if isinstance(value, str):
                 values = value.split(",")
                 for v in values:
-                    if v not in ['AlltoAll', 'AlltoAllV', 'MorphAllGather',
+                    if v not in ['AlltoAll', 'AlltoAllV', 'MorphAllGather', 'AllReduce',
                                  'AllGather', 'ReduceScatter', 'MorphReduceScatter', '']:
                         raise ValueError("{} 's value should be subset of ['AlltoAll', 'AlltoAllV',"
                                          " 'MorphAllGather', 'AllGather', 'ReduceScatter',"
-                                         " 'MorphReduceScatter'].".format(key))
+                                         " 'MorphReduceScatter', 'AllReduce'].".format(key))
                 return value
             if value:
-                return "AlltoAll,AlltoAllV,AllGather,ReduceScatter"
+                return "AlltoAll,AlltoAllV,AllGather,ReduceScatter,AllReduce"
             return ""
 
         return value
