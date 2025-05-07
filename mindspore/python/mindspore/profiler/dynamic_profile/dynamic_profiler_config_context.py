@@ -103,7 +103,7 @@ class DynamicProfilerConfigContext:
                 iterations = 0
                 logger.warning("dyno config 'iterations' should be an integer, will be reset to default value: '0'.")
 
-            self._stop_step = start_step + iterations
+            self._stop_step = start_step + iterations - 1
         else:
             self._stop_step = json_data.get("stop_step", -1)
 
