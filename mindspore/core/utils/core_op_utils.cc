@@ -143,7 +143,9 @@ CNodePtr ConvertArgsToAttr(const CNodePtr &cnode) {
       continue;
     }
     auto arg_value_node = arg_input_node->cast<ValueNodePtr>();
+    MS_EXCEPTION_IF_NULL(arg_value_node);
     auto arg_value = arg_value_node->value();
+    MS_EXCEPTION_IF_NULL(arg_value);
     prim->AddAttr(arg.arg_name_, arg_value);
   }
 

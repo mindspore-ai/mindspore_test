@@ -216,6 +216,7 @@ std::optional<ArrayValue<T>> GetArrayValue(const abstract::AbstractBasePtr &abs_
   std::set<size_t> unknown_value_indexes;
   if (abs_base->isa<abstract::AbstractSequence>()) {
     auto abs_sequence = abs_base->cast<abstract::AbstractSequencePtr>();
+    MS_EXCEPTION_IF_NULL(abs_sequence);
     if (abs_sequence->dynamic_len()) {
       return std::nullopt;
     }
