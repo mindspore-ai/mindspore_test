@@ -195,10 +195,8 @@ void CheckOutputInner(const AnfNodePtr &node) {
 
   // switch node
   if (IsPrimitiveCNode(cnode, prim::kPrimSwitch)) {
-    constexpr size_t cond_index = 1;
     constexpr size_t true_index = 2;
     constexpr size_t false_index = 3;
-    CheckOutputInner(cnode->input(cond_index));
     auto true_func = GetValueNode<FuncGraphPtr>(cnode->input(true_index));
     MS_EXCEPTION_IF_NULL(true_func);
     auto true_func_out = true_func->output();
