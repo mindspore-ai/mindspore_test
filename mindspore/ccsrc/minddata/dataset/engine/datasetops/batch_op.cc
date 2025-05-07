@@ -24,6 +24,9 @@
 #endif
 
 #include "minddata/dataset/kernels/data/data_utils.h"
+#include "minddata/dataset/util/command.h"
+#include "minddata/dataset/util/ftok_key.h"
+#include "minddata/dataset/util/sig_handler.h"
 #include "minddata/dataset/util/status.h"
 #include "minddata/utils.h"
 
@@ -48,6 +51,19 @@ BatchOp::~BatchOp() {
     batch_size_func_ = py::object();
     batch_map_func_ = py::object();
   }
+#if !defined(_WIN32) && !defined(_WIN64)
+  for (auto &item : shm_queues_) {
+    if (item) {
+      item->SetReleaseFlag(true);
+    }
+  }
+
+  for (auto &item : msg_queues_) {
+    if (item) {
+      item->SetReleaseFlag(true);
+    }
+  }
+#endif
 }
 #else
 BatchOp::~BatchOp() = default;
@@ -70,6 +86,13 @@ BatchOp::BatchOp(int32_t batch_size, bool drop, bool pad, int32_t op_queue_size,
     // Ensure there are at least 2 queue slots for whole operation.  If only 1 worker, increase queue size to 2.
     worker_connector_size_ = std::max(2, worker_connector_size_);
   }
+
+#if !defined(_WIN32) && !defined(_WIN64)
+  ftok_keys_.resize(num_workers);
+  msg_queues_.resize(num_workers);
+  shm_queues_.resize(num_workers);
+  worker_pids_.resize(num_workers);
+#endif
 }
 
 Status BatchOp::operator()() {
@@ -419,7 +442,7 @@ Status BatchOp::WorkerEntry(int32_t workerId) {
     if (table_pair.second.ctrl_ == BatchCtrl::kNoCtrl) {
       TensorRow batched_tensor_row;
       auto collection = TimeSumOfBatch(*(table_pair.first));
-      RETURN_IF_NOT_OK(MakeBatchedRow(std::move(table_pair), &batched_tensor_row));
+      RETURN_IF_NOT_OK(MakeBatchedRow(std::move(table_pair), &batched_tensor_row, workerId));
       RETURN_IF_NOT_OK(CollectOpInfo(this->NameWithID(), "WorkerProcess", start_time));
       batched_tensor_row.TimerRecord(NameWithID(), RowTimer::kWorkerTime, {GetMilliTimeStamp() - row_timer_start},
                                      &collection);
@@ -460,14 +483,14 @@ Status BatchOp::WorkerEntry(int32_t workerId) {
 }
 
 Status BatchOp::MakeBatchedRow(std::pair<std::unique_ptr<TensorQTable>, CBatchInfo> tensor_info_pair,
-                               TensorRow *batched_tensor_row) {
+                               TensorRow *batched_tensor_row, int32_t worker_id) {
   RETURN_UNEXPECTED_IF_NULL(tensor_info_pair.first);
   bool concat_batch = false;
   bool contains_per_batch_map = false;
 #ifdef ENABLE_PYTHON
   if (batch_map_func_) {
     contains_per_batch_map = true;
-    RETURN_IF_NOT_OK(MapColumns(&tensor_info_pair, &concat_batch));
+    RETURN_IF_NOT_OK(MapColumns(&tensor_info_pair, &concat_batch, worker_id));
   }  // pass it through pyfunc
 #endif
   if (pad_) {
@@ -485,7 +508,8 @@ Status BatchOp::EoeReceived(int32_t) {
 }
 
 #ifdef ENABLE_PYTHON
-Status BatchOp::MapColumns(std::pair<std::unique_ptr<TensorQTable>, CBatchInfo> *table_pair, bool *concat_batch) {
+Status BatchOp::MapColumns(std::pair<std::unique_ptr<TensorQTable>, CBatchInfo> *table_pair, bool *concat_batch,
+                           int32_t worker_id) {
   RETURN_UNEXPECTED_IF_NULL(table_pair);
   RETURN_UNEXPECTED_IF_NULL(table_pair->first);
   std::unique_ptr<TensorQTable> in_q_table = std::move(table_pair->first);
@@ -506,7 +530,7 @@ Status BatchOp::MapColumns(std::pair<std::unique_ptr<TensorQTable>, CBatchInfo> 
     }
   }
 
-  RETURN_IF_NOT_OK(InvokeBatchMapFunc(&in_cols, &out_cols, table_pair->second, concat_batch));
+  RETURN_IF_NOT_OK(InvokeBatchMapFunc(&in_cols, &out_cols, table_pair->second, concat_batch, worker_id));
 
   // If concat batch rows, the num_rows should be 1.
   if (*concat_batch) {
@@ -594,117 +618,181 @@ Status BatchOp::InvokeBatchSizeFunc(int32_t *batch_size, CBatchInfo info) {
   return Status(StatusCode::kSuccess, "batch_size function call succeeded.");
 }
 
-Status BatchOp::InvokeBatchMapFunc(TensorTable *input, TensorTable *output, CBatchInfo info, bool *concat_batch) {
+#if !defined(_WIN32) && !defined(_WIN64)
+Status BatchOp::ComputeWithWorker(TensorTable *input, TensorTable *output, CBatchInfo info, bool *concat_batch,
+                                  int32_t worker_id) {
   RETURN_UNEXPECTED_IF_NULL(input);
   RETURN_UNEXPECTED_IF_NULL(output);
-  {
-    // Acquire Python GIL
-    py::gil_scoped_acquire gil_acquire;
-    if (Py_IsInitialized() == 0) {
-      return Status(StatusCode::kMDPythonInterpreterFailure, "[Internal ERROR] Python Interpreter is finalized.");
+  CHECK_FAIL_RETURN_UNEXPECTED(*concat_batch != true, "Batch with multiprocess mode is not support concat batch yet.");
+
+  // >> send procedure >>
+  // 1. convert TensorRow to shared memory
+  RETURN_IF_NOT_OK(shm_queues_[worker_id]->FromTensorTable(*input, &info, concat_batch));
+
+  RegisterShmIDAndMsgID(std::to_string(worker_pids_[worker_id]), shm_queues_[worker_id]->GetShmID(),
+                        msg_queues_[worker_id]->msg_queue_id_);
+
+  // 2. send message queue which contains shared memory to Python Process Worker
+  RETURN_IF_NOT_OK(msg_queues_[worker_id]->MsgSnd(kMasterSendDataMsg, shm_queues_[worker_id]->GetShmID(),
+                                                  shm_queues_[worker_id]->GetShmSize()));
+  MS_LOG(INFO) << "Batch thread " << std::to_string(worker_id)
+               << " sends sample to python process worker: " << worker_pids_[worker_id]
+               << " through shm_id: " << std::to_string(shm_queues_[worker_id]->GetShmID())
+               << " with shm_size: " << std::to_string(shm_queues_[worker_id]->GetShmSize());
+
+  // >> receive procedure >>
+  // 1. get message queue which contains shared memory from Python Process Worker
+  RETURN_IF_NOT_OK(msg_queues_[worker_id]->MsgRcv(kWorkerSendDataMsg));
+
+  if (msg_queues_[worker_id]->GetErrorStatus()) {
+    // got err from Python Process Worker
+    return msg_queues_[worker_id]->DeserializeStatus();
+  }
+  MS_LOG(INFO) << "Batch thread " << std::to_string(worker_id)
+               << " receives sample from python process worker: " << worker_pids_[worker_id]
+               << " through shm_id: " << std::to_string(msg_queues_[worker_id]->shm_id_)
+               << " with shm_size: " << std::to_string(msg_queues_[worker_id]->shm_size_);
+
+  RegisterShmIDAndMsgID(std::to_string(worker_pids_[worker_id]), msg_queues_[worker_id]->shm_id_,
+                        msg_queues_[worker_id]->msg_queue_id_);
+
+  // 2. construct shared memory to TensorRow
+  CBatchInfo response_batch_info;  // not used
+  RETURN_IF_NOT_OK(shm_queues_[worker_id]->ToTensorTable(
+    output, &response_batch_info, concat_batch, msg_queues_[worker_id]->shm_id_, msg_queues_[worker_id]->shm_size_));
+
+  CHECK_FAIL_RETURN_UNEXPECTED(output->size() == out_col_names_.size(),
+                               "Invalid per_batch_map, the number of columns returned in 'per_batch_map' function "
+                               "should be " +
+                                 std::to_string(out_col_names_.size()) +
+                                 " , but got: " + std::to_string(output->size()));
+  return Status::OK();
+}
+#endif
+
+Status BatchOp::ComputeWithThread(TensorTable *input, TensorTable *output, CBatchInfo info, bool *concat_batch,
+                                  int32_t worker_id) {
+  RETURN_UNEXPECTED_IF_NULL(input);
+  RETURN_UNEXPECTED_IF_NULL(output);
+
+  // Acquire Python GIL
+  py::gil_scoped_acquire gil_acquire;
+  if (Py_IsInitialized() == 0) {
+    return Status(StatusCode::kMDPythonInterpreterFailure, "[Internal ERROR] Python Interpreter is finalized.");
+  }
+  try {
+    // Prepare batch map call back parameters
+    py::tuple input_args(input->size() + 1);
+    for (size_t i = 0; i < input->size(); i++) {  // iterate over columns
+      std::vector<py::object> column_batch;
+      for (std::shared_ptr<Tensor> t : input->at(i)) {  // iterate over rows
+        if (t->type().IsPython()) {
+          py::dict new_data;
+          RETURN_IF_NOT_OK(t->GetDataAsPythonObject(&new_data));
+          column_batch.push_back(new_data);
+        } else {
+          py::array np_array;
+          RETURN_IF_NOT_OK(t->GetDataAsNumpy(&np_array));
+          column_batch.push_back(std::move(np_array));
+        }
+      }
+      input_args[i] = column_batch;
     }
-    try {
-      // Prepare batch map call back parameters
-      py::tuple input_args(input->size() + 1);
-      for (size_t i = 0; i < input->size(); i++) {  // iterate over columns
-        std::vector<py::object> column_batch;
-        for (std::shared_ptr<Tensor> t : input->at(i)) {  // iterate over rows
-          if (t->type().IsPython()) {
-            py::dict new_data;
-            RETURN_IF_NOT_OK(t->GetDataAsPythonObject(&new_data));
-            column_batch.push_back(new_data);
-          } else {
-            py::array np_array;
-            RETURN_IF_NOT_OK(t->GetDataAsNumpy(&np_array));
-            column_batch.push_back(std::move(np_array));
-          }
+    input_args[input->size()] = info;
+    // Invoke batch map func
+    py::object ret_py_obj = batch_map_func_(*input_args);
+
+    if (ret_py_obj.is_none()) {
+      std::string error_msg =
+        "The subprocess of dataset may exit unexpected or be killed, "
+        "main process will exit. If this is not an artificial operation, you can use "
+        "mindspore.dataset.config.set_enable_watchdog(False) to block this error.";
+      RETURN_STATUS_UNEXPECTED("Got None from Python object. " + error_msg);
+    }
+
+    // return value from per_batch_map can be:
+    // case 1: int, float, str, bytes, np.ndarray, dict
+    // case 2: item1, item2, item3, ...
+    py::tuple ret_tuple;
+    if (!py::isinstance<py::tuple>(ret_py_obj)) {
+      ret_tuple = py::make_tuple(ret_py_obj);
+    } else {
+      ret_tuple = py::cast<py::tuple>(ret_py_obj);
+    }
+
+    // Parse batch map return value
+    CHECK_FAIL_RETURN_UNEXPECTED(py::isinstance<py::tuple>(ret_tuple),
+                                 "Invalid per_batch_map, 'per_batch_map' function should return a tuple, but got " +
+                                   std::string(ret_py_obj.get_type().str()));
+    CHECK_FAIL_RETURN_UNEXPECTED(ret_tuple.size() == out_col_names_.size(),
+                                 "Invalid per_batch_map, the number of columns returned in 'per_batch_map' function "
+                                 "should be " +
+                                   std::to_string(out_col_names_.size()) +
+                                   " , but got: " + std::to_string(ret_tuple.size()));
+    bool all_array_or_dict = true;
+    for (size_t i = 0; i < ret_tuple.size(); i++) {
+      if (!py::isinstance<py::array>(ret_tuple[i]) && !py::isinstance<py::dict>(ret_tuple[i])) {
+        all_array_or_dict = false;
+        break;
+      }
+    }
+    *concat_batch = all_array_or_dict;
+    for (size_t i = 0; i < ret_tuple.size(); i++) {
+      TensorRow output_batch;
+      // If user returns a type that is neither a list nor a Python dictionary, issue a error msg.
+      if (!py::isinstance<py::list>(ret_tuple[i]) && !py::isinstance<py::dict>(ret_tuple[i])) {
+        MS_LOG(INFO) << "column: " << out_col_names_[i]
+                     << " returned by per_batch_map is not a list nor a Python dict, "
+                     << "this could lead to conversion failure.";
+      }
+
+      if (*concat_batch) {
+        // If concat batch rows, the batch map function result should be in 1 row.
+        std::shared_ptr<Tensor> out;
+        if (py::isinstance<py::dict>(ret_tuple[i])) {
+          RETURN_IF_NOT_OK(Tensor::CreateFromPythonObject(py::cast<py::object>(ret_tuple[i]), &out));
+        } else {
+          RETURN_IF_NOT_OK(Tensor::CreateFromNpArray(py::cast<py::array>(ret_tuple[i]), &out));
         }
-        input_args[i] = column_batch;
-      }
-      input_args[input->size()] = info;
-      // Invoke batch map func
-      py::object ret_py_obj = batch_map_func_(*input_args);
-
-      if (ret_py_obj.is_none()) {
-        std::string error_msg =
-          "The subprocess of dataset may exit unexpected or be killed, "
-          "main process will exit. If this is not an artificial operation, you can use "
-          "mindspore.dataset.config.set_enable_watchdog(False) to block this error.";
-        RETURN_STATUS_UNEXPECTED("Got None from Python object. " + error_msg);
-      }
-
-      // return value from per_batch_map can be:
-      // case 1: int, float, str, bytes, np.ndarray, dict
-      // case 2: item1, item2, item3, ...
-      py::tuple ret_tuple;
-      if (!py::isinstance<py::tuple>(ret_py_obj)) {
-        ret_tuple = py::make_tuple(ret_py_obj);
+        output_batch.push_back(std::move(out));
       } else {
-        ret_tuple = py::cast<py::tuple>(ret_py_obj);
-      }
-
-      // Parse batch map return value
-      CHECK_FAIL_RETURN_UNEXPECTED(py::isinstance<py::tuple>(ret_tuple),
-                                   "Invalid per_batch_map, 'per_batch_map' function should return a tuple, but got " +
-                                     std::string(ret_py_obj.get_type().str()));
-      CHECK_FAIL_RETURN_UNEXPECTED(ret_tuple.size() == out_col_names_.size(),
-                                   "Invalid per_batch_map, the number of columns returned in 'per_batch_map' function "
-                                   "should be " +
-                                     std::to_string(out_col_names_.size()) +
-                                     " , but got: " + std::to_string(ret_tuple.size()));
-      bool all_array_or_dict = true;
-      for (size_t i = 0; i < ret_tuple.size(); i++) {
-        if (!py::isinstance<py::array>(ret_tuple[i]) && !py::isinstance<py::dict>(ret_tuple[i])) {
-          all_array_or_dict = false;
-          break;
-        }
-      }
-      *concat_batch = all_array_or_dict;
-      for (size_t i = 0; i < ret_tuple.size(); i++) {
-        TensorRow output_batch;
-        // If user returns a type that is neither a list nor a Python dictionary, issue a error msg.
-        if (!py::isinstance<py::list>(ret_tuple[i]) && !py::isinstance<py::dict>(ret_tuple[i])) {
-          MS_LOG(INFO) << "column: " << out_col_names_[i]
-                       << " returned by per_batch_map is not a list nor a Python dict, "
-                       << "this could lead to conversion failure.";
-        }
-
-        if (*concat_batch) {
-          // If concat batch rows, the batch map function result should be in 1 row.
+        CHECK_FAIL_RETURN_UNEXPECTED(
+          !py::isinstance<py::dict>(ret_tuple[i]),
+          "Failed to convert rows: mismatched types returned from per_batch_map function. If different types are "
+          "returned, all of them should be convertible to Python lists. Got: Python dict");
+        py::list output_list = py::cast<py::list>(ret_tuple[i]);
+        for (size_t j = 0; j < output_list.size(); j++) {
           std::shared_ptr<Tensor> out;
-          if (py::isinstance<py::dict>(ret_tuple[i])) {
-            RETURN_IF_NOT_OK(Tensor::CreateFromPythonObject(py::cast<py::object>(ret_tuple[i]), &out));
+          if (py::isinstance<py::dict>(output_list[j])) {
+            RETURN_IF_NOT_OK(Tensor::CreateFromPythonObject(py::cast<py::object>(output_list[j]), &out));
           } else {
-            RETURN_IF_NOT_OK(Tensor::CreateFromNpArray(py::cast<py::array>(ret_tuple[i]), &out));
+            RETURN_IF_NOT_OK(Tensor::CreateFromNpArray(py::cast<py::array>(output_list[j]), &out));
           }
           output_batch.push_back(std::move(out));
-        } else {
-          CHECK_FAIL_RETURN_UNEXPECTED(
-            !py::isinstance<py::dict>(ret_tuple[i]),
-            "Failed to convert rows: mismatched types returned from per_batch_map function. If different types are "
-            "returned, all of them should be convertible to Python lists. Got: Python dict");
-          py::list output_list = py::cast<py::list>(ret_tuple[i]);
-          for (size_t j = 0; j < output_list.size(); j++) {
-            std::shared_ptr<Tensor> out;
-            if (py::isinstance<py::dict>(output_list[j])) {
-              RETURN_IF_NOT_OK(Tensor::CreateFromPythonObject(py::cast<py::object>(output_list[j]), &out));
-            } else {
-              RETURN_IF_NOT_OK(Tensor::CreateFromNpArray(py::cast<py::array>(output_list[j]), &out));
-            }
-            output_batch.push_back(std::move(out));
-          }
         }
-        output->push_back(std::move(output_batch));
       }
-    } catch (const py::error_already_set &e) {
-      return Status(StatusCode::kMDPyFuncException, e.what());
-    } catch (const py::cast_error &e) {
-      return Status(StatusCode::kMDPyFuncException,
-                    "Invalid per_batch_map, the return value of 'per_batch_map' function cast to py::tuple failed: " +
-                      std::string(e.what()));
+      output->push_back(std::move(output_batch));
     }
+  } catch (const py::error_already_set &e) {
+    return Status(StatusCode::kMDPyFuncException, e.what());
+  } catch (const py::cast_error &e) {
+    return Status(StatusCode::kMDPyFuncException,
+                  "Invalid per_batch_map, the return value of 'per_batch_map' function cast to py::tuple failed: " +
+                    std::string(e.what()));
   }
   return Status::OK();
+}
+
+Status BatchOp::InvokeBatchMapFunc(TensorTable *input, TensorTable *output, CBatchInfo info, bool *concat_batch,
+                                   int32_t worker_id) {
+  RETURN_UNEXPECTED_IF_NULL(input);
+  RETURN_UNEXPECTED_IF_NULL(output);
+#if !defined(_WIN32) && !defined(_WIN64)
+  if (python_multiprocessing_runtime_ != nullptr) {  // multiprocess mode
+    return ComputeWithWorker(input, output, info, concat_batch, worker_id);
+  }
+#endif
+  return ComputeWithThread(input, output, info, concat_batch, worker_id);  // multithread mode
 }
 #endif
 
@@ -985,38 +1073,95 @@ Status BatchOp::SendQuitFlagToWorker(int32_t worker_id) {
   return Status::OK();
 }
 
+#if !defined(_WIN32) && !defined(_WIN64)
 Status BatchOp::AddNewWorkers(int32_t num_new_workers) {
   RETURN_IF_NOT_OK(ParallelOp::AddNewWorkers(num_new_workers));
+
   if (python_multiprocessing_runtime_ != nullptr) {
+    for (int32_t wkr_id = 0; wkr_id < num_new_workers; wkr_id++) {
+      ftok_keys_.push_back(0);
+
+      // Create new ftok key for PyFunc which will be used to create msg queue and shared memory queue
+      auto new_worker_id = ftok_keys_.size() - 1;
+      auto status = GetKey(&ftok_keys_[new_worker_id]);
+      if (status != Status::OK()) {
+        MS_LOG(EXCEPTION) << status.GetErrDescription();
+      }
+      MS_LOG(INFO) << "Get new ftok key: " << std::to_string(ftok_keys_[new_worker_id])
+                   << " for worker: " << std::to_string(new_worker_id);
+
+      // create msg queues & shm queues
+      msg_queues_.push_back(std::make_shared<MessageQueue>(ftok_keys_[new_worker_id]));
+      msg_queues_[new_worker_id]->SetReleaseFlag(false);
+      shm_queues_.push_back(std::make_shared<SharedMemoryQueue>(ftok_keys_[new_worker_id]));
+      shm_queues_[new_worker_id]->SetReleaseFlag(false);
+    }
+
     CHECK_FAIL_RETURN_UNEXPECTED(num_new_workers > 0, "Number of workers added should be greater than 0.");
-    python_multiprocessing_runtime_->add_new_workers(num_new_workers);
+    python_multiprocessing_runtime_->add_new_workers(num_new_workers, kBatchOp, ftok_keys_);
+
+    worker_pids_ = GetMPWorkerPIDs();
   }
+
   return Status::OK();
 }
 
 Status BatchOp::RemoveWorkers(int32_t num_workers) {
   RETURN_IF_NOT_OK(ParallelOp::RemoveWorkers(num_workers));
+
   if (python_multiprocessing_runtime_ != nullptr) {
+    for (int32_t i = 0; i < num_workers; i++) {
+      ftok_keys_.pop_back();
+      msg_queues_.pop_back();
+      shm_queues_.pop_back();
+    }
+
     CHECK_FAIL_RETURN_UNEXPECTED(num_workers > 0, "Number of workers removed should be greater than 0.");
-    python_multiprocessing_runtime_->remove_workers(num_workers);
+    python_multiprocessing_runtime_->remove_workers(num_workers, kBatchOp, ftok_keys_);
+
+    worker_pids_ = GetMPWorkerPIDs();
   }
+
   return Status::OK();
 }
+#endif
 
 void BatchOp::SetPythonMp(std::shared_ptr<PythonMultiprocessingRuntime> python_multiprocessing_runtime) {
   python_multiprocessing_runtime_ = std::move(python_multiprocessing_runtime);
+
+#if !defined(_WIN32) && !defined(_WIN64)
+  for (int32_t wkr_id = 0; wkr_id < num_workers_; wkr_id++) {
+    // Create new ftok key for PyFunc which will be used to create msg queue and shared memory queue
+    auto status = GetKey(&ftok_keys_[wkr_id]);
+    if (status != Status::OK()) {
+      MS_LOG(EXCEPTION) << status.GetErrDescription();
+    }
+    MS_LOG(INFO) << "Get new ftok key: " << std::to_string(ftok_keys_[wkr_id])
+                 << " for worker: " << std::to_string(wkr_id);
+
+    // create msg queues & shm queues
+    msg_queues_[wkr_id] = std::make_shared<MessageQueue>(ftok_keys_[wkr_id]);
+    msg_queues_[wkr_id]->SetReleaseFlag(false);
+    shm_queues_[wkr_id] = std::make_shared<SharedMemoryQueue>(ftok_keys_[wkr_id]);
+    shm_queues_[wkr_id]->SetReleaseFlag(false);
+  }
+#endif
 }
 
+#if !defined(_WIN32) && !defined(_WIN64)
 Status BatchOp::Launch() {
   // Launch Python multiprocessing. This will create the MP pool and shared memory if needed.
   if (python_multiprocessing_runtime_) {
     MS_LOG(DEBUG) << "Launch Python Multiprocessing for BatchOp:" << id();
-    python_multiprocessing_runtime_->launch(id());
+    python_multiprocessing_runtime_->launch(id(), kBatchOp, ftok_keys_);
     std::vector<int32_t> worker_ids = python_multiprocessing_runtime_->get_pids();
     for (int i = 0; i < worker_ids.size(); i++) {
       BindThreadCoreForMindDataOp("dataset::BatchOp", worker_ids[i], false);
     }
+
+    worker_pids_ = GetMPWorkerPIDs();
   }
+
   return DatasetOp::Launch();
 }
 
@@ -1035,5 +1180,6 @@ std::vector<int32_t> BatchOp::GetMPWorkerPIDs() const {
   }
   return DatasetOp::GetMPWorkerPIDs();
 }
+#endif
 }  // namespace dataset
 }  // namespace mindspore

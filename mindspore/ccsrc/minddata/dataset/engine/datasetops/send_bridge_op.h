@@ -86,7 +86,7 @@ class SendBridgeOp : public ParallelOp<TensorRow, TensorRow> {
 
   Status GetNextRowPullMode(TensorRow *const row) override;
 
-  MessageQueue::State MessageQueueState();
+  MessageState MessageQueueState();
 
   MessageQueue GetMessageQueue();
 

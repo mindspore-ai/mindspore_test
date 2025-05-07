@@ -16,6 +16,7 @@ mindspore/mindspore/ccsrc/minddata/dataset/audio/kernels/audio_utils.h:mindspore
 mindspore/mindspore/lite/minddata/dataset/kernels/image/dvpp/utils/dvpp_image_utils.cc:mindspore::dataset::DvppConvertColor, mindspore::dataset::DvppErase, mindspore::dataset::DvppNormalize, mindspore::dataset::DvppPerspective, mindspore::dataset::DvppResizedCrop, mindspore::dataset::DvppRotate, mindspore::dataset::CreateAclTensor
 mindspore/mindspore/lite/minddata/dataset/kernels/image/dvpp/utils/dvpp_video.cc:DvppVideo::SaveYuvFile
 mindspore/mindspore/lite/minddata/dataset/engine/datasetops/data_queue_op.cc:mindspore::dataset::DataQueueOp::SendDataToAscend
+mindspore/mindspore/python/mindspore/dataset/engine/datasets.py:_worker_loop
 mindspore/mindspore/python/mindspore/mindrecord/filewriter.py:write_raw_data, _parallel_commit
 mindspore/mindspore/lite/tools/converter/graphdef_transform.cc:mindspore::lite::GraphDefTransform::Transform
 mindspore/mindspore/lite/providers/nnie_proposal/src/proposal.cc:mindspore::proposal::Rpn

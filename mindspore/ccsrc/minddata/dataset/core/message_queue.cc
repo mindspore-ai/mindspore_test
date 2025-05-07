@@ -24,6 +24,22 @@
 namespace mindspore {
 namespace dataset {
 #if !defined(_WIN32) && !defined(_WIN64)
+MessageQueue::MessageQueue(key_t key)
+    : mtype_(0), shm_id_(-1), shm_size_(0), key_(key), release_flag_(true), state_(MessageState::kInit) {
+  // create message queue id first
+  int msg_queue_id = msgget(key, IPC_CREAT | 0600);
+  if (msg_queue_id < 0) {
+    MS_LOG(EXCEPTION) << "Create send message by key: " << std::to_string(key)
+                      << " failed. Errno: " << std::to_string(errno);
+  }
+  msg_queue_id_ = msg_queue_id;
+
+  auto ret = memset_s(err_msg_, kWorkerErrorMsgSize, 0, kWorkerErrorMsgSize);
+  if (ret != EOK) {
+    MS_LOG(EXCEPTION) << "memset_s failed. err code: " << std::to_string(ret);
+  }
+}
+
 MessageQueue::MessageQueue(key_t key, int msg_queue_id)
     : mtype_(0),
       shm_id_(-1),
@@ -31,7 +47,7 @@ MessageQueue::MessageQueue(key_t key, int msg_queue_id)
       key_(key),
       msg_queue_id_(msg_queue_id),
       release_flag_(true),
-      state_(State::kInit) {
+      state_(MessageState::kInit) {
   auto ret = memset_s(err_msg_, kWorkerErrorMsgSize, 0, kWorkerErrorMsgSize);
   if (ret != EOK) {
     MS_LOG(EXCEPTION) << "memset_s failed. err code: " << std::to_string(ret);
@@ -47,7 +63,7 @@ void MessageQueue::ReleaseQueue() {
     if (msgctl(msg_queue_id_, IPC_RMID, 0) == -1) {
       MS_LOG(ERROR) << "Delete msg queue id: " << msg_queue_id_ << " failed.";
     }
-    state_ = State::kReleased;
+    state_ = MessageState::kReleased;
     MS_LOG(INFO) << "Delete msg queue id: " << msg_queue_id_ << " success.";
     msg_queue_id_ = -1;
   }
@@ -56,7 +72,7 @@ void MessageQueue::ReleaseQueue() {
 Status MessageQueue::GetOrCreateMessageQueueID() {
   msg_queue_id_ = msgget(key_, kMsgQueuePermission);
   if (msg_queue_id_ < 0) {
-    if (state_ != State::kReleased) {
+    if (state_ != MessageState::kReleased) {
       // create message queue id
       int msg_queue_id_ = msgget(key_, IPC_CREAT | kMsgQueuePermission);
       if (msg_queue_id_ < 0) {
@@ -71,11 +87,11 @@ Status MessageQueue::GetOrCreateMessageQueueID() {
                                "to view detailed error messages.");
     }
   }
-  state_ = State::kRunning;
+  state_ = MessageState::kRunning;
   return Status::OK();
 }
 
-MessageQueue::State MessageQueue::MessageQueueState() { return state_; }
+MessageState MessageQueue::MessageQueueState() { return state_; }
 
 Status MessageQueue::MsgSnd(int64_t mtype, int shm_id, uint64_t shm_size) {
   RETURN_IF_NOT_OK(GetOrCreateMessageQueueID());
@@ -84,9 +100,9 @@ Status MessageQueue::MsgSnd(int64_t mtype, int shm_id, uint64_t shm_size) {
     shm_id_ = shm_id;
     shm_size_ = shm_size;
   }
-  if (msg_queue_id_ >= 0 && msgsnd(msg_queue_id_, this, sizeof(MessageQueue), 0) != 0) {
+  if (msg_queue_id_ >= 0 && msgsnd(msg_queue_id_, this, sizeof(MessageQueue) - sizeof(mtype), 0) != 0) {
     if (msgget(key_, kMsgQueuePermission) < 0) {
-      MS_LOG(INFO) << "Main process is exit, msg_queue_id: " << std::to_string(msg_queue_id_) << " had been released.";
+      MS_LOG(INFO) << "The msg_queue_id: " << std::to_string(msg_queue_id_) << " had been released.";
       return Status::OK();
     }
     RETURN_STATUS_UNEXPECTED("Exec msgsnd failed. Msg queue id: " + std::to_string(msg_queue_id_) +
@@ -94,31 +110,35 @@ Status MessageQueue::MsgSnd(int64_t mtype, int shm_id, uint64_t shm_size) {
                              ", shm_size: " + std::to_string(shm_size));
   }
   MS_LOG(DEBUG) << "Exec msgsnd success, msg queue id: " << msg_queue_id_ << ", mtype: " << mtype
-                << ", shm_id: " << shm_id << ", shm_size: " << shm_id << ", err status: " << GetErrorStatus();
+                << ", shm_id: " << shm_id << ", shm_size: " << shm_size << ", err status: " << GetErrorStatus();
   return Status::OK();
 }
 
 Status MessageQueue::MsgRcv(int64_t mtype) {
-  if (msg_queue_id_ >= 0 && msgrcv(msg_queue_id_, this, sizeof(MessageQueue), mtype, 0) <= 0) {
+  if (msg_queue_id_ >= 0 && msgrcv(msg_queue_id_, this, sizeof(MessageQueue) - sizeof(mtype), mtype, 0) <= 0) {
     if (msgget(key_, kMsgQueuePermission) < 0) {
-      MS_LOG(INFO) << "The msg_queue_id: " << std::to_string(msg_queue_id_) << " had been released.";
+      state_ = MessageState::kReleased;
       if (errno == kMsgQueueClosed) {  // the message queue had been closed
-        state_ = State::kReleased;
+        MS_LOG(INFO) << "The msg_queue_id: " << std::to_string(msg_queue_id_) << " had been closed.";
       }
+      if (errno == kMsgQueueInterrupted) {
+        MS_LOG(INFO) << "The msg_queue_id: " << std::to_string(msg_queue_id_) << " had been interrupted.";
+      }
+      return Status::OK();
     }
     RETURN_STATUS_UNEXPECTED("Exec msgrcv failed. Msg queue id: " + std::to_string(msg_queue_id_) +
                              ", mtype: " + std::to_string(mtype) + ", errno: " + std::to_string(errno));
   }
   MS_LOG(DEBUG) << "Exec msgrcv success, msg queue id: " << msg_queue_id_ << ", mtype: " << mtype
-                << ", shm_id: " << shm_id_ << ", shm_size: " << shm_id_ << ", err status: " << GetErrorStatus();
+                << ", shm_id: " << shm_id_ << ", shm_size: " << shm_size_ << ", err status: " << GetErrorStatus();
   return Status::OK();
 }
 
 int MessageQueue::MsgRcv(int64_t mtype, int msgflg) {
-  auto ret = msgrcv(msg_queue_id_, this, sizeof(MessageQueue), mtype, msgflg);
+  auto ret = msgrcv(msg_queue_id_, this, sizeof(MessageQueue) - sizeof(mtype), mtype, msgflg);
   if (ret > 0) {
     MS_LOG(DEBUG) << "Exec msgrcv success, msg queue id: " << msg_queue_id_ << ", mtype: " << mtype
-                  << ", shm_id: " << shm_id_ << ", shm_size: " << shm_id_ << ", err status: " << GetErrorStatus();
+                  << ", shm_id: " << shm_id_ << ", shm_size: " << shm_size_ << ", err status: " << GetErrorStatus();
   }
   return ret;
 }
@@ -258,6 +278,73 @@ Status MessageQueue::SerializeStatus(const Status &status) {
   return Status::OK();
 }
 
+Status MessageQueue::SerializeStatus(const int32_t &status_code, const int32_t &line_of_code,
+                                     const std::string &filename, const std::string &err_desc) {
+  // StatusCode : 4bytes
+  // line_of_code: 4bytes
+  // file_name : 4bytes + data
+  // err_description : 4bytes + data
+  auto ret = memset_s(err_msg_, kWorkerErrorMsgSize, 0, kWorkerErrorMsgSize);
+  CHECK_FAIL_RETURN_UNEXPECTED(ret == EOK, "memset_s failed. err code: " + std::to_string(ret));
+
+  MS_LOG(INFO) << "Begin serialize status: " << err_desc;
+
+  // StatusCode
+  int32_t offset = 0;
+  auto ret_code = memcpy_s(err_msg_ + offset, kFourBytes, &status_code, kFourBytes);
+  CHECK_FAIL_RETURN_UNEXPECTED(ret_code == EOK,
+                               "memcpy_s the status code of Status failed. err code: " + std::to_string(ret_code));
+  offset += kFourBytes;
+
+  // line_of_code
+  ret_code = memcpy_s(err_msg_ + offset, kFourBytes, &line_of_code, kFourBytes);
+  CHECK_FAIL_RETURN_UNEXPECTED(ret_code == EOK,
+                               "memcpy_s the line number of Status failed. err code: " + std::to_string(ret_code));
+  offset += kFourBytes;
+
+  // file_name
+  std::string file_name = filename;
+  auto ori_file_name_len = file_name.size();
+  if (offset + kFourBytes + ori_file_name_len >= kWorkerErrorMsgSize) {
+    file_name = file_name.substr(0, kWorkerErrorMsgSize - kFourBytes - offset);
+  }
+  int file_name_len = file_name.size();
+  ret_code = memcpy_s(err_msg_ + offset, kFourBytes, &file_name_len, kFourBytes);
+  CHECK_FAIL_RETURN_UNEXPECTED(ret_code == EOK,
+                               "memcpy_s the file name length of Status failed. err code: " + std::to_string(ret_code));
+  offset += kFourBytes;
+
+  ret_code = memcpy_s(err_msg_ + offset, file_name_len, file_name.data(), file_name_len);
+  CHECK_FAIL_RETURN_UNEXPECTED(ret_code == EOK,
+                               "memcpy_s the file name of Status failed. err code: " + std::to_string(ret_code));
+  offset += file_name_len;
+
+  if (ori_file_name_len != file_name_len) {
+    err_msg_[kWorkerErrorMsgSize - 1] = '\0';
+    return Status::OK();
+  }
+
+  // err_description
+  std::string err_description = err_desc;
+  if (offset + kFourBytes + err_description.size() >= kWorkerErrorMsgSize) {
+    err_description = err_description.substr(0, kWorkerErrorMsgSize - kFourBytes - offset);
+  }
+  int err_description_len = err_description.size();
+  ret_code = memcpy_s(err_msg_ + offset, kFourBytes, &err_description_len, kFourBytes);
+  CHECK_FAIL_RETURN_UNEXPECTED(
+    ret_code == EOK, "memcpy_s the err description len of Status failed. err code: " + std::to_string(ret_code));
+  offset += kFourBytes;
+
+  ret_code = memcpy_s(err_msg_ + offset, err_description_len, err_description.data(), err_description_len);
+  CHECK_FAIL_RETURN_UNEXPECTED(ret_code == EOK,
+                               "memcpy_s the err description of Status failed. err code: " + std::to_string(ret_code));
+
+  err_msg_[kWorkerErrorMsgSize - 1] = '\0';
+
+  MS_LOG(INFO) << "End serialize status.";
+  return Status::OK();
+}
+
 Status MessageQueue::DeserializeStatus() {
   StatusCode status_code = StatusCode::kSuccess;
   int line_of_code = -1;
@@ -326,6 +413,13 @@ bool MessageQueue::GetErrorStatus() {
     return true;
   }
   return false;
+}
+
+void MessageQueue::ClearErrMsg() {
+  auto ret = memset_s(err_msg_, kWorkerErrorMsgSize, 0, kWorkerErrorMsgSize);
+  if (ret != EOK) {
+    MS_LOG(EXCEPTION) << "memset_s failed. err code: " << std::to_string(ret);
+  }
 }
 #endif
 }  // namespace dataset
