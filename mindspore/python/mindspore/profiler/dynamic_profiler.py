@@ -294,7 +294,7 @@ class DynamicProfilerMonitorBase(Callback):
 
             # Setup profiler configuration
             active_steps = stop_step - start_step + 1
-            self._output_path = args.prof_path if self._is_dyno else self._output_path
+            self._output_path = args.prof_path if args.prof_path else self._output_path
             prof_path = os.path.join(
                 self._output_path,
                 f"rank{self._rank_id}_start{start_step}_stop{stop_step}"

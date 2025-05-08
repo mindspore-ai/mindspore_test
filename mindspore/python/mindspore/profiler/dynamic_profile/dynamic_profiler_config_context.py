@@ -207,19 +207,19 @@ class DynamicProfilerConfigContext:
             else:
                 self._analyse = False
         else:
-            self._analyse = json_data.get("analyse", True)
+            self._analyse = json_data.get("analyse", False)
 
     def _parse_prof_path(self, json_data):
         """ Parse the prof_path from JSON data."""
         if self._is_dyno:
-            prof_path = json_data.get("log_file", "./")
+            prof_path = json_data.get("log_file", "./data")
             if not isinstance(prof_path, str):
-                logger.warning(f"The 'log-file' must be a string, "
-                               f"will be set to default: './'.")
-                prof_path = "./"
+                logger.warning("The 'log-file' must be a string, "
+                               "will be set to default: './data'.")
+                prof_path = "./data"
             self._prof_path = prof_path
         else:
-            self._prof_path = None
+            self._prof_path = json_data.get("prof_path", None)
 
     def _check_params_type(self):
         """ Check and enforce parameter types with lower complexity."""
