@@ -35,6 +35,7 @@
 - [STABLE] For LLM reinforcement learning， now we support DP/MP/PP for training and inferenceing phase.
 - [STABLE] MindSpore supports users to query whether the distributed module is available and whether the communication module is initialized. Users can query whether the distributed module is available through the [mint.distributed.is_available](https://www.mindspore.cn/docs/en/master/api_python/mint/mindspore.mint.distributed.is_available.html) interface, and query whether the communication module is initialized through the [mint.distributed.is_initialized](https://www.mindspore.cn/docs/en/master/api_python/mint/mindspore.mint.distributed.is_initialized.html) interface.
 - [STABLE] MindSpore static graph mode supports the `AlltoAllV` forward and reverse operators. Users can use this operator through the [ops.AlltoAllV](https://www.mindspore.cn/docs/en/master/api_python/ops/mindspore.ops.AlltoAllV.html) interface.
+- [STABLE] Support CPU operators [mindspore.mint.distributed.allreduce](https://www.mindspore.cn/docs/en/master/api_python/mint/mindspore.mint.distributed.all_reduce.html#mindspore.mint.distributed.all_reduce), [mindspore.mint.distributed.barrier](https://www.mindspore.cn/docs/en/master/api_python/mint/mindspore.mint.distributed.barrier.html#mindspore.mint.distributed.barrier), [mindspore.mint.distributed.send](https://www.mindspore.cn/docs/en/master/api_python/mint/mindspore.mint.distributed.send.html#mindspore.mint.distributed.send), and [mindspore.mint.distributed.recv](https://www.mindspore.cn/docs/en/master/api_python/mint/mindspore.mint.distributed.recv.html#mindspore.mint.distributed.recv), and the users can use the corresponding aggregate communication operator functions through these interfaces.
 
 #### Inference
 
@@ -51,6 +52,10 @@
 - [STABLE] Profiler supports viewing memory_access related aicore metric information.
 - [STABLE] MindSpore Profiler supports [mindspore.profiler.profile](https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.profiler.profile.html) and [_ExperimentalConfig](https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.profiler._ExperimentalConfig.html), as well as the [tensorboard_trace_handler](https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.profiler.tensorboard_trace_handler.html) parameter, improving tool usability.
 - [STABLE] MindSpore Profiler dynamic profiling now supports memory data collection, allowing users to dynamically enable memory data gathering to enhance tool usability.
+
+#### Compiler
+
+- [BETA] The graph mode supports the inplace and view operator forward expression capabilities.
 
 ### API Change
 
