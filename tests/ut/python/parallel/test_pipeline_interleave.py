@@ -1,4 +1,4 @@
-# Copyright 2020-2023 Huawei Technologies Co., Ltd
+# Copyright 2020-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
 import numpy as np
 import mindspore as ms
 import mindspore.nn as nn
+from mindspore.nn import SoftmaxCrossEntropyWithLogits
 from mindspore import context
 from mindspore import Tensor
 from mindspore.ops import operations as P
@@ -57,6 +58,17 @@ class DatasetLenet():
     def create_tuple_iterator(self, num_epochs=1, do_copy=True):
         return self
 
+
+class MatMulNet(nn.Cell):
+    def __init__(self, strategy=None):
+        super().__init__()
+        self.matmul1 = P.MatMul()
+        if strategy is not None:
+            self.matmul1.shard(strategy)
+
+    def construct(self, inputs, label):
+        x = self.matmul1(inputs, label)
+        return x
 
 class MatMulCell(nn.Cell):
     def __init__(self, strategy1, strategy2):
@@ -125,6 +137,33 @@ class LazyInlineNetForFineGrain(nn.Cell):
         out = self.cell4(out, param)
         return out
 
+
+class MatMulStageNet(nn.Cell):
+    # @lazy_inline
+    def __init__(self, matmul_weight, strategy=None):
+        super().__init__()
+        self.matmul_weight = Parameter(matmul_weight, name="weight2")
+        self.layer1 = MatMulNet(strategy)
+        self.layer2 = MatMulNet(strategy)
+
+    def construct(self, inputs):
+        x = self.layer1(inputs, self.matmul_weight)
+        x = self.layer2(x, self.matmul_weight)
+        return x
+
+
+class WithLossCell(nn.Cell):
+    @lazy_inline
+    def __init__(self, backbone, loss_fn):
+        super(WithLossCell, self).__init__(auto_prefix=False)
+        self._backbone = backbone
+        self._loss_fn = loss_fn
+        self._get_attr_from_cell(backbone)
+
+    def construct(self, data, label):
+        out = self._backbone(data)
+        return self._loss_fn(out, label)
+
 def test_pipeline_interleave_gpipe_stage0():
     """
     Feature: Pipeline Interleave
@@ -160,6 +199,82 @@ def test_pipeline_interleave_gpipe_stage1():
     stra1 = ((16, 1), (1, 1))
     stra2 = ((8, 1), (1, 1))
     net = PipelineCell(LazyInlineNet(stra1, stra2), 4)
+    params = net.trainable_params()
+    dataset = DatasetLenet(data, label, 3)
+    optim = nn.Lamb(params, learning_rate=0.01)
+    model = Model(net, optimizer=optim)
+    model.train(2, dataset, dataset_sink_mode=False)
+
+
+def test_pipeline_interleave_gpipe_shared_param():
+    """
+    Feature: Pipeline Interleave
+    Description: Pipeline Interleave with gpipe scheduler, share param.
+    Expectation: success
+    """
+    context.set_auto_parallel_context(device_num=8, global_rank=0, pipeline_stages=2)
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
+    context.set_auto_parallel_context(pipeline_config={"pipeline_interleave": True, "pipeline_scheduler": "gpipe"})
+    data = Tensor(np.ones([64, 64]), dtype=ms.float32)
+    label = Tensor(np.ones([64, 64]), dtype=ms.float32)
+    matmul_weight = Tensor(np.ones([64, 64]), dtype=ms.float32)
+    parallel_net = MatMulStageNet(matmul_weight, ((2, 1), (1, 2)))
+    parallel_net.layer1.pipeline_stage = 0
+    parallel_net.layer2.pipeline_stage = 1
+    loss = SoftmaxCrossEntropyWithLogits(sparse=False)
+    net = PipelineCell(WithLossCell(parallel_net, loss), 2)
+    params = net.trainable_params()
+    dataset = DatasetLenet(data, label, 3)
+    optim = nn.Lamb(params, learning_rate=0.01)
+    model = Model(net, optimizer=optim)
+    model.train(2, dataset, dataset_sink_mode=False)
+
+
+def test_pipeline_interleave_gpipe_shared_param_enable_parallel_opt():
+    """
+    Feature: Pipeline Interleave
+    Description: Pipeline Interleave with gpipe scheduler, share param, parallel_opt enabled.
+    Expectation: success
+    """
+    context.set_auto_parallel_context(device_num=8, global_rank=0, pipeline_stages=2)
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", enable_parallel_optimizer=True,
+                                      parallel_optimizer_config={'parallel_optimizer_threshold': 0,
+                                                                 "optimizer_level": "level1"})
+    context.set_auto_parallel_context(pipeline_config={"pipeline_interleave": True, "pipeline_scheduler": "gpipe"})
+    data = Tensor(np.ones([64, 64]), dtype=ms.float32)
+    label = Tensor(np.ones([64, 64]), dtype=ms.float32)
+    matmul_weight = Tensor(np.ones([64, 64]), dtype=ms.float32)
+    parallel_net = MatMulStageNet(matmul_weight, ((2, 1), (1, 2)))
+    parallel_net.layer1.pipeline_stage = 0
+    parallel_net.layer2.pipeline_stage = 1
+    loss = SoftmaxCrossEntropyWithLogits(sparse=False)
+    net = PipelineCell(WithLossCell(parallel_net, loss), 2)
+    params = net.trainable_params()
+    dataset = DatasetLenet(data, label, 3)
+    optim = nn.Lamb(params, learning_rate=0.01)
+    model = Model(net, optimizer=optim)
+    model.train(2, dataset, dataset_sink_mode=False)
+
+
+def test_pipeline_interleave_gpipe_shared_param_enable_parallel_opt_stage1():
+    """
+    Feature: Pipeline Interleave
+    Description: Pipeline Interleave with gpipe scheduler, share param, parallel_opt enabled.
+    Expectation: success
+    """
+    context.set_auto_parallel_context(device_num=8, global_rank=4, pipeline_stages=2)
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", enable_parallel_optimizer=True,
+                                      parallel_optimizer_config={'parallel_optimizer_threshold': 0,
+                                                                 "optimizer_level": "level1"})
+    context.set_auto_parallel_context(pipeline_config={"pipeline_interleave": True, "pipeline_scheduler": "gpipe"})
+    data = Tensor(np.ones([64, 64]), dtype=ms.float32)
+    label = Tensor(np.ones([64, 64]), dtype=ms.float32)
+    matmul_weight = Tensor(np.ones([64, 64]), dtype=ms.float32)
+    parallel_net = MatMulStageNet(matmul_weight, ((2, 1), (1, 2)))
+    parallel_net.layer1.pipeline_stage = 0
+    parallel_net.layer2.pipeline_stage = 1
+    loss = SoftmaxCrossEntropyWithLogits(sparse=False)
+    net = PipelineCell(WithLossCell(parallel_net, loss), 2)
     params = net.trainable_params()
     dataset = DatasetLenet(data, label, 3)
     optim = nn.Lamb(params, learning_rate=0.01)

@@ -117,6 +117,7 @@ class PipelinePostProcess {
                                                 const ValuePtr &micro, const ValuePtr &index);
   AnfNodePtr GenerateMainGraphRecv(const AnfNodePtr &fg_node, const AnfNodePtr &recv);
   void MoveSharedParamMirrorOutCall(const std::vector<AnfNodePtr> &all_nodes);
+  void RemoveUselessOriginSharedCell();
   FuncGraphManagerPtr manager_;
   int64_t stage_;
   int64_t stage_num_;
