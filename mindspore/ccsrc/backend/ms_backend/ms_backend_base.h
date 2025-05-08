@@ -115,7 +115,7 @@ class BACKEND_EXPORT MSBackendBase : public BackendBase {
 
   void UpdateGraphCompilerInfo(const GraphCompilerInfo &graph_compile_info);
 
-  void ContiguousArgs(const VectorRef &args, const GraphCompilerInfo &);
+  void CreateTensorArgs(const VectorRef &args, const GraphCompilerInfo &);
 
   // Wait multi stream finish.
   void WaitMultiStream(const GraphCompilerInfo &graph_compiler_info);
