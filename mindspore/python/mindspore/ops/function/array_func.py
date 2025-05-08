@@ -5430,7 +5430,6 @@ def narrow(input, axis, start, length):
     sizes[axis] = length
     return tensor_slice(input, begins, sizes)
 
-
 def topk(input, k, dim=None, largest=True, sorted=True):
     r"""
     Return the top `k` largest or smallest elements of the input tensor along a specified dimension.

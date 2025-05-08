@@ -51,6 +51,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace device {
@@ -450,34 +451,6 @@ TypeId GetInputDeviceType(const AnfNodePtr &kernel_node, size_t input_idx) {
   return type;
 }
 
-inline bool NeedTransDataWhenInferBoost(const CNodePtr &kernel, const KernelType &kernel_type) {
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-  const auto soc_version = context_ptr->ascend_soc_version();
-  if (soc_version == kAscendVersion310p) {
-    return kernel_type == KernelType::INTERNAL_KERNEL ||
-           IsOneOfPrimitiveCNode(kernel, {prim::kPrimReshapeExt, prim::kPrimReshape, prim::kPrimGroupedMatmul});
-  } else if (soc_version == kAscendVersion910b || soc_version == kAscendVersion910_93) {
-    if (IsOneOfPrimitiveCNode(kernel, {prim::kPrimGroupedMatmulV4})) {
-      auto x_dtype = common::AnfAlgo::GetPrevNodeOutputInferType(kernel, 0);
-      auto weight_dtype = common::AnfAlgo::GetPrevNodeOutputInferType(kernel, 1);
-      if (x_dtype->type_id() == kNumberTypeInt8 &&
-          (weight_dtype->type_id() == kNumberTypeInt8 || weight_dtype->type_id() == kNumberTypeInt4)) {
-        auto x_shape = common::AnfAlgo::GetPrevNodeOutputInferShape(kernel, 0);
-        auto weight_shape = common::AnfAlgo::GetPrevNodeOutputInferShape(kernel, 1);
-        constexpr auto kRankTwo = 2;
-        constexpr auto kRankThree = 3;
-        if (x_shape.size() == kRankTwo && weight_shape.size() == kRankThree) {
-          // only trans weight to NZ when trans_a and tras_b is false
-          return x_shape[1] == weight_shape[1] && weight_shape[1] != weight_shape[2];
-        }
-      }
-    }
-  }
-
-  return false;
-}
-
 void GenerateKernelBuildInfo(const CNodePtr &kernel, const KernelType &kernel_type) {
   MS_EXCEPTION_IF_NULL(kernel);
   std::vector<std::string> input_formats;
@@ -520,7 +493,9 @@ void GenerateKernelBuildInfo(const CNodePtr &kernel, const KernelType &kernel_ty
     const auto &info = device::ascend::GeAdapterManager::GetInstance().GetInfo(name, true);
     auto adapter_output_num = info->GetNumStaticOutputsOfMsOpProto();
     process_tuple_output(kernel, true, adapter_output_num);
-  } else if (context_ptr->IsEnableInferBoost() && NeedTransDataWhenInferBoost(kernel, kernel_type)) {
+  } else if (context_ptr->IsEnableInferBoost() && context_ptr->ascend_soc_version() == "ascend310p" &&
+             (kernel_type == KernelType::INTERNAL_KERNEL ||
+              IsOneOfPrimitiveCNode(kernel, {prim::kPrimReshapeExt, prim::kPrimReshape, prim::kPrimGroupedMatmul}))) {
     input_formats.clear();
     output_formats.clear();
     input_reshape_types.clear();

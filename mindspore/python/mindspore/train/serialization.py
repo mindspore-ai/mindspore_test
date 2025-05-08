@@ -31,7 +31,6 @@ from multiprocessing import active_children
 import multiprocessing as mp
 from collections import OrderedDict
 from io import BytesIO
-from functools import partial
 
 import math
 import sys
@@ -39,7 +38,8 @@ import time
 import google
 import numpy as np
 
-from safetensors.numpy import save_file
+from safetensors.numpy import save_file, load_file
+from safetensors import safe_open
 
 from mindspore.train.checkpoint_pb2 import Checkpoint
 from mindspore.train.mind_ir_pb2 import ModelProto as mindir_model
@@ -76,7 +76,6 @@ from mindspore.parallel.checkpoint_transform import restore_group_info_list as n
 from mindspore.parallel.checkpoint_transform import load_distributed_checkpoint as new_load_distributed_checkpoint
 from mindspore.parallel.checkpoint_transform import merge_sliced_parameter as new_merge_sliced_parameter
 from mindspore.parallel.checkpoint_transform import build_searched_strategy as new_build_searched_strategy
-from mindspore.parallel.transform_safetensors import _fast_safe_open
 from mindspore.train._utils import read_proto, get_parameter_redundancy, _progress_bar, _load_and_transform
 from mindspore._c_expression import load_mindir, _encrypt, _decrypt, _is_cipher_file, \
     split_mindir, split_dynamic_mindir
@@ -99,8 +98,6 @@ np_type_convert = {"int32": np.int32, "float32": np.float32, "float16": np.float
 mindir_to_tensor_type = {1: mstype.float32, 2: mstype.uint8, 3: mstype.int8, 4: mstype.uint16,
                          5: mstype.int16, 6: mstype.int32, 7: mstype.int64, 10: mstype.float16,
                          11: mstype.float64, 12: mstype.uint32, 13: mstype.uint64}
-
-safetensors_to_mstype = {'Int4': mstype.qint4x2}
 
 _ckpt_mutex = RLock()
 
@@ -316,7 +313,7 @@ def _update_param(param, new_param, strict_load):
 def _type_convert(param, new_param, strict_load):
     """Whether to convert parameter's type during load checkpoint into network."""
     float_type = (mstype.float16, mstype.float32, mstype.float64, mstype.bfloat16)
-    int_type = (mstype.int8, mstype.int16, mstype.int32, mstype.int64, mstype.qint4x2)
+    int_type = (mstype.int8, mstype.int16, mstype.int32, mstype.int64)
     if not strict_load and ({param.data.dtype, new_param.data.dtype}.issubset(float_type) or
                             {param.data.dtype, new_param.data.dtype}.issubset(int_type)):
         logger.warning(f"The type of {new_param.name}:{new_param.data.dtype} in 'parameter_dict' is different from "
@@ -431,16 +428,11 @@ def _exec_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-GCM", map_
             elif format == "safetensors":
                 save_dict = {}
                 crc_num = 0
-                meta_data = {"format": "ms"}
                 for name in sorted(data_list.keys()):
                     value = data_list[name]
                     if isinstance(value[2], np.ndarray):
-                        if value[1] == str(mstype.qint4x2):
-                            meta_data[name] = str(mstype.qint4x2)
                         save_dict[name] = value[2]
                     else:
-                        if value[2].dtype == mstype.qint4x2:
-                            meta_data[name] = str(mstype.qint4x2)
                         bytes_data = value[2].get_bytes()
                         np_type = tensor_to_np_type.get(value[1])
                         np_array = np.frombuffer(bytes_data, np_type)
@@ -453,12 +445,10 @@ def _exec_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-GCM", map_
                             bytes(save_dict[name]), crc_num)
                 safetensors_save_time_start = time.time()
                 if crc_check:
-                    meta_data.update({"crc_num": str(crc_num)})
-                if save_dict:
-                    save_file(save_dict, tmp_name, metadata=meta_data)
+                    save_file(save_dict, tmp_name, metadata={
+                        "crc_num": str(crc_num)})
                 else:
                     save_file(save_dict, tmp_name)
-
                 safetensors_save_time_end = time.time()
                 cost_time = safetensors_save_time_end - safetensors_save_time_start
                 vlog_print("1", "ME", __file__, sys._getframe().f_lineno, f"Save safetensors io cost time:{cost_time}.")
@@ -936,13 +926,10 @@ def _convert_dict_to_param_dict(save_obj, choice_func):
     """Convert a dict of Parameter to param_list."""
     param_list = []
     for (key, value) in save_obj.items():
-        if isinstance(key, str):
+        if isinstance(key, str) and (isinstance(value, (Parameter, str)) or _is_buffer_type(value)):
             if choice_func is not None and not choice_func(key):
                 continue
-            if isinstance(value, np.ndarray):
-                each_param = {"name": key, "data": Parameter(Tensor.from_numpy(value))}
-            if (isinstance(value, (Parameter, str)) or _is_buffer_type(value)):
-                each_param = {"name": key, "data": value}
+            each_param = {"name": key, "data": value}
             param_list.append(each_param)
         else:
             raise TypeError(f"For save_checkpoint, when save_obj is made up by dict, the key should be str and"
@@ -1233,7 +1220,7 @@ def _load_into_param_dict(ckpt_file_name, parameter_dict, specify_prefix, filter
     """load parameter into parameter_dict"""
     ckpt_file_name = _check_ckpt_file_name(ckpt_file_name, format)
     if format == "safetensors":
-        with _fast_safe_open(ckpt_file_name, framework='np') as f:
+        with safe_open(ckpt_file_name, framework='np') as f:
             cal_crc_num = 0
             total_io_cost_time = 0
             for k in sorted(f.keys()):
@@ -1247,12 +1234,7 @@ def _load_into_param_dict(ckpt_file_name, parameter_dict, specify_prefix, filter
                 io_end_time = time.time()
                 io_cost_time = io_end_time - io_start_time
                 total_io_cost_time += io_cost_time
-                if f.metadata() is not None and k in f.metadata().keys():
-                    sf_dtype = f.metadata()[k]
-                    ms_dtype = safetensors_to_mstype[sf_dtype]
-                    parameter_dict[k] = Parameter(Tensor(value, dtype=ms_dtype))
-                else:
-                    parameter_dict[k] = Parameter(Tensor.from_numpy(value))
+                parameter_dict[k] = Parameter(Tensor.from_numpy(value))
 
             vlog_print("1", "ME", __file__, sys._getframe().f_lineno,
                        f"Load safetensors io cost time:{total_io_cost_time}.")
@@ -2748,35 +2730,28 @@ def convert_model(mindir_file, convert_file, file_format):
         export(net, *net_input, file_name=convert_file, file_format=file_format)
 
 
-def _load_ckpt_to_new_name_map(path, name_map=None):
-    return _load_and_transform(path, name_map, mindspore.load_checkpoint, None)
+def _transform_tensor_to_numpy(path, name_map=None):
+    return _load_and_transform(path, name_map, mindspore.load_checkpoint, lambda v, new_name: v.asnumpy())
 
 
-def _load_sf_to_new_name_map(path, name_map=None):
-    load_func = partial(mindspore.load_checkpoint, format="safetensors")
-    return _load_and_transform(path, name_map, load_func, None)
+def _transform_numpy_to_tensor(path, name_map=None):
+    return _load_and_transform(path, name_map, load_file, lambda v, new_name: mindspore.Parameter(v, name=new_name))
 
 
 def _process_file(file_info):
     cur_ckpt_path, name_map, save_path, file = file_info
-    if name_map is not None:
-        param_dict = _load_ckpt_to_new_name_map(cur_ckpt_path, name_map)
-    else:
-        param_dict = mindspore.load_checkpoint(cur_ckpt_path)
+    param_dict_numpy = _transform_tensor_to_numpy(cur_ckpt_path, name_map)
     safetensors_filename = file.replace(".ckpt", ".safetensors")
     dst_file = os.path.join(save_path, safetensors_filename)
-    mindspore.save_checkpoint(param_dict, dst_file, format='safetensors')
+    save_file(param_dict_numpy, dst_file)
 
 
 def _process_file_safetensors(file_info):
     cur_safe_path, name_map, save_path, file = file_info
-    if name_map is not None:
-        param_dict = _load_sf_to_new_name_map(cur_safe_path, name_map)
-    else:
-        param_dict = mindspore.load_checkpoint(cur_safe_path, format="safetensors")
+    param_dict_tensor = _transform_numpy_to_tensor(cur_safe_path, name_map)
     ckpt_filename = file.replace(".safetensors", ".ckpt")
     dst_file = os.path.join(save_path, ckpt_filename)
-    mindspore.save_checkpoint(param_dict, dst_file)
+    mindspore.save_checkpoint(param_dict_tensor, dst_file)
 
 
 def _gather_safetensors_tasks(file_path, save_path, file_name_regex, name_map):
@@ -2887,14 +2862,10 @@ def ckpt_to_safetensors(file_path, save_path=None, name_map=None, file_name_rege
         if save_path and not os.path.exists(save_path):
             os.makedirs(save_path, exist_ok=True)
 
-        if name_map is not None:
-            param_dict = _load_ckpt_to_new_name_map(file_path, name_map)
-        else:
-            param_dict = mindspore.load_checkpoint(file_path)
-
+        param_dict_numpy = _transform_tensor_to_numpy(file_path, name_map)
         safetensors_filename = os.path.basename(file_path).replace(".ckpt", ".safetensors")
         dst_file = os.path.join(save_path if save_path else os.path.dirname(file_path), safetensors_filename)
-        mindspore.save_checkpoint(param_dict, dst_file, format='safetensors')
+        save_file(param_dict_numpy, dst_file)
 
 
 def safetensors_to_ckpt(file_path, save_path=None, name_map=None, file_name_regex=None, processes_num=1):
@@ -2953,14 +2924,10 @@ def safetensors_to_ckpt(file_path, save_path=None, name_map=None, file_name_rege
         if save_path and not os.path.exists(save_path):
             os.makedirs(save_path, exist_ok=True)
 
-        if name_map is not None:
-            param_dict = _load_sf_to_new_name_map(file_path, name_map)
-        else:
-            param_dict = mindspore.load_checkpoint(file_path, format="safetensors")
-
+        param_dict_tensor = _transform_numpy_to_tensor(file_path, name_map)
         ckpt_filename = os.path.basename(file_path).replace(".safetensors", ".ckpt")
         dst_file = os.path.join(save_path if save_path else os.path.dirname(file_path), ckpt_filename)
-        mindspore.save_checkpoint(param_dict, dst_file)
+        mindspore.save_checkpoint(param_dict_tensor, dst_file)
 
 
 def restore_group_info_list(group_info_file_name):
