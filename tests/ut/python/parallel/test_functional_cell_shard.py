@@ -71,16 +71,18 @@ class ShardSubNet(nn.Cell):
         return y
 
 class ShardNet(nn.Cell):
-    def __init__(self, in_strategy, out_strategy=None, shard_key="cell", in_parameter_plan=None):
+    def __init__(self, in_strategy=None, out_strategy=None, shard_key=None, in_parameter_plan=None):
         super().__init__()
         self.subnet = ShardSubNet()
-        if shard_key == "cell":
-            self.subnet_shard = self.subnet.shard(in_strategy, out_strategy, parameter_plan=in_parameter_plan)
         if shard_key == "ms":
             self.subnet_shard = ms.shard(self.subnet, in_strategy, out_strategy, parameter_plan=in_parameter_plan)
+        else:
+            if shard_key == "cell":
+                self.subnet.shard(in_strategy, out_strategy, parameter_plan=in_parameter_plan)
+            self.subnet_shard = self.subnet
         self.add = P.Add()
         self.matmul = P.MatMul()
-        self.relu = P.ReLU()
+        self.relu = nn.ReLU()
 
     def construct(self, x):
         y = self.subnet_shard(x)
@@ -488,7 +490,7 @@ def test_ms_shard_pp_interleave_with_correct_group_rank_ids():
     withlosscell = WithLossCell(net_2, loss_2)
     pipeline_cell = nn.PipelineCell(withlosscell, micro_size=4,
                                     stage_config={"_backbone.matmul": 0, "_backbone.add": 1})
-    pipeline_net = AutoParallel(pipeline_cell, parallel_mode="semi_auto")
+    pipeline_net = AutoParallel(pipeline_cell, parallel_mode="sharding_propagation")
     pipeline_net.pipeline(stages=2, interleave=True)
     pipeline_net.dataset_strategy("full_batch")
 
@@ -503,3 +505,183 @@ def test_ms_shard_pp_interleave_with_correct_group_rank_ids():
     para1_str = "= Send("
     group_rank_ids_str = 'group_rank_ids: (0, 4)'
     check_layout_config(para1_str, file, group_rank_ids_str)
+
+
+def test_cell_shard_with_layout_be_set_and_propagate_defer_inline_0():
+    """
+    Feature: Test cell.shard given layout. The set layout can be seen in the shard operator.
+    Description: dev_num is 8.
+    Expectation: compile success
+    """
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation",
+                                      device_num=8, global_rank=0)
+    case_name = "test_cell_shard_with_layout_be_set_and_propagate_defer_inline_0"
+    ir_graph_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "layout_ir", case_name)
+    context.set_context(save_graphs=True, save_graphs_path=ir_graph_path)
+    layout = Layout((2, 4, 1), ("dp", "sp", "mp"))
+    in_layout1 = (layout("dp", "mp"),)
+    x = Tensor(np.ones([1024, 1024]), dtype=ms.float32)
+    net = GradWrap(NetWithLoss(ShardNet(in_layout1, shard_key="cell")))
+    in_layout2 = (layout("mp", "sp"),)
+    net.network.network.relu.shard(in_layout2)
+    compile_net(net, x)
+    file = f"{ir_graph_path}/rank_0/04_inline_*"
+    para1_str = "= Shard(.*ShardSubNet_construct"
+    in_layout1_str = (
+        '(((I64(2), I64(4), I64(1)), (I64(2), I64(0)), Bool(0), ("dp", "sp", "mp"))), None'
+    )
+    para2_str = "= Shard(.*ReLU_construct"
+    in_layout2_str = (
+        '(((I64(2), I64(4), I64(1)), (I64(0), I64(1)), Bool(0), ("dp", "sp", "mp"))), None'
+    )
+    check_layout_config(para1_str, file, in_layout1_str)
+    check_layout_config(para2_str, file, in_layout2_str)
+
+
+def test_cell_nested_shard_with_layout_be_set_and_propagate_1():
+    """
+    Feature: Test cell.shard given nested layout. The set layout can be seen in the shard operator.
+    Description: dev_num is 8.
+    Expectation: compile success
+    """
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation",
+                                      device_num=8, global_rank=0)
+    case_name = "test_cell_nested_shard_with_layout_be_set_and_propagate_1"
+    ir_graph_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "layout_ir", case_name)
+    context.set_context(save_graphs=True, save_graphs_path=ir_graph_path)
+    layout = Layout((2, 4, 1), ("dp", "sp", "mp"))
+    in_layout1 = (layout("dp", "mp"),)
+    x = Tensor(np.ones([1024, 1024]), dtype=ms.float32)
+    net = GradWrap(NetWithLoss(ShardNet(in_layout1, shard_key="cell")))
+    in_layout2 = (layout("mp", "sp"),)
+    net.network.network.shard(in_layout2)
+    compile_net(net, x)
+    file = f"{ir_graph_path}/rank_0/04_inline_*"
+    para1_str = "y) = Shard("
+    in_layout1_str = (
+        '(((I64(2), I64(4), I64(1)), (I64(2), I64(0)), Bool(0), ("dp", "sp", "mp"))), None'
+    )
+    para2_str = "predict) = Shard("
+    in_layout2_str = (
+        '(((I64(2), I64(4), I64(1)), (I64(0), I64(1)), Bool(0), ("dp", "sp", "mp"))), None'
+    )
+    check_layout_config(para1_str, file, in_layout1_str)
+    check_layout_config(para2_str, file, in_layout2_str)
+
+
+def test_cell_nested_shard_with_layout_be_set_and_propagate_2():
+    """
+    Feature: Test cell.shard given nested layout. The set layout can be seen in the shard operator.
+    Description: dev_num is 8.
+    Expectation: compile success
+    """
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation",
+                                      device_num=8, global_rank=0)
+    case_name = "test_cell_nested_shard_with_layout_be_set_and_propagate_2"
+    ir_graph_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "layout_ir", case_name)
+    context.set_context(save_graphs=True, save_graphs_path=ir_graph_path)
+    layout = Layout((2, 4, 1), ("dp", "sp", "mp"))
+    in_layout1 = (layout("dp", "mp"),)
+    x = Tensor(np.ones([1024, 1024]), dtype=ms.float32)
+    net = GradWrap(NetWithLoss(ShardNet()))
+    net.network.network.subnet.shard(in_layout1)
+    in_strategy2 = ((1, 8),)
+    out_strategy2 = ((4, 2),)
+    net.network.network.shard(in_strategy2, out_strategy2)
+    compile_net(net, x)
+    file = f"{ir_graph_path}/rank_0/04_inline_*"
+    para1_str = "y) = Shard("
+    in_layout1_str = (
+        '(((I64(2), I64(4), I64(1)), (I64(2), I64(0)), Bool(0), ("dp", "sp", "mp"))), None'
+    )
+    para2_str = "predict) = Shard("
+    in_strategy2_str = (
+        '((I64(1), I64(8))), ((I64(4), I64(2)))'
+    )
+    check_layout_config(para1_str, file, in_layout1_str)
+    check_layout_config(para2_str, file, in_strategy2_str)
+
+
+def test_cell_nested_and_repeated_shard_with_layout_be_set_and_propagate_3():
+    """
+    Feature: Test cell.shard given nested layout. The set layout can be seen in the shard operator.
+    Description: dev_num is 8.
+    Expectation: compile success
+    """
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation",
+                                      device_num=8, global_rank=0)
+    case_name = "test_cell_nested_and_repeated_shard_with_layout_be_set_and_propagate_3"
+    ir_graph_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "layout_ir", case_name)
+    context.set_context(save_graphs=True, save_graphs_path=ir_graph_path)
+    layout = Layout((2, 4, 1), ("dp", "sp", "mp"))
+    in_layout1 = (layout("dp", "mp"),)
+    x = Tensor(np.ones([1024, 1024]), dtype=ms.float32)
+    net = GradWrap(NetWithLoss(ShardNet()))
+    net.network.network.subnet.shard(in_layout1)
+    in_layout2 = (layout("mp", "sp"),)
+    net.network.network.shard(in_layout2)
+
+    in_layout3 = (layout("sp", "mp"),)
+    net.network.network.subnet.shard(in_layout3)
+
+    in_strategy4 = ((1, 8),)
+    out_strategy4 = ((4, 2),)
+    net.network.network.shard(in_strategy4, out_strategy4)
+
+    compile_net(net, x)
+    file = f"{ir_graph_path}/rank_0/04_inline_*"
+    para1_str = "y) = Shard("
+    in_layout3_str = (
+        '(((I64(2), I64(4), I64(1)), (I64(1), I64(0)), Bool(0), ("dp", "sp", "mp"))), None'
+    )
+    para2_str = "predict) = Shard("
+    in_strategy4_str = (
+        '((I64(1), I64(8))), ((I64(4), I64(2)))'
+    )
+    check_layout_config(para1_str, file, in_layout3_str)
+    check_layout_config(para2_str, file, in_strategy4_str)
+
+
+def test_cell_shard_pp_interleave_4():
+    """
+    Feature: Test cell.shard with given layout and make shard on a pipeline_cell.
+    Description: dev_num is 8.
+    Expectation: compile with value error raised.
+    """
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation",
+                                      device_num=8, global_rank=0)
+    setup_function()
+    case_name = "test_cell_shard_pp_interleave_4"
+    ir_graph_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "layout_ir", case_name)
+    context.set_context(save_graphs=True, save_graphs_path=ir_graph_path)
+    layout = Layout((2, 4, 1), ("dp", "sp", "mp"))
+    in_layout1 = (layout("dp", "mp"),)
+    withlosscell = NetWithLoss(AddMatmulNet(matmul_weight_shape=(128, 128), add_weight_shape=(1, 128)))
+    pipeline_cell = nn.PipelineCell(withlosscell, micro_size=2, stage_config={"network.matmul": 0, "network.add": 1})
+    with pytest.raises(ValueError) as error_info:
+        pipeline_cell.shard(in_layout1)
+    assert "For 'PipelineCell', no 'shard' " in str(error_info.value)
+
+
+def test_cell_shard_pp_interleave_5():
+    """
+    Feature: Test cell.shard with given layout and make shard outside a sub cell of pipeline stage.
+    Description: dev_num is 8.
+    Expectation: compile with runtime error raised.
+    """
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation",
+                                      device_num=8, global_rank=0)
+    case_name = "test_cell_shard_pp_interleave_5"
+    ir_graph_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "layout_ir", case_name)
+    context.set_context(save_graphs=True, save_graphs_path=ir_graph_path)
+    x = Tensor(np.ones([128, 128]), dtype=ms.float32)
+    net_2 = AddMatmulNet(matmul_weight_shape=(128, 128), add_weight_shape=(1, 128))
+    withlosscell = NetWithLoss(net_2)
+    pipeline_cell = nn.PipelineCell(withlosscell, micro_size=4, stage_config={"network.matmul": 0, "network.add": 1})
+    pipeline_net = AutoParallel(pipeline_cell, parallel_mode="sharding_propagation")
+    pipeline_net.pipeline(stages=2, interleave=True)
+    pipeline_net.dataset_strategy("full_batch")
+    withlosscell.shard(in_strategy=((1, 2),))
+    with pytest.raises(RuntimeError) as error_info:
+        compile_net(pipeline_net, x)
+    assert "For sharded cell " in str(error_info.value)
