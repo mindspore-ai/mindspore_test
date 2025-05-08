@@ -11,9 +11,10 @@ Executor
     :nosignatures:
     :template: classtemplate.rst
 
-    mindspore.runtime.set_cpu_affinity
-    mindspore.runtime.launch_blocking
     mindspore.runtime.dispatch_threads_num
+    mindspore.runtime.launch_blocking
+    mindspore.runtime.set_cpu_affinity
+    mindspore.runtime.set_kernel_launch_capture
     mindspore.runtime.set_kernel_launch_group
 
 Memory

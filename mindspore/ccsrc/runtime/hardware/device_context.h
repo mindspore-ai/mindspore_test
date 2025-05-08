@@ -27,6 +27,7 @@
 #include "common/device_type.h"
 #include "common/device_address.h"
 #include "runtime/device/res_manager/swap_manager.h"
+#include "runtime/device/res_manager/capture_graph.h"
 #include "runtime/collective/collective_communication_lib.h"
 #include "runtime/collective/collective_comm_lib_loader.h"
 #include "include/backend/kernel_graph.h"
@@ -290,6 +291,9 @@ class BACKEND_COMMON_EXPORT DeviceResManager {
 
   // Create device event for runtime.
   virtual DeviceEventPtr CreateRuntimeEvent(bool enable_blocking, bool enable_record_wait) { return nullptr; }
+
+  // Create mind graph
+  virtual CaptureGraphPtr CreateCaptureGraph() { return nullptr; }
 
   // Create device event with flag.
   virtual DeviceEventPtr CreateEventWithFlag(bool enable_timing, bool blocking, bool use_extensional_api = true) {

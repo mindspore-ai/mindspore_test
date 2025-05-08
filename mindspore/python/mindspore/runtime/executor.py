@@ -179,6 +179,9 @@ def set_kernel_launch_group(thread_num=2, kernel_group_num=8):
     if RuntimeConf.get_instance().is_kernel_launch_group_configured():
         raise RuntimeError("The 'kernel_launch_group' can not be set repeatedly.")
 
+    if RuntimeConf.get_instance().get_enable_kernel_launch_capture():
+        raise RuntimeError("The 'kernel_launch_group' can not be set with kernel launch capture")
+
     if thread_num < 1:
         raise ValueError(f"The value of thread_num should be at least 1, but got {thread_num}")
 
@@ -190,3 +193,27 @@ def set_kernel_launch_group(thread_num=2, kernel_group_num=8):
                          f"be evenly divisible by thread_num: {thread_num}")
 
     return RuntimeConf.get_instance().set_kernel_launch_group(thread_num, kernel_group_num)
+
+
+@args_type_check(enable_capture_graph=bool)
+def set_kernel_launch_capture(enable_capture_graph):
+    """
+    In O0/O1 mode, the incremental inference scenario supports graph capture.
+    By capturing the CPU-side operator dispatch behavior into a graph,
+    the performance of CPU-side operator dispatch is improved.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        enable_capture_graph (bool): Whether to enable graph capture.
+            It can be turned on or off at any position in the script.
+
+    Examples:
+        >>> import mindspore as ms
+        >>> ms.runtime.set_kernel_launch_capture(enable_capture_graph=True)
+    """
+    if RuntimeConf.get_instance().is_kernel_launch_group_configured():
+        raise RuntimeError("The 'kernel_launch_group' can not be set with kernel launch capture")
+
+    return RuntimeConf.get_instance().set_kernel_launch_capture(enable_capture_graph)

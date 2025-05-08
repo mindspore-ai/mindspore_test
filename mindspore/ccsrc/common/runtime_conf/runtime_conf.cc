@@ -36,7 +36,8 @@ RuntimeConf::RuntimeConf()
       mem_block_increase_size_(kDefaultMemBlockIncreaseSize),
       mem_max_size_(kDefaultMemMaxSize),
       mem_optimize_level_(0),
-      mem_huge_page_reserve_size_(0.0) {}
+      mem_huge_page_reserve_size_(0.0),
+      enable_capture_graph_(false) {}
 
 RuntimeConf::~RuntimeConf() = default;
 
