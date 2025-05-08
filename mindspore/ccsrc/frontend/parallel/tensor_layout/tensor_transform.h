@@ -41,7 +41,7 @@ class FRONTEND_EXPORT TensorTransform {
   TensorTransform &operator=(const TensorTransform &) = delete;
   void InitTransforOperator();
   std::vector<RedisOpPair> TransformOperators(const Shapes &from, const Shapes &to, const RankList &dev_list,
-                                              int64_t rank_id);
+                                              const bool redist_opt, int64_t rank_id);
   RedistributionOpListPtr OptimizeTensorRedistributionOperatorList(
     const RedistributionOpListPtr &redistribution_op_list, const Shape &input_shape, int64_t virtual_rank = -1);
 

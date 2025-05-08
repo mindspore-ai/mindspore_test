@@ -20,6 +20,7 @@
 #include <memory>
 #include <utility>
 #include <string>
+#include <set>
 #include "include/common/utils/parallel_context.h"
 #include "frontend/parallel/ops_info/ops_utils.h"
 #include "frontend/parallel/graph_util/graph_utils.h"
@@ -314,10 +315,8 @@ Status TensorTransform::TransSliceToStridedSlice(const Shape &input_shape,
   return SUCCESS;
 }
 
-std::vector<std::pair<std::string, std::vector<int64_t>>> TensorTransform::TransformOperators(const Shapes &from,
-                                                                                              const Shapes &to,
-                                                                                              const RankList &dev_list,
-                                                                                              int64_t rank_id) {
+std::vector<std::pair<std::string, std::vector<int64_t>>> TensorTransform::TransformOperators(
+  const Shapes &from, const Shapes &to, const RankList &dev_list, const bool redist_opt, int64_t rank_id) {
   TensorLayout from_layout;
   (void)from_layout.InitFromVector(from[kIndex0], from[kIndex1], from[kIndex2]);
   TensorLayout to_layout;
@@ -331,6 +330,10 @@ std::vector<std::pair<std::string, std::vector<int64_t>>> TensorTransform::Trans
   }
   if (redistribution_oplist_ptr->first.size() != redistribution_oplist_ptr->second.size()) {
     MS_LOG(INTERNAL_EXCEPTION) << "The redistribution op list size cannot match redistribution output info list size.";
+  }
+  if (redist_opt) {
+    redistribution_oplist_ptr = OptimizeTensorRedistributionOperatorList(redistribution_oplist_ptr,
+                                                                         tensor_redistribution_.input_shape(), rank_id);
   }
   auto operators_vector = redistribution_oplist_ptr->first;
   std::vector<std::pair<std::string, std::vector<int64_t>>> transform_op_list;
