@@ -21,7 +21,7 @@ import mindspore.common.dtype as mstype
 import mindspore as ms
 from mindspore.ops import where
 from mindspore import ops, Tensor, jit, context
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 
@@ -231,7 +231,8 @@ def test_where_ext_dynamic_shape():
     x2 = generate_random_input((6, 7, 8), np.float32)
     y2 = generate_random_input((6, 7, 8), np.float32)
     cond2 = x2 > 0
-    TEST_OP(where_forward_func, [[cond1, x1, y1], [cond2, x2, y2]], '', disable_yaml_check=True)
+    TEST_OP(where_forward_func, [[cond1, x1, y1], [cond2, x2, y2]],
+            case_config={'all_dim_zero': True})
 
 
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_ascend'], level_mark='level1',

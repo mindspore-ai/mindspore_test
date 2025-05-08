@@ -16,7 +16,7 @@ import pytest
 import numpy as np
 import mindspore as ms
 from mindspore import mint, jit
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 
@@ -85,4 +85,5 @@ def test_mint_reshape_dynamic_shape():
     ms_data2 = ms.Tensor(generate_random_input((5, 8, 7), np.float32))
     shape2 = (5, 2, 4, 7)
     TEST_OP(reshape_forward_func, [[ms_data1, shape1], [ms_data2, shape2]],
-            'reshape', disable_mode=['GRAPH_MODE'])
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor', 'ScalarTensor'])

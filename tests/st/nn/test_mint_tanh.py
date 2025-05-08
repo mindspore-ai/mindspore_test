@@ -19,7 +19,7 @@ import mindspore as ms
 from mindspore import Tensor, mint
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 
 @test_utils.run_with_cell
@@ -86,4 +86,4 @@ def test_mint_tanh_dyn():
     """
     in1 = Tensor(np.random.randn(1, 2, 4, 4).astype(np.float32))
     in2 = Tensor(np.random.randn(2, 1, 4).astype(np.float32))
-    TEST_OP(Tanh_forward, [[in1], [in2]], 'tanh')
+    TEST_OP(Tanh_forward, [[in1], [in2]])

@@ -17,7 +17,7 @@ import pytest
 import mindspore as ms
 from mindspore import mint, ops, Tensor
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -73,6 +73,9 @@ def test_amax_dynamic_shape():
     Description:  Test operator amax with dynamic input.
     Expectation: the result of amax is correct.
     """
+    # TEST_OP Todo: EmptyTensor GRAPH_MODE_O0 has bug.
     x1 = Tensor(generate_random_input((2, 3, 4, 5), np.float32))
     x2 = Tensor(generate_random_input((3, 4, 5, 6, 7), np.float32))
-    TEST_OP(amax_forward_func, [[x1], [x2]], '', disable_yaml_check=True, disable_mode=["GRAPH_MODE"])
+    TEST_OP(amax_forward_func, [[x1], [x2]],
+            disable_mode=["GRAPH_MODE_GE"],
+            disable_case=['EmptyTensor'])

@@ -18,7 +18,7 @@ import pytest
 
 import mindspore as ms
 from mindspore import mint, Tensor
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
 
@@ -67,5 +67,8 @@ def test_mint_bincount_ext_dynamic():
     TEST_OP(bincount_forward_func,
             [[Tensor(x1), Tensor(x3), minlength],
              [Tensor(x2), Tensor(x3), minlength]],
-            "bincount_ext", disable_input_check=True, disable_mode=["GRAPH_MODE"],
-            disable_grad=True, disable_yaml_check=True)
+            disable_mode=["GRAPH_MODE_GE"],
+            disable_case=['ScalarTensor'],
+            case_config={'disable_input_check': True,
+                         'disable_grad': True,
+                         'deterministic_use_origin_inputs': True})

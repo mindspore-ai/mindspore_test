@@ -16,7 +16,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 
@@ -99,4 +99,7 @@ def test_index_add_dynamic_shape():
     TEST_OP(index_add_forward_func,
             [[tensor_x1, dim1, index1, tensor_source1, alpha1],
              [tensor_x2, dim2, index2, tensor_source2, alpha2]],
-            "index_add_ext", disable_mode=['GRAPH_MODE'], disable_input_check=True, inplace_update=True)
+            disable_mode=['GRAPH_MODE_GE'],
+            case_config={'disable_input_check': True,
+                         'all_dim_zero': True},
+            inplace_update=True)

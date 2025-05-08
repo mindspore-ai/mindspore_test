@@ -15,7 +15,7 @@
 import pytest
 import numpy as np
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 import mindspore as ms
@@ -137,9 +137,8 @@ def test_unpermute_dynamic():
     TEST_OP(
         unpermuted_forward_func,
         [input_case1, input_case2],
-        "moe_token_unpermute",
-        disable_mode=[
-            "GRAPH_MODE",
-        ],
-        disable_input_check=True,
+        disable_mode=["GRAPH_MODE_GE"],
+        disable_case=['EmptyTensor', 'ScalarTensor'],
+        case_config={'disable_input_check': True,
+                     'deterministic_use_origin_inputs': True}
     )

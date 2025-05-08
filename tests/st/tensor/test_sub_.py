@@ -15,7 +15,7 @@
 # pylint: disable=unused-variable
 import numpy as np
 import mindspore as ms
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 from tests.st.pynative.utils import GradOfAllInputs
 
@@ -72,9 +72,11 @@ def test_sub__dynamic_shape():
     alpha2 = 2.5
 
     # TEST_OP(inplace_sub_forward_func, [[tensor_x1, tensor_y1, alpha1], [tensor_x2, tensor_y2, alpha2]],
-    #         'inplace_sub_ext', disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'], disable_grad=True)
-    TEST_OP(inplace_sub_forward_func, [[tensor_x1, tensor_y1, alpha1], [tensor_x2, tensor_y2, alpha2]],
-            'inplace_sub_ext', disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])
+    #         'inplace_sub_ext', disable_mode=['GRAPH_MODE_GE', 'GRAPH_MODE_O0'], case_config={'disable_grad': True})
+    TEST_OP(inplace_sub_forward_func,
+            [[tensor_x1, tensor_y1, alpha1], [tensor_x2, tensor_y2, alpha2]],
+            disable_mode=['GRAPH_MODE_GE', 'GRAPH_MODE_O0'],
+            case_config={'all_dim_zero': True})
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

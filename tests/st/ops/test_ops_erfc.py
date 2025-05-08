@@ -20,7 +20,7 @@ from mindspore import ops
 from mindspore.mint import erfc
 from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 
 def generate_random_input(shape, dtype):
@@ -117,5 +117,4 @@ def test_erfc_dynamic_shape():
     """
     ms_data1 = generate_random_input((2, 3, 4), np.float32)
     ms_data2 = generate_random_input((3, 4, 5, 6), np.float32)
-    TEST_OP(erfc_forward_func
-            , [[ms.Tensor(ms_data1)], [ms.Tensor(ms_data2)]], 'erfc')
+    TEST_OP(erfc_forward_func, [[ms.Tensor(ms_data1)], [ms.Tensor(ms_data2)]])

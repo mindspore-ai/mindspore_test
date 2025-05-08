@@ -18,8 +18,8 @@ import mindspore as ms
 from mindspore import Tensor
 from mindspore import context, mint
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
-from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
+from tests.st.ops.test_tools.test_op import TEST_OP
+from tests.st.ops.test_tools.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 from tests.mark_utils import arg_mark
 
 
@@ -118,7 +118,8 @@ def test_mint_avg_pool3d_dynamic():
             [input_case1, 4, (2, 2, 2), (1,), False, True, 1],
             [input_case2, 2, (1, 1, 1), (1,), True, False, 2],
         ],
-        "avg_pool3d_ext",
-        disable_mode=["GRAPH_MODE"],
-        disable_input_check=True
+        disable_mode=["GRAPH_MODE_GE"],
+        disable_case=['EmptyTensor',
+                      'ScalarTensor'],
+        case_config={'disable_input_check': True}
     )

@@ -18,7 +18,7 @@ import numpy as np
 import mindspore as ms
 from mindspore import ops, jit
 from mindspore.mint import cumprod
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 
@@ -121,4 +121,4 @@ def test_cumprod_dynamic_shape():
     dim2 = 1
     ms_data2, _ = generate_random_input((3, 4, 5, 6), dim2)
     TEST_OP(cumprod_forward_func, [[ms.Tensor(ms_data1), dim1], [ms.Tensor(ms_data2), dim2]],
-            '', disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+            disable_mode=['GRAPH_MODE_GE'], disable_case=['ScalarTensor'])

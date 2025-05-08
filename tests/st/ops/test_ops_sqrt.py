@@ -18,7 +18,7 @@ import mindspore as ms
 from mindspore import ops
 from mindspore.ops import sqrt
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -114,4 +114,4 @@ def test_ops_sqrt_dynamic_shape():
     x2 = generate_random_input((3, 4, 5, 6, 7), np.float32)
 
     TEST_OP(sqrt_forward_func,
-            [[ms.Tensor(x1)], [ms.Tensor(x2)]], 'sqrt')
+            [[ms.Tensor(x1)], [ms.Tensor(x2)]])

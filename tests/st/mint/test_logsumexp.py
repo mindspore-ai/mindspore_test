@@ -15,7 +15,7 @@
 import pytest
 import numpy as np
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 import mindspore as ms
 from mindspore import mint, Tensor, jit, context, ops
@@ -87,5 +87,4 @@ def test_f_logsumexp_dynamic():
     dim_2 = (2)
     keepdim_2 = True
     # dynamic string is not supported
-    TEST_OP(mint.logsumexp, [[input_1, dim_1, keepdim_1], [input_2, dim_2, keepdim_2]], 'logsumexp',
-            disable_yaml_check=True, disable_mode=["GRAPH_MODE"])
+    TEST_OP(mint.logsumexp, [[input_1, dim_1, keepdim_1], [input_2, dim_2, keepdim_2]], disable_mode=["GRAPH_MODE_GE"])

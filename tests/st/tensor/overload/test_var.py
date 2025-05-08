@@ -18,7 +18,7 @@ import numpy as np
 import mindspore as ms
 import mindspore.nn as nn
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 def generate_deprecated_expect_forward_output(input_x, axis=None, ddof=0, keepdims=False):
     if isinstance(input_x, ms.Tensor):
@@ -153,16 +153,16 @@ def test_tensor_var_dynamic():
     TEST_OP(
         net,
         [[input1, 0, 1, False], [input2, 1, 3, True]],
-        'var',
-        disable_input_check=True,
-        disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'],
+        disable_mode=['GRAPH_MODE_GE', 'GRAPH_MODE_O0'],
+        disable_case=['ScalarTensor'],
+        case_config={'disable_input_check': True},
     )
 
     net = VarPyBoostNet()
     TEST_OP(
         net,
         [[input1, 0, 1, False], [input2, 1, 2, True]],
-        'var',
-        disable_input_check=True,
-        disable_mode=['GRAPH_MODE'],
+        disable_mode=['GRAPH_MODE_GE'],
+        disable_case=['ScalarTensor'],
+        case_config={'disable_input_check': True},
     )

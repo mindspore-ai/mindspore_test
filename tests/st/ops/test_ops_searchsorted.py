@@ -16,7 +16,7 @@
 import numpy as np
 import pytest
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 from mindspore import ops, nn
 import mindspore as ms
@@ -119,4 +119,5 @@ def test_ops_searchsorted_dynamic(context_mode):
 
     TEST_OP(searchsorted_forward_func_static_dtype,
             [[ms.Tensor(x1), ms.Tensor(other1), right_1, sorter_1],
-             [ms.Tensor(x2), ms.Tensor(other2), right_2, sorter_2]], 'searchsorted')
+             [ms.Tensor(x2), ms.Tensor(other2), right_2, sorter_2]],
+            disable_case=['ScalarTensor'])

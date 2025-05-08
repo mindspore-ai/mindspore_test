@@ -18,7 +18,7 @@ import numpy as np
 import mindspore as ms
 from mindspore import mint
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -76,4 +76,4 @@ def test_mint_std_mean_dynamic():
 
     TEST_OP(std_mean_forward_func,
             [[ms.Tensor(x1), dim1, correction1, keepdim1], [ms.Tensor(x2), dim2, correction2, keepdim2]],
-            "std_mean", disable_mode=["GRAPH_MODE"])
+            disable_mode=["GRAPH_MODE_GE"])

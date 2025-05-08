@@ -16,7 +16,7 @@
 import numpy as np
 import pytest
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 import mindspore as ms
@@ -76,5 +76,5 @@ def test_forward_dynamic_shape():
     """
     inputs1 = [[1, 10, 2], [0, 6, 1]]
     inputs2 = [[5, 0.1, -1.2], [0, 5.5, 1.2]]
-    TEST_OP(arange_forward, inputs1, 'arange', disable_mode=['GRAPH_MODE'], disable_grad=True, disable_yaml_check=True)
-    TEST_OP(arange_forward, inputs2, 'arange', disable_mode=['GRAPH_MODE'], disable_grad=True, disable_yaml_check=True)
+    TEST_OP(arange_forward, inputs1, disable_mode=['GRAPH_MODE_GE'], case_config={'disable_grad': True})
+    TEST_OP(arange_forward, inputs2, disable_mode=['GRAPH_MODE_GE'], case_config={'disable_grad': True})

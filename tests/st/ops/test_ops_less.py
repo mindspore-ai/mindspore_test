@@ -17,7 +17,7 @@ import numpy as np
 import mindspore as ms
 from mindspore import ops
 from mindspore.ops.auto_generate import less
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 import tests.st.utils.test_utils as test_utils
@@ -162,4 +162,5 @@ def test_less_dynamic_shape():
     x2, other2 = generate_random_input((3, 4, 5, 6), np.float32)
 
     TEST_OP(less_forward_func,
-            [[ms.Tensor(x1), ms.Tensor(other1)], [ms.Tensor(x2), ms.Tensor(other2)]], 'less')
+            [[ms.Tensor(x1), ms.Tensor(other1)], [ms.Tensor(x2), ms.Tensor(other2)]],
+            case_config={'all_dim_zero': True})

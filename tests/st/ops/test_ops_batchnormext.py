@@ -22,8 +22,8 @@ from mindspore import Tensor, context
 from mindspore import ops
 from mindspore.ops.function.nn_func import batch_norm_ext
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
-from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
+from tests.st.ops.test_tools.test_op import TEST_OP
+from tests.st.ops.test_tools.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 from tests.mark_utils import arg_mark
 
 
@@ -133,7 +133,9 @@ def test_bn_dyn():
     TEST_OP(batch_norm_forward_func,
             [[Tensor(input_x1), scale1, bias1, mean1, variance1, training1, momentum1, eps1],
              [Tensor(input_x2), scale2, bias2, mean2, variance2, training2, momentum2, eps2]],
-            '', disable_input_check=True, disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor', 'ScalarTensor'],
+            case_config={'disable_input_check': True})
 
 
 def ops_batchnormext_binary_compare(input_binary_data, output_binary_data):

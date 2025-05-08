@@ -16,7 +16,7 @@
 import numpy as np
 import pytest
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.utils import test_utils
 
 import mindspore as ms
@@ -139,6 +139,9 @@ def test_tensor_sub_dynamic():
     y1 = ms.Tensor(generate_random_input((4, 6), np.float32))
     ms_data2 = ms.Tensor(generate_random_input((5, 2, 7, 3), np.float32))
     y2 = ms.Tensor(generate_random_input((5, 2, 7, 3), np.float32))
-    TEST_OP(sub_forward_func, [[ms_data1, y1], [ms_data2, y2]], 'sub', disable_mode=["GRAPH_MODE"])
-    TEST_OP(sub_ext_forward_func, [[ms_data1, y1], [ms_data2, y2]], 'sub_ext', disable_mode=['GRAPH_MODE'],
-            disable_yaml_check=True)
+    TEST_OP(sub_forward_func, [[ms_data1, y1], [ms_data2, y2]],
+            disable_mode=["GRAPH_MODE_GE"],
+            case_config={'all_dim_zero': True})
+    TEST_OP(sub_ext_forward_func, [[ms_data1, y1], [ms_data2, y2]],
+            disable_mode=['GRAPH_MODE_GE'],
+            case_config={'all_dim_zero': True})

@@ -22,7 +22,7 @@ from mindspore.mint.nn import (
     ReplicationPad1d, ReplicationPad2d, ReplicationPad3d
 )
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -264,65 +264,96 @@ def test_nn_PadNd_dynamic():
     input1d_1 = generate_random_input((2, 3), np.float32)
     input1d_2 = generate_random_input((2, 3, 4), np.float32)
     TEST_OP(pad_nd_forward_for_dyn, [[ms.Tensor(input1d_1), "constant_1d"], [ms.Tensor(input1d_2), "constant_1d"]],
-            '', disable_input_check=True, disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['ScalarTensor'],
+            case_config={'disable_input_check': True})
 
     input2d_1 = generate_random_input((2, 3, 4, 5), np.float32)
     input2d_2 = generate_random_input((2, 3, 4), np.float32)
     TEST_OP(pad_nd_forward_for_dyn, [[ms.Tensor(input2d_1), "constant_2d"], [ms.Tensor(input2d_2), "constant_2d"]],
-            '', disable_input_check=True, disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['ScalarTensor'],
+            case_config={'disable_input_check': True})
 
     input3d_1 = generate_random_input((2, 3, 4, 5), np.float32)
     input3d_2 = generate_random_input((2, 3, 4), np.float32)
     TEST_OP(pad_nd_forward_for_dyn, [[ms.Tensor(input3d_1), "constant_3d"], [ms.Tensor(input3d_2), "constant_3d"]],
-            '', disable_input_check=True, disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['ScalarTensor'],
+            case_config={'disable_input_check': True})
 
     input_zero_1d_1 = generate_random_input((2, 3, 4, 5), np.float32)
     input_zero_1d_2 = generate_random_input((2, 3, 4), np.float32)
     TEST_OP(pad_nd_forward_for_dyn, [[ms.Tensor(input_zero_1d_1), "zero_1d"], [ms.Tensor(input_zero_1d_2), "zero_1d"]],
-            '', disable_input_check=True, disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['ScalarTensor'],
+            case_config={'disable_input_check': True})
 
     input_zero_2d_1 = generate_random_input((2, 3, 4, 5), np.float32)
     input_zero_2d_2 = generate_random_input((2, 3, 4), np.float32)
     TEST_OP(pad_nd_forward_for_dyn, [[ms.Tensor(input_zero_2d_1), "zero_2d"], [ms.Tensor(input_zero_2d_2), "zero_2d"]],
-            '', disable_input_check=True, disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['ScalarTensor'],
+            case_config={'disable_input_check': True})
 
     input_zero_3d_1 = generate_random_input((2, 3, 4, 5), np.float32)
     input_zero_3d_2 = generate_random_input((2, 3, 4), np.float32)
     TEST_OP(pad_nd_forward_for_dyn, [[ms.Tensor(input_zero_3d_1), "zero_3d"], [ms.Tensor(input_zero_3d_2), "zero_3d"]],
-            '', disable_input_check=True, disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['ScalarTensor'],
+            case_config={'disable_input_check': True})
 
     input_reflection_1d_1 = generate_random_input((2, 3), np.float32)
     input_reflection_1d_2 = generate_random_input((2, 3, 4), np.float32)
     TEST_OP(pad_nd_forward_for_dyn, [[ms.Tensor(input_reflection_1d_1), "reflection_1d"], \
                                      [ms.Tensor(input_reflection_1d_2), "reflection_1d"]],
-            '', disable_input_check=True, disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor',
+                          'ScalarTensor'],
+            case_config={'disable_input_check': True})
 
     input_reflection_2d_1 = generate_random_input((2, 3, 4, 5), np.float32)
     input_reflection_2d_2 = generate_random_input((2, 3, 4), np.float32)
     TEST_OP(pad_nd_forward_for_dyn, [[ms.Tensor(input_reflection_2d_1), "reflection_2d"], \
                                      [ms.Tensor(input_reflection_2d_2), "reflection_2d"]],
-            '', disable_input_check=True, disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor',
+                          'ScalarTensor'],
+            case_config={'disable_input_check': True})
 
     input_reflection_3d_1 = generate_random_input((2, 3, 4, 5), np.float32)
     input_reflection_3d_2 = generate_random_input((2, 3, 4, 5, 6), np.float32)
     TEST_OP(pad_nd_forward_for_dyn, [[ms.Tensor(input_reflection_3d_1), "reflection_3d"], \
                                      [ms.Tensor(input_reflection_3d_2), "reflection_3d"]],
-            '', disable_input_check=True, disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor',
+                          'ScalarTensor'],
+            case_config={'disable_input_check': True})
 
     input_replication_1d_1 = generate_random_input((4, 5), np.float32)
     input_replication_1d_2 = generate_random_input((2, 3, 4), np.float32)
     TEST_OP(pad_nd_forward_for_dyn, [[ms.Tensor(input_replication_1d_1), "replication_1d"], \
                                      [ms.Tensor(input_replication_1d_2), "replication_1d"]],
-            '', disable_input_check=True, disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor',
+                          'ScalarTensor'],
+            case_config={'disable_input_check': True})
 
     input_replication_2d_1 = generate_random_input((2, 3, 4, 5), np.float32)
     input_replication_2d_2 = generate_random_input((2, 3, 4), np.float32)
     TEST_OP(pad_nd_forward_for_dyn, [[ms.Tensor(input_replication_2d_1), "replication_2d"], \
                                      [ms.Tensor(input_replication_2d_2), "replication_2d"]],
-            '', disable_input_check=True, disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor',
+                          'ScalarTensor'],
+            case_config={'disable_input_check': True,
+                         'deterministic_use_origin_inputs': True})
 
     input_replication_3d_1 = generate_random_input((2, 3, 4, 5), np.float32)
     input_replication_3d_2 = generate_random_input((2, 3, 4, 6, 9), np.float32)
     TEST_OP(pad_nd_forward_for_dyn, [[ms.Tensor(input_replication_3d_1), "replication_3d"], \
                                      [ms.Tensor(input_replication_3d_2), "replication_3d"]],
-            '', disable_input_check=True, disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor',
+                          'ScalarTensor'],
+            case_config={'disable_input_check': True})

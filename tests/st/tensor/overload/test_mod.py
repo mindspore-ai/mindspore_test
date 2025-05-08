@@ -19,7 +19,7 @@ import mindspore as ms
 from mindspore import Tensor
 from tests.mark_utils import arg_mark
 from tests.st.utils.test_utils import run_with_cell
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 
 @run_with_cell
@@ -98,8 +98,7 @@ def test_tensor_mod_dynamic():
     other2 = Tensor(np.array([[3.0, 4.0], [5.0, 6.0]]), ms.float32)
     TEST_OP(
         mod_forward_func,
-        [[input1, other1], [input2, other2]],
-        'remainder_tensor_tensor',
+        [[input1, other1], [input2, other2]]
     )
 
     input3 = Tensor(np.array([1.0, 2.0, 3.0]), ms.float32)
@@ -108,6 +107,5 @@ def test_tensor_mod_dynamic():
     other4 = -5.0
     TEST_OP(
         mod_forward_func,
-        [[input3, other3], [input4, other4]],
-        'remainder_tensor_scalar',
+        [[input3, other3], [input4, other4]]
     )

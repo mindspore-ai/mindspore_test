@@ -18,7 +18,7 @@ import mindspore as ms
 from mindspore import Tensor, context
 from mindspore.ops import flip
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -99,4 +99,6 @@ def test_flip_dynamic():
     """
     input_case1 = Tensor(np.random.rand(3, 4, 5, 6).astype(np.float32))
     input_case2 = Tensor(np.random.rand(3, 4).astype(np.float32))
-    TEST_OP(flip_forward_func, [[input_case1, (0, -1)], [input_case2, (-1, 0)]], 'reverse_v2', disable_input_check=True)
+    TEST_OP(flip_forward_func, [[input_case1, (0, -1)], [input_case2, (-1, 0)]],
+            disable_case=['ScalarTensor'],
+            case_config={'disable_input_check': True})

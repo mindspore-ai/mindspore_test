@@ -19,7 +19,7 @@ import mindspore as ms
 from mindspore import ops
 from mindspore.mint import erf
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -131,5 +131,4 @@ def test_erf_dynamic_shape():
     """
     ms_data1 = generate_random_input((2, 3, 4), np.float32)
     ms_data2 = generate_random_input((3, 4, 5, 6), np.float32)
-    TEST_OP(erf_forward_func
-            , [[ms.Tensor(ms_data1)], [ms.Tensor(ms_data2)]], 'erf')
+    TEST_OP(erf_forward_func, [[ms.Tensor(ms_data1)], [ms.Tensor(ms_data2)]])

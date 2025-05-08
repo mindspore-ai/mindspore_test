@@ -18,7 +18,7 @@ import mindspore as ms
 from mindspore import context, Tensor
 from mindspore.ops import triu
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -126,4 +126,5 @@ def test_triu_dynamic():
     """
     input_case1 = Tensor(np.random.rand(3, 4, 5, 6).astype(np.float32))
     input_case2 = Tensor(np.random.rand(3, 4).astype(np.float32))
-    TEST_OP(triu_forward_func, [[input_case1, 0], [input_case2, 1]], 'triu')
+    TEST_OP(triu_forward_func, [[input_case1, 0], [input_case2, 1]],
+            disable_case=['ScalarTensor'])

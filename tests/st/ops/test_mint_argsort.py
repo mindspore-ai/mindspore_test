@@ -17,7 +17,7 @@ import pytest
 
 from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 import mindspore as ms
 import mindspore.mint as mint
@@ -66,5 +66,7 @@ def test_argsort_dynamic_shape():
     inputs2 = ms.Tensor(np.array([[[5, 0.1, -1.2], [0, 5.5, 1.2]], [[-5, 0.1, 1.2], [0, -5.5, 1.2]]], np.float32))
 
 
-    TEST_OP(argsort_forward, [[inputs1, 1, False, True], [inputs2, -1, True, False]], 'argsort',
-            disable_mode=['GRAPH_MODE'], disable_grad=True, disable_yaml_check=True)
+    TEST_OP(argsort_forward, [[inputs1, 1, False, True], [inputs2, -1, True, False]],
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['ScalarTensor'],
+            case_config={'disable_grad': True})

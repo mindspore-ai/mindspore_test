@@ -17,7 +17,7 @@ import pytest
 import mindspore as ms
 from mindspore import mint, ops
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -65,7 +65,7 @@ def test_histc_ext_dynamic_shape():
     x1 = generate_random_input((2, 3, 4, 5), np.int32)
     x2 = generate_random_input((3, 4, 5, 6, 7), np.int32)
     TEST_OP(histc_forward_func, [[ms.Tensor(x1), 4, 0.0, 3.0], [ms.Tensor(x2), 5, 1.0, 8.0]],
-            'histc_ext', disable_yaml_check=True, disable_grad=True, disable_mode=["GRAPH_MODE"])
+            case_config={'disable_grad': True}, disable_mode=["GRAPH_MODE_GE"])
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1',

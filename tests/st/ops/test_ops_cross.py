@@ -18,7 +18,7 @@ import mindspore as ms
 from mindspore.mint import cross
 from mindspore import Tensor
 import tests.st.utils.test_utils as test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -88,4 +88,6 @@ def test_ops_cross_forward_dynamic():
     input2 = Tensor(generate_random_input((2, 3, 5, 4), np.float32))
     other2 = Tensor(generate_random_input((2, 3, 5, 4), np.float32))
 
-    TEST_OP(test_cell, [[input1, other1, 0], [input2, other2, -3]], "cross", disable_mode=["GRAPH_MODE"])
+    TEST_OP(test_cell, [[input1, other1, 0], [input2, other2, -3]],
+            disable_mode=["GRAPH_MODE_GE"],
+            disable_case=['EmptyTensor', 'ScalarTensor'])

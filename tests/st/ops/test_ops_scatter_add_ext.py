@@ -19,7 +19,7 @@ import mindspore as ms
 from mindspore.mint import scatter_add
 from mindspore import Tensor, ops, jit
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -184,5 +184,7 @@ def test_scatter_add_ext_dynamic():
     dim2 = 0
     index2 = Tensor(np.array([[0, 0, 0], [2, 2, 2], [4, 4, 4]]), dtype=ms.int64)
     src2 = Tensor(np.array([[1.123, 2, 3], [4.35, 5.131, -6.513], [7.24, -1.348, 9.314]]), dtype=ms.float32)
-    TEST_OP(scatter_add_ext_forward_func, [[x1, dim1, index1, src1], [x2, dim2, index2, src2]], 'scatter_add_ext',
-            disable_input_check=True, disable_mode=['GRAPH_MODE'])
+    TEST_OP(scatter_add_ext_forward_func, [[x1, dim1, index1, src1], [x2, dim2, index2, src2]],
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor', 'ScalarTensor'],
+            case_config={'disable_input_check': True})

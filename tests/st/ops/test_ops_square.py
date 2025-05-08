@@ -19,7 +19,7 @@ import mindspore.common.dtype as mstype
 from mindspore import ops, Tensor, jit
 from mindspore.ops import square
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -120,4 +120,4 @@ def test_square_dynamic_shape_testop():
     x1 = generate_random_input((64, 32, 3584), np.float32)
     x2 = generate_random_input((3, 512, 64, 64), np.float32)
 
-    TEST_OP(square_forward_func, [[Tensor(x1)], [Tensor(x2)]], 'square')
+    TEST_OP(square_forward_func, [[Tensor(x1)], [Tensor(x2)]])

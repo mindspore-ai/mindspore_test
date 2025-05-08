@@ -19,10 +19,10 @@ import pytest
 import mindspore as ms
 from mindspore.nn import Cell
 from mindspore.ops.auto_generate.gen_ops_def import bmm_ext as bmm
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.pynative.utils import allclose_nparray
 from tests.mark_utils import arg_mark
-from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
+from tests.st.ops.test_tools.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 
 loss = 1e-3
 
@@ -102,7 +102,10 @@ def test_ops_dynamic():
     x2 = ms.Tensor(random_input([20, 10, 10]))
     y2 = ms.Tensor(random_input([20, 10, 10]))
 
-    TEST_OP(bmm, [[x1, y1], [x2, y2]], '', disable_input_check=True, disable_yaml_check=True)
+    TEST_OP(bmm, [[x1, y1], [x2, y2]],
+            disable_case=['ScalarTensor'],
+            case_config={'disable_input_check': True,
+                         'all_dim_zero': True})
 
 
 def random_input(shape, dtype=np.float32):

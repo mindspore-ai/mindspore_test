@@ -21,7 +21,7 @@ from mindspore import dtype as mstype
 from mindspore.ops.function.array_func import new_ones
 
 import tests.st.utils.test_utils as test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -84,5 +84,4 @@ def test_new_ones_dyn_shape():
     size1 = (1, 2)
     ms_data2 = generate_random_input((3, 4, 5, 6, 7), np.float32)
     size2 = (2, 3, 4)
-    TEST_OP(new_ones_forward_func, [[ms.Tensor(ms_data1), size1], [ms.Tensor(ms_data2), size2]],
-            'new_ones', disable_yaml_check=True)
+    TEST_OP(new_ones_forward_func, [[ms.Tensor(ms_data1), size1], [ms.Tensor(ms_data2), size2]])

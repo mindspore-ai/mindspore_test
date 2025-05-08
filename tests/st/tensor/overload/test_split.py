@@ -16,7 +16,7 @@
 import numpy as np
 import pytest
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.utils import test_utils
 
 import mindspore as ms
@@ -168,15 +168,19 @@ def test_tensor_split_pyboost_dynamic():
     ms_data2 = ms.Tensor(generate_random_input((5, 2, 7, 3), np.float32))
     split_size2 = 3
     dim2 = 2
-    TEST_OP(split_pyboost_forward_func, [[ms_data1, split_size1, dim1], [ms_data2, split_size2, dim2]], 'split_tensor',
-            disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'], disable_nontensor_dynamic_type='BOTH')
+    TEST_OP(split_pyboost_forward_func, [[ms_data1, split_size1, dim1], [ms_data2, split_size2, dim2]],
+            disable_mode=['GRAPH_MODE_GE', 'GRAPH_MODE_O0'],
+            disable_case=['EmptyTensor', 'ScalarTensor'],
+            case_config={'disable_nontensor_dynamic_type': 'BOTH'})
 
     split_size1 = (2, 2)
     dim1 = 0
     split_size2 = (3, 2, 2)
     dim2 = 2
     TEST_OP(split_pyboost_forward_func, [[ms_data1, split_size1, dim1], [ms_data2, split_size2, dim2]],
-            'split_with_size', disable_mode=['GRAPH_MODE'], disable_nontensor_dynamic_type='BOTH')
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor', 'ScalarTensor'],
+            case_config={'disable_nontensor_dynamic_type': 'BOTH'})
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'],
@@ -196,5 +200,7 @@ def test_tensor_split_python_dynamic():
     split_size_or_sections2 = (4, 1, 2)
     axis2 = 2
     TEST_OP(split_python_forward_func,
-            [[ms_data1, split_size_or_sections1, axis1], [ms_data2, split_size_or_sections2, axis2]], 'split',
-            disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'], disable_nontensor_dynamic_type='BOTH')
+            [[ms_data1, split_size_or_sections1, axis1], [ms_data2, split_size_or_sections2, axis2]],
+            disable_mode=['GRAPH_MODE_GE', 'GRAPH_MODE_O0'],
+            disable_case=['EmptyTensor', 'ScalarTensor'],
+            case_config={'disable_nontensor_dynamic_type': 'BOTH'})

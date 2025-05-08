@@ -107,10 +107,6 @@ def test_avg_pool_dynamic(mode):
     Description: test dynamic tensor and dynamic scalar of avg pool.
     Expectation: expect correct result.
     """
-    # in1 = [ms.Tensor(np.arange(1 * 3 * 3 * 4).reshape(1, 3, 3, 4), ms.float32), 2, 2, "VALID", "NCHW"]
-    # in2 = [ms.Tensor(np.arange(1 * 3 * 3 * 4).reshape(1, 3, 3, 4), ms.float32), 2, 2, "VALID", "NCHW"]
-    # TEST_OP(ops.auto_generate.avg_pool, [in1, in2], dump_ir=True, grad=False)
-
     ms.context.set_context(mode=mode)
     x_dyn = ms.Tensor(shape=[None, None, None, None], dtype=ms.float32)
     x = ms.Tensor(np.arange(1 * 3 * 3 * 4).reshape(1, 3, 3, 4), ms.float32)

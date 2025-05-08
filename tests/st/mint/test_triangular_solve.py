@@ -21,8 +21,8 @@ import mindspore as ms
 from mindspore import nn, mint, Tensor
 from mindspore.ops.composite import GradOperation
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
-from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
+from tests.st.ops.test_tools.test_op import TEST_OP
+from tests.st.ops.test_tools.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 
 
 def generate_random_input(shape, dtype):
@@ -126,6 +126,7 @@ def test_triangular_solve_dyn():
     TEST_OP(mint.triangular_solve,
             [[ms.Tensor(y1), ms.Tensor(x1), True, False, False],
              [ms.Tensor(y2), ms.Tensor(x2), False, True, True]],
-            "triangular_solve",
-            disable_input_check=True,
-            disable_mode=["GRAPH_MODE"])
+            disable_mode=["GRAPH_MODE_GE"],
+            disable_case=['ScalarTensor'],
+            case_config={'disable_input_check': True,
+                         'all_dim_zero': True})

@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 import mindspore as ms
 from mindspore import mint, jit
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -151,7 +151,9 @@ def test_prelu_dynamic_shape():
     x2, w2 = generate_random_input((2, 3, 4), np.float32)
 
     TEST_OP(prelu_forward_func, [[ms.Tensor(x1), ms.Tensor(w1)], [ms.Tensor(x2), ms.Tensor(w2)]],
-            'prelu', disable_input_check=True, disable_mode=['GRAPH_MODE'])
+            disable_mode=['GRAPH_MODE_GE'],
+            case_config={'disable_input_check': True,
+                         'all_dim_zero': True})
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

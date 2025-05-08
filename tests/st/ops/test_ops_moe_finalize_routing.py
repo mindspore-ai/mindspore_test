@@ -21,7 +21,7 @@ from mindspore.nn import Cell
 from mindspore.ops.auto_generate import MoeFinalizeRouting
 
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -206,4 +206,8 @@ def test_ops_moe_finalize_routing_dyn():
     TEST_OP(moe_finalize_routing_forward_func,
             [[x1, skip1_1, skip2_1, bias1, scale1, expanded_src_to_dst1, expert_for_source_row1],
              [x2, skip1_2, skip2_2, bias2, scale2, expanded_src_to_dst2, expert_for_source_row2]],
-            '', disable_input_check=True, disable_grad=True, disable_yaml_check=True)
+            disable_case=['ScalarTensor'],
+            case_config={'disable_input_check': True,
+                         'disable_grad': True,
+                         'all_dim_zero': True,
+                         'deterministic_use_origin_inputs': True})

@@ -17,7 +17,7 @@ import numpy as np
 from mindspore.ops import clamp
 import mindspore as ms
 import tests.st.utils.test_utils as test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -142,7 +142,9 @@ def test_ops_clamp_min_max_tensor_dynamic_shape():
     max2 = ms.Tensor(generate_random_input((3, 4, 1, 6), np.float32))
 
     test_cell = test_utils.to_cell_obj(clamp_forward_func)
-    TEST_OP(test_cell, [[x1, min1, max1], [x2, min2, max2]], '', disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+    TEST_OP(test_cell, [[x1, min1, max1], [x2, min2, max2]],
+            disable_mode=['GRAPH_MODE_GE'],
+            case_config={'all_dim_zero': True})
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -161,4 +163,4 @@ def test_ops_clamp_min_max_scalar_dynamic_shape():
     max2 = 8
 
     test_cell = test_utils.to_cell_obj(clamp_forward_func)
-    TEST_OP(test_cell, [[x1, min1, max1], [x2, min2, max2]], '', disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+    TEST_OP(test_cell, [[x1, min1, max1], [x2, min2, max2]], disable_mode=['GRAPH_MODE_GE'])

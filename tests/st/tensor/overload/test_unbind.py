@@ -16,7 +16,7 @@ import pytest
 import numpy as np
 import mindspore as ms
 import mindspore.nn as nn
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 def generate_random_input(shape, dtype):
@@ -123,8 +123,7 @@ def test_tensor_unbind_dynamic():
     TEST_OP(
         net,
         [[ms.Tensor(input1), 0], [ms.Tensor(input2), 1]],
-        'unbind',
-        disable_input_check=True,
-        disable_yaml_check=True,
-        disable_mode=["GRAPH_MODE", "GRAPH_MODE_O0"],
+        disable_mode=["GRAPH_MODE_GE", "GRAPH_MODE_O0"],
+        disable_case=['EmptyTensor', 'ScalarTensor'],
+        case_config={'disable_input_check': True}
     )

@@ -20,7 +20,7 @@ from mindspore import mint, nn
 from mindspore.common.api import _pynative_executor
 from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 
 def generate_ones_input(shape, dtype):
@@ -234,17 +234,13 @@ def test_func_dropout_ext_dynamic():
 
     TEST_OP(dropout_ext_func,
             [[x1, p1, False], [x2, p2, False]],
-            "",
-            disable_input_check=True,
-            disable_yaml_check=True,
-            disable_mode=["GRAPH_MODE"])
+            disable_mode=["GRAPH_MODE_GE"],
+            case_config={'disable_input_check': True})
 
     TEST_OP(dropout_ext_func,
             [[x1, p1, True], [x2, p2, True]],
-            "",
-            disable_input_check=True,
-            disable_yaml_check=True,
-            disable_mode=["GRAPH_MODE"])
+            disable_mode=["GRAPH_MODE_GE"],
+            case_config={'disable_input_check': True})
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

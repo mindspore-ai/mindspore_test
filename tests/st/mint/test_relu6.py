@@ -17,7 +17,7 @@ import pytest
 import numpy as np
 import mindspore as ms
 from mindspore import mint, jit
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 
@@ -88,10 +88,14 @@ def test_relu6_dynamic_shape():
     """
     x1 = generate_random_input((3, 4, 5))
     x2 = generate_random_input((3, 7, 8, 3))
-    TEST_OP(relu6_forward_func, [[ms.Tensor(x1)], [ms.Tensor(x2)]], '',
-            disable_yaml_check=True, disable_input_check=True, disable_mode=['GRAPH_MODE'])
-    TEST_OP(inplace_relu6_forward_func, [[ms.Tensor(x1)], [ms.Tensor(x2)]], '',
-            disable_yaml_check=True, disable_input_check=True, disable_mode=['GRAPH_MODE'], disable_grad=True)
+    TEST_OP(relu6_forward_func, [[ms.Tensor(x1)], [ms.Tensor(x2)]],
+            disable_mode=['GRAPH_MODE_GE'],
+            case_config={'disable_input_check': True})
+    TEST_OP(inplace_relu6_forward_func, [[ms.Tensor(x1)], [ms.Tensor(x2)]],
+            disable_mode=['GRAPH_MODE_GE'],
+            case_config={'disable_input_check': True,
+                         'disable_grad': True,
+                         'all_dim_zero': True})
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

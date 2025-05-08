@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
-from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
+from tests.st.ops.test_tools.test_op import TEST_OP
+from tests.st.ops.test_tools.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 from tests.mark_utils import arg_mark
 import mindspore.nn as nn
 import mindspore as ms
@@ -120,9 +120,11 @@ def test_ops_inplace_div_dynamic_shape():
     input2 = ms.Tensor(generate_random_input((8, 9), np.float16))
     other2 = ms.Tensor(generate_random_input((8, 9), np.float32))
 
-    TEST_OP(inplace_sub_dyn_func, [[input1, other1], [input2, other2]], "inplace_sub_ext",
-            disable_input_check=True, disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'],
-            inplace_update=True, disable_yaml_check=True)
+    TEST_OP(inplace_sub_dyn_func, [[input1, other1], [input2, other2]],
+            disable_mode=['GRAPH_MODE_GE', 'GRAPH_MODE_O0'],
+            case_config={'disable_input_check': True,
+                         'all_dim_zero': True},
+            inplace_update=True)
 
     input3 = ms.Tensor(generate_random_input((7, 8, 9), np.float64))
     other3 = ms.Tensor(generate_random_input((7, 8, 9), np.float32))
@@ -132,8 +134,11 @@ def test_ops_inplace_div_dynamic_shape():
     other4 = ms.Tensor(generate_random_input((8, 9), np.float32))
     alpha4 = 3
 
-    TEST_OP(inplace_sub_alpha_dyn_func, [[input3, other3, alpha3], [input4, other4, alpha4]], "inplace_sub_ext",
-            disable_input_check=True, disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'], inplace_update=True)
+    TEST_OP(inplace_sub_alpha_dyn_func, [[input3, other3, alpha3], [input4, other4, alpha4]],
+            disable_mode=['GRAPH_MODE_GE', 'GRAPH_MODE_O0'],
+            case_config={'disable_input_check': True,
+                         'all_dim_zero': True},
+            inplace_update=True)
 
     input5 = ms.Tensor(generate_random_input((7, 8, 9), np.float32))
     other5 = 7.1
@@ -142,8 +147,10 @@ def test_ops_inplace_div_dynamic_shape():
     other6 = 8.2
 
     TEST_OP(inplace_sub_dyn_func, [[input5, other5], [input6, other6]],
-            "inplace_sub_scalar", disable_input_check=True, disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'],
-            inplace_update=True, disable_yaml_check=True)
+            disable_mode=['GRAPH_MODE_GE', 'GRAPH_MODE_O0'],
+            case_config={'disable_input_check': True,
+                         'all_dim_zero': True},
+            inplace_update=True)
 
     input7 = ms.Tensor(generate_random_input((7, 8, 9), np.float64))
     other7 = 8
@@ -154,7 +161,9 @@ def test_ops_inplace_div_dynamic_shape():
     alpha8 = 7
 
     TEST_OP(inplace_sub_alpha_dyn_func, [[input7, other7, alpha7], [input8, other8, alpha8]],
-            "inplace_sub_scalar", disable_input_check=True, disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'],
+            disable_mode=['GRAPH_MODE_GE', 'GRAPH_MODE_O0'],
+            case_config={'disable_input_check': True,
+                         'all_dim_zero': True},
             inplace_update=True)
 
 @arg_mark(plat_marks=['platform_ascend910b', 'cpu_linux', 'platform_gpu'],

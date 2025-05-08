@@ -19,7 +19,7 @@ import mindspore as ms
 from mindspore import Tensor, mint, ops, jit
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 
 @test_utils.run_with_cell
@@ -141,6 +141,5 @@ def test_mint_elu_dyn():
     """
     in1 = Tensor(np.random.randn(1, 2, 4, 4).astype(np.float32))
     in2 = Tensor(np.random.randn(2, 1, 4).astype(np.float32))
-    TEST_OP(ELU_forward_for_dyn, [[in1], [in2]], '', disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
-    TEST_OP(Inplace_ELU_forward_for_dyn, [[in1], [in2]], '', disable_yaml_check=True, inplace_update=True,
-            disable_mode=['GRAPH_MODE'])
+    TEST_OP(ELU_forward_for_dyn, [[in1], [in2]], disable_mode=['GRAPH_MODE_GE'])
+    TEST_OP(Inplace_ELU_forward_for_dyn, [[in1], [in2]], disable_mode=['GRAPH_MODE_GE'], inplace_update=True)

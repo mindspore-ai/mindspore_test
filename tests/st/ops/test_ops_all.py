@@ -17,7 +17,7 @@ import numpy as np
 import mindspore as ms
 from mindspore import ops, context
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -160,5 +160,6 @@ def test_all_dynamic_shape_testop():
     keep_dims1 = True
     keep_dims2 = False
 
-    TEST_OP(all_forward_func, [[ms.Tensor(x1), axis1, keep_dims1], [ms.Tensor(x2), axis2, keep_dims2]], 'reduce_all',
-            disable_input_check=True, disable_grad=True)
+    TEST_OP(all_forward_func, [[ms.Tensor(x1), axis1, keep_dims1], [ms.Tensor(x2), axis2, keep_dims2]],
+            disable_case=['ScalarTensor'],
+            case_config={'disable_input_check': True, 'disable_grad': True})

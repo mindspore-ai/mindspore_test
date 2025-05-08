@@ -21,8 +21,8 @@ from mindspore import mint
 from mindspore import Tensor
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
-from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
+from tests.st.ops.test_tools.test_op import TEST_OP
+from tests.st.ops.test_tools.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 
 
 @test_utils.run_with_cell
@@ -87,5 +87,7 @@ def test_batchnorm1d_dyn():
     """
     in1 = Tensor(np.random.randn(4, 4), dtype=ms.float32)
     in2 = Tensor(np.random.randn(2, 4, 2), dtype=ms.float32)
-    TEST_OP(forward_adaptive_max_pool1d_net_dyn, [[in1], [in2]], '',
-            disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+    TEST_OP(forward_adaptive_max_pool1d_net_dyn, [[in1], [in2]],
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor',
+                          'ScalarTensor'])

@@ -17,7 +17,7 @@ import pytest
 import mindspore as ms
 import mindspore.nn as nn
 from mindspore import Tensor, ops
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -139,4 +139,6 @@ def test_greater_equal_dynamic_shape():
 
     ms_data3 = GenInputData(np.float32, (5, 5, 5, 5))
     ms_data4 = GenInputData(np.float32, (5, 5, 5, 5))
-    TEST_OP(call_ge, [[ms_data1, ms_data2], [ms_data3, ms_data4]], 'greater_equal', disable_grad=True)
+    TEST_OP(call_ge, [[ms_data1, ms_data2], [ms_data3, ms_data4]],
+            case_config={'disable_grad': True,
+                         'all_dim_zero': True})

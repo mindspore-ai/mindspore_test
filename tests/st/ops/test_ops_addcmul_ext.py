@@ -16,7 +16,7 @@ import pytest
 import numpy as np
 import mindspore as ms
 from mindspore import mint, jit
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 
@@ -87,6 +87,6 @@ def test_ops_addcmul_ext_forward_dynamic_shape():
             [ms.Tensor(data1_x), ms.Tensor(data1_x1), ms.Tensor(data1_x2), data1_v],
             [ms.Tensor(data2_x), ms.Tensor(data2_x1), ms.Tensor(data2_x2), data2_v]
         ],
-        'addcmul_ext',
-        disable_mode=['GRAPH_MODE']
+        disable_mode=['GRAPH_MODE_GE'],
+        case_config={'all_dim_zero': True}
     )

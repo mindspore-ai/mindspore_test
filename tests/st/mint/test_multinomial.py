@@ -16,8 +16,8 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import mint, jit, JitConfig
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from mindspore import mint, jit
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -79,7 +79,11 @@ def test_multinomial_dynamic_shape():
 
     TEST_OP(multinomial_forward_dyn_func,
             [[tensor_1, num_samples_1, replacement_1], [tensor_2, num_samples_2, replacement_2]],
-            'multinomial_ext', disable_mode=['GRAPH_MODE'], disable_yaml_check=True, disable_grad=True)
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor',
+                          'ScalarTensor'],
+            case_config={'disable_grad': True,
+                         'deterministic_use_origin_inputs': True})
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -96,7 +100,6 @@ def test_multinomial_bfloat16(mode):
         ms.context.set_context(mode=ms.PYNATIVE_MODE)
         output = multinomial_forward_func(ms.Tensor(x, dtype=ms.bfloat16), 6, True)
     else:
-        output = (jit(multinomial_forward_func, jit_level="O0"))(ms.Tensor(x, dtype=ms.bfloat16),
-                                                                                       6, True)
+        output = (jit(multinomial_forward_func, jit_level="O0"))(ms.Tensor(x, dtype=ms.bfloat16), 6, True)
 
     assert output.asnumpy().shape == (2, 6)

@@ -17,7 +17,7 @@ import pytest
 import numpy as np
 import mindspore as ms
 from mindspore.mint import count_nonzero
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 import tests.st.utils.test_utils as test_utils
 
@@ -84,13 +84,10 @@ def test_mint_count_nonzero_forward_dynamic_shape():
     input2 = ms.Tensor(generate_random_input((3, 3, 4, 4), np.float32))
     axis2 = (0, 1, -1)
     TEST_OP(count_nonzero_forward_func, [[input1, axis1], [input2, axis2]],
-            'count_nonzero',
-            disable_yaml_check=True,
-            disable_mode=['GRAPH_MODE'])
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['ScalarTensor'])
 
     input3 = ms.Tensor(generate_random_input((2, 3, 4), np.float32))
     input4 = ms.Tensor(generate_random_input((2, 3), np.float32))
     TEST_OP(count_nonzero_forward_func, [[input3], [input4]],
-            'count_nonzero',
-            disable_yaml_check=True,
-            disable_mode=['GRAPH_MODE'])
+            disable_mode=['GRAPH_MODE_GE'])

@@ -21,7 +21,7 @@ from mindspore import Tensor, nn
 from mindspore.mint.nn import GLU
 from mindspore.mint.nn.functional import glu
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -147,11 +147,10 @@ def test_glu_dynamic():
             [x1, dim1],
             [x2, dim2],
         ],
-        'glu',
+        disable_case=['ScalarTensor']
     )
     TEST_OP(
         GLU(dim=0),
         [[x1], [x2]],
-        'glu',
-        disable_yaml_check=True,  # dim is __init__ attr
+        disable_case=['ScalarTensor']
     )

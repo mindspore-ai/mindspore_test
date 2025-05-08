@@ -16,7 +16,7 @@
 import pytest
 import numpy as np
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 import mindspore as ms
 from mindspore import Tensor
@@ -81,5 +81,7 @@ def test_fold_dynamic():
             [input_case1, (12, 16), (6, 5), (3, 2), (2, 3), (2, 5)],
             [input_case2, (8, 8), (3, 3), (2, 2), (1, 1), (3, 3)],
         ],
-        "col2im_ext", disable_input_check=True, disable_mode=['GRAPH_MODE'],
+        disable_mode=['GRAPH_MODE_GE'],
+        disable_case=['EmptyTensor', 'ScalarTensor'],
+        case_config={'disable_input_check': True}
     )

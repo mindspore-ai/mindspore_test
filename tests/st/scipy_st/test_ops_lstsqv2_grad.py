@@ -17,7 +17,7 @@ import numpy as np
 import mindspore as ms
 from mindspore import ops, jit
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 
 np.random.seed(0)
@@ -112,5 +112,7 @@ def test_lstsqv2_grad_dynamic_shape():
     inputs1 = [ms.Tensor(Dout1), ms.Tensor(A1), ms.Tensor(B1)]
     inputs2 = [ms.Tensor(Dout2), ms.Tensor(A2), ms.Tensor(B2)]
 
-    TEST_OP(lstsqv2_grad_forward_func, [
-        inputs1, inputs2], 'lstsqv2_grad', disable_grad=True, disable_yaml_check=True)
+    TEST_OP(lstsqv2_grad_forward_func,
+            [inputs1, inputs2],
+            disable_case=['ScalarTensor'],
+            case_config={'disable_grad': True})

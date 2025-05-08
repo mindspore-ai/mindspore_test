@@ -21,7 +21,7 @@ import mindspore.common.dtype as mstype
 import mindspore as ms
 from mindspore.mint import xlogy
 from mindspore import ops, Tensor
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.common.random_generator import generate_numpy_ndarray_by_randn
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
@@ -187,7 +187,9 @@ def test_xlogy_dynamic_shape():
     y2 = Tensor(np.abs(generate_random_input((5, 2, 3, 1), np.float32)) + 0.01)
 
     test_cell = test_utils.to_cell_obj(xlogy_forward_func)
-    TEST_OP(test_cell, [[x1, y1], [x2, y2]], '', disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+    TEST_OP(test_cell, [[x1, y1], [x2, y2]],
+            disable_mode=['GRAPH_MODE_GE'],
+            case_config={'all_dim_zero': True})
 
     x1 = Tensor(generate_random_input((2, 3, 4), np.float32))
     y1 = 2
@@ -196,4 +198,6 @@ def test_xlogy_dynamic_shape():
     y2 = 3
 
     test_cell = test_utils.to_cell_obj(xlogy_forward_func)
-    TEST_OP(test_cell, [[x1, y1], [x2, y2]], '', disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+    TEST_OP(test_cell, [[x1, y1], [x2, y2]],
+            disable_mode=['GRAPH_MODE_GE'],
+            case_config={'all_dim_zero': True})

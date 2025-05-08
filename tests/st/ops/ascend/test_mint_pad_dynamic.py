@@ -13,7 +13,7 @@
 # limitations under the License.
 # ============================================================================
 import numpy as np
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 import mindspore as ms
 from mindspore import mint
@@ -50,9 +50,12 @@ def test_ops_pad_constant_dynamic():
     padding2 = (1, 2)
     value2 = 1
 
-    TEST_OP(pad_constant_func, [[ms.Tensor(input1), padding1, value1], [ms.Tensor(input2), padding2, value2]],
-            'constant_pad_nd', disable_mode=['GRAPH_MODE'], disable_nontensor_dynamic_type='MUTABLE_LEN',
-            disable_input_check=True, disable_yaml_check=True)
+    TEST_OP(pad_constant_func,
+            [[ms.Tensor(input1), padding1, value1], [ms.Tensor(input2), padding2, value2]],
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor', 'ScalarTensor'],
+            case_config={'disable_input_check': True,
+                         'disable_nontensor_dynamic_type': 'MUTABLE_LEN'})
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -68,9 +71,12 @@ def test_ops_pad_reflect_1d_dynamic():
     input2 = generate_random_input((2, 3, 4), np.float32)
     padding2 = (1, 2)
 
-    TEST_OP(pad_reflect_func, [[ms.Tensor(input1), padding1], [ms.Tensor(input2), padding2]],
-            'reflection_pad_1d', disable_mode=['GRAPH_MODE'], disable_nontensor_dynamic_type='MUTABLE_LEN',
-            disable_input_check=True, disable_yaml_check=True)
+    TEST_OP(pad_reflect_func,
+            [[ms.Tensor(input1), padding1], [ms.Tensor(input2), padding2]],
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor', 'ScalarTensor'],
+            case_config={'disable_input_check': True,
+                         'disable_nontensor_dynamic_type': 'MUTABLE_LEN'})
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -86,9 +92,12 @@ def test_ops_pad_reflect_2d_dynamic():
     input2 = generate_random_input((2, 3, 4, 4), np.float64)
     padding2 = (1, 2, 1, 1)
 
-    TEST_OP(pad_reflect_func, [[ms.Tensor(input1), padding1], [ms.Tensor(input2), padding2]],
-            'reflection_pad_2d', disable_mode=['GRAPH_MODE'], disable_nontensor_dynamic_type='MUTABLE_LEN',
-            disable_input_check=True, disable_yaml_check=True)
+    TEST_OP(pad_reflect_func,
+            [[ms.Tensor(input1), padding1], [ms.Tensor(input2), padding2]],
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor', 'ScalarTensor'],
+            case_config={'disable_input_check': True,
+                         'disable_nontensor_dynamic_type': 'MUTABLE_LEN'})
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -104,9 +113,12 @@ def test_ops_pad_reflect_3d_dynamic():
     input2 = generate_random_input((2, 3, 3, 4, 4), np.float32)
     padding2 = (1, 1, 1, 2, 1, 2)
 
-    TEST_OP(pad_reflect_func, [[ms.Tensor(input1), padding1], [ms.Tensor(input2), padding2]],
-            'reflection_pad_3d', disable_mode=['GRAPH_MODE'], disable_nontensor_dynamic_type='MUTABLE_LEN',
-            disable_input_check=True, disable_yaml_check=True)
+    TEST_OP(pad_reflect_func,
+            [[ms.Tensor(input1), padding1], [ms.Tensor(input2), padding2]],
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor', 'ScalarTensor'],
+            case_config={'disable_input_check': True,
+                         'disable_nontensor_dynamic_type': 'MUTABLE_LEN'})
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -122,9 +134,12 @@ def test_ops_pad_replicate_1d_dynamic():
     input2 = generate_random_input((2, 3, 4), np.float32)
     padding2 = (1, 2)
 
-    TEST_OP(pad_replicate_func, [[ms.Tensor(input1), padding1], [ms.Tensor(input2), padding2]],
-            'replication_pad_1d', disable_mode=['GRAPH_MODE'], disable_nontensor_dynamic_type='MUTABLE_LEN',
-            disable_input_check=True, disable_yaml_check=True)
+    TEST_OP(pad_replicate_func,
+            [[ms.Tensor(input1), padding1], [ms.Tensor(input2), padding2]],
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor', 'ScalarTensor'],
+            case_config={'disable_input_check': True,
+                         'disable_nontensor_dynamic_type': 'MUTABLE_LEN'})
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -140,9 +155,12 @@ def test_ops_pad_replicate_2d_dynamic():
     input2 = generate_random_input((2, 3, 4, 4), np.float64)
     padding2 = (1, 2, 1, 1)
 
-    TEST_OP(pad_replicate_func, [[ms.Tensor(input1), padding1], [ms.Tensor(input2), padding2]],
-            'replication_pad_2d', disable_mode=['GRAPH_MODE'], disable_nontensor_dynamic_type='MUTABLE_LEN',
-            disable_input_check=True, disable_yaml_check=True)
+    TEST_OP(pad_replicate_func,
+            [[ms.Tensor(input1), padding1], [ms.Tensor(input2), padding2]],
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor', 'ScalarTensor'],
+            case_config={'disable_input_check': True,
+                         'disable_nontensor_dynamic_type': 'MUTABLE_LEN'})
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -158,6 +176,9 @@ def test_ops_pad_replicate_3d_dynamic():
     input2 = generate_random_input((2, 3, 3, 4, 4), np.float32)
     padding2 = (1, 1, 1, 2, 1, 2)
 
-    TEST_OP(pad_replicate_func, [[ms.Tensor(input1), padding1], [ms.Tensor(input2), padding2]],
-            'replication_pad_3d', disable_mode=['GRAPH_MODE'], disable_nontensor_dynamic_type='MUTABLE_LEN',
-            disable_input_check=True, disable_yaml_check=True)
+    TEST_OP(pad_replicate_func,
+            [[ms.Tensor(input1), padding1], [ms.Tensor(input2), padding2]],
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor', 'ScalarTensor'],
+            case_config={'disable_input_check': True,
+                         'disable_nontensor_dynamic_type': 'MUTABLE_LEN'})

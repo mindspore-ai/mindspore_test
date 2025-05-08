@@ -20,7 +20,7 @@ import mindspore as ms
 from mindspore import ops
 from mindspore.nn import Cell
 from mindspore.ops import matmul
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.pynative.utils import allclose_nparray
 from tests.mark_utils import arg_mark
 
@@ -136,7 +136,8 @@ def test_ops_dynamic():
     x2 = ms.Tensor(random_input([4, 2, 5, 6]))
     y2 = ms.Tensor(random_input([3, 4, 2, 6, 5]))
 
-    TEST_OP(matmul, [[x1, y1], [x2, y2]], '', disable_yaml_check=True)
+    TEST_OP(matmul, [[x1, y1], [x2, y2]],
+            disable_case=['ScalarTensor'])
 
 
 @arg_mark(plat_marks=['platform_ascend', 'cpu_linux'], level_mark='level1',

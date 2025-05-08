@@ -17,7 +17,7 @@ import numpy as np
 import mindspore as ms
 from mindspore import mint, Tensor, context
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 
 def allclose_forward_func(x, y, rtol, atol, equal_nan):
@@ -118,7 +118,9 @@ def test_allclose_dynamic_shape_testop():
     atol = 1e-08
     equal_nan = False
     TEST_OP(allclose_forward_func,
-            [[Tensor(x1), Tensor(y1), rtol, atol, equal_nan], [
-                Tensor(x2), Tensor(y2), rtol, atol, equal_nan]],
-            '', disable_input_check=True, disable_yaml_check=True, disable_grad=True,
-            disable_tensor_dynamic_type='DYNAMIC_RANK', disable_mode=['GRAPH_MODE'])
+            [[Tensor(x1), Tensor(y1), rtol, atol, equal_nan],
+             [Tensor(x2), Tensor(y2), rtol, atol, equal_nan]],
+            disable_mode=['GRAPH_MODE_GE'],
+            case_config={'disable_input_check': True,
+                         'disable_tensor_dynamic_type': 'DYNAMIC_RANK',
+                         'all_dim_zero': True})

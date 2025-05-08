@@ -19,7 +19,7 @@ import mindspore.nn as nn
 from mindspore import Tensor
 from mindspore import mint
 from mindspore.mint.nn.functional import conv1d
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -236,4 +236,7 @@ def test_conv1d_dynamic():
     groups = 1
     TEST_OP(conv1d, [[x1, weight1, bias, stride, padding, dilation, groups],
                      [x2, weight2, bias, stride, padding, dilation, groups]],
-            'conv1d', disable_input_check=True, disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor',
+                          'ScalarTensor'],
+            case_config={'disable_input_check': True})

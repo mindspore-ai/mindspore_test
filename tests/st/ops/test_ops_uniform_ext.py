@@ -21,7 +21,7 @@ from mindspore import Tensor
 from mindspore.ops.operations.random_ops import UniformExt
 from mindspore.nn import Cell
 
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 rtol = 1e-3
@@ -116,10 +116,14 @@ def test_op():
     seed2 = Tensor(42, dtype=mindspore.int64)
     offset2 = Tensor(3, dtype=mindspore.int64)
 
-    TEST_OP(UniformExtCell(), [
-        [mindspore.Tensor(x1), from_, to, seed1, offset1],
-        [mindspore.Tensor(x2), from_, to, seed2, offset2],
-    ], 'uniform_ext', disable_input_check=True, disable_mode=['GRAPH_MODE'], disable_grad=True, inplace_update=True)
+    TEST_OP(UniformExtCell(),
+            [[mindspore.Tensor(x1), from_, to, seed1, offset1],
+             [mindspore.Tensor(x2), from_, to, seed2, offset2]],
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor'],
+            case_config={'disable_input_check': True,
+                         'disable_grad': True},
+            inplace_update=True)
 
 
 def random_input(shape):

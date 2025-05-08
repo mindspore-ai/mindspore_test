@@ -19,7 +19,7 @@ from mindspore import Tensor
 from mindspore.ops import swiglu
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 def generate_random_input(shape, dtype):
     return np.random.randn(*shape).astype(dtype)
@@ -119,4 +119,6 @@ def test_ops_swiglu_dynamic_shape():
     dim1 = 1
     x2 = generate_random_input((4, 5, 7, 9), np.float32)
     dim2 = -4
-    TEST_OP(swiglu_forward_func, [[ms.Tensor(x1), dim1], [ms.Tensor(x2), dim2]], 'swiglu', disable_mode=['GRAPH_MODE'])
+    TEST_OP(swiglu_forward_func, [[ms.Tensor(x1), dim1], [ms.Tensor(x2), dim2]],
+            disable_case=['ScalarTensor'],
+            disable_mode=['GRAPH_MODE_GE'])

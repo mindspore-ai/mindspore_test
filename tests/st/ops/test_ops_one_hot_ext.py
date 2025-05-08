@@ -19,9 +19,9 @@ from mindspore.nn import Cell
 from mindspore.ops.function.array_func import one_hot_ext as one_hot
 from mindspore import ops, context
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
-from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
+from tests.st.ops.test_tools.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 
 
 def generate_random_input(num_classes):
@@ -234,8 +234,10 @@ def test_onehot_dynamic_shape_testop():
     x1 = generate_random_input(2)
     x2 = generate_random_input(2)
 
-    TEST_OP(onehot_forward_func, [[ms.Tensor(x1), 3], [ms.Tensor(x2), 3]], '', disable_input_check=True,
-            disable_yaml_check=True, disable_grad=True)
+    TEST_OP(onehot_forward_func, [[ms.Tensor(x1), 3], [ms.Tensor(x2), 3]],
+            disable_case=['EmptyTensor'],
+            case_config={'disable_input_check': True,
+                         'disable_grad': True})
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

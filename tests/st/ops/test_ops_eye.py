@@ -17,7 +17,7 @@ import pytest
 import mindspore as ms
 from mindspore import mint
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -60,4 +60,4 @@ def test_eye_dynamic():
     Expectation: the result of Eye is correct.
     """
 
-    TEST_OP(eye_forward_func, [[3, 3], [4, 5]], '', disable_yaml_check=True)
+    TEST_OP(eye_forward_func, [[3, 3], [4, 5]])

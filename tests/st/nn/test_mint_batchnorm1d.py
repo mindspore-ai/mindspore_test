@@ -21,7 +21,7 @@ import mindspore.mint.nn as nn
 from mindspore import Tensor, jit
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 
 @test_utils.run_with_cell
@@ -96,6 +96,10 @@ def test_batchnorm1d_dyn():
     in1 = Tensor(np.array([[1, 3, 3, 5], [2, 4, 6, 8]]), dtype=ms.float32)
     in2 = Tensor(
         np.array([[1, 3, 3, 5], [2, 4, 6, 8], [2, 5, 1, 8]]), dtype=ms.float32)
-    TEST_OP(forward_batch_norm_1d_for_dyn, [[in1], [in2]], '', disable_input_check=True,
-            disable_yaml_check=True, disable_mode=['GRAPH_MODE'],
-            disable_resize=True, disable_tensor_dynamic_type='DYNAMIC_RANK')
+    TEST_OP(forward_batch_norm_1d_for_dyn, [[in1], [in2]],
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor',
+                          'ScalarTensor'],
+            case_config={'disable_input_check': True,
+                         'disable_resize': True,
+                         'disable_tensor_dynamic_type': 'DYNAMIC_RANK'})

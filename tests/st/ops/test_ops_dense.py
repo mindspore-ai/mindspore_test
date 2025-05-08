@@ -5,7 +5,7 @@ from mindspore.ops import Dense
 from mindspore.ops.composite.base import GradOperation
 
 import mindspore
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -170,7 +170,9 @@ def test_op():
 
         inputs_seq.append([x, w, b])
 
-    TEST_OP(dense_cell, inputs_seq, '', disable_input_check=True, disable_yaml_check=True)
+    TEST_OP(dense_cell, inputs_seq,
+            disable_case=['EmptyTensor', 'ScalarTensor'],
+            case_config={'disable_input_check': True})
 
 
 def random_input(shape, dtype=np.float32):

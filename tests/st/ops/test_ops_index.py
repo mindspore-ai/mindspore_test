@@ -19,7 +19,7 @@ from mindspore.common import mutable
 from mindspore.ops.auto_generate.gen_ops_def import index
 from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 
 def generate_random_input(shape, dtype):
@@ -164,17 +164,17 @@ def test_index_dynamic_shape():
     indices4 = np.array([[1, 1, 1], [1, 0, 1]], dtype=np.bool_)
     indices5 = np.array([1], dtype=np.int32)
 
-    TEST_OP(index_forward_func
-            , [[ms.Tensor(ms_data1), mutable([ms.Tensor(indices1), ms.Tensor(indices2)])],
-               [ms.Tensor(ms_data2), mutable([ms.Tensor(indices3)])]]
-            , 'index'
-            , disable_mode=['GRAPH_MODE']
+    TEST_OP(index_forward_func,
+            [[ms.Tensor(ms_data1), mutable([ms.Tensor(indices1), ms.Tensor(indices2)])],
+             [ms.Tensor(ms_data2), mutable([ms.Tensor(indices3)])]],
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor', 'ScalarTensor', 'GradByRequirement']
             )
 
-    TEST_OP(index_forward_func
-            , [[ms.Tensor(ms_data1), mutable([ms.Tensor(indices4)])],
-               [ms.Tensor(ms_data2), mutable([ms.Tensor(indices3), ms.Tensor(indices5)])]]
-            , 'index'
-            , disable_mode=['GRAPH_MODE']
-            , disable_tensor_dynamic_type="DYNAMIC_RANK"
+    TEST_OP(index_forward_func,
+            [[ms.Tensor(ms_data1), mutable([ms.Tensor(indices4)])],
+             [ms.Tensor(ms_data2), mutable([ms.Tensor(indices3), ms.Tensor(indices5)])]],
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor', 'ScalarTensor', 'GradByRequirement'],
+            case_config={'disable_tensor_dynamic_type': "DYNAMIC_RANK"}
             )

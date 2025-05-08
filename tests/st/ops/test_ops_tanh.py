@@ -17,7 +17,7 @@ import numpy as np
 import mindspore as ms
 from mindspore import context, Tensor
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -97,4 +97,4 @@ def test_tanh_dynamic_shape_testop():
     x1 = generate_random_input((3, 4, 5), np.float32)
     x2 = generate_random_input((3, 7, 8, 3), np.float32)
 
-    TEST_OP(ms.ops.tanh, [[ms.Tensor(x1)], [ms.Tensor(x2)]], 'tanh')
+    TEST_OP(ms.ops.tanh, [[ms.Tensor(x1)], [ms.Tensor(x2)]])

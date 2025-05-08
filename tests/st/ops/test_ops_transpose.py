@@ -19,7 +19,7 @@ from mindspore import ops, jit
 from mindspore.mint import transpose
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 
 def generate_random_input(shape, dtype):
@@ -97,5 +97,6 @@ def test_ops_transpose_dynamic_shape():
     x2 = generate_random_input((3, 1, 2, 1, 4), np.float32)
     dim0_1 = 2
     dim1_1 = 3
-    TEST_OP(transpose_forward_func, [[ms.Tensor(x1), dim0_0, dim1_0], [ms.Tensor(x2), dim0_1, dim1_1]]
-            , 'transpose_ext_view', disable_mode=['GRAPH_MODE'])
+    TEST_OP(transpose_forward_func, [[ms.Tensor(x1), dim0_0, dim1_0], [ms.Tensor(x2), dim0_1, dim1_1]],
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['ScalarTensor'])

@@ -18,7 +18,7 @@ import pytest
 import mindspore as ms
 from mindspore import mint, jit
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 
 def generate_random_input(shape, dtype):
@@ -77,7 +77,7 @@ def test_dot_dynamic_shape():
     input1, other1 = generate_random_input((10,), np.float32)
     input2, other2 = generate_random_input((20,), np.float32)
     TEST_OP(dot_forward_func, [[ms.Tensor(input1), ms.Tensor(other1)], [ms.Tensor(input2), ms.Tensor(other2)]],
-            'dot', disable_input_check=True, disable_mode=['GRAPH_MODE'])
+            disable_mode=['GRAPH_MODE_GE'], disable_case=['ScalarTensor'], case_config={'disable_input_check': True})
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

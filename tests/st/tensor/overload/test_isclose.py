@@ -16,7 +16,7 @@
 import numpy as np
 import pytest
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.utils import test_utils
 
 import mindspore as ms
@@ -134,8 +134,10 @@ def test_tensor_isclose_dynamic():
     atol2 = 1e-08
     equal_nan2 = False
     TEST_OP(isclose_forward_func1,
-            [[ms_data1, other1, rtol1, atol1, equal_nan1], [ms_data2, other2, rtol2, atol2, equal_nan2]], 'isclose',
-            disable_mode=["GRAPH_MODE"], disable_grad=True)
+            [[ms_data1, other1, rtol1, atol1, equal_nan1], [ms_data2, other2, rtol2, atol2, equal_nan2]],
+            disable_mode=["GRAPH_MODE_GE"],
+            case_config={'disable_grad': True, 'all_dim_zero': True})
     TEST_OP(isclose_forward_func2,
-            [[ms_data1, x2_1, rtol1, atol1, equal_nan1], [ms_data2, x2_2, rtol2, atol2, equal_nan2]], 'isclose',
-            disable_mode=["GRAPH_MODE"], disable_grad=True, disable_yaml_check=True)
+            [[ms_data1, x2_1, rtol1, atol1, equal_nan1], [ms_data2, x2_2, rtol2, atol2, equal_nan2]],
+            disable_mode=["GRAPH_MODE_GE"],
+            case_config={'disable_grad': True, 'all_dim_zero': True})

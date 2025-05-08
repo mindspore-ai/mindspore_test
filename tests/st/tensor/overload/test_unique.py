@@ -17,7 +17,7 @@ import numpy as np
 import mindspore as ms
 import tests.st.utils.test_utils as test_utils
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 
 def generate_random_input(shape):
@@ -135,5 +135,7 @@ def test_tensor_unique_dynamic_shape():
     dim2 = 1
 
     test_cell = test_utils.to_cell_obj(unique_forward_func_dynamic)
-    TEST_OP(test_cell, [[x1, sorted1, dim1], [x2, sorted2, dim2]], "", disable_grad=True, disable_mode=["GRAPH_MODE"],
-            disable_yaml_check=True)
+    TEST_OP(test_cell, [[x1, sorted1, dim1], [x2, sorted2, dim2]],
+            disable_mode=["GRAPH_MODE_GE"],
+            disable_case=['ScalarTensor'],
+            case_config={'disable_grad': True})

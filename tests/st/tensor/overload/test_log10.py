@@ -20,7 +20,7 @@ import numpy as np
 import pytest
 
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.utils import test_utils
 
 
@@ -70,4 +70,4 @@ def test_method_log10_dynamic():
     """
     ms_data1 = ms.Tensor(genereate_random_input((4, 3, 6), np.float32))
     ms_data2 = ms.Tensor(genereate_random_input((5, 2, 7, 3), np.float32))
-    TEST_OP(log10_forward_func, [[ms_data1], [ms_data2]], 'log10')
+    TEST_OP(log10_forward_func, [[ms_data1], [ms_data2]])

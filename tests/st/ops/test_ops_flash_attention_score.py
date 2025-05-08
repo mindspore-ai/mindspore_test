@@ -20,7 +20,7 @@ from mindspore import Tensor, context
 from mindspore.nn import Cell
 from mindspore.ops.composite import GradOperation
 from mindspore.ops import flash_attention_score
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 
@@ -291,10 +291,12 @@ def test_ops_flash_attention_score_dynamic(input_layout):
     query2, key2, value2, _, _, _ = generate_inputs(B2, N2, N2, S2, S2, D2, input_layout, dtype)
     actual_seq_qlen2 = (2, 8)
     actual_seq_kvlen2 = (2, 8)
-    TEST_OP(flash_attention_score_func, \
-            [[query1, key1, value1, head_num1, actual_seq_qlen1, actual_seq_kvlen1, input_layout], \
-             [query2, key2, value2, head_num2, actual_seq_qlen2, actual_seq_kvlen2, input_layout]], \
-            '', disable_input_check=True, disable_yaml_check=True, disable_mode=['GRAPH_MODE'], ignore_output_index=2)
+    TEST_OP(flash_attention_score_func,
+            [[query1, key1, value1, head_num1, actual_seq_qlen1, actual_seq_kvlen1, input_layout],
+             [query2, key2, value2, head_num2, actual_seq_qlen2, actual_seq_kvlen2, input_layout]],
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor', 'ScalarTensor'],
+            case_config={'disable_input_check': True, 'ignore_output_index': 2})
 
 
 def generate_unpad_full_attn_mask(batch, seq_len, actual_seq_qlen, actual_seq_kvlen):

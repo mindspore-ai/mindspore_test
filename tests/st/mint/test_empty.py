@@ -20,7 +20,7 @@ import mindspore as ms
 from mindspore.common import dtype as mstype
 from mindspore import mint
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 
 class Net(ms.nn.Cell):
@@ -152,5 +152,7 @@ def test_empty_dynamic_shape():
     Description: call ops.extend.empty with valid input and index.
     Expectation: return the correct value.
     """
-    TEST_OP(empty_forward_func_dyn_test, [[(2, 3)], [(3, 4, 5)]], '', disable_yaml_check=True,
-            disable_grad=True, disable_mode=['GRAPH_MODE'])
+    TEST_OP(empty_forward_func_dyn_test,
+            [[(2, 3)], [(3, 4, 5)]],
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['ScalarTensor'])

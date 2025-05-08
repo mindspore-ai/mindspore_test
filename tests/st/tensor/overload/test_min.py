@@ -16,7 +16,7 @@
 import numpy as np
 import pytest
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.utils import test_utils
 
 import mindspore as ms
@@ -166,8 +166,13 @@ def test_tensor_min_dynamic():
     ms_data2 = ms.Tensor(generate_random_input((5, 2, 7, 3), np.float32))
     axis2 = 2
     keepdims2 = True
-    TEST_OP(min_forward_func1, [[ms_data1], [ms_data2]], 'min', disable_mode=['GRAPH_MODE'],
-            disable_tensor_dynamic_type='DYNAMIC_RANK', disable_resize=True)
-    TEST_OP(min_forward_func2, [[ms_data1, axis1, keepdims1], [ms_data2, axis2, keepdims2]], 'min',
-            disable_mode=['GRAPH_MODE'],
-            disable_yaml_check=True, disable_tensor_dynamic_type='DYNAMIC_RANK', disable_grad=True, disable_resize=True)
+    TEST_OP(min_forward_func1, [[ms_data1], [ms_data2]],
+            disable_mode=['GRAPH_MODE_GE'],
+            case_config={'disable_tensor_dynamic_type': 'DYNAMIC_RANK',
+                         'disable_resize': True})
+    TEST_OP(min_forward_func2, [[ms_data1, axis1, keepdims1], [ms_data2, axis2, keepdims2]],
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor', 'ScalarTensor'],
+            case_config={'disable_tensor_dynamic_type': 'DYNAMIC_RANK',
+                         'disable_grad': True,
+                         'disable_resize': True})

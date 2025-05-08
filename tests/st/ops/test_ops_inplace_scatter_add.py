@@ -17,7 +17,7 @@ import pytest
 import numpy as np
 import mindspore as ms
 from mindspore import Tensor, ops
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -116,5 +116,6 @@ def test_inplace_scatter_add_dynamic():
     index2 = Tensor(np.array([[0, 0, 0], [2, 2, 2], [4, 4, 4]]), dtype=ms.int64)
     src2 = Tensor(np.array([[1.123, 2, 3], [4.35, 5.131, -6.513], [7.24, -1.348, 9.314]]), dtype=ms.float32)
     TEST_OP(inplace_scatter_add_forward_func, [[x1, dim1, index1, src1], [x2, dim2, index2, src2]],
-            'inplace_scatter_add', disable_input_check=True, disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'],
-            disable_grad=True)
+            disable_mode=['GRAPH_MODE_GE', 'GRAPH_MODE_O0'],
+            disable_case=['ScalarTensor'],
+            case_config={'disable_input_check': True, 'disable_grad': True})

@@ -17,7 +17,7 @@ import numpy as np
 from mindspore.mint import unique_consecutive
 import mindspore as ms
 import tests.st.utils.test_utils as test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 def generate_random_input(shape):
@@ -157,4 +157,6 @@ def test_ops_unique_consecutive_dynamic_shape():
     dim2 = 1
 
     test_cell = test_utils.to_cell_obj(unique_consecutive_forward_func_dynamic)
-    TEST_OP(test_cell, [[x1, dim1], [x2, dim2]], "", disable_grad=True, disable_yaml_check=True)
+    TEST_OP(test_cell, [[x1, dim1], [x2, dim2]],
+            disable_case=['EmptyTensor', 'ScalarTensor'],
+            case_config={'disable_grad': True})

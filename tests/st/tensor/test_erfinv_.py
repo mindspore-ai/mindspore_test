@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 import mindspore as ms
 from mindspore import Tensor, context, ops, mint
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
 
@@ -80,5 +80,5 @@ def test_t_erfinv__dynamic():
     input_1 = Tensor(np.zeros((5, 5)), dtype=ms.float32)
     input_2 = Tensor(np.ones((3, 4, 5)), dtype=ms.float32)
     # dynamic string is not supported
-    TEST_OP(erfinv__forward_backward_func, [[input_1], [input_2]], 'inplace_erfinv',
-            disable_yaml_check=True, disable_mode=["GRAPH_MODE"])
+    TEST_OP(erfinv__forward_backward_func, [[input_1], [input_2]],
+            disable_mode=["GRAPH_MODE_GE"])

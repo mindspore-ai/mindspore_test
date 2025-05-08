@@ -26,7 +26,7 @@ import mindspore.ops as ops
 from mindspore.ops.function import incre_flash_attention
 from mindspore.common import JitConfig
 
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 RANDOM_MAX = 1
@@ -184,7 +184,7 @@ def gen_ifa_golden(shape,
     else:
         scalar = 1 / math.sqrt(D)
     dropscalar, _ = -10000, 1
-    # 计算真实的actual seq length
+    # compute real actual seq length
     if not p_a_s_control[2]:
         actual_seq_length = None
 
@@ -226,7 +226,7 @@ def gen_ifa_golden(shape,
             masks = np.random.uniform(0, 2, mask_shape).astype(
                 np.uint8).astype(np.float16)
 
-    # 生成pse_shift
+    # generate pse_shift
     pse_shift = np.zeros(p_shape)
     if p_a_s_control[0]:
         maya = get_slopes(p_shape[1])
@@ -254,14 +254,14 @@ def gen_ifa_golden(shape,
         squeeze = ops.Squeeze(1)
         masks_right = squeeze(masks_right)
     masks_right = masks_right.asnumpy()
-    # Paged Attention 场景，生成block_table, k_cache, v_cache
+    # Paged Attention, generate block_table, k_cache, v_cache
     block_table = None
     k_cache = None
     v_cache = None
     if page_attention_flag:
         blockNum = 0
         maxBlockNumPerSeq = ceil_div(max(actual_seq_length_real),
-                                     block_size)  # TODO:更大的maxBlockNumPerSeq
+                                     block_size)
         blockNumPerBlock = []
         for actual_seq in actual_seq_length_real:
             blockNumPerBlock.append(ceil_div(actual_seq, block_size))
@@ -311,7 +311,7 @@ def gen_ifa_golden(shape,
     new_kv_shape = [B, S, kvN, D]
     if page_attention_flag:
         new_kv_shape = [B, max(actual_seq_length_real), kvN, D]
-    q = q.reshape(new_q_shape).transpose(0, 2, 1, 3)  # 最终CPU计算，使用的是B N S D格式
+    q = q.reshape(new_q_shape).transpose(0, 2, 1, 3)
     v = v.reshape(new_kv_shape).transpose(0, 2, 1, 3)
     k = k.reshape(new_kv_shape).transpose(0, 2, 1, 3)
     q = np.ascontiguousarray(q)
@@ -736,5 +736,7 @@ def test_incre_flash_attention_bsh_fwd_dynamic():
                    None, None, block_table0, block_size0, N0, data_format0, scale_value0, num_key_value_heads0, 1, None]
     net_inputs1 = [query1, key1, value1, attn_mask1, actual_seq_lengths1, pse_shift1, None, None, None, None, None,
                    None, None, block_table1, block_size1, N1, data_format1, scale_value1, num_key_value_heads1, 1, None]
-    TEST_OP(incre_flash_attention_func, [net_inputs0, net_inputs1], "incre_flash_attention", disable_input_check=True,
-            disable_grad=True)
+    TEST_OP(incre_flash_attention_func, [net_inputs0, net_inputs1],
+            disable_case=['ScalarTensor', 'EmptyTensor'],
+            case_config={'disable_input_check': True,
+                         'disable_grad': True})

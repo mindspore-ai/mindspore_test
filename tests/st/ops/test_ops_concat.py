@@ -22,10 +22,10 @@ import mindspore as ms
 from mindspore import ops, nn, Tensor, context, mutable
 import mindspore.ops.functional as F
 from mindspore.device_context.cpu.op_tuning import threads_num
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
-from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
+from tests.st.ops.test_tools.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 
 def concat_func(x1, x2, axis):
     return F.concat((x1, x2), axis=axis)
@@ -157,8 +157,10 @@ def test_concat_dynamic():
     axis = 1
     inputs_case1, _ = forward_datas_prepare((2, 4), axis=axis, need_expect=False)
     inputs_case2, _ = forward_datas_prepare((2, 2, 2), axis=axis, need_expect=False)
-    TEST_OP(concat_func, [[*inputs_case1, axis], [*inputs_case2, axis]], '', disable_input_check=True,
-            disable_yaml_check=True)
+    TEST_OP(concat_func, [[*inputs_case1, axis], [*inputs_case2, axis]],
+            disable_case=['ScalarTensor'],
+            case_config={'disable_input_check': True,
+                         'all_dim_zero': True})
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',

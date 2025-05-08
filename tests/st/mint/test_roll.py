@@ -18,7 +18,7 @@ import mindspore as ms
 import mindspore.ops as ops
 from mindspore import Tensor, mint
 import tests.st.utils.test_utils as test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -129,5 +129,7 @@ def test_ops_roll_dynamic_shape():
     dims2 = (2, 3)
 
     test_cell = test_utils.to_cell_obj(roll_forward_func)
-    TEST_OP(test_cell, [[x1, shifts1, dims1], [x2, shifts2, dims2]], "roll", disable_input_check=True,
-            disable_mode=['GRAPH_MODE'])
+    TEST_OP(test_cell, [[x1, shifts1, dims1], [x2, shifts2, dims2]],
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['ScalarTensor'],
+            case_config={'disable_input_check': True})

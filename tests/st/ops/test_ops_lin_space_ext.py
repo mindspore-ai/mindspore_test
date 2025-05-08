@@ -16,7 +16,7 @@
 import numpy as np
 import pytest
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 from mindspore import ops
 from mindspore.ops.function.math_func import linspace_ext
@@ -107,11 +107,16 @@ def test_lin_space_ext_dynamic():
     """
     input_case1 = (5.4113, -130.13134, 5)
     input_case2 = (-2421.13178, 413.47, 6004)
-    TEST_OP(lin_space_ext_forward_func, [[*input_case1], [*input_case2]], '', disable_yaml_check=True,
-            disable_input_check=True, disable_mode=['GRAPH_MODE'], disable_nontensor_dynamic_type='BOTH')
+    TEST_OP(lin_space_ext_forward_func, [[*input_case1], [*input_case2]],
+            disable_mode=['GRAPH_MODE_GE'],
+            case_config={'disable_input_check': True,
+                         'disable_nontensor_dynamic_type': 'BOTH'})
 
     input_case3 = (5, 50.23, mutable(5), ms.int32)
     input_case4 = (-5, 43.97, mutable(13), ms.float32)
-    TEST_OP(lin_space_ext_forward_func, [[*input_case3], [*input_case4]], '', disable_yaml_check=True,
-            disable_input_check=True, disable_mode=['GRAPH_MODE'], disable_nontensor_dynamic_type='BOTH',
-            disable_resize=True)
+    TEST_OP(lin_space_ext_forward_func, [[*input_case3], [*input_case4]],
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['GradByRequirement'],
+            case_config={'disable_input_check': True,
+                         'disable_resize': True,
+                         'disable_nontensor_dynamic_type': 'BOTH'})

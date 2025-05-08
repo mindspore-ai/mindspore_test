@@ -19,7 +19,7 @@ from mindspore import Tensor, context
 from mindspore.mint.linalg import qr
 from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 import scipy
 
 context.set_context(jit_level='O0')
@@ -194,7 +194,7 @@ def test_linalg_qr_dynamic_shape():
     TEST_OP(
         forward_func,
         [[Tensor(input1), "reduced"], [Tensor(input2), "reduced"]],
-        "linalg_qr",
-        disable_input_check=True,
-        disable_mode=["GRAPH_MODE"]
+        disable_mode=["GRAPH_MODE_GE"],
+        disable_case=['ScalarTensor'],
+        case_config={'disable_input_check': True}
     )

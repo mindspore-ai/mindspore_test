@@ -17,7 +17,7 @@ import numpy as np
 from mindspore.mint import topk
 import mindspore as ms
 import tests.st.utils.test_utils as test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -149,4 +149,6 @@ def test_ops_topk_ext_dynamic_shape():
     k2 = 4
 
     test_cell = test_utils.to_cell_obj(topk_forward_func)
-    TEST_OP(test_cell, [[x1, k1], [x2, k2]], '', disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+    TEST_OP(test_cell, [[x1, k1], [x2, k2]],
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor', 'ScalarTensor'])

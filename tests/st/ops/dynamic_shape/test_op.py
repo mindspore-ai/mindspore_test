@@ -14,7 +14,7 @@
 # ============================================================================
 from mindspore import Tensor, ops
 import numpy as np
-from .test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -26,10 +26,13 @@ def test_sum():
     Description: test all dynamic cases for sum.
     Expectation: the result match with expect
     """
+    def reduce_sum(input_x, axis):
+        reducesum = ops.ReduceSum(keep_dims=True)
+        return reducesum(input_x, axis)
+
     np_data1 = np.random.rand(2, 3, 4).astype(np.float32)
     in1 = Tensor(np_data1)
     np_data2 = np.random.rand(2, 3).astype(np.float32)
     in2 = Tensor(np_data2)
 
-    reducesum = ops.ReduceSum(keep_dims=True)
-    TEST_OP(reducesum, [[in1, (0,)], [in2, (1,)]], '', disable_input_check=True, disable_yaml_check=True)
+    TEST_OP(reduce_sum, [[in1, (0,)], [in2, (1,)]], case_config={'disable_input_check': True})

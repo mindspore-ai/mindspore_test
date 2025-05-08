@@ -18,7 +18,7 @@ import numpy as np
 import mindspore as ms
 from mindspore import mint
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -76,4 +76,7 @@ def test_mint_addmv_dynamic():
     TEST_OP(addmv_forward_func,
             [[ms.Tensor(x1), ms.Tensor(mat1), ms.Tensor(vec1), beta, alpha],
              [ms.Tensor(x2), ms.Tensor(mat2), ms.Tensor(vec2), beta, alpha]],
-            "addmv", disable_mode=["GRAPH_MODE"], disable_input_check=True)
+            disable_mode=["GRAPH_MODE_GE"],
+            disable_case=['ScalarTensor'],
+            case_config={'disable_input_check': True,
+                         'all_dim_zero': True})

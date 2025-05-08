@@ -17,7 +17,7 @@ import numpy as np
 import mindspore as ms
 from mindspore import ops
 from mindspore.mint import ravel
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 
@@ -99,5 +99,5 @@ def test_ravel_dynamic_shape():
     """
     ms_data1 = generate_random_input((2, 3, 4), np.float32)
     ms_data2 = generate_random_input((3, 4, 5, 6), np.float32)
-    TEST_OP(ravel_forward_func, [[ms.Tensor(ms_data1)], [ms.Tensor(ms_data2)]], '', disable_yaml_check=True,
-            disable_mode=['GRAPH_MODE'])
+    TEST_OP(ravel_forward_func, [[ms.Tensor(ms_data1)], [ms.Tensor(ms_data2)]],
+            disable_mode=['GRAPH_MODE_GE'])

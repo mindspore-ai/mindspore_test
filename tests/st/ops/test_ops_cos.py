@@ -19,7 +19,7 @@ from mindspore import ops
 from mindspore.ops import cos
 
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -106,4 +106,4 @@ def test_ops_cos_dyn():
     x1 = generate_random_input((4, 5, 6), np.float32)
     x2 = generate_random_input((2, 3, 4, 5), np.float32)
 
-    TEST_OP(cos_forward_func, [[ms.Tensor(x1)], [ms.Tensor(x2)]], 'cos')
+    TEST_OP(cos_forward_func, [[ms.Tensor(x1)], [ms.Tensor(x2)]])

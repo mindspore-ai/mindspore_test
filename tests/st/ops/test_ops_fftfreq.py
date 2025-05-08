@@ -17,7 +17,7 @@ import numpy as np
 from mindspore import ops, jit
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 
 @test_utils.run_with_cell
@@ -69,5 +69,4 @@ def test_ops_fftfreq_forward_dynamic(jit_level):
     inputs1 = [n1, d1]
     inputs2 = [n2, d2]
 
-    TEST_OP(fftfreq_forward_func, [inputs1, inputs2], "fftfreq",
-            disable_yaml_check=True)
+    TEST_OP(fftfreq_forward_func, [inputs1, inputs2])

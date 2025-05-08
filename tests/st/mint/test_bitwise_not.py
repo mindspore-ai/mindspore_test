@@ -18,7 +18,7 @@ import mindspore as ms
 from mindspore import mint
 from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 
 def generate_random_input(shape, dtype):
@@ -53,7 +53,7 @@ def test_mint_bitwise_not_normal(mode):
 
 @arg_mark(plat_marks=['platform_ascend'],
           level_mark='level1', card_mark='onecard', essential_mark='unessential')
-def test_mint_std_dynamic_shape():
+def test_mint_bitwise_not_dynamic_shape():
     """
     Feature: Test operator bitwise_not by TEST_OP.
     Description: Test operator bitwise_not with dynamic input.
@@ -61,5 +61,4 @@ def test_mint_std_dynamic_shape():
     """
     x1 = ms.Tensor(generate_random_input((2, 3), np.int32))
     x2 = ms.Tensor(generate_random_input((2, 3, 4), np.int32))
-    TEST_OP(bitwise_not_forward_func, [[x1], [x2]], 'bitwise_not',
-            disable_yaml_check=True, disable_grad=True, disable_mode=["GRAPH_MODE"])
+    TEST_OP(bitwise_not_forward_func, [[x1], [x2]], disable_mode=["GRAPH_MODE_GE"])

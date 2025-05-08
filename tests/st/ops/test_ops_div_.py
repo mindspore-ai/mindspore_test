@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
-from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
+from tests.st.ops.test_tools.test_op import TEST_OP
+from tests.st.ops.test_tools.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 from tests.mark_utils import arg_mark
 import mindspore.nn as nn
 import mindspore as ms
@@ -121,8 +121,10 @@ def test_ops_inplace_div_dynamic_shape(rounding_mode):
     input2 = ms.Tensor(generate_random_input((8, 9), np.float32))
     other2 = ms.Tensor(generate_random_input((8, 9), np.float32))
 
-    TEST_OP(inplace_div_dyn_func, [[input1, other1], [input2, other2]], "inplace_div",
-            disable_input_check=True, disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'], inplace_update=True)
+    TEST_OP(inplace_div_dyn_func, [[input1, other1], [input2, other2]],
+            disable_mode=['GRAPH_MODE_GE', 'GRAPH_MODE_O0'],
+            case_config={'disable_input_check': True, 'all_dim_zero': True},
+            inplace_update=True)
 
     input3 = ms.Tensor(generate_random_input((7, 8, 9), np.float32))
     other3 = 4
@@ -130,8 +132,10 @@ def test_ops_inplace_div_dynamic_shape(rounding_mode):
     input4 = ms.Tensor(generate_random_input((8, 9), np.float32))
     other4 = 3
 
-    TEST_OP(inplace_div_dyn_func, [[input3, other3], [input4, other4]], "inplace_divs",
-            disable_input_check=True, disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'], inplace_update=True)
+    TEST_OP(inplace_div_dyn_func, [[input3, other3], [input4, other4]],
+            case_config={'disable_input_check': True},
+            disable_mode=['GRAPH_MODE_GE', 'GRAPH_MODE_O0'],
+            inplace_update=True)
 
     input5 = ms.Tensor(generate_random_input((7, 8, 9), np.float32))
     other5 = ms.Tensor(generate_random_input((7, 8, 9), np.float32))
@@ -140,7 +144,8 @@ def test_ops_inplace_div_dynamic_shape(rounding_mode):
     other6 = ms.Tensor(generate_random_input((8, 9), np.float32))
 
     TEST_OP(inplace_div_rounding_mode_dyn_func, [[input5, other5, rounding_mode], [input6, other6, rounding_mode]],
-            "inplace_divmod", disable_input_check=True, disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'],
+            disable_mode=['GRAPH_MODE_GE', 'GRAPH_MODE_O0'],
+            case_config={'disable_input_check': True, 'all_dim_zero': True},
             inplace_update=True)
 
     input7 = ms.Tensor(generate_random_input((7, 8, 9), np.float32))
@@ -150,7 +155,7 @@ def test_ops_inplace_div_dynamic_shape(rounding_mode):
     other8 = 4
 
     TEST_OP(inplace_div_rounding_mode_dyn_func, [[input7, other7, rounding_mode], [input8, other8, rounding_mode]],
-            "inplace_divmods", disable_input_check=True, disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'],
+            case_config={'disable_input_check': True}, disable_mode=['GRAPH_MODE_GE', 'GRAPH_MODE_O0'],
             inplace_update=True)
 
 @arg_mark(plat_marks=['platform_ascend910b'],

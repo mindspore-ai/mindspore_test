@@ -13,10 +13,10 @@
 # limitations under the License.
 # ============================================================================
 import pytest
-from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
+from tests.st.ops.test_tools.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 import numpy as np
 import mindspore as ms
 from mindspore import ops, Tensor, context
@@ -85,7 +85,9 @@ def test_ops_soft_margin_loss_dynamic_shape(reduction):
     target2 = ms.Tensor(generate_random_input((9, 8), np.float32))
 
     TEST_OP(soft_margin_loss_forward_dyn_func, [[input1, target1, reduction], [input2, target2, reduction]],
-            "soft_margin_loss", disable_input_check=True, disable_mode=['GRAPH_MODE'])
+            disable_mode=['GRAPH_MODE_GE'],
+            case_config={'disable_input_check': True,
+                         'all_dim_zero': True})
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')

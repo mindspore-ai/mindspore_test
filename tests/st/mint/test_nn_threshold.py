@@ -20,7 +20,7 @@ import mindspore.mint.nn as mnn
 from mindspore import Tensor
 import mindspore.context as context
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.utils import test_utils
 
 
@@ -111,12 +111,9 @@ def test_f_threshold_dynamic_shape():
     x1 = Tensor(np.array([[[0., 1.], [3., 4.]]]).astype(np.float32))
     x2 = Tensor(np.array([[[[6., 8.], [14., 16.]]]]).astype(np.float32))
     TEST_OP(net, [[x1], [x2]],
-            'Threshold',
-            disable_yaml_check=True,
-            disable_mode=['GRAPH_MODE'])
+            disable_mode=['GRAPH_MODE_GE'])
 
     TEST_OP(threshold_forward_func_noleaf, [[x1, 2.0, 10.0], [x2, 5.0, 20.0]],
-            'inplace_threshold',
-            disable_mode=['GRAPH_MODE'],
-            disable_grad=True,
+            disable_mode=['GRAPH_MODE_GE'],
+            case_config={'disable_grad': True},
             inplace_update=True)

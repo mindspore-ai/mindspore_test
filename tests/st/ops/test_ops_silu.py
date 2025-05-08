@@ -18,7 +18,7 @@ import mindspore as ms
 from mindspore import ops
 from mindspore.ops import silu
 from tests.st.utils import test_utils
-from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
+from tests.st.ops.test_tools.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 from tests.mark_utils import arg_mark
 
 

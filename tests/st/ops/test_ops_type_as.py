@@ -17,7 +17,7 @@ import pytest
 import numpy as np
 import mindspore as ms
 from mindspore.ops import type_as
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 import tests.st.utils.test_utils as test_utils
 
@@ -86,6 +86,5 @@ def test_ops_type_as_forward_dynamic_shape():
     TEST_OP(
         type_as_forward_func,
         [[ms.Tensor(x1), ms.Tensor(y1)], [ms.Tensor(x2), ms.Tensor(y2)]],
-        "type_as",
-        disable_mode=["GRAPH_MODE"],
+        disable_mode=["GRAPH_MODE_GE"],
     )

@@ -15,7 +15,7 @@
 import pytest
 from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.common.random_generator import generate_numpy_ndarray_by_randn
 import numpy as np
 import mindspore as ms
@@ -238,40 +238,58 @@ def test_ops_svd_dynamic():
     """
     inputs1 = [Tensor(get_svd_input_ndarray((3, 4), np.float32)), False, True]
     inputs2 = [Tensor(get_svd_input_ndarray((2, 3, 4), np.float32)), True, True]
-    TEST_OP(svd_dyn_forward_func, [inputs1, inputs2], 'svd', disable_input_check=True,
-            disable_nontensor_dynamic_type='BOTH')
+    TEST_OP(svd_dyn_forward_func, [inputs1, inputs2],
+            disable_case=['EmptyTensor', 'ScalarTensor'],
+            case_config={'disable_input_check': True,
+                         'disable_nontensor_dynamic_type': 'BOTH'})
 
     inputs3 = [Tensor(get_svd_input_ndarray((3, 4), np.float32)), True, True]
     inputs4 = [Tensor(get_svd_input_ndarray((2, 3, 4), np.float32)), False, True]
-    TEST_OP(svd_dyn_forward_func, [inputs3, inputs4], 'svd', disable_input_check=True,
-            disable_nontensor_dynamic_type='BOTH')
+    TEST_OP(svd_dyn_forward_func, [inputs3, inputs4],
+            disable_case=['EmptyTensor', 'ScalarTensor'],
+            case_config={'disable_input_check': True,
+                         'disable_nontensor_dynamic_type': 'BOTH'})
 
     inputs1 = [Tensor(get_svd_input_ndarray((2, 3, 3), np.float32)), False, True]
     inputs2 = [Tensor(get_svd_input_ndarray((2, 3), np.float32)), True, True]
-    TEST_OP(svd_dyn_forward_func, [inputs1, inputs2], 'svd', disable_input_check=True,
-            disable_nontensor_dynamic_type='BOTH')
+    TEST_OP(svd_dyn_forward_func, [inputs1, inputs2],
+            disable_case=['EmptyTensor', 'ScalarTensor'],
+            case_config={'disable_input_check': True,
+                         'disable_nontensor_dynamic_type': 'BOTH'})
 
     inputs3 = [Tensor(get_svd_input_ndarray((2, 3, 3), np.float32)), True, True]
     inputs4 = [Tensor(get_svd_input_ndarray((2, 3), np.float32)), False, True]
-    TEST_OP(svd_dyn_forward_func, [inputs3, inputs4], 'svd', disable_input_check=True,
-            disable_nontensor_dynamic_type='BOTH')
+    TEST_OP(svd_dyn_forward_func, [inputs3, inputs4],
+            disable_case=['EmptyTensor', 'ScalarTensor'],
+            case_config={'disable_input_check': True,
+                         'disable_nontensor_dynamic_type': 'BOTH'})
 
     inputs1 = [Tensor(get_svd_input_ndarray((4, 3, 2), np.float32)), False, True]
     inputs2 = [Tensor(get_svd_input_ndarray((4, 3), np.float32)), True, True]
-    TEST_OP(svd_dyn_forward_func, [inputs1, inputs2], 'svd', disable_input_check=True,
-            disable_nontensor_dynamic_type='BOTH')
+    TEST_OP(svd_dyn_forward_func, [inputs1, inputs2],
+            disable_case=['EmptyTensor', 'ScalarTensor'],
+            case_config={'disable_input_check': True,
+                         'disable_nontensor_dynamic_type': 'BOTH'})
 
     inputs3 = [Tensor(get_svd_input_ndarray((4, 3, 2), np.float32)), True, True]
     inputs4 = [Tensor(get_svd_input_ndarray((4, 3), np.float32)), False, True]
-    TEST_OP(svd_dyn_forward_func, [inputs3, inputs4], 'svd', disable_input_check=True,
-            disable_nontensor_dynamic_type='BOTH')
+    TEST_OP(svd_dyn_forward_func, [inputs3, inputs4],
+            disable_case=['EmptyTensor', 'ScalarTensor'],
+            case_config={'disable_input_check': True,
+                         'disable_nontensor_dynamic_type': 'BOTH'})
 
     inputs5 = [Tensor(get_svd_input_ndarray((2, 3, 4), np.float32)), False, False]
     inputs6 = [Tensor(get_svd_input_ndarray((2, 3), np.float32)), True, False]
-    TEST_OP(svd_dyn_forward_func, [inputs5, inputs6], 'svd', disable_input_check=True,
-            disable_nontensor_dynamic_type='BOTH', ignore_output_index=[1, 2])
+    TEST_OP(svd_dyn_forward_func, [inputs5, inputs6],
+            disable_case=['EmptyTensor', 'ScalarTensor'],
+            case_config={'disable_input_check': True,
+                         'disable_nontensor_dynamic_type': 'BOTH',
+                         'ignore_output_index': [1, 2]})
 
     inputs7 = [Tensor(get_svd_input_ndarray((2, 3, 4), np.float32)), True, False]
     inputs8 = [Tensor(get_svd_input_ndarray((2, 3), np.float32)), False, False]
-    TEST_OP(svd_dyn_forward_func, [inputs7, inputs8], 'svd', disable_input_check=True,
-            disable_nontensor_dynamic_type='BOTH', ignore_output_index=[1, 2])
+    TEST_OP(svd_dyn_forward_func, [inputs7, inputs8],
+            disable_case=['EmptyTensor', 'ScalarTensor'],
+            case_config={'disable_input_check': True,
+                         'disable_nontensor_dynamic_type': 'BOTH',
+                         'ignore_output_index': [1, 2]})

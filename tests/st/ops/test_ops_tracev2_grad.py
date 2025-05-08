@@ -17,7 +17,7 @@ import numpy as np
 import mindspore as ms
 from mindspore import ops, jit
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -107,5 +107,9 @@ def test_tracev2_grad_dynamic_shape():
     inputs1 = [ms.Tensor(Dout1), ms.Tensor(A1.shape), offset1, axis11, axis21]
     inputs2 = [ms.Tensor(Dout2), ms.Tensor(A2.shape), offset2, axis12, axis22]
 
-    TEST_OP(tracev2_grad_forward_func, [
-        inputs1, inputs2], 'tracev2_grad', disable_grad=True, disable_input_check=True)
+    TEST_OP(tracev2_grad_forward_func, [inputs1, inputs2],
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor', 'ScalarTensor'],
+            case_config={'disable_input_check': True,
+                         'disable_grad': True,
+                         'deterministic_use_origin_inputs': True})

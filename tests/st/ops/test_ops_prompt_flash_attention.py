@@ -4,7 +4,7 @@ import mindspore as ms
 import mindspore.common.dtype as mstype
 from mindspore import Tensor
 from mindspore.ops.function.nn_func import prompt_flash_attention
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 
@@ -112,9 +112,8 @@ def prompt_flash_attention_func(query, key, value, num_heads, num_key_value_head
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize('mode', [ms.context.GRAPH_MODE, ms.context.PYNATIVE_MODE])
 @pytest.mark.parametrize('input_layout', ["BSH", "BNSD"])
-def test_ops_prompt_flash_attention_dynamic(mode, input_layout):
+def test_ops_prompt_flash_attention_dynamic(input_layout):
     """
     Feature: Pyboost function.
     Description: Test function prmopt_flash_attention dynamic.
@@ -143,18 +142,19 @@ def test_ops_prompt_flash_attention_dynamic(mode, input_layout):
     actual_seq_qlen2 = (q_s2,)
     actual_seq_kvlen2 = (kv_s2,)
 
-    TEST_OP(prompt_flash_attention_func,\
-            [[query1, key1, value1, head_num1, num_key_value_heads, actual_seq_qlen1,\
-              actual_seq_kvlen1, input_layout],\
-             [query2, key2, value2, head_num2, num_key_value_heads2, actual_seq_qlen2,\
-              actual_seq_kvlen2, input_layout]],\
-             "prompt_flash_attention", disable_input_check=True, disable_yaml_check=True, disable_grad=True)
+    TEST_OP(prompt_flash_attention_func,
+            [[query1, key1, value1, head_num1, num_key_value_heads, actual_seq_qlen1,
+              actual_seq_kvlen1, input_layout],
+             [query2, key2, value2, head_num2, num_key_value_heads2, actual_seq_qlen2,
+              actual_seq_kvlen2, input_layout]],
+            disable_case=['EmptyTensor', 'ScalarTensor'],
+            case_config={'disable_input_check': True,
+                         'disable_grad': True})
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize('mode', [ms.context.GRAPH_MODE, ms.context.PYNATIVE_MODE])
 @pytest.mark.parametrize('input_layout', ["BSH"])
-def test_ops_prompt_flash_attention_dynamic_all_params(mode, input_layout):
+def test_ops_prompt_flash_attention_dynamic_all_params(input_layout):
     """
     Feature: Pyboost function.
     Description: Test function prmopt_flash_attention dynamic.
@@ -209,11 +209,13 @@ def test_ops_prompt_flash_attention_dynamic_all_params(mode, input_layout):
     sparse_mode2 = 2
     inner_precise2 = 0
 
-    TEST_OP(prompt_flash_attention_func,\
-            [[query1, key1, value1, head_num1, num_key_value_heads, actual_seq_qlen1,\
-              actual_seq_kvlen1, input_layout, pse_shift1, attn_mask1, deq_scale11, quant_scale11, deq_scale21,\
-              quant_scale21, quant_offset21, scale_value1, pre_tokens1, next_tokens1, sparse_mode1, inner_precise1],\
-             [query2, key2, value2, head_num2, num_key_value_heads2, actual_seq_qlen2,\
-              actual_seq_kvlen2, input_layout, pse_shift2, attn_mask2, deq_scale12, quant_scale12, deq_scale22,\
-              quant_scale22, quant_offset22, scale_value2, pre_tokens2, next_tokens2, sparse_mode2, inner_precise2]],\
-             "prompt_flash_attention", disable_input_check=True, disable_yaml_check=True, disable_grad=True)
+    TEST_OP(prompt_flash_attention_func,
+            [[query1, key1, value1, head_num1, num_key_value_heads, actual_seq_qlen1,
+              actual_seq_kvlen1, input_layout, pse_shift1, attn_mask1, deq_scale11, quant_scale11, deq_scale21,
+              quant_scale21, quant_offset21, scale_value1, pre_tokens1, next_tokens1, sparse_mode1, inner_precise1],
+             [query2, key2, value2, head_num2, num_key_value_heads2, actual_seq_qlen2,
+              actual_seq_kvlen2, input_layout, pse_shift2, attn_mask2, deq_scale12, quant_scale12, deq_scale22,
+              quant_scale22, quant_offset22, scale_value2, pre_tokens2, next_tokens2, sparse_mode2, inner_precise2]],
+            disable_case=['EmptyTensor', 'ScalarTensor'],
+            case_config={'disable_input_check': True,
+                         'disable_grad': True})

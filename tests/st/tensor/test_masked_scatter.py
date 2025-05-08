@@ -19,7 +19,7 @@ import mindspore.nn as nn
 from mindspore import Tensor
 import pytest
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 
 
@@ -36,7 +36,7 @@ def generate_random_input(shape, dtype):
     return np.random.uniform(-1, 1, shape).astype(dtype)
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'],
-          level_mark='level2',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
@@ -56,7 +56,7 @@ def test_tensor_masked_scatter(mode):
     assert np.allclose(output.asnumpy(), expect_output.asnumpy())
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_ascend'],
-          level_mark='level2', card_mark='onecard', essential_mark='unessential')
+          level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_tensor_masked_scatter_dynamic_shape():
     """
     Feature: dynamic shape forward, backward features.
@@ -71,5 +71,7 @@ def test_tensor_masked_scatter_dynamic_shape():
     mask2 = Tensor(generate_random_input((3, 4, 5), np.float32) > 0, ms.bool_)
     tensor2 = ms.Tensor(generate_random_input((3, 4, 5), np.float32))
 
-    TEST_OP(masked_scatter_forward_func, [[x, mask, tensor], [x2, mask2, tensor2]],
-            'masked_scatter', disable_mode=[])
+    TEST_OP(masked_scatter_forward_func,
+            [[x, mask, tensor], [x2, mask2, tensor2]],
+            disable_mode=["GRAPH_MODE_GE"],
+            case_config={'deterministic_use_origin_inputs': True})

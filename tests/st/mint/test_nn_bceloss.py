@@ -17,8 +17,8 @@ import pytest
 import numpy as np
 import mindspore as ms
 from mindspore import mint
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
-from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
+from tests.st.ops.test_tools.test_op import TEST_OP
+from tests.st.ops.test_tools.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 from tests.mark_utils import arg_mark
 
 def generate_random_input(shape, dtype):
@@ -187,8 +187,7 @@ def test_mint_nn_bceloss_dynamic(reduction):
     TEST_OP(
         net,
         [[logits1, labels1], [logits2, labels2]],
-        'BCELoss',
-        disable_input_check=True,
-        disable_yaml_check=True,
-        disable_mode=["GRAPH_MODE"],
+        disable_mode=["GRAPH_MODE_GE"],
+        case_config={'disable_input_check': True,
+                     'all_dim_zero': True}
     )

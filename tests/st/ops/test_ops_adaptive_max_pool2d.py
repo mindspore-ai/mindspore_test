@@ -13,10 +13,10 @@
 # limitations under the License.
 # ============================================================================
 import pytest
-from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
+from tests.st.ops.test_tools.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 import numpy as np
 import mindspore as ms
 from mindspore import ops, Tensor, context
@@ -83,8 +83,10 @@ def test_ops_adaptive_max_pool2d_dynamic_shape():
     """
     input1 = generate_random_input((6, 4, 8, 9), np.float32)
     input2 = generate_random_input((3, 7, 8, 5), np.float32)
-    TEST_OP(adaptive_max_pool2d_forward_dyn_func, [[Tensor(input1)], [Tensor(input2)]], 'adaptive_max_pool2d',
-            disable_input_check=True, disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+    TEST_OP(adaptive_max_pool2d_forward_dyn_func, [[Tensor(input1)], [Tensor(input2)]],
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor', 'ScalarTensor'],
+            case_config={'disable_input_check': True})
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')

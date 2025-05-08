@@ -19,7 +19,7 @@ import mindspore.common.dtype as mstype
 from mindspore import nn, Tensor, mint, value_and_grad
 from mindspore.ops.composite import GradOperation
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -158,11 +158,11 @@ def test_mean_dynamic():
     input2 = Tensor(generate_random_input((3, 3, 4, 4), np.float32))
     axis2 = (0, 1, -1)
     keep_dims2 = True
-    TEST_OP(mean_func, [[input1, axis1, keep_dims1], [input2, axis2, keep_dims2]], '', disable_yaml_check=True)
+    TEST_OP(mean_func, [[input1, axis1, keep_dims1], [input2, axis2, keep_dims2]], disable_case=['ScalarTensor'])
 
     input3 = Tensor(generate_random_input((2, 3, 4), np.float32))
     input4 = Tensor(generate_random_input((2, 3), np.float32))
-    TEST_OP(mean_func, [[input3], [input4]], '', disable_yaml_check=True)
+    TEST_OP(mean_func, [[input3], [input4]])
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows',
@@ -234,11 +234,11 @@ def test_sum_dynamic():
     input2 = Tensor(generate_random_input((3, 3, 4, 4), np.float32))
     axis2 = (0, 1, -1)
     keep_dims2 = True
-    TEST_OP(sum_func, [[input1, axis1, keep_dims1], [input2, axis2, keep_dims2]], '', disable_yaml_check=True)
+    TEST_OP(sum_func, [[input1, axis1, keep_dims1], [input2, axis2, keep_dims2]], disable_case=['ScalarTensor'])
 
     input3 = Tensor(generate_random_input((2, 3, 4), np.float32))
     input4 = Tensor(generate_random_input((2, 3), np.float32))
-    TEST_OP(sum_func, [[input3], [input4]], '', disable_yaml_check=True)
+    TEST_OP(sum_func, [[input3], [input4]])
 
 
 @arg_mark(plat_marks=['platform_ascend910b', 'platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows',
@@ -400,14 +400,17 @@ def test_prod_dynamic():
     input2 = Tensor(generate_random_input((3, 3, 4, 4), np.float32))
     axis2 = 1
     keep_dims2 = True
-    TEST_OP(prod_func, [[input1, axis1, keep_dims1], [input2, axis2, keep_dims2]], '', disable_yaml_check=True)
+    TEST_OP(prod_func, [[input1, axis1, keep_dims1], [input2, axis2, keep_dims2]],
+            disable_mode=["GRAPH_MODE_GE"],
+            disable_case=['ScalarTensor'])
 
     input3 = Tensor(generate_random_input((2, 3, 4), np.float32))
     keep_dims3 = False
     input4 = Tensor(generate_random_input((2, 3), np.float32))
     keep_dims4 = False
-    TEST_OP(ProdNet(), [[input3, keep_dims3], [input4, keep_dims4]], '', disable_input_check=True,
-            disable_yaml_check=True)
+    TEST_OP(ProdNet(), [[input3, keep_dims3], [input4, keep_dims4]],
+            disable_mode=["GRAPH_MODE_GE"],
+            case_config={'disable_input_check': True})
 
 
 @arg_mark(plat_marks=['platform_ascend910b', 'platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows',

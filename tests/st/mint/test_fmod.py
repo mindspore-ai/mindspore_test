@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 import mindspore as ms
 from mindspore import mint, Tensor, context
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 
@@ -83,8 +83,7 @@ def test_fmod_dynamic_shape_scalar():
     x2, y2 = generate_random_input((3, 4), np.float16)
     x2 = Tensor(x2, dtype=ms.float16)
     y2 = 3
-    TEST_OP(fmod_forward_func, [[x, y], [x2, y2]], '',
-            disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+    TEST_OP(fmod_forward_func, [[x, y], [x2, y2]], disable_mode=['GRAPH_MODE_GE'])
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -100,5 +99,4 @@ def test_fmod_dynamic_shape_tensor():
     x2, y2 = generate_random_input((3, 4), np.float16)
     x2 = Tensor(x2, dtype=ms.float16)
     y2 = Tensor(y2, dtype=ms.float16)
-    TEST_OP(fmod_forward_func, [[x, y], [x2, y2]], '',
-            disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+    TEST_OP(fmod_forward_func, [[x, y], [x2, y2]], disable_mode=['GRAPH_MODE_GE'], case_config={'all_dim_zero': True})

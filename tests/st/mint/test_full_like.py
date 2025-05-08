@@ -17,7 +17,7 @@ import numpy as np
 import mindspore as ms
 from mindspore.common import dtype as mstype
 from mindspore import ops, mint, Tensor, jit, context
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.utils import test_utils
 
 
@@ -75,5 +75,4 @@ def test_full_like_dynamic_shape():
     fill_value1 = 2
     fill_value2 = 3
 
-    TEST_OP(full_like_forward_func, [[tensor1, fill_value1], [tensor2, fill_value2]],
-                        '', disable_yaml_check=True, disable_mode=['GRAPH_MODE'], disable_grad=True)
+    TEST_OP(full_like_forward_func, [[tensor1, fill_value1], [tensor2, fill_value2]], disable_mode=['GRAPH_MODE_GE'])

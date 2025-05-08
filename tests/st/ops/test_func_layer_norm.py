@@ -21,7 +21,7 @@ from mindspore import Tensor, ops, context
 from mindspore.ops import layer_norm
 
 import tests.st.utils.test_utils as test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -134,4 +134,6 @@ def test_layer_norm_ext_dyn():
 
     TEST_OP(layer_norm_forward_func,
             [[Tensor(input_x1), normalize_shape, gamma, beta, eps],
-             [Tensor(input_x2), normalize_shape, gamma, beta, eps]], 'layer_norm_ext', disable_input_check=True)
+             [Tensor(input_x2), normalize_shape, gamma, beta, eps]],
+            disable_case=['EmptyTensor', 'ScalarTensor'],
+            case_config={'disable_input_check': True})

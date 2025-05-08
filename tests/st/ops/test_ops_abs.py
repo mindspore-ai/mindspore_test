@@ -21,7 +21,7 @@ from mindspore import ops
 from mindspore import context
 from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
-from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
+from tests.st.ops.test_tools.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 
 
 @test_utils.run_with_cell

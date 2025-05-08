@@ -15,8 +15,8 @@
 import pytest
 import numpy as np
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
-from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
+from tests.st.ops.test_tools.test_op import TEST_OP
+from tests.st.ops.test_tools.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 from tests.mark_utils import arg_mark
 import mindspore as ms
 from mindspore import Tensor, context
@@ -152,7 +152,8 @@ def test_softmax_dynamic():
             [input_case1, (-1,)],
             [input_case2, (0,)],
         ],
-        "softmax", disable_input_check=True
+        disable_case=['ScalarTensor'],
+        case_config={'disable_input_check': True}
     )
 
 

@@ -21,7 +21,6 @@ from mindspore import mint, context
 from mindspore import Tensor, jit, JitConfig
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 
 
 

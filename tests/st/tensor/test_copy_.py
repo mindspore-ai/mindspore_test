@@ -17,7 +17,7 @@ import pytest
 import numpy as np
 import mindspore as ms
 from mindspore import ops, jit
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -120,10 +120,12 @@ def test_copy_dynamic_shape():
     tensor_x2 = ms.Tensor(generate_random_input((3, 4, 5), np.float32))
     tensor_y2 = ms.Tensor(generate_random_input((1, 1, 5), np.float32))  # broadcast
 
-    TEST_OP(copy_forward_func, [[tensor_x1, tensor_y1], [tensor_x2, tensor_y2]], 'inplace_copy',
-            disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
-    TEST_OP(copy_forward_func, [[tensor_x2, tensor_y2], [tensor_x1, tensor_y1]], 'inplace_copy',
-            disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+    TEST_OP(copy_forward_func, [[tensor_x1, tensor_y1], [tensor_x2, tensor_y2]],
+            disable_mode=['GRAPH_MODE_GE', 'GRAPH_MODE_O0'],
+            case_config={'all_dim_zero': True})
+    TEST_OP(copy_forward_func, [[tensor_x1, tensor_y1], [tensor_x2, tensor_y2]],
+            disable_mode=['GRAPH_MODE_GE'],
+            case_config={'all_dim_zero': True})
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

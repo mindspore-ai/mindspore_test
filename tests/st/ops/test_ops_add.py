@@ -20,9 +20,9 @@ import mindspore as ms
 from mindspore import JitConfig
 from mindspore.nn import Cell
 from mindspore.ops.auto_generate.gen_ops_def import add_ext as add
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
-from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
+from tests.st.ops.test_tools.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 
 rtol = 1e-3
 
@@ -90,7 +90,7 @@ def test_ops_dynamic():
     x2 = ms.Tensor(np.array([[1, 2, 3]], np.float32))
     y2 = ms.Tensor(np.array([[10, 11, 12], [13, 14, 15], [16, 17, 18]], np.float32))
 
-    TEST_OP(add, [[x1, y1, 1.], [x2, y2, 2.]], 'add_ext', disable_input_check=True)
+    TEST_OP(add, [[x1, y1, 1.], [x2, y2, 2.]], case_config={'disable_input_check': True, 'all_dim_zero': True})
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'],

@@ -21,7 +21,7 @@ from mindspore import ops, Tensor, nn, mint
 from mindspore.ops.function.math_func import norm_ext
 
 import tests.st.utils.test_utils as test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -112,7 +112,7 @@ def test_ops_norm_dyn():
     input_x2 = np.random.randn(*(3, 3, 3)).astype(np.float32)
     in1 = Tensor(input_x1)
     in2 = Tensor(input_x2)
-    TEST_OP(norm_ext_forward_dyn, [[in1], [in2]], '', disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+    TEST_OP(norm_ext_forward_dyn, [[in1], [in2]], disable_mode=['GRAPH_MODE_GE'])
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')

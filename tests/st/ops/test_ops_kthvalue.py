@@ -19,7 +19,7 @@ from mindspore import Tensor
 from mindspore.ops.auto_generate import kthvalue
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 def generate_random_input(shape, dtype):
     return np.random.randn(*shape).astype(dtype)
@@ -141,5 +141,7 @@ def test_ops_kthvalue_dynamic_shape():
     k2 = 3
     dim2 = 0
     keepdim2 = True
-    TEST_OP(kthvalue_forward_func, [[ms.Tensor(x1), k1, dim1, keepdim1], [ms.Tensor(x2), k2, dim2, keepdim2]], \
-            'kthvalue', disable_mode=['GRAPH_MODE'])
+    TEST_OP(kthvalue_forward_func,
+            [[ms.Tensor(x1), k1, dim1, keepdim1], [ms.Tensor(x2), k2, dim2, keepdim2]],
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor', 'ScalarTensor'])

@@ -16,7 +16,7 @@ import pytest
 import numpy as np
 import mindspore as ms
 from mindspore.mint import meshgrid
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 class Net(ms.nn.Cell):
@@ -76,4 +76,5 @@ def test_ops_mul_dynamic_shape():
     y2 = generate_random_input((5,), np.float32)
 
     TEST_OP(meshgrid_forward_func, [[[ms.Tensor(x1), ms.Tensor(y1)]], [[ms.Tensor(x2), ms.Tensor(y2)]]],
-            'meshgrid', disable_grad=True, disable_input_check=True, disable_yaml_check=True)
+            case_config={'disable_input_check': True,
+                         'disable_grad': True})

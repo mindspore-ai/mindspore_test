@@ -21,7 +21,7 @@ from mindspore import mint
 from mindspore import Tensor, jit
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 
 @test_utils.run_with_cell
@@ -108,4 +108,4 @@ def test_mint_group_norm_dyn():
                              [[3.], [5.], [7.]],
                              [[9.], [2.], [5.]],
                              [[7.], [5.], [1.]]]]]).astype(np.float32))
-    TEST_OP(forward_group_norm_net_for_dyn, [[in1], [in2]], '', disable_yaml_check=True)
+    TEST_OP(forward_group_norm_net_for_dyn, [[in1], [in2]], disable_case=['EmptyTensor', 'ScalarTensor'])

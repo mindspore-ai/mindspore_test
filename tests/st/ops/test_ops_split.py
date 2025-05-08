@@ -19,7 +19,7 @@ from mindspore import Tensor, jit, ops
 from mindspore.mint import split
 
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -208,7 +208,9 @@ def test_f_split_ext_dynamic():
     x1 = ms.Tensor(np_x1, ms.float32)
     np_x2 = np.arange(4 * 6 * 4).reshape(4, 6, 4)
     x2 = ms.Tensor(np_x2, ms.float32)
-    TEST_OP(split_forward_func_dynamic, [[x1, 2, 0], [x2, 3, 1]], 'split_tensor')
+    TEST_OP(split_forward_func_dynamic, [[x1, 2, 0], [x2, 3, 1]],
+            disable_dynamic_test=True,
+            disable_case=['EmptyTensor', 'ScalarTensor'])
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

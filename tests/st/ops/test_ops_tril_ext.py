@@ -18,7 +18,7 @@ import mindspore as ms
 from mindspore import Tensor, jit
 from mindspore.mint import tril
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 def generate_random_input(shape, dtype):
@@ -125,4 +125,6 @@ def test_tril_dynamic():
     """
     input_case1 = Tensor(np.random.rand(3, 4, 5, 6).astype(np.float32))
     input_case2 = Tensor(np.random.rand(3, 4).astype(np.float32))
-    TEST_OP(tril_forward_func, [[input_case1, 0], [input_case2, 1]], 'tril_ext', disable_mode=['GRAPH_MODE'])
+    TEST_OP(tril_forward_func, [[input_case1, 0], [input_case2, 1]],
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['ScalarTensor'])

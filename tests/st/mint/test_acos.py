@@ -17,7 +17,7 @@ import pytest
 import numpy as np
 import mindspore as ms
 from mindspore import ops, mint, jit
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -74,7 +74,7 @@ def test_acos_dynamic_shape():
     tensor_1 = ms.Tensor(generate_random_input((2, 3), np.float32))
     tensor_2 = ms.Tensor(generate_random_input((3, 4, 5), np.float32))
 
-    TEST_OP(acos_forward_func, [[tensor_1], [tensor_2]], 'acos_ext', disable_mode=['GRAPH_MODE'])
+    TEST_OP(acos_forward_func, [[tensor_1], [tensor_2]], disable_mode=['GRAPH_MODE_GE'])
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

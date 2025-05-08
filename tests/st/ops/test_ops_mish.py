@@ -20,7 +20,7 @@ from mindspore.mint.nn import Mish
 from mindspore.mint.nn.functional import mish
 from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 
 def generate_random_input(shape, dtype):
@@ -110,5 +110,5 @@ def test_mish_dynamic_shape():
     """
     ms_data1 = generate_random_input((2, 3, 4, 5), np.float32)
     ms_data2 = generate_random_input((3, 4, 5, 6, 7), np.float32)
-    TEST_OP(mish_forward_func
-            , [[ms.Tensor(ms_data1)], [ms.Tensor(ms_data2)]], 'mish_ext', disable_mode=['GRAPH_MODE'])
+    TEST_OP(mish_forward_func, [[ms.Tensor(ms_data1)], [ms.Tensor(ms_data2)]],
+            disable_mode=['GRAPH_MODE_GE'])
