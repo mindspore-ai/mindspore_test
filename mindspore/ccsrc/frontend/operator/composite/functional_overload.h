@@ -85,7 +85,7 @@ class PrimitiveConverter {
   std::vector<std::string> error_msgs_;
   size_t first_failed_position_ = 0;
   bool is_keyword_ = false;
-  size_t prim_list_size_;  // Some of the tensor_method_overload_signature_map has no deprecated
+  size_t prim_list_size_ = 0;  // Some of the tensor_method_overload_signature_map has no deprecated
   bool has_deprecated_ = false;
 };
 

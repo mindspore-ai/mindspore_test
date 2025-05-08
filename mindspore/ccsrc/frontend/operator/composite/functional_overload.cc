@@ -266,7 +266,7 @@ bool PrimitiveConverter::CheckKwargs(PrimitiveAttr *cur_prim) {
     // Check value dtype.
     auto op_arg = expect_op_args[index_key];
     if (!MatchPrimitiveArgDtype(cur_prim->prim_name, op_arg, value)) {
-      error_msgs_.push_back(functional_name_ + "(): argumeent '" + key + "' must be " +
+      error_msgs_.push_back(functional_name_ + "(): argument '" + key + "' must be " +
                             ops::EnumToString(op_arg.arg_dtype_) + " but got " + ops::EnumToString(value));
       return false;
     }
