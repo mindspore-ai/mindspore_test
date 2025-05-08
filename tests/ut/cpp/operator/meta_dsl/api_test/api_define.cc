@@ -71,17 +71,6 @@ BeginFunction(TestIfExp, x, y) {
 EndFunction(TestIfExp)
 
 /** Python code:
- *  def custom_bprop(x, y, out, dout):
- *    return zeros_like(x), zeros_like(y)
- */
-BeginFunction(TestCustomBprop, x, y, out, dout) {
-  auto dx = Call(Prim(ZerosLike), x);
-  auto dy = Call(Prim(ZerosLike), y);
-  Return(Tuple(dx, dy));
-}
-EndFunction(TestCustomBprop)
-
-/** Python code:
  *  result = []
  *  sequence = (x, x, x, x, x)
  *  for index, item in enumerate(sequence):

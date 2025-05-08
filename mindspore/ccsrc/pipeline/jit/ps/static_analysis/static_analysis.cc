@@ -1217,7 +1217,7 @@ EvaluatorPtr GetPrimEvaluator(const PrimitivePtr &prim, const AnalysisEnginePtr 
     if (prim->isa<PrimitivePy>()) {
       return std::make_shared<PrimitiveArgsToInputsEvaluator>(prim);
     }
-    if (prim::IsMetaImpl(prim->name())) {
+    if (prim::RegMetaImplFactory::GetInstance().IsMetaImpl(prim->name())) {
       return std::make_shared<PrimitiveToMetaEvaluator>(prim);
     }
     return std::make_shared<PrimitiveFunctionEvaluator>(prim);

@@ -32,6 +32,7 @@
 #include "pipeline/jit/ps/resource.h"
 #include "frontend/optimizer/ad/dfunctor.h"
 #include "frontend/operator/composite/composite.h"
+#include "frontend/operator/meta_dsl/common/meta_impl.h"
 #include "frontend/expander/bprop/bprop.h"
 #include "frontend/expander/bprop/bprop_meta_func_graph.h"
 #include "include/common/utils/primitive_utils.h"
@@ -69,6 +70,11 @@ FuncGraphPtr GetBprop(const PrimitivePtr &prim, const pipeline::ResourceBasePtr 
                                        grad_op_child_scope_prefix + prim_name);
   ScopeGuard scope_guard(scope);
 
+  // Get bprop implemented by Meta Dsl.
+  FuncGraphPtr bprop_meta_impl_graph = prim::RegMetaImplFactory::GetInstance().GetBprop(prim);
+  if (bprop_meta_impl_graph != nullptr) {
+    return bprop_meta_impl_graph;
+  }
   // Firstly we get bprop from expander. If failed, try mindir. If still failed, try the python bprop function.
   FuncGraphPtr func_graph = expander::bprop::GetBpropMetaFuncGraph(prim, cnode);
   if (func_graph != nullptr) {

@@ -3048,7 +3048,7 @@ EvalResultPtr PrimitiveToMetaEvaluator::EvalPrim(const AnalysisEnginePtr &engine
   MS_EXCEPTION_IF_NULL(fg);
 
   const auto &op_name = prim_->name();
-  const auto &meta_op = prim::CreateMetaImpl(op_name);
+  const auto &meta_op = prim::RegMetaImplFactory::GetInstance().CreateMetaImpl(op_name);
   MS_EXCEPTION_IF_NULL(meta_op);
   meta_op->set_prim(prim_);
   meta_op->set_manager(fg->manager());

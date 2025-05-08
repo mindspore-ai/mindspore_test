@@ -30,6 +30,10 @@
 #include "mindspore/ccsrc/frontend/operator/meta_dsl/common/meta_impl.h"
 
 namespace mindspore::prim {
+MetaImplPtr CreateMetaImpl(const std::string &name) {
+  return RegMetaImplFactory::GetInstance().CreateMetaImpl(name);
+}
+
 inline FuncGraphPtr NewFuncGraph(const MetaImplPtr &meta, const AbstractBasePtrList &abs_list) {
   // Create FuncGraph.
   FuncGraphPtr fg = std::make_shared<FuncGraph>();

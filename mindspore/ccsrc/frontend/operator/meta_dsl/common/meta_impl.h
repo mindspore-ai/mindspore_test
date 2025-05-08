@@ -45,8 +45,6 @@ class MetaImpl : public MetaFuncGraph {
   MS_DECLARE_PARENT(MetaImpl, MetaFuncGraph)
   void set_prim(const PrimitivePtr &prim);
   void set_manager(const FuncGraphManagerPtr &manager);
-  void set_check_func(const CheckFunc &check_func);
-  void set_bprop(const std::shared_ptr<MetaImpl> &bprop_);
   PrimitivePtr prim() const;
   FuncGraphPtr GenerateFuncGraph(const AbstractBasePtrList &input_args) override;
   virtual void GenerateFunction() = 0;
@@ -574,23 +572,49 @@ class MetaImpl : public MetaFuncGraph {
 
   PrimitivePtr prim_{nullptr};
   std::string name_;
-  CheckFunc check_func_{nullptr};
   FuncGraphPtr bprop_graph_{nullptr};
   FuncGraphManagerPtr manager_{nullptr};
   std::stack<MetaFuncBuilderPtr> func_builder_stack_;
-  std::shared_ptr<MetaImpl> bprop_{nullptr};
 };
 using MetaImplPtr = std::shared_ptr<MetaImpl>;
 using CreateFunc = std::function<std::shared_ptr<MetaImpl>()>;
 
-bool IsMetaImpl(const std::string &name);
-void AddMetaImpl(const std::string &name, const CreateFunc &creator);
-MetaImplPtr CreateMetaImpl(const std::string &name);
-
-class MetaImplRegHelper {
+class RegMetaImplFactory {
  public:
-  MetaImplRegHelper(const std::string &name, const CreateFunc &creator) { AddMetaImpl(name, creator); }
-  ~MetaImplRegHelper() = default;
+  static RegMetaImplFactory &GetInstance();
+  bool IsMetaImpl(const std::string &name);
+  MetaImplPtr CreateMetaImpl(const std::string &name);
+  void AddMetaImpl(const std::string &name, const CreateFunc &creator);
+
+  void RegBprop(const PrimitivePtr &prim, const CreateFunc &creator);
+  FuncGraphPtr GetBprop(const PrimitivePtr &prim);
+
+  void RegCheckFunc(const std::string &name, const CheckFunc &check_func);
+  CheckFunc GetCheckFunc(const std::string &prim_name);
+
+  class RegHelper {
+   public:
+    explicit RegHelper(const std::string &name, const CreateFunc &creator, const CheckFunc &check_func = nullptr) {
+      RegMetaImplFactory::GetInstance().AddMetaImpl(name, creator);
+      if (check_func != nullptr) {
+        RegMetaImplFactory::GetInstance().RegCheckFunc(name, check_func);
+      }
+    }
+    ~RegHelper() = default;
+  };
+
+  class RegBpropHelper {
+   public:
+    explicit RegBpropHelper(const PrimitivePtr &prim, const CreateFunc &creator) {
+      RegMetaImplFactory::GetInstance().RegBprop(prim, creator);
+    }
+    ~RegBpropHelper() = default;
+  };
+
+ private:
+  std::map<std::string, CreateFunc> registry_;
+  std::map<std::string, CreateFunc> bprop_map_;
+  std::map<std::string, CheckFunc> check_func_map_;
 };
 }  // namespace mindspore::prim
 #endif  // MINDSPORE_CCSRC_FRONTEND_OPERATOR_META_DSL_COMMON_META_IMPL_H_
