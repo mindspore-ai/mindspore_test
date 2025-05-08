@@ -249,6 +249,59 @@ void UpdateFuncGraphParameter(const FuncGraphPtr &func_graph, const std::vector<
   func_graph->set_parameters(new_paras);
 }
 
+bool CheckDuplicatedParameterName(const ValuePtr &arg, std::set<std::string> *param_names) {
+  if (arg->isa<ValueSequence>()) {
+    const auto &elements = arg->cast<ValueSequencePtr>()->value();
+    return std::all_of(elements.begin(), elements.end(),
+                       [param_names](const auto &elem) { return CheckDuplicatedParameterName(elem, param_names); });
+  }
+
+  if (arg->isa<ValueDictionary>()) {
+    const auto &key_values = arg->cast<ValueDictionaryPtr>()->value();
+    return std::all_of(key_values.begin(), key_values.end(), [param_names](const auto &pair) {
+      return CheckDuplicatedParameterName(pair.second, param_names);
+    });
+  }
+
+  if (!arg->isa<tensor::Tensor>()) {
+    return true;
+  }
+
+  auto arg_tensor = arg->cast<tensor::TensorPtr>();
+  if (!arg_tensor->is_parameter()) {
+    return true;
+  }
+
+  auto param_info = arg_tensor->param_info();
+  MS_EXCEPTION_IF_NULL(param_info);
+  auto param_name = param_info->name();
+  if (param_names->find(param_name) != param_names->end()) {
+    MS_EXCEPTION(ValueError)
+      << "The parameter " << arg->ToString() << " , its name '" << param_name
+      << "' already exists. Please set a unique name for the parameter."
+      << "\nFor more details with the name of parameter, please refer to "
+      << "https://mindspore.cn/search?inputValue=Please%20set%20a%20unique%20name%20for%20the%20parameter";
+  }
+
+  param_names->insert(param_name);
+  return true;
+}
+
+// Check parameters in cell and out cell has same name
+void CheckDuplicatedParameterName(const AnfNodePtrList &parameters) {
+  std::set<std::string> param_names;
+  for (auto &parameter : parameters) {
+    auto param_node = parameter->cast<ParameterPtr>();
+    MS_EXCEPTION_IF_NULL(param_node);
+
+    if (!param_node->has_default()) {
+      continue;
+    }
+
+    (void)CheckDuplicatedParameterName(param_node->default_param(), &param_names);
+  }
+}
+
 // Exist ScalarAdd ScalarSub etc OPS which will backoff to CPU
 bool IsNeedBackoffGraph(const FuncGraphPtr &func_graph) {
   MS_EXCEPTION_IF_NULL(func_graph);
@@ -1423,6 +1476,7 @@ bool TypeInferenceAction(const ResourcePtr &resource) {
   }
 
   UpdateFuncGraphParameter(new_fg, resource->arguments());
+  CheckDuplicatedParameterName(new_fg->parameters());
   SetMindIRLoadFlag(resource);
   SetViewInplaceGradFlag(resource);
 

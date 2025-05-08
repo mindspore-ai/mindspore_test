@@ -46,8 +46,8 @@ def test_batch_norm_elemt_fwd(mode):
     batch_norm_elemt_net = BatchNormElemtNet()
 
     input_data = Tensor(np.array([[1.], [2.], [3.]]), mstype.float32)
-    weight = Parameter(Tensor(np.array([1.]), mstype.float32))
-    bias = Parameter(Tensor(np.array([10.]), mstype.float32))
+    weight = Parameter(Tensor(np.array([1.]), mstype.float32), name="weight")
+    bias = Parameter(Tensor(np.array([10.]), mstype.float32), name="bias")
 
     mean = Tensor(np.array([2.]), mstype.float32)
     invstd = Tensor(np.array([2.]), mstype.float32)
