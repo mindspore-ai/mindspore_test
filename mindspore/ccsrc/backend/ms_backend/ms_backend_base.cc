@@ -1868,11 +1868,10 @@ void MSBackendBase::ConstructOutputs(runtime::ActorSet *actor_set, VectorRef *ou
   }
 }
 
-void MSBackendBase::ContiguousArgs(const VectorRef &args, const GraphCompilerInfo &) {
+void MSBackendBase::CreateTensorArgs(const VectorRef &args, const GraphCompilerInfo &) {
   for (const auto &arg : args) {
     if (utils::isa<tensor::TensorPtr>(arg)) {
       auto value = utils::cast<tensor::TensorPtr>(arg);
-      runtime::DeviceAddressUtils::ConvertContiguousTensorSync(value);
     } else if (utils::isa<stub::TensorNode>(arg)) {
       auto tensor_stub = utils::cast<std::shared_ptr<stub::TensorNode>>(arg);
       MS_EXCEPTION_IF_NULL(tensor_stub);
@@ -1880,7 +1879,6 @@ void MSBackendBase::ContiguousArgs(const VectorRef &args, const GraphCompilerInf
       MS_EXCEPTION_IF_NULL(value);
       auto tensor = value->cast<tensor::TensorPtr>();
       MS_EXCEPTION_IF_NULL(tensor);
-      runtime::DeviceAddressUtils::ConvertContiguousTensorSync(tensor);
     } else if (utils::isa<ValuePtr>(arg)) {
       auto value = utils::cast<ValuePtr>(arg);
       MS_EXCEPTION_IF_NULL(value);
@@ -1895,7 +1893,6 @@ void MSBackendBase::ContiguousArgs(const VectorRef &args, const GraphCompilerInf
           continue;
         }
         auto t = v->cast<tensor::TensorPtr>();
-        runtime::DeviceAddressUtils::ConvertContiguousTensorSync(t);
       }
     }
   }
@@ -2179,8 +2176,6 @@ RunningStatus MSBackendBase::Run(BackendGraphId graph_id, const VectorRef &input
   MS_EXCEPTION_IF_NULL(ms_context);
   // There will be more than one kernel graph in heterogeneous scenario in a jit of PyNative Mode.
   if (graph_compiler_info.is_pynative_mode_) {
-    // The tensor needs to be converted to contiguous before being given to the actors.
-    // After the view feature is supported in the graph mode, the following code will be deleted.
     RunGraphByCondition(graph_id, graph_compiler_info, inputs, outputs);
     return kRunningSuccess;
   }
@@ -2192,14 +2187,6 @@ RunningStatus MSBackendBase::Run(BackendGraphId graph_id, const VectorRef &input
   std::vector<std::vector<tensor::TensorPtr>> input_tensors;
   if (graph_compiler_info.exist_flatten_concat_) {
     input_tensors = GetRunGraphInputs(graph_compiler_info, inputs);
-    // The tensor needs to be converted to contiguous before being given to the actors.
-    // After the view feature is supported in the graph mode, the following code will be deleted.
-    // Single ops(run in pynative mode) output to net(context is graph mode) input.
-    (void)std::for_each(input_tensors.begin(), input_tensors.end(), [this](const auto &tensor_vec) {
-      (void)std::for_each(tensor_vec.begin(), tensor_vec.end(), [](const tensor::TensorPtr &t) {
-        runtime::DeviceAddressUtils::ConvertContiguousTensorSync(t);
-      });
-    });
   }
   // Release python gil.
   mindspore::ScopedLongRunning long_running;

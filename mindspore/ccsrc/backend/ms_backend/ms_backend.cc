@@ -219,7 +219,7 @@ runtime::ActorSet *MSBackend::RealCompileGraphBeforeRunActor(BackendGraphId grap
                                                              const VectorRef &args, bool no_multi_graph) {
   WaitTaskFinish();
   WaitMultiStream(graph_compiler_info);
-  ContiguousArgs(args, graph_compiler_info);
+  CreateTensorArgs(args, graph_compiler_info);
   WaitTaskFinish();
   auto graphs = graph_compiler_info.graphs_;
   auto device_contexts = graph_compiler_info.device_contexts_;
@@ -349,7 +349,6 @@ void MSBackend::RunActorSet(BackendGraphId graph_id, runtime::ActorSet *actor_se
                             VectorRef *outputs) {
   WaitTaskFinish();
   WaitMultiStream(graph_compiler_info);
-  ContiguousArgs(args, graph_compiler_info);
   WaitTaskFinish();
 
   auto graphs = graph_compiler_info.graphs_;
@@ -414,7 +413,7 @@ void MSBackend::RunGraphBySingleOp(const GraphCompilerInfo &graph_compiler_info,
                                    VectorRef *outputs) {
   WaitTaskFinish();
   WaitMultiStream(graph_compiler_info);
-  ContiguousArgs(args, graph_compiler_info);
+  CreateTensorArgs(args, graph_compiler_info);
   WaitTaskFinish();
 
   MS_LOG(INFO) << "Status record: begin run graph by single op";
