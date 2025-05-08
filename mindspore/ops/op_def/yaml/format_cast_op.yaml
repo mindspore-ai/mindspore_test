@@ -1,0 +1,10 @@
+#operator format_cast
+format_cast:
+    args:
+        input:
+            dtype: tensor
+        acl_format:
+            dtype: int
+    returns:
+        output:
+            dtype: tensor
