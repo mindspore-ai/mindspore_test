@@ -42,6 +42,7 @@
 #include "include/backend/distributed/init.h"
 #include "include/backend/distributed/recovery/recovery_context.h"
 #include "include/backend/distributed/collective/collective_manager.h"
+#include "include/backend/distributed/cluster/tcp_store.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "runtime/graph_scheduler/embedding_cache_scheduler.h"
 #endif
@@ -79,6 +80,7 @@ using mindspore::MsCtxParam;
 using PSContext = mindspore::ps::PSContext;
 using CreateGroupConfig = mindspore::distributed::collective::CreateGroupConfig;
 using CollectiveManager = mindspore::distributed::collective::CollectiveManager;
+using TCPStoreClient = mindspore::distributed::cluster::TCPStoreClient;
 using RecoveryContext = mindspore::distributed::recovery::RecoveryContext;
 using DeviceContextManager = mindspore::device::DeviceContextManager;
 using DeviceContext = mindspore::device::DeviceContext;
@@ -717,6 +719,12 @@ PYBIND11_MODULE(_c_expression, m) {
     .def("resume_hccl_comm", &CollectiveManager::ResumeHcclComm, "resume hccl comm.")
     .def("wait_all_comm_init", &CollectiveManager::WaitAllCommInitDone,
          "Wait for all communicators to be initialized.");
+
+  (void)py::class_<TCPStoreClient, std::shared_ptr<TCPStoreClient>>(m, "TCPStoreClient")
+    .def_static("get_instance", &TCPStoreClient::instance, "Get TCPStore Client instance.")
+    .def("get", &TCPStoreClient::GetKey, "Get key.")
+    .def("set", &TCPStoreClient::SetKey, "Set key.")
+    .def("delete_key", &TCPStoreClient::DeleteKey, "Delete key.");
 
   (void)py::class_<PSContext, std::shared_ptr<PSContext>>(m, "PSContext")
     .def_static("get_instance", &PSContext::instance, "Get PS context instance.")

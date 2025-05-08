@@ -137,7 +137,7 @@ MessageBase *TCPClient::ReceiveSync(std::unique_ptr<MessageBase> &&msg, uint32_t
       MessageBase *message = received_message_;
       return message;
     } else {
-      MS_LOG(WARNING) << "Failed to receive message.";
+      MS_LOG(WARNING) << "Message receive timeout, Suggest configuring timeout time through MS_RECEIVE_MSG_TIMEOUT.";
     }
   } else {
     MS_LOG(INFO) << "Failed to send message in ReceiveSync.";

@@ -24,6 +24,7 @@ Please see the `msrun start up
 for more details.
 """
 from __future__ import absolute_import
+from mindspore.mint.distributed.distributed import TCPStore
 from mindspore.mint.distributed.distributed import (
     init_process_group,
     destroy_process_group,

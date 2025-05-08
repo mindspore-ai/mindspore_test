@@ -70,6 +70,7 @@ from mindspore.ops.auto_generate.gen_ops_prim import (
     dist_comm_barrier_op,
     dist_comm_batch_isend_irecv_op,
 )
+from mindspore._c_expression import TCPStoreClient
 
 _pickler = pickle.Pickler
 _unpickler = pickle.Unpickler
@@ -135,6 +136,193 @@ def _object_to_tensor(obj, size=0):
 def _tensor_to_object(tensor, tensor_size):
     buf = tensor.asnumpy().tobytes()[:tensor_size]
     return restricted_loads(buf)
+
+
+class TCPStore:
+    """
+    A TCP-based distributed key-value store implementation.
+
+    Note:
+        - The function is implemented by CPU and does not involve any hardware operations related to Ascend.
+        - Currently, all parameters provided by the TCPStore class constructor are not supported.
+          The master node and port number are uniformly specified by the MindSpore framework.
+          The following parameters are provided, currently not supported and settings are invalid.
+        - The current TcpStore function is limited and only supports scenarios where the key is
+          less than 4k and the value is less than 1G. Complex scenarios are to be supported.
+        - The timeout interval for message sending and receiving in the TcpStore function is controlled by
+          the `MS_RECEIVE_MSG_TIMEOUT` environment variable, in seconds, with a default value of ``15``.
+          If a timeout occurs, the user needs to increase the configuration value.
+
+    Args:
+        host_name (str, invalid, optional): The hostname or IP Address the server store should run on.
+            Default is ``None``.
+        port (int, invalid, optional): The port on which the server store should listen for incoming requests.
+            Default is ``None``.
+        world_size (int, invalid, optional): The total number of store users (number of clients + 1 for the server).
+            Default is ``None``(``None`` indicates a non-fixed number of store users).
+        is_master (bool, invalid, optional): True when initializing the server store and False for client stores.
+            Default is ``False``.
+        timeout (timedelta, invalid, optional): Timeout used by the store during initialization, Unit: seconds.
+            Default is ``300``.
+        wait_for_workers (bool, invalid, optional): Whether to wait for all the workers to connect with the server
+            store. This is only applicable when `world_size` is a fixed value. Default is ``True``.
+        multi_tenant (bool, invalid, optional): If ``True``, all ``TCPStore`` instances in the current process with
+            the same host/port will use the same underlying ``TCPServer``. Default is ``False``.
+        master_listen_fd (int, invalid, optional): If specified, the underlying ``TCPServer`` will listen on this file
+            descriptor, which must be a socket already bound to ``port``. Useful to avoid port assignment races
+            in some scenarios. Default is ``None`` (meaning the server creates a new socket and attempts to bind it
+            to ``port``).
+        use_libuv (bool, invalid, optional): If True, use libuv for ``TCPServer`` backend. Default is ``True``.
+
+    Returns:
+        TCPStore Object.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        .. note::
+            Before running the following examples, you need to configure the communication environment variables.
+
+            For Ascend devices, it is recommended to use the msrun startup method
+            without any third-party or configuration file dependencies.
+            Please see the `msrun start up
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
+            for more details.
+
+        >>> from mindspore.mint.distributed import TCPStore
+        >>> store = TCPStore()
+    """
+
+    def __init__(self, host_name=None, port=None, world_size=None, is_master=False, timeout=300,
+                 wait_for_workers=True, multi_tenant=False, master_listen_fd=None, use_libuv=True):
+        self.instance = TCPStoreClient.get_instance()
+
+
+    def set(self, key, value):
+        """
+        Inserts the key-value pair into the store based on the supplied `key` and
+        `value`. If `key` already exists in the store, it will overwrite the old
+        value with the new supplied `value`.
+
+        Args:
+            key (str): The key to be added to the store.
+            value (Union[bytes, str]): The value associated with `key` to be added to the store.
+
+        Raises:
+            TypeError: If `key` is not string.
+            TypeError: If `value` is not string or bytes.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            .. note::
+                Before running the following examples, you need to configure the communication environment variables.
+
+                For Ascend devices, it is recommended to use the msrun startup method
+                without any third-party or configuration file dependencies.
+                Please see the `msrun start up
+                <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
+                for more details.
+
+            >>> from mindspore.mint.distributed import TCPStore
+            >>> store = TCPStore()
+            >>> store.set("first_key", "first_value")
+        """
+        if not isinstance(key, str):
+            raise TypeError(
+                "For 'TCPStore.set', the argument 'key' must be type of string, "
+                "but got 'key' type : {}.".format(type(key))
+            )
+        if not isinstance(value, (str, bytes)):
+            raise TypeError(
+                "For 'TCPStore.set', the argument 'value' must be type of string or bytes, "
+                "but got 'value' type : {}.".format(type(value))
+            )
+        return self.instance.set(key, value)
+
+
+    def get(self, key):
+        """
+        Retrieves the value associated with the given `key` in the store. If `key` is not
+        present in the store, the function will return "".
+
+        Args:
+            key (str): The function will return the value associated with this key.
+
+        Returns:
+            bytes, Value associated with `key` if `key` is in the store.
+
+        Raises:
+            TypeError: If `key` is not string.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            .. note::
+                Before running the following examples, you need to configure the communication environment variables.
+
+                For Ascend devices, it is recommended to use the msrun startup method
+                without any third-party or configuration file dependencies.
+                Please see the `msrun start up
+                <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
+                for more details.
+
+            >>> from mindspore.mint.distributed import TCPStore
+            >>> store = TCPStore()
+            >>> store.set("first_key", "first_value")
+            >>> data = store.get("first_key")
+            >>> print(data)
+        """
+        if not isinstance(key, str):
+            raise TypeError(
+                "For 'TCPStore.get', the argument 'key' must be type of string, "
+                "but got 'key' type : {}.".format(type(key))
+            )
+        byte_data = self.instance.get(key)
+        return byte_data
+
+
+    def delete_key(self, key):
+        """
+        Deletes the key-value pair associated with `key` from the store.
+
+        Args:
+            key (str): The key to be deleted from the store.
+
+        Returns:
+            bool, ``True`` if `key` was deleted, otherwise ``False``.
+
+        Raises:
+            TypeError: If `key` is not string.
+
+        Supported Platforms:
+            ``CPU``
+
+        Examples:
+            .. note::
+                Before running the following examples, you need to configure the communication environment variables.
+
+                For Ascend devices, it is recommended to use the msrun startup method
+                without any third-party or configuration file dependencies.
+                Please see the `msrun start up
+                <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
+                for more details.
+
+            >>> from mindspore.mint.distributed import TCPStore
+            >>> store = TCPStore()
+            >>> store.set("first_key", "first_value")
+            >>> # This should return true
+            >>> store.delete_key("first_key")
+        """
+        if not isinstance(key, str):
+            raise TypeError(
+                "For 'TCPStore.delete_key', the argument 'key' must be type of string, "
+                "but got 'key' type : {}.".format(type(key))
+            )
+        return self.instance.delete_key(key)
 
 
 def is_available():
