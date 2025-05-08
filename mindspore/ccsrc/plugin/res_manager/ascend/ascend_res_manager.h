@@ -60,10 +60,10 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public HalResBase {
   std::vector<void *> AllocateContinuousMemory(const std::vector<size_t> &size_list,
                                                uint32_t stream_id = kDefaultStreamIndex) const override;
 
-  DeviceAddressPtr CreateDeviceAddress(const KernelTensorPtr &kernel_tensor) const override;
+  DeviceAddressPtr CreateDeviceAddress() const override;
   DeviceAddressPtr CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector, const Format &format,
                                        TypeId type_id, const std::string &device_name, uint32_t device_id,
-                                       uint32_t stream_id) const override;
+                                       uint32_t stream_id, const UserDataPtr &user_data = nullptr) const override;
 
   bool LoadCollectiveCommLib() override;
   bool IsEnableVmm() const override;
@@ -140,8 +140,8 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public HalResBase {
   void UceMemRepair(int32_t device_id) override;
   void StopDevice(int32_t device_id) override;
   std::vector<std::pair<device::DeviceMemPtr, size_t>> GetMemUceAddr() override;
-  bool AllocateForHete(DeviceAddress *const &address, mindspore::kernel::HeterogeneousInfoPtr hete_info) const;
-  void FreeForHete(mindspore::kernel::HeterogeneousInfoPtr hete_info) const;
+  bool AllocateForHete(DeviceAddress *const &address, mindspore::HeterogeneousInfoPtr hete_info) const;
+  void FreeForHete(mindspore::HeterogeneousInfoPtr hete_info) const;
 
   // Override interface for multi stream event control.
   bool RecordEvent(int64_t task_id_on_stream, uint32_t user_stream_id,

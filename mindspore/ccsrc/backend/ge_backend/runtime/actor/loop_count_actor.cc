@@ -30,19 +30,19 @@
 namespace mindspore {
 namespace ge_backend {
 namespace runtime {
-void LoopCountActor::Run(OpContext<DeviceTensor> *const context) {
+void LoopCountActor::Run(OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);
   // Need wait MemoryManagerActor running finished to avoid the illegal memory timing problem before
   // LoopCountActor exits, because other processors which are not in actor also will process device tensor.
   ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::Wait, context, GetAID());
 }
 
-void LoopCountActor::OnMemoryAllocFinish(OpContext<DeviceTensor> *const context) {
+void LoopCountActor::OnMemoryAllocFinish(OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);
   IncreaseLoopCount(context);
 }
 
-void LoopCountActor::IncreaseLoopCount(OpContext<DeviceTensor> *const context) {
+void LoopCountActor::IncreaseLoopCount(OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);
 
   total_running_count_++;
@@ -81,19 +81,19 @@ void LoopCountActor::IncreaseLoopCount(OpContext<DeviceTensor> *const context) {
   PostRun(context);
 }
 
-void LoopCountActor::SendDebugReq(OpContext<DeviceTensor> *const context) {
+void LoopCountActor::SendDebugReq(OpContext<KernelTensor> *const context) {
   ActorDispatcher::SendSync(*debug_aid_, &DebugActor::DebugOnStepEnd, context, &GetAID(), total_running_count_,
                             sink_size_);
   OnDebugFinish(context);
 }
 
-void LoopCountActor::SendProfilerReq(OpContext<DeviceTensor> *const context) {
+void LoopCountActor::SendProfilerReq(OpContext<KernelTensor> *const context) {
   ActorDispatcher::SendSync(*profiler_aid_, &ProfilerActor::ProfilerOnStepEnd, context, &GetAID(),
                             total_running_count_);
   OnDebugFinish(context);
 }
 
-void LoopCountActor::SendOutput(OpContext<DeviceTensor> *const context) {
+void LoopCountActor::SendOutput(OpContext<KernelTensor> *const context) {
   // Send recorder info.
   if (recorder_aid_ != nullptr) {
     ActorDispatcher::Send(*recorder_aid_, &RecorderActor::RecordOnStepEnd, context);
@@ -103,7 +103,7 @@ void LoopCountActor::SendOutput(OpContext<DeviceTensor> *const context) {
   auto from_aid = const_cast<AID *>(&GetAID());
   for (auto &output_control : output_control_arrows_) {
     MS_EXCEPTION_IF_NULL(output_control);
-    ActorDispatcher::Send(output_control->to_op_id_, &OpActor::RunOpControl, from_aid, context);
+    ActorDispatcher::Send(output_control->to_op_id_, &OpRTActor::RunOpControl, from_aid, context);
   }
 
   // Send to EntranceActor to clear the data which are generated in the loop body execution.
@@ -118,7 +118,7 @@ void LoopCountActor::SendOutput(OpContext<DeviceTensor> *const context) {
   }
 
   // Send to DataPrepareActor to trigger next step running.
-  ActorDispatcher::Send(data_prepare_aid_, &OpActor::RunOpControl, from_aid, context);
+  ActorDispatcher::Send(data_prepare_aid_, &OpRTActor::RunOpControl, from_aid, context);
 }
 }  // namespace runtime
 }  // namespace ge_backend

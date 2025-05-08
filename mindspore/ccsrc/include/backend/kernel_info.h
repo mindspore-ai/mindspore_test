@@ -37,8 +37,8 @@ class BACKEND_COMMON_EXPORT KernelInfo : public KernelInfoDevice {
     kernel_mod_ = nullptr;
     is_feature_map_ = false;
     select_kernel_build_info_ = nullptr;
-    output_address_list_ = {};
-    workspace_address_list_ = {};
+    output_kernel_tensor_list_ = {};
+    workspace_kernel_tensor_list_ = {};
     stream_id_ = 0;
     stream_distinction_label_ = kInvalidDistincLabel;
     graph_id_ = kInvalidGraphId;
@@ -61,12 +61,11 @@ class BACKEND_COMMON_EXPORT KernelInfo : public KernelInfoDevice {
   bool SetOutputAddr(const DeviceAddressPtr &output_address, size_t index);
   DeviceAddress *GetWorkspaceAddr(size_t index) const;
   DeviceAddressPtr GetMutableWorkspaceAddr(size_t index) const;
+  KernelTensorPtr GetWorkspaceKernelTensor(size_t index) const;
   bool WorkspaceAddrExist(size_t index) const;
   bool SetWorkspaceAddr(const DeviceAddressPtr &output_address, size_t index);
-  // The number of workspace may change after kernel Resize.
-  void set_workspace_address_list(const std::vector<DeviceAddressPtr> &workspace_address_list) {
-    workspace_address_list_ = workspace_address_list;
-  }
+  bool SetWorkspaceKernelTensor(const KernelTensorPtr &kernel_tensor, size_t index);
+  bool WorkspaceKernelTensorExist(size_t index) const;
   void set_kernel_mod(const kernel::KernelModPtr &kernel_mod);
   kernel::KernelMod *MutableKernelMod() const;
   kernel::KernelModPtr GetKernelMod() const;
@@ -82,8 +81,8 @@ class BACKEND_COMMON_EXPORT KernelInfo : public KernelInfoDevice {
   bool operator==(const KernelInfo &other) const;
   bool is_feature_map() const { return is_feature_map_; }
 
-  const std::vector<std::shared_ptr<DeviceAddress>> &output_address_list() const { return output_address_list_; }
-  const std::vector<std::shared_ptr<DeviceAddress>> &workspace_address_list() const { return workspace_address_list_; }
+  const std::vector<KernelTensorPtr> &output_kernel_tensor_list() const { return output_kernel_tensor_list_; }
+  const std::vector<KernelTensorPtr> &workspace_kernel_tensor_list() const { return workspace_kernel_tensor_list_; }
 
   // Set output and input reference. If all_ref is set true, each output is a reference to the input with the same
   // index.
@@ -105,8 +104,7 @@ class BACKEND_COMMON_EXPORT KernelInfo : public KernelInfoDevice {
   bool is_feature_map_;
   kernel::KernelBuildInfoPtr select_kernel_build_info_;
   std::vector<KernelTensorPtr> output_kernel_tensor_list_;
-  std::vector<std::shared_ptr<DeviceAddress>> output_address_list_;
-  std::vector<std::shared_ptr<DeviceAddress>> workspace_address_list_;
+  std::vector<KernelTensorPtr> workspace_kernel_tensor_list_;
   // pair<size_t, size_t> : (offset, aligned_size)
   // aligned_size of 0 means no memory allocation
   std::vector<std::pair<size_t, size_t>> somas_output_result_;

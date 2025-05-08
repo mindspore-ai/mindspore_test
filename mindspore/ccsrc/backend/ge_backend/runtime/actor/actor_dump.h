@@ -37,7 +37,8 @@ void DumpSuperKernelActors(const std::vector<SuperKernelActorPtr> &actors, std::
 void DumpNoInputKernelActors(const std::vector<AbstractActorPtr> &actors, std::ofstream &ofs);
 void DumpControlActors(const ControlActorSetPtr &control_actor_set, std::ofstream &ofs);
 using DeviceAddressPtr = device::DeviceAddressPtr;
-using ActorInfoMap = mindspore::HashMap<AbstractActor *, std::tuple<size_t, std::vector<DeviceAddressPtr>>>;
+using KernelTensorPtr = kernel::KernelTensorPtr;
+using ActorInfoMap = mindspore::HashMap<AbstractActor *, std::tuple<size_t, std::vector<KernelTensorPtr>>>;
 using GetInputAidFunc = std::function<std::vector<std::string>(AbstractActor *const)>;
 std::vector<AbstractActor *> TopoSortForActor(AbstractActor *root, const GetInputAidFunc &get_input_func = nullptr);
 void DumpActorInfo(AbstractActor *actor, size_t index, ActorInfoMap *actor_info, std::ofstream &ofs);

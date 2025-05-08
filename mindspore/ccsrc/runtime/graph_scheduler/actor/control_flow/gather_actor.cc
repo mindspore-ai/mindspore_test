@@ -26,7 +26,7 @@ GatherActor::GatherActor(const std::string &name, const AID &memory_manager_aid,
   device_contexts_.resize(parameters.size());
 }
 
-void GatherActor::SendOutput(OpContext<DeviceTensor> *const context) {
+void GatherActor::SendOutput(OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);
   MS_EXCEPTION_IF_NULL(gather_input_);
 
@@ -74,7 +74,7 @@ void GatherActor::SendOutput(OpContext<DeviceTensor> *const context) {
   gather_input_ = nullptr;
 }
 
-void GatherActor::IncreaseDynamicRefCounts(OpContext<DeviceTensor> *const context) {
+void GatherActor::IncreaseDynamicRefCounts(OpContext<KernelTensor> *const context) {
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kPreLaunch, GetAID().Name());
   MS_EXCEPTION_IF_NULL(context);
   // Build the gather input.
@@ -116,7 +116,7 @@ void GatherActor::IncreaseDynamicRefCounts(OpContext<DeviceTensor> *const contex
   }
 }
 
-void GatherActor::IncreaseNewRefCounts(OpContext<DeviceTensor> *const context) {
+void GatherActor::IncreaseNewRefCounts(OpContext<KernelTensor> *const context) {
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kPreLaunch, GetAID().Name());
   MS_EXCEPTION_IF_NULL(context);
   // Build the gather input.
@@ -158,7 +158,7 @@ void GatherActor::IncreaseNewRefCounts(OpContext<DeviceTensor> *const context) {
   }
 }
 
-void GatherActor::GatherInput(OpContext<DeviceTensor> *const context) {
+void GatherActor::GatherInput(OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);
   if (input_partials_.empty()) {
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "The input partials is empty.");
@@ -169,19 +169,19 @@ void GatherActor::GatherInput(OpContext<DeviceTensor> *const context) {
   MS_EXCEPTION_IF_NULL(gather_input_);
   // The first input partial is the base of gather inputs.
   gather_input_->func_graph_ = input_partials_[0]->func_graph_;
-  gather_input_->device_tensors_ = input_partials_[0]->device_tensors_;
+  gather_input_->kernel_tensors_ = input_partials_[0]->kernel_tensors_;
   gather_input_->partials_ = input_partials_[0]->partials_;
   MS_EXCEPTION_IF_NULL(gather_input_->func_graph_);
   // The gather actor needs to put the inputs into the first partial in order. In order to keep the index consistent,
   // the inputs need to be delayed in sequence. The offset indicates the number of delays, that is, the number of
   // inputs in the first partial.
-  size_t offset = gather_input_->device_tensors_.size() + gather_input_->partials_.size();
+  size_t offset = gather_input_->kernel_tensors_.size() + gather_input_->partials_.size();
   if (dynamic_len_index_.find(gather_input_->func_graph_) == dynamic_len_index_.end()) {
     // Put all the real parameters in the first partial.
-    for (size_t i = 0; i < input_device_tensors_.size(); ++i) {
-      const auto &device_tensor = input_device_tensors_[i];
-      if (device_tensor != nullptr) {
-        (void)gather_input_->device_tensors_.emplace_back(i + offset, device_tensor);
+    for (size_t i = 0; i < input_kernel_tensors_.size(); ++i) {
+      const auto &kernel_tensor = input_kernel_tensors_[i];
+      if (kernel_tensor != nullptr) {
+        (void)gather_input_->kernel_tensors_.emplace_back(i + offset, kernel_tensor);
       }
     }
 
@@ -203,25 +203,25 @@ void GatherActor::GatherInput(OpContext<DeviceTensor> *const context) {
   for (size_t i = 1; i < real_indexes.size(); ++i) {
     const auto &indexes = real_indexes[i].first;
     if (real_indexes[i].second) {
-      std::vector<DeviceTensor *> addr_list;
+      std::vector<KernelTensor *> addr_list;
       for (size_t index : indexes) {
-        if (index >= input_device_tensors_.size()) {
+        if (index >= input_kernel_tensors_.size()) {
           std::string error_info = "Invalid real index:" + std::to_string(index) + " for index:" + std::to_string(i) +
-                                   " total size:" + std::to_string(input_device_tensors_.size()) +
+                                   " total size:" + std::to_string(input_kernel_tensors_.size()) +
                                    " for gather actor:" + GetAID().Name();
           SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
         }
-        if (input_device_tensors_[index] == nullptr) {
+        if (input_kernel_tensors_[index] == nullptr) {
           std::string error_info =
             "Invalid input device address index:" + std::to_string(index) + " for index:" + std::to_string(i) +
-            " total size:" + std::to_string(input_device_tensors_.size()) + " for actor:" + GetAID().Name();
+            " total size:" + std::to_string(input_kernel_tensors_.size()) + " for actor:" + GetAID().Name();
           SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
         }
-        addr_list.emplace_back(input_device_tensors_[index]);
+        addr_list.emplace_back(input_kernel_tensors_[index].get());
       }
-      DeviceTensor *new_device_tensor = nullptr;
-      MergeDeviceAddress(context, addr_list, &new_device_tensor);
-      (void)gather_input_->device_tensors_.emplace_back(offset++, new_device_tensor);
+      KernelTensorPtr new_kernel_tensor = nullptr;
+      MergeDeviceAddress(context, addr_list, &new_kernel_tensor);
+      (void)gather_input_->kernel_tensors_.emplace_back(offset++, new_kernel_tensor);
     } else if (indexes.empty() || indexes[0] >= input_partials_.size()) {
       std::string error_info = "Invalid index num:" + std::to_string(indexes.size()) +
                                " for index:" + std::to_string(i) + " for gather actor:" + GetAID().Name();
@@ -229,8 +229,8 @@ void GatherActor::GatherInput(OpContext<DeviceTensor> *const context) {
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
     } else if (input_partials_[indexes[0]] != nullptr) {
       gather_input_->partials_.emplace_back(offset++, input_partials_[indexes[0]]);
-    } else if (input_device_tensors_[indexes[0]] != nullptr) {
-      (void)gather_input_->device_tensors_.emplace_back(offset++, input_device_tensors_[indexes[0]]);
+    } else if (input_kernel_tensors_[indexes[0]] != nullptr) {
+      (void)gather_input_->kernel_tensors_.emplace_back(offset++, input_kernel_tensors_[indexes[0]]);
     } else {
       std::string error_info = "Failed to get input for real index:" + std::to_string(indexes[0]) +
                                " for index:" + std::to_string(i) + " for gather actor:" + GetAID().Name();
@@ -240,24 +240,24 @@ void GatherActor::GatherInput(OpContext<DeviceTensor> *const context) {
   }
 }
 
-void GatherActor::BuildOutput(OpRealParameterWithBranchID *const output, OpContext<DeviceTensor> *const context) {
+void GatherActor::BuildOutput(OpRealParameterWithBranchID *const output, OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(output);
   MS_EXCEPTION_IF_NULL(context);
   MS_EXCEPTION_IF_NULL(gather_input_);
   // Copy the data from the gather input to the output.
   output->branch_id_ = output_branch_id_;
-  output->device_tensors_ = gather_input_->device_tensors_;
+  output->kernel_tensors_ = gather_input_->kernel_tensors_;
   output->partials_ = gather_input_->partials_;
 
   // The first input of gather actor is the target funcgraph, which will not be sent to the entrance actor as
   // an real parameter, so the subsequent index needs to be reduced by one.
-  for (auto &device_tensor : output->device_tensors_) {
-    if (device_tensor.first == 0) {
+  for (auto &kernel_tensor : output->kernel_tensors_) {
+    if (kernel_tensor.first == 0) {
       std::string error_info =
-        "Invalid device tensor index:" + std::to_string(device_tensor.first) + " for actor:" + GetAID().Name();
+        "Invalid kernel tensor index:" + std::to_string(kernel_tensor.first) + " for actor:" + GetAID().Name();
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
     }
-    device_tensor.first--;
+    kernel_tensor.first--;
   }
   for (auto &partial : output->partials_) {
     if (partial.first == 0) {

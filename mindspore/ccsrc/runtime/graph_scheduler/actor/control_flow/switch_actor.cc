@@ -34,7 +34,7 @@ SwitchActor::SwitchActor(const std::string &name, const AID &memory_manager_aid,
   output_data_by_output_index_.resize(kSwitchDefaultOutputNum);
 }
 
-void SwitchActor::FetchInput(OpContext<DeviceTensor> *const context) {
+void SwitchActor::FetchInput(OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);
 
   // Call the base class interface to get input data and input partial.
@@ -62,16 +62,16 @@ void SwitchActor::FetchInput(OpContext<DeviceTensor> *const context) {
 
   for (auto &output_data : output_data_by_output_index_[0]) {
     MS_EXCEPTION_IF_NULL(output_data);
-    MS_EXCEPTION_IF_NULL(input_device_tensors_[index + kSwitchCondPos]);
-    output_data->data_ = input_device_tensors_[index + kSwitchCondPos];
+    MS_EXCEPTION_IF_NULL(input_kernel_tensors_[index + kSwitchCondPos]);
+    output_data->data_ = input_kernel_tensors_[index + kSwitchCondPos];
   }
 }
 
-size_t SwitchActor::GetIndex(const OpContext<DeviceTensor> *const context) const {
+size_t SwitchActor::GetIndex(const OpContext<KernelTensor> *const context) const {
   MS_EXCEPTION_IF_NULL(context);
-  MS_EXCEPTION_IF_NULL(input_device_tensors_[0]);
+  MS_EXCEPTION_IF_NULL(input_kernel_tensors_[0]);
 
-  DeviceTensor *device_tensor = input_device_tensors_[0];
+  DeviceTensor *device_tensor = input_kernel_tensors_[0]->device_address().get();
   TypeId type_id = device_tensor->type_id();
   size_t size = abstract::TypeIdSize(type_id);
   if (size > sizeof(int64_t)) {

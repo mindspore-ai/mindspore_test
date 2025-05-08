@@ -101,12 +101,12 @@ KernelTensor::KernelTensor(const abstract::BaseShapePtr &shape, const TypePtr &t
   }
 }
 
-KernelTensor::KernelTensor(void *device_ptr, size_t size, Format format, TypeId dtype_id, const ShapeVector &host_shape,
-                           const string &device_name, uint32_t device_id, const UserDataPtr &user_data)
-    : host_shape_(host_shape),
-      user_data_(user_data),
-      address_common_(
-        std::make_shared<AddressCommon>(device_ptr, size, host_shape, format, dtype_id, device_name, device_id)) {
+KernelTensor::KernelTensor(const DeviceAddressPtr &device_address, TypeId dtype_id, const ShapeVector &host_shape) {
+  MS_EXCEPTION_IF_NULL(device_address);
+  device_address_ = device_address;
+  address_common_ = device_address_->address_common();
+  device_address_->set_host_shape(host_shape);
+  set_device_synchronizer(device_address_->NewDeviceSynchronizer());
   if (dtype_id == kTypeUnknown) {
     SetType(TypeIdToType(dtype_id));
   } else {
@@ -114,28 +114,50 @@ KernelTensor::KernelTensor(void *device_ptr, size_t size, Format format, TypeId 
   }
 }
 
-KernelTensor::KernelTensor(const abstract::BaseShapePtr &shape, const TypePtr &type, const ValuePtr &value,
-                           void *device_ptr, size_t size, const std::string &format, TypeId dtype_id,
-                           const ShapeVector &host_shape, const string &device_name, uint32_t device_id,
-                           const UserDataPtr &user_data)
+KernelTensor::KernelTensor(const DeviceAddressPtr &device_address, const abstract::BaseShapePtr &shape,
+                           const TypePtr &type, const ValuePtr &value, void *device_ptr, size_t size,
+                           const std::string &format, TypeId dtype_id, const ShapeVector &host_shape,
+                           const string &device_name, uint32_t device_id)
     : KernelTensor(shape, type, value) {
+  MS_EXCEPTION_IF_NULL(device_address);
+  device_address_ = device_address;
   address_common_->pointer_ref_count_->set_ptr(device_ptr);
+  auto pointer_ref_count = device_address_->address_common()->pointer_ref_count_;
+  address_common_->pointer_ref_count_->set_deleter(pointer_ref_count->deleter());
   address_common_->size_ = size;
   address_common_->format_ = GetFormatFromStrToEnum(format);
   address_common_->dtype_id_ = dtype_id;
   address_common_->device_name_ = device_name;
   address_common_->device_id_ = device_id;
-  host_shape_ = host_shape;
-  user_data_ = user_data;
+  device_address_->set_address_common(address_common_);
+  device_address_->set_host_shape(host_shape);
+  set_device_synchronizer(device_address_->NewDeviceSynchronizer());
 }
 
-KernelTensor::KernelTensor(const AddressCommonPtr &address_common, const abstract::BaseShapePtr &shape,
+KernelTensor::KernelTensor(const DeviceAddressPtr &device_address, const abstract::BaseShapePtr &shape,
                            const TypePtr &type, const ValuePtr &value, const ShapeVector &host_shape,
-                           const UserDataPtr &user_data)
-    : KernelTensor(shape, type, value) {
-  address_common_ = address_common;
-  host_shape_ = host_shape;
-  user_data_ = user_data;
+                           const UserDataPtr &user_data) {
+  if (device_address != nullptr) {
+    device_address_ = device_address;
+    address_common_ = device_address_->address_common();
+    device_address_->set_user_data(user_data);
+    device_address_->set_host_shape(host_shape);
+    set_device_synchronizer(device_address_->NewDeviceSynchronizer());
+  } else {
+    address_common_ = std::make_shared<AddressCommon>();
+  }
+
+  host_info_ = std::make_unique<KernelHostInfo>();
+  if (type) {
+    SetType(type);
+  }
+  if (shape) {
+    // Note: for performance, the function `SetShape` uses host_info_->type_id_, so need to SetType first.
+    SetShape(shape);
+  }
+  if (value) {
+    SetValue(value);
+  }
 }
 
 KernelTensor::KernelTensor(const KernelTensor &other) {
@@ -153,11 +175,16 @@ KernelTensor::KernelTensor(const KernelTensor &other) {
 
   // Copy device info.
   task_id_on_stream_ = other.task_id_on_stream_;
-  address_common_ = std::make_shared<AddressCommon>(*other.address_common_);
-  device_synchronizer_ = other.device_synchronizer_;
-  host_shape_ = other.host_shape_;
-  user_data_ = other.user_data_;
-  hete_info_ = other.hete_info_;
+  if (other.device_address_ != nullptr) {
+    device_address_ = other.device_address_->CloneDeviceAddress();
+    address_common_ = device_address_->address_common();
+    device_synchronizer_ = other.device_synchronizer_;
+    device_address_->set_user_data(other.user_data());
+    device_address_->set_heterogeneous_info(other.heterogeneous_info());
+    device_address_->set_host_shape(other.host_shape());
+  } else {
+    address_common_ = std::make_shared<AddressCommon>(*other.address_common_);
+  }
 }
 
 inline void KernelTensor::CheckHostInfoValid() {
@@ -528,12 +555,13 @@ bool KernelTensor::SyncDataFromDeviceToHost() const {
   }
   host_info_->value_mutex_.lock();
 
-  if (hete_info_ != nullptr && hete_info_->host_ptr_ != nullptr) {
+  if (device_address_ != nullptr && device_address_->heterogeneous_info() != nullptr &&
+      device_address_->heterogeneous_info()->host_ptr_ != nullptr) {
     if (!host_info_->kernel_tensor_value_) {
-      host_info_->kernel_tensor_value_ =
-        std::make_shared<KernelTensorValue>(hete_info_->host_ptr_, address_common_->size_, type_);
+      host_info_->kernel_tensor_value_ = std::make_shared<KernelTensorValue>(
+        device_address_->heterogeneous_info()->host_ptr_, address_common_->size_, type_);
     } else {
-      host_info_->kernel_tensor_value_->SetDataPtr(hete_info_->host_ptr_);
+      host_info_->kernel_tensor_value_->SetDataPtr(device_address_->heterogeneous_info()->host_ptr_);
       host_info_->kernel_tensor_value_->Resize(address_common_->size_);
     }
     return true;
@@ -575,7 +603,7 @@ bool KernelTensor::SyncDataFromDeviceToHost() const {
   MS_EXCEPTION_IF_NULL(device_synchronizer_);
   if (!device_synchronizer_->SyncDeviceToHost(
         host_ptr, device_ptr, address_common_->size_, address_common_->device_name_, address_common_->device_id_,
-        address_common_->format_, address_common_->shape_vector_, address_common_->stream_id_, user_data_)) {
+        address_common_->format_, address_common_->shape_vector_, address_common_->stream_id_, user_data())) {
     MS_LOG(EXCEPTION) << "Sync data from device to host side failed";
   }
   return true;
@@ -637,5 +665,16 @@ ShapeVector KernelTensor::GetMaxShape() const {
   }
 
   return shape_->cast<abstract::ShapePtr>()->max_shape();
+}
+
+const DeviceAddressPtr &KernelTensor::device_address() const { return device_address_; }
+void KernelTensor::set_device_address(const DeviceAddressPtr &device_address) {
+  device_address_ = device_address;
+  if (device_address_ != nullptr) {
+    address_common_ = device_address_->address_common();
+    if (device_synchronizer_ == nullptr) {
+      device_synchronizer_ = device_address_->NewDeviceSynchronizer();
+    }
+  }
 }
 }  // namespace mindspore::kernel

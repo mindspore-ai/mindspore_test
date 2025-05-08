@@ -37,15 +37,15 @@ class KernelInferActor : public KernelActor {
   ~KernelInferActor() override = default;
 
   // The actor run when receive the input data.
-  void RunOpData(OpData<DeviceTensor> *const input_data, OpContext<DeviceTensor> *const context) override;
+  void RunOpData(OpData<KernelTensor> *const input_data, OpContext<KernelTensor> *const context) override;
 
   // The memory related operation interface.
-  void SendMemoryFreeReq(OpContext<DeviceTensor> *const context) override;
+  void SendMemoryFreeReq(OpContext<KernelTensor> *const context) override;
 
  protected:
-  void Run(OpContext<DeviceTensor> *const context) override;
+  void Run(OpContext<KernelTensor> *const context) override;
   void Init() override;
-  void SendRecorderInfo(OpContext<DeviceTensor> *const context) const override {}
+  void SendRecorderInfo(OpContext<KernelTensor> *const context) const override {}
 };
 
 using KernelInferActorPtr = std::shared_ptr<KernelInferActor>;

@@ -41,7 +41,7 @@ class MeanStatisticKernel : public StatisticKernel {
 
  protected:
   std::vector<KernelTensorPtr> GetExtraInputsDeviceAddress(KernelTensor *input) override;
-  DeviceAddressPtr GetOutputDeviceAddress(TypeId dtype_id) override;
+  KernelTensorPtr GetOutputDeviceAddress(TypeId dtype_id) override;
 };
 
 }  // namespace datadump

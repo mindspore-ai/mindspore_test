@@ -30,7 +30,7 @@ void KernelAsyncLaunchActor::Initialize() {
   Wait();
 }
 
-void KernelAsyncLaunchActor::LaunchKernel(OpContext<DeviceTensor> *const context, KernelActor *kernel_actor) {
+void KernelAsyncLaunchActor::LaunchKernel(OpContext<KernelTensor> *const context, KernelActor *kernel_actor) {
   try {
     kernel_actor->ExecuteLaunchKernelTask(context);
   } catch (const std::exception &e) {

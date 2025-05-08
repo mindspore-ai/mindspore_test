@@ -75,17 +75,17 @@ class SuperKernelActor : public DebugAwareActor {
   ~SuperKernelActor() override;
 
   size_t FetchInputNodePosition(const AnfNodePtr &intput_node);
-  virtual void FetchInputDeviceTensor(OpContext<DeviceTensor> *const context);
+  virtual void FetchInputDeviceTensor(OpContext<KernelTensor> *const context);
   // The debug related operation interface.
-  void SendDebugReq(OpContext<DeviceTensor> *const context) override;
+  void SendDebugReq(OpContext<KernelTensor> *const context) override;
 
   // The memory related operation interface.
-  void SendMemoryAllocReq(OpContext<DeviceTensor> *const context) override;
+  void SendMemoryAllocReq(OpContext<KernelTensor> *const context) override;
   // The callback after memory alloc finished.
-  void OnMemoryAllocFinish(OpContext<DeviceTensor> *const context) override;
+  void OnMemoryAllocFinish(OpContext<KernelTensor> *const context) override;
   // The input may come from the control actor, so need free the input memory by the dynamic ref count.
-  void SendMemoryFreeReq(OpContext<DeviceTensor> *const context) override;
-  bool CopyInputData(const OpContext<DeviceTensor> *context, const KernelGraphPtr &graph);
+  void SendMemoryFreeReq(OpContext<KernelTensor> *const context) override;
+  bool CopyInputData(const OpContext<KernelTensor> *context, const KernelGraphPtr &graph);
 
   const KernelGraphPtr &graph() const { return graph_; }
 
@@ -107,7 +107,7 @@ class SuperKernelActor : public DebugAwareActor {
   }
   const std::set<std::pair<size_t, ParameterInfo>> &input_params_no_user() const { return input_params_no_user_; }
 
-  void IncreaseNewRefCounts(OpContext<DeviceTensor> *const context) override;
+  void IncreaseNewRefCounts(OpContext<KernelTensor> *const context) override;
   // Get the release position of the device address in the graph through static analysis of the input-output
   // relationship in the graph.
   void SetFreePositionForKernelActor();
@@ -129,21 +129,20 @@ class SuperKernelActor : public DebugAwareActor {
 
  protected:
   void Init() override;
-  void Run(OpContext<DeviceTensor> *const context) override;
+  void Run(OpContext<KernelTensor> *const context) override;
   void Finalize() override;
-
   // The input device tensors for launch.
-  std::vector<DeviceTensor *> input_device_tensors_;
+  std::vector<KernelTensorPtr> input_kernel_tensors_;
   // The device tensors of graph input parameter, which used to compare the recv input data.
-  std::vector<DeviceTensorPtr> node_device_tensors_;
+  std::vector<KernelTensorPtr> node_kernel_tensors_;
   // The device tensors for memory alloc.
-  std::vector<DeviceTensor *> memory_alloc_list_;
+  std::vector<KernelTensorPtr> memory_alloc_list_;
   // The lists of device tensors which need free by dynamic ref count, will be cleared at the end of step.
-  std::queue<std::vector<DeviceTensor *>> memory_free_lists_;
+  std::queue<std::vector<KernelTensorPtr>> memory_free_lists_;
 
  protected:
   bool CopyInputDataPersistedHandle(const DeviceContext *device_context, DeviceTensor *input_device_tensor,
-                                    const DeviceTensorPtr &node_device_tensor, size_t i);
+                                    const KernelTensorPtr &node_kernel_tensor, size_t i);
 
   // Generate and initialize all kernel actors by execution order of graph_ for kerkel by kernl execute a sub garph
   // mode.
@@ -167,47 +166,47 @@ class SuperKernelActor : public DebugAwareActor {
   void LinkKernelActorByDeviceType(const CNodePtr &kernel, size_t input_index, const AnfNodePtr &input_node,
                                    size_t output_index);
 
-  void RunGraphKernelByKernel(OpContext<DeviceTensor> *const context);
+  void RunGraphKernelByKernel(OpContext<KernelTensor> *const context);
   // Need to correct current ref count or dynamic ref count by the use count of the input node(parameter) in the graph.
   // From the outside, the input device address is used only once by the super kernel actor, origin ref count only +1 in
   // compile phase.
-  void CorrectRefCount(size_t input_index, DeviceTensor *device_tensor);
-  void CorrectRefCountByCondition(size_t index, DeviceTensor *device_tensor,
-                                  std::vector<DeviceTensor *> *memory_free_list);
+  void CorrectRefCount(size_t input_index, KernelTensor *kernel_tensor);
+  void CorrectRefCountByCondition(size_t index, const KernelTensorPtr &kernel_tensor,
+                                  std::vector<KernelTensorPtr> *memory_free_list);
 
   void FetchPersistentDeviceTensor();
 
-  void UpdateMemoryTraceMangerStatus(OpContext<DeviceTensor> *const context);
+  void UpdateMemoryTraceMangerStatus(OpContext<KernelTensor> *const context);
   void SetTraceMemoryForKernel(const KernelActorPtr &kernel_actor, bool safe_update = false);
   // Allocate block memory for use trace memory (run by static shape) step.
-  void AllocateTraceMemory(OpContext<DeviceTensor> *const context) const;
+  void AllocateTraceMemory(OpContext<KernelTensor> *const context) const;
   // Free block memory for use trace memory (run by static shape) step.
   void FreeTraceMemory() const;
   void SetInputTraceMemory(const KernelActorPtr &kernel_actor) const;
 
   // Handle copy output for different device type kernel.
-  bool CopyHeterogeneousOutput(OpContext<DeviceTensor> *const context, const KernelActorPtr &kernel_actor) const;
+  bool CopyHeterogeneousOutput(OpContext<KernelTensor> *const context, const KernelActorPtr &kernel_actor) const;
 
   void UpdateOutputAddress(const std::vector<std::pair<size_t, std::vector<size_t>>> &kernel_inputs_to_actor_outputs,
                            const KernelActorPtr &kernel_actor);
 
   // Launch all kernels by execution order in kernel graph: graph_.
-  bool LaunchAllKernels(OpContext<DeviceTensor> *const context);
+  bool LaunchAllKernels(OpContext<KernelTensor> *const context);
 
   void TrackInputMemory();
 
-  void FetchParameterInput(const KernelActorPtr &kernel_actor, OpContext<DeviceTensor> *const context);
-  void FreeInputParamWithoutUser(OpContext<DeviceTensor> *const context);
+  void FetchParameterInput(const KernelActorPtr &kernel_actor, OpContext<KernelTensor> *const context);
+  void FreeInputParamWithoutUser(OpContext<KernelTensor> *const context);
   void RecordKernelActorWeight();
 
   // Prepare non top cell input, such as internal parameter msg input, control flow msg input and const value.
-  bool FetchMsgInputAndConstValueForKernel(KernelActor *kernel_actor, OpContext<DeviceTensor> *const context);
+  bool FetchMsgInputAndConstValueForKernel(KernelActor *kernel_actor, OpContext<KernelTensor> *const context);
 
-  void ParallelDispatchKernels(OpContext<DeviceTensor> *const context);
+  void ParallelDispatchKernels(OpContext<KernelTensor> *const context);
   // Dispatch kernel which can parallel launch.
-  void DispatchParallelLaunchKernels(size_t index, OpContext<DeviceTensor> *const context);
+  void DispatchParallelLaunchKernels(size_t index, OpContext<KernelTensor> *const context);
   // Dispatch serial launch kernels: communication ops and the kernel need force resize.
-  void DispatchSerialLaunchKernels(OpContext<DeviceTensor> *const context);
+  void DispatchSerialLaunchKernels(OpContext<KernelTensor> *const context);
 
   void InitParallelDispatchResource();
   void PartitionParallelDispatchKernels();
@@ -233,7 +232,7 @@ class SuperKernelActor : public DebugAwareActor {
 
   // The received input device type and format may be different from the formal parameter in the control flow scenarios,
   // so it needs to be copied from the input data to real data that graph launch needs.
-  std::vector<DeviceTensorPtr> copy_input_device_tensors_;
+  std::vector<KernelTensorPtr> copy_input_kernel_tensors_;
   // Record the device address to the output node of graph.
   std::map<DeviceAddress *, OutputMemoryInfo> device_address_to_node_;
 
@@ -243,7 +242,7 @@ class SuperKernelActor : public DebugAwareActor {
   // Record the graph parameter without user.
   std::set<std::pair<size_t, ParameterInfo>> input_params_no_user_;
 
-  std::vector<DeviceTensor *> new_memory_free_list_;
+  std::vector<KernelTensorPtr> new_memory_free_list_;
 
   // Record whether the input is used by kernel actor.
   std::vector<bool> is_input_used_;

@@ -563,8 +563,9 @@ TEST_F(RuntimeFaultModeTest, OutofMemory) {
     std::make_shared<TestDeviceAddress>(nullptr, 2048, "format", TypeId::kNumberTypeUInt16, "CPU", 0);
   DeviceContextKey device_context_key{"CPU", 0};
   auto device_context = std::make_shared<TestDeviceContext>(device_context_key);
-  std::vector<DeviceTensor *> alloc_list{device_tensor.get()};
-  OpContext<DeviceTensor> op_context;
+  auto kernel_tensor = std::make_shared<KernelTensor>(device_tensor);
+  std::vector<KernelTensorPtr> alloc_list{kernel_tensor};
+  OpContext<KernelTensor> op_context;
   std::vector<Promise<int>> result(1);
   op_context.sequential_num_ = RandInt::Instance().Get();
   op_context.results_ = &result;
@@ -609,7 +610,8 @@ TEST_F(RuntimeFaultModeTest, OutofMemoryByMemoryLeak) {
   MS_EXCEPTION_IF_NULL(device_context->graph_executor_);
   auto device_tensor = device_context->device_res_manager_->CreateDeviceAddress(
     nullptr, 1024, shp, Format::DEFAULT_FORMAT, TypeId::kNumberTypeUInt16, "CPU", 0, 0);
-  AnfAlgo::SetOutputAddr(device_tensor, 0, add_node.get());
+  auto kernel_tensor = std::make_shared<KernelTensor>(device_tensor);
+  AnfAlgo::SetOutputKernelTensor(kernel_tensor, 0, add_node.get());
 
   std::vector<tensor::TensorPtr> tensors;
   std::map<string, string> compile_options;
@@ -617,8 +619,8 @@ TEST_F(RuntimeFaultModeTest, OutofMemoryByMemoryLeak) {
 
   AID aid;
   auto &memory_manager_actor = MemoryManagerActor::GetInstance();
-  std::vector<DeviceTensor *> alloc_list{device_tensor.get()};
-  OpContext<DeviceTensor> op_context;
+  std::vector<KernelTensorPtr> alloc_list{kernel_tensor};
+  OpContext<KernelTensor> op_context;
   std::vector<Promise<int>> result(1);
   op_context.sequential_num_ = RandInt::Instance().Get();
   op_context.results_ = &result;

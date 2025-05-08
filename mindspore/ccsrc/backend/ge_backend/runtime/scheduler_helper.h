@@ -39,7 +39,7 @@ class SchedulerHelper {
   // Judge the input node whether need the control arrow.
   static bool HasMonadControl(const AnfNodePtr &anf_node, const KernelGraphPtr &graph);
 
-  static void AddDeviceTensorStore(const AnfNodePtr &anf_node, const DeviceTensorPtr &device_tensor);
+  static void AddDeviceTensorStore(const AnfNodePtr &anf_node, const KernelTensorPtr &kernel_tensor);
 
   static void AddMonadDeviceTensorStore(AbstractActor *const to_actor, const CNodePtr &kernel,
                                         const KernelGraphPtr &graph);

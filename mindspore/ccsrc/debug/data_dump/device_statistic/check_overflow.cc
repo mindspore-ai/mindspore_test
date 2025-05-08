@@ -27,7 +27,7 @@
 namespace mindspore {
 namespace datadump {
 
-std::map<std::uint32_t, DeviceAddressPtr> CheckOverflowKernel::cache_;
+std::map<std::uint32_t, KernelTensorPtr> CheckOverflowKernel::cache_;
 
 std::vector<KernelTensor *> CheckOverflowKernel::CheckInputs(std::vector<KernelTensor *> inputs) {
   std::vector<KernelTensor *> check_kernel_tensors;
@@ -50,8 +50,8 @@ std::vector<KernelTensor *> CheckOverflowKernel::CheckInputs(std::vector<KernelT
   return check_kernel_tensors;
 }
 
-DeviceAddressPtr CheckOverflowKernel::LaunchKernelAsync(std::vector<KernelTensor *> inputs,
-                                                        const std::uint32_t stream_id) {
+KernelTensorPtr CheckOverflowKernel::LaunchKernelAsync(std::vector<KernelTensor *> inputs,
+                                                       const std::uint32_t stream_id) {
   stream_id_ = stream_id;
   std::vector<KernelTensor *> selected_inputs = CheckInputs(inputs);
   if (selected_inputs.empty()) {
@@ -61,10 +61,9 @@ DeviceAddressPtr CheckOverflowKernel::LaunchKernelAsync(std::vector<KernelTensor
   if (cache_.find(stream_id) == cache_.end()) {
     cache_[stream_id] = GetOutputDeviceAddress(kNumberTypeBool);
   }
-  auto output_addr = cache_[stream_id];
-  std::vector<KernelTensor *> outputs{output_addr->kernel_tensor().get()};
+  auto output_kernel_tensor = cache_[stream_id];
+  std::vector<KernelTensor *> outputs{output_kernel_tensor.get()};
 
-  MS_EXCEPTION_IF_NULL(output_addr);
   MS_EXCEPTION_IF_NULL(kernel_mod_);
 
   void *stream_ptr = device_context_->device_res_manager_->GetStream(stream_id_);
@@ -73,7 +72,7 @@ DeviceAddressPtr CheckOverflowKernel::LaunchKernelAsync(std::vector<KernelTensor
   if (!ret) {
     MS_LOG(EXCEPTION) << "Device cal overflow check, launch " << kernel_name_ << "error";
   }
-  return output_addr;
+  return output_kernel_tensor;
 }
 
 REGISTER_KERNEL(KCheckOverflow, CheckOverflowKernel);

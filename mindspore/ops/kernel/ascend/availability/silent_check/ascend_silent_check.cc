@@ -604,8 +604,10 @@ void SilentChecker::LaunchOperator(const OpExecState *op_exec_state, const std::
   if (output_tensor != nullptr) {
     MS_EXCEPTION_IF_NULL(op_exec_state->output);
     if (op_exec_state->output->dev_addr == nullptr) {
-      op_exec_state->output->dev_addr = runtime::DeviceAddressUtils::CreateWorkspaceAddress(
+      auto kernel_tensor = runtime::DeviceAddressUtils::CreateWorkspaceKernelTensor(
         device_context_, kDefaultStreamIndex, op_exec_state->output->max_size);
+      MS_EXCEPTION_IF_NULL(kernel_tensor);
+      op_exec_state->output->dev_addr = kernel_tensor->device_address();
     }
     output_tensor->set_device_ptr(op_exec_state->output->dev_addr->GetMutablePtr());
   }
@@ -613,8 +615,10 @@ void SilentChecker::LaunchOperator(const OpExecState *op_exec_state, const std::
   auto work_space = op_exec_state->kernel->GetWorkspaceSizeList();
   if (!work_space.empty() && work_space[0] != 0) {
     if (workspace_.dev_addr == nullptr) {
-      workspace_.dev_addr =
-        runtime::DeviceAddressUtils::CreateWorkspaceAddress(device_context_, kDefaultStreamIndex, workspace_.max_size);
+      auto kernel_tensor = runtime::DeviceAddressUtils::CreateWorkspaceKernelTensor(
+        device_context_, kDefaultStreamIndex, workspace_.max_size);
+      MS_EXCEPTION_IF_NULL(kernel_tensor);
+      workspace_.dev_addr = kernel_tensor->device_address();
     }
     op_exec_state->workspace->set_device_ptr(workspace_.dev_addr->GetMutablePtr());
     workspace.emplace_back(op_exec_state->workspace.get());
@@ -677,9 +681,9 @@ KernelTensorPtr SilentChecker::GenerateKernelTensor(TypeId dtype_id, const Shape
   auto mem_size = UnitSizeInBytes(dtype_id) * num_elems;
   void *addr =
     alloc_dev ? device_context_->device_res_manager_->AllocateMemory(mem_size, kDefaultStreamIndex) : nullptr;
-  auto tensor = std::make_shared<kernel::KernelTensor>(addr, mem_size, Format::DEFAULT_FORMAT, dtype_id, shape,
-                                                       device_context_->device_context_key().device_name_,
-                                                       device_context_->device_context_key().device_id_);
+  auto tensor = AnfAlgo::CreateKernelTensor(addr, mem_size, Format::DEFAULT_FORMAT, dtype_id, shape,
+                                            device_context_->device_context_key().device_name_,
+                                            device_context_->device_context_key().device_id_);
   tensor->set_stream_id(kDefaultStreamIndex);
   tensor->SetType(std::make_shared<TensorType>(TypeIdToType(dtype_id)));
   tensor->SetShape(std::make_shared<abstract::TensorShape>(shape));

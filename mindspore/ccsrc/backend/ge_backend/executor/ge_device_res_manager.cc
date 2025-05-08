@@ -209,18 +209,12 @@ bool GeDeviceResManager::SyncCopyStream() const {
   return device::ascend::AscendStreamMng::GetInstance().SyncStream(copy_stream);
 }
 
-device::DeviceAddressPtr GeDeviceResManager::CreateDeviceAddress(const kernel::KernelTensorPtr &kernel_tensor) const {
-  MS_EXCEPTION_IF_NULL(kernel_tensor);
-
-  if (kernel_tensor->device_name().empty()) {
-    kernel_tensor->set_device_name(kAscendDevice);
-    auto context_ptr = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(context_ptr);
-    uint32_t device_id = context_ptr->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    kernel_tensor->set_device_id(device_id);
-  }
-  auto device_address = std::make_shared<device::ascend::AscendDeviceAddress>(kernel_tensor);
-  device_address->set_device_synchronizer(std::make_shared<device::ascend::AscendDeviceSynchronizer>());
+device::DeviceAddressPtr GeDeviceResManager::CreateDeviceAddress() const {
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_address = std::make_shared<device::ascend::AscendDeviceAddress>();
+  device_address->set_device_name(ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET));
+  device_address->set_device_id(ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID));
   return device_address;
 }
 

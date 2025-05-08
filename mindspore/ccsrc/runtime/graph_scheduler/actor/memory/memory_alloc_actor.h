@@ -37,16 +37,16 @@ class MemoryAllocActor : public MemoryAwareActor {
   ~MemoryAllocActor() override = default;
 
   // The memory related operation interface.
-  void SendMemoryAllocReq(OpContext<DeviceTensor> *const context) override;
+  void SendMemoryAllocReq(OpContext<KernelTensor> *const context) override;
   // The processing after memory alloc finished.
-  void OnMemoryAllocFinish(OpContext<DeviceTensor> *const context) override;
+  void OnMemoryAllocFinish(OpContext<KernelTensor> *const context) override;
 
   // Get the member.
   SomasInfo *somas_info() const { return somas_info_; }
 
  protected:
   void Init() override;
-  void Run(OpContext<DeviceTensor> *const context) override { SendMemoryAllocReq(context); }
+  void Run(OpContext<KernelTensor> *const context) override { SendMemoryAllocReq(context); }
 
  private:
   friend class SchedulerHelper;

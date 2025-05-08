@@ -40,6 +40,7 @@ using TensorPtr = std::shared_ptr<Tensor>;
 using mindspore::kernel::AddressPtr;
 using mindspore::kernel::AddressPtrList;
 using mindspore::kernel::KernelLaunchInfo;
+using mindspore::kernel::KernelTensor;
 
 namespace mindspore {
 #ifndef ENABLE_DEBUGGER
@@ -58,7 +59,7 @@ class BACKEND_EXPORT KernelRuntime {
   void AssignCommunicationInputFromMemoryPool(const AnfNodePtr &node) const;
   void RunOpClearMemory(const session::KernelGraph &graph) const;
   using TbeLaunchKernelModCallBack =
-    std::function<void(const AnfNodePtr &, const kernel::KernelMod *kernel_mod, std::vector<KernelTensor *> *)>;
+    std::function<void(const AnfNodePtr &, const kernel::KernelMod *kernel_mod, std::vector<kernel::KernelTensor *> *)>;
   static void tbe_call_setter(const TbeLaunchKernelModCallBack &call) { tbe_call_ = call; }
 #ifdef ENABLE_DEBUGGER
   BACKEND_EXPORT static bool DumpDataEnabled();

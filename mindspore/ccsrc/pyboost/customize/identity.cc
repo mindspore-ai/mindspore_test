@@ -34,8 +34,11 @@ void IdentityCustomizeCallWithoutContigous(const std::shared_ptr<OpRunner> &op, 
     PyBoostUtils::MallocOpInputs(device_context, x_tensor);
 
     // Malloc for output tensors
-    auto launch_device_address = runtime::DeviceAddressUtils::CreateDeviceAddress(
+    auto launch_kernel_tensor = runtime::DeviceAddressUtils::CreateKernelTensor(
       op->device_context(), outputs[0], x_tensor->storage_info()->ori_shape, op->stream_id());
+    MS_EXCEPTION_IF_NULL(launch_kernel_tensor);
+    auto launch_device_address = launch_kernel_tensor->device_address();
+    MS_EXCEPTION_IF_NULL(launch_device_address);
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", memory::mem_pool::MemType::kPyNativeOutput,
                                                    launch_device_address->GetSize(), launch_device_address.get());
     if (!device_context->device_res_manager_->AllocateMemory(launch_device_address.get())) {
@@ -45,11 +48,18 @@ void IdentityCustomizeCallWithoutContigous(const std::shared_ptr<OpRunner> &op, 
     // Get inputs kernel tensors, the not-tensor value will malloc here
     const auto &input_address_info =
       PyBoostUtils::GetAddressInfo(device_context, op->stream_id(), op->input_abs(), x_tensor);
-
+    if (input_address_info.first.empty()) {
+      MS_LOG(EXCEPTION) << "Empty input kernel tensors.";
+    }
+    MS_EXCEPTION_IF_NULL(input_address_info.first[0]);
+    if (!input_address_info.first[0]->host_info_exist()) {
+      input_address_info.first[0]->SetHostInfo(std::make_shared<abstract::TensorShape>(x_tensor->shape()),
+                                               std::make_shared<TensorType>(x_tensor->Dtype()), nullptr);
+    }
     // Get outputs kernel tensors
-    std::vector<kernel::KernelTensor *> output_kernel_tensor_list{launch_device_address->kernel_tensor().get()};
-    device::DeviceAddressPtrList output_device_address_list{launch_device_address};
-    const auto &output_address_info = std::make_pair(output_kernel_tensor_list, output_device_address_list);
+    std::vector<kernel::KernelTensor *> output_kernel_tensor_list{launch_kernel_tensor.get()};
+    std::vector<kernel::KernelTensorPtr> output_kernel_tensor_ptr_list{launch_kernel_tensor};
+    const auto &output_address_info = std::make_pair(output_kernel_tensor_list, output_kernel_tensor_ptr_list);
 
     PyBoostUtils::LaunchKernel(op->primitive(), op->device_context(), input_address_info, output_address_info,
                                op->stream_id());
@@ -75,11 +85,26 @@ void IdentityCustomizeCall(const std::shared_ptr<OpRunner> &op, const BaseTensor
     // Get inputs kernel tensors, the not-tensor value will malloc here
     const auto &input_address_info =
       PyBoostUtils::GetAddressInfo(device_context, op->stream_id(), op->input_abs(), x_tensor);
+    if (input_address_info.first.empty()) {
+      MS_LOG(EXCEPTION) << "Empty input kernel tensors.";
+    }
+    MS_EXCEPTION_IF_NULL(input_address_info.first[0]);
+    if (!input_address_info.first[0]->host_info_exist()) {
+      input_address_info.first[0]->SetHostInfo(std::make_shared<abstract::TensorShape>(x_tensor->shape()),
+                                               std::make_shared<TensorType>(x_tensor->Dtype()), nullptr);
+    }
 
     // Get outputs kernel tensors
     const auto &output_address_info =
       PyBoostUtils::GetAddressInfo(device_context, op->stream_id(), {op->output_abs()}, outputs);
-
+    if (output_address_info.first.empty()) {
+      MS_LOG(EXCEPTION) << "Empty output kernel tensors.";
+    }
+    MS_EXCEPTION_IF_NULL(output_address_info.first[0]);
+    if (!output_address_info.first[0]->host_info_exist()) {
+      output_address_info.first[0]->SetHostInfo(std::make_shared<abstract::TensorShape>(outputs[0]->shape()),
+                                                std::make_shared<TensorType>(outputs[0]->Dtype()), nullptr);
+    }
     PyBoostUtils::LaunchKernel(op->primitive(), op->device_context(), input_address_info, output_address_info,
                                op->stream_id());
     MS_LOG(DEBUG) << "Run device task Identity end";

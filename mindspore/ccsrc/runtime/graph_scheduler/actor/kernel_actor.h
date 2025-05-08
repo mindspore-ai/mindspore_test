@@ -85,14 +85,14 @@ class KernelActor : public DebugAwareActor {
   ~KernelActor() override = default;
 
   // The memory related operation interface.
-  void SendMemoryAllocReq(OpContext<DeviceTensor> *const context) override;
-  void SendMemoryFreeReq(OpContext<DeviceTensor> *const context) override;
+  void SendMemoryAllocReq(OpContext<KernelTensor> *const context) override;
+  void SendMemoryFreeReq(OpContext<KernelTensor> *const context) override;
   // The callback after memory alloc finished.
-  void OnMemoryAllocFinish(OpContext<DeviceTensor> *const context) override;
+  void OnMemoryAllocFinish(OpContext<KernelTensor> *const context) override;
 
   const CNodePtr &kernel() const { return kernel_; }
   KernelLaunchInfo kernel_launch_info() const {
-    return KernelLaunchInfo(input_kernel_tensors_, output_kernel_tensors_, workspace_kernel_tensors_, stream_);
+    return KernelLaunchInfo(input_launch_tensors_, output_launch_tensors_, workspace_launch_tensors_, stream_);
   }
   const std::set<size_t> &modifiable_ref_input_indexes() const { return modifiable_ref_input_indexes_; }
   const std::set<size_t> &modifiable_ref_output_indexes() const { return modifiable_ref_output_indexes_; }
@@ -114,66 +114,66 @@ class KernelActor : public DebugAwareActor {
   void set_enable_async_infer(bool enable_async_infer) { enable_async_infer_ = enable_async_infer; }
 
   // Really do infer shape and update kernel tensor shape.
-  virtual void ExecuteInferShapeTask(OpContext<DeviceTensor> *const context);
+  virtual void ExecuteInferShapeTask(OpContext<KernelTensor> *const context);
   // Really do resize kernel mod and update new size into output and workspace kernel tensors.
-  virtual void ExecuteResizeKernelModTask(OpContext<DeviceTensor> *const context);
+  virtual void ExecuteResizeKernelModTask(OpContext<KernelTensor> *const context);
   // Really do launch kernel with memory allocate and free.
-  virtual void ExecuteLaunchKernelTask(OpContext<DeviceTensor> *const context);
+  virtual void ExecuteLaunchKernelTask(OpContext<KernelTensor> *const context);
 
   void set_stream_send_actor(KernelActor *stream_send_actor) { stream_send_actor_ = stream_send_actor; }
 
-  void SetInputDeviceTensor(DeviceTensor *input_device_tensor, size_t input_index);
+  void SetInputDeviceTensor(const KernelTensorPtr &input_kernel_tensor, size_t input_index);
 
   // Set the memory address for the tensors which use the somas.
-  void SetSomasMemory(OpContext<DeviceTensor> *const context) const;
+  void SetSomasMemory(OpContext<KernelTensor> *const context) const;
 
   bool skip_launch_shape_related_op() const { return skip_launch_shape_related_op_; }
   void set_skip_launch_shape_related_op(bool skip_launch_shape_related_op) {
     skip_launch_shape_related_op_ = skip_launch_shape_related_op;
   }
 
-  const std::map<size_t, std::pair<DeviceTensorPtr, std::pair<const DeviceContext *, std::vector<DeviceTensor *>>>>
-    &copy_output_device_tensors() const {
-    return copy_output_device_tensors_;
+  const std::map<size_t, std::pair<KernelTensorPtr, std::pair<const DeviceContext *, std::vector<KernelTensorPtr>>>>
+    &copy_output_kernel_tensors() const {
+    return copy_output_kernel_tensors_;
   }
-  std::vector<DeviceTensor *> GetOutputDeviceTensors() { return output_device_tensors_; }
+  std::vector<KernelTensor *> GetOutputDeviceTensors() { return output_launch_tensors_; }
 
   // Reset state for UCE.
   void ResetState() override;
 
-  const std::vector<DeviceTensor *> &workspace_device_tensors() { return workspace_device_tensors_; }
-  const std::vector<DeviceTensor *> &output_device_tensors() { return output_device_tensors_; }
-  const std::vector<DeviceTensor *> &input_device_tensors() { return input_device_tensors_; }
+  const std::vector<KernelTensorPtr> &workspace_kernel_tensors() { return workspace_kernel_tensors_; }
+  const std::vector<KernelTensorPtr> &output_kernel_tensors() { return output_kernel_tensors_; }
+  const std::vector<KernelTensorPtr> &input_kernel_tensors() { return input_kernel_tensors_; }
 
  protected:
   void Init() override;
-  void Run(OpContext<DeviceTensor> *const context) override;
-  void SendRecorderInfo(OpContext<DeviceTensor> *const context) const override;
+  void Run(OpContext<KernelTensor> *const context) override;
+  void SendRecorderInfo(OpContext<KernelTensor> *const context) const override;
 
   // Do kernel launching in this method after 'PreLaunchKernel' and 'PostLaunchKernel'.
-  virtual bool LaunchKernel(OpContext<DeviceTensor> *const context, bool is_skip_launch = false);
+  virtual bool LaunchKernel(OpContext<KernelTensor> *const context, bool is_skip_launch = false);
   // Handle the ref op, set input addr to output addr.
-  virtual void UpdateRefDeviceAddress(OpContext<DeviceTensor> *const context, bool increase_ref_count);
+  virtual void UpdateRefDeviceAddress(OpContext<KernelTensor> *const context, bool increase_ref_count);
   // Execute kernel actor multi stream produre to make sure safety of memory before kernel launch.
-  void ProcessMultiStreamBeforeKernelLaunch(OpContext<DeviceTensor> *const context);
+  void ProcessMultiStreamBeforeKernelLaunch(OpContext<KernelTensor> *const context);
   // Execute kernel actor multi stream produre to make sure safety of memory after kernel launch.
-  void ProcessMultiStreamAfterKernelLaunch(OpContext<DeviceTensor> *const context);
+  void ProcessMultiStreamAfterKernelLaunch(OpContext<KernelTensor> *const context);
   // Update the output ref count of graph output kernel.
-  void UpdateGraphOutputRefCount(OpContext<DeviceTensor> *const context);
+  void UpdateGraphOutputRefCount(OpContext<KernelTensor> *const context);
   // Update the input device tensors to the memory free list.
-  void UpdateMemoryFreeList(OpContext<DeviceTensor> *const context);
+  void UpdateMemoryFreeList(OpContext<KernelTensor> *const context);
   // Execute infer shape, resize and launch kernel by runtime pipeline which executes by KernelAsyncInferActor,
   // KernelAsyncResizeActor and KernelAsyncLaunchActor.
-  void RunWithMultiPipeline(OpContext<DeviceTensor> *const context);
+  void RunWithMultiPipeline(OpContext<KernelTensor> *const context);
   // Execute launch kernel asynchronously in KernelAsyncLaunchActor.
-  void RunWithAsyncLaunchKernel(OpContext<DeviceTensor> *const context);
+  void RunWithAsyncLaunchKernel(OpContext<KernelTensor> *const context);
 
   // Infer shape(and type) and resize kernel mod for dynamic shape or dynamic value, and update memory size from kernel
   // mod to output/workspace device tensors.
-  void InferAndUpdateDeviceTensorSize(OpContext<DeviceTensor> *const context);
+  void InferAndUpdateDeviceTensorSize(OpContext<KernelTensor> *const context);
 
   // Infer shape(and type) and resize kernel mod.
-  void InferAndResize(OpContext<DeviceTensor> *const context);
+  void InferAndResize(OpContext<KernelTensor> *const context);
 
   // Re-Infer shape, type and resize before kernel launch in dynamic scenarios.
   void InferShapeAndType();
@@ -184,14 +184,14 @@ class KernelActor : public DebugAwareActor {
   void ResizeKernelMod();
 
   // Update input_device_tensors by input op data.
-  void UpdateInputDeviceTensor(const OpData<DeviceTensor> *input_data, OpContext<DeviceTensor> *const context);
+  void UpdateInputDeviceTensor(const OpData<KernelTensor> *input_data, OpContext<KernelTensor> *const context);
 
   // Record the output and workspace memory pointer and size to optimize memory allocate/free performance in next step.
   // Note: only use in inference case.
   void TraceDynamicMemory();
 
   // Only aclnn kernel support no-contiguous input, so need make input contiguous.
-  void ConvertInputContiguous(OpContext<DeviceTensor> *const context);
+  void ConvertInputContiguous(OpContext<KernelTensor> *const context);
 
   // Recover the inputs with contiguous.
   void RecoverInputs();
@@ -210,54 +210,53 @@ class KernelActor : public DebugAwareActor {
   KernelInfo *kernel_info_;
   KernelMod *kernel_mod_;
 
-  // The device tensors for launch.
-  std::vector<DeviceTensor *> input_device_tensors_;
-  std::vector<DeviceTensor *> output_device_tensors_;
-  std::vector<DeviceTensor *> workspace_device_tensors_;
+  // Used for set kernel tensor to resize and launch list.
+  std::vector<KernelTensor *> input_launch_tensors_;
+  std::vector<KernelTensor *> output_launch_tensors_;
+  std::vector<KernelTensor *> workspace_launch_tensors_;
 
-  std::vector<DeviceTensor *> max_ref_cnt_output_list_;
+  std::vector<KernelTensorPtr> max_ref_cnt_output_list_;
 
   // The input kernel tensors for infer shape.
   std::vector<abstract::AbstractBasePtr> input_kernel_tensors_for_infer_;
-  // The kernel tensors for resize and launch.
-  std::vector<KernelTensor *> input_kernel_tensors_;
-  std::vector<KernelTensor *> output_kernel_tensors_;
-  std::vector<KernelTensor *> workspace_kernel_tensors_;
+  // The kernel tensors for input, output and workspace.
+  std::vector<KernelTensorPtr> input_kernel_tensors_;
+  std::vector<KernelTensorPtr> output_kernel_tensors_;
+  std::vector<KernelTensorPtr> workspace_kernel_tensors_;
 
   // The received input device type and format may be different from the formal parameter in the control flow
   // scenarios, so it needs to be copied from the input data to real data that kernel launch needs.
   // And if the kernel has a ref input and output, the ptr should be set into the output device addresses.
-  std::vector<DeviceTensorPtr> copy_input_device_tensors_;
+  std::vector<KernelTensorPtr> copy_input_kernel_tensors_;
   // This vector record the heter input device tensor which is the source of copy input device tensors, and the
   // size of this vector is same to copy input device tensors. It is used to free memory of input, when the pre
   // input is not empty, and the input should be free, the pre device tensors should be free too.
-  std::vector<DeviceTensor *> pre_input_device_tensors_;
-  std::map<size_t, std::pair<DeviceTensorPtr, std::pair<const DeviceContext *, std::vector<DeviceTensor *>>>>
-    copy_output_device_tensors_;
+  std::vector<KernelTensorPtr> pre_input_kernel_tensors_;
+  std::map<size_t, std::pair<KernelTensorPtr, std::pair<const DeviceContext *, std::vector<KernelTensorPtr>>>>
+    copy_output_kernel_tensors_;
   // Real data info that kernel launch needs, used to check the consistency of received input data.
   std::vector<std::shared_ptr<InputDataInfo>> real_input_data_infos_;
 
   // Store the tensor generated by ConvertInputContiguous.
-  std::vector<DeviceTensorPtr> contiguous_tensors_;
+  std::vector<KernelTensorPtr> contiguous_tensors_;
   // Store the input infos for recover after launch.
-  std::map<size_t, DeviceTensor *> temp_input_device_tensors_;
-  std::map<size_t, KernelTensor *> temp_input_kernel_tensors_;
+  std::map<size_t, KernelTensorPtr> temp_input_kernel_tensors_;
 
   // The device tensors for memory alloc and free.
   // output + workspace
-  std::vector<DeviceTensor *> memory_alloc_list_;
+  std::vector<KernelTensorPtr> memory_alloc_list_;
   // input + output + workspace
-  std::vector<DeviceTensor *> memory_free_list_;
+  std::vector<KernelTensorPtr> memory_free_list_;
 
   std::vector<size_t> input_free_index_;
   std::vector<size_t> output_free_index_;
-  std::vector<DeviceTensor *> new_memory_free_list_;
+  std::vector<KernelTensorPtr> new_memory_free_list_;
 
   // depend shape input list
   std::vector<bool> depend_shape_input_list_;
   // The device tensor of external reference is not the real data of this kernel, but need add to the
   // memory_free_list_.
-  std::vector<DeviceTensor *> external_reference_tensors_;
+  std::vector<KernelTensorPtr> external_reference_tensors_;
 
   // The information used for integration of dynamic and static memory.
   SomasInfo *somas_info_;
@@ -294,27 +293,27 @@ class KernelActor : public DebugAwareActor {
   void InitIsMonadInput();
 
   // Fetch the device tensor for launch.
-  void FetchInputDeviceTensor(OpContext<DeviceTensor> *const context);
-  void FetchOutputDeviceTensor(OpContext<DeviceTensor> *const context);
+  void FetchInputDeviceTensor(OpContext<KernelTensor> *const context);
+  void FetchOutputDeviceTensor(OpContext<KernelTensor> *const context);
   void FetchWorkspaceDeviceTensor();
   // Need copy when the data type or format between real parameters and formal parameters are inconsistent.
-  void CopyInputDeviceTensor(DeviceTensor *device_tensor, size_t input_index, OpContext<DeviceTensor> *const context);
+  void CopyInputDeviceTensor(KernelTensorPtr kernel_tensor, size_t input_index, OpContext<KernelTensor> *const context);
   void UpdateDeviceTensorCopyStore(DeviceTensor *const new_device_tensor, DeviceTensor *const input_device_tensor,
                                    size_t input_index);
   // The processing before kernel launch: update the info of kernel launch.
-  void PreLaunchKernel(OpContext<DeviceTensor> *const context);
+  void PreLaunchKernel(OpContext<KernelTensor> *const context);
   // The processing after kernel launch: 1.erase input, 2.free memory, 3.send output.
-  void PostLaunchKernel(OpContext<DeviceTensor> *const context);
+  void PostLaunchKernel(OpContext<KernelTensor> *const context);
   // Back refresh the dynamic device tensor stores that have been triggered copy.
-  void RefreshDeviceTensorCopyStore(OpContext<DeviceTensor> *const context);
+  void RefreshDeviceTensorCopyStore(OpContext<KernelTensor> *const context);
 
   void *GetSomasDevicePtr(size_t offset) const;
 
   // Record mem info, because async send may free device info.
   void SetMemInfoForRdr();
   void SetShapeDependInfo();
-  void DispatchDebugActor(OpContext<DeviceTensor> *const context);
-  bool LaunchKernelWithDebug(OpContext<DeviceTensor> *const context, const bool skip_launch);
+  void DispatchDebugActor(OpContext<KernelTensor> *const context);
+  bool LaunchKernelWithDebug(OpContext<KernelTensor> *const context, const bool skip_launch);
 
   // The real input number of kernel launch.
   size_t real_input_num_;

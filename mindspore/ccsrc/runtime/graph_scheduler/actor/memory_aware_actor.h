@@ -33,9 +33,9 @@ class MemoryAwareActor : public AbstractActor {
       : AbstractActor(name, type, recorder_aid), memory_manager_aid_(memory_manager_aid) {}
   ~MemoryAwareActor() override = default;
 
-  virtual void SendMemoryAllocReq(OpContext<DeviceTensor> *const context) {}
-  virtual void SendMemoryFreeReq(OpContext<DeviceTensor> *const context) {}
-  virtual void OnMemoryAllocFinish(OpContext<DeviceTensor> *const context) {}
+  virtual void SendMemoryAllocReq(OpContext<KernelTensor> *const context) {}
+  virtual void SendMemoryFreeReq(OpContext<KernelTensor> *const context) {}
+  virtual void OnMemoryAllocFinish(OpContext<KernelTensor> *const context) {}
 
   const AID &memory_manager_aid() const { return memory_manager_aid_; }
 
@@ -43,7 +43,7 @@ class MemoryAwareActor : public AbstractActor {
   friend class GraphScheduler;
 
   // The processing after actor run: 1.erase input, 2.free memory, 3.send output.
-  void PostRun(OpContext<DeviceTensor> *const context) {
+  void PostRun(OpContext<KernelTensor> *const context) {
     // The input is invalid and needs to be erased when finish run.
     EraseInput(context);
     MS_LOG(DEBUG) << "Output data size:" << output_data_.size() << " for actor:" << GetAID();

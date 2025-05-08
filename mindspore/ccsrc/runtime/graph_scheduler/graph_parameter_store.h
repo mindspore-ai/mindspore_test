@@ -25,7 +25,7 @@
 #include <shared_mutex>
 #include "utils/ms_utils.h"
 #include "include/backend/visible.h"
-#include "common/device_address.h"
+#include "common/kernel.h"
 namespace mindspore {
 namespace runtime {
 using mindspore::tensor::Tensor;
@@ -35,12 +35,13 @@ using DeviceTensor = mindspore::device::DeviceAddress;
 using DeviceTensorType = mindspore::device::DeviceType;
 using DeviceTensorPtr = std::shared_ptr<DeviceTensor>;
 using KernelWithIndex = std::pair<AnfNodePtr, size_t>;
+using KernelTensorPtr = kernel::KernelTensorPtr;
 using UserCntWithPrepared = std::pair<size_t, bool>;
 using DeviceTensorPosition = std::pair<std::pair<size_t, size_t>, DeviceTensorType>;
-// The device tensor mainly includes address ptr, size and reference count,
+// The kernel tensor mainly includes address ptr, size and reference count,
 // which represents the basic data structure of kernel launch and transfers between actors.
 // The args are input from the front every step.
-// The parameter device tensors (such as weight and non-weight parameter) and the args are save in
+// The parameter kernel tensors (such as weight and non-weight parameter) and the args are save in
 // the store, so they can be known by actors and be used for preparing data in actor.
 class BACKEND_EXPORT GraphParameterStore {
  public:
@@ -48,45 +49,46 @@ class BACKEND_EXPORT GraphParameterStore {
   ~GraphParameterStore() = default;
 
   void Resize(size_t front_parameter_size) {
-    parameter_device_tensors_.resize(front_parameter_size);
-    heter_device_tensors_.resize(front_parameter_size);
+    parameter_kernel_tensors_.resize(front_parameter_size);
+    heter_kernel_tensors_.resize(front_parameter_size);
     is_dynamic_.resize(front_parameter_size);
   }
   bool HasHeter(size_t outer_index, size_t inner_index);
   void ResizePosition(size_t outer_index, size_t tuple_unfold_length) {
-    if (outer_index >= parameter_device_tensors_.size()) {
-      MS_LOG(EXCEPTION) << "inner index is larger than the size of parameter device tensors [" << outer_index << "].";
+    if (outer_index >= parameter_kernel_tensors_.size()) {
+      MS_LOG(EXCEPTION) << "inner index is larger than the size of parameter kernel tensors [" << outer_index << "].";
     }
-    parameter_device_tensors_[outer_index].resize(tuple_unfold_length);
-    heter_device_tensors_[outer_index].resize(tuple_unfold_length);
+    parameter_kernel_tensors_[outer_index].resize(tuple_unfold_length);
+    heter_kernel_tensors_[outer_index].resize(tuple_unfold_length);
     is_dynamic_[outer_index].resize(tuple_unfold_length, false);
     buffer_size_ += tuple_unfold_length;
   }
 
   void CheckIndexValid(size_t outer_index, size_t inner_index) {
-    if (outer_index >= parameter_device_tensors_.size()) {
-      MS_LOG(EXCEPTION) << "Outer index is larger than the size of parameter device tensors ["
-                        << parameter_device_tensors_.size() << "].";
+    if (outer_index >= parameter_kernel_tensors_.size()) {
+      MS_LOG(EXCEPTION) << "Outer index is larger than the size of parameter kernel tensors ["
+                        << parameter_kernel_tensors_.size() << "].";
     }
-    if (inner_index >= parameter_device_tensors_[outer_index].size()) {
-      MS_LOG(EXCEPTION) << "inner index is larger than the size of parameter device tensors ["
-                        << parameter_device_tensors_[outer_index].size() << "].";
+    if (inner_index >= parameter_kernel_tensors_[outer_index].size()) {
+      MS_LOG(EXCEPTION) << "inner index is larger than the size of parameter kernel tensors ["
+                        << parameter_kernel_tensors_[outer_index].size() << "].";
     }
   }
 
   bool CheckDeviceTensorHeter(size_t outer_index, size_t inner_index, DeviceTensorType value_type) {
     CheckIndexValid(outer_index, inner_index);
-    auto &device_tensor_with_info = parameter_device_tensors_[outer_index][inner_index];
-    auto &device_tensor = device_tensor_with_info.first;
-    auto &heter_device_tensor_with_info = heter_device_tensors_[outer_index][inner_index];
-    auto &heter_device_tensor = heter_device_tensor_with_info.first;
-    if (device_tensor == nullptr && heter_device_tensor == nullptr) {
+    const auto &kernel_tensor_with_info = parameter_kernel_tensors_[outer_index][inner_index];
+    const auto &kernel_tensor = kernel_tensor_with_info.first;
+    const auto &heter_kernel_tensor_with_info = heter_kernel_tensors_[outer_index][inner_index];
+    const auto &heter_kernel_tensor = heter_kernel_tensor_with_info.first;
+    if (kernel_tensor == nullptr && heter_kernel_tensor == nullptr) {
       return false;
     }
-    if (device_tensor != nullptr && device_tensor->GetDeviceType() != value_type) {
+    if (kernel_tensor != nullptr && device::GetDeviceTypeByName(kernel_tensor->device_name()) != value_type) {
       return true;
     }
-    if (heter_device_tensor != nullptr && heter_device_tensor->GetDeviceType() == value_type) {
+    if (heter_kernel_tensor != nullptr &&
+        device::GetDeviceTypeByName(heter_kernel_tensor->device_name()) == value_type) {
       return true;
     }
     return false;
@@ -101,49 +103,49 @@ class BACKEND_EXPORT GraphParameterStore {
 
   void SetDeviceTensorPrepared(size_t outer_idx, size_t inner_idx, bool is_prepared) {
     CheckIndexValid(outer_idx, inner_idx);
-    auto &device_tensor_with_info = parameter_device_tensors_[outer_idx][inner_idx];
-    device_tensor_with_info.second.second = is_prepared;
+    auto &kernel_tensor_with_info = parameter_kernel_tensors_[outer_idx][inner_idx];
+    kernel_tensor_with_info.second.second = is_prepared;
   }
   bool GetDeviceTensorPrepared(size_t outer_idx, size_t inner_idx) {
     CheckIndexValid(outer_idx, inner_idx);
-    auto &device_tensor_with_info = parameter_device_tensors_[outer_idx][inner_idx];
-    return device_tensor_with_info.second.second;
+    auto &kernel_tensor_with_info = parameter_kernel_tensors_[outer_idx][inner_idx];
+    return kernel_tensor_with_info.second.second;
   }
 
   void SetUserCnt(size_t outer_idx, size_t inner_idx, size_t cnt, DeviceTensorType value_type) {
     auto is_heter = CheckDeviceTensorHeter(outer_idx, inner_idx, value_type);
     if (!is_heter) {
-      auto &device_tensor_with_info = parameter_device_tensors_[outer_idx][inner_idx];
-      device_tensor_with_info.second.first = cnt;
+      auto &kernel_tensor_with_info = parameter_kernel_tensors_[outer_idx][inner_idx];
+      kernel_tensor_with_info.second.first = cnt;
       return;
     }
-    auto &device_tensor_with_info = heter_device_tensors_[outer_idx][inner_idx];
-    device_tensor_with_info.second = cnt;
+    auto &kernel_tensor_with_info = heter_kernel_tensors_[outer_idx][inner_idx];
+    kernel_tensor_with_info.second = cnt;
   }
 
   void IncreaseUserCnt(size_t outer_idx, size_t inner_idx, DeviceTensorType value_type) {
     auto is_heter = CheckDeviceTensorHeter(outer_idx, inner_idx, value_type);
     if (!is_heter) {
-      auto &device_tensor_with_info = parameter_device_tensors_[outer_idx][inner_idx];
-      if (device_tensor_with_info.second.first != SIZE_MAX) {
-        device_tensor_with_info.second.first++;
+      auto &kernel_tensor_with_info = parameter_kernel_tensors_[outer_idx][inner_idx];
+      if (kernel_tensor_with_info.second.first != SIZE_MAX) {
+        kernel_tensor_with_info.second.first++;
       }
       return;
     }
-    auto &heter_device_tensor_with_info = heter_device_tensors_[outer_idx][inner_idx];
-    if (heter_device_tensor_with_info.second != SIZE_MAX) {
-      heter_device_tensor_with_info.second++;
+    auto &heter_kernel_tensor_with_info = heter_kernel_tensors_[outer_idx][inner_idx];
+    if (heter_kernel_tensor_with_info.second != SIZE_MAX) {
+      heter_kernel_tensor_with_info.second++;
     }
   }
 
   size_t GetUserCnt(size_t outer_idx, size_t inner_idx, DeviceTensorType value_type) {
     auto is_heter = CheckDeviceTensorHeter(outer_idx, inner_idx, value_type);
     if (!is_heter) {
-      auto &device_tensor_with_info = parameter_device_tensors_[outer_idx][inner_idx];
-      return device_tensor_with_info.second.first;
+      auto &kernel_tensor_with_info = parameter_kernel_tensors_[outer_idx][inner_idx];
+      return kernel_tensor_with_info.second.first;
     }
-    auto &device_tensor_with_info = heter_device_tensors_[outer_idx][inner_idx];
-    return device_tensor_with_info.second;
+    const auto &kernel_tensor_with_info = heter_kernel_tensors_[outer_idx][inner_idx];
+    return kernel_tensor_with_info.second;
   }
 
   void SetFrontNodeToIndex(AnfNode *node, size_t index) {
@@ -217,15 +219,14 @@ class BACKEND_EXPORT GraphParameterStore {
 
   void ResetAddrRefCount(size_t outer_index, size_t inner_index, DeviceTensorType value_type);
 
-  // Fetch device tensor with index from parameter_device_tensors_.
-  DeviceTensor *Fetch(size_t outer_index, size_t inner_index, DeviceTensorType value_type);
-  DeviceTensorPtr FetchMutableAddr(size_t outer_index, size_t inner_index, DeviceTensorType value_type);
+  // Fetch kernel tensor with index from parameter_kernel_tensors_.
+  KernelTensorPtr Fetch(size_t outer_index, size_t inner_index, DeviceTensorType value_type);
+  KernelTensorPtr FetchWithFreshRefMap(size_t outer_index, size_t inner_index, DeviceTensorType value_type);
 
-  std::vector<DeviceTensor *> Fetch(size_t outer_index, size_t inner_index);
-  std::vector<DeviceTensorPtr> FetchMutableAddr(size_t outer_index, size_t inner_index);
+  std::vector<KernelTensorPtr> Fetch(size_t outer_index, size_t inner_index);
 
-  // Push the device tensor and user count to parameter_device_tensors_.
-  void Push(size_t outer_index, size_t inner_index, const DeviceTensorPtr &value, DeviceTensorType value_type,
+  // Push the kernel tensor and user count to parameter_kernel_tensors_.
+  void Push(size_t outer_index, size_t inner_index, const KernelTensorPtr &value, DeviceTensorType value_type,
             size_t cnt);
 
   // Fetch Tensor with index from input_args_.
@@ -247,8 +248,8 @@ class BACKEND_EXPORT GraphParameterStore {
 
   void Clear() {
     std::unique_lock<std::shared_mutex> lock(param_mutex_);
-    parameter_device_tensors_.clear();
-    heter_device_tensors_.clear();
+    parameter_kernel_tensors_.clear();
+    heter_kernel_tensors_.clear();
     release_data_info_.clear();
     front_node_to_index_.clear();
     node_to_real_front_node_.clear();
@@ -262,12 +263,12 @@ class BACKEND_EXPORT GraphParameterStore {
     buffers_.clear();
   }
 
-  const std::vector<std::vector<std::pair<DeviceTensorPtr, UserCntWithPrepared>>> &GetAll() const {
-    return parameter_device_tensors_;
+  const std::vector<std::vector<std::pair<KernelTensorPtr, UserCntWithPrepared>>> &GetAll() const {
+    return parameter_kernel_tensors_;
   }
 
-  const std::vector<std::vector<std::pair<DeviceTensorPtr, size_t>>> &GetAllHeter() const {
-    return heter_device_tensors_;
+  const std::vector<std::vector<std::pair<KernelTensorPtr, size_t>>> &GetAllHeter() const {
+    return heter_kernel_tensors_;
   }
 
   void FillBuffer(size_t idx, const std::vector<TensorPtr> &tensors);
@@ -278,12 +279,12 @@ class BACKEND_EXPORT GraphParameterStore {
  private:
   // The input args refresh in every step.
   VectorRef *input_args_;
-  // The device tensors used for launch and transfer between actors. Outer index corresponds to the
+  // The kernel tensors used for launch and transfer between actors. Outer index corresponds to the
   // front nodle position, and inner index corresponds to the addr position after tuple unfold.
-  // Besides, record the user cnt and data prepared flag for each device tensor.
-  std::vector<std::vector<std::pair<DeviceTensorPtr, UserCntWithPrepared>>> parameter_device_tensors_;
-  // Record the heterogeneous device tensor of parameter_device_tensors_.
-  std::vector<std::vector<std::pair<DeviceTensorPtr, size_t>>> heter_device_tensors_;
+  // Besides, record the user cnt and data prepared flag for each kernel tensor.
+  std::vector<std::vector<std::pair<KernelTensorPtr, UserCntWithPrepared>>> parameter_kernel_tensors_;
+  // Record the heterogeneous kernel tensor of parameter_kernel_tensors_.
+  std::vector<std::vector<std::pair<KernelTensorPtr, size_t>>> heter_kernel_tensors_;
   // Record non-weight ref max input, so that do not tranverse the store when releasing data.
   std::set<std::pair<size_t, size_t>> non_weight_ref_max_inputs_;
   std::map<DeviceTensorPosition, std::pair<TypePtr, KernelWithIndex>> release_data_info_;

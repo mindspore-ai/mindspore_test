@@ -264,7 +264,6 @@ void InitCommGroup(const FuncGraphPtr &root_graph) {
 void TransformGraphToActorDAG(const GraphCompilerInfo &graph_compiler_info) {
   const auto &actor_set = runtime::GraphScheduler::GetInstance().Transform(graph_compiler_info);
   runtime::GraphScheduler::GetInstance().Schedule(actor_set);
-  runtime::GraphScheduler::GetInstance().RemoveNodeAddr(graph_compiler_info);
 }
 }  // namespace
 
@@ -1830,48 +1829,16 @@ void MindRTBackendBase::ConstructOutputs(runtime::ActorSet *actor_set, VectorRef
 
     // Fetch outputs.
     auto &output_tensors = actor_set->output_actor_->outputs();
+    auto &output_types = actor_set->output_actor_->output_types();
     if (!output_tensors.empty()) {
       size_t output_position = 0;
       std::vector<tensor::TensorPtr> tuple_tensors;
-      ConstructOutputs(root_graph->output(), output_tensors, &output_position, outputs, &tuple_tensors);
+      ConstructOutputs(root_graph->output(), output_tensors, &output_position, outputs, &tuple_tensors, output_types);
 
       // The tensor may be repeated, so it needs to be set null last.
       for (auto &tuple_tensor : tuple_tensors) {
         MS_EXCEPTION_IF_NULL(tuple_tensor);
         tuple_tensor->set_device_address(nullptr);
-      }
-    }
-  }
-}
-
-void MindRTBackendBase::CreateTensorArgs(const VectorRef &args, const GraphCompilerInfo &) {
-  for (const auto &arg : args) {
-    if (utils::isa<tensor::BaseTensorPtr>(arg)) {
-      auto value = utils::cast<tensor::BaseTensorPtr>(arg);
-      runtime::DeviceAddressUtils::CreateKernelTensor(value);
-    } else if (utils::isa<stub::TensorNode>(arg)) {
-      auto tensor_stub = utils::cast<std::shared_ptr<stub::TensorNode>>(arg);
-      MS_EXCEPTION_IF_NULL(tensor_stub);
-      auto value = tensor_stub->WaitValue();
-      MS_EXCEPTION_IF_NULL(value);
-      auto tensor = value->cast<tensor::BaseTensorPtr>();
-      MS_EXCEPTION_IF_NULL(tensor);
-      runtime::DeviceAddressUtils::CreateKernelTensor(tensor);
-    } else if (utils::isa<ValuePtr>(arg)) {
-      auto value = utils::cast<ValuePtr>(arg);
-      MS_EXCEPTION_IF_NULL(value);
-      if (!value->isa<ValueSequence>()) {
-        return;
-      }
-      auto value_tuple = value->cast<ValueSequencePtr>();
-      MS_EXCEPTION_IF_NULL(value_tuple);
-      auto tuple_value = value_tuple->value();
-      for (const auto &v : tuple_value) {
-        if (!v->isa<tensor::BaseTensor>()) {
-          continue;
-        }
-        auto t = v->cast<tensor::BaseTensorPtr>();
-        runtime::DeviceAddressUtils::CreateKernelTensor(t);
       }
     }
   }
@@ -1921,15 +1888,19 @@ void StrictCheckForDeviceAddress(const runtime::ActorSet *actor_set) {
   for (const auto &kernel_actor : actor_set->kernel_actors_) {
     MS_EXCEPTION_IF_NULL(kernel_actor);
     MS_LOG(DEBUG) << "Check for kernel actor:" << kernel_actor->GetAID();
-    for (size_t i = 0; i < kernel_actor->output_device_tensors().size(); ++i) {
-      const auto &device_tensor = kernel_actor->output_device_tensors()[i];
+    for (size_t i = 0; i < kernel_actor->output_kernel_tensors().size(); ++i) {
+      const auto &kernel_tensor = kernel_actor->output_kernel_tensors()[i];
+      MS_EXCEPTION_IF_NULL(kernel_tensor);
+      const auto &device_tensor = kernel_tensor->device_address().get();
       if (IsMemoryLeak(device_tensor)) {
         MS_LOG(EXCEPTION) << "Memory leak detected in actor:" << kernel_actor->GetAID()
                           << " output device tensor:" << device_tensor->PrintInfo();
       }
     }
-    for (size_t i = 0; i < kernel_actor->workspace_device_tensors().size(); ++i) {
-      const auto &device_tensor = kernel_actor->workspace_device_tensors()[i];
+    for (size_t i = 0; i < kernel_actor->workspace_kernel_tensors().size(); ++i) {
+      const auto &kernel_tensor = kernel_actor->workspace_kernel_tensors()[i];
+      MS_EXCEPTION_IF_NULL(kernel_tensor);
+      const auto &device_tensor = kernel_tensor->device_address().get();
       if (IsMemoryLeak(device_tensor)) {
         MS_LOG(EXCEPTION) << "Memory leak detected in actor:" << kernel_actor->GetAID()
                           << " workspace device tensor:" << device_tensor->PrintInfo();
@@ -1939,7 +1910,8 @@ void StrictCheckForDeviceAddress(const runtime::ActorSet *actor_set) {
 
   for (const auto &copy_actor : actor_set->copy_actors_) {
     MS_EXCEPTION_IF_NULL(copy_actor);
-    if (IsMemoryLeak(copy_actor->output().get())) {
+    MS_EXCEPTION_IF_NULL(copy_actor->output()->device_address());
+    if (IsMemoryLeak(copy_actor->output()->device_address().get())) {
       MS_LOG(EXCEPTION) << "Memory leak detected in actor:" << copy_actor->GetAID()
                         << " output device tensor:" << copy_actor->output()->PrintInfo();
     }
@@ -1951,16 +1923,20 @@ void StrictCheckForDeviceAddress(const runtime::ActorSet *actor_set) {
     for (const auto &kernel_actor : super_kernel_actor->kernel_actors()) {
       MS_EXCEPTION_IF_NULL(kernel_actor);
       MS_LOG(DEBUG) << "Check output for actor:" << kernel_actor->GetAID();
-      for (size_t i = 0; i < kernel_actor->output_device_tensors().size(); ++i) {
-        const auto &device_tensor = kernel_actor->output_device_tensors()[i];
+      for (size_t i = 0; i < kernel_actor->output_kernel_tensors().size(); ++i) {
+        const auto &kernel_tensor = kernel_actor->output_kernel_tensors()[i];
+        MS_EXCEPTION_IF_NULL(kernel_tensor);
+        const auto &device_tensor = kernel_tensor->device_address().get();
         if (IsMemoryLeak(device_tensor)) {
           MS_LOG(EXCEPTION) << "Memory leak detected in actor:" << kernel_actor->GetAID()
                             << " output device tensor:" << device_tensor->PrintInfo();
         }
       }
       MS_LOG(DEBUG) << "Check workspace for actor:" << kernel_actor->GetAID();
-      for (size_t i = 0; i < kernel_actor->workspace_device_tensors().size(); ++i) {
-        const auto &device_tensor = kernel_actor->workspace_device_tensors()[i];
+      for (size_t i = 0; i < kernel_actor->workspace_kernel_tensors().size(); ++i) {
+        const auto &kernel_tensor = kernel_actor->workspace_kernel_tensors()[i];
+        MS_EXCEPTION_IF_NULL(kernel_tensor);
+        const auto &device_tensor = kernel_tensor->device_address().get();
         if (IsMemoryLeak(device_tensor)) {
           MS_LOG(EXCEPTION) << "Memory leak detected in actor:" << kernel_actor->GetAID()
                             << " workspace device tensor:" << device_tensor->PrintInfo();
@@ -1974,7 +1950,8 @@ void StrictCheckForDeviceAddress(const runtime::ActorSet *actor_set) {
   if (graph_parameter_store != nullptr) {
     for (const auto &pair : graph_parameter_store->GetAll()) {
       for (const auto &sub_pair : pair) {
-        const auto &device_tensor = sub_pair.first;
+        MS_EXCEPTION_IF_NULL(sub_pair.first);
+        const auto &device_tensor = sub_pair.first->device_address();
         if (IsMemoryLeak(device_tensor.get())) {
           MS_LOG(EXCEPTION) << "Memory leak detected in parameter store for device address:"
                             << device_tensor->PrintInfo();
@@ -2020,13 +1997,14 @@ void MindRTBackendBase::RunGraph(const ActorInfo &actor_info, const VectorRef &a
     mindspore::ScopedLongRunning long_running;
 
     std::vector<tensor::TensorPtr> output_tensors;
-    ge_backend_->RunGraph(actor_info, device_context, args, &output_tensors);
+    std::vector<TypePtr> output_types;
+    ge_backend_->RunGraph(actor_info, device_context, args, &output_tensors, &output_types);
     if (output_tensors.empty()) {
       return;
     }
     size_t output_position = 0;
     std::vector<tensor::TensorPtr> tuple_tensors;
-    ConstructOutputs(root_graph_->output(), output_tensors, &output_position, outputs, &tuple_tensors);
+    ConstructOutputs(root_graph_->output(), output_tensors, &output_position, outputs, &tuple_tensors, output_types);
     return;
   }
 
@@ -2042,7 +2020,6 @@ void MindRTBackendBase::RunGraph(const ActorInfo &actor_info, const VectorRef &a
   MS_EXCEPTION_IF_NULL(outputs);
   // There will be more than one kernel graph in heterogeneous scenario in a jit of PyNative Mode.
   if (ms_execution_mode_ == kPynativeMode && !pynative::GraphAdapter::IsPynativeGeGraphSink(root_graph_)) {
-    CreateTensorArgs(args, graph_compiler_info);
     RunGraphByCondition(actor_info, graph_compiler_info, args, outputs);
     return;
   }
@@ -2052,14 +2029,6 @@ void MindRTBackendBase::RunGraph(const ActorInfo &actor_info, const VectorRef &a
   MS_LOG(INFO) << "Status record: start run actor: " << actor_info;
   uint64_t start_time_ = profiler::GetClockSyscnt();
   std::vector<std::vector<tensor::TensorPtr>> input_tensors;
-  if (graph_compiler_info.exist_flatten_concat_) {
-    input_tensors = GetRunGraphInputs(graph_compiler_info, args);
-    // Single ops(run in pynative mode) output to net(context is graph mode) input.
-    (void)std::for_each(input_tensors.begin(), input_tensors.end(), [this](const auto &tensor_vec) {
-      (void)std::for_each(tensor_vec.begin(), tensor_vec.end(),
-                          [](const tensor::TensorPtr &t) { runtime::DeviceAddressUtils::CreateKernelTensor(t); });
-    });
-  }
   // Release python gil.
   mindspore::ScopedLongRunning long_running;
   // Run actor DAG.
@@ -2126,16 +2095,19 @@ bool IsTupleOutputOfAnyType(const abstract::AbstractBasePtr &abstract, const ten
     return false;
   }
   auto device_tensor = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
-  return device_tensor != nullptr && device_tensor->user_data() == nullptr &&
-         device_tensor->kernel_tensor() != nullptr && device_tensor->kernel_tensor()->GetShape() != nullptr &&
-         device_tensor->kernel_tensor()->GetShape()->isa<abstract::SequenceShape>();
+  if (device_tensor == nullptr) {
+    return false;
+  }
+  return device_tensor != nullptr && device_tensor->user_data() == nullptr && tensor->base_shape_ptr() != nullptr &&
+         tensor->base_shape_ptr()->isa<abstract::SequenceShape>();
 }
 }  // namespace
 
 BaseRef MindRTBackendBase::ConstructOutputByAbstract(const abstract::AbstractBasePtr &abstract,
                                                      const std::vector<tensor::TensorPtr> &output_tensors,
                                                      size_t *output_position,
-                                                     std::vector<tensor::TensorPtr> *tuple_tensors) {
+                                                     std::vector<tensor::TensorPtr> *tuple_tensors,
+                                                     const std::vector<TypePtr> &output_types) {
   MS_EXCEPTION_IF_NULL(abstract);
   MS_EXCEPTION_IF_NULL(output_position);
   MS_EXCEPTION_IF_NULL(tuple_tensors);
@@ -2150,11 +2122,10 @@ BaseRef MindRTBackendBase::ConstructOutputByAbstract(const abstract::AbstractBas
     if (IsTupleOutputOfAnyType(abstract, output_tensors[*output_position])) {
       MS_LOG(DEBUG) << "Any output for position:" << *output_position;
       VectorRef outputs;
-      auto device_tensor =
-        std::dynamic_pointer_cast<device::DeviceAddress>(output_tensors[*output_position]->device_address());
-      ConstructOutputByTupleTensor(output_tensors[*output_position],
-                                   device_tensor->kernel_tensor()->GetShape()->cast<abstract::SequenceShapePtr>(),
-                                   &outputs, tuple_tensors);
+      auto base_shape = output_tensors[*output_position]->base_shape_ptr();
+      MS_EXCEPTION_IF_NULL(base_shape);
+      ConstructOutputByTupleTensor(output_tensors[*output_position], base_shape->cast<abstract::SequenceShapePtr>(),
+                                   &outputs, tuple_tensors, output_types[*output_position]);
       (*output_position)++;
       std::vector<ValuePtr> values;
 
@@ -2173,12 +2144,11 @@ BaseRef MindRTBackendBase::ConstructOutputByAbstract(const abstract::AbstractBas
   // Dynamic len tuple.
   if (tuple_abstract->dynamic_len()) {
     auto &output_tensor = output_tensors[*output_position];
-    MS_EXCEPTION_IF_NULL(output_tensor);
     auto &tensor_shape = output_tensor->base_shape_ptr();
     // Restore the tuple output by the tensor of tuple.
     if ((tensor_shape != nullptr) && tensor_shape->isa<abstract::SequenceShape>()) {
       ConstructOutputByTupleTensor(output_tensor, tensor_shape->cast<abstract::SequenceShapePtr>(), &outputs,
-                                   tuple_tensors);
+                                   tuple_tensors, output_types[*output_position]);
       (*output_position)++;
       return outputs;
     }
@@ -2187,14 +2157,16 @@ BaseRef MindRTBackendBase::ConstructOutputByAbstract(const abstract::AbstractBas
   const auto &sub_abstracts = tuple_abstract->elements();
   for (const auto &sub_abstract : sub_abstracts) {
     MS_EXCEPTION_IF_NULL(sub_abstract);
-    outputs.emplace_back(ConstructOutputByAbstract(sub_abstract, output_tensors, output_position, tuple_tensors));
+    outputs.emplace_back(
+      ConstructOutputByAbstract(sub_abstract, output_tensors, output_position, tuple_tensors, output_types));
   }
   return outputs;
 }
 
 void MindRTBackendBase::ConstructOutputByTupleTensor(tensor::TensorPtr output_tensor,
                                                      const abstract::SequenceShapePtr &tensor_shape, VectorRef *outputs,
-                                                     std::vector<tensor::TensorPtr> *tuple_tensors) const {
+                                                     std::vector<tensor::TensorPtr> *tuple_tensors,
+                                                     const TypePtr &output_type) const {
   MS_EXCEPTION_IF_NULL(output_tensor);
   MS_EXCEPTION_IF_NULL(tensor_shape);
   MS_EXCEPTION_IF_NULL(outputs);
@@ -2226,10 +2198,6 @@ void MindRTBackendBase::ConstructOutputByTupleTensor(tensor::TensorPtr output_te
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
 
-  const auto &output_kernel_tensor = device_tensor->kernel_tensor();
-  MS_EXCEPTION_IF_NULL(output_kernel_tensor);
-  TypePtr output_type = output_kernel_tensor->GetType();
-  MS_EXCEPTION_IF_NULL(output_type);
   TuplePtr output_tuple_type = output_type->cast<TuplePtr>();
   MS_EXCEPTION_IF_NULL(output_tuple_type);
   const auto &element_types = output_tuple_type->elements();
@@ -2247,14 +2215,15 @@ void MindRTBackendBase::ConstructOutputByTupleTensor(tensor::TensorPtr output_te
     auto split_tensor_size = SizeOf(split_tensor_shape) * GetTypeByte(TypeIdToType(tensor_type_id));
     auto split_tensor = std::make_shared<tensor::Tensor>(tensor_type_id, split_tensor_shape);
 
-    auto kernel_tensor = std::make_shared<kernel::KernelTensor>(
+    auto kernel_tensor = AnfAlgo::CreateKernelTensor(
       nullptr, split_tensor_size, kernel::GetFormatFromStrToEnum(device_tensor->format()), device_tensor->type_id(),
       split_tensor_shape, device_context->device_context_key().device_name_,
       device_context->device_context_key().device_id_);
     kernel_tensor->SetType(element_types[i]);
     kernel_tensor->SetShape((*tensor_shape)[i]);
     kernel_tensor->set_stream_id(device_tensor->stream_id());
-    auto split_device_tensor = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
+    auto split_device_tensor = kernel_tensor->device_address();
+    MS_EXCEPTION_IF_NULL(split_device_tensor);
     MS_LOG(DEBUG) << "Create device tensor:" << split_device_tensor << " type:" << device_tensor->type_id();
     // Copy data from origin tensor to the split tensor.
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "ConstructOutputByTupleTensor",
@@ -2318,7 +2287,8 @@ bool IsEmptySequence(const AnfNodePtr &output_node, const std::vector<tensor::Te
 
 void MindRTBackendBase::ConstructOutputs(const AnfNodePtr &output_node,
                                          const std::vector<tensor::TensorPtr> &output_tensors, size_t *output_position,
-                                         VectorRef *outputs, std::vector<tensor::TensorPtr> *tuple_tensors) {
+                                         VectorRef *outputs, std::vector<tensor::TensorPtr> *tuple_tensors,
+                                         const std::vector<TypePtr> &output_types) {
   MS_EXCEPTION_IF_NULL(output_node);
   MS_EXCEPTION_IF_NULL(outputs);
   MS_EXCEPTION_IF_NULL(output_position);
@@ -2347,7 +2317,8 @@ void MindRTBackendBase::ConstructOutputs(const AnfNodePtr &output_node,
     MS_EXCEPTION_IF_NULL(make_tuple);
     VectorRef make_tuple_output;
     for (size_t i = 1; i < make_tuple->size(); i++) {
-      ConstructOutputs(make_tuple->input(i), output_tensors, output_position, &make_tuple_output, tuple_tensors);
+      ConstructOutputs(make_tuple->input(i), output_tensors, output_position, &make_tuple_output, tuple_tensors,
+                       output_types);
     }
     outputs->emplace_back(std::move(make_tuple_output));
     return;
@@ -2358,7 +2329,7 @@ void MindRTBackendBase::ConstructOutputs(const AnfNodePtr &output_node,
     auto depend_node = output_node->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(depend_node);
     ConstructOutputs(depend_node->input(kRealInputIndexInDepend), output_tensors, output_position, outputs,
-                     tuple_tensors);
+                     tuple_tensors, output_types);
     return;
   }
 
@@ -2382,7 +2353,8 @@ void MindRTBackendBase::ConstructOutputs(const AnfNodePtr &output_node,
       (output_node->abstract() != nullptr && output_node->abstract()->isa<abstract::AbstractSequence>())) {
     auto abstract = output_node->abstract();
     MS_EXCEPTION_IF_NULL(abstract);
-    outputs->emplace_back(ConstructOutputByAbstract(abstract, output_tensors, output_position, tuple_tensors));
+    outputs->emplace_back(
+      ConstructOutputByAbstract(abstract, output_tensors, output_position, tuple_tensors, output_types));
     return;
   }
 
@@ -2404,7 +2376,7 @@ void MindRTBackendBase::ConstructOutputs(const AnfNodePtr &output_node,
       // Restore the tuple output by the tensor of tuple.
       if ((tensor_shape != nullptr) && tensor_shape->isa<abstract::SequenceShape>()) {
         ConstructOutputByTupleTensor(output_tensor, tensor_shape->cast<abstract::SequenceShapePtr>(), &output_tuple,
-                                     tuple_tensors);
+                                     tuple_tensors, output_types[*output_position]);
       } else {
         output_tuple.emplace_back(output_tensor);
       }

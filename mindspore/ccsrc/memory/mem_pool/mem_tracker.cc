@@ -483,15 +483,6 @@ MemInfoPtr MemoryTrackerEnabled::NewMemInfo(const std::string &task_name, MemTyp
   return mem_info;
 }
 
-void MemoryTrackerEnabled::AddMemInfoForKernelTensor(const std::string &task_name, MemType type, size_t size,
-                                                     const void *kernel_tensor, const std::string &file_name,
-                                                     size_t line_num) {
-  auto mem_info = NewMemInfo(task_name, type, size, kernel_tensor, file_name, line_num);
-  if (mem_info != nullptr) {
-    kernel_tensor_mem_map[kernel_tensor] = mem_info;
-  }
-}
-
 void MemoryTrackerEnabled::AddMemInfo(const std::string &task_name, MemType type, size_t size,
                                       DeviceAddress *device_address, const std::string &file_name, size_t line_num) {
   MS_EXCEPTION_IF_NULL(device_address);
@@ -500,12 +491,8 @@ void MemoryTrackerEnabled::AddMemInfo(const std::string &task_name, MemType type
   }
   std::lock_guard<std::mutex> lock(mutex_);
 
-  if (device_address->kernel_tensor() == nullptr) {
-    auto mem_info = NewMemInfo(task_name, type, size, nullptr, file_name, line_num);
-    device_address_mem_map[device_address] = mem_info;
-  } else {
-    AddMemInfoForKernelTensor(task_name, type, size, device_address->kernel_tensor().get(), file_name, line_num);
-  }
+  auto mem_info = NewMemInfo(task_name, type, size, nullptr, file_name, line_num);
+  device_address_mem_map[device_address] = mem_info;
   if (MS_UNLIKELY(enable_memory_debug_info_)) {
     auto &&iter = task_map_.find(task_name);
     if (iter != task_map_.end()) {
@@ -555,28 +542,18 @@ void MemoryTrackerEnabled::BindDevicePtr(DeviceAddress *device_address, DeviceMe
     return;
   }
   MemInfoPtr mem_info{nullptr};
-  if (device_address->kernel_tensor() == nullptr) {
-    auto iter = device_address_mem_map.find(device_address);
-    if (iter == device_address_mem_map.end()) {
-      MS_LOG(ERROR) << "MemoryTracker BindDevicePtr failed, device_address:" << device_address << " not found, "
-                    << file_name << ":" << line_num;
-      return;
-    }
-    mem_info = iter->second;
-  } else {
-    auto iter = kernel_tensor_mem_map.find(device_address->kernel_tensor().get());
-    if (iter == kernel_tensor_mem_map.end()) {
-      MS_LOG(WARNING) << "MemoryTracker BindDevicePtr failed, device_address : " << device_address
-                      << ", kernel_tensor:" << device_address->kernel_tensor().get() << " not found, " << file_name
-                      << ":" << line_num;
-      return;
-    }
-    mem_info = iter->second;
+  auto iter = device_address_mem_map.find(device_address);
+  if (iter == device_address_mem_map.end()) {
+    MS_LOG(ERROR) << "MemoryTracker BindDevicePtr failed, device_address:" << device_address << " not found, "
+                  << file_name << ":" << line_num;
+    return;
   }
+  mem_info = iter->second;
   if (mem_info == nullptr) {
     MS_LOG(ERROR) << "BindDevicePtr failed, mem_info is nullptr, " << file_name << ":" << line_num << ".";
     return;
   }
+
   auto mem_block_iter = FindMemBlock(device_ptr, file_name, line_num);
   if (mem_block_iter == device_mem_block_map.end()) {
     MS_LOG(ERROR) << "MemoryTracker BindDevicePtr failed, device_addr:" << device_ptr << " not found, " << file_name

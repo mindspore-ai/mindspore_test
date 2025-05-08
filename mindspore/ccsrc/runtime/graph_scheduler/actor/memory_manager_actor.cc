@@ -25,17 +25,19 @@
 namespace mindspore {
 namespace runtime {
 namespace {
-void OnMemoryAllocFinish(const AID &from_aid, OpContext<DeviceTensor> *const op_context) {
+void OnMemoryAllocFinish(const AID &from_aid, OpContext<KernelTensor> *const op_context) {
   if (!ActorDispatcher::is_memory_allocation_sync()) {
     ActorDispatcher::Send(from_aid, &MemoryAwareActor::OnMemoryAllocFinish, op_context);
   }
 }
 }  // namespace
 
-void MemoryManagerActor::AllocateMemory(const std::vector<DeviceTensor *> *alloc_list,
-                                        const DeviceContext *device_context, OpContext<DeviceTensor> *const op_context,
+void MemoryManagerActor::AllocateMemory(const std::vector<KernelTensorPtr> *alloc_list,
+                                        const DeviceContext *device_context, OpContext<KernelTensor> *const op_context,
                                         const AID &from_aid) {
-  for (auto &device_tensor : *alloc_list) {
+  for (auto &kernel_tensor : *alloc_list) {
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
+    auto device_tensor = kernel_tensor->device_address().get();
     MS_EXCEPTION_IF_NULL(device_tensor);
     // Unused device address need skip to reduce memory use.
     if (device_tensor->IsNotNeedAlloc()) {
@@ -53,7 +55,7 @@ void MemoryManagerActor::AllocateMemory(const std::vector<DeviceTensor *> *alloc
         device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), "ContinuousMemory", "", false);
 
         MS_LOG(DEBUG) << "Allocate continuous memory, device address : " << device_tensor << ".";
-        success = AllocateContinuousMemory(device_tensor, device_context, from_aid);
+        success = AllocateContinuousMemory(kernel_tensor.get(), device_context, from_aid);
       }
 
       if (!success) {
@@ -74,8 +76,11 @@ void MemoryManagerActor::AllocateMemory(const std::vector<DeviceTensor *> *alloc
   }
 }
 
-bool MemoryManagerActor::AllocateContinuousMemory(const DeviceTensor *device_tensor,
-                                                  const DeviceContext *device_context, const AID &from_aid) {
+bool MemoryManagerActor::AllocateContinuousMemory(KernelTensor *kernel_tensor, const DeviceContext *device_context,
+                                                  const AID &from_aid) {
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  auto device_tensor = kernel_tensor->device_address().get();
+  MS_EXCEPTION_IF_NULL(device_tensor);
   std::vector<size_t> size_list;
   const auto &continuous_device_addresses = device_tensor->continuous_device_addresses();
   for (const auto &device_address_wpr : *continuous_device_addresses) {
@@ -93,9 +98,9 @@ bool MemoryManagerActor::AllocateContinuousMemory(const DeviceTensor *device_ten
       device_address->IncreaseNewRefCount(from_aid.Name() + " alloc continue memory");
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, from_aid.Name(),
                                                      memory::mem_pool::MemType::kContinuousMemory,
-                                                     device_address->GetSize(), device_address.get());
+                                                     device_address->GetSize(), device_tensor);
       if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
-        device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(BindDevicePtr, device_address.get(), device_addresses[i]);
+        device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(BindDevicePtr, device_tensor, device_addresses[i]);
       }
     }
     return true;
@@ -103,12 +108,12 @@ bool MemoryManagerActor::AllocateContinuousMemory(const DeviceTensor *device_ten
   return false;
 }
 
-void MemoryManagerActor::AllocateContinuousMemory(const std::vector<std::vector<DeviceTensorPtr>> *alloc_list_list,
+void MemoryManagerActor::AllocateContinuousMemory(const std::vector<std::vector<KernelTensorPtr>> *alloc_list_list,
                                                   const std::vector<std::vector<size_t>> *size_list_list,
                                                   const std::vector<uint32_t> *stream_id_list,
                                                   const std::vector<size_t> *total_size_list,
                                                   const std::vector<const DeviceContext *> *device_contexts,
-                                                  OpContext<DeviceTensor> *const op_context, const AID &from_aid) {
+                                                  OpContext<KernelTensor> *const op_context, const AID &from_aid) {
   uint64_t start_time = 0;
   PROFILER_START(start_time);
 
@@ -134,7 +139,7 @@ void MemoryManagerActor::AllocateContinuousMemory(const std::vector<std::vector<
     auto &device_context = (*device_contexts)[i];
     MS_EXCEPTION_IF_NULL(device_context);
     // If the address of continuous tensor has already been allocated, skip the tensor.
-    if (alloc_list[0]->GetPtr() != nullptr) {
+    if (alloc_list[0]->device_ptr() != nullptr) {
       MS_LOG(WARNING) << "The continuous memory has already been allocated of actor: " << from_aid.Name()
                       << " with index: " << i;
       continue;
@@ -152,32 +157,34 @@ void MemoryManagerActor::AllocateContinuousMemory(const std::vector<std::vector<
 
     for (size_t index = 0; index < alloc_list.size(); index++) {
       MS_EXCEPTION_IF_NULL(alloc_list[index]);
-      if (alloc_list[index]->GetPtr() != nullptr) {
-        auto old_dev_addr = alloc_list[index];
-        MS_EXCEPTION_IF_NULL(old_dev_addr);
+      auto &old_dev_kernel_tensor = alloc_list[index];
+      MS_EXCEPTION_IF_NULL(old_dev_kernel_tensor);
+      auto &old_dev_addr = old_dev_kernel_tensor->device_address();
+      MS_EXCEPTION_IF_NULL(old_dev_addr);
+      if (old_dev_addr->GetPtr() != nullptr) {
         auto old_size = old_dev_addr->GetSize();
         if (old_size > size_list[index]) {
           MS_LOG(EXCEPTION) << "Device size of old device address is larger than new device address, " << old_size
                             << " vs " << size_list[index];
         }
 
-        auto kernel_tensor = std::make_shared<kernel::KernelTensor>(
+        auto kernel_tensor = AnfAlgo::CreateKernelTensor(
           dev_ptr_list[index], old_size, kernel::GetFormatFromStrToEnum(old_dev_addr->format()),
-          old_dev_addr->type_id(), old_dev_addr->host_shape(), device_context->device_context_key().device_name_,
-          device_context->device_context_key().device_id_);
+          old_dev_addr->type_id(), old_dev_kernel_tensor->host_shape(),
+          device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
         kernel_tensor->set_stream_id(old_dev_addr->stream_id());
-        auto new_dev_addr = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
+        auto new_dev_addr = kernel_tensor->device_address();
         MS_LOG(DEBUG) << "Create device tensor:" << new_dev_addr << " type:" << new_dev_addr->type_id();
         (void)new_dev_addr->SyncDeviceToDevice(old_dev_addr.get());
         device_context->device_res_manager_->FreeMemory(old_dev_addr.get());
       }
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, from_aid.Name(),
                                                      memory::mem_pool::MemType::kContinuousMemory,
-                                                     alloc_list[index]->GetSize(), alloc_list[index].get());
-      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(BindDevicePtr, alloc_list[index].get(), dev_ptr_list[index]);
-      alloc_list[index]->set_ptr(dev_ptr_list[index]);
-      alloc_list[index]->SetSize(size_list[index]);
-      alloc_list[index]->set_from_mem_pool(true);
+                                                     old_dev_addr->GetSize(), old_dev_addr.get());
+      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(BindDevicePtr, old_dev_addr.get(), dev_ptr_list[index]);
+      old_dev_addr->set_ptr(dev_ptr_list[index]);
+      old_dev_addr->SetSize(size_list[index]);
+      old_dev_addr->set_from_mem_pool(true);
     }
   }
 
@@ -187,9 +194,9 @@ void MemoryManagerActor::AllocateContinuousMemory(const std::vector<std::vector<
   PROFILER_END(start_time, ProfilerModule::kRuntime, ProfilerEvent::kMemoryAlloc, from_aid.Name(), false);
 }
 
-void MemoryManagerActor::AllocateBatchMemory(const std::vector<DeviceTensor *> *alloc_list,
+void MemoryManagerActor::AllocateBatchMemory(const std::vector<KernelTensorPtr> *alloc_list,
                                              const std::vector<const DeviceContext *> *device_contexts,
-                                             OpContext<DeviceTensor> *const op_context, const AID &from_aid) {
+                                             OpContext<KernelTensor> *const op_context, const AID &from_aid) {
   uint64_t start_time = 0;
   PROFILER_START(start_time);
 
@@ -202,7 +209,9 @@ void MemoryManagerActor::AllocateBatchMemory(const std::vector<DeviceTensor *> *
   }
 
   for (size_t i = 0; i < (*alloc_list).size(); ++i) {
-    auto &device_tensor = (*alloc_list)[i];
+    auto &kernel_tensor = (*alloc_list)[i];
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
+    auto device_tensor = kernel_tensor->device_address().get();
     auto &device_context = (*device_contexts)[i];
     MS_EXCEPTION_IF_NULL(device_tensor);
     MS_EXCEPTION_IF_NULL(device_context);
@@ -233,7 +242,7 @@ void MemoryManagerActor::AllocateBatchMemory(const std::vector<DeviceTensor *> *
 }
 
 void MemoryManagerActor::AllocateSomasMemory(SomasInfo *const somas_info, const DeviceContext *device_context,
-                                             OpContext<DeviceTensor> *const op_context, const AID &from_aid) {
+                                             OpContext<KernelTensor> *const op_context, const AID &from_aid) {
   uint64_t start_time = 0;
   PROFILER_START(start_time);
 
@@ -306,16 +315,16 @@ void MemoryManagerActor::AllocateSomasMemory(SomasInfo *const somas_info, const 
   PROFILER_END(start_time, ProfilerModule::kRuntime, ProfilerEvent::kMemoryAlloc, from_aid.Name(), false);
 }
 
-void MemoryManagerActor::FreeMemory(const std::vector<DeviceTensor *> *free_list, const DeviceContext *device_context,
-                                    OpContext<DeviceTensor> *, const AID &from_aid) {
-  for (auto &device_tensor : *free_list) {
-    FreeMemoryByRefCount(device_tensor, device_context, from_aid.Name());
+void MemoryManagerActor::FreeMemory(const std::vector<KernelTensorPtr> *free_list, const DeviceContext *device_context,
+                                    OpContext<KernelTensor> *, const AID &from_aid) {
+  for (auto &kernel_tensor : *free_list) {
+    FreeMemoryByRefCount(kernel_tensor->device_address().get(), device_context, from_aid.Name());
   }
 }
 
-void MemoryManagerActor::FreeBatchMemory(const std::vector<DeviceTensor *> *free_list,
+void MemoryManagerActor::FreeBatchMemory(const std::vector<KernelTensorPtr> *free_list,
                                          const std::vector<const DeviceContext *> *device_contexts,
-                                         OpContext<DeviceTensor> *const op_context, const AID &from_aid) {
+                                         OpContext<KernelTensor> *const op_context, const AID &from_aid) {
   uint64_t start_time = 0;
   PROFILER_START(start_time);
 
@@ -328,16 +337,16 @@ void MemoryManagerActor::FreeBatchMemory(const std::vector<DeviceTensor *> *free
   }
 
   for (size_t i = 0; i < (*free_list).size(); ++i) {
-    auto &device_tensor = (*free_list)[i];
+    auto &kernel_tensor = (*free_list)[i];
     auto &device_context = (*device_contexts)[i];
-    FreeMemoryByRefCount(device_tensor, device_context, from_aid.Name());
+    FreeMemoryByRefCount(kernel_tensor->device_address().get(), device_context, from_aid.Name());
   }
 
   PROFILER_END(start_time, ProfilerModule::kRuntime, ProfilerEvent::kMemoryFree, from_aid.Name(), false);
 }
 
 void MemoryManagerActor::FreeSomasMemory(SomasInfo *const somas_info, const DeviceContext *device_context,
-                                         OpContext<DeviceTensor> *const op_context, const AID &from_aid) {
+                                         OpContext<KernelTensor> *const op_context, const AID &from_aid) {
   uint64_t start_time = 0;
   PROFILER_START(start_time);
 
@@ -394,7 +403,7 @@ void MemoryManagerActor::FreeSomasMemory(SomasInfo *const somas_info, const Devi
   PROFILER_END(start_time, ProfilerModule::kRuntime, ProfilerEvent::kMemoryFree, from_aid.Name(), false);
 }
 
-void MemoryManagerActor::Wait(OpContext<DeviceTensor> *const op_context, const AID &from_aid) {
+void MemoryManagerActor::Wait(OpContext<KernelTensor> *const op_context, const AID &from_aid) {
   // Call back to the from actor to process.
   ActorDispatcher::Send(from_aid, &MemoryAwareActor::OnMemoryAllocFinish, op_context);
 }
@@ -441,7 +450,7 @@ void MemoryManagerActor::FreeMemoryByRefCount(DeviceTensor *const device_tensor,
 
 void MemoryManagerActor::SetOpContextMemoryAllocFail(const std::string &kernel_name,
                                                      const DeviceContext *device_context, size_t alloc_size,
-                                                     OpContext<DeviceTensor> *const op_context) {
+                                                     OpContext<KernelTensor> *const op_context) {
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(op_context);
 

@@ -77,7 +77,7 @@ void ProfilerActor::AscendStepEnd() {
 void ProfilerActor::ProfilerOnStepBegin(const std::vector<KernelGraphPtr> &graphs,
                                         const std::vector<AnfNodePtr> &origin_parameters_order,
                                         std::vector<DeviceContext *> device_contexts,
-                                        OpContext<DeviceTensor> *const op_context, const AID *) {
+                                        OpContext<KernelTensor> *const op_context, const AID *) {
   MS_LOG(INFO) << "Profiler on step begin.";
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
@@ -95,7 +95,7 @@ void ProfilerActor::ProfilerOnStepBegin(const std::vector<KernelGraphPtr> &graph
  * Target device group: Ascend, GPU and CPU.
  * Runtime category: MindRT.
  */
-void ProfilerActor::ProfilerOnStepEnd(OpContext<DeviceTensor> *const op_context, const AID *,
+void ProfilerActor::ProfilerOnStepEnd(OpContext<KernelTensor> *const op_context, const AID *,
                                       int total_running_count_) {
   MS_LOG(INFO) << "Profiler on step begin.";
   auto context = MsContext::GetInstance();

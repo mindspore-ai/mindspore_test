@@ -23,19 +23,16 @@
 #include <utility>
 #include "common/kernel.h"
 #include "common/device_type.h"
-#include "common/device_address.h"
 #include "include/backend/kernel_graph.h"
 
 namespace mindspore {
 namespace backend {
 namespace ge_backend {
+using KernelTensor = kernel::KernelTensor;
+using KernelTensorPtr = kernel::KernelTensorPtr;
 // Extract the methods related to DeviceAddress in GraphCompiler to the DeviceAddressUtils class.
 class BACKEND_EXPORT DeviceAddressUtils {
  public:
-  static void CreateKernelTensor(const device::DeviceAddressPtr &device_address, const tensor::BaseTensor *tensor);
-  static void CreateKernelTensor(const device::DeviceAddressPtr &device_address, const AbstractBasePtr &abs);
-  static void CreateKernelTensor(const ValuePtr &input_value);
-  static void CreateKernelTensor(const tensor::TensorPtr &input_tensor);
   static void CreateParameterDeviceAddress(const KernelGraphPtr &graph);
   static device::DeviceAddressPtrList CreateDeviceAddressForTensorValue(const ValuePtr &node_value, size_t output_idx,
                                                                         const ValueNodePtr &value_node,
@@ -44,7 +41,7 @@ class BACKEND_EXPORT DeviceAddressUtils {
 
   static void CreateDeviceAddressByMapTensorNode(const AnfNodePtr &node, size_t index);
 
-  static device::DeviceAddressPtr CloneEmptyDeviceAddress(const device::DeviceAddressPtr &old_device_address);
+  static KernelTensorPtr CloneEmptyKernelTensor(const KernelTensorPtr &old_kernel_tensor);
 
   static void UpdateDeviceAddressHostInfoByNode(const device::DeviceAddressPtr &addr, const AnfNodePtr &node,
                                                 size_t output_idx);

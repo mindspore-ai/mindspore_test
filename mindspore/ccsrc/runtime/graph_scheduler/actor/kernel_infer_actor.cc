@@ -23,13 +23,13 @@ void KernelInferActor::Init() {
   KernelActor::Init();
 
   // Erase output and workspace device tensors which is released by kernel actor.
-  size_t input_num = input_device_tensors_.size();
+  size_t input_num = input_kernel_tensors_.size();
   if (memory_free_list_.size() > input_num) {
     memory_free_list_.erase(memory_free_list_.begin() + input_num, memory_free_list_.end());
   }
 }
 
-void KernelInferActor::RunOpData(OpData<DeviceTensor> *const input_data, OpContext<DeviceTensor> *const context) {
+void KernelInferActor::RunOpData(OpData<KernelTensor> *const input_data, OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(input_data);
   MS_EXCEPTION_IF_NULL(input_data->data_);
   auto &sequential_num = context->sequential_num_;
@@ -50,7 +50,7 @@ void KernelInferActor::RunOpData(OpData<DeviceTensor> *const input_data, OpConte
   }
 }
 
-void KernelInferActor::Run(OpContext<DeviceTensor> *const context) {
+void KernelInferActor::Run(OpContext<KernelTensor> *const context) {
   try {
     ProfilerRecorder profiler(ProfilerModule::kKernel, ProfilerEvent::kKernelInfer, GetAID().Name());
     // 1. Collect the inputs from input data.
@@ -62,7 +62,7 @@ void KernelInferActor::Run(OpContext<DeviceTensor> *const context) {
     }
 
     // Collect the inputs from device tensor store.
-    FetchInputByTensorStore(&input_device_tensors_, &input_kernel_tensors_, &input_kernel_tensors_for_infer_,
+    FetchInputByTensorStore(&input_launch_tensors_, &input_kernel_tensors_, &input_kernel_tensors_for_infer_,
                             &memory_free_list_, context);
 
     // 2. InferShape or InferShapeAndType and update output shape(and type).
@@ -86,7 +86,7 @@ void KernelInferActor::Run(OpContext<DeviceTensor> *const context) {
   SendOutput(context);
 }
 
-void KernelInferActor::SendMemoryFreeReq(OpContext<DeviceTensor> *const context) {
+void KernelInferActor::SendMemoryFreeReq(OpContext<KernelTensor> *const context) {
   if (memory_free_list_.size() > 0) {
     MemoryManagerActor::GetInstance()->FreeMemory(&memory_free_list_, device_contexts_[0], context, GetAID());
   }

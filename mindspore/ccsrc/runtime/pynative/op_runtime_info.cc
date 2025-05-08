@@ -184,17 +184,17 @@ void OpRuntimeInfo::SetOutputDeviceShape(size_t index, const ShapeVector &shape)
   output_device_shape_[index] = shape;
 }
 
-device::DeviceAddressPtr OpRuntimeInfo::GetOutputDeviceAddress(size_t index) const {
+KernelTensorPtr OpRuntimeInfo::GetOutputKernelTensor(size_t index) const {
   MS_EXCEPTION_IF_NULL(kernel_info_);
-  return kernel_info_->GetMutableOutputAddr(index);
+  return kernel_info_->GetOutputKernelTensor(index);
 }
 
-device::DeviceAddressPtr OpRuntimeInfo::GetWorkspaceDeviceAddress(size_t index) const {
+KernelTensorPtr OpRuntimeInfo::GetWorkspaceKernelTensor(size_t index) const {
   MS_EXCEPTION_IF_NULL(kernel_info_);
-  return kernel_info_->GetMutableWorkspaceAddr(index);
+  return kernel_info_->GetWorkspaceKernelTensor(index);
 }
 
-device::DeviceAddressPtr OpRuntimeInfo::GetInputDeviceAddress(size_t index) const {
+KernelTensorPtr OpRuntimeInfo::GetInputKernelTensor(size_t index) const {
   if (index >= input_kernel_infos_.size()) {
     MS_LOG(ERROR) << "Output range! index:" << index << " input size:" << input_kernel_infos_.size();
     return nullptr;
@@ -202,19 +202,19 @@ device::DeviceAddressPtr OpRuntimeInfo::GetInputDeviceAddress(size_t index) cons
 
   auto kernel_info_pair = input_kernel_infos_[index];
   MS_EXCEPTION_IF_NULL(kernel_info_pair.first);
-  return kernel_info_pair.first->GetMutableOutputAddr(kernel_info_pair.second);
+  return kernel_info_pair.first->GetOutputKernelTensor(kernel_info_pair.second);
 }
 
 size_t OpRuntimeInfo::GetInputSize() const { return input_kernel_infos_.size(); }
 
 size_t OpRuntimeInfo::GetOutputSize() const {
   MS_EXCEPTION_IF_NULL(kernel_info_);
-  return kernel_info_->output_address_list().size();
+  return kernel_info_->output_kernel_tensor_list().size();
 }
 
 size_t OpRuntimeInfo::GetWorkspaceSize() const {
   MS_EXCEPTION_IF_NULL(kernel_info_);
-  return kernel_info_->workspace_address_list().size();
+  return kernel_info_->workspace_kernel_tensor_list().size();
 }
 
 kernel::KernelMod *OpRuntimeInfo::GetKernelMod() const {

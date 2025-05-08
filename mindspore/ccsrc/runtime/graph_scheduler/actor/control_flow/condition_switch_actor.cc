@@ -42,16 +42,17 @@ void ConditionSwitchActor::Init() {
   MS_EXCEPTION_IF_NULL(kernel_info_);
   kernel_mod_ = kernel_info_->MutableKernelMod();
   MS_EXCEPTION_IF_NULL(kernel_mod_);
-  const auto &output_addresses = kernel_info_->output_address_list();
-  for (size_t i = 0; i < output_addresses.size(); ++i) {
-    auto &output_address = output_addresses[i];
-    MS_EXCEPTION_IF_NULL(output_address);
+  const auto &output_kernel_tensors = kernel_info_->output_kernel_tensor_list();
+  for (size_t i = 0; i < output_kernel_tensors.size(); ++i) {
+    auto &output_kernel_tensor = output_kernel_tensors[i];
+    MS_EXCEPTION_IF_NULL(output_kernel_tensor);
+    auto output_address = output_kernel_tensor->device_address().get();
 
     if (output_address->stream_id() != kernel_info_->stream_id()) {
       MS_LOG(DEBUG) << "Output address : " << output_address << " stream id :" << output_address->stream_id()
                     << " is not equal kernel info stream id : " << kernel_info_->stream_id() << ".";
     }
-    (void)output_device_tensors_.emplace_back(output_address.get());
+    (void)output_kernel_tensors_.emplace_back(output_kernel_tensor);
   }
 
   real_input_num_ = common::AnfAlgo::GetInputTensorNum(kernel_);
@@ -59,11 +60,11 @@ void ConditionSwitchActor::Init() {
   InitInputInfo();
 
   for (size_t index : output_free_index_) {
-    if (index >= output_device_tensors_.size()) {
-      MS_LOG(EXCEPTION) << "Invalid output index:" << index << " output size:" << output_device_tensors_.size()
+    if (index >= output_kernel_tensors_.size()) {
+      MS_LOG(EXCEPTION) << "Invalid output index:" << index << " output size:" << output_kernel_tensors_.size()
                         << " for actor:" << GetAID();
     }
-    new_memory_free_list_.emplace_back(output_device_tensors_[index]);
+    new_memory_free_list_.emplace_back(output_kernel_tensors_[index]);
   }
 
   if (!kernel_->HasAttr(kInlineSubGraphName)) {
@@ -83,44 +84,47 @@ void ConditionSwitchActor::Init() {
   MS_LOG(DEBUG) << "Branch names:" << branch_names_ << " for actor:" << GetAID();
 }
 
-void ConditionSwitchActor::UpdateRefDeviceAddress(OpContext<DeviceTensor> *const context, bool increase_ref_count) {
-  if (input_device_tensors_.size() != output_device_tensors_.size() + 1) {
-    MS_LOG(EXCEPTION) << "Invalid input tensor size:" << input_device_tensors_.size()
-                      << " and output device tensor size:" << output_device_tensors_.size()
+void ConditionSwitchActor::UpdateRefDeviceAddress(OpContext<KernelTensor> *const context, bool increase_ref_count) {
+  if (input_kernel_tensors_.size() != output_kernel_tensors_.size() + 1) {
+    MS_LOG(EXCEPTION) << "Invalid input tensor size:" << input_kernel_tensors_.size()
+                      << " and output device tensor size:" << output_kernel_tensors_.size()
                       << " for actor:" << GetAID();
   }
-  for (size_t i = 0; i < output_device_tensors_.size(); ++i) {
-    if (input_device_tensors_[i + 1] == nullptr) {
+  for (size_t i = 0; i < output_kernel_tensors_.size(); ++i) {
+    if (input_kernel_tensors_[i + 1] == nullptr) {
       MS_LOG(EXCEPTION) << "Invalid input device tensor index:" << i + 1 << " for actor:" << GetAID();
     }
-    if (output_device_tensors_[i] == nullptr) {
+    if (output_kernel_tensors_[i] == nullptr) {
       MS_LOG(EXCEPTION) << "Invalid input device tensor index:" << i + 1 << " for actor:" << GetAID();
     }
-    output_device_tensors_[i]->set_pointer_ref_count(input_device_tensors_[i + 1]->pointer_ref_count());
-    if (input_device_tensors_[i + 1]->kernel_tensor()->heterogeneous_info() != nullptr) {
-      output_device_tensors_[i]->kernel_tensor()->set_heterogeneous_info(std::make_shared<kernel::HeterogeneousInfo>());
-      *(output_device_tensors_[i]->kernel_tensor()->heterogeneous_info()) =
-        *(input_device_tensors_[i + 1]->kernel_tensor()->heterogeneous_info());
+    auto input_device_tensor = input_kernel_tensors_[i + 1]->device_address().get();
+    MS_EXCEPTION_IF_NULL(input_device_tensor);
+    auto output_device_tensor = output_kernel_tensors_[i]->device_address().get();
+    MS_EXCEPTION_IF_NULL(output_device_tensor);
+    output_device_tensor->set_pointer_ref_count(input_device_tensor->pointer_ref_count());
+    if (input_kernel_tensors_[i + 1]->heterogeneous_info() != nullptr) {
+      output_kernel_tensors_[i]->set_heterogeneous_info(std::make_shared<HeterogeneousInfo>());
+      *(output_kernel_tensors_[i]->heterogeneous_info()) = *(input_kernel_tensors_[i + 1]->heterogeneous_info());
     }
-    output_device_tensors_[i]->IncreaseNewRefCount(GetAID().Name());
-    MS_LOG(DEBUG) << "Actor:" << GetAID() << " increase new ref count:" << output_device_tensors_[i]->new_ref_count()
-                  << " and set ref device address:" << output_device_tensors_[i]->PrintInfo()
-                  << " ref input device address:" << input_device_tensors_[i + 1]->PrintInfo();
+    output_device_tensor->IncreaseNewRefCount(GetAID().Name());
+    MS_LOG(DEBUG) << "Actor:" << GetAID() << " increase new ref count:" << output_device_tensor->new_ref_count()
+                  << " and set ref device address:" << output_device_tensor->PrintInfo()
+                  << " ref input device address:" << input_device_tensor->PrintInfo();
   }
 }
 
-void ConditionSwitchActor::ExecuteInferShapeTask(OpContext<DeviceTensor> *const context) {
+void ConditionSwitchActor::ExecuteInferShapeTask(OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(kernel_);
   MS_LOG(DEBUG) << "Begin InferShape for kernel: " << kernel_->fullname_with_scope();
   Async(kernel_async_resize_aid_, &KernelAsyncResizeActor::ResizeKernelMod, context, this);
   MS_LOG(DEBUG) << "End InferShape for kernel: " << kernel_->fullname_with_scope();
 }
 
-void ConditionSwitchActor::ExecuteResizeKernelModTask(OpContext<DeviceTensor> *const context) {
+void ConditionSwitchActor::ExecuteResizeKernelModTask(OpContext<KernelTensor> *const context) {
   Async(kernel_async_launch_aid_, &KernelAsyncLaunchActor::LaunchKernel, context, this);
 }
 
-void ConditionSwitchActor::ExecuteLaunchKernelTask(OpContext<DeviceTensor> *const context) {
+void ConditionSwitchActor::ExecuteLaunchKernelTask(OpContext<KernelTensor> *const context) {
   ProfilerRecorder profiler(ProfilerModule::kKernel, ProfilerEvent::kKernelLaunch, GetAID().Name());
   MS_EXCEPTION_IF_NULL(kernel_);
   MS_LOG(DEBUG) << "Begin launch kernel: " << kernel_->fullname_with_scope();
@@ -128,9 +132,8 @@ void ConditionSwitchActor::ExecuteLaunchKernelTask(OpContext<DeviceTensor> *cons
     MS_LOG(INFO) << "Run failed and early stop.";
     return;
   }
-  MS_EXCEPTION_IF_NULL(input_device_tensors_[0]);
-  MS_EXCEPTION_IF_NULL(input_device_tensors_[0]->kernel_tensor());
-  bool index = input_device_tensors_[0]->kernel_tensor()->GetValueWithCheck<bool>();
+  MS_EXCEPTION_IF_NULL(input_kernel_tensors_[0]);
+  bool index = input_kernel_tensors_[0]->GetValueWithCheck<bool>();
   if (common::IsDryRun()) {
     index = true;
   }
@@ -149,23 +152,23 @@ void ConditionSwitchActor::ExecuteLaunchKernelTask(OpContext<DeviceTensor> *cons
                 << " branch name:" << branch_names_[index] << " in actor:" << GetAID();
   new_memory_free_list_.clear();
   for (size_t input_index : input_free_index_) {
-    if (input_index >= input_device_tensors_.size() || input_device_tensors_[input_index] == nullptr) {
+    if (input_index >= input_kernel_tensors_.size() || input_kernel_tensors_[input_index] == nullptr) {
       MS_LOG(EXCEPTION) << "Failed to get input device tensor index:" << input_index
-                        << " total input size:" << input_device_tensors_.size()
+                        << " total input size:" << input_kernel_tensors_.size()
                         << " for node:" << kernel_->DebugString() << " for actor:" << GetAID();
     }
-    new_memory_free_list_.emplace_back(input_device_tensors_[input_index]);
-    MS_LOG(DEBUG) << "Add decrease new ref count for device address:" << input_device_tensors_[input_index]
+    new_memory_free_list_.emplace_back(input_kernel_tensors_[input_index]);
+    MS_LOG(DEBUG) << "Add decrease new ref count for kernel tensor:" << input_kernel_tensors_[input_index]
                   << " in actor:" << GetAID();
   }
   if (branch_output_free_index_.find(branch_names_[index]) != branch_output_free_index_.end()) {
     for (size_t output_index : branch_output_free_index_[branch_names_[index]]) {
-      if (output_index >= output_device_tensors_.size() || output_device_tensors_[output_index] == nullptr) {
+      if (output_index >= output_kernel_tensors_.size() || output_kernel_tensors_[output_index] == nullptr) {
         MS_LOG(EXCEPTION) << "Invalid output device tensor index:" << output_index
-                          << "total size:" << output_device_tensors_.size() << " for actor:" << GetAID();
+                          << "total size:" << output_kernel_tensors_.size() << " for actor:" << GetAID();
       }
-      new_memory_free_list_.emplace_back(output_device_tensors_[output_index]);
-      MS_LOG(DEBUG) << "Add decrease new ref count for device address:" << output_device_tensors_[output_index]
+      new_memory_free_list_.emplace_back(output_kernel_tensors_[output_index]);
+      MS_LOG(DEBUG) << "Add decrease new ref count for kernel tensor:" << output_kernel_tensors_[output_index]
                     << " in actor:" << GetAID();
     }
   }
@@ -176,7 +179,7 @@ void ConditionSwitchActor::ExecuteLaunchKernelTask(OpContext<DeviceTensor> *cons
   MS_LOG(DEBUG) << "End launch kernel: " << kernel_->fullname_with_scope();
 }
 
-void ConditionSwitchActor::SendOutput(OpContext<DeviceTensor> *const context, size_t index) {
+void ConditionSwitchActor::SendOutput(OpContext<KernelTensor> *const context, size_t index) {
   MS_EXCEPTION_IF_NULL(gather_aid_);
   MS_LOG(DEBUG) << "condition actor run for index:" << index << " branch name:" << branch_names_[index]
                 << " for actor:" << GetAID();
@@ -199,7 +202,7 @@ void ConditionSwitchActor::SendOutput(OpContext<DeviceTensor> *const context, si
       output_data_[i].first->index_ = SizeToInt(data_arrow_to_fusion_actor_indexs_.at(output_data_arrows_[i].get()));
     }
     if (output_data_branch_indexes_[i] == index) {
-      ActorDispatcher::Send(output_data_arrows_[i]->to_op_id_, &OpActor::RunOpData, output_data_[i].first.get(),
+      ActorDispatcher::Send(output_data_arrows_[i]->to_op_id_, &OpRTActor::RunOpData, output_data_[i].first.get(),
                             context);
     }
   }
@@ -211,13 +214,13 @@ void ConditionSwitchActor::SendOutput(OpContext<DeviceTensor> *const context, si
   for (size_t i = 0; i < output_control_branch_indexes_.size(); ++i) {
     MS_EXCEPTION_IF_NULL(output_control_arrows_[i]);
     if (output_control_branch_indexes_[i] == index) {
-      ActorDispatcher::Send(output_control_arrows_[i]->to_op_id_, &OpActor::RunOpControl, const_cast<AID *>(&GetAID()),
-                            context);
+      ActorDispatcher::Send(output_control_arrows_[i]->to_op_id_, &OpRTActor::RunOpControl,
+                            const_cast<AID *>(&GetAID()), context);
     }
   }
 }
 
-void ConditionSwitchActor::Run(OpContext<DeviceTensor> *const context) {
+void ConditionSwitchActor::Run(OpContext<KernelTensor> *const context) {
   try {
     if (!WaitRuntimePipelineFinish(context, GetAID().Name())) {
       MS_LOG(INFO) << "Run failed and early stop.";
@@ -226,9 +229,9 @@ void ConditionSwitchActor::Run(OpContext<DeviceTensor> *const context) {
     MS_LOG(INFO) << "Sync stream in the condition switch.";
     ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kPreLaunch, GetAID().Name());
     FetchInput(context);
-    MS_EXCEPTION_IF_NULL(input_device_tensors_[0]);
-    MS_EXCEPTION_IF_NULL(input_device_tensors_[0]->kernel_tensor());
-    bool index = input_device_tensors_[0]->kernel_tensor()->GetValueWithCheck<bool>();
+    MS_EXCEPTION_IF_NULL(input_kernel_tensors_[0]);
+    MS_EXCEPTION_IF_NULL(input_kernel_tensors_[0]->device_address());
+    bool index = input_kernel_tensors_[0]->GetValueWithCheck<bool>();
     if (common::IsDryRun()) {
       index = true;
     }
@@ -256,49 +259,49 @@ void ConditionSwitchActor::Run(OpContext<DeviceTensor> *const context) {
 
 void ConditionSwitchActor::CollectMemoryFreeList(size_t index) {
   memory_free_list_.clear();
-  memory_free_list_.insert(memory_free_list_.end(), input_device_tensors_.begin(), input_device_tensors_.end());
-  memory_free_list_.insert(memory_free_list_.end(), input_device_tensors_.begin() + 1, input_device_tensors_.end());
+  memory_free_list_.insert(memory_free_list_.end(), input_kernel_tensors_.begin(), input_kernel_tensors_.end());
+  memory_free_list_.insert(memory_free_list_.end(), input_kernel_tensors_.begin() + 1, input_kernel_tensors_.end());
   for (size_t i = 0; i < branch_origin_ref_count_.size(); ++i) {
     if (i == index) {
       continue;
     }
-    if (branch_origin_ref_count_[i].size() + 1 != input_device_tensors_.size()) {
+    if (branch_origin_ref_count_[i].size() + 1 != input_kernel_tensors_.size()) {
       MS_LOG(EXCEPTION) << "Invalid origin ref count size:" << branch_origin_ref_count_[i]
-                        << " and input size:" << input_device_tensors_.size() << " for actor:" << GetAID();
+                        << " and input size:" << input_kernel_tensors_.size() << " for actor:" << GetAID();
     }
     MS_LOG(DEBUG) << "Free memory for branch:" << i << " for actor:" << GetAID();
     for (size_t j = 0; j < branch_origin_ref_count_[i].size(); ++j) {
-      std::fill_n(back_inserter(memory_free_list_), branch_origin_ref_count_[i][j], input_device_tensors_[j + 1]);
+      std::fill_n(back_inserter(memory_free_list_), branch_origin_ref_count_[i][j], input_kernel_tensors_[j + 1]);
     }
   }
 }
 
-void ConditionSwitchActor::FetchParameterInput(OpContext<DeviceTensor> *const context) {
+void ConditionSwitchActor::FetchParameterInput(OpContext<KernelTensor> *const context) {
   // Fetch parameter input tensor from graph parameter store.
   if (!enable_input_optimize_) {
     return;
   }
 
   for (auto &parameter_index : parameter_indexs_) {
-    auto device_tensor = FetchParameter(parameter_index.second, context, device_contexts_[0], GetAID());
-    if (device_tensor == nullptr) {
+    auto kernel_tensor = FetchParameter(parameter_index.second, context, device_contexts_[0], GetAID());
+    if (kernel_tensor == nullptr) {
       std::string error_info =
         GetAID().Name() + " get graph parameter store failed: " + parameter_index.second.first.first->DebugString() +
         ", device type:" + std::to_string(static_cast<int>(device_contexts_[0]->GetDeviceType()));
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
     }
 
-    if (parameter_index.first >= input_device_tensors_.size()) {
+    if (parameter_index.first >= input_kernel_tensors_.size()) {
       std::string error_info = "The input index is out of range, need:" + std::to_string(parameter_index.first) +
-                               " current:" + std::to_string(input_device_tensors_.size()) +
+                               " current:" + std::to_string(input_kernel_tensors_.size()) +
                                " for actor:" + GetAID().Name();
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
     }
-    input_device_tensors_[parameter_index.first] = device_tensor;
+    input_kernel_tensors_[parameter_index.first] = kernel_tensor;
   }
 }
 
-void ConditionSwitchActor::FetchInput(OpContext<DeviceTensor> *const context) {
+void ConditionSwitchActor::FetchInput(OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);
 
   // Fetch input device tensor from input data.
@@ -306,51 +309,51 @@ void ConditionSwitchActor::FetchInput(OpContext<DeviceTensor> *const context) {
   if (data_iter != input_op_datas_.end()) {
     for (auto &input_data : data_iter->second) {
       MS_EXCEPTION_IF_NULL(input_data);
-      if (IntToSize(input_data->index_) >= input_device_tensors_.size()) {
+      if (IntToSize(input_data->index_) >= input_kernel_tensors_.size()) {
         std::string error_info = "Invalid input index, need:" + std::to_string(input_data->index_) +
-                                 " current:" + std::to_string(input_device_tensors_.size()) +
+                                 " current:" + std::to_string(input_kernel_tensors_.size()) +
                                  " for actor:" + GetAID().Name();
         SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
       }
       MS_EXCEPTION_IF_NULL(input_data->data_);
-      input_device_tensors_[IntToSize(input_data->index_)] = input_data->data_;
+      input_kernel_tensors_[IntToSize(input_data->index_)] = input_data->data_;
     }
   }
 
   // Fetch input device tensor from device tensor store.
   for (auto &device_tensor_store_key : device_tensor_store_keys_) {
     MS_EXCEPTION_IF_NULL(device_tensor_store_key.second);
-    auto device_tensor = DeviceTensorStore::GetInstance().Fetch(device_tensor_store_key.second.get(),
+    auto kernel_tensor = DeviceTensorStore::GetInstance().Fetch(device_tensor_store_key.second.get(),
                                                                 device_contexts_[0]->GetDeviceType());
-    if (device_tensor == nullptr) {
+    if (kernel_tensor == nullptr) {
       std::string error_info =
         GetAID().Name() + " get device tensor store failed: " + device_tensor_store_key.second->DebugString() +
         ", device type:" + std::to_string(static_cast<int>(device_contexts_[0]->GetDeviceType()));
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
     }
 
-    if (device_tensor_store_key.first >= input_device_tensors_.size()) {
+    if (device_tensor_store_key.first >= input_kernel_tensors_.size()) {
       std::string error_info =
         "The input index is out of range, need:" + std::to_string(device_tensor_store_key.first) +
-        " current:" + std::to_string(input_device_tensors_.size()) + " for actor:" + GetAID().Name();
+        " current:" + std::to_string(input_kernel_tensors_.size()) + " for actor:" + GetAID().Name();
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
     }
-    MS_EXCEPTION_IF_NULL(device_tensor);
-    input_device_tensors_[device_tensor_store_key.first] = device_tensor.get();
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
+    input_kernel_tensors_[device_tensor_store_key.first] = kernel_tensor;
   }
 
   FetchParameterInput(context);
 
-  if (output_data_by_output_index_.size() + 1 != input_device_tensors_.size()) {
+  if (output_data_by_output_index_.size() + 1 != input_kernel_tensors_.size()) {
     MS_LOG(EXCEPTION) << "Invalid output size:" << output_data_by_output_index_.size()
-                      << " and input device tensor size:" << input_device_tensors_.size() << " for actor:" << GetAID();
+                      << " and input device tensor size:" << input_kernel_tensors_.size() << " for actor:" << GetAID();
   }
 
   for (size_t i = 0; i < output_data_by_output_index_.size(); ++i) {
     if (output_data_by_output_index_[i].empty()) {
       continue;
     }
-    const auto &data = input_device_tensors_[i + 1];
+    const auto &data = input_kernel_tensors_[i + 1];
     MS_EXCEPTION_IF_NULL(data);
     for (auto &output_data : output_data_by_output_index_[i]) {
       MS_EXCEPTION_IF_NULL(output_data);

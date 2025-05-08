@@ -345,13 +345,13 @@ void CreateDeviceTensorForValueNode(const KernelWithIndex &front_node_with_index
     const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
       {backend_node, 0}, nullptr, tensor_size, output_format, output_type_id, ShapeVector(), device_name, device_id);
     kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(backend_node));
-    address = res_manager->CreateDeviceAddress(kernel_tensor);
+    address = kernel_tensor->device_address();
   }
   MS_EXCEPTION_IF_NULL(address);
   MS_LOG(DEBUG) << "Create address for front node:" << front_node->DebugString()
                 << " backend node:" << backend_node->DebugString() << " index:" << front_node_with_index.second
                 << " addr:" << address << " size:" << tensor_size;
-  AnfAlgo::SetOutputAddr(address, front_node_with_index.second, front_node.get());
+  AnfAlgo::SetOutputAddr(address, front_node_with_index.second, front_node);
   UpdateRefCount(address.get(), true);
 }
 
@@ -445,11 +445,11 @@ void CreateDeviceTensorForFrontNode(const KernelWithIndex &front_node_with_index
       // Create device tensor.
       const auto &sub_abstract = common::AnfAlgo::FetchAbstractByIndex(node->abstract(), front_node_with_index.second);
       MS_EXCEPTION_IF_NULL(sub_abstract);
-      const auto &kernel_tensor = std::make_shared<kernel::KernelTensor>(
-        sub_abstract->BuildShape(), sub_abstract->BuildType(), sub_abstract->BuildValue(), nullptr, size,
-        kOpFormat_DEFAULT, type_id, ShapeVector(), device_name, device_id);
+      const auto &kernel_tensor =
+        AnfAlgo::CreateKernelTensor(sub_abstract->BuildShape(), sub_abstract->BuildType(), sub_abstract->BuildValue(),
+                                    nullptr, size, kOpFormat_DEFAULT, type_id, ShapeVector(), device_name, device_id);
       kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(node));
-      address = res_manager->CreateDeviceAddress(kernel_tensor);
+      address = kernel_tensor->device_address();
     }
   } else {
     // Create device tensor.
@@ -457,13 +457,13 @@ void CreateDeviceTensorForFrontNode(const KernelWithIndex &front_node_with_index
       {node, front_node_with_index.second}, nullptr, size, kOpFormat_DEFAULT, type_id, ShapeVector(), device_name,
       device_id);
     kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(node));
-    address = res_manager->CreateDeviceAddress(kernel_tensor);
+    address = kernel_tensor->device_address();
   }
   MS_EXCEPTION_IF_NULL(address);
   MS_LOG(INFO) << "Create address for node that has no corresponding backend node:"
                << common::AnfAlgo::GetNodeDebugString(node) << " addr:" << address << " size:" << size
                << ", type id:" << type_id;
-  AnfAlgo::SetOutputAddr(address, front_node_with_index.second, node.get());
+  AnfAlgo::SetOutputAddr(address, front_node_with_index.second, node);
   UpdateRefCount(address.get(), true);
 }
 

@@ -254,7 +254,9 @@ DataQueueStatus DataQueueMgr::SetThreadDevice(const std::string &channel_name) c
 void UpdateGetNextWithDataQueueItems(const AnfNodePtr &data_kernel, const std::vector<device::DataQueueItem> &data) {
   auto kernel_info = dynamic_cast<device::KernelInfo *>(data_kernel->kernel_info());
   std::vector<std::shared_ptr<device::DeviceAddress>> device_tensors;
-  for (auto &device_tensor : kernel_info->output_address_list()) {
+  for (auto &kernel_tensor : kernel_info->output_kernel_tensor_list()) {
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
+    const auto &device_tensor = kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(device_tensor);
     device_tensors.push_back(device_tensor);
   }
