@@ -102,6 +102,7 @@ static const std::map<std::string, std::vector<std::pair<std::string, size_t>>> 
   {"GridSampler2D", {{"interpolation_mode", 3}, {"padding_mode", 4}, {"align_corners", 5}}},
   {"WeightQuantBatchMatmul", {{"transpose_x", 8}, {"transpose_weight", 9}, {"antiquant_group_size", 10}}},
   {"QuantBatchMatmul", {{"transpose_x1", 7}, {"transpose_x2", 8}, {"dtype", 9}}},
+  {"QuantBatchMatmulV3", {{"transpose_x1", 7}, {"transpose_x2", 8}, {"dtype", 9}}},
   {"GroupedMatmul", {{"split_item", 9}, {"group_type", 10}, {"transpose_a", 11}, {"transpose_b", 12}}},
   {"AdaptiveMaxPool2D", {{"output_size", 2}}},
   {"BinaryCrossEntropy", {{"reduction", 4}}},
@@ -161,6 +162,21 @@ int AdjustInputsAndAttrsForSqueeze(const FuncGraphManagerPtr &manager, const CNo
   return RET_OK;
 }
 
+bool IsValidInputIndex(const std::vector<int64_t> &input_index) {
+  if (input_index.empty()) {
+    return true;
+  }
+  if (input_index[0] < 0) {
+    return false;
+  }
+  for (size_t i = 1; i < input_index.size(); ++i) {
+    if (input_index[i] <= input_index[i - 1]) {
+      return false;
+    }
+  }
+  return true;
+}
+
 int ConvertAttrToArgsForNode(const AnfNodePtr &node, const FuncGraphManagerPtr &manager) {
   auto cnode = node->cast<CNodePtr>();
   MS_CHECK_TRUE_MSG(cnode != nullptr, RET_ERROR, "cnode is nullptr");
@@ -180,6 +196,37 @@ int ConvertAttrToArgsForNode(const AnfNodePtr &node, const FuncGraphManagerPtr &
     } else {
       MS_LOG(ERROR) << "Custom op has no attribute type or reg_op_name!";
       return RET_ERROR;
+    }
+    auto attr_input_index = origin_prim->GetAttr("input_index");
+    if (attr_input_index != nullptr) {
+      AnfNodePtrList new_inputs = {};
+      new_inputs.emplace_back(cnode->input(0));
+      auto attr_input_names = origin_prim->GetAttr("input_names");
+      MS_CHECK_TRUE_MSG(attr_input_names != nullptr, RET_ERROR, "Custom op has no attribute input_names!");
+      auto input_names = GetValue<std::vector<std::string>>(attr_input_names);
+      auto input_index = GetValue<std::vector<int64_t>>(attr_input_index);
+      if (!IsValidInputIndex(input_index)) {
+        MS_LOG(ERROR) << "Custom op attribute input_index is invalid!";
+        return RET_ERROR;
+      }
+      for (size_t i = 0; i < input_names.size(); i++) {
+        auto index_it = std::find(input_index.begin(), input_index.end(), i);
+        if (index_it == input_index.end()) {
+          auto none_input = NewValueNode(std::make_shared<None>());
+          none_input->set_abstract(std::make_shared<abstract::AbstractNone>());
+          new_inputs.emplace_back(none_input);
+        } else {
+          auto index = index_it - input_index.begin() + 1;
+          auto input = cnode->input(index);
+          if (input == nullptr) {
+            MS_LOG(ERROR) << "Failed to get cnode input at index " << index << ", input name is " << input_names[i]
+                          << "!";
+            return RET_ERROR;
+          }
+          new_inputs.emplace_back(input);
+        }
+      }
+      cnode->set_inputs(new_inputs);
     }
     if (kAttrMapNeedAdjust.find(prim_name) == kAttrMapNeedAdjust.end()) {
       MS_LOG(INFO) << "Custom with type: '" << prim_name << "' does not need to do attr_to_args conversion.";
