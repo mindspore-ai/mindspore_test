@@ -513,10 +513,10 @@ class AutoParallel(Cell):
         if not isinstance(scheduler, str):
             raise TypeError("For 'AutoParallel.pipeline', the argument 'stages' "
                             "must be str type, but got the type : {}.".format(type(scheduler)))
-        if scheduler not in ("1f1b", "gpipe"):
+        if scheduler not in ("1f1b", "gpipe", "seqpipe", "seqvpp", "seqsmartvpp", "zero_bubble_v"):
             raise ValueError("For 'AutoParallel.pipeline', the argument "
-                             "'scheduler' must be '1f1b' , 'gpipe' , but got the value : {}."
-                             .format(scheduler))
+                             "'scheduler' must be '1f1b'/'gpipe'/'seqpipe'/'seqvpp'/'seqsmartvpp'/'zero_bubble_v'"
+                             ", but got the value : {}.".format(scheduler))
         self._pipeline_stages = stages
         self._pipeline_result_broadcast = output_broadcast
         self._pipeline_interleave = interleave

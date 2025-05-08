@@ -26,23 +26,6 @@
 namespace mindspore {
 namespace parallel {
 enum class BorderType { kSend, kReceive, kCallForward, kCallBackward, kOther };
-
-void ControlOrder(const AnfNodePtr &prior, const CNodePtr &last, const FuncGraphPtr &graph,
-                  const std::string &tags = "zero_bubble_v_control") {
-  MS_EXCEPTION_IF_NULL(prior);
-  MS_EXCEPTION_IF_NULL(last);
-  if (prior == last) {
-    return;
-  }
-  const auto &manager = graph->manager();
-  MS_EXCEPTION_IF_NULL(manager);
-  std::vector<AnfNodePtr> depend_input = {NewValueNode(prim::kPrimDepend), last->input(1), prior};
-  auto depend = graph->NewCNode(depend_input);
-  depend->set_abstract(last->input(1)->abstract());
-  depend->AddPrimalAttr(tags, MakeValue(true));
-  manager->SetEdge(last, 1, depend);
-}
-
 bool CompareBorderPair(const BorderPair &bp1, const BorderPair &bp2) {
   auto compare_border = [](const Border &b1, const Border &b2) {
     return b1.chunk == b2.chunk && b1.micro == b2.micro && b1.seq_chunk == b2.seq_chunk && b1.border == b2.border;
@@ -50,8 +33,7 @@ bool CompareBorderPair(const BorderPair &bp1, const BorderPair &bp2) {
   return compare_border(bp1.first, bp2.first) && compare_border(bp1.second, bp2.second);
 }
 
-void InsertCallControlEdge(const std::vector<BorderPair> &borders, const FuncGraphPtr &graph,
-                           const std::string &tags = "zero_bubble_v_control") {
+void ZeroBubbleV::InsertCallControlOrder(const std::vector<BorderPair> &borders, const std::string &tags) {
   size_t size = borders.size();
   if (size < kIndexThree) {
     return;
@@ -62,7 +44,7 @@ void InsertCallControlEdge(const std::vector<BorderPair> &borders, const FuncGra
     }
     const auto &prior = borders[i];
     const auto &last = borders[i + kIndexTwo];
-    ControlOrder(prior.second.border, last.first.border, graph, tags);
+    ControlOrder(prior.second, last.first, tags);
   }
 }
 
@@ -75,12 +57,12 @@ void Add1b1fReceiveAttr(const BorderPair &recv, const std::string &tag, size_t i
   }
 }
 
-void InsertContorlOrder(const std::vector<BorderPair> &borders, const FuncGraphPtr &graph, size_t start, size_t end,
-                        const std::string &tags = "zero_bubble_v_control") {
+void ZeroBubbleV::InsertContorlOrder(const std::vector<BorderPair> &borders, size_t start, size_t end,
+                                     const std::string &tags) {
   while (start < end) {
     auto prior_border = borders[start].second;
     auto last_border = borders[start + 1].first;
-    ControlOrder(prior_border.border, last_border.border, graph, tags);
+    ControlOrder(prior_border, last_border, tags);
     start++;
   }
 }
@@ -129,14 +111,16 @@ void LabelFor1b1fOverlap(const std::vector<BorderPair> &borders, const std::pair
       auto prior_recv = borders[prior_cell_index - 1];
       const auto &prior_recv_border = prior_recv.second.border;
       MS_EXCEPTION_IF_NULL(prior_recv_border);
-      if (JudgeBorderType(prior_recv_border) == BorderType::kReceive) {
+      // only label advanced recv
+      if (JudgeBorderType(prior_recv_border) == BorderType::kReceive && index_1f1b > 1) {
         Add1b1fReceiveAttr(prior_recv, kCNodeAttr1f1bIndexRecv, index_1f1b);
       }
 
       auto next_recv = borders[inter_recv_index];
       const auto &next_recv_border = next_recv.second.border;
       MS_EXCEPTION_IF_NULL(next_recv_border);
-      if (inter_recv_index > prior_cell_index) {
+      // only label advanced recv
+      if (inter_recv_index > prior_cell_index && index_1f1b > 1) {
         Add1b1fReceiveAttr(next_recv, kCNodeAttr1f1bIndexInterRecv, index_1f1b);
       }
       index_1f1b++;
@@ -181,9 +165,10 @@ bool JudgeInsertControlEdge(const CNodePtr &pre, const CNodePtr &cur) {
   return true;
 }
 
-void ReorderInnerOverlap(const FuncGraphPtr &graph, const std::vector<BorderPair> &borders,
-                         const std::vector<std::pair<size_t, size_t>> &overlap_border,
-                         const std::pair<size_t, size_t> &border_step4, const std::pair<size_t, size_t> &border_step5) {
+void ZeroBubbleV::ReorderInnerOverlap(const std::vector<BorderPair> &borders,
+                                      const std::vector<std::pair<size_t, size_t>> &overlap_border,
+                                      const std::pair<size_t, size_t> &border_step4,
+                                      const std::pair<size_t, size_t> &border_step5) {
   auto start_step4 = border_step4.first;
   auto end_step5 = border_step5.second;
   auto pre_index = start_step4;
@@ -198,8 +183,8 @@ void ReorderInnerOverlap(const FuncGraphPtr &graph, const std::vector<BorderPair
                  << ", overlap_border size: " << overlap_border.size();
     MS_LOG(INFO) << "ZeroBubbleV::ReorderInnerOverlap: start: " << start.second.border->ToString()
                  << ", end: " << end.first.border->ToString();
-    ControlOrder(start.second.border, end.first.border, graph, kPrimalAttr1b1fCallCall);
-    InsertContorlOrder(borders, graph, pre_index, start_index);
+    ControlOrder(start.second, end.first, kPrimalAttr1b1fCallCall);
+    InsertContorlOrder(borders, pre_index, start_index);
     pre_index = end_index;
     if (end_index - start_index <= 1) {
       continue;
@@ -212,18 +197,18 @@ void ReorderInnerOverlap(const FuncGraphPtr &graph, const std::vector<BorderPair
       const auto &pre_cur_border = pre_cur.second.border;
       const auto &cur_border = cur.first.border;
       if (JudgeInsertControlEdge(pre_cur_border, cur_border)) {
-        ControlOrder(pre_cur_border, cur_border, graph, "inner_overlap");
+        ControlOrder(pre_cur.second, cur.first, "inner_overlap");
       }
       const auto &cur_border_type = JudgeBorderType(cur_border);
       if (cur_border_type == BorderType::kSend) {
-        ControlOrder(cur_border, next_overlap.first.border, graph, "send_out_1f1b");
+        ControlOrder(cur.second, next_overlap.first, "send_out_1f1b");
       }
       if (cur_border_type == BorderType::kReceive) {
-        ControlOrder(pre_overlap.second.border, cur_border, graph, "input_recv_1f1b");
+        ControlOrder(pre_overlap.second, cur.first, "input_recv_1f1b");
       }
     }
   }
-  InsertContorlOrder(borders, graph, overlap_border.back().second, end_step5);
+  InsertContorlOrder(borders, overlap_border.back().second, end_step5);
 }
 
 void MarkDualPipePhase(const std::vector<BorderPair> &orders, const std::string &tag, size_t start, size_t end,
@@ -545,7 +530,7 @@ void ZeroBubbleV::ReorderFor1b1fOverlap(const std::vector<BorderPair> borders,
   auto end_step4 = border_step4.second;
   auto start_step5 = border_step5.first;
   auto end_step5 = border_step5.second;
-  InsertContorlOrder(borders, root_, 0, start_step4, "before_overlap");
+  InsertContorlOrder(borders, 0, start_step4, "before_overlap");
   std::vector<BorderPair> before_overlap(borders.begin(), borders.begin() + start_step4);
   std::vector<BorderPair> after_overlap(borders.begin() + end_step5, borders.end());
   std::vector<BorderPair> after_step4(borders.begin() + start_step5, borders.end());
@@ -588,12 +573,12 @@ void ZeroBubbleV::ReorderFor1b1fOverlap(const std::vector<BorderPair> borders,
       call_call_control(cur, is_step4);
     }
   }
-  ReorderInnerOverlap(root_, borders, overlap_border_index, border_step4, border_step5);
+  ReorderInnerOverlap(borders, overlap_border_index, border_step4, border_step5);
   call_call_step4.push_back(next_cell_step4);
   call_call_step5.push_back(next_cell_step5);
-  InsertCallControlEdge(call_call_step4, root_, "call_call_1f1b");
-  InsertCallControlEdge(call_call_step5, root_, "call_call_1f1b");
-  InsertContorlOrder(borders, root_, end_step5, borders.size() - 1, "after_overlap");
+  InsertCallControlOrder(call_call_step4, "call_call_1f1b");
+  InsertCallControlOrder(call_call_step5, "call_call_1f1b");
+  InsertContorlOrder(borders, end_step5, borders.size() - 1, "after_overlap");
 }
 
 void ZeroBubbleV::Reorder() {
