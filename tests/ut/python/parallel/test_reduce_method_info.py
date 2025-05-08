@@ -941,6 +941,37 @@ def test_all_mul2():
     compile_net_no_bias(net, x, y)
 
 
+def test_all_mul3():
+    """
+    Feature: test ReduceAll semi parallel strategy
+    Description: axis is None, keep_dims is False
+    Expectation: compile success
+    """
+
+    class Net(nn.Cell):
+        def __init__(self, strategy1, strategy2):
+            super(Net, self).__init__()
+            self.mul1 = P.Mul().shard(strategy1)
+            self.reduce_all = P.ReduceAll(keep_dims=False).shard(strategy2)
+            self.cast = P.Cast()
+
+        def construct(self, x, y):
+            out = self.mul1(x, y)
+            out = self.cast(out, ms.bool_)
+            out = self.reduce_all(out, None)
+            return out
+
+    context.set_auto_parallel_context(device_num=8, global_rank=0)
+    strategy1 = ((1, 8, 1), (1, 8, 1))
+    strategy2 = ((1, 8, 1),)
+    net = GradWrapNoBias(NetWithLossNoBias(Net(strategy1, strategy2)))
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
+
+    x = Tensor(np.ones([128, 32, 64]), dtype=ms.float32)
+    y = Tensor(np.ones([128, 32, 64]), dtype=ms.float32)
+    compile_net_no_bias(net, x, y)
+
+
 def test_prod_mul():
     """
     Feature: test ReduceProd model parallel strategy
