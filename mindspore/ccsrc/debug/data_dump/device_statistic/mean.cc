@@ -40,7 +40,7 @@ std::vector<KernelTensorPtr> MeanStatisticKernel::GetExtraInputsDeviceAddress(Ke
   return {axis, keepdims, dtype};
 }
 
-DeviceAddressPtr MeanStatisticKernel::GetOutputDeviceAddress(TypeId type_id) {
+KernelTensorPtr MeanStatisticKernel::GetOutputDeviceAddress(TypeId type_id) {
   if (DumpJsonParser::GetInstance().IsDeviceStatHighPrecisionMode()) {
     type_id = kNumberTypeFloat32;
   }

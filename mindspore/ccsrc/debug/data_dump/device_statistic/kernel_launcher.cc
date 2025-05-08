@@ -29,8 +29,8 @@ TensorPtr CalStatistic(const std::string &stat_name, const DeviceContext *device
   return SyncDeviceToHostTensor(out.back());
 }
 
-std::vector<DeviceAddressPtr> CalStatisticAsync(const std::string &stat_name, const DeviceContext *device_context,
-                                                KernelTensor *input, const uint32_t stream_id) {
+std::vector<KernelTensorPtr> CalStatisticAsync(const std::string &stat_name, const DeviceContext *device_context,
+                                               KernelTensor *input, const uint32_t stream_id) {
   MS_EXCEPTION_IF_NULL(input);
   auto dtype = input->dtype_id();
   auto kernel = KernelFactory::Instance().CreateKernel(stat_name, device_context);
@@ -50,15 +50,13 @@ bool CalCheckOverflow(const DeviceContext *device_context, const std::vector<Ker
   if (out == nullptr) {
     return false;
   }
-  auto overflow_tensor = out->kernel_tensor();
-  return overflow_tensor->GetValueWithCheck<bool>();
+  return out->GetValueWithCheck<bool>();
 }
 
-DeviceAddressPtr CalCheckOverflowAsync(const DeviceContext *device_context, std::vector<KernelTensor *> inputs,
-                                       const uint32_t stream_id) {
+KernelTensorPtr CalCheckOverflowAsync(const DeviceContext *device_context, std::vector<KernelTensor *> inputs,
+                                      const uint32_t stream_id) {
   auto kernel = KernelFactory::Instance().CreateKernel(KCheckOverflow, device_context);
   return kernel->LaunchKernelAsync(inputs, stream_id);
 }
-
 }  // namespace datadump
 }  // namespace mindspore

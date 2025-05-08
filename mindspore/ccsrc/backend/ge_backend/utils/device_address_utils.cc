@@ -49,6 +49,7 @@ device::DeviceAddressPtr CreateDeviceAddressForScalarAndString(const ValueNodePt
   MS_EXCEPTION_IF_NULL(res_manager);
 
   device::DeviceAddressPtr address = nullptr;
+  KernelTensorPtr kernel_tensor = nullptr;
   const auto &node_value = value_node->value();
   MS_EXCEPTION_IF_NULL(node_value);
   if (node_value->isa<StringImm>()) {
@@ -61,28 +62,29 @@ device::DeviceAddressPtr CreateDeviceAddressForScalarAndString(const ValueNodePt
       // NOTE: on Ascend, string type need a head of type ge::StringHead
       tensor_size += GE_STRING_HEAD_SIZE;
     }
-    const auto &kernel_tensor =
+    kernel_tensor =
       AnfAlgo::CreateOutputKernelTensorWithDeviceInfo({value_node, 0}, nullptr, tensor_size, kOpFormat_DEFAULT,
                                                       kObjectTypeString, ShapeVector(), node_target, device_id);
     kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(value_node));
-    address = res_manager->CreateDeviceAddress(kernel_tensor);
+    address = kernel_tensor->device_address();
   } else if (node_value->isa<Scalar>()) {
     auto scalar_value = node_value->cast<ScalarPtr>();
     MS_EXCEPTION_IF_NULL(scalar_value);
     TypePtr data_type = scalar_value->type();
     MS_EXCEPTION_IF_NULL(data_type);
     TypeId type_id = data_type->type_id();
-    const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
+    kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
       {value_node, 0}, nullptr, GetTypeByte(TypeIdToType(type_id)), kOpFormat_DEFAULT, type_id, ShapeVector(),
       node_target, device_id);
     kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(value_node));
-    address = res_manager->CreateDeviceAddress(kernel_tensor);
+    address = kernel_tensor->device_address();
   } else if (node_value->isa<None>()) {
-    const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
+    kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
       {value_node, 0}, nullptr, 0, kOpFormat_DEFAULT, kTypeNone->type_id(), ShapeVector(), node_target, device_id);
     kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(value_node));
-    address = res_manager->CreateDeviceAddress(kernel_tensor);
+    address = kernel_tensor->device_address();
   }
+  AnfAlgo::SetOutputKernelTensor(kernel_tensor, 0, value_node.get());
 
   return address;
 }
@@ -143,11 +145,11 @@ device::DeviceAddressPtr CreateDeviceAddressForTypeValue(const ValueNodePtr &val
   const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
     {value_node, 0}, nullptr, 0, kOpFormat_DEFAULT, kMetaTypeTypeType, {}, node_target, device_id);
   kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(value_node));
-  device::DeviceAddressPtr address = res_manager->CreateDeviceAddress(kernel_tensor);
+  device::DeviceAddressPtr address = kernel_tensor->device_address();
   MS_LOG(DEBUG) << "Create addr for node:" << value_node->DebugString() << " addr:" << address;
   MS_EXCEPTION_IF_NULL(address);
   address->set_from_persistent_mem(true);
-  AnfAlgo::SetOutputAddr(address, 0, value_node.get());
+  AnfAlgo::SetOutputKernelTensor(kernel_tensor, 0, value_node.get());
   return address;
 }
 }  // namespace
@@ -158,7 +160,6 @@ bool DeviceAddressUtils::NodeDeviceAddressExist(const device::DeviceType &node_d
   if (AnfAlgo::OutputAddrExist(node, index)) {
     const auto address = AnfAlgo::GetMutableOutputAddr(node, index, false);
     MS_EXCEPTION_IF_NULL(address);
-    CreateKernelTensor(address, session::AnfRuntimeAlgorithm::GetNodeAbstractByIndex(node, index));
     return address->GetDeviceType() == node_device_type;
   }
   return false;
@@ -207,9 +208,9 @@ void DeviceAddressUtils::CreateDeviceAddressByMapTensorNode(const AnfNodePtr &no
     {node, index}, nullptr, 1, kOpFormat_DEFAULT, TypeId::kObjectTypeMapTensorType, ShapeVector(), node_target,
     device_id, user_data);
   kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(node));
-  auto device_address = res_manager->CreateDeviceAddress(kernel_tensor);
+  auto device_address = kernel_tensor->device_address();
   MS_LOG(DEBUG) << "Create device tensor:" << device_address << " type:" << device_address->type_id();
-  AnfAlgo::SetOutputAddr(device_address, index, node.get());
+  AnfAlgo::SetOutputKernelTensor(kernel_tensor, index, node.get());
 }
 
 void DeviceAddressUtils::CreateParameterDeviceAddress(const KernelGraphPtr &graph) {
@@ -270,12 +271,12 @@ void DeviceAddressUtils::CreateParameterDeviceAddress(const KernelGraphPtr &grap
       }
 
       size_t tensor_size = AnfAlgo::GetOutputTensorMemSize(item, index);
-      const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
+      auto kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
         {item, index}, nullptr, tensor_size, AnfAlgo::GetOutputFormat(item, index), output_type_id,
         AnfAlgo::GetRuntimePaddingShape(item, index), node_target, device_id);
       MS_EXCEPTION_IF_NULL(kernel_tensor);
       kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(item));
-      auto device_address = res_manager->CreateDeviceAddress(kernel_tensor);
+      auto device_address = kernel_tensor->device_address();
 
       MS_EXCEPTION_IF_NULL(device_address);
       MS_LOG(DEBUG) << "Create device address:" << device_address << " for item:" << item->DebugString();
@@ -295,7 +296,7 @@ void DeviceAddressUtils::CreateParameterDeviceAddress(const KernelGraphPtr &grap
       device_address->set_from_persistent_mem(item->isa<Parameter>());
       MS_LOG(DEBUG) << "Create addr for node:" << common::AnfAlgo::GetNodeDebugString(item)
                     << " addr:" << device_address << " type:" << device_address->type_id();
-      AnfAlgo::SetOutputAddr(device_address, index, item.get());
+      AnfAlgo::SetOutputKernelTensor(kernel_tensor, index, item.get());
     }
   }
 }
@@ -303,7 +304,6 @@ void DeviceAddressUtils::CreateParameterDeviceAddress(const KernelGraphPtr &grap
 void DeviceAddressUtils::UpdateDeviceAddressHostInfoByNode(const device::DeviceAddressPtr &addr, const AnfNodePtr &node,
                                                            size_t output_idx) {
   MS_EXCEPTION_IF_NULL(addr);
-  CreateKernelTensor(addr, session::AnfRuntimeAlgorithm::GetNodeAbstractByIndex(node, output_idx));
 }
 
 device::DeviceAddressPtrList DeviceAddressUtils::CreateDeviceAddressForTensorValue(const ValuePtr &node_value,
@@ -328,7 +328,7 @@ device::DeviceAddressPtrList DeviceAddressUtils::CreateDeviceAddressForTensorVal
         // in PyNative Bprop graph. ValueNode device_address is necessary for GraphSchedule::Transform.
         UpdateDeviceAddressHostInfoByNode(output_address, value_node, output_idx);
         AnfAlgo::SetOutputAddr(std::static_pointer_cast<device::DeviceAddress>(tensor->device_address()), output_idx++,
-                               value_node.get());
+                               value_node);
         (void)address_list.emplace_back(output_address);
         return address_list;
       }
@@ -353,17 +353,17 @@ device::DeviceAddressPtrList DeviceAddressUtils::CreateDeviceAddressForTensorVal
   auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
   MS_EXCEPTION_IF_NULL(res_manager);
 
-  const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
+  auto kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
     {value_node, output_idx}, nullptr, tensor_size, output_format, output_type_id, {}, node_target, device_id);
   kernel_tensor->set_host_shape(kernel_tensor->GetShapeVector());
   kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(value_node));
-  device::DeviceAddressPtr address = res_manager->CreateDeviceAddress(kernel_tensor);
+  device::DeviceAddressPtr address = kernel_tensor->device_address();
   MS_LOG(DEBUG) << "Create addr for node:" << common::AnfAlgo::GetNodeDebugString(value_node) << " addr:" << address
                 << " size:" << tensor_size << " format:" << output_format << " type:" << output_type_id
                 << " shape:" << kernel_tensor->GetShapeVector();
   MS_EXCEPTION_IF_NULL(address);
   address->set_from_persistent_mem(true);
-  AnfAlgo::SetOutputAddr(address, output_idx++, value_node.get());
+  AnfAlgo::SetOutputKernelTensor(kernel_tensor, output_idx, value_node.get());
   (void)address_list.emplace_back(address);
   return address_list;
 }
@@ -412,7 +412,7 @@ void DeviceAddressUtils::CreateValueNodeDeviceAddress(const KernelGraphPtr &grap
       MS_LOG(DEBUG) << "Create addr for node:" << common::AnfAlgo::GetNodeDebugString(value_node)
                     << " addr:" << address;
       address->set_from_persistent_mem(true);
-      AnfAlgo::SetOutputAddr(address, 0, value_node.get());
+      AnfAlgo::SetOutputAddr(address, 0, value_node);
     } else {
       MS_LOG(INFO) << "No device address for value node:" << value_node->fullname_with_scope()
                    << ", debug name:" << common::AnfAlgo::GetNodeDebugString(value_node);
@@ -420,28 +420,35 @@ void DeviceAddressUtils::CreateValueNodeDeviceAddress(const KernelGraphPtr &grap
   }
 }
 
-device::DeviceAddressPtr DeviceAddressUtils::CloneEmptyDeviceAddress(
-  const device::DeviceAddressPtr &old_device_address) {
+KernelTensorPtr DeviceAddressUtils::CloneEmptyKernelTensor(const KernelTensorPtr &old_kernel_tensor) {
+  MS_EXCEPTION_IF_NULL(old_kernel_tensor);
+  auto old_device_address = old_kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(old_device_address);
-  const auto &kernel_tensor = old_device_address->kernel_tensor();
-  MS_EXCEPTION_IF_NULL(kernel_tensor);
-  auto new_kernel_tensor = kernel_tensor->CloneKernelTensor();
-  MS_EXCEPTION_IF_NULL(new_kernel_tensor);
 
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  MS_EXCEPTION_IF_NULL(res_manager);
+
+  auto address_common = old_kernel_tensor->address_common();
+  MS_EXCEPTION_IF_NULL(address_common);
+  auto new_device_address = res_manager->CreateDeviceAddress(
+    address_common->pointer_ref_count_->ptr(), address_common->size_, address_common->shape_vector_,
+    address_common->format_, address_common->dtype_id_, device_name, device_id, address_common->stream_id_,
+    old_kernel_tensor->user_data());
+  new_device_address->set_heterogeneous_info(old_kernel_tensor->heterogeneous_info());
+  new_device_address->set_host_shape(old_kernel_tensor->host_shape());
+  auto new_kernel_tensor = old_kernel_tensor->CloneKernelTensor();
+  new_kernel_tensor->set_device_address(new_device_address);
+  new_kernel_tensor->set_device_synchronizer(new_device_address->NewDeviceSynchronizer());
+  MS_EXCEPTION_IF_NULL(new_kernel_tensor);
 
   new_kernel_tensor->set_device_name(device_name);
   new_kernel_tensor->set_device_id(device_id);
   new_kernel_tensor->set_device_ptr(nullptr);
-
-  device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
-  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-  MS_EXCEPTION_IF_NULL(res_manager);
-  auto new_device_address = res_manager->CreateDeviceAddress(new_kernel_tensor);
-  MS_EXCEPTION_IF_NULL(new_device_address);
   MS_LOG(DEBUG) << "Create device tensor:" << new_device_address << " type:" << new_device_address->type_id();
 
   new_device_address->set_original_ref_count(old_device_address->original_ref_count());
@@ -449,71 +456,7 @@ device::DeviceAddressPtr DeviceAddressUtils::CloneEmptyDeviceAddress(
   auto node = old_device_address->GetNodeIndex();
   new_device_address->SetNodeIndex(node.first, node.second);
   new_device_address->set_padding_type(old_device_address->padding_type());
-  return new_device_address;
-}
-
-void DeviceAddressUtils::CreateKernelTensor(const device::DeviceAddressPtr &device_address,
-                                            const tensor::BaseTensor *tensor) {
-  MS_EXCEPTION_IF_NULL(device_address);
-  MS_EXCEPTION_IF_NULL(tensor);
-  if (device_address->kernel_tensor() != nullptr) {
-    return;
-  }
-  {
-    GilReleaseWithCheck no_gil;
-    // DeviceAddress is used by backebd queue.
-    runtime::Pipeline::Get().backend_stage()->Wait();
-  }
-  const auto &address_common = device_address->address_common();
-  MS_EXCEPTION_IF_NULL(address_common);
-  auto real_kernel_tensor = std::make_shared<kernel::KernelTensor>(
-    address_common, std::make_shared<abstract::TensorShape>(tensor->shape()),
-    std::make_shared<TensorType>(TypeIdToType(tensor->data_type())), nullptr, tensor->shape());
-  device_address->set_kernel_tensor(real_kernel_tensor);
-  device_address->DeviceSynchronizerInit();
-}
-
-void DeviceAddressUtils::CreateKernelTensor(const ValuePtr &input_value) {
-  MS_EXCEPTION_IF_NULL(input_value);
-  if (input_value->isa<tensor::BaseTensor>()) {
-    auto tensor = input_value->cast<tensor::BaseTensorPtr>();
-    if (tensor->device_address() != nullptr) {
-      auto device_address = std::static_pointer_cast<device::DeviceAddress>(tensor->device_address());
-      MS_EXCEPTION_IF_NULL(device_address);
-      CreateKernelTensor(device_address, tensor.get());
-    }
-  }
-}
-
-void DeviceAddressUtils::CreateKernelTensor(const tensor::TensorPtr &input_tensor) {
-  MS_EXCEPTION_IF_NULL(input_tensor);
-  if (input_tensor->device_address() != nullptr) {
-    auto device_address = std::static_pointer_cast<device::DeviceAddress>(input_tensor->device_address());
-    MS_EXCEPTION_IF_NULL(device_address);
-    CreateKernelTensor(device_address, input_tensor.get());
-  }
-}
-
-void DeviceAddressUtils::CreateKernelTensor(const device::DeviceAddressPtr &device_address,
-                                            const AbstractBasePtr &abs) {
-  MS_EXCEPTION_IF_NULL(device_address);
-  if (device_address->kernel_tensor() != nullptr) {
-    return;
-  }
-  {
-    GilReleaseWithCheck no_gil;
-    // DeviceAddress is used by backebd queue.
-    runtime::Pipeline::Get().backend_stage()->Wait();
-  }
-  const auto address_common = device_address->address_common();
-  MS_EXCEPTION_IF_NULL(address_common);
-  MS_EXCEPTION_IF_NULL(abs);
-  const auto &shape = abs->GetShape();
-  const auto &type = abs->GetType();
-  auto real_kernel_tensor =
-    std::make_shared<kernel::KernelTensor>(address_common, shape, type, nullptr, shape->GetShapeVector());
-  device_address->set_kernel_tensor(real_kernel_tensor);
-  device_address->DeviceSynchronizerInit();
+  return new_kernel_tensor;
 }
 
 bool DeviceAddressUtils::IsContiguousTensor(const tensor::BaseTensorPtr &tensor) {

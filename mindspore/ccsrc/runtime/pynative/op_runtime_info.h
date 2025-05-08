@@ -25,6 +25,7 @@
 #include "include/backend/kernel_graph.h"
 
 namespace mindspore::runtime {
+using KernelTensorPtr = kernel::KernelTensorPtr;
 class AclRuntimeInfo {
  public:
   AclRuntimeInfo() : is_dynamic_input_size_(true), is_dynamic_output_size_(true), use_(false) {}
@@ -109,9 +110,9 @@ class BACKEND_EXPORT OpRuntimeInfo {
   void SetOutputTensorSize(size_t index, size_t tensor_size);
   void SetOutputInferShape(size_t index, const ShapeVector &shape);
   void SetOutputDeviceShape(size_t index, const ShapeVector &shape);
-  device::DeviceAddressPtr GetOutputDeviceAddress(size_t index) const;
-  device::DeviceAddressPtr GetWorkspaceDeviceAddress(size_t index) const;
-  device::DeviceAddressPtr GetInputDeviceAddress(size_t index) const;
+  KernelTensorPtr GetOutputKernelTensor(size_t index) const;
+  KernelTensorPtr GetWorkspaceKernelTensor(size_t index) const;
+  KernelTensorPtr GetInputKernelTensor(size_t index) const;
   size_t GetInputSize() const;
   size_t GetOutputSize() const;
   size_t GetWorkspaceSize() const;

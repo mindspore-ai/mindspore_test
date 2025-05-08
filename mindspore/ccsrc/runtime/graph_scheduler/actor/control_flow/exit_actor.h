@@ -37,7 +37,7 @@ class ExitActor : public ControlActor {
             const AnfNodePtr &node)
       : ControlActor(name, KernelTransformType::kExitActor, memory_manager_aid, parameters, node) {
     device_contexts_.resize(parameters.size());
-    input_device_tensors_.resize(parameters.size());
+    input_kernel_tensors_.resize(parameters.size());
   }
   ~ExitActor() override = default;
 
@@ -55,22 +55,22 @@ class ExitActor : public ControlActor {
     const {
     return output_branch_dynamic_len_index_;
   }
-  void OnMemoryAllocFinish(OpContext<DeviceTensor> *const context) override;
+  void OnMemoryAllocFinish(OpContext<KernelTensor> *const context) override;
 
  protected:
   void Init() override;
-  void FetchInput(OpContext<DeviceTensor> *const context) override;
-  void SendOutput(OpContext<DeviceTensor> *const context) override;
-  void IncreaseDynamicRefCounts(OpContext<DeviceTensor> *const context) override;
-  void IncreaseNewRefCounts(OpContext<DeviceTensor> *const context) override;
+  void FetchInput(OpContext<KernelTensor> *const context) override;
+  void SendOutput(OpContext<KernelTensor> *const context) override;
+  void IncreaseDynamicRefCounts(OpContext<KernelTensor> *const context) override;
+  void IncreaseNewRefCounts(OpContext<KernelTensor> *const context) override;
 
  private:
   friend class ControlNodeScheduler;
   friend class SchedulerHelper;
 
-  void CopyDeviceAddress(OpContext<DeviceTensor> *const context);
+  void CopyDeviceAddress(OpContext<KernelTensor> *const context);
   void UpdateDeviceOutputData();
-  void MergeDynamiclenDeviceAddress(OpContext<DeviceTensor> *const context);
+  void MergeDynamiclenDeviceAddress(OpContext<KernelTensor> *const context);
   bool IsNeedCopyDeviceAddress(DeviceTensor *const input_device_tensor, size_t index);
 
   // Exit actor will send to different actors according to different callers, so the output data, control,
@@ -93,7 +93,7 @@ class ExitActor : public ControlActor {
   std::vector<bool> is_dynamic_shapes_;
   // Output data.
   //  The output branch data corresponds to the output_data_arrows_ one by one.
-  mindspore::HashMap<int, std::vector<std::pair<size_t, OpDataUniquePtr<DeviceTensor>>>> output_branch_data_;
+  mindspore::HashMap<int, std::vector<std::pair<size_t, OpDataUniquePtr<KernelTensor>>>> output_branch_data_;
   // The value of haspmap indicates the output data flag. See constant prefixed with kOutputDataFalg for details.
   mindspore::HashMap<int, std::vector<size_t>> output_branch_data_flag_;
 };

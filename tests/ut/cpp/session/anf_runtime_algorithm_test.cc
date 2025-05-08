@@ -568,7 +568,7 @@ TEST_F(AnfRuntimeAlgorithmTest, SetOutputAddr) {
   int *addr = nullptr;
   auto device_address = std::make_shared<AscendDeviceAddress>(addr, 1);
   EXPECT_THROW(AnfAlgo::SetOutputAddr(device_address, 0, nullptr), std::runtime_error);
-  AnfAlgo::SetOutputAddr(device_address, 0, add.get());
+  AnfAlgo::SetOutputAddr(device_address, 0, add);
   EXPECT_EQ(AnfAlgo::GetOutputAddr(add, 0), device_address.get());
 }
 
@@ -595,7 +595,7 @@ TEST_F(AnfRuntimeAlgorithmTest, SetWorkspaceAddr) {
   int *addr = nullptr;
   auto device_address = std::make_shared<AscendDeviceAddress>(addr, 1);
   EXPECT_THROW(AnfAlgo::SetWorkspaceAddr(device_address, 0, nullptr), std::runtime_error);
-  AnfAlgo::SetWorkspaceAddr(device_address, 0, add.get());
+  AnfAlgo::SetWorkspaceAddr(device_address, 0, add);
   EXPECT_EQ(AnfAlgo::GetWorkspaceAddr(add, 0), device_address.get());
 }
 

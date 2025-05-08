@@ -45,16 +45,16 @@ class ConditionSwitchActor : public KernelActor {
 
  protected:
   void Init() override;
-  void Run(OpContext<DeviceTensor> *const context) override;
-  void UpdateRefDeviceAddress(OpContext<DeviceTensor> *const context, bool increase_ref_count) override;
-  void ExecuteInferShapeTask(OpContext<DeviceTensor> *const context) override;
-  void ExecuteResizeKernelModTask(OpContext<DeviceTensor> *const context) override;
-  void ExecuteLaunchKernelTask(OpContext<DeviceTensor> *const context) override;
-  void FetchInput(OpContext<DeviceTensor> *const context);
-  void SendOutput(OpContext<DeviceTensor> *const context, size_t index);
+  void Run(OpContext<KernelTensor> *const context) override;
+  void UpdateRefDeviceAddress(OpContext<KernelTensor> *const context, bool increase_ref_count) override;
+  void ExecuteInferShapeTask(OpContext<KernelTensor> *const context) override;
+  void ExecuteResizeKernelModTask(OpContext<KernelTensor> *const context) override;
+  void ExecuteLaunchKernelTask(OpContext<KernelTensor> *const context) override;
+  void FetchInput(OpContext<KernelTensor> *const context);
+  void SendOutput(OpContext<KernelTensor> *const context, size_t index);
 
  private:
-  void FetchParameterInput(OpContext<DeviceTensor> *const context);
+  void FetchParameterInput(OpContext<KernelTensor> *const context);
 
   friend class SuperKernelActor;
   friend class InlineControlFlowScheduler;
@@ -71,7 +71,7 @@ class ConditionSwitchActor : public KernelActor {
   std::vector<size_t> output_control_branch_indexes_;
 
   // Cache output data by output index to modify the output data effectively.
-  std::vector<std::vector<OpData<DeviceTensor> *>> output_data_by_output_index_;
+  std::vector<std::vector<OpData<KernelTensor> *>> output_data_by_output_index_;
 
   // Switch needs to send current branch name to the corresponding gather actor to check its inputs.
   AID *gather_aid_{nullptr};

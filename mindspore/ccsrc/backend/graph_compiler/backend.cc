@@ -210,65 +210,6 @@ void RunControlOperator(const std::shared_ptr<GraphCompiler> &graph_compiler,
 }
 }  // namespace
 
-void CreateKernelTensor(const std::vector<std::vector<tensor::TensorPtr>> &input_tensors,
-                        std::vector<DeviceContext *> device_contexts) {
-  if (input_tensors.size() < device_contexts.size()) {
-    MS_LOG(EXCEPTION) << "Invalid input_tensors size " << input_tensors.size() << " device_contexts size "
-                      << device_contexts.size();
-  }
-  for (size_t i = 0; i < device_contexts.size(); ++i) {
-    const auto &tensors = input_tensors[i];
-    const auto &device_context = device_contexts[i];
-    MS_EXCEPTION_IF_NULL(device_context);
-    for (const auto &tensor : tensors) {
-      if (tensor != nullptr && tensor->device_address() != nullptr) {
-        auto device_address = std::static_pointer_cast<device::DeviceAddress>(tensor->device_address());
-        MS_EXCEPTION_IF_NULL(device_address);
-        if (device_address->kernel_tensor() == nullptr) {
-          runtime::DeviceAddressUtils::CreateKernelTensor(device_address, tensor.get());
-        }
-      }
-    }
-  }
-}
-
-void CreateKernelTensor(const BaseRef &arg) {
-  if (utils::isa<tensor::BaseTensor>(arg)) {
-    auto tensor = utils::cast<tensor::BaseTensorPtr>(arg);
-    MS_EXCEPTION_IF_NULL(tensor);
-    auto device_address = std::static_pointer_cast<device::DeviceAddress>(tensor->device_address());
-    if (device_address != nullptr) {
-      runtime::DeviceAddressUtils::CreateKernelTensor(device_address, tensor.get());
-    }
-  } else if (utils::isa<ValueSequencePtr>(arg)) {
-    auto value_sequence = utils::cast<ValueSequencePtr>(arg);
-    MS_EXCEPTION_IF_NULL(value_sequence);
-    const auto &sequence_value = value_sequence->value();
-    for (const auto &value : sequence_value) {
-      CreateKernelTensor(value);
-    }
-  } else if (utils::isa<stub::TensorNode>(arg)) {
-    auto tensor_stub = utils::cast<std::shared_ptr<stub::TensorNode>>(arg);
-    MS_EXCEPTION_IF_NULL(tensor_stub);
-    auto value = tensor_stub->WaitValue();
-    MS_EXCEPTION_IF_NULL(value);
-    auto tensor = value->cast<tensor::BaseTensorPtr>();
-    MS_EXCEPTION_IF_NULL(tensor);
-    auto device_address = std::static_pointer_cast<device::DeviceAddress>(tensor->device_address());
-    if (device_address != nullptr) {
-      runtime::DeviceAddressUtils::CreateKernelTensor(device_address, tensor.get());
-    }
-  } else {
-    MS_LOG(DEBUG) << "Only tensor need create KernelTensor";
-  }
-}
-
-void CreateKernelTensor(const VectorRef &args) {
-  for (const auto &arg : args) {
-    CreateKernelTensor(arg);
-  }
-}
-
 MindRTBackend::~MindRTBackend() {
   if (enable_graph_pipeline_) {
     GilReleaseWithCheck gil_release;
@@ -280,11 +221,9 @@ runtime::ActorSet *MindRTBackend::RealCompileGraphBeforeRunActor(const GraphComp
                                                                  const VectorRef &args, bool no_multi_graph) {
   WaitTaskFinish();
   WaitMultiStream(graph_compiler_info);
-  CreateTensorArgs(args, graph_compiler_info);
   WaitTaskFinish();
   auto graphs = graph_compiler_info.graphs_;
   auto device_contexts = graph_compiler_info.device_contexts_;
-  CreateKernelTensor(args);
 
   for (size_t i = 0; i < graphs.size(); ++i) {
     const auto &graph = graphs[i];
@@ -340,7 +279,6 @@ runtime::ActorSet *MindRTBackend::RealCompileGraphBeforeRunActor(const GraphComp
     MS_LOG(INFO) << "Actor Multithreading is turned off!";
   }
   runtime::GraphScheduler::GetInstance().Schedule(actor_set);
-  runtime::GraphScheduler::GetInstance().RemoveNodeAddr(graph_compiler_info);
 
   for (size_t i = 0; i < graphs.size(); ++i) {
     pynative::GraphAdapter::ClearForwardOutputValueNodeDeviceAddress(graphs[i], device_contexts[i]);
@@ -412,7 +350,6 @@ void MindRTBackend::RunActorSet(const ActorInfo &actor_info, runtime::ActorSet *
   if (!first_step_) {
     WaitTaskFinish();
     WaitMultiStream(graph_compiler_info);
-    CreateTensorArgs(args, graph_compiler_info);
     WaitTaskFinish();
   } else {
     first_step_ = false;
@@ -439,7 +376,6 @@ void MindRTBackend::RunActorSet(const ActorInfo &actor_info, runtime::ActorSet *
                         << " should less than or equal to inputs size " << input_tensors.size();
     }
     pynative::GraphAdapter::HandleHeterogeneousTensors(input_tensors, device_contexts, actor_set);
-    CreateKernelTensor(input_tensors, device_contexts);
     // Release GIL and run actor DAG.
     GilReleaseWithCheck release_gil;
     VectorRef empty_args;
@@ -477,7 +413,6 @@ void MindRTBackend::RunGraphBySingleOp(const GraphCompilerInfo &graph_compiler_i
                                        VectorRef *outputs) {
   WaitTaskFinish();
   WaitMultiStream(graph_compiler_info);
-  CreateTensorArgs(args, graph_compiler_info);
   WaitTaskFinish();
 
   MS_LOG(INFO) << "Status record: begin run graph by single op";

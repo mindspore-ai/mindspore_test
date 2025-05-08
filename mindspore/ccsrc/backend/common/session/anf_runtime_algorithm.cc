@@ -44,6 +44,7 @@
 #include "pipeline/jit/ps/static_analysis/static_analysis.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "runtime/device/res_manager/utils/convert_tensor_utils.h"
+#include "runtime/hardware/device_context_manager.h"
 #include "utils/trace_base.h"
 #include "utils/anf_utils.h"
 #include "utils/ms_context.h"
@@ -1020,14 +1021,15 @@ bool AnfRuntimeAlgorithm::ExistOutputKernelTensor(const AnfNodePtr &node, size_t
   return kernel_info->OutputAddrExist(output_idx) || kernel_info->OutputKernelTensorExist(output_idx);
 }
 
-const KernelTensorPtr &AnfRuntimeAlgorithm::GetOutputKernelTensor(const AnfNodePtr &node, size_t output_idx) {
+const KernelTensorPtr &AnfRuntimeAlgorithm::GetOutputKernelTensor(const AnfNodePtr &node, size_t output_idx,
+                                                                  bool skip_nop_node) {
   MS_EXCEPTION_IF_NULL(node);
   auto kernel_info = dynamic_cast<device::KernelInfo *>(node->kernel_info());
   MS_EXCEPTION_IF_NULL(kernel_info);
-
-  // Get output kernel tensor in device address if exists.
-  if (kernel_info->OutputAddrExist(output_idx)) {
-    return kernel_info->GetOutputAddr(output_idx)->kernel_tensor();
+  if (common::AnfAlgo::IsNopNode(node) && (skip_nop_node || common::AnfAlgo::IsNeedSkipNopOpAddr(node))) {
+    auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
+    return AnfRuntimeAlgorithm::GetPrevNodeOutputKernelTensor(cnode, 0, skip_nop_node);
   }
 
   // Get output kernel tensor if exists.
@@ -1047,12 +1049,6 @@ const KernelTensorPtr &AnfRuntimeAlgorithm::GetOrCreateOutputKernelTensor(const 
     MS_LOG(EXCEPTION) << "Failed to get kernel info for node:" << node->DebugString() << " index:" << output_idx;
   }
 
-  // Get output kernel tensor in device address if exists.
-  if (kernel_info->OutputAddrExist(output_idx)) {
-    const auto &kt = kernel_info->GetOutputAddr(output_idx)->kernel_tensor();
-    return kt;
-  }
-
   // Get output kernel tensor if exists.
   if (kernel_info->OutputKernelTensorExist(output_idx)) {
     return kernel_info->GetOutputKernelTensor(output_idx);
@@ -1067,9 +1063,10 @@ const KernelTensorPtr &AnfRuntimeAlgorithm::GetOrCreateOutputKernelTensor(const 
   return kernel_info->GetOutputKernelTensor(output_idx);
 }
 
-const KernelTensorPtr &AnfRuntimeAlgorithm::GetPrevNodeOutputKernelTensor(const AnfNodePtr &node, size_t input_idx) {
+const KernelTensorPtr &AnfRuntimeAlgorithm::GetPrevNodeOutputKernelTensor(const AnfNodePtr &node, size_t input_idx,
+                                                                          bool skip_nop_node) {
   KernelWithIndex kernel_with_index = common::AnfAlgo::GetPrevNodeOutput(node, input_idx, false);
-  return GetOutputKernelTensor(kernel_with_index.first, kernel_with_index.second);
+  return GetOutputKernelTensor(kernel_with_index.first, kernel_with_index.second, skip_nop_node);
 }
 
 const KernelTensorPtr &AnfRuntimeAlgorithm::GetOrCreatePrevNodeOutputKernelTensor(const AnfNodePtr &node,
@@ -1100,13 +1097,14 @@ std::vector<KernelTensor *> AnfRuntimeAlgorithm::GetOrCreateAllOutputKernelTenso
 
 KernelTensorPtr AnfRuntimeAlgorithm::CreateOutputKernelTensorWithDeviceInfo(
   const AnfWithOutIndex &node_with_index, void *const device_ptr, size_t size, const string &format, TypeId dtype_id,
-  const ShapeVector &host_shape, const std::string &device_name, uint32_t device_id, const UserDataPtr &user_data) {
+  const ShapeVector &host_shape, const std::string &device_name, uint32_t device_id, const UserDataPtr &user_data,
+  uint32_t stream_id) {
   abstract::BaseShapePtr shape;
   TypePtr type;
   ValuePtr value;
   TensorStorageInfoPtr info = nullptr;
-  if (ExistOutputKernelTensor(node_with_index.first, node_with_index.second)) {
-    const auto &kernel_tensor = GetOutputKernelTensor(node_with_index.first, node_with_index.second);
+  if (AnfAlgo::ExistOutputKernelTensor(node_with_index.first, node_with_index.second)) {
+    const auto &kernel_tensor = AnfAlgo::GetOutputKernelTensor(node_with_index.first, node_with_index.second, false);
     MS_EXCEPTION_IF_NULL(kernel_tensor);
     MS_EXCEPTION_IF_NULL(kernel_tensor->GetShape());
     MS_EXCEPTION_IF_NULL(kernel_tensor->GetType());
@@ -1116,22 +1114,60 @@ KernelTensorPtr AnfRuntimeAlgorithm::CreateOutputKernelTensorWithDeviceInfo(
     info = kernel_tensor->tensor_storage_info();
   }
   if (value == nullptr) {
-    std::tie(shape, type, value) = GetAbstractInfo(node_with_index.first, node_with_index.second);
+    std::tie(shape, type, value) = AnfAlgo::GetAbstractInfo(node_with_index.first, node_with_index.second);
   }
 
   MS_EXCEPTION_IF_NULL(shape);
   MS_EXCEPTION_IF_NULL(type);
-  MS_LOG(DEBUG) << "Create output kernel tensor for node: " << node_with_index.first->fullname_with_scope()
-                << ", output index: " << node_with_index.second << ", Shape: " << shape->ToString()
-                << ", Type: " << type->ToString() << ", Value: " << (value ? value->ToString() : "nullptr")
-                << ", host shape: " << host_shape;
+  MS_LOG(DEBUG) << "Create device address for node: " << node_with_index.first->fullname_with_scope()
+                << ", output index: " << node_with_index.second << ", device ptr: " << device_ptr << ", size: " << size
+                << ", host shape: " << host_shape << ", format: " << format << ", dtype id: " << dtype_id
+                << ", device name: " << device_name << ", device id: " << device_id << ", stream id: " << stream_id
+                << ", Shape: " << shape->ToString() << ", Type: " << type->ToString()
+                << ", Value: " << (value ? value->ToString() : "nullptr");
 
-  auto out_tensor = std::make_shared<kernel::KernelTensor>(shape, type, value, device_ptr, size, format, dtype_id,
-                                                           host_shape, device_name, device_id, user_data);
+  auto out_tensor = CreateKernelTensor(shape, type, value, device_ptr, size, format, dtype_id, host_shape, device_name,
+                                       device_id, user_data);
   if (info) {
     out_tensor->set_tensor_storage_info(info);
   }
   return out_tensor;
+}
+
+KernelTensorPtr AnfRuntimeAlgorithm::CreateKernelTensor(const abstract::BaseShapePtr &shape, const TypePtr &type,
+                                                        const ValuePtr &value, void *device_ptr, size_t size,
+                                                        const std::string &format, TypeId dtype_id,
+                                                        const ShapeVector &host_shape, const string &device_name,
+                                                        uint32_t device_id, const UserDataPtr &user_data) {
+  const auto &device_context =
+    device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_name, device_id});
+  MS_EXCEPTION_IF_NULL(device_context);
+  MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
+  auto device_address = device_context->device_res_manager_->CreateDeviceAddress(
+    device_ptr, size, host_shape, kernel::GetFormatFromStrToEnum(format), dtype_id, device_name, device_id, 0,
+    user_data);
+  // Currently, address_common and device_address are not unified. Kernel tensor may use info from address_common
+  // or device_address, so all info keep to kernel tensor.
+  // Only device address are keep for construct after unified.
+  auto kernel_tensor = std::make_shared<kernel::KernelTensor>(device_address, shape, type, value, device_ptr, size,
+                                                              format, dtype_id, host_shape, device_name, device_id);
+  return kernel_tensor;
+}
+
+KernelTensorPtr AnfRuntimeAlgorithm::CreateKernelTensor(void *device_ptr, size_t size, Format format, TypeId dtype_id,
+                                                        const ShapeVector &host_shape, const string &device_name,
+                                                        uint32_t device_id, const UserDataPtr &user_data) {
+  const auto &device_context =
+    device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_name, device_id});
+  MS_EXCEPTION_IF_NULL(device_context);
+  MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
+  auto device_address = device_context->device_res_manager_->CreateDeviceAddress(
+    device_ptr, size, host_shape, format, dtype_id, device_name, device_id, 0, user_data);
+  // Currently, address_common and device_address are not unified. Kernel tensor may use info from address_common
+  // or device_address, so all info keep to kernel tensor.
+  // Only device address are keep for construct after unified.
+  auto kernel_tensor = std::make_shared<kernel::KernelTensor>(device_address, dtype_id, host_shape);
+  return kernel_tensor;
 }
 
 std::vector<size_t> AnfRuntimeAlgorithm::GetNodeInputSizeList(const AnfNodePtr &node) {
@@ -1156,22 +1192,73 @@ size_t AnfRuntimeAlgorithm::GetOutputAddressNum(const AnfNodePtr &node) {
 }
 
 // set output device addr of anf_node
-void AnfRuntimeAlgorithm::SetOutputAddr(const DeviceAddressPtr &addr, size_t output_idx, AnfNode *node) {
+void AnfRuntimeAlgorithm::SetOutputAddr(const DeviceAddressPtr &addr, size_t output_idx, const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
   auto kernel_info = dynamic_cast<device::KernelInfo *>(node->kernel_info());
   MS_EXCEPTION_IF_NULL(kernel_info);
+  if (!kernel_info->OutputKernelTensorExist(output_idx)) {
+    MS_LOG(DEBUG) << "There is no kernel tensor for node: " << node->DebugString() << ", with index: " << output_idx
+                  << ", new a kernel tensor.";
+    abstract::BaseShapePtr shape;
+    TypePtr type;
+    ValuePtr value;
+    std::tie(shape, type, value) = GetAbstractInfo(node, output_idx);
+    MS_LOG(DEBUG) << "Create kernel tensor for node: " << node->fullname_with_scope()
+                  << ", output index: " << output_idx << ", device address: " << addr.get()
+                  << ", Shape: " << shape->ToString() << ", Type: " << type->ToString()
+                  << ", Value: " << (value ? value->ToString() : "nullptr");
+
+    MS_EXCEPTION_IF_NULL(shape);
+    MS_EXCEPTION_IF_NULL(type);
+    auto out_tensor = std::make_shared<kernel::KernelTensor>(shape, type, value);
+    out_tensor->set_device_address(addr);
+    out_tensor->set_device_synchronizer(addr->NewDeviceSynchronizer());
+    SetOutputKernelTensor(out_tensor, output_idx, node.get());
+  }
   if (!kernel_info->SetOutputAddr(addr, output_idx)) {
     MS_LOG(EXCEPTION) << "Node " << node->DebugString() << "set output index:" << output_idx << " fail."
                       << trace::DumpSourceLines(node);
   }
 }
 
-// set workspace device addr of anf_node
-void AnfRuntimeAlgorithm::SetWorkspaceAddr(const DeviceAddressPtr &addr, size_t output_idx, AnfNode *node) {
+// set output kernel tensor of anf node
+void AnfRuntimeAlgorithm::SetOutputKernelTensor(const KernelTensorPtr &kernel_tensor, size_t output_idx,
+                                                AnfNode *node) {
   MS_EXCEPTION_IF_NULL(node);
   auto kernel_info = dynamic_cast<device::KernelInfo *>(node->kernel_info());
   MS_EXCEPTION_IF_NULL(kernel_info);
+  if (!kernel_info->SetOutputKernelTensor(kernel_tensor, output_idx)) {
+    MS_LOG(EXCEPTION) << "Node " << node->DebugString() << "set output index:" << output_idx << " fail."
+                      << trace::DumpSourceLines(node);
+  }
+}
+
+// set workspace device addr of anf_node
+void AnfRuntimeAlgorithm::SetWorkspaceAddr(const DeviceAddressPtr &addr, size_t output_idx, const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
+  auto kernel_info = dynamic_cast<device::KernelInfo *>(node->kernel_info());
+  MS_EXCEPTION_IF_NULL(kernel_info);
+  if (!kernel_info->WorkspaceKernelTensorExist(output_idx)) {
+    auto out_tensor = std::make_shared<kernel::KernelTensor>(addr);
+    MS_LOG(DEBUG) << "Create kernel tensor: " << out_tensor << ", device address: " << addr;
+    if (!kernel_info->SetWorkspaceKernelTensor(out_tensor, output_idx)) {
+      MS_LOG(EXCEPTION) << "Node " << node->DebugString() << "set output index:" << output_idx << " fail."
+                        << trace::DumpSourceLines(node);
+    }
+  }
   if (!kernel_info->SetWorkspaceAddr(addr, output_idx)) {
+    MS_LOG(EXCEPTION) << "Node " << node->DebugString() << "set output index:" << output_idx << " fail."
+                      << trace::DumpSourceLines(node);
+  }
+}
+
+// set workspace kernel tensor of anf node
+void AnfRuntimeAlgorithm::SetWorkspaceKernelTensor(const KernelTensorPtr &kernel_tensor, size_t output_idx,
+                                                   AnfNode *node) {
+  MS_EXCEPTION_IF_NULL(node);
+  auto kernel_info = dynamic_cast<device::KernelInfo *>(node->kernel_info());
+  MS_EXCEPTION_IF_NULL(kernel_info);
+  if (!kernel_info->SetWorkspaceKernelTensor(kernel_tensor, output_idx)) {
     MS_LOG(EXCEPTION) << "Node " << node->DebugString() << "set output index:" << output_idx << " fail."
                       << trace::DumpSourceLines(node);
   }
@@ -1188,6 +1275,19 @@ DeviceAddress *AnfRuntimeAlgorithm::GetWorkspaceAddr(const AnfNodePtr &node, siz
                                       << "] workspace addr is not exist." << trace::DumpSourceLines(node);
   }
   return addr;
+}
+
+// get workspace kernel tensor of anf_node
+KernelTensorPtr AnfRuntimeAlgorithm::GetWorkspaceKernelTensor(const AnfNodePtr &node, size_t output_idx) {
+  MS_EXCEPTION_IF_NULL(node);
+  auto kernel_info = dynamic_cast<device::KernelInfo *>(node->kernel_info());
+  MS_EXCEPTION_IF_NULL(kernel_info);
+  const auto &kernel_tenosr = kernel_info->GetWorkspaceKernelTensor(output_idx);
+  if (kernel_tenosr == nullptr) {
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "Output_idx " << output_idx << " of node " << node->DebugString()
+                                      << "] workspace addr is not exist." << trace::DumpSourceLines(node);
+  }
+  return kernel_tenosr;
 }
 
 // get workspace device mutable addr of anf_node
@@ -1851,9 +1951,11 @@ bool AnfRuntimeAlgorithm::HasComputedDependInputNode(const CNodePtr &kernel) {
 void AnfRuntimeAlgorithm::UpdateOutputAddrSize(device::KernelInfo const *kernel_info, const CNodePtr &kernel) {
   MS_EXCEPTION_IF_NULL(kernel_info);
   MS_EXCEPTION_IF_NULL(kernel);
-  auto &output_addresses = kernel_info->output_address_list();
-  for (size_t i = 0; i < output_addresses.size(); ++i) {
-    auto output_address = output_addresses[i].get();
+  auto &output_kernel_tensors = kernel_info->output_kernel_tensor_list();
+  for (size_t i = 0; i < output_kernel_tensors.size(); ++i) {
+    auto output_kernel_tensor = output_kernel_tensors[i];
+    MS_EXCEPTION_IF_NULL(output_kernel_tensor);
+    auto output_address = output_kernel_tensor->device_address().get();
     MS_EXCEPTION_IF_NULL(output_address);
     auto output_addr_size = AnfAlgo::GetOutputTensorMemSize(kernel, i);
     MS_LOG(DEBUG) << "output size:" << output_addr_size << " index:" << i
@@ -2324,9 +2426,11 @@ void SetScalarToTensor(const std::vector<ValuePtr> &values, const tensor::Tensor
 }
 }  // namespace
 
-tensor::TensorPtr AnfRuntimeAlgorithm::CreateMapTensor(const DeviceAddressPtr &output_device_address) {
+tensor::TensorPtr AnfRuntimeAlgorithm::CreateMapTensor(const KernelTensorPtr &output_kernel_tensor) {
+  MS_EXCEPTION_IF_NULL(output_kernel_tensor);
+  const auto &output_device_address = output_kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(output_device_address);
-  const auto &user_data = output_device_address->user_data();
+  const auto &user_data = output_kernel_tensor->user_data();
   MS_EXCEPTION_IF_NULL(user_data);
   const auto &user_data_type = user_data->get<UserDataType>(kUserDataType);
   MS_EXCEPTION_IF_NULL(user_data_type);
@@ -2348,8 +2452,8 @@ tensor::TensorPtr AnfRuntimeAlgorithm::CreateMapTensor(const DeviceAddressPtr &o
 }
 
 tensor::TensorPtr AnfRuntimeAlgorithm::CreateMapTensor(const AnfNodePtr &output_node, size_t output_index) {
-  const auto &device_tensor = AnfAlgo::GetMutableOutputAddr(output_node, output_index, false);
-  return CreateMapTensor(device_tensor);
+  auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(output_node, output_index, false);
+  return CreateMapTensor(kernel_tensor);
 }
 
 // In dynamic sequence, since the number of members is not determined in compile time, the entire sequence needs

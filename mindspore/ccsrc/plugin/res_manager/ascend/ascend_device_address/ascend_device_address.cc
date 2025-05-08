@@ -195,8 +195,8 @@ bool IsOpNeedTransFormat(const std::string &format) {
   return op_need_trans_format.find(format) != op_need_trans_format.end();
 }
 
-void AscendDeviceAddress::DeviceSynchronizerInit() {
-  set_device_synchronizer(std::make_shared<AscendDeviceSynchronizer>());
+DeviceSynchronizerPtr AscendDeviceAddress::NewDeviceSynchronizer() {
+  return std::make_shared<AscendDeviceSynchronizer>();
 }
 
 void AscendDeviceAddress::SyncHostMemoryToDeviceWithCopySrc(void *dst, const void *src, uint64_t size,
@@ -952,16 +952,15 @@ void AscendDeviceAddress::ClearDeviceMemory() {
 
 void AscendDeviceAddress::CopyDeviceToHost(void *dst, uint64_t size) const {
   MS_EXCEPTION_IF_NULL(dst);
-  const auto hete_info = kernel_tensor_ == nullptr ? nullptr : kernel_tensor_->heterogeneous_info();
-  if (hete_info != nullptr) {
-    if (hete_info->host_ptr_ == nullptr) {
-      if (!hete_info->file_name_.empty()) {
+  if (hete_info_ != nullptr) {
+    if (hete_info_->host_ptr_ == nullptr) {
+      if (!hete_info_->file_name_.empty()) {
         MS_LOG(EXCEPTION) << "Copy from file to host is not supported yet.";
       } else {
         MS_LOG(EXCEPTION) << "Illegal heterogeneous info: empty file name and host ptr.";
       }
     }
-    SyncMemory(dst, hete_info->host_ptr_, size, ACL_MEMCPY_HOST_TO_HOST);
+    SyncMemory(dst, hete_info_->host_ptr_, size, ACL_MEMCPY_HOST_TO_HOST);
   } else {
     if (GetDevicePtr() == nullptr) {
       MS_LOG(EXCEPTION) << "Invalid device ptr for device address:" << this;
@@ -973,16 +972,15 @@ void AscendDeviceAddress::CopyDeviceToHost(void *dst, uint64_t size) const {
 void AscendDeviceAddress::CopyHostToDevice(const void *src, uint64_t size,
                                            const tensor::TensorDataPtr &tensor_data) const {
   MS_EXCEPTION_IF_NULL(src);
-  const auto hete_info = kernel_tensor_ == nullptr ? nullptr : kernel_tensor_->heterogeneous_info();
-  if (hete_info != nullptr) {
-    if (hete_info->host_ptr_ == nullptr) {
-      if (!hete_info->file_name_.empty()) {
+  if (hete_info_ != nullptr) {
+    if (hete_info_->host_ptr_ == nullptr) {
+      if (!hete_info_->file_name_.empty()) {
         MS_LOG(EXCEPTION) << "Copy from host to file is not supported yet.";
       } else {
         MS_LOG(EXCEPTION) << "Illegal heterogeneous info: empty file name and host ptr.";
       }
     }
-    SyncMemory(hete_info->host_ptr_, src, size, ACL_MEMCPY_HOST_TO_HOST, tensor_data);
+    SyncMemory(hete_info_->host_ptr_, src, size, ACL_MEMCPY_HOST_TO_HOST, tensor_data);
   } else {
     MS_EXCEPTION_IF_NULL(GetDevicePtr());
     if (type_id() == kObjectTypeString) {
@@ -1126,6 +1124,13 @@ bool AscendDeviceAddress::CopyDeviceToHostWithoutSyncStream(void *dst, size_t ds
     MS_LOG(WARNING) << "AclrtMemcpy failed, error code: " << ret;
   }
   return (ret != ACL_ERROR_NONE);
+}
+
+DeviceAddressPtr AscendDeviceAddress::CloneDeviceAddress() {
+  auto clone_device_address = std::make_shared<AscendDeviceAddress>();
+  DeviceAddress::CloneDeviceAddress(clone_device_address);
+  clone_device_address->set_communication_ptr(communication_ptr_);
+  return clone_device_address;
 }
 
 /*

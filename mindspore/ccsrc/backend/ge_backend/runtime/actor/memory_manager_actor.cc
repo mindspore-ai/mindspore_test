@@ -26,16 +26,18 @@ namespace mindspore {
 namespace ge_backend {
 namespace runtime {
 namespace {
-void OnMemoryAllocFinish(const AID &from_aid, OpContext<DeviceTensor> *const op_context) {
+void OnMemoryAllocFinish(const AID &from_aid, OpContext<KernelTensor> *const op_context) {
   if (!ActorDispatcher::is_memory_allocation_sync()) {
     ActorDispatcher::Send(from_aid, &MemoryAwareActor::OnMemoryAllocFinish, op_context);
   }
 }
 }  // namespace
 
-void MemoryManagerActor::AllocateMemory(const std::vector<DeviceTensor *> *alloc_list,
-                                        OpContext<DeviceTensor> *const op_context, const AID &from_aid) {
-  for (auto &device_tensor : *alloc_list) {
+void MemoryManagerActor::AllocateMemory(const std::vector<KernelTensorPtr> *alloc_list,
+                                        OpContext<KernelTensor> *const op_context, const AID &from_aid) {
+  for (auto &kernel_tensor : *alloc_list) {
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
+    auto device_tensor = kernel_tensor->device_address().get();
     MS_EXCEPTION_IF_NULL(device_tensor);
     // Unused device address need skip to reduce memory use.
     if (device_tensor->IsNotNeedAlloc()) {
@@ -73,8 +75,8 @@ void MemoryManagerActor::AllocateMemory(const std::vector<DeviceTensor *> *alloc
   }
 }
 
-void MemoryManagerActor::AllocateBatchMemory(const std::vector<DeviceTensor *> *alloc_list,
-                                             OpContext<DeviceTensor> *const op_context, const AID &from_aid) {
+void MemoryManagerActor::AllocateBatchMemory(const std::vector<KernelTensorPtr> *alloc_list,
+                                             OpContext<KernelTensor> *const op_context, const AID &from_aid) {
   uint64_t start_time = 0;
   PROFILER_START(start_time);
 
@@ -90,7 +92,9 @@ void MemoryManagerActor::AllocateBatchMemory(const std::vector<DeviceTensor *> *
   MS_EXCEPTION_IF_NULL(res_manager);
 
   for (size_t i = 0; i < (*alloc_list).size(); ++i) {
-    auto &device_tensor = (*alloc_list)[i];
+    auto &kernel_tensor = (*alloc_list)[i];
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
+    auto device_tensor = kernel_tensor->device_address().get();
     MS_EXCEPTION_IF_NULL(device_tensor);
     // Unused device address need skip to reduce memory use.
     if (device_tensor->IsNotNeedAlloc()) {
@@ -118,29 +122,31 @@ void MemoryManagerActor::AllocateBatchMemory(const std::vector<DeviceTensor *> *
   PROFILER_END(start_time, ProfilerModule::kRuntime, ProfilerEvent::kMemoryAlloc, from_aid.Name(), false);
 }
 
-void MemoryManagerActor::FreeMemory(const std::vector<DeviceTensor *> *free_list, OpContext<DeviceTensor> *,
+void MemoryManagerActor::FreeMemory(const std::vector<KernelTensorPtr> *free_list, OpContext<KernelTensor> *,
                                     const AID &from_aid) {
-  for (auto &device_tensor : *free_list) {
-    FreeMemoryByRefCount(device_tensor, from_aid.Name());
+  for (auto &kernel_tensor : *free_list) {
+    FreeMemoryByRefCount(kernel_tensor->device_address().get(), from_aid.Name());
   }
 }
 
-void MemoryManagerActor::FreeBatchMemory(const std::vector<DeviceTensor *> *free_list,
-                                         OpContext<DeviceTensor> *const op_context, const AID &from_aid) {
+void MemoryManagerActor::FreeBatchMemory(const std::vector<KernelTensorPtr> *free_list,
+                                         OpContext<KernelTensor> *const op_context, const AID &from_aid) {
   uint64_t start_time = 0;
   PROFILER_START(start_time);
   MS_EXCEPTION_IF_NULL(free_list);
   MS_EXCEPTION_IF_NULL(op_context);
 
   for (size_t i = 0; i < (*free_list).size(); ++i) {
-    auto &device_tensor = (*free_list)[i];
-    FreeMemoryByRefCount(device_tensor, from_aid.Name());
+    auto &kernel_tensor = (*free_list)[i];
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
+    auto &device_tensor = kernel_tensor->device_address();
+    FreeMemoryByRefCount(device_tensor.get(), from_aid.Name());
   }
 
   PROFILER_END(start_time, ProfilerModule::kRuntime, ProfilerEvent::kMemoryFree, from_aid.Name(), false);
 }
 
-void MemoryManagerActor::Wait(OpContext<DeviceTensor> *const op_context, const AID &from_aid) {
+void MemoryManagerActor::Wait(OpContext<KernelTensor> *const op_context, const AID &from_aid) {
   // Call back to the from actor to process.
   ActorDispatcher::Send(from_aid, &MemoryAwareActor::OnMemoryAllocFinish, op_context);
 }
@@ -183,7 +189,7 @@ void MemoryManagerActor::FreeMemoryByRefCount(DeviceTensor *const device_tensor,
 }
 
 void MemoryManagerActor::SetOpContextMemoryAllocFail(const std::string &kernel_name, size_t alloc_size,
-                                                     OpContext<DeviceTensor> *const op_context) {
+                                                     OpContext<KernelTensor> *const op_context) {
   MS_EXCEPTION_IF_NULL(op_context);
 
   std::lock_guard<std::mutex> locker(mem_alloc_failed_mutex_);

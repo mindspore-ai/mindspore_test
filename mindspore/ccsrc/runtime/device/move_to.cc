@@ -120,7 +120,7 @@ void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_te
   if (dst_addr == nullptr) {
     auto size = src_device_ptr != nullptr ? src_device_ptr->GetSize() : src_tensor->Size();
     auto type_id = src_device_ptr != nullptr ? src_device_ptr->type_id() : src_tensor->data_type();
-    auto host_shape = src_device_ptr != nullptr ? src_device_ptr->host_shape() : src_tensor->shape();
+    auto host_shape = src_tensor->shape();
     auto device_id = MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID);
     auto target_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({to, device_id});
     MS_EXCEPTION_IF_NULL(target_context);
@@ -129,9 +129,9 @@ void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_te
     if (target_context->device_res_manager_->GetStream(stream_id) == nullptr) {
       stream_id = kDefaultStreamIndex;
     }
-    auto kernel_tensor = std::make_shared<kernel::KernelTensor>(
-      nullptr, size, kernel::GetFormatFromStrToEnum(kOpFormat_DEFAULT), type_id, host_shape, to, device_id);
-    dst_addr = target_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
+    auto kernel_tensor = AnfAlgo::CreateKernelTensor(nullptr, size, kernel::GetFormatFromStrToEnum(kOpFormat_DEFAULT),
+                                                     type_id, host_shape, to, device_id);
+    dst_addr = kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(dst_addr);
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", memory::mem_pool::MemType::kPyNativeOutput,
                                                    dst_addr->GetSize(), dst_addr.get());

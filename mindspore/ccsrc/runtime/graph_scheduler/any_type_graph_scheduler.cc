@@ -343,11 +343,12 @@ void PrepareDataForValueNode(const AnfNodePtr &node, const DeviceContext *const 
     return;
   }
   MS_LOG(DEBUG) << "Prepare data for value node:" << node->DebugString() << " node addr:" << node;
-  auto device_tensors = DeviceTensorStore::GetInstance().Fetch(node.get());
-  for (const auto &device_tensor : device_tensors) {
-    if (device_tensor == nullptr) {
+  auto kernel_tensors = DeviceTensorStore::GetInstance().Fetch(node.get());
+  for (const auto &kernel_tensor : kernel_tensors) {
+    if (kernel_tensor == nullptr || kernel_tensor->device_address() == nullptr) {
       continue;
     }
+    const auto &device_tensor = kernel_tensor->device_address();
     const auto &real_device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
       {device_tensor->device_name(), device_tensor->device_id()});
     MS_EXCEPTION_IF_NULL(real_device_context);
@@ -362,8 +363,6 @@ void PrepareDataForValueNode(const AnfNodePtr &node, const DeviceContext *const 
                     << " for value node:" << node->DebugString();
     }
 
-    const auto &kernel_tensor = device_tensor->kernel_tensor();
-    MS_EXCEPTION_IF_NULL(kernel_tensor);
     if (!device_tensor->SyncHostToDevice(kernel_tensor->GetShapeVector(), kernel_tensor->size(),
                                          kernel_tensor->dtype_id(), kernel_tensor->GetValuePtr())) {
       MS_LOG_WITH_NODE(EXCEPTION, node) << "Failed to sync data for value node:" << node->DebugString();
@@ -413,13 +412,13 @@ void AnyTypeGraphScheduler::FixDeviceTensorStoreKeyInActor(const std::vector<Abs
         if (actor->device_contexts().size() != 0 && actor->device_contexts()[0] != nullptr &&
             DeviceTensorStore::GetInstance().Fetch(front_node.get(), actor->device_contexts_[0]->GetDeviceType()) ==
               nullptr) {
-          auto device_tensor =
+          auto kernel_tensor =
             DeviceTensorStore::GetInstance().Fetch(pair.second.get(), actor->device_contexts()[0]->GetDeviceType());
-          if (device_tensor != nullptr) {
+          if (kernel_tensor != nullptr) {
             MS_LOG(DEBUG) << "Add device tensor store for front node:" << front_node->DebugString()
-                          << " by node:" << pair.second->DebugString() << " device tensor:" << device_tensor
+                          << " by node:" << pair.second->DebugString() << " kernel tensor:" << kernel_tensor
                           << " for actor:" << actor->GetAID();
-            SchedulerHelper::AddDeviceTensorStore(front_node, device_tensor);
+            SchedulerHelper::AddDeviceTensorStore(front_node, kernel_tensor);
             PrepareDataForValueNode(pair.second, actor->device_contexts_[0]);
           } else {
             MS_LOG(WARNING) << "Failed to get device tensor store by front node:" << front_node->DebugString()
@@ -444,7 +443,7 @@ void AnyTypeGraphScheduler::FixDeviceTensorStoreKeyInActor(const std::vector<Abs
         auto fusion_actor = dynamic_cast<FusionActor *>(base_actor);
         MS_EXCEPTION_IF_NULL(fusion_actor);
         auto data_arrow = std::make_shared<DataArrow>(from_index, fusion_actor->GetAID(), pair.first);
-        auto data = std::make_unique<OpData<DeviceTensor>>(fusion_actor->GetAID(), nullptr, pair.first);
+        auto data = std::make_unique<OpData<KernelTensor>>(fusion_actor->GetAID(), nullptr, pair.first);
         any_type_kernel_actor->graph_input_data_[id].emplace_back(
           std::make_pair(std::move(data), kOutputDataFlagToFusion));
         fusion_actor->real_input_data_.emplace_back(actor.get(), pair.first);
@@ -462,7 +461,7 @@ void AnyTypeGraphScheduler::FixDeviceTensorStoreKeyInActor(const std::vector<Abs
           std::make_pair(any_type_kernel_actor->GetAID(), data_arrow.get()));
       } else {
         auto data_arrow = std::make_shared<DataArrow>(from_index, actor->GetAID(), pair.first);
-        auto data = std::make_unique<OpData<DeviceTensor>>(actor->GetAID(), nullptr, pair.first);
+        auto data = std::make_unique<OpData<KernelTensor>>(actor->GetAID(), nullptr, pair.first);
         any_type_kernel_actor->graph_input_data_arrows_[id].emplace_back(data_arrow);
         MS_LOG(DEBUG) << "Any type actor:" << any_type_kernel_actor->GetAID() << " current type:" << id
                       << " add graph input node:" << real_backend_node->DebugString() << " from index:" << from_index
@@ -578,27 +577,26 @@ void AnyTypeGraphScheduler::Optimize(const ActorSetPtr &actor_set,
                       << ", type:" << device_context->GetDeviceType()
                       << " for actor:" << any_type_kernel_actor->GetAID();
         const auto &device_addresses = DeviceTensorStore::GetInstance().Fetch(backend_node_with_index.first.get());
-        if (device_addresses.empty() || device_addresses[0] == nullptr ||
-            device_addresses[0]->kernel_tensor() == nullptr) {
+        const auto &kernel_tensors = DeviceTensorStore::GetInstance().Fetch(backend_node_with_index.first.get());
+        if (kernel_tensors.empty() || kernel_tensors[0] == nullptr || kernel_tensors[0]->device_address() == nullptr) {
           MS_LOG(WARNING) << "Failed to get device tensor store by backend node:"
                           << backend_node_with_index.first->DebugString() << " input index:" << iter->first
                           << " in graph output any type kernel actor:" << any_type_kernel_actor->GetAID();
           continue;
         }
 
-        const auto &kernel_tensor = std::make_shared<kernel::KernelTensor>(
-          device_addresses[0]->kernel_tensor()->GetShape(), device_addresses[0]->kernel_tensor()->GetType(),
-          backend_node_with_index.first->cast<ValueNodePtr>()->value(), nullptr,
-          device_addresses[0]->kernel_tensor()->size(), device_addresses[0]->kernel_tensor()->GetStringFormat(),
-          device_addresses[0]->kernel_tensor()->dtype_id(), device_addresses[0]->kernel_tensor()->GetShapeVector(),
+        const auto &kernel_tensor = AnfAlgo::CreateKernelTensor(
+          kernel_tensors[0]->GetShape(), kernel_tensors[0]->GetType(),
+          backend_node_with_index.first->cast<ValueNodePtr>()->value(), nullptr, kernel_tensors[0]->size(),
+          kernel_tensors[0]->GetStringFormat(), kernel_tensors[0]->dtype_id(), kernel_tensors[0]->GetShapeVector(),
           device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
         MS_LOG(INFO) << "Create kernel tensor without setting stream id.";
-        auto other_type_device_tensor = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
-        MS_LOG(DEBUG) << "Create device tensor:" << other_type_device_tensor
+        const auto &other_type_device_tensor = kernel_tensor->device_address();
+        MS_LOG(DEBUG) << "Create device tensor:" << other_type_device_tensor << ", kernel tensor: " << kernel_tensor
                       << " device type:" << device_context->GetDeviceType()
                       << " type:" << other_type_device_tensor->type_id()
                       << " for actor:" << any_type_kernel_actor->GetAID();
-        SchedulerHelper::AddDeviceTensorStore(backend_node_with_index.first, other_type_device_tensor);
+        SchedulerHelper::AddDeviceTensorStore(backend_node_with_index.first, kernel_tensor);
       }
 
       MS_LOG(INFO) << "Get backend:" << backend_node_with_index.first->DebugString()

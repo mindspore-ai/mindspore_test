@@ -3608,10 +3608,11 @@ void CopyCNodeInfo(const FuncGraphPtr &func_graph, const uint32_t &target_graph_
     // some check
     MS_EXCEPTION_IF_CHECK_FAIL(kernel_info->MutableKernelMod() == nullptr,
                                "Inline ERROR: " + ori_node->DebugString() + ", kernel mod is not nullptr");
-    MS_EXCEPTION_IF_CHECK_FAIL(kernel_info->output_address_list().empty(),
-                               "Inline ERROR: " + ori_node->DebugString() + ", output_address_list is not empty");
-    MS_EXCEPTION_IF_CHECK_FAIL(kernel_info->workspace_address_list().empty(),
-                               "Inline ERROR: " + ori_node->DebugString() + ", workspace_address_list is not empty");
+    MS_EXCEPTION_IF_CHECK_FAIL(kernel_info->output_kernel_tensor_list().empty(),
+                               "Inline ERROR: " + ori_node->DebugString() + ", output_kernel_tensor_list is not empty");
+    MS_EXCEPTION_IF_CHECK_FAIL(
+      kernel_info->workspace_kernel_tensor_list().empty(),
+      "Inline ERROR: " + ori_node->DebugString() + ", workspace_kernel_tensor_list is not empty");
 
     auto new_kernel_info = std::make_shared<device::KernelInfo>();
     auto builder = std::make_shared<kernel::KernelBuildInfo::KernelBuildInfoBuilder>(

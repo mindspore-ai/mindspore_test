@@ -23,13 +23,13 @@ void KernelResizeActor::Init() {
   KernelActor::Init();
 
   // Erase output and workspace device tensors which is released by kernel actor.
-  size_t input_num = input_device_tensors_.size();
+  size_t input_num = input_kernel_tensors_.size();
   if (memory_free_list_.size() > input_num) {
     memory_free_list_.erase(memory_free_list_.begin() + input_num, memory_free_list_.end());
   }
 }
 
-void KernelResizeActor::RunOpData(OpData<DeviceTensor> *const input_data, OpContext<DeviceTensor> *const context) {
+void KernelResizeActor::RunOpData(OpData<KernelTensor> *const input_data, OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(input_data);
   MS_EXCEPTION_IF_NULL(input_data->data_);
   MS_EXCEPTION_IF_NULL(context);
@@ -51,7 +51,7 @@ void KernelResizeActor::RunOpData(OpData<DeviceTensor> *const input_data, OpCont
   }
 }
 
-void KernelResizeActor::Run(OpContext<DeviceTensor> *const context) {
+void KernelResizeActor::Run(OpContext<KernelTensor> *const context) {
   try {
     ProfilerRecorder profiler(ProfilerModule::kKernel, ProfilerEvent::kKernelResize, GetAID().Name());
     // 1. Collect the inputs from input data.
@@ -63,7 +63,7 @@ void KernelResizeActor::Run(OpContext<DeviceTensor> *const context) {
     }
 
     // Collect the inputs from device tensor store.
-    FetchInputByTensorStore(&input_device_tensors_, &input_kernel_tensors_, &input_kernel_tensors_for_infer_,
+    FetchInputByTensorStore(&input_launch_tensors_, &input_kernel_tensors_, &input_kernel_tensors_for_infer_,
                             &memory_free_list_, context);
 
     if (!device_contexts_[0]->device_res_manager_->BindDeviceToCurrentThread(false)) {
@@ -86,7 +86,7 @@ void KernelResizeActor::Run(OpContext<DeviceTensor> *const context) {
   SendOutput(context);
 }
 
-void KernelResizeActor::SendMemoryFreeReq(OpContext<DeviceTensor> *const context) {
+void KernelResizeActor::SendMemoryFreeReq(OpContext<KernelTensor> *const context) {
   if (memory_free_list_.size() > 0) {
     MemoryManagerActor::GetInstance()->FreeMemory(&memory_free_list_, device_contexts_[0], context, GetAID());
   }

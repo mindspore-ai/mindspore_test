@@ -38,12 +38,12 @@ class SwitchActor : public ControlActor {
   ~SwitchActor() override = default;
 
  protected:
-  void FetchInput(OpContext<DeviceTensor> *const context) override;
+  void FetchInput(OpContext<KernelTensor> *const context) override;
 
  private:
   friend class ControlNodeScheduler;
   // Get the output branch index of the switch actor.
-  size_t GetIndex(const OpContext<DeviceTensor> *const context) const;
+  size_t GetIndex(const OpContext<KernelTensor> *const context) const;
   size_t index_{0};
 };
 

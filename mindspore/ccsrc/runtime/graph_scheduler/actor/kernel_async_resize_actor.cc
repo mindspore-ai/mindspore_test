@@ -30,7 +30,7 @@ void KernelAsyncResizeActor::Initialize() {
   Wait();
 }
 
-void KernelAsyncResizeActor::ResizeKernelMod(OpContext<DeviceTensor> *const context, KernelActor *kernel_actor) {
+void KernelAsyncResizeActor::ResizeKernelMod(OpContext<KernelTensor> *const context, KernelActor *kernel_actor) {
   try {
     kernel_actor->ExecuteResizeKernelModTask(context);
   } catch (const std::exception &e) {

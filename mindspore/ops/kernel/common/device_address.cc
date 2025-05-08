@@ -15,58 +15,52 @@
  */
 
 #include "common/device_address.h"
+#include "common/format_utils.h"
 
 namespace mindspore {
 namespace device {
 using ContinuousDeviceAddressesPtr = std::shared_ptr<std::vector<std::weak_ptr<DeviceAddress>>>;
 
-DeviceAddress::DeviceAddress(const KernelTensorPtr &kernel_tensor)
-    : kernel_tensor_(kernel_tensor), address_common_(kernel_tensor_->address_common()) {}
+DeviceAddress::DeviceAddress() { address_common_ = std::make_shared<AddressCommon>(); }
+DeviceAddress::DeviceAddress(const AddressCommonPtr &address_common) : address_common_(address_common) {}
 
-DeviceAddress::DeviceAddress(void *ptr, size_t size) {
-  address_common_ = std::make_shared<AddressCommon>(ptr, size);
-  kernel_tensor_ = std::make_shared<KernelTensor>();
-}
+DeviceAddress::DeviceAddress(void *ptr, size_t size) { address_common_ = std::make_shared<AddressCommon>(ptr, size); }
 
 DeviceAddress::DeviceAddress(void *ptr, size_t size, const string &format, TypeId type_id) {
-  kernel_tensor_ = std::make_shared<KernelTensor>();
-  address_common_ = kernel_tensor_->address_common();
+  address_common_ = std::make_shared<AddressCommon>();
   address_common_->pointer_ref_count_->set_ptr(ptr);
   address_common_->size_ = size;
   address_common_->dtype_id_ = type_id;
-  kernel_tensor_->SetStringFormat(format);
+  address_common_->format_ = kernel::GetFormatFromStrToEnum(format);
 }
 
 DeviceAddress::DeviceAddress(void *ptr, size_t size, const std::string &format, TypeId type_id,
                              const KernelWithIndex &node_index)
     : node_index_(node_index) {
-  kernel_tensor_ = std::make_shared<KernelTensor>();
-  address_common_ = kernel_tensor_->address_common();
+  address_common_ = std::make_shared<AddressCommon>();
   address_common_->pointer_ref_count_->set_ptr(ptr);
   address_common_->size_ = size;
   address_common_->dtype_id_ = type_id;
-  kernel_tensor_->SetStringFormat(format);
+  address_common_->format_ = kernel::GetFormatFromStrToEnum(format);
 }
 
 DeviceAddress::DeviceAddress(void *ptr, size_t size, const std::string &device_name, uint32_t device_id) {
-  kernel_tensor_ = std::make_shared<KernelTensor>();
-  address_common_ = kernel_tensor_->address_common();
+  address_common_ = std::make_shared<AddressCommon>();
   address_common_->pointer_ref_count_->set_ptr(ptr);
   address_common_->size_ = size;
   address_common_->device_name_ = device_name;
-  kernel_tensor_->set_device_id(device_id);
+  address_common_->device_id_ = device_id;
 }
 
 DeviceAddress::DeviceAddress(void *ptr, size_t size, const string &format, TypeId type_id,
                              const std::string &device_name, uint32_t device_id) {
-  kernel_tensor_ = std::make_shared<KernelTensor>();
-  address_common_ = kernel_tensor_->address_common();
+  address_common_ = std::make_shared<AddressCommon>();
   address_common_->pointer_ref_count_->set_ptr(ptr);
   address_common_->size_ = size;
   address_common_->device_name_ = device_name;
   address_common_->dtype_id_ = type_id;
-  kernel_tensor_->SetStringFormat(format);
-  kernel_tensor_->set_device_id(device_id);
+  address_common_->format_ = kernel::GetFormatFromStrToEnum(format);
+  address_common_->device_id_ = device_id;
 }
 
 DeviceAddress::DeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector, const Format &format,
@@ -78,14 +72,13 @@ DeviceAddress::DeviceAddress(void *ptr, size_t size, const ShapeVector &shape_ve
 DeviceAddress::DeviceAddress(void *ptr, size_t size, const std::string &format, TypeId type_id,
                              const KernelWithIndex &node_index, const std::string &device_name, uint32_t device_id)
     : node_index_(node_index) {
-  kernel_tensor_ = std::make_shared<KernelTensor>();
-  address_common_ = kernel_tensor_->address_common();
+  address_common_ = std::make_shared<AddressCommon>();
   address_common_->pointer_ref_count_->set_ptr(ptr);
   address_common_->size_ = size;
   address_common_->device_name_ = device_name;
   address_common_->dtype_id_ = type_id;
-  kernel_tensor_->SetStringFormat(format);
-  kernel_tensor_->set_device_id(device_id);
+  address_common_->format_ = kernel::GetFormatFromStrToEnum(format);
+  address_common_->device_id_ = device_id;
 }
 
 DeviceAddress::~DeviceAddress() {
@@ -103,25 +96,35 @@ DeviceAddress::~DeviceAddress() {
 
 std::string DeviceAddress::PrintInfo() const {
   std::ostringstream ofs;
-  ofs << this << " device type:" << GetDeviceType() << " kernel tensor:" << kernel_tensor_;
-  if (kernel_tensor_ != nullptr) {
-    ofs << " " << kernel_tensor_->PrintInfo();
+  ofs << this << " device type:" << GetDeviceType() << " address common:" << address_common_;
+  if (address_common_ != nullptr) {
+    ofs << " " << address_common_->PrintInfo();
   }
   ofs << " device address deleter:" << (deleter_ != nullptr) << " flag:" << flag_
       << " need sync user data:" << need_sync_user_data_ << " is view:" << is_view_;
   return ofs.str();
 }
 
-const KernelTensorPtr &DeviceAddress::kernel_tensor() const { return kernel_tensor_; }
-
-void DeviceAddress::set_kernel_tensor(const KernelTensorPtr &kernel_tensor) {
-  kernel_tensor_ = kernel_tensor;
-  address_common_ = kernel_tensor_->address_common();
-}
-
-void DeviceAddress::set_device_synchronizer(const DeviceSynchronizerPtr &device_synchronizer) {
-  MS_EXCEPTION_IF_NULL(kernel_tensor_);
-  kernel_tensor_->set_device_synchronizer(device_synchronizer);
+void DeviceAddress::CloneDeviceAddress(const DeviceAddressPtr &device_address) {
+  device_address->set_address_common(std::make_shared<AddressCommon>(*address_common_));
+  device_address->set_device_shape(device_shape_);
+  device_address->set_from_persistent_mem(from_persistent_mem_);
+  device_address->set_need_recycle(need_recycle_);
+  device_address->set_padding_type(padding_type_);
+  device_address->set_flag(flag_);
+  device_address->set_is_view(is_view_);
+  device_address->set_status(status_);
+  device_address->set_deleter(deleter_);
+  device_address->set_continuous_device_addresses(continuous_device_addresses_);
+  device_address->set_user_data(user_data_);
+  device_address->set_need_sync_user_data(need_sync_user_data_);
+  device_address->set_host_shape(host_shape_);
+  device_address->set_heterogeneous_info(hete_info_);
+  auto node_with_index = GetNodeIndex();
+  device_address->SetNodeIndex(node_with_index.first, node_with_index.second);
+  for (const auto &held_by_node : held_by_nodes_) {
+    device_address->AddHeldByNode(held_by_node);
+  }
 }
 
 const void *DeviceAddress::GetPtr() const {
@@ -141,9 +144,9 @@ void DeviceAddress::set_ptr(void *ptr) {
 }
 
 size_t DeviceAddress::GetSize() const {
-  auto kt = kernel_tensor();
-  if (kt && kt->tensor_storage_info() && kt->tensor_storage_info()->ori_size != 0) {
-    return kt->tensor_storage_info()->ori_size;
+  if (address_common_ && address_common_->tensor_storage_info_ &&
+      (address_common_->tensor_storage_info_->ori_size != 0)) {
+    return address_common_->tensor_storage_info_->ori_size;
   }
   return size();
 }
@@ -177,10 +180,6 @@ bool DeviceAddress::is_ptr_persisted() const { return address_common_->pointer_r
 void DeviceAddress::set_is_ptr_persisted(bool is_ptr_persisted) {
   address_common_->pointer_ref_count_->set_is_ptr_persisted(is_ptr_persisted);
 }
-
-void DeviceAddress::set_host_shape(const ShapeVector &shape) { kernel_tensor_->set_host_shape(shape); }
-
-const ShapeVector &DeviceAddress::host_shape() const { return kernel_tensor_->host_shape(); }
 
 void DeviceAddress::set_device_shape(const ShapeVector &shape) { device_shape_ = shape; }
 
@@ -220,12 +219,20 @@ void DeviceAddress::set_tensor_storage_info(const TensorStorageInfoPtr &tensor_s
 }
 
 const std::string &DeviceAddress::device_name() const { return address_common_->device_name_; }
+void DeviceAddress::set_device_name(const std::string &device_name) { address_common_->device_name_ = device_name; }
 
 uint32_t DeviceAddress::device_id() const { return address_common_->device_id_; }
+void DeviceAddress::set_device_id(uint32_t device_id) { address_common_->device_id_ = device_id; }
 
 void DeviceAddress::set_stream_id(uint32_t stream_id) { address_common_->stream_id_ = stream_id; }
 
 const uint32_t DeviceAddress::stream_id() const { return address_common_->stream_id_; }
+
+bool DeviceAddress::managed_by_somas() const { return address_common_->managed_by_somas_; }
+
+void DeviceAddress::set_managed_by_somas(bool managed_by_somas) {
+  address_common_->managed_by_somas_ = managed_by_somas;
+}
 
 void DeviceAddress::AddHeldByNode(const std::weak_ptr<ValueNode> &value_node) {
   (void)held_by_nodes_.emplace_back(value_node);
@@ -274,6 +281,20 @@ void DeviceAddress::set_ref_count(size_t ref_count) const {
 }
 
 size_t DeviceAddress::ref_count() const { return address_common_->pointer_ref_count_->ref_count(); }
+
+void DeviceAddress::set_ref_count_without_hold(const PointerRefCountPtr &ptr_ref_cnt) {
+  if (ptr_ref_cnt == nullptr || address_common_ == nullptr || address_common_->pointer_ref_count_ == nullptr) {
+    return;
+  }
+  address_common_->pointer_ref_count_->set_ptr(ptr_ref_cnt->ptr());
+  address_common_->pointer_ref_count_->set_from_mem_pool(ptr_ref_cnt->from_mem_pool());
+  address_common_->pointer_ref_count_->set_original_ref_count(ptr_ref_cnt->original_ref_count());
+  address_common_->pointer_ref_count_->set_ref_count(ptr_ref_cnt->ref_count());
+  address_common_->pointer_ref_count_->set_dynamic_ref_count(ptr_ref_cnt->dynamic_ref_count());
+  address_common_->pointer_ref_count_->set_deleter(ptr_ref_cnt->deleter());
+  address_common_->pointer_ref_count_->set_is_ptr_persisted(ptr_ref_cnt->is_ptr_persisted());
+  address_common_->pointer_ref_count_->set_new_ref_count(ptr_ref_cnt->new_ref_count());
+}
 
 void DeviceAddress::ResetRefCount() { address_common_->pointer_ref_count_->ResetRefCount(); }
 
@@ -354,19 +375,26 @@ void DeviceAddress::Swap(DeviceAddress *other) {
   SetDevicePtr(nullptr);
   this->set_from_mem_pool(false);
   deleter_ = nullptr;
-  kernel_tensor()->set_task_id_on_stream(other->kernel_tensor()->task_id_on_stream());
-  kernel_tensor()->set_managed_by_somas(other->kernel_tensor()->managed_by_somas());
-  if (this->kernel_tensor()->heterogeneous_info() != nullptr) {
-    other->kernel_tensor()->set_heterogeneous_info(std::make_shared<kernel::HeterogeneousInfo>());
-    *(other->kernel_tensor()->heterogeneous_info()) = *(this->kernel_tensor()->heterogeneous_info());
-    this->kernel_tensor()->heterogeneous_info()->host_ptr_ = nullptr;
-    this->kernel_tensor()->heterogeneous_info()->file_name_ = "";
+  set_managed_by_somas(other->managed_by_somas());
+  if (this->heterogeneous_info() != nullptr) {
+    other->set_heterogeneous_info(std::make_shared<HeterogeneousInfo>());
+    *(other->heterogeneous_info()) = *(this->heterogeneous_info());
+    this->heterogeneous_info()->host_ptr_ = nullptr;
+    this->heterogeneous_info()->file_name_ = "";
   }
 }
 
-const UserDataPtr &DeviceAddress::user_data() const { return kernel_tensor_->user_data(); }
+const UserDataPtr &DeviceAddress::user_data() const { return user_data_; }
 
-void DeviceAddress::set_user_data(const UserDataPtr &user_data) { kernel_tensor_->set_user_data(user_data); }
+void DeviceAddress::set_user_data(const UserDataPtr &user_data) { user_data_ = user_data; }
+
+const ShapeVector &DeviceAddress::host_shape() const { return host_shape_; }
+
+void DeviceAddress::set_host_shape(const ShapeVector &host_shape) { host_shape_ = host_shape; }
+
+HeterogeneousInfoPtr DeviceAddress::heterogeneous_info() const { return hete_info_; }
+
+void DeviceAddress::set_heterogeneous_info(HeterogeneousInfoPtr hete_info) { hete_info_ = hete_info; }
 
 size_t DeviceAddress::flag() const { return flag_; }
 
@@ -398,6 +426,7 @@ void DeviceAddress::set_is_view(bool is_view) { is_view_ = is_view; }
 bool DeviceAddress::is_view() const { return is_view_; }
 
 AddressCommonPtr DeviceAddress::address_common() const { return address_common_; }
+void DeviceAddress::set_address_common(const AddressCommonPtr &address_common) { address_common_ = address_common; }
 
 ContinuousDeviceAddressesPtr DeviceAddress::continuous_device_addresses() const { return continuous_device_addresses_; }
 

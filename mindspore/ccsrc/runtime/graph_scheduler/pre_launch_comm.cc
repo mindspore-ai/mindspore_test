@@ -116,7 +116,7 @@ void PreLaunchComm::Launch(std::vector<LaunchCommNode> &launch_hccl_nodes, Sorte
     for (const auto &input_kernel_tensor : input_kernel_tensors) {
       MS_EXCEPTION_IF_NULL(input_kernel_tensor);
       auto kernel_tensor = std::make_shared<KernelTensor>(*input_kernel_tensor);
-      const auto &new_device_tensor = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
+      const auto &new_device_tensor = kernel_tensor->device_address();
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "AllocMemoryForPreLaunchComm",
                                                      memory::mem_pool::MemType::kOther, new_device_tensor->GetSize(),
                                                      new_device_tensor.get());
@@ -127,7 +127,7 @@ void PreLaunchComm::Launch(std::vector<LaunchCommNode> &launch_hccl_nodes, Sorte
     for (const auto &output_kernel_tensor : output_kernel_tensors) {
       MS_EXCEPTION_IF_NULL(output_kernel_tensor);
       auto kernel_tensor = std::make_shared<KernelTensor>(*output_kernel_tensor);
-      const auto &new_device_tensor = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
+      const auto &new_device_tensor = kernel_tensor->device_address();
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "AllocMemoryForPreLaunchComm",
                                                      memory::mem_pool::MemType::kOther, new_device_tensor->GetSize(),
                                                      new_device_tensor.get());

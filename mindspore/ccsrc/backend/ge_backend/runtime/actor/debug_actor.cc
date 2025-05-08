@@ -18,6 +18,7 @@
 #include <vector>
 #include <memory>
 #include <string>
+#include <algorithm>
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 #ifdef ENABLE_DEBUGGER
@@ -30,22 +31,37 @@ namespace mindspore {
 namespace ge_backend {
 namespace runtime {
 
-void DebugActor::DebugPreLaunch(const AnfNodePtr &node, const std::vector<DeviceTensor *> &input_device_tensors,
-                                const std::vector<DeviceTensor *> &output_device_tensors,
-                                OpContext<DeviceTensor> *const op_context, const AID *) {
+void DebugActor::DebugPreLaunch(const AnfNodePtr &node, const std::vector<KernelTensorPtr> &input_kernel_tensors,
+                                const std::vector<KernelTensorPtr> &output_kernel_tensors,
+                                OpContext<KernelTensor> *const op_context, const AID *) {
   MS_EXCEPTION_IF_NULL(node);
   MS_EXCEPTION_IF_NULL(op_context);
 }
 
-void DebugActor::DebugPostLaunch(const AnfNodePtr &node, const std::vector<DeviceTensor *> &input_device_tensors,
-                                 const std::vector<DeviceTensor *> &output_device_tensors,
-                                 OpContext<DeviceTensor> *const op_context, const AID *) {
+/*
+ * Feature group: Dump, Online debugger.
+ * Target device group: GPU.
+ * Runtime category: MindRT.
+ * Description: Load and read data for the given node if needed. Dump the node if dump is enabled and free the loaded
+ * memory after the dump (for GPU and ascend kernel-by-kernel).
+ */
+void DebugActor::DebugPostLaunch(const AnfNodePtr &node, const std::vector<KernelTensorPtr> &input_kernel_tensors,
+                                 const std::vector<KernelTensorPtr> &output_kernel_tensors,
+                                 OpContext<KernelTensor> *const op_context, const AID *) {
+  std::vector<KernelTensor *> raw_input_kernel_tensors;
+  raw_input_kernel_tensors.resize(input_kernel_tensors.size());
+  std::vector<KernelTensor *> raw_output_kernel_tensors;
+  raw_output_kernel_tensors.resize(output_kernel_tensors.size());
+  std::transform(input_kernel_tensors.begin(), input_kernel_tensors.end(), raw_input_kernel_tensors.begin(),
+                 [](const KernelTensorPtr &ptr) { return ptr.get(); });
+  std::transform(output_kernel_tensors.begin(), output_kernel_tensors.end(), raw_output_kernel_tensors.begin(),
+                 [](const KernelTensorPtr &ptr) { return ptr.get(); });
   MS_EXCEPTION_IF_NULL(node);
   MS_EXCEPTION_IF_NULL(op_context);
 }
 void DebugActor::DebugOnStepBegin(const std::vector<KernelGraphPtr> &graphs,
                                   const std::vector<AnfNodePtr> &origin_parameters_order,
-                                  OpContext<DeviceTensor> *const op_context, const AID *) {
+                                  OpContext<KernelTensor> *const op_context, const AID *) {
   MS_LOG(INFO) << "Debug on step begin.";
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
@@ -60,7 +76,7 @@ void DebugActor::DebugOnStepBegin(const std::vector<KernelGraphPtr> &graphs,
   }
 }
 
-void DebugActor::DebugOnStepEnd(OpContext<DeviceTensor> *const, const AID *, int total_running_count, int sink_size) {
+void DebugActor::DebugOnStepEnd(OpContext<KernelTensor> *const, const AID *, int total_running_count, int sink_size) {
   MS_LOG(INFO) << "Debug on step end. total_running_count is: " << total_running_count;
   step_count_ = total_running_count;
   auto context = MsContext::GetInstance();

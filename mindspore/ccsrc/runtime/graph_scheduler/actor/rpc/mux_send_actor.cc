@@ -19,7 +19,7 @@
 
 namespace mindspore {
 namespace runtime {
-bool MuxSendActor::LaunchKernel(OpContext<DeviceTensor> *const context, bool is_skip_launch) {
+bool MuxSendActor::LaunchKernel(OpContext<KernelTensor> *const context, bool is_skip_launch) {
   if (is_skip_launch) {
     return KernelActor::LaunchKernel(context, is_skip_launch);
   }
@@ -30,7 +30,7 @@ bool MuxSendActor::LaunchKernel(OpContext<DeviceTensor> *const context, bool is_
   }
 
   // Send input data(inter-process data is the input of the Send kernel) to peers.
-  if (input_device_tensors_.empty()) {
+  if (input_kernel_tensors_.empty()) {
     MS_LOG(ERROR) << "Send kernel has no output tensor.";
     return false;
   }

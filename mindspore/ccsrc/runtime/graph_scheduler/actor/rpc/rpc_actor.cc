@@ -18,7 +18,7 @@
 
 namespace mindspore {
 namespace runtime {
-void RpcActor::SetOpcontext(OpContext<DeviceTensor> *const op_context) { op_context_ = op_context; }
+void RpcActor::SetOpcontext(OpContext<KernelTensor> *const op_context) { op_context_ = op_context; }
 
 void RpcActor::set_actor_route_table_proxy(const ActorRouteTableProxyPtr &proxy) { actor_route_table_proxy_ = proxy; }
 

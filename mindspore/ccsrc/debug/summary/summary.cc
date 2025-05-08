@@ -101,7 +101,7 @@ void Summary::SummaryTensor(KernelGraph *graph) {
     auto node = output_item.second.first;
     size_t index = IntToSize(output_item.second.second);
     auto address = AnfAlgo::GetOutputAddr(node, index, false);
-    auto kt = AnfAlgo::GetOutputKernelTensor(node, index);
+    auto kt = AnfAlgo::GetOutputKernelTensor(node, index, false);
     auto shape = kt->GetShapeVector();
     TypeId type_id = kt->dtype_id();
     tensor::TensorPtr tensor = std::make_shared<tensor::Tensor>(type_id, shape);

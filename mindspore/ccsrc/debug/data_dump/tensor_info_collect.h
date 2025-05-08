@@ -21,22 +21,24 @@
 #include <string>
 #include <map>
 
-#include "common/device_address.h"
+#include "common/kernel.h"
 
 namespace mindspore {
+using KernelTensor = kernel::KernelTensor;
+using KernelTensorPtr = kernel::KernelTensorPtr;
 
 class TensorInfoForDump {
  public:
   TensorInfoForDump(std::string io, uint32_t io_index, std::string format, TypeId host_type,
-                    const ShapeVector &host_shape, size_t device_size, device::DeviceAddress *device_tensor)
+                    const ShapeVector &host_shape, size_t device_size, KernelTensor *kernel_tensor)
       : io(io),
         io_index(io_index),
         format(format),
         host_type(host_type),
         host_shape(host_shape),
         device_size(device_size),
-        device_tensor(device_tensor) {
-    this->device_ptr = device_tensor->GetPtr();
+        kernel_tensor(kernel_tensor) {
+    this->device_ptr = kernel_tensor->device_address()->GetPtr();
   }
 
   std::string io;
@@ -46,9 +48,9 @@ class TensorInfoForDump {
   TypeId host_type;
   const ShapeVector host_shape;
   size_t device_size;
-  device::DeviceAddress *device_tensor;
+  KernelTensor *kernel_tensor;
   const void *device_ptr;
-  std::map<std::string, std::vector<device::DeviceAddressPtr>> stat_results;
+  std::map<std::string, std::vector<KernelTensorPtr>> stat_results;
 };
 
 class TensorInfoCommForDump {

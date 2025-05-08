@@ -23,13 +23,13 @@
 #include "utils/hash_map.h"
 #include "utils/ms_utils.h"
 #include "include/backend/visible.h"
-#include "common/device_address.h"
+#include "common/kernel.h"
 
 namespace mindspore {
 namespace runtime {
-using DeviceTensor = mindspore::device::DeviceAddress;
+using KernelTensor = mindspore::kernel::KernelTensor;
 using DeviceTensorType = mindspore::device::DeviceType;
-using DeviceTensorPtr = std::shared_ptr<DeviceTensor>;
+using KernelTensorPtr = std::shared_ptr<KernelTensor>;
 
 // The device tensor mainly includes address ptr, size and reference count,
 // which represents the basic data structure of kernel launch and transfers between actors.
@@ -40,16 +40,17 @@ class BACKEND_COMMON_EXPORT DeviceTensorStore {
   static DeviceTensorStore &GetInstance();
 
   //  Support value modifiable.
-  void Insert(AnfNode *key, const DeviceTensorPtr &value) {
+  void Insert(AnfNode *key, const KernelTensorPtr &value) {
     MS_EXCEPTION_IF_NULL(key);
     MS_EXCEPTION_IF_NULL(value);
     std::unique_lock<std::shared_mutex> lock(map_mutex_);
-    const auto &iter = device_tensors_.find(key);
-    value->set_new_ref_count(SIZE_MAX);
-    MS_LOG(DEBUG) << "Device tensor store set ref count to max for device address:" << value
-                  << " node:" << key->DebugString();
-    if (iter == device_tensors_.end()) {
-      device_tensors_[key].emplace_back(value);
+    const auto &iter = kernel_tensors_.find(key);
+    MS_EXCEPTION_IF_NULL(value->device_address());
+    value->device_address()->set_new_ref_count(SIZE_MAX);
+    MS_LOG(DEBUG) << "Device tensor store set ref count to max for kernel tensor:" << value
+                  << ", device address: " << value->device_address().get() << " node:" << key->DebugString();
+    if (iter == kernel_tensors_.end()) {
+      kernel_tensors_[key].emplace_back(value);
       return;
     }
 
@@ -72,33 +73,33 @@ class BACKEND_COMMON_EXPORT DeviceTensorStore {
   void Remove(AnfNode *key) {
     MS_EXCEPTION_IF_NULL(key);
     std::unique_lock<std::shared_mutex> lock(map_mutex_);
-    const auto &iter = device_tensors_.find(key);
-    if (iter != device_tensors_.end()) {
-      (void)device_tensors_.erase(iter);
+    const auto &iter = kernel_tensors_.find(key);
+    if (iter != kernel_tensors_.end()) {
+      (void)kernel_tensors_.erase(iter);
     }
   }
 
-  std::vector<DeviceTensorPtr> Fetch(AnfNode *key) const {
+  std::vector<KernelTensorPtr> Fetch(AnfNode *key) const {
     MS_EXCEPTION_IF_NULL(key);
     std::shared_lock<std::shared_mutex> lock(map_mutex_);
-    const auto &iter = device_tensors_.find(key);
-    if (iter != device_tensors_.end()) {
+    const auto &iter = kernel_tensors_.find(key);
+    if (iter != kernel_tensors_.end()) {
       return iter->second;
     } else {
-      std::vector<DeviceTensorPtr> empty_value;
+      std::vector<KernelTensorPtr> empty_value;
       return empty_value;
     }
   }
 
-  DeviceTensorPtr Fetch(AnfNode *key, DeviceTensorType value_type) const {
+  KernelTensorPtr Fetch(AnfNode *key, DeviceTensorType value_type) const {
     MS_EXCEPTION_IF_NULL(key);
     std::shared_lock<std::shared_mutex> lock(map_mutex_);
-    const auto &iter = device_tensors_.find(key);
-    if (iter != device_tensors_.end()) {
-      for (const auto &device_tensor : iter->second) {
-        MS_EXCEPTION_IF_NULL(device_tensor);
-        if (device_tensor->GetDeviceType() == value_type) {
-          return device_tensor;
+    const auto &iter = kernel_tensors_.find(key);
+    if (iter != kernel_tensors_.end()) {
+      for (const auto &kernel_tensor : iter->second) {
+        MS_EXCEPTION_IF_NULL(kernel_tensor);
+        if (kernel_tensor->GetDeviceType() == value_type) {
+          return kernel_tensor;
         }
       }
     }
@@ -107,10 +108,10 @@ class BACKEND_COMMON_EXPORT DeviceTensorStore {
 
   void Clear() {
     std::unique_lock<std::shared_mutex> lock(map_mutex_);
-    device_tensors_.clear();
+    kernel_tensors_.clear();
   }
 
-  const mindspore::HashMap<AnfNode *, std::vector<DeviceTensorPtr>> &GetAll() const { return device_tensors_; }
+  const mindspore::HashMap<AnfNode *, std::vector<KernelTensorPtr>> &GetAll() const { return kernel_tensors_; }
 
  private:
   DeviceTensorStore() = default;
@@ -119,7 +120,7 @@ class BACKEND_COMMON_EXPORT DeviceTensorStore {
 
   // The data storage of device tensor. Key is the anf node, value is the vector which may contains the device
   // tensors from different devices.
-  mindspore::HashMap<AnfNode *, std::vector<DeviceTensorPtr>> device_tensors_;
+  mindspore::HashMap<AnfNode *, std::vector<KernelTensorPtr>> kernel_tensors_;
   // Read/Write lock for map.
   mutable std::shared_mutex map_mutex_;
 };

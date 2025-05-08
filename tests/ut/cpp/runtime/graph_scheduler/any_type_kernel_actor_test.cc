@@ -123,22 +123,20 @@ TEST_F(AnyTypeKernelActorTest, RunOpData) {
   DataType input_1 = 2.0;
   ShapeVector shape = {1};
 
-  OpContext<DeviceAddress> op_context;
+  OpContext<kernel::KernelTensor> op_context;
   std::vector<Promise<int>> result(1);
   op_context.sequential_num_ = 140429;
   op_context.results_ = &result;
 
-  auto kernel_tensor0 = std::make_shared<kernel::KernelTensor>(
+  auto kernel_tensor0 = AnfAlgo::CreateKernelTensor(
     &input_0, sizeof(DataType), Format::DEFAULT_FORMAT, TypeId::kNumberTypeFloat32, shape,
     device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
-  auto device_address0 = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor0);
-  auto op_data0 = std::make_shared<OpData<DeviceTensor>>(any_type_kernel_actor->GetAID(), device_address0.get(), 0);
+  auto op_data0 = std::make_shared<OpData<KernelTensor>>(any_type_kernel_actor->GetAID(), kernel_tensor0, 0);
 
-  auto kernel_tensor1 = std::make_shared<kernel::KernelTensor>(
+  auto kernel_tensor1 = AnfAlgo::CreateKernelTensor(
     &input_1, sizeof(DataType), Format::DEFAULT_FORMAT, TypeId::kNumberTypeFloat32, shape,
     device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
-  auto device_address1 = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor1);
-  auto op_data1 = std::make_shared<OpData<DeviceTensor>>(any_type_kernel_actor->GetAID(), device_address1.get(), 1);
+  auto op_data1 = std::make_shared<OpData<KernelTensor>>(any_type_kernel_actor->GetAID(), kernel_tensor1, 1);
 
   any_type_kernel_actor->input_datas_num_ = 2;
   any_type_kernel_actor->any_type_parameter_indexes_.emplace_back(1);

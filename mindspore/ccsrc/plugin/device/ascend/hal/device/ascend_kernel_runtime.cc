@@ -41,6 +41,7 @@
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/common/utils/parallel_context.h"
 #include "include/common/utils/comm_manager.h"
+#include "runtime/graph_scheduler/scheduler_helper.h"
 #ifdef MEM_REUSE_DEBUG
 #include "backend/common/mem_reuse/mem_reuse_checker.h"
 #include "include/common/debug/env_config_parser.h"
@@ -107,7 +108,7 @@ struct TbeLaunchKernelModRegister {
             MS_LOG_WITH_NODE(EXCEPTION, kernel)
               << "MallocMem from memory pool failed. Node info :" << kernel->fullname_with_scope();
           }
-          const KernelTensorPtr &workspace = device_address_ptr->kernel_tensor();
+          const KernelTensorPtr &workspace = std::make_shared<KernelTensor>(device_address_ptr);
           (void)workspaces->emplace_back(workspace.get());
         }
       });
@@ -329,13 +330,13 @@ DeviceAddressPtr AscendKernelRuntime::CreateDeviceAddress(void *device_ptr, size
 
   const auto kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
     {node_index.first, node_index.second}, device_ptr, device_size, format, type_id, {}, kAscendDevice, device_id);
-  auto ascend_device_address_ptr = std::make_shared<AscendDeviceAddress>(kernel_tensor);
+  auto ascend_device_address_ptr = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(ascend_device_address_ptr);
   kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(node_index.first));
 
   ascend_device_address_ptr->SetNodeIndex(node_index.first, node_index.second);
   ascend_device_address_ptr->set_is_ptr_persisted(true);
-  ascend_device_address_ptr->set_device_synchronizer(std::make_shared<AscendDeviceSynchronizer>());
+  kernel_tensor->set_device_synchronizer(std::make_shared<AscendDeviceSynchronizer>());
 
   return ascend_device_address_ptr;
 }
@@ -465,7 +466,7 @@ bool AscendKernelRuntime::RunDynamicKernelAsync(const session::KernelGraph &grap
             << "MallocMem from memory pool failed. Node info :" << kernel->fullname_with_scope();
         }
 
-        const auto &workspace = device_address_ptr->kernel_tensor();
+        const auto &workspace = std::make_shared<KernelTensor>(device_address_ptr);
         (void)workspaces.emplace_back(workspace.get());
       }
     } else {

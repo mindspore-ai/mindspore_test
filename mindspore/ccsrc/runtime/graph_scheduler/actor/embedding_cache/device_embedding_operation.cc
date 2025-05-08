@@ -20,6 +20,7 @@
 #include "include/backend/optimizer/helper.h"
 #include "backend/common/optimizer/dynamic_shape/dynamic_shape_helper.h"
 #include "runtime/graph_scheduler/actor/embedding_cache/embedding_cache_prefetch_actor.h"
+#include "runtime/graph_scheduler/scheduler_helper.h"
 
 namespace mindspore {
 namespace runtime {
@@ -180,11 +181,11 @@ bool DeviceEmbeddingOperation::MemcpyHostToDeviceAsync(void *dst, const void *sr
   void *device_ptr = dst;
   const void *host_ptr = src;
 
-  auto kernel_tensor = std::make_shared<kernel::KernelTensor>(
-    device_ptr, size, Format::DEFAULT_FORMAT, kTypeUnknown, ShapeVector(),
-    device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
+  auto kernel_tensor = AnfAlgo::CreateKernelTensor(device_ptr, size, Format::DEFAULT_FORMAT, kTypeUnknown,
+                                                   ShapeVector(), device_context->device_context_key().device_name_,
+                                                   device_context->device_context_key().device_id_);
   kernel_tensor->set_stream_id(stream_id);
-  auto device_address = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
+  auto device_address = kernel_tensor->device_address();
   MS_ERROR_IF_NULL(device_address);
   RETURN_IF_FALSE_WITH_LOG(device_address->AsyncHostToDevice({}, size, kTypeUnknown, host_ptr, stream_id),
                            "Async memcpy host to device failed.");
@@ -202,11 +203,11 @@ bool DeviceEmbeddingOperation::MemcpyDeviceToHostAsync(void *dst, const void *sr
   void *device_ptr = const_cast<void *>(src);
   void *host_ptr = dst;
 
-  auto kernel_tensor = std::make_shared<kernel::KernelTensor>(
-    device_ptr, size, Format::DEFAULT_FORMAT, kTypeUnknown, ShapeVector(),
-    device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
+  auto kernel_tensor = AnfAlgo::CreateKernelTensor(device_ptr, size, Format::DEFAULT_FORMAT, kTypeUnknown,
+                                                   ShapeVector(), device_context->device_context_key().device_name_,
+                                                   device_context->device_context_key().device_id_);
   kernel_tensor->set_stream_id(stream_id);
-  auto device_address = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
+  auto device_address = kernel_tensor->device_address();
   MS_ERROR_IF_NULL(device_address);
   RETURN_IF_FALSE_WITH_LOG(device_address->AsyncDeviceToHost({}, size, kTypeUnknown, host_ptr, stream_id),
                            "Async memcpy device to host failed.");
@@ -273,7 +274,7 @@ ValueNodePtr DeviceEmbeddingOperation::NewValueNode(int64_t value, const DeviceC
     AnfAlgo::GetRuntimePaddingShape(value_node, output_idx), device_context->device_context_key().device_name_,
     device_context->device_context_key().device_id_);
   kernel_tensor->set_stream_id(stream_id);
-  auto address = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
+  auto address = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(address);
 
   // Sync tensor value.
@@ -282,7 +283,7 @@ ValueNodePtr DeviceEmbeddingOperation::NewValueNode(int64_t value, const DeviceC
   MS_EXCEPTION_IF_CHECK_FAIL(device_context->device_res_manager_->SyncStream(stream_id), "Synchronize stream failed.");
 
   address->set_from_persistent_mem(true);
-  AnfAlgo::SetOutputAddr(address, output_idx, value_node.get());
+  AnfAlgo::SetOutputKernelTensor(kernel_tensor, output_idx, value_node.get());
 
   return value_node;
 }

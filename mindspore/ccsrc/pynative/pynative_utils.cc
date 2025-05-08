@@ -618,7 +618,6 @@ void Common::StubNodeToValue(const FrontendOpRunInfoPtr &op_run_info) {
     op_run_info->op_grad_info->input_value[i] = StubNodeToValue(op_run_info->op_grad_info->input_value[i]);
     // Contiguous tensor in Backend RunOp.
     kernel::pyboost::PyBoostUtils::set_cur_stream_id(old_stream_id);
-    runtime::DeviceAddressUtils::CreateKernelTensor(op_run_info->op_grad_info->input_value[i]);
   }
 }
 
@@ -1358,7 +1357,6 @@ void PyBoost::DataSyncForGraph(const kernel::pyboost::OpPtr &op) {
       if (device_address == nullptr) {
         continue;
       }
-      runtime::DeviceAddressUtils::CreateKernelTensor(device_address, output.get());
       output->data_sync(true);
     }
   }

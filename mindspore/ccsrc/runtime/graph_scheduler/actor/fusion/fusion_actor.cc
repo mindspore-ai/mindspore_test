@@ -18,7 +18,7 @@
 
 namespace mindspore {
 namespace runtime {
-void FusionActor::RunOpData(OpData<DeviceTensor> *const input_data, OpContext<DeviceTensor> *const context) {
+void FusionActor::RunOpData(OpData<KernelTensor> *const input_data, OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(input_data);
   MS_EXCEPTION_IF_NULL(context);
   if (IntToSize(input_data->index_) >= real_input_data_.size()) {
@@ -28,7 +28,7 @@ void FusionActor::RunOpData(OpData<DeviceTensor> *const input_data, OpContext<De
   auto &real_input_data = real_input_data_[IntToSize(input_data->index_)];
   MS_EXCEPTION_IF_NULL(real_input_data.first);
   MS_LOG(DEBUG) << "Actor(" << GetAID().Name() << ") receive the input op data, device address:" << input_data->data_
-                << " ptr:" << (input_data->data_ == nullptr ? nullptr : input_data->data_->GetPtr())
+                << " ptr:" << (input_data->data_ == nullptr ? nullptr : input_data->data_->device_ptr())
                 << " to index:" << input_data->index_ << " to actor:" << input_data->op_id_
                 << " real to index:" << real_input_data.second << " real to actor:" << real_input_data.first->GetAID();
   input_data->index_ = SizeToInt(real_input_data.second);
@@ -36,7 +36,7 @@ void FusionActor::RunOpData(OpData<DeviceTensor> *const input_data, OpContext<De
   real_input_data.first->RunOpData(input_data, context);
 }
 
-void FusionActor::RunOpControl(AID *const input_control, OpContext<DeviceTensor> *const context) {
+void FusionActor::RunOpControl(AID *const input_control, OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(input_control);
   MS_EXCEPTION_IF_NULL(context);
   MS_LOG(DEBUG) << "Actor(" << GetAID().Name() << ") receive the input op control: " << input_control->Name();

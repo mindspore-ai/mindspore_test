@@ -27,6 +27,7 @@
 #include "utils/hash_map.h"
 #include "utils/hash_set.h"
 #include "runtime/graph_scheduler/actor/actor_set.h"
+#include "runtime/hardware/device_context.h"
 
 namespace mindspore {
 namespace runtime {
@@ -38,7 +39,7 @@ class SchedulerHelper {
   // Judge the input node whether need the control arrow.
   static bool HasMonadControl(const AnfNodePtr &anf_node, const KernelGraphPtr &graph);
 
-  static void AddDeviceTensorStore(const AnfNodePtr &anf_node, const DeviceTensorPtr &device_tensor);
+  static void AddDeviceTensorStore(const AnfNodePtr &anf_node, const KernelTensorPtr &kernel_tensor);
 
   static void AddMonadDeviceTensorStore(AbstractActor *const to_actor, const CNodePtr &kernel,
                                         const KernelGraphPtr &graph);
@@ -119,6 +120,9 @@ class SchedulerHelper {
     const KernelActorPtr &kernel_actor, bool is_send_node);
 
   static size_t fusion_actor_index_;
+
+  static KernelTensorPtr CloneKernelTensorWithDeviceInfo(const KernelTensorPtr &kernel_tensor,
+                                                         const DeviceContext *device_context);
 };
 }  // namespace runtime
 }  // namespace mindspore

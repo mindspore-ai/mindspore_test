@@ -35,7 +35,7 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 using AbstractConverter = pynative::AbstractConverter;
-using AddressInfoPair = std::pair<std::vector<kernel::KernelTensor *>, device::DeviceAddressPtrList>;
+using AddressInfoPair = std::pair<std::vector<kernel::KernelTensor *>, std::vector<kernel::KernelTensorPtr>>;
 using BaseTensor = tensor::BaseTensor;
 using BaseTensorPtr = tensor::BaseTensorPtr;
 using Tensor = tensor::Tensor;
@@ -48,10 +48,10 @@ class PYBOOST_API PyBoostUtils {
 
   static DeviceSyncPtr ContiguousByDeviceAddress(const DeviceSyncPtr &device_sync);
 
-  // Create device address
-  static device::DeviceAddressPtrList CreateWorkSpaceDeviceAddress(const KernelModPtr &kernel_mod,
-                                                                   const device::DeviceContext *device_context,
-                                                                   const std::string &op_name);
+  // Create kernel tensors
+  static std::vector<kernel::KernelTensorPtr> CreateWorkSpaceKernelTensors(const KernelModPtr &kernel_mod,
+                                                                           const device::DeviceContext *device_context,
+                                                                           const std::string &op_name);
 
   // Create output tensors
   static void CreateOutputTensor(const AbstractBasePtr &abstract, std::vector<tensor::BaseTensorPtr> *outputs);
@@ -91,9 +91,10 @@ class PYBOOST_API PyBoostUtils {
   static void GetAddressInfoHelper(const DeviceContext *device_context, size_t stream_id,
                                    const std::vector<AbstractBasePtr> &input_abs,
                                    std::vector<kernel::KernelTensor *> *kernel_tensor_list,
-                                   device::DeviceAddressPtrList *device_address_list, std::index_sequence<Index...>,
-                                   const T &... args) {
-    (GetKernelTensor(device_context, stream_id, input_abs[Index], Index, kernel_tensor_list, device_address_list, args),
+                                   std::vector<kernel::KernelTensorPtr> *kernel_tensor_ptr_list,
+                                   std::index_sequence<Index...>, const T &... args) {
+    (GetKernelTensor(device_context, stream_id, input_abs[Index], Index, kernel_tensor_list, kernel_tensor_ptr_list,
+                     args),
      ...);
   }
 
@@ -101,17 +102,17 @@ class PYBOOST_API PyBoostUtils {
   static AddressInfoPair GetAddressInfo(const DeviceContext *device_context, size_t stream_id,
                                         const std::vector<AbstractBasePtr> &input_abs, const T &... args) {
     std::vector<kernel::KernelTensor *> kernel_tensor_list;
-    // Kernel tensor is a raw ppointer, device address need to be returned.
-    device::DeviceAddressPtrList device_address_list;
+    // Kernel tensor is a raw ppointer, kernel tensor ptr need to be returned.
+    std::vector<kernel::KernelTensorPtr> kernel_tensor_ptr_list;
     if (input_abs.empty()) {
       std::vector<AbstractBasePtr> tmp_abs(sizeof...(args), nullptr);
-      GetAddressInfoHelper(device_context, stream_id, tmp_abs, &kernel_tensor_list, &device_address_list,
+      GetAddressInfoHelper(device_context, stream_id, tmp_abs, &kernel_tensor_list, &kernel_tensor_ptr_list,
                            std::make_index_sequence<sizeof...(T)>(), args...);
     } else {
-      GetAddressInfoHelper(device_context, stream_id, input_abs, &kernel_tensor_list, &device_address_list,
+      GetAddressInfoHelper(device_context, stream_id, input_abs, &kernel_tensor_list, &kernel_tensor_ptr_list,
                            std::make_index_sequence<sizeof...(T)>(), args...);
     }
-    return std::make_pair(kernel_tensor_list, device_address_list);
+    return std::make_pair(kernel_tensor_list, kernel_tensor_ptr_list);
   }
 
   static void LaunchKernel(const PrimitivePtr &primitive, const device::DeviceContext *device_context,
@@ -120,58 +121,60 @@ class PYBOOST_API PyBoostUtils {
 
   static void GetKernelTensor(const DeviceContext *device_context, size_t stream_id, size_t index,
                               std::vector<kernel::KernelTensor *> *kernel_tensor_list,
-                              device::DeviceAddressPtrList *device_address_list, const BaseTensorPtr &tensor) {
-    GetKernelTensor(device_context, stream_id, nullptr, index, kernel_tensor_list, device_address_list, tensor);
+                              std::vector<kernel::KernelTensorPtr> *kernel_tensor_ptr_list,
+                              const BaseTensorPtr &tensor) {
+    GetKernelTensor(device_context, stream_id, nullptr, index, kernel_tensor_list, kernel_tensor_ptr_list, tensor);
   }
 
   static void GetKernelTensor(const DeviceContext *device_context, size_t stream_id,
                               const abstract::AbstractBasePtr &input_abs, size_t index,
                               std::vector<kernel::KernelTensor *> *kernel_tensor_list,
-                              device::DeviceAddressPtrList *device_address_list, const BaseTensorPtr &tensor);
+                              std::vector<kernel::KernelTensorPtr> *kernel_tensor_ptr_list,
+                              const BaseTensorPtr &tensor);
 
   template <typename T>
   static void GetKernelTensor(const DeviceContext *device_context, size_t stream_id,
                               const abstract::AbstractBasePtr &input_abs, size_t index,
                               std::vector<kernel::KernelTensor *> *kernel_tensor_list,
-                              device::DeviceAddressPtrList *device_address_list, const std::optional<T> &val) {
+                              std::vector<kernel::KernelTensorPtr> *kernel_tensor_ptr_list,
+                              const std::optional<T> &val) {
     if (val.has_value()) {
-      GetKernelTensor(device_context, stream_id, input_abs, index, kernel_tensor_list, device_address_list,
+      GetKernelTensor(device_context, stream_id, input_abs, index, kernel_tensor_list, kernel_tensor_ptr_list,
                       val.value());
     } else {
       // Construct none kernel tensor
       MS_EXCEPTION_IF_NULL(kernel_tensor_list);
-      MS_EXCEPTION_IF_NULL(device_address_list);
+      MS_EXCEPTION_IF_NULL(kernel_tensor_ptr_list);
 
-      const auto &kernel_tensor = std::make_shared<kernel::KernelTensor>(
+      const auto &kernel_tensor = AnfAlgo::CreateKernelTensor(
         std::make_shared<abstract::TensorShape>(ShapeVector()), kTypeNone, kNone, nullptr, 0, kOpFormat_DEFAULT,
         kTypeNone->type_id(), ShapeVector(), device_context->device_context_key().device_name_,
         device_context->device_context_key().device_id_);
       kernel_tensor->set_stream_id(stream_id);
       (void)kernel_tensor_list->emplace_back(kernel_tensor.get());
-      auto device_address = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
-      (void)device_address_list->emplace_back(device_address);
+      (void)kernel_tensor_ptr_list->emplace_back(kernel_tensor);
     }
   }
 
   static void GetKernelTensor(const DeviceContext *device_context, size_t stream_id,
                               const abstract::AbstractBasePtr &input_abs, size_t index,
                               std::vector<kernel::KernelTensor *> *kernel_tensor_list,
-                              device::DeviceAddressPtrList *device_address_list,
+                              std::vector<kernel::KernelTensorPtr> *kernel_tensor_ptr_list,
                               const std::vector<tensor::BaseTensorPtr> &tensors);
 
   template <typename T>
   static void GetKernelTensor(const DeviceContext *device_context, size_t stream_id,
                               const abstract::AbstractBasePtr &input_abs, size_t index,
                               std::vector<kernel::KernelTensor *> *kernel_tensor_list,
-                              device::DeviceAddressPtrList *device_address_list, const T &val) {
+                              std::vector<kernel::KernelTensorPtr> *kernel_tensor_ptr_list, const T &val) {
     // Value ptr alloc device address and malloc mem here
-    auto device_address =
-      runtime::DeviceAddressUtils::CreateInputAddress(device_context, stream_id, input_abs, index, val);
-    MS_EXCEPTION_IF_NULL(device_address);
-    MS_EXCEPTION_IF_NULL(device_address_list);
+    auto kernel_tensor =
+      runtime::DeviceAddressUtils::CreateInputKernelTensor(device_context, stream_id, input_abs, index, val);
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
+    MS_EXCEPTION_IF_NULL(kernel_tensor_ptr_list);
     MS_EXCEPTION_IF_NULL(kernel_tensor_list);
-    (void)device_address_list->emplace_back(device_address);
-    (void)kernel_tensor_list->emplace_back(device_address->kernel_tensor().get());
+    (void)kernel_tensor_ptr_list->emplace_back(kernel_tensor);
+    (void)kernel_tensor_list->emplace_back(kernel_tensor.get());
   }
 
   // Create output tensor device address without kernel tensor
@@ -187,9 +190,8 @@ class PYBOOST_API PyBoostUtils {
     runtime::DeviceAddressUtils::MallocForOutputs(device_context, outputs);
   }
 
-  // Create workspace device address with kernel tensor
-  static std::vector<kernel::KernelTensor *> GetKernelTensorFromAddress(
-    const device::DeviceAddressPtrList &input_device_address);
+  static std::vector<kernel::KernelTensor *> GetRawKernelTensor(
+    const std::vector<kernel::KernelTensorPtr> &input_kernel_tensor);
 
   // Check kernel mod is reg
   static bool IsKernelModRegistered(const std::string &device_name, const std::string &op_name);

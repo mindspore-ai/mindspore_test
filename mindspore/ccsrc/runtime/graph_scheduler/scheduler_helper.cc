@@ -30,6 +30,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
+#include "runtime/hardware/device_context_manager.h"
 
 namespace mindspore {
 namespace runtime {
@@ -100,7 +101,7 @@ void UpdateDataArrowRefCount(AbstractActor *const to_actor, size_t to_input_inde
   }
 }
 
-void SetHeteInfoForParamDeviceAddress(const AnfNodePtr &anf_node, const DeviceTensorPtr &device_tensor) {
+void SetHeteInfoForParamDeviceAddress(const AnfNodePtr &anf_node, const KernelTensorPtr &kernel_tensor) {
   constexpr auto kParamterDeviceUserDataName = "parameter_device";
   if (!anf_node->isa<Parameter>()) {
     return;
@@ -126,14 +127,16 @@ void SetHeteInfoForParamDeviceAddress(const AnfNodePtr &anf_node, const DeviceTe
   if (device_str.empty()) {
     return;
   }
-  const auto &kernel_tensor = device_tensor->kernel_tensor();
+
   MS_EXCEPTION_IF_NULL(kernel_tensor);
+  const auto &device_tensor = kernel_tensor->device_address();
+  MS_EXCEPTION_IF_NULL(device_tensor);
   if (device_str == kToCpu) {
-    kernel_tensor->set_heterogeneous_info(std::make_shared<kernel::HeterogeneousInfo>());
-    kernel_tensor->heterogeneous_info()->need_alloc_hete_res_ = kernel::NeedAllocateHeteRes::NeedHostMem;
+    kernel_tensor->set_heterogeneous_info(std::make_shared<HeterogeneousInfo>());
+    kernel_tensor->heterogeneous_info()->need_alloc_hete_res_ = NeedAllocateHeteRes::NeedHostMem;
   } else if (device_str == kToDisk) {
-    kernel_tensor->set_heterogeneous_info(std::make_shared<kernel::HeterogeneousInfo>());
-    kernel_tensor->heterogeneous_info()->need_alloc_hete_res_ = kernel::NeedAllocateHeteRes::NeedDiskFile;
+    kernel_tensor->set_heterogeneous_info(std::make_shared<HeterogeneousInfo>());
+    kernel_tensor->heterogeneous_info()->need_alloc_hete_res_ = NeedAllocateHeteRes::NeedDiskFile;
   }
 }
 }  // namespace
@@ -227,8 +230,10 @@ bool SchedulerHelper::HasMonadControl(const AnfNodePtr &input_node, const Kernel
   return false;
 }
 
-void SchedulerHelper::AddDeviceTensorStore(const AnfNodePtr &anf_node, const DeviceTensorPtr &device_tensor) {
+void SchedulerHelper::AddDeviceTensorStore(const AnfNodePtr &anf_node, const KernelTensorPtr &kernel_tensor) {
   MS_EXCEPTION_IF_NULL(anf_node);
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  const auto &device_tensor = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_tensor);
   // Intercept, parameter-weight is not placed into device tensor store
   if (EnableInputOptimize()) {
@@ -239,19 +244,19 @@ void SchedulerHelper::AddDeviceTensorStore(const AnfNodePtr &anf_node, const Dev
       auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
       MS_EXCEPTION_IF_NULL(graph_parameter_store);
       auto outer_idx = graph_parameter_store->GetFrontNodeToIndex(anf_node.get());
-      graph_parameter_store->Push(outer_idx, 0, device_tensor, device_tensor->GetDeviceType(), SIZE_MAX);
-      MS_LOG(DEBUG) << "Add graph parameter store:" << device_tensor << " for node:" << anf_node.get()->DebugString()
-                    << " node addr:" << anf_node.get() << " device type:" << device_tensor->GetDeviceType()
+      graph_parameter_store->Push(outer_idx, 0, kernel_tensor, kernel_tensor->GetDeviceType(), SIZE_MAX);
+      MS_LOG(DEBUG) << "Add graph parameter store:" << kernel_tensor << " for node:" << anf_node.get()->DebugString()
+                    << " node addr:" << anf_node.get() << " device type:" << kernel_tensor->GetDeviceType()
                     << ", outer idx:" << outer_idx;
       device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
       device_tensor->set_new_ref_count(SIZE_MAX);
       return;
     }
   }
-  MS_LOG(DEBUG) << "Add device tensor store:" << device_tensor << " for node:" << anf_node.get()->DebugString()
-                << " node addr:" << anf_node.get() << " device type:" << device_tensor->GetDeviceType();
-  SetHeteInfoForParamDeviceAddress(anf_node, device_tensor);
-  DeviceTensorStore::GetInstance().Insert(const_cast<AnfNode *>(anf_node.get()), device_tensor);
+  MS_LOG(DEBUG) << "Add device tensor store:" << kernel_tensor << " for node:" << anf_node.get()->DebugString()
+                << " node addr:" << anf_node.get() << " device type:" << kernel_tensor->GetDeviceType();
+  SetHeteInfoForParamDeviceAddress(anf_node, kernel_tensor);
+  DeviceTensorStore::GetInstance().Insert(const_cast<AnfNode *>(anf_node.get()), kernel_tensor);
   device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
   UpdateRefCount(device_tensor.get(), true);
 }
@@ -638,9 +643,10 @@ void SchedulerHelper::AddResultParameter(AbstractActor *const from_actor, Output
   to_actor->InsertParameterIndexs(output_position, parameter_info);
   graph_parameter_store->SetUserCnt(outer_idx, front_node_with_index.second, SIZE_MAX, device_context->GetDeviceType());
 
-  auto device_tensor =
+  const auto &kernel_tensor =
     graph_parameter_store->Fetch(outer_idx, front_node_with_index.second, device_context->GetDeviceType());
-  if (device_tensor != nullptr) {
+  if (kernel_tensor != nullptr && kernel_tensor->device_address() != nullptr) {
+    auto device_tensor = kernel_tensor->device_address().get();
     device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
     // The device tensor of graph out need be taken over by host tensor, so set the max reference count.
     UpdateRefCount(device_tensor, true);
@@ -827,13 +833,15 @@ void SchedulerHelper::AddFormalParameterDeviceTensor(ControlActor *const from_ac
     return;
   }
 
-  auto device_tensor = AnfAlgo::GetMutableOutputAddr(input_node, 0, false);
+  auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(input_node, 0, false);
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  auto device_tensor = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_tensor);
-  (void)from_actor->ref_formal_parameter_device_tensors_[from_index].insert(device_tensor);
+  (void)from_actor->ref_formal_parameter_kernel_tensors_[from_index].insert(kernel_tensor);
   if (graph->IsRefOutputMapValue({input_node, 0})) {
     MS_LOG(DEBUG) << "Add device address:" << device_tensor << " from index:" << from_index
                   << " parameter:" << input_node->DebugString() << " for actor:" << from_actor->GetAID();
-    (void)from_actor->ref_node_formal_parameter_device_tensors_[from_index].insert(device_tensor);
+    (void)from_actor->ref_node_formal_parameter_kernel_tensors_[from_index].insert(kernel_tensor);
   }
 
   device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
@@ -1313,21 +1321,25 @@ void CheckControlActorValid(const ActorSet *actor_set) {
   auto control_actors = CollectControlActors(actor_set->control_actors_);
   for (const auto &control_actor : control_actors) {
     MS_EXCEPTION_IF_NULL(control_actor);
-    for (auto &ref_node_formal_parameter_device_tensor : control_actor->ref_node_formal_parameter_device_tensors()) {
-      auto &device_tensors = ref_node_formal_parameter_device_tensor.second;
-      for (auto iter = device_tensors.begin(); iter != device_tensors.end(); ++iter) {
-        if (((*device_tensors.begin())->format() != (*iter)->format()) ||
-            ((*device_tensors.begin())->type_id() != (*iter)->type_id())) {
+    for (auto &ref_node_formal_parameter_kernel_tensor : control_actor->ref_node_formal_parameter_kernel_tensors()) {
+      auto &kernel_tensors = ref_node_formal_parameter_kernel_tensor.second;
+      for (auto iter = kernel_tensors.begin(); iter != kernel_tensors.end(); ++iter) {
+        MS_EXCEPTION_IF_NULL((*kernel_tensors.begin())->device_address());
+        MS_EXCEPTION_IF_NULL((*iter)->device_address());
+        if (((*kernel_tensors.begin())->device_address()->format() != (*iter)->device_address()->format()) ||
+            ((*kernel_tensors.begin())->device_address()->type_id() != (*iter)->device_address()->type_id())) {
           MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Runtime error info:#dmsg#" << control_actor->GetAID().Name()
                                      << " does not support the ref node formal parameters with different format.";
         }
       }
     }
 
-    for (auto &ref_formal_parameter_device_tensor : control_actor->ref_formal_parameter_device_tensors()) {
-      auto &device_tensors = ref_formal_parameter_device_tensor.second;
-      for (auto iter = device_tensors.begin(); iter != device_tensors.end(); ++iter) {
-        if ((*device_tensors.begin())->type_id() != (*iter)->type_id()) {
+    for (auto &ref_formal_parameter_kernel_tensor : control_actor->ref_formal_parameter_kernel_tensors()) {
+      auto &kernel_tensors = ref_formal_parameter_kernel_tensor.second;
+      for (auto iter = kernel_tensors.begin(); iter != kernel_tensors.end(); ++iter) {
+        MS_EXCEPTION_IF_NULL((*kernel_tensors.begin())->device_address());
+        MS_EXCEPTION_IF_NULL((*iter)->device_address());
+        if ((*kernel_tensors.begin())->device_address()->type_id() != (*iter)->device_address()->type_id()) {
           MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Runtime error info:#dmsg#" << control_actor->GetAID().Name()
                                      << " does not support the ref formal parameters with different type.";
         }
@@ -1503,6 +1515,25 @@ void SchedulerHelper::ProcessStreamSendRecvEventPair(
   } else {
     MS_LOG(INFO) << "Stream send/recv kernel : " << kernel->DebugString() << " has no event stream pair id.";
   }
+}
+
+KernelTensorPtr SchedulerHelper::CloneKernelTensorWithDeviceInfo(const KernelTensorPtr &kernel_tensor,
+                                                                 const DeviceContext *device_context) {
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  MS_EXCEPTION_IF_NULL(device_context);
+  MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
+  auto address_common = kernel_tensor->address_common();
+  MS_EXCEPTION_IF_NULL(address_common);
+  auto new_device_address = device_context->device_res_manager_->CreateDeviceAddress(
+    address_common->pointer_ref_count_->ptr(), address_common->size_, address_common->shape_vector_,
+    address_common->format_, address_common->dtype_id_, device_context->device_context_key().device_name_,
+    device_context->device_context_key().device_id_, address_common->stream_id_, kernel_tensor->user_data());
+  new_device_address->set_heterogeneous_info(kernel_tensor->heterogeneous_info());
+  new_device_address->set_host_shape(kernel_tensor->host_shape());
+  auto new_kernel_tensor = kernel_tensor->CloneKernelTensor();
+  new_kernel_tensor->set_device_address(new_device_address);
+  new_kernel_tensor->set_device_synchronizer(new_device_address->NewDeviceSynchronizer());
+  return new_kernel_tensor;
 }
 }  // namespace runtime
 }  // namespace mindspore

@@ -42,11 +42,11 @@ class StackActor : public ControlActor {
 
   // The input data and partial of the stack actor needs to be pushed into the stack according to the input index,
   // so it is implemented separately.
-  void RunOpData(OpData<DeviceTensor> *const input_data, OpContext<DeviceTensor> *const context) override;
-  void RunOpPartial(const OpPartialPtr &partial, size_t position, OpContext<DeviceTensor> *const context) override;
-  void RunOpControl(AID *const input_control, OpContext<DeviceTensor> *const context) override;
+  void RunOpData(OpData<KernelTensor> *const input_data, OpContext<KernelTensor> *const context) override;
+  void RunOpPartial(const OpPartialPtr &partial, size_t position, OpContext<KernelTensor> *const context) override;
+  void RunOpControl(AID *const input_control, OpContext<KernelTensor> *const context) override;
 
-  void SendMemoryFreeReq(OpContext<DeviceTensor> *const context) override;
+  void SendMemoryFreeReq(OpContext<KernelTensor> *const context) override;
 
   size_t input_stack_data_num() const { return input_stack_data_num_; }
   size_t input_stack_partials_num() const { return input_stack_partials_num_; }
@@ -54,21 +54,21 @@ class StackActor : public ControlActor {
 
  protected:
   void Init() override;
-  void FetchInput(OpContext<DeviceTensor> *const context) override;
-  bool CheckRunningCondition(const OpContext<DeviceTensor> *context) const override;
-  void EraseInput(const OpContext<DeviceTensor> *const context) override;
+  void FetchInput(OpContext<KernelTensor> *const context) override;
+  bool CheckRunningCondition(const OpContext<KernelTensor> *context) const override;
+  void EraseInput(const OpContext<KernelTensor> *const context) override;
 
  private:
   friend class ControlNodeScheduler;
 
   // Check running condition functions.
-  bool CheckStackDataRunningCondition(const OpContext<DeviceTensor> *context) const;
-  bool CheckStackPartialRunningCondition(const OpContext<DeviceTensor> *context) const;
-  bool CheckStackControlRunningCondition(const OpContext<DeviceTensor> *context) const;
+  bool CheckStackDataRunningCondition(const OpContext<KernelTensor> *context) const;
+  bool CheckStackPartialRunningCondition(const OpContext<KernelTensor> *context) const;
+  bool CheckStackControlRunningCondition(const OpContext<KernelTensor> *context) const;
 
   // The input data and partials records that the stack actor is copied from the input nodes and needs to be
   // stored in the device tensor in the stack.
-  mindspore::HashMap<int, mindspore::HashMap<size_t, std::stack<DeviceTensor *>>> input_stack_data_;
+  mindspore::HashMap<int, mindspore::HashMap<size_t, std::stack<KernelTensorPtr>>> input_stack_data_;
   mindspore::HashMap<int, mindspore::HashMap<size_t, std::stack<OpPartialPtr>>> input_stack_partials_;
   // When the input has side effects, some control arrows need to be pushed to the stack, which needs to be
   // recorded according to the from aids, but if the input node is a call node, the input control arrows may

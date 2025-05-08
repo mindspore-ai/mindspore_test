@@ -36,7 +36,7 @@ class BACKEND_EXPORT KernelAsyncLaunchActor : public ActorBase {
 
   void Initialize();
 
-  void LaunchKernel(OpContext<DeviceTensor> *const context, KernelActor *kernel_actor);
+  void LaunchKernel(OpContext<KernelTensor> *const context, KernelActor *kernel_actor);
 
   void Wait();
 
