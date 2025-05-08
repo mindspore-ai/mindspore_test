@@ -254,6 +254,18 @@ void ProfilerAnalyzer::RecordData(const ProfilerDataPtr &data) noexcept {
 #endif
 }
 
+void ProfilerAnalyzer::RecordShapesData(const std::string &op_name,
+                                        const std::vector<std::vector<int64_t>> &input_shapes,
+                                        const std::vector<std::string> &input_types) noexcept {
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && !defined(ANDROID) && !defined(__APPLE__)
+  if (mi_profiler_enable_) {
+#if defined(ENABLE_DEBUGGER)
+    profiler::ascend::ProfilingFrameworkData::RecordShapesProfile(op_name, input_shapes, input_types);
+#endif
+  }
+#endif
+}
+
 void ProfilerAnalyzer::RecordFlowData(uint64_t flow_id) {
   if (!ProfilerAnalyzer::GetInstance().profiler_enable()) {
     return;

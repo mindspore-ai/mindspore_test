@@ -1362,7 +1362,7 @@ bool GeKernelExecutor::LaunchKernel(const CNodePtr &kernel, const std::vector<Ke
     }
   }
   PROFILER_END(start_time, runtime::ProfilerModule::kKernel, runtime::ProfilerEvent::kKernelLaunch,
-               kernel->fullname_with_scope(), false);
+               kernel->fullname_with_scope(), false, inputs);
   return true;
 }
 

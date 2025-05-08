@@ -51,16 +51,25 @@ enum class PROFILER_EXPORT OpRangeDataType : uint8_t {
   CUSTOM_INFO = 17,
 };
 
+enum class PROFILER_EXPORT RecordShapesDataType : uint8_t {
+  STEP = 0,
+  NAME = 1,
+  INPUT_SHAPES = 2,
+  INPUT_TYPE = 3,
+};
+
 enum class PROFILER_EXPORT ReportFileType : uint32_t {
   OP_RANGE = 0,
   PYTHON_STACK = 1,
   MEMORY_USAGE = 2,
+  RECORD_SHAPES = 3,
 };
 
 static const std::map<ReportFileType, std::string> kReportFileTypeMap = {
   {ReportFileType::OP_RANGE, "mindspore.op_range"},
   {ReportFileType::PYTHON_STACK, "mindspore.py_stack"},
   {ReportFileType::MEMORY_USAGE, "mindspore.memory_usage"},
+  {ReportFileType::RECORD_SHAPES, "mindspore.record_shapes"},
 };
 
 struct PROFILER_EXPORT BaseReportData {
@@ -136,6 +145,21 @@ struct PROFILER_EXPORT OpRangeData : BaseReportData {
         end_time_ns(end_time_ns),
         is_stack(true),
         op_name(std::move(op_name)) {}
+
+  std::vector<uint8_t> encode() override;
+};
+
+struct PROFILER_EXPORT RecordShapesData : BaseReportData {
+  // dynamic length
+  std::string op_name;
+  std::string input_shapes;
+  std::string input_type;
+
+  RecordShapesData(int32_t device_id, std::string op_name, std::string input_shapes, std::string input_type)
+      : BaseReportData(device_id, static_cast<uint32_t>(ReportFileType::RECORD_SHAPES)),
+        op_name(std::move(op_name)),
+        input_shapes(std::move(input_shapes)),
+        input_type(std::move(input_type)) {}
 
   std::vector<uint8_t> encode() override;
 };

@@ -66,6 +66,31 @@ std::vector<uint8_t> OpRangeData::encode() {
   return resultTLV;
 }
 
+std::vector<uint8_t> RecordShapesData::encode() {
+  std::vector<uint8_t> tlvBytes;
+
+  // Fixed data
+  // Dynamic length data
+  encodeStrData(static_cast<uint16_t>(RecordShapesDataType::NAME), op_name, tlvBytes);
+  encodeStrData(static_cast<uint16_t>(RecordShapesDataType::INPUT_SHAPES), input_shapes, tlvBytes);
+  encodeStrData(static_cast<uint16_t>(RecordShapesDataType::INPUT_TYPE), input_type, tlvBytes);
+
+  std::vector<uint8_t> resultTLV;
+  size_t totalSize = sizeof(uint16_t) + sizeof(uint32_t) + tlvBytes.size();
+  resultTLV.reserve(totalSize);
+
+  uint16_t dataType = static_cast<uint16_t>(ReportFileType::RECORD_SHAPES);
+  for (size_t i = 0; i < sizeof(uint16_t); ++i) {
+    resultTLV.push_back((dataType >> (i * kBitsPerByte)) & 0xff);
+  }
+  uint32_t length = tlvBytes.size();
+  for (size_t i = 0; i < sizeof(uint32_t); ++i) {
+    resultTLV.push_back((length >> (i * kBitsPerByte)) & 0xff);
+  }
+  resultTLV.insert(resultTLV.end(), tlvBytes.cbegin(), tlvBytes.cend());
+  return resultTLV;
+}
+
 }  // namespace ascend
 }  // namespace profiler
 }  // namespace mindspore

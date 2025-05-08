@@ -805,6 +805,7 @@ class Profile:
             hbm_ddr: bool = False,
             pcie: bool = False,
             sync_enable: bool = True,
+            record_shapes: bool = False,
             schedule: Schedule = None,
             on_trace_ready: Optional[Callable[..., Any]] = None,
             experimental_config: Optional[_ExperimentalConfig] = None,
@@ -818,6 +819,7 @@ class Profile:
         self._hbm_ddr = hbm_ddr
         self._pcie = pcie
         self._sync_enable = sync_enable
+        self._record_shapes = record_shapes
         self._schedule = schedule
         self._on_trace_ready = on_trace_ready
         self._experimental_config = experimental_config or _ExperimentalConfig()
@@ -834,6 +836,7 @@ class Profile:
             hbm_ddr=self._hbm_ddr,
             pcie=self._pcie,
             sync_enable=self._sync_enable,
+            record_shapes=self._record_shapes,
             data_simplification=self._experimental_config.data_simplification,
             mstx=self._experimental_config.mstx,
             export_type=self._experimental_config.export_type,

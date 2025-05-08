@@ -46,6 +46,7 @@ struct AscendProfilerConfig {
   bool parallelStrategy{false};
   bool cpuTrace{false};
   bool npuTrace{false};
+  bool recordShapes{false};
   std::string profilerLevel;
   std::string aicoreMetrics;
   std::string outputPath;
@@ -54,7 +55,7 @@ struct AscendProfilerConfig {
   AscendProfilerConfig() = default;
   AscendProfilerConfig(uint32_t deviceId, uint32_t rankId, bool profileMemory, bool l2Cache, bool hbmDdr, bool sysIo,
                        bool sysInterconnection, bool withStack, bool mstx, bool parallelStrategy, bool pcie,
-                       const std::string &profilerLevel, const std::string &aicoreMetrics,
+                       bool recordShapes, const std::string &profilerLevel, const std::string &aicoreMetrics,
                        const std::string &outputPath, const std::string &frameworkDataPath)
       : deviceId(deviceId),
         rankId(rankId),
@@ -67,6 +68,7 @@ struct AscendProfilerConfig {
         withStack(withStack),
         mstx(mstx),
         parallelStrategy(parallelStrategy),
+        recordShapes(recordShapes),
         profilerLevel(profilerLevel),
         aicoreMetrics(aicoreMetrics),
         outputPath(outputPath),
@@ -85,6 +87,7 @@ struct AscendProfilerConfig {
     parallelStrategy = false;
     cpuTrace = false;
     npuTrace = false;
+    recordShapes = false;
     profilerLevel.clear();
     aicoreMetrics.clear();
     outputPath.clear();
@@ -108,9 +111,18 @@ class AscendProfiler : public Profiler {
   void StepStop() override;
   void StepProfilingEnable(const bool enable_flag) override;
   void OpDataProducerEnd() override { return; }
+<<<<<<< HEAD
   void MstxMark(const std::string &message, void *stream = nullptr) override;
   int MstxRangeStart(const std::string &message, void *stream = nullptr) override;
   void MstxRangeEnd(int range_id) override;
+=======
+  void MstxMark(const std::string &message, void *stream = nullptr,
+                const std::string &domain_name = "default") override;
+  int MstxRangeStart(const std::string &message, void *stream = nullptr,
+                     const std::string &domain_name = "default") override;
+  void MstxRangeEnd(int range_id, const std::string &domain_name = "default") override;
+  bool EnableRecordShapes();
+>>>>>>> d6d80b2394d (profiler recordshape)
 
  protected:
   void SaveProfileData() override { return; }

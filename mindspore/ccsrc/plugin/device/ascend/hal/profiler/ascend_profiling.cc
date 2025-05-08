@@ -104,6 +104,7 @@ void AscendProfiler::InitAscendProfilerConfig(const std::string &profiling_path,
   config_.cpuTrace = options["cpu_trace"];
   config_.npuTrace = options["npu_trace"];
   config_.mstx = options["mstx"];
+  config_.recordShapes = options["record_shapes"];
   config_.outputPath = profiling_path;
 
   is_parallel_strategy = config_.parallelStrategy;
@@ -377,6 +378,8 @@ void AscendProfiler::MstxRangeEnd(int range_id) {
   MS_LOG(INFO) << "Ascend mstx range end, range_id: " << range_id;
   MstxDispatcher::GetInstance().RangeEnd(range_id);
 }
+
+bool AscendProfiler::EnableRecordShapes() { return config_.recordShapes; }
 
 }  // namespace ascend
 }  // namespace profiler

@@ -49,6 +49,7 @@ class ProfilerParameters:
         "sys_interconnection": (bool, False),
         "sync_enable": (bool, True),
         "data_simplification": (bool, True),
+        "record_shapes": (bool, False),
         "export_type": (list, [ExportType.Text]),
         "mstx": (bool, False),
         "schedule": (Schedule, None),
@@ -109,6 +110,7 @@ class ProfilerParameters:
             "parallel_strategy": self.parallel_strategy,
             "profiler_level": self.profiler_level.value,
             "with_stack": self.with_stack,
+            "record_shapes": self.record_shapes,
             "mstx": self.mstx,
             "cpu_trace": ProfilerActivity.CPU in self.activities,
             "npu_trace": ProfilerActivity.NPU in self.activities,
@@ -235,7 +237,13 @@ class ProfilerParameters:
                           f"'aic_metrics' cannot be set to 'AicoreMetrics.AiCoreNone', "
                           f"reset to 'AicoreMetrics.PipeUtilization'.")
 
-    def _check_and_get_export_type(self, export_type) -> list:
+        if self.__dict__.get('record_shapes', False) and ProfilerActivity.CPU not in self.__dict__.get('activities'):
+            self.record_shapes = False
+            warnings.warn("when 'ProfilerActivity.CPU' is not set in 'activities', 'Record_shapes' cannot be set to "
+                          "True, reset to 'False'.")
+
+    @staticmethod
+    def _check_and_get_export_type(export_type) -> list:
         """
         Check export type.
         """

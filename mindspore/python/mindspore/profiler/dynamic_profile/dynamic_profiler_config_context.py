@@ -47,6 +47,7 @@ class DynamicProfilerConfigContext:
         self._l2_cache = False
         self._analyse = True
         self._is_valid = False
+        self._record_shapes = False
         self._prof_path = None
         self._mstx_domain_include = []
         self._mstx_domain_exclude = []
@@ -68,6 +69,7 @@ class DynamicProfilerConfigContext:
         self._parse_data_simplification(json_data)
         self._parse_l2_cache(json_data)
         self._parse_analyse(json_data)
+        self._parse_record_shapes(json_data)
         self._parse_prof_path(json_data)
         self._aic_metrics = json_data.get("aic_metrics", "AiCoreNone")
         self._analyse_mode = json_data.get("analyse_mode", -1)
@@ -209,6 +211,17 @@ class DynamicProfilerConfigContext:
         else:
             self._analyse = json_data.get("analyse", False)
 
+    def _parse_record_shapes(self, json_data):
+        """ Parse the record_shapes from JSON data."""
+        if self._is_dyno:
+            record_shapes = json_data.get("record_shapes", False)
+            if isinstance(record_shapes, str):
+                self._record_shapes = self.BOOL_MAP.get(record_shapes.lower(), False)
+            else:
+                self._record_shapes = False
+        else:
+            self._record_shapes = json_data.get("record_shapes", False)
+
     def _parse_prof_path(self, json_data):
         """ Parse the prof_path from JSON data."""
         if self._is_dyno:
@@ -240,6 +253,7 @@ class DynamicProfilerConfigContext:
             '_with_stack': (bool, False),
             '_data_simplification': (bool, True),
             '_is_valid': (bool, False),
+            '_record_shapes': (bool, False),
             '_mstx_domain_include': (list, []),
             '_mstx_domain_exclude': (list, [])
         }
@@ -387,6 +401,7 @@ class DynamicProfilerConfigContext:
             "data_simplification": self._data_simplification,
             "l2_cache": self._l2_cache,
             "analyse": self._analyse,
+            "record_shapes": self._record_shapes,
             "is_valid": self._is_valid
         }
 
