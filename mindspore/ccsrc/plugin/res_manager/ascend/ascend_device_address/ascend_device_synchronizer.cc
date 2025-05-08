@@ -63,6 +63,7 @@ bool AscendDeviceSynchronizer::SyncDeviceToHost(void *host_ptr, const void *devi
     MS_LOG(ERROR) << "Call aclrtMemcpyAsync device to host failed, the error num[" << ret << "]";
     return false;
   }
+
   if (!AscendStreamMng::GetInstance().SyncStream(stream)) {
     MS_LOG(ERROR) << "Sync stream failed, stream id: " << stream_id;
     return false;

@@ -324,7 +324,7 @@ bool IsDisableGeKernel() {
 }
 
 bool IsNeedProfilieMemoryLog() {
-  static bool is_need_profile_memory_log = IsDisableGeKernel() && common::IsDryRun();
+  static bool is_need_profile_memory_log = IsDisableGeKernel() && common::IsCompileSimulation();
   return is_need_profile_memory_log;
 }
 

@@ -602,7 +602,7 @@ DeviceMemPtr DynamicMemPoolBestFit::CreateMemBlockAndMemBuf(size_t size, bool fr
 
 size_t DynamicMemPoolBestFit::CalMemBlockAllocSize(size_t size, bool from_persistent_mem, bool) {
   auto device_free_mem_size = free_mem_size();
-  if (device_free_mem_size < size && common::IsDryRun()) {
+  if (device_free_mem_size < size && common::IsCompileSimulation()) {
     device_free_mem_size = size;
   }
   if (device_free_mem_size < size) {

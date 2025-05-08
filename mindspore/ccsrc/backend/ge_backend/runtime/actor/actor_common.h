@@ -254,7 +254,7 @@ bool IsGraphRootParameter(const AnfNodePtr &node, const KernelGraphPtr &graph = 
 bool IsSwitchActor(const AnfNodePtr &node);
 
 // Judge whether skip the launch by the env MS_KERNEL_LAUNCH_SKIP.
-bool IsSkippedLaunch(const CNodePtr &kernel, const KernelGraphPtr &kernel_graph);
+bool IsSkippedLaunch(const CNodePtr &kernel = nullptr, const KernelGraphPtr &kernel_graph = nullptr);
 
 // Internal parameter is not the origin parameter of func graph, it is the output of previous kernel graph which is
 // related to the input of this kernel graph.

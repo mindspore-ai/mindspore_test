@@ -112,8 +112,8 @@ uint8_t *AscendTwoPointerMemAdapter::MallocStaticDevMem(size_t size, const std::
     return nullptr;
   }
   size = GetRoundUpAlignSize(size);
-  if (!common::IsDryRun() && (static_mem_offset_ < static_cast<int64_t>(size) ||
-                              (static_mem_offset_ - static_cast<int64_t>(size)) < max_dynamic_mem_offset_)) {
+  if (!common::IsCompileSimulation() && (static_mem_offset_ < static_cast<int64_t>(size) ||
+                                         (static_mem_offset_ - static_cast<int64_t>(size)) < max_dynamic_mem_offset_)) {
     MS_LOG(INFO) << DevMemDetailInfo();
     MS_LOG(EXCEPTION) << "#umsg#Framework Error Message:#umsg#Out of Memory!!! Request memory size: " << size
                       << "B, Memory Statistic:" << DevMemStatistics()
@@ -128,7 +128,7 @@ uint8_t *AscendTwoPointerMemAdapter::MallocStaticDevMem(size_t size, const std::
 }
 
 bool AscendTwoPointerMemAdapter::FreeStaticDevMem(void *addr) {
-  if (common::IsDryRun()) {
+  if (common::IsCompileSimulation()) {
     return true;
   }
   MS_LOG(WARNING) << "FreeStaticDevMem addr:" << addr << " is not supported in two pointer mode.";
@@ -145,7 +145,7 @@ uint8_t *AscendTwoPointerMemAdapter::MallocDynamicDevMem(size_t size, const std:
   }
   size = GetRoundUpAlignSize(size);
   int64_t new_dynamic_offset = cur_dynamic_mem_offset_ + static_cast<int64_t>(size);
-  if (!common::IsDryRun() && new_dynamic_offset > static_mem_offset_) {
+  if (!common::IsCompileSimulation() && new_dynamic_offset > static_mem_offset_) {
     MS_LOG(INFO) << DevMemDetailInfo();
     MS_LOG(EXCEPTION) << "#umsg#Framework Error Message:#umsg#Out of Memory!!! Request memory size: " << size
                       << "B, Memory Statistic:" << DevMemStatistics()

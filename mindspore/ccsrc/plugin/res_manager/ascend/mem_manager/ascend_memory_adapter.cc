@@ -43,7 +43,7 @@ AscendMemAdapterPtr AscendMemAdapter::GetInstance() {
   if (instance_ == nullptr) {
     auto op_tuning_conf = OpTuningConf::GetInstance();
     MS_EXCEPTION_IF_NULL(op_tuning_conf);
-    if (IsDisableGeKernel() || common::IsDryRun() || op_tuning_conf->EnableAoeOnline()) {
+    if (IsDisableGeKernel() || common::IsCompileSimulation() || op_tuning_conf->EnableAoeOnline()) {
       // disable ge kernel or dry run.
       instance_ = std::make_shared<AscendTwoPointerMemAdapter>();
     } else {
@@ -220,7 +220,7 @@ bool AscendMemAdapter::DeInitialize() {
   std::ostringstream oss_buf;
   oss_buf << "Ascend Memory Adapter deinitialize success, statistics:" << DevMemStatistics();
   MS_LOG(INFO) << oss_buf.str();
-  if (common::IsDryRun() || common::IsNeedMemoryStatistic()) {
+  if (common::IsCompileSimulation() || common::IsNeedMemoryStatistic()) {
     MS_LOG(WARNING) << oss_buf.str();
   }
   if (common::IsEnableRuntimeConfig(common::kRuntimeMemoryStat)) {

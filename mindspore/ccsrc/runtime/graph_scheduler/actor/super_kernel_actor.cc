@@ -260,7 +260,7 @@ void SuperKernelActor::Init() {
         MS_LOG(INFO) << "Output node:" << output_node->DebugString() << " has a default ptr, maybe a mem leak.";
         device_address->set_ptr(nullptr);
       }
-      if (common::IsDryRun()) {
+      if (IsSkippedLaunch()) {
         device_address_to_node_[device_address.get()] = {device_address->GetSize(), output_node->fullname_with_scope()};
       }
       memory_alloc_list_.emplace_back(kernel_tensor);

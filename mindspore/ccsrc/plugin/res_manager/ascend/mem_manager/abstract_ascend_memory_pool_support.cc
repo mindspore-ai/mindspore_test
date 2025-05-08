@@ -83,7 +83,7 @@ bool NoAdditionalMemory() {
 
 size_t AbstractAscendMemoryPoolSupport::CalMemBlockAllocSize(size_t size, bool from_persistent_mem, bool need_recycle) {
   auto device_free_mem_size = free_mem_size();
-  if (device_free_mem_size < size && common::IsDryRun()) {
+  if (device_free_mem_size < size && common::IsCompileSimulation()) {
     device_free_mem_size = size;
   }
   if (device_free_mem_size < size) {
@@ -219,7 +219,7 @@ size_t AbstractAscendMemoryPoolSupport::free_mem_size() { return AscendMemAdapte
 
 uint64_t AbstractAscendMemoryPoolSupport::total_mem_size() const {
   static constexpr uint64_t kMaxHbmSize = 1LL << 40;
-  if (common::IsDryRun()) {
+  if (common::IsCompileSimulation()) {
     return kMaxHbmSize;
   } else {
     return AscendMemAdapter::GetInstance()->MaxHbmSizeForMs();
