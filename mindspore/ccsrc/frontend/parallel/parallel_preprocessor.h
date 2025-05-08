@@ -35,13 +35,13 @@ class ParallelPreprocessor {
   void Process();
 
   static void ExtractInformation(const std::vector<AnfNodePtr> &all_nodes);
-  static void ReshapeInit(const std::vector<AnfNodePtr> &all_nodes);
   static void HandleRootReshapeAndSaveStrategy(const std::vector<AnfNodePtr> &all_nodes);
   static void HandleForwardMakeTupleAndMakeList(const std::vector<AnfNodePtr> &all_nodes);
 
  private:
   void MarkAndModifyGraph();
   void SetOperatorInfo();
+  void SetParameterInfo();
   void PipelinePreProcess();
 
   const ParallelProcessorContextPtr &processor_context_;

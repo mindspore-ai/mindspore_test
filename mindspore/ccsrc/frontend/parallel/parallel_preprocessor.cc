@@ -922,7 +922,7 @@ static std::pair<AnfNodePtr, int64_t> FindSubGraph(const FuncGraphPtr &graph, co
   return std::make_pair(nullptr, 0);
 }
 
-static void CoverSliceShape(const FuncGraphPtr &root) {
+static void SetParameterSliceShape(const FuncGraphPtr &root) {
   MS_EXCEPTION_IF_NULL(root);
   auto parameters = root->parameters();
   FuncGraphManagerPtr manager = root->manager();
@@ -1120,9 +1120,8 @@ std::shared_ptr<TensorLayout> FindNextLayout(const AnfNodePtr &cnode, bool *next
   }
   return nullptr;
 }
-}  // namespace
 
-void ParallelPreprocessor::ReshapeInit(const std::vector<AnfNodePtr> &all_nodes) {
+void InitReshapeOpInfo(const std::vector<AnfNodePtr> &all_nodes) {
   MS_LOG(DEBUG) << "=============Do ReshapeInit start=============";
   for (auto &node : all_nodes) {
     auto cnode = node->cast<CNodePtr>();
@@ -1180,6 +1179,7 @@ void ParallelPreprocessor::ReshapeInit(const std::vector<AnfNodePtr> &all_nodes)
   }
   MS_LOG(DEBUG) << "=============Do ReshapeInit end=============";
 }
+}  // namespace
 
 void ParallelPreprocessor::HandleRootReshapeAndSaveStrategy(const std::vector<AnfNodePtr> &all_nodes) {
   // If root graph has reshape op. Find the corresponding parameter.
@@ -1353,14 +1353,16 @@ void ParallelPreprocessor::MarkAndModifyGraph() {
       all_nodes = TopoSort(ret_after, SuccDeeperSimple);
     }
   }
+
+  SetCastForParamNotRecompute(all_nodes);
   processor_context_->all_nodes = all_nodes;
 }
 
 void ParallelPreprocessor::SetOperatorInfo() {
+  auto &all_nodes = processor_context_->all_nodes;
   if (processor_context_->parallel_mode != kAutoParallel || CheckShardingPropagation()) {
     // semi: extract shape and strategy, set operator_info
     // auto: create opInfo for step parallel generated op and reset cnode for existing ones
-    auto &all_nodes = processor_context_->all_nodes;
     ExtractInformation(all_nodes);
 
     // dump IR detail in semi_auto_parallel and recursive_programming mode
@@ -1387,34 +1389,24 @@ void ParallelPreprocessor::SetOperatorInfo() {
       }
     }
   }
+
+  InitReshapeOpInfo(all_nodes);
 }
 
-void ParallelPreprocessor::Process() {
+void ParallelPreprocessor::SetParameterInfo() {
   auto root = processor_context_->root;
   auto manager = processor_context_->manager;
   MS_EXCEPTION_IF_NULL(root);
   MS_EXCEPTION_IF_NULL(manager);
   auto &all_nodes = processor_context_->all_nodes;
 
-  MarkAndModifyGraph();
-
-  SetOperatorInfo();
-
-  ReshapeInit(all_nodes);
-
-  SetCastForParamNotRecompute(all_nodes);
-
-  HandleRootReshapeAndSaveStrategy(all_nodes);
-
-  HandleForwardMakeTupleAndMakeList(all_nodes);
-
   // if the input or parameter has multiple users, check whether its split strategies are consistent.
   CheckParameterSplit(all_nodes);
 
   HandleSymbolicKeyInstance(root, all_nodes);
 
-  // cover Parallel shape
-  CoverSliceShape(root);
+  // set parallel slice shape for parameters
+  SetParameterSliceShape(root);
 
   // handle input is not used
   HandleNoUsedParameter(root);
@@ -1424,11 +1416,25 @@ void ParallelPreprocessor::Process() {
 
   HandleCameAndAdaFactorOpt(root, all_nodes, manager);
 
-  InsertUniformRealForTaggedNodes(manager, all_nodes);
-
   processor_context_->adasum_param_tensor_layout_map = AdaSumParamTensorLayout(root);
   bool is_apply_adasum = HandleAdaSum(root, all_nodes, &(processor_context_->adasum_param_tensor_layout_map));
   processor_context_->is_apply_adasum = is_apply_adasum;
+}
+
+void ParallelPreprocessor::Process() {
+  auto root = processor_context_->root;
+  MS_EXCEPTION_IF_NULL(root);
+  auto &all_nodes = processor_context_->all_nodes;
+
+  MarkAndModifyGraph();
+
+  SetOperatorInfo();
+
+  HandleRootReshapeAndSaveStrategy(all_nodes);
+
+  HandleForwardMakeTupleAndMakeList(all_nodes);
+
+  SetParameterInfo();
 
   if (MergeEntireShapeForDynamic(root) != Status::SUCCESS) {
     MS_LOG(EXCEPTION) << "Merge entire shape for dynamic shape failed.";
