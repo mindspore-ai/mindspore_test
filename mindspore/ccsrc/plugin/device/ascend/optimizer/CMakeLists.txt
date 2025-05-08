@@ -20,6 +20,7 @@ file(GLOB_RECURSE MS_OPTIMIZER_910B RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "./format_type/set_fracz_group_attr.cc"
         "./format_type/utils.cc"
         "./format_type/deal_ref_output.cc"
+        "./format_type/format_cast_modify_output.cc"
         "./common/gllo_utils.cc"
         "./expander_fallback.cc"
         "./ir_fission/tensor_scatter_fission.cc"

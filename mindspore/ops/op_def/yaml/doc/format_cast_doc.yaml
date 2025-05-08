@@ -1,0 +1,33 @@
+format_cast:
+    description: |
+        Change tensor format.
+
+        .. warning::
+            FormatCast will not work in the ge backend, origin input will be returned.
+
+        Args:
+            input (Tensor): The input tensor. 
+            acl_format (int): enum value of acl format, the valid values are below: 
+                - ``0`` NCHW
+                - ``1`` NHWC
+                - ``2`` ND
+                - ``3`` NC1HWC0
+                - ``4`` FRACTAL_Z
+                - ``27`` NDHWC
+                - ``29`` FRACTAL_NZ
+                - ``30`` NCDHW
+                - ``32`` NDC1HWC0
+                - ``33`` FRACTAL_Z_3D
+
+        Returns:
+            Tensor
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import mindspore
+            >>> input = mindspore.ops.randn((2, 3, 4, 5))
+            >>> output = mindspore.ops.format_cast(input, 2)
+            >>> print(output.shape)
+            (2, 3, 4, 5)
