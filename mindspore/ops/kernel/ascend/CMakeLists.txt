@@ -25,4 +25,4 @@ endif()
 target_link_libraries(mindspore_ops_ascend PRIVATE mindspore_core mindspore_ops mindspore_common mindspore_ms_backend
                       mindspore_ops_kernel_common mindspore_pyboost mindspore_backend_common
                       mindspore_ascend_res_manager)
-set_target_properties(mindspore_ops_ascend PROPERTIES INSTALL_RPATH "$ORIGIN:$ORIGIN/..")
+set_target_properties(mindspore_ops_ascend PROPERTIES INSTALL_RPATH "$ORIGIN:$ORIGIN/..:$ORIGIN/ascend")

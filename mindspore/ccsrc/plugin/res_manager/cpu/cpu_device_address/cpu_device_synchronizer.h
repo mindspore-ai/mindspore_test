@@ -19,12 +19,12 @@
 
 #include <string>
 #include "include/backend/device_synchronizer.h"
-#include "include/backend/visible.h"
+#include "plugin/res_manager/cpu/visible.h"
 
 namespace mindspore {
 namespace device {
 namespace cpu {
-class BACKEND_EXPORT CPUDeviceSynchronizer : public DeviceSynchronizer {
+class CPU_RES_MANAGER_EXPORT CPUDeviceSynchronizer : public DeviceSynchronizer {
  public:
   CPUDeviceSynchronizer() = default;
   ~CPUDeviceSynchronizer() override = default;
