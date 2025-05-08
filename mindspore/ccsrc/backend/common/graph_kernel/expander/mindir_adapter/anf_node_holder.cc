@@ -17,7 +17,6 @@
 #include "backend/common/graph_kernel/expander/mindir_adapter/anf_node_holder.h"
 #include "backend/common/graph_kernel/core/graph_kernel_callback.h"
 #include "abstract/abstract_value.h"
-#include "include/common/utils/utils.h"
 
 namespace mindspore::graphkernel::expander {
 ValuePtr AnfNodeHolder::GetValue() {

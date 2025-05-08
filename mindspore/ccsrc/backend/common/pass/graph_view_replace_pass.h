@@ -19,7 +19,7 @@
 #include <string>
 #include <vector>
 #include "include/backend/optimizer/pass.h"
-#include "include/backend/optimizer/optimizer.h"
+#include "include/backend/visible.h"
 
 namespace mindspore {
 namespace opt {

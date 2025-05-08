@@ -26,7 +26,6 @@
 #include "include/common/utils/anfalgo.h"
 #include "backend/common/graph_kernel/graph_kernel_helper.h"
 #include "utils/anf_utils.h"
-#include "include/common/utils/utils.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
 #include "utils/ms_context.h"
 #include "mindspore/ops/op_def/array_ops.h"

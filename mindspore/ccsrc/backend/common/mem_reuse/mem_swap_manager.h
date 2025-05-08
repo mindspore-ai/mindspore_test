@@ -22,7 +22,6 @@
 #include <vector>
 #include <utility>
 #include "utils/hash_map.h"
-#include "utils/hash_set.h"
 #include "backend/common/mem_reuse/mem_copy_manager.h"
 
 using PerformPair = std::pair<float, float>;

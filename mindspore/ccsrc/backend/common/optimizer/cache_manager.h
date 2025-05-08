@@ -17,7 +17,7 @@
 #define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_COMMON_CACHE_MANAGER_H_
 
 #include <map>
-#include "ir/anf.h"
+#include "base/base.h"
 #include "mindapi/base/type_id.h"
 #include "mindapi/base/shape_vector.h"
 

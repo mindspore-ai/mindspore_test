@@ -17,8 +17,8 @@
 #ifndef MINDSPORE_CCSRC_BACKEND_COMMON_OPTIMIZER_DYNAMIC_SHAPE_CONVERT_CUSTOM_OP_H
 #define MINDSPORE_CCSRC_BACKEND_COMMON_OPTIMIZER_DYNAMIC_SHAPE_CONVERT_CUSTOM_OP_H
 
-#include "ir/anf.h"
-#include "include/backend/optimizer/optimizer.h"
+#include "base/base.h"
+#include "include/backend/optimizer/pass.h"
 
 namespace mindspore::opt::dynamic_shape {
 class ConvertCustomOp : public Pass {

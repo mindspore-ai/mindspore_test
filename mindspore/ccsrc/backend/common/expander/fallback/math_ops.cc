@@ -15,7 +15,6 @@
  */
 
 #include "backend/common/expander/fallback/fallback_irbuilder.h"
-#include "include/common/utils/utils.h"
 #include "utils/shape_utils.h"
 #include "utils/ms_context.h"
 #include "infer/ops_func_impl/matmul_ext.h"

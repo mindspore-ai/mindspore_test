@@ -19,7 +19,6 @@
 #include <map>
 #include <nlohmann/json.hpp>
 #include "utils/phase.h"
-#include "include/common/utils/utils.h"
 
 namespace mindspore {
 namespace backend {

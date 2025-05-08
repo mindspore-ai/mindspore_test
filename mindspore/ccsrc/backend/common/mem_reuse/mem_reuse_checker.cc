@@ -15,6 +15,7 @@
  */
 
 #include "backend/common/mem_reuse/mem_reuse_checker.h"
+#include "include/common/utils/anfalgo.h"
 #include "utils/file_utils.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
 #include "utils/trace_base.h"

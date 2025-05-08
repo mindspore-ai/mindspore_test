@@ -26,7 +26,6 @@
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "include/common/utils/utils.h"
 #include "utils/log_adapter.h"
-#include "utils/ms_context.h"
 #include "utils/convert_utils_base.h"
 #include "utils/ms_utils.h"
 

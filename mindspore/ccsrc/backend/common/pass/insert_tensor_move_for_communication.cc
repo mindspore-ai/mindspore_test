@@ -15,7 +15,10 @@
  */
 
 #include "backend/common/pass/insert_tensor_move_for_communication.h"
+#include <vector>
+#include <set>
 #include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/optimizer/helper.h"
 #include "include/common/utils/anfalgo.h"
 #include "utils/ms_context.h"
 #include "include/common/runtime_conf/runtime_conf.h"

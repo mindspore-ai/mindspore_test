@@ -23,7 +23,6 @@
 
 #include "mindspore/ops/op_def/other_ops.h"
 #include "include/common/utils/utils.h"
-#include "include/common/utils/parallel_context.h"
 #include "mindspore/core/include/utils/ms_context.h"
 #include "include/common/utils/anfalgo.h"
 

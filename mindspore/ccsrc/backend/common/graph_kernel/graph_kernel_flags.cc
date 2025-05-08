@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2024 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@
 #include "utils/ms_context.h"
 #include "utils/ms_utils.h"
 #include "utils/file_utils.h"
-#include "include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore::graphkernel {
 namespace {

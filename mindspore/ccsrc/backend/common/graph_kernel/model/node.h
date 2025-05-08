@@ -23,10 +23,9 @@
 #include "ir/anf.h"
 #include "ir/base_tensor.h"
 #include "utils/hash_map.h"
-#include "utils/shape_utils.h"
-#include "include/common/utils/utils.h"
 #include "include/backend/visible.h"
 #include "symbolic_shape/symbol.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore::graphkernel::inner {
 enum class NType {

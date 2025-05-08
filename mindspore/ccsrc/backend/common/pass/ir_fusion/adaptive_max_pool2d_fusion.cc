@@ -23,7 +23,6 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/kernel_graph.h"
 #include "include/common/utils/anfalgo.h"
-#include "include/common/utils/utils.h"
 #include "ir/anf.h"
 #include "ir/func_graph.h"
 #include "ir/primitive.h"
