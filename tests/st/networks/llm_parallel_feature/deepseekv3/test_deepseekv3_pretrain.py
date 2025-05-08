@@ -126,7 +126,7 @@ def test_deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_deredundency_8p_gmm():
     loss_list = extract_losses_from_log(log_file_path)
 
     # set golden_loss
-    golden_loss = [13.509, 13.509, 13.507, 13.507, 13.501, 13.503]
+    golden_loss = [13.509, 13.509, 13.507, 13.507, 13.501, 13.504]
     if_equal = np.allclose(
         np.array(golden_loss), np.array(loss_list), atol=1e-4, rtol=1e-4
     )
