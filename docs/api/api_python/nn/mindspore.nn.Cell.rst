@@ -748,7 +748,7 @@
         教程样例：
             - `模型训练 - 训练与评估实现 <https://mindspore.cn/tutorials/zh-CN/master/beginner/train.html#训练与评估>`_
 
-    .. py:method:: shard(in_strategy, out_strategy=None, parameter_plan=None, device="Ascend", level=0)
+    .. py:method:: shard(in_strategy, out_strategy=None, parameter_plan=None)
 
         指定输入/输出Tensor的分布策略，通过其余算子的策略推导得到。在PyNative模式下，可以利用此方法指定某个Cell以图模式进行分布式执行。 在图模式下，
         可以利用此方法设置某个模块的分布式切分策略，未设置的会自动通过策略传播方式配置。 in_strategy/out_strategy需要为元组类型，
@@ -760,14 +760,9 @@
 
         参数：
             - **in_strategy** (tuple) - 指定各输入的切分策略，输入元组的每个元素元组，元组即具体指定输入每一维的切分策略。
-            - **out_strategy** (Union[None, tuple]) - 指定各输出的切分策略，用法同in_strategy，目前未使能。默认值： ``None`` 。
+            - **out_strategy** (Union[None, tuple]) - 指定各输出的切分策略，用法同in_strategy。默认值： ``None`` 。
             - **parameter_plan** (Union[dict, None]) - 指定各参数的切分策略，传入字典时，键是str类型的参数名，值是一维整数tuple表示相应的切分策略，
               如果参数名错误或对应参数已经设置了切分策略，该参数的设置会被跳过。默认值： ``None`` 。
-            - **device** (str) - 指定执行设备，可以为[ ``"CPU"`` , ``"GPU"`` , ``"Ascend"`` ]中任意一个，目前未使能。默认值： ``"Ascend"`` 。
-            - **level** (int) - 指定搜索切分策略的目标函数，即是最大化计算通信比、最小化内存消耗、最大化执行速度等。可以为[ ``0`` , ``1`` , ``2`` ]中任意一个，默认值： ``0`` 。目前仅支持最大化计算通信比，其余模式未使能。
-
-        返回：
-            Function，返回一个在自动并行流程下执行的函数。
 
     .. py:method:: state_dict(*args, destination=None, prefix="", keep_vars=False)
 
