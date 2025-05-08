@@ -1141,9 +1141,9 @@ class Cell(Cell_):
         The parallel strategies of remaining operators are derived from the strategy specified by the input and output.
 
         Note:
-            If Cell.shard is called, the parallel mode in `set_auto_parallel_context` (parallel_mode) will be set to
-            "auto_parallel" and the search mode (search_mode) to "sharding_propagation".
-            If the input contain Parameter, its strategy should be set in `in_strategy`.
+            - It is valid only in semi auto parallel or auto parallel mode.
+              In other parallel modes, strategies set here will be ignored.
+            - If the input contain Parameter, its strategy should be set in `in_strategy`.
 
         Args:
             in_strategy (tuple): Define the layout of inputs, each element of the tuple should be a tuple. Tuple

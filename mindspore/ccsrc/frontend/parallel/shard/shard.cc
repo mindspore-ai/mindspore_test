@@ -653,7 +653,8 @@ bool Shard(const FuncGraphPtr &root, const opt::OptimizerPtr &) {
   // assertion
   auto parallel_mode = ParallelContext::GetInstance()->parallel_mode();
   if (parallel_mode != kSemiAutoParallel && parallel_mode != kAutoParallel) {
-    MS_LOG(EXCEPTION) << "Only auto_parallel and semi_auto_parallel support shard.";
+    MS_LOG(DEBUG) << "Only auto_parallel and semi_auto_parallel support shard.";
+    return change;
   }
 
   auto device_target = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
