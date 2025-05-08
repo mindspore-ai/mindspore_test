@@ -43,6 +43,7 @@
 #include "plugin/device/ascend/optimizer/format_type/set_fracz_group_attr.h"
 #include "plugin/device/ascend/optimizer/expander_fallback.h"
 #include "plugin/device/ascend/optimizer/ge/insert_identity.h"
+#include "plugin/device/ascend/optimizer/ge/format_cast_modify_output.h"
 #include "plugin/device/ascend/optimizer/heterogeneous/insert_pre_fetch_depend.h"
 #include "backend/common/pass/other/process_call_inline.h"
 #include "backend/common/pass/other/process_partial_inline.h"
@@ -149,6 +150,7 @@ void GEBackendOptimizeACLAfterKernelSelect(const KernelGraphPtr &kernel_graph) {
   auto optimizer = std::make_shared<GraphOptimizer>();
   auto opt_acl_after_kernel_select_pm = std::make_shared<PassManager>("opt_acl_after_kernel_select_pm");
   opt_acl_after_kernel_select_pm->AddPass(std::make_shared<SetFraczGroupAttr>());
+  opt_acl_after_kernel_select_pm->AddPass(std::make_shared<FormatCastModifyOutput>());
   opt_acl_after_kernel_select_pm->AddPass(std::make_shared<InsertIdentity>());
 
   // graph_mode process the pass in OptimizeACLGraphAfterCreateKernel
