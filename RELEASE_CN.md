@@ -35,6 +35,7 @@
 - [STABLE]支持强化学习场景中，DP/MP/PP 多维混合并行模式下的训推权重在线权重重排。
 - [STABLE] 支持用户查询分布式模块是否可用和通信模块是否初始化功能，用户可以通过 [mint.distributed.is_available](https://www.mindspore.cn/docs/zh-CN/master/api_python/mint/mindspore.mint.distributed.is_available.html) 接口查询分布式模块是否可用，以及通过 [mint.distributed.is_initialized](https://www.mindspore.cn/docs/zh-CN/master/api_python/mint/mindspore.mint.distributed.is_initialized.html) 接口查询通信模块是否初始化。
 - [STABLE] 静态图模式场景，支持 `AlltoAllV` 正反向算子，用户可通过 [ops.AlltoAllV](https://www.mindspore.cn/docs/zh-CN/master/api_python/ops/mindspore.ops.AlltoAllV.html) 接口使用该算子。
+- [STABLE] 支持CPU通信接口[mindspore.mint.distributed.allreduce](https://www.mindspore.cn/docs/zh-CN/master/api_python/mint/mindspore.mint.distributed.all_reduce.html#mindspore.mint.distributed.all_reduce)、[mindspore.mint.distributed.barrier](https://www.mindspore.cn/docs/zh-CN/master/api_python/mint/mindspore.mint.distributed.barrier.html#mindspore.mint.distributed.barrier)、[mindspore.mint.distributed.send](https://www.mindspore.cn/docs/zh-CN/master/api_python/mint/mindspore.mint.distributed.send.html#mindspore.mint.distributed.send)、[mindspore.mint.distributed.recv](https://www.mindspore.cn/docs/zh-CN/master/api_python/mint/mindspore.mint.distributed.recv.html#mindspore.mint.distributed.recv)，用户可通过这些接口使用对应的集合通信算子功能。
 
 #### Inference
 
@@ -51,6 +52,10 @@
 - [STABLE] Profiler支持查看memory_access相关aicore metric信息。
 - [STABLE] Profiler支持[mindspore.profiler.profile](https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.profiler.profile.html)、[_ExperimentalConfig](https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.profiler._ExperimentalConfig.html) 和[tensorboard_trace_handler](https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.profiler.tensorboard_trace_handler.html)，提升工具易用性。
 - [STABLE] 动态profiling支持内存采集，用户可动态开启内存数据采集，提升工具易用性。
+
+#### Compiler
+
+- [BETA] 图模式支持inplace和view算子正向表达能力。
 
 ### API 变更
 
