@@ -222,6 +222,7 @@ class ClassNamer(Namer):
 
         super(ClassNamer, self).add_name(name + self._prefix)
 
+
 class FunctionNamer(Namer):
     """
     Used for unique-ing function name in a network.

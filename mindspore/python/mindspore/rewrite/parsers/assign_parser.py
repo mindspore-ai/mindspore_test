@@ -46,7 +46,7 @@ class AssignParser(Parser):
     """Parse ast.Assign in construct function to node of SymbolTree."""
 
     # Types for creating Cell Container node
-    types_for_cell_container = [SequentialCell,]
+    types_for_cell_container = [SequentialCell]
     # If mindspore built-in function to be parsered or skipped
     _skip_ms_function = False
     # Functions in black list will not be parsed
