@@ -61,6 +61,13 @@ aclmdlGetInputDynamicDimsFunObj aclmdlGetInputDynamicDims_ = nullptr;
 aclmdlGetInputDynamicGearCountFunObj aclmdlGetInputDynamicGearCount_ = nullptr;
 aclmdlGetDynamicBatchFunObj aclmdlGetDynamicBatch_ = nullptr;
 aclmdlSetDynamicHWSizeFunObj aclmdlSetDynamicHWSize_ = nullptr;
+#if defined(__linux__) && defined(WITH_BACKEND)
+aclmdlRICaptureBeginFunObj aclmdlRICaptureBegin_ = nullptr;
+aclmdlRICaptureGetInfoFunObj aclmdlRICaptureGetInfo_ = nullptr;
+aclmdlRICaptureEndFunObj aclmdlRICaptureEnd_ = nullptr;
+aclmdlRIExecuteAsyncFunObj aclmdlRIExecuteAsync_ = nullptr;
+aclmdlRIDestroyFunObj aclmdlRIDestroy_ = nullptr;
+#endif
 
 void LoadAclMdlApiSymbol(const std::string &ascend_path) {
   std::string aclmdl_plugin_path = ascend_path + "lib64/libascendcl.so";
@@ -112,6 +119,14 @@ void LoadAclMdlApiSymbol(const std::string &ascend_path) {
   aclmdlGetInputDynamicGearCount_ = DlsymAscendFuncObj(aclmdlGetInputDynamicGearCount, handler);
   aclmdlGetDynamicBatch_ = DlsymAscendFuncObj(aclmdlGetDynamicBatch, handler);
   aclmdlSetDynamicHWSize_ = DlsymAscendFuncObj(aclmdlSetDynamicHWSize, handler);
+#if defined(__linux__) && defined(WITH_BACKEND)
+  aclmdlRICaptureBegin_ = DlsymAscendFuncObj(aclmdlRICaptureBegin, handler);
+  aclmdlRICaptureGetInfo_ = DlsymAscendFuncObj(aclmdlRICaptureGetInfo, handler);
+  aclmdlRICaptureEnd_ = DlsymAscendFuncObj(aclmdlRICaptureEnd, handler);
+  aclmdlRIExecuteAsync_ = DlsymAscendFuncObj(aclmdlRIExecuteAsync, handler);
+  aclmdlRIDestroy_ = DlsymAscendFuncObj(aclmdlRIDestroy, handler);
+#endif
+
   MS_LOG(INFO) << "Load acl mdl api success!";
 }
 }  // namespace mindspore::device::ascend

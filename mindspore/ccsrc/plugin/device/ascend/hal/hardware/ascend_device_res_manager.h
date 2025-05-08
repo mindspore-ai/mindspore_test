@@ -130,6 +130,7 @@ class AscendDeviceResManager : public DeviceResManager {
   int CleanTdtChannel() const override;
 
   DeviceEventPtr CreateRuntimeEvent(bool enable_blocking, bool enable_record_wait);
+  CaptureGraphPtr CreateCaptureGraph();
   DeviceEventPtr CreateEventWithFlag(bool enable_timing, bool blocking, bool use_extensional_api) override;
 
   bool single_op_multi_stream_enable() const override;

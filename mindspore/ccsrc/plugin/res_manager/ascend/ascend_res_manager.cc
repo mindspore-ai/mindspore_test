@@ -32,6 +32,7 @@
 #include "plugin/res_manager/ascend/device_context_conf/op_debug_conf.h"
 #include "plugin/res_manager/ascend/event/ascend_event.h"
 #include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
+#include "plugin/res_manager/ascend/capture_graph/ascend_capture_graph.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_pin_mem_pool.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_compiler_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
@@ -1007,6 +1008,8 @@ DeviceEventPtr AscendResManager::CreateRuntimeEvent(bool enable_blocking, bool e
   }
   return std::make_shared<AscendEvent>(flag);
 }
+
+CaptureGraphPtr AscendResManager::CreateCaptureGraph() { return std::make_shared<AscendCaptureGraph>(); }
 
 DeviceEventPtr AscendResManager::CreateEventWithFlag(bool enable_timing, bool blocking, bool use_extensional_api) {
   auto flag = enable_timing ? (ACL_EVENT_TIME_LINE | ACL_EVENT_SYNC) : ACL_EVENT_SYNC;
