@@ -2110,13 +2110,11 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
 
         from mindspore.common.initializer import Zero as ZeroInitializer
 
-        is_qint4x2 = self.dtype == mstype.qint4x2
         try:
-            dtype_ = mstype.int8 if is_qint4x2 else self.dtype
             if isinstance(self.init, ZeroInitializer):
-                data = np.zeros(data_shape, dtype=mstype.dtype_to_nptype(dtype_))
+                data = np.zeros(data_shape, dtype=mstype.dtype_to_nptype(self.dtype))
             else:
-                data = np.ndarray(data_shape, dtype=mstype.dtype_to_nptype(dtype_))
+                data = np.ndarray(data_shape, dtype=mstype.dtype_to_nptype(self.dtype))
         except ValueError as e:
             msg = "Error shape={}".format(shape)
             logger.critical(msg)
@@ -2161,10 +2159,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
             self.assign_value(TensorPy_.persistent_data_from_numpy(data, slice_num_of_persistent_data))
         else:
             self.assign_value(TensorPy_.from_numpy(data))
-
-        if is_qint4x2:
-            self.set_dtype(mstype.qint4x2)
-
         return self
 
     def resize(self, *new_shape):

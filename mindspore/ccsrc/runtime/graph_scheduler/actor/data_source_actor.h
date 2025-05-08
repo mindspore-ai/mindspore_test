@@ -44,7 +44,8 @@ class DataSourceActor : public DebugAwareActor {
  public:
   DataSourceActor(const std::string &name, KernelTransformType type, size_t buffer_capacity,
                   const AID &memory_manager_aid, const AID *debug_aid, const AID *recorder_aid)
-      : DebugAwareActor(name, type, recorder_aid, memory_manager_aid, debug_aid, nullptr) {}
+      : DebugAwareActor(name, type, recorder_aid, memory_manager_aid, debug_aid, nullptr),
+        buffer_capacity_(buffer_capacity) {}
   ~DataSourceActor() override = default;
 
   virtual void ReleaseData() {}
@@ -62,11 +63,14 @@ class DataSourceActor : public DebugAwareActor {
   void FetchData(OpContext<DeviceTensor> *const context);
 
   // Construct the device tensors and fill to device tensor buffer from the member nodes during the data fetching.
-  virtual void FillDataBuffer(OpContext<DeviceTensor> *const context) = 0;
+  virtual void FillDataBuffer() = 0;
 
   void UpdateOutputData(OpData<DeviceTensor> *const output_data, const DataArrowPtr &data_arrow,
                         const AnfNodePtr &output_node, OpContext<DeviceTensor> *const context) override;
-  std::vector<DeviceTensor *> device_tensors_;
+
+  // The buffers store the device tensors.
+  std::queue<std::vector<DeviceTensor *>> buffers_;
+  size_t buffer_capacity_;
 };
 
 // The class represents that the data source is device queue.
@@ -93,7 +97,7 @@ class DeviceQueueDataSourceActor : public DataSourceActor {
 
  protected:
   void Init() override;
-  void FillDataBuffer(OpContext<DeviceTensor> *const context) override;
+  void FillDataBuffer() override;
   void SendRecorderInfo(OpContext<DeviceTensor> *const context) const override;
 
  private:
@@ -138,13 +142,11 @@ class HostQueueDataSourceActor : public DataSourceActor {
   size_t FetchNodePosition(const KernelWithIndex &node) const override;
   KernelWithIndex FetchNode(size_t node_position) const;
   const std::vector<KernelWithIndex> &data_nodes() const { return data_node_with_indexs_; }
-  bool is_shape_match() { return is_shape_match_; }
-  void set_is_shape_match(bool is_shape_match) { is_shape_match_ = is_shape_match; }
+
   void ReleaseData() override;
 
  protected:
-  void Init() override;
-  void FillDataBuffer(OpContext<DeviceTensor> *const context) override;
+  void FillDataBuffer() override;
 
   void AddCopyDataCallBack(bool enable_async_copy, const mindspore::tensor::TensorPtrList &host_tensors,
                            const std::vector<mindspore::runtime::DeviceTensor *> &device_tensors);
@@ -168,9 +170,6 @@ class HostQueueDataSourceActor : public DataSourceActor {
 
   // Whether the super kernel actor is a infer 'prefill' or 'increment' graph or not.
   bool is_infer_phase_;
-  bool is_shape_match_{false};
-  std::vector<size_t> need_refresh_input_index_;
-  std::vector<bool> need_refresh_device_address_;
 };
 
 using DataSourceActorPtr = std::shared_ptr<DataSourceActor>;
