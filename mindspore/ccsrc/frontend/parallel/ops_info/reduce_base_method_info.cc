@@ -81,13 +81,20 @@ Status ReduceBaseMethod::InferMirrorOps() {
 }
 
 std::vector<int64_t> ReduceBaseMethod::reduce_dim() {
-  std::vector<int64_t> dim_list{};
+  std::vector<int64_t> dim_list;
+  std::vector<int64_t> axis_value;
   auto axis_opt = GetArrayValueFromInputs<int64_t>(input_value_, name_, kNameAxis);
   if (!axis_opt.has_value()) {
-    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << "For " << name_ << ", failed to get value for " << kNameAxis << ".";
+    if (!outputs_shape_.empty() && outputs_shape_[0].empty()) {
+      // the axis of reduce op may be None, it is equivalent to axis = ().
+      axis_value = {};
+    } else {
+      MS_LOG_WITH_NODE(EXCEPTION, cnode_) << "For " << name_ << ", failed to get value for " << kNameAxis << ".";
+    }
+  } else {
+    axis_value = axis_opt.value();
   }
 
-  auto axis_value = axis_opt.value();
   MS_ASSERT(inputs_shape_.size() >= 1);
   auto x_dim = inputs_shape_.at(0).size();
   // axis is (), reduce all dim
