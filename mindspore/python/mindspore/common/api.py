@@ -1165,6 +1165,11 @@ def jit(
         ...
         >>> tensor_add_graph = jit(function=tensor_add)
         >>> out = tensor_add_graph(x, y)
+        >>> print(out)
+        Tensor(shape=[1, 1, 3, 3], dtype=Float32, value=
+        [[[[ 2.00000000e+00,  2.00000000e+00,  2.00000000e+00],
+           [ 2.00000000e+00,  2.00000000e+00,  2.00000000e+00],
+           [ 2.00000000e+00,  2.00000000e+00,  2.00000000e+00]]]])
         ...
         >>> # create a callable MindSpore graph through decorator @jit
         >>> @jit
@@ -1173,6 +1178,11 @@ def jit(
         ...     return z
         ...
         >>> out = tensor_add_with_dec(x, y)
+        >>> print(out)
+        Tensor(shape=[1, 1, 3, 3], dtype=Float32, value=
+        [[[[ 2.00000000e+00,  2.00000000e+00,  2.00000000e+00],
+           [ 2.00000000e+00,  2.00000000e+00,  2.00000000e+00],
+           [ 2.00000000e+00,  2.00000000e+00,  2.00000000e+00]]]])
         ...
         >>> # create a callable MindSpore graph and capture the entire function into the graph
         >>> @jit(fullgraph=True)
@@ -1181,6 +1191,11 @@ def jit(
         ...     return z
         ...
         >>> out = tensor_add_fullgraph(x, y)
+        >>> print(out)
+        Tensor(shape=[1, 1, 3, 3], dtype=Float32, value=
+        [[[[ 2.00000000e+00,  2.00000000e+00,  2.00000000e+00],
+           [ 2.00000000e+00,  2.00000000e+00,  2.00000000e+00],
+           [ 2.00000000e+00,  2.00000000e+00,  2.00000000e+00]]]])
     """
 
     capture_mode = Validator.check_string(capture_mode, ["ast", "bytecode", "trace"], "capture_mode", "jit")
