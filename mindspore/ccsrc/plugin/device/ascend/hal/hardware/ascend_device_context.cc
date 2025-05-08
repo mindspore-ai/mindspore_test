@@ -1,5 +1,5 @@
 /**
- * Copyright 2022-2023 Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/hal/hardware/ge_device_context.h"
+#include "plugin/device/ascend/hal/hardware/ascend_device_context.h"
 #include <tuple>
 #include <algorithm>
 #include <sstream>
@@ -125,7 +125,7 @@ void SetAclOpDebugOption() {
 }
 }  // namespace
 
-bool GeDeviceContext::PartitionGraph(const FuncGraphPtr &func_graph) const {
+bool AscendDeviceContext::PartitionGraph(const FuncGraphPtr &func_graph) const {
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
   if (common::AnfAlgo::IsDynamicShapeFuncGraph(func_graph)) {
@@ -180,7 +180,7 @@ bool GeDeviceContext::PartitionGraph(const FuncGraphPtr &func_graph) const {
   return context_ptr->get_param<bool>(MS_CTX_IS_MULTI_GRAPH_SINK);
 }
 
-RunMode GeDeviceContext::GetRunMode(const FuncGraphPtr &func_graph) const {
+RunMode AscendDeviceContext::GetRunMode(const FuncGraphPtr &func_graph) const {
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
   if (common::AnfAlgo::IsDynamicShapeFuncGraph(func_graph)) {
@@ -213,7 +213,7 @@ RunMode GeDeviceContext::GetRunMode(const FuncGraphPtr &func_graph) const {
   }
 }
 
-void GeDeviceContext::ContextInitGe() const {
+void AscendDeviceContext::ContextInitGe() const {
   if (ge_initialized_) {
     return;
   }
@@ -226,7 +226,7 @@ void GeDeviceContext::ContextInitGe() const {
   ge_initialized_ = true;
 }
 
-void GeDeviceContext::Initialize() {
+void AscendDeviceContext::Initialize() {
   GilReleaseWithCheck gil_release;
   std::lock_guard<std::mutex> lock(init_mutex_);
   if (initialized_) {
@@ -295,7 +295,7 @@ void GeDeviceContext::Initialize() {
   MS_LOG(INFO) << "End initializing device context.";
 }
 
-void GeDeviceContext::Destroy() {
+void AscendDeviceContext::Destroy() {
   if (!IsNeedDestroy()) {
     // The device context is copied from main process by fork
     MS_LOG(INFO) << "The device context is not initialized by current process, it doesn't need to be destroyed.";
@@ -329,7 +329,7 @@ void GeDeviceContext::Destroy() {
   initialized_ = false;
 }
 
-void GeDeviceContext::InitDump() const {
+void AscendDeviceContext::InitDump() const {
   if (common::AnfAlgo::IsBackendGe()) {
     MS_LOG(INFO) << "In the ge backend, dump is initialized at the same time as the backend.";
     return;
@@ -338,7 +338,7 @@ void GeDeviceContext::InitDump() const {
   dump_parser.Parse();
 }
 
-DeprecatedInterface *GeDeviceContext::GetDeprecatedInterface() {
+DeprecatedInterface *AscendDeviceContext::GetDeprecatedInterface() {
   // need lock when multi-threads
   if (deprecated_interface_ == nullptr) {
     deprecated_interface_ = std::make_unique<AscendDeprecatedInterface>();
@@ -346,33 +346,33 @@ DeprecatedInterface *GeDeviceContext::GetDeprecatedInterface() {
   return deprecated_interface_.get();
 }
 
-uint32_t GeDeviceContext::GetDeviceCount() { return AscendHalManager::GetInstance().GetDeviceCount(); }
+uint32_t AscendDeviceContext::GetDeviceCount() { return AscendHalManager::GetInstance().GetDeviceCount(); }
 
-std::string GeDeviceContext::GetDeviceName(uint32_t) {
+std::string AscendDeviceContext::GetDeviceName(uint32_t) {
   const char *name = CALL_ASCEND_API(aclrtGetSocName);
   std::string device_name = (name == nullptr) ? "" : name;
   return device_name;
 }
 
-uint32_t GeDeviceContext::GetExecuteTimeout() {
+uint32_t AscendDeviceContext::GetExecuteTimeout() {
   auto op_debug_conf = OpDebugConf::GetInstance();
   MS_EXCEPTION_IF_NULL(op_debug_conf);
   return op_debug_conf->execute_timeout();
 }
 
-std::string GeDeviceContext::GetAoeJobType() {
+std::string AscendDeviceContext::GetAoeJobType() {
   auto op_tuning_conf = OpTuningConf::GetInstance();
   MS_EXCEPTION_IF_NULL(op_tuning_conf);
   return op_tuning_conf->aoe_job_type();
 }
 
-std::string GeDeviceContext::GetPrecisionMode() {
+std::string AscendDeviceContext::GetPrecisionMode() {
   auto op_precision_conf = OpPrecisionConf::GetInstance();
   MS_EXCEPTION_IF_NULL(op_precision_conf);
   return op_precision_conf->precision_mode();
 }
 
-AscendDeviceProperties GeDeviceContext::GetDeviceProperties(uint32_t) {
+AscendDeviceProperties AscendDeviceContext::GetDeviceProperties(uint32_t) {
   AscendDeviceProperties device_properties;
   const char *name = CALL_ASCEND_API(aclrtGetSocName);
   device_properties.name = (name == nullptr) ? "" : name;
@@ -387,7 +387,7 @@ AscendDeviceProperties GeDeviceContext::GetDeviceProperties(uint32_t) {
   return device_properties;
 }
 
-MS_REGISTER_DEVICE(kAscendDevice, GeDeviceContext);
+MS_REGISTER_DEVICE(kAscendDevice, AscendDeviceContext);
 #ifdef WITH_BACKEND
 namespace {
 void SetContextSocVersion(MsContext *ctx) {
@@ -447,10 +447,10 @@ void PybindAscendStatelessFunc(py::module *m) {
         << "MB, free_memory=" << p.free_memory / (1024 * 1024) << "MB)";
       return s.str();
     });
-  (void)m->def("ascend_get_device_count", &GeDeviceContext::GetDeviceCount, "Get Ascend device count.");
-  (void)m->def("ascend_get_device_name", &GeDeviceContext::GetDeviceName,
+  (void)m->def("ascend_get_device_count", &AscendDeviceContext::GetDeviceCount, "Get Ascend device count.");
+  (void)m->def("ascend_get_device_name", &AscendDeviceContext::GetDeviceName,
                "Get Ascend device name of specified device id.");
-  (void)m->def("ascend_get_device_properties", &GeDeviceContext::GetDeviceProperties,
+  (void)m->def("ascend_get_device_properties", &AscendDeviceContext::GetDeviceProperties,
                "Get Ascend device properties of specified device id.");
 
   RegOpPrecisionConf(m);

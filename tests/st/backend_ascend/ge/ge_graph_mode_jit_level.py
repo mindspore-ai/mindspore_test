@@ -65,7 +65,7 @@ def test_ge_graph_mode_without_jit_level():
     """
     Feature: GE with jit_level.
     Description: Graph Mode jit_level==None with GE.
-    Expectation: Run by ge_device_context without jit_level.
+    Expectation: Run ge without jit_level.
     """
     context.set_context(device_target="Ascend", mode=context.GRAPH_MODE)
     inputs = Tensor(np.ones((3, 3), np.float32))
