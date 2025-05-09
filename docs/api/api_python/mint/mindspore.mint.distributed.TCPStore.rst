@@ -1,7 +1,7 @@
 mindspore.mint.distributed.TCPStore
 =====================================
 
-.. py:class:: mindspore.mint.distributed.TCPStore(self, host_name=None, port=None, world_size=None, is_master=False, timeout=300, wait_for_workers=True, multi_tenant=False, master_listen_fd=None, use_libuv=True)
+.. py:class:: mindspore.mint.distributed.TCPStore(host_name=None, port=None, world_size=None, is_master=False, timeout=300, wait_for_workers=True, multi_tenant=False, master_listen_fd=None, use_libuv=True)
 
     一种基于传输控制协议（TCP）的分布式键值存储实现方法。
 
@@ -30,7 +30,7 @@ mindspore.mint.distributed.TCPStore
     .. note::
         .. include:: mindspore.mint.comm_note.rst
 
-    .. py:method:: delete_key(key: str)
+    .. py:method:: delete_key(key)
 
         从存储中删除与 `key` 关联的键值对。
 
@@ -48,7 +48,7 @@ mindspore.mint.distributed.TCPStore
         .. note::
             .. include:: mindspore.mint.comm_note.rst
 
-    .. py:method:: get(key: str)
+    .. py:method:: get(key)
 
         检索与存储中给定 `key` 关联的值。如果存储中不存在 `key` ，则该函数将返回空字符串。
 
@@ -66,13 +66,13 @@ mindspore.mint.distributed.TCPStore
         .. note::
             .. include:: mindspore.mint.comm_note.rst
 
-    .. py:method:: set(key: str, value: str)
+    .. py:method:: set(key, value)
 
         根据提供的 `key` 和 `value` 将键值对插入到存储中。如果存储中已经存在 `key` ，它将使用新提供的 `value` 覆盖旧值。
 
         参数：
             - **key** (str) - 要添加到存储中的键。
-            - **value** (Union[str, bytes]) - 要添加到存储中的键值对的value。
+            - **value** (Union[bytes, str]) - 要添加到存储中的键值对的value。
 
         异常：
             - **TypeError** - 当 `key` 不是字符串。

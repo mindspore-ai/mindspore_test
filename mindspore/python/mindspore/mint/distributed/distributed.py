@@ -159,7 +159,7 @@ class TCPStore:
         port (int, invalid, optional): The port on which the server store should listen for incoming requests.
             Default is ``None``.
         world_size (int, invalid, optional): The total number of store users (number of clients + 1 for the server).
-            Default is ``None``(``None`` indicates a non-fixed number of store users).
+            Default is ``None`` (``None`` indicates a non-fixed number of store users).
         is_master (bool, invalid, optional): True when initializing the server store and False for client stores.
             Default is ``False``.
         timeout (timedelta, invalid, optional): Timeout used by the store during initialization, Unit: seconds.
