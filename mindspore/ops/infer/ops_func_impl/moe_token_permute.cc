@@ -91,11 +91,6 @@ std::vector<TypeId> MoeTokenPermuteFuncImpl::InferType(const PrimitivePtr &primi
                                                        const InferInfoPtrList &input_infos) const {
   TypeId tokens_type = input_infos[kIndex0]->GetType();
   TypeId indices_type = input_infos[kIndex1]->GetType();
-
-  if (tokens_type != kNumberTypeBFloat16) {
-    MS_EXCEPTION(TypeError) << "For primitive[MoeTokenPermute], dtype of 'tokens' is invalid"
-                            << " , should be bfloat16.";
-  }
   if (indices_type != kNumberTypeInt32 && indices_type != kNumberTypeInt64) {
     MS_EXCEPTION(TypeError) << "For primitive[MoeTokenPermute], indices dtype is invalid"
                             << " , should be int32 or int64.";
