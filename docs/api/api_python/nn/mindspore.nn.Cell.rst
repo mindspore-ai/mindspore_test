@@ -43,16 +43,6 @@
         返回：
             Cell类型，Cell本身。
 
-    .. py:method:: auto_cast_inputs(inputs)
-
-        在混合精度下，自动对输入进行类型转换。
-
-        参数：
-            - **inputs** (tuple) - construct方法的输入。
-
-        返回：
-            Tuple类型，经过类型转换后的输入。
-
     .. py:method:: bprop_debug
         :property:
 
@@ -72,24 +62,11 @@
 
         将输入转换为指定类型。
 
-        参数：
-            - **inputs** (tuple[Tensor]) - 输入。
-            - **dst_type** (mindspore.dtype) - 指定的数据类型。
+        .. warning::
+            此接口将在后续版本中废弃。
 
         返回：
             tuple[Tensor]类型，转换类型后的结果。
-
-    .. py:method:: cast_param(param)
-
-        在PyNative模式下，根据自动混合精度的精度设置转换Cell中参数的类型。
-
-        该接口目前在自动混合精度场景下使用。
-
-        参数：
-            - **param** (Parameter) - 需要被转换类型的输入参数。
-
-        返回：
-            Parameter类型，转换类型后的参数。
 
     .. py:method:: cells()
 
@@ -264,19 +241,6 @@
 
         返回：
             Cell
-
-    .. py:method:: infer_param_pipeline_stage()
-
-        推导Cell中当前 `pipeline_stage` 的参数。
-
-        .. note::
-            - 这个接口在2.3版本废弃，并且会在未来版本移除。
-
-        返回：
-            属于当前 `pipeline_stage` 的参数。
-
-        异常：
-            - **RuntimeError** - 如果参数不属于任何stage。
 
     .. py:method:: init_parameters_data(auto_parallel_mode=False)
 
@@ -506,19 +470,33 @@
             - **tensor** (Tensor) - 待注册的缓冲区。如果为 ``None`` ，则此Cell的 :attr:`state_dict` 不会包括该缓冲区。
             - **persistent** (bool, 可选) - 缓冲区是否是此Cell的 :attr:`state_dict` 的一部分。默认 ``True`` 。
 
-    .. py:method:: register_forward_hook(hook_fn)
+    .. py:method:: register_forward_hook(hook_fn, with_kwargs=False)
 
         设置Cell对象的正向hook函数。
 
+        该hook函数会在 :func:`mindspore.nn.Cell.construct` 执行并生成输出之后被调用。
+
+        `hook_fn` 必须符合以下两种函数签名之一：
+
+        - 当 `with_kwargs` 为 ``False`` 时，`hook_fn(cell, args, output) -> None or new_output` 。
+        - 当 `with_kwargs` 为 ``True`` 时，`hook_fn(cell, args, kwargs, output) -> None or new_output` 。
+
+        其中：
+
+        - `cell` (Cell)：注册hook的Cell对象。
+        - `args` (tuple)：传递给 `construct` 函数的位置参数。
+        - `kwargs` (dict)：传递给 `construct` 函数的关键字参数。仅当 `with_kwargs` 为 ``True`` 时，这些参数才会传递给 `hook_fn` 。
+        - `output` ： `construct` 函数生成的输出。
+
         .. note::
-            - `register_forward_hook(hook_fn)` 在图模式下，或者在PyNative模式下使用 `jit` 装饰器功能时不起作用。
-            - hook_fn必须有如下代码定义。 `cell` 是已注册Cell对象。 `inputs` 是网络正向传播时Cell对象的输入数据。 `outputs` 是网络正向传播时Cell对象的输出数据。用户可以在hook_fn中打印数据或者返回新的输出数据。
-            - hook_fn返回新的输出数据或者None：hook_fn(cell, inputs, outputs) -> New outputs or None。
-            - 为了避免脚本在切换到图模式时运行失败，不建议在Cell对象的 `construct` 函数中调用 `register_forward_hook(hook_fn)` 。
-            - PyNative模式下，如果在Cell对象的 `construct` 函数中调用 `register_forward_hook(hook_fn)` ，那么Cell对象每次运行都将增加一个 `hook_fn` 。
+            - 该功能在图模式下或使用 `jit` 装饰器的PyNative模式下不生效。
+            - `hook_fn` 可以通过返回新的输出数据来修改前向输出。
+            - 为了避免脚本在切换到图模式时运行失败，不建议在Cell对象的 `construct` 函数中调用此方法。
+            - PyNative模式下，如果在Cell对象的 `construct` 函数中调用此方法，那么Cell对象每次运行都将增加一个 `hook_fn` 。
 
         参数：
             - **hook_fn** (function) - 捕获Cell对象信息和正向输入，输出数据的 `hook_fn` 函数。
+            - **with_kwargs** (bool，可选) - 是否将 `construct` 的关键字参数传递给hook函数。默认值： ``False`` 。
 
         返回：
             返回与 `hook_fn` 函数对应的 `handle` 对象。可通过调用 `handle.remove()` 来删除添加的 `hook_fn` 函数。
@@ -526,19 +504,34 @@
         异常：
             - **TypeError** - 如果 `hook_fn` 不是Python函数。
 
-    .. py:method:: register_forward_pre_hook(hook_fn)
+    .. py:method:: register_forward_pre_hook(hook_fn, with_kwargs=False)
 
         设置Cell对象的正向pre_hook函数。
 
+        该hook函数会在 :func:`mindspore.nn.Cell.construct` 执行前调用。
+
+        hook 函数需满足以下两种签名之一：
+
+        - 当 `with_kwargs` 为 ``False`` 时， `hook_fn(cell, args) -> None or new_args` 。
+        - 当 `with_kwargs` 为 ``True`` 时， `hook_fn(cell, args, kwargs) -> None or (new_args, new_kwargs)` 。
+
+        其中：
+
+        - `cell` (Cell)：注册hook的Cell对象。
+        - `args` (tuple)：传入 `construct` 函数的位置参数。
+        - `kwargs` (dict)：传入 `construct` 函数的关键字参数。仅当 `with_kwargs` 为 ``True`` 时，这些参数才会传递给 `hook_fn` 。
+
         .. note::
-            - `register_forward_pre_hook(hook_fn)` 在图模式下，或者在PyNative模式下使用 `jit` 装饰器功能时不起作用。
-            - hook_fn必须有如下代码定义。 `cell` 是已注册Cell对象。 `inputs` 是网络正向传播时Cell对象的输入数据。用户可以在hook_fn中打印输入数据或者返回新的输入数据。
-            - hook_fn返回新的输入数据或者None：hook_fn(cell, inputs) -> New inputs or None。
-            - 为了避免脚本在切换到图模式时运行失败，不建议在Cell对象的 `construct` 函数中调用 `register_forward_pre_hook(hook_fn)` 。
-            - PyNative模式下，如果在Cell对象的 `construct` 函数中调用 `register_forward_pre_hook(hook_fn)` ，那么Cell对象每次运行都将增加一个 `hook_fn` 。
+            - 该功能在图模式下或使用 `jit` 装饰器的PyNative模式下不生效。
+            - `hook_fn` 可通过返回新的输入数据来修改前向输入。
+              如果 `with_kwargs` 为 ``False`` ，可以返回单独的值（如果返回值不是元组，将自动封装为元组），也可以直接返回一个元组形式的参数列表。
+              如果 `with_kwargs` 为 ``True`` ，则应该返回包含新的 `args` 和 `kwargs` 的元组。
+            - 为了避免脚本在切换到图模式时运行失败，不建议在Cell对象的 `construct` 函数中调用此方法。
+            - PyNative模式下，如果在Cell对象的 `construct` 函数中调用此方法，那么Cell对象每次运行都将增加一个 `hook_fn` 。
 
         参数：
             - **hook_fn** (function) - 捕获Cell对象信息和正向输入数据的hook_fn函数。
+            - **with_kwargs** (bool，可选) - 是否将 `construct` 的关键字参数传递给hook函数。默认值： ``False`` 。
 
         返回：
             返回与 `hook_fn` 函数对应的 `handle` 对象。可通过调用 `handle.remove()` 来删除添加的 `hook_fn` 函数。
@@ -618,7 +611,8 @@
 
         删除冗余参数。
 
-        这个接口通常不需要显式调用。
+        .. warning::
+            此接口将在后续版本中废弃。
 
     .. py:method:: run_construct(cast_inputs, kwargs)
 

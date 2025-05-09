@@ -81,19 +81,23 @@ class HookHandle:
         It is only supported in pynative mode and works when registering or removing hook function for Cell object.
 
     Args:
-        hook_dict (Dict): The hook object with hook function registered on. Default value: None.
+        hook_dict (Dict, optional): The hook object with hook function registered on. Default value: ``None`` .
+        extra_dict (Dict, optional): The extra dict. Default value: ``None`` .
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
     """
     unique_id = 0
 
-    def __init__(self, hook_dict=None):
+    def __init__(self, hook_dict=None, *, extra_dict=None):
         self.hook_dict_ref = None
+        self.extra_dict_ref = None
         if hook_dict is not None:
             self.hook_dict_ref = weakref.ref(hook_dict)
             self.handle_id = HookHandle.unique_id
             HookHandle.unique_id += 1
+            if extra_dict is not None:
+                self.extra_dict_ref = weakref.ref(extra_dict)
 
     def remove(self):
         """
@@ -145,3 +149,8 @@ class HookHandle:
             hook_dict = self.hook_dict_ref()
             if hook_dict is not None and self.handle_id in hook_dict:
                 del hook_dict[self.handle_id]
+
+        if self.extra_dict_ref is not None:
+            extra_dict = self.extra_dict_ref()
+            if extra_dict is not None and self.handle_id in extra_dict:
+                del extra_dict[self.handle_id]

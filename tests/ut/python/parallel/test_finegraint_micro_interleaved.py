@@ -53,14 +53,12 @@ class GradWrap(nn.Cell):
 
 
 def compile_net(net, input_x):
-    net.set_auto_parallel()
     net.set_train()
     phase, _ = _cell_graph_executor.compile(net, input_x)
     return phase
 
 
 def compile_net_unsupported(net, input_x, indices, update):
-    net.set_auto_parallel()
     net.set_train()
     phase, _ = _cell_graph_executor.compile(net, input_x, indices, update)
     return phase
