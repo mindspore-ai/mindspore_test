@@ -60,7 +60,8 @@ def _fill_param_into_net(net, parameter_list):
         if np_val.shape == (1,):
             parameter_dict[param_name] = Parameter(np_val, name=param_name)
         elif np_val.shape == ():
-            parameter_dict[param_name] = Parameter(Tensor(np_val.tolist(), mstype.pytype_to_dtype(np_val.dtype)),
+            # pylint:disable=protected-access
+            parameter_dict[param_name] = Parameter(Tensor(np_val.tolist(), mstype._pytype_to_dtype(np_val.dtype)),
                                                    name=param_name)
         else:
             parameter_dict[param_name] = Parameter(Tensor(np_val), name=param_name)

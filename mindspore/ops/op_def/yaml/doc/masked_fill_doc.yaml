@@ -18,7 +18,7 @@ masked_fill:
         Examples:
             >>> import mindspore
             >>> input_x = mindspore.tensor([1., 2., 3., 4.], mindspore.float32)
-            >>> mask = mindspore.tensor([True, True, False, True], mindspore.bool_)
+            >>> mask = mindspore.tensor([True, True, False, True], mindspore.bool)
             >>> output = mindspore.ops.masked_fill(input_x, mask, 0.5)
             >>> print(output)
             [0.5 0.5 3.  0.5]

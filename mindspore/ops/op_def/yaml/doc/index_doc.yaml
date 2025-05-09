@@ -39,7 +39,7 @@ index:
             [2 6 5]
             >>> input2 = Tensor(np.arange(4 * 3 * 3).reshape(4, 3, 3), mindspore.int32)
             >>> indices3 = Tensor(np.array([1, 0]), mindspore.int32)
-            >>> indices4 = Tensor(np.array([1, 1, 0]), mindspore.bool_)
+            >>> indices4 = Tensor(np.array([1, 1, 0]), mindspore.bool)
             >>> output2 = ops.auto_generate.index(input2, [indices3, indices4])
             >>> print(output2)
             [[ 9 10 11]

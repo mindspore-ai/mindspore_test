@@ -23,7 +23,7 @@ from mindspore.nn import Cell
 from mindspore import Tensor
 from mindspore.common.parameter import Parameter
 from mindspore.common.initializer import initializer
-from mindspore.common.dtype import pytype_to_dtype
+from mindspore.common.dtype import _pytype_to_dtype
 from mindspore.common.api import _pynative_executor
 
 
@@ -71,7 +71,7 @@ def test_scatter_func_small_float32():
     # div
     indices_me = Tensor(indices_np)
     update_me = Tensor(update_np)
-    net = ScatterDiv(input_shape, pytype_to_dtype(input_dtype), use_locking=True)
+    net = ScatterDiv(input_shape, _pytype_to_dtype(input_dtype), use_locking=True)  # pylint:disable=protected-access
     out = net(indices_me, update_me)
     expect = np.array([[0.00013175, 0.01010101, 0.00102564], [0.00714286, 0.00396825, 0.00011926]])
     assert np.allclose(out.asnumpy(), expect.astype(np.float32), 0.0001, 0.0001)
@@ -79,7 +79,7 @@ def test_scatter_func_small_float32():
     # mul
     indices_me = Tensor(indices_np)
     update_me = Tensor(update_np)
-    net = ScatterMul(input_shape, pytype_to_dtype(input_dtype), use_locking=True)
+    net = ScatterMul(input_shape, _pytype_to_dtype(input_dtype), use_locking=True)  # pylint:disable=protected-access
     out = net(indices_me, update_me)
     expect = np.array([[7590.0, 99.0, 975.0], [140.0, 252.0, 8385.0]])
     assert np.allclose(out.asnumpy(), expect.astype(np.float32), 0.0001, 0.0001)

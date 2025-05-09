@@ -1,8 +1,8 @@
 import numpy as np
 from mindspore.common.tensor import Tensor
+from mindspore.common import dtype as mstype
 from mindspore.nn import Cell
 from mindspore.ops import operations as op
-import mindspore
 from ...utils import tensor_to_numpy, is_empty
 from ...grad import GradOfFirstInput
 
@@ -37,7 +37,7 @@ class DTypeFactory():
         return input_grad.asnumpy()
 
     def forward_cmp(self, net):
-        out_mindspore = mindspore.dtype_to_nptype(self.forward_mindspore_impl(net))
+        out_mindspore = mstype._dtype_to_nptype(self.forward_mindspore_impl(net))  # pylint:disable=protected-access
         assert out_mindspore == self.dtype
 
     def grad_cmp(self, net):

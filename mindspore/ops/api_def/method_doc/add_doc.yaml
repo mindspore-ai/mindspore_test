@@ -12,7 +12,7 @@ add:
         - When `self` and `other` have different shapes,
           they must be able to broadcast to a common shape.
         - `self` and `other` can not be bool type at the same time,
-          [True, Tensor(True, bool\_), Tensor(np.array([True]), bool\_)] are all considered bool type.
+          [True, Tensor(True), Tensor(np.array([True]))] are all considered bool type.
         - `self` and `other` comply with the implicit type conversion rules to make the data types
           consistent.
         - The dimension of `self` should be greater than or equal to 1.
@@ -20,7 +20,7 @@ add:
     Args:
         other (Union[Tensor, number.Number, bool]): `other` is a number.Number or a bool or a tensor whose data type is
             `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
-            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
+            `bool <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
 
     Returns:
         Tensor with a shape that is the same as the broadcasted shape of `self` and `other`,
@@ -71,7 +71,7 @@ add:
     Args:
         other (Union[Tensor, number.Number, bool]): `other` is a number.Number or a bool or a tensor whose data type is
             `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
-            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
+            `bool <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
         
     Keyword Args:
         alpha (number.Number): A scaling factor applied to `other`, default 1.

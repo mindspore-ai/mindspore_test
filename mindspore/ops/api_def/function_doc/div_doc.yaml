@@ -11,7 +11,7 @@ div:
     .. note::
         - When the two inputs have different shapes, they must be able to broadcast to a common shape.
         - The two inputs can not be bool type at the same time,
-          [True, Tensor(True, bool\_), Tensor(np.array([True]), bool\_)] are all considered bool type.
+          [True, Tensor(True), Tensor(np.array([True]))] are all considered bool type.
         - The two inputs comply with the implicit type conversion rules to make the data types
           consistent.
 

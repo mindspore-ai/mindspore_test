@@ -2,7 +2,7 @@ import numpy as np
 import mindspore.ops.operations as ops
 from mindspore.common.tensor import Tensor
 from mindspore.nn import Cell
-from mindspore.common import dtype_to_nptype
+from mindspore.common.dtype import _dtype_to_nptype
 from ...utils import allclose_nparray, is_empty
 from ...grad import HighGrad
 from ...grad import GradOfFirstInput
@@ -24,7 +24,7 @@ class MaxPool(Cell):
 class MaxPoolMock():
     def __init__(self, attributes=None, inputs=None, grads=None):
         self.ms_type = inputs[0][0].dtype
-        self.dtype = dtype_to_nptype(self.ms_type)
+        self.dtype = _dtype_to_nptype(self.ms_type)  # pylint:disable=protected-access
         self.pad_mode = attributes.get('pad_mode')
         self.kernel_size = attributes.get('kernel_size')
         self.strides = attributes.get('strides')

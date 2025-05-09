@@ -619,7 +619,7 @@ def scalar_in_sequence(x, y):
 @constexpr
 def get_np_eps(input_dtype):
     """Get numpy eps."""
-    nptype = mstype.dtype_to_nptype(input_dtype)
+    nptype = mstype._dtype_to_nptype(input_dtype)  # pylint:disable=protected-access
     eps = np.finfo(nptype).eps
     return float(eps)
 

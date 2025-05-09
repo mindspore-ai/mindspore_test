@@ -8,7 +8,7 @@ add:
 
         Note:
             - The two inputs can not be bool type at the same time,
-              [True, Tensor(True, bool\_), Tensor(np.array([True]), bool\_)] are all considered bool type.
+              [True, Tensor(True), Tensor(np.array([True]))] are all considered bool type.
             - Support broadcast, support implicit type conversion and type promotion.
             - When the input is a tensor, the dimension should be greater than or equal to 1.
 

@@ -14,7 +14,7 @@ pow_tensor_scalar:
         Args:
             input (Tensor): The first input is a tensor whose data type is
                 `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
-                `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
+                `bool <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
             exponent (Number): The second input is a Number.
 
         Returns:

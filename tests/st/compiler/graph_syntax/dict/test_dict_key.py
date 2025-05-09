@@ -13,7 +13,7 @@
 # limitations under the License.
 # ============================================================================
 import mindspore as ms
-from mindspore import context, jit
+from mindspore import context, jit, dtype
 from tests.mark_utils import arg_mark
 
 context.set_context(mode=context.GRAPH_MODE)
@@ -28,7 +28,7 @@ def test_dict_key_is_type():
     """
     @jit
     def dict_key_is_type():
-        return ms.dtype_to_nptype(ms.float32)
+        return dtype._dtype_to_nptype(ms.float32)  # pylint:disable=protected-access
 
     out = dict_key_is_type()
     assert str(out) == "<class 'numpy.float32'>"

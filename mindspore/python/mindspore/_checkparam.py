@@ -787,9 +787,9 @@ def check_astype_dtype(dtype):
     if isinstance(dtype, str):
         if dtype.lower() not in all_types:
             raise TypeError(f"For Tensor.astype, the input type must be one of {all_types}, but got '{dtype}'.")
-        dtype = mstype.pytype_to_dtype(np.dtype(dtype.lower()))
+        dtype = mstype._pytype_to_dtype(np.dtype(dtype.lower()))  # pylint:disable=protected-access
     elif isinstance(dtype, type):
-        dtype = mstype.pytype_to_dtype(dtype)
+        dtype = mstype._pytype_to_dtype(dtype)  # pylint:disable=protected-access
     elif not dtype in mstype.number_type + (mstype.bool_,):
         raise TypeError(f"For Tensor.astype, the input type must be one of {mstype.number_type + (mstype.bool_,)}," \
                         f" but got '{dtype}'.")

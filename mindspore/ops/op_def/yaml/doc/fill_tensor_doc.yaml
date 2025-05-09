@@ -8,7 +8,7 @@ fill_tensor:
                 scalar Tensor or 1-D Tensor with shape of [1].
 
         Keyword Args:
-            dtype (mindspore.dtype): The specified type of output tensor. `bool_` and `number` are supported, for
+            dtype (mindspore.dtype): The specified type of output tensor. `bool` and `number` are supported, for
                 details, please refer to :class:`mindspore.dtype` . Default: ``None`` .
 
         Returns:
