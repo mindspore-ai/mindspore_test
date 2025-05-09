@@ -2069,6 +2069,17 @@ void CheckMemoryLeak(const runtime::AbstractActorPtr &actor, const KernelTensorP
   }
 }
 
+void CheckMemoryLeakV2(const runtime::KernelRunnerPtr &actor, const KernelTensorPtr &kernel_tensor) {
+  if (kernel_tensor == nullptr) {
+    return;
+  }
+  const auto &device_tensor = kernel_tensor->device_address().get();
+  if (IsMemoryLeak(device_tensor)) {
+    MS_LOG(EXCEPTION) << "Memory leak detected in actor:" << actor->GetAID()
+                      << " output device tensor:" << device_tensor->PrintInfo();
+  }
+}
+
 void StrictCheckForDeviceAddress(const runtime::ActorSet *actor_set) {
   if (!common::IsEnableRuntimeConfig(common::kRuntimeNewRefCount)) {
     return;
@@ -2101,12 +2112,12 @@ void StrictCheckForDeviceAddress(const runtime::ActorSet *actor_set) {
       MS_LOG(DEBUG) << "Check output for actor:" << kernel_actor->GetAID();
       for (size_t i = 0; i < kernel_actor->output_kernel_tensors().size(); ++i) {
         const auto &kernel_tensor = kernel_actor->output_kernel_tensors()[i];
-        CheckMemoryLeak(kernel_actor, kernel_tensor);
+        CheckMemoryLeakV2(kernel_actor, kernel_tensor);
       }
       MS_LOG(DEBUG) << "Check workspace for actor:" << kernel_actor->GetAID();
       for (size_t i = 0; i < kernel_actor->workspace_kernel_tensors().size(); ++i) {
         const auto &kernel_tensor = kernel_actor->workspace_kernel_tensors()[i];
-        CheckMemoryLeak(kernel_actor, kernel_tensor);
+        CheckMemoryLeakV2(kernel_actor, kernel_tensor);
       }
     }
   }

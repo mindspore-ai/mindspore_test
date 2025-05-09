@@ -44,6 +44,8 @@
 #include "runtime/graph_scheduler/actor/control_flow/exit_actor.h"
 #include "runtime/graph_scheduler/actor/control_flow/stack_actor.h"
 #include "runtime/graph_scheduler/control_node_scheduler.h"
+#include "runtime/graph_scheduler/actor/control_flow/condition_gather_runner.h"
+#include "runtime/graph_scheduler/actor/control_flow/condition_switch_runner.h"
 
 namespace mindspore {
 namespace runtime {

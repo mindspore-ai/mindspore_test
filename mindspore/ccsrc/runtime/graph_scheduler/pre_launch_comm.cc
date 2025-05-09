@@ -195,17 +195,6 @@ void PreLaunchComm::PreLaunchCommKernel(runtime::ActorSet *actor_set) {
   MS_LOG(INFO) << "Pre launch comm kernel.";
   const PrimitiveSet prim_set{prim::kPrimSend, prim::kPrimReceive};
   std::vector<LaunchCommNode> pre_build_hccl_kernels;
-  for (const auto &kernel_actor : actor_set->kernel_actors_) {
-    if (kernel_actor == nullptr) {
-      continue;
-    }
-    auto kernel = kernel_actor->kernel();
-    if (IsOneOfPrimitiveCNode(kernel, prim_set)) {
-      const auto &kernel_info = GetKernelInfo(kernel);
-      pre_build_hccl_kernels.push_back(
-        std::make_tuple(kernel_actor, kernel, kernel_info, kernel_actor->kernel_launch_info()));
-    }
-  }
   for (const auto &super_kernel_actor : actor_set->super_kernel_actors_) {
     if (super_kernel_actor == nullptr) {
       continue;

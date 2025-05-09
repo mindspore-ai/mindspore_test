@@ -115,11 +115,34 @@ using BaseOperatorPtr = std::shared_ptr<ops::BaseOperator>;
 
 class KernelAttr;
 
+struct InputDataInfo {
+  InputDataInfo(const std::string &format, const ShapeVector &shape, size_t size, TypeId type_id)
+      : format_(format), shape_(shape), size_(size), type_id_(type_id) {}
+  std::string format_;
+  ShapeVector shape_;
+  size_t size_;
+  TypeId type_id_;
+};
+
 // The info of kernel launch.
 struct KernelLaunchInfo {
   std::vector<KernelTensor *> inputs_;
   std::vector<KernelTensor *> outputs_;
   std::vector<KernelTensor *> workspaces_;
+};
+
+struct KernelLaunchInfoWithStream {
+  KernelLaunchInfoWithStream(std::vector<KernelTensor *> input_kernel_tensors,
+                             std::vector<KernelTensor *> output_kernel_tensors,
+                             std::vector<KernelTensor *> workspace_kernel_tensors, void *stream)
+      : input_kernel_tensors_(input_kernel_tensors),
+        output_kernel_tensors_(output_kernel_tensors),
+        workspace_kernel_tensors_(workspace_kernel_tensors),
+        stream_(stream) {}
+  std::vector<KernelTensor *> input_kernel_tensors_;
+  std::vector<KernelTensor *> output_kernel_tensors_;
+  std::vector<KernelTensor *> workspace_kernel_tensors_;
+  void *stream_;
 };
 
 enum KernelErrorCode : int { KRET_OK = 0, KRET_RESIZE_FAILED = 1, KRET_UNKNOWN_SHAPE = 2, KRET_UNKNOWN_OUT_SHAPE = 3 };
