@@ -425,9 +425,10 @@ void SuperKernelActor::Run(OpContext<KernelTensor> *const context) {
       }
     }
   }
-
-  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, GetAID().Name(), "SuperKernelActor", graph_->ToString(),
-                                                 true);
+  if (NeedRunMemTracker()) {
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, GetAID().Name(), "SuperKernelActor", graph_->ToString(),
+                                                   true);
+  }
   if (device_contexts_.empty() || device_contexts_[0] == nullptr) {
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Invalid device context for super kernel actor:" + GetAID().Name());
   }
@@ -464,8 +465,11 @@ void SuperKernelActor::Run(OpContext<KernelTensor> *const context) {
                         << ", kernel graph: " << graph_->ToString() << ", node: " << info.node_full_name
                         << ", device address class ptr: " << output_address << ", device address size: " << info.size;
       }
-      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
-        AddMemInfo, GetAID().Name(), memory::mem_pool::MemType::kGraphOutput, device_tensor->GetSize(), device_tensor);
+      if (NeedRunMemTracker()) {
+        device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, GetAID().Name(),
+                                                       memory::mem_pool::MemType::kGraphOutput,
+                                                       device_tensor->GetSize(), device_tensor);
+      }
     }
     SendMemoryAllocReq(context);
   } else {
@@ -897,8 +901,10 @@ bool SuperKernelActor::LaunchAllKernels(OpContext<KernelTensor> *const context) 
       continue;
     }
     const auto &kernel = kernel_actor->kernel();
-    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
-      AddTask, kernel_actor->GetAID().Name(), kernel->fullname_with_scope(), kernel->func_graph()->ToString(), false);
+    if (NeedRunMemTracker()) {
+      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
+        AddTask, kernel_actor->GetAID().Name(), kernel->fullname_with_scope(), kernel->func_graph()->ToString(), false);
+    }
     // 1. Prepare input data for kernel
     // 1.1. Prepare top cell parameter input.
     FetchParameterInput(kernel_actor, context);
