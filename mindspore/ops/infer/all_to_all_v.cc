@@ -121,7 +121,7 @@ class AlltoAllVInfer : public abstract::OpInferBase {
       MS_LOG(EXCEPTION) << "AlltoAllV input numbers must be 3.";
     }
     // disable dynamic convert static shape optimization
-    LLMManager::GetInstance().set_convert_static(false);
+    LLMManager::GetInstance().set_disable_convert_static(true);
     auto type = InferType(primitive, input_args);
     auto shape = InferShape(primitive, input_args);
     return abstract::MakeAbstract(shape, type);

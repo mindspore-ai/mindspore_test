@@ -53,13 +53,13 @@ class MS_CORE_API LLMManager {
 
   bool is_disable_convert_static();
 
-  void set_convert_static(bool convert_static);
+  void set_disable_convert_static(bool disable_convert_static);
 
   void Clear();
 
  private:
   bool force_resize_kernel_{false};
-  bool enable_static_shape_{true};
+  bool disable_convert_static_{false};
   std::map<std::string, tensor::TensorDataPtr> graph_inputs_map_;
   std::set<std::string> force_resize_kernel_set_{};
 };
