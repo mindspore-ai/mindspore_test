@@ -34,6 +34,8 @@ class Net(nn.Cell):
 
 def get_output(w_norm, g_norm, lr, update, param, enable_graph_kernel=False):
     context.set_context(enable_graph_kernel=enable_graph_kernel)
+    if enable_graph_kernel:
+        context.set_context(graph_kernel_flags="--enable_expand_ops=LambApplyWeightAssign")
     opt = Net(Tensor(param))
     _ = opt(Tensor(w_norm), Tensor(g_norm), Tensor(lr), Tensor(update))
     return opt.param.data.asnumpy()

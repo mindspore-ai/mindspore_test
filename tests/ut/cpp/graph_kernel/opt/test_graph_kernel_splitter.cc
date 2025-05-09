@@ -207,7 +207,7 @@ FuncGraphPtr ConstructGraph_2() {
 /// Description: op will expand, then split, check main graph single output when no inline.
 /// Expectation: After split pass, the output should be gk node.
 TEST_F(TestGraphSplit, no_inline_main_single_out) {
-  SetGraphKernelFlags("--enable_expand_ops=SiluGrad");
+  SetGraphKernelFlags("--enable_expand_ops=SiLUGrad,AssignAdd");
   SetDeviceTarget(kAscendDevice);
   auto fg = ConstructGraph_2();
   RunPass(fg, {std::make_shared<graphkernel::GraphKernelExpanderCloud>(),
@@ -222,7 +222,7 @@ TEST_F(TestGraphSplit, no_inline_main_single_out) {
 /// Description: op will expand, then split, check main graph node and gk node when partial inline.
 /// Expectation: After split pass, the main graph should have inline node and gk node.
 TEST_F(TestGraphSplit, partial_inline) {
-  SetGraphKernelFlags("--enable_expand_ops=SiluGrad");
+  SetGraphKernelFlags("--enable_expand_ops=SiLUGrad,AssignAdd");
   SetDeviceTarget(kAscendDevice);
   auto fg = ConstructGraph_2();
   MOCKER_CPP(&CommonSplitSchemer::NeedInline, bool (*)(const CommonSplitSchemer*, size_t)).stubs().will(invoke(StubNeedInline));
@@ -242,7 +242,7 @@ TEST_F(TestGraphSplit, partial_inline) {
 /// Description: op will expand, then split, check main graph node when all inline.
 /// Expectation: After split pass, the main graph should have all inline node and no gk node.
 TEST_F(TestGraphSplit, all_inline) {
-  SetGraphKernelFlags("--enable_expand_ops=SiluGrad");
+  SetGraphKernelFlags("--enable_expand_ops=SiLUGrad,AssignAdd");
   SetDeviceTarget(kAscendDevice);
   auto fg = ConstructGraph_2();
   MOCKER_CPP(&CommonSplitSchemer::NeedInline, bool (*)(const CommonSplitSchemer*, size_t)).stubs().will(returnValue(true));
