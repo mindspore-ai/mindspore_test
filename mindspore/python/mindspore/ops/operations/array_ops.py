@@ -1048,11 +1048,11 @@ class Fill(PrimitiveWithCheck):
         self.init_prim_io_names(inputs=['type', 'shape', 'value'], outputs=['y'])
 
     def __call__(self, dtype, dims, x):
-        if dtype not in mstype.all_types and dtype not in [mstype.uint16, mstype.uint32, mstype.uint64]:
+        if dtype not in mstype.all_types:
             raise TypeError(
                 f"For \'{self.name}\', the supported data type is ['bool', 'int8', 'int16', 'int32', 'int64', 'uint8', "
                 "'uint16', 'uint32', 'uint64','float16', 'float32', 'float64'], but got an invalid dtype!.")
-        x_nptype = mstype.dtype_to_nptype(dtype)
+        x_nptype = mstype._dtype_to_nptype(dtype)  # pylint:disable=protected-access
         if not isinstance(dims, Tensor) and not isinstance(dims, tuple):
             raise TypeError(f"For \'{self.name}\', input[1] must be tensor.")
         if not isinstance(x, Tensor) and not isinstance(x, float) and not isinstance(x, int):
@@ -1065,7 +1065,7 @@ class Fill(PrimitiveWithCheck):
         return Tensor(ret, dtype=dtype)
 
     def infer_value(self, dtype, dims, x):
-        x_nptype = mstype.dtype_to_nptype(dtype)
+        x_nptype = mstype._dtype_to_nptype(dtype)  # pylint:disable=protected-access
         if dims is not None and None not in dims and x is not None:
             if isinstance(dims, Tensor):
                 dims = dims.asnumpy()
@@ -4007,7 +4007,7 @@ class MaskedScatter(Primitive):
         >>> import numpy as np
         >>> from mindspore import Tensor, ops
         >>> input_x = Tensor(np.array([1., 2., 3., 4.]), mindspore.float32)
-        >>> mask = Tensor(np.array([True, True, False, True]), mindspore.bool_)
+        >>> mask = Tensor(np.array([True, True, False, True]), mindspore.bool)
         >>> updates = Tensor(np.array([5., 6., 7.]), mindspore.float32)
         >>> output = ops.MaskedScatter()(input_x, mask, updates)
         >>> print(output)

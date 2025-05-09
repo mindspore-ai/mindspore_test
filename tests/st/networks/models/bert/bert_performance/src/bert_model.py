@@ -346,7 +346,7 @@ class SaturateCast(nn.Cell):
 
     def __init__(self, src_type=mstype.float32, dst_type=mstype.float32):
         super(SaturateCast, self).__init__()
-        np_type = mstype.dtype_to_nptype(dst_type)
+        np_type = mstype._dtype_to_nptype(dst_type)  # pylint:disable=protected-access
 
         self.tensor_min_type = float(np.finfo(np_type).min)
         self.tensor_max_type = float(np.finfo(np_type).max)

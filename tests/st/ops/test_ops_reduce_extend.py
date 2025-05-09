@@ -104,16 +104,18 @@ def test_mean_normal(keep_dims, in_dtype, out_dtype, context_mode):
     """
     ms.context.set_context(mode=context_mode)
     axis = (0, 1, 2, 3)
-    x = generate_random_input((64, 4, 64, 64), mstype.dtype_to_nptype(in_dtype))
+    x = generate_random_input((64, 4, 64, 64), mstype._dtype_to_nptype(in_dtype))  # pylint:disable=protected-access
     output = mean_forward_func(Tensor(x), axis, keep_dims, out_dtype)
-    expect = generate_expect_forward_output("mean", x, axis, keep_dims, mstype.dtype_to_nptype(out_dtype))
+    # pylint:disable=protected-access
+    expect = generate_expect_forward_output("mean", x, axis, keep_dims, mstype._dtype_to_nptype(out_dtype))
     np.testing.assert_equal(output.dtype, out_dtype)
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
 
     axis = (0, -1)
-    x = np.arange(2 * 3 * 4).reshape(2, 3, 4).astype(mstype.dtype_to_nptype(in_dtype))
+    # pylint:disable=protected-access
+    x = np.arange(2 * 3 * 4).reshape(2, 3, 4).astype(mstype._dtype_to_nptype(in_dtype))
     grads = mean_backward_func(Tensor(x), axis, False, out_dtype)
-    expect = np.full((2, 3, 4), 1 / (2 * 4), mstype.dtype_to_nptype(in_dtype))
+    expect = np.full((2, 3, 4), 1 / (2 * 4), mstype._dtype_to_nptype(in_dtype))  # pylint:disable=protected-access
     np.testing.assert_equal(grads.dtype, in_dtype)
     np.testing.assert_allclose(grads.asnumpy(), expect, rtol=1e-3)
 
@@ -178,16 +180,18 @@ def test_sum_normal(keep_dims, in_dtype, out_dtype, context_mode):
     """
     ms.context.set_context(mode=context_mode)
     axis = (0, -1)
-    x = generate_random_input((2, 3, 4, 5), mstype.dtype_to_nptype(in_dtype))
+    x = generate_random_input((2, 3, 4, 5), mstype._dtype_to_nptype(in_dtype))  # pylint:disable=protected-access
     output = sum_forward_func(Tensor(x), axis, keep_dims, out_dtype)
-    expect = generate_expect_forward_output("sum", x, axis, keep_dims, mstype.dtype_to_nptype(out_dtype))
+    # pylint:disable=protected-access
+    expect = generate_expect_forward_output("sum", x, axis, keep_dims, mstype._dtype_to_nptype(out_dtype))
     np.testing.assert_equal(output.dtype, out_dtype)
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
 
     axis = (0, -1)
-    x = np.arange(2 * 3 * 4).reshape(2, 3, 4).astype(mstype.dtype_to_nptype(in_dtype))
+    # pylint:disable=protected-access
+    x = np.arange(2 * 3 * 4).reshape(2, 3, 4).astype(mstype._dtype_to_nptype(in_dtype))
     grads = sum_backward_func(Tensor(x), axis, False, out_dtype)
-    expect = np.ones((2, 3, 4), mstype.dtype_to_nptype(in_dtype))
+    expect = np.ones((2, 3, 4), mstype._dtype_to_nptype(in_dtype))# pylint:disable=protected-access
     np.testing.assert_equal(grads.dtype, in_dtype)
     np.testing.assert_allclose(grads.asnumpy(), expect, rtol=1e-3)
 
@@ -251,11 +255,11 @@ def test_sum_vaild_dtype(axis, in_dtype, out_dtype, context_mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=context_mode)
-    x = generate_random_input((2, 3, 4), mstype.dtype_to_nptype(in_dtype))
+    x = generate_random_input((2, 3, 4), mstype._dtype_to_nptype(in_dtype))  # pylint:disable=protected-access
     output = sum_forward_func(Tensor(x), axis, False, out_dtype)
     np.testing.assert_equal(output.dtype, out_dtype)
 
-    x1 = generate_random_input((3, 4, 5), mstype.dtype_to_nptype(in_dtype))
+    x1 = generate_random_input((3, 4, 5), mstype._dtype_to_nptype(in_dtype))  # pylint:disable=protected-access
     grads = sum_backward_func(Tensor(x1), axis, False, out_dtype)
     np.testing.assert_equal(grads.dtype, in_dtype)
 
@@ -273,11 +277,11 @@ def test_sum_default_dtype(axis, in_dtype, context_mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=context_mode)
-    x = generate_random_input((2, 3, 4), mstype.dtype_to_nptype(in_dtype))
+    x = generate_random_input((2, 3, 4), mstype._dtype_to_nptype(in_dtype))  # pylint:disable=protected-access
     output = sum_forward_func(Tensor(x), axis, False, None)
     np.testing.assert_equal(output.dtype, mstype.int64)
 
-    x1 = generate_random_input((3, 4, 5), mstype.dtype_to_nptype(in_dtype))
+    x1 = generate_random_input((3, 4, 5), mstype._dtype_to_nptype(in_dtype))  # pylint:disable=protected-access
     grads = sum_backward_func(Tensor(x1), axis, False, None)
     np.testing.assert_equal(grads.dtype, in_dtype)
 
@@ -297,23 +301,27 @@ def test_prod_normal(keep_dims, in_dtype, out_dtype, context_mode):
     """
     ms.context.set_context(mode=context_mode)
     axis = 0
-    x = generate_random_input((2, 3, 4, 5), mstype.dtype_to_nptype(in_dtype))
+    x = generate_random_input((2, 3, 4, 5), mstype._dtype_to_nptype(in_dtype))  # pylint:disable=protected-access
     output = ProdNet(axis, out_dtype)(Tensor(x), keep_dims)
-    expect = generate_expect_forward_output("prod", x, axis, keep_dims, mstype.dtype_to_nptype(out_dtype))
+    # pylint:disable=protected-access
+    expect = generate_expect_forward_output("prod", x, axis, keep_dims, mstype._dtype_to_nptype(out_dtype))
     np.testing.assert_equal(output.dtype, out_dtype)
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
 
     axis = -1
-    x = np.array([[1, 2, 3], [4, 5, 6]]).astype(mstype.dtype_to_nptype(in_dtype))
+    # pylint:disable=protected-access
+    x = np.array([[1, 2, 3], [4, 5, 6]]).astype(mstype._dtype_to_nptype(in_dtype))
     grads = ProdGradNet(ProdNet(axis, out_dtype))(Tensor(x), False)
-    expect = np.array([[6, 3, 2], [30, 24, 20]]).astype(mstype.dtype_to_nptype(in_dtype))
+    # pylint:disable=protected-access
+    expect = np.array([[6, 3, 2], [30, 24, 20]]).astype(mstype._dtype_to_nptype(in_dtype))
     np.testing.assert_equal(grads.dtype, in_dtype)
     np.testing.assert_allclose(grads.asnumpy(), expect, rtol=1e-3)
 
     axis = -1
-    x = np.array([[0, 1, 2], [3, 4, 5]]).astype(mstype.dtype_to_nptype(in_dtype))
+    x = np.array([[0, 1, 2], [3, 4, 5]]).astype(mstype._dtype_to_nptype(in_dtype))  # pylint:disable=protected-access
     grads = ProdGradNet(ProdNet(axis, out_dtype))(Tensor(x), False)
-    expect = np.array([[2, 0, 0], [20, 15, 12]]).astype(mstype.dtype_to_nptype(in_dtype))
+    # pylint:disable=protected-access
+    expect = np.array([[2, 0, 0], [20, 15, 12]]).astype(mstype._dtype_to_nptype(in_dtype))
     np.testing.assert_equal(grads.dtype, in_dtype)
     np.testing.assert_allclose(grads.asnumpy(), expect, rtol=1e-3)
 
@@ -333,9 +341,10 @@ def test_prod_normal_1d(axis, keep_dims, in_dtype, out_dtype, context_mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=context_mode)
-    x = np.random.randn(5).astype(mstype.dtype_to_nptype(in_dtype))
+    x = np.random.randn(5).astype(mstype._dtype_to_nptype(in_dtype))  # pylint:disable=protected-access
     output = ProdNet(axis, out_dtype)(Tensor(x), keep_dims)
-    expect = generate_expect_forward_output("prod", x, axis, keep_dims, mstype.dtype_to_nptype(out_dtype))
+    # pylint:disable=protected-access
+    expect = generate_expect_forward_output("prod", x, axis, keep_dims, mstype._dtype_to_nptype(out_dtype))
     np.testing.assert_equal(output.dtype, out_dtype)
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-2)
 
@@ -415,11 +424,11 @@ def test_prod_vaild_dtype(axis, in_dtype, out_dtype, context_mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=context_mode)
-    x = generate_random_input((2, 3, 4), mstype.dtype_to_nptype(in_dtype))
+    x = generate_random_input((2, 3, 4), mstype._dtype_to_nptype(in_dtype))  # pylint:disable=protected-access
     output = ProdNet(axis, out_dtype)(Tensor(x), False)
     np.testing.assert_equal(output.dtype, out_dtype)
 
-    x1 = generate_random_input((3, 4, 5), mstype.dtype_to_nptype(in_dtype))
+    x1 = generate_random_input((3, 4, 5), mstype._dtype_to_nptype(in_dtype))  # pylint:disable=protected-access
     grads = ProdGradNet(ProdNet(axis, out_dtype))(Tensor(x1), False)
     np.testing.assert_equal(grads.dtype, in_dtype)
 
@@ -437,10 +446,10 @@ def test_prod_default_dtype(axis, in_dtype, context_mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=context_mode)
-    x = generate_random_input((2, 3, 4), mstype.dtype_to_nptype(in_dtype))
+    x = generate_random_input((2, 3, 4), mstype._dtype_to_nptype(in_dtype))  # pylint:disable=protected-access
     output = ProdNet(axis, None)(Tensor(x), False)
     np.testing.assert_equal(output.dtype, mstype.int64)
 
-    x1 = generate_random_input((3, 4, 5), mstype.dtype_to_nptype(in_dtype))
+    x1 = generate_random_input((3, 4, 5), mstype._dtype_to_nptype(in_dtype))  # pylint:disable=protected-access
     grads = ProdGradNet(ProdNet(axis, None))(Tensor(x1), False)
     np.testing.assert_equal(grads.dtype, in_dtype)

@@ -127,7 +127,7 @@ def asarray_const(a, dtype=None):
         # If dtype is not specified, we keep consistent with numpy decision
         # only exceptions are: we use int/float32
         if dtype is None:
-            dtype = mstype.pytype_to_dtype(a.dtype)
+            dtype = mstype._pytype_to_dtype(a.dtype)  # pylint:disable=protected-access
             if dtype == mstype.float64:
                 dtype = mstype.float32
             elif dtype == mstype.int64:
@@ -138,7 +138,7 @@ def asarray_const(a, dtype=None):
     if isinstance(a, onp.ndarray) and dtype is None:
         if a.dtype is onp.dtype('object'):
             raise TypeError(f"For Tensor conversion, the input_data is {a} that contains unsupported element.")
-        dtype = mstype.pytype_to_dtype(a.dtype)
+        dtype = mstype._pytype_to_dtype(a.dtype)  # pylint:disable=protected-access
         a = Tensor.from_numpy(a)
 
     return Tensor(a, dtype=dtype)

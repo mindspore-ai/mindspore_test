@@ -349,7 +349,7 @@ def set_param_type(args, hint_type):
     for name, arg in args.items():
         if hasattr(arg, 'dtype'):
             if isinstance(arg, np.ndarray):
-                cur_dtype = mstype.pytype_to_dtype(arg.dtype)
+                cur_dtype = mstype._pytype_to_dtype(arg.dtype)  # pylint:disable=protected-access
             else:
                 cur_dtype = arg.dtype
             if common_dtype is None:

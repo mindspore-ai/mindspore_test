@@ -55,7 +55,14 @@ void RegTyping(py::module *m) {
       }
       return t->DeepCopy();
     });
-  (void)py::class_<Number, Type, std::shared_ptr<Number>>(m_sub, "Number").def(py::init());
+  (void)py::class_<Number, Type, std::shared_ptr<Number>>(m_sub, "Number")
+    .def(py::init())
+    .def_property_readonly("itemsize", &Number::ItemSize)
+    .def_property_readonly("is_signed", &Number::IsSigned)
+    .def_property_readonly("is_floating_point", &Number::IsFloatingPoint)
+    .def_property_readonly("is_complex", &Number::IsComplex)
+    .def("to_real", &Number::ToReal)
+    .def("to_complex", &Number::ToComplex);
   (void)py::class_<Bool, Number, std::shared_ptr<Bool>>(m_sub, "Bool")
     .def(py::init())
     .def(py::pickle(

@@ -70,7 +70,7 @@ def _check_dtype(dtype):
         elif dtype is float:
             dtype = mstype.float32
         else:
-            dtype = mstype.pytype_to_dtype(dtype)
+            dtype = mstype._pytype_to_dtype(dtype)  # pylint:disable=protected-access
     if dtype not in dtype_tuple:
         raise TypeError(f"only {all_types} are allowed for dtype, but got {type(dtype)}")
     return dtype

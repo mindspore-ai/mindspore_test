@@ -113,7 +113,7 @@ def _convert_img_dtype_to_float32(img, max_val):
 @constexpr
 def _get_dtype_max(dtype):
     """get max of the dtype"""
-    np_type = mstype.dtype_to_nptype(dtype)
+    np_type = mstype._dtype_to_nptype(dtype)  # pylint:disable=protected-access
     if issubclass(np_type, numbers.Integral):
         dtype_max = np.float64(np.iinfo(np_type).max).item()
     else:

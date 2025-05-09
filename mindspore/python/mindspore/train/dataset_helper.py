@@ -21,7 +21,7 @@ import copy
 from mindspore import _checkparam as Validator
 from mindspore import log as logger
 from mindspore.common._auto_dynamic import is_auto_dynamic, convert_new_shapes
-from mindspore.common.dtype import pytype_to_dtype
+from mindspore.common.dtype import _pytype_to_dtype
 from mindspore.common.api import _cell_graph_executor, _is_args_fullmode, ARG_SPECIFIED
 from mindspore.common._utils import is_shape_unknown
 from mindspore.dataset.core import config as dataset_config
@@ -275,7 +275,7 @@ def connect_network_with_dataset(network, dataset_helper):
         # Need to do full_batch for shapes which also do in the _DatasetIterMSLoopSink
         if _need_to_full():
             dataset_shapes = _to_full_shapes(dataset_shapes, _get_device_num() // _get_pipeline_stages())
-        dataset_types = [pytype_to_dtype(x) for x in dataset_types]
+        dataset_types = [_pytype_to_dtype(x) for x in dataset_types]  # pylint:disable=protected-access
         if not is_dynamic:
             dataset_shapes = _auto_dynamic_shape.auto_dynamic_generate_compile_args(dataset_shapes, True)
         key = str(dataset_types) + str(dataset_shapes)

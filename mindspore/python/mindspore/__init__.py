@@ -19,7 +19,7 @@ from mindspore.run_check import run_check
 from mindspore import common, dataset, mindrecord, train, log, amp
 from mindspore import profiler, communication, numpy, parallel, hal, runtime, device_context
 from mindspore.common import *
-from mindspore.common import _tensor_docs
+from mindspore.common import _tensor_docs, bool, int, float
 del _tensor_docs
 from mindspore.mindrecord import *
 from mindspore.ops import _op_impl, grad, value_and_grad, vjp, jvp, jacfwd, jacrev, vmap, get_grad, constexpr

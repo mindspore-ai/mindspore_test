@@ -2,7 +2,7 @@ import numpy as np
 from mindspore.ops import operations as op
 from mindspore.nn import Cell
 from mindspore.common.tensor import Tensor
-from mindspore.common import dtype_to_nptype
+from mindspore.common.dtype import _dtype_to_nptype
 from ...utils import allclose_nparray, is_empty
 from ...grad import GradOfFirstInput
 from mindspore import jit, context
@@ -26,7 +26,7 @@ class SinTensorNet(Cell):
 class SinMock():
     def __init__(self, inputs=None, grads=None):
         self.ms_type = inputs[0].dtype
-        self.dtype = dtype_to_nptype(self.ms_type)
+        self.dtype = _dtype_to_nptype(self.ms_type)  # pylint:disable=protected-access
         self.input_x = inputs[0]
         self.input_x_np = inputs[0].asnumpy()
         if self.dtype == np.float16:

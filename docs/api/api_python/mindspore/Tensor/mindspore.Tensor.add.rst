@@ -11,12 +11,12 @@ mindspore.Tensor.add
 
     .. note::
         - 当 `self` 和 `other` 具有不同的shape时，它们的shape必须要能广播为一个共同的shape。
-        - `self` 和 `other` 不能同时为bool类型。[True, Tensor(True, bool\_), Tensor(np.array([True]), bool\_)]等都为bool类型。
+        - `self` 和 `other` 不能同时为bool类型。[True, Tensor(True), Tensor(np.array([True]))]等都为bool类型。
         - `self` 和 `other` 遵循隐式类型转换规则，使数据类型保持一致。
         - `self` 的维度应大于或等于1。
 
     参数：
-        - **other** (Union[Tensor, number.Number, bool]) - `other` 是一个number.Number、bool值或数据类型为 `number <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html#mindspore.dtype>`_ 或 `bool_ <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html#mindspore.dtype>`_ 的Tensor。
+        - **other** (Union[Tensor, number.Number, bool]) - `other` 是一个number.Number、bool值或数据类型为 `number <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html#mindspore.dtype>`_ 或 `bool <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html#mindspore.dtype>`_ 的Tensor。
 
     返回：
         Tensor，shape与输入 `self`、 `other` 广播后的shape相同，数据类型为两个输入中精度较高的类型。
@@ -42,7 +42,7 @@ mindspore.Tensor.add
     参数：
         - **other** (Union[Tensor, number.Number, bool]) - `other` 是一个 number.Number、一个 bool 或一个数据类型为
           `number <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html#mindspore.dtype>`_ 或
-          `bool_ <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html#mindspore.dtype>`_ 的Tensor。
+          `bool <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html#mindspore.dtype>`_ 的Tensor。
 
     关键字参数：
         - **alpha** (number.Number) - 应用于 `other` 的缩放因子，默认值为 ``1``。

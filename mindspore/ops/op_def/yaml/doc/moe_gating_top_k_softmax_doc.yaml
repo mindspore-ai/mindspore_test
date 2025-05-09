@@ -30,7 +30,7 @@ moe_gating_top_k_softmax:
             ...                      [0.2, 0.2, 0.4, 0.2],
             ...                      [0.3, 0.3, 0.1, 0.3],
             ...                      [0.1, 0.7, 0.1, 0.1]]), ms.float16)
-            >>> finished = Tensor(np.array([True, True, True, True]), ms.bool_)
+            >>> finished = Tensor(np.array([True, True, True, True]), ms.bool)
             >>> net = _infer_ops.MoeGatingTopKSoftmax()
             >>> output = net(x, finished, k=4)
             >>> print(output[0])

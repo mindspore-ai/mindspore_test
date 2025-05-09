@@ -9,7 +9,7 @@ sub:
         Note:
             - When the two inputs have different shapes, they must be able to broadcast to a common shape.
             - The two inputs can not be bool type at the same time,
-              [True, Tensor(True, bool\_), Tensor(np.array([True]), bool\_)] are all considered bool type.
+              [True, Tensor(True), Tensor(np.array([True]))] are all considered bool type.
             - Support implicit type conversion and type promotion.
 
         Args:

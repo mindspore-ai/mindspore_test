@@ -1,6 +1,6 @@
 import numpy as np
 import mindspore.ops.operations as op
-from mindspore.common import dtype_to_nptype
+from mindspore.common.dtype import _dtype_to_nptype
 from mindspore.nn import Cell
 from ...utils import allclose_nparray, is_empty
 from mindspore import jit, context, Tensor
@@ -89,8 +89,10 @@ class SliceMock(SliceFactory):
         input_shape = input_x.shape
         self.ms_type = input_x.dtype
 
-        super().__init__(input_shape=input_shape, begin=self.begin, size=self.size,
-                         dtype=dtype_to_nptype(self.ms_type))
+        super().__init__(input_shape=input_shape,
+                         begin=self.begin,
+                         size=self.size,
+                         dtype=_dtype_to_nptype(self.ms_type))  # pylint:disable=protected-access
         self.input_np = input_x.asnumpy()
 
         if is_empty(grads):

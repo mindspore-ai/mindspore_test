@@ -1448,7 +1448,7 @@ class TransformerEncoderLayer(Cell):
             >>> # When use use_past=True, it includes two steps to implement the incremental prediction.
             >>> # Step 1: set is_first_iteration=True, and input the full sequence length's state.
             >>> batch_valid_length = Tensor(np.ones((2,)), mstype.int32)
-            >>> init_reset = Tensor([True], mstype.bool_)
+            >>> init_reset = Tensor([True], mstype.bool)
             >>> # Set is_first_iteration=True to generate the full memory states
             >>> model = TransformerEncoderLayer(batch_size=2, hidden_size=8, ffn_hidden_size=64, seq_length=16,
             ...                                 num_heads=2, use_past=True)
@@ -1462,7 +1462,7 @@ class TransformerEncoderLayer(Cell):
             (2, 2, 16, 4)
             >>> encoder_input_value = Tensor(np.ones((2, 1, 8)), mstype.float32)
             >>> encoder_input_mask = Tensor(np.ones((2, 1, 16)), mstype.float16)
-            >>> init_reset = Tensor([False], mstype.bool_)
+            >>> init_reset = Tensor([False], mstype.bool)
             >>> # Step 2: set is_first_iteration=False, and pass the single word to run the prediction rather than
             >>> # the full sequence.
             >>> model.add_flags_recursive(is_first_iteration=False)
@@ -2370,7 +2370,7 @@ class TransformerEncoder(Cell):
             >>> # When use use_past=True, it includes two steps to implement the incremental prediction.
             >>> # Step 1: set is_first_iteration=True, and input the full sequence length's state.
             >>> batch_valid_length = Tensor(np.ones((2,)), mstype.int32)
-            >>> init_reset = Tensor([True], mstype.bool_)
+            >>> init_reset = Tensor([True], mstype.bool)
             >>> # Set is_first_iteration=True to generate the full memory states
             >>> model = TransformerEncoder(batch_size=2, hidden_size=8, ffn_hidden_size=64, seq_length=16,
             ...                            num_heads=2, num_layers=2, use_past=True)
@@ -2384,7 +2384,7 @@ class TransformerEncoder(Cell):
             (2, 2, 16, 4)
             >>> encoder_input_value = Tensor(np.ones((2, 1, 8)), mstype.float32)
             >>> encoder_input_mask = Tensor(np.ones((2, 1, 16)), mstype.float16)
-            >>> init_reset = Tensor([False], mstype.bool_)
+            >>> init_reset = Tensor([False], mstype.bool)
             >>> # Step 2: set is_first_iteration=False, and pass the single word to run the prediction rather than
             >>> # the full sequence.
             >>> model.add_flags_recursive(is_first_iteration=False)

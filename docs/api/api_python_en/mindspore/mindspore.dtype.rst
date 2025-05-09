@@ -17,24 +17,25 @@ Basic Data Type
 
 MindSpore supports the following base data types:
 
-==============================================   =============================
-Definition                                        Description
-==============================================   =============================
-``mindspore.int8`` ,  ``mindspore.byte``         8-bit integer
-``mindspore.int16`` ,  ``mindspore.short``       16-bit integer
-``mindspore.int32`` ,  ``mindspore.intc``        32-bit integer
-``mindspore.int64`` ,  ``mindspore.intp``        64-bit integer
-``mindspore.uint8`` ,  ``mindspore.ubyte``       unsigned 8-bit integer
-``mindspore.uint16`` ,  ``mindspore.ushort``     unsigned 16-bit integer
-``mindspore.uint32`` ,  ``mindspore.uintc``      unsigned 32-bit integer
-``mindspore.uint64`` ,  ``mindspore.uintp``      unsigned 64-bit integer
-``mindspore.float16`` ,  ``mindspore.half``      16-bit floating-point number
-``mindspore.float32`` ,  ``mindspore.single``    32-bit floating-point number
-``mindspore.float64`` ,  ``mindspore.double``    64-bit floating-point number
-``mindspore.bfloat16``                           16-bit brain-floating-point number
-``mindspore.complex64``                          64-bit complex number
-``mindspore.complex128``                         128-bit complex number
-==============================================   =============================
+===================================================   =============================
+Definition                                             Description
+===================================================   =============================
+``mindspore.bool``                                     Boolean
+``mindspore.int8``                                     8-bit integer
+``mindspore.int16`` ,  ``mindspore.short``             16-bit integer
+``mindspore.int32`` ,  ``mindspore.int``               32-bit integer
+``mindspore.int64`` ,  ``mindspore.long``              64-bit integer
+``mindspore.uint8``                                    unsigned 8-bit integer
+``mindspore.uint16``                                   unsigned 16-bit integer
+``mindspore.uint32``                                   unsigned 32-bit integer
+``mindspore.uint64``                                   unsigned 64-bit integer
+``mindspore.float16`` ,  ``mindspore.half``            16-bit floating-point number
+``mindspore.float32`` ,  ``mindspore.float``           32-bit floating-point number
+``mindspore.float64`` ,  ``mindspore.double``          64-bit floating-point number
+``mindspore.bfloat16``                                 16-bit brain-floating-point number
+``mindspore.complex64`` ,  ``mindspore.cfloat``        64-bit complex number
+``mindspore.complex128`` ,  ``mindspore.cdouble``      128-bit complex number
+===================================================   =============================
 
 Other Type
 ^^^^^^^^^^^^^^^
@@ -45,12 +46,8 @@ For other defined types, see the following table.
 Type                            Description
 ============================   =================
 ``tensor``                      MindSpore's ``tensor`` type. Data format uses NCHW. For details, see `tensor <https://www.gitee.com/mindspore/mindspore/blob/master/mindspore/python/mindspore/common/tensor.py>`_.
-``bool_``                       Boolean ``True`` or ``False``.
-``int_``                        Integer scalar.
-``uint``                        Unsigned integer scalar.
-``float_``                      Floating-point scalar.
 ``complex``                     Complex scalar.
-``number``                      Number, including ``int_`` , ``uint`` , ``float_`` , ``complex`` and ``bool_`` .
+``number``                      Number, including base data types above, such as ``int16`` , ``float32`` .
 ``list_``                       List constructed by ``tensor`` , such as ``List[T0,T1,...,Tn]`` , where the element ``Ti`` can be of different types.
 ``tuple_``                      Tuple constructed by ``tensor`` , such as ``Tuple[T0,T1,...,Tn]`` , where the element ``Ti`` can be of different types.
 ``function``                    Function. Return in two ways, when function is not None, returns Func directly, the other returns Func(args: List[T0,T1,...,Tn], retval: T) when function is None.
@@ -67,14 +64,14 @@ When some inputs of an operator are required to have the same target type, type 
 
 For the type conversion rules between Tensor and Tensor, please refer to the following table. The first row and the first column in the table both represent the types of the input ``Tensor``, and the corresponding position in the table represents the type of the output ``Tensor``. ``-`` indicates that no type promotion will be performed.
 
-For convenience of description, ``bool_`` is used in the table to refer to ``mindspore.bool_``, ``int8`` is used to refer to ``mindspore.int8``, and so on.
+For convenience of description, ``bool`` is used in the table to refer to ``mindspore.bool``, ``int8`` is used to refer to ``mindspore.int8``, and so on.
 
 .. list-table::
     :widths: 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20
     :header-rows: 1
 
     * - Tensor and Tensor
-      - **bool_**
+      - **bool**
       - **int8**
       - **int16**
       - **int32**
@@ -89,8 +86,8 @@ For convenience of description, ``bool_`` is used in the table to refer to ``min
       - **float64**
       - **complex64**
       - **complex128**
-    * - **bool_**
-      - ``bool_``
+    * - **bool**
+      - ``bool``
       - ``int8``
       - ``int16``
       - ``int32``
@@ -341,8 +338,8 @@ For the type conversion rules between Number and Tensor, please refer to the fol
       - **bool**
       - **int**
       - **float**
-    * - **bool_**
-      - ``bool_``
+    * - **bool**
+      - ``bool``
       - ``int64``
       - ``float32``
     * - **int8**

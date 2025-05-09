@@ -19,7 +19,7 @@ import numpy as onp
 import mindspore as ms
 import mindspore.numpy as mnp
 from mindspore import context
-from mindspore.common.dtype import dtype_to_nptype
+from mindspore.common.dtype import _dtype_to_nptype
 from mindspore.common.api import _pynative_executor
 
 from .utils import rand_int, rand_bool, run_binop_test, run_unary_test, run_multi_test, \
@@ -2048,7 +2048,7 @@ def test_result_type():
     y = ('?', True, onp.uint16, onp.ones((2, 3)).astype(onp.int32), 'float')
     for i in range(4):
         mnp_args = x[:i + 1]
-        actual = dtype_to_nptype(mnp.result_type(*mnp_args))
+        actual = _dtype_to_nptype(mnp.result_type(*mnp_args))  # pylint:disable=protected-access
         onp_args = y[:i + 1]
         expected = onp.result_type(*onp_args)
         if expected == onp.int64:
