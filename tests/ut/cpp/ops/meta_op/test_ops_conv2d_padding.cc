@@ -56,7 +56,7 @@ std::vector<GeneralInferParam> prepare_params() {
                       ValuePtrList{CreateScalar<int64_t>(1), CreateScalar<int64_t>(1)}},
                     InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(1)}
                   })
-    .FeedExpectedOutput({{3, -1, 3, 3}}, {kNumberTypeFloat32});
+    .FeedExpectedOutput({{3, -1, -1, -1}}, {kNumberTypeFloat32});
 
   generator
     .FeedInputArgs({InferInfoParam{ShapeVector{-1, 2, 3, 3}, kNumberTypeFloat32},

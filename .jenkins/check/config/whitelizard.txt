@@ -86,6 +86,13 @@ mindspore/mindspore/python/mindspore/ops/function/nn_func.py:conv3d_ext
 mindspore/mindspore/python/mindspore/ops/function/nn_func.py:conv1d_ext
 mindspore/mindspore/python/mindspore/ops/function/nn_func.py:conv2d
 mindspore/mindspore/python/mindspore/ops/function/nn_func.py:cross_entropy_ext
+mindspore/mindspore/python/mindspore/ops/function/nn_func.py:multi_head_attention_forward
+mindspore/mindspore/python/mindspore/ops/function/nn_func.py:fractional_max_pool2d
+mindspore/mindspore/python/mindspore/ops/function/nn_func.py:fractional_max_pool3d
+mindspore/mindspore/python/mindspore/ops/function/nn_func.py:interpolate_ext
+mindspore/mindspore/python/mindspore/ops/function/nn_func.py:prompt_flash_attention
+mindspore/mindspore/python/mindspore/ops/function/nn_func.py:incre_flash_attention
+mindspore/mindspore/python/mindspore/ops/function/nn_func.py:speed_fusion_attention
 mindspore/mindspore/python/mindspore/ops/function/math_func.py:cov
 mindspore/mindspore/python/mindspore/ops/function/math_func.py:norm
 mindspore/mindspore/python/mindspore/ops/function/math_func.py:matrix_norm
