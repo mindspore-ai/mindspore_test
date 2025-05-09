@@ -1336,7 +1336,7 @@ When converting Ascend backend models, the [input_shape](https://www.mindspore.c
 - [STABLE] Provides a hierarchical Profiler function, controls different levels of performance data collection through the profiler_level parameter.
 - [STABLE] Profiler analyse adds a new mode parameter to configure asynchronous parsing mode to parallelize performance data parsing and training.
 - [STABLE] The Profiler adds a new data_simplification parameter, which allows users to control whether to delete redundant data after parsing the performance data to save hard disk space.
-- [STABLE] The Profiler enhances the memory analysis function. Users can collect the memory application and release information of the framework, CANN and hardware through the profile_memory parameter, and visualize and analyze the information through the [MindStudio tool](https://www.hiascend.com/forum/thread-0230130822583032044-1-1.html).
+- [STABLE] The Profiler enhances the memory analysis function. Users can collect the memory application and release information of the framework, CANN and hardware through the profile_memory parameter, and visualize and analyze the information through the [MindStudio tool](https://www.hiascend.com/developer/blog/details/0230130822583032044).
 - [BETA] In Pynative mode, Timeline integrates host profiling information, including task time and user side stack information.
 
 #### Dump

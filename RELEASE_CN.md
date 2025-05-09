@@ -1337,7 +1337,7 @@ ccsszz;dairenjie;DeshiChen;fuhouyu;gaoshuanglong;gaoyong10;GuoZhibin;halo;huoxin
 - [STABLE] 提供分级Profiler功能，通过profiler_level参数可控制按照不同级别进行性能数据采集。
 - [STABLE] Profiler analyse方法新增mode参数，可配置异步解析模式，性能数据解析与训练并行。
 - [STABLE] Profiler接口新增data_simplification参数，用户可控制性能数据解析完成后是否删除多余数据，节省硬盘空间。
-- [STABLE] Profiler接口增强内存分析功能，用户通过profile_memory参数可采集框架、CANN、硬件的内存申请、释放信息，并可通过[MindStudio工具](https://www.hiascend.com/forum/thread-0230130822583032044-1-1.html)进行可视化分析。
+- [STABLE] Profiler接口增强内存分析功能，用户通过profile_memory参数可采集框架、CANN、硬件的内存申请、释放信息，并可通过[MindStudio工具](https://www.hiascend.com/developer/blog/details/0230130822583032044)进行可视化分析。
 - [BETA] PyNative模式下Timeline整合host profiling信息，包括任务耗时、用户侧堆栈信息。
 
 #### Dump
