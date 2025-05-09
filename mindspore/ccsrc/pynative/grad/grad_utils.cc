@@ -706,7 +706,6 @@ CallBackFn AutoGradUtil::CreateGraphCallBack(const FuncGraphPtr &call_graph, con
       MS_LOG(DEBUG) << "Start emit action for graph " << resource->func_graph()->ToString();
       auto manager = resource->manager();
       manager->AddFuncGraph(resource->func_graph(), true);
-      resource->SetBackendAsync([]() { return compile::CreateBackend(); });
       // kFlagJitCallGraph is set false to compile sub graph in control flow
       if (is_control_flow) {
         for (const auto &g : manager->func_graphs()) {

@@ -39,10 +39,7 @@ static const std::map<CollectiveOpReduceType, HcclReduceOp> kHcomOpReduceTypeMap
 
 class EXPORT_WRAPPER AscendCollectiveCommLib : public CollectiveCommunicationLib {
  public:
-  static AscendCollectiveCommLib &GetInstance() {
-    static AscendCollectiveCommLib instance;
-    return instance;
-  }
+  static AscendCollectiveCommLib &GetInstance();
 
   bool Initialize(uint32_t global_rank, uint32_t global_rank_size, uint32_t local_rank_id) override;
 

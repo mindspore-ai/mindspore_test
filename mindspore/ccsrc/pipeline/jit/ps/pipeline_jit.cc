@@ -174,14 +174,6 @@ std::vector<PassItem> GetJitPasses(const ResourcePtr &resource, bool build_top_g
 void DoOptimize(const ResourcePtr &resource, bool build_top_graph = true) {
   compile::SetMindRTEnable();
   std::vector<PassItem> jit_passes = GetJitPasses(resource, build_top_graph);
-  if (std::any_of(jit_passes.cbegin(), jit_passes.cend(),
-                  [](const PassItem &action) { return action.first == kTaskEmit || action.first == kExecute; })) {
-    // Create backend asynchronously.
-    resource->SetBackendAsync([]() {
-      auto backend = compile::CreateBackend();
-      return backend;
-    });
-  }
   Optimize(resource, jit_passes);
 }
 }  // namespace

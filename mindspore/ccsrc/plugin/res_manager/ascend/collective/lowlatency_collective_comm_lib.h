@@ -37,10 +37,7 @@ constexpr char kLCCLGlobalGroupName[] = "hccl_world_group";
 // reused.
 class EXPORT_WRAPPER LowlatencyCollectiveCommLib : public CollectiveCommunicationLib {
  public:
-  static LowlatencyCollectiveCommLib &GetInstance() {
-    static LowlatencyCollectiveCommLib instance;
-    return instance;
-  }
+  static LowlatencyCollectiveCommLib &GetInstance();
 
   bool Initialize(uint32_t global_rank, uint32_t global_rank_size, uint32_t local_rank_id) override;
 

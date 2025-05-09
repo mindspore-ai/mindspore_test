@@ -36,10 +36,7 @@ using mindspore::runtime::ProfilerRecorder;
 // MemoryManagerActor need response to memory alloc and free quickly, so must bind single thread.
 class MemoryManagerActor : public ActorBase {
  public:
-  static std::shared_ptr<MemoryManagerActor> &GetInstance() {
-    static std::shared_ptr<MemoryManagerActor> instance = std::shared_ptr<MemoryManagerActor>(new MemoryManagerActor());
-    return instance;
-  }
+  static std::shared_ptr<MemoryManagerActor> &GetInstance();
   ~MemoryManagerActor() override = default;
 
   // The process entry of memory alloc.

@@ -44,7 +44,7 @@ class SuperKernelActor : public DebugAwareActor {
  public:
   SuperKernelActor(const std::string &name, const KernelGraphPtr &graph, const std::string &graph_phase,
                    const AID &memory_manager_aid, const AID *debug_aid, const AID *recorder_aid,
-                   const std::shared_ptr<device::GraphExecutor> &graph_executor,
+                   const std::shared_ptr<backend::ge_backend::GeGraphExecutor> &graph_executor,
                    KernelTransformType type = KernelTransformType::kSuperKernelActor)
       : DebugAwareActor(name, type, recorder_aid, memory_manager_aid, debug_aid, nullptr),
         graph_(graph),
@@ -110,7 +110,7 @@ class SuperKernelActor : public DebugAwareActor {
   std::vector<KernelTensorPtr> copy_input_kernel_tensors_;
   // Record the device address to the output node of graph.
   std::map<DeviceAddress *, OutputMemoryInfo> device_address_to_node_;
-  std::shared_ptr<device::GraphExecutor> graph_executor_;
+  std::shared_ptr<backend::ge_backend::GeGraphExecutor> graph_executor_;
 };
 
 using SuperKernelActorPtr = std::shared_ptr<SuperKernelActor>;

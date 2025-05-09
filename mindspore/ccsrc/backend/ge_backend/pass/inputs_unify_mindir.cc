@@ -24,6 +24,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "backend/ge_backend/graph_ir/utils.h"
 #include "plugin/res_manager/ascend/op_adapter/op_adapter_map.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_util.h"
 
 namespace mindspore {
 namespace opt {
@@ -77,7 +78,7 @@ const AnfNodePtr InputsUnifyMindIR::Process(const FuncGraphPtr &func_graph, cons
     return nullptr;
   }
 
-  bool can_sink = backend::ge_backend::SinkGraphCheck(node);
+  bool can_sink = device::ascend::SinkGraphCheck(node);
   auto input_map = adpt->getInputMap();
   for (auto it : input_map) {
     if (static_cast<size_t>(it.first) >= cnode->size()) {

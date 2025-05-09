@@ -276,6 +276,8 @@ class RES_EXPORT HalResBase {
 
   virtual bool SyncAllEvents() { return false; }
 
+  virtual void InitializeForGe() const {}
+
  protected:
   ResKey res_key_;
 };

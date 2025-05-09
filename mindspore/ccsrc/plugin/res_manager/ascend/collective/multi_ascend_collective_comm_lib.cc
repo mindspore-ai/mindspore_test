@@ -35,6 +35,11 @@ std::string GetCurrentDir() {
 #endif
 }
 
+MultiAscendCollectiveCommLib &MultiAscendCollectiveCommLib::GetInstance() {
+  static MultiAscendCollectiveCommLib instance;
+  return instance;
+}
+
 MultiAscendCollectiveCommLib::MultiAscendCollectiveCommLib() { global_group_name_ = kMACCLGlobalGroupName; }
 
 std::unordered_set<std::string> MultiAscendCollectiveCommLib::GetLcclEnabledGroups() { return lccl_enabled_groups; }

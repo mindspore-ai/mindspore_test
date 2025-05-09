@@ -26,10 +26,12 @@
 #include "runtime/graph_scheduler/control_node_parser.h"
 #include "include/backend/optimizer/graph_optimizer.h"
 #include "backend/common/pass/communication_op_fusion.h"
-#include "backend/graph_compiler/backend.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
 #include "runtime/hardware/device_context.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "include/backend/device_synchronizer.h"
+#include "common/device_address.h"
+#include "common/kernel_tensor.h"
 #include "common/kernel_utils.h"
 #include "common/common_utils.h"
 #include "kernel/framework_utils.h"
@@ -50,6 +52,7 @@ using device::DeviceContextKey;
 using device::DeviceContextRegister;
 using device::DeviceType;
 using kernel::AddressPtr;
+using kernel::KernelTensorPtr;
 using session::KernelGraph;
 
 class TestDeviceAddress : public DeviceAddress {
@@ -245,12 +248,31 @@ class TestGraphExecutor : public device::GraphExecutor {
 
 class TestDeviceContext : public device::DeviceInterface<TestGraphExecutor, TestKernelExecutor, TestDeviceResManager> {
  public:
-  explicit TestDeviceContext(const DeviceContextKey &device_context_key) : DeviceInterface(device_context_key) {}
+  explicit TestDeviceContext(const DeviceContextKey &device_context_key) : DeviceInterface(device_context_key) {
+    graph_executor_ = std::make_shared<TestGraphExecutor>();
+  }
   ~TestDeviceContext() override = default;
 
   virtual void Initialize() {}
   virtual DeviceType GetDeviceType() const { return DeviceType::kCPU; }
   device::RunMode GetRunMode(const FuncGraphPtr &func_graph) const override { return device::RunMode::kKernelMode; }
+};
+
+class TestResManager : public device::HalResBase {
+ public:
+  TestResManager(const device::ResKey &res_key) : device::HalResBase(res_key) {}
+
+  ~TestResManager() override = default;
+
+  DeviceAddressPtr CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector, const Format &format,
+                                       TypeId type_id, const std::string &device_name, uint32_t device_id,
+                                       uint32_t stream_id, const UserDataPtr &user_data = nullptr) const override {
+    return std::make_shared<TestDeviceAddress>(ptr, size, "NCHW", type_id, "CPU", 0);
+  }
+  void *AllocateMemory(size_t size, uint32_t stream_id = kDefaultStreamIndex) const override {}
+  void FreeMemory(void *ptr) const override {}
+  void FreePartMemorys(const std::vector<void *> &free_addrs, const std::vector<void *> &keep_addrs,
+                       const std::vector<size_t> &keep_addr_sizes) const override {}
 };
 }  // namespace test
 }  // namespace runtime

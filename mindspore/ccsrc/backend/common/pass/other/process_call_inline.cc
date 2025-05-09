@@ -57,12 +57,7 @@ const AnfNodePtr ProcessCallInline::Process(const FuncGraphPtr &graph, const Anf
     auto call_graph = cnode->input(kIndex1);
     auto sub_kernel_graph = session::AnfRuntimeAlgorithm::GetValueNodeKernelGraph(call_graph);
     std::vector<AnfNodePtr> call_inputs = {};
-    if (kernel_graph->RunMode() == device::RunMode::kHybridMode) {
-      call_inputs.push_back(NewValueNode(std::make_shared<Primitive>(prim::kPrimGEGraphOp->name())));
-      sub_kernel_graph->set_flag(kFlagGeKernel, true);
-    } else {
-      call_inputs.push_back(NewValueNode(std::make_shared<Primitive>(prim::kPrimCallInline->name())));
-    }
+    call_inputs.push_back(NewValueNode(std::make_shared<Primitive>(prim::kPrimCallInline->name())));
     for (size_t i = kIndex1; i < common::AnfAlgo::GetInputNum(cnode); i++) {
       call_inputs.emplace_back(common::AnfAlgo::GetInputNode(cnode, i));
     }

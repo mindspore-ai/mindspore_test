@@ -20,17 +20,17 @@
 #include <sstream>
 #include <map>
 #include <set>
-#include "backend/ge_backend/graph_ir/utils.h"
-#include "backend/ge_backend/executor/ge_graph_executor.h"
 #include "include/common/utils/utils.h"
 #include "include/common/debug/common.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/common/utils/parallel_context.h"
 #include "include/common/utils/scoped_long_running.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "plugin/res_manager/ascend/device_context_conf/op_debug_conf.h"
 #include "plugin/res_manager/ascend/device_context_conf/op_precision_conf.h"
 #include "plugin/res_manager/ascend/device_context_conf/op_tuning_conf.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_util.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "plugin/res_manager/cpu/cpu_mem_manager/cpu_memory_manager.h"
 #include "debug/profiler/profiling.h"
@@ -40,7 +40,7 @@
 #include "include/common/utils/compile_cache_context.h"
 #include "utils/file_utils.h"
 #include "utils/ms_utils.h"
-#include "backend/ge_backend/pass/ge_backend_optimization.h"
+#include "plugin/device/ascend/optimizer/ge_backend_optimization.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_base_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
@@ -59,59 +59,6 @@ constexpr auto kOpDebugConfigFile = "ge_op_debug_config.ini";
 constexpr auto kSaturationMode = "Saturation";
 constexpr auto kINFNANMode = "INFNAN";
 
-bool IsNeedHybridMode(const FuncGraphPtr &func_graph) {
-  // cell reuse + pipeline parallel
-  // only O2
-  if (func_graph == nullptr) {
-    return false;
-  }
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
-  auto nodes = TopoSort(func_graph->get_return(), SuccDeeperSimple);
-  bool has_cell_reuse = std::any_of(nodes.begin(), nodes.end(), [](const AnfNodePtr &node) {
-    if (node == nullptr || !node->isa<CNode>()) {
-      return false;
-    }
-    auto cnode = node->cast<CNodePtr>();
-    const auto &inputs = cnode->inputs();
-
-    // for func graph
-    AnfNodePtr fn = inputs[0];
-    FuncGraphPtr child_graph = common::AnfAlgo::GetValueNodeFuncGraph(fn);
-    bool func_graph_has_cell_reuse = child_graph != nullptr && child_graph->has_flag(FUNC_GRAPH_FLAG_CELL_REUSE);
-
-    // for kernel graph
-    bool kernel_graph_has_cell_reuse = false;
-    if (IsPrimitiveCNode(cnode, prim::kPrimCall)) {
-      auto call_graph = cnode->input(kIndex1);
-      auto sub_kernel_graph = session::AnfRuntimeAlgorithm::GetValueNodeKernelGraph(call_graph);
-      kernel_graph_has_cell_reuse = sub_kernel_graph != nullptr && sub_kernel_graph->need_inline();
-    }
-    return func_graph_has_cell_reuse || kernel_graph_has_cell_reuse;
-  });
-
-  auto parallel_context = parallel::ParallelContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(parallel_context);
-  auto stages = parallel_context->pipeline_stage_split_num();
-  auto grad_accu_step = parallel_context->grad_accumulation_step();
-  MS_LOG(INFO) << "graph: " << func_graph->ToString() << "stages: " << stages << ", grad_accu_step: " << grad_accu_step;
-  if (stages <= 1 && grad_accu_step <= 1) {
-    if (has_cell_reuse) {
-      // no pipeline + cell reuse + O2
-      context->SetCellReuseLevel(CellReuseLevel::kNoInline);
-    }
-    return false;
-  }
-  if (IsDisableGeKernel()) {
-    if (has_cell_reuse) {
-      // force subgraph sink
-      context->SetCellReuseLevel(CellReuseLevel::kNoInline);
-    }
-    return false;
-  }
-  return has_cell_reuse;
-}
-
 void SetAclOpDebugOption() {
   auto op_debug_conf = OpDebugConf::GetInstance();
   MS_EXCEPTION_IF_NULL(op_debug_conf);
@@ -124,61 +71,6 @@ void SetAclOpDebugOption() {
   }
 }
 }  // namespace
-
-bool AscendDeviceContext::PartitionGraph(const FuncGraphPtr &func_graph) const {
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-  if (common::AnfAlgo::IsDynamicShapeFuncGraph(func_graph)) {
-    // dynamic shape default kernel be kernel before ge support
-    if (GetRunMode(func_graph) == RunMode::kKernelMode) {
-      return true;
-    }
-    backend::ge_backend::opt::GEDynamicUnifyMindIR(func_graph);
-    bool all_support = true;
-    auto mng = func_graph->manager();
-    MS_EXCEPTION_IF_NULL(mng);
-    const auto &sub_graphs = mng->func_graphs();
-    for (const auto &sub_graph : sub_graphs) {
-      if (sub_graph == nullptr) {
-        continue;
-      }
-      auto nodes = TopoSort(sub_graph->get_return());
-      for (const auto &node : nodes) {
-        if (!node->isa<CNode>() || !AnfUtils::IsRealKernel(node)) {
-          continue;
-        }
-        if (GetCNodeTarget(node) != kAscendDevice) {
-          all_support = false;
-          continue;
-        }
-        if (GetCNodePrimitive(node) == nullptr) {
-          continue;
-        }
-        if (!backend::ge_backend::ConvertCheck(node)) {
-          all_support = false;
-          common::AnfAlgo::SetNodeAttr(kAttrPrimitiveTarget, MakeValue<std::string>(kCPUDevice), node);
-          MS_LOG(DEBUG) << node->fullname_with_scope() << " can not find adpt, run on CPU";
-          continue;
-        }
-        if (!backend::ge_backend::DynamicShapeSupportCheck(node)) {
-          all_support = false;
-          common::AnfAlgo::SetNodeAttr(kAttrGraphSplitGroup, MakeValue<std::string>(kKernelGroup), node);
-          MS_LOG(DEBUG) << node->fullname_with_scope() << " not support dynamic shape, will run in KernelGraph";
-          continue;
-        }
-        if (!backend::ge_backend::SinkGraphCheck(node)) {
-          all_support = false;
-          common::AnfAlgo::SetNodeAttr(kAttrGraphSplitGroup, MakeValue<std::string>(kKernelGroup), node);
-          MS_LOG(DEBUG) << node->fullname_with_scope() << " have attrs is not ValueNode, will run in KernelGraph";
-        }
-      }
-    }
-    if (!all_support) {
-      context_ptr->set_param<bool>(MS_CTX_IS_MULTI_GRAPH_SINK, false);
-    }
-  }
-  return context_ptr->get_param<bool>(MS_CTX_IS_MULTI_GRAPH_SINK);
-}
 
 RunMode AscendDeviceContext::GetRunMode(const FuncGraphPtr &func_graph) const {
   auto context = MsContext::GetInstance();
@@ -198,32 +90,31 @@ RunMode AscendDeviceContext::GetRunMode(const FuncGraphPtr &func_graph) const {
     return RunMode::kKernelMode;
   }
 
-  if (context->IsKByKExecutorMode() && !context->get_param<bool>(MS_CTX_ENABLE_HYBRID_MODE)) {
+  if (context->IsKByKExecutorMode()) {
     MS_LOG(INFO) << "RunMode::kKernelMode, graph: " << func_graph->ToString();
     return RunMode::kKernelMode;
   } else {
-    if (IsNeedHybridMode(func_graph)) {
-      context->set_param(MS_CTX_ENABLE_HYBRID_MODE, true);
-      MS_LOG(INFO) << "RunMode::kHybridMode, graph: " << func_graph->ToString();
-      return RunMode::kHybridMode;
-    }
-    context->set_param(MS_CTX_ENABLE_HYBRID_MODE, false);
     MS_LOG(INFO) << "RunMode::kGraphMode, graph: " << func_graph->ToString();
     return RunMode::kGraphMode;
   }
 }
 
-void AscendDeviceContext::ContextInitGe() const {
-  if (ge_initialized_) {
+void AscendDeviceContext::InitializeForAclop() const {
+  if (initialized_aclop_) {
     return;
   }
   if (!UseSimulationApi()) {
-    dynamic_cast<backend::ge_backend::GeGraphExecutor *>(graph_executor_.get())->GraphInitGe();
+    auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    device::ResKey res_key{device::DeviceType::kAscend, device_id};
+    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+    res_manager->InitializeForGe();
   }
   // should be called after ge initialize.
   SetAclOpDebugOption();
   TensorDumpStepManager::GetInstance().SetAclDumpCallbackReg(reinterpret_cast<void *>(acldumpRegCallback));
-  ge_initialized_ = true;
+  initialized_aclop_ = true;
 }
 
 void AscendDeviceContext::Initialize() {
@@ -257,14 +148,11 @@ void AscendDeviceContext::Initialize() {
   MS_EXCEPTION_IF_NULL(device_res_manager_);
   device_res_manager_->Initialize();
 
-  // set MS_CTX_ENABLE_GE_HETEROGENOUS true according to  heterogeneous mode
+  // set MS_CTX_ENABLE_GE_HETEROGENOUS true according to heterogeneous mode
   ms_context->set_param<bool>(MS_CTX_ENABLE_GE_HETEROGENOUS, false);
-  if (!UseSimulationApi()) {
-    graph_executor_->Initialize();
-  }
 
   if (ms_context->GetBackend() == kBackendGE || ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
-    ContextInitGe();
+    InitializeForAclop();
   }
 
   MS_EXCEPTION_IF_NULL(GetKernelExecutor(false));
@@ -275,15 +163,6 @@ void AscendDeviceContext::Initialize() {
   GetKernelExecutor(false)->Initialize();
 
   InitDump();
-  auto op_tuning_conf = OpTuningConf::GetInstance();
-  MS_EXCEPTION_IF_NULL(op_tuning_conf);
-  if (op_tuning_conf->EnableAoeOnline()) {
-    std::string aoe_job_type = op_tuning_conf->aoe_job_type();
-    backend::ge_backend::InitializeAoeUtil(aoe_job_type);
-  }
-  if (op_tuning_conf->EnableAoeOffline()) {
-    backend::ge_backend::EnableAoeOffline();
-  }
   // open tsd
   if (!common::UseDynamicCluster()) {
     if (!GetDeprecatedInterface()->OpenTsd(ms_context)) {
@@ -301,17 +180,7 @@ void AscendDeviceContext::Destroy() {
     MS_LOG(INFO) << "The device context is not initialized by current process, it doesn't need to be destroyed.";
     return;
   }
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto op_tuning_conf = OpTuningConf::GetInstance();
-  MS_EXCEPTION_IF_NULL(op_tuning_conf);
-  if (op_tuning_conf->EnableAoeOnline()) {
-    backend::ge_backend::DestroyAoeUtil();
-  }
-  if (graph_executor_ == nullptr) {
-    return;
-  }
-  dynamic_cast<backend::ge_backend::GeGraphExecutor *>(graph_executor_.get())->Finalize();
+
   if (device_res_manager_ == nullptr) {
     return;
   }

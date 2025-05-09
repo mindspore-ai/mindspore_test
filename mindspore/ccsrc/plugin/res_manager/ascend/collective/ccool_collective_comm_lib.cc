@@ -47,6 +47,11 @@ bool CCOOLGroupCheckNotEmpty(const std::string &group) {
   return true;
 }
 
+CcoolCollectiveCommLib &CcoolCollectiveCommLib::GetInstance() {
+  static CcoolCollectiveCommLib instance;
+  return instance;
+}
+
 CcoolCollectiveCommLib::CcoolCollectiveCommLib() {
   global_group_name_ = kHCCLGlobalGroupName;
   helper_comm_lib_instance_ = nullptr;

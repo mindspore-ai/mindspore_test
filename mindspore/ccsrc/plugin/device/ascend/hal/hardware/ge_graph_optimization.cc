@@ -23,7 +23,6 @@
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "backend/common/graph_kernel/adapter/graph_kernel_optimization.h"
 #include "plugin/device/ascend/optimizer/ge_backend_optimization.h"
-#include "backend/ge_backend/pass/ge_backend_optimization.h"
 #include "plugin/device/ascend/optimizer/backend_common_unify_mindir.h"
 #include "utils/ms_context.h"
 #include "include/backend/anf_runtime_algorithm.h"
@@ -73,35 +72,6 @@ void MarkRefGraph(const KernelGraphPtr &kernel_graph) {
 }
 }  // namespace
 
-void GEGraphOptimization::OptimizeGEGraph(const KernelGraphPtr &graph, std::set<KernelGraphPtr> *const memo) {
-  MS_EXCEPTION_IF_NULL(graph);
-  MS_EXCEPTION_IF_NULL(memo);
-  PROF_START(OptimizeGEGraph);
-  if (memo->find(graph) != memo->end()) {
-    return;
-  }
-  memo->insert(graph);
-  MS_LOG(DEBUG) << "Status record: start optimize ge graph. graph id: " << graph->graph_id();
-  // empty graph dont entry to backend
-  if (graph->execution_order().empty()) {
-    MS_LOG(DEBUG) << graph->ToString() << " is empty graph.";
-    AnfAlgo::InsertMakeTupleForOutput(NOT_NULL(graph));
-    graph->set_executable(false);
-    MS_LOG(DEBUG) << "Status record: end optimize ge graph. graph id: " << graph->graph_id();
-  }
-  MarkRefGraph(graph);
-  opt::GEBackendOptimizeACL(graph);
-  backend::ge_backend::opt::GEBackendOptimization(graph);
-  for (auto &child_graph : graph->child_graph_order()) {
-    if (child_graph.lock()->has_flag(kFlagGeKernel)) {
-      continue;
-    }
-    OptimizeGEGraph(child_graph.lock(), memo);
-  }
-  PROF_END(OptimizeGEGraph);
-  MS_LOG(DEBUG) << "Status record: end optimize ge graph. graph id: " << graph->graph_id();
-}
-
 void GEGraphOptimization::OptimizeACLGraph(const KernelGraphPtr &graph, std::set<KernelGraphPtr> *const memo) {
   MS_EXCEPTION_IF_NULL(graph);
   MS_EXCEPTION_IF_NULL(memo);
@@ -122,11 +92,7 @@ void GEGraphOptimization::OptimizeACLGraph(const KernelGraphPtr &graph, std::set
   opt::AscendUnfoldInputsForSpecialNodes(graph);
   opt::GEBackendOptimizeACL(graph);
   for (auto &child_graph : graph->child_graph_order()) {
-    if (child_graph.lock()->has_flag(kFlagGeKernel)) {
-      OptimizeGEGraph(child_graph.lock(), memo);
-    } else {
-      OptimizeACLGraph(child_graph.lock(), memo);
-    }
+    OptimizeACLGraph(child_graph.lock(), memo);
   }
   PROF_END(OptimizeACLGraph);
   MS_LOG(DEBUG) << "Status record: end optimize acl graph. graph id: " << graph->graph_id();
@@ -160,9 +126,6 @@ void GEGraphOptimization::OptimizeACLGraphAfterKernelSelect(const KernelGraphPtr
   // after kernel packet
   opt::GEBackendOptimizeACLAfterKernelPacket(graph);
   for (auto &child_graph : graph->child_graph_order()) {
-    if (child_graph.lock()->has_flag(kFlagGeKernel)) {
-      continue;
-    }
     OptimizeACLGraphAfterKernelSelect(child_graph.lock(), memo);
   }
   PROF_END(OptimizeACLGraphAfterKernelSelect);

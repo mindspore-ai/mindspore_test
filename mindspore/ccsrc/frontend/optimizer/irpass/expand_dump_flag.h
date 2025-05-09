@@ -24,6 +24,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "frontend/optimizer/anf_visitor.h"
 #include "pipeline/jit/ps/resource.h"
+#include "utils/anf_utils.h"
 
 namespace mindspore::opt::irpass {
 const PrimitiveSet dump_skipped_prim_set = {prim::kPrimReturn,       prim::kPrimDepend,      prim::kPrimMakeTuple,

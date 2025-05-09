@@ -64,6 +64,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_v.h"
+#include "include/common/utils/anfalgo.h"
 
 using mindspore::tensor::Tensor;
 

@@ -56,7 +56,7 @@
 #include "backend/common/pass/other/add_attr_to_dump.h"
 #include "backend/common/pass/other/getnext_for_ge.h"
 #include "backend/common/pass/ir_fusion/adaptive_max_pool2d_fusion.h"
-#include "plugin/device/ascend/optimizer/ir_fusion/flash_attention_fusion.h"
+#include "backend/common/pass/ir_fusion/flash_attention_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion/grouped_matmul_assignadd_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/add_layer_norm_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion/add_rms_norm_fusion.h"

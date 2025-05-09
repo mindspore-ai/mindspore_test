@@ -21,6 +21,8 @@
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "runtime/graph_scheduler/actor/any_type_kernel_actor.h"
+#include "runtime/graph_scheduler/actor/memory_manager_actor.h"
 
 namespace mindspore {
 namespace runtime {
@@ -107,6 +109,7 @@ TEST_F(AnyTypeKernelActorTest, RunOpData) {
   ms_context->set_param<uint32_t>(MS_CTX_DEVICE_ID, device_id);
   ms_context->set_param<std::string>(MS_CTX_DEVICE_TARGET, device_name);
   MS_REGISTER_DEVICE(device_name, TestDeviceContext);
+  MS_REGISTER_HAL_RES_MANAGER(kCPUDevice, DeviceType::kCPU, TestResManager);
   DeviceContextKey device_context_key{device_name, device_id};
   auto device_context = std::make_shared<TestDeviceContext>(device_context_key);
 

@@ -27,6 +27,7 @@
 #include "include/common/utils/utils.h"
 #include "frontend/parallel/step_parallel.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "include/common/utils/anfalgo.h"
 
 namespace mindspore {
 namespace parallel {

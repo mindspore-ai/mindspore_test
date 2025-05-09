@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2023 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,16 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_GE_KERNEL_BUILD_H_
-#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_GE_KERNEL_BUILD_H_
-#include <memory>
-#include "common/kernel.h"
-#include "backend/ge_backend/executor/ge_graph_executor.h"
+
+#ifndef MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_GE_EXPANDER_FALLBACK_H_
+#define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_GE_EXPANDER_FALLBACK_H_
+
+#include "include/backend/optimizer/pass.h"
+#include "ir/func_graph.h"
 
 namespace mindspore {
-namespace kernel {
-KernelModPtr GeOpBuild(const AnfNodePtr &anf_node);
-}  // namespace kernel
+namespace opt {
+class ExpanderFallback : public Pass {
+ public:
+  ExpanderFallback() : Pass("expander_fallback") {}
+  ~ExpanderFallback() override = default;
+  bool Run(const FuncGraphPtr &graph) override;
+};
+}  // namespace opt
 }  // namespace mindspore
-
-#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_GE_KERNEL_BUILD_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_GE_EXPANDER_FALLBACK_H_

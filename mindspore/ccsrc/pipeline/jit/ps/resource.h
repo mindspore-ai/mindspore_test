@@ -42,10 +42,6 @@
 #include "pipeline/jit/ps/compile_cache_manager.h"
 
 namespace mindspore {
-namespace compile {
-class Backend;
-using BackendPtr = std::shared_ptr<Backend>;
-}  // namespace compile
 namespace pipeline {
 namespace py = pybind11;
 
@@ -178,15 +174,6 @@ class Resource : public ResourceBase {
   // should be cleared.
   FRONTEND_EXPORT void Clean();
 
-  // Get the backend object. if the backend is being initialized, wait until it completes.
-  compile::BackendPtr GetBackend() const;
-
-  void CleanBackend() { backend_ = nullptr; }
-
-  // Set backend asynchronously, the input function should return a Backend pointer,
-  // and it will be called in a background thread.
-  FRONTEND_EXPORT void SetBackendAsync(std::function<compile::BackendPtr()> func);
-
   // Get the mutex for backend initializing.
   static std::mutex &GetBackendInitMutex() { return backend_init_mutex_; }
 
@@ -216,9 +203,6 @@ class Resource : public ResourceBase {
   LayoutMap layout_map_{};
   CompileCacheManagerPtr compile_cache_manager_{nullptr};
   // The backend related fields for async initializing.
-  mutable compile::BackendPtr backend_;
-  mutable std::future<compile::BackendPtr> backend_future_;
-  // Mutex to ensure backend creating task is running exclusively.
   static std::mutex backend_init_mutex_;
   bool is_pynative_grad_view_inplace_{false};
   PiplineLevel pipeline_level_{kLevelNone};

@@ -41,6 +41,7 @@
 #include "include/common/utils/convert_utils.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "include/common/utils/primfunc_utils.h"
+#include "include/common/utils/anfalgo.h"
 #include "ir/anf.h"
 #include "ir/cell.h"
 #include "mindspore/ops/op_def/arithmetic_ops.h"

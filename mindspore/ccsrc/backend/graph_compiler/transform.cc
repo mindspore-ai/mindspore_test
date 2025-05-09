@@ -32,6 +32,7 @@
 #include "ir/graph_utils.h"
 #include "utils/ms_context.h"
 #include "utils/trace_base.h"
+#include "include/common/utils/utils.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/backend/distributed/ps/ps_context.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
@@ -69,13 +70,12 @@ const std::vector<PrimitivePtr> &GetMsNonlinearOps() {
   return ms_nonlinear_ops;
 }
 
-CompileGraph::CompileGraph(const BackendPtr &backend, const std::vector<PrimitivePtr> &cut_list) : backend_(backend) {
-  MS_EXCEPTION_IF_NULL(backend_);
-  lin_convert_ = backend_->convert_fn();
+CompileGraph::CompileGraph(const std::vector<PrimitivePtr> &cut_list) {
+  lin_convert_ = MsVmConvert;
   if (lin_convert_ == nullptr) {
-    MS_LOG(EXCEPTION) << "Attribute 'lin_convert' is null.: " << backend->name();
+    MS_LOG(EXCEPTION) << "Attribute 'lin_convert' is null.";
   }
-  graph_partition_ = std::make_shared<GraphPartition>(cut_list, backend->name());
+  graph_partition_ = std::make_shared<GraphPartition>(cut_list, kMsVm);
 }
 
 // Push the value node on the stack.
@@ -509,10 +509,8 @@ FuncGraphPtr WrapPrimitives(const FuncGraphPtr &graph) {
   return graph;
 }
 
-CompileGraphs::CompileGraphs(const BackendPtr &backend, const std::vector<PrimitivePtr> &cut_list) : backend_(backend) {
-  MS_EXCEPTION_IF_NULL(backend);
-  MS_LOG(DEBUG) << "Start vm: " << backend->name();
-  transform_ = std::make_shared<CompileGraph>(backend, cut_list);
+CompileGraphs::CompileGraphs(const std::vector<PrimitivePtr> &cut_list) {
+  transform_ = std::make_shared<CompileGraph>(cut_list);
   Reset();
 }
 
@@ -545,56 +543,9 @@ FinalVMPtr CompileGraphs::Link() {
     }
   }
 
-  FinalVMPtr rt = std::make_shared<FinalVM>(insts_, backend_);
+  FinalVMPtr rt = std::make_shared<FinalVM>(insts_);
   MS_LOG(DEBUG) << "End";
   return rt;
-}
-
-// Convert all graphs to unlinked instructions and link them.
-FinalVMPtr CompileGraphs::CompileAndLink(const FuncGraphPtr &graph) {
-  MS_EXCEPTION_IF_NULL(graph);
-  MS_LOG(DEBUG) << "Start";
-  Reset();
-  MS_LOG(DEBUG) << "Begin parameter:" << graph->parameters().size();
-
-  FuncGraphPtr prim_graph = WrapPrimitives(graph);
-  Compile(prim_graph);
-  MS_EXCEPTION_IF_NULL(prim_graph);
-  MS_EXCEPTION_IF_NULL(prim_graph->manager());
-  FuncGraphSet graphs = prim_graph->manager()->func_graphs();
-  for (const auto &g : graphs) {
-    if (g != graph && g != nullptr) {
-      Compile(g);
-    }
-  }
-
-  FinalVMPtr rt = Link();
-  Reset();
-  MS_LOG(DEBUG) << "End";
-  return rt;
-}
-
-BackendPtr CreateBackend() {
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-  std::string name = context_ptr->backend_policy();
-  MS_LOG(INFO) << "CreateBackend is: " << name;
-  context_ptr->Refresh();
-
-  BackendPtr backend = nullptr;
-  if (name == kMsConvert || name == kGeVm) {
-    std::string target = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-    uint32_t device_id = context_ptr->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    backend = std::make_shared<MindRTBackend>(name, target, device_id);
-    if (target == kAscendDevice && context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
-      backend->set_is_multi_graph_sink(false);
-    }
-  } else {
-    backend = std::make_shared<Backend>(name);
-  }
-  backend->set_backend_jit_config(backend::BackendJitConfig::ParseBackendJitConfig());
-
-  return backend;
 }
 
 void SetMindRTEnable() {

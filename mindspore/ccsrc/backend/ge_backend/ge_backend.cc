@@ -48,7 +48,7 @@
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "include/common/utils/scoped_long_running.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
-#include "backend/graph_compiler/segment_runner.h"
+#include "backend/ge_backend/runtime/segment_runner.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "backend/ge_backend/runtime/graph_scheduler.h"
@@ -73,7 +73,6 @@
 #include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
 #include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
 #include "plugin/res_manager/ascend/collective/hccl_watch_dog_thread.h"
-#include "runtime/hardware/device_context_manager.h"
 
 namespace mindspore {
 namespace backend {
@@ -414,19 +413,7 @@ mindspore::HashSet<const tensor::Tensor *> GEBackend::weights_need_reprepare_ = 
 BackendGraphId GEBackend::backend_graph_id_ = 0;
 
 GEBackend::GEBackend() {
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-  std::string device_target = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  uint32_t device_id = context_ptr->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  const auto &device_context =
-    device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_target, device_id});
-  MS_EXCEPTION_IF_NULL(device_context);
-  device_context->Initialize();
-  graph_executor_ = device_context->graph_executor_;
-
-  const std::vector<PrimitivePtr> cut_list = {prim::kPrimReturn,    prim::kPrimPartial,  prim::kPrimSwitch,
-                                              prim::kPrimMakeTuple, prim::kPrimBpropCut, prim::kPrimSwitchLayer};
-  graph_partition_ = std::make_shared<compile::GraphPartition>(cut_list, "ge");
+  Init();
   graph_compiler_ = std::make_shared<mindspore::ge_backend::runtime::GraphCompiler>(graph_executor_);
   mindspore::ge_backend::runtime::GraphScheduler::GetInstance().Initialize();
 #ifndef ENABLE_SECURITY
@@ -440,9 +427,9 @@ void GEBackend::Init() {
   }
   GilReleaseWithCheck gil_release;
   std::lock_guard<std::mutex> lock(init_mutex_);
-  // graph_executor_ = std::make_shared<GeGraphExecutor>();
+  graph_executor_ = std::make_shared<GeGraphExecutor>();
 
-  MS_LOG(INFO) << "Start initializing device context.";
+  MS_LOG(INFO) << "Start initializing GE backend.";
   if (UseSimulationApi()) {
     device::ascend::LoadSimulationApiSymbols();
   }
@@ -496,7 +483,7 @@ void GEBackend::Init() {
     device::ascend::AscendHalManager::GetInstance().SetOpExecuteTimeOut(op_execute_timeout);
   }
 
-  // set MS_CTX_ENABLE_GE_HETEROGENOUS true according to  heterogeneous mode
+  // set MS_CTX_ENABLE_GE_HETEROGENOUS true according to heterogeneous mode
   ms_context->set_param<bool>(MS_CTX_ENABLE_GE_HETEROGENOUS, false);
   if (!UseSimulationApi()) {
     graph_executor_->Initialize();
@@ -514,13 +501,12 @@ void GEBackend::Init() {
     backend::ge_backend::EnableAoeOffline();
   }
   // open tsd
-  if (!common::UseDynamicCluster()) {
-    if (!OpenTsd(ms_context)) {
-      MS_LOG(EXCEPTION) << "Open tsd failed";
-    }
+  if (!OpenTsd(ms_context)) {
+    MS_LOG(EXCEPTION) << "Open tsd failed";
   }
+
   is_initialized_ = true;
-  MS_LOG(INFO) << "End initializing device context.";
+  MS_LOG(INFO) << "End initializing GE backend.";
 }
 
 void GEBackend::DestroyHccl() {
@@ -544,35 +530,38 @@ void GEBackend::Clear() {
   if (!is_initialized_) {
     return;
   }
+
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
+
   auto op_tuning_conf = device::ascend::OpTuningConf::GetInstance();
   MS_EXCEPTION_IF_NULL(op_tuning_conf);
   if (op_tuning_conf->EnableAoeOnline()) {
     backend::ge_backend::DestroyAoeUtil();
   }
 
+  graph_executor_->Finalize();
+
   // destroy hccl things
   if (ms_context->get_param<bool>(MS_CTX_ENABLE_HCCL_WATCHDOG)) {
     device::ascend::HcclWatchDogManager::GetInstance().DestoryHandler();
+    ms_context->set_param<bool>(MS_CTX_ENABLE_HCCL_WATCHDOG, false);
   }
-  // DestroyHccl must be called before FreeDeviceMemory
+
+  // DestroyHccl must be called before FreeDeviceMemory, watch_hccl_dog and hccl_adapter are in this function
   (void)DestroyHccl();
 
-  graph_executor_->Finalize();
+  device::ascend::AscendStreamMng::GetInstance().DestroyAllRtEvents();
+  if (!device::ascend::AscendStreamMng::GetInstance().DestroyAllStreams()) {
+    MS_LOG(ERROR) << "Fail to destroy all streams.";
+  }
 
-  // Device resource manager must be destroyed before 'FinalizeGe' unless some runtime APIs will throw exception.
-  // for ge, has destropy in graph_executor->finalize
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
   device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
   auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
   MS_EXCEPTION_IF_NULL(res_manager);
   res_manager->Destroy();
-
-  if (hccl::HcclAdapter::GetInstance().Inited()) {
-    (void)hccl::HcclAdapter::GetInstance().FinalizeHccl();
-  }
 
   CloseTsd(true);
   is_initialized_ = false;
@@ -825,15 +814,15 @@ CompileType GEBackend::CheckGraph(const FuncGraphPtr &func_graph) const {
         continue;
       }
       if (is_dynamic_graph && common::AnfAlgo::IsDynamic(node)) {
-        if (!ConvertCheck(node)) {
+        if (!device::ascend::ConvertCheck(node)) {
           MS_LOG(ERROR) << node->fullname_with_scope() << " can not find adpt.";
           return CompileType::NotSupport;
         }
-        if (!DynamicShapeSupportCheck(node)) {
+        if (!device::ascend::DynamicShapeSupportCheck(node)) {
           MS_LOG(ERROR) << node->fullname_with_scope() << " not support dynamic shape.";
           return CompileType::NotSupport;
         }
-        if (!SinkGraphCheck(node)) {
+        if (!device::ascend::SinkGraphCheck(node)) {
           MS_LOG(ERROR) << node->fullname_with_scope() << " have attrs is not ValueNode.";
           return CompileType::NotSupport;
         }
@@ -2017,7 +2006,7 @@ void GEBackend::CompileGraph(const FuncGraphPtr &func_graph, const BackendJitCon
   // Split graph to segments.
   const std::vector<PrimitivePtr> cut_list = {prim::kPrimReturn,    prim::kPrimPartial,  prim::kPrimSwitch,
                                               prim::kPrimMakeTuple, prim::kPrimBpropCut, prim::kPrimSwitchLayer};
-  auto graph_partition = std::make_shared<compile::GraphPartition>(cut_list, "ge");
+  auto graph_partition = std::make_shared<mindspore::ge_backend::runtime::GraphPartition>(cut_list, "ge");
   MS_EXCEPTION_IF_NULL(graph_partition);
   const auto &segments = graph_partition->Partition(func_graph);
   (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph,
@@ -2045,7 +2034,7 @@ void GEBackend::CompileGraphFromSegment(const GraphSegmentPtr &segment, const Ba
     FuncGraphPtr fg;
     AnfNodePtrList inputs;
     AnfNodePtrList outputs;
-    std::tie(fg, inputs, outputs) = compile::TransformSegmentToAnfGraph(segment->nodes_);
+    std::tie(fg, inputs, outputs) = mindspore::ge_backend::runtime::TransformSegmentToAnfGraph(segment->nodes_);
 
     GraphId graph_id = graph_compiler_->CompileGraph(segment, std::make_pair(inputs, outputs), backend_jit_config,
                                                      device::RunMode::kGraphMode, false);

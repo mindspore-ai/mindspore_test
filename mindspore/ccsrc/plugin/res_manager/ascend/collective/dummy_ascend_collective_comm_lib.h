@@ -34,10 +34,7 @@ namespace device {
 ///
 class EXPORT_WRAPPER DummyAscendCollectiveCommLib : public DummyCollectiveCommunicationLib {
  public:
-  static DummyAscendCollectiveCommLib &GetInstance() {
-    static DummyAscendCollectiveCommLib instance;
-    return instance;
-  }
+  static DummyAscendCollectiveCommLib &GetInstance();
   DummyAscendCollectiveCommLib();
 
   ~DummyAscendCollectiveCommLib() override = default;

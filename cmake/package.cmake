@@ -238,7 +238,7 @@ if(ENABLE_D)
     endif()
     if(ENABLE_MPI)
         install(
-                TARGETS ascend_collective
+                TARGETS ascend_collective d_collective
                 DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
                 COMPONENT mindspore
         )

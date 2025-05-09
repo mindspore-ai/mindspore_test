@@ -33,6 +33,11 @@ void OnMemoryAllocFinish(const AID &from_aid, OpContext<KernelTensor> *const op_
 }
 }  // namespace
 
+std::shared_ptr<MemoryManagerActor> &MemoryManagerActor::GetInstance() {
+  static std::shared_ptr<MemoryManagerActor> instance = std::shared_ptr<MemoryManagerActor>(new MemoryManagerActor());
+  return instance;
+}
+
 void MemoryManagerActor::AllocateMemory(const std::vector<KernelTensorPtr> *alloc_list,
                                         OpContext<KernelTensor> *const op_context, const AID &from_aid) {
   for (auto &kernel_tensor : *alloc_list) {

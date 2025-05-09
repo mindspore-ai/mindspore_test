@@ -35,7 +35,7 @@
 #include "backend/ge_backend/utils/device_address_utils.h"
 #include "backend/ge_backend/executor/ge_memory_allocator.h"
 #include "backend/ge_backend/executor/ge_utils.h"
-#include "plugin/device/ascend/hal/hardware/ascend_device_context.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_memory_adapter.h"
 #include "plugin/res_manager/ascend/ascend_device_address/ascend_device_address.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
@@ -416,8 +416,7 @@ void GeGraphExecutor::BuildOutputDataGeTensor(const KernelGraphPtr &kernel_graph
       continue;
     }
     auto real_index = output_node->isa<ValueNode>() ? 0 : index;
-    auto kernel_tensor =
-      kernel_graph->has_flag(kFlagGeKernel) ? nullptr : AnfAlgo::GetOutputKernelTensor(output_node, real_index, false);
+    auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(output_node, real_index, false);
     (void)kernel_tensors.emplace_back(kernel_tensor.get());
     auto shapes = AnfAlgo::GetRuntimePaddingShape(output_node, real_index);
     auto host_type = common::AnfAlgo::GetOutputInferDataType(output_node, real_index);
@@ -881,7 +880,6 @@ void GeGraphExecutor::AddRefCorrespondPairs(const KernelGraphPtr &graph,
 
 bool GeGraphExecutor::CompileGraph(const FuncGraphPtr &graph, const std::map<string, string> &compile_options) {
   MS_EXCEPTION_IF_NULL(graph);
-  dynamic_cast<device::ascend::AscendDeviceContext *>(device_context_)->ContextInitGe();
 
   auto graph_name = GetGraphName(graph);
   uint64_t start_time = profiler::GetClockSyscnt();
@@ -1361,31 +1359,20 @@ void GeGraphExecutor::RunInitGraph(const std::string &graph_name) {
   }
 }
 
-void GeGraphExecutor::GraphInitGe() {
+void GeGraphExecutor::Initialize() {
+  if (initialized_) {
+    return;
+  }
+
+  ge_res_manager_ = std::make_shared<GeDeviceResManager>();
+  ge_res_manager_->Initialize();
+
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-
-  if (ms_context->get_param<bool>(MS_CTX_IS_PYNATIVE_GE_INIT)) {
-    return;
-  }
-
-  if (static_cast<bool>(ms_context->get_param<uint32_t>(MS_CTX_GE_REF))) {
-    ms_context->increase_param<uint32_t>(MS_CTX_GE_REF);
-    if (ge_res_manager_ == nullptr) {
-      MS_LOG(INFO) << "There exist at least two ge_graph_executor, please check.";
-    }
-    return;
-  }
-  std::map<std::string, std::string> ge_options;
-  GetGeGlobalOptions(&ge_options);
-  SetPassthroughGeOptions("global", &ge_options);
-  {
-    // Release GIL before calling into (potentially long-running) C++ code
-    GilReleaseWithCheck gil_release;
-    if (::ge::GEInitialize(ge_options) != ::ge::GRAPH_SUCCESS) {
-      MS_LOG(EXCEPTION) << "Initialize GE failed!";
-    }
-  }
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  device::ResKey res_key{device::DeviceType::kAscend, device_id};
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  res_manager->InitializeForGe();
 
   CreateSessionAndGraphRunner();
   auto graph_runner = backend::ge_backend::GetGraphRunner();
@@ -1401,15 +1388,6 @@ void GeGraphExecutor::GraphInitGe() {
 
   ms_context->increase_param<uint32_t>(MS_CTX_GE_REF);
   MS_LOG(INFO) << "Init ge successful, ge reference = " << ms_context->get_param<uint32_t>(MS_CTX_GE_REF) << ".";
-}
-
-void GeGraphExecutor::Initialize() {
-  if (initialized_) {
-    return;
-  }
-
-  ge_res_manager_ = std::make_shared<GeDeviceResManager>();
-  ge_res_manager_->Initialize();
   initialized_ = true;
   return;
 }

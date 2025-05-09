@@ -25,6 +25,7 @@ namespace {
 int CleanTdtChannel() {
   const auto &device_name = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
   auto device_ctx = device::DeviceContextManager::GetInstance().GetDeviceContext(device_name);
+  device_ctx->Initialize();
   MS_EXCEPTION_IF_NULL(device_ctx);
   MS_EXCEPTION_IF_NULL(device_ctx->device_res_manager_);
   device::DeviceContextManager::GetInstance().SyncAllStreams();

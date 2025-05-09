@@ -73,7 +73,7 @@ def test_hal_device_ascend():
     Description: Test hal.device api on Ascend platform.
     Expectation: hal.device api performs as expected.
     """
-    context.set_context(mode=context.GRAPH_MODE, device_target='Ascend')
+    context.set_context(mode=context.GRAPH_MODE, device_target='Ascend', jit_level="O0")
     assert not is_initialized("Ascend")
     assert ms.device_context.ascend.is_available()
     assert get_device_properties(0).total_memory == 0

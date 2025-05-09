@@ -24,7 +24,6 @@
 #include "pipeline/jit/ps/resource.h"
 #include "pipeline/jit/ps/pass.h"
 #include "backend/graph_compiler/segment_runner.h"
-#include "backend/graph_compiler/backend.h"
 
 namespace mindspore {
 namespace pipeline {
@@ -69,7 +68,7 @@ FuncGraphPtr ProgramSpecialize(const abstract::AnalysisEnginePtr &engine, const 
                                const abstract::AnalysisContextPtr &context);
 FuncGraphPtr Renormalize(const ResourcePtr &resource, const FuncGraphPtr &func_graph,
                          const abstract::AbstractBasePtrList &args_abs);
-void SetRunMode(const FuncGraphPtr &func_graph, compile::Backend *backend_ptr, std::string *kbk_reason = nullptr);
+void SetRunMode(const FuncGraphPtr &func_graph, std::string *kbk_reason = nullptr);
 bool IsDynamicShapeGraph(const FuncGraphPtr &func_graph);
 AbstractBasePtr GetDefaultValueAbstract(const ParameterPtr &param);
 }  // namespace pipeline

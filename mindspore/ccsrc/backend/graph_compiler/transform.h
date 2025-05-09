@@ -30,7 +30,6 @@
 #include "ir/anf.h"
 #include "frontend/operator/ops.h"
 #include "backend/graph_compiler/segment_runner.h"
-#include "backend/graph_compiler/backend.h"
 #include "backend/graph_compiler/graph_partition.h"
 #include "include/backend/visible.h"
 
@@ -49,7 +48,7 @@ using VmEvalFuncPtr = std::shared_ptr<std::function<BaseRef(const VectorRef &)>>
 
 class BACKEND_EXPORT CompileGraph {
  public:
-  explicit CompileGraph(const BackendPtr &backend, const std::vector<PrimitivePtr> &cut_list = GetNonlinearOps());
+  explicit CompileGraph(const std::vector<PrimitivePtr> &cut_list = GetNonlinearOps());
 
   virtual ~CompileGraph() = default;
 
@@ -94,7 +93,6 @@ class BACKEND_EXPORT CompileGraph {
   void AddInst(const Instruction &inst, const ValuePtr &arg);
   void AddInst(const Instruction &inst, const VectorRef &args);
 
-  BackendPtr backend_;
   GraphPartitionPtr graph_partition_;
   LinkFuncType lin_convert_;
 
@@ -110,7 +108,7 @@ using CompileGraphPtr = std::shared_ptr<CompileGraph>;
 // CompileGraphs is used to Convert a graph cluster into instruction lists.
 class BACKEND_EXPORT CompileGraphs {
  public:
-  explicit CompileGraphs(const BackendPtr &backend, const std::vector<PrimitivePtr> &cut_list = GetNonlinearOps());
+  explicit CompileGraphs(const std::vector<PrimitivePtr> &cut_list = GetNonlinearOps());
 
   virtual ~CompileGraphs() = default;
 
@@ -121,16 +119,12 @@ class BACKEND_EXPORT CompileGraphs {
 
   void Compile(const FuncGraphPtr &graph);
   FinalVMPtr Link();
-  FinalVMPtr CompileAndLink(const FuncGraphPtr &graph);
 
  protected:
   InstSet insts_;
   mindspore::HashMap<FuncGraphPtr, int64_t> mapping_;
   CompileGraphPtr transform_;
-  BackendPtr backend_;
 };
-
-BACKEND_EXPORT BackendPtr CreateBackend();
 
 // Set mindRT whether enable. GPU and CPU use mindRT currently, and other hardwares will use it in the future.
 BACKEND_EXPORT void SetMindRTEnable();

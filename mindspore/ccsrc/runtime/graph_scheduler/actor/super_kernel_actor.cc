@@ -282,12 +282,6 @@ void SuperKernelActor::Init() {
     // If the parameter has ref attribute and is directly used by the kernel in the graph, it needs to be copied.
     is_parameters_need_copy_[i] = true;
   }
-
-  if (type_ == KernelTransformType::kSuperKernelActor && !enable_kbk_sub_graph_execute_) {
-    MS_EXCEPTION_IF_NULL(device_contexts_[0]);
-    MS_EXCEPTION_IF_NULL(device_contexts_[0]->graph_executor_);
-    device_contexts_[0]->graph_executor_->InitGraphInfo(graph_);
-  }
 }
 
 void SuperKernelActor::InitParallelDispatchResource() {

@@ -333,8 +333,7 @@ KernelWithIndex VisitKernelWithReturnTypeForTupleGetItem(const AnfNodePtr &anf_n
                                                       return_types);
   }
   if (common::AnfAlgo::IsCallNode(item_with_index_tmp.first) || item_with_index_tmp.first->isa<Parameter>() ||
-      IsPrimitiveCNode(item_with_index_tmp.first, prim::kPrimBpropCut) ||
-      IsPrimitiveCNode(item_with_index_tmp.first, prim::kPrimGEGraphOp)) {
+      IsPrimitiveCNode(item_with_index_tmp.first, prim::kPrimBpropCut)) {
     size_t real_index = item_with_index_tmp.second;
     if (abs == nullptr) {
       abs = item_with_index_tmp.first->abstract();

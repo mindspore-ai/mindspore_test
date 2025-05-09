@@ -28,7 +28,7 @@
 #include "ir/tensor.h"
 #include "backend/common/session/kernel_graph_mgr.h"
 #include "abstract/abstract_value.h"
-#include "backend/graph_compiler/graph_partition.h"
+#include "backend/ge_backend/runtime/graph_partition.h"
 #include "backend/ge_backend/runtime/graph_compiler.h"
 #include "backend/ge_backend/runtime/actor/actor_set.h"
 
@@ -153,9 +153,7 @@ class BACKEND_EXPORT GEBackend : public BackendBase {
 
   std::shared_ptr<mindspore::ge_backend::runtime::GraphCompiler> graph_compiler_;
   static BackendGraphId backend_graph_id_;
-  std::shared_ptr<device::GraphExecutor> graph_executor_;
-  BackendJitConfig backend_jit_config_;
-  compile::GraphPartitionPtr graph_partition_;
+  std::shared_ptr<GeGraphExecutor> graph_executor_;
   inline static std::mutex init_mutex_;
   bool is_initialized_ = false;
 };

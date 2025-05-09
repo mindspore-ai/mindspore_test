@@ -32,6 +32,7 @@
 #include "plugin/res_manager/ascend/ascend_device_address/ascend_device_synchronizer.h"
 #include "plugin/res_manager/ascend/device_context_conf/op_debug_conf.h"
 #include "plugin/res_manager/ascend/event/ascend_event.h"
+#include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_pin_mem_pool.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_compiler_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
@@ -129,6 +130,159 @@ void AclrtLaunchCallback(void *user_data) {
   Callback *callback_func = reinterpret_cast<Callback *>(user_data);
   (*callback_func)();
   delete callback_func;
+}
+
+static bool initialized_ge = false;
+
+// ge.exec.allow_hf32 default value is "10"(enable Conv, disable Matmul) set by CANN
+void SetAscendHF32Config(const std::shared_ptr<MsContext> &ms_context_ptr,
+                         std::map<std::string, std::string> *ge_options) {
+  MS_EXCEPTION_IF_NULL(ms_context_ptr);
+  std::string allow_matmul_hf32 = ms_context_ptr->get_param<std::string>(MS_CTX_MATMUL_ALLOW_HF32);
+  std::string allow_conv_hf32 = ms_context_ptr->get_param<std::string>(MS_CTX_CONV_ALLOW_HF32);
+  if (allow_matmul_hf32.empty() && allow_conv_hf32.empty()) {
+    MS_LOG(INFO) << "The default value of allow_matmul_hf32 and allow_conv_hf32 are set by CANN.";
+  } else if (allow_matmul_hf32.empty() && !allow_conv_hf32.empty()) {
+    (*ge_options)["ge.exec.allow_hf32"] = allow_conv_hf32 + std::string("0");
+  } else if (!allow_matmul_hf32.empty() && allow_conv_hf32.empty()) {
+    (*ge_options)["ge.exec.allow_hf32"] = std::string("1") + allow_matmul_hf32;
+  } else {
+    (*ge_options)["ge.exec.allow_hf32"] = allow_conv_hf32 + allow_matmul_hf32;
+  }
+
+  MS_LOG(INFO) << "allow_matmul_hf32: " << allow_matmul_hf32 << ", allow_conv_hf32: " << allow_conv_hf32;
+}
+
+void SetAscendConfig(const std::shared_ptr<MsContext> &ms_context_ptr, std::map<std::string, std::string> *ge_options) {
+  MS_EXCEPTION_IF_NULL(ms_context_ptr);
+  MS_EXCEPTION_IF_NULL(ge_options);
+
+  std::string topo_sorting_mode = "0";
+  if (ms_context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
+    topo_sorting_mode = "2";
+  }
+  (*ge_options)["ge.topoSortingMode"] = topo_sorting_mode;
+  // disable RemoveSameConstPass, it will be caused the communication failed on multi-card.
+  (*ge_options)["ge.disableOptimizations"] = "RemoveSameConstPass";
+
+  (*ge_options)["ge.exec.memoryOptimizationPolicy"] = "MemoryPriority";
+  MS_LOG(INFO) << "Set GE topo mode to memory-priority.";
+
+  (*ge_options)["ge.exec.staticMemoryPolicy"] = "2";
+  MS_LOG(INFO) << "Set staticMemoryPolicy to default mode 2.";
+
+  if (ms_context_ptr->get_param<std::string>(MS_CTX_ENABLE_JIT_COMPILE) != "") {
+    (*ge_options)["ge.jit_compile"] = ms_context_ptr->get_param<std::string>(MS_CTX_ENABLE_JIT_COMPILE);
+    MS_LOG(INFO) << "Set jit_compile " << ms_context_ptr->get_param<std::string>(MS_CTX_ENABLE_JIT_COMPILE) << ".";
+  } else {
+    (*ge_options)["ge.jit_compile"] = "2";
+    MS_LOG(INFO) << "The default value of jit_compile is set to 2.";
+  }
+
+  SetAscendHF32Config(ms_context_ptr, ge_options);
+
+  if (ms_context_ptr->get_param<std::string>(MS_CTX_OP_PRECISION_MODE) != "") {
+    (*ge_options)["ge.exec.op_precision_mode"] = ms_context_ptr->get_param<std::string>(MS_CTX_OP_PRECISION_MODE);
+    MS_LOG(INFO) << "Set op_precision_mode " << ms_context_ptr->get_param<std::string>(MS_CTX_OP_PRECISION_MODE) << ".";
+  }
+}
+
+void SetHcclOptions(const std::shared_ptr<MsContext> &inst_context, std::map<std::string, std::string> *ge_options) {
+  MS_EXCEPTION_IF_NULL(inst_context);
+  MS_EXCEPTION_IF_NULL(ge_options);
+  auto env_table_file = common::GetEnv("MINDSPORE_HCCL_CONFIG_PATH");
+  if (env_table_file.empty()) {
+    env_table_file = common::GetEnv("RANK_TABLE_FILE");
+  }
+  auto simulation_level = common::GetEnv(kSimulationLevel);
+  if (!simulation_level.empty()) {
+    env_table_file = "";
+  }
+  auto env_rank_id = common::GetEnv("RANK_ID");
+  auto env_device_id = std::to_string(inst_context->get_param<uint32_t>(MS_CTX_DEVICE_ID));
+  auto env_cluster_info = common::GetEnv("HELP_CLUSTER");
+  auto enable_hccl = inst_context->get_param<bool>(MS_CTX_ENABLE_HCCL);
+  auto escluster_config_path = common::GetEnv("ESCLUSTER_CONFIG_PATH");
+
+  MS_LOG(INFO) << "Values for hccl options: env_table_file[" << env_table_file << "], simulation_level["
+               << simulation_level << "], env_rank_id[" << env_rank_id << "], env_device_id[" << env_device_id
+               << "], enable_hccl[" << enable_hccl << "], UseDynamicCluster[" << common::UseDynamicCluster() << "].";
+  if (enable_hccl &&
+      (!(env_table_file.empty() || env_rank_id.empty()) || !(env_cluster_info.empty() || env_rank_id.empty()) ||
+       hccl::HcclAdapter::GetInstance().UseHcclCM()) &&
+      !(common::UseDynamicCluster() && !env_table_file.empty())) {
+    MS_LOG(INFO) << "Initialize Ge for distribute parameter";
+    if (!env_table_file.empty()) {
+      MS_LOG(INFO) << "Use hccl, make sure hccl lib is set in OPTION_EXEC_EXTERN_PLUGIN_PATH.";
+      (*ge_options)["ge.exec.rankTableFile"] = env_table_file;
+    } else if (hccl::HcclAdapter::GetInstance().UseHcclCM()) {
+      hccl::HcclAdapter::AddCMEnvToHcclOption(ge_options);
+    }
+
+    (*ge_options)["ge.exec.isUseHcom"] = "1";
+    (*ge_options)["ge.exec.deviceId"] = env_device_id;
+    (*ge_options)["ge.exec.rankId"] = env_rank_id;
+    (*ge_options)["ge.exec.podName"] = env_rank_id;
+  } else if (!escluster_config_path.empty()) {
+    (*ge_options)["ge.exec.deviceId"] = env_device_id;
+    (*ge_options)["ge.exec.rankTableFile"] = env_table_file;
+    (*ge_options)["ge.exec.rankId"] = env_rank_id;
+  } else {
+    // device id is still needed for non-distribute case
+    (*ge_options)["ge.exec.deviceId"] = env_device_id;
+    MS_LOG(INFO) << "No hccl mode. If use hccl, make sure [RANK_TABLE_FILE,RANK_ID,DEVICE_ID] all be set in ENV.";
+  }
+}
+
+void GetGeGlobalOptions(std::map<std::string, std::string> *ge_options) {
+  MS_EXCEPTION_IF_NULL(ge_options);
+  auto ms_context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context_ptr);
+
+  SetHcclOptions(ms_context_ptr, ge_options);
+  (*ge_options)["ge.exec.jobId"] = "0";
+  MS_LOG(INFO) << "Set ge.exec.jobId to default value 0";
+
+  auto proto_lib_path = common::GetEnv("OPTION_PROTO_LIB_PATH");
+  if (!proto_lib_path.empty()) {
+    char real_path[PATH_MAX] = {0};
+    if (realpath(proto_lib_path.c_str(), real_path)) {
+      proto_lib_path = real_path;
+      (*ge_options)["ge.opsProtoLibPath"] = proto_lib_path;
+    }
+  } else {
+    MS_LOG(INFO) << "Got empty proto lib path, cannot set ge.opsProtoLibPath.";
+  }
+
+  SetAscendConfig(ms_context_ptr, ge_options);
+
+  auto op_debug_level = common::GetEnv("MS_COMPILER_OP_LEVEL");
+  if (!op_debug_level.empty()) {
+    (*ge_options)["ge.opDebugLevel"] = op_debug_level;
+    MS_LOG(INFO) << "Use MS_COMPILER_OP_LEVEL, op debug level:" << op_debug_level;
+  }
+
+  // Enable the global variable acc may cause accuracy problems in train+eval
+  (*ge_options)["ge.exec.variable_acc"] = "0";
+
+  // ge heterogeneous mode
+  if (ms_context_ptr->get_param<bool>(MS_CTX_ENABLE_GE_HETEROGENOUS)) {
+    (*ge_options)["ge.socVersion"] = "Ascend310P3";
+  }
+
+  // enable overflow detection
+  (*ge_options)["ge.exec.overflow"] = "1";
+  // enable deterministic
+  (*ge_options)[::ge::DETERMINISTIC] = ms_context_ptr->get_param<std::string>(MS_CTX_DETERMINISTIC) == "ON" ? "1" : "0";
+  MS_LOG(INFO) << "Set ge::DETERMINISTIC to " << (*ge_options)[::ge::DETERMINISTIC];
+}
+
+void SetPassthroughGeOptions(std::string option_level, OptionMap *options) {
+  const auto &new_options = AnfAlgo::GetGeOptions(option_level);
+  for (auto &[key, value] : new_options) {
+    (*options)[key] = value;
+    MS_LOG(INFO) << "Set ge " << option_level << " option: {" << key << ", " << value << "}";
+  }
 }
 }  // namespace
 
@@ -1013,6 +1167,34 @@ bool AscendResManager::LaunchCallback(std::function<void(void)> callback_func, s
     return false;
   }
   return true;
+}
+
+void AscendResManager::InitializeForGe() const {
+  if (initialized_ge) {
+    return;
+  }
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+
+  if (ms_context->get_param<bool>(MS_CTX_IS_PYNATIVE_GE_INIT)) {
+    return;
+  }
+
+  if (static_cast<bool>(ms_context->get_param<uint32_t>(MS_CTX_GE_REF))) {
+    ms_context->increase_param<uint32_t>(MS_CTX_GE_REF);
+    return;
+  }
+  std::map<std::string, std::string> ge_options;
+  GetGeGlobalOptions(&ge_options);
+  SetPassthroughGeOptions("global", &ge_options);
+  {
+    // Release GIL before calling into (potentially long-running) C++ code
+    GilReleaseWithCheck gil_release;
+    if (::ge::GEInitialize(ge_options) != ::ge::GRAPH_SUCCESS) {
+      MS_LOG(EXCEPTION) << "Initialize GE failed!";
+    }
+  }
+  initialized_ge = true;
 }
 
 MS_REGISTER_HAL_RES_MANAGER(kAscendDevice, DeviceType::kAscend, AscendResManager);

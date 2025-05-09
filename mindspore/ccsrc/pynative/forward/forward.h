@@ -26,7 +26,7 @@
 #include "pynative/forward/do_cast.h"
 #include "pynative/forward/do_pyboost_cast.h"
 #include "pynative/forward/do_infer.h"
-#include "backend/graph_compiler/backend.h"
+#include "backend/ms_backend/ms_backend.h"
 #include "ir/cell.h"
 #include "runtime/pipeline/async_hqueue.h"
 #include "mindspore/ops/view/view_strides_calculator.h"

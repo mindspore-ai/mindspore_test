@@ -37,6 +37,9 @@
 #include "frontend/ir/primitive_py.h"
 #include "pynative/grad/variable.h"
 #include "frontend/operator/composite/auto_generate/functional_map.h"
+#include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/structure_ops.h"
 
 namespace mindspore {
 namespace pijit {

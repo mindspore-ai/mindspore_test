@@ -59,8 +59,8 @@ namespace ascend {
 namespace {
 constexpr uint32_t kFirstItem = 0;
 constexpr size_t kOpTypeNumber = static_cast<size_t>(SelectedKernelType::NUM_KERNLE_TYPE);
-constexpr const char *kOpSelectedType[] = {"GE kernel",  "internal kernel", "aclnn kernel", "aclop kernel",
-                                           "atb kernel", "hccl kernel",     "host kernel"};
+constexpr const char *kOpSelectedType[] = {"internal kernel", "aclnn kernel", "aclop kernel",
+                                           "atb kernel",      "hccl kernel",  "host kernel"};
 
 std::string KernelSelectDebugString(const kernel::KernelBuildInfo *build_info,
                                     const std::vector<std::shared_ptr<kernel::KernelBuildInfo>> &kernel_info_list) {
@@ -637,12 +637,6 @@ std::tuple<bool, std::string, ExceptionType, bool> SelectKernelInfoWithMsg(const
   device::ascend::ErrorAclType acl_err_type = device::ascend::ErrorAclType::kNormalOp;
   std::tuple<bool, std::string, ExceptionType, bool> result = std::make_tuple(true, "", NoExceptionType, false);
   std::string op_name = common::AnfAlgo::GetCNodeName(node);
-
-  if (common::AnfAlgo::CheckPrimitiveType(node, prim::kPrimGEGraphOp)) {
-    GenerateKernelBuildInfo(node, KernelType::GE_KERNEL);
-    CollectOpSelectedType(op_name, SelectedKernelType::GE_KERNEL, op_selected_num, &op_selected_type);
-    return result;
-  }
 
   if (kernel::IsEnableInternalNode(node)) {
     GenerateKernelBuildInfo(node, KernelType::INTERNAL_KERNEL);

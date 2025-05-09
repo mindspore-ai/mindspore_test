@@ -49,6 +49,7 @@
 #include "pipeline/jit/pi/eval_frame_hook.h"
 #include "include/common/utils/tensor_py.h"
 #include "include/common/pynative/grad_state.h"
+#include "debug/profiler/profiler.h"
 
 namespace mindspore {
 namespace pijit {

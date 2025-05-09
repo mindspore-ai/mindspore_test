@@ -64,13 +64,6 @@ foreach(a_comp ${ASCEND_COMMON_SUB})
     endif()
 endforeach()
 
-list(APPEND ASCEND_COMMON_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_transform_graph_ir_obj>)
-list(APPEND ASCEND_COMMON_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_ge_utils_obj>)
-
-# to delete
-list(APPEND ASCEND_COMMON_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_ge_pass_obj>)
-list(APPEND ASCEND_COMMON_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_ge_executor_obj>)
-
 list(APPEND ASCEND_910B_OBJ_SRC ${ASCEND_COMMON_OBJECTS_SRC})
 add_library(mindspore_ascend SHARED ${ASCEND_910B_OBJ_SRC})
 set_target_properties(mindspore_ascend PROPERTIES VERSION 2)

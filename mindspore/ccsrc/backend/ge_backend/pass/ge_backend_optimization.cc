@@ -63,6 +63,7 @@
 #include "backend/ge_backend/pass/broadcast_for_select.h"
 #include "backend/ge_backend/pass/add_noop_to_es_grad.h"
 #include "backend/ge_backend/pass/bce_with_logits_loss_for_ge.h"
+#include "backend/ge_backend/pass/matmul_allreduce_fusion.h"
 #include "backend/common/pass/custom_defined_depend.h"
 #include "backend/common/pass/other/hcom/insert_tensor_move_for_hccl_op_ge.h"
 #include "backend/common/pass/other/resize_bilinear_add_attr.h"
@@ -102,9 +103,7 @@
 #include "backend/common/pass/ir_fusion/mc2_fusion.h"
 #include "backend/common/pass/other/add_attr_to_dump.h"
 #include "backend/ge_backend/pass/ascend_mindir_op_adapter_for_ge.h"
-#include "plugin/device/ascend/optimizer/ir_fusion/flash_attention_fusion.h"
-#include "plugin/device/ascend/optimizer/ir_fusion_infer/matmul_allreduce_fusion.h"
-#include "backend/ge_backend/pass/matmul_allreduce_add_rmsnorm_fusion.h"
+#include "backend/common/pass/ir_fusion/flash_attention_fusion.h"
 #include "backend/common/pass/convert_list_to_tuple.h"
 #include "backend/common/pass/eliminate_func_data_type.h"
 #include "backend/common/pass/conv_transpose_to_conv_bp.h"
@@ -421,9 +420,6 @@ void OptimizeGEGraph(const KernelGraphPtr &graph, std::set<KernelGraphPtr> *cons
   GEBackendOptimization(graph);
 
   for (auto &child_graph : graph->child_graph_order()) {
-    if (child_graph.lock()->has_flag(kFlagGeKernel)) {
-      continue;
-    }
     OptimizeGEGraph(child_graph.lock(), memo);
   }
   PROF_END(OptimizeGEGraph);

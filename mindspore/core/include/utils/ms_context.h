@@ -121,7 +121,6 @@ enum MsCtxParam : unsigned {
   MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE,
   MS_CTX_ENABLE_PYNATIVE_OP_GRAPH_CACHE,
   MS_CTX_ENABLE_MEM_OFFLOAD,
-  MS_CTX_ENABLE_HYBRID_MODE,
   MS_CTX_ENABLE_RECOVERY,
   MS_CTX_ENABLE_GE_HETEROGENOUS,
   MS_CTX_DISABLE_FORMAT_TRANSFORM,
@@ -451,9 +450,6 @@ inline void MsContext::decrease_param<uint32_t>(MsCtxParam param) {
 }
 
 MS_CORE_API bool UseSimulationApi();
-
-// The UseNewBackend will delete when new backend switch.
-MS_CORE_API bool UseNewBackend();
 
 #define MSCONTEXT_REGISTER_INIT_FUNC(name, func)                          \
   class name##InitFuncRegister {                                          \

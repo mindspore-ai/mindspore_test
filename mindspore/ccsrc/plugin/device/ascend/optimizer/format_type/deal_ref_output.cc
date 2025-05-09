@@ -24,7 +24,6 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "ops/op_def.h"
 #include "plugin/device/ascend/optimizer/format_type/utils.h"
-#include "plugin/device/ascend/kernel/ge/ge_kernel_mod.h"
 #include "common/oplib/oplib.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
@@ -48,20 +47,6 @@ std::unordered_map<size_t, size_t> GetRefInfoMaps(const CNodePtr &cnode) {
   auto kernel_type = AnfAlgo::GetKernelType(cnode);
   if (kernel_type == KernelType::UNKNOWN_KERNEL_TYPE) {
     return ref_infos;
-  }
-
-  if (kernel_type == KernelType::GE_KERNEL) {
-    if (!common::AnfAlgo::CheckPrimitiveType(cnode, prim::kPrimGEGraphOp)) {
-      MS_LOG(EXCEPTION) << "Current node must be callinline! but got " << cnode->DebugString();
-    }
-    auto kernel_mod = AnfAlgo::GetKernelMod(cnode);
-    if (kernel_mod == nullptr) {
-      return ref_infos;
-    }
-    auto ge_ref = dynamic_cast<kernel::GeKernelMod *>(kernel_mod)->io_indexes();
-    for (auto [input_idx, output_idx] : ge_ref) {
-      ref_infos[output_idx] = input_idx;
-    }
   }
 
   auto op_name = common::AnfAlgo::GetCNodeName(cnode);

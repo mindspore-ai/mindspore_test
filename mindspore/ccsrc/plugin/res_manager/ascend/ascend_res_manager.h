@@ -156,6 +156,8 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public HalResBase {
 
   bool LaunchCallback(std::function<void(void)> callback_func, size_t stream_id, bool is_block = false) const override;
 
+  void InitializeForGe() const override;
+
  private:
   MemUceInfo mem_uce_info_;
   std::mutex mem_uce_info_mutex_;

@@ -51,36 +51,6 @@ class TestCompileSegmentRunner : public UT::Common {
   VM vm_;
 };
 
-TEST_F(TestCompileSegmentRunner, test_MsVmConvert1) {
-  FuncGraphPtr g = get_py_fun_("ScalarAdd");
-  // g was managed by local variable manager in get_py_fun_ and that manager will be freed as no reference.
-  // so a new manager should be declared to make get_outputs() in segment_runner.cc happy.
-  std::shared_ptr<mindspore::FuncGraphManager> manager = mindspore::Manage(g);
-
-  BackendPtr b = std::make_shared<Backend>("vm");
-  auto graph_partition = std::make_shared<GraphPartition>(GetNonlinearOps(), b->name());
-  auto segments = graph_partition->Partition(g);
-  VectorRef args({1.0, 2.0});
-
-  auto convertResult = MsVmConvert(segments[0], "");
-  auto runResult = (*(convertResult.run))(args);
-  ASSERT_TRUE(runResult.size() == 1 && py::cast<double>(BaseRefToPyData(runResult[0])) == 3.0);
-}
-
-TEST_F(TestCompileSegmentRunner, test_MsVmConvert2) {
-  FuncGraphPtr g = get_py_fun_("ScalarMul");
-  std::shared_ptr<mindspore::FuncGraphManager> manager = mindspore::Manage(g);
-
-  BackendPtr b = std::make_shared<Backend>("vm");
-  auto graph_partition = std::make_shared<GraphPartition>(GetNonlinearOps(), b->name());
-  auto segments = graph_partition->Partition(g);
-  VectorRef args({1.0, 2.0});
-
-  auto convertResult = MsVmConvert(segments[0], "");
-  auto runResult = (*(convertResult.run))(args);
-  ASSERT_TRUE(runResult.size() == 1 && py::cast<double>(BaseRefToPyData(runResult[0])) == 2.0);
-}
-
 TEST_F(TestCompileSegmentRunner, test_RunOperation1) {
   VectorRef args({1});
   auto res =

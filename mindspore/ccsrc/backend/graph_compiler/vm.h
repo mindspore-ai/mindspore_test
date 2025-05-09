@@ -41,9 +41,6 @@ namespace py = pybind11;
 namespace mindspore {
 namespace compile {
 
-class Backend;
-using BackendPtr = std::shared_ptr<Backend>;
-
 enum Instruction {
   kCall = 0,
   kTailCall,
@@ -101,7 +98,7 @@ bool operator==(const StructSimuSwitch &lhs, const StructSimuSwitch &rhs);
 class BACKEND_EXPORT FinalVM {
  public:
   // Create a VM with the specified instructions and backend.
-  explicit FinalVM(const InstSet &insts, const BackendPtr &backend);
+  explicit FinalVM(const InstSet &insts);
   virtual ~FinalVM() = default;
 
   BaseRef Eval(const VectorRef &args);
@@ -140,7 +137,6 @@ class BACKEND_EXPORT FinalVM {
   std::stack<int64_t> retsp_;
   int64_t pc_;
   int64_t sp_;
-  BackendPtr backend_;
   const InstFunctionMap inst_function_map = {
     {Instruction::kCall, [this](const VectorRef &args) { InstCall(args); }},
     {Instruction::kTailCall, [this](const VectorRef &args) { InstTailCall(args); }},

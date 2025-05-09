@@ -19,6 +19,11 @@
 namespace mindspore {
 namespace device {
 namespace ascend {
+LowlatencyCollectiveCommLib &LowlatencyCollectiveCommLib::GetInstance() {
+  static LowlatencyCollectiveCommLib instance;
+  return instance;
+}
+
 LowlatencyCollectiveCommLib::LowlatencyCollectiveCommLib() { global_group_name_ = kLCCLGlobalGroupName; }
 
 bool LowlatencyCollectiveCommLib::Initialize(uint32_t global_rank, uint32_t global_rank_size, uint32_t local_rank_id) {

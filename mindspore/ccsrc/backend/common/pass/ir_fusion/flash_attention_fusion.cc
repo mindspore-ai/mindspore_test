@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "plugin/device/ascend/optimizer/ir_fusion/flash_attention_fusion.h"
+#include "backend/common/pass/ir_fusion/flash_attention_fusion.h"
 #include <memory>
 #include "backend/common/pass/common/gllo_utils.h"
 #include "ops_utils/op_utils.h"
@@ -107,12 +107,12 @@ std::vector<int64_t> GetTensorShape(CNodePtr cnode, size_t input_index) {
 }
 }  // namespace
 
-const BaseRef FlashAttentionFusion::DefinePattern() const {
+const BaseRef FlashAttentionFusionBase::DefinePattern() const {
   VectorRef pattern = DefineFlashAttentionPattern();
   return pattern;
 }
 
-CNodePtr FlashAttentionFusion::CreatePromptFlashAttentionCnodeForBNSD(
+CNodePtr FlashAttentionFusionBase::CreatePromptFlashAttentionCnodeForBNSD(
   const FuncGraphPtr &func_graph, const AnfNodePtr &node, const AnfNodePtr &q, const AnfNodePtr &k, const AnfNodePtr &v,
   const AnfNodePtr &atten_mask, const int64_t num_heads, const int64_t next_token, const float scale_value,
   const int64_t num_key_value_heads) const {
@@ -161,8 +161,8 @@ CNodePtr FlashAttentionFusion::CreatePromptFlashAttentionCnodeForBNSD(
   return prompt_flash_attention_cnode;
 }
 
-const AnfNodePtr FlashAttentionFusion::Process(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
-                                               const EquivPtr &equiv) const {
+const AnfNodePtr FlashAttentionFusionBase::Process(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
+                                                   const EquivPtr &equiv) const {
   MS_LOG(INFO) << "Do FlashAttention fusion.";
   if (func_graph == nullptr || node == nullptr || equiv == nullptr) {
     MS_LOG(ERROR) << "Func graph, node and equiv should be not nullptr, but some of them are nullptr";

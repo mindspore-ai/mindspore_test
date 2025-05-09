@@ -60,9 +60,9 @@ class RES_EXPORT HalResManagerRegister {
   ~HalResManagerRegister() = default;
 };
 
-#define MS_REGISTER_HAL_RES_MANAGER(DEVICE_NAME, TARGET, HAL_RES_MANAGER_CLASS) \
-  static const HalResManagerRegister g_res_mananger_##DEVICE_NAME##_reg(        \
-    TARGET, [](const ResKey &res_key) { return std::make_shared<HAL_RES_MANAGER_CLASS>(res_key); });
+#define MS_REGISTER_HAL_RES_MANAGER(DEVICE_NAME, TARGET, HAL_RES_MANAGER_CLASS)  \
+  static const device::HalResManagerRegister g_res_mananger_##DEVICE_NAME##_reg( \
+    TARGET, [](const device::ResKey &res_key) { return std::make_shared<HAL_RES_MANAGER_CLASS>(res_key); });
 
 }  // namespace device
 }  // namespace mindspore

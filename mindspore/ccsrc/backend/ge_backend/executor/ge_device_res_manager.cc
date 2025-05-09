@@ -36,10 +36,10 @@ void GeDeviceResManager::Initialize() {
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   device::ResKey res_key{device::DeviceType::kAscend, device_id};
-  auto res_manager_ = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-  MS_EXCEPTION_IF_NULL(res_manager_);
-  res_manager_->Initialize();
-  mem_manager_ = res_manager_->mem_manager();
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  MS_EXCEPTION_IF_NULL(res_manager);
+  res_manager->Initialize();
+  mem_manager_ = res_manager->mem_manager();
   MS_EXCEPTION_IF_NULL(mem_manager_);
 
   if (ms_context->get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD)) {
@@ -52,11 +52,7 @@ void GeDeviceResManager::Destroy() {
   if (!initialized_) {
     return;
   }
-  // release runtime
-  if (res_manager_ != nullptr) {
-    res_manager_->Destroy();
-    res_manager_ = nullptr;
-  }
+
   // memory Released in res_manager_->Destroy.
   mem_manager_ = nullptr;
   initialized_ = false;
@@ -156,14 +152,6 @@ bool GeDeviceResManager::BindDeviceToCurrentThread(bool force_bind) const {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-
-  static thread_local std::once_flag is_set;
-  std::call_once(is_set, [device_id]() {
-    auto ret = CALL_ASCEND_API(aclrtSetDevice, static_cast<int32_t>(device_id));
-    if (ret != ACL_ERROR_NONE) {
-      MS_LOG(EXCEPTION) << "Device " << device_id << " call aclrtSetDevice failed, ret:" << static_cast<int>(ret);
-    }
-  });
 
   if (force_bind) {
     device::ascend::AscendHalManager::GetInstance().SetContextForce(device_id);

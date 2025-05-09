@@ -16,6 +16,7 @@
 
 #include "tests/ut/cpp/common/device_common_test.h"
 
+#include "runtime/graph_scheduler/graph_compiler.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
@@ -36,7 +37,7 @@ class GraphCompilerTest : public UT::Common {
 TEST_F(GraphCompilerTest, CompileGraph) {
   std::vector<int64_t> shp{2, 2};
   abstract::AbstractTensorPtr abs;
-
+  MS_REGISTER_HAL_RES_MANAGER(kCPUDevice, DeviceType::kCPU, TestResManager);
   // Func graph.
   auto func_graph = std::make_shared<FuncGraph>();
 
