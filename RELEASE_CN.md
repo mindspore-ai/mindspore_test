@@ -90,7 +90,7 @@
   | mindspore.mint.optim.SGD |
   | mindspore.mint.linalg.qr |
 
-- [STABLE] [mindspore.mint](https://gitee.com/link?target=https://www.mindspore.cn/docs/en/master/api_python/mindspore.mint.html) API 也提供了一些新增的stable接口。此外, 一些demo的接口也转为了stable。
+- [STABLE] [mindspore.mint](https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore.mint.html) API 也提供了一些新增的stable接口。此外, 一些demo的接口也转为了stable。
 
   | mindspore.mint           |
   | :----------------------- |

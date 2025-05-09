@@ -61,7 +61,7 @@
 
 #### New APIs & Enhanced APIs
 
-- [DEMO] [mindspore.mint](https://www.mindspore.cn/docs/en/r2.4.0/api_python/mindspore.mint.html) API provides more functional, nn interfaces. The mint interface is currently an experimental interface and performs better than ops in `jit_level="O0"` and pynative mode. Currently, the graph sinking mode and CPU/GPU backend are not supported, and it will be gradually improved in the future.
+- [DEMO] [mindspore.mint](https://www.mindspore.cn/docs/en/master/api_python/mindspore.mint.html) API provides more functional, nn interfaces. The mint interface is currently an experimental interface and performs better than ops in `jit_level="O0"` and pynative mode. Currently, the graph sinking mode and CPU/GPU backend are not supported, and it will be gradually improved in the future.
 
   | mindspore.mint                  |
   | :------------------------------ |
@@ -90,7 +90,7 @@
   | mindspore.mint.optim.SGD |
   | mindspore.mint.linalg.qr |
 
-- [STABLE] [mindspore.mint](https://www.mindspore.cn/docs/en/r2.4.0/api_python/mindspore.mint.html) API also provides some new stable interfaces. Besides, some demo interfaces are changed into stable ones.
+- [STABLE] [mindspore.mint](https://www.mindspore.cn/docs/en/master/api_python/mindspore.mint.html) API also provides some new stable interfaces. Besides, some demo interfaces are changed into stable ones.
 
   | mindspore.mint           |
   | :----------------------- |
@@ -114,7 +114,7 @@
   | mindspore.Tensor.log2     |
 
 - [DEMO] [mindspore.Tensor](https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.Tensor.html#mindspore.Tensor) API provides more Tensor methods. Currently, these Tensor methods are experimental interfaces and currently does not support the graph sink mode and CPU, GPU backend, and they will be gradually improved in the future. Details can be found in [API list](https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.Tensor.html#mindspore.Tensor) in official website.
-- [STABLE] [mindspore.ops](https://www.mindspore.cn/docs/en/r2.4.0/api_python/mindspore.ops.html) provides two inference API [mindspore.ops.moe_token_permute](https://www.mindspore.cn/docs/en/master/api_python/ops/mindspore.ops.moe_token_permute.html#mindspore.ops.moe_token_permute) and [mindspore.ops.moe_token_unpermute](https://www.mindspore.cn/docs/en/master/api_python/ops/mindspore.ops.moe_token_unpermute.html#mindspore.ops.moe_token_unpermute). Currently, only Ascend backend is supported.
+- [STABLE] [mindspore.ops](https://www.mindspore.cn/docs/en/master/api_python/mindspore.ops.html) provides two inference API [mindspore.ops.moe_token_permute](https://www.mindspore.cn/docs/en/master/api_python/ops/mindspore.ops.moe_token_permute.html#mindspore.ops.moe_token_permute) and [mindspore.ops.moe_token_unpermute](https://www.mindspore.cn/docs/en/master/api_python/ops/mindspore.ops.moe_token_unpermute.html#mindspore.ops.moe_token_unpermute). Currently, only Ascend backend is supported.
 - [STABLE] [mindspore.mint.nn.functional.gelu](https://www.mindspore.cn/docs/en/master/api_python/mint/mindspore.mint.nn.functional.gelu.html) and [mindspore.mint.nn.GeLU](https://www.mindspore.cn/docs/en/master/api_python/mint/mindspore.mint.nn.GELU.html) now support input argument "approximate".
 - [STABLE] Added the offline parsing interface [mindspore.profiler.profiler.analyse](https://gitee.com/link?target=https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.profiler.profiler.analyse.html).
 
