@@ -71,9 +71,9 @@ template <typename T>
 std::vector<T> TensorValueToVector(const tensor::TensorPtr &tensor) {
   MS_EXCEPTION_IF_NULL(tensor);
   std::vector<T> value;
-  auto element_size = tensor->data().size();
+  size_t element_size = tensor->DataSize();
   auto *data = static_cast<T *>(tensor->data_c());
-  for (auto i = 0; i < element_size; i++) {
+  for (size_t i = 0; i < element_size; i++) {
     value.push_back(data[i]);
   }
   return value;

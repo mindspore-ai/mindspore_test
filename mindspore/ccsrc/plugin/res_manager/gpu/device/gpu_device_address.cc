@@ -401,7 +401,7 @@ mindspore::tensor::TensorPtr GPUDeviceAddress::LoadMemToHost(const std::string &
                                                              const ShapeVector &host_shape, TypeId host_type, bool,
                                                              bool) const {
   mindspore::tensor::TensorPtr out_tensor = std::make_shared<tensor::Tensor>(host_type, host_shape);
-  size_t host_size = out_tensor->data().nbytes();
+  size_t host_size = out_tensor->DataNBytes();
   if (host_size == 0) {
     MS_LOG(INFO) << "Host size is 0 for tensor: " << tensor_name << ", no need to load.";
     return std::make_shared<mindspore::tensor::Tensor>();

@@ -114,8 +114,8 @@ class PyExecuteInitializer {
     tensor::TensorPtr tensor =
       std::make_shared<tensor::Tensor>(kernel_tensor->dtype_id(), kernel_tensor->GetShapeVector());
     MS_EXCEPTION_IF_NULL(tensor);
-    if (LongToSize(tensor->data().nbytes()) != kernel_tensor_value->GetDataSize()) {
-      MS_LOG(EXCEPTION) << "Invalid host tensor size:" << tensor->data().nbytes()
+    if (LongToSize(tensor->DataNBytes()) != kernel_tensor_value->GetDataSize()) {
+      MS_LOG(EXCEPTION) << "Invalid host tensor size:" << tensor->DataNBytes()
                         << " and kernel tensor size:" << kernel_tensor_value->GetDataSize() << " for pyexecute.";
     }
     if (kernel_tensor_value->GetDataSize() == 0) {

@@ -63,7 +63,7 @@ tensor::TensorPtr CreateTensorByTupleCast(const std::vector<T> &values, const Ty
   auto data_ptr = tensor->data_c();
   MS_EXCEPTION_IF_NULL(data_ptr);
   auto elem_num = new_values.size() * data_len;
-  auto ret_code = memcpy_s(data_ptr, static_cast<size_t>(tensor->data().nbytes()), new_values.data(), elem_num);
+  auto ret_code = memcpy_s(data_ptr, static_cast<size_t>(tensor->DataNBytes()), new_values.data(), elem_num);
   if (ret_code != EOK) {
     MS_LOG(EXCEPTION) << "Failed to copy data into tensor, memcpy_s errorno: " << ret_code;
   }

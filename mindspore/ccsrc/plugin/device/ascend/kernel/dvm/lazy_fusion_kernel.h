@@ -95,7 +95,7 @@ class LazyFusionKernelAscend : public dvm::Kernel {
   TensorPtr Output(dvm::NDObject *obj, TypeId dtype, const ShapeVector &shape) {
     auto tensor = std::make_shared<tensor::Tensor>(dtype, shape);
     runtime::DeviceAddressUtils::CreateOutputTensorAddress(device_context_, stream_id_, tensor,
-                                                           LongToSize(tensor->data().nbytes()));
+                                                           LongToSize(tensor->DataNBytes()));
     Output(tensor, obj);
     return tensor;
   }

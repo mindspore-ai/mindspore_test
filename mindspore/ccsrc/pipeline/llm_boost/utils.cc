@@ -58,7 +58,7 @@ py::object SetFormat(const py::object &py_tensor, const std::string &format_name
     format = mindspore::Format::FRACTAL_NZ;
   }
   device_address = device_context->device_res_manager_->CreateDeviceAddress(
-    nullptr, static_cast<size_t>(tensor->data().nbytes()), tensor->shape(), format, tensor->data_type(), device_name,
+    nullptr, static_cast<size_t>(tensor->DataNBytes()), tensor->shape(), format, tensor->data_type(), device_name,
     device_id, stream_id);
   MS_EXCEPTION_IF_NULL(device_address);
   device_address->set_from_persistent_mem(tensor->is_parameter());
