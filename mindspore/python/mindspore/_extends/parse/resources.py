@@ -76,6 +76,15 @@ parse_object_map = {
     SYMBOL_UNDEFINE: (None, 'undefine', ''),
 }
 
+parse_augassign_object_map = {
+    # ast grammar
+    ast.Add:        (trope_ns, 'augassign_add', '+='),
+    ast.Sub:        (trope_ns, 'augassign_sub', '-='),
+    ast.Mult:       (trope_ns, 'augassign_mul', '*='),
+    ast.Div:        (trope_ns, 'augassign_div', '/='),
+    ast.FloorDiv:   (trope_ns, 'augassign_floordiv', '//='),
+}
+
 # Operation symbols corresponding to ast grammar
 ops_symbol_map = {
     # ast grammar

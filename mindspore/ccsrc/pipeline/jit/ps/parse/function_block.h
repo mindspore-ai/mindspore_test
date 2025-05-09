@@ -75,6 +75,7 @@ class FunctionBlock : public std::enable_shared_from_this<FunctionBlock> {
   bool IsGlobalVar(const std::string &var_name) { return global_vars_.find(var_name) != global_vars_.end(); }
 
   py::tuple GetAstOpNameSpace(const py::object &op);
+  py::tuple GetAugAssignAstOpNameSpace(const py::object &op);
   AnfNodePtr MakeResolveAstOpNameSpace(const py::tuple &namespace_var);
   AnfNodePtr MakeResolveClassObject();
   AnfNodePtr MakeResolveClassMember(const std::string &attr_or_self);

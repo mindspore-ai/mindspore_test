@@ -2705,7 +2705,7 @@ FunctionBlockPtr Parser::ParseAugAssign(const FunctionBlockPtr &block, const py:
   py::object value_object = python_adapter::GetPyObjAttr(node, "value");
   AnfNodePtr target_node = nullptr;
 
-  const auto &ns = block->GetAstOpNameSpace(op_object);
+  const auto &ns = block->GetAugAssignAstOpNameSpace(op_object);
   auto op_node = block->MakeResolveAstOpNameSpace(ns);
 
   AnfNodePtr value_node = ParseExprNode(block, value_object);

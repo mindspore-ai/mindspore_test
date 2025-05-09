@@ -43,7 +43,8 @@ from mindspore.common import dtype as mstype
 from mindspore.common.parameter import Parameter
 from mindspore.common import mutable
 from .namespace import Namespace, ModuleNamespace, ClosureNamespace, ClassMemberNamespace
-from .resources import parse_object_map, ops_symbol_map, convert_object_map, convert_class_to_function_map, trope_ns
+from .resources import (parse_object_map, parse_augassign_object_map, ops_symbol_map, convert_object_map,
+                        convert_class_to_function_map, trope_ns)
 from .resources import SYMBOL_UNDEFINE, constant_fold_functions
 from .jit_fallback_modules.check_utils import third_party_checker
 from ...common.api import _convert_python_data
@@ -662,6 +663,14 @@ def get_ast_namespace_symbol(obj):
     """Get obj type and namespace and symbol."""
     # Get symbol from object map.
     ops_info = parse_object_map.get(type(obj), SYMBOL_UNDEFINE)
+    logger.debug("ops info: %r", ops_info)
+    return ops_info
+
+
+def get_ast_augassign_namespace_symbol(obj):
+    """Get obj type and namespace and symbol."""
+    # Get symbol from object map.
+    ops_info = parse_augassign_object_map.get(type(obj), SYMBOL_UNDEFINE)
     logger.debug("ops info: %r", ops_info)
     return ops_info
 

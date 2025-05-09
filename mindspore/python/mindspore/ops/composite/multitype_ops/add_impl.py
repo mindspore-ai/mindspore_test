@@ -20,8 +20,18 @@ from mindspore.ops.composite.multitype_ops import _compile_utils as utils
 from mindspore.ops.composite import base
 from mindspore.ops import functional as F
 from mindspore.ops.composite.multitype_ops._constexpr_utils import make_tensor, check_equal
+from mindspore.ops.auto_generate.gen_ops_prim import InplaceAddExt, InplaceAddsExt
 from mindspore.common import CSRTensor, COOTensor
 from ...operations._sequence_ops import SequenceAdd
+
+# x += y
+augassign_add = base.MultitypeFuncGraph('augassign_add', True)
+"""
+`augassign_add` is a metafuncgraph object which will add two objects according to input type using ".register"
+decorator.
+"""
+
+augassign_add.set_need_raise()
 
 
 add = base.MultitypeFuncGraph('add', True)
@@ -103,7 +113,7 @@ class _ListAdd(base.ListAdd_):
 _list_add = _ListAdd('list_add')
 """`_list_add` is an metafuncgraph object which will concatenate two lists to form a list."""
 
-
+@augassign_add.register("Number", "Number")
 @add.register("Number", "Number")
 @_add_backward.register("Number", "Number")
 def _scalar_add_scalar(x, y):
@@ -119,7 +129,7 @@ def _scalar_add_scalar(x, y):
     """
     return F.scalar_add(x, y)
 
-
+@augassign_add.register("String", "String")
 @add.register("String", "String")
 def _string_concat_string(x, y):
     """
@@ -135,6 +145,7 @@ def _string_concat_string(x, y):
     return F.string_concat(x, y)
 
 
+@augassign_add.register("Number", "Tensor")
 @add.register("Number", "Tensor")
 def _scalar_add_tensor(x, y):
     """
@@ -148,6 +159,21 @@ def _scalar_add_tensor(x, y):
         Tensor, has the same dtype as x.
     """
     return F.add(x, y)
+
+
+@augassign_add.register("Tensor", "Number")
+def _tensor_add_scalar_augassign(x, y):
+    """
+    Tensor is added to number.
+
+    Args:
+        x (Tensor): x
+        y (Number): The dtype is same as x.
+
+    Returns:
+        Tensor, has the same dtype as x.
+    """
+    return InplaceAddsExt()(x, y)
 
 
 @add.register("Tensor", "Number")
@@ -165,6 +191,7 @@ def _tensor_add_scalar(x, y):
     return F.add(x, y)
 
 
+@augassign_add.register("Tuple", "Tensor")
 @add.register("Tuple", "Tensor")
 def _tuple_add_tensor(x, y):
     """
@@ -181,6 +208,7 @@ def _tuple_add_tensor(x, y):
     return F.tensor_add(x, y)
 
 
+@augassign_add.register("Tensor", "Tuple")
 @add.register("Tensor", "Tuple")
 def _tensor_add_tuple(x, y):
     """
@@ -197,6 +225,7 @@ def _tensor_add_tuple(x, y):
     return F.tensor_add(x, y)
 
 
+@augassign_add.register("List", "Tensor")
 @add.register("List", "Tensor")
 def _list_add_tensor(x, y):
     """
@@ -213,6 +242,7 @@ def _list_add_tensor(x, y):
     return F.tensor_add(x, y)
 
 
+@augassign_add.register("Tensor", "List")
 @add.register("Tensor", "List")
 def _tensor_add_list(x, y):
     """
@@ -229,6 +259,7 @@ def _tensor_add_list(x, y):
     return F.tensor_add(x, y)
 
 
+@augassign_add.register("List", "List")
 @add.register("List", "List")
 def _list_add_list(x, y):
     """
@@ -246,6 +277,21 @@ def _list_add_list(x, y):
     return _list_add(x, y)
 
 
+@augassign_add.register("Tensor", "Tensor")
+def _tensor_add_tensor_augassign(x, y):
+    """
+    Returns x + y element-wise.
+
+    Args:
+        x (Tensor): x
+        y (Tensor): The dtype is same as x.
+
+    Returns:
+        Tensor, has the same dtype as x.
+    """
+    return InplaceAddExt()(x, y)
+
+
 @add.register("Tensor", "Tensor")
 def _tensor_add_tensor(x, y):
     """
@@ -261,6 +307,7 @@ def _tensor_add_tensor(x, y):
     return F.add(x, y)
 
 
+@augassign_add.register("RowTensor", "Tensor")
 @add.register("RowTensor", "Tensor")
 def add_rowtensor_tensor(x, y):
     """
@@ -306,6 +353,7 @@ def _add_env(x, y):
     return F.environ_add(x, y)
 
 
+@augassign_add.register("Tuple", "Tuple")
 @add.register("Tuple", "Tuple")
 def _add_tuple(x, y):
     """
@@ -323,6 +371,7 @@ def _add_tuple(x, y):
     return _tuple_add(x, y)
 
 
+@augassign_add.register("CSRTensor", "CSRTensor")
 @add.register("CSRTensor", "CSRTensor")
 def _add_csrtensor(x, y):
     """
@@ -340,6 +389,7 @@ def _add_csrtensor(x, y):
     return F.csr_add(x, y, make_tensor(1, x.values.dtype), make_tensor(1, x.values.dtype))
 
 
+@augassign_add.register("COOTensor", "COOTensor")
 @add.register("COOTensor", "COOTensor")
 def _add_cootensor(x, y):
     """
@@ -357,6 +407,7 @@ def _add_cootensor(x, y):
     return F.coo_add(x, y, make_tensor(0, x.values.dtype))
 
 
+@augassign_add.register("COOTensor", "Tensor")
 @add.register("COOTensor", "Tensor")
 def _add_cootensor_tensor(x, y):
     """
@@ -374,6 +425,7 @@ def _add_cootensor_tensor(x, y):
     return F.tensor_scatter_add(y, x.indices, x.values)
 
 
+@augassign_add.register("Tensor", "COOTensor")
 @add.register("Tensor", "COOTensor")
 def _add_tensor_cootensor(x, y):
     """
@@ -616,6 +668,7 @@ hyper_add = base.HyperMap(_add_backward)
 
 
 # pylint: disable=protected-access
+@augassign_add._register_default()
 @add._register_default()
 def default_add(x, y):
     """Default function for add."""

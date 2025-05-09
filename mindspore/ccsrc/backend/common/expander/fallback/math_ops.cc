@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -121,6 +121,63 @@ REG_FALLBACK_BUILDER("InplaceAddsExt").SetBody(BODYFUNC(ib) {
   auto other_tensor = ib->ScalarToTensor(y, x->dtype());
   auto alpha_tensor = ib->ScalarToTensor(alpha, x->dtype());
   return {x + other_tensor * alpha_tensor};
+});
+
+REG_FALLBACK_BUILDER("InplaceSubExt").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto y = ib->GetInput(kIndex1);
+  auto alpha = ib->GetInput(kIndex2);
+  auto alpha_tensor = ib->ScalarToTensor(alpha, x->dtype());
+  auto y_cast = ib->Cast(y, x->dtype());
+  return {x - y_cast * alpha_tensor};
+});
+
+REG_FALLBACK_BUILDER("InplaceSubScalar").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto y = ib->GetInput(kIndex1);
+  auto alpha = ib->GetInput(kIndex2);
+  auto other_tensor = ib->ScalarToTensor(y, x->dtype());
+  auto alpha_tensor = ib->ScalarToTensor(alpha, x->dtype());
+  return {x - other_tensor * alpha_tensor};
+});
+
+REG_FALLBACK_BUILDER("InplaceMul").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto y = ib->GetInput(kIndex1);
+  return {x * y};
+});
+
+REG_FALLBACK_BUILDER("InplaceMuls").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto y = ib->GetInput(kIndex1);
+  auto other_tensor = ib->ScalarToTensor(y, x->dtype());
+  return {x * other_tensor};
+});
+
+REG_FALLBACK_BUILDER("InplaceDiv").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto y = ib->GetInput(kIndex1);
+  return {x / y};
+});
+
+REG_FALLBACK_BUILDER("InplaceDivs").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto y = ib->GetInput(kIndex1);
+  auto other_tensor = ib->ScalarToTensor(y, x->dtype());
+  return {x / other_tensor};
+});
+
+REG_FALLBACK_BUILDER("InplaceFloorDivide").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto y = ib->GetInput(kIndex1);
+  return {ib->Emit("FloorDiv", {x, y})};
+});
+
+REG_FALLBACK_BUILDER("InplaceFloorDivides").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto y = ib->GetInput(kIndex1);
+  auto other_tensor = ib->ScalarToTensor(y, x->dtype());
+  return {ib->Emit("FloorDiv", {x, other_tensor})};
 });
 
 REG_FALLBACK_BUILDER("SubExt").SetBody(BODYFUNC(ib) {

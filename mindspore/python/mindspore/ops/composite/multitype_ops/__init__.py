@@ -45,6 +45,12 @@ from mindspore.ops.composite.multitype_ops.uadd_impl import uadd
 from mindspore.ops.composite.multitype_ops.in_impl import in_
 from mindspore.ops.composite.multitype_ops.not_in_impl import not_in_
 from mindspore.ops.composite.multitype_ops.invert_impl import invert
+from mindspore.ops.composite.multitype_ops.add_impl import augassign_add
+from mindspore.ops.composite.multitype_ops.sub_impl import augassign_sub
+from mindspore.ops.composite.multitype_ops.mul_impl import augassign_mul
+from mindspore.ops.composite.multitype_ops.div_impl import augassign_div
+from mindspore.ops.composite.multitype_ops.floordiv_impl import augassign_floordiv
+
 __all__ = [
     'add',
     'sub',
@@ -76,5 +82,10 @@ __all__ = [
     'in_',
     'not_in_',
     'invert',
-    '_ones_like_for_grad'
+    '_ones_like_for_grad',
+    'augassign_add',
+    'augassign_sub',
+    'augassign_mul',
+    'augassign_div',
+    'augassign_floordiv'
 ]

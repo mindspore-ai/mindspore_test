@@ -30,7 +30,7 @@ from .parser import (Parser, create_instance, is_supported_create_instance_type,
                      get_obj_defined_from_obj_type, is_from_third_party_library, get_const_abs, get_const_round,
                      get_const_len, convert_to_namedtuple, check_attrs, generate_lambda_object,
                      check_is_subclass, check_attr_is_property, get_method_info, can_constant_fold,
-                     convert_to_mutable)
+                     convert_to_mutable, get_ast_augassign_namespace_symbol)
 
 __all__ = ['Parser', 'create_instance', 'is_supported_create_instance_type', 'generate_scope', 'get_attr_from_object',
            'get_bprop_method_of_class', 'get_class_instance_type', 'get_class_member_namespace_symbol',
@@ -45,4 +45,4 @@ __all__ = ['Parser', 'create_instance', 'is_supported_create_instance_type', 'ge
            'is_class_member_recursive', 'get_obj_defined_from_obj_type',
            'is_from_third_party_library', 'get_const_abs', 'get_const_round', 'get_const_len', 'get_method_info',
            'convert_to_namedtuple', 'check_attrs', 'generate_lambda_object', 'check_is_subclass', 'check_attr_is_property',
-           'can_constant_fold', 'convert_to_mutable']
+           'can_constant_fold', 'convert_to_mutable', 'get_ast_augassign_namespace_symbol']

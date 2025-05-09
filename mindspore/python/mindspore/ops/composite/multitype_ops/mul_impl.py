@@ -14,12 +14,22 @@
 # ============================================================================
 """Implementation for internal polymorphism `mul` operations."""
 from mindspore.ops.operations import _inner_ops as inner
+from mindspore.ops.auto_generate.gen_ops_prim import InplaceMul, InplaceMuls
 from mindspore.ops.composite.multitype_ops import _compile_utils as utils
 from mindspore.ops.composite.multitype_ops._constexpr_utils import check_equal
 from mindspore.ops.composite import base
 from mindspore.ops import functional as F
 from mindspore.common import COOTensor
 from ...operations._sequence_ops import SequenceMul
+
+
+# x *= y
+augassign_mul = base.MultitypeFuncGraph("augassign_mul", True)
+"""
+`augassign_mul` is a metafuncgraph object which will multiply two objects according to input type
+using ".register" decorator.
+"""
+augassign_mul.set_need_raise()
 
 
 mul = base.MultitypeFuncGraph("mul", True)
@@ -30,6 +40,7 @@ using ".register" decorator.
 mul.set_need_raise()
 
 
+@augassign_mul.register("Number", "Number")
 @mul.register("Number", "Number")
 def _mul_scalar(x, y):
     """
@@ -39,6 +50,17 @@ def _mul_scalar(x, y):
        Number, equal to x * y, the type is same as x.
    """
     return F.scalar_mul(x, y)
+
+
+@augassign_mul.register("Tensor", "Tensor")
+def _mul_tensor_augassign(x, y):
+    """
+    Returns x * y by element-wise where x and y are all tensors.
+
+    Outputs:
+        Tensor, has the same dtype as x.
+    """
+    return InplaceMul()(x, y)
 
 
 @mul.register("Tensor", "Tensor")
@@ -52,6 +74,7 @@ def _mul_tensor(x, y):
     return F.tensor_mul(x, y)
 
 
+@augassign_mul.register("Number", "Tensor")
 @mul.register("Number", "Tensor")
 def _scalar_mul_tensor(x, y):
     """
@@ -61,6 +84,17 @@ def _scalar_mul_tensor(x, y):
        Tensor, has the same dtype as x.
     """
     return F.tensor_mul(x, y)
+
+
+@augassign_mul.register("Tensor", "Number")
+def _tensor_mul_scalar_augassign(x, y):
+    """
+    Returns x * y where x is a tensor and y is a scalar. x and y have same dtype.
+
+    Outputs:
+        Tensor, has the same dtype as x.
+    """
+    return InplaceMuls()(x, y)
 
 
 @mul.register("Tensor", "Number")
@@ -74,6 +108,7 @@ def _tensor_mul_scalar(x, y):
     return F.tensor_muls(x, y)
 
 
+@augassign_mul.register("Number", "String")
 @mul.register("Number", "String")
 def _number_mul_string(x, y):
     """
@@ -85,6 +120,7 @@ def _number_mul_string(x, y):
     return inner.string_mul(x, y)
 
 
+@augassign_mul.register("String", "Number")
 @mul.register("String", "Number")
 def _string_mul_number(x, y):
     """
@@ -96,6 +132,7 @@ def _string_mul_number(x, y):
     return inner.string_mul(x, y)
 
 
+@augassign_mul.register("List", "Number")
 @mul.register("List", "Number")
 def _list_mul_scalar(x, y):
     """
@@ -116,6 +153,7 @@ def _list_mul_scalar(x, y):
     return res
 
 
+@augassign_mul.register("Number", "List")
 @mul.register("Number", "List")
 def _scalar_mul_list(x, y):
     """
@@ -136,6 +174,7 @@ def _scalar_mul_list(x, y):
     return res
 
 
+@augassign_mul.register("Tuple", "Number")
 @mul.register("Tuple", "Number")
 def _tuple_mul_scalar(x, y):
     """
@@ -156,6 +195,7 @@ def _tuple_mul_scalar(x, y):
     return res
 
 
+@augassign_mul.register("Number", "Tuple")
 @mul.register("Number", "Tuple")
 def _scalar_mul_tuple(x, y):
     """
@@ -176,6 +216,7 @@ def _scalar_mul_tuple(x, y):
     return res
 
 
+@augassign_mul.register("Tensor", "Tuple")
 @mul.register("Tensor", "Tuple")
 def _tensor_mul_tuple(x, y):
     """
@@ -192,6 +233,7 @@ def _tensor_mul_tuple(x, y):
     return F.tensor_mul(x, y)
 
 
+@augassign_mul.register("Tuple", "Tensor")
 @mul.register("Tuple", "Tensor")
 def _tuple_mul_tensor(x, y):
     """
@@ -208,6 +250,7 @@ def _tuple_mul_tensor(x, y):
     return F.tensor_mul(x, y)
 
 
+@augassign_mul.register("Tensor", "List")
 @mul.register("Tensor", "List")
 def _tensor_mul_list(x, y):
     """
@@ -224,6 +267,7 @@ def _tensor_mul_list(x, y):
     return F.tensor_mul(x, y)
 
 
+@augassign_mul.register("List", "Tensor")
 @mul.register("List", "Tensor")
 def _list_mul_tensor(x, y):
     """
@@ -240,6 +284,7 @@ def _list_mul_tensor(x, y):
     return F.tensor_mul(x, y)
 
 
+@augassign_mul.register("CSRTensor", "Tensor")
 @mul.register("CSRTensor", "Tensor")
 def _csrtensor_mul_tensor(x, y):
     """
@@ -251,6 +296,7 @@ def _csrtensor_mul_tensor(x, y):
     return F.csr_mul(x, y)
 
 
+@augassign_mul.register("Tensor", "CSRTensor")
 @mul.register("Tensor", "CSRTensor")
 def _tensor_mul_csrtensor(x, y):
     """
@@ -262,6 +308,7 @@ def _tensor_mul_csrtensor(x, y):
     return F.csr_mul(y, x)
 
 
+@augassign_mul.register("COOTensor", "Tensor")
 @mul.register("COOTensor", "Tensor")
 def _cootensor_mul_tensor(x, y):
     """
@@ -275,6 +322,7 @@ def _cootensor_mul_tensor(x, y):
     return COOTensor(x.indices, x.values * other_values, x.shape)
 
 
+@augassign_mul.register("Tensor", "COOTensor")
 @mul.register("Tensor", "COOTensor")
 def _tensor_mul_cootensor(x, y):
     """
@@ -289,6 +337,7 @@ def _tensor_mul_cootensor(x, y):
 
 
 # pylint: disable=protected-access
+@augassign_mul._register_default()
 @mul._register_default()
 def default_mul(x, y):
     """Default function for mul."""

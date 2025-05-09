@@ -112,6 +112,7 @@ const char PYTHON_PARSE_GET_ARGS_DEFAULT_VALUES[] = "get_args_default_values";
 const char PYTHON_PARSE_GET_NODE_TYPE[] = "get_node_type";
 const char PYTHON_PARSE_GET_AST_TYPE[] = "get_ast_type";
 const char PYTHON_PARSE_GET_AST_NAMESPACE_SYMBOL[] = "get_ast_namespace_symbol";
+const char PYTHON_PARSE_GET_AUGASSIGN_AST_NAMESPACE_SYMBOL[] = "get_ast_augassign_namespace_symbol";
 const char PYTHON_PARSE_GET_OPERATION_SYMBOL[] = "get_operation_symbol";
 const char PYTHON_PARSE_GET_OPERATION_NAMESPACE_SYMBOL[] = "get_operation_namespace_symbol";
 const char PYTHON_PARSE_GET_CLASS_TENSOR_TYPE[] = "get_tensor_class_type";
