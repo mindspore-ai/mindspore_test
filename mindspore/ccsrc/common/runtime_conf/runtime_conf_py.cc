@@ -37,7 +37,6 @@ void RegRuntimeConf(py::module *m) {
          "Check whether thread_bind_core configured.")
     .def("set_thread_bind_core_configured", &RuntimeConf::SetThreadBindCoreConfigured,
          "Set thread_bind_core configured.")
-    .def("thread_bind_core", &RuntimeConf::BindCore, "Bind thread to specific cpus")
     .def("thread_bind_core_with_policy", &RuntimeConf::BindCoreWithPolicy,
          "Bind thread to specific cpus with policy generated");
 }

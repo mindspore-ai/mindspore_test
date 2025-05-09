@@ -710,20 +710,6 @@ void GraphScheduler::Initialize() {
   MS_EXCEPTION_IF_NULL(actor_manager);
   size_t actor_queue_size = 81920;
 
-  // Thread bind core for Runtime module
-  auto &bind_core_manager = ThreadBindCore::GetInstance();
-  if (bind_core_manager.is_enable_thread_bind_core_) {
-    if (actor_thread_num > kMaxBindCoreThreadNum) {
-      MS_LOG(WARNING)
-        << "Enabling thread bind core with a dispatch_threads_num value greater than 5 may result in performance "
-           "degradation of the Runtime module. Will not enable thread bind core feature to Runtime module.";
-    } else {
-      numa_cpus_ = bind_core_manager.get_thread_bind_core_list(kBindCoreModule::kRUNTIME);
-      is_bind_core_ = true;
-    }
-  }
-
-  MS_LOG(DEBUG) << "Bind core list size: " << numa_cpus_.size();
   auto ret =
     actor_manager->Initialize(true, actor_thread_num, actor_and_kernel_thread_num, actor_queue_size, numa_cpus_);
   if (ret != MINDRT_OK) {
@@ -1344,6 +1330,27 @@ bool GraphScheduler::CheckSingleThreadRunningCondition(ActorSet *const actor_set
   return true;
 }
 
+void GraphScheduler::BindCoreForRuntimeThread(ActorThreadPool *thread_pool, size_t thread_num) const {
+  static bool is_bind_core_ = false;
+  if (is_bind_core_) {
+    return;
+  }
+  auto &bind_core_manager = runtime::ThreadBindCore::GetInstance();
+  if (!bind_core_manager.is_enable_thread_bind_core_) {
+    return;
+  }
+
+  const auto &cpu_list = bind_core_manager.get_thread_bind_core_list(runtime::kBindCoreModule::kRUNTIME);
+  if (cpu_list.empty()) {
+    MS_LOG(WARNING) << "Failed to bind thread core as no available core assigned to Runtime actor thread.";
+  } else {
+    const auto &actor_thread_fix_bind =
+      common::GetConfigValue(common::kRuntimeConf, common::kRuntimeActorThreadFixBind);
+    thread_pool->APIThreadPoolSetAffinity(thread_num, cpu_list, actor_thread_fix_bind);
+  }
+  is_bind_core_ = true;
+}
+
 void GraphScheduler::SetActorExecutionStrategy(ActorSet *const actor_set, GraphExecutionStrategy strategy,
                                                double execution_time) const {
   MS_EXCEPTION_IF_NULL(actor_set);
@@ -1358,8 +1365,12 @@ void GraphScheduler::SetActorExecutionStrategy(ActorSet *const actor_set, GraphE
   static bool bind_core_flag = false;
   static bool env_runtime_reserved_empty = common::GetEnv("CONFIG_BIND_RUNTIME_LIST").empty();
   if (!env_runtime_reserved_empty && bind_core_flag == false && actor_set->execution_count_ == kBindCoreThreadStep) {
-    thread_pool->ThreadPoolSetAffinity();
+    thread_pool->ThreadPoolSetAffinity(default_actor_thread_num_);
     bind_core_flag = true;
+  }
+
+  if (actor_set->execution_count_ == kBindCoreThreadStep) {
+    BindCoreForRuntimeThread(thread_pool, default_actor_thread_num_);
   }
 
   if (!CheckSingleThreadRunningCondition(actor_set, strategy)) {

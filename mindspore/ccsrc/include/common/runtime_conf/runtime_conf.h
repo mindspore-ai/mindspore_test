@@ -120,12 +120,7 @@ class COMMON_EXPORT RuntimeConf {
 
   void SetThreadBindCoreConfigured() { conf_status_[kThreadBindCore] = true; }
 
-  void BindCore(const std::vector<int> &module_bind_core_policy) {
-    conf_status_[kThreadBindCore] = true;
-    ThreadBindCore::GetInstance().enable_thread_bind_core(module_bind_core_policy);
-  }
-
-  void BindCoreWithPolicy(const BindCorePolicy &module_bind_core_policy) {
+  void BindCoreWithPolicy(const ModuleBindCorePolicy &module_bind_core_policy) {
     conf_status_[kThreadBindCore] = true;
     ThreadBindCore::GetInstance().enable_thread_bind_core_with_policy(module_bind_core_policy);
   }

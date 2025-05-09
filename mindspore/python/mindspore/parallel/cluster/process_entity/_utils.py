@@ -18,6 +18,9 @@ import json
 import socket
 import ipaddress
 import mindspore.log as logger
+from mindspore import context
+from mindspore.runtime.thread_bind_core import _get_physical_device_id, _get_cpu_available, \
+    _auto_generate_policy, _equal_distribution_strategy
 
 CURRENT_IP = None
 
@@ -45,19 +48,19 @@ def _generate_cmd_args_list(cmd, cmd_args):
     return [cmd] + cmd_args
 
 
-def _generate_cmd_args_list_with_core(cmd, cmd_args, cpu_start, cpu_end):
+def _generate_cmd_args_list_with_core(cmd, cmd_args, affinity_cpu_str):
     """
     Generates arguments list for 'Popen'. It consists of a binary file name and subsequential arguments.
     """
     # Bind cpu cores to this process.
-    taskset_args = ['taskset'] + ['-c'] + [str(cpu_start) + '-' + str(cpu_end)]
+    taskset_args = ['taskset'] + ['-c'] + [affinity_cpu_str]
     final_cmd = []
     if cmd not in ['python', 'pytest', 'python3']:
         # If user don't set binary file name, defaulty use 'python' to launch the job.
         final_cmd = taskset_args + ['python'] + [cmd] + cmd_args
     else:
         final_cmd = taskset_args + [cmd] + cmd_args
-    logger.info(f"Launch process with command: {' '.join(final_cmd)}")
+    logger.warning(f"Launch process with command: {' '.join(final_cmd)}")
     return final_cmd
 
 
@@ -134,3 +137,69 @@ def _send_scale_num(url, scale_num):
 
     """
     return ""
+
+
+def _parse_global_device_to_cpu_map(local_rank_id, device_to_cpu_map):
+    """
+    Parse the global device_to_cpu_map and return a cpu list for assigned local_rank_id.
+
+    """
+    physical_device_id = _get_physical_device_id(local_rank_id)
+    input_device_id = int(list(device_to_cpu_map.keys())[local_rank_id].replace("device", ""))
+    if physical_device_id != input_device_id:
+        return [], physical_device_id
+    affinity_cpu_list = list(device_to_cpu_map.values())[local_rank_id]
+    affinity_cpu_str = ",".join(affinity_cpu_list)
+    return affinity_cpu_str, physical_device_id
+
+
+def ranges_to_str(num_list):
+    """
+    Convert a num list to a range string.
+
+    """
+    ranges = []
+    start = num_list[0]
+    for i in range(1, len(num_list)):
+        if num_list[i] != num_list[i-1] + 1:
+            ranges.append((start, num_list[i-1]))
+            start = num_list[i]
+    ranges.append((start, num_list[-1]))
+
+    parts = []
+    for start, end in ranges:
+        if start == end:
+            parts.append(str(start))
+        else:
+            parts.append(f"{start}-{end}")
+    return ",".join(parts)
+
+
+def _generate_bind_core_policy(local_rank_id, local_worker_num, arg_bind_core):
+    """
+    Get core range assigned for the process.
+
+    """
+    affinity_cpu_str = ""
+    cpu_list_for_device = []
+    try:
+        available_cpus = _get_cpu_available()
+    except RuntimeError as e:
+        logger.warning(f"Failed to acquire available cpu info, error: {e} Will not launch process with taskset.")
+        return None
+    if isinstance(arg_bind_core, dict):
+        affinity_cpu_str, physical_device_id = _parse_global_device_to_cpu_map(local_rank_id, arg_bind_core)
+        if not affinity_cpu_str:
+            logger.warning(f"Failed to find physical_device_id[{physical_device_id}] for "
+                           f"process[{local_rank_id}]. Will not launch process with taskset.")
+            return None
+    elif arg_bind_core is True:
+        if context.get_context("device_target") == "Ascend":
+            cpu_list_for_device = _auto_generate_policy(local_rank_id, local_worker_num, available_cpus)
+            if not cpu_list_for_device:
+                return None
+        else:
+            cpu_list_for_device = _equal_distribution_strategy(local_rank_id, local_worker_num, available_cpus)
+        os.environ["MSRUN_CPU_LIST"] = str(cpu_list_for_device)
+        affinity_cpu_str = ranges_to_str(cpu_list_for_device)
+    return affinity_cpu_str

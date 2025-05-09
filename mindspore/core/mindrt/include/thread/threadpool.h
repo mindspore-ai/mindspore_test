@@ -50,7 +50,6 @@ constexpr int kDefaultFrequency = 1;
 constexpr float kMaxScale = 1.;
 constexpr size_t kMaxHqueueSize = 8192;
 constexpr size_t kMinActorRunOther = 2;
-constexpr int kDefaultActorThread = 5;
 /* Thread status */
 constexpr int kThreadBusy = 0;  // busy, the thread is running task
 constexpr int kThreadHeld = 1;  // held, the thread has been marked as occupied
@@ -191,7 +190,10 @@ class MS_CORE_API ThreadPool {
   void SetMinSpinCount(int spin_count);
   void ActiveWorkers();
   void SetWorkerIdMap();
-  void ThreadPoolSetAffinity();
+  void ThreadPoolSetAffinity(size_t thread_num);
+  // function to bind core for actor thread in set_cpu_affinity.
+  void APIThreadPoolSetAffinity(const size_t thread_num, const std::vector<int> &cpu_list,
+                                const std::string actor_thread_fix_bind);
   // init task queues
   int TaskQueuesInit(size_t thread_num);
   void ChildAfterFork();

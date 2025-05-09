@@ -32,7 +32,7 @@
 
 namespace mindspore {
 namespace runtime {
-using BindCorePolicy = std::map<int, std::map<std::string, std::vector<int>>>;
+using ModuleBindCorePolicy = std::map<std::string, std::vector<int>>;
 enum kBindCoreModule : int { kMAIN = 0, kRUNTIME, kPYNATIVE, kMINDDATA, kBATCHLAUNCH };
 
 class COMMON_EXPORT ThreadBindCore {
@@ -41,9 +41,8 @@ class COMMON_EXPORT ThreadBindCore {
     static ThreadBindCore instance;
     return instance;
   }
-  void enable_thread_bind_core(const std::vector<int> &available_cpu_list);
-  void enable_thread_bind_core_with_policy(const BindCorePolicy &bind_core_policy);
-  bool parse_thread_bind_core_policy(const kBindCoreModule &module_name, uint32_t device_id);
+  void enable_thread_bind_core_with_policy(const ModuleBindCorePolicy &bind_core_policy);
+  bool parse_thread_bind_core_policy(const kBindCoreModule &module_name);
   std::vector<int> get_thread_bind_core_list(const kBindCoreModule &module_name);
   void bind_thread_core(const std::vector<int> &cpu_list);
 
@@ -57,11 +56,10 @@ class COMMON_EXPORT ThreadBindCore {
   bool is_enable_thread_bind_core_{false};
 
  private:
-  BindCorePolicy process_bind_core_policy_;
-  std::vector<int> cpu_bind_core_policy_;
+  ModuleBindCorePolicy process_bind_core_policy_;
+  std::vector<int> available_cpu_list_;
   std::map<kBindCoreModule, std::vector<int>> thread_bind_core_policy_;
   std::map<kBindCoreModule, bool> thread_bind_core_status_;
-  bool is_enable_with_policy{false};
   std::mutex mtx_;
   ThreadBindCore() = default;
   ~ThreadBindCore() = default;

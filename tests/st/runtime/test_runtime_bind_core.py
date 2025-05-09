@@ -55,6 +55,7 @@ def test_bind_core_auto():
         assert os.path.exists(output)
         with open(output, "r") as f:
             output_log = f.read()
+            print(output_log, flush=True)
         assert "Module bind core policy generated:" in output_log
     else:
         print("Skip this ST, as the environment is not suitable for thread bind core.")
@@ -66,7 +67,7 @@ def test_bind_core_manual():
     """
     Feature: Runtime set_cpu_affinity api.
     Description: Test runtime.set_cpu_affinity api which manually bind thread core.
-    Expectation: Core bound for module and threads as input affinity_cpu_list.
+    Expectation: Core bound for module and threads as input affinity_cpu_list and module_to_cpu_dict.
     """
     if _check_env_valid_cpu_resource():
         os.environ['GLOG_v'] = str(1)
@@ -81,26 +82,12 @@ def test_bind_core_manual():
         assert os.path.exists(output)
         with open(output, "r") as f:
             output_log = f.read()
-        manual_policy_str = ("Module bind core policy generated: {0: {'main': [0], 'runtime': "
-                             "[1, 2, 3, 4, 5], 'pynative': [1, 2, 3, 4], 'minddata': [6, 7, 8, 9, 10]}}")
+            print(output_log, flush=True)
+        manual_policy_str = ("Module bind core policy generated: {'main': [0, 1, 2, 3], "
+                             "'minddata': [4, 5, 6, 7], 'pynative': [10, 21]}")
         assert manual_policy_str in output_log
     else:
         print("Skip this ST, as the environment is not suitable for thread bind core.")
-
-
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1',
-          card_mark='onecard', essential_mark='essential')
-def test_bind_core_repeatly_call():
-    """
-    Feature: Runtime set_cpu_affinity api.
-    Description: Test runtime.set_cpu_affinity api repeatedly called..
-    Expectation: RuntimeError reported.
-    """
-    affinity_cpu_list = {"device0": ["0-10"]}
-    ms.runtime.set_cpu_affinity(True, affinity_cpu_list)
-    with pytest.raises(RuntimeError) as err_info:
-        ms.runtime.set_cpu_affinity(False)
-    assert "The 'mindspore.runtime.set_cpu_affinity' cannot be set repeatedly." in str(err_info)
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1',
@@ -111,21 +98,22 @@ def test_bind_core_manual_no_available_cpus():
     Description: Test runtime.set_cpu_affinity api manually input unavailable cpu list.
     Expectation: RuntimeError reported.
     """
-    affinity_cpu_list = {"device0": ["300-500"]}
+    affinity_cpu_list = ["300-500"]
     with pytest.raises(RuntimeError) as err_info:
         ms.runtime.set_cpu_affinity(True, affinity_cpu_list)
-    assert "set in affinity_cpu_list is not available." in str(err_info)
+    assert f"set in affinity_cpu_list:{affinity_cpu_list} is not available." in str(err_info)
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
-def test_bind_core_manual_no_enough_cpus_for_device():
+def test_bind_core_repeatly_call():
     """
-    Feature: Runtime set_cpu_affinity api.
-    Description: Test runtime.set_cpu_affinity api manually input with CPUs less than 7 for a device.
+Feature: Runtime set_cpu_affinity api.
+    Description: Test runtime.set_cpu_affinity api repeatedly called..
     Expectation: RuntimeError reported.
     """
-    affinity_cpu_list = {"device0": ["0-2"]}
+    affinity_cpu_list = ["0-10"]
+    ms.runtime.set_cpu_affinity(True, affinity_cpu_list)
     with pytest.raises(RuntimeError) as err_info:
-        ms.runtime.set_cpu_affinity(True, affinity_cpu_list)
-    assert "is less than 7, which is the minimum cpu num need." in str(err_info)
+        ms.runtime.set_cpu_affinity(False)
+    assert "The 'mindspore.runtime.set_cpu_affinity' cannot be set repeatedly." in str(err_info)
