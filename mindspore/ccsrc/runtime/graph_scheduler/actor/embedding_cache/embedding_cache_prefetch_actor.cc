@@ -331,6 +331,7 @@ void EmbeddingCachePrefetchActor::Run() {
   // Bind device to current thread to gain device control privileges
   MS_EXCEPTION_IF_NULL(device_context_);
   MS_EXCEPTION_IF_NULL(device_context_->device_res_manager_);
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR) << "embedding cache prefetch actor:" << GetAID() << " start run.";
   if (!device_context_->device_res_manager_->BindDeviceToCurrentThread(false)) {
     MS_LOG(ERROR) << "Failed to bind device to current thread.";
     running_ = false;
@@ -345,6 +346,7 @@ void EmbeddingCachePrefetchActor::Run() {
 
   // Wait data channel ready.
   WaitDataChannelInit();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR) << "embedding cache prefetch actor:" << GetAID() << " end run.";
 }
 
 void EmbeddingCachePrefetchActor::CreateChannelLock(const std::string &channel_name) {

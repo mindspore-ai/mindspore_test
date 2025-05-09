@@ -46,7 +46,7 @@ class MemoryAwareActor : public AbstractActor {
   void PostRun(OpContext<KernelTensor> *const context) {
     // The input is invalid and needs to be erased when finish run.
     EraseInput(context);
-    MS_LOG(DEBUG) << "Output data size:" << output_data_.size() << " for actor:" << GetAID();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR) << "Output data size:" << output_data_.size() << " for actor:" << GetAID();
     IncreaseNewRefCounts(context);
     // Note that SendMemoryFreeReq must be in front of SendOutput, because SendOutput will trigger SendMemoryAllocReq of
     // the next actor and the actor is asynchronous execution. So it is necessary to ensure that SendMemoryFreeReq of

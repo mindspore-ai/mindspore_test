@@ -243,8 +243,9 @@ void DeviceQueueDataSourceActor::IncreaseNewRefCounts(OpContext<KernelTensor> *c
     MS_EXCEPTION_IF_NULL(output_kernel_tensors[position]);
     MS_EXCEPTION_IF_NULL(output_kernel_tensors[data_arrow->from_output_index_]->device_address());
     output_kernel_tensors[data_arrow->from_output_index_]->device_address()->IncreaseNewRefCount(GetAID().Name());
-    MS_LOG(DEBUG) << "Increase new ref count for device address:"
-                  << output_kernel_tensors[data_arrow->from_output_index_]->PrintInfo() << " in actor:" << GetAID();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "Increase new ref count for device address:"
+      << output_kernel_tensors[data_arrow->from_output_index_]->PrintInfo() << " in actor:" << GetAID();
   }
 }
 void HostQueueDataSourceActor::IncreaseNewRefCounts(OpContext<KernelTensor> *const context) {
@@ -271,8 +272,9 @@ void HostQueueDataSourceActor::IncreaseNewRefCounts(OpContext<KernelTensor> *con
     MS_EXCEPTION_IF_NULL(output_kernel_tensors[position]);
     MS_EXCEPTION_IF_NULL(output_kernel_tensors[position]->device_address());
     output_kernel_tensors[position]->device_address()->IncreaseNewRefCount(GetAID().Name());
-    MS_LOG(DEBUG) << "Increase new ref count for device address:" << output_kernel_tensors[position]->PrintInfo()
-                  << " in actor:" << GetAID();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "Increase new ref count for device address:" << output_kernel_tensors[position]->PrintInfo()
+      << " in actor:" << GetAID();
   }
 }
 
@@ -282,8 +284,9 @@ void HostQueueDataSourceActor::FillDataBuffer() {
   for (auto &node_with_index : data_node_with_indexs_) {
     auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(node_with_index.first, node_with_index.second, false);
     MS_EXCEPTION_IF_NULL(kernel_tensor);
-    MS_LOG(DEBUG) << "Node:" << node_with_index.first->DebugString() << " index:" << node_with_index.second
-                  << " device address:" << kernel_tensor->PrintInfo();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "Node:" << node_with_index.first->DebugString() << " index:" << node_with_index.second
+      << " device address:" << kernel_tensor->PrintInfo();
     (void)kernel_tensors.emplace_back(kernel_tensor);
   }
 
@@ -292,12 +295,11 @@ void HostQueueDataSourceActor::FillDataBuffer() {
       MS_LOG(EXCEPTION) << "Invalid index:" << pair.first << " " << pair.second
                         << " device tensor size:" << kernel_tensors.size() << " for data source actor.";
     }
-    MS_LOG(DEBUG) << "Add device tensor copy store for device address:"
-                  << kernel_tensors[pair.second]->device_address().get()
-                  << " type:" << kernel_tensors[pair.second]->device_address()->GetDeviceType() << " and "
-                  << kernel_tensors[pair.first]->device_address()
-                  << " type:" << kernel_tensors[pair.first]->device_address()->GetDeviceType()
-                  << " for actor:" << GetAID();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "Add device tensor copy store for device address:" << kernel_tensors[pair.second]->device_address().get()
+      << " type:" << kernel_tensors[pair.second]->device_address()->GetDeviceType() << " and "
+      << kernel_tensors[pair.first]->device_address()
+      << " type:" << kernel_tensors[pair.first]->device_address()->GetDeviceType() << " for actor:" << GetAID();
     DeviceTensorCopyStore::GetInstance().Insert(kernel_tensors[pair.second]->device_address().get(),
                                                 kernel_tensors[pair.first]->device_address().get());
   }
@@ -514,7 +516,8 @@ void HostQueueDataSourceActor::ReleaseData() {
     if (old_address->original_ref_count() == SIZE_MAX && !old_address->is_ptr_persisted()) {
       auto new_address = old_address->CloneDeviceAddress();
       MS_EXCEPTION_IF_NULL(new_address);
-      MS_LOG(DEBUG) << "Create device tensor:" << new_address << " type:" << new_address->type_id();
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+        << "Create device tensor:" << new_address << " type:" << new_address->type_id();
       new_address->set_original_ref_count(old_address->original_ref_count());
       new_address->set_new_ref_count(old_address->new_ref_count());
       new_address->ResetRefCount();

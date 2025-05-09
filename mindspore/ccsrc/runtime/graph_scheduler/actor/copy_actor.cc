@@ -51,8 +51,10 @@ void CopyActor::Init() {
 void CopyActor::Run(OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, GetAID().Name(), GetAID().Name(), "");
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR) << "Copy actor:" << GetAID() << " start run.";
   FetchKernelTensor(context);
   SendMemoryAllocReq(context);
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR) << "Copy actor:" << GetAID() << " end run.";
 }
 
 void CopyActor::SendMemoryAllocReq(OpContext<KernelTensor> *const context) {
@@ -112,26 +114,27 @@ void CopyActor::OnMemoryAllocFinish(OpContext<KernelTensor> *const context) {
 
   {
     ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kCopyData, GetAID().Name());
-    MS_LOG(DEBUG) << "Copy device tensor from device address:"
-                  << input_kernel_tensors_[0]->device_address()->PrintInfo() << " to "
-                  << output_kernel_tensors_[0]->device_address()->PrintInfo() << " for copy actor:" << GetAID();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "Copy device tensor from device address:" << input_kernel_tensors_[0]->device_address()->PrintInfo() << " to "
+      << output_kernel_tensors_[0]->device_address()->PrintInfo() << " for copy actor:" << GetAID();
     if (!Copy(output_kernel_tensors_[0]->device_address().get(), input_kernel_tensors_[0]->device_address().get())) {
       std::string error_info = "Copy device tensor failed: " + GetAID().Name();
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
     }
 
-    MS_LOG(DEBUG) << "Add device tensor copy store for device address:"
-                  << output_kernel_tensors_[0]->device_address()->PrintInfo() << " and "
-                  << input_kernel_tensors_[0]->device_address()->PrintInfo() << " for copy actor:" << GetAID();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "Add device tensor copy store for device address:" << output_kernel_tensors_[0]->device_address()->PrintInfo()
+      << " and " << input_kernel_tensors_[0]->device_address()->PrintInfo() << " for copy actor:" << GetAID();
     DeviceTensorCopyStore::GetInstance().Insert(output_kernel_tensors_[0]->device_address().get(),
                                                 input_kernel_tensors_[0]->device_address().get());
     output_kernel_tensors_[0]->SetType(input_kernel_tensors_[0]->GetType());
     output_kernel_tensors_[0]->SetShape(input_kernel_tensors_[0]->GetShape());
     output_kernel_tensors_[0]->set_user_data(input_kernel_tensors_[0]->user_data());
-    MS_LOG(DEBUG) << "Set user data:" << input_kernel_tensors_[0]->user_data()
-                  << " shape:" << input_kernel_tensors_[0]->GetShape()->ToString()
-                  << " from device tensor:" << input_kernel_tensors_[0]->device_address()
-                  << " to device address:" << output_kernel_tensors_[0]->device_address();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "Set user data:" << input_kernel_tensors_[0]->user_data()
+      << " shape:" << input_kernel_tensors_[0]->GetShape()->ToString()
+      << " from device tensor:" << input_kernel_tensors_[0]->device_address()
+      << " to device address:" << output_kernel_tensors_[0]->device_address();
     output_kernel_tensors_[0]->set_need_sync_user_data(input_kernel_tensors_[0]->need_sync_user_data());
   }
 
@@ -251,8 +254,9 @@ void CopyActor::IncreaseNewRefCounts(OpContext<KernelTensor> *const context) {
   }
   for (size_t i = 0; i < output_data_arrows_.size() - output_free_size_; ++i) {
     output_kernel_tensors_[0]->device_address()->IncreaseNewRefCount(GetAID().Name());
-    MS_LOG(DEBUG) << "Increase new ref count for device address:"
-                  << output_kernel_tensors_[0]->device_address()->PrintInfo() << " in actor:" << GetAID();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "Increase new ref count for device address:" << output_kernel_tensors_[0]->device_address()->PrintInfo()
+      << " in actor:" << GetAID();
   }
 }
 

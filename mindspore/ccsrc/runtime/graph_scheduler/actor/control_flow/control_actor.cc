@@ -126,8 +126,8 @@ void ControlActor::IncreaseNewRefCountForPartial(const OpPartialPtr &op_partial)
     const auto &partial_device_tensor = partial_kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(partial_device_tensor);
     partial_device_tensor->IncreaseNewRefCount(GetAID().Name());
-    MS_LOG(DEBUG) << "Increase new ref count for device address:" << partial_device_tensor->PrintInfo()
-                  << " in actor:" << GetAID();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "Increase new ref count for device address:" << partial_device_tensor->PrintInfo() << " in actor:" << GetAID();
   }
 }
 
@@ -139,8 +139,8 @@ void ControlActor::IncreaseNewRefCountForRealParameter(const OpRealParameterWith
     const auto &partial_device_tensor = partial_kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(partial_device_tensor);
     partial_device_tensor->IncreaseNewRefCount(GetAID().Name());
-    MS_LOG(DEBUG) << "Increase new ref count for device address:" << partial_device_tensor->PrintInfo()
-                  << " in actor:" << GetAID();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "Increase new ref count for device address:" << partial_device_tensor->PrintInfo() << " in actor:" << GetAID();
   }
 }
 
@@ -186,13 +186,13 @@ size_t ControlActor::FetchNodePosition(const KernelWithIndex &node) const {
 
 void ControlActor::Run(OpContext<KernelTensor> *const context) {
   try {
-    MS_LOG(DEBUG) << "Begin run actor:" << GetAID();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR) << "Control actor:" << GetAID() << " start run.";
     // The exit actor is the output of kernel graph when the node_ is null.
     if (type_ == KernelTransformType::kExitActor && node_ == nullptr) {
       double end_time = GetTime();
       const size_t kSecondsToMilliseconds = 1000;
-      MS_LOG(DEBUG) << "Kernel graph group exit actor:" << GetAID()
-                    << " cost time:" << (end_time - start_time_) * kSecondsToMilliseconds;
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR) << "Kernel graph group exit actor:" << GetAID()
+                                          << " cost time:" << (end_time - start_time_) * kSecondsToMilliseconds;
     }
 
     FetchInput(context);
@@ -209,12 +209,13 @@ void ControlActor::Run(OpContext<KernelTensor> *const context) {
 
     EraseInput(context);
     SendOutput(context);
-    MS_LOG(DEBUG) << "End run actor:" << GetAID();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR) << "End run actor:" << GetAID();
   } catch (const std::exception &e) {
     MsException::Instance().SetException();
     std::string error_info = "Actor fun failed:" + GetAID().Name();
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(GraphExecutionStrategy::kPipeline, (*context), error_info);
   }
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR) << "Control actor:" << GetAID() << " end run.";
 }
 
 void ControlActor::RunOpPartial(const OpPartialPtr &partial, size_t position, OpContext<KernelTensor> *const context) {
@@ -223,8 +224,9 @@ void ControlActor::RunOpPartial(const OpPartialPtr &partial, size_t position, Op
   (void)input_op_partials_[sequential_num].emplace_back(position, partial);
 
   auto is_run = CheckRunningCondition(context);
-  MS_LOG(DEBUG) << "Actor(" << GetAID().Name() << ") receive the input op partial, position:" << position
-                << " and check running condition:" << is_run;
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR_MSG)
+    << "Actor(" << GetAID().Name() << ") receive the input op partial, position:" << position
+    << " and check running condition:" << is_run;
   if (is_run) {
     Run(context);
   }
@@ -236,8 +238,8 @@ void ControlActor::RunBranchID(int branch_id, OpContext<KernelTensor> *const con
   input_branch_ids_[sequential_num].push(branch_id);
 
   auto is_run = CheckRunningCondition(context);
-  MS_LOG(DEBUG) << "Actor(" << GetAID().Name()
-                << ") receive the input branch id and check running condition:" << is_run;
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR_MSG)
+    << "Actor(" << GetAID().Name() << ") receive the input branch id and check running condition:" << is_run;
   if (is_run) {
     Run(context);
   }
@@ -570,10 +572,10 @@ CNodePtr CreateRealMakeTuple(const std::vector<KernelTensor *> &addr_list, const
     auto abs = std::make_shared<abstract::AbstractTensor>(TypeIdToType(addr->type_id()), addr->host_shape());
     abs_list.emplace_back(abs);
     formats.emplace_back(addr->format());
-    MS_LOG(DEBUG) << "Create new abstract:" << abs->ToString();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Create new abstract:" << abs->ToString();
   }
   auto tuple_abs = std::make_shared<abstract::AbstractTuple>(abs_list);
-  MS_LOG(DEBUG) << "Create abstract for real make tuple:" << tuple_abs->ToString();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Create abstract for real make tuple:" << tuple_abs->ToString();
   // Set dynamic len element abstract to check the abstract is dynamic len.
   abstract::AbstractBasePtr element_abs = (abs_list.empty() ? std::make_shared<abstract::AbstractTensor>(
                                                                 TypeIdToType(TypeId::kNumberTypeInt64), ShapeVector())
@@ -659,7 +661,7 @@ void ControlActor::MergeDeviceAddress(OpContext<KernelTensor> *const context,
   const auto &new_device_tensor = new_kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(new_device_tensor);
 
-  MS_LOG(DEBUG) << "Create device tensor:" << new_device_tensor->PrintInfo();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Create device tensor:" << new_device_tensor->PrintInfo();
   if (!device_context->device_res_manager_->AllocateMemory(new_device_tensor.get(), kDefaultStreamIndex)) {
     SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(GraphExecutionStrategy::kPipeline, *context, *device_context,
                                                 GetAID().Name(), new_device_tensor->GetSize());
@@ -686,7 +688,8 @@ void ControlActor::MergeDeviceAddress(OpContext<KernelTensor> *const context,
   tmp_kernel_tensor->set_stream_id(addr_list[0]->device_address()->stream_id());
   const auto &tmp_device_tensor = tmp_kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(tmp_device_tensor);
-  MS_LOG(DEBUG) << "Create device tensor:" << tmp_device_tensor << " type:" << tmp_device_tensor->type_id();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+    << "Create device tensor:" << tmp_device_tensor << " type:" << tmp_device_tensor->type_id();
   std::shared_ptr<int64_t> max_task_id_on_stream = nullptr;
   for (size_t i = 0; i < addr_list.size(); ++i) {
     auto task_id_on_stream = addr_list[i]->task_id_on_stream();

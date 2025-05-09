@@ -144,9 +144,10 @@ void LoopCountActor::HandleNotifyTwoPhase(OpContext<KernelTensor> *const context
 
 void LoopCountActor::HandleNotifyMessage(OpContext<KernelTensor> *const context, const AID &from_aid) {
   notify_messages_.emplace_back(from_aid);
-  MS_LOG(DEBUG) << "Actor:" << GetAID() << " receive signal message from actor:" << from_aid
-                << " current size:" << notify_messages_.size() << " need size:" << first_control_aids_.size() << " and"
-                << entrance_aids_.size() << " for actor:" << GetAID();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR_MSG)
+    << "Actor:" << GetAID() << " receive signal message from actor:" << from_aid
+    << " current size:" << notify_messages_.size() << " need size:" << first_control_aids_.size() << " and"
+    << entrance_aids_.size() << " for actor:" << GetAID();
   if (notify_messages_.size() < first_control_aids_.size() ||
       (notify_messages_.size() < first_control_aids_.size() + entrance_aids_.size() &&
        notify_messages_.size() > first_control_aids_.size())) {

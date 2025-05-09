@@ -194,8 +194,8 @@ void GatherActor::GatherInput(OpContext<KernelTensor> *const context) {
     return;
   }
 
-  MS_LOG(DEBUG) << "Gather actor:" << GetAID()
-                << " merge input for funcgraph:" << gather_input_->func_graph_->ToString();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR) << "Gather actor:" << GetAID()
+                                      << " merge input for funcgraph:" << gather_input_->func_graph_->ToString();
   const auto &real_indexes = dynamic_len_index_[gather_input_->func_graph_];
   // Merge device address for dynamic len and collect new outputs.
   // Skip the first input of gather actor which would be its funcgraph.

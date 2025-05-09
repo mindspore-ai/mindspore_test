@@ -298,17 +298,17 @@ bool DeviceEmbeddingOperation::InferOpShape(
   // 1. Infer operator's output's Shape.
   auto base_shape = opt::dynamic_shape::InferShape(kernel_mod->primitive(), input_kernel_tensors_for_infer);
   MS_ERROR_IF_NULL(base_shape);
-  MS_LOG(DEBUG) << "End InferShape for kernel: " << kernel->fullname_with_scope()
-                << ", shape: " << base_shape->ToString();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "End InferShape for kernel: " << kernel->fullname_with_scope()
+                                       << ", shape: " << base_shape->ToString();
 
   // 2. Update shape of output kernel tensor.
   opt::dynamic_shape::UpdateKernelTensorShape(base_shape, output_kernel_tensors);
 
   // 3. Resize kernel mod.
-  MS_LOG(DEBUG) << "Begin Resize kernel mod for kernel: " << kernel->fullname_with_scope();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Begin Resize kernel mod for kernel: " << kernel->fullname_with_scope();
   int ret = kernel_mod->Resize(input_kernel_tensors, output_kernel_tensors);
-  MS_LOG(DEBUG) << "End Resize kernel mod for kernel: " << kernel->fullname_with_scope()
-                << ", the output size list: " << kernel_mod->GetOutputSizeList();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "End Resize kernel mod for kernel: " << kernel->fullname_with_scope()
+                                       << ", the output size list: " << kernel_mod->GetOutputSizeList();
   if (ret != kernel::KRET_OK) {
     MS_LOG(ERROR) << "Resize failed for kernel: " << kernel->fullname_with_scope();
     return false;

@@ -37,13 +37,14 @@ void KernelInferActor::RunOpData(OpData<KernelTensor> *const input_data, OpConte
   // Without verifying that the device pointer for device tensor is empty, the kernel before the KernelActor phase
   // may not have started memory allocate and launch.
   auto can_run = CheckRunningCondition(context);
-  MS_LOG(DEBUG) << "Actor(" << GetAID().Name() << ") receive the input op data and check running condition:" << can_run
-                << ", sequential num:" << sequential_num << ", the input data:" << input_data->data_
-                << " input index:" << input_data->index_ << ", size:" << input_data->data_->GetSize()
-                << ", origin ref count:" << input_data->data_->original_ref_count()
-                << ", current ref count:" << input_data->data_->ref_count()
-                << ", dynamic ref count:" << input_data->data_->dynamic_ref_count()
-                << ", flag:" << input_data->data_->flag() << " user data:" << input_data->data_->user_data();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR_MSG)
+    << "Actor(" << GetAID().Name() << ") receive the input op data and check running condition:" << can_run
+    << ", sequential num:" << sequential_num << ", the input data:" << input_data->data_
+    << " input index:" << input_data->index_ << ", size:" << input_data->data_->GetSize()
+    << ", origin ref count:" << input_data->data_->original_ref_count()
+    << ", current ref count:" << input_data->data_->ref_count()
+    << ", dynamic ref count:" << input_data->data_->dynamic_ref_count() << ", flag:" << input_data->data_->flag()
+    << " user data:" << input_data->data_->user_data();
 
   if (can_run) {
     Run(context);
@@ -53,6 +54,7 @@ void KernelInferActor::RunOpData(OpData<KernelTensor> *const input_data, OpConte
 void KernelInferActor::Run(OpContext<KernelTensor> *const context) {
   try {
     ProfilerRecorder profiler(ProfilerModule::kKernel, ProfilerEvent::kKernelInfer, GetAID().Name());
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR) << "Kernel Infer actor:" << GetAID() << " start run.";
     // 1. Collect the inputs from input data.
     const auto &data_iter = input_op_datas_.find(context->sequential_num_);
     if (data_iter != input_op_datas_.end()) {
@@ -84,6 +86,7 @@ void KernelInferActor::Run(OpContext<KernelTensor> *const context) {
   EraseInput(context);
   SendMemoryFreeReq(context);
   SendOutput(context);
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR) << "Kernel Infer actor:" << GetAID() << " end run.";
 }
 
 void KernelInferActor::SendMemoryFreeReq(OpContext<KernelTensor> *const context) {

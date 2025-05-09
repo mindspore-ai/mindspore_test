@@ -249,10 +249,10 @@ void SuperKernelActor::Init() {
       auto device_address = kernel_tensor->device_address();
       MS_EXCEPTION_IF_NULL(device_address);
       if (device_address->is_ptr_persisted() || graph_->is_dynamic_shape()) {
-        MS_LOG(DEBUG) << "Actor:" << GetAID() << " skip alloc memory for device address:" << device_address
-                      << " is persist:" << device_address->is_ptr_persisted()
-                      << " is dynamic shape:" << graph_->is_dynamic_shape()
-                      << " output node:" << output_node->DebugString();
+        MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+          << "Actor:" << GetAID() << " skip alloc memory for device address:" << device_address
+          << " is persist:" << device_address->is_ptr_persisted() << " is dynamic shape:" << graph_->is_dynamic_shape()
+          << " output node:" << output_node->DebugString();
         continue;
       }
       // Free the ptr in device address of output node.
@@ -413,6 +413,7 @@ void SuperKernelActor::FetchInputDeviceTensor(OpContext<KernelTensor> *const con
 void SuperKernelActor::Run(OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);
   MS_EXCEPTION_IF_NULL(graph_);
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR) << "Super Kernel actor:" << GetAID() << " start run.";
   if (enable_kbk_sub_graph_execute_) {
     try {
       return RunGraphKernelByKernel(context);
@@ -475,6 +476,7 @@ void SuperKernelActor::Run(OpContext<KernelTensor> *const context) {
     MS_LOG(WARNING) << "Need Profile Memory, end launch, actor name: " << GetAID().Name()
                     << ", kernel graph: " << graph_->ToString();
   }
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR) << "Super Kernel actor:" << GetAID() << " end run.";
 }
 
 void SuperKernelActor::FetchPersistentDeviceTensor() {
@@ -542,8 +544,9 @@ void SuperKernelActor::UpdateMemoryTraceMangerStatus(OpContext<KernelTensor> *co
 
         const auto &iter = all_kernel_block_info->find(kernel);
         if (iter == all_kernel_block_info->end()) {
-          MS_LOG(DEBUG) << "Not found kernel block info for kernel: " << kernel->fullname_with_scope()
-                        << ", is output kernel: " << kernel_actor->is_output_kernel_;
+          MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL)
+            << "Not found kernel block info for kernel: " << kernel->fullname_with_scope()
+            << ", is output kernel: " << kernel_actor->is_output_kernel_;
         } else {
           const auto &kernel_mem_block = iter->second;
           for (auto &block : kernel_mem_block) {
@@ -578,8 +581,8 @@ void SuperKernelActor::SetTraceMemoryForKernel(const KernelRunnerPtr &kernel_act
   MS_EXCEPTION_IF_NULL(all_kernel_block_info);
   const auto &iter = all_kernel_block_info->find(kernel);
   if (iter == all_kernel_block_info->end()) {
-    MS_LOG(DEBUG) << "Not found kernel block info for kernel: " << kernel->fullname_with_scope()
-                  << ", is output kernel: " << kernel_actor->is_output_kernel_;
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Not found kernel block info for kernel: " << kernel->fullname_with_scope()
+                                         << ", is output kernel: " << kernel_actor->is_output_kernel_;
   } else {
     const auto &kernel_mem_block = iter->second;
     const auto &merge_blocks_with_device_context = MemoryTraceManager::GetInstance().GetMergeBlocks();
@@ -697,8 +700,8 @@ bool SuperKernelActor::CopyHeterogeneousOutput(OpContext<KernelTensor> *const co
           << "Memory leak detected in copy output device address for kernel: "
           << kernel_actor->kernel_->fullname_with_scope();
       }
-      MS_LOG(DEBUG) << "Free heter output address:" << dest_device_address->PrintInfo()
-                    << " for actor:" << kernel_actor->GetAID();
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+        << "Free heter output address:" << dest_device_address->PrintInfo() << " for actor:" << kernel_actor->GetAID();
       dest_device_context->device_res_manager_->FreeMemory(dest_device_address);
     }
     std::vector<KernelTensorPtr> mem_alloc_list = {dest_kernel_tensor};
@@ -717,9 +720,10 @@ bool SuperKernelActor::CopyHeterogeneousOutput(OpContext<KernelTensor> *const co
       return false;
     }
     if (!ref_output_kernel_tensors.empty()) {
-      MS_LOG(DEBUG) << "Add device tensor copy store for device address:" << src_device_address
-                    << " type:" << src_device_address->GetDeviceType() << " and " << dest_device_address
-                    << " type:" << dest_device_address->GetDeviceType() << " for actor:" << GetAID();
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+        << "Add device tensor copy store for device address:" << src_device_address
+        << " type:" << src_device_address->GetDeviceType() << " and " << dest_device_address
+        << " type:" << dest_device_address->GetDeviceType() << " for actor:" << GetAID();
       DeviceTensorCopyStore::GetInstance().Insert(src_device_address, dest_device_address);
     }
   }
@@ -739,9 +743,9 @@ void SuperKernelActor::UpdateOutputAddress(
     MS_EXCEPTION_IF_NULL(real_input);
     const std::vector<size_t> &actor_output_indices = pair.second;
     real_input->device_address()->IncreaseNewRefCount(GetAID().Name(), actor_output_indices.size());
-    MS_LOG(DEBUG) << "Increase ref count to:" << real_input->new_ref_count()
-                  << " increase size:" << actor_output_indices.size() - 1
-                  << " for device address:" << real_input->PrintInfo() << " in actor:" << GetAID();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "Increase ref count to:" << real_input->new_ref_count() << " increase size:" << actor_output_indices.size() - 1
+      << " for device address:" << real_input->PrintInfo() << " in actor:" << GetAID();
     for (auto actor_output_index : actor_output_indices) {
       auto data = output_data_[actor_output_index].first.get();
       MS_EXCEPTION_IF_NULL(data);
@@ -767,12 +771,13 @@ void SuperKernelActor::FetchParameterInput(const KernelRunnerPtr &kernel_actor,
     auto kernel_tensor = FetchParameter(parameter_index.second, context, device_context, kernel_actor->GetAID());
     const auto &device_tensor = kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(device_tensor);
-    MS_LOG(DEBUG) << "Actor: " << kernel_actor->GetAID().Name() << ", input index: " << parameter_index.first
-                  << ", device tensor: " << device_tensor << ", ptr: " << device_tensor->GetPtr()
-                  << ", ref cnt: " << device_tensor->ref_count() << " new ref count:" << device_tensor->new_ref_count()
-                  << " is_disable_new_ref_count:" << is_disable_new_ref_count
-                  << " super kernel actor context:" << device_contexts_[0]->device_context_key().ToString()
-                  << " kernel actor context:" << kernel_actor->device_contexts()[0]->device_context_key().ToString();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "Actor: " << kernel_actor->GetAID().Name() << ", input index: " << parameter_index.first
+      << ", device tensor: " << device_tensor << ", ptr: " << device_tensor->GetPtr()
+      << ", ref cnt: " << device_tensor->ref_count() << " new ref count:" << device_tensor->new_ref_count()
+      << " is_disable_new_ref_count:" << is_disable_new_ref_count
+      << " super kernel actor context:" << device_contexts_[0]->device_context_key().ToString()
+      << " kernel actor context:" << kernel_actor->device_contexts()[0]->device_context_key().ToString();
     kernel_actor->SetInputDeviceTensor(kernel_tensor, parameter_index.first);
   }
 
@@ -789,9 +794,9 @@ void SuperKernelActor::FetchParameterInput(const KernelRunnerPtr &kernel_actor,
       if (ActorDispatcher::enable_use_trace_memory()) {
         if (kernel_actor->input_kernel_tensors_[actor_input_idx]->new_ref_count() != SIZE_MAX) {
           memory_free_lists_.back().emplace_back(kernel_actor->input_kernel_tensors_[actor_input_idx]);
-          MS_LOG(DEBUG) << "Add memory free list for trace:"
-                        << kernel_actor->input_kernel_tensors_[actor_input_idx]->PrintInfo()
-                        << " in actor:" << GetAID();
+          MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+            << "Add memory free list for trace:" << kernel_actor->input_kernel_tensors_[actor_input_idx]->PrintInfo()
+            << " in actor:" << GetAID();
         }
       }
     }
@@ -843,11 +848,11 @@ void SuperKernelActor::FreeInputParamWithoutUser(OpContext<KernelTensor> *const 
       }
       if (device_tensor->new_ref_count() != SIZE_MAX) {
         // No user for this input in graph.
-        MS_LOG(DEBUG) << "Free ref count for no used parameter:" << iter.second.first.first->DebugString()
-                      << " inner index:" << iter.second.first.second << " out index:" << iter.second.second
-                      << " device tensor:" << device_tensor->PrintInfo()
-                      << " device context:" << device_contexts_[0]->device_context_key().ToString()
-                      << " for actor:" << GetAID();
+        MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+          << "Free ref count for no used parameter:" << iter.second.first.first->DebugString()
+          << " inner index:" << iter.second.first.second << " out index:" << iter.second.second
+          << " device tensor:" << device_tensor->PrintInfo()
+          << " device context:" << device_contexts_[0]->device_context_key().ToString() << " for actor:" << GetAID();
         MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(device_tensor, device_contexts_[0], GetAID().Name());
       }
     }
@@ -893,7 +898,7 @@ bool SuperKernelActor::LaunchAllKernels(OpContext<KernelTensor> *const context) 
       continue;
     }
     if (enable_inline_control_flow_ && !*(kernel_actor->is_enable_)) {
-      MS_LOG(DEBUG) << "Skip launch kernel for actor:" << kernel_actor->GetAID();
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Skip launch kernel for actor:" << kernel_actor->GetAID();
       continue;
     }
     const auto &kernel = kernel_actor->kernel();
@@ -931,11 +936,13 @@ bool SuperKernelActor::LaunchAllKernels(OpContext<KernelTensor> *const context) 
       // If the kernel need user data and is dynamic, maybe need input kernel's output user data to infer shape, this
       // value depend case can not handle in KernelTensor auto sync phase currently.
       if (kernel_actor->kernel_mod_->need_user_data() && kernel_actor->has_dynamic_) {
-        MS_LOG(DEBUG) << "Begin wait runtime pipeline for kernel: " << kernel_actor->kernel_->fullname_with_scope();
+        MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL)
+          << "Begin wait runtime pipeline for kernel: " << kernel_actor->kernel_->fullname_with_scope();
         if (!WaitRuntimePipelineFinish(context, kernel_actor->kernel_mod_->kernel_name())) {
           return false;
         }
-        MS_LOG(DEBUG) << "End wait runtime pipeline for kernel: " << kernel_actor->kernel_->fullname_with_scope();
+        MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL)
+          << "End wait runtime pipeline for kernel: " << kernel_actor->kernel_->fullname_with_scope();
       }
 
       // Push run task to pipeline.
@@ -945,11 +952,13 @@ bool SuperKernelActor::LaunchAllKernels(OpContext<KernelTensor> *const context) 
 
       // The computed depend kernel should wait output shape update after kernel launch.
       if (kernel_actor->kernel_mod_->IsNeedUpdateOutputShapeAndSize()) {
-        MS_LOG(DEBUG) << "Begin wait runtime pipeline for kernel: " << kernel_actor->kernel_->fullname_with_scope();
+        MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL)
+          << "Begin wait runtime pipeline for kernel: " << kernel_actor->kernel_->fullname_with_scope();
         if (!WaitRuntimePipelineFinish(context, kernel_actor->kernel_mod_->kernel_name())) {
           return false;
         }
-        MS_LOG(DEBUG) << "End wait runtime pipeline for kernel: " << kernel_actor->kernel_->fullname_with_scope();
+        MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL)
+          << "End wait runtime pipeline for kernel: " << kernel_actor->kernel_->fullname_with_scope();
       }
     } else if (ActorDispatcher::enable_async_launch_kernel()) {
       auto &llm_manager = LLMManager::GetInstance();
@@ -967,15 +976,18 @@ bool SuperKernelActor::LaunchAllKernels(OpContext<KernelTensor> *const context) 
 
       // The computed depend kernel should wait output shape update after kernel launch.
       if (kernel_actor->kernel_mod_->IsNeedUpdateOutputShapeAndSize()) {
-        MS_LOG(DEBUG) << "Begin wait runtime pipeline for kernel: " << kernel_actor->kernel_->fullname_with_scope();
+        MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL)
+          << "Begin wait runtime pipeline for kernel: " << kernel_actor->kernel_->fullname_with_scope();
         if (!WaitRuntimePipelineFinish(context, kernel_actor->kernel_mod_->kernel_name())) {
           MS_LOG(INFO) << "Run failed and early stop for kernel: " << kernel_actor->kernel_->fullname_with_scope();
           return false;
         }
-        MS_LOG(DEBUG) << "End wait runtime pipeline for kernel: " << kernel_actor->kernel_->fullname_with_scope();
+        MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL)
+          << "End wait runtime pipeline for kernel: " << kernel_actor->kernel_->fullname_with_scope();
       }
     } else {
-      MS_LOG(DEBUG) << "Sync launch kernel actor:" << kernel_actor->GetAID() << " in actor:" << GetAID();
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL)
+        << "Sync launch kernel actor:" << kernel_actor->GetAID() << " in actor:" << GetAID();
       kernel_actor->InferAndUpdateDeviceTensorSize(context);
       kernel_actor->ExecuteLaunchKernelTask(context);
     }
@@ -1047,7 +1059,7 @@ void SuperKernelActor::DispatchParallelLaunchKernels(size_t index, OpContext<Ker
       }
 
       if (!kernel_actor->is_launch_skipped_) {
-        MS_LOG(DEBUG) << "Begin launch kernel: " << kernel_actor->kernel_->fullname_with_scope();
+        MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Begin launch kernel: " << kernel_actor->kernel_->fullname_with_scope();
         auto ret = device_contexts_[0]->GetKernelExecutor(false)->LaunchKernel(
           kernel_actor->kernel_, kernel_actor->input_launch_tensors_, kernel_actor->workspace_launch_tensors_,
           kernel_actor->output_launch_tensors_, kernel_actor->kernel_mod_, real_stream);
@@ -1055,7 +1067,7 @@ void SuperKernelActor::DispatchParallelLaunchKernels(size_t index, OpContext<Ker
         if (!ret) {
           MS_LOG(EXCEPTION) << "Launch kernel failed, kernel name: " << kernel_actor->kernel_->fullname_with_scope();
         }
-        MS_LOG(DEBUG) << "End launch kernel: " << kernel_actor->kernel_->fullname_with_scope();
+        MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "End launch kernel: " << kernel_actor->kernel_->fullname_with_scope();
       }
     }
 
@@ -1096,14 +1108,16 @@ void SuperKernelActor::DispatchSerialLaunchKernels(OpContext<KernelTensor> *cons
     auto &wait_event = event_array[0];
     wait_event->WaitEventWithoutReset(0);
 
-    MS_LOG(DEBUG) << "Begin serial launch kernel: " << kernel_actor->kernel_->fullname_with_scope();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Begin serial launch kernel: "
+                                         << kernel_actor->kernel_->fullname_with_scope();
     auto ret = device_contexts_[0]->GetKernelExecutor(false)->LaunchKernel(
       kernel_actor->kernel_, kernel_actor->input_launch_tensors_, kernel_actor->workspace_launch_tensors_,
       kernel_actor->output_launch_tensors_, kernel_actor->kernel_mod_, default_stream);
     if (!ret) {
       MS_LOG(EXCEPTION) << "Launch kernel failed, kernel name: " << kernel_actor->kernel_->fullname_with_scope();
     }
-    MS_LOG(DEBUG) << "End serial launch kernel: " << kernel_actor->kernel_->fullname_with_scope();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "End serial launch kernel: "
+                                         << kernel_actor->kernel_->fullname_with_scope();
 
     auto &record_event = event_array[1];
     record_event->RecordEvent(0);
@@ -1274,13 +1288,13 @@ void SuperKernelActor::OnMemoryAllocFinish(OpContext<KernelTensor> *const contex
     MS_EXCEPTION_IF_NULL(device_contexts_[0]->graph_executor_);
     if (!IsSkippedLaunch(nullptr, graph_)) {
       ProfilerRecorder profiler(ProfilerModule::kKernel, ProfilerEvent::kGraphLaunch, GetAID().Name());
-      MS_LOG(DEBUG) << "Start run graph:" << graph_->ToString();
+      MS_VLOG(VL_RUNTIME_FRAMEWORK) << "Start run graph:" << graph_->ToString();
       auto ret = device_contexts_[0]->graph_executor_->RunGraph(graph_, inputs, &outputs, compile_options);
       if (!ret) {
         std::string error_info = "Launch graph failed, graph id: " + std::to_string(graph_->graph_id());
         SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
       }
-      MS_LOG(DEBUG) << "End run graph:" << graph_->ToString();
+      MS_VLOG(VL_RUNTIME_FRAMEWORK) << "End run graph:" << graph_->ToString();
     } else if (IsNeedProfilieMemoryLog()) {
       auto memory_size = device_contexts_[0]->graph_executor_->GetGraphFeatureMemory(graph_);
       MS_LOG(WARNING) << "Need Profile Memory, graph: " << graph_->ToString() << ", feature memory: " << memory_size;
@@ -1331,8 +1345,9 @@ bool SuperKernelActor::CopyInputDataPersistedHandle(const DeviceContext *device_
   MS_EXCEPTION_IF_NULL(node_device_tensor);
   if ((input_device_tensor->GetDeviceType() == node_device_tensor->GetDeviceType()) &&
       AnfAlgo::IsEquivalentFormat(input_device_tensor->format(), node_device_tensor->format())) {
-    MS_LOG(DEBUG) << "Not need copy for device tensor:" << node_device_tensor << " ptr:" << node_device_tensor->GetPtr()
-                  << " index:" << i << " for actor:" << GetAID();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "Not need copy for device tensor:" << node_device_tensor << " ptr:" << node_device_tensor->GetPtr()
+      << " index:" << i << " for actor:" << GetAID();
     // Set the ptr from input_device_tensor and set mem pool false to avoid memory double management for
     // supporting zero copy.
     if (type_ != KernelTransformType::kSuperKernelActor) {
@@ -1340,9 +1355,9 @@ bool SuperKernelActor::CopyInputDataPersistedHandle(const DeviceContext *device_
     } else {
       node_device_tensor->set_ptr(input_device_tensor->GetValidPtr(input_device_tensor->stream_id()));
     }
-    MS_LOG(DEBUG) << "Actor:" << GetAID() << "set need sync flag from:" << input_device_tensor
-                  << " to:" << node_device_tensor
-                  << " sync user data handler:" << node_device_tensor->need_sync_user_data();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "Actor:" << GetAID() << "set need sync flag from:" << input_device_tensor << " to:" << node_device_tensor
+      << " sync user data handler:" << node_device_tensor->need_sync_user_data();
     node_device_tensor->set_from_mem_pool(false);
     // continue
     return true;
@@ -1377,8 +1392,9 @@ bool SuperKernelActor::CopyInputDataPersistedHandle(const DeviceContext *device_
                   << ", alloc size: " + std::to_string(copy_device_tensor->GetSize()) << "B.";
     return true;
   }
-  MS_LOG(DEBUG) << "Alloc memory for device tensor:" << copy_device_tensor << " ptr:" << copy_device_tensor->GetPtr()
-                << " size:" << copy_device_tensor->GetSize() << " index:" << i << " for actor:" << GetAID();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+    << "Alloc memory for device tensor:" << copy_device_tensor << " ptr:" << copy_device_tensor->GetPtr()
+    << " size:" << copy_device_tensor->GetSize() << " index:" << i << " for actor:" << GetAID();
   if (type_ != KernelTransformType::kSuperKernelActor) {
     node_device_tensor->set_ptr(copy_device_tensor->GetMutablePtr());
   } else {
@@ -1834,8 +1850,8 @@ void SuperKernelActor::BuildKernelActors() {
   }
   for (auto &[event_pair_id, send_recv_actor] : send_recv_nodes) {
     auto [send_actor, recv_actor] = send_recv_actor;
-    MS_LOG(DEBUG) << "Stream send/recv pair : " << event_pair_id << ", send_actor : " << send_actor
-                  << ", recv_actor : " << recv_actor << ".";
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Stream send/recv pair : " << event_pair_id
+                                         << ", send_actor : " << send_actor << ", recv_actor : " << recv_actor << ".";
     recv_actor->set_stream_send_actor(send_actor.get());
   }
 
@@ -2068,11 +2084,13 @@ void SuperKernelActor::SetInputFreePositionForKernelActor(
           const auto &input_context_iter = kernel_to_context_key.find(input_node);
           if (input_context_iter != kernel_to_context_key.end()) {
             input_info.context_key = input_context_iter->second;
-            MS_LOG(DEBUG) << "Heter input kernel:" << input_node->fullname_with_scope()
-                          << " for kernel actor:" << kernel_actor->GetAID() << " in actor:" << GetAID();
+            MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL)
+              << "Heter input kernel:" << input_node->fullname_with_scope()
+              << " for kernel actor:" << kernel_actor->GetAID() << " in actor:" << GetAID();
           } else {
-            MS_LOG(DEBUG) << "Failed to get device context key for input node:" << input_node->DebugString()
-                          << " of kernel:" << kernel_actor->kernel_->fullname_with_scope() << " in actor:" << GetAID();
+            MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL)
+              << "Failed to get device context key for input node:" << input_node->DebugString()
+              << " of kernel:" << kernel_actor->kernel_->fullname_with_scope() << " in actor:" << GetAID();
           }
         }
       } else {
@@ -2412,8 +2430,8 @@ void SuperKernelActor::AnalyseNodesDependence(
         auto output_idx_iter = output_node_to_actor_output_index.find(input_node_with_idx.first);
         if (output_idx_iter != output_node_to_actor_output_index.end()) {
           kernel_input_to_actor_output_indices_[kernel.get()].emplace_back(j, output_idx_iter->second);
-          MS_LOG(DEBUG) << "Add kernel input:" << j << " kernel:" << kernel->fullname_with_scope()
-                        << " for actor:" << GetAID();
+          MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL)
+            << "Add kernel input:" << j << " kernel:" << kernel->fullname_with_scope() << " for actor:" << GetAID();
         }
       }
     }
@@ -2544,9 +2562,10 @@ void SuperKernelActor::LinkKernelActorByDeviceType(const CNodePtr &kernel, size_
   MS_EXCEPTION_IF_NULL(input_copy_device_address);
   UpdateRefCount(input_copy_device_address, false);
   if (kernel_actor->modifiable_ref_input_indexes_.count(input_index) > 0) {
-    MS_LOG(DEBUG) << "Add device tensor copy store for device address:" << input_copy_device_address
-                  << " type:" << input_copy_device_address->GetDeviceType() << " and " << input_device_tensor
-                  << " type:" << input_device_tensor->GetDeviceType() << " for copy actor:" << GetAID();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "Add device tensor copy store for device address:" << input_copy_device_address
+      << " type:" << input_copy_device_address->GetDeviceType() << " and " << input_device_tensor
+      << " type:" << input_device_tensor->GetDeviceType() << " for copy actor:" << GetAID();
     if (kernel_actor->kernel_info_ != nullptr) {
       const auto &ref_map = kernel_actor->kernel_info_->out_in_ref_map();
       auto index_iter =

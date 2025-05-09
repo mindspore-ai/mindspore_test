@@ -49,8 +49,9 @@ void ConditionSwitchActor::Init() {
     auto output_address = output_kernel_tensor->device_address().get();
 
     if (output_address->stream_id() != kernel_info_->stream_id()) {
-      MS_LOG(DEBUG) << "Output address : " << output_address << " stream id :" << output_address->stream_id()
-                    << " is not equal kernel info stream id : " << kernel_info_->stream_id() << ".";
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+        << "Output address : " << output_address << " stream id :" << output_address->stream_id()
+        << " is not equal kernel info stream id : " << kernel_info_->stream_id() << ".";
     }
     (void)output_kernel_tensors_.emplace_back(output_kernel_tensor);
   }
@@ -115,9 +116,9 @@ void ConditionSwitchActor::UpdateRefDeviceAddress(OpContext<KernelTensor> *const
 
 void ConditionSwitchActor::ExecuteInferShapeTask(OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(kernel_);
-  MS_LOG(DEBUG) << "Begin InferShape for kernel: " << kernel_->fullname_with_scope();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Begin InferShape for kernel: " << kernel_->fullname_with_scope();
   Async(kernel_async_resize_aid_, &KernelAsyncResizeActor::ResizeKernelMod, context, this);
-  MS_LOG(DEBUG) << "End InferShape for kernel: " << kernel_->fullname_with_scope();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "End InferShape for kernel: " << kernel_->fullname_with_scope();
 }
 
 void ConditionSwitchActor::ExecuteResizeKernelModTask(OpContext<KernelTensor> *const context) {
@@ -127,7 +128,7 @@ void ConditionSwitchActor::ExecuteResizeKernelModTask(OpContext<KernelTensor> *c
 void ConditionSwitchActor::ExecuteLaunchKernelTask(OpContext<KernelTensor> *const context) {
   ProfilerRecorder profiler(ProfilerModule::kKernel, ProfilerEvent::kKernelLaunch, GetAID().Name());
   MS_EXCEPTION_IF_NULL(kernel_);
-  MS_LOG(DEBUG) << "Begin launch kernel: " << kernel_->fullname_with_scope();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Begin launch kernel: " << kernel_->fullname_with_scope();
   if (!WaitRuntimePipelineFinish(context, GetAID().Name())) {
     MS_LOG(INFO) << "Run failed and early stop.";
     return;
@@ -176,7 +177,7 @@ void ConditionSwitchActor::ExecuteLaunchKernelTask(OpContext<KernelTensor> *cons
   if (new_memory_free_list_.size() > 0) {
     SendMemoryFreeReq(context);
   }
-  MS_LOG(DEBUG) << "End launch kernel: " << kernel_->fullname_with_scope();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "End launch kernel: " << kernel_->fullname_with_scope();
 }
 
 void ConditionSwitchActor::SendOutput(OpContext<KernelTensor> *const context, size_t index) {
@@ -222,6 +223,7 @@ void ConditionSwitchActor::SendOutput(OpContext<KernelTensor> *const context, si
 
 void ConditionSwitchActor::Run(OpContext<KernelTensor> *const context) {
   try {
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR) << "Condition switch actor:" << GetAID() << " start run.";
     if (!WaitRuntimePipelineFinish(context, GetAID().Name())) {
       MS_LOG(INFO) << "Run failed and early stop.";
       return;
@@ -235,7 +237,7 @@ void ConditionSwitchActor::Run(OpContext<KernelTensor> *const context) {
     if (common::IsDryRun()) {
       index = true;
     }
-    MS_LOG(DEBUG) << "Index:" << index << " for actor:" << GetAID();
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Index:" << index << " for actor:" << GetAID();
     if (index >= branch_names_.size()) {
       std::string error_info = "Invalid index:" + std::to_string(index) +
                                " and branch size:" + std::to_string(branch_names_.size()) +
@@ -247,7 +249,7 @@ void ConditionSwitchActor::Run(OpContext<KernelTensor> *const context) {
     if (memory_free_list_.size() > 0) {
       SendMemoryFreeReq(context);
     }
-    MS_LOG(DEBUG) << "Launch kernel:" << kernel_->fullname_with_scope() << " by index:" << index;
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Launch kernel:" << kernel_->fullname_with_scope() << " by index:" << index;
     SendOutput(context, index);
   } catch (const std::exception &e) {
     MsException::Instance().SetException();
@@ -255,6 +257,7 @@ void ConditionSwitchActor::Run(OpContext<KernelTensor> *const context) {
       "#umsg#Kernel error:#umsg#run kernel[" + kernel_->fullname_with_scope() + "] failed, exception: " + e.what();
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(GraphExecutionStrategy::kPipeline, (*context), error_info);
   }
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR) << "Condition switch actor:" << GetAID() << " end run.";
 }
 
 void ConditionSwitchActor::CollectMemoryFreeList(size_t index) {
