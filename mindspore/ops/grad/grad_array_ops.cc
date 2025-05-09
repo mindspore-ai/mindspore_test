@@ -516,7 +516,7 @@ bool IsMutable(const NodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
   ValuePtr value_ptr = node->BuildValue();
   if (value_ptr != nullptr &&
-      (value_ptr->isa<ValueSequence>() || value_ptr->isa<Scalar>() || value_ptr->isa<tensor::BaseTensor>())) {
+      (value_ptr->isa<ValueSequence>() || value_ptr->isa<Scalar>() || value_ptr->isa<tensor::Tensor>())) {
     return false;
   }
   return true;
@@ -3519,11 +3519,11 @@ REG_BPROP_BUILDER("AsStrided").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(i
   const auto &output = ib->GetInput(kIndex4);
   auto dout = ib->GetInput(kIndex5);
 
-  auto output_tensor = output->BuildValue()->cast<tensor::BaseTensorPtr>();
+  auto output_tensor = output->BuildValue()->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(output_tensor);
   MS_EXCEPTION_IF_NULL(output_tensor->storage_info());
   auto output_storage_offset = output_tensor->storage_info()->storage_offset;
-  auto input_tensor = input->BuildValue()->cast<tensor::BaseTensorPtr>();
+  auto input_tensor = input->BuildValue()->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   auto input_storage_offset =
     input_tensor->storage_info() == nullptr ? 0 : output_tensor->storage_info()->storage_offset;

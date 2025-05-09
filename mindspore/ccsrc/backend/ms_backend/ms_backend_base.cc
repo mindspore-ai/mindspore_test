@@ -1870,15 +1870,15 @@ void MSBackendBase::ConstructOutputs(runtime::ActorSet *actor_set, VectorRef *ou
 
 void MSBackendBase::ContiguousArgs(const VectorRef &args, const GraphCompilerInfo &) {
   for (const auto &arg : args) {
-    if (utils::isa<tensor::BaseTensorPtr>(arg)) {
-      auto value = utils::cast<tensor::BaseTensorPtr>(arg);
+    if (utils::isa<tensor::TensorPtr>(arg)) {
+      auto value = utils::cast<tensor::TensorPtr>(arg);
       runtime::DeviceAddressUtils::ConvertContiguousTensorSync(value);
     } else if (utils::isa<stub::TensorNode>(arg)) {
       auto tensor_stub = utils::cast<std::shared_ptr<stub::TensorNode>>(arg);
       MS_EXCEPTION_IF_NULL(tensor_stub);
       auto value = tensor_stub->WaitValue();
       MS_EXCEPTION_IF_NULL(value);
-      auto tensor = value->cast<tensor::BaseTensorPtr>();
+      auto tensor = value->cast<tensor::TensorPtr>();
       MS_EXCEPTION_IF_NULL(tensor);
       runtime::DeviceAddressUtils::ConvertContiguousTensorSync(tensor);
     } else if (utils::isa<ValuePtr>(arg)) {
@@ -1891,10 +1891,10 @@ void MSBackendBase::ContiguousArgs(const VectorRef &args, const GraphCompilerInf
       MS_EXCEPTION_IF_NULL(value_tuple);
       auto tuple_value = value_tuple->value();
       for (const auto &v : tuple_value) {
-        if (!v->isa<tensor::BaseTensor>()) {
+        if (!v->isa<tensor::Tensor>()) {
           continue;
         }
-        auto t = v->cast<tensor::BaseTensorPtr>();
+        auto t = v->cast<tensor::TensorPtr>();
         runtime::DeviceAddressUtils::ConvertContiguousTensorSync(t);
       }
     }

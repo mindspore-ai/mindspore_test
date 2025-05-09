@@ -77,7 +77,7 @@ TypePtr AddmmFuncImpl::InferType(const PrimitivePtr &prim, const std::vector<Abs
   return input_args[0]->GetType();
 }
 TypePtrList AddmmFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   const auto &x_type = x_tensor->Dtype();
   const std::set<TypePtr> valid_types = {kFloat16, kFloat32, kBFloat16};
@@ -85,9 +85,9 @@ TypePtrList AddmmFuncImpl::InferType(const PrimitivePtr &primitive, const ValueP
   return {x_type};
 }
 ShapeArray AddmmFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
-  const auto &y_tensor = input_values[kIndex2]->cast<tensor::BaseTensorPtr>();
+  const auto &y_tensor = input_values[kIndex2]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(y_tensor);
   const auto &x_shape = x_tensor->shape();
   const auto &y_shape = y_tensor->shape();

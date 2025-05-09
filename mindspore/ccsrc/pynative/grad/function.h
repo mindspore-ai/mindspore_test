@@ -31,20 +31,20 @@
 #include "pynative/grad/variable.h"
 
 namespace mindspore::pynative::autograd {
-using BaseTensorPtr = tensor::BaseTensorPtr;
-using BaseTensorPtrList = std::vector<BaseTensorPtr>;
+using TensorPtr = tensor::TensorPtr;
+using TensorPtrList = std::vector<TensorPtr>;
 
-inline BaseTensorPtrList ToTensorList(const BaseTensorPtr &tensor) { return BaseTensorPtrList{tensor}; }
+inline TensorPtrList ToTensorList(const TensorPtr &tensor) { return TensorPtrList{tensor}; }
 
-inline BaseTensorPtrList ToTensorList(const BaseTensorPtrList &tensor_list) { return tensor_list; }
+inline TensorPtrList ToTensorList(const TensorPtrList &tensor_list) { return tensor_list; }
 
 template <typename T>
-std::enable_if_t<std::is_same_v<T, BaseTensorPtrList>, T> ToOutputType(const BaseTensorPtrList &tensor_list) {
+std::enable_if_t<std::is_same_v<T, TensorPtrList>, T> ToOutputType(const TensorPtrList &tensor_list) {
   return tensor_list;
 }
 
 template <typename T>
-std::enable_if_t<std::is_same_v<T, BaseTensorPtr>, T> ToOutputType(const BaseTensorPtrList &tensor_list) {
+std::enable_if_t<std::is_same_v<T, TensorPtr>, T> ToOutputType(const TensorPtrList &tensor_list) {
   return tensor_list[0];
 }
 
@@ -79,7 +79,7 @@ struct PYNATIVE_EXPORT AutogradContext {
   /// computation is finished.
   ///
   /// \param to_save A list of tensors to save.
-  void SaveForBackward(const BaseTensorPtrList &to_save) { to_save_ = std::move(to_save); }
+  void SaveForBackward(const TensorPtrList &to_save) { to_save_ = std::move(to_save); }
 
   /// \brief Retrieve the tensors saved for backward computation.
   ///
@@ -87,7 +87,7 @@ struct PYNATIVE_EXPORT AutogradContext {
   /// `SaveForBackward` method. These tensors can be used in the backward pass.
   ///
   /// \return The list of saved tensors.
-  const BaseTensorPtrList &GetSavedTensors() { return to_save_; }
+  const TensorPtrList &GetSavedTensors() { return to_save_; }
 
   /// \brief Mark input tensors as "dirty".
   ///
@@ -96,7 +96,7 @@ struct PYNATIVE_EXPORT AutogradContext {
   /// it should not rely on the original value of the tensor for gradient computation.
   ///
   /// \param inputs A list of tensors that are modified in-place.
-  void MarkDirty(const BaseTensorPtrList &inputs);
+  void MarkDirty(const TensorPtrList &inputs);
 
   /// \brief Mark output tensors as "non-differentiable".
   ///
@@ -104,7 +104,7 @@ struct PYNATIVE_EXPORT AutogradContext {
   /// This is useful for outputs that are detached from the computation graph.
   ///
   /// \param outputs A list of tensors that are non-differentiable.
-  void MarkNonDifferentiable(const BaseTensorPtrList &outputs);
+  void MarkNonDifferentiable(const TensorPtrList &outputs);
 
   /// \brief Set whether to materialize gradients.
   ///
@@ -135,7 +135,7 @@ struct PYNATIVE_EXPORT AutogradContext {
   ///
   /// \param tensor A pointer to the tensor to check.
   /// \return True if the tensor requires gradients, false otherwise.
-  bool NeedGrad(const BaseTensorPtr &tensor);
+  bool NeedGrad(const TensorPtr &tensor);
 
   /// \brief A key-value store for saving arbitrary data during the forward pass.
   ///
@@ -144,13 +144,13 @@ struct PYNATIVE_EXPORT AutogradContext {
   /// computation. The data is stored as key-value pairs.
   std::unordered_map<std::string, ValuePtr> saved_data;
 
-  friend PYNATIVE_EXPORT void CppFunctionDoGrad(AutogradContext *context, const BaseTensorPtrList &inputs,
-                                                BaseTensorPtrList *outputs);
+  friend PYNATIVE_EXPORT void CppFunctionDoGrad(AutogradContext *context, const TensorPtrList &inputs,
+                                                TensorPtrList *outputs);
 
  private:
-  BaseTensorPtrList to_save_;
-  std::unordered_set<BaseTensorPtr> non_differentiable_;
-  std::unordered_set<BaseTensorPtr> dirty_inputs_;
+  TensorPtrList to_save_;
+  std::unordered_set<TensorPtr> non_differentiable_;
+  std::unordered_set<TensorPtr> dirty_inputs_;
   bool materialize_grads_{true};
   std::weak_ptr<BackwardNode> node_;
 
@@ -179,10 +179,10 @@ auto Function<T>::Apply(Args &&... args) -> std::enable_if_t<std::is_same_v<X, T
   MS_LOG(DEBUG) << function_name << " Begin Apply";
   auto node_ptr = std::make_shared<CppFunctionNode<T>>(function_name);
   // process function input
-  BaseTensorPtrList input_vars;
+  TensorPtrList input_vars;
   auto check_is_base_tensor = [&input_vars, &node_ptr](auto &&arg) {
     using ArgType = std::decay_t<decltype(arg)>;
-    if constexpr (std::is_same_v<ArgType, BaseTensorPtr>) {
+    if constexpr (std::is_same_v<ArgType, TensorPtr>) {
       arg->set_need_pipeline_sync(true);
       (void)input_vars.emplace_back(arg);
       node_ptr->is_tensor_input_.emplace_back(true);
@@ -204,7 +204,7 @@ auto Function<T>::Apply(Args &&... args) -> std::enable_if_t<std::is_same_v<X, T
     output = T::Forward(&(node_ptr->context_), std::forward<Args>(args)...);
   }
 
-  BaseTensorPtrList output_list = ToTensorList(output);
+  TensorPtrList output_list = ToTensorList(output);
   MS_EXCEPTION_IF_CHECK_FAIL(output_list.size() > 0, "The output list must not be empty.");
   AbstractBasePtrList outputs_abstract;
   outputs_abstract.reserve(output_list.size());
@@ -223,10 +223,10 @@ auto Function<T>::Apply(Args &&... args) -> std::enable_if_t<std::is_same_v<X, T
   return ToOutputType<forward_return_t>(output_list);
 }
 
-PYNATIVE_EXPORT BaseTensorPtrList GradPreProcess(const ValuePtrList &grads, const AbstractBasePtrList &outputs_abstract,
-                                                 bool materialize_grads, const std::string &function_name);
+PYNATIVE_EXPORT TensorPtrList GradPreProcess(const ValuePtrList &grads, const AbstractBasePtrList &outputs_abstract,
+                                             bool materialize_grads, const std::string &function_name);
 
-PYNATIVE_EXPORT ValuePtrList GradPostProcess(const BaseTensorPtrList &outputs, std::vector<bool> is_tensor_input,
+PYNATIVE_EXPORT ValuePtrList GradPostProcess(const TensorPtrList &outputs, std::vector<bool> is_tensor_input,
                                              const std::string &function_name);
 
 template <class T>

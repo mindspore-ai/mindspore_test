@@ -119,7 +119,7 @@ ValuePtr WrapCOOTensor(const ValuePtr &coo_out, const ValuePtr &value) {
   MS_EXCEPTION_IF_NULL(coo_tensor);
   auto value_tensor = value->cast<tensor::TensorPtr>();
   if (value_tensor == nullptr) {
-    auto base_tensor = value->cast<tensor::BaseTensorPtr>();
+    auto base_tensor = value->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(base_tensor);
     value_tensor = std::make_shared<tensor::Tensor>(*base_tensor);
   }
@@ -134,7 +134,7 @@ ValuePtr WrapCSRTensor(const ValuePtr &csr_out, const ValuePtr &value) {
   MS_EXCEPTION_IF_NULL(csr_tensor);
   auto value_tensor = value->cast<tensor::TensorPtr>();
   if (value_tensor == nullptr) {
-    auto base_tensor = value->cast<tensor::BaseTensorPtr>();
+    auto base_tensor = value->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(base_tensor);
     value_tensor = std::make_shared<tensor::Tensor>(*base_tensor);
   }
@@ -174,8 +174,8 @@ void ConvertSimpleInferInfoToAbstract(const OpGradInfoPtr &op_grad_info) {
 
 InputType AutoGradUtil::SetValueGradInfo(const ValuePtr &value, InputType grad_type) {
   MS_EXCEPTION_IF_NULL(value);
-  if (value->isa<tensor::BaseTensor>()) {
-    const auto &tensor_value = value->cast<tensor::BaseTensorPtr>();
+  if (value->isa<tensor::Tensor>()) {
+    const auto &tensor_value = value->cast<tensor::TensorPtr>();
     auto auto_grad_meta_data = autograd::impl::get_autograd_meta_impl(tensor_value);
     if (auto_grad_meta_data != nullptr) {
       if (auto_grad_meta_data->input_type() != InputType::kUnkown) {
@@ -227,7 +227,7 @@ InputType AutoGradUtil::SetValueGradInfo(const ValuePtr &value, InputType grad_t
   return grad_type;
 }
 
-InputType AutoGradUtil::SetTensorGradInfo(const tensor::BaseTensorPtr &tensor) {
+InputType AutoGradUtil::SetTensorGradInfo(const tensor::TensorPtr &tensor) {
   MS_EXCEPTION_IF_NULL(tensor);
   auto auto_grad_meta_data = autograd::impl::get_autograd_meta_impl(tensor);
   if (auto_grad_meta_data != nullptr) {
@@ -257,8 +257,8 @@ bool AutoGradUtil::IsPrimNeedGrad(const PrimitivePtr &prim) {
 ValuePtr AutoGradUtil::BaseRefToValue(const BaseRef &value, bool requires_grad, bool is_out_sequence, size_t op_index) {
   MS_EXCEPTION_IF_NULL(value);
   ValuePtr ret;
-  if (utils::isa<tensor::BaseTensorPtr>(value)) {
-    auto t = utils::cast<tensor::BaseTensorPtr>(value);
+  if (utils::isa<tensor::TensorPtr>(value)) {
+    auto t = utils::cast<tensor::TensorPtr>(value);
     if (requires_grad) {
       t->set_auto_grad_meta_data(std::make_shared<AutoGradMetaData>(op_index, InputType::kOpOutput));
     }
@@ -296,7 +296,7 @@ ValuePtr AutoGradUtil::VectorRefToValue(const VectorRef &vec_ref, bool requires_
   return std::make_shared<ValueTuple>(v_list);
 }
 
-void AutoGradUtil::BuildViewAutoGradMeta(const tensor::BaseTensorPtr &src_tensor, const tensor::BaseTensorPtr &output,
+void AutoGradUtil::BuildViewAutoGradMeta(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &output,
                                          size_t op_index, autograd::CreationType creation_type) {
   MS_EXCEPTION_IF_NULL(output);
   auto view_meta = autograd::impl::get_view_autograd_meta_impl(src_tensor);
@@ -345,7 +345,7 @@ void AutoGradUtil::SetInferMultiOutputToGrad(const OpGradInfoPtr &op_grad_info, 
 }
 
 ValuePtr AutoGradUtil::MakeOutput(bool requires_grad, const kernel::pyboost::OpPtr &op, size_t op_index,
-                                  const tensor::BaseTensorPtr &base_view) {
+                                  const tensor::TensorPtr &base_view) {
   // delete NoneTypeNode check.
   if (base_view != nullptr && op->outputs()[0]->storage_info() != nullptr) {
     autograd::CreationType creationType =
@@ -360,7 +360,7 @@ ValuePtr AutoGradUtil::MakeOutput(bool requires_grad, const kernel::pyboost::OpP
 }
 
 ValuePtr AutoGradUtil::MakeMultiOutput(bool requires_grad, const kernel::pyboost::OpPtr &op, size_t op_index,
-                                       const tensor::BaseTensorPtr &base_view) {
+                                       const tensor::TensorPtr &base_view) {
   size_t size = op->outputs().size();
   std::vector<ValuePtr> output_values(size);
   for (size_t i = 0; i < size; ++i) {
@@ -390,7 +390,7 @@ ValuePtr AutoGradUtil::MakeMultiOutput(bool requires_grad, const kernel::pyboost
   for (size_t i = 0; i < size; ++i) {
     const auto &output_tensor = op->outputs()[i];
     MS_EXCEPTION_IF_NULL(output_tensor);
-    const auto input_tensor = inputs[i]->cast<tensor::BaseTensorPtr>();
+    const auto input_tensor = inputs[i]->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(input_tensor);
     // Set auto grad meta data for op output
     if (input_tensor != nullptr && output_tensor->storage_info() != nullptr) {
@@ -407,12 +407,12 @@ ValuePtr AutoGradUtil::MakeMultiOutput(bool requires_grad, const kernel::pyboost
 
 void AutoGradUtil::BumpVersion(const ValuePtr &value) {
   MS_EXCEPTION_IF_NULL(value);
-  auto tensor = value->cast<tensor::BaseTensorPtr>();
+  auto tensor = value->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(tensor);
   tensor->BumpVersion();
 }
 
-bool AutoGradUtil::NeedGrad(const tensor::BaseTensorPtr &input_tensor) {
+bool AutoGradUtil::NeedGrad(const tensor::TensorPtr &input_tensor) {
   MS_EXCEPTION_IF_NULL(input_tensor);
   if (IsParamRequiresGrad(input_tensor)) {
     return true;
@@ -430,8 +430,8 @@ bool AutoGradUtil::NeedGrad(const tensor::BaseTensorPtr &input_tensor) {
 bool AutoGradUtil::NeedGrad(const std::vector<ValuePtr> &input_values) {
   for (const ValuePtr &input_arg : input_values) {
     MS_EXCEPTION_IF_NULL(input_arg);
-    if (input_arg->isa<tensor::BaseTensor>()) {
-      const auto input_tensor = input_arg->cast<tensor::BaseTensorPtr>();
+    if (input_arg->isa<tensor::Tensor>()) {
+      const auto input_tensor = input_arg->cast<tensor::TensorPtr>();
       if (NeedGrad(input_tensor)) {
         return true;
       }
@@ -479,14 +479,14 @@ ValuePtr AutoGradUtil::GetFakeZeroTensor() {
   return fake_v;
 }
 
-ValuePtr AutoGradUtil::BuildSpecialValueGrad(const ValuePtr &value, const tensor::BaseTensorPtr &grad,
+ValuePtr AutoGradUtil::BuildSpecialValueGrad(const ValuePtr &value, const tensor::TensorPtr &grad,
                                              autograd::FuncBuilder *func_builder, const SpecialType &type) {
   MS_EXCEPTION_IF_NULL(value);
   if (grad != nullptr) {
     return grad;
   }
-  if (value->isa<tensor::BaseTensor>()) {
-    const auto tensor = value->cast<tensor::BaseTensorPtr>();
+  if (value->isa<tensor::Tensor>()) {
+    const auto tensor = value->cast<tensor::TensorPtr>();
     return (type == SpecialType::kZerosLikeType ? func_builder->Zeros(tensor) : func_builder->Ones(tensor));
   }
   if (value->isa<ValueSequence>()) {
@@ -517,7 +517,7 @@ ValuePtr AutoGradUtil::BuildSpecialValueGrad(const ValuePtr &value, const tensor
 AnfNodePtr AutoGradUtil::BuildSpecialNode(const KernelGraphPtr &tape, const ValuePtr &value,
                                           const abstract::AbstractBasePtr &abs, const SpecialType &type) {
   MS_EXCEPTION_IF_NULL(value);
-  if (value->isa<tensor::BaseTensor>()) {
+  if (value->isa<tensor::Tensor>()) {
     auto prim_node =
       (type == SpecialType::kZerosLikeType ? NewValueNode(std::make_shared<Primitive>(*prim::kPrimZerosLike))
                                            : NewValueNode(std::make_shared<Primitive>(*prim::kPrimOnesLike)));
@@ -595,9 +595,9 @@ AnfNodePtr AutoGradUtil::BuildSparseTensorNode(const KernelGraphPtr &tape, const
 }
 
 void AutoGradUtil::SetGradMetaData(const ValuePtr &value, const VariablePtr &variable, const ParameterPtr &param) {
-  if (value->isa<tensor::BaseTensor>()) {
-    tensor::BaseTensorPtr tensor = nullptr;
-    tensor = value->cast<tensor::BaseTensorPtr>();
+  if (value->isa<tensor::Tensor>()) {
+    tensor::TensorPtr tensor = nullptr;
+    tensor = value->cast<tensor::TensorPtr>();
     auto auto_grad_meta_data = tensor->auto_grad_meta_data();
     if (auto_grad_meta_data == nullptr) {
       MS_LOG(DEBUG) << "tensor has no auto_grad_meta_data";
@@ -624,8 +624,8 @@ void AutoGradUtil::SetGradMetaData(const ValuePtr &value, const VariablePtr &var
 
 void AutoGradUtil::SetGradInfoForInputs(const ValuePtr &value, const VariablePtr &variable,
                                         autograd::MetaGradInfoList *param_meta_grad_info, const ParameterPtr &param) {
-  if (value->isa<tensor::BaseTensor>()) {
-    const auto &input_tensor = value->cast<tensor::BaseTensorPtr>();
+  if (value->isa<tensor::Tensor>()) {
+    const auto &input_tensor = value->cast<tensor::TensorPtr>();
     const auto &auto_grad_meta_data = autograd::impl::get_autograd_meta_impl(input_tensor);
     MS_EXCEPTION_IF_NULL(auto_grad_meta_data);
     auto_grad_meta_data->set_variable(variable);
@@ -811,7 +811,7 @@ void AutoGradUtil::CacheOutputAbstract(const ValuePtr &v, const abstract::Abstra
 
 void AutoGradUtil::CheckAndCloneInplaceInput(const kernel::pyboost::OpPtr &inplace_op, const PrimitivePtr &prim,
                                              const std::string &device_target, ValuePtrList &&inputs) {
-  auto input_tensor = inputs[0]->cast<tensor::BaseTensorPtr>();
+  auto input_tensor = inputs[0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   ValuePtr val = nullptr;
   if (!kernel::pyboost::OpRunStatus::Get().RequireGrad() ||

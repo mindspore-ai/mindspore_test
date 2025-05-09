@@ -48,9 +48,9 @@ class COMMON_EXPORT HookAdapter {
  public:
   HookAdapter();
   ~HookAdapter();
-  HANDLER_DEFINE(uint64_t, RegisterTensorBackwardHook, const tensor::BaseTensorPtr &, const py::function &);
+  HANDLER_DEFINE(uint64_t, RegisterTensorBackwardHook, const tensor::TensorPtr &, const py::function &);
   HANDLER_DEFINE(void, RemoveTensorBackwardHook, uint64_t);
-  HANDLER_DEFINE(py::list, GetHooks, const tensor::BaseTensorPtr &);
+  HANDLER_DEFINE(py::list, GetHooks, const tensor::TensorPtr &);
 };
 }  // namespace pynative
 }  // namespace mindspore

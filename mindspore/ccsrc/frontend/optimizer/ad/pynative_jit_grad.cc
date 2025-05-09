@@ -195,10 +195,10 @@ AnfNodePtrList ProcessParam(const FuncGraphPtr &source_fg, const abstract::Abstr
     (void)param_list.emplace_back(param);
     const auto &input_value = input_values[index];
     MS_EXCEPTION_IF_NULL(input_value);
-    if (!input_value->isa<tensor::BaseTensor>()) {
+    if (!input_value->isa<tensor::Tensor>()) {
       continue;
     }
-    const auto &tensor = input_value->cast<tensor::BaseTensorPtr>();
+    const auto &tensor = input_value->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(tensor);
     if (!tensor->is_parameter()) {
       continue;

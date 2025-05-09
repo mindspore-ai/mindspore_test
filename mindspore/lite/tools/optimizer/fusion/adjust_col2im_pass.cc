@@ -60,12 +60,12 @@ STATUS AddConstInputToAttr(const CNodePtr &cnode, const size_t input_index, cons
     return lite::RET_ERROR;
   }
 
-  if (!value->isa<tensor::BaseTensor>()) {
+  if (!value->isa<tensor::Tensor>()) {
     primitive->AddAttr(arg_name, value);
     return RET_OK;
   }
   auto value_vector = CheckAndConvertUtils::CheckTensorIntValue(arg_name, value, primitive->name());
-  auto tensor = value->cast<tensor::BaseTensorPtr>();
+  auto tensor = value->cast<tensor::TensorPtr>();
   auto tensor_shape = tensor->shape_c();
   MS_LOG(DEBUG) << cnode->ToString() << " 's input[" << input_index << "] is tensor.";
   if (tensor_shape.empty()) {

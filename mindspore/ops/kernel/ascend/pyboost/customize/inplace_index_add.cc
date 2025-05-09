@@ -23,10 +23,9 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr InplaceIndexAddExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                        const BaseTensorPtr &input_tensor, const Int64ImmPtr &dim,
-                                                        const BaseTensorPtr &index_tensor,
-                                                        const BaseTensorPtr &source_tensor, const ScalarPtr &alpha) {
+tensor::TensorPtr InplaceIndexAddExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                                    const Int64ImmPtr &dim, const TensorPtr &index_tensor,
+                                                    const TensorPtr &source_tensor, const ScalarPtr &alpha) {
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor, index_tensor, source_tensor);
   op->set_outputs({input_tensor});
   auto axis_imm = GetValue<int64_t>(dim);

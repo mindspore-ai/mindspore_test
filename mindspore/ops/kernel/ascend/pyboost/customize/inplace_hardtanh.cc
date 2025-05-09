@@ -24,9 +24,8 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr InplaceHardtanhAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                     const BaseTensorPtr &input_tensor, const ScalarPtr &min_val,
-                                                     const ScalarPtr &max_val) {
+tensor::TensorPtr InplaceHardtanhAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                                 const ScalarPtr &min_val, const ScalarPtr &max_val) {
   MS_LOG(DEBUG) << "Call InplaceHardtanh start";
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor);
   op->set_outputs({input_tensor});

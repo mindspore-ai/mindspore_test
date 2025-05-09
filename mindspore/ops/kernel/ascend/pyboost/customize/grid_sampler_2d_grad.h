@@ -27,9 +27,9 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr> GridSampler2DGradAscendCustomize(
-  const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &grad_tensor, const BaseTensorPtr &input_x_tensor,
-  const BaseTensorPtr &grid_tensor, const Int64ImmPtr &interpolation_mode, const Int64ImmPtr &padding_mode,
+std::tuple<tensor::TensorPtr, tensor::TensorPtr> GridSampler2DGradAscendCustomize(
+  const std::shared_ptr<OpRunner> &op, const TensorPtr &grad_tensor, const TensorPtr &input_x_tensor,
+  const TensorPtr &grid_tensor, const Int64ImmPtr &interpolation_mode, const Int64ImmPtr &padding_mode,
   const BoolImmPtr &align_corners, const ValueTuplePtr &output_mask);
 }  // namespace pyboost
 }  // namespace kernel

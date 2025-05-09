@@ -23,9 +23,8 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr DivModGPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &x_tensor,
-                                         const BaseTensorPtr &y_tensor,
-                                         const std::optional<Int64ImmPtr> &rounding_mode) {
+tensor::TensorPtr DivModGPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &x_tensor,
+                                     const TensorPtr &y_tensor, const std::optional<Int64ImmPtr> &rounding_mode) {
   DivModCustomize(op, x_tensor, y_tensor, rounding_mode);
   auto sync = runtime::RuntimeConf::GetInstance()->launch_blocking();
   if (sync && !op->device_context()->device_res_manager_->SyncAllStreams()) {

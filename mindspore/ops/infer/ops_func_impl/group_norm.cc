@@ -110,9 +110,9 @@ TypePtr GroupNormFuncImpl::InferType(const PrimitivePtr &primitive,
 
 TypePtrList GroupNormFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
   const auto &prim_name = primitive->name();
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
-  const auto &weight_tensor = input_values[kInputIndex2]->cast<tensor::BaseTensorPtr>();
-  const auto &bias_tensor = input_values[kInputIndex3]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
+  const auto &weight_tensor = input_values[kInputIndex2]->cast<tensor::TensorPtr>();
+  const auto &bias_tensor = input_values[kInputIndex3]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   MS_EXCEPTION_IF_NULL(weight_tensor);
   MS_EXCEPTION_IF_NULL(bias_tensor);
@@ -134,9 +134,9 @@ TypePtrList GroupNormFuncImpl::InferType(const PrimitivePtr &primitive, const Va
 }
 
 ShapeArray GroupNormFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
-  const auto &weight_tensor = input_values[kInputIndex2]->cast<tensor::BaseTensorPtr>();
-  const auto &bias_tensor = input_values[kInputIndex3]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
+  const auto &weight_tensor = input_values[kInputIndex2]->cast<tensor::TensorPtr>();
+  const auto &bias_tensor = input_values[kInputIndex3]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   MS_EXCEPTION_IF_NULL(weight_tensor);
   MS_EXCEPTION_IF_NULL(bias_tensor);

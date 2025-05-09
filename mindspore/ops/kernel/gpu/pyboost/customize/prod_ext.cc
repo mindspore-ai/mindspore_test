@@ -26,7 +26,7 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-void ProdExtGPUCall(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor, const ValuePtr &axis,
+void ProdExtGPUCall(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor, const ValuePtr &axis,
                     const BoolImmPtr &keep_dims) {
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
@@ -58,7 +58,7 @@ void ProdExtGPUCall(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &in
 }
 }  // namespace
 
-void ProdExtGPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
+void ProdExtGPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
                          const std::optional<Int64ImmPtr> &axis, const BoolImmPtr &keep_dims,
                          const std::optional<Int64ImmPtr> &dtype) {
   OpRunner::InferOpOutput(op, input_tensor, axis, keep_dims, dtype);
@@ -73,7 +73,7 @@ void ProdExtGPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPt
   // Infer function has confirmed the actual dtype of output
   TypeId out_dtype = op->output_value_simple_info()->dtype_vector_[kIndex0]->type_id();
 
-  BaseTensorPtr act_tensor = input_tensor;
+  TensorPtr act_tensor = input_tensor;
   // Call Cast before Launch ReduceProd
   if (input_tensor->data_type() != out_dtype) {
     MS_LOG(DEBUG) << "Call Cast gpu kernel, src dtype: " << TypeIdToString(input_tensor->data_type())

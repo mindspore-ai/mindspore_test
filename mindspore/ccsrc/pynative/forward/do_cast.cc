@@ -42,8 +42,8 @@ void CastOperation::ClearRes() {
 
 bool CastOperation::IsValueTypeInvalid(const ValuePtr &v) const {
   MS_EXCEPTION_IF_NULL(v);
-  return !v->isa<tensor::BaseTensor>() && !v->isa<tensor::CSRTensor>() && !v->isa<IntegerImm>() &&
-         !v->isa<FloatImm>() && !v->isa<BoolImm>();
+  return !v->isa<tensor::Tensor>() && !v->isa<tensor::CSRTensor>() && !v->isa<IntegerImm>() && !v->isa<FloatImm>() &&
+         !v->isa<BoolImm>();
 }
 
 ValuePtr CastOperation::DoNormalCast(const FrontendOpRunInfoPtr &cast_run_info, const ValuePtr &v,
@@ -59,8 +59,8 @@ ValuePtr CastOperation::DoNormalCast(const FrontendOpRunInfoPtr &cast_run_info, 
     return dst_value;
   }
 
-  if (v->isa<tensor::BaseTensor>()) {
-    auto tensor = v->cast<tensor::BaseTensorPtr>();
+  if (v->isa<tensor::Tensor>()) {
+    auto tensor = v->cast<tensor::TensorPtr>();
     if (type_id == tensor->data_type()) {
       cast_run_info->real_out = v;
       return cast_run_info->real_out;
@@ -93,7 +93,7 @@ ValuePtr CastOperation::DoAutoCast(const FrontendOpRunInfoPtr &op_run_info, cons
     return dst_value;
   }
   MS_EXCEPTION_IF_NULL(op_run_info);
-  if (op_run_info->source_type[index] != ops::OP_DTYPE::DT_BEGIN && v->isa<tensor::BaseTensor>()) {
+  if (op_run_info->source_type[index] != ops::OP_DTYPE::DT_BEGIN && v->isa<tensor::Tensor>()) {
     MS_LOG(DEBUG) << "Source value: " << v->ToString();
     dst_value = CastUtils::TensorToDstDtypeValue(v, dst_type.first);
     MS_LOG(DEBUG) << "Cast to value: " << dst_value->ToString() << " without dispatching cast op";
@@ -145,7 +145,7 @@ ValuePtr CastOperation::DoParamMixPrecisionCast(const FrontendOpRunInfoPtr &op_r
     }
   }
 
-  const auto &tensor = v->cast<tensor::BaseTensorPtr>();
+  const auto &tensor = v->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(tensor);
   auto source_dtype = tensor->Dtype();
   if (source_dtype != nullptr && (IsSubType(source_dtype, kFloat) || IsSubType(source_dtype, kBFloat)) &&
@@ -263,8 +263,8 @@ std::pair<std::vector<TypeId>, std::vector<bool>> GetTypeInfo(const FrontendOpRu
     MS_EXCEPTION_IF_NULL(value);
     MS_LOG(DEBUG) << "Get type info of input_value " << i << " is " << value->ToString() << " source type "
                   << op_run_info->source_type[i];
-    if (value->isa<tensor::BaseTensor>()) {
-      args_type_id.push_back(value->cast<tensor::BaseTensorPtr>()->data_type());
+    if (value->isa<tensor::Tensor>()) {
+      args_type_id.push_back(value->cast<tensor::TensorPtr>()->data_type());
       if (op_run_info->source_type[i] == ops::OP_DTYPE::DT_BEGIN) {
         // The arg is Tensor and not cast from scalar.
         args_has_tensor.push_back(true);
@@ -285,8 +285,8 @@ std::pair<std::vector<TypeId>, std::vector<bool>> GetTypeInfo(const FrontendOpRu
       for (const auto &element : elements) {
         MS_EXCEPTION_IF_NULL(element);
         MS_LOG(DEBUG) << "Get tuple element " << element->ToString();
-        if (element->isa<tensor::BaseTensor>()) {
-          args_type_id.push_back(element->cast<tensor::BaseTensorPtr>()->data_type());
+        if (element->isa<tensor::Tensor>()) {
+          args_type_id.push_back(element->cast<tensor::TensorPtr>()->data_type());
           // No tuple[int] to tuple[Tensor] type_cast yet.
           args_has_tensor.push_back(true);
           has_tensor = true;

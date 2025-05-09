@@ -34,7 +34,7 @@ ValuePtr ConvertOutputTensorList(const py::object &obj) {
   ValuePtrList res;
   res.reserve(tuple.size());
   for (size_t i = 0; i < tuple.size(); i++) {
-    auto tensor = tensor::ConvertToBaseTensor(tuple[i]);
+    auto tensor = tensor::ConvertToTensor(tuple[i]);
     if (tensor == nullptr) {
       res.emplace_back(kNone);
     } else {
@@ -49,9 +49,9 @@ ValuePtr ConvertOutputTensorList(const py::object &obj) {
 const char CUSTOM_FORWARD_NAME[] = "forward";
 const char CUSTOM_BACKWARD_NAME[] = "backward";
 
-static BaseTensorPtrSet parse_mark_dirty(const FunctionPtr &fptr) {
+static TensorPtrSet parse_mark_dirty(const FunctionPtr &fptr) {
   // versions of modified tensors should be increased.
-  BaseTensorPtrSet dirty;
+  TensorPtrSet dirty;
   py::object dirty_tensors = fptr->dirty_tensors();
   if (!dirty_tensors) {
     return dirty;
@@ -66,7 +66,7 @@ static BaseTensorPtrSet parse_mark_dirty(const FunctionPtr &fptr) {
     if (!tensor::IsTensorPy(elem)) {
       MS_LOG(EXCEPTION) << "element of dirty_tensors should be a tensor, but get a " << elem.get_type();
     }
-    auto base_tensor = tensor::ConvertToBaseTensor(elem);
+    auto base_tensor = tensor::ConvertToTensor(elem);
     MS_EXCEPTION_IF_NULL(base_tensor);
     dirty.insert(base_tensor);
     base_tensor->BumpVersion();
@@ -75,8 +75,8 @@ static BaseTensorPtrSet parse_mark_dirty(const FunctionPtr &fptr) {
   return dirty;
 }
 
-static BaseTensorPtrSet parse_non_differentiable(const FunctionPtr &fptr) {
-  BaseTensorPtrSet non_diff;
+static TensorPtrSet parse_non_differentiable(const FunctionPtr &fptr) {
+  TensorPtrSet non_diff;
   py::object non_diff_obj = fptr->non_differentiable();
   if (!non_diff_obj) {
     return non_diff;
@@ -91,7 +91,7 @@ static BaseTensorPtrSet parse_non_differentiable(const FunctionPtr &fptr) {
     if (!tensor::IsTensorPy(elem)) {
       MS_LOG(EXCEPTION) << "element of non_differentiable should be a tensor, but get a " << elem.get_type();
     }
-    auto base_tensor = tensor::ConvertToBaseTensor(elem);
+    auto base_tensor = tensor::ConvertToTensor(elem);
     MS_EXCEPTION_IF_NULL(base_tensor);
     non_diff.insert(base_tensor);
   }
@@ -99,8 +99,8 @@ static BaseTensorPtrSet parse_non_differentiable(const FunctionPtr &fptr) {
   return non_diff;
 }
 
-static BaseTensorPtrSet parse_to_save(const FunctionPtr &fptr) {
-  BaseTensorPtrSet to_save_tensors;
+static TensorPtrSet parse_to_save(const FunctionPtr &fptr) {
+  TensorPtrSet to_save_tensors;
   py::object to_save_obj = fptr->saved_tensors();
   if (!to_save_obj) {
     return to_save_tensors;
@@ -118,7 +118,7 @@ static BaseTensorPtrSet parse_to_save(const FunctionPtr &fptr) {
     if (py::isinstance<py::none>(elem)) {
       continue;
     }
-    auto base_tensor = tensor::ConvertToBaseTensor(elem);
+    auto base_tensor = tensor::ConvertToTensor(elem);
     to_save_tensors.insert(base_tensor);
   }
   return to_save_tensors;
@@ -136,8 +136,8 @@ class ForwardGradGuard {
   bool grad_flag_;
 };
 
-void UpdateTensorSetIfNeeded(const std::shared_ptr<FunctionContext> &context, tensor::BaseTensorPtr old_value,
-                             tensor::BaseTensorPtr new_value) {
+void UpdateTensorSetIfNeeded(const std::shared_ptr<FunctionContext> &context, tensor::TensorPtr old_value,
+                             tensor::TensorPtr new_value) {
   if (context->input_base_tensors.count(old_value) > 0) {
     MS_LOG(DEBUG) << "update input old: " << old_value << " new: " << new_value;
     context->input_base_tensors.erase(old_value);
@@ -156,36 +156,36 @@ void UpdateTensorSetIfNeeded(const std::shared_ptr<FunctionContext> &context, te
 }
 
 void CleanBackwardUnusedTensorDeviceAddress(const std::shared_ptr<FunctionContext> &context) {
-  std::unordered_map<tensor::BaseTensorPtr, tensor::BaseTensorPtr> changed;
+  std::unordered_map<tensor::TensorPtr, tensor::TensorPtr> changed;
   for (size_t i = 0; i < context->inputs.size(); i++) {
-    if (context->inputs[i]->isa<tensor::BaseTensor>()) {
-      auto base_tensor = context->inputs[i]->cast<tensor::BaseTensorPtr>();
+    if (context->inputs[i]->isa<tensor::Tensor>()) {
+      auto base_tensor = context->inputs[i]->cast<tensor::TensorPtr>();
       if (context->to_save_tensors.count(base_tensor) == 0) {
         ValuePtr fake_value;
         if (changed.count(base_tensor) == 0) {
           fake_value = PyNativeAlgo::Common::CreateFakeValueWithoutDeviceAddress(base_tensor);
-          changed.emplace(base_tensor, fake_value->cast<tensor::BaseTensorPtr>());
+          changed.emplace(base_tensor, fake_value->cast<tensor::TensorPtr>());
         } else {
           fake_value = changed[base_tensor];
         }
-        UpdateTensorSetIfNeeded(context, base_tensor, fake_value->cast<tensor::BaseTensorPtr>());
+        UpdateTensorSetIfNeeded(context, base_tensor, fake_value->cast<tensor::TensorPtr>());
         context->inputs[i] = fake_value;
         MS_LOG(DEBUG) << "clean input tensor address, index: " << i;
       }
     }
   }
   for (size_t i = 0; i < context->flatten_outputs.size(); i++) {
-    if (context->flatten_outputs[i]->isa<tensor::BaseTensor>()) {
-      auto base_tensor = context->flatten_outputs[i]->cast<tensor::BaseTensorPtr>();
+    if (context->flatten_outputs[i]->isa<tensor::Tensor>()) {
+      auto base_tensor = context->flatten_outputs[i]->cast<tensor::TensorPtr>();
       if (context->to_save_tensors.count(base_tensor) == 0) {
         ValuePtr fake_value;
         if (changed.count(base_tensor) == 0) {
           fake_value = PyNativeAlgo::Common::CreateFakeValueWithoutDeviceAddress(base_tensor);
-          changed.emplace(base_tensor, fake_value->cast<tensor::BaseTensorPtr>());
+          changed.emplace(base_tensor, fake_value->cast<tensor::TensorPtr>());
         } else {
           fake_value = changed[base_tensor];
         }
-        UpdateTensorSetIfNeeded(context, base_tensor, fake_value->cast<tensor::BaseTensorPtr>());
+        UpdateTensorSetIfNeeded(context, base_tensor, fake_value->cast<tensor::TensorPtr>());
         context->flatten_outputs[i] = fake_value;
         MS_LOG(DEBUG) << "clean output tensor address, index: " << i;
       }
@@ -208,14 +208,14 @@ void ConstructContextAfterForward(const std::shared_ptr<FunctionContext> &contex
                 << "saved_tensors size: " << context->to_save_tensors.size();
 
   // Convert input object to tensors.
-  BaseTensorPtrSet input_base_tensors;
+  TensorPtrSet input_base_tensors;
   input_base_tensors.reserve(context->inputs.size());
   for (size_t i = 0; i < context->inputs.size(); ++i) {
     const auto &input_value = context->inputs[i];
     if (!input_value->isa<None>()) {
       (void)context->input_value_grad_type.emplace_back(
         PyNativeAlgo::AutoGradUtil::SetValueGradInfo(input_value, InputType::kConstant));
-      auto base_tensor = input_value->cast<tensor::BaseTensorPtr>();
+      auto base_tensor = input_value->cast<tensor::TensorPtr>();
       input_base_tensors.insert(base_tensor);
     }
   }
@@ -241,7 +241,7 @@ py::object FunctionBase::apply(const py::object &cls, const py::args &inputs) {
   runtime::Pipeline::Get().WaitFrontend();
   runtime::Pipeline::Get().WaitBpropStage();  // wait to get inputs value
   for (size_t i = 0; i < inputs.size(); ++i) {
-    auto base_tensor = tensor::ConvertToBaseTensor(inputs[i]);
+    auto base_tensor = tensor::ConvertToTensor(inputs[i]);
     if (base_tensor != nullptr) {
       (void)is_tensor_input.emplace_back(true);
       base_tensor->set_need_pipeline_sync(true);
@@ -276,7 +276,7 @@ py::object FunctionBase::apply(const py::object &cls, const py::args &inputs) {
   }
   ConstructContextAfterForward(context, ctx, outputs);
   ValuePtrList flatten_outputs = context->flatten_outputs;
-  BaseTensorPtrSet non_diff_tensors = context->non_diff_tensors;
+  TensorPtrSet non_diff_tensors = context->non_diff_tensors;
   // Clean device address to reduce the occupation of resources.
   CleanBackwardUnusedTensorDeviceAddress(context);
 
@@ -296,8 +296,8 @@ py::object FunctionBase::apply(const py::object &cls, const py::args &inputs) {
   py::tuple output_ret(num_output);
   MS_LOG(DEBUG) << "Output info, modified: " << modified << ", num_output: " << num_output;
   for (size_t i = 0; i < num_output; ++i) {
-    if (flatten_outputs[i]->isa<tensor::BaseTensor>()) {
-      auto base_tensor = flatten_outputs[i]->cast<tensor::BaseTensorPtr>();
+    if (flatten_outputs[i]->isa<tensor::Tensor>()) {
+      auto base_tensor = flatten_outputs[i]->cast<tensor::TensorPtr>();
       bool is_diff = non_diff_tensors.count(base_tensor) == 0;
       if (!is_diff) {
         // For tensor not need grad, we should clean grad meta data.

@@ -226,7 +226,7 @@ class OpTemplateParser:
         call_args_types = self._parse_call_args_types(self.op_proto.op_args)
         call_args = self.parse_original_call_args(self.op_proto.op_args)
         for _type, arg_name in zip(call_args_types, call_args):
-            if _type in ("mindspore::tensor::BaseTensorPtr", "std::optional<mindspore::tensor::BaseTensorPtr>"):
+            if _type in ("mindspore::tensor::TensorPtr", "std::optional<mindspore::tensor::TensorPtr>"):
                 call_args_tensor.append(arg_name)
         return call_args_tensor
 
@@ -258,8 +258,8 @@ class OpTemplateParser:
         """
         returns_type = []
         type_convert_to_base = {
-            'std::vector<mindspore::tensor::TensorPtr>': 'std::vector<mindspore::tensor::BaseTensorPtr>',
-            'mindspore::tensor::TensorPtr': 'mindspore::tensor::BaseTensorPtr'
+            'std::vector<mindspore::tensor::TensorPtr>': 'std::vector<mindspore::tensor::TensorPtr>',
+            'mindspore::tensor::TensorPtr': 'mindspore::tensor::TensorPtr'
         }
         for return_obj in self.op_proto.op_returns:
             temp_return = get_return_type(return_obj.arg_dtype)

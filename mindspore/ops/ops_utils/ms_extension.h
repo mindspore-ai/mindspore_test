@@ -37,3 +37,10 @@
 #include "kernel/ascend/opapi/aclnn/custom_aclnn_utils.h"
 #include "mindspore/ops/kernel/ascend/pyboost/customize/custom_launch_aclnn.h"
 #endif  // CUSTOM_ASCEND_OP
+
+namespace mindspore {
+namespace tensor {
+using BaseTensor = Tensor;
+using BaseTensorPtr = TensorPtr;
+}  // namespace tensor
+}  // namespace mindspore

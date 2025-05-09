@@ -121,7 +121,7 @@ class PYNATIVE_EXPORT ForwardExecutor {
   void InferOutputAbstract(const FrontendOpRunInfoPtr &op_run_info) const;
   void PrepareOpInputs(const FrontendOpRunInfoPtr &op_run_info);
   void OpRunInfoUsePrimC(const FrontendOpRunInfoPtr &op_run_info) const;
-  void CreateInputAddressForViewOp(const tensor::BaseTensorPtr &input_tensor, const FrontendOpRunInfoPtr &op_run_info);
+  void CreateInputAddressForViewOp(const tensor::TensorPtr &input_tensor, const FrontendOpRunInfoPtr &op_run_info);
   void DispatchViewKernelTask(const FrontendOpRunInfoPtr &op_run_info, const runtime::KernelTaskType &task_type);
   void ForwardRunViewKernelTask(const FrontendOpRunInfoPtr &op_run_info, const runtime::KernelTaskType &task_type,
                                 bool enable_async);
@@ -131,7 +131,7 @@ class PYNATIVE_EXPORT ForwardExecutor {
   device::DeviceAddressPtr TensorContiguousCallback(const DeviceSyncPtr &device_address,
                                                     const TensorStorageInfoPtr &storage_info);
 
-  void CreateViewOutputTensor(const FrontendOpRunInfoPtr &op_run_info, const tensor::BaseTensorPtr &input_tensor,
+  void CreateViewOutputTensor(const FrontendOpRunInfoPtr &op_run_info, const tensor::TensorPtr &input_tensor,
                               const TensorStorageInfoPtr &storage_info, runtime::KernelTaskType task_type,
                               bool is_multi_output);
 
@@ -140,7 +140,7 @@ class PYNATIVE_EXPORT ForwardExecutor {
   PrimitivePtr GetSlicePrimFromCache(const std::string &op_name);
   FrontendOpRunInfoPtr GenerateSliceOpRunInfo(const std::string &op_name, bool requires_grad,
                                               const stub::StubNodePtr &stub_output, size_t stream_id);
-  void CreateViewOpOutputs(const FrontendOpRunInfoPtr &op_run_info, const tensor::BaseTensorPtr &view_input_tensor,
+  void CreateViewOpOutputs(const FrontendOpRunInfoPtr &op_run_info, const tensor::TensorPtr &view_input_tensor,
                            runtime::KernelTaskType task_type, const TensorStorageInfoPtrList &storage_infos,
                            bool is_tuple_output);
 

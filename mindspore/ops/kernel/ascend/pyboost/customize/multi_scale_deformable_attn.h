@@ -27,9 +27,11 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr MultiScaleDeformableAttnAscendCustomize(
-  const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &value_tensor, const BaseTensorPtr &shape_tensor,
-  const BaseTensorPtr &offset_tensor, const BaseTensorPtr &locations_tensor, const BaseTensorPtr &weight_tensor);
+tensor::TensorPtr MultiScaleDeformableAttnAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                                          const TensorPtr &value_tensor, const TensorPtr &shape_tensor,
+                                                          const TensorPtr &offset_tensor,
+                                                          const TensorPtr &locations_tensor,
+                                                          const TensorPtr &weight_tensor);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

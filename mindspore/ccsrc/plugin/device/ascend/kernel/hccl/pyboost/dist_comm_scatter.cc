@@ -28,7 +28,7 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void DistCommScatterAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &other_tensor,
+void DistCommScatterAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &other_tensor,
                                     const ValueTuplePtr &scatter_list, const Int64ImmPtr &rank_size,
                                     const Int64ImmPtr &src, const Int64ImmPtr &rank_id, const StringImmPtr &group) {
   OpRunner::InferOpOutput(op, other_tensor, scatter_list, rank_size, src, rank_id, group);
@@ -36,11 +36,11 @@ void DistCommScatterAscendCustomize(const std::shared_ptr<OpRunner> &op, const B
 
   auto src_rank = GetValue<int64_t>(src);
   auto local_rank = GetValue<int64_t>(rank_id);
-  std::vector<BaseTensorPtr> scatter_tensors = ConvertValueTupleToVector<BaseTensorPtr>(scatter_list);
+  std::vector<TensorPtr> scatter_tensors = ConvertValueTupleToVector<TensorPtr>(scatter_list);
   auto rank_size_imm = GetValue<int64_t>(rank_size);
   auto input_shape = other_tensor->shape();
   input_shape[0] = static_cast<int64_t>(input_shape[0] * rank_size_imm);
-  BaseTensorPtr input_tensor =
+  TensorPtr input_tensor =
     std::make_shared<tensor::Tensor>(static_cast<TypeId>(other_tensor->data_type_c()), input_shape);
   PyBoostUtils::PrepareOpInputs(op->device_context(), kDefaultStreamIndex, other_tensor, scatter_tensors, input_tensor);
 

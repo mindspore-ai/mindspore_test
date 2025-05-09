@@ -24,8 +24,8 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr InplaceEluAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                                const ScalarPtr &alpha) {
+tensor::TensorPtr InplaceEluAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                            const ScalarPtr &alpha) {
   MS_LOG(DEBUG) << "Call InplaceElu start";
   TypeId data_type = input_tensor->data_type();
   if (data_type == kNumberTypeFloat64) {

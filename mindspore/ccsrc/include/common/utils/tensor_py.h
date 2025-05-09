@@ -44,12 +44,7 @@ class COMMON_EXPORT TensorPy {
 
   /// \brief Create tensorpy with base tensor.
   ///
-  /// \param[in] input [BaseTensorPtr] The input base tensor.
-  explicit TensorPy(const BaseTensorPtr &input);
-
-  /// \brief Create tensorpy with tensor.
-  ///
-  /// \param[in] input [TensorPtr] The input tensor.
+  /// \param[in] input [TensorPtr] The input base tensor.
   explicit TensorPy(const TensorPtr &input);
 
   /// \brief Create 0 dimension tensorpy from an int64_t scalar.
@@ -162,7 +157,7 @@ class COMMON_EXPORT TensorPy {
   /// \brief Get the C++ Tensor.
   ///
   /// \return The created C++ Tensor.
-  const TensorPtr GetTensor() const;
+  TensorPtr GetTensor() const;
 
   /// \brief Get parent Tensor.
   ///
@@ -468,9 +463,7 @@ class COMMON_EXPORT TensorPy {
   /// \param[in] slice_shape_of_persistent_data [py::object] The slice shape of persistent data.
   void SetSliceShapeOfPersistentData(const py::object &slice_shape_of_persistent_data);
 
-  BaseTensorPtr GetBaseTensor() const;
-
-  void UpdateStub(const BaseTensorPtr &tensor);
+  void UpdateStub(const TensorPtr &tensor);
   bool has_stub() const { return stub_ != nullptr; }
   const stub::StubNodePtr &stub() const { return stub_; }
   const stub::StubNodePtr &MakeStub() {
@@ -494,7 +487,7 @@ class COMMON_EXPORT TensorPy {
   py::object slice_num_of_persistent_data_;
   py::object slice_shape_of_persistent_data_;
   std::string device_;
-  BaseTensorPtr tensor_{nullptr};
+  TensorPtr tensor_{nullptr};
   py::object flatten_tensor_;
   stub::StubNodePtr stub_{nullptr};
 };
@@ -521,9 +514,8 @@ COMMON_EXPORT const py::handle ConvertToTensorPy(const py::handle &obj);
 /// \param[in] obj [py::handle] The python object.
 ///
 /// \return A pointer address of C++ Tensor.
-COMMON_EXPORT const TensorPtr ConvertToTensor(const py::handle &obj);
+COMMON_EXPORT TensorPtr ConvertToTensor(const py::handle &obj);
 COMMON_EXPORT const ValuePtr ConvertToValue(const py::handle &obj);
-COMMON_EXPORT BaseTensorPtr ConvertToBaseTensor(const py::handle &obj);
 template <typename T>
 struct PyType {
   PyObject_HEAD T value;
@@ -548,23 +540,22 @@ COMMON_EXPORT PyTypeObject *GetTensorPyType();
 COMMON_EXPORT void SetTensorPyType(PyTypeObject *TensorPyType);
 /// \brief alloc Python Tensor from C++ Tensor.
 ///
-/// \param[in] tensor [BaseTensorPtr] C++ Tensor.
+/// \param[in] tensor [TensorPtr] C++ Tensor.
 ///
 /// \return A PyObject address of Python Tensor.
-COMMON_EXPORT PyObject *TensorPythonInit(BaseTensorPtr tensor);
+COMMON_EXPORT PyObject *TensorPythonInit(TensorPtr tensor);
 COMMON_EXPORT PyObject *TensorPythonInitFromTensor(TensorPtr tensor);
 
-COMMON_EXPORT py::object PackTensorToPyObject(BaseTensorPtr tensor);
+COMMON_EXPORT py::object PackTensorToPyObject(TensorPtr tensor);
 
 /// \brief Get the Python Tensor Object.
 ///
 /// \return The python Tensor.
 COMMON_EXPORT py::object GetPythonTensor();
 
-COMMON_EXPORT PyObject *PackTensor(const BaseTensorPtr &tensor);
-COMMON_EXPORT PyObject *Wrap(const BaseTensorPtr &tensor);
+COMMON_EXPORT PyObject *PackTensor(const TensorPtr &tensor);
 COMMON_EXPORT PyObject *Wrap(const TensorPtr &tensor);
-COMMON_EXPORT PyObject *Wrap(const std::vector<BaseTensorPtr> &tensors);
+COMMON_EXPORT PyObject *Wrap(const std::vector<TensorPtr> &tensors);
 template <typename... Args>
 PyObject *Wrap(const std::tuple<Args...> &tuple) {
   constexpr size_t size = std::tuple_size<std::tuple<Args...>>::value;

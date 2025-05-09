@@ -29,18 +29,18 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 
-std::vector<tensor::BaseTensorPtr> MeshgridCustomizeCall(const std::shared_ptr<OpRunner> &op,
-                                                         const ValueTuplePtr &tensors_list, const Int64ImmPtr &indexing,
-                                                         const string &device_type) {
+std::vector<tensor::TensorPtr> MeshgridCustomizeCall(const std::shared_ptr<OpRunner> &op,
+                                                     const ValueTuplePtr &tensors_list, const Int64ImmPtr &indexing,
+                                                     const string &device_type) {
   MS_LOG(DEBUG) << "Meshgrid call start";
-  std::vector<BaseTensorPtr> tensors_list_vector;
+  std::vector<TensorPtr> tensors_list_vector;
 
   const auto &tensors_value = tensors_list->value();
   MS_CHECK_VALUE(tensors_value.size() > 0,
                  "For Primitive [Meshgrid], the size of input tensors must be greater than 0.");
   for (const auto &tensor : tensors_value) {
-    if (tensor->isa<BaseTensor>()) {
-      (void)tensors_list_vector.emplace_back(GetValue<BaseTensorPtr>(tensor));
+    if (tensor->isa<Tensor>()) {
+      (void)tensors_list_vector.emplace_back(GetValue<TensorPtr>(tensor));
     } else if (tensor->isa<Scalar>()) {
       (void)tensors_list_vector.emplace_back(PyBoostUtils::ScalarToTensor(tensor->cast<ScalarPtr>()));
     }
@@ -60,7 +60,7 @@ std::vector<tensor::BaseTensorPtr> MeshgridCustomizeCall(const std::shared_ptr<O
     std::swap(tensors_list_vector[kIndex0], tensors_list_vector[kIndex1]);
   }
 
-  std::vector<tensor::BaseTensorPtr> view_outputs;
+  std::vector<tensor::TensorPtr> view_outputs;
   auto view_shape_list = std::vector<ValuePtr>(tensors_list_vector.size(), std::make_shared<Int64Imm>(1));
   for (size_t i = 0; i < tensors_list_vector.size(); ++i) {
     view_shape_list[i] = std::make_shared<Int64Imm>(-1);
@@ -82,7 +82,7 @@ std::vector<tensor::BaseTensorPtr> MeshgridCustomizeCall(const std::shared_ptr<O
     }
   }
 
-  std::vector<tensor::BaseTensorPtr> broadcast_to_outputs;
+  std::vector<tensor::TensorPtr> broadcast_to_outputs;
   for (auto view_tensor : view_outputs) {
     auto broadcast_to_op = CREATE_PYBOOST_OP(BroadcastTo, device_type);
     broadcast_to_op->Call(view_tensor, std::make_shared<ValueTuple>(output_shape_list));

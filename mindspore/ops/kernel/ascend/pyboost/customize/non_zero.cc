@@ -27,7 +27,7 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr NonZeroAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor) {
+tensor::TensorPtr NonZeroAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor) {
   MS_LOG(DEBUG) << "NonZero Ascend start";
   OpRunner::InferOpOutput(op, input_tensor);
 

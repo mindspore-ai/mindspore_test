@@ -70,7 +70,7 @@ class TestReduceMaxSimple : public TestOps, public testing::WithParamInterface<R
 
 TEST_P(TestReduceMaxSimple, simple_infer) {
   const auto &param = GetParam();
-  auto x = std::make_shared<tensor::BaseTensor>(param.input_dtype->type_id(), param.input_shape);
+  auto x = std::make_shared<tensor::Tensor>(param.input_dtype->type_id(), param.input_shape);
   auto dim = param.dim->ToAbstract();
   auto keepdim = param.keepdim->ToAbstract();
 

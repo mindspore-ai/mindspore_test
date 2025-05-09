@@ -66,8 +66,7 @@ namespace mindspore {
 namespace compile {
 namespace {
 ValuePtr GetInputofBpropCut(const std::shared_ptr<GraphCompiler> &graph_compiler, const CNodePtr &parent_node,
-                            const AnfNodePtr &input_node,
-                            const std::map<KernelWithIndex, tensor::BaseTensorPtr> &op_output,
+                            const AnfNodePtr &input_node, const std::map<KernelWithIndex, tensor::TensorPtr> &op_output,
                             const std::map<AnfNodePtr, size_t> &parameter_index,
                             const std::vector<TensorPtr> &graph_inputs, InputInfo *input_info, size_t input_index) {
   if (!IsPrimitiveCNode(input_node, prim::kPrimMakeTuple)) {
@@ -123,7 +122,7 @@ ValuePtr GetFrontArgByParameter(const std::vector<AnfNodePtr> &origin_paramters,
 void GetControlOpInput(const std::shared_ptr<GraphCompiler> &graph_compiler,
                        const std::vector<AnfNodePtr> &origin_paramters, const VectorRef &front_args,
                        const CNodePtr &front_cnode, const CNodePtr &backend_cnode,
-                       const std::map<KernelWithIndex, tensor::BaseTensorPtr> &op_output_map,
+                       const std::map<KernelWithIndex, tensor::TensorPtr> &op_output_map,
                        const std::map<AnfNodePtr, size_t> &parameter_index,
                        const std::vector<tensor::TensorPtr> &graph_inputs, InputInfo *input_info, VectorRef *args) {
   MS_EXCEPTION_IF_NULL(front_cnode);
@@ -156,7 +155,7 @@ void GetControlOpInput(const std::shared_ptr<GraphCompiler> &graph_compiler,
 void RunControlOperator(const std::shared_ptr<GraphCompiler> &graph_compiler,
                         const std::vector<AnfNodePtr> &origin_paramters, const VectorRef &front_args,
                         const KernelGraphPtr &graph, const CNodePtr &kernel,
-                        const std::map<KernelWithIndex, tensor::BaseTensorPtr> &op_output_map,
+                        const std::map<KernelWithIndex, tensor::TensorPtr> &op_output_map,
                         const std::map<AnfNodePtr, size_t> &parameter_index,
                         const std::vector<tensor::TensorPtr> &graph_inputs, InputInfo *input_info,
                         VectorRef *op_outputs) {
@@ -422,7 +421,7 @@ void MindRTBackend::RunGraphBySingleOp(const GraphCompilerInfo &graph_compiler_i
   for (size_t graph_index = 0; graph_index < graphs.size(); ++graph_index) {
     const auto &graph = graphs[graph_index];
     MS_EXCEPTION_IF_NULL(graph);
-    std::map<KernelWithIndex, tensor::BaseTensorPtr> op_output_map;
+    std::map<KernelWithIndex, tensor::TensorPtr> op_output_map;
     std::map<AnfNodePtr, size_t> parameter_index;
     GraphOutputInfo graph_output_info;
     graph_output_info.graph_outputs = outputs;

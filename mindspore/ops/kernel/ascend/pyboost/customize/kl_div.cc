@@ -21,13 +21,12 @@
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "mindapi/base/types.h"
 
-
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr KLDivAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                           const BaseTensorPtr &target_tensor, const Int64ImmPtr &reduction,
-                                           const BoolImmPtr &log_target) {
+tensor::TensorPtr KLDivAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                       const TensorPtr &target_tensor, const Int64ImmPtr &reduction,
+                                       const BoolImmPtr &log_target) {
   OpRunner::InferOpOutput(op, input_tensor, target_tensor, reduction, log_target);
 
   auto log_target_imm = GetValue<bool>(log_target);

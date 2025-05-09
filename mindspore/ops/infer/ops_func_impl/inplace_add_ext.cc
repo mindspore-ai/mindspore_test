@@ -39,13 +39,13 @@ TypePtr InplaceAddExtFuncImpl::InferType(const PrimitivePtr &primitive,
   return input_type;
 }
 TypePtrList InplaceAddExtFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &input_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &input_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   const auto &input_type = input_tensor->Dtype();
   return {input_type};
 }
 ShapeArray InplaceAddExtFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &input_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &input_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   return {input_tensor->shape()};
 }

@@ -178,11 +178,11 @@ bool ConvertFrontEndToGraphKernel::AddConstInputToAttr(const CNodePtr &cnode, co
     return true;
   }
 
-  if (!value->isa<tensor::BaseTensor>()) {
+  if (!value->isa<tensor::Tensor>()) {
     primitive->AddAttr(arg_name, value);
     return true;
   }
-  auto tensor = value->cast<tensor::BaseTensorPtr>();
+  auto tensor = value->cast<tensor::TensorPtr>();
   if (tensor->Dtype()->type_id() == kNumberTypeBool) {
     auto tensor_data = GetArrayValue<bool>(value).value().ToVector();
     primitive->AddAttr(arg_name, MakeValue<bool>(tensor_data[0]));

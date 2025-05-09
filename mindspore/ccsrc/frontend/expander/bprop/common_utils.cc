@@ -38,8 +38,8 @@ int64_t CheckRange(int64_t idx, int64_t dim_size) {
 
 std::vector<int64_t> GetIntList(const ValuePtr &value) {
   MS_EXCEPTION_IF_NULL(value);
-  if (value->isa<tensor::BaseTensor>()) {
-    auto tensor = value->cast<tensor::BaseTensorPtr>();
+  if (value->isa<tensor::Tensor>()) {
+    auto tensor = value->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(tensor);
     tensor->data_sync();
     return CheckAndConvertUtils::CheckTensorIntValue("tensor", value, "bprop");

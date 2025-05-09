@@ -24,8 +24,8 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 
-tensor::BaseTensorPtr CrossAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                           const BaseTensorPtr &other_tensor, const Int64ImmPtr &dim) {
+tensor::TensorPtr CrossAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                       const TensorPtr &other_tensor, const Int64ImmPtr &dim) {
   MS_LOG(DEBUG) << op->primitive()->name() << " call start";
   OpRunner::InferOpOutput(op, input_tensor, other_tensor, dim);
   auto dim_imm = GetValue<int64_t>(dim);

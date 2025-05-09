@@ -63,16 +63,16 @@ TypePtr MaskedSelectFuncImpl::InferType(const PrimitivePtr &primitive,
 }
 
 TypePtrList MaskedSelectFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &input_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &input_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   return {input_tensor->Dtype()};
 }
 
 ShapeArray MaskedSelectFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &input_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &input_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   auto &input_shape = input_tensor->shape();
-  const auto &mask_tensor = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &mask_tensor = input_values[kInputIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(mask_tensor);
   auto mask_shape = mask_tensor->shape();
   bool is_dynamic = IsDynamic(input_shape) || IsDynamic(mask_shape);

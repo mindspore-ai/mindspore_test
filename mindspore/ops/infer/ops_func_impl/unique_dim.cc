@@ -138,7 +138,7 @@ TypePtr UniqueDimFuncImpl::InferType(const PrimitivePtr &primitive,
 }
 
 ShapeArray UniqueDimFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   auto x_shape_vector = x_tensor->shape();
   if (x_shape_vector.empty()) {
@@ -164,7 +164,7 @@ ShapeArray UniqueDimFuncImpl::InferShape(const PrimitivePtr &primitive, const Va
 }
 
 TypePtrList UniqueDimFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   return {x_tensor->Dtype(), kInt64, kInt64};
 }

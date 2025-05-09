@@ -32,15 +32,15 @@ ValuePtr PyBoostCastOperation::DoAutoCast(const FrontendOpRunInfoPtr &op_run_inf
     MS_LOG(DEBUG) << "Source value: " << v->ToString() << " cast to value: " << dst_value->ToString();
     return dst_value;
   }
-  if (!v->isa<tensor::BaseTensor>()) {
+  if (!v->isa<tensor::Tensor>()) {
     return v;
   }
-  return DoAutoCast(op_run_info, dst_type, index, v->cast<tensor::BaseTensorPtr>());
+  return DoAutoCast(op_run_info, dst_type, index, v->cast<tensor::TensorPtr>());
 }
 
-tensor::BaseTensorPtr PyBoostCastOperation::DoAutoCast(const FrontendOpRunInfoPtr &op_run_info,
-                                                       const std::pair<TypeId, bool> &dst_type, size_t index,
-                                                       const tensor::BaseTensorPtr &t) const {
+tensor::TensorPtr PyBoostCastOperation::DoAutoCast(const FrontendOpRunInfoPtr &op_run_info,
+                                                   const std::pair<TypeId, bool> &dst_type, size_t index,
+                                                   const tensor::TensorPtr &t) const {
   if (op_run_info->source_type[index] != ops::OP_DTYPE::DT_BEGIN) {
     MS_LOG(DEBUG) << "Try cast Source tensor: " << t->ToString();
     auto dst_tensor = CastUtils::TensorToDstDtypeValue(t, dst_type.first);
@@ -72,21 +72,20 @@ tensor::BaseTensorPtr PyBoostCastOperation::DoAutoCast(const FrontendOpRunInfoPt
     PyNativeAlgo::AutoGradUtil::SetInferOutputToGrad(cast_run_info->op_grad_info, cast_op);
     PyNativeAlgo::PyBoost::DoGrad(cast_op, cast_run_info->op_grad_info, cast_run_info->async_status);
   }
-  return real_output->cast<tensor::BaseTensorPtr>();
+  return real_output->cast<tensor::TensorPtr>();
 }
 
 ValuePtr PyBoostCastOperation::SetTensorMixPrecisionCast(const FrontendOpRunInfoPtr &op_run_info, const ValuePtr &v,
                                                          size_t index) const {
   MS_EXCEPTION_IF_NULL(v);
-  if (v->isa<tensor::BaseTensor>()) {
-    return SetTensorMixPrecisionCast(op_run_info, v->cast<tensor::BaseTensorPtr>(), index);
+  if (v->isa<tensor::Tensor>()) {
+    return SetTensorMixPrecisionCast(op_run_info, v->cast<tensor::TensorPtr>(), index);
   }
   return v;
 }
 
-tensor::BaseTensorPtr PyBoostCastOperation::SetTensorMixPrecisionCast(const FrontendOpRunInfoPtr &op_run_info,
-                                                                      const tensor::BaseTensorPtr &t,
-                                                                      size_t index) const {
+tensor::TensorPtr PyBoostCastOperation::SetTensorMixPrecisionCast(const FrontendOpRunInfoPtr &op_run_info,
+                                                                  const tensor::TensorPtr &t, size_t index) const {
   MS_EXCEPTION_IF_NULL(op_run_info);
   MS_EXCEPTION_IF_NULL(t);
   auto dst_dtype = kFloat16;
@@ -110,8 +109,8 @@ tensor::BaseTensorPtr PyBoostCastOperation::SetTensorMixPrecisionCast(const Fron
   return t;
 }
 
-std::optional<tensor::BaseTensorPtr> PyBoostCastOperation::SetTensorMixPrecisionCast(
-  const FrontendOpRunInfoPtr &op_run_info, const std::optional<tensor::BaseTensorPtr> &t, size_t index) const {
+std::optional<tensor::TensorPtr> PyBoostCastOperation::SetTensorMixPrecisionCast(
+  const FrontendOpRunInfoPtr &op_run_info, const std::optional<tensor::TensorPtr> &t, size_t index) const {
   MS_EXCEPTION_IF_NULL(op_run_info);
   if (!t.has_value()) {
     return std::nullopt;

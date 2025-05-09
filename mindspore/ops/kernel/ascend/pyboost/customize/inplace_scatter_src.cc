@@ -22,10 +22,9 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr InplaceScatterSrcAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                       const BaseTensorPtr &input_tensor, const Int64ImmPtr &dim,
-                                                       const BaseTensorPtr &index_tensor,
-                                                       const BaseTensorPtr &src_tensor) {
+tensor::TensorPtr InplaceScatterSrcAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                                   const Int64ImmPtr &dim, const TensorPtr &index_tensor,
+                                                   const TensorPtr &src_tensor) {
   MS_LOG(DEBUG) << "Call InplaceScatterSrc start";
   // No need to call infer
   // forbid complex support: grad backward use aclnnGather which not supports complex

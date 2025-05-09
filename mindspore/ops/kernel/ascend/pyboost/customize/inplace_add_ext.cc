@@ -24,9 +24,8 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr InplaceAddExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                   const BaseTensorPtr &input_tensor, const BaseTensorPtr &other_tensor,
-                                                   const ScalarPtr &alpha) {
+tensor::TensorPtr InplaceAddExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                               const TensorPtr &other_tensor, const ScalarPtr &alpha) {
   MS_LOG(DEBUG) << "Call InplaceAddExt start";
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor, other_tensor);
   op->set_outputs({input_tensor});

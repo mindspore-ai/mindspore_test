@@ -53,7 +53,7 @@ class COMMON_EXPORT TensorPyWrapper : public TensorPyWrapperBase {
 
   const py::object &GetTensorWrapper() const { return tensor_py; }
 
-  void SetTensorWrapper(const py::object &base_tensor) { tensor_py = base_tensor; }
+  void SetTensorPyObj(const py::object &base_tensor) { tensor_py = base_tensor; }
 
  private:
   py::object tensor_py;

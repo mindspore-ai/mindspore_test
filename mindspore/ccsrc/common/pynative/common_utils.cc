@@ -286,7 +286,7 @@ void CommonUtils::FlattenValueSeqArg(const ValuePtr &v, bool is_only_flatten_ten
   MS_EXCEPTION_IF_NULL(v);
   MS_EXCEPTION_IF_NULL(flatten_v);
   MS_LOG(DEBUG) << "Get is only flatten tensor seq " << is_only_flatten_tensor_seq;
-  if (v->isa<tensor::BaseTensor>()) {
+  if (v->isa<tensor::Tensor>()) {
     (void)flatten_v->emplace_back(v);
   } else if (v->isa<ValueSequence>()) {
     const auto &v_vec = v->cast<ValueSequencePtr>()->value();
@@ -296,7 +296,7 @@ void CommonUtils::FlattenValueSeqArg(const ValuePtr &v, bool is_only_flatten_ten
       MS_LOG(DEBUG) << "Get empty value sequence";
       return;
     }
-    if (is_only_flatten_tensor_seq && !v_vec.front()->isa<tensor::BaseTensor>()) {
+    if (is_only_flatten_tensor_seq && !v_vec.front()->isa<tensor::Tensor>()) {
       (void)flatten_v->emplace_back(v);
     } else {
       for (const auto &elem : v_vec) {
@@ -314,9 +314,9 @@ void CommonUtils::FlattenValueSeqArg(const ValuePtr &v, bool is_only_flatten_ten
   }
 }
 
-tensor::BaseTensorPtr CastUtils::TensorToDstDtypeValue(const ValuePtr &src_value, const TypeId &dst_type_id) {
+tensor::TensorPtr CastUtils::TensorToDstDtypeValue(const ValuePtr &src_value, const TypeId &dst_type_id) {
   MS_EXCEPTION_IF_NULL(src_value);
-  auto src_tensor = src_value->cast<tensor::BaseTensorPtr>();
+  auto src_tensor = src_value->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(src_tensor);
   (void)src_tensor->set_data_type(dst_type_id);
   return src_tensor;
@@ -328,7 +328,7 @@ tensor::BaseTensorPtr CastUtils::TensorToDstDtypeValue(const ValuePtr &src_value
 ValuePtr CastUtils::ScalarToDstDtypeValue(const ValuePtr &src_value, const std::pair<TypeId, bool> &dst_type) {
   MS_EXCEPTION_IF_NULL(src_value);
   // Tensor not do scalar cast
-  if (src_value->isa<tensor::BaseTensor>()) {
+  if (src_value->isa<tensor::Tensor>()) {
     return nullptr;
   }
   if (src_value->isa<Int64Imm>()) {

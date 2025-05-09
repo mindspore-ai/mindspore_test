@@ -157,8 +157,8 @@ ValueTuplePtr ConvertList<py::list, py::int_, Int64Imm>(const py::object &obj) {
 void EnablePipelineForTupleTensor(const ValueTuplePtr &tuple) {
   const auto &values = tuple->value();
   for (auto &value : values) {
-    if (value->isa<BaseTensor>()) {
-      auto t = value->cast<BaseTensorPtr>();
+    if (value->isa<tensor::Tensor>()) {
+      auto t = value->cast<TensorPtr>();
       t->set_need_pipeline_sync(true);
     }
   }
@@ -181,15 +181,15 @@ ValuePtr Converter::ToTensor(const py::list &python_args, size_t i) {
   source_type_[i] = OP_DTYPE::DT_BEGIN;
   auto tensor = parse::ConvertTensor(obj);
   if (tensor != nullptr) {
-    if (tensor->isa<tensor::BaseTensor>()) {
-      tensor->cast<tensor::BaseTensorPtr>()->set_need_pipeline_sync(true);
+    if (tensor->isa<tensor::Tensor>()) {
+      tensor->cast<tensor::TensorPtr>()->set_need_pipeline_sync(true);
     }
     return tensor;
   }
   if (!op_arg.cast_dtype_.empty()) {
     auto convert = ConvertByCastDtype(obj, op_arg, i);
-    if (convert != nullptr && convert->isa<tensor::BaseTensor>()) {
-      return convert->cast<tensor::BaseTensorPtr>();
+    if (convert != nullptr && convert->isa<tensor::Tensor>()) {
+      return convert->cast<tensor::TensorPtr>();
     }
   }
 
@@ -1075,8 +1075,8 @@ ValuePtr ConvertMutableBool(const py::object &obj) {
 ValuePtr ConvertStubTensor(const py::object &obj) {
   auto tensor = PyStubNodeCast(obj);
   if (tensor != nullptr) {
-    if (tensor->isa<tensor::BaseTensor>()) {
-      tensor->cast<tensor::BaseTensorPtr>()->set_need_pipeline_sync(true);
+    if (tensor->isa<tensor::Tensor>()) {
+      tensor->cast<tensor::TensorPtr>()->set_need_pipeline_sync(true);
     }
     return tensor;
   }
@@ -1086,8 +1086,8 @@ ValuePtr ConvertStubTensor(const py::object &obj) {
 ValuePtr ConvertSimpleTensor(const py::object &obj) {
   auto tensor = tensor::ConvertToTensor(obj);
   if (tensor != nullptr) {
-    if (tensor->isa<tensor::BaseTensor>()) {
-      tensor->cast<tensor::BaseTensorPtr>()->set_need_pipeline_sync(true);
+    if (tensor->isa<tensor::Tensor>()) {
+      tensor->cast<tensor::TensorPtr>()->set_need_pipeline_sync(true);
     }
     return tensor;
   }

@@ -27,8 +27,8 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr, tensor::BaseTensorPtr> UniqueDimAscendCustomize(
-  const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor, const BoolImmPtr &sorted,
+std::tuple<tensor::TensorPtr, tensor::TensorPtr, tensor::TensorPtr> UniqueDimAscendCustomize(
+  const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor, const BoolImmPtr &sorted,
   const BoolImmPtr &return_inverse, const Int64ImmPtr &dim);
 }  // namespace pyboost
 }  // namespace kernel

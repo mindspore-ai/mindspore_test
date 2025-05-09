@@ -52,13 +52,13 @@ TypePtr SignFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector
 }
 
 ShapeArray SignFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   return {x_tensor->shape()};
 }
 
 TypePtrList SignFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   const auto &x_tensor_type = x_tensor->Dtype();
   CheckSignValidTypes(primitive, x_tensor_type->type_id());

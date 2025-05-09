@@ -59,11 +59,11 @@ TensorStorageInfoPtrList TransposeExtViewStridesCalc(const OldTensorInfoPtr old_
 }
 
 TensorStorageInfoPtrList TransposeExtViewCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  if (CheckInputsNull(inputs, kTransposeExtCalcInputsNum) || !inputs[kIndex0]->isa<tensor::BaseTensor>() ||
+  if (CheckInputsNull(inputs, kTransposeExtCalcInputsNum) || !inputs[kIndex0]->isa<tensor::Tensor>() ||
       !inputs[kIndex1]->isa<IntegerImm>() || !inputs[kIndex2]->isa<IntegerImm>()) {
     return {};
   }
-  auto tensor = inputs[kIndex0]->cast<tensor::BaseTensorPtr>();
+  auto tensor = inputs[kIndex0]->cast<tensor::TensorPtr>();
   auto dim0 = GetValue<int64_t>(inputs[kIndex1]);
   auto dim1 = GetValue<int64_t>(inputs[kIndex2]);
   auto old_tensor_info = GetOldTensorInfo(tensor);

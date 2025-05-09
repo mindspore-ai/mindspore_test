@@ -171,7 +171,7 @@ ShapeArray StackExtFuncImpl::InferShape(const PrimitivePtr &primitive, const Val
   shapes.reserve(tuple_x->size());
   for (const auto &item : tuple_x->value()) {
     MS_EXCEPTION_IF_NULL(item);
-    auto tensor = item->cast<tensor::BaseTensorPtr>();
+    auto tensor = item->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(tensor);
     shapes.push_back(tensor->shape());
   }
@@ -197,7 +197,7 @@ TypePtrList StackExtFuncImpl::InferType(const PrimitivePtr &primitive, const Val
   elements.reserve(tuple_x->size());
   for (const auto &item : tuple_x->value()) {
     MS_EXCEPTION_IF_NULL(item);
-    auto tensor = item->cast<tensor::BaseTensorPtr>();
+    auto tensor = item->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(tensor);
     elements.push_back(tensor->Dtype());
   }

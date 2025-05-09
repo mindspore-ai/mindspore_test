@@ -85,7 +85,7 @@ static int TensorPython_set_shape(PyObject *self, PyObject *list_obj, void *) {
     shape.push_back(value);
   }
 
-  obj->value.GetBaseTensor()->set_shape(shape);
+  obj->value.GetTensor()->set_shape(shape);
   return 0;
   HANDLE_MS_EXCEPTION_RET_FAIL_END
 }
@@ -147,7 +147,7 @@ static PyObject *TensorPython_get_init_flag(PyObject *self, void *) {
 static PyObject *TensorPython_get_dtype(PyObject *self, void *) {
   HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
-  TypePtr type_ptr = obj->value.GetBaseTensor()->Dtype();
+  TypePtr type_ptr = obj->value.GetTensor()->Dtype();
   return py::cast(type_ptr).release().ptr();
   HANDLE_MS_EXCEPTION_END
 }
@@ -155,7 +155,7 @@ static PyObject *TensorPython_get_dtype(PyObject *self, void *) {
 static PyObject *TensorPython_get_size(PyObject *self, void *) {
   HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
-  size_t size = obj->value.GetBaseTensor()->DataSize();
+  size_t size = obj->value.GetTensor()->DataSize();
   return PyLong_FromSize_t(size);
   HANDLE_MS_EXCEPTION_END
 }
@@ -163,7 +163,7 @@ static PyObject *TensorPython_get_size(PyObject *self, void *) {
 static PyObject *TensorPython_get_itemsize(PyObject *self, void *) {
   HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
-  ssize_t itemsize = obj->value.GetBaseTensor()->data().itemsize();
+  ssize_t itemsize = obj->value.GetTensor()->data().itemsize();
   return PyLong_FromSsize_t(itemsize);
   HANDLE_MS_EXCEPTION_END
 }
@@ -171,7 +171,7 @@ static PyObject *TensorPython_get_itemsize(PyObject *self, void *) {
 static PyObject *TensorPython_get_nbytes(PyObject *self, void *) {
   HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
-  ssize_t nbytes = obj->value.GetBaseTensor()->data().nbytes();  // use data().nbytes()
+  ssize_t nbytes = obj->value.GetTensor()->data().nbytes();  // use data().nbytes()
   return PyLong_FromSsize_t(nbytes);
   HANDLE_MS_EXCEPTION_END
 }
@@ -808,7 +808,7 @@ static PyObject *TensorPython_assign_value(PyObject *self, PyObject *args) {
   if (PyObject_TypeCheck(py_tensor, TensorPyType)) {
     PyType<TensorPy> *tensorpy = (PyType<TensorPy> *)(py_tensor);
     tensor->value.AssignValue(tensorpy->value);
-  } else if (py::isinstance<mindspore::tensor::BaseTensor>(py_tensor) || py::isinstance<Tensor>(py_tensor)) {
+  } else if (py::isinstance<mindspore::tensor::Tensor>(py_tensor) || py::isinstance<Tensor>(py_tensor)) {
     Tensor *tensor_data = reinterpret_cast<Tensor *>(py_tensor);
     tensor->value.GetTensor()->AssignValue(*tensor_data);
   } else {
@@ -877,7 +877,7 @@ static PyObject *TensorPy_set_user_data(PyObject *self, PyObject *args) {
   if (!PyArg_ParseTuple(args, "sO", &key, &value_obj)) {
     return nullptr;
   }
-  TensorPybind::SetUserData(tensor->value.GetBaseTensor(), py::str(key), py::reinterpret_borrow<py::object>(value_obj));
+  TensorPybind::SetUserData(tensor->value.GetTensor(), py::str(key), py::reinterpret_borrow<py::object>(value_obj));
   Py_RETURN_NONE;
   HANDLE_MS_EXCEPTION_END
 }
@@ -889,7 +889,7 @@ static PyObject *TensorPy_get_user_data(PyObject *self, PyObject *args) {
   if (!PyArg_ParseTuple(args, "s", &key)) {
     return nullptr;
   }
-  py::object result = TensorPybind::GetUserData(tensor->value.GetBaseTensor(), py::str(key));
+  py::object result = TensorPybind::GetUserData(tensor->value.GetTensor(), py::str(key));
   return result.release().ptr();
   HANDLE_MS_EXCEPTION_END
 }
@@ -972,7 +972,7 @@ static PyObject *RegisterTensorBackwardHook(PyObject *self, PyObject *args) {
   }
   PyType<TensorPy> *tensor = (PyType<TensorPy> *)tensor_obj;
   py::function hook = py::cast<py::function>(hook_func);
-  uint64_t hook_id = pynative::HookAdapter::RegisterTensorBackwardHook(tensor->value.GetBaseTensor(), hook);
+  uint64_t hook_id = pynative::HookAdapter::RegisterTensorBackwardHook(tensor->value.GetTensor(), hook);
   return PyLong_FromUnsignedLongLong(hook_id);
   HANDLE_MS_EXCEPTION_END
 }
@@ -1006,7 +1006,7 @@ static PyObject *TensorPython_SetOffload(PyObject *self, PyObject *args) {
   runtime::Pipeline::Get().WaitForward();
   PyType<TensorPy> *tensor = (PyType<TensorPy> *)tensor_obj;
   bool release = (PyObject_IsTrue(releaseObj) == 1);
-  auto tensorTmp = tensor->value.GetBaseTensor();
+  auto tensorTmp = tensor->value.GetTensor();
   TensorPybind::Offload(tensorTmp, release);
   Py_RETURN_NONE;
   HANDLE_MS_EXCEPTION_END
@@ -1037,7 +1037,7 @@ static PyObject *TensorPython_set_device_address(PyObject *self, PyObject *args)
   }
   TypePtr type_ptr = py::cast<TypePtr>(py::handle(type_ptr_obj));
   PyType<TensorPy> *tensor = (PyType<TensorPy> *)self;
-  auto tensorTmp = tensor->value.GetBaseTensor();
+  auto tensorTmp = tensor->value.GetTensor();
   TensorPybind::SetDeviceAddress(tensorTmp, addr, shape, type_ptr);
 
   Py_RETURN_NONE;
@@ -1211,7 +1211,7 @@ static PyObject *TensorPython_GetFusionSize(PyObject *self, PyObject *args, PyOb
 static PyObject *TensorPython_GetNewItem(PyObject *self, PyObject *args, PyObject *kwargs) {
   HANDLE_MS_EXCEPTION
   PyType<TensorPy> *tensor = (PyType<TensorPy> *)self;
-  auto tensorTmp = tensor->value.GetBaseTensor();
+  auto tensorTmp = tensor->value.GetTensor();
   py::object result = TensorPybind::Item(tensorTmp);
   return result.release().ptr();
   HANDLE_MS_EXCEPTION_END
@@ -1220,7 +1220,7 @@ static PyObject *TensorPython_GetNewItem(PyObject *self, PyObject *args, PyObjec
 static PyObject *TensorPython_ToList(PyObject *self, PyObject *args) {
   HANDLE_MS_EXCEPTION
   PyType<TensorPy> *tensor = (PyType<TensorPy> *)self;
-  auto tensorTmp = tensor->value.GetBaseTensor();
+  auto tensorTmp = tensor->value.GetTensor();
   py::object result = TensorPybind::ToList(tensorTmp);
   return result.release().ptr();
   HANDLE_MS_EXCEPTION_END
@@ -1237,7 +1237,7 @@ static PyObject *TensorPython_HasAutoGrad(PyObject *self, PyObject *args, PyObje
 static PyObject *TensorPython_GetHooks(PyObject *self, PyObject *args, PyObject *kwargs) {
   HANDLE_MS_EXCEPTION
   PyType<TensorPy> *tensor = (PyType<TensorPy> *)self;
-  auto tensorTmp = tensor->value.GetBaseTensor();
+  auto tensorTmp = tensor->value.GetTensor();
   py::list result = pynative::HookAdapter::GetHooks(tensorTmp);
   return result.release().ptr();
   HANDLE_MS_EXCEPTION_END
@@ -1252,7 +1252,7 @@ static PyObject *TensorPython_GetDataPtr(PyObject *self, PyObject *args, PyObjec
     return nullptr;
   }
   PyType<TensorPy> *tensor = (PyType<TensorPy> *)tensor_obj;
-  auto tensorTmp = tensor->value.GetBaseTensor();
+  auto tensorTmp = tensor->value.GetTensor();
   uintptr_t dataPtr = TensorPybind::DataPtr(tensorTmp);
   PyObject *dataPtrResult = PyLong_FromVoidPtr(reinterpret_cast<void *>(dataPtr));
   return dataPtrResult;

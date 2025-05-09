@@ -39,9 +39,9 @@ TypePtr LessFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector
 }
 
 ShapeArray LessFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x1_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x1_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x1_tensor);
-  const auto &x2_tensor = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &x2_tensor = input_values[kInputIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x2_tensor);
   auto broadcast_shape = CalBroadCastShape(x1_tensor->shape(), x2_tensor->shape(), primitive->name());
 

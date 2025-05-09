@@ -89,7 +89,7 @@ TEST_P(TestUpsampleBackward, dyn_shape) {
                             {std::make_shared<TensorType>(kFloat32)});
 
   // Simple Infer
-  ValuePtrList input_values{std::make_shared<tensor::BaseTensor>(kNumberTypeFloat32, param.dout_shape)};
+  ValuePtrList input_values{std::make_shared<tensor::Tensor>(kNumberTypeFloat32, param.dout_shape)};
   std::transform(input_args.begin() + kIndex1, input_args.end(), std::back_inserter(input_values),
                  [](const AbstractBasePtr &abstract) { return abstract->GetValue(); });
 }

@@ -27,18 +27,18 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "common/kernel.h"
-#include "mindspore/core/include/ir/base_tensor.h"
+#include "mindspore/core/include/ir/tensor.h"
 
 namespace mindspore {
 namespace kernel {
 
 template <size_t N, std::size_t... Is>
-auto GetTupleFrontImpl(const std::vector<tensor::BaseTensorPtr> &vecs, std::index_sequence<Is...>) {
+auto GetTupleFrontImpl(const std::vector<tensor::TensorPtr> &vecs, std::index_sequence<Is...>) {
   return std::make_tuple(vecs[Is]...);
 }
 
 template <size_t N>
-auto GetTupleFront(const std::vector<tensor::BaseTensorPtr> &vecs) {
+auto GetTupleFront(const std::vector<tensor::TensorPtr> &vecs) {
   return GetTupleFrontImpl<N>(vecs, std::make_index_sequence<N>());
 }
 

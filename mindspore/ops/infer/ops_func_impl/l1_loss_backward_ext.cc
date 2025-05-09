@@ -53,9 +53,9 @@ BaseShapePtr L1LossBackwardExtFuncImpl::InferShape(const PrimitivePtr &primitive
 
 TypePtrList L1LossBackwardExtFuncImpl::InferType(const PrimitivePtr &primitive,
                                                  const ValuePtrList &input_values) const {
-  auto grad_output_type = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>()->Dtype();
-  auto input_type = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>()->Dtype();
-  auto target_type = input_values[kInputIndex2]->cast<tensor::BaseTensorPtr>()->Dtype();
+  auto grad_output_type = input_values[kInputIndex0]->cast<tensor::TensorPtr>()->Dtype();
+  auto input_type = input_values[kInputIndex1]->cast<tensor::TensorPtr>()->Dtype();
+  auto target_type = input_values[kInputIndex2]->cast<tensor::TensorPtr>()->Dtype();
   MS_EXCEPTION_IF_NULL(grad_output_type);
   MS_EXCEPTION_IF_NULL(input_type);
   MS_EXCEPTION_IF_NULL(target_type);

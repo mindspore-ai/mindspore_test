@@ -39,7 +39,7 @@ TypePtr Expm1FuncImpl::InferType(const PrimitivePtr &primitive, const std::vecto
 }
 
 TypePtrList Expm1FuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   const auto &input_type = x_tensor->Dtype();
   const auto &input_type_id = x_tensor->Dtype()->type_id();
@@ -53,7 +53,7 @@ TypePtrList Expm1FuncImpl::InferType(const PrimitivePtr &primitive, const ValueP
 }
 
 ShapeArray Expm1FuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   return {x_tensor->shape()};
 }

@@ -27,10 +27,11 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr MatmulReduceScatterAscendCustomize(
-  const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input, const BaseTensorPtr &x2, const StringImmPtr &group,
-  const Int64ImmPtr &world_size, const Int64ImmPtr &reduction, const std::optional<BaseTensorPtr> &bias,
-  const Int64ImmPtr &comm_turn, const BoolImmPtr &trans_input, const BoolImmPtr &trans_x2);
+tensor::TensorPtr MatmulReduceScatterAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input,
+                                                     const TensorPtr &x2, const StringImmPtr &group,
+                                                     const Int64ImmPtr &world_size, const Int64ImmPtr &reduction,
+                                                     const std::optional<TensorPtr> &bias, const Int64ImmPtr &comm_turn,
+                                                     const BoolImmPtr &trans_input, const BoolImmPtr &trans_x2);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

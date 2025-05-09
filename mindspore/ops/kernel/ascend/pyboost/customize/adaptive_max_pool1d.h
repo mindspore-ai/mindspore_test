@@ -28,8 +28,9 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr> AdaptiveMaxPool1DAscendCustomize(
-  const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_x_tensor, const ValueTuplePtr &output_size);
+std::tuple<tensor::TensorPtr, tensor::TensorPtr> AdaptiveMaxPool1DAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                                                                  const TensorPtr &input_x_tensor,
+                                                                                  const ValueTuplePtr &output_size);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

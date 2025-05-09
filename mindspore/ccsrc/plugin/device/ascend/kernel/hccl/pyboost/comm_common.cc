@@ -37,8 +37,8 @@ void CommonCommRunTask(const std::function<void(void)> &run_func) {
       std::make_shared<runtime::PassthroughNoWaitDeviceTask>(run_func));
   }
 }
-void CommonCommAscendFunc(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                          const StringImmPtr &group, const std::function<void(const HcclComm &, void *)> &launch_func,
+void CommonCommAscendFunc(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor, const StringImmPtr &group,
+                          const std::function<void(const HcclComm &, void *)> &launch_func,
                           const std::function<void(const DeviceEventPtr &, size_t)> &post_func) {
   const auto &op_name = op->primitive()->name();
   MS_LOG(DEBUG) << "Run device task " << op_name << " end";
@@ -113,7 +113,7 @@ void CommonCommAscendFunc(const std::shared_ptr<OpRunner> &op, const BaseTensorP
   MS_LOG(DEBUG) << "Run device task " << op_name << " end";
 }
 
-void *GetDevicePtrFromTensor(const std::string &op_name, const tensor::BaseTensorPtr &tensor) {
+void *GetDevicePtrFromTensor(const std::string &op_name, const tensor::TensorPtr &tensor) {
   MS_EXCEPTION_IF_NULL(tensor);
 
   auto device_address = std::static_pointer_cast<device::DeviceAddress>(tensor->device_address());

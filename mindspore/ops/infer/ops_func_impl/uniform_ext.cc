@@ -43,13 +43,13 @@ TypePtr UniformExtFuncImpl::InferType(const PrimitivePtr &primitive,
 }
 
 TypePtrList UniformExtFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   return {x_tensor->Dtype()};
 }
 
 ShapeArray UniformExtFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   return {x_tensor->shape()};
 }

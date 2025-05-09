@@ -26,9 +26,9 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr InplaceGroupedMatmulAddAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                             const BaseTensorPtr &x, const BaseTensorPtr &weight,
-                                                             const BaseTensorPtr &group_list, const BaseTensorPtr &out);
+tensor::TensorPtr InplaceGroupedMatmulAddAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &x,
+                                                         const TensorPtr &weight, const TensorPtr &group_list,
+                                                         const TensorPtr &out);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

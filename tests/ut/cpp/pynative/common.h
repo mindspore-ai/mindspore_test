@@ -50,7 +50,7 @@ class PyCommon : public testing::Test {
     guard_ = nullptr;
   }
 
-  pybind11::object NewPyTensor(const tensor::BaseTensorPtr &tensor) {
+  pybind11::object NewPyTensor(const tensor::TensorPtr &tensor) {
     py::object tensor_obj = tensor::PackTensorToPyObject(tensor);
     return tensor_module_.attr("Tensor")(tensor_obj);
   }
@@ -59,7 +59,7 @@ class PyCommon : public testing::Test {
     return stub_tensor_module_.attr("_convert_stub")(stub_tensor);
   }
 
-  pybind11::object NewPyStubTensor(const tensor::BaseTensorPtr &tensor) {
+  pybind11::object NewPyStubTensor(const tensor::TensorPtr &tensor) {
     auto node = stub::MakeTopNode(kTensorType);
     node.second->SetValue(tensor);
     return stub_tensor_module_.attr("_convert_stub")(node.first);

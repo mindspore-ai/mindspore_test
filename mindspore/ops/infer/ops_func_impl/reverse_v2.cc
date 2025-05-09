@@ -74,12 +74,12 @@ TypePtr ReverseV2FuncImpl::InferType(const PrimitivePtr &primitive,
   return input_args[kIndex0]->GetType();
 }
 TypePtrList ReverseV2FuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   return {x_tensor->Dtype()};
 }
 ShapeArray ReverseV2FuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   const auto &x_shape_vec = x_tensor->shape();
   const int64_t x_rank = SizeToLong(x_shape_vec.size());

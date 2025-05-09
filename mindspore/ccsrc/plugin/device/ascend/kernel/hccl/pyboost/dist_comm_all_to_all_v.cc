@@ -52,8 +52,8 @@ void GetAllToAllVParam(const ValueTuplePtr &send_numel_list, const ValueTuplePtr
 }
 
 std::function<void(const HcclComm &, void *)> CallAllToAllVList(const std::shared_ptr<OpRunner> &op,
-                                                                const std::vector<BaseTensorPtr> &output_tensors,
-                                                                const BaseTensorPtr &input_tensor,
+                                                                const std::vector<TensorPtr> &output_tensors,
+                                                                const TensorPtr &input_tensor,
                                                                 const ValueTuplePtr &send_numel_list,
                                                                 const ValueTuplePtr &recv_numel_list) {
   MS_LOG(DEBUG) << "Begin";
@@ -90,12 +90,12 @@ std::function<void(const HcclComm &, void *)> CallAllToAllVList(const std::share
 }  // namespace
 
 void DistCommAllToAllVAscendCustomize(const std::shared_ptr<OpRunner> &op, const ValueTuplePtr &outputs,
-                                      const BaseTensorPtr &input_tensor, const StringImmPtr &group,
+                                      const TensorPtr &input_tensor, const StringImmPtr &group,
                                       const ValueTuplePtr &send_numel_list, const ValueTuplePtr &recv_numel_list,
                                       const Int64ImmPtr &rank_size) {
   OpRunner::InferOpOutput(op, outputs, input_tensor, group, send_numel_list, recv_numel_list, rank_size);
 
-  std::vector<BaseTensorPtr> output_tensors = ConvertValueTupleToVector<BaseTensorPtr>(outputs);
+  std::vector<TensorPtr> output_tensors = ConvertValueTupleToVector<TensorPtr>(outputs);
   PyBoostUtils::PrepareOpInputs(op->device_context(), kDefaultStreamIndex, output_tensors, input_tensor);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), kDefaultStreamIndex, op->outputs());
 

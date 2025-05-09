@@ -41,13 +41,13 @@ TypePtr InplaceZeroFuncImpl::InferType(const PrimitivePtr &primitive,
   return input_type;
 }
 TypePtrList InplaceZeroFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &variable_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &variable_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(variable_tensor);
   const auto &input_type = variable_tensor->Dtype();
   return {input_type};
 }
 ShapeArray InplaceZeroFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &variable_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &variable_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(variable_tensor);
   return {variable_tensor->shape()};
 }

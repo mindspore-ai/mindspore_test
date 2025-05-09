@@ -228,8 +228,8 @@ void WeightQuantBatchMatmulFuncImpl::CheckBatchMatmulInputWhetherCanBeBroadcast(
 
 TypePtrList WeightQuantBatchMatmulFuncImpl::InferType(const PrimitivePtr &primitive,
                                                       const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputX]->cast<tensor::BaseTensorPtr>();
-  const auto &w_tensor = input_values[kInputWeight]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputX]->cast<tensor::TensorPtr>();
+  const auto &w_tensor = input_values[kInputWeight]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   MS_EXCEPTION_IF_NULL(w_tensor);
   TypePtr x_type = x_tensor->Dtype();
@@ -245,8 +245,8 @@ TypePtrList WeightQuantBatchMatmulFuncImpl::InferType(const PrimitivePtr &primit
 
 ShapeArray WeightQuantBatchMatmulFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                       const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
-  const auto &y_tensor = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
+  const auto &y_tensor = input_values[kInputIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   MS_EXCEPTION_IF_NULL(y_tensor);
 

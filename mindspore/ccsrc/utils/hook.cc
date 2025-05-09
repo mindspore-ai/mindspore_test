@@ -55,7 +55,7 @@ ValuePtr TensorBackwardHook::operator()(const ValuePtr &grad) {
   if (IsStubTensor(ret)) {
     val = ConvertStubTensor(ret);
   } else if (tensor::IsTensorPy(ret)) {
-    val = tensor::ConvertToBaseTensor(ret);
+    val = tensor::ConvertToTensor(ret);
   } else {
     MS_LOG(EXCEPTION) << "Tensor hook should be return Tensor, but get type: "
                       << py::str(ret.get_type().attr("__name__")).cast<std::string>() << ".";

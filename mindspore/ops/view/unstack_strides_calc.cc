@@ -52,10 +52,10 @@ TensorStorageInfoPtrList UnstackStridesCalc(const OldTensorInfoPtr old_tensor_in
   return res_storage_info;
 }
 OPS_API TensorStorageInfoPtrList UnstackCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  if (!inputs[kInputIndex0]->isa<tensor::BaseTensor>()) {
+  if (!inputs[kInputIndex0]->isa<tensor::Tensor>()) {
     return {};
   }
-  auto tensor = inputs[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  auto tensor = inputs[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(tensor);
   auto type = tensor->Dtype();
   (void)CheckAndConvertUtils::CheckTypeValid("input_x", type, common_valid_types_with_complex_and_bool, "Unstack");

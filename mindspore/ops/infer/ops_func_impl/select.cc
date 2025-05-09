@@ -62,9 +62,9 @@ abstract::BaseShapePtr SelectFuncImpl::InferShape(const PrimitivePtr &prim,
 }
 
 ShapeArray SelectFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &cond_tensor = input_values[kSelectCondIndex]->cast<tensor::BaseTensorPtr>();
-  const auto &x_tensor = input_values[kSelectXIndex]->cast<tensor::BaseTensorPtr>();
-  const auto &y_tensor = input_values[kSelectYIndex]->cast<tensor::BaseTensorPtr>();
+  const auto &cond_tensor = input_values[kSelectCondIndex]->cast<tensor::TensorPtr>();
+  const auto &x_tensor = input_values[kSelectXIndex]->cast<tensor::TensorPtr>();
+  const auto &y_tensor = input_values[kSelectYIndex]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(cond_tensor);
   MS_EXCEPTION_IF_NULL(x_tensor);
   MS_EXCEPTION_IF_NULL(y_tensor);
@@ -86,10 +86,10 @@ TypePtr SelectFuncImpl::InferType(const PrimitivePtr &prim, const std::vector<Ab
 }
 
 TypePtrList SelectFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kSelectXIndex]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kSelectXIndex]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   auto x_type = x_tensor->Dtype();
-  const auto &y_tensor = input_values[kSelectYIndex]->cast<tensor::BaseTensorPtr>();
+  const auto &y_tensor = input_values[kSelectYIndex]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(y_tensor);
   auto y_type = y_tensor->Dtype();
   auto promote_type = PromoteType(x_type, y_type, primitive->name());

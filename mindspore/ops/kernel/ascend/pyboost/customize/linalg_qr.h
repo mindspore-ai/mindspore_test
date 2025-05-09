@@ -27,8 +27,7 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void LinalgQrAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &A_tensor,
-                             const Int64ImmPtr &mode);
+void LinalgQrAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &A_tensor, const Int64ImmPtr &mode);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

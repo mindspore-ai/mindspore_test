@@ -56,14 +56,14 @@ TypePtr RollFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector
 }
 
 ShapeArray RollFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   auto x_shape_vector = x_tensor->shape();
   return {x_shape_vector};
 }
 
 TypePtrList RollFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   return {x_tensor->Dtype()};
 }

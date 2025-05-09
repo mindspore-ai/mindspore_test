@@ -26,12 +26,10 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr MoeTokenUnpermuteAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                       const BaseTensorPtr &permuted_tokens,
-                                                       const BaseTensorPtr &sorted_indices,
-                                                       const std::optional<BaseTensorPtr> &probs,
-                                                       const BoolImmPtr &padded_mode,
-                                                       const std::optional<ValueTuplePtr> &restore_shape) {
+tensor::TensorPtr MoeTokenUnpermuteAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                                   const TensorPtr &permuted_tokens, const TensorPtr &sorted_indices,
+                                                   const std::optional<TensorPtr> &probs, const BoolImmPtr &padded_mode,
+                                                   const std::optional<ValueTuplePtr> &restore_shape) {
   OpRunner::InferOpOutput(op, permuted_tokens, sorted_indices, probs, padded_mode, restore_shape);
 
   // Convert ValuePtr to c++ scalar

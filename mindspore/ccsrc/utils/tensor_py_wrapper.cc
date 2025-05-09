@@ -21,10 +21,10 @@ namespace mindspore {
 namespace tensor {
 
 TensorPyWrapper::TensorPyWrapper(const py::object &input) {
-  SetTensorWrapper(input);
+  SetTensorPyObj(input);
   PyObject *py_obj = input.ptr();
   PyType<TensorPy> *tensor = (PyType<TensorPy> *)py_obj;
-  SetBaseTensorWrapper(tensor->value.GetBaseTensor());
+  SetTensorWrapper(tensor->value.GetTensor());
 }
 
 TensorPyWrapperPtr ConvertToTensorPyWrapper(const py::handle &obj) {
@@ -51,8 +51,8 @@ py::object GetTensorPyFromValue(const ValuePtr &value) {
     return PackTensorToPyObject(tensor);
   }
 
-  if (value->isa<BaseTensor>()) {
-    auto tensor = value->cast<BaseTensorPtr>();
+  if (value->isa<Tensor>()) {
+    auto tensor = value->cast<TensorPtr>();
     return PackTensorToPyObject(tensor);
   }
   TensorPyWrapperPtr result = value->cast<TensorPyWrapperPtr>();
@@ -73,11 +73,11 @@ const MetaTensorPtr GetMetaTensorFromValue(const ValuePtr &value) {
     auto tensorPyWrapper = tensorpy->GetTensorWrapper();
     PyObject *py_obj = tensorPyWrapper.ptr();
     PyType<TensorPy> *tensor = reinterpret_cast<PyType<TensorPy> *>(py_obj);
-    return (tensor->value.GetBaseTensor())->cast<MetaTensorPtr>();
+    return (tensor->value.GetTensor())->cast<MetaTensorPtr>();
   }
 
-  if (value->isa<BaseTensor>()) {
-    auto tensor = value->cast<BaseTensorPtr>();
+  if (value->isa<Tensor>()) {
+    auto tensor = value->cast<TensorPtr>();
     return tensor->cast<MetaTensorPtr>();
   }
 

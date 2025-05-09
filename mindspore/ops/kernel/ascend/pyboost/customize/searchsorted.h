@@ -28,10 +28,9 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr SearchSortedAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                  const BaseTensorPtr &sorted_sequence, const BaseTensorPtr &values,
-                                                  const std::optional<BaseTensorPtr> &sorter, const Int64ImmPtr &dtype,
-                                                  const BoolImmPtr &right);
+tensor::TensorPtr SearchSortedAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &sorted_sequence,
+                                              const TensorPtr &values, const std::optional<TensorPtr> &sorter,
+                                              const Int64ImmPtr &dtype, const BoolImmPtr &right);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

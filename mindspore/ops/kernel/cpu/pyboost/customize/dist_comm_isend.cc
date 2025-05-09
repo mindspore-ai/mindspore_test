@@ -31,7 +31,7 @@ using device::cpu::kMCCLGlobalGroupName;
 using device::cpu::MsCollectiveCommLib;
 #endif
 namespace pyboost {
-void DistCommIsendCPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
+void DistCommIsendCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
                                const Int64ImmPtr &dst, const StringImmPtr &group, const Int64ImmPtr &tag) {
 #if defined(__linux__) && defined(WITH_BACKEND)
   MS_LOG(DEBUG) << "Call start";

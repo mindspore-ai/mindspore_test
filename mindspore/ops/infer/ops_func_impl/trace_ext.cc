@@ -81,7 +81,7 @@ TypePtr TraceExtFuncImpl::InferType(const PrimitivePtr &primitive,
 }
 
 ShapeArray TraceExtFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &input = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &input = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input);
   const size_t kTraceInputRank = 2;
   if (input->shape().size() != kTraceInputRank) {
@@ -92,7 +92,7 @@ ShapeArray TraceExtFuncImpl::InferShape(const PrimitivePtr &primitive, const Val
 }
 
 TypePtrList TraceExtFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &input = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &input = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input);
   const auto &input_type = input->Dtype();
   const auto &input_type_id = input->Dtype()->type_id();

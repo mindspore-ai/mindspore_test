@@ -39,7 +39,7 @@ inline bool ensure_obj_tuple(py::object *obj) {
   return true;
 }
 
-using BaseTensorPtrSet = std::unordered_set<tensor::BaseTensorPtr>;
+using TensorPtrSet = std::unordered_set<tensor::TensorPtr>;
 
 struct FunctionContext {
   // The input of apply function
@@ -61,13 +61,13 @@ struct FunctionContext {
   std::vector<InputType> input_value_grad_type;
 
   // Set of input tensors
-  BaseTensorPtrSet input_base_tensors;
+  TensorPtrSet input_base_tensors;
   // Set of dirty tensors
-  BaseTensorPtrSet dirty_tensors;
+  TensorPtrSet dirty_tensors;
   // Set of non_diff tensors
-  BaseTensorPtrSet non_diff_tensors;
+  TensorPtrSet non_diff_tensors;
   // Set of to_save tensors
-  BaseTensorPtrSet to_save_tensors;
+  TensorPtrSet to_save_tensors;
 
   ~FunctionContext() {
     py::gil_scoped_acquire gil_acquire;

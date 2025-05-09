@@ -20,7 +20,7 @@
 
 namespace mindspore::ops {
 constexpr size_t kAsStridedInputsNum = 4;
-TensorStorageInfoPtrList AsStridedCalcImpl(const PrimitivePtr &prim, const tensor::BaseTensorPtr &input,
+TensorStorageInfoPtrList AsStridedCalcImpl(const PrimitivePtr &prim, const tensor::TensorPtr &input,
                                            const std::vector<int64_t> &size, const std::vector<int64_t> &stride,
                                            int64_t offset) {
   MS_EXCEPTION_IF_NULL(input);
@@ -35,7 +35,7 @@ TensorStorageInfoPtrList AsStridedCalc(const PrimitivePtr &prim, const std::vect
   if (inputs.size() != kAsStridedInputsNum) {
     return {};
   }
-  auto input_tensor = inputs[0]->cast<tensor::BaseTensorPtr>();
+  auto input_tensor = inputs[0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   auto shape = GetValue<std::vector<int64_t>>(inputs[1]);
   if (std::any_of(shape.begin(), shape.end(), [](const int &shape_i) { return shape_i < -1; })) {

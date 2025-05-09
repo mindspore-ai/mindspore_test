@@ -28,14 +28,14 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void DistCommGatherAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
+void DistCommGatherAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
                                    const ValueTuplePtr &gather_list, const Int64ImmPtr &rank_size,
                                    const Int64ImmPtr &dst, const Int64ImmPtr &rank_id, const StringImmPtr &group) {
   OpRunner::InferOpOutput(op, input_tensor, gather_list, rank_size, dst, rank_id, group);
   auto dst_rank = GetValue<int64_t>(dst);
   auto local_rank = GetValue<int64_t>(rank_id);
   auto rank_size_imm = GetValue<int64_t>(rank_size);
-  std::vector<BaseTensorPtr> gather_tensors = ConvertValueTupleToVector<BaseTensorPtr>(gather_list);
+  std::vector<TensorPtr> gather_tensors = ConvertValueTupleToVector<TensorPtr>(gather_list);
   if (local_rank == dst_rank) {
     PyBoostUtils::PrepareOpInputs(op->device_context(), kDefaultStreamIndex, input_tensor, gather_tensors);
   } else {

@@ -28,7 +28,7 @@ namespace kernel {
 namespace pyboost {
 void DistCommBarrierAscendCustomize(const std::shared_ptr<OpRunner> &op, const StringImmPtr &group) {
   auto op_type_enum = HCCL_REDUCE_SUM;
-  BaseTensorPtr input_tensor = std::make_shared<tensor::Tensor>(0.0);
+  TensorPtr input_tensor = std::make_shared<tensor::Tensor>(0.0);
   PyBoostUtils::PrepareOpInputs(op->device_context(), kDefaultStreamIndex, input_tensor);
   op->set_outputs({input_tensor});
   auto run_func = [op, input_tensor, op_type_enum, group]() {

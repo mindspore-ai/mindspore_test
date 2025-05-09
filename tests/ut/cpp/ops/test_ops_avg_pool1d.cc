@@ -18,7 +18,7 @@
 #include <memory>
 #include "common/common_test.h"
 #include "ir/anf.h"
-#include "ir/base_tensor.h"
+#include "ir/tensor.h"
 #include "ir/dtype/number.h"
 #include "infer/ops_func_impl/avg_pool1d.h"
 #include "ir/dtype/type.h"

@@ -32,7 +32,7 @@ TypePtr MinDimFuncImpl::InferType(const PrimitivePtr &primitive, const std::vect
 }
 
 TypePtrList MinDimFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   const auto &input_x_type = x_tensor->Dtype();
   TypePtrList type_ptr_list{input_x_type, kInt64};

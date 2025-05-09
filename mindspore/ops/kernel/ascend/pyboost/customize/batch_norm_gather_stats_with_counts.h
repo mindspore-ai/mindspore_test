@@ -27,11 +27,11 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr> BatchNormGatherStatsWithCountsAscendCustomize(
-  const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor, const BaseTensorPtr &mean_tensor,
-  const BaseTensorPtr &invstd_tensor, const std::optional<BaseTensorPtr> &running_mean_tensor,
-  const std::optional<BaseTensorPtr> &running_var_tensor, const FP32ImmPtr &momentum, const FP32ImmPtr &eps,
-  const std::optional<BaseTensorPtr> &counts_tensor);
+std::tuple<tensor::TensorPtr, tensor::TensorPtr> BatchNormGatherStatsWithCountsAscendCustomize(
+  const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor, const TensorPtr &mean_tensor,
+  const TensorPtr &invstd_tensor, const std::optional<TensorPtr> &running_mean_tensor,
+  const std::optional<TensorPtr> &running_var_tensor, const FP32ImmPtr &momentum, const FP32ImmPtr &eps,
+  const std::optional<TensorPtr> &counts_tensor);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

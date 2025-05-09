@@ -70,7 +70,7 @@ TEST_P(TestRemainderTensorScalarSimpleInfer, simple_infer) {
   auto prim = std::make_shared<Primitive>("RemainderTensorScalar");
   ASSERT_NE(prim, nullptr);
 
-  auto x = std::make_shared<tensor::BaseTensor>(param.x_type->type_id(), param.x_shape);
+  auto x = std::make_shared<tensor::Tensor>(param.x_type->type_id(), param.x_shape);
   ASSERT_NE(x, nullptr);
   ValuePtrList input_values;
   input_values.push_back(std::move(x));

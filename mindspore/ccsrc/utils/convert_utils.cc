@@ -445,8 +445,8 @@ KernelTensorValuePtr ConvertValueToKernelTensorValue(const ValuePtr &value) {
   } else if (value->isa<ValueSequence>()) {
     auto value_seq = value->cast<ValueSequencePtr>();
     return ConvertSequenceToKernelTensorValue(value_seq);
-  } else if (value->isa<tensor::BaseTensor>()) {
-    auto tensor_ptr = value->cast<tensor::BaseTensorPtr>();
+  } else if (value->isa<tensor::Tensor>()) {
+    auto tensor_ptr = value->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(tensor_ptr);
     return std::make_shared<KernelTensorValue>(tensor_ptr->data_ptr(), tensor_ptr->type());
   } else if (value->isa<StringImm>()) {
@@ -556,11 +556,11 @@ ValuePtr CreateValueFromTensor(const tensor::TensorPtr &tensor) {
   return ret;
 }
 
-void TensorValueToTensor(const ValuePtr &value, std::vector<tensor::BaseTensorPtr> *tensors) {
+void TensorValueToTensor(const ValuePtr &value, std::vector<tensor::TensorPtr> *tensors) {
   MS_EXCEPTION_IF_NULL(value);
   MS_EXCEPTION_IF_NULL(tensors);
-  if (value->isa<tensor::BaseTensor>()) {
-    auto tensor = value->cast<tensor::BaseTensorPtr>();
+  if (value->isa<tensor::Tensor>()) {
+    auto tensor = value->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(tensor);
     tensors->emplace_back(tensor);
   } else if (value->isa<Scalar>()) {

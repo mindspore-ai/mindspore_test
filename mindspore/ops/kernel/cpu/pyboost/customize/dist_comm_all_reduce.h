@@ -28,7 +28,7 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void DistCommAllReduceCPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
+void DistCommAllReduceCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
                                    const StringImmPtr &op_type, const StringImmPtr &group);
 }  // namespace pyboost
 }  // namespace kernel

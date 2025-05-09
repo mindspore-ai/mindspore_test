@@ -83,11 +83,11 @@ TypePtr XlogyFuncImpl::InferType(const PrimitivePtr &primitive, const std::vecto
 }
 
 ShapeArray XlogyFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   auto x_shape_vector = x_tensor->shape();
 
-  const auto &y_tensor = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &y_tensor = input_values[kInputIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(y_tensor);
   auto y_shape_vector = y_tensor->shape();
 
@@ -96,10 +96,10 @@ ShapeArray XlogyFuncImpl::InferShape(const PrimitivePtr &primitive, const ValueP
 }
 
 TypePtrList XlogyFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   auto x1_type = x_tensor->Dtype();
-  const auto &y_tensor = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &y_tensor = input_values[kInputIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(y_tensor);
   auto x2_type = y_tensor->Dtype();
   auto promote_type = PromoteType(x1_type, x2_type, primitive->name());

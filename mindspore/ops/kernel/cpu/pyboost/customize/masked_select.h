@@ -27,8 +27,8 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr MaskedSelectCPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                               const BaseTensorPtr &mask_tensor);
+tensor::TensorPtr MaskedSelectCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                           const TensorPtr &mask_tensor);
 
 }  // namespace pyboost
 }  // namespace kernel

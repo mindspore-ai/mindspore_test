@@ -27,12 +27,12 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr AvgPool3DGradExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &grad,
-                                                      const BaseTensorPtr &input, const ValueTuplePtr &kernel_size,
-                                                      const std::optional<mindspore::ValueTuplePtr> &stride,
-                                                      const ValueTuplePtr &padding, const BoolImmPtr &ceil_mode,
-                                                      const BoolImmPtr &count_include_pad,
-                                                      const std::optional<Int64ImmPtr> &divisor_override);
+tensor::TensorPtr AvgPool3DGradExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &grad,
+                                                  const TensorPtr &input, const ValueTuplePtr &kernel_size,
+                                                  const std::optional<mindspore::ValueTuplePtr> &stride,
+                                                  const ValueTuplePtr &padding, const BoolImmPtr &ceil_mode,
+                                                  const BoolImmPtr &count_include_pad,
+                                                  const std::optional<Int64ImmPtr> &divisor_override);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

@@ -24,8 +24,9 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr> AdaptiveMaxPool1DAscendCustomize(
-  const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_x_tensor, const ValueTuplePtr &output_size) {
+std::tuple<tensor::TensorPtr, tensor::TensorPtr> AdaptiveMaxPool1DAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                                                                  const TensorPtr &input_x_tensor,
+                                                                                  const ValueTuplePtr &output_size) {
   OpRunner::InferOpOutput(op, input_x_tensor, output_size);
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_x_tensor);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
@@ -49,8 +50,8 @@ std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr> AdaptiveMaxPool1DAscend
   // call AdaptiveMaxPool2d
   auto adaptive_max_pool2d_op =
     CREATE_PYBOOST_OP(AdaptiveMaxPool2D, op->device_context()->device_context_key_.device_name_);
-  tensor::BaseTensorPtr output_adaptive_max_pool2d_tensor;
-  tensor::BaseTensorPtr output_adaptive_max_pool2d_indices;
+  tensor::TensorPtr output_adaptive_max_pool2d_tensor;
+  tensor::TensorPtr output_adaptive_max_pool2d_indices;
   std::tie(output_adaptive_max_pool2d_tensor, output_adaptive_max_pool2d_indices) =
     adaptive_max_pool2d_op->Call(input_x_imm, output_size_2d);
   // squeeze shape

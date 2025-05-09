@@ -39,7 +39,7 @@ TypePtr RemainderTensorScalarFuncImpl::InferType(const PrimitivePtr &primitive,
 // simple infer
 TypePtrList RemainderTensorScalarFuncImpl::InferType(const PrimitivePtr &primitive,
                                                      const ValuePtrList &input_values) const {
-  const auto &input_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &input_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   const auto &other_value = input_values[kInputIndex1];
   MS_EXCEPTION_IF_NULL(input_tensor);
   MS_EXCEPTION_IF_NULL(other_value);
@@ -50,7 +50,7 @@ TypePtrList RemainderTensorScalarFuncImpl::InferType(const PrimitivePtr &primiti
 
 ShapeArray RemainderTensorScalarFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                      const ValuePtrList &input_values) const {
-  const auto &input_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &input_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   return {input_tensor->shape()};
 }

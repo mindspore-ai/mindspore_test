@@ -29,9 +29,8 @@ namespace pyboost {
 namespace {
 constexpr int kShape2dDims = 2;
 }
-tensor::BaseTensorPtr AdaptiveAvgPool1DAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                       const BaseTensorPtr &input_x_tensor,
-                                                       const ValueTuplePtr &output_size) {
+tensor::TensorPtr AdaptiveAvgPool1DAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_x_tensor,
+                                                   const ValueTuplePtr &output_size) {
   OpRunner::InferOpOutput(op, input_x_tensor, output_size);
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_x_tensor);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());

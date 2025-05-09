@@ -70,7 +70,7 @@ TensorStorageInfoPtrList SliceExtStridesCalc(const OldTensorInfoPtr old_tensor_i
 }
 
 TensorStorageInfoPtrList SliceExtCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  auto input_tensor = inputs[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  auto input_tensor = inputs[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
 
   auto old_tensor_info = GetOldTensorInfo(input_tensor);

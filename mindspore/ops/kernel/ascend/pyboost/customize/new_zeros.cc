@@ -20,7 +20,7 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void NewZerosAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
+void NewZerosAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
                              const ValueTuplePtr &size, const std::optional<Int64ImmPtr> &dtype) {
   MS_LOG(DEBUG) << "NewZeros Call start";
 

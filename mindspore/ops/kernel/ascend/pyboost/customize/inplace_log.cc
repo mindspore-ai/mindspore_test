@@ -26,7 +26,7 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr InplaceLogAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input) {
+tensor::TensorPtr InplaceLogAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input) {
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input);
   op->set_outputs({input});
   // Async

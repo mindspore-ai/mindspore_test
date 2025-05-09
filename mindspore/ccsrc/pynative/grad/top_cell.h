@@ -179,7 +179,7 @@ class TopCellInfo {
   const std::vector<std::string> &output_ids() const { return output_ids_; }
   void set_outputs_ids(std::vector<std::string> output_ids) { output_ids_ = std::move(output_ids); }
   // Check whether the tensor is top cell output.
-  bool IsOutputTensor(const tensor::BaseTensorPtr &tensor) const;
+  bool IsOutputTensor(const tensor::TensorPtr &tensor) const;
 
  private:
   void SetMultipleOutputToGraphInfoMap(const string &id, const AnfNodePtr &node) const;
@@ -214,7 +214,7 @@ class TopCellInfo {
   // If net just has run forward by set_grad, which does not do gradient calculation, weight auto grad meta should be
   // save
   bool need_resume_meta_grad_{false};
-  std::map<tensor::BaseTensorPtr, autograd::AutoGradMetaDataPtr> param_grad_info_;
+  std::map<tensor::TensorPtr, autograd::AutoGradMetaDataPtr> param_grad_info_;
   // Check is the top cell is first step.
   bool is_first_step_{false};
   // Running by actor or by func grad

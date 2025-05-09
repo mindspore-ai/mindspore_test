@@ -76,7 +76,7 @@ BaseShapePtr ArgMaxExtFuncImpl::InferShape(const PrimitivePtr &primitive,
 }
 
 ShapeArray ArgMaxExtFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   const auto &x_shape_vec = x_tensor->shape();
   if (IsShapeNone(x_shape_vec)) {

@@ -102,15 +102,15 @@ TypePtr LayerNormExtFuncImpl::InferType(const PrimitivePtr &primitive,
 }
 
 TypePtrList LayerNormExtFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   return {x_tensor->Dtype(), kFloat32, kFloat32};
 }
 
 ShapeArray LayerNormExtFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
-  const auto &gamma_tensor = input_values[kInputIndex2]->cast<tensor::BaseTensorPtr>();
-  const auto &beta_tensor = input_values[kInputIndex3]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
+  const auto &gamma_tensor = input_values[kInputIndex2]->cast<tensor::TensorPtr>();
+  const auto &beta_tensor = input_values[kInputIndex3]->cast<tensor::TensorPtr>();
   const auto &normalized_shape_opt = GetArrayValue<int64_t>(input_values[kInputIndex1]);
   if (!normalized_shape_opt.has_value() || normalized_shape_opt.value().HasUnknownValue()) {
     ShapeVector dynamic_rank_shape{abstract::TensorShape::kShapeRankAny};

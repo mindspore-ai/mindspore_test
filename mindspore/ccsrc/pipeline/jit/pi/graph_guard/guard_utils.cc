@@ -3209,7 +3209,7 @@ ValuePtr Cast(S in, const std::pair<TypeId, bool> &dst_type) {
 ValuePtr ScalarToDstDtypeValue(const ValuePtr &src_value, const std::pair<TypeId, bool> &dst_type) {
   MS_EXCEPTION_IF_NULL(src_value);
   // Tensor not do scalar cast
-  if (src_value->isa<tensor::BaseTensor>()) {
+  if (src_value->isa<tensor::Tensor>()) {
     return nullptr;
   }
   if (src_value->isa<Int64Imm>()) {
@@ -3240,9 +3240,9 @@ ValuePtr ScalarToDstDtypeValue(const ValuePtr &src_value, const std::pair<TypeId
   return nullptr;
 }
 
-tensor::BaseTensorPtr TensorToDstDtypeValue(const ValuePtr &src_value, const TypeId &dst_type_id) {
+tensor::TensorPtr TensorToDstDtypeValue(const ValuePtr &src_value, const TypeId &dst_type_id) {
   MS_EXCEPTION_IF_NULL(src_value);
-  auto src_tensor = src_value->cast<tensor::BaseTensorPtr>();
+  auto src_tensor = src_value->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(src_tensor);
   (void)src_tensor->set_data_type(dst_type_id);
   return src_tensor;

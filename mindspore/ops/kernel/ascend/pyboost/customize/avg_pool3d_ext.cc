@@ -23,12 +23,12 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr AvgPool3DExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input,
-                                                  const ValueTuplePtr &kernel_size,
-                                                  const std::optional<mindspore::ValueTuplePtr> &stride,
-                                                  const ValueTuplePtr &padding, const BoolImmPtr &ceil_mode,
-                                                  const BoolImmPtr &count_include_pad,
-                                                  const std::optional<Int64ImmPtr> &divisor_override) {
+tensor::TensorPtr AvgPool3DExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input,
+                                              const ValueTuplePtr &kernel_size,
+                                              const std::optional<mindspore::ValueTuplePtr> &stride,
+                                              const ValueTuplePtr &padding, const BoolImmPtr &ceil_mode,
+                                              const BoolImmPtr &count_include_pad,
+                                              const std::optional<Int64ImmPtr> &divisor_override) {
   MS_LOG(INFO) << "AvgPool3DExtAscendCustomize start";
   OpRunner::InferOpOutput(op, input, kernel_size, stride, padding, ceil_mode, count_include_pad, divisor_override);
 

@@ -26,11 +26,9 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr KVCacheScatterUpdateAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                          const BaseTensorPtr &var_tensor,
-                                                          const BaseTensorPtr &indices_tensor,
-                                                          const BaseTensorPtr &updates_tensor, const Int64ImmPtr &axis,
-                                                          const Int64ImmPtr &reduce);
+tensor::TensorPtr KVCacheScatterUpdateAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &var_tensor,
+                                                      const TensorPtr &indices_tensor, const TensorPtr &updates_tensor,
+                                                      const Int64ImmPtr &axis, const Int64ImmPtr &reduce);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

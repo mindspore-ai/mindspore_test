@@ -26,11 +26,11 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 
-tensor::BaseTensorPtr CopyCustomizeCall(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor) {
+tensor::TensorPtr CopyCustomizeCall(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor) {
   MS_LOG(DEBUG) << "Call start";
   MS_EXCEPTION_IF_NULL(input_tensor);
 
-  std::vector<tensor::BaseTensorPtr> outputs;
+  std::vector<tensor::TensorPtr> outputs;
   PyBoostUtils::CreateOutputTensor(input_tensor->data_type(), input_tensor->shape(), &outputs);
   op->set_outputs(outputs);
 
@@ -80,8 +80,7 @@ tensor::BaseTensorPtr CopyCustomizeCall(const std::shared_ptr<OpRunner> &op, con
   return op->output(0);
 }
 
-tensor::BaseTensorPtr ContiguousTensorOpProcess(const std::shared_ptr<OpRunner> &op,
-                                                const BaseTensorPtr &input_tensor) {
+tensor::TensorPtr ContiguousTensorOpProcess(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor) {
   // If the tensor is continuous, return the cloned tensor and set the op information. If the tensor is not continuous,
   // return nullptr and do nothing.
   MS_EXCEPTION_IF_NULL(input_tensor);
@@ -96,10 +95,9 @@ tensor::BaseTensorPtr ContiguousTensorOpProcess(const std::shared_ptr<OpRunner> 
   return nullptr;
 }
 
-tensor::BaseTensorPtr ClampTensorCustomizeCall(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &x_tensor,
-                                               const std::optional<BaseTensorPtr> &min,
-                                               const std::optional<BaseTensorPtr> &max,
-                                               const std::string &device_target) {
+tensor::TensorPtr ClampTensorCustomizeCall(const std::shared_ptr<OpRunner> &op, const TensorPtr &x_tensor,
+                                           const std::optional<TensorPtr> &min, const std::optional<TensorPtr> &max,
+                                           const std::string &device_target) {
   MS_LOG(DEBUG) << "Call ClampTensor start";
   if (!min.has_value() && !max.has_value()) {
     MS_EXCEPTION(ValueError) << "For Clamp, at least one of 'min' or 'max' must not be None.";
@@ -107,7 +105,7 @@ tensor::BaseTensorPtr ClampTensorCustomizeCall(const std::shared_ptr<OpRunner> &
   auto device_context = op->device_context();
   OpPtr final_node = nullptr;
 
-  BaseTensorPtr output = x_tensor;
+  TensorPtr output = x_tensor;
   if (min.has_value()) {
     auto min_tensor = PyBoostUtils::CastTensor(min.value(), x_tensor->Dtype()->type_id(), device_target);
     const auto &maximum = CREATE_PYBOOST_OP(Maximum, device_context->device_context_key_.device_name_);
@@ -123,16 +121,16 @@ tensor::BaseTensorPtr ClampTensorCustomizeCall(const std::shared_ptr<OpRunner> &
   return output;
 }
 
-tensor::BaseTensorPtr ClampScalarCustomizeCall(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &x_tensor,
-                                               const std::optional<ScalarPtr> &min, const std::optional<ScalarPtr> &max,
-                                               const std::string &device_target) {
+tensor::TensorPtr ClampScalarCustomizeCall(const std::shared_ptr<OpRunner> &op, const TensorPtr &x_tensor,
+                                           const std::optional<ScalarPtr> &min, const std::optional<ScalarPtr> &max,
+                                           const std::string &device_target) {
   MS_LOG(DEBUG) << "Call ClampScalar start";
   if (!min.has_value() && !max.has_value()) {
     MS_EXCEPTION(ValueError) << "For Clamp, at least one of 'min' or 'max' must not be None.";
   }
   auto device_context = op->device_context();
 
-  BaseTensorPtr output = x_tensor;
+  TensorPtr output = x_tensor;
   if (min.has_value()) {
     auto min_tensor = PyBoostUtils::ScalarToTensor(min.value());
     min_tensor = PyBoostUtils::CastTensor(min_tensor, x_tensor->Dtype()->type_id(), device_target);
@@ -151,7 +149,7 @@ tensor::BaseTensorPtr ClampScalarCustomizeCall(const std::shared_ptr<OpRunner> &
   return output;
 }
 
-void CommonCommFunc(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
+void CommonCommFunc(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
                     const std::function<void(void)> &pre_func, std::function<void()> launch_func) {
   MS_EXCEPTION_IF_NULL(op);
   MS_EXCEPTION_IF_NULL(input_tensor);

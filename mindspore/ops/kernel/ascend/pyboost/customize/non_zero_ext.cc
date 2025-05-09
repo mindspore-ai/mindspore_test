@@ -30,13 +30,13 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-std::vector<tensor::BaseTensorPtr> NonZeroExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                             const BaseTensorPtr &input_tensor) {
+std::vector<tensor::TensorPtr> NonZeroExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                                         const TensorPtr &input_tensor) {
   MS_LOG(DEBUG) << "NonZeroExt call start";
   MS_EXCEPTION_IF_NULL(input_tensor);
   auto nonzero_op = CREATE_PYBOOST_OP(NonZero, kAscendDevice);
   auto unstack_op = CREATE_PYBOOST_OP(UnstackExtView, kAscendDevice);
-  BaseTensorPtr output_tensor = nullptr;
+  TensorPtr output_tensor = nullptr;
   if (input_tensor->shape().size() == kDim0) {
     std::vector<ValuePtr> unsqueeze_shape;
     unsqueeze_shape.emplace_back(std::make_shared<Int64Imm>(kIndex1));

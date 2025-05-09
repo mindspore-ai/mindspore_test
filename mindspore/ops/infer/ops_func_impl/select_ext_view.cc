@@ -58,7 +58,7 @@ BaseShapePtr SelectExtViewFuncImpl::InferShape(const PrimitivePtr &prim,
 
 ShapeArray SelectExtViewFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
   auto prim_name = primitive->name();
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   auto input_x_shape = x_tensor->shape();
   (void)CheckAndConvertUtils::CheckInteger("rank of input_x", SizeToLong(input_x_shape.size()), kGreaterThan, 0,
                                            prim_name);
@@ -85,7 +85,7 @@ TypePtr SelectExtViewFuncImpl::InferType(const PrimitivePtr &prim,
 }
 
 TypePtrList SelectExtViewFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   return {x_tensor->Dtype()};
 }

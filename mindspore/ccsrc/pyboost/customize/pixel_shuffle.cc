@@ -54,8 +54,8 @@ void CheckPixelShuffleShapes(const std::vector<int64_t> &input_shape, int64_t up
   }
 }
 }  // namespace
-tensor::BaseTensorPtr PixelShuffleCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input,
-                                            const Int64ImmPtr &upscale_factor_imm) {
+tensor::TensorPtr PixelShuffleCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input,
+                                        const Int64ImmPtr &upscale_factor_imm) {
   const auto &input_shape = input->shape();
   const auto input_rank = input_shape.size();
   auto upscale_factor = GetValue<int64_t>(upscale_factor_imm);

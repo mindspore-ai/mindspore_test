@@ -312,7 +312,7 @@ class COMMON_EXPORT AnfAlgo {
   static bool CheckAbsSparseTensor(const abstract::AbstractBasePtr &abs);
   static TypeId GetSparseTypeIdAt(const AnfNodePtr &node, size_t idx);
 
-  static std::string GetTensorValueString(const tensor::BaseTensorPtr &tensor);
+  static std::string GetTensorValueString(const tensor::TensorPtr &tensor);
   static abstract::AbstractBasePtr FrontendGetNodeAbstractByIndex(const AnfNodePtr &node, size_t index);
 
   static bool IsNodeMutableScalar(const AnfNodePtr &node);

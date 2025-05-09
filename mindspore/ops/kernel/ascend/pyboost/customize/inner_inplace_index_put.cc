@@ -25,18 +25,17 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr InnerInplaceIndexPutAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                          const BaseTensorPtr &input_tensor,
-                                                          const ValueTuplePtr &indices_tensor_list,
-                                                          const BaseTensorPtr &values_tensor,
-                                                          const BoolImmPtr &accumulate) {
+tensor::TensorPtr InnerInplaceIndexPutAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                                      const TensorPtr &input_tensor,
+                                                      const ValueTuplePtr &indices_tensor_list,
+                                                      const TensorPtr &values_tensor, const BoolImmPtr &accumulate) {
   // Inplace op does not require infer, but for check broadcasts of indexes, inputs and value.
   OpRunner::InferOpOutput(op, input_tensor, indices_tensor_list, values_tensor, accumulate);
   op->set_outputs({input_tensor});
 
   const auto &input_shape = input_tensor->shape();
   const auto &values_shape = values_tensor->shape();
-  std::vector<BaseTensorPtr> indices_tensor_vector = ConvertValueTupleToVector<BaseTensorPtr>(indices_tensor_list);
+  std::vector<TensorPtr> indices_tensor_vector = ConvertValueTupleToVector<TensorPtr>(indices_tensor_list);
   auto input_numel =
     std::accumulate(input_shape.begin(), input_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
   auto values_numel =

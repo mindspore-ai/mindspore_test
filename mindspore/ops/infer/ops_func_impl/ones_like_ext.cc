@@ -42,7 +42,7 @@ TypePtr OnesLikeExtFuncImpl::InferType(const PrimitivePtr &primitive,
 
 TypePtrList OnesLikeExtFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
   auto prim_name = primitive->name();
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   auto dtype = input_values[kIndex1];
   if (dtype->isa<None>()) {

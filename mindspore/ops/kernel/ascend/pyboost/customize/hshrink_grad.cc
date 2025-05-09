@@ -26,9 +26,8 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr HShrinkGradAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                 const BaseTensorPtr &gradients_tensor,
-                                                 const BaseTensorPtr &features_tensor, const ScalarPtr &lambd) {
+tensor::TensorPtr HShrinkGradAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &gradients_tensor,
+                                             const TensorPtr &features_tensor, const ScalarPtr &lambd) {
   MS_LOG(DEBUG) << "HShrinkGrad Ascend start";
   OpRunner::InferOpOutput(op, gradients_tensor, features_tensor, lambd);
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), gradients_tensor, features_tensor);

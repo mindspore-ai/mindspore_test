@@ -65,8 +65,8 @@ ValuePtr ShallowCopyValue(const FrontendOpRunInfoPtr &op_run_info, const ValuePt
   }
   auto new_shape = tensor_abs->BuildShape()->cast<abstract::ShapePtr>();
   MS_EXCEPTION_IF_NULL(new_shape);
-  if (value->isa<mindspore::tensor::BaseTensor>()) {
-    auto tensor_value = value->cast<mindspore::tensor::BaseTensorPtr>();
+  if (value->isa<mindspore::tensor::Tensor>()) {
+    auto tensor_value = value->cast<mindspore::tensor::TensorPtr>();
     return std::make_shared<mindspore::tensor::Tensor>(tensor_value->data_type(), new_shape->shape(),
                                                        tensor_value->data_c(), tensor_value->Size());
   }
@@ -81,7 +81,7 @@ ValuePtr ShallowCopyValue(const FrontendOpRunInfoPtr &op_run_info, const ValuePt
 }
 
 #ifndef ENABLE_TEST
-void CreateDeviceAddressForTensor(const FrontendOpRunInfoPtr &op_run_info, const tensor::BaseTensorPtr &tensor) {
+void CreateDeviceAddressForTensor(const FrontendOpRunInfoPtr &op_run_info, const tensor::TensorPtr &tensor) {
   MS_EXCEPTION_IF_NULL(op_run_info);
   MS_EXCEPTION_IF_NULL(tensor);
   if (tensor->device_address() != nullptr) {
@@ -116,8 +116,8 @@ void CreateDeviceAddressForTensor(const FrontendOpRunInfoPtr &op_run_info, const
 ValuePtr CopyTensorValueWithNewId(const FrontendOpRunInfoPtr &op_run_info, const ValuePtr &v) {
   MS_EXCEPTION_IF_NULL(op_run_info);
   MS_EXCEPTION_IF_NULL(v);
-  if (v->isa<tensor::BaseTensor>()) {
-    auto tensor = v->cast<tensor::BaseTensorPtr>();
+  if (v->isa<tensor::Tensor>()) {
+    auto tensor = v->cast<tensor::TensorPtr>();
 #ifndef ENABLE_TEST
     // Preallocate device memory for the tensor to prevent the device memory of the same tensor
     // from being allocated multiple times
@@ -208,7 +208,7 @@ bool IsDynamicInputs(const FrontendOpRunInfoPtr &op_run_info) {
     if (tuple_inputs.empty()) {
       continue;
     }
-    if (tuple_inputs[0]->isa<tensor::BaseTensor>() || tuple_inputs[0]->isa<stub::TensorNode>()) {
+    if (tuple_inputs[0]->isa<tensor::Tensor>() || tuple_inputs[0]->isa<stub::TensorNode>()) {
       return true;
     }
   }
@@ -322,7 +322,7 @@ bool GetMixprecisionTypeFromStrategy(const FrontendOpRunInfoPtr &op_run_info) {
   return true;
 }
 
-tensor::BaseTensorPtr TensorContiguous(const tensor::BaseTensorPtr &tensor) {
+tensor::TensorPtr TensorContiguous(const tensor::TensorPtr &tensor) {
   if (tensor == nullptr || tensor->storage_info() == nullptr) {
     return tensor;
   }
@@ -341,10 +341,10 @@ void ContiguousInputByRunInfo(const BackendOpRunInfoPtr &op_run_info) {
   auto &inputs = op_run_info->base_op_run_info.expanded_input_values;
   for (size_t i = 0; i < inputs.size(); ++i) {
     const auto &input = inputs[i];
-    if (!input->isa<tensor::BaseTensor>()) {
+    if (!input->isa<tensor::Tensor>()) {
       continue;
     }
-    auto tensor = input->cast<tensor::BaseTensorPtr>();
+    auto tensor = input->cast<tensor::TensorPtr>();
     if (tensor->storage_info() == nullptr) {
       continue;
     }
@@ -452,8 +452,7 @@ void ForwardExecutor::ForwardRunViewKernelTask(const FrontendOpRunInfoPtr &op_ru
 }
 
 void ForwardExecutor::CreateViewOpOutputs(const FrontendOpRunInfoPtr &op_run_info,
-                                          const tensor::BaseTensorPtr &view_input_tensor,
-                                          runtime::KernelTaskType task_type,
+                                          const tensor::TensorPtr &view_input_tensor, runtime::KernelTaskType task_type,
                                           const TensorStorageInfoPtrList &storage_infos, bool is_tuple_output) {
   const bool is_single_tensor_output = storage_infos.size() == 1 && !is_tuple_output;
   // Generate output abs by storage_info.
@@ -505,11 +504,11 @@ bool ForwardExecutor::ProcessViewOp(const FrontendOpRunInfoPtr &op_run_info,
   // Only split and chunk has mul outputs, and input tensor is first input.
   auto view_value = op_run_info->op_grad_info->input_value[0];
   MS_EXCEPTION_IF_NULL(view_value);
-  if (!view_value->isa<tensor::BaseTensor>()) {
+  if (!view_value->isa<tensor::Tensor>()) {
     MS_EXCEPTION(TypeError) << "For primitive[" << op_run_info->base_op_run_info.op_name
                             << "],  the input[0] should be Tensor, but got:" << view_value->ToString();
   }
-  auto view_input_tensor = view_value->cast<tensor::BaseTensorPtr>();
+  auto view_input_tensor = view_value->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(view_input_tensor);
 
   auto storage_infos = strides_calc_func(op_run_info->op_grad_info->op_prim, op_run_info->op_grad_info->input_value);
@@ -932,7 +931,7 @@ ValuePtr ForwardExecutor::RunOpInMs(const FrontendOpRunInfoPtr &op_run_info,
   return RunOpInMsInner(op_run_info, backend_op_run_info);
 }
 
-void ForwardExecutor::CreateInputAddressForViewOp(const tensor::BaseTensorPtr &input_tensor,
+void ForwardExecutor::CreateInputAddressForViewOp(const tensor::TensorPtr &input_tensor,
                                                   const FrontendOpRunInfoPtr &op_run_info) {
   MS_EXCEPTION_IF_NULL(input_tensor);
   bool is_cpu_address_exist = false;
@@ -990,14 +989,14 @@ void ForwardExecutor::PrepareOpInputs(const FrontendOpRunInfoPtr &op_run_info) {
   MS_EXCEPTION_IF_NULL(op_run_info);
   PyNativeAlgo::DataConvert::GetInputTensor(op_run_info, op_run_info->requires_grad ? grad()->top_cell() : nullptr);
   for (const auto &value : op_run_info->base_op_run_info.expanded_input_values) {
-    if (!value->isa<tensor::BaseTensor>()) {
+    if (!value->isa<tensor::Tensor>()) {
       continue;
     }
   }
 }
 
 void ForwardExecutor::CreateViewOutputTensor(const FrontendOpRunInfoPtr &op_run_info,
-                                             const tensor::BaseTensorPtr &input_tensor,
+                                             const tensor::TensorPtr &input_tensor,
                                              const TensorStorageInfoPtr &storage_info,
                                              runtime::KernelTaskType task_type, bool is_multi_output) {
   MS_EXCEPTION_IF_NULL(input_tensor);

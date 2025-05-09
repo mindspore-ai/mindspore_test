@@ -25,8 +25,8 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr, tensor::BaseTensorPtr> UniqueConsecutiveAscendCustomize(
-  const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor, const BoolImmPtr &return_inverse,
+std::tuple<tensor::TensorPtr, tensor::TensorPtr, tensor::TensorPtr> UniqueConsecutiveAscendCustomize(
+  const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor, const BoolImmPtr &return_inverse,
   const BoolImmPtr &return_counts, const std::optional<Int64ImmPtr> &dim) {
   MS_LOG(DEBUG) << "Run device task unique_consecutive start";
   auto device_context = op->device_context();

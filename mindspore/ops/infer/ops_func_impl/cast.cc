@@ -54,7 +54,7 @@ TypePtr CastFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector
   }
 }
 TypePtrList CastFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   const auto &input_type = x_tensor->Dtype();
   (void)CheckAndConvertUtils::CheckTypeValid("x", input_type, common_valid_types_with_complex_and_bool,
@@ -65,7 +65,7 @@ TypePtrList CastFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePt
   return {type};
 }
 ShapeArray CastFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   return {x_tensor->shape()};
 }

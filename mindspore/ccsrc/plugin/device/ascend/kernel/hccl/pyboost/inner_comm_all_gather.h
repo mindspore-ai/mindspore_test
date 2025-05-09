@@ -28,7 +28,7 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void InnerCommAllGatherAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
+void InnerCommAllGatherAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
                                        const Int64ImmPtr &rank_size, const StringImmPtr &group);
 }  // namespace pyboost
 }  // namespace kernel

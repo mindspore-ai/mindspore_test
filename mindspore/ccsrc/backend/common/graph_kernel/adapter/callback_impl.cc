@@ -92,8 +92,8 @@ void GetTypeAndFormats(const device::KernelWithIndex &kernel_with_index, std::ve
   MS_EXCEPTION_IF_NULL(value_node);
   auto value = value_node->value();
   MS_EXCEPTION_IF_NULL(value);
-  if (value->isa<tensor::BaseTensor>()) {
-    auto tensor = value->cast<tensor::BaseTensorPtr>();
+  if (value->isa<tensor::Tensor>()) {
+    auto tensor = value->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(tensor);
     (void)input_types->emplace_back(tensor->data_type());
   } else if (value->isa<ValueSequence>()) {

@@ -33,7 +33,7 @@ TypePtr MaxFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<
   return input_args[kIndex0]->GetType();
 }
 TypePtrList MaxFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   return {x_tensor->Dtype()};
 }

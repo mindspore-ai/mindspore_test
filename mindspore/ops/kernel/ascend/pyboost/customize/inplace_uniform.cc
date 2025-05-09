@@ -44,10 +44,9 @@ double GetScalarValue(const std::shared_ptr<Scalar> &scalar, const string &scala
 }
 }  // namespace
 
-tensor::BaseTensorPtr InplaceUniformAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                    const BaseTensorPtr &input_tensor, const ScalarPtr &from,
-                                                    const ScalarPtr &to, const BaseTensorPtr &seed,
-                                                    const BaseTensorPtr &offset) {
+tensor::TensorPtr InplaceUniformAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                                const ScalarPtr &from, const ScalarPtr &to, const TensorPtr &seed,
+                                                const TensorPtr &offset) {
   MS_LOG(DEBUG) << "aclnnInplaceUniform call start";
 
   // Convert ValuePtr to c++ scalar

@@ -47,7 +47,7 @@ inline std::string GetNumString(int n) {
   return kNumStrCache[n];
 }
 
-inline std::string GetShapeString(const tensor::BaseTensorPtr &input_tensor) {
+inline std::string GetShapeString(const tensor::TensorPtr &input_tensor) {
   if (input_tensor->base_shape_ptr() != nullptr) {
     return input_tensor->base_shape_ptr()->ToString();
   }
@@ -333,8 +333,8 @@ std::string OpCompiler::GetSingleOpGraphInfo(const pynative::BaseOpRunInfo &op_i
   const auto &depend_list = GetDependList(op_info, op_prim);
   for (size_t index = 0; index < op_info.expanded_input_values.size(); ++index) {
     auto const &value = op_info.expanded_input_values[index];
-    if (value->isa<tensor::BaseTensor>()) {
-      const auto &input_tensor = value->cast<tensor::BaseTensorPtr>();
+    if (value->isa<tensor::Tensor>()) {
+      const auto &input_tensor = value->cast<tensor::TensorPtr>();
       MS_EXCEPTION_IF_NULL(input_tensor);
       if (op_info.use_dynamic_shape_process) {
         graph_info += GetNumString(static_cast<int>(input_tensor->shape().size()));
@@ -376,7 +376,7 @@ std::string OpCompiler::GetSingleOpGraphInfo(const pynative::BaseOpRunInfo &op_i
   }
   // Special process for avgpoolgrad op, because that ge input 0 needs shape rather than tensor.
   if (op_name == kAvgPoolGradOpName) {
-    auto const tensor = op_info.expanded_input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+    auto const tensor = op_info.expanded_input_values[kIndex0]->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(tensor);
     graph_info += GetShapeString(tensor);
   }

@@ -17,12 +17,12 @@
 #include <set>
 #include "ms_extension.h"
 
-using BaseTensor = mindspore::tensor::BaseTensor;
-using BaseTensorPtr = mindspore::tensor::BaseTensorPtr;
+using Tensor = mindspore::tensor::Tensor;
+using TensorPtr = mindspore::tensor::TensorPtr;
 using TypeId = mindspore::TypeId;
 using PyBoostUtils = mindspore::kernel::pyboost::PyBoostUtils;
 
-ShapeVector ReduceSumInferShape(const BaseTensorPtr &t, const std::vector<int64_t> &axis, bool keepdims) {
+ShapeVector ReduceSumInferShape(const TensorPtr &t, const std::vector<int64_t> &axis, bool keepdims) {
   auto &s = t->shape();
   size_t n = s.size();
   if (!axis.empty()) {
@@ -47,7 +47,7 @@ ShapeVector ReduceSumInferShape(const BaseTensorPtr &t, const std::vector<int64_
 }
 
 namespace mindspore {
-BaseTensorPtr npu_reduce_sum(const BaseTensorPtr &x, const std::optional<std::vector<int64_t>> &axis, bool keepdims,
+TensorPtr npu_reduce_sum(const TensorPtr &x, const std::optional<std::vector<int64_t>> &axis, bool keepdims,
                              std::optional<int64_t> dtype) {
   mindspore::runtime::ProfilerRecorder profiler(mindspore::runtime::ProfilerModule::kPynative,
                                                 mindspore::runtime::ProfilerEvent::kRunOp, "npu_reduce_sum");
@@ -55,7 +55,7 @@ BaseTensorPtr npu_reduce_sum(const BaseTensorPtr &x, const std::optional<std::ve
   auto device_context = mindspore::runtime::OpRunner::GetDeviceContext("Ascend");
   auto type_id = dtype.has_value() ? static_cast<TypeId>(dtype.value()) : x->data_type();
   auto axis_vec = axis.has_value() ? axis.value() : std::vector<int64_t>();
-  auto result = std::make_shared<BaseTensor>(type_id, ReduceSumInferShape(x, axis_vec, keepdims));
+  auto result = std::make_shared<Tensor>(type_id, ReduceSumInferShape(x, axis_vec, keepdims));
 
   auto y = kernel::pyboost::abs(x);
 

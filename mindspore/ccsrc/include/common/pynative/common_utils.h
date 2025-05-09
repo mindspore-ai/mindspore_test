@@ -44,7 +44,7 @@ class COMMON_EXPORT CommonUtils {
 class COMMON_EXPORT CastUtils {
  public:
   static ValuePtr ScalarToDstDtypeValue(const ValuePtr &src_value, const std::pair<TypeId, bool> &dst_type);
-  static tensor::BaseTensorPtr TensorToDstDtypeValue(const ValuePtr &src_value, const TypeId &dst_type_id);
+  static tensor::TensorPtr TensorToDstDtypeValue(const ValuePtr &src_value, const TypeId &dst_type_id);
 };
 }  // namespace pynative
 

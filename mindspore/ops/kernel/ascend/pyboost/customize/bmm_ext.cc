@@ -24,9 +24,8 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr BatchMatMulExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                    const BaseTensorPtr &input_tensor,
-                                                    const BaseTensorPtr &mat2_tensor) {
+tensor::TensorPtr BatchMatMulExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                                const TensorPtr &mat2_tensor) {
   OpRunner::InferOpOutput(op, input_tensor, mat2_tensor);
   // No need to convert input
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor, mat2_tensor);

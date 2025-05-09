@@ -29,8 +29,8 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr L1LossExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                               const BaseTensorPtr &target_tensor, const Int64ImmPtr &reduction) {
+tensor::TensorPtr L1LossExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                           const TensorPtr &target_tensor, const Int64ImmPtr &reduction) {
   MS_LOG(DEBUG) << "L1LossExt call start";
   OpRunner::InferOpOutput(op, input_tensor, target_tensor, reduction);
 

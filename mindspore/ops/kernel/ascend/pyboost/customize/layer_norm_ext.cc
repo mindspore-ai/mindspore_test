@@ -24,10 +24,10 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void LayerNormExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
+void LayerNormExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
                                  const ValueTuplePtr &normalized_shape,
-                                 const std::optional<BaseTensorPtr> &weight_opt_tensor,
-                                 const std::optional<BaseTensorPtr> &bias_opt_tensor, const FP32ImmPtr &eps) {
+                                 const std::optional<TensorPtr> &weight_opt_tensor,
+                                 const std::optional<TensorPtr> &bias_opt_tensor, const FP32ImmPtr &eps) {
   MS_LOG(DEBUG) << "Call start";
 
   // Convert ValuePtr to c++ scalr

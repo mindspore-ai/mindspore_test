@@ -36,14 +36,14 @@ class BACKEND_EXPORT ViewBackend {
   void RunViewKernelTask(const pynative::BaseOpRunInfo &base_op_run_info, const runtime::KernelTaskType &task_type,
                          bool enable_async) const;
 
-  void RunAllocMemTask(DeviceContext *device_context, const tensor::BaseTensorPtr &tensor, bool enable_async,
+  void RunAllocMemTask(DeviceContext *device_context, const tensor::TensorPtr &tensor, bool enable_async,
                        bool is_cpu_address_exist) const;
 
   void RunViewKernelTaskAsyncImpl(const runtime::KernelTaskType &task_type, DeviceContext *device_context,
                                   const device::DeviceAddressPtrList &input_addr_list,
                                   const device::DeviceAddressPtrList &output_addr_list, const size_t &stream_id) const;
 
-  void AllocateMemForTensor(const tensor::BaseTensorPtr &tensor, DeviceContext *device_context,
+  void AllocateMemForTensor(const tensor::TensorPtr &tensor, DeviceContext *device_context,
                             bool is_cpu_address_exist) const;
 
   static void ContiguousInputByRunInfo(const BackendOpRunInfoPtr &op_run_info);
@@ -79,12 +79,12 @@ class BACKEND_EXPORT PostRunOp {
   }
 
  private:
-  tensor::BaseTensorPtr CreateOutputTensor(const AnfNodePtr &output_node, size_t output_index) const;
+  tensor::TensorPtr CreateOutputTensor(const AnfNodePtr &output_node, size_t output_index) const;
 
-  tensor::BaseTensorPtr CreateOutputTensorDynamicImpl(const OpCompilerInfoPtr &op_compiler_info,
-                                                      const AnfNodePtr &output_node, size_t output_index,
-                                                      const KernelTensorPtr &kernel_tensor,
-                                                      size_t idx_in_graph_outputs) const;
+  tensor::TensorPtr CreateOutputTensorDynamicImpl(const OpCompilerInfoPtr &op_compiler_info,
+                                                  const AnfNodePtr &output_node, size_t output_index,
+                                                  const KernelTensorPtr &kernel_tensor,
+                                                  size_t idx_in_graph_outputs) const;
 
   // Cache forward op output value node tensor ref count of kernels for back propagation graph in PyNative mode.
   std::map<std::string, size_t> forward_tensor_ref_count_;
@@ -105,7 +105,7 @@ class BACKEND_EXPORT OpBackend {
   void RunViewKernelTask(const pynative::BaseOpRunInfo &base_op_run_info, const runtime::KernelTaskType &task_type,
                          bool enable_async) const;
 
-  void RunAllocMemTask(DeviceContext *device_context, const tensor::BaseTensorPtr &tensor, bool enable_async,
+  void RunAllocMemTask(DeviceContext *device_context, const tensor::TensorPtr &tensor, bool enable_async,
                        bool is_cpu_address_exist) const;
 
  protected:

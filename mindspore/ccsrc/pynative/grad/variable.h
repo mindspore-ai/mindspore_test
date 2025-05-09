@@ -24,7 +24,7 @@
 #include <map>
 #include "ir/anf.h"
 #include "ir/meta_grad_data.h"
-#include "ir/base_tensor.h"
+#include "ir/tensor.h"
 #include "include/common/utils/hook.h"
 
 namespace mindspore {
@@ -108,17 +108,17 @@ class AutoGradMetaData : public AutoGradMetaInterface {
 };
 using AutoGradMetaDataPtr = std::shared_ptr<AutoGradMetaData>;
 
-using BaseTensor = tensor::BaseTensor;
-using BaseTensorPtr = std::shared_ptr<tensor::BaseTensor>;
+using Tensor = tensor::Tensor;
+using TensorPtr = std::shared_ptr<tensor::Tensor>;
 
 class ViewInfo {
  public:
-  explicit ViewInfo(BaseTensorPtr base) : base_(std::move(base)) {}
+  explicit ViewInfo(TensorPtr base) : base_(std::move(base)) {}
   [[nodiscard]] ViewInfo Union() const { return ViewInfo(base_); }
-  [[nodiscard]] const tensor::BaseTensorPtr &base() const { return base_; }
+  [[nodiscard]] const tensor::TensorPtr &base() const { return base_; }
 
  private:
-  BaseTensorPtr base_;
+  TensorPtr base_;
 };
 
 enum class CreationType {
@@ -416,18 +416,18 @@ class FuncVariable : public Variable {
 
   /// \brief Gradients of the variable if variable is left node, nullptr if not left node.
   ///
-  const tensor::BaseTensorPtr &grad() const { return grad_; }
+  const tensor::TensorPtr &grad() const { return grad_; }
 
   /// \brief Set gradients of the leaf variable.
   ///
   /// \param grad
-  void set_grad(const tensor::BaseTensorPtr &grad) { grad_ = grad; }
+  void set_grad(const tensor::TensorPtr &grad) { grad_ = grad; }
 
   std::string ToString() const override;
 
  private:
   // Grad for this variable, only leaf node has grad.
-  tensor::BaseTensorPtr grad_;
+  tensor::TensorPtr grad_;
 };
 using FuncVariablePtr = std::shared_ptr<FuncVariable>;
 
@@ -457,9 +457,9 @@ bool isa(const BackwardNodePtr &base_ptr) {
 }
 
 namespace impl {
-AutoGradMetaDataPtr get_autograd_meta_impl(const tensor::BaseTensorPtr &tensor);
-AutoGradMetaDataPtr get_autograd_meta_impl(const tensor::BaseTensor &tensor);
-ViewAutoGradMetaDataPtr get_view_autograd_meta_impl(const tensor::BaseTensorPtr &tensor);
+AutoGradMetaDataPtr get_autograd_meta_impl(const tensor::TensorPtr &tensor);
+AutoGradMetaDataPtr get_autograd_meta_impl(const tensor::Tensor &tensor);
+ViewAutoGradMetaDataPtr get_view_autograd_meta_impl(const tensor::TensorPtr &tensor);
 }  // namespace impl
 }  // namespace mindspore::pynative::autograd
 

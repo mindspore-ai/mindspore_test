@@ -24,12 +24,11 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-tensor::BaseTensorPtr UpsampleTrilinear3DAscendCall(const std::shared_ptr<OpRunner> &op,
-                                                    const device::DeviceContext *device_context,
-                                                    const BaseTensorPtr &input_tensor,
-                                                    const std::vector<int64_t> &output_size,
-                                                    const std::vector<pyfloat> &scales, const bool &align_corners,
-                                                    const std::vector<tensor::BaseTensorPtr> &outputs) {
+tensor::TensorPtr UpsampleTrilinear3DAscendCall(const std::shared_ptr<OpRunner> &op,
+                                                const device::DeviceContext *device_context,
+                                                const TensorPtr &input_tensor, const std::vector<int64_t> &output_size,
+                                                const std::vector<pyfloat> &scales, const bool &align_corners,
+                                                const std::vector<tensor::TensorPtr> &outputs) {
   MS_LOG(DEBUG) << "Call start";
   double scales_d = scales[0];
   double scales_h = scales[1];
@@ -41,11 +40,10 @@ tensor::BaseTensorPtr UpsampleTrilinear3DAscendCall(const std::shared_ptr<OpRunn
 }
 }  // namespace
 
-tensor::BaseTensorPtr UpsampleTrilinear3DAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                         const BaseTensorPtr &input_tensor,
-                                                         const std::optional<ValueTuplePtr> &output_size,
-                                                         const std::optional<ValueTuplePtr> &scale_factors,
-                                                         const BoolImmPtr &align_corners) {
+tensor::TensorPtr UpsampleTrilinear3DAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                                     const std::optional<ValueTuplePtr> &output_size,
+                                                     const std::optional<ValueTuplePtr> &scale_factors,
+                                                     const BoolImmPtr &align_corners) {
   MS_LOG(INFO) << "UpsampleTrilinear3DAscendCustomize start";
 
   OpRunner::InferOpOutput(op, input_tensor, output_size, scale_factors, align_corners);

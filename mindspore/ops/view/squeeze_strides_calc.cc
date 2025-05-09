@@ -25,11 +25,11 @@ constexpr size_t kSqueezeCalcInputsNum = 2;
 constexpr auto kSqueezedNum = 1;
 }  // namespace
 TensorStorageInfoPtrList SqueezeCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  if (CheckInputsNull(inputs, kSqueezeCalcInputsNum) || !inputs[0]->isa<tensor::BaseTensor>() ||
+  if (CheckInputsNull(inputs, kSqueezeCalcInputsNum) || !inputs[0]->isa<tensor::Tensor>() ||
       !inputs[1]->isa<ValueSequence>()) {
     return {};
   }
-  auto tensor = inputs[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  auto tensor = inputs[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(tensor);
   const auto &axis = GetValue<std::vector<int64_t>>(inputs[1]);
   auto old_tensor_info = GetOldTensorInfo(tensor);

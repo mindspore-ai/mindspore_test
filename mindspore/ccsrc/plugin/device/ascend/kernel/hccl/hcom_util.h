@@ -32,7 +32,7 @@
 #include "common/kernel.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
 #include "mindspore/ops/op_def/ascend_op_name.h"
-#include "ir/base_tensor.h"
+#include "ir/tensor.h"
 
 namespace mindspore {
 using kernel::KernelTensor;
@@ -89,7 +89,7 @@ class HcomUtil {
                            const std::optional<int64_t> rank_size_opt, uint64_t *total_count);
 
   static std::pair<uint64_t, ::HcclDataType> GetHcclCountAndTypeFromTensor(
-    const PrimitivePtr &primitive, const tensor::BaseTensorPtr &tensor,
+    const PrimitivePtr &primitive, const tensor::TensorPtr &tensor,
     const std::optional<int64_t> rank_size_opt = std::nullopt);
   static device::CollectiveOpReduceType GetCollectiveOpReduceType(const std::string &reduce_op);
   static HcclReduceOp GetHcomReduceOpType(const std::string &reduce_op);

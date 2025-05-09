@@ -25,7 +25,7 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-void ProdExtCPUCall(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor, const ValuePtr &axis,
+void ProdExtCPUCall(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor, const ValuePtr &axis,
                     const BoolImmPtr &keep_dims, const std::vector<AbstractBasePtr> &input_abs) {
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
@@ -52,7 +52,7 @@ void ProdExtCPUCall(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &in
 }
 }  // namespace
 
-void ProdExtCPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
+void ProdExtCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
                          const std::optional<Int64ImmPtr> &axis, const BoolImmPtr &keep_dims,
                          const std::optional<Int64ImmPtr> &dtype) {
   OpRunner::InferOpOutput(op, input_tensor, axis, keep_dims, dtype);
@@ -67,7 +67,7 @@ void ProdExtCPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPt
   // Infer function has confirmed the actual dtype of output
   TypeId out_dtype = op->output_value_simple_info()->dtype_vector_[kIndex0]->type_id();
 
-  BaseTensorPtr act_tensor = input_tensor;
+  TensorPtr act_tensor = input_tensor;
   if (input_tensor->data_type() != out_dtype) {
     MS_LOG(DEBUG) << "Call Cast cpu kernel, src dtype: " << TypeIdToString(input_tensor->data_type())
                   << ", dst dtype: " << TypeIdToString(out_dtype);

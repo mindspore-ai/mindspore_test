@@ -40,9 +40,9 @@ float GetScalarValueToFloat(const std::shared_ptr<Scalar> &scalar, const string 
   }
 }
 
-tensor::BaseTensorPtr InplaceNormalAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input,
-                                                   const ScalarPtr &mean, const ScalarPtr &std,
-                                                   const BaseTensorPtr &seed, const BaseTensorPtr &offset) {
+tensor::TensorPtr InplaceNormalAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input,
+                                               const ScalarPtr &mean, const ScalarPtr &std, const TensorPtr &seed,
+                                               const TensorPtr &offset) {
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input);
   op->set_outputs({input});
 

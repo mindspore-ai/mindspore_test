@@ -36,8 +36,6 @@ namespace kernel {
 namespace pyboost {
 using AbstractConverter = pynative::AbstractConverter;
 using AddressInfoPair = std::pair<std::vector<kernel::KernelTensor *>, std::vector<kernel::KernelTensorPtr>>;
-using BaseTensor = tensor::BaseTensor;
-using BaseTensorPtr = tensor::BaseTensorPtr;
 using Tensor = tensor::Tensor;
 
 class PYBOOST_API PyBoostUtils {
@@ -54,16 +52,16 @@ class PYBOOST_API PyBoostUtils {
                                                                            const std::string &op_name);
 
   // Create output tensors
-  static void CreateOutputTensor(const AbstractBasePtr &abstract, std::vector<tensor::BaseTensorPtr> *outputs);
-  static void CreateOutputTensor(const DeviceContext *device_context, const tensor::BaseTensorPtr &input,
-                                 const TensorStorageInfoPtr &storage_info, std::vector<tensor::BaseTensorPtr> *outputs);
-  static void CreateOutputTensor(const DeviceContext *device_context, const tensor::BaseTensorPtr &input,
+  static void CreateOutputTensor(const AbstractBasePtr &abstract, std::vector<tensor::TensorPtr> *outputs);
+  static void CreateOutputTensor(const DeviceContext *device_context, const tensor::TensorPtr &input,
+                                 const TensorStorageInfoPtr &storage_info, std::vector<tensor::TensorPtr> *outputs);
+  static void CreateOutputTensor(const DeviceContext *device_context, const tensor::TensorPtr &input,
                                  const TensorStorageInfoPtrList &storage_info_list,
-                                 std::vector<tensor::BaseTensorPtr> *outputs);
+                                 std::vector<tensor::TensorPtr> *outputs);
   static void CreateOutputTensor(const ValueSimpleInfoPtr &output_value_simple_info,
-                                 std::vector<tensor::BaseTensorPtr> *outputs);
+                                 std::vector<tensor::TensorPtr> *outputs);
   static void CreateOutputTensor(const TypeId &type_id, const ShapeVector &shape_vector,
-                                 std::vector<tensor::BaseTensorPtr> *outputs);
+                                 std::vector<tensor::TensorPtr> *outputs);
 
   // Create input device address without kernel tensor
   template <typename... Args>
@@ -121,16 +119,14 @@ class PYBOOST_API PyBoostUtils {
 
   static void GetKernelTensor(const DeviceContext *device_context, size_t stream_id, size_t index,
                               std::vector<kernel::KernelTensor *> *kernel_tensor_list,
-                              std::vector<kernel::KernelTensorPtr> *kernel_tensor_ptr_list,
-                              const BaseTensorPtr &tensor) {
+                              std::vector<kernel::KernelTensorPtr> *kernel_tensor_ptr_list, const TensorPtr &tensor) {
     GetKernelTensor(device_context, stream_id, nullptr, index, kernel_tensor_list, kernel_tensor_ptr_list, tensor);
   }
 
   static void GetKernelTensor(const DeviceContext *device_context, size_t stream_id,
                               const abstract::AbstractBasePtr &input_abs, size_t index,
                               std::vector<kernel::KernelTensor *> *kernel_tensor_list,
-                              std::vector<kernel::KernelTensorPtr> *kernel_tensor_ptr_list,
-                              const BaseTensorPtr &tensor);
+                              std::vector<kernel::KernelTensorPtr> *kernel_tensor_ptr_list, const TensorPtr &tensor);
 
   template <typename T>
   static void GetKernelTensor(const DeviceContext *device_context, size_t stream_id,
@@ -160,7 +156,7 @@ class PYBOOST_API PyBoostUtils {
                               const abstract::AbstractBasePtr &input_abs, size_t index,
                               std::vector<kernel::KernelTensor *> *kernel_tensor_list,
                               std::vector<kernel::KernelTensorPtr> *kernel_tensor_ptr_list,
-                              const std::vector<tensor::BaseTensorPtr> &tensors);
+                              const std::vector<tensor::TensorPtr> &tensors);
 
   template <typename T>
   static void GetKernelTensor(const DeviceContext *device_context, size_t stream_id,
@@ -179,12 +175,12 @@ class PYBOOST_API PyBoostUtils {
 
   // Create output tensor device address without kernel tensor
   static void PrepareOpOutputs(const DeviceContext *device_context, size_t stream_id,
-                               const std::vector<tensor::BaseTensorPtr> &outputs) {
+                               const std::vector<tensor::TensorPtr> &outputs) {
     runtime::DeviceAddressUtils::CreateOutputTensorAddress(device_context, stream_id, outputs);
   }
 
   // Create output tensor device address without kernel tensor
-  static void MallocOpOutputs(const DeviceContext *device_context, const std::vector<tensor::BaseTensorPtr> &outputs) {
+  static void MallocOpOutputs(const DeviceContext *device_context, const std::vector<tensor::TensorPtr> &outputs) {
     runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kPyBoostMallocOutput,
                                        runtime::ProfilerRecorder::kNoName, false);
     runtime::DeviceAddressUtils::MallocForOutputs(device_context, outputs);
@@ -204,16 +200,16 @@ class PYBOOST_API PyBoostUtils {
   static std::pair<bool, KernelAttr> SelectKernel(const std::vector<AbstractBasePtr> &inputs_abs,
                                                   const AbstractBasePtr &outputs_abs,
                                                   const DeviceContext *device_context, const std::string &op_name);
-  static std::optional<tensor::BaseTensorPtr> CastTensor(const std::optional<tensor::BaseTensorPtr> &tensor,
-                                                         const TypeId &type_id, const std::string &device_target);
-  static tensor::BaseTensorPtr CastTensor(const tensor::BaseTensorPtr &tensor, const TypeId &type_id,
-                                          const std::string &device_target);
-  static std::vector<tensor::BaseTensorPtr> CastTensor(const std::vector<tensor::BaseTensorPtr> &tensors,
-                                                       const std::vector<TypeId> &type_id_list,
-                                                       const std::string &device_target);
+  static std::optional<tensor::TensorPtr> CastTensor(const std::optional<tensor::TensorPtr> &tensor,
+                                                     const TypeId &type_id, const std::string &device_target);
+  static tensor::TensorPtr CastTensor(const tensor::TensorPtr &tensor, const TypeId &type_id,
+                                      const std::string &device_target);
+  static std::vector<tensor::TensorPtr> CastTensor(const std::vector<tensor::TensorPtr> &tensors,
+                                                   const std::vector<TypeId> &type_id_list,
+                                                   const std::string &device_target);
   // ValueTuple input
-  static std::vector<tensor::BaseTensorPtr> CastTensor(const std::vector<tensor::BaseTensorPtr> &tensors,
-                                                       TypeId type_id, const std::string &device_target);
+  static std::vector<tensor::TensorPtr> CastTensor(const std::vector<tensor::TensorPtr> &tensors, TypeId type_id,
+                                                   const std::string &device_target);
   template <typename... T>
   static std::pair<bool, KernelAttr> SelectKernel(AbstractConverter *converter, const DeviceContext *device_context,
                                                   const std::string &op_name,
@@ -227,7 +223,7 @@ class PYBOOST_API PyBoostUtils {
     auto output_abs = TransformValueSimpleInfoToAbstract(*output_value_simple_info);
     return SelectKernel(input_abs, output_abs, device_context, op_name);
   }
-  static ValueTuplePtr ConvertTensorVectorToTuple(const std::vector<BaseTensorPtr> &tensor_list) {
+  static ValueTuplePtr ConvertTensorVectorToTuple(const std::vector<TensorPtr> &tensor_list) {
     std::vector<ValuePtr> value_vector;
     for (const auto &tensor : tensor_list) {
       (void)value_vector.emplace_back(tensor);
@@ -236,33 +232,33 @@ class PYBOOST_API PyBoostUtils {
     MS_LOG(DEBUG) << "Convert TensorList to ValueTuple " << result->ToString();
     return result;
   }
-  static BaseTensorPtr ScalarToTensor(const ScalarPtr &scalar);
-  static BaseTensorPtr ScalarToTensor(const ScalarPtr &scalar, const TypePtr &tensor_dtype);
+  static TensorPtr ScalarToTensor(const ScalarPtr &scalar);
+  static TensorPtr ScalarToTensor(const ScalarPtr &scalar, const TypePtr &tensor_dtype);
 
   static uint32_t cur_stream_id() { return cur_stream_id_; }
 
   // Set current stream for CREATE_PYBOOST_OP in front queue.
   static void set_cur_stream_id(uint32_t cur_stream_id) { cur_stream_id_ = cur_stream_id; }
 
-  static bool IsBool(const BaseTensorPtr &input_tensor) { return input_tensor->data_type() == TypeId::kNumberTypeBool; }
+  static bool IsBool(const TensorPtr &input_tensor) { return input_tensor->data_type() == TypeId::kNumberTypeBool; }
 
   static bool IsBool(const ScalarPtr &alpha) { return alpha->isa<BoolImm>(); }
 
-  static bool IsIntegral(const BaseTensorPtr &input_tensor) {
+  static bool IsIntegral(const TensorPtr &input_tensor) {
     return input_tensor->data_type() >= TypeId::kNumberTypeInt &&
            input_tensor->data_type() <= TypeId::kNumberTypeUInt64;
   }
 
   static bool IsIntegral(const ScalarPtr &alpha) { return alpha->isa<IntegerImm>(); }
 
-  static bool IsFloat(const BaseTensorPtr &input_tensor) {
+  static bool IsFloat(const TensorPtr &input_tensor) {
     return input_tensor->data_type() >= TypeId::kNumberTypeFloat &&
            input_tensor->data_type() <= TypeId::kNumberTypeBFloat16;
   }
 
   static bool IsFloat(const ScalarPtr &alpha) { return alpha->isa<FloatImm>(); }
 
-  static bool IsComplex(const BaseTensorPtr &input_tensor) {
+  static bool IsComplex(const TensorPtr &input_tensor) {
     return input_tensor->data_type() >= TypeId::kNumberTypeComplex &&
            input_tensor->data_type() <= TypeId::kNumberTypeComplex128;
   }

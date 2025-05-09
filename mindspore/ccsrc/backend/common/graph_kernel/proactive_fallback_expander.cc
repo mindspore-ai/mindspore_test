@@ -78,8 +78,8 @@ bool ProactiveFallbackExpander::Run(const FuncGraphPtr &func_graph) {
         auto vnode = input->cast<ValueNodePtr>();
         auto value = vnode->value();
         MS_EXCEPTION_IF_NULL(value);
-        if (value->isa<tensor::BaseTensor>()) {
-          auto tensor = value->cast<tensor::BaseTensorPtr>();
+        if (value->isa<tensor::Tensor>()) {
+          auto tensor = value->cast<tensor::TensorPtr>();
           info_builder->SetOutputsFormat(std::vector<std::string>{kOpFormat_DEFAULT});
           info_builder->SetOutputsDeviceType(std::vector<TypeId>{tensor->Dtype()->type_id()});
           info_builder->SetOutputsKernelObjectType(

@@ -50,7 +50,7 @@ void GetAllToAllVParam(const ValueTuplePtr &send_numel_list, const ValueTuplePtr
 }
 
 std::function<void(const HcclComm &, void *)> CallAllToAllV(const std::shared_ptr<OpRunner> &op,
-                                                            const BaseTensorPtr &input_tensor,
+                                                            const TensorPtr &input_tensor,
                                                             const ValueTuplePtr &send_numel_list,
                                                             const ValueTuplePtr &recv_numel_list) {
   MS_LOG(DEBUG) << "Begin";
@@ -72,7 +72,7 @@ std::function<void(const HcclComm &, void *)> CallAllToAllV(const std::shared_pt
 }
 
 std::function<void(const HcclComm &, void *)> CallAllToAll(const std::shared_ptr<OpRunner> &op,
-                                                           const BaseTensorPtr &input_tensor,
+                                                           const TensorPtr &input_tensor,
                                                            const Int64ImmPtr &rank_size) {
   MS_LOG(DEBUG) << "Begin";
   hccl::HcclAllToAllParams params;
@@ -96,7 +96,7 @@ std::function<void(const HcclComm &, void *)> CallAllToAll(const std::shared_ptr
 }
 }  // namespace
 
-void InnerCommAllToAllVAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
+void InnerCommAllToAllVAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
                                        const StringImmPtr &group, const ValueTuplePtr &send_numel_list,
                                        const ValueTuplePtr &recv_numel_list, const Int64ImmPtr &rank_size,
                                        const BoolImmPtr &split_sizes_empty) {

@@ -24,9 +24,8 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr DivModAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &x_tensor,
-                                            const BaseTensorPtr &y_tensor,
-                                            const std::optional<Int64ImmPtr> &rounding_mode) {
+tensor::TensorPtr DivModAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &x_tensor,
+                                        const TensorPtr &y_tensor, const std::optional<Int64ImmPtr> &rounding_mode) {
   OpRunner::InferOpOutput(op, x_tensor, y_tensor, rounding_mode);
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), x_tensor, y_tensor);

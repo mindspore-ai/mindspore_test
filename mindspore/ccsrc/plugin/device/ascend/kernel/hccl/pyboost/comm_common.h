@@ -29,12 +29,12 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 void CommonCommRunTask(const std::function<void(void)> &run_func);
-void CommonCommAscendFunc(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                          const StringImmPtr &group, const std::function<void(const HcclComm &, void *)> &launch_func,
+void CommonCommAscendFunc(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor, const StringImmPtr &group,
+                          const std::function<void(const HcclComm &, void *)> &launch_func,
                           const std::function<void(const DeviceEventPtr &, size_t)> &post_func);
 
 // Get device mutable ptr from tensor
-void *GetDevicePtrFromTensor(const std::string &op_name, const tensor::BaseTensorPtr &tensor);
+void *GetDevicePtrFromTensor(const std::string &op_name, const tensor::TensorPtr &tensor);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

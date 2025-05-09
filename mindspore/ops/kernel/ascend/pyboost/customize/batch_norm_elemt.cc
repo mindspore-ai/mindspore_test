@@ -25,13 +25,11 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr BatchNormElemtAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                    const BaseTensorPtr &input_tensor,
-                                                    const std::optional<BaseTensorPtr> &weight_tensor,
-                                                    const std::optional<BaseTensorPtr> &bias_tensor,
-                                                    const std::optional<BaseTensorPtr> &mean_tensor,
-                                                    const std::optional<BaseTensorPtr> &invstd_tensor,
-                                                    const FP32ImmPtr &eps) {
+tensor::TensorPtr BatchNormElemtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                                const std::optional<TensorPtr> &weight_tensor,
+                                                const std::optional<TensorPtr> &bias_tensor,
+                                                const std::optional<TensorPtr> &mean_tensor,
+                                                const std::optional<TensorPtr> &invstd_tensor, const FP32ImmPtr &eps) {
   std::string op_name = op->primitive()->name();
   MS_LOG(DEBUG) << op_name << " call start";
   OpRunner::InferOpOutput(op, input_tensor, weight_tensor, bias_tensor, mean_tensor, invstd_tensor, eps);

@@ -27,12 +27,10 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr NLLLossGradAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                 const BaseTensorPtr &logits_tensor,
-                                                 const BaseTensorPtr &loss_grad_tensor,
-                                                 const BaseTensorPtr &labels_tensor, const BaseTensorPtr &weight_tensor,
-                                                 const BaseTensorPtr &total_weight_tensor, const Int64ImmPtr &reduction,
-                                                 const Int64ImmPtr &ignore_index);
+tensor::TensorPtr NLLLossGradAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &logits_tensor,
+                                             const TensorPtr &loss_grad_tensor, const TensorPtr &labels_tensor,
+                                             const TensorPtr &weight_tensor, const TensorPtr &total_weight_tensor,
+                                             const Int64ImmPtr &reduction, const Int64ImmPtr &ignore_index);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

@@ -27,7 +27,7 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-std::vector<BaseTensorPtr> ConvertOptiaonlValueTupleToVector(const std::optional<ValueTuplePtr> &tensor_list_opt);
+std::vector<TensorPtr> ConvertOptiaonlValueTupleToVector(const std::optional<ValueTuplePtr> &tensor_list_opt);
 }  // namespace
 void GroupedMatmulV4AscendCustomize(
   const std::shared_ptr<OpRunner> &op, const ValueTuplePtr &x_tensor_list, const ValueTuplePtr &weight_tensor_list,
@@ -35,7 +35,7 @@ void GroupedMatmulV4AscendCustomize(
   const std::optional<ValueTuplePtr> &offset_tensor_list,
   const std::optional<ValueTuplePtr> &antiquant_scale_tensor_list,
   const std::optional<ValueTuplePtr> &antiquant_offset_tensor_list,
-  const std::optional<ValueTuplePtr> &pre_token_scale_tensor_list, const std::optional<BaseTensorPtr> &group_list,
+  const std::optional<ValueTuplePtr> &pre_token_scale_tensor_list, const std::optional<TensorPtr> &group_list,
   const std::optional<ValueTuplePtr> &activation_input_tensor_list,
   const std::optional<ValueTuplePtr> &activation_quant_scale_tensor_list,
   const std::optional<ValueTuplePtr> &activation_quant_offset_tensor_list, const Int64ImmPtr &split_item_imm,
@@ -48,18 +48,17 @@ void GroupedMatmulV4AscendCustomize(
                           group_type_imm, group_list_type_imm, act_type_imm);
 
   // Convert ValuePtr to c++ scalar
-  std::vector<BaseTensorPtr> x = ConvertValueTupleToVector<BaseTensorPtr>(x_tensor_list);
-  std::vector<BaseTensorPtr> weight = ConvertValueTupleToVector<BaseTensorPtr>(weight_tensor_list);
-  std::vector<BaseTensorPtr> bias = ConvertOptiaonlValueTupleToVector(bias_tensor_list);
-  std::vector<BaseTensorPtr> scale = ConvertOptiaonlValueTupleToVector(scale_tensor_list);
-  std::vector<BaseTensorPtr> offset = ConvertOptiaonlValueTupleToVector(offset_tensor_list);
-  std::vector<BaseTensorPtr> antiquant_scale = ConvertOptiaonlValueTupleToVector(antiquant_scale_tensor_list);
-  std::vector<BaseTensorPtr> antiquant_offset = ConvertOptiaonlValueTupleToVector(antiquant_offset_tensor_list);
-  std::vector<BaseTensorPtr> pre_token_scale = ConvertOptiaonlValueTupleToVector(pre_token_scale_tensor_list);
-  std::vector<BaseTensorPtr> activation_input = ConvertOptiaonlValueTupleToVector(activation_input_tensor_list);
-  std::vector<BaseTensorPtr> activation_quant_scale =
-    ConvertOptiaonlValueTupleToVector(activation_quant_scale_tensor_list);
-  std::vector<BaseTensorPtr> activation_quant_offset =
+  std::vector<TensorPtr> x = ConvertValueTupleToVector<TensorPtr>(x_tensor_list);
+  std::vector<TensorPtr> weight = ConvertValueTupleToVector<TensorPtr>(weight_tensor_list);
+  std::vector<TensorPtr> bias = ConvertOptiaonlValueTupleToVector(bias_tensor_list);
+  std::vector<TensorPtr> scale = ConvertOptiaonlValueTupleToVector(scale_tensor_list);
+  std::vector<TensorPtr> offset = ConvertOptiaonlValueTupleToVector(offset_tensor_list);
+  std::vector<TensorPtr> antiquant_scale = ConvertOptiaonlValueTupleToVector(antiquant_scale_tensor_list);
+  std::vector<TensorPtr> antiquant_offset = ConvertOptiaonlValueTupleToVector(antiquant_offset_tensor_list);
+  std::vector<TensorPtr> pre_token_scale = ConvertOptiaonlValueTupleToVector(pre_token_scale_tensor_list);
+  std::vector<TensorPtr> activation_input = ConvertOptiaonlValueTupleToVector(activation_input_tensor_list);
+  std::vector<TensorPtr> activation_quant_scale = ConvertOptiaonlValueTupleToVector(activation_quant_scale_tensor_list);
+  std::vector<TensorPtr> activation_quant_offset =
     ConvertOptiaonlValueTupleToVector(activation_quant_offset_tensor_list);
 
   auto split_item = GetValue<int64_t>(split_item_imm);
@@ -71,8 +70,8 @@ void GroupedMatmulV4AscendCustomize(
                                 antiquant_offset, pre_token_scale, group_list, activation_input, activation_quant_scale,
                                 activation_quant_offset);
 
-  std::vector<BaseTensorPtr> activation_feature_out;
-  std::vector<BaseTensorPtr> dyn_quant_scale_out;
+  std::vector<TensorPtr> activation_feature_out;
+  std::vector<TensorPtr> dyn_quant_scale_out;
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
 
   // Async

@@ -63,15 +63,15 @@ TypePtr BaddbmmFuncImpl::InferType(const PrimitivePtr &primitive,
 }
 
 TypePtrList BaddbmmFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   return {x_tensor->Dtype()};
 }
 
 ShapeArray BaddbmmFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &batch1_tensor = input_values[kIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &batch1_tensor = input_values[kIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(batch1_tensor);
-  const auto &batch2_tensor = input_values[kIndex2]->cast<tensor::BaseTensorPtr>();
+  const auto &batch2_tensor = input_values[kIndex2]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(batch2_tensor);
   const auto &batch1_shape = batch1_tensor->shape();
   const auto &batch2_shape = batch2_tensor->shape();

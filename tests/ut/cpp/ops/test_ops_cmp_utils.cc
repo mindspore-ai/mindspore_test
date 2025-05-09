@@ -27,8 +27,8 @@ namespace ops {
 namespace {
 inline bool IsDynamicInputs(const ValuePtrList &input_values) {
   for (const auto &value : input_values) {
-    if (value->isa<tensor::BaseTensor>()) {
-      const auto &in_tensor = value->cast<tensor::BaseTensorPtr>();
+    if (value->isa<tensor::Tensor>()) {
+      const auto &in_tensor = value->cast<tensor::TensorPtr>();
       const auto &shape = in_tensor->shape();
       if (IsDynamic(shape)) {
         return true;
@@ -210,7 +210,7 @@ void TestOpFuncImplSimpleInferWithEltwiseOpParams(const OpFuncImplPtr &infer_imp
     MS_LOG(ERROR) << prim_name << " has not simple infer implementation!";
     ASSERT_TRUE(False);
   }
-  auto x = std::make_shared<tensor::BaseTensor>(param.x_type->type_id(), param.x_shape);
+  auto x = std::make_shared<tensor::Tensor>(param.x_type->type_id(), param.x_shape);
   ASSERT_NE(x, nullptr);
   ValuePtrList input_values{std::move(x)};
   for (const auto &attr : param.attr_list) {
@@ -250,7 +250,7 @@ void TestOpFuncImplSimpleInferWithMultiInputOpParams(const OpFuncImplPtr &infer_
       MS_LOG(INFO) << "Skip dynamic case when doing simple infer.";
       return;
     }
-    auto input = std::make_shared<tensor::BaseTensor>(param.in_type_list[idx]->type_id(), param.in_shape_array[idx]);
+    auto input = std::make_shared<tensor::Tensor>(param.in_type_list[idx]->type_id(), param.in_shape_array[idx]);
     input_values.push_back(std::move(input));
   }
   for (auto attr : param.attr_list) {

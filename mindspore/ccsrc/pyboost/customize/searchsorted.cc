@@ -22,10 +22,9 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 
-tensor::BaseTensorPtr SearchSortedCustomizeCall(const std::shared_ptr<OpRunner> &op,
-                                                const BaseTensorPtr &sorted_sequence, const BaseTensorPtr &values,
-                                                const std::optional<BaseTensorPtr> &sorter, const Int64ImmPtr &dtype,
-                                                const BoolImmPtr &right) {
+tensor::TensorPtr SearchSortedCustomizeCall(const std::shared_ptr<OpRunner> &op, const TensorPtr &sorted_sequence,
+                                            const TensorPtr &values, const std::optional<TensorPtr> &sorter,
+                                            const Int64ImmPtr &dtype, const BoolImmPtr &right) {
   OpRunner::InferOpOutput(op, sorted_sequence, values, sorter, dtype, right);
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), sorted_sequence, values, sorter);

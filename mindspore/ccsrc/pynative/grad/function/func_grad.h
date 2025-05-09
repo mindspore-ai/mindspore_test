@@ -129,7 +129,7 @@ class CopySliceNode : public BackwardNode {
   ~CopySliceNode() override = default;
   ValuePtrList CallBackward(const ValuePtrList &grads) override;
   std::string inplace_op_name() const { return inplace_op_name_; }
-  NodePtrList CallBackwardImpl(const NodePtr &grad_node, const tensor::BaseTensorPtr &view_tensor);
+  NodePtrList CallBackwardImpl(const NodePtr &grad_node, const tensor::TensorPtr &view_tensor);
   void Release() override;
 
  private:
@@ -155,18 +155,18 @@ class FuncGrad : public AutoGrad {
   void CallCustomBprop(const CustomContext &context) override;
   void CallCustomFunction(const std::shared_ptr<FunctionContext> &context) override;
 
-  void CallCPPFunctionBprop(const ValuePtrList &flatten_outputs, const BaseTensorPtrSet &input_base_tensors,
-                            const BaseTensorPtrSet &dirty_tensors, const BaseTensorPtrSet &non_diff_tensors,
+  void CallCPPFunctionBprop(const ValuePtrList &flatten_outputs, const TensorPtrSet &input_base_tensors,
+                            const TensorPtrSet &dirty_tensors, const TensorPtrSet &non_diff_tensors,
                             const ValuePtrList &inputs, const std::vector<InputType> &input_value_grad_type,
                             const BackwardNodePtr &node) override;
   // Save get and update variable of tensor.
-  VariablePtr SafeGetVariableImpl(const tensor::BaseTensorPtr &tensor) override;
+  VariablePtr SafeGetVariableImpl(const tensor::TensorPtr &tensor) override;
 
-  ValuePtr Finish(const tensor::BaseTensorPtrList &weights, const std::vector<size_t> &grad_position,
+  ValuePtr Finish(const tensor::TensorPtrList &weights, const std::vector<size_t> &grad_position,
                   const GradAttr &grad_attr, bool has_aux, const ValuePtr &sens = nullptr);
 
  private:
-  void RebaseVariable(const OpGradInfoPtr &op_grad_info, const VariablePtr &variable, const BaseTensorPtr &input_tensor,
+  void RebaseVariable(const OpGradInfoPtr &op_grad_info, const VariablePtr &variable, const TensorPtr &input_tensor,
                       size_t output_index);
   void UpdateNextEdges(const BackwardNodePtr &grad_node, const ValuePtrList &inputs);
   void BackPropagate();
@@ -185,27 +185,27 @@ class FuncGrad : public AutoGrad {
   BackwardNodePtr BuildFakeBackwardNode(const PrimitivePtr &prim, const ValuePtrList &flatten_inputs,
                                         const OpGradInfoPtr &op_grad_info, size_t flatten_output_size);
   BackwardNodePtr BuildGraphBackwardNode(const GradParamPtr &grad_param);
-  ValuePtr GetGrads(const tensor::BaseTensorPtrList &weights, const std::vector<size_t> &grad_position,
+  ValuePtr GetGrads(const tensor::TensorPtrList &weights, const std::vector<size_t> &grad_position,
                     const GradAttr &grad_attr);
   ValuePtr GetInputGrads(bool grad_all_inputs, bool get_by_position, const std::vector<size_t> &grad_position);
-  ValuePtr GetWeightGrads(bool grad_weights, const tensor::BaseTensorPtrList &weights, bool weight_param_is_tuple);
-  ValuePtr GetWeightGrad(const tensor::BaseTensorPtr &weight);
-  void ClearGrads(const tensor::BaseTensorPtrList &weights);
+  ValuePtr GetWeightGrads(bool grad_weights, const tensor::TensorPtrList &weights, bool weight_param_is_tuple);
+  ValuePtr GetWeightGrad(const tensor::TensorPtr &weight);
+  void ClearGrads(const tensor::TensorPtrList &weights);
   ValuePtrList OnsLike(const ValuePtrList &value);
   void CheckSensShapeAndType(const ValuePtr &sens_gradient);
-  void PruningGradGraph(const tensor::BaseTensorPtrList &weights, const GradAttr &grad_attr,
+  void PruningGradGraph(const tensor::TensorPtrList &weights, const GradAttr &grad_attr,
                         const std::vector<size_t> &grad_position);
   void PruningInput(const GradAttr &grad_attr, const std::vector<size_t> &grad_position);
-  void PruningWeights(const tensor::BaseTensorPtrList &weights, const GradAttr &grad_attr);
-  void ProcessForwardOutput(const ValuePtrList &flatten_outputs, const BaseTensorPtrSet &input_base_tensors,
-                            const BaseTensorPtrSet &dirty_tensors, const BaseTensorPtrSet &non_diff_tensors,
+  void PruningWeights(const tensor::TensorPtrList &weights, const GradAttr &grad_attr);
+  void ProcessForwardOutput(const ValuePtrList &flatten_outputs, const TensorPtrSet &input_base_tensors,
+                            const TensorPtrSet &dirty_tensors, const TensorPtrSet &non_diff_tensors,
                             const ValuePtrList &inputs, const std::vector<InputType> &input_value_grad_type,
                             const FuncVariablePtr &variable);
   bool is_run_recompute_{false};
   std::shared_ptr<FuncBuilder> func_impl_;
   OrderedSet<FuncVariablePtr> variable_set_;
   std::vector<std::pair<ValuePtr, FuncVariablePtr>> cell_inputs_;
-  std::vector<tensor::BaseTensorPtr> weights_used_in_graph_;
+  std::vector<tensor::TensorPtr> weights_used_in_graph_;
   ValuePtrList flatten_sens_out_{};
   ValuePtr sens_out_;
   FuncVariablePtr last_variable_{nullptr};

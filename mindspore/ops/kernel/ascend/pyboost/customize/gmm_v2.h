@@ -30,7 +30,7 @@ namespace kernel {
 namespace pyboost {
 void GmmV2AscendCustomize(const std::shared_ptr<OpRunner> &op, const ValueTuplePtr &x_tensor_list,
                           const ValueTuplePtr &weight_tensor_list, const std::optional<ValueTuplePtr> &bias_tensor_list,
-                          const std::optional<BaseTensorPtr> &group_list, const Int64ImmPtr &group_type,
+                          const std::optional<TensorPtr> &group_list, const Int64ImmPtr &group_type,
                           const Int64ImmPtr &group_list_type);
 }  // namespace pyboost
 }  // namespace kernel

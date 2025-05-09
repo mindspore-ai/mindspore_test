@@ -102,18 +102,18 @@ TensorStorageInfoPtrList BroadCastToStrideCalc(const OldTensorInfoPtr old_tensor
   return {new_storage_info};
 }
 
-TensorStorageInfoPtrList BroadCastToProcess(const PrimitivePtr &prim, const tensor::BaseTensorPtr input_tensor,
+TensorStorageInfoPtrList BroadCastToProcess(const PrimitivePtr &prim, const tensor::TensorPtr input_tensor,
                                             const std::vector<int64_t> &input_x) {
   auto old_tensor_info = GetOldTensorInfo(input_tensor);
   return BroadCastToStrideCalc(old_tensor_info, input_x);
 }
 
 TensorStorageInfoPtrList BroadcastToCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  if (!inputs[kInputIndex0]->isa<tensor::BaseTensor>()) {
+  if (!inputs[kInputIndex0]->isa<tensor::Tensor>()) {
     return {};
   }
 
-  auto input_tensor = inputs[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  auto input_tensor = inputs[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   auto input_x = GetValue<std::vector<int64_t>>(inputs[kInputIndex1]);
   return BroadCastToProcess(prim, input_tensor, input_x);

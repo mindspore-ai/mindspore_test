@@ -531,10 +531,10 @@ bool CheckAndConvertUtils::CheckValueSame(const ValuePtr &value_1, const ValuePt
   if (!value_1->IsSameTypeId(value_2->tid())) {
     return false;
   }
-  if (value_1->isa<tensor::BaseTensor>()) {
-    auto value_1_ptr = value_1->cast_ptr<tensor::BaseTensor>();
+  if (value_1->isa<tensor::Tensor>()) {
+    auto value_1_ptr = value_1->cast_ptr<tensor::Tensor>();
     MS_EXCEPTION_IF_NULL(value_1_ptr);
-    auto list_tensor_value = value_2->cast_ptr<tensor::BaseTensor>();
+    auto list_tensor_value = value_2->cast_ptr<tensor::Tensor>();
     MS_EXCEPTION_IF_NULL(list_tensor_value);
     return value_1_ptr->ValueEqual(*list_tensor_value);
   }
@@ -917,11 +917,11 @@ ShapeVector CheckAndConvertUtils::CheckTensorIntValue(const std::string &tensor_
                              << "] value is nullptr.";
   }
   ShapeVector tensor_value;
-  if (!value->isa<tensor::BaseTensor>()) {
+  if (!value->isa<tensor::Tensor>()) {
     MS_EXCEPTION(ValueError) << "For primitive[" << prim_name << "], the input argument[" << tensor_name
                              << "] must be a tensor, but got " << value->ToString();
   }
-  auto input_tensor = value->cast<tensor::BaseTensorPtr>();
+  auto input_tensor = value->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   size_t data_size = input_tensor->DataSize();
   auto tensor_type = input_tensor->Dtype();
@@ -1208,11 +1208,11 @@ std::vector<double> CheckAndConvertUtils::CheckTensorFloatValue(const std::strin
                              << "] value is nullptr.";
   }
   std::vector<double> tensor_value;
-  if (!value->isa<tensor::BaseTensor>()) {
+  if (!value->isa<tensor::Tensor>()) {
     MS_EXCEPTION(ValueError) << "For primitive[" << prim_name << "], the input argument[" << type_name
                              << "] must be a tensor, but got " << value->ToString();
   }
-  auto input_tensor = value->cast<tensor::BaseTensorPtr>();
+  auto input_tensor = value->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   size_t data_size = input_tensor->DataSize();
   auto tensor_type = input_tensor->Dtype();

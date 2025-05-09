@@ -971,7 +971,7 @@ bool PromotePrimitiveInputsType(const ValuePtr &primitive, AbstractBasePtrList *
     auto build_value = (*inputs_abs_list)[i]->BuildValue();
     if (build_value->isa<Scalar>()) {
       (*inputs_abs_list)[i] = pynative::CastUtils::ScalarToDstDtypeValue(build_value, it->second)->ToAbstract();
-    } else if (build_value->isa<tensor::BaseTensor>() && it->second.second) {  // is tensor
+    } else if (build_value->isa<tensor::Tensor>() && it->second.second) {  // is tensor
       (*inputs_abs_list)[i] = pynative::CastUtils::TensorToDstDtypeValue(build_value, it->second.first)->ToAbstract();
     }
   }

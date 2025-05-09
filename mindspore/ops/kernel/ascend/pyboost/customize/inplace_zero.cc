@@ -26,8 +26,7 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr InplaceZeroAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                 const BaseTensorPtr &input_tensor) {
+tensor::TensorPtr InplaceZeroAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor) {
   MS_LOG(DEBUG) << "Call InplaceZero start";
   OpRunner::InferOpOutput(op, input_tensor);
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor);

@@ -64,7 +64,7 @@ TypePtr BincountExtFuncImpl::InferType(const PrimitivePtr &primitive,
 }
 
 ShapeArray BincountExtFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &input_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &input_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   auto input_shape = input_tensor->shape();
   return {input_shape};
 }
@@ -72,7 +72,7 @@ ShapeArray BincountExtFuncImpl::InferShape(const PrimitivePtr &primitive, const 
 TypePtrList BincountExtFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
   // check if weight tensor is exist
   if (input_values[kInputIndex1] != mindspore::kNone) {
-    const auto &weight_tensor = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>();
+    const auto &weight_tensor = input_values[kInputIndex1]->cast<tensor::TensorPtr>();
     if (weight_tensor->Dtype()->type_id() == kNumberTypeFloat32) {
       return {kFloat32};
     }

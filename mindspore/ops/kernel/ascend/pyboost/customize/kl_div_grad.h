@@ -26,12 +26,9 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr KLDivGradAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                               const BaseTensorPtr &grad_output_tensor,
-                                               const BaseTensorPtr &input_tensor,
-                                               const BaseTensorPtr &target_tensor,
-                                               const Int64ImmPtr &reduction,
-                                               const BoolImmPtr &log_target);
+tensor::TensorPtr KLDivGradAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &grad_output_tensor,
+                                           const TensorPtr &input_tensor, const TensorPtr &target_tensor,
+                                           const Int64ImmPtr &reduction, const BoolImmPtr &log_target);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

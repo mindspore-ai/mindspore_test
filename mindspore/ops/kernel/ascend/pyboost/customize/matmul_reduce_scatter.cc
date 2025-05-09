@@ -29,7 +29,7 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace matmul_reduce_scatter {
-ValueTuplePtr GetTransposePerm(const BaseTensorPtr &tensor) {
+ValueTuplePtr GetTransposePerm(const TensorPtr &tensor) {
   std::vector<ValuePtr> perm(tensor->shape().size());
   perm[kDim0] = MakeValue(static_cast<int64_t>(kDim1));
   perm[kDim1] = MakeValue(static_cast<int64_t>(kDim0));
@@ -37,10 +37,11 @@ ValueTuplePtr GetTransposePerm(const BaseTensorPtr &tensor) {
 }
 }  // namespace matmul_reduce_scatter
 
-tensor::BaseTensorPtr MatmulReduceScatterAscendCustomize(
-  const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input, const BaseTensorPtr &x2, const StringImmPtr &group,
-  const Int64ImmPtr &world_size, const Int64ImmPtr &reduction, const std::optional<BaseTensorPtr> &bias,
-  const Int64ImmPtr &comm_turn, const BoolImmPtr &trans_input, const BoolImmPtr &trans_x2) {
+tensor::TensorPtr MatmulReduceScatterAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input,
+                                                     const TensorPtr &x2, const StringImmPtr &group,
+                                                     const Int64ImmPtr &world_size, const Int64ImmPtr &reduction,
+                                                     const std::optional<TensorPtr> &bias, const Int64ImmPtr &comm_turn,
+                                                     const BoolImmPtr &trans_input, const BoolImmPtr &trans_x2) {
   MS_LOG(DEBUG) << op->primitive()->name() << " call start";
 
   OpRunner::InferOpOutput(op, input, x2, group, world_size, reduction, bias, comm_turn, trans_input, trans_x2);
@@ -62,8 +63,8 @@ tensor::BaseTensorPtr MatmulReduceScatterAscendCustomize(
     MS_LOG(EXCEPTION) << op->primitive()->name() << ": the value of reduce_op is invalid.";
   }
   auto reduce_op_imm = iter->second;
-  BaseTensorPtr input_ = input;
-  BaseTensorPtr x2_ = x2;
+  TensorPtr input_ = input;
+  TensorPtr x2_ = x2;
   const auto &device_name = op->device_context()->device_context_key_.device_name_;
   auto transpose_op = CREATE_PYBOOST_OP(Transpose, device_name);
   if (trans_input_imm) {

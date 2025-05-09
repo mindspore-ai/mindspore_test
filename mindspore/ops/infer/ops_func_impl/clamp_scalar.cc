@@ -44,7 +44,7 @@ TypePtr ClampScalarFuncImpl::InferType(const PrimitivePtr &primitive,
   return input0_type->Clone();
 }
 TypePtrList ClampScalarFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   if (input_values[kInputIndex1] == mindspore::kNone && input_values[kInputIndex2] == mindspore::kNone) {
     MS_EXCEPTION(ValueError) << "For Clamp, at least one of 'min' or 'max' must not be None.";
@@ -66,7 +66,7 @@ BaseShapePtr ClampScalarFuncImpl::InferShape(const PrimitivePtr &primitive,
   return input0_shape->Clone();
 }
 ShapeArray ClampScalarFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   return {x_tensor->shape()};
 }

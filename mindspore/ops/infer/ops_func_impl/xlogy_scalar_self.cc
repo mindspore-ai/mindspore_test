@@ -44,14 +44,14 @@ TypePtr XLogYScalarSelfFuncImpl::InferType(const PrimitivePtr &primitive,
 }
 
 ShapeArray XLogYScalarSelfFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &y_tensor = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &y_tensor = input_values[kInputIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(y_tensor);
   auto y_shape_vector = y_tensor->shape();
   return {y_shape_vector};
 }
 
 TypePtrList XLogYScalarSelfFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &y_tensor = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &y_tensor = input_values[kInputIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(y_tensor);
   auto x2_type = y_tensor->Dtype();
   if (IsFloatType(x2_type)) {

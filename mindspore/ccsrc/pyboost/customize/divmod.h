@@ -27,9 +27,9 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr PYBOOST_API DivModCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &x_tensor,
-                                                  const BaseTensorPtr &y_tensor,
-                                                  const std::optional<Int64ImmPtr> &rounding_mode);
+tensor::TensorPtr PYBOOST_API DivModCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &x_tensor,
+                                              const TensorPtr &y_tensor,
+                                              const std::optional<Int64ImmPtr> &rounding_mode);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

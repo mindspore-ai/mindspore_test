@@ -15,6 +15,7 @@
  */
 
 #include "kernel/ascend/pyboost/customize/custom_ext.h"
+#include <algorithm>
 #include <string>
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "runtime/device/device_address_utils.h"
@@ -27,7 +28,7 @@
 namespace mindspore::kernel::pyboost {
 
 void LaunchCustomAclnn(const std::string &aclnn_name, const std::shared_ptr<OpRunner> &op,
-                       const std::vector<ValuePtr> &inputs, const std::vector<BaseTensorPtr> &output_tensors) {
+                       const std::vector<ValuePtr> &inputs, const std::vector<TensorPtr> &output_tensors) {
   MS_EXCEPTION_IF_NULL(op);
   MS_LOG(DEBUG) << "Run device task custom " << aclnn_name << " start";
   MS_VLOG(VL_CUSTOM_OP) << "Run device task custom " << aclnn_name << " start";
@@ -47,10 +48,10 @@ void LaunchCustomAclnn(const std::string &aclnn_name, const std::shared_ptr<OpRu
       MS_LOG(EXCEPTION) << "SyncStream failed for op " << aclnn_name;
     }
   } else {
-    std::vector<BaseTensorPtr> input_tensors;
+    std::vector<TensorPtr> input_tensors;
     for (const auto &item : inputs) {
-      if (item->isa<BaseTensor>()) {
-        (void)input_tensors.emplace_back(item->cast<BaseTensorPtr>());
+      if (item->isa<Tensor>()) {
+        (void)input_tensors.emplace_back(item->cast<TensorPtr>());
       }
     }
     runtime::DeviceAddressUtils::ProcessCrossStreamAddress(aclnn_name, device_context, stream_id, input_tensors,
@@ -61,15 +62,15 @@ void LaunchCustomAclnn(const std::string &aclnn_name, const std::shared_ptr<OpRu
   MS_VLOG(VL_CUSTOM_OP) << "Run device task custom " << aclnn_name << " end";
 }
 
-std::vector<tensor::BaseTensorPtr> CustomExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                            const ValueTuplePtr &tensors_tensor_list) {
+std::vector<tensor::TensorPtr> CustomExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                                        const ValueTuplePtr &tensors_tensor_list) {
   MS_EXCEPTION_IF_NULL(op);
   MS_EXCEPTION_IF_NULL(tensors_tensor_list);
   MS_LOG(DEBUG) << "Start custom ascend customize";
   MS_VLOG(VL_CUSTOM_OP) << "Start custom ascend customize";
   OpRunner::InferOpOutput(op, tensors_tensor_list);
   // ValueTuple to std::vector
-  std::vector<BaseTensorPtr> tensors_tensor_list_vector = ConvertValueTupleToVector<BaseTensorPtr>(tensors_tensor_list);
+  std::vector<TensorPtr> tensors_tensor_list_vector = ConvertValueTupleToVector<TensorPtr>(tensors_tensor_list);
   auto device_context = op->device_context();
   PyBoostUtils::PrepareOpInputs(device_context, op->stream_id(), tensors_tensor_list_vector);
   for (size_t i = 0; i < tensors_tensor_list_vector.size(); i++) {
@@ -104,22 +105,22 @@ class CustomAclnnOp : public OpRunner {
 };
 
 void CustomLaunchAclnnImpl(const std::string &aclnn_name, const ValuePtrList &inputs,
-                           const tensor::BaseTensorPtrList &outputs) {
+                           const tensor::TensorPtrList &outputs) {
   auto p = std::make_shared<Primitive>("CustomLaunchAclnn");
   auto op = std::make_shared<CustomAclnnOp>(p, runtime::OpRunner::GetDeviceContext("Ascend"));
   op->set_stream_id(PyBoostUtils::cur_stream_id());
 
-  tensor::BaseTensorPtrList input_tensors;
+  tensor::TensorPtrList input_tensors;
   input_tensors.reserve(inputs.size());
   for (auto &inp : inputs) {
-    if (inp->isa<tensor::BaseTensor>()) {
-      (void)input_tensors.emplace_back(inp->cast<tensor::BaseTensorPtr>());
+    if (inp->isa<tensor::Tensor>()) {
+      (void)input_tensors.emplace_back(inp->cast<tensor::TensorPtr>());
     }
     if (inp->isa<ValueTuple>()) {
       auto tuple = inp->cast<ValueTuplePtr>();
       auto element = tuple->value();
-      if (!element.empty() && element[0]->isa<tensor::BaseTensor>()) {
-        auto tuple_vector = ConvertValueTupleToVector<BaseTensorPtr>(tuple);
+      if (!element.empty() && element[0]->isa<tensor::Tensor>()) {
+        auto tuple_vector = ConvertValueTupleToVector<TensorPtr>(tuple);
         (void)std::copy(tuple_vector.begin(), tuple_vector.end(), std::back_inserter(input_tensors));
       }
     }
@@ -145,7 +146,7 @@ void CustomLaunchAclnnImpl(const std::string &aclnn_name, const ValuePtrList &in
 
 namespace mindspore::custom {
 void CustomLaunchAclnn(const std::string &aclnn_name, const ValuePtrList &inputs,
-                       const tensor::BaseTensorPtrList &outputs) {
+                       const tensor::TensorPtrList &outputs) {
   return mindspore::kernel::pyboost::CustomLaunchAclnnImpl(aclnn_name, inputs, outputs);
 }
 }  // namespace mindspore::custom

@@ -42,14 +42,14 @@ BaseShapePtr BinaryCrossEntropyGradFuncImpl::InferShape(
 
 TypePtrList BinaryCrossEntropyGradFuncImpl::InferType(const PrimitivePtr &primitive,
                                                       const ValuePtrList &input_values) const {
-  const auto &input_tensor = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &input_tensor = input_values[kInputIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   return {input_tensor->Dtype()};
 }
 
 ShapeArray BinaryCrossEntropyGradFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                       const ValuePtrList &input_values) const {
-  const auto &input_tensor = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &input_tensor = input_values[kInputIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   auto input_shape = input_tensor->shape();
   return {input_shape};

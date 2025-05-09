@@ -84,7 +84,7 @@ std::string FuncVariable::ToString() const {
 std::string IrVariable::ToString() const {
   std::ostringstream buf;
   buf << "Variable id: " << PyNativeAlgo::Common::GetIdByValue(out_value());
-  if (auto tensor = out_value()->cast<tensor::BaseTensorPtr>(); tensor != nullptr && tensor->is_parameter()) {
+  if (auto tensor = out_value()->cast<tensor::TensorPtr>(); tensor != nullptr && tensor->is_parameter()) {
     buf << ", parameter name: " + tensor->param_info()->name();
   }
   buf << ", is_need_grad: " << is_need_grad() << ", is_need_propagate: " << is_need_propagate()
@@ -109,7 +109,7 @@ AnfNodePtr IrVariable::RealDout() {
   const auto &dout_abs = accumulate_dout->abstract();
   MS_EXCEPTION_IF_NULL(dout_abs);
   // For input, if it is a sparsetensor, we need return a sparsetensor.
-  if (out_value()->isa<tensor::BaseTensor>() || dout_abs->isa<abstract::AbstractSparseTensor>()) {
+  if (out_value()->isa<tensor::Tensor>() || dout_abs->isa<abstract::AbstractSparseTensor>()) {
     return accumulate_dout;
   }
   if (out_value()->isa<tensor::MetaSparseTensor>()) {
@@ -119,12 +119,12 @@ AnfNodePtr IrVariable::RealDout() {
 }
 
 namespace impl {
-AutoGradMetaDataPtr get_autograd_meta_impl(const tensor::BaseTensorPtr &tensor) {
+AutoGradMetaDataPtr get_autograd_meta_impl(const tensor::TensorPtr &tensor) {
   MS_EXCEPTION_IF_NULL(tensor);
   return get_autograd_meta_impl(*tensor);
 }
 
-AutoGradMetaDataPtr get_autograd_meta_impl(const tensor::BaseTensor &tensor) {
+AutoGradMetaDataPtr get_autograd_meta_impl(const tensor::Tensor &tensor) {
   auto auto_grad_meta = tensor.auto_grad_meta_data();
   if (auto_grad_meta == nullptr) {
     return nullptr;
@@ -132,7 +132,7 @@ AutoGradMetaDataPtr get_autograd_meta_impl(const tensor::BaseTensor &tensor) {
   return std::dynamic_pointer_cast<AutoGradMetaData>(auto_grad_meta);
 }
 
-ViewAutoGradMetaDataPtr get_view_autograd_meta_impl(const tensor::BaseTensorPtr &tensor) {
+ViewAutoGradMetaDataPtr get_view_autograd_meta_impl(const tensor::TensorPtr &tensor) {
   MS_EXCEPTION_IF_NULL(tensor);
   if (tensor->auto_grad_meta_data() == nullptr) {
     return nullptr;

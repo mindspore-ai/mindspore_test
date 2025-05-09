@@ -24,9 +24,8 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr FillTensorAscendCustomize(const std::shared_ptr<OpRunner> &op, const ValueTuplePtr &size,
-                                                const BaseTensorPtr &fill_value,
-                                                const std::optional<Int64ImmPtr> &dtype) {
+tensor::TensorPtr FillTensorAscendCustomize(const std::shared_ptr<OpRunner> &op, const ValueTuplePtr &size,
+                                            const TensorPtr &fill_value, const std::optional<Int64ImmPtr> &dtype) {
   OpRunner::InferOpOutput(op, size, fill_value, dtype);
   // No need to convert input
   bool is_host_tensor = fill_value->device_address() == nullptr && fill_value->isa<Tensor>();

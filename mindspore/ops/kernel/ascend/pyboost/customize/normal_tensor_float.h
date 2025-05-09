@@ -26,9 +26,9 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr NormalTensorFloatAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                       const BaseTensorPtr &mean_tensor, const ScalarPtr &std,
-                                                       const BaseTensorPtr &seed, const BaseTensorPtr &offset);
+tensor::TensorPtr NormalTensorFloatAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &mean_tensor,
+                                                   const ScalarPtr &std, const TensorPtr &seed,
+                                                   const TensorPtr &offset);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

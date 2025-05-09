@@ -28,15 +28,15 @@ namespace pyboost {
 namespace {
 
 void PromptFlashAttentionAscendCall(
-  const std::shared_ptr<OpRunner> &op, const device::DeviceContext *device_context, const BaseTensorPtr &query,
-  const BaseTensorPtr &key, const BaseTensorPtr &value, const std::optional<BaseTensorPtr> &atten_mask,
+  const std::shared_ptr<OpRunner> &op, const device::DeviceContext *device_context, const TensorPtr &query,
+  const TensorPtr &key, const TensorPtr &value, const std::optional<TensorPtr> &atten_mask,
   const std::optional<ValueTuplePtr> &actual_seq_qlen, const std::optional<ValueTuplePtr> &actual_seq_qlen_kv,
-  const std::optional<BaseTensorPtr> &pse_shift, const std::optional<BaseTensorPtr> &deq_scale1,
-  const std::optional<BaseTensorPtr> &quant_scale1, const std::optional<BaseTensorPtr> &deq_scale2,
-  const std::optional<BaseTensorPtr> &quant_scale2, const std::optional<BaseTensorPtr> &quant_offset2,
+  const std::optional<TensorPtr> &pse_shift, const std::optional<TensorPtr> &deq_scale1,
+  const std::optional<TensorPtr> &quant_scale1, const std::optional<TensorPtr> &deq_scale2,
+  const std::optional<TensorPtr> &quant_scale2, const std::optional<TensorPtr> &quant_offset2,
   const Int64ImmPtr num_heads, const FP32ImmPtr scale_value, const Int64ImmPtr pre_tokens,
   const Int64ImmPtr next_tokens, const Int64ImmPtr input_layout, const Int64ImmPtr num_key_value_heads,
-  const Int64ImmPtr sparse_mode, const Int64ImmPtr inner_precise, const std::vector<tensor::BaseTensorPtr> &outputs) {
+  const Int64ImmPtr sparse_mode, const Int64ImmPtr inner_precise, const std::vector<tensor::TensorPtr> &outputs) {
   std::vector<int64_t> actual_seq_qlen_array;
   std::vector<int64_t> actual_seq_qlen_kv_array;
 
@@ -62,13 +62,13 @@ void PromptFlashAttentionAscendCall(
 }
 }  // namespace
 
-tensor::BaseTensorPtr PromptFlashAttentionAscendCustomize(
-  const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &query, const BaseTensorPtr &key, const BaseTensorPtr &value,
-  const std::optional<BaseTensorPtr> &atten_mask, const std::optional<ValueTuplePtr> &actual_seq_qlen,
-  const std::optional<ValueTuplePtr> &actual_seq_qlen_kv, const std::optional<BaseTensorPtr> &pse_shift,
-  const std::optional<BaseTensorPtr> &deq_scale1, const std::optional<BaseTensorPtr> &quant_scale1,
-  const std::optional<BaseTensorPtr> &deq_scale2, const std::optional<BaseTensorPtr> &quant_scale2,
-  const std::optional<BaseTensorPtr> &quant_offset2, const Int64ImmPtr num_heads, const FP32ImmPtr scale_value,
+tensor::TensorPtr PromptFlashAttentionAscendCustomize(
+  const std::shared_ptr<OpRunner> &op, const TensorPtr &query, const TensorPtr &key, const TensorPtr &value,
+  const std::optional<TensorPtr> &atten_mask, const std::optional<ValueTuplePtr> &actual_seq_qlen,
+  const std::optional<ValueTuplePtr> &actual_seq_qlen_kv, const std::optional<TensorPtr> &pse_shift,
+  const std::optional<TensorPtr> &deq_scale1, const std::optional<TensorPtr> &quant_scale1,
+  const std::optional<TensorPtr> &deq_scale2, const std::optional<TensorPtr> &quant_scale2,
+  const std::optional<TensorPtr> &quant_offset2, const Int64ImmPtr num_heads, const FP32ImmPtr scale_value,
   const Int64ImmPtr pre_tokens, const Int64ImmPtr next_tokens, const Int64ImmPtr input_layout,
   const Int64ImmPtr num_key_value_heads, const Int64ImmPtr sparse_mode, const Int64ImmPtr inner_precise) {
   OpRunner::InferOpOutput(op, query, key, value, atten_mask, actual_seq_qlen, actual_seq_qlen_kv, pse_shift, deq_scale1,

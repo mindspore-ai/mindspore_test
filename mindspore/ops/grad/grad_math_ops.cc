@@ -88,7 +88,7 @@ bool CloneInplaceInputFuncForInplaceDiv(const PynativeCallback &cb) {
 
 void FreeTensorOfInplaceDivTensor(const PynativeCallback &cb) {
   auto &inputs = *cb.GetInputs();
-  if (inputs[kIndex1]->isa<tensor::BaseTensor>() && cb.IsNotRequiresGrad(kIndex1)) {
+  if (inputs[kIndex1]->isa<tensor::Tensor>() && cb.IsNotRequiresGrad(kIndex1)) {
     cb.FreeDeviceAddress(&inputs[0]);
     MS_LOG(DEBUG) << "Clear device address for inputs[0] of" << cb.opname();
   }
@@ -762,11 +762,11 @@ void FreeTensorsOfMul(const PynativeCallback &cb) {
   // For operators like Mul, the dx ONLY rely on y, and dy ONLY rely on x.
   // so if y is a valuenode, the dy is useless, we can free x in ahead.
   auto &inputs = *cb.GetInputs();
-  if (cb.IsNotRequiresGrad(kIndex0) && inputs[kIndex1]->isa<tensor::BaseTensor>()) {
+  if (cb.IsNotRequiresGrad(kIndex0) && inputs[kIndex1]->isa<tensor::Tensor>()) {
     cb.FreeDeviceAddress(&inputs[kIndex1]);
     MS_LOG(DEBUG) << "Clear device address for inputs[1] of " << cb.opname();
   }
-  if (cb.IsNotRequiresGrad(kIndex1) && inputs[kIndex0]->isa<tensor::BaseTensor>()) {
+  if (cb.IsNotRequiresGrad(kIndex1) && inputs[kIndex0]->isa<tensor::Tensor>()) {
     cb.FreeDeviceAddress(&inputs[kIndex0]);
     MS_LOG(DEBUG) << "Clear device address for inputs[0] of " << cb.opname();
   }
@@ -776,11 +776,11 @@ void FreeTensorsOfBaddbmm(const PynativeCallback &cb) {
   cb.FreeOutputDeviceAddress();
   auto &inputs = *cb.GetInputs();
   cb.FreeDeviceAddress(&inputs[kIndex0]);
-  if (cb.IsNotRequiresGrad(kIndex1) && inputs[kIndex2]->isa<tensor::BaseTensor>()) {
+  if (cb.IsNotRequiresGrad(kIndex1) && inputs[kIndex2]->isa<tensor::Tensor>()) {
     cb.FreeDeviceAddress(&inputs[kIndex2]);
     MS_LOG(DEBUG) << "Clear device address for inputs[2] of " << cb.opname();
   }
-  if (cb.IsNotRequiresGrad(kIndex2) && inputs[kIndex1]->isa<tensor::BaseTensor>()) {
+  if (cb.IsNotRequiresGrad(kIndex2) && inputs[kIndex1]->isa<tensor::Tensor>()) {
     cb.FreeDeviceAddress(&inputs[kIndex1]);
     MS_LOG(DEBUG) << "Clear device address for inputs[1] of " << cb.opname();
   }
@@ -933,11 +933,11 @@ void FreeTensorsOfInplaceMul(const PynativeCallback &cb) {
   // For operators like Mul, the dx ONLY rely on y, and dy ONLY rely on x.
   // so if y is a valuenode, the dy is useless, we can free x in ahead.
   auto &inputs = *cb.GetInputs();
-  if (cb.IsNotRequiresGrad(kIndex0) && inputs[kIndex1]->isa<tensor::BaseTensor>()) {
+  if (cb.IsNotRequiresGrad(kIndex0) && inputs[kIndex1]->isa<tensor::Tensor>()) {
     cb.FreeDeviceAddress(&inputs[kIndex1]);
     MS_LOG(DEBUG) << "Clear device address for inputs[1] of " << cb.opname();
   }
-  if (cb.IsNotRequiresGrad(kIndex1) && inputs[kIndex0]->isa<tensor::BaseTensor>()) {
+  if (cb.IsNotRequiresGrad(kIndex1) && inputs[kIndex0]->isa<tensor::Tensor>()) {
     cb.FreeDeviceAddress(&inputs[kIndex0]);
     MS_LOG(DEBUG) << "Clear device address for inputs[0] of " << cb.opname();
   }

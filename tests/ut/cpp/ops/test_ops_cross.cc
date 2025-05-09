@@ -84,8 +84,8 @@ TEST_P(TestCrossException, exception) {
 
 TEST_P(TestCrossSimpleInfer, simple_infer) {
   const auto &param = GetParam();
-  auto input = std::make_shared<tensor::BaseTensor>(param.input_type->type_id(), param.input_shape);
-  auto other = std::make_shared<tensor::BaseTensor>(param.other_type->type_id(), param.other_shape);
+  auto input = std::make_shared<tensor::Tensor>(param.input_type->type_id(), param.input_shape);
+  auto other = std::make_shared<tensor::Tensor>(param.other_type->type_id(), param.other_shape);
   auto expect_shape = ShapeArray{param.input_shape};
   auto expect_type = TypePtrList{param.input_type};
   CrossFuncImpl cross_func_impl;

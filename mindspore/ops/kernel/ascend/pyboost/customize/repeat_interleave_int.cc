@@ -25,10 +25,9 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr RepeatInterleaveIntAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                         const BaseTensorPtr &input_tensor, const Int64ImmPtr &repeats,
-                                                         const std::optional<Int64ImmPtr> &dim,
-                                                         const std::optional<Int64ImmPtr> &output_size) {
+tensor::TensorPtr RepeatInterleaveIntAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                                     const Int64ImmPtr &repeats, const std::optional<Int64ImmPtr> &dim,
+                                                     const std::optional<Int64ImmPtr> &output_size) {
   OpRunner::InferOpOutput(op, input_tensor, repeats, dim, output_size);
   const ShapeVector &output_shape = op->output_value_simple_info()->shape_vector_[0];
   int64_t repeats_imm = GetValue<int64_t>(repeats);

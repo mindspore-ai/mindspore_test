@@ -86,9 +86,9 @@ BACKEND_EXPORT void GatherInfo(const device::DeviceAddressPtr &);
 BACKEND_EXPORT void GatherInfo(device::DeviceAddress *);
 
 BACKEND_EXPORT void GatherInfo(const device::DeviceAddressPtr &);
-BACKEND_EXPORT void GatherInfo(const mindspore::tensor::BaseTensorPtr &);
-BACKEND_EXPORT void GatherInfo(const std::optional<tensor::BaseTensorPtr> &);
-BACKEND_EXPORT void GatherInfo(const std::vector<tensor::BaseTensorPtr> &);
+BACKEND_EXPORT void GatherInfo(const mindspore::tensor::TensorPtr &);
+BACKEND_EXPORT void GatherInfo(const std::optional<tensor::TensorPtr> &);
+BACKEND_EXPORT void GatherInfo(const std::vector<tensor::TensorPtr> &);
 BACKEND_EXPORT void GatherInfo(const mindspore::tensor::TensorPtr &);
 BACKEND_EXPORT void GatherInfo(const std::optional<tensor::TensorPtr> &);
 BACKEND_EXPORT void GatherInfo(const std::vector<tensor::TensorPtr> &);
@@ -144,7 +144,7 @@ inline void RefreshAddr(const std::vector<mindspore::kernel::KernelTensor *> &te
 }
 
 void RefreshAddr(const device::DeviceAddressPtr &device_address);
-void RefreshAddr(const mindspore::tensor::BaseTensorPtr &tensor);
+void RefreshAddr(const mindspore::tensor::TensorPtr &tensor);
 
 template <typename Args>
 void RefreshAddr(const Args &values) {}
@@ -232,9 +232,9 @@ BACKEND_EXPORT void GatherHash(const std::pair<mindspore::kernel::KernelTensor *
 BACKEND_EXPORT void GatherHash(const std::vector<mindspore::kernel::KernelTensor *> &);
 BACKEND_EXPORT void GatherHash(device::DeviceAddress *);
 BACKEND_EXPORT void GatherHash(const device::DeviceAddressPtr &);
-BACKEND_EXPORT void GatherHash(const mindspore::tensor::BaseTensorPtr &);
-BACKEND_EXPORT void GatherHash(const std::optional<tensor::BaseTensorPtr> &);
-BACKEND_EXPORT void GatherHash(const std::vector<tensor::BaseTensorPtr> &);
+BACKEND_EXPORT void GatherHash(const mindspore::tensor::TensorPtr &);
+BACKEND_EXPORT void GatherHash(const std::optional<tensor::TensorPtr> &);
+BACKEND_EXPORT void GatherHash(const std::vector<tensor::TensorPtr> &);
 BACKEND_EXPORT void GatherHash(const mindspore::tensor::TensorPtr &);
 BACKEND_EXPORT void GatherHash(const std::optional<tensor::TensorPtr> &);
 BACKEND_EXPORT void GatherHash(const std::vector<tensor::TensorPtr> &);

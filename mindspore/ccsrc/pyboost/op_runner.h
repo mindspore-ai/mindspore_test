@@ -39,11 +39,11 @@
 
 namespace mindspore {
 namespace tensor {
-using BaseTensorPtr = tensor::BaseTensorPtr;
+using TensorPtr = tensor::TensorPtr;
 }
 namespace kernel {
 namespace pyboost {
-using BaseTensorPtr = tensor::BaseTensorPtr;
+using TensorPtr = tensor::TensorPtr;
 // OpRunner is a base class for operators.
 // OpRunner records the operator's input abstract,
 // output abstract and output Tensors for grad,
@@ -64,11 +64,11 @@ class PYBOOST_API OpRunner : public std::enable_shared_from_this<OpRunner> {
   const AbstractBasePtr &output_abs() const { return output_abs_; }
   const DeviceContext *device_context() const { return device_context_; }
   const std::vector<pynative::DeviceAddressPromisePtr> &device_sync_promises() const { return device_sync_promises_; }
-  const std::vector<tensor::BaseTensorPtr> &outputs() const { return outputs_; }
-  void set_outputs(const std::vector<tensor::BaseTensorPtr> &outputs) { outputs_ = outputs; }
+  const std::vector<tensor::TensorPtr> &outputs() const { return outputs_; }
+  void set_outputs(const std::vector<tensor::TensorPtr> &outputs) { outputs_ = outputs; }
   void set_stream_id(size_t stream_id) { stream_id_ = stream_id; }
-  void set_clone_tensor(const tensor::BaseTensorPtr &clone_tensor) { clone_tensor_ = clone_tensor; }
-  const tensor::BaseTensorPtr &clone_tensor() { return clone_tensor_; }
+  void set_clone_tensor(const tensor::TensorPtr &clone_tensor) { clone_tensor_ = clone_tensor; }
+  const tensor::TensorPtr &clone_tensor() { return clone_tensor_; }
   virtual bool output_is_tuple() const { return false; }
 
   void set_comm_handle(const CommHandlePtr &comm_handle) { comm_handle_ = comm_handle; }
@@ -77,7 +77,7 @@ class PYBOOST_API OpRunner : public std::enable_shared_from_this<OpRunner> {
   size_t stream_id() const { return stream_id_; }
   ValueSimpleInfoPtr output_value_simple_info() const { return output_value_simple_info_; }
 
-  const tensor::BaseTensorPtr &output(const size_t &idx) {
+  const tensor::TensorPtr &output(const size_t &idx) {
     if (idx >= outputs_.size()) {
       MS_LOG(EXCEPTION) << "idx is out of bounds, idx:" << idx << ", outputs_.size():" << outputs_.size();
     }
@@ -142,7 +142,7 @@ class PYBOOST_API OpRunner : public std::enable_shared_from_this<OpRunner> {
     if (MS_LIKELY(skip_tracker_)) {
       return;
     }
-    std::vector<tensor::BaseTensorPtr> tensors;
+    std::vector<tensor::TensorPtr> tensors;
     (CollectTrackerTensor(args, &tensors), ...);
 
     PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([primitive = primitive_, tensors]() {
@@ -171,7 +171,7 @@ class PYBOOST_API OpRunner : public std::enable_shared_from_this<OpRunner> {
     if (MS_LIKELY(skip_tracker_)) {
       return;
     }
-    std::vector<tensor::BaseTensorPtr> tensors;
+    std::vector<tensor::TensorPtr> tensors;
     std::apply([this, &tensors](const Args &... args) { (CollectTrackerTensor(args, &tensors), ...); }, tuple);
     TrackerOutputTensors(tensors);
   }
@@ -181,7 +181,7 @@ class PYBOOST_API OpRunner : public std::enable_shared_from_this<OpRunner> {
     if (MS_LIKELY(skip_tracker_)) {
       return;
     }
-    std::vector<tensor::BaseTensorPtr> tensors;
+    std::vector<tensor::TensorPtr> tensors;
     for (const auto &val : vals) {
       CollectTrackerTensor(val, &tensors);
     }
@@ -192,12 +192,12 @@ class PYBOOST_API OpRunner : public std::enable_shared_from_this<OpRunner> {
     if (MS_LIKELY(skip_tracker_)) {
       return;
     }
-    std::vector<tensor::BaseTensorPtr> tensors;
+    std::vector<tensor::TensorPtr> tensors;
     CollectTrackerTensor(val, &tensors);
     TrackerOutputTensors(tensors);
   }
 
-  void UpdateOutputShape(const BaseTensorPtr &tensor, const ShapeVector &shape) {
+  void UpdateOutputShape(const TensorPtr &tensor, const ShapeVector &shape) {
     tensor->set_shape(shape);
     std::static_pointer_cast<device::DeviceAddress>(tensor->device_address())->address_common()->shape_vector_ = shape;
   }
@@ -224,9 +224,9 @@ class PYBOOST_API OpRunner : public std::enable_shared_from_this<OpRunner> {
   AbstractBasePtr output_abs_{nullptr};
   CommHandlePtr comm_handle_{nullptr};
   // Forward output for grad.
-  std::vector<tensor::BaseTensorPtr> outputs_{};
+  std::vector<tensor::TensorPtr> outputs_{};
   // clone inplace tensor, temp method, later we will erease it.
-  tensor::BaseTensorPtr clone_tensor_{nullptr};
+  tensor::TensorPtr clone_tensor_{nullptr};
   const DeviceContext *device_context_{nullptr};
   // Device address promise for multi-stage pipeline.
   std::vector<pynative::DeviceAddressPromisePtr> device_sync_promises_;
@@ -237,27 +237,27 @@ class PYBOOST_API OpRunner : public std::enable_shared_from_this<OpRunner> {
   bool skip_tracker_{true};
 
  private:
-  void CollectTrackerTensor(const ValuePtr &val, std::vector<tensor::BaseTensorPtr> *tensors) {
-    auto tensor = std::dynamic_pointer_cast<tensor::BaseTensor>(val);
+  void CollectTrackerTensor(const ValuePtr &val, std::vector<tensor::TensorPtr> *tensors) {
+    auto tensor = std::dynamic_pointer_cast<tensor::Tensor>(val);
     if (tensor != nullptr) {
       tensors->emplace_back(tensor);
     }
   }
 
-  void CollectTrackerTensor(const ValueTuplePtr &tensor_tuple, std::vector<tensor::BaseTensorPtr> *tensors) {
+  void CollectTrackerTensor(const ValueTuplePtr &tensor_tuple, std::vector<tensor::TensorPtr> *tensors) {
     for (const auto &val : tensor_tuple->value()) {
       CollectTrackerTensor(val, tensors);
     }
   }
 
   template <typename T>
-  void CollectTrackerTensor(const std::optional<T> &opt, std::vector<tensor::BaseTensorPtr> *tensors) {
+  void CollectTrackerTensor(const std::optional<T> &opt, std::vector<tensor::TensorPtr> *tensors) {
     if (opt.has_value()) {
       CollectTrackerTensor(opt.value(), tensors);
     }
   }
 
-  void TrackerOutputTensors(const std::vector<tensor::BaseTensorPtr> &tensors) {
+  void TrackerOutputTensors(const std::vector<tensor::TensorPtr> &tensors) {
     PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([primitive = primitive_, tensors]() {
       for (const auto &tensor : tensors) {
         MS_EXCEPTION_IF_NULL(tensor);

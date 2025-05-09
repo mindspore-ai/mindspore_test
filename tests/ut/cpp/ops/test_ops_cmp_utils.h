@@ -51,8 +51,8 @@ template <typename T, typename std::enable_if<std::is_base_of<OpFuncImpl, T>::va
 void DoFuncImplSimpleInferAndCompare(const std::string &prim_name, const ValuePtrList &input_values,
                                      const ShapeArray &expect_shape, const TypePtrList &expect_type) {
   for (const auto &value : input_values) {
-    if (value->isa<tensor::BaseTensor>()) {
-      const auto &in_tensor = value->cast<tensor::BaseTensorPtr>();
+    if (value->isa<tensor::Tensor>()) {
+      const auto &in_tensor = value->cast<tensor::TensorPtr>();
       ASSERT_NE(in_tensor, nullptr);
       const auto &shape = in_tensor->shape();
       if (IsDynamic(shape)) {

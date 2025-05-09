@@ -215,8 +215,8 @@ const mindspore::HashSet<std::string> kNotRealOP{
   kPyExecuteOpName,
 };
 
-tensor::BaseTensorPtr GetContiguousTensor(const tensor::BaseTensorPtr &input_tensor, const std::string &device_target,
-                                          bool requires_grad) {
+tensor::TensorPtr GetContiguousTensor(const tensor::TensorPtr &input_tensor, const std::string &device_target,
+                                      bool requires_grad) {
   auto contiguous_op = CREATE_PYBOOST_OP(Contiguous, device_target);
   auto contiguous_tensor = contiguous_op->Call(input_tensor);
   if (requires_grad) {
@@ -271,8 +271,8 @@ AnfNodePtr Common::ConvertValueSequenceToMakeTuple(const ValueNodePtr &node, con
 
 std::string Common::GetIdByValue(const ValuePtr &v) {
   MS_EXCEPTION_IF_NULL(v);
-  if (v->isa<tensor::BaseTensor>()) {
-    return v->cast<tensor::BaseTensorPtr>()->id();
+  if (v->isa<tensor::Tensor>()) {
+    return v->cast<tensor::TensorPtr>()->id();
   }
   if (v->isa<stub::StubNode>()) {
     return GetIdByValue(v->cast<stub::StubNodePtr>()->WaitValue());
@@ -388,8 +388,8 @@ void Common::SplitString(const std::string &str, std::vector<std::string> *id_ve
 
 bool Common::ValueHasDynamicShape(const ValuePtr &value) {
   MS_EXCEPTION_IF_NULL(value);
-  if (value->isa<tensor::BaseTensor>()) {
-    return value->cast<tensor::BaseTensorPtr>()->base_shape_ptr() != nullptr;
+  if (value->isa<tensor::Tensor>()) {
+    return value->cast<tensor::TensorPtr>()->base_shape_ptr() != nullptr;
   }
   if (value->isa<ValueSequence>()) {
     auto value_seq = value->cast<ValueSequencePtr>();
@@ -402,7 +402,7 @@ bool Common::ValueHasDynamicShape(const ValuePtr &value) {
 bool Common::IsTensor(const ValuePtr &v, bool include_sequence) {
   MS_EXCEPTION_IF_NULL(v);
   if (include_sequence) {
-    if (v->isa<tensor::MetaSparseTensor>() || v->isa<tensor::BaseTensor>()) {
+    if (v->isa<tensor::MetaSparseTensor>() || v->isa<tensor::Tensor>()) {
       return true;
     }
     if (v->isa<ValueSequence>()) {
@@ -423,7 +423,7 @@ bool Common::IsTensor(const ValuePtr &v, bool include_sequence) {
     return false;
   }
   MS_LOG(DEBUG) << "Get value " << v->ToString();
-  return v->isa<tensor::BaseTensor>() || v->isa<tensor::MetaSparseTensor>();
+  return v->isa<tensor::Tensor>() || v->isa<tensor::MetaSparseTensor>();
 }
 
 bool Common::IsControlFlowGraph(const FuncGraphPtr &func_graph) {
@@ -433,7 +433,7 @@ bool Common::IsControlFlowGraph(const FuncGraphPtr &func_graph) {
 
 ValuePtr Common::FilterSensValues(const ValuePtr &value, bool dict_convert_to_tuple) {
   MS_EXCEPTION_IF_NULL(value);
-  if (value->isa<tensor::BaseTensor>() || value->isa<tensor::COOTensor>() || value->isa<tensor::CSRTensor>()) {
+  if (value->isa<tensor::Tensor>() || value->isa<tensor::COOTensor>() || value->isa<tensor::CSRTensor>()) {
     return value;
   }
   if (value->isa<ValueSequence>()) {
@@ -457,7 +457,7 @@ ValuePtr Common::FilterSensValues(const ValuePtr &value, bool dict_convert_to_tu
   return nullptr;
 }
 
-tensor::BaseTensorPtr Common::GetTensorFromParam(const AnfNodePtr &param_node) {
+tensor::TensorPtr Common::GetTensorFromParam(const AnfNodePtr &param_node) {
   MS_EXCEPTION_IF_NULL(param_node);
   auto param = param_node->cast<ParameterPtr>();
   MS_EXCEPTION_IF_NULL(param);
@@ -466,7 +466,7 @@ tensor::BaseTensorPtr Common::GetTensorFromParam(const AnfNodePtr &param_node) {
   }
   auto default_value = param->default_param();
   MS_EXCEPTION_IF_NULL(default_value);
-  auto tensor_value = default_value->cast<tensor::BaseTensorPtr>();
+  auto tensor_value = default_value->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(tensor_value);
   return tensor_value;
 }
@@ -502,8 +502,8 @@ ShapeVector Common::GetShapeFromAbstract(const abstract::AbstractBasePtr &abs) {
 
 std::pair<TypePtr, TypeId> Common::GetTypeFromValue(const ValuePtr &v) {
   MS_EXCEPTION_IF_NULL(v);
-  if (v->isa<tensor::BaseTensor>()) {
-    return std::make_pair(v->cast<tensor::BaseTensorPtr>()->Dtype(), kObjectTypeTensorType);
+  if (v->isa<tensor::Tensor>()) {
+    return std::make_pair(v->cast<tensor::TensorPtr>()->Dtype(), kObjectTypeTensorType);
   }
   if (v->isa<ValueTuple>()) {
     return std::make_pair(v->type(), kObjectTypeTuple);
@@ -519,8 +519,8 @@ std::pair<TypePtr, TypeId> Common::GetTypeFromValue(const ValuePtr &v) {
 
 ShapeVector Common::GetShapeFromValue(const ValuePtr &v) {
   MS_EXCEPTION_IF_NULL(v);
-  if (v->isa<tensor::BaseTensor>()) {
-    return v->cast<tensor::BaseTensorPtr>()->shape_c();
+  if (v->isa<tensor::Tensor>()) {
+    return v->cast<tensor::TensorPtr>()->shape_c();
   }
   if (v->isa<ValueSequence>()) {
     const auto &v_seq = v->cast<ValueSequencePtr>()->value();
@@ -621,22 +621,22 @@ void Common::StubNodeToValue(const FrontendOpRunInfoPtr &op_run_info) {
   }
 }
 
-tensor::BaseTensorPtr Common::StubNodeToTensor(const ValuePtr &v) {
+tensor::TensorPtr Common::StubNodeToTensor(const ValuePtr &v) {
   MS_EXCEPTION_IF_NULL(v);
   if (utils::isa<stub::StubNode>(v)) {
     auto stub = utils::cast<stub::StubNodePtr>(v);
-    return stub->WaitValue()->cast<tensor::BaseTensorPtr>();
+    return stub->WaitValue()->cast<tensor::TensorPtr>();
   }
-  if (v->isa<tensor::BaseTensor>()) {
-    return v->cast<tensor::BaseTensorPtr>();
+  if (v->isa<tensor::Tensor>()) {
+    return v->cast<tensor::TensorPtr>();
   }
   MS_LOG(EXCEPTION) << "It should be stub tensor, but got " << v->ToString();
 }
 
 ValuePtr Common::ConvertToContiguousValue(const ValuePtr &v, bool requires_grad) {
   MS_EXCEPTION_IF_NULL(v);
-  if (v->isa<tensor::BaseTensor>()) {
-    auto tensor = v->cast<tensor::BaseTensorPtr>();
+  if (v->isa<tensor::Tensor>()) {
+    auto tensor = v->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(tensor);
     if (tensor->storage_info() == nullptr) {
       return tensor;
@@ -669,7 +669,7 @@ ValuePtr Common::ConvertToContiguousValue(const ValuePtr &v, bool requires_grad)
   }
 }
 
-tensor::BaseTensorPtr Common::ConvertToContiguousTensor(const tensor::BaseTensorPtr &tensor, bool requires_grad) {
+tensor::TensorPtr Common::ConvertToContiguousTensor(const tensor::TensorPtr &tensor, bool requires_grad) {
   MS_EXCEPTION_IF_NULL(tensor);
 
   // Tensor with storage info, need convert to contiguous in no-view op.
@@ -680,7 +680,7 @@ tensor::BaseTensorPtr Common::ConvertToContiguousTensor(const tensor::BaseTensor
   return GetContiguousTensor(tensor, device_target, requires_grad);
 }
 
-tensor::BaseTensorPtr Common::ConvertStubNodeToTensor(const ValuePtr &v, bool need_contiguous, bool requires_grad) {
+tensor::TensorPtr Common::ConvertStubNodeToTensor(const ValuePtr &v, bool need_contiguous, bool requires_grad) {
   const auto &tensor = StubNodeToTensor(v);
   MS_EXCEPTION_IF_NULL(tensor);
   if (!need_contiguous || tensor->storage_info() == nullptr) {
@@ -697,8 +697,8 @@ tensor::BaseTensorPtr Common::ConvertStubNodeToTensor(const ValuePtr &v, bool ne
   return GetContiguousTensor(tensor, device_target, requires_grad);
 }
 
-std::optional<tensor::BaseTensorPtr> Common::ConvertStubNodeToTensor(const std::optional<ValuePtr> &v,
-                                                                     bool need_contiguous, bool requires_grad) {
+std::optional<tensor::TensorPtr> Common::ConvertStubNodeToTensor(const std::optional<ValuePtr> &v, bool need_contiguous,
+                                                                 bool requires_grad) {
   if (!v.has_value()) {
     return std::nullopt;
   }
@@ -790,7 +790,7 @@ tensor::TensorPtr Common::CreateFakeTensorWithoutDeviceAddress(const tensor::Ten
 }
 
 void Common::ClearDeviceAddress(const ValuePtr &value) {
-  std::vector<tensor::BaseTensorPtr> tensors;
+  std::vector<tensor::TensorPtr> tensors;
   TensorValueToTensor(value, &tensors);
   for (const auto &tensor : tensors) {
     tensor->set_device_address(nullptr);
@@ -799,8 +799,8 @@ void Common::ClearDeviceAddress(const ValuePtr &value) {
 
 void Common::SetOutputUsedInBpropGraph(const ValuePtr &value) {
   MS_EXCEPTION_IF_NULL(value);
-  if (value->isa<tensor::BaseTensor>()) {
-    const auto &v_t = value->cast<tensor::BaseTensorPtr>();
+  if (value->isa<tensor::Tensor>()) {
+    const auto &v_t = value->cast<tensor::TensorPtr>();
     v_t->set_used_in_bprop_graph(true);
   }
   if (value->isa<ValueSequence>()) {
@@ -823,8 +823,8 @@ void Common::SetOutputUsedInBpropGraph(const ValuePtr &value) {
 
 ValuePtr Common::CreateFakeValueWithoutDeviceAddress(const ValuePtr &value, bool is_force_create_fake) {
   MS_EXCEPTION_IF_NULL(value);
-  if (value->isa<tensor::BaseTensor>()) {
-    const auto &v_t = value->cast<tensor::BaseTensorPtr>();
+  if (value->isa<tensor::Tensor>()) {
+    const auto &v_t = value->cast<tensor::TensorPtr>();
     // If the tensor used in bprop graph, no need create fake value
     if (!is_force_create_fake && v_t->is_parameter()) {
       return value;
@@ -954,7 +954,7 @@ void Common::ClearRes() { kGradAbstractConverter.clear(); }
 
 std::string PyParser::GetIdByPyObj(const py::object &obj) {
   if (tensor::IsTensorPy(obj)) {
-    return tensor::ConvertToBaseTensor(obj)->id();
+    return tensor::ConvertToTensor(obj)->id();
   }
   if (IsStubTensor(obj)) {
     return ConvertStubTensor(obj)->id();
@@ -1269,8 +1269,8 @@ bool DataConvert::RunOpConvertConstInputToAttr(const FrontendOpRunInfoPtr &op_ru
     MS_LOG(EXCEPTION) << "The input index: " << input_index << " is larger than the input names vector size!";
   }
   const auto &input_name = input_names_vec[input_index];
-  if (v->isa<tensor::BaseTensor>()) {
-    auto tensor = v->cast<tensor::BaseTensorPtr>();
+  if (v->isa<tensor::Tensor>()) {
+    auto tensor = v->cast<tensor::TensorPtr>();
     if (tensor->data().const_data() == nullptr && !tensor->has_user_data(kTensorValueIsEmpty)) {
       return false;
     }
@@ -1279,14 +1279,14 @@ bool DataConvert::RunOpConvertConstInputToAttr(const FrontendOpRunInfoPtr &op_ru
   return true;
 }
 
-void DataConvert::TransformValueNodeBaseTensorToTensor(const ValueNodePtr &value_node) {
+void DataConvert::TransformValueNodeTensorToTensor(const ValueNodePtr &value_node) {
   MS_EXCEPTION_IF_NULL(value_node);
   const auto &v = value_node->value();
   MS_EXCEPTION_IF_NULL(v);
-  if (!v->isa<tensor::BaseTensor>()) {
+  if (!v->isa<tensor::Tensor>()) {
     return;
   }
-  const auto &tensor = v->cast<tensor::BaseTensorPtr>();
+  const auto &tensor = v->cast<tensor::TensorPtr>();
   value_node->set_value(std::make_shared<tensor::Tensor>(*tensor));
 }
 
@@ -1300,11 +1300,11 @@ ValuePtr DataConvert::ValueListToValue(const ValuePtrList &values, const abstrac
   return std::make_shared<ValueTuple>(values);
 }
 
-ValuePtrList DataConvert::TensorListToValueList(const tensor::BaseTensorPtrList &tensor_list) {
+ValuePtrList DataConvert::TensorListToValueList(const tensor::TensorPtrList &tensor_list) {
   ValuePtrList output_values;
   output_values.reserve(tensor_list.size());
   (void)std::transform(tensor_list.begin(), tensor_list.end(), std::back_inserter(output_values),
-                       [](const BaseTensorPtr &tensor) -> ValuePtr {
+                       [](const TensorPtr &tensor) -> ValuePtr {
                          if (tensor == nullptr) return kNone;
                          return tensor;
                        });
@@ -1438,15 +1438,15 @@ void PyBoost::MarkPyBoostInputs(const OpGradInfoPtr &op_grad_info, const TopCell
   op_grad_info->input_value_grad_type.resize(input_size);
   for (size_t index = 0; index < input_size; ++index) {
     const auto &v = op_grad_info->input_value[index];
-    if (v->isa<tensor::BaseTensor>()) {
-      op_grad_info->input_value_grad_type[index] = AutoGradUtil::SetTensorGradInfo(v->cast<tensor::BaseTensorPtr>());
+    if (v->isa<tensor::Tensor>()) {
+      op_grad_info->input_value_grad_type[index] = AutoGradUtil::SetTensorGradInfo(v->cast<tensor::TensorPtr>());
     } else if (v->isa<ValueSequence>()) {
       const auto &value_sequence = v->cast<ValueSequencePtr>();
       const auto &tuple_inputs = value_sequence->value();
-      if (!tuple_inputs.empty() && tuple_inputs[0]->isa<tensor::BaseTensor>()) {
+      if (!tuple_inputs.empty() && tuple_inputs[0]->isa<tensor::Tensor>()) {
         op_grad_info->input_value_grad_type[index] = InputType::kOpOutput;
         for (const auto &elem : tuple_inputs) {
-          auto grad_type = AutoGradUtil::SetTensorGradInfo(elem->cast<tensor::BaseTensorPtr>());
+          auto grad_type = AutoGradUtil::SetTensorGradInfo(elem->cast<tensor::TensorPtr>());
           if (AutoGradUtil::IsParam(grad_type)) {
             op_grad_info->input_value_grad_type[index] = InputType::kParameter;
           }
@@ -1470,7 +1470,7 @@ void PyBoost::MarkPyBoostInputs(const OpGradInfoPtr &op_grad_info, const TopCell
   }
 }
 
-void PyBoost::BumpVersionAsync(const tensor::BaseTensorPtr &tensor) {
+void PyBoost::BumpVersionAsync(const tensor::TensorPtr &tensor) {
   const auto &forward = PyNativeAlgo::Common::GetPyNativeExecutor()->forward_executor();
   if (forward->enable_async()) {
     const auto task = [tensor]() { tensor->BumpVersion(); };
@@ -1489,7 +1489,7 @@ void DataConvert::PlantTensorTupleToVector(const FrontendOpRunInfoPtr &op_run_in
     op_run_info->op_grad_info->input_value_grad_type[index] = InputType::kOpOutput;
   }
   for (const auto &v : value_seq->value()) {
-    if (!v->isa<tensor::BaseTensor>()) {
+    if (!v->isa<tensor::Tensor>()) {
       MS_LOG(DEBUG) << "Get value " << v->ToString() << " in tensor tuple, op name "
                     << op_run_info->base_op_run_info.op_name;
       (void)op_run_info->base_op_run_info.expanded_input_values.emplace_back(value_seq);
@@ -1497,7 +1497,7 @@ void DataConvert::PlantTensorTupleToVector(const FrontendOpRunInfoPtr &op_run_in
       continue;
     }
     InputType input_type = InputType::kInput;
-    auto tensor = v->cast<tensor::BaseTensorPtr>();
+    auto tensor = v->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(tensor);
     if (tensor->is_parameter()) {
       input_type = InputType::kParameter;
@@ -1581,7 +1581,7 @@ void DataConvert::ConvertCSRTensorToTensorList(const FrontendOpRunInfoPtr &op_ru
     op_run_info->op_grad_info->input_value_grad_type[index] = InputType::kOpOutput;
     for (int i = 0; i < input_num; ++i) {
       auto iter = op_run_info->base_op_run_info.expanded_input_values.rbegin() + i;
-      auto grad_type = AutoGradUtil::SetTensorGradInfo((*iter)->cast<tensor::BaseTensorPtr>());
+      auto grad_type = AutoGradUtil::SetTensorGradInfo((*iter)->cast<tensor::TensorPtr>());
       if (AutoGradUtil::IsParam(grad_type)) {
         op_run_info->op_grad_info->input_value_grad_type[index] = InputType::kParameter;
       }
@@ -1590,8 +1590,8 @@ void DataConvert::ConvertCSRTensorToTensorList(const FrontendOpRunInfoPtr &op_ru
 }
 
 void DataConvert::GetTensorIdFromOutputValue(const ValuePtr &value, std::vector<std::string> *converted_tensor_id) {
-  if (value->isa<tensor::BaseTensor>()) {
-    (void)converted_tensor_id->emplace_back(value->cast<tensor::BaseTensorPtr>()->id());
+  if (value->isa<tensor::Tensor>()) {
+    (void)converted_tensor_id->emplace_back(value->cast<tensor::TensorPtr>()->id());
     MS_LOG(DEBUG) << "Get top cell output tensor id " << converted_tensor_id->back();
   } else if (value->isa<ValueSequence>()) {
     const auto &seq = value->cast<ValueSequencePtr>();
@@ -1614,7 +1614,7 @@ void DataConvert::ConvertTupleValueToTensor(const FrontendOpRunInfoPtr &op_run_i
     (void)op_run_info->base_op_run_info.input_types.emplace_back(InputType::kConstant);
     return;
   }
-  if (tuple_inputs[0]->isa<tensor::BaseTensor>()) {
+  if (tuple_inputs[0]->isa<tensor::Tensor>()) {
     PlantTensorTupleToVector(op_run_info, value_seq, index, top_cell);
   } else {
     (void)op_run_info->base_op_run_info.expanded_input_values.emplace_back(value_seq);
@@ -1626,10 +1626,10 @@ void DataConvert::MarkInputs(const FrontendOpRunInfoPtr &op_run_info, const Valu
                              const TopCellInfoPtr &top_cell) {
   MS_EXCEPTION_IF_NULL(op_run_info);
   MS_EXCEPTION_IF_NULL(v);
-  tensor::BaseTensorPtr tensor_ptr = nullptr;
+  tensor::TensorPtr tensor_ptr = nullptr;
   InputType input_type = InputType::kInput;
-  if (v->isa<tensor::BaseTensor>()) {
-    tensor_ptr = v->cast<tensor::BaseTensorPtr>();
+  if (v->isa<tensor::Tensor>()) {
+    tensor_ptr = v->cast<tensor::TensorPtr>();
     if (tensor_ptr->is_parameter()) {
       input_type = InputType::kParameter;
     }
@@ -1707,7 +1707,7 @@ void ReplaceReduceAxis(const FrontendOpRunInfoPtr &op_run_info) {
     reduce_all_axis = true;
   }
   if (reduce_all_axis) {
-    auto size = inputs[0]->cast<tensor::BaseTensorPtr>()->shape().size();
+    auto size = inputs[0]->cast<tensor::TensorPtr>()->shape().size();
     // For example, input 0 is Tensor(shape=[], value=1), the axis to reduce is 0.
     std::vector<ValuePtr> axis = {std::make_shared<Int64Imm>(0)};
     for (size_t i = 1; i < size; ++i) {

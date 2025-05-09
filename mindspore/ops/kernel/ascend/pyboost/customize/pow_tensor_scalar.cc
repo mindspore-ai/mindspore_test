@@ -25,9 +25,8 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr PowTensorScalarAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                     const BaseTensorPtr &input_tensor,
-                                                     const ScalarPtr &exponent_scalar) {
+tensor::TensorPtr PowTensorScalarAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                                 const ScalarPtr &exponent_scalar) {
   MS_EXCEPTION_IF_NULL(input_tensor);
   MS_EXCEPTION_IF_NULL(exponent_scalar);
   OpRunner::InferOpOutput(op, input_tensor, exponent_scalar);

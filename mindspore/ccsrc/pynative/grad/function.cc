@@ -32,7 +32,7 @@ void PrepareForForward() {
   kernel::pyboost::OpRunStatus::Get().set_run_info(std::move(status));
 }
 
-void AutogradContext::MarkDirty(const BaseTensorPtrList &inputs) {
+void AutogradContext::MarkDirty(const TensorPtrList &inputs) {
   dirty_inputs_.clear();
   dirty_inputs_.reserve(inputs.size());
   for (const auto &input : inputs) {
@@ -40,7 +40,7 @@ void AutogradContext::MarkDirty(const BaseTensorPtrList &inputs) {
   }
 }
 
-void AutogradContext::MarkNonDifferentiable(const BaseTensorPtrList &outputs) {
+void AutogradContext::MarkNonDifferentiable(const TensorPtrList &outputs) {
   non_differentiable_.clear();
   non_differentiable_.reserve(outputs.size());
   for (const auto &output : outputs) {
@@ -57,12 +57,12 @@ bool AutogradContext::NeedsInputGrad(size_t tensor_index) const {
   return edge.is_defined() ? edge.variable->is_need_grad() : false;
 }
 
-bool AutogradContext::NeedGrad(const BaseTensorPtr &tensor) {
+bool AutogradContext::NeedGrad(const TensorPtr &tensor) {
   runtime::Pipeline::Get().WaitBpropStage();
   return PyNativeAlgo::AutoGradUtil::NeedGrad(tensor);
 }
 
-void CppFunctionDoGrad(AutogradContext *context, const BaseTensorPtrList &inputs, BaseTensorPtrList *outputs) {
+void CppFunctionDoGrad(AutogradContext *context, const TensorPtrList &inputs, TensorPtrList *outputs) {
   auto node = context->node_.lock();
   MS_EXCEPTION_IF_NULL(node);
   const auto &function_name = node->name();
@@ -73,7 +73,7 @@ void CppFunctionDoGrad(AutogradContext *context, const BaseTensorPtrList &inputs
     MS_LOG(DEBUG) << function_name << " Begin build grad graph";
 
     // process input
-    BaseTensorPtrSet input_tensor_set;
+    TensorPtrSet input_tensor_set;
     ValuePtrList input_value_list;
     std::vector<InputType> input_value_grad_type;
     input_value_list.reserve(inputs.size());
@@ -127,10 +127,10 @@ void CppFunctionDoGrad(AutogradContext *context, const BaseTensorPtrList &inputs
   }
 }
 
-BaseTensorPtrList GradPreProcess(const ValuePtrList &grads, const AbstractBasePtrList &outputs_abstract,
-                                 bool materialize_grads, const std::string &function_name) {
+TensorPtrList GradPreProcess(const ValuePtrList &grads, const AbstractBasePtrList &outputs_abstract,
+                             bool materialize_grads, const std::string &function_name) {
   MS_LOG(DEBUG) << function_name << " Begin GradPreProcess";
-  BaseTensorPtrList outputs;
+  TensorPtrList outputs;
   outputs.reserve(grads.size());
 
   const auto &device_target = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
@@ -138,23 +138,23 @@ BaseTensorPtrList GradPreProcess(const ValuePtrList &grads, const AbstractBasePt
 
   for (size_t i = 0; i < grads.size(); ++i) {
     const auto &grad = grads[i];
-    BaseTensorPtr tensor = nullptr;
-    if (grad->isa<tensor::BaseTensor>()) {
-      tensor = grad->cast<BaseTensorPtr>();
+    TensorPtr tensor = nullptr;
+    if (grad->isa<tensor::Tensor>()) {
+      tensor = grad->cast<TensorPtr>();
     } else if (grad->isa<None>()) {
       if (materialize_grads) {
         const auto filled_zeros_grad = func_builder.FillZeros(grad, outputs_abstract[i]);
-        tensor = filled_zeros_grad->cast<BaseTensorPtr>();
+        tensor = filled_zeros_grad->cast<TensorPtr>();
       }
     } else {
-      MS_LOG(EXCEPTION) << "The value is not a BaseTensor or None.";
+      MS_LOG(EXCEPTION) << "The value is not a Tensor or None.";
     }
     (void)outputs.emplace_back(tensor);
   }
   return outputs;
 }
 
-ValuePtrList GradPostProcess(const BaseTensorPtrList &outputs, std::vector<bool> is_tensor_input,
+ValuePtrList GradPostProcess(const TensorPtrList &outputs, std::vector<bool> is_tensor_input,
                              const std::string &function_name) {
   MS_LOG(DEBUG) << function_name << " Begin GradPostProcess";
   const auto num_forward_inputs = is_tensor_input.size();
@@ -166,7 +166,7 @@ ValuePtrList GradPostProcess(const BaseTensorPtrList &outputs, std::vector<bool>
     msg += std::to_string(num_grad_outputs) + ")";
     MS_LOG(EXCEPTION) << msg;
   }
-  BaseTensorPtrList result;
+  TensorPtrList result;
   result.reserve(num_grad_outputs);
   for (size_t i = 0; i < num_grad_outputs; i++) {
     if (!is_tensor_input[i]) {

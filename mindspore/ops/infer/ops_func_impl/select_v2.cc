@@ -58,9 +58,9 @@ abstract::BaseShapePtr SelectV2FuncImpl::InferShape(const PrimitivePtr &prim,
 }
 
 ShapeArray SelectV2FuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &cond_tensor = input_values[kSelectCondIndex]->cast<tensor::BaseTensorPtr>();
-  const auto &x_tensor = input_values[kSelectXIndex]->cast<tensor::BaseTensorPtr>();
-  const auto &y_tensor = input_values[kSelectYIndex]->cast<tensor::BaseTensorPtr>();
+  const auto &cond_tensor = input_values[kSelectCondIndex]->cast<tensor::TensorPtr>();
+  const auto &x_tensor = input_values[kSelectXIndex]->cast<tensor::TensorPtr>();
+  const auto &y_tensor = input_values[kSelectYIndex]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(cond_tensor);
   MS_EXCEPTION_IF_NULL(x_tensor);
   MS_EXCEPTION_IF_NULL(y_tensor);
@@ -89,7 +89,7 @@ TypePtr SelectV2FuncImpl::InferType(const PrimitivePtr &prim, const std::vector<
 }
 
 TypePtrList SelectV2FuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kSelectXIndex]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kSelectXIndex]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   return {x_tensor->Dtype()};
 }

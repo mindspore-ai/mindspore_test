@@ -810,8 +810,8 @@ def _generate_cpp_func_return(op_proto):
     """
     returns_type = []
     type_convert_to_base = {
-        'std::vector<mindspore::tensor::TensorPtr>': 'std::vector<mindspore::tensor::BaseTensorPtr>',
-        'mindspore::tensor::TensorPtr': 'mindspore::tensor::BaseTensorPtr'
+        'std::vector<mindspore::tensor::TensorPtr>': 'std::vector<mindspore::tensor::TensorPtr>',
+        'mindspore::tensor::TensorPtr': 'mindspore::tensor::TensorPtr'
     }
     for return_obj in op_proto.op_returns:
         temp_return = get_return_type(return_obj.arg_dtype)

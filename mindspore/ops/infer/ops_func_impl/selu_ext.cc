@@ -37,14 +37,14 @@ TypePtr SeLUExtFuncImpl::InferType(const PrimitivePtr &primitive,
   return x_type;
 }
 TypePtrList SeLUExtFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   const std::set<TypePtr> valid_types = {kFloat16, kFloat32, kBFloat16};
   const auto &input_type = x_tensor->Dtype();
   (void)CheckAndConvertUtils::CheckSubClass("input", input_type, valid_types, primitive->name());
   return {input_type};
 }
 ShapeArray SeLUExtFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   return {x_tensor->shape()};
 }
 REGISTER_SIMPLE_INFER(kNameSeLUExt, SeLUExtFuncImpl)

@@ -56,29 +56,29 @@ namespace PyNativeAlgo {
 struct AutoGradUtil {
   // Common grad function
   static InputType SetValueGradInfo(const ValuePtr &value, InputType grad_type);
-  static InputType SetTensorGradInfo(const tensor::BaseTensorPtr &tensor);
+  static InputType SetTensorGradInfo(const tensor::TensorPtr &tensor);
   static ValuePtr BaseRefToValue(const BaseRef &value, bool requires_grad, bool is_out_sequence, size_t op_index = 0);
   static ValuePtr VectorRefToValue(const VectorRef &vec_ref, bool requires_grad, bool is_out_sequence,
                                    size_t op_index = 0);
-  static void BuildViewAutoGradMeta(const tensor::BaseTensorPtr &src_tensor, const tensor::BaseTensorPtr &output,
+  static void BuildViewAutoGradMeta(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &output,
                                     size_t op_index, autograd::CreationType creation_type);
   static void SetInferOutputToGrad(const OpGradInfoPtr &op_grad_info, const kernel::pyboost::OpPtr &op);
   static void SetInferMultiOutputToGrad(const OpGradInfoPtr &op_grad_info, const kernel::pyboost::OpPtr &op);
   static ValuePtr MakeOutput(bool requires_grad, const kernel::pyboost::OpPtr &op, size_t op_index,
-                             const tensor::BaseTensorPtr &base_view = nullptr);
+                             const tensor::TensorPtr &base_view = nullptr);
   static ValuePtr MakeMultiOutput(bool requires_grad, const kernel::pyboost::OpPtr &op, size_t op_index,
-                                  const tensor::BaseTensorPtr &view_base = nullptr);
+                                  const tensor::TensorPtr &view_base = nullptr);
   // Multi inputs and multi outputs view op enter here, temp code need discard.
   static ValuePtr MakeMultiOutput(bool requires_grad, const kernel::pyboost::OpPtr &op, size_t op_index,
                                   const ValueTuplePtr &base_view);
   static void BumpVersion(const ValuePtr &value);
 
   static bool IsPrimNeedGrad(const PrimitivePtr &prim);
-  static bool NeedGrad(const tensor::BaseTensorPtr &input_tensor);
+  static bool NeedGrad(const tensor::TensorPtr &input_tensor);
   static bool NeedGrad(const std::vector<ValuePtr> &input_values);
   static bool IsZerosLikeNode(const AnfNodePtr &node);
   static ValuePtr GetFakeZeroTensor();
-  static ValuePtr BuildSpecialValueGrad(const ValuePtr &value, const tensor::BaseTensorPtr &grad,
+  static ValuePtr BuildSpecialValueGrad(const ValuePtr &value, const tensor::TensorPtr &grad,
                                         autograd::FuncBuilder *func_builder, const SpecialType &type);
   static AnfNodePtr BuildSpecialNode(const KernelGraphPtr &tape, const ValuePtr &value,
                                      const abstract::AbstractBasePtr &abs, const SpecialType &type);
@@ -91,7 +91,7 @@ struct AutoGradUtil {
   static inline bool IsParam(InputType grad_type) {
     return grad_type == InputType::kParameter || grad_type == InputType::kInput;
   }
-  static inline bool IsParamRequiresGrad(const tensor::BaseTensorPtr &tensor) {
+  static inline bool IsParamRequiresGrad(const tensor::TensorPtr &tensor) {
     return tensor->param_info() != nullptr && tensor->param_info()->requires_grad();
   }
   // Create fake bprop

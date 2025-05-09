@@ -126,7 +126,7 @@ T CheckAbstractElementsSize(const AbstractBasePtr &abs_value, size_t value_size)
   return abs;
 }
 
-py::object CheckAndConvertToScalar(const tensor::BaseTensorPtr &tensor, const AbstractBasePtr &abs) {
+py::object CheckAndConvertToScalar(const tensor::TensorPtr &tensor, const AbstractBasePtr &abs) {
   if (abs == nullptr || !abs->isa<abstract::AbstractScalar>()) {
     return py::none();
   }
@@ -181,7 +181,7 @@ py::object COOTensorToPyData(const tensor::COOTensorPtr &coo_tensor) {
   return ref[0];
 }
 
-py::object TensorToPyData(const tensor::BaseTensorPtr &tensor, const AbstractBasePtr &abs) {
+py::object TensorToPyData(const tensor::TensorPtr &tensor, const AbstractBasePtr &abs) {
   MS_EXCEPTION_IF_NULL(tensor);
   auto scalar_obj = CheckAndConvertToScalar(tensor, abs);
   if (!py::isinstance<py::none>(scalar_obj)) {
@@ -347,17 +347,17 @@ static ValueNameToConverterVector value_name_to_converter = {
      auto tensor_ptr = value->cast<tensor::TensorPtr>();
      return TensorToPyData(tensor_ptr, abs);
    }},
-  // BaseTensor
-  {tensor::BaseTensor::kTypeId,
+  // Tensor
+  {tensor::Tensor::kTypeId,
    [](const ValuePtr &value, const AbstractBasePtr &abs) -> py::object {
-     auto tensor_ptr = value->cast<tensor::BaseTensorPtr>();
+     auto tensor_ptr = value->cast<tensor::TensorPtr>();
      return TensorToPyData(std::make_shared<tensor::Tensor>(*tensor_ptr), abs);
    }},
   // MetaTenser
   {tensor::MetaTensor::kTypeId,
    [](const ValuePtr &value, const AbstractBasePtr &abs) -> py::object {
      auto meta_tensor = value->cast<tensor::MetaTensorPtr>();
-     auto base_tensor = std::dynamic_pointer_cast<tensor::BaseTensor>(meta_tensor);
+     auto base_tensor = std::dynamic_pointer_cast<tensor::Tensor>(meta_tensor);
      return TensorToPyData(std::make_shared<tensor::Tensor>(*base_tensor), abs);
    }},
   // StubNode: Tensor, Tuple/List, Scalar, String
@@ -911,8 +911,8 @@ tensor::TensorPtr ConvertStubTensor(const py::handle &obj) {
   return tensor;
 }
 
-tensor::BaseTensorPtr ConvertTensorAndSyncCompiling(const py::handle &obj) {
-  auto tensor = tensor::ConvertToBaseTensor(obj);
+tensor::TensorPtr ConvertTensorAndSyncCompiling(const py::handle &obj) {
+  auto tensor = tensor::ConvertToTensor(obj);
   MS_EXCEPTION_IF_NULL(tensor);
   bool is_parameter = py::hasattr(obj, "__parameter__") && tensor::IsTensorPy(obj);
   if (JitCompiling() && !is_parameter) {
@@ -921,7 +921,7 @@ tensor::BaseTensorPtr ConvertTensorAndSyncCompiling(const py::handle &obj) {
   return tensor;
 }
 
-tensor::BaseTensorPtr StubNodeToTensor(const py::object &obj) {
+tensor::TensorPtr StubNodeToTensor(const py::object &obj) {
   ValuePtr tensor = nullptr;
   if (IsStubTensor(obj)) {
     tensor = PyStubNodeCast(obj);
@@ -931,10 +931,10 @@ tensor::BaseTensorPtr StubNodeToTensor(const py::object &obj) {
   }
   if (utils::isa<stub::StubNode>(tensor)) {
     auto stub = utils::cast<stub::StubNodePtr>(tensor);
-    return stub->WaitValue()->cast<tensor::BaseTensorPtr>();
+    return stub->WaitValue()->cast<tensor::TensorPtr>();
   }
-  if (tensor->isa<tensor::BaseTensor>()) {
-    return tensor->cast<tensor::BaseTensorPtr>();
+  if (tensor->isa<tensor::Tensor>()) {
+    return tensor->cast<tensor::TensorPtr>();
   }
   MS_LOG(EXCEPTION) << "It should be stub tensor, but got " << tensor->ToString();
 }
@@ -948,7 +948,7 @@ ValuePtr PyStubNodeCast(const py::handle &obj) {
   auto py_stub = py::getattr(obj, stub::PY_ATTR_STUB);
   auto stub = py_stub.cast<stub::StubNodePtr>();
   if (stub == nullptr) {
-    auto tensor = tensor::ConvertToBaseTensor(py::getattr(obj, stub::PY_ATTR_TENSOR));
+    auto tensor = tensor::ConvertToTensor(py::getattr(obj, stub::PY_ATTR_TENSOR));
     MS_EXCEPTION_IF_NULL(tensor);
     return tensor;
   }
@@ -960,7 +960,7 @@ std::pair<ShapeVector, TypePtr> GetStubTensorInfo(const py::handle &obj) {
   ValuePtr stub = py_stub.cast<stub::StubNodePtr>();
   AbstractBasePtr stub_abs;
   if (stub == nullptr) {
-    auto tensor = tensor::ConvertToBaseTensor(py::getattr(obj, stub::PY_ATTR_TENSOR));
+    auto tensor = tensor::ConvertToTensor(py::getattr(obj, stub::PY_ATTR_TENSOR));
     MS_EXCEPTION_IF_NULL(tensor);
     stub_abs = tensor->ToAbstract();
   } else {
@@ -978,8 +978,8 @@ ValuePtr ConvertTensorNode(const py::object &obj) {
 
 ValuePtr ShallowCopyTensorValue(const ValuePtr &value) {
   MS_EXCEPTION_IF_NULL(value);
-  if (value->isa<tensor::BaseTensor>()) {
-    auto tensor_value = value->cast<tensor::BaseTensorPtr>();
+  if (value->isa<tensor::Tensor>()) {
+    auto tensor_value = value->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(tensor_value);
     auto shallow_tensor = std::make_shared<tensor::Tensor>(*tensor_value);
     if (tensor_value->is_parameter()) {
@@ -1006,7 +1006,7 @@ ValuePtr ShallowCopyTensorValue(const ValuePtr &value) {
 ValuePtr ConvertPyObjectToCObject(const py::object &input_object, bool is_base_tensor) {
   ValuePtr output = nullptr;
   if (tensor::IsTensorPy(input_object)) {
-    output = is_base_tensor ? tensor::ConvertToBaseTensor(input_object) : tensor::ConvertToTensor(input_object);
+    output = tensor::ConvertToTensor(input_object);
   } else if (py::isinstance<py::none>(input_object)) {
     output = kNone;
   } else if (py::isinstance<py::float_>(input_object)) {
@@ -1052,7 +1052,7 @@ void ConvertPybindTupleGradToCValue(const py::tuple &input_tuple, std::vector<Va
     ValuePtr value;
     const auto item = input_tuple[i];
     if (tensor::IsTensorPy(item)) {
-      value = is_base_tensor ? tensor::ConvertToBaseTensor(item) : tensor::ConvertToTensor(item);
+      value = tensor::ConvertToTensor(item);
     } else if (py::isinstance<py::none>(item)) {
       value = kNone;
     } else {

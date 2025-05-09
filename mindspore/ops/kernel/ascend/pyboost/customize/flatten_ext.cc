@@ -27,7 +27,7 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void FlattenExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_x_tensor,
+void FlattenExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_x_tensor,
                                const Int64ImmPtr &start_dim, const Int64ImmPtr &end_dim) {
   MS_LOG(DEBUG) << op->primitive()->name() << " Call start";
   OpRunner::InferOpOutput(op, input_x_tensor, start_dim, end_dim);

@@ -27,8 +27,8 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr GeluGradExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &grad_tensor,
-                                                 const BaseTensorPtr &input_tensor, const Int64ImmPtr &approximate);
+tensor::TensorPtr GeluGradExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &grad_tensor,
+                                             const TensorPtr &input_tensor, const Int64ImmPtr &approximate);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

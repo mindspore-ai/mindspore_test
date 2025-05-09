@@ -28,8 +28,9 @@ namespace pyboost {
 namespace {
 constexpr int kShapeDim2d = 2;
 }  // namespace
-std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr> AdaptiveMaxPool2DAscendCustomize(
-  const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor, const ValueTuplePtr &output_size) {
+std::tuple<tensor::TensorPtr, tensor::TensorPtr> AdaptiveMaxPool2DAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                                                                  const TensorPtr &input_tensor,
+                                                                                  const ValueTuplePtr &output_size) {
   OpRunner::InferOpOutput(op, input_tensor, output_size);
 
   std::vector<int64_t> output_size_vector = ConvertValueTupleToVector<int64_t>(output_size);

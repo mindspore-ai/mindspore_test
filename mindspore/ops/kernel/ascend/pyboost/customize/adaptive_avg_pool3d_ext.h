@@ -27,9 +27,8 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr AdaptiveAvgPool3DExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                          const BaseTensorPtr &input_tensor,
-                                                          const ValueTuplePtr &output_size);
+tensor::TensorPtr AdaptiveAvgPool3DExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                                      const TensorPtr &input_tensor, const ValueTuplePtr &output_size);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

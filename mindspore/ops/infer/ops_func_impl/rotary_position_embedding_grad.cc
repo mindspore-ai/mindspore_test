@@ -46,22 +46,22 @@ BaseShapePtr RotaryPositionEmbeddingGradFuncImpl::InferShape(
 
 TypePtrList RotaryPositionEmbeddingGradFuncImpl::InferType(const PrimitivePtr &primitive,
                                                            const ValuePtrList &input_values) const {
-  const auto &dx_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &dx_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(dx_tensor);
-  const auto &cos_tensor = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &cos_tensor = input_values[kInputIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(cos_tensor);
-  const auto &sin_tensor = input_values[kInputIndex2]->cast<tensor::BaseTensorPtr>();
+  const auto &sin_tensor = input_values[kInputIndex2]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(sin_tensor);
   return {dx_tensor->Dtype(), cos_tensor->Dtype(), sin_tensor->Dtype()};
 }
 
 ShapeArray RotaryPositionEmbeddingGradFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                            const ValuePtrList &input_values) const {
-  const auto &dx_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &dx_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(dx_tensor);
-  const auto &cos_tensor = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &cos_tensor = input_values[kInputIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(cos_tensor);
-  const auto &sin_tensor = input_values[kInputIndex2]->cast<tensor::BaseTensorPtr>();
+  const auto &sin_tensor = input_values[kInputIndex2]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(sin_tensor);
   return {dx_tensor->shape(), cos_tensor->shape(), sin_tensor->shape()};
 }
