@@ -761,7 +761,7 @@
         其中的每一个元素指定对应的输入/输出的Tensor分布策略，可参考： :func:`mindspore.ops.Primitive.shard` 的描述。
         其余算子的并行策略由输入输出指定的策略推导得到。
 
-        .. note:: 调用该方法后，并行模式(parallel_mode)会自动设置为"auto_parallel"且搜索模式(search_mode)自动设置为"sharding_propagation"。
+        .. note:: 仅在半自动并行或自动并行模式下有效。在其他并行模式中，将忽略此处设置的策略。
             如果输入含有Parameter，其对应的策略应该在 `in_strategy` 里设置。
 
         参数：
