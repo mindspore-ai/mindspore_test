@@ -31,6 +31,8 @@ atb::Context *GetAtbContext(const aclrtStream &stream);
 uint64_t GetWorkSpaceSize(atb::Operation *operation, atb::VariantPack variant_pack, aclrtStream stream);
 void Launch(atb::Operation *operation, atb::VariantPack variant_pack, void *workspace_ptr,
             std::vector<size_t> workpsace_size_list, aclrtStream stream);
+void Launch(atb::Operation *op, atb::VariantPack variant_pack, void *workspace_ptr, size_t workpsace_size,
+            aclrtStream stream);
 
 template <typename... Args>
 uint64_t AtbHash(const Args &... args) {
@@ -43,8 +45,18 @@ class ParamSetter {
  public:
   ParamSetter &Input(mindspore::kernel::KernelTensor *kernel_tensor);
   ParamSetter &Input(std::optional<mindspore::kernel::KernelTensor *> kernel_tensor);
+  ParamSetter &Input(const tensor::TensorPtr &base_tensor);
+  ParamSetter &Input(const std::optional<tensor::TensorPtr> &base_tensor);
   ParamSetter &Output(mindspore::kernel::KernelTensor *kernel_tensor);
   ParamSetter &Output(std::optional<mindspore::kernel::KernelTensor *> kernel_tensor);
+  ParamSetter &Output(const tensor::TensorPtr &base_tensor);
+  ParamSetter &Output(const std::optional<tensor::TensorPtr> &base_tensor);
+
+  void Clear() {
+    variant_pack.inTensors.clear();
+    variant_pack.outTensors.clear();
+  }
+
   ParamSetter &SetIndex(const std::vector<size_t> inputs, const std::vector<size_t> outputs) {
     input_ids = std::move(inputs);
     output_ids = std::move(outputs);

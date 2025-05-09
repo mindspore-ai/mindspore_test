@@ -20,10 +20,10 @@
 namespace mindspore::kernel {
 void AddATBKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                        const std::vector<KernelTensor *> &outputs) {
-  uint64_t hash_id = device::ascend::AtbHash();
+  atb::infer::ElewiseParam param;
+  param.elewiseType = atb::infer::ElewiseParam::ELEWISE_ADD;
+  uint64_t hash_id = device::ascend::AtbHash(param, op_name_);
   if (hash_id != hash_id_) {
-    atb::infer::ElewiseParam param;
-    param.elewiseType = atb::infer::ElewiseParam::ELEWISE_ADD;
     atb::CreateOperation(param, &op_);
     hash_id_ = hash_id;
   }
