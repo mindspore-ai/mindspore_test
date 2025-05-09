@@ -234,6 +234,7 @@ enum VLogLevel : int {
   VL_UCE = VL_GE_ADPT,                                                            // verbose log for uce function
   VL_UCE_DEVICE_MEM,                                        // verbose log for uce of type device memory error
   VL_UCE_HBM_MUTLI_BIT_ECC,                                 // verbose log for uce of type hbm mutit bit ecc error
+  VL_GE_EXECUTOR,                                           // ge graph executor
   VL_IR = COMPONENT_START + (SM_IR - 1) * COMPONENT_RANGE,  // 7. IR
   VL_KERNEL = COMPONENT_START + (SM_KERNEL - 1) * COMPONENT_RANGE,                        // 8. kernel
   VL_MD = COMPONENT_START + (SM_MD - 1) * COMPONENT_RANGE,                                // 9. MindData

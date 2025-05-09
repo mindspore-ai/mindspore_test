@@ -811,6 +811,7 @@ void DispVerboseLogTags() {
     {VL_UCE, "verbose log for uce function."},
     {VL_UCE_DEVICE_MEM, "verbose log for uce of type device memory error."},
     {VL_UCE_HBM_MUTLI_BIT_ECC, "verbose log for uce of type hbm mutit bit ecc error."},
+    {VL_GE_EXECUTOR, "verbose log for ge graph executor"},
   };
 
   for (auto &[tag, desc] : used_tags) {
