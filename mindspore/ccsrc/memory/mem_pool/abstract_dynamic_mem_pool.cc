@@ -666,11 +666,12 @@ std::vector<MemBuf *> AbstractDynamicMemPool::DoFreePartTensorMems(const std::ve
   std::set<size_t> processed_keep_addrs;
   for (size_t i = 0; i < keep_addrs.size(); i++) {
     auto keep_addr = keep_addrs[i];
-    if (processed_keep_addrs.count((size_t)keep_addr) > 0) {
+    size_t keep_addr_to_size = reinterpret_cast<size_t>(keep_addr);
+    if (processed_keep_addrs.count(keep_addr_to_size) > 0) {
       MS_LOG(INFO) << "Duplicate keep address : " << keep_addr << ".";
       continue;
     }
-    (void)processed_keep_addrs.insert((size_t)keep_addr);
+    (void)processed_keep_addrs.insert(keep_addr_to_size);
     auto &&it = candidates.upper_bound(keep_addr);
     if (it == candidates.begin()) {
       MS_LOG(WARNING) << "Locate keep addr : " << keep_addr << " failed.";
@@ -679,10 +680,10 @@ std::vector<MemBuf *> AbstractDynamicMemPool::DoFreePartTensorMems(const std::ve
     auto iter = --it;
     auto mem_buf = iter->second.first;
     auto allocator = iter->second.second;
-    size_t base_start = (size_t)mem_buf->addr_;
+    size_t base_start = reinterpret_cast<size_t>(mem_buf->addr_);
     size_t base_end = base_start + mem_buf->size_;
-    size_t keep_start = (size_t)keep_addr;
-    size_t keep_end = keep_start + (size_t)keep_addr_sizes[i];
+    size_t keep_start = keep_addr_to_size;
+    size_t keep_end = keep_start + keep_addr_sizes[i];
     // Since free part tensor mem may double free keep addr, continue for these keep addrs.
     if (keep_start >= base_end) {
       MS_LOG(WARNING) << "Check range error, base start : " << base_start << ", base end : " << base_end
