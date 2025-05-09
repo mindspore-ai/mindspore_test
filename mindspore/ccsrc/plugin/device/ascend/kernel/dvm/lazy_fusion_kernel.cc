@@ -51,6 +51,15 @@ LazyFusionManager::~LazyFusionManager() {
 }
 
 LazyFusionKernelAscend *LazyFusionManager::Get(const device::DeviceContext *context, size_t stream) {
+  static bool runtime_init = false;
+  if (!runtime_init) {
+    auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    bool enable_deterministic = ms_context->get_param<std::string>(MS_CTX_DETERMINISTIC) == "ON";
+    dvm::SetDeterministic(enable_deterministic);
+    MS_LOG(INFO) << "Set dvm deterministic " << (enable_deterministic ? "on" : "off");
+    runtime_init = true;
+  }
   if (current_ != nullptr) {
     if (current_->stream_id() == stream) {
       return current_;
@@ -240,9 +249,7 @@ void LazyFusionKernelAscend::Flush() {
                         ? 0
                         : storage_info->storage_offset * GetTypeByte(TypeIdToType(device_address->type_id()));
         auto dev_mem = device_address->GetMutablePtr();
-        auto dst_type = TransType(device_address->type_id());
-        dvm::Kernel::Store(static_cast<void *>(static_cast<uint8_t *>(dev_mem) + offset),
-                           dst_type != GetDType(out.op) ? Cast(out.op, dst_type) : out.op);
+        dvm::Kernel::Store(static_cast<void *>(static_cast<uint8_t *>(dev_mem) + offset), out.op);
         has_store = true;
       }
       if (!has_store) {
