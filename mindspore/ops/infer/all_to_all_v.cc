@@ -38,6 +38,7 @@
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 #include "utils/anf_utils.h"
+#include "utils/llm_manager.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 
 namespace mindspore {
@@ -119,6 +120,8 @@ class AlltoAllVInfer : public abstract::OpInferBase {
     } else {
       MS_LOG(EXCEPTION) << "AlltoAllV input numbers must be 3.";
     }
+    // disable dynamic convert static shape optimization
+    LLMManager::GetInstance().set_convert_static(false);
     auto type = InferType(primitive, input_args);
     auto shape = InferShape(primitive, input_args);
     return abstract::MakeAbstract(shape, type);
