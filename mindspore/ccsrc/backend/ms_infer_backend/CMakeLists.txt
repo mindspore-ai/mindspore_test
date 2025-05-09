@@ -14,9 +14,18 @@ set_property(SOURCE ${_MS_INFER_BACKEND_SRC_LIST}
 
 # Create shared library
 add_library(mindspore_ms_infer_backend SHARED ${_MS_INFER_BACKEND_SRC_LIST})
-target_link_libraries(mindspore_ms_infer_backend PUBLIC dalang)
-target_link_libraries(mindspore_ms_infer_backend PRIVATE mindspore_core mindspore_ops mindspore_common
-                                                         mindspore_backend_common mindspore_backend_manager)
+target_link_libraries(mindspore_ms_infer_backend PRIVATE dalang mindspore_ops_host)
+target_link_libraries(mindspore_ms_infer_backend PRIVATE mindspore_core mindspore_ops
+        mindspore_common mindspore_ops_kernel_common mindspore_backend_manager mindspore_res_manager
+        mindspore_profiler mindspore_runtime_pipeline mindspore_backend_common mindspore_memory_pool)
+
+if(ENABLE_CPU)
+    target_link_libraries(mindspore_ms_infer_backend PRIVATE mindspore::dnnl mindspore::mkldnn nnacl)
+endif()
+
+if(NOT WIN32)
+    target_link_libraries(mindspore_ms_infer_backend PRIVATE mindspore::crypto)
+endif()
 
 # Set the output directory for the shared library
 if(CMAKE_SYSTEM_NAME MATCHES "Darwin")

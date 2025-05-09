@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include <map>
+#include <string>
 #include <memory>
 #include <utility>
 
@@ -52,20 +54,15 @@ RunningStatus MSInferBackend::Run(BackendGraphId graph_id, const VectorRef &inpu
 }
 
 std::string MSInferBackend::ExportIR(const FuncGraphPtr &func_graph, const std::string &file_name, bool is_save_to_file,
-  IRFormat ir_format) {
-  // TODO: Implement ExportIR
+                                     IRFormat ir_format) {
   return "";
 }
 
 void MSInferBackend::ConvertIR(const FuncGraphPtr &func_graph,
-  const std::map<std::string, std::shared_ptr<tensor::Tensor>> &init_tensors,
-  IRFormat ir_format) {
-  // TODO: Implement ConvertIR
-}
+                               const std::map<std::string, std::shared_ptr<tensor::Tensor>> &init_tensors,
+                               IRFormat ir_format) {}
 
-void MSInferBackend::Clear() {
-  // TODO: Implement Clear
-}
+void MSInferBackend::Clear() {}
 
 MS_REGISTER_BACKEND(kMSInferBackendName, MSInferBackend)
 

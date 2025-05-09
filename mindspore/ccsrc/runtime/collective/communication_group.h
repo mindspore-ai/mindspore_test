@@ -124,6 +124,7 @@ static constexpr size_t GetCommLibFileRelPathPos() noexcept {
     }                                                                                                   \
   } while (0)
 
+#ifndef CHECK_IF_NULL
 #define CHECK_IF_NULL(ptr)                                                                                    \
   do {                                                                                                        \
     if ((ptr) == nullptr) {                                                                                   \
@@ -133,4 +134,5 @@ static constexpr size_t GetCommLibFileRelPathPos() noexcept {
       pybind11::pybind11_fail(oss.str());                                                                     \
     }                                                                                                         \
   } while (0)
+#endif
 #endif  // MINDSPORE_CCSRC_RUNTIME_HARDWARE_COLLECTIVE_COMMUNICATION_GROUP_H_

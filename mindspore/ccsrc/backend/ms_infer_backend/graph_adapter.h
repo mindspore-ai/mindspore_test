@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2022 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 
 #include <memory>
 #include <unordered_map>
+#include <unordered_set>
 
 #include "mindspore/core/include/base/base.h"
 #include "mindspore/core/include/base/base_ref.h"
@@ -31,7 +32,7 @@ namespace ms_infer_backend {
 
 class GraphAdapter {
  public:
-  GraphAdapter(const FuncGraphPtr &func_graph) : func_graph_(func_graph) { MS_EXCEPTION_IF_NULL(func_graph_); }
+  explicit GraphAdapter(const FuncGraphPtr &func_graph) : func_graph_(func_graph) { MS_EXCEPTION_IF_NULL(func_graph_); }
   ~GraphAdapter() {}
 
   void ConvertGraph();
@@ -45,6 +46,7 @@ class GraphAdapter {
   void ConvertInputs(const VectorRef &inputs);
   void ConvertOutputs(VectorRef *outputs);
 
+  void SetValue(da::tensor::DATensor *da_value, const BaseRef &val);
   da::tensor::DATensor *GetNodeDATensor(const AnfNodePtr &node);
 
   FuncGraphPtr func_graph_;
@@ -52,6 +54,7 @@ class GraphAdapter {
   std::unordered_map<AnfNodePtr, da::tensor::DATensor *> apply_map_;
   std::unordered_map<AnfNodePtr, da::tensor::DATensor *> const_map_;
   std::unordered_map<AnfNodePtr, da::tensor::DATensor *> parameter_map_;
+  std::unordered_set<ValuePtr> converted_values_;
 };
 
 using GraphAdapterPtr = std::shared_ptr<GraphAdapter>;
@@ -59,4 +62,4 @@ using GraphAdapterPtr = std::shared_ptr<GraphAdapter>;
 }  // namespace ms_infer_backend
 }  // namespace backend
 }  // namespace mindspore
-#endif // MINDSPORE_CCSRC_BACKEND_MS_INFER_BACKEND_GRAPH_ADAPTER_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_MS_INFER_BACKEND_GRAPH_ADAPTER_H_

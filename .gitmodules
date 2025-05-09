@@ -62,3 +62,4 @@
 	path = mindspore/ccsrc/backend/ms_infer_backend/dart
 	url = https://gitee.com/ms-incubator/dart.git
 	shallow = true
+	branch = master
