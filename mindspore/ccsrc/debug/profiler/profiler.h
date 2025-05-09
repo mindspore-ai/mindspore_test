@@ -113,6 +113,7 @@ enum class ProfilerEvent {
   kPyBoostMallocInput,
   kPyBoostMallocOutput,
   kPyBoostLaunchAclnn,
+  kPyBoostLaunchAtb,
   // pybind api
   kPyNativeNewGraph,
   kPyNativeEndGraph,
@@ -211,6 +212,7 @@ static const std::map<ProfilerEvent, std::string> kProfilerEventString = {
   {ProfilerEvent::kPyBoostMallocInput, "MallocInput"},
   {ProfilerEvent::kPyBoostMallocOutput, "MallocOutput"},
   {ProfilerEvent::kPyBoostLaunchAclnn, "LaunchAclnn"},
+  {ProfilerEvent::kPyBoostLaunchAtb, "LaunchAtb"},
   // pybind api
   {ProfilerEvent::kPyNativeNewGraph, "new_graph"},
   {ProfilerEvent::kPyNativeEndGraph, "end_graph"},
