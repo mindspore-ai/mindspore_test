@@ -1,0 +1,26 @@
+#operator topprouter
+topprouter:
+  args:
+    input:
+      dtype: tensor
+    capacity:
+      dtype: int
+    expert_num:
+      dtype: int
+    drop_type:
+      dtype: int
+      default: 0
+    threshold:
+      dtype: float
+      default: 0.0
+    router_prob:
+      dtype: tensor
+      default: 0.0
+      type_cast: float
+  returns:
+    dispatch_index:
+      dtype: tensor
+    combine_index:
+      dtype: tensor
+  class:
+    name: TopPRouter
