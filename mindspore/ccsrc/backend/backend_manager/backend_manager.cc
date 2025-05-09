@@ -55,15 +55,20 @@ bool ShouldLoadBackendLib(BackendType backend_type) {
 }
 
 BackendType GetBackendType(const std::string &backend_name) {
+  auto backend_type = kInvalidBackend;
   if (!backend_name.empty()) {
-    return GetBackendTypeByName(backend_name);
+    backend_type = GetBackendTypeByName(backend_name);
   }
 
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
   auto device_target = context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  if (device_target != kAscendDevice) {
+  if (backend_type != kMSInferBackend && device_target != kAscendDevice) {
     return kMSBackend;
+  }
+
+  if (backend_type != kInvalidBackend) {
+    return backend_type;
   }
 
   if (context->IsKByKExecutorMode()) {
