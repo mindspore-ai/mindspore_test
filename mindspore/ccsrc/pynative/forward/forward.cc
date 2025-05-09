@@ -91,7 +91,7 @@ void CreateDeviceAddressForTensor(const FrontendOpRunInfoPtr &op_run_info, const
   // Create a device address for tensor
   const auto &device_context = runtime::OpRunner::GetDeviceContext(op_run_info->base_op_run_info.device_target);
   MS_EXCEPTION_IF_NULL(device_context);
-  auto tensor_size = LongToSize(tensor->data().nbytes());
+  auto tensor_size = LongToSize(tensor->DataNBytes());
   runtime::DeviceAddressUtils::CreateOutputTensorAddress(device_context, op_run_info->base_op_run_info.stream_id,
                                                          tensor, tensor_size);
   // Allocate a block of device memory
@@ -125,7 +125,8 @@ ValuePtr CopyTensorValueWithNewId(const FrontendOpRunInfoPtr &op_run_info, const
     CreateDeviceAddressForTensor(op_run_info, tensor);
 #endif
     // This constructor will make a tensor with the new id
-    auto new_tensor = std::make_shared<tensor::Tensor>(tensor->data_type(), tensor->shape(), tensor->data_ptr());
+    auto new_tensor = std::make_shared<tensor::Tensor>(tensor->data_type(), tensor->shape());
+    // todo: check tensor->data need ?
     new_tensor->set_need_pipeline_sync(true);
     new_tensor->set_device_address(tensor->device_address());
     new_tensor->set_contiguous_callback(tensor->contiguous_callback());

@@ -426,7 +426,7 @@ inline std::shared_ptr<TensorData> PrepareStatTensorData(mindspore::tensor::Tens
   std::shared_ptr<TensorData> tensor_data = std::make_shared<TensorData>();
   tensor_data->SetTensor(out_tensor);
   tensor_data->SetDataPtr(static_cast<char *>(out_tensor->data_c()));
-  auto byte_size = LongToSize(out_tensor->data().nbytes());
+  auto byte_size = LongToSize(out_tensor->DataNBytes());
   if (tensor_info.host_type == kNumberTypeInt4) {
     uint32_t int4_nums_per_byte = 2;
     byte_size = byte_size / int4_nums_per_byte;
@@ -534,7 +534,7 @@ void LaunchDumpCallback(const std::vector<TensorInfoForDump> &tensor_info_list, 
       }
       mindspore::tensor::TensorPtr out_tensor = std::make_shared<tensor::Tensor>(host_type, host_shape);
       MS_EXCEPTION_IF_NULL(out_tensor);
-      size_t host_size = LongToSize(out_tensor->data().nbytes());
+      size_t host_size = LongToSize(out_tensor->DataNBytes());
       if (host_size == 0) {
         std::string file_name = tensor_info_comm.file_path_prefix;
         if (file_name.rfind("/") != std::string::npos) {
@@ -674,7 +674,7 @@ inline mindspore::tensor::TensorPtr KernelTensor2Tensor(device::KernelTensorPtr 
 
   mindspore::tensor::TensorPtr out_tensor = std::make_shared<tensor::Tensor>(host_type, host_shape);
   MS_EXCEPTION_IF_NULL(out_tensor);
-  size_t host_size = LongToSize(out_tensor->data().nbytes());
+  size_t host_size = LongToSize(out_tensor->DataNBytes());
   if (host_size == 0) {
     MS_LOG(WARNING) << "kernel tensor size is 0, skip it.";
     return out_tensor;
@@ -687,7 +687,7 @@ inline string TensorToString(mindspore::tensor::TensorPtr tensor) {
   if (!tensor) {
     return "null";
   }
-  return tensor->data().ToString(tensor->data_type(), tensor->shape(), false);
+  return tensor->DataToString(false);
 }
 
 inline string ShapeToString(const ShapeVector &shape) {

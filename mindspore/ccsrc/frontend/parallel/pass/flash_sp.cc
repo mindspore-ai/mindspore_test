@@ -499,7 +499,7 @@ CNodePtr NewTriuNode(const AnfNodePtr &tensor, const AnfNodePtr &diag) {
 
 tensor::TensorPtr make_mask_tensor(TypeId type_id, ShapeVector shape, uint8_t value, bool is_causle) {
   tensor::TensorPtr mask_tensor = std::make_shared<mindspore::tensor::Tensor>(type_id, shape);
-  int64_t tensor_size = SizeToLong(mask_tensor->data().size());
+  int64_t tensor_size = SizeToLong(mask_tensor->DataSize());
   uint8_t *uint8_data = reinterpret_cast<uint8_t *>(mask_tensor->data_c());
   if (!is_causle) {
     for (int64_t i = 0; i < tensor_size; ++i) {
