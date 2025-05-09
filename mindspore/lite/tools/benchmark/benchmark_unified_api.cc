@@ -892,6 +892,7 @@ int BenchmarkUnifiedApi::MarkPerformance() {
   std::cout << "Running warm up loops..." << std::endl;
   std::vector<MSTensor> outputs;
   for (int i = 0; i < flags_->warm_up_loop_count_; i++) {
+    outputs = {};
     auto status = ms_model_.Predict(ms_inputs_for_api_, &outputs);
     if (status != kSuccess) {
       MS_LOG(ERROR) << "Inference error ";
@@ -912,6 +913,7 @@ int BenchmarkUnifiedApi::MarkPerformance() {
       tensor.MutableData();  // prepare data
     }
     auto start = GetTimeUs();
+    outputs = {};
     auto status = ms_model_.Predict(ms_inputs_for_api_, &outputs, ms_before_call_back_, ms_after_call_back_);
     if (status != kSuccess) {
       MS_LOG(ERROR) << "Inference error ";
