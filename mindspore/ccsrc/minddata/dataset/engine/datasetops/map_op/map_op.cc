@@ -40,6 +40,7 @@
 #include "minddata/dataset/kernels/image/dvpp/acl_adapter.h"
 #include "minddata/dataset/kernels/image/dvpp/utils/ErrorCode.h"
 #endif
+#include "minddata/utils.h"
 
 namespace mindspore {
 namespace dataset {
@@ -814,6 +815,10 @@ Status MapOp::Launch() {
   if (python_multiprocessing_runtime_) {
     MS_LOG(DEBUG) << "Launch Python Multiprocessing for MapOp:" << id();
     python_multiprocessing_runtime_->launch(id());
+    std::vector<int32_t> worker_ids = python_multiprocessing_runtime_->get_pids();
+    for (int i = 0; i < worker_ids.size(); i++) {
+      BindThreadCoreForMindDataOp("dataset::MapOp", worker_ids[i], false);
+    }
   }
   return DatasetOp::Launch();
 }

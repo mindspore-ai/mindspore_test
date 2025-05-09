@@ -25,6 +25,7 @@
 
 #include "minddata/dataset/kernels/data/data_utils.h"
 #include "minddata/dataset/util/status.h"
+#include "minddata/utils.h"
 
 namespace mindspore {
 namespace dataset {
@@ -1011,6 +1012,10 @@ Status BatchOp::Launch() {
   if (python_multiprocessing_runtime_) {
     MS_LOG(DEBUG) << "Launch Python Multiprocessing for BatchOp:" << id();
     python_multiprocessing_runtime_->launch(id());
+    std::vector<int32_t> worker_ids = python_multiprocessing_runtime_->get_pids();
+    for (int i = 0; i < worker_ids.size(); i++) {
+      BindThreadCoreForMindDataOp("dataset::BatchOp", worker_ids[i], false);
+    }
   }
   return DatasetOp::Launch();
 }

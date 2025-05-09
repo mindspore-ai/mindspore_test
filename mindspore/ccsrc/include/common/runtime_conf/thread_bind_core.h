@@ -46,6 +46,13 @@ class COMMON_EXPORT ThreadBindCore {
   bool parse_thread_bind_core_policy(const kBindCoreModule &module_name, uint32_t device_id);
   std::vector<int> get_thread_bind_core_list(const kBindCoreModule &module_name);
   void bind_thread_core(const std::vector<int> &cpu_list);
+
+  /// @brief Bind thread id or process id to cores.
+  /// @param cpu_list List of bound cores.
+  /// @param thread_or_process_id The thread id or process id.
+  /// @param is_thread Whether the binding is a thread or not, false is bound to a thread, true is bound to a process,
+  ///     default is false
+  void bind_thread_core(const std::vector<int> &cpu_list, int64_t thread_or_process_id, bool is_thread = false);
   bool unbind_thread_core(const std::string &thread_name);
   bool is_enable_thread_bind_core_{false};
 

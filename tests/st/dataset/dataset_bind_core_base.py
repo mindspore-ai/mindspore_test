@@ -16,9 +16,21 @@
 dataset bind core
 """
 import argparse
+import numpy as np
 
 import mindspore as ms
 import mindspore.dataset as ds
+
+
+class MyAccessible:
+    def __init__(self):
+        self._data = np.array([1, 2, 3, 4, 5, 6, 7, 8])
+
+    def __getitem__(self, index):
+        return self._data[index]
+
+    def __len__(self):
+        return len(self._data)
 
 
 def binding_function():
@@ -47,6 +59,38 @@ def numa_and_binding():
         continue
 
 
+def binding_python_process():
+    """
+    Verify Binding functions by GeneratorDataset and batch operation.
+    """
+    ms.runtime.set_cpu_affinity(True)
+
+    def batch_func(input_data, batch_info):
+        return np.array(input_data)
+
+    generator_dataset = ds.GeneratorDataset(source=MyAccessible(), column_names='col', python_multiprocessing=True,
+                                            num_parallel_workers=2, shuffle=False)
+    generator_dataset = generator_dataset.map(operations=[(lambda x: x - 1)], num_parallel_workers=2,
+                                              python_multiprocessing=True)
+    generator_dataset = generator_dataset.batch(batch_size=2, python_multiprocessing=True, num_parallel_workers=2,
+                                                per_batch_map=batch_func)
+    for _ in generator_dataset.create_dict_iterator(num_epochs=1, output_numpy=True):
+        break
+
+
+def binding_independent_dataset_process():
+    """
+    Verify the independent dataset process binding kernel functionality.
+    """
+    ms.runtime.set_cpu_affinity(True)
+
+    generator_dataset = ds.GeneratorDataset(source=MyAccessible(), column_names='col', python_multiprocessing=False,
+                                            num_parallel_workers=2, shuffle=False)
+
+    for _ in generator_dataset.create_dict_iterator(num_epochs=1, output_numpy=True):
+        break
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run specific functions.')
     parser.add_argument('function', type=str, help='Function to run (one or two)')
@@ -57,3 +101,7 @@ if __name__ == '__main__':
         binding_function()
     elif args.function == 'second_function':
         numa_and_binding()
+    elif args.function == 'third_function':
+        binding_python_process()
+    elif args.function == 'fourth_function':
+        binding_independent_dataset_process()

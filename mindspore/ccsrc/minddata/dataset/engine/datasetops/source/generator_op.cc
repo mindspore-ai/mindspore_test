@@ -22,6 +22,7 @@
 #include "minddata/dataset/engine/datasetops/source/sampler/python_sampler.h"
 #include "minddata/dataset/engine/execution_tree.h"
 #include "minddata/dataset/util/task_manager.h"
+#include "minddata/utils.h"
 
 namespace mindspore {
 namespace dataset {
@@ -112,6 +113,16 @@ Status GeneratorOp::Launch() {
     MS_LOG(DEBUG) << "Launch Python Multiprocessing for GeneratorOp: " << id();
     try {
       python_multiprocessing_runtime_->launch(id());
+      py::dict worker_ids = python_multiprocessing_runtime_->get_worker_ids();
+      if (worker_ids.empty()) {
+        std::string msg = "The current thread/process id cannot be null.";
+        RETURN_STATUS_ERROR(StatusCode::kMDPyFuncException, msg);
+      }
+      bool is_thread = py::cast<bool>(worker_ids["is_thread"]);
+      std::vector<int64_t> worker_id = py::cast<std::vector<int64_t>>(worker_ids["worker_id"]);
+      for (int i = 0; i < worker_id.size(); i++) {
+        BindThreadCoreForMindDataOp("dataset::GeneratorOp", worker_id[i], is_thread);
+      }
     } catch (py::error_already_set &e) {
       std::string traceback;
       try {

@@ -40,6 +40,9 @@ class PythonMultiprocessingRuntime {
   virtual void add_new_workers(int32_t num_new_workers) = 0;
   virtual void remove_workers(int32_t num_removed_workers) = 0;
   virtual std::vector<int32_t> get_pids() = 0;
+#ifdef ENABLE_PYTHON
+  virtual py::dict get_worker_ids() = 0;
+#endif
   virtual bool is_running() = 0;
   virtual ~PythonMultiprocessingRuntime() {}
   virtual void set_thread_to_worker(int32_t worker_id) = 0;
@@ -60,15 +63,20 @@ class PyPythonMultiprocessingRuntime : public PythonMultiprocessingRuntime {
   void launch(int32_t id) override { PYBIND11_OVERLOAD_PURE(void, PythonMultiprocessingRuntime, launch, id); }
   void terminate() override { PYBIND11_OVERLOAD_PURE(void, PythonMultiprocessingRuntime, terminate); }
   bool is_mp_enabled() override { PYBIND11_OVERLOAD_PURE(bool, PythonMultiprocessingRuntime, is_mp_enabled); }
+
   void add_new_workers(int32_t num_workers) override {
     PYBIND11_OVERLOAD_PURE(void, PythonMultiprocessingRuntime, add_new_workers, num_workers);
   }
+
   void remove_workers(int32_t num_workers) override {
     PYBIND11_OVERLOAD_PURE(void, PythonMultiprocessingRuntime, remove_workers, num_workers);
   }
+
   std::vector<int32_t> get_pids() override {
     PYBIND11_OVERLOAD_PURE(std::vector<int32_t>, PythonMultiprocessingRuntime, get_pids);
   }
+
+  py::dict get_worker_ids() override { PYBIND11_OVERLOAD_PURE(py::dict, PythonMultiprocessingRuntime, get_worker_ids); }
 
   void set_thread_to_worker(int32_t worker_id) override {
     std::lock_guard<std::mutex> guard(lock_);
