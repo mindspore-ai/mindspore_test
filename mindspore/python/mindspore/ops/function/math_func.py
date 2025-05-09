@@ -4859,7 +4859,7 @@ def addmv(input, mat, vec, *, beta=1, alpha=1):
 
 
 def addmv_ext(input, mat, vec, *, beta=1, alpha=1):
-    """
+    r"""
     Performs a matrix-vector product of `mat` and `vec`, and add the input vector `input` to the final result.
 
     If `mat` is a tensor of size :math:`(N, M)` , `vec` is a 1-D tensor of size :math:`M` , then `input` must be
