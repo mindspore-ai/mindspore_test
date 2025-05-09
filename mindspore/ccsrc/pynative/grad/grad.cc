@@ -1790,7 +1790,10 @@ void GradExecutor::MakeNestedCnode(bool has_custom_bprop, const std::vector<Valu
   PyNativeAlgo::Common::SetGraphInputAndWeightsInfo(op_run_info, first_grad_fg);
   (void)first_grad_fg->transforms().erase(kGrad);
   op_run_info->op_grad_info->out_value = out_value;
-  op_run_info->op_grad_info->out_abs = first_grad_fg->output()->abstract();
+
+  const auto &fg_output = first_grad_fg->output();
+  MS_EXCEPTION_IF_NULL(fg_output);
+  op_run_info->op_grad_info->out_abs = fg_output->abstract();
   jit()->set_eliminate_forward(false);
   auto resource = std::make_shared<pipeline::Resource>();
   auto opt = opt::Optimizer::MakeEmptyOptimizer(resource);
