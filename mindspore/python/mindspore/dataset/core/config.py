@@ -1097,12 +1097,12 @@ def get_error_samples_mode():
     return _CDE_TO_PYTHON_ERROR_SAMPLES_MODE.get(_config.get_error_samples_mode())
 
 
-def set_iterator_mode(do_copy=True, parallel_convert=False):
+def set_iterator_mode(do_copy=False, parallel_convert=False):
     """
     Select dataset iterator optimization strategy.
 
     Args:
-        do_copy (bool): Whether dataset iterator creates a Tensor from numpy.ndarray without copy. Default: "True".
+        do_copy (bool): Whether dataset iterator creates a Tensor from numpy.ndarray without copy. Default: "False".
         parallel_convert (bool): Whether dataset iterator starts a thread to organize Tensors to output.
             Default: "False".
 
@@ -1122,7 +1122,7 @@ def set_iterator_mode(do_copy=True, parallel_convert=False):
 def get_iterator_mode():
     """
     Get dataset iterator mode indicate iterator optimization strategy.
-    If `set_iterator_mode` is never called before, `do_copy` default to "True", `parallel_convert` default to "False".
+    If `set_iterator_mode` is never called before, `do_copy` default to "False", `parallel_convert` default to "False".
 
     Returns:
         dict, iterator mode dictionary contains the value of `do_copy` and `parallel_convert`.

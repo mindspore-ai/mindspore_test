@@ -1557,7 +1557,7 @@ class Dataset:
         del api_tree
 
     @check_tuple_iterator
-    def create_tuple_iterator(self, columns=None, num_epochs=-1, output_numpy=False, do_copy=True):
+    def create_tuple_iterator(self, columns=None, num_epochs=-1, output_numpy=False, do_copy=False):
         """
         Create an iterator over the dataset that yields samples of type list, whose elements are
         the data for each column.
@@ -1571,7 +1571,7 @@ class Dataset:
                 convert it to Tensor. Default: ``False`` .
             do_copy (bool, optional): Whether to copy the data when converting output to Tensor,
                 or reuse the buffer for better performance, only works when `output_numpy` is ``False`` .
-                Default: ``True`` .
+                Default: ``False`` .
 
         Returns:
             Iterator, a dataset iterator that yields samples of type list.
@@ -1598,7 +1598,7 @@ class Dataset:
         return TupleIterator(self, columns, num_epochs, output_numpy, do_copy)
 
     @check_dict_iterator
-    def create_dict_iterator(self, num_epochs=-1, output_numpy=False, do_copy=True):
+    def create_dict_iterator(self, num_epochs=-1, output_numpy=False, do_copy=False):
         """
         Create an iterator over the dataset that yields samples of type dict,
         while the key is the column name and the value is the data.
@@ -1610,7 +1610,7 @@ class Dataset:
                 convert it to Tensor. Default: ``False`` .
             do_copy (bool, optional): Whether to copy the data when converting output to Tensor,
                 or reuse the buffer for better performance, only works when `output_numpy` is ``False`` .
-                Default: ``True`` .
+                Default: ``False`` .
 
         Returns:
             Iterator, a dataset iterator that yields samples of type dict.
@@ -4385,7 +4385,7 @@ class TransferDataset(Dataset):
     def create_dict_iterator(self, num_epochs=-1, output_numpy=False):
         raise RuntimeError("TransferDataset is not iterable.")
 
-    def create_tuple_iterator(self, columns=None, num_epochs=-1, output_numpy=False, do_copy=True):
+    def create_tuple_iterator(self, columns=None, num_epochs=-1, output_numpy=False, do_copy=False):
         raise RuntimeError("TransferDataset is not iterable.")
 
     def __iter__(self):

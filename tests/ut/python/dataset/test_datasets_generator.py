@@ -98,6 +98,17 @@ class DatasetGeneratorMixed:
         return 10
 
 
+class CustomizedData:
+    def __init__(self, low, mid, high):
+        self.input_ids = np.ones((low, mid, high), dtype=np.int32)
+
+    def __getitem__(self, index):
+        return self.input_ids
+
+    def __len__(self):
+        return 10
+
+
 def test_generator_0():
     """
     Feature: GeneratorDataset
@@ -3233,6 +3244,30 @@ def test_generator_dataset_debug_mode():
     ds.config.set_debug_mode(False)
 
 
+def test_perf_do_copy_parameter():
+    """
+    Feature: Performance comparison of the do_copy parameter
+    Description: Testing do_copy parameter False outperforms True
+    Expectation: SUCCESS
+    """
+    source = CustomizedData(256, 1, 8193)
+    dataset = ds.GeneratorDataset(source, ["input_ids"], shuffle=False)
+
+    start_time = time.time()
+    for _ in range(20):
+        for _ in dataset.create_dict_iterator(output_numpy=False, do_copy=False):
+            pass
+    do_copy_false_time = (time.time() - start_time) / 20
+
+    dataset1 = ds.GeneratorDataset(source, ["input_ids"], shuffle=False)
+    start_time1 = time.time()
+    for _ in range(20):
+        for _ in dataset1.create_dict_iterator(output_numpy=False, do_copy=True):
+            pass
+    do_copy_true_time = (time.time() - start_time1) / 20
+    assert do_copy_false_time < do_copy_true_time
+
+
 if __name__ == "__main__":
     test_generator_0()
     test_generator_1()
@@ -3318,3 +3353,4 @@ if __name__ == "__main__":
     test_generator_dataset_with_parallel_convert_break()
     test_generator_dataset_with_parallel_convert_exception()
     test_generator_dataset_debug_mode()
+    test_perf_do_copy_parameter()

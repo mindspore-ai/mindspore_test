@@ -53,7 +53,7 @@ ConfigManager::ConfigManager()
       autotune_interval_(kCfgAutoTuneInterval),
       enable_watchdog_(true),
       multiprocessing_timeout_interval_(kCfgMultiprocessingTimeoutInterval),
-      iterator_mode_({{"do_copy", true}, {"parallel_convert", false}}),
+      iterator_mode_({{"do_copy", false}, {"parallel_convert", false}}),
       start_method_("fork") {
   autotune_json_filepath_ = kEmptyString;
   num_cpu_threads_ = num_cpu_threads_ > 0 ? num_cpu_threads_ : std::numeric_limits<uint16_t>::max();
