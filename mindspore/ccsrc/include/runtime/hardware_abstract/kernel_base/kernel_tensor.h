@@ -109,7 +109,7 @@ class RUNTIME_HARDWARE_EXPORT KernelTensor : public AbstractBase {
   using Deleter = PointerRefCount::Deleter;
 
   KernelTensor();
-  ~KernelTensor() = default;
+  virtual ~KernelTensor() = default;
 
   // Constructor of KernelTensor by shape, type, value.
   KernelTensor(const abstract::BaseShapePtr &shape, const TypePtr &type, const ValuePtr &value);
@@ -157,16 +157,16 @@ class RUNTIME_HARDWARE_EXPORT KernelTensor : public AbstractBase {
   void SetShape(const abstract::BaseShapePtr &shape);
 
   // Get the shape vector for Tensor/Sequence/Scalar.
-  const ShapeVector &GetShapeVector() const { return device_address_->GetShapeVector(); }
+  virtual const ShapeVector &GetShapeVector() const { return device_address_->GetShapeVector(); }
 
   // Set the shape vector for Tensor/Sequence/Scalar.
-  void SetShapeVector(const ShapeVector &shape_vector);
+  virtual void SetShapeVector(const ShapeVector &shape_vector);
 
   // Set the shape vector for Tensor/Sequence/Scalar with rvalue.
-  void SetShapeVector(ShapeVector &&shape_vector);
+  virtual void SetShapeVector(ShapeVector &&shape_vector);
 
   // Get the device shape vector for Tensor/Sequence/Scalar.
-  const ShapeVector &GetDeviceShapeVector() const;
+  virtual const ShapeVector &GetDeviceShapeVector() const;
 
   // Get the object type of the KernelTensor.
   TypePtr GetType() const override { return type_; }
@@ -181,13 +181,13 @@ class RUNTIME_HARDWARE_EXPORT KernelTensor : public AbstractBase {
   void SetHostInfo(const abstract::BaseShapePtr &shape, const TypePtr &type, const ValuePtr &value);
 
   // Get the object enum type id of the KernelTensor.
-  TypeId type_id() const {
+  virtual TypeId type_id() const {
     MS_EXCEPTION_IF_NULL(host_info_);
     return host_info_->type_id_;
   }
 
   // Get the data enum type id of the KernelTensor.
-  TypeId dtype_id() const { return device_address_->type_id(); }
+  virtual TypeId dtype_id() const { return device_address_->type_id(); }
 
   // Set the data enum type id of the KernelTensor.
   void set_dtype_id(TypeId dtype_id) { device_address_->set_type_id(dtype_id); }
@@ -332,13 +332,13 @@ class RUNTIME_HARDWARE_EXPORT KernelTensor : public AbstractBase {
   }
 
   // Get pointer to the device side that corresponds to KernelTensor, used in runtime.
-  void *device_ptr() const { return device_address_->pointer_ref_count()->ptr(); }
+  virtual void *device_ptr() const { return device_address_->pointer_ref_count()->ptr(); }
 
   // Set pointer to the device side that corresponds to KernelTensor, used in runtime.
-  void set_device_ptr(void *ptr);
+  virtual void set_device_ptr(void *ptr);
 
   // Get the memory size in byte of the KernelTensor.
-  size_t size() const { return device_address_->size(); }
+  virtual size_t size() const { return device_address_->size(); }
 
   // Set the memory size in byte of the KernelTensor.
   void set_size(size_t size) { device_address_->SetSize(size); }
