@@ -33,6 +33,11 @@ void StressDetectTask::Run() {
   p_.set_value(ret);
 }
 
+void AmlAicoreDetectTask::Run() {
+  auto ret = run_func_(device_id_, attr_.get());
+  p_.set_value(ret);
+}
+
 int LaunchAclnnWithNoInput(const std::string &aclnn_name, const device::DeviceContext *device_context) {
   runtime::ProfilerRecorder aclnn_profiler(runtime::ProfilerModule::kPynative,
                                            runtime::ProfilerEvent::kPyBoostLaunchAclnn, aclnn_name, false);
@@ -47,16 +52,44 @@ int LaunchAclnnWithNoInput(const std::string &aclnn_name, const device::DeviceCo
     return 0;
   }
   workspace_addr = workspace_device_address->GetMutablePtr();
-  const auto op_api_func = device::ascend::GetOpApiFunc(aclnn_name.c_str());
-  if (op_api_func == nullptr) {
-    MS_LOG(EXCEPTION) << aclnn_name << " not in " << device::ascend::GetOpApiLibName() << ", please check!";
-  }
-  auto run_api_func = reinterpret_cast<int (*)(int32_t, void *, uint64_t)>(op_api_func);
   std::promise<int> p;
   std::future<int> f = p.get_future();
-  auto task =
-    std::make_shared<StressDetectTask>(std::move(run_api_func), device_context->device_context_key().device_id_,
-                                       workspace_addr, workspace_size, std::move(p));
+  std::shared_ptr<runtime::AsyncTask> task;
+
+  if (aclnn_name == "AmlAicoreDetectOnline") {
+    auto ascend_path = mindspore::device::ascend::GetAscendPath();
+    auto lib_path = ascend_path + GetLibAscendMLName();
+    void *lib_handle = dlopen(lib_path.c_str(), RTLD_LAZY);
+    if (lib_handle == nullptr) {
+      MS_LOG(EXCEPTION) << lib_path << " was not found. Exiting stress detect";
+    }
+    const auto *op_api_func = dlsym(lib_handle, aclnn_name.c_str());
+    if (op_api_func == nullptr) {
+      MS_LOG(EXCEPTION) << aclnn_name << " not in " << GetLibAscendMLName() << ", please check!";
+    }
+    auto run_api_func = reinterpret_cast<int (*)(int32_t, const AmlAicoreDetectAttr *)>(op_api_func);
+
+    auto aml_attr = std::make_shared<AmlAicoreDetectAttr>();
+    aml_attr->mode = AML_DETECT_RUN_MODE_ONLINE;
+    aml_attr->workspaceSize = workspace_size;
+    aml_attr->workspace = workspace_addr;
+
+    task = std::make_shared<AmlAicoreDetectTask>(
+      std::move(run_api_func), device_context->device_context_key().device_id_, aml_attr, std::move(p));
+    auto aml_task = std::dynamic_pointer_cast<AmlAicoreDetectTask>(task);
+    MS_LOG(DEBUG) << "aml_task created with device_id: " << aml_task->device_id()
+                  << ", attr.runmode: " << aml_task->attr()->mode
+                  << ", attr.workspaceSize: " << aml_task->attr()->workspaceSize
+                  << ", attr.workspace: " << aml_task->attr()->workspace;
+  } else {
+    const auto op_api_func = device::ascend::GetOpApiFunc(aclnn_name.c_str());
+    if (op_api_func == nullptr) {
+      MS_LOG(EXCEPTION) << aclnn_name << " not in " << device::ascend::GetOpApiLibName() << ", please check!";
+    }
+    auto run_api_func = reinterpret_cast<int (*)(int32_t, void *, uint64_t)>(op_api_func);
+    task = std::make_shared<StressDetectTask>(std::move(run_api_func), device_context->device_context_key().device_id_,
+                                              workspace_addr, workspace_size, std::move(p));
+  }
   runtime::Pipeline::Get().stress_detect()->Push(task);
   runtime::Pipeline::Get().stress_detect()->Wait();
   int api_ret = f.get();
@@ -64,7 +97,26 @@ int LaunchAclnnWithNoInput(const std::string &aclnn_name, const device::DeviceCo
 }
 
 int StressDetectKernel(const device::DeviceContext *device_context) {
-  auto ret = LaunchAclnnWithNoInput("StressDetect", device_context);
+  auto ascend_path = mindspore::device::ascend::GetAscendPath();
+  auto lib_path = ascend_path + GetLibAscendMLName();
+  int ret;
+
+  void *lib_handle = dlopen(lib_path.c_str(), RTLD_LAZY);
+  if (lib_handle) {
+    // Try to find the function
+    void *func_ptr = dlsym(lib_handle, kNameAmlAicoreDetectOnline);
+    if (func_ptr) {
+      MS_LOG(INFO) << "Using new API AmlAicoreDetectOnline from " << lib_path;
+      ret = LaunchAclnnWithNoInput("AmlAicoreDetectOnline", device_context);
+    } else {
+      MS_LOG(INFO) << "AmlAicoreDetectOnline not found in " << lib_path << ". Using the StressDetect api instead.";
+      ret = LaunchAclnnWithNoInput("StressDetect", device_context);
+    }
+    dlclose(lib_handle);
+  } else {
+    MS_LOG(INFO) << lib_path << " not found. Using the StressDetect api instead.";
+    ret = LaunchAclnnWithNoInput("StressDetect", device_context);
+  }
   constexpr int clear_device_state_fail = 574007;
   if (ret == clear_device_state_fail) {
     MS_LOG(EXCEPTION) << "Stress detect: clear device state fail!";

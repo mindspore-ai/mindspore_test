@@ -19,12 +19,28 @@
 #include <thread>
 #include <future>
 #include <utility>
+#include <memory>
+#include <string>
 #include "runtime/hardware/device_context.h"
 #include "runtime/pipeline/task/task.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
+
+typedef enum AmlDetectRunMode {
+  AML_DETECT_RUN_MODE_ONLINE = 0,
+  AML_DETECT_RUN_MODE_OFFLINE = 1,
+  AML_DETECT_RUN_MODE_MAX,
+} AmlDetectRunMode;
+
+typedef struct AmlAicoreDetectAttr {
+  AmlDetectRunMode mode;
+  void *workspace;
+  uint64_t workspaceSize;
+  uint8_t reserve[64];
+} AmlAicoreDetectAttr;
+
 class StressDetectTask : public runtime::AsyncTask {
  public:
   StressDetectTask(std::function<int(int32_t, void *, uint64_t)> run_func, uint32_t device_id, void *workspace_addr,
@@ -45,7 +61,31 @@ class StressDetectTask : public runtime::AsyncTask {
   uint64_t workspace_size_;
   std::promise<int> p_;
 };
+
+class AmlAicoreDetectTask : public runtime::AsyncTask {
+ public:
+  AmlAicoreDetectTask(std::function<int(int32_t, const AmlAicoreDetectAttr *)> run_func, uint32_t device_id,
+                      std::shared_ptr<AmlAicoreDetectAttr> attr, std::promise<int> &&p)
+      : AsyncTask(runtime::kStressDetectTask),
+        run_func_(std::move(run_func)),
+        device_id_(device_id),
+        attr_(std::move(attr)),
+        p_(std::move(p)) {}
+  uint32_t device_id() const { return device_id_; }
+  std::shared_ptr<AmlAicoreDetectAttr> attr() const { return attr_; }
+  ~AmlAicoreDetectTask() override = default;
+  void Run() override;
+
+ private:
+  std::function<int(int32_t, const AmlAicoreDetectAttr *)> run_func_;
+  uint32_t device_id_;
+  std::shared_ptr<AmlAicoreDetectAttr> attr_;
+  std::promise<int> p_;
+};
+
 int StressDetectKernel(const device::DeviceContext *device_context);
+inline std::string GetLibAscendMLName() { return "/lib64/libascend_ml.so"; }
+constexpr const char *kNameAmlAicoreDetectOnline = "AmlAicoreDetectOnline";
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore
