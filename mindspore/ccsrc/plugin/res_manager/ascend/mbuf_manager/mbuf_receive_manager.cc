@@ -44,7 +44,7 @@ bool CopyDataToTensor(const uint8_t *src_addr, mindspore::tensor::TensorPtr tens
   MS_EXCEPTION_IF_NULL(tensor_ptr);
   auto *dst_addr = reinterpret_cast<uint8_t *>(tensor_ptr->data_c());
   MS_EXCEPTION_IF_NULL(dst_addr);
-  size_t dst_size = static_cast<size_t>(tensor_ptr->data().nbytes());
+  size_t dst_size = static_cast<size_t>(tensor_ptr->DataNBytes());
   MS_EXCEPTION_IF_CHECK_FAIL(dst_size >= size, "The destination size is smaller than the source size.");
   size_t remain_size = size;
   while (remain_size > SECUREC_MEM_MAX_LEN) {

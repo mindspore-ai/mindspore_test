@@ -140,7 +140,7 @@ tensor::TensorPtr OnnxNodeParser::CopyOnnxTensorData(const onnx::TensorProto &on
     MS_LOG(ERROR) << "Dst tensor cannot be nullptr";
     return nullptr;
   }
-  auto dst_bytes_size = tensor_info->data().nbytes();
+  auto dst_bytes_size = tensor_info->DataNBytes();
   if (dst_bytes_size != SizeToLong(data_size)) {
     MS_LOG(ERROR) << "Calculated data size " << data_size << " != tensor bytes size " << dst_bytes_size;
     return nullptr;
@@ -303,10 +303,10 @@ STATUS OnnxNodeParser::LoadOnnxExternalTensorData(const onnx::TensorProto &onnx_
     return RET_MEMORY_FAILED;
   }
   auto tensor_data = reinterpret_cast<uint8_t *>(tensor_info->data_c());
-  if (common::huge_memcpy(tensor_data, static_cast<size_t>(tensor_info->data().nbytes()),
+  if (common::huge_memcpy(tensor_data, static_cast<size_t>(tensor_info->DataNBytes()),
                           static_cast<const uint8_t *>(onnx_data), data_size) != EOK) {
     MS_LOG(ERROR) << "memcpy_s from onnx tensor data to mindspore tensor data failed, dst size "
-                  << tensor_info->data().nbytes() << ", src size " << data_size;
+                  << tensor_info->DataNBytes() << ", src size " << data_size;
     return RET_ERROR;
   }
   return RET_OK;
@@ -349,7 +349,7 @@ static int CopyOnnxData(void *dst_v, const void *src_v, size_t data_count) {
 
 int OnnxNodeParser::GetOnnxRawData(const onnx::TensorProto &onnx_const_tensor, size_t data_count,
                                    const tensor::TensorPtr &tensor_info) {
-  auto data_size = LongToSize(tensor_info->data().nbytes());
+  auto data_size = LongToSize(tensor_info->DataNBytes());
   auto tensor_data = tensor_info->data_c();
   auto onnx_data = onnx_const_tensor.raw_data().data();
   if (onnx_const_tensor.raw_data().size() != data_size) {

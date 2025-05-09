@@ -251,7 +251,7 @@ GeTensorPtr ConvertStringTensor(const MeTensorPtr &tensor, const std::string &fo
     return nullptr;
   }
   GeTensorPtr tensor_ptr = nullptr;
-  auto data_buff_size = tensor->data().nbytes();
+  auto data_buff_size = tensor->DataNBytes();
   py::gil_scoped_acquire gil;
   auto py_array = python_adapter::PyAdapterCallback::TensorToNumpy(*tensor);
   auto buf = py_array.request();
@@ -530,7 +530,7 @@ MeTensorPtr TransformUtil::GenerateMeTensor(const GeTensorPtr &ge_tensor, const 
   if (ref_mem) {
     void *data = reinterpret_cast<void *>(const_cast<uint8_t *>(ge_tensor->GetData()));
     ssize_t data_size = static_cast<ssize_t>(SizeOf(me_dims));
-    ssize_t itemsize = MeTensor(me_type, ShapeVector()).data().itemsize();
+    ssize_t itemsize = MeTensor(me_type, ShapeVector()).DataItemSize();
     ssize_t ndim = static_cast<ssize_t>(me_dims.size());
     auto ref_data = std::make_shared<TensorRefData>(data, data_size, itemsize, ndim);
     return make_shared<MeTensor>(me_type, me_dims, ref_data);
@@ -539,7 +539,7 @@ MeTensorPtr TransformUtil::GenerateMeTensor(const GeTensorPtr &ge_tensor, const 
 
     // Get the writable data pointer of the tensor and cast it to its data type.
     auto me_data_ptr = me_tensor.data_c();
-    size_t me_data_size = static_cast<size_t>(me_tensor.data().nbytes());
+    size_t me_data_size = static_cast<size_t>(me_tensor.DataNBytes());
     MS_EXCEPTION_IF_NULL(me_data_ptr);
     size_t length = ge_tensor->GetSize();
     if (me_data_size < length) {

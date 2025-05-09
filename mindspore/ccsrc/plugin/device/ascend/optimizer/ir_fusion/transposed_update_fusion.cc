@@ -44,8 +44,8 @@ tensor::TensorPtr CreatePermTensor(const CNodePtr &transposed) {
   auto data_ptr = perm_tensor->data_c();
   MS_EXCEPTION_IF_NULL(data_ptr);
   auto elem_num = perm.size() * kInt32Len;
-  auto ret_code = memcpy_s(data_ptr, static_cast<size_t>(perm_tensor->data().nbytes()),
-                           reinterpret_cast<void *>(perm.data()), elem_num);
+  auto ret_code =
+    memcpy_s(data_ptr, static_cast<size_t>(perm_tensor->DataNBytes()), reinterpret_cast<void *>(perm.data()), elem_num);
   if (ret_code != EOK) {
     MS_LOG(ERROR) << "Failed to copy data into tensor, memcpy_s errorno: " << ret_code;
     return nullptr;

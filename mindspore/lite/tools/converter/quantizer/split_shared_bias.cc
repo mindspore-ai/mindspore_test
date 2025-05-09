@@ -59,11 +59,11 @@ AnfNodePtr SplitSharedBias::CloneParameterNode(const CNodePtr &cnode, size_t ind
   MS_CHECK_TRUE_RET(tensor_info != nullptr, nullptr);
   if (!data_info.data_.empty()) {
     auto tensor_data = reinterpret_cast<uint8_t *>(tensor_info->data_c());
-    if (tensor_data == nullptr || tensor_info->data().nbytes() < 0) {
+    if (tensor_data == nullptr || tensor_info->DataNBytes() < 0) {
       MS_LOG(ERROR) << "tensor info data is nullptr or the size is smaller than zero.";
       return nullptr;
     }
-    if (memcpy_s(tensor_data, tensor_info->data().nbytes(), data_info.data_.data(), data_info.data_.size()) != EOK) {
+    if (memcpy_s(tensor_data, tensor_info->DataNBytes(), data_info.data_.data(), data_info.data_.size()) != EOK) {
       MS_LOG(ERROR) << "memcpy_s failed";
       return nullptr;
     }

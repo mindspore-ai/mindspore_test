@@ -171,15 +171,13 @@ DebugServices::TensorStat DebugServices::GetTensorStatistics(const std::shared_p
     }
     tensor->SetTensor(tensor_int8);
     tensor->SetDataPtr(static_cast<char *>(tensor_int8->data_c()));
-    base_summary_ptr =
-      GetSummaryPtr(tensor, previous_tensor_ptr, tensor_int8->data().nbytes(), 0, DbgDataType::DT_INT8);
+    base_summary_ptr = GetSummaryPtr(tensor, previous_tensor_ptr, tensor_int8->DataNBytes(), 0, DbgDataType::DT_INT8);
   } else if (tensor->GetType() == DbgDataType::DT_UINT1) {
     auto tensor_uint8 = std::make_shared<tensor::Tensor>(TypeId::kNumberTypeUInt8, tensor->GetShape());
     SplitUint1x8ToUint8s(tensor->GetDataPtr(), tensor->GetByteSize(), tensor->GetShape(), tensor_uint8->data_c());
     tensor->SetTensor(tensor_uint8);
     tensor->SetDataPtr(static_cast<char *>(tensor_uint8->data_c()));
-    base_summary_ptr =
-      GetSummaryPtr(tensor, previous_tensor_ptr, tensor_uint8->data().nbytes(), 0, DbgDataType::DT_UINT8);
+    base_summary_ptr = GetSummaryPtr(tensor, previous_tensor_ptr, tensor_uint8->DataNBytes(), 0, DbgDataType::DT_UINT8);
   } else {
     base_summary_ptr = GetSummaryPtr(tensor, previous_tensor_ptr, tensor->GetNumElements(), 0, tensor->GetType());
   }

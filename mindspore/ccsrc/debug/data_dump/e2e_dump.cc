@@ -301,8 +301,7 @@ void E2eDump::DumpArgsSingleNode(const CNodePtr &node, const std::string &dump_p
             static_cast<void *>(const_cast<char *>(t_data->GetDataPtr())), t_data->GetByteSize());
         }
 
-        json[arg_name] =
-          converted_tensor->data().ToString(converted_tensor->data_type(), converted_tensor->shape(), false);
+        json[arg_name] = converted_tensor->DataToString(false);
       }
     }
   }

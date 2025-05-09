@@ -91,7 +91,7 @@ mindspore::ValuePtr MindirModelUtil::MakeValueFromTensorAttribute(const mind_ir:
   const std::string &tensor_buf = tensor_proto.raw_data();
   if (tensor_proto.has_raw_data()) {
     auto *tensor_data_buf = reinterpret_cast<uint8_t *>(tensor->data_c());
-    auto ret = memcpy_s(tensor_data_buf, tensor->data().nbytes(), tensor_buf.data(), tensor_buf.size());
+    auto ret = memcpy_s(tensor_data_buf, tensor->DataNBytes(), tensor_buf.data(), tensor_buf.size());
     MS_CHECK_TRUE_MSG(
       ret != mindspore::lite::RET_OK, nullptr,
       "MindirModelUtil: Generate tensor ptr from tensor proto failed, failed to get tensor from tensor proto.");

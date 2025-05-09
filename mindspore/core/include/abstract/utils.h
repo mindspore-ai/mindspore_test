@@ -28,6 +28,7 @@
 #include "utils/misc.h"
 #include "utils/shape_utils.h"
 #include "mindapi/base/macros.h"
+#include "ir/dtype/type_id.h"
 
 namespace mindspore {
 namespace abstract {
@@ -46,7 +47,6 @@ MS_CORE_API AbstractBasePtr AbstractBroaden(const AbstractBasePtr &abs);
 MS_CORE_API AbstractBasePtr SensitivityTransform(const AbstractBasePtr &spec);
 
 MS_CORE_API ShapeVector BroadcastShape(ShapeVector shpx, ShapeVector shpy);
-MS_CORE_API size_t TypeIdSize(const TypeId data_type);
 template <typename T>
 T ShapeSize(const std::vector<T> &shape) {
   return std::accumulate(shape.begin(), shape.end(), static_cast<T>(1), std::multiplies<T>());

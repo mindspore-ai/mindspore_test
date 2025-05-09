@@ -117,7 +117,7 @@ class BACKEND_COMMON_EXPORT ConstTensorNode : public Node {
   ~ConstTensorNode() = default;
 
   NType NodeType() override { return NType::Tensor; }
-  std::string ToString() const override { return data_->data().ToString(data_->data_type(), data_->shape(), false); }
+  std::string ToString() const override { return data_->DataToString(false); }
   const tensor::TensorPtr data() const { return data_; }
   abstract::AbstractBasePtr ToAbstract() const override { return data_->ToAbstract(); }
 

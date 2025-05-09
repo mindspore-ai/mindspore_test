@@ -46,7 +46,7 @@ string TensorToString(TensorPtr tensor) {
   if (!tensor) {
     return "null";
   }
-  return tensor->data().ToString(tensor->data_type(), tensor->shape(), false);
+  return tensor->DataToString(false);
 }
 }  // namespace
 

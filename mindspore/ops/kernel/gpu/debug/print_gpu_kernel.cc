@@ -216,7 +216,7 @@ std::string PrintGpuKernelMod::GetString(size_t tensor_index, size_t original_in
   Tensor current_tensor(type_id, shape, input_host_data, size_in_byte);
   if (value_type_.count(original_index) > 0) {
     // not a tensor
-    auto out = current_tensor.data().ToString(type_id, shape, true);
+    auto out = current_tensor.DataToString(true);
     // need check is not list
     if (value_type_[original_index] != 0 && list_pos_[original_index] == 0) {
       // tuple, not scalar
