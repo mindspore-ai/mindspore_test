@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include "plugin/device/ascend/kernel/dvm/dvm.h"
+#include "plugin/res_manager/ascend/dvm/dvm.h"
 #include "runtime/collective/communication_group.h"
 
 using CommPtr = std::shared_ptr<dvm::Comm>;

@@ -15,7 +15,7 @@
 # ============================================================================
 
 arch_name=`uname -m`
-lib_file="${BASEPATH}/mindspore/ccsrc/plugin/device/ascend/kernel/dvm/prebuild/${arch_name}/libdvm.a"
+lib_file="${BASEPATH}/mindspore/ccsrc/plugin/res_manager/ascend/dvm/prebuild/${arch_name}/libdvm.a"
 if [ -f "${lib_file}" ]; then
   file_lines=`cat "${lib_file}" | wc -l`
   if [ ${file_lines} -ne 3 ]; then

@@ -28,8 +28,6 @@ if(DEFINED ENV{MS_INTERNAL_KERNEL_HOME})
     add_compile_definitions(ENABLE_INTERNAL_KERNELS)
 endif()
 
-set(DVM_KERNEL_HOME ${CMAKE_SOURCE_DIR}/mindspore/ccsrc/plugin/device/ascend/kernel/dvm)
-include_directories(${DVM_KERNEL_HOME})
 link_directories(${DVM_LIB})
 set(DVM_COLLECTIVE_SRCS "dvm_collective_comm_lib.cc"
         "dvm_communication_group.cc"
