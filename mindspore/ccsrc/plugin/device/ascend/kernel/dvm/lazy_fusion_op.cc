@@ -511,7 +511,7 @@ tensor::TensorPtr ConcatAscendDvm::Call(const ValueTuplePtr &tensors_tensor_list
     for (size_t i = 0; i < tensors_tensor_list_vector.size(); ++i) {
       auto output_tensor_i =
         std::make_shared<tensor::Tensor>(outputs[0]->data_type(), tensors_tensor_list_vector[i]->shape());
-      auto sz = LongToSize(output_tensor_i->data().nbytes());
+      auto sz = LongToSize(output_tensor_i->DataNBytes());
       device_address->set_ptr(device_ptr + offset);
       device_address->SetSize(sz);
       output_tensor_i->set_device_address(device_address);

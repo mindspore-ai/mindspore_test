@@ -6272,7 +6272,7 @@ void OnnxExporter::SetTensorData(const ValuePtr &value, onnx::TensorProto *tenso
     tensor_proto->add_int64_data(attr_value);
   } else if (value->isa<tensor::Tensor>()) {
     auto data = dyn_cast<tensor::Tensor>(value);
-    tensor_proto->set_raw_data(data->data_c(), static_cast<size_t>(data->data().nbytes()));
+    tensor_proto->set_raw_data(data->data_c(), static_cast<size_t>(data->DataNBytes()));
     auto dtype = data->data_type();
     auto shape = data->shape_c();
 

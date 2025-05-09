@@ -145,9 +145,9 @@ py::tuple TensorPy::GetPyTupleShape() {
   return dims;
 }
 
-py::int_ TensorPy::GetPyItemSize() { return GetTensor()->data().itemsize(); }
+py::int_ TensorPy::GetPyItemSize() { return GetTensor()->DataItemSize(); }
 
-py::int_ TensorPy::GetPyNBytes() { return GetTensor()->data().nbytes(); }
+py::int_ TensorPy::GetPyNBytes() { return GetTensor()->DataNBytes(); }
 
 static std::vector<ssize_t> GetStrides(const std::vector<ssize_t> &shape, ssize_t item_size) {
   std::vector<ssize_t> strides;
@@ -166,7 +166,7 @@ static std::vector<ssize_t> GetStrides(const std::vector<ssize_t> &shape, ssize_
 py::tuple TensorPy::GetPyTupleStrides() {
   auto tensor = GetTensor();
   std::vector<ssize_t> shape(tensor->shape().begin(), tensor->shape().end());
-  std::vector<ssize_t> strides = GetStrides(shape, tensor->data().itemsize());
+  std::vector<ssize_t> strides = GetStrides(shape, tensor->DataItemSize());
   py::tuple py_strides(strides.size());
   for (size_t i = 0; i < strides.size(); ++i) {
     py_strides[i] = py::int_(strides[i]);

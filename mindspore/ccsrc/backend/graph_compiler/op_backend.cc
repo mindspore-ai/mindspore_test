@@ -672,7 +672,7 @@ void ViewBackend::AllocateMemForTensor(const tensor::TensorPtr &tensor, DeviceCo
     MS_LOG(EXCEPTION) << "Allocate memory failed";
   }
 
-  auto tensor_size = LongToSize(tensor->data().nbytes());
+  auto tensor_size = LongToSize(tensor->DataNBytes());
   auto tensor_type = tensor->data_type();
   if (!device_address->SyncHostToDevice(tensor->shape(), tensor_size, tensor_type, "DefaultFormat",
                                         tensor->data_ptr())) {

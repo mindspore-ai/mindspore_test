@@ -128,7 +128,7 @@ bool CopyTensorData(const tensor::TensorPtr &tensor, const device::DeviceAddress
   }
 
   // Copy data from host tensor to device.
-  auto host_tensor_size = LongToSize(tensor->data().nbytes());
+  auto host_tensor_size = LongToSize(tensor->DataNBytes());
   auto host_tensor_type = tensor->data_type();
   if (!device_address->SyncHostToDevice(AnfAlgo::GetRuntimePaddingShape(node, 0), host_tensor_size, host_tensor_type,
                                         kOpFormat_DEFAULT, tensor->data_ptr())) {

@@ -31,7 +31,8 @@
 #include "utils/shape_utils.h"
 #include "utils/check_convert_utils.h"
 #include "include/common/utils/utils.h"
-#include "common/device_type.h"
+#include "ir/device_type.h"
+#include "common/kernel_visible.h"
 
 namespace mindspore {
 namespace device {
@@ -416,7 +417,6 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   void set_need_recycle(bool need_recycle);
   void set_status(DeviceAddressStatus status);
   DeviceAddressStatus status() const;
-  virtual DeviceType GetDeviceType() const;
   void *GetMutablePtr() const override;
   // Get the shape vector for Tensor/Sequence/Scalar.
   const ShapeVector &GetShapeVector() const;
@@ -542,7 +542,7 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   void UpdateFlag(size_t flag);
   void ClearFlag(size_t flag);
   std::pair<AnfNodeWeakPtr, size_t> node_index() const;
-  void set_deleter(const std::function<void(uint8_t *)> &deleter);
+  void set_deleter(const std::function<void(uint8_t *)> &deleter) override;
   std::function<void(uint8_t *)> deleter() const;
 
   // For output of pyexecute kernel, the input data is stored in user data and the handler is used to sync data from

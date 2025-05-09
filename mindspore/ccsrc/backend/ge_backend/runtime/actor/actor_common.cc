@@ -525,7 +525,7 @@ void UpdateDynamicShapeAndSize(tensor::Tensor *input_tensor, KernelTensorPtr ker
     kOpFormat_DEFAULT, kOpFormat_ND, kOpFormat_NCHW, kOpFormat_NHWC, kOpFormat_HWCN,
   };
   if (kNormalFormat.find(device_format) != kNormalFormat.end()) {
-    auto tensor_data_size = input_tensor->data().nbytes();
+    auto tensor_data_size = input_tensor->DataNBytes();
     MS_LOG(DEBUG) << "Set device address:" << device_tensor << " size from:" << device_tensor->GetSize()
                   << " to:" << tensor_data_size;
     device_tensor->SetSize(tensor_data_size);

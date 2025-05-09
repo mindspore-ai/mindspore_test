@@ -165,7 +165,7 @@ static PyObject *TensorPython_get_size(PyObject *self, void *) {
 static PyObject *TensorPython_get_itemsize(PyObject *self, void *) {
   HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
-  ssize_t itemsize = obj->value.GetTensor()->data().itemsize();
+  ssize_t itemsize = obj->value.GetTensor()->DataItemSize();
   return PyLong_FromSsize_t(itemsize);
   HANDLE_MS_EXCEPTION_END
 }
@@ -173,7 +173,7 @@ static PyObject *TensorPython_get_itemsize(PyObject *self, void *) {
 static PyObject *TensorPython_get_nbytes(PyObject *self, void *) {
   HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
-  ssize_t nbytes = obj->value.GetTensor()->data().nbytes();  // use data().nbytes()
+  ssize_t nbytes = obj->value.GetTensor()->DataNBytes();  // use DataNBytes()
   return PyLong_FromSsize_t(nbytes);
   HANDLE_MS_EXCEPTION_END
 }
@@ -1757,6 +1757,7 @@ void RegPyTensor(py::module *m) {
 void RegMetaTensor(const py::module *m) {
   // Define TensorData as a python class so that ownership of tensor data can be managed.
   (void)py::class_<TensorData, TensorDataPtr>(*m, "_TensorData");
+  (void)py::class_<DeviceSync, DeviceSyncPtr>(*m, "_DeviceSync");
 }
 
 void RegCSRTensor(const py::module *m) {

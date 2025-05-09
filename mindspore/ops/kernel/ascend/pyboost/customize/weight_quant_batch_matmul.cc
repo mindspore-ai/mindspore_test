@@ -22,6 +22,7 @@
 #include "mindspore/ccsrc/pyboost/op_register.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
+#include "ir/device_address_maker.h"
 
 namespace mindspore {
 namespace kernel {
@@ -78,8 +79,9 @@ tensor::TensorPtr WeightQuantBatchMatmulV2AscendCustomize(
     int kInt4ShapeMul = 2;
     weight_shape.back() *= kInt4ShapeMul;
     const ShapeVector &new_weight_shape = weight_shape;
-    new_weight_tensor =
-      std::make_shared<tensor::Tensor>(weight_tensor->data_type(), new_weight_shape, weight_tensor->data_ptr());
+    new_weight_tensor = std::make_shared<tensor::Tensor>(
+      weight_tensor->data_type(), new_weight_shape,
+      MakeDeviceAddress(weight_tensor->data_type(), new_weight_shape, weight_tensor->data_ptr()));
   }
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), x_tensor, new_weight_tensor,

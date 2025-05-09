@@ -130,7 +130,7 @@ const AnfNodePtr PaddUpdateFusion::Process(const FuncGraphPtr &func_graph, const
   }
   auto data_ptr = const_tensor->data_c();
   MS_EXCEPTION_IF_NULL(data_ptr);
-  auto ret_code = memcpy_s(data_ptr, static_cast<size_t>(const_tensor->data().nbytes()),
+  auto ret_code = memcpy_s(data_ptr, static_cast<size_t>(const_tensor->DataNBytes()),
                            static_cast<void *>(const_value.data()), const_value.size() * sizeof(int64_t));
   if (ret_code != EOK) {
     MS_LOG(EXCEPTION) << "Failed to copy data into tensor, memcpy_s errorno: " << ret_code;

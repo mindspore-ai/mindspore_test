@@ -97,7 +97,7 @@ int64_t MemReuseChecker::CalculOriValue(const KernelGraph *graph) const {
     if (tensor == nullptr) {
       continue;
     }
-    int64_t checker_size = tensor->data().nbytes();
+    int64_t checker_size = tensor->DataNBytes();
     static_value_size += checker_size;
   }
   return static_value_size;

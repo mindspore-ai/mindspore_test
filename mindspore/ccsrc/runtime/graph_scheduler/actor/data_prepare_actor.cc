@@ -184,7 +184,7 @@ void SyncTensorData(const TensorPtr &host_tensor, const KernelTensorPtr &kernel_
     const auto &real_host_tensor = get_tensor_by_index(i);
     MS_EXCEPTION_IF_NULL(real_host_tensor);
     // Copy data from host tensor to device.
-    auto host_tensor_size = LongToSize(real_host_tensor->data().nbytes());
+    auto host_tensor_size = LongToSize(real_host_tensor->DataNBytes());
     auto host_tensor_type = real_host_tensor->data_type();
     if (node->isa<ValueNode>()) {
       host_shape = real_host_tensor->shape();
@@ -468,7 +468,7 @@ void DataPrepareActor::UpdateDynamicShapeAndSize(const AnfNodePtr &input_node, c
     kOpFormat_DEFAULT, kOpFormat_ND, kOpFormat_NCHW, kOpFormat_NHWC, kOpFormat_HWCN,
   };
   if (kNormalFormat.find(device_format) != kNormalFormat.end()) {
-    auto tensor_data_size = input_tensor->data().nbytes();
+    auto tensor_data_size = input_tensor->DataNBytes();
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
       << "Set device address:" << device_address << " size from:" << device_address->GetSize()
       << " to:" << tensor_data_size;
@@ -1120,7 +1120,7 @@ void DataPrepareActor::PrepareDataForControlValueNode(const KernelWithIndex &nod
     return;
   }
 
-  auto host_tensor_size = LongToSize(tensor->data().nbytes());
+  auto host_tensor_size = LongToSize(tensor->DataNBytes());
   auto host_tensor_type = tensor->data_type();
   auto shape = tensor->shape();
   if (!device_tensor->SyncHostToDevice(shape, host_tensor_size, host_tensor_type, tensor->device_info().host_format_,

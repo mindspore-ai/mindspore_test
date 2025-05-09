@@ -970,7 +970,7 @@ void DeviceAddressUtils::CreateInputTensorAddress(const DeviceContext *device_co
     tensor->data_sync();
     tensor->set_device_address(nullptr);
   }
-  auto tensor_size = LongToSize(tensor->data().nbytes());
+  auto tensor_size = LongToSize(tensor->DataNBytes());
   const auto &format = GetFormatByTensorShape(device_context, tensor->shape());
   auto device_address = device_context->device_res_manager_->CreateDeviceAddress(
     nullptr, tensor_size, tensor->shape(), format, tensor->data_type(),
@@ -1027,7 +1027,7 @@ void DeviceAddressUtils::MallocForInput(const DeviceContext *device_context, con
     }
   }
 
-  auto tensor_size = LongToSize(tensor->data().nbytes());
+  auto tensor_size = LongToSize(tensor->DataNBytes());
   if (device_address->GetDeviceType() == device::DeviceType::kAscend) {
     OpExecutor::DispatchLaunchTask([=]() {
       if (!device_address->SyncHostToDevice(tensor->shape(), tensor_size, tensor->data_type(), device_address->format(),
@@ -1095,7 +1095,7 @@ KernelTensorPtr DeviceAddressUtils::CreateInputKernelTensor(const DeviceContext 
     }
   }
 
-  const auto &tensor_size = LongToSize(tensor->data().nbytes());
+  const auto &tensor_size = LongToSize(tensor->DataNBytes());
   const auto &format = GetFormatByTensorShape(device_context, tensor->shape());
   auto kernel_tensor =
     AnfAlgo::CreateKernelTensor(shape, type, nullptr, nullptr, tensor_size, kernel::GetFormatFromEnumToStr(format),
@@ -1216,7 +1216,7 @@ void DeviceAddressUtils::CreateOutputTensorAddress(const DeviceContext *device_c
   for (size_t i = 0; i < outputs.size(); ++i) {
     const auto &tensor = outputs[i];
     MS_EXCEPTION_IF_NULL(tensor);
-    auto tensor_size = LongToSize(tensor->data().nbytes());
+    auto tensor_size = LongToSize(tensor->DataNBytes());
     const auto &format = GetFormatByTensorShape(device_context, tensor->shape());
     auto device_address = device_context->device_res_manager_->CreateDeviceAddress(
       nullptr, tensor_size, tensor->shape(), format, tensor->data_type(),

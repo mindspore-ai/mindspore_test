@@ -386,8 +386,7 @@ void EmbeddingCacheTableManager::WarmUpHostCacheItemBatch(const int32_t batch_co
   auto &value_shape = value_ptr->shape();
   size_t value_len = 0;
   (void)std::for_each(value_shape.begin() + 1, value_shape.end(), [&](int n) { value_len += n; });
-  MS_EXCEPTION_IF_NULL(value_ptr->data_ptr());
-  value_len *= static_cast<size_t>(value_ptr->data_ptr()->itemsize());
+  value_len *= static_cast<size_t>(value_ptr->DataItemSize());
   size_t value_expected_len = value_len * (value_shape[0] + 1);
   MS_EXCEPTION_IF_CHECK_FAIL(value_expected_len <= host_length, "Size of value tensor is overflow.");
 

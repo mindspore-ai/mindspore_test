@@ -109,7 +109,7 @@ void Summary::SummaryTensor(KernelGraph *graph) {
     if (!address->GetPtr()) {
       continue;
     }
-    if (!address->SyncDeviceToHost(AnfAlgo::GetRuntimePaddingShape(node, index), LongToSize(tensor->data().nbytes()),
+    if (!address->SyncDeviceToHost(AnfAlgo::GetRuntimePaddingShape(node, index), LongToSize(tensor->DataNBytes()),
                                    tensor->data_type(), tensor->data_c())) {
       MS_LOG(ERROR) << "Failed to sync output from device to host.";
     }

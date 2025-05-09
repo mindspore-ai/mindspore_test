@@ -112,9 +112,8 @@ bool PyExecuteCpuKernelMod::Launch(const std::vector<KernelTensor *> &inputs, co
     outputs[0]->SetType(abstract->BuildType());
     outputs[0]->SetShape(abstract->BuildShape());
     auto tensor = pyexecute::GetValueByPyObj(obj);
-    if (outputs[0]->size() != LongToSize(tensor->data().nbytes())) {
-      MS_LOG(EXCEPTION) << "Invalid output size:" << outputs[0]->size()
-                        << " and tensor size:" << tensor->data().nbytes();
+    if (outputs[0]->size() != LongToSize(tensor->DataNBytes())) {
+      MS_LOG(EXCEPTION) << "Invalid output size:" << outputs[0]->size() << " and tensor size:" << tensor->DataNBytes();
     }
     const auto &res = memcpy_s(reinterpret_cast<char *>(outputs[0]->device_ptr()), outputs[0]->size(), tensor->data_c(),
                                outputs[0]->size());

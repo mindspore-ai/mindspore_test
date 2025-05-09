@@ -102,7 +102,7 @@ void TensorPrintUtils::OutputReceiveData2PbFile(const ScopeAclTdtDataset &datase
     }
 
     tensor->set_tensor_type(tensor_ptr->Dtype()->ToString());
-    tensor->set_tensor_content(tensor_ptr->data_c(), tensor_ptr->data().nbytes());
+    tensor->set_tensor_content(tensor_ptr->data_c(), tensor_ptr->DataNBytes());
   }
 
   if (!print.SerializeToOstream(pb_file_stream_.get())) {

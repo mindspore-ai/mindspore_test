@@ -725,7 +725,7 @@ bool AscendDeviceAddress::SyncDeviceToDeviceWithDiffFormatType(const DeviceSync 
   }
   auto host_tensor = std::make_shared<tensor::Tensor>(src_device_address->type_id(), host_shape);
   MS_EXCEPTION_IF_NULL(host_tensor);
-  auto host_tensor_size = LongToSize(host_tensor->data().nbytes());
+  auto host_tensor_size = LongToSize(host_tensor->DataNBytes());
   auto host_tensor_type = host_tensor->data_type();
   if (!src_device_address->SyncDeviceToHost(host_shape, host_tensor_size, host_tensor_type, host_tensor->data_c())) {
     MS_LOG(ERROR) << "Sync device to device failed at the stage of sync device to intermediate Tensor.";
@@ -1167,7 +1167,7 @@ mindspore::tensor::TensorPtr AscendDeviceAddress::LoadMemToHost(const std::strin
   }
   mindspore::tensor::TensorPtr out_tensor = std::make_shared<tensor::Tensor>(host_type, corrected_host_shape);
   MS_EXCEPTION_IF_NULL(out_tensor);
-  size_t host_size = LongToSize(out_tensor->data().nbytes());
+  size_t host_size = LongToSize(out_tensor->DataNBytes());
   if (host_size == 0) {
     MS_LOG(INFO) << "Tensor size is 0 for tensor: " << tensor_name;
     return std::make_shared<mindspore::tensor::Tensor>();

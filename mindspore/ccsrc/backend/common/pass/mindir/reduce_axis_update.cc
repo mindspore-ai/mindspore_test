@@ -52,7 +52,7 @@ tensor::TensorPtr CreateTensor(const std::vector<int64_t> &values) {
   MS_EXCEPTION_IF_NULL(data_ptr);
   auto buffer_size = values.size() * data_length;
   if (buffer_size != 0) {
-    auto ret_code = memcpy_s(data_ptr, static_cast<size_t>(tensor->data().nbytes()), values.data(), buffer_size);
+    auto ret_code = memcpy_s(data_ptr, static_cast<size_t>(tensor->DataNBytes()), values.data(), buffer_size);
     if (ret_code != EOK) {
       MS_LOG(EXCEPTION) << "Failed to copy data into tensor, memcpy_s errorno: " << ret_code;
     }

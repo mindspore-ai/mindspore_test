@@ -183,7 +183,7 @@ void CopyTensorDataToDevice(const tensor::TensorPtr &tensor, const AnfNodePtr &n
     MS_LOG(EXCEPTION) << "Allocate memory failed, alloc size " << device_address->GetSize() << "B";
   }
   // Copy data from host tensor to device.
-  auto tensor_size = LongToSize(tensor->data().nbytes());
+  auto tensor_size = LongToSize(tensor->DataNBytes());
   auto tensor_type = tensor->data_type();
   MS_LOG(DEBUG) << "Copy to device, node:" << common::AnfAlgo::GetNodeDebugString(node);
   if (!device_address->SyncHostToDevice(AnfAlgo::GetRuntimePaddingShape(node, 0), tensor_size, tensor_type,
@@ -228,7 +228,7 @@ void UpdateAddressSizeForDynamicShapeTensor(const tensor::TensorPtr &input_tenso
   if (input_tensor->base_shape_ptr() != nullptr) {
     auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(input_tensor->device_address());
     MS_EXCEPTION_IF_NULL(device_address);
-    auto tensor_size = LongToSize(input_tensor->data().nbytes());
+    auto tensor_size = LongToSize(input_tensor->DataNBytes());
     if (tensor_size != device_address->GetSize()) {
       device_address->SetSize(tensor_size);
     }

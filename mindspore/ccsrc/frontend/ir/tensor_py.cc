@@ -35,6 +35,7 @@
 #include "include/backend/mbuf_device_address.h"
 #include "utils/ordered_set.h"
 #include "runtime/device/move_to.h"
+#include "ir/device_address_maker.h"
 
 namespace mindspore {
 namespace tensor {
@@ -355,9 +356,16 @@ TensorPtr TensorPybind::MakeTensorOfNumpy(const py::array &input) {
   }
   // Get tensor shape.
   ShapeVector shape(buf.shape.begin(), buf.shape.end());
+
   // Make a tensor with shared data with numpy array.
   auto tensor_data = std::make_shared<TensorDataNumpy>(std::move(buf));
-  return std::make_shared<Tensor>(dtype, shape, tensor_data);
+
+  auto device_address = DeviceAddressMaker(tensor_data->data(), dtype, shape)
+                          .set_deleter([tensor_data](void *) {})
+                          .set_maker(GetDeviceAddressMaker(device::DeviceType::kCPU))
+                          .make_device_address();
+
+  return std::make_shared<Tensor>(dtype, shape, device_address);
 }
 
 /// Creates a Tensor from a numpy array without copy, use persistent tensor data
@@ -377,8 +385,9 @@ TensorPtr TensorPybind::MakePersistentDataTensorOfNumpy(const py::array &input, 
   // Get tensor shape.
   ShapeVector shape(buf.shape.begin(), buf.shape.end());
   // Make a tensor with shared data with numpy array.
+  // todo: delete PersistentTensorDataNumpy
   auto tensor_data = std::make_shared<PersistentTensorDataNumpy>(std::move(buf), static_cast<int>(slice_num));
-  return std::make_shared<Tensor>(dtype, shape, tensor_data);
+  return std::make_shared<Tensor>(dtype, shape, MakeDeviceAddress(dtype, shape, tensor_data));
 }
 
 void TensorPybind::SetUserData(const TensorPtr &tensor, const py::str &key, const py::object &value) {
@@ -413,9 +422,9 @@ static std::vector<ssize_t> GetStrides(const std::vector<ssize_t> &shape, ssize_
 
 static py::buffer_info GetPyBufferInfo(const Tensor &tensor) {
   std::vector<ssize_t> shape(tensor.shape().begin(), tensor.shape().end());
-  std::vector<ssize_t> strides = GetStrides(shape, tensor.data().itemsize());
+  std::vector<ssize_t> strides = GetStrides(shape, tensor.DataItemSize());
   return py::buffer_info{
-    tensor.data_c(), tensor.data().itemsize(), GetPyTypeFormat(tensor.data_type()), tensor.DataDim(), shape, strides};
+    tensor.data_c(), tensor.DataItemSize(), GetPyTypeFormat(tensor.data_type()), tensor.DataDim(), shape, strides};
 }
 
 py::tuple TensorPybind::GetPyTupleShape(const Tensor &tensor) {
@@ -429,7 +438,7 @@ py::tuple TensorPybind::GetPyTupleShape(const Tensor &tensor) {
 
 py::tuple TensorPybind::GetPyTupleStrides(const Tensor &tensor) {
   std::vector<ssize_t> shape(tensor.shape().begin(), tensor.shape().end());
-  std::vector<ssize_t> strides = GetStrides(shape, tensor.data().itemsize());
+  std::vector<ssize_t> strides = GetStrides(shape, tensor.DataItemSize());
   py::tuple py_strides(strides.size());
   for (size_t i = 0; i < strides.size(); ++i) {
     py_strides[i] = py::int_(strides[i]);
@@ -437,9 +446,9 @@ py::tuple TensorPybind::GetPyTupleStrides(const Tensor &tensor) {
   return py_strides;
 }
 
-py::int_ TensorPybind::GetPyItemSize(const Tensor &tensor) { return tensor.data().itemsize(); }
+py::int_ TensorPybind::GetPyItemSize(const Tensor &tensor) { return tensor.DataItemSize(); }
 
-py::int_ TensorPybind::GetPyNBytes(const Tensor &tensor) { return tensor.data().nbytes(); }
+py::int_ TensorPybind::GetPyNBytes(const Tensor &tensor) { return tensor.DataNBytes(); }
 
 template <typename T>
 void MemCopyFromCacheToHost(void *hashmap_addr, void *host_addr, void *cache_addr, size_t host_max, size_t cache_max,
@@ -630,7 +639,7 @@ py::object TensorPybind::ToList(const TensorPtr &tensor) {
 }
 
 py::object TensorPybind::Item(const TensorPtr &tensor) {
-  auto tensor_element_count = tensor->data().size();
+  auto tensor_element_count = tensor->DataSize();
   if (tensor_element_count != 1) {
     MS_EXCEPTION(ValueError) << "The tensor should have only one element, but got " << tensor_element_count << ","
                              << " more than one element is ambiguous.";
@@ -715,13 +724,8 @@ py::array TensorPybind::AsNumpy(const Tensor &tensor) {
   // We can NOT use Tensor as the owner since its TensorData may change
   // by other operations such as AssignValue().
   py::gil_scoped_acquire acquire;
-  py::object owner = py::cast(tensor.data_ptr());
-  auto data_numpy = dynamic_cast<const TensorDataNumpy *>(&tensor.data());
-  if (data_numpy != nullptr) {
-    // Return internal numpy array if tensor data is implemented base on it.
-    return data_numpy->py_array(owner);
-  }
-  // Otherwise, create numpy array by buffer protocol.
+  py::object owner = py::cast(tensor.device_address());
+  // Create numpy array by buffer protocol.
   auto info = GetPyBufferInfo(tensor);
   py::dtype np_dtype = (tensor.data_type() == kNumberTypeBFloat16)
                          ? py::detail::npy_format_descriptor<bfloat16>::dtype()

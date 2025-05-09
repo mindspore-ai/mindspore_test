@@ -2385,12 +2385,12 @@ void SetScalarToTensor(const std::vector<ValuePtr> &values, const tensor::Tensor
   const auto &tensor_type_id = tensor->data_type();
   const auto dst_ptr = tensor->data_c();
   MS_EXCEPTION_IF_NULL(dst_ptr);
-  MS_LOG(DEBUG) << "Set scalar tuple to tensor, dst size:" << tensor->data().nbytes();
+  MS_LOG(DEBUG) << "Set scalar tuple to tensor, dst size:" << tensor->DataNBytes();
   for (size_t i = 0; i < values.size(); ++i) {
     // Check mem size.
-    if (SizeToLong(abstract::TypeIdSize(tensor_type_id) * (i + 1)) > tensor->data().nbytes()) {
+    if (abstract::TypeIdSize(tensor_type_id) * (i + 1) > tensor->DataNBytes()) {
       MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Runtime error info:#dmsg#Value size:" << values.size()
-                                 << " type:" << tensor_type_id << " out of range:" << tensor->data().nbytes();
+                                 << " type:" << tensor_type_id << " out of range:" << tensor->DataNBytes();
     }
     const auto &value = values[i];
     MS_EXCEPTION_IF_NULL(value);
@@ -2506,15 +2506,15 @@ tensor::TensorPtr AnfRuntimeAlgorithm::SequenceToTensor(const ValuePtr &value) {
     MS_EXCEPTION_IF_NULL(new_tensor);
     const auto dst_ptr = new_tensor->data_c();
     MS_EXCEPTION_IF_NULL(dst_ptr);
-    MS_LOG(DEBUG) << "Copy start, dst size:" << new_tensor->data().nbytes();
+    MS_LOG(DEBUG) << "Copy start, dst size:" << new_tensor->DataNBytes();
     for (size_t i = 0; i < values.size(); ++i) {
       const auto &sub_value = values[i];
       MS_EXCEPTION_IF_NULL(sub_value);
       const auto &src_tensor = sub_value->cast<tensor::TensorPtr>();
       MS_EXCEPTION_IF_NULL(src_tensor);
       MS_EXCEPTION_IF_NULL(src_tensor->data_c());
-      auto ret = memcpy_s((reinterpret_cast<char *>(dst_ptr)) + i * size,
-                          static_cast<size_t>(new_tensor->data().nbytes()), src_tensor->data_c(), size);
+      auto ret = memcpy_s((reinterpret_cast<char *>(dst_ptr)) + i * size, static_cast<size_t>(new_tensor->DataNBytes()),
+                          src_tensor->data_c(), size);
       if (ret != EOK) {
         MS_LOG(INTERNAL_EXCEPTION)
           << "#dmsg#Runtime error info:#dmsg#Failed to copy data into tensor, memcpy_s errorno: " << ret;

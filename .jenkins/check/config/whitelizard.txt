@@ -25,6 +25,8 @@ mindspore/mindspore/core/include/ir/tensor.h:mindspore::tensor::NewData
 mindspore/mindspore/core/include/ir/tensor.h:mindspore::tensor::CopyData
 mindspore/mindspore/core/include/ir/tensor.h:mindspore::tensor::TensorStringifier::ToString
 mindspore/mindspore/core/include/ir/tensor.h:mindspore::tensor::MakeTensorData
+mindspore/mindspore/core/include/ir/tensor_data.h:mindspore::tensor::MakeTensorData
+mindspore/mindspore/core/ir/tensor_data.cc:mindspore::tensor::GetTensorDataString
 mindspore/mindspore/core/ir/dtype_extends.cc:mindspore::UnitSizeInBytes
 mindspore/mindspore/ccsrc/frontend/optimizer/irpass.cc:mindspore::opt::irpass::OptimizeIRPassLib::OptimizeIRPassLib
 mindspore/mindspore/ccsrc/frontend/optimizer/ad/dfunctor.cc:mindspore::ad::DFunctor::MapValueObject

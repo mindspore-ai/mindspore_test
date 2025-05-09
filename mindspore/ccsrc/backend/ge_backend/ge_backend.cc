@@ -1457,7 +1457,7 @@ void GEBackend::UpdateInputsShapeAndSize(const ParameterPtr &input_node,
     kOpFormat_DEFAULT, kOpFormat_ND, kOpFormat_NCHW, kOpFormat_NHWC, kOpFormat_HWCN,
   };
   if (kNormalFormat.find(device_format) != kNormalFormat.end()) {
-    auto tensor_data_size = input_tensor->data().nbytes();
+    auto tensor_data_size = input_tensor->DataNBytes();
     MS_LOG(DEBUG) << "Set device address:" << device_tensor << " size from:" << device_tensor->GetSize()
                   << " to:" << tensor_data_size;
     device_tensor->SetSize(tensor_data_size);
@@ -1657,7 +1657,7 @@ void GEBackend::SyncTensorData(const tensor::TensorPtr &host_tensor,
     const auto &real_host_tensor = get_tensor_by_index(i);
     MS_EXCEPTION_IF_NULL(real_host_tensor);
     // Copy data from host tensor to device.
-    auto host_tensor_size = LongToSize(real_host_tensor->data().nbytes());
+    auto host_tensor_size = LongToSize(real_host_tensor->DataNBytes());
     auto host_tensor_type = real_host_tensor->data_type();
     if (node->isa<ValueNode>()) {
       host_shape = real_host_tensor->shape();

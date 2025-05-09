@@ -913,7 +913,7 @@ void UpdateDynamicShapeAndSize(tensor::Tensor *input_tensor, const KernelTensorP
     kOpFormat_DEFAULT, kOpFormat_ND, kOpFormat_NCHW, kOpFormat_NHWC, kOpFormat_HWCN,
   };
   if (kNormalFormat.find(device_format) != kNormalFormat.end()) {
-    auto tensor_data_size = input_tensor->data().nbytes();
+    auto tensor_data_size = input_tensor->DataNBytes();
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
       << "Set device address:" << device_tensor << " size from:" << device_tensor->GetSize()
       << " to:" << tensor_data_size;
@@ -989,7 +989,7 @@ void SyncHostToDeviceFromTensor(size_t outer_index, size_t inner_index, tensor::
     }
   }
 
-  auto tensor_size = LongToSize(tensor->data().nbytes());
+  auto tensor_size = LongToSize(tensor->DataNBytes());
   if (is_first_user) {
     if (tensor_size > 0 && !CopyDataFromTensor(device_tensor, tensor, stream_id)) {
       MS_LOG(EXCEPTION) << "Fetch parameter async host to device failed.";
@@ -1077,7 +1077,7 @@ void PrepareForNonTensorAddress(const std::pair<KernelWithIndex, size_t> &parame
     auto new_device_tensor = device_context->device_res_manager_->CreateDeviceAddress();
     auto new_kernel_tensor =
       std::make_shared<kernel::KernelTensor>(new_device_tensor, shape, type, nullptr, ShapeVector{});
-    new_kernel_tensor->set_size(LongToSize(tensor->data().nbytes()));
+    new_kernel_tensor->set_size(LongToSize(tensor->DataNBytes()));
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
       << "Refresh store device tensor, from: " << new_device_tensor.get() << ", to null,"
       << ", outer index: " << outer_index << ", inner index: " << inner_index

@@ -97,7 +97,7 @@ void CPUKernelRuntime::AssignValueNodeAddress(const session::KernelGraph *kernel
         address->SetDevicePtr(tensor->data_c());
       } else {
         address->SetDevicePtr(static_cast<CPUMemoryManager *>(mem_manager_.get())->StaticMemMalloc(tensor_size));
-        if (!address->SyncHostToDevice(data_shape, LongToSize(tensor->data().nbytes()), tensor->data_type(),
+        if (!address->SyncHostToDevice(data_shape, LongToSize(tensor->DataNBytes()), tensor->data_type(),
                                        tensor->data_c())) {
           MS_LOG(EXCEPTION) << "Value node sync host to device failed!";
         }
@@ -314,7 +314,7 @@ void CPUKernelRuntime::BindInputTensorAddressPtr(const session::KernelGraph &ker
         address->SetDevicePtr(static_cast<CPUMemoryManager *>(mem_manager_.get())->StaticMemMalloc(tensor_size));
         address->SetSize(tensor_size);
       }
-      if (!address->SyncHostToDevice(data_shape, LongToSize(tensor->data().nbytes()), tensor->data_type(),
+      if (!address->SyncHostToDevice(data_shape, LongToSize(tensor->DataNBytes()), tensor->data_type(),
                                      tensor->data_c())) {
         MS_LOG(EXCEPTION) << "Parameter node sync host to device failed!";
       }

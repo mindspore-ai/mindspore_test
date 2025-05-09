@@ -35,6 +35,7 @@
 #include "utils/system/env.h"
 #include "utils/temp_file_manager.h"
 #include "utils/ms_context.h"
+#include "ir/device_address_maker.h"
 
 namespace mindspore {
 namespace tensor {
@@ -173,7 +174,6 @@ Tensor::Tensor(const Tensor &tensor)
       version_(tensor.version_),
       device_sync_(tensor.device_sync_),
       auto_grad_meta_data_(tensor.auto_grad_meta_data_),
-      data_(tensor.data_),
       base_shape_ptr_(tensor.base_shape_ptr_),
       cache_tensor_ptr_(tensor.cache_tensor_ptr_),
       hashmap_tensor_ptr_(tensor.hashmap_tensor_ptr_),
@@ -197,7 +197,6 @@ Tensor::Tensor(const Tensor &tensor, TypeId data_type)
       version_(tensor.version_),
       device_sync_(tensor.device_sync_),
       auto_grad_meta_data_(tensor.auto_grad_meta_data_),
-      data_(MakeTensorData(data_type, tensor.shape_, tensor.data_->data(), tensor.data_type_)),
       base_shape_ptr_(tensor.base_shape_ptr_),
       cache_tensor_ptr_(tensor.cache_tensor_ptr_),
       hashmap_tensor_ptr_(tensor.hashmap_tensor_ptr_),
@@ -210,7 +209,8 @@ Tensor::Tensor(const Tensor &tensor, TypeId data_type)
       init_flag_(tensor.init_flag_),
       cache_enable_(tensor.cache_enable_),
       copy_done_flag_(tensor.copy_done_flag_) {
-  user_data_ = tensor.user_data_;
+  // todo: tensor.astype
+  MS_LOG(EXCEPTION) << "Not support change data type";
 }
 
 Tensor &Tensor::operator=(const Tensor &tensor) {
@@ -218,7 +218,6 @@ Tensor &Tensor::operator=(const Tensor &tensor) {
     return *this;
   }
   is_forward_output_ = tensor.is_forward_output_;
-  data_ = tensor.data_;
   id_ = tensor.id_;
   sync_status_ = tensor.sync_status_;
   version_ = tensor.version_;
@@ -245,126 +244,139 @@ Tensor &Tensor::operator=(const Tensor &tensor) {
   return *this;
 }
 
-Tensor::Tensor(TypeId data_type, const ShapeVector &shape, TensorDataPtr data)
-    : MetaTensor(data_type, shape), id_(MakeId()), data_(std::move(data)) {}
+template <template <class> class ImplClass = TensorDataImpl, typename... Args>
+TensorDataPtr MakeData(TypeId data_type, Args &&... args) {
+  return MakeTensorData(data_type, args...);
+}
+
+Tensor::Tensor(TypeId data_type, const ShapeVector &shape, DeviceSyncPtr device_address)
+    : MetaTensor(data_type, shape), id_(MakeId()), device_sync_(std::move(device_address)) {}
 
 Tensor::Tensor(TypeId data_type, const ShapeVector &shape)
-    : Tensor(data_type, shape, MakeTensorData(data_type, shape)) {}
+    : Tensor(data_type, shape, MakeDeviceAddress(data_type, shape)) {}
 
 Tensor::Tensor(TypeId data_type, const ShapeVector &shape, void *data, size_t data_len)
-    : Tensor(data_type, shape, MakeTensorData(data_type, shape, data, data_len)) {}
+    : Tensor(data_type, shape, MakeDeviceAddress(data_type, shape, MakeTensorData(data_type, shape, data, data_len))) {}
 
 Tensor::Tensor(TypeId data_type, const ShapeVector &shape, void *data, TypeId src_data_type)
-    : Tensor(data_type, shape, MakeTensorData(data_type, shape, data, src_data_type)) {}
+    : Tensor(data_type, shape,
+             MakeDeviceAddress(data_type, shape, MakeTensorData(data_type, shape, data, src_data_type))) {}
 
 Tensor::Tensor(const std::vector<int64_t> &input, const TypePtr &data_type)
     : MetaTensor(TypeIdOf(data_type, kNumberTypeInt64), {static_cast<int>(input.size())}),
       id_(MakeId()),
-      data_(MakeTensorData(data_type_, shape_, input.data(), input.size())) {}
+      device_sync_(
+        MakeDeviceAddress(data_type_, shape_, MakeTensorData(data_type_, shape_, input.data(), input.size()))) {}
 
 Tensor::Tensor(const std::vector<int32_t> &input, const TypePtr &data_type)
     : MetaTensor(TypeIdOf(data_type, kNumberTypeInt32), {static_cast<int>(input.size())}),
       id_(MakeId()),
-      data_(MakeTensorData(data_type_, shape_, input.data(), input.size())) {}
+      device_sync_(
+        MakeDeviceAddress(data_type_, shape_, MakeTensorData(data_type_, shape_, input.data(), input.size()))) {}
 
 Tensor::Tensor(const std::vector<double> &input, const TypePtr &data_type)
     : MetaTensor(TypeIdOf(data_type, kNumberTypeFloat32), {static_cast<int>(input.size())}),
       id_(MakeId()),
-      data_(MakeTensorData(data_type_, shape_, input.data(), input.size())) {}
+      device_sync_(
+        MakeDeviceAddress(data_type_, shape_, MakeTensorData(data_type_, shape_, input.data(), input.size()))) {}
 
 Tensor::Tensor(const std::vector<float> &input, const TypePtr &data_type)
     : MetaTensor(TypeIdOf(data_type, kNumberTypeFloat32), {static_cast<int>(input.size())}),
       id_(MakeId()),
-      data_(MakeTensorData(data_type_, shape_, input.data(), input.size())) {}
+      device_sync_(
+        MakeDeviceAddress(data_type_, shape_, MakeTensorData(data_type_, shape_, input.data(), input.size()))) {}
 
 Tensor::Tensor(int64_t input, const TypePtr &data_type)
     : MetaTensor(TypeIdOf(data_type, kNumberTypeInt64), {}),
       id_(MakeId()),
-      data_(MakeTensorData(data_type_, ShapeVector{}, input)) {}
+      device_sync_(MakeDeviceAddress(data_type_, ShapeVector{}, MakeTensorData(data_type_, ShapeVector{}, input))) {}
 
 Tensor::Tensor(int32_t input, const TypePtr &data_type)
     : MetaTensor(TypeIdOf(data_type, kNumberTypeInt32), {}),
       id_(MakeId()),
-      data_(MakeTensorData(data_type_, ShapeVector{}, input)) {}
+      device_sync_(MakeDeviceAddress(data_type_, ShapeVector{}, MakeTensorData(data_type_, ShapeVector{}, input))) {}
 
 Tensor::Tensor(int16_t input, const TypePtr &data_type)
     : MetaTensor(TypeIdOf(data_type, kNumberTypeInt16), {}),
       id_(MakeId()),
-      data_(MakeTensorData(data_type_, ShapeVector{}, input)) {}
+      device_sync_(MakeDeviceAddress(data_type_, ShapeVector{}, MakeTensorData(data_type_, ShapeVector{}, input))) {}
 
 Tensor::Tensor(int8_t input, const TypePtr &data_type)
     : MetaTensor(TypeIdOf(data_type, kNumberTypeInt8), {}),
       id_(MakeId()),
-      data_(MakeTensorData(data_type_, ShapeVector{}, input)) {}
+      device_sync_(MakeDeviceAddress(data_type_, ShapeVector{}, MakeTensorData(data_type_, ShapeVector{}, input))) {}
 
 Tensor::Tensor(double input, const TypePtr &data_type)
     : MetaTensor(TypeIdOf(data_type, kNumberTypeFloat32), {}),
       id_(MakeId()),
-      data_(MakeTensorData(data_type_, ShapeVector{}, input)) {}
+      device_sync_(MakeDeviceAddress(data_type_, ShapeVector{}, MakeTensorData(data_type_, ShapeVector{}, input))) {}
 
 Tensor::Tensor(float input, const TypePtr &data_type)
     : MetaTensor(TypeIdOf(data_type, kNumberTypeFloat32), {}),
       id_(MakeId()),
-      data_(MakeTensorData(data_type_, ShapeVector{}, input)) {}
+      device_sync_(MakeDeviceAddress(data_type_, ShapeVector{}, MakeTensorData(data_type_, ShapeVector{}, input))) {}
 
 Tensor::Tensor(float16 input, const TypePtr &data_type)
     : MetaTensor(TypeIdOf(data_type, kNumberTypeFloat16), {}),
       id_(MakeId()),
-      data_(MakeTensorData(data_type_, ShapeVector{}, input)) {}
+      device_sync_(MakeDeviceAddress(data_type_, ShapeVector{}, MakeTensorData(data_type_, ShapeVector{}, input))) {}
 
 Tensor::Tensor(float8_e5m2 input, const TypePtr &data_type)
     : MetaTensor(TypeIdOf(data_type, kNumberTypeFloat8E5M2), {}),
       id_(MakeId()),
-      data_(MakeTensorData(data_type_, ShapeVector{}, input)) {}
+      device_sync_(MakeDeviceAddress(data_type_, ShapeVector{}, MakeTensorData(data_type_, ShapeVector{}, input))) {}
 
 Tensor::Tensor(float8_e4m3fn input, const TypePtr &data_type)
     : MetaTensor(TypeIdOf(data_type, kNumberTypeFloat8E4M3FN), {}),
       id_(MakeId()),
-      data_(MakeTensorData(data_type_, ShapeVector{}, input)) {}
+      device_sync_(MakeDeviceAddress(data_type_, ShapeVector{}, MakeTensorData(data_type_, ShapeVector{}, input))) {}
 
 Tensor::Tensor(hifloat8 input, const TypePtr &data_type)
     : MetaTensor(TypeIdOf(data_type, kNumberTypeHiFloat8), {}),
       id_(MakeId()),
-      data_(MakeTensorData(data_type_, ShapeVector{}, input)) {}
+      device_sync_(MakeDeviceAddress(data_type_, ShapeVector{}, MakeTensorData(data_type_, ShapeVector{}, input))) {}
 
 #ifndef KERNEL_EXECUTOR_ANDROID
 Tensor::Tensor(bfloat16 input, const TypePtr &data_type)
     : MetaTensor(TypeIdOf(data_type, kNumberTypeBFloat16), {}),
       id_(MakeId()),
-      data_(MakeTensorData(data_type_, ShapeVector{}, input)) {}
+      device_sync_(MakeDeviceAddress(data_type_, ShapeVector{}, MakeTensorData(data_type_, ShapeVector{}, input))) {}
 #endif
 Tensor::Tensor(uint64_t input, const TypePtr &data_type)
     : MetaTensor(TypeIdOf(data_type, kNumberTypeUInt64), {}),
       id_(MakeId()),
-      data_(MakeTensorData(data_type_, ShapeVector{}, input)) {}
+      device_sync_(MakeDeviceAddress(data_type_, ShapeVector{}, MakeTensorData(data_type_, ShapeVector{}, input))) {}
 
 Tensor::Tensor(uint32_t input, const TypePtr &data_type)
     : MetaTensor(TypeIdOf(data_type, kNumberTypeUInt32), {}),
       id_(MakeId()),
-      data_(MakeTensorData(data_type_, ShapeVector{}, input)) {}
+      device_sync_(MakeDeviceAddress(data_type_, ShapeVector{}, MakeTensorData(data_type_, ShapeVector{}, input))) {}
 
 Tensor::Tensor(uint16_t input, const TypePtr &data_type)
     : MetaTensor(TypeIdOf(data_type, kNumberTypeUInt16), {}),
       id_(MakeId()),
-      data_(MakeTensorData(data_type_, ShapeVector{}, input)) {}
+      device_sync_(MakeDeviceAddress(data_type_, ShapeVector{}, MakeTensorData(data_type_, ShapeVector{}, input))) {}
 
 Tensor::Tensor(uint8_t input, const TypePtr &data_type)
     : MetaTensor(TypeIdOf(data_type, kNumberTypeUInt8), {}),
       id_(MakeId()),
-      data_(MakeTensorData(data_type_, ShapeVector{}, input)) {}
+      device_sync_(MakeDeviceAddress(data_type_, ShapeVector{}, MakeTensorData(data_type_, ShapeVector{}, input))) {}
 
 Tensor::Tensor(bool input, const TypePtr &data_type)
     : MetaTensor(TypeIdOf(data_type, kNumberTypeBool), {}),
       id_(MakeId()),
-      data_(MakeTensorData(data_type_, ShapeVector{}, input)) {}
+      device_sync_(MakeDeviceAddress(data_type_, ShapeVector{}, MakeTensorData(data_type_, ShapeVector{}, input))) {}
 
 Tensor::Tensor(TypeId data_type, size_t data_size)
     : Tensor(data_type, ShapeVector{static_cast<int64_t>(data_size)},
-             MakeTensorData<TensorChunkData>(data_type, data_size)) {}
+             MakeDeviceAddress(data_type, ShapeVector{static_cast<int64_t>(data_size)},
+                               MakeTensorData<TensorChunkData>(data_type, data_size))) {}
 
 Tensor::Tensor(TypeId origin_data_type, const ShapeVector &shape, size_t compression_data_size,
                TensorCompressionType compression_type)
-    : Tensor(origin_data_type, shape, MakeTensorData<CompressionTensorData>(kNumberTypeInt8, compression_data_size)) {
+    : Tensor(origin_data_type, shape,
+             MakeDeviceAddress(kNumberTypeInt8, shape,
+                               MakeTensorData<CompressionTensorData>(kNumberTypeInt8, compression_data_size))) {
   compression_type_ = compression_type;
 }
 
@@ -378,7 +390,7 @@ Tensor::~Tensor() {
 }
 
 bool Tensor::operator==(const Tensor &tensor) const {
-  return (&tensor == this || (MetaTensor::operator==(tensor) && data_ == tensor.data_));
+  return (&tensor == this || (MetaTensor::operator==(tensor) && device_sync_ == tensor.device_sync_));
 }
 
 // Assign value to this tensor.
@@ -392,18 +404,10 @@ Tensor &Tensor::AssignValue(const Tensor &tensor) {
     is_forward_output_ = tensor.is_forward_output_;
     sync_status_ = tensor.sync_status_;
     version_ = tensor.version_;
-    MS_EXCEPTION_IF_NULL(data_);
     if (this->auto_grad_meta_data() != nullptr && this->auto_grad_meta_data()->input_type() == InputType::kInput) {
       MS_LOG(EXCEPTION)
         << "Can not modify tensor id of input tensor from network by assign value, this may caused by slice op, "
            "please check your code to avoid this error!";
-    }
-    if (data_->is_sub_data()) {
-      // If tensor data is sub data, we should keep data
-      // memory address unchange and copy data to it.
-      CopyTensorData(data_, tensor.data_);
-    } else {
-      data_ = tensor.data_;
     }
     if (!is_parameter_) {
       id_ = tensor.id_;
@@ -449,28 +453,20 @@ bool Tensor::ValueEqual(const Tensor &tensor) const {
   if (is_parameter_ && param_info_->name() != tensor.param_info_->name()) {
     return false;
   }
-  return (&tensor == this || (MetaTensor::operator==(tensor) && data_->equals(*tensor.data_)));
+  MS_LOG(EXCEPTION) << "Not support!";
+  // todo: tensor.cpu().equal(others.cpu())
+  // return (&tensor == this || (MetaTensor::operator==(tensor) && data_->equals(*tensor.data_)));
 }
 
-TypeId Tensor::set_data_type(TypeId data_type) {
-  if (data_type != data_type_) {
-    MS_EXCEPTION_IF_NULL(data_);
-    if (device_sync_ != nullptr) {
-      data_sync();
-      device_sync_ = nullptr;
-    }
-    data_ = MakeTensorData(data_type, shape_, data_->data(), data_type_);
-    id_ = MakeId();
-    return MetaTensor::set_data_type(data_type);
-  }
-  return data_type;
-}
+TypeId Tensor::set_data_type(TypeId data_type) { MS_LOG(EXCEPTION) << "Not support set data_type!"; }
 
 size_t Tensor::set_shape(const ShapeVector &shape) {
-  if (DataSize() != SizeOf(shape)) {
-    data_ = MakeTensorData(data_type_, shape);
-  }
-  return MetaTensor::set_shape(shape);
+  MS_LOG(EXCEPTION) << "Not support change shape!";
+  // todo: not support change shape.
+  // if (DataSize() != SizeOf(shape)) {
+  //   data_ = MakeTensorData(data_type_, shape);
+  // }
+  // return MetaTensor::set_shape(shape);
 }
 
 std::string Tensor::GetShapeAndDataTypeInfo() const {
@@ -486,7 +482,7 @@ std::string Tensor::ToStringInternal(size_t limit_size) const {
   buf << "Tensor(shape=" << ShapeToString(shape_) << ", dtype=" << dtype->ToString() << ", value=";
   if (limit_size == 0 || DataSize() < limit_size) {
     // Only print data for small tensor.
-    buf << ((data().ndim() > 1) ? "\n" : "") << data().ToString(data_type_, shape_, false);
+    buf << ((DataDim() > 1) ? "\n" : "") << DataToString(false);
   } else {
     buf << "[...]";
   }
@@ -509,7 +505,7 @@ std::string Tensor::ToStringRepr() const {
   auto dtype = Dtype();
   MS_EXCEPTION_IF_NULL(dtype);
   buf << "Tensor(shape=" << ShapeToString(shape_) << ", dtype=" << dtype->ToString()
-      << ", value=" << ((data().ndim() > 1) ? '\n' : ' ') << data().ToString(data_type_, shape_, true) << ')';
+      << ", value=" << ((DataNDim() > 1) ? '\n' : ' ') << DataToString(true) << ')';
   return buf.str();
 }
 
@@ -594,8 +590,9 @@ void Tensor::data_sync(bool need_wait, bool inpalce, bool sync_on_demand) const 
   if (device_sync_ == nullptr || device_sync_->GetMutablePtr() == nullptr) {
     return;
   }
-  MS_EXCEPTION_IF_NULL(data_);
-  if (data_->is_sub_data()) {
+
+  if (device_sync_->GetDeviceType() == device::DeviceType::kCPU) {
+    MS_LOG(DEBUG) << "Already cpu device address. Skip data_sync.";
     return;
   }
 
@@ -615,10 +612,28 @@ void Tensor::data_sync(bool need_wait, bool inpalce, bool sync_on_demand) const 
       !address->SyncDeviceToHost(shape(), size, data_type(), data_c(), sync_on_demand)) {
     MS_LOG(INTERNAL_EXCEPTION) << "SyncDeviceToHost failed.";
   }
-  if (!data_->file_path().empty()) {
-    device_sync_ = nullptr;
-  }
+
+  // todo: support in device address
+  // if (!data_->file_path().empty()) {
+  //   device_sync_ = nullptr;
+  // }
   sync_status_ = kNeedSyncHostToDevice;
+}
+
+TensorData &Tensor::data() {
+  std::abort();
+}
+
+const TensorDataPtr &Tensor::data_ptr() const {
+  std::abort();
+}
+
+const TensorData &Tensor::data() const {
+  std::abort();
+}
+
+void Tensor::set_data(const TensorDataPtr &data) {
+  std::abort();
 }
 
 void Tensor::ExecuteUpdateValueCallback() const {
@@ -637,10 +652,6 @@ void Tensor::data_sync_directly(const DeviceSync *const device_sync, bool need_w
     ExecuteLazyTask();
   }
   if (device_sync == nullptr) {
-    return;
-  }
-  MS_EXCEPTION_IF_NULL(data_);
-  if (data_->is_sub_data()) {
     return;
   }
 
@@ -662,41 +673,44 @@ void Tensor::data_sync_directly(const DeviceSync *const device_sync, bool need_w
 }
 
 bool Tensor::Offload(const std::string &file_path) {
-  if (file_path.empty()) {
-    return false;
-  }
-
-  auto fs = mindspore::system::Env::GetFileSystem();
-  MS_EXCEPTION_IF_NULL(fs);
-  MS_EXCEPTION_IF_NULL(data_);
-  auto data_ptr = data_->data();
-  auto file = fs->CreateWriteFile(file_path);
-  MS_EXCEPTION_IF_NULL(file);
-  TempFileManager::GetInstance().Register(file_path);
-  bool success = file->PWrite(data_ptr, LongToSize(data_->nbytes()), 0);
-  if (!file->Close()) {
-    MS_LOG(WARNING) << "Close tensor file: " << file_path << " failed!";
-  }
-  if (!success) {
-    MS_LOG(WARNING) << "Tensor write data to file: " << file_path << " failed!";
-    return false;
-  }
-
-  if (file_path == GetOffloadFilePath()) {
-    data_->set_file_path("");
-  }
-
-  data_ = tensor::MakeTensorData(data_type_, shape_);
-  MS_EXCEPTION_IF_NULL(data_);
-  data_->set_file_path(file_path);
+  // todo: support in device address.
+  //  if (file_path.empty()) {
+  //    return false;
+  //  }
+  //
+  //  auto fs = mindspore::system::Env::GetFileSystem();
+  //  MS_EXCEPTION_IF_NULL(fs);
+  //  MS_EXCEPTION_IF_NULL(data_);
+  //  auto data_ptr = data_->data();
+  //  auto file = fs->CreateWriteFile(file_path);
+  //  MS_EXCEPTION_IF_NULL(file);
+  //  TempFileManager::GetInstance().Register(file_path);
+  //  bool success = file->PWrite(data_ptr, LongToSize(data_->nbytes()), 0);
+  //  if (!file->Close()) {
+  //    MS_LOG(WARNING) << "Close tensor file: " << file_path << " failed!";
+  //  }
+  //  if (!success) {
+  //    MS_LOG(WARNING) << "Tensor write data to file: " << file_path << " failed!";
+  //    return false;
+  //  }
+  //
+  //  if (file_path == GetOffloadFilePath()) {
+  //    data_->set_file_path("");
+  //  }
+  //
+  //  data_ = tensor::MakeTensorData(data_type_, shape_);
+  //  MS_EXCEPTION_IF_NULL(data_);
+  //  data_->set_file_path(file_path);
   return true;
 }
 
 const std::string Tensor::GetOffloadFilePath() const {
-  if (data_ == nullptr) {
-    return "";
-  }
-  return data_->file_path();
+  // todo
+  //  if (data_ == nullptr) {
+  //    return "";
+  //  }
+  //  return data_->file_path();
+  return "";
 }
 
 std::pair<void *, size_t> Tensor::GetChunkOffset() const {
@@ -716,7 +730,7 @@ static std::map<TypeId, std::vector<TensorChunk>> GroupingTensors(const TensorPt
   std::map<TypeId, std::vector<TensorChunk>> group_info;
   for (auto &tensor : tensors) {
     MS_EXCEPTION_IF_NULL(tensor);
-    auto tensor_bytes = static_cast<size_t>(tensor->data().nbytes());
+    auto tensor_bytes = static_cast<size_t>(tensor->DataNBytes());
     if ((fusion_size != 0) && (tensor_bytes > fusion_size)) {
       MS_LOG(EXCEPTION) << "Fusion size " << fusion_size << " is too small for a tensor size " << tensor_bytes << ".";
     }
@@ -823,7 +837,7 @@ size_t Tensor::GetFusionSize(const TensorPtrList &flat_tensors) {
   std::map<TypeId, size_t> type_groups;
   for (auto &tensor : flat_tensors) {
     MS_EXCEPTION_IF_NULL(tensor);
-    auto tensor_bytes = static_cast<size_t>(tensor->data().nbytes());
+    auto tensor_bytes = static_cast<size_t>(tensor->DataNBytes());
     if (tensor_bytes > fusion_size) {
       fusion_size = tensor_bytes;
     }
@@ -894,13 +908,13 @@ abstract::AbstractBasePtr CSRTensor::ToAbstract() {
 const size_t CSRTensor::GetSizeAt(size_t index) const {
   if (index == kIndptrIdx) {
     MS_EXCEPTION_IF_NULL(indptr_);
-    return indptr_->data().nbytes();
+    return indptr_->DataNBytes();
   } else if (index == kIndicesIdx) {
     MS_EXCEPTION_IF_NULL(indices_);
-    return indices_->data().nbytes();
+    return indices_->DataNBytes();
   } else if (index == kValuesIdx) {
     MS_EXCEPTION_IF_NULL(values_);
-    return values_->data().nbytes();
+    return values_->DataNBytes();
   } else if (index >= kIndicesIdx && index < kShapeIdx + shape().size()) {
     return sizeof(int64_t);
   }

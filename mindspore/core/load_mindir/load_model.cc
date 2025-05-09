@@ -628,9 +628,9 @@ tensor::TensorPtr MSANFModelParser::GenerateTensorPtrFromTensorProto(const mind_
 
   MS_EXCEPTION_IF_NULL(tensor);
   const std::string &tensor_buf = attr_tensor.raw_data();
-  if (attr_tensor.has_raw_data() && tensor->data().nbytes() != 0) {
+  if (attr_tensor.has_raw_data() && tensor->DataNBytes() != 0) {
     auto *tensor_data_buf = reinterpret_cast<uint8_t *>(tensor->data_c());
-    errno_t ret = memcpy_s(tensor_data_buf, tensor->data().nbytes(), tensor_buf.data(), tensor_buf.size());
+    errno_t ret = memcpy_s(tensor_data_buf, tensor->DataNBytes(), tensor_buf.data(), tensor_buf.size());
     if (ret != EOK) {
       MS_LOG(ERROR) << "Failed to copy data from tensor proto.";
       return nullptr;
@@ -1080,13 +1080,13 @@ bool MSANFModelParser::GetTensorDataFromExternal(const mind_ir::TensorProto &ten
   MS_EXCEPTION_IF_NULL(tensor_data_buf);
   MS_EXCEPTION_IF_NULL(data);
 
-  if (tensor_info->data().nbytes() == 0 || tensor_proto.external_data().length() == 0) {
+  if (tensor_info->DataNBytes() == 0 || tensor_proto.external_data().length() == 0) {
     // no need to copy data
     return true;
   }
 
   auto ret =
-    common::huge_memcpy(tensor_data_buf, tensor_info->data().nbytes(), data + tensor_proto.external_data().offset(),
+    common::huge_memcpy(tensor_data_buf, tensor_info->DataNBytes(), data + tensor_proto.external_data().offset(),
                         LongToSize(tensor_proto.external_data().length()));
   if (ret != EOK) {
     MS_LOG(ERROR) << "Build parameter occur memcpy_s error.";
@@ -1494,7 +1494,7 @@ bool MSANFModelParser::ObtainValueNodeInTupleTensorForm(const std::string &value
     }
     const std::string &tensor_buf = attr_tensor.raw_data();
     auto *tensor_data_buf = reinterpret_cast<uint8_t *>(tensor_info->data_c());
-    errno_t ret = memcpy_s(tensor_data_buf, tensor_info->data().nbytes(), tensor_buf.data(), tensor_buf.size());
+    errno_t ret = memcpy_s(tensor_data_buf, tensor_info->DataNBytes(), tensor_buf.data(), tensor_buf.size());
     if (ret != EOK) {
       MS_LOG(ERROR) << "Obtain ValueNode in TupleTensorForm occur memcpy_s error.";
       return false;

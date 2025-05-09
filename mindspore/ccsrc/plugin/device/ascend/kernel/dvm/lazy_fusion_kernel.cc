@@ -252,7 +252,7 @@ void LazyFusionKernelAscend::Flush() {
         auto device_address = std::static_pointer_cast<device::DeviceAddress>(input->tensor->device_address());
         MS_EXCEPTION_IF_NULL(device_address);
         auto storage_info = device_address->GetTensorStorageInfo();
-        auto offset_addr = storage_info ? storage_info->storage_offset * input->tensor->data().itemsize() : 0;
+        auto offset_addr = storage_info ? storage_info->storage_offset * input->tensor->DataItemSize() : 0;
         auto dev_mem = device_address->GetMutablePtr();
         reloc_entry_.emplace_back(input->op, static_cast<void *>(static_cast<uint8_t *>(dev_mem) + offset_addr));
         auto stream_id = device_address->stream_id();

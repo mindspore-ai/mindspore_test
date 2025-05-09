@@ -715,7 +715,7 @@ bool IrExportBuilder::SetTensorToAttributeProto(const ValuePtr &value, mind_ir::
   tensor_proto->set_name("value0");
   auto data = value->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(data);
-  tensor_proto->set_raw_data(data->data_c(), static_cast<size_t>(data->data().nbytes()));
+  tensor_proto->set_raw_data(data->data_c(), static_cast<size_t>(data->DataNBytes()));
   auto dtype = data->data_type();
   auto shape = data->shape_c();
   auto data_type = GetMindirDataType(dtype);
@@ -1984,7 +1984,7 @@ bool MindIRExporter::SaveMindIRTogether() {
     }
     auto data = para->default_param()->cast<tensor::TensorPtr>();
     param_proto.clear_raw_data();
-    param_proto.set_raw_data(data->data_c(), static_cast<size_t>(data->data().nbytes()));
+    param_proto.set_raw_data(data->data_c(), static_cast<size_t>(data->DataNBytes()));
   }
   return SaveProtoToFile(&model_proto_, save_model_path_);
 }
@@ -2066,7 +2066,7 @@ bool MindIRExporter::SplitSave() {
       continue;
     }
     auto data = para->default_param()->cast<tensor::TensorPtr>();
-    int64_t data_length = static_cast<int64_t>(data->data().nbytes());
+    int64_t data_length = static_cast<int64_t>(data->DataNBytes());
     int64_t append_size = 0;
     if (data_length % OFFSET != 0) {
       append_size = OFFSET - (data_length % OFFSET);

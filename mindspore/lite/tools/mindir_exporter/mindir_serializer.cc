@@ -410,7 +410,7 @@ int MindIRSerializer::SaveMindIRTogether(const std::shared_ptr<ConverterPara> &p
     }
     auto data = para->default_param()->cast<tensor::TensorPtr>();
     param_proto.clear_raw_data();
-    param_proto.set_raw_data(data->data_c(), static_cast<size_t>(data->data().nbytes()));
+    param_proto.set_raw_data(data->data_c(), static_cast<size_t>(data->DataNBytes()));
   }
 
   return SaveProtoToFile(&model_proto_, save_model_path_, param);
@@ -561,7 +561,7 @@ int MindIRSerializer::SplitSave(const std::shared_ptr<ConverterPara> &param) {
       continue;
     }
     auto data = para->default_param()->cast<tensor::TensorPtr>();
-    int64_t data_length = static_cast<int64_t>(data->data().nbytes());
+    int64_t data_length = static_cast<int64_t>(data->DataNBytes());
     int64_t append_size = 0;
     if (data_length % OFFSET != 0) {
       append_size = OFFSET - (data_length % OFFSET);

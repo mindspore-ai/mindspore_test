@@ -230,7 +230,7 @@ bool AscendDumpMemToFile(const device::DeviceAddress &addr, const std::string &f
     }
     mindspore::tensor::TensorPtr out_tensor = std::make_shared<tensor::Tensor>(host_type, host_shape);
     MS_EXCEPTION_IF_NULL(out_tensor);
-    size_t host_size = LongToSize(out_tensor->data().nbytes());
+    size_t host_size = LongToSize(out_tensor->DataNBytes());
     ret = addr.SyncDeviceToHost(host_shape, host_size, host_type, out_tensor->data_c());
     if (!ret) {
       MS_LOG(ERROR) << "Copy device mem to host failed";
@@ -320,7 +320,7 @@ bool LoadMemToHost(const device::DeviceAddress &addr, const std::string &tensor_
     return true;
   }
   std::string tensor_format = trans_flag ? host_fmt : addr.format();
-  size_t host_size = LongToSize(out_tensor->data().nbytes());
+  size_t host_size = LongToSize(out_tensor->DataNBytes());
   if (host_type == kNumberTypeInt4) {
     const int int4_nums_per_byte = 2;
     host_size = out_tensor->DataSize() / int4_nums_per_byte;

@@ -282,7 +282,7 @@ bool UpdatedByAssign(const KernelGraphPtr &kernel_graph, const AnfNodePtr &node)
 size_t UpdateGraphInputAbstract(const AnfNodePtr input_node, const tensor::TensorPtr tensor) {
   MS_EXCEPTION_IF_NULL(input_node);
   MS_EXCEPTION_IF_NULL(tensor);
-  size_t size = LongToSize(tensor->data().nbytes());
+  size_t size = LongToSize(tensor->DataNBytes());
   if (!input_node->isa<Parameter>()) {
     return size;
   }
