@@ -15,7 +15,6 @@
 from tests.mark_utils import arg_mark
 
 import numpy as np
-import pytest
 import mindspore.context as context
 import mindspore.nn as nn
 from mindspore import Tensor
@@ -423,9 +422,9 @@ def test_vmap_sparseapplyftrl():
     Expectation: Output matching expected values
     """
     context.set_context(mode=context.GRAPH_MODE, device_target="CPU")
-    var = Parameter(Tensor(np.array([[2.0], [0.1]]).astype(np.float32)))
-    accum = Parameter(Tensor(np.array([[1.0], [0.1]]).astype(np.float32)))
-    linear = Parameter(Tensor(np.array([[0.2], [0.1]]).astype(np.float32)))
+    var = Parameter(Tensor(np.array([[2.0], [0.1]]).astype(np.float32)), name="var")
+    accum = Parameter(Tensor(np.array([[1.0], [0.1]]).astype(np.float32)), name="accum")
+    linear = Parameter(Tensor(np.array([[0.2], [0.1]]).astype(np.float32)), name="linear")
     gradient = Tensor(np.array([[0.5], [0.1]]).astype(np.float32))
     indices = Tensor([[0], [0]], mstype.int32)
     sparse_apply_adagrad = VmapNetSparseApplyFtrl()

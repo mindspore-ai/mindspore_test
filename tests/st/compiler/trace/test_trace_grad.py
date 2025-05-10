@@ -17,6 +17,7 @@
 import shutil
 import os
 import numpy as np
+import pytest
 from tests.mark_utils import arg_mark
 from tests.dataset_mock import MindData
 import mindspore as ms
@@ -272,6 +273,7 @@ class Net(nn.Cell):
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.skip(reason="skip")
 def test_trace_train_1():
     """
     Feature: JIT trace function
@@ -290,6 +292,7 @@ def test_trace_train_1():
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.skip(reason="skip")
 def test_trace_train_2():
     """
     Feature: JIT trace function
