@@ -113,7 +113,6 @@ std::vector<KernelTensorPtr> StatisticKernel::LaunchKernelAsync(KernelTensor *in
   void *stream_ptr = device_context_->device_res_manager_->GetStream(stream_id_);
   MS_EXCEPTION_IF_NULL(stream_ptr);
   auto workspace_kernel_tensor = GetWorkSpaceDeviceAddress(inputs, outputs);
-  auto workspace_addr = workspace_kernel_tensor->device_address();
   // in low precision mode, workspace is about 1-13KB.
   // don't use memreuse capture workspace mem.
   if (!DumpJsonParser::GetInstance().IsDeviceStatHighPrecisionMode()) {
@@ -121,7 +120,7 @@ std::vector<KernelTensorPtr> StatisticKernel::LaunchKernelAsync(KernelTensor *in
   }
   res.emplace_back(output_kernel_tensor);
   std::vector<KernelTensor *> workspace;
-  if (workspace_addr) {
+  if (workspace_kernel_tensor) {
     workspace.emplace_back(workspace_kernel_tensor.get());
   }
   MS_VLOG(VL_DUMP) << "Start launch statistic kernel, kernel name is " << kernel_name_ << ", stream id is "

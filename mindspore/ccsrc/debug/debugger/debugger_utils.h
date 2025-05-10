@@ -29,7 +29,6 @@ using mindspore::kernel::KernelLaunchAddr;
 using mindspore::kernel::KernelTensor;
 
 namespace mindspore {
-std::vector<size_t> CheckRealOutput(const std::string &node_name, const size_t &output_size);
 
 std::vector<size_t> GetValidDumpIndex(const CNodePtr &cnode, size_t index_size, bool is_input,
                                       const DeviceContext *device_context,

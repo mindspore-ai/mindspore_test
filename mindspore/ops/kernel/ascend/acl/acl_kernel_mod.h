@@ -47,6 +47,9 @@ class OPS_ASCEND_API AclKernelMod : public KernelMod {
   // The input addresses that are not used in the kernel launch.
   std::vector<size_t> GetLaunchIgnoredInputAddressIdx() const override;
 
+  // Some kernels, e.g., Send/Print, output is use less.
+  std::vector<size_t> GetUseLessOutputIdx() const override;
+
   void SetDeviceInfo(const std::vector<std::string> &input_device_formats,
                      const std::vector<std::string> &output_device_formats,
                      const std::vector<TypeId> &input_device_types, const std::vector<TypeId> &output_device_types);

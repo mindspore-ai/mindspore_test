@@ -284,6 +284,18 @@ std::vector<size_t> AclKernelMod::GetLaunchIgnoredInputAddressIdx() const {
   }
 }
 
+std::vector<size_t> AclKernelMod::GetUseLessOutputIdx() const {
+  static const std::map<std::string, std::vector<size_t>> output_use_less_idx = {
+    {"Print", {kIndex0}},        {"TensorDump", {kIndex0}},        {"TensorSummary", {kIndex0}},
+    {"ImageSummary", {kIndex0}}, {"ScalarSummary", {kIndex0}},     {"HistogramSummary", {kIndex0}},
+    {"Send", {kIndex0}},         {"BatchNorm", {kIndex1, kIndex2}}};
+  if (output_use_less_idx.count(kernel_name_) > 0) {
+    return output_use_less_idx.at(kernel_name_);
+  } else {
+    return {};
+  }
+}
+
 void AclKernelMod::SetDeviceInfo(const std::vector<std::string> &input_device_formats,
                                  const std::vector<std::string> &output_device_formats,
                                  const std::vector<TypeId> &input_device_types,

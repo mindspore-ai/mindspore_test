@@ -166,6 +166,9 @@ class OPS_KERNEL_COMMON_API KernelMod {
   // Some kernels, e.g., Shape/Reshape, don't use some input addresses in the kernel launch.
   virtual std::vector<size_t> GetLaunchIgnoredInputAddressIdx() const { return {}; }
 
+  // Some kernels, e.g., Send/Print, output is use less.
+  virtual std::vector<size_t> GetUseLessOutputIdx() const { return {}; }
+
   void SetDevicedId(uint32_t device_id) { device_id_ = device_id; }
   virtual enum KernelModType GetKernelModType() const { return KernelModType::KernelMod; }
 

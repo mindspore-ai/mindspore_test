@@ -47,6 +47,7 @@ class FlashAttentionScoreGradAscend : public AclnnKernelMod {
     }
     return true;
   }
+  std::vector<size_t> GetUseLessOutputIdx() const override { return {kIndex3}; };
 
  protected:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
