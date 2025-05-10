@@ -20,6 +20,9 @@
 #include <vector>
 #include <memory>
 #include <utility>
+#include <queue>
+#include <map>
+#include <tuple>
 #include "ir/capture_graph.h"
 #include "runtime/graph_scheduler/actor/kernel_runner.h"
 #include "runtime/graph_scheduler/graph_parameter_store.h"

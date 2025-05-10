@@ -43,6 +43,23 @@ bool GraphParameterStore::IsWeight(size_t outer_index) {
   }
   return is_weights_[outer_index];
 }
+void GraphParameterStore::SetPositionWeight(size_t outer_index, bool is_weight) {
+  if (outer_index >= is_weights_.size()) {
+    MS_LOG(EXCEPTION) << "Outer index is larger than the size of is weights [" << is_weights_.size() << "].";
+  }
+
+  if (!is_weights_[outer_index] && is_weight) {
+    weight_num_++;
+  }
+  is_weights_[outer_index] = is_weight;
+}
+
+bool GraphParameterStore::GetPositionWeight(size_t outer_index) {
+  if (outer_index >= is_weights_.size()) {
+    MS_LOG(EXCEPTION) << "Outer index is larger than the size of is weights [" << is_weights_.size() << "].";
+  }
+  return is_weights_[outer_index];
+}
 
 void GraphParameterStore::SetPositionTensor(size_t outer_index, bool is_tensor) {
   if (outer_index >= is_tensors_.size()) {
@@ -62,23 +79,17 @@ bool GraphParameterStore::IsConcurrentlyUse(size_t outer_index, size_t inner_ind
   return parameter_used_times_[outer_index][inner_index] > 1;
 }
 
-void GraphParameterStore::SetFrontNodeToIndex(const AnfNodePtr &node, size_t index) {
+void GraphParameterStore::SetFrontNodeToIndex(AnfNode *node, size_t index) {
   MS_EXCEPTION_IF_NULL(node);
-  const auto &iter = front_node_to_index_.find(node.get());
+  const auto &iter = front_node_to_index_.find(node);
   if (iter != front_node_to_index_.end()) {
     MS_LOG(INFO) << "Update index for front node " << node->DebugString() << " in graph parameter store.";
     iter->second = index;
   }
-  if (index >= is_weights_.size()) {
-    MS_LOG(ERROR) << "Index " << index << ", is out of range of outer size: " << is_weights_.size();
-    return;
-  }
-  if (node->isa<Parameter>() && common::AnfAlgo::IsParameterWeight(node->cast<ParameterPtr>())) {
-    is_weights_[index] = true;
-  }
-  front_node_to_index_.emplace(node.get(), index);
-  index_to_front_node_.emplace(index, node.get());
+  front_node_to_index_.emplace(node, index);
+  index_to_front_node_.emplace(index, node);
 }
+size_t GraphParameterStore::GetNonWeightParameterNum() { return is_weights_.size() - weight_num_; }
 
 void GraphParameterStore::InsertTensorDataIntoCallback(const TensorDataPtr &tensor_data) {
   std::unique_lock<std::shared_mutex> lock(param_mutex_);

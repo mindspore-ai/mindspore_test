@@ -40,10 +40,11 @@ from mindformers.pet import get_pet_model
 from mindformers.pet.pet_config import SLoraConfig
 from research.qwen2.qwen2_tokenizer import Qwen2Tokenizer
 
+ms.runtime.set_kernel_launch_group()
+
 
 def parallel_qwen2_0_5b_predict_mp2():
     """test qwen2-0.5B predict in model_parallel=2 with dynamic shape"""
-    ms.runtime.set_kernel_launch_group()
     cur_dir = os.path.dirname(os.path.realpath(__file__))
     config_path = os.path.join(cur_dir, "qwen/configs/ci_predict_qwen2_0_5b_instruct.yaml")
 
@@ -139,7 +140,6 @@ def parallel_qwen2_0_5b_predict_mp2():
 def parallel_qwen2_0_5b_predict_mp2_static():
     """test qwen2-0.5B predict in model_parallel=2 with static shape"""
     # config.model.model_config.is_dynamic = False
-    ms.runtime.set_kernel_launch_group()
     cur_dir = os.path.dirname(os.path.realpath(__file__))
     config_path = os.path.join(cur_dir, "qwen/configs/ci_predict_qwen2_0_5b_instruct.yaml")
 
@@ -219,7 +219,6 @@ def parallel_qwen2_0_5b_predict_mp2_static():
 
 def parallel_qwen2_0_5b_parallel_decoding_mp2():
     """test qwen2-0.5B predict in model_parallel=2 with dynamic shape"""
-    ms.runtime.set_kernel_launch_group()
     os.environ["MS_INTERNAL_DISABLE_CUSTOM_KERNEL_LIST"] = "PagedAttention,FlashAttentionScore"
     os.environ["RUN_MODE"] = "predict"
     cur_dir = os.path.dirname(os.path.realpath(__file__))
@@ -390,7 +389,6 @@ def parallel_qwen2_0_5b_parallel_decoding_mp2():
 
 def parallel_qwen2_0_5b_multilora_mp2():
     """test qwen2-0.5B predict in model_parallel=2 with dynamic shape"""
-    ms.runtime.set_kernel_launch_group()
     cur_dir = os.path.dirname(os.path.realpath(__file__))
     config_path = os.path.join(cur_dir, "qwen/configs/ci_predict_qwen2_0_5b_instruct.yaml")
 

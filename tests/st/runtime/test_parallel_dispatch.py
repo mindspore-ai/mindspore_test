@@ -31,6 +31,7 @@ ascend_home_path = os.getenv('ASCEND_HOME_PATH')
 if not ascend_home_path:
     os.environ['ASCEND_HOME_PATH'] = "/usr/local/Ascend/latest"
 
+ms.runtime.set_kernel_launch_group()
 context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0", "infer_boost": "on"}, max_call_depth=6000)
 
 class Net(nn.Cell):
@@ -75,7 +76,6 @@ def test_host_bound_for_parallel_dispatch():
                  internal kernels.
     Expectation: The program execute and exit normally.
     """
-    ms.runtime.set_kernel_launch_group()
     input_data = Tensor(np.zeros((2, 3)).astype(np.float32))
     dyn_input_data = Tensor(shape=[2, None], dtype=mstype.float32)
 
