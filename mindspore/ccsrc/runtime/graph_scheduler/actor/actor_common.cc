@@ -297,16 +297,23 @@ bool EnableTraceMemory() {
   return true;
 }
 
-void ResetPipelineAndTraceMemoryStatus() {
-  ActorDispatcher::set_enable_async_launch_kernel(false);
-  ActorDispatcher::set_enable_runtime_multi_pipeline(false);
-
+void ResetTraceMemoryStatus() {
   ActorDispatcher::set_enable_static_shape(false);
   ActorDispatcher::set_enable_trace_dynamic_memory(false);
   ActorDispatcher::set_enable_use_trace_memory(false);
 
   ActorDispatcher::set_enable_parallel_dispatch_kernel_for_cur_actor_set(false);
   ActorDispatcher::set_enable_parallel_dispatch_kernel_for_cur_step(false);
+}
+
+void ResetPipelineStatus() {
+  ActorDispatcher::set_enable_async_launch_kernel(false);
+  ActorDispatcher::set_enable_runtime_multi_pipeline(false);
+}
+
+void ResetPipelineAndTraceMemoryStatus() {
+  ResetPipelineStatus();
+  ResetTraceMemoryStatus();
 }
 
 bool EnableKbkSubGraphExecute() {

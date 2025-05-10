@@ -67,6 +67,8 @@ class KernelRunner {
   void SendMemoryFreeReq(OpContext<KernelTensor> *const context);
 
   const CNodePtr &kernel() const { return kernel_; }
+  KernelMod *kernel_mod() const { return kernel_mod_; }
+
   KernelLaunchInfoWithStream kernel_launch_info() const {
     return KernelLaunchInfoWithStream(input_launch_tensors_, output_launch_tensors_, workspace_launch_tensors_,
                                       stream_);

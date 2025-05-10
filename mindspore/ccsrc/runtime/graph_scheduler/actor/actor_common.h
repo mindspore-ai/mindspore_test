@@ -490,6 +490,8 @@ bool EnableAsyncInfer();
 
 bool EnableTraceMemory();
 
+void ResetPipelineStatus();
+void ResetTraceMemoryStatus();
 void ResetPipelineAndTraceMemoryStatus();
 
 // Kernel by kernel sub graph execute mode need not send actor message by kernel actor, just launch all kernels in

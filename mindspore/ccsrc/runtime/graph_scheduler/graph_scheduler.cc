@@ -37,6 +37,7 @@
 #include "runtime/graph_scheduler/parameter_store.h"
 #include "runtime/graph_scheduler/graph_parameter_store.h"
 #include "runtime/graph_scheduler/graph_scheduler.h"
+#include "runtime/graph_scheduler/graph_capture/graph_capture_manager.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "include/common/runtime_conf/runtime_conf.h"
 #include "include/common/runtime_conf/thread_bind_core.h"
@@ -634,6 +635,8 @@ void GraphScheduler::Clear() {
 
   // Clear all cache memory info before process exits.
   MemoryTraceManager::GetInstance().ClearAllCache();
+
+  GraphCaptureManager::GetInstance().Finalize();
 }
 
 void GraphScheduler::ClearActorData(const ActorSet *actor_set) {
@@ -1221,6 +1224,7 @@ void GraphScheduler::Run(ActorSet *const actor_set, const std::vector<std::vecto
   MS_EXCEPTION_IF_NULL(op_context_setter);
 #endif
 
+  ResetTraceMemoryStatus();
   // Trigger data prepare actor running.
   MS_EXCEPTION_IF_NULL(ActorMgr::GetActorMgrRef());
   auto thread_pool = ActorMgr::GetActorMgrRef()->GetActorThreadPool();
@@ -1268,7 +1272,7 @@ void GraphScheduler::Run(ActorSet *const actor_set, const std::vector<std::vecto
     MS_LOG(EXCEPTION) << op_context.error_info_;
   }
 
-  ResetPipelineAndTraceMemoryStatus();
+  ResetPipelineStatus();
   MsException::Instance().CheckException();
   double end_time = GetTime();
   const size_t kSecondsToMilliseconds = 1000;
