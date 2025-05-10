@@ -201,6 +201,7 @@ enum SubModuleId : int {
   SM_LLM_BOOST,          // llm boost
   SM_TRACE,              // JIT trace
   SM_INTERNAL_KERNEL,    // internal kernel
+  SM_EXTENSION,          // MindSpore Extension interfaces
   NUM_SUBMODUES,         // number of submodules
 };
 

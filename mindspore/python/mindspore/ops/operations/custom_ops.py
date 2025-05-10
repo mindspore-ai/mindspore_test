@@ -1205,11 +1205,25 @@ class CustomOpBuilder:
         self.cflags = cflags
         self.ldflags = ldflags
         self.build_dir = kwargs.get("build_dir")
+        self.enable_atb = kwargs.get("enable_atb", False)
         if CustomOpBuilder._mindspore_path is None:
             CustomOpBuilder._mindspore_path = os.path.dirname(os.path.abspath(ms.__file__))
             CustomOpBuilder._ms_code_base = os.path.join(CustomOpBuilder._mindspore_path, "include")
+        if self.enable_atb:
+            if backend is not None and backend != "Ascend":
+                raise ValueError("For 'CustomOpBuilder', when 'enable_atb' is set to True, the 'backend' must be " \
+                                 f"'Ascend' (or left implicit), but got '{backend}'")
+            self.backend = "Ascend"
         if self.backend == "Ascend":
-            self.ascend_cann_path = os.getenv("ASCEND_OPP_PATH").split('opp')[0]
+            ascend_opp_path = os.getenv("ASCEND_OPP_PATH")
+            if not ascend_opp_path:
+                raise ValueError("Environment variable 'ASCEND_OPP_PATH' must be set for Ascend backend.")
+            self.ascend_cann_path = ascend_opp_path.split('opp')[0]
+
+            if self.enable_atb:
+                self.atb_home_path = os.getenv("ATB_HOME_PATH")
+                if not self.atb_home_path:
+                    raise ValueError("Environment variable 'ATB_HOME_PATH' must be set when 'enable_atb' is True.")
 
     def get_sources(self):
         """
@@ -1236,6 +1250,8 @@ class CustomOpBuilder:
 
         if self.backend == "Ascend":
             include_list.append(os.path.join(self.ascend_cann_path, "include"))
+            if self.enable_atb:
+                include_list.append(os.path.join(self.atb_home_path, "include"))
         include_list += self._get_ms_inner_includes()
         return include_list
 
@@ -1264,6 +1280,8 @@ class CustomOpBuilder:
         flags += ['-DENABLE_FAST_HASH_TABLE=1']
         if self.backend == "Ascend":
             flags.append('-DCUSTOM_ASCEND_OP')
+            if self.enable_atb:
+                flags.append('-DCUSTOM_ENABLE_ATB')
         if self.cflags is not None:
             flags.append(self.cflags)
         return flags
@@ -1280,13 +1298,19 @@ class CustomOpBuilder:
             '-L' + os.path.abspath(os.path.join(CustomOpBuilder._mindspore_path, 'lib')),
             '-lmindspore_core',
             '-lmindspore_ms_backend',
-            '-lmindspore_pynative'
+            '-lmindspore_pynative',
+            '-lmindspore_extension'
         ]
         if self.backend == "Ascend":
             flags.append('-L' + os.path.abspath(os.path.join(CustomOpBuilder._mindspore_path, 'lib/plugin')))
             flags.append('-L' + os.path.abspath(os.path.join(self.ascend_cann_path, "lib64")))
             flags.append('-lascendcl')
             flags.append('-l:libmindspore_ascend.so.2')
+            if self.enable_atb:
+                flags.append('-L' + os.path.abspath(os.path.join(CustomOpBuilder._mindspore_path, 'lib/plugin/ascend')))
+                flags.append('-lmindspore_extension_ascend_atb')
+                flags.append('-L' + os.path.abspath(os.path.join(self.atb_home_path, 'lib')))
+                flags.append('-latb')
         if self.ldflags is not None:
             flags.append(self.ldflags)
         return flags

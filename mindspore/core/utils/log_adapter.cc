@@ -859,6 +859,7 @@ const std::string GetSubModuleName(SubModuleId module_id) {
     "LLM_BOOST",          // SM_LLM_BOOST
     "TRACE",              // SM_TRACE
     "INTERNAL_KERNEL",    // SM_INTERNAL_KERNEL
+    "EXTENSION",          // SM_EXTENSION
   };
   return sub_module_names[IntToSize(module_id % NUM_SUBMODUES)];
 }
