@@ -26,6 +26,26 @@
 
 namespace mindspore {
 namespace runtime {
+void GraphParameterStore::SetPositionWeight(size_t outer_index, bool is_weight) {
+  if (outer_index >= is_weights_.size()) {
+    MS_LOG(EXCEPTION) << "Outer index is larger than the size of is weights [" << is_weights_.size() << "].";
+  }
+
+  if (!is_weights_[outer_index] && is_weight) {
+    weight_num_++;
+  }
+  is_weights_[outer_index] = is_weight;
+}
+
+bool GraphParameterStore::GetPositionWeight(size_t outer_index) {
+  if (outer_index >= is_weights_.size()) {
+    MS_LOG(EXCEPTION) << "Outer index is larger than the size of is weights [" << is_weights_.size() << "].";
+  }
+  return is_weights_[outer_index];
+}
+
+size_t GraphParameterStore::GetNonWeightParameterNum() { return is_weights_.size() - weight_num_; }
+
 void GraphParameterStore::InsertTensorDataIntoCallback(const TensorDataPtr &tensor_data) {
   tensor_data_in_callback_.push_back(tensor_data);
 }
