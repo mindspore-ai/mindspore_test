@@ -98,7 +98,6 @@ class RowTensor(RowTensorInner):
 
     .. warning::
         - This is an experimental API that is subjected to change or deletion.
-        - If use PyNative mode, set "export MS_PYNATIVE_CONFIG_STATIC_SHAPE=1".
 
     Args:
         indices (Tensor): A 1-D integer Tensor of shape :math:`(d_0)` . Default: ``None``.
@@ -232,7 +231,6 @@ class COOTensor(COOTensor_):
 
     .. warning::
         - This is an experimental API that is subject to change or deletion.
-        - If use PyNative mode, set "export MS_PYNATIVE_CONFIG_STATIC_SHAPE=1".
         - Currently, duplicate coordinates in the indices will not be coalesced.
           If the indices contain out-of-bound values, the result will be undefined.
 
@@ -681,7 +679,6 @@ class CSRTensor(CSRTensor_):
 
     .. warning::
         - This is an experimental API that is subjected to change.
-        - If use PyNative mode, set "export MS_PYNATIVE_CONFIG_STATIC_SHAPE=1".
         - If the values given by `indptr` or `indices` are invalid, the results may be undefined. Invalid values include
           when the length of `values` or `indices` exceeds the range indicated by `indptr`, and when the columns
           indicated by `indices` are repeated on the same row.

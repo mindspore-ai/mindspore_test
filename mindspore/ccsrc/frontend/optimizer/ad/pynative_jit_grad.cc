@@ -85,8 +85,7 @@ FuncGraphPtr OptimizeBpropGraph(const FuncGraphPtr &bprop_func_graph, const pyna
   MS_EXCEPTION_IF_NULL(manager);
   manager->AddFuncGraph(bprop_func_graph);
   auto after_opt_bg = pipeline::JitBpropGraphPass(resource, true);
-  auto is_dynamic_shape_control_flow =
-    grad_param->is_jit_graph && grad_param->use_dynamic_shape_process && grad_param->is_control_flow;
+  auto is_dynamic_shape_control_flow = grad_param->is_jit_graph && grad_param->is_control_flow;
   if (is_dynamic_shape_control_flow) {
     for (const auto &g : manager->func_graphs()) {
       g->set_flag(kFlagJitCallGraph, true);
@@ -273,16 +272,17 @@ std::pair<bool, FuncGraphPtr> GetBpropGraphWithParamalization(const pynative::Gr
   // Determine if forward result is needed, eg: second grad for high grad no need
   const bool need_forward_result = (grad_param->op_grad_info->out_value == nullptr);
   // Determine if forward node reuse is needed, first grad for high grad is ir_grad, no need reuse forward node
-  const bool need_reuse_forward_node = need_forward_result && grad_param->is_func_grad;
+  const bool need_reuse_forward_node = need_forward_result && !grad_param->is_high_order;
+  grad_param->graph_cache_key = grad_param->graph_cache_key + (grad_param->is_high_order ? ".high_order" : "");
   MS_LOG(INFO) << "Get Bprop from fprop, need forward result: " << need_forward_result
                << " , need reuse forward node: " << need_reuse_forward_node
-               << " , is func grad: " << grad_param->is_func_grad;
+               << " , is high order: " << grad_param->is_high_order << " , cache key: " << grad_param->graph_cache_key;
 
   // 1. Check cache for existing graphs
   const auto it = pass_grad_graph_param_.find(grad_param->graph_cache_key);
   bool cache_hit = it != pass_grad_graph_param_.end();
   if (cache_hit) {
-    MS_LOG(DEBUG) << "Get ad grad graph by cache";
+    MS_LOG(DEBUG) << "Get ad grad graph by cache, cache key: " << grad_param->graph_cache_key;
     std::tie(forward_fg, after_opt_fg) = it->second;
   } else {
     // Generate forward graph with reused cnode as output
@@ -343,14 +343,13 @@ std::pair<bool, FuncGraphPtr> GetBpropGraphWithParamalization(const pynative::Gr
   // 4. Store forward_graph and bprop
   if (!cache_hit) {
     MS_LOG(INFO) << "Start generating brop graph.";
-    jit_adgrad_processer->set_forward_output_abs(grad_param->op_grad_info->out_abs, grad_param->is_func_grad);
+    jit_adgrad_processer->set_forward_output_abs(grad_param->op_grad_info->out_abs);
     after_opt_fg = jit_adgrad_processer->GenerateBpropGraph();
     MS_LOG(INFO) << "Start optimizing brop graph.";
     pynative::CommonUtils::DumpGraphIR("opt_backward_before_opt.ir", after_opt_fg);
     after_opt_fg = OptimizeBpropGraph(after_opt_fg, grad_param);
     MS_LOG(INFO) << "Bprop graph generated successfully.";
-
-    if (grad_param->is_jit_graph || !grad_param->use_dynamic_shape_process) {
+    if (grad_param->is_jit_graph) {
       pass_grad_graph_param_[grad_param->graph_cache_key] = {forward_fg, after_opt_fg};
     }
     pynative::CommonUtils::DumpGraphIR("opt_backward.ir", after_opt_fg);
@@ -399,11 +398,8 @@ std::pair<bool, FuncGraphPtr> GetBpropGraphWithValueNodeReplacement(const pynati
     // Call pass for optimize graph, such as inline
     ClearFuncGraphCNodeAbstract(bprop_builder);
     after_opt_fg = OptimizeBpropGraph(bprop_builder, grad_param);
-    if (grad_param->is_func_grad) {
-      PlantFuncGradBpropGraphDout(after_opt_fg, grad_param->input_size, grad_param->op_grad_info->out_abs);
-    }
-
-    if (grad_param->is_jit_graph || !grad_param->use_dynamic_shape_process) {
+    PlantFuncGradBpropGraphDout(after_opt_fg, grad_param->input_size, grad_param->op_grad_info->out_abs);
+    if (grad_param->is_jit_graph) {
       // Control flow no need do valuenode replacement, just return the original funcgraph
       pass_grad_graph_valuenode_[grad_param->graph_cache_key] =
         grad_param->is_control_flow ? after_opt_fg : BasicClone(after_opt_fg);
@@ -559,17 +555,14 @@ FuncGraphPtr BpropGenerator::GenerateForwardGraph(const FuncGraphPtr &jit_forwar
   return OptimizeForwardGraph(forward_fg, true);
 }
 
-void BpropGenerator::set_forward_output_abs(const abstract::AbstractBasePtr &forward_abs, bool do_dout_plant) {
+void BpropGenerator::set_forward_output_abs(const abstract::AbstractBasePtr &forward_abs) {
   if (basic_graph_->parameters().empty()) {
     return;
   }
   auto input_value_size = input_value_.size();
   auto &dout_param = basic_graph_->parameters()[input_value_size];
   dout_param->set_abstract(forward_abs);
-  if (do_dout_plant) {
-    MS_LOG(INFO) << "Need plant dout param for bprop graph";
-    PlantFuncGradBpropGraphDout(basic_graph_, input_value_size, forward_abs);
-  }
+  PlantFuncGradBpropGraphDout(basic_graph_, input_value_size, forward_abs);
 }
 }  // namespace ad
 }  // namespace mindspore

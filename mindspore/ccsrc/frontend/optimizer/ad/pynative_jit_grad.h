@@ -44,7 +44,7 @@ class BpropGenerator {
   void Init();
   FuncGraphPtr GenerateBpropGraph();
   FuncGraphPtr GenerateForwardGraph(const FuncGraphPtr &jit_forward_graph, bool do_renormalize);
-  void set_forward_output_abs(const abstract::AbstractBasePtr &forward_abs, bool do_dout_plant);
+  void set_forward_output_abs(const abstract::AbstractBasePtr &forward_abs);
 
  private:
   FuncGraphPtr fprop_graph_;

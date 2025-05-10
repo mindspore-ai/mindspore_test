@@ -44,6 +44,7 @@ using mindspore::profiler::ProfilerManager;
 #include "mindspore/ccsrc/pyboost/auto_generate/contiguous.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "include/common/utils/tensor_py.h"
+#include "mindspore/ccsrc/frontend/expander/bprop/bprop.h"
 
 namespace mindspore {
 namespace pynative {
@@ -372,12 +373,7 @@ void ForwardExecutor::InitOpRunInfo(const FrontendOpRunInfoPtr &op_run_info) {
   Init();
   // Used for async run
   op_run_info->requires_grad = GradState::Get().RequiresGrad();
-  if (op_run_info->requires_grad) {
-    op_run_info->base_op_run_info.use_dynamic_shape_process = grad()->use_dynamic_shape_process();
-  } else {
-    op_run_info->base_op_run_info.use_dynamic_shape_process =
-      grad()->forward_use_dynamic_shape_process() || grad()->use_dynamic_shape_process();
-  }
+  op_run_info->base_op_run_info.use_dynamic_shape_process = grad()->forward_use_dynamic_shape_process();
   op_run_info->base_op_run_info.device_target = GetCurrentDeviceTarget(op_run_info->op_grad_info->op_prim);
   auto device_context = runtime::OpRunner::GetDeviceContext(op_run_info->base_op_run_info.device_target);
   op_run_info->base_op_run_info.stream_id = device_context->device_res_manager_->GetCurrentStreamId();
@@ -528,7 +524,7 @@ bool ForwardExecutor::ProcessViewOp(const FrontendOpRunInfoPtr &op_run_info,
     const auto &top_cell = op_run_info->requires_grad ? grad()->top_cell() : nullptr;
     for (size_t index = 0; index < op_run_info->input_size; ++index) {
       const ValuePtr &input_object = op_run_info->op_grad_info->input_value[index];
-      PyNativeAlgo::DataConvert::MarkInputs(op_run_info, input_object, index, top_cell);
+      PyNativeAlgo::DataConvert::MarkInputs(op_run_info, input_object, index);
     }
   }
 
@@ -725,12 +721,7 @@ FrontendOpRunInfoPtr ForwardExecutor::GenerateOpRunInfo(const py::args &args, bo
   // Used for async run
   op_run_info->base_op_run_info.op_name = args[static_cast<size_t>(RunOpArgsEnum::PY_NAME)].cast<std::string>();
   op_run_info->requires_grad = GradState::Get().RequiresGrad();
-  if (op_run_info->requires_grad) {
-    op_run_info->base_op_run_info.use_dynamic_shape_process = grad()->use_dynamic_shape_process();
-  } else {
-    op_run_info->base_op_run_info.use_dynamic_shape_process =
-      grad()->forward_use_dynamic_shape_process() || grad()->use_dynamic_shape_process();
-  }
+  op_run_info->base_op_run_info.use_dynamic_shape_process = grad()->forward_use_dynamic_shape_process();
   PyNativeAlgo::PyParser::SetPrim(op_run_info, args[static_cast<size_t>(RunOpArgsEnum::PY_PRIM)]);
   OpRunInfoUsePrimC(op_run_info);
   PyNativeAlgo::PyParser::ParseOpInputByPythonObj(op_run_info, args[static_cast<size_t>(RunOpArgsEnum::PY_INPUTS)],
@@ -835,7 +826,7 @@ ValuePtr ForwardExecutor::RunOpInVM(const FrontendOpRunInfoPtr &op_run_info) con
   if (op_run_info->requires_grad) {
     for (size_t i = 0; i < op_run_info->input_size; i++) {
       op_run_info->op_grad_info->input_value_grad_type[i] =
-        PyNativeAlgo::AutoGradUtil::SetValueGradInfo(op_run_info->op_grad_info->input_value[i], InputType::kConstant);
+        AutoGradUtil::SetValueGradInfo(op_run_info->op_grad_info->input_value[i], InputType::kConstant);
       (void)op_run_info->base_op_run_info.expanded_input_values.emplace_back(op_run_info->op_grad_info->input_value[i]);
     }
   }
@@ -847,7 +838,7 @@ ValuePtr ForwardExecutor::RunOpInVM(const FrontendOpRunInfoPtr &op_run_info) con
     auto result_v = ConstructOutputInVM(result);
     if (op_run_info->requires_grad) {
       // Later we need modify hook op to view op.
-      (void)PyNativeAlgo::AutoGradUtil::SetValueGradInfo(result_v, InputType::kOpOutput);
+      (void)AutoGradUtil::SetValueGradInfo(result_v, InputType::kOpOutput);
     }
     MS_LOG(DEBUG) << "RunOpInVM end";
     return result_v;
@@ -871,7 +862,7 @@ ValuePtr ForwardExecutor::RunOpInVM(const FrontendOpRunInfoPtr &op_run_info) con
     result_v = std::make_shared<ValueTuple>(std::vector{result_v});
   }
   if (op_run_info->requires_grad) {
-    (void)PyNativeAlgo::AutoGradUtil::SetValueGradInfo(result_v, InputType::kOpOutput);
+    (void)AutoGradUtil::SetValueGradInfo(result_v, InputType::kOpOutput);
   }
   MS_LOG(DEBUG) << "RunOpInVM end";
   return result_v;
@@ -987,7 +978,7 @@ device::DeviceAddressPtr ForwardExecutor::TensorContiguousCallback(const DeviceS
 
 void ForwardExecutor::PrepareOpInputs(const FrontendOpRunInfoPtr &op_run_info) {
   MS_EXCEPTION_IF_NULL(op_run_info);
-  PyNativeAlgo::DataConvert::GetInputTensor(op_run_info, op_run_info->requires_grad ? grad()->top_cell() : nullptr);
+  PyNativeAlgo::DataConvert::GetInputTensor(op_run_info);
   for (const auto &value : op_run_info->base_op_run_info.expanded_input_values) {
     if (!value->isa<tensor::Tensor>()) {
       continue;
@@ -1036,8 +1027,7 @@ void ForwardExecutor::CreateViewOutputTensor(const FrontendOpRunInfoPtr &op_run_
     is_multi_output
       ? autograd::CreationType::kMultiOutput
       : (op_run_info->requires_grad ? autograd::CreationType::kDefault : autograd::CreationType::kNoGradMode);
-  size_t op_index = op_run_info->requires_grad ? grad()->top_cell()->op_index() : 0;
-  PyNativeAlgo::AutoGradUtil::BuildViewAutoGradMeta(input_tensor, output_tensor, op_index, creationType);
+  AutoGradUtil::BuildViewAutoGradMeta(input_tensor, output_tensor, creationType, op_run_info->requires_grad);
   (void)op_run_info->base_op_run_info.output_tensors.emplace_back(output_tensor);
 }
 
@@ -1046,9 +1036,7 @@ ValuePtr ForwardExecutor::RunOpInMsInner(const FrontendOpRunInfoPtr &op_run_info
   const auto &outputs = RunOpBackendInner(op_run_info, backend_op_run_info);
   bool is_out_sequence = (op_run_info->base_op_run_info.abstract == nullptr ||
                           op_run_info->base_op_run_info.abstract->isa<abstract::AbstractSequence>());
-  const auto &result_v =
-    PyNativeAlgo::AutoGradUtil::VectorRefToValue(outputs, op_run_info->requires_grad, is_out_sequence,
-                                                 op_run_info->requires_grad ? grad()->top_cell()->op_index() : 0);
+  const auto &result_v = AutoGradUtil::VectorRefToValue(outputs, op_run_info->requires_grad, is_out_sequence);
   MS_LOG(DEBUG) << "RunOpInMs end";
   return result_v;
 }

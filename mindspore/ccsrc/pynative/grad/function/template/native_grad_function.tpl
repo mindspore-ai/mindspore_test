@@ -10,14 +10,12 @@ NodePtr NativeFunc::${func_name}(${call_args_with_type}) {
     (kernel::pyboost::PyBoostUtils::IsKernelModRegistered(device_target_, "${func_name}") ||
     kernel::pyboost::PyBoostUtils::IsPyBoostCustomRegistered(device_target_, "${func_name}"));
   if (is_kernel_register) {
-    // Create op
-    auto op = CREATE_PYBOOST_OP(${op_name}, device_target_);
-    op->set_primitive(prim::kPrim${op_name});
-
     // Run op
     ${convert_body}
-    (void)op->Call(${call_args});
-    op->CreateOutputSimpleInfo();
+    kernel::pyboost::OpRunStatus::Get().set_run_info(
+      kernel::pyboost::OpStatus(true, false, 0, device_target_));
+    auto outputs = kernel::pyboost::${operator_name}(${call_args});
+    auto op = kernel::pyboost::OpRunStatus::Get().GetLastOp();
     abstract::AbstractBasePtr output_abs;
     if (op->output_value_simple_info() != nullptr) {
         // Get output abstract
@@ -31,7 +29,7 @@ NodePtr NativeFunc::${func_name}(${call_args_with_type}) {
 
     // Set abstract to tensor cache
     if (op->output_value_simple_info() != nullptr) {
-      PyNativeAlgo::AutoGradUtil::CacheOutputAbstract(output_value, output_abs);
+      AutoGradUtil::CacheOutputAbstract(output_value, output_abs);
     }
     MS_LOG(DEBUG) << "End execute native func" << " ${func_name}";
     return output_node;

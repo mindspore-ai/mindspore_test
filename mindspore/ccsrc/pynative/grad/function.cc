@@ -20,6 +20,7 @@
 #include "pynative/pynative_utils.h"
 #include "pynative/grad/grad_utils.h"
 #include "pynative/grad/function.h"
+#include "pynative/grad/function/func_grad.h"
 
 namespace mindspore::pynative::autograd {
 void PrepareForForward() {
@@ -30,6 +31,20 @@ void PrepareForForward() {
   kernel::pyboost::OpStatus status{false, false, pynative_executor->grad_executor()->custom_bprop_cell_count(),
                                    pynative_executor->forward_executor()->device_target()};
   kernel::pyboost::OpRunStatus::Get().set_run_info(std::move(status));
+}
+
+const TensorPtrList AutogradContext::GetSavedTensors() const {
+  TensorPtrList res;
+  res.reserve(saved_nodes_.size());
+  for (size_t i = 0; i < saved_nodes_.size(); ++i) {
+    const auto output = saved_nodes_[i]->Unwrap(node_.lock());
+    if (output == nullptr) {
+      (void)res.emplace_back(nullptr);
+      continue;
+    }
+    (void)res.emplace_back(output->cast<tensor::TensorPtr>());
+  }
+  return res;
 }
 
 void AutogradContext::MarkDirty(const TensorPtrList &inputs) {
@@ -54,12 +69,29 @@ bool AutogradContext::NeedsInputGrad(size_t tensor_index) const {
   const auto &edge_list = node->next_edges();
   MS_EXCEPTION_IF_CHECK_FAIL(tensor_index < edge_list.size(), "tensor index out of range");
   const auto &edge = edge_list[tensor_index];
-  return edge.is_defined() ? edge.variable->is_need_grad() : false;
+  return edge.is_defined() ? true : false;
 }
 
 bool AutogradContext::NeedGrad(const TensorPtr &tensor) {
   runtime::Pipeline::Get().WaitBpropStage();
-  return PyNativeAlgo::AutoGradUtil::NeedGrad(tensor);
+  return AutoGradUtil::NeedGrad(tensor);
+}
+
+void AutogradContext::GenerateSavedNodes() {
+  if (to_save_.empty()) {
+    return;
+  }
+  saved_nodes_.reserve(to_save_.size());
+  for (const auto &val : to_save_) {
+    if (val == nullptr) {
+      (void)saved_nodes_.emplace_back(std::make_shared<SavedNode>(nullptr, nullptr, false, true));
+      continue;
+    }
+    const auto &tensor = val->cast<tensor::TensorPtr>();
+    MS_EXCEPTION_IF_NULL(tensor);
+    (void)saved_nodes_.emplace_back(SavedNode::ConstructSavedNode(tensor));
+  }
+  to_save_.clear();
 }
 
 void CppFunctionDoGrad(AutogradContext *context, const TensorPtrList &inputs, TensorPtrList *outputs) {
@@ -78,11 +110,10 @@ void CppFunctionDoGrad(AutogradContext *context, const TensorPtrList &inputs, Te
     std::vector<InputType> input_value_grad_type;
     input_value_list.reserve(inputs.size());
     input_value_grad_type.reserve(inputs.size());
-    for (const auto input_tensor : inputs) {
+    for (const auto &input_tensor : inputs) {
       MS_EXCEPTION_IF_NULL(input_tensor);
       (void)input_value_list.emplace_back(input_tensor);
-      (void)input_value_grad_type.emplace_back(
-        PyNativeAlgo::AutoGradUtil::SetValueGradInfo(input_tensor, InputType::kConstant));
+      (void)input_value_grad_type.emplace_back(AutoGradUtil::SetValueGradInfo(input_tensor, InputType::kConstant));
       (void)input_tensor_set.insert(input_tensor);
     }
 
@@ -98,29 +129,30 @@ void CppFunctionDoGrad(AutogradContext *context, const TensorPtrList &inputs, Te
         output_tensor = std::make_shared<tensor::Tensor>(*output_tensor);
         output_tensor->set_auto_grad_meta_data(nullptr);
       } else {
-        (void)PyNativeAlgo::AutoGradUtil::SetValueGradInfo(output_tensor, InputType::kOpOutput);
+        (void)AutoGradUtil::SetValueGradInfo(output_tensor, InputType::kOpOutput);
       }
     }
 
     // Do grad
     if (pynative_executor->forward_executor()->enable_async()) {
-      auto auto_grad_cell_ptr = grad_executor->top_cell()->auto_grad_cell_ptr();
-      auto task = [auto_grad_cell_ptr, context, node, flatten_outputs_value = std::move(flatten_outputs_value),
+      auto task = [context, node, flatten_outputs_value = std::move(flatten_outputs_value),
                    input_tensor_set = std::move(input_tensor_set), input_value_list = std::move(input_value_list),
                    input_value_grad_type = std::move(input_value_grad_type)]() mutable {
-        auto_grad_cell_ptr->CallCPPFunctionBprop(flatten_outputs_value, input_tensor_set, context->dirty_inputs_,
-                                                 context->non_differentiable_, input_value_list, input_value_grad_type,
-                                                 node);
+        (void)CallCustomCFunction(flatten_outputs_value, input_tensor_set, context->dirty_inputs_,
+                                  context->non_differentiable_, input_value_list, input_value_grad_type, node);
         context->non_differentiable_.clear();
         context->dirty_inputs_.clear();
+        // Generate saved nodes and clear to_save.
+        context->GenerateSavedNodes();
       };
       grad_executor->DispatchGradQueueTask(std::move(task));
     } else {
-      grad_executor->top_cell()->auto_grad_cell_ptr()->CallCPPFunctionBprop(
-        flatten_outputs_value, input_tensor_set, context->dirty_inputs_, context->non_differentiable_, input_value_list,
-        input_value_grad_type, node);
+      (void)CallCustomCFunction(flatten_outputs_value, input_tensor_set, context->dirty_inputs_,
+                                context->non_differentiable_, input_value_list, input_value_grad_type, node);
       context->non_differentiable_.clear();
       context->dirty_inputs_.clear();
+      // Generate saved nodes and clear to_save.
+      context->GenerateSavedNodes();
     }
   } else {
     MS_LOG(DEBUG) << function_name << " Run in no grad mode";

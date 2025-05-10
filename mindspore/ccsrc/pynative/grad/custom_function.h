@@ -24,9 +24,10 @@
 #include "ir/anf.h"
 #include "include/backend/kernel_graph.h"
 #include "include/common/expander/core/node.h"
-#include "pynative/grad/variable.h"
+#include "include/common/pynative/variable.h"
 #include "pybind11/pybind11.h"
 #include "pybind_api/gil_scoped_long_running.h"
+#include "mindspore/ccsrc/pynative/grad/grad_utils.h"
 
 namespace mindspore {
 namespace pynative {
@@ -44,8 +45,6 @@ struct CustomContext {
   py::function bprop_fn;
   // Python inputs for bprop_fn
   py::object original_inputs;
-  // Python output
-  py::object original_output;
   // Recompute weight size
   size_t weight_size{0};
   // Whether the cell is recompute cell
@@ -54,45 +53,53 @@ struct CustomContext {
     py::gil_scoped_acquire gil_acquire;
     bprop_fn = py::object();
     original_inputs = py::object();
-    original_output = py::object();
   }
 };
 
 class CustomBackward : public BackwardNode {
  public:
-  CustomBackward(string name, py::function bprop_fn, py::list bprop_inputs, abstract::AbstractBasePtr out_abstract,
+  CustomBackward(string name, py::function bprop_fn, py::list bprop_inputs, SavedNodePtr saved_output,
+                 const std::vector<TensorMeta> &input_meta, abstract::AbstractBasePtr out_abstract,
                  bool is_recompute = false, size_t output_size = 1)
       : BackwardNode(std::move(name), output_size),
         bprop_fn_(std::move(bprop_fn)),
         bprop_inputs_(std::move(bprop_inputs)),
+        saved_output_(std::move(saved_output)),
+        input_meta_(input_meta),
         out_abstract_(std::move(out_abstract)),
         is_recompute_(is_recompute) {}
   ~CustomBackward() override;
   ValuePtrList CallBackward(const ValuePtrList &grads) override;
+  ValuePtrList PostProcess(const ValuePtrList &gradient_value) override;
   void Release() override;
 
  private:
   py::function bprop_fn_;
   py::object bprop_inputs_;
+  SavedNodePtr saved_output_;
+  std::vector<TensorMeta> input_meta_;
   abstract::AbstractBasePtr out_abstract_;
   bool is_recompute_{false};
 };
 
 class PyBackwardNode : public BackwardNode {
  public:
-  PyBackwardNode(string name, py::function backward_fn, py::object obj, abstract::AbstractBasePtr out_abstract,
-                 size_t output_size = 1)
+  PyBackwardNode(string name, py::function backward_fn, py::object obj, std::vector<TensorMeta> input_meta,
+                 abstract::AbstractBasePtr out_abstract, size_t output_size = 1)
       : BackwardNode(std::move(name), output_size),
         backward_fn_(std::move(backward_fn)),
         obj_(std::move(obj)),
+        input_meta_(std::move(input_meta)),
         out_abstract_(std::move(out_abstract)) {}
   ~PyBackwardNode() override;
   ValuePtrList CallBackward(const ValuePtrList &grads) override;
+  ValuePtrList PostProcess(const ValuePtrList &gradient_value) override;
   void Release() override;
 
  private:
   py::function backward_fn_;
   py::object obj_;
+  std::vector<TensorMeta> input_meta_;
   abstract::AbstractBasePtr out_abstract_;
 };
 

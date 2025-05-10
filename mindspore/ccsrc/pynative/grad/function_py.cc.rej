@@ -1,0 +1,11 @@
+diff a/mindspore/ccsrc/pynative/grad/function_py.cc b/mindspore/ccsrc/pynative/grad/function_py.cc	(rejected hunks)
+@@ -42,9 +42,6 @@ ValuePtr ConvertOutputTensorList(const py::object &obj) {
+       res.emplace_back(tensor);
+     }
+   }
+-  if (res.size() == 1) {
+-    return res[0];
+-  }
+   return std::make_shared<ValueTuple>(res);
+ }
+ }  // namespace

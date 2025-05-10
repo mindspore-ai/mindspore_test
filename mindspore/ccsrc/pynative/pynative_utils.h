@@ -82,7 +82,7 @@ struct Common {
   static tensor::TensorPtr ConvertToContiguousTensor(const tensor::TensorPtr &tensor, bool requires_grad);
   static ValuePtr ConvertToContiguousValue(const ValuePtr &v, bool requires_grad);
   static ValuePtr CreateTensorByConstantValue(const ValuePtr &value);
-
+  static tensor::TensorPtr CaculateGradNorm(const tensor::TensorPtr &grad);
   template <typename T>
   static std::string PrintDebugInfo(std::vector<T> items, const std::string &info_header = "",
                                     bool is_print_tensor_data = false) {
@@ -97,9 +97,10 @@ struct Common {
       if (items[i]->template isa<tensor::Tensor>() && is_print_tensor_data) {
         auto tensor = items[i]->template cast<tensor::TensorPtr>();
         auto grad = std::make_shared<tensor::Tensor>(*tensor);
-        grad->data_sync();
+        auto norm_val = CaculateGradNorm(grad);
+        norm_val->data_sync();
         buf << i << "th: "
-            << "ptr " << items[i].get() << ", " << grad->ToStringRepr() << ", ";
+            << "ptr " << items[i].get() << ", " << norm_val->ToStringRepr() << ", ";
       } else {
         buf << i << "th: "
             << "ptr " << items[i].get() << ", " << items[i]->ToString() << ", ";
@@ -111,11 +112,10 @@ struct Common {
   static bool IsVmOp(const std::string &op_name);
   static std::vector<int64_t> BuildShape(const abstract::AbstractBasePtr &abs);
   static void ClearRes();
-  static TopCellInfo *FindPreTopcell(const GradExecutor *grad_executor, const OpGradInfoPtr &op_grad_info,
-                                     const std::string &op_info, const ValuePtr &value);
-  static void UpdateGradOpInfo(const GradExecutor *grad_executor, const OpGradInfoPtr &op_grad_info,
-                               TopCellInfo *pre_top_cell, bool is_jit_graph);
   static OperatorType GetOpTypeFromOpdef(const ops::OpDef &op_def);
+  static void DoGradInner(runtime::OpRunnerInfo *op_runner_info, VectorRef *op_outputs);
+  static tensor::TensorPtr GetTensorFromSparseTensor(const ValuePtr &val);
+  static void WaitBprop();
 };
 
 // Parser python
@@ -140,23 +140,19 @@ struct PyParser {
 
 // Data convert
 struct DataConvert {
-  static ValuePtrList FlattenOnlyTensor(const ValuePtr &v);
   static void FlattenArgs(const std::vector<ValuePtr> &v_vec, std::vector<ValuePtr> *flatten_v, bool has_sens);
-  static ValuePtrList FlattenTensorSeqInValue(const ValuePtr &v);
-  static void GetInputTensor(const FrontendOpRunInfoPtr &op_run_info, const TopCellInfoPtr &top_cell);
+  static void GetInputTensor(const FrontendOpRunInfoPtr &op_run_info);
   static void ConvertCSRTensorToTensorList(const FrontendOpRunInfoPtr &op_run_info,
-                                           const tensor::CSRTensorPtr &csr_tensor, const TopCellInfoPtr &top_cell,
-                                           size_t index);
+                                           const tensor::CSRTensorPtr &csr_tensor, size_t index);
   static void ConvertMapTensor(const FrontendOpRunInfoPtr &op_run_info, const tensor::MapTensorPtr &map_tensor,
-                               const TopCellInfoPtr &top_cell, size_t index);
+                               size_t index);
   static ValuePtr ConvertValueDictToValueTuple(const ValuePtr &v);
   static void PlantTensorTupleToVector(const FrontendOpRunInfoPtr &op_run_info, const ValueSequencePtr &value_seq,
-                                       size_t index, const TopCellInfoPtr &top_cell);
+                                       size_t index);
   static void GetTensorIdFromOutputValue(const ValuePtr &value, std::vector<std::string> *converted_tensor_id);
   static void ConvertTupleValueToTensor(const FrontendOpRunInfoPtr &op_run_info, const ValueSequencePtr &value_seq,
-                                        size_t index, const TopCellInfoPtr &top_cell);
-  static void MarkInputs(const FrontendOpRunInfoPtr &op_run_info, const ValuePtr &v, size_t index,
-                         const TopCellInfoPtr &top_cell);
+                                        size_t index);
+  static void MarkInputs(const FrontendOpRunInfoPtr &op_run_info, const ValuePtr &v, size_t index);
   static bool RunOpConvertConstInputToAttr(const FrontendOpRunInfoPtr &op_run_info, const ValuePtr &v,
                                            size_t input_index);
   static void TransformValueNodeTensorToTensor(const ValueNodePtr &value_node);
@@ -171,6 +167,7 @@ struct PyBoost {
   static void UpdateStubOutput(const kernel::pyboost::OpPtr &op, const stub::StubNodePtr &stub_output,
                                const AbstractBasePtr &abstract, const ValuePtr &real_out);
   static PrimitivePtr ConvertPrimitive(const py::object &obj);
+
   static py::object RunPyFunction(const PrimitivePtr &prim, const py::list &args);
   template <typename T>
   static ValuePtr OptionalToValue(const std::optional<T> &val) {
@@ -208,9 +205,9 @@ struct PyBoost {
     return ret;
   }
   static void DataSyncForGraph(const kernel::pyboost::OpPtr &op);
-  static void MarkPyBoostInputs(const OpGradInfoPtr &op_grad_info, const TopCellInfoPtr &top_cell);
+  static void MarkPyBoostInputs(const OpGradInfoPtr &op_grad_info);
   static void BumpVersionAsync(const tensor::TensorPtr &tensor);
-  static ValuePtr OutputToValue(const TensorPtr &output) { return output; }
+  static ValuePtr OutputToValue(const tensor::TensorPtr &output) { return output; }
   static ValuePtr MultiOutputToValue(const std::vector<TensorPtr> &outputs) {
     std::vector<ValuePtr> output_values;
     output_values.reserve(outputs.size());

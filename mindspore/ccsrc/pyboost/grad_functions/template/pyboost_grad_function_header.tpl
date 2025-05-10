@@ -21,6 +21,8 @@
 #include "backend/graph_compiler/vmimpl.h"
 #include "include/common/utils/python_adapter.h"
 #include "pybind_api/gil_scoped_long_running.h"
+#include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
+#include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
 ${include_op_header}
 
 namespace mindspore::runtime {
@@ -38,6 +40,19 @@ session::BackendOpRunInfoPtr GetBackendOpRunInfo(OpRunnerInfo *op_runner_info) {
   base_op_run_info.abstract = op_runner_info->output_abs ;
   return std::make_shared<BackendOpRunInfo>(base_op_run_info, op_runner_info->prim, false, false);
 }
+
+DoGradFunc do_grad_func{nullptr};
+}
+
+void RegisterDoGradFunc(const DoGradFunc &grad_func) {
+  do_grad_func = grad_func;
+}
+
+const DoGradFunc& GetDoGradFunc() {
+  if (do_grad_func == nullptr) {
+    MS_LOG(EXCEPTION) << "Do grad func not register!";
+  }
+  return do_grad_func;
 }
 
 PyBoostOpExecute& PyBoostOpExecute::GetInstance() {
@@ -93,8 +108,8 @@ void PyBoostOpExecute::RunOpDeprecated(OpRunnerInfo *op_runner_info, VectorRef *
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-
   op_backend_.Run(backend_op_run_info, backend_op_run_info->base_op_run_info.device_target, device_id, op_outputs);
+  GetDoGradFunc()(op_runner_info, op_outputs);
 }
 
 void PyBoostOpExecute::RunOpInVm(OpRunnerInfo *op_runner_info, VectorRef *op_outputs) {
@@ -115,6 +130,7 @@ void PyBoostOpExecute::RunOpInVm(OpRunnerInfo *op_runner_info, VectorRef *op_out
                          [](const auto &value) { return value; });
     }
     op_runner_info->output_abs = result_v->ToAbstract()->Broaden();
+    GetDoGradFunc()(op_runner_info, op_outputs);
     return;
   }
 

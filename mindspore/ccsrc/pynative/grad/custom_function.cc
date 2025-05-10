@@ -23,6 +23,8 @@
 #include "include/common/utils/convert_utils_py.h"
 #include "include/common/utils/tensor_py.h"
 #include "pynative/pynative_utils.h"
+#include "include/common/pynative/common_utils.h"
+#include "mindspore/ccsrc/pynative/grad/function/func_grad.h"
 
 namespace mindspore {
 namespace pynative {
@@ -53,6 +55,36 @@ ValuePtr ValueListToValue(const ValuePtrList &list) {
   }
   return std::make_shared<ValueTuple>(list);
 }
+
+ValuePtrList AutoCastAndReduce(const ValuePtrList &gradients, const std::vector<TensorMeta> &inputs_meta) {
+  ValuePtrList grads;
+  grads.reserve(gradients.size());
+  if (gradients.size() < inputs_meta.size()) {
+    MS_LOG(EXCEPTION) << "For custom function, grad size should lager than forward inputs, but got " << gradients.size()
+                      << " vs " << inputs_meta.size();
+  }
+  for (size_t i = 0; i < inputs_meta.size(); ++i) {
+    const auto &input_info = inputs_meta[i];
+    if (input_info.is_default() || gradients[i]->isa<None>()) {
+      (void)grads.emplace_back(gradients[i]);
+      continue;
+    }
+    MS_EXCEPTION_IF_NULL(gradients[i]);
+    auto grad_tensor = gradients[i]->cast<tensor::TensorPtr>();
+    MS_EXCEPTION_IF_NULL(grad_tensor);
+    if (input_info.IsSameShape(grad_tensor->shape())) {
+      (void)grads.emplace_back(input_info.Cast(grad_tensor));
+      continue;
+    }
+    if (!input_info.IsBroadcastTo(grad_tensor->shape())) {
+      MS_LOG(EXCEPTION) << "For custom function, grad tensor should be broadcast to input shape, but got "
+                        << grad_tensor->shape() << " vs " << input_info.shape();
+    }
+    grad_tensor = input_info.Cast(input_info.ReduceGrad(grad_tensor));
+    (void)grads.emplace_back(grad_tensor);
+  }
+  return grads;
+}
 }  // namespace
 
 CustomBackward::~CustomBackward() {
@@ -69,37 +101,25 @@ ValuePtrList CustomBackward::CallBackward(const ValuePtrList &grads) {
   // Python grad func can not process None, we need to convert None to zero tensor.
   auto func_builder = FuncBuilder(name_, device_target, nullptr);
   auto filled_zeros_grad = func_builder.FillZeros(gradient, out_abstract_);
-
   // Run bprop function.
   py::gil_scoped_acquire gil_acquire;
   py::object py_tensor_grad = CValueToPybindObj(filled_zeros_grad);
   py::list list_inputs = bprop_inputs_.cast<py::list>();
-  list_inputs.append(py_tensor_grad);
-  size_t non_inp_args_size = is_recompute_ ? kSizeOne : kSizeTwo;
-  auto inp_args_size = list_inputs.size() - non_inp_args_size;
-  py::tuple input_args(inp_args_size);
-  for (size_t i = 0; i < inp_args_size; ++i) {
-    input_args[i] = list_inputs[i];
-  }
-  py::tuple fn_args(list_inputs.size());
-  for (size_t i = 0; i < fn_args.size(); ++i) {
+  size_t fn_size = is_recompute_ ? list_inputs.size() + kSizeOne : list_inputs.size() + kSizeTwo;
+  py::tuple fn_args(fn_size);
+  for (size_t i = 0; i < list_inputs.size(); ++i) {
     fn_args[i] = list_inputs[i];
   }
-  const auto &inst = pynative::PyNativeExecutor::GetInstance();
-  if (inst->grad_flag()) {
-    inst->NewGraph(bprop_fn_, input_args.cast<py::args>());
+  if (!is_recompute_) {
+    auto out = saved_output_->Unwrap(shared_from_this());
+    py::object py_out = CValueToPybindObj(out);
+    fn_args[list_inputs.size()] = py_out;
+    fn_args[list_inputs.size() + kSizeOne] = py_tensor_grad;
+  } else {
+    fn_args[list_inputs.size()] = py_tensor_grad;
   }
   py::object grads_obj = bprop_fn_(*fn_args);
   py::tuple input_grads = CheckBpropOut(grads_obj, fn_args, name());
-  py::object out = grads_obj;
-  // If grads.size() > inp_args_size, that means exist weights.
-  if (input_grads.size() > inp_args_size) {
-    MS_LOG(DEBUG) << "Get grads size " << input_grads.size();
-    out = py::cast<py::tuple>(grads_obj)[0];
-  }
-  if (inst->grad_flag()) {
-    inst->EndGraph(bprop_fn_, out, input_args.cast<py::args>());
-  }
   MS_LOG(DEBUG) << "Run cell custom bprop function end.";
   ValuePtrList gradient_values;
   ConvertPyObjectToCTensor(input_grads, &gradient_values, true);
@@ -112,7 +132,13 @@ ValuePtrList CustomBackward::CallBackward(const ValuePtrList &grads) {
   return gradient_tensors;
 }
 
+ValuePtrList CustomBackward::PostProcess(const ValuePtrList &gradient_value) {
+  auto flatten_gradients = CommonUtils::FlattenTensorSeqInValueSeq(gradient_value, false);
+  return AutoCastAndReduce(flatten_gradients, input_meta_);
+}
+
 void CustomBackward::Release() {
+  saved_output_ = nullptr;
   py::gil_scoped_acquire gil_acquire;
   bprop_fn_ = py::object();
   bprop_inputs_ = py::object();
@@ -176,6 +202,10 @@ ValuePtrList PyBackwardNode::CallBackward(const ValuePtrList &grads) {
   runtime::Pipeline::Get().WaitFrontend();
   MS_LOG(DEBUG) << "End PyBackwardNode CallBackward";
   return gradient_tensors;
+}
+
+ValuePtrList PyBackwardNode::PostProcess(const ValuePtrList &gradient_value) {
+  return AutoCastAndReduce(gradient_value, input_meta_);
 }
 
 void PyBackwardNode::Release() {

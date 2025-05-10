@@ -37,8 +37,11 @@ class COMMON_EXPORT CommonUtils {
   static void DumpGraphIR(const std::string &filename, const FuncGraphPtr &graph);
   static AbstractBasePtr SetAbstractValueToAnyValue(const AbstractBasePtr &abs);
   static ValuePtrList FlattenTensorSeqInValueSeq(const ValuePtrList &v, bool only_flatten_tensor = true);
+  static ValuePtrList FlattenOnlyTensor(const ValuePtr &v);
+  static ValuePtrList FlattenTensorSeqInValue(const ValuePtr &v);
   static void FlattenValueSeqArg(const ValuePtr &v, bool is_only_flatten_tensor_seq, bool is_filter_tensor,
                                  std::vector<ValuePtr> *flatten_v);
+  static ValuePtr ShallowCopyAndDetach(const ValuePtr &value);
 };
 
 class COMMON_EXPORT CastUtils {
@@ -46,6 +49,7 @@ class COMMON_EXPORT CastUtils {
   static ValuePtr ScalarToDstDtypeValue(const ValuePtr &src_value, const std::pair<TypeId, bool> &dst_type);
   static tensor::TensorPtr TensorToDstDtypeValue(const ValuePtr &src_value, const TypeId &dst_type_id);
 };
+void COMMON_EXPORT RegisterWaitBpropFunc(const std::function<void(void)> &wait_func);
 }  // namespace pynative
 
 class COMMON_EXPORT HookUtils {

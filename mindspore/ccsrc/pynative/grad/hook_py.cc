@@ -20,17 +20,33 @@
 #include "include/common/utils/hook.h"
 #include "include/common/pynative/adapter.h"
 #include "pipeline/jit/ps/pipeline.h"
+#include "runtime/pipeline/pipeline.h"
+#include "pynative/grad/grad_utils.h"
+#include "pynative/grad/function/func_grad.h"
 
 namespace mindspore::pynative::autograd {
 namespace {
-AutoGradMetaDataWeakPtr BuildAutoGradMeta(const tensor::TensorPtr &tensor) {
+BackwardNodePtr BuildAutoGradMeta(const tensor::TensorPtr &tensor) {
+  runtime::Pipeline::Get().WaitBpropStage();
   auto auto_grad_meta_data = impl::get_autograd_meta_impl(tensor);
   if (auto_grad_meta_data == nullptr) {
+    if (tensor->param_info() != nullptr && !tensor->param_info()->requires_grad()) {
+      MS_LOG(EXCEPTION) << "The tensor requires grad is false, which can not register tensor hook";
+    }
+    MS_LOG(DEBUG) << "Create leaf node for: " << tensor->ToString();
     auto_grad_meta_data = std::make_shared<AutoGradMetaData>();
-    const_cast<tensor::TensorPtr &>(tensor)->set_auto_grad_meta_data(auto_grad_meta_data);
-    MS_LOG(DEBUG) << "Tensor has no auto_grad_meta_data, build it";
+    auto fn = std::make_shared<autograd::LeafNode>(
+      tensor->param_info() != nullptr ? tensor->param_info()->name() : "register_hook_input", tensor->shape(),
+      tensor->Dtype(), tensor->is_parameter());
+    auto_grad_meta_data->set_grad_node(fn);
+    tensor->set_auto_grad_meta_data(auto_grad_meta_data);
+    return fn;
   }
-  return {auto_grad_meta_data};
+  auto grad_node = auto_grad_meta_data->UnsafeGetGradNodeImpl();
+  if (grad_node == nullptr) {
+    MS_LOG(EXCEPTION) << "The tensor requires grad is false, which can not register tensor hook";
+  }
+  return grad_node;
 }
 
 inline uint64_t GetTensorNumId(const std::string &id) { return std::stoull(id.substr(1)); }
@@ -38,7 +54,7 @@ inline uint64_t GetTensorNumId(const std::string &id) { return std::stoull(id.su
 
 std::map<uint64_t, std::vector<uint64_t>> RegisterHook::tensor_id_with_unique_id_ = {};
 std::map<uint64_t, std::weak_ptr<std::map<uint64_t, py::function>>> RegisterHook::tensor_id_with_hook_map_ = {};
-std::map<uint64_t, std::pair<AutoGradMetaDataWeakPtr, TensorBackwardHookPtr>> RegisterHook::hook_meta_fn_map_ = {};
+std::map<uint64_t, std::pair<std::weak_ptr<BackwardNode>, TensorBackwardHookPtr>> RegisterHook::hook_meta_fn_map_ = {};
 
 uint64_t RegisterHook::RegisterTensorBackwardHook(const tensor::TensorPtr &tensor, const py::function &hook) {
   // Delete char 'T'
@@ -46,18 +62,12 @@ uint64_t RegisterHook::RegisterTensorBackwardHook(const tensor::TensorPtr &tenso
   ++unique_id_;
   MS_LOG(DEBUG) << "Register hook " << py::str(py::cast<py::object>(hook)).cast<std::string>() << " for tensor "
                 << tensor->id() << " with handle " << unique_id_;
-
   // Add hook for tensor
-  auto meta = BuildAutoGradMeta(tensor);
+  auto grad_node = BuildAutoGradMeta(tensor);
   auto tensor_backward_hook = std::make_shared<TensorBackwardHook>(tensor_id, hook);
-  MS_EXCEPTION_IF_NULL(meta.lock());
-  // If tensor has register hook before and finish once grad; And then register another hook fn, auto grad meta is not
-  // nullptr and UpdateTensorBackwardHook will not be call at PyNative forward process. so Call it here.
-  UpdateTensorBackwardHook(meta.lock(), tensor->id());
-  meta.lock()->AddBackwardHook(unique_id_, tensor_backward_hook);
-  hook_meta_fn_map_.emplace(unique_id_, std::make_pair(meta, tensor_backward_hook));
+  grad_node->AddBackwardHook(unique_id_, tensor_backward_hook);
+  hook_meta_fn_map_.emplace(unique_id_, std::make_pair(grad_node, tensor_backward_hook));
   tensor_id_with_unique_id_[tensor_id].emplace_back(unique_id_);
-
   if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode) {
     std::shared_ptr<std::map<uint64_t, py::function>> hook_map;
     if (tensor->has_user_data("backward_hook")) {
@@ -72,7 +82,6 @@ uint64_t RegisterHook::RegisterTensorBackwardHook(const tensor::TensorPtr &tenso
       tensor_id_with_hook_map_[tensor_id] = hook_map;
     }
   }
-
   return unique_id_;
 }
 
@@ -118,13 +127,14 @@ void RegisterHook::RemoveTensorBackwardHook(uint64_t handle_id) {
       ++tensor_it;
     }
   }
-  auto meta = it->second.first.lock();
+
+  auto grad_node = it->second.first.lock();
   (void)hook_meta_fn_map_.erase(it);
-  if (meta == nullptr) {
-    MS_LOG(DEBUG) << "Get null meta";
+  if (grad_node == nullptr) {
+    MS_LOG(DEBUG) << "Get null grad node";
     return;
   }
-  meta->RemoveBackwardHook(handle_id);
+  grad_node->RemoveBackwardHook(handle_id);
 }
 
 py::list RegisterHook::GetHooks(const tensor::TensorPtr &tensor) {
@@ -142,25 +152,6 @@ py::list RegisterHook::GetHooks(const tensor::TensorPtr &tensor) {
   }
 
   return hooks;
-}
-
-void RegisterHook::UpdateTensorBackwardHook(const AutoGradMetaDataPtr &auto_grad_meta_data,
-                                            const std::string &tensor_id) {
-  MS_EXCEPTION_IF_NULL(auto_grad_meta_data);
-  const auto &tensor_numerical_id = GetTensorNumId(tensor_id);
-  auto it = tensor_id_with_unique_id_.find(tensor_numerical_id);
-  if (it == tensor_id_with_unique_id_.end()) {
-    return;
-  }
-  MS_LOG(DEBUG) << "Update tensor backward hook for tensor id " << tensor_id;
-  for (uint64_t unique_id : tensor_id_with_unique_id_[tensor_numerical_id]) {
-    auto fn_it = hook_meta_fn_map_.find(unique_id);
-    if (fn_it != hook_meta_fn_map_.end()) {
-      auto_grad_meta_data->AddBackwardHook(unique_id, fn_it->second.second);
-      // Update remove handle auto grad meta
-      hook_meta_fn_map_[unique_id].first = std::weak_ptr<AutoGradMetaData>(auto_grad_meta_data);
-    }
-  }
 }
 
 struct HookAdapterRegister {

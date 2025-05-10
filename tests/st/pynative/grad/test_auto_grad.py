@@ -14,15 +14,13 @@
 # ============================================================================
 """ test_auto_grad """
 
-import os
 import numpy as np
-os.environ['MS_PYNATIVE_CONFIG_STATIC_SHAPE'] = '1'
 import mindspore
 from mindspore.ops import composite as C
 from mindspore import Tensor, Parameter
 from mindspore import nn
 from mindspore import ops
-
+from tests.mark_utils import arg_mark
 
 class MultiInputNet(nn.Cell):
     def construct(self, x, t):
@@ -176,10 +174,6 @@ def test_auto_grad_multi_input():
     grad_net = C.GradOperation(get_all=True)
     grads = grad_net(net)(x, (y, z))
     assert np.allclose(grads[0].asnumpy(), np.array([4], dtype=np.float32), 0.00001, 0.00001)
-    net.set_inputs(Tensor(shape=[None], dtype=mindspore.float32),
-                   (Tensor(shape=[None], dtype=mindspore.float32), Tensor(shape=[None], dtype=mindspore.float32)))
-    grads = grad_net(net)(x, (y, z))
-    assert np.allclose(grads[0].asnumpy(), np.array([4], dtype=np.float32), 0.00001, 0.00001)
 
 
 def test_auto_grad_multi_input_op():
@@ -192,10 +186,6 @@ def test_auto_grad_multi_input_op():
     y = Tensor([2], mindspore.float32)
     net = ConcatNet()
     grad_net = C.GradOperation(get_all=True)
-    grads = grad_net(net)(x, y)
-    assert np.allclose(grads[0].asnumpy(), np.array([1], dtype=np.float32), 0.00001, 0.00001)
-    assert np.allclose(grads[1].asnumpy(), np.array([1], dtype=np.float32), 0.00001, 0.00001)
-    net.set_inputs(Tensor(shape=[None], dtype=mindspore.float32), Tensor(shape=[None], dtype=mindspore.float32))
     grads = grad_net(net)(x, y)
     assert np.allclose(grads[0].asnumpy(), np.array([1], dtype=np.float32), 0.00001, 0.00001)
     assert np.allclose(grads[1].asnumpy(), np.array([1], dtype=np.float32), 0.00001, 0.00001)
@@ -214,10 +204,6 @@ def test_auto_grad_stack_op():
     grads = grad_net(net)(x, y)
     assert np.allclose(grads[0].asnumpy(), np.array([1], dtype=np.float32), 0.00001, 0.00001)
     assert np.allclose(grads[1].asnumpy(), np.array([1], dtype=np.float32), 0.00001, 0.00001)
-    net.set_inputs(Tensor(shape=[None], dtype=mindspore.float32), Tensor(shape=[None], dtype=mindspore.float32))
-    grads = grad_net(net)(x, y)
-    assert np.allclose(grads[0].asnumpy(), np.array([1], dtype=np.float32), 0.00001, 0.00001)
-    assert np.allclose(grads[1].asnumpy(), np.array([1], dtype=np.float32), 0.00001, 0.00001)
 
 
 def test_ir_grad_multi_output():
@@ -228,9 +214,6 @@ def test_ir_grad_multi_output():
     """
     input1 = Tensor(np.arange(9).astype("float32"))
     net = SplitNet()
-    grad = mindspore.grad(net)(input1)
-    assert np.allclose(grad.asnumpy(), np.array([1, 1, 1, 1, 1, 1, 1, 1, 1], dtype=np.float32), 0.00001, 0.00001)
-    net.set_inputs(Tensor(shape=[None], dtype=mindspore.float32))
     grad = mindspore.grad(net)(input1)
     assert np.allclose(grad.asnumpy(), np.array([1, 1, 1, 1, 1, 1, 1, 1, 1], dtype=np.float32), 0.00001, 0.00001)
 
@@ -245,9 +228,6 @@ def test_auto_grad_multi_output_add_gradient():
     net = SplitAddNet()
     grad = mindspore.grad(net)(input1)
     assert np.allclose(grad.asnumpy(), np.array([3, 3, 3, 2, 2, 2, 0, 0, 0], dtype=np.float32), 0.00001, 0.00001)
-    net.set_inputs(Tensor(shape=[None], dtype=mindspore.float32))
-    grad = mindspore.grad(net)(input1)
-    assert np.allclose(grad.asnumpy(), np.array([3, 3, 3, 2, 2, 2, 0, 0, 0], dtype=np.float32), 0.00001, 0.00001)
 
 
 def test_auto_grad_not_register_expander_op():
@@ -258,9 +238,6 @@ def test_auto_grad_not_register_expander_op():
     """
     input1 = Tensor([2], mindspore.float32)
     net = InsertGradientOfNet()
-    grad = mindspore.grad(net)(input1)
-    assert np.allclose(grad.asnumpy(), np.array([32], dtype=np.float32), 0.00001, 0.00001)
-    net.set_inputs(Tensor(shape=[None], dtype=mindspore.float32))
     grad = mindspore.grad(net)(input1)
     assert np.allclose(grad.asnumpy(), np.array([32], dtype=np.float32), 0.00001, 0.00001)
 
@@ -276,9 +253,6 @@ def test_auto_grad_weights_grad():
     grad_net = C.GradOperation(get_all=True, get_by_list=True)
     grads = grad_net(net, [net.p1])(x)
     assert np.allclose(grads[0][0].asnumpy(), np.array([2], dtype=np.float32), 0.00001, 0.00001)
-    net.set_inputs(Tensor(shape=[None], dtype=mindspore.float32))
-    grads = grad_net(net, [net.p1])(x)
-    assert np.allclose(grads[0][0].asnumpy(), np.array([2], dtype=np.float32), 0.00001, 0.00001)
 
 
 def test_auto_grad_single_weight():
@@ -290,9 +264,6 @@ def test_auto_grad_single_weight():
     x = Tensor([1], mindspore.float32)
     net = NormalNet()
     grad_net = C.GradOperation(get_all=True, get_by_list=True)
-    grads = grad_net(net, [net.p1])(x)
-    assert np.allclose(grads[0][0].asnumpy(), np.array([2], dtype=np.float32), 0.00001, 0.00001)
-    net.set_inputs(Tensor(shape=[None], dtype=mindspore.float32))
     grads = grad_net(net, [net.p1])(x)
     assert np.allclose(grads[0][0].asnumpy(), np.array([2], dtype=np.float32), 0.00001, 0.00001)
 
@@ -309,9 +280,6 @@ def test_auto_grad_with_sens():
     grad_net = C.GradOperation(get_all=True, get_by_list=True, sens_param=True)
     grads = grad_net(net, [net.p1])(x, sens)
     assert np.allclose(grads[0][0].asnumpy(), np.array([2], dtype=np.float32), 0.00001, 0.00001)
-    net.set_inputs(Tensor(shape=[None], dtype=mindspore.float32))
-    grads = grad_net(net, [net.p1])(x, sens)
-    assert np.allclose(grads[0][0].asnumpy(), np.array([2], dtype=np.float32), 0.00001, 0.00001)
 
 
 def test_auto_grad_none_inputs_and_weights():
@@ -324,9 +292,6 @@ def test_auto_grad_none_inputs_and_weights():
     y = Tensor([2], mindspore.float32)
     net = NoneTensorInputNet()
     grad_net = C.GradOperation(get_all=True, get_by_list=True)
-    grads = grad_net(net)((x, y))
-    assert len(grads) == 2
-    net.set_inputs(Tensor(shape=[None], dtype=mindspore.float32))
     grads = grad_net(net)((x, y))
     assert len(grads) == 2
     assert not grads[0]
@@ -343,9 +308,6 @@ def test_auto_grad_by_position():
     net = NormalNet()
     _, grad = ops.value_and_grad(net)(x)
     assert np.allclose(grad.asnumpy(), np.array([2], dtype=np.float32), 0.00001, 0.00001)
-    net.set_inputs(Tensor(shape=[None], dtype=mindspore.float32))
-    _, grad = ops.value_and_grad(net)(x)
-    assert np.allclose(grad.asnumpy(), np.array([2], dtype=np.float32), 0.00001, 0.00001)
 
 
 def test_auto_grad_return_param():
@@ -357,9 +319,6 @@ def test_auto_grad_return_param():
     x = Tensor([2], mindspore.float32)
     net = ParamNet()
     grad_net = C.GradOperation(get_all=True, get_by_list=True)
-    grads = grad_net(net)(x)
-    assert np.allclose(grads[1][0].asnumpy(), np.array([1], dtype=np.float32), 0.00001, 0.00001)
-    net.set_inputs(Tensor(shape=[None], dtype=mindspore.float32))
     grads = grad_net(net)(x)
     assert np.allclose(grads[1][0].asnumpy(), np.array([1], dtype=np.float32), 0.00001, 0.00001)
 
@@ -376,10 +335,6 @@ def test_auto_grad_stop_gradient():
     grads = grad_net(net)(x)
     assert np.allclose(grads[0][0].asnumpy(), np.array([0], dtype=np.float32), 0.00001, 0.00001)
     assert np.allclose(grads[1][0].asnumpy(), np.array([4], dtype=np.float32), 0.00001, 0.00001)
-    net.set_inputs(Tensor(shape=[None], dtype=mindspore.float32))
-    grads = grad_net(net)(x)
-    assert np.allclose(grads[0][0].asnumpy(), np.array([0], dtype=np.float32), 0.00001, 0.00001)
-    assert np.allclose(grads[1][0].asnumpy(), np.array([4], dtype=np.float32), 0.00001, 0.00001)
 
 
 def test_auto_grad_bprop_net():
@@ -390,8 +345,5 @@ def test_auto_grad_bprop_net():
     """
     x = Tensor([2], mindspore.float32)
     net = CustomBpropNet()
-    grad = mindspore.grad(net)(x)
-    assert np.allclose(grad.asnumpy(), np.array([8], dtype=np.float32), 0.00001, 0.00001)
-    net.set_inputs(Tensor(shape=[None], dtype=mindspore.float32))
     grad = mindspore.grad(net)(x)
     assert np.allclose(grad.asnumpy(), np.array([8], dtype=np.float32), 0.00001, 0.00001)
