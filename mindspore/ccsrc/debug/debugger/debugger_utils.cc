@@ -58,30 +58,44 @@ using mindspore::TensorInfoForDump;
 inline mindspore::tensor::TensorPtr DeviceAddressTensor(device::DeviceAddressPtr device_tensor, const void *src);
 inline string TensorToString(mindspore::tensor::TensorPtr tensor);
 
-/*
- * Feature group: Dump, Online debugger.
- * Target device group: GPU.
- * Runtime category: MindRT.
- * Description: Returns a vector containing real output number.
- */
-std::vector<size_t> CheckRealOutput(const std::string &node_name, const size_t &output_size) {
-  std::vector<size_t> real_outputs;
-  // P.BatchNorm is used for training and inference
-  // can add the filter list for more operators here....
-  if (node_name == "BatchNorm") {
-    MS_LOG(INFO) << "loading node named " << node_name;
-    (void)real_outputs.insert(real_outputs.cend(), {0, 3, 4});
-  } else if (node_name == "FlashAttentionScore") {
-    MS_LOG(INFO) << "loading node named " << node_name;
-    (void)real_outputs.insert(real_outputs.cend(), {0, 1, 3});
-  } else {
-    // by default, TensorLoader will load all outputs
-    for (size_t j = 0; j < output_size; ++j) {
-      real_outputs.push_back(j);
-    }
+namespace {
+std::vector<size_t> GetIgnoredIndexesForInput(const CNodePtr &cnode, const DeviceContext *device_context) {
+  std::vector<size_t> ignored_indexes;
+  auto kernel_mod = AnfAlgo::GetKernelMod(cnode);
+  if (kernel_mod != nullptr) {
+    MS_EXCEPTION_IF_NULL(device_context);
+    auto kernel_executor = device_context->GetKernelExecutor(false);
+    MS_EXCEPTION_IF_NULL(kernel_executor);
+    ignored_indexes = kernel_executor->GetLaunchIgnoredInputAddressIdx(cnode);
   }
-  return real_outputs;
+  return ignored_indexes;
 }
+
+std::vector<size_t> GetIgnoredIndexesForOutput(const CNodePtr &cnode, const DeviceContext *device_context) {
+  std::vector<size_t> ignored_indexes;
+  auto kernel_mod = AnfAlgo::GetKernelMod(cnode);
+  static string ignore_useless_output_env = common::GetEnv("MINDSPORE_DUMP_IGNORE_USELESS_OUTPUT", "1");
+  static bool warn_once = true;
+  if (warn_once && ignore_useless_output_env != "0" && ignore_useless_output_env != "1") {
+    MS_LOG(WARNING) << "Invalid value for environment variable 'MINDSPORE_DUMP_IGNORE_USELESS_OUTPUT'. "
+                    << "Expected value is either '0' or '1', but got '" << ignore_useless_output_env << "'. "
+                    << "The default value '1' will be used. Please correct the setting to avoid this warning.";
+    warn_once = false;
+  }
+  static bool enable_useless_output = ignore_useless_output_env == "0";
+  static bool log_once = true;
+  if (log_once) {
+    MS_LOG(INFO) << "Useless output dump is " << (enable_useless_output ? "enabled" : "disabled")
+                 << " (MINDSPORE_DUMP_IGNORE_USELESS_OUTPUT=" << ignore_useless_output_env << "). "
+                 << "Invalid outputs will " << (enable_useless_output ? "" : "not ") << "be dumped.";
+    log_once = false;
+  }
+  if (!enable_useless_output && kernel_mod != nullptr) {
+    ignored_indexes = kernel_mod->GetUseLessOutputIdx();
+  }
+  return ignored_indexes;
+}
+};  // namespace
 
 /*
  * Feature group: Dump, Online debugger.
@@ -92,31 +106,15 @@ std::vector<size_t> CheckRealOutput(const std::string &node_name, const size_t &
 std::vector<size_t> GetValidDumpIndex(const CNodePtr &cnode, size_t index_size, bool is_input,
                                       const DeviceContext *device_context, const std::vector<KernelTensor *> &tensors) {
   std::vector<size_t> valid_indexes;
-  std::vector<size_t> temp_indexes;
   valid_indexes.reserve(index_size);
-  temp_indexes.reserve(index_size);
-  if (is_input) {
-    std::vector<size_t> ignored_address;
-    auto kernel_mod = AnfAlgo::GetKernelMod(cnode);
-    if (kernel_mod != nullptr) {
-      MS_EXCEPTION_IF_NULL(device_context);
-      auto kernel_executor = device_context->GetKernelExecutor(false);
-      MS_EXCEPTION_IF_NULL(kernel_executor);
-      ignored_address = kernel_executor->GetLaunchIgnoredInputAddressIdx(cnode);
+  std::vector<size_t> ignored_indexes =
+    is_input ? GetIgnoredIndexesForInput(cnode, device_context) : GetIgnoredIndexesForOutput(cnode, device_context);
+  std::set<size_t> ignored_indexes_set(ignored_indexes.begin(), ignored_indexes.end());
+  for (size_t index = 0; index < index_size; ++index) {
+    if (ignored_indexes_set.find(index) != ignored_indexes_set.end()) {
+      continue;
     }
-    std::set<size_t> ignored_address_set(ignored_address.begin(), ignored_address.end());
-    for (size_t index = 0; index < index_size; ++index) {
-      if (ignored_address_set.find(index) != ignored_address_set.end()) {
-        continue;
-      }
-      temp_indexes.push_back(index);
-    }
-  } else {
-    auto node_name = common::AnfAlgo::GetCNodeName(cnode);
-    temp_indexes = CheckRealOutput(node_name, index_size);
-  }
-  for (size_t index : temp_indexes) {
-    if (tensors.size() > index && tensors[index]->device_ptr() == nullptr) {
+    if (index < tensors.size() && tensors[index]->device_ptr() == nullptr) {
       MS_LOG(INFO) << cnode->fullname_with_scope() << (is_input ? " input" : " output") << ", index " << index
                    << " deviceaddress is nullptr.";
       continue;
