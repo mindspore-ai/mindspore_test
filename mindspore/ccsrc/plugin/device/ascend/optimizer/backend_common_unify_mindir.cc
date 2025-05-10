@@ -58,6 +58,7 @@
 #include "backend/common/pass/ir_fusion/adaptive_max_pool2d_fusion.h"
 #include "backend/common/pass/ir_fusion/flash_attention_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion/grouped_matmul_assignadd_fusion.h"
+#include "plugin/device/ascend/optimizer/ir_fusion/matmul_assignadd_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/add_layer_norm_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion/add_rms_norm_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/rms_norm_quant_fusion.h"
@@ -167,6 +168,7 @@ PassManagerPtr GetBackendFusionGroupPassManager() {
   pm->AddFusionPass(std::make_shared<opt::MatMulAllReduceFusion>());
 #ifdef ENABLE_ATB
   pm->AddFusionPass(std::make_shared<opt::GroupedMatmulAssignaddFusion>(), false);
+  pm->AddFusionPass(std::make_shared<opt::MatmulAssignaddFusion>(), false);
 #endif
 
   auto ms_context = MsContext::GetInstance();
