@@ -13,13 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#include "pybind11/pybind11.h"
-#include "pybind11/stl.h"
+#ifndef MINDSPORE_CCSRC_MS_EXTENSION_ALL_H_
+#define MINDSPORE_CCSRC_MS_EXTENSION_ALL_H_
+#include "ms_extension/api.h"
 
 #include "ir/tensor.h"
 #include "mindspore/ccsrc/frontend/ir/tensor_py.h"
-#include "pynative/grad/function.h"
 
 // pyboost headfiles
 #include "mindspore/ccsrc/pyboost/op_register.h"
@@ -35,12 +34,13 @@
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "kernel/ascend/opapi/aclnn/custom_aclnn_utils.h"
-#include "mindspore/ops/kernel/ascend/pyboost/customize/custom_launch_aclnn.h"
 #endif  // CUSTOM_ASCEND_OP
 
+// The BaseTensor is deprecated
 namespace mindspore {
 namespace tensor {
 using BaseTensor = Tensor;
 using BaseTensorPtr = TensorPtr;
 }  // namespace tensor
 }  // namespace mindspore
+#endif  // MINDSPORE_CCSRC_MS_EXTENSION_ALL_H_

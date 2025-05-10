@@ -55,6 +55,7 @@ install(
     TARGETS mindspore_core mindspore_ops mindspore_common mindspore_ms_backend mindspore_pyboost mindspore_pynative
         mindspore_backend_manager mindspore_res_manager mindspore_frontend mindspore_ops_kernel_common
         mindspore_profiler mindspore_memory_pool mindspore_runtime_pipeline mindspore_dump mindspore_backend_common
+        mindspore_extension
     DESTINATION ${INSTALL_LIB_DIR}
     COMPONENT mindspore
 )
@@ -218,6 +219,11 @@ if(ENABLE_D)
                 DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
                 COMPONENT mindspore
                 NAMELINK_SKIP
+        )
+        install(
+                TARGETS mindspore_extension_ascend_atb ARCHIVE
+                DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
+                COMPONENT mindspore
         )
     endif()
     if(ENABLE_MPI)
@@ -472,8 +478,9 @@ install(DIRECTORY ${CMAKE_SOURCE_DIR}/third_party/securec
     FILES_MATCHING PATTERN "*.h")
 
 ## msextension for custom ops
-install(FILES ${CMAKE_SOURCE_DIR}/mindspore/ops/ops_utils/ms_extension.h
+install(FILES ${CMAKE_SOURCE_DIR}/mindspore/ccsrc/ms_extension/all.h
     DESTINATION ${INSTALL_BASE_DIR}/include
+    RENAME ms_extension.h
     COMPONENT mindspore)
 
 ## third-party header files
