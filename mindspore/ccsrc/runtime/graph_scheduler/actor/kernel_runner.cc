@@ -27,6 +27,7 @@
 #include "runtime/graph_scheduler/actor/recorder_actor.h"
 #include "runtime/graph_scheduler/actor/debug_actor.h"
 #include "runtime/graph_scheduler/execution_order_check/kernel_cache.h"
+#include "runtime/graph_scheduler/graph_capture/graph_capture_manager.h"
 #include "async/async.h"
 #include "utils/log_adapter.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
@@ -774,14 +775,20 @@ void *KernelRunner::GetSomasDevicePtr(size_t offset) const {
 }
 
 void KernelRunner::TraceDynamicMemory() {
+  bool enable_capture_graph = GraphCaptureManager::GetInstance().GetEnableGraphCapture();
   for (size_t i = 0; i < output_kernel_tensors_.size(); i++) {
-    if (output_kernel_tensors_[i]->device_address()->original_ref_count() != SIZE_MAX) {
-      const auto &kernel_tensor = output_kernel_tensors_[i];
-      MemoryTraceManager::GetInstance().AddKernelMemoryTraceBlock(
-        std::make_shared<KernelMemoryTraceBlock>(kernel_, kernel_tensor->device_ptr(), kernel_tensor->size(),
-                                                 kOutputMem, i, kernel_tensor.get()),
-        device_contexts_[0]);
+    const auto &kernel_tensor = output_kernel_tensors_[i];
+    // If enable kernel launch capture, the kernel output as graph output will be captured and can not changed, so need
+    // trace the graph output kernel tensor device address, which device memory will be allocated and released with the
+    // whole graph.
+    if ((is_output_kernel_[i] && !enable_capture_graph) ||
+        kernel_tensor->pointer_ref_count()->new_ref_count() == SIZE_MAX) {
+      continue;
     }
+    MemoryTraceManager::GetInstance().AddKernelMemoryTraceBlock(
+      std::make_shared<KernelMemoryTraceBlock>(kernel_, kernel_tensor->device_ptr(), kernel_tensor->size(), kOutputMem,
+                                               i, kernel_tensor.get()),
+      device_contexts_[0]);
   }
 
   for (size_t i = 0; i < workspace_kernel_tensors_.size(); i++) {
