@@ -83,6 +83,36 @@ parse_augassign_object_map = {
     ast.Mult:       (trope_ns, 'augassign_mul', '*='),
     ast.Div:        (trope_ns, 'augassign_div', '/='),
     ast.FloorDiv:   (trope_ns, 'augassign_floordiv', '//='),
+
+    ast.Mod:        (trope_ns, 'mod', '%'),
+    ast.Pow:        (trope_ns, 'pow', '**'),
+    ast.MatMult:    (trope_ns, 'matmul', '@'),
+    ast.LShift:     (trope_ns, 'lshift', '<<'),
+    ast.RShift:     (trope_ns, 'rshift', '>>'),
+    ast.BitAnd:     (trope_ns, 'and_', '&'),
+    ast.BitOr:      (trope_ns, 'or_', '|'),
+    ast.BitXor:     (trope_ns, 'xor', '^'),
+    ast.UAdd:       (trope_ns, 'pos', '+'),
+    ast.USub:       (trope_ns, 'neg', '-'),
+    ast.Invert:     (trope_ns, 'invert', '~'),
+    ast.Not:        (trope_ns, 'not_', 'not'),
+    ast.Eq:         (trope_ns, 'eq', '=='),
+    ast.NotEq:      (trope_ns, 'ne', '!='),
+    ast.Lt:         (trope_ns, 'lt', '<'),
+    ast.Gt:         (trope_ns, 'gt', '>'),
+    ast.LtE:        (trope_ns, 'le', '<='),
+    ast.GtE:        (trope_ns, 'ge', '>='),
+    ast.Is:         (trope_ns, 'is_', 'is'),
+    ast.IsNot:      (trope_ns, 'is_not', 'is not'),
+    ast.In:         (trope_ns, 'contains', 'in'),
+    ast.NotIn:      (trope_ns, 'not_contains', 'not in'),
+
+    # operation symbol type
+    'getitem':      (composite_ns, 'getitem', ''),
+    'ms_next':      (composite_ns, 'ms_next', ''),
+
+    # undefined type
+    SYMBOL_UNDEFINE: (None, 'undefine', ''),
 }
 
 # Operation symbols corresponding to ast grammar
