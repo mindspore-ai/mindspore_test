@@ -1078,8 +1078,8 @@ void KernelRuntime::AssignStaticMemoryValueNode(const session::KernelGraph &grap
     if (node_value->isa<Tensor>() || node_value->isa<ValueTuple>() || node_value->isa<Scalar>()) {
       AssignValueNodeTensor(value_node, node_value, 0);
     } else if (node_value->isa<StringImm>()) {
-      const bool use_mem_from_memory_pool = ms_context->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_INFER) ||
-                                            ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode;
+      MS_LOG(EXCEPTION) << "KernelRuntime::AssignStaticMemoryValueNode is deprecated.";
+      const bool use_mem_from_memory_pool = ms_context->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_INFER);
       auto address = CreateDeviceAddressForStringValue(node_value, use_mem_from_memory_pool, graph.graph_id());
       MS_EXCEPTION_IF_NULL(address);
       address->set_from_persistent_mem(true);
@@ -1191,17 +1191,17 @@ void KernelRuntime::GenLaunchArgs(const mindspore::kernel::KernelMod &kernel_mod
   }
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  auto skip_nop_node = (ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) != kPynativeMode);
+  MS_LOG(EXCEPTION) << "KernelRuntime::GenLaunchArgs is deprecated.";
   size_t input_num = common::AnfAlgo::GetInputTensorNum(kernel);
   for (size_t i = 0; i < input_num; ++i) {
     auto real_input = AnfAlgo::GetInputGraphIdxByKernelIdx(kernel, i);
-    auto kernel_tensor = AnfAlgo::GetPrevNodeOutputKernelTensor(kernel, real_input, skip_nop_node);
+    auto kernel_tensor = AnfAlgo::GetPrevNodeOutputKernelTensor(kernel, real_input, true);
     MS_EXCEPTION_IF_NULL(kernel_tensor);
     (void)kernel_launch_info->inputs_.emplace_back(kernel_tensor.get());
   }
 
   for (size_t i = 0; i < kernel_mod.GetOutputSizeList().size(); ++i) {
-    auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(kernel, i, skip_nop_node);
+    auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(kernel, i, true);
     MS_EXCEPTION_IF_NULL(kernel_tensor);
     (void)kernel_launch_info->outputs_.emplace_back(kernel_tensor.get());
   }

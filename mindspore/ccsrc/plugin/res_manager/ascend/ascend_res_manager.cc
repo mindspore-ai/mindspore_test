@@ -157,11 +157,7 @@ void SetAscendConfig(const std::shared_ptr<MsContext> &ms_context_ptr, std::map<
   MS_EXCEPTION_IF_NULL(ms_context_ptr);
   MS_EXCEPTION_IF_NULL(ge_options);
 
-  std::string topo_sorting_mode = "0";
-  if (ms_context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
-    topo_sorting_mode = "2";
-  }
-  (*ge_options)["ge.topoSortingMode"] = topo_sorting_mode;
+  (*ge_options)["ge.topoSortingMode"] = "0";
   // disable RemoveSameConstPass, it will be caused the communication failed on multi-card.
   (*ge_options)["ge.disableOptimizations"] = "RemoveSameConstPass";
 

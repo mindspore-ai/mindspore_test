@@ -81,11 +81,6 @@ MS_REG_SESSION(kSessionBasic, SessionBasic);
 
 namespace {
 constexpr int64_t kInvalidShape = -2;
-static bool IsPynativeMode() {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  return ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode;
-}
 
 BaseRef GetNodeOutputTensorFromInputs(const session::KernelWithIndex &node_output_pair, const KernelGraphPtr &graph,
                                       const std::vector<tensor::TensorPtr> &input_tensors) {
@@ -100,9 +95,7 @@ BaseRef GetNodeOutputTensorFromInputs(const session::KernelWithIndex &node_outpu
     MS_EXCEPTION_IF_NULL(value_node);
     return value_node->value();
   }
-  if (IsPynativeMode()) {
-    return nullptr;
-  }
+  MS_LOG(EXCEPTION) << "GetNodeOutputTensorFromInputs is deprecated.";
   if (!node->isa<Parameter>()) {
     return nullptr;
   }
@@ -160,11 +153,11 @@ BaseRef CreateNodeOutputTensor(const session::KernelWithIndex &node_output_pair,
   if (is_internal_output) {
     tensor->set_sync_status(kNoNeedSync);
   } else {
+    MS_LOG(EXCEPTION) << "CreateNodeOutputTensor is deprecated.";
     // if in pynative mode,data only copied to host when user want to print data
     auto ms_context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(ms_context);
-    if (ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) != kPynativeMode &&
-        ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET) != kGPUDevice) {
+    if (ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET) != kGPUDevice) {
       tensor->set_sync_status(kNeedSyncDeviceToHostImmediately);
     } else {
       tensor->set_sync_status(kNeedSyncDeviceToHost);
@@ -1012,8 +1005,8 @@ void SessionBasic::UpdateOutputs(const std::shared_ptr<KernelGraph> &kernel_grap
     auto &node = item.second.first;
     auto &output_index = item.second.second;
     DeviceAddressPtr address = nullptr;
-    if (ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode &&
-        ms_context->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_INFER)) {
+    MS_LOG(EXCEPTION) << "SessionBasic::UpdateOutputs is deprecated.";
+    if (ms_context->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_INFER)) {
       address = AnfAlgo::GetMutableOutputAddr(node, output_index, false);
     } else {
       address = AnfAlgo::GetMutableOutputAddr(node, output_index);
@@ -1026,10 +1019,8 @@ void SessionBasic::UpdateOutputs(const std::shared_ptr<KernelGraph> &kernel_grap
       const auto &updated_shape = common::AnfAlgo::GetOutputInferShape(node, output_index);
       (void)tensor->set_shape(updated_shape);
     }
-    if (ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) != kPynativeMode) {
-      tensor->data_sync(false);
-      tensor->set_sync_status(kNeedSyncHostToDevice);
-    }
+    tensor->data_sync(false);
+    tensor->set_sync_status(kNeedSyncHostToDevice);
   }
 }
 

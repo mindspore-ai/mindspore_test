@@ -150,9 +150,8 @@ void GEBackendOptimizeACLAfterKernelSelect(const KernelGraphPtr &kernel_graph) {
   opt_acl_after_kernel_select_pm->AddPass(std::make_shared<SetFraczGroupAttr>());
   opt_acl_after_kernel_select_pm->AddPass(std::make_shared<InsertIdentity>());
 
-  int execution_mode = context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE);
   // graph_mode process the pass in OptimizeACLGraphAfterCreateKernel
-  if (execution_mode == kPynativeMode) {
+  if (!IsJit()) {
     opt_acl_after_kernel_select_pm->AddPass(std::make_shared<EraseVisitAttr>());
     opt_acl_after_kernel_select_pm->AddPass(std::make_shared<DealRefOutput>());
   }
