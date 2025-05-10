@@ -500,7 +500,7 @@ std::string GetFormatMode() {
     auto ms_context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(ms_context);
     if (ms_context->ascend_soc_version() == "ascend910" && ms_context->get_param<bool>(MS_CTX_IS_MULTI_GRAPH_SINK) &&
-        ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) != kPynativeMode) {
+        IsJit() && ms_context->GetBackend() == kBackendGE) {
       format_mode = "0";
     } else {
       format_mode = "1";

@@ -133,12 +133,9 @@ void GEGraphOptimization::OptimizeACLGraphAfterKernelSelect(const KernelGraphPtr
 }
 
 void GEGraphOptimization::OptimizeACLGraphAfterCreateKernel(const KernelGraphPtr &graph) {
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
   PROF_START(OptimizeACLGraphAfterCreateKernel);
-  int execution_mode = context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE);
   // pynaitve process the pass in GEBackendOptimizeACLAfterKernelSelect
-  if (execution_mode == kPynativeMode) {
+  if (!IsJit()) {
     return;
   }
   MS_EXCEPTION_IF_NULL(graph);

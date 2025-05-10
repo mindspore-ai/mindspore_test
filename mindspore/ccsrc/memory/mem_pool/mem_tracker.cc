@@ -37,12 +37,6 @@ namespace mindspore {
 namespace device {
 namespace tracker {
 namespace {
-bool IsPyNative() {
-  static bool is_pynative = MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode;
-  // PythonStack is no need in graph mode.
-  return is_pynative;
-}
-
 constexpr int64_t kUserTaskNumThreshold = 1e6;
 constexpr size_t kLogThreshold = 10;
 constexpr size_t kLogPersentage = 100;
@@ -52,9 +46,7 @@ void MemoryTrackerEnabled::AddTask(const std::string &task_name, const std::stri
                                    const std::string &graph_name, const bool to_graph, const std::string &file_name,
                                    size_t line_num) {
   std::string python_stack;
-  if (IsPyNative()) {
-    python_stack = GetPythonStackStr();
-  }
+  python_stack = GetPythonStackStr();
 
   std::lock_guard lock(mutex_);
   if (!is_init_enable_hccl_) {

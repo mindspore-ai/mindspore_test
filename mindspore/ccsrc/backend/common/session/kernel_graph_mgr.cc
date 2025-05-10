@@ -3531,12 +3531,6 @@ CNodePtr KernelGraphMgr::ConstructOutput(const AnfNodePtrList &outputs, const st
   auto FindEqu = [graph, outputs, this](const AnfNodePtr &out) -> AnfNodePtr {
     auto backend_anf = graph->GetBackendAnfByFrontAnf(out);
     if (backend_anf != nullptr) {
-      auto context_ptr = MsContext::GetInstance();
-      MS_EXCEPTION_IF_NULL(context_ptr);
-      if (context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
-        return backend_anf;
-      }
-
       MS_EXCEPTION_IF_NULL(out);
       auto out_func_graph = out->func_graph();
       MS_EXCEPTION_IF_NULL(out_func_graph);
@@ -3544,6 +3538,8 @@ CNodePtr KernelGraphMgr::ConstructOutput(const AnfNodePtrList &outputs, const st
       if (out_func_graph_manager == nullptr) {
         return backend_anf;
       }
+      auto context_ptr = MsContext::GetInstance();
+      MS_EXCEPTION_IF_NULL(context_ptr);
       if (!context_ptr->IsKByKExecutorMode()) {
         HandleInternalOutput(out, backend_anf, out_func_graph_manager, graph);
       }

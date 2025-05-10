@@ -303,13 +303,7 @@ void CPUKernelRuntime::BindInputTensorAddressPtr(const session::KernelGraph &ker
     MS_EXCEPTION_IF_NULL(tensor);
     auto context_ptr = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(context_ptr);
-    if (context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
-      auto tensor_address = tensor->device_address();
-      if (common::AnfAlgo::IsParameterWeight(item->cast<ParameterPtr>()) && tensor_address != nullptr &&
-          tensor_address != address) {
-        tensor->data_sync();
-      }
-    }
+    MS_LOG(EXCEPTION) << "CPUKernelRuntime::BindInputTensorAddressPtr is deprecated.";
     if (GetTypeByte(TypeIdToType(tensor->data_type())) == GetTypeByte(TypeIdToType(address->type_id()))) {
       address->SetDevicePtr(tensor->data_c());
     } else {
