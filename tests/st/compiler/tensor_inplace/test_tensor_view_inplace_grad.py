@@ -438,7 +438,6 @@ def test_tensor_view_inplace_grad_check7():
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.skip(reason="No support")
 def test_tensor_view_inplace_grad_check8():
     """
     Feature: view inplace operation in grad.

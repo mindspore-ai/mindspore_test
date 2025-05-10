@@ -32,6 +32,10 @@ namespace mindspore {
 namespace ad {
 namespace {
 constexpr auto kNeedGradFlag = "need_grad";
+constexpr auto kHasViewOutputFlag = "has_view_output";
+constexpr auto kCheckViewInplaceGradFlag = "view_inplace_grad_validate";
+constexpr auto kSetNeedGradFlag = "set_need_grad_flag";
+
 FuncGraphPtr PartialEliminateOptPass(const pipeline::ResourcePtr &resource, const FuncGraphPtr &func_graph) {
   MS_EXCEPTION_IF_NULL(resource);
 
@@ -158,23 +162,37 @@ void AddToManage(const pipeline::ResourceBasePtr &resources, const FuncGraphPtr 
   manager_ptr->AddFuncGraph(func_graph);
 }
 
+void CheckAbstractViewOutput(const AnfNodePtr &node) {
+  const auto &abs = node->abstract();
+  if (abs == nullptr) {
+    return;
+  }
+  bool need_throw_exception = false;
+  auto has_view_output = abs->user_data<bool>(kHasViewOutputFlag);
+  if (has_view_output != nullptr && *has_view_output) {
+    need_throw_exception = true;
+  }
+  if (abs->isa<abstract::AbstractRefTensor>()) {
+    const auto ref = abs->cast<abstract::AbstractRefPtr>();
+    if (ref->is_view_output()) {
+      need_throw_exception = true;
+    }
+  }
+  if (need_throw_exception) {
+    MS_LOG(EXCEPTION) << "The current view inplace differentiation scenario is not supported. "
+                         "The code location is as follows:\n"
+                      << trace::GetDebugInfoStr(node->debug_info());
+  }
+}
+
 void CheckOutputInner(const AnfNodePtr &node) {
-  constexpr auto kCheckViewInplaceGradFlag = "view_inplace_grad_validate";
   auto has_checked = node->user_data<bool>(kCheckViewInplaceGradFlag);
   if (has_checked != nullptr && *has_checked) {
     MS_LOG(DEBUG) << "The node has checked: " << node->DebugString();
     return;
   }
   node->set_user_data<bool>(kCheckViewInplaceGradFlag, std::make_shared<bool>(true));
-  const auto &abs = node->abstract();
-  if (abs != nullptr && abs->isa<abstract::AbstractRefTensor>()) {
-    const auto ref = abs->cast<abstract::AbstractRefPtr>();
-    if (ref->is_view_output()) {
-      MS_LOG(EXCEPTION) << "The current view inplace differentiation scenario is not supported."
-                           "The code location is as follows:\n"
-                        << trace::GetDebugInfoStr(node->debug_info());
-    }
-  }
+  CheckAbstractViewOutput(node);
 
   if (!node->isa<CNode>() || IsPrimitiveCNode(node, prim::kPrimUpdateState)) {
     return;
@@ -295,7 +313,6 @@ void GetNeedGradMapForUpdateStateUseOnlyNodes(const FuncGraphPtr &func_graph,
 }
 
 void SetFlagInner(const AnfNodePtr &node, const std::map<AnfNodePtr, AnfNodePtr> &need_grad_map) {
-  constexpr auto kSetNeedGradFlag = "set_need_grad_flag";
   auto already_set_flag = node->user_data<bool>(kSetNeedGradFlag);
   if (already_set_flag != nullptr && *already_set_flag) {
     MS_LOG(DEBUG) << "The node has checked: " << node->DebugString();

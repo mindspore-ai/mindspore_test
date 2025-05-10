@@ -50,6 +50,7 @@ using MetaFuncGraphPtr = std::shared_ptr<MetaFuncGraph>;
 namespace mindspore {
 
 constexpr auto kDumpIrParallelDetail = "1";
+constexpr auto kHasViewOutputFlag = "has_view_output";
 
 enum FormatLevel : int {
   // When setting to basic level, ir will only contains operator and operands of nodes and title of subgraph with
@@ -325,6 +326,10 @@ void PrintNodeOutputType(std::ostringstream &buffer, const AnfNodePtr &node) {
       ref_key = dyn_cast<StringImm>(map_tensor->ref_key_value());
     }
     sequence_abs = dyn_cast<abstract::AbstractSequence>(abstract);
+    auto has_view_output = abstract->user_data<bool>(kHasViewOutputFlag);
+    if (has_view_output != nullptr && *has_view_output) {
+      buffer << "has_view_output, ";
+    }
   }
 
   abstract::BaseShapePtr shape = dyn_cast<abstract::BaseShape>(node->Shape());

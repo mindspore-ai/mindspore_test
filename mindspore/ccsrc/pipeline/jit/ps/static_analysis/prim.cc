@@ -77,6 +77,23 @@ namespace mindspore {
 using ClassTypePtr = std::shared_ptr<parse::ClassType>;
 namespace abstract {
 using mindspore::parse::PyObjectWrapper;
+constexpr auto kHasViewOutputFlag = "has_view_output";
+
+bool NeedInfectViewOutputFlag(const AbstractBasePtrList &args) {
+  for (const auto &arg : args) {
+    if (arg->isa<abstract::AbstractRefTensor>()) {
+      const auto ref = arg->cast<abstract::AbstractRefPtr>();
+      if (ref->is_view_output()) {
+        return true;
+      }
+    }
+    auto has_view_output_flag = arg->user_data<bool>(kHasViewOutputFlag);
+    if (has_view_output_flag != nullptr && *has_view_output_flag) {
+      return true;
+    }
+  }
+  return false;
+}
 
 namespace {
 mindspore::HashSet<std::string> prims_to_skip_undetermined_infer{kMakeTupleOpName,  kMakeListOpName,   kSwitchOpName,
@@ -837,14 +854,16 @@ AbstractBasePtr UpdateViewOpsAbstract(const AbstractBasePtr &res, const Abstract
   AbstractBasePtr new_input_arg = ConvertTensorToRef(arg0_tensor);
   if (arg0_tensor != nullptr && arg0_tensor->isa<abstract::AbstractRefTensor>()) {
     const auto ref = arg0_tensor->cast<abstract::AbstractRefPtr>();
-    if (new_input_arg->isa<abstract::AbstractRefTensor>()) {
+    if (new_input_arg != nullptr && new_input_arg->isa<abstract::AbstractRefTensor>()) {
       // Keep the original ref_type.
       new_input_arg->cast<AbstractRefPtr>()->set_ref_tensor_type(ref->ref_tensor_type());
-      // Added is_view_input ref_type.
-      new_input_arg->cast<AbstractRefPtr>()->set_is_view_input(true);
     }
   }
   if (new_input_arg != nullptr) {
+    if (new_input_arg->isa<abstract::AbstractRefTensor>()) {
+      // Added is_view_input ref_type.
+      new_input_arg->cast<AbstractRefPtr>()->set_is_view_input(true);
+    }
     args[0]->set_inplace_abstract(new_input_arg);
   }
 
@@ -958,6 +977,10 @@ EvalResultPtr PrimitiveFunctionEvaluator::EvalPrim(const AnalysisEnginePtr &engi
   }
   abs_base = CheckAndInfer(args);
   MS_EXCEPTION_IF_NULL(abs_base);
+  bool need_infect_view_output_flag = NeedInfectViewOutputFlag(args);
+  if (need_infect_view_output_flag) {
+    abs_base->set_user_data<bool>(kHasViewOutputFlag, std::make_shared<bool>(true));
+  }
   prim_func_->EndRecordAddAttr();
   const auto &added_attrs = prim_func_->evaluate_added_attrs();
   return std::make_shared<EvalResult>(abs_base, std::make_shared<AttrValueMap>(added_attrs));
@@ -1001,6 +1024,10 @@ EvalResultPtr StandardPrimEvaluator::EvalPrim(const AnalysisEnginePtr &engine, c
   const auto &inplace_indexes = inplace_input_indexes();
   abs_base = inplace_prim() ? AddRefKeyForArgs(output_abs, args, rw_write_indexes, inplace_indexes) : output_abs;
   MS_EXCEPTION_IF_NULL(abs_base);
+  bool need_infect_view_output_flag = NeedInfectViewOutputFlag(args);
+  if (need_infect_view_output_flag && prim_->name() != "UpdateState") {
+    abs_base->set_user_data<bool>(kHasViewOutputFlag, std::make_shared<bool>(true));
+  }
   prim_->EndRecordAddAttr();
   const auto &added_attrs = prim_->evaluate_added_attrs();
   return std::make_shared<EvalResult>(abs_base, std::make_shared<AttrValueMap>(added_attrs));
