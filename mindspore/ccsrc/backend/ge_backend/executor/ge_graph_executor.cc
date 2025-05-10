@@ -261,9 +261,12 @@ void SetOutput(GeDeviceResManagerPtr res_manager, GeTensor *ge_output, const Anf
   const auto &kernel_tensor = AnfAlgo::GetOutputKernelTensor(output_node, idx, false);
   MS_EXCEPTION_IF_NULL(kernel_tensor);
   kernel_tensor->SetShapeVector(actual_shapes);
-  MS_LOG(INFO) << "[ZeroCopy] Update output " << output_node->DebugString() << " address to "
+  std::ostringstream zerocopy_log;
+  zerocopy_log << "[ZeroCopy] Update output " << output_node->DebugString() << " address to "
                << output_addr->GetMutablePtr() << ", shape:" << actual_shapes
                << ", type: " << TypeIdToString(output_addr->type_id()) << ", format: " << output_addr->format();
+  MS_LOG(DEBUG) << zerocopy_log.str();
+  MS_VLOG(VL_GE_EXECUTOR) << zerocopy_log.str();
 }
 
 void SetDynamicOutputs(const std::vector<KernelWithIndex> &graph_outputs, std::vector<GeTensor> *ge_outputs,
@@ -1265,11 +1268,14 @@ std::vector<GeTensor> GeGraphExecutor::GenerateInputGeTensor(const KernelGraphPt
       GEMemoryAllocator::AllocUnuseInput(kernel_graph, input_node, output_addr, ge_res_manager_);
       node_output_addr = output_addr->GetMutablePtr();
     }
-    MS_LOG(INFO) << "[ZeroCopy] For Graph " << kernel_graph->ToString() << ", update input "
+    std::ostringstream zerocopy_log;
+    zerocopy_log << "[ZeroCopy] For Graph " << kernel_graph->ToString() << ", update input "
                  << GetNodeInfo(iter->second.need_update_input[i].first) << " address to "
                  << output_addr->GetMutablePtr() << ", shape:" << output_kernel_tensor->GetShapeVector()
                  << ", type: " << TypeIdToString(output_addr->type_id()) << ", format: " << output_addr->format()
                  << ", memory size: " << output_addr->GetSize();
+    MS_LOG(DEBUG) << zerocopy_log.str();
+    MS_VLOG(VL_GE_EXECUTOR) << zerocopy_log.str();
     if (node_output_addr != ge_inputs[i].GetData() || output_addr->GetSize() != ge_inputs[i].GetSize()) {
       (void)ge_inputs[i].SetData(static_cast<uint8_t *>(node_output_addr), output_addr->GetSize(), [](void *) {});
     }
@@ -1314,11 +1320,14 @@ std::vector<GeTensor> GeGraphExecutor::GenerateOutputGeTensor(const KernelGraphP
         << "\n Maybe memory is not enough, memory statistics:"
         << device::ascend::AscendMemAdapter::GetInstance()->DevMemStatistics();
     }
-    MS_LOG(INFO) << "[ZeroCopy] For Graph " << kernel_graph->ToString() << ", update output "
+    std::ostringstream zerocopy_log;
+    zerocopy_log << "[ZeroCopy] For Graph " << kernel_graph->ToString() << ", update output "
                  << output_node->DebugString() << " out_idx " << index << " address to "
                  << output_device_addr->GetMutablePtr() << ", shape:" << output_kernel_tensor->GetShapeVector()
                  << ", type: " << TypeIdToString(output_device_addr->type_id())
                  << ", format: " << output_device_addr->format() << ", memory size: " << output_device_addr->GetSize();
+    MS_LOG(DEBUG) << zerocopy_log.str();
+    MS_VLOG(VL_GE_EXECUTOR) << zerocopy_log.str();
     if (node_output_device_addr != ge_outputs[idx].GetData() ||
         output_device_addr->GetSize() != ge_outputs[idx].GetSize()) {
       (void)ge_outputs[idx].SetData(reinterpret_cast<uint8_t *>(node_output_device_addr), output_device_addr->GetSize(),
