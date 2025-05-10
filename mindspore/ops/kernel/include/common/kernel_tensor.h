@@ -139,6 +139,7 @@ class OPS_KERNEL_COMMON_API KernelTensor : public AbstractBase {
 
   std::string PrintInfo() const {
     std::stringstream ofs;
+    ofs << this;
     if (device_address_ != nullptr) {
       return ofs.str() + " device address:" + device_address_->PrintInfo();
     }
