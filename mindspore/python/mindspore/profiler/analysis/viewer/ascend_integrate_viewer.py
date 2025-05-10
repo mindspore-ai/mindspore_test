@@ -25,7 +25,8 @@ from mindspore.profiler.common.log import ProfilerLogger
 class AscendIntegrateViewer(BaseViewer):
     """Ascend integrate viewer"""
 
-    CSV_PREFIX_NAME = ["l2_cache", "api_statistic", "op_statistic", "static_op_mem"]
+    CSV_PREFIX_NAME = ["l2_cache", "api_statistic", "op_statistic", "static_op_mem",
+                       "hbm", "nic", "roce", "pcie", "hccs"]
     AI_CPU_CSV_PATTERN = "aicpu_[0-9]*.csv"
 
     def __init__(self, **kwargs):

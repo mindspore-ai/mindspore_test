@@ -71,6 +71,9 @@ class _ExperimentalConfig:
 
             - ExportType.Text: Export text type data.
             - ExportType.Db: Export db type data.
+        sys_io (bool, optional): (Ascend only) Whether to collect NIC and RoCE data. Default: ``False``.
+        sys_interconnection (bool, optional): (Ascend only) Whether to collect system interconnection data, including
+            HCCS data, PCIe data, and Stars Chip Trans. Default: ``False``.
 
     Raises:
         RuntimeError: When the version of CANN does not match the version of MindSpore,
@@ -139,13 +142,18 @@ class _ExperimentalConfig:
                  l2_cache: bool = False,
                  mstx: bool = False,
                  data_simplification: bool = True,
-                 export_type: list = None):
+                 export_type: list = None,
+                 sys_io: bool = False,
+                 sys_interconnection: bool = False
+                 ):
         self._profiler_level = profiler_level
         self._aic_metrics = aic_metrics
         self._l2_cache = l2_cache
         self._mstx = mstx
         self._data_simplification = data_simplification
         self._export_type = export_type
+        self._sys_io = sys_io
+        self._sys_interconnection = sys_interconnection
 
     @property
     def profiler_level(self) -> ProfilerLevel:
@@ -171,6 +179,14 @@ class _ExperimentalConfig:
     def export_type(self) -> list:
         return self._export_type
 
+    @property
+    def sys_io(self) -> bool:
+        return self._sys_io
+
+    @property
+    def sys_interconnection(self) -> bool:
+        return self._sys_interconnection
+
     # Setters
     @profiler_level.setter
     def profiler_level(self, value: ProfilerLevel):
@@ -195,3 +211,11 @@ class _ExperimentalConfig:
     @export_type.setter
     def export_type(self, value: list):
         self._export_type = value
+
+    @sys_io.setter
+    def sys_io(self, value: bool):
+        self._sys_io = value
+
+    @sys_interconnection.setter
+    def sys_interconnection(self, value: bool):
+        self._sys_interconnection = value

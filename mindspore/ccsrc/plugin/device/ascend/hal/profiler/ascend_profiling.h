@@ -39,6 +39,8 @@ struct AscendProfilerConfig {
   bool l2Cache{false};
   bool hbmDdr{false};
   bool pcie{false};
+  bool sysIo{false};
+  bool sysInterconnection{false};
   bool withStack{false};
   bool mstx{false};
   bool parallelStrategy{false};
@@ -50,16 +52,18 @@ struct AscendProfilerConfig {
   std::string frameworkDataPath;
 
   AscendProfilerConfig() = default;
-  AscendProfilerConfig(uint32_t deviceId, uint32_t rankId, bool profileMemory, bool l2Cache, bool hbmDdr, bool pcie,
-                       bool withStack, bool mstx, bool parallelStrategy, const std::string &profilerLevel,
-                       const std::string &aicoreMetrics, const std::string &outputPath,
-                       const std::string &frameworkDataPath)
+  AscendProfilerConfig(uint32_t deviceId, uint32_t rankId, bool profileMemory, bool l2Cache, bool hbmDdr, bool sysIo,
+                       bool sysInterconnection, bool withStack, bool mstx, bool parallelStrategy, bool pcie,
+                       const std::string &profilerLevel, const std::string &aicoreMetrics,
+                       const std::string &outputPath, const std::string &frameworkDataPath)
       : deviceId(deviceId),
         rankId(rankId),
         profileMemory(profileMemory),
         l2Cache(l2Cache),
         hbmDdr(hbmDdr),
         pcie(pcie),
+        sysIo(sysIo),
+        sysInterconnection(sysInterconnection),
         withStack(withStack),
         mstx(mstx),
         parallelStrategy(parallelStrategy),
@@ -75,6 +79,8 @@ struct AscendProfilerConfig {
     l2Cache = false;
     hbmDdr = false;
     pcie = false;
+    sysIo = false;
+    sysInterconnection = false;
     withStack = false;
     parallelStrategy = false;
     cpuTrace = false;

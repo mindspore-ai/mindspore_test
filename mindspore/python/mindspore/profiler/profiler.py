@@ -838,6 +838,8 @@ class Profile:
             data_simplification=self._experimental_config.data_simplification,
             mstx=self._experimental_config.mstx,
             export_type=self._experimental_config.export_type,
+            sys_io=self._experimental_config.sys_io,
+            sys_interconnection=self._experimental_config.sys_interconnection,
             schedule=self._schedule,
             on_trace_ready=self._on_trace_ready,
         )
