@@ -52,6 +52,7 @@ class BACKEND_EXPORT GraphParameterStore {
     parameter_kernel_tensors_.resize(front_parameter_size);
     heter_kernel_tensors_.resize(front_parameter_size);
     is_dynamic_.resize(front_parameter_size);
+    is_weights_.resize(front_parameter_size, false);
   }
   bool HasHeter(size_t outer_index, size_t inner_index);
   void ResizePosition(size_t outer_index, size_t tuple_unfold_length) {
@@ -238,6 +239,10 @@ class BACKEND_EXPORT GraphParameterStore {
   // Release input data at the end of run graph.
   void ReleaseData();
 
+  void SetPositionWeight(size_t outer_index, bool is_weight);
+  bool GetPositionWeight(size_t outer_index);
+  size_t GetNonWeightParameterNum();
+
   // Insert and refresh ref device tensor when device tensor changed in store.
   void InsertRefDeviceTensors(const DeviceTensorPosition &key, DeviceTensor *value);
   void RefreshRefDeviceTensor(const DeviceTensorPosition &key);
@@ -290,6 +295,9 @@ class BACKEND_EXPORT GraphParameterStore {
   std::map<DeviceTensorPosition, std::pair<TypePtr, KernelWithIndex>> release_data_info_;
 
   std::map<AnfNode *, size_t> front_node_to_index_;
+
+  std::vector<bool> is_weights_;
+  size_t weight_num_{0};
 
   // When front node to index failed, use the map to find real front node.
   std::map<KernelWithIndex, KernelWithIndex> node_to_real_front_node_;
