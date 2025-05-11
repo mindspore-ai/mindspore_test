@@ -25,7 +25,7 @@
 namespace mindspore {
 namespace kernel {
 namespace {
-constexpr size_t kApplyAdamWithAmsgradV2InputsNum = 11;
+constexpr size_t kApplyAdamWithAmsgradV2InputsNum = 12;
 constexpr size_t kApplyAdamWithAmsgradV2OutputsNum = 4;
 }  // namespace
 
@@ -177,6 +177,7 @@ std::vector<std::pair<KernelAttr, ApplyAdamWithAmsgradV2GpuKernelMod::KernelFunc
                                                        .AddInputAttr(kNumberTypeFloat64)
                                                        .AddInputAttr(kNumberTypeFloat64)
                                                        .AddInputAttr(kNumberTypeFloat64)
+                                                       .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                                        .AddOutputAttr(kNumberTypeFloat64)
                                                        .AddOutputAttr(kNumberTypeFloat64)
                                                        .AddOutputAttr(kNumberTypeFloat64)
@@ -198,6 +199,7 @@ std::vector<std::pair<KernelAttr, ApplyAdamWithAmsgradV2GpuKernelMod::KernelFunc
                                                        .AddInputAttr(kNumberTypeFloat32)
                                                        .AddInputAttr(kNumberTypeFloat32)
                                                        .AddInputAttr(kNumberTypeFloat32)
+                                                       .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                                        .AddOutputAttr(kNumberTypeFloat32)
                                                        .AddOutputAttr(kNumberTypeFloat32)
                                                        .AddOutputAttr(kNumberTypeFloat32)
@@ -219,6 +221,7 @@ std::vector<std::pair<KernelAttr, ApplyAdamWithAmsgradV2GpuKernelMod::KernelFunc
                                                        .AddInputAttr(kNumberTypeFloat16)
                                                        .AddInputAttr(kNumberTypeFloat16)
                                                        .AddInputAttr(kNumberTypeFloat16)
+                                                       .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                                        .AddOutputAttr(kNumberTypeFloat16)
                                                        .AddOutputAttr(kNumberTypeFloat16)
                                                        .AddOutputAttr(kNumberTypeFloat16)

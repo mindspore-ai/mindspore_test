@@ -28,7 +28,7 @@ namespace kernel {
 namespace sparse_apply_proximal_gradient_descent_cpu {
 using namespace sparse_optimizer_cpu;
 namespace {
-constexpr size_t kSparseApplyProximalGradientDescentInputsNum = 6;
+constexpr size_t kSparseApplyProximalGradientDescentInputsNum = 7;
 constexpr size_t kSparseApplyProximalGradientDescentOutputsNum = 1;
 
 using KernelRunFunc = SparseApplyProximalGradientDescentCpuKernelMod::KernelRunFunc;
@@ -41,6 +41,7 @@ using KernelRunFunc = SparseApplyProximalGradientDescentCpuKernelMod::KernelRunF
     .AddInputAttr(kNumberType##t4)                                                    \
     .AddInputAttr(kNumberType##t5)                                                    \
     .AddInputAttr(kNumberType##t6)                                                    \
+    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)                                 \
     .AddOutputAttr(kNumberType##t7)
 }  // namespace
 

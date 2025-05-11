@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,22 +14,37 @@
  * limitations under the License.
  */
 
-#include "infer/sparse_apply_proximal_gradient_descent.h"
+#include "infer/ops_func_impl/sparse_apply_proximal_gradient_descent.h"
 
-#include <algorithm>
+#include <memory>
+#include <map>
 #include <set>
+#include <string>
+#include <vector>
 
+#include "abstract/abstract_value.h"
+#include "abstract/dshape.h"
+#include "abstract/ops/op_infer.h"
 #include "abstract/ops/primitive_infer_map.h"
+#include "base/base.h"
+#include "base/float16.h"
+#include "ir/anf.h"
+#include "ir/primitive.h"
+#include "ir/tensor.h"
+#include "mindapi/base/type_id.h"
 #include "mindapi/helper.h"
-#include "mindspore/ops/op_def/nn_optimizer_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "ops/primitive_c.h"
+#include "utils/check_convert_utils.h"
+#include "utils/convert_utils_base.h"
+#include "utils/log_adapter.h"
 
 namespace mindspore {
 namespace ops {
 namespace {
-abstract::ShapePtr SparseApplyProximalGradientDescentInferShape(const PrimitivePtr &primitive,
-                                                                const std::vector<AbstractBasePtr> &input_args) {
+BaseShapePtr SparseApplyProximalGradientDescentInferShape(const PrimitivePtr &primitive,
+                                                          const std::vector<AbstractBasePtr> &input_args) {
   MS_EXCEPTION_IF_NULL(primitive);
   auto prim_name = primitive->name();
   auto var_shape = CheckAndConvertUtils::ConvertShapePtrToShapeMap(input_args[0]->GetShape())[kShape];
@@ -89,13 +104,11 @@ TypePtr SparseApplyProximalGradientDescentInferType(const PrimitivePtr &primitiv
   auto grad_type = input_args[4]->GetType();
   auto indices_type = input_args[5]->GetType();
 
-  std::map<std::string, TypePtr> args;
-  (void)args.emplace("var", var_type);
-  (void)args.emplace("alpha", alpha_type);
-  (void)args.emplace("l1", l1_type);
-  (void)args.emplace("l2", l2_type);
-  (void)args.emplace("grad", grad_type);
-  (void)CheckAndConvertUtils::CheckScalarOrTensorTypesSame(args, common_valid_types, prim_name);
+  (void)CheckAndConvertUtils::CheckTensorTypeValid("var", var_type, common_valid_types, prim_name);
+  (void)CheckAndConvertUtils::CheckTensorTypeValid("alpha", alpha_type, common_valid_types, prim_name);
+  (void)CheckAndConvertUtils::CheckTensorTypeValid("l1", l1_type, common_valid_types, prim_name);
+  (void)CheckAndConvertUtils::CheckTensorTypeValid("l2", l2_type, common_valid_types, prim_name);
+  (void)CheckAndConvertUtils::CheckTensorTypeValid("grad", grad_type, common_valid_types, prim_name);
 
   const std::set<TypePtr> valid_types = {kInt32, kInt64};
   (void)CheckAndConvertUtils::CheckTensorTypeValid("indices", indices_type, valid_types, prim_name);
@@ -103,47 +116,14 @@ TypePtr SparseApplyProximalGradientDescentInferType(const PrimitivePtr &primitiv
 }
 }  // namespace
 
-MIND_API_OPERATOR_IMPL(SparseApplyProximalGradientDescent, BaseOperator);
-void SparseApplyProximalGradientDescent::Init(const bool use_locking) { this->set_use_locking(use_locking); }
-
-void SparseApplyProximalGradientDescent::set_use_locking(const bool use_locking) {
-  (void)this->AddAttr(kUseLocking, api::MakeValue(use_locking));
+BaseShapePtr SparseApplyProximalGradientDescentFuncImpl::InferShape(
+  const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
+  return SparseApplyProximalGradientDescentInferShape(primitive, input_args);
 }
 
-bool SparseApplyProximalGradientDescent::get_use_locking() const {
-  auto value_ptr = GetAttr(kUseLocking);
-  return GetValue<bool>(value_ptr);
+TypePtr SparseApplyProximalGradientDescentFuncImpl::InferType(const PrimitivePtr &primitive,
+                                                              const std::vector<AbstractBasePtr> &input_args) const {
+  return SparseApplyProximalGradientDescentInferType(primitive, input_args);
 }
-
-AbstractBasePtr SparseApplyProximalGradientDescentInfer(const abstract::AnalysisEnginePtr &,
-                                                        const PrimitivePtr &primitive,
-                                                        const std::vector<AbstractBasePtr> &input_args) {
-  MS_EXCEPTION_IF_NULL(primitive);
-  const int Inputs_num = 6;
-  CheckAndConvertUtils::CheckInputArgs(input_args, kEqual, Inputs_num, primitive->name());
-  auto infer_type = SparseApplyProximalGradientDescentInferType(primitive, input_args);
-  auto infer_shape = SparseApplyProximalGradientDescentInferShape(primitive, input_args);
-  return abstract::MakeAbstract(infer_shape, infer_type);
-}
-
-// AG means auto generated
-class OPS_API AGSparseApplyProximalGradientDescentInfer : public abstract::OpInferBase {
- public:
-  BaseShapePtr InferShape(const PrimitivePtr &primitive,
-                          const std::vector<AbstractBasePtr> &input_args) const override {
-    return SparseApplyProximalGradientDescentInferShape(primitive, input_args);
-  }
-
-  TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override {
-    return SparseApplyProximalGradientDescentInferType(primitive, input_args);
-  }
-  AbstractBasePtr InferShapeAndType(const abstract::AnalysisEnginePtr &engine, const PrimitivePtr &primitive,
-                                    const std::vector<AbstractBasePtr> &input_args) const override {
-    return SparseApplyProximalGradientDescentInfer(engine, primitive, input_args);
-  }
-};
-
-REGISTER_PRIMITIVE_OP_INFER_IMPL(SparseApplyProximalGradientDescent, prim::kPrimSparseApplyProximalGradientDescent,
-                                 AGSparseApplyProximalGradientDescentInfer, false);
 }  // namespace ops
 }  // namespace mindspore

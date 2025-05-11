@@ -18,19 +18,20 @@
 #include <algorithm>
 #include <iostream>
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
-#include "mindspore/ops/infer/sparse_apply_momentum.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace kernel {
 namespace {
-constexpr size_t kSparseApplyMomentumInputsNum = 6;
+constexpr size_t kSparseApplyMomentumInputsNum = 8;
 constexpr size_t kVarIndex = 0;
 constexpr size_t kAccIndex = 1;
 constexpr size_t kLrIndex = 2;
 constexpr size_t kGradIndex = 3;
 constexpr size_t kIndicesIndex = 4;
 constexpr size_t kMomentumIndex = 5;
+constexpr size_t kUseLockingIndex = 6;
+constexpr size_t kUseNesterovIndex = 7;
 }  // namespace
 
 bool SparseApplyMomentumGpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
@@ -40,8 +41,6 @@ bool SparseApplyMomentumGpuKernelMod::Init(const std::vector<KernelTensor *> &in
                   << kernel_name_;
     return false;
   }
-
-  use_nesterov_ = GetValue<bool>(primitive_->GetAttr("use_nesterov"));
 
   auto kernel_attr = GetKernelAttrFromTensors(inputs, outputs);
   auto [is_match, index] = MatchKernelAttr(kernel_attr, GetOpSupport());
@@ -61,6 +60,7 @@ bool SparseApplyMomentumGpuKernelMod::Init(const std::vector<KernelTensor *> &in
 
 int SparseApplyMomentumGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
                                             const std::vector<KernelTensor *> &outputs) {
+  use_nesterov_ = inputs[kUseNesterovIndex]->GetValueWithCheck<bool>();
   for (const auto &input : inputs) {
     auto input_shape = input->GetShapeVector();
     if (!IsValidShape(input_shape)) {
@@ -73,7 +73,7 @@ int SparseApplyMomentumGpuKernelMod::Resize(const std::vector<KernelTensor *> &i
   }
 
   if (inputs.size() != kSparseApplyMomentumInputsNum) {
-    MS_LOG(ERROR) << "For '" << kernel_name_ << "' input size must be equal 6 but got " << inputs.size();
+    MS_LOG(ERROR) << "For '" << kernel_name_ << "' input size must be equal 8 but got " << inputs.size();
     return KRET_RESIZE_FAILED;
   }
 
@@ -194,6 +194,8 @@ std::vector<std::pair<KernelAttr, SparseApplyMomentumGpuKernelMod::SparseApplyMo
                                                     .AddInputAttr(kNumberTypeInt8)
                                                     .AddInputAttr(kNumberTypeInt32)
                                                     .AddInputAttr(kNumberTypeInt8)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                                     .AddOutputAttr(kNumberTypeInt8),
                                                   &SparseApplyMomentumGpuKernelMod::LaunchKernel<int8_t, int32_t>},
                                                  {KernelAttr()
@@ -203,6 +205,8 @@ std::vector<std::pair<KernelAttr, SparseApplyMomentumGpuKernelMod::SparseApplyMo
                                                     .AddInputAttr(kNumberTypeInt16)
                                                     .AddInputAttr(kNumberTypeInt32)
                                                     .AddInputAttr(kNumberTypeInt16)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                                     .AddOutputAttr(kNumberTypeInt16),
                                                   &SparseApplyMomentumGpuKernelMod::LaunchKernel<int16_t, int32_t>},
                                                  {KernelAttr()
@@ -212,6 +216,8 @@ std::vector<std::pair<KernelAttr, SparseApplyMomentumGpuKernelMod::SparseApplyMo
                                                     .AddInputAttr(kNumberTypeInt32)
                                                     .AddInputAttr(kNumberTypeInt32)
                                                     .AddInputAttr(kNumberTypeInt32)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                                     .AddOutputAttr(kNumberTypeInt32),
                                                   &SparseApplyMomentumGpuKernelMod::LaunchKernel<int32_t, int32_t>},
                                                  {KernelAttr()
@@ -221,6 +227,8 @@ std::vector<std::pair<KernelAttr, SparseApplyMomentumGpuKernelMod::SparseApplyMo
                                                     .AddInputAttr(kNumberTypeInt64)
                                                     .AddInputAttr(kNumberTypeInt32)
                                                     .AddInputAttr(kNumberTypeInt64)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                                     .AddOutputAttr(kNumberTypeInt64),
                                                   &SparseApplyMomentumGpuKernelMod::LaunchKernel<int64_t, int32_t>},
                                                  {KernelAttr()
@@ -230,6 +238,8 @@ std::vector<std::pair<KernelAttr, SparseApplyMomentumGpuKernelMod::SparseApplyMo
                                                     .AddInputAttr(kNumberTypeUInt8)
                                                     .AddInputAttr(kNumberTypeInt32)
                                                     .AddInputAttr(kNumberTypeUInt8)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                                     .AddOutputAttr(kNumberTypeUInt8),
                                                   &SparseApplyMomentumGpuKernelMod::LaunchKernel<uint8_t, int32_t>},
                                                  {KernelAttr()
@@ -239,6 +249,8 @@ std::vector<std::pair<KernelAttr, SparseApplyMomentumGpuKernelMod::SparseApplyMo
                                                     .AddInputAttr(kNumberTypeUInt16)
                                                     .AddInputAttr(kNumberTypeInt32)
                                                     .AddInputAttr(kNumberTypeUInt16)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                                     .AddOutputAttr(kNumberTypeUInt16),
                                                   &SparseApplyMomentumGpuKernelMod::LaunchKernel<uint16_t, int32_t>},
                                                  {KernelAttr()
@@ -248,6 +260,8 @@ std::vector<std::pair<KernelAttr, SparseApplyMomentumGpuKernelMod::SparseApplyMo
                                                     .AddInputAttr(kNumberTypeUInt32)
                                                     .AddInputAttr(kNumberTypeInt32)
                                                     .AddInputAttr(kNumberTypeUInt32)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                                     .AddOutputAttr(kNumberTypeUInt32),
                                                   &SparseApplyMomentumGpuKernelMod::LaunchKernel<uint32_t, int32_t>},
                                                  {KernelAttr()
@@ -257,6 +271,8 @@ std::vector<std::pair<KernelAttr, SparseApplyMomentumGpuKernelMod::SparseApplyMo
                                                     .AddInputAttr(kNumberTypeUInt64)
                                                     .AddInputAttr(kNumberTypeInt32)
                                                     .AddInputAttr(kNumberTypeUInt64)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                                     .AddOutputAttr(kNumberTypeUInt64),
                                                   &SparseApplyMomentumGpuKernelMod::LaunchKernel<uint64_t, int32_t>},
                                                  {KernelAttr()
@@ -266,6 +282,8 @@ std::vector<std::pair<KernelAttr, SparseApplyMomentumGpuKernelMod::SparseApplyMo
                                                     .AddInputAttr(kNumberTypeInt8)
                                                     .AddInputAttr(kNumberTypeInt64)
                                                     .AddInputAttr(kNumberTypeInt8)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                                     .AddOutputAttr(kNumberTypeInt8),
                                                   &SparseApplyMomentumGpuKernelMod::LaunchKernel<int8_t, int64_t>},
                                                  {KernelAttr()
@@ -275,6 +293,8 @@ std::vector<std::pair<KernelAttr, SparseApplyMomentumGpuKernelMod::SparseApplyMo
                                                     .AddInputAttr(kNumberTypeInt16)
                                                     .AddInputAttr(kNumberTypeInt64)
                                                     .AddInputAttr(kNumberTypeInt16)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                                     .AddOutputAttr(kNumberTypeInt16),
                                                   &SparseApplyMomentumGpuKernelMod::LaunchKernel<int16_t, int64_t>},
                                                  {KernelAttr()
@@ -284,6 +304,8 @@ std::vector<std::pair<KernelAttr, SparseApplyMomentumGpuKernelMod::SparseApplyMo
                                                     .AddInputAttr(kNumberTypeInt32)
                                                     .AddInputAttr(kNumberTypeInt64)
                                                     .AddInputAttr(kNumberTypeInt32)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                                     .AddOutputAttr(kNumberTypeInt32),
                                                   &SparseApplyMomentumGpuKernelMod::LaunchKernel<int32_t, int64_t>},
                                                  {KernelAttr()
@@ -293,6 +315,8 @@ std::vector<std::pair<KernelAttr, SparseApplyMomentumGpuKernelMod::SparseApplyMo
                                                     .AddInputAttr(kNumberTypeInt64)
                                                     .AddInputAttr(kNumberTypeInt64)
                                                     .AddInputAttr(kNumberTypeInt64)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                                     .AddOutputAttr(kNumberTypeInt64),
                                                   &SparseApplyMomentumGpuKernelMod::LaunchKernel<int64_t, int64_t>},
                                                  {KernelAttr()
@@ -302,6 +326,8 @@ std::vector<std::pair<KernelAttr, SparseApplyMomentumGpuKernelMod::SparseApplyMo
                                                     .AddInputAttr(kNumberTypeUInt8)
                                                     .AddInputAttr(kNumberTypeInt64)
                                                     .AddInputAttr(kNumberTypeUInt8)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                                     .AddOutputAttr(kNumberTypeUInt8),
                                                   &SparseApplyMomentumGpuKernelMod::LaunchKernel<uint8_t, int64_t>},
                                                  {KernelAttr()
@@ -311,6 +337,8 @@ std::vector<std::pair<KernelAttr, SparseApplyMomentumGpuKernelMod::SparseApplyMo
                                                     .AddInputAttr(kNumberTypeUInt16)
                                                     .AddInputAttr(kNumberTypeInt64)
                                                     .AddInputAttr(kNumberTypeUInt16)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                                     .AddOutputAttr(kNumberTypeUInt16),
                                                   &SparseApplyMomentumGpuKernelMod::LaunchKernel<uint16_t, int64_t>},
                                                  {KernelAttr()
@@ -320,6 +348,8 @@ std::vector<std::pair<KernelAttr, SparseApplyMomentumGpuKernelMod::SparseApplyMo
                                                     .AddInputAttr(kNumberTypeUInt32)
                                                     .AddInputAttr(kNumberTypeInt64)
                                                     .AddInputAttr(kNumberTypeUInt32)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                                     .AddOutputAttr(kNumberTypeUInt32),
                                                   &SparseApplyMomentumGpuKernelMod::LaunchKernel<uint32_t, int64_t>},
                                                  {KernelAttr()
@@ -329,6 +359,8 @@ std::vector<std::pair<KernelAttr, SparseApplyMomentumGpuKernelMod::SparseApplyMo
                                                     .AddInputAttr(kNumberTypeUInt64)
                                                     .AddInputAttr(kNumberTypeInt64)
                                                     .AddInputAttr(kNumberTypeUInt64)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                                     .AddOutputAttr(kNumberTypeUInt64),
                                                   &SparseApplyMomentumGpuKernelMod::LaunchKernel<uint64_t, int64_t>},
                                                  {KernelAttr()
@@ -338,6 +370,8 @@ std::vector<std::pair<KernelAttr, SparseApplyMomentumGpuKernelMod::SparseApplyMo
                                                     .AddInputAttr(kNumberTypeFloat16)
                                                     .AddInputAttr(kNumberTypeInt32)
                                                     .AddInputAttr(kNumberTypeFloat16)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                                     .AddOutputAttr(kNumberTypeFloat16),
                                                   &SparseApplyMomentumGpuKernelMod::LaunchKernel<half, int32_t>},
                                                  {KernelAttr()
@@ -347,6 +381,8 @@ std::vector<std::pair<KernelAttr, SparseApplyMomentumGpuKernelMod::SparseApplyMo
                                                     .AddInputAttr(kNumberTypeFloat32)
                                                     .AddInputAttr(kNumberTypeInt32)
                                                     .AddInputAttr(kNumberTypeFloat32)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                                     .AddOutputAttr(kNumberTypeFloat32),
                                                   &SparseApplyMomentumGpuKernelMod::LaunchKernel<float, int32_t>},
                                                  {KernelAttr()
@@ -356,6 +392,8 @@ std::vector<std::pair<KernelAttr, SparseApplyMomentumGpuKernelMod::SparseApplyMo
                                                     .AddInputAttr(kNumberTypeFloat64)
                                                     .AddInputAttr(kNumberTypeInt32)
                                                     .AddInputAttr(kNumberTypeFloat64)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                                     .AddOutputAttr(kNumberTypeFloat64),
                                                   &SparseApplyMomentumGpuKernelMod::LaunchKernel<double, int32_t>},
                                                  {KernelAttr()
@@ -365,6 +403,8 @@ std::vector<std::pair<KernelAttr, SparseApplyMomentumGpuKernelMod::SparseApplyMo
                                                     .AddInputAttr(kNumberTypeFloat16)
                                                     .AddInputAttr(kNumberTypeInt64)
                                                     .AddInputAttr(kNumberTypeFloat16)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                                     .AddOutputAttr(kNumberTypeFloat16),
                                                   &SparseApplyMomentumGpuKernelMod::LaunchKernel<half, int64_t>},
                                                  {KernelAttr()
@@ -374,6 +414,8 @@ std::vector<std::pair<KernelAttr, SparseApplyMomentumGpuKernelMod::SparseApplyMo
                                                     .AddInputAttr(kNumberTypeFloat32)
                                                     .AddInputAttr(kNumberTypeInt64)
                                                     .AddInputAttr(kNumberTypeFloat32)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                                     .AddOutputAttr(kNumberTypeFloat32),
                                                   &SparseApplyMomentumGpuKernelMod::LaunchKernel<float, int64_t>},
                                                  {KernelAttr()
@@ -383,6 +425,8 @@ std::vector<std::pair<KernelAttr, SparseApplyMomentumGpuKernelMod::SparseApplyMo
                                                     .AddInputAttr(kNumberTypeFloat64)
                                                     .AddInputAttr(kNumberTypeInt64)
                                                     .AddInputAttr(kNumberTypeFloat64)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+                                                    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                                     .AddOutputAttr(kNumberTypeFloat64),
                                                   &SparseApplyMomentumGpuKernelMod::LaunchKernel<double, int64_t>}};
 

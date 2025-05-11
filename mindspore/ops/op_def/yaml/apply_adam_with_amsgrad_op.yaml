@@ -1,0 +1,54 @@
+#operator apply_adam_with_amsgrad
+apply_adam_with_amsgrad:
+    args:
+        var:
+            dtype: tensor
+        m:
+            dtype: tensor
+        v:
+            dtype: tensor
+        vhat:
+            dtype: tensor
+        beta1_power:
+            dtype: tensor
+            type_cast: float
+        beta2_power:
+            dtype: tensor
+            type_cast: float
+        lr:
+            dtype: tensor
+            type_cast: float
+        grad:
+            dtype: tensor
+        beta1:
+            dtype: float
+            default: 0.9
+            prim_init: True
+        beta2:
+            dtype: float
+            default: 0.999
+            prim_init: True
+        epsilon:
+            dtype: float
+            default: 1e-8
+            prim_init: True
+        use_locking:
+            dtype: bool
+            default: False
+            prim_init: True
+    returns:
+        var:
+            dtype: tensor
+        m:
+            dtype: tensor
+        v:
+            dtype: tensor
+        vhat:
+            dtype: tensor
+    args_signature:
+        rw_write: var, m, v, vhat
+        dtype_group: (var, m, v, vhat, grad), (beta1_power), (beta2_power), (lr)
+    labels:
+        side_effect_mem: True
+    function:
+        disable: True

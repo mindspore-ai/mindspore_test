@@ -49,11 +49,6 @@ GVAR_DEF(PrimitivePtr, kPrimSGD, std::make_shared<Primitive>("SGD"));
 GVAR_DEF(PrimitivePtr, kPrimSparseApplyAdadelta, std::make_shared<Primitive>(kSparseApplyAdadeltaOpName));
 GVAR_DEF(PrimitivePtr, kPrimSparseApplyAdagrad, std::make_shared<Primitive>("SparseApplyAdagrad"));
 GVAR_DEF(PrimitivePtr, kPrimSparseApplyAdagradV2, std::make_shared<Primitive>("SparseApplyAdagradV2"));
-GVAR_DEF(PrimitivePtr, kPrimSparseApplyAdagradDA, std::make_shared<Primitive>(kSparseApplyAdagradDAOpName));
-GVAR_DEF(PrimitivePtr, kPrimSparseApplyMomentum, std::make_shared<Primitive>(kSparseApplyMomentumOpName));
-GVAR_DEF(PrimitivePtr, kPrimSparseApplyProximalGradientDescent,
-         std::make_shared<Primitive>(kSparseApplyProximalGradientDescentOpName));
-GVAR_DEF(PrimitivePtr, kPrimAdam, std::make_shared<Primitive>("Adam"));
 GVAR_DEF(PrimitivePtr, kPrimAdamNoUpdateParam, std::make_shared<Primitive>("AdamNoUpdateParam"));
 GVAR_DEF(PrimitivePtr, kPrimApplyAdaMaxD, std::make_shared<Primitive>("ApplyAdaMaxD"));
 GVAR_DEF(PrimitivePtr, kPrimApplyAdam, std::make_shared<Primitive>("ApplyAdam"));
@@ -71,14 +66,11 @@ GVAR_DEF(PrimitivePtr, kPrimSparseApplyFtrlD, std::make_shared<Primitive>("Spars
 GVAR_DEF(PrimitivePtr, kPrimSparseApplyFtrlV2D, std::make_shared<Primitive>("SparseApplyFtrlV2D"));
 GVAR_DEF(PrimitivePtr, kPrimSparseApplyProximalAdagradD, std::make_shared<Primitive>("SparseApplyProximalAdagradD"));
 GVAR_DEF(PrimitivePtr, kPrimApplyAdagradV2D, std::make_shared<Primitive>("ApplyAdagradV2D"));
-GVAR_DEF(PrimitivePtr, kPrimSparseApplyRMSProp, std::make_shared<Primitive>("SparseApplyRMSProp"));
 GVAR_DEF(PrimitivePtr, kLambApplyOptimizerAssign, std::make_shared<Primitive>("LambApplyOptimizerAssign"));
 GVAR_DEF(PrimitivePtr, kLambApplyWeightAssign, std::make_shared<Primitive>("LambApplyWeightAssign"));
 GVAR_DEF(PrimitivePtr, kPrimApplyAddSignD, std::make_shared<Primitive>("ApplyAddSignD"));
 GVAR_DEF(PrimitivePtr, kPrimApplyAdagradD, std::make_shared<Primitive>("ApplyAdagradD"));
 GVAR_DEF(PrimitivePtr, kPrimApplyAdadeltaD, std::make_shared<Primitive>("ApplyAdadeltaD"));
-GVAR_DEF(PrimitivePtr, kPrimApplyAdamWithAmsgrad, std::make_shared<Primitive>("ApplyAdamWithAmsgrad"));
-GVAR_DEF(PrimitivePtr, kPrimApplyAdamWithAmsgradV2, std::make_shared<Primitive>("ApplyAdamWithAmsgradV2"));
 
 // AdamApplyOne
 GVAR_DEF(PrimitivePtr, kPrimAdamApplyOne, std::make_shared<Primitive>("AdamApplyOne"));

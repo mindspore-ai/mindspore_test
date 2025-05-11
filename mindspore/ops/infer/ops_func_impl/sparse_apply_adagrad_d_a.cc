@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,22 +13,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "infer/sparse_apply_adagrad_da.h"
 
-#include <algorithm>
+#include "infer/ops_func_impl/sparse_apply_adagrad_d_a.h"
+
+#include <memory>
+#include <map>
 #include <set>
+#include <string>
+#include <vector>
 
+#include "abstract/abstract_value.h"
+#include "abstract/dshape.h"
+#include "abstract/ops/op_infer.h"
 #include "abstract/ops/primitive_infer_map.h"
+#include "base/base.h"
+#include "base/float16.h"
+#include "ir/anf.h"
+#include "ir/primitive.h"
+#include "ir/tensor.h"
+#include "mindapi/base/type_id.h"
 #include "mindapi/helper.h"
-#include "mindspore/ops/op_def/nn_optimizer_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "ops/primitive_c.h"
+#include "utils/check_convert_utils.h"
+#include "utils/convert_utils_base.h"
+#include "utils/log_adapter.h"
 
 namespace mindspore {
 namespace ops {
 namespace {
-abstract::ShapePtr SparseApplyAdagradDAInferShape(const PrimitivePtr &primitive,
-                                                  const std::vector<AbstractBasePtr> &input_args) {
+BaseShapePtr SparseApplyAdagradDAInferShape(const PrimitivePtr &primitive,
+                                            const std::vector<AbstractBasePtr> &input_args) {
   MS_EXCEPTION_IF_NULL(primitive);
   auto prim_name = primitive->name();
   auto var_shape = CheckAndConvertUtils::ConvertShapePtrToShapeMap(input_args[0]->GetShape())[kShape];
@@ -118,48 +134,27 @@ TypePtr SparseApplyAdagradDAInferType(const PrimitivePtr &primitive, const std::
   (void)args.emplace("lr", lr);
   (void)args.emplace("l1", l1);
   (void)args.emplace("l2", l2);
-  (void)CheckAndConvertUtils::CheckScalarOrTensorTypesSame(args, common_valid_types, prim_name);
+  (void)CheckAndConvertUtils::CheckTensorTypeSame(args, common_valid_types, prim_name);
 
   const std::set<TypePtr> valids1 = {kInt32, kInt64};
   (void)CheckAndConvertUtils::CheckTensorTypeValid("indices", indices, valids1, prim_name);
-
   std::map<std::string, TypePtr> args_global_step;
   (void)args_global_step.emplace("global_step", global_step);
   const std::set<TypePtr> valids2 = {kInt64};
   (void)CheckAndConvertUtils::CheckScalarOrTensorTypesSame(args_global_step, valids2, prim_name);
+
   return var;
 }
 }  // namespace
 
-AbstractBasePtr SparseApplyAdagradDAInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                          const std::vector<AbstractBasePtr> &input_args) {
-  MS_EXCEPTION_IF_NULL(primitive);
-  const int Inputs_num = 9;
-  CheckAndConvertUtils::CheckInputArgs(input_args, kEqual, Inputs_num, primitive->name());
-  auto infer_type = SparseApplyAdagradDAInferType(primitive, input_args);
-  auto infer_shape = SparseApplyAdagradDAInferShape(primitive, input_args);
-  return abstract::MakeAbstract(infer_shape, infer_type);
+BaseShapePtr SparseApplyAdagradDAFuncImpl::InferShape(const PrimitivePtr &primitive,
+                                                      const std::vector<AbstractBasePtr> &input_args) const {
+  return SparseApplyAdagradDAInferShape(primitive, input_args);
 }
-MIND_API_OPERATOR_IMPL(SparseApplyAdagradDA, BaseOperator);
 
-// AG means auto generated
-class OPS_API AGSparseApplyAdagradDAInfer : public abstract::OpInferBase {
- public:
-  BaseShapePtr InferShape(const PrimitivePtr &primitive,
-                          const std::vector<AbstractBasePtr> &input_args) const override {
-    return SparseApplyAdagradDAInferShape(primitive, input_args);
-  }
-
-  TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override {
-    return SparseApplyAdagradDAInferType(primitive, input_args);
-  }
-  AbstractBasePtr InferShapeAndType(const abstract::AnalysisEnginePtr &engine, const PrimitivePtr &primitive,
-                                    const std::vector<AbstractBasePtr> &input_args) const override {
-    return SparseApplyAdagradDAInfer(engine, primitive, input_args);
-  }
-};
-
-REGISTER_PRIMITIVE_OP_INFER_IMPL(SparseApplyAdagradDA, prim::kPrimSparseApplyAdagradDA, AGSparseApplyAdagradDAInfer,
-                                 false);
+TypePtr SparseApplyAdagradDAFuncImpl::InferType(const PrimitivePtr &primitive,
+                                                const std::vector<AbstractBasePtr> &input_args) const {
+  return SparseApplyAdagradDAInferType(primitive, input_args);
+}
 }  // namespace ops
 }  // namespace mindspore

@@ -65,8 +65,9 @@ INPUT_MAP(ApplyAdamD) = {{1, INPUT_DESC(var)},         {2, INPUT_DESC(m)},      
                          {4, INPUT_DESC(beta1_power)}, {5, INPUT_DESC(beta2_power)}, {6, INPUT_DESC(lr)},
                          {7, INPUT_DESC(beta1)},       {8, INPUT_DESC(beta2)},       {9, INPUT_DESC(epsilon)},
                          {10, INPUT_DESC(grad)}};
-ATTR_MAP(ApplyAdamD) = {{"use_locking", ATTR_DESC(use_locking, AnyTraits<bool>())},
-                        {"use_nesterov", ATTR_DESC(use_nesterov, AnyTraits<bool>())}};
+INPUT_ATTR_MAP(ApplyAdamD) = {{11, ATTR_DESC(use_locking, AnyTraits<bool>())},
+                              {12, ATTR_DESC(use_nesterov, AnyTraits<bool>())}};
+ATTR_MAP(ApplyAdamD) = EMPTY_ATTR_MAP;
 OUTPUT_MAP(ApplyAdamD) = {{0, OUTPUT_DESC(var)}, {1, OUTPUT_DESC(m)}, {2, OUTPUT_DESC(v)}};
 REG_ADPT_DESC(Adam, kNameAdam, ADPT_DESC(ApplyAdamD))
 REG_ADPT_DESC(ApplyAdamD, kNameApplyAdamD, ADPT_DESC(ApplyAdamD))
@@ -262,10 +263,11 @@ OUTPUT_MAP(SparseApplyRMSProp) = {{0, OUTPUT_DESC(var)}};
 // SparseApplyRMSPropD
 INPUT_MAP(SparseApplyRMSPropD) = {{1, INPUT_DESC(var)}, {2, INPUT_DESC(ms)},   {3, INPUT_DESC(mom)},
                                   {4, INPUT_DESC(lr)},  {5, INPUT_DESC(grad)}, {6, INPUT_DESC(indices)}};
-ATTR_MAP(SparseApplyRMSPropD) = {{"use_locking", ATTR_DESC(use_locking, AnyTraits<bool>())},
-                                 {"rho", ATTR_DESC(rho, AnyTraits<float>())},
-                                 {"momentum", ATTR_DESC(momentum, AnyTraits<float>())},
-                                 {"epsilon", ATTR_DESC(epsilon, AnyTraits<float>())}};
+INPUT_ATTR_MAP(SparseApplyRMSPropD) = {{7, ATTR_DESC(rho, AnyTraits<float>())},
+                                       {8, ATTR_DESC(momentum, AnyTraits<float>())},
+                                       {9, ATTR_DESC(epsilon, AnyTraits<float>())},
+                                       {10, ATTR_DESC(use_locking, AnyTraits<bool>())}};
+ATTR_MAP(SparseApplyRMSPropD) = EMPTY_ATTR_MAP;
 OUTPUT_MAP(SparseApplyRMSPropD) = {{0, OUTPUT_DESC(var)}, {1, OUTPUT_DESC(ms)}, {2, OUTPUT_DESC(mom)}};
 REG_ADPT_DESC(SparseApplyRMSPropD, prim::kPrimSparseApplyRMSProp->name(), ADPT_DESC(SparseApplyRMSPropD))
 
@@ -292,8 +294,8 @@ INPUT_MAP(ApplyAdamWithAmsgradV2) = {
   {1, INPUT_DESC(var)},         {2, INPUT_DESC(m)},           {3, INPUT_DESC(v)},    {4, INPUT_DESC(vhat)},
   {5, INPUT_DESC(beta1_power)}, {6, INPUT_DESC(beta2_power)}, {7, INPUT_DESC(lr)},   {8, INPUT_DESC(beta1)},
   {9, INPUT_DESC(beta2)},       {10, INPUT_DESC(epsilon)},    {11, INPUT_DESC(grad)}};
-ATTR_INPUT_MAP(ApplyAdamWithAmsgradV2) = {{"beta1", "beta1"}, {"beta2", "beta2"}, {"epsilon", "epsilon"}};
-ATTR_MAP(ApplyAdamWithAmsgradV2) = {{"use_locking", ATTR_DESC(use_locking, AnyTraits<bool>())}};
+INPUT_ATTR_MAP(ApplyAdamWithAmsgradV2) = {{12, ATTR_DESC(use_locking, AnyTraits<bool>())}};
+ATTR_MAP(ApplyAdamWithAmsgradV2) = EMPTY_ATTR_MAP;
 OUTPUT_MAP(ApplyAdamWithAmsgradV2) = {
   {0, OUTPUT_DESC(var)}, {1, OUTPUT_DESC(m)}, {2, OUTPUT_DESC(v)}, {3, OUTPUT_DESC(vhat)}};
 REG_ADPT_DESC(ApplyAdamWithAmsgradV2, kApplyAdamWithAmsgradV2OpName, ADPT_DESC(ApplyAdamWithAmsgradV2))
@@ -302,13 +304,14 @@ REG_ADPT_DESC(ApplyAdamWithAmsgradV2, kApplyAdamWithAmsgradV2OpName, ADPT_DESC(A
 INPUT_MAP(ApplyAdamWithAmsgradD) = {{1, INPUT_DESC(var)},  {2, INPUT_DESC(m)},           {3, INPUT_DESC(v)},
                                     {4, INPUT_DESC(vhat)}, {5, INPUT_DESC(beta1_power)}, {6, INPUT_DESC(beta2_power)},
                                     {7, INPUT_DESC(lr)},   {8, INPUT_DESC(grad)}};
-ATTR_MAP(ApplyAdamWithAmsgradD) = {{"beta1", ATTR_DESC(beta1, AnyTraits<float>())},
-                                   {"beta2", ATTR_DESC(beta2, AnyTraits<float>())},
-                                   {"epsilon", ATTR_DESC(epsilon, AnyTraits<float>())},
-                                   {"use_locking", ATTR_DESC(use_locking, AnyTraits<bool>())}};
+INPUT_ATTR_MAP(ApplyAdamWithAmsgradD) = {{9, ATTR_DESC(beta1, AnyTraits<float>())},
+                                         {10, ATTR_DESC(beta2, AnyTraits<float>())},
+                                         {11, ATTR_DESC(epsilon, AnyTraits<float>())},
+                                         {12, ATTR_DESC(use_locking, AnyTraits<bool>())}};
+ATTR_MAP(ApplyAdamWithAmsgradD) = EMPTY_ATTR_MAP;
 OUTPUT_MAP(ApplyAdamWithAmsgradD) = {
   {0, OUTPUT_DESC(var)}, {1, OUTPUT_DESC(m)}, {2, OUTPUT_DESC(v)}, {3, OUTPUT_DESC(vhat)}};
-REG_ADPT_DESC(ApplyAdamWithAmsgradD, kApplyAdamWithAmsgradDOpName, ADPT_DESC(ApplyAdamWithAmsgradD));
+REG_ADPT_DESC(ApplyAdamWithAmsgradD, kApplyAdamWithAmsgradDOpName, ADPT_DESC(ApplyAdamWithAmsgradD))
 REG_ADPT_DESC(ApplyAdamWithAmsgrad, kApplyAdamWithAmsgradOpName, ADPT_DESC(ApplyAdamWithAmsgradD))
 
 // ApplyAdagradDA

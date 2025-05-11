@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,28 +14,39 @@
  * limitations under the License.
  */
 
-#include "infer/sparse_apply_r_m_s_prop.h"
+#include "infer/ops_func_impl/sparse_apply_r_m_s_prop.h"
 
-#include <map>
 #include <memory>
+#include <map>
 #include <set>
-#include <utility>
+#include <string>
+#include <vector>
 
+#include "abstract/abstract_value.h"
+#include "abstract/dshape.h"
+#include "abstract/ops/op_infer.h"
 #include "abstract/ops/primitive_infer_map.h"
+#include "base/base.h"
+#include "base/float16.h"
+#include "ir/anf.h"
+#include "ir/primitive.h"
+#include "ir/tensor.h"
+#include "mindapi/base/type_id.h"
 #include "mindapi/helper.h"
-#include "mindspore/ops/op_def/nn_optimizer_ops.h"
-#include "mindspore/ops/op_def/op_name.h"
+#include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/ops_utils/op_utils.h"
+#include "ops/primitive_c.h"
 #include "utils/check_convert_utils.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "utils/convert_utils_base.h"
+#include "utils/log_adapter.h"
 
 namespace mindspore {
 namespace ops {
 namespace {
-abstract::TupleShapePtr SparseApplyRMSPropInferShape(const PrimitivePtr &primitive,
-                                                     const std::vector<AbstractBasePtr> &input_args) {
+BaseShapePtr SparseApplyRMSPropInferShape(const PrimitivePtr &primitive,
+                                          const std::vector<AbstractBasePtr> &input_args) {
   MS_EXCEPTION_IF_NULL(primitive);
   auto prim_name = primitive->name();
-  (void)CheckAndConvertUtils::CheckInteger("input number", SizeToLong(input_args.size()), kEqual, 6, primitive->name());
   for (const auto &item : input_args) {
     MS_EXCEPTION_IF_NULL(item);
   }
@@ -92,7 +103,6 @@ TuplePtr SparseApplyRMSPropInferType(const PrimitivePtr &prim, const std::vector
   MS_EXCEPTION_IF_NULL(prim);
   auto prim_name = prim->name();
 
-  (void)CheckAndConvertUtils::CheckInteger("input number", SizeToLong(input_args.size()), kEqual, 6, prim_name);
   for (const auto &item : input_args) {
     MS_EXCEPTION_IF_NULL(item);
   }
@@ -106,97 +116,29 @@ TuplePtr SparseApplyRMSPropInferType(const PrimitivePtr &prim, const std::vector
   auto lr_type = input_args[kInputIndex3]->GetType();
   auto grad_type = input_args[kInputIndex4]->GetType();
   auto indices_type = input_args[kInputIndex5]->GetType();
+
   const std::set<TypePtr> valid_types = {kFloat16, kFloat32};
+  (void)CheckAndConvertUtils::CheckTensorTypeValid("var", var_type, valid_types, prim_name);
+  (void)CheckAndConvertUtils::CheckTensorTypeValid("ms", ms_type, valid_types, prim_name);
+  (void)CheckAndConvertUtils::CheckTensorTypeValid("mom", mom_type, valid_types, prim_name);
+  (void)CheckAndConvertUtils::CheckTensorTypeValid("grad", grad_type, valid_types, prim_name);
+  (void)CheckAndConvertUtils::CheckTensorTypeValid("lr", lr_type, valid_types, prim_name);
 
-  // Args ms、mom、grad must have the same type as var
-  std::map<std::string, TypePtr> args;
-  (void)args.insert(std::make_pair("var", var_type));
-  (void)args.insert(std::make_pair("ms", ms_type));
-  (void)args.insert(std::make_pair("mom", mom_type));
-  (void)args.insert(std::make_pair("grad", grad_type));
-  (void)CheckAndConvertUtils::CheckTensorTypeSame(args, valid_types, prim_name);
-
-  // Args lr must be a scalar type
-  std::map<std::string, TypePtr> args2;
-  (void)args2.insert(std::make_pair("lr", lr_type));
-  (void)CheckAndConvertUtils::CheckScalarOrTensorTypesSame(args2, valid_types, prim_name);
-
-  // Check indices type
-  std::map<std::string, TypePtr> args3;
-  (void)args3.insert(std::make_pair("indices", indices_type));
   const std::set<TypePtr> valid_types1 = {kInt32, kInt64};
-  (void)CheckAndConvertUtils::CheckScalarOrTensorTypesSame(args3, valid_types1, prim_name);
+  (void)CheckAndConvertUtils::CheckTensorTypeValid("indices", indices_type, valid_types1, prim_name);
 
   return std::make_shared<Tuple>(std::vector<TypePtr>{var_type, ms_type, mom_type});
 }
 }  // namespace
 
-// SparseApplyRMSProp Rho getter method
-float SparseApplyRMSProp::get_rho() const {
-  auto value_ptr = this->GetAttr(kRho);
-  return GetValue<float>(value_ptr);
+BaseShapePtr SparseApplyRMSPropFuncImpl::InferShape(const PrimitivePtr &primitive,
+                                                    const std::vector<AbstractBasePtr> &input_args) const {
+  return SparseApplyRMSPropInferShape(primitive, input_args);
 }
 
-// SparseApplyRMSProp Rho setter method
-void SparseApplyRMSProp::set_rho(const float rho) { (void)this->AddAttr(kRho, api::MakeValue(rho)); }
-
-// SparseApplyRMSProp Momentum getter method
-float SparseApplyRMSProp::get_momentum() const {
-  auto value_ptr = this->GetAttr(kMomentum);
-  return GetValue<float>(value_ptr);
+TypePtr SparseApplyRMSPropFuncImpl::InferType(const PrimitivePtr &primitive,
+                                              const std::vector<AbstractBasePtr> &input_args) const {
+  return SparseApplyRMSPropInferType(primitive, input_args);
 }
-
-// SparseApplyRMSProp Momentum setter method
-void SparseApplyRMSProp::set_momentum(const float momentum) {
-  (void)this->AddAttr(kMomentum, api::MakeValue(momentum));
-}
-
-// SparseApplyRMSProp Epsilon getter method
-float SparseApplyRMSProp::get_epsilon() const {
-  auto value_ptr = this->GetAttr(kEpsilon);
-  return GetValue<float>(value_ptr);
-}
-
-// SparseApplyRMSProp Epsilon setter method
-void SparseApplyRMSProp::set_epsilon(const float epsilon) { (void)this->AddAttr(kEpsilon, api::MakeValue(epsilon)); }
-
-// SparseApplyRMSProp Use_Locking getz`ter method
-bool SparseApplyRMSProp::get_use_locking() const {
-  auto value_ptr = this->GetAttr(kUseLocking);
-  return GetValue<bool>(value_ptr);
-}
-
-// SparseApplyRMSProp Use_Locking setter method
-void SparseApplyRMSProp::set_use_locking(const bool use_locking) {
-  (void)this->AddAttr(kUseLocking, api::MakeValue(use_locking));
-}
-
-MIND_API_OPERATOR_IMPL(SparseApplyRMSProp, BaseOperator);
-AbstractBasePtr SparseApplyRMSPropInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                        const std::vector<AbstractBasePtr> &input_args) {
-  MS_EXCEPTION_IF_NULL(primitive);
-  auto infer_type = SparseApplyRMSPropInferType(primitive, input_args);
-  auto infer_shape = SparseApplyRMSPropInferShape(primitive, input_args);
-  return abstract::MakeAbstract(infer_shape, infer_type);
-}
-
-// AG means auto generated
-class OPS_API AGSparseApplyRMSPropInfer : public abstract::OpInferBase {
- public:
-  BaseShapePtr InferShape(const PrimitivePtr &primitive,
-                          const std::vector<AbstractBasePtr> &input_args) const override {
-    return SparseApplyRMSPropInferShape(primitive, input_args);
-  }
-
-  TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override {
-    return SparseApplyRMSPropInferType(primitive, input_args);
-  }
-  AbstractBasePtr InferShapeAndType(const abstract::AnalysisEnginePtr &engine, const PrimitivePtr &primitive,
-                                    const std::vector<AbstractBasePtr> &input_args) const override {
-    return SparseApplyRMSPropInfer(engine, primitive, input_args);
-  }
-};
-
-REGISTER_PRIMITIVE_OP_INFER_IMPL(SparseApplyRMSProp, prim::kPrimSparseApplyRMSProp, AGSparseApplyRMSPropInfer, false);
 }  // namespace ops
 }  // namespace mindspore

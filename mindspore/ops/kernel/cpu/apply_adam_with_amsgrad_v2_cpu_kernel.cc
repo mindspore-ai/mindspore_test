@@ -22,7 +22,7 @@
 #include "kernel/cpu/apply_adam_with_amsgrad_v2_cpu_kernel.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "kernel/cpu/nnacl/fp32/adam_fp32.h"
-#include "mindspore/ops/infer/apply_adam_with_amsgradv2.h"
+#include "mindspore/ops/infer/ops_func_impl/apply_adam_with_amsgrad_v2.h"
 #include "utils/ms_utils.h"
 #include "ops_utils/op_utils.h"
 
@@ -30,7 +30,7 @@ namespace mindspore {
 namespace kernel {
 namespace apply_adam_with_amsgrad_v2_cpu {
 namespace {
-constexpr size_t kApplyAdamWithAmsgradV2InputsNum = 11;
+constexpr size_t kApplyAdamWithAmsgradV2InputsNum = 12;
 constexpr size_t kApplyAdamWithAmsgradV2OutputsNum = 4;
 constexpr size_t kScalarIndex = 0;
 }  // namespace
@@ -203,6 +203,7 @@ std::vector<KernelAttr> ApplyAdamWithAmsgradV2CpuKernelMod::GetOpSupport() {
                                                    .AddInputAttr(kNumberTypeFloat64)
                                                    .AddInputAttr(kNumberTypeFloat64)
                                                    .AddInputAttr(kNumberTypeFloat64)
+                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                                    .AddOutputAttr(kNumberTypeFloat64)
                                                    .AddOutputAttr(kNumberTypeFloat64)
                                                    .AddOutputAttr(kNumberTypeFloat64)
@@ -223,6 +224,7 @@ std::vector<KernelAttr> ApplyAdamWithAmsgradV2CpuKernelMod::GetOpSupport() {
                                                    .AddInputAttr(kNumberTypeFloat32)
                                                    .AddInputAttr(kNumberTypeFloat32)
                                                    .AddInputAttr(kNumberTypeFloat32)
+                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                                    .AddOutputAttr(kNumberTypeFloat32)
                                                    .AddOutputAttr(kNumberTypeFloat32)
                                                    .AddOutputAttr(kNumberTypeFloat32)
@@ -243,6 +245,7 @@ std::vector<KernelAttr> ApplyAdamWithAmsgradV2CpuKernelMod::GetOpSupport() {
                                                    .AddInputAttr(kNumberTypeFloat16)
                                                    .AddInputAttr(kNumberTypeFloat16)
                                                    .AddInputAttr(kNumberTypeFloat16)
+                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
                                                    .AddOutputAttr(kNumberTypeFloat16)
                                                    .AddOutputAttr(kNumberTypeFloat16)
                                                    .AddOutputAttr(kNumberTypeFloat16)

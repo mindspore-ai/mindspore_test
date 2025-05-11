@@ -1,0 +1,41 @@
+#operator sparse_apply_r_m_s_prop
+sparse_apply_r_m_s_prop:
+    args:
+        var:
+            dtype: tensor
+        ms:
+            dtype: tensor
+        mom:
+            dtype: tensor
+        lr:
+            dtype: tensor
+            type_cast: number
+        grad:
+            dtype: tensor
+        indices:
+            dtype: tensor
+        rho:
+            dtype: float
+            prim_init: True
+        momentum:
+            dtype: float
+            prim_init: True
+        epsilon:
+            dtype: float
+            prim_init: True
+        use_locking:
+            dtype: bool
+            default: False
+            prim_init: True
+    returns:
+        var:
+            dtype: tensor
+        ms:
+            dtype: tensor
+        mom:
+            dtype: tensor
+    args_signature:
+        rw_write: var, ms, mom
+        dtype_group: (var, ms, mom, grad), (lr), (indices)
+    function:
+        disable: True

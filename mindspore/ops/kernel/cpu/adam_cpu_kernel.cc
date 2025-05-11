@@ -15,7 +15,7 @@
  */
 #include <algorithm>
 #include <functional>
-#include "mindspore/ops/infer/adam.h"
+
 #include "kernel/cpu/adam_cpu_kernel.h"
 #include "kernel/cpu/nnacl/errorcode.h"
 #include "kernel/cpu/nnacl/fp32/adam_fp32.h"
@@ -26,7 +26,7 @@ namespace mindspore {
 namespace kernel {
 namespace adam_cpu {
 namespace {
-constexpr size_t kAdamInputsNum = 10;
+constexpr size_t kAdamInputsNum = 12;
 constexpr size_t kAdamOutputsNum = 3;
 constexpr size_t kScalarIndex = 0;
 constexpr size_t kIndexVar = 0;
@@ -39,6 +39,8 @@ constexpr size_t kIndexBeta1 = 6;
 constexpr size_t kIndexBeta2 = 7;
 constexpr size_t kIndexEpsilon = 8;
 constexpr size_t kIndexGrad = 9;
+constexpr size_t kIndexUseLocking = 10;
+constexpr size_t kIndexUseNesterov = 11;
 constexpr float kAdamBlock = 1000;
 }  // namespace
 
@@ -114,13 +116,6 @@ void AdamCpuKernelMod::LaunchAdamNnacl(const std::vector<kernel::KernelTensor *>
 }
 
 bool AdamCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
-  if (primitive_->HasAttr("use_locking")) {
-    use_locking_ = GetValue<bool>(primitive_->GetAttr("use_locking"));
-  }
-  if (primitive_->HasAttr("use_nesterov")) {
-    use_nesterov_ = GetValue<bool>(primitive_->GetAttr("use_nesterov"));
-  }
-
   dtype_ = inputs.at(kIndex0)->dtype_id();
   batch_rank_ = ops::get_batch_rank(primitive_);
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kAdamInputsNum, kernel_name_);
@@ -136,6 +131,8 @@ bool AdamCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std
 }
 
 int AdamCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
+  use_locking_ = inputs[kIndexUseLocking]->GetValueWithCheck<bool>();
+  use_nesterov_ = inputs[kIndexUseNesterov]->GetValueWithCheck<bool>();
   int ret = KernelMod::Resize(inputs, outputs);
   if (ret != 0) {
     return ret;
@@ -220,6 +217,8 @@ std::vector<std::pair<KernelAttr, AdamCpuKernelMod::AdamFunc>> AdamCpuKernelMod:
      .AddInputAttr(kNumberTypeFloat32)
      .AddInputAttr(kNumberTypeFloat32)
      .AddInputAttr(kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
      .AddOutputAttr(kNumberTypeFloat32)
      .AddOutputAttr(kNumberTypeFloat32)
      .AddOutputAttr(kNumberTypeFloat32),

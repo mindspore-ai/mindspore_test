@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2023 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,38 +14,37 @@
  * limitations under the License.
  */
 
-#include "infer/apply_adam_with_amsgrad.h"
+#include "infer/ops_func_impl/apply_adam_with_amsgrad.h"
 
+#include <memory>
 #include <map>
 #include <set>
 #include <string>
-#include <utility>
+#include <vector>
 
 #include "abstract/abstract_value.h"
 #include "abstract/dshape.h"
 #include "abstract/ops/op_infer.h"
 #include "abstract/ops/primitive_infer_map.h"
-#include "abstract/utils.h"
 #include "base/base.h"
+#include "base/float16.h"
 #include "ir/anf.h"
-#include "ir/dtype/container.h"
-#include "ir/dtype/number.h"
 #include "ir/primitive.h"
-#include "mindapi/base/shared_ptr.h"
-#include "mindapi/ir/value.h"
+#include "ir/tensor.h"
+#include "mindapi/base/type_id.h"
 #include "mindapi/helper.h"
-#include "mindspore/ops/op_def/nn_optimizer_ops.h"
-#include "mindspore/ops/op_def/op_name.h"
+#include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/ops_utils/op_utils.h"
 #include "ops/primitive_c.h"
 #include "utils/check_convert_utils.h"
+#include "utils/convert_utils_base.h"
 #include "utils/log_adapter.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 
 namespace mindspore {
 namespace ops {
 namespace {
-abstract::TupleShapePtr ApplyAdamWithAmsgradInferShape(const PrimitivePtr &primitive,
-                                                       const std::vector<AbstractBasePtr> &input_args) {
+BaseShapePtr ApplyAdamWithAmsgradInferShape(const PrimitivePtr &primitive,
+                                            const std::vector<AbstractBasePtr> &input_args) {
   for (const auto &item : input_args) {
     MS_EXCEPTION_IF_NULL(item);
   }
@@ -107,80 +106,27 @@ TuplePtr ApplyAdamWithAmsgradInferType(const PrimitivePtr &prim, const std::vect
   auto grad_type = input_args[7]->GetType();
   const std::set<TypePtr> valid_types = {kFloat16, kFloat32};
   // var, m, v, vhat, grad valid and must has the same type
-  std::map<std::string, TypePtr> args;
-  (void)args.insert(std::make_pair("var_type", var_type));
-  (void)args.insert(std::make_pair("m_type", m_type));
-  (void)args.insert(std::make_pair("v_type", v_type));
-  (void)args.insert(std::make_pair("vhat_type", vhat_type));
-  (void)args.insert(std::make_pair("grad_type", grad_type));
-  (void)CheckAndConvertUtils::CheckTensorTypeSame(args, valid_types, prim_name);
-  // beta1_power, beta2_power, lr type valid
+  (void)CheckAndConvertUtils::CheckTensorTypeValid("var_type", var_type, valid_types, prim_name);
+  (void)CheckAndConvertUtils::CheckTensorTypeValid("m_type", m_type, valid_types, prim_name);
+  (void)CheckAndConvertUtils::CheckTensorTypeValid("v_type", v_type, valid_types, prim_name);
+  (void)CheckAndConvertUtils::CheckTensorTypeValid("vhat_type", vhat_type, valid_types, prim_name);
+  (void)CheckAndConvertUtils::CheckTensorTypeValid("grad_type", grad_type, valid_types, prim_name);
   (void)CheckAndConvertUtils::CheckTensorTypeValid("beta1_power_type", beta1_power_type, valid_types, prim_name);
   (void)CheckAndConvertUtils::CheckTensorTypeValid("beta2_power_type", beta2_power_type, valid_types, prim_name);
   (void)CheckAndConvertUtils::CheckTensorTypeValid("lr_type", lr_type, valid_types, prim_name);
+
   return std::make_shared<Tuple>(std::vector<TypePtr>{var_type, m_type, v_type, vhat_type});
 }
 }  // namespace
 
-void ApplyAdamWithAmsgrad::set_beta1(const float beta1) { (void)this->AddAttr(kBeta1, api::MakeValue(beta1)); }
-
-void ApplyAdamWithAmsgrad::set_beta2(const float beta2) { (void)this->AddAttr(kBeta2, api::MakeValue(beta2)); }
-
-void ApplyAdamWithAmsgrad::set_epsilon(const float epsilon) { (void)this->AddAttr(kEpsilon, api::MakeValue(epsilon)); }
-
-void ApplyAdamWithAmsgrad::set_use_locking(const bool use_locking) {
-  (void)this->AddAttr(kUseLocking, api::MakeValue(use_locking));
+BaseShapePtr ApplyAdamWithAmsgradFuncImpl::InferShape(const PrimitivePtr &primitive,
+                                                      const std::vector<AbstractBasePtr> &input_args) const {
+  return ApplyAdamWithAmsgradInferShape(primitive, input_args);
 }
 
-float ApplyAdamWithAmsgrad::get_beta1() const {
-  auto value_ptr = this->GetAttr(kBeta1);
-  return GetValue<float>(value_ptr);
+TypePtr ApplyAdamWithAmsgradFuncImpl::InferType(const PrimitivePtr &primitive,
+                                                const std::vector<AbstractBasePtr> &input_args) const {
+  return ApplyAdamWithAmsgradInferType(primitive, input_args);
 }
-
-float ApplyAdamWithAmsgrad::get_beta2() const {
-  auto value_ptr = this->GetAttr(kBeta2);
-  return GetValue<float>(value_ptr);
-}
-
-float ApplyAdamWithAmsgrad::get_epsilon() const {
-  auto value_ptr = this->GetAttr(kEpsilon);
-  return GetValue<float>(value_ptr);
-}
-
-bool ApplyAdamWithAmsgrad::get_use_locking() const {
-  auto value_ptr = this->GetAttr(kUseLocking);
-  return GetValue<bool>(value_ptr);
-}
-
-MIND_API_OPERATOR_IMPL(ApplyAdamWithAmsgrad, BaseOperator);
-AbstractBasePtr ApplyAdamWithAmsgradInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                          const std::vector<AbstractBasePtr> &input_args) {
-  MS_EXCEPTION_IF_NULL(primitive);
-  const int64_t input_num = 8;
-  CheckAndConvertUtils::CheckInputArgs(input_args, kGreaterEqual, input_num, primitive->name());
-  auto infer_type = ApplyAdamWithAmsgradInferType(primitive, input_args);
-  auto infer_shape = ApplyAdamWithAmsgradInferShape(primitive, input_args);
-  return abstract::MakeAbstract(infer_shape, infer_type);
-}
-
-// AG means auto generated
-class OPS_API AGApplyAdamWithAmsgradInfer : public abstract::OpInferBase {
- public:
-  BaseShapePtr InferShape(const PrimitivePtr &primitive,
-                          const std::vector<AbstractBasePtr> &input_args) const override {
-    return ApplyAdamWithAmsgradInferShape(primitive, input_args);
-  }
-
-  TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override {
-    return ApplyAdamWithAmsgradInferType(primitive, input_args);
-  }
-  AbstractBasePtr InferShapeAndType(const abstract::AnalysisEnginePtr &engine, const PrimitivePtr &primitive,
-                                    const std::vector<AbstractBasePtr> &input_args) const override {
-    return ApplyAdamWithAmsgradInfer(engine, primitive, input_args);
-  }
-};
-
-REGISTER_PRIMITIVE_OP_INFER_IMPL(ApplyAdamWithAmsgrad, prim::kPrimApplyAdamWithAmsgrad, AGApplyAdamWithAmsgradInfer,
-                                 false);
 }  // namespace ops
 }  // namespace mindspore

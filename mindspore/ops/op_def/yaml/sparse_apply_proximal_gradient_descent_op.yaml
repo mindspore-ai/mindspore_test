@@ -1,0 +1,30 @@
+#operator sparse_apply_proximal_gradient_descent
+sparse_apply_proximal_gradient_descent:
+    args:
+        var:
+            dtype: tensor
+        alpha:
+            dtype: tensor
+            type_cast: number
+        l1:
+            dtype: tensor
+            type_cast: number
+        l2:
+            dtype: tensor
+            type_cast: number
+        grad:
+            dtype: tensor
+        indices:
+            dtype: tensor
+        use_locking:
+            dtype: bool
+            default: False
+            prim_init: True
+    returns:
+        var:
+            dtype: tensor
+    args_signature:
+        rw_write: var
+        dtype_group: (var, alpha, l1, l2, grad), (indices)
+    function:
+        disable: True

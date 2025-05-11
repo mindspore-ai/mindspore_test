@@ -16,15 +16,17 @@
 #include "kernel/gpu/nn/sparse_apply_r_m_s_prop_gpu_kernel.h"
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
 #include "common/common_utils.h"
-#include "mindspore/ops/infer/sparse_apply_r_m_s_prop.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace kernel {
 namespace {
-constexpr size_t kSparseApplyRMSPropInputsNum = 6;
+constexpr size_t kSparseApplyRMSPropInputsNum = 10;
 constexpr size_t kSparseApplyRMSPropOutputsNum = 3;
 constexpr size_t kIndicesDim = 1;
+constexpr size_t kIndexRho = 6;
+constexpr size_t kIndexMomentum = 7;
+constexpr size_t kIndexEpsilon = 8;
 using KernelRunFunc = SparseApplyRMSPropGpuKernelMod::KernelRunFunc;
 }  // namespace
 
@@ -128,26 +130,6 @@ bool SparseApplyRMSPropGpuKernelMod::Init(const std::vector<KernelTensor *> &inp
     return false;
   }
 
-  rho_ = GetValue<float>(primitive_->GetAttr("rho"));
-  if (rho_ > 1 || rho_ < 0) {
-    MS_EXCEPTION(ValueError) << "For '" << kernel_name_
-                             << "', the argument rho should be between 0 and 1, but got the value of rho: " << rho_;
-    return false;
-  }
-  momentum_ = GetValue<float>(primitive_->GetAttr("momentum"));
-  if (momentum_ < 0) {
-    MS_EXCEPTION(ValueError) << "For '" << kernel_name_
-                             << "', the argument momentum should be no less than 0, but got the value of momentum: "
-                             << momentum_;
-    return false;
-  }
-  epsilon_ = GetValue<float>(primitive_->GetAttr("epsilon"));
-  if (epsilon_ <= 0) {
-    MS_EXCEPTION(ValueError) << "For '" << kernel_name_
-                             << "', the argument momentum should be greater than 0, but got the value of epsilon: "
-                             << epsilon_;
-    return false;
-  }
   return MatchKernelFunc(kernel_name_, inputs, outputs);
 }
 
@@ -155,6 +137,26 @@ int SparseApplyRMSPropGpuKernelMod::Resize(const std::vector<KernelTensor *> &in
                                            const std::vector<KernelTensor *> &outputs) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kSparseApplyRMSPropInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kSparseApplyRMSPropOutputsNum, kernel_name_);
+  rho_ = inputs[kIndexRho]->GetValueWithCheck<pyfloat>();
+  if (rho_ > 1 || rho_ < 0) {
+    MS_EXCEPTION(ValueError) << "For '" << kernel_name_
+                             << "', the argument rho should be between 0 and 1, but got the value of rho: " << rho_;
+    return KRET_RESIZE_FAILED;
+  }
+  momentum_ = inputs[kIndexMomentum]->GetValueWithCheck<pyfloat>();
+  if (momentum_ < 0) {
+    MS_EXCEPTION(ValueError) << "For '" << kernel_name_
+                             << "', the argument momentum should be no less than 0, but got the value of momentum: "
+                             << momentum_;
+    return KRET_RESIZE_FAILED;
+  }
+  epsilon_ = inputs[kIndexEpsilon]->GetValueWithCheck<pyfloat>();
+  if (epsilon_ <= 0) {
+    MS_EXCEPTION(ValueError) << "For '" << kernel_name_
+                             << "', the argument epsilon should be greater than 0, but got the value of epsilon: "
+                             << epsilon_;
+    return KRET_RESIZE_FAILED;
+  }
   int ret = KernelMod::Resize(inputs, outputs);
   if (ret != 0) {
     return ret;
@@ -199,6 +201,10 @@ const std::vector<std::pair<KernelAttr, KernelRunFunc>> &SparseApplyRMSPropGpuKe
        .AddInputAttr(kNumberTypeFloat32)
        .AddInputAttr(kNumberTypeFloat32)
        .AddInputAttr(kNumberTypeInt32)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
        .AddOutputAttr(kNumberTypeFloat32)
        .AddOutputAttr(kNumberTypeFloat32)
        .AddOutputAttr(kNumberTypeFloat32)
@@ -213,6 +219,10 @@ const std::vector<std::pair<KernelAttr, KernelRunFunc>> &SparseApplyRMSPropGpuKe
        .AddInputAttr(kNumberTypeFloat32)
        .AddInputAttr(kNumberTypeFloat32)
        .AddInputAttr(kNumberTypeInt64)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
        .AddOutputAttr(kNumberTypeFloat32)
        .AddOutputAttr(kNumberTypeFloat32)
        .AddOutputAttr(kNumberTypeFloat32)
@@ -227,6 +237,10 @@ const std::vector<std::pair<KernelAttr, KernelRunFunc>> &SparseApplyRMSPropGpuKe
        .AddInputAttr(kNumberTypeFloat16)
        .AddInputAttr(kNumberTypeFloat16)
        .AddInputAttr(kNumberTypeInt32)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
        .AddOutputAttr(kNumberTypeFloat16)
        .AddOutputAttr(kNumberTypeFloat16)
        .AddOutputAttr(kNumberTypeFloat16)
@@ -241,6 +255,10 @@ const std::vector<std::pair<KernelAttr, KernelRunFunc>> &SparseApplyRMSPropGpuKe
        .AddInputAttr(kNumberTypeFloat16)
        .AddInputAttr(kNumberTypeFloat16)
        .AddInputAttr(kNumberTypeInt64)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypePyFloat)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
        .AddOutputAttr(kNumberTypeFloat16)
        .AddOutputAttr(kNumberTypeFloat16)
        .AddOutputAttr(kNumberTypeFloat16)

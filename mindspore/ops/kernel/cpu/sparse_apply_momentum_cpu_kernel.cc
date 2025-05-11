@@ -28,8 +28,9 @@ namespace kernel {
 namespace sparse_apply_momentum_cpu {
 using namespace sparse_optimizer_cpu;
 namespace {
-constexpr size_t kSparseApplyMomentumInputsNum = 6;
+constexpr size_t kSparseApplyMomentumInputsNum = 8;
 constexpr size_t kSparseApplyMomentumOutputsNum = 1;
+constexpr size_t kIndexUseNesterov = 7;
 
 using KernelRunFunc = SparseApplyMomentumCpuKernelMod::KernelRunFunc;
 
@@ -41,6 +42,8 @@ using KernelRunFunc = SparseApplyMomentumCpuKernelMod::KernelRunFunc;
     .AddInputAttr(kNumberType##t4)                                   \
     .AddInputAttr(kNumberType##t5)                                   \
     .AddInputAttr(kNumberType##t6)                                   \
+    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)                \
+    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)                \
     .AddOutputAttr(kNumberType##t7)
 }  // namespace
 
@@ -60,7 +63,7 @@ bool SparseApplyMomentumCpuKernelMod::Init(const std::vector<KernelTensor *> &in
                   << ", but got " << outputs.size() << ".";
     return false;
   }
-  use_nesterov_ = GetValue<bool>(primitive_->GetAttr(ops::kUseNesterov));
+
   if (!MatchKernelFunc(kernel_name_, inputs, outputs)) {
     return false;
   }
@@ -80,6 +83,7 @@ void SparseApplyMomentumCpuKernelMod::ResetResource() noexcept {
 int SparseApplyMomentumCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
                                             const std::vector<KernelTensor *> &outputs) {
   ResetResource();
+  use_nesterov_ = inputs[kIndexUseNesterov]->GetValueWithCheck<bool>();
   int ret = KernelMod::Resize(inputs, outputs);
   if (ret != KRET_OK) {
     return ret;

@@ -1,0 +1,37 @@
+#operator sparse_apply_adagrad_d_a
+sparse_apply_adagrad_d_a:
+    args:
+        var:
+            dtype: tensor
+        grad_accum:
+            dtype: tensor
+        grad_square_accum:
+            dtype: tensor
+        grad:
+            dtype: tensor
+        indices:
+            dtype: tensor
+        lr:
+            dtype: tensor
+            type_cast: number
+        l1:
+            dtype: tensor
+            type_cast: number
+        l2:
+            dtype: tensor
+            type_cast: number
+        global_step:
+            dtype: int
+            type_cast: tensor
+        use_locking:
+            dtype: bool
+            default: False
+            prim_init: True
+    returns:
+        var:
+            dtype: tensor
+    args_signature:
+        rw_write: var, grad_accum, grad_square_accum
+        dtype_group: (var, grad_accum,  grad_square_accum, grad, lr, l1, l2), (indices), (global_step)
+    function:
+        disable: True

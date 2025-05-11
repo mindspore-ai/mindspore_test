@@ -28,7 +28,7 @@ namespace kernel {
 namespace sparse_apply_adagrad_da_cpu {
 using namespace sparse_optimizer_cpu;
 namespace {
-constexpr size_t kSparseApplyAdagradDAInputsNum = 9;
+constexpr size_t kSparseApplyAdagradDAInputsNum = 10;
 constexpr size_t kSparseApplyAdagradDAOutputsNum = 1;
 
 using KernelRunFunc = SparseApplyAdagradDACpuKernelMod::KernelRunFunc;
@@ -44,6 +44,7 @@ using KernelRunFunc = SparseApplyAdagradDACpuKernelMod::KernelRunFunc;
     .AddInputAttr(kNumberType##t7)                                                  \
     .AddInputAttr(kNumberType##t8)                                                  \
     .AddInputAttr(kNumberType##t9)                                                  \
+    .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)                               \
     .AddOutputAttr(kNumberType##t10)
 }  // namespace
 

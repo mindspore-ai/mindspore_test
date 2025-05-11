@@ -1,0 +1,92 @@
+adam:
+    description: |
+        Updates gradients by the Adaptive Moment Estimation (Adam) algorithm.
+
+        The Adam algorithm is proposed in `Adam: A Method for Stochastic Optimization <https://arxiv.org/abs/1412.6980>`_.
+
+        For more details, please refer to :class:`mindspore.nn.Adam`.
+
+        The updating formulas are as follows,
+
+        .. math::
+            \begin{array}{ll} \\
+                m = \beta_1 * m + (1 - \beta_1) * g \\
+                v = \beta_2 * v + (1 - \beta_2) * g * g \\
+                l = \alpha * \frac{\sqrt{1-\beta_2^t}}{1-\beta_1^t} \\
+                w = w - l * \frac{m}{\sqrt{v} + \epsilon}
+            \end{array}
+
+        :math:`m` represents the 1st moment vector, :math:`v` represents the 2nd moment vector, :math:`g` represents
+            `gradient`, :math:`l` represents scaling factor `lr`, :math:`\beta_1, \beta_2` represent `beta1` and `beta2`,
+        :math:`t` represents updating step while :math:`beta_1^t(\beta_1^{t})` and :math:`beta_2^t(\beta_2^{t})`
+            represent `beta1_power` and `beta2_power`, :math:`\alpha` represents `learning_rate`, :math:`w` represents `var`,
+        :math:`\epsilon` represents `epsilon`.
+
+        Inputs of `var`, `m`, `v` and `gradient`
+        comply with the implicit type conversion rules to make the data types consistent.
+        If they have different data types, the lower priority data type will be converted to
+        the relatively highest priority data type.
+
+        Args:
+            use_locking (bool): Whether to enable a lock to protect variable tensors from being updated.
+                If ``True`` , updates of the var, m, and v tensors will be protected by a lock.
+                If ``False`` , the result is unpredictable. Default: ``False`` .
+            use_nesterov (bool): Whether to use Nesterov Accelerated Gradient (NAG) algorithm to update the gradients.
+                If ``True`` , update the gradients using NAG.
+                If ``False`` , update the gradients without using NAG. Default: ``False`` .
+
+        Inputs:
+            - **var** (Union[Parameter, Tensor]) - Weights to be updated. The shape is :math:`(N, *)` where :math:`*` means,
+              any number of additional dimensions. The data type can be float16 or float32.
+            - **m** (Union[Parameter, Tensor]) - The 1st moment vector in the updating formula,
+              the shape should be the same as `var`.
+            - **v** (Union[Parameter, Tensor]) - the 2nd moment vector in the updating formula,
+              the shape should be the same as `var`.
+            - **beta1_power** (float) - :math:`beta_1^t(\beta_1^{t})` in the updating formula.
+            - **beta2_power** (float) - :math:`beta_2^t(\beta_2^{t})` in the updating formula.
+            - **lr** (float) - :math:`l` in the updating formula. The paper suggested value is :math:`10^{-8}`.
+            - **beta1** (float) - The exponential decay rate for the 1st moment estimations.
+              The paper suggested value is :math:`0.9`.
+            - **beta2** (float) - The exponential decay rate for the 2nd moment estimations.
+              The paper suggested value is :math:`0.999`.
+            - **epsilon** (float) - Term added to the denominator to improve numerical stability.
+            - **gradient** (Tensor) - Gradient, has the same shape and data type as `var`.
+
+        Outputs:
+            Tuple of 3 Tensor, the updated parameters.
+
+            - **var** (Tensor) - The same shape and data type as Inputs `var`.
+            - **m** (Tensor) - The same shape and data type as Inputs `m`.
+            - **v** (Tensor) - The same shape and data type as Inputs `v`.
+
+        Raises:
+            TypeError: If neither `use_locking` nor `use_nesterov` is a bool.
+            TypeError: If `var`, `m` or `v` is not a Parameter.
+            TypeError: If `beta1_power`, `beta2_power`, `lr`, `beta1`, `beta2`, `epsilon` or `gradient` is not a Tensor.
+
+        Supported Platforms:
+            ``Ascend`` ``GPU`` ``CPU``
+
+        Examples:
+            >>> import mindspore
+            >>> import numpy as np
+            >>> from mindspore import Tensor, nn, ops
+            >>> from mindspore import Parameter
+            >>> class Net(nn.Cell):
+            ...     def __init__(self):
+            ...         super(Net, self).__init__()
+            ...         self.apply_adam = ops.Adam()
+            ...         self.var = Parameter(Tensor(np.ones([2, 2]).astype(np.float32)), name="var")
+            ...         self.m = Parameter(Tensor(np.ones([2, 2]).astype(np.float32)), name="m")
+            ...         self.v = Parameter(Tensor(np.ones([2, 2]).astype(np.float32)), name="v")
+            ...     def construct(self, beta1_power, beta2_power, lr, beta1, beta2, epsilon, grad):
+            ...         out = self.apply_adam(self.var, self.m, self.v, beta1_power, beta2_power, lr, beta1, beta2,
+            ...                               epsilon, grad)
+            ...         return out
+            ...
+            >>> net = Net()
+            >>> gradient = Tensor(np.ones([2, 2]).astype(np.float32))
+            >>> output = net(0.9, 0.999, 0.001, 0.9, 0.999, 1e-8, gradient)
+            >>> print(net.var.asnumpy())
+            [[0.9996838 0.9996838]
+            [0.9996838 0.9996838]]
