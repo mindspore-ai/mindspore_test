@@ -467,6 +467,7 @@ constexpr char MAXPOOLV2[] = "MaxPoolV2";
 constexpr char L2_NORMALIZE[] = "L2Normalize";
 constexpr char TRANSPOSE[] = "Transpose";
 constexpr char RESHAPE[] = "Reshape";
+constexpr char FMODSCALAR[] = "FmodScalar";
 constexpr char ADD[] = "Add";
 constexpr char ADDN[] = "AddN";
 constexpr char INCRE_FLASH_ATTENTION[] = "IncreFlashAttention";

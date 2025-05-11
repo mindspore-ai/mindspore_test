@@ -289,6 +289,8 @@ using ActivationInfoCost = ReLU6Cost;
 using SelectCost = ReLU6Cost;
 using XlogyCost = ReLU6Cost;
 using ErfinvCost = ReLU6Cost;
+using FmodScalarCost = ActivationInfoCost;
+using MulsCost = ActivationInfoCost;
 
 class TransposeCost : public CastCost {
  public:
