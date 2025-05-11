@@ -116,7 +116,8 @@ void CPUDeviceAddress::ClearUserData() {
   }
 }
 
-bool CPUDeviceAddress::SyncDeviceToHost(const ShapeVector &, size_t size, TypeId type, void *host_ptr) const {
+bool CPUDeviceAddress::SyncDeviceToHost(const ShapeVector &, size_t size, TypeId type, void *host_ptr,
+                                        bool sync_on_demand) const {
   // The input or output may be empty.
   if ((size == 0) || (GetSize() == 0)) {
     MS_LOG(INFO) << "No need sync, host size: " << size << ", device size: " << GetSize();

@@ -41,9 +41,14 @@ bool GPUDeviceSynchronizer::SyncDeviceToHost(void *host_ptr, const void *device_
     MS_LOG(WARNING) << "Bind device to current thread failed.";
   }
 
-  CHECK_RET_WITH_RETURN_ERROR(CudaDriver::CopyDeviceMemToHostAsync(host_ptr, device_ptr, size, stream),
-                              "CopyHostMemToDeviceAsync failed");
+  if (stream_id != kDefaultStreamIndex) {
+    auto default_stream = GPUDeviceManager::GetInstance().GetStream(kDefaultStreamIndex);
+    CHECK_RET_WITH_RETURN_ERROR(CudaDriver::SyncStream(default_stream), "SyncStream 0 failed");
+  }
 
+  void *src_ptr = const_cast<void *>(device_ptr);
+  CHECK_RET_WITH_RETURN_ERROR(CudaDriver::CopyDeviceMemToHostAsync(host_ptr, src_ptr, size, stream),
+                              "CopyDeviceMemToHostAsync failed");
   CHECK_RET_WITH_RETURN_ERROR(CudaDriver::SyncStream(stream), "SyncStream failed");
 
   return true;

@@ -110,7 +110,8 @@ bool GPUDeviceAddress::SyncHostToDevice(size_t size, const void *host_ptr) const
   return GPUDeviceManager::GetInstance().SyncStream(stream);
 }
 
-bool GPUDeviceAddress::SyncDeviceToHost(const ShapeVector &, size_t size, TypeId, void *host_ptr) const {
+bool GPUDeviceAddress::SyncDeviceToHost(const ShapeVector &, size_t size, TypeId, void *host_ptr,
+                                        bool sync_on_demand) const {
   return SyncDeviceToHost(size, host_ptr);
 }
 

@@ -286,7 +286,7 @@ void AscendDeviceAddress::SyncHostMemoryToDeviceWithTensorData(void *dst, const 
 }
 
 void AscendDeviceAddress::SyncMemory(void *dst, const void *src, uint64_t size, aclrtMemcpyKind kind,
-                                     const tensor::TensorDataPtr &tensor_data) const {
+                                     const tensor::TensorDataPtr &tensor_data, bool sync_on_demand) const {
   if (size == 0) {
     return;
   }
@@ -304,10 +304,13 @@ void AscendDeviceAddress::SyncMemory(void *dst, const void *src, uint64_t size, 
 
   // Only apply asynchronous copy in Pynative && ACL_MEMCPY_HOST_TO_DEVICE mode
   if (execution_mode != kPynativeMode || kind != ACL_MEMCPY_HOST_TO_DEVICE) {
-    auto ret = SyncStreamUtils();
-    if (!ret) {
-      MS_LOG(EXCEPTION) << "Sync stream error!";
+    if (!sync_on_demand) {
+      auto ret = SyncStreamUtils();
+      if (!ret) {
+        MS_LOG(EXCEPTION) << "Sync stream error!";
+      }
     }
+
     if (!common::IsDryRun()) {
       auto ret_rt_memcpy = CALL_ASCEND_API(aclrtMemcpy, dst, size, src, size, kind);
       if (ret_rt_memcpy != ACL_ERROR_NONE) {
@@ -342,13 +345,13 @@ bool AscendDeviceAddress::Float64ToFloatAndSyncHostToDevice(void *dst, size_t ds
 }
 
 bool AscendDeviceAddress::SyncDeviceToHostAndFloatToFloat64(void *dst, size_t dst_size, const void *src,
-                                                            size_t src_size) const {
+                                                            size_t src_size, bool sync_on_demand) const {
   if (src_size / kFloatBytes != dst_size / kFloat64Bytes) {
     MS_INTERNAL_EXCEPTION(ArgumentError) << "src_size[" << src_size << "], dst_size[" << dst_size << "]";
   }
   size_t elem_num = src_size / sizeof(float);
   auto host_tmp = std::vector<float>(elem_num);
-  SyncMemory(host_tmp.data(), src, src_size, ACL_MEMCPY_DEVICE_TO_HOST);
+  SyncMemory(host_tmp.data(), src, src_size, ACL_MEMCPY_DEVICE_TO_HOST, nullptr, sync_on_demand);
   FloatToDouble(dst, host_tmp.data(), elem_num);
   return true;
 }
@@ -524,14 +527,18 @@ bool AscendDeviceAddress::SyncHostToDevice(size_t size, const void *host_ptr) co
 }
 
 bool AscendDeviceAddress::SyncDeviceToHost(const ShapeVector &shape, size_t size, mindspore::TypeId type,
-                                           void *host_ptr) const {
+                                           void *host_ptr, bool sync_on_demand) const {
   MS_LOG(DEBUG) << "SyncDeviceToHost, Device(format:" << format() << ", type_id:" << TypeIdLabel(type_id())
                 << ", size:" << GetSize() << "), Host(type_id:" << TypeIdLabel(type) << ", size:" << size << ")";
   if (type_id() > kMonadTypeBegin && type_id() < kMonadTypeEnd) {
     return true;
   }
   BindDevice();
-  SyncStream();
+  if (!sync_on_demand) {
+    SyncStream();
+  } else {
+    SyncStream(address_common_->stream_id_);
+  }
   if (!MoveToDevice(false)) {
     MS_LOG(WARNING) << "Move data to device failed, check previous log for details.";
   }
@@ -543,14 +550,14 @@ bool AscendDeviceAddress::SyncDeviceToHost(const ShapeVector &shape, size_t size
   std::lock_guard<std::recursive_mutex> lock(ptr_mutex_);
   if (basic_format.find(format()) != basic_format.end()) {
     if (type_id() == type) {
-      CopyDeviceToHost(host_ptr, size);
+      CopyDeviceToHost(host_ptr, size, sync_on_demand);
       sync_ok = true;
     } else if (type_id() == kNumberTypeFloat32 && type == kNumberTypeFloat64) {
-      sync_ok = SyncDeviceToHostAndFloatToFloat64(host_ptr, size, GetDevicePtr(), GetSize());
+      sync_ok = SyncDeviceToHostAndFloatToFloat64(host_ptr, size, GetDevicePtr(), GetSize(), sync_on_demand);
     } else {
       auto shape_size = abstract::ShapeSize(host_shape);
       auto host = std::vector<uint8_t>(GetSize());
-      CopyDeviceToHost(host.data(), GetSize());
+      CopyDeviceToHost(host.data(), GetSize(), sync_on_demand);
       const trans::TypeIdArgs type_args{host.data(), shape_size, type_id(), type, GetSize()};
       sync_ok = trans::TransDataType(type_args, host_ptr);
       if (!sync_ok) {
@@ -560,7 +567,7 @@ bool AscendDeviceAddress::SyncDeviceToHost(const ShapeVector &shape, size_t size
     }
   } else {
     if (IsOpNeedTransFormat(format())) {
-      sync_ok = SyncDeviceToHostAndConvertFormat(shape, size, type, host_ptr);
+      sync_ok = SyncDeviceToHostAndConvertFormat(shape, size, type, host_ptr, sync_on_demand);
     } else {
       MS_LOG(INFO) << "Can not find format transfer function for :" << format();
     }
@@ -591,7 +598,8 @@ ShapeVector AscendDeviceAddress::GetDeviceShape(ShapeVector *host_shape) const {
 }
 
 bool AscendDeviceAddress::SyncDeviceToHostAndConvertFormat(const ShapeVector &shape, size_t size,
-                                                           mindspore::TypeId type, void *host_ptr) const {
+                                                           mindspore::TypeId type, void *host_ptr,
+                                                           bool sync_on_demand) const {
   MS_LOG(DEBUG) << "SyncDeviceToHostAndConvertFormat, Device(format:" << format()
                 << ", type_id:" << TypeIdLabel(type_id()) << ", size:" << GetSize()
                 << "), Host(type_id:" << TypeIdLabel(type) << ", size:" << size << ")";
@@ -610,7 +618,7 @@ bool AscendDeviceAddress::SyncDeviceToHostAndConvertFormat(const ShapeVector &sh
   auto device_shape = GetDeviceShape(&host_shape);
   std::lock_guard<std::recursive_mutex> lock(ptr_mutex_);
   auto host_tmp = std::vector<uint8_t>(GetSize());
-  CopyDeviceToHost(host_tmp.data(), GetSize());
+  CopyDeviceToHost(host_tmp.data(), GetSize(), sync_on_demand);
   auto node_index = GetNodeIndex();
   if (type_id() != type) {
     const trans::FormatArgs format_args{host_tmp.data(), GetSize(),    kOpFormat_NCHW, format(),
@@ -950,7 +958,7 @@ void AscendDeviceAddress::ClearDeviceMemory() {
   }
 }
 
-void AscendDeviceAddress::CopyDeviceToHost(void *dst, uint64_t size) const {
+void AscendDeviceAddress::CopyDeviceToHost(void *dst, uint64_t size, bool sync_on_demand) const {
   MS_EXCEPTION_IF_NULL(dst);
   if (hete_info_ != nullptr) {
     if (hete_info_->host_ptr_ == nullptr) {
@@ -960,12 +968,12 @@ void AscendDeviceAddress::CopyDeviceToHost(void *dst, uint64_t size) const {
         MS_LOG(EXCEPTION) << "Illegal heterogeneous info: empty file name and host ptr.";
       }
     }
-    SyncMemory(dst, hete_info_->host_ptr_, size, ACL_MEMCPY_HOST_TO_HOST);
+    SyncMemory(dst, hete_info_->host_ptr_, size, ACL_MEMCPY_HOST_TO_HOST, nullptr, sync_on_demand);
   } else {
     if (GetDevicePtr() == nullptr) {
       MS_LOG(EXCEPTION) << "Invalid device ptr for device address:" << this;
     }
-    SyncMemory(dst, GetDevicePtr(), size, ACL_MEMCPY_DEVICE_TO_HOST);
+    SyncMemory(dst, GetDevicePtr(), size, ACL_MEMCPY_DEVICE_TO_HOST, nullptr, sync_on_demand);
   }
 }
 
