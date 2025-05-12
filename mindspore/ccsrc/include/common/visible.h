@@ -56,16 +56,6 @@
 #endif
 
 #if (defined(_WIN32) || defined(__WIN32__) || defined(WIN32) || defined(__CYGWIN__))
-#ifdef BUILDING_ME_DLL
-#define ME_EXPORT __declspec(dllexport)
-#else
-#define ME_EXPORT __declspec(dllimport)
-#endif
-#else
-#define ME_EXPORT __attribute__((visibility("default")))
-#endif
-
-#if (defined(_WIN32) || defined(__WIN32__) || defined(WIN32) || defined(__CYGWIN__))
 #ifdef PYNATIVE_DLL
 #define PYNATIVE_EXPORT __declspec(dllexport)
 #else
