@@ -1266,7 +1266,7 @@ class MetaTensorData : public ItemData {
     return false;
   }
 
-  bool EqualInternal(const tensor::BaseTensorPtr &tensor_ptr) const {
+  bool EqualInternal(const tensor::TensorPtr &tensor_ptr) const {
     if (tid_ == tensor_ptr->data_type() && is_parameter_ == tensor_ptr->is_parameter() &&
         CheckTypeAndShape(tensor_ptr->Dtype(), tensor_ptr->shape())) {
       return !is_parameter_ || ParamInfoData::Equal(param_, tensor_ptr->param_info());
@@ -1281,19 +1281,19 @@ class MetaTensorData : public ItemData {
     return false;
   }
 
-  tensor::BaseTensorPtr GetStubInfo(PyObject *obj) const {
+  tensor::TensorPtr GetStubInfo(PyObject *obj) const {
     py::object py_tensor = py::reinterpret_borrow<py::object>(obj);
     if (!tensor::IsTensorPy(obj)) {
       // stub tensor is deprecated and will be remove
       auto py_stub = py::getattr(obj, stub::PY_ATTR_STUB, Py_None);
       if (py_stub.ptr() != Py_None) {
-        return std::static_pointer_cast<tensor::BaseTensor>(py_stub.cast<stub::StubNodePtr>()->WaitValue());
+        return std::static_pointer_cast<tensor::Tensor>(py_stub.cast<stub::StubNodePtr>()->WaitValue());
       }
       py_tensor = py::getattr(obj, stub::PY_ATTR_TENSOR, nullptr);
       MS_EXCEPTION_IF_CHECK_FAIL(py_tensor.ptr() != nullptr && tensor::IsTensorPy(py_tensor),
                                  std::string() + "unexpected tensor type: " + Py_TYPE(obj)->tp_name);
     }
-    auto value_ptr = tensor::ConvertToBaseTensor(py_tensor);
+    auto value_ptr = tensor::ConvertToTensor(py_tensor);
     return value_ptr;
   }
 
@@ -1384,7 +1384,7 @@ class TensorData : public MetaTensorData {
   TensorData(PyObject *obj, bool needSpecialize, int recurseDepth) : MetaTensorData(needSpecialize, recurseDepth) {
     tensor_type_ = Py_TYPE(obj);
     tp_ = ItemType::Tensor;
-    tensor::BaseTensorPtr tensor_ptr = GetStubInfo(obj);
+    tensor::TensorPtr tensor_ptr = GetStubInfo(obj);
     if (OptStrategy::MakeCalcStrategyByShape(tensor_ptr->shape()) != OptStrategy::CalcKind::kCalcValue) {
       specialized_ = false;
     }
@@ -1440,7 +1440,7 @@ class TensorData : public MetaTensorData {
     if (!type_match) {
       return false;
     }
-    tensor::BaseTensorPtr tensor_ptr = GetStubInfo(obj);
+    tensor::TensorPtr tensor_ptr = GetStubInfo(obj);
     if (!MetaTensorData::EqualInternal(tensor_ptr)) {
       return false;
     }
@@ -1475,7 +1475,7 @@ class TensorData : public MetaTensorData {
     return ret;
   }
 
-  bool CheckTensorAndParam(const mindspore::tensor::BaseTensorPtr &tensor_ptr) const {
+  bool CheckTensorAndParam(const mindspore::tensor::TensorPtr &tensor_ptr) const {
     // tensor_ptr->base_shape_ptr_ should check ?
     if (tensor_ptr->is_forward_output() != is_forward_output_) {
       return false;
@@ -1502,7 +1502,7 @@ class TensorData : public MetaTensorData {
     return true;
   }
 
-  bool CheckTensorData(const mindspore::tensor::BaseTensorPtr &tensor_ptr) const {
+  bool CheckTensorData(const mindspore::tensor::TensorPtr &tensor_ptr) const {
     if (!specialized_) {
       return true;
     }
@@ -1536,7 +1536,7 @@ class TensorData : public MetaTensorData {
     return ret;
   }
 
-  void StoreTensor(mindspore::tensor::BaseTensorPtr tensor_ptr) {
+  void StoreTensor(mindspore::tensor::TensorPtr tensor_ptr) {
     MetaTensorData::StoreTensor(std::static_pointer_cast<tensor::MetaTensor>(tensor_ptr));
     is_forward_output_ = tensor_ptr->is_forward_output();
     id_ = tensor_ptr->id();
