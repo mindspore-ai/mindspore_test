@@ -160,8 +160,8 @@ HalResBase *HalResManager::GetOrCreateResManager(const ResKey &res_key) {
 
 #ifdef WITH_BACKEND
   // dynamic load res_manager library.
-  if (res_key.device_name_ != DeviceType::kUnknown) {
-    // LoadResManager(res_key.device_name_);
+  if (res_key.device_name_ == DeviceType::kAscend || res_key.device_name_ == DeviceType::kGPU) {
+    LoadResManager(res_key.device_name_);
   }
 #endif
 
