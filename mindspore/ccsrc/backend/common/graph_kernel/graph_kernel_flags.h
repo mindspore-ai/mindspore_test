@@ -169,6 +169,13 @@ class BACKEND_COMMON_EXPORT GraphKernelFlags {
   bool enable_allreduce_epilogue_fusion{true};
 
   /**
+   * If this flag is set to false, then some optimizations that may cause precision loss will be enabled.
+   * For example, some algebraic transformations that are unsafe for low-precision floating-point computation will be
+   * allowed.
+   */
+  bool exact_precision_mode{true};
+
+  /**
    * Optimization level, value from 0 to 3.
    * 0: Disable GraphKernel
    * 1: Enable GraphKernel with basic features only.
@@ -278,11 +285,13 @@ class BACKEND_COMMON_EXPORT GraphKernelFlags {
    * Arithmetic simplify expressions to be enabled (case sensitive).
    * The default list will be overwritten by this list.
    * Note that "disable_simplify_exprs" will be ignored if this flag is set.
+   * Usage Example: --enable_simplify_exprs_only=2.0
    */
   std::vector<std::string> enable_simplify_exprs_only;
 
   /**
    * Arithmetic simplify expressions to be disabled (case sensitive).
+   * Usage Example: --disable_simplify_exprs=1.0,1.2
    */
   std::vector<std::string> disable_simplify_exprs;
 

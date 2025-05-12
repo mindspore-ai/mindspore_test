@@ -54,6 +54,7 @@ class TestArithmeticSimplify : public GraphKernelCommonTestSuite,
 };
 
 TEST_P(TestArithmeticSimplify, test_arithmetic_simplify) {
+  SetGraphKernelFlags("--exact_precision_mode=false");
   // get params
   MOCKER_CPP(ConvertTensorToParameter, bool (*)(const FuncGraphPtr &, AnfNodePtrList *))
     .stubs()
