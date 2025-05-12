@@ -23,6 +23,7 @@
 #include <stack>
 #include <vector>
 #include <memory>
+#include <utility>
 #include <algorithm>
 #include <unordered_map>
 #include "ir/manager.h"
@@ -121,32 +122,59 @@ class MetaImpl : public MetaFuncGraph {
   ///         # python                       // cpp
   ///         if condition:                  auto true_case = [&]() { Return(x); };
   ///           return x         -->         auto false_case = [&]() { Return(y); };
-  ///         return y                       auto out = If(condition, true_case, false_case, (x, y))
+  ///         return y                       auto out = If(condition, true_case, false_case)
   ///
-  /// \param[in] cond The condition of if-else expression.
-  /// \param[in] true_case True branch.
-  /// \param[in] false_case False branch.
-  /// \param[in] params All parameters used by true branch and false branch.
+  /// \param[in] condition The condition of if-else expression.
+  /// \param[in] true_branch True branch.
+  /// \param[in] false_branch False branch.
   ///
   /// \return The result node of if-else expression.
-#define If(cond, true_case, false_case, params) IF_IMPL(cond, true_case, false_case, params)
+  NodePtr If(const NodePtr &condition, const BlockFunc &true_branch, const BlockFunc &false_branch);
 
-  /// \brief for-loop. Refer to `mindspore.ops.ForiLoop` for more details.
+  /// \brief if-elif-else expression. If({{cond1, br1}, {cond2, br2}, ...}, else_br)
+  ///
+  /// \param[in] if_branchs If conditions and corresponding branches.
+  /// \param[in] else_branch Else branch.
+  ///
+  /// \return The result node of if-elif-else expression.
+  NodePtr If(const std::vector<std::pair<NodePtr, BlockFunc>> &if_branches, const BlockFunc &else_branch);
+
+  /// \brief for-loop.
+  ///
+  /// \note Example:
+  ///         # python                                         // cpp
+  ///         result = ...                                   auto loop_func = [&](const NodePtr &index,
+  ///         for index, item in enumerate(sequence):   -->                       const NodePtr &item,
+  ///           result = loop_func(index, item, result)                           const NodePtr &result) { ... };
+  ///                                                        result = For(loop_func, sequence, result, lower, upper);
+  ///
+  /// \param[in] loop_func The loop function, take 3 argument and return value has the same type with result argument.
+  /// \param[in] sequence Object that needs to be iterated.
+  /// \param[in] result The result of for-loop.
+  /// \param[in] lower The start index of loop.
+  /// \param[in] upper The end index of loop.
+  ///
+  /// \return The result node of for-loop expression.
+  NodePtr For(const std::function<void(const NodePtr &, const NodePtr &, const NodePtr &)> &loop_func,
+              const NodePtr &sequence, const NodePtr &result, const NodePtr &lower = nullptr,
+              const NodePtr &upper = nullptr);
+
+  /// \brief Refer to `mindspore.ops.ForiLoop` for more details.
   ///
   /// \note Example:
   ///         # python                                      // cpp
   ///         for i in range(lower, upper):                 auto loop_func =
   ///           init_val = loop_func(i, init_val)    -->      [&](const NodePtr &index, const NodePtr &res) { ... };
-  ///         return init_val                               auto out = For(cond_func, loop_func, init_val);
+  ///         return init_val                               auto out = ForiLoop(cond_func, loop_func, init_val);
   ///
   /// \param[in] lower The start index of loop.
   /// \param[in] upper The end index of loop.
   /// \param[in] loop_func The loop function, takes two arguments.
   /// \param[in] init_val The init value. Supports Tensor, number, str, bool, list, tuple, dict.
   ///
-  /// \return The result node of while-loop expression.
-  NodePtr For(const NodePtr &lower, const NodePtr &upper,
-              const std::function<void(const NodePtr &, const NodePtr &)> &loop_func, const NodePtr &init_val);
+  /// \return The result node of for-loop expression.
+  NodePtr ForiLoop(const NodePtr &lower, const NodePtr &upper,
+                   const std::function<void(const NodePtr &, const NodePtr &)> &loop_func, const NodePtr &init_val);
 
   /// \brief while-loop. Refer to `mindspore.ops.WhileLoop` for more details.
   ///
@@ -358,6 +386,24 @@ class MetaImpl : public MetaFuncGraph {
   /// \return Output node.
   NodePtr And(const NodePtr &x, const NodePtr &y);
 
+  /// \brief all(iterable) such as all([1, 2, 3, None])
+  ///
+  /// \note Example: All(x)
+  ///
+  /// \param[in] iterable Input node.
+  ///
+  /// \return Output node of all operation.
+  NodePtr All(const NodePtr &iterable);
+
+  /// \brief any(iterable) such as any([1, 2, 3, None])
+  ///
+  /// \note Example: Any(x)
+  ///
+  /// \param[in] iterable Input node.
+  ///
+  /// \return Output node of any operation.
+  NodePtr Any(const NodePtr &iterable);
+
   /// \brief x or y
   ///
   /// \note Example: Or(x, y)
@@ -367,6 +413,15 @@ class MetaImpl : public MetaFuncGraph {
   ///
   /// \return Output node.
   NodePtr Or(const NodePtr &x, const NodePtr &y);
+
+  /// \brief len(x)
+  ///
+  /// \note Example: Len(x)
+  ///
+  /// \param[in] x Input node.
+  ///
+  /// \return Output node.
+  NodePtr Len(const NodePtr &x);
 
   /// \brief x + y
   ///
@@ -501,8 +556,8 @@ class MetaImpl : public MetaFuncGraph {
   NodePtr NewParam(const std::string &name);
   NodePtr IfCond(const NodePtr &condition, const BlockFunc &true_branch, const BlockFunc &false_branch,
                  const NodePtrList &args);
-  void set_check_func(const CheckFunc &check_func);
-  void set_bprop_func(const std::function<std::shared_ptr<MetaImpl>()> &bprop_func);
+  NodePtr IfBranchesInner(const std::vector<std::pair<NodePtr, BlockFunc>> &if_branches, const BlockFunc &else_branch,
+                          size_t index);
 
  private:
   void BeginFunc(const std::string &func_name = "anonymous");
@@ -513,26 +568,53 @@ class MetaImpl : public MetaFuncGraph {
   void DefineCustomBprop(const FuncGraphPtr &graph);
   void ConvertTypeIdToType(NodePtrList *nodes);
   void DumpIRForMetaDsl(const FuncGraphPtr &graph) const;
+  NodePtr ImplAllAny(const NodePtr &input, bool is_all);
 
   PrimitivePtr prim_{nullptr};
   std::string name_;
-  CheckFunc check_func_{nullptr};
   FuncGraphPtr bprop_graph_{nullptr};
   FuncGraphManagerPtr manager_{nullptr};
   std::stack<MetaFuncBuilderPtr> func_builder_stack_;
-  std::function<std::shared_ptr<MetaImpl>()> bprop_func_{nullptr};
 };
 using MetaImplPtr = std::shared_ptr<MetaImpl>;
 using CreateFunc = std::function<std::shared_ptr<MetaImpl>()>;
 
-bool IsMetaImpl(const std::string &name);
-void AddMetaImpl(const std::string &name, const CreateFunc &creator);
-MetaImplPtr CreateMetaImpl(const std::string &name);
-
-class MetaImplRegHelper {
+class RegMetaImplFactory {
  public:
-  MetaImplRegHelper(const std::string &name, const CreateFunc &creator) { AddMetaImpl(name, creator); }
-  ~MetaImplRegHelper() = default;
+  static RegMetaImplFactory &GetInstance();
+  bool IsMetaImpl(const std::string &name);
+  MetaImplPtr CreateMetaImpl(const std::string &name);
+  void AddMetaImpl(const std::string &name, const CreateFunc &creator);
+
+  void RegBprop(const PrimitivePtr &prim, const CreateFunc &creator);
+  FuncGraphPtr GetBprop(const PrimitivePtr &prim);
+
+  void RegCheckFunc(const std::string &name, const CheckFunc &check_func);
+  CheckFunc GetCheckFunc(const std::string &prim_name);
+
+  class RegHelper {
+   public:
+    explicit RegHelper(const std::string &name, const CreateFunc &creator, const CheckFunc &check_func = nullptr) {
+      RegMetaImplFactory::GetInstance().AddMetaImpl(name, creator);
+      if (check_func != nullptr) {
+        RegMetaImplFactory::GetInstance().RegCheckFunc(name, check_func);
+      }
+    }
+    ~RegHelper() = default;
+  };
+
+  class RegBpropHelper {
+   public:
+    explicit RegBpropHelper(const PrimitivePtr &prim, const CreateFunc &creator) {
+      RegMetaImplFactory::GetInstance().RegBprop(prim, creator);
+    }
+    ~RegBpropHelper() = default;
+  };
+
+ private:
+  std::map<std::string, CreateFunc> registry_;
+  std::map<std::string, CreateFunc> bprop_map_;
+  std::map<std::string, CheckFunc> check_func_map_;
 };
 }  // namespace mindspore::prim
 #endif  // MINDSPORE_CCSRC_FRONTEND_OPERATOR_META_DSL_COMMON_META_IMPL_H_

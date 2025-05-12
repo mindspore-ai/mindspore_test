@@ -268,7 +268,7 @@ TEST_P(GeneralInferTest, test_infer) {
   const bool expect_throw = param.expect_throw;
 
   // MetaOp infer test
-  bool is_meta_impl = prim::IsMetaImpl(op_type);
+  bool is_meta_impl = prim::RegMetaImplFactory::GetInstance().IsMetaImpl(op_type);
   if (is_meta_impl) {
     UT::InitPythonPath();  // required by RunMetaImpl();
     const auto &abstracts = params_to_abstracts(arg_params);

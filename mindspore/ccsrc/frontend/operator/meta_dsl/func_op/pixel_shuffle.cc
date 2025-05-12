@@ -105,12 +105,10 @@ BeginFunction(PixelShuffle, input, upscale_factor) {
   auto impl_branch = [&]() {
     // the mod of c and upscale_factor_squared, expects to be 0
     auto calc_out = ScalarMod(c, upscale_factor_squared);
-    Return(If(NotEqual(calc_out, Value(0)), invalid_dimension, pixel_shuffle_calc,
-              (input, upscale_factor, input_shape, input_rank, c, upscale_factor_squared)));
+    Return(If(NotEqual(calc_out, Value(0)), invalid_dimension, pixel_shuffle_calc));
   };
   // upscalefactor expects to be positive
-  Return(If(LessEqual(upscale_factor, Value(0)), invalid_upscale_factor, impl_branch,
-            (input, upscale_factor, input_shape, input_rank, c, upscale_factor_squared)));
+  Return(If(LessEqual(upscale_factor, Value(0)), invalid_upscale_factor, impl_branch));
 }
 EndFunction(PixelShuffle)
 }  // namespace mindspore::prim

@@ -14,15 +14,18 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_MINDSPORE_CCSRC_KERNEL_PYBOOST_CUSTOMIZE_INPLACE_EXPONENTIAL_H_
-#define MINDSPORE_MINDSPORE_CCSRC_KERNEL_PYBOOST_CUSTOMIZE_INPLACE_EXPONENTIAL_H_
+#ifndef MINDSPORE_CCSRC_FRONTEND_OPERATOR_META_DSL_FUNC_OP_INPLACE_EXPONENTIAL_H_
+#define MINDSPORE_CCSRC_FRONTEND_OPERATOR_META_DSL_FUNC_OP_INPLACE_EXPONENTIAL_H_
 
 #include <vector>
 #include <memory>
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
 #include "mindspore/ccsrc/frontend/operator/meta_dsl/common/meta_impl.h"
 
 namespace mindspore::prim {
 void CheckInplaceExponentialInputs(const PrimitivePtr &primitive, const AbstractBasePtrList &input_args);
-REGISTER_FUNCTION_OP(InplaceExponential, CheckInplaceExponentialInputs, InplaceExponentialGrad);
+REGISTER_FUNCTION_OP(InplaceExponential, CheckInplaceExponentialInputs);
+REGISTER_FUNCTION_OP(InplaceExponentialGrad);
+PRIMITIVE_BPROP_REG(InplaceExponential, InplaceExponentialGrad);
 }  // namespace mindspore::prim
-#endif  // MINDSPORE_MINDSPORE_CCSRC_KERNEL_PYBOOST_CUSTOMIZE_INPLACE_EXPONENTIAL_H_
+#endif  // MINDSPORE_CCSRC_FRONTEND_OPERATOR_META_DSL_FUNC_OP_INPLACE_EXPONENTIAL_H_

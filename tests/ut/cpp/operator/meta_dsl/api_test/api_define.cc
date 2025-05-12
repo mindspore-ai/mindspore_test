@@ -18,10 +18,12 @@
 #include "utils/core_op_utils.h"
 #include "utils/check_convert_utils.h"
 #include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/ops_utils/op_constants.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_z.h"
 
@@ -46,33 +48,46 @@ EndFunction(TestIsInstance)
 BeginFunction(TestIf, x) {
   auto true_branch = [&]() { Return(Value(1)); };
   auto false_branch = [&]() { Return(Value(0)); };
-  Return(If(Call(Prim(Greater), x, Value(0)), true_branch, false_branch, ()));
+  Return(If(Call(Prim(Greater), x, Value(0)), true_branch, false_branch));
 }
 EndFunction(TestIf)
 
 /** Python code:
  *  def if_exp(x, y):
- *    if x is not None:
- *      return x + y
- *    return None
+ *    if x is None:
+ *      return x
+ *    elif x < 0:
+ *      return x - y
+ *    return x + y
  */
 BeginFunction(TestIfExp, x, y) {
-  auto true_branch = [&]() { Return(Call(Prim(Add), x, y)); };
-  auto false_branch = [&]() { Return(Value(kNone)); };
-  Return(If(IsNotNone(x), true_branch, false_branch, (x, y)));
+  auto cond1 = IsNone(x);
+  auto cond2 = Call(Prim(Less), x, Value(0));
+  auto branch1 = [&]() { Return(x); };
+  auto branch2 = [&]() { Return(Call(Prim(Sub), x, y)); };
+  auto branch3 = [&]() { Return(Call(Prim(Add), x, y)); };
+  Return(If({{cond1, branch1}, {cond2, branch2}}, branch3));
 }
 EndFunction(TestIfExp)
 
 /** Python code:
- *  def custom_bprop(x, y, out, dout):
- *    return zeros_like(x), zeros_like(y)
+ *  result = []
+ *  sequence = (x, x, x, x, x)
+ *  for index, item in enumerate(sequence):
+ *    result.append(item + index)
  */
-BeginFunction(TestCustomBprop, x, y, out, dout) {
-  auto dx = Call(Prim(ZerosLike), x);
-  auto dy = Call(Prim(ZerosLike), y);
-  Return(Tuple(dx, dy));
+BeginFunction(TestFor, x) {
+  auto result = List();
+  auto sequence = Tuple(x, x, x, x, x);
+  auto loop_func = [&](const NodePtr &index, const NodePtr &item, const NodePtr &result) {
+    auto arg = Call(Prim(Add), item, index);
+    auto out = Call(Prim(ListAppend), result, arg);
+    Return(out);
+  };
+  auto out = For(loop_func, sequence, result, Value(1), Value(3));
+  Return(out);
 }
-EndFunction(TestCustomBprop)
+EndFunction(TestFor)
 
 /** Python code:
  *  def for_func(x, lower, upper):
@@ -83,12 +98,12 @@ EndFunction(TestCustomBprop)
  *      x = cumsum(i, x)
  *    return x
  */
-BeginFunction(TestFor, x, lower, upper) {
+BeginFunction(TestForiLoop, x, lower, upper) {
   auto cumsum = [&](const NodePtr &index, const NodePtr &res) { Return(Call(Prim(Add), index, res)); };
-  auto out = For(lower, upper, cumsum, x);
+  auto out = ForiLoop(lower, upper, cumsum, x);
   Return(out);
 }
-EndFunction(TestFor)
+EndFunction(TestForiLoop)
 
 /** Python code:
  *  def while_func(x):
@@ -157,4 +172,13 @@ BeginFunction(TestDtype, x, y, dtype) {
   Return(Call(Prim(Cast), out, dtype));
 }
 EndFunction(TestDtype)
+
+/** Python code:
+ *  def func(iterable):
+ *    return all(iterable), any(iterable)
+ */
+BeginFunction(TestAllAny, iterable) {
+  Return(Tuple(All(iterable), Any(iterable)));
+}
+EndFunction(TestAllAny)
 }  // namespace mindspore::prim

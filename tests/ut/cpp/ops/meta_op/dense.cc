@@ -138,7 +138,7 @@ BeginFunction(Dense, input, weight, bias) {
       Return(perm);
     };
     auto condition = Call(Prim(ScalarLt), size, Value(2));
-    return If(condition, true_branch, false_branch, (size));
+    return If(condition, true_branch, false_branch);
   };
 
   auto perm = get_transpose_perm(weight);
@@ -147,7 +147,7 @@ BeginFunction(Dense, input, weight, bias) {
   auto output = Call(Prim(MatMulExt), input, contiguous_out);
   auto true_branch = [&]() { Return(Call(Prim(Add), output, bias)); };
   auto false_branch = [&]() { Return(output); };
-  Return(If(IsNotNone(bias), true_branch, false_branch, (output, bias)));
+  Return(If(IsNotNone(bias), true_branch, false_branch));
 }
 EndFunction(Dense)
 }  // namespace mindspore::prim

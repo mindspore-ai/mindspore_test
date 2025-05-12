@@ -39,7 +39,9 @@ FuncGraphPtr MetaFuncBuilder::EndFunc() const {
 
 AnfNodePtr MetaFuncBuilder::AddParameter(const std::string &name) {
   MS_LOG(DEBUG) << "Add parameter '" << name << "' to " << name_;
-  return graph_->add_parameter();
+  auto param = graph_->add_parameter();
+  param->set_name(name);
+  return param;
 }
 
 void MetaFuncBuilder::SetOutput(const AnfNodePtr &output) {

@@ -131,7 +131,7 @@ BeginFunction(InplaceExponential, input, lambd, seed, offset) {
   auto double_lambd = Call(Prim(ScalarToTensor), lambd, Value(static_cast<int64_t>(kNumberTypeFloat64)));
   auto condition = Call(Prim(IsInf), double_lambd);
 
-  Return(If(condition, inf_branch, normal_branch, (input, lambd, seed, offset)));
+  Return(If(condition, inf_branch, normal_branch));
 }
 EndFunction(InplaceExponential)
 

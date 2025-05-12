@@ -126,73 +126,50 @@ namespace mindspore::prim {
     DECLARE_PARAMS_9, DECLARE_PARAMS_8, DECLARE_PARAMS_7, DECLARE_PARAMS_6, DECLARE_PARAMS_5, DECLARE_PARAMS_4,       \
     DECLARE_PARAMS_3, DECLARE_PARAMS_2, DECLARE_PARAMS_1, DECLARE_PARAMS_0)(__VA_ARGS__))
 
-// There are variable length elements in params.
-#define IF_IMPL_0(cond, true_case, false_case, ...) \
-  IfCond(                                           \
-    cond,                                           \
-    [this, true_case]() {                           \
-      DECLARE_PARAMS(__VA_ARGS__);                  \
-      true_case();                                  \
-    },                                              \
-    [this, false_case]() {                          \
-      DECLARE_PARAMS(__VA_ARGS__);                  \
-      false_case();                                 \
-    },                                              \
-    {__VA_ARGS__})
+#define _REGISTER_META_IMPL(name)      \
+  const auto meta_impl_helper_##name = \
+    RegMetaImplFactory::RegHelper(#name, []() { return std::make_shared<name##MetaImpl>(); });
 
-// The params is ().
-#define IF_IMPL_1(cond, true_case, false_case, ...) \
-  IfCond(                                           \
-    cond, [this, true_case]() { true_case(); }, [this, false_case]() { false_case(); }, {})
-
-// Select different macro definitions depending on whether params is empty.
-#define IF_IMPL_DISPATCH(cond, true_case, false_case, is_empty, ...) \
-  IF_IMPL_##is_empty(cond, true_case, false_case, __VA_ARGS__)
-
-#define IF_IMPL_SELECT(cond, true_case, false_case, is_empty, ...) \
-  IF_IMPL_DISPATCH(cond, true_case, false_case, is_empty, __VA_ARGS__)
-
-#define ARG_N(_1, _2, N, ...) N
-
-#define IS_EMPTY(params) ARG_N(EXPAND_PARAMS params, 0, 1)
-
-// Define IF_IMPL.
-#define IF_IMPL(cond, true_case, false_case, params) \
-  IF_IMPL_SELECT(cond, true_case, false_case, IS_EMPTY(params), EXPAND_PARAMS params)
+#define _REGISTER_META_IMPL_WITH_CHECK(name, check_func)              \
+  const auto meta_impl_helper_##name = RegMetaImplFactory::RegHelper( \
+    #name, []() { return std::make_shared<name##MetaImpl>(); }, check_func);
 
 // Definition of MetaImpl subclass.
-#define _DEFINE_FUNCTION_OP(name, check_func, bprop_func) \
-  class name##MetaImpl : public MetaImpl {                \
-   public:                                                \
-    explicit name##MetaImpl() : MetaImpl(#name) {         \
-      set_check_func(check_func);                         \
-      set_bprop_func(bprop_func);                         \
-    }                                                     \
-    ~name##MetaImpl() override = default;                 \
-    MS_DECLARE_PARENT(name##MetaImpl, MetaImpl)           \
-    void GenerateFunction() override;                     \
-  };                                                      \
-  static const MetaImplRegHelper meta_impl_helper_##name(#name, []() { return std::make_shared<name##MetaImpl>(); });
+#define _DEFINE_META_IMPL(name)                 \
+  class name##MetaImpl : public MetaImpl {      \
+   public:                                      \
+    name##MetaImpl() : MetaImpl(#name) {}       \
+    ~name##MetaImpl() override = default;       \
+    MS_DECLARE_PARENT(name##MetaImpl, MetaImpl) \
+    void GenerateFunction() override;           \
+  };
 
-// DEFINE_FUNCTION_OP(op_name) -> _DEFINE_FUNCTION_OP_1
-#define _DEFINE_FUNCTION_OP_1(name) _DEFINE_FUNCTION_OP(name, nullptr, nullptr)
+// DEFINE_FUNCTION_OP(op_name) -> _DEFINE_FUNCTION_OP
+#define _DEFINE_FUNCTION_OP(name) \
+  _DEFINE_META_IMPL(name)         \
+  _REGISTER_META_IMPL(name)
 
-// DEFINE_FUNCTION_OP(op_name, check_func) -> _DEFINE_FUNCTION_OP_2
-#define _DEFINE_FUNCTION_OP_2(name, check_func) _DEFINE_FUNCTION_OP(name, check_func, nullptr)
-
-// DEFINE_FUNCTION_OP(op_name, check_func, bprop) -> _DEFINE_FUNCTION_OP_3
-
-#define _DEFINE_FUNCTION_OP_3(name, check_func, bprop) \
-  _DEFINE_FUNCTION_OP(bprop, nullptr, nullptr)         \
-  _DEFINE_FUNCTION_OP(name, check_func, []() { return std::make_shared<bprop##MetaImpl>(); })
+// DEFINE_FUNCTION_OP(op_name, check_func) -> _DEFINE_FUNCTION_OP_WITH_CHECK
+#define _DEFINE_FUNCTION_OP_WITH_CHECK(name, check_func) \
+  _DEFINE_META_IMPL(name)                                \
+  _REGISTER_META_IMPL_WITH_CHECK(name, check_func)
 
 #define _EXPAND(x) x
-#define _GET_FUNCTION_OP_MACRO(_1, _2, _3, NAME, ...) NAME
+
+#define _GET_FUNCTION_OP_MACRO(_1, _2, NAME, ...) NAME
+
+// Define REGISTER_META_IMPL api.
+#define REGISTER_META_IMPL(...) \
+  _EXPAND(_GET_FUNCTION_OP_MACRO(__VA_ARGS__, _REGISTER_META_IMPL_WITH_CHECK, _REGISTER_META_IMPL)(__VA_ARGS__))
 
 // Define REGISTER_FUNCTION_OP api.
-#define REGISTER_FUNCTION_OP(...)                                                           \
-  _EXPAND(_GET_FUNCTION_OP_MACRO(__VA_ARGS__, _DEFINE_FUNCTION_OP_3, _DEFINE_FUNCTION_OP_2, \
-                                 _DEFINE_FUNCTION_OP_1)(__VA_ARGS__))
+#define REGISTER_FUNCTION_OP(...) \
+  _EXPAND(_GET_FUNCTION_OP_MACRO(__VA_ARGS__, _DEFINE_FUNCTION_OP_WITH_CHECK, _DEFINE_FUNCTION_OP)(__VA_ARGS__))
+
+// Define PRIMITIVE_BPROP_REG api.
+#define PRIMITIVE_BPROP_REG(name, bprop)     \
+  const auto bprop_meta_impl_helper_##name = \
+    RegMetaImplFactory::RegBpropHelper(kPrim##name, []() { return std::make_shared<bprop##MetaImpl>(); });
 
 #define BeginFunction(name, ...)            \
   void name##MetaImpl::GenerateFunction() { \

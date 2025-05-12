@@ -36,11 +36,6 @@
 
 namespace mindspore::prim {
 namespace {
-std::unordered_map<std::string, CreateFunc> &GetMetaImplTable() {
-  static std::unordered_map<std::string, CreateFunc> meta_impl_table;
-  return meta_impl_table;
-}
-
 ValuePtr GetPyValueWithCache(const std::string &module_name, const std::string &op_name) {
   static std::map<std::string, ValuePtr> py_value_map;
   auto full_name = module_name + "." + op_name;
@@ -91,24 +86,6 @@ ValuePtr GetClassTypeValue(const TypeId &type) {
 }
 }  // namespace
 
-bool IsMetaImpl(const std::string &name) {
-  const auto &meta_impl_table = GetMetaImplTable();
-  return meta_impl_table.find(name) != meta_impl_table.end();
-}
-
-void AddMetaImpl(const std::string &name, const CreateFunc &creator) {
-  (void)GetMetaImplTable().emplace(name, creator);
-}
-
-MetaImplPtr CreateMetaImpl(const std::string &name) {
-  auto &creators = GetMetaImplTable();
-  auto it = creators.find(name);
-  if (it == creators.end()) {
-    MS_LOG(EXCEPTION) << "Failed to create MetaImpl: " << name;
-  }
-  return it->second();
-}
-
 FuncGraphPtr MetaImpl::GenerateFuncGraph(const AbstractBasePtrList &input_args) {
   CheckInputs(input_args);
   BeginFunc("total");
@@ -122,24 +99,25 @@ PrimitivePtr MetaImpl::prim() const { return prim_; }
 
 void MetaImpl::set_manager(const FuncGraphManagerPtr &manager) { manager_ = manager; }
 
-void MetaImpl::set_check_func(const CheckFunc &check_func) { check_func_ = check_func; }
-
-void MetaImpl::set_bprop_func(const std::function<std::shared_ptr<MetaImpl>()> &bprop_func) {
-  bprop_func_ = bprop_func;
-}
-
 void MetaImpl::CheckInputs(const AbstractBasePtrList &input_args) const {
+  if (prim_ == nullptr) {
+    return;
+  }
   // Check inputs' number.
-  const auto &op_def = ops::GetOpDef(name_);
-  if (op_def != nullptr) {
-    auto args_size = op_def->args_.size();
-    if (input_args.size() != args_size) {
-      MS_LOG(EXCEPTION) << name_ << " requires " << args_size << " arguments, but got " << input_args.size() << ".";
-    }
+  const auto &prim_name = prim_->name();
+  const auto &op_def = ops::GetOpDef(prim_name);
+  if (op_def == nullptr) {
+    return;
+  }
+  auto args_size = op_def->args_.size();
+  if (input_args.size() != args_size) {
+    MS_LOG(EXCEPTION) << "Operator[" << prim_name << "] requires " << args_size << " arguments, but got "
+                      << input_args.size() << ".";
   }
   // Check inputs' abstract.
-  if (check_func_ != nullptr && prim_ != nullptr) {
-    check_func_(prim_, input_args);
+  const auto &check_func = RegMetaImplFactory::GetInstance().GetCheckFunc(prim_name);
+  if (check_func != nullptr) {
+    check_func(prim_, input_args);
   }
 }
 
@@ -170,22 +148,8 @@ FuncGraphPtr MetaImpl::EndFunc() {
 }
 
 void MetaImpl::DefineCustomBprop(const FuncGraphPtr &graph) {
-  if (bprop_func_ != nullptr) {
-    auto bprop_meta_impl = bprop_func_();
-    // Create bprop graph.
-    bprop_graph_ = std::make_shared<FuncGraph>();
-    bprop_graph_->set_flag(FUNC_GRAPH_FLAG_CORE, true);
-    MS_EXCEPTION_IF_NULL(bprop_graph_->debug_info());
-    bprop_graph_->debug_info()->set_name(name_ + "_" + parse::CUSTOM_BPROP_NAME);
-    // Implement bprop graph.
-    constexpr auto extend_size = 2;
-    auto params_size = graph->parameters().size() + extend_size;
-    AnfNodePtrList inputs{NewValueNode(bprop_meta_impl)};
-    for (size_t i = 0; i < params_size; ++i) {
-      (void)inputs.emplace_back(bprop_graph_->add_parameter());
-    }
-    CNodePtr cnode = bprop_graph_->NewCNodeInOrder(inputs);
-    bprop_graph_->set_output(cnode);
+  bprop_graph_ = RegMetaImplFactory::GetInstance().GetBprop(prim_);
+  if (bprop_graph_ != nullptr) {
     // Associate bprop to graph.
     MS_LOG(DEBUG) << "Define custom bprop for " << name_ << ": " << bprop_graph_->ToString();
     (void)graph->transforms().emplace(parse::CUSTOM_BPROP_NAME, FuncGraphTransform(bprop_graph_));
@@ -258,10 +222,111 @@ NodePtr MetaImpl::IfCond(const NodePtr &condition, const BlockFunc &true_branch,
   return NewNode(node_list);
 }
 
-NodePtr MetaImpl::For(const NodePtr &lower, const NodePtr &upper,
-                      const std::function<void(const NodePtr &, const NodePtr &)> &loop_func, const NodePtr &init_val) {
+NodePtr MetaImpl::If(const NodePtr &condition, const BlockFunc &true_branch, const BlockFunc &false_branch) {
+  return IfCond(condition, true_branch, false_branch, {});
+}
+
+NodePtr MetaImpl::If(const std::vector<std::pair<NodePtr, BlockFunc>> &if_branches, const BlockFunc &else_branch) {
+  MS_EXCEPTION_IF_CHECK_FAIL(!if_branches.empty(), "if_branches should not be empty.");
+  return IfBranchesInner(if_branches, else_branch, 0);
+}
+
+NodePtr MetaImpl::IfBranchesInner(const std::vector<std::pair<NodePtr, BlockFunc>> &if_branches,
+                                  const BlockFunc &else_branch, size_t index) {
+  constexpr auto first_index = 0;
+  const auto &[condition, true_branch] = if_branches[first_index];
+  if (index == if_branches.size() - 1) {
+    return IfCond(condition, true_branch, else_branch, {});
+  }
+  auto false_branch = [&]() { Return(IfBranchesInner(if_branches, else_branch, index + 1)); };
+  return IfCond(condition, true_branch, false_branch, {});
+}
+
+namespace {
+FuncGraphPtr BuildForBodyGraph(const FuncGraphPtr &loop_func_graph, const FuncGraphPtr &for_iter_graph) {
+  /* def body_func(sequence, result, index, len):
+   *   result = loop_func(index, sequence[index], result)
+   *   index = index + 1
+   *   return for_impl(sequence, result, index, len) */
+  auto body_graph = std::make_shared<FuncGraph>();
+  auto sequence_param = body_graph->add_parameter();
+  auto result_param = body_graph->add_parameter();
+  auto index_param = body_graph->add_parameter();
+  auto len_param = body_graph->add_parameter();
+  auto item = body_graph->NewCNodeInOrder({GetMultitypeOps("getitem"), sequence_param, index_param});
+  auto new_result = body_graph->NewCNodeInOrder({NewValueNode(loop_func_graph), index_param, item, result_param});
+  auto new_index = body_graph->NewCNodeInOrder(
+    {NewValueNode(prim::kPrimScalarAdd), index_param, NewValueNode(static_cast<int64_t>(1))});
+  auto output =
+    body_graph->NewCNodeInOrder({NewValueNode(for_iter_graph), sequence_param, new_result, new_index, len_param});
+  body_graph->set_output(output);
+  return body_graph;
+}
+
+FuncGraphPtr BuildForReturnGraph() {
+  /* def return_func(sequence, result, index, len):
+   *   return result */
+  auto return_graph = std::make_shared<FuncGraph>();
+  return_graph->debug_info()->set_name("for_return");
+  (void)return_graph->add_parameter();
+  auto result_param = return_graph->add_parameter();
+  (void)return_graph->add_parameter();
+  (void)return_graph->add_parameter();
+  return_graph->set_output(result_param);
+  return return_graph;
+}
+
+FuncGraphPtr BuildForIterGraph(const FuncGraphPtr &graph, const FuncGraphPtr &body_func_graph,
+                               const FuncGraphPtr &return_func_graph) {
+  /* def for_iter(sequence, result, index, len):
+   *   return index < len ? body_func(...) : return_func(...) */
+  graph->debug_info()->set_name("for_iter");
+  auto sequence_param = graph->add_parameter();
+  auto result_param = graph->add_parameter();
+  auto index_param = graph->add_parameter();
+  auto len_param = graph->add_parameter();
+  auto compare_node = graph->NewCNodeInOrder({NewValueNode(prim::kPrimScalarLt), index_param, len_param});
+  auto cond_node = graph->NewCNodeInOrder({NewValueNode(prim::kPrimCond), compare_node, NewValueNode(MakeValue(true))});
+  auto switch_node = graph->NewCNodeInOrder(
+    {NewValueNode(prim::kPrimSwitch), cond_node, NewValueNode(body_func_graph), NewValueNode(return_func_graph)});
+  auto output_node = graph->NewCNodeInOrder({switch_node, sequence_param, result_param, index_param, len_param});
+  graph->set_output(output_node);
+  return graph;
+}
+}  // namespace
+
+NodePtr MetaImpl::For(const std::function<void(const NodePtr &, const NodePtr &, const NodePtr &)> &loop_func,
+                      const NodePtr &sequence, const NodePtr &result, const NodePtr &lower, const NodePtr &upper) {
+  // Define for_iter(sequence, result, index, len)
+  auto for_iter_graph = std::make_shared<FuncGraph>();
+  for_iter_graph->set_manager(manager_);
+  // Define loop_func(index, item, result)
+  BeginFunc("loop_func");
+  auto param_loop_index = NewParam("index");
+  auto param_loop_item = NewParam("item");
+  auto param_loop_result = NewParam("result");
+  loop_func(param_loop_index, param_loop_item, param_loop_result);
+  auto loop_func_graph = EndFunc();
+  // Build body graph.
+  auto body_func_graph = BuildForBodyGraph(loop_func_graph, for_iter_graph);
+  body_func_graph->set_manager(manager_);
+  // Build return graph.
+  auto return_func_graph = BuildForReturnGraph();
+  return_func_graph->set_manager(manager_);
+  // Build for_iter graph.
+  BuildForIterGraph(for_iter_graph, body_func_graph, return_func_graph);
+  // Call for_iter(sequence, result, lower=0, upper=len(sequence))
+  auto new_lower = lower != nullptr ? lower : NewValueNode(static_cast<int64_t>(0));
+  auto new_upper = upper != nullptr ? upper : Len(sequence);
+  NodePtrList node_list{NewValueNode(for_iter_graph), sequence, result, new_lower, new_upper};
+  return NewNode(node_list);
+}
+
+NodePtr MetaImpl::ForiLoop(const NodePtr &lower, const NodePtr &upper,
+                           const std::function<void(const NodePtr &, const NodePtr &)> &loop_func,
+                           const NodePtr &init_val) {
   // Build graph for loop body.
-  BeginFunc("for_loop");
+  BeginFunc("ForiLoop");
   auto param_index = NewParam("index");
   auto param_value = NewParam("value");
   loop_func(param_index, param_value);
@@ -374,6 +439,44 @@ NodePtr MetaImpl::Or(const NodePtr &x, const NodePtr &y) {
   return IfCond(x, true_branch, false_branch, {x, y});
 }
 
+NodePtr MetaImpl::Len(const NodePtr &x) {
+  auto len_func = NewNode({NewValueNode(prim::kPrimGetAttr), x, NewValueNode(MakeValue("__len__"))});
+  return NewNode({len_func});
+}
+
+NodePtr MetaImpl::ImplAllAny(const NodePtr &input, bool is_all) {
+  constexpr int idx_zero = 0;
+  constexpr int idx_first = 1;
+  constexpr int idx_second = 2;
+  auto cond_func = [&](const NodePtr &val) {
+    auto index = GetItem(val, Value(idx_zero));
+    auto result = GetItem(val, Value(idx_first));
+    auto iterable = GetItem(val, Value(idx_second));
+    auto index_valid = NewNode({NewValueNode(prim::kPrimScalarLt), index, Len(iterable)});
+    // All: index < len(iterable) and result. Any: index < len(iterable) and not result.
+    auto check = is_all ? result : Not(result);
+    Return(And(index_valid, check));
+  };
+  auto loop_func = [&](const NodePtr &val) {
+    auto index = GetItem(val, Value(idx_zero));
+    auto result = GetItem(val, Value(idx_first));
+    auto iterable = GetItem(val, Value(idx_second));
+    // Example code: bool(iterable[index])
+    auto new_res = NewNode({NewValueNode(prim::kPrimCond), GetItem(iterable, index), NewValueNode(MakeValue(false))});
+    // Example code: (index + 1, new_res, iterable)
+    auto new_index = NewNode({NewValueNode(prim::kPrimScalarAdd), index, Value(idx_first)});
+    Return(Tuple(new_index, new_res, iterable));
+  };
+  auto default_value = is_all ? Value(true) : Value(false);
+  auto init_val = Tuple(Value(idx_zero), default_value, input);
+  auto res = While(cond_func, loop_func, init_val);
+  return GetItem(res, Value(idx_first));
+}
+
+NodePtr MetaImpl::All(const NodePtr &iterable) { return ImplAllAny(iterable, true); }
+
+NodePtr MetaImpl::Any(const NodePtr &iterable) { return ImplAllAny(iterable, false); }
+
 NodePtr MetaImpl::ScalarAdd(const NodePtr &x, const NodePtr &y) {
   return NewNode({NewValueNode(prim::kPrimScalarAdd), x, y});
 }
@@ -430,5 +533,70 @@ NodePtr MetaImpl::IsInstance(const NodePtr &x, const std::vector<TypeId> &types)
                        [](const auto &type) { return NewValueNode(GetClassTypeValue(type)); });
   auto class_type_list_node = NewNode(class_type_list);
   return NewNode({NewValueNode(prim::kPrimIsInstance), x, class_type_list_node});
+}
+
+RegMetaImplFactory &RegMetaImplFactory::GetInstance() {
+  static RegMetaImplFactory instance{};
+  return instance;
+}
+
+bool RegMetaImplFactory::IsMetaImpl(const std::string &name) { return registry_.find(name) != registry_.end(); }
+
+void RegMetaImplFactory::AddMetaImpl(const std::string &name, const CreateFunc &creator) {
+  (void)registry_.emplace(name, creator);
+}
+
+MetaImplPtr RegMetaImplFactory::CreateMetaImpl(const std::string &name) {
+  const auto &it = registry_.find(name);
+  if (it == registry_.end()) {
+    MS_LOG(INTERNAL_EXCEPTION) << "Failed to create MetaImpl: " << name;
+  }
+  return it->second();
+}
+
+void RegMetaImplFactory::RegBprop(const PrimitivePtr &prim, const CreateFunc &creator) {
+  (void)bprop_map_.emplace(prim->name(), creator);
+}
+
+FuncGraphPtr RegMetaImplFactory::GetBprop(const PrimitivePtr &prim) {
+  if (prim == nullptr) {
+    return nullptr;
+  }
+  const auto &prim_name = prim->name();
+  const auto &it = bprop_map_.find(prim_name);
+  if (it == bprop_map_.end()) {
+    return nullptr;
+  }
+  auto bprop_meta_impl = it->second();
+  MS_LOG(DEBUG) << "Get bprop " << bprop_meta_impl->ToString() << " for Operator[" << prim_name << "].";
+  // Implement bprop graph.
+  auto bprop_graph = std::make_shared<FuncGraph>();
+  bprop_graph->set_flag(FUNC_GRAPH_FLAG_CORE, true);
+  MS_EXCEPTION_IF_NULL(bprop_graph->debug_info());
+  bprop_graph->debug_info()->set_name(prim_name + "_" + parse::CUSTOM_BPROP_NAME);
+  constexpr auto extend_size = 2;
+  const auto &op_def = ops::GetOpDef(prim_name);
+  MS_EXCEPTION_IF_NULL(op_def);
+  auto args_size = op_def->args_.size();
+  auto params_size = args_size + extend_size;
+  AnfNodePtrList inputs{NewValueNode(bprop_meta_impl)};
+  for (size_t i = 0; i < params_size; ++i) {
+    (void)inputs.emplace_back(bprop_graph->add_parameter());
+  }
+  CNodePtr cnode = bprop_graph->NewCNodeInOrder(inputs);
+  bprop_graph->set_output(cnode);
+  if (GetPrimitiveFlag(prim, GRAPH_FLAG_SIDE_EFFECT_BACKPROP)) {
+    bprop_graph->set_flag(mindspore::kFuncGraphFlagReAutoMonad, true);
+  }
+  return bprop_graph;
+}
+
+void RegMetaImplFactory::RegCheckFunc(const std::string &name, const CheckFunc &check_func) {
+  (void)check_func_map_.emplace(name, check_func);
+}
+
+CheckFunc RegMetaImplFactory::GetCheckFunc(const std::string &prim_name) {
+  const auto &it = check_func_map_.find(prim_name);
+  return it != check_func_map_.end() ? it->second : nullptr;
 }
 }  // namespace mindspore::prim
