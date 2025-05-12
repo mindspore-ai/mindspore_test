@@ -26,6 +26,7 @@
 #include "frontend/optimizer/optimizer.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/graph_util/graph_info.h"
+#include "pipeline/jit/ps/graph_circle_handler.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
@@ -117,6 +118,7 @@ void MoveCastBehindAllGather(const FuncGraphPtr &func_graph, const CNodePtr &all
 void OptimizeParallelAllGatherComm(const FuncGraphPtr &graph) {
   auto manager = graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
+  circle_handler::SetAttrToDepend(graph);
   for (const auto &each_graph : manager->func_graphs()) {
     std::list<CNodePtr> graph_orders = each_graph->GetOrderedCnodes();
     std::vector<CNodePtr> origin_nodes_topological(graph_orders.cbegin(), graph_orders.cend());
@@ -148,6 +150,7 @@ void OptimizeParallelAllGatherComm(const FuncGraphPtr &graph) {
       }
     }
   }
+  circle_handler::DetectAndRevertGraphCircle(graph, manager, "OptimizeParallelAllGatherComm");
 }
 }  // namespace parallel
 }  // namespace mindspore

@@ -32,6 +32,7 @@
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/optimizer/optimizer.h"
 #include "include/common/utils/utils.h"
+#include "pipeline/jit/ps/graph_circle_handler.h"
 #include "frontend/parallel/graph_util/pipeline_split_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
@@ -158,6 +159,7 @@ void OverlapParamGather(const FuncGraphPtr &func_graph) {
   }
 
   MS_EXCEPTION_IF_NULL(func_graph);
+  circle_handler::SetAttrToDepend(func_graph);
   const auto &node_list = TopoSort(func_graph->get_return());
 
   // Solve for cell_reuse
@@ -173,6 +175,8 @@ void OverlapParamGather(const FuncGraphPtr &func_graph) {
     return;
   }
   InsertDependByOrder(ordered_param_gather_nodes);
+
+  circle_handler::DetectAndRevertGraphCircle(func_graph, func_graph->manager(), "OverlapParamGather");
 }
 }  // namespace parallel
 }  // namespace mindspore
