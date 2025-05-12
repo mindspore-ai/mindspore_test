@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,41 +22,13 @@
 
 namespace mindspore {
 namespace ops {
-BaseShapePtr EltwiseOpFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                           const std::vector<AbstractBasePtr> &input_args) const {
-  auto input_shape = input_args[kInputIndex0]->GetShape();
-  return input_shape->Clone();
+ShapeArray EltwiseOpFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  return {input_infos[kInputIndex0]->GetShape()};
 }
 
-BaseShapePtr EltwiseOpFuncImpl::InferShapeWithCheck(const PrimitivePtr &primitive,
-                                                    const std::vector<AbstractBasePtr> &input_args,
-                                                    const size_t max_rank) const {
-  auto input_shape = input_args[kInputIndex0]->GetShape();
-  auto input_shape_vec = input_shape->GetShapeVector();
-  MS_CHECK_VALUE(input_shape_vec.size() < max_rank,
-                 CheckAndConvertUtils::FormatCheckIntegerMsg("rank of input", input_shape_vec.size(), kLessThan,
-                                                             max_rank, primitive));
-  return input_shape->Clone();
+std::vector<TypeId> EltwiseOpFuncImpl::InferType(const PrimitivePtr &primitive,
+                                                 const InferInfoPtrList &input_infos) const {
+  return {input_infos[kInputIndex0]->GetType()};
 }
-
-TypePtr EltwiseOpFuncImpl::InferType(const PrimitivePtr &primitive,
-                                     const std::vector<AbstractBasePtr> &input_args) const {
-  return input_args[kInputIndex0]->GetType();
-}
-
-ShapeArray EltwiseOpFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
-  MS_EXCEPTION_IF_NULL(x_tensor);
-  const auto &x_shape = x_tensor->shape();
-  return {x_shape};
-}
-
-TypePtrList EltwiseOpFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
-  MS_EXCEPTION_IF_NULL(x_tensor);
-  const auto &input_x_type = x_tensor->Dtype();
-  return {input_x_type};
-}
-
 }  // namespace ops
 }  // namespace mindspore

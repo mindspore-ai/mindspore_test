@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2023 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,26 +22,18 @@
 #include "ops_utils/op_constants.h"
 
 namespace mindspore::ops {
-BaseShapePtr ReciprocalFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                            const std::vector<AbstractBasePtr> &input_args) const {
-  auto x_shape = input_args[kIndex0]->GetShape();
-  return x_shape->Clone();
-}
-
-TypePtr ReciprocalFuncImpl::InferType(const PrimitivePtr &primitive,
-                                      const std::vector<AbstractBasePtr> &input_args) const {
-  auto input_type = input_args[kIndex0]->GetType();
-  auto input_type_id = input_type->cast<TensorTypePtr>()->element()->type_id();
+std::vector<TypeId> ReciprocalFuncImpl::InferType(const PrimitivePtr &primitive,
+                                                  const InferInfoPtrList &input_infos) const {
+  const auto &input_type_id = input_infos[kInputIndex0]->GetType();
   static const std::vector<TypeId> int_or_bool = {kNumberTypeUInt8,  kNumberTypeUInt16, kNumberTypeUInt32,
                                                   kNumberTypeUInt64, kNumberTypeInt8,   kNumberTypeInt16,
                                                   kNumberTypeInt32,  kNumberTypeInt64,  kNumberTypeBool};
   bool is_int_or_bool = std::any_of(int_or_bool.begin(), int_or_bool.end(),
-                                    [&input_type_id](TypeId type_id) { return input_type_id == type_id; });
+                                    [&input_type_id](const TypeId &type_id) { return input_type_id == type_id; });
   if (is_int_or_bool) {
-    return std::make_shared<TensorType>(kFloat32);
-  } else {
-    return input_type->Clone();
+    return {kNumberTypeFloat32};
   }
+  return {input_type_id};
 }
 
 template <typename T>

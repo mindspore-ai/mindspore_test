@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,14 +18,13 @@
 #define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_SIGMOID_H_
 
 #include <vector>
-#include "ops/ops_func_impl/op_func_impl.h"
+#include "infer/ops_func_impl/eltwise_op.h"
 
 namespace mindspore {
 namespace ops {
-class OPS_API SigmoidFuncImpl : public OpFuncImpl {
+class OPS_API SigmoidFuncImpl : public EltwiseOpFuncImpl {
  public:
-  BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-  TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+  std::vector<TypeId> InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
 };
 }  // namespace ops
 }  // namespace mindspore
