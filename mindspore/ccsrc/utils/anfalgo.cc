@@ -70,6 +70,7 @@ using abstract::AbstractTuple;
 
 namespace {
 constexpr size_t kNopNodeRealInputIndex = 1;
+constexpr int64_t kAll2AllSize = 262144;
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
 
@@ -267,6 +268,18 @@ bool IsNodeDynamicShape(const AnfNodePtr &node) {
     return true;
   }
   return in_dynamic || out_dynamic;
+}
+
+bool IsNeededOverlapCommA2a(const CNodePtr &cnode, const std::string &pp_1f1b_value) {
+  bool is_target = false;
+  if (pp_1f1b_value.find("AlltoAll") != std::string::npos) {
+    is_target =
+      is_target || IsPrimitiveCNode(cnode, prim::kPrimAlltoAll) || IsPrimitiveCNode(cnode, prim::kPrimAllToAll);
+  }
+  if (pp_1f1b_value.find("AlltoAllV") != std::string::npos) {
+    is_target = is_target || IsPrimitiveCNode(cnode, prim::kPrimAlltoAllV);
+  }
+  return is_target;
 }
 }  // namespace
 
@@ -2923,6 +2936,82 @@ void AnfAlgo::InsertDepend(const AnfNodePtr &prior_node, const AnfNodePtr &post_
     depend_node->AddAttr(attr_tag, MakeValue<bool>(true));
   }
   (void)manager->SetEdge(post_node, post_node_input_index, depend_node);
+}
+
+bool AnfAlgo::IsNeededOverlapComm(const CNodePtr &cnode, const std::string &pp_1f1b_value) {
+  bool is_target = IsNeededOverlapCommA2a(cnode, pp_1f1b_value);
+  if (pp_1f1b_value.find("MorphAllGather") != std::string::npos) {
+    is_target =
+      is_target || (IsPrimitiveCNode(cnode, prim::kPrimAllGather) &&
+                    GetCNodePrimitive(cnode)->instance_name().find("parallel_optimizer") == std::string::npos &&
+                    GetCNodePrimitive(cnode)->instance_name().find("redistribution") == std::string::npos &&
+                    GetCNodePrimitive(cnode)->instance_name().find("forward_op") == std::string::npos);
+  } else if (pp_1f1b_value.find("AllGather") != std::string::npos) {
+    is_target =
+      is_target || (IsPrimitiveCNode(cnode, prim::kPrimAllGather) &&
+                    GetCNodePrimitive(cnode)->instance_name().find("parallel_optimizer") == std::string::npos);
+  }
+  if (pp_1f1b_value.find("MorphReduceScatter") != std::string::npos) {
+    is_target =
+      is_target || (IsPrimitiveCNode(cnode, prim::kPrimReduceScatter) &&
+                    GetCNodePrimitive(cnode)->instance_name().find("parallel_optimizer") == std::string::npos &&
+                    GetCNodePrimitive(cnode)->instance_name().find("redistribution") == std::string::npos &&
+                    GetCNodePrimitive(cnode)->instance_name().find("forward_op") == std::string::npos);
+  } else if (pp_1f1b_value.find("ReduceScatter") != std::string::npos) {
+    is_target =
+      is_target || (IsPrimitiveCNode(cnode, prim::kPrimReduceScatter) &&
+                    GetCNodePrimitive(cnode)->instance_name().find("parallel_optimizer") == std::string::npos);
+  }
+  return is_target;
+}
+
+AnfNodePtr AnfAlgo::GetInputNode(const AnfNodePtr &node,
+                                 std::function<std::pair<bool, size_t>(const CNodePtr &)> check_filter) {
+  std::queue<AnfNodePtr> node_queue;
+  node_queue.push(node);
+  while (!node_queue.empty()) {
+    auto end = node_queue.front();
+    node_queue.pop();
+    if (!end->isa<CNode>()) {
+      return end;
+    }
+    auto cnode_queue_end = end->cast<CNodePtr>();
+    auto check_res = check_filter(cnode_queue_end);
+    if (!check_res.first) {
+      return end;
+    }
+    node_queue.push(cnode_queue_end->input(check_res.second));
+  }
+  return node;
+}
+
+bool AnfAlgo::IsNeededShape(const CNodePtr &cnode) {
+  if (!(cnode->input(kIndex1)->abstract() && cnode->input(kIndex1)->abstract()->GetShape())) {
+    return true;
+  }
+  auto a2a_shape = cnode->input(kIndex1)->abstract()->GetShape()->GetShapeVector();
+  auto a2a_size = std::accumulate(a2a_shape.begin(), a2a_shape.end(), 1, std::multiplies<int64_t>());
+  if (std::find(a2a_shape.begin(), a2a_shape.end(), -1) != a2a_shape.end()) {
+    auto input_node = GetInputNode(cnode->input(kIndex1), [&](const CNodePtr &cnode) {
+      bool filter = IsPrimitiveCNode(cnode, prim::kPrimDepend) || IsPrimitiveCNode(cnode, prim::kPrimLoad) ||
+                    IsPrimitiveCNode(cnode, prim::kPrimReshape) || IsPrimitiveCNode(cnode, prim::kPrimCast);
+      return std::make_pair(filter, 1);
+    });
+    if (!input_node->isa<CNode>()) {
+      return true;
+    }
+    auto input_cnode = input_node->cast<CNodePtr>();
+    if (input_cnode->input(kIndex1)->abstract() && input_cnode->input(kIndex1)->abstract()->GetShape()) {
+      auto a2a_input_shape = input_cnode->input(kIndex1)->abstract()->GetShape()->GetShapeVector();
+      auto a2a_input_size =
+        std::accumulate(a2a_input_shape.begin(), a2a_input_shape.end(), 1, std::multiplies<int64_t>());
+      if (std::find(a2a_input_shape.begin(), a2a_input_shape.end(), -1) != a2a_input_shape.end()) {
+        return true;
+      }
+      return a2a_input_size >= kAll2AllSize;
+    }
+  }
+  return a2a_size >= kAll2AllSize;
 }
 
 bool AnfAlgo::IsMonadType(const TypeId &type_id) {

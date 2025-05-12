@@ -359,7 +359,7 @@ def test_pipeline_lazy_inline_overlap_grad_comm_nodes_stage0():
     """
     context.set_auto_parallel_context(device_num=32, global_rank=0, pipeline_stages=2)
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
-    context.set_context(recompute_comm_overlap=True)
+    context.set_context(recompute_comm_overlap="AllGather,ReduceScatter")
     data = Tensor(np.ones([32, 64]), dtype=ms.float32)
     label = Tensor(np.ones([64, 64]), dtype=ms.float32)
     stra1 = ((4, 1), (1, 4))

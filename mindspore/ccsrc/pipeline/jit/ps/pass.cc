@@ -48,6 +48,7 @@
 #include "frontend/parallel/pipeline_transformer/gpipe_interleave_scheduler.h"
 #include "frontend/parallel/pass/merge_comm.h"
 #include "frontend/parallel/pass/merge_send_recv.h"
+#include "frontend/parallel/pass/merge_recompute_call_nodes.h"
 #include "frontend/parallel/pass/set_forward_comm_id_for_comm_node.h"
 #include "frontend/parallel/cache_embedding/cache_embedding.h"
 #include "frontend/parallel/cache_embedding/ps_embedding_cache_inserter.h"
@@ -85,6 +86,7 @@
 #include "frontend/parallel/pipeline_transformer/pipeline_transformer.h"
 #include "frontend/parallel/pass/overlap_grad_comm.h"
 #include "frontend/parallel/pass/overlap_param_gather.h"
+#include "frontend/parallel/pass/overlap_recompute_comm.h"
 #include "frontend/optimizer/recompute.h"
 #include "frontend/optimizer/irpass/recompute.h"
 #include "frontend/optimizer/slice_activation_in_recompute.h"
@@ -644,6 +646,7 @@ OptPassGroupMap GetOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass, cons
      {"offload_activation", opt::OptPassConfig(OffloadActivationWrapper)},
      {"cell_reuse_recompute_pass", opt::OptPassConfig(opt::irpass::Recomputation())},
      {"cell_reuse_handle_not_recompute_node_pass", cell_reuse_handle_not_recompute_node_pass},
+     {"merge_recompute_call_nodes", opt::OptPassConfig(parallel::MergeRecomputeCallNodes)},
      {"before_grad", before_grad},
      {kSetForwardCommIdForCommNodePass, opt::OptPassConfig(parallel::SetForwardCommIdForCommNode)},
      {kMetaFgExpandFlag, opt::OptPassConfig(opt::irpass::ExpandMetaFg())},
@@ -1113,6 +1116,15 @@ bool OverlapRecomputeAllGatherAndFlashAttentionGradPass(const ResourcePtr &resou
     return true;
   }
   parallel::OverlapRecomputeAllGatherAndFlashAttentionGrad(resource->func_graph());
+  return true;
+}
+
+bool OverlapRecomputeCommPass(const ResourcePtr &resource) {
+  MS_EXCEPTION_IF_NULL(resource);
+  if (IsPassDisableForGPTO()) {
+    return true;
+  }
+  parallel::OverlapRecomputeComm(resource->func_graph());
   return true;
 }
 
@@ -1797,6 +1809,7 @@ std::vector<PassItem> kVmPasses = {
   {"overlap_recompute_and_grad_model_parallel", OverlapRecomputeAndGradModelParallel},
   {"overlap_grad_matmul_and_grad_allreduce", OverlapGradMatmulAndGradAllreduce},
   {"overlap_recompute_allgather_and_fa_grad", OverlapRecomputeAllGatherAndFlashAttentionGradPass},
+  {"overlap_recompute_comm", OverlapRecomputeCommPass},
   {"overlap_grad_ring_attention", OverlapGradRingAttentionPass},
   {"overlap_grad_flash_sp", OverlapGradFlashSP},
   {"begin_end_overlap_inline", BeginEndOverlapInlinePass},
