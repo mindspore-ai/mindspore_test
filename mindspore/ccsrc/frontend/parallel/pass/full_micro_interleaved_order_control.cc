@@ -26,6 +26,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/common/utils/utils.h"
 #include "frontend/parallel/step_parallel.h"
+#include "pipeline/jit/ps/graph_circle_handler.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "include/common/utils/anfalgo.h"
 
@@ -303,6 +304,7 @@ void FullMicroInterleavedOrderControl(const FuncGraphPtr &graph) {
   MS_EXCEPTION_IF_NULL(graph);
   auto manager = graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
+  circle_handler::SetAttrToDepend(graph);
   std::list<CNodePtr> orders = graph->GetOrderedCnodes();
   std::vector<CNodePtr> origin_nodes_topological(orders.cbegin(), orders.cend());
   if (parallel::ParallelContext::GetInstance()->pipeline_stage_split_num() == 1) {
@@ -310,6 +312,7 @@ void FullMicroInterleavedOrderControl(const FuncGraphPtr &graph) {
     return;
   }
   MicroInterleavedOrderControlPipeline(manager, origin_nodes_topological);
+  circle_handler::DetectAndRevertGraphCircle(graph, manager, "FullMicroInterleavedOrderControl");
 }
 }  // namespace parallel
 }  // namespace mindspore

@@ -34,6 +34,7 @@
 #include "frontend/parallel/pass/interleave_branches_utils.h"
 #include "include/common/utils/utils.h"
 #include "utils/ms_context.h"
+#include "pipeline/jit/ps/graph_circle_handler.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {
@@ -142,6 +143,7 @@ void InterleaveParallelBranches(const FuncGraphPtr &graph) {
 
   auto manager = graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
+  circle_handler::SetAttrToDepend(graph);
   std::vector<InterLeaveScopePtr> interleave_scopes;
   size_t scope_id = 0;
   std::unordered_map<std::string, bool> target_unique_id_map;
@@ -210,6 +212,7 @@ void InterleaveParallelBranches(const FuncGraphPtr &graph) {
   for (auto &interleave_scope : interleave_scopes) {
     InterleaveParallelBranches(interleave_scope, true);
   }
+  circle_handler::DetectAndRevertGraphCircle(graph, manager, "InterleaveParallelBranches");
 }
 }  // namespace parallel
 }  // namespace mindspore
