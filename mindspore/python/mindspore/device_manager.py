@@ -120,13 +120,20 @@ def set_deterministic(deterministic):
     """
     Enables or disables deterministic computing.
 
-    When deterministic computing is enabled, the same output is generated if an operator is executed
-    for multiple times with the same hardware and input.This often slows down operator execution.
-    In distributed scenario, we suggest user to set deterministic mode before
-    calling :func:`mindspore.communication.init` to enable deterministic operation for
-    communication operators in the global communication group.
+    This configuration is a global configuration, and once enabled, subsequent calculation operations
+    will follow the configuration setting. When deterministic computing is enabled, the same output
+    is generated if an operator is executed for multiple times with the same hardware and input. This often
+    slows down operator execution.
 
     The framework not enabled deterministic computation by default.
+
+    Note:
+        - In distributed scenario, we suggest user to set deterministic computing before
+          calling :func:`mindspore.communication.init` to enable deterministic operation for
+          communication operators in the global communication group.
+        - The fixed method for deterministic calculation must be in the same main process as the network,
+          operator, etc. Only one deterministic state can be set in the same thread, and it is not recommended
+          to set deterministic state multiple times in one thread.
 
     Args:
         deterministic (bool): Whether to enable deterministic computing.
