@@ -2173,6 +2173,7 @@ RunningStatus MSBackendBase::Run(BackendGraphId graph_id, const VectorRef &input
   static auto disable_pre_build_comm = common::IsDisableRuntimeConfig(common::kRuntimePreBuildCommKernel);
   if (!disable_pre_build_comm) {
     PROF_START(PreLaunchCommKernel);
+    runtime::PreLaunchComm::GetInstance().CachePreLaunchOrder(graph_id);
     runtime::PreLaunchComm::GetInstance().PreLaunchCommKernel(actor_set);
     PROF_END(PreLaunchCommKernel);
   }

@@ -20,6 +20,8 @@
 #include "runtime/hardware/device_context.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "runtime/graph_scheduler/device_tensor_store.h"
+#include "runtime/graph_scheduler/pre_launch_comm.h"
+#include "runtime/graph_scheduler/graph_scheduler.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 
 namespace mindspore {
@@ -173,6 +175,7 @@ void FinalizeCommunication() {
     }
     MS_LOG(WARNING) << "Destroy sub-group, group name: " << item.first << " ok";
   }
+  distributed::collective::CollectiveManager::instance()->ClearCacheInitedGroups();
   MS_LOG(WARNING) << "Finalize communication end";
 }
 
@@ -202,6 +205,10 @@ void RebuildSubCommunication() {
     }
     MS_LOG(WARNING) << "Rebuild sub-group, group name: " << item.first << " ok";
   }
+  while (group_info.size() != distributed::collective::CollectiveManager::instance()->InitedGroupSize()) {
+    MS_LOG(DEBUG) << "Wait all group init ok";
+  }
+  MS_LOG(WARNING) << "All group init done";
   UCEException::GetInstance().set_force_stop_flag(false);
   UCEException::GetInstance().clear_uce_error();
   MS_LOG(WARNING) << "Rebuild communication end";
@@ -215,6 +222,23 @@ void CleanUniqueId() {
     distributed::collective::CollectiveManager::instance()->ClearUniqueID(item.first);
   }
   MS_LOG(WARNING) << "End clean unique id";
+}
+
+void RePreLaunchSendRecv(int32_t device_id) {
+  MS_LOG(WARNING) << "Try to pre-launch send recv. device id: " << device_id;
+  const auto &launch_orders = runtime::PreLaunchComm::GetInstance().GetPreLaunchOrder(true);
+  static auto disable_pre_build_comm = common::IsDisableRuntimeConfig(common::kRuntimePreBuildCommKernel);
+  for (auto graph_id : launch_orders) {
+    const auto &actor_set = runtime::GraphScheduler::GetInstance().Fetch(graph_id);
+    MS_EXCEPTION_IF_NULL(actor_set);
+    if (!disable_pre_build_comm) {
+      PROF_START(PreLaunchCommKernel);
+      MS_LOG(WARNING) << "Pre launch comm kernel, graph_id: " << graph_id;
+      runtime::PreLaunchComm::GetInstance().PreLaunchCommKernel(actor_set);
+      PROF_END(PreLaunchCommKernel);
+    }
+  }
+  MS_LOG(WARNING) << "Pre-launch send recv success";
 }
 
 void RegTFT(py::module *m) {
@@ -239,5 +263,6 @@ void RegTFT(py::module *m) {
   (void)m->def("_rebuild_sub_group", &RebuildSubCommunication, "Rebuild comm.");
   (void)m->def("_rebuild_world_group", &RebuildHcclWorldGroup, "Rebuild comm.");
   (void)m->def("is_reboot_node", &IsRebootNode, "Get reboot node flag.");
+  (void)m->def("_pre_launch_send_recv", &RePreLaunchSendRecv, "PreLaunch Send Recv before launch graph.");
 }
 }  // namespace mindspore

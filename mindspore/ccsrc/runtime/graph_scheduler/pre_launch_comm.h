@@ -61,12 +61,15 @@ class BACKEND_EXPORT PreLaunchComm {
                    std::vector<LaunchCommNode> *, std::vector<LaunchCommNode> *);
   void Launch(std::vector<LaunchCommNode> &, SortedFunc);
   void PreLaunchCommKernel(runtime::ActorSet *);
+  void CachePreLaunchOrder(uint32_t graph_id);
+  std::vector<uint32_t> GetPreLaunchOrder(bool force_launch);
 
  private:
   PreLaunchComm() = default;
   ~PreLaunchComm() = default;
 
   std::set<std::string> is_pre_launch_comm_;
+  std::vector<uint32_t> orders_;
 };
 
 }  // namespace runtime
