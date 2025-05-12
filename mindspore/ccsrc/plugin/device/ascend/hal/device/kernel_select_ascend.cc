@@ -459,10 +459,9 @@ inline bool NeedTransDataWhenInferBoost(const CNodePtr &kernel, const KernelType
            IsOneOfPrimitiveCNode(kernel, {prim::kPrimReshapeExt, prim::kPrimReshape, prim::kPrimGroupedMatmul});
   } else if (soc_version == kAscendVersion910b || soc_version == kAscendVersion910_93) {
     if (IsOneOfPrimitiveCNode(kernel, {prim::kPrimGroupedMatmulV4})) {
-      auto x_dtype = common::AnfAlgo::GetPrevNodeOutputInferType(kernel, 0);
-      auto weight_dtype = common::AnfAlgo::GetPrevNodeOutputInferType(kernel, 1);
-      if (x_dtype->type_id() == kNumberTypeInt8 &&
-          (weight_dtype->type_id() == kNumberTypeInt8 || weight_dtype->type_id() == kNumberTypeInt4)) {
+      auto x_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(kernel, 0);
+      auto weight_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(kernel, 1);
+      if (x_dtype == kNumberTypeInt8 && (weight_dtype == kNumberTypeInt8 || weight_dtype == kNumberTypeInt4)) {
         auto x_shape = common::AnfAlgo::GetPrevNodeOutputInferShape(kernel, 0);
         auto weight_shape = common::AnfAlgo::GetPrevNodeOutputInferShape(kernel, 1);
         constexpr auto kRankTwo = 2;
