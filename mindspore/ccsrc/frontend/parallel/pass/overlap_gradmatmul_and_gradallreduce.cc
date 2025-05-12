@@ -30,6 +30,7 @@
 #include "frontend/parallel/step_parallel_utils.h"
 #include "include/common/utils/utils.h"
 #include "include/common/utils/anfalgo.h"
+#include "pipeline/jit/ps/graph_circle_handler.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
@@ -259,6 +260,7 @@ void OverlapGradMatmulAndGradAllreduce(const FuncGraphPtr &graph) {
   }
   auto manager = graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
+  circle_handler::SetAttrToDepend(graph);
   const auto cell_reuse = ms_context->CellReuseLevel() != CellReuseLevel::kNoCellReuse;
   if (cell_reuse) {
     for (const auto &each_graph : manager->func_graphs()) {
@@ -275,6 +277,7 @@ void OverlapGradMatmulAndGradAllreduce(const FuncGraphPtr &graph) {
   } else {
     DoOverLapWay(manager, graph, graph);
   }
+  circle_handler::DetectAndRevertGraphCircle(graph, manager, "OverlapGradMatmulAndGradAllreduce");
 }
 }  // namespace parallel
 }  // namespace mindspore
