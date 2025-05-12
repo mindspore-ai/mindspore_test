@@ -34,15 +34,6 @@ endif()
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/proto_compile_config.cmake)
 
-# for pybind_api/np_dtype/np_dtypes.cc
-find_package(Python3 COMPONENTS Interpreter Development)
-if(Python3_FOUND)
-    find_package(Python3 COMPONENTS NumPy Development)
-    if(Python3_NumPy_FOUND)
-        include_directories(${Python3_NumPy_INCLUDE_DIRS})
-    endif()
-endif()
-
 ## make sub objects
 set(SUB_COMP
         transform/express_ir
@@ -66,7 +57,7 @@ foreach(_comp ${SUB_COMP})
         add_dependencies(_mindspore_${sub}_obj proto_input mindspore_core mindspore_ops mindspore_ms_backend)
     endif()
     if(CMAKE_SYSTEM_NAME MATCHES "Windows")
-        target_compile_definitions(_mindspore_${sub}_obj PRIVATE FRONTEND_DLL BUILDING_ME_DLL BUILDING_NP_DTYPE_DLL)
+        target_compile_definitions(_mindspore_${sub}_obj PRIVATE FRONTEND_DLL)
     endif()
 endforeach()
 

@@ -18,25 +18,16 @@
 #define MINDSPORE_CCSRC_INCLUDE_COMMON_NP_DTYPE_NP_DTYPES_H_
 #include <string>
 #include "pybind11/pybind11.h"
-
-#if (defined(_WIN32) || defined(__WIN32__) || defined(WIN32) || defined(__CYGWIN__))
-#ifdef BUILDING_NP_DTYPE_DLL
-#define NP_DTYPE_API __declspec(dllexport)
-#else
-#define NP_DTYPE_API __declspec(dllimport)
-#endif
-#else
-#define NP_DTYPE_API __attribute__((visibility("default")))
-#endif
+#include "include/common/visible.h"
 
 namespace py = pybind11;
 namespace mindspore {
 namespace np_dtypes {
-std::string NP_DTYPE_API GetNumpyVersion();
-std::string NP_DTYPE_API GetMinimumSupportedNumpyVersion();
-bool NP_DTYPE_API NumpyVersionValid(std::string version);
+FRONTEND_EXPORT std::string GetNumpyVersion();
+FRONTEND_EXPORT std::string GetMinimumSupportedNumpyVersion();
+FRONTEND_EXPORT bool NumpyVersionValid(std::string version);
 }  // namespace np_dtypes
-int NP_DTYPE_API GetBFloat16NpDType();
-void NP_DTYPE_API RegNumpyTypes(py::module *m);
+FRONTEND_EXPORT int GetBFloat16NpDType();
+FRONTEND_EXPORT void RegNumpyTypes(py::module *m);
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_INCLUDE_COMMON_NP_DTYPE_NP_DTYPES_H_

@@ -46,7 +46,7 @@ class PyboostFunctionsHeaderGenerator(BaseGenerator):
             'py::object PYNATIVE_EXPORT ${func_name}_Base(const PrimitivePtr &prim, const py::list &args);'
         )
         self.pyboost_op_func_template = Template(
-            'py::object ME_EXPORT ${func_name}_OP(const PrimitivePtr &prim, '
+            'py::object PYNATIVE_EXPORT ${func_name}_OP(const PrimitivePtr &prim, '
             'const std::vector<ops::OP_DTYPE>& source_type, ${input_args});'
         )
         self.input_args_template = Template(" const ${arg_type}& ${arg_name},")

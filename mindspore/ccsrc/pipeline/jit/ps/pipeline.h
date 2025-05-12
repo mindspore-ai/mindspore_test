@@ -255,9 +255,10 @@ FRONTEND_EXPORT FuncGraphPtr SplitDynamicMindIR(const std::string &file_name, si
                                                 bool sapp);
 
 // init and exec dataset sub graph
-bool ME_EXPORT InitExecDataset(const std::string &queue_name, int64_t iter_num, int64_t batch_size,
-                               const std::vector<TypePtr> &types, const std::vector<std::vector<int64_t>> &shapes,
-                               const std::vector<int64_t> &input_indexes, const std::string &phase, bool need_run);
+bool FRONTEND_EXPORT InitExecDataset(const std::string &queue_name, int64_t iter_num, int64_t batch_size,
+                                     const std::vector<TypePtr> &types, const std::vector<std::vector<int64_t>> &shapes,
+                                     const std::vector<int64_t> &input_indexes, const std::string &phase,
+                                     bool need_run);
 
 // Build and run dataset subgraph for ms backend
 bool InitExecDatasetVm(const std::string &queue_name, int64_t size, int64_t batch_size,

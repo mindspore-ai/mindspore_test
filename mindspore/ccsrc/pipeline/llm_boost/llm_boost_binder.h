@@ -28,7 +28,7 @@
 
 namespace mindspore {
 namespace pipeline {
-class ME_EXPORT LlmBoostBinder {
+class FRONTEND_EXPORT LlmBoostBinder {
  public:
   explicit LlmBoostBinder(const std::string &backend, const std::string &model_name);
   ~LlmBoostBinder() = default;

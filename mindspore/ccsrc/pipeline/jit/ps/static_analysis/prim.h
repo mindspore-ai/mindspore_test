@@ -378,8 +378,8 @@ bool IsSubtype(const AbstractBasePtr x, const TypePtr model);
 FRONTEND_EXPORT void ClearPrimEvaluatorMap();
 
 py::dict ConvertAbstractToPython(const AbstractBasePtr &abs_base, bool only_convert_value = false);
-ME_EXPORT py::tuple PreparePyInputs(const AbstractBasePtrList &args);
-ME_EXPORT AbstractBasePtr PyInferRes2Abstract(const PrimitivePyPtr &prim_py, const py::dict &output);
+FRONTEND_EXPORT py::tuple PreparePyInputs(const AbstractBasePtrList &args);
+FRONTEND_EXPORT AbstractBasePtr PyInferRes2Abstract(const PrimitivePyPtr &prim_py, const py::dict &output);
 
 // Get the __init__() arguments of the PrimitivePy object.
 AnfNodePtrList GetPrimitiveInitArgs(const PrimitivePyPtr &prim_py, const ops::OpDef *op_def);
