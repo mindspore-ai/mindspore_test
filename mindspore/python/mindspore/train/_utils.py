@@ -323,9 +323,15 @@ def parse_strategy_ckpt(file_name):
 def _get_strategy_opt_shard(param_redundancy_dict, parameter_layout_opt_shard):
     """Strategy ckpt append opt shard."""
     for key, value in parameter_layout_opt_shard.items():
-        if value[1] not in (-1, 0):
-            opt_para_num = value[1]
+        if value[1] != 0:
             param_redundancy_ranks = param_redundancy_dict.get(key)
+            if value[1] != -1:
+                opt_para_num = value[1]
+            elif param_redundancy_ranks:
+                opt_para_num = len(param_redundancy_ranks) * len(param_redundancy_ranks[0]) // value[0]
+            else:
+                raise ValueError(f"For get_parameter_redundancy, the format of the parallel communication domain for "
+                                 f"the optimizer is incorrect.")
             res = []
             for param_ranks in param_redundancy_ranks:
                 if len(param_ranks) % opt_para_num == 0:
