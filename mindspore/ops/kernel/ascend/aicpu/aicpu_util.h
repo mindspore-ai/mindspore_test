@@ -197,6 +197,7 @@ constexpr auto kMatrixBandPart = "MatrixBandPart";
 constexpr auto kMatrixDiagPartV3 = "MatrixDiagPartV3";
 constexpr auto kMatrixDiagV3 = "MatrixDiagV3";
 constexpr auto kTopKRouter = "TopKRouter";
+constexpr auto kTopPRouter = "TopPRouter";
 constexpr auto kBetainc = "Betainc";
 constexpr auto kCompareAndBitpack = "CompareAndBitpack";
 constexpr auto kZeta = "Zeta";
@@ -262,6 +263,7 @@ const std::set<std::string> kCpuKernelOps{kIdentity,
                                           kTensorScatterElements,
                                           kAdd,
                                           kTopKRouter,
+                                          kTopPRouter,
                                           kLess,
                                           kLinSpace,
                                           kIsInf,

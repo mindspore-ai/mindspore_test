@@ -265,6 +265,7 @@ cust_op_lists = [
     "tril",
     "truncatednormal",
     "topkrouter",
+    "topprouter",
     "unravelindex",
     "unsortedsegmentsum",
     "unstack",

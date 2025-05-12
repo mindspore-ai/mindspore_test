@@ -56,6 +56,7 @@ inline static PredictOutTypeMap out_type_prediction = {{"ActsULQ", kTupleTensor4
                                                        {"AdaptiveMaxPool2D", kTupleTensor2},
                                                        {"AdaptiveMaxPool3D", kTupleTensor2},
                                                        {"TopKRouter", kTypeAny},
+                                                       {"TopPRouter", kTypeAny},
                                                        {"ApplyAdaMax", kTupleTensor3},
                                                        {"ApplyAdadelta", kTupleTensor3},
                                                        {"ApplyAdagrad", kTupleTensor2},
