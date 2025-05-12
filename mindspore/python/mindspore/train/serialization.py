@@ -441,11 +441,7 @@ def _exec_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-GCM", map_
                     else:
                         if value[2].dtype == mstype.qint4x2:
                             meta_data[name] = str(mstype.qint4x2)
-                        bytes_data = value[2].get_bytes()
-                        np_type = tensor_to_np_type.get(value[1])
-                        np_array = np.frombuffer(bytes_data, np_type)
-                        new_np_array = np_array.reshape(value[0])
-                        save_dict[name] = new_np_array
+                        save_dict[name] = value[2].asnumpy()
 
                     if crc_check:
                         crc_num = binascii.crc32(bytes(name, encoding='utf-8'), crc_num)
@@ -1015,15 +1011,14 @@ def _convert_cell_to_param_list(save_obj, integrated_save, append_dict, choice_f
             param_data.append(str(param_tensor.dtype))
             param_data.append(value.key)
         else:
-            param_data = value.data
             if append_dict and "__exception_save__" in append_dict:
                 param_data = Tensor(Tensor_.move_to(value, "CPU", False))
+            else:
+                param_data = Tensor(value.data)
 
             # in automatic model parallel scenario, some parameters were split to all the devices,
             # which should be combined before saving
             if key in parameter_layout_dict:
-                if not append_dict or "__exception_save__" not in append_dict:
-                    param_data = Tensor(value.data)
                 param_data = _get_merged_param_data(save_obj, parameter_layout_dict, key, param_data,
                                                     integrated_save)
 
