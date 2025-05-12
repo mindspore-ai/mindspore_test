@@ -32,6 +32,7 @@
 namespace mindspore {
 namespace ad {
 namespace {
+constexpr auto kAlreadyCheck = "already_check";
 constexpr auto kNeedGradFlag = "need_grad";
 constexpr auto kHasViewOutputFlag = "has_view_output";
 constexpr auto kCheckViewInplaceGradFlag = "view_inplace_grad_validate";
@@ -281,32 +282,21 @@ void GetNeedGradMapForUpdateStateUseOnlyNodes(const FuncGraphPtr &func_graph,
   const auto &mgr = func_graph->manager();
   MS_EXCEPTION_IF_NULL(mgr);
   const auto &node_users_map = mgr->node_users();
-  constexpr size_t true_br_index = 2;
-  constexpr size_t false_br_index = 3;
 
-  for (size_t i = 0; i < all_nodes.size(); ++i) {
-    auto cnode = all_nodes[i]->cast<CNodePtr>();
-    // is Switch.
-    if (IsPrimitiveCNode(cnode, prim::kPrimSwitch)) {
-      auto true_br_fg = GetValueNode<FuncGraphPtr>(cnode->input(true_br_index));
-      MS_EXCEPTION_IF_NULL(true_br_fg);
-      GetNeedGradMapForUpdateStateUseOnlyNodes(true_br_fg, need_grad_map);
-      auto false_br_fg = GetValueNode<FuncGraphPtr>(cnode->input(false_br_index));
-      MS_EXCEPTION_IF_NULL(false_br_fg);
-      GetNeedGradMapForUpdateStateUseOnlyNodes(false_br_fg, need_grad_map);
-      continue;
-    }
-    // is call func
-    if (cnode != nullptr && IsValueNode<FuncGraph>(cnode->input(0))) {
-      FuncGraphPtr sub_graph = GetValueNode<FuncGraphPtr>(cnode->input(0));
+  for (const auto &node : all_nodes) {
+    auto check_flag = node->user_data<bool>(kAlreadyCheck);
+    auto already_check = check_flag != nullptr && *check_flag;
+    if (!already_check && IsValueNode<FuncGraph>(node)) {
+      FuncGraphPtr sub_graph = GetValueNode<FuncGraphPtr>(node);
       MS_EXCEPTION_IF_NULL(sub_graph);
+      node->set_user_data<bool>(kAlreadyCheck, std::make_shared<bool>(true));
       GetNeedGradMapForUpdateStateUseOnlyNodes(sub_graph, need_grad_map);
       continue;
     }
 
     // is inplace node
-    if (IsInplaceNode(all_nodes[i]) && UpdateStateUseOnly(all_nodes[i], node_users_map)) {
-      auto inplace_node = all_nodes[i]->cast<CNodePtr>();
+    if (IsInplaceNode(node) && UpdateStateUseOnly(node, node_users_map)) {
+      auto inplace_node = node->cast<CNodePtr>();
       MS_EXCEPTION_IF_NULL(inplace_node);
       auto prim_value = inplace_node->input(0)->cast<ValueNodePtr>()->value();
       MS_EXCEPTION_IF_NULL(prim_value);
@@ -315,11 +305,11 @@ void GetNeedGradMapForUpdateStateUseOnlyNodes(const FuncGraphPtr &func_graph,
       for (auto index : rw_write_input_indexes) {
         auto inplace_input = inplace_node->input(index + 1);
         if (IsViewOutput(inplace_input)) {
-          (*need_grad_map)[inplace_input] = all_nodes[i];
+          (*need_grad_map)[inplace_input] = node;
         } else {
-          (*need_grad_map)[inplace_node] = all_nodes[i];
+          (*need_grad_map)[inplace_node] = node;
         }
-        all_nodes[i]->set_user_data<bool>(kNeedGradFlag, std::make_shared<bool>(false));
+        node->set_user_data<bool>(kNeedGradFlag, std::make_shared<bool>(false));
       }
     }
   }
