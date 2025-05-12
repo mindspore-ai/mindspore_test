@@ -19,7 +19,13 @@ if(ENABLE_D OR ENABLE_ACL)
             mindspore_memory_pool)
     target_link_libraries(mindspore_ge_backend PRIVATE securec d_collective)
 
-    set_target_properties(mindspore_ge_backend PROPERTIES INSTALL_RPATH $ORIGIN:$ORIGIN/plugin:$ORIGIN/plugin/ascend)
+
+    if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
+        set_target_properties(mindspore_ge_backend PROPERTIES MACOSX_RPATH ON)
+        set_target_properties(mindspore_ge_backend PROPERTIES INSTALL_RPATH @loader_path:@loader_path/plugin)
+    else()
+        set_target_properties(mindspore_ge_backend PROPERTIES INSTALL_RPATH $ORIGIN:$ORIGIN/plugin)
+    endif()
 
     add_subdirectory(pass)
     add_subdirectory(executor)

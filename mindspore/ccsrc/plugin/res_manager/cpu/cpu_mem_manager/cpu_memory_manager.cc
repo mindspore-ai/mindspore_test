@@ -15,6 +15,7 @@
  */
 
 #include "plugin/res_manager/cpu/cpu_mem_manager/cpu_memory_manager.h"
+#include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "utils/ms_context.h"
 #include "include/common/utils/convert_utils.h"
@@ -87,6 +88,29 @@ void CPUMemoryManager::MemFree() noexcept {
   mem_block_map_.clear();
 }
 
+void CPUMemoryManager::AssignMemory(const session::KernelGraph *graph) {
+  size_t graph_mem_size = mem_plan_.MemPlan(graph);
+  if (graph_mem_size > mem_size_) {
+    if (mem_size_ > 0) {
+      dynamic_mem_[mem_ptr_] = mem_size_;
+      mem_size_ = 0;
+    }
+    mem_ptr_ = MemMalloc(graph_mem_size);
+    if (mem_ptr_ != nullptr) {
+      MS_LOG(INFO) << "Simple MemPlan GraphMemSize [" << graph_mem_size << "]";
+      mem_size_ = graph_mem_size;
+      dynamic_malloc_ = false;
+    } else {
+      MS_LOG(INFO) << "Switch to dynamic malloc";
+      dynamic_malloc_ = true;
+    }
+  }
+  if (dynamic_malloc_) {
+    return;
+  }
+  mem_plan_.MemAssign(graph, mem_ptr_);
+}
+
 void *CPUMemoryManager::StaticMemMalloc(size_t mem_size) {
   auto ptr = MemMalloc(mem_size);
   if (ptr != nullptr) {
@@ -104,6 +128,94 @@ void CPUMemoryManager::MemFree(void *ptr) {
     auto block_iter = mem_block_map_.find(ptr);
     if (block_iter != mem_block_map_.end()) {
       (void)mem_block_map_.erase(block_iter);
+    }
+  }
+}
+
+void CPUMemoryManager::IncreaseSummaryRefCount(const session::NamedSummaryOutputs &summary_outputs) const {
+  if (!dynamic_malloc_) {
+    return;
+  }
+  if (summary_outputs.empty()) {
+    return;
+  }
+  for (auto &output_item : summary_outputs) {
+    auto node = output_item.second.first;
+    size_t index = IntToSize(output_item.second.second);
+    auto address = AnfAlgo::GetMutableOutputAddr(node, index);
+    MS_EXCEPTION_IF_NULL(address);
+    address->set_ref_count(address->ref_count() + 1);
+  }
+}
+
+void CPUMemoryManager::DecreaseSummaryRefCount(const session::NamedSummaryOutputs &summary_outputs) {
+  if (!dynamic_malloc_) {
+    return;
+  }
+  if (summary_outputs.empty()) {
+    return;
+  }
+  for (auto &output_item : summary_outputs) {
+    auto node = output_item.second.first;
+    size_t index = IntToSize(output_item.second.second);
+    auto address = AnfAlgo::GetMutableOutputAddr(node, index);
+    MS_EXCEPTION_IF_NULL(address);
+    address->DecreaseRefCount();
+    if (address->ref_count() == 0 && address->GetDevicePtr() != nullptr) {
+      MemFree(address->GetDevicePtr());
+      address->SetDevicePtr(nullptr);
+    }
+  }
+}
+
+void CPUMemoryManager::IncreaseAddressRefCount(const session::KernelGraph *graph) const {
+  if (!dynamic_malloc_) {
+    return;
+  }
+  MS_EXCEPTION_IF_NULL(graph);
+  auto kernels = graph->execution_order();
+  for (const auto &kernel : kernels) {
+    MS_EXCEPTION_IF_NULL(kernel);
+    size_t input_num = common::AnfAlgo::GetInputTensorNum(kernel);
+    for (size_t i = 0; i < input_num; ++i) {
+      auto address = AnfAlgo::GetPrevNodeMutableOutputAddr(kernel, i);
+      MS_EXCEPTION_IF_NULL(address);
+      address->set_ref_count(address->ref_count() + 1);
+    }
+    auto kernel_mod = AnfAlgo::GetKernelMod(kernel);
+    MS_EXCEPTION_IF_NULL(kernel_mod);
+    for (size_t i = 0; i < kernel_mod->GetWorkspaceSizeList().size(); ++i) {
+      auto address = AnfAlgo::GetWorkspaceAddr(kernel, i);
+      MS_EXCEPTION_IF_NULL(address);
+      address->set_ref_count(address->ref_count() + 1);
+    }
+  }
+}
+
+void CPUMemoryManager::DecreaseAddressRefCount(const AnfNodePtr &kernel) {
+  if (!dynamic_malloc_) {
+    return;
+  }
+  MS_EXCEPTION_IF_NULL(kernel);
+  size_t input_num = common::AnfAlgo::GetInputTensorNum(kernel);
+  for (size_t i = 0; i < input_num; ++i) {
+    auto address = AnfAlgo::GetPrevNodeMutableOutputAddr(kernel, i);
+    MS_EXCEPTION_IF_NULL(address);
+    address->DecreaseRefCount();
+    if (address->ref_count() == 0 && address->GetDevicePtr() != nullptr) {
+      MemFree(address->GetDevicePtr());
+      address->SetDevicePtr(nullptr);
+    }
+  }
+  auto kernel_mod = AnfAlgo::GetKernelMod(kernel);
+  MS_EXCEPTION_IF_NULL(kernel_mod);
+  for (size_t i = 0; i < kernel_mod->GetWorkspaceSizeList().size(); ++i) {
+    auto address = AnfAlgo::GetWorkspaceAddr(kernel, i);
+    MS_EXCEPTION_IF_NULL(address);
+    address->DecreaseRefCount();
+    if (address->ref_count() == 0 && address->GetDevicePtr() != nullptr) {
+      MemFree(address->GetDevicePtr());
+      address->SetDevicePtr(nullptr);
     }
   }
 }

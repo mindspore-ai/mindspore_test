@@ -22,6 +22,8 @@
 #include "runtime/device/res_manager/hal_res_base.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
 #include "runtime/device/res_manager/swap_manager.h"
+#include "runtime/collective/collective_communication_lib.h"
+#include "runtime/collective/collective_comm_lib_loader.h"
 #include "plugin/res_manager/cpu/cpu_mem_manager/cpu_memory_manager.h"
 namespace mindspore {
 namespace device {
@@ -52,6 +54,10 @@ class CPUResManager : public HalResBase {
   tensor::TensorPtr GetSliceByPaddingShapeHandle(const tensor::TensorPtr &first_tensor, size_t start,
                                                  size_t end) override;
 
+  bool LoadCollectiveCommLib() override;
+
+  CollectiveCommunicationLib *collective_comm_lib() const override { return collective_comm_lib_; }
+
   // Relevant function to allocate and free device memory of raw ptr.
   void *AllocateMemory(size_t size, uint32_t stream_id = kDefaultStreamIndex) const override;
   void FreeMemory(void *ptr) const override;
@@ -60,6 +66,7 @@ class CPUResManager : public HalResBase {
 
  private:
   std::shared_ptr<CPUMemoryManager> mem_manager_{nullptr};
+  CollectiveCommunicationLib *collective_comm_lib_{nullptr};
 };
 }  // namespace cpu
 }  // namespace device

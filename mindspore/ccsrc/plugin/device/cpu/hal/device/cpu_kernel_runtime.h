@@ -56,7 +56,6 @@ class CPUKernelRuntime : public KernelRuntime {
                                        const KernelWithIndex &node_index) const override;
 
  private:
-  void RunKernel(const CNodePtr &kernel, bool iter_dump_flag, uint32_t graph_id);
   tensor::TensorPtr CreateTensorForOutput(session::KernelGraph *kernel_graph, const CNodePtr &node, size_t index,
                                           std::set<DeviceAddressPtr> *bound_addresses);
   BaseRef GetOrCreateTensorForOutput(session::KernelGraph *kernel_graph,
