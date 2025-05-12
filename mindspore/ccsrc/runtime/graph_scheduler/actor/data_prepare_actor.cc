@@ -942,7 +942,8 @@ void DataPrepareActor::RecordInputAndConvertStatic(const std::vector<TensorPtr> 
                                                    const std::vector<size_t> &host_param_indexes, bool isDyn) {
   if (is_enable_infer_boost_ && EnableKbkSubGraphExecute()) {
     RecordGraphInputs(host_tensors, host_param_indexes);
-    if (has_dynamic_shape_) {
+    bool is_disable_convert_static = LLMManager::GetInstance().is_disable_convert_static();
+    if (has_dynamic_shape_ && !is_disable_convert_static) {
       ActorDispatcher::set_enable_static_shape(!isDyn);
 
       const auto &phase = graph_compiler_info_->graph_phase_;

@@ -54,9 +54,11 @@ bool LLMManager::need_force_resize(const std::string &kernel_name) {
   return it != force_resize_kernel_set_.end();
 }
 
-bool LLMManager::is_disable_convert_static() { return !enable_static_shape_; }
+bool LLMManager::is_disable_convert_static() { return disable_convert_static_; }
 
-void LLMManager::set_convert_static(bool convert_static) { enable_static_shape_ = convert_static; }
+void LLMManager::set_disable_convert_static(bool disable_convert_static) {
+  disable_convert_static_ = disable_convert_static;
+}
 
 void LLMManager::Clear() { graph_inputs_map_.clear(); }
 }  // namespace mindspore
