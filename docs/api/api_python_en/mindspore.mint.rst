@@ -141,6 +141,7 @@ Pointwise Operations
     mindspore.mint.fix
     mindspore.mint.float_power
     mindspore.mint.floor
+    mindspore.mint.floor_divide
     mindspore.mint.fmod
     mindspore.mint.frac
     mindspore.mint.lerp
