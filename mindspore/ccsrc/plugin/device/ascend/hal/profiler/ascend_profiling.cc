@@ -160,7 +160,10 @@ aclprofAicoreMetrics AscendProfiler::CheckAicMetricsFeature(aclprofAicoreMetrics
                                                             const std::string &profiler_level) {
   if (aic_metrics == ACL_AICORE_MEMORY_ACCESS &&
       !FeatureMgr::Instance().IsSupportFeature(FeatureType::FEATURE_MEMORY_ACCESS)) {
-    MS_LOG(WARNING) << "AicMetrics is not supported to set to MemoryAccess.";
+    MS_LOG(WARNING) << "AicMetrics is not supported to set to MemoryAccess. "
+                    << "When profiler_level is set to " << profiler_level << ", AicMetrics will be set to "
+                    << (profiler_level == "Level1" || profiler_level == "Level2" ? "PipeUtilization" : "AicoreNone")
+                    << ".";
     return (profiler_level == "Level1" || profiler_level == "Level2") ? ACL_AICORE_PIPE_UTILIZATION : ACL_AICORE_NONE;
   }
   return aic_metrics;
