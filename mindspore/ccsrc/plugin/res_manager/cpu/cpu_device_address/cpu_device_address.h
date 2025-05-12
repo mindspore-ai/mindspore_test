@@ -19,13 +19,13 @@
 
 #include <string>
 #include <vector>
-#include "plugin/res_manager/cpu/visible.h"
+#include "include/backend/visible.h"
 #include "common/device_address.h"
 
 namespace mindspore {
 namespace device {
 namespace cpu {
-class CPU_RES_MANAGER_EXPORT CPUDeviceAddress : public DeviceAddress {
+class BACKEND_EXPORT CPUDeviceAddress : public DeviceAddress {
  public:
   CPUDeviceAddress() : DeviceAddress() { SetDevicePtrDeleter(); }
 

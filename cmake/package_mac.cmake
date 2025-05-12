@@ -65,11 +65,6 @@ if(ENABLE_CPU AND NOT WIN32)
         COMPONENT mindspore
     )
     install(
-        TARGETS mindspore_cpu_res_manager
-        DESTINATION ${INSTALL_PLUGIN_DIR}/cpu
-        COMPONENT mindspore
-    )
-    install(
         TARGETS mindspore_ops_host LIBRARY
         DESTINATION ${INSTALL_PLUGIN_DIR}
         COMPONENT mindspore

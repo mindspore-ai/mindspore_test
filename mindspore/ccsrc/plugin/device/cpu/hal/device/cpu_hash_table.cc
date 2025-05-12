@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "plugin/res_manager/cpu/cpu_mem_manager/cpu_hash_table.h"
+#include "plugin/device/cpu/hal/device/cpu_hash_table.h"
 
 #include <string>
-#include <memory>
 #include <algorithm>
 
 #include "utils/log_adapter.h"
 #include "utils/convert_utils_base.h"
 #include "utils/ms_context.h"
+#include "runtime/hardware/device_context_manager.h"
 
 namespace mindspore {
 namespace device {

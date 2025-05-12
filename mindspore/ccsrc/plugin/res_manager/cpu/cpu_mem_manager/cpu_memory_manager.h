@@ -19,15 +19,17 @@
 #include <vector>
 #include <map>
 #include <memory>
+#include "include/backend/kernel_graph.h"
+#include "backend/common/session/session_basic.h"
 #include "common/device_address.h"
-#include "plugin/res_manager/cpu/visible.h"
 #include "runtime/device/res_manager/memory_manager.h"
+#include "plugin/device/cpu/hal/device/cpu_simple_mem_plan.h"
 #include "plugin/res_manager/cpu/cpu_mem_manager/cpu_memory_pool.h"
 
 namespace mindspore {
 namespace device {
 namespace cpu {
-class CPU_RES_MANAGER_EXPORT CPUMemoryManager : public MemoryManager {
+class BACKEND_EXPORT CPUMemoryManager : public MemoryManager {
  public:
   CPUMemoryManager() = default;
   virtual ~CPUMemoryManager();
@@ -36,8 +38,13 @@ class CPU_RES_MANAGER_EXPORT CPUMemoryManager : public MemoryManager {
   void Finalize() override { CPUMemoryPool::GetInstance().ReleaseDeviceRes(); }
   void ResetDynamicMemory() override;
 
+  void AssignMemory(const session::KernelGraph *graph);
+  void IncreaseAddressRefCount(const session::KernelGraph *graph) const;
+  void DecreaseAddressRefCount(const AnfNodePtr &kernel);
   void *StaticMemMalloc(size_t mem_size);
   void MemFree(void *ptr);
+  void IncreaseSummaryRefCount(const session::NamedSummaryOutputs &summary_outputs) const;
+  void DecreaseSummaryRefCount(const session::NamedSummaryOutputs &summary_outputs);
 
   void *MallocMemFromMemPool(size_t size, bool from_persistent_mem, bool need_recycle = false,
                              uint32_t stream_id = kDefaultStreamIndex) override {
@@ -56,8 +63,6 @@ class CPU_RES_MANAGER_EXPORT CPUMemoryManager : public MemoryManager {
     return memory_pool_;
   }
 
-  bool GetDynamicMalloc() { return dynamic_malloc_; }
-
  protected:
   uint8_t *MallocStaticMem(size_t size, bool communication_mem, uint32_t graph_id) override;
   uint8_t *MallocDynamicMem(size_t size, bool communication_mem) override;
@@ -65,6 +70,7 @@ class CPU_RES_MANAGER_EXPORT CPUMemoryManager : public MemoryManager {
  private:
   uint8_t *MemMalloc(size_t size);
   void MemFree() noexcept;
+  CPUSimpleMemPlan mem_plan_;
 
   size_t mem_size_{0};
   uint8_t *mem_ptr_{nullptr};

@@ -24,7 +24,7 @@
 #include "plugin/device/cpu/optimizer/reg_cpu_const_input_to_attr.h"
 #include "plugin/device/cpu/optimizer/print_value_type.h"
 #include "plugin/device/cpu/hal/hardware/cpu_somas.h"
-#include "plugin/res_manager/cpu/cpu_mem_manager/cpu_hash_table_util.h"
+#include "plugin/device/cpu/hal/device/cpu_hash_table_util.h"
 #ifdef ENABLE_AKG
 #include "plugin/device/cpu/kernel/akg/akg_cpu_kernel_build.h"
 #endif
@@ -297,32 +297,11 @@ DeviceAddressPtr CPUDeviceResManager::CreateDeviceAddress(void *ptr, size_t size
                                                stream_id, user_data);
 }
 
-bool CPUDeviceResManager::LoadCollectiveCommLib() {
-  bool using_mpi = common::UseMPI();
-  if (using_mpi) {
-    std::string mpi_comm_lib_name = "libmpi_collective.so";
-    auto loader = std::make_shared<CollectiveCommLibLoader>(mpi_comm_lib_name);
-    MS_EXCEPTION_IF_NULL(loader);
-    if (!loader->Initialize()) {
-      MS_LOG(EXCEPTION) << "Failed to load mpi collective library.";
-    }
+bool CPUDeviceResManager::LoadCollectiveCommLib() { return cpu_res_manager_->LoadCollectiveCommLib(); }
 
-    void *collective_comm_lib_handle = loader->collective_comm_lib_ptr();
-    MS_EXCEPTION_IF_NULL(collective_comm_lib_handle);
-
-    auto instance_func = DlsymFuncObj(communication_lib_instance, collective_comm_lib_handle);
-    collective_comm_lib_ = instance_func();
-    MS_EXCEPTION_IF_NULL(collective_comm_lib_);
-  } else {
-#if defined(__linux__) && defined(WITH_BACKEND)
-    collective_comm_lib_ = &MsCollectiveCommLib::GetInstance();
-    MS_EXCEPTION_IF_NULL(collective_comm_lib_);
-#endif
-  }
-  return true;
+CollectiveCommunicationLib *CPUDeviceResManager::collective_comm_lib() const {
+  return cpu_res_manager_->collective_comm_lib();
 }
-
-CollectiveCommunicationLib *CPUDeviceResManager::collective_comm_lib() const { return collective_comm_lib_; }
 
 void CPUKernelExecutor::OptimizeGraph(const FuncGraphPtr &graph) const {
   MS_EXCEPTION_IF_NULL(graph);

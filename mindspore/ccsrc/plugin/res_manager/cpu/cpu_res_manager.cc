@@ -18,11 +18,14 @@
 #include <vector>
 #include <string>
 #include <memory>
-#include "utils/ms_context.h"
 #include "runtime/device/res_manager/memory_manager.h"
-#include "plugin/res_manager/cpu/cpu_mem_manager/cpu_hash_table_util.h"
+#include "plugin/device/cpu/hal/device/cpu_hash_table_util.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_synchronizer.h"
+#if defined(__linux__) && defined(WITH_BACKEND)
+#include "plugin/device/cpu/hal/hardware/ms_collective_comm_lib.h"
+#endif
+#include "runtime/device/move_to.h"
 #include "runtime/device/res_manager/tensor_array.h"
 
 namespace mindspore {
@@ -212,6 +215,31 @@ DeviceAddressPtr CPUResManager::CreateDeviceAddress(void *ptr, size_t size, cons
   }
 
   return device_address;
+}
+
+bool CPUResManager::LoadCollectiveCommLib() {
+  bool using_mpi = common::UseMPI();
+  if (using_mpi) {
+    std::string mpi_comm_lib_name = "libmpi_collective.so";
+    auto loader = std::make_shared<CollectiveCommLibLoader>(mpi_comm_lib_name);
+    MS_EXCEPTION_IF_NULL(loader);
+    if (!loader->Initialize()) {
+      MS_LOG(EXCEPTION) << "Failed to load mpi collective library.";
+    }
+
+    void *collective_comm_lib_handle = loader->collective_comm_lib_ptr();
+    MS_EXCEPTION_IF_NULL(collective_comm_lib_handle);
+
+    auto instance_func = DlsymFuncObj(communication_lib_instance, collective_comm_lib_handle);
+    collective_comm_lib_ = instance_func();
+    MS_EXCEPTION_IF_NULL(collective_comm_lib_);
+  } else {
+#if defined(__linux__) && defined(WITH_BACKEND)
+    collective_comm_lib_ = &MsCollectiveCommLib::GetInstance();
+    MS_EXCEPTION_IF_NULL(collective_comm_lib_);
+#endif
+  }
+  return true;
 }
 
 MS_REGISTER_HAL_RES_MANAGER(kCPUDevice, DeviceType::kCPU, CPUResManager);

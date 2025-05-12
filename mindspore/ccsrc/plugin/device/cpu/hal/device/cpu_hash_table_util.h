@@ -23,7 +23,7 @@
 #include <functional>
 #include <string>
 #include "common/device_address.h"
-#include "plugin/res_manager/cpu/cpu_mem_manager/cpu_hash_table.h"
+#include "plugin/device/cpu/hal/device/cpu_hash_table.h"
 
 namespace mindspore {
 namespace device {
