@@ -1013,10 +1013,29 @@ def _get_dst_shape(param_name, param_shape, src_strategy_list):
     return to_full_tensor_shape
 
 
+def _check_remove_redundancy(merge_with_redundancy, f):
+    """Check whether remove_redundancy is consistent with the safetensors file."""
+    if f.metadata() is not None and "remove_redundancy" in f.metadata().keys():
+        if f.metadata()["remove_redundancy"] == "True" and merge_with_redundancy:
+            logger.warning("For 'unified_safetensors', the safetensors file is deduplicated, "
+                           "but merge_with_redundancy is set to True.")
+            return False
+        if f.metadata()["remove_redundancy"] == "False" and not merge_with_redundancy:
+            logger.warning("For 'unified_safetensors', the safetensors file is non-deduplicated, "
+                           "but merge_with_redundancy is set to False.")
+            return True
+    return merge_with_redundancy
+
+
 def unified_safetensors(src_dir, src_strategy_file, dst_dir, merge_with_redundancy=True, file_suffix=None,
                         max_process_num=64, choice_func=None, split_dst_file=()):
     """
     Merge multiple safetensor files into a unified safetensor file.
+
+    Note:
+        When merging weights, it will verify whether the `merge_with_redundancy` parameter differs from
+        the deduplication flag in the merged safetensors files. If they are the same, the merging will be performed
+        according to the deduplication flag in the files.
 
     Args:
         src_dir (str): Source weight saving directory.
@@ -1079,6 +1098,7 @@ def unified_safetensors(src_dir, src_strategy_file, dst_dir, merge_with_redundan
     for _, file_name in all_safetensor_files_map.items():
         with _fast_safe_open(file_name, framework="np") as f:
             actual_params.update(f.keys())
+            merge_with_redundancy = _check_remove_redundancy(merge_with_redundancy, f)
 
     params_to_store = actual_params & set(layout_map.keys())
 

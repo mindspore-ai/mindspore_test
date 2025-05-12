@@ -362,7 +362,7 @@ def _save_weight(checkpoint_dir, model_name, iteration, params):
 
 
 def _exec_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-GCM", map_param_inc=False, crc_check=False,
-               format="ckpt"):
+               format="ckpt", remove_redundancy=None):
     """Execute the process of saving checkpoint into file."""
     try:
         with _ckpt_mutex:
@@ -432,6 +432,8 @@ def _exec_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-GCM", map_
                 save_dict = {}
                 crc_num = 0
                 meta_data = {"format": "ms"}
+                if remove_redundancy is not None and isinstance(remove_redundancy, bool):
+                    meta_data["remove_redundancy"] = str(remove_redundancy)
                 for name in sorted(data_list.keys()):
                     value = data_list[name]
                     if isinstance(value[2], np.ndarray):
@@ -650,11 +652,11 @@ def _check_async_save(async_save):
 
 
 def _async_process_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-GCM", map_param_inc=False,
-                        crc_check=False, format="ckpt", cond=None):
+                        crc_check=False, format="ckpt", cond=None, remove_redundancy=None):
     """Check whether the process is pulled up successfully, execute the process of saving checkpoint into file."""
     with cond:
         cond.notify()
-    _exec_save(ckpt_file_name, data_list, enc_key, enc_mode, map_param_inc, crc_check, format)
+    _exec_save(ckpt_file_name, data_list, enc_key, enc_mode, map_param_inc, crc_check, format, remove_redundancy)
 
 
 def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
@@ -745,6 +747,8 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
     map_param_inc = kwargs.get('incremental', False)
     logger.info("Execute the process of saving checkpoint files.")
     global_step_num = kwargs.get('global_step_num', None)
+    remove_redundancy = kwargs.get('remove_redundancy', None)
+    remove_redundancy = Validator.check_isinstance("remove_redundancy", remove_redundancy, (type(None), bool))
     _check_save_checkpoint_upsupported_param(format, enc_key, enc_mode, map_param_inc, global_step_num)
 
     if append_dict and "__exception_save__" in append_dict:
@@ -847,7 +851,7 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
                 while process_flag:
                     process = ctx.Process(target=_async_process_save,
                                           args=(ckpt_file_name, data_list, enc_key, enc_mode, map_param_inc, crc_check,
-                                                format, cond), daemon=True, name="asyn_save_ckpt")
+                                                format, cond, remove_redundancy), daemon=True, name="asyn_save_ckpt")
                     process.start()
                     with cond:
                         wait_flag = cond.wait(timeout=5)
@@ -860,11 +864,12 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
             data_copy = copy.deepcopy(data_list)
             _wait_async_thread_save_ckpt()
             thr = Thread(target=_exec_save,
-                         args=(ckpt_file_name, data_copy, enc_key, enc_mode, map_param_inc, crc_check, format),
+                         args=(ckpt_file_name, data_copy, enc_key, enc_mode, map_param_inc, crc_check, format,
+                               remove_redundancy),
                          name="asyn_save_ckpt")
             thr.start()
     else:
-        _exec_save(ckpt_file_name, data_list, enc_key, enc_mode, map_param_inc, crc_check, format)
+        _exec_save(ckpt_file_name, data_list, enc_key, enc_mode, map_param_inc, crc_check, format, remove_redundancy)
 
     mstx.range_end(range_id)
     logger.info("Saving checkpoint process is finished.")
@@ -1223,8 +1228,22 @@ def _check_param_type(param_config, key, target_type, requested):
     return None
 
 
+def _check_remove_redundancy(remove_redundancy, f):
+    """Check whether remove_redundancy is consistent with the safetensors file."""
+    if f.metadata() is not None and "remove_redundancy" in f.metadata().keys():
+        if f.metadata()["remove_redundancy"] == "True" and not remove_redundancy:
+            logger.warning("For 'load_checkpoint', the safetensors file is deduplicated, "
+                           "but remove_redundancy is set to False.")
+            return True
+        if f.metadata()["remove_redundancy"] == "False" and remove_redundancy:
+            logger.warning("For 'load_checkpoint', the safetensors file is non-deduplicated, "
+                           "but remove_redundancy is set to True.")
+            return False
+    return remove_redundancy
+
+
 def _load_into_param_dict(ckpt_file_name, parameter_dict, specify_prefix, filter_prefix, choice_func, dec_key,
-                          dec_mode, crc_check, format):
+                          dec_mode, crc_check, format, remove_redundancy):
     """load parameter into parameter_dict"""
     ckpt_file_name = _check_ckpt_file_name(ckpt_file_name, format)
     if format == "safetensors":
@@ -1248,7 +1267,7 @@ def _load_into_param_dict(ckpt_file_name, parameter_dict, specify_prefix, filter
                     parameter_dict[k] = Parameter(Tensor(value, dtype=ms_dtype))
                 else:
                     parameter_dict[k] = Parameter(Tensor.from_numpy(value))
-
+            remove_redundancy = _check_remove_redundancy(remove_redundancy, f)
             vlog_print("1", "ME", __file__, sys._getframe().f_lineno,
                        f"Load safetensors io cost time:{total_io_cost_time}.")
             if crc_check:
@@ -1261,7 +1280,7 @@ def _load_into_param_dict(ckpt_file_name, parameter_dict, specify_prefix, filter
                     if cal_crc_num != crc_num:
                         raise ValueError("For 'load_checkpoint', the crc check has failed. "
                                          "Please check whether the ckpt file is damaged.")
-        return
+        return remove_redundancy
     checkpoint_list = _parse_ckpt_proto(ckpt_file_name, dec_key, dec_mode, crc_check)
     try:
         param_data_list = []
@@ -1314,6 +1333,7 @@ def _load_into_param_dict(ckpt_file_name, parameter_dict, specify_prefix, filter
                     _offload_if_config(parameter)
 
         logger.info("Loading checkpoint files process is finished.")
+        return remove_redundancy
 
     except BaseException as e:
         logger.critical("Failed to load the checkpoint file '%s'.", ckpt_file_name)
@@ -1333,6 +1353,9 @@ def load_checkpoint(ckpt_file_name, net=None, strict_load=False, filter_prefix=N
           And using either of those two args will override `choice_func` at the same time.
         - If none of the parameters are loaded from checkpoint file, it will throw ValueError.
         - When loading a checkpoint that has removed redundancy, the network should be compiled.
+        - When `net` is not None, it will verify whether the `remove_redundancy` parameter matches the
+          deduplication flag in the loaded safetensors file. If they are different, load the file according to
+          the deduplication flag in the file.
 
     Args:
         ckpt_file_name (str): Checkpoint file name.
@@ -1437,8 +1460,8 @@ def load_checkpoint(ckpt_file_name, net=None, strict_load=False, filter_prefix=N
                                      f"passed the CRC check and has been corrupted.")
                 parameter_dict[key] = Parameter(Tensor(value[0]), name=key)
     else:
-        _load_into_param_dict(ckpt_file_name, parameter_dict, specify_prefix, filter_prefix, choice_func, dec_key,
-                              dec_mode, crc_check, format)
+        remove_redundancy = _load_into_param_dict(ckpt_file_name, parameter_dict, specify_prefix, filter_prefix,
+                                                  choice_func, dec_key, dec_mode, crc_check, format, remove_redundancy)
 
     if not parameter_dict:
         raise ValueError(f"The loaded parameter dict is empty after filter or specify, please check whether "
@@ -1688,6 +1711,22 @@ def _check_load_param_into_net(net, parameter_dict):
     if "random_op" in parameter_dict.keys():
         net._add_attr("random_op_snapshot", parameter_dict["random_op"])
         parameter_dict.pop("random_op")
+    for key, value in parameter_dict.items():
+        if not isinstance(key, str) or not isinstance(value, (Parameter, str, list)):
+            logger.critical("Load parameters into net failed.")
+            msg = ("For 'parameter_dict', the element in the argument 'parameter_dict' should be a "
+                   "'str' and 'Parameter' , but got {} and {}.".format(type(key), type(value)))
+            raise TypeError(msg)
+
+
+def _check_remove_redundancy_net(net):
+    """Check whether the network is compiled with the remove_redundancy feature."""
+    if get_group_size() == 1:
+        raise TypeError(f"The deduplication feature for loading checkpoint can only be used "
+                        f"in parallel scenarios, but got stand_alone.")
+    if not net.compile_cache and not net.parameter_layout_dict:
+        raise ValueError("When loading a parameter dict that has removed redundancy, "
+                         "the network should be compiled.")
 
 
 def load_param_into_net(net, parameter_dict, strict_load=False, remove_redundancy=False):
@@ -1734,18 +1773,14 @@ def load_param_into_net(net, parameter_dict, strict_load=False, remove_redundanc
           <https://mindspore.cn/tutorials/en/master/beginner/save_load.html#saving-and-loading-the-model-weight>`_
     """
     _check_load_param_into_net(net, parameter_dict)
-    for key, value in parameter_dict.items():
-        if not isinstance(key, str) or not isinstance(value, (Parameter, str, list)):
-            logger.critical("Load parameters into net failed.")
-            msg = ("For 'parameter_dict', the element in the argument 'parameter_dict' should be a "
-                   "'str' and 'Parameter' , but got {} and {}.".format(type(key), type(value)))
-            raise TypeError(msg)
 
     strict_load = Validator.check_bool(strict_load)
     remove_redundancy = Validator.check_isinstance('remove_redundancy', remove_redundancy, bool)
     logger.info("Execute the process of loading parameters into net.")
     param_not_load = []
+    param_loaded = set()
     ckpt_not_load = list(parameter_dict.keys())
+    is_parallel_mode = _is_auto_parallel_mode(net)
     for _, param in net.parameters_and_names():
         if param.param_info.is_pipeline_shared_param:
             continue
@@ -1761,22 +1796,23 @@ def load_param_into_net(net, parameter_dict, strict_load=False, remove_redundanc
             if hasattr(param, "init_param") and not param.init_param:
                 param.init_param = True
             ckpt_not_load.remove(param.name)
+            param_loaded.add(param.name)
         else:
+            if param.name.startswith("accu_grads"):
+                continue
+            if param.param_info.is_pipeline_shared_param:
+                continue
+            if is_parallel_mode and not param.sliced:
+                continue
             param_not_load.append(param.name)
 
     if param_not_load and not strict_load:
         _load_dismatch_prefix_params(net, parameter_dict, param_not_load, strict_load)
 
     if remove_redundancy:
-        if get_group_size() == 1:
-            raise TypeError(f"The deduplication feature for loading checkpoint can only be used "
-                            f"in parallel scenarios, but got stand_alone.")
-        if not net.compile_cache and not net.parameter_layout_dict:
-            raise ValueError("When loading a parameter dict that has removed redundancy, "
-                             "the network should be compiled.")
+        _check_remove_redundancy_net(net)
         param_layout = net.parameter_layout_dict
-        _single_parameter_broadcast(net, param_layout, param_not_load)
-        mindspore.hal.synchronize()
+        _single_parameter_broadcast(net, param_layout, param_not_load, param_loaded)
 
     logger.info("Loading parameters into net is finished.")
     if param_not_load:

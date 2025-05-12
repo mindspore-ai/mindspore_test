@@ -9,6 +9,7 @@ mindspore.load_checkpoint
         - `specify_prefix` 和 `filter_prefix` 参数已被弃用，推荐使用 `choice_func` 代替。 `specify_prefix` 和 `filter_prefix` 的功能相互之间没有影响，并且使用这两个参数中的任何一个都将覆盖 `choice_func` 。
         - 如果没有参数被成功加载，将会报ValueError。
         - 当加载去冗余的checkpoint时，网络应该是编译过的。
+        - 当 `net` 不为 ``None`` 时，校验入参 `remove_redundancy` 与所加载的safetensors文件中的去冗余标志位是否相同。如果不同，按照文件的去冗余标志位进行加载。
 
     参数：
         - **ckpt_file_name** (str) - checkpoint的文件名称。
