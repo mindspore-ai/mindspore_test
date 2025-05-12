@@ -63,19 +63,25 @@ mindspore.nn.Conv1d
         pad_mode为 ``"same"`` 时：
 
         .. math::
-            L_{out} = \left \lceil{\frac{L_{in}}{\text{stride}}} \right \rceil
+            \begin{array}{ll} \\
+                L_{out} = \left \lceil{\frac{L_{in}}{\text{stride}}} \right \rceil \\
+            \end{array}
 
         pad_mode为 ``"valid"`` 时：
 
         .. math::
-            L_{out} = \left \lceil{\frac{L_{in} - \text{dilation} \times (\text{kernel_size} - 1) }
-            {\text{stride}}} \right \rceil
+            \begin{array}{ll} \\
+                L_{out} = \left \lfloor{\frac{L_{in} - \text{dilation} \times (\text{kernel_size} - 1) - 1}
+                {\text{stride}}} \right \rfloor + 1 \\
+            \end{array}
 
         pad_mode为 ``"pad"`` 时：
 
         .. math::
-            L_{out} = \left \lfloor{\frac{L_{in} + 2 \times padding - (\text{kernel_size} - 1) \times
-            \text{dilation} - 1 }{\text{stride}} + 1} \right \rfloor
+            \begin{array}{ll} \\
+                L_{out} = \left \lfloor{\frac{L_{in} + 2 \times {padding} - \text{dilation} \times
+                (\text{kernel_size} - 1) - 1}{\text{stride}}} \right \rfloor + 1 \\
+            \end{array}
 
     异常：
         - **TypeError** - `in_channels` 、 `out_channels` 、 `kernel_size` 、 `stride` 、 `padding` 或 `dilation` 不是int。
