@@ -713,12 +713,13 @@ class ModelCheckpoint(Callback):
                 save_checkpoint(network, cur_file, False, self._config.async_save,
                                 self._append_dict, self._config.enc_key, self._config.enc_mode,
                                 crc_check=self._config.crc_check, format=self._config.format,
-                                incremental=self._map_param_inc, choice_func=choice_func)
+                                incremental=self._map_param_inc, choice_func=choice_func,
+                                remove_redundancy=self._config.remove_redundancy)
             else:
                 save_checkpoint(network, cur_file, self._config.integrated_save, self._config.async_save,
                                 self._append_dict, self._config.enc_key, self._config.enc_mode,
                                 crc_check=self._config.crc_check, format=self._config.format,
-                                incremental=self._map_param_inc)
+                                incremental=self._map_param_inc, remove_redundancy=self._config.remove_redundancy)
 
             self._latest_ckpt_file_name = cur_file
 
