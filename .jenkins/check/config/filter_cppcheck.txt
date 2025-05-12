@@ -80,7 +80,7 @@
 "mindspore/mindspore/ccsrc/backend/common/expander/fallback/nn_ops.cc"                                           "unknownMacro"
 "mindspore/mindspore/ops/kernel/cpu/eltwise_grad_cpu_kernel.cc"                        "compareBoolExpressionWithInt"
 "mindspore/mindspore/ops/kernel/cpu/arithmetic_self_cpu_kernel.cc"                        "duplicateExpression"
-"mindspore/mindspore/ccsrc/pybind_api/np_dtype/np_dtypes.cc"                                              "knownConditionTrueFalse"
+"mindspore/mindspore/ccsrc/frontend/np_dtypes/np_dtypes.cc"                                              "knownConditionTrueFalse"
 "mindspore/mindspore/ccsrc/pybind_api/tensor_py_reg.cc"                                 "unreachableCode"
 "mindspore/mindspore/ccsrc/runtime/graph_scheduler/actor/debug_actor.cc"                              "unreadVariable"
 "mindspore/mindspore/ccsrc/plugin/res_manager/ascend/symbol_interface/acl_base_symbol.cc"  "unknownMacro"
