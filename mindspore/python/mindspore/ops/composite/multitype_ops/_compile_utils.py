@@ -829,6 +829,7 @@ def _tensor_index_by_integer(data, int_index):
         end_mask += 2 ** i
     return strided_slice(data, begin_strides, end_strides, step_strides, begin_mask, end_mask, 0, 0, shrink_axis_mask)
 
+
 def _check_dim_shape_valid(data, tensor_index):
     """check dim and shape of tensor_index for tensor(bool) indexing"""
     if data.ndim < tensor_index.ndim:

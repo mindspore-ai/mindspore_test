@@ -34,6 +34,7 @@ _ms_cells_to_subtree = False
 # Paths of modules which will not be considered as third party module
 _ignore_third_party_paths = []
 
+
 def is_subtree(cls_inst):
     """Determine whether 'cls_inst' is a subtree."""
     cls_name = type(cls_inst).__name__
