@@ -51,7 +51,7 @@ source /usr/local/Ascend/nnal/atb/set_env.sh
 export MS_DEV_GRAPH_KERNEL_FLAGS=$GRAPH_KERNEL_FLAGS
 
 msrun --worker_num=$RANK_SIZE --local_worker_num=$RANK_SIZE --master_port=$MASTER_PORT --log_dir=$BASE_PATH/$CASE_NAME/ \
-  --join=True --cluster_time_out=7200 \
+  --join=True --cluster_time_out=7200 --bind_core=True \
   ${MF_PATH}/run_mindformer.py \
   --config $CONFIG_FILE \
   --register_path ${MF_PATH}/research/deepseek3/

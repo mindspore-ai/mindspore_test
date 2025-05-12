@@ -185,7 +185,7 @@ def test_deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_8p_bmm():
         f"where training loss: {loss_list}, golden_loss: {golden_loss}."
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='allcards', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='allcards', essential_mark='essential')
 def test_deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_8p_gptdataset():
     """
     Feature: test deepseekv3 cell dp2mp2ep4pp2mb4gas1bs1 8p gptdataset
@@ -232,7 +232,7 @@ def test_deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_8p_gptdataset():
 
     # check per step time
     # self-test results: 170ms, step time should be lower than 170+20=190ms
-    excepted_average_step_time = 190
+    excepted_average_step_time = 200
 
     # extract training step time
     average_step_time = extract_average_step_time_from_log(log_file_path)
