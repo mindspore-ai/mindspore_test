@@ -686,8 +686,6 @@ void GraphScheduler::Initialize() {
   BindNumaNode();
   (void)kKernelTypeToLinkFunc.emplace(KernelTransformType::kGraphParameterStore,
                                       &GraphScheduler::LinkDataArrowForGraphParameterStore);
-  (void)kKernelTypeToLinkFunc.emplace(KernelTransformType::kDeviceDataSourceActor,
-                                      &GraphScheduler::LinkDataArrowForBaseActor);
   (void)kKernelTypeToLinkFunc.emplace(KernelTransformType::kHostDataSourceActor,
                                       &GraphScheduler::LinkDataArrowForHostDSActor);
   (void)kKernelTypeToLinkFunc.emplace(KernelTransformType::kKernelActor, &GraphScheduler::LinkDataArrowForKernelActor);
@@ -1455,7 +1453,6 @@ ActorSetPtr GraphScheduler::Build(const GraphCompilerInfo &graph_compiler_info) 
       BuildDataPrepareActor(graph_compiler_info, actor_set->data_source_actors_, host_queue);
   }
 
-  actor_set->custom_actors_ = BuildCustomActor(graph_compiler_info);
   actor_set->kernel_actors_ = BuildKernelActor(graph_compiler_info);
   actor_set->super_kernel_actors_ = BuildSuperKernelActor(graph_compiler_info);
   actor_set->any_type_kernel_actors_ =
@@ -1650,11 +1647,6 @@ void GraphScheduler::LinkControlArrowForNoInputArrowActor(const ActorSet *actor_
 
   MS_EXCEPTION_IF_NULL(actor_set);
   std::vector<AbstractActorPtr> actors;
-
-  for (auto &custom_actor : actor_set->custom_actors_) {
-    MS_EXCEPTION_IF_NULL(custom_actor);
-    (void)actors.emplace_back(static_cast<AbstractActorPtr>(custom_actor));
-  }
   for (auto &kernel_actor : actor_set->kernel_actors_) {
     MS_EXCEPTION_IF_NULL(kernel_actor);
     (void)actors.emplace_back(static_cast<AbstractActorPtr>(kernel_actor));
@@ -2121,37 +2113,6 @@ std::vector<DataSourceActorPtr> GraphScheduler::BuildDataSourceActor(const Graph
   return data_source_actors;
 }
 
-std::vector<CustomActorPtr> GraphScheduler::BuildCustomActor(const GraphCompilerInfo &graph_compiler_info) {
-  std::vector<CustomActorPtr> custom_actors;
-  if (!is_enable_custom_actor) {
-    return custom_actors;
-  }
-  for (size_t i = 0; i < graph_compiler_info.graphs_.size(); ++i) {
-    const auto &device_context = graph_compiler_info.device_contexts_[i];
-    const auto &graph = graph_compiler_info.graphs_[i];
-    MS_EXCEPTION_IF_NULL(graph);
-    if (graph->is_graph_run_mode() || graph->is_any_type_input()) {
-      continue;
-    }
-
-    auto all_nodes = TopoSort(graph->get_return());
-    for (const auto &node : all_nodes) {
-      if (!AnfUtils::IsCustomActorNode(node)) {
-        continue;
-      }
-
-      auto actor_name = AnfUtils::GetCustomActorName(node);
-      const auto &base_node = AnfUtils::GetCustomActorBaseNode(node);
-      auto custom_actor = std::make_shared<CustomActor>(
-        actor_name, node, device::FetchRealDeviceContext(base_node, device_context), memory_manager_aid_);
-      MS_EXCEPTION_IF_NULL(custom_actor);
-      InsertActor(custom_actor.get());
-      (void)custom_actors.emplace_back(custom_actor);
-    }
-  }
-  return custom_actors;
-}
-
 std::vector<KernelActorPtr> GraphScheduler::BuildKernelActor(const GraphCompilerInfo &graph_compiler_info) {
   std::vector<KernelActorPtr> kernel_actors;
   auto root_weights = GatherAllParams(graph_compiler_info);
@@ -2367,14 +2328,6 @@ std::vector<AbstractActorPtr> GraphScheduler::BuildNoInputKernelActor(const Acto
 
     if ((kernel_actor->input_datas_num_ == 0) && (kernel_actor->input_controls_num_ == 0)) {
       (void)no_input_kernel_actors.emplace_back(kernel_actor);
-    }
-  }
-
-  for (auto &custom_actor : actor_set->custom_actors_) {
-    MS_EXCEPTION_IF_NULL(custom_actor);
-
-    if ((custom_actor->input_datas_num_ == 0) && (custom_actor->input_controls_num_ == 0)) {
-      (void)no_input_kernel_actors.emplace_back(custom_actor);
     }
   }
   return no_input_kernel_actors;
@@ -2796,8 +2749,7 @@ bool IsNeedInsertCopyActor(AbstractActor *const from_actor, AbstractActor *const
       }
     }
   }
-  auto need_copy_actor = (to_actor->type() != KernelTransformType::kCustomActor) &&
-                         (!SchedulerHelper::IsIgnoredInputAddress(to_actor, to_input_index)) && need_copy &&
+  auto need_copy_actor = (!SchedulerHelper::IsIgnoredInputAddress(to_actor, to_input_index)) && need_copy &&
                          IsDeviceTypeNotSame(from_device_context, to_actor->device_contexts()[0]);
   return need_copy_actor;
 }
@@ -3014,12 +2966,8 @@ void GraphScheduler::LinkDataArrowForKernelActor(AbstractActor *const from_actor
   if (IsSkippedKernelActor(from_kernel)) {
     real_from_kernel_with_output_idx = common::AnfAlgo::GetPrevNodeOutput(from_kernel, 0, false);
     MS_EXCEPTION_IF_NULL(real_from_kernel_with_output_idx.first);
-    // The custom actor no need control arrow for skipped node.
-    if (to_actor->type_ != KernelTransformType::kCustomActor) {
-      LinkControlArrowBySkippedNode(to_actor, from_kernel, graph);
-    }
-
     MS_EXCEPTION_IF_NULL(to_kernel_with_input_idx.first);
+    LinkControlArrowBySkippedNode(to_actor, from_kernel, graph);
     MS_LOG(INFO) << "Link data arrow for inplace node, aggregate node: "
                  << to_kernel_with_input_idx.first->fullname_with_scope()
                  << ", aggregate input index: " << to_kernel_with_input_idx.second
@@ -3313,12 +3261,6 @@ void GraphScheduler::LinkGlobalControlArrow(ActorSet *const actor_set,
   // Auto monad actor may modify the device tensor store.
   LinkDeviceTensorStoreForAutoMonadActor(auto_monad_actors, graph_compiler_info);
 
-  // Link arrows for custom actor.
-  if (is_enable_custom_actor) {
-    LinkDataArrowForCustomActor(actor_set, graph_compiler_info);
-    LinkControlArrowForCustomActor(actor_set, graph_compiler_info);
-  }
-
   // BuildNoInputKernelActor depends on whether kernel actors have input, so must be behind the link of kernel actors.
   actor_set->no_input_kernel_actors_ = BuildNoInputKernelActor(actor_set, graph_compiler_info.strategy_);
 
@@ -3334,191 +3276,6 @@ void GraphScheduler::LinkGlobalControlArrow(ActorSet *const actor_set,
   LinkControlArrowForOutputActor(actor_set->output_actor_.get(), actor_set);
 
   LinkControlArrowForCopyActor(actor_set);
-}
-
-void GraphScheduler::LinkControlArrowForCustomActor(const ActorSet *actor_set,
-                                                    const GraphCompilerInfo &graph_compiler_info) {
-  MS_EXCEPTION_IF_NULL(actor_set);
-  const auto &parser = graph_compiler_info.control_node_parser_;
-  MS_EXCEPTION_IF_NULL(parser);
-  // Link depend(custom, custom) or depend(custom, kernel) or depend(internal parameter, custom).
-  for (size_t i = 0; i < graph_compiler_info.graphs_.size(); ++i) {
-    const auto &graph = graph_compiler_info.graphs_[i];
-    MS_EXCEPTION_IF_NULL(graph);
-    if (graph->is_graph_run_mode()) {
-      continue;
-    }
-
-    auto all_nodes = TopoSort(graph->get_return());
-    for (const auto &node : all_nodes) {
-      MS_EXCEPTION_IF_NULL(node);
-      if (!IsPrimitiveCNode(node, prim::kPrimDepend)) {
-        continue;
-      }
-      auto depend_cnode = node->cast<CNodePtr>();
-      MS_EXCEPTION_IF_NULL(depend_cnode);
-      auto from_node = depend_cnode->input(kDependAttachNodeIndex);
-      auto to_node = depend_cnode->input(kRealInputIndexInDepend);
-      MS_EXCEPTION_IF_NULL(from_node);
-      MS_EXCEPTION_IF_NULL(to_node);
-      if (!AnfUtils::IsCustomActorNode(from_node) && !AnfUtils::IsCustomActorNode(to_node)) {
-        continue;
-      }
-
-      auto to_kernel_type = FetchKernelTransformType(to_node, graph, graph_compiler_info.origin_parameters_order_,
-                                                     graph_compiler_info.strategy_);
-      auto to_actor = FetchActor(to_kernel_type, graph_compiler_info.name_, to_node, graph);
-      if (to_actor == nullptr) {
-        MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, to_node)
-          << "#dmsg#Runtime error info:#dmsg#Fetch no actor for node:" << to_node->fullname_with_scope()
-          << ", from node:" << from_node->fullname_with_scope();
-      }
-
-      AbstractActor *from_actor = nullptr;
-      // InternalParameter --> CustomActor.
-      MS_LOG(DEBUG) << "Link control arrow from:" << from_node->fullname_with_scope()
-                    << " in graph:" << graph->ToString() << " to actor:" << to_actor->GetAID();
-      if (IsInternalParameter(from_node, graph) && (!parser->IsControlFlowDataArrow(graph, from_node))) {
-        auto front_output_with_index = graph->GetOriginFrontNodeByInternalParameter(from_node);
-        auto front_output_node = front_output_with_index.first;
-        MS_EXCEPTION_IF_NULL(front_output_node);
-        if (IsSwitchActor(front_output_node) || (graph_output_to_actor_.count(front_output_with_index) == 0)) {
-          continue;
-        }
-        auto real_from_node =
-          common::AnfAlgo::FetchRealNodeSkipMonadControl(graph_output_to_actor_[front_output_with_index].second).first;
-        auto from_infer_node = AnfUtils::GetCustomInferopNode(real_from_node);
-        if (AnfAlgo::IsNeedUpdateShapeAndTypeAfterLaunch(real_from_node)) {
-          from_actor = graph_output_to_actor_[front_output_with_index].first;
-        } else {
-          from_actor = FetchActor(AnfUtils::GetCustomActorName(from_infer_node));
-        }
-        MS_EXCEPTION_IF_NULL(from_actor);
-        MS_LOG(INFO) << "Custom actor link control arrow by internal parameter, front node: "
-                     << front_output_node->fullname_with_scope() << ", from actor: " << from_actor->GetAID().Name()
-                     << ", to actor: " << to_actor->GetAID().Name();
-      } else if (from_node->isa<Parameter>()) {
-        continue;
-      } else {
-        auto from_kernel_type = FetchKernelTransformType(from_node, graph, graph_compiler_info.origin_parameters_order_,
-                                                         graph_compiler_info.strategy_);
-        from_actor = FetchActor(from_kernel_type, graph_compiler_info.name_, from_node, graph);
-        MS_EXCEPTION_IF_NULL(from_actor);
-      }
-      SchedulerHelper::AddControlArrow(from_actor, to_actor);
-    }
-  }
-  LinkControlArrowForCustomActorByAutoMonad(actor_set, graph_compiler_info);
-}
-
-void GraphScheduler::LinkControlArrowForCustomActorByAutoMonad(const ActorSet *actor_set,
-                                                               const GraphCompilerInfo &graph_compiler_info) {
-  MS_EXCEPTION_IF_NULL(actor_set);
-  const auto &parser = graph_compiler_info.control_node_parser_;
-  MS_EXCEPTION_IF_NULL(parser);
-  mindspore::HashMap<KernelGraphPtr, mindspore::HashMap<AnfNodePtr, std::set<AnfNodePtr>>> graph_to_monad_inputs;
-
-  // Link control arrow for the value depend of monad.
-  for (const auto &to_actor : actor_set->custom_actors_) {
-    MS_EXCEPTION_IF_NULL(to_actor);
-    auto kernel = to_actor->kernel().lock();
-    MS_EXCEPTION_IF_NULL(kernel);
-    if (AnfUtils::GetCustomActorType(kernel) != kInfer) {
-      continue;
-    }
-
-    const auto &base_node = AnfUtils::GetCustomActorBaseNode(kernel);
-    MS_EXCEPTION_IF_NULL(base_node);
-    const auto &graph = AnfAlgo::FetchKernelGraph(base_node.get());
-    auto dynamic_shape_depends = abstract::GetValueDependArgIndices(base_node);
-    for (auto iter = dynamic_shape_depends.begin(); iter != dynamic_shape_depends.end(); ++iter) {
-      const auto &input_node = common::AnfAlgo::GetInputNode(base_node, LongToSize(*iter));
-      MS_EXCEPTION_IF_NULL(input_node);
-      if (graph == nullptr || (!IsInternalParameter(input_node, graph)) ||
-          parser->IsControlFlowDataArrow(graph, input_node)) {
-        MS_LOG(DEBUG) << "Skip link control arrow for custom actor:" << to_actor->GetAID().Name()
-                      << " kernel:" << base_node->fullname_with_scope() << " input node:" << input_node->DebugString()
-                      << " index:" << *iter;
-        continue;
-      }
-      MS_LOG(INFO) << "Link control arrow by value depend custom actor:" << to_actor->GetAID().Name()
-                   << ", kernel:" << base_node->fullname_with_scope()
-                   << ", input node:" << input_node->fullname_with_scope() << ", value depend input index:" << *iter;
-      auto front_output_with_index = graph->GetOriginFrontNodeByInternalParameter(input_node);
-      auto front_output_node = front_output_with_index.first;
-      if (front_output_node == nullptr || graph_output_to_actor_.count(front_output_with_index) == 0) {
-        MS_LOG(DEBUG) << "To actor:" << to_actor->GetAID() << " check front node:"
-                      << (front_output_node == nullptr ? "null" : front_output_node->DebugString());
-        continue;
-      }
-      const auto &graph_output_pair = graph_output_to_actor_.at(front_output_with_index);
-      MS_LOG(DEBUG) << "to actor:" << to_actor->GetAID() << " check front node:" << front_output_node->DebugString()
-                    << " backend node:"
-                    << (graph_output_pair.second.first == nullptr ? "nullptr"
-                                                                  : graph_output_pair.second.first->DebugString());
-      if (graph_output_pair.second.first == nullptr ||
-          (!common::AnfAlgo::CheckPrimitiveType(graph_output_pair.second.first, prim::kPrimLoad))) {
-        continue;
-      }
-      const auto &pre_graph = AnfAlgo::FetchKernelGraph(graph_output_pair.second.first.get());
-      if (pre_graph == nullptr) {
-        continue;
-      }
-      if (graph_to_monad_inputs.find(pre_graph) == graph_to_monad_inputs.end()) {
-        mindspore::HashMap<AnfNodePtr, std::set<AnfNodePtr>> cnode_to_monad_inputs;
-        MS_LOG(INFO) << "Get all u input of cnode in graph:" << pre_graph->ToString() << " start.";
-        GetAllCNodeUInputByGraph(pre_graph, &cnode_to_monad_inputs);
-        MS_LOG(INFO) << "Get all u input of cnode in graph:" << pre_graph->ToString() << " end.";
-        graph_to_monad_inputs[pre_graph] = cnode_to_monad_inputs;
-      }
-      std::set<AnfNodePtr> checked_nodes;
-      LinkControlArrowByAutoMonad(to_actor.get(), graph_output_pair.second.first, pre_graph, parser,
-                                  graph_to_monad_inputs[pre_graph], &checked_nodes);
-    }
-  }
-}
-
-void GraphScheduler::LinkDataArrowForCustomActor(const ActorSet *actor_set,
-                                                 const GraphCompilerInfo &graph_compiler_info) {
-  MS_EXCEPTION_IF_NULL(actor_set);
-  MS_EXCEPTION_IF_NULL(actor_set->data_prepare_actor_);
-  const auto &parser = graph_compiler_info.control_node_parser_;
-  MS_EXCEPTION_IF_NULL(parser);
-
-  // Link data arrow for the value depend kernel.
-  for (const auto &custom_actor : actor_set->custom_actors_) {
-    MS_EXCEPTION_IF_NULL(custom_actor);
-    auto kernel = custom_actor->kernel().lock();
-    MS_EXCEPTION_IF_NULL(kernel);
-    // Only the infer type actor need the data arrow.
-    if (AnfUtils::GetCustomActorType(kernel) != kInfer) {
-      continue;
-    }
-
-    const auto &base_node = AnfUtils::GetCustomActorBaseNode(kernel);
-    MS_EXCEPTION_IF_NULL(base_node);
-    const auto &graph = AnfAlgo::FetchKernelGraph(base_node.get());
-    auto dynamic_shape_depends = abstract::GetValueDependArgIndices(base_node);
-    for (auto iter = dynamic_shape_depends.begin(); iter != dynamic_shape_depends.end(); ++iter) {
-      const auto &input_node = common::AnfAlgo::GetInputNode(base_node, LongToSize(*iter));
-      MS_EXCEPTION_IF_NULL(input_node);
-      KernelWithIndex from_kernel_with_output_idx = common::AnfAlgo::VisitKernelWithReturnType(input_node, 0, false);
-      if (graph != nullptr && parser->IsControlFlowDataArrow(graph, from_kernel_with_output_idx.first)) {
-        MS_LOG(DEBUG) << "Skip link arrow for custom actor:" << custom_actor->GetAID().Name()
-                      << " kernel:" << base_node->fullname_with_scope() << " input node:" << input_node->DebugString()
-                      << " index:" << *iter;
-        continue;
-      }
-
-      MS_LOG(INFO) << "Link data arrow for value depend custom actor:" << custom_actor->GetAID().Name()
-                   << ", kernel:" << base_node->fullname_with_scope()
-                   << ", input node:" << input_node->fullname_with_scope() << ", value depend input index:" << *iter;
-      KernelWithIndex to_kernel_with_input_idx = std::make_pair(base_node, LongToSize(*iter));
-      // The gather of linking data arrows of kernel by the different from kernel type.
-      LinkDataArrow(custom_actor.get(), graph_compiler_info, graph, from_kernel_with_output_idx,
-                    to_kernel_with_input_idx);
-    }
-  }
 }
 
 void GraphScheduler::LinkControlArrowByExecutionOrder(const KernelGraphPtr &graph,
@@ -3609,9 +3366,6 @@ void GraphScheduler::LinkControlArrowForDataPrepareActor(DataPrepareActor *data_
     // Data prepare actor --> no input kernel actor.
     for (auto &no_input_kernel_actor : actor_set->no_input_kernel_actors_) {
       MS_EXCEPTION_IF_NULL(no_input_kernel_actor);
-      if (IsInlineKernelActor(no_input_kernel_actor)) {
-        continue;
-      }
       SchedulerHelper::AddControlArrow(data_prepare_actor, no_input_kernel_actor.get());
     }
   }
@@ -3655,7 +3409,7 @@ void GraphScheduler::LinkControlArrowForLoopCountActor(LoopCountActor *loop_coun
   for (auto &kernel_actor : actor_set->kernel_actors_) {
     MS_EXCEPTION_IF_NULL(kernel_actor);
     // The no output kernel control side in subgraph needs to be connected to the corresponding output switch actor.
-    if (is_no_output_actor(kernel_actor) && (!IsInlineKernelActor(kernel_actor))) {
+    if (is_no_output_actor(kernel_actor)) {
       (void)no_output_actors.emplace_back(kernel_actor.get());
     }
   }
@@ -3669,12 +3423,6 @@ void GraphScheduler::LinkControlArrowForLoopCountActor(LoopCountActor *loop_coun
     MS_EXCEPTION_IF_NULL(copy_actor);
     if (is_no_output_actor(copy_actor)) {
       (void)no_output_actors.emplace_back(copy_actor.get());
-    }
-  }
-  for (auto &custom_actor : actor_set->custom_actors_) {
-    MS_EXCEPTION_IF_NULL(custom_actor);
-    if (is_no_output_actor(custom_actor)) {
-      (void)no_output_actors.emplace_back(custom_actor.get());
     }
   }
 

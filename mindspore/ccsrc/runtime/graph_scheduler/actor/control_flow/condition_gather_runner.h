@@ -52,7 +52,6 @@ class ConditionGatherRunner : public KernelRunner {
   void FetchParameterInput(size_t start_index, OpContext<DeviceTensor> *const context);
 
   friend class SuperKernelActor;
-  friend class InlineControlFlowScheduler;
   // Output num of each branch.
   size_t branch_output_num_{0};
   // The order of each branch name.

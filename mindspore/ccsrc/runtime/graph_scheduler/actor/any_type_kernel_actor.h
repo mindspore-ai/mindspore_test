@@ -57,27 +57,9 @@ class AnyTypeKernelActor : public SuperKernelActor {
   void Init() override;
   void Run(OpContext<KernelTensor> *const context) override;
 
-  // Hand the graph input.
-  // The execution of actor is divided into the following steps:
-  // Receive graph inputs:
-  // 1. generate type key
-  // 2. check whether the corresponding graph already exists, if not found, execute 3, if there is, execute 4
-  // 3. compile the corresponding kernel_graph according to the type and generate the corresponding actor_set
-  // 4. send graph inputs to kernel actor of current graph
-  void RunForGraphInput(OpContext<KernelTensor> *const context);
   void FetchInputDeviceTensor(OpContext<KernelTensor> *const context) override;
-  void UpdataDynamicShapeParameterForGraphInput(OpContext<KernelTensor> *const context);
-  void OnMemoryAllocFinish(OpContext<KernelTensor> *const context) override;
 
-  // Handle the graph output.
-  bool CheckGraphOutputRunningCondition(const OpContext<KernelTensor> *context);
-  // Receive graph outputs:
-  // 1. find the corresponding arrow according to the current type key, and send the outputs.
-  void RunForGraphOutput(OpContext<KernelTensor> *const context);
   KernelGraphPtr CompileRealKernelGraph(OpContext<KernelTensor> *const context);
-  void CheckParams(OpContext<KernelTensor> *const context);
-  void FetchGraphOutput(OpContext<KernelTensor> *const context);
-  void EraseGraphOutput(OpContext<KernelTensor> *const context);
   void UpdateOutputData(OpData<KernelTensor> *const output_data, const DataArrowPtr &data_arrow,
                         const AnfNodePtr &output_node, OpContext<KernelTensor> *const context) override;
   // Compile the corresponding kernel_graph according to the input tensors and create the kernel actor in super kernel
@@ -89,9 +71,6 @@ class AnyTypeKernelActor : public SuperKernelActor {
  private:
   friend class AnyTypeGraphScheduler;
 
-  // When the actor receives the input of the graph, it can determine the data type of the parameter and then compile
-  // an executable kernel graph and actors.
-  mindspore::HashMap<string, std::vector<AbstractActorPtr>> actors_;
   // Kernel graphs that are actually executed.
   mindspore::HashMap<string, KernelGraphPtr> real_graphs_;
   // The positions of any type parameter in the kernel graph.
@@ -101,42 +80,9 @@ class AnyTypeKernelActor : public SuperKernelActor {
   // The data type of any type parameters in the currently received input, the format is like:typeid1_typeid2_typeid3.
   std::string current_data_type_;
 
-  // Parameters that have a dynamic shape.
-  mindspore::HashMap<std::string, std::vector<AnfNodePtr>> graph_input_backend_parameters_;
-
-  // Arrows send to kernel/superkernel actors of graph.
-  mindspore::HashMap<std::string, std::vector<DataArrowPtr>> graph_input_data_arrows_;
-  mindspore::HashMap<std::string, std::vector<ControlArrowPtr>> graph_input_control_arrows_;
-  // The output_data_nodes_ and output_data_ corresponds to the output_data_arrows_ one by one.
-  mindspore::HashMap<std::string, std::vector<AnfNodePtr>> graph_input_data_nodes_;
-  // The second of pair indicates the output data flag. See constant prefixed with kOutputDataFalg for details.
-  mindspore::HashMap<std::string, std::vector<std::pair<OpDataUniquePtr<KernelTensor>, size_t>>> graph_input_data_;
-  // Record the fusion output index for output data arrow.
-  mindspore::HashMap<std::string, mindspore::HashMap<DataArrow *, size_t>> data_arrow_to_graph_input_actor_indexs_;
-  // Used to send batch data in the message which RunBatchOpData needs, the key is the actor name of destination actor.
-  mindspore::HashMap<std::string, mindspore::HashMap<std::string, std::vector<OpData<KernelTensor> *>>>
-    batch_graph_input_data_;
-  mindspore::HashMap<std::string, mindspore::HashMap<std::string, std::vector<DataArrowPtr>>>
-    batch_graph_input_data_arrows_;
-
-  // Graph outputs receive from kernel/superkernel actors of graph.
-  mindspore::HashMap<int, std::vector<OpData<KernelTensor> *>> graph_output_op_data_;
-  mindspore::HashMap<int, std::vector<AID *>> graph_output_op_control_;
-  std::vector<KernelTensorPtr> graph_ouput_kernel_tensors_;
-  // In any type kernel actor, the kernel in the model graph will have fallback scenario, the device type of the
-  // model graph and the real graph will be different. A new device address needs to be created for the model graph
-  // and placed here.
-  std::vector<KernelTensorPtr> fallback_kernel_tensors_;
-  mindspore::HashMap<std::string, size_t> graph_output_data_num_;
-  mindspore::HashMap<std::string, size_t> graph_output_control_num_;
-
-  AnyTypeKernelActorState actor_state_{kAnyTypeKernelActorInit};
-
   static std::mutex instance_lock_;
 
   CompileFunc compile_func_;
-  TransformFunc transform_func_;
-  ScheduleFunc schedule_func_;
   KernelGraphPtr model_graph_;
 
   std::vector<AnfNodePtr> model_output_data_nodes_;

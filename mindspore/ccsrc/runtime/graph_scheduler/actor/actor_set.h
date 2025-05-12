@@ -35,7 +35,6 @@
 #include "runtime/graph_scheduler/actor/kernel_actor.h"
 #include "runtime/graph_scheduler/actor/kernel_infer_actor.h"
 #include "runtime/graph_scheduler/actor/kernel_resize_actor.h"
-#include "runtime/graph_scheduler/actor/custom_actor.h"
 #include "runtime/graph_scheduler/actor/super_kernel_actor.h"
 #include "runtime/graph_scheduler/actor/any_type_kernel_actor.h"
 #include "runtime/graph_scheduler/actor/output_actor.h"
@@ -46,8 +45,6 @@
 #include "runtime/graph_scheduler/actor/control_flow/entrance_actor.h"
 #include "runtime/graph_scheduler/actor/control_flow/exit_actor.h"
 #include "runtime/graph_scheduler/actor/control_flow/stack_actor.h"
-#include "runtime/graph_scheduler/actor/control_flow/condition_switch_actor.h"
-#include "runtime/graph_scheduler/actor/control_flow/condition_gather_actor.h"
 #include "runtime/graph_scheduler/actor/memory/memory_swap_actor.h"
 
 #ifdef ENABLE_RPC_ACTOR
@@ -111,7 +108,6 @@ struct ActorSet {
   std::vector<KernelActorPtr> kernel_actors_;
   std::vector<KernelInferActorPtr> kernel_infer_actors_;
   std::vector<KernelResizeActorPtr> kernel_resize_actors_;
-  std::vector<CustomActorPtr> custom_actors_;
   std::vector<SuperKernelActorPtr> super_kernel_actors_;
   std::vector<AnyTypeKernelActorPtr> any_type_kernel_actors_;
   // No input kernel actors need be triggered specifically.

@@ -96,12 +96,10 @@ const char kKernelResizeActorNamePrefix[] = "KernelResizeActor_";
 enum class KernelTransformType {
   kUnknown,
   kDataPrepareActor,
-  kDeviceDataSourceActor,
   kHostDataSourceActor,
   kKernelActor,
   kKernelInferActor,
   kKernelResizeActor,
-  kCustomActor,
   // Super kernel actor represents the sink executing of graph which is the combination of kernels.
   kSuperKernelActor,
   // Any type kernel actor represents the graph which has an any type input.
@@ -450,8 +448,6 @@ class BACKEND_EXPORT ActorDispatcher {
 
 bool IsRunningFailed(const OpContext<KernelTensor> *context);
 
-bool IsDeviceQueueDSActor(const AnfNodePtr &node, GraphExecutionStrategy strategy = GraphExecutionStrategy::kPipeline);
-
 // Host parameters are parameters of root funcgraph, in control flow, only the parameters of the root funcgraph are
 // in the host data source.
 bool IsHostQueueDSActor(const AnfNodePtr &node, const KernelGraphPtr &graph = nullptr,
@@ -461,8 +457,6 @@ bool IsHostQueueDSActor(const AnfNodePtr &node, const KernelGraphPtr &graph = nu
 bool IsGraphRootParameter(const AnfNodePtr &node, const KernelGraphPtr &graph = nullptr,
                           const std::vector<AnfNodePtr> &host_parameters = {},
                           GraphExecutionStrategy strategy = GraphExecutionStrategy::kPipeline);
-
-bool IsCustomActor(const AnfNodePtr &node);
 
 bool IsKernelActor(const AnfNodePtr &node, GraphExecutionStrategy strategy = GraphExecutionStrategy::kPipeline);
 
