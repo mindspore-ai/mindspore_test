@@ -280,12 +280,13 @@ class NPUProfilerAnalysis:
         cann_flow_parsers = []
 
         if export_type == [ExportType.Db.value]:
-            cann_flow_parsers.append(
-                AscendMsprofParser(**kwargs)
-            )
-            task_mgr.create_flow(
-                *cann_flow_parsers, flow_name="cann_flow", show_process=True
-            )
+            if ProfilerActivity.NPU.value in activities:
+                cann_flow_parsers.append(
+                    AscendMsprofParser(**kwargs)
+                )
+                task_mgr.create_flow(
+                    *cann_flow_parsers, flow_name="cann_flow", show_process=True
+                )
             return task_mgr
 
         if ProfilerActivity.NPU.value in activities:
