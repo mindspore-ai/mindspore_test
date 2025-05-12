@@ -73,16 +73,16 @@ mindspore.mint.nn.Conv1d
 
         .. math::
             \begin{array}{ll} \\
-                L_{out} = \left \lceil{\frac{L_{in} - \text{dilation} \times (\text{kernel_size} - 1) }
-                {\text{stride}}} \right \rceil \\
+                L_{out} = \left \lfloor{\frac{L_{in} - \text{dilation} \times (\text{kernel_size} - 1) - 1}
+                {\text{stride}}} \right \rfloor + 1 \\
             \end{array}
 
         padding为int或tuple时：
 
         .. math::
             \begin{array}{ll} \\
-                L_{out} = \left \lfloor{\frac{L_{in} + 2 \times {padding} - (\text{kernel_size} - 1) \times
-                \text{dilation} - 1 }{\text{stride}} + 1} \right \rfloor \\
+                L_{out} = \left \lfloor{\frac{L_{in} + 2 \times {padding} - \text{dilation} \times
+                (\text{kernel_size} - 1) - 1}{\text{stride}}} \right \rfloor + 1 \\
             \end{array}
 
     异常：
