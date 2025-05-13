@@ -473,15 +473,22 @@ def _transform_safetensors_with_parallel(needed_rank_list_map, all_safetensor_fi
             pipe_param_list[layout[6][0]].append(name)
     part_list_dict = _distribute_files_by_size(all_safetensor_files_map, needed_rank_list_map, process_num)
     processes = []
-    for i in range(process_num):
-        p = mp.Process(target=_transform_safetensors_single, args=(
-            part_list_dict[i], all_safetensor_files_map, src_stage_device_num, dst_stage_device_num,
-            src_strategy_dict, dst_strategy_dict, origin_src_strategy_list, origin_dst_strategy_list,
-            ckpt_prefix, dst_safetensors_dir, output_format, _transform_param_list, pipe_param_list[i]))
-        p.start()
-        processes.append(p)
-    for p in processes:
-        p.join()
+    if process_num > 1:
+        for i in range(process_num):
+            p = mp.Process(target=_transform_safetensors_single, args=(
+                part_list_dict[i], all_safetensor_files_map, src_stage_device_num, dst_stage_device_num,
+                src_strategy_dict, dst_strategy_dict, origin_src_strategy_list, origin_dst_strategy_list,
+                ckpt_prefix, dst_safetensors_dir, output_format, _transform_param_list, pipe_param_list[i]))
+            p.start()
+            processes.append(p)
+        for p in processes:
+            p.join()
+    else:
+        _transform_safetensors_single(part_list_dict[0], all_safetensor_files_map, src_stage_device_num,
+                                      dst_stage_device_num, src_strategy_dict, dst_strategy_dict,
+                                      origin_src_strategy_list, origin_dst_strategy_list, ckpt_prefix,
+                                      dst_safetensors_dir, output_format, _transform_param_list,
+                                      pipe_param_list[0])
 
 
 def _count_redundancy_list(rank_num, param_name, redundancy_dict, device_num):
@@ -1141,15 +1148,22 @@ def unified_safetensors(src_dir, src_strategy_file, dst_dir, merge_with_redundan
     src_strategy_name = None
     if not merge_with_redundancy:
         src_strategy_name = src_strategy_file
-    for i in range(max_process):
-        p = mp.Process(target=_transform_safetensors_single_semaphore, args=(
-            needed_rank_list_map, all_safetensor_files_map, src_stage_device_num, dst_stage_device_num,
-            src_strategy_dict, None, origin_src_strategy_list, origin_dst_strategy_list,
-            "", dst_dir, "safetensors", None, sub_list, res[i], True, src_strategy_name, choice_func))
-        p.start()
-        processes.append(p)
-    for p in processes:
-        p.join()
+    if max_process > 1:
+        for i in range(max_process):
+            p = mp.Process(target=_transform_safetensors_single_semaphore, args=(
+                needed_rank_list_map, all_safetensor_files_map, src_stage_device_num, dst_stage_device_num,
+                src_strategy_dict, None, origin_src_strategy_list, origin_dst_strategy_list,
+                "", dst_dir, "safetensors", None, sub_list, res[i], True, src_strategy_name, choice_func))
+            p.start()
+            processes.append(p)
+        for p in processes:
+            p.join()
+    else:
+        _transform_safetensors_single_semaphore(needed_rank_list_map, all_safetensor_files_map, src_stage_device_num,
+                                                dst_stage_device_num, src_strategy_dict, None,
+                                                origin_src_strategy_list, origin_dst_strategy_list, "",
+                                                dst_dir, "safetensors", None, sub_list,
+                                                res[0], True, src_strategy_name, choice_func)
 
 
 def _transform_safetensors_single_semaphore(needed_rank_list_map, all_safetensor_files_map,
@@ -1230,7 +1244,20 @@ def _process_hyper_params(file_list, total_safetensors_dir, total_param):
     return total_param
 
 
-def _cal_param_name_map_and_param_list(file_list, total_safetensors_dir, json_files, dst_strategy_file, rank_id):
+def _get_param_name_map_by_file(file_name, file_list, name_map):
+    """get param_name_map by file"""
+    with _fast_safe_open(file_name, framework="np") as f:
+        keys = f.keys()
+        values = len(keys) * [file_list[0]]
+        if name_map:
+            flipped_name_map = {value: key for key, value in name_map.items()}
+            keys = [flipped_name_map.get(key, key) for key in keys]
+        param_name_map = dict(zip(keys, values))
+    return param_name_map
+
+
+def _cal_param_name_map_and_param_list(file_list, total_safetensors_dir, json_files,
+                                       dst_strategy_file, rank_id, name_map=None):
     """calculate param_name_map and param_list"""
     if len(file_list) == 1:
         logger.info("There is only one weight file in the directory, which will be automatically mapped.")
@@ -1239,10 +1266,7 @@ def _cal_param_name_map_and_param_list(file_list, total_safetensors_dir, json_fi
         if not is_file:
             raise ValueError(f"For 'load_parallel_checkpoint', weight files must be included "
                              f"in the `unified_safetensors_dir`.")
-        with _fast_safe_open(file_name, framework="np") as f:
-            keys = f.keys()
-            values = len(keys) * [file_list[0]]
-            param_name_map = dict(zip(keys, values))
+        param_name_map = _get_param_name_map_by_file(file_name, file_list, name_map)
     else:
         if not json_files:
             raise ValueError(
@@ -1261,6 +1285,50 @@ def _cal_param_name_map_and_param_list(file_list, total_safetensors_dir, json_fi
         dst_strategy_list = None
         param_list = param_name_map.keys()
     return param_name_map, param_list, dst_strategy_list
+
+
+def _cal_transform_operator_stack_and_device_num(from_dev_matrix, from_tensor_map, from_opt_shard_step,
+                                                 from_opt_shard_size, param_name, dst_strategy_list, tensor_shape,
+                                                 local_rank_id):
+    """cal transform_operator_stack and device_num"""
+    to_dev_matrix_origin, to_tensor_map_origin, to_opt_shard_step, to_opt_shard_size = _extract_layout_item(
+        dst_strategy_list.get(param_name))
+
+    device_num = np.prod(from_dev_matrix)
+    param_strategy = _get_tensor_strategy(from_dev_matrix, from_tensor_map)
+    origin_tensor_shape = ()
+    for i, item in enumerate(tensor_shape):
+        if i == 0 and from_opt_shard_size > 0:
+            origin_tensor_shape += (item * param_strategy[i] * from_opt_shard_size,)
+            continue
+        origin_tensor_shape += (item * param_strategy[i],)
+
+    has_layout_from = any(isinstance(i, (list, tuple)) for i in from_tensor_map)
+    has_layout_to = any(isinstance(i, (list, tuple)) for i in to_tensor_map_origin)
+
+    from_dev_matrix, from_tensor_map, from_full_tensor_shape = _construct_tensor_layout_for_opt_shard(
+        from_dev_matrix, from_tensor_map, from_opt_shard_step, from_opt_shard_size, origin_tensor_shape)
+    to_dev_matrix, to_tensor_map, to_full_tensor_shape = _construct_tensor_layout_for_opt_shard(
+        to_dev_matrix_origin, to_tensor_map_origin, to_opt_shard_step, to_opt_shard_size, origin_tensor_shape)
+    # Convert tensor layout to same device num
+    from_tensor_layout, to_tensor_layout = _construct_from_to_tensor_layout(from_full_tensor_shape,
+                                                                            from_dev_matrix,
+                                                                            from_tensor_map,
+                                                                            to_full_tensor_shape,
+                                                                            to_dev_matrix, to_tensor_map)
+
+    # when the from_layout is less devices, the safetensor_map for map[device_num] should using map[0]
+    device_list = list(range(0, np.prod(from_tensor_layout[0])))
+    param_rank_map = _get_needed_rank_transform_operator_map_by_layouts(from_tensor_layout, to_tensor_layout,
+                                                                        device_list, local_rank_id)
+
+    from_info_tuple = (from_opt_shard_size, from_dev_matrix, from_tensor_map, from_full_tensor_shape)
+    to_info_tuple = (to_opt_shard_size, to_dev_matrix_origin, to_tensor_map_origin, origin_tensor_shape)
+    _insert_opt_shard_reshape(param_rank_map, from_info_tuple, to_info_tuple)
+    _insert_expand_layout_reshape(param_rank_map, from_info_tuple, to_info_tuple,
+                                  has_layout_from, has_layout_to)
+    transform_operator_stack = _generate_transform_operator_stack(param_rank_map, local_rank_id)
+    return transform_operator_stack, device_num
 
 
 def check_param_dtype(file, param_name):
@@ -1283,9 +1351,10 @@ def _load_parallel_checkpoint(file_info):
     os.sched_setaffinity(pid, all_cores)
     file_list = os.listdir(total_safetensors_dir)
     json_files = [file for file in file_list if file == "param_name_map.json"]
-    param_name_map, param_list, dst_strategy_list = _cal_param_name_map_and_param_list(file_list, total_safetensors_dir,
+    sf_files = [file for file in file_list if file.endswith('.safetensors')]
+    param_name_map, param_list, dst_strategy_list = _cal_param_name_map_and_param_list(sf_files, total_safetensors_dir,
                                                                                        json_files, dst_strategy_file,
-                                                                                       rank_id)
+                                                                                       rank_id, name_map)
     total_param = dict()
     dst_stage_device_num = np.prod(dst_strategy_list.get(list(dst_strategy_list.keys())[0])[0]) if dst_strategy_list \
                                                                                                    is not None else 1
@@ -1310,43 +1379,14 @@ def _load_parallel_checkpoint(file_info):
         if dst_strategy_list is not None:
             if param_name not in dst_strategy_list:
                 continue
-            to_dev_matrix_origin, to_tensor_map_origin, to_opt_shard_step, to_opt_shard_size = _extract_layout_item(
-                dst_strategy_list.get(param_name))
-
-            device_num = np.prod(from_dev_matrix)
-            param_strategy = _get_tensor_strategy(from_dev_matrix, from_tensor_map)
-            origin_tensor_shape = ()
-            for i, item in enumerate(tensor_shape):
-                if i == 0 and from_opt_shard_size > 0:
-                    origin_tensor_shape += (item * param_strategy[i] * from_opt_shard_size,)
-                    continue
-                origin_tensor_shape += (item * param_strategy[i],)
-
-            has_layout_from = any(isinstance(i, (list, tuple)) for i in from_tensor_map)
-            has_layout_to = any(isinstance(i, (list, tuple)) for i in to_tensor_map_origin)
-
-            from_dev_matrix, from_tensor_map, from_full_tensor_shape = _construct_tensor_layout_for_opt_shard(
-                from_dev_matrix, from_tensor_map, from_opt_shard_step, from_opt_shard_size, origin_tensor_shape)
-            to_dev_matrix, to_tensor_map, to_full_tensor_shape = _construct_tensor_layout_for_opt_shard(
-                to_dev_matrix_origin, to_tensor_map_origin, to_opt_shard_step, to_opt_shard_size, origin_tensor_shape)
-            # Convert tensor layout to same device num
-            from_tensor_layout, to_tensor_layout = _construct_from_to_tensor_layout(from_full_tensor_shape,
-                                                                                    from_dev_matrix,
-                                                                                    from_tensor_map,
-                                                                                    to_full_tensor_shape,
-                                                                                    to_dev_matrix, to_tensor_map)
-
-            # when the from_layout is less devices, the safetensor_map for map[device_num] should using map[0]
-            device_list = list(range(0, np.prod(from_tensor_layout[0])))
-            param_rank_map = _get_needed_rank_transform_operator_map_by_layouts(from_tensor_layout, to_tensor_layout,
-                                                                                device_list, local_rank_id)
-
-            from_info_tuple = (from_opt_shard_size, from_dev_matrix, from_tensor_map, from_full_tensor_shape)
-            to_info_tuple = (to_opt_shard_size, to_dev_matrix_origin, to_tensor_map_origin, origin_tensor_shape)
-            _insert_opt_shard_reshape(param_rank_map, from_info_tuple, to_info_tuple)
-            _insert_expand_layout_reshape(param_rank_map, from_info_tuple, to_info_tuple,
-                                          has_layout_from, has_layout_to)
-            transform_operator_stack = _generate_transform_operator_stack(param_rank_map, local_rank_id)
+            transform_operator_stack, device_num = _cal_transform_operator_stack_and_device_num(from_dev_matrix,
+                                                                                                from_tensor_map,
+                                                                                                from_opt_shard_step,
+                                                                                                from_opt_shard_size,
+                                                                                                param_name,
+                                                                                                dst_strategy_list,
+                                                                                                tensor_shape,
+                                                                                                local_rank_id)
             start_time = time.time()
             slice_param = _apply_sf_obj_transform_operators(transform_operator_stack, sf_obj, device_num)
             end_time = time.time()
