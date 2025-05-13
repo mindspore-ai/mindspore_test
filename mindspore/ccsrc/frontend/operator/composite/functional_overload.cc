@@ -25,7 +25,6 @@
 #include <algorithm>
 #include "include/common/pybind_api/api_register.h"
 #include "mindspore/ops/op_def/structure_ops.h"
-#include "ops/op_def.h"
 #include "ir/core_ops_primitive.h"
 #include "frontend/operator/ops.h"
 #include "abstract/abstract_value.h"
@@ -78,7 +77,7 @@ bool MatchExpectedDtype(const ops::OP_DTYPE &input_dtype, const ops::OP_DTYPE &e
     return true;
   }
   // Check List without checking its elements.
-  if (input_dtype == ops::OP_DTYPE::DT_LIST_ANY && list_dtype_list.find(expected_dtype) != tuple_dtype_list.end()) {
+  if (input_dtype == ops::OP_DTYPE::DT_LIST_ANY && list_dtype_list.find(expected_dtype) != list_dtype_list.end()) {
     return true;
   }
   return false;
@@ -159,29 +158,6 @@ std::set<std::string> *GetFunctionKwonlyArgs(const std::string &prim_name) {
   return nullptr;
 }
 
-void GetOpDtypeList(const std::string &prim_name, const abstract::AbstractBasePtrList &args_abs_list,
-                    std::vector<ops::OP_DTYPE> *position_args_dtype,
-                    std::map<std::string, ops::OP_DTYPE> *keyword_args_dtype) {
-  for (const auto &abs : args_abs_list) {
-    // Ignore monad.
-    if (abs->isa<abstract::AbstractMonad>()) {
-      continue;
-    }
-    if (abs->isa<abstract::AbstractKeywordArg>()) {
-      auto kw_abs = abs->cast<abstract::AbstractKeywordArgPtr>();
-      const std::string &key = kw_abs->get_key();
-      if (keyword_args_dtype->find(key) != keyword_args_dtype->end()) {
-        MS_EXCEPTION(TypeError) << "Primitive[" << prim_name << "] got multiple values for argument '" << key << "'";
-      }
-      auto op_dtype = GetOpDtypeFromAbstract(kw_abs->get_arg());
-      keyword_args_dtype->insert(std::make_pair(key, op_dtype));
-    } else {
-      auto op_dtype = GetOpDtypeFromAbstract(abs);
-      (void)position_args_dtype->emplace_back(op_dtype);
-    }
-  }
-}
-
 std::pair<size_t, bool> GetVarargsIndex(const std::string &prim_name, bool is_method) {
   if (is_method) {
     const auto &iter = ops::tensor_method_varargs_map.find(prim_name);
@@ -198,118 +174,6 @@ std::pair<size_t, bool> GetVarargsIndex(const std::string &prim_name, bool is_me
   }
 }
 
-bool CheckKwargs(const std::string &prim_name, const std::map<std::string, ops::OP_DTYPE> &keyword_args_dtype,
-                 const std::vector<ops::OP_DTYPE> &position_args_dtype, bool has_varargs) {
-  const auto &op_def = ops::GetOpDef(prim_name);
-  for (const auto &[key, value] : keyword_args_dtype) {
-    auto op_indexes = op_def->indexes_;
-    const auto &op_args = op_def->args_;
-    const auto &iter = op_indexes.find(key);
-    if (iter == op_indexes.end()) {
-      MS_LOG(DEBUG) << "Mismatch: For Primitive[" << prim_name << "], no arg matching '" << key << "' could be found.";
-      return false;
-    }
-    // Check key index.
-    auto index_key = iter->second;
-    if (index_key < position_args_dtype.size() && !has_varargs) {
-      MS_LOG(DEBUG) << "Mismatch: Primitive[" << prim_name << "] got multiple values for argument '" << key << "'.";
-      return false;
-    }
-    // Check value dtype.
-    auto op_arg = op_args[index_key];
-    if (!MatchPrimitiveArgDtype(prim_name, op_arg, value)) {
-      return false;
-    }
-  }
-  return true;
-}
-
-size_t GetPrimDefaultSize(const std::vector<ops::OpInputArg> &op_args, const std::string &prim_name,
-                          size_t varargs_index, bool has_varargs) {
-  auto default_dict = parse::GetPrimDefaultDict(prim_name);
-  bool has_default = !py::isinstance<py::none>(default_dict);
-  // The default value of vararg is ().
-  bool vararg_non_default =
-    has_varargs && ((has_default && !default_dict.contains(op_args[varargs_index].arg_name_)) || !has_default);
-  size_t varargs_count = vararg_non_default ? 1 : 0;
-  if (!has_default) {
-    return varargs_count;
-  }
-  return varargs_count + default_dict.cast<py::dict>().size();
-}
-
-bool CheckPositionArgs(const std::string &prim_name, const std::vector<ops::OP_DTYPE> &position_args_dtype,
-                       bool is_method, bool *need_pack) {
-  size_t check_position_size = position_args_dtype.size();
-  auto has_varargs_index_pair = GetVarargsIndex(prim_name, is_method);
-  size_t varargs_index = has_varargs_index_pair.first;
-  bool has_varargs = has_varargs_index_pair.second;
-  if (has_varargs) {
-    bool all_int = false;
-    if (position_args_dtype.size() > varargs_index) {
-      check_position_size = varargs_index;
-      all_int = std::all_of(position_args_dtype.begin() + varargs_index,
-                            position_args_dtype.begin() + position_args_dtype.size(),
-                            [](const auto &op_dtype) { return op_dtype == ops::DT_INT; });
-    }
-    // all of args type show be int or primitive name has "Deprecated"
-    if ((prim_name.find("Deprecated") != std::string::npos) || all_int) {
-      *need_pack = true;
-    }
-  }
-  const auto kwonly_list = is_method ? GetMethodKwonlyArgs(prim_name) : GetFunctionKwonlyArgs(prim_name);
-  const auto &op_def = ops::GetOpDef(prim_name);
-  const auto &op_args = op_def->args_;
-  for (size_t i = 0; i < check_position_size; ++i) {
-    // position argument should not be keyword-only.
-    const auto &arg_name = op_args[i].arg_name_;
-    if (kwonly_list != nullptr && kwonly_list->find(arg_name) != kwonly_list->end()) {
-      return false;
-    }
-    if (!MatchPrimitiveArgDtype(prim_name, op_args[i], position_args_dtype[i])) {
-      return false;
-    }
-  }
-  return true;
-}
-
-bool MatchPrimitiveArgs(const std::string &functional_name, const std::string &prim_name,
-                        const abstract::AbstractBasePtrList &args_abs_list, bool is_method, bool *need_pack) {
-  const auto &op_def = ops::GetOpDef(prim_name);
-  if (op_def == nullptr) {
-    MS_LOG(INTERNAL_EXCEPTION) << "Cannot find OpDef of Primitive[" << prim_name << "].";
-  }
-  // Separate position arguments and keyword arguments.
-  std::vector<ops::OP_DTYPE> position_args_dtype;
-  std::map<std::string, ops::OP_DTYPE> keyword_args_dtype;
-  GetOpDtypeList(prim_name, args_abs_list, &position_args_dtype, &keyword_args_dtype);
-  // Check args size.
-  const auto &op_args = op_def->args_;
-  MS_LOG(DEBUG) << "Matching Primitive" << prim_name << "], expect args number: " << op_args.size()
-                << ". The number of position args is " << position_args_dtype.size() << " and that of keyword args is "
-                << keyword_args_dtype.size() << ".";
-  // If no varargs , check args size
-  auto inputs_size = position_args_dtype.size() + keyword_args_dtype.size();
-  auto has_varargs_index_pair = GetVarargsIndex(prim_name, is_method);
-  size_t varargs_index = has_varargs_index_pair.first;
-  bool has_varargs = has_varargs_index_pair.second;
-  if (!has_varargs && inputs_size > op_args.size()) {
-    return false;
-  }
-  if (!CheckKwargs(prim_name, keyword_args_dtype, position_args_dtype, has_varargs)) {
-    return false;
-  }
-  if (!CheckPositionArgs(prim_name, position_args_dtype, is_method, need_pack)) {
-    return false;
-  }
-  // Check the number of arguments.
-  auto least_size = op_args.size() - GetPrimDefaultSize(op_args, prim_name, varargs_index, has_varargs);
-  if (inputs_size < least_size) {
-    return false;
-  }
-  return true;
-}
-
 std::string GetPrimName(const ValuePtr &prim) {
   MS_EXCEPTION_IF_NULL(prim);
   if (prim->isa<Primitive>()) {
@@ -321,46 +185,195 @@ std::string GetPrimName(const ValuePtr &prim) {
   MS_LOG(INTERNAL_EXCEPTION) << "Expect Primitive or MetaFuncGraph, but got " << prim->ToString();
 }
 
-std::string BuildOtherTypeString(const TypePtr &arg_type) {
+template <typename ContainerType>
+std::string HandleContainer(const ContainerType *container, const std::string &type_name) {
+  if (container->dynamic_len()) {
+    return type_name;
+  }
+
   std::stringstream ss;
+  ss << type_name << "<";
+  for (size_t i = 0; i < container->size(); ++i) {
+    if (i != 0) {
+      ss << ", ";
+    }
+    ss << BuildArgsTypeString(container->elements()[i]);
+  }
+  ss << ">";
+  return ss.str();
+}
+
+std::string BuildOtherTypeString(const TypePtr &arg_type) {
   if (arg_type->isa<Keyword>()) {
+    std::stringstream ss;
     auto kw_type = arg_type->cast_ptr<Keyword>();
     ss << kw_type->GetKey() << "=" << BuildArgsTypeString(kw_type->GetValue());
     return ss.str();
   }
+
   if (arg_type->isa<Tuple>()) {
     auto tuple_type = arg_type->cast_ptr<Tuple>();
-    if (tuple_type->dynamic_len()) {
-      return "tuple";
-    }
-    ss << "tuple<";
-    for (size_t i = 0; i < tuple_type->size(); ++i) {
-      if (i != 0) {
-        ss << ", ";
-      }
-      ss << BuildArgsTypeString(tuple_type->elements()[i]);
-    }
-    ss << ">";
-    return ss.str();
+    return HandleContainer(tuple_type, "tuple");
   }
+
   if (arg_type->isa<List>()) {
     auto list_type = arg_type->cast_ptr<List>();
-    if (list_type->dynamic_len()) {
-      return "list";
-    }
-    ss << "list<";
-    for (size_t i = 0; i < list_type->size(); ++i) {
-      if (i != 0) {
-        ss << ", ";
-      }
-      ss << BuildArgsTypeString(list_type->elements()[i]);
-    }
-    ss << ">";
-    return ss.str();
+    return HandleContainer(list_type, "list");
   }
+
   return arg_type->ToString();
 }
 }  // namespace
+
+void PrimitiveConverter::GetOpDtypeList() {
+  for (const auto &abs : input_args_abs_list_) {
+    // Ignore monad.
+    if (abs->isa<abstract::AbstractMonad>()) {
+      MS_LOG(DEBUG) << "Arg is a: AbstractMonad";
+      continue;
+    }
+    if (abs->isa<abstract::AbstractKeywordArg>()) {
+      auto kw_abs = abs->cast<abstract::AbstractKeywordArgPtr>();
+      const std::string &key = kw_abs->get_key();
+      auto op_dtype = GetOpDtypeFromAbstract(kw_abs->get_arg());
+      input_keyword_args_dtype_.insert(std::make_pair(key, op_dtype));
+      MS_LOG(DEBUG) << "Keyword arg is: " << key;
+    } else {
+      auto op_dtype = GetOpDtypeFromAbstract(abs);
+      (void)input_position_args_dtype_.emplace_back(op_dtype);
+      MS_LOG(DEBUG) << "Arg is a: " << op_dtype;
+    }
+  }
+}
+
+bool PrimitiveConverter::CheckKwargs(PrimitiveAttr *cur_prim) {
+  for (const auto &[key, value] : input_keyword_args_dtype_) {
+    const auto &op_indexes = cur_prim->op_def->indexes_;
+    const auto &expect_op_args = cur_prim->op_def->args_;
+    const auto &iter = op_indexes.find(key);
+    if (iter == op_indexes.end()) {
+      error_msgs_.push_back("match failed because incorrect keyword name: " + key);
+      is_keyword_ = true;
+      return false;
+    }
+    // Check key index.
+    auto index_key = iter->second;
+    if (index_key < input_position_args_dtype_.size() && !cur_prim->has_varargs) {
+      error_msgs_.push_back("Mismatch: Primitive[" + cur_prim->prim_name + "] got multiple values for argument '" +
+                            key + "'.");
+      return false;
+    }
+    // Check value dtype.
+    auto op_arg = expect_op_args[index_key];
+    if (!MatchPrimitiveArgDtype(cur_prim->prim_name, op_arg, value)) {
+      error_msgs_.push_back(functional_name_ + "(): argument '" + key + "' must be " +
+                            ops::EnumToString(op_arg.arg_dtype_) + " but got " + ops::EnumToString(value));
+      return false;
+    }
+  }
+  return true;
+}
+
+size_t PrimitiveConverter::GetPrimDefaultSize(const std::vector<ops::OpInputArg> &expect_op_args,
+                                              const std::string &prim_name, size_t varargs_index, bool has_varargs) {
+  auto default_dict = parse::GetPrimDefaultDict(prim_name);
+  bool has_default = !py::isinstance<py::none>(default_dict);
+  // The default value of vararg is ().
+  bool vararg_non_default =
+    has_varargs && ((has_default && !default_dict.contains(expect_op_args[varargs_index].arg_name_)) || !has_default);
+  size_t varargs_count = vararg_non_default ? 1 : 0;
+  if (!has_default) {
+    return varargs_count;
+  }
+  return varargs_count + default_dict.cast<py::dict>().size();
+}
+
+bool PrimitiveConverter::CheckPositionArgs(PrimitiveAttr *cur_prim) {
+  size_t check_position_size = input_position_args_dtype_.size();
+  if (cur_prim->has_varargs) {
+    bool all_int = false;
+    if (input_position_args_dtype_.size() > cur_prim->varargs_index) {
+      check_position_size = cur_prim->varargs_index;
+      all_int = std::all_of(input_position_args_dtype_.begin() + cur_prim->varargs_index,
+                            input_position_args_dtype_.begin() + input_position_args_dtype_.size(),
+                            [](const auto &op_dtype) { return op_dtype == ops::DT_INT; });
+    }
+    // all of args type show be int or primitive name has "Deprecated"
+    if ((cur_prim->prim_name.find("Deprecated") != std::string::npos) || all_int) {
+      *need_pack_ = true;
+    }
+  }
+  const auto kwonly_list =
+    is_method_ ? GetMethodKwonlyArgs(cur_prim->prim_name) : GetFunctionKwonlyArgs(cur_prim->prim_name);
+  const auto &op_def = ops::GetOpDef(cur_prim->prim_name);
+  const auto &expect_op_args = op_def->args_;
+  for (size_t i = 0; i < check_position_size; ++i) {
+    // position argument should not be keyword-only.
+    const auto &arg_name = expect_op_args[i].arg_name_;
+    if (kwonly_list != nullptr && kwonly_list->find(arg_name) != kwonly_list->end()) {
+      error_msgs_.push_back("Find arg_name " + arg_name + " in kwonly_list");
+      first_failed_position_ = i;
+      return false;
+    }
+    if (!MatchPrimitiveArgDtype(cur_prim->prim_name, expect_op_args[i], input_position_args_dtype_[i])) {
+      error_msgs_.push_back(functional_name_ + "(): argument '" + arg_name + "' (position " + std::to_string(i) +
+                            ") must be " + ops::EnumToString(expect_op_args[i].arg_dtype_) + ", not " +
+                            ops::EnumToString(input_position_args_dtype_[i]) + ".");
+      first_failed_position_ = i;
+      return false;
+    }
+  }
+  return true;
+}
+
+bool PrimitiveConverter::CheckArgsSize(PrimitiveAttr *cur_prim) {
+  // If no varargs , check args size
+  auto has_varargs_index_pair = GetVarargsIndex(cur_prim->prim_name, is_method_);
+  cur_prim->varargs_index = has_varargs_index_pair.first;
+  cur_prim->has_varargs = has_varargs_index_pair.second;
+  const auto &expect_op_args = cur_prim->op_def->args_;
+  size_t kwonly_size = 0;
+  auto kwonly_list = is_method_ ? GetMethodKwonlyArgs(cur_prim->prim_name) : GetFunctionKwonlyArgs(cur_prim->prim_name);
+  if (kwonly_list != nullptr) {
+    kwonly_size = kwonly_list->size();
+  }
+  auto inputs_size = input_position_args_dtype_.size() + input_keyword_args_dtype_.size();
+  size_t expect_positional_size = expect_op_args.size() - kwonly_size;
+  if (cur_prim->has_varargs || (inputs_size <= expect_op_args.size() && inputs_size >= expect_positional_size)) {
+    cur_prim->is_match_args_size = true;
+  }
+  MS_LOG(DEBUG) << "Expect args number: " << expect_op_args.size() << " kwonly_size: " << kwonly_size
+                << ". The number of input position args: " << input_position_args_dtype_.size()
+                << " and that of input keyword args: " << input_keyword_args_dtype_.size()
+                << " has_varargs: " << cur_prim->has_varargs;
+
+  if (!cur_prim->has_varargs && input_position_args_dtype_.size() > expect_positional_size) {
+    error_msgs_.push_back(
+      functional_name_ + "() takes " +
+      (is_method_ ? std::to_string(expect_positional_size - 1) : std::to_string(expect_positional_size)) +
+      " positional arguments but " + (is_method_ ? std::to_string(inputs_size - 1) : std::to_string(inputs_size)) +
+      (inputs_size > 2 ? " were" : " was") + " given.");
+    return false;
+  }
+
+  // Check the number of arguments.
+  auto least_size = expect_op_args.size() - GetPrimDefaultSize(expect_op_args, cur_prim->prim_name,
+                                                               cur_prim->varargs_index, cur_prim->has_varargs);
+  if (inputs_size < least_size) {
+    error_msgs_.push_back(functional_name_ + "() missing " + std::to_string(least_size - inputs_size) +
+                          " required argument");
+    return false;
+  }
+  return true;
+}
+
+bool PrimitiveConverter::MatchPrimitiveArgs(PrimitiveAttr *cur_prim) {
+  MS_LOG(DEBUG) << "Matching Primitive" << cur_prim->prim_name;
+  if (!CheckArgsSize(cur_prim) || !CheckKwargs(cur_prim) || !CheckPositionArgs(cur_prim)) {
+    return false;
+  }
+  return true;
+}
 
 std::string BuildArgsTypeString(const TypePtr &arg_type) {
   MS_EXCEPTION_IF_NULL(arg_type);
@@ -393,6 +406,64 @@ std::stringstream BuildApiInputInfo(const std::string &function_name, const std:
   ss << "Failed calling " << function_name << " with \"" << function_name << "(" << result << ")\".\n";
   ss << "The valid calling should be:\n";
   return ss;
+}
+
+std::string PrimitiveConverter::BuildMatchInfo(const std::vector<std::string> &arg_info_list) {
+  MS_LOG(DEBUG) << "first_failed_position_ = " << first_failed_position_;
+  std::stringstream ss;
+  std::string result;
+  std::string info = "    match failed because invalid types: (";
+  std::string guide_line(info.size(), ' ');
+  result = std::accumulate(
+    arg_info_list.begin(), arg_info_list.end(), std::string(),
+    [](const std::string &a, const std::string &b) -> std::string { return a.empty() ? b : a + ", " + b; });
+  for (size_t i = 0; i < arg_info_list.size(); ++i) {
+    MS_LOG(DEBUG) << "size[" << i << "] = " << arg_info_list[i].size();
+    if (i + 1 < first_failed_position_) {
+      guide_line += std::string(arg_info_list[i].size(), ' ') + "  ";
+    } else {
+      guide_line += std::string(arg_info_list[i].size(), '~') + "~~";
+    }
+  }
+  ss << info << result << ")\n" << guide_line << "\n";
+  return ss.str();
+}
+
+std::string PrimitiveConverter::BuildDetailedErrorMsg(const std::vector<std::string> &arg_info_list) {
+  const auto &signature_map =
+    is_method_ ? ops::tensor_method_overload_signature_map : ops::function_overload_signature_map;
+  auto it = signature_map.find(functional_name_);
+  std::stringstream ss;
+  if (it != signature_map.end()) {
+    if (prim_list_size_ == 1) {
+      if (!error_msgs_.empty()) {
+        ss << error_msgs_[0] << "\n";
+      }
+    } else if (match_index_.size() == 1) {
+      if (match_index_[0] < error_msgs_.size()) {
+        ss << error_msgs_[match_index_[0]] << "\n";
+      }
+    } else {
+      const std::vector<std::string> &valid_arg_options = it->second;
+      ss << BuildApiInputInfo(functional_name_, arg_info_list).str();
+      for (size_t i = 0; i < valid_arg_options.size(); ++i) {
+        const std::string &arg_option = valid_arg_options[i];
+        ss << "\"" << arg_option << "\"\n";
+        if (std::find(match_index_.begin(), match_index_.end(), i) == match_index_.end()) {
+          continue;
+        }
+        if (!is_keyword_) {
+          ss << BuildMatchInfo(arg_info_list);
+        } else {
+          ss << "\t" << error_msgs_[i] << "\n";
+        }
+      }
+    }
+    ss << std::endl;
+  } else {
+    MS_LOG(EXCEPTION) << "Valid arg options are not correctly generated." << std::endl;
+  }
+  return ss.str();
 }
 
 std::string BuildFunctionalErrorMsg(const std::string &function_name, const std::vector<std::string> &arg_info_list,
@@ -441,11 +512,91 @@ bool IsFunctionalMethod(const TypeId &type_id, const std::string &method_name) {
          ops::tensor_method_overload_map.find(method_name) != ops::tensor_method_overload_map.end();
 }
 
+void PrimitiveConverter::PrintErrorMessages() {
+  // The order of tensor_method_overload_map is different with that of tensor_method_overload_signature_map.
+  if (has_deprecated_) {
+    if (!error_msgs_.empty()) {
+      std::string first_error = error_msgs_[0];
+      error_msgs_.erase(error_msgs_.begin());
+      error_msgs_.push_back(first_error);
+    }
+    for (auto &index : this->match_index_) {
+      if (index == 0) {
+        index = prim_list_size_ - 1;
+      } else {
+        index--;
+      }
+    }
+  }
+
+  for (auto &i : match_index_) {
+    MS_LOG(DEBUG) << "index=" << i;
+  }
+  for (auto &e : error_msgs_) {
+    MS_LOG(DEBUG) << "error_msgs_=" << e;
+  }
+
+  std::vector<std::string> arg_info_list;
+  // The first arg of method map is input tenspr
+  auto start = is_method_ ? input_args_abs_list_.begin() + 1 : input_args_abs_list_.begin();
+  (void)std::transform(start, input_args_abs_list_.cend(), std::back_inserter(arg_info_list),
+                       [](const AbstractBasePtr &op_abs) { return BuildArgsTypeString(op_abs->BuildType()); });
+  if (prim_list_size_ == 1 || match_index_.size() != 0) {
+    MS_EXCEPTION(TypeError) << BuildDetailedErrorMsg(arg_info_list);
+  } else {
+    MS_EXCEPTION(TypeError) << BuildFunctionalErrorMsg(functional_name_, arg_info_list, is_method_);
+  }
+}
+
+ValuePtr PrimitiveConverter::Convert() {
+  // Convert Function to Primitive.
+  const auto &overload_map = is_method_ ? ops::tensor_method_overload_map : ops::function_overload_map;
+  const auto &iter = overload_map.find(functional_name_);
+  if (iter == overload_map.end()) {
+    MS_LOG(INTERNAL_EXCEPTION) << "Functional[" << functional_name_ << "] does not support overloading.";
+  }
+  GetOpDtypeList();
+  const auto &prim_list = iter->second;
+  prim_list_size_ = prim_list.size();
+  ValuePtr match_prim = nullptr;
+  for (size_t i = 0; i < prim_list.size(); ++i) {
+    const auto &prim = prim_list[i];
+    const auto &prim_name = GetPrimName(prim);
+    const auto &op_def = ops::GetOpDef(prim_name);
+    if (op_def == nullptr) {
+      MS_LOG(INTERNAL_EXCEPTION) << "Cannot find OpDef of Primitive[" << prim_name << "].";
+    }
+    PrimitiveAttr cur_prim = {
+      prim_name,
+      op_def,
+    };
+
+    if (MatchPrimitiveArgs(&cur_prim)) {
+      match_prim = prim;
+      break;
+    }
+
+    if (cur_prim.is_match_args_size) {
+      match_index_.push_back(i);
+    }
+    if (prim_name.find("Deprecated") != std::string::npos) {
+      has_deprecated_ = true;
+    }
+  }
+
+  if (match_prim != nullptr) {
+    return match_prim;
+  }
+
+  PrintErrorMessages();
+  return nullptr;
+}
+
 ValuePtr TransformFunctionalToPrimitive(const std::string &functional_name,
-                                        const abstract::AbstractBasePtrList &args_abs_list, bool is_method,
+                                        const abstract::AbstractBasePtrList &input_args_abs_list, bool is_method,
                                         bool *need_pack) {
   // Check cache.
-  auto hash_id = GetHashIdForFunctionalCache(functional_name, args_abs_list, is_method);
+  auto hash_id = GetHashIdForFunctionalCache(functional_name, input_args_abs_list, is_method);
   const auto &cache_iter = GetFunctionalConvertCache().find(hash_id);
   if (cache_iter != GetFunctionalConvertCache().end()) {
     const auto &prim = cache_iter->second.first;
@@ -453,29 +604,11 @@ ValuePtr TransformFunctionalToPrimitive(const std::string &functional_name,
     MS_LOG(DEBUG) << "Get functional cache: " << functional_name << ", primitive name: " << prim->ToString();
     return prim;
   }
-  // Convert Function to Primitive.
-  const auto &overload_map = is_method ? ops::tensor_method_overload_map : ops::function_overload_map;
-  const auto &iter = overload_map.find(functional_name);
-  if (iter == overload_map.end()) {
-    MS_LOG(INTERNAL_EXCEPTION) << "Functional[" << functional_name << "] does not support overloading.";
-  }
-  const auto &prim_list = iter->second;
-  // Find matching Primitive.
+
   MS_LOG(DEBUG) << "Start looking for matched primitive for Functional[" << functional_name << "].";
-  ValuePtr match_prim = nullptr;
-  for (const auto &prim : prim_list) {
-    const auto &prim_name = GetPrimName(prim);
-    if (MatchPrimitiveArgs(functional_name, prim_name, args_abs_list, is_method, need_pack)) {
-      match_prim = prim;
-      break;
-    }
-  }
-  if (match_prim == nullptr) {
-    std::vector<std::string> arg_info_list;
-    (void)std::transform(args_abs_list.cbegin(), args_abs_list.cend(), std::back_inserter(arg_info_list),
-                         [](const AbstractBasePtr &op_abs) { return BuildArgsTypeString(op_abs->BuildType()); });
-    MS_EXCEPTION(TypeError) << BuildFunctionalErrorMsg(functional_name, arg_info_list, is_method);
-  }
+  PrimitiveConverter converter(functional_name, input_args_abs_list, is_method, need_pack);
+  ValuePtr match_prim = converter.Convert();
+
   MS_LOG(DEBUG) << "Convert Functional[" << functional_name << "] to Primitive: " << match_prim->ToString();
   GetFunctionalConvertCache()[hash_id] = std::make_pair(match_prim, *need_pack);
   return match_prim;

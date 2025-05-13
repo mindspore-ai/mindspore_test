@@ -81,7 +81,7 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             'MS_LOG(INFO) << "Call Tensor${class_name}";\n'
             'auto res = mindspore::pynative::'
             '${pyboost_function}(mindspore::prim::kPrim${class_name}, parse_args.src_types_, ${convert_args});\n'
-            'trace::Capture(parse_args.arg_list_, "${class_name}", &res);\n'
+            'trace::Capture(parse_args.arg_list_, mindspore::prim::kPrim${class_name}, &res);\n'
             'return res;\n'
         )
         self.callback_python_template = Template(

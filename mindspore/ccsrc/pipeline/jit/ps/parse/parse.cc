@@ -788,6 +788,14 @@ FunctionBlockPtr Parser::ParseDefFunction(const py::object &node, const Function
     function_name = class_name + '_' + cell_construct;
     MS_LOG(DEBUG) << "The generated function full name: " << function_name;
   }
+
+  // If meet trace_begin or trace_end, throw exception.
+  constexpr auto trace_begin = "_jit_trace_begin";
+  constexpr auto trace_end = "_jit_trace_end";
+  if (function_name == trace_begin || function_name == trace_end) {
+    MS_LOG(EXCEPTION) << "Do not support using " << function_name << "under ast mode or graph mode.";
+  }
+
   // Normalize the name.
   std::replace(function_name.begin(), function_name.end(), '.', '_');
   std::replace(function_name.begin(), function_name.end(), '<', '_');

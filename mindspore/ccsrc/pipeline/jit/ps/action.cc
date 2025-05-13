@@ -621,6 +621,7 @@ FuncArgSpec GetFuncArgSpec(const FuncGraphPtr &func_graph, const py::object &inp
 
 void BuildTopGraph(const FuncGraphPtr &func_graph, const py::object &input,
                    const abstract::AbstractBasePtrList &args_abs) {
+  ScopeGuard scope_guard(kDefaultScope);
   // Make Resolve for user top graph 'input'.
   auto function_name = GetFunctionName(input);
   parse::NameSpacePtr name_space =

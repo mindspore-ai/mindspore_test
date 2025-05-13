@@ -87,7 +87,7 @@ AnfNodePtr TwoReshapeEliminater::operator()(const OptimizerPtr &, const AnfNodeP
   if (fg != nullptr && x_ != nullptr && shape_ != nullptr) {
     auto new_node = fg->NewCNode({NewValueNode(prim_), x_, shape_});
     new_node->set_abstract(node->abstract());
-    if (node->scope() != kDefaultScope) {
+    if (!IsScopeDefault(node->scope())) {
       new_node->set_scope(node->scope());
     }
     return new_node;

@@ -58,7 +58,7 @@ from mindspore.common.jit_context import jit_context
 from mindspore.common.jit_trace import _jit_trace
 from mindspore.parallel._utils import _init_auto_parallel_context, _clear_auto_parallel_context
 
-# Store ms_function class compiled pipeline cache.
+# Store jit class compiled pipeline cache.
 ms_compile_cache = set()
 # Store cell compiled pipeline cache.
 cells_compile_cache = {}
@@ -1037,6 +1037,58 @@ def _check_options(options, backend):
         _check_option_value(option, value)
 
 
+def _jit_ast(hash_obj, dynamic, jit_config):
+    """Return the wrapped function for ast mode jit."""
+    def wrap_func(func):
+        nonlocal hash_obj
+        if hasattr(func, "construct"):
+            if isinstance(func, ms.nn.Cell):
+                # Bound the cell object to get the self arg.
+                func.construct = types.MethodType(_jit_ast(hash_obj, dynamic, jit_config)(func.construct.__func__),
+                                                  func)
+            elif isinstance(func, type) and issubclass(func, ms.nn.Cell):
+                func.construct = _jit_ast(hash_obj, dynamic, jit_config)(func.construct)
+            return func
+
+        if isinstance(func, types.MethodType):
+            return types.MethodType(_jit_ast(hash_obj, dynamic, jit_config)(func.__func__), func.__self__)
+
+        if not isinstance(func, types.FunctionType):
+            logger.warning(f"The func should be function, method or cell instance/class, but got {func}")
+            return func
+
+        if hasattr(func, "__wrapped_by_jit__"):
+            logger.warning(f"The func {func} should be wrapped by jit only once.")
+        setattr(func, "__wrapped_by_jit__", True)
+
+        if hash_obj is None or not _is_inner_func(func):
+            hash_obj = int(time.time() * 1e9)
+
+        @wraps(func)
+        def staging_specialize(*args, **kwargs):
+            if os.getenv("MS_JIT") == '0':
+                return func(*args, **kwargs)
+
+            args, kwargs = _handle_func_args(func, *args, **kwargs)
+            process_obj = None
+            if args and not isinstance(args[0], PythonTensor) and hasattr(args[0], func.__name__):
+                process_obj = args[0]
+            # Handle auto mixed precision strategy.
+            if not hasattr(func, "amp_strategy"):
+                if isinstance(func, types.MethodType):
+                    setattr(func.__func__, "amp_strategy", get_curr_amp_strategy())
+                else:
+                    setattr(func, "amp_strategy", get_curr_amp_strategy())
+
+            jit_executor = _JitExecutor(func, hash_obj, None, process_obj, jit_config, dynamic)
+            out = jit_executor(*args, **kwargs)
+            return out
+
+        return staging_specialize
+
+    return wrap_func
+
+
 def jit(
         function: Optional[Callable] = None,
         *,
@@ -1059,7 +1111,7 @@ def jit(
           and the decoration @jit(capture_mode=“bytecode”) is considered invalid.
 
     Args:
-        function (Function, optional): The Python function that will be run as a graph. Default: ``None``.
+        function (Callable, optional): The Python function or Cell that will be run as a graph. Default: ``None``.
 
     Keyword Args:
         capture_mode (str, optional): The method to create a callable MindSpore graph. The value of capture_mode
@@ -1158,7 +1210,7 @@ def jit(
         >>> x = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
         >>> y = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
         ...
-        >>> # create a callable MindSpore graph by calling jit
+        >>> # Create a callable MindSpore graph by calling jit.
         >>> def tensor_add(x, y):
         ...     z = x + y
         ...     return z
@@ -1171,7 +1223,7 @@ def jit(
            [ 2.00000000e+00,  2.00000000e+00,  2.00000000e+00],
            [ 2.00000000e+00,  2.00000000e+00,  2.00000000e+00]]]])
         ...
-        >>> # create a callable MindSpore graph through decorator @jit
+        >>> # Create a callable MindSpore graph through decorator @jit.
         >>> @jit
         ... def tensor_add_with_dec(x, y):
         ...     z = x + y
@@ -1184,7 +1236,7 @@ def jit(
            [ 2.00000000e+00,  2.00000000e+00,  2.00000000e+00],
            [ 2.00000000e+00,  2.00000000e+00,  2.00000000e+00]]]])
         ...
-        >>> # create a callable MindSpore graph and capture the entire function into the graph
+        >>> # Create a callable MindSpore graph and capture the entire function into the graph.
         >>> @jit(fullgraph=True)
         ... def tensor_add_fullgraph(x, y):
         ...     z = x + y
@@ -1196,6 +1248,20 @@ def jit(
         [[[[ 2.00000000e+00,  2.00000000e+00,  2.00000000e+00],
            [ 2.00000000e+00,  2.00000000e+00,  2.00000000e+00],
            [ 2.00000000e+00,  2.00000000e+00,  2.00000000e+00]]]])
+        ...
+        >>> # Create a callable MindSpore graph by trace mode.
+        >>> @jit(capture_mode="trace")
+        ... def tensor_add_by_trace(x, y):
+        ...     z = x + y
+        ...     return z
+        ...
+        >>> out = tensor_add_by_trace(x, y)
+        >>> print(out)
+        Tensor(shape=[1, 1, 3, 3], dtype=Float32, value=
+        [[[[ 2.00000000e+00,  2.00000000e+00,  2.00000000e+00],
+           [ 2.00000000e+00,  2.00000000e+00,  2.00000000e+00],
+           [ 2.00000000e+00,  2.00000000e+00,  2.00000000e+00]]]])
+        ...
     """
 
     capture_mode = Validator.check_string(capture_mode, ["ast", "bytecode", "trace"], "capture_mode", "jit")
@@ -1214,39 +1280,12 @@ def jit(
     jit_config = JitConfig(jit_level=jit_level, exc_mode=exc_mode, jit_syntax_level=jit_syntax_level,
                            infer_boost=infer_boost, backend=backend, options=options_str)
 
-    def wrap_func(func):
-        nonlocal hash_obj
-        if hash_obj is None or not _is_inner_func(func):
-            hash_obj = int(time.time() * 1e9)
-
-        @wraps(func)
-        def staging_specialize(*args, **kwargs):
-            if os.getenv("MS_JIT") == '0':
-                return func(*args, **kwargs)
-
-            args, kwargs = _handle_func_args(func, *args, **kwargs)
-            process_obj = None
-            if args and not isinstance(args[0], PythonTensor) and hasattr(args[0], func.__name__):
-                process_obj = args[0]
-            # Handle auto mixed precision strategy.
-            if not hasattr(func, "amp_strategy"):
-                if isinstance(func, types.MethodType):
-                    setattr(func.__func__, "amp_strategy", get_curr_amp_strategy())
-                else:
-                    setattr(func, "amp_strategy", get_curr_amp_strategy())
-
-            ms_function_executor = _JitExecutor(func, hash_obj, None, process_obj, jit_config, dynamic)
-            out = ms_function_executor(*args, **kwargs)
-            return out
-
-        return staging_specialize
-
-    if capture_mode == "bytecode":
+    if capture_mode == "ast":
+        wrap_func = _jit_ast(hash_obj, dynamic, jit_config)
+    elif capture_mode == "bytecode":
         wrap_func = PIJitCaptureContext(jit_config)
-    elif capture_mode == "trace":
-        if function is not None:
-            return _jit_trace(function)
-        return _jit_trace
+    else:
+        wrap_func = _jit_trace()
 
     if function is not None:
         return wrap_func(function)

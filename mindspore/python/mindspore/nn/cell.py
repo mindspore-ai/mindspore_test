@@ -33,6 +33,7 @@ from typing import (
     Mapping
 )
 
+import weakref
 import mindspore as ms
 from mindspore._checkparam import args_type_check, check_hook_fn
 from mindspore.common._auto_dynamic import is_auto_dynamic, convert_inputs_to_dynamic
@@ -160,6 +161,17 @@ class Cell(Cell_):
                    '_cell_backward_pre_hook', '_cell_backward_hook', '_param_prefix',
                    'requires_grad', 'cell_type', '_parameters_forward_hook', '_parameters_backward_hook']
     total_instance_count = 0
+    _buffers: Dict[str, Optional[Tensor]]
+    global_cells = weakref.WeakKeyDictionary()
+    _no_auto_lazy_inline = True
+
+    def __new__(cls, *args, **kwargs):
+        this = Cell_.__new__(cls, *args, **kwargs)
+        if Cell._no_auto_lazy_inline:
+            return this
+
+        Cell.global_cells[this] = (cls, args, kwargs)
+        return this
 
     def __init__(self, auto_prefix=True, flags=None):
         Cell_.__init__(self, self._cell_tag)
@@ -988,6 +1000,7 @@ class Cell(Cell_):
         if hasattr(self, "compile_cache") and self.compile_cache:
             _cell_graph_executor.del_net_res(self, self.compile_cache)
         Cell.total_instance_count -= 1
+        Cell.global_cells.pop(self, None)
 
     def __delattr__(self, name):
         if name in self._params:

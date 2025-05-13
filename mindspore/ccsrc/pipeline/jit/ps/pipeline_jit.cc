@@ -62,6 +62,12 @@ void Optimize(const ResourcePtr &resource, const std::vector<PassItem> &passes) 
         if (!result) {
           MS_LOG(INTERNAL_EXCEPTION) << "Pass running to end, failed in pass:" << pass.first;
         }
+        if (common::GetCompileConfig("CHECK_PASS_NODE_SCOPE") == "1") {
+          const auto &new_all_nodes = TopoSort(resource->func_graph()->return_node(), SuccDeeperSimple);
+          for (const auto &node : new_all_nodes) {
+            validator::ValidateScope(node, pass.first);
+          }
+        }
 #ifdef ENABLE_DUMP_IR
         auto context = MsContext::GetInstance();
         MS_EXCEPTION_IF_NULL(context);

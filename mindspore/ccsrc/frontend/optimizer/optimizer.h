@@ -31,6 +31,7 @@
 #include "include/common/debug/anf_ir_dump.h"
 #include "pipeline/jit/ps/debug/trace.h"
 #include "frontend/optimizer/opt.h"
+#include "pipeline/jit/ps/validator.h"
 #include "pipeline/jit/ps/resource.h"
 #include "pipeline/jit/ps/action.h"
 #include "utils/ms_context.h"
@@ -350,6 +351,12 @@ class Optimizer : public std::enable_shared_from_this<Optimizer> {
             std::transform(func_graph_->parameters().begin(), func_graph_->parameters().end(),
                            std::back_inserter(maybe_new_args),
                            [](const AnfNodePtr &param) -> AbstractBasePtr { return param->abstract(); });
+            if (common::GetCompileConfig("CHECK_PASS_NODE_SCOPE") == "1") {
+              const auto &all_nodes = TopoSort(func_graph_->return_node(), SuccDeeperSimple);
+              for (const auto &node : all_nodes) {
+                validator::ValidateScope(node, "before_renormalize");
+              }
+            }
             func_graph_ = pipeline::Renormalize(resource, func_graph_, maybe_new_args);
             clear_is_untyped_generated();
           } else {
@@ -359,6 +366,12 @@ class Optimizer : public std::enable_shared_from_this<Optimizer> {
           std::transform(func_graph_->parameters().begin(), func_graph_->parameters().end(),
                          std::back_inserter(maybe_new_args),
                          [](const AnfNodePtr &param) -> AbstractBasePtr { return param->abstract(); });
+          if (common::GetCompileConfig("CHECK_PASS_NODE_SCOPE") == "1") {
+            const auto &all_nodes = TopoSort(func_graph_->return_node(), SuccDeeperSimple);
+            for (const auto &node : all_nodes) {
+              validator::ValidateScope(node, "before_renormalize");
+            }
+          }
           func_graph_ = pipeline::Renormalize(resource, func_graph_, maybe_new_args);
         }
       }

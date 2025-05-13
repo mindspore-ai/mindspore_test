@@ -67,11 +67,16 @@ Cloner::Cloner(const FuncGraphVector &func_graphs, bool clone_all_valuenodes, bo
       clone_all_used_graphs_(clone_all_used_graphs),
       relation_(relation),
       target_relation_(target_relation == nullptr ? relation : target_relation),
-      scope_(kDefaultScope),
+      scope_(kDefaultScopeUnderGuard),
       type_(kBasic) {
   for (auto &func_graph : func_graphs) {
     AddClone(func_graph);
   }
+}
+
+ScopePtr Cloner::GetNodeScope(const AnfNodePtr &node) const {
+  MS_EXCEPTION_IF_NULL(node);
+  return (IsScopeDefault(node->scope()) && (this->scope() != nullptr)) ? this->scope() : node->scope();
 }
 
 void Cloner::AddClone(const FuncGraphPtr &func_graph, const FuncGraphPtr &target_func_graph,
@@ -116,7 +121,7 @@ void Cloner::CloneParameter(const AnfNodePtr &node, const FuncGraphPtr &target, 
     new_param->set_default_param(old_param->default_param_raw());
   }
   new_param->set_is_top_graph_param(old_param->is_top_graph_param());
-  ScopePtr scope = ((node->scope() == kDefaultScope) && (this->scope() != nullptr)) ? this->scope() : node->scope();
+  ScopePtr scope = GetNodeScope(node);
   new_param->set_scope(scope);
   replicated_node_[node] = std::move(new_param);
 }
@@ -170,7 +175,7 @@ void Cloner::CloneCNodeWithoutInputs(const AnfNodePtr &node, const FuncGraphPtr 
   if (this->update_info() != nullptr && this->update_info()->scope_ != nullptr) {
     scope = this->update_info()->scope_;
   } else {
-    scope = ((node->scope() == kDefaultScope) && (this->scope() != nullptr)) ? this->scope() : node->scope();
+    scope = GetNodeScope(node);
   }
   new_node->set_scope(scope);
   auto new_cnode = new_node->cast<CNodePtr>();
@@ -194,7 +199,7 @@ void Cloner::CloneValueNode(const AnfNodePtr &node) {
   } else {
     new_const = NewValueNode(GetValueNode(node));
   }
-  ScopePtr scope = ((node->scope() == kDefaultScope) && (this->scope() != nullptr)) ? this->scope() : node->scope();
+  ScopePtr scope = GetNodeScope(node);
   new_const->set_scope(scope);
   if (preset_abstract()) {
     new_const->set_abstract(node->abstract());
@@ -215,7 +220,7 @@ void Cloner::CloneFuncGraphValueNode(const AnfNodePtr &node, const FuncGraphPtr 
   } else {
     new_const = NewValueNode(target);
   }
-  ScopePtr scope = ((node->scope() == kDefaultScope) && (this->scope() != nullptr)) ? this->scope() : node->scope();
+  ScopePtr scope = GetNodeScope(node);
   new_const->set_scope(scope);
   if (preset_abstract()) {
     new_const->set_abstract(node->abstract());

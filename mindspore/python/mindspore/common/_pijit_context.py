@@ -89,13 +89,17 @@ class PIJitCaptureContext:
             fn.construct = self(fn.construct)
             return fn
         if isinstance(fn, mindspore.nn.Cell):
-            type(fn).construct = self(type(fn).construct)
+            fn.construct = types.MethodType(self(fn.construct.__func__), fn)
             return fn
         if isinstance(fn, types.MethodType):
             return types.MethodType(self(fn.__func__), fn.__self__)
         if not isinstance(fn, types.FunctionType) or self._is_unsupported(fn):
             logger.warning("unsupported function type" + str(fn))
             return fn
+
+        if hasattr(fn, "__wrapped_by_jit__"):
+            logger.warning(f"The fn {fn} should be wrapped by jit only once.")
+        setattr(fn, "__wrapped_by_jit__", True)
 
         module = inspect.getmodule(fn.__code__)
         if module is not None and module.__name__.startswith("mindspore"):
