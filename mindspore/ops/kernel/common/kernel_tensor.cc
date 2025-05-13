@@ -106,7 +106,6 @@ KernelTensor::KernelTensor(const DeviceAddressPtr &device_address, TypeId dtype_
   device_address_ = device_address;
   address_common_ = device_address_->address_common();
   device_address_->set_host_shape(host_shape);
-  set_device_synchronizer(device_address_->NewDeviceSynchronizer());
   if (dtype_id == kTypeUnknown) {
     SetType(TypeIdToType(dtype_id));
   } else {
@@ -131,7 +130,6 @@ KernelTensor::KernelTensor(const DeviceAddressPtr &device_address, const abstrac
   address_common_->device_id_ = device_id;
   device_address_->set_address_common(address_common_);
   device_address_->set_host_shape(host_shape);
-  set_device_synchronizer(device_address_->NewDeviceSynchronizer());
 }
 
 KernelTensor::KernelTensor(const DeviceAddressPtr &device_address, const abstract::BaseShapePtr &shape,
@@ -142,7 +140,6 @@ KernelTensor::KernelTensor(const DeviceAddressPtr &device_address, const abstrac
     address_common_ = device_address_->address_common();
     device_address_->set_user_data(user_data);
     device_address_->set_host_shape(host_shape);
-    set_device_synchronizer(device_address_->NewDeviceSynchronizer());
   } else {
     address_common_ = std::make_shared<AddressCommon>();
   }
@@ -178,7 +175,6 @@ KernelTensor::KernelTensor(const KernelTensor &other) {
   if (other.device_address_ != nullptr) {
     device_address_ = other.device_address_->CloneDeviceAddress();
     address_common_ = device_address_->address_common();
-    device_synchronizer_ = other.device_synchronizer_;
     device_address_->set_user_data(other.user_data());
     device_address_->set_heterogeneous_info(other.heterogeneous_info());
     device_address_->set_host_shape(other.host_shape());
@@ -600,10 +596,10 @@ bool KernelTensor::SyncDataFromDeviceToHost() const {
   void *host_ptr = host_info_->kernel_tensor_value_->GetMutableDataPtr();
   MS_EXCEPTION_IF_NULL(host_ptr);
 
-  MS_EXCEPTION_IF_NULL(device_synchronizer_);
-  if (!device_synchronizer_->SyncDeviceToHost(
-        host_ptr, device_ptr, address_common_->size_, address_common_->device_name_, address_common_->device_id_,
-        address_common_->format_, address_common_->shape_vector_, address_common_->stream_id_, user_data())) {
+  MS_EXCEPTION_IF_NULL(device_address_);
+  if (!device_address_->SyncDeviceToHost(host_ptr, device_ptr, address_common_->size_, address_common_->device_name_,
+                                         address_common_->device_id_, address_common_->format_,
+                                         address_common_->shape_vector_, address_common_->stream_id_, user_data())) {
     MS_LOG(EXCEPTION) << "Sync data from device to host side failed";
   }
   return true;
@@ -672,9 +668,6 @@ void KernelTensor::set_device_address(const DeviceAddressPtr &device_address) {
   device_address_ = device_address;
   if (device_address_ != nullptr) {
     address_common_ = device_address_->address_common();
-    if (device_synchronizer_ == nullptr) {
-      device_synchronizer_ = device_address_->NewDeviceSynchronizer();
-    }
   }
 }
 }  // namespace mindspore::kernel

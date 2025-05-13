@@ -31,7 +31,6 @@
 #include "include/api/format.h"
 #include "include/common/utils/utils.h"
 #include "include/common/utils/convert_utils.h"
-#include "include/backend/device_synchronizer.h"
 #include "ir/anf.h"
 #include "ir/dtype.h"
 #include "ir/tensor.h"

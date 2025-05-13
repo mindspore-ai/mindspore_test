@@ -66,7 +66,6 @@
 #include "debug/profiler/profiler.h"
 #include "include/common/utils/parallel_context.h"
 #include "plugin/device/cpu/hal/device/cpu_kernel_task.h"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_synchronizer.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "ops_utils/op_constants.h"
 #include "common/oplib/oplib.h"

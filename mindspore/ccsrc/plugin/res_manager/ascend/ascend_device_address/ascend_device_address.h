@@ -62,7 +62,6 @@ class ASCEND_RES_MANAGER_EXPORT AscendDeviceAddress : public LoadableDeviceAddre
 
   DeviceAddressPtr CloneDeviceAddress() override;
 
-  DeviceSynchronizerPtr NewDeviceSynchronizer() override;
   bool SyncDeviceToHost(size_t size, void *const host_ptr) const override;
   bool SyncHostToDevice(size_t size, const void *host_ptr) const override;
   bool SyncDeviceToHost(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr,
@@ -85,6 +84,13 @@ class ASCEND_RES_MANAGER_EXPORT AscendDeviceAddress : public LoadableDeviceAddre
   bool SyncDeviceToDevice(const DeviceSync *src_device_addr) const override;
   bool CopyDeviceToHost(void *dst, const void *src, const size_t &size) const override;
   bool CopyHostToDevice(void *dst, const void *src, const size_t &size) const override;
+  bool SyncDeviceToHost(void *host_ptr, const void *device_ptr, size_t size, const std::string &device_name,
+                        uint32_t device_id, mindspore::Format format, const ShapeVector &shape, size_t stream_id,
+                        const UserDataPtr &user_data = nullptr) const override;
+
+  bool SyncHostToDevice(void *device_ptr, const void *host_ptr, size_t size, const std::string &device_name,
+                        uint32_t device_id, mindspore::Format format, const ShapeVector &shape, size_t stream_id,
+                        const UserDataPtr &user_data = nullptr) const override;
   void ClearDeviceMemory() override;
   DeviceType GetDeviceType() const override { return DeviceType::kAscend; }
   mindspore::tensor::TensorPtr LoadMemToHost(const std::string &tensor_name, const ShapeVector &host_shape,

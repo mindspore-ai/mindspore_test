@@ -54,7 +54,6 @@ class BACKEND_EXPORT CPUDeviceAddress : public DeviceAddress {
   }
 
   ~CPUDeviceAddress() override = default;
-  DeviceSynchronizerPtr NewDeviceSynchronizer() override;
   DeviceAddressPtr CloneDeviceAddress() override;
 
   bool SyncDeviceToHost(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr,
@@ -68,6 +67,13 @@ class BACKEND_EXPORT CPUDeviceAddress : public DeviceAddress {
                          const std::string &format) const override;
   bool SyncDeviceToDevice(const ShapeVector &shape, size_t size, TypeId type, const void *src_ptr,
                           const std::string &format) const override;
+  bool SyncDeviceToHost(void *host_ptr, const void *device_ptr, size_t size, const std::string &device_name,
+                        uint32_t device_id, mindspore::Format format, const ShapeVector &shape, size_t stream_id,
+                        const UserDataPtr &user_data = nullptr) const override;
+
+  bool SyncHostToDevice(void *device_ptr, const void *host_ptr, size_t size, const std::string &device_name,
+                        uint32_t device_id, mindspore::Format format, const ShapeVector &shape, size_t stream_id,
+                        const UserDataPtr &user_data = nullptr) const override;
 
   void ClearDeviceMemory() override;
   void ClearUserData() override;

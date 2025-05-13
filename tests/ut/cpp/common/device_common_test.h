@@ -29,7 +29,6 @@
 #include "runtime/device/res_manager/hal_res_manager.h"
 #include "runtime/hardware/device_context.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "include/backend/device_synchronizer.h"
 #include "common/device_address.h"
 #include "common/kernel_tensor.h"
 #include "common/kernel_utils.h"
@@ -73,7 +72,6 @@ class TestDeviceAddress : public DeviceAddress {
   }
   virtual void *GetMutablePtr() const { return nullptr; }
   virtual void ClearDeviceMemory() {}
-  device::DeviceSynchronizerPtr NewDeviceSynchronizer() override { return nullptr; }
 };
 
 class TestKernelMod : public kernel::KernelMod {
