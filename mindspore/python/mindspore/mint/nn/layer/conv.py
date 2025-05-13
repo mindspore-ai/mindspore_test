@@ -240,16 +240,16 @@ class Conv1d(_Conv):
 
         .. math::
             \begin{array}{ll} \\
-                L_{out} = \left \lceil{\frac{L_{in} - \text{dilation} \times (\text{kernel_size} - 1) }
-                {\text{stride}}} \right \rceil \\
+                L_{out} = \left \lfloor{\frac{L_{in} - \text{dilation} \times (\text{kernel_size} - 1) - 1}
+                {\text{stride}}} \right \rfloor + 1 \\
             \end{array}
 
         padding is int or tuple/list:
 
         .. math::
             \begin{array}{ll} \\
-                L_{out} = \left \lfloor{\frac{L_{in} + 2 \times {padding} - (\text{kernel_size} - 1) \times
-                \text{dilation} - 1 }{\text{stride}} + 1} \right \rfloor \\
+                L_{out} = \left \lfloor{\frac{L_{in} + 2 \times {padding} - \text{dilation} \times
+                (\text{kernel_size} - 1) - 1}{\text{stride}}} \right \rfloor + 1 \\
             \end{array}
 
     Raises:
@@ -432,20 +432,20 @@ class Conv2d(_Conv):
 
         .. math::
             \begin{array}{ll} \\
-                H_{out} = \left \lceil{\frac{H_{in} - \text{dilation[0]} \times (\text{kernel_size[0]} - 1) }
-                {\text{stride[0]}}} \right \rceil \\
-                W_{out} = \left \lceil{\frac{W_{in} - \text{dilation[1]} \times (\text{kernel_size[1]} - 1) }
-                {\text{stride[1]}}} \right \rceil \\
+                H_{out} = \left \lfloor{\frac{H_{in} - \text{dilation[0]} \times (\text{kernel_size[0]} - 1) - 1}
+                {\text{stride[0]}}} \right \rfloor + 1 \\
+                W_{out} = \left \lfloor{\frac{W_{in} - \text{dilation[1]} \times (\text{kernel_size[1]} - 1) - 1}
+                {\text{stride[1]}}} \right \rfloor + 1 \\
             \end{array}
 
         padding is int or tuple/list:
 
         .. math::
             \begin{array}{ll} \\
-                H_{out} = \left \lfloor{\frac{H_{in} + padding[0] + padding[1] - (\text{kernel_size[0]} - 1) \times
-                \text{dilation[0]} - 1 }{\text{stride[0]}} + 1} \right \rfloor \\
-                W_{out} = \left \lfloor{\frac{W_{in} + padding[2] + padding[3] - (\text{kernel_size[1]} - 1) \times
-                \text{dilation[1]} - 1 }{\text{stride[1]}} + 1} \right \rfloor \\
+                H_{out} = \left \lfloor{\frac{H_{in} + padding[0] + padding[1] - \text{dilation[0]} \times
+                (\text{kernel_size[0]} - 1) - 1}{\text{stride[0]}}} \right \rfloor + 1 \\
+                W_{out} = \left \lfloor{\frac{W_{in} + padding[2] + padding[3] - \text{dilation[1]} \times
+                (\text{kernel_size[1]} - 1) - 1}{\text{stride[1]}}} \right \rfloor + 1 \\
             \end{array}
 
     Raises:
