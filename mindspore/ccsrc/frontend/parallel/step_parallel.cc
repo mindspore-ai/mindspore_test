@@ -118,7 +118,7 @@ bool StepParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &optimizer) 
   }
 
   // control whether use model_parallel mode
-  if (!IsAutoParallelCareGraph(root) || HasNestedMetaFg(root)) {
+  if (!IsAutoParallelCareGraph(root)) {
     if (!root->has_flag(CHECK_SET_STRATEGY_VALID_ONCE_ONLY)) {
       MS_LOG(INFO) << "Strategies would be ignored in " << processor_context->parallel_mode
                    << ", shard() only valid in [semi_]auto_parallel.";
