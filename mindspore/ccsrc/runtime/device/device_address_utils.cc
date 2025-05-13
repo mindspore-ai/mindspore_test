@@ -926,11 +926,31 @@ KernelTensorPtr DeviceAddressUtils::CloneEmptyKernelTensor(const KernelTensorPtr
   return new_kernel_tensor;
 }
 
+void CheckAutoH2D(const DeviceContext *device_context, const tensor::TensorPtr &tensor) {
+  auto addr = tensor->device_address();
+  if (addr == nullptr) {
+    if (device_context->GetDeviceType() == device::DeviceType::kCPU) {
+      return;
+    }
+    MS_LOG(EXCEPTION) << "The tensor " << tensor->ToString() << " device address is null! Need to call Tensor.to first";
+  }
+  auto device_address = std::static_pointer_cast<device::DeviceAddress>(addr);
+  if (device_address->GetDeviceType() != device_context->GetDeviceType()) {
+    MS_LOG(EXCEPTION) << "The tensor device address type is " << device_address->GetDeviceType()
+                      << ". Need to call Tensor.to first";
+  }
+}
+
 void DeviceAddressUtils::CreateInputTensorAddress(const DeviceContext *device_context, size_t stream_id, size_t index,
                                                   const tensor::TensorPtr &tensor) {
   MS_EXCEPTION_IF_NULL(device_context);
   if (tensor == nullptr) {
     return;
+  }
+
+  static bool need_check = common::GetEnv("MS_DEV_DISABLE_AUTO_H2D") == "1";
+  if (need_check) {
+    CheckAutoH2D(device_context, tensor);
   }
 
   auto addr = tensor->device_address();

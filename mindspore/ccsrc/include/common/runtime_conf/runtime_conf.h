@@ -36,6 +36,7 @@ const char kLaunchBlocking[] = "launch_blocking";
 const char kThreadBindCore[] = "thread_bind_core";
 const char kKernelLaunchGroupConf[] = "KernelLaunchGroupConf";
 const char kSimulationLevelKey[] = "MS_SIMULATION_LEVEL";
+constexpr auto kMsDevLaunchBlocking = "MS_DEV_LAUNCH_BLOCKING";
 
 class COMMON_EXPORT RuntimeConf {
  public:
@@ -50,6 +51,10 @@ class COMMON_EXPORT RuntimeConf {
     launch_blocking_ = true;
   }
   bool launch_blocking() {
+    static bool launch_blocking = common::GetEnv(kMsDevLaunchBlocking) == "1";
+    if (launch_blocking) {
+      return true;
+    }
     if (is_sim_level_three_) {
       MS_LOG(INFO) << "Run in simulation level 3, always run in blocking";
       return true;
