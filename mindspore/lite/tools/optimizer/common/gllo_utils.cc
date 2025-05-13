@@ -1491,7 +1491,7 @@ CNodePtr GenTupleGetItemNode(const FuncGraphPtr &func_graph, const CNodePtr &inp
   return tuple_cnode;
 }
 
-CNodePtr CreateMulNode(const FuncGraphPtr &func_graph, const AnfNodePtr &input_cnode, const float mul_scale) {
+CNodePtr CreateMulNode(const FuncGraphPtr &func_graph, const AnfNodePtr &input_cnode, float mul_scale) {
   MS_LOG(INFO) << "create mul_fusion node start.";
   MS_CHECK_TRUE_RET(func_graph != nullptr, nullptr);
   MS_CHECK_TRUE_RET(input_cnode != nullptr, nullptr);
@@ -1505,6 +1505,29 @@ CNodePtr CreateMulNode(const FuncGraphPtr &func_graph, const AnfNodePtr &input_c
     return nullptr;
   }
   auto cnode = func_graph->NewCNode(mul_fusion_prim_c, {input_cnode, scale_node});
+  if (cnode == nullptr) {
+    MS_LOG(ERROR) << "cnode is nullptr!";
+    return nullptr;
+  }
+  cnode->set_fullname_with_scope(cnode->fullname_with_scope() + "_mul_fusion");
+  if (input_cnode->abstract() != nullptr) {
+    cnode->set_abstract(input_cnode->abstract()->Clone());
+  }
+  MS_LOG(INFO) << "create mul_fusion node end.";
+  return cnode;
+}
+
+CNodePtr CreateMulNode(const FuncGraphPtr &func_graph, const AnfNodePtr &input_cnode,
+                       const AnfNodePtr &mul_scale_node) {
+  MS_LOG(INFO) << "create mul_fusion node start.";
+  MS_CHECK_TRUE_RET(func_graph != nullptr, nullptr);
+  MS_CHECK_TRUE_RET(input_cnode != nullptr, nullptr);
+  MS_CHECK_TRUE_RET(mul_scale_node != nullptr, nullptr);
+  auto mul_fusion_op = std::make_unique<ops::MulFusion>();
+  MS_CHECK_TRUE_RET(mul_fusion_op != nullptr, nullptr);
+  auto mul_fusion_prim_c = mul_fusion_op->GetPrim();
+  MS_CHECK_TRUE_RET(mul_fusion_prim_c != nullptr, nullptr);
+  auto cnode = func_graph->NewCNode(mul_fusion_prim_c, {input_cnode, mul_scale_node});
   if (cnode == nullptr) {
     MS_LOG(ERROR) << "cnode is nullptr!";
     return nullptr;

@@ -37,6 +37,7 @@ constexpr const int kIndex1 = 1;
 constexpr const int kIndex2 = 2;
 constexpr const int kIndex3 = 3;
 constexpr const int kIndex4 = 4;
+constexpr const size_t kLen1 = 1;
 constexpr const size_t kLen2 = 2;
 constexpr const size_t kLen3 = 3;
 constexpr const size_t kLen4 = 4;
@@ -547,6 +548,58 @@ int InsertMulReduceNode(const FuncGraphPtr &func_graph, const CNodePtr &cnode) {
   }
   return lite::RET_OK;
 }
+
+int InsertReshapeMulNode(const FuncGraphPtr &func_graph, const CNodePtr &cnode) {
+  // ops.outer is created by reshape and mul
+  MS_CHECK_TRUE_RET(cnode != nullptr, RET_ERROR);
+  MS_CHECK_TRUE_RET(func_graph != nullptr, RET_ERROR);
+  if (cnode->inputs().size() != kLen3) {
+    MS_LOG(ERROR) << "Input size must be 3!";
+    return RET_ERROR;
+  }
+  AnfNodePtr input1 = cnode->input(kIndex1);
+  AnfNodePtr input2 = cnode->input(kIndex2);
+
+  std::vector<int32_t> shape = {-1, 1};
+  auto reshape_node = opt::GenReshapeNode(func_graph, input1, shape, cnode->fullname_with_scope() + "_reshape");
+  if (reshape_node == nullptr) {
+    MS_LOG(ERROR) << "Create outer node failed!";
+    return RET_ERROR;
+  }
+  if (cnode->abstract() != nullptr) {
+    reshape_node->set_abstract(cnode->abstract()->Clone());
+  }
+
+  auto mul_node = opt::CreateMulNode(func_graph, reshape_node, input2);
+  if (mul_node == nullptr) {
+    MS_LOG(ERROR) << "Create mul node failed!";
+    return RET_ERROR;
+  }
+  auto manager = Manage(func_graph, true);
+  if (manager == nullptr) {
+    MS_LOG(ERROR) << "manager is nullptr!";
+    return lite::RET_ERROR;
+  }
+  if (!manager->Replace(cnode, mul_node)) {
+    MS_LOG(ERROR) << "Replace node failed!";
+    return lite::RET_ERROR;
+  }
+  return lite::RET_OK;
+}
+
+int CheckAndConvertEinsum(const FuncGraphPtr &func_graph, const CNodePtr &cnode, const std::string &first_dims,
+                          const std::string &second_dims, const std::string &output_dims) {
+  if (CheckCanConvertToMul(first_dims, second_dims, output_dims)) {
+    return InsertMulNode(func_graph, cnode);
+  } else if (CheckCanConvertToMulTrans(first_dims, second_dims, output_dims)) {
+    return InsertMulNodeTrans(func_graph, cnode);
+  } else if (CheckCanConvertToTransMul(first_dims, second_dims, output_dims)) {
+    return InsertTransMulNode(func_graph, cnode);
+  } else if (CheckCanConvertToMulReduce(first_dims, second_dims, output_dims)) {
+    return InsertMulReduceNode(func_graph, cnode);
+  }
+  return lite::RET_ERROR;
+}
 }  // namespace
 
 bool EinsumAdjust::Adjust(const FuncGraphPtr &func_graph) {
@@ -587,53 +640,52 @@ bool EinsumAdjust::Adjust(const FuncGraphPtr &func_graph) {
       value_node->set_value(scale_prim);
       continue;
     }
+    // check can convert to outer. e.g. "i,j->ij"
+    if (output_dims.length() == kLen2 && output_dims.substr(kIndex0, kLen1) == first_dims &&
+        output_dims.substr(kIndex1, kLen1) == second_dims) {
+      // outer is implemented by reshape and mul in MindSpore
+      if (InsertReshapeMulNode(func_graph, cnode) == RET_OK) {
+        continue;
+      } else {
+        MS_LOG(ERROR) << "Convert einsum to outer failed!";
+        return false;
+      }
+    }
     // convert to matmul
     bool trans_a = false;
     bool trans_b = false;
     bool trans_out = false;
-    if (CheckCanConvertToMatmul(first_dims, second_dims, output_dims, &trans_a, &trans_b, &trans_out) != RET_OK) {
-      if (CheckCanConvertToMul(first_dims, second_dims, output_dims)) {
-        if (InsertMulNode(func_graph, cnode) == lite::RET_OK) {
-          continue;
-        }
-      } else if (CheckCanConvertToMulTrans(first_dims, second_dims, output_dims)) {
-        if (InsertMulNodeTrans(func_graph, cnode) == lite::RET_OK) {
-          continue;
-        }
-      } else if (CheckCanConvertToTransMul(first_dims, second_dims, output_dims)) {
-        if (InsertTransMulNode(func_graph, cnode) == lite::RET_OK) {
-          continue;
-        }
-      } else if (CheckCanConvertToMulReduce(first_dims, second_dims, output_dims)) {
-        if (InsertMulReduceNode(func_graph, cnode) == lite::RET_OK) {
-          continue;
+    if (CheckCanConvertToMatmul(first_dims, second_dims, output_dims, &trans_a, &trans_b, &trans_out) == RET_OK) {
+      auto value_node = cnode->input(kIndex0)->cast<ValueNodePtr>();
+      MS_CHECK_TRUE_RET(value_node != nullptr, false);
+      ops::MatMulFusion matmul_node;
+      // ops::Mul matmul_node;
+      auto scale_prim = matmul_node.GetPrim();
+      MS_CHECK_TRUE_MSG(scale_prim != nullptr, RET_NULL_PTR, "dst_prim is nullptr.");
+      matmul_node.set_transpose_a(trans_a);
+      matmul_node.set_transpose_b(trans_b);
+      value_node->set_value(scale_prim);
+      if (trans_out) {
+        std::vector<int> perm(output_dims.size());
+        std::iota(perm.begin(), perm.end(), 0);
+        std::reverse(perm.end() - DIMENSION_2D, perm.end());
+        auto transpose = opt::GenTransposeNode(func_graph, cnode, perm, cnode->fullname_with_scope() + "_transpose");
+        MS_CHECK_TRUE_MSG(transpose != nullptr, false, "create transpose failed!");
+        auto manager = Manage(func_graph, true);
+        MS_CHECK_TRUE_MSG(manager != nullptr, false, "manager is nullptr!");
+        if (!manager->Replace(cnode, transpose)) {
+          MS_LOG(ERROR) << "Replace node failed!";
+          return false;
         }
       }
-      MS_LOG(ERROR) << "Convert einsum to matmul failed!";
-      return false;
+      continue;
     }
-    auto value_node = cnode->input(kIndex0)->cast<ValueNodePtr>();
-    MS_CHECK_TRUE_RET(value_node != nullptr, false);
-    ops::MatMulFusion matmul_node;
-    // ops::Mul matmul_node;
-    auto scale_prim = matmul_node.GetPrim();
-    MS_CHECK_TRUE_MSG(scale_prim != nullptr, RET_NULL_PTR, "dst_prim is nullptr.");
-    matmul_node.set_transpose_a(trans_a);
-    matmul_node.set_transpose_b(trans_b);
-    value_node->set_value(scale_prim);
-    if (trans_out) {
-      std::vector<int> perm(output_dims.size());
-      std::iota(perm.begin(), perm.end(), 0);
-      std::reverse(perm.end() - DIMENSION_2D, perm.end());
-      auto transpose = opt::GenTransposeNode(func_graph, cnode, perm, cnode->fullname_with_scope() + "_transpose");
-      MS_CHECK_TRUE_MSG(transpose != nullptr, false, "create transpose failed!");
-      auto manager = Manage(func_graph, true);
-      MS_CHECK_TRUE_MSG(manager != nullptr, false, "manager is nullptr!");
-      if (!manager->Replace(cnode, transpose)) {
-        MS_LOG(ERROR) << "Replace node failed!";
-        return false;
-      }
+    // convert to other operations
+    if (CheckAndConvertEinsum(func_graph, cnode, first_dims, second_dims, output_dims) == RET_OK) {
+      continue;
     }
+    MS_LOG(ERROR) << "Convert einsum failed!";
+    return false;
   }
   return true;
 }
