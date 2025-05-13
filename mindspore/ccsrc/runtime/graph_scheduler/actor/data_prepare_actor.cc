@@ -346,12 +346,17 @@ void RecordGraphInputsForInputOptimize(const GraphCompilerInfo *graph_compiler_i
   if (EnableKbkSubGraphExecute()) {
     std::vector<size_t> input_index;
     std::vector<ParameterPtr> parameters;
+    size_t non_weight_parameter_num = graph_parameter_store->GetNonWeightParameterNum();
+    size_t current_data_num = 0;
     for (size_t i = 0; i < graph_compiler_info->origin_parameters_order_.size(); ++i) {
+      if (current_data_num == non_weight_parameter_num) {
+        break;
+      }
       const auto &origin_parameter = graph_compiler_info->origin_parameters_order_[i];
       MS_EXCEPTION_IF_NULL(origin_parameter);
       const auto parameter = origin_parameter->cast<ParameterPtr>();
       // The input data is front of the parameter weight.
-      if (common::AnfAlgo::IsParameterWeight(parameter)) {
+      if (graph_parameter_store->GetPositionWeight(i)) {
         MS_LOG(DEBUG) << "Skip the prepare host data for parameter: " << origin_parameter->fullname_with_scope();
         continue;
       }
@@ -361,6 +366,7 @@ void RecordGraphInputsForInputOptimize(const GraphCompilerInfo *graph_compiler_i
       }
       input_index.emplace_back(i);
       parameters.emplace_back(parameter);
+      ++current_data_num;
 
       std::vector<tensor::TensorPtr> flatten_tensors;
       AnfAlgo::FlattenInputArg(args[i], origin_parameter, &flatten_tensors);
