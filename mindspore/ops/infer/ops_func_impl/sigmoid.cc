@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,29 +25,17 @@
 
 namespace mindspore {
 namespace ops {
-BaseShapePtr SigmoidFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                         const std::vector<AbstractBasePtr> &input_args) const {
-  auto x_shape = input_args[kInputIndex0]->GetShape();
-  return x_shape->Clone();
-}
-
-TypePtr SigmoidFuncImpl::InferType(const PrimitivePtr &primitive,
-                                   const std::vector<AbstractBasePtr> &input_args) const {
-  auto x_type = input_args[kInputIndex0]->GetType();
-  if (!x_type->isa<TensorType>()) {
-    MS_EXCEPTION(TypeError) << "Input for Sigmoid should be TensorType, but got " << TypeIdToString(x_type->type_id());
-  }
-  auto x_type_id = x_type->cast<TensorTypePtr>()->element()->type_id();
-  const std::set<TypeId> int_or_bool = {kNumberTypeUInt8, kNumberTypeInt8,  kNumberTypeInt16,
-                                        kNumberTypeInt32, kNumberTypeInt64, kNumberTypeBool};
+std::vector<TypeId> SigmoidFuncImpl::InferType(const PrimitivePtr &primitive,
+                                               const InferInfoPtrList &input_infos) const {
+  const auto &input_type_id = input_infos[kInputIndex0]->GetType();
+  static const std::vector<TypeId> int_or_bool = {kNumberTypeUInt8, kNumberTypeInt8,  kNumberTypeInt16,
+                                                  kNumberTypeInt32, kNumberTypeInt64, kNumberTypeBool};
   bool is_int_or_bool = std::any_of(int_or_bool.begin(), int_or_bool.end(),
-                                    [&x_type_id](const TypeId &type_id) { return x_type_id == type_id; });
+                                    [&input_type_id](const TypeId &type_id) { return input_type_id == type_id; });
   if (is_int_or_bool) {
-    return std::make_shared<TensorType>(kFloat32);
-  } else {
-    return x_type->Clone();
+    return {kNumberTypeFloat32};
   }
+  return {input_type_id};
 }
-
 }  // namespace ops
 }  // namespace mindspore

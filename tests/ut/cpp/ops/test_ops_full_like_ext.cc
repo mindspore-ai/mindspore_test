@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,10 +36,10 @@ std::vector<GeneralInferParam> prepare_params() {
                     InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(kNumberTypeFloat16)}})
     .FeedExpectedOutput({{1, 1, 1, 1, 1, 1, 1, 8}}, {kNumberTypeFloat16});
   generator
-    .FeedInputArgs({InferInfoParam{ShapeVector{2, 3}, kNumberTypeFloat32},
+    .FeedInputArgs({InferInfoParam{ShapeVector{-1, 2}, kNumberTypeInt64},
                     InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
                     InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(kNumberTypeFloat32)}})
-    .FeedExpectedOutput({{2, 3}}, {kNumberTypeFloat32});
+    .FeedExpectedOutput({{-1, 2}}, {kNumberTypeFloat32});
   generator
     .FeedInputArgs({InferInfoParam{ShapeVector{-1, -1}, kNumberTypeInt64},
                     InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},

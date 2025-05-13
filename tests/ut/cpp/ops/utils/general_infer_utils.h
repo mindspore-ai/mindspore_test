@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,5 +43,30 @@ InferInfoPtr param_to_value_info(InferInfoParam param, const std::string &op_typ
 std::pair<InferInfoPtrList, InferInfoPtrList> params_to_infos(GeneralInferParam params, const OpDef op_def);
 
 class GeneralInferTest : public testing::TestWithParam<GeneralInferParam> {};
+
+static std::vector<GeneralInferParam> single_input_eltwise_op_params() {
+  GeneralInferParamGenerator generator;
+  generator
+      .FeedInputArgs({InferInfoParam{ShapeVector{2, 3, 6}, kNumberTypeFloat32}})
+      .FeedExpectedOutput({{2, 3, 6}}, {kNumberTypeFloat32});
+  generator
+      .FeedInputArgs({InferInfoParam{ShapeVector{6}, kNumberTypeFloat16}})
+      .FeedExpectedOutput({{6}}, {kNumberTypeFloat16});
+  generator
+      .FeedInputArgs({InferInfoParam{ShapeVector{1, 1, 1, 1, 1, 1, 1, 8}, kNumberTypeFloat32}})
+      .FeedExpectedOutput({{1, 1, 1, 1, 1, 1, 1, 8}}, {kNumberTypeFloat32});
+  generator
+      .FeedInputArgs({InferInfoParam{ShapeVector{2, -1}, kNumberTypeFloat64}})
+      .FeedExpectedOutput({{2, -1}}, {kNumberTypeFloat64});
+  generator
+      .FeedInputArgs({InferInfoParam{ShapeVector{-1, -1}, kNumberTypeFloat32}})
+      .FeedExpectedOutput({{-1, -1}}, {kNumberTypeFloat32});
+  generator
+      .FeedInputArgs({InferInfoParam{ShapeVector{-2}, kNumberTypeFloat32}})
+      .FeedExpectedOutput({{-2}}, {kNumberTypeFloat32});
+  return generator.Generate();
+}
+
+static auto single_input_eltwise_op_default_cases = testing::ValuesIn(single_input_eltwise_op_params());
 }  // namespace mindspore::ops
 #endif  // MINDSPORE_TESTS_UT_CPP_OPS_UTILS_GENERAL_INFER_UTILS

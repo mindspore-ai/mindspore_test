@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2023 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,17 +17,12 @@
 #define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_RECIPROCAL_H_
 
 #include <vector>
-#include "ops/ops_func_impl/op_func_impl.h"
+#include "infer/ops_func_impl/eltwise_op.h"
 
 namespace mindspore::ops {
-class OPS_API ReciprocalFuncImpl : public OpFuncImpl {
+class OPS_API ReciprocalFuncImpl : public EltwiseOpFuncImpl {
  public:
-  ReciprocalFuncImpl() = default;
-  ~ReciprocalFuncImpl() = default;
-
-  BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-
-  TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+  std::vector<TypeId> InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
 };
 }  // namespace mindspore::ops
 

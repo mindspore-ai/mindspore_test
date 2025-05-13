@@ -13,16 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "infer/ops_func_impl/reciprocal.h"
-#include "ops/test_ops.h"
-#include "ops/test_ops_cmp_utils.h"
+
+#include "ops/utils/general_infer_utils.h"
 
 namespace mindspore {
 namespace ops {
-OP_FUNC_IMPL_TEST_DECLARE(Reciprocal, EltwiseOpParams);
-
-OP_FUNC_IMPL_TEST_CASES(Reciprocal, testing::Values(EltwiseOpParams{{2, 3}, kFloat32, {2, 3}, kFloat32},
-                                                    EltwiseOpParams{{-1, -1}, kFloat32, {-1, -1}, kFloat32},
-                                                    EltwiseOpParams{{-2}, kFloat32, {-2}, kFloat32}));
+INSTANTIATE_TEST_CASE_P(Reciprocal, GeneralInferTest, single_input_eltwise_op_default_cases);
 }  // namespace ops
 }  // namespace mindspore

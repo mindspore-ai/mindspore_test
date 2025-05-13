@@ -18,15 +18,11 @@
 #define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_ONES_LIKE_H_
 
 #include <vector>
-#include "ops/ops_func_impl/op_func_impl.h"
+#include "infer/ops_func_impl/eltwise_op.h"
 
 namespace mindspore {
 namespace ops {
-class OPS_API OnesLikeFuncImpl : public OpFuncImpl {
- public:
-  BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-  TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-};
+class OPS_API OnesLikeFuncImpl : public EltwiseOpFuncImpl {};
 }  // namespace ops
 }  // namespace mindspore
 

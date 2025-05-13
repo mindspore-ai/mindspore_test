@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,21 +13,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "common/common_test.h"
-#include "infer/ops_func_impl/zeros_like_ext.h"
-#include "ops/test_value_utils.h"
-#include "ops/test_ops.h"
-#include "ops/test_ops_cmp_utils.h"
 
-namespace mindspore {
-namespace ops {
-OP_FUNC_IMPL_TEST_DECLARE(ZerosLikeExt, EltwiseOpParams);
+#include "ops/utils/general_infer_utils.h"
 
-OP_FUNC_IMPL_TEST_CASES(
-  ZerosLikeExt,
-  testing::Values(
-    EltwiseOpParams{{-1, 4, -1}, kFloat32, {-1, 4, -1}, kInt64, {CreateScalar<int64_t>(kNumberTypeInt64)}},
-    EltwiseOpParams{{3, 4, 5}, kInt32, {3, 4, 5}, kFloat32, {CreateScalar<int64_t>(kNumberTypeFloat32)}},
-    EltwiseOpParams{{-2}, kFloat32, {-2}, kInt32, {CreateScalar<int64_t>(kNumberTypeInt32)}}));
-}  // namespace ops
-}  // namespace mindspore
+namespace mindspore::ops {
+namespace {
+std::vector<GeneralInferParam> prepare_params() {
+  GeneralInferParamGenerator generator;
+  generator
+      .FeedInputArgs({InferInfoParam{ShapeVector{2, 3, 6}, kNumberTypeFloat32},
+                      InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(kNumberTypeInt64)}})
+      .FeedExpectedOutput({{2, 3, 6}}, {kNumberTypeInt64});
+  generator
+      .FeedInputArgs({InferInfoParam{ShapeVector{6}, kNumberTypeFloat32},
+                      InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(kNumberTypeInt64)}})
+      .FeedExpectedOutput({{6}}, {kNumberTypeInt64});
+  generator
+      .FeedInputArgs({InferInfoParam{ShapeVector{1, 1, 1, 1, 1, 1, 1, 8}, kNumberTypeFloat32},
+                      InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(kNumberTypeFloat16)}})
+      .FeedExpectedOutput({{1, 1, 1, 1, 1, 1, 1, 8}}, {kNumberTypeFloat16});
+  generator
+      .FeedInputArgs({InferInfoParam{ShapeVector{-1, 2}, kNumberTypeInt64},
+                      InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(kNumberTypeFloat32)}})
+      .FeedExpectedOutput({{-1, 2}}, {kNumberTypeFloat32});
+  generator
+      .FeedInputArgs({InferInfoParam{ShapeVector{-1, -1}, kNumberTypeInt64},
+                      InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(kNumberTypeFloat32)}})
+      .FeedExpectedOutput({{-1, -1}}, {kNumberTypeFloat32});
+  generator
+      .FeedInputArgs({InferInfoParam{ShapeVector{-2}, kNumberTypeFloat32},
+                      InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(kNumberTypeInt64)}})
+      .FeedExpectedOutput({{-2}}, {kNumberTypeInt64});
+  return generator.Generate();
+}
+}  // namespace
+
+INSTANTIATE_TEST_CASE_P(ZerosLikeExt, GeneralInferTest, testing::ValuesIn(prepare_params()));
+}  // namespace mindspore::ops

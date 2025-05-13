@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,11 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "ops/test_ops_cmp_utils.h"
-#include "infer/ops_func_impl/abs.h"
+#include "ops/utils/general_infer_utils.h"
 
 namespace mindspore {
 namespace ops {
-ELTWISE_OP_FUNC_IMPL_TEST_WITH_DEFAULT_CASES(Abs);
+INSTANTIATE_TEST_CASE_P(Abs, GeneralInferTest, single_input_eltwise_op_default_cases);
 }  // namespace ops
 }  // namespace mindspore
