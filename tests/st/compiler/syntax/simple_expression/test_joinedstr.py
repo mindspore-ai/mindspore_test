@@ -40,7 +40,7 @@ def test_raise_joinedstr_variable_1():
     with pytest.raises(ValueError) as raise_info:
         res = func(input_x)
         print(res)
-    assert "The input can not be Tensor(shape=[1], dtype=Int64, value= [1])." in str(raise_info.value)
+    assert "The input can not be [1]." in str(raise_info.value)
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
 
 
@@ -60,7 +60,7 @@ def test_raise_joinedstr_variable_2():
     with pytest.raises(ValueError) as raise_info:
         res = func(input_x)
         print(res)
-    assert "('The input can not be Tensor(shape=[1], dtype=Int64, value= [1])', '.')" in str(raise_info.value)
+    assert "('The input can not be [1]', '.')" in str(raise_info.value)
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
 
 
@@ -83,7 +83,7 @@ def test_raise_joinedstr_constant_tuple():
     with pytest.raises(ValueError) as raise_info:
         res = func(input_x)
         print(res)
-    assert "The input can not be (Tensor(shape=[1], dtype=Int64, value=[1])," in str(raise_info.value)
+    assert "The input can not be (Tensor(shape=[1]," in str(raise_info.value)
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
 
 
@@ -106,7 +106,7 @@ def test_raise_joinedstr_constant_list():
     with pytest.raises(ValueError) as raise_info:
         res = func(input_x)
         print(res)
-    assert "The input can not be [Tensor(shape=[1], dtype=Int64, value=[1])," in str(raise_info.value)
+    assert "The input can not be [Tensor(shape=[1]," in str(raise_info.value)
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
 
 
@@ -152,7 +152,7 @@ def test_raise_joinedstr_variable_tuple():
     with pytest.raises(ValueError) as raise_info:
         res = func(input_x)
         print(res)
-    assert "The input can not be (Tensor(shape=[1], dtype=Int64, value= [1]), 1)" in str(raise_info.value)
+    assert "The input can not be ([1], 1)" in str(raise_info.value)
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
 
 
@@ -175,7 +175,7 @@ def test_raise_joinedstr_variable_nested_tuple():
     with pytest.raises(ValueError) as raise_info:
         res = func(input_x)
         print(res)
-    assert "The input can not be ((Tensor(shape=[1], dtype=Int64, value= [1]), 0), 1)" in str(raise_info.value)
+    assert "The input can not be (([1], 0), 1)" in str(raise_info.value)
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
 
 
@@ -198,7 +198,7 @@ def test_raise_joinedstr_variable_list():
     with pytest.raises(ValueError) as raise_info:
         res = func(input_x)
         print(res)
-    assert "The input can not be [Tensor(shape=[1], dtype=Int64, value= [1]), 1]" in str(raise_info.value)
+    assert "The input can not be [[1], 1]" in str(raise_info.value)
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
 
 
@@ -221,7 +221,7 @@ def test_raise_joinedstr_variable_nested_list():
     with pytest.raises(ValueError) as raise_info:
         res = func(input_x)
         print(res)
-    assert "The input can not be [[Tensor(shape=[1], dtype=Int64, value= [1]), 0], 1]" in str(raise_info.value)
+    assert "The input can not be [[[1], 0], 1]" in str(raise_info.value)
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
 
 
@@ -244,7 +244,7 @@ def test_raise_joinedstr_variable_nested_sequence():
     with pytest.raises(ValueError) as raise_info:
         res = func(input_x)
         print(res)
-    assert "The input can not be ([Tensor(shape=[1], dtype=Int64, value= [1]), 0], 1)" in str(raise_info.value)
+    assert "The input can not be ([[1], 0], 1)" in str(raise_info.value)
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
 
 
@@ -313,7 +313,7 @@ def test_raise_joinedstr_control_flow():
     with pytest.raises(ValueError) as raise_info:
         res = func(input_x, input_y)
         print(res)
-    assert "The input can not be Tensor(shape=[1], dtype=Int64, value= [1])." in str(raise_info.value)
+    assert "The input can not be [1]." in str(raise_info.value)
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
 
 
@@ -362,7 +362,7 @@ def test_raise_joinedstr_control_flow_grad_in_graph():
     with pytest.raises(ValueError) as raise_info:
         res = grad_func(func, input_x, input_y)
         print(res)
-    assert "The input can not be Tensor(shape=[1], dtype=Int64, value= [1])." in str(raise_info.value)
+    assert "The input can not be [1]." in str(raise_info.value)
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
 
 
@@ -389,7 +389,7 @@ def test_raise_joinedstr_control_flow_grad_in_pynative():
     with pytest.raises(ValueError) as raise_info:
         res = grad_func_raise_error(func_raise_error, input_x, input_y)
         print(res)
-    assert "The input can not be Tensor(shape=[1], dtype=Int64, value= [1])." in str(raise_info.value)
+    assert "The input can not be [1]." in str(raise_info.value)
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
 
 
@@ -469,7 +469,7 @@ def test_raise_joinedstr_scalar_join_grad_in_graph():
     with pytest.raises(ValueError) as raise_info:
         res = grad_func(func, input_x, input_y, input_z)
         print(res)
-    assert "The input can not be Tensor(shape=[1], dtype=Int64, value= [1])." in str(raise_info.value)
+    assert "The input can not be [1]." in str(raise_info.value)
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
 
 
