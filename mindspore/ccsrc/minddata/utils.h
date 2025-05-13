@@ -43,8 +43,8 @@ inline void BindThreadCoreForMindDataOp(std::string name) {
   if (bind_core_manager.is_enable_thread_bind_core_) {
     const auto &core_list = bind_core_manager.get_thread_bind_core_list(runtime::kBindCoreModule::kMINDDATA);
     if (core_list.empty()) {
-      MS_LOG(WARNING) << "[" << name
-                      << "]: Failed to get core list, please check if core binding is enabled by 'set_cpu_affinity'.";
+      MS_LOG(INFO) << "[" << name
+                   << "]: No core list assigned, make sure set_cpu_affinity method is configured correctly.";
       return;
     } else {
       bind_core_manager.bind_thread_core(core_list);
@@ -93,8 +93,8 @@ inline void BindThreadCoreForMindDataOp(std::string name, int64_t id, bool is_th
 
   const auto &core_list = bind_core_manager.get_thread_bind_core_list(runtime::kBindCoreModule::kMINDDATA);
   if (core_list.empty()) {
-    MS_LOG(WARNING) << "[" << name
-                    << "]: Failed to get core list, please check if core binding is enabled by 'set_cpu_affinity'.";
+    MS_LOG(INFO) << "[" << name
+                 << "]: No core list assigned, make sure set_cpu_affinity method is configured correctly.";
     return;
   } else {
     bind_core_manager.bind_thread_core(core_list, id, is_thread);
