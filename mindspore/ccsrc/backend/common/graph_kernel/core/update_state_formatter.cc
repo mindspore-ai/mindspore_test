@@ -149,7 +149,7 @@ bool ExtendOutputForUpdateState::Run(const FuncGraphPtr &func_graph) {
       continue;
     }
     for (auto idx : indexes_) {
-      changed = ProcessIndex(func_graph, sub_func_graph, idx) || changed;
+      changed = ProcessIndex(func_graph, sub_func_graph, idx, node) || changed;
     }
   }
   if (changed) {
@@ -231,7 +231,7 @@ std::vector<size_t> ExtendOutputForUpdateState::FindAllOutputs(const FuncGraphPt
 }
 
 bool ExtendOutputForUpdateState::ProcessIndex(const FuncGraphPtr &func_graph, const FuncGraphPtr &sub_func_graph,
-                                              size_t index) {
+                                              size_t index, const AnfNodePtr &node) {
   auto group = FindAllOutputs(sub_func_graph, index + 1);
   AnfNodePtr new_node = nullptr;
   if (group.size() == 1 && group[0] == index) {
@@ -249,8 +249,28 @@ bool ExtendOutputForUpdateState::ProcessIndex(const FuncGraphPtr &func_graph, co
     // Create MakeTuple, even though the group size is 1, the following pass will spread the MakeTuple,
     // so it's unnecessary to set abstract for it.
     AnfNodePtrList mt_input = {NewValueNode(prim::kPrimMakeTuple)};
-    (void)std::transform(group.begin(), group.end(), std::back_inserter(mt_input),
-                         [this](size_t idx) { return getitems_[idx]; });
+    (void)std::transform(
+      group.begin(), group.end(), std::back_inserter(mt_input),
+      [this, &node, &func_graph, &sub_func_graph](size_t idx) {
+        if (getitems_[idx] == nullptr) {
+          MS_LOG(INFO) << "Start create TupleGetItem index " << idx << " for node: " << node->fullname_with_scope();
+          auto item_idx = MakeValue(SizeToLong(idx));
+          AnfNodePtrList gt_inputs{NewValueNode(prim::kPrimTupleGetItem), node, NewValueNode(item_idx)};
+          gt_inputs.back()->set_abstract(item_idx->ToAbstract());
+          auto get_item = func_graph->NewCNode(gt_inputs);
+          auto sub_graph_output = sub_func_graph->output();
+          if (IsPrimitiveCNode(sub_graph_output, prim::kPrimMakeTuple)) {
+            auto cnode = sub_graph_output->cast<CNodePtr>();
+            MS_EXCEPTION_IF_NULL(cnode);
+            auto out = cnode->input(idx + 1);
+            MS_EXCEPTION_IF_NULL(out);
+            get_item->set_abstract(out->abstract()->Clone());
+          }
+          getitems_[idx] = get_item;
+          MS_LOG(INFO) << "End create TupleGetItem index " << idx << " for node: " << node->fullname_with_scope();
+        }
+        return getitems_[idx];
+      });
     new_node = func_graph->NewCNode(mt_input)->cast<AnfNodePtr>();
   }
   auto mng = func_graph->manager();

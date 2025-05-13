@@ -53,6 +53,21 @@ NodePtrList ComputeAdamApplyOneWithDecay(const DefaultIrBuilder *ib) {
   auto var_new = ib->Sub(var, lr_update);
   return {v_new, m_new, var_new};
 }
+
+ShapeVector AllAxis(size_t rank) {
+  ShapeVector axis(rank);
+  for (int64_t i = 0; i < static_cast<int64_t>(rank); ++i) {
+    axis[i] = i;
+  }
+  return axis;
+}
+
+NodePtr CastOp(const DefaultIrBuilder *ib, const NodePtr &node, TypeId dst_type) {
+  MS_EXCEPTION_IF_NULL(node);
+  auto node_type = node->GetDtype();
+  MS_EXCEPTION_IF_NULL(node_type);
+  return node_type->type_id() == dst_type ? node : ib->Cast(node, dst_type);
+}
 }  // namespace
 
 REG_EXPANDER_FUNC("AdamApplyOneWithDecay").SetBody(BODYFUNC(ib) { return ComputeAdamApplyOneWithDecay(ib); });
@@ -518,6 +533,136 @@ REG_EXPANDER_FUNC("BCEWithLogitsLoss").SetBody(BODYFUNC(ib) {
     result = ib->Div(result, sz);
   }
   result = need_cast ? ib->Cast(result, dtype) : result;
+  return {result};
+});
+
+REG_EXPANDER_FUNC("BatchNormStats").SetBody(BODYFUNC(ib) {
+  auto x = ib->input(kIndex0);
+  auto x_type = x->GetDtype()->type_id();
+  if (x_type != kNumberTypeFloat32) {
+    MS_LOG(DEBUG) << "Skip data type: " << TypeIdToString(x_type);
+    return {};
+  }
+  ShapeVector axis;
+  axis.reserve(x->GetShape().size());
+  for (int64_t i = 0; i < static_cast<int64_t>(x->GetShape().size()); ++i) {
+    if (i != 1) {  // reduce all axis except C channel(axis 1)
+      axis.push_back(i);
+    }
+  }
+  auto x_sum = ib->ReduceSum(x, ib->Value(axis), ib->Value(false));
+  auto x_square_sum = ib->ReduceSum(ib->Mul(x, x), ib->Value(axis), ib->Value(false));
+  return {x_sum, x_square_sum};
+});
+
+REG_EXPANDER_FUNC("BatchNormGatherStatsWithCounts").SetRealOutputIndices({0, 1}).SetBody(BODYFUNC(ib) {
+  auto x = ib->input(kIndex0);
+  auto x_type = x->GetDtype()->type_id();
+  if (x_type != kNumberTypeFloat32) {
+    MS_LOG(DEBUG) << "Skip data type: " << TypeIdToString(x_type);
+    return {};
+  }
+  auto sum_all = ib->input(kIndex1);
+  auto square_sum_all = ib->input(kIndex2);
+  auto running_mean = ib->input(kIndex3);  // optional input
+  auto running_var = ib->input(kIndex4);   // optional input
+  auto momentum = ib->input(kIndex5);
+  auto eps = ib->input(kIndex6);
+  auto counts_all = ib->input(kIndex7);  // optional input
+  if (counts_all->GetDtype()->type_id() == kMetaTypeNone) {
+    MS_LOG(DEBUG) << "Skip counts_all is None";
+    return {};
+  }
+  auto momentum_value = GetValue<float>(momentum->GetValue());
+  auto m1 = ib->Tensor(momentum_value, x->GetDtype());
+  auto m2 = ib->Tensor(1.0f - momentum_value, x->GetDtype());
+  auto global_counts = ib->ReduceSum(counts_all, ib->Value(AllAxis(counts_all->GetShape().size())), ib->Value(false));
+  ShapeVector reduce_axis;
+  reduce_axis.reserve(sum_all->GetShape().size());
+  for (int64_t i = 0; i < static_cast<int64_t>(sum_all->GetShape().size()) - 1; ++i) {  // last axis is C channel
+    reduce_axis.push_back(i);
+  }
+  auto global_sum = ib->ReduceSum(sum_all, ib->Value(reduce_axis), ib->Value(false));
+  auto global_square_sum = ib->ReduceSum(square_sum_all, ib->Value(reduce_axis), ib->Value(false));
+  auto global_mean = ib->Div(global_sum, global_counts);
+  auto global_var = ib->Sub(ib->Div(global_square_sum, global_counts), ib->Mul(global_mean, global_mean));
+  auto global_invstd = ib->Reciprocal(ib->Sqrt(ib->Add(global_var, eps)));
+  NodePtrList results{global_mean, global_invstd};
+  // update running_mean
+  if (running_mean->GetDtype()->type_id() != kMetaTypeNone) {
+    auto running_mean_new = ib->Add(ib->Mul(global_mean, m1), ib->Mul(CastOp(ib, running_mean, x_type), m2));
+    running_mean_new = CastOp(ib, running_mean_new, running_mean->GetDtype()->type_id());
+    auto running_mean_res = ib->Assign(running_mean, running_mean_new);
+    results.push_back(running_mean_res);
+  }
+  // update running_var
+  if (running_var->GetDtype()->type_id() != kMetaTypeNone) {
+    auto const_one = ib->Tensor(1.0, x->GetDtype());
+    auto global_var1 = ib->Mul(global_var, ib->Div(global_counts, ib->Sub(global_counts, const_one)));
+    auto running_var_new = ib->Add(ib->Mul(global_var1, m1), ib->Mul(CastOp(ib, running_var, x_type), m2));
+    running_var_new = CastOp(ib, running_var_new, running_var->GetDtype()->type_id());
+    auto running_var_res = ib->Assign(running_var, running_var_new);
+    results.push_back(running_var_res);
+  }
+  return results;
+});
+
+REG_EXPANDER_FUNC("BatchNormElemt").SetBody(BODYFUNC(ib) {
+  auto x = ib->input(kIndex0);
+  auto x_type = x->GetDtype()->type_id();
+  auto x_shape = x->GetShape();
+  if (x_type != kNumberTypeFloat32 || x_shape.size() < kDim2) {
+    MS_LOG(DEBUG) << "Skip data type: " << TypeIdToString(x_type) << " shape: " << x_shape;
+    return {};
+  }
+  auto weight = ib->input(kIndex1);  // optional input
+  auto bias = ib->input(kIndex2);    // optional input
+  auto mean = ib->input(kIndex3);    // optional input
+  auto invstd = ib->input(kIndex4);  // optional input
+  ShapeVector new_shape(x_shape.size(), 1);
+  new_shape[1] = x_shape[1];
+  if (mean->GetDtype()->type_id() != kMetaTypeNone) {
+    x = ib->Sub(x, ib->Reshape(CastOp(ib, mean, x_type), new_shape));
+  }
+  if (invstd->GetDtype()->type_id() != kMetaTypeNone) {
+    x = ib->Mul(x, ib->Reshape(CastOp(ib, invstd, x_type), new_shape));
+  }
+  if (weight->GetDtype()->type_id() != kMetaTypeNone) {
+    x = ib->Mul(x, ib->Reshape(CastOp(ib, weight, x_type), new_shape));
+  }
+  if (bias->GetDtype()->type_id() != kMetaTypeNone) {
+    x = ib->Add(x, ib->Reshape(CastOp(ib, bias, x_type), new_shape));
+  }
+  return {x};
+});
+
+REG_EXPANDER_FUNC("BatchNormElemtGrad").SetBody(BODYFUNC(ib) {
+  auto dout = ib->input(kIndex0);
+  auto x = ib->input(kIndex1);
+  auto x_type = x->GetDtype()->type_id();
+  auto x_shape = x->GetShape();
+  if (x_type != kNumberTypeFloat32 || x_shape.size() < kDim2) {
+    MS_LOG(DEBUG) << "Skip data type: " << TypeIdToString(x_type) << " shape: " << x_shape;
+    return {};
+  }
+  auto mean = ib->input(kIndex2);
+  auto invstd = ib->input(kIndex3);
+  auto weight = ib->input(kIndex4);
+  auto sumd_dy = ib->input(kIndex5);
+  auto sum_dy_xmu = ib->input(kIndex6);
+  auto count = ib->input(kIndex7);
+  ShapeVector new_shape(x_shape.size(), 1);
+  new_shape[1] = x_shape[1];
+  auto global_counts = ib->ReduceSum(count, ib->Value(AllAxis(count->GetShape().size())), ib->Value(false));
+  invstd = CastOp(ib, ib->Reshape(invstd, new_shape), x_type);
+  auto invstd_dy_xmu =
+    ib->Mul(ib->Mul(invstd, invstd), ib->Div(CastOp(ib, ib->Reshape(sum_dy_xmu, new_shape), x_type), global_counts));
+  auto x_sub_mean = ib->Sub(x, CastOp(ib, ib->Reshape(mean, new_shape), x_type));
+  auto x_invstd = ib->Mul(x_sub_mean, invstd_dy_xmu);
+  auto result = ib->Mul(ib->Sub(ib->Sub(CastOp(ib, dout, x_type),
+                                        ib->Div(CastOp(ib, ib->Reshape(sumd_dy, new_shape), x_type), global_counts)),
+                                x_invstd),
+                        ib->Mul(invstd, CastOp(ib, ib->Reshape(weight, new_shape), x_type)));
   return {result};
 });
 }  // namespace mindspore::graphkernel::expander
