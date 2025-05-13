@@ -60,6 +60,8 @@ GVAR_DEF(PrimitivePtr, kPrimNeighborExchangeV2Grad, std::make_shared<Primitive>(
 GVAR_DEF(PrimitivePtr, kPrimAlltoAll, std::make_shared<Primitive>("AlltoAll"));
 GVAR_DEF(PrimitivePtr, kPrimAllToAll, std::make_shared<Primitive>("AllToAll"));
 GVAR_DEF(PrimitivePtr, kPrimAlltoAllV, std::make_shared<Primitive>("AlltoAllV"));
+GVAR_DEF(PrimitivePtr, kPrimAllGatherV, std::make_shared<Primitive>("AllGatherV"));
+GVAR_DEF(PrimitivePtr, kPrimReduceScatterV, std::make_shared<Primitive>("ReduceScatterV"));
 GVAR_DEF(PrimitivePtr, kPrimAlltoAllVGE, std::make_shared<Primitive>("AlltoAllVGE"));
 GVAR_DEF(PrimitivePtr, kPrimAllGather, std::make_shared<Primitive>("AllGather"));
 GVAR_DEF(PrimitivePtr, kPrimAllSwap, std::make_shared<Primitive>("_AllSwap"));

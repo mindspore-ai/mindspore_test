@@ -49,6 +49,18 @@ struct HcclAllToAllVParams {
   std::vector<uint64_t> rdispls;
 };
 
+struct HcclAllGatherVParams {
+  uint64_t send_count;
+  std::vector<uint64_t> recv_counts;
+  std::vector<uint64_t> rdispls;
+};
+
+struct HcclReduceScatterVParams {
+  std::vector<uint64_t> send_counts;
+  std::vector<uint64_t> sdispls;
+  uint64_t recv_count;
+};
+
 struct HcclAllToAllParams {
   uint64_t sendcount;
   uint64_t recvcount;
@@ -100,6 +112,14 @@ class ASCEND_RES_MANAGER_EXPORT HcclAdapter {
                       HcclComm comm) const;
   HcclResult HcclAlltoAllV(void *send_buf, void *recv_buf, hccl::HcclAllToAllVParams params, HcclDataType dataType,
                            const aclrtStream stream, HcclComm comm) const;
+
+  HcclResult HcclReduceScatterV(void *send_buf, void *recv_buf, hccl::HcclReduceScatterVParams params,
+                                HcclDataType data_type, const HcclReduceOp op, const aclrtStream stream,
+                                HcclComm hccl_comm) const;
+
+  HcclResult HcclAllGatherV(void *send_buf, void *recv_buf, hccl::HcclAllGatherVParams params, HcclDataType data_type,
+                            const aclrtStream stream, HcclComm hccl_comm) const;
+
   HcclResult HcclAllToAll(void *send_buf, void *recv_buf, hccl::HcclAllToAllParams params, HcclDataType dataType,
                           const aclrtStream stream, HcclComm comm) const;
   HcclResult HcclBarrier(const aclrtStream stream, HcclComm comm) const;
@@ -165,10 +185,11 @@ class ASCEND_RES_MANAGER_EXPORT HcclAdapter {
   HcclGetRankIdFunObj single_op_hccl_get_rank_id_ = nullptr;
   HcclGetRankSizeFunObj single_op_hccl_get_rank_size_ = nullptr;
   HcclAlltoAllVFunObj launch_hccl_all_to_allv_ = nullptr;
+  HcclReduceScatterVFunObj launch_hccl_reduce_scatterv_ = nullptr;
+  HcclAllGatherVFunObj launch_hccl_all_gatherv_ = nullptr;
   HcclAlltoAllFunObj launch_hccl_all_to_all_ = nullptr;
   HcclBatchSendRecvFunObj launch_hccl_batch_isend_irecv_ = nullptr;
   HcclCommResumeFunObj launch_hccl_comm_resume_ = nullptr;
-
   HcclGetCommAsyncErrorFunObj hccl_get_comm_async_error_ = nullptr;
   HcclGetErrorStringFunObj hccl_get_error_string_ = nullptr;
   HcomCreateGroupFunObj hccl_create_group_ = nullptr;
