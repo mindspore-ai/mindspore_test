@@ -1208,7 +1208,6 @@ void AnfRuntimeAlgorithm::SetOutputAddr(const DeviceAddressPtr &addr, size_t out
     MS_EXCEPTION_IF_NULL(type);
     auto out_tensor = std::make_shared<kernel::KernelTensor>(shape, type, value);
     out_tensor->set_device_address(addr);
-    out_tensor->set_device_synchronizer(addr->NewDeviceSynchronizer());
     SetOutputKernelTensor(out_tensor, output_idx, node.get());
   }
   if (!kernel_info->SetOutputAddr(addr, output_idx)) {

@@ -71,7 +71,6 @@ class GPUDeviceAddress : public LoadableDeviceAddress {
   mindspore::tensor::TensorPtr LoadMemToHost(const std::string &tensor_name, const ShapeVector &host_shape,
                                              TypeId host_type, bool trans_flag, bool async_copy = true) const override;
 
-  DeviceSynchronizerPtr NewDeviceSynchronizer() override;
   // Asynchronously copy host memory to device side.
   bool AsyncHostToDevice(const ShapeVector &, size_t size, TypeId, const void *host_ptr,
                          size_t stream_id) const override;
@@ -84,6 +83,14 @@ class GPUDeviceAddress : public LoadableDeviceAddress {
   bool AsyncHostToDevice(size_t size, const void *host_ptr, size_t stream_id) const override;
 
   bool AsyncDeviceToHost(size_t size, void *host_ptr, size_t stream_id) const override;
+
+  bool SyncDeviceToHost(void *host_ptr, const void *device_ptr, size_t size, const std::string &device_name,
+                        uint32_t device_id, mindspore::Format format, const ShapeVector &shape, size_t stream_id,
+                        const UserDataPtr &user_data = nullptr) const override;
+
+  bool SyncHostToDevice(void *device_ptr, const void *host_ptr, size_t size, const std::string &device_name,
+                        uint32_t device_id, mindspore::Format format, const ShapeVector &shape, size_t stream_id,
+                        const UserDataPtr &user_data = nullptr) const override;
 
   void ClearUserData() override;
 

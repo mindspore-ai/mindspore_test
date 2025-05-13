@@ -443,7 +443,6 @@ KernelTensorPtr DeviceAddressUtils::CloneEmptyKernelTensor(const KernelTensorPtr
   new_device_address->set_host_shape(old_kernel_tensor->host_shape());
   auto new_kernel_tensor = old_kernel_tensor->CloneKernelTensor();
   new_kernel_tensor->set_device_address(new_device_address);
-  new_kernel_tensor->set_device_synchronizer(new_device_address->NewDeviceSynchronizer());
   MS_EXCEPTION_IF_NULL(new_kernel_tensor);
 
   new_kernel_tensor->set_device_name(device_name);

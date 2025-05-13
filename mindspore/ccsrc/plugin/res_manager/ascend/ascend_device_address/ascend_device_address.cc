@@ -28,7 +28,6 @@
 #include "include/common/utils/utils.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "runtime/device/res_manager/utils/convert_tensor_utils.h"
-#include "plugin/res_manager/ascend/ascend_device_address/ascend_device_synchronizer.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
@@ -193,10 +192,6 @@ bool IsOpNeedTransFormat(const std::string &format) {
     kOpFormat_NHWC,    kOpFormat_HWCN,        kOpFormat_NC1HWC0,       kOpFormat_FRAC_Z,   kOpFormat_C1HWNCoC0,
     kOpFormat_FRAC_NZ, kOpFormat_NC1HWC0_C04, kOpFormat_FRACTAL_Z_C04, kOpFormat_NDC1HWC0, kOpFormat_FRACTAL_Z_3D};
   return op_need_trans_format.find(format) != op_need_trans_format.end();
-}
-
-DeviceSynchronizerPtr AscendDeviceAddress::NewDeviceSynchronizer() {
-  return std::make_shared<AscendDeviceSynchronizer>();
 }
 
 void AscendDeviceAddress::SyncHostMemoryToDeviceWithCopySrc(void *dst, const void *src, uint64_t size,
@@ -1200,6 +1195,79 @@ mindspore::tensor::TensorPtr AscendDeviceAddress::LoadMemToHost(const std::strin
     return nullptr;
   }
   return out_tensor;
+}
+
+bool BindDeviceToCurrentThread() {
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  AscendHalManager::GetInstance().SetContext(device_id);
+  return true;
+}
+
+bool AscendDeviceAddress::SyncDeviceToHost(void *host_ptr, const void *device_ptr, size_t size,
+                                           const std::string &device_name, uint32_t device_id, mindspore::Format format,
+                                           const ShapeVector &shape, size_t stream_id,
+                                           const UserDataPtr &user_data) const {
+  MS_EXCEPTION_IF_NULL(host_ptr);
+  MS_EXCEPTION_IF_NULL(device_ptr);
+  auto stream = AscendStreamMng::GetInstance().GetStream(stream_id);
+  if (stream == nullptr) {
+    stream = AscendStreamMng::GetInstance().GetStream(kDefaultStreamIndex);
+  }
+  MS_ERROR_IF_NULL(stream);
+
+  if (!BindDeviceToCurrentThread()) {
+    MS_LOG(WARNING) << "Bind device to current thread failed.";
+  }
+
+  if (stream_id != kDefaultStreamIndex) {
+    if (!AscendStreamMng::GetInstance().SyncStream(kDefaultStreamIndex)) {
+      MS_LOG(ERROR) << "Sync stream failed, stream id: " << kDefaultStreamIndex;
+      return false;
+    }
+  }
+
+  auto ret = CALL_ASCEND_API(aclrtMemcpyAsync, host_ptr, size, device_ptr, size, ACL_MEMCPY_DEVICE_TO_HOST, stream);
+  if (ret != ACL_ERROR_NONE) {
+    MS_LOG(ERROR) << "Call aclrtMemcpyAsync device to host failed, the error num[" << ret << "]";
+    return false;
+  }
+
+  if (!AscendStreamMng::GetInstance().SyncStream(stream)) {
+    MS_LOG(ERROR) << "Sync stream failed, stream id: " << stream_id;
+    return false;
+  }
+  return true;
+}
+
+bool AscendDeviceAddress::SyncHostToDevice(void *device_ptr, const void *host_ptr, size_t size,
+                                           const std::string &device_name, uint32_t device_id, mindspore::Format format,
+                                           const ShapeVector &shape, size_t stream_id,
+                                           const UserDataPtr &user_data) const {
+  MS_EXCEPTION_IF_NULL(device_ptr);
+  MS_EXCEPTION_IF_NULL(host_ptr);
+  auto stream = AscendStreamMng::GetInstance().GetStream(stream_id);
+  if (stream == nullptr) {
+    stream = AscendStreamMng::GetInstance().GetStream(kDefaultStreamIndex);
+  }
+  MS_ERROR_IF_NULL(stream);
+
+  if (!BindDeviceToCurrentThread()) {
+    MS_LOG(WARNING) << "Bind device to current thread failed.";
+  }
+
+  auto ret = CALL_ASCEND_API(aclrtMemcpyAsync, device_ptr, size, host_ptr, size, ACL_MEMCPY_HOST_TO_DEVICE, stream);
+  if (ret != ACL_ERROR_NONE) {
+    MS_LOG(ERROR) << "Call aclrtMemcpyAsync device to host failed, the error num[" << ret << "]";
+    return false;
+  }
+
+  if (!AscendStreamMng::GetInstance().SyncStream(stream)) {
+    MS_LOG(ERROR) << "Sync stream failed, stream id: " << stream_id;
+    return false;
+  }
+  return true;
 }
 }  // namespace ascend
 }  // namespace device
