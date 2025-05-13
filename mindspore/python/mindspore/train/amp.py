@@ -358,7 +358,7 @@ def _auto_black_list(network, black_list, dtype):
     return network
 
 
-class amp_decorator:
+class AmpDecorator:
     """
     Auto mixed precision decorator.
     Type of lists: List[Tuple[str, List[int]]]
@@ -384,7 +384,7 @@ def _set_amp_decorator(obj, amp_level, amp_dtype, white_list, black_list):
     if inspect.isfunction(obj) or inspect.ismethod(obj):
         @functools.wraps(obj)
         def wrapper(*args, **kwargs):
-            with amp_decorator(amp_level, amp_dtype, white_list, black_list):
+            with AmpDecorator(amp_level, amp_dtype, white_list, black_list):
                 return obj(*args, **kwargs)
         return wrapper
     if isinstance(obj, nn.Cell):
