@@ -1672,7 +1672,9 @@ ValuePtr AutoDiff::RunBackward(const ValuePtrList &inputs, const tensor::TensorP
   kernel::pyboost::RequireGradGuard requires_grad(high_order_);
   BackPropagate();
   CommonUtils::DumpGraphIR("func_grad.ir", std::make_shared<FuncGraph>());
-  python_adapter::PyAdapterCallback::ProcessUnPairedCellHook(true);
+  if (!is_run_recompute_) {
+    python_adapter::PyAdapterCallback::ProcessUnPairedCellHook(true);
+  }
   return GetGrads(inputs, weights_node, grad_position, grad_attr);
 }
 
