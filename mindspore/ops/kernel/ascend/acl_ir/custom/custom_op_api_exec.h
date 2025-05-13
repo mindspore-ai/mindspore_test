@@ -18,8 +18,10 @@
 #define MINDSPORE_OPS_KERNEL_ASCEND_ACL_IR_CUSTOM_CUSTOM_OP_API_EXEC_H_
 #include <vector>
 #include "kernel/ascend/acl_ir/op_api_exec.h"
+#include "kernel/ascend/acl_ir/custom/custom_aclnn_utils.h"
 
 namespace mindspore::device::ascend {
+using CustomSupportType = mindspore::kernel::custom::CustomSupportType;
 class CustomGraphCache {
  public:
   explicit CustomGraphCache(device::ascend::aclOpExecutor *executor, std::vector<void *> &&param,

@@ -20,13 +20,16 @@
 #include <string>
 #include "kernel/ascend/acl_ir/op_api_util.h"
 #include "kernel/ascend/acl_ir/op_api_cache.h"
+#include "kernel/ascend/acl_ir/custom/custom_aclnn_utils.h"
 
 namespace mindspore::device::ascend {
+using CustomSupportType = mindspore::kernel::custom::CustomSupportType;
 bool CustomHitCache(const char *aclnn_api, aclOpExecutor **executor, uint64_t *workspace_size,
-                    const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs,
+                    const std::vector<std::vector<KernelTensor *>> &inputs,
+                    const std::vector<std::vector<KernelTensor *>> &outputs,
                     const std::vector<CustomSupportType> &input_output_types);
-uint64_t CustomAclnnHash(const std::string &op_type, const std::vector<KernelTensor *> &inputs,
-                         const std::vector<KernelTensor *> &outputs,
+uint64_t CustomAclnnHash(const std::string &op_type, const std::vector<std::vector<KernelTensor *>> &inputs,
+                         const std::vector<std::vector<KernelTensor *>> &outputs,
                          const std::vector<CustomSupportType> &input_output_types);
 }  // namespace mindspore::device::ascend
 

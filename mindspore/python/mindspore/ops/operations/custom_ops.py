@@ -40,7 +40,7 @@ from mindspore.communication.management import get_rank, GlobalComm
 from ._ms_kernel import determine_variable_usage
 from ._custom_grad import autodiff_bprop
 from ._pyfunc_registry import add_pyfunc
-from ._custom_ops_utils import ExtensionBuilder
+from ._custom_ops_utils import ExtensionBuilder, CustomCodeGenerator, CustomInfoGenerator
 
 if platform.system() != "Windows":
     import fcntl
@@ -73,11 +73,16 @@ def _get_cache_path():
     """
     cache_path = os.getenv('MS_COMPILER_CACHE_PATH')
     if cache_path is None:
-        cache_path = "./akg_kernel_meta/"
+        cache_path = "./custom_kernel_meta/"
     elif cache_path[-1] != "/":
         cache_path = cache_path + "/"
 
     if not os.path.exists(cache_path):
+        os.makedirs(cache_path, exist_ok=True)
+
+    # for distributed case, we create folders separately to avoid conflict
+    if GlobalComm.INITED:
+        cache_path = os.path.join(cache_path, "rank_" + str(get_rank()), "")
         os.makedirs(cache_path, exist_ok=True)
 
     return cache_path
@@ -94,10 +99,6 @@ def _compile_aot(file):
         str, the path to the compiled library.
     """
     cache_path = _get_cache_path()
-    # for distributed case, we create folders separately to avoid conflict
-    if GlobalComm.INITED:
-        cache_path = os.path.join(cache_path, "rank_" + str(get_rank()), "")
-        os.makedirs(cache_path, exist_ok=True)
 
     res_path = importlib.util.find_spec("mindspore").origin
     find_pos = res_path.find("__init__.py")
@@ -444,11 +445,13 @@ class Custom(ops.PrimitiveWithInfer):
         self._is_ms_kernel = False
         self.out_shape = out_shape
         self.out_dtype = out_dtype
-        self.is_ascend_c = context.get_context("device_target") == "Ascend" and self.func_type == "aot"
+        self.reg_info = reg_info
+        self.is_ascend_c = (context.get_context("device_target") == "Ascend" and self.func_type == "aot")
 
         self._check_platform()
         self._check_func()
-        self._update_func_info(reg_info)
+        self._generate_reg_info()
+        self._update_func_info(self.reg_info)
         self.add_prim_attr("func_name", self.func_name)
         self.add_prim_attr("uniq_name", self.uniq_name)
         if self.func_type == HYBRID_TYPE:
@@ -460,23 +463,22 @@ class Custom(ops.PrimitiveWithInfer):
             add_pyfunc(func_id, self.func)
             self.add_prim_attr("fn_id", func_id)
 
-        self.set_infer_flag()
-
-        self.multi_output = (reg_info is not None and (len(reg_info.get("outputs", [])) > 1))
-        self.add_prim_attr("multi_output", self.multi_output)
+        self._set_infer_flag()
+        self._set_multi_output_flag()
 
         self.bprop = bprop
         self.fake_output = False
         self.single_scalar_output = False
-        if not self.out_dtype and not self.func_type == "pyfunc":
-            self.fake_output = True
-        elif not self.out_shape and self.func_type == "pyfunc":
-            self.single_scalar_output = True
-        self.add_prim_attr("fake_output", self.fake_output)
-        self.add_prim_attr("single_scalar_output", self.single_scalar_output)
+        if self.func_type == "pyfunc":
+            if not self.out_dtype:
+                self.fake_output = True
+            elif not self.out_shape:
+                self.single_scalar_output = True
+            self.add_prim_attr("fake_output", self.fake_output)
+            self.add_prim_attr("single_scalar_output", self.single_scalar_output)
 
         # Register info
-        self._register_info(reg_info)
+        self._register_info(self.reg_info)
 
         if func_type == "akg":
             self._set_akg_kernel_type()
@@ -488,25 +490,22 @@ class Custom(ops.PrimitiveWithInfer):
         self._update_attr()
 
         if self.is_ascend_c:
-            self.set_inputs_type(reg_info)
             self.custom_pyboost = _CustomExt(self.func, self.out_shape, self.out_dtype, self.bprop)
             for key, value in super().get_attr_dict().items():
                 self.custom_pyboost.add_prim_attr(key, value)
+        self._generate_get_workspace_size_func()
 
-    def set_infer_flag(self):
+    def _set_infer_flag(self):
         """set cpp infer attr"""
         if self.out_shape is None and self.func_type == "aot":
             self.add_prim_attr("cpp_infer_shape", True)
         if self.out_dtype is None and self.func_type == "aot":
             self.add_prim_attr("cpp_infer_type", True)
 
-    def set_inputs_type(self, reg_info):
-        """set custom_inputs_type attr"""
-        if not self.is_ascend_c or not reg_info.get('attr'):
-            return
-        inputs_type = ["tensor"] * len(reg_info.get("inputs", [])) + \
-                      [attr.get("type") for attr in reg_info.get("attr", [])]
-        self.add_prim_attr("custom_inputs_type", inputs_type)
+    def _set_multi_output_flag(self):
+        outputs = self.reg_info.get("outputs", []) if self.reg_info else []
+        self.multi_output = len(outputs) > 1 or (len(outputs) == 1 and outputs[0].get("paramType") == "dynamic")
+        self.add_prim_attr("multi_output", self.multi_output)
 
     def __infer__(self, *args):
         if callable(self.out_shape):
@@ -1139,6 +1138,88 @@ class Custom(ops.PrimitiveWithInfer):
         infer_value = Tensor(fake_output) if enable_infer_value else None
 
         return infer_shape, infer_dtype, infer_value
+
+    def _generate_reg_info(self):
+        if not self.is_ascend_c:
+            return
+        if self.reg_info is None:
+            func_name, _ = self._split_func()
+            if func_name.startswith("aclnn"):
+                func_name = func_name[len("aclnn"):]
+            reg_info_generator = CustomInfoGenerator(func_name)
+            self.reg_info = reg_info_generator.generate_custom_reg_op()
+
+    def _split_func(self):
+        func_list = self.func.split(":")
+        func_path = ""
+        if len(func_list) == 2:
+            func_path = func_list[0]
+            func_name = func_list[1]
+        else:
+            func_name = self.func
+        return func_name, func_path
+
+    def _generate_get_worspace_size_func_by_types(self, aclnn_api_types):
+        """generate custom GetWorkSpaceSize func by aclnn api types"""
+        if not self.is_ascend_c:
+            return
+
+        input_output_types = []
+        if isinstance(aclnn_api_types, str):
+            params = re.split(r',\s*', aclnn_api_types)
+            for param in params:
+                param = param.replace('const ', '')
+                type_part = re.search(r'^\s*(\w+\s*\*+|\w+)', param).group(1)
+                type_part = type_part.replace(' ', '')
+                input_output_types.append(type_part)
+        elif isinstance(aclnn_api_types, list):
+            input_output_types = aclnn_api_types
+        else:
+            raise RuntimeError(f"Unsupported type: {type(aclnn_api_types)}, support type is list or string.")
+
+        func_name, _ = self._split_func()
+        file_path = os.path.join(_get_cache_path(), func_name, func_name + "_callback.cc")
+
+        file_path = os.path.abspath(file_path)
+        dir_path = os.path.dirname(file_path)
+        os.makedirs(dir_path, exist_ok=True)
+
+        custom_builder = CustomCodeGenerator()
+        callback_func = custom_builder.generate_callback_by_types(func_name, self.reg_info, input_output_types)
+
+        with open(file_path, 'w') as f:
+            f.write(callback_func)
+
+        custom_callback_func_path = _compile_aot(file_path)
+        custom_callback_func = custom_callback_func_path + ":" + func_name
+        self.add_prim_attr("custom_callback_func", custom_callback_func)
+        self.add_prim_attr("custom_inputs_type", input_output_types[:-2])
+
+    def _generate_get_workspace_size_func(self):
+        """generate custom GetWorkSpaceSize func"""
+        if not self.is_ascend_c:
+            return
+        func_name, _ = self._split_func()
+        file_path = os.path.join(_get_cache_path(), func_name, func_name + "_callback.cc")
+
+        file_path = os.path.abspath(file_path)
+        dir_path = os.path.dirname(file_path)
+        os.makedirs(dir_path, exist_ok=True)
+
+        custom_info_generator = CustomInfoGenerator(func_name)
+        api_types = custom_info_generator.get_aclnn_api_types()
+        custom_builder = CustomCodeGenerator()
+        if api_types == []:
+            api_types = custom_builder.get_api_types_by_reg_info(self.reg_info)
+
+        callback_func = custom_builder.generate_callback_by_types(func_name, self.reg_info, api_types)
+        with open(file_path, 'w') as f:
+            f.write(callback_func)
+
+        custom_callback_func_path = _compile_aot(file_path)
+        custom_callback_func = custom_callback_func_path + ":" + func_name
+        self.add_prim_attr("custom_callback_func", custom_callback_func)
+        self.add_prim_attr("custom_inputs_type", api_types[:-2])
 
     def __call__(self, *args):
         if self.is_ascend_c:

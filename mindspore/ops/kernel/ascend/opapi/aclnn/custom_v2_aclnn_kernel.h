@@ -27,13 +27,13 @@
 #include "kernel/ascend/opapi/aclnn/custom_aclnn_kernel.h"
 #include "kernel/ascend/acl_ir/acl_convert.h"
 #include "kernel/ascend/acl_ir/custom/custom_op_api_exec.h"
+#include "kernel/ascend/acl_ir/custom/custom_aclnn_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace custom {
 
 using ExecutorTuple = std::tuple<uint64_t, aclOpExecutor *, std::function<void()>>;
-using CustomSupportType = mindspore::device::ascend ::CustomSupportType;
 
 class CustomV2AclnnKernelMod : public AclnnKernelMod {
  public:
@@ -49,26 +49,31 @@ class CustomV2AclnnKernelMod : public AclnnKernelMod {
   std::vector<int64_t> inputs_int_value_;
   std::vector<float> inputs_float_value_;
   std::vector<char> inputs_bool_value_;
-  void InitInputOutputType(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
-  CacheTuple GenCustomExecutorForResize(const std::vector<KernelTensor *> &inputs,
-                                        const std::vector<KernelTensor *> &outputs);
-  void GetWorkspaceForResize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
-  void RunOp(void *stream_ptr, const std::vector<KernelTensor *> &workspace, const std::vector<KernelTensor *> &inputs,
-             const std::vector<KernelTensor *> &outputs);
-  std::pair<aclOpExecutor *, std::function<void()>> GetExecutor(const std::vector<KernelTensor *> &inputs,
-                                                                const std::vector<KernelTensor *> &outputs);
-  ExecutorTuple GenCustomExecutor(const std::vector<KernelTensor *> &inputs,
-                                  const std::vector<KernelTensor *> &outputs);
+  std::vector<double> inputs_double_value_;
+  std::vector<aclDataType> inputs_type_value_;
+  CacheTuple GenCustomExecutorForResize(const std::vector<std::vector<KernelTensor *>> &inputs,
+                                        const std::vector<std::vector<KernelTensor *>> &outputs);
+  void GetWorkspaceForResize(const std::vector<std::vector<KernelTensor *>> &inputs,
+                             const std::vector<std::vector<KernelTensor *>> &outputs);
+  void RunOp(void *stream_ptr, const std::vector<KernelTensor *> &workspace,
+             const std::vector<std::vector<KernelTensor *>> &inputs,
+             const std::vector<std::vector<KernelTensor *>> &outputs);
+  std::pair<aclOpExecutor *, std::function<void()>> GetExecutor(
+    const std::vector<std::vector<KernelTensor *>> &inputs, const std::vector<std::vector<KernelTensor *>> &outputs);
+  ExecutorTuple GenCustomExecutor(const std::vector<std::vector<KernelTensor *>> &inputs,
+                                  const std::vector<std::vector<KernelTensor *>> &outputs);
 
-  bool CallGetWorkSpaceSize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs,
-                            uint64_t *workspace_size_addr, aclOpExecutor **executor_addr,
-                            void *get_workspace_size_func);
-  std::vector<std::vector<void *>> GetTensorAddress(const std::vector<KernelTensor *> &inputs,
-                                                    const std::vector<KernelTensor *> &outputs);
-  void UpdateTensorForLaunch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs,
-                             const ProcessCache &cache);
-  void ConvertTypes(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs,
-                    std::vector<void *> *converted_inputs, std::vector<void *> *converted_outputs);
+  bool CallGetWorkSpaceSize(const std::vector<std::vector<KernelTensor *>> &inputs,
+                            const std::vector<std::vector<KernelTensor *>> &outputs, uint64_t *workspace_size_addr,
+                            aclOpExecutor **executor_addr, void *get_workspace_size_func);
+  std::vector<std::vector<void *>> GetTensorAddress(const std::vector<std::vector<KernelTensor *>> &inputs,
+                                                    const std::vector<std::vector<KernelTensor *>> &outputs);
+  void UpdateTensorForLaunch(const std::vector<std::vector<KernelTensor *>> &inputs,
+                             const std::vector<std::vector<KernelTensor *>> &outputs, const ProcessCache &cache);
+  std::vector<void *> ConvertTypes(const std::vector<std::vector<KernelTensor *>> &inputs, size_t offset = 0);
+  std::vector<std::vector<KernelTensor *>> GetCustomInputs(const std::vector<KernelTensor *> &inputs);
+  std::vector<std::vector<KernelTensor *>> GetCustomOutputs(const std::vector<KernelTensor *> &outputs);
+  void GetCustomInputTypes();
 };
 
 }  // namespace custom
