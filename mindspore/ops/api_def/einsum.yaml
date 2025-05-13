@@ -1,0 +1,7 @@
+einsum:
+  op_yaml: einsum_ext_op.yaml
+  py_method: deprecated_einsum
+  Ascend: pyboost
+  CPU: py_method
+  GPU: py_method
+  interface: function

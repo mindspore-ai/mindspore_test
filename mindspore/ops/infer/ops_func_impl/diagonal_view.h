@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,19 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CORE_OPS_VIEW_DIAGONAL_STRIDES_CALC_H
-#define MINDSPORE_CORE_OPS_VIEW_DIAGONAL_STRIDES_CALC_H
 
+#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_DIAGONAL_VIEW_H_
+#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_DIAGONAL_VIEW_H_
+
+#include <memory>
 #include <vector>
-#include "view/view_strides_calculator.h"
+#include "mindapi/base/types.h"
+#include "ops/ops_func_impl/op_func_impl.h"
+#include "infer/ops_func_impl/diagonal.h"
 
 namespace mindspore {
 namespace ops {
-
-OPS_API TensorStorageInfoPtrList DiagonalCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs);
-OPS_API TensorStorageInfoPtrList DiagonalStridesCalc(const OldTensorInfoPtr old_tensor_info, const int64_t &offset,
-                                                     const int64_t &dim_1, const int64_t &dim_2);
+class OPS_API DiagonalViewFuncImpl : public DiagonalFuncImpl {};
 }  // namespace ops
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CORE_OPS_VIEW_DIAGONAL_STRIDES_CALC_H
+#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_DIAGONAL_VIEW_H_

@@ -4718,7 +4718,7 @@ REG_BPROP_BUILDER("Baddbmm").FreeUselessValues(FreeTensorsOfBaddbmm).SetBody(BOD
   return {input_grad, batch1_grad, batch2_grad, ib->OutZeros(beta), ib->OutZeros(alpha)};
 });
 
-REG_BPROP_BUILDER("Diagonal").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
+NodePtrList DiagonalGrad(BpropBuilder *ib) {
   auto x = ib->GetInput(kIndex0);
   auto offset_node = ib->GetInput(kIndex1);
   auto dim1_node = ib->GetInput(kIndex2);
@@ -4760,7 +4760,10 @@ REG_BPROP_BUILDER("Diagonal").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
   } else {
     return false_case(ib);
   }
-});
+}
+
+REG_BPROP_BUILDER("Diagonal").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) { return DiagonalGrad(ib); });
+REG_BPROP_BUILDER("DiagonalView").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) { return DiagonalGrad(ib); });
 
 REG_BPROP_BUILDER("DiagExt").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);

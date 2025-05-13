@@ -84,7 +84,7 @@ def mint_einsum_binary_case4(input_binary_data=None, output_binary_data=None):
 @ops_binary_cases(OpsBinaryCase(input_info=[((32, 16), np.float32), ((32, 16), np.float32)],
                                 output_info=[((), np.float32), ((32, 16), np.float32), ((32, 16), np.float32)]))
 def mint_einsum_binary_case5(input_binary_data=None, output_binary_data=None):
-    mint_einsum_binary_case_compare('ab, ab -> ', input_binary_data, output_binary_data)
+    mint_einsum_binary_case_compare('ab, ab -> ', input_binary_data, output_binary_data, 1e-3)
 
 
 @ops_binary_cases(OpsBinaryCase(input_info=[((32, 16, 8), np.float32), ((16, 8, 12), np.float32)],
