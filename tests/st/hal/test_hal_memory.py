@@ -238,14 +238,14 @@ def test_empty_cache_without_vmm():
     """
     set_device()
     os.environ['MS_ALLOC_CONF'] = "enable_vmm:false"
-
-    net = Net()
-    net(Tensor(2.0))
-    reserved_size = ms.runtime.memory_reserved()
-    assert reserved_size > 0
-    ms.runtime.empty_cache()
-    reserved_size = ms.runtime.memory_reserved()
-    assert reserved_size == 0
+    for _ in range(1000):
+        net = Net()
+        net(Tensor(2.0))
+        reserved_size = ms.runtime.memory_reserved()
+        assert reserved_size > 0
+        ms.runtime.empty_cache()
+        reserved_size = ms.runtime.memory_reserved()
+        assert reserved_size == 0
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
