@@ -44,6 +44,7 @@ constexpr auto kPhaseNameIncrement = "increment";
 constexpr auto kQuantLinearSparseName = "QuantLinearSparse";
 constexpr auto kQuantBatchMatmulName = "QuantBatchMatmul";
 constexpr auto kGroupedMatmulName = "GroupedMatmul";
+constexpr auto kMlaPreprocessName = "MlaPreprocess";
 constexpr auto CONST_2 = 2;
 constexpr auto Align16 = 16;
 constexpr auto kQuantLinearSparseBiasIdx = 5;  // primitive input weight deq_scale compress_idx bias
