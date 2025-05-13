@@ -18,7 +18,7 @@ import os
 import numpy as np
 from mindspore.common import Tensor, dtype
 from mindspore.experimental.llm_boost.ascend_native.llm_boost import LLMBoost
-
+from mindspore.experimental.llm_boost.register import LlmBoostRegister, LlmBoostType
 
 def RoundUp(val: int, align: int) -> int:
     if align == 0:
@@ -44,6 +44,7 @@ def ConvertTensor(nd_mat: np.ndarray, transpose: bool = True, nd2nz: bool = True
     return nz_mat
 
 
+@LlmBoostRegister.register(LlmBoostType.ASCEND_NATIVE, "Llama")
 class LlamaBoostAscendNative(LLMBoost):
     r"""
     Implements an Llama model in a single kernel.
