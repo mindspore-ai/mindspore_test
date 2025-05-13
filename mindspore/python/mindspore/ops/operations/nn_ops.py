@@ -39,6 +39,7 @@ from ..auto_generate import (CeLU, Flatten, LogSoftmax, LogSoftmaxExt, GLU, ReLU
                              GridSampler3D, GridSampler2D, LayerNorm, LayerNormExt, HShrink, AdamWeightDecay, Dropout,
                              ApplyRotaryPosEmb, GroupTopk, PagedAttention, PagedAttentionMask, ReshapeAndCache,
                              FlashAttentionScore, PromptFlashAttention, Embedding, UpsampleNearest1D, UpsampleNearest2D,
+                             DynamicNTK,
                              UpsampleNearest3D, UpsampleTrilinear3D,
                              SoftMarginLoss, UpsampleBilinear2D, UpsampleLinear1D,
                              BinaryCrossEntropy, BCEWithLogitsLoss, SoftShrink, AdaptiveMaxPool2D,
