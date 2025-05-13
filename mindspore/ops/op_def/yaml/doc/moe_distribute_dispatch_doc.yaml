@@ -1,0 +1,121 @@
+moe_distribute_dispatch:
+    description: |
+        Performs token data quantization (optional) and parallel communication for Mixture of Experts (MoE).
+        When Tensor Parallelism (TP) communication exists, it first performs Expert Parallelism (EP) AllToAllV
+        communication followed by TP AllGatherV communication. Otherwise, only EP AllToAllV communication is performed.
+
+        Notes:
+            - A: Maximum tokens to dispatch per rank:
+                - For shared experts: A = BS * ep_world_size * shared_expert_num / shared_expert_rank_num
+                - For MoE experts:
+                    - When global_bs = 0: A >= BS * ep_world_size * min(local_expert_num, K)
+                    - When global_bs != 0: A >= global_bs * min(local_expert_num, K)
+            - H (hidden size): Dimension of each token's hidden state
+                - Ascend 910B: 0 < H <= 7168, must be multiple of 32
+                - Ascend 910_93: H = 7168
+            - BS (batch sequence size): Number of tokens processed per rank
+                - Ascend 910B: 0 < BS <= 256
+                - Ascend 910_93: 0 < BS <= 512
+            - K: Number of experts selected per token (0 < K <= 8 and K <= moe_expert_num)
+            - server_num: Number of server nodes (supports 2, 4, 8)
+            - local_expert_num: Number of experts per rank:
+                - Shared expert ranks: local_expert_num = 1
+                - MoE expert ranks: local_expert_num = moe_expert_num / (ep_world_size - shared_expert_rank_num)
+                (TP communication not supported when localExpertNum > 1)
+
+        Inputs:
+            - **x** (Tensor) - Input token data to be sent. 2D tensor with shape [BS, H].
+                Supported dtypes: float16, bfloat16. Format: ND, non-contiguous allowed.
+            - **expert_ids** (Tensor) - Top-K expert indices for each token. 2D int32 tensor with shape [BS, K].
+                Format: ND, non-contiguous allowed.
+            - **ep_world_size** (int64) - EP domain size.
+                - Ascend 910B: Supports 16, 32, 64.
+                - Ascend 910_93: Supports 8, 16, 32, 64, 128, 144, 256, 288.
+            - **ep_rank_id** (int64) - Local rank ID in EP domain [0, ep_world_size), must be unique per domain.
+            - **moe_expert_num** (int64) - Number of MoE experts (0 < moe_expert_num <= 256),
+                must satisfy moe_expert_num % (ep_world_size-shared_expert_rank_num) = 0.
+            - **expert_scales** (Tensor) - Top-K expert weights per token.
+                - Ascend 910B: 2D float32 tensor [BS, K], ND format, non-contiguous allowed.
+                - Ascend 910_93: Unsupported (pass nullptr).
+            - **scales** (Tensor) - Expert weights. 2D float32 tensor with shape [shared_expert_num + moe_expert_num, H].
+                Pass nullptr for non-quantized scenarios. Format: ND, non-contiguous allowed.
+                Note: On Ascend 910B, must be nullptr when HCCL_INTRA_PCIE_ENABLE=1 and HCCL_INTRA_ROCE_ENABLE=0.
+            - **x_active_mask** (Tensor) - Reserved parameter (pass nullptr in current version).
+            - **group_ep** (str) - EP communication domain name (string length 1-127), must differ from group_tp.
+            - **group_tp** (str) - TP communication domain name.
+                - Ascend 910B: Unsupported (pass empty string).
+                - Ascend 910_93: When TP communication exists, string length 1-127, must differ from group_ep.
+            - **tp_world_size** (int64) - TP domain size.
+                - Ascend 910B: Unsupported (pass 0).
+                - Ascend 910_93: 0/1 means no TP communication; only 2 supported when TP exists.
+            - **tp_rank_id** (int64) - Local rank ID in TP domain.
+                - Ascend 910B: Unsupported (pass 0).
+                - Ascend 910_93: [0,1], unique per domain; pass 0 when no TP communication.
+            - **expert_shard_type** (int64) - Shared expert distribution type.
+                - Ascend 910B: Unsupported (pass 0).
+                - Ascend 910_93: Currently only 0 (shared experts precede MoE experts).
+            - **shared_expert_num** (int64) - Number of shared experts.
+                - Ascend 910B: Unsupported (pass 0).
+                - Ascend 910_93: Currently 0 (none) or 1 (one shared expert).
+            - **shared_expert_rank_num** (int64) - Number of ranks hosting shared experts.
+                - Ascend 910B: Unsupported (pass 0).
+                - Ascend 910_93: [0, ep_world_size-1), must satisfy ep_world_size % shared_expert_rank_num = 0 when non-zero.
+            - **quant_mode** (int64) - Quantization mode: 0 (none), 2 (dynamic quantization).
+            - **global_bs** (int64) - Global batch size across EP domain.
+                - Ascend 910B: 256*ep_world_size when BS varies per rank; 0 or BS*ep_world_size when uniform.
+                - Ascend 910_93: 0 or BS*ep_world_size.
+            - **expert_token_nums_type** (int64) - Semantic meaning of expert_token_nums output:
+                0 (prefix sums), 1 (raw counts).
+
+        Outputs:
+            - **expand_x** (Tensor) - Expanded token features. 2D tensor [A, H] with dtype matching input.
+                Supported dtypes: float16, bfloat16, int8. Format: ND, non-contiguous allowed.
+            - **dynamic_scales** (Tensor) - Dynamic quantization scales (when quant_mode=2).
+                1D float32 tensor [A]. Format: ND, non-contiguous allowed.
+            - **expand_idx** (Tensor) - Token counts per expert for combine operation.
+                1D int32 tensor [BS*K]. Format: ND, non-contiguous allowed.
+            - **expert_token_nums** (Tensor) - Tokens received per expert.
+                1D int64 tensor [local_expert_num]. Format: ND, non-contiguous allowed.
+            - **ep_recv_counts** (Tensor) - Tokens received from each EP rank.
+                - Ascend 910B: 1D int32 tensor [moe_expert_num + 2 * global_bs * K * server_num]
+                - Ascend 910_93: 1D int32 tensor [ep_world_size * max(tp_world_size,1) * local_expert_num]
+                Format: ND, non-contiguous allowed.
+            - **tp_recv_counts** (Tensor) - Tokens received from each TP rank (when TP exists).
+                - Ascend 910B: Not supported.
+                - Ascend 910_93: 1D int32 tensor [tp_world_size] when TP exists. Format: ND, non-contiguous allowed.
+            - **expand_scales** (Tensor) - Output token weights for combine operation.
+                - Ascend 910B: 1D float32 tensor [A]. Format: ND, non-contiguous allowed.
+                - Ascend 910_93: Unsupported.
+
+        Raises:
+            TypeError: If input dtypes don't match specifications.
+            ValueError: If input values violate constraints (e.g., invalid expert indices).
+            RuntimeError: If communication domain configuration is invalid.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+        >>> # EP-only communication example (Ascend 910B)
+        >>> import mindspore as ms
+        >>> from mindspore import Tensor
+        >>> from mindspore import ops
+        >>> from mindspore.communication import init, get_rank, GlobalComm
+        >>> from mindspore.ops.auto_generate import moe_distribute_dispatch
+        >>> import numpy as np
+        >>> bs = 8
+        >>> h = 7168
+        >>> k = 8
+        >>> ep_world_size = 16
+        >>> moe_expert_num = 16
+        >>> global_bs = bs * ep_world_size
+        >>> x = Tensor(np.random.randn(bs, h), ms.float16)
+        >>> expert_ids = Tensor(np.random.randint(0, moe_expert_num, (bs, k)), ms.int32)
+        >>> expert_scales = Tensor(np.random.randn(bs, k), ms.float32)
+        >>> init()
+        >>> rank_id = get_rank()
+        >>> out = moe_distribute_dispatch(
+        ...     x, expert_ids, ep_world_size, rank_id, moe_expert_num, expert_scales=expert_scales,
+        ...     group_ep=GlobalComm.WORLD_COMM_GROUP)
+        >>> print(out[0].shape)  # expand_x
+        (128, 7168)
