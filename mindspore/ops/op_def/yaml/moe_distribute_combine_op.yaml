@@ -1,0 +1,76 @@
+#operator moe_distribute_combine
+moe_distribute_combine:
+  args:
+    expand_x:
+      dtype: tensor
+    expert_ids:
+      dtype: tensor
+    expand_idx:
+      dtype: tensor
+    ep_send_counts:
+      dtype: tensor
+    expert_scales:
+      dtype: tensor
+    ep_world_size:
+      dtype: int
+    ep_rank_id:
+      dtype: int
+    moe_expert_num:
+      dtype: int
+    tp_send_counts:
+      dtype: tensor
+      default: None
+    x_active_mask:
+      dtype: tensor
+      default: None
+    activate_scale:
+      dtype: tensor
+      default: None
+    weight_scale:
+      dtype: tensor
+      default: None
+    group_list:
+      dtype: tensor
+      default: None
+    expand_scales:
+      dtype: tensor
+      default: None
+    group_ep:
+      dtype: str
+      default: None
+    group_tp:
+      dtype: str
+      default: None
+    tp_world_size:
+      dtype: int
+      default: 0
+    tp_rank_id:
+      dtype: int
+      default: 0
+    expert_shard_type:
+      dtype: int
+      default: 0
+    shared_expert_num:
+      dtype: int
+      default: 0
+    shared_export_rank_num:
+      dtype: int
+      default: 0
+    global_bs:
+      dtype: int
+      default: 0
+    out_dtype:
+      dtype: int
+      default: 0
+    common_quant_mode:
+      dtype: int
+      default: 0
+    group_list_type:
+      dtype: int
+      default: 0
+  returns:
+    output:
+      dtype: tensor
+  dispatch:
+    enable: True
+    Ascend: MoeDistributeCombineAscend
