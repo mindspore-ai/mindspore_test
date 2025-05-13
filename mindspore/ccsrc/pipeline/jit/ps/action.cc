@@ -1299,14 +1299,20 @@ bool IsViewInplaceNode(const AnfNodePtr &node) {
 
 bool FindViewInplaceNode(const AnfNodePtrList &nodes) {
   bool has_view_inplace = false;
+  std::vector<std::string> loc_str_list{};
   for (auto &node : nodes) {
     if (IsViewInplaceNode(node)) {
       has_view_inplace = true;
+      auto location_str = trace::GetDebugInfoStr(node->debug_info());
+      if (std::find(loc_str_list.begin(), loc_str_list.end(), location_str) != loc_str_list.end()) {
+        continue;
+      }
       MS_LOG(WARNING)
         << "There is an in-place modification to a Tensor view that requires gradients. However, computing gradients "
            "for in-place modified Tensor views is still an experimental feature, and the results may be inaccurate. It "
            "is recommended to replace the Tensor view here with a non-view Tensor. The code location is as follows:\n"
-        << trace::GetDebugInfoStr(node->debug_info());
+        << location_str;
+      (void)loc_str_list.emplace_back(location_str);
     }
   }
   return has_view_inplace;
