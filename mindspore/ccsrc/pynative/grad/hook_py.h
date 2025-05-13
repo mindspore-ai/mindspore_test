@@ -26,11 +26,25 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/pytypes.h"
 #include "ir/tensor.h"
-#include "include/common/pynative/variable.h"
 #include "include/common/visible.h"
 
 namespace mindspore::pynative::autograd {
 namespace py = pybind11;
+class BackwardNode;
+
+struct BackwardNodePreHook {
+  virtual ~BackwardNodePreHook() = default;
+  virtual void operator()(ValuePtrList *grad) = 0;
+};
+
+using CppHookFn = std::function<tensor::TensorPtr(const tensor::TensorPtr &)>;
+struct CppTensorBackwardNodePreHook : public BackwardNodePreHook {
+  CppTensorBackwardNodePreHook(CppHookFn hook_fn, size_t output_idx);
+  void operator()(ValuePtrList *grad) override;
+  CppHookFn hook_fn_;
+  size_t output_idx_;
+};
+
 struct RegisterHook {
   /// \brief Register a backward hook
   ///
@@ -44,13 +58,16 @@ struct RegisterHook {
   PYNATIVE_EXPORT static void RemoveTensorBackwardHook(uint64_t handle_id);
   PYNATIVE_EXPORT static py::list GetHooks(const tensor::TensorPtr &tensor);
 
+  PYNATIVE_EXPORT static unsigned RegisterCppTensorBackwardHook(const tensor::TensorPtr &tensor, const CppHookFn &hook);
+  PYNATIVE_EXPORT static void RemoveCppTensorBackwardHook(const tensor::TensorPtr &tensor, unsigned hook_id);
+
   static void ClearHookMap() { hook_meta_fn_map_.clear(); }
 
   // For store hook
   inline static uint64_t unique_id_ = 0;
   static std::map<uint64_t, std::vector<uint64_t>> tensor_id_with_unique_id_;
   static std::map<uint64_t, std::weak_ptr<std::map<uint64_t, py::function>>> tensor_id_with_hook_map_;
-  static std::map<uint64_t, std::pair<std::weak_ptr<autograd::BackwardNode>, TensorBackwardHookPtr>> hook_meta_fn_map_;
+  static std::map<uint64_t, std::pair<std::weak_ptr<BackwardNode>, TensorBackwardHookPtr>> hook_meta_fn_map_;
 };
 }  // namespace mindspore::pynative::autograd
 #endif  // MINDSPORE_CCSRC_PYBIND_API_IR_HOOK_PY_H_

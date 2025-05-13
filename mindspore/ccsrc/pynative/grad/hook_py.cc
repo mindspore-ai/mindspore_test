@@ -56,6 +56,21 @@ std::map<uint64_t, std::vector<uint64_t>> RegisterHook::tensor_id_with_unique_id
 std::map<uint64_t, std::weak_ptr<std::map<uint64_t, py::function>>> RegisterHook::tensor_id_with_hook_map_ = {};
 std::map<uint64_t, std::pair<std::weak_ptr<BackwardNode>, TensorBackwardHookPtr>> RegisterHook::hook_meta_fn_map_ = {};
 
+CppTensorBackwardNodePreHook::CppTensorBackwardNodePreHook(CppHookFn hook_fn, size_t output_idx)
+    : hook_fn_(std::move(hook_fn)), output_idx_(output_idx) {}
+
+void CppTensorBackwardNodePreHook::operator()(ValuePtrList *grad) {
+  if (output_idx_ >= grad->size()) {
+    MS_LOG(EXCEPTION) << "CppTensor hook output_idx out of range";
+  }
+  const auto grad_in = (*grad)[output_idx_];
+  if (!grad_in->isa<tensor::Tensor>()) {
+    MS_LOG(DEBUG) << "input grad is not a Tensor";
+  } else {
+    (*grad)[output_idx_] = hook_fn_(grad_in->cast<TensorPtr>());
+  }
+}
+
 uint64_t RegisterHook::RegisterTensorBackwardHook(const tensor::TensorPtr &tensor, const py::function &hook) {
   // Delete char 'T'
   const auto &tensor_id = GetTensorNumId(tensor->id());
@@ -152,6 +167,20 @@ py::list RegisterHook::GetHooks(const tensor::TensorPtr &tensor) {
   }
 
   return hooks;
+}
+
+unsigned RegisterHook::RegisterCppTensorBackwardHook(const tensor::TensorPtr &tensor, const CppHookFn &hook) {
+  auto grad_node = BuildAutoGradMeta(tensor);
+  auto cpp_hook = std::make_unique<CppTensorBackwardNodePreHook>(hook, tensor->auto_grad_meta_data()->output_index());
+  return grad_node->AddCppTensorHook(std::move(cpp_hook));
+}
+
+void RegisterHook::RemoveCppTensorBackwardHook(const tensor::TensorPtr &tensor, unsigned hook_id) {
+  if (const auto auto_grad_meta_data = impl::get_autograd_meta_impl(tensor)) {
+    if (const auto grad_node = auto_grad_meta_data->UnsafeGetGradNodeImpl()) {
+      grad_node->RemoveCppTensorHook(hook_id);
+    }
+  }
 }
 
 struct HookAdapterRegister {

@@ -220,12 +220,23 @@ void RunTensorHook(ValuePtrList *grad_in, const BackwardNodePtr &grad_node) {
   MS_LOG(DEBUG) << PyNativeAlgo::Common::PrintDebugInfo(*grad_in, "After hook print gradient in: ");
 }
 
+void RunCppTensorHook(ValuePtrList *grad_in, const BackwardNodePtr &grad_node) {
+  MS_LOG(DEBUG) << "Begin run cpp tensor hooks";
+  for (const auto &hook : grad_node->cpp_tensor_pre_hooks()) {
+    if (hook != nullptr) {
+      (*hook)(grad_in);
+    }
+  }
+}
+
 void CallBackwardHooks(const BackwardNodePtr &grad_node, ValuePtrList *grad_in) {
   MS_EXCEPTION_IF_NULL(grad_in);
-  if (grad_node->backward_hooks().empty()) {
-    return;
+  if (!grad_node->backward_hooks().empty()) {
+    RunTensorHook(grad_in, grad_node);
   }
-  RunTensorHook(grad_in, grad_node);
+  if (!grad_node->cpp_tensor_pre_hooks().empty()) {
+    RunCppTensorHook(grad_in, grad_node);
+  }
 }
 
 void ReleaseResource(const BackwardNodePtr &grad_node) {
@@ -1063,6 +1074,41 @@ void CallCustomCFunction(const ValuePtrList &flatten_outputs, const TensorPtrSet
   }
   ProcessForwardOutput(flatten_outputs, input_base_tensors, dirty_tensors, non_diff_tensors, inputs,
                        input_value_grad_type, node);
+}
+
+tensor::TensorPtrList SearchUnusedParameters(const tensor::TensorPtrList &outputs,
+                                             const tensor::TensorPtrList &total_params) {
+  std::queue<BackwardNodePtr> grad_node_queue;
+  for (const auto &output : outputs) {
+    if (const auto grad_node = impl::get_unsafe_grad_node_impl(output)) {
+      grad_node_queue.push(grad_node);
+    }
+  }
+
+  std::unordered_set<BackwardNodePtr> used_leaf_node_set;
+  // BFS
+  while (!grad_node_queue.empty()) {
+    const auto grad_node = grad_node_queue.front();
+    grad_node_queue.pop();
+    for (const auto &edge : grad_node->next_edges()) {
+      if (edge.is_defined()) {
+        grad_node_queue.push(edge.grad_node);
+      }
+    }
+    if (isa<LeafNode>(grad_node)) {
+      (void)used_leaf_node_set.insert(grad_node);
+    }
+  }
+
+  tensor::TensorPtrList unused_params;
+  for (const auto &param : total_params) {
+    if (const auto grad_node = impl::get_unsafe_grad_node_impl(param)) {
+      if (used_leaf_node_set.find(grad_node) == used_leaf_node_set.end()) {
+        (void)unused_params.emplace_back(param);
+      }
+    }
+  }
+  return unused_params;
 }
 
 BackwardNodePtr BuildFuncBackwardNode(const PrimitivePtr &prim, const expander::bprop::BpropBuilderFunc &func,

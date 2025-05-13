@@ -797,6 +797,7 @@ py::object GradExecutor::RunGradFunc(const autograd::GradAttr &grad_attr, const 
   MS_EXCEPTION_IF_NULL(grads);
   InsertCheckForLastGrad(grads);
   MS_EXCEPTION_IF_NULL(cur_top_cell);
+  cur_top_cell->RunFinalCallback();
   cur_top_cell->set_grad_is_running(false);
   MS_LOG(DEBUG) << "Eval run end";
   cur_top_cell = nullptr;
