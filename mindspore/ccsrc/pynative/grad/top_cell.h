@@ -90,6 +90,9 @@ class TopCellInfo {
   bool grad_is_running() const { return grad_is_running_; }
   inline void set_grad_first(bool grad_first) { grad_first_ = grad_first; }
   bool grad_first() const { return grad_first_; }
+  // Add backward final callback
+  void QueueFinalCallback(std::function<void()> callback);
+  void RunFinalCallback();
 
  private:
   void SetMultipleOutputToGraphInfoMap(const string &id, const AnfNodePtr &node) const;
@@ -123,6 +126,8 @@ class TopCellInfo {
   OrderedMap<FuncGraphPtr, GraphInfoPtr> graph_info_map_;
 
   InputArgsInfoPtr input_args_info_{nullptr};
+
+  std::vector<std::function<void()>> final_callbacks_{};
 };
 using TopCellInfoPtr = std::shared_ptr<TopCellInfo>;
 }  // namespace pynative

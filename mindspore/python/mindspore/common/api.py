@@ -1899,6 +1899,18 @@ class _PyNativeExecutor:
         """
         return self._executor.constant_folding(*args)
 
+    def queue_backward_final_callback(self, callback):
+        """
+        add backward final callback
+
+        Args:
+            callback(Function): callback function.
+
+        Return:
+            None.
+        """
+        return self._executor.queue_backward_final_callback(callback)
+
 
 class _CellGraphExecutor:
     """

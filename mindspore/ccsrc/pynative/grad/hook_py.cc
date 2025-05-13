@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,9 @@
 #include "pynative/grad/hook_py.h"
 #include <memory>
 #include <string>
+#include <utility>
 #include "include/common/utils/tensor_py.h"
 #include "include/common/pynative/adapter.h"
-#include "include/common/utils/tensor_py.h"
 #include "pipeline/jit/ps/pipeline.h"
 #include "runtime/pipeline/pipeline.h"
 #include "pynative/grad/grad_utils.h"
@@ -60,6 +60,21 @@ PyTensorBackwardNodePreHook::PyTensorBackwardNodePreHook(const py::function &hoo
 PyTensorBackwardNodePreHook::~PyTensorBackwardNodePreHook() {
   py::gil_scoped_acquire gil;
   hook_fn_ = py::object();
+}
+
+CppTensorBackwardNodePreHook::CppTensorBackwardNodePreHook(CppHookFn hook_fn, size_t output_idx)
+    : hook_fn_(std::move(hook_fn)), output_idx_(output_idx) {}
+
+void CppTensorBackwardNodePreHook::operator()(ValuePtrList *grad) {
+  if (output_idx_ >= grad->size()) {
+    MS_LOG(EXCEPTION) << "CppTensor hook output_idx out of range";
+  }
+  const auto grad_in = (*grad)[output_idx_];
+  if (!grad_in->isa<tensor::Tensor>()) {
+    MS_LOG(DEBUG) << "input grad is not a Tensor";
+  } else {
+    (*grad)[output_idx_] = hook_fn_(grad_in->cast<TensorPtr>());
+  }
 }
 
 void PyTensorBackwardNodePreHook::operator()(ValuePtrList *grad) {
@@ -177,6 +192,18 @@ py::list RegisterHook::GetHooks(const tensor::TensorPtr &tensor) {
     }
   }
   return hooks;
+}
+
+unsigned RegisterHook::RegisterCppTensorBackwardHook(const tensor::TensorPtr &tensor, const CppHookFn &hook) {
+  auto grad_node = BuildAutoGradMeta(tensor);
+  auto cpp_hook = std::make_unique<CppTensorBackwardNodePreHook>(hook, tensor->auto_grad_meta_data()->output_index());
+  return grad_node->AddCppTensorHook(std::move(cpp_hook));
+}
+
+void RegisterHook::RemoveCppTensorBackwardHook(const tensor::TensorPtr &tensor, unsigned hook_id) {
+  if (const auto grad_node = impl::GetUnsafeGradNodeImpl(tensor)) {
+    grad_node->RemoveCppTensorHook(hook_id);
+  }
 }
 
 struct HookAdapterRegister {

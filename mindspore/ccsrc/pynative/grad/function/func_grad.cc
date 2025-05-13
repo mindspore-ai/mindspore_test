@@ -201,7 +201,7 @@ NodePtrList GenerateNodeInputs(const OpGradInfoPtr &op_grad_info, const FuncBuil
   return node_inputs;
 }
 
-void RunPyTensorHook(ValuePtrList *grad_in, const BackwardNodePtr &grad_node) {
+void RunPyTensorHook(const BackwardNodePtr &grad_node, ValuePtrList *grad_in) {
   static const std::string kTensorHook = "TensorHook";
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunExpanderFunc,
                                      kTensorHook, false);
@@ -217,10 +217,22 @@ void RunPyTensorHook(ValuePtrList *grad_in, const BackwardNodePtr &grad_node) {
   MS_LOG(DEBUG) << PyNativeAlgo::Common::PrintDebugInfo(*grad_in, "After hook print gradient in: ");
 }
 
+void RunCppTensorHook(const BackwardNodePtr &grad_node, ValuePtrList *grad_in) {
+  MS_LOG(DEBUG) << "Begin run cpp tensor hooks";
+  for (const auto &hook : grad_node->cpp_tensor_pre_hooks()) {
+    if (hook != nullptr) {
+      (*hook)(grad_in);
+    }
+  }
+}
+
 void CallBackwardNodePreHooks(const BackwardNodePtr &grad_node, ValuePtrList *grad_in) {
   MS_EXCEPTION_IF_NULL(grad_in);
   if (!grad_node->py_tensor_pre_hooks().empty()) {
-    RunPyTensorHook(grad_in, grad_node);
+    RunPyTensorHook(grad_node, grad_in);
+  }
+  if (!grad_node->cpp_tensor_pre_hooks().empty()) {
+    RunCppTensorHook(grad_node, grad_in);
   }
 }
 
@@ -1080,6 +1092,41 @@ void CallCustomCFunction(const ValuePtrList &flatten_outputs, const TensorPtrSet
                        input_value_grad_type, node);
 }
 
+tensor::TensorPtrList SearchUnusedParameters(const tensor::TensorPtrList &outputs,
+                                             const tensor::TensorPtrList &total_params) {
+  std::queue<BackwardNodePtr> grad_node_queue;
+  for (const auto &output : outputs) {
+    if (const auto grad_node = impl::GetUnsafeGradNodeImpl(output)) {
+      grad_node_queue.push(grad_node);
+    }
+  }
+
+  std::unordered_set<BackwardNodePtr> used_leaf_node_set;
+  // BFS
+  while (!grad_node_queue.empty()) {
+    const auto grad_node = grad_node_queue.front();
+    grad_node_queue.pop();
+    for (const auto &edge : grad_node->next_edges()) {
+      if (edge.is_defined()) {
+        grad_node_queue.push(edge.grad_node);
+      }
+    }
+    if (isa<LeafNode>(grad_node)) {
+      (void)used_leaf_node_set.insert(grad_node);
+    }
+  }
+
+  tensor::TensorPtrList unused_params;
+  for (const auto &param : total_params) {
+    if (const auto grad_node = impl::GetUnsafeGradNodeImpl(param)) {
+      if (used_leaf_node_set.find(grad_node) == used_leaf_node_set.end()) {
+        (void)unused_params.emplace_back(param);
+      }
+    }
+  }
+  return unused_params;
+}
+
 BackwardNodePtr BuildFuncBackwardNode(const PrimitivePtr &prim, const expander::bprop::BpropBuilderFunc &func,
                                       const ValuePtrList &flatten_inputs, const OpGradInfoPtr &op_grad_info,
                                       size_t flatten_output_size) {
@@ -1546,7 +1593,7 @@ ValuePtr AutoDiff::LeafNodeNotInGradButHasTensorHook(const std::shared_ptr<LeafN
   }
   ValuePtrList grad_in{};
   (void)grad_in.emplace_back(fn->Zeros(func_impl_));
-  RunPyTensorHook(&grad_in, fn);
+  RunPyTensorHook(fn, &grad_in);
   auto grad_tensor = grad_in.front()->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(grad_tensor);
   return grad_tensor;

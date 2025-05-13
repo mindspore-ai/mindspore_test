@@ -44,6 +44,20 @@ void TopCellInfo::Clear() {
   input_args_info_ = nullptr;
 }
 
+void TopCellInfo::QueueFinalCallback(std::function<void()> callback) {
+  MS_EXCEPTION_IF_CHECK_FAIL(this->grad_is_running(),
+                             "Final backward callback can only be installed during backward pass");
+  (void)final_callbacks_.emplace_back(std::move(callback));
+}
+
+void TopCellInfo::RunFinalCallback() {
+  MS_LOG(DEBUG) << "Begin run final callback";
+  for (const auto &func : final_callbacks_) {
+    func();
+  }
+  MS_LOG(DEBUG) << "End run final callback";
+}
+
 void TopCellInfo::DeleteParamNodeInfo(const FuncGraphPtr &g, const std::string &id) const {
   auto &graph_info = graph_info_map().at(g);
   MS_EXCEPTION_IF_NULL(graph_info);
