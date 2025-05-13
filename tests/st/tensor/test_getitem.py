@@ -225,9 +225,6 @@ def test_getitem_with_ellipsis(capture_mode):
     Description: Verify the result of tensor getitem with ellipsis
     Expectation: success
     """
-    if capture_mode == 'bytecode':
-        pytest.skip("There are some bugs when using bytecode mode in test_getitem_with_ellipsis")
-
     os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
     if capture_mode is not None:
         os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'

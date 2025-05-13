@@ -2810,19 +2810,20 @@ AnfNodePtr GetRealOutputNode(const KernelWithIndex &front_pair, const KernelWith
   if (front_pair.first == nullptr || backend_pair.first == nullptr) {
     return nullptr;
   }
-  if (common::AnfAlgo::CheckPrimitiveType(backend_pair.first, prim::kPrimLoad) &&
-      common::AnfAlgo::CheckPrimitiveType(front_pair.first, prim::kPrimLoad)) {
-    const auto &backend_cnode = backend_pair.first->cast<CNodePtr>();
-    const auto &front_cnode = front_pair.first->cast<CNodePtr>();
-    MS_EXCEPTION_IF_NULL(backend_cnode);
-    MS_EXCEPTION_IF_NULL(front_cnode);
-    if (backend_cnode->inputs().size() > 1 && backend_cnode->input(1) != nullptr &&
-        backend_cnode->input(1)->isa<CNode>() && front_cnode->inputs().size() > 1 && front_cnode->input(1) != nullptr &&
-        front_cnode->input(1)->isa<CNode>()) {
-      return front_cnode->input(1);
-    }
+  if (!common::AnfAlgo::CheckPrimitiveType(backend_pair.first, prim::kPrimLoad) ||
+      !common::AnfAlgo::CheckPrimitiveType(front_pair.first, prim::kPrimLoad)) {
+    return nullptr;
   }
-  return nullptr;
+  MS_LOG(DEBUG) << "Check for backend node:" << backend_pair.first->DebugString()
+                << " and front node:" << front_pair.first->DebugString();
+  const auto &real_backend_node = common::AnfAlgo::VisitKernelWithReturnType(backend_pair.first, backend_pair.second);
+  const auto &real_front_node = common::AnfAlgo::VisitKernelWithReturnType(front_pair.first, front_pair.second);
+  MS_EXCEPTION_IF_NULL(real_backend_node.first);
+  MS_EXCEPTION_IF_NULL(real_front_node.first);
+  if (!real_backend_node.first->isa<CNode>() || !real_front_node.first->isa<CNode>()) {
+    return nullptr;
+  }
+  return real_front_node.first;
 }
 }  // namespace
 

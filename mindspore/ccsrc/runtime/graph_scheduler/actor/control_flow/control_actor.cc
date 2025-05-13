@@ -126,9 +126,11 @@ size_t ControlActor::FetchNodePosition(const KernelWithIndex &node) const {
     }
     const auto &get_item_iter =
       std::find_if(formal_parameters_.begin(), formal_parameters_.end(), [&node](const KernelWithIndex &pair) {
-        return pair.first != nullptr && common::AnfAlgo::CheckPrimitiveType(pair.first, prim::kPrimTupleGetItem) &&
-               common::AnfAlgo::GetTupleGetItemRealInput(pair.first->cast<CNodePtr>()) == node.first &&
-               common::AnfAlgo::GetTupleGetItemOutIndex(pair.first->cast<CNodePtr>()) == node.second;
+        return pair.first != nullptr &&
+               ((common::AnfAlgo::CheckPrimitiveType(pair.first, prim::kPrimTupleGetItem) &&
+                 common::AnfAlgo::GetTupleGetItemRealInput(pair.first->cast<CNodePtr>()) == node.first &&
+                 common::AnfAlgo::GetTupleGetItemOutIndex(pair.first->cast<CNodePtr>()) == node.second) ||
+                node == common::AnfAlgo::VisitKernelWithReturnType(pair.first, pair.second, false));
       });
     if (get_item_iter != formal_parameters_.end()) {
       MS_LOG(INFO) << "Input node:" << node.first->DebugString() << " fullname:" << node.first->fullname_with_scope()
