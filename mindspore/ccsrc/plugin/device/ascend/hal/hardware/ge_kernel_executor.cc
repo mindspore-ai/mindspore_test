@@ -1435,6 +1435,9 @@ void CustomizeCopyAscendInner(device::DeviceContext *device_context, const devic
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "PyNative", "Contiguous", "");
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", device::tracker::MemType::kPyNativeOutput,
                                                  output_addr->GetSize(), output_addr.get());
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(MarkTensorAsInput, "PyNative", input_addr->device_name(),
+                                                 input_addr->GetPtr(), input_addr->type_id(),
+                                                 input_addr->GetShapeVector(), input_addr->GetTensorStorageInfo());
   if (output_addr->GetPtr() == nullptr) {
     if (!device_context->device_res_manager_->AllocateMemory(output_addr.get())) {
       MS_LOG(EXCEPTION) << "Allocate memory failed";
@@ -1449,6 +1452,9 @@ void CustomizeCopyAscendInner(device::DeviceContext *device_context, const devic
 
   // Inplace output need be front
   LAUNCH_ACLNN(aclnnInplaceCopy, device_context, stream_id, output_addr, input_addr);
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(MarkTensorAsOutput, "PyNative", output_addr->device_name(),
+                                                 output_addr->GetPtr(), output_addr->type_id(),
+                                                 output_addr->GetShapeVector(), output_addr->GetTensorStorageInfo());
   MS_LOG(DEBUG) << "Launch end";
 }
 
