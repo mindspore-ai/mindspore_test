@@ -253,13 +253,6 @@ class Shard(Shard_):
                            "will be overwritten as False.")
             ms.set_algo_parameters(fully_use_devices=False)
 
-        if ms.context.get_auto_parallel_context("full_batch_is_set") is False and \
-            ms.context.get_context("mode") == ms.context.PYNATIVE_MODE:
-            logger.warning("When calling the shard interface, "
-                           "'dataset_strategy' or 'full_batch' is not manually set by the user, "
-                           "and the 'dataset_strategy' will be set to 'full_batch'.")
-            ms.context.set_auto_parallel_context(dataset_strategy="full_batch")
-
         if self._is_attrs_has_been_set(fn, in_strategy, out_strategy, device, level):
             return self.shard_fn
         shard_ = Shard()

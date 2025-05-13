@@ -83,8 +83,7 @@ AnfNodePtr SpecialOpEliminater::operator()(const OptimizerPtr &optimizer, const 
 // {PrimVirtualDataset, Xs} -> {prim::kPrimMakeTuple, Xs}
 
 AnfNodePtr VirtualDatasetEliminater::operator()(const OptimizerPtr &, const AnfNodePtr &node) {
-  if (!IsPrimitiveCNode(node, prim::kPrimVirtualDataset) || node->func_graph() == nullptr ||
-      parallel::HasNestedMetaFg(node->func_graph())) {
+  if (!IsPrimitiveCNode(node, prim::kPrimVirtualDataset) || node->func_graph() == nullptr) {
     return nullptr;
   }
 
@@ -102,8 +101,7 @@ AnfNodePtr VirtualDatasetEliminater::operator()(const OptimizerPtr &, const AnfN
 
 // {prim::kPrimVirtualOutput, X} -> X
 AnfNodePtr VirtualOutputEliminater::operator()(const OptimizerPtr &, const AnfNodePtr &node) {
-  if (!IsPrimitiveCNode(node, prim::kPrimVirtualOutput) || node->func_graph() == nullptr ||
-      parallel::HasNestedMetaFg(node->func_graph())) {
+  if (!IsPrimitiveCNode(node, prim::kPrimVirtualOutput) || node->func_graph() == nullptr) {
     return nullptr;
   }
   auto cnode = node->cast<CNodePtr>();
@@ -115,8 +113,7 @@ AnfNodePtr VirtualOutputEliminater::operator()(const OptimizerPtr &, const AnfNo
 
 // {prim::kPrimAShardIdentity, X} -> X
 AnfNodePtr AShardIdentityEliminater::operator()(const OptimizerPtr &, const AnfNodePtr &node) {
-  if (!IsPrimitiveCNode(node, prim::kPrimAShardIdentity) || node->func_graph() == nullptr ||
-      parallel::HasNestedMetaFg(node->func_graph())) {
+  if (!IsPrimitiveCNode(node, prim::kPrimAShardIdentity) || node->func_graph() == nullptr) {
     return nullptr;
   }
   auto _cnode = node->cast<CNodePtr>();

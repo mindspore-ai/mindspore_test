@@ -435,13 +435,6 @@ class _AutoParallelContext:
         """
         self.check_context_handle()
         run_mode = context.get_context("mode")
-        if run_mode == context.PYNATIVE_MODE and parallel_mode not in (
-                context.ParallelMode.DATA_PARALLEL, context.ParallelMode.STAND_ALONE,
-                context.ParallelMode.AUTO_PARALLEL):
-            raise ValueError(f"Pynative only supports STAND_ALONE, DATA_PARALLEL and AUTO_PARALLEL using"
-                             f" sharding_propagation under shard function"
-                             f" for ParallelMode, "
-                             f"but got {parallel_mode.upper()}.")
         ret = self._context_handle.set_parallel_mode(parallel_mode)
         if ret is False:
             raise ValueError("The context configuration parameter 'parallel_mode' only support 'stand_alone', "
@@ -605,9 +598,6 @@ class _AutoParallelContext:
                 if not isinstance(dim, int):
                     raise TypeError("For 'set_auto_parallel_context', the element of argument "
                                     "'dataset_strategy' must be int type, but got the type : {} .".format(type(dim)))
-        if context.get_context('mode') == context.PYNATIVE_MODE:
-            raise ValueError("In PyNative mode, the setting value of 'dataset_strategy' must be either 'full_batch' "
-                             f"or 'data_parallel', but got {dataset_strategy}.")
         self._dataset_strategy_using_str = False
         self._context_handle.set_dataset_strategy(dataset_strategy)
 
@@ -647,9 +637,6 @@ class _AutoParallelContext:
                 return "full_batch"
             return "data_parallel"
         dataset_strategy = self._context_handle.get_dataset_strategy()
-        if context.get_context('mode') == context.PYNATIVE_MODE:
-            raise ValueError("In PyNative mode, the value of 'dataset_strategy' must be either 'full_batch' "
-                             f"or 'data_parallel', but got the setting value is {dataset_strategy}.")
         return dataset_strategy
 
     def set_grad_accumulation_step(self, grad_accumulation_step):

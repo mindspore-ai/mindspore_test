@@ -19,7 +19,6 @@ from __future__ import division
 import numpy as np
 
 import mindspore.log as logger
-from mindspore import context
 from mindspore.nn.cell import Cell
 from mindspore.ops import operations as P
 from mindspore.ops.operations.comm_ops import AllGather
@@ -117,24 +116,6 @@ def destroy_allgather_cell():
         _ALLGATHER_CELL = None
 
 
-def _chang_parallel_context(origin_dataset_strategy):
-    """Change the original parallel state."""
-    if context.get_context("mode") == context.GRAPH_MODE:
-        context.set_auto_parallel_context(parallel_mode="hybrid_parallel")
-        if origin_dataset_strategy != "data_parallel":
-            context.set_auto_parallel_context(dataset_strategy="data_parallel")
-
-
-def _restore_parallel_context(origin_parallel_mode, origin_dataset_strategy):
-    """Restore the original parallel state."""
-    if context.get_context("mode") == context.GRAPH_MODE:
-        context.set_auto_parallel_context(parallel_mode=origin_parallel_mode)
-        if origin_dataset_strategy != "data_parallel":
-            if origin_dataset_strategy is not None and isinstance(origin_dataset_strategy, list):
-                origin_dataset_strategy = tuple(tuple(ds_item) for ds_item in origin_dataset_strategy)
-            context.set_auto_parallel_context(dataset_strategy=origin_dataset_strategy)
-
-
 def _get_group_name(group_map, group):
     """get group name"""
     group_name = "remove_redundancy" + str(group)
@@ -171,8 +152,6 @@ def _single_parameter_broadcast(net, layout, param_not_load=None):
     Broadcast single parameter to other rank in data parallel dimension.
     """
     from mindspore import Tensor
-    origin_parallel_mode = context.get_auto_parallel_context("parallel_mode")
-    origin_dataset_strategy = context.get_auto_parallel_context("dataset_strategy")
     cur_rank = get_rank()
     if layout:
         param_redundancy = get_parameter_redundancy(layout)
@@ -187,7 +166,6 @@ def _single_parameter_broadcast(net, layout, param_not_load=None):
     if not param_redundancy_reversed or cur_rank not in single_params:
         return
     net_param_dict = net.parameters_dict()
-    _chang_parallel_context(origin_dataset_strategy)
     group_map = _get_group_map()
     if group_map:
         group_map = {key: group_map[key] for key in sorted(group_map.keys())}
@@ -214,7 +192,6 @@ def _single_parameter_broadcast(net, layout, param_not_load=None):
             real_param.set_data(communicator(Tensor(real_param)), real_param.sliced)
         if is_manual_communication_group:
             destroy_group(group_name)
-    _restore_parallel_context(origin_parallel_mode, origin_dataset_strategy)
 
 
 def _insert_virtual_pp_dim(layout):

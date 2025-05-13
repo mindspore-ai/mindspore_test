@@ -134,9 +134,7 @@ void AddNodeFusionInfo(const CNodePtr &node, const CNodePtr &comm_node, const st
                        const std::string &param_name, int32_t fusion_id);
 void AddNodeMirrorInfo(const CNodePtr &cnode, const std::string &param_name);
 void SetCastForParamNotRecompute(const std::vector<AnfNodePtr> &all_nodes);
-bool IsPynativeParallel();
 bool IsAutoParallelCareGraph(const FuncGraphPtr &func_graph);
-bool HasNestedMetaFg(const FuncGraphPtr &func_graph);
 bool IsEmbedShardNode(const FuncGraphPtr &func_graph);
 bool IsSplittableOperator(const std::string &op_name);
 AnfNodePtr FindRealInputByFormalParameter(const CNodePtr &node, const AnfNodePtr &input,

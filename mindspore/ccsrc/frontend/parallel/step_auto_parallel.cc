@@ -107,7 +107,7 @@ bool IsSkipAutoParallel(const FuncGraphPtr &root, const std::string &strategy_se
   root->set_flag(kHasShard, HasCellShard(root));
   std::string parallel_mode = ParallelContext::GetInstance()->parallel_mode();
   if (root->has_flag(kSkipAutoParallelCompile) || parallel_mode != kAutoParallel ||
-      root->has_flag(AUTO_PARALLEL_RUN_ONCE_ONLY) || HasNestedMetaFg(root)) {
+      root->has_flag(AUTO_PARALLEL_RUN_ONCE_ONLY)) {
     return true;
   }
 
@@ -118,9 +118,6 @@ bool IsSkipAutoParallel(const FuncGraphPtr &root, const std::string &strategy_se
   }
   if (root->has_flag(kSharded)) {
     return false;
-  }
-  if (parallel::IsPynativeParallel() && !root->has_flag(kHasShard)) {
-    return true;
   }
 
   if ((is_pre_action && strategy_search_mode == kDynamicProgramming) ||

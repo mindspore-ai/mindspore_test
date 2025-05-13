@@ -424,21 +424,6 @@ bool IsParallelCareNode(const CNodePtr &cnode) {
   return cnode->in_forward_flag();
 }
 
-bool HasNestedMetaFg(const FuncGraphPtr &func_graph) {
-  if (!IsPynativeParallel()) {
-    return false;
-  }
-  AnfNodePtr ret = func_graph->get_return();
-  std::vector<AnfNodePtr> all_nodes = DeepScopedGraphSearch(ret);
-  for (auto &node : all_nodes) {
-    if (IsPrimitiveCNode(node, prim::kPrimJ) || IsPrimitiveCNode(node, prim::kPrimVmap) ||
-        IsPrimitiveCNode(node, prim::kPrimTaylor)) {
-      return true;
-    }
-  }
-  return false;
-}
-
 bool IsEmbedShardNode(const FuncGraphPtr &func_graph) {
   MS_EXCEPTION_IF_NULL(func_graph);
   AnfNodePtr ret = func_graph->get_return();
@@ -2309,12 +2294,6 @@ CommInfo GetCommInfo() {
   return comm_info;
 }
 
-bool IsPynativeParallel() {
-  auto parallel_mode = ParallelContext::GetInstance()->parallel_mode();
-  auto execution_mode = MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE);
-  return (execution_mode == kPynativeMode) && (parallel_mode == kSemiAutoParallel || parallel_mode == kAutoParallel);
-}
-
 bool IsAutoParallelCareGraph(const FuncGraphPtr &func_graph) {
   // compile graph order:
   // 1, ParallelParameterContextRestoreShape
@@ -2331,10 +2310,6 @@ bool IsAutoParallelCareGraph(const FuncGraphPtr &func_graph) {
   MS_EXCEPTION_IF_NULL(ParallelContext::GetInstance());
   std::string parallel_mode = ParallelContext::GetInstance()->parallel_mode();
   if (parallel_mode != kAutoParallel && parallel_mode != kSemiAutoParallel) {
-    return false;
-  }
-
-  if (IsPynativeParallel() && !func_graph->has_flag(kHasShard) && !(func_graph->has_flag(kSharded))) {
     return false;
   }
   return true;
@@ -3245,8 +3220,7 @@ bool IsInsertVirtualOutput(const FuncGraphPtr &root) {
                        " to configure the input strategy.";
   }
   return ((!root->has_flag(kTraining) && ParallelContext::GetInstance()->dataset_strategy().empty() &&
-           current_stage == split_stage_num - 1) ||
-          IsPynativeParallel());
+           current_stage == split_stage_num - 1));
 }
 
 TensorLayout GetInputLayoutFromCNode(const std::pair<AnfNodePtr, int64_t> &node_pair, const int &make_tuple_index) {

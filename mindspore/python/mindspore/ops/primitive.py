@@ -513,8 +513,6 @@ class Primitive(Primitive_):
         Args:
             backward_prefetch(Union[str, int]): Specifies whether the activation is prefetched in backward pass.
         """
-        if context.get_context("mode") == context.PYNATIVE_MODE:
-            raise ValueError("Offload is not supported in pynative mode currently.")
         self.add_prim_attr("offload", True)
         if isinstance(backward_prefetch, str):
             Validator.check_string(backward_prefetch, ['Auto'], 'backward_prefetch', 'Primitive._offload')
