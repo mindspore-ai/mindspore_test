@@ -34,6 +34,7 @@ internal::InternalOpPtr InternalMultiWeightMatmulBase::CreateKernel(const intern
   if (n_list.size() == kSizeNum2) {
     n_list.push_back(0);
   }
+  MS_LOG(INFO) << "Creating kernel for op_name " << op_name_;
   const auto n_input_zero = 0;
   const auto n_input_one = 1;
   const auto n_input_two = 2;
@@ -47,6 +48,8 @@ internal::InternalOpPtr InternalMultiWeightMatmulBase::CreateKernel(const intern
   param.with_bias = with_bias;
   param.transpose_a = false;
   param.transpose_b = true;
+  param.split_two = split_two_;
+  param.fused = fused_;
   return internal::CreateMultiWeightMatmulOp(inputs, outputs, param, op_name_);
 }
 
@@ -155,5 +158,69 @@ MS_INTERNAL_KERNEL_FACTORY_REG(MatmulBiasSplitSiluOut2, internal::kInternalMulti
                                InternalMatmulBiasSplitSiluOut2);
 REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(MatmulBiasSplitSiluOut2, INPUT_NUM_3, INDEX_0, INDEX_1, INDEX_3);
 REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(MatmulBiasSplitSiluOut2, OUTPUT_NUM_2, INDEX_0, INDEX_1);
+
+// MatmulSplitSiluMulOut1
+class InternalMatmulSplitSiluMulOut1 : public InternalMultiWeightMatmulBase {
+ public:
+  InternalMatmulSplitSiluMulOut1() : InternalMultiWeightMatmulBase("InternalMatmulSplitSiluMulOut1") {
+    fused_ = true;
+    split_two_ = true;
+  }
+  ~InternalMatmulSplitSiluMulOut1() = default;
+};
+
+MS_INTERNAL_KERNEL_FACTORY_REG(MatmulSplitSiluMulOut1, internal::kInternalMultiWeightMatmulOpName,
+                               InternalMatmulSplitSiluMulOut1);
+REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(MatmulSplitSiluMulOut1, INPUT_NUM_2, INDEX_0, INDEX_1);
+REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(MatmulSplitSiluMulOut1, OUTPUT_NUM_1, INDEX_0);
+
+// MatmulSplitSiluFastgeluAddMulOut1
+class InternalMatmulSplitSiluFastgeluAddMulOut1 : public InternalMultiWeightMatmulBase {
+ public:
+  InternalMatmulSplitSiluFastgeluAddMulOut1()
+      : InternalMultiWeightMatmulBase("InternalMatmulSplitSiluFastgeluAddMulOut1") {
+    split_two_ = false;
+    fused_ = true;
+  }
+  ~InternalMatmulSplitSiluFastgeluAddMulOut1() = default;
+};
+
+MS_INTERNAL_KERNEL_FACTORY_REG(MatmulSplitSiluFastgeluAddMulOut1, internal::kInternalMultiWeightMatmulOpName,
+                               InternalMatmulSplitSiluFastgeluAddMulOut1);
+REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(MatmulSplitSiluFastgeluAddMulOut1, INPUT_NUM_2, INDEX_0, INDEX_1);
+REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(MatmulSplitSiluFastgeluAddMulOut1, OUTPUT_NUM_1, INDEX_0);
+
+// QMatmulSplitSiluMulOut1
+class InternalQMatmulSplitSiluMulOut1 : public InternalMultiWeightMatmulBase {
+ public:
+  InternalQMatmulSplitSiluMulOut1() : InternalMultiWeightMatmulBase("InternalQMatmulSplitSiluMulOut1") {
+    split_two_ = true;
+    fused_ = true;
+  }
+  ~InternalQMatmulSplitSiluMulOut1() = default;
+};
+
+MS_INTERNAL_KERNEL_FACTORY_REG(QMatmulSplitSiluMulOut1, internal::kInternalMultiWeightMatmulOpName,
+                               InternalQMatmulSplitSiluMulOut1);
+REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(QMatmulSplitSiluMulOut1, INPUT_NUM_4, INDEX_0, INDEX_1, INDEX_3, INDEX_4);
+REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(QMatmulSplitSiluMulOut1, OUTPUT_NUM_1, INDEX_0);
+
+// QMatmulSplitSiluFastgeluAddMulOut1
+class InternalQMatmulSplitSiluFastgeluAddMulOut1 : public InternalMultiWeightMatmulBase {
+ public:
+  InternalQMatmulSplitSiluFastgeluAddMulOut1()
+      : InternalMultiWeightMatmulBase("InternalQMatmulSplitSiluFastgeluAddMulOut1") {
+    split_two_ = false;
+    fused_ = true;
+  }
+  ~InternalQMatmulSplitSiluFastgeluAddMulOut1() = default;
+};
+
+MS_INTERNAL_KERNEL_FACTORY_REG(QMatmulSplitSiluFastgeluAddMulOut1, internal::kInternalMultiWeightMatmulOpName,
+                               InternalQMatmulSplitSiluFastgeluAddMulOut1);
+REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(QMatmulSplitSiluFastgeluAddMulOut1, INPUT_NUM_4, INDEX_0, INDEX_1, INDEX_3,
+                                     INDEX_4);
+REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(QMatmulSplitSiluFastgeluAddMulOut1, OUTPUT_NUM_1, INDEX_0);
+
 }  // namespace kernel
 }  // namespace mindspore

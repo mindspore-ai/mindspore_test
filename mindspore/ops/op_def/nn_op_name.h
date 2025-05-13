@@ -158,6 +158,10 @@ constexpr auto kRNNTLossOpName = "RNNTLoss";
 constexpr auto kAllFiniteOpName = "AllFinite";
 constexpr auto kWeightQuantMatmulQkvOpName = "WeightQuantMatmulQkv";
 constexpr auto kWeightQuantMatmulFfnOpName = "WeightQuantMatmulFfn";
+constexpr auto kPrimNameMatmulSplitSiluFastgeluAddMulOut1 = "MatmulSplitSiluFastgeluAddMulOut1";
+constexpr auto kPrimNameMatmulSplitSiluMulOut1 = "MatmulSplitSiluMulOut1";
+constexpr auto kPrimNameQMatmulSplitSiluFastgeluAddMulOut1 = "QMatmulSplitSiluFastgeluAddMulOut1";
+constexpr auto kPrimNameQMatmulSplitSiluMulOut1 = "QMatmulSplitSiluMulOut1";
 }  // namespace mindspore
 
 #endif  // MINDSPORE_CORE_BASE_NN_OP_NAME_H_

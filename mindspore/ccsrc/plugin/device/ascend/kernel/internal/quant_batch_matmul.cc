@@ -31,6 +31,13 @@ internal::InternalOpPtr InternalQuantBatchMatmul::CreateKernel(const internal::I
   param.with_bias = !(ms_inputs[kIndex4]->GetType()->isa<TypeNone>());
   param.enable_shuffle = false;  // the real definition is in internal
   param.enable_dequant = true;
+  bool has_element_type = primitive_->HasAttr("ElemwiseType");
+  auto value_str = primitive_->GetAttr("ElemwiseType");
+  if (has_element_type && (value_str != nullptr)) {
+    if (GetValue<std::string>(value_str) == "fastgelu") {
+      param.with_fastgelu = true;
+    }
+  }
   output_format_ = outputs[0].GetFormat();
   return internal::CreateMatmulOp(inputs, outputs, param, internal::kInternalMatMulOpName);
 }

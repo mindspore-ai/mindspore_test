@@ -25,6 +25,7 @@
 #include "utils/ms_context.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
@@ -41,7 +42,8 @@ bool IsElemNode(const BaseRef &ref) {
   if (utils::isa<AnfNodePtr>(ref)) {
     AnfNodePtr node = utils::cast<AnfNodePtr>(ref);
     MS_EXCEPTION_IF_NULL(node);
-    if (IsOneOfPrimitive(node, {prim::kPrimBiasAdd, prim::kPrimAdd, prim::kPrimReLU, prim::kPrimGeLU})) {
+    if (IsOneOfPrimitive(node,
+                         {prim::kPrimBiasAdd, prim::kPrimAdd, prim::kPrimReLU, prim::kPrimGeLU, prim::kPrimFastGeLU})) {
       return true;
     }
   }
@@ -54,6 +56,7 @@ std::string MatmulElemFusion::GetElemwiseType(const CNodePtr &elemwise_node) con
   static const std::map<std::string, std::string> kOpElemiseTypeMap = {{prim::kPrimBiasAdd->name(), "bias_add"},
                                                                        {prim::kPrimAdd->name(), "bias_add"},
                                                                        {prim::kPrimReLU->name(), "relu"},
+                                                                       {prim::kPrimFastGeLU->name(), "fastgelu"},
                                                                        {prim::kPrimGeLU->name(), "gelu"}};
   return kOpElemiseTypeMap.at(common::AnfAlgo::GetCNodeName(elemwise_node));
 }
@@ -88,10 +91,10 @@ const AnfNodePtr MatmulElemFusion::Process(const FuncGraphPtr &func_graph, const
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   auto const &soc_version = ms_context->ascend_soc_version();
-  if (!soc_version.empty() && soc_version != "ascend910b" && soc_version != "ascend910_93") {
+  if (!soc_version.empty() && soc_version != "ascend910b" && soc_version != "ascend910_93" &&
+      soc_version != "ascend310p") {
     return nullptr;
   }
-
   auto enable_op_list = ms_context->ms_internal_enable_custom_kernel_list();
   bool enable_matmul_elemwise =
     (std::find(enable_op_list.begin(), enable_op_list.end(), "MatMulElemwise") != enable_op_list.end());
@@ -108,8 +111,12 @@ const AnfNodePtr MatmulElemFusion::Process(const FuncGraphPtr &func_graph, const
   auto matmul_cnode = elemwise_node->input(kIndex1)->cast<CNodePtr>();
   MS_CHECK_TRUE_RET(matmul_cnode != nullptr, {});
   MS_CHECK_TRUE_RET(matmul_cnode->func_graph() == elemwise_node->func_graph(), {});
-
   std::string elemwise_type = GetElemwiseType(elemwise_node);
+  const std::string fastgelu_str = "fastgelu";
+  if (elemwise_type != fastgelu_str && !soc_version.empty() && soc_version != "ascend910b" &&
+      soc_version != "ascend910_93") {
+    return nullptr;
+  }
   const std::string bias_add_str = "bias_add";
   if (elemwise_type == bias_add_str && (common::AnfAlgo::GetPrevNodeOutputInferShape(node, 1).size() > 1 ||
                                         common::AnfAlgo::GetOutputInferDataType(node, 0) != kFloat16->type_id())) {
