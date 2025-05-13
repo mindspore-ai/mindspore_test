@@ -25,7 +25,7 @@ from mindspore.communication import get_rank, get_group_size
 from mindspore import log as logger
 from mindspore.train.serialization import _get_cur_rank_dp
 from mindspore._c_expression import _repair_device, _stop_device, _tft_sem_post, _tft_sem_enable
-from mindspore._c_expression import _rebuild_world_group, _rebuild_sub_group, _finalize_comm
+from mindspore._c_expression import _rebuild_world_group, _rebuild_sub_group, _finalize_comm, _clean_unique_id
 from mindspore._c_expression import clean_tdt_channel
 from mindspore._c_expression import send_recv, reset_params
 from mindspore._c_expression import CollectiveManager
@@ -321,6 +321,7 @@ class TrainFaultTolerance(Callback):
         self.learning_rate = None
         self.has_init_replica = False
         self.is_uce_rank = False
+        self.clean_unique_id = False
 
         self.assign = mindspore.ops.Assign()
         self.g_one = Parameter(Tensor([1], dtype=mstype.int32))
@@ -436,6 +437,12 @@ class TrainFaultTolerance(Callback):
         if reset_params(accu_grad_list) != 0:
             raise ValueError("Call reset_params failed.")
 
+    def _clear_unique_id(self):
+        """Clean unique id on first train step end"""
+        if not self.clean_unique_id and ("ARF:1" in os.getenv("MS_ENABLE_TFT", "")):
+            _clean_unique_id()
+            self.clean_unique_id = True
+
     def on_train_step_end(self, run_context):
         """
         Report status to MindIO TFT after every step finished.
@@ -444,6 +451,7 @@ class TrainFaultTolerance(Callback):
             run_context (RunContext): Context of the train running. Refer to
                                       :class:`mindspore.train.RunContext` for detail.
         """
+        self._clear_unique_id()
         if self._only_enable_tre():
             return
         if self.has_init_replica is False:
