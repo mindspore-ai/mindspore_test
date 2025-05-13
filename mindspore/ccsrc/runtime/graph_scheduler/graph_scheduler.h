@@ -29,7 +29,6 @@
 #include "utils/hash_set.h"
 #include "runtime/graph_scheduler/control_node_scheduler.h"
 #include "runtime/graph_scheduler/any_type_graph_scheduler.h"
-#include "runtime/graph_scheduler/inline_control_flow_scheduler.h"
 #include "runtime/graph_scheduler/mem_swap_scheduler.h"
 #include "runtime/graph_scheduler/actor/actor_set.h"
 #include "runtime/graph_scheduler/graph_compiler.h"
@@ -132,7 +131,6 @@ class BACKEND_EXPORT GraphScheduler {
   std::vector<DataSourceActorPtr> BuildDataSourceActor(const GraphCompilerInfo &graph_compiler_info,
                                                        const HostTensorQueuePtr &host_queue);
   std::vector<KernelActorPtr> BuildKernelActor(const GraphCompilerInfo &graph_compiler_info);
-  std::vector<CustomActorPtr> BuildCustomActor(const GraphCompilerInfo &graph_compiler_info);
   std::vector<SuperKernelActorPtr> BuildSuperKernelActor(const GraphCompilerInfo &graph_compiler_info);
   LoopCountActorPtr BuildLoopCountActor(const GraphCompilerInfo &graph_compiler_info);
   OutputActorPtr BuildOutputActor(const GraphCompilerInfo &graph_compiler_info) const;
@@ -211,10 +209,6 @@ class BACKEND_EXPORT GraphScheduler {
   void LinkGlobalControlArrow(ActorSet *const actor_set, const GroupNameToCommuNodes &communication_node_groups,
                               const std::vector<AbstractActor *> &auto_monad_actors,
                               const GraphCompilerInfo &graph_compiler_info);
-  void LinkDataArrowForCustomActor(const ActorSet *actor_set, const GraphCompilerInfo &graph_compiler_info);
-  void LinkControlArrowForCustomActor(const ActorSet *actor_set, const GraphCompilerInfo &graph_compiler_info);
-  void LinkControlArrowForCustomActorByAutoMonad(const ActorSet *actor_set,
-                                                 const GraphCompilerInfo &graph_compiler_info);
   void LinkControlArrowByExecutionOrder(const KernelGraphPtr &graph,
                                         const GraphCompilerInfo &graph_compiler_info) const;
   // Link the control arrows by the communication nodes in the kernel graph to ensure communication nodes running order.
@@ -277,8 +271,6 @@ class BACKEND_EXPORT GraphScheduler {
   ControlNodeScheduler control_node_scheduler_;
   // If there is an any type input in graph, it will be used to transform it.
   AnyTypeGraphScheduler any_type_graph_scheduler_;
-  // If there is inline control flow in kernel graph, it will be used to transform it.
-  InlineControlFlowScheduler inline_control_flow_scheduler_;
 
   // Build and link swap actor when memory offload is enabled.
   MemSwapScheduler swap_node_scheduler_;
@@ -307,9 +299,6 @@ class BACKEND_EXPORT GraphScheduler {
   bool init_{false};
   bool already_spawn_kernel_async_launch_actor_{false};
   bool already_spawn_kernel_async_infer_resize_actor_{false};
-
-  // Disable custom actor in scheduler.
-  bool is_enable_custom_actor{false};
 
   bool is_bind_core_{false};
   bool is_shut_spin_{false};

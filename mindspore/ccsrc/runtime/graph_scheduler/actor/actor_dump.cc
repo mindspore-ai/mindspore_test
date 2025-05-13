@@ -195,25 +195,7 @@ void DumpDSActor(const DataSourceActor *actor, std::ofstream &ofs) {
   const auto &actor_name = actor->GetAID().Name();
   ofs << "\tactor_name:" << actor_name << "\tactor_id:" << actor->actor_id() << "\n";
 
-  if (actor->type() == KernelTransformType::kDeviceDataSourceActor) {
-    // Dump the member info of device queue data source actor.
-    const auto &device_queue_ds_actor = dynamic_cast<const DeviceQueueDataSourceActor *>(actor);
-    MS_EXCEPTION_IF_NULL(device_queue_ds_actor);
-    const auto &data_kernel = device_queue_ds_actor->data_kernel();
-    MS_EXCEPTION_IF_NULL(data_kernel);
-    ofs << "\t\tdata_kernel_name:" << data_kernel->fullname_with_scope()
-        << "\tinput_number:" << common::AnfAlgo::GetInputTensorNum(data_kernel)
-        << "\toutput_number:" << AnfAlgo::GetOutputTensorNum(data_kernel) << "\n";
-    for (size_t i = 0; i < AnfAlgo::GetOutputTensorNum(data_kernel); ++i) {
-      const auto &device_tensor = AnfAlgo::GetMutableOutputAddr(data_kernel, i, false);
-      MS_EXCEPTION_IF_NULL(device_tensor);
-      ofs << "\t\t\toutput_index:" << i << "\tptr:" << device_tensor->GetPtr() << "\tsize:" << device_tensor->GetSize()
-          << "\tstream id:" << device_tensor->stream_id()
-          << "\toriginal_ref_count:" << device_tensor->original_ref_count()
-          << "\tdynamic_ref_count:" << device_tensor->dynamic_ref_count() << "\tflag:" << device_tensor->flag()
-          << "\n ";
-    }
-  } else if (actor->type() == KernelTransformType::kHostDataSourceActor) {
+  if (actor->type() == KernelTransformType::kHostDataSourceActor) {
     // Dump the member info of host queue data source actor.
     const auto &host_queue_ds_actor = dynamic_cast<const HostQueueDataSourceActor *>(actor);
     MS_EXCEPTION_IF_NULL(host_queue_ds_actor);
@@ -237,20 +219,6 @@ void DumpDSActor(const DataSourceActor *actor, std::ofstream &ofs) {
   ofs << "\n";
 }
 
-void DumpConditionSwitchActor(const ConditionSwitchActor *actor, std::ofstream &ofs) {
-  MS_EXCEPTION_IF_NULL(actor);
-  ofs << "\t\tbranch names:";
-  std::for_each(actor->branch_names().begin(), actor->branch_names().end(),
-                [&ofs](const auto &name) { ofs << name << "\t"; });
-  ofs << "\n";
-  ofs << "\t\tbranch output free index\n";
-  for (const auto &pair : actor->branch_output_free_index()) {
-    ofs << "\t\t\tbranch name:" << pair.first << " index:";
-    std::for_each(pair.second.begin(), pair.second.end(), [&ofs](const auto &index) { ofs << index << " "; });
-    ofs << "\n";
-  }
-}
-
 void DumpConditionSwitchActorV2(const ConditionSwitchRunner *actor, std::ofstream &ofs) {
   MS_EXCEPTION_IF_NULL(actor);
   ofs << "\t\tbranch names:";
@@ -263,15 +231,6 @@ void DumpConditionSwitchActorV2(const ConditionSwitchRunner *actor, std::ofstrea
     std::for_each(pair.second.begin(), pair.second.end(), [&ofs](const auto &index) { ofs << index << " "; });
     ofs << "\n";
   }
-}
-
-void DumpConditionGatherActor(const ConditionGatherActor *actor, std::ofstream &ofs) {
-  MS_EXCEPTION_IF_NULL(actor);
-  ofs << "\t\tbranch names:";
-  std::for_each(actor->branch_names().begin(), actor->branch_names().end(),
-                [&ofs](const auto &name) { ofs << name << "\t"; });
-  ofs << "\n";
-  ofs << "\t\tbranch output num:" << actor->branch_output_num() << "\n";
 }
 
 void DumpConditionGatherActorV2(const ConditionGatherRunner *actor, std::ofstream &ofs) {
@@ -423,11 +382,6 @@ void DumpKernelActor(const KernelActor *actor, std::ofstream &ofs) {
     }
     ofs << "\n";
   }
-  if (common::AnfAlgo::CheckPrimitiveType(kernel, prim::kPrimConditionSwitch)) {
-    DumpConditionSwitchActor(dynamic_cast<const ConditionSwitchActor *>(actor), ofs);
-  } else if (common::AnfAlgo::CheckPrimitiveType(kernel, prim::kPrimConditionGather)) {
-    DumpConditionGatherActor(dynamic_cast<const ConditionGatherActor *>(actor), ofs);
-  }
 }
 
 void DumpKernelActorV2(const KernelRunner *actor, std::ofstream &ofs) {
@@ -513,13 +467,6 @@ void DumpKernelActorV2(const KernelRunner *actor, std::ofstream &ofs) {
   } else if (common::AnfAlgo::CheckPrimitiveType(kernel, prim::kPrimConditionGather)) {
     DumpConditionGatherActorV2(dynamic_cast<const ConditionGatherRunner *>(actor), ofs);
   }
-}
-
-void DumpCustomActor(const CustomActor *actor, std::ofstream &ofs) {
-  MS_EXCEPTION_IF_NULL(actor);
-  ofs << "\tactor_name:" << actor->GetAID().Name() << "\tactor_id:" << actor->GetAID() << "\n";
-  DumpAbstractActor(actor, ofs);
-  ofs << "\n";
 }
 
 void DumpSwapActor(const MemorySwapActor *actor, std::ofstream &ofs) {
@@ -1051,13 +998,6 @@ void DumpKernelActors(const std::vector<KernelActorPtr> &actors, std::ofstream &
   }
 }
 
-void DumpCustomActors(const std::vector<CustomActorPtr> &actors, std::ofstream &ofs) {
-  ofs << "\n\n[Custom actors:" << actors.size() << "]\n";
-  for (const auto &custom_actor : actors) {
-    DumpCustomActor(custom_actor.get(), ofs);
-  }
-}
-
 void DumpSwapActors(const std::vector<std::vector<MemSwapActorPtr>> &actors, std::ofstream &ofs) {
   size_t swap_actor_num = 0;
   (void)std::for_each(actors.cbegin(), actors.cend(),
@@ -1133,10 +1073,6 @@ void DumpNoInputKernelActors(const std::vector<AbstractActorPtr> &actors, std::o
       auto super_kernel_actor = dynamic_cast<const SuperKernelActor *>(actor.get());
       MS_EXCEPTION_IF_NULL(super_kernel_actor);
       DumpSuperKernelActor(super_kernel_actor, ofs);
-    } else if (actor->type() == KernelTransformType::kCustomActor) {
-      auto custom_actor = dynamic_cast<const CustomActor *>(actor.get());
-      MS_EXCEPTION_IF_NULL(custom_actor);
-      DumpCustomActor(custom_actor, ofs);
     }
   }
 }
@@ -1437,9 +1373,7 @@ void FetchOutputInfo(AbstractActor *actor, std::vector<KernelTensorPtr> *output_
                      const ActorInputMap &actor_inputs) {
   MS_EXCEPTION_IF_NULL(actor);
   MS_EXCEPTION_IF_NULL(output_kernel_tensors);
-  if (actor->type() == KernelTransformType::kKernelActor ||
-      actor->type() == KernelTransformType::kConditionGatherActor ||
-      actor->type() == KernelTransformType::kConditionSwitchActor) {
+  if (actor->type() == KernelTransformType::kKernelActor) {
     const auto &kernel_actor = dynamic_cast<KernelActor *>(actor);
     if (kernel_actor != nullptr && kernel_actor->kernel() != nullptr &&
         kernel_actor->kernel()->kernel_info() != nullptr) {

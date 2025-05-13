@@ -73,53 +73,6 @@ class DataSourceActor : public DebugAwareActor {
   size_t buffer_capacity_;
 };
 
-// The class represents that the data source is device queue.
-class DeviceQueueDataSourceActor : public DataSourceActor {
- public:
-  DeviceQueueDataSourceActor(const std::string &name, size_t buffer_capacity, const DeviceContext *device_context,
-                             const AID &memory_manager_aid, const AID *debug_aid, const AID *recorder_aid)
-      : DataSourceActor(name, KernelTransformType::kDeviceDataSourceActor, buffer_capacity, memory_manager_aid,
-                        debug_aid, recorder_aid) {
-    (void)device_contexts_.emplace_back(device_context);
-  }
-  ~DeviceQueueDataSourceActor() override = default;
-
-  // The memory related operation interface.
-  void SendMemoryAllocReq(OpContext<KernelTensor> *const context) override;
-  void SendMemoryFreeReq(OpContext<KernelTensor> *const context) override;
-  // Copy data from data source to the device tensor buffer of actor after memory alloc finished.
-  void OnMemoryAllocFinish(OpContext<KernelTensor> *const context) override;
-  void IncreaseNewRefCounts(OpContext<KernelTensor> *const context) override;
-
-  void SendDebugReq(OpContext<KernelTensor> *const context) override;
-
-  const CNodePtr &data_kernel() const { return data_kernel_; }
-
- protected:
-  void Init() override;
-  void FillDataBuffer() override;
-  void SendRecorderInfo(OpContext<KernelTensor> *const context) const override;
-
- private:
-  friend class GraphScheduler;
-  friend class ControlNodeScheduler;
-
-  // Input data kernel(for example GetNext) fetches data from device queue.
-  CNodePtr data_kernel_{nullptr};
-  KernelInfo *kernel_info_{nullptr};
-
-  bool is_dynamic_shape_;
-
-  // The kernel mem info is needed for recording info.
-  KernelLaunchAddr mem_info_;
-
-  // The kernel tensors for resize and launch.
-  std::vector<KernelTensor *> output_kernel_tensors_;
-
-  // The stream resource of the Actor to launch kernel.
-  void *stream_{nullptr};
-};
-
 // The class represents that the data source is host queue.
 class HostQueueDataSourceActor : public DataSourceActor {
  public:
@@ -173,7 +126,6 @@ class HostQueueDataSourceActor : public DataSourceActor {
 };
 
 using DataSourceActorPtr = std::shared_ptr<DataSourceActor>;
-using DeviceQueueDSActorPtr = std::shared_ptr<DeviceQueueDataSourceActor>;
 using HostQueueDSActorPtr = std::shared_ptr<HostQueueDataSourceActor>;
 
 }  // namespace runtime

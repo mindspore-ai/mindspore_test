@@ -282,7 +282,6 @@ class KernelRunner {
  protected:
   friend class GraphScheduler;
   friend class ControlNodeScheduler;
-  friend class InlineControlFlowScheduler;
   friend class SchedulerHelper;
   friend class SuperKernelActor;
 

@@ -54,7 +54,6 @@ class ConditionSwitchRunner : public KernelRunner {
   void FetchParameterInput(OpContext<KernelTensor> *const context);
 
   friend class SuperKernelActor;
-  friend class InlineControlFlowScheduler;
   // Collect memory free list, as the ref counts of different branches are superimposed on the output,
   // so the excess reference counts of other branches need to be subtracted in advance.
   void CollectMemoryFreeList(size_t index);

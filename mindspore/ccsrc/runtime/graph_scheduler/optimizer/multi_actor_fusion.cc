@@ -24,8 +24,7 @@ namespace runtime {
 namespace {
 bool SupportFusion(const AbstractActorPtr &actor) {
   MS_EXCEPTION_IF_NULL(actor);
-  if ((actor->type() == KernelTransformType::kDeviceDataSourceActor) ||
-      (actor->type() == KernelTransformType::kHostDataSourceActor) ||
+  if ((actor->type() == KernelTransformType::kHostDataSourceActor) ||
       (actor->type() == KernelTransformType::kKernelActor) ||
       (actor->type() == KernelTransformType::kSuperKernelActor) || (actor->type() == KernelTransformType::kCopyActor)) {
     return true;
@@ -39,10 +38,6 @@ constexpr size_t kActorFusionMaxNum = 1000;
 
 void MultiActorFusion::Process(ActorSet *const actor_set, AbstractActor *const) {
   MS_EXCEPTION_IF_NULL(actor_set);
-  if (!actor_set->custom_actors_.empty()) {
-    return;
-  }
-
   // Build all the fusion actors.
   FuseMultiActors(actor_set);
 

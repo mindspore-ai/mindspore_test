@@ -84,8 +84,6 @@ bool IsRunningFailed(const OpContext<KernelTensor> *context) {
   return (context->error_info_ != "");
 }
 
-bool IsDeviceQueueDSActor(const AnfNodePtr &, GraphExecutionStrategy) { return false; }
-
 bool IsHostQueueDSActor(const AnfNodePtr &node, const KernelGraphPtr &graph,
                         const std::vector<AnfNodePtr> &host_parameters, GraphExecutionStrategy strategy) {
   MS_EXCEPTION_IF_NULL(node);
@@ -172,17 +170,8 @@ bool IsInternalParameter(const AnfNodePtr &node, const KernelGraphPtr &graph) {
   return false;
 }
 
-bool IsCustomActor(const AnfNodePtr &node) {
-  MS_EXCEPTION_IF_NULL(node);
-  return AnfUtils::IsCustomActorNode(node);
-}
-
 bool IsKernelActor(const AnfNodePtr &node, GraphExecutionStrategy) {
   MS_EXCEPTION_IF_NULL(node);
-  if (IsCustomActor(node)) {
-    return false;
-  }
-
   if (!AnfUtils::IsRealCNodeKernel(node)) {
     return false;
   }
@@ -579,12 +568,8 @@ KernelTransformType FetchKernelTransformType(const AnfNodePtr &node, const Kerne
     }
   }
 
-  if (IsDeviceQueueDSActor(real_node, strategy)) {
-    type = KernelTransformType::kDeviceDataSourceActor;
-  } else if (IsHostQueueDSActor(real_node, kernel_graph, host_parameters, strategy)) {
+  if (IsHostQueueDSActor(real_node, kernel_graph, host_parameters, strategy)) {
     type = KernelTransformType::kHostDataSourceActor;
-  } else if (IsCustomActor(real_node)) {
-    type = KernelTransformType::kCustomActor;
   } else if (IsKernelActor(real_node, strategy)) {
     type = KernelTransformType::kKernelActor;
   } else if (IsInternalParameter(real_node, kernel_graph)) {
@@ -624,18 +609,11 @@ std::string FetchActorName(KernelTransformType kernel_type, const std::string &a
     case KernelTransformType::kAnyTypeKernelActor:
       actor_name = kernel_graph->ToString() + kAnyTypeKernelActorNameSuffix;
       break;
-    case KernelTransformType::kDeviceDataSourceActor:
-      actor_name = actor_set_name + kDeviceDSActorNameSuffix + "_" + std::to_string(kernel_graph->graph_id());
-      break;
     case KernelTransformType::kHostDataSourceActor:
       actor_name = actor_set_name + kHostDSActorNameSuffix;
       break;
     case KernelTransformType::kGraphParameterStore:
       actor_name = actor_set_name + kReplaceDSActorStore;
-      break;
-    case KernelTransformType::kCustomActor:
-      MS_EXCEPTION_IF_NULL(real_node);
-      actor_name = AnfUtils::GetCustomActorName(real_node);
       break;
     case KernelTransformType::kKernelActor:
       MS_EXCEPTION_IF_NULL(real_node);

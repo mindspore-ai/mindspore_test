@@ -259,7 +259,6 @@ class KernelActor : public DebugAwareActor {
  protected:
   friend class GraphScheduler;
   friend class ControlNodeScheduler;
-  friend class InlineControlFlowScheduler;
   friend class SchedulerHelper;
 #ifdef ENABLE_RPC_ACTOR
   friend class RpcNodeScheduler;

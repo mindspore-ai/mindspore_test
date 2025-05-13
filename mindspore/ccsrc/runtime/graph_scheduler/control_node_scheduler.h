@@ -95,7 +95,6 @@ class ControlNodeScheduler {
 
   // Link data arrow between control actor and actor in frame, including kernel actor, output actor, data source actor.
   void LinkDataArrowForKernelActor(const GraphCompilerInfo &graph_compiler_info) const;
-  void LinkDataArrowForCustomActor(const ActorSet *actor_set, const GraphCompilerInfo &graph_compiler_info) const;
   void LinkDataArrowByKernelGraph(const KernelGraphPtr &graph, ControlActor *const entrance_actor,
                                   const ControlNodeParserPtr &parser) const;
   void LinkDataArrowByKernelGraphInSinkMode(const KernelGraphPtr &graph, ControlActor *const from_actor,
@@ -106,7 +105,6 @@ class ControlNodeScheduler {
   void LinkDataArrowForOutputActor(ActorSet *const actor_set, const GraphCompilerInfo &graph_compiler_info) const;
   void LinkControlArrowForKernelActor(ActorSet *const actor_set, const GraphCompilerInfo &graph_compiler_info) const;
   void LinkOutputControlArrowForActor(ActorSet *const actor_set, const GraphCompilerInfo &graph_compiler_info) const;
-  void LinkControlArrowForCustomActor(ActorSet *const actor_set, const GraphCompilerInfo &graph_compiler_info) const;
   void LinkControlArrowByKernelGraphGroup(const GraphCompilerInfo &graph_compiler_info) const;
   void LinkControlArrowByAutoMonad(ControlActor *to_actor, const AnfNodePtr &from_node,
                                    const ControlNodeParserPtr &parser) const;

@@ -152,10 +152,6 @@ std::vector<AbstractActorPtr> SchedulerHelper::CollectActors(const ActorSet *act
     MS_EXCEPTION_IF_NULL(data_source_actor);
     (void)actors.emplace_back(static_cast<AbstractActorPtr>(data_source_actor));
   }
-  for (auto &custom_actor : actor_set->custom_actors_) {
-    MS_EXCEPTION_IF_NULL(custom_actor);
-    (void)actors.emplace_back(static_cast<AbstractActorPtr>(custom_actor));
-  }
   for (auto &kernel_actor : actor_set->kernel_actors_) {
     MS_EXCEPTION_IF_NULL(kernel_actor);
     (void)actors.emplace_back(static_cast<AbstractActorPtr>(kernel_actor));
@@ -1217,15 +1213,6 @@ KernelGraphPtr SchedulerHelper::FetchKernelGraphByActor(AbstractActor *const act
     MS_EXCEPTION_IF_NULL(from_kernel);
   }
 
-  // The device data source actor is from the GetNext cnode that is not a boundary of the graph and is equivalent to the
-  // kernel actor when inserted the memory actor.
-  if (actor->type() == KernelTransformType::kDeviceDataSourceActor) {
-    auto device_ds_actor = dynamic_cast<DeviceQueueDataSourceActor *>(actor);
-    MS_EXCEPTION_IF_NULL(device_ds_actor);
-    from_kernel = device_ds_actor->data_kernel().get();
-    MS_EXCEPTION_IF_NULL(from_kernel);
-  }
-
   // Only the copy actor from device tensor store need to fetch the kernel graph, because the copy actor is not a
   // boundary of the graph and is equivalent to the kernel actor when inserted the memory actor.
   if ((actor->type() == KernelTransformType::kCopyActor) &&
@@ -1539,12 +1526,11 @@ void SchedulerHelper::CheckActorValid(const ActorSet *actor_set) {
                                  << ", actual control num: " << actor->input_control_arrow_aids_.size();
     }
 
-    if ((actor->type_ != KernelTransformType::kOutputActor) && (actor->type_ != KernelTransformType::kCustomActor) &&
-        (actor->output_data_arrows_.size() == 0) && (actor->output_control_arrows_.size() == 0)) {
+    if ((actor->type_ != KernelTransformType::kOutputActor) && (actor->output_data_arrows_.size() == 0) &&
+        (actor->output_control_arrows_.size() == 0)) {
       MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Runtime error info:#dmsg#" << actor->GetAID().Name() << " has no user.";
     }
     if ((actor->type_ != KernelTransformType::kDataPrepareActor) &&
-        (actor->type_ != KernelTransformType::kCustomActor) &&
         (actor->input_datas_num_ == 0 && actor->parameter_indexs_.size() == 0) && (actor->input_controls_num_ == 0)) {
       MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Runtime error info:#dmsg#" << actor->GetAID().Name() << " has no source.";
     }
@@ -1611,7 +1597,6 @@ void SchedulerHelper::DumpActorSet(const ActorSet *actor_set, std::ofstream &ofs
   DumpOutputActor(actor_set->output_actor_, ofs);
   DumpFusionActors(actor_set->fusion_actors_, ofs);
   DumpControlActors(actor_set->control_actors_, ofs);
-  DumpCustomActors(actor_set->custom_actors_, ofs);
   DumpSwapActors(actor_set->swap_actors_, ofs);
 }
 
