@@ -581,7 +581,8 @@ bool AscendMemoryPool::UseEnhancedMemoryPool() {
   bool enable_debug_log = common::GetEnv("GLOG_v") == "0";
   bool enable_memory_vlog = IS_VLOG_ON(VL_RUNTIME_FRAMEWORK_MEMORY);
   return enable_debugger || enable_debug_log || enable_memory_vlog ||
-         common::IsEnableAllocConfig(common::kAllocMemoryTracker) || common::IsCompileSimulation();
+         common::IsEnableAllocConfig(common::kAllocMemoryTracker) || common::IsCompileSimulation() ||
+         !common::GetAllocConfigValue(common::kAllocMemoryTrackerPath).empty();
 }
 
 std::string AscendMemoryPool::ParseDebugConfig(std::string input, std::string config) {
