@@ -188,6 +188,8 @@ struct Edge {
   size_t input_index;
 };
 
+using CppTensorHookList = std::vector<std::unique_ptr<CppTensorBackwardNodePreHook>>;
+
 class COMMON_EXPORT BackwardNode : public std::enable_shared_from_this<BackwardNode> {
  public:
   /// \brief Constructor.
@@ -223,6 +225,15 @@ class COMMON_EXPORT BackwardNode : public std::enable_shared_from_this<BackwardN
   /// \param id
   void RemovePyTensorHook(uint64_t id) { (void)py_tensor_pre_hooks_.erase(id); }
 
+  /// \brief Add cpp tensor hook.
+  /// \param[in] hook
+  /// \return hook index
+  unsigned AddCppTensorHook(std::unique_ptr<CppTensorBackwardNodePreHook> &&hook);
+
+  /// \brief Remove cpp tensor hook.
+  /// \param[in] idx Cpp tensor hook id.
+  void RemoveCppTensorHook(unsigned idx);
+
   /// check next edges is all not defined.
   /// \return true
   bool IsEmpty();
@@ -252,11 +263,15 @@ class COMMON_EXPORT BackwardNode : public std::enable_shared_from_this<BackwardN
   /// \brief Set check func.
   void set_check_func(const std::function<void(const std::string &op_name)> &check_func) { check_func_ = check_func; }
 
-  /// \brief Backward hook for backward node.
-  /// \return backward_hooks
+  /// \brief Python tensor pre hook for backward node.
+  /// \return hook map
   const OrderedMap<uint64_t, std::unique_ptr<PyTensorBackwardNodePreHook>> &py_tensor_pre_hooks() const {
     return py_tensor_pre_hooks_;
   }
+
+  /// \brief Cpp tensor pre hook for backward node.
+  /// \return hook list
+  const std::unique_ptr<CppTensorHookList> &cpp_tensor_pre_hooks() const { return cpp_tensor_pre_hooks_; }
 
   /// \brief The sequence number of current node.
   /// \return sequence number
@@ -280,6 +295,7 @@ class COMMON_EXPORT BackwardNode : public std::enable_shared_from_this<BackwardN
   std::function<void(const std::string &op_name)> check_func_{nullptr};
   // Tensor hooks
   OrderedMap<uint64_t, std::unique_ptr<PyTensorBackwardNodePreHook>> py_tensor_pre_hooks_;
+  std::unique_ptr<CppTensorHookList> cpp_tensor_pre_hooks_{};
   size_t seq_id_;
   size_t output_size_;
 };
