@@ -213,6 +213,7 @@ KernelRunner::KernelRunner(const std::string &name, const CNodePtr &kernel, cons
                            const std::set<size_t> &modifiable_ref_output_indexes, const KernelTransformType &type)
     : type_(type),
       id(name, ActorMgr::GetActorMgrRef()->GetUrl()),
+      enable_input_optimize_(EnableInputOptimize()),
       kernel_(kernel),
       is_dynamic_value_(false),
       is_dynamic_type_(false),
@@ -1115,7 +1116,7 @@ void KernelRunner::ExecuteResizeKernelModTask(OpContext<KernelTensor> *const con
 }
 
 void KernelRunner::ExecuteLaunchKernelTask(OpContext<KernelTensor> *const context) {
-  if (IsRunningFailed(context)) {
+  if (MS_UNLIKELY(IsRunningFailed(context))) {
     MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Run failed and early stop launch kernel: "
                                          << kernel_->fullname_with_scope();
     return;
@@ -1132,7 +1133,7 @@ void KernelRunner::ExecuteLaunchKernelTask(OpContext<KernelTensor> *const contex
                                                       GetAID());
   }
 
-  if (IsRunningFailed(context)) {
+  if (MS_UNLIKELY(IsRunningFailed(context))) {
     MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Run failed and early stop launch kernel: "
                                          << kernel_->fullname_with_scope();
     return;
@@ -1140,14 +1141,14 @@ void KernelRunner::ExecuteLaunchKernelTask(OpContext<KernelTensor> *const contex
 
   // For performance, Only kernel need user data (such as PyExecute op) need call 'PreLaunchKernel', the
   // 'PreLaunchKernel' will be removed in the future.
-  if (ActorDispatcher::has_kernel_need_user_data()) {
+  if (MS_UNLIKELY(ActorDispatcher::has_kernel_need_user_data())) {
     PreLaunchKernel(context);
   }
 
   // 2. Launch kernel if need.
   device_contexts_[0]->device_res_manager_->BindDeviceToCurrentThread(false);
 
-  if (debug_aid_ != nullptr) {
+  if (MS_UNLIKELY(debug_aid_ != nullptr)) {
     ActorDispatcher::SendSync(*debug_aid_, &DebugActor::DebugPreLaunch, kernel_, input_kernel_tensors_,
                               output_kernel_tensors_, device_contexts_[0], context, &GetAID());
   }
@@ -1158,7 +1159,7 @@ void KernelRunner::ExecuteLaunchKernelTask(OpContext<KernelTensor> *const contex
                                          << trace::DumpSourceLines(kernel_);
   }
 
-  if (recorder_aid_ != nullptr) {
+  if (MS_UNLIKELY(recorder_aid_ != nullptr)) {
     SetMemInfoForRdr();
     ActorDispatcher::Send(*recorder_aid_, &RecorderActor::RecordInfo, kernel_->fullname_with_scope(), &mem_info_,
                           device_contexts_[0], context);
@@ -1168,7 +1169,7 @@ void KernelRunner::ExecuteLaunchKernelTask(OpContext<KernelTensor> *const contex
     kernel_mod_->UpdateOutputShapeAndSize(input_launch_tensors_, output_launch_tensors_);
   }
 
-  if (kernel_mod_->need_user_data()) {
+  if (MS_UNLIKELY(kernel_mod_->need_user_data())) {
     for_each(output_kernel_tensors_.begin(), output_kernel_tensors_.end(),
              [](auto &kernel_tensor) { kernel_tensor->set_need_sync_user_data(true); });
   }
@@ -1292,11 +1293,11 @@ void KernelRunner::DispatchDebugActor(OpContext<KernelTensor> *const context) {
 bool KernelRunner::LaunchKernelWithDebug(OpContext<KernelTensor> *const context, const bool skip_launch) {
   MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Begin launch kernel: " << kernel_->fullname_with_scope();
   static bool is_enable_mem_tracker = device::tracker::MemTrackerManager::GetInstance().IsEnabled();
-  if (is_enable_mem_tracker) {
+  if (MS_UNLIKELY(is_enable_mem_tracker)) {
     AddNodeToGraphTracker(kernel_, GetAID().Name());
     TrackInputOutputMemory(input_launch_tensors_, output_launch_tensors_, GetAID().Name(), depend_shape_input_list_);
   } else {
-    if (device::tracker::MemTrackerManager::GetInstance().enable_memory_debug_info()) {
+    if (MS_UNLIKELY(device::tracker::MemTrackerManager::GetInstance().enable_memory_debug_info())) {
       AddNodeMemTrackerInfo(kernel_, GetAID().Name(), is_stream_recv_actor_);
     }
   }
@@ -1316,12 +1317,12 @@ bool KernelRunner::LaunchKernel(OpContext<KernelTensor> *const context, bool is_
     cache.Add(kernel_);
   }
 
-  if (EnableExecuteOrderDump()) {
+  if (MS_UNLIKELY(EnableExecuteOrderDump())) {
     auto &execute_order_tracker = ExecuteOrderTracker::GetInstance();
     execute_order_tracker.ProcessNode(kernel_);
   }
   static bool is_enable_mem_tracker = device::tracker::MemTrackerManager::GetInstance().IsEnabled();
-  if (skip_launch_shape_related_op_) {
+  if (MS_UNLIKELY(skip_launch_shape_related_op_)) {
     MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Skip launch real make tuple kernel: " << kernel_->fullname_with_scope()
                                          << " input kernel tensor: " << input_kernel_tensors_;
     if (is_enable_mem_tracker) {
