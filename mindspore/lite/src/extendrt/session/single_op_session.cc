@@ -385,11 +385,8 @@ void SingleOpInferSession::SetBackOutputIfDynamic(std::vector<tensor::Tensor> *o
         auto type_size = abstract::TypeIdSize(out_type);
         MS_CHECK_TRUE_RET_VOID(type_size != 0);
         auto elem_num = kernel_args_.outputs[i]->size() / type_size;
-        auto acl_mem_deleter = [](uint8_t *data_buf_ptr) {
-          kernel::AscendAllocatorPlugin::GetInstance().FreeHost(static_cast<void *>(data_buf_ptr));
-        };
         auto ref_tensor_data =
-          std::make_shared<TensorRefData>(host_addr->addr, elem_num, host_addr->size, shape.size(), acl_mem_deleter);
+          std::make_shared<TensorRefData>(host_addr->addr, elem_num, host_addr->size, shape.size());
         (*outputs)[i] = tensor::Tensor(out_type, shape, ref_tensor_data);
         MS_LOG(DEBUG) << "resetting kernel tensor shape to 0 for the next prediction";
         kernel_args_.outputs[i]->SetShapeVector({0});
