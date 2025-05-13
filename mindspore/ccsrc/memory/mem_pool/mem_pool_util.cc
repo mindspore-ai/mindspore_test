@@ -17,6 +17,7 @@
 
 #include "include/common/debug/common.h"
 #include "utils/file_utils.h"
+#include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace memory {
@@ -39,9 +40,7 @@ const std::map<MemType, std::string> kMemTypeStr = {{MemType::kWeight, "Weight"}
 std::string MemTypeToStr(MemType mem_type) { return kMemTypeStr.at(mem_type); }
 
 std::string GeneratePath(size_t rank_id, const std::string &file_name, const std::string &suffix) {
-  std::string path;
-  auto &&ms_context = MsContext::GetInstance();
-  path = ms_context->get_param<std::string>(MS_CTX_PROF_MEM_OUTPUT_PATH);
+  std::string path = common::GetAllocConfigValue(common::kAllocMemoryTrackerPath);
   if (path.empty()) {
     path = "./";
   }
