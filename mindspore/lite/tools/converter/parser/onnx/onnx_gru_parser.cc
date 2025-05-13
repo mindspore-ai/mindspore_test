@@ -24,40 +24,62 @@
 #include "mindspore/ops/infer/grad/gru_v2_grad.h"
 
 namespace mindspore {
+namespace {
+constexpr auto kGruAttrDirection = "direction";
+constexpr auto kGruAttrDirectionValueForward = "forward";
+constexpr auto kGruAttrDirectionValueReverse = "reverse";
+constexpr auto kGruAttrDirectionValueBidirectional = "bidirectional";
+constexpr auto kGruAttrActivationAlpha = "activation_alpha";
+constexpr auto kGruAttrActivationBeta = "activation_beta";
+constexpr auto kGruAttrActivations = "activations";
+constexpr auto kGruAttrClip = "clip";
+constexpr auto kGruAttrHiddenSize = "hidden_size";
+constexpr auto kGruAttrLinearBeforeReset = "linear_before_reset";
+}  // namespace
 namespace lite {
 PrimitiveCPtr OnnxGruParser::Parse(const onnx::GraphProto &onnx_graph, const onnx::NodeProto &onnx_node) {
   auto prim = std::make_unique<ops::GRU>();
   MS_CHECK_TRUE_RET(prim != nullptr, nullptr);
-
+  (void)prim->AddAttr(kGruAttrDirection, api::MakeValue(kGruAttrDirectionValueForward));
   for (const auto &onnx_node_attr : onnx_node.attribute()) {
-    if (onnx_node_attr.name() == "direction") {
+    if (onnx_node_attr.name() == kGruAttrDirection) {
       const auto &direction = onnx_node_attr.s();
-      bool bidirectional = direction == "bidirectional";
+      bool bidirectional = direction == kGruAttrDirectionValueBidirectional;
       prim->set_bidirectional(bidirectional);
-    } else if (onnx_node_attr.name() == "activation_alpha") {
+      if (direction == kGruAttrDirectionValueBidirectional) {
+        (void)prim->AddAttr(kGruAttrDirection, api::MakeValue(kGruAttrDirectionValueBidirectional));
+      } else if (direction == kGruAttrDirectionValueReverse) {
+        (void)prim->AddAttr(kGruAttrDirection, api::MakeValue(kGruAttrDirectionValueReverse));
+      } else if (direction == kGruAttrDirectionValueForward) {
+        (void)prim->AddAttr(kGruAttrDirection, api::MakeValue(kGruAttrDirectionValueForward));
+      } else {
+        MS_LOG(ERROR) << " not support direction value : " << direction;
+        return nullptr;
+      }
+    } else if (onnx_node_attr.name() == kGruAttrActivationAlpha) {
       std::vector<float> activation_alpha;
       for (int i = 0; i < onnx_node_attr.ints_size(); ++i) {
         activation_alpha.push_back(onnx_node_attr.floats(i));
       }
-      (void)prim->AddAttr("activation_alpha", api::MakeValue(activation_alpha));
-    } else if (onnx_node_attr.name() == "activation_beta") {
+      (void)prim->AddAttr(kGruAttrActivationAlpha, api::MakeValue(activation_alpha));
+    } else if (onnx_node_attr.name() == kGruAttrActivationBeta) {
       std::vector<float> activation_beta;
       for (int i = 0; i < onnx_node_attr.ints_size(); ++i) {
         activation_beta.push_back(onnx_node_attr.floats(i));
       }
-      (void)prim->AddAttr("activation_beta", api::MakeValue(activation_beta));
-    } else if (onnx_node_attr.name() == "activations") {
+      (void)prim->AddAttr(kGruAttrActivationBeta, api::MakeValue(activation_beta));
+    } else if (onnx_node_attr.name() == kGruAttrActivations) {
       std::vector<std::string> activations;
       for (int i = 0; i < onnx_node_attr.ints_size(); ++i) {
         activations.push_back(onnx_node_attr.strings(i));
       }
-      (void)prim->AddAttr("activations", api::MakeValue(activations));
-    } else if (onnx_node_attr.name() == "clip") {
-      (void)prim->AddAttr("clip", api::MakeValue(onnx_node_attr.f()));
-    } else if (onnx_node_attr.name() == "hidden_size") {
-      (void)prim->AddAttr("hidden_size", api::MakeValue(onnx_node_attr.i()));
-    } else if (onnx_node_attr.name() == "linear_before_reset") {
-      (void)prim->AddAttr("linear_before_reset", api::MakeValue(onnx_node_attr.i()));
+      (void)prim->AddAttr(kGruAttrActivations, api::MakeValue(activations));
+    } else if (onnx_node_attr.name() == kGruAttrClip) {
+      (void)prim->AddAttr(kGruAttrClip, api::MakeValue(onnx_node_attr.f()));
+    } else if (onnx_node_attr.name() == kGruAttrHiddenSize) {
+      (void)prim->AddAttr(kGruAttrHiddenSize, api::MakeValue(onnx_node_attr.i()));
+    } else if (onnx_node_attr.name() == kGruAttrLinearBeforeReset) {
+      (void)prim->AddAttr(kGruAttrLinearBeforeReset, api::MakeValue(onnx_node_attr.i()));
     }
   }
 
