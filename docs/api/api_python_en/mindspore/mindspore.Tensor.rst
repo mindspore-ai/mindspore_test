@@ -330,6 +330,7 @@ mindspore.Tensor
     mindspore.Tensor.nelement
     mindspore.Tensor.new_ones
     mindspore.Tensor.new_zeros
+    mindspore.Tensor.new_full
     mindspore.Tensor.nextafter
     mindspore.Tensor.nonzero
     mindspore.Tensor.norm
