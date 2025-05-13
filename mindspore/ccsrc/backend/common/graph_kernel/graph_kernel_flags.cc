@@ -386,6 +386,7 @@ void GraphKernelFlags::RegisterFlags(std::map<std::string, std::string> *flag_ma
   reg.AddFlag("disable_matmul_post_fusion", &disable_matmul_post_fusion);
   reg.AddFlag("enable_allreduce_prologue_fusion", &enable_allreduce_prologue_fusion);
   reg.AddFlag("enable_allreduce_epilogue_fusion", &enable_allreduce_epilogue_fusion);
+  reg.AddFlag("exact_precision_mode", &exact_precision_mode);
 
   // Integer flags
   reg.AddFlag("reduce_fuse_depth", &reduce_fuse_depth);
@@ -468,6 +469,7 @@ std::string GraphKernelFlags::DumpAllFlags() const {
   json["enable_lite_conv_tuning"] = enable_lite_conv_tuning;
   json["enable_vectorization"] = enable_vectorization;
   json["enable_dynamic_shape_fusion"] = enable_dynamic_shape_fusion;
+  json["exact_precision_mode"] = exact_precision_mode;
 
   json["opt_level"] = opt_level;
   json["fusion_ops_level"] = fusion_ops_level;

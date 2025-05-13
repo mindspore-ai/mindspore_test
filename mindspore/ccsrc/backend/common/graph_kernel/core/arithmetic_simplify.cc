@@ -1072,79 +1072,35 @@ struct Expression {
 
 #define EXPR_PATTERN(cls) [](const std::string &expr) -> PatternTreePtr { return std::make_shared<cls>(expr); }
 
-static std::vector<Expression> expressions = {
+// The result of this collection of optimizations is guaranteed to be exactly the same as the result of original graph
+// structure
+static std::vector<Expression> expressions_optlevel_1 = {
   // add
   {"Add(A,0)=A", EXPR_PATTERN(ConstantFoldingPatternTree)},
-  {"Add(Mul(A,C),Mul(A,B))=Mul(A,Add(B,C))", EXPR_PATTERN(PatternTree)},
-  {"Add(Add(A,const1),const2)=Add(A,Add(const1,const2))", EXPR_PATTERN(PatternTree)},
   {"Add(A,Neg(A))=BroadcastTo(0,B)", EXPR_PATTERN(NegAddPatternTree)},
-  {"Add(Add(A,B),Neg(A))=B", EXPR_PATTERN(PatternTree)},
-  {"Add(Add(A,B),Add(Neg(A),C))=Add(B,C)", EXPR_PATTERN(PatternTree)},
   // sub
   {"Sub(A,0)=A", EXPR_PATTERN(ConstantFoldingPatternTree)},
   {"Sub(A,const1)=Add(A,Neg(const1))", EXPR_PATTERN(PatternTree)},
-  {"Sub(Mul(A,C),Mul(A,B))=Mul(A,Sub(B,C))", EXPR_PATTERN(PatternTree)},
-  {"Sub(Mul(A,C),Mul(B,C))=Mul(Sub(A,B),C)", EXPR_PATTERN(PatternTree)},
-  // log
-  {"Log(Exp(A))=A", EXPR_PATTERN(PatternTree)},
-  {"Log(Pow(A,B))=Mul(B,Log(Abs(A)))", EXPR_PATTERN(PatternTree)},
-  {"Log(Sqrt(A))=Mul(0.5,Log(A))", EXPR_PATTERN(PatternTree)},
-  {"Log(Rsqrt(A))=Mul(-0.5,Log(A))", EXPR_PATTERN(PatternTree)},
   // pow
   {"Pow(A,1)=A", EXPR_PATTERN(ConstantFoldingPatternTree)},
-  {"Pow(Exp(A),B)=Exp(Mul(A,B))", EXPR_PATTERN(PatternTree)},
   {"Pow(A,2)=Mul(A,A)", EXPR_PATTERN(ConstantFoldingPatternTree)},
   {"Pow(A,-1)=Reciprocal(A)", EXPR_PATTERN(ConstantFoldingPatternTree)},
-  // sqrt
-  {"Sqrt(Mul(A,A))=Abs(A)", EXPR_PATTERN(PatternTree)},
-  {"Rsqrt(Pow(A,-2))=Abs(A)", EXPR_PATTERN(ConstantFoldingPatternTree)},
-  {"Rsqrt(Reciprocal(A))=Sqrt(A)", EXPR_PATTERN(PatternTree)},
   // select
   {"Select(A,B,B)=B", EXPR_PATTERN(PatternTree)},
-  // Neg
+  // neg
   {"Neg(Neg(A))=A", EXPR_PATTERN(PatternTree)},
   // mul
   {"Mul(A,1)=A", EXPR_PATTERN(ConstantFoldingPatternTree)},
-  {"Mul(Mul(A,const1),Mul(B,const2))=Mul(Mul(A,B),Mul(const1,const2))", EXPR_PATTERN(PatternTree)},
-  {"Mul(Mul(A,const1),const2)=Mul(A,Mul(const1,const2))", EXPR_PATTERN(PatternTree)},
-  {"Mul(Exp(A),Exp(B))=Exp(Add(A,B))", EXPR_PATTERN(PatternTree)},
-  {"Mul(Mul(Exp(A),C),Exp(B))=Mul(Exp(Add(A,B)),C)", EXPR_PATTERN(PatternTree)},
-  {"Mul(Mul(Exp(A),C),Mul(Exp(B),D))=Mul(Exp(Add(A,B)),Mul(C,D))", EXPR_PATTERN(PatternTree)},
-  {"Mul(Sqrt(A),Sqrt(A))=A", EXPR_PATTERN(PatternTree)},
-  {"Mul(Mul(A,Sqrt(B)),Mul(C,Sqrt(B)))=Mul(Mul(A,B),C)", EXPR_PATTERN(PatternTree)},
-  {"Mul(Mul(A,Sqrt(B)),Sqrt(B))=Mul(A,B)", EXPR_PATTERN(PatternTree)},
-  {"Mul(Sqrt(A),Sqrt(B))=Sqrt(Mul(A,B))", EXPR_PATTERN(PatternTree)},
-  {"Mul(Rsqrt(A),Rsqrt(A))=Reciprocal(A)", EXPR_PATTERN(PatternTree)},
-  {"Mul(Mul(A,Rsqrt(B)),Rsqrt(B))=RealDiv(A,B)", EXPR_PATTERN(PatternTree)},
-  {"Mul(Mul(A,Rsqrt(B)),Mul(C,Rsqrt(B)))=RealDiv(Mul(A,C),B)", EXPR_PATTERN(PatternTree)},
-  {"Mul(Rsqrt(A),Rsqrt(B))=Rsqrt(Mul(A,B))", EXPR_PATTERN(PatternTree)},
-  {"Mul(A,Rsqrt(A))=Sqrt(A)", EXPR_PATTERN(PatternTree)},
-  {"Mul(Abs(A),Abs(B))=Abs(Mul(A,B))", EXPR_PATTERN(PatternTree)},
-  {"Mul(Mul(Abs(A),C),Abs(B))=Mul(Abs(Mul(A,B)),C)", EXPR_PATTERN(PatternTree)},
-  {"Mul(Mul(Abs(A),C),Mul(Abs(B),D))=Mul(Abs(Mul(A,B)),Mul(C,D))", EXPR_PATTERN(PatternTree)},
   {"Mul(Neg(A),const1)=Mul(A,Neg(const1))", EXPR_PATTERN(PatternTree)},
   // realdiv
   {"RealDiv(1,A)=Reciprocal(A)", EXPR_PATTERN(ConstantFoldingPatternTree)},
   {"RealDiv(A,1)=A", EXPR_PATTERN(ConstantFoldingPatternTree)},
-  {"RealDiv(Exp(A),Exp(B))=Exp(Sub(A,B))", EXPR_PATTERN(PatternTree)},
-  {"RealDiv(A,Exp(B))=Mul(A,Exp(Neg(B)))", EXPR_PATTERN(PatternTree)},
-  {"RealDiv(A,Pow(B,const1))=Mul(A,Pow(B,Neg(const1)))", EXPR_PATTERN(PatternTree)},
-  {"RealDiv(A,Sqrt(A))=Sqrt(A)", EXPR_PATTERN(PatternTree)},
-  {"RealDiv(A,Sqrt(B))=Mul(A,Rsqrt(B))", EXPR_PATTERN(PatternTree)},
-  {"RealDiv(A,Rsqrt(B))=Mul(A,Sqrt(B))", EXPR_PATTERN(PatternTree)},
-  {"RealDiv(A,const1)=Mul(A,Reciprocal(const1))", EXPR_PATTERN(FloatCheckPatternTree)},
-  {"RealDiv(RealDiv(A,B),RealDiv(C,D))=RealDiv(Mul(A,D),Mul(B,C))", EXPR_PATTERN(PatternTree)},
-  {"RealDiv(Neg(A),const1)=RealDiv(A,Neg(const1))", EXPR_PATTERN(PatternTree)},
-  {"RealDiv(RealDiv(A,B),C)=RealDiv(A,Mul(B,C))", EXPR_PATTERN(PatternTree)},
-  {"RealDiv(A,RealDiv(B,C))=RealDiv(Mul(A,C),B)", EXPR_PATTERN(PatternTree)},
-  // reduce1, B, C, D are all axes input
+  // reduce, B, C, D are all axes input
   {"ReduceSum(ReduceSum(A,B),C)=ReduceSum(A,D)", EXPR_PATTERN(ExtraReduce1PatternTree)},
   {"ReduceMin(ReduceMin(A,B),C)=ReduceMin(A,D)", EXPR_PATTERN(ExtraReduce1PatternTree)},
   {"ReduceMax(ReduceMax(A,B),C)=ReduceMax(A,D)", EXPR_PATTERN(ExtraReduce1PatternTree)},
-  // reduce2, B is axes input
   {"ReduceSum(Neg(A),B)=Neg(ReduceSum(A,B))", EXPR_PATTERN(ExtraReduce2PatternTree)},
-  {"ReduceSum(RealDiv(A,const1),B)=RealDiv(ReduceSum(A,B),const1)", EXPR_PATTERN(ExtraReduce2PatternTree)},
-  {"ReduceSum(Mul(A,const1),B)=Mul(ReduceSum(A,B),const1)", EXPR_PATTERN(ExtraReduce2PatternTree)},
+  // complex
   {"CReal(Complex(A,B))=A", EXPR_PATTERN(PatternTree)},
   {"CImag(Complex(A,B))=B", EXPR_PATTERN(PatternTree)},
   // lite only
@@ -1175,25 +1131,95 @@ static std::vector<Expression> expressions = {
   {"Add(BatchMatMul(A,B),C)=BatchMatMul(A,B,C)", EXPR_PATTERN(MatMulAddPatternTree)},
 };
 
+// This collection of optimizations is a little bit progressive, it can lead to better performance,
+// however, due to some reasons, the result may not be exactly the same as the original graph structure.
+// The possible reasons are as follows:
+// 1. Associative Law does not strictly hold for low-precision floating-point computation
+// 2. Distributive law does not strictly hold for low-precision floating-point computation
+// 3. Simplifications involving non-linear functions may not hold exactly in floating-point arithmetic due to rounding
+// errors
+static std::vector<Expression> expressions_optlevel_2 = {
+  // add
+  {"Add(Add(A,B),Neg(A))=B", EXPR_PATTERN(PatternTree)},
+  {"Add(Mul(A,C),Mul(A,B))=Mul(A,Add(B,C))", EXPR_PATTERN(PatternTree)},
+  {"Add(Add(A,const1),const2)=Add(A,Add(const1,const2))", EXPR_PATTERN(PatternTree)},
+  {"Add(Add(A,B),Add(Neg(A),C))=Add(B,C)", EXPR_PATTERN(PatternTree)},
+  // sub
+  {"Sub(Mul(A,C),Mul(A,B))=Mul(A,Sub(B,C))", EXPR_PATTERN(PatternTree)},
+  {"Sub(Mul(A,C),Mul(B,C))=Mul(Sub(A,B),C)", EXPR_PATTERN(PatternTree)},
+  // reduce
+  {"ReduceSum(RealDiv(A,const1),B)=RealDiv(ReduceSum(A,B),const1)", EXPR_PATTERN(ExtraReduce2PatternTree)},
+  {"ReduceSum(Mul(A,const1),B)=Mul(ReduceSum(A,B),const1)", EXPR_PATTERN(ExtraReduce2PatternTree)},
+  // log
+  {"Log(Exp(A))=A", EXPR_PATTERN(PatternTree)},
+  {"Log(Pow(A,B))=Mul(B,Log(Abs(A)))", EXPR_PATTERN(PatternTree)},
+  {"Log(Sqrt(A))=Mul(0.5,Log(A))", EXPR_PATTERN(PatternTree)},
+  {"Log(Rsqrt(A))=Mul(-0.5,Log(A))", EXPR_PATTERN(PatternTree)},
+  // pow
+  {"Pow(Exp(A),B)=Exp(Mul(A,B))", EXPR_PATTERN(PatternTree)},
+  // sqrt
+  {"Sqrt(Mul(A,A))=Abs(A)", EXPR_PATTERN(PatternTree)},
+  {"Rsqrt(Pow(A,-2))=Abs(A)", EXPR_PATTERN(ConstantFoldingPatternTree)},
+  {"Rsqrt(Reciprocal(A))=Sqrt(A)", EXPR_PATTERN(PatternTree)},
+  // mul
+  {"Mul(Mul(A,const1),Mul(B,const2))=Mul(Mul(A,B),Mul(const1,const2))", EXPR_PATTERN(PatternTree)},
+  {"Mul(Mul(A,const1),const2)=Mul(A,Mul(const1,const2))", EXPR_PATTERN(PatternTree)},
+  {"Mul(Exp(A),Exp(B))=Exp(Add(A,B))", EXPR_PATTERN(PatternTree)},
+  {"Mul(Mul(Exp(A),C),Exp(B))=Mul(Exp(Add(A,B)),C)", EXPR_PATTERN(PatternTree)},
+  {"Mul(Mul(Exp(A),C),Mul(Exp(B),D))=Mul(Exp(Add(A,B)),Mul(C,D))", EXPR_PATTERN(PatternTree)},
+  {"Mul(Sqrt(A),Sqrt(A))=A", EXPR_PATTERN(PatternTree)},
+  {"Mul(Mul(A,Sqrt(B)),Mul(C,Sqrt(B)))=Mul(Mul(A,B),C)", EXPR_PATTERN(PatternTree)},
+  {"Mul(Mul(A,Sqrt(B)),Sqrt(B))=Mul(A,B)", EXPR_PATTERN(PatternTree)},
+  {"Mul(Sqrt(A),Sqrt(B))=Sqrt(Mul(A,B))", EXPR_PATTERN(PatternTree)},
+  {"Mul(Rsqrt(A),Rsqrt(A))=Reciprocal(A)", EXPR_PATTERN(PatternTree)},
+  {"Mul(Mul(A,Rsqrt(B)),Rsqrt(B))=RealDiv(A,B)", EXPR_PATTERN(PatternTree)},
+  {"Mul(Mul(A,Rsqrt(B)),Mul(C,Rsqrt(B)))=RealDiv(Mul(A,C),B)", EXPR_PATTERN(PatternTree)},
+  {"Mul(Rsqrt(A),Rsqrt(B))=Rsqrt(Mul(A,B))", EXPR_PATTERN(PatternTree)},
+  {"Mul(A,Rsqrt(A))=Sqrt(A)", EXPR_PATTERN(PatternTree)},
+  {"Mul(Abs(A),Abs(B))=Abs(Mul(A,B))", EXPR_PATTERN(PatternTree)},
+  {"Mul(Mul(Abs(A),C),Abs(B))=Mul(Abs(Mul(A,B)),C)", EXPR_PATTERN(PatternTree)},
+  {"Mul(Mul(Abs(A),C),Mul(Abs(B),D))=Mul(Abs(Mul(A,B)),Mul(C,D))", EXPR_PATTERN(PatternTree)},
+  // realdiv
+  {"RealDiv(Exp(A),Exp(B))=Exp(Sub(A,B))", EXPR_PATTERN(PatternTree)},
+  {"RealDiv(A,Exp(B))=Mul(A,Exp(Neg(B)))", EXPR_PATTERN(PatternTree)},
+  {"RealDiv(A,Pow(B,const1))=Mul(A,Pow(B,Neg(const1)))", EXPR_PATTERN(PatternTree)},
+  {"RealDiv(A,Sqrt(A))=Sqrt(A)", EXPR_PATTERN(PatternTree)},
+  {"RealDiv(A,Sqrt(B))=Mul(A,Rsqrt(B))", EXPR_PATTERN(PatternTree)},
+  {"RealDiv(A,Rsqrt(B))=Mul(A,Sqrt(B))", EXPR_PATTERN(PatternTree)},
+  {"RealDiv(A,const1)=Mul(A,Reciprocal(const1))", EXPR_PATTERN(FloatCheckPatternTree)},
+  {"RealDiv(RealDiv(A,B),RealDiv(C,D))=RealDiv(Mul(A,D),Mul(B,C))", EXPR_PATTERN(PatternTree)},
+  {"RealDiv(Neg(A),const1)=RealDiv(A,Neg(const1))", EXPR_PATTERN(PatternTree)},
+  {"RealDiv(RealDiv(A,B),C)=RealDiv(A,Mul(B,C))", EXPR_PATTERN(PatternTree)},
+  {"RealDiv(A,RealDiv(B,C))=RealDiv(Mul(A,C),B)", EXPR_PATTERN(PatternTree)},
+};
+
 mindspore::HashMap<std::string, std::vector<PatternTreePtr>> GetExpressions() {
   const auto &flags = GraphKernelFlags::GetInstance();
+  bool exact_precision_mode = flags.exact_precision_mode;
   mindspore::HashMap<std::string, std::vector<PatternTreePtr>> expression_map;
   mindspore::HashSet<std::string> enable_ids{flags.enable_simplify_exprs_only.begin(),
                                              flags.enable_simplify_exprs_only.end()};
   mindspore::HashSet<std::string> disable_ids{flags.disable_simplify_exprs.begin(), flags.disable_simplify_exprs.end()};
-  for (size_t id = 0; id < expressions.size(); id++) {
-    if (!enable_ids.empty()) {
-      if (enable_ids.count(std::to_string(id)) == 0) {
-        continue;
+  auto add_exprs = [&](const std::vector<Expression> &exprs, int level) {
+    for (size_t i = 0; i < exprs.size(); ++i) {
+      std::string expr_id = std::to_string(level) + "." + std::to_string(i);
+      if (!enable_ids.empty()) {
+        if (enable_ids.count(expr_id) == 0) {
+          continue;
+        }
+      } else {
+        if (disable_ids.count(expr_id) > 0) {
+          continue;
+        }
       }
-    } else {
-      if (disable_ids.count(std::to_string(id)) > 0) {
-        continue;
-      }
+      auto e = exprs[i];
+      PatternTreePtr pt = e.func(e.math_expr);
+      expression_map[pt->GetRootOp()].push_back(pt);
     }
-    auto e = expressions[id];
-    PatternTreePtr pt = e.func(e.math_expr);
-    expression_map[pt->GetRootOp()].push_back(pt);
+  };
+  add_exprs(expressions_optlevel_1, 1);
+  if (!exact_precision_mode) {
+    add_exprs(expressions_optlevel_2, 2);
   }
   return expression_map;
 }
