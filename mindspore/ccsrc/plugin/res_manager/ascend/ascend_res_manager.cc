@@ -735,6 +735,15 @@ bool AscendResManager::CreateStreamWithPriority(size_t *stream_id, int32_t prior
   return true;
 }
 
+bool AscendResManager::DestroyStream(size_t stream_id) const {
+  if (!BindDeviceToCurrentThread(false)) {
+    MS_LOG(ERROR) << "Bind context to current thread failed";
+    return false;
+  }
+  AscendStreamMng::GetInstance().DestroyStream(stream_id);
+  return true;
+}
+
 size_t AscendResManager::QueryStreamSize() const { return AscendStreamMng::GetInstance().QueryStreamSize(); }
 
 std::vector<uint32_t> AscendResManager::GetStreamIds() const { return AscendStreamMng::GetInstance().GetStreamIds(); }

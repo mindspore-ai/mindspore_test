@@ -26,7 +26,7 @@ def test_hccl_allreduce():
     Expectation: success
     """
     context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
-    return_code = os.system("mpirun --allow-run-as-root -n 8 pytest -s test_allreduce.py")
+    return_code = os.system("msrun --worker_num=8 --local_worker_num=8 --master_port=12345 pytest -s test_allreduce.py")
     assert return_code == 0
 
 
