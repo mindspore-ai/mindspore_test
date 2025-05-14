@@ -33,29 +33,18 @@
 
 namespace mindspore::device::ascend {
 namespace {
-#define AT_ALL_MINDSPORE_TYPE_AND_ACL_DATATYPE_PAIR(_) \
-  _(kNumberTypeBool, ACL_BOOL)                         \
-  _(kNumberTypeInt, ACL_INT32)                         \
-  _(kNumberTypeInt8, ACL_INT8)                         \
-  _(kNumberTypeInt16, ACL_INT16)                       \
-  _(kNumberTypeInt32, ACL_INT32)                       \
-  _(kNumberTypeInt64, ACL_INT64)                       \
-  _(kNumberTypeUInt, ACL_UINT32)                       \
-  _(kNumberTypeUInt8, ACL_UINT8)                       \
-  _(kNumberTypeUInt16, ACL_UINT16)                     \
-  _(kNumberTypeUInt32, ACL_UINT32)                     \
-  _(kNumberTypeUInt64, ACL_UINT64)                     \
-  _(kNumberTypeFloat, ACL_FLOAT)                       \
-  _(kNumberTypeFloat16, ACL_FLOAT16)                   \
-  _(kNumberTypeFloat32, ACL_FLOAT)                     \
-  _(kNumberTypeFloat64, ACL_DOUBLE)                    \
-  _(kNumberTypeBFloat16, ACL_BF16)                     \
-  _(kNumberTypeDouble, ACL_DOUBLE)                     \
-  _(kNumberTypeComplex, ACL_DT_UNDEFINED)              \
-  _(kNumberTypeComplex64, ACL_COMPLEX64)               \
-  _(kNumberTypeComplex128, ACL_COMPLEX128)             \
-  _(kNumberTypeInt4, ACL_INT4)                         \
-  _(kNumberTypeGLUInt, ACL_DT_UNDEFINED)
+static const std::map<TypeId, aclDataType> kDataTypeToAclDataTypeTable = {
+  {kNumberTypeBool, ACL_BOOL},           {kNumberTypeInt, ACL_INT32},
+  {kNumberTypeInt8, ACL_INT8},           {kNumberTypeInt16, ACL_INT16},
+  {kNumberTypeInt32, ACL_INT32},         {kNumberTypeInt64, ACL_INT64},
+  {kNumberTypeUInt, ACL_UINT32},         {kNumberTypeUInt8, ACL_UINT8},
+  {kNumberTypeUInt16, ACL_UINT16},       {kNumberTypeUInt32, ACL_UINT32},
+  {kNumberTypeUInt64, ACL_UINT64},       {kNumberTypeFloat, ACL_FLOAT},
+  {kNumberTypeFloat16, ACL_FLOAT16},     {kNumberTypeFloat32, ACL_FLOAT},
+  {kNumberTypeFloat64, ACL_DOUBLE},      {kNumberTypeBFloat16, ACL_BF16},
+  {kNumberTypeDouble, ACL_DOUBLE},       {kNumberTypeComplex, ACL_DT_UNDEFINED},
+  {kNumberTypeComplex64, ACL_COMPLEX64}, {kNumberTypeComplex128, ACL_COMPLEX128},
+  {kNumberTypeInt4, ACL_INT4},           {kNumberTypeGLUInt, ACL_DT_UNDEFINED}};
 
 static const std::map<std::string, aclFormat> kMsFormatToAclFormat = {{kOpFormat_NCHW, ACL_FORMAT_NCHW},
                                                                       {kOpFormat_NHWC, ACL_FORMAT_NHWC},
@@ -951,11 +940,6 @@ void AclConverter::GenerateRealGeIdx() {
 }
 
 aclDataType AclConverter::ConvertType(TypeId type) {
-  static constexpr aclDataType kDataTypeToAclDataTypeTable[static_cast<int64_t>(kNumberTypeEnd)] = {
-#define DEFINE_ENUM(_1, n) n,
-    AT_ALL_MINDSPORE_TYPE_AND_ACL_DATATYPE_PAIR(DEFINE_ENUM)
-#undef DEFINE_ENUM
-  };
   if (type == kMetaTypeNone || type == kTypeUnknown) {
     return ACL_DT_UNDEFINED;
   }
@@ -965,7 +949,11 @@ aclDataType AclConverter::ConvertType(TypeId type) {
   if (type <= kNumberTypeBegin || type >= kNumberTypeEnd) {
     MS_LOG(EXCEPTION) << "Invalid datatype:" << type;
   }
-  auto acl_type = kDataTypeToAclDataTypeTable[type - kNumberTypeBegin - 1];
+  auto iter = kDataTypeToAclDataTypeTable.find(type);
+  if (iter == kDataTypeToAclDataTypeTable.end()) {
+    MS_LOG(EXCEPTION) << "Invalid datatype:" << type;
+  }
+  auto acl_type = iter->second;
   if (acl_type == ACL_DT_UNDEFINED) {
     MS_LOG(EXCEPTION) << "Invalid datatype:" << type;
   }

@@ -131,6 +131,23 @@ def test_bfloat():
     assert np.allclose(float(a.asnumpy()), 1.0)
 
 
+def test_float8():
+    """
+    Feature: Test create a tensor with type of float8.
+    Description: Check shape/type of tensor with type of float8.
+    Expectation: success.
+    """
+    a = ms.Tensor(np.ones((2, 3)), ms.float8_e5m2)
+    assert a.shape == (2, 3)
+    assert a.dtype == ms.float8_e5m2
+    a = ms.Tensor(np.ones((2, 3)), ms.float8_e4m3fn)
+    assert a.shape == (2, 3)
+    assert a.dtype == ms.float8_e4m3fn
+    a = ms.Tensor(np.ones((2, 3)), ms.hifloat8)
+    assert a.shape == (2, 3)
+    assert a.dtype == ms.hifloat8
+
+
 def test_tensor_method_sub():
     """test_tensor_method_sub"""
 

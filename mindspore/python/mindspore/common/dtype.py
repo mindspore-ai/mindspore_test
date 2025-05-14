@@ -46,7 +46,9 @@ __dtype__ = [
     "TensorType", "_null",
     "Type", "Int",
     "complex64", "complex128",
-    "bfloat16", "qint4x2"
+    "bfloat16", "qint4x2",
+    "float8_e4m3fn", "float8_e5m2",
+    "hifloat8"
 ]
 
 __method__ = [
@@ -86,6 +88,9 @@ float32 = typing.kFloat32
 single = float32
 float64 = typing.kFloat64
 double = float64
+float8_e4m3fn = typing.kFloat8E4M3FN
+float8_e5m2 = typing.kFloat8E5M2
+hifloat8 = typing.kHiFloat8
 bfloat16 = typing.kBFloat16
 complex64 = typing.kComplex64
 complex128 = typing.kComplex128
@@ -145,16 +150,19 @@ number_type = (int8,
                bfloat16,
                complex64,
                complex128,
-               qint4x2,)
+               qint4x2,
+               float8_e4m3fn,
+               float8_e5m2,
+               hifloat8)
 
 int_type = (int8, int16, int32, int64,)
 uint_type = (uint8, uint16, uint32, uint64,)
-float_type = (float16, float32, float64, bfloat16,)
-signed_type = (int8, byte, int16, short, int32, intc, int64,
-               intp, float16, half, float32, single, float64,
-               double, bfloat16, complex64, complex128)
+float_type = (float16, float32, float64, bfloat16, float8_e4m3fn, float8_e5m2, hifloat8)
+signed_type = (int8, byte, int16, short, int32, intc, int64, intp, float16, half, float32, single, float64, double,
+               bfloat16, complex64, complex128, float8_e4m3fn, float8_e5m2, hifloat8)
 complex_type = (complex64, complex128,)
-all_types = (bool_, int8, uint8, int16, int32, int64, float16, float32, float64, bfloat16, complex64, complex128)
+all_types = (bool_, int8, uint8, int16, int32, int64, float16, float32, float64, bfloat16, complex64, complex128,
+             float8_e4m3fn, float8_e5m2, hifloat8)
 implicit_conversion_seq = {t: idx for idx, t in enumerate(all_types)}
 
 _simple_types = {

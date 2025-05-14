@@ -25,7 +25,7 @@
 #include <limits>
 #include <functional>
 
-// Implement fp8_e5m2 for mindspore
+// Implement float8_e5m2 for mindspore
 namespace mindspore {
 class Float8_e5m2 {
  public:
@@ -229,19 +229,19 @@ inline std::ostream &operator<<(std::ostream &os, const Float8_e5m2 &v) { return
 
 }  // namespace mindspore
 
-using Float8_e5m2 = mindspore::Float8_e5m2;
+using float8_e5m2 = mindspore::Float8_e5m2;
 
 namespace std {
 template <>
-struct hash<Float8_e5m2> {
-  std::size_t operator()(const Float8_e5m2 &bf16) const noexcept { return static_cast<std::size_t>(bf16.int_value()); }
+struct hash<float8_e5m2> {
+  std::size_t operator()(const float8_e5m2 &bf16) const noexcept { return static_cast<std::size_t>(bf16.int_value()); }
 };
 
 template <>
-struct is_floating_point<Float8_e5m2> : public std::true_type {};
+struct is_floating_point<float8_e5m2> : public std::true_type {};
 
 template <>
-struct is_signed<Float8_e5m2> : public std::true_type {};
+struct is_signed<float8_e5m2> : public std::true_type {};
 
 // If std::numeric_limits<T> is specialized, should also specialize
 // std::numeric_limits<const T>, std::numeric_limits<volatile T>, and
