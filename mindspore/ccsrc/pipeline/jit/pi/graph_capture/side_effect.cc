@@ -239,7 +239,7 @@ ValueNode *SideEffect::GetSource(ValueNode *src_node) const {
     return src_node;
   }
   auto iter = map.find(src_node);
-  return iter != map.end() ? iter->second : src_node;
+  return iter != map.end() && iter->second != nullptr ? iter->second : src_node;
 }
 
 namespace {
@@ -562,11 +562,11 @@ void SideEffectHandler::RebaseObjectVersion(CallNode *call_node) const {
   auto callable_check = !is_method || op == LOAD_ATTR || op == LOAD_METHOD;
   MS_EXCEPTION_IF_CHECK_FAIL(callable_check, "Should be a func or LoadNode, but got ." + callable->ToString());
   auto &operand = is_method ? callable->getInputs().front() : call_node->getInputs()[1];
-  auto own_vobj = operand->GetOwnVobj();
-  if (own_vobj->IsBaseVersion()) {
+  auto base = operand->GetOwnVobj()->GetBaseVersion();
+  if (ex_var_base_2_node_.find(base) == ex_var_base_2_node_.end()) {
     return;
   }
-  operand = ex_var_base_2_node_.at(own_vobj->GetBaseVersion());
+  operand = ex_var_base_2_node_.at(base);
 }
 
 std::vector<ValueNode *> SideEffectHandler::RebaseObjectVersionInSideEffects(

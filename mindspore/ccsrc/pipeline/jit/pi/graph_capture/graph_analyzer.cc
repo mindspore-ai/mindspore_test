@@ -31,6 +31,7 @@
 #include "pipeline/jit/pi/graph_capture/graph_build.h"
 #include "pipeline/jit/pi/graph_capture/side_effect.h"
 #include "pipeline/jit/pi/graph_build/build_graph_utils.h"
+#include "pipeline/jit/pi/graph_capture/graph_arguments_optimizer.h"
 
 #define ADD_NODE(container, node)                                                   \
   do {                                                                              \
@@ -72,18 +73,10 @@ void GraphAnalyzer::CapturedInfo::Info::clear() {
   outputs.clear();
 }
 
-void GraphAnalyzer::CapturedInfo::GraphInputs::clear() {
-  args.clear();
-  globals.clear();
-  vargs = nullptr;
-  kwargs = nullptr;
-}
-
 void GraphAnalyzer::CapturedInfo::clear() {
   captured_.clear();
   interpret_.clear();
   outputs_optimize_.clear();
-  graph_inputs_.clear();
 }
 
 std::string GraphAnalyzer::CapturedInfo::Info::ToString() {
@@ -106,29 +99,6 @@ std::string GraphAnalyzer::CapturedInfo::Info::ToString() {
   return s.str();
 }
 
-std::string GraphAnalyzer::CapturedInfo::GraphInputs::ToString() {
-  std::stringstream s;
-  s << "globals: ";
-  for (auto i : globals) {
-    s << i->ToString() << "\n";
-  }
-  s << "args: \n";
-  for (auto i : args) {
-    s << i->ToString() << "\n";
-  }
-  s << "vargs: ";
-  if (vargs != nullptr) {
-    s << vargs->ToString();
-  }
-  s << "\n";
-  s << "kwargs: ";
-  if (kwargs != nullptr) {
-    s << kwargs->ToString();
-  }
-  s << "\n";
-  return s.str();
-}
-
 std::string GraphAnalyzer::CapturedInfo::ToString() {
   std::stringstream s;
   s << "1. captured_ info: \n";
@@ -137,9 +107,7 @@ std::string GraphAnalyzer::CapturedInfo::ToString() {
   s << outputs_optimize_.ToString();
   s << "3. interpret_ info: \n";
   s << interpret_.ToString();
-  s << "4. graph_inputs_: \n";
-  s << graph_inputs_.ToString();
-  s << "5. has_grad_: " << has_grad_ << "\n";
+  s << "4. has_grad_: " << has_grad_ << "\n";
   return s.str();
 }
 
@@ -182,6 +150,28 @@ void GraphAnalyzer::BeforeAnalyze() {
                << new_break_bci;
   g->StopTraceAt(new_break_bci, g->GetStopTraceReason());
 #endif
+}
+
+void GraphAnalyzer::GraphArgumentOpt() {
+  if (graph_->Config().GetBoolConfig(GraphJitConfig::kInterpretCapturedCode)) {
+    return;
+  }
+  if (!graph_->Config().GetBoolConfig(GraphJitConfig::kExpandGraphInput)) {
+    return;
+  }
+  if (!graph_->Config().GetBoolConfig(GraphJitConfig::kEliminateRedundantArgs)) {
+    return;
+  }
+  auto optimizer = GraphArgumentOptimizer::GetNewInstance(graph_);
+  optimizer->SetGraphNodes(GetCaptureInfo().captured_.operations);
+  optimizer->Run({GetCaptureInfo().captured_.outputs});
+  auto inputs = GetCaptureInfo().captured_.inputs;
+  GetCaptureInfo().captured_.inputs = optimizer->GetArguments();
+  for (const auto &input : GetCaptureInfo().outputs_optimize_.inputs) {
+    if (std::find(inputs.begin(), inputs.end(), input) != inputs.end()) {
+      graph_->PrepareParameter(input);
+    }
+  }
 }
 
 void GraphAnalyzer::Analyze() {
@@ -236,6 +226,8 @@ void GraphAnalyzer::Analyze() {
 
   CollectCapturedAndInterpret();
 
+  GraphArgumentOpt();
+
   need_interpret_ = true;
   if (graph_->GetStopTraceBci() != -1 || !GetCaptureInfo().interpret_.operations.empty()) {
     return;
@@ -252,7 +244,8 @@ void GraphAnalyzer::Analyze() {
     }
     param_index++;
   }
-  need_interpret_ = !graph_->GetSideEffect()->IsEmpty() || !GetCaptureInfo().outputs_optimize_.operations.empty();
+  need_interpret_ = !graph_->GetSideEffect()->IsEmpty() || !GetCaptureInfo().outputs_optimize_.operations.empty() ||
+                    param_index != graph_->GetCodeObj()->co_argcount;
 }
 
 void GraphAnalyzer::CollectClosureSideEffect() {
@@ -392,7 +385,8 @@ ValueNode *GraphAnalyzer::MutateSequenceNode(ValueNode *node) {
 
     auto bc_index = graph_->NewValueNode(AObject::Convert(py::int_(index)), LOAD_CONST, -1, {});
     bc_index->set_abstract_wrapper(index_abstract_wrapper);
-    auto bc_item = graph_->NewValueNode(AObject::Convert(item_abstract_wrapper), BINARY_SUBSCR, 0, {node, bc_index});
+    auto vobj_item = static_cast<AbstractSequence *>(node->GetOwnVobj())->GetItem(bc_index->GetOwnVobj());
+    auto bc_item = graph_->NewValueNode(vobj_item, BINARY_SUBSCR, 0, {node, bc_index});
     bc_item->set_abstract_wrapper(item_abstract_wrapper);
 
     bc_index->MarkGraphNode();
@@ -469,10 +463,10 @@ std::pair<ValueNode *, ValueNode *> GraphAnalyzer::MutateDictNode(ValueNode *nod
   auto call_op_code = IS_PYTHON_3_11_PLUS ? CALL : CALL_FUNCTION;
   auto bc_keys = graph_->NewCallNode(call_op_code, 1, {dict_keys_method, node});
   bc_keys->set_abstract_wrapper(keys_wrapper);
-  bc_keys->SetVobj(AObject::Convert(keys_wrapper));
+  bc_keys->UpdateVobj();
   auto bc_values = graph_->NewCallNode(call_op_code, 1, {dict_values_method, node});
   bc_values->set_abstract_wrapper(values_wrapper);
-  bc_values->SetVobj(AObject::Convert(values_wrapper));
+  bc_values->UpdateVobj();
   auto call_zip = graph_->NewCallNode(call_op_code, 2, {zip_method, bc_keys, bc_values});
   auto make_dict = graph_->NewCallNode(call_op_code, 1, {dict_method, call_zip});
   make_dict->set_abstract_wrapper(std::make_shared<AbstractWrapper>(abstract));
@@ -665,10 +659,6 @@ void GraphAnalyzer::CollectCapturedAndInterpret() {
       std::copy(alive_nodes.begin(), alive_nodes.end(), std::back_inserter(info_.interpret_.outputs));
     }
   }
-
-  // graph inputs is ordered by MindGraphBuilder, here do nothing
-  // not care variable args, variable key words
-  GetCaptureInfo().graph_inputs_.args = GetCaptureInfo().captured_.inputs;
 }
 
 namespace {

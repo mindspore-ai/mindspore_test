@@ -97,6 +97,7 @@ Graph::Graph(PyCodeObject *co, PyObject *globals, const GraphJitConfig &conf)
 
 const std::shared_ptr<OptCode> &Graph::GetGuardManager() const { return guard_builder_->guard(); }
 void Graph::SetGuard(const std::shared_ptr<OptCode> &g) { guard_builder_->SetGuard(g); }
+void Graph::RemoveAllGuardItems() const { GetGuardManager()->GetGuard()->RemoveAllGuardItems(); }
 void GuardBuilder::SetGuard(const std::shared_ptr<OptCode> &g) {
   guard_ = g;
   if (g->guard_status() == nullptr) {
@@ -781,7 +782,8 @@ static void PrintValueNode(std::ostream *out, FuncGraphBuilder *fg, ValueNode *n
   }
   auto anf_node = fg->FindNodeByWrapper(node->abstract_wrapper());
   if (anf_node != nullptr) {
-    bool is_any = (*mindspore::kValueAny == *anf_node->abstract()->mindspore::abstract::AbstractBase::BuildValue());
+    bool is_any = anf_node->abstract() != nullptr &&
+                  (*mindspore::kValueAny == *anf_node->abstract()->mindspore::abstract::AbstractBase::BuildValue());
     bool is_cnst = node->IsConstantValue();
     PrintAnfNode(out, anf_node.get(), prefix);
     s << " is_constant " << (is_cnst == is_any ? "==" : "!=") << " is_any";

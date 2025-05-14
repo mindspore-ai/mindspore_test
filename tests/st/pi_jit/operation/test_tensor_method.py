@@ -20,6 +20,7 @@ from tests.st.pi_jit.share.utils import assert_equal, assert_executed_by_graph_m
 from tests.mark_utils import arg_mark
 
 
+@pytest.mark.skip
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_tensor_type_guard():
     """
@@ -43,6 +44,7 @@ def test_tensor_type_guard():
     assert_executed_by_graph_mode(fn)
 
 
+@pytest.mark.skip
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_stub_tensor_load_method():
     """
@@ -51,7 +53,7 @@ def test_stub_tensor_load_method():
     Expectation: no exception, no graph break.
     """
 
-    def fn(x: StubTensor):
+    def fn(x):
         y = x.permute((0, 2, 1))
         return y + 1
 

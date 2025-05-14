@@ -278,7 +278,7 @@ static bool GuardBuiltinFunc(CallNode *call_node) {
   if (PyMethod_Check(func)) {
     auto self = PyMethod_GET_SELF(func);
     if (IsTensorType<true>(Py_TYPE(self))) {
-      auto self_node = GetSelfFromMethod(func_node);
+      auto self_node = call_node->GetSelf();
       if (self_node == nullptr) {
         MS_LOG(WARNING) << "failed to find self value node for call node" << call_node->ToString();
         return false;
@@ -443,7 +443,9 @@ static bool InferListAppend(CallNode *call_node, GraphBuilder *parent) {
   bool is_referenced = false;
   parent->ReplaceAll(old_node, new_node, &is_referenced);
   const auto &replace_map = parent->GetGraph()->GetSideEffect()->data()->modified_and_replaced_map();
-  bool is_new_var = self->GetOpcode() == BUILD_LIST && replace_map.find(self) == replace_map.end();
+  auto is_param_expander_enable = parent->GetGraph()->Config().GetBoolConfig(GraphJitConfig::kExpandGraphInput);
+  bool is_new_var =
+    self->GetOpcode() == BUILD_LIST && replace_map.find(self) == replace_map.end() && !is_param_expander_enable;
   if (!is_new_var || is_referenced || self == new_element) {
     parent->GetGraph()->GetSideEffect()->data()->RecordModifiedAndReplacedNode(old_node, new_node);
     RecordBuiltinMethodSideEffect(parent->GetGraph(), call_node, "append");
@@ -489,7 +491,9 @@ static bool InferListMethodWithSideEffect(CallNode *call_node, GraphBuilder *par
   bool is_referenced = false;
   parent->ReplaceAll(old_node, new_node, &is_referenced);
   const auto &replace_map = parent->GetGraph()->GetSideEffect()->data()->modified_and_replaced_map();
-  bool is_new_var = self->GetOpcode() == BUILD_LIST && replace_map.find(self) == replace_map.end();
+  auto is_param_expander_enable = parent->GetGraph()->Config().GetBoolConfig(GraphJitConfig::kExpandGraphInput);
+  bool is_new_var =
+    self->GetOpcode() == BUILD_LIST && replace_map.find(self) == replace_map.end() && !is_param_expander_enable;
   if (!is_new_var || is_referenced || !is_safe_replace(call_node, parent)) {
     parent->GetGraph()->GetSideEffect()->data()->RecordModifiedAndReplacedNode(old_node, new_node);
     RecordBuiltinMethodSideEffect(parent->GetGraph(), call_node, method_name);
@@ -635,7 +639,9 @@ static bool InferDictPop(CallNode *call_node, GraphBuilder *parent) {
   bool is_referenced = false;
   parent->ReplaceAll(old_node, new_node, &is_referenced);
   const auto &replace_map = parent->GetGraph()->GetSideEffect()->data()->modified_and_replaced_map();
-  bool is_new_var = self->GetOpcode() == BUILD_MAP && replace_map.find(self) == replace_map.end();
+  auto is_param_expander_enable = parent->GetGraph()->Config().GetBoolConfig(GraphJitConfig::kExpandGraphInput);
+  bool is_new_var =
+    self->GetOpcode() == BUILD_MAP && replace_map.find(self) == replace_map.end() && !is_param_expander_enable;
   if (!is_new_var || is_referenced) {
     parent->GetGraph()->GetSideEffect()->data()->RecordModifiedAndReplacedNode(old_node, new_node);
     RecordBuiltinMethodSideEffect(parent->GetGraph(), call_node, "pop");

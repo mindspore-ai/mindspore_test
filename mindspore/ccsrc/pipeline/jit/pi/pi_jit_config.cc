@@ -55,6 +55,7 @@ static const std::unordered_map<std::string, bool (GraphJitConfig::*)(PyObject *
   {"enable_dynamic_shape", &GraphJitConfig::SetBool<GraphJitConfig::kEnableDynamicShape>},
   {"expand_graph_input", &GraphJitConfig::SetBool<GraphJitConfig::kExpandGraphInput>},
   {"expand_graph_output", &GraphJitConfig::SetBool<GraphJitConfig::kExpandGraphOutput>},
+  {"eliminate_redundant_args", &GraphJitConfig::SetBool<GraphJitConfig::kEliminateRedundantArgs>},
   {"subgraph_break_opt", &GraphJitConfig::SetBool<GraphJitConfig::kSubgraphBreakOpt>},
   {"fullgraph", &GraphJitConfig::SetBool<GraphJitConfig::kFullGraph>},
   {"enable_old_guard_strategy", &GraphJitConfig::SetBool<GraphJitConfig::kEnableOldGuardStrategy>},
@@ -97,6 +98,7 @@ GraphJitConfig::GraphJitConfig() : int_conf{0}, bool_conf{false} {
   bool_conf[kEnableDynamicShape - kBoolConf] = false;
   bool_conf[kExpandGraphInput - kBoolConf] = true;
   bool_conf[kExpandGraphOutput - kBoolConf] = true;
+  bool_conf[kEliminateRedundantArgs - kBoolConf] = true;
   bool_conf[kSubgraphBreakOpt - kBoolConf] = true;
   bool_conf[kReCaptureLoopBody - kBoolConf] = false;
   bool_conf[kFullGraph - kBoolConf] = false;

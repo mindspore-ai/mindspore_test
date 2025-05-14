@@ -85,21 +85,13 @@ class GraphParameterBuilder {
  public:
   static std::string Key(int, ValueNode *n);
 
-  void Init(const std::vector<ValueNode *> &args, const std::vector<ValueNode *> &globals, ValueNode *vargs,
-            ValueNode *kwargs);
+  void Init(const std::vector<ValueNode *> &args);
   void Build(const std::unordered_map<ValueNode *, int> &locals);
 
   std::vector<ValueNode *> args_;
-  std::vector<ValueNode *> globals_;
   std::vector<std::unique_ptr<Instr>> load_;  // load parameters and store parameters to global, for caller
   std::vector<std::unique_ptr<Instr>> dele_;  // delete global parameters, for caller
   std::vector<std::unique_ptr<Instr>> sort_;  // load global parameter and store to locals, for callee
-  ValueNode *vargs_;
-  ValueNode *kwargs_;
-
- private:
-  void BuildVargs(const std::unordered_map<ValueNode *, int> &locals);
-  void BuildKwVargs(const std::unordered_map<ValueNode *, int> &locals);
 };
 
 static bool FindBlock(int start_bci, const CFG *cfg, int *target_bci, int *stack_effect);
@@ -1152,10 +1144,7 @@ void CodeBreakGenerator::CallCapturedCode(CodeGenerator *code_gen) {
   MS_LOG(DEBUG) << "Do codegen for calling graph";
   GraphParameterBuilder param_info;
   BuildGraphParameters(code_gen->GetLocalsMap(), &param_info);
-  int flag = (param_info.vargs_ ? CO_VARARGS : 0) | (param_info.kwargs_ ? CO_VARKEYWORDS : 0);
-  MS_EXCEPTION_IF_CHECK_FAIL(flag == 0,
-                             "shouldn't call graph with variable arguments for pijit, all parameter must be flatten");
-  py::object code = MakeCapturedCode(std::move(param_info.sort_), param_info.args_.size(), flag);
+  py::object code = MakeCapturedCode(std::move(param_info.sort_), param_info.args_.size(), 0);
 
   PyCodeWrapper co(co_);
 
@@ -1881,10 +1870,6 @@ void CodeBreakGenerator::Init(const GraphAnalyzer &analyzer, Graph *graph) {
   outputs_optimize_.outputs = info.outputs_optimize_.outputs;
   outputs_optimize_.operations = info.outputs_optimize_.operations;
   replaced_nodes_ = info.replaced_nodes_;
-  graph_inputs_info_.args = info.graph_inputs_.args;
-  graph_inputs_info_.vargs = info.graph_inputs_.vargs;
-  graph_inputs_info_.kwargs = info.graph_inputs_.kwargs;
-  graph_inputs_info_.globals = info.graph_inputs_.globals;
   no_graph_ = captured_.operations.empty();
 
   const auto &break_info = analyzer.graph_break_info();
@@ -1910,20 +1895,8 @@ void CodeBreakGenerator::BuildGraphParameters(const std::unordered_map<ValueNode
   MS_EXCEPTION_IF_CHECK_FAIL(co_->co_nlocals == SizeToInt(interpret_.inputs.size()),
                              "interpret inputs must be same as locals");
 
-  builder->Init(graph_inputs_info_.args, graph_inputs_info_.globals, graph_inputs_info_.vargs,
-                graph_inputs_info_.kwargs);
+  builder->Init(captured_.inputs);
   builder->Build(locals);
-
-  size_t inputs_count = captured_.inputs.size();
-  captured_.inputs = builder->args_;
-  if (builder->vargs_ != nullptr) {
-    captured_.inputs.push_back(builder->vargs_);
-  }
-  if (builder->kwargs_ != nullptr) {
-    captured_.inputs.push_back(builder->kwargs_);
-  }
-  captured_.inputs.insert(captured_.inputs.end(), builder->globals_.begin(), builder->globals_.end());
-  MS_EXCEPTION_IF_CHECK_FAIL(inputs_count == captured_.inputs.size(), "error parameters");
 }
 
 std::string GraphParameterBuilder::Key(int index, ValueNode *n) {
@@ -1935,13 +1908,7 @@ std::string GraphParameterBuilder::Key(int index, ValueNode *n) {
   return s.str();
 }
 
-void GraphParameterBuilder::Init(const std::vector<ValueNode *> &args, const std::vector<ValueNode *> &globals,
-                                 ValueNode *vargs, ValueNode *kwargs) {
-  args_ = args;
-  globals_ = globals;
-  vargs_ = vargs;
-  kwargs_ = kwargs;
-}
+void GraphParameterBuilder::Init(const std::vector<ValueNode *> &args) { args_ = args; }
 
 void GraphParameterBuilder::Build(const std::unordered_map<ValueNode *, int> &locals) {
   auto Load = [&locals](ValueNode *param) {
@@ -1956,62 +1923,7 @@ void GraphParameterBuilder::Build(const std::unordered_map<ValueNode *, int> &lo
     }
     MS_EXCEPTION_IF_CHECK_FAIL(false, "Can't find graph parameters from interpret-locals and closures");
   };
-
-  /**
-   * graph parameter treat tuple, list, dict as constant
-   * must be unpack these parameters and pack it by graph
-   * if param is tuple or param is list:
-   *   TupleRebuild(param, &load_, &sort_, &args_)
-   * if param is dict:
-   *   DictRebuild(param, &load_, &sort_, &args_)
-   **/
   std::transform(args_.begin(), args_.end(), std::back_inserter(load_), Load);
-
-  const int argc = SizeToInt(args_.size()) + (vargs_ != nullptr) + (kwargs_ != nullptr);
-  for (size_t i = 0; i < globals_.size(); ++i) {
-    std::string name = GraphParameterBuilder::Key(i, globals_[i]);
-    load_.emplace_back(Load(globals_[i]));
-    load_.emplace_back(std::make_unique<Instr>(STORE_GLOBAL, 0, name));
-    dele_.emplace_back(std::make_unique<Instr>(DELETE_GLOBAL, 0, name));
-    sort_.emplace_back(std::make_unique<Instr>(LOAD_GLOBAL, 0, name));
-    sort_.emplace_back(std::make_unique<Instr>(STORE_FAST, argc + i));
-  }
-  if (vargs_) {
-    BuildVargs(locals);
-  }
-  if (kwargs_) {
-    BuildKwVargs(locals);
-  }
-}
-
-void GraphParameterBuilder::BuildVargs(const std::unordered_map<ValueNode *, int> &locals) {
-  auto iter = locals.find(vargs_);
-  MS_EXCEPTION_IF_CHECK_FAIL(iter != locals.end(), "can't find graph parameters from interpret locals");
-  if (args_.size() == 0) {
-    load_.push_back(std::make_unique<Instr>(LOAD_FAST, iter->second));
-    return;
-  }
-
-  load_.push_back(std::make_unique<Instr>(BUILD_LIST, args_.size()));
-  load_.push_back(std::make_unique<Instr>(LOAD_FAST, iter->second));
-#if PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION < 9
-  const int tuple_unpack_arg = 2;
-  load_.push_back(std::make_unique<Instr>(BUILD_TUPLE_UNPACK, tuple_unpack_arg));
-#else
-  load_.push_back(std::make_unique<Instr>(LIST_EXTEND, 1));
-  load_.push_back(std::make_unique<Instr>(LIST_TO_TUPLE, 0));
-#endif
-}
-
-void GraphParameterBuilder::BuildKwVargs(const std::unordered_map<ValueNode *, int> &locals) {
-  auto iter = locals.find(kwargs_);
-  MS_EXCEPTION_IF_CHECK_FAIL(iter != locals.end(), "can't find graph parameters from interpret locals");
-
-  if (vargs_ == nullptr) {
-    // only kwargs
-    load_.push_back(std::make_unique<Instr>(BUILD_TUPLE, args_.size()));
-  }
-  load_.push_back(std::make_unique<Instr>(LOAD_FAST, iter->second));
 }
 
 // e.g. while..., for..., while...else..., for...else...,
@@ -2236,6 +2148,8 @@ py::object MakeCodeFromCodeGen(const GraphBuilderPtr &builder, const GraphAnalyz
 #endif
   if (skip_compile) {
     MS_LOG(INFO) << "skip graph capture because of no graph in the function";
+    // no graph, no guard needed
+    builder->GetGraph()->RemoveAllGuardItems();
     return PyCodeWrapper(builder->GetGraph()->GetCodeObj()).DeepCopy();
   }
   auto graph = builder->GetGraph();
@@ -2284,46 +2198,32 @@ void CodeBreakGenerator::Compile(const std::string &co_name, int co_argcount, in
                                  const py::object &stub) const {
   TimeRecorder compile_time("MindCodeCompile", kPIJitConfigDefault.GetBoolConfig(GraphJitConfig::kLogPerf));
 
-  // Compile graph.
-  FGBuilder()->ClearNodeAbstract();
-  FGBuilder()->SetGraphName(co_name);
-  auto func_graph = FGBuilder()->graph();
-  if (func_graph == nullptr) {
-    MS_LOG(EXCEPTION) << "Get function graph from function graph builder failed.";
+  auto compile_result = FGBuilder()->GetCompileResult();
+  if (compile_result.first.empty() || compile_result.second == nullptr) {
+    // Compile graph.
+    FGBuilder()->ClearNodeAbstract();
+    FGBuilder()->SetGraphName(co_name);
+    auto func_graph = FGBuilder()->graph();
+    auto origin_top_input_num = FGBuilder()->origin_top_input_num();
+    GraphCompiler::CompileInfo compile_info{py::cast<std::string>(co_->co_filename),
+                                            co_name,
+                                            co_->co_firstlineno,
+                                            co_argcount,
+                                            co_kwonlyargcount,
+                                            co_flags,
+                                            origin_top_input_num};
+    compile_result = GraphCompiler::Compile(func_graph, compile_info);
   }
-  std::string phase =
-    py::cast<std::string>(co_->co_filename) + "_" + std::to_string(co_->co_firstlineno) + "_" + co_name;
-  const auto &parameters = func_graph->parameters();
-  py::tuple args(parameters.size() - func_graph->fv_param_count());
-  size_t cur_fv_param_count = 0;
-  for (size_t i = 0; i < parameters.size(); ++i) {
-    auto para = parameters[i]->cast<ParameterPtr>();
-    MS_EXCEPTION_IF_NULL(para);
-    if (para->has_default()) {
-      cur_fv_param_count++;
-      continue;
-    }
-    auto para_abstract = para->abstract();
-    MS_EXCEPTION_IF_NULL(para_abstract);
-    phase += "_" + para_abstract->ToString();
-    auto input_obj = para->user_data<py::object>("pi_jit_py_obj");
-    MS_EXCEPTION_IF_NULL(input_obj);
-    args[i - cur_fv_param_count] = *input_obj;
-  }
-  phase += ".pi_jit";
-  auto origin_top_input_num = FGBuilder()->origin_top_input_num();
-  GraphCompiler::CompileInfo compile_info{co_name, co_argcount, co_kwonlyargcount, co_flags, origin_top_input_num};
-  CallableGraph callable = GraphCompiler::Compile(func_graph, args, py::dict(), phase, compile_info);
   // Set NativeFunc.
   auto parent = GetJitCompileResults(co_);
   if (stub.ptr() == nullptr) {
-    parent->code()->SetNativeFunc(phase, callable, nullptr);
+    parent->code()->SetNativeFunc(compile_result.first, compile_result.second, nullptr);
     parent->set_stat(JitCompileResults::GRAPH_CALLABLE);
   } else {
     JitCompileResults *child = CreateJitCompileResults(stub.ptr());
     MS_EXCEPTION_IF_CHECK_FAIL(child->code() == nullptr, "must be a new stub code");
     child->set_code(child->codehub()->AddOptTarget(OptOption::CreateOptionByPoint(child)));
-    child->code()->SetNativeFunc(phase, callable, nullptr);
+    child->code()->SetNativeFunc(compile_result.first, compile_result.second, nullptr);
     child->set_stat(JitCompileResults::GRAPH_CALLABLE);
     child->set_conf(parent->conf());
     child->set_tbs(parent->tbs());

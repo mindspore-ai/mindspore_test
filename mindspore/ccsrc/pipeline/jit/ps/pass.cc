@@ -1595,6 +1595,21 @@ bool AutoParallelSymbolPassWithReNormalize(const ResourcePtr &resource) {
   return true;
 }
 
+bool EliminateUnusedParamsPass(const ResourcePtr &resource) {
+  MS_EXCEPTION_IF_NULL(resource);
+  MS_EXCEPTION_IF_NULL(resource->func_graph());
+  FuncGraphPtr func_graph = resource->func_graph();
+  ud_chain::Preprocess(func_graph);
+  AnfNodePtrList parameters;
+  for (const auto &param : func_graph->parameters()) {
+    if (!ud_chain::GetUsers(param).empty() || param->cast<ParameterPtr>()->has_default()) {
+      parameters.push_back(param);
+    }
+  }
+  func_graph->set_parameters(parameters);
+  return true;
+}
+
 bool ValidatePass(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
   MS_EXCEPTION_IF_NULL(resource->func_graph());

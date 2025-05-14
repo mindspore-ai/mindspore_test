@@ -46,7 +46,6 @@ const std::vector<std::string> kAstFunctionList = {
   "mindspore.ops.function.array_func", "mindspore.ops.function.nn_func", "mindspore.ops.function.math_func"};
 
 bool CheckSupportCreateInstance(CallNode *call_node);
-ValueNode *GetSelfFromMethod(ValueNode *method);
 class GraphBuilder {
  public:
   static const char *ID___self__;
@@ -261,6 +260,7 @@ class GraphBuilder {
   bool DoBinary(const Instr &instr);
   bool DoIsOp(const Instr &instr);
   bool DoContainsOp(const Instr &instr);
+  bool DoListOrTupleAdd(const Instr &instr);
   bool DoBinaryAdd(const Instr &instr);
   bool DoInplaceAdd(const Instr &instr);
   bool DoCompare(const Instr &instr);

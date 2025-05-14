@@ -51,6 +51,7 @@ class GraphJitConfig {
     kSkipException,
     kExpandGraphInput,
     kExpandGraphOutput,
+    kEliminateRedundantArgs,
     kReCaptureLoopBody,
     kSubgraphBreakOpt,
     kFullGraph,

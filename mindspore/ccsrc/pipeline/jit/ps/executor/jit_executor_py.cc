@@ -139,6 +139,9 @@ std::vector<PassItem> GetJitPasses(const ResourcePtr &resource, bool build_top_g
     (void)jit_passes.emplace_back(kJitOptPassAfterCconv, JitOptPassAfterCconvGroup);
     (void)jit_passes.emplace_back(kRemoveDupValue, RemoveValueNodeDuplicationsPassForJit);
     (void)jit_passes.emplace_back(kPartialUnusedArgsEliminate, PartialUnusedArgsEliminatePass);
+    if (common::GetCompileConfig("ENABLE_ELIMINATE_UNUSED_PARAMS") == "1") {
+      (void)jit_passes.emplace_back(kUnusedParamsEliminate, EliminateUnusedParamsPass);
+    }
     (void)jit_passes.emplace_back(kEnvironConv, EnvironConversionPass);
     (void)jit_passes.emplace_back(kAddRecomputation, AddRecomputationPass);
     (void)jit_passes.emplace_back(kCseAfterRecomputation, OptAfterRecomputeGroup);

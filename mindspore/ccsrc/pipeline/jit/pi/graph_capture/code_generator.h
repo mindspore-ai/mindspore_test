@@ -342,8 +342,6 @@ class CodeBreakGenerator {
   // used to record the value nodes and the nodes that replaced them
   std::map<ValueNode *, ValueNode *> replaced_nodes_;
 
-  GraphInputInfo graph_inputs_info_;
-
   // break bci alive locals
   std::vector<int> alive_locals_;
 

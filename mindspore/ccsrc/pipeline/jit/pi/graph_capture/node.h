@@ -249,6 +249,10 @@ class CallNode : public ValueNode {
     return args;
   }
 
+  ValueNode *GetSelf() const;
+
+  void UpdateVobj();
+
  private:
   // sub-graph if traced function
   Graph *sub_graph_;

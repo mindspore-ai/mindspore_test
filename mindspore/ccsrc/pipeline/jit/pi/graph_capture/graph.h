@@ -131,6 +131,11 @@ class Graph {
     StopTraceReason reason_;
   };
 
+  struct ExpandParamInfo {
+    ValueNode *node_;
+    std::vector<const AObject *> elements_;
+  };
+
   Graph(PyCodeObject *co, PyObject *globals, const GraphJitConfig &conf);
   virtual ~Graph();
 
@@ -172,7 +177,10 @@ class Graph {
   // only func name
   std::string GetCodeName() const {
     PyCodeObject *c = reinterpret_cast<PyCodeObject *>(co_.ptr());
-    return py::str(c->co_name);
+    if (c != nullptr && c->co_name != nullptr) {
+      return py::str(c->co_name);
+    }
+    return "";
   }
 
   const std::vector<ValueNode *> &GetParameters() const { return params_; }
@@ -190,6 +198,8 @@ class Graph {
   std::vector<TracePtr> TraceValueNodeClosure(ValueNode *, bool *ret, int max_trace_depth = -1);
   const std::shared_ptr<OptCode> &GetGuardManager() const;
   void SetGuard(const std::shared_ptr<OptCode> &guard);
+  void RemoveAllGuardItems() const;
+  std::map<const AObject *, ExpandParamInfo> &GetExpandParamInfo() { return expand_param_info_; }
 
   // (chaiyouheng): restore graph status at loop begin, clear trace values and operations and guards
   bool RestoreLoopStatus() const { return false; }
@@ -214,6 +224,7 @@ class Graph {
   void FoundInnerClass() { found_inner_class = true; }
 
   const auto &prepare() const { return prepare_; }
+  auto &prepare() { return prepare_; }
   bool PrepareParameter(ValueNode *node);
 
   // return true if has fail guard matched
@@ -234,6 +245,8 @@ class Graph {
   std::vector<ValueNode *> traced_nodes_;
 
   std::vector<ValueNode *> params_;
+
+  std::map<const AObject *, ExpandParamInfo> expand_param_info_;
 
   // return value
   ValueNode *ret_val_;

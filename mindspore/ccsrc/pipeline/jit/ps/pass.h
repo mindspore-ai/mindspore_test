@@ -47,6 +47,7 @@ bool PipelineParallelScheduler(const ResourcePtr &resource);
 bool AutoParallelPass(const ResourcePtr &resource);
 bool AutoParallelSymbolPassWithReNormalize(const ResourcePtr &resource);
 bool ParallelVirtualDatasetPass(const ResourcePtr &resource);
+bool EliminateUnusedParamsPass(const ResourcePtr &resource);
 bool ValidatePass(const ResourcePtr &resource);
 bool ConvertPrepareAdapt(const ResourcePtr &resource);
 bool AddCacheEmbeddingPass(const ResourcePtr &resource);

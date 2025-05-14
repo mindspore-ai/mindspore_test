@@ -13,10 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <iterator>
 #include <string>
+#include <vector>
+#include "pipeline/jit/pi/graph_capture/abstract_object.h"
 #include "pipeline/jit/pi/graph_capture/node.h"
 #include "pipeline/jit/pi/graph_capture/cfg.h"
 #include "pipeline/jit/pi/graph_capture/graph.h"
+#include "pipeline/jit/pi/graph_guard/infer.h"
 
 namespace mindspore {
 namespace pijit {
@@ -104,6 +108,53 @@ std::string CallNode::ToString() const {
     << (kw_names().ptr() != nullptr ? ("kw:" + std::string(py::str(kw_names().ptr()))) : std::string())
     << " sub-graph=" << sub_graph_;
   return s.str();
+}
+
+ValueNode *CallNode::GetSelf() const {
+  auto method = input(0);
+  auto func = method->GetOwnVobj()->GetPyObject().ptr();
+  if (func != nullptr && !PyMethod_Check(func) && !(PyCFunction_Check(func) && PyCFunction_GET_SELF(func) != nullptr)) {
+    return nullptr;
+  }
+  Opcode opcode(method->GetOpcode());
+  if (opcode.IsCall() && opcode != CALL_FUNCTION_EX) {
+    // method from the CALL_FUNCTION
+    py::object tp = method->input(0)->GetOwnVobj() ? method->input(0)->GetOwnVobj()->GetPyObject() : py::object();
+    if (tp.ptr() == reinterpret_cast<PyObject *>(&PyMethod_Type)) {
+      return method->input(2);
+    }
+  }
+  if (method->GetOpcode() != LOAD_ATTR) {
+    return nullptr;
+  }
+  ValueNode *self = method->input(0);
+  PyTypeObject *tp = self->GetVobj() ? self->GetVobj()->GetTypeObject() : nullptr;
+  PyTypeObject *real_tp = method->GetVobj()->GetAttr("__self__")->GetTypeObject();
+  if (tp == real_tp) {
+    return self;
+  }
+  MS_LOG(DEBUG) << "Types of 'self' are different, " << (tp ? tp->tp_name : "NULL") << " vs "
+                << (real_tp ? real_tp->tp_name : "NULL");
+  // In case of this situation:
+  // a = TypeA(); b = TypeB(); a.method = b.method
+  // then tp of a.method is TypeA, but real_tp is TypeB.
+  return nullptr;
+}
+
+void CallNode::UpdateVobj() {
+  auto inputs = getInputs();
+  const auto &func = inputs[0]->GetOwnVobj()->GetPyObject();
+  std::vector<AObject *> args;
+  auto self = GetSelf();
+  if (self != nullptr) {
+    args.push_back(self->GetOwnVobj());
+  }
+  std::transform(inputs.begin() + 1, inputs.end(), std::back_inserter(args),
+                 [](auto &input) { return input->GetOwnVobj(); });
+  auto vobj = AObject::FuncAObjectUpdater(func, args);
+  if (vobj->GetType() != AObject::kTypeAnyValue) {
+    SetVobj(vobj);
+  }
 }
 
 std::string ValueNode::ToString() const {

@@ -17,10 +17,11 @@
 #ifndef MINDSPORE_PI_JIT_GRAPH_BUILD_FUNC_GRAPH_BUILDER_H_
 #define MINDSPORE_PI_JIT_GRAPH_BUILD_FUNC_GRAPH_BUILDER_H_
 
-#include <vector>
+#include <map>
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 #include "ir/value.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "pipeline/jit/ps/parse/parse_base.h"
@@ -33,6 +34,7 @@ class FuncGraphBuilder;
 using FuncGraphBuilderPtr = std::shared_ptr<FuncGraphBuilder>;
 class AbstractWrapper;
 using AbstractWrapperPtr = std::shared_ptr<AbstractWrapper>;
+using CallableGraph = std::function<PyObject *(PyObject *, PyObject *)>;
 
 class FuncGraphBuilder {
  public:
@@ -286,6 +288,15 @@ class FuncGraphBuilder {
 
   AbstractWrapperPtr AddAttributeInput(const py::object &object);
 
+  /// \brief Save the phase and the callable of the func_graph.
+  ///
+  /// \param[in] result The phase and the callable.
+  void SetCompileResult(const std::pair<std::string, CallableGraph> &result) { compile_result_ = result; }
+  /// \brief Get the phase and the callable of the func_graph.
+  ///
+  /// \return The phase and the callable.
+  const std::pair<std::string, CallableGraph> &GetCompileResult() const { return compile_result_; }
+
  private:
   AnfNodePtr ConvertObjToNode(const py::object &input_obj);
   AnfNodePtr ConvertParameterTupleToNode(const py::object &input_obj);
@@ -325,6 +336,7 @@ class FuncGraphBuilder {
 
   FuncGraphManagerPtr mng_;
   size_t origin_top_input_num_ = 0;
+  std::pair<std::string, CallableGraph> compile_result_;
 };
 }  // namespace pijit
 }  // namespace mindspore

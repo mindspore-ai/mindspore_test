@@ -62,6 +62,24 @@ class AbstractObjectBase {
     std::unordered_map<const PyObject *, AObject *> obj_2_aobj_;
   };
 
+  template <typename T>
+  static AObject *ConstructAbstract(const py::object &obj) {
+    return Resource::Current()->pool()->New<T>(obj);
+  }
+
+  template <typename T>
+  static AObject *ConstructAbstract(const std::vector<AObject *> &elements) {
+    return Resource::Current()->pool()->New<T>(elements);
+  }
+
+  template <typename T>
+  static AObject *ConstructAbstract(const py::object &obj, const std::vector<AObject *> &elements) {
+    if (obj.ptr() == nullptr) {
+      return ConstructAbstract<T>(elements);
+    }
+    return ConstructAbstract<T>(obj);
+  }
+
  public:
   enum Type {
 #define ABSTRACT_TYPE_DEF(unit) kType##unit,
@@ -102,12 +120,11 @@ class AbstractObjectBase {
   virtual py::object GetPyObject() const { return py::object(); }
 
   virtual AObject *Binary(AObject *other, int op) { return MakeAObject(kTypeAnyValue); }
-  virtual AObject *Unary(int op) const { return MakeAObject(kTypeAnyValue); }
   virtual AObject *GetIter() const { return MakeAObject(kTypeAnyValue); }
 
   virtual AObject *GetAttr(const std::string &name);
   virtual AObject *GetItem(AObject *key) { return MakeAObject(kTypeAnyValue); }
-
+  AObject *GetItem(AObject *key, AObject *defalut_value);
   // return false if has an python exception
   virtual bool SetAttr(const std::string &name, AObject *value) { return true; }
   virtual bool SetItem(AObject *key, AObject *value) { return true; }
@@ -132,6 +149,8 @@ class AbstractObjectBase {
   static AObject *TryConvertDynamicLengthSequence(const abstract::AbstractBasePtr &abstract);
 
   static AObject *MakeFunction(const std::vector<AObject *> &args, const py::object &globals, int oparg);
+
+  static AObject *FuncAObjectUpdater(const py::object &func, const std::vector<AObject *> &args);
 
   /**
    * BUILD_SLICE,BUILD_STRING,BUILD_SET,BUILD_LIST,BUILD_TUPLE,BUILD_CONST_KEY_MAP,BUILD_MAP
@@ -190,9 +209,6 @@ class AbstractObject : public AbstractObjectBase {
 
   py::object GetPyObject() const override { return value_; }
 
-  AObject *Binary(AObject *other, int op) override;
-  AObject *Unary(int op) const override;
-  AObject *UnaryValue(int op) const;
   AObject *GetIter() const override;
   AObject *GetAttr(const std::string &name) override;
   AObject *GetItem(AObject *key) override;
@@ -209,7 +225,7 @@ class AbstractString : public AbstractObject {
   AbstractString() : AbstractObject(kTypeString, py::object()), str_() {}
   explicit AbstractString(const py::object &str)
       : AbstractObject(kTypeString, str), str_(str.ptr() == nullptr ? std::string() : py::cast<std::string>(str)) {}
-  virtual ~AbstractString() = default;
+  ~AbstractString() override = default;
   AObject *GetItem(AObject *index) override;
 
  protected:
@@ -220,7 +236,7 @@ class AbstractType : public AbstractObject {
  public:
   explicit AbstractType(const py::object &cls)
       : AbstractObject(kTypeType, cls), type_type_(GetPyType(reinterpret_cast<PyTypeObject *>(cls.ptr()))) {}
-  virtual ~AbstractType() {}
+  ~AbstractType() override = default;
   bool IsMindSporeSupportedType() override { return false; }
 
   Type GetTypeType() const { return type_type_; }
@@ -236,10 +252,9 @@ class AbstractSequence : public AbstractObject {
   explicit AbstractSequence(Type type, const py::object &obj)
       : AbstractObject(type, obj), element_type_(kTypeUnknown), elements_({}) {}
   explicit AbstractSequence(Type type, const std::vector<AObject *> &elements);
-  virtual ~AbstractSequence() {}
+  ~AbstractSequence() override = default;
 
   AObject *Binary(AObject *other, int op) override;
-  AObject *Unary(int op) const override;
   AObject *GetAttr(const std::string &name) override;
   bool SetAttr(const std::string &name, AObject *) override { return false; };
   AObject *GetItem(AObject *key) override;
@@ -256,6 +271,10 @@ class AbstractSequence : public AbstractObject {
   ///
   /// \return The vector of AObject objects.
   const std::vector<AObject *> &GetElements() const { return elements_; }
+  const std::vector<AObject *> &GetElementsWithInit() {
+    InitElementsListIfNeed();
+    return elements_;
+  }
   bool IsMindSporeSupportedType() override;
 
   void SetElementType(Type type) { element_type_ = type; }
@@ -275,7 +294,7 @@ class AbstractTuple : public AbstractSequence {
  public:
   explicit AbstractTuple(const py::object &tuple) : AbstractSequence(kTypeTuple, tuple) {}
   explicit AbstractTuple(const std::vector<AObject *> &elements) : AbstractSequence(kTypeTuple, elements) {}
-  virtual ~AbstractTuple() {}
+  ~AbstractTuple() override = default;
 };
 
 class AbstractNamedTuple : public AbstractObject {
@@ -301,11 +320,39 @@ class AbstractList : public AbstractSequence {
  public:
   explicit AbstractList(const py::object &list) : AbstractSequence(kTypeList, list) {}
   explicit AbstractList(const std::vector<AObject *> &elements) : AbstractSequence(kTypeList, elements) {}
-  virtual ~AbstractList() {}
+  ~AbstractList() override = default;
 
   AbstractList *ListAppend(AObject *item);
   AbstractList *ListExtend(AObject *list);
   AbstractTuple *ListToTuple();
+};
+
+class AbstractCellList : public AbstractSequence {
+ public:
+  explicit AbstractCellList(const py::object &cells) : AbstractSequence(kTypeNNCellList, cells) {}
+  explicit AbstractCellList(const std::vector<AObject *> &cells) : AbstractSequence(kTypeNNCellList, cells) {}
+  ~AbstractCellList() override = default;
+};
+
+class AbstractDictKeys : public AbstractSequence {
+ public:
+  explicit AbstractDictKeys(const py::object &keys) : AbstractSequence(kTypeDictKeys, keys) {}
+  explicit AbstractDictKeys(const std::vector<AObject *> &keys) : AbstractSequence(kTypeDictKeys, keys) {}
+  ~AbstractDictKeys() override = default;
+};
+
+class AbstractDictValues : public AbstractSequence {
+ public:
+  explicit AbstractDictValues(const py::object &values) : AbstractSequence(kTypeDictValues, values) {}
+  explicit AbstractDictValues(const std::vector<AObject *> &values) : AbstractSequence(kTypeDictValues, values) {}
+  ~AbstractDictValues() override = default;
+};
+
+class AbstractDictItems : public AbstractSequence {
+ public:
+  explicit AbstractDictItems(const py::object &items) : AbstractSequence(kTypeDictItems, items) {}
+  explicit AbstractDictItems(const std::vector<AObject *> &items) : AbstractSequence(kTypeDictItems, items) {}
+  ~AbstractDictItems() override = default;
 };
 
 using AObjectPair = std::pair<AObject *, AObject *>;
@@ -318,12 +365,14 @@ class AbstractDict : public AbstractObject {
   virtual ~AbstractDict() {}
 
   std::string ToString() const override;
-  AObject *Unary(int op) const override;
-  AObject *Binary(AObject *, int op) override;
   AObject *GetAttr(const std::string &name) override;
   bool SetAttr(const std::string &name, AObject *) override { return false; };
   AObject *GetItem(AObject *key) override;
   bool IsMindSporeSupportedType() override;
+
+  AObject *Keys();
+  AObject *Values();
+  AObject *Items();
 
   Type KeyType() const { return k_type_; }
   Type ValueType() const { return v_type_; }
@@ -340,6 +389,10 @@ class AbstractDict : public AbstractObject {
   ///
   /// \return The elements of AbstractDict object.
   const AObjectPairList &GetElements() const { return key_values_; }
+  const AObjectPairList &GetElementsWithInit() {
+    InitKeyValuesListIfNeed();
+    return key_values_;
+  }
 
   class ValueIter {
    public:
@@ -378,8 +431,6 @@ class AbstractTensor : public AbstractObject {
  public:
   AbstractTensor(const py::object &o, bool is_stub);
   virtual ~AbstractTensor() {}
-  AObject *Binary(AObject *, int op) override;
-  AObject *Unary(int op) const override;
   AObject *GetAttr(const std::string &name) override;
   std::string ToString() const override;
 

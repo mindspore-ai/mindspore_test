@@ -78,6 +78,7 @@ class OptGuard : public std::enable_shared_from_this<OptGuard> {
   virtual void Pop();
   virtual bool IsEmpty() { return guardList_.size() == 0; }
   const auto &guard_list() const { return guardList_; }
+  void RemoveAllGuardItems() { guardList_.clear(); }
 
   bool Erase(const GuardItemPtr &last_item);
 

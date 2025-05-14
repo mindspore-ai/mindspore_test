@@ -1276,7 +1276,7 @@ class MetaTensorData : public ItemData {
   }
 
   bool operator==(PyObject *obj) const override {
-    if (tensor::IsTensorPy(py::cast<py::object>(obj)) || IsStubTensor(py::cast<py::object>(obj))) {
+    if (tensor::IsTensorPy(py::cast<py::object>(obj))) {
       return EqualInternal(GetStubInfo(obj));
     }
     return false;
@@ -1412,7 +1412,7 @@ class TensorData : public MetaTensorData {
   bool operator==(PyObject *obj) const override {
     bool type_match = Py_IS_TYPE(obj, tensor_type_);
     if (!type_match) {
-      type_match = tensor::IsTensorPy(py::cast<py::object>(obj)) || IsStubTensor(py::cast<py::object>(obj));
+      type_match = tensor::IsTensorPy(py::cast<py::object>(obj));
     }
     if (!type_match) {
       return false;
