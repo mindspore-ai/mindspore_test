@@ -1741,6 +1741,11 @@ def deprecated_tensor_nansum(input, axis=(), keepdims=False, *, dtype=None):
     return nansum(input, axis, keepdims, dtype=dtype)
 
 
+# 974
+def tensor_as_strided(input, size, stride, storage_offset=None):
+    raise NotImplementedError("as_strided not support CPU and GPU.")
+
+
 # 244 log1p
 def tensor_log1p(input):
     return log1p(input)

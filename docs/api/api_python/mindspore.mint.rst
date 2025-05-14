@@ -44,6 +44,7 @@ Tensor
     :nosignatures:
     :template: classtemplate.rst
 
+    mindspore.mint.as_strided
     mindspore.mint.cat
     mindspore.mint.chunk
     mindspore.mint.concat
