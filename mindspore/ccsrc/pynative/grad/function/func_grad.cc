@@ -564,6 +564,18 @@ void ProcessForwardOutput(const ValuePtrList &flatten_outputs, const TensorPtrSe
                 << "diff tensor num: " << num_diff_tensors;
   ProcessPost(flatten_outputs, dirty_tensors, output_tensors, num_diff_tensors);
 }
+
+bool ArgNeedGrad(const BaseRef &arg, const std::unordered_map<BackwardNode *, GradientContext> &gradient_contexts) {
+  if (!utils::isa<tensor::Tensor>(arg)) {
+    return false;
+  }
+  const auto &tensor = utils::cast<tensor::TensorPtr>(arg);
+  if (tensor->auto_grad_meta_data() == nullptr || tensor->auto_grad_meta_data()->UnsafeGetGradNodeImpl() == nullptr) {
+    return false;
+  }
+  const auto &grad_node = tensor->auto_grad_meta_data()->UnsafeGetGradNodeImpl();
+  return gradient_contexts.find(grad_node.get()) != gradient_contexts.end();
+}
 }  // namespace
 
 void KPynativeOp(const GradParamPtr &grad_param) {
@@ -900,12 +912,19 @@ void HookBackwardNode::Release() {
   check_func_ = nullptr;
 }
 
+void GraphBackwardNode::SetNeedGradIndexes(
+  const std::unordered_map<BackwardNode *, GradientContext> &gradient_contexts) {
+  need_grad_indexes_.clear();
+  std::transform(args_.begin(), args_.end(), std::back_inserter(need_grad_indexes_),
+                 [&gradient_contexts](const auto &arg) { return ArgNeedGrad(arg, gradient_contexts); });
+}
+
 ValuePtrList GraphBackwardNode::CallBackward(const ValuePtrList &grads) {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunExpanderFunc,
                                      name(), false);
   MS_LOG(DEBUG) << "Begin GraphBackwardNode CallBackward ";
   MS_LOG(DEBUG) << PyNativeAlgo::Common::PrintDebugInfo(grads, "bprop cut input grads: ");
-  mindspore::ad::CheckBpropGraphHasInvalidDout(cache_key_, args_);
+  mindspore::ad::CheckBpropGraphHasInvalidDout(cache_key_, need_grad_indexes_);
   auto graph_call_back = AutoGradUtil::CreateGraphCallBack(func_graph_, cache_key_, graph_call_condition_);
   // Add graph din
   const auto &device_target = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
@@ -1469,6 +1488,11 @@ void AutoDiff::BackPropagate() {
       MS_EXCEPTION_IF_NULL(tensor_grad);
       ctx_iter->second.captured_grad->SetGradient(tensor_grad);
       continue;
+    }
+    if (isa<GraphBackwardNode>(fn)) {
+      auto graph_backward_node = std::dynamic_pointer_cast<GraphBackwardNode>(fn);
+      MS_EXCEPTION_IF_NULL(graph_backward_node);
+      graph_backward_node->SetNeedGradIndexes(gradient_contexts_);
     }
     auto gradient_out = fn->CallBackward(gradient_in);
     MS_LOG(DEBUG) << PyNativeAlgo::Common::PrintDebugInfo(gradient_out, "Begin print gradient out: ");

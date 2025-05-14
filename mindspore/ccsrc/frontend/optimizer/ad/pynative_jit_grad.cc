@@ -439,14 +439,14 @@ void ClearGradCache() {
   original_bprop_graph.clear();
 }
 
-void CheckBpropGraphHasInvalidDout(const std::string &cache_key, const VectorRef &args) {
+void CheckBpropGraphHasInvalidDout(const std::string &cache_key, const std::vector<bool> &need_grads) {
   const auto it = original_bprop_graph.find(cache_key);
   if (it == original_bprop_graph.end()) {
     return;
   }
   auto original_bprop = it->second;
   MS_EXCEPTION_IF_NULL(original_bprop);
-  mindspore::opt::irpass::CheckBpropGraphHasInvalidDoutHelper(original_bprop, args);
+  mindspore::opt::irpass::CheckBpropGraphHasInvalidDoutHelper(original_bprop, need_grads);
   original_bprop_graph.erase(cache_key);
 }
 

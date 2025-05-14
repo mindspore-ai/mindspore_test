@@ -35,18 +35,6 @@ constexpr auto kInvalidInplaceDout = "Invalid_inplace_dout";
 constexpr auto kFlagNeedCheckViewInplaceDoutBprop = "need_check_view_inplace_dout_bprop";
 
 namespace {
-bool ArgNeedGrad(const BaseRef &arg) {
-  if (!utils::isa<tensor::Tensor>(arg)) {
-    return false;
-  }
-  const auto &tensor = utils::cast<tensor::TensorPtr>(arg);
-  bool need_grad =
-    (tensor->auto_grad_meta_data() != nullptr && tensor->auto_grad_meta_data()->UnsafeGetVariableImpl() != nullptr &&
-     tensor->auto_grad_meta_data()->UnsafeGetVariableImpl()->is_need_grad()) ||
-    (tensor->param_info() != nullptr && tensor->param_info()->requires_grad());
-  return need_grad;
-}
-
 bool IsCreatedByViewOp(const AnfNodePtr &node) {
   const auto &prim = GetCNodePrimitive(node);
   if (prim != nullptr && prim->graph_view_prim()) {
@@ -93,13 +81,6 @@ std::vector<std::size_t> NeedCheckInplaceCNode(const CNodePtr &primal_cnode, con
   }
   bprop_fg->set_attr(kInvalidInplaceDout, MakeValue(result));
   return result;
-}
-
-std::vector<bool> GetNeedGradIndex(const VectorRef &args) {
-  std::vector<bool> need_grad;
-  std::transform(args.begin(), args.end(), std::back_inserter(need_grad),
-                 [](const auto &arg) { return ArgNeedGrad(arg); });
-  return need_grad;
 }
 
 void ResetUselessFuncGraph(const FuncGraphPtr &func_graph, const std::vector<bool> &use_flag) {
@@ -320,7 +301,7 @@ bool CheckInvalidViewInplaceDout::operator()(const FuncGraphPtr &root, const Opt
 }
 
 // For Gradjit situation
-void CheckBpropGraphHasInvalidDoutHelper(const FuncGraphPtr &func_graph, const VectorRef &args) {
+void CheckBpropGraphHasInvalidDoutHelper(const FuncGraphPtr &func_graph, const std::vector<bool> &need_grads) {
   MS_EXCEPTION_IF_NULL(func_graph);
   bool need_check = false;
   for (const auto &node : TopoSort(func_graph->output(), SuccDeeperSimple)) {
@@ -333,8 +314,7 @@ void CheckBpropGraphHasInvalidDoutHelper(const FuncGraphPtr &func_graph, const V
   if (!need_check) {
     return;
   }
-  auto indexes = GetNeedGradIndex(args);
-  ResetUselessFuncGraph(func_graph, indexes);
+  ResetUselessFuncGraph(func_graph, need_grads);
   auto resource = std::make_shared<pipeline::Resource>();
   resource->set_func_graph(func_graph);
   auto new_manager = resource->manager();

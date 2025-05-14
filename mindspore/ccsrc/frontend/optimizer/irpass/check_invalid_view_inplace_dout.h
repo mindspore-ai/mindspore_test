@@ -35,7 +35,7 @@ class CheckInvalidViewInplaceDout {
   bool operator()(const FuncGraphPtr &func_graph, const OptimizerPtr &optimizer);
 };
 
-void CheckBpropGraphHasInvalidDoutHelper(const FuncGraphPtr &func_graph, const VectorRef &args);
+void CheckBpropGraphHasInvalidDoutHelper(const FuncGraphPtr &func_graph, const std::vector<bool> &need_grads);
 void MarkInvalidInplaceOpDout(const FuncGraphPtr &fprop_graph);
 }  // namespace irpass
 }  // namespace opt

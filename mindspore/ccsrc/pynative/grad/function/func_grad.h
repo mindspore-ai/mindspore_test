@@ -82,6 +82,8 @@ class HookBackwardNode : public BackwardNode {
   abstract::AbstractBasePtr out_abstract_;
 };
 
+struct GradientContext;
+
 class GraphBackwardNode : public BackwardNode {
  public:
   explicit GraphBackwardNode(const string &name, FuncGraphPtr func_graph, const VectorRef &args,
@@ -98,6 +100,7 @@ class GraphBackwardNode : public BackwardNode {
   // Update nullptr grad.
   ValuePtrList LazeUpdateZeroGradient(const ValuePtrList &dout, FuncBuilder *func_builder, const ValuePtr &output);
   void Release() override;
+  void SetNeedGradIndexes(const std::unordered_map<BackwardNode *, GradientContext> &gradient_contexts);
 
  private:
   FuncGraphPtr func_graph_;
@@ -106,6 +109,7 @@ class GraphBackwardNode : public BackwardNode {
   SavedNodePtr saved_output_;
   std::string cache_key_{false};
   GraphCallCondition graph_call_condition_;
+  std::vector<bool> need_grad_indexes_;
 };
 
 class LeafNode : public BackwardNode {
