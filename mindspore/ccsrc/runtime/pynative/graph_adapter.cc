@@ -444,46 +444,6 @@ bool GraphAdapter::IsPynativeGeGraphSink(const FuncGraphPtr &func_graph) {
   return true;
 }
 
-bool GraphAdapter::PyNativeEnableTaskSink(const FuncGraphPtr &func_graph) {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  bool pynative_mode = ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode;
-  if (!pynative_mode) {
-    return true;
-  }
-
-  MS_EXCEPTION_IF_NULL(func_graph);
-  if (GraphAdapter::IsPynativeGeGraphSink(func_graph)) {
-    MS_LOG(DEBUG) << "Enable graph sink for PyNative";
-    return true;
-  }
-
-  if (!func_graph->has_attr(kAttrJitLevel)) {
-    MS_LOG(EXCEPTION) << "Not jit_level set to func_graph";
-  }
-  auto jit_level_value = func_graph->get_attr(kAttrJitLevel);
-  auto jit_level = GetValue<std::string>(jit_level_value);
-  if (jit_level != kAttrJitLevelO2) {
-    MS_LOG(INFO) << "jit_level is " << jit_level << ", task sink is disabled";
-    return false;
-  }
-
-  std::vector<AnfNodePtr> node_list = TopoSort(func_graph->get_return());
-  auto is_cut_graph = std::any_of(node_list.begin(), node_list.end(), [](const AnfNodePtr &node) {
-    return common::AnfAlgo::IsBpropCutOpExecInBackend(node);
-  });
-
-  auto has_comm_op = std::any_of(node_list.begin(), node_list.end(),
-                                 [](const AnfNodePtr &node) { return common::AnfAlgo::IsCommunicationOp(node); });
-
-  auto is_auto_parallel = IsAutoParallel();
-
-  MS_LOG(INFO) << "JitLevel is " << jit_level << " is_auto_parallel " << is_auto_parallel << " has_comm_op "
-               << has_comm_op << " is_cut_graph " << is_cut_graph;
-
-  return !is_auto_parallel && !has_comm_op && !is_cut_graph;
-}
-
 void UpdateValueNodeAbstractFromTensor(const ValueNodePtr &value_node, const tensor::TensorPtr &tensor) {
   MS_EXCEPTION_IF_NULL(value_node);
   MS_EXCEPTION_IF_NULL(tensor);
