@@ -439,8 +439,8 @@ NodePtr FuncBuilder::Concat(const NodePtr &tensors, const NodePtr &axis) {
   return NativeFunc::Concat(tensors, axis);
 }
 
-NodePtr FuncBuilder::InplaceCopy(const NodePtr &variable, const NodePtr &value) {
-  return NativeFunc::InplaceCopy(variable, value);
+NodePtr FuncBuilder::InplaceCopy(const NodePtr &variable, const NodePtr &value, bool non_blocking) {
+  return NativeFunc::InplaceCopy(variable, value, Value<bool>(non_blocking));
 }
 
 NodePtr FuncBuilder::AsStrided(const NodePtr &input, const NodePtr &size, const NodePtr &stride,

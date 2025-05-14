@@ -1113,7 +1113,7 @@ def copy_(self, src, non_blocking=False):
     """
     Copies the elements from src into self tensor and returns self.
     """
-    return inplace_copy_op(self, src)
+    return inplace_copy_op(self, src, non_blocking)
 
 
 def max(input, axis=None, keepdims=False, *, initial=None,  # pylint: disable=redefined-builtin

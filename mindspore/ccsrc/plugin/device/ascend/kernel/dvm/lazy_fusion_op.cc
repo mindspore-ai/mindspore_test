@@ -1172,9 +1172,10 @@ std::tuple<tensor::TensorPtr, tensor::TensorPtr, tensor::TensorPtr> AdamWAscendD
   return std::make_tuple(outputs_[kIndex0], outputs_[kIndex1], outputs_[kIndex2]);
 }
 
-tensor::TensorPtr InplaceCopyAscendDvm::Call(const TensorPtr &variable_tensor, const TensorPtr &value_tensor) {
+tensor::TensorPtr InplaceCopyAscendDvm::Call(const TensorPtr &variable_tensor, const TensorPtr &value_tensor,
+                                             const BoolImmPtr &non_blocking) {
   if (!InputCheck(variable_tensor, IsFloatIntType) || !InputCheck(value_tensor, IsFloatIntType)) {
-    return InplaceCopyAscend::Call(variable_tensor, value_tensor);
+    return InplaceCopyAscend::Call(variable_tensor, value_tensor, non_blocking);
   }
   if (SameTensor(variable_tensor, value_tensor)) {
     MS_LOG(INFO) << op_name() << " call skip";
