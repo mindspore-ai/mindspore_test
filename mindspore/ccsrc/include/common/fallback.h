@@ -17,6 +17,8 @@
 #ifndef MINDSPORE_CCSRC_INCLUDE_COMMON_FALLBACK_H_
 #define MINDSPORE_CCSRC_INCLUDE_COMMON_FALLBACK_H_
 
+#include <memory>
+
 #include "include/common/visible.h"
 #include "pybind11/pybind11.h"
 #include "ir/value.h"
@@ -24,6 +26,13 @@
 namespace py = pybind11;
 
 namespace mindspore {
+namespace kernel {
+struct PyExecuteOutputUserData {
+  py::object obj;
+  constexpr static char key[] = "PyExecuteOutputUserData";
+};
+using PyExecuteOutputUserDataPtr = std::shared_ptr<PyExecuteOutputUserData>;
+}  // namespace kernel
 namespace fallback {
 COMMON_EXPORT bool HasPyExecuteOutput();
 COMMON_EXPORT py::object PopPyExecuteOutput();

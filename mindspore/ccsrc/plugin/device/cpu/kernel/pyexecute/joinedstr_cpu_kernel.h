@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_PYEXECUTE_KERNEL_H_
-#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_PYEXECUTE_KERNEL_H_
+#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_JOINEDSTR_KERNEL_H
+#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_JOINEDSTR_KERNEL_H
 
 #include <map>
 #include <memory>
@@ -24,26 +24,23 @@
 #include <Python.h>
 #include "pybind11/pybind11.h"
 #include "pybind11/numpy.h"
-#include "include/common/fallback.h"
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 
 namespace py = pybind11;
 namespace mindspore {
 namespace kernel {
-class PyExecuteCpuKernelMod : public NativeCpuKernelMod {
+class JoinedStrCpuKernelMod : public NativeCpuKernelMod {
  public:
-  PyExecuteCpuKernelMod() {}
-  ~PyExecuteCpuKernelMod() = default;
+  JoinedStrCpuKernelMod() {}
+  ~JoinedStrCpuKernelMod() = default;
 
   bool Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &,
               const std::vector<KernelTensor *> &outputs) override;
-  bool need_user_data() const override { return true; }
-
- private:
-  bool is_output_any_{true};
 };
+
+std::string ConvertAbsToStr(KernelTensor *input);
 }  // namespace kernel
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_PYEXECUTE_KERNEL_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_JOINEDSTR_KERNEL_H

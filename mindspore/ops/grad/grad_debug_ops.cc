@@ -59,5 +59,10 @@ REG_BPROP_BUILDER("VmapUnstackAssign").FreeUselessValues_IO({}, {}).SetBody(BODY
                  [&ib](const NodePtr &node) { return ib->OutZeros(node); });
   return gradients;
 });
+
+REG_BPROP_BUILDER("JoinedStr").FreeUselessValues_IO({}, {}).SetBody(BODYFUNC(ib) {
+  const auto &all_inputs = ib->GetInputs();
+  return NodePtrList(all_inputs.begin(), all_inputs.end() - i2);
+});
 REG_BPROP_BUILDERS_END
 }  // namespace mindspore::expander::bprop

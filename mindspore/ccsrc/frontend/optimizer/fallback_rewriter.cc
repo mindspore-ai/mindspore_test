@@ -1564,15 +1564,19 @@ class AfterOptARewriter : public BaseRewriter {
   AnfNodePtr ConvertRaise(const CNodePtr &cnode) const {
     const auto allow_fallback_runtime = (fallback::GetJitSyntaxLevel() >= kCompatible);
     if (!allow_fallback_runtime) {
-      MS_LOG(WARNING) << "When using the raise statement, it is best to set jit_syntax_level to LAX, "
-                      << "because there is no the real raise operator.\n";
+      return nullptr;
+    }
+    const auto &inputs = cnode->inputs();
+    bool need_convert = std::any_of(inputs.begin(), inputs.end(), [](const AnfNodePtr &e) {
+      return e->abstract() == nullptr || e->abstract()->isa<abstract::AbstractAny>();
+    });
+    if (!need_convert) {
       return nullptr;
     }
     MS_EXCEPTION_IF_NULL(cnode);
     const auto &fg = cnode->func_graph();
     MS_EXCEPTION_IF_NULL(fg);
     MS_LOG(DEBUG) << "Raise node: " << cnode->DebugString();
-    const auto &inputs = cnode->inputs();
     std::shared_ptr<raiseutils::KeyValueInfo> key_value = std::make_shared<raiseutils::KeyValueInfo>();
     key_value->keys = {NewValueNode(prim::kPrimMakeTuple)};
     key_value->values = {NewValueNode(prim::kPrimMakeTuple)};
@@ -1796,12 +1800,138 @@ class AfterOptARewriter : public BaseRewriter {
     return pyexecute_node;
   }
 
+  bool CheckNeedConvertJoinedStrInputs(const AnfNodePtr &node) const {
+    if (!node->isa<CNode>()) {
+      return false;
+    }
+    auto cnode = node->cast<CNodePtr>();
+    const auto &inputs = cnode->inputs();
+    return std::any_of(inputs.begin() + 1, inputs.end(), [this](const AnfNodePtr &e) {
+      auto abstract = e->abstract();
+      if (abstract == nullptr) {
+        return false;
+      }
+      if (!abstract->isa<abstract::AbstractSequence>() && !abstract->isa<abstract::AbstractDictionary>()) {
+        return false;
+      }
+      if (abstract->isa<abstract::AbstractSequence>() &&
+          abstract->cast<abstract::AbstractSequencePtr>()->dynamic_len()) {
+        return false;
+      }
+      return true;
+    });
+  }
+
+  AnfNodePtrList ConvertJoinedStrInput(const AnfNodePtr &node) const {
+    auto abstract = node->abstract();
+    if (abstract == nullptr) {
+      return AnfNodePtrList{node};
+    }
+    auto value = abstract->BuildValue();
+    if (value != kValueAny) {
+      // Build constant string for input
+      const auto &new_str = (py::str(ValueToPyData(value))).cast<std::string>();
+      return AnfNodePtrList{NewValueNode(new_str)};
+    }
+    if (!abstract->isa<abstract::AbstractSequence>() && !abstract->isa<abstract::AbstractDictionary>()) {
+      return AnfNodePtrList{node};
+    }
+    if (!node->isa<CNode>()) {
+      return AnfNodePtrList{node};
+    }
+    auto fg = node->func_graph();
+    MS_EXCEPTION_IF_NULL(fg);
+    AnfNodePtrList new_inputs;
+    if (abstract->isa<abstract::AbstractDictionary>()) {
+      MS_LOG(EXCEPTION) << "Joined Str do not support dictionary input yet";
+    }
+    std::string left = abstract->isa<abstract::AbstractTuple>() ? "(" : "[";
+    std::string right = abstract->isa<abstract::AbstractTuple>() ? ")" : "]";
+    PrimitivePtr getitem_prim =
+      abstract->isa<abstract::AbstractTuple>() ? prim::kPrimTupleGetItem : prim::kPrimListGetItem;
+    (void)new_inputs.emplace_back(NewValueNode(left));
+    auto abstract_sequence = abstract->cast<abstract::AbstractSequencePtr>();
+    const auto &elements_abstract = abstract_sequence->elements();
+    for (size_t i = 0; i < elements_abstract.size(); ++i) {
+      auto cur_node = fg->NewCNode({NewValueNode(getitem_prim), node, NewValueNode(int64_t(i))});
+      cur_node->set_abstract(elements_abstract[i]);
+      auto cur_flattened_input = ConvertJoinedStrInput(cur_node);
+      new_inputs.insert(new_inputs.end(), std::make_move_iterator(cur_flattened_input.begin()),
+                        std::make_move_iterator(cur_flattened_input.end()));
+      if (i != elements_abstract.size() - 1) {
+        (void)new_inputs.emplace_back(NewValueNode(", "));
+      }
+    }
+    (void)new_inputs.emplace_back(NewValueNode(right));
+    return new_inputs;
+  }
+
+  AnfNodePtr BuildFlattenedInputJoinedStr(const CNodePtr &node) const {
+    if (!CheckNeedConvertJoinedStrInputs(node)) {
+      return nullptr;
+    }
+    MS_LOG(INFO) << "Start to flattened JoinedStr node: " << node->DebugString(2);
+    const auto &inputs = node->inputs();
+    AnfNodePtrList flattened_joined_str_inputs;
+    for (size_t i = 1; i < inputs.size(); ++i) {
+      const auto &new_cur_inputs = ConvertJoinedStrInput(inputs[i]);
+      flattened_joined_str_inputs.insert(flattened_joined_str_inputs.end(),
+                                         std::make_move_iterator(new_cur_inputs.begin()),
+                                         std::make_move_iterator(new_cur_inputs.end()));
+    }
+
+    AnfNodePtrList compressed_joined_str_inputs{inputs[0]};
+    std::string compressed_str = "";
+    for (size_t i = 0; i < flattened_joined_str_inputs.size(); ++i) {
+      const auto &cur_input = flattened_joined_str_inputs[i];
+      if (cur_input->isa<ValueNode>()) {
+        const auto &cur_val = cur_input->cast<ValueNodePtr>()->value();
+        const auto &cur_str = GetValue<std::string>(cur_val);
+        compressed_str += cur_str;
+        continue;
+      }
+      if (compressed_str != "") {
+        ValueNodePtr compressed_node = NewValueNode(compressed_str);
+        compressed_node->set_abstract(compressed_node->value()->ToAbstract());
+        compressed_str = "";
+        (void)compressed_joined_str_inputs.emplace_back(compressed_node);
+      }
+      (void)compressed_joined_str_inputs.emplace_back(cur_input);
+    }
+    if (compressed_str != "") {
+      ValueNodePtr compressed_node = NewValueNode(compressed_str);
+      compressed_node->set_abstract(compressed_node->value()->ToAbstract());
+      compressed_str = "";
+      (void)compressed_joined_str_inputs.emplace_back(compressed_node);
+    }
+    auto fg = node->func_graph();
+    MS_EXCEPTION_IF_NULL(fg);
+    auto ret = fg->NewCNode(compressed_joined_str_inputs);
+    MS_LOG(INFO) << "Result flattened JoinedStr node: " << ret->DebugString(2);
+    return ret;
+  }
+
   // JoinedStr(XXXXXX)
   // TO
   // A = PyExecute("list(map(str, __inner_convert_object__), ("__inner_convert_object__",), ((XXXXXX,),)")
   // B = PyExecute("".join(__inner_str_list__)", ("__inner_str_list__",), (A,)).
   // replace(B --> JoinedStr)
   AnfNodePtr ConvertJoinedStr(const CNodePtr &cnode) const {
+    const auto &cnode_users_iter = manager_->node_users().find(cnode);
+    if (cnode_users_iter != manager_->node_users().end()) {
+      bool only_use_for_raise = true;
+      for (const auto &user : cnode_users_iter->second) {
+        const auto &user_node = user.first;
+        if (!IsPrimitiveCNode(user_node, prim::kPrimRaise)) {
+          only_use_for_raise = false;
+          break;
+        }
+      }
+      if (only_use_for_raise) {
+        return BuildFlattenedInputJoinedStr(cnode);
+      }
+    }
+
     if (not_convert_jit_) {
       MS_LOG(WARNING) << "If the forward graph is in graph mode and the grad graph is in pynative mode, "
                          "the JoinedStr operator is not supported.\n";

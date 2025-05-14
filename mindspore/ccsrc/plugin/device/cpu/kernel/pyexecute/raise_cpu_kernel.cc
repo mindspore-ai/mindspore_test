@@ -1,5 +1,5 @@
 /**
- * Copyright 2022-2023 Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@
 #include "ir/anf.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
 #include "utils/log_adapter.h"
+#include "plugin/device/cpu/kernel/pyexecute/joinedstr_cpu_kernel.h"
 
 namespace mindspore {
 namespace kernel {
@@ -40,14 +41,36 @@ bool RaiseCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const st
 
 bool RaiseCpuKernelMod::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &,
                                const std::vector<KernelTensor *> &outputs) {
+  constexpr size_t exception_one_input_size = 3;
   constexpr size_t exception_type_abs_index = 0;
-  constexpr size_t exception_msg_abs_index = 1;
+  constexpr size_t exception_msg_abs_first_index = 1;
+  const size_t exception_msg_abs_last_index = inputs.size() - 2;
   auto exception_type_abs = inputs[exception_type_abs_index];
-  auto exception_msg_abs = inputs[exception_msg_abs_index];
   MS_EXCEPTION_IF_NULL(exception_type_abs);
-  MS_EXCEPTION_IF_NULL(exception_msg_abs);
   const auto &exception_type_str = GetValue<std::string>(exception_type_abs->BuildValue());
-  const auto &exception_msg = GetValue<std::string>(exception_msg_abs->BuildValue());
+  py::gil_scoped_acquire gil_acquire;
+  std::string exception_msg;
+  for (size_t index = exception_msg_abs_first_index; index <= exception_msg_abs_last_index; ++index) {
+    const auto &input = inputs[index];
+    MS_EXCEPTION_IF_NULL(input);
+    AbstractBase *object_input = input;
+    bool cur_is_str = object_input->has_user_data("str_exception_result") || input->GetType()->ToString() == "String";
+    const auto &cur_exception_msg = object_input->has_user_data("str_exception_result")
+                                      ? *object_input->user_data<string>("str_exception_result")
+                                      : ConvertAbsToStr(input);
+    // if only one input
+    if (inputs.size() == exception_one_input_size) {
+      exception_msg = cur_exception_msg;
+      break;
+    }
+    if (index == exception_msg_abs_first_index) {
+      exception_msg = cur_is_str ? "('" + cur_exception_msg + "', " : "(" + cur_exception_msg + ", ";
+      continue;
+    }
+    exception_msg = cur_is_str ? exception_msg + "'" + cur_exception_msg + "'" : exception_msg + cur_exception_msg;
+    // if is last inputs index
+    exception_msg = index == exception_msg_abs_last_index ? exception_msg + ")" : exception_msg + ", ";
+  }
   auto iter = exception_types_map.find(exception_type_str);
   if (iter == exception_types_map.end()) {
     MS_LOG(ERROR) << "Found unexpected exception type " << exception_type_str;
