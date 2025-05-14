@@ -16,7 +16,6 @@
 from mindspore._c_expression import Event as Event_
 from mindspore._c_expression import Stream as Stream_
 from mindspore._c_expression import current_stream as current_stream_
-from mindspore import _checkparam as Validator
 from .device import _is_supported
 
 function_event_status = {'Event': False, 'wait': False}
@@ -71,9 +70,16 @@ class Event(Event_):
             function_event_status['Event'] = True
             if not _is_supported():
                 return
-        # pylint: disable=useless-super-delegation
-        Validator.check_bool(enable_timing, "enable_timing", "Event")
-        Validator.check_bool(blocking, "blocking", "Event")
+        if not isinstance(enable_timing, bool):
+            raise TypeError(
+                f"For 'Event', the 'enable_timing' must be a bool,"
+                f" but got {type(enable_timing).__name__}."
+            )
+        if not isinstance(blocking, bool):
+            raise TypeError(
+                f"For 'Event', the 'blocking' must be a bool,"
+                f" but got {type(blocking).__name__}."
+            )
         super().__init__(enable_timing, blocking)
 
     def record(self, stream=None):
