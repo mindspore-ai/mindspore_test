@@ -556,7 +556,6 @@ TEST_F(TestAbstractDynamicMemPool, test_release_free_blocks) {
   EXPECT_EQ(mem_pool->TotalUsedMemStatistics(), kGBToByte * 8);
 }
 
-
 /// Feature: test empty cache for abstract dynamic mem pool.
 /// Description: test empty cache.
 /// Expectation: all interface work normally and can not throw exception.
