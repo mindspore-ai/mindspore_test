@@ -78,5 +78,5 @@ std::vector<GeneralInferParam> prepare_params() {
 }
 }  // namespace
 
-INSTANTIATE_TEST_CASE_P(MoeTokenUnpermute, GeneralInferTest, testing::ValuesIn(prepare_params()));
+INSTANTIATE_TEST_CASE_P(InnerMoeTokenUnpermute, GeneralInferTest, testing::ValuesIn(prepare_params()));
 }  // namespace mindspore::ops

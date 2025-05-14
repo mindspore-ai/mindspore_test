@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "infer/ops_func_impl/moe_token_unpermute.h"
+#include "infer/ops_func_impl/inner_moe_token_unpermute.h"
 #include <string>
 #include <set>
 #include "utils/check_convert_utils.h"
@@ -28,8 +28,8 @@ constexpr int64_t kUnpermutedDim = 2;
 constexpr int64_t kUnpermutedIndiceDim = 1;
 }  // namespace
 
-ShapeArray MoeTokenUnpermuteFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                                 const InferInfoPtrList &input_infos) const {
+ShapeArray InnerMoeTokenUnpermuteFuncImpl::InferShape(const PrimitivePtr &primitive,
+                                                      const InferInfoPtrList &input_infos) const {
   auto &permuted_tokens_tensor = input_infos[kIndex0];
   auto &sorted_indices_tensor = input_infos[kIndex1];
   auto permuted_tokens_shape = permuted_tokens_tensor->GetShape();
@@ -83,27 +83,13 @@ ShapeArray MoeTokenUnpermuteFuncImpl::InferShape(const PrimitivePtr &primitive,
   return {output_shape};
 }
 
-std::vector<TypeId> MoeTokenUnpermuteFuncImpl::InferType(const PrimitivePtr &primitive,
-                                                         const InferInfoPtrList &input_infos) const {
+std::vector<TypeId> InnerMoeTokenUnpermuteFuncImpl::InferType(const PrimitivePtr &primitive,
+                                                              const InferInfoPtrList &input_infos) const {
   TypeId unpermute_token_type = input_infos[kIndex0]->GetType();
   TypeId sorted_indices_type = input_infos[kIndex1]->GetType();
-
-  if (unpermute_token_type != kNumberTypeBFloat16) {
-    MS_EXCEPTION(TypeError) << "For primitive[MoeTokenUnpermute], unpermuted_tokens dtype is invalid"
-                            << " , should be bfloat16.";
-  }
   if (sorted_indices_type != kNumberTypeInt32) {
     MS_EXCEPTION(TypeError) << "For primitive[MoeTokenUnpermute], sorted_indices dtype is invalid"
                             << " , should be int32.";
-  }
-
-  auto &probs = input_infos[kIndex2];
-  if (!probs->IsNone()) {
-    TypeId probs_type = probs->GetType();
-    if (probs_type != kNumberTypeBFloat16) {
-      MS_EXCEPTION(TypeError) << "For primitive[MoeTokenUnpermute], probs dtype is invalid"
-                              << " , should be bfloat16.";
-    }
   }
   return {unpermute_token_type};
 }

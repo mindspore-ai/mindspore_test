@@ -39,7 +39,24 @@ ShapeArray MoeTokenUnpermuteGradFuncImpl::InferShape(const PrimitivePtr &primiti
 
 std::vector<TypeId> MoeTokenUnpermuteGradFuncImpl::InferType(const PrimitivePtr &primitive,
                                                              const InferInfoPtrList &input_infos) const {
-  return {input_infos[kIndex0]->GetType(), input_infos[kIndex0]->GetType()};
+  auto permuted_token_type = input_infos[kIndex0]->GetType();
+  auto unpermuted_token_type = input_infos[kIndex1]->GetType();
+  if (permuted_token_type != unpermuted_token_type) {
+    MS_EXCEPTION(TypeError) << "For primitive [MoeTokenUnpermuteGrad], the permuted_tokens and unpermuted_tokens_grad"
+                            << " must have the same data type. But got permuted_tokens type is " << permuted_token_type
+                            << ", unpermuted_tokens_grad type is " << unpermuted_token_type;
+  }
+  auto &probs_tensor = input_infos[kIndex3];
+  if (!probs_tensor->IsNone()) {
+    auto probs_type = probs_tensor->GetType();
+    if (permuted_token_type != probs_type) {
+      MS_EXCEPTION(TypeError) << "For primitive [MoeTokenUnpermuteGrad], the permuted_tokens and probs"
+                              << " must have the same data type. But got permuted_tokens type is "
+                              << permuted_token_type << ", probs type is " << probs_type;
+    }
+  }
+
+  return {permuted_token_type, permuted_token_type};
 }
 }  // namespace ops
 }  // namespace mindspore

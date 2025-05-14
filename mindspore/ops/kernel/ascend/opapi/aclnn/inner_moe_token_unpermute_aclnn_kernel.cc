@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "kernel/ascend/opapi/aclnn/moe_token_unpermute_aclnn_kernel.h"
+#include "kernel/ascend/opapi/aclnn/inner_moe_token_unpermute_aclnn_kernel.h"
 
 #include <tuple>
 #include <algorithm>
@@ -31,8 +31,8 @@
 namespace mindspore {
 namespace kernel {
 namespace moe_token_unpermute {
-void MoeTokenUnpermuteAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
-                                               const std::vector<KernelTensor *> &outputs) {
+void InnerMoeTokenUnpermuteAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
+                                                    const std::vector<KernelTensor *> &outputs) {
   padded_mode = inputs[kIndex3]->GetValueWithCheck<bool>();
   auto restore_shape_opt = inputs[kIndex4]->GetValue<std::vector<int64_t>>();
   std::vector<int64_t> restore_default = {1};
@@ -41,16 +41,16 @@ void MoeTokenUnpermuteAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *>
                         outputs[kIndex0]);
 }
 
-bool MoeTokenUnpermuteAscend::Launch(const std::vector<KernelTensor *> &inputs,
-                                     const std::vector<KernelTensor *> &workspace,
-                                     const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
+bool InnerMoeTokenUnpermuteAscend::Launch(const std::vector<KernelTensor *> &inputs,
+                                          const std::vector<KernelTensor *> &workspace,
+                                          const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
   RunOp(stream_ptr, workspace, inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], padded_mode, restore_shape_val,
         outputs[kIndex0]);
   return true;
 }
 
-MS_ACLNN_KERNEL_FACTORY_REG(MoeTokenUnpermute, MoeTokenUnpermuteAscend);
+MS_ACLNN_KERNEL_FACTORY_REG(InnerMoeTokenUnpermute, InnerMoeTokenUnpermuteAscend);
 }  // namespace moe_token_unpermute
 }  // namespace kernel
 }  // namespace mindspore
