@@ -364,7 +364,7 @@ const AnfNodePtr AllToAllUnifyMindIR::Process(const FuncGraphPtr &graph, const A
                                    << split_dim << "] = " << shape[split_dim] << trace::DumpSourceLines(all_to_all);
       }
       new_shape[0] = shape[0] * split_count;
-      new_shape[split_dim] = shape[split_dim] / split_count;
+      new_shape[split_dim] = -1;
       auto reshape_node = CreateReshapeNode(kernel_graph, all_to_all_input, new_shape);
       all_to_all_input = reshape_node;
     } else if (split_dim != 0) {
@@ -377,6 +377,7 @@ const AnfNodePtr AllToAllUnifyMindIR::Process(const FuncGraphPtr &graph, const A
     ret_node = new_ata;
     auto out_shape = common::AnfAlgo::GetOutputInferShape(all_to_all, kIndex0);
     if (CheckNoNeedTranspose(out_shape, static_cast<size_t>(concat_dim))) {
+      out_shape[concat_dim] = -1;
       auto reshape_node = CreateReshapeNode(kernel_graph, new_ata, out_shape);
       ret_node = reshape_node;
     } else if (concat_dim != 0) {
