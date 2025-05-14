@@ -23,33 +23,62 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "backend/common/graph_kernel/graph_kernel_helper.h"
 #include "backend/common/graph_kernel/core/graph_kernel_callback.h"
+#include "backend/common/graph_kernel/adapter/graph_kernel_cluster_cloud.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 namespace mindspore::graphkernel {
 bool IsMatMul(const AnfNodePtr &node) {
-  return IsPrimitiveCNode(node, prim::kPrimMatMul) || IsPrimitiveCNode(node, prim::kPrimBatchMatMul);
+  return IsPrimitiveCNode(node, prim::kPrimMatMul) || IsPrimitiveCNode(node, prim::kPrimBatchMatMul) ||
+         (IsPrimitiveCNode(node, prim::kPrimGroupedMatmul) &&
+          StaticShapeCluster::CanClusterableOp(node, StaticShapeCluster::GetClusterOps()));
 }
 
-bool IsTargetTranspose(const AnfNodePtr &node, const AnfNodePtr &input) {
-  auto transpose = input->cast<CNodePtr>();
-  MS_EXCEPTION_IF_NULL(transpose);
-  auto perm_node = transpose->input(kIndex2);
-  MS_EXCEPTION_IF_NULL(perm_node);
-  if (!perm_node->isa<ValueNode>()) {
-    return false;
-  }
-  auto perm_valuenode = perm_node->cast<ValueNodePtr>();
-  auto perm = GetValue<std::vector<int64_t>>(perm_valuenode->value());
-  (void)std::transform(perm.begin(), perm.end(), perm.begin(),
-                       [&perm](int64_t axis) -> int64_t { return axis < 0 ? axis + SizeToLong(perm.size()) : axis; });
-  // the target transpose only changes the last two axes.
-  for (size_t i = 0; i < perm.size() - kSizeTwo; i++) {
-    if (perm[i] != SizeToLong(i)) {
+bool IsTargetTranspose(const AnfNodePtr &input) {
+  if (IsPrimitiveCNode(input, prim::kPrimTranspose)) {
+    auto transpose = input->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(transpose);
+    auto perm_node = transpose->input(kIndex2);
+    MS_EXCEPTION_IF_NULL(perm_node);
+    if (!perm_node->isa<ValueNode>()) {
       return false;
     }
+    auto rank = SizeToLong(GetShape(input).size());
+    auto perm = GetValue<std::vector<int64_t>>(perm_node->cast<ValueNodePtr>()->value());
+    (void)std::transform(perm.begin(), perm.end(), perm.begin(),
+                         [rank](int64_t axis) -> int64_t { return axis < 0 ? axis + rank : axis; });
+    // the target transpose only changes the last two axes.
+    std::swap(perm[perm.size() - 1], perm[perm.size() - 2]);
+    for (size_t i = 0; i < perm.size(); i++) {
+      if (perm[i] != SizeToLong(i)) {
+        return false;
+      }
+    }
+    return true;
   }
-  return perm[perm.size() - 2] == SizeToLong(perm.size() - 1) && perm[perm.size() - 1] == SizeToLong(perm.size() - 2);
+  if (IsPrimitiveCNode(input, prim::kPrimTransposeExtView)) {
+    auto transpose = input->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(transpose);
+    auto perm0_node = transpose->input(kIndex2);
+    auto perm1_node = transpose->input(kIndex3);
+    MS_EXCEPTION_IF_NULL(perm0_node);
+    MS_EXCEPTION_IF_NULL(perm1_node);
+    if (!perm0_node->isa<ValueNode>() || !perm1_node->isa<ValueNode>()) {
+      return false;
+    }
+    auto rank = SizeToLong(GetShape(input).size());
+    auto perm0 = GetValue<int64_t>(perm0_node->cast<ValueNodePtr>()->value());
+    auto perm1 = GetValue<int64_t>(perm1_node->cast<ValueNodePtr>()->value());
+    if (perm0 < 0) {
+      perm0 += rank;
+    }
+    if (perm1 < 0) {
+      perm1 += rank;
+    }
+    return perm0 == rank - 1 && perm1 == rank - 2;
+  }
+  return false;
 }
 
 bool TransposeMatmulFusion::Run(const FuncGraphPtr &func_graph) {
@@ -67,55 +96,18 @@ bool TransposeMatmulFusion::Run(const FuncGraphPtr &func_graph) {
     }
     auto matmul = node->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(matmul);
-    auto lhs = matmul->input(kIndex1);
-    auto rhs = matmul->input(kIndex2);
-    bool trans_a = IsPrimitiveCNode(lhs, prim::kPrimTranspose) && IsTargetTranspose(node, lhs);
-    bool trans_b = IsPrimitiveCNode(rhs, prim::kPrimTranspose) && IsTargetTranspose(node, rhs);
     auto prim = GetCNodePrimitive(matmul);
-    AnfNodePtrList inputs{NewValueNode(prim)};
-    if (trans_a) {
-      auto lhs_cnode = lhs->cast<CNodePtr>();
-      inputs.emplace_back(lhs_cnode->input(kIndex1));
-    } else {
-      inputs.emplace_back(lhs);
+    MS_EXCEPTION_IF_NULL(prim);
+    for (size_t i = kIndex1; i < kIndex3; i++) {
+      auto trans_node = matmul->input(i);
+      bool trans = IsTargetTranspose(trans_node);
+      if (trans) {
+        auto attr_name = i == kIndex1 ? kTransposeA : kTransposeB;
+        bool ori_trans = GetValue<bool>(prim->GetAttr(attr_name));
+        prim->set_attr(attr_name, MakeValue<bool>(trans ^ ori_trans));
+        matmul->set_input(i, trans_node->cast<CNodePtr>()->input(kIndex1));
+      }
     }
-    if (trans_b) {
-      auto rhs_cnode = rhs->cast<CNodePtr>();
-      inputs.emplace_back(rhs_cnode->input(kIndex1));
-    } else {
-      inputs.emplace_back(rhs);
-    }
-    if (!trans_a && !trans_b) {
-      continue;
-    }
-    auto input_trans_a_node = matmul->input(kIndex3);
-    auto input_trans_b_node = matmul->input(kIndex4);
-
-    if (!input_trans_a_node->isa<ValueNode>() || !input_trans_b_node->isa<ValueNode>()) {
-      continue;
-    }
-    // update transpose inputs of matmul
-    auto input_trans_a = GetValue<bool>(input_trans_a_node->cast<ValueNodePtr>()->value());
-    auto input_trans_b = GetValue<bool>(input_trans_b_node->cast<ValueNodePtr>()->value());
-    auto new_trans_a = MakeValue<bool>(trans_a ^ input_trans_a);
-    auto new_trans_b = MakeValue<bool>(trans_b ^ input_trans_b);
-    auto new_trans_a_node = NewValueNode(new_trans_a);
-    auto new_trans_b_node = NewValueNode(new_trans_b);
-    new_trans_a_node->set_abstract(new_trans_a->ToAbstract());
-    new_trans_b_node->set_abstract(new_trans_b->ToAbstract());
-    inputs.emplace_back(new_trans_a_node);
-    inputs.emplace_back(new_trans_b_node);
-    auto new_matmul = func_graph->NewCNode(inputs);
-    func_graph->AddValueNode(new_trans_a_node);
-    func_graph->AddValueNode(new_trans_b_node);
-    // clone cnode attrs
-    new_matmul->set_attrs(matmul->attrs());
-    new_matmul->set_abstract(matmul->abstract());
-    if (cb->IsUseDeviceInfo()) {
-      auto build_info = AnfAlgo::GetSelectKernelBuildInfo(node);
-      AnfAlgo::SetSelectKernelBuildInfo(build_info, new_matmul.get());
-    }
-    (void)mng->Replace(node, new_matmul);
   }
   return true;
 }

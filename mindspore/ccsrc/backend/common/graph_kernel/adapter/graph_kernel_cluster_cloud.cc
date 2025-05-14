@@ -15,6 +15,9 @@
  */
 #include "backend/common/graph_kernel/adapter/graph_kernel_cluster_cloud.h"
 #include <set>
+#include <functional>
+#include <unordered_map>
+#include <string>
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "include/common/utils/anfalgo.h"
@@ -162,6 +165,7 @@ class DvmSupportChecker {
     // matmul op
     check_func_["MatMul"] = {DvmSupportChecker::DvmMatMulSupported, input_check_all};
     check_func_["BatchMatMul"] = {DvmSupportChecker::DvmMatMulSupported, input_check_all};
+    check_func_[ops::kNameGroupedMatmul] = {DvmSupportChecker::DvmGroupedMatmulSupported};
     // transpose op
     check_func_["Transpose"] = {transpose_op_check, input_check_all};
     // collective comm op
@@ -235,18 +239,31 @@ class DvmSupportChecker {
   }
 
   static bool DvmSliceSupported(const AnfNodePtr &node) {
+    constexpr size_t kMaxRank = 4;
+    if (common::AnfAlgo::IsDynamicRankNode(node)) {
+      return false;
+    }
     auto node_output_type = GetNodeOutputType(node);
-    constexpr size_t input_num = 3;
-    if (common::AnfAlgo::IsDynamicRankNode(node) || GetShape(node).size() > input_num) {
+    auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
+    auto output_shape = GetShape(node);
+    auto input_shape = GetShape(cnode->input(kIndex1));
+    auto rank = output_shape.size();
+    for (size_t i = kIndex3; i < rank; i++) {
+      if (input_shape[rank - 1 - i] != output_shape[rank - 1 - i]) {
+        return false;
+      }
+    }
+    if (input_shape.size() > kMaxRank) {
       return false;
     }
     if (IsPrimitiveCNode(node, prim::kPrimStridedSlice)) {
-      auto cnode = node->cast<CNodePtr>();
       auto step_node = cnode->input(kIndex4)->cast<ValueNodePtr>();
       if (step_node == nullptr) {
         return false;
       }
       auto step_vector = GetValue<std::vector<int64_t>>(step_node->value());
+
       if (std::any_of(step_vector.begin(), step_vector.end(), [](int i) { return i != 1; })) {
         return false;
       }
@@ -277,6 +294,38 @@ class DvmSupportChecker {
       return false;
     }
     if (IsPrimitiveCNode(node, prim::kPrimBatchMatMul) && c_shape.size() > kSizeFour) {
+      return false;
+    }
+    return true;
+  }
+
+  static bool DvmGroupedMatmulSupported(const AnfNodePtr &node) {
+    constexpr int64_t MAX_GM_STRIDE = UINT16_MAX;
+    auto prim = GetCNodePrimitive(node);
+    MS_EXCEPTION_IF_NULL(prim);
+    auto split_item = GetValue<int64_t>(prim->GetAttr("split_item"));
+    auto group_type = GetValue<int64_t>(prim->GetAttr("group_type"));
+    if (split_item != 3 || (group_type != 0 && group_type != 2)) {
+      return false;
+    }
+    auto node_output_type = GetNodeOutputType(node);
+    if (node_output_type != kNumberTypeFloat16 && node_output_type != kNumberTypeBFloat16) {
+      return false;
+    }
+    auto cnode = node->cast<CNodePtr>();
+    for (size_t i = kIndex4; i < kIndex8; i++) {
+      auto input_node = cnode->input(i);
+      if (input_node->isa<ValueNode>() && input_node->cast<ValueNodePtr>()->value()->isa<None>()) {
+        continue;
+      }
+      if (GetShape(input_node) == ShapeVector{0}) {
+        continue;
+      }
+      return false;
+    }
+    auto a_shape = GetShape(cnode->input(kIndex1));
+    auto b_shape = GetShape(cnode->input(kIndex2));
+    if (a_shape.back() > MAX_GM_STRIDE || b_shape.back() > MAX_GM_STRIDE) {
       return false;
     }
     return true;
@@ -492,7 +541,7 @@ bool SkipHostInputNode(const AnfNodePtr &node, bool is_dvm) {
   return false;
 }
 
-bool StaticShapeCluster::IsClusterableOp(const AnfNodePtr &node) {
+bool StaticShapeCluster::CanClusterableOp(const AnfNodePtr &node, const std::vector<PrimitivePtr> &op_list) {
   if (AnfUtils::IsGraphKernel(node)) {
     auto sub_graph = GetCNodeFuncGraph(node);
     if (auto type = sub_graph->get_attr("composite_type")) {
@@ -509,7 +558,7 @@ bool StaticShapeCluster::IsClusterableOp(const AnfNodePtr &node) {
   if (!is_dvm && common::AnfAlgo::IsDynamicShape(node)) {
     return false;
   }
-  bool node_in_oplist = std::any_of(op_list_.begin(), op_list_.end(),
+  bool node_in_oplist = std::any_of(op_list.begin(), op_list.end(),
                                     [&node](const PrimitivePtr &prim) { return IsPrimitiveCNode(node, prim); });
   if (!node_in_oplist) {
     return false;
@@ -555,6 +604,10 @@ bool StaticShapeCluster::IsClusterableOp(const AnfNodePtr &node) {
   }
 
   return !GkUtils::InplaceWithViewInputs(node);
+}
+
+bool StaticShapeCluster::IsClusterableOp(const AnfNodePtr &node) {
+  return StaticShapeCluster::CanClusterableOp(node, op_list_);
 }
 
 std::vector<PrimitivePtr> DynamicShapeCluster::GetClusterableOpList() {

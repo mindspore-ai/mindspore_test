@@ -28,10 +28,13 @@
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"  // collective communication operations
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
+#include "backend/common/graph_kernel/graph_kernel_helper.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "plugin/res_manager/ascend/collective/dvm_collective_comm_lib.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace kernel {
@@ -50,7 +53,10 @@ enum OpType {
   OP_REDUCE,
   OP_SLICE,
   OP_MATMUL,
+  OP_GMM,
   OP_COMM,
+  OP_TG,
+  OPTypeEnd
 };
 
 ShapeVector GetAxisList(const AnfNodePtr &axis_input) {
@@ -118,6 +124,8 @@ static std::unordered_map<std::string, std::pair<OpType, int>> op_type_map = {
   {"StridedSlice", {OP_SLICE, 1}},
   {ops::kNameMatMul, {OP_MATMUL, 0}},
   {ops::kNameBatchMatMul, {OP_MATMUL, 0}},
+  {ops::kNameGroupedMatmul, {OP_GMM, 0}},
+  {"TupleGetItem", {OP_TG, 0}},
   {"AllReduce", {OP_COMM, 0}},
 };
 
@@ -226,13 +234,8 @@ class OpBuilder {
       }
       case OP_NEG: {
         auto obj = GetInput(node->input(1));
-        if (kernel_->GetDType(obj) == dvm::kInt32) {
-          auto op = kernel_->Binary(dvm::BinaryOpType::kMul, obj, -1);
-          EmitOp(anf_node, op);
-        } else {
-          auto op = kernel_->Binary(dvm::BinaryOpType::kMul, obj, -1.0f);
-          EmitOp(anf_node, op);
-        }
+        auto op = kernel_->Binary(dvm::BinaryOpType::kMul, obj, -1);
+        EmitOp(anf_node, op);
         break;
       }
       case OP_ASSIGN: {
@@ -257,8 +260,16 @@ class OpBuilder {
         HandlerMatMulOp(node, prim, prim_name);
         break;
       }
+      case OP_GMM: {
+        HandlerGroupedMatmulOp(node, prim);
+        break;
+      }
       case OP_COMM: {
         HandlerCollectiveCommOp(node);
+        break;
+      }
+      case OP_TG: {
+        EmitOp(node, GetInput(node->input(kIndex1)));
         break;
       }
       default:
@@ -381,6 +392,20 @@ class OpBuilder {
       MS_LOG_WITH_NODE(EXCEPTION, node) << "Input size of " << prim_name << " should be " << kMatMulInputNum
                                         << " but got " << node->size();
     }
+  }
+
+  void HandlerGroupedMatmulOp(const CNodePtr &node, const PrimitivePtr &prim) {
+    auto transpose_a = GetValue<bool>(prim->GetAttr(kTransposeA));
+    auto transpose_b = GetValue<bool>(prim->GetAttr(kTransposeB));
+    auto group_type = GetValue<int64_t>(prim->GetAttr("group_type"));
+    auto bias_node = node->input(kIndex3);
+    dvm::NDObject *bias_op = nullptr;
+    if (AnfAlgo::GetInputDeviceShape(node, kIndex2) != ShapeVector{0}) {
+      bias_op = GetInput(bias_node);
+    }
+    auto op = kernel_->GroupedMatMul(GetInput(node->input(kIndex1)), GetInput(node->input(kIndex2)), transpose_a,
+                                     transpose_b, bias_op, GetInput(node->input(kIndex8)), dvm::GroupType(group_type));
+    EmitOp(node, op);
   }
 
   std::pair<dvm::ShapeRef *, dvm::DType> GetNodeShapeAndType(const AnfNodePtr &node) {
@@ -540,17 +565,15 @@ class OpBuilder {
   bool empty_input_{false};
 };
 
-std::unordered_map<dvm::DType, TypeId> OpBuilder::v_type_map = {{dvm::DType::kFloat32, TypeId::kNumberTypeFloat32},
-                                                                {dvm::DType::kFloat16, TypeId::kNumberTypeFloat16},
-                                                                {dvm::DType::kBool, TypeId::kNumberTypeBool},
-                                                                {dvm::DType::kInt32, TypeId::kNumberTypeInt32},
-                                                                {dvm::DType::kBFloat16, TypeId::kNumberTypeBFloat16}};
+std::unordered_map<dvm::DType, TypeId> OpBuilder::v_type_map = {
+  {dvm::DType::kFloat32, TypeId::kNumberTypeFloat32}, {dvm::DType::kFloat16, TypeId::kNumberTypeFloat16},
+  {dvm::DType::kBool, TypeId::kNumberTypeBool},       {dvm::DType::kInt32, TypeId::kNumberTypeInt32},
+  {dvm::DType::kInt64, TypeId::kNumberTypeInt64},     {dvm::DType::kBFloat16, TypeId::kNumberTypeBFloat16}};
 
-std::unordered_map<TypeId, dvm::DType> OpBuilder::ms_type_map = {{TypeId::kNumberTypeFloat32, dvm::DType::kFloat32},
-                                                                 {TypeId::kNumberTypeFloat16, dvm::DType::kFloat16},
-                                                                 {TypeId::kNumberTypeBool, dvm::DType::kBool},
-                                                                 {TypeId::kNumberTypeInt32, dvm::DType::kInt32},
-                                                                 {TypeId::kNumberTypeBFloat16, dvm::DType::kBFloat16}};
+std::unordered_map<TypeId, dvm::DType> OpBuilder::ms_type_map = {
+  {TypeId::kNumberTypeFloat32, dvm::DType::kFloat32}, {TypeId::kNumberTypeFloat16, dvm::DType::kFloat16},
+  {TypeId::kNumberTypeBool, dvm::DType::kBool},       {TypeId::kNumberTypeInt32, dvm::DType::kInt32},
+  {TypeId::kNumberTypeInt64, dvm::DType::kInt64},     {TypeId::kNumberTypeBFloat16, dvm::DType::kBFloat16}};
 
 size_t GetSubGraphNums(FuncGraphPtr graph_kernel) {
   auto output = graph_kernel->get_return()->cast<CNodePtr>()->input(1);
@@ -697,11 +720,12 @@ class SingleDvmKernelBuilder : public DvmKernelBuilder {
  private:
   dvm::KernelType GetKernelType(std::vector<AnfNodePtr> *nodes) {
     auto iter = std::find_if(nodes->begin(), nodes->end(), [](const AnfNodePtr &node) {
-      return IsPrimitiveCNode(node, prim::kPrimMatMul) || IsPrimitiveCNode(node, prim::kPrimBatchMatMul);
+      return IsPrimitiveCNode(node, prim::kPrimMatMul) || IsPrimitiveCNode(node, prim::kPrimBatchMatMul) ||
+             IsPrimitiveCNode(node, prim::kPrimGroupedMatmul);
     });
     if (iter != nodes->end()) {
       std::rotate(nodes->begin(), iter, iter + 1);
-      return dvm::KernelType::kStaticMix;
+      return is_dynamic_ ? dvm::KernelType::kDynMix : dvm::KernelType::kStaticMix;
     } else {
       return is_dynamic_ ? dvm::KernelType::kDynShape : dvm::KernelType::kStaticShape;
     }
