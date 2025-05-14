@@ -1084,6 +1084,10 @@ def _jit_ast(hash_obj, dynamic, jit_config):
             out = jit_executor(*args, **kwargs)
             return out
 
+        # `inspect.getfullargspec(func)` will get the specification of the decorated function by default. By set
+        # `__signature__` for the decorated function, `inspect.getfullargspec(func)` will get the specification of
+        # original `func`.
+        staging_specialize.__signature__ = inspect.signature(func)
         return staging_specialize
 
     return wrap_func

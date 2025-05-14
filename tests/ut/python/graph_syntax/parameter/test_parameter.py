@@ -227,3 +227,22 @@ def test_parameter_in_and_out_cell_with_same_name():
     param_x = ms.Parameter(ms.Tensor(1), name="myname")
     with pytest.raises(ValueError, match="its name 'myname' already exists."):
         net(param_x)
+
+def test_parameter_in_cell_and_construct_input_with_same_name():
+    """
+    Feature: Test parameter.
+    Description: Test parameters in cell and construct input argument has same name.
+    Expectation: no exception reported.
+    """
+    class ParamNet(Cell):
+        def __init__(self):
+            super(ParamNet, self).__init__()
+            self.param = Parameter(Tensor([1], ms.float32))
+
+        @ms.jit
+        def construct(self, param):
+            return param + self.param
+
+    net = ParamNet()
+    param = ms.Parameter(ms.Tensor(1))
+    net(param)
