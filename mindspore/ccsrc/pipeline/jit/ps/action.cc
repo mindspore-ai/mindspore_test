@@ -249,7 +249,7 @@ void UpdateFuncGraphParameter(const FuncGraphPtr &func_graph, const std::vector<
   func_graph->set_parameters(new_paras);
 }
 
-bool CheckDuplicatedParameterName(const ValuePtr &arg, std::set<std::string> *param_names) {
+bool CheckDuplicatedParameterName(const ValuePtr &arg, std::map<std::string, ValuePtr> *param_names) {
   if (arg->isa<ValueSequence>()) {
     const auto &elements = arg->cast<ValueSequencePtr>()->value();
     return std::all_of(elements.begin(), elements.end(),
@@ -275,7 +275,11 @@ bool CheckDuplicatedParameterName(const ValuePtr &arg, std::set<std::string> *pa
   auto param_info = arg_tensor->param_info();
   MS_EXCEPTION_IF_NULL(param_info);
   auto param_name = param_info->name();
-  if (param_names->find(param_name) != param_names->end()) {
+  auto found = param_names->find(param_name);
+  if (found != param_names->end()) {
+    if (found->second == arg) {
+      return true;
+    }
     MS_EXCEPTION(ValueError)
       << "The parameter " << arg->ToString() << " , its name '" << param_name
       << "' already exists. Please set a unique name for the parameter."
@@ -283,13 +287,13 @@ bool CheckDuplicatedParameterName(const ValuePtr &arg, std::set<std::string> *pa
       << "https://mindspore.cn/search?inputValue=Please%20set%20a%20unique%20name%20for%20the%20parameter";
   }
 
-  param_names->insert(param_name);
+  param_names->emplace(param_name, arg);
   return true;
 }
 
 // Check parameters in cell and out cell has same name
 void CheckDuplicatedParameterName(const AnfNodePtrList &parameters) {
-  std::set<std::string> param_names;
+  std::map<std::string, ValuePtr> param_names;
   for (auto &parameter : parameters) {
     auto param_node = parameter->cast<ParameterPtr>();
     MS_EXCEPTION_IF_NULL(param_node);
