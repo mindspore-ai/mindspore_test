@@ -63,7 +63,8 @@ bool AscendDynamicMemAdapter::FreeStaticDevMem(void *addr) {
     MS_LOG(ERROR) << "Free memory failed.";
     return false;
   }
-  MS_LOG(INFO) << "Free memory success, addr:" << addr << ", size:" << static_memory_blocks_[addr] << ".";
+  MS_LOG(INFO) << "Free memory success, addr:" << addr << ", size:" << mem_block->mem_size << ".";
+  has_alloc_size -= mem_block->mem_size;
   static_memory_blocks_.erase(addr);
   return true;
 }
