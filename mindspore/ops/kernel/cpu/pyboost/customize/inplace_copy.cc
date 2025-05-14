@@ -22,19 +22,20 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void InplaceCopyCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &variable, const TensorPtr &value) {
+void InplaceCopyCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &dst, const TensorPtr &src,
+                             const BoolImmPtr &non_blocking) {
   MS_LOG(DEBUG) << "InplaceCopy cpu pyboost call start";
-  PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), variable, value);
+  PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), dst, src);
   // Set inplace output
-  op->set_outputs({variable});
-  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([op, variable, value]() {
+  op->set_outputs({dst});
+  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([op, dst, src, non_blocking]() {
     auto device_context = op->device_context();
     const auto &outputs = op->outputs();
     // Malloc for input tensors
-    PyBoostUtils::MallocOpInputs(device_context, variable, value);
+    PyBoostUtils::MallocOpInputs(device_context, dst, src);
 
     const auto &input_address_info =
-      PyBoostUtils::GetAddressInfo(device_context, op->stream_id(), op->input_abs(), variable, value);
+      PyBoostUtils::GetAddressInfo(device_context, op->stream_id(), op->input_abs(), dst, src, non_blocking);
     const auto &output_address_info =
       PyBoostUtils::GetAddressInfo(device_context, op->stream_id(), {op->input_abs()}, outputs);
 

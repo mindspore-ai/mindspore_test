@@ -300,10 +300,15 @@ void InplaceCopyCpuKernelMod::InplaceCopyBroadcastTo(T *input, T *output, const 
   }
 }
 
-#define INPLACE_COPY_CPU_KERNEL_REG(SELF_DTYPE, VALUE_DTYPE, S, T)                                               \
-  {                                                                                                              \
-    KernelAttr().AddInputAttr(SELF_DTYPE).AddInputAttr(VALUE_DTYPE).AddOutputAttr(SELF_DTYPE).AddOutInRef(0, 0), \
-      &InplaceCopyCpuKernelMod::LaunchKernel<S, T>                                                               \
+#define INPLACE_COPY_CPU_KERNEL_REG(SELF_DTYPE, VALUE_DTYPE, S, T) \
+  {                                                                \
+    KernelAttr()                                                   \
+      .AddInputAttr(SELF_DTYPE)                                    \
+      .AddInputAttr(VALUE_DTYPE)                                   \
+      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)            \
+      .AddOutputAttr(SELF_DTYPE)                                   \
+      .AddOutInRef(0, 0),                                          \
+      &InplaceCopyCpuKernelMod::LaunchKernel<S, T>                 \
   }
 
 #define INPLACE_COPY_CPU_KERNEL_REG_BY_SELF(SELF_DTYPE, S)                                 \

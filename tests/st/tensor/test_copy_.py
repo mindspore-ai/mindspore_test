@@ -121,9 +121,9 @@ def test_copy_dynamic_shape():
     tensor_y2 = ms.Tensor(generate_random_input((1, 1, 5), np.float32))  # broadcast
 
     TEST_OP(copy_forward_func, [[tensor_x1, tensor_y1], [tensor_x2, tensor_y2]], 'inplace_copy',
-            disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])
-    TEST_OP(copy_forward_func, [[tensor_x1, tensor_y1], [tensor_x2, tensor_y2]], 'inplace_copy', disable_grad=True,
-            disable_mode=['GRAPH_MODE'])
+            disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+    TEST_OP(copy_forward_func, [[tensor_x2, tensor_y2], [tensor_x1, tensor_y1]], 'inplace_copy',
+            disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -145,3 +145,131 @@ def test_copy_bfloat16():
 
     np.allclose(output.float().asnumpy(), expect, 0.004, 0.004, equal_nan=True)
     np.allclose(output_grad[1].float().asnumpy(), expect_grad, 0.004, 0.004, equal_nan=True)
+
+
+def copy_h2d_d2h_h2h(non_blocking):
+    """
+    Feature: test copy functional API.
+    Description: testcase for copy functional API with h2d, d2h and h2h.
+    Expectation: the result match with expected result.
+    """
+    #h2d
+    ori_alloc_mem = ms.runtime.memory_allocated()
+    dst1 = ms.mint.randn((1024, 1024))
+    alloc_mem = ms.runtime.memory_allocated()
+    src1 = ms.mint.empty_like(dst1, device="CPU")
+    dst1.copy_(src1, non_blocking=non_blocking)
+    assert alloc_mem == ms.runtime.memory_allocated()
+    assert np.all(dst1.asnumpy() == src1.asnumpy())
+    dst1.storage().resize_(0)
+    assert ori_alloc_mem == ms.runtime.memory_allocated()
+
+    #d2h
+    ori_alloc_mem = ms.runtime.memory_allocated()
+    src2 = ms.mint.randn((1024, 1024))
+    alloc_mem = ms.runtime.memory_allocated()
+    dst2 = ms.mint.empty_like(src2, device="CPU")
+    dst2.copy_(src2, non_blocking=non_blocking)
+    assert alloc_mem == ms.runtime.memory_allocated()
+    assert np.all(dst2.asnumpy() == src2.asnumpy())
+    src2.storage().resize_(0)
+    assert ori_alloc_mem == ms.runtime.memory_allocated()
+
+    #h2h
+    alloc_mem = ms.runtime.memory_allocated()
+    src3 = ms.Tensor(np.random.randn(1024, 1024))
+    dst3 = ms.Tensor(np.random.randn(1024, 1024))
+    dst3.copy_(src3, non_blocking=non_blocking)
+    assert alloc_mem == ms.runtime.memory_allocated()
+    assert np.all(dst3.asnumpy() == src3.asnumpy())
+
+
+def copy_h2d_d2h_view(non_blocking):
+    """
+    Feature: test copy functional API.
+    Description: testcase for copy functional API with h2d and d2h view.
+    Expectation: the result match with expected result.
+    """
+    #h2d
+    dst1 = ms.mint.randn((1024, 1024))
+    alloc_mem = ms.runtime.memory_allocated()
+    view1 = dst1[1]
+    src1 = ms.mint.empty_like(view1, device="CPU")
+    view1.copy_(src1, non_blocking=non_blocking)
+    assert alloc_mem == ms.runtime.memory_allocated()
+    assert np.all(view1.asnumpy() == src1.asnumpy())
+
+    #d2h
+    src2 = ms.mint.randn((1024, 1024))
+    alloc_mem = ms.runtime.memory_allocated()
+    view2 = src2[1]
+    dst2 = ms.mint.empty_like(view2, device="CPU")
+    dst2.copy_(view2, non_blocking=non_blocking)
+    assert alloc_mem == ms.runtime.memory_allocated()
+    assert np.all(dst2.asnumpy() == view2.asnumpy())
+
+
+def copy_h2d_d2h_discontiguous(non_blocking):
+    """
+    Feature: test copy functional API.
+    Description: testcase for copy functional API with h2d and d2h discontiguous.
+    Expectation: the result match with expected result.
+    """
+    #h2d
+    alloc_mem1 = ms.runtime.memory_allocated()
+    dst1 = ms.mint.randn((512, 1024), dtype=ms.float32)
+    discontig1 = dst1.t()
+    src1 = ms.mint.empty_like(discontig1, device="CPU")
+    discontig1.copy_(src1, non_blocking=non_blocking)
+    assert (ms.runtime.memory_allocated() - alloc_mem1) == 4195328
+    assert np.all(discontig1.asnumpy() == src1.asnumpy())
+
+    #d2h
+    alloc_mem2 = ms.runtime.memory_allocated()
+    src2 = ms.mint.randn((512, 1024), dtype=ms.float32)
+    discontig2 = src2.t()
+    dst2 = ms.mint.empty_like(discontig2, device="CPU")
+    dst2.copy_(discontig2, non_blocking=non_blocking)
+    assert (ms.runtime.memory_allocated() - alloc_mem2) == 4195328
+    assert np.all(dst2.asnumpy() == discontig2.asnumpy())
+
+
+def copy_h2d_d2h_h2h_empty(non_blocking):
+    """
+    Feature: test copy functional API.
+    Description: testcase for copy functional API with h2d and d2h empty src/dst.
+    Expectation: the result match with expected result.
+    """
+    x = ms.ops.slice(ms.Tensor([1], dtype=ms.float32), (0,), (0,))
+    alloc_mem1 = ms.runtime.memory_allocated()
+    y = ms.mint.empty_like(x, device="CPU")
+    x.copy_(y, non_blocking=non_blocking)
+    assert alloc_mem1 == ms.runtime.memory_allocated()
+    assert np.all(x.asnumpy() == y.asnumpy())
+
+    alloc_mem2 = ms.runtime.memory_allocated()
+    z = ms.mint.empty_like(x, device="CPU")
+    z.copy_(x, non_blocking=non_blocking)
+    assert alloc_mem2 == ms.runtime.memory_allocated()
+    assert np.all(x.asnumpy() == z.asnumpy())
+
+    alloc_mem3 = ms.runtime.memory_allocated()
+    a = ms.mint.empty_like(x, device="CPU")
+    b = ms.mint.empty_like(x, device="CPU")
+    a.copy_(b, non_blocking=non_blocking)
+    assert alloc_mem3 == ms.runtime.memory_allocated()
+    assert np.all(a.asnumpy() == b.asnumpy())
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('non_blocking', [False, True])
+def test_copy_h2d_d2h_h2h(non_blocking):
+    """
+    Feature: test copy functional API.
+    Description: testcase for copy functional API with h2d, d2h and h2h with view and discontiguous.
+    Expectation: the result match with expected result.
+    """
+    copy_h2d_d2h_h2h(non_blocking)
+    copy_h2d_d2h_view(non_blocking)
+    copy_h2d_d2h_discontiguous(non_blocking)
+    copy_h2d_d2h_h2h_empty(non_blocking)
