@@ -3908,8 +3908,11 @@ void GraphScheduler::PersistDeviceTensorForParameter(const AnfNodePtr &parameter
                       << " type:" << other_type_device_tensor->type_id();
         SchedulerHelper::AddDeviceTensorStore(front_node, kernel_tensor);
       }
+      // If enable input optimize, the weight should push into parameter store, so return to avoid to push into
+      // device tensor store.
+      // The value node should push into device tensor store.
+      return;
     }
-    return;
   }
 
   // If the device tensor store of this device type is not exist, then create the new device tensor of this type.
