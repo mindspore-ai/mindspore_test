@@ -73,6 +73,8 @@ ExpanderPtr GetExpander(const AnfNodePtr &node, const ExpanderPtr &init) {
     {prim::kPrimAdam->name(), {OpUMonadExpanderDeco::GetCreator(kAdamInputIdx)}},
     {prim::kPrimAdamWeightDecay->name(), {OpUMonadExpanderDeco::GetCreator(kAdamWeightDecayInputIdx)}},
     {prim::kPrimApplyMomentum->name(), {OpUMonadExpanderDeco::GetCreator(kApplyMomentumInputIdx)}},
+    {"BatchNormGatherStatsWithCounts", {OpUMonadExpanderDeco::GetCreator(kIndex4)}},
+    {"BatchNormElemt", {OpUMonadExpanderDeco::GetCreator(kIndex2)}},
     {prim::kPrimDropout->name(), {DropoutExpanderDeco::Creator}},
     {prim::kPrimArgMaxWithValue->name(), {ArgWithValueDeco::Creator}},
     {prim::kPrimArgMinWithValue->name(), {ArgWithValueDeco::Creator}},

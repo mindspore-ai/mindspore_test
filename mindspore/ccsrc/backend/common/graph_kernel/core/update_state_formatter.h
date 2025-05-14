@@ -104,7 +104,8 @@ class ExtendOutputForUpdateState : public opt::Pass {
   void FilterIndexes(const FuncGraphPtr &func_graph);
   // Find all the func_graph's outputs that depends (directly or indirectly) on the indicated(index) node.
   std::vector<size_t> FindAllOutputs(const FuncGraphPtr &func_graph, size_t index);
-  bool ProcessIndex(const FuncGraphPtr &func_graph, const FuncGraphPtr &sub_func_graph, size_t index);
+  bool ProcessIndex(const FuncGraphPtr &func_graph, const FuncGraphPtr &sub_func_graph, size_t index,
+                    const AnfNodePtr &node);
 
   enum ExternalUserType {
     kNormalOp,     // only has normal operators

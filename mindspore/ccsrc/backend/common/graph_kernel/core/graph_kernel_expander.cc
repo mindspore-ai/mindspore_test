@@ -67,7 +67,7 @@ void ReplaceNodeWithTupleGetItem(const AnfNodePtr &node, const AnfNodePtr &newno
     new_out->set_abstract(elements[output_indices[0]]);
     mng->Replace(node, new_out);
   } else {
-    MS_LOG(EXCEPTION) << "Unsupported at present";
+    mng->Replace(node, newnode);
   }
 }
 
