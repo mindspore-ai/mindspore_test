@@ -440,12 +440,7 @@ bool GraphAdapter::IsPynativeGeGraphSink(const FuncGraphPtr &func_graph) {
   if (context_ptr->backend_policy() != "ge" || !context_ptr->get_param<bool>(MS_CTX_IS_MULTI_GRAPH_SINK)) {
     return false;
   }
-
   MS_EXCEPTION_IF_NULL(func_graph);
-  if (func_graph->has_flag(kFlagEnableRunGraphBySingleOp)) {
-    return false;
-  }
-
   return true;
 }
 
