@@ -80,7 +80,7 @@ void DvmKernelMod::CodeGen(const std::vector<ShapeVector> &inputs_shape,
     for (auto sh : inputs_shape[i]) {
       input_size_list_[i] *= LongToSize(sh);
     }
-    if (input_size_list_[i] == 0) {
+    if (input_size_list_[i] == 0 && inputs_shape_ref_[i] != nullptr) {
       skip_launch_ = true;
     }
   }
@@ -119,15 +119,15 @@ BaseShapePtr DvmKernelMod::InferShape(const AbstractBasePtrList &inputs_abs) {
   for (size_t i = 0; i < inputs_abs.size(); ++i) {
     // to do: if input value is needed in infer shape, then we should fetch input value here
     inputs_shape_[i] = BaseShapeToShape(inputs_abs[i]->GetShape());
-    if (inputs_shape_ref_[i] != nullptr) {
-      *inputs_shape_ref_[i] = inputs_shape_[i];
-    }
     input_size_list_[i] = inputs_type_byte_[i];
     for (auto sh : inputs_shape_[i]) {
       input_size_list_[i] *= LongToSize(sh);
     }
-    if (input_size_list_[i] == 0) {
-      skip_launch_ = true;
+    if (inputs_shape_ref_[i] != nullptr) {
+      *inputs_shape_ref_[i] = inputs_shape_[i];
+      if (input_size_list_[i] == 0) {
+        skip_launch_ = true;
+      }
     }
   }
   if (dump_kernel_) {

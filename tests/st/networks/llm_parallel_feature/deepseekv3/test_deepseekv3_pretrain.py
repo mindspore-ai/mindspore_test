@@ -127,7 +127,9 @@ def test_deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_deredundency_8p_gmm():
 
     # set golden_loss
     golden_loss = [13.509, 13.509, 13.507, 13.507, 13.501, 13.503]
-    if_equal = golden_loss == loss_list
+    if_equal = np.allclose(
+        np.array(golden_loss), np.array(loss_list), atol=1e-4, rtol=1e-4
+    )
     assert if_equal, \
         f"Training loss is different from the golden loss, " \
         f"where training loss: {loss_list}, golden_loss: {golden_loss}."

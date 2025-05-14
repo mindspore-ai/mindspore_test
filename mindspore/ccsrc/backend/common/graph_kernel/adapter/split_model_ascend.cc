@@ -20,7 +20,9 @@
 #include "mindspore/ops/op_def/array_op_name.h"
 #include "mindspore/ops/op_def/math_op_name.h"
 #include "mindspore/ops/op_def/other_op_name.h"  // collective communication ops
+#include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/nn_optimizer_op_name.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 
 namespace mindspore::graphkernel::inner {
@@ -189,7 +191,19 @@ class FuseMatMul : public FusePattern {
 
  protected:
   bool Check(const AreaPtr &dom) override {
-    return dom->size() == 1 && (dom->dom()->op() == kMatMulOpName || dom->dom()->op() == kBatchMatMulOpName);
+    const int64_t kGroupTypeK = 2;
+    const size_t kGmmSize = 2;
+    if (dom->size() == 1) {
+      return dom->dom()->op() == kMatMulOpName || dom->dom()->op() == kBatchMatMulOpName;
+    } else if (dom->size() == kGmmSize) {
+      if (dom->ops()[0]->op() == ops::kNameGroupedMatmul && dom->ops()[1]->op() == kTupleGetItemOpName) {
+        auto group_type_value = dom->dom()->attrs().at("group_type");
+        MS_EXCEPTION_IF_NULL(group_type_value);
+        auto group_type = GetValue<int64_t>(group_type_value);
+        return group_type == kGroupTypeK;
+      }
+    }
+    return false;
   }
 
   bool IsSameShapeSize(int64_t size, const NodePtrList &output_nodes) {
@@ -221,7 +235,8 @@ class FuseMatMul : public FusePattern {
         continue;
       }
       bool fuse_flag = (dom->dom()->op() == kMatMulOpName && a->pattern() <= NodePattern::BROADCAST) ||
-                       (dom->dom()->op() == kBatchMatMulOpName && a->pattern() < NodePattern::BROADCAST);
+                       (dom->dom()->op() == kBatchMatMulOpName && a->pattern() <= NodePattern::BROADCAST) ||
+                       (dom->dom()->op() == ops::kNameGroupedMatmul && a->pattern() < NodePattern::BROADCAST);
       if (fuse_flag && !HasCircle(dom, a) && IsSameShapeSize(matmul_output_size, a->area_outputs())) {
         (void)fused_areas_.emplace_back(a);
         current_size += a->area_outputs().size();
