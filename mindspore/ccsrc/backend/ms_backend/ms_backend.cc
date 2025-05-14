@@ -254,8 +254,7 @@ runtime::ActorSet *MSBackend::RealCompileGraphBeforeRunActor(BackendGraphId grap
     pynative::GraphAdapter::RemoveUnusedValueNodes(graph);
     // PyNative use kernel graph will result in front node and back node is the same; But in pynative task sink, backend
     // still create new kernel graph
-    if (graph_compiler_info.root_func_graph_->has_flag(kFlagIsPyNativeBpropKernelGraph) &&
-        !pynative::GraphAdapter::PyNativeEnableTaskSink(graph_compiler_info.root_func_graph_)) {
+    if (graph_compiler_info.root_func_graph_->has_flag(kFlagIsPyNativeBpropKernelGraph)) {
       graph->CacheGraphOutputToFrontNodeWithIndex({graph->output()}, {graph->output()});
     } else {
       graph->CacheGraphOutputToFrontNodeWithIndex({graph->output()}, graph->front_outputs());

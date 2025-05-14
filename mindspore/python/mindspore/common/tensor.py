@@ -3837,9 +3837,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
             raise ValueError(f"The type of 'blocking' must be bool, but got {blocking}")
         if to not in ("Ascend", "GPU", "CPU"):
             raise ValueError(f"The value of 'to' must be one of ['Ascend', 'GPU', 'CPU'], but got {to}")
-        mode = context.get_context("mode")
-        if mode != context.PYNATIVE_MODE:
-            raise ValueError(f"The method of 'move_to' only supported in pynative mode, but got: {mode}.")
         return TensorPy_.move_to(self, to, blocking)
 
     def _offload(self):

@@ -18,7 +18,6 @@ from collections import OrderedDict
 from types import MethodType
 from mindspore import log as logger
 from mindspore.nn.cell import Cell
-from mindspore import context
 from mindspore.common.tensor import Tensor
 from mindspore import ops
 from mindspore.ops.composite import GradOperation
@@ -211,9 +210,6 @@ def _detach_input(input_arg):
 def _check_validation(block):
     if not isinstance(block, Cell):
         raise TypeError("Recompute function now only support block which inherited from Cell!")
-    if context.get_context("mode") != context.PYNATIVE_MODE:
-        raise AssertionError("Recompute function now only support pynative mode, you can use "
-                             "Cell.recompute() in graph mode.")
     if block.construct.__code__.co_name == "staging_specialize":
         logger.warning('Block\'s construct method decorated by @jit that recompute '
                        'function will not come into effect.')
