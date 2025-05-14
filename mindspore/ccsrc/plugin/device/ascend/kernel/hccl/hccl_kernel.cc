@@ -155,7 +155,7 @@ bool HcclKernel::Init(const std::vector<KernelTensor *> &inputs, const std::vect
     return false;
   }
 
-  if (common::GetEnv(kSimulationLevel).empty() && !common::IsDryRun()) {
+  if (common::GetEnv(kSimulationLevel).empty()) {
     // Before calling each hccl operator, we need to wait for communicator to be initialized.
     distributed::collective::CollectiveManager::instance()->WaitCommInitDone(group_);
 #ifdef ENABLE_INTERNAL_KERNELS

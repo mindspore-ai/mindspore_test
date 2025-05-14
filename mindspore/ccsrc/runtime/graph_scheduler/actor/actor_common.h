@@ -480,7 +480,7 @@ bool IsControlFlowActor(KernelTransformType actor_type);
 bool IsMemoryActor(KernelTransformType actor_type);
 
 // Judge whether skip the launch by the env MS_KERNEL_LAUNCH_SKIP.
-bool IsSkippedLaunch(const CNodePtr &kernel, const KernelGraphPtr &kernel_graph);
+bool IsSkippedLaunch(const CNodePtr &kernel = nullptr, const KernelGraphPtr &kernel_graph = nullptr);
 
 // Whether enable asynchronously infer shape and resize kernel mod by KernelInferActor and KernelResizeActor.
 bool EnableAsyncInfer();

@@ -87,7 +87,7 @@ class ASCEND_RES_MANAGER_EXPORT AscendVmmAdapter {
       return false;
     }
 
-    if (common::IsDryRun()) {
+    if (common::IsCompileSimulation()) {
       MS_LOG(INFO) << "Dry run, vmm is disabled.";
       return false;
     }

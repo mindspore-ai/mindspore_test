@@ -4212,22 +4212,21 @@ void DfGraphConvertor::AddCommAttrForHcclNode(const CNodePtr &node, const Operat
     (void)converted_op->SetAttr("group", hccl_inner_comm_name);
     return;
   }
-  if (common::GetEnv(kSimulationLevel).empty() && !common::IsDryRun()) {
-    if (common::UseHostCollective() && !hccl::HcclAdapter::GetInstance().UseHcclCM()) {
-      // For HcclCommInitRootInfo manner, set 'group' and 'comm' attrs. 'group' attr value should be hccl's inner comm
-      // name.
-      auto comm = device::ascend::AscendCollectiveCommLib::GetInstance().HcclCommunicator(group);
-      auto hccl_inner_comm_name = device::ascend::AscendCollectiveCommLib::GetInstance().CommName(group);
-      MS_LOG(INFO) << "Set comm handle and comm group name of the hccl node: " << node->fullname_with_scope()
-                   << ". Comm handle: " << comm << ", comm name:" << hccl_inner_comm_name;
-      MS_EXCEPTION_IF_NULL(comm);
-      (void)converted_op->SetAttr("comm", reinterpret_cast<int64_t>(comm));
-      (void)converted_op->SetAttr("group", hccl_inner_comm_name);
-    } else {
-      // For rank_table manner, 'group' attr should be user set group name.
-      MS_LOG(INFO) << "Set group name for ranktable manner: " << group;
-      (void)converted_op->SetAttr("group", group);
-    }
+
+  if (common::UseHostCollective() && !hccl::HcclAdapter::GetInstance().UseHcclCM()) {
+    // For HcclCommInitRootInfo manner, set 'group' and 'comm' attrs. 'group' attr value should be hccl's inner comm
+    // name.
+    auto comm = device::ascend::AscendCollectiveCommLib::GetInstance().HcclCommunicator(group);
+    auto hccl_inner_comm_name = device::ascend::AscendCollectiveCommLib::GetInstance().CommName(group);
+    MS_LOG(INFO) << "Set comm handle and comm group name of the hccl node: " << node->fullname_with_scope()
+                 << ". Comm handle: " << comm << ", comm name:" << hccl_inner_comm_name;
+    MS_EXCEPTION_IF_NULL(comm);
+    (void)converted_op->SetAttr("comm", reinterpret_cast<int64_t>(comm));
+    (void)converted_op->SetAttr("group", hccl_inner_comm_name);
+  } else {
+    // For rank_table manner, 'group' attr should be user set group name.
+    MS_LOG(INFO) << "Set group name for ranktable manner: " << group;
+    (void)converted_op->SetAttr("group", group);
   }
 #endif
 }

@@ -230,18 +230,17 @@ bool IsMemoryActor(KernelTransformType actor_type) {
 }
 
 bool IsSkippedLaunch(const CNodePtr &kernel, const KernelGraphPtr &kernel_graph) {
-  if (common::IsCompileSimulation()) {
-    return true;
-  }
-  static std::string launch_skipped = "";
-  static bool first_get_launch_skipped_env = true;
   static const char kLaunchSkippedEnv[] = "MS_KERNEL_LAUNCH_SKIP";
-  if (first_get_launch_skipped_env) {
-    launch_skipped = common::GetEnv(kLaunchSkippedEnv);
-    first_get_launch_skipped_env = false;
-  }
-  if (launch_skipped.empty()) {
+  static std::string launch_skipped = common::GetEnv(kLaunchSkippedEnv);
+  static bool no_launch_skipped = launch_skipped.empty();
+  if (no_launch_skipped) {
     return false;
+  }
+
+  static bool launch_skipped_all = (launch_skipped == "all" || launch_skipped == "ALL");
+  if (launch_skipped_all) {
+    MS_LOG(DEBUG) << "Skip all the launch.";
+    return true;
   }
 
   std::string launch_name = "";
@@ -253,7 +252,6 @@ bool IsSkippedLaunch(const CNodePtr &kernel, const KernelGraphPtr &kernel_graph)
     launch_name = kernel_graph->ToString();
     full_name = kernel_graph->ToString();
   } else {
-    MS_LOG(ERROR) << "The luanch kernel or graph is nullptr";
     return false;
   }
 

@@ -294,13 +294,6 @@ inline bool IsExecuteSimulation() {
   return simu_execute;
 }
 
-inline bool IsDryRun() {
-  static const char kLaunchSkippedEnv[] = "MS_KERNEL_LAUNCH_SKIP";
-  static const auto launch_skipped = GetEnv(kLaunchSkippedEnv);
-  static const bool skip_launch = (launch_skipped == "all" || launch_skipped == "ALL" || IsCompileSimulation());
-  return skip_launch;
-}
-
 inline void SplitString(const std::string &str, char delim, std::set<std::string> *output_list) {
   std::stringstream ss(str);
   std::string item;

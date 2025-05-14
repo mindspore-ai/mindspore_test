@@ -148,7 +148,7 @@ bool MemcpyAsync(void *dst, const void *src, uint64_t size, int32_t kind, void *
   }
   // cppcheck-suppress unreadVariable
   auto lock = LockRuntime(stream);
-  if (!common::IsDryRun()) {
+  if (!common::IsCompileSimulation()) {
     if (ACL_ERROR_NONE !=
         CALL_ASCEND_API(aclrtMemcpyAsync, dst, size, src, size, static_cast<aclrtMemcpyKind>(kind), stream)) {
       MS_LOG(ERROR) << "Call runtime rtMemcpyAsync error.";
@@ -310,8 +310,7 @@ void AscendDeviceAddress::SyncMemory(void *dst, const void *src, uint64_t size, 
         MS_LOG(EXCEPTION) << "Sync stream error!";
       }
     }
-
-    if (!common::IsDryRun()) {
+    if (!common::IsCompileSimulation()) {
       auto ret_rt_memcpy = CALL_ASCEND_API(aclrtMemcpy, dst, size, src, size, kind);
       if (ret_rt_memcpy != ACL_ERROR_NONE) {
         MS_EXCEPTION(DeviceProcessError) << "aclrtMemcpy failed";

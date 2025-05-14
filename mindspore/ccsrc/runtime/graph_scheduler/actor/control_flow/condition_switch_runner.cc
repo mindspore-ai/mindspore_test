@@ -134,7 +134,7 @@ void ConditionSwitchRunner::ExecuteLaunchKernelTask(OpContext<KernelTensor> *con
   }
   MS_EXCEPTION_IF_NULL(input_kernel_tensors_[0]);
   bool index = input_kernel_tensors_[0]->GetValueWithCheck<bool>();
-  if (common::IsDryRun()) {
+  if (IsSkippedLaunch()) {
     index = true;
   }
   MS_LOG(DEBUG) << "Index:" << index << " for actor:" << GetAID();

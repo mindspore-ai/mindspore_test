@@ -111,6 +111,10 @@ std::pair<BackendType, BackendGraphId> BackendManager::Build(const FuncGraphPtr 
                                                              const BackendJitConfig &backend_jit_config,
                                                              const std::string &backend_name) {
   MS_EXCEPTION_IF_NULL(func_graph);
+  // Convert the dry run to kernel luanch skip for runtime.
+  if (common::IsCompileSimulation()) {
+    common::SetEnv("MS_KERNEL_LAUNCH_SKIP", "all", 1);
+  }
   auto backend_type = GetBackendType(backend_name);
   auto backend = GetOrCreateBackend(backend_type);
   MS_EXCEPTION_IF_NULL(backend);
