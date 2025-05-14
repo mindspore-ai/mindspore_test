@@ -1,7 +1,7 @@
 mindspore.mint.nn.SiLU
 =============================
 
-.. py:class:: mindspore.mint.nn.SiLU
+.. py:class:: mindspore.mint.nn.SiLU(inplace=False)
 
     逐元素计算SiLU激活函数。有时也被称作Swish函数。
 
@@ -24,6 +24,9 @@ mindspore.mint.nn.SiLU
 
     .. warning::
         这是一个实验性API，后续可能修改或删除。
+
+    参数：
+        - **inplace** (bool, 可选) - 若为 ``True`` 则启用原地更新功能。默认值： ``False`` 。
 
     输入：
         - **input** (Tensor) - `input` 即为上述公式中的 :math:`x`。数据类型为float16或float32的输入。任意维度的Tensor。
