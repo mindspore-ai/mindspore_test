@@ -22,7 +22,8 @@ import socket
 import psutil
 import mindspore.log as logger
 from ._utils import _generate_cmd_args_list, _generate_cmd_args_list_with_core, _generate_url, \
-    _is_local_ip, _convert_addr_to_ip, _send_scale_num, _get_local_ip, _generate_bind_core_policy
+    _is_local_ip, _convert_addr_to_ip, _send_scale_num, _get_local_ip, _generate_auto_bind_core_strategy, \
+    _generate_bind_core_strategy
 
 
 class _Node:
@@ -276,6 +277,10 @@ class _ProcessManager:
                            "You can access 'RANK_ID' environment variable after calling "
                            "'mindspore.communication.init()'")
 
+        device_to_cpu_map = {}
+        if self.bind_core is True:
+            device_to_cpu_map = _generate_auto_bind_core_strategy(self.local_worker_num)
+
         for i in range(self.local_worker_num):
             os.environ["DEVICE_ID"] = str(i)
             node_id, log_name = self._get_node_id_and_log_path(i)
@@ -294,7 +299,7 @@ class _ProcessManager:
                 logger.warning(f"In dryrun case, RANK_ID is assigned to {self.sim_rank_id}.")
 
             if self.bind_core:
-                affinity_cpu_str = _generate_bind_core_policy(i, self.local_worker_num, self.bind_core)
+                affinity_cpu_str = _generate_bind_core_strategy(i, device_to_cpu_map, self.bind_core)
                 if affinity_cpu_str is not None:
                     cmd = _generate_cmd_args_list_with_core(self.cmd, self.cmd_args, affinity_cpu_str)
                 else:

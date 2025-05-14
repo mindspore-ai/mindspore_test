@@ -15,7 +15,8 @@
 
 """Executor manager interfaces."""
 from mindspore._c_expression import RuntimeConf
-from mindspore.runtime.thread_bind_core import _get_cpu_affinity_policy, _validate_affinity_cpu_list, _validate_module_cpu_index
+from mindspore.runtime.thread_bind_core import _get_cpu_affinity_strategy, _validate_affinity_cpu_list, \
+    _validate_module_cpu_index
 from mindspore._checkparam import args_type_check
 from mindspore import _checkparam as Validator
 from mindspore import log as logger
@@ -77,28 +78,28 @@ def set_cpu_affinity(enable_affinity, affinity_cpu_list=None, module_to_cpu_dict
              based on available CPU cores, NUMA nodes, and device resources in the environment.
           2. When `affinity_cpu_list` is specified, the process manually binds to the CPU range defined in
              `affinity_cpu_list`.
-          3. When `module_to_cpu_dict` is not specified, the default binding strategy assigns the CPU
+          3. When `module_to_cpu_dict` is not specified, the default bind-core strategy assigns the CPU
              cores to the `"main"` module.
           4. When `module_to_cpu_dict` is specified, the process manually binds each module to CPU ranges as
              defined in `module_to_cpu_dict`.
-        - The automated bind-core policy generation scenario invokes system commands to obtain CPU, NUMA node, and
+        - The automated bind-core strategy generation scenario invokes system commands to obtain CPU, NUMA node, and
           device resources on the environment, and some commands cannot be executed successfully due to environment
-          differences; the automated bind-core policy generated will vary according to the resources available on the
+          differences; the automated bind-core strategy generated will vary according to the resources available on the
           environment:
 
           1. `cat /sys/fs/cgroup/cpuset/cpuset.cpus`, to obtain the available CPU resources on the environment; if the
              execution of this command fails, the bind-core function will not take effect.
           2. `npu-smi info -m`, get the available NPU resources on the environment; if the execution of this command
-             fails, the bind-core policy will be generated only based on the available CPU resources,
+             fails, the bind-core strategy will be generated only based on the available CPU resources,
              without considering the device affinity.
           3. `npu-smi info -t board -i {NPU_ID} -c {CHIP_ID}`, get NPU details based on the logical ID of the device;
-             if the execution of this command fails, the bind-core policy is generated based on the available CPU
+             if the execution of this command fails, the bind-core strategy is generated based on the available CPU
              resources only, regardless of device affinity.
           4. `lspci -s {PCIe_No} -vvv`, get the hardware information of the device on the environment; if the execution
-             of this command fails, the bind-core policy is generated only based on the available CPU resources,
+             of this command fails, the bind-core strategy is generated only based on the available CPU resources,
              without considering the device affinity.
           5. `lscpu`, get information about CPUs and NUMA nodes on the environment; if the execution of this command
-             fails, only the available CPU resources are used to generate the bind-core policy, without considering
+             fails, only the available CPU resources are used to generate the bind-core strategy, without considering
              the device affinity.
 
     Args:
@@ -151,13 +152,13 @@ def set_cpu_affinity(enable_affinity, affinity_cpu_list=None, module_to_cpu_dict
     if not enable_affinity:
         RuntimeConf.get_instance().set_thread_bind_core_configured()
         return
-    module_bind_core_policy = _get_cpu_affinity_policy(affinity_cpu_list, module_to_cpu_dict)
-    if not module_bind_core_policy:
+    module_bind_core_strategy = _get_cpu_affinity_strategy(affinity_cpu_list, module_to_cpu_dict)
+    if not module_bind_core_strategy:
         logger.warning("set_cpu_affinity is not enabled because the environment does not meet the "
                        "basic conditions for binding core.")
         RuntimeConf.get_instance().set_thread_bind_core_configured()
         return
-    RuntimeConf.get_instance().thread_bind_core_with_policy(module_bind_core_policy)
+    RuntimeConf.get_instance().thread_bind_core(module_bind_core_strategy)
 
 
 @args_type_check(thread_num=int, kernel_group_num=int)

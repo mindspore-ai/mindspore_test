@@ -40,7 +40,7 @@ def _validate_affinity_cpu_list(affinity_cpu_list):
     Validate the user-configured affinity_cpu_list.
 
     Args:
-        affinity_cpu_list (list): Customized bind-core policy to be validated.
+        affinity_cpu_list (list): Customized bind-core strategy to be validated.
 
     Returns:
         None.
@@ -264,7 +264,7 @@ def _get_physical_device_id(logical_device_id):
         int: The physical device id for this process in the host.
     """
     env_visible_device = os.getenv("ASCEND_RT_VISIBLE_DEVICES", "")
-    if not env_visible_device:
+    if not env_visible_device or context.get_context("device_target") != "Ascned":
         physical_device_id = logical_device_id
     else:
         list_visible_device = []
@@ -275,47 +275,48 @@ def _get_physical_device_id(logical_device_id):
     return physical_device_id
 
 
-def _equal_distribution_strategy(logical_device_id, device_count, available_cpus):
+def _equal_distribution_strategy(device_count, available_cpus):
     """
-    Equally distributes available cpus according to logical device id and device count.
+    Generate global bind core strategy by equally distributing available cpus.
 
     Args:
-        logical_device_id (int): The logical device id for this process in the task.
         device_count(int): The total number of device in the task.
         available_cpus(list): A list of cpus in the environment.
 
     Returns:
-        list: A list of cpus assigned to this logical device id.
+        dict: Mapping of device to its affinity CPUs.
     """
-    physical_device_id = _get_physical_device_id(logical_device_id)
-    cpu_num_per_device = int(len(available_cpus)) // device_count
+    device_to_cpu_map = {}
+
+    total_cpus = len(available_cpus)
+    cpu_num_per_device = total_cpus // device_count
     if cpu_num_per_device < 1:
         logger.warning(f"Available CPUs is less than 1. Will not enable bind core feature.")
-        return []
-    cpu_start = cpu_num_per_device * physical_device_id
-    cpu_end = cpu_start + cpu_num_per_device
-    cpu_list_for_device = available_cpus[cpu_start:cpu_end]
-    return cpu_list_for_device
+        return {}
+
+    for i in range(device_count):
+        cpu_start = i * cpu_num_per_device
+        cpu_end = (i + 1) * cpu_num_per_device if i != device_count - 1 else total_cpus
+        device_to_cpu_map[i] = available_cpus[cpu_start:cpu_end]
+
+    return device_to_cpu_map
 
 
-def _assemble_env_info(available_devices, available_cpus, affinity_flag, numa_to_cpu_map,
-                       device_to_numa_map, logical_device_id):
+def _assemble_env_info(available_devices, available_cpus, affinity_flag, numa_to_cpu_map, device_to_numa_map):
     """
     Assemble all results of commands based on the hardware on the environment.
 
     Args:
         available_devices (list): All available NPU logical ids on the environment.
         available_cpus (list): A list of available CPUs on the environment.
-        affinity_flag (bool): Whether or not it satisfies generating CPU affinity bind-core policy based on the
-          resources on the environment.
+        affinity_flag (bool): Whether or not it satisfies generating CPU affinity bind-core
+          strategy based on the resources on the environment.
         numa_to_cpu_map (dict): A map of NUMA node to its affinity CPUs.
         device_to_numa_map (dict): A map of device ID to its affinity NUMA nodes.
 
     Returns:
         dict: Mapping of device to its affinity CPUs.
     """
-    physical_device_id = _get_physical_device_id(logical_device_id)
-
     device_to_cpu_map = {}
     for device_id in available_devices:
         device_to_cpu_map[device_id] = list()
@@ -324,7 +325,7 @@ def _assemble_env_info(available_devices, available_cpus, affinity_flag, numa_to
     cpu_num_per_device = available_cpu_num // available_device_num
     if cpu_num_per_device < 1:
         logger.warning(f"Available CPUs is less than 1. Will not enable bind core feature.")
-        return []
+        return {}
 
     if affinity_flag:
         device_to_cpu_idx = {}
@@ -358,15 +359,15 @@ def _assemble_env_info(available_devices, available_cpus, affinity_flag, numa_to
             device_to_cpu_map[device_id] = available_cpus[cpu_start:(cpu_start + cpu_num_per_device)]
             device_rank += 1
 
-    cpu_list_for_device = device_to_cpu_map[physical_device_id]
-    return cpu_list_for_device
+    return device_to_cpu_map
 
 
-def _auto_generate_policy(logical_device_id, device_count, available_cpus):
+def _auto_generate_strategy(device_count, available_cpus):
     """
-    Automatically generate bind-core policy based on CPU affinity.
+    Automatically generate bind-core strategy based on CPU affinity.
 
     Args:
+        device_count(int): The total number of device in the task.
         available_cpus (list): A list of available CPUs on the environment.
 
     Returns:
@@ -381,10 +382,10 @@ def _auto_generate_policy(logical_device_id, device_count, available_cpus):
     try:
         device_map_info, available_devices = _get_device_map_info()
     except RuntimeError as e:
-        cpu_list_for_device = _equal_distribution_strategy(logical_device_id, device_count, available_cpus)
+        device_to_cpu_map = _equal_distribution_strategy(device_count, available_cpus)
         logger.warning(f"Failed to acquire device to numa affinity info, error: {e} "
                        "Will not bind core based on affinity.")
-        return cpu_list_for_device
+        return device_to_cpu_map
     # Get the affinity resources in the environment. If this fails, will bind core not based on affinity.
     try:
         device_pcie_map = _get_pcie_info(device_map_info, available_devices)
@@ -396,23 +397,23 @@ def _auto_generate_policy(logical_device_id, device_count, available_cpus):
         affinity_flag = False
     if device_pcie_map and device_to_numa_map and numa_to_device_map and numa_to_cpu_map:
         affinity_flag = True
-    # Auto-generation of bind core policy for Ascned.
+    # Auto-generation of bind core strategy for Ascend.
     try:
-        cpu_list_for_device = _assemble_env_info(available_devices, available_cpus, affinity_flag,
-                                                 numa_to_cpu_map, device_to_numa_map, logical_device_id)
-        return cpu_list_for_device
+        device_to_cpu_map = _assemble_env_info(available_devices, available_cpus, affinity_flag,
+                                               numa_to_cpu_map, device_to_numa_map)
+        return device_to_cpu_map
     except (RuntimeError, ZeroDivisionError) as e:
-        logger.warning(f"Failed to auto generate bind core policy, error: {e}. "
+        logger.warning(f"Failed to auto generate bind core strategy, error: {e}. "
                        "Will not enable bind core feature.")
-        return []
+        return {}
 
 
-def _customize_generate_policy(affinity_cpu_list, available_cpus):
+def _customize_generate_strategy(affinity_cpu_list, available_cpus):
     """
-    Generate customized bind-core policy based on user-configured inputs.
+    Generate customized bind-core strategy based on user-configured inputs.
 
     Args:
-        affinity_cpu_list (list): User-configured inputs to generate customized bind-core policy.
+        affinity_cpu_list (list): User-configured inputs to generate customized bind-core strategy.
         available_cpus (list): A list of available CPUs on the environment.
 
     Returns:
@@ -439,35 +440,37 @@ def _assign_cpu_to_module(cpu_list_for_device, module_to_cpu_dict):
 
     Args:
         cpu_list_for_device (list): A map of device to its affinity CPUs.
+        module_to_cpu_dict (dict): A map of module to its affinity CPU index in cpu_list_for_device.
 
     Returns:
         dict: Mapping of device to its affinity CPUs based on module segmentation.
     """
-    module_bind_core_policy = {}
+    module_bind_core_strategy = {}
 
     valid_module_names = {"main", "runtime", "pynative", "minddata"}
 
     if module_to_cpu_dict is not None:
-        module_bind_core_policy = {
+        module_bind_core_strategy = {
             module: [cpu_list_for_device[i] for i in indices if 0 <= i < len(cpu_list_for_device)]
             for module, indices in module_to_cpu_dict.items() if module in valid_module_names
         }
     else:
-        module_bind_core_policy["main"] = cpu_list_for_device
-    return module_bind_core_policy
+        module_bind_core_strategy["main"] = cpu_list_for_device
+    return module_bind_core_strategy
 
 
-def _get_cpu_affinity_policy(affinity_cpu_list=None, module_to_cpu_dict=None):
+def _get_cpu_affinity_strategy(affinity_cpu_list=None, module_to_cpu_dict=None):
     """
-    The entry to get bind-core policy.
+    The entry to get bind-core strategy.
 
     Args:
-        affinity_cpu_list (list, optional): User-configured inputs to generate customized bind-core policy.
+        affinity_cpu_list (list, optional): User-configured CPU range to generate customized bind-core strategy.
           Default: ``None``.
+        module_to_cpu_dict (dict, optional): User-configured module to CPU index to generate customized
+          bind-core strategy. Default: ``None``.
 
     Returns:
         dict: Mapping of device to its affinity CPUs based on module segmentation.
-        bool: Whether the generated bind-core policy is based on cpu affinity.
     """
     device_target = context.get_context("device_target")
 
@@ -478,30 +481,33 @@ def _get_cpu_affinity_policy(affinity_cpu_list=None, module_to_cpu_dict=None):
         logger.warning(f"Failed to acquire available cpu info, error: {e} Will not enable bind core feature.")
         return {}
     if (affinity_cpu_list is not None) and (affinity_cpu_list):
-        # User configured binding core policy.
-        cpu_list_for_device = _customize_generate_policy(affinity_cpu_list, available_cpus)
+        # User configured bind-core strategy.
+        cpu_list_for_device = _customize_generate_strategy(affinity_cpu_list, available_cpus)
     else:
-        # Automatic generation of binding core policy based on resources on the environment.
+        # Automatic generation of bind-core strategy based on resources on the environment.
         env_msrun_cpu_list = os.getenv("MSRUN_CPU_LIST")
         if env_msrun_cpu_list:
-            module_bind_core_policy = _assign_cpu_to_module(ast.literal_eval(env_msrun_cpu_list), module_to_cpu_dict)
-            logger.warning(f"Module bind core policy from msrun: {module_bind_core_policy}.")
-            return module_bind_core_policy
+            module_bind_core_strategy = _assign_cpu_to_module(ast.literal_eval(env_msrun_cpu_list), module_to_cpu_dict)
+            logger.warning(f"Module bind core policy from msrun: {module_bind_core_strategy}.")
+            return module_bind_core_strategy
         try:
             logical_device_id = get_local_rank()
             device_count = get_local_rank_size()
+            physical_device_id = _get_physical_device_id(logical_device_id)
         except RuntimeError as e:
             logger.warning(f"Fail to get device_id or device_count, error: {e} Will not enable bind core feature.")
             return {}
         # If the device target is Ascend, the affinity between the device and NUMA node is taken into account
-        # to generate the binding core policy.
+        # to generate the binding core strategy.
         if device_target == "Ascend":
-            cpu_list_for_device = _auto_generate_policy(logical_device_id, device_count, available_cpus)
+            device_to_cpu_map = _auto_generate_strategy(device_count, available_cpus)
         else:
-            cpu_list_for_device = _equal_distribution_strategy(logical_device_id, device_count, available_cpus)
+            device_to_cpu_map = _equal_distribution_strategy(device_count, available_cpus)
+        # Get cpu_list for this process according to global device_to_cpu_map.
+        cpu_list_for_device = device_to_cpu_map.get(physical_device_id, [])
     # cpu_list_for_device is empty, indicating that the basic conditions have not been met to enable the thread bind core feature.
     if not cpu_list_for_device:
         return {}
-    module_bind_core_policy = _assign_cpu_to_module(cpu_list_for_device, module_to_cpu_dict)
-    logger.warning(f"Module bind core policy generated: {module_bind_core_policy}.")
-    return module_bind_core_policy
+    module_bind_core_strategy = _assign_cpu_to_module(cpu_list_for_device, module_to_cpu_dict)
+    logger.warning(f"Module bind core policy generated: {module_bind_core_strategy}.")
+    return module_bind_core_strategy

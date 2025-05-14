@@ -20,7 +20,7 @@ import ipaddress
 import mindspore.log as logger
 from mindspore import context
 from mindspore.runtime.thread_bind_core import _get_physical_device_id, _get_cpu_available, \
-    _auto_generate_policy, _equal_distribution_strategy
+    _auto_generate_strategy, _equal_distribution_strategy
 
 CURRENT_IP = None
 
@@ -139,18 +139,36 @@ def _send_scale_num(url, scale_num):
     return ""
 
 
-def _parse_global_device_to_cpu_map(local_rank_id, device_to_cpu_map):
+def _parse_global_device_to_cpu_map(local_rank_id, physical_device_id, device_to_cpu_map):
     """
     Parse the global device_to_cpu_map and return a cpu list for assigned local_rank_id.
 
     """
-    physical_device_id = _get_physical_device_id(local_rank_id)
     input_device_id = int(list(device_to_cpu_map.keys())[local_rank_id].replace("device", ""))
     if physical_device_id != input_device_id:
-        return [], physical_device_id
+        return ""
     affinity_cpu_list = list(device_to_cpu_map.values())[local_rank_id]
     affinity_cpu_str = ",".join(affinity_cpu_list)
-    return affinity_cpu_str, physical_device_id
+    return affinity_cpu_str
+
+
+def _generate_auto_bind_core_strategy(local_worker_num):
+    """
+    Get device to core range assigned for the all processes.
+
+    """
+    try:
+        available_cpus = _get_cpu_available()
+    except RuntimeError as e:
+        logger.warning(f"Failed to acquire available cpu info, error: {e} Will not launch process with taskset.")
+        return {}
+
+    if context.get_context("device_target") == "Ascend":
+        device_to_cpu_map = _auto_generate_strategy(local_worker_num, available_cpus)
+    else:
+        device_to_cpu_map = _equal_distribution_strategy(local_worker_num, available_cpus)
+
+    return device_to_cpu_map
 
 
 def ranges_to_str(num_list):
@@ -175,31 +193,24 @@ def ranges_to_str(num_list):
     return ",".join(parts)
 
 
-def _generate_bind_core_policy(local_rank_id, local_worker_num, arg_bind_core):
+def _generate_bind_core_strategy(local_rank_id, device_to_cpu_map, arg_bind_core):
     """
-    Get core range assigned for the process.
+    Get device to core range assigned for the all processes.
 
     """
     affinity_cpu_str = ""
     cpu_list_for_device = []
-    try:
-        available_cpus = _get_cpu_available()
-    except RuntimeError as e:
-        logger.warning(f"Failed to acquire available cpu info, error: {e} Will not launch process with taskset.")
-        return None
+    physical_device_id = _get_physical_device_id(local_rank_id)
     if isinstance(arg_bind_core, dict):
-        affinity_cpu_str, physical_device_id = _parse_global_device_to_cpu_map(local_rank_id, arg_bind_core)
+        affinity_cpu_str = _parse_global_device_to_cpu_map(local_rank_id, physical_device_id, arg_bind_core)
         if not affinity_cpu_str:
             logger.warning(f"Failed to find physical_device_id[{physical_device_id}] for "
                            f"process[{local_rank_id}]. Will not launch process with taskset.")
             return None
     elif arg_bind_core is True:
-        if context.get_context("device_target") == "Ascend":
-            cpu_list_for_device = _auto_generate_policy(local_rank_id, local_worker_num, available_cpus)
-            if not cpu_list_for_device:
-                return None
-        else:
-            cpu_list_for_device = _equal_distribution_strategy(local_rank_id, local_worker_num, available_cpus)
+        cpu_list_for_device = device_to_cpu_map.get(physical_device_id, [])
+        if not cpu_list_for_device:
+            return None
         os.environ["MSRUN_CPU_LIST"] = str(cpu_list_for_device)
         affinity_cpu_str = ranges_to_str(cpu_list_for_device)
     return affinity_cpu_str

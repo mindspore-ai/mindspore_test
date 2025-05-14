@@ -120,9 +120,9 @@ class COMMON_EXPORT RuntimeConf {
 
   void SetThreadBindCoreConfigured() { conf_status_[kThreadBindCore] = true; }
 
-  void BindCoreWithPolicy(const ModuleBindCorePolicy &module_bind_core_policy) {
+  void BindThreadCore(const ModuleBindCorePolicy &module_bind_core_strategy) {
     conf_status_[kThreadBindCore] = true;
-    ThreadBindCore::GetInstance().enable_thread_bind_core_with_policy(module_bind_core_policy);
+    ThreadBindCore::GetInstance().enable_thread_bind_core(module_bind_core_strategy);
   }
 
  private:
