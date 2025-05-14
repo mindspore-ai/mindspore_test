@@ -65,9 +65,6 @@
         .. warning::
             此接口将在后续版本中废弃。
 
-        返回：
-            tuple[Tensor]类型，转换类型后的结果。
-
     .. py:method:: cells()
 
         返回当前Cell的子Cell的迭代器。
