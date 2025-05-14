@@ -170,10 +170,13 @@ class Primitive(Primitive_):
                 raise TypeError(f'The element of strategy must be tuple/Layout type, but got:{type(in_ele)}')
             if isinstance(in_ele, tuple):
                 for in_value in in_ele:
-                    if not isinstance(in_value, int) and self.name not in SUPPORTED_TUPLE_IN_TUPLE_STRATEGY:
+                    if not isinstance(in_value, int) and self.name not in SUPPORTED_TUPLE_IN_TUPLE_STRATEGY \
+                            and not self.attrs.get("self_define_shard", False):
                         raise TypeError(f'The {log_info}: {strategy} of {self.name} is not valid,'
                                         f' the value of strategy must be int type, but got:{type(in_value)}')
-                    if isinstance(in_value, Layout) and (self.name in SUPPORTED_TUPLE_IN_TUPLE_STRATEGY):
+                    if isinstance(in_value, Layout) and (
+                            self.name in SUPPORTED_TUPLE_IN_TUPLE_STRATEGY or self.attrs.get("self_define_shard",
+                                                                                             False)):
                         is_layout.append(True)
                         continue
                 is_layout.append(False)
@@ -315,7 +318,7 @@ class Primitive(Primitive_):
             out_is_layout = self._check_shard_strategy(out_strategy, "out_strategy")
         is_layout = in_is_layout if in_is_layout is not None else out_is_layout
         if out_is_layout is not None and is_layout != out_is_layout and \
-                self.name not in SUPPORTED_TUPLE_IN_TUPLE_STRATEGY:
+                self.name not in SUPPORTED_TUPLE_IN_TUPLE_STRATEGY and not self.attrs.get("self_define_shard", False):
             raise ValueError(f'The in_strategy type must equal to the out_strategy type, '
                              f'one using tuple(tuple) and the other using tuple(Layout) is not allowed.')
 

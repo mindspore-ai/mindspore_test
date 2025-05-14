@@ -946,9 +946,9 @@ def _get_pipeline_operator_map(from_layout, to_layout, self_rank):
     if len(from_layout[3]) < len(to_layout[3]):
         logger.debug(f"from {from_layout} to {to_layout} need to broadcast data across pp stages")
         comm_tensor_cache_key = (
-            f"{from_layout[0]}, {from_layout[1]}, {from_layout[3]}"
+            f"{from_layout[0]}, {from_layout[1]}, {from_layout[2]}, {from_layout[3]}"
             f" -> "
-            f"{to_layout[0]}, {to_layout[1]}, {to_layout[3]}")
+            f"{to_layout[0]}, {to_layout[1]}, {from_layout[2]}, {to_layout[3]}")
         global COMM_TENSOR_CELL_CACHE
         if comm_tensor_cache_key not in COMM_TENSOR_CELL_CACHE:
             logger.debug(f"comm_tensor_cache_key is {comm_tensor_cache_key}, not match cache")
@@ -1035,9 +1035,9 @@ def _get_resharding_operator_map(from_layout, to_layout, self_rank):
         self_rank (int): rank_id
     """
     reshard_op_cache_key = (
-        f"{from_layout[0]}, {from_layout[1]}, {from_layout[3]}"
+        f"{from_layout[0]}, {from_layout[1]}, {from_layout[2]}, {from_layout[3]}"
         f" -> "
-        f"{to_layout[0]}, {to_layout[1]}, {to_layout[3]}")
+        f"{to_layout[0]}, {to_layout[1]}, {from_layout[2]}, {to_layout[3]}")
     global RESHARD_OP_MAP_CACHE
     if reshard_op_cache_key not in RESHARD_OP_MAP_CACHE:
         operator_map = _infer_reshard_op_map(from_layout, to_layout, self_rank)
