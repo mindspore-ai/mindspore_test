@@ -38,6 +38,9 @@ using ge::DT_DUAL_SUB_INT8;
 using ge::DT_DUAL_SUB_UINT8;
 using ge::DT_FLOAT;
 using ge::DT_FLOAT16;
+using ge::DT_FLOAT8_E4M3FN;
+using ge::DT_FLOAT8_E5M2;
+using ge::DT_HIFLOAT8;
 using ge::DT_INT16;
 using ge::DT_INT2;
 using ge::DT_INT32;
@@ -84,6 +87,9 @@ std::vector<std::string> SplitString(const std::string &input) {
 std::vector<enum ge::DataType> ParseGeTypes(const std::string &op_name, const std::string &tensor_types) {
   static HashMap<std::string, std::vector<enum ge::DataType>> kGeTypeMap = {
     {"DT_BF16", {DT_BF16}},
+    {"DT_HIFLOAT8", {DT_HIFLOAT8}},
+    {"DT_FLOAT8_E5M2", {DT_FLOAT8_E5M2}},
+    {"DT_FLOAT8_E4M3FN", {DT_FLOAT8_E4M3FN}},
     {"DT_BOOL", {DT_BOOL}},
     {"DT_COMPLEX128", {DT_COMPLEX128}},
     {"DT_COMPLEX64", {DT_COMPLEX64}},
