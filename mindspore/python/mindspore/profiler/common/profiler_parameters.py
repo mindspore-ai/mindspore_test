@@ -198,6 +198,11 @@ class ProfilerParameters:
                     "The parameter 'pcie' will be deprecated in future versions. "
                     "Please use 'sys_interconnection' in mindspore.profiler._ExperimentalConfig instead."
                 )
+            elif key == "hbm_ddr" and value is True:
+                warnings.warn(
+                    "The parameter 'hbm_ddr' will be deprecated in future versions. "
+                    "Please use 'profile_memory' in instead."
+                )
 
     def _set_schedule(self, **kwargs):
         if "schedule" in kwargs and isinstance(kwargs["schedule"], Schedule):
