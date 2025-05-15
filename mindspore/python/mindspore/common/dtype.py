@@ -281,8 +281,11 @@ def dtype_to_nptype(type_):
     }
     if type_ == bfloat16:
         if not np_version_valid(True):
-            raise TypeError("The Numpy bfloat16 data type is not supported now, please ensure that the current "
-                            "Numpy version is not less than the version when the mindspore is compiled.")
+            raise TypeError(
+                "The Numpy bfloat16 data type is not supported now, please ensure that the current "
+                "Numpy version is not less than the version when the mindspore is compiled, "
+                "and the major versions are same."
+            )
         return np_bfloat16
     return _dtype_nptype_dict[type_]
 
