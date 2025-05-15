@@ -1,0 +1,62 @@
+/**
+ * Copyright 2025 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_INTERNAL_PYBOOST_FLASH_ATTENTION_SCORE_H_
+#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_INTERNAL_PYBOOST_FLASH_ATTENTION_SCORE_H_
+
+#include <memory>
+#include <string>
+#include <vector>
+#include <utility>
+
+#include "plugin/device/ascend/kernel/internal/pyboost/internal_kernel_info.h"
+
+namespace mindspore {
+namespace kernel {
+class InternalKernelInfoFlashAttentionScore : public InternalKernelInfo {
+ public:
+  InternalKernelInfoFlashAttentionScore() : InternalKernelInfo(std::move("FlashAttentionScore")) {}
+  ~InternalKernelInfoFlashAttentionScore() = default;
+
+  void Call(const std::shared_ptr<pyboost::OpRunner> &op, const BaseTensorPtr &query, const BaseTensorPtr &key,
+            const BaseTensorPtr &value, const std::optional<BaseTensorPtr> &real_shift,
+            const std::optional<BaseTensorPtr> &drop_mask, const std::optional<BaseTensorPtr> &padding_mask,
+            const std::optional<BaseTensorPtr> &attn_mask, const std::vector<int64_t> &prefix,
+            const std::vector<int64_t> &actual_seq_len, const std::vector<int64_t> &actual_seq_kvlen,
+            const int64_t &head_num, const float &keep_prob, const float &scale_value, const int64_t &pre_tokens,
+            const int64_t &next_tokens, const int64_t &inner_precise, const int64_t &input_layout,
+            const int64_t &sparse_mode);
+
+ protected:
+  uint64_t GenerateTilingKey(const std::string &kernel_name, const std::vector<BaseTensorPtr> &inputs) override;
+  internal::InternalOpPtr CreateKernel(const internal::InputsImmutableInfoList &inputs,
+                                       const internal::OutputsImmutableInfoList &outputs) override;
+
+ private:
+  int32_t head_num_;
+  int32_t inner_precise_;
+  int32_t pre_tokens_;
+  int32_t next_tokens_;
+  int32_t sparse_mode_;
+  int32_t mask_dtype_;
+  int32_t input_layout_;
+  std::vector<int64_t> mask_dims_;
+  std::vector<int32_t> kv_seq_len_;
+  std::vector<int32_t> q_seq_len_;
+  float tor_;
+};
+}  // namespace kernel
+}  // namespace mindspore
+#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_INTERNAL_PYBOOST_FLASH_ATTENTION_SCORE_H_

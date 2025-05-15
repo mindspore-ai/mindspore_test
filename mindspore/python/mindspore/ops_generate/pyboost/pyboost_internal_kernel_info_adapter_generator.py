@@ -33,6 +33,10 @@ from .pyboost_internal_functions_h_generator import PyboostInternalFunctionsHead
 
 from .op_template_parser import OpTemplateParser
 
+KERNEL_INFO_ADAPTER_REGISTER = """
+MS_KERNEL_INFO_ADAPTER_REG(${op_name}, Internal${op_name}KernelInfoAdapter, ${op_name}KernelInfoAdapter);\n
+"""
+
 class PyboostKernelInfoAdapterGenerator(BaseGenerator):
     """
     A class to generate `kernel_info_adapter.h`, `internal_kernel_info_adapter.h` and `internal_kernel_info_adapter.cc`
@@ -47,9 +51,7 @@ class PyboostKernelInfoAdapterGenerator(BaseGenerator):
         self.INTERNAL_KERNEL_INFO_ADAPTER_H_TEMPLATE = template.PYBOOST_INTERNAL_KERNEL_INFO_ADAPTER_H_TEMPLATE
         self.KERNEL_INFO_ADAPTER_SINGLE_CPP_TEMPLATE = template.PYBOOST_INTERNAL_KERNEL_INFO_ADAPTER_SINGLE_CPP_TEMPLATE
         self.KERNEL_INFO_ADAPTER_CPP_TEMPLATE = template.PYBOOST_INTERNAL_KERNEL_INFO_ADAPTER_CPP_TEMPLATE
-        self.KERNEL_INFO_ADAPTER_REGISTER_TEMPLATE = Template(
-            "MS_KERNEL_INFO_ADAPTER_REG(${op_name}, \
-                Internal${op_name}KernelInfoAdapter, ${op_name}KernelInfoAdapter);\n")
+        self.KERNEL_INFO_ADAPTER_REGISTER_TEMPLATE = Template(KERNEL_INFO_ADAPTER_REGISTER)
         self.MERGED_OP_HEADERS_TEMPLATE = Template(
             "#include \"plugin/device/ascend/kernel/internal/pyboost/${operator_name}.h\"\n")
         self.header_generator = PyboostInternalFunctionsHeaderGenerator()
