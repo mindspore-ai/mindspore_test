@@ -54,6 +54,7 @@ class GraphJitConfig {
     kReCaptureLoopBody,
     kSubgraphBreakOpt,
     kFullGraph,
+    kEnableOldGuardStrategy,
     /* ------------------------------ */
     kIntConf,
     kSymbolic,

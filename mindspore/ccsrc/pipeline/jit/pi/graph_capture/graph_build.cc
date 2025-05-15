@@ -2119,6 +2119,14 @@ bool GraphBuilder::DoByteCode(const Instr &instr) {
   return true;
 }
 
+static bool IsDelayGuardType(const py::handle &obj) {
+  if (obj.ptr() == nullptr) {
+    return true;
+  }
+  return py::isinstance<Cell>(obj) || PyFunction_Check(obj.ptr()) || PyMethod_Check(obj.ptr()) ||
+         PyCFunction_Check(obj.ptr());
+}
+
 GraphBuilder::GraphBuilder(GraphBuilder *r, GraphBuilder *p, PyCodeObject *co, PyObject *globals)
     : root_(r),
       parent_(p),
@@ -2204,6 +2212,23 @@ GraphBuilder::GraphBuilder(const PyFrameWrapper &f)
   fg_builder->SetGraphName(std::string() + name + "_" + std::to_string(first_line));
 
   graph_->set_func_graph_builder(fg_builder);
+
+  if (root()->GetGraph()->Config().GetBoolConfig(GraphJitConfig::kEnableOldGuardStrategy)) {
+    bool has_vargs;
+    bool has_kwargs;
+    int args_count = PyCodeWrapper(GetGraph()->GetCodeObj()).ArgCount(&has_vargs, &has_kwargs);
+    const auto &locals = frame_.GetLocals();
+    args_count = args_count - has_vargs - has_kwargs;
+    int cur_index = 0;
+    for (cur_index = 0; cur_index < args_count; ++cur_index) {
+      auto cur = locals[cur_index];
+      if (IsDelayGuardType(cur->GetVobj()->GetPyObject())) {
+        continue;
+      }
+      graph_->GuardValueNode(cur, GuardLevel::GDeduce);
+    }
+  }
+
   this->FGAddTopInputs();
   auto add_local = [this](ValueNode *node) {
     if (node != &ValueNode::kUnboundLocal && node->abstract_wrapper() == nullptr) {
@@ -3993,15 +4018,12 @@ void GraphBuilder::AddInput(ValueNode *node) {
     return;
   }
   AbstractWrapperPtr ret = nullptr;
-  bool is_callable = py::isinstance<Cell>(obj) || PyFunction_Check(obj.ptr()) || PyMethod_Check(obj.ptr()) ||
-                     PyCFunction_Check(obj.ptr());
-  bool is_scalar = obj.ptr() == Py_None;
-  if (is_callable || is_scalar) {
-    MS_LOG(DEBUG) << "constant argument of func_graph, eliminate at compile: " << py::str(obj);
+  if (IsDelayGuardType(obj)) {
+    MS_LOG(DEBUG) << "constant argument of func_graph, eliminate at compile but delay guard: " << py::str(obj);
     // delay guard only if it used
-    if (!is_callable) {
-      GetGraph()->GuardParameter(node);
-    }
+  } else if (obj.ptr() == Py_None) {
+    MS_LOG(DEBUG) << "constant argument of func_graph, guard and eliminate at compile: " << py::str(obj);
+    GetGraph()->GuardParameter(node);
   } else {
     ret = FGBuilder()->AddTopGraphArgInput(obj);
   }

@@ -57,6 +57,7 @@ static const std::unordered_map<std::string, bool (GraphJitConfig::*)(PyObject *
   {"expand_graph_output", &GraphJitConfig::SetBool<GraphJitConfig::kExpandGraphOutput>},
   {"subgraph_break_opt", &GraphJitConfig::SetBool<GraphJitConfig::kSubgraphBreakOpt>},
   {"fullgraph", &GraphJitConfig::SetBool<GraphJitConfig::kFullGraph>},
+  {"enable_old_guard_strategy", &GraphJitConfig::SetBool<GraphJitConfig::kEnableOldGuardStrategy>},
   // kEnableOptimizeForAttrItem
   {"_symbolic", &GraphJitConfig::SetInt<GraphJitConfig::kSymbolic>},
   {"MAX_TRACE_DEPTH", &GraphJitConfig::SetInt<GraphJitConfig::kMaxTraceDepth>},
