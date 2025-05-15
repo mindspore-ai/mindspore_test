@@ -1360,6 +1360,9 @@ void GraphScheduler::SetActorExecutionStrategy(ActorSet *const actor_set, GraphE
   MS_LOG(INFO) << actor_set->name_ << " execution count: " << actor_set->execution_count_
                << ", execution time: " << execution_time
                << " ms in multi thread or not: " << actor_set->is_multi_thread_execution_ << ".";
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_PRINT_PROF)
+    << actor_set->name_ << " execution count: " << actor_set->execution_count_ << ", execution time: " << execution_time
+    << " ms in multi thread or not: " << actor_set->is_multi_thread_execution_ << ".";
 
   MS_EXCEPTION_IF_NULL(ActorMgr::GetActorMgrRef());
   auto thread_pool = ActorMgr::GetActorMgrRef()->GetActorThreadPool();
