@@ -74,6 +74,7 @@ constexpr auto kFlagGeKernel = "ge_kernel";
 
 // custom operator func type
 constexpr auto kCustomTypeAOT = "aot";
+constexpr auto kCustomTypeOPPlugin = "op_plugin";
 constexpr auto kCustomTypeJULIA = "julia";
 constexpr auto kCustomTypePyfunc = "pyfunc";
 constexpr auto kCustomTypeTbe = "tbe";

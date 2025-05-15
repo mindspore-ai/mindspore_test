@@ -15,5 +15,4 @@ zeros_like_ext:
     dispatch:
         enable: True
         Ascend: ZerosLikeExtAscend
-        CPU: None
         GPU: None
