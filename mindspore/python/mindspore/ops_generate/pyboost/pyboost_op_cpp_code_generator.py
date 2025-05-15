@@ -195,9 +195,7 @@ class PyboostInternalOpHeaderGenerator(BaseGenerator):
                 continue
             if getattr(op_proto.op_dispatch, self.device) == 'None':
                 continue
-            if getattr(op_proto.op_dispatch, 'ascend_kernel') == 'aclnn':
-                continue
-            if op_proto.op_dispatch.ascend_kernel not in ('Internal', 'InternalAscend'):
+            if getattr(op_proto.op_dispatch, 'internal_op_ascend') == 'None':
                 continue
             op_parser = OpTemplateParser(op_proto)
             op_name_str = op_proto.op_class.name
@@ -734,13 +732,14 @@ class InternalOpCppCodeGenerator:
         for op_proto in op_protos:
             if op_proto.op_dispatch is None or not op_proto.op_dispatch.enable:
                 continue
-            if getattr(op_proto.op_dispatch, 'ascend_kernel') == 'aclnn':
+            if getattr(op_proto.op_dispatch, 'internal_op_ascend') == 'None':
                 continue
-            ascend_kernel = op_proto.op_dispatch.ascend_kernel
-            if ascend_kernel == 'Internal':
+            internal_op_ascend = op_proto.op_dispatch.internal_op_ascend
+            op_name = op_proto.op_class.name
+            if internal_op_ascend == 'AutoGen':
                 self.generate_default_call(work_path, op_proto, merge_op_header,
                                            merge_op_function, ascend_merge_op_inc)
-            elif ascend_kernel == 'InternalAscend':
+            elif internal_op_ascend == 'Internal' + op_name + 'AscendCustomize':
                 self.generate_customize_call(work_path, op_proto, merge_op_header,
                                              merge_op_function, ascend_merge_op_inc)
 
@@ -1225,7 +1224,7 @@ class PyboostOpRegisterCppCodeGenerator:
                 continue
             functional_name = op_proto.op_name
             op_name_str = op_proto.op_class.name
-            if getattr(op_proto.op_dispatch, 'ascend_kernel') in ('Internal', 'InternalAscend'):
+            if getattr(op_proto.op_dispatch, 'internal_op_ascend') != 'None':
                 internal_op_names.append(op_name_str)
             all_op_names.append(op_name_str)
             all_functional_names.append(functional_name)

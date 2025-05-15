@@ -72,8 +72,8 @@ def create_ms_inputs(np_k, np_v, np_k_cache, np_v_cache, np_slot_map):
     """
     ms_key = Tensor(np_k)
     ms_value = Tensor(np_v)
-    ms_key_cache = Parameter(Tensor(np_k_cache))
-    ms_value_cache = Parameter(Tensor(np_v_cache))
+    ms_key_cache = Parameter(Tensor(np_k_cache), name="ms_key_cache")
+    ms_value_cache = Parameter(Tensor(np_v_cache), name="ms_value_cache")
     ms_slot_map = Tensor(np_slot_map)
     return ms_key, ms_value, ms_key_cache, ms_value_cache, ms_slot_map
 
@@ -98,7 +98,8 @@ def create_np_inputs(dtype=np.float16):
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('np_dtype', [np.float16, bfloat16, np.int8])
-def test_reshape_and_cache_net(np_dtype):
+@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_reshape_and_cache_net(np_dtype, mode):
     """
     Feature: Test ReshapeAndCache.
     Description: Test float16 inputs.
@@ -106,7 +107,7 @@ def test_reshape_and_cache_net(np_dtype):
     """
     if "ASCEND_HOME_PATH" not in os.environ:
         os.environ['ASCEND_HOME_PATH'] = "/usr/local/Ascend/latest"
-    context.set_context(device_target="Ascend")
+    context.set_context(device_target="Ascend", mode=mode)
     context.set_context(jit_config={"jit_level": "O0", "infer_boost": "on"})
 
     net = ReshapeAndCacheNet()

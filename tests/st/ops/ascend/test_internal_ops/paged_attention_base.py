@@ -194,7 +194,7 @@ class PagedAttentionBase:
         }
         if "ASCEND_HOME_PATH" not in os.environ:
             os.environ['ASCEND_HOME_PATH'] = "/usr/local/Ascend/latest"
-        context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+        context.set_context(mode=self.ctx_mode, device_target="Ascend")
         if first_case.get("mask_mode", "MASK_DEFAULT") != "MASK_DEFAULT":
             i_init["mask_mode"] = first_case.get("mask_mode", "MASK_DEFAULT")
         if first_case.get("mla_kvcombined", False):

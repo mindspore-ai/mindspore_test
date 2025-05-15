@@ -76,9 +76,7 @@ class PyboostKernelInfoAdapterGenerator(BaseGenerator):
         for op_proto in op_protos:
             if op_proto.op_dispatch is None or not op_proto.op_dispatch.enable:
                 continue
-            if getattr(op_proto.op_dispatch, 'ascend_kernel') == 'aclnn':
-                continue
-            if op_proto.op_dispatch.ascend_kernel not in ('Internal', 'InternalAscend'):
+            if getattr(op_proto.op_dispatch, 'internal_op_ascend') == 'None':
                 continue
             op_parser = OpTemplateParser(op_proto)
             call_args_after_convert, _, _ = op_parser.op_args_converter()

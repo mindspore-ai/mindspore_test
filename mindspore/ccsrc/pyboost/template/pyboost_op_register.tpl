@@ -37,6 +37,24 @@ std::shared_ptr<T> OpFactory<T>::Create(const string &device, uint32_t stream_id
   return op;
 }
 
+// for internal op
+template <typename T>
+InternalOpFactory<T> &InternalOpFactory<T>::Get() {
+  static InternalOpFactory<T> instance;
+  return instance;
+}
+
+template <typename T>
+std::shared_ptr<T> InternalOpFactory<T>::Create(const string &device, uint32_t stream_id) {
+  auto iter = op_creator_.find(device);
+  if (iter == op_creator_.end()) {
+    MS_LOG(EXCEPTION) << "Not found internal op " << typeid(T).name() << " on device " << device;
+  }
+  auto op = iter->second();
+  op->set_stream_id(stream_id);
+  return op;
+}
+
 ${op_factory_templates}
 }  // namespace pyboost
 }  // namespace kernel

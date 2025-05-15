@@ -88,8 +88,8 @@ class InternalKernelInfo {
 
  protected:
   void GetInputAndOutputIndex(const std::shared_ptr<pyboost::OpRunner> &op, const TensorPtrList &input_tensors);
-  TilingCacheItemPtr GetOrGenerateTiling(const std::shared_ptr<pyboost::OpRunner> &op,
-                                         const TensorPtrList &inputs);
+  bool IsInternalDtypeSupport(const TensorPtrList *ms_inputs, const TensorPtrList *ms_outputs);
+  TilingCacheItemPtr GetOrGenerateTiling(const std::shared_ptr<pyboost::OpRunner> &op, const TensorPtrList &inputs);
   virtual uint64_t GenerateTilingKey(const std::string &kernel_name, const TensorPtrList &inputs);
   virtual internal::InternalOpPtr CreateKernel(const internal::InputsImmutableInfoList &inputs,
                                                const internal::OutputsImmutableInfoList &outputs) = 0;
@@ -100,6 +100,8 @@ class InternalKernelInfo {
   inline static std::unordered_map<uint64_t, internal::InternalOpPtr> hash_map_;
   inline static std::unordered_map<std::string, std::vector<size_t>> ms_inputs_idx_map_;
   inline static std::unordered_map<std::string, std::vector<size_t>> ms_outputs_idx_map_;
+  internal::DtypeInfoList internal_inputs_dtype_;
+  internal::DtypeInfoList internal_outputs_dtype_;
   internal::ShapeInfoList internal_inputs_shape_;
   internal::ShapeInfoList internal_outputs_shape_;
   internal::InputsImmutableInfoList inputs_ii_;
@@ -107,9 +109,9 @@ class InternalKernelInfo {
   TilingCacheItemPtr tiling_info_{nullptr};
 
  private:
-  void UpdateArgImmutableInfo(internal::ArgImmutableInfo *arginfo, const TensorPtr &tensor);
-  void UpdateArgImmutableInfo(std::vector<internal::ArgImmutableInfo> *arginfos,
-                              const TensorPtrList &tensorlist);
+  void UpdateArgImmutableInfo(internal::ArgImmutableInfo *arginfo, const TensorPtr &tensor, internal::DataType dtype);
+  void UpdateArgImmutableInfo(std::vector<internal::ArgImmutableInfo> *arginfos, const TensorPtrList &tensorlist,
+                              bool is_input = false);
   SimpleSpinLock lock_;
 };
 using InternalKernelInfoPtr = std::shared_ptr<InternalKernelInfo>;
@@ -149,10 +151,10 @@ using InternalKernelInfoPtr = std::shared_ptr<InternalKernelInfo>;
     pyboost::PyBoostUtils::MallocOpOutputs(device_context, outputs);                                                  \
     internal::InputsAddrList inputs_addr;                                                                             \
     internal::OutputsAddrList outputs_addr;                                                                           \
-    InternalKernelInfo::UpdateAddr(inputs_addr, inputs);                                                              \
-    InternalKernelInfo::UpdateAddr(outputs_addr, outputs);                                                            \
+    InternalKernelInfo::UpdateAddr(&inputs_addr, inputs);                                                             \
+    InternalKernelInfo::UpdateAddr(&outputs_addr, outputs);                                                           \
     internal::WsAddrList internal_wss_addr;                                                                           \
-    InternalKernelInfo::MallocWorkspace(device_context, op->stream_id(), internal_op, internal_wss_addr);             \
+    InternalKernelInfo::MallocWorkspace(device_context, op->stream_id(), internal_op, &internal_wss_addr);            \
     LAUNCH_INTERNAL_KERNEL(op, internal_op, device_context, tiling_ptr, inputs_addr, outputs_addr, internal_wss_addr, \
                            kernel_name);                                                                              \
   } while (false)

@@ -135,7 +135,7 @@ def run(net, seqLen, batch, num_head_q, num_head_k, hidden_dim, max_seq_len, que
     np.testing.assert_allclose(key_embed1, key_embed2, rtol=1e-2, atol=1e-2)
 
 
-def _test_rope(query_dtype, cos_dtype, cos_format, batch_size, seq_len, num_head):
+def _test_rope(query_dtype, cos_dtype, cos_format, batch_size, seq_len, num_head, mode):
     ndim = 3
     hidden_dim = 128
     base = 10000
@@ -143,7 +143,7 @@ def _test_rope(query_dtype, cos_dtype, cos_format, batch_size, seq_len, num_head
     np.random.seed(0)
     if "ASCEND_HOME_PATH" not in os.environ:
         os.environ['ASCEND_HOME_PATH'] = "/usr/local/Ascend/latest"
-    ms.set_context(device_target="Ascend", mode=context.GRAPH_MODE)
+    ms.set_context(device_target="Ascend", mode=mode)
     ms.set_context(jit_config={"jit_level": "O0", "infer_boost": "on"})
     net = RotaryEmbedding(hidden_dim, base, max_seq_len, cos_dtype, cos_format)
     run(net, seq_len, batch_size, num_head, num_head, hidden_dim, max_seq_len, query_dtype, np.int32, ndim, cos_format)
@@ -156,13 +156,14 @@ def _test_rope(query_dtype, cos_dtype, cos_format, batch_size, seq_len, num_head
 @pytest.mark.parametrize('batch_size', [16])
 @pytest.mark.parametrize('seq_len', [256])
 @pytest.mark.parametrize('num_head', [32])
-def test_rope_float16(query_dtype, cos_dtype, cos_format, batch_size, seq_len, num_head):
+@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_rope_float16(query_dtype, cos_dtype, cos_format, batch_size, seq_len, num_head, mode):
     """
     Feature: test ROPE op in kbk enabling infer_boost
     Description: test ROPE op in float16.
     Expectation: the result is correct
     """
-    _test_rope(query_dtype, cos_dtype, cos_format, batch_size, seq_len, num_head)
+    _test_rope(query_dtype, cos_dtype, cos_format, batch_size, seq_len, num_head, mode)
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -172,10 +173,11 @@ def test_rope_float16(query_dtype, cos_dtype, cos_format, batch_size, seq_len, n
 @pytest.mark.parametrize('batch_size', [16])
 @pytest.mark.parametrize('seq_len', [256])
 @pytest.mark.parametrize('num_head', [32])
-def test_rope_bfloat16(query_dtype, cos_dtype, cos_format, batch_size, seq_len, num_head):
+@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_rope_bfloat16(query_dtype, cos_dtype, cos_format, batch_size, seq_len, num_head, mode):
     """
     Feature: test ROPE op in kbk enabling infer_boost
     Description: test ROPE op in bfloat16.
     Expectation: the result is correct
     """
-    _test_rope(query_dtype, cos_dtype, cos_format, batch_size, seq_len, num_head)
+    _test_rope(query_dtype, cos_dtype, cos_format, batch_size, seq_len, num_head, mode)

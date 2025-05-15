@@ -178,7 +178,7 @@ class FunctionsGenerator(BaseGenerator):
                                                                  return_type_with_handle=return_type_with_handle)
             return comm_body
         create_op_str = self.create_aclnn_op_template.replace(class_name=op_proto.op_class.name)
-        if getattr(op_proto.op_dispatch, 'ascend_kernel') in ('Internal', 'InternalAscend'):
+        if getattr(op_proto.op_dispatch, 'internal_op_ascend') != 'None':
             create_op_str = self.create_internal_op_template.replace(class_name=op_proto.op_class.name)
         return self.FUNCTION_BODY_TEMPLATE.replace(op_name=op_proto.op_name,
                                                    class_name=op_proto.op_class.name,
