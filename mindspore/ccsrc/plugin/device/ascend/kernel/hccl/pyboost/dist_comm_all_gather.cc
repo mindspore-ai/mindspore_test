@@ -47,20 +47,69 @@ void DistCommAllGatherAscendCustomize(const std::shared_ptr<OpRunner> &op, const
     auto input_data_ptr = GetDevicePtrFromTensor(op_name, input_tensor);
     auto output_data_ptr = GetDevicePtrFromTensor(op_name, op->output(0));
     auto size = input_tensor->Size();
+    auto input_num_elements = input_tensor->DataSize();
+
     auto launch_func = [input_data_ptr, output_data_ptr, hccl_count, hccl_data_type, rank_size_imm, size,
-                        gather_tensors, op_name](const HcclComm &hccl_comm, void *comm_stream_ptr) {
-      auto hccl_result = hccl::HcclAdapter::GetInstance().HcclAllGather(input_data_ptr, output_data_ptr, hccl_count,
-                                                                        hccl_data_type, comm_stream_ptr, hccl_comm);
-      if (hccl_result != HCCL_SUCCESS) {
-        MS_LOG(EXCEPTION) << "HcclAllGather failed, ret:" << hccl_result;
-      }
-      for (int r = 0; r < rank_size_imm; r++) {
-        uint64_t offset = (uint64_t)(r * size);
-        auto data_ptr = GetDevicePtrFromTensor(op_name, gather_tensors[r]);
-        auto cp_ret = CALL_ASCEND_API(aclrtMemcpyAsync, data_ptr, size, static_cast<char *>(output_data_ptr) + offset,
-                                      size, ACL_MEMCPY_DEVICE_TO_DEVICE, comm_stream_ptr);
-        if (cp_ret != EOK) {
-          MS_LOG(EXCEPTION) << "aclrtMemcpy failed.";
+                        input_num_elements, gather_tensors, op_name](const HcclComm &hccl_comm, void *comm_stream_ptr) {
+      bool same_shape = std::all_of(gather_tensors.begin(), gather_tensors.end(),
+                                    [&](const TensorPtr &t) { return t->Size() == gather_tensors[0]->Size(); });
+
+      if (same_shape) {
+        auto hccl_result = hccl::HcclAdapter::GetInstance().HcclAllGather(input_data_ptr, output_data_ptr, hccl_count,
+                                                                          hccl_data_type, comm_stream_ptr, hccl_comm);
+        if (hccl_result != HCCL_SUCCESS) {
+          MS_LOG(EXCEPTION) << "HcclAllGather failed, ret:" << hccl_result;
+        }
+        for (int r = 0; r < rank_size_imm; r++) {
+          uint64_t offset = static_cast<uint64_t>(r * size);
+          auto data_ptr = GetDevicePtrFromTensor(op_name, gather_tensors[r]);
+          auto cp_ret = CALL_ASCEND_API(aclrtMemcpyAsync, data_ptr, size, static_cast<char *>(output_data_ptr) + offset,
+                                        size, ACL_MEMCPY_DEVICE_TO_DEVICE, comm_stream_ptr);
+          if (cp_ret != EOK) {
+            MS_LOG(EXCEPTION) << "aclrtMemcpy failed.";
+          }
+        }
+      } else {
+        MS_LOG(DEBUG) << "For kernel HcclAllGather, Different shapes detected, using HcclAllGatherV instead.";
+        hccl::HcclAllGatherVParams params;
+        std::vector<uint64_t> recv_counts;
+        std::vector<uint64_t> recv_displs;
+        std::vector<uint64_t> recv_size_byte;
+        std::vector<uint64_t> recv_offset_byte;
+        params.send_count = static_cast<uint64_t>(input_num_elements);
+
+        recv_counts.reserve(rank_size_imm);
+        recv_displs.resize(rank_size_imm, 0);
+        recv_offset_byte.resize(rank_size_imm, 0);
+        for (const auto &tensor : gather_tensors) {
+          recv_counts.push_back(static_cast<uint64_t>(tensor->DataSize()));
+          recv_size_byte.push_back(static_cast<uint64_t>(tensor->Size()));
+        }
+        for (int i = 1; i < rank_size_imm; ++i) {
+          recv_displs[i] = recv_displs[i - 1] + recv_counts[i - 1];
+          recv_offset_byte[i] = recv_offset_byte[i - 1] + recv_size_byte[i - 1];
+        }
+
+        params.recv_counts = recv_counts;
+        params.rdispls = recv_displs;
+
+        auto hccl_result = hccl::HcclAdapter::GetInstance().HcclAllGatherV(input_data_ptr, output_data_ptr, params,
+                                                                           hccl_data_type, comm_stream_ptr, hccl_comm);
+        if (hccl_result != HCCL_SUCCESS) {
+          MS_LOG(EXCEPTION) << "HcclAllGatherV failed, ret:" << hccl_result;
+        }
+
+        for (int r = 0; r < rank_size_imm; r++) {
+          uint64_t offset = recv_offset_byte[r];
+          auto copy_size = recv_size_byte[r];
+
+          auto data_ptr = GetDevicePtrFromTensor(op_name, gather_tensors[r]);
+          auto cp_ret =
+            CALL_ASCEND_API(aclrtMemcpyAsync, data_ptr, copy_size, static_cast<char *>(output_data_ptr) + offset,
+                            copy_size, ACL_MEMCPY_DEVICE_TO_DEVICE, comm_stream_ptr);
+          if (cp_ret != EOK) {
+            MS_LOG(EXCEPTION) << "HcclAllGather aclrtMemcpy failed.";
+          }
         }
       }
     };
