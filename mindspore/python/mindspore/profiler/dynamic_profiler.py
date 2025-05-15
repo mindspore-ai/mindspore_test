@@ -573,7 +573,7 @@ class DynamicProfilerMonitorBase(Callback):
         if not os.path.exists(shm_path):
             return
 
-        MAX_TIME_DIFF = 30 # seconds
+        MAX_TIME_DIFF = 60 # seconds
         time_shm = os.stat(shm_path).st_ctime
         cur_proc_time = self._get_pid_st_ctime(os.getpid())
 
