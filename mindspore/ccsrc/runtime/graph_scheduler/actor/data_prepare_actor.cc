@@ -489,28 +489,15 @@ void DataPrepareActor::UpdateDeviceAddressForDataNode(const AnfNodePtr &input_no
     return;
   }
   tensor_address->set_new_ref_count(SIZE_MAX);
-
-  static const bool enable_infer_boost = MsContext::GetInstance()->IsEnableInferBoost();
-  bool is_kv_cache = enable_infer_boost && (input_tensor->name().find("key_cache") != std::string::npos ||
-                                            input_tensor->name().find("value_cache") != std::string::npos);
-
   auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(input_node, 0, false);
   MS_EXCEPTION_IF_NULL(kernel_tensor);
   auto device_address = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_address);
   if (tensor_address == device_address) {
-    if (is_kv_cache) {
-      MS_LOG(EXCEPTION) << "The tensor address can not set into input node for kv cache: "
-                        << input_node->fullname_with_scope() << " address:" << tensor_address->PrintInfo();
-    }
     tensor_address->SetNodeIndex(input_node, 0);
     tensor_address->set_original_ref_count(SIZE_MAX);
     tensor_address->ResetRefCount();
     return;
-  } else if (is_kv_cache && tensor_address->pointer_ref_count() == device_address->pointer_ref_count()) {
-    MS_LOG(EXCEPTION) << "The tensor address can not set into input node for kv cache: "
-                      << input_node->fullname_with_scope() << " tensor address:" << tensor_address->PrintInfo()
-                      << " input address:" << device_address->PrintInfo();
   }
 
   // If tensor address and device address are different (heterogeneous scenarios), or device address is persisted
@@ -524,15 +511,7 @@ void DataPrepareActor::UpdateDeviceAddressForDataNode(const AnfNodePtr &input_no
 
   tensor_address->set_flag(device_address->flag());
   DeviceAddressUtils::UpdateDeviceAddressHostInfoByNode(tensor_address, input_node, 0);
-  if (is_kv_cache) {
-    kernel_tensor->set_device_ptr(tensor_address->GetMutablePtr());
-    MS_EXCEPTION_IF_NULL(kernel_tensor->device_ptr());
-    device_address->set_from_mem_pool(false);
-    device_address->set_new_ref_count(SIZE_MAX);
-    device_address->set_original_ref_count(SIZE_MAX);
-  } else {
-    AnfAlgo::SetOutputAddr(tensor_address, 0, input_node);
-  }
+  AnfAlgo::SetOutputAddr(tensor_address, 0, input_node);
   MS_LOG(DEBUG) << "Update device address of " << input_node->DebugString() << " to " << tensor_address.get()
                 << " ptr:" << tensor_address->GetPtr();
   tensor_address->SetNodeIndex(input_node, 0);
@@ -655,10 +634,7 @@ void DataPrepareActor::PrepareData(const std::vector<std::vector<TensorPtr>> &in
     return;
   }
   MS_EXCEPTION_IF_NULL(graph_compiler_info_);
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  static const bool enable_infer_boost = ms_context->IsEnableInferBoost();
-  if (!address_modified_input_nodes_.empty() && !enable_infer_boost) {
+  if (!address_modified_input_nodes_.empty()) {
     UpdateDeviceAddressByRefInputNode(graph_compiler_info_->graphs_, address_modified_input_nodes_);
     address_modified_input_nodes_.clear();
   }
@@ -928,9 +904,6 @@ void DataPrepareActor::RecordGraphInputs(const std::vector<TensorPtr> &host_tens
   auto &llm_manager = LLMManager::GetInstance();
   for (size_t i = 0; i < host_tensors.size(); ++i) {
     auto host_tensor = host_tensors[i];
-    if (host_tensor == nullptr) {
-      continue;
-    }
     auto param_index = host_param_indexes[i];
     const auto &origin_parameter = graph_compiler_info_->origin_parameters_order_[param_index];
     // host_tensor must not be nullptr
@@ -978,11 +951,6 @@ void DataPrepareActor::PrepareDataForHostTensorQueueNew(const VectorRef &args, O
   host_tensors_.resize(host_data_size);
   host_param_indexes.resize(host_data_size);
   bool isDyn = false;
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  static const bool enable_infer_boost = ms_context->IsEnableInferBoost();
-  bool first_kv_cache_input = true;
-  bool early_stop_prepare = false;
   // Fill host tensors.
   for (size_t i = 0; i < graph_compiler_info_->origin_parameters_order_.size(); ++i) {
     if (current_data_num == host_data_size) {
@@ -1022,20 +990,6 @@ void DataPrepareActor::PrepareDataForHostTensorQueueNew(const VectorRef &args, O
       MS_LOG(INFO) << "Set host tensor position:" << tensor_position
                    << " for input parameter:" << origin_parameter->fullname_with_scope();
 
-      if (enable_infer_boost && first_kv_cache_input &&
-          (input_tensor->name().find("key_cache") != std::string::npos ||
-           input_tensor->name().find("value_cache") != std::string::npos)) {
-        first_kv_cache_input = false;
-
-        bool kv_cache_not_change = (input_tensor->shape() == kv_cache_shape_);
-        kv_cache_shape_ = input_tensor->shape();
-        if (kv_cache_not_change) {
-          host_data_source_actor_->set_is_shape_match(true);
-          early_stop_prepare = true;
-          break;
-        }
-      }
-
       if (!isDyn) {
         if (host_tensors_[tensor_position] != input_tensor->shape() || input_tensor->shape().empty()) {
           isDyn = true;
@@ -1055,10 +1009,6 @@ void DataPrepareActor::PrepareDataForHostTensorQueueNew(const VectorRef &args, O
       if (origin_to_backend_pair.first.first != origin_to_backend_pair.second.first) {
         UpdateDeviceAddressForDataNode(origin_to_backend_pair.second.first, input_tensor);
       }
-    }
-    if (early_stop_prepare) {
-      MS_LOG(DEBUG) << "Early stop prepare in index:" << i << " parameter:" << origin_parameter->DebugString();
-      break;
     }
   }
 

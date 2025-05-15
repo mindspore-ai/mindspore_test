@@ -15,9 +15,6 @@
  */
 
 #include "runtime/graph_scheduler/actor/data_source_actor.h"
-
-#include <set>
-
 #include "runtime/graph_scheduler/actor/kernel_actor.h"
 #include "runtime/graph_scheduler/actor/memory_manager_actor.h"
 #include "runtime/graph_scheduler/actor/output_actor.h"
@@ -46,9 +43,15 @@ void DataSourceActor::FetchData(OpContext<KernelTensor> *const context) {
   MS_LOG(INFO) << "Data source actor(" << GetAID().Name() << ") fetches data.";
   MS_EXCEPTION_IF_NULL(context);
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, GetAID().Name(), GetAID().Name(), "");
-
+  // Pop the data of last time.
+  if (!buffers_.empty()) {
+    buffers_.pop();
+  }
   // Construct device tensors and fill to the buffers from member nodes.
-  FillDataBuffer(context);
+  FillDataBuffer();
+  if (buffers_.size() == 0) {
+    SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "The data queue is empty.");
+  }
 
   // Allocate memory for device tensors.
   SendMemoryAllocReq(context);
@@ -61,199 +64,57 @@ void DataSourceActor::UpdateOutputData(OpData<KernelTensor> *const output_data, 
   MS_EXCEPTION_IF_NULL(output_node);
   MS_EXCEPTION_IF_NULL(context);
 
+  if (buffers_.size() == 0) {
+    SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "The data queue is empty.");
+  }
+  const auto &output_kernel_tensors = buffers_.front();
+
   auto position = FetchNodePosition({output_node, data_arrow->from_output_index_});
   // Host data souruce actor uses the node position, device data source actor uses the output index.
   auto output_position = (position != 0) ? position : IntToSize(data_arrow->from_output_index_);
-  if (output_position >= kernel_tensors_.size()) {
+  if (output_position >= output_kernel_tensors.size()) {
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "The output index is of range.");
   }
-  output_data->data_ = kernel_tensors_[output_position];
+  output_data->data_ = output_kernel_tensors[output_position];
 }
 
-void DeviceQueueDataSourceActor::Init() {
-  // Check device contexts number.
-  if (device_contexts_.size() != device::kDeviceContextsNumOne) {
-    MS_LOG(EXCEPTION) << "The device contexts number is wrong.";
-  }
+void DeviceQueueDataSourceActor::Init() {}
 
-  InitOutputData();
+void DeviceQueueDataSourceActor::FillDataBuffer() {}
 
-  // Init kernel launch info.
-  MS_EXCEPTION_IF_NULL(kernel_info_);
-  const auto &output_kernel_tensors = kernel_info_->output_kernel_tensor_list();
-  for (size_t i = 0; i < output_kernel_tensors.size(); ++i) {
-    (void)output_kernel_tensors_.emplace_back(output_kernel_tensors[i].get());
-    if (recorder_aid_ != nullptr || debug_aid_ != nullptr) {
-      mem_info_.outputs_.emplace_back(std::make_shared<Address>());
-    }
-  }
+void DeviceQueueDataSourceActor::SendMemoryAllocReq(OpContext<KernelTensor> *const context) {}
 
-  is_dynamic_shape_ = common::AnfAlgo::IsDynamicShape(data_kernel_);
-  stream_ = device_contexts_[0]->device_res_manager_->GetStream(kernel_info_->stream_id());
-}
+void DeviceQueueDataSourceActor::SendMemoryFreeReq(OpContext<KernelTensor> *const context) {}
 
-void DeviceQueueDataSourceActor::FillDataBuffer(OpContext<KernelTensor> *const context) {
-  MS_EXCEPTION_IF_NULL(kernel_info_);
-  if (is_dynamic_shape_) {
-    // For GetNext dynamic case, the Resize method finish update output shape and output size in kernel tensor via data
-    // item from MindData, need not do infer shape first.
-    const auto &kernel_mod = kernel_info_->MutableKernelMod();
-    MS_EXCEPTION_IF_NULL(kernel_mod);
-    int ret = kernel_mod->Resize({}, output_kernel_tensors_);
-    if (ret != kernel::KRET_OK) {
-      MS_LOG_WITH_NODE(EXCEPTION, data_kernel_) << "Resize failed for kernel: " << data_kernel_->fullname_with_scope();
-    }
-  }
+void DeviceQueueDataSourceActor::OnMemoryAllocFinish(OpContext<KernelTensor> *const context) {}
+void DeviceQueueDataSourceActor::SendDebugReq(OpContext<KernelTensor> *const context) {}
 
-  kernel_tensors_.clear();
-  for (auto &kernel_tensor : kernel_info_->output_kernel_tensor_list()) {
-    MS_EXCEPTION_IF_NULL(kernel_tensor);
-    (void)kernel_tensors_.emplace_back(kernel_tensor);
-  }
-}
+void DeviceQueueDataSourceActor::SendRecorderInfo(OpContext<KernelTensor> *const context) const {}
 
-void DeviceQueueDataSourceActor::SendMemoryAllocReq(OpContext<KernelTensor> *const context) {
-  if (ActorDispatcher::is_memory_allocation_sync()) {
-    ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::AllocateMemory, &kernel_tensors_,
-                              device_contexts_[0], context, GetAID());
-    OnMemoryAllocFinish(context);
-  } else {
-    ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::AllocateMemory, &kernel_tensors_,
-                          device_contexts_[0], context, GetAID());
-  }
-}
-
-void DeviceQueueDataSourceActor::SendMemoryFreeReq(OpContext<KernelTensor> *const context) {
-  if (device_contexts_.empty()) {
-    SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Empty device contexts in device data source actor.");
-  }
-  if (ActorDispatcher::is_memory_free_sync()) {
-    ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::FreeMemory, &kernel_tensors_,
-                              device_contexts_[0], context, GetAID());
-  } else {
-    ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::FreeMemory, &kernel_tensors_, device_contexts_[0],
-                          context, GetAID());
-  }
-}
-
-void DeviceQueueDataSourceActor::OnMemoryAllocFinish(OpContext<KernelTensor> *const context) {
-  MS_EXCEPTION_IF_NULL(context);
-  MS_EXCEPTION_IF_NULL(data_kernel_);
-  MS_EXCEPTION_IF_CHECK_FAIL((!device_contexts_.empty()), "The device context doesn't exist.");
-  MS_EXCEPTION_IF_NULL(device_contexts_[0]);
-  if (IsRunningFailed(context)) {
-    return;
-  }
-
-  if (output_kernel_tensors_.size() != kernel_tensors_.size()) {
-    SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "The outputs number is not equal to the device tensors number.");
-  }
-  for (size_t i = 0; i < kernel_tensors_.size(); ++i) {
-    MS_EXCEPTION_IF_NULL(output_kernel_tensors_[i]);
-    MS_EXCEPTION_IF_NULL(kernel_tensors_[i]);
-    auto device_tensor = kernel_tensors_[i]->device_address();
-    MS_EXCEPTION_IF_NULL(device_tensor);
-    output_kernel_tensors_[i]->set_device_ptr(device_tensor->GetMutablePtr());
-    output_kernel_tensors_[i]->set_size(device_tensor->GetSize());
-    if (recorder_aid_ != nullptr || debug_aid_ != nullptr) {
-      mem_info_.outputs_[i]->addr = device_tensor->GetMutablePtr();
-      mem_info_.outputs_[i]->size = device_tensor->GetSize();
-    }
-  }
-
-  if (debug_aid_ != nullptr) {
-    ActorDispatcher::SendSync(*debug_aid_, &DebugActor::DebugPreLaunch, data_kernel_, std::vector<KernelTensorPtr>(),
-                              kernel_tensors_, device_contexts_[0], context, &GetAID());
-  }
-
-  // Copy data from device queue by data kernel launching.
-  MS_EXCEPTION_IF_NULL(kernel_info_);
-  try {
-    uint64_t start_time = 0;
-    PROFILER_START(start_time);
-    auto kernel_mod = AnfAlgo::GetKernelMod(data_kernel_);
-    auto ret = device_contexts_[0]->GetKernelExecutor(false)->LaunchKernel(data_kernel_, {}, {}, output_kernel_tensors_,
-                                                                           kernel_mod, stream_);
-    PROFILER_END(start_time, ProfilerModule::kKernel, ProfilerEvent::kKernelLaunch, GetAID().Name(), false);
-    if (!ret) {
-      std::string error_info = "Launch kernel failed: " + data_kernel_->fullname_with_scope();
-      SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
-    }
-  } catch (const std::exception &e) {
-    MsException::Instance().SetException();
-    std::string error_info = "Launch kernel exception: " + data_kernel_->fullname_with_scope();
-    SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
-  }
-
-  // Debug actor is blocked, must wait debug actor callback message to process continue.
-  if (debug_aid_ != nullptr) {
-    SendDebugReq(context);
-    return;
-  }
-
-  PostRun(context);
-}
-
-void DeviceQueueDataSourceActor::SendDebugReq(OpContext<KernelTensor> *const context) {
-  ActorDispatcher::SendSync(*debug_aid_, &DebugActor::DebugPostLaunch, data_kernel_, std::vector<KernelTensorPtr>(),
-                            kernel_tensors_, device_contexts_[0], context, &GetAID());
-  OnDebugFinish(context);
-}
-
-void DeviceQueueDataSourceActor::SendRecorderInfo(OpContext<KernelTensor> *const context) const {
-  if (recorder_aid_ != nullptr && (!device_contexts_.empty())) {
-    MS_EXCEPTION_IF_NULL(data_kernel_);
-    ActorDispatcher::Send(*recorder_aid_, &RecorderActor::RecordInfo, data_kernel_->fullname_with_scope(), &mem_info_,
-                          device_contexts_[0], context);
-  }
-}
-
-void DeviceQueueDataSourceActor::IncreaseNewRefCounts(OpContext<KernelTensor> *const context) {
-  for (const auto &data_arrow : output_data_arrows_) {
-    MS_EXCEPTION_IF_NULL(data_arrow);
-    size_t position = IntToSize(data_arrow->from_output_index_);
-    if (position >= kernel_tensors_.size()) {
-      SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Invalid output index:" + std::to_string(position) +
-                                                      " total size:" + std::to_string(kernel_tensors_.size()) +
-                                                      " for device queue data source actor.");
-    }
-    MS_EXCEPTION_IF_NULL(kernel_tensors_[position]);
-    auto kernel_tensor = kernel_tensors_[data_arrow->from_output_index_];
-    MS_EXCEPTION_IF_NULL(kernel_tensor);
-    auto device_tensor = kernel_tensor->device_address();
-    MS_EXCEPTION_IF_NULL(device_tensor);
-    device_tensor->IncreaseNewRefCount(GetAID().Name());
-    MS_LOG(DEBUG) << "Increase new ref count for device address:" << device_tensor->PrintInfo()
-                  << " in actor:" << GetAID();
-  }
-}
+void DeviceQueueDataSourceActor::IncreaseNewRefCounts(OpContext<KernelTensor> *const context) {}
 void HostQueueDataSourceActor::IncreaseNewRefCounts(OpContext<KernelTensor> *const context) {
-  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kRuntime, runtime::ProfilerEvent::kOutputProcess,
-                                     "DataSourceActorIncreaseRefCount");
-  if (output_data_arrows_.size() != output_data_nodes_.size() ||
-      need_refresh_device_address_.size() != output_data_arrows_.size()) {
+  if (buffers_.size() == 0) {
+    SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "The device data source actor data queue is empty.");
+  }
+  const auto &output_kernel_tensors = buffers_.front();
+  if (output_data_arrows_.size() != output_data_nodes_.size()) {
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR(
-      (*context), "Invalid data arrow size:" + std::to_string(output_data_arrows_.size()) +
-                    " and data node size:" + std::to_string(output_data_nodes_.size()) +
-                    " and need refresh flag size:" + std::to_string(need_refresh_device_address_.size()) +
-                    " for host queue data source actor.");
+      (*context), "Invalid data arrow size:" + std::to_string(output_data_arrows_.size()) + " and data node size:" +
+                    std::to_string(output_data_nodes_.size()) + " for host queue data source actor.");
   }
   for (size_t i = 0; i < output_data_arrows_.size(); ++i) {
-    if (!need_refresh_device_address_[i]) {
-      continue;
-    }
     auto &data_arrow = output_data_arrows_[i];
     auto output_node = output_data_nodes_[i];
     MS_EXCEPTION_IF_NULL(data_arrow);
     MS_EXCEPTION_IF_NULL(output_node);
     auto position = FetchNodePosition({output_node, data_arrow->from_output_index_});
-    if (position >= kernel_tensors_.size()) {
+    if (position >= output_kernel_tensors.size()) {
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Invalid output index:" + std::to_string(position) +
-                                                      " total size:" + std::to_string(kernel_tensors_.size()) +
+                                                      " total size:" + std::to_string(output_kernel_tensors.size()) +
                                                       " for device queue data source actor.");
     }
-    MS_EXCEPTION_IF_NULL(kernel_tensors_[position]);
-    auto device_tensor = kernel_tensors_[position]->device_address();
+    MS_EXCEPTION_IF_NULL(output_kernel_tensors[position]);
+    auto device_tensor = output_kernel_tensors[position]->device_address();
     MS_EXCEPTION_IF_NULL(device_tensor);
     device_tensor->IncreaseNewRefCount(GetAID().Name());
     MS_LOG(DEBUG) << "Increase new ref count for device address:" << device_tensor->PrintInfo()
@@ -261,68 +122,51 @@ void HostQueueDataSourceActor::IncreaseNewRefCounts(OpContext<KernelTensor> *con
   }
 }
 
-void HostQueueDataSourceActor::FillDataBuffer(OpContext<KernelTensor> *const context) {
-  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kRuntime, runtime::ProfilerEvent::kOutputProcess,
-                                     "DataSourceActorFillDataBuffer");
+void HostQueueDataSourceActor::FillDataBuffer() {
   // Construct device tensors.
-  if (kernel_tensors_.size() != data_node_with_indexs_.size()) {
-    std::stringstream ofs;
-    ofs << "Invalid device tensor size:" << kernel_tensors_.size()
-        << " and data node size:" << data_node_with_indexs_.size() << " for actor:" << GetAID();
-    SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), ofs.str());
-  }
-  auto update_device_tensor = [this](const KernelWithIndex &node_with_index, size_t index) {
+  std::vector<KernelTensorPtr> kernel_tensors;
+  for (auto &node_with_index : data_node_with_indexs_) {
     auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(node_with_index.first, node_with_index.second, false);
     MS_EXCEPTION_IF_NULL(kernel_tensor);
     MS_LOG(DEBUG) << "Node:" << node_with_index.first->DebugString() << " index:" << node_with_index.second
                   << " device address:" << kernel_tensor->PrintInfo();
-    kernel_tensors_[index] = kernel_tensor;
-  };
-  if (is_shape_match_) {
-    MS_LOG(DEBUG) << "Fill data in shape match mode, refreash index:" << need_refresh_input_index_
-                  << " for actor:" << GetAID();
-    std::for_each(
-      need_refresh_input_index_.begin(), need_refresh_input_index_.end(),
-      [update_device_tensor, this](size_t index) { update_device_tensor(data_node_with_indexs_[index], index); });
-    is_shape_match_ = false;
-  } else {
-    for (size_t i = 0; i < data_node_with_indexs_.size(); ++i) {
-      update_device_tensor(data_node_with_indexs_[i], i);
-    }
+    kernel_tensors.emplace_back(kernel_tensor);
   }
 
   for (const auto &pair : heter_index_pair_) {
-    if (pair.first >= kernel_tensors_.size() || pair.second >= kernel_tensors_.size()) {
+    if (pair.first >= kernel_tensors.size() || pair.second >= kernel_tensors.size()) {
       MS_LOG(EXCEPTION) << "Invalid index:" << pair.first << " " << pair.second
-                        << " device tensor size:" << kernel_tensors_.size() << " for data source actor.";
+                        << " device tensor size:" << kernel_tensors.size() << " for data source actor.";
     }
-    MS_LOG(DEBUG) << "Add device tensor copy store for device address:" << kernel_tensors_[pair.second]
-                  << " type:" << kernel_tensors_[pair.second]->GetDeviceType() << " and " << kernel_tensors_[pair.first]
-                  << " type:" << kernel_tensors_[pair.first]->GetDeviceType() << " for actor:" << GetAID();
-    DeviceTensorCopyStore::GetInstance().Insert(kernel_tensors_[pair.second]->device_address().get(),
-                                                kernel_tensors_[pair.first]->device_address().get());
+    MS_LOG(DEBUG) << "Add device tensor copy store for device address:" << kernel_tensors[pair.second]
+                  << " type:" << kernel_tensors[pair.second]->GetDeviceType() << " and " << kernel_tensors[pair.first]
+                  << " type:" << kernel_tensors[pair.first]->GetDeviceType() << " for actor:" << GetAID();
+    DeviceTensorCopyStore::GetInstance().Insert(kernel_tensors[pair.second]->device_address().get(),
+                                                kernel_tensors[pair.first]->device_address().get());
   }
+  buffers_.push(kernel_tensors);
 }
 
 void HostQueueDataSourceActor::SendMemoryAllocReq(OpContext<KernelTensor> *const context) {
   if (device_contexts_.empty()) {
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Empty device contexts in device data source actor.");
   }
+  auto kernel_tensors = buffers_.back();
   if (ActorDispatcher::is_memory_allocation_sync()) {
     if (IsSameDeviceType()) {
-      ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::AllocateMemory, &kernel_tensors_,
+      ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::AllocateMemory, &kernel_tensors,
                                 device_contexts_[0], context, GetAID());
     } else {
-      ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::AllocateBatchMemory, &kernel_tensors_,
+      ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::AllocateBatchMemory, &kernel_tensors,
                                 &device_contexts_, context, GetAID());
     }
     OnMemoryAllocFinish(context);
   } else {
     if (IsSameDeviceType()) {
-      ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::AllocateMemory, &kernel_tensors_,
+      ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::AllocateMemory, &kernel_tensors,
                             device_contexts_[0], context, GetAID());
     } else {
-      ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::AllocateBatchMemory, &kernel_tensors_,
+      ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::AllocateBatchMemory, &kernel_tensors,
                             &device_contexts_, context, GetAID());
     }
   }
@@ -332,20 +176,21 @@ void HostQueueDataSourceActor::SendMemoryFreeReq(OpContext<KernelTensor> *const 
   if (device_contexts_.empty()) {
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Empty device contexts in device data source actor.");
   }
+  auto &kernel_tensors = buffers_.front();
   if (ActorDispatcher::is_memory_free_sync()) {
     if (IsSameDeviceType()) {
-      ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::FreeMemory, &kernel_tensors_,
+      ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::FreeMemory, &kernel_tensors,
                                 device_contexts_[0], context, GetAID());
     } else {
-      ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::FreeBatchMemory, &kernel_tensors_,
+      ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::FreeBatchMemory, &kernel_tensors,
                                 &device_contexts_, context, GetAID());
     }
   } else {
     if (IsSameDeviceType()) {
-      ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::FreeMemory, &kernel_tensors_, device_contexts_[0],
+      ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::FreeMemory, &kernel_tensors, device_contexts_[0],
                             context, GetAID());
     } else {
-      ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::FreeBatchMemory, &kernel_tensors_,
+      ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::FreeBatchMemory, &kernel_tensors,
                             &device_contexts_, context, GetAID());
     }
   }
@@ -375,12 +220,6 @@ void HostQueueDataSourceActor::AddCopyDataCallBack(
   }
 }
 
-namespace {
-bool IsEmptyTuple(const tensor::TensorPtr &host_tensor, device::DeviceAddress *const device_tensor) {
-  return host_tensor->data_ptr() == nullptr && device_tensor->GetSize() == 0;
-}
-}  // namespace
-
 void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<KernelTensor> *const context) {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
@@ -388,14 +227,17 @@ void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<KernelTensor> *cons
   if (IsRunningFailed(context)) {
     return;
   }
-
+  if (buffers_.size() == 0) {
+    SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "The data queue is empty.");
+  }
   // Get host tensors from host queue and get device tensors from buffers.
   MS_EXCEPTION_IF_NULL(host_queue_);
   if (host_queue_->IsEmpty()) {
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Host data queue is empty.");
   }
   auto &host_tensors = host_queue_->Pull();
-  if (host_tensors.size() != kernel_tensors_.size()) {
+  auto &kernel_tensors = buffers_.back();
+  if (host_tensors.size() != kernel_tensors.size()) {
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context),
                                       "The length of host tensors is not equal to the length of kernel tensors.");
   }
@@ -410,12 +252,9 @@ void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<KernelTensor> *cons
   try {
     for (size_t i = 0; i < host_tensors.size(); ++i) {
       auto &host_tensor = host_tensors[i];
-      auto &kernel_tensor = kernel_tensors_[i];
+      auto &kernel_tensor = kernel_tensors[i];
       MS_EXCEPTION_IF_NULL(kernel_tensor);
       auto device_tensor = kernel_tensor->device_address().get();
-      if (host_tensor == nullptr && enable_infer_boost) {
-        continue;
-      }
       MS_EXCEPTION_IF_NULL(device_tensor);
       MS_EXCEPTION_IF_NULL(host_tensor);
       // No used device address need skip.
@@ -436,7 +275,7 @@ void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<KernelTensor> *cons
         }
         continue;
       }
-      if (IsEmptyTuple(host_tensor, device_tensor)) {
+      if (host_tensor->data_ptr() == nullptr && device_tensor->GetSize() == 0) {
         MS_LOG(INFO) << "Empty tuple sync";
         continue;
       }
@@ -461,7 +300,7 @@ void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<KernelTensor> *cons
         device_tensor->set_host_shape(host_tensor->shape());
       }
     }
-    AddCopyDataCallBack(enable_async_copy, host_tensors, kernel_tensors_);
+    AddCopyDataCallBack(enable_async_copy, host_tensors, kernel_tensors);
   } catch (const std::exception &e) {
     MsException::Instance().SetException();
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Host data source actor run exception.");
@@ -497,52 +336,6 @@ bool HostQueueDataSourceActor::IsSameDeviceType() const {
   return true;
 }
 
-void HostQueueDataSourceActor::Init() {
-  DataSourceActor::Init();
-  kernel_tensors_.resize(data_node_with_indexs_.size());
-  need_refresh_device_address_.resize(output_data_nodes_.size(), true);
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  static const bool enable_infer_boost = ms_context->IsEnableInferBoost();
-  if (!enable_infer_boost) {
-    need_refresh_input_index_.resize(data_node_with_indexs_.size());
-    std::iota(need_refresh_input_index_.begin(), need_refresh_input_index_.end(), 0);
-    return;
-  }
-
-  std::set<KernelWithIndex> kv_cache_parameters;
-  for (size_t i = 0; i < data_node_with_indexs_.size(); ++i) {
-    MS_EXCEPTION_IF_NULL(data_node_with_indexs_[i].first);
-    const auto &graph = data_node_with_indexs_[i].first->func_graph();
-    const auto &kernel_graph = dynamic_cast<KernelGraph *>(graph.get());
-    if (kernel_graph == nullptr) {
-      need_refresh_input_index_.emplace_back(i);
-      continue;
-    }
-    const auto &front_node_with_index = GetFrontNodeByKernelGraph(data_node_with_indexs_[i].first, kernel_graph);
-    if (front_node_with_index.first != nullptr &&
-        front_node_with_index.first->fullname_with_scope().find("key_cache") == std::string::npos &&
-        front_node_with_index.first->fullname_with_scope().find("value_cache") == std::string::npos) {
-      need_refresh_input_index_.emplace_back(i);
-      continue;
-    }
-    kv_cache_parameters.emplace(data_node_with_indexs_[i]);
-  }
-  if (output_data_nodes_.size() != output_data_arrows_.size()) {
-    MS_LOG(EXCEPTION) << "Invalid output data node size:" << output_data_nodes_.size()
-                      << " and output data arrow size:" << output_data_arrows_.size() << " for actor:" << GetAID();
-  }
-  for (size_t i = 0; i < output_data_nodes_.size(); ++i) {
-    MS_EXCEPTION_IF_NULL(output_data_arrows_[i]);
-    if (kv_cache_parameters.find({output_data_nodes_[i], output_data_arrows_[i]->from_output_index_}) !=
-        kv_cache_parameters.end()) {
-      need_refresh_device_address_[i] = false;
-    }
-  }
-  MS_LOG(DEBUG) << "Need refresh input index:" << need_refresh_input_index_
-                << " and need update device tensor flag:" << need_refresh_device_address_ << " for actor:" << GetAID();
-}
-
 void HostQueueDataSourceActor::ReleaseData() {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kRuntime, runtime::ProfilerEvent::kOutputProcess,
                                      "DataSourceActorReleaseData");
@@ -551,8 +344,7 @@ void HostQueueDataSourceActor::ReleaseData() {
   host_queue_->Pop();
 
   // The step end need release data node address.
-  for (size_t i : need_refresh_input_index_) {
-    const auto &data_node_with_index = data_node_with_indexs_[i];
+  for (auto &data_node_with_index : data_node_with_indexs_) {
     if (!AnfAlgo::OutputAddrExist(data_node_with_index.first, data_node_with_index.second)) {
       continue;
     }
