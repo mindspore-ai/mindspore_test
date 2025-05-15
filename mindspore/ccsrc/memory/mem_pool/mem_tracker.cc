@@ -41,6 +41,10 @@ bool IsPyNative() {
   // PythonStack is no need in graph mode.
   return is_pynative;
 }
+
+constexpr int64_t kUserTaskNumThreshold = 1e6;
+constexpr size_t kLogThreshold = 10;
+constexpr size_t kLogPersentage = 100;
 }  // namespace
 
 std::tuple<std::string, std::string, std::string> MemoryTrackerEnabled::GetPath(size_t rank_id) {
@@ -457,6 +461,10 @@ const std::vector<std::pair<std::string, std::function<void(const MemBlockInfoPt
    }},
   {"user_tasks",
    [](const MemBlockInfoPtr &mem_block, std::ofstream &oss) {
+     static bool is_simple_tracker = common::IsEnableAllocConfig(common::kAllocSimpleTracker);
+     if (is_simple_tracker) {
+        return;
+     }
      auto mem_info = mem_block->mem_info.lock();
      if (mem_info) {
        oss << task_list_to_str(mem_info->user_tasks);
@@ -514,7 +522,24 @@ void MemoryTrackerEnabled::Dump(size_t rank_id) {
     return;
   }
 
-  MS_LOG(WARNING) << "MemoryTracker Dump start";
+  int64_t user_task_num = 0;
+  for (auto &mem_block : mem_block_list_) {
+    MS_EXCEPTION_IF_NULL(mem_block);
+    if (mem_block->pool_name == "CPU") {
+      continue;
+    }
+    auto mem_info = mem_block->mem_info.lock();
+    if (mem_info) {
+      user_task_num += mem_info->user_tasks.size();
+    }
+  }
+  if (user_task_num >= kUserTaskNumThreshold && !common::IsEnableAllocConfig(common::kAllocSimpleTracker)) {
+    MS_LOG(WARNING)
+      << "The number of user tasks is too large: " << user_task_num
+      << ", the speed of dump will be slow, please set MS_ALLOC_CONF=\"simple_tracker:True\" to speed up the dump";
+  }
+  MS_LOG(WARNING) << "MemoryTracker Dump start, task num: " << task_list_.size()
+                  << ", mem block num: " << mem_block_list_.size() << ", user task num: " << user_task_num;
   MS_LOG(WARNING) << "block csv path: " << block_csv_path;
   MS_LOG(WARNING) << "task csv path: " << task_csv_path;
   graph::GraphTracker::getInstance().Dump(graph_path);
@@ -528,7 +553,10 @@ void MemoryTrackerEnabled::Dump(size_t rank_id) {
     block_file << csv.first << ",";
   }
   block_file << "\n";
+  size_t log_threshold = mem_block_list_.size() / kLogThreshold;
+  size_t i = 0;
   for (auto &mem_block : mem_block_list_) {
+    i++;
     if (mem_block->pool_name == "CPU") {
       continue;
     }
@@ -540,6 +568,12 @@ void MemoryTrackerEnabled::Dump(size_t rank_id) {
       not_bind_size += mem_block->size;
     }
     block_file << "\n";
+    // print log
+    if (i > log_threshold) {
+      MS_LOG(WARNING) << "MemoryTracker MemBlock Dump progress: " << (i + 1) * kLogPersentage / mem_block_list_.size()
+                      << "%";
+      log_threshold += mem_block_list_.size() / kLogThreshold;
+    }
   }
 
   std::ofstream task_file(task_csv_path);
@@ -550,12 +584,20 @@ void MemoryTrackerEnabled::Dump(size_t rank_id) {
     task_file << csv.first << ",";
   }
   task_file << "\n";
+  log_threshold = task_list_.size() / kLogThreshold;
+  i = 0;
   for (auto &task : task_list_) {
+    i++;
     for (const auto &csv : task_csv) {
       csv.second(task, task_file);
       task_file << ",";
     }
     task_file << "\n";
+    // print log
+    if (i > log_threshold) {
+      MS_LOG(WARNING) << "MemoryTracker Task Dump progress: " << (i + 1) * kLogPersentage / task_list_.size() << "%";
+      log_threshold += task_list_.size() / kLogThreshold;
+    }
   }
 
   block_file.close();
