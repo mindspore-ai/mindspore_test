@@ -90,8 +90,8 @@ mindspore.ops.Custom
                      Custom(func="{dir_path}/{file_name}:{module_name}:{func_name}",...)
 
                  例如：Custom(func="./add.jl:Add:add", out_shape=[1], out_dtype=mstype.float32, "julia")
-        - **out_shape** (Union[function, list, tuple]) - 自定义算子的输入的形状或者输出形状的推导函数。默认值： ``None`` 。
-        - **out_dtype** (Union[function, :class:`mindspore.dtype`, tuple[:class:`mindspore.dtype`]]) - 自定义算子的输入的数据类型或者输出数据类型的推导函数。默认值： ``None`` 。
+        - **out_shape** (Union[function, list, tuple]) - 自定义算子的输出的形状或者输出形状的推导函数。默认值： ``None`` 。
+        - **out_dtype** (Union[function, :class:`mindspore.dtype`, tuple[:class:`mindspore.dtype`]]) - 自定义算子的输出的数据类型或者输出数据类型的推导函数。默认值： ``None`` 。
         - **func_type** (str) - 自定义算子的函数类型，必须是[ ``"aot"`` , ``"pyfunc"`` , ``"julia"``]中之一。
         - **bprop** (function) - 自定义算子的反向函数。默认值： ``None``。
         - **reg_info** (Union[str, dict, list, tuple]) - 自定义算子的算子注册信息。默认值： ``None`` 。
