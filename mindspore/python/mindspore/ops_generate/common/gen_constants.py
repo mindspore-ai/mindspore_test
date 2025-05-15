@@ -61,7 +61,7 @@ RETURN_KEYS = {'dtype', 'inplace', 'type_cast'}
 ARG_SIGNATURE_KEYS = {'rw_write', 'rw_read', 'rw_ref', 'dtype_group'}
 CLASS_KEYS = {'name', 'disable'}
 FUNCTION_KEYS = {'name', 'disable'}
-DISPATCH_KEYS = {'enable', 'is_comm_op', 'Ascend', 'GPU', 'CPU'}
+DISPATCH_KEYS = {'enable', 'is_comm_op', 'Ascend', 'ascend_kernel', 'GPU', 'CPU'}
 TENSOR_FUNC_KEYS = {'op_yaml', 'py_method', 'kwonlyargs',
                     'varargs', 'alias', 'Ascend', 'GPU', 'CPU', 'interface'}
 
@@ -89,3 +89,8 @@ MS_OPS_KERNEL_PATH = "mindspore/ops/kernel"
 MS_PYBOOST_FUNCTIONS_AUTO_GEN_PATH = "mindspore/ccsrc/pyboost/functions/auto_generate"
 MS_COMMON_PYBOOST_KERNEL_PATH = os.path.join(MS_OPS_KERNEL_PATH, "common/pyboost")
 MS_PYBOOST_BASE_PATH = "mindspore/ccsrc/pyboost"
+MS_PYBOOST_INTERNAL_FUNCTIONS_AUTO_GEN_PATH = os.path.join(MS_OPS_KERNEL_PATH,
+                                                           "ascend/pyboost/internal/functions")
+MS_INTERNAL_PYBOOST_GEN_PATH = "mindspore/ccsrc/plugin/device/ascend/kernel/internal/pyboost/auto_gen"
+MS_PLUGIN_INTERNAL_PATH = "mindspore/ccsrc/plugin/device/ascend/kernel/internal"
+MS_OPS_PYBOOST_INTERNAL = "mindspore/ops/kernel/ascend/pyboost/internal"

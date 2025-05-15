@@ -21,6 +21,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <set>
 #include "include/common/utils/tensor_future.h"
 #include "runtime/pynative/op_executor.h"
 #include "mindspore/ops/view/view_strides_calculator.h"
@@ -78,6 +79,17 @@ class PYBOOST_API PyBoostUtils {
     runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kPyBoostMallocInput,
                                        runtime::ProfilerRecorder::kNoName, false);
     (runtime::DeviceAddressUtils::MallocForInput(device_context, args, false), ...);
+  }
+
+  static void MallocInternalOpInputs(const DeviceContext *device_context,
+                                     const std::vector<tensor::BaseTensorPtr> &tensors) {
+    runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kPyBoostMallocInput,
+                                       runtime::ProfilerRecorder::kNoName, false);
+    for (const auto &tensor : tensors) {
+      if (tensor != nullptr) {
+        runtime::DeviceAddressUtils::MallocForInput(device_context, tensor, false);
+      }
+    }
   }
 
   template <typename... T>
@@ -196,6 +208,37 @@ class PYBOOST_API PyBoostUtils {
   // Check kernel mod is reg
   static bool IsKernelModRegistered(const std::string &device_name, const std::string &op_name);
   static bool IsPyBoostCustomRegistered(const std::string &device_name, const std::string &op_name);
+
+  // Check if enable internal kernel
+  static bool IsEnableInternalKernel(const std::string &name) {
+    static bool is_set;
+    static bool is_enable;
+    static std::set<std::string> disable_kernel_list;
+
+    if (is_set) {
+      if (!is_enable) {
+        return false;
+      }
+      bool disable_internal_kernel =
+        std::find(disable_kernel_list.begin(), disable_kernel_list.end(), name) != disable_kernel_list.end();
+      return !disable_internal_kernel;
+    }
+
+    auto ms_context = MsContext::GetInstance();
+    auto enable_infer_boost = ms_context->IsEnableInferBoost();
+    auto enable_internal_kernel = common::GetEnv("MS_ENABLE_INTERNAL_KERNELS");
+    is_enable = enable_infer_boost && (enable_internal_kernel != "off");
+
+    std::string env = common::GetEnv("MS_DISABLE_INTERNAL_KERNELS_LIST");
+    if (!env.empty()) {
+      common::SplitString(env, ',', &disable_kernel_list);
+    }
+    bool disable_internal_kernel =
+      std::find(disable_kernel_list.begin(), disable_kernel_list.end(), name) != disable_kernel_list.end();
+
+    is_set = true;
+    return is_enable && !disable_internal_kernel;
+  }
 
   static kernel::KernelModPtr CreateKernelMod(const PrimitivePtr &prim, const DeviceContext *device_context,
                                               const std::vector<KernelTensor *> &inputs,
