@@ -54,7 +54,7 @@ from mindspore.ops.auto_generate import (reflection_pad_1d_op, reflection_pad_2d
                                          upsample_linear1d_op, upsample_bilinear2d_op, upsample_bicubic2d_op,
                                          upsample_trilinear3d_impl, fill_scalar_op, floor_op, nllloss_2d_op,
                                          masked_fill_op, masked_select, ones, flatten_ext, conv_transpose2d,
-                                         inner_max_pool2d_op)
+                                         func_max_pool2d_op)
 # 2
 
 # 3
@@ -8909,7 +8909,7 @@ def max_pool2d_ext(input, kernel_size, stride=None, padding=0, dilation=1, ceil_
         >>> print(argmax.shape)
         (20, 16, 24, 31)
     """
-    out, indices = inner_max_pool2d_op(input, kernel_size, stride, padding, dilation, ceil_mode, return_indices)
+    out, indices = func_max_pool2d_op(input, kernel_size, stride, padding, dilation, ceil_mode, return_indices)
     if return_indices:
         return out, indices
     return out

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_CUSTOMIZE_INNER_MAX_POOL2D_H_
-#define MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_CUSTOMIZE_INNER_MAX_POOL2D_H_
+#ifndef MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_CUSTOMIZE_FUNC_MAX_POOL2D_H_
+#define MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_CUSTOMIZE_FUNC_MAX_POOL2D_H_
 
 #include <optional>
 #include <vector>
@@ -28,11 +28,11 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void InnerMaxPool2DAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
-                                   const ValueTuplePtr &kernel_size, const std::optional<ValueTuplePtr> &stride,
-                                   const ValueTuplePtr &padding, const ValueTuplePtr &dilation,
-                                   const BoolImmPtr &ceil_mode, const BoolImmPtr &return_indices);
+void FuncMaxPool2DAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                  const ValueTuplePtr &kernel_size, const std::optional<ValueTuplePtr> &stride,
+                                  const ValueTuplePtr &padding, const ValueTuplePtr &dilation,
+                                  const BoolImmPtr &ceil_mode, const BoolImmPtr &return_indices);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore
-#endif  // MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_CUSTOMIZE_INNER_MAX_POOL2D_H_
+#endif  // MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_CUSTOMIZE_FUNC_MAX_POOL2D_H_
