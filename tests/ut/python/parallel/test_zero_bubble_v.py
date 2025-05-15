@@ -424,6 +424,7 @@ def test_zero_bubble_v_new_api():
         shell=True)
     log_cnt = str(log_output, 'utf-8').strip()
     assert "zero_bubble_v_control" in log_cnt
-    os.remove("./speed_up.json")
+    if os.path.exists("./speed_up.json"):
+        os.remove("./speed_up.json")
     shutil.rmtree("./zbv_graph")
     del os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"]
