@@ -26,7 +26,7 @@
 #include "ir/anf.h"
 #include "ir/meta_grad_data.h"
 #include "ir/tensor.h"
-#include "include/common/utils/hook.h"
+#include "pynative/grad/hook_py.h"
 
 namespace mindspore {
 namespace session {
@@ -215,14 +215,16 @@ class COMMON_EXPORT BackwardNode : public std::enable_shared_from_this<BackwardN
   /// \return Real gradients after postprocess, the size is same as next edges size.
   virtual ValuePtrList PostProcess(const ValuePtrList &gradient_value);
 
-  /// \brief Add tensor hook.
+  /// \brief Add python tensor hook.
   /// \param id
   /// \param hook
-  void AddBackwardHook(uint64_t id, TensorBackwardHookPtr hook) { (void)backward_hooks_.emplace(id, std::move(hook)); }
+  void AddPyTensorHook(uint64_t id, std::unique_ptr<PyTensorBackwardNodePreHook> &&hook) {
+    py_tensor_pre_hooks_[id] = std::move(hook);
+  }
 
-  ///
+  /// \brief Remove python tensor hook.
   /// \param id
-  void RemoveBackwardHook(uint64_t id) { (void)backward_hooks_.erase(id); }
+  void RemovePyTensorHook(uint64_t id) { py_tensor_pre_hooks_.erase(id); }
 
   /// check next edges is all not defined.
   /// \return true
@@ -263,7 +265,9 @@ class COMMON_EXPORT BackwardNode : public std::enable_shared_from_this<BackwardN
   /// \brief Backward hook for backward node.
   ///
   /// \return backward_hooks
-  const std::map<uint64_t, TensorBackwardHookPtr> &backward_hooks() const { return backward_hooks_; }
+  const OrderedMap<uint64_t, std::unique_ptr<PyTensorBackwardNodePreHook>> &py_tensor_pre_hooks() const {
+    return py_tensor_pre_hooks_;
+  }
 
   /// \brief The sequence number of current node.
   ///
@@ -289,7 +293,7 @@ class COMMON_EXPORT BackwardNode : public std::enable_shared_from_this<BackwardN
   std::string name_;
   std::function<void(const std::string &op_name)> check_func_{nullptr};
   // Tensor hooks
-  std::map<uint64_t, TensorBackwardHookPtr> backward_hooks_{};
+  OrderedMap<uint64_t, std::unique_ptr<PyTensorBackwardNodePreHook>> py_tensor_pre_hooks_;
   size_t seq_id_;
   size_t output_size_;
 };

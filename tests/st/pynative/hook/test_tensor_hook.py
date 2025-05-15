@@ -17,7 +17,7 @@ import numpy as np
 
 import mindspore as ms
 import mindspore.nn as nn
-from mindspore import Tensor, Parameter
+from mindspore import Tensor, Parameter, ops
 from tests.st.pynative.utils import GradOfAllParams, GradOfFirstInput
 from tests.mark_utils import arg_mark
 
@@ -317,3 +317,84 @@ def test_tensor_backward_hook_with_weight_not_in_grad():
     not_in_grad = 1
     ms_grad(input_x)
     assert not_in_grad == 3
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_tensor_backward_hook_multi_output():
+    """
+    Feature: Tensor hook
+    Description: test tensor hook for multi output ops
+    Expectation: Success
+    """
+
+    def fn(x):
+        y1, y2 = ops.split(x, 2)
+        y1.register_hook(hook_fn)
+        y2.register_hook(hook_fn_2)
+        return y1 + y2
+
+    input_x = Tensor(np.arange(4).astype("float32"), dtype=ms.float32)
+    grad_op = GradOfFirstInput(fn, sens_param=False)
+    grad = grad_op(input_x)
+    assert np.allclose(grad.asnumpy(), np.array([2.0, 2.0, 3.0, 3.0], dtype=np.float32), 0.001, 0.001)
+
+
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_tensor_backward_hook_inplace():
+    """
+    Feature: Tensor hook
+    Description: test tensor hook for inplace ops
+    Expectation: Success
+    """
+
+    def fn(x):
+        y = x * x
+        y.register_hook(hook_fn)
+        y.add_(2.0)
+        y.register_hook(hook_fn_2)
+        return y + 1.0
+
+    input_x = Tensor([1.0, 2.0], dtype=ms.float32)
+    grad_op = GradOfFirstInput(fn, sens_param=False)
+    grad = grad_op(input_x)
+    assert np.allclose(grad.asnumpy(), np.array([12.0, 24.0], dtype=np.float32), 0.001, 0.001)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_tensor_backward_hook_get_hooks():
+    """
+    Feature: Tensor hook
+    Description: test get tensor hook
+    Expectation: Success
+    """
+
+    def fn(x):
+        y = x * x
+        y.register_hook(hook_fn)
+        z = ops.relu(y)
+        hooks_list = y.hooks()
+        assert len(hooks_list) == 1
+        assert hooks_list[0] is hook_fn
+        return z
+
+    input_x = Tensor([2.0, 3.0])
+    handle = input_x.register_hook(hook_fn)
+    x_hook_list = input_x.hooks()
+    assert len(x_hook_list) == 1
+    assert x_hook_list[0] is hook_fn
+
+    handle.remove()
+    x_hook_list = input_x.hooks()
+    assert not x_hook_list
+
+    grad_op = GradOfFirstInput(fn, sens_param=False)
+    grad_op(input_x)
