@@ -30,6 +30,8 @@ from mindspore.mint.distributed.distributed import (
     get_group_rank,
     all_reduce,
     all_gather_into_tensor,
+    all_gather_into_tensor_uneven,
+    reduce_scatter_tensor_uneven,
     all_to_all,
     all_to_all_single,
     reduce_scatter_tensor,
@@ -338,6 +340,104 @@ def test_hccl_all_gather_into_tensor():
         all_gather_into_tensor(output_tensor, input_tensor)
         _pynative_executor.sync()
 
+def test_hccl_all_gather_into_tensor_uneven():
+    """
+    Feature: test distributed op
+    Description: test comm op in python native
+    Expectation: success
+    """
+    ## 同步场景多维tensor
+    # rank0: [0, 0], rank1: [[1, 1], [1, 1]], rank2: [[2, 2], [2, 2], [2, 2]], rank3: [[3, 3], [3, 3], [3, 3], [3, 3]]...
+    input_tensor = ms.Tensor(np.ones([rank + 1, 2]).astype(np.float32) * rank)
+    total_size = sum([r + 1 for r in range(size)])
+    output_tensor = ms.Tensor(np.zeros([total_size, 2]).astype(np.float32))
+    output_split_sizes = [r + 1 for r in range(size)]
+    expected_output = np.concatenate(
+        [np.ones([r + 1, 2]) * r for r in range(size)], axis=0
+    )
+    output_handle = all_gather_into_tensor_uneven(
+        output_tensor, input_tensor, output_split_sizes=output_split_sizes
+    )
+    assert output_handle is None
+    assert np.allclose(output_tensor.asnumpy(), expected_output)
+    # # 同步场景一维tensor
+    # # rank0: [0], rank1: [1, 1], rank2: [2, 2, 2], rank3: [3, 3, 3, 3] ...
+    input_tensor = ms.Tensor(np.ones([rank + 1]).astype(np.float32) * rank)
+
+    total_size = sum([r + 1 for r in range(size)])
+    output_tensor = ms.Tensor(np.zeros([total_size]).astype(np.float32))
+    output_split_sizes = [r + 1 for r in range(size)]
+    expected_output = np.concatenate([np.ones([r + 1]) * r for r in range(size)])
+
+    output_handle = all_gather_into_tensor_uneven(
+        output_tensor, input_tensor, output_split_sizes=output_split_sizes
+    )
+
+    assert output_handle is None
+    assert np.allclose(output_tensor.asnumpy(), expected_output)
+
+    # 异步场景
+    output_tensor = ms.Tensor(np.zeros([total_size]).astype(np.float32))
+    output_handle = all_gather_into_tensor_uneven(
+        output_tensor,
+        input_tensor,
+        output_split_sizes=output_split_sizes,
+        async_op=True,
+    )
+    assert output_handle is not None
+    output_handle.wait()
+    assert np.allclose(output_tensor.asnumpy(), expected_output)
+    # group场景
+    if rank == 0 or rank == 1:
+        group = new_group(list(range(2)), 1)
+        name = "hccl_" + str(2) + "_" + hashlib.sha1(bytes("_".join(map(str, range(2))), "utf-8")).hexdigest()
+        assert group == name
+        input_tensor1 = ms.Tensor(np.ones([rank + 1]).astype(np.float32) * rank)
+        output_tensor1 = ms.Tensor(np.zeros([3]).astype(np.float32))
+        output_split_sizes = [1, 2]
+        except_output = np.array([0, 1, 1]).astype(np.float32)
+        output_handle = all_gather_into_tensor_uneven(
+            output_tensor1,
+            input_tensor1,
+            output_split_sizes=output_split_sizes,
+            group=name,
+        )
+        assert output_handle is None
+        assert np.allclose(output_tensor1.asnumpy(), except_output)
+    # # 异常场景
+    with pytest.raises(TypeError):
+        all_gather_into_tensor_uneven(1)
+    with pytest.raises(TypeError):
+        all_gather_into_tensor_uneven(output_tensor, input_tensor, group=1)
+    with pytest.raises(TypeError):
+        all_gather_into_tensor_uneven(output_tensor, input_tensor, async_op="test")
+    with pytest.raises(TypeError):
+        all_gather_into_tensor_uneven([1], input_tensor)
+    with pytest.raises(TypeError):
+        all_gather_into_tensor_uneven(output_tensor, [1])
+    with pytest.raises(ValueError):
+        output_split_sizes1 = [r + 3 for r in range(size)]
+        all_gather_into_tensor_uneven(
+            output_tensor, input_tensor, output_split_sizes=output_split_sizes1
+        )
+        _pynative_executor.sync()
+    with pytest.raises(ValueError):
+        output_split_sizes1 = [r + 1 for r in range(size + 3)]
+        all_gather_into_tensor_uneven(
+            output_tensor, input_tensor, output_split_sizes=output_split_sizes1
+        )
+        _pynative_executor.sync()
+    output_tensor = ms.Tensor(np.zeros([5 * size]).astype(np.float32))
+    with pytest.raises(ValueError):
+        all_gather_into_tensor_uneven(
+            output_tensor, input_tensor, output_split_sizes=output_split_sizes
+        )
+        _pynative_executor.sync()
+    output_tensor = ms.Tensor(np.zeros([total_size]).astype(np.int32))
+    with pytest.raises(ValueError):
+        all_gather_into_tensor_uneven(output_tensor, input_tensor)
+        _pynative_executor.sync()
+
 
 def test_hccl_reduce_scatter_tensor_type():
     """
@@ -427,6 +527,98 @@ def test_hccl_reduce_scatter_tensor():
     output_tensor = ms.Tensor(np.zeros([3, 3]).astype(np.int32))
     with pytest.raises(ValueError):
         reduce_scatter_tensor(output_tensor, input_tensor)
+        _pynative_executor.sync()
+
+
+
+def test_hccl_reduce_scatter_tensor_uneven():
+    """
+    Feature: test distributed op
+    Description: test comm op in python native
+    Expectation: success
+    """
+    ## 同步场景多维tensor
+    # input_tensor: [[0, 0], [1, 1], [1, 1], [2, 2], [2, 2], [2, 2], ...]
+    # rank0: [[0, 0]], rank1: [[1, 1], [1, 1]], rank2: [[2, 2], [2, 2], [2, 2]], rank3: [[3, 3], [3, 3], [3, 3
+    # ], [3, 3]]...
+    input_tensor = ms.Tensor(np.concatenate([np.ones([r + 1, 2]) * r for r in range(size)]).astype(np.float32))
+    output_tensor = ms.Tensor(np.zeros([rank + 1, 2]).astype(np.float32))
+    input_split_sizes = [r + 1 for r in range(size)]
+    expected_output = np.array([np.ones([rank + 1, 2]) * rank * size])
+    output_handle = reduce_scatter_tensor_uneven(
+        output_tensor, input_tensor, input_split_sizes=input_split_sizes
+    )
+    assert output_handle is None
+    assert np.allclose(output_tensor.asnumpy(), expected_output)
+    # # 同步场景一维tensor
+    # input_tensor: [0, 1, 1, 2, 2, 2, 3, 3, 3, 3]
+    # rank0: [0], rank1: [1, 1] * rank, rank2: [2, 2, 2] * rank, rank3: [3, 3, 3, 3] *rank ...
+    input_tensor = ms.Tensor(np.concatenate([np.ones([r + 1]) * r for r in range(size)]).astype(np.float32))
+    output_tensor = ms.Tensor(np.zeros([rank + 1]).astype(np.float32))
+    input_split_sizes = [r + 1 for r in range(size)]
+    expected_output = np.ones([rank + 1]).astype(np.float32) * rank * size
+
+    output_handle = reduce_scatter_tensor_uneven(
+        output_tensor, input_tensor, input_split_sizes=input_split_sizes
+    )
+
+    assert output_handle is None
+    assert np.allclose(output_tensor.asnumpy(), expected_output)
+
+    # 异步场景
+    output_tensor = ms.Tensor(np.zeros([rank + 1]).astype(np.float32))
+    output_handle = reduce_scatter_tensor_uneven(
+        output_tensor,
+        input_tensor,
+        input_split_sizes=input_split_sizes,
+        async_op=True,
+    )
+    assert output_handle is not None
+    output_handle.wait()
+    assert np.allclose(output_tensor.asnumpy(), expected_output)
+    # group场景
+    if rank == 0 or rank == 1:
+        group = new_group(list(range(2)), 1)
+        name = "hccl_" + str(2) + "_" + hashlib.sha1(bytes("_".join(map(str, range(2))), "utf-8")).hexdigest()
+        assert group == name
+        input_tensor1 = ms.Tensor(np.array([0, 1, 1]).astype(np.float32))
+        output_tensor1 = ms.Tensor(np.zeros([rank + 1]).astype(np.float32))
+        input_split_sizes = [1, 2]
+        expected_output = np.ones([rank + 1]).astype(np.float32) * rank * 2
+        output_handle = reduce_scatter_tensor_uneven(
+            output_tensor1,
+            input_tensor1,
+            input_split_sizes=input_split_sizes,
+            group=name,
+        )
+        assert output_handle is None
+        assert np.allclose(output_tensor1.asnumpy(), expected_output)
+    # 异常场景
+    with pytest.raises(TypeError):
+        reduce_scatter_tensor_uneven(1)
+    with pytest.raises(TypeError):
+        reduce_scatter_tensor_uneven(output_tensor, input_tensor, group=1)
+    with pytest.raises(TypeError):
+        reduce_scatter_tensor_uneven(output_tensor, input_tensor, async_op="test")
+    with pytest.raises(TypeError):
+        reduce_scatter_tensor_uneven([1], input_tensor)
+    with pytest.raises(TypeError):
+        reduce_scatter_tensor_uneven(output_tensor, [1])
+    with pytest.raises(ValueError):
+        input_split_sizes1 = [r + 3 for r in range(size)]
+        reduce_scatter_tensor_uneven(
+            output_tensor, input_tensor, input_split_sizes=input_split_sizes1
+        )
+        _pynative_executor.sync()
+    with pytest.raises(ValueError):
+        input_split_sizes1 = [r + 1 for r in range(size + 3)]
+        reduce_scatter_tensor_uneven(
+            output_tensor, input_tensor, input_split_sizes=input_split_sizes1
+        )
+        _pynative_executor.sync()
+    output_tensor = ms.Tensor(np.zeros([rank + 1]).astype(np.int32))
+    with pytest.raises(ValueError):
+        reduce_scatter_tensor_uneven(output_tensor, input_tensor)
         _pynative_executor.sync()
 
 
@@ -1046,6 +1238,42 @@ def test_hccl_all_gather():
         all_gather(output_tensor, input_tensor)
         _pynative_executor.sync()
 
+def test_hccl_all_gather_diff_shape():
+    """
+    Feature: test distributed op
+    Description: test comm op in python native
+    Expectation: success
+    """
+    ## 同步场景多维tensor
+    ## rank0 : [0, 0], rank1: [[1, 1], [1, 1]], rank2: [[2, 2], [2, 2], [2, 2]]...
+    data = ms.Tensor(np.ones([rank + 1, 2]) * rank, dtype=ms.int64)
+    expect_output = np.concatenate(
+        [np.ones([ii + 1, 2]) * ii for ii in range(size)], axis=0
+    )
+    output_tensor = [ms.Tensor(np.zeros([ii + 1, 2]).astype(np.int64)) for ii in range(size)]
+    output_handle = all_gather(output_tensor, data)
+    assert output_handle is None
+    output_tensor = cat(output_tensor)
+    assert np.allclose(output_tensor.asnumpy(), expect_output)
+    # 同步场景一维tensor
+    ## rank 0: [0], rank 1: [1, 2] rank 2: [3, 4, 5] ...
+    total_num = (size * (size + 1)) // 2
+    start = rank * (rank + 1) // 2
+    data = ms.Tensor(list(range(start, start + rank + 1)), dtype=ms.int64)
+    expect_output = np.array(list(range(total_num)), dtype=np.int64)
+    output_tensor = [ms.Tensor(np.zeros([ii + 1]).astype(np.int64)) for ii in range(size)]
+    output_handle = all_gather(output_tensor, data)
+    assert output_handle is None
+    output_tensor = cat(output_tensor)
+    assert np.allclose(output_tensor.asnumpy(), expect_output)
+    # 异步场景
+    output_tensor = [ms.Tensor(np.zeros([ii + 1]).astype(np.int64)) for ii in range(size)]
+    output_handle = all_gather(output_tensor, data, async_op=True)
+    output_handle.wait()
+    assert output_handle is not None
+    output_tensor = cat(output_tensor)
+    assert np.allclose(output_tensor.asnumpy(), expect_output)
+
 
 def test_hccl_reduce_scatter():
     """
@@ -1102,12 +1330,6 @@ def test_hccl_reduce_scatter():
             ms.Tensor(np.zeros([3, 3]).astype(np.int32)),
         ]
         reduce_scatter(output_tensor, input_tensor1)
-    with pytest.raises(TypeError):
-        input_tensor1 = [
-            ms.Tensor(np.zeros([3, 3]).astype(np.float32)),
-            ms.Tensor(np.zeros([1, 3]).astype(np.float32)),
-        ]
-        reduce_scatter(output_tensor, input_tensor1)
     output_tensor = ms.Tensor(np.zeros([1, 3]).astype(np.float32))
     with pytest.raises(TypeError):
         reduce_scatter(output_tensor, input_tensor)
@@ -1119,6 +1341,41 @@ def test_hccl_reduce_scatter():
     output_tensor = ms.Tensor(np.zeros([3, 3]).astype(np.int32))
     with pytest.raises(TypeError):
         reduce_scatter(output_tensor, input_tensor)
+        _pynative_executor.sync()
+
+
+def test_hccl_reduce_scatter_diff_shape():
+    """
+    Feature: test distributed op
+    Description: test comm op in python native
+    Expectation: success
+    """
+    # 同步场景多维tensor
+    ## rank0 : [0, 0], rank1: [[1, 1], [1, 1]], rank2: [[2, 2], [2, 2], [2, 2]]...
+    input_list = [ms.Tensor(np.ones([ii + 1, 2]) * rank, dtype=ms.int32) for ii in range(size)]
+    output_tensor = ms.Tensor(np.zeros([rank + 1, 2]).astype(np.int32))
+    expect_output = np.ones([rank + 1, 2]) * rank * size
+    output_handle = reduce_scatter(output_tensor, input_list)
+    assert output_handle is None
+    assert np.allclose(output_tensor.asnumpy(), expect_output)
+    # 同步场景一维tensor
+    ## rank 0: [0], rank 1: [1, 2] rank 2: [2, 3, 4] ...
+    input_list = [ms.Tensor(list(range(ii, ii + ii + 1)), dtype=ms.int32) for ii in range(size)]
+    output_tensor = ms.Tensor(np.zeros([rank + 1]).astype(np.int32))
+    expect_output = (np.array(list(range(rank + 1)), dtype=np.int32) + rank) * size
+    output_handle = reduce_scatter(output_tensor, input_list)
+    assert output_handle is None
+    assert np.allclose(output_tensor.asnumpy(), expect_output)
+    # 异步场景
+    output_tensor = ms.Tensor(np.zeros([rank + 1]).astype(np.int32))
+    output_handle = reduce_scatter(output_tensor, input_list, async_op=True)
+    assert output_handle is not None
+    output_handle.wait()
+    assert np.allclose(output_tensor.asnumpy(), expect_output)
+    # output tensor shape not match real op output.
+    output_tensor = ms.Tensor(np.zeros([size+1]).astype(np.int32))
+    with pytest.raises(TypeError):
+        reduce_scatter(output_tensor, input_list)
         _pynative_executor.sync()
 
 

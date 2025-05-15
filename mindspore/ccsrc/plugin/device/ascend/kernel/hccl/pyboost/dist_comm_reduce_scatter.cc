@@ -57,21 +57,58 @@ void DistCommReduceScatterAscendCustomize(const std::shared_ptr<OpRunner> &op, c
     auto input_data_ptr = GetDevicePtrFromTensor(op_name, input_tensor);
     auto output_data_ptr = GetDevicePtrFromTensor(op_name, op->output(0));
     auto size = scatter_tensors[0]->Size();
+    auto other_tensor_num_elements = other_tensor->DataSize();
     auto launch_func = [input_data_ptr, output_data_ptr, hccl_count, hccl_data_type, op_type_enum, size, rank_size_imm,
-                        scatter_tensors, op_name](const HcclComm &hccl_comm, void *comm_stream_ptr) {
-      for (int r = 0; r < rank_size_imm; r++) {
-        uint64_t offset = (uint64_t)(r * size);
-        auto data_ptr = GetDevicePtrFromTensor(op_name, scatter_tensors[r]);
-        auto cp_ret = CALL_ASCEND_API(aclrtMemcpyAsync, static_cast<char *>(input_data_ptr) + offset, size, data_ptr,
-                                      size, ACL_MEMCPY_DEVICE_TO_DEVICE, comm_stream_ptr);
-        if (cp_ret != EOK) {
-          MS_LOG(EXCEPTION) << "aclrtMemcpy failed.";
+                        scatter_tensors, op_name,
+                        other_tensor_num_elements](const HcclComm &hccl_comm, void *comm_stream_ptr) {
+      bool same_shape = std::all_of(scatter_tensors.begin(), scatter_tensors.end(),
+                                    [&](const TensorPtr &t) { return t->shape() == scatter_tensors[0]->shape(); });
+      if (same_shape) {
+        for (int r = 0; r < rank_size_imm; r++) {
+          uint64_t offset = static_cast<uint64_t>(r * size);
+          auto data_ptr = GetDevicePtrFromTensor(op_name, scatter_tensors[r]);
+          auto cp_ret = CALL_ASCEND_API(aclrtMemcpyAsync, static_cast<char *>(input_data_ptr) + offset, size, data_ptr,
+                                        size, ACL_MEMCPY_DEVICE_TO_DEVICE, comm_stream_ptr);
+          if (cp_ret != EOK) {
+            MS_LOG(EXCEPTION) << "aclrtMemcpy failed.";
+          }
         }
-      }
-      auto hccl_result = hccl::HcclAdapter::GetInstance().HcclReduceScatter(
-        input_data_ptr, output_data_ptr, hccl_count, hccl_data_type, op_type_enum, comm_stream_ptr, hccl_comm);
-      if (hccl_result != HCCL_SUCCESS) {
-        MS_LOG(EXCEPTION) << "HcclReduceScatter failed, ret:" << hccl_result;
+        auto hccl_result = hccl::HcclAdapter::GetInstance().HcclReduceScatter(
+          input_data_ptr, output_data_ptr, hccl_count, hccl_data_type, op_type_enum, comm_stream_ptr, hccl_comm);
+        if (hccl_result != HCCL_SUCCESS) {
+          MS_LOG(EXCEPTION) << "HcclReduceScatter failed, ret:" << hccl_result;
+        }
+      } else {
+        MS_LOG(DEBUG) << "For kernel HcclReduceScatter, Different shapes detected, using HcclReduceScatterV instead.";
+        hccl::HcclReduceScatterVParams params;
+        params.send_counts.clear();
+        params.sdispls.resize(rank_size_imm, 0);
+
+        for (const auto &t : scatter_tensors) {
+          params.send_counts.push_back(t->DataSize());
+        }
+        for (int r = 1; r < rank_size_imm; ++r) {
+          params.sdispls[r] = params.sdispls[r - 1] + params.send_counts[r - 1];
+        }
+        params.recv_count = other_tensor_num_elements;
+
+        uint64_t offset = 0;
+        for (int r = 0; r < rank_size_imm; r++) {
+          auto data_ptr = GetDevicePtrFromTensor(op_name, scatter_tensors[r]);
+          uint64_t send_size = scatter_tensors[r]->Size();
+          auto cp_ret = CALL_ASCEND_API(aclrtMemcpyAsync, static_cast<char *>(input_data_ptr) + offset, send_size,
+                                        data_ptr, send_size, ACL_MEMCPY_DEVICE_TO_DEVICE, comm_stream_ptr);
+          if (cp_ret != EOK) {
+            MS_LOG(EXCEPTION) << "aclrtMemcpy failed.";
+          }
+          offset += send_size;
+        }
+
+        auto hccl_result = hccl::HcclAdapter::GetInstance().HcclReduceScatterV(
+          input_data_ptr, output_data_ptr, params, hccl_data_type, op_type_enum, comm_stream_ptr, hccl_comm);
+        if (hccl_result != HCCL_SUCCESS) {
+          MS_LOG(EXCEPTION) << "HcclReduceScatterV failed, ret:" << hccl_result;
+        }
       }
     };
 
