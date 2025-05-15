@@ -2182,7 +2182,9 @@ bool SetMindIRGraphAction(const ResourcePtr &resource) {
     is_equal_input_args = false;
   }
 
-  if (!is_equal_input_args) {
+  bool changed = ConvertScalarDtypeForLegacyMindIR(resource);
+
+  if (!is_equal_input_args || changed) {
     // Use InferMindir which will find c++ infer in eval_map and backend_eval_map;
     ModifyGraphs(resource->func_graph());
     resource->func_graph()->set_flag("generated_from_mindir_with_prim_func", true);
