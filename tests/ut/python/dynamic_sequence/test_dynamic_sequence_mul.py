@@ -13,12 +13,12 @@
 # limitations under the License.
 # ============================================================================
 """test mul operation for dynamic sequence and variable integer in graph mode"""
+import os
 from mindspore.common import mutable
 from mindspore.ops import functional as F
 from mindspore import Tensor
 from mindspore import jit
 from mindspore import context
-from mindspore._extends.parse import compile_config
 
 context.set_context(mode=context.GRAPH_MODE)
 
@@ -65,7 +65,7 @@ def test_constant_length_sequence_mul_variable_scalar():
     Description: Constant length sequence mul variable scalar should return variable length sequence.
     Expectation: No exception.
     """
-    compile_config.GRAD_FOR_SCALAR = 1
+    os.environ['MS_JIT'] = 'GRAD_FOR_SCALAR:1'
 
     @jit
     def foo(x):
@@ -76,7 +76,7 @@ def test_constant_length_sequence_mul_variable_scalar():
     ret1, ret2 = foo(5)
     assert ret1
     assert ret2
-    compile_config.GRAD_FOR_SCALAR = ''
+    del os.environ['MS_JIT']
 
 
 def test_variable_length_sequence_mul_variable_scalar():
@@ -85,7 +85,7 @@ def test_variable_length_sequence_mul_variable_scalar():
     Description: Constant length sequence mul variable scalar should return variable length sequence.
     Expectation: No exception.
     """
-    compile_config.GRAD_FOR_SCALAR = 1
+    os.environ['MS_JIT'] = 'GRAD_FOR_SCALAR:1'
 
     @jit
     def foo(x):
@@ -96,4 +96,4 @@ def test_variable_length_sequence_mul_variable_scalar():
     ret1, ret2 = foo(5)
     assert ret1
     assert ret2
-    compile_config.GRAD_FOR_SCALAR = ''
+    del os.environ['MS_JIT']
