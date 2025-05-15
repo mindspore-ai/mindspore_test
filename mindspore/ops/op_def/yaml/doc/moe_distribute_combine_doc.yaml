@@ -1,0 +1,119 @@
+moe_distribute_combine:
+    description: |
+        Parallel communication for Mixture of Experts (MoE). When Tensor Parallelism (TP) communication exists,
+        it first ReduceScatter performs communication followed by Expert Parallelism (EP) AllToAllV communication.
+        Otherwise, only EP AllToAllV communication is performed. Finally multiply the received data by weight and
+        add them up.
+
+        Notes:
+            This function must be used in conjunction with function `moe_distribute_dispatch`.
+            - A: Maximum tokens to dispatch per rank:
+                - For shared experts: A = BS * ep_world_size * shared_expert_num / shared_expert_rank_num
+                - For MoE experts:
+                    - When global_bs = 0: A >= BS * ep_world_size * min(local_expert_num, K)
+                    - When global_bs != 0: A >= global_bs * min(local_expert_num, K)
+            - H (hidden size): Dimension of each token's hidden state
+                - Ascend 910B: 0 < H <= 7168, must be multiple of 32
+                - Ascend 910_93: H = 7168
+            - BS (batch sequence size): Number of tokens processed per rank
+                - Ascend 910B: 0 < BS <= 256
+                - Ascend 910_93: 0 < BS <= 512
+            - K: Number of experts selected per token (0 < K <= 8 and K <= moe_expert_num)
+            - server_num: Number of server nodes (supports 2, 4, 8)
+            - local_expert_num: Number of experts per rank:
+                - Shared expert ranks: local_expert_num = 1
+                - MoE expert ranks: local_expert_num = moe_expert_num / (ep_world_size - shared_expert_rank_num)
+                (TP communication not supported when localExpertNum > 1)
+
+        Inputs:
+            - **expand_x** (Tensor) - Expanded token features. 2D tensor [A, H] with dtype matching input.
+                Supported dtypes: float16, bfloat16, int8. Format: ND, non-contiguous allowed.
+            - **expert_ids** (Tensor) - Top-K expert indices for each token. 2D int32 tensor with shape [BS, K].
+                Format: ND, non-contiguous allowed.
+            - **expert_idx** (Tensor) - Token counts per expert, it's the output of dispatch operation. 
+                1D int32 tensor [BS*K]. Format: ND, non-contiguous allowed.
+            - **ep_send_counts** (Tensor) - Tokens that each EP rank needs to send, it's the output of dispatch operation.
+                - Ascend 910B: 1D int32 tensor [moe_expert_num + 2 * global_bs * K * server_num]
+                - Ascend 910_93: 1D int32 tensor [ep_world_size * max(tp_world_size,1) * local_expert_num]
+                Format: ND, non-contiguous allowed.
+            - **expert_scales** (Tensor) - Top-K expert weights per token.
+            - **ep_world_size** (int) - EP domain size.
+                - Ascend 910B: Supports 16, 32, 64.
+                - Ascend 910_93: Supports 8, 16, 32, 64, 128, 144, 256, 288.
+            - **ep_rank_id** (int) - Local rank ID in EP domain [0, ep_world_size), must be unique per domain.
+            - **moe_expert_num** (int) - Number of MoE experts (0 < moe_expert_num <= 256), 
+                must satisfy moe_expert_num % (ep_world_size-shared_expert_rank_num) = 0.
+            - **tp_send_counts** (Tensor) - Tokens that each TP rank needs to send (when TP exists). It's the output of dispatch operation. Default: ``None``.
+                - Ascend 910B: Not supported.
+                - Ascend 910_93: 1D int32 tensor [tp_world_size] when TP exists. Format: ND, non-contiguous allowed.
+            - **x_active_mask** (Tensor) - Reserved parameter. Default: ``None``.
+            - **activate_scale** (Tensor) - Reserved parameter. Default: ``None``.
+            - **weight_scale** (Tensor) - Reserved parameter. Default: ``None``.
+            - **group_list** (Tensor) - Reserved parameter. Default: ``None``.
+            - **expand_scales** (Tensor) - Output of dispatch operation. Default: ``None``.
+                - Ascend 910B: 1D float32 tensor [A]. Format: ND, non-contiguous allowed.
+                - Ascend 910_93: Unsupported.
+            - **group_ep** (str) - EP communication domain name (string length 1-127), must differ from group_tp. Default: ``None``.
+            - **group_tp** (str) - TP communication domain name. Default: ``None``.
+                - Ascend 910B: Unsupported (pass empty string).
+                - Ascend 910_93: When TP communication exists, string length 1-127, must differ from group_ep.
+            - **tp_world_size** (int) - TP domain size. Default: ``0``.
+                - Ascend 910B: Unsupported (pass 0).
+                - Ascend 910_93: 0/1 means no TP communication; only 2 supported when TP exists.
+            - **tp_rank_id** (int) - Local rank ID in TP domain. Default: ``0``.
+                - Ascend 910B: Unsupported (pass 0).
+                - Ascend 910_93: [0,1], unique per domain; pass 0 when no TP communication.
+            - **expert_shard_type** (int) - Shared expert distribution type. Default: ``0``.
+                - Ascend 910B: Unsupported (pass 0).
+                - Ascend 910_93: Currently only 0 (shared experts precede MoE experts).
+            - **shared_expert_num** (int) - Number of shared experts. Default: ``0``.
+                - Ascend 910B: Unsupported (pass 0).
+                - Ascend 910_93: Currently 0 (none) or 1 (one shared expert).
+            - **shared_expert_rank_num** (int) - Number of ranks hosting shared experts. Default: ``0``.
+                - Ascend 910B: Unsupported (pass 0).
+                - Ascend 910_93: [0, ep_world_size-1), must satisfy ep_world_size % shared_expert_rank_num = 0 when non-zero.
+            - **global_bs** (int) - Global batch size across EP domain. Default: ``0``.
+                - Ascend 910B: 256*ep_world_size when BS varies per rank; 0 or BS*ep_world_size when uniform.
+                - Ascend 910_93: 0 or BS*ep_world_size.
+            - **out_dtype** (int) - Specify the type of output x. Reserved parameter (pass 0 in current version). Default: ``0``.
+            - **common_quant_mode** (int) - Communication quantification type. Reserved parameter (pass 0 in current version). Default: ``0``.
+            - **group_list_type** (int) - The format of group_list. Reserved parameter (pass 0 in current version). Default: ``0``.
+
+        Outputs:
+            - **x** (Tensor) - Processed tokens. 2D tensor [BS, H] with dtype matching input `expand_x`.
+
+        Raises:
+            TypeError: If input dtypes don't match specifications.
+            ValueError: If input values violate constraints (e.g., invalid expert indices).
+            RuntimeError: If communication domain configuration is invalid.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+        >>> # EP-only communication example (Ascend 910B)
+        >>> import mindspore as ms
+        >>> from mindspore import Tensor
+        >>> from mindspore import ops
+        >>> from mindspore.communication import init, get_rank, GlobalComm
+        >>> from mindspore.ops.auto_generate import moe_distribute_dispatch, moe_distribute_combine
+        >>> import numpy as np
+        >>> bs = 8
+        >>> h = 7168
+        >>> k = 8
+        >>> ep_world_size = 16
+        >>> moe_expert_num = 16
+        >>> global_bs = bs * ep_world_size
+        >>> x = Tensor(np.random.randn(bs, h), ms.float16)
+        >>> expert_ids = Tensor(np.random.randint(0, moe_expert_num, (bs, k)), ms.int32)
+        >>> expert_scales = Tensor(np.random.randn(bs, k), ms.float32)
+        >>> init()
+        >>> rank_id = get_rank()
+        >>> expand_x, _, expand_idx, _, ep_recv_count, _, expand_scale = moe_distribute_dispatch(
+        ...     x, expert_ids, expert_scales, ep_world_size, rank_id, moe_expert_num,
+        ...     group_ep=GlobalComm.WORLD_COMM_GROUP)
+        >>> out_x = moe_distribute_combine(
+        ...     expand_x, expert_ids, expand_idx, ep_recv_count, expert_scales, ep_world_size, rank_id,
+        ...     moe_expert_num, group_ep=GlobalComm.WORLD_COMM_GROUP)
+        >>> print(out_x.shape)
+        (8, 7168)
