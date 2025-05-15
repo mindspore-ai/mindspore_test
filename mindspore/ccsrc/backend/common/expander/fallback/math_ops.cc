@@ -167,6 +167,13 @@ REG_FALLBACK_BUILDER("InplaceDivs").SetBody(BODYFUNC(ib) {
   return {x / other_tensor};
 });
 
+REG_FALLBACK_BUILDER("Divs").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto y = ib->GetInput(kIndex1);
+  auto other_tensor = ib->ScalarToTensor(y, x->dtype());
+  return {x / other_tensor};
+});
+
 REG_FALLBACK_BUILDER("InplaceFloorDivide").SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto y = ib->GetInput(kIndex1);
