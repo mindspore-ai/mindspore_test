@@ -21,6 +21,33 @@ context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"})
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
           essential_mark='unessential')
+def test_for_after_if_in_if_tensor():
+    """
+    Feature: JIT Fallback
+    Description: Test fallback with control flow.
+    Expectation: No exception.
+    """
+    @jit(backend="ms_backend")
+    def control_flow_for_after_if_in_if():
+        x = Tensor([1])
+        y = Tensor([0])
+        if x + y == Tensor(1):
+            if x > Tensor(0):
+                x += 5
+            else:
+                x += 7
+        else:
+            x += 2
+            y += 3
+        for i in range(5):
+            y += i
+        return x + y
+    res = control_flow_for_after_if_in_if()
+    assert res == 16
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_for_after_if_in_if_tensor_2():
     """
     Feature: JIT Fallback

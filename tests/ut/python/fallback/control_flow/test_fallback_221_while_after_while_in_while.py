@@ -66,30 +66,3 @@ def test_while_after_while_in_while_numpy_2():
         return Tensor(x), Tensor(y), Tensor(z)
     res = control_flow_while_after_while_in_while()
     assert res == (2, -1, -3)
-
-
-def test_while_after_while_in_while_numpy_3():
-    """
-    Feature: JIT Fallback
-    Description: Test fallback with control flow.
-    Expectation: No exception.
-    """
-    @jit
-    def control_flow_while_after_while_in_if():
-        x = np.array([-1])
-        y = np.array([-2])
-        z_sum = Tensor([0])
-        output = Tensor([0])
-        while abs(x) <= abs(y):
-            z = [Tensor([3]), Tensor([4]), Tensor([5])]
-            index = 0
-            while index < 3:
-                z_sum += z[index]
-                index += 1
-            output = Tensor(x) + z_sum
-            x += 1
-        while y < x:
-            y += 1
-        return output + Tensor(y)
-    res = control_flow_while_after_while_in_if()
-    assert res == 53

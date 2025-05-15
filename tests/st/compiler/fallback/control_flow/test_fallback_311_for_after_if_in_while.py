@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 """ test graph fallback control flow for after if in while scenario"""
+import numpy as np
 from mindspore import Tensor, jit, context
 from tests.mark_utils import arg_mark
 
@@ -72,3 +73,28 @@ def test_for_after_if_in_while_tensor_2():
         return x - y
     res = control_flow_for_after_if_in_while()
     assert res == 4
+
+
+@case_register.level1
+@case_register.target_gpu
+@case_register.target_ascend
+def test_for_after_if_in_while_numpy():
+    """
+    Feature: JIT Fallback
+    Description: Test fallback with control flow.
+    Expectation: No exception.
+    """
+    @jit(backend="ms_backend")
+    def control_flow_for_after_if_in_while():
+        x = np.array([1, 2, 3, 4])
+        y = np.array([9, 10, 11, 12])
+        while sum(x) < 20:
+            x += 2
+            if max(y) % 2 == 0:
+                y -= 3
+        a = Tensor(0)
+        for i in range(4):
+            a += Tensor(x[i] - y[i])
+        return a
+    res = control_flow_for_after_if_in_while()
+    assert res == -4
