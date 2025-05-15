@@ -28,7 +28,7 @@ namespace mindspore::pynative::autograd {
 namespace {
 BackwardNodePtr BuildAutoGradMeta(const tensor::TensorPtr &tensor) {
   runtime::Pipeline::Get().WaitBpropStage();
-  auto auto_grad_meta_data = impl::get_autograd_meta_impl(tensor);
+  auto auto_grad_meta_data = impl::GetAutogradMetaImpl(tensor);
   if (auto_grad_meta_data == nullptr) {
     if (tensor->param_info() != nullptr && !tensor->param_info()->requires_grad()) {
       MS_LOG(EXCEPTION) << "The tensor requires grad is false, which can not register tensor hook";
