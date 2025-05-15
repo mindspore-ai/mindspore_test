@@ -36,6 +36,7 @@ class BatchNormExtAscend : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 
+  bool training_;
   double momentum_;
   double eps_;
 };

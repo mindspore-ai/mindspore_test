@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_CUSTOMIZE_MAX_POOL_WITH_MASK_H_
-#define MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_CUSTOMIZE_MAX_POOL_WITH_MASK_H_
+#ifndef MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_CUSTOMIZE_INNER_MAX_POOL2D_H_
+#define MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_CUSTOMIZE_INNER_MAX_POOL2D_H_
 
+#include <optional>
 #include <vector>
 #include <memory>
 #include "ir/tensor.h"
@@ -27,11 +28,11 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void MaxPoolWithMaskAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &x_tensor,
-                                    const ValueTuplePtr &kernel_size, const std::optional<ValueTuplePtr> &strides,
-                                    const ValueTuplePtr &pads, const ValueTuplePtr &dilation,
-                                    const BoolImmPtr &ceil_mode, const Int64ImmPtr &argmax_type);
+void InnerMaxPool2DAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                   const ValueTuplePtr &kernel_size, const std::optional<ValueTuplePtr> &stride,
+                                   const ValueTuplePtr &padding, const ValueTuplePtr &dilation,
+                                   const BoolImmPtr &ceil_mode, const BoolImmPtr &return_indices);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore
-#endif  // MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_CUSTOMIZE_MAX_POOL_WITH_MASK_H_
+#endif  // MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_CUSTOMIZE_INNER_MAX_POOL2D_H_

@@ -7,6 +7,7 @@ batch_norm_grad_ext:
       dtype: tensor
     weight:
       dtype: tensor
+      default: None
     running_mean:
       dtype: tensor
       default: None

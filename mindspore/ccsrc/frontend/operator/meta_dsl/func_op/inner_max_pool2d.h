@@ -1,5 +1,5 @@
-/**
- * Copyright 2024 Huawei Technologies Co., Ltd
+/*
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_MAX_POOL_GRAD_WITH_INDICES_H_
-#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_MAX_POOL_GRAD_WITH_INDICES_H_
+#ifndef MINDSPORE_CCSRC_FRONTEND_OPERATOR_META_DSL_FUNC_OP_INNER_MAX_POOL2D_H_
+#define MINDSPORE_CCSRC_FRONTEND_OPERATOR_META_DSL_FUNC_OP_INNER_MAX_POOL2D_H_
 
-#include "mindspore/ops/infer/ops_func_impl/max_pool_grad_with_mask.h"
+#include <vector>
+#include <memory>
 
-namespace mindspore {
-namespace ops {
-class OPS_API MaxPoolGradWithIndicesFuncImpl final : public MaxPoolGradWithMaskFuncImpl {};
-}  // namespace ops
-}  // namespace mindspore
+#include "mindspore/ccsrc/frontend/operator/meta_dsl/common/meta_impl.h"
 
-#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_MAX_POOL_GRAD_WITH_INDICES_H_
+namespace mindspore::prim {
+REGISTER_FUNCTION_OP(InnerMaxPool2D, nullptr);
+}  // namespace mindspore::prim
+#endif  // MINDSPORE_CCSRC_FRONTEND_OPERATOR_META_DSL_FUNC_OP_INNER_MAX_POOL2D_H_

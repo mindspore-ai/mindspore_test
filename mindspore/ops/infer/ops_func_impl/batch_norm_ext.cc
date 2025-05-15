@@ -1,5 +1,5 @@
 /**
- * Copyright 2023-2024 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,126 +17,67 @@
 #include "infer/ops_func_impl/batch_norm_ext.h"
 
 #include <memory>
+#include <string>
 #include <utility>
 
 #include "abstract/dshape.h"
-#include "ops/op_def.h"
-#include "mindspore/ops/op_def/op_name.h"
-#include "mindspore/ops/ops_utils/op_utils.h"
-#include "ops/ops_func_impl/simple_infer.h"
+#include "ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
 #include "utils/convert_utils_base.h"
-#include "utils/log_adapter.h"
 #include "utils/shape_utils.h"
-#include "utils/ms_context.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 
 namespace mindspore {
 namespace ops {
 namespace {
-template <typename T>
-void MultiClone(std::vector<T> *const vec, const T &ori, const size_t times) {
-  for (size_t i = 0; i < times; ++i) {
-    vec->push_back(ori->Clone());
-  }
-}
-
-constexpr auto minDim = 2;
-constexpr auto kTwice = 2;
-constexpr auto maxDim = 8;
-
-void BatchNormExtShapeCheck(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args,
-                            const ShapeVector &x_shape, const ShapeVector &weight_shape, const ShapeVector &bias_shape,
-                            const size_t attr_pos) {
-  if (MS_LIKELY(!IsDynamicRank(x_shape))) {
-    MS_CHECK_VALUE(minDim <= x_shape.size() && x_shape.size() <= maxDim,
-                   CheckAndConvertUtils::FormatCheckInRangeMsg("rank of images", SizeToLong(x_shape.size()),
-                                                               kIncludeBoth, {minDim, maxDim}, primitive));
-  }
-  MS_CHECK_VALUE(weight_shape.size() == 1, CheckAndConvertUtils::FormatCheckIntegerMsg(
-                                             "rank of weight", SizeToLong(weight_shape.size()), kEqual, 1, primitive));
-  MS_CHECK_VALUE(bias_shape.size() == 1, CheckAndConvertUtils::FormatCheckIntegerMsg(
-                                           "rank of bias", SizeToLong(bias_shape.size()), kEqual, 1, primitive));
-  if (MS_LIKELY(!(IsDynamic(weight_shape) || IsDynamic(bias_shape)))) {
-    MS_CHECK_VALUE(bias_shape == weight_shape, CheckAndConvertUtils::FormatCheckMsg("weight and bias", weight_shape,
-                                                                                    kEqual, bias_shape, primitive));
-  }
-  if (MS_LIKELY(!IsDynamic(x_shape) && !IsDynamic(weight_shape))) {
-    auto channel = x_shape[kInputIndex1];
-    if (MS_UNLIKELY(weight_shape[kInputIndex0] != channel)) {
-      MS_EXCEPTION(ValueError) << "For " << primitive->name()
-                               << ", weight.shape[0] should be equal to input_x's channel dimension: " << channel
-                               << ", bug got weight.shape[0]: " << weight_shape[kInputIndex0] << ".";
-    }
-  }
-
-  if (input_args[kInputIndex3]->GetType()->isa<TypeNone>() || input_args[kInputIndex4]->GetType()->isa<TypeNone>()) {
+void BatchNormExtArgShapeCheck(const PrimitivePtr &primitive, const std::string &arg_name, const InferInfoPtr &arg_info,
+                               int64_t channel) {
+  if (arg_info->IsNone()) {
     return;
   }
-  auto mean_shape = input_args[kInputIndex3]->GetShape()->GetShapeVector();
-  auto variance_shape = input_args[kInputIndex4]->GetShape()->GetShapeVector();
-  MS_CHECK_VALUE(mean_shape.size() == 1, CheckAndConvertUtils::FormatCheckIntegerMsg(
-                                           "rank of mean", SizeToLong(mean_shape.size()), kEqual, 1, primitive));
-  MS_CHECK_VALUE(variance_shape.size() == 1,
-                 CheckAndConvertUtils::FormatCheckIntegerMsg("rank of variance", SizeToLong(variance_shape.size()),
-                                                             kEqual, 1, primitive));
-  auto is_training_opt = GetScalarValue<bool>(input_args[attr_pos + 0]->GetValue());
-  if (MS_UNLIKELY(!is_training_opt.has_value())) {
-    return;
-  }
-  auto is_training = is_training_opt.value();
-  if (!is_training && !IsDynamic(mean_shape) && !IsDynamic(variance_shape) && !IsDynamic(weight_shape)) {
-    if ((mean_shape[0] != variance_shape[0]) || (variance_shape[0] != weight_shape[0])) {
-      MS_EXCEPTION(ValueError)
-        << "For '" << primitive->name()
-        << "', 'weight', 'bias', 'running_mean', and 'running_var' should have the same size during training, but got "
-        << weight_shape[0] << ", " << bias_shape[0] << ", " << mean_shape[0] << " and " << variance_shape[0] << ".";
+  const auto &arg_shape = arg_info->GetShape();
+  MS_CHECK_VALUE(arg_shape.size() == 1, CheckAndConvertUtils::FormatCheckIntegerMsg(
+                                          "rank of " + arg_name, SizeToLong(arg_shape.size()), kEqual, 1, primitive));
+  if (MS_LIKELY(!arg_info->IsDynamic() && channel != abstract::Shape::kShapeDimAny)) {
+    if (MS_UNLIKELY(arg_shape[kIndex0] != channel)) {
+      MS_EXCEPTION(ValueError) << "For " << primitive->name() << ", the " << arg_name
+                               << ".shape[0] should be equal to input's channel dimension, but got "
+                               << arg_shape[kIndex0] << " and " << channel;
     }
   }
 }
 }  // namespace
-BaseShapePtr BatchNormExtFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                              const std::vector<AbstractBasePtr> &input_args) const {
-  const auto &x_shape = input_args[kInputIndex0]->GetShape()->GetShapeVector();
-  const auto &weight_shape = input_args[kInputIndex1]->GetShape()->GetShapeVector();
-  const auto &bias_shape = input_args[kInputIndex2]->GetShape()->GetShapeVector();
-  auto attr_pos = GetAttrPosZero();
-  BatchNormExtShapeCheck(primitive, input_args, x_shape, weight_shape, bias_shape, attr_pos);
-
-  auto x_shape_ptr = std::make_shared<abstract::TensorShape>(x_shape);
-  auto weight_shape_ptr = IsDynamicRank(weight_shape)
-                            ? std::make_shared<abstract::TensorShape>(ShapeVector{abstract::TensorShape::kShapeDimAny})
-                            : std::make_shared<abstract::TensorShape>(weight_shape);
-  std::vector<abstract::BaseShapePtr> shapes{std::move(x_shape_ptr)};
-  MultiClone<abstract::BaseShapePtr>(&shapes, weight_shape_ptr, kTwice);
-  return std::make_shared<abstract::TupleShape>(std::move(shapes));
+ShapeArray BatchNormExtFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  const auto &input_shape = input_infos[kIndex0]->GetShape();
+  auto channel = input_infos[kIndex0]->IsDynamicRank() ? abstract::Shape::kShapeDimAny : input_shape[kIndex1];
+  const std::vector<int64_t> save_mv_shape{channel};
+  return {input_shape, save_mv_shape, save_mv_shape};
 }
 
-TypePtr BatchNormExtFuncImpl::InferType(const PrimitivePtr &primitive,
-                                        const std::vector<AbstractBasePtr> &input_args) const {
-  auto x_type = input_args[kInputIndex0]->GetType();
-  auto weight_type = input_args[kInputIndex1]->GetType();
-  std::vector<TypePtr> types_list;
-  types_list = {x_type, weight_type, weight_type};
-  return std::make_shared<Tuple>(types_list);
+std::vector<TypeId> BatchNormExtFuncImpl::InferType(const PrimitivePtr &primitive,
+                                                    const InferInfoPtrList &input_infos) const {
+  const auto &input_type = input_infos[kIndex0]->GetType();
+  const auto &weight_info = input_infos[kIndex1];
+  auto save_mv_type = weight_info->IsNone() ? input_type : weight_info->GetType();
+  return {input_type, save_mv_type, save_mv_type};
 }
 
-ShapeArray BatchNormExtFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
-  const auto &weight_tensor = input_values[kInputIndex1]->cast<tensor::TensorPtr>();
-  MS_EXCEPTION_IF_NULL(x_tensor);
-  MS_EXCEPTION_IF_NULL(weight_tensor);
-  return {x_tensor->shape(), weight_tensor->shape(), weight_tensor->shape()};
+int32_t BatchNormExtFuncImpl::CheckValidation(const PrimitivePtr &primitive,
+                                              const InferInfoPtrList &input_infos) const {
+  constexpr auto minDim = 2;
+  constexpr auto maxDim = 8;
+  const auto &input_shape = input_infos[kIndex0]->GetShape();
+  auto channel = abstract::Shape::kShapeDimAny;
+  if (MS_LIKELY(!input_infos[kIndex0]->IsDynamicRank())) {
+    MS_CHECK_VALUE(minDim <= input_shape.size() && input_shape.size() <= maxDim,
+                   CheckAndConvertUtils::FormatCheckInRangeMsg("rank of input", SizeToLong(input_shape.size()),
+                                                               kIncludeBoth, {minDim, maxDim}, primitive));
+    channel = input_shape[kIndex1];
+  }
+  BatchNormExtArgShapeCheck(primitive, "weight", input_infos[kIndex1], channel);
+  BatchNormExtArgShapeCheck(primitive, "bias", input_infos[kIndex2], channel);
+  BatchNormExtArgShapeCheck(primitive, "running_mean", input_infos[kIndex3], channel);
+  BatchNormExtArgShapeCheck(primitive, "runnning_var", input_infos[kIndex4], channel);
+  return OP_CHECK_SUCCESS;
 }
-
-TypePtrList BatchNormExtFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
-  const auto &weight_tensor = input_values[kInputIndex1]->cast<tensor::TensorPtr>();
-  MS_EXCEPTION_IF_NULL(x_tensor);
-  MS_EXCEPTION_IF_NULL(weight_tensor);
-  return {x_tensor->Dtype(), weight_tensor->Dtype(), weight_tensor->Dtype()};
-}
-
-REGISTER_SIMPLE_INFER(kNameBatchNormExt, BatchNormExtFuncImpl)
 }  // namespace ops
 }  // namespace mindspore

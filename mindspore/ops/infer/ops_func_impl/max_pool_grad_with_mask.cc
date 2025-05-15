@@ -15,30 +15,30 @@
  */
 
 #include "infer/ops_func_impl/max_pool_grad_with_mask.h"
+
+#include <utility>
 #include <algorithm>
 #include <memory>
+
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "utils/ms_context.h"
 #include "ops_utils/op_constants.h"
 
 namespace mindspore {
 namespace ops {
-TypePtr MaxPoolGradWithMaskFuncImpl::InferType(const PrimitivePtr &primitive,
-                                               const std::vector<abstract::AbstractBasePtr> &input_args) const {
-  auto x_type = input_args[kIndex0]->GetType();
-  return x_type->Clone();
-}
-
-BaseShapePtr MaxPoolGradWithMaskFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                                     const std::vector<abstract::AbstractBasePtr> &input_args) const {
-  auto x_shape = input_args[kIndex0]->GetShape()->GetShapeVector();
-  if (IsDynamicRank(x_shape)) {
-    return std::make_shared<abstract::Shape>(
-      std::vector<int64_t>{abstract::Shape::kShapeDimAny, abstract::Shape::kShapeDimAny, abstract::Shape::kShapeDimAny,
-                           abstract::Shape::kShapeDimAny});
+ShapeArray MaxPoolGradWithMaskFuncImpl::InferShape(const PrimitivePtr &primitive,
+                                                   const InferInfoPtrList &input_infos) const {
+  const auto &x_info = input_infos[kIndex0];
+  if (x_info->IsDynamicRank()) {
+    auto output_shape = std::vector<int64_t>(kIndex4, abstract::Shape::kShapeDimAny);
+    return {std::move(output_shape)};
   }
-  return std::make_shared<abstract::Shape>(x_shape);
+  return {x_info->GetShape()};
 }
 
+TypeIdList MaxPoolGradWithMaskFuncImpl::InferType(const PrimitivePtr &primitive,
+                                                  const InferInfoPtrList &input_infos) const {
+  return {input_infos[kIndex0]->GetType()};
+}
 }  // namespace ops
 }  // namespace mindspore

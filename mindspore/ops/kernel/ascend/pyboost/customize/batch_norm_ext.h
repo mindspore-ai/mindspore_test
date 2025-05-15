@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,8 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 void BatchNormExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
-                                 const TensorPtr &weight_tensor, const TensorPtr &bias_tensor,
+                                 const std::optional<TensorPtr> &weight_tensor,
+                                 const std::optional<TensorPtr> &bias_tensor,
                                  const std::optional<TensorPtr> &mean_tensor,
                                  const std::optional<TensorPtr> &variance_tensor, const BoolImmPtr &training,
                                  const FP32ImmPtr &momentum, const FP32ImmPtr &epsilon);
