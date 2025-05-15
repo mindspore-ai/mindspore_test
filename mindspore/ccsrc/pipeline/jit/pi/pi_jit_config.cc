@@ -16,6 +16,7 @@
 #include "pipeline/jit/pi/pi_jit_config.h"
 #include <string>
 #include <unordered_map>
+#include <vector>
 #include "utils/log_adapter.h"
 #include "pipeline/jit/pi/external.h"
 #include "pipeline/jit/pi/utils/utils.h"
@@ -36,20 +37,16 @@ constexpr const char *kGuardFuncMapName = "guard_func_map";
 static const std::unordered_map<std::string, bool (GraphJitConfig::*)(PyObject *)> key_map = {
   {"auto_jit_func_filter", &GraphJitConfig::SetAutoJitFilter},
   {"auto_jit_cell", &GraphJitConfig::SetBool<GraphJitConfig::kAutoJitCell>},
-  {"print_after_all", &GraphJitConfig::SetBool<GraphJitConfig::kPrintAfterAll>},
   {"print_bb", &GraphJitConfig::SetBool<GraphJitConfig::kPrintBB>},
-  {"print_bytecode", &GraphJitConfig::SetBool<GraphJitConfig::kPrintBytecode>},
   {"interpret_captured_code", &GraphJitConfig::SetBool<GraphJitConfig::kInterpretCapturedCode>},
   {"compile_with_try", &GraphJitConfig::SetBool<GraphJitConfig::kCompileWithTry>},
   {"specialize_scalar", &GraphJitConfig::SetBool<GraphJitConfig::kGuardSpecializeScalar>},
   {"specialize_container", &GraphJitConfig::SetBool<GraphJitConfig::kGuardSpecializeContainer>},
   {"specialize_tensor", &GraphJitConfig::SetBool<GraphJitConfig::kGuardSpecializeTensor>},
-  {"print_guard", &GraphJitConfig::SetBool<GraphJitConfig::kPrintGuard>},
   {"loop_unrolling", &GraphJitConfig::SetBool<GraphJitConfig::kLoopUnrolling>},
   {"infer_only", &GraphJitConfig::SetBool<GraphJitConfig::kInferOnly>},
   {"strict_trace", &GraphJitConfig::SetBool<GraphJitConfig::kStrictTrace>},
   {"perf_statistics", &GraphJitConfig::SetBool<GraphJitConfig::kPerfStatistics>},
-  {"LOG_GRAPH_BREAK", &GraphJitConfig::SetBool<GraphJitConfig::kLogGraphBreak>},
   {"LOG_PERF", &GraphJitConfig::SetBool<GraphJitConfig::kLogPerf>},
   {"LOG_GUARD_PERF", &GraphJitConfig::SetBool<GraphJitConfig::kLogGuardPerf>},
   {"enable_dynamic_shape", &GraphJitConfig::SetBool<GraphJitConfig::kEnableDynamicShape>},
@@ -76,23 +73,33 @@ static const std::unordered_map<std::string, bool (GraphJitConfig::*)(PyObject *
   {"recapture_loop_body", &GraphJitConfig::SetBool<GraphJitConfig::kReCaptureLoopBody>},
 };
 
+static const std::unordered_map<std::string, GraphJitConfig::LogConfig> key_to_log_map = {
+  {"print_after_all", GraphJitConfig::kAll},
+  {"print_bytecode", GraphJitConfig::kBytecode},
+  {"print_guard", GraphJitConfig::kGuard},
+  {"LOG_GRAPH_BREAK", GraphJitConfig::kGraphBreak},
+};
+
+static const std::unordered_map<std::string, GraphJitConfig::LogConfig> log_map = {
+  {"all", GraphJitConfig::kAll},
+  {"bytecode", GraphJitConfig::kBytecode},
+  {"guard", GraphJitConfig::kGuard},
+  {"graph_break", GraphJitConfig::kGraphBreak},
+};
+
 GraphJitConfig::GraphJitConfig() : int_conf{0}, bool_conf{false} {
   bool_conf[kAutoJitCell - kBoolConf] = false;
-  bool_conf[kPrintAfterAll - kBoolConf] = false;
   bool_conf[kPrintBB - kBoolConf] = false;
-  bool_conf[kPrintBytecode - kBoolConf] = false;
   bool_conf[kInterpretCapturedCode - kBoolConf] = false;
   bool_conf[kCompileWithTry - kBoolConf] = true;
   bool_conf[kGuardSpecializeScalar - kBoolConf] = true;
   bool_conf[kGuardSpecializeContainer - kBoolConf] = false;
   bool_conf[kGuardSpecializeTensor - kBoolConf] = false;
-  bool_conf[kPrintGuard - kBoolConf] = false;
   bool_conf[kLoopUnrolling - kBoolConf] = true;
   bool_conf[kSkipException - kBoolConf] = false;
   bool_conf[kInferOnly - kBoolConf] = true;
   bool_conf[kStrictTrace - kBoolConf] = true;
   bool_conf[kPerfStatistics - kBoolConf] = false;
-  bool_conf[kLogGraphBreak - kBoolConf] = false;
   bool_conf[kLogPerf - kBoolConf] = false;
   bool_conf[kLogGuardPerf - kBoolConf] = false;
   bool_conf[kEnableDynamicShape - kBoolConf] = false;
@@ -270,8 +277,38 @@ void GraphJitConfig::Update(const py::object &c) {
       if (iter != key_map.end() && (this->*(iter->second))(value)) {
         continue;
       }
+      auto log_iter = key_to_log_map.find(k);
+      if (log_iter != key_to_log_map.end()) {
+        MS_LOG(WARNING) << "For 'jit_config', the parameter '" << k
+                        << "' has been deprecated. Please use the "
+                           "environment variable 'MS_JIT_BYTECODE_LOGS' instead. For more details, please refer to "
+                           "https://www.mindspore.cn/docs/en/master/api_python/env_var_list.html.";
+        log_conf_[log_iter->second] = value;
+        continue;
+      }
     }
     MS_LOG(WARNING) << "Unknown PIJit option: " << std::string(py::str(key)) << ":" << std::string(py::str(value));
+  }
+
+  // Log config
+  std::stringstream jit_log(common::GetEnv("MS_JIT_BYTECODE_LOGS"));
+  std::vector<std::string> tokens;
+  std::string token;
+
+  while (std::getline(jit_log, token, ',')) {
+    token.erase(0, token.find_first_not_of(" "));
+    token.erase(token.find_last_not_of(" ") + 1);
+    if (!token.empty()) {
+      tokens.push_back(token);
+    }
+  }
+
+  for (const auto &t : tokens) {
+    auto it = log_map.find(t);
+    if (it != log_map.end()) {
+      log_conf_[it->second] = true;
+      MS_LOG(DEBUG) << it->first << "=true";
+    }
   }
 }
 

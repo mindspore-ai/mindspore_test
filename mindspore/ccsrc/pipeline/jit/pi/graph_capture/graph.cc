@@ -70,7 +70,7 @@ Graph::Graph(PyCodeObject *co, PyObject *globals, const GraphJitConfig &conf)
   guard_builder_ = std::make_unique<GuardBuilder>(
     // save config
     Config().GetBoolConfig(GraphJitConfig::kStrictTrace), Config().getIntConfig(GraphJitConfig::kMaxTraceDepth),
-    Config().GetBoolConfig(GraphJitConfig::kPrintGuard));
+    Config().GetLogConfig(GraphJitConfig::kGuard));
 
   break_info_.bci_ = -1;
   break_info_.reason_ = StopTraceReason::kNonStopTrace;
