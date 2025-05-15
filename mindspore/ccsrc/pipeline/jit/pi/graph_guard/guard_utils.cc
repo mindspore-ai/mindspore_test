@@ -137,8 +137,6 @@ class ItemData {
 
   ItemType GetItemType() const { return tp_; }
 
-  virtual bool MatchDynamicShape(std::shared_ptr<ItemData> other) { return false; }
-
  protected:
   virtual void SubInfo(InfoPack *info) {}
   ItemType tp_;
@@ -1253,6 +1251,9 @@ class MetaTensorData : public ItemData {
     StoreTensor(GetStubInfo(obj));
   }
 
+  const auto &shape() const { return shape_; }
+  const auto &data_type() const { return data_type_; }
+
   bool operator==(const ItemData &obj) const override {
     if (ItemData::operator==(obj)) {
       const MetaTensorData &other = static_cast<const MetaTensorData &>(obj);
@@ -1281,7 +1282,7 @@ class MetaTensorData : public ItemData {
     return false;
   }
 
-  tensor::TensorPtr GetStubInfo(PyObject *obj) const {
+  static tensor::TensorPtr GetStubInfo(PyObject *obj) {
     py::object py_tensor = py::reinterpret_borrow<py::object>(obj);
     if (!tensor::IsTensorPy(obj)) {
       // stub tensor is deprecated and will be remove
@@ -1297,10 +1298,6 @@ class MetaTensorData : public ItemData {
     return value_ptr;
   }
 
-  py::object MakeTensor() {
-    return PackTensorToPyObject(std::make_shared<mindspore::tensor::Tensor>(data_type_->type_id(), shape_));
-  }
-
   bool IsDynamicShape() const { return is_dynamic_shape_; }
 
   std::string ToString() override {
@@ -1308,37 +1305,17 @@ class MetaTensorData : public ItemData {
     return DESC(meta_tensor) + DESC_END;
   }
 
-  bool MatchDynamicShape(std::shared_ptr<ItemData> other) override {
-    auto type = other->GetItemType();
-    if (type != ItemType::Tensor && type != ItemType::MetaTensor) {
-      return false;
-    }
-    auto o = static_cast<MetaTensorData *>(other.get());
-    if (!CheckDataType(*o) || specialized_ != false || o->specialized_ != false) {
-      return false;
-    }
-    if (shape_.size() != o->shape_.size()) {
-      shape_ = {kDynamicDim};
-    } else {
-      for (size_t idx = 0; idx < shape_.size(); ++idx) {
-        if (shape_[idx] != kDynamicShape && shape_[idx] != o->shape_[idx]) {
-          shape_[idx] = kDynamicShape;
-        }
-      }
-    }
-    return true;
-  }
-
  protected:
   MetaTensorData(bool needSpecialize, int recurseDepth)
       : ItemData(ItemType::MetaTensor, needSpecialize, recurseDepth) {}
   virtual std::string ToStringIntern() {
     std::string param_desc = ParamInfoData::ToStringAttr(param_);
-    std::string shape = "";
+    std::string shape_str = "";
     for (size_t i = 0; i < shape_.size(); ++i) {
-      shape += DESC_INDEX_V(shape_, i);
+      shape_str += DESC_INDEX_V(shape_, i);
     }
-    return DESC_STRING(tid_) + DESC_TOSTRING(data_type_) + DESC_STRING(is_parameter_) + DESC(param_desc) + DESC(shape);
+    return DESC_STRING(tid_) + DESC_TOSTRING(data_type_) + DESC_STRING(is_parameter_) + DESC(param_desc) +
+           DESC(shape_str);
   }
   bool CheckTypeAndShape(const TypePtr &tp, const ShapeVector &sv) const {
     return CheckShape(shape_, sv) && ((data_type_ == nullptr && tp == nullptr) ||
@@ -1506,7 +1483,7 @@ class TensorData : public MetaTensorData {
     if (!specialized_) {
       return true;
     }
-    // BaseTensor::data_sync need WaitAll pipeline, it's too expensive
+    // Tensor::data_sync need WaitAll pipeline, it's too expensive
     auto data = tensor_ptr->data_ptr();
     if (data_ptr_ == nullptr || reinterpret_cast<const uint8_t *>(data->const_data()) == nullptr) {
       // If not data_sync, check data size, but shape and dtype is checked, here return true.
@@ -1539,7 +1516,6 @@ class TensorData : public MetaTensorData {
   void StoreTensor(mindspore::tensor::TensorPtr tensor_ptr) {
     MetaTensorData::StoreTensor(std::static_pointer_cast<tensor::MetaTensor>(tensor_ptr));
     is_forward_output_ = tensor_ptr->is_forward_output();
-    id_ = tensor_ptr->id();
     base_shape_ptr_ = tensor_ptr->base_shape_ptr() == nullptr ? nullptr : tensor_ptr->base_shape_ptr()->Clone();
 
     auto tensor_tensor_ptr = std::dynamic_pointer_cast<tensor::Tensor>(tensor_ptr);
@@ -1588,7 +1564,6 @@ class TensorData : public MetaTensorData {
   bool is_forward_output_{false};
   std::unique_ptr<uint8_t[]> data_ptr_{nullptr};
   size_t data_len_{0};
-  std::string id_;
   bool graph_output_{false};
   mindspore::abstract::BaseShapePtr base_shape_ptr_{nullptr};
   mindspore::TypePtr cast_dtype_{nullptr};
@@ -2136,6 +2111,10 @@ class CellData : public ItemData {
     cell += DESC_STRING(requires_grad_);
     return DESC(cell) + DESC_END;
   }
+  PyTypeObject *GetTypeObject() {
+    PyObject *weak_ref = PyWeakref_GET_OBJECT(cell_ref_.ptr());
+    return Py_TYPE(weak_ref);
+  }
 
  protected:
   void SubInfo(InfoPack *info) override {
@@ -2399,29 +2378,49 @@ class EqGuard : public GuardItem {
     return false;
   }
 
-  bool MatchDynamicShape(std::shared_ptr<GuardItem> other) override {
-    var_->Detach();
-    other->GetTrace()->Detach();
-    if (other->GetType() != GIType::GTEqual || !(*var_ == *(other->GetTrace())) ||
-        !dp_->MatchDynamicShape((static_cast<EqGuard *>(other.get()))->dp_)) {
-      return false;
-    } else {
-      return true;
-    }
-  }
-
-  PyObject *ApplyDynamicShape(PyObject *obj) override {
+  py::object MakeDynamicShape(const tensor::TensorPtr &new_tensor) {
     auto type = dp_->GetItemType();
     if (type != ItemType::MetaTensor && type != ItemType::Tensor) {
-      return nullptr;
+      return {};
     }
     auto item = (MetaTensorData &)(*dp_);
-    if (item.IsDynamicShape()) {
-      return item.MakeTensor().inc_ref().ptr();
-    } else {
-      return nullptr;
+    if (item.data_type()->type_id() != new_tensor->Dtype()->type_id()) {
+      return {};  // can't symbolic tensor data type
     }
+    ShapeVector new_shape;
+    bool has_dynamic_shape = false;
+    if (item.shape().size() == new_tensor->shape().size()) {
+      for (size_t i = 0; i < new_tensor->shape().size(); ++i) {
+        new_shape.push_back(item.shape()[i] == new_tensor->shape()[i] ? item.shape()[i] : kDynamicShape);
+        has_dynamic_shape |= item.shape()[i] != new_tensor->shape()[i];
+      }
+    } else {
+      new_shape.push_back(kDynamicDim);
+      has_dynamic_shape = true;
+    }
+    if (!has_dynamic_shape) {
+      MS_LOG(INFO) << "maybe not a dynamic shape";
+      return {};
+    }
+    tensor::TensorPtr copy_tensor = std::make_shared<tensor::Tensor>(new_tensor->Dtype()->type_id(), new_shape);
+    copy_tensor->set_is_forward_output(new_tensor->is_forward_output());
+    auto tensor_tensor_ptr = std::dynamic_pointer_cast<tensor::Tensor>(new_tensor);
+    if (tensor_tensor_ptr != nullptr) {
+      if (tensor_tensor_ptr->IsGraphOutput()) {
+        copy_tensor->SetIsGraphOutput();
+      }
+      if (tensor_tensor_ptr->cast_dtype() != nullptr) {
+        copy_tensor->set_cast_dtype(tensor_tensor_ptr->cast_dtype()->Clone());
+      }
+      copy_tensor->set_quant_param(tensor_tensor_ptr->quant_params());
+      copy_tensor->set_name(tensor_tensor_ptr->name());
+    }
+    return PackTensorToPyObject(copy_tensor);
   }
+
+  bool specialized() const { return specialized_; }
+  const auto &Item() const { return dp_; }
+  const auto &GetObject() const { return last_; }
 
  protected:
   ItemDataPtr dp_;
@@ -2511,6 +2510,8 @@ class TypeGuard : public GuardItem {
     }
     return false;
   }
+
+  auto ref_type() const { return refType_; }
 
  private:
   static bool IsTensorOrStubTensor(PyTypeObject *type) { return type != nullptr && IsTensorType<true>(type); }
@@ -2939,6 +2940,55 @@ tensor::TensorPtr TensorToDstDtypeValue(const ValuePtr &src_value, const TypeId 
   MS_EXCEPTION_IF_NULL(src_tensor);
   (void)src_tensor->set_data_type(dst_type_id);
   return src_tensor;
+}
+
+py::object SymbolicFromGuard(const GuardItemPtr &item, const py::object &new_object) {
+  if (item->GetType() != GIType::GTEqual) {
+    return {};
+  }
+  auto eq_guard = static_cast<EqGuard *>(item.get());
+  py::object h = new_object;
+  if (!eq_guard->specialized() && CheckTensorObject(h.ptr())) {
+    tensor::TensorPtr new_tenor = MetaTensorData::GetStubInfo(h.ptr());
+    h = eq_guard->MakeDynamicShape(new_tenor);
+    if (h.ptr() == nullptr) {
+      return {};
+    }
+  }
+  py::object res = py::module::import("mindspore.common").attr("mutable")(h);
+  MS_LOG(DEBUG) << "symbolic object: " << Py_TYPE(new_object.ptr())->tp_name << "(" << py::repr(new_object) << ") ->"
+                << Py_TYPE(h.ptr())->tp_name << "(" << py::repr(h) << ")";
+  return res;
+}
+
+bool IsSpecializedGuard(const GuardItemPtr &item) {
+  if (item->GetType() != GIType::GTEqual) {
+    return false;
+  }
+  return static_cast<EqGuard *>(item.get())->specialized();
+}
+
+bool GuardItemPyTypeMatch(const GuardItemPtr &item, const py::handle &new_object) {
+  if (item->GetType() == GIType::GTType) {
+    return Py_TYPE(new_object.ptr()) == static_cast<TypeGuard *>(item.get())->ref_type();
+  }
+  if (item->GetType() != GIType::GTEqual) {
+    return false;
+  }
+  EqGuard *item_p = static_cast<EqGuard *>(item.get());
+  if (item_p->GetObject().ptr() != nullptr) {
+    return Py_TYPE(new_object.ptr()) == Py_TYPE(item_p->GetObject().ptr());
+  }
+  if (item_p->Item()->GetItemType() == ItemType::PyUnknown) {
+    return false;
+  }
+  if (item_p->Item()->GetItemType() == ItemType::Tensor) {
+    return CheckTensorObject(new_object.ptr());
+  }
+  if (item_p->Item()->GetItemType() == ItemType::Cell) {
+    return Py_TYPE(new_object.ptr()) == static_cast<CellData *>(item_p->Item().get())->GetTypeObject();
+  }
+  return false;
 }
 
 }  // namespace pijit

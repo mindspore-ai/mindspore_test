@@ -77,9 +77,6 @@ class OptGuard : public std::enable_shared_from_this<OptGuard> {
   virtual void Rollback();
   virtual void Pop();
   virtual bool IsEmpty() { return guardList_.size() == 0; }
-  virtual bool MatchShape(std::shared_ptr<OptGuard> other);
-  virtual std::vector<PyObject *> ApplyDynamicShape(EvalFrameObject *frame);
-  virtual void RevertDynamicShape(EvalFrameObject *frame, const std::vector<PyObject *> &backup);
   const auto &guard_list() const { return guardList_; }
 
   bool Erase(const GuardItemPtr &last_item);

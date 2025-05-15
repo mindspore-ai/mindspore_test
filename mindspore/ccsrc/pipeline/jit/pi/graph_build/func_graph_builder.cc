@@ -437,7 +437,7 @@ AbstractWrapperPtr FuncGraphBuilder::AddTopGraphArgInput(const py::object &objec
   AbstractWrapperPtr abstract_wrapper = std::make_shared<AbstractWrapper>(para->abstract());
   (void)key_to_node_.emplace(abstract_wrapper, para);
   origin_top_input_num_ = origin_top_input_num_ + 1;
-  MS_LOG(INFO) << "Add top arg input success, python object: " << py::str(object) << ", node: " << para->DebugString()
+  MS_LOG(INFO) << "Add top arg input success, python object: " << py::repr(object) << ", node: " << para->DebugString()
                << ", abstract: " << abs->ToString();
   return abstract_wrapper;
 }
@@ -449,12 +449,12 @@ AbstractWrapperPtr FuncGraphBuilder::AddTopGraphVargsInputs(const py::object &va
   }
   auto vargs_tuple = vargs.cast<py::tuple>();
   if (vargs_tuple.ptr() == nullptr) {
-    MS_LOG(INFO) << "Vargs object should be tuple but got: " << py::str(vargs) << ", add top graph vargs failed.";
+    MS_LOG(INFO) << "Vargs object should be tuple but got: " << py::repr(vargs) << ", add top graph vargs failed.";
     return nullptr;
   }
   auto value = ConvertPyObjToValue(vargs);
   if (value == nullptr || !value->isa<ValueTuple>()) {
-    MS_LOG(INFO) << "Convert vargs to value failed, vargs: " << py::str(vargs);
+    MS_LOG(INFO) << "Convert vargs to value failed, vargs: " << py::repr(vargs);
     return nullptr;
   }
   auto value_tuple = value->cast<ValueTuplePtr>();
@@ -470,7 +470,7 @@ AbstractWrapperPtr FuncGraphBuilder::AddTopGraphVargsInputs(const py::object &va
     auto cur_obj = vargs_tuple[i].cast<py::object>();
     auto cur_abs = BuildAbstractForInputObject(cur_obj);
     if (cur_abs == nullptr) {
-      MS_LOG(INFO) << "Fail to convert args element " << py::str(cur_obj);
+      MS_LOG(INFO) << "Fail to convert args element " << py::repr(cur_obj);
       return nullptr;
     }
     new_elements.push_back(cur_abs);
@@ -481,7 +481,7 @@ AbstractWrapperPtr FuncGraphBuilder::AddTopGraphVargsInputs(const py::object &va
   para->set_user_data(kPiJitPyObjKey, std::make_shared<py::object>(vargs));
   AbstractWrapperPtr abstract_wrapper = std::make_shared<AbstractWrapper>(para->abstract());
   (void)key_to_node_.emplace(abstract_wrapper, para);
-  MS_LOG(INFO) << "Add top vargs input success, python object: " << py::str(vargs) << ", node: " << para->DebugString()
+  MS_LOG(INFO) << "Add top vargs input success, python object: " << py::repr(vargs) << ", node: " << para->DebugString()
                << ", abstract: " << new_vargs_abs->ToString();
   origin_top_input_num_ = origin_top_input_num_ + 1;
   return abstract_wrapper;

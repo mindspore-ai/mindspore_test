@@ -160,6 +160,7 @@ class GuardContext {
 class CodeCache {
  public:
   struct FailInfo {
+    GuardItemPtr item_;
     int count_;
   };
 
@@ -169,27 +170,24 @@ class CodeCache {
   const auto &code() const { return code_; }
 
   void set_code(const OptCodePtr &ptr) { code_ = ptr; }
-  FailInfo FindFailInfo(const GuardItemPtr &p) const;
+  FailInfo FindFailInfo(const TracePtr &p, GIType item_type) const;
   void CollectFailGuard();
   void Clear();
 
  private:
   class GuardItemKey {
    public:
-    explicit GuardItemKey(const GuardItemPtr &p) : ptr_(p) {}
-    auto operator-> () const { return ptr_.operator->(); }
+    explicit GuardItemKey(const TracePtr &p) : ptr_(p) {}
     auto ptr() const { return ptr_; }
-    size_t hash() const { return ptr_ ? ptr_->GetTrace()->Info().Id() + ptr_->GetType() : 0; }
-    bool operator==(const GuardItemKey &) const noexcept;
+    bool operator==(const GuardItemKey &o) const noexcept { return ptr_ == o.ptr_ || *ptr_ == *o.ptr_; }
 
    private:
-    GuardItemPtr ptr_;
+    TracePtr ptr_;
   };
   struct KeyHash {
-    bool operator()(const GuardItemKey &p) const noexcept { return p.hash(); }
+    bool operator()(const GuardItemKey &p) const noexcept { return p.ptr()->Info().Id(); }
   };
 
-  using GuardItemSet = std::unordered_set<GuardItemKey, KeyHash>;
   using FailGuardItemMap = std::unordered_map<GuardItemKey, FailInfo, KeyHash>;
 
   OptOptionPtr jcr_;

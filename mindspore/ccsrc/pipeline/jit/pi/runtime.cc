@@ -493,30 +493,9 @@ static bool JitCompile(PyThreadState *tstate, JitCompileResults *c) {
                                        "PIJitCapture");
     c->set_stat(JitCompileResults::GRAPH_BUILDING);
     auto aobject_resource = AObject::MakeResource();
-    bool enable_dynamicshape = c->conf()->GetBoolConfig(GraphJitConfig::kEnableDynamicShape);
-    std::vector<PyObject *> backup;
     GuardForFrame(frame, c->code(), *c->conf());
-    OptStrategy::MakeGCStrategy(c->codehub(), c->conf()->getIntConfig(GraphJitConfig::kLimitGraphSize),
-                                c->conf()->getIntConfig(GraphJitConfig::kLimitGraphCount), enable_dynamicshape,
-                                c->code());
-    if (enable_dynamicshape) {
-      // this is dynamic symbolic tensor shape. if shape guard failed, use dynamic shape recompile
-      // move this to graph builder ...
-      backup = c->code()->GetGuard()->ApplyDynamicShape(frame.frame());
-#if !IS_PYTHON_3_11_PLUS
-      PyFrame_FastToLocals(frame.frame());
-#endif
-    }
-
     GraphCapture(c);
 
-    if (enable_dynamicshape) {
-      // move this to graph builder ...
-      c->code()->GetGuard()->RevertDynamicShape(frame.frame(), backup);
-#if !IS_PYTHON_3_11_PLUS
-      PyFrame_FastToLocals(frame.frame());
-#endif
-    }
     // global guard is generated while graph build
     c->code()->guard_status() = nullptr;
     aobject_resource.Release();

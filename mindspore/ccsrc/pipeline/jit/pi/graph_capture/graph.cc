@@ -106,6 +106,9 @@ void GuardBuilder::SetGuard(const std::shared_ptr<OptCode> &g) {
 }
 
 bool Graph::NeedSymbolic(ValueNode *node) {
+  if (Config().getIntConfig(GraphJitConfig::kSymbolic) == -1) {
+    return false;
+  }
   if (node->IsConstantValue()) {
     // such as LOAD_CONST,
     MS_LOG(DEBUG) << "The node already marked the constant";
@@ -122,34 +125,34 @@ bool Graph::NeedSymbolic(ValueNode *node) {
   if (jcr->cache().fail_guard().empty()) {
     return false;
   }
-  const auto size = GetGuardManager()->GetGuard()->guard_list().size();
-  if (!this->GuardValueNode(node)) {
-    return false;
-  }
-  if (size + 1 != GetGuardManager()->GetGuard()->guard_list().size()) {
-    MS_LOG(INFO) << "more than one guard, not implement";
-    return false;
-  }
-  GuardItemPtr except = GetGuardManager()->GetGuard()->guard_list().back();
-  auto item = jcr->cache().FindFailInfo(except);
-  if (item.count_ == 0) {
+  TracePtr trace = this->TraceValueNode(node);
+  auto item = jcr->cache().FindFailInfo(trace, GIType::GTEqual);
+  if (item.count_ == 0) {  // can't symbolic object type
     return false;
   }
   const int symbolic_scalar = Config().getIntConfig(GraphJitConfig::kSymbolic) + 1;
   const int symbolic_tensor = Config().getIntConfig(GraphJitConfig::kSymbolic);
-  const int guard_strategy_symbol = 1;
-  int guard_strategy = item.count_ > (real_type == AObject::kTypeTensor ? symbolic_tensor : symbolic_scalar);
-  MS_LOG(DEBUG) << "find failed item: !! " << except->GetTrace()->ToString() << " fail count: " << item.count_
-                << " except > " << (real_type == AObject::kTypeTensor ? symbolic_tensor : symbolic_scalar) << std::endl;
-  bool is_mutable = guard_strategy == guard_strategy_symbol;
-  if (is_mutable) {
-    node->SetConstantValue(false);
-    bool succ = GetGuardManager()->GetGuard()->Erase(except);
-    MS_EXCEPTION_IF_CHECK_FAIL(succ, "just create guard item, but can't find it in guard map");
-    // clear compile cache for this fail item ...
-    // erase fail item from cache ...
+  const int symbolic_shape = symbolic_tensor > 0 ? symbolic_tensor + 4 : INT_MAX;
+  bool is_tensor = real_type == AObject::kTypeTensor;
+  // guard is not value equal guard for tensor, will lower to dynamic shape.
+  int threshold = is_tensor ? (IsSpecializedGuard(item.item_) ? symbolic_tensor : symbolic_shape) : symbolic_scalar;
+  MS_LOG(DEBUG) << "find failed item: !! " << item.item_->GetTrace()->ToString() << " fail count: " << item.count_
+                << " > " << threshold << std::endl;
+  bool is_mutable = item.count_ > threshold;
+  if (!is_mutable) {
+    return false;
   }
-  return is_mutable;
+  py::object symbol_object = SymbolicFromGuard(item.item_, node->GetVobj()->GetPyObject());
+  if (symbol_object.ptr() == nullptr) {
+    MS_LOG(INFO) << "symbolic fail from guard: " << item.item_->ToString() << std::endl
+                 << "the node is: " << node->ToString();
+    return false;
+  }
+  node->SetVobj(AObject::Convert(symbol_object));
+  node->GetTrace()->SetObject(symbol_object);
+  // clear compile cache for this fail item ...
+  // erase fail item from cache ...
+  return true;
 }
 
 bool Graph::PrepareParameter(ValueNode *node) {

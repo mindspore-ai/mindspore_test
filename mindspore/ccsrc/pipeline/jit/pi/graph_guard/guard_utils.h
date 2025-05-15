@@ -52,8 +52,6 @@ class GuardItem : public std::enable_shared_from_this<GuardItem> {
   virtual bool operator==(const GuardItem &obj) const;
   virtual GIType GetType() const { return type_; }
   virtual void UpdateTrace(std::map<size_t, TracePtr> *unique_cache);
-  virtual bool MatchDynamicShape(std::shared_ptr<GuardItem> other) { return false; }
-  virtual PyObject *ApplyDynamicShape(PyObject *obj) { return nullptr; }
   virtual std::shared_ptr<GuardItem> Optimize();
   virtual std::shared_ptr<GuardItem> This() { return shared_from_this(); }
   int fail_count() const { return fail_count_; }
@@ -90,6 +88,13 @@ PyObject *GetMsTensorType();
 
 ValuePtr ScalarToDstDtypeValue(const ValuePtr &src_value, const std::pair<TypeId, bool> &dst_type);
 tensor::TensorPtr TensorToDstDtypeValue(const ValuePtr &src_value, const TypeId &dst_type_id);
+
+// only support tensor, int, float, bool
+// for tensor has: 1.value guard 2.shape guard 3. dynamic shape equal
+// for scalar has: 1.value guard 2.type guard
+py::object SymbolicFromGuard(const GuardItemPtr &item, const py::object &new_object);
+bool IsSpecializedGuard(const GuardItemPtr &item);
+bool GuardItemPyTypeMatch(const GuardItemPtr &item, const py::handle &new_object);
 
 }  // namespace pijit
 }  // namespace mindspore

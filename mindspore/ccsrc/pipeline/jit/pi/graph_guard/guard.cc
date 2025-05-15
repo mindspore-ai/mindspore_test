@@ -318,12 +318,7 @@ bool OptGuard::Check(PyFrameWrapper frame, bool print, bool perf) {
     if (result) {
       continue;
     }
-    MS_LOG(DEBUG) << "Guard check fail:" << item->ToString();
-    if (print) {
-      auto trace = item->GetTrace();
-      auto obj = GetObjectFromTrace(frame, trace);
-      GRAPH_JIT_LOG_F("%s\n", GuardCheckFailInfo(item, obj).c_str());
-    }
+    MS_LOG(DEBUG) << "Guard check fail:" << GuardCheckFailInfo(item, GetObjectFromTrace(frame, item->GetTrace()));
     UpdateGuardList(item);
     return false;
   }
@@ -472,7 +467,11 @@ static GuardItemPtr GuardOnGDeduce(TracePtr var, PyObject *obj, const std::map<s
   } else if (py::isinstance<mindspore::ParamInfo>(obj)) {
     item = GuardEqual(var, true, INT_MAX);
   } else {
-    item = GuardType(var);
+    // CheckLiteral use exactly type match, so mindspore.mutable object will come to this case.
+    item = GuardOnMutableOrConstObj(var);
+    if (item == nullptr) {
+      item = GuardType(var);
+    }
   }
   return item;
 }
@@ -628,149 +627,6 @@ void OptGuard::Rollback() {
 }
 
 void OptGuard::Pop() { guardStack_.pop(); }
-
-static bool MatchDynamicShape(GuardItemPtr item, const std::vector<GuardItemPtr> &list) {
-  auto trace_type = item->GetTrace()->GetTraceType();
-  auto guard_type = item->GetType();
-  if ((trace_type != TraceType::Deref && trace_type != TraceType::Param) || guard_type != GIType::GTEqual) {
-    return false;
-  }
-  for (auto other : list) {
-    if (item->MatchDynamicShape(other)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-bool OptGuard::MatchShape(OptGuardPtr other) {
-  if (std::any_of(guardList_.begin(), guardList_.end(), [other](auto &item) {
-        return (!std::any_of(other->guardList_.begin(), other->guardList_.end(), [item](GuardItemPtr oi) {
-          return *item == *oi;
-        }) && !MatchDynamicShape(item, other->guardList_));
-      })) {
-    return false;
-  }
-  if (std::any_of(other->guardList_.begin(), other->guardList_.end(), [this](auto &item) {
-        return (!std::any_of(guardList_.begin(), guardList_.end(), [item](GuardItemPtr oi) { return *item == *oi; }));
-      })) {
-    return false;
-  }
-  return true;
-}
-#if IS_PYTHON_3_11_PLUS
-std::vector<PyObject *> OptGuard::ApplyDynamicShape(EvalFrameObject *f) {
-  std::vector<PyObject *> ret;
-  MS_LOG(ERROR) << "not implement in python3.11";
-  return ret;
-}
-void OptGuard::RevertDynamicShape(EvalFrameObject *f, const std::vector<PyObject *> &backup) {
-  MS_LOG(ERROR) << "not implement in python3.11";
-}
-#else
-static PyObject *FindItem(const std::vector<GuardItemPtr> &guardList, int idx, TraceType type, PyObject *obj) {
-  auto iter = std::find_if(guardList.begin(), guardList.end(), [idx, type](GuardItemPtr item) {
-    if (item->GetTrace()->GetTraceType() == type) {
-      int index;
-      std::string name, module_name;
-      (reinterpret_cast<RootTrace *>(item->GetTrace().get()))->GetParam(&index, &name, &module_name);
-      return (idx == index);
-    } else {
-      return false;
-    }
-  });
-  if (iter != guardList.end()) {
-    GuardItemPtr item = *iter;
-    return item->ApplyDynamicShape(obj);
-  } else {
-    return nullptr;
-  }
-}
-
-std::vector<PyObject *> OptGuard::ApplyDynamicShape(EvalFrameObject *f) {
-  std::vector<PyObject *> ret;
-  int argc = f->f_code->co_argcount + f->f_code->co_kwonlyargcount;
-  PyObject *vargs = NULL;
-  PyObject *kwargs = NULL;
-  if (f->f_code->co_flags & CO_VARARGS) {
-    vargs = f->f_localsplus[argc];
-  }
-  if (f->f_code->co_flags & CO_VARKEYWORDS) {
-    kwargs = f->f_localsplus[argc + (vargs ? 1 : 0)];
-  }
-  for (int i = 0; i < argc; ++i) {
-    auto new_obj = FindItem(guardList_, i, TraceType::Param, f->f_localsplus[i]);
-    if (new_obj == nullptr) {
-      ret.push_back(nullptr);
-    } else {
-      ret.push_back(f->f_localsplus[i]);
-      f->f_localsplus[i] = new_obj;
-    }
-  }
-
-  if (vargs != NULL) {
-    ret.push_back(nullptr);
-  }
-  if (kwargs != NULL) {
-    ret.push_back(nullptr);
-  }
-  ret.resize(f->f_code->co_nlocals, nullptr);
-  for (int i = 0; f->f_code->co_cell2arg && i < PyTuple_GET_SIZE(f->f_code->co_cellvars); ++i) {
-    Py_ssize_t arg = f->f_code->co_cell2arg[i];
-    if (arg != CO_CELL_NOT_AN_ARG) {
-      auto cell = f->f_localsplus[f->f_code->co_nlocals + i];
-      auto new_obj = FindItem(guardList_, i, TraceType::Deref, PyCell_GET(cell));
-      if (new_obj == nullptr) {
-        ret.push_back(nullptr);
-      } else {
-        ret.push_back(PyCell_GET(cell));
-        PyCell_SET(cell, new_obj);
-      }
-    }
-  }
-  ret.resize(f->f_code->co_nlocals + PyTuple_GET_SIZE(f->f_code->co_cellvars), nullptr);
-  for (int i = 0; i < PyTuple_GET_SIZE(f->f_code->co_freevars); ++i) {
-    Py_ssize_t arg = PyTuple_GET_SIZE(f->f_code->co_cellvars) + i;
-    auto cell = f->f_localsplus[f->f_code->co_nlocals + arg];
-    auto new_obj = FindItem(guardList_, arg, TraceType::Deref, PyCell_GET(cell));
-    if (new_obj == nullptr) {
-      ret.push_back(nullptr);
-    } else {
-      ret.push_back(PyCell_GET(cell));
-      PyCell_SET(cell, new_obj);
-    }
-  }
-  return ret;
-}
-
-void OptGuard::RevertDynamicShape(EvalFrameObject *f, const std::vector<PyObject *> &backup) {
-  int argc = f->f_code->co_argcount + f->f_code->co_kwonlyargcount;
-  for (int i = 0; i < argc; ++i) {
-    if (backup[i] != nullptr) {
-      Py_XDECREF(f->f_localsplus[i]);
-      f->f_localsplus[i] = backup[i];
-    }
-  }
-  for (int i = 0; f->f_code->co_cell2arg && i < PyTuple_GET_SIZE(f->f_code->co_cellvars); ++i) {
-    Py_ssize_t arg = f->f_code->co_cell2arg[i];
-    if (arg != CO_CELL_NOT_AN_ARG) {
-      auto cell = f->f_localsplus[f->f_code->co_nlocals + i];
-      if (backup[f->f_code->co_nlocals + i] != nullptr) {
-        Py_XDECREF(PyCell_GET(cell));
-        PyCell_SET(cell, backup[f->f_code->co_nlocals + i]);
-      }
-    }
-  }
-  for (int i = 0; i < PyTuple_GET_SIZE(f->f_code->co_freevars); ++i) {
-    Py_ssize_t arg = PyTuple_GET_SIZE(f->f_code->co_cellvars) + i;
-    auto cell = f->f_localsplus[f->f_code->co_nlocals + arg];
-    if (backup[f->f_code->co_nlocals + arg] != nullptr) {
-      Py_XDECREF(PyCell_GET(cell));
-      PyCell_SET(cell, backup[f->f_code->co_nlocals + arg]);
-    }
-  }
-}
-#endif
 
 std::string OptGuard::ToString() const {
   std::stringstream s;

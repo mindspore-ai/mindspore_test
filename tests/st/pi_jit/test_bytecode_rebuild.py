@@ -205,7 +205,7 @@ def test_kw_inline():
         return kwf(1), kwf(1, 2), kwf(1, 2, a=3), kwf(p=1, a=3), kwf(p=1), kwf(a=1), kwf2(a=1, b=2), kwf3(a=1)
 
     a = kw_inline_test()
-    b = pi_jit_with_config(function=kw_inline_test, jit_config=config)()
+    b = pi_jit_with_config(function=kw_inline_test)()
     assert a == b
 
 

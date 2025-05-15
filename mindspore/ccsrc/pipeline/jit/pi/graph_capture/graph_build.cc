@@ -1128,9 +1128,12 @@ bool GraphBuilder::Symbolic(ValueNode *node) {
     return false;
   }
   MS_LOG(INFO) << "Try adding node as graph input: [" << node->ToString();
+  o = node->GetVobj()->GetPyObject();
   // rename 'AddAttributeInput' to 'AddSymbolicParameter', call this only if the guard failed
   auto abstract_wrapper = FGBuilder()->AddAttributeInput(o);
-  MS_EXCEPTION_IF_CHECK_FAIL(abstract_wrapper, "Failed to add scalar or Tensor as input: [" + node->ToString());
+  MS_EXCEPTION_IF_CHECK_FAIL(
+    abstract_wrapper != nullptr && !abstract_wrapper->IsConstant(),
+    "Failed to add scalar or Tensor as input: [" + node->ToString() + "] object type is " + Py_TYPE(o.ptr())->tp_name);
   node->set_abstract_wrapper(abstract_wrapper);
   // tensor must be guard dtype
   graph_->GuardParameter(node);
@@ -3984,6 +3987,9 @@ void GraphBuilder::AddInput(ValueNode *node) {
   if (IsParameterSequence(obj)) {
     MS_LOG(WARNING) << "Get Parameter as function inputs, recompile if it's id changed";
     // delay guard
+    return;
+  }
+  if (Symbolic(node)) {
     return;
   }
   AbstractWrapperPtr ret = nullptr;

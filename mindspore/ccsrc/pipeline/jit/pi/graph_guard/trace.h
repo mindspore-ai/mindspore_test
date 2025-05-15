@@ -96,6 +96,7 @@ class Trace : public std::enable_shared_from_this<Trace> {
   void Cache(PTraceContext context, const py::object &obj);
   void ClearCache();
   PyObject *GetObject() const { return obj_.ptr(); }
+  void SetObject(const py::handle &o) { obj_ = py::reinterpret_borrow<py::object>(o); }
 
  protected:
   py::object obj_;
