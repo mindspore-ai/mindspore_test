@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -259,6 +259,31 @@ py::object HandleForwardResult(const BaseRef &forward_result, const FuncGraphPtr
     return ret_tuple[kIndex0];
   }
 }
+
+bool WithRecomputedScope(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
+  if (!node->isa<CNode>()) {
+    return false;
+  }
+  auto full_name_with_scope = node->fullname_with_scope();
+  return full_name_with_scope.find(kAttrRecompute) == 0;
+}
+
+bool HasRecomputedScope(const CNodePtr &node) {
+  // Exclude nodes without recompute scope
+  if (!WithRecomputedScope(node)) {
+    return false;
+  }
+  // Do not directly judge through the kAttrRecompute to prevent inaccurate passes related to adding this attr
+  // Exclude nodes if has kAttrRecompute, but set as false (cell output node)
+  auto cnode = node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
+  if (common::AnfAlgo::HasNodeAttr(kAttrRecompute, cnode) &&
+      !common::AnfAlgo::GetNodeAttr<bool>(cnode, kAttrRecompute)) {
+    return false;
+  }
+  return true;
+}
 }  // namespace
 
 std::pair<bool, FuncGraphPtr> GetBpropGraphWithParamalization(const pynative::GradParamPtr &grad_param) {
@@ -472,6 +497,10 @@ void BpropGenerator::Init() {
   }
   auto primal_fg = primal_fg_iter->second.func_graph();
   MS_EXCEPTION_IF_NULL(primal_fg);
+
+  // Check whether top cell do recompute
+  bool top_cell_do_recompute = primal_fg->has_flag(kTopCellWithRecompute);
+
   for (const auto &node : TopoSort(basic_graph_->return_node(), SuccDeeperSimple)) {
     // Check fprop graph for each prim
     auto k_fg = GetValueNode<FuncGraphPtr>(node);
@@ -487,6 +516,11 @@ void BpropGenerator::Init() {
     const auto &primal_cnode = primal_cnode_iter->second.primal_cnode();
     MS_EXCEPTION_IF_NULL(primal_cnode);
     if (primal_cnode->func_graph() != primal_fg || IsUnSupportPrim(primal_cnode)) {
+      continue;
+    }
+    // Do not reuse recompute sub cell's cnode
+    if (!top_cell_do_recompute && HasRecomputedScope(primal_cnode)) {
+      MS_LOG(DEBUG) << "Need recompute cnode: " << primal_cnode->DebugString();
       continue;
     }
     // Process primal abstract

@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -572,6 +572,14 @@ bool Jit::GetJitGradGraph(const pipeline::ResourcePtr &resource, const std::stri
   graph_executor->SetJitPrimalFuncGraph(primal_fg, graph_phase_);
   bool is_control_flow = PyNativeAlgo::Common::IsControlFlowGraph(jit_forward_graph);
   auto jit_output_has_dict = JitOutputHasDict(jit_forward_graph->output()->abstract());
+
+  // Get top cell recompute flag
+  py::object input = resource->source_input();
+  if (input != py::none() && py::hasattr(input, ad::kOutputNoRecompute)) {
+    MS_LOG(INFO) << "Top cell with recompute flag, do not do recompute again in gradjit, cell: " << py::str(input);
+    primal_fg->set_flag(ad::kTopCellWithRecompute, true);
+  }
+
   static bool enable_valuenode_replace = (common::GetCompileConfig("PYNATIVE_JIT_GRAD_MODE") == "1");
   set_eliminate_forward(!is_control_flow && !jit_output_has_dict && enable_valuenode_replace);
   // Using adgrad to generate fprop func graph for jit function in pynative mode
