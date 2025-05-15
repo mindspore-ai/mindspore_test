@@ -57,6 +57,11 @@ ORIGIN_METHOD(HcclSend, HcclResult, void *, uint64_t, HcclDataType, uint32_t, Hc
 ORIGIN_METHOD(HcclRecv, HcclResult, void *, uint64_t, HcclDataType, uint32_t, HcclComm, aclrtStream);
 ORIGIN_METHOD(HcclAlltoAllV, HcclResult, const void *, const void *, const void *, HcclDataType, const void *,
               const void *, const void *, HcclDataType, HcclComm, aclrtStream);
+ORIGIN_METHOD(HcclAllGatherV, HcclResult, void *, uint64_t, void *, const void *, const void *, HcclDataType, HcclComm,
+              aclrtStream);
+ORIGIN_METHOD(HcclReduceScatterV, HcclResult, void *, const void *, const void *, void *, uint64_t, HcclDataType,
+              HcclReduceOp, HcclComm, aclrtStream);
+
 ORIGIN_METHOD(HcclAlltoAll, HcclResult, const void *, uint64_t, HcclDataType, const void *, uint64_t, HcclDataType,
               HcclComm, aclrtStream);
 ORIGIN_METHOD(HcclBarrier, HcclResult, HcclComm, aclrtStream);

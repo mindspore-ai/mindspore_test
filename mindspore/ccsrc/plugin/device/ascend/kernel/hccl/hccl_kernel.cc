@@ -136,8 +136,8 @@ bool HcclKernel::Init(const std::vector<KernelTensor *> &inputs, const std::vect
     return false;
   }
 
-  std::set<std::string> reduce_op_names = {kAllReduceOpName, kReduceScatterOpName, kReduceOpName,
-                                           kMatMulAllReduceOpName};
+  static std::set<std::string> reduce_op_names = {kAllReduceOpName, kReduceScatterOpName, kReduceOpName,
+                                                  kReduceScatterVOpName, kMatMulAllReduceOpName};
   if (reduce_op_names.count(kernel_name_) != 0) {
     if (!HcomUtil::GetHcomOperationType(primitive_, &op_type_, &collective_reduce_type_)) {
       MS_LOG(ERROR) << "GetHcomOperationType fail!";

@@ -549,7 +549,9 @@ KernelWithIndex FetchRealFrontNode(const KernelWithIndex &node_with_index, const
 bool NoNeedContinuesOp(const AnfNodePtr &kernel) {
   bool flag = !common::AnfAlgo::IsCommunicationOp(kernel) ||
               common::AnfAlgo::GetCNodeName(kernel) == kMatMulAllReduceOpName ||
-              common::AnfAlgo::GetCNodeName(kernel) == kAlltoAllVOpName;
+              common::AnfAlgo::GetCNodeName(kernel) == kAlltoAllVOpName ||
+              common::AnfAlgo::GetCNodeName(kernel) == kAllGatherVOpName ||
+              common::AnfAlgo::GetCNodeName(kernel) == kReduceScatterVOpName;
   return flag;
 }
 }  // namespace
