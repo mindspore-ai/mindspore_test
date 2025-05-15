@@ -173,7 +173,14 @@ kernel::KernelModPtr PyBoostUtils::CreateKernelMod(const PrimitivePtr &prim, con
   if (kernel_mod == nullptr) {
     kernel_mod = device_context->GetKernelExecutor(false)->CreateKernelMod(op_name);
     if (kernel_mod == nullptr) {
-      MS_LOG(EXCEPTION) << "Create kernelmod for op " << op_name << " failed";
+      if (common::EnvHelper::GetInstance()->GetEnv("MS_OP_PLUGIN_PATH") != nullptr) {
+        // if env var MS_OP_PLUGIN_PATH is set, then use custom op plugin to load op
+        const std::string custom_op_name = "CustomOpPlugin";
+        kernel_mod = device_context->GetKernelExecutor(false)->CreateKernelMod(custom_op_name);
+        MS_EXCEPTION_IF_NULL(kernel_mod);
+      } else {
+        MS_LOG(EXCEPTION) << "Create kernelmod for op " << op_name << " failed";
+      }
     }
     if (!kernel_mod->Init(prim, inputs, outputs)) {
       MS_LOG(EXCEPTION) << "KernelMod Init Failed: " << op_name;
@@ -588,6 +595,11 @@ std::pair<bool, KernelAttr> PyBoostUtils::SelectKernel(const std::vector<Abstrac
   // only support CPU
   const auto &kernel_mod = device_context->GetKernelExecutor(false)->CreateKernelMod(op_name);
   if (kernel_mod == nullptr) {
+    if (common::EnvHelper::GetInstance()->GetEnv("MS_OP_PLUGIN_PATH") != nullptr) {
+      // if env var MS_OP_PLUGIN_PATH is set, then use custom op plugin to load op
+      MS_LOG(INFO) << "The kernel " << op_name << " unregistered, use custom op plugin";
+      return {true, KernelAttr()};
+    }
     MS_LOG(EXCEPTION) << "The kernel " << op_name << " unregistered.";
   }
   return GetKernelAttr(op_name, kernel_mod, GetInputTypeFromAbstractBase(inputs_abs),

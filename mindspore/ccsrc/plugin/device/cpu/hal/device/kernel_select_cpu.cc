@@ -36,6 +36,7 @@
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "plugin/device/cpu/kernel/custom/custom_aot_cpu_kernel.h"
 #include "plugin/device/cpu/kernel/custom/custom_julia_cpu_kernel.h"
+#include "plugin/device/cpu/kernel/custom/custom_op_plugin_kernel.h"
 #include "plugin/device/cpu/kernel/pyfunc/py_func_cpu_kernel.h"
 #include "common/ms_factory.h"
 #include "utils/trace_base.h"
@@ -679,6 +680,9 @@ void SetCustomOpKernelInfo(const std::string &custom_op_type, const std::string 
   } else if (custom_op_type == kCustomTypeJULIA) {
     kernel::Factory<kernel::NativeCpuKernelMod>::Instance().Register(
       op_name, []() { return std::make_shared<kernel::CustomJULIACpuKernelMod>(); });
+  } else if (custom_op_type == kCustomTypeOPPlugin) {
+    kernel::Factory<kernel::NativeCpuKernelMod>::Instance().Register(
+      op_name, []() { return std::make_shared<kernel::CustomOpPluginCpuKernelMod>(); });
   } else {
     MS_LOG(EXCEPTION) << "Unsupported func type for Custom operator on CPU, it should be "
                       << "'hybrid', 'akg', 'pyfunc' or 'aot' or 'julia', "
@@ -734,6 +738,12 @@ std::pair<std::string, ExceptionType> SetKernelInfoWithMsg(const CNodePtr &kerne
   std::vector<kernel::KernelAttr> object_selected_kernel_attrs;
   const auto &kernel_attrs = kernel::NativeCpuKernelMod::GetCpuSupportedList(op_name);
   if (kernel_attrs.empty()) {
+    if (common::EnvHelper::GetInstance()->GetEnv("MS_OP_PLUGIN_PATH") != nullptr) {
+      // if env var MS_OP_PLUGIN_PATH is set, then use custom op plugin to load op
+      SetCustomOpKernelInfo(kCustomTypeOPPlugin, op_name);
+      UpdateCustomKernelBuildInfo(kernel_node, false);
+      return {};
+    }
     return KernelNotSupportWarning(kernel_node, false);
   } else if (kernel_attrs[0].GetSkipCheck()) {
     object_selected_kernel_attrs = kernel_attrs;
