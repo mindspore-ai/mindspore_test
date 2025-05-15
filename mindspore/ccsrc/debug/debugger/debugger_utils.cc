@@ -55,7 +55,7 @@ namespace mindspore {
 using mindspore::TensorInfoCommForDump;
 using mindspore::TensorInfoForDump;
 
-inline mindspore::tensor::TensorPtr DeviceAddressTensor(device::DeviceAddressPtr device_tensor, const void *src);
+inline mindspore::tensor::TensorPtr KernelTensor2Tensor(device::KernelTensorPtr);
 inline string TensorToString(mindspore::tensor::TensorPtr tensor);
 
 namespace {
@@ -85,8 +85,7 @@ std::vector<size_t> GetIgnoredIndexesForOutput(const CNodePtr &cnode, const Devi
   static bool enable_useless_output = ignore_useless_output_env == "0";
   static bool log_once = true;
   if (log_once) {
-    MS_LOG(INFO) << "Useless output dump is " << (enable_useless_output ? "enabled" : "disabled")
-                 << " (MINDSPORE_DUMP_IGNORE_USELESS_OUTPUT=" << ignore_useless_output_env << "). "
+    MS_LOG(INFO) << "MINDSPORE_DUMP_IGNORE_USELESS_OUTPUT=" << ignore_useless_output_env << ". "
                  << "Invalid outputs will " << (enable_useless_output ? "" : "not ") << "be dumped.";
     log_once = false;
   }
@@ -114,13 +113,20 @@ std::vector<size_t> GetValidDumpIndex(const CNodePtr &cnode, size_t index_size, 
     if (ignored_indexes_set.find(index) != ignored_indexes_set.end()) {
       continue;
     }
-    if (index < tensors.size() && tensors[index]->device_ptr() == nullptr) {
+    if (index >= tensors.size()) {
+      valid_indexes.push_back(index);
+      continue;
+    }
+    MS_EXCEPTION_IF_CHECK_FAIL(index < tensors.size(), "Index out of range. Index: " + std::to_string(index) +
+                                                         ", tensors size: " + std::to_string(tensors.size()));
+    auto tensor = tensors[index];
+    MS_EXCEPTION_IF_NULL(tensor);
+    if (tensor->device_ptr() == nullptr) {
       MS_LOG(INFO) << cnode->fullname_with_scope() << (is_input ? " input" : " output") << ", index " << index
                    << " deviceaddress is nullptr.";
       continue;
     }
-    if (index < tensors.size() && tensors[index]->device_address() &&
-        tensors[index]->device_address()->GetTensorStorageInfo()) {
+    if (tensor->tensor_storage_info()) {
       MS_LOG(WARNING) << cnode->fullname_with_scope() << (is_input ? " input" : " output") << ", index " << index
                       << " deviceaddress is not contiguous. Dump currently does not support non-contiguous data and is "
                          "currently skipped.";
@@ -250,6 +256,7 @@ void LoadInputs(const CNodePtr &cnode, std::vector<KernelTensor *> kernel_tensor
       E2eDump::IsDeviceTargetGPU() ? kOpFormat_DEFAULT : AnfAlgo::GetOutputFormat(input_kernel, kParameterOutputIndex);
 
     string input_tensor_name = input_kernel_name + ':' + "0";
+    MS_EXCEPTION_IF_NULL(kernel_tensors[index]);
     auto device_addr = kernel_tensors[index]->device_address();
 
     auto dump_shape = GetInputKernelShapeVec(input_kernel, kernel_tensors[index], index, trans_flag);
@@ -287,6 +294,7 @@ void LoadOutputs(const CNodePtr &cnode, std::vector<KernelTensor *> kernel_tenso
     auto device_format = E2eDump::IsDeviceTargetGPU() ? kOpFormat_DEFAULT : AnfAlgo::GetOutputFormat(cnode, index);
 
     string tensor_name = kernel_name + ':' + std::to_string(index);
+    MS_EXCEPTION_IF_NULL(kernel_tensors[index]);
     auto device_addr = kernel_tensors[index]->device_address();
     auto dump_shape = GetOutputKernelShapeVec(cnode, kernel_tensors[index], index, trans_flag);
 
@@ -467,10 +475,7 @@ KernelTensorPtr HandleOverflow(const std::vector<TensorInfoForDump> &tensor_info
 }
 
 bool ProcessOverflow(const KernelTensorPtr &overflow_kernel_tensor, uint32_t set_overflow_num) {
-  device::DeviceAddressPtr overflow_result =
-    (overflow_kernel_tensor) ? overflow_kernel_tensor->device_address() : nullptr;
-  const void *add = (overflow_result) ? overflow_result->GetPtr() : nullptr;
-  mindspore::tensor::TensorPtr my_overflow = DeviceAddressTensor(overflow_result, add);
+  mindspore::tensor::TensorPtr my_overflow = KernelTensor2Tensor(overflow_kernel_tensor);
   bool is_overflow = (TensorToString(my_overflow) == "True");
   if (is_overflow && (set_overflow_num == 0 || OverflowCounter::GetInstance().getCount() < set_overflow_num)) {
     OverflowCounter::GetInstance().addCount();
@@ -588,6 +593,7 @@ void PrepareInputDataViaCallback(const CNodePtr &cnode, const DeviceContext *dev
 
   for (size_t index : valid_indexes) {
     auto input_kernel = cnode->input(index + 1);
+    MS_EXCEPTION_IF_NULL(input_kernel_tensors[index]);
     auto &device_tensor = input_kernel_tensors[index]->device_address();
     MS_EXCEPTION_IF_NULL(device_tensor);
 
@@ -623,6 +629,7 @@ void PrepareOutputDataViaCallback(const CNodePtr &cnode, const DeviceContext *de
       continue;
     }
 
+    MS_EXCEPTION_IF_NULL(output_kernel_tensors[index]);
     auto &device_tensor = output_kernel_tensors[index]->device_address();
     MS_EXCEPTION_IF_NULL(device_tensor);
 
@@ -653,18 +660,22 @@ TensorInfoCommForDump GetTensorInfoCommFromCnode(const CNodePtr &cnode) {
   return tensor_info_comm;
 }
 
-inline mindspore::tensor::TensorPtr DeviceAddressTensor(device::DeviceAddressPtr device_tensor, const void *src) {
-  if (!device_tensor) {
+inline mindspore::tensor::TensorPtr KernelTensor2Tensor(device::KernelTensorPtr kernel_tensor) {
+  if (!kernel_tensor) {
     return nullptr;
   }
-  auto host_type = device_tensor->type_id();
-  auto host_shape = device_tensor->GetShapeVector();
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  const void *src = kernel_tensor->device_ptr();
+  auto host_type = kernel_tensor->dtype_id();
+  auto host_shape = kernel_tensor->GetShapeVector();
+  auto device_tensor = kernel_tensor->device_address();
+  MS_EXCEPTION_IF_NULL(device_tensor);
 
   mindspore::tensor::TensorPtr out_tensor = std::make_shared<tensor::Tensor>(host_type, host_shape);
   MS_EXCEPTION_IF_NULL(out_tensor);
   size_t host_size = LongToSize(out_tensor->data().nbytes());
   if (host_size == 0) {
-    MS_LOG(WARNING) << "Dump tensor size is 0 for tensor: . Skip it";
+    MS_LOG(WARNING) << "kernel tensor size is 0, skip it.";
     return out_tensor;
   }
   device_tensor->CopyDeviceToHostWithoutSyncStream(out_tensor->data_c(), host_size, src, host_size);
@@ -733,14 +744,8 @@ inline void Write2File(const TensorInfoForDump &tensor_info, uint32_t stream_id,
     if (it == tensor_info.stat_results.end()) {
       MS_LOG(EXCEPTION) << "The statistics of the " << name << " category cannot be found!";
     }
-    auto result = it->second.back();
-    const void *add = nullptr;
-    if (result) {
-      add = result->device_ptr();
-    }
-    const auto &device_tensor = result->device_address();
-    MS_EXCEPTION_IF_NULL(device_tensor);
-    auto tensor = DeviceAddressTensor(device_tensor, add);
+    auto result_kernel_tensor = it->second.back();
+    auto tensor = KernelTensor2Tensor(result_kernel_tensor);
     csv.WriteToCsv(TensorToString(tensor));
   }
   csv.WriteToCsv("", true);

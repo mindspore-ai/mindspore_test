@@ -32,6 +32,7 @@ TensorPtr SyncDeviceToHostTensor(KernelTensorPtr kernel_tensor) {
   if (!kernel_tensor) {
     return nullptr;
   }
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
   auto device_addr = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_addr);
   auto dtype_id = kernel_tensor->dtype_id();
@@ -52,6 +53,7 @@ KernelTensorPtr StatisticKernel::GenerateDeviceAddress(const size_t &mem_size, c
   auto tensor = AnfAlgo::CreateKernelTensor(
     shape_ptr, type, nullptr, nullptr, mem_size, kernel::GetFormatFromEnumToStr(Format::DEFAULT_FORMAT), dtype_id,
     shape, device_context_->device_context_key().device_name_, device_context_->device_context_key().device_id_);
+  MS_EXCEPTION_IF_NULL(tensor);
   tensor->set_stream_id(kDefaultStreamIndex);
   auto device_addr = tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_addr);
