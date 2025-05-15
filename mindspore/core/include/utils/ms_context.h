@@ -144,6 +144,8 @@ enum MsCtxParam : unsigned {
   MS_CTX_ENABLE_FUSED_CAST_ADD_OPT,
   MS_CTX_NEED_CKPT,
   MS_CTX_ENABLE_OFFLOADING_PACKED_EXPERTS,
+  // Used for flatten weight, remove after the feature is abort.
+  MS_ENV_FLATTEN_WEIGHT,
   MS_CTX_TYPE_BOOL_END,
 
   // parameter of type int

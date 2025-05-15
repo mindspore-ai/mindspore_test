@@ -279,8 +279,7 @@ void ControlActor::FetchParameterInput(OpContext<KernelTensor> *const context) {
                                " current:" + std::to_string(device_contexts_.size()) + " for actor:" + GetAID().Name();
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
     }
-    auto kernel_tensor =
-      FetchParameter(parameter_index.second, context, device_contexts_[parameter_index.first], GetAID());
+    auto kernel_tensor = FetchParameter(parameter_index.second, context, GetAID());
     MS_EXCEPTION_IF_NULL(kernel_tensor);
     if (parameter_index.first >= input_kernel_tensors_.size()) {
       std::string error_info = "The input index is out of range, need:" + std::to_string(parameter_index.first) +
