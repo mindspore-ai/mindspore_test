@@ -1789,6 +1789,7 @@ void SuperKernelActor::BuildKernelActors() {
   MS_EXCEPTION_IF_NULL(graph_);
   const auto &execution_order = graph_->execution_order();
   size_t kernel_num = execution_order.size();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_PRINT_PROF) << "Build " << kernel_num << " kernels for SuperKernelActor.";
   kernel_actors_.resize(kernel_num);
 
   mindspore::HashMap<uint32_t, std::pair<KernelRunnerPtr, KernelRunnerPtr>> send_recv_nodes;
