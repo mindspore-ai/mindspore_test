@@ -30,7 +30,7 @@ namespace mindspore {
 class HiFloat8 {
  public:
   static constexpr uint8_t value_mask = 0x7f;
-  static constexpr uint16_t true_value = 0x3f80;
+  static constexpr uint8_t true_value = 0x08;
   static constexpr uint8_t inf_value = 0x6F;
   static constexpr uint8_t nan_value = 0x80;
   static constexpr uint8_t zero_value = 0x00;
@@ -153,14 +153,13 @@ class HiFloat8 {
     constexpr uint8_t fp32_exponent_adjust = 127;
     constexpr uint8_t fp8_DML_adjust = 23;
     constexpr uint8_t fp32_mantissa_width = 23;
+    constexpr uint8_t mantissa_width = 3;
 
     Union32 f32 = {0};
-    uint8_t mantissa_width = 0;
     uint32_t exponent_val = 0;
     uint32_t mantissa_value = 0;
     uint8_t hif8_exponent_sign_mask = 0;
     uint32_t exponent_sign = 0;
-    uint8_t exponent_width = 0;
     if ((hif8.value_ & 0x78) == 0x00) {
       if (hif8.value_ == nan_value) {  // NaN
         f32.u = f32_nan_value;
@@ -171,18 +170,15 @@ class HiFloat8 {
         return f32.f;
       }
       // For DML, HiF8 should be interpreted as: X = (−1)^S × 2^(M−23) × 1.0
-      mantissa_width = 3;
       exponent_val = (hif8.value_ & ((1U << mantissa_width) - 1)) + fp32_exponent_adjust - fp8_DML_adjust;
       f32.u = (static_cast<uint32_t>(exponent_val) << fp32_mantissa_width);
     } else if ((hif8.value_ & 0x78) == 0x08) {  // dot == 0001
       // For the normal number, HiF8 should be interpreted as: X = (−1)^S × 2^E × 1.M
-      mantissa_width = 3;
       exponent_val = 0 + fp32_exponent_adjust;
       f32.u = (static_cast<uint32_t>(exponent_val) << fp32_mantissa_width);
       mantissa_value = hif8.value_ & ((1U << mantissa_width) - 1);          // 小数位为最后后三位
       f32.u |= (mantissa_value << (fp32_mantissa_width - mantissa_width));  // 加上小数位
     } else if ((hif8.value_ & 0x70) == 0x10) {                              // dot == 001
-      mantissa_width = 3;
       hif8_exponent_sign_mask = 0x08;
       exponent_sign = ((hif8.value_ & hif8_exponent_sign_mask) >> mantissa_width);
       exponent_val = ((exponent_sign == 1) ? -1 : 1) + fp32_exponent_adjust;
@@ -195,19 +191,20 @@ class HiFloat8 {
         f32.u = f32_inf_value | (sign << sign_bit_shift);
         return f32.f;
       }
-      uint8_t hif8_dot_mask = 0x60;
-      exponent_width = ((hif8.value_ & hif8_dot_mask) >> 5) + 1;
-      mantissa_width = 5 - exponent_width;
+      constexpr uint8_t hif8_dot_mask = 0x60;
+      constexpr uint8_t exp_man_width = 5;
+      uint8_t exponent_width = ((hif8.value_ & hif8_dot_mask) >> exp_man_width) + 1;
+      uint8_t mantissa_width_ = exp_man_width - exponent_width;
       hif8_exponent_sign_mask = 0x10;
-      exponent_sign = ((hif8.value_ & hif8_exponent_sign_mask) >> (exponent_width + mantissa_width));
+      exponent_sign = ((hif8.value_ & hif8_exponent_sign_mask) >> (exponent_width + mantissa_width_));
       uint8_t hif8_exponent_mantissa_mask = 0x0F;
       exponent_val =
         ((exponent_sign == 1) ? -1 : 1) *
-          ((1U << (exponent_width - 1)) + ((hif8.value_ & hif8_exponent_mantissa_mask) >> mantissa_width)) +
+          ((1U << (exponent_width - 1)) + ((hif8.value_ & hif8_exponent_mantissa_mask) >> mantissa_width_)) +
         fp32_exponent_adjust;
       f32.u = (static_cast<uint32_t>(exponent_val) << fp32_mantissa_width);
-      mantissa_value = hif8.value_ & ((1U << mantissa_width) - 1);
-      f32.u |= (mantissa_value << (fp32_mantissa_width - mantissa_width));
+      mantissa_value = hif8.value_ & ((1U << mantissa_width_) - 1);
+      f32.u |= (mantissa_value << (fp32_mantissa_width - mantissa_width_));
     }
 
     f32.u |= (sign << sign_bit_shift);
@@ -238,7 +235,7 @@ class HiFloat8 {
       return (f.u > f32infty.u) ? nan_value : (sign_bits | inf_value);
     }
 
-    int32_t exponent = ((f.u >> 23) & 0xFF) - 127;  // 去除偏置
+    uint32_t exponent = ((f.u >> 23) & 0xFF) - 127;  // 去除偏置
     uint32_t mantissa = f.u & 0x7FFFFF;
 
     ExponentRange range = GetExponentRange(exponent);
