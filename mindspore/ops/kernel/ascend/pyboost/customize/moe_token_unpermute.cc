@@ -18,10 +18,9 @@
 #include <cstdint>
 #include <memory>
 #include <vector>
-#include "include/common/utils/utils.h"
-#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ops/ops_utils/op_constants.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
-#include "kernel/ascend/pyboost/aclnn_utils.h"
+#include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
 
 namespace mindspore {
 namespace kernel {
@@ -30,35 +29,19 @@ tensor::TensorPtr MoeTokenUnpermuteAscendCustomize(const std::shared_ptr<OpRunne
                                                    const TensorPtr &permuted_tokens, const TensorPtr &sorted_indices,
                                                    const std::optional<TensorPtr> &probs, const BoolImmPtr &padded_mode,
                                                    const std::optional<ValueTuplePtr> &restore_shape) {
-  OpRunner::InferOpOutput(op, permuted_tokens, sorted_indices, probs, padded_mode, restore_shape);
-
-  // Convert ValuePtr to c++ scalar
-  auto padded_mode_imm = GetValue<bool>(padded_mode);
-
-  // Convert ValueTuple to std::vector
-  std::vector<int64_t> restore_shape_val = {1};
-  if (restore_shape.has_value()) {
-    restore_shape_val = ConvertValueTupleToVector<int64_t>(restore_shape.value());
+  if (probs.has_value()) {
+    auto target_dtype = probs.value()->data_type();
+    if (target_dtype == kNumberTypeFloat32) {
+      auto origin_dtype = permuted_tokens->data_type();
+      auto unpermute_token_casted = cast(permuted_tokens, std::make_shared<Int64Imm>(target_dtype));
+      auto out = inner_moe_token_unpermute(unpermute_token_casted, sorted_indices, probs, padded_mode, restore_shape);
+      out = cast(out, std::make_shared<Int64Imm>(origin_dtype));
+      op->set_outputs({out});
+      return op->output(0);
+    }
   }
-
-  PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), permuted_tokens, sorted_indices, probs);
-  PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
-
-  // Async
-  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>(
-    [op, permuted_tokens, sorted_indices, probs, padded_mode_imm, restore_shape_val]() {
-      MS_LOG(DEBUG) << "Run device task MoeTokenUnpermute end";
-
-      auto device_context = op->device_context();
-      const auto &outputs = op->outputs();
-      // Malloc for input tensors
-      PyBoostUtils::MallocOpInputs(op->device_context(), permuted_tokens, sorted_indices, probs);
-      // Malloc for output tensors
-      PyBoostUtils::MallocOpOutputs(op->device_context(), op->outputs());
-      LAUNCH_ACLNN(aclnnMoeTokenUnpermute, device_context, op->stream_id(), permuted_tokens, sorted_indices, probs,
-                   padded_mode_imm, restore_shape_val, outputs[0]);
-      MS_LOG(DEBUG) << "Run device task MoeTokenUnpermute end";
-    }));
+  auto out = inner_moe_token_unpermute(permuted_tokens, sorted_indices, probs, padded_mode, restore_shape);
+  op->set_outputs({out});
   return op->output(0);
 }
 }  // namespace pyboost

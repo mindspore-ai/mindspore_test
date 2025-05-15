@@ -20,6 +20,7 @@ moe_token_unpermute:
       dtype: tensor
   class:
       name: MoeTokenUnpermute
+  bprop_expander: False
   dispatch:
     enable: True
     Ascend: MoeTokenUnpermuteAscend

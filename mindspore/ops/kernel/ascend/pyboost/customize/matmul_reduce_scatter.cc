@@ -28,14 +28,14 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-namespace matmul_reduce_scatter {
+namespace matmul_reduce_scatter_in {
 ValueTuplePtr GetTransposePerm(const TensorPtr &tensor) {
   std::vector<ValuePtr> perm(tensor->shape().size());
   perm[kDim0] = MakeValue(static_cast<int64_t>(kDim1));
   perm[kDim1] = MakeValue(static_cast<int64_t>(kDim0));
   return std::make_shared<ValueTuple>(perm);
 }
-}  // namespace matmul_reduce_scatter
+}  // namespace matmul_reduce_scatter_in
 
 tensor::TensorPtr MatmulReduceScatterAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input,
                                                      const TensorPtr &x2, const StringImmPtr &group,
@@ -68,10 +68,10 @@ tensor::TensorPtr MatmulReduceScatterAscendCustomize(const std::shared_ptr<OpRun
   const auto &device_name = op->device_context()->device_context_key_.device_name_;
   auto transpose_op = CREATE_PYBOOST_OP(Transpose, device_name);
   if (trans_input_imm) {
-    input_ = transpose_op->Call(input, matmul_reduce_scatter::GetTransposePerm(input));
+    input_ = transpose_op->Call(input, matmul_reduce_scatter_in::GetTransposePerm(input));
   }
   if (trans_x2_imm) {
-    x2_ = transpose_op->Call(x2, matmul_reduce_scatter::GetTransposePerm(x2));
+    x2_ = transpose_op->Call(x2, matmul_reduce_scatter_in::GetTransposePerm(x2));
   }
 
   PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>(

@@ -1098,7 +1098,7 @@ REG_BPROP_BUILDER("Identity").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
   return {dout};
 });
 
-REG_BPROP_BUILDER("MoeTokenUnpermute").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("InnerMoeTokenUnpermute").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
   auto permuted_tokens = ib->GetInput(kIndex0);
   auto sorted_indices = ib->GetInput(kIndex1);
   auto probs = ib->GetInput(kIndex2);
