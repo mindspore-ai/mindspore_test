@@ -69,8 +69,6 @@ class CopyActor : public MemoryAwareActor {
   // Fetch the device tensor for copy.
   void FetchKernelTensor(OpContext<KernelTensor> *const context);
 
-  void FetchParameterInput(OpContext<KernelTensor> *const context);
-
   // The copy source.
   AnfNode *from_kernel_;
   KernelGraphPtr from_graph_;

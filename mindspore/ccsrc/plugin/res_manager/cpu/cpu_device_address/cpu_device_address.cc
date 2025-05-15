@@ -225,17 +225,17 @@ bool CPUDeviceAddress::SyncHostToDevice(const ShapeVector &, size_t size, TypeId
   return true;
 }
 
-bool CPUDeviceAddress::AsyncHostToDevice(size_t size, TypeId type, const void *host_ptr) const {
+bool CPUDeviceAddress::AsyncHostToDevice(size_t size, TypeId type, const void *host_ptr, size_t) const {
   // cpu not provide async copy, call sync copy instead
   return SyncHostToDevice({}, size, type, host_ptr, "");
 }
 
-bool CPUDeviceAddress::AsyncDeviceToDevice(const DeviceAddress *src_device_addr) const {
+bool CPUDeviceAddress::AsyncDeviceToDevice(const DeviceAddress *src_device_addr, size_t) const {
   return SyncDeviceToDevice(src_device_addr);
 }
 
 bool CPUDeviceAddress::AsyncHostToDevice(size_t size, TypeId type, const tensor::TensorDataPtr &tensor_data,
-                                         const std::string &format) const {
+                                         const std::string &format, size_t) const {
   return SyncHostToDevice(GetShapeVector(), size, type, tensor_data->data(), format);
 }
 

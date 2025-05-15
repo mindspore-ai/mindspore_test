@@ -139,8 +139,7 @@ class DataPrepareActor : public DebugAwareActor {
 
   // Record updated tensors for reprepare.
   void RecordTensorsNeedReprepare(tensor::Tensor *tensor);
-  void PrepareWeightForInputOptimize(const KernelWithIndex &node_with_index, OpContext<KernelTensor> *const context,
-                                     const DeviceContext *device_context);
+  void PrepareWeightForInputOptimize(const KernelWithIndex &node_with_index, OpContext<KernelTensor> *const context);
   void RecordInputAndConvertStatic(const std::vector<TensorPtr> &host_tensors,
                                    const std::vector<size_t> &host_param_indexes, bool isDyn);
 

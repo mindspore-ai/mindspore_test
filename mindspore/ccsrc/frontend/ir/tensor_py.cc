@@ -781,7 +781,7 @@ void TensorPybind::Load(const Tensor &tensor) {
     MS_LOG(WARNING) << "Tensor has no cpu data, can not be loaded.";
     return;
   }
-  const auto device = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  const auto device = device_address->device_name();
   auto device_ctx = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
     {device, MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
   // make sure op execute end before data copy
