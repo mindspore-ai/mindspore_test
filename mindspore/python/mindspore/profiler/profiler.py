@@ -492,8 +492,7 @@ class Profiler:
             >>> import mindspore as ms
             >>> import mindspore.dataset as ds
             >>> from mindspore import context, nn, Profiler
-            >>> from mindspore.profiler import schedule, tensorboard_trace_handler, ProfilerLevel, AicoreMetrics,
-            >>> ExportType, ProfilerActivity
+            >>> from mindspore.profiler import schedule, tensorboard_trace_handler
             >>>
             >>> class Net(nn.Cell):
             ...     def __init__(self):
