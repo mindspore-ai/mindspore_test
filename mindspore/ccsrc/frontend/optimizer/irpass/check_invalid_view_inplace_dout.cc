@@ -20,7 +20,7 @@
 #include "include/common/utils/utils.h"
 #include "frontend/optimizer/irpass.h"
 #include "frontend/optimizer/optimizer.h"
-#include "include/common/pynative//variable.h"
+#include "include/common/pynative/variable.h"
 #include "mindspore/core/include/base/base_ref.h"
 #include "mindspore/core/include/ir/func_graph_cloner.h"
 #include "mindspore/core/include/ir/anf.h"

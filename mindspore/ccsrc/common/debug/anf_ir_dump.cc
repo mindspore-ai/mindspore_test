@@ -316,6 +316,7 @@ void PrintNodeOutputType(std::ostringstream &buffer, const AnfNodePtr &node) {
   StringImmPtr ref_key = nullptr;
   abstract::AbstractSequencePtr sequence_abs = nullptr;
   auto abstract = node->abstract();
+  bool is_view_output = false;
   if (abstract != nullptr) {
     if (abstract->isa<abstract::AbstractTensor>()) {
       tensor_value = abstract->BuildValue();
@@ -328,44 +329,36 @@ void PrintNodeOutputType(std::ostringstream &buffer, const AnfNodePtr &node) {
     sequence_abs = dyn_cast<abstract::AbstractSequence>(abstract);
     auto has_view_output = abstract->user_data<bool>(kHasViewOutputFlag);
     if (has_view_output != nullptr && *has_view_output) {
-      buffer << "has_view_output, ";
+      is_view_output = true;
     }
   }
 
   abstract::BaseShapePtr shape = dyn_cast<abstract::BaseShape>(node->Shape());
   TypePtr type = dyn_cast<Type>(node->Type());
-  if ((shape != nullptr) && (type != nullptr)) {
-    buffer << "<" << type << ", ";
-    shape->ToStringWithBuffer(buffer);
-    if (tensor_value != nullptr && tensor_value != kValueAny) {
-      buffer << ", value=...";
-    }
-    if (ref_key != nullptr) {
-      buffer << ", ref_key=" << ref_key->value();
-    }
-    if (abstract->isa<abstract::AbstractRefTensor>()) {
-      const auto &ref_tensor = abstract->cast_ptr<abstract::AbstractRefTensor>();
-      buffer << "," << ref_tensor->RefTensorTypeToString();
-    }
-    PrintTupleNodeUsedFlags(buffer, sequence_abs);
-    buffer << ">";
-  } else if (type != nullptr) {
-    buffer << "<" << type;
-    if (tensor_value != nullptr && tensor_value != kValueAny) {
-      buffer << ", value=...";
-    }
-    if (ref_key != nullptr) {
-      buffer << ", ref_key=" << ref_key->value();
-    }
-    if (abstract->isa<abstract::AbstractRefTensor>()) {
-      const auto &ref_tensor = abstract->cast_ptr<abstract::AbstractRefTensor>();
-      buffer << "," << ref_tensor->RefTensorTypeToString();
-    }
-    PrintTupleNodeUsedFlags(buffer, sequence_abs);
-    buffer << ">";
-  } else {
+  if (type == nullptr) {
     buffer << "<null>";
+    return;
   }
+  buffer << "<" << type;
+  if (shape != nullptr) {
+    buffer << ", ";
+    shape->ToStringWithBuffer(buffer);
+  }
+  if (tensor_value != nullptr && tensor_value != kValueAny) {
+    buffer << ", value=...";
+  }
+  if (ref_key != nullptr) {
+    buffer << ", ref_key=" << ref_key->value();
+  }
+  if (abstract->isa<abstract::AbstractRefTensor>()) {
+    const auto &ref_tensor = abstract->cast_ptr<abstract::AbstractRefTensor>();
+    buffer << ref_tensor->RefTensorTypeToString();
+  }
+  if (is_view_output) {
+    buffer << ", " << kHasViewOutputFlag;
+  }
+  PrintTupleNodeUsedFlags(buffer, sequence_abs);
+  buffer << ">";
 }
 
 void PrintNodeInputType(std::ostringstream &buffer, const AnfNodePtr &node) {

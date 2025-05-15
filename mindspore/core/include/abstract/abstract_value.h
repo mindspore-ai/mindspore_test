@@ -1519,16 +1519,16 @@ class MS_CORE_API AbstractRefTensor final : public AbstractTensor {
   std::string RefTensorTypeToString() const {
     std::ostringstream buffer;
     if (is_parameter()) {
-      buffer << " is_parameter, ";
+      buffer << ", is_parameter";
     }
     if (is_view_input()) {
-      buffer << " is_view_input, ";
+      buffer << ", is_view_input";
     }
     if (is_view_output()) {
-      buffer << " is_view_output, ";
+      buffer << ", is_view_output";
     }
     if (is_inplace()) {
-      buffer << " is_inplace, ";
+      buffer << ", is_inplace";
     }
     return buffer.str();
   }
