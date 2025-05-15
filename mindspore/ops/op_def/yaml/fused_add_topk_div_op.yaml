@@ -29,7 +29,7 @@ fused_add_topk_div:
     mapping_table:
       dtype: tensor
       default: None
-    enableExpertMapping:
+    enable_expert_mapping:
       dtype: bool
       default: False
   returns:
