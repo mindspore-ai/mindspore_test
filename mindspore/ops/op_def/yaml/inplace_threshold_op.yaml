@@ -4,11 +4,9 @@ inplace_threshold:
     input:
       dtype: tensor
     threshold:
-      dtype: float
-      type_cast: int
+      dtype: number
     value:
-      dtype: float
-      type_cast: int
+      dtype: number
   args_signature:
     rw_write: input
   returns:

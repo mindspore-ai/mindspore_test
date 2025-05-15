@@ -14,9 +14,6 @@ mindspore.mint.nn.Threshold
         \text{value}, &\text{ otherwise }
         \end{cases}
 
-    .. warning::
-        这是一个实验性API，后续可能修改或删除。
-
     参数：
         - **threshold** (Union[int, float]) - 阈值。
         - **value** (Union[int, float]) - 小于阈值时的填充值。

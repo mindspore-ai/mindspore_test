@@ -4,11 +4,9 @@ threshold:
     input:
       dtype: tensor
     threshold:
-      dtype: float
-      type_cast: int
+      dtype: number
     value:
-      dtype: float
-      type_cast: int
+      dtype: number
   returns:
     output:
       dtype: tensor
