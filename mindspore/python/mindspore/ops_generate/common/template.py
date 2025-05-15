@@ -121,6 +121,61 @@ PYBOOST_FUNCTION_HEADER_TEMPLATE = Template.load_from_file(
 
 PYBOOST_CORE_HEADER_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_core_header.tpl'))
+PYBOOST_INTERNAL_OP_HEADER_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR,
+                 f'./{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/internal/template/pyboost_internal_header_template.tpl'))
+
+PYBOOST_INTERNAL_SINGLE_OP_HEADER_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR,
+                 f'./{K.MS_OPS_PYBOOST_INTERNAL}/template/pyboost_internal_single_op_header_template.tpl'))
+
+PYBOOST_INTERNAL_SINGLE_OP_SOURCE_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR,
+                 f'./{K.MS_OPS_PYBOOST_INTERNAL}/template/pyboost_internal_single_op_source_template.tpl'))
+
+PYBOOST_INTERNAL_SINGLE_OP_CUSTOMIZE_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR,
+                 f'./{K.MS_OPS_PYBOOST_INTERNAL}/template/pyboost_internal_single_op_customize_source_template.tpl'))
+
+PYBOOST_INTERNAL_OP_SOURCE_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR,
+                 f'./{K.MS_OPS_PYBOOST_INTERNAL}/template/pyboost_internal_source_template.tpl'))
+
+PYBOOST_INTERNAL_FUNCTION_HEADER_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR,
+                 f'{K.MS_OPS_PYBOOST_INTERNAL}/template/pyboost_internal_functions_header_template.tpl'))
+
+PYBOOST_INTERNAL_FUNCTION_SOURCE_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR,
+                 f'{K.MS_OPS_PYBOOST_INTERNAL}/template/pyboost_internal_functions_source_template.tpl'))
+
+PYBOOST_INTERNAL_FUNCTION_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR,
+                 f'{K.MS_OPS_PYBOOST_INTERNAL}/template/pyboost_internal_function_template.tpl'))
+
+PYBOOST_KERNEL_INFO_ADAPTER_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR,
+                 f'{K.MS_PLUGIN_INTERNAL_PATH}/pyboost/template/kernel_info_adapter.tpl'))
+
+PYBOOST_KERNEL_INFO_ADAPTER_H_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR,
+                 f'{K.MS_PLUGIN_INTERNAL_PATH}/pyboost/template/kernel_info_adapter_h.tpl'))
+
+PYBOOST_INTERNAL_KERNEL_INFO_ADAPTER_H_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR,
+                 f'{K.MS_PLUGIN_INTERNAL_PATH}/pyboost/template/internal_kernel_info_adapter_h.tpl'))
+
+PYBOOST_INTERNAL_KERNEL_INFO_ADAPTER_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR,
+                 f'{K.MS_PLUGIN_INTERNAL_PATH}/pyboost/template/internal_kernel_info_adapter.tpl'))
+
+PYBOOST_INTERNAL_KERNEL_INFO_ADAPTER_CPP_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR,
+                 f'{K.MS_PLUGIN_INTERNAL_PATH}/pyboost/template/internal_kernel_info_adapter_cpp.tpl'))
+
+PYBOOST_INTERNAL_KERNEL_INFO_ADAPTER_SINGLE_CPP_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR,
+                 f'{K.MS_PLUGIN_INTERNAL_PATH}/pyboost/template/internal_kernel_info_adapter_single_cpp.tpl'))
 
 PYBOOST_REGISTRY_BODY_CC_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_registry_body_cc.tpl'))
@@ -227,6 +282,10 @@ PYBOOST_OP_REGISTER_TEMPLATE = Template.load_from_file(
 PYBOOST_ASCEND_OP_HEADER_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR,
                  f'./{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/template/pyboost_aclnn_header_template.tpl'))
+PYBOOST_ASCEND_INTERNAL_OP_HEADER_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR,
+                 f'./{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/internal/template/pyboost_internal_header_template.tpl')
+)
 
 PYBOOST_ASCEND_OP_SOURCE_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR,

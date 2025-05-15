@@ -31,6 +31,7 @@ from common.base_generator import BaseGenerator
 from .pyboost_utils import is_cube, AclnnUtils, get_return_type, merge_strings_by_chunk_size, is_op_multi_output, \
     chunk_list
 from .op_template_parser import OpTemplateParser
+from .pyboost_utils import tuple_input_to_cpp_type
 
 def check_no_basic_int_type(op_args):
     for arg in op_args:
@@ -150,6 +151,67 @@ class PyboostOpHeaderGenerator(BaseGenerator):
                                                                      return_type=cpp_func_return)
             save_path = os.path.join(work_path, self.code_generate_path if not is_ascend_comm_op \
                                      else self.hccl_code_generate_path)
+            file_name = f"{op_proto.op_name}.h"
+            save_file(save_path, file_name, pyboost_op_str)
+
+
+class PyboostInternalOpHeaderGenerator(BaseGenerator):
+    """
+    Generates C++ headers for PyBoost internal operations.
+
+    This class generates header files for Ascend and defines the operation functions accordingly.
+    """
+
+    def __init__(self, device):
+        """
+        Initializes the PyboostOpHeaderGenerator with the appropriate templates for the specified device.
+
+        Args:
+            device (str): The target device (ascend, gpu, or cpu), currently only support ascend.
+
+        Raises:
+            ValueError: If the device is not supported.
+        """
+        if device != 'ascend':
+            raise ValueError(
+                f"Currently, only support 'ascend' for internal operations, {device} is not supported.")
+        self.pyboost_internal_op_header_template = template.PYBOOST_ASCEND_INTERNAL_OP_HEADER_TEMPLATE
+        self.code_generate_path = f"{K.MS_OPS_KERNEL_PATH}/{device}/pyboost/internal/auto_generate/"
+        self.device = device
+
+    def generate(self, work_path, op_protos):
+        """
+        Generates header files for the provided operator prototypes based on the device.
+
+        Args:
+            work_path (str): The directory path where the header files will be saved.
+            op_protos (list): A list of operator prototypes containing information about the operators.
+
+        Returns:
+            None
+        """
+        for op_proto in op_protos:
+            if op_proto.op_dispatch is None:
+                continue
+            if getattr(op_proto.op_dispatch, self.device) == 'None':
+                continue
+            if getattr(op_proto.op_dispatch, 'ascend_kernel') == 'aclnn':
+                continue
+            if op_proto.op_dispatch.ascend_kernel not in ('Internal', 'InternalAscend'):
+                continue
+            op_parser = OpTemplateParser(op_proto)
+            op_name_str = op_proto.op_class.name
+            call_args_with_type = op_parser.parse_call_args_with_types()
+            cpp_func_return = _generate_cpp_func_return(op_proto)
+
+            pyboost_op_str = self.pyboost_internal_op_header_template.replace(
+                op_name=op_name_str,
+                op_name_upper=op_name_str.upper(),
+                operator_name=op_proto.op_name,
+                call_args_with_type=call_args_with_type,
+                return_type=cpp_func_return)
+
+            save_path = os.path.join(work_path, self.code_generate_path)
             file_name = f"{op_proto.op_name}.h"
             save_file(save_path, file_name, pyboost_op_str)
 
@@ -642,6 +704,179 @@ class AclnnOpCppCodeGenerator:
         return inputs_kernel_tensors
 
 
+class InternalOpCppCodeGenerator:
+    """
+    Generates C++ code files for internal operations in PyBoost.
+    """
+
+    def __init__(self, device):
+        """
+        Initializes the InternalOpCppCodeGenerator with the appropriate templates.
+        """
+        self.device = device
+        self.internal_op_header_template = template.PYBOOST_INTERNAL_OP_HEADER_TEMPLATE
+        self.internal_single_op_header_template = template.PYBOOST_INTERNAL_SINGLE_OP_HEADER_TEMPLATE
+        self.internal_op_source_template = template.PYBOOST_INTERNAL_OP_SOURCE_TEMPLATE
+        self.internal_single_op_source_template = template.PYBOOST_INTERNAL_SINGLE_OP_SOURCE_TEMPLATE
+        self.internal_single_op_customize_source_template = template.PYBOOST_INTERNAL_SINGLE_OP_CUSTOMIZE_TEMPLATE
+        self.customize_inc_template = Template(
+            '#include "{ms_ops_kernel_path}/ascend/pyboost/internal/customize/${operator_name}.h"\n'
+        )
+        self.gen_path = f"{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/internal/auto_generate/"
+
+    def generate_internal_op_cpp_code(self, work_path, op_protos):
+        """
+        Generate internal op cpp code in pyboost.
+        """
+        merge_op_header = []
+        merge_op_function = []
+        ascend_merge_op_inc = []
+        for op_proto in op_protos:
+            if op_proto.op_dispatch is None or not op_proto.op_dispatch.enable:
+                continue
+            if getattr(op_proto.op_dispatch, 'ascend_kernel') == 'aclnn':
+                continue
+            ascend_kernel = op_proto.op_dispatch.ascend_kernel
+            if ascend_kernel == 'Internal':
+                self.generate_default_call(work_path, op_proto, merge_op_header,
+                                           merge_op_function, ascend_merge_op_inc)
+            elif ascend_kernel == 'InternalAscend':
+                self.generate_customize_call(work_path, op_proto, merge_op_header,
+                                             merge_op_function, ascend_merge_op_inc)
+
+        if not ascend_merge_op_inc:
+            return
+        ops_inc_head_set = set()
+        for op_name_inc in ascend_merge_op_inc:
+            ops_inc_head_set.add(template.OP_DEF_INC_HEAD_TEMPLATE.replace(prefix_char=op_name_inc[0].lower()))
+
+        internal_op_source_str = self.internal_op_source_template.replace(ops_prim_inc=list(sorted(ops_inc_head_set)),
+                                                                          merge_op_header=merge_op_header,
+                                                                          merge_op_function=merge_op_function)
+        save_path = os.path.join(work_path, self.gen_path)
+        file_name = "pyboost_ascend_internal_ops.cc"
+        save_file(save_path, file_name, internal_op_source_str)
+
+    def generate_default_call(self, work_path, op_proto, merge_op_header,
+                              merge_op_function, ascend_merge_op_inc):
+        """
+        Generate internal op default call function in pyboost.
+        """
+        op_parser = OpTemplateParser(op_proto)
+        call_args_with_type = op_parser.parse_call_args_with_types()
+        cpp_func_return = _generate_cpp_func_return(op_proto)
+
+        # generate op header
+        internal_op_header_str = self.internal_op_header_template.replace(
+            operator_name=op_proto.op_name,
+            op_name=op_proto.op_class.name,
+            op_name_upper=op_proto.op_class.name.upper(),
+            call_args_with_type=call_args_with_type,
+            return_type=cpp_func_return)
+        save_path = os.path.join(work_path, self.gen_path)
+        save_file(save_path, f"{op_proto.op_name}.h", internal_op_header_str)
+        merge_op_header.append(
+            self.internal_single_op_header_template.replace(
+                operator_name=op_proto.op_name,
+                customize_inc=''))
+
+        # generate op function
+        _, call_func_outputs = op_parser.generate_pyboost_outputs()
+        call_args = op_parser.parse_original_call_args(op_proto.op_args)
+        call_args_after_convert, value_tuple_convert, const_number_convert = op_parser.op_args_converter()
+        create_input_address, create_output_address = self._create_input_and_output_address(op_parser, op_proto)
+        internal_op_source_str = self.internal_single_op_source_template.replace(
+            op_name=op_proto.op_class.name,
+            operator_name=op_proto.op_name,
+            call_args_with_type=call_args_with_type,
+            internal_call_args=call_args,
+            internal_real_call_args=call_args_after_convert,
+            create_input_address=create_input_address,
+            create_output_address=create_output_address,
+            value_tuple_convert=value_tuple_convert,
+            const_number_convert=const_number_convert,
+            return_type=cpp_func_return,
+            return_values=call_func_outputs)
+        merge_op_function.append(internal_op_source_str)
+        ascend_merge_op_inc.append(op_proto.op_class.name)
+
+    def generate_customize_call(self, work_path, op_proto, merge_op_header,
+                                merge_op_function, ascend_merge_op_inc):
+        """
+        Generate internal op customize call function in pyboost.
+        """
+        op_parser = OpTemplateParser(op_proto)
+        call_args_with_type = op_parser.parse_call_args_with_types()
+        cpp_func_return = _generate_cpp_func_return(op_proto)
+
+        # generate op header
+        internal_op_header_str = self.internal_op_header_template.replace(
+            operator_name=op_proto.op_name,
+            op_name=op_proto.op_class.name,
+            op_name_upper=op_proto.op_class.name.upper(),
+            call_args_with_type=call_args_with_type,
+            return_type=cpp_func_return)
+        save_path = os.path.join(work_path, self.gen_path)
+        file_name = f"{op_proto.op_name}.h"
+        save_file(save_path, file_name, internal_op_header_str)
+        self.customize_inc_template.replace(
+            ms_ops_kernel_path=K.MS_OPS_KERNEL_PATH,
+            operator_name=op_proto.op_name)
+        merge_op_header.append(
+            self.internal_single_op_header_template.replace(
+                operator_name=op_proto.op_name,
+                customize_inc=self.customize_inc_template))
+
+        # generate op function
+        _, call_func_outputs = op_parser.generate_pyboost_outputs()
+        call_args = op_parser.parse_original_call_args(op_proto.op_args)
+        internal_op_source_str = self.internal_single_op_customize_source_template.replace(
+            op_name=op_proto.op_class.name,
+            call_args=call_args,
+            call_args_with_type=call_args_with_type,
+            return_type=cpp_func_return,
+            return_values=call_func_outputs)
+        merge_op_function.append(internal_op_source_str)
+        ascend_merge_op_inc.append(op_proto.op_class.name)
+
+    @staticmethod
+    def _create_input_and_output_address(op_parser: OpTemplateParser, op_proto):
+        """
+        Create input and output address, especially for FA and PA.
+        """
+        need_malloc_tensors, _, _ = op_parser.parse_need_malloc_tensors()
+        create_input_address = ''
+        create_output_address = ''
+        args_list = ''
+        for item in need_malloc_tensors:
+            args_list += f'{item}, '
+        args_list = args_list[:-2]
+        if args_list:
+            create_input_address = f'PyBoostUtils::PrepareOpInputs(device_context_, op->stream_id(), {args_list});\n'
+        if op_proto.op_args_signature and op_proto.op_args_signature.rw_write:
+            create_output_address = ''
+        else:
+            create_output_address = 'PyBoostUtils::PrepareOpOutputs(device_context_, op->stream_id(), outputs_);\n'
+
+        return create_input_address, create_output_address
+
+    @staticmethod
+    def _convert_tuple_tensor(op_parser: OpTemplateParser, op_proto):
+        """
+        Convert tuple input to vector.
+        """
+        value_tuple_convert = []
+        call_args = op_parser.parse_original_call_args(op_proto.op_args)
+        for op_arg, call_arg in zip(op_proto.op_args, call_args):
+            cpp_type = tuple_input_to_cpp_type(op_arg.arg_dtype)
+            if cpp_type == 'mindspore::tensor::TensorPtr':
+                cpp_type = 'TensorPtr'
+                convert = f"std::vector<{cpp_type}> {call_arg}_vector = \
+                    ConvertValueTupleToVector<{cpp_type}>({call_arg});\n"
+                value_tuple_convert.append(convert)
+        return value_tuple_convert
+
+
 class PyboostOpFunctionGenerator(BaseGenerator):
     """
     Generates C++ source files for ACLNN operations in PyBoost.
@@ -660,6 +895,7 @@ class PyboostOpFunctionGenerator(BaseGenerator):
         self.ascend_op_cpp_generator = PyboostOpCppGenerator('ascend')
         self.ascend_view_op_cpp_generator = PyboostViewOpCppGenerator('ascend')
         self.ascend_aclnn_cpp_generator = AclnnOpCppCodeGenerator('ascend')
+        self.ascend_internal_op_cpp_generator = InternalOpCppCodeGenerator('ascend')
 
         self.cpu_op_cpp_generator = PyboostOpCppGenerator('cpu')
         self.cpu_view_op_cpp_generator = PyboostViewOpCppGenerator('cpu')
@@ -724,6 +960,7 @@ class PyboostOpFunctionGenerator(BaseGenerator):
         self.ascend_aclnn_cpp_generator.generate_aclnn_op_cpp_code(op_protos, ascend_merge_op_header,
                                                                    ascend_merge_op_function,
                                                                    ascend_merge_op_inc)
+        self.ascend_internal_op_cpp_generator.generate_internal_op_cpp_code(work_path, op_protos)
 
         ascend_op_header_merge_by_chunk_size = merge_strings_by_chunk_size(
             ascend_merge_op_header, chunk_size=120)
@@ -981,12 +1218,15 @@ class PyboostOpRegisterCppCodeGenerator:
             None
         """
         all_op_names = []
+        internal_op_names = []
         all_functional_names = []
         for op_proto in op_protos:
             if op_proto.op_dispatch is None:
                 continue
             functional_name = op_proto.op_name
             op_name_str = op_proto.op_class.name
+            if getattr(op_proto.op_dispatch, 'ascend_kernel') in ('Internal', 'InternalAscend'):
+                internal_op_names.append(op_name_str)
             all_op_names.append(op_name_str)
             all_functional_names.append(functional_name)
 
@@ -994,6 +1234,8 @@ class PyboostOpRegisterCppCodeGenerator:
         factory_str = ''
         for op_name in all_op_names:
             factory_str += "template class OpFactory<{0}>;\n".format(op_name)
+        for op_name in internal_op_names:
+            factory_str += "template class InternalOpFactory<{0}>;\n".format(op_name)
         for operator_name in all_functional_names:
             include_str += f'#include "{K.MS_PYBOOST_BASE_PATH}/auto_generate/{operator_name}.h"\n'
         op_register_file_str = self.PYBOOST_OP_REGISTER_TEMPLATE.replace(op_includes=include_str,
