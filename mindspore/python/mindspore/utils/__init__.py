@@ -16,9 +16,9 @@
 from __future__ import absolute_import
 from mindspore._c_expression import stress_detect, _reuse_data_ptr
 from .utils import ExitByRequest, _tft_handler
-from .runtime_execution_order_check import runtime_execution_order_check
+from .runtime_execution_order_check import runtime_execution_order_check, CommExecOrderCheck
 from . import dryrun
 
 # Symbols from utils module.
 __all__ = ["stress_detect", "ExitByRequest", "runtime_execution_order_check", "dryrun", "_reuse_data_ptr",
-           "_tft_handler"]
+           "_tft_handler", "CommExecOrderCheck"]

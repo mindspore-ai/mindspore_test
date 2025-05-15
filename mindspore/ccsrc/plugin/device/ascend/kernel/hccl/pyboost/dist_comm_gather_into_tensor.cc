@@ -41,7 +41,7 @@ void DistCommGatherIntoTensorAscendCustomize(const std::shared_ptr<OpRunner> &op
     PyBoostUtils::PrepareOpOutputs(op->device_context(), kDefaultStreamIndex, op->outputs());
   }
 
-  auto run_func = [op, other_tensor, input_tensor, group]() {
+  auto run_func = [op, other_tensor, input_tensor, group, dst_rank]() {
     PyBoostUtils::MallocOpInputs(op->device_context(), input_tensor);
     PyBoostUtils::MallocOpOutputs(op->device_context(), op->outputs());
 
@@ -58,7 +58,7 @@ void DistCommGatherIntoTensorAscendCustomize(const std::shared_ptr<OpRunner> &op
       }
     };
 
-    CommonCommAscendFunc(op, input_tensor, group, launch_func, nullptr);
+    CommonCommAscendFunc(op, input_tensor, group, launch_func, nullptr, dst_rank);
   };
   CommonCommRunTask(run_func);
 }

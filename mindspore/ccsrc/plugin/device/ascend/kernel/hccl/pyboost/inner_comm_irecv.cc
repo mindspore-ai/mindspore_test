@@ -58,7 +58,7 @@ void InnerCommIrecvAscendCustomize(const std::shared_ptr<OpRunner> &op, const In
       runtime::DeviceAddressUtils::ProcessCrossStreamAddressWithEvent(op->primitive()->name(), op->device_context(),
                                                                       comm_stream_id, event, output_tensor);
     };
-    CommonCommAscendFunc(op, nullptr, group, launch_func, post_func);
+    CommonCommAscendFunc(op, nullptr, group, launch_func, post_func, src_imm);
   };
   CommonCommRunTask(run_func);
 }
