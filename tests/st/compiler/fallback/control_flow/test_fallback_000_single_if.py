@@ -47,6 +47,26 @@ def test_single_if_4():
 @case_register.level1
 @case_register.target_gpu
 @case_register.target_ascend
+def test_single_if_else_1():
+    """
+    Feature: JIT Fallback
+    Description: Test fallback with control flow.
+    Expectation: No exception.
+    """
+    @jit(backend="ms_backend")
+    def control_flow_if_else():
+        x = Tensor(1)
+        if x > Tensor(7):
+            return x
+        x += Tensor(3)
+        return x * 2
+    res = control_flow_if_else()
+    assert res == 8
+
+
+@case_register.level1
+@case_register.target_gpu
+@case_register.target_ascend
 def test_single_if_two_cond():
     """
     Feature: JIT Fallback
@@ -62,6 +82,25 @@ def test_single_if_two_cond():
         return x * 2
     res = control_flow_if()
     assert res == 1
+
+
+@case_register.level1
+@case_register.target_ascend
+def test_single_if_builtin_function_sum():
+    """
+    Feature: JIT Fallback
+    Description: Test fallback with control flow.
+    Expectation: No exception.
+    """
+    @jit(backend="ms_backend")
+    def control_flow_if():
+        x = Tensor(-11, mstype.float32)
+        y = Tensor(12, mstype.float32)
+        if x + y > 0:
+            return sum([x, y, 2 * x])
+        return x * 2
+    res = control_flow_if()
+    assert res == -21
 
 
 @case_register.level1

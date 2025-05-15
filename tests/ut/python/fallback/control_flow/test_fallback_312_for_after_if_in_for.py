@@ -19,52 +19,6 @@ from mindspore import Tensor, jit, context
 context.set_context(mode=context.GRAPH_MODE)
 
 
-def test_for_after_if_in_for_tensor():
-    """
-    Feature: JIT Fallback
-    Description: Test fallback with control flow.
-    Expectation: No exception.
-    """
-    @jit
-    def control_flow_for_after_if_in_for():
-        x = Tensor([1])
-        y = Tensor([0])
-        for _ in range(5):
-            x += 2
-            y += 3
-            if y - x > 2:
-                y -= 4
-        for _ in range(5):
-            x += 1
-            y -= 1
-        return x - y
-    res = control_flow_for_after_if_in_for()
-    assert res == 10
-
-
-def test_for_after_if_in_for_tensor_2():
-    """
-    Feature: JIT Fallback
-    Description: Test fallback with control flow.
-    Expectation: No exception.
-    """
-    @jit
-    def control_flow_for_after_if_in_for():
-        x = Tensor([1])
-        y = Tensor([0])
-        for _ in range(5):
-            x += 2
-            y += 3
-            if y > 8:
-                break
-            y += 1
-        for _ in range(5):
-            x += 1
-        return x - y
-    res = control_flow_for_after_if_in_for()
-    assert res == 1
-
-
 def test_for_after_if_in_for_numpy():
     """
     Feature: JIT Fallback

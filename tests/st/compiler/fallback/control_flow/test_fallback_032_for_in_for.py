@@ -1,4 +1,4 @@
-# Copyright 2022 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-""" test graph fallback control flow if after while scenario"""
+""" test graph fallback control flow."""
 import numpy as np
 from mindspore import Tensor, jit, context
 from tests.st.compiler.fallback.cases_register import case_register
@@ -23,95 +23,68 @@ context.set_context(mode=context.GRAPH_MODE)
 @case_register.level1
 @case_register.target_gpu
 @case_register.target_ascend
-def test_if_after_while_tensor():
+def test_for_in_for_tensor():
     """
     Feature: JIT Fallback
     Description: Test fallback with control flow.
     Expectation: No exception.
     """
     @jit(backend="ms_backend")
-    def control_flow_if_after_while():
+    def control_flow_for_in_for():
         x = Tensor(1)
         y = Tensor(0)
-        while x < 5:
-            x += y
-            y += 2
-        if y > 5:
-            x = x - y
-            y = y - 1
-        return x + y
-    res = control_flow_if_after_while()
-    assert res == 6
+        for _ in range(3):
+            x += 1
+            for j in range(4):
+                y += x + j
+        y = y * x
+        return y
+    res = control_flow_for_in_for()
+    assert res == 216
 
 
 @case_register.level1
 @case_register.target_gpu
 @case_register.target_ascend
-def test_if_after_while_tensor_2():
+def test_for_in_for_tensor_2():
     """
     Feature: JIT Fallback
     Description: Test fallback with control flow.
     Expectation: No exception.
     """
     @jit(backend="ms_backend")
-    def control_flow_if_after_while():
+    def control_flow_for_in_for():
         x = Tensor(1)
+        z = Tensor(0)
+        for _ in range(2):
+            x += 1
+            y = x * 2
+            for j in range(1, 4):
+                y += x + j
+            z = x + y
+        return z
+    res = control_flow_for_in_for()
+    assert res == 24
+
+
+@case_register.level1
+@case_register.target_gpu
+@case_register.target_ascend
+def test_for_in_for_numpy_2():
+    """
+    Feature: JIT Fallback
+    Description: Test fallback with control flow.
+    Expectation: No exception.
+    """
+    @jit(backend="ms_backend")
+    def control_flow_for_in_for():
+        x = np.array([3, 3])
         y = Tensor(0)
-        while x < 5:
-            x += y
-            y += 2
-        if y < 5:
-            y = y + 1
-        else:
-            y = y - 2
-        return x + y
-    res = control_flow_if_after_while()
-    assert res == 11
-
-
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
-def test_if_after_while_tensor_and_numpy():
-    """
-    Feature: JIT Fallback
-    Description: Test fallback with control flow.
-    Expectation: No exception.
-    """
-    @jit(backend="ms_backend")
-    def control_flow_if_after_while():
-        x = np.array([1, 2, 3, 4])
-        y = Tensor(5)
-        while sum(x) < 20:
-            x += 1
-            y += 1
-        if max(x) == 7:
-            return y
-        y = y - 2
+        for _ in range(2):
+            z = sum(x, 1)
+            x = x * 2
+            for j in range(1, 4):
+                y += Tensor(z * j)
         return y
-    res = control_flow_if_after_while()
-    assert res == 8
-
-
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
-def test_if_after_while_tensor_and_numpy_2():
-    """
-    Feature: JIT Fallback
-    Description: Test fallback with control flow.
-    Expectation: No exception.
-    """
-    @jit(backend="ms_backend")
-    def control_flow_if_after_while():
-        x = np.array([1, 2, 3, 4])
-        y = Tensor(5)
-        while sum(x) < 20:
-            x += 1
-            y += 1
-        if max(x) == 6:
-            return y
-        y = y - 2
-        return y
-    res = control_flow_if_after_while()
-    assert res == 6
+    res = control_flow_for_in_for()
+    assert res == 120

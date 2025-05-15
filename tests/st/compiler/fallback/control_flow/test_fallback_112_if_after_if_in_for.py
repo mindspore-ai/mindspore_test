@@ -13,10 +13,38 @@
 # limitations under the License.
 # ============================================================================
 """ test graph fallback control flow."""
+import numpy as np
 from mindspore import Tensor, jit, context
 from tests.st.compiler.fallback.cases_register import case_register
 
 context.set_context(mode=context.GRAPH_MODE)
+
+
+@case_register.level1
+@case_register.target_gpu
+@case_register.target_ascend
+def test_if_after_if_in_for_tensor():
+    """
+    Feature: JIT Fallback
+    Description: Test fallback with control flow.
+    Expectation: No exception.
+    """
+    @jit(backend="ms_backend")
+    def control_flow_if_after_if_in_for():
+        x = Tensor(1)
+        y = Tensor(2)
+        z = Tensor(0)
+        for _ in range(3):
+            if y > x:
+                y += x
+            else:
+                z = x * 2 - y
+        z = z + Tensor(1)
+        if x + y >= z:
+            y = y * x - z
+        return y
+    res = control_flow_if_after_if_in_for()
+    assert res == 4
 
 
 @case_register.level1
@@ -45,3 +73,30 @@ def test_if_after_if_in_for_tensor_2():
         return y + z
     res = control_flow_if_after_if_in_for()
     assert res == -37
+
+
+@case_register.level1
+@case_register.target_gpu
+@case_register.target_ascend
+def test_if_after_if_in_for_numpy():
+    """
+    Feature: JIT Fallback
+    Description: Test fallback with control flow.
+    Expectation: No exception.
+    """
+    @jit(backend="ms_backend")
+    def control_flow_if_after_if_in_for():
+        x = Tensor(1)
+        y = np.array(1)
+        z = Tensor(0)
+        tensor_y = Tensor(y)
+        for _ in range(3):
+            if tensor_y > x:
+                z = x * 2 - tensor_y
+            z = z + Tensor(1)
+            tensor_y += 2
+        if x + Tensor(y) >= z:
+            return tensor_y * x - z
+        return tensor_y * x + z
+    res = control_flow_if_after_if_in_for()
+    assert res == 9
