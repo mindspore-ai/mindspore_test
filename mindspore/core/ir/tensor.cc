@@ -380,6 +380,11 @@ Tensor &Tensor::AssignValue(const Tensor &tensor) {
     sync_status_ = tensor.sync_status_;
     version_ = tensor.version_;
     MS_EXCEPTION_IF_NULL(data_);
+    if (this->auto_grad_meta_data() != nullptr && this->auto_grad_meta_data()->input_type() == InputType::kInput) {
+      MS_LOG(EXCEPTION)
+        << "Can not modify tensor id of input tensor from network by assign value, this may caused by slice op, "
+           "please check your code to avoid this error!";
+    }
     if (data_->is_sub_data()) {
       // If tensor data is sub data, we should keep data
       // memory address unchange and copy data to it.

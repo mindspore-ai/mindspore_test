@@ -46,6 +46,8 @@ bool IsOutputPlaceHolder(const ValuePtr &output) {
   }
   return true;
 }
+
+AutoDiffInterfacePtr local_auto_diff_engine{nullptr};
 }  // namespace
 
 ValuePtr SavedNode::Unwrap(BackwardNodePtr grad_node, bool only_tensor) {
@@ -82,7 +84,7 @@ SavedNodePtr SavedNode::ConstructSavedNode(const ValuePtr &output, bool is_view_
   if (is_view_inplace) {
     auto tensor = output->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(tensor);
-    auto grad_node = impl::get_unsafe_grad_node_impl(tensor);
+    auto grad_node = impl::GetUnsafeGradNodeImpl(tensor);
     MS_EXCEPTION_IF_NULL(grad_node);
     return std::make_shared<SavedNode>(detach_value, grad_node, true, is_placeholder);
   }
@@ -124,13 +126,23 @@ std::string BackwardNode::ToString() const {
   return buf.str();
 }
 
-namespace impl {
-AutoGradMetaDataPtr get_autograd_meta_impl(const tensor::TensorPtr &tensor) {
-  MS_EXCEPTION_IF_NULL(tensor);
-  return get_autograd_meta_impl(*tensor);
+AutoDiffGuard::AutoDiffGuard(const AutoDiffInterfacePtr &auto_diff) {
+  prev_auto_diff_engine_ = local_auto_diff_engine;
+  local_auto_diff_engine = auto_diff;
 }
 
-AutoGradMetaDataPtr get_autograd_meta_impl(const tensor::Tensor &tensor) {
+AutoDiffGuard::~AutoDiffGuard() {
+  local_auto_diff_engine = prev_auto_diff_engine_;
+  prev_auto_diff_engine_ = nullptr;
+}
+
+namespace impl {
+AutoGradMetaDataPtr GetAutogradMetaImpl(const tensor::TensorPtr &tensor) {
+  MS_EXCEPTION_IF_NULL(tensor);
+  return GetAutogradMetaImpl(*tensor);
+}
+
+AutoGradMetaDataPtr GetAutogradMetaImpl(const tensor::Tensor &tensor) {
   auto auto_grad_meta = tensor.auto_grad_meta_data();
   if (auto_grad_meta == nullptr) {
     return nullptr;
@@ -138,7 +150,7 @@ AutoGradMetaDataPtr get_autograd_meta_impl(const tensor::Tensor &tensor) {
   return std::dynamic_pointer_cast<AutoGradMetaData>(auto_grad_meta);
 }
 
-ViewAutoGradMetaDataPtr get_view_autograd_meta_impl(const tensor::TensorPtr &tensor) {
+ViewAutoGradMetaDataPtr GetViewAutogradMetaImpl(const tensor::TensorPtr &tensor) {
   MS_EXCEPTION_IF_NULL(tensor);
   if (tensor->auto_grad_meta_data() == nullptr) {
     return nullptr;
@@ -148,11 +160,22 @@ ViewAutoGradMetaDataPtr get_view_autograd_meta_impl(const tensor::TensorPtr &ten
   return view_meta_data;
 }
 
-BackwardNodePtr get_unsafe_grad_node_impl(const tensor::TensorPtr &tensor) {
+BackwardNodePtr GetUnsafeGradNodeImpl(const tensor::TensorPtr &tensor) {
   if (tensor->auto_grad_meta_data() != nullptr) {
     return tensor->auto_grad_meta_data()->UnsafeGetGradNodeImpl();
   }
   return nullptr;
 }
+
+bool requires_grad(const tensor::TensorPtr &tensor) {
+  auto grad_node = GetUnsafeGradNodeImpl(tensor);
+  if (local_auto_diff_engine == nullptr) {
+    return grad_node != nullptr;
+  } else {
+    return grad_node != nullptr && local_auto_diff_engine->IsInExecGraph(grad_node);
+  }
+}
+
+AutoDiffInterfacePtr CurrentAutoDiffEngine() { return local_auto_diff_engine; }
 }  // namespace impl
 }  // namespace mindspore::pynative::autograd

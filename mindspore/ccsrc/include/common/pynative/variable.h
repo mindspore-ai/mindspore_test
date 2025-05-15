@@ -307,11 +307,29 @@ bool isa(const BackwardNode *base_ptr) {
   return typeid(object) == typeid(T);
 }
 
+class COMMON_EXPORT AutoDiffInterface {
+ public:
+  [[nodiscard]] virtual bool IsInExecGraph(const BackwardNodePtr &node) const = 0;
+  virtual void AddNodeToExecGraph(const BackwardNodePtr &node) = 0;
+};
+using AutoDiffInterfacePtr = std::shared_ptr<AutoDiffInterface>;
+
+class COMMON_EXPORT AutoDiffGuard {
+ public:
+  explicit AutoDiffGuard(const AutoDiffInterfacePtr &auto_diff);
+  ~AutoDiffGuard();
+
+ private:
+  AutoDiffInterfacePtr prev_auto_diff_engine_;
+};
+
 namespace impl {
-COMMON_EXPORT AutoGradMetaDataPtr get_autograd_meta_impl(const tensor::TensorPtr &tensor);
-COMMON_EXPORT AutoGradMetaDataPtr get_autograd_meta_impl(const tensor::Tensor &tensor);
-COMMON_EXPORT ViewAutoGradMetaDataPtr get_view_autograd_meta_impl(const tensor::TensorPtr &tensor);
-COMMON_EXPORT BackwardNodePtr get_unsafe_grad_node_impl(const tensor::TensorPtr &tensor);
+COMMON_EXPORT AutoGradMetaDataPtr GetAutogradMetaImpl(const tensor::TensorPtr &tensor);
+COMMON_EXPORT AutoGradMetaDataPtr GetAutogradMetaImpl(const tensor::Tensor &tensor);
+COMMON_EXPORT ViewAutoGradMetaDataPtr GetViewAutogradMetaImpl(const tensor::TensorPtr &tensor);
+COMMON_EXPORT BackwardNodePtr GetUnsafeGradNodeImpl(const tensor::TensorPtr &tensor);
+COMMON_EXPORT bool RequiresGrad(const tensor::TensorPtr &tensor);
+COMMON_EXPORT AutoDiffInterfacePtr CurrentAutoDiffEngine();
 }  // namespace impl
 }  // namespace mindspore::pynative::autograd
 
