@@ -95,9 +95,7 @@ void StoragePy_assertNotNull(PyObject *obj) { StoragePy_assertNotNull(reinterpre
 static PyObject *StoragePy_Copy_(PyObject *self, PyObject *args, PyObject *kwargs) {
   HANDLE_MS_EXCEPTION
   StoragePy_assertNotNull(self);
-
   auto self_ = StoragePy_Unpack(self);
-
   PyObject *py_type;
   int non_blocking = 0;
   if (!PyArg_ParseTuple(args, "O|i", &py_type, &non_blocking)) {
@@ -105,7 +103,6 @@ static PyObject *StoragePy_Copy_(PyObject *self, PyObject *args, PyObject *kwarg
   }
 
   auto src = StoragePy_Unpack(py_type);
-
   if (self_.NBytes() != src.NBytes()) {
     MS_LOG(EXCEPTION) << "Size does not match, self was " << self_.NBytes() << " bytes but src was " << src.NBytes()
                       << " bytes";
@@ -186,7 +183,9 @@ void RegStorage(py::module *m) {
   }
 
   StoragePyType.tp_methods = methods.data();
-  if (PyType_Ready(&StoragePyType) < 0) return;
+  if (PyType_Ready(&StoragePyType) < 0) {
+    return;
+  }
   Py_INCREF(&StoragePyType);
   m->add_object("StoragePy", reinterpret_cast<PyObject *>(&StoragePyType));
 }
