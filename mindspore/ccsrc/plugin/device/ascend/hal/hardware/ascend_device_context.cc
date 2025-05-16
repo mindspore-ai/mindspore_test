@@ -151,7 +151,7 @@ void AscendDeviceContext::Initialize() {
   // set MS_CTX_ENABLE_GE_HETEROGENOUS true according to heterogeneous mode
   ms_context->set_param<bool>(MS_CTX_ENABLE_GE_HETEROGENOUS, false);
 
-  if (ms_context->GetBackend() == kBackendGE || ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
+  if (ms_context->GetBackend() == kBackendGE) {
     InitializeForAclop();
   }
 
