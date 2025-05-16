@@ -274,3 +274,39 @@ def test_parameter_plan_with_layout_4x1_pynative():
         net = Net2()
         compile_net(net, x, layout1, layout2)
     assert error_msg in str(err.value)
+
+
+def test_shard_with_in_strategy_4x1_getting_dynamic_input_1():
+    """
+    Feature: Test shard.
+    Description: Test shard given (4, 1) tuple as in_strategy.
+    Expectation: In strategy of the identity node is ((4, 1)).
+    """
+    net, _, ir_graph_path = before_test("test_shard_with_in_strategy_4x1")
+    x_dyn = Tensor(shape=[32, 1, None, 28], dtype=ms.float32)
+    compile_net(net, x_dyn, layout1, layout2)
+    file = f"{ir_graph_path}/rank_0/step_parallel_begin_*"
+    para1 = "PrimFunc_AShardIdentity(%6)"
+    in_strategy1 = "in_strategy: ((4, 1))"
+    para2 = "PrimFunc_AShardIdentity(%10)"
+    in_strategy2 = "in_strategy: ((4, 1))"
+    check_layout_config(para1, file, in_strategy1)
+    check_layout_config(para2, file, in_strategy2)
+
+
+def test_shard_with_in_strategy_4x1_getting_dynamic_input_2():
+    """
+    Feature: Test shard.
+    Description: Test shard given (4, 1) tuple as in_strategy.
+    Expectation: In strategy of the identity node is ((4, 1)).
+    """
+    net, _, ir_graph_path = before_test("test_shard_with_in_strategy_4x1")
+    x_dyn = Tensor(shape=[None, None, None, None], dtype=ms.float32)
+    compile_net(net, x_dyn, layout1, layout2)
+    file = f"{ir_graph_path}/rank_0/step_parallel_begin_*"
+    para1 = "PrimFunc_AShardIdentity(%6)"
+    in_strategy1 = "in_strategy: ((4, 1))"
+    para2 = "PrimFunc_AShardIdentity(%10)"
+    in_strategy2 = "in_strategy: ((4, 1))"
+    check_layout_config(para1, file, in_strategy1)
+    check_layout_config(para2, file, in_strategy2)

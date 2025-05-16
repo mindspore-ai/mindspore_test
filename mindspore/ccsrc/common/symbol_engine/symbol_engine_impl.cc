@@ -60,6 +60,14 @@ std::pair<FuncGraphPtr, size_t> GetFuncGraphFromCNode(const CNodePtr &cnode) {
   return std::make_pair(sub_fg, begin_index);
 }
 
+SymbolEngineImplPtr SpecialCNodeHelper::symbol_engine() const {
+  auto symbol_engine = cnode_->func_graph()->symbol_engine();
+  MS_EXCEPTION_IF_NULL(symbol_engine);
+  auto symbol_engine_impl = symbol_engine->cast<SymbolEngineImplPtr>();
+  MS_EXCEPTION_IF_NULL(symbol_engine_impl);
+  return symbol_engine_impl;
+}
+
 class ControlFlowJoinNode : public SpecialCNodeHelper {
  public:
   using SpecialCNodeHelper::SpecialCNodeHelper;
@@ -70,7 +78,7 @@ class ControlFlowJoinNode : public SpecialCNodeHelper {
     SetFuncGraphDepend(input0->input(kIndex2));
     SetFuncGraphDepend(input0->input(kIndex3));
   }
-  std::pair<PrimitivePtr, AbstractBasePtrList> ExtractInputs() override {
+  std::pair<PrimitivePtr, AbstractBasePtrList> Process() override {
     auto prim = std::make_shared<Primitive>(ops::kControlFlowJoin);
     AbstractBasePtrList inputs;
     auto input0 = input();
@@ -85,13 +93,6 @@ class ControlFlowJoinNode : public SpecialCNodeHelper {
     auto input0 = cnode_->input(0)->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(input0);
     return input0;
-  }
-  SymbolEngineImplPtr symbol_engine() const {
-    auto symbol_engine = cnode_->func_graph()->symbol_engine();
-    MS_EXCEPTION_IF_NULL(symbol_engine);
-    auto symbol_engine_impl = symbol_engine->cast<SymbolEngineImplPtr>();
-    MS_EXCEPTION_IF_NULL(symbol_engine_impl);
-    return symbol_engine_impl;
   }
   void SetFuncGraphDepend(const AnfNodePtr &node) const {
     auto fg = GetValueNode<FuncGraphPtr>(node);
@@ -148,7 +149,7 @@ class JFuncCaller : public SpecialCNodeHelper {
       (*depend_status_map)[input_->input(i)] = (*depend_status_map)[cnode_];
     }
   }
-  std::pair<PrimitivePtr, AbstractBasePtrList> ExtractInputs() override {
+  std::pair<PrimitivePtr, AbstractBasePtrList> Process() override {
     auto prim = std::make_shared<Primitive>(ops::kJFuncCaller);
     AbstractBasePtrList inputs;
     inputs.reserve(input_->size());
@@ -159,6 +160,37 @@ class JFuncCaller : public SpecialCNodeHelper {
 
  protected:
   CNodePtr input_{nullptr};
+};
+
+class ShardFuncCaller : public SpecialCNodeHelper {
+ public:
+  /// \brief The call node of Shard:
+  ///
+  ///  %0 = Shard(@fg, strategy) // primitive "Shard", input is strategy.
+  ///  %1 = %0(inp1, inp2, ...)  // call @fg with real inputs
+  ///
+  /// this pattern match the "%1", output is same to @fg.
+  explicit ShardFuncCaller(const CNodePtr &cnode) : SpecialCNodeHelper(cnode) {
+    auto shard = cnode->input(kIndex0)->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(shard);
+    fg_ = GetValueNode<FuncGraphPtr>(shard->input(kIndex1));
+    MS_EXCEPTION_IF_NULL(fg_);
+  }
+  ~ShardFuncCaller() override = default;
+  static bool Match(const CNodePtr &cnode) {
+    auto inp = cnode->input(kIndex0)->cast<CNodePtr>();
+    return inp != nullptr && IsPrimitiveCNode(inp, prim::kPrimShard);
+  }
+  void SetDependStatus(std::map<AnfNodePtr, DependStatus> *depend_status_map) override {
+    symbol_engine()->PreBuildQuerySubgraphDependStatus(cnode_, fg_, kIndex1);
+  }
+  std::pair<PrimitivePtr, AbstractBasePtrList> Process() override {
+    symbol_engine()->BuildSubgraphImpl(cnode_, fg_, kIndex1);
+    return std::pair<PrimitivePtr, AbstractBasePtrList>(nullptr, {});
+  }
+
+ protected:
+  FuncGraphPtr fg_{nullptr};
 };
 
 SymbolEngineImplPtr SymbolEngineImpl::Build(const FuncGraphPtr &func_graph) {
@@ -264,6 +296,8 @@ void SymbolEngineImpl::PreBuildSpecialNode(const CNodePtr &cnode) {
     helper = std::make_shared<ControlFlowJoinNode>(cnode);
   } else if (JFuncCaller::Match(cnode)) {
     helper = std::make_shared<JFuncCaller>(cnode);
+  } else if (ShardFuncCaller::Match(cnode)) {
+    helper = std::make_shared<ShardFuncCaller>(cnode);
   } else {
     MS_LOG(DEBUG) << "The special node " << cnode->fullname_with_scope() << " is not supported.";
     return;
@@ -581,13 +615,17 @@ SymbolPtr SymbolEngineImpl::BuildCNodeSymbolicValue(OperationBuilder *builder, c
 void SymbolEngineImpl::BuildCNodeSymbol(const CNodePtr &cnode) {
   PrimitivePtr prim;
   AbstractBasePtrList inputs;
+  auto abstract = CloneAbstractIfSymbolExists(cnode);
+  MS_EXCEPTION_IF_NULL(abstract);
   if (cnode->input(0)->isa<CNode>()) {
     if (auto iter = special_cnodes_.find(cnode); iter != special_cnodes_.end()) {
-      auto ret = iter->second->ExtractInputs();
-      prim = std::move(ret.first);
+      auto ret = iter->second->Process();
+      prim = ret.first;
+      if (prim == nullptr) {
+        return;
+      }
       inputs = std::move(ret.second);
-    }
-    if (prim == nullptr) {
+    } else {
       prim = std::make_shared<Primitive>("_SpecialCNode");
     }
   } else {
@@ -597,8 +635,6 @@ void SymbolEngineImpl::BuildCNodeSymbol(const CNodePtr &cnode) {
     }
     inputs = ExtractInputsAbstract(cnode);
   }
-  auto abstract = CloneAbstractIfSymbolExists(cnode);
-  MS_EXCEPTION_IF_NULL(abstract);
   if (HasAbstractAny(inputs, abstract)) {
     MS_LOG(DEBUG) << "The input or output of " << cnode->fullname_with_scope()
                   << " has AbstractAny, which is not supported by symbol engine. node: " << cnode->DebugString();
