@@ -1594,6 +1594,16 @@ bool PipelineSplitPass(const ResourcePtr &resource) { return PipelineSplit(resou
 
 bool ParallelVirtualDatasetPass(const ResourcePtr &resource) { return ParallelVirtualDataset(resource); }
 
+void ResetPipelineConfig() {
+  // Temporary solution: PipelineInterleaved does not support predict. When refactoring predict, it should be removed.
+  // Reset the user-set pp configuration, which is saved by the pipeline_spilit.cc SavePipelineConfigOrigin.
+  const auto parallel_context = parallel::ParallelContext::GetInstance();
+  const auto is_pp_interleave_temp = parallel_context->pipeline_interleave_temp();
+  const auto pipeline_scheduler_temp = parallel_context->pipeline_scheduler_temp();
+  parallel_context->set_pipeline_interleave(is_pp_interleave_temp);
+  parallel_context->set_pipeline_scheduler(pipeline_scheduler_temp);
+}
+
 bool PipelineParallelScheduler(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
   auto root = resource->func_graph();
@@ -1617,6 +1627,7 @@ bool PipelineParallelScheduler(const ResourcePtr &resource) {
     }
     scheduler->GetBorderNode();
     scheduler->Reorder();
+    ResetPipelineConfig();
   }
   opt::ProcessSendRecvForGE(root);
   return true;

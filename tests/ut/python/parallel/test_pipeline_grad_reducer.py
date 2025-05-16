@@ -119,7 +119,7 @@ def test_pipeline_functional_stage0():
         loss = net(inputs, target)
         return loss
 
-    params = net.network.cell1.trainable_params()
+    params = net.network.trainable_params()
     grad_fn = ops.value_and_grad(forward_fn, None, params)
     optimizer = nn.SGD(params, learning_rate=0.01)
     pp_grad_reducer = PipelineGradReducer(optimizer.parameters)
@@ -155,7 +155,7 @@ def test_pipeline_functional_shard_stage0():
         loss = net(inputs, target)
         return loss
 
-    params = net.network.cell1.trainable_params()
+    params = net.network.trainable_params()
     grad_fn = ops.value_and_grad(forward_fn, None, params)
     optimizer = nn.SGD(params, learning_rate=0.01)
     pp_grad_reducer = PipelineGradReducer(optimizer.parameters)
@@ -188,7 +188,7 @@ def test_pipeline_functional_shard_stage0_1():
 
     with no_init_parameters():
         net = Pipeline(Net(strategy1, strategy2), 4)
-        params = net.network.cell1.trainable_params()
+        params = net.network.trainable_params()
         optimizer = nn.SGD(params, learning_rate=0.01)
         pp_grad_reducer = PipelineGradReducerNew(optimizer.parameters, opt_shard=True)
 

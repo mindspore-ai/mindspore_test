@@ -29,7 +29,7 @@ from mindspore.train import Model, CheckpointConfig, ModelCheckpoint, load_check
 from mindspore.communication.management import init, get_rank, get_group_size
 from mindspore.parallel.auto_parallel import AutoParallel
 from mindspore.nn.utils import no_init_parameters
-from mindspore.nn import Pipeline
+from mindspore.parallel.nn import Pipeline
 from mindspore.common import set_seed
 from mindspore.context import ParallelMode
 from .model_parallel import FakeData, FakeDataInitMode
@@ -325,6 +325,7 @@ def semi_auto_ckpt_with_redundancy_dp2_mp2_pp2_new_pp():
 
 # Functional Cases
 def autoparallel_functional_programming_pp(strategy):
+    ms.set_seed(1)
     dataset = FakeData(size=64, batch_size=8, image_size=(4, 4), num_classes=16,
                        fakedata_mode=FakeDataInitMode.UniqueInit)
     ir_path = "model_parallel_functional_programming_ir/parallel_ir_" + str(strategy)
@@ -353,6 +354,7 @@ def autoparallel_functional_programming_pp(strategy):
 
 # Functional Cases
 def context_functional_programming_pp(strategy):
+    ms.set_seed(1)
     dataset = FakeData(size=64, batch_size=8, image_size=(4, 4), num_classes=16,
                        fakedata_mode=FakeDataInitMode.UniqueInit)
     ir_path = "model_parallel_functional_programming_ir/parallel_ir_" + str(strategy)

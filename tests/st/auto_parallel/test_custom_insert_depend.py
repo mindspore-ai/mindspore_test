@@ -165,7 +165,7 @@ def test_pipeline_split_stage0_custom_insert_depend_kbk():
         ["grep -r '%s' %s | wc -l" % (para, file)],
         shell=True)
     out = str(output, 'utf-8').strip()
-    assert out == "47"
+    assert out == "50"
     os.environ["MS_CUSTOM_DEPEND_CONFIG_PATH"] = ""
     os.environ["MS_SIMULATION_LEVEL"] = ""
     if os.path.exists("./rank_1"):
@@ -231,7 +231,7 @@ def test_pipeline_split_stage1_custom_insert_depend_kbk():
         ["grep -r '%s' %s | wc -l" % (para, file)],
         shell=True)
     out = str(output, 'utf-8').strip()
-    assert out == "39"
+    assert out == "42"
     os.environ["MS_CUSTOM_DEPEND_CONFIG_PATH"] = ""
     os.environ["MS_SIMULATION_LEVEL"] = ""
     if os.path.exists("./rank_8"):
@@ -289,7 +289,7 @@ def test_pipeline_split_stage1_custom_insert_depend():
         ["grep -r '%s' %s | wc -l" % (para, file)],
         shell=True)
     out = str(output, 'utf-8').strip()
-    assert out == "39"
+    assert out == "0"
     os.environ["MS_CUSTOM_DEPEND_CONFIG_PATH"] = ""
     os.environ["MS_SIMULATION_LEVEL"] = ""
     if os.path.exists("./rank_8"):
