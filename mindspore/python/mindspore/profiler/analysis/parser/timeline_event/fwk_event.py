@@ -110,6 +110,7 @@ class ProfilerEvent(Enum):
     PYBOOST_MALLOC_INPUT = "PyBoostMallocInput"
     PYBOOST_MALLOC_OUTPUT = "PyBoostMallocOutput"
     PYBOOST_LAUNCH_ACLLNN = "PyBoostLaunchAclnn"
+    PYBOOST_LAUNCH_ATB = "PyBoostLaunchAtb"
     # pybind api
     PYNATIVE_NEW_GRAPH = "PyNativeNewGraph"
     PYNATIVE_END_GRAPH = "PyNativeEndGraph"
