@@ -1,4 +1,4 @@
-# Copyright 2024 Huawei Technologies Co., Ltd
+# Copyright 2024-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -371,6 +371,16 @@ Value Range:
 """
 CHECK_INVALID_VIEW_INPLACE_DOUT_LEVEL = ''
 
+"""
+Name: JIT_ENABLE_AUGASSIGN_INPLACE
+Function: Whether enable augassign inplace.
+Value Range:
+    0: Disable
+    1: Enable
+    Default: Disable
+"""
+JIT_ENABLE_AUGASSIGN_INPLACE = '0'
+
 __all__ = [
     "COMPILE_PROFILE",
     "COMPILE_PROFILE_FINISH_ACTION",
@@ -410,5 +420,6 @@ __all__ = [
     "ENABLE_ELIMINATE_UNUSED_PARAMS",
     "PUT_ALL_CNODE_INTO_ORDER_LIST",
     "CHECK_PASS_NODE_SCOPE",
-    "CHECK_INVALID_VIEW_INPLACE_DOUT_LEVEL"
+    "CHECK_INVALID_VIEW_INPLACE_DOUT_LEVEL",
+    "JIT_ENABLE_AUGASSIGN_INPLACE"
 ]

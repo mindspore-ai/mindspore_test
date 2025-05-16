@@ -2706,7 +2706,8 @@ FunctionBlockPtr Parser::ParseAugAssign(const FunctionBlockPtr &block, const py:
   AnfNodePtr target_node = nullptr;
 
   py::tuple ns;
-  static const bool enable_augassign = (common::GetEnv("MS_DEV_JIT_ENABLE_AUGASSIGN_INPLACE") == "1");
+  auto enable_augassign = common::GetCompileConfig("JIT_ENABLE_AUGASSIGN_INPLACE") == "1";
+  MS_LOG(DEBUG) << "enable_augassign: " << enable_augassign;
   if (enable_augassign) {
     ns = block->GetAugAssignAstOpNameSpace(op_object);
   } else {

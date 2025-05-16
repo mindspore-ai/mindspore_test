@@ -1,4 +1,4 @@
-# Copyright 2020 Huawei Technologies Co., Ltd
+# Copyright 2020-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,9 +21,10 @@ import pytest
 import sys
 
 from mindspore._c_expression import update_pijit_default_config
-
+from mindspore._extends.parse import compile_config
 
 def pytest_runtest_setup(item):
     if sys.version_info >= (3, 11):
         pytest.skip("Skipping PIJit tests for Python >= 3.11.")
     update_pijit_default_config(compile_with_try=False)
+    compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '0'
