@@ -413,6 +413,13 @@ void AutoGradUtil::BuildViewAutoGradMeta(const tensor::TensorPtr &src_tensor, co
   }
 }
 
+void AutoGradUtil::SetInferOutputToGrad(const PyboostOpRunInfoPtr &op_run_info, const kernel::pyboost::OpPtr &op) {
+  if (op->output_value_simple_info() != nullptr) {
+    op_run_info->output_value_simple_info = op->output_value_simple_info();
+    op_run_info->output_value_simple_info->is_tuple_output_ = false;
+  }
+}
+
 void AutoGradUtil::SetInferOutputToGrad(const OpGradInfoPtr &op_grad_info, const kernel::pyboost::OpPtr &op) {
   if (op->output_value_simple_info() != nullptr) {
     op_grad_info->output_value_simple_info = op->output_value_simple_info();

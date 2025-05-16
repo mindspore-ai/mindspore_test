@@ -23,7 +23,7 @@
 
 namespace mindspore {
 namespace pynative {
-ValuePtr PyBoostCastOperation::DoAutoCast(const FrontendOpRunInfoPtr &op_run_info,
+ValuePtr PyBoostCastOperation::DoAutoCast(const PyboostOpRunInfoPtr &op_run_info,
                                           const std::pair<TypeId, bool> &dst_type, size_t index,
                                           const ValuePtr &v) const {
   MS_EXCEPTION_IF_NULL(v);
@@ -38,7 +38,7 @@ ValuePtr PyBoostCastOperation::DoAutoCast(const FrontendOpRunInfoPtr &op_run_inf
   return DoAutoCast(op_run_info, dst_type, index, v->cast<tensor::TensorPtr>());
 }
 
-tensor::TensorPtr PyBoostCastOperation::DoAutoCast(const FrontendOpRunInfoPtr &op_run_info,
+tensor::TensorPtr PyBoostCastOperation::DoAutoCast(const PyboostOpRunInfoPtr &op_run_info,
                                                    const std::pair<TypeId, bool> &dst_type, size_t index,
                                                    const tensor::TensorPtr &t) const {
   if (op_run_info->source_type[index] != ops::OP_DTYPE::DT_BEGIN) {
@@ -72,7 +72,7 @@ tensor::TensorPtr PyBoostCastOperation::DoAutoCast(const FrontendOpRunInfoPtr &o
   return real_output->cast<tensor::TensorPtr>();
 }
 
-ValuePtr PyBoostCastOperation::SetTensorMixPrecisionCast(const FrontendOpRunInfoPtr &op_run_info, const ValuePtr &v,
+ValuePtr PyBoostCastOperation::SetTensorMixPrecisionCast(const PyboostOpRunInfoPtr &op_run_info, const ValuePtr &v,
                                                          size_t index) const {
   MS_EXCEPTION_IF_NULL(v);
   if (v->isa<tensor::Tensor>()) {
@@ -81,7 +81,7 @@ ValuePtr PyBoostCastOperation::SetTensorMixPrecisionCast(const FrontendOpRunInfo
   return v;
 }
 
-tensor::TensorPtr PyBoostCastOperation::SetTensorMixPrecisionCast(const FrontendOpRunInfoPtr &op_run_info,
+tensor::TensorPtr PyBoostCastOperation::SetTensorMixPrecisionCast(const PyboostOpRunInfoPtr &op_run_info,
                                                                   const tensor::TensorPtr &t, size_t index) const {
   MS_EXCEPTION_IF_NULL(op_run_info);
   MS_EXCEPTION_IF_NULL(t);
@@ -98,7 +98,7 @@ tensor::TensorPtr PyBoostCastOperation::SetTensorMixPrecisionCast(const Frontend
   auto source_dtype = t->Dtype();
   if (source_dtype != nullptr && (IsSubType(source_dtype, kFloat) || IsSubType(source_dtype, kBFloat)) &&
       *source_dtype != *dst_dtype) {
-    MS_LOG(DEBUG) << "MixPrecision cast for " << op_run_info->base_op_run_info.op_name << " " << index
+    MS_LOG(DEBUG) << "MixPrecision cast for " << op_run_info->op_prim->name() << " " << index
                   << "th input, and to type " << dst_dtype->ToString();
     auto cast_t = DoAutoCast(op_run_info, std::make_pair(dst_dtype->type_id(), true), index, t);
     return cast_t;
@@ -107,7 +107,7 @@ tensor::TensorPtr PyBoostCastOperation::SetTensorMixPrecisionCast(const Frontend
 }
 
 std::optional<tensor::TensorPtr> PyBoostCastOperation::SetTensorMixPrecisionCast(
-  const FrontendOpRunInfoPtr &op_run_info, const std::optional<tensor::TensorPtr> &t, size_t index) const {
+  const PyboostOpRunInfoPtr &op_run_info, const std::optional<tensor::TensorPtr> &t, size_t index) const {
   MS_EXCEPTION_IF_NULL(op_run_info);
   if (!t.has_value()) {
     return std::nullopt;
@@ -115,17 +115,17 @@ std::optional<tensor::TensorPtr> PyBoostCastOperation::SetTensorMixPrecisionCast
   return std::make_optional(SetTensorMixPrecisionCast(op_run_info, t.value(), index));
 }
 
-ValueTuplePtr PyBoostCastOperation::SetTensorMixPrecisionCast(const FrontendOpRunInfoPtr &op_run_info,
+ValueTuplePtr PyBoostCastOperation::SetTensorMixPrecisionCast(const PyboostOpRunInfoPtr &op_run_info,
                                                               const ValueTuplePtr &v_tuple, size_t index) const {
   return std::make_shared<ValueTuple>(SetSeqMixPrecisionCast(op_run_info, v_tuple, index));
 }
 
-ValueListPtr PyBoostCastOperation::SetTensorMixPrecisionCast(const FrontendOpRunInfoPtr &op_run_info,
+ValueListPtr PyBoostCastOperation::SetTensorMixPrecisionCast(const PyboostOpRunInfoPtr &op_run_info,
                                                              const ValueListPtr &v_list, size_t index) const {
   return std::make_shared<ValueList>(SetSeqMixPrecisionCast(op_run_info, v_list, index));
 }
 
-ValuePtrList PyBoostCastOperation::SetSeqMixPrecisionCast(const FrontendOpRunInfoPtr &op_run_info,
+ValuePtrList PyBoostCastOperation::SetSeqMixPrecisionCast(const PyboostOpRunInfoPtr &op_run_info,
                                                           const ValueSequencePtr &v_seq, size_t index) const {
   MS_EXCEPTION_IF_NULL(op_run_info);
   MS_EXCEPTION_IF_NULL(v_seq);

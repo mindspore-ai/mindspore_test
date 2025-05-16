@@ -77,6 +77,7 @@ struct AutoGradUtil {
   static ValuePtr VectorRefToValue(const VectorRef &vec_ref, bool requires_grad, bool is_out_sequence);
   static void BuildViewAutoGradMeta(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &output,
                                     autograd::CreationType creation_type, bool requires_grad);
+  static void SetInferOutputToGrad(const PyboostOpRunInfoPtr &op_run_info, const kernel::pyboost::OpPtr &op);
   static void SetInferOutputToGrad(const OpGradInfoPtr &op_grad_info, const kernel::pyboost::OpPtr &op);
   static void SetInferMultiOutputToGrad(const OpGradInfoPtr &op_grad_info, const kernel::pyboost::OpPtr &op);
   static ValuePtr MakeOutput(bool requires_grad, const kernel::pyboost::OpPtr &op,

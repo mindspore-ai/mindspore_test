@@ -161,6 +161,7 @@ struct DataConvert {
 };
 
 struct PyBoost {
+  static PyboostOpRunInfoPtr Init_Pyboost(const PrimitivePtr &prim);
   static FrontendOpRunInfoPtr Init(const PrimitivePtr &prim);
   static void DoGrad(const kernel::pyboost::OpPtr &op, const OpGradInfoPtr &grad_info, const AsyncStatus &async_status);
   static void SetAnyValueForAbstract(const kernel::pyboost::OpPtr &op);
@@ -190,20 +191,21 @@ struct PyBoost {
   }
 
   template <size_t N, typename... T>
-  static auto SetPyBoostCastForInputs(const FrontendOpRunInfoPtr &op_run_info,
+  static auto SetPyBoostCastForInputs(const PyboostOpRunInfoPtr &op_run_info, const std::string &op_name,
                                       const std::vector<std::vector<size_t>> &same_type_table, T... t) {
     MS_EXCEPTION_IF_NULL(op_run_info);
-    op_run_info->input_size = sizeof...(t);
-    if (op_run_info->op_grad_info->op_prim->name() == kCast) {
+    const size_t &input_size = sizeof...(t);
+    if (op_name == kCast) {
       return std::make_tuple(t...);
     }
     const auto &pyboost_cast_operation = Common::GetPyNativeExecutor()->forward_executor()->pyboost_cast_operation();
-    const auto &ret = pyboost_cast_operation->DoMixPrecisionCast(op_run_info, t...);
+    const auto &ret = pyboost_cast_operation->DoMixPrecisionCast(op_run_info, input_size, t...);
     if constexpr (N != 0) {
-      return pyboost_cast_operation->DoImplicitCast<N>(op_run_info, same_type_table, ret);
+      return pyboost_cast_operation->DoImplicitCast<N>(op_run_info, input_size, same_type_table, ret);
     }
     return ret;
   }
+
   static void DataSyncForGraph(const kernel::pyboost::OpPtr &op);
   static void MarkPyBoostInputs(const OpGradInfoPtr &op_grad_info);
   static void BumpVersionAsync(const tensor::TensorPtr &tensor);
@@ -215,6 +217,7 @@ struct PyBoost {
                          [](const TensorPtr &value) -> ValuePtr { return value; });
     return std::make_shared<ValueTuple>(output_values);
   }
+
   template <typename... Args>
   static ValuePtr MultiOutputToValue(const std::tuple<Args...> &outputs) {
     std::vector<ValuePtr> output_values = TupleToVector(outputs);
