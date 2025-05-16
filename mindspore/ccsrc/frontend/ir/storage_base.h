@@ -23,10 +23,9 @@
 #include "common/device_address.h"
 
 namespace mindspore {
-class StorageBase;
-using StorageBasePtr = std::shared_ptr<StorageBase>;
 class FRONTEND_EXPORT StorageBase {
  public:
+  using StorageBasePtr = std::shared_ptr<StorageBase>;
   StorageBase() = default;
   explicit StorageBase(device::DeviceAddressPtr &device_data) : device_data_(device_data) {}
   explicit StorageBase(const StorageBase &storage_base) : device_data_(storage_base.device_data_) {}
@@ -41,5 +40,6 @@ class FRONTEND_EXPORT StorageBase {
  private:
   device::DeviceAddressPtr device_data_{nullptr};
 };
+using StorageBasePtr = std::shared_ptr<StorageBase>;
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_FRONTEND_IR_STORAGE_BASE_H
