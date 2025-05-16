@@ -125,13 +125,14 @@ Buffer ModelConverter::BuildAirModel(const backend::ge_backend::DfGraphPtr &grap
       return Buffer();
     }
     std::map<ge::AscendString, ge::AscendString> bund_bundle_options;
+    std::map<ge::AscendString, ge::AscendString> update_options;
     for (auto it : build_options) {
       bund_bundle_options.insert(
         std::make_pair(ge::AscendString(it.first.c_str()), ge::AscendString(it.second.c_str())));
     }
     std::vector<ge::GraphWithOptions> graph_and_options;
     graph_and_options.push_back(ge::GraphWithOptions{split_graphs.infer_graph, bund_bundle_options});
-    graph_and_options.push_back(ge::GraphWithOptions{split_graphs.var_update_graph, bund_bundle_options});
+    graph_and_options.push_back(ge::GraphWithOptions{split_graphs.var_update_graph, update_options});
     ret = ge::aclgrphBundleBuildModel(graph_and_options, model);
     if (ret != ge::SUCCESS) {
       MS_LOG(ERROR) << "Call aclgrphBuildModel fail: " << CALL_ASCEND_API(aclGetRecentErrMsg);
