@@ -41,6 +41,13 @@ TensorStorageInfoPtrList ExpandDimsStrideCalc(const mindspore::ops::OldTensorInf
   return {new_storage_info};
 }
 
+TensorStorageInfoPtrList ExpandDimsBasicTypeCalc(const PrimitivePtr &prim,
+                                                 const mindspore::tensor::TensorPtr &input_tensor,
+                                                 const int64_t &axis) {
+  auto old_tensor_info = GetOldTensorInfo(input_tensor);
+  return ExpandDimsStrideCalc(old_tensor_info, axis);
+}
+
 TensorStorageInfoPtrList ExpandDimsCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
   if (!inputs[kInputIndex0]->isa<tensor::Tensor>() || !inputs[kInputIndex1]->isa<IntegerImm>()) {
     return {};

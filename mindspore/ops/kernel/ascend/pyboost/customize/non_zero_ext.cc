@@ -38,10 +38,10 @@ std::vector<tensor::TensorPtr> NonZeroExtAscendCustomize(const std::shared_ptr<O
   auto unstack_op = CREATE_PYBOOST_OP(UnstackExtView, kAscendDevice);
   TensorPtr output_tensor = nullptr;
   if (input_tensor->shape().size() == kDim0) {
-    std::vector<ValuePtr> unsqueeze_shape;
-    unsqueeze_shape.emplace_back(std::make_shared<Int64Imm>(kIndex1));
+    std::vector<int64_t> unsqueeze_shape;
+    unsqueeze_shape.emplace_back(kIndex1);
     auto reshape_op = CREATE_PYBOOST_OP(Reshape, kAscendDevice);
-    auto expanded_input = reshape_op->Call(input_tensor, std::make_shared<ValueTuple>(unsqueeze_shape));
+    auto expanded_input = reshape_op->Call(input_tensor, unsqueeze_shape);
     output_tensor = nonzero_op->Call(expanded_input);
   } else {
     output_tensor = nonzero_op->Call(input_tensor);

@@ -87,7 +87,7 @@ class AutoGradRegHeaderGenerator(BaseGenerator):
         input_tensor_prt_args_str = ""
         for op_arg in op_proto.op_args:
             is_optional = is_optional_param(op_arg)
-            input_dtype = get_input_dtype(op_arg.arg_dtype, is_optional)
+            input_dtype = get_input_dtype(op_arg.arg_dtype, is_optional, op_proto.op_view)
             input_tensor_prt_args_str += f"const {input_dtype} &, "
 
         return self.op_grad_func_args_template.replace(input_tensor_prt_args=input_tensor_prt_args_str.rstrip(', '))

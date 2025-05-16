@@ -41,16 +41,16 @@ tensor::TensorPtr AvgPool1DAscendCustomize(const std::shared_ptr<OpRunner> &op, 
   auto input_shape = input->shape_c();
   auto input_dim = SizeToLong(input_shape.size());
 
-  std::vector<ValuePtr> unsqueeze_shape;
+  std::vector<int64_t> unsqueeze_shape;
   std::vector<ValuePtr> squeeze_shape;
   for (auto i = 0; i < input_dim - 1; i++) {
-    unsqueeze_shape.emplace_back(std::make_shared<Int64Imm>(input_shape[i]));
+    unsqueeze_shape.emplace_back(input_shape[i]);
     squeeze_shape.emplace_back(std::make_shared<Int64Imm>(input_shape[i]));
   }
-  unsqueeze_shape.emplace_back(std::make_shared<Int64Imm>(1));
-  unsqueeze_shape.emplace_back(std::make_shared<Int64Imm>(input_shape[input_dim - 1]));
+  unsqueeze_shape.emplace_back(1);
+  unsqueeze_shape.emplace_back(input_shape[input_dim - 1]);
   const auto reshape_op = CREATE_PYBOOST_OP(Reshape, op->device_context()->device_context_key().device_name_);
-  auto expanded_input = reshape_op->Call(input, std::make_shared<ValueTuple>(unsqueeze_shape));
+  auto expanded_input = reshape_op->Call(input, unsqueeze_shape);
 
   auto kernel_size_val = ConvertValueTupleToVector<int64_t>(kernel_size);
   if (kernel_size_val.size() != 1) {

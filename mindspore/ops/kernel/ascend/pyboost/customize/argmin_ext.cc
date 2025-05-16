@@ -41,8 +41,7 @@ tensor::TensorPtr ArgMinAscendCustomize(const std::shared_ptr<OpRunner> &op, con
     real_input = input_tensor;
   } else {
     auto reshape_op = CREATE_PYBOOST_OP(Reshape, op->device_context()->device_context_key_.device_name_);
-    real_input = reshape_op->Call(
-      input_tensor, std::make_shared<ValueTuple>(std::vector<ValuePtr>({std::make_shared<Int64Imm>(-1)})));
+    real_input = reshape_op->Call(input_tensor, {-1});
   }
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), real_input);

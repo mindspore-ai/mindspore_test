@@ -26,21 +26,20 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace matmul {
-ValueTuplePtr GetTransposePerm(const TensorPtr &weight_tensor) {
+std::vector<int64_t> GetTransposePerm(const TensorPtr &weight_tensor) {
   const auto &shape = weight_tensor->shape();
   size_t size = shape.size();
-  std::vector<ValuePtr> perm(size);
+  std::vector<int64_t> perm(size);
   if (size < kDim2) {
-    auto zero = std::make_shared<Int64Imm>(0);
-    perm[0] = MakeValue(zero);
-    return std::make_shared<ValueTuple>(perm);
+    perm[0] = 0;
+    return perm;
   }
-  perm[size - kDim1] = MakeValue(static_cast<int64_t>(size - kDim2));
-  perm[size - kDim2] = MakeValue(static_cast<int64_t>(size - kDim1));
+  perm[size - kDim1] = static_cast<int64_t>(size - kDim2);
+  perm[size - kDim2] = static_cast<int64_t>(size - kDim1);
   for (size_t i = 0; i < size - kDim2; ++i) {
-    perm[i] = MakeValue(static_cast<int64_t>(i));
+    perm[i] = static_cast<int64_t>(i);
   }
-  return std::make_shared<ValueTuple>(perm);
+  return perm;
 }
 }  // namespace matmul
 tensor::TensorPtr MatMulAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,

@@ -29,11 +29,11 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace matmul_reduce_scatter {
-ValueTuplePtr GetTransposePerm(const TensorPtr &tensor) {
-  std::vector<ValuePtr> perm(tensor->shape().size());
-  perm[kDim0] = MakeValue(static_cast<int64_t>(kDim1));
-  perm[kDim1] = MakeValue(static_cast<int64_t>(kDim0));
-  return std::make_shared<ValueTuple>(perm);
+std::vector<int64_t> GetTransposePerm(const TensorPtr &tensor) {
+  std::vector<int64_t> perm(tensor->shape().size());
+  perm[kDim0] = static_cast<int64_t>(kDim1);
+  perm[kDim1] = static_cast<int64_t>(kDim0);
+  return perm;
 }
 }  // namespace matmul_reduce_scatter
 

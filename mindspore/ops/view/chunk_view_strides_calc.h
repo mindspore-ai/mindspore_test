@@ -21,7 +21,9 @@
 
 namespace mindspore {
 namespace ops {
-
+OPS_API TensorStorageInfoPtrList ChunkViewBasicTypeCalc(const PrimitivePtr &prim,
+                                                        const mindspore::tensor::TensorPtr &input_tensor,
+                                                        const int64_t &chunks, const int64_t &dim);
 OPS_API TensorStorageInfoPtrList ChunkViewCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs);
 OPS_API TensorStorageInfoPtrList ChunkViewStridesCalc(const OldTensorInfoPtr tensor_info,
                                                       TensorStorageInfoPtr storage_info, const int64_t &chunks,

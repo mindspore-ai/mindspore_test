@@ -33,6 +33,7 @@ class OPS_ASCEND_API ${op_name}Ascend : public pyboost::${op_name} {
   ~${op_name}Ascend() = default;
 
   ${return_type} Call(${call_args_with_type}) override;
+  ${basic_type_func}
 };
 }  // namespace pyboost
 }  // namespace kernel

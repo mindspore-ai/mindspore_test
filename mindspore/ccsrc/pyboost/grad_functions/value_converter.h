@@ -19,6 +19,7 @@
 
 #include <optional>
 #include <string>
+#include <vector>
 #include "ir/tensor.h"
 #include "ir/value.h"
 #include "include/backend/visible.h"
@@ -36,6 +37,15 @@ class PYBOOST_API ValueConverter {
     }
     return t;
   }
+  template <typename T, typename U>
+  static U ConvertBasic(const ValuePtr &input) {
+    MS_EXCEPTION_IF_NULL(input);
+    auto t = input->template cast<T>();
+    if (t == nullptr) {
+      MS_LOG(EXCEPTION) << "Get input type " << input->ToString() << ", but want to get " << typeid(T).name();
+    }
+    return GetValue<U>(t);
+  }
   static Int64ImmPtr ToInt(const ValuePtr &input);
   static FP32ImmPtr ToFloat(const ValuePtr &input);
   static BoolImmPtr ToBool(const ValuePtr &input);
@@ -44,6 +54,9 @@ class PYBOOST_API ValueConverter {
   static StringImmPtr ToString(const ValuePtr &input);
   static TypePtr ToDtype(const ValuePtr &input);
   static ValueTuplePtr ToValueTuple(const ValuePtr &input);
+
+  static std::vector<int64_t> ToBasicIntVector(const ValuePtr &input);
+  static int64_t ToBasicInt(const ValuePtr &input);
 
   template <typename T>
   static std::optional<T> ConvertOptional(const ValuePtr &input) {
@@ -54,6 +67,17 @@ class PYBOOST_API ValueConverter {
     MS_EXCEPTION_IF_NULL(t);
     return std::make_optional<T>(t);
   }
+
+  template <typename T, typename U>
+  static std::optional<U> ConvertBasicOptional(const ValuePtr &input) {
+    if (input->template isa<None>()) {
+      return std::nullopt;
+    }
+    auto t = input->template cast<T>();
+    MS_EXCEPTION_IF_NULL(t);
+    return std::make_optional<U>(GetValue<U>(t));
+  }
+
   static std::optional<Int64ImmPtr> ToIntOptional(const ValuePtr &input);
   static std::optional<FP32ImmPtr> ToFloatOptional(const ValuePtr &input);
   static std::optional<BoolImmPtr> ToBoolOptional(const ValuePtr &input);
@@ -62,6 +86,9 @@ class PYBOOST_API ValueConverter {
   static std::optional<StringImmPtr> ToStringOptional(const ValuePtr &input);
   static std::optional<TypePtr> ToDtypeOptional(const ValuePtr &input);
   static std::optional<ValueTuplePtr> ToValueTupleOptional(const ValuePtr &input);
+
+  static std::optional<std::vector<int64_t>> ToBasicIntVectorOptional(const ValuePtr &input);
+  static std::optional<int64_t> ToBasicIntOptional(const ValuePtr &input);
 
   static tensor::TensorPtr ContiguousTensorValue(const std::string &device_target, const tensor::TensorPtr &tensor);
   static ValueTuplePtr ContiguousTensorValue(const std::string &device_target, const ValueTuplePtr &tuple);

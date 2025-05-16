@@ -87,6 +87,15 @@ constexpr auto kDstMask = (1 << kTypeShiftBits) - 1;
 inline int32_t CombineTypesForTypeCast(const mindspore::ops::OP_DTYPE &src, const mindspore::ops::OP_DTYPE &dst) {
   return (static_cast<int32_t>(src) << kTypeShiftBits) | static_cast<int32_t>(dst);
 }
+static inline void *GetTensorDataPtr(const tensor::TensorPtr &tensor) {
+  MS_EXCEPTION_IF_NULL(tensor);
+  const auto &device_address = tensor->device_address();
+  if (device_address != nullptr) {
+    // Before get data, sync form device address should be performed first
+    tensor->data_sync();
+  }
+  return tensor->data_c();
+}
 // using OpDefConvertFunc = std::function<ValuePtr(const py::object &obj)>;
 typedef ValuePtr (*OpDefConvertFunc)(const py::object &);
 FRONTEND_EXPORT OpDefConvertFunc GetConverterByType(int32_t dtype);

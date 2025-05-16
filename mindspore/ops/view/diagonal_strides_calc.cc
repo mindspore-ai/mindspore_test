@@ -73,6 +73,13 @@ TensorStorageInfoPtrList DiagonalStridesCalc(const OldTensorInfoPtr old_tensor_i
   return {new_storage_info};
 }
 
+TensorStorageInfoPtrList DiagonalBasicTypeCalc(const PrimitivePtr &prim,
+                                               const mindspore::tensor::TensorPtr &input_tensor, const int64_t &offset,
+                                               const int64_t &dim1, const int64_t &dim2) {
+  auto old_tensor_info = GetOldTensorInfo(input_tensor);
+  return DiagonalStridesCalc(old_tensor_info, offset, dim1, dim2);
+}
+
 TensorStorageInfoPtrList DiagonalCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
   auto input_tensor = inputs[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);

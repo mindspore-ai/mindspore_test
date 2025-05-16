@@ -25,6 +25,11 @@ tensor::TensorPtr ReshapeCPUCustomize(const std::shared_ptr<OpRunner> &op, const
   MS_LOG(DEBUG) << "Call start";
   return ReshapeCustomize(op, input_tensor, shape, op->device_context()->device_context_key_.device_name_);
 }
+tensor::TensorPtr ReshapeCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                      const std::vector<int64_t> &shape) {
+  MS_LOG(DEBUG) << "Call start";
+  return ReshapeCustomize(op, input_tensor, shape, op->device_context()->device_context_key_.device_name_);
+}
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore
