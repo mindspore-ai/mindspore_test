@@ -13,5 +13,5 @@ if(EXISTS ${ASCEND_NNAL_ATB_PATH})
     target_link_libraries(mindspore_atb_kernels PRIVATE ${ATB_KENREL})
     target_link_libraries(mindspore_atb_kernels PRIVATE mindspore_ascend)
     set_target_properties(mindspore_atb_kernels PROPERTIES INSTALL_RPATH
-        ${ORIGIN_PATH}:${ORIGIN_PATH}/ascend/:${ORIGIN_PATH}/../)
+        $ORIGIN:$ORIGIN/../:$ORIGIN/../../:$ORIGIN/../../../)
 endif()
