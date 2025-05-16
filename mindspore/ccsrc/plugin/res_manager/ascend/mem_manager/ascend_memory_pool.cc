@@ -25,6 +25,7 @@
 
 #include "debug/profiler/profiling_data_dumper.h"
 #include "debug/profiler/profiling.h"
+#include "debug/profiler/mstx/mstx_impl.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "include/common/utils/comm_manager.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_vmm_adapter.h"
@@ -213,6 +214,7 @@ DeviceMemPtr DefaultEnhancedAscendMemoryPool::AllocTensorMem(size_t size, bool f
   auto device_addr = mem_buf->addr_;
 
   instance_->ReportMemoryPoolInfo();
+  instance_->ReportMemoryPoolMallocInfoToMstx(device_addr, align_size);
 
   // Adapt for dry run.
   if (IsNeedProfilieMemoryLog()) {
@@ -286,6 +288,7 @@ bool DefaultEnhancedAscendMemoryPool::DoFreeTensorMem(const DeviceMemPtr &device
   bool ret = instance_->DoFreeTensorMem(device_addr);
   if (ret) {
     instance_->ReportMemoryPoolInfo();
+    instance_->ReportMemoryPoolFreeInfoToMstx(device_addr);
 
     // Adapt for dry run.
     if (IsNeedProfilieMemoryLog()) {
@@ -532,6 +535,46 @@ AbstractAscendMemoryPoolSupport &AscendMemoryPool::GetInstance() {
       }
     });
 #endif
+    // Set memory mstx callback func.
+    instance_->SetMemoryMstxCallback(
+      [&](void *addr, size_t size) {
+        if (profiler::MstxImpl::GetInstance().IsMsleaksEnable()) {
+          uint32_t device_id = GetDeviceId();
+          profiler::mstxDomainHandle_t msleaksDomain =
+            profiler::MstxImpl::GetInstance().DomainCreateAImpl(profiler::MSTX_DOMAIN_MSLEAKS);
+          profiler::mstxMemVirtualRangeDesc_t desc{device_id, addr, static_cast<int64_t>(size)};
+          profiler::mstxMemRegionsRegisterBatch_t batch;
+          batch.regionCount = 1;
+          batch.regionDescArray = reinterpret_cast<const void *>(&desc);
+          profiler::MstxImpl::GetInstance().MemRegionsRegisterImpl(msleaksDomain, &batch);
+
+          profiler::mstxMemVirtualRangeDesc_t descTotal{device_id, addr,
+                                                        static_cast<int64_t>(instance_->TotalMemStatistics())};
+          profiler::mstxMemHeapDesc_t heapDesc;
+          heapDesc.typeSpecificDesc = reinterpret_cast<void const *>(&descTotal);
+          profiler::MstxImpl::GetInstance().MemHeapRegisterImpl(msleaksDomain, &heapDesc);
+        }
+      },
+      [&](void *addr) {
+        if (profiler::MstxImpl::GetInstance().IsMsleaksEnable()) {
+          uint32_t device_id = GetDeviceId();
+          profiler::mstxDomainHandle_t msleaksDomain =
+            profiler::MstxImpl::GetInstance().DomainCreateAImpl(profiler::MSTX_DOMAIN_MSLEAKS);
+          profiler::mstxMemRegionsUnregisterBatch_t unregisterBatch;
+          unregisterBatch.refCount = 1;
+          profiler::mstxMemRegionRef_t regionRef[1] = {};
+          regionRef[0].refType = profiler::MSTX_MEM_REGION_REF_TYPE_POINTER;
+          regionRef[0].pointer = addr;
+          unregisterBatch.refArray = regionRef;
+          profiler::MstxImpl::GetInstance().MemRegionsUnregisterImpl(msleaksDomain, &unregisterBatch);
+
+          profiler::mstxMemVirtualRangeDesc_t descTotal{device_id, addr,
+                                                        static_cast<int64_t>(instance_->TotalMemStatistics())};
+          profiler::mstxMemHeapDesc_t heapDesc;
+          heapDesc.typeSpecificDesc = reinterpret_cast<void const *>(&descTotal);
+          profiler::MstxImpl::GetInstance().MemHeapRegisterImpl(msleaksDomain, &heapDesc);
+        }
+      });
 
     enhanced_instance_->SetRankIdGetter([]() {
       size_t rank_id = SIZE_MAX;
@@ -582,6 +625,7 @@ bool AscendMemoryPool::UseEnhancedMemoryPool() {
   bool enable_memory_vlog = IS_VLOG_ON(VL_RUNTIME_FRAMEWORK_MEMORY);
   return enable_debugger || enable_debug_log || enable_memory_vlog ||
          common::IsEnableAllocConfig(common::kAllocMemoryTracker) || common::IsCompileSimulation() ||
+         profiler::MstxImpl::GetInstance().IsMsleaksEnable() ||
          !common::GetAllocConfigValue(common::kAllocMemoryTrackerPath).empty();
 }
 

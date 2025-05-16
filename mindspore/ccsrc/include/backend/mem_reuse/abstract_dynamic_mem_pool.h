@@ -444,7 +444,9 @@ class BACKEND_EXPORT AbstractEnhancedDynamicMemPool : public AbstractDynamicMemP
 
   // Report memory pool stat info for enhanced processing.
   virtual void ReportMemoryPoolInfo();
-
+  // Report memory pool stat info for mstx
+  virtual void ReportMemoryPoolMallocInfoToMstx(void *ptr, size_t size);
+  virtual void ReportMemoryPoolFreeInfoToMstx(void *ptr);
   bool IsEnableTimeEvent() override { return enable_time_event_; }
 
   void SetEnableTimeEvent(bool enable_time_event) override { enable_time_event_ = enable_time_event; }

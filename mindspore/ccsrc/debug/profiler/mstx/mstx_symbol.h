@@ -26,6 +26,63 @@ struct mstxDomainRegistration_st {};
 typedef struct mstxDomainRegistration_st mstxDomainRegistration_t;
 typedef mstxDomainRegistration_t *mstxDomainHandle_t;
 
+struct mstxMemHeap_st;
+typedef struct mstxMemHeap_st mstxMemHeap_t;
+typedef mstxMemHeap_t *mstxMemHeapHandle_t;
+
+struct mstxMemRegion_st;
+typedef struct mstxMemRegion_st mstxMemRegion_t;
+typedef mstxMemRegion_t *mstxMemRegionHandle_t;
+
+typedef enum mstxMemType {
+  MSTX_MEM_TYPE_VIRTUAL_ADDRESS = 0,
+} mstxMemType;
+
+typedef struct mstxMemVirtualRangeDesc_t {
+  uint32_t device_id;
+  void const *ptr;
+  int64_t size;
+} mstxMemVirtualRangeDesc_t;
+
+// region
+typedef struct mstxMemRegionsRegisterBatch_t {
+  mstxMemHeapHandle_t heap;
+  mstxMemType regionType;
+  size_t regionCount;
+  void const *regionDescArray;
+  mstxMemRegionHandle_t *regionHandleArrayOut;
+} mstxMemRegionsRegisterBatch_t;
+
+typedef enum mstxMemRegionRefType {
+  MSTX_MEM_REGION_REF_TYPE_POINTER = 0,
+  MSTX_MEM_REGION_REF_TYPE_HANDLE
+} mstxMemRegionRefType;
+
+typedef struct mstxMemRegionRef_t {
+  mstxMemRegionRefType refType;
+  union {
+    void const *pointer;
+    mstxMemRegionHandle_t handle;
+  };
+} mstxMemRegionRef_t;
+
+// unregion
+typedef struct mstxMemRegionsUnregisterBatch_t {
+  size_t refCount;
+  mstxMemRegionRef_t const *refArray;
+} mstxMemRegionsUnregisterBatch_t;
+
+typedef enum mstxMemHeapUsageType {
+  MSTX_MEM_HEAP_USAGE_TYPE_SUB_ALLOCATOR = 0,
+} mstxMemHeapUsageType;
+
+// heap
+typedef struct mstxMemHeapDesc_t {
+  mstxMemHeapUsageType usage;
+  mstxMemType type;
+  void const *typeSpecificDesc;
+} mstxMemHeapDesc_t;
+
 ORIGIN_METHOD(mstxMarkA, void, const char *, void *)
 ORIGIN_METHOD(mstxRangeStartA, uint64_t, const char *, void *)
 ORIGIN_METHOD(mstxRangeEnd, void, uint64_t)
@@ -34,6 +91,9 @@ ORIGIN_METHOD(mstxDomainDestroy, void, mstxDomainHandle_t)
 ORIGIN_METHOD(mstxDomainMarkA, void, mstxDomainHandle_t, const char *, void *)
 ORIGIN_METHOD(mstxDomainRangeStartA, uint64_t, mstxDomainHandle_t, const char *, void *)
 ORIGIN_METHOD(mstxDomainRangeEnd, void, mstxDomainHandle_t, uint64_t)
+ORIGIN_METHOD(mstxMemRegionsRegister, void, mstxDomainHandle_t, mstxMemRegionsRegisterBatch_t const *)
+ORIGIN_METHOD(mstxMemRegionsUnregister, void, mstxDomainHandle_t, mstxMemRegionsUnregisterBatch_t const *)
+ORIGIN_METHOD(mstxMemHeapRegister, mstxMemHeapHandle_t, mstxDomainHandle_t, mstxMemHeapDesc_t const *)
 
 extern mstxMarkAFunObj mstxMarkA_;
 extern mstxRangeStartAFunObj mstxRangeStartA_;
@@ -43,6 +103,9 @@ extern mstxDomainDestroyFunObj mstxDomainDestroy_;
 extern mstxDomainMarkAFunObj mstxDomainMarkA_;
 extern mstxDomainRangeStartAFunObj mstxDomainRangeStartA_;
 extern mstxDomainRangeEndFunObj mstxDomainRangeEnd_;
+extern mstxMemRegionsRegisterFunObj mstxMemRegionsRegister_;
+extern mstxMemRegionsUnregisterFunObj mstxMemRegionsUnregister_;
+extern mstxMemHeapRegisterFunObj mstxMemHeapRegister_;
 
 void LoadMstxApiSymbol(const std::string &ascend_path);
 bool IsCannSupportMstxApi();

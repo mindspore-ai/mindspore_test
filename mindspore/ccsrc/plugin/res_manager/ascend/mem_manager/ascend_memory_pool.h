@@ -211,6 +211,12 @@ class ASCEND_RES_MANAGER_EXPORT DefaultEnhancedAscendMemoryPool : public Default
 
   void ReportMemoryPoolInfo() override { instance_->ReportMemoryPoolInfo(); }
 
+  void ReportMemoryPoolMallocInfoToMstx(void *ptr, size_t size) override {
+    instance_->ReportMemoryPoolMallocInfoToMstx(ptr, size);
+  }
+
+  void ReportMemoryPoolFreeInfoToMstx(void *ptr) override { instance_->ReportMemoryPoolFreeInfoToMstx(ptr); }
+
   bool IsEnableTimeEvent() override { return instance_->IsEnableTimeEvent(); }
 
   void SetEnableTimeEvent(bool enable_time_event) override { instance_->SetEnableTimeEvent(enable_time_event); }

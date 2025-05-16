@@ -29,6 +29,9 @@ mstxDomainDestroyFunObj mstxDomainDestroy_ = nullptr;
 mstxDomainMarkAFunObj mstxDomainMarkA_ = nullptr;
 mstxDomainRangeStartAFunObj mstxDomainRangeStartA_ = nullptr;
 mstxDomainRangeEndFunObj mstxDomainRangeEnd_ = nullptr;
+mstxMemRegionsRegisterFunObj mstxMemRegionsRegister_ = nullptr;
+mstxMemRegionsUnregisterFunObj mstxMemRegionsUnregister_ = nullptr;
+mstxMemHeapRegisterFunObj mstxMemHeapRegister_ = nullptr;
 
 void LoadMstxApiSymbol(const std::string &ascend_path) {
   std::string mstx_plugin_path = ascend_path + "/lib64/libms_tools_ext.so";
@@ -50,11 +53,15 @@ void LoadMstxApiSymbol(const std::string &ascend_path) {
   mstxDomainMarkA_ = DlsymAscendFuncObj(mstxDomainMarkA, handler);
   mstxDomainRangeStartA_ = DlsymAscendFuncObj(mstxDomainRangeStartA, handler);
   mstxDomainRangeEnd_ = DlsymAscendFuncObj(mstxDomainRangeEnd, handler);
+  mstxMemRegionsRegister_ = DlsymAscendFuncObj(mstxMemRegionsRegister, handler);
+  mstxMemRegionsUnregister_ = DlsymAscendFuncObj(mstxMemRegionsUnregister, handler);
+  mstxMemHeapRegister_ = DlsymAscendFuncObj(mstxMemHeapRegister, handler);
 #endif
   g_mstx_support = mstxMarkA_ != nullptr && mstxRangeStartA_ != nullptr && mstxRangeEnd_ != nullptr;
   g_mstx_domain_support = mstxDomainCreateA_ != nullptr && mstxDomainDestroy_ != nullptr &&
                           mstxDomainMarkA_ != nullptr && mstxDomainRangeStartA_ != nullptr &&
-                          mstxDomainRangeEnd_ != nullptr;
+                          mstxDomainRangeEnd_ != nullptr && mstxMemRegionsRegister_ != nullptr &&
+                          mstxMemRegionsUnregister_ != nullptr && mstxMemHeapRegister_ != nullptr;
   MS_LOG(INFO) << "Load mstx api success!";
 }
 

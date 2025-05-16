@@ -1224,6 +1224,18 @@ void AbstractEnhancedDynamicMemPool::ReportMemoryPoolInfo() {
   }
 }
 
+void AbstractEnhancedDynamicMemPool::ReportMemoryPoolMallocInfoToMstx(void *addr, size_t size) {
+  if (memory_malloc_mstx_callback_) {
+    memory_malloc_mstx_callback_(addr, size);
+  }
+}
+
+void AbstractEnhancedDynamicMemPool::ReportMemoryPoolFreeInfoToMstx(void *addr) {
+  if (memory_free_mstx_callback_) {
+    memory_free_mstx_callback_(addr);
+  }
+}
+
 MemoryTimeEventPtr AbstractEnhancedDynamicMemPool::GenAllocateMemoryTimeEvent(const void *addr, size_t size,
                                                                               uint32_t stream_id, bool from_persistent,
                                                                               bool is_persistent) {
