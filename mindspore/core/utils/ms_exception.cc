@@ -68,16 +68,18 @@ void UCEException::ProcessApiUceError(const FuncInfo &fn_info, int error_code,
                   << fn_info.caller_file << ":" << fn_info.caller_line << " failed, error code [" << error_code << "].";
   }
 
-  if ((error_type == UCEError::kDeviceMemError || error_type == UCEError::kHbmMultBitEccError) &&
+  if ((error_type == UCEError::kDeviceMemError || error_type == UCEError::kHbmMultBitEccError ||
+       error_type == UCEError::kCommOpRetryFailError) &&
       !get_has_throw_error()) {
     if (error_type == UCEError::kHbmMultBitEccError && fn_get_recent_err_msg != nullptr) {
       set_uce_occur_time(ExtractUceTime(fn_get_recent_err_msg()));
     }
     uce_error_type_ = error_type;
+    auto error_keyword = error_type == UCEError::kCommOpRetryFailError ? "HCCEError" : "UCEError";
     if (throw_exception) {
-      MS_LOG(EXCEPTION) << "UCEError error occurs when execute, error_code=" << error_code << ".";
+      MS_LOG(EXCEPTION) << error_keyword << " error occurs when execute, error_code=" << error_code << ".";
     } else {
-      MS_LOG(ERROR) << "UCEError error occurs when execute, error_code=" << error_code << ".";
+      MS_LOG(ERROR) << error_keyword << " error occurs when execute, error_code=" << error_code << ".";
     }
   }
   if (error_type == UCEError::kForceStopError) {
@@ -121,5 +123,18 @@ bool UCEException::IsEnableUCE() {
     return false;
   }();
   return is_enable_uce;
+}
+
+bool UCEException::IsEnableHCCE() {
+  static bool is_enable_hcce = []() {
+    auto tftEnv = common::GetEnv("MS_ENABLE_TFT");
+    constexpr std::string_view optCCE = "HCCE:1";
+    if (!tftEnv.empty() && (tftEnv.find(optCCE) != std::string::npos)) {
+      MS_LOG(WARNING) << "HCCE enabled.";
+      return true;
+    }
+    return false;
+  }();
+  return is_enable_hcce;
 }
 }  // namespace mindspore

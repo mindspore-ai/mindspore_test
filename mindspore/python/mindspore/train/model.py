@@ -154,6 +154,9 @@ def _handle_exception_info(obj, uce_env, tft, e):
                 tft.tft_report_error(tft.ReportState.RS_UNKNOWN.value)
                 raise e
         tft.tft_report_error(tft.ReportState.RS_UCE.value)
+    elif "HCCEError" in e_str:
+        logger.warning("uce wrapper caught HCCEError")
+        tft.tft_report_error(tft.ReportState.RS_HCCL_FAILED.value)
     elif "ForceStopError" in e_str:
         logger.warning("uce wrapper caught RuntimeError ForceStopError")
         force_stop_err = tft.ReportState.RS_NORMAL.value
@@ -248,7 +251,7 @@ def _handle_tft(func):
         if obj:
             tft = obj.tft
             tft_env = os.getenv("MS_ENABLE_TFT", "")
-            uce_env = "UCE:1" in tft_env or "ARF:1" in tft_env
+            uce_env = "UCE:1" in tft_env or "ARF:1" in tft_env or "HCCE:1" in tft_env
             tre_env = "TRE:1" in tft_env
             while True:
                 try:
@@ -272,7 +275,7 @@ def _handle_tft(func):
                     initial_step = repair_step % self.batch_num
                     kwargs["initial_epoch"] = initial_epoch
                     cb_initial_step = _calc_cb_initial_step(initial_epoch, initial_step, *args, **kwargs)
-                    if not self.enable_tre:
+                    if not self.enable_tre and not self.enable_hcce:
                         kwargs["initial_step"] = cb_initial_step
                         self._initial_step = 0
                     # reset all accu grads to zero
@@ -446,7 +449,7 @@ def _set_with_processed_inputs(network, inputs):
 
 def _check_tft_reset_dataset():
     env_tft = os.getenv("MS_ENABLE_TFT", "")
-    return any([v in env_tft for v in ["TRE:1", "UCE:1", "ARF:1"]])
+    return any([v in env_tft for v in ["TRE:1", "UCE:1", "HCCE:1", "ARF:1"]])
 
 
 class Model:
@@ -567,6 +570,7 @@ class Model:
         self._mindspore_lite_model_group_id = id(self) & 0xFFFF
         self.batch_num = -1
         self.enable_tre = "TRE:1" in os.getenv("MS_ENABLE_TFT", "")
+        self.enable_hcce = "HCCE:1" in os.getenv("MS_ENABLE_TFT", "")
         self._initial_step = None
         self._need_reset_data = _check_tft_reset_dataset()
         _clear_auto_parallel_context(self._network)

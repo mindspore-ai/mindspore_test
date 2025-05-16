@@ -267,7 +267,7 @@ CacheTuple CustomV2AclnnKernelMod::GenCustomExecutorForResize(const std::vector<
   auto workspace_status =
     CallGetWorkSpaceSize(inputs, outputs, workspace_size_addr, executor_addr, get_workspace_size_func_ptr);
   if (workspace_status != 0) {
-    CHECK_AND_THROW_UCE_ERROR(workspace_api_name);
+    CHECK_AND_THROW_RECOVERABLE_ERROR(workspace_api_name);
     MS_LOG(EXCEPTION) << workspace_api_name << " call failed, please check!";
   }
 
