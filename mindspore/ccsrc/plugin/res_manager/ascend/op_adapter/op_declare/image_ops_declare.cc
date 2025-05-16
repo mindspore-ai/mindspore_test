@@ -335,7 +335,9 @@ INPUT_MAP(ResizeD) = {{1, INPUT_DESC(x)}};
 INPUT_ATTR_MAP(ResizeD) = {{2, ATTR_DESC(sizes, AnyTraits<std::vector<int64_t>>())},
                            {3, ATTR_DESC(scales, AnyTraits<std::vector<float>>())},
                            {4, ATTR_DESC(coordinate_transformation_mode, AnyTraits<GECoordinateTransformMode>())}};
-ATTR_MAP(ResizeD) = {{"mode", ATTR_DESC(mode, AnyTraits<std::string>())}};
+ATTR_MAP(ResizeD) = {{"mode", ATTR_DESC(mode, AnyTraits<std::string>())},
+                     {"nearest_mode", ATTR_DESC(nearest_mode, AnyTraits<std::string>())},
+                     {"data_format", ATTR_DESC(data_format, AnyTraits<std::string>())}};
 OUTPUT_MAP(ResizeD) = {{0, OUTPUT_DESC(y)}};
 REG_ADPT_DESC(ResizeD, kResizeDOpName, ADPT_DESC(ResizeD))
 
