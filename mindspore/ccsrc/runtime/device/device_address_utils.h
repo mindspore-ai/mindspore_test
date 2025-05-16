@@ -251,6 +251,8 @@ class BACKEND_EXPORT DeviceAddressUtils {
     }
   }
 };
+
+void CheckAutoH2D(const DeviceContext *device_context, const tensor::TensorPtr &tensor);
 }  // namespace runtime
 }  // namespace mindspore
 #endif  // MINDSPORE_MINDSPORE_CCSRC_RUNTIME_GRAPH_SCHEDULER_COMMON_UTILS_H_

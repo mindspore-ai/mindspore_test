@@ -32,6 +32,7 @@ namespace mindspore {
 namespace runtime {
 constexpr size_t kThreadNameThreshold = 15;
 thread_local kThreadWaitLevel current_level_{kThreadWaitLevel::kLevelUnknown};
+constexpr auto kMsDevHostBlockingRun = "MS_DEV_HOST_BLOCKING_RUN";
 
 AsyncRQueue::~AsyncRQueue() {
   try {
@@ -149,7 +150,8 @@ void AsyncRQueue::WorkerLoop() {
 }
 
 void AsyncRQueue::Push(const AsyncTaskPtr &task) {
-  if (disable_multi_thread_) {
+  static bool blocking_run = common::GetEnv(kMsDevHostBlockingRun) == "1";
+  if (blocking_run || disable_multi_thread_) {
     task->Run();
     return;
   }
