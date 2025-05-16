@@ -219,9 +219,9 @@ class ApiCachePool {
 };
 
 // check and throw only when enable uce.
-#define CHECK_AND_THROW_UCE_ERROR(aclnn_api)                                                                     \
+#define CHECK_AND_THROW_RECOVERABLE_ERROR(aclnn_api)                                                             \
   do {                                                                                                           \
-    if (UCEException::IsEnableUCE() && aclrt_get_last_error != nullptr) {                                        \
+    if ((UCEException::IsEnableUCE() || UCEException::IsEnableHCCE()) && aclrt_get_last_error != nullptr) {      \
       auto error_code = aclrt_get_last_error(thread_level);                                                      \
       auto error_type = GetErrorType(error_code);                                                                \
       UCEException::GetInstance().ProcessApiUceError(                                                            \
@@ -412,7 +412,7 @@ class ApiCachePool {
       device::ascend::ConvertToOpApiFunc(converted_params, get_workspace_size_func_ptr);                               \
     auto workspace_status = device::ascend::call(get_workspace_size_func, converted_params);                           \
     if (workspace_status != 0) {                                                                                       \
-      CHECK_AND_THROW_UCE_ERROR(workspace_api_name);                                                                   \
+      CHECK_AND_THROW_RECOVERABLE_ERROR(workspace_api_name);                                                           \
       MS_LOG(EXCEPTION) << workspace_api_name << " call failed, please check!";                                        \
     }                                                                                                                  \
     int32_t repeat_ret = device::ascend::SetExecutorRepeatable(workspace_api_name, executor);                          \
@@ -436,7 +436,7 @@ class ApiCachePool {
     auto get_workspace_size_func = device::ascend::ConvertToOpApiFunc(converted_params, get_workspace_size_func_ptr);  \
     auto workspace_status = device::ascend::call(get_workspace_size_func, converted_params);                           \
     if (workspace_status != 0) {                                                                                       \
-      CHECK_AND_THROW_UCE_ERROR(workspace_api_name);                                                                   \
+      CHECK_AND_THROW_RECOVERABLE_ERROR(workspace_api_name);                                                           \
       MS_LOG(EXCEPTION) << workspace_api_name << " call failed, please check!";                                        \
     }                                                                                                                  \
     int32_t repeat_ret = device::ascend::SetExecutorRepeatable(workspace_api_name, executor);                          \
@@ -463,7 +463,7 @@ class ApiCachePool {
     auto run_api_func = reinterpret_cast<device::ascend::RunApiFunc>(op_api_func);                            \
     auto api_ret = run_api_func(workspace_addr, workspace_size, executor, acl_stream);                        \
     if (api_ret != 0) {                                                                                       \
-      CHECK_AND_THROW_UCE_ERROR(aclnn_api);                                                                   \
+      CHECK_AND_THROW_RECOVERABLE_ERROR(aclnn_api);                                                           \
       MS_LOG(EXCEPTION) << "Call " << aclnn_api << " failed, detail:" << CALL_ASCEND_API(aclGetRecentErrMsg); \
     }                                                                                                         \
     if (release_func != nullptr) {                                                                            \
@@ -481,7 +481,7 @@ class ApiCachePool {
     auto run_api_func = reinterpret_cast<device::ascend::RunApiFunc>(op_api_func);                             \
     auto api_ret = run_api_func(workspace_addr, workspace_size, executor, acl_stream);                         \
     if (api_ret != 0) {                                                                                        \
-      CHECK_AND_THROW_UCE_ERROR(aclnn_api);                                                                    \
+      CHECK_AND_THROW_RECOVERABLE_ERROR(aclnn_api);                                                            \
       MS_LOG(EXCEPTION) << "Call " << aclnn_api << " failed, detail:" << CALL_ASCEND_API(aclGetRecentErrMsg);  \
     }                                                                                                          \
     if (release_func != nullptr) {                                                                             \
@@ -499,7 +499,7 @@ class ApiCachePool {
     auto run_api_func = reinterpret_cast<device::ascend::RunApiFunc>(op_api_func);                                   \
     auto api_ret = run_api_func(workspace_addr, workspace_size, executor, acl_stream);                               \
     if (api_ret != 0) {                                                                                              \
-      CHECK_AND_THROW_UCE_ERROR(aclnn_api);                                                                          \
+      CHECK_AND_THROW_RECOVERABLE_ERROR(aclnn_api);                                                                  \
       MS_LOG(EXCEPTION) << "Call " << aclnn_api << " failed, detail:" << CALL_ASCEND_API(aclGetRecentErrMsg);        \
     }                                                                                                                \
     auto ret = CALL_ASCEND_API(aclrtSynchronizeStream, acl_stream);                                                  \

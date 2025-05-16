@@ -32,6 +32,9 @@ extern "C" BACKEND_EXPORT FuncGetRecentErrMsg acl_get_recent_err_msg;
 #ifndef ACL_ERROR_RT_HBM_MULTI_BIT_ECC_ERROR
 #define ACL_ERROR_RT_HBM_MULTI_BIT_ECC_ERROR 507054
 #endif
+#ifndef ACL_ERROR_RT_COMM_OP_RETRY_FAIL
+#define ACL_ERROR_RT_COMM_OP_RETRY_FAIL 507904
+#endif
 #ifndef ACL_ERROR_RT_DEVICE_TASK_ABORT
 #define ACL_ERROR_RT_DEVICE_TASK_ABORT 107022
 #endif
@@ -43,6 +46,8 @@ inline mindspore::UCEError GetErrorType(int error_code) {
       return mindspore::UCEError::kDeviceMemError;
     case ACL_ERROR_RT_HBM_MULTI_BIT_ECC_ERROR:
       return mindspore::UCEError::kHbmMultBitEccError;
+    case ACL_ERROR_RT_COMM_OP_RETRY_FAIL:
+      return mindspore::UCEError::kCommOpRetryFailError;
     case ACL_ERROR_RT_DEVICE_TASK_ABORT:
       return mindspore::UCEError::kForceStopError;
     default:
@@ -59,7 +64,8 @@ auto RunAscendApi(Function f, const char *file, int line, const char *call_f, co
 #ifndef BUILD_LITE
   if constexpr (std::is_same_v<std::invoke_result_t<decltype(f), Args...>, int>) {
     auto ret = f(args...);
-    if (ret != ACL_SUCCESS && mindspore::UCEException::IsEnableUCE() && aclrt_get_last_error != nullptr) {
+    if (ret != ACL_SUCCESS && aclrt_get_last_error != nullptr &&
+        (mindspore::UCEException::IsEnableUCE() || mindspore::UCEException::IsEnableHCCE())) {
       auto error_code = aclrt_get_last_error(thread_level);
       auto error_type = GetErrorType(error_code);
       mindspore::UCEException::GetInstance().ProcessApiUceError(mindspore::FuncInfo{file, line, call_f, func_name},
@@ -92,7 +98,8 @@ auto RunAscendApi(Function f, const char *file, int line, const char *call_f, co
 #ifndef BUILD_LITE
   if constexpr (std::is_same_v<std::invoke_result_t<decltype(f)>, int>) {
     auto ret = f();
-    if (ret != ACL_SUCCESS && mindspore::UCEException::IsEnableUCE() && aclrt_get_last_error != nullptr) {
+    if (ret != ACL_SUCCESS && aclrt_get_last_error != nullptr &&
+        (mindspore::UCEException::IsEnableUCE() || mindspore::UCEException::IsEnableHCCE())) {
       auto error_code = aclrt_get_last_error(thread_level);
       auto error_type = GetErrorType(error_code);
       mindspore::UCEException::GetInstance().ProcessApiUceError(mindspore::FuncInfo{file, line, call_f, func_name},

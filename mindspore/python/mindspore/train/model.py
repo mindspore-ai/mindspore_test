@@ -154,6 +154,9 @@ def _handle_exception_info(obj, uce_env, tft, e):
                 tft.tft_report_error(tft.ReportState.RS_UNKNOWN.value)
                 raise e
         tft.tft_report_error(tft.ReportState.RS_UCE.value)
+    elif "HCCEError" in e_str:
+        logger.warning("uce wrapper caught HCCEError")
+        tft.tft_report_error(tft.ReportState.RS_HCCL_FAILED.value)
     elif "ForceStopError" in e_str:
         logger.warning("uce wrapper caught RuntimeError ForceStopError")
         force_stop_err = tft.ReportState.RS_NORMAL.value
@@ -248,7 +251,7 @@ def _handle_tft(func):
         if obj:
             tft = obj.tft
             tft_env = os.getenv("MS_ENABLE_TFT", "")
-            uce_env = "UCE:1" in tft_env or "ARF:1" in tft_env
+            uce_env = "UCE:1" in tft_env or "ARF:1" in tft_env or "HCCE:1" in tft_env
             tre_env = "TRE:1" in tft_env
             while True:
                 try:

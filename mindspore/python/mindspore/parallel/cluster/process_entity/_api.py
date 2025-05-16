@@ -208,7 +208,7 @@ class _ProcessManager:
         self.proc_rank_map = {}
         self.enable_mindx = False
         tft_env = os.getenv("MS_ENABLE_TFT", "")
-        if any(v in tft_env for v in ('TTP:1', 'UCE:1', 'ARF:1', 'TSP:1')):
+        if any(v in tft_env for v in ('TTP:1', 'UCE:1', 'ARF:1', 'TSP:1', 'HCCE:1')):
             try:
                 from taskd.python.framework.agent.ms_mgr.msrun_plugin import MSRunPlugin
                 self.msmgr = MSRunPlugin()
