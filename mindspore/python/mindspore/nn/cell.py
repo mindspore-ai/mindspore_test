@@ -165,12 +165,13 @@ class Cell(Cell_):
     global_cells = weakref.WeakKeyDictionary()
     _no_auto_lazy_inline = True
 
-    def __new__(cls, *args, **kwargs):
-        this = Cell_.__new__(cls, *args, **kwargs)
+    def __new__(class_, *args, **kwargs):
+        # Use class_ to avoid name conflicts with input args and kwargs.
+        this = Cell_.__new__(class_, *args, **kwargs)
         if Cell._no_auto_lazy_inline:
             return this
 
-        Cell.global_cells[this] = (cls, args, kwargs)
+        Cell.global_cells[this] = (class_, args, kwargs)
         return this
 
     def __init__(self, auto_prefix=True, flags=None):
