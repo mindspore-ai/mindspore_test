@@ -201,31 +201,27 @@ NodePtrList GenerateNodeInputs(const OpGradInfoPtr &op_grad_info, const FuncBuil
   return node_inputs;
 }
 
-void RunTensorHook(ValuePtrList *grad_in, const BackwardNodePtr &grad_node) {
+void RunPyTensorHook(ValuePtrList *grad_in, const BackwardNodePtr &grad_node) {
   static const std::string kTensorHook = "TensorHook";
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunExpanderFunc,
                                      kTensorHook, false);
   MS_EXCEPTION_IF_NULL(grad_in);
   MS_EXCEPTION_IF_NULL(grad_node);
-  if (grad_in->size() != kSizeOne) {
-    MS_LOG(EXCEPTION) << "Tensor hook just work on one tensor value, not support value sequence";
-  }
   runtime::Pipeline::Get().WaitFrontend();
-  for (const auto &hook : grad_node->backward_hooks()) {
-    MS_LOG(DEBUG) << "Run hook id T" << hook.first;
-    MS_EXCEPTION_IF_NULL(hook.second);
-    (*grad_in)[kIndex0] = (*(hook.second))(grad_in->front());
+  for (const auto &[hook_id, hook] : grad_node->py_tensor_pre_hooks()) {
+    MS_LOG(DEBUG) << "Run hook id T" << hook_id;
+    MS_EXCEPTION_IF_NULL(hook);
+    (*hook)(grad_in);
   }
   runtime::Pipeline::Get().WaitFrontend();
   MS_LOG(DEBUG) << PyNativeAlgo::Common::PrintDebugInfo(*grad_in, "After hook print gradient in: ");
 }
 
-void CallBackwardHooks(const BackwardNodePtr &grad_node, ValuePtrList *grad_in) {
+void CallBackwardNodePreHooks(const BackwardNodePtr &grad_node, ValuePtrList *grad_in) {
   MS_EXCEPTION_IF_NULL(grad_in);
-  if (grad_node->backward_hooks().empty()) {
-    return;
+  if (!grad_node->py_tensor_pre_hooks().empty()) {
+    RunPyTensorHook(grad_in, grad_node);
   }
-  RunTensorHook(grad_in, grad_node);
 }
 
 void ReleaseResource(const BackwardNodePtr &grad_node) {
@@ -1457,7 +1453,7 @@ void AutoDiff::BackPropagate() {
     // If register hook by weight, and weight in recomputed cell.So, hook will execute, which is not expect.
     if (!is_run_recompute_ || !isa<LeafNode>(fn)) {
       // to do
-      CallBackwardHooks(fn, &gradient_in);
+      CallBackwardNodePreHooks(fn, &gradient_in);
     }
     if (extral_info_iter->second.captured_grad != nullptr) {
       auto tensor_grad = gradient_in[extral_info_iter->second.captured_grad->input_index]->cast<tensor::TensorPtr>();
@@ -1518,12 +1514,12 @@ void AutoDiff::BackPropagate() {
 
 ValuePtr AutoDiff::LeafNodeNotInGradButHasTensorHook(const std::shared_ptr<LeafNode> &fn) const {
   MS_EXCEPTION_IF_NULL(fn);
-  if (is_run_recompute_ || fn->backward_hooks().empty()) {
+  if (is_run_recompute_ || fn->py_tensor_pre_hooks().empty()) {
     return fn->Zeros(func_impl_);
   }
   ValuePtrList grad_in{};
   (void)grad_in.emplace_back(fn->Zeros(func_impl_));
-  RunTensorHook(&grad_in, fn);
+  RunPyTensorHook(&grad_in, fn);
   auto grad_tensor = grad_in.front()->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(grad_tensor);
   return grad_tensor;
