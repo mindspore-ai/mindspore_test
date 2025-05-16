@@ -81,6 +81,7 @@ KernelHostInfo::KernelHostInfo(const KernelHostInfo &other) {
   shape_vector_after_format_trasform_ = other.shape_vector_after_format_trasform_;
   type_id_ = other.type_id_;
   kernel_tensor_value_ = other.kernel_tensor_value_;
+  is_host_info_valid_ = other.is_host_info_valid_;
 }
 
 KernelTensor::KernelTensor() { address_common_ = std::make_shared<AddressCommon>(); }
@@ -544,16 +545,19 @@ const void *KernelTensor::GetValuePtr() {
 }
 
 bool KernelTensor::SyncDataFromDeviceToHost() const {
-  // Note: must release lock when wait async resize or launch kernel finish, because the kernels' resize and launch
-  // tasks which are waited maybe use this kernel's GetValue and try lock this mutex to avoid deadlock.
-  host_info_->value_mutex_.unlock();
-  constexpr char kWaitAsyncResizeAndLaunchFinishCallback[] = "WaitAsyncResizeAndLaunchFinish";
-  static const auto wait_resize_and_launch_finish =
-    KernelCallback::GetInstance().GetCallback<void>(kWaitAsyncResizeAndLaunchFinishCallback);
-  if (wait_resize_and_launch_finish) {
-    wait_resize_and_launch_finish();
+  static bool disable_host_value_cache = common::IsDisableRuntimeConfig("host_value_cache");
+  if (disable_host_value_cache || !host_info_->is_host_info_valid_ || host_info_->need_wait_pipeline_) {
+    // Note: must release lock when wait async resize or launch kernel finish, because the kernels' resize and launch
+    // tasks which are waited maybe use this kernel's GetValue and try lock this mutex to avoid deadlock.
+    host_info_->value_mutex_.unlock();
+    constexpr char kWaitAsyncResizeAndLaunchFinishCallback[] = "WaitAsyncResizeAndLaunchFinish";
+    static const auto wait_resize_and_launch_finish =
+      KernelCallback::GetInstance().GetCallback<void>(kWaitAsyncResizeAndLaunchFinishCallback);
+    if (wait_resize_and_launch_finish) {
+      wait_resize_and_launch_finish();
+    }
+    host_info_->value_mutex_.lock();
   }
-  host_info_->value_mutex_.lock();
 
   if (device_address_ != nullptr && device_address_->heterogeneous_info() != nullptr &&
       device_address_->heterogeneous_info()->host_ptr_ != nullptr) {
@@ -593,7 +597,7 @@ bool KernelTensor::SyncDataFromDeviceToHost() const {
     host_info_->kernel_tensor_value_->Resize(address_common_->size_);
   }
 
-  if (address_common_->size_ == 0) {
+  if (address_common_->size_ == 0 || host_info_->is_host_info_valid_) {
     return true;
   }
 
@@ -601,10 +605,15 @@ bool KernelTensor::SyncDataFromDeviceToHost() const {
   MS_EXCEPTION_IF_NULL(host_ptr);
 
   MS_EXCEPTION_IF_NULL(device_synchronizer_);
+  MS_LOG(INFO) << "kernel tensor:" << this << " sync stream.";
   if (!device_synchronizer_->SyncDeviceToHost(
         host_ptr, device_ptr, address_common_->size_, address_common_->device_name_, address_common_->device_id_,
         address_common_->format_, address_common_->shape_vector_, address_common_->stream_id_, user_data())) {
     MS_LOG(EXCEPTION) << "Sync data from device to host side failed";
+  }
+  if (!disable_host_value_cache) {
+    MS_LOG(DEBUG) << "Set host info valid flag to true for kernel_tensor:" << PrintInfo();
+    host_info_->is_host_info_valid_ = true;
   }
   return true;
 }

@@ -318,7 +318,7 @@ void MemoryManagerActor::AllocateSomasMemory(SomasInfo *const somas_info, const 
 void MemoryManagerActor::FreeMemory(const std::vector<KernelTensorPtr> *free_list, const DeviceContext *device_context,
                                     OpContext<KernelTensor> *, const AID &from_aid) {
   for (auto &kernel_tensor : *free_list) {
-    FreeMemoryByRefCount(kernel_tensor->device_address().get(), device_context, from_aid.Name());
+    FreeMemoryByRefCount(kernel_tensor.get(), device_context, from_aid.Name());
   }
 }
 
@@ -339,7 +339,7 @@ void MemoryManagerActor::FreeBatchMemory(const std::vector<KernelTensorPtr> *fre
   for (size_t i = 0; i < (*free_list).size(); ++i) {
     auto &kernel_tensor = (*free_list)[i];
     auto &device_context = (*device_contexts)[i];
-    FreeMemoryByRefCount(kernel_tensor->device_address().get(), device_context, from_aid.Name());
+    FreeMemoryByRefCount(kernel_tensor.get(), device_context, from_aid.Name());
   }
 
   PROFILER_END(start_time, ProfilerModule::kRuntime, ProfilerEvent::kMemoryFree, from_aid.Name(), false);
@@ -409,11 +409,12 @@ void MemoryManagerActor::Wait(OpContext<KernelTensor> *const op_context, const A
 }
 
 // Only one of the static and dynamic reference counts will take effect.
-void MemoryManagerActor::FreeMemoryByRefCount(DeviceTensor *const device_tensor, const DeviceContext *device_context,
+void MemoryManagerActor::FreeMemoryByRefCount(KernelTensor *const kernel_tensor, const DeviceContext *device_context,
                                               const std::string &op_name) {
-  if (device_tensor == nullptr) {
+  if (kernel_tensor == nullptr || kernel_tensor->device_address() == nullptr) {
     return;
   }
+  const auto &device_tensor = kernel_tensor->device_address().get();
   if (device_tensor->new_ref_count() != SIZE_MAX) {
     if (device_tensor->new_ref_count() == 0) {
       const auto &node_with_index = device_tensor->GetNodeIndex();
@@ -428,6 +429,10 @@ void MemoryManagerActor::FreeMemoryByRefCount(DeviceTensor *const device_tensor,
 
     MS_LOG(DEBUG) << "Op:" << op_name << " decrease new ref count for:" << device_tensor->PrintInfo();
     if ((device_tensor->DecreaseNewRefCount(op_name) == 0) && device_tensor->IsPtrValid()) {
+      if (kernel_tensor->host_info_exist()) {
+        kernel_tensor->set_is_host_info_valid(false);
+        MS_LOG(DEBUG) << "Set host info valid flag to false for kernel_tensor:" << kernel_tensor->PrintInfo();
+      }
       device_tensor->ClearUserData();
       MS_LOG(DEBUG) << "Op:" << op_name
                     << " free memory by the new reference count, device address:" << device_tensor->GetPtr() << ".";

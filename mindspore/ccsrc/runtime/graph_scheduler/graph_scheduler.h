@@ -230,7 +230,11 @@ class BACKEND_EXPORT GraphScheduler {
   // 3. The processing of linking output result arrows.
   void LinkOutputResultArrowForOutputActor(OutputActor *to_actor, const GraphCompilerInfo &graph_compiler_info) const;
 
-  void LinkKernelActorsForSubGraphExecute(const ActorSet *actor_set) const;
+  void LinkKernelActorsForSubGraphExecute(const GraphCompilerInfo &graph_compiler_info,
+                                          const ActorSet *actor_set) const;
+  void CorrectKernelRunnerRefCountForSuperKernelActor(const SuperKernelActorPtr &super_kernel_actor) const;
+  void OptimizeHeterInfoForSubGraphExecute(const GraphCompilerInfo &graph_compiler_info,
+                                           const ActorSet *actor_set) const;
 
   void LinkControlArrowForNoInputArrowActor(const ActorSet *actor_set);
   void CorrectControlArrowForAutoMonadActor(AbstractActor *const auto_monad_actor, const AbstractActorPtr &copy_actor);

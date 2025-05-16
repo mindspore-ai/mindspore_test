@@ -636,8 +636,8 @@ void GraphScheduler::Clear() {
 void GraphScheduler::ClearActorData(const ActorSet *actor_set) {
   MS_EXCEPTION_IF_NULL(actor_set);
 
-  // Clear the member of DeviceTensorCopyStore.
-  DeviceTensorCopyStore::GetInstance().Clear();
+  // Clear the member of KernelTensorCopyStore.
+  KernelTensorCopyStore::GetInstance().Clear();
 
   // Clear the output tensors of output actor.
   if (actor_set->output_actor_ != nullptr) {
@@ -1769,7 +1769,7 @@ void GraphScheduler::Link(ActorSet *actor_set, const GraphCompilerInfo &graph_co
 #endif
   // Need to call after all link task finish, because all kernel actor of super kernel actor will be initialized and
   // need to known the graph output(ref count: SIZE_MAX)
-  LinkKernelActorsForSubGraphExecute(actor_set);
+  LinkKernelActorsForSubGraphExecute(graph_compiler_info, actor_set);
   LinkControlArrowForNoInputArrowActor(actor_set);
 }
 
@@ -3724,96 +3724,142 @@ void GraphScheduler::LinkOutputResultArrowForOutputActor(OutputActor *to_actor,
   }
 }
 
-void GraphScheduler::LinkKernelActorsForSubGraphExecute(const ActorSet *actor_set) const {
+void GraphScheduler::LinkKernelActorsForSubGraphExecute(const GraphCompilerInfo &graph_compiler_info,
+                                                        const ActorSet *actor_set) const {
   MS_EXCEPTION_IF_NULL(actor_set);
   if (EnableKbkSubGraphExecute()) {
     for (auto &super_kernel_actor : actor_set->super_kernel_actors_) {
       MS_EXCEPTION_IF_NULL(super_kernel_actor);
       super_kernel_actor->BuildAndLinkKernelActors();
+      CorrectKernelRunnerRefCountForSuperKernelActor(super_kernel_actor);
+    }
+    OptimizeHeterInfoForSubGraphExecute(graph_compiler_info, actor_set);
+  }
+}
 
-      std::map<size_t, std::pair<AID, DataArrow *>> input_index_to_input_arrow;
-      for (const auto &pair : super_kernel_actor->input_data_arrow_aids_) {
-        if (pair.second == nullptr) {
-          continue;
-        }
-        input_index_to_input_arrow[pair.second->to_input_index_] = pair;
+void GraphScheduler::OptimizeHeterInfoForSubGraphExecute(const GraphCompilerInfo &graph_compiler_info,
+                                                         const ActorSet *actor_set) const {
+  MS_EXCEPTION_IF_NULL(actor_set);
+  if (graph_compiler_info.graphs_.size() != 1 || graph_compiler_info.control_node_parser_ == nullptr ||
+      graph_compiler_info.control_node_parser_->IsInited() || actor_set->super_kernel_actors_.size() != 1 ||
+      actor_set->super_kernel_actors_[0] == nullptr) {
+    return;
+  }
+  const auto &super_kernel_actor = actor_set->super_kernel_actors_[0];
+  for (const auto &runner : super_kernel_actor->kernel_actors_) {
+    MS_EXCEPTION_IF_NULL(runner);
+    const auto &kernel = runner->kernel_;
+    MS_EXCEPTION_IF_NULL(kernel);
+    if (kernel->abstract() == nullptr || kernel->kernel_info() == nullptr) {
+      continue;
+    }
+    auto kernel_info = dynamic_cast<KernelInfo *>(kernel->kernel_info());
+    MS_EXCEPTION_IF_NULL(kernel_info);
+    if (common::AnfAlgo::GetOutputNumByAbstract(kernel->abstract()) !=
+        kernel_info->output_kernel_tensor_list().size()) {
+      MS_LOG(WARNING) << "Invalid output abstract size:" << common::AnfAlgo::GetOutputNumByAbstract(kernel->abstract())
+                      << " and output kernel tensor size:" << kernel_info->output_kernel_tensor_list().size()
+                      << " for kernel:" << kernel->fullname_with_scope()
+                      << " in actor:" << super_kernel_actor->GetAID();
+      continue;
+    }
+    size_t output_num = kernel_info->output_kernel_tensor_list().size();
+    for (size_t i = 0; i < output_num; ++i) {
+      const auto &sub_abstract = common::AnfAlgo::FetchAbstractByIndex(kernel->abstract(), i);
+      const auto &kernel_tensor = kernel_info->output_kernel_tensor_list()[i];
+      if (sub_abstract != nullptr && !sub_abstract->isa<abstract::AbstractRefTensor>() && kernel_tensor != nullptr &&
+          kernel_tensor->host_info_exist()) {
+        kernel_tensor->set_need_wait_pipeline(false);
+        MS_LOG(INFO) << "Set wait pipeline to false for kernel tensor:" << kernel_tensor->PrintInfo()
+                     << " for kernel:" << kernel->fullname_with_scope() << " in actor:" << super_kernel_actor->GetAID();
       }
-      for (size_t i = 0; i < super_kernel_actor->is_input_used_.size(); ++i) {
-        if (super_kernel_actor->is_input_used_[i]) {
-          continue;
-        }
-        const auto &iter = input_index_to_input_arrow.find(i);
-        if (iter == input_index_to_input_arrow.end()) {
-          continue;
-        }
-        const auto &input_arrow = iter->second.second;
-        const auto &from_actor = FetchActor(iter->second.first.Name());
-        if (from_actor == nullptr) {
-          continue;
-        }
-        if (from_actor->type() == KernelTransformType::kCopyActor) {
-          const auto &copy_actor = dynamic_cast<CopyActor *>(from_actor);
-          MS_EXCEPTION_IF_NULL(from_actor);
-          copy_actor->output_free_size_++;
-          MS_LOG(INFO) << "Add free size for copy actor:" << copy_actor->GetAID()
-                       << " to super kernel actor:" << super_kernel_actor->GetAID();
-        } else if (from_actor->type() == KernelTransformType::kSuperKernelActor) {
-          const auto &from_super_kernel_actor = dynamic_cast<SuperKernelActor *>(from_actor);
-          MS_EXCEPTION_IF_NULL(from_super_kernel_actor);
-          if (from_super_kernel_actor->output_data_nodes_.size() !=
-              from_super_kernel_actor->output_data_arrows_.size()) {
-            MS_LOG(DEBUG) << "Invalid output node size:" << from_super_kernel_actor->output_data_nodes_.size()
-                          << " and arrow size:" << from_super_kernel_actor->output_data_arrows_.size()
-                          << " for actor:" << from_super_kernel_actor->GetAID();
-            continue;
-          }
-          const auto &arrow_iter = std::find_if(
-            from_super_kernel_actor->output_data_arrows_.begin(), from_super_kernel_actor->output_data_arrows_.end(),
-            [input_arrow](const auto &arrow) { return arrow.get() == input_arrow; });
-          if (arrow_iter == from_super_kernel_actor->output_data_arrows_.end()) {
-            MS_LOG(DEBUG) << "Invalid input_data arrow, to actor:" << input_arrow->to_op_id_
-                          << " for actor:" << super_kernel_actor->GetAID();
-            continue;
-          }
-          size_t output_index = LongToSize(arrow_iter - from_super_kernel_actor->output_data_arrows_.begin());
-          const auto &from_kernel = from_super_kernel_actor->output_data_nodes_[output_index];
-          if (from_kernel == nullptr || !from_kernel->isa<CNode>() ||
-              from_super_kernel_actor->cnode_to_kernel_actor_.find(from_kernel) ==
-                from_super_kernel_actor->cnode_to_kernel_actor_.end()) {
-            MS_LOG(DEBUG) << "Invalid from kernel:" << (from_kernel == nullptr ? "nullptr" : from_kernel->DebugString())
-                          << " from actor:" << from_super_kernel_actor->GetAID()
-                          << " to actor:" << super_kernel_actor->GetAID();
-            continue;
-          }
-          const auto &kernel_actor = from_super_kernel_actor->cnode_to_kernel_actor_[from_kernel];
-          MS_EXCEPTION_IF_NULL(kernel_actor);
-          if (LongToSize(input_arrow->from_output_index_) >= kernel_actor->output_kernel_tensors_.size()) {
-            MS_LOG(DEBUG) << "Invalid kernel actor:" << kernel_actor->GetAID()
-                          << " output index:" << input_arrow->from_output_index_
-                          << " for kernel:" << from_kernel->fullname_with_scope();
-            continue;
-          }
-          auto &free_list = kernel_actor->new_memory_free_list_;
-          if (free_list.size() < kernel_actor->input_free_index_.size() + kernel_actor->output_free_index_.size()) {
-            MS_LOG(DEBUG) << "Invalid kernel actor:" << kernel_actor
-                          << " input free list:" << kernel_actor->input_free_index_
-                          << " output free list:" << kernel_actor->output_free_index_
-                          << " in actor:" << from_super_kernel_actor->GetAID();
-            continue;
-          }
-          free_list.insert(
-            free_list.begin() + kernel_actor->input_free_index_.size() + kernel_actor->output_free_index_.size(),
-            kernel_actor->output_kernel_tensors_[input_arrow->from_output_index_]);
-          MS_LOG(INFO) << "Add free index:" << input_arrow->from_output_index_ << " device address:"
-                       << kernel_actor->output_kernel_tensors_[input_arrow->from_output_index_]->device_address()
-                       << " for kernel actor:" << kernel_actor->GetAID()
-                       << " in super kernel actor:" << from_super_kernel_actor->GetAID();
-          kernel_actor->output_free_index_.emplace_back(input_arrow->from_output_index_);
-        } else {
-          MS_LOG(INFO) << "Skip fix ref count for actor:" << from_actor->GetAID()
-                       << " to actor:" << super_kernel_actor->GetAID() << " to index:" << i;
-        }
+    }
+  }
+}
+
+void GraphScheduler::CorrectKernelRunnerRefCountForSuperKernelActor(
+  const SuperKernelActorPtr &super_kernel_actor) const {
+  MS_EXCEPTION_IF_NULL(super_kernel_actor);
+  std::map<size_t, std::pair<AID, DataArrow *>> input_index_to_input_arrow;
+  for (const auto &pair : super_kernel_actor->input_data_arrow_aids_) {
+    if (pair.second == nullptr) {
+      continue;
+    }
+    input_index_to_input_arrow[pair.second->to_input_index_] = pair;
+  }
+  for (size_t i = 0; i < super_kernel_actor->is_input_used_.size(); ++i) {
+    if (super_kernel_actor->is_input_used_[i]) {
+      continue;
+    }
+    const auto &iter = input_index_to_input_arrow.find(i);
+    if (iter == input_index_to_input_arrow.end()) {
+      continue;
+    }
+    const auto &input_arrow = iter->second.second;
+    const auto &from_actor = FetchActor(iter->second.first.Name());
+    if (from_actor == nullptr) {
+      continue;
+    }
+    if (from_actor->type() == KernelTransformType::kCopyActor) {
+      const auto &copy_actor = dynamic_cast<CopyActor *>(from_actor);
+      MS_EXCEPTION_IF_NULL(from_actor);
+      copy_actor->output_free_size_++;
+      MS_LOG(INFO) << "Add free size for copy actor:" << copy_actor->GetAID()
+                   << " to super kernel actor:" << super_kernel_actor->GetAID();
+    } else if (from_actor->type() == KernelTransformType::kSuperKernelActor) {
+      const auto &from_super_kernel_actor = dynamic_cast<SuperKernelActor *>(from_actor);
+      MS_EXCEPTION_IF_NULL(from_super_kernel_actor);
+      if (from_super_kernel_actor->output_data_nodes_.size() != from_super_kernel_actor->output_data_arrows_.size()) {
+        MS_LOG(DEBUG) << "Invalid output node size:" << from_super_kernel_actor->output_data_nodes_.size()
+                      << " and arrow size:" << from_super_kernel_actor->output_data_arrows_.size()
+                      << " for actor:" << from_super_kernel_actor->GetAID();
+        continue;
       }
+      const auto &arrow_iter = std::find_if(from_super_kernel_actor->output_data_arrows_.begin(),
+                                            from_super_kernel_actor->output_data_arrows_.end(),
+                                            [input_arrow](const auto &arrow) { return arrow.get() == input_arrow; });
+      if (arrow_iter == from_super_kernel_actor->output_data_arrows_.end()) {
+        MS_LOG(DEBUG) << "Invalid input_data arrow, to actor:" << input_arrow->to_op_id_
+                      << " for actor:" << super_kernel_actor->GetAID();
+        continue;
+      }
+      size_t output_index = LongToSize(arrow_iter - from_super_kernel_actor->output_data_arrows_.begin());
+      const auto &from_kernel = from_super_kernel_actor->output_data_nodes_[output_index];
+      if (from_kernel == nullptr || !from_kernel->isa<CNode>() ||
+          from_super_kernel_actor->cnode_to_kernel_actor_.find(from_kernel) ==
+            from_super_kernel_actor->cnode_to_kernel_actor_.end()) {
+        MS_LOG(DEBUG) << "Invalid from kernel:" << (from_kernel == nullptr ? "nullptr" : from_kernel->DebugString())
+                      << " from actor:" << from_super_kernel_actor->GetAID()
+                      << " to actor:" << super_kernel_actor->GetAID();
+        continue;
+      }
+      const auto &kernel_actor = from_super_kernel_actor->cnode_to_kernel_actor_[from_kernel];
+      MS_EXCEPTION_IF_NULL(kernel_actor);
+      if (LongToSize(input_arrow->from_output_index_) >= kernel_actor->output_kernel_tensors_.size()) {
+        MS_LOG(DEBUG) << "Invalid kernel actor:" << kernel_actor->GetAID()
+                      << " output index:" << input_arrow->from_output_index_
+                      << " for kernel:" << from_kernel->fullname_with_scope();
+        continue;
+      }
+      auto &free_list = kernel_actor->new_memory_free_list_;
+      if (free_list.size() < kernel_actor->input_free_index_.size() + kernel_actor->output_free_index_.size()) {
+        MS_LOG(DEBUG) << "Invalid kernel actor:" << kernel_actor
+                      << " input free list:" << kernel_actor->input_free_index_
+                      << " output free list:" << kernel_actor->output_free_index_
+                      << " in actor:" << from_super_kernel_actor->GetAID();
+        continue;
+      }
+      free_list.insert(
+        free_list.begin() + kernel_actor->input_free_index_.size() + kernel_actor->output_free_index_.size(),
+        kernel_actor->output_kernel_tensors_[input_arrow->from_output_index_]);
+      MS_LOG(INFO) << "Add free index:" << input_arrow->from_output_index_ << " device address:"
+                   << kernel_actor->output_kernel_tensors_[input_arrow->from_output_index_]->device_address()
+                   << " for kernel actor:" << kernel_actor->GetAID()
+                   << " in super kernel actor:" << from_super_kernel_actor->GetAID();
+      kernel_actor->output_free_index_.emplace_back(input_arrow->from_output_index_);
+    } else {
+      MS_LOG(INFO) << "Skip fix ref count for actor:" << from_actor->GetAID()
+                   << " to actor:" << super_kernel_actor->GetAID() << " to index:" << i;
     }
   }
 }

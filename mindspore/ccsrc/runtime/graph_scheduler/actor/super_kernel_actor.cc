@@ -46,6 +46,7 @@ std::vector<AsyncRQueuePtr> SuperKernelActor::queues_;
 static SpinLock spin_lock;
 static std::mutex mtx;
 
+constexpr char kAttrParallelLaunch[] = "parallel_launch";
 namespace {
 inline void UpdateShape(const AnfNodePtr &input_node, const KernelTensorPtr &node_device_kernel_tensor,
                         const KernelTensorPtr &input_kernel_tensor, const KernelTransformType &type) {
@@ -527,8 +528,7 @@ void SuperKernelActor::CorrectRefCount(size_t input_index, KernelTensor *kernel_
   if (input_use_cnt == 0) {
     if (device_tensor->original_ref_count() != SIZE_MAX) {
       // No user for this input in graph.
-      MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(device_tensor.get(), device_contexts_[0],
-                                                              GetAID().Name());
+      MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(kernel_tensor, device_contexts_[0], GetAID().Name());
     }
     return;
   }
@@ -539,7 +539,7 @@ void SuperKernelActor::CorrectRefCount(size_t input_index, KernelTensor *kernel_
     device_tensor->IncreaseDynamicRefCount(GetAID().Name(), SizeToInt(input_use_cnt));
   }
   // Need to decrease current ref count once.
-  MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(device_tensor.get(), device_contexts_[0], GetAID().Name());
+  MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(kernel_tensor, device_contexts_[0], GetAID().Name());
 }
 
 void SuperKernelActor::UpdateMemoryTraceMangerStatus(OpContext<KernelTensor> *const context) {
@@ -742,7 +742,7 @@ bool SuperKernelActor::CopyHeterogeneousOutput(OpContext<KernelTensor> *const co
       MS_LOG(DEBUG) << "Add device tensor copy store for device address:" << src_device_address
                     << " type:" << src_device_address->GetDeviceType() << " and " << dest_device_address
                     << " type:" << dest_device_address->GetDeviceType() << " for actor:" << GetAID();
-      DeviceTensorCopyStore::GetInstance().Insert(src_device_address, dest_device_address);
+      KernelTensorCopyStore::GetInstance().Insert(src_kernel_tensor.get(), dest_kernel_tensor.get());
     }
   }
   if (kernel_actor->new_memory_free_list_.size() > 0) {
@@ -826,12 +826,14 @@ void SuperKernelActor::FreeInputParamWithoutUser(OpContext<KernelTensor> *const 
       }
       if (device_tensor->new_ref_count() != SIZE_MAX) {
         // No user for this input in graph.
+
         MS_LOG(DEBUG) << "Free ref count for no used parameter:" << iter.second.first.first->DebugString()
                       << " inner index:" << iter.second.first.second << " out index:" << iter.second.second
                       << " device tensor:" << device_tensor->PrintInfo()
                       << " device context:" << device_contexts_[0]->device_context_key().ToString()
                       << " for actor:" << GetAID();
-        MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(device_tensor, device_contexts_[0], GetAID().Name());
+        MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(kernel_tensor.get(), device_contexts_[0],
+                                                                GetAID().Name());
       }
     }
   }
@@ -1058,6 +1060,13 @@ void SuperKernelActor::DispatchSerialLaunchKernels(OpContext<KernelTensor> *cons
     }
     SetTraceMemoryForKernel(kernel_actor, true);
     SetInputTraceMemory(kernel_actor);
+    if (kernel_actor->need_reset_heter_status_) {
+      for (const KernelTensorPtr &kernel_tensor : kernel_actor->output_kernel_tensors_) {
+        MS_EXCEPTION_IF_NULL(kernel_tensor);
+        kernel_tensor->set_is_host_info_valid(false);
+        MS_LOG(DEBUG) << "Set host info valid to false for kernel tensor:" << kernel_tensor->PrintInfo();
+      }
+    }
     if (!kernel_actor->max_ref_cnt_output_list_.empty()) {
       // Allocate dynamic memory for graph output.
       MemoryManagerActor::GetInstance()->AllocateMemory(
@@ -1620,7 +1629,9 @@ void SuperKernelActor::PartitionParallelDispatchKernels() {
     const auto &kernel_name = kernel_actor->kernel_mod_->kernel_name();
     bool need_force_resize = llm_manager.need_force_resize(kernel_name);
     if (need_force_resize || (kernel_name == kMatMulAllReduceOpName) || (kernel_name == "QbmmAllReduceAdd") ||
-        (kernel_name == "MatmulAllReduceAddRmsNorm")) {
+        (kernel_name == "MatmulAllReduceAddRmsNorm") || kernel_actor->kernel_->HasAttr(kAttrParallelLaunch)) {
+      MS_LOG(INFO) << "Add serial launch kernel:" << kernel_actor->kernel_->fullname_with_scope()
+                   << " for actor:" << GetAID();
       serial_launch_kernels_.push_back(kernel_actor);
       continue;
     }
@@ -1752,6 +1763,47 @@ KernelActorPtr SuperKernelActor::BuildInnerControlFlowActor(const CNodePtr &kern
                                                 ref_input_indexes, ref_output_indexes);
 }
 
+namespace {
+void AddAttrForValueDependKernel(const CNodePtr &kernel,
+                                 const mindspore::HashMap<AnfNodePtr, KernelActor *> &cnode_to_kernel_actor) {
+  MS_EXCEPTION_IF_NULL(kernel);
+  auto &llm_manager = LLMManager::GetInstance();
+  const auto &kernel_info = dynamic_cast<KernelInfo *>(kernel->kernel_info());
+  MS_EXCEPTION_IF_NULL(kernel_info);
+  const auto &kernel_mod = kernel_info->MutableKernelMod();
+  MS_EXCEPTION_IF_NULL(kernel_mod);
+  if (!llm_manager.need_force_resize(kernel_mod->kernel_name())) {
+    return;
+  }
+
+  auto depend_list = abstract::GetValueDependArgIndices(kernel);
+  size_t input_num = common::AnfAlgo::GetInputNum(kernel);
+  for (size_t index : depend_list) {
+    if (index >= input_num) {
+      MS_LOG(WARNING) << "Invalid value depend index:" << index << " input num:" << input_num
+                      << " for kernel:" << kernel->fullname_with_scope();
+      continue;
+    }
+    auto input_node = common::AnfAlgo::GetInputNode(kernel, index);
+    MS_EXCEPTION_IF_NULL(input_node);
+    const auto &real_input_node = common::AnfAlgo::VisitKernelWithReturnType(input_node, 0, false).first;
+    MS_EXCEPTION_IF_NULL(real_input_node);
+    if (!real_input_node->isa<CNode>()) {
+      continue;
+    }
+    const auto &cnode = real_input_node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
+    cnode->AddAttr(kAttrParallelLaunch, MakeValue<bool>(false));
+    MS_LOG(INFO) << "Set parallel launch flag to false for kernel:" << cnode->fullname_with_scope();
+    const auto &actor_iter = cnode_to_kernel_actor.find(cnode);
+    if (actor_iter != cnode_to_kernel_actor.end() && actor_iter->second != nullptr) {
+      actor_iter->second->set_need_reset_heter_status(true);
+      MS_LOG(INFO) << "Set reset heter status flag to true for actor:" << actor_iter->second->GetAID();
+    }
+  }
+}
+}  // namespace
+
 void SuperKernelActor::BuildKernelActors() {
   MS_EXCEPTION_IF_NULL(graph_);
   const auto &execution_order = graph_->execution_order();
@@ -1812,7 +1864,7 @@ void SuperKernelActor::BuildKernelActors() {
     }
 
     SchedulerHelper::AddSomasInfo(kernel_actor.get());
-
+    AddAttrForValueDependKernel(kernel, cnode_to_kernel_actor_);
     cnode_to_kernel_actor_[kernel] = kernel_actor.get();
   }
   for (auto &[event_pair_id, send_recv_actor] : send_recv_nodes) {

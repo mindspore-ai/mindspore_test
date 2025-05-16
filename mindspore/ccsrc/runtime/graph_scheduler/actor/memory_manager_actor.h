@@ -71,7 +71,7 @@ class MemoryManagerActor : public ActorBase {
   void FreeSomasMemory(SomasInfo *const somas_info, const DeviceContext *device_context,
                        OpContext<KernelTensor> *const op_context, const AID &from_aid);
 
-  void FreeMemoryByRefCount(DeviceTensor *const device_tensor, const DeviceContext *device_context,
+  void FreeMemoryByRefCount(KernelTensor *const kernel_tensor, const DeviceContext *device_context,
                             const std::string &op_name);
 
   // Wait the MemoryManagerActor to finish running all current messages.

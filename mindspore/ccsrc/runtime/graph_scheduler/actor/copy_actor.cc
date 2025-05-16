@@ -108,11 +108,7 @@ void CopyActor::OnMemoryAllocFinish(OpContext<KernelTensor> *const context) {
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
     }
 
-    MS_LOG(DEBUG) << "Add device tensor copy store for device address:"
-                  << output_kernel_tensors_[0]->device_address()->PrintInfo() << " and "
-                  << input_kernel_tensors_[0]->device_address()->PrintInfo() << " for copy actor:" << GetAID();
-    DeviceTensorCopyStore::GetInstance().Insert(output_kernel_tensors_[0]->device_address().get(),
-                                                input_kernel_tensors_[0]->device_address().get());
+    KernelTensorCopyStore::GetInstance().Insert(output_kernel_tensors_[0].get(), input_kernel_tensors_[0].get());
     output_kernel_tensors_[0]->SetType(input_kernel_tensors_[0]->GetType());
     output_kernel_tensors_[0]->SetShape(input_kernel_tensors_[0]->GetShape());
     output_kernel_tensors_[0]->set_user_data(input_kernel_tensors_[0]->user_data());
