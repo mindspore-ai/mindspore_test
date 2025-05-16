@@ -1438,7 +1438,7 @@ std::vector<AnfNodePtr> PipelinePostProcess::PartitionChunkGraph(const FuncGraph
     auto index = cusr->GetPrimalAttr(INDEX);
     auto temp_sends = GenerateMainGraphSend(sends, new_usr, micro, index);
     if (temp_sends.empty()) {
-      manager_->Replace(usr, new_usr);
+      (void)manager_->Replace(usr, new_usr);
     }
     main_graph_sends.insert(main_graph_sends.end(), temp_sends.begin(), temp_sends.end());
     for (auto &recv : recvs) {
@@ -1533,6 +1533,44 @@ std::vector<AnfNodePtr> PipelinePostProcess::PartitionVShapeChunkGraph(const std
   return out_input;
 }
 
+void PipelinePostProcess::RemoveUselessOriginSharedCell() {
+  const auto &main_graph_nodes = TopoSort(main_graph_->get_return(), SuccDeeperSimple);
+  for (const auto &node : main_graph_nodes) {
+    if (!node->isa<CNode>()) {
+      continue;
+    }
+    auto cnode = node->cast<CNodePtr>();
+    if (!IsValueNode<FuncGraph>(cnode->input(0))) {
+      continue;
+    }
+    auto fg = GetValueNode<FuncGraphPtr>(cnode->input(0));
+    if (fg != shared_cell_) {
+      continue;
+    }
+    const auto &node_users_map = manager_->node_users();
+    if (node_users_map.count(cnode) == 0) {
+      continue;
+    }
+    auto origin_cell_users = node_users_map.at(cnode);
+    for (const auto &origin_cell_user_pair : origin_cell_users) {
+      if (IsPrimitiveCNode(origin_cell_user_pair.first, prim::kPrimUpdateState)) {
+        auto abs = origin_cell_user_pair.first->abstract();
+        auto monad_node = NewValueNode(kUMonad);
+        if (abs->isa<abstract::AbstractIOMonad>()) {
+          monad_node = NewValueNode(kIOMonad);
+        }
+        (void)manager_->Replace(origin_cell_user_pair.first, monad_node);
+      } else if (IsPrimitiveCNode(origin_cell_user_pair.first, prim::kPrimDepend) &&
+                 origin_cell_user_pair.second == SIZE_TWO) {
+        (void)manager_->Replace(origin_cell_user_pair.first,
+                                origin_cell_user_pair.first->cast<CNodePtr>()->input(SIZE_ONE));
+      } else {
+        MS_LOG(EXCEPTION) << "There are still contains origin lazy inline call after graph partition.";
+      }
+    }
+  }
+}
+
 void PipelinePostProcess::GraphPartition(const std::vector<AnfNodePtr> &all_nodes) {
   LabelInterleaveIndex();
   if (NeededHandleShardParam()) {
@@ -1564,7 +1602,12 @@ void PipelinePostProcess::GraphPartition(const std::vector<AnfNodePtr> &all_node
     if (out_input.size() > 1) {
       make_tuple->set_inputs(out_input);
     }
+    return;
   }
+  if (stage_ == stage_num_ - 1) {
+    return;
+  }
+  RemoveUselessOriginSharedCell();
 }
 
 void PipelinePostProcess::HandleSendParam() {

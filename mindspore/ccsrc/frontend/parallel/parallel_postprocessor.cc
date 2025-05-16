@@ -96,7 +96,20 @@ static void MoveMicroMirrorOutCallFunc(const FuncGraphPtr &root) {
     if (micro_mirror->HasAttr(kPipelineSendSharedParam)) {
       continue;
     }
-    (void)MoveSingeMirrorOutCallFunc(micro_mirror);
+    size_t max_loop = 0;
+    while (micro_mirror != nullptr && micro_mirror->func_graph() != root && max_loop < SIZE_FOUR) {
+      auto anf_micro_mirror = MoveSingeMirrorOutCallFunc(micro_mirror);
+      if (anf_micro_mirror != nullptr) {
+        micro_mirror = anf_micro_mirror->cast<CNodePtr>();
+      } else {
+        micro_mirror = nullptr;
+      }
+      max_loop++;
+    }
+    if (micro_mirror != nullptr && micro_mirror->func_graph() != root) {
+      DumpGraph(root, "move_mirror_failed");
+      MS_LOG(EXCEPTION) << "Move mirror operator to root graph failed, micro_mirror:" << micro_mirror->DebugString();
+    }
   }
 }
 
