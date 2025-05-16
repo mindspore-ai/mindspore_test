@@ -109,8 +109,8 @@ static const std::map<std::string, std::vector<std::pair<std::string, size_t>>> 
   {"Triu", {{"diagonal", 2}}},
   {"SoftMarginLoss", {{"reduction", 3}}},
   {"SmoothL1Loss", {{"beta", 3}, {"reduction", 4}}},
-  {"TensorScatterElements", {{"axis", 4}, {"reduction", 5}, {"reduce", 5}}}  // reduce OR reduction is passed
-};
+  {"TensorScatterElements", {{"axis", 4}, {"reduction", 5}, {"reduce", 5}}},  // reduce OR reduction is passed
+  {"ResizeD", {{"sizes", 2}, {"scales", 3}, {"coordinate_transformation_mode", 4}}}};
 
 constexpr size_t kMatMulInputSizeWithBias = 6;  // primitive, x1, x2, bias, transpose_a, transpose_b
 constexpr size_t kInputSizeTwo = 2;
