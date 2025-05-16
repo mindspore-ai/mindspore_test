@@ -35,7 +35,7 @@
 {{ fullname | underline }}
 
 .. autoclass:: {{ name }}
-    :exclude-members: infer_value, infer_shape, infer_dtype, auto_parallel_compile_and_run, load_parameter_slice, set_auto_parallel, set_parallel_input_with_inputs, exec_checkpoint_graph, exist_names
+    :exclude-members: infer_value, infer_shape, infer_dtype, exist_names, compile_cache, phase_cache
     :members:
 
 {% elif fullname=="mindspore.ops.Custom" %}
