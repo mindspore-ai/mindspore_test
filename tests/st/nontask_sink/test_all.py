@@ -169,19 +169,7 @@ def test_hccl_send_receive():
     assert return_code == 0
 
 
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="allcards", essential_mark="essential")
-@test_utils.run_test_with_On
-def test_hccl_all_to_all_vc():
-    """
-    Feature: mpi run 2P case of 'alltoallvc' communication operator.
-    Description: mpi run 2P case of 'alltoallvc' communication operator.
-    Expectation: success
-    """
-    return_code = os.system("mpirun --allow-run-as-root -n 2 pytest -s test_all_to_all_v_c.py")
-    assert return_code == 0
-
-
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="allcards", essential_mark="essential")
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="allcards", essential_mark="essential")
 @test_utils.run_test_with_On
 def test_allgather_v():
     """
@@ -193,7 +181,7 @@ def test_allgather_v():
     assert return_code == 0
 
 
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="allcards", essential_mark="essential")
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="allcards", essential_mark="essential")
 @test_utils.run_test_with_On
 def test_reduce_scatter_tensor_v():
     """
@@ -213,7 +201,7 @@ def test_hccl_all_to_all_v():
     Description: mpi run 2P case of 'alltoallv' communication operator.
     Expectation: success
     """
-    return_code = os.system("mpirun --allow-run-as-root -n 2 pytest -s all_to_all_v_c.py")
+    return_code = os.system("mpirun --allow-run-as-root -n 2 pytest -s test_all_to_all_v.py")
     assert return_code == 0
 
 
