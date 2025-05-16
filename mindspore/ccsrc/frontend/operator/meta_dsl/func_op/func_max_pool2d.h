@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_FRONTEND_OPERATOR_META_DSL_FUNC_OP_INNER_MAX_POOL2D_H_
-#define MINDSPORE_CCSRC_FRONTEND_OPERATOR_META_DSL_FUNC_OP_INNER_MAX_POOL2D_H_
+#ifndef MINDSPORE_CCSRC_FRONTEND_OPERATOR_META_DSL_FUNC_OP_FUNC_MAX_POOL2D_H_
+#define MINDSPORE_CCSRC_FRONTEND_OPERATOR_META_DSL_FUNC_OP_FUNC_MAX_POOL2D_H_
 
 #include <vector>
 #include <memory>
@@ -23,6 +23,6 @@
 #include "mindspore/ccsrc/frontend/operator/meta_dsl/common/meta_impl.h"
 
 namespace mindspore::prim {
-REGISTER_FUNCTION_OP(InnerMaxPool2D, nullptr);
+REGISTER_FUNCTION_OP(FuncMaxPool2D, nullptr);
 }  // namespace mindspore::prim
-#endif  // MINDSPORE_CCSRC_FRONTEND_OPERATOR_META_DSL_FUNC_OP_INNER_MAX_POOL2D_H_
+#endif  // MINDSPORE_CCSRC_FRONTEND_OPERATOR_META_DSL_FUNC_OP_FUNC_MAX_POOL2D_H_

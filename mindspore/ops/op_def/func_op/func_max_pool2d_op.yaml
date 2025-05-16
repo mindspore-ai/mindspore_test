@@ -1,5 +1,5 @@
-#operator inner_max_pool2d
-inner_max_pool2d:
+#operator func_max_pool2d
+func_max_pool2d:
     args:
         input:
             dtype: tensor
@@ -33,9 +33,9 @@ inner_max_pool2d:
         disable: True
     bprop_expander: False
     class:
-        name: InnerMaxPool2D
+        name: FuncMaxPool2D
     dispatch:
         enable: True
-        Ascend: InnerMaxPool2DAscend
+        Ascend: FuncMaxPool2DAscend
         CPU: None
         GPU: None

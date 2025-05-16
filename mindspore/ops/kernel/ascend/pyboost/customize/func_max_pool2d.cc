@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "kernel/ascend/pyboost/customize/inner_max_pool2d.h"
+#include "kernel/ascend/pyboost/customize/func_max_pool2d.h"
 
 #include <memory>
 
@@ -27,10 +27,10 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void InnerMaxPool2DAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
-                                   const ValueTuplePtr &kernel_size, const std::optional<ValueTuplePtr> &stride,
-                                   const ValueTuplePtr &padding, const ValueTuplePtr &dilation,
-                                   const BoolImmPtr &ceil_mode, const BoolImmPtr &return_indices) {
+void FuncMaxPool2DAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                  const ValueTuplePtr &kernel_size, const std::optional<ValueTuplePtr> &stride,
+                                  const ValueTuplePtr &padding, const ValueTuplePtr &dilation,
+                                  const BoolImmPtr &ceil_mode, const BoolImmPtr &return_indices) {
   TensorPtr out;
   TensorPtr indices;
   const auto &real_stride = stride.value_or(kernel_size);
