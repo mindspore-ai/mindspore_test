@@ -31,11 +31,10 @@ class GraphNet(nn.Cell):
     def construct(self, x):
         out = self.zero
         out1 = self.param_a
-        if x > 0:
-            out = out + self.param_a
-        if x > 2:
-            out1 += self.param_a
-            out += self.param_a
+
+        out = out + self.param_a
+        out1 += self.param_a
+        out += self.param_a
         out1 += self.param_a
         return out, out1
 
