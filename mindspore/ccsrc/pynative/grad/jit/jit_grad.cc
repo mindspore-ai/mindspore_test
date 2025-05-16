@@ -680,10 +680,6 @@ py::object Jit::GradJit(const py::args &args) {
 }
 
 bool GetJitBpropGraphInner(const pipeline::ResourcePtr &resource, const std::string &phase) {
-  // This function only works in Pynative mode. The func_graph is decorated with 'jit'.
-  if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode) {
-    return true;
-  }
   return pynative::PyNativeExecutor::GetInstance()->grad_executor()->jit()->GetJitGradGraph(resource, phase);
 }
 
