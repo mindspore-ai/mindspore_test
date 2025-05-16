@@ -70,15 +70,12 @@ class RunEnvironment {
 
   void fetchAndSetRunEnv(const JitCompileResults *jcr) {
     auto ms_context = MsContext::GetInstance();
-    run_mode_ = ms_context->get_param<int>(MS_CTX_EXECUTION_MODE);
     jit_level_ = ms_context->GetJitLevel();
     task_sink_ = ms_context->get_param<bool>(MS_CTX_ENABLE_TASK_SINK);
 
     auto jit_level = jcr->conf()->getJitLevel();
     auto grad_flag = pynative::GradState::Get().grad_flag();
-    auto run_mode = jit_level == "O2" && !grad_flag ? kGraphMode : kPynativeMode;
     auto task_sink = jit_level == "O2" && !grad_flag;
-    ms_context->set_param(MS_CTX_EXECUTION_MODE, run_mode);
     ms_context->set_param(MS_CTX_JIT_LEVEL, jit_level);
     ms_context->SetJitLevel(jit_level);
     ms_context->set_param<bool>(MS_CTX_ENABLE_TASK_SINK, task_sink);
@@ -87,7 +84,6 @@ class RunEnvironment {
 
   void resumePreviousRunEnv() {
     auto ms_context = MsContext::GetInstance();
-    ms_context->set_param(MS_CTX_EXECUTION_MODE, run_mode_);
     ms_context->set_param(MS_CTX_JIT_LEVEL, jit_level_);
     ms_context->SetJitLevel(jit_level_);
     ms_context->set_param<bool>(MS_CTX_ENABLE_TASK_SINK, task_sink_);
@@ -95,7 +91,6 @@ class RunEnvironment {
   }
 
  private:
-  int run_mode_ = kPynativeMode;
   std::string jit_level_;
   bool task_sink_ = false;
 };

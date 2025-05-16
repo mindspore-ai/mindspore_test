@@ -92,9 +92,6 @@ AnfNodePtr ArithmeticSimplify::operator()(const OptimizerPtr &, const AnfNodePtr
 
   // Prim Eliminate (identity)
   MATCH_REPLACE(node, PPrimitive(prim::kPrimidentity, x), x);
-  if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
-    return nullptr;
-  }
 
   // ConstantDuplicateMul
   auto const_dup_lambda = [&node, &x, &const_, &const_2]() -> AnfNodePtr {

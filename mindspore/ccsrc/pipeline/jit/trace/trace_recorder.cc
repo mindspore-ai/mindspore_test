@@ -340,8 +340,7 @@ py::object TraceRecorder::RunGraph(const py::object &phase, const py::tuple &arg
   auto graph_executor = pipeline::GetExecutor();
   MS_EXCEPTION_IF_NULL(graph_executor);
   py::object res;
-  int mode = MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE);
-  if (mode == kPynativeMode && pynative::GradState::Get().RequiresGrad()) {
+  if (pynative::GradState::Get().RequiresGrad()) {
     pynative::PyNativeAdapter::SetGraphPhase(py::cast<std::string>(phase));
     FuncGraphPtr jit_fg = graph_executor->GetFuncGraph(py::cast<std::string>(phase));
     MS_EXCEPTION_IF_NULL(jit_fg);
