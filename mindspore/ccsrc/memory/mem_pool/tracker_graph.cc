@@ -62,6 +62,9 @@ size_t GetTaskInfoStreamId(const TaskInfoPtr &task_info) {
   }
   return std::stoul(iter->second);
 }
+
+constexpr size_t kLogThreshold = 10;
+constexpr size_t kLogPersentage = 100;
 }  // namespace
 
 std::string TrackerTensor::ToString() { return "%" + std::to_string(start_time_stamp); }
@@ -180,12 +183,25 @@ void GraphTracker::Dump(const std::string &graph_path) {
   std::lock_guard<std::mutex> lock(mutex_);
   RaceCheck();
 
+  static bool is_simple_tracker = common::IsEnableAllocConfig(common::kAllocSimpleTracker);
+  if (is_simple_tracker) {
+    MS_LOG(WARNING) << "Simple tracker, skip dump";
+    return;
+  }
   MS_LOG(WARNING) << "Dump graph to file: " << graph_path;
   std::ofstream graph_file(graph_path);
   // dump operators
+  size_t log_threshold = operators_.size() / kLogThreshold;
+  size_t i = 0;
   for (const auto &op : operators_) {
+    i++;
     MS_EXCEPTION_IF_NULL(op);
     graph_file << op->ToString() << std::endl;
+    // print log
+    if (i > log_threshold) {
+      MS_LOG(WARNING) << "GraphTracker Dump progress: " << (i + 1) * kLogPersentage / operators_.size() << "%";
+      log_threshold += operators_.size() / kLogThreshold;
+    }
   }
   graph_file.close();
 }

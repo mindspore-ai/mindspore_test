@@ -77,6 +77,7 @@ const char kAllocEnableVmm[] = "enable_vmm";
 const char kAllocVmmAlignSize[] = "vmm_align_size";
 const char kAllocMemoryRecycle[] = "memory_recycle";
 const char kAllocMemoryTracker[] = "memory_tracker";
+const char kAllocSimpleTracker[] = "simple_tracker";
 const char kAllocDefragMemoryStepFreq[] = "defrag_memory_step_freq";
 const char kAllocMemoryPool[] = "older_pool";
 
