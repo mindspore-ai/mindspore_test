@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "pynative/op_function/auto_generate/pyboost_functions.h"
-#include "pynative/op_function/auto_generate/pyboost_functions_impl.h"
+#include "pynative/op_function/auto_generate/pyboost_api.h"
+#include "pynative/op_function/auto_generate/pyboost_core.h"
 #include "include/common/pybind_api/api_register.h"
 #include "pynative/pynative_execute.h"
 #include "pynative/grad/grad_utils.h"

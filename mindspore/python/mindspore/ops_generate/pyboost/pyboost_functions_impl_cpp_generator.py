@@ -101,7 +101,7 @@ class PyboostFunctionsImplGenerator(BaseGenerator):
             = self.PYBOOST_FUNCTIONS_IMPL_CC_TEMPLATE.replace(include_op_header=pyboost_func_include_headers_str,
                                                               function_body=pyboost_func_impl_str)
         save_path = os.path.join(work_path, K.PIPELINE_PYBOOST_FUNC_GEN_PATH)
-        file_name = "pyboost_functions_impl.cc"
+        file_name = "pyboost_core.cc"
         save_file(save_path, file_name, pyboost_func_impl_file)
 
     def _get_pyboost_func_impl_all_str(self, op_protos):

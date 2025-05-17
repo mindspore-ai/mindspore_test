@@ -13,22 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#include <memory>
-#include "utils/ms_context.h"
-#include "frontend/ir/arg_handler.h"
-#include "pybind_api/ir/tensor_api/auto_generate/tensor_api.h"
-#include "mindspore/ccsrc/pynative/op_function/auto_generate/tensor_func_utils.h"
-#include "pynative/op_function/converter.h"
 #include "pynative/op_function/auto_generate/pyboost_api.h"
 #include "pynative/op_function/auto_generate/pyboost_core.h"
-#include "pipeline/jit/trace/trace_recorder.h"
-${ops_inc}
+#include "include/common/pybind_api/api_register.h"
+#include "pynative/op_function/converter.h"
+#include "op_def/auto_generate/gen_ops_def.h"
+#include "frontend/expander/bprop/bprop_irbuilder.h"
+#include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
 
-namespace mindspore {
-namespace tensor {
-
-${tenosr_func_call_body}
-
-}  // namespace tensor
-}  // namespace mindspore
+namespace mindspore::pynative {
+${pyboost_op_base_body}
+}// namespace mindspore::pynative
