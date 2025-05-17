@@ -148,7 +148,7 @@ void AclStreamAssign::AssignStream(
   if (kernels.empty()) {
     return;
   }
-  if (kernel_graph->is_from_single_op() || kernel_graph->has_flag(kFlagPyNativeRunInGraph)) {
+  if (kernel_graph->is_from_single_op()) {
     MS_LOG(INFO) << "Not stream assign when pynative forward.";
     return;
   }
