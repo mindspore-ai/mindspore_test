@@ -20,6 +20,9 @@
 #endif
 
 #include <algorithm>
+#include <memory>
+#include <string>
+#include <vector>
 
 #include "utils/ms_context.h"
 
@@ -126,6 +129,16 @@ void AclAdapter::InitPlugin() {
   dvpp_sharpness_fun_obj_ = DlsymFuncObj(DvppAdjustSharpness, plugin_handle_);
   dvpp_solarize_fun_obj_ = DlsymFuncObj(DvppSolarize, plugin_handle_);
   dvpp_vertical_flip_fun_obj_ = DlsymFuncObj(DvppVerticalFlip, plugin_handle_);
+  dvpp_sys_init_fun_obj_ = DlsymFuncObj(DvppSysInit, plugin_handle_);
+  dvpp_sys_exit_fun_obj_ = DlsymFuncObj(DvppSysExit, plugin_handle_);
+  dvpp_vdec_create_chnl_fun_obj_ = DlsymFuncObj(DvppVdecCreateChnl, plugin_handle_);
+  dvpp_vdec_start_get_frame_fun_obj_ = DlsymFuncObj(DvppVdecStartGetFrame, plugin_handle_);
+  dvpp_vdec_send_stream_fun_obj_ = DlsymFuncObj(DvppVdecSendStream, plugin_handle_);
+  dvpp_vdec_stop_get_frame_fun_obj_ = DlsymFuncObj(DvppVdecStopGetFrame, plugin_handle_);
+  dvpp_vdec_destroy_chnl_fun_obj_ = DlsymFuncObj(DvppVdecDestroyChnl, plugin_handle_);
+  dvpp_malloc_fun_obj_ = DlsymFuncObj(DvppMalloc, plugin_handle_);
+  dvpp_free_fun_obj_ = DlsymFuncObj(DvppFree, plugin_handle_);
+  dvpp_memcpy_fun_obj_ = DlsymFuncObj(DvppMemcpy, plugin_handle_);
 
   // acl
   get_soc_name_fun_obj_ = DlsymFuncObj(GetSocName, plugin_handle_);
@@ -207,6 +220,16 @@ void AclAdapter::FinalizePlugin() {
   dvpp_sharpness_fun_obj_ = nullptr;
   dvpp_solarize_fun_obj_ = nullptr;
   dvpp_vertical_flip_fun_obj_ = nullptr;
+  dvpp_sys_init_fun_obj_ = nullptr;
+  dvpp_sys_exit_fun_obj_ = nullptr;
+  dvpp_vdec_create_chnl_fun_obj_ = nullptr;
+  dvpp_vdec_start_get_frame_fun_obj_ = nullptr;
+  dvpp_vdec_send_stream_fun_obj_ = nullptr;
+  dvpp_vdec_stop_get_frame_fun_obj_ = nullptr;
+  dvpp_vdec_destroy_chnl_fun_obj_ = nullptr;
+  dvpp_malloc_fun_obj_ = nullptr;
+  dvpp_free_fun_obj_ = nullptr;
+  dvpp_memcpy_fun_obj_ = nullptr;
 
   // acl
   get_soc_name_fun_obj_ = nullptr;
@@ -711,6 +734,89 @@ APP_ERROR AclAdapter::DvppSolarize(const std::shared_ptr<DeviceTensorAscend910B>
     return APP_ERR_ACL_FAILURE;
   }
   return dvpp_solarize_fun_obj_(input, output, threshold);
+}
+
+APP_ERROR AclAdapter::DvppSysInit() {
+  if (!HasAclPlugin() || dvpp_sys_init_fun_obj_ == nullptr) {
+    return APP_ERR_ACL_FAILURE;
+  }
+
+  int64_t ret = dvpp_sys_init_fun_obj_();
+  return ret == 0 ? APP_ERR_OK : APP_ERR_ACL_FAILURE;
+}
+
+APP_ERROR AclAdapter::DvppSysExit() {
+  if (!HasAclPlugin() || dvpp_sys_exit_fun_obj_ == nullptr) {
+    return APP_ERR_ACL_FAILURE;
+  }
+  int64_t ret = dvpp_sys_exit_fun_obj_();
+  return ret == 0 ? APP_ERR_OK : APP_ERR_ACL_FAILURE;
+}
+
+APP_ERROR AclAdapter::DvppVdecCreateChnl(int64_t pType, int64_t *chnl) {
+  if (!HasAclPlugin() || dvpp_vdec_create_chnl_fun_obj_ == nullptr || chnl == nullptr) {
+    return APP_ERR_ACL_FAILURE;
+  }
+  *chnl = dvpp_vdec_create_chnl_fun_obj_(pType);
+  return APP_ERR_OK;
+}
+
+APP_ERROR AclAdapter::DvppVdecStartGetFrame(int64_t chnId, int64_t totalFrame) {
+  if (!HasAclPlugin() || dvpp_vdec_start_get_frame_fun_obj_ == nullptr) {
+    return APP_ERR_ACL_FAILURE;
+  }
+  int64_t ret = dvpp_vdec_start_get_frame_fun_obj_(chnId, totalFrame);
+  return ret == 0 ? APP_ERR_OK : APP_ERR_ACL_FAILURE;
+}
+
+APP_ERROR AclAdapter::DvppVdecSendStream(int64_t chnId, const std::shared_ptr<Tensor> &input, int64_t outFormat,
+                                         bool display, std::shared_ptr<DeviceBuffer> *out) {
+  if (!HasAclPlugin() || dvpp_vdec_send_stream_fun_obj_ == nullptr) {
+    return APP_ERR_ACL_FAILURE;
+  }
+  int64_t ret = dvpp_vdec_send_stream_fun_obj_(chnId, input, outFormat, display, out);
+  return ret == 0 ? APP_ERR_OK : APP_ERR_ACL_FAILURE;
+}
+
+APP_ERROR AclAdapter::DvppVdecStopGetFrame(int64_t chnId, int64_t totalFrame, std::shared_ptr<DeviceBuffer> *output) {
+  if (!HasAclPlugin() || dvpp_vdec_stop_get_frame_fun_obj_ == nullptr || output == nullptr) {
+    return APP_ERR_ACL_FAILURE;
+  }
+
+  *output = dvpp_vdec_stop_get_frame_fun_obj_(chnId, totalFrame);
+  return APP_ERR_OK;
+}
+
+APP_ERROR AclAdapter::DvppVdecDestroyChnl(int64_t chnId) {
+  if (!HasAclPlugin() || dvpp_vdec_destroy_chnl_fun_obj_ == nullptr) {
+    return APP_ERR_ACL_FAILURE;
+  }
+  int64_t ret = dvpp_vdec_destroy_chnl_fun_obj_(chnId);
+  return ret == 0 ? APP_ERR_OK : APP_ERR_ACL_FAILURE;
+}
+
+APP_ERROR AclAdapter::DvppMalloc(uint32_t dev_id, void **dev_ptr, uint64_t size) {
+  if (!HasAclPlugin() || dvpp_malloc_fun_obj_ == nullptr) {
+    return APP_ERR_ACL_FAILURE;
+  }
+  int64_t ret = dvpp_malloc_fun_obj_(dev_id, dev_ptr, size);
+  return ret == 0 ? APP_ERR_OK : APP_ERR_ACL_FAILURE;
+}
+
+APP_ERROR AclAdapter::DvppFree(void *dev_ptr) {
+  if (!HasAclPlugin() || dvpp_free_fun_obj_ == nullptr) {
+    return APP_ERR_ACL_FAILURE;
+  }
+  int64_t ret = dvpp_free_fun_obj_(dev_ptr);
+  return ret == 0 ? APP_ERR_OK : APP_ERR_ACL_FAILURE;
+}
+
+APP_ERROR AclAdapter::DvppMemcpy(const std::shared_ptr<DeviceBuffer> &src, void *dest) {
+  if (!HasAclPlugin() || dvpp_memcpy_fun_obj_ == nullptr) {
+    return APP_ERR_ACL_FAILURE;
+  }
+  int64_t ret = dvpp_memcpy_fun_obj_(src, dest);
+  return ret == 0 ? APP_ERR_OK : APP_ERR_ACL_FAILURE;
 }
 
 // acl
