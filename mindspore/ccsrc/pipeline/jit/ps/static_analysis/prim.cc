@@ -1257,7 +1257,6 @@ EvalResultPtr InterpretGetAttrNode(const AbstractBasePtrList &args_abs_list, con
   const auto expr = debug_info->location()->expr_src();
   if (expr.empty()) {
     MS_LOG(WARNING) << "Location's expr is empty, node: " << out_node->DebugString(debug_recursive_level);
-    return nullptr;
   }
 
   constexpr auto item_index = 1;

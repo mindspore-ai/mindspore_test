@@ -16,7 +16,7 @@
 
 #ifndef MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_IRPASS_CHECK_INVALID_VIEW_INPLACE_DOUT_H_
 #define MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_IRPASS_CHECK_INVALID_VIEW_INPLACE_DOUT_H_
-
+#include <vector>
 #include "include/common/utils/utils.h"
 #include "frontend/optimizer/irpass.h"
 #include "frontend/optimizer/optimizer.h"

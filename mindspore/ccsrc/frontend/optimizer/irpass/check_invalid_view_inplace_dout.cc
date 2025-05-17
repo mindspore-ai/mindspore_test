@@ -17,8 +17,6 @@
 
 #include <algorithm>
 #include <memory>
-#include <vector>
-
 #include "include/common/utils/utils.h"
 #include "frontend/optimizer/irpass.h"
 #include "frontend/optimizer/optimizer.h"
