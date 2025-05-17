@@ -15,3 +15,4 @@ add:
   dispatch:
     enable: True
     Ascend: AddAscend
+    ascend_kernel: Internal

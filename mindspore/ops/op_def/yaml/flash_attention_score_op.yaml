@@ -77,5 +77,6 @@ flash_attention_score:
   dispatch:
     enable: True
     Ascend: FlashAttentionScoreAscend
+    ascend_kernel: Internal
     CPU: None
     GPU: None

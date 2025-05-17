@@ -48,7 +48,6 @@ namespace mindspore {
 namespace kernel {
 using BaseTensorPtr = tensor::BaseTensorPtr;
 using BaseTensorPtrList = tensor::BaseTensorPtrList;
-// 线程安全
 class InternalKernelInfo {
  public:
   explicit InternalKernelInfo(std::string &&op_name) : kernel_name_(std::move(op_name)) {}
@@ -149,10 +148,10 @@ using InternalKernelInfoPtr = std::shared_ptr<InternalKernelInfo>;
     pyboost::PyBoostUtils::MallocOpOutputs(device_context, outputs);                                                  \
     internal::InputsAddrList inputs_addr;                                                                             \
     internal::OutputsAddrList outputs_addr;                                                                           \
-    InternalKernelInfo::UpdateAddr(inputs_addr, inputs);                                                              \
-    InternalKernelInfo::UpdateAddr(outputs_addr, outputs);                                                            \
+    InternalKernelInfo::UpdateAddr(&inputs_addr, inputs);                                                             \
+    InternalKernelInfo::UpdateAddr(&outputs_addr, outputs);                                                           \
     internal::WsAddrList internal_wss_addr;                                                                           \
-    InternalKernelInfo::MallocWorkspace(device_context, op->stream_id(), internal_op, internal_wss_addr);             \
+    InternalKernelInfo::MallocWorkspace(device_context, op->stream_id(), internal_op, &internal_wss_addr);            \
     LAUNCH_INTERNAL_KERNEL(op, internal_op, device_context, tiling_ptr, inputs_addr, outputs_addr, internal_wss_addr, \
                            kernel_name);                                                                              \
   } while (false)

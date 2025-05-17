@@ -1,0 +1,96 @@
+/**
+ * Copyright 2025 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_INTERNAL_PYBOOST_PAGED_ATTENTION_H_
+#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_INTERNAL_PYBOOST_PAGED_ATTENTION_H_
+
+#include <memory>
+#include <string>
+#include <vector>
+#include <utility>
+
+#include "plugin/device/ascend/kernel/internal/pyboost/internal_kernel_info.h"
+
+namespace mindspore {
+namespace kernel {
+class InternalKernelInfoPagedAttention : public InternalKernelInfo {
+ public:
+  InternalKernelInfoPagedAttention() : InternalKernelInfo(std::move("PagedAttention")) {}
+  ~InternalKernelInfoPagedAttention() = default;
+
+  void Call(const std::shared_ptr<pyboost::OpRunner> &op, const BaseTensorPtr &query, const BaseTensorPtr &key_cache,
+            const std::optional<BaseTensorPtr> &value_cache, const std::optional<BaseTensorPtr> &block_tabels,
+            const std::optional<BaseTensorPtr> &context_lens, const std::optional<BaseTensorPtr> &antiquant_scale,
+            const std::optional<BaseTensorPtr> &antiquant_offset, const std::optional<BaseTensorPtr> &attn_mask,
+            const std::optional<BaseTensorPtr> &q_seq_lens, const std::optional<BaseTensorPtr> &alibi_mask,
+            const int64_t &head_num, const float &scale_value, const int64_t &kv_head_num,
+            const int64_t &kv_cache_quant_mode, const int64_t &mask_mode, const int64_t &mla_v_dim);
+
+ protected:
+  uint64_t GenerateTilingKey(const std::string &kernel_name, const std::vector<BaseTensorPtr> &inputs) override;
+  internal::InternalOpPtr CreateKernel(const internal::InputsImmutableInfoList &inputs,
+                                       const internal::OutputsImmutableInfoList &outputs) override;
+
+ private:
+  inline bool GetSeqLenFromInputTensor(const BaseTensorPtr &input_tensor, std::vector<int32_t> *seq_len) {
+    if (input_tensor == nullptr) {
+      return false;
+    }
+
+    auto input_tensor_value = static_cast<int32_t *>(input_tensor->data_c());
+    auto input_tensor_value_num = input_tensor->Size() / sizeof(int32_t);
+    seq_len->clear();
+    for (size_t i = 0; i < input_tensor_value_num; i++) {
+      (*seq_len).emplace_back(input_tensor_value[i]);
+    }
+    return true;
+  }
+
+  inline void CheckMask() {
+    mask_type_ = internal::PagedAttentionParam::MaskType::kMaskTypeNone;
+    auto enable_lookahead =
+      std::any_of(q_seq_len_.begin(), q_seq_len_.end(), [](int32_t seq_len) { return seq_len > 1; });
+    if (enable_lookahead) {
+      if (has_attn_mask_) {
+        mask_type_ = internal::PagedAttentionParam::MaskType::kMaskTypeLookAhead;
+      }
+    } else {
+      q_seq_len_.clear();
+    }
+
+    if (has_alibi_mask_) {
+      if (mask_type_ == internal::PagedAttentionParam::MaskType::kMaskTypeLookAhead) {
+        MS_LOG(EXCEPTION) << "For op " << kernel_name_ << ", lookahead cannot be enabled when alibi_mask exists.";
+      } else {
+        mask_type_ = internal::PagedAttentionParam::MaskType::kMaskTypeAlibi;
+      }
+    }
+  }
+
+  float tor_;
+  int32_t head_num_;
+  int32_t kv_head_num_;
+  int32_t kv_cache_quant_mode_;
+  int32_t mla_v_dim_;
+  std::vector<int32_t> kv_seq_len_;
+  std::vector<int32_t> q_seq_len_;
+  internal::PagedAttentionParam::MaskType mask_type_;
+  internal::PagedAttentionParam::MaskMode mask_mode_;
+  bool has_attn_mask_{false};
+  bool has_alibi_mask_{false};
+};
+}  // namespace kernel
+}  // namespace mindspore
+#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_INTERNAL_PYBOOST_PAGED_ATTENTION_H_

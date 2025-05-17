@@ -23,7 +23,6 @@
 #include <optional>
 #include "kernel/ascend/acl_ir/op_api_cache.h"
 #include "plugin/device/ascend/kernel/internal/internal_helper.h"
-#include "debug/profiler/profiler.h"
 
 namespace mindspore::kernel {
 namespace transform = device::ascend;
@@ -55,7 +54,7 @@ BACKEND_EXPORT void GatherOpHash(const std::optional<TypePtr> &);
 
 template <typename T>
 BACKEND_EXPORT void GatherOpHash(const std::vector<T> &values) {
-  transform::MemcpyToBuf(reinterpret_cast<void *>(values.data()), values.size() * sizeof(T));
+  transform::MemcpyToBuf(reinterpret_cast<const void *>(values.data()), values.size() * sizeof(T));
 }
 
 BACKEND_EXPORT void GatherOpHash();
@@ -66,12 +65,8 @@ void GatherOpHash(const T &arg, const Args &... args) {
   GatherOpHash(args...);
 }
 
-// 创建internal算子主要看输入的数据类型和属性
 template <typename... Args>
 uint64_t CalcInternalOpApiHash(const std::string &arg, const Args &... args) {
-  mindspore::runtime::ProfilerRecorder profile(mindspore::runtime::ProfilerModule::kPynative,
-                                               mindspore::runtime::ProfilerEvent::kPyNativeFrontendTask,
-                                               "CalcInternalOpApiHash", false, false);
   transform::g_hash_offset = 0;
   GatherOpHash(arg, args...);
   return transform::calc_hash_id();
@@ -95,7 +90,6 @@ void GatherTilingHash(const T &arg, const Args &... args) {
   GatherTilingHash(args...);
 }
 
-// internal算子tiling还需要包含输入的shape和属性是否变化
 template <typename... Args>
 uint64_t CalcInternalOpTilingHash(const std::string &arg, const Args &... args) {
   GatherTilingHash(arg, args...);
