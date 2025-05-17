@@ -92,6 +92,12 @@ struct KernelHostInfo {
 
   // Make GetValue related interfaces thread-safe.
   std::mutex value_mutex_;
+  // Whether to wait for pipeline to end when GetValue in kernel tensor. If the value is determined not to change during
+  // compilation, mark it as false.
+  bool need_wait_pipeline_{true};
+  // Whether the value of host Info is valid. When get the device value in the kernel to the host, this value is
+  // recorded in the host info until the device value changes.
+  bool is_host_info_valid_{false};
 };
 
 struct Address {
@@ -356,7 +362,13 @@ class OPS_KERNEL_COMMON_API KernelTensor : public AbstractBase {
   void *device_ptr() const { return address_common_->pointer_ref_count_->ptr(); }
 
   // Set pointer to the device side that corresponds to KernelTensor, used in runtime.
-  void set_device_ptr(void *ptr) { address_common_->pointer_ref_count_->set_ptr(ptr); }
+  void set_device_ptr(void *ptr) {
+    address_common_->pointer_ref_count_->set_ptr(ptr);
+    if (host_info_ != nullptr) {
+      MS_LOG(DEBUG) << "Set host info valid flag to false for kernel_tensor:" << PrintInfo();
+      host_info_->is_host_info_valid_ = false;
+    }
+  }
 
   // Get the memory size in byte of the KernelTensor.
   size_t size() const { return address_common_->size_; }
@@ -477,6 +489,11 @@ class OPS_KERNEL_COMMON_API KernelTensor : public AbstractBase {
   size_t ref_count() const { return address_common_->pointer_ref_count_->ref_count(); }
   int32_t dynamic_ref_count() const { return address_common_->pointer_ref_count_->dynamic_ref_count(); }
   size_t new_ref_count() const { return address_common_->pointer_ref_count_->new_ref_count(); }
+
+  bool need_wait_pipeline() const { return host_info_->need_wait_pipeline_; }
+  void set_need_wait_pipeline(bool need_wait_pipeline) { host_info_->need_wait_pipeline_ = need_wait_pipeline; }
+  bool is_host_info_valid() const { return host_info_->is_host_info_valid_; }
+  void set_is_host_info_valid(bool is_host_info_valid) { host_info_->is_host_info_valid_ = is_host_info_valid; }
 
   const DeviceAddressPtr &device_address() const;
   void set_device_address(const DeviceAddressPtr &device_address);

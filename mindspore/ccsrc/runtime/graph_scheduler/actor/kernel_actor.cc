@@ -831,16 +831,17 @@ void KernelActor::SetSomasMemory(OpContext<KernelTensor> *const context) const {
       if (somas_graph_output_indexes_.count(i) && (output_device_tensor->GetPtr() != nullptr)) {
         if (device_ptr != output_device_tensor->GetPtr()) {
           MS_LOG(ERROR) << GetAID().Name() << " does not free address for graph output index: " << i
-                        << " device address:" << output_device_tensor->PrintInfo();
+                        << " kernel tensor:" << output_kernel_tensors_[i]->PrintInfo();
           device_contexts_[0]->device_res_manager_->FreeMemory(output_device_tensor);
         }
       }
       MS_LOG(DEBUG) << "Set ptr:" << device_ptr << " to device address:" << output_device_tensor
                     << " in actor:" << GetAID();
       output_device_tensor->set_ptr(device_ptr);
+      output_kernel_tensors_[i]->set_is_host_info_valid(false);
       if (somas_graph_output_indexes_.count(i) || output_device_tensor->new_ref_count() != SIZE_MAX) {
         output_device_tensor->IncreaseNewRefCount(GetAID().Name());
-        MS_LOG(DEBUG) << "Add new ref count for somas output address:" << output_device_tensor
+        MS_LOG(DEBUG) << "Add new ref count for somas kernel tensor:" << output_kernel_tensors_[i]->PrintInfo()
                       << " in kernel actor:" << GetAID();
       }
     }
@@ -856,6 +857,7 @@ void KernelActor::SetSomasMemory(OpContext<KernelTensor> *const context) const {
       auto &workspace_device_tensor = workspace_kernel_tensors_[i]->device_address();
       MS_EXCEPTION_IF_NULL(workspace_device_tensor);
       workspace_device_tensor->set_ptr(device_ptr);
+      workspace_kernel_tensors_[i]->set_is_host_info_valid(false);
     }
   }
 }
@@ -912,6 +914,9 @@ void KernelActor::SendMemoryAllocReq(OpContext<KernelTensor> *const context) {
       MS_EXCEPTION_IF_NULL(input_device_tensor);
       const auto &ptr = input_device_tensor->GetValidPtr(kDefaultStreamIndex);
       MS_EXCEPTION_IF_NULL(output_kernel_tensors_[out_in.first]);
+      output_kernel_tensors_[out_in.first]->set_is_host_info_valid(false);
+      MS_LOG(DEBUG) << "Set host info valid flag to false for kernel_tensor:"
+                    << output_kernel_tensors_[out_in.first]->PrintInfo();
       const auto &output_device_tensor = output_kernel_tensors_[out_in.first]->device_address();
       if (ptr == nullptr || output_device_tensor == nullptr || output_device_tensor->GetPtr() != nullptr) {
         continue;
@@ -944,7 +949,7 @@ void KernelActor::SendMemoryFreeReq(OpContext<KernelTensor> *const context) {
     if ((copy_input_device_tensor != nullptr) && (copy_input_device_tensor->GetPtr() != nullptr)) {
       MS_LOG(DEBUG) << "Free memory by ref count for device address:" << copy_input_device_tensor->PrintInfo()
                     << " for actor:" << GetAID();
-      MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(copy_input_device_tensor.get(), device_contexts_[0],
+      MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(copy_input_kernel_tensor.get(), device_contexts_[0],
                                                               GetAID().Name());
     }
   }
@@ -1006,15 +1011,6 @@ void KernelActor::SetMemInfoForRdr() {
     mem_info_.workspaces_[i]->addr = workspace_kernel_tensors_[i]->device_address()->GetMutablePtr();
     mem_info_.workspaces_[i]->size = workspace_kernel_tensors_[i]->device_address()->GetSize();
   }
-}
-
-void KernelActor::UpdateDeviceTensorCopyStore(DeviceTensor *const new_device_tensor,
-                                              DeviceTensor *const input_device_tensor, size_t input_index) {
-  UpdateRefCount(new_device_tensor, true);
-  MS_LOG(DEBUG) << "Add device tensor copy store for device address:" << new_device_tensor
-                << " type:" << new_device_tensor->GetDeviceType() << " and " << input_device_tensor
-                << " type:" << input_device_tensor->GetDeviceType() << " for copy actor:" << GetAID();
-  DeviceTensorCopyStore::GetInstance().Insert(new_device_tensor, input_device_tensor);
 }
 
 void KernelActor::CopyInputDeviceTensor(KernelTensorPtr kernel_tensor, size_t input_index,
@@ -1124,7 +1120,10 @@ void KernelActor::CopyInputDeviceTensor(KernelTensorPtr kernel_tensor, size_t in
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(strategy_, *context, error_info);
   }
   if (modifiable_ref_input_indexes_.count(input_index) > 0) {
-    UpdateDeviceTensorCopyStore(new_device_tensor.get(), device_tensor, input_index);
+    MS_LOG(DEBUG) << "Add device tensor copy store for device address:" << new_device_tensor
+                  << " type:" << new_device_tensor->GetDeviceType() << " and " << device_tensor
+                  << " type:" << device_tensor->GetDeviceType() << " for copy actor:" << GetAID();
+    KernelTensorCopyStore::GetInstance().Insert(new_kernel_tensor.get(), kernel_tensor.get());
   }
 }
 
@@ -1240,7 +1239,10 @@ void KernelActor::CopyParameterDeviceTensor(KernelTensorPtr kernel_tensor, size_
   graph_parameter_store->InsertDeviceTensorIntoCallback(device_tensor);
 
   if (modifiable_ref_input_indexes_.count(input_index) > 0) {
-    UpdateDeviceTensorCopyStore(new_device_tensor.get(), device_tensor.get(), input_index);
+    MS_LOG(DEBUG) << "Add device tensor copy store for device address:" << new_device_tensor
+                  << " type:" << new_device_tensor->GetDeviceType() << " and " << device_tensor
+                  << " type:" << device_tensor->GetDeviceType() << " for copy actor:" << GetAID();
+    KernelTensorCopyStore::GetInstance().Insert(new_kernel_tensor.get(), kernel_tensor.get());
   }
 }
 
@@ -1318,7 +1320,8 @@ void KernelActor::UpdateGraphOutputRefCount(OpContext<KernelTensor> *const conte
     MS_EXCEPTION_IF_NULL(output_device_tensor);
     output_device_tensor->IncreaseNewRefCount(GetAID().Name(), pair.second);
     MS_LOG(DEBUG) << "Add new ref count size:" << pair.second
-                  << " for kernel tensor:" << output_device_tensor->PrintInfo() << " for kernel actor:" << GetAID();
+                  << " for kernel tensor:" << output_kernel_tensors_[pair.first]->PrintInfo()
+                  << " for kernel actor:" << GetAID();
   }
 }
 
@@ -1532,7 +1535,7 @@ void KernelActor::ExecuteLaunchKernelTask(OpContext<KernelTensor> *const context
   }
 
   if ((modifiable_ref_input_indexes_.size() != 0) || (modifiable_ref_output_indexes_.size() != 0)) {
-    RefreshDeviceTensorCopyStore(context);
+    RefreshKernelTensorCopyStore(context);
   }
 
   // 3. Fix ref count.
@@ -1918,7 +1921,7 @@ void KernelActor::PostLaunchKernel(OpContext<KernelTensor> *const context) {
   }
 
   if ((modifiable_ref_input_indexes_.size() != 0) || (modifiable_ref_output_indexes_.size() != 0)) {
-    RefreshDeviceTensorCopyStore(context);
+    RefreshKernelTensorCopyStore(context);
   }
 
   // The input is invalid and needs to be erased when finish kernel launch.
@@ -1936,7 +1939,7 @@ void KernelActor::PostLaunchKernel(OpContext<KernelTensor> *const context) {
   SendOutput(context);
 }
 
-void KernelActor::RefreshDeviceTensorCopyStore(OpContext<KernelTensor> *const context) {
+void KernelActor::RefreshKernelTensorCopyStore(OpContext<KernelTensor> *const context) {
   uint64_t start_time = 0;
   PROFILER_START(start_time);
 
@@ -1949,18 +1952,24 @@ void KernelActor::RefreshDeviceTensorCopyStore(OpContext<KernelTensor> *const co
     }
     auto &input_kernel_tensor = input_kernel_tensors_[ref_input_index];
     MS_EXCEPTION_IF_NULL(input_kernel_tensor);
+    input_kernel_tensor->set_is_host_info_valid(false);
+    MS_LOG(DEBUG) << "Set host info valid flag to false for kernel_tensor:" << input_kernel_tensor->PrintInfo();
     auto input_device_tensor = input_kernel_tensor->device_address().get();
     MS_EXCEPTION_IF_NULL(input_device_tensor);
-    auto need_refreshed_device_tensors = DeviceTensorCopyStore::GetInstance().Fetch(input_device_tensor);
+    auto need_refreshed_device_tensors = KernelTensorCopyStore::GetInstance().Fetch(input_kernel_tensor.get());
     MS_LOG(DEBUG) << "Fetch input copy device tensor:" << input_device_tensor << " for actor:" << GetAID();
     if (need_refreshed_device_tensors == nullptr) {
       continue;
     }
-    for (auto &new_device_tensor : *need_refreshed_device_tensors) {
+    for (auto &new_kernel_tensor : *need_refreshed_device_tensors) {
+      MS_EXCEPTION_IF_NULL(new_kernel_tensor);
+      new_kernel_tensor->set_is_host_info_valid(false);
+      MS_LOG(DEBUG) << "Set host info valid flag to false for kernel_tensor:" << new_kernel_tensor->PrintInfo();
+      const auto &new_device_tensor = new_kernel_tensor->device_address().get();
       MS_EXCEPTION_IF_NULL(new_device_tensor);
       MS_LOG(INFO) << GetAID().Name() << " the input position:" << ref_input_index
-                   << " refresh from device address:" << input_device_tensor->PrintInfo()
-                   << " to device address:" << new_device_tensor->PrintInfo();
+                   << " refresh from kernel tensor:" << input_kernel_tensor->PrintInfo()
+                   << " to kernel tensor:" << new_device_tensor->PrintInfo();
 
       if (new_device_tensor->GetPtr() == nullptr || new_device_tensor->GetPtr() == input_device_tensor->GetPtr()) {
         continue;
@@ -1979,21 +1988,22 @@ void KernelActor::RefreshDeviceTensorCopyStore(OpContext<KernelTensor> *const co
     }
     auto &output_kernel_tensor = output_kernel_tensors_[ref_output_index];
     MS_EXCEPTION_IF_NULL(output_kernel_tensor);
+    output_kernel_tensor->set_is_host_info_valid(false);
+    MS_LOG(DEBUG) << "Set host info valid flag to false for kernel_tensor:" << output_kernel_tensor->PrintInfo();
     auto output_device_tensor = output_kernel_tensor->device_address().get();
     MS_EXCEPTION_IF_NULL(output_device_tensor);
-    auto need_refreshed_device_tensors = DeviceTensorCopyStore::GetInstance().Fetch(output_device_tensor);
-    MS_LOG(DEBUG) << "Fetch output copy device tensor:" << output_device_tensor << " for actor:" << GetAID();
-    if (need_refreshed_device_tensors == nullptr) {
+    auto need_refreshed_kernel_tensors = KernelTensorCopyStore::GetInstance().Fetch(output_kernel_tensor.get());
+    if (need_refreshed_kernel_tensors == nullptr) {
       continue;
     }
-    for (auto &new_device_tensor : *need_refreshed_device_tensors) {
+    for (auto &new_kernel_tensor : *need_refreshed_kernel_tensors) {
+      MS_EXCEPTION_IF_NULL(new_kernel_tensor);
+      new_kernel_tensor->set_is_host_info_valid(false);
+      const auto &new_device_tensor = new_kernel_tensor->device_address().get();
       MS_EXCEPTION_IF_NULL(new_device_tensor);
       MS_LOG(INFO) << GetAID().Name() << " the output position:" << ref_output_index
-                   << " refresh from device address:" << output_device_tensor
-                   << " ptr:" << output_device_tensor->GetPtr() << ", type:" << output_device_tensor->GetDeviceType()
-                   << ", format:" << output_device_tensor->format() << " to device address:" << new_device_tensor
-                   << " ptr:" << new_device_tensor->GetPtr() << ", type:" << new_device_tensor->GetDeviceType()
-                   << ", format:" << new_device_tensor->format();
+                   << " refresh from kernel tensor:" << output_kernel_tensor->PrintInfo()
+                   << " to kernel tensor:" << new_kernel_tensor->PrintInfo();
       if (new_device_tensor->GetPtr() == nullptr || new_device_tensor->GetPtr() == output_device_tensor->GetPtr()) {
         continue;
       }

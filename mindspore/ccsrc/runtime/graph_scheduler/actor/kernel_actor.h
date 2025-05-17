@@ -154,6 +154,8 @@ class KernelActor : public DebugAwareActor {
   const std::vector<KernelTensorPtr> &workspace_kernel_tensors() { return workspace_kernel_tensors_; }
   const std::vector<KernelTensorPtr> &output_kernel_tensors() { return output_kernel_tensors_; }
   const std::vector<KernelTensorPtr> &input_kernel_tensors() { return input_kernel_tensors_; }
+  bool need_reset_heter_status() const { return need_reset_heter_status_; }
+  void set_need_reset_heter_status(bool need_reset_heter_status) { need_reset_heter_status_ = need_reset_heter_status; }
 
  protected:
   void Init() override;
@@ -313,14 +315,12 @@ class KernelActor : public DebugAwareActor {
   // Use for graph parameter.
   void CopyParameterDeviceTensor(KernelTensorPtr kernel_tensor, size_t input_index,
                                  OpContext<KernelTensor> *const context, size_t stream_id);
-  void UpdateDeviceTensorCopyStore(DeviceTensor *const new_device_tensor, DeviceTensor *const input_device_tensor,
-                                   size_t input_index);
   // The processing before kernel launch: update the info of kernel launch.
   void PreLaunchKernel(OpContext<KernelTensor> *const context);
   // The processing after kernel launch: 1.erase input, 2.free memory, 3.send output.
   void PostLaunchKernel(OpContext<KernelTensor> *const context);
   // Back refresh the dynamic device tensor stores that have been triggered copy.
-  void RefreshDeviceTensorCopyStore(OpContext<KernelTensor> *const context);
+  void RefreshKernelTensorCopyStore(OpContext<KernelTensor> *const context);
 
   void *GetSomasDevicePtr(size_t offset) const;
 
@@ -378,6 +378,10 @@ class KernelActor : public DebugAwareActor {
   // it sets the flag of the branch to true to enable the actor in this branch.
   bool *is_enable_{nullptr};
   bool need_wait_pipeline_{false};
+  // When allocating memory in the trace process, the allocated address may be the same as the previous step. If the
+  // parallel launch function is enabled at the same time, some kernels will skip set device ptr and the hetero status
+  // cannot be reset. These kernels need to be reset separately.
+  bool need_reset_heter_status_{false};
 };
 
 using KernelActorPtr = std::shared_ptr<KernelActor>;

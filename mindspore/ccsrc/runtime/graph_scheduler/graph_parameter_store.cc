@@ -29,6 +29,11 @@ namespace runtime {
 void GraphParameterStore::SetDeviceTensorPrepared(size_t outer_idx, size_t inner_idx, bool is_prepared) {
   auto &kernel_tensor_with_info = parameter_kernel_tensors_[outer_idx][inner_idx];
   kernel_tensor_with_info.second.second = is_prepared;
+  if (kernel_tensor_with_info.first != nullptr) {
+    kernel_tensor_with_info.first->set_is_host_info_valid(false);
+    MS_LOG(DEBUG) << "Set host info valid flag to false for kernel_tensor:"
+                  << kernel_tensor_with_info.first->PrintInfo();
+  }
 }
 
 bool GraphParameterStore::GetDeviceTensorPrepared(size_t outer_idx, size_t inner_idx) {

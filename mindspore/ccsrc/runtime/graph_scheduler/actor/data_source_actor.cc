@@ -138,11 +138,7 @@ void HostQueueDataSourceActor::FillDataBuffer() {
       MS_LOG(EXCEPTION) << "Invalid index:" << pair.first << " " << pair.second
                         << " device tensor size:" << kernel_tensors.size() << " for data source actor.";
     }
-    MS_LOG(DEBUG) << "Add device tensor copy store for device address:" << kernel_tensors[pair.second]
-                  << " type:" << kernel_tensors[pair.second]->GetDeviceType() << " and " << kernel_tensors[pair.first]
-                  << " type:" << kernel_tensors[pair.first]->GetDeviceType() << " for actor:" << GetAID();
-    DeviceTensorCopyStore::GetInstance().Insert(kernel_tensors[pair.second]->device_address().get(),
-                                                kernel_tensors[pair.first]->device_address().get());
+    KernelTensorCopyStore::GetInstance().Insert(kernel_tensors[pair.second].get(), kernel_tensors[pair.first].get());
   }
   buffers_.push(kernel_tensors);
 }
@@ -252,11 +248,13 @@ void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<KernelTensor> *cons
   try {
     for (size_t i = 0; i < host_tensors.size(); ++i) {
       auto &host_tensor = host_tensors[i];
+      MS_EXCEPTION_IF_NULL(host_tensor);
       auto &kernel_tensor = kernel_tensors[i];
       MS_EXCEPTION_IF_NULL(kernel_tensor);
+      kernel_tensor->set_is_host_info_valid(false);
+      MS_LOG(DEBUG) << "Set host info valid flag to false for kernel_tensor:" << kernel_tensor->PrintInfo();
       auto device_tensor = kernel_tensor->device_address().get();
       MS_EXCEPTION_IF_NULL(device_tensor);
-      MS_EXCEPTION_IF_NULL(host_tensor);
       // No used device address need skip.
       if (TEST_FLAG(device_tensor->flag(), device::kDeviceAddressFlagNotUsed)) {
         device_tensor->IncreaseNewRefCount(GetAID().Name());
