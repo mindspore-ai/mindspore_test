@@ -21,6 +21,7 @@
 
 #include "minddata/dataset/core/device_tensor.h"
 #if defined(ENABLE_D)
+#include "minddata/dataset/core/device_buffer.h"
 #include "minddata/dataset/core/device_tensor_ascend910b.h"
 #endif
 #include "minddata/dataset/core/tensor.h"
@@ -162,6 +163,28 @@ PLUGIN_METHOD(DvppSolarize, int, const std::shared_ptr<mindspore::dataset::Devic
 
 PLUGIN_METHOD(DvppVerticalFlip, int, const std::shared_ptr<mindspore::dataset::DeviceTensorAscend910B> &,
               std::shared_ptr<mindspore::dataset::DeviceTensorAscend910B> *);
+
+PLUGIN_METHOD(DvppSysInit, int64_t, void);
+
+PLUGIN_METHOD(DvppSysExit, int64_t, void);
+
+PLUGIN_METHOD(DvppVdecCreateChnl, int64_t, int64_t);
+
+PLUGIN_METHOD(DvppVdecStartGetFrame, int64_t, int64_t, int64_t);
+
+PLUGIN_METHOD(DvppVdecSendStream, int64_t, int64_t, const std::shared_ptr<mindspore::dataset::Tensor> &, int64_t, bool,
+              std::shared_ptr<mindspore::dataset::DeviceBuffer> *);
+
+PLUGIN_METHOD(DvppVdecStopGetFrame, std::shared_ptr<mindspore::dataset::DeviceBuffer>, int64_t, int64_t);
+
+PLUGIN_METHOD(DvppVdecDestroyChnl, int64_t, int64_t);
+
+PLUGIN_METHOD(DvppMalloc, int64_t, uint32_t, void **, uint64_t);
+
+PLUGIN_METHOD(DvppFree, int64_t, void *);
+
+PLUGIN_METHOD(DvppMemcpy, int64_t, const std::shared_ptr<mindspore::dataset::DeviceBuffer> &, void *);
+
 // acl
 PLUGIN_METHOD(GetSocName, int, std::string *);
 
