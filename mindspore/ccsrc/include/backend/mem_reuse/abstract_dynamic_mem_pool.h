@@ -292,15 +292,15 @@ class BACKEND_EXPORT MemBufAllocator {
   bool enable_eager_free_;
 
   std::list<MemBlock *> mem_blocks_;
-  std::set<MemBuf *, MemBufComparator> free_mem_bufs_;
-  std::set<MemBuf *, MemBufComparator> eager_free_mem_bufs_;
+  typedef memory::mem_pool::PooledAllocator<MemBuf *> MemAllocator;
+  std::set<MemBuf *, MemBufComparator, MemAllocator> free_mem_bufs_;
+  std::set<MemBuf *, MemBufComparator, MemAllocator> eager_free_mem_bufs_;
 
  private:
   MemBuf *search_key_;
 
   uint32_t stream_id_;
   bool is_persistent_;
-  bool has_do_eager_free_{false};
 
   friend AbstractDynamicMemPool;
 };
