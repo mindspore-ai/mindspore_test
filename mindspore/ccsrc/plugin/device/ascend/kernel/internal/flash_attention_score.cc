@@ -45,11 +45,14 @@ bool InternalFlashAttentionScore::UpdateSeqLen(const std::vector<KernelTensor *>
     q_need_recreate = ConvertSeqLenToVectorAndCheckUpadate(inputs[kIndex8], &param_.q_seq_len);
   } else {
     bool get_from_tensor_input = false;
-    auto seq_length_tensor = inputs[kIndex8]->GetValueWithCheck<std::vector<int32_t>>();
-    if (seq_length_tensor.size() != 0) {
-      q_need_recreate =
-        GetSeqLenFromInputAndCheckUpadate(kernel_name_, {"q_seq_lens"}, inputs[kIndex8], &param_.q_seq_len);
-      get_from_tensor_input = true;
+    auto seq_length_tensor_opt = inputs[kIndex8]->GetValue<std::vector<int32_t>>();
+    if (seq_length_tensor_opt.has_value()) {
+      auto seq_length_tensor = seq_length_tensor_opt.value();
+      if (seq_length_tensor.size() != 0) {
+        q_need_recreate =
+          GetSeqLenFromInputAndCheckUpadate(kernel_name_, {"q_seq_lens"}, inputs[kIndex8], &param_.q_seq_len);
+        get_from_tensor_input = true;
+      }
     }
     if (!get_from_tensor_input) {
       param_.q_seq_len = param_.kv_seq_len;
