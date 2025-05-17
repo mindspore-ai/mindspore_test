@@ -103,12 +103,11 @@ void PrintCpuKernelMod::LaunchKernel(size_t index, const std::vector<kernel::Ker
       std::cout << *num << std::endl;
     }
   } else {
-    TypeId type_id = std::get<1>(input_info_[index]);
     Tensor tensor(data_types_[index], input_shapes_[index], inputs[index]->device_ptr(),
                   input_sizes_[index] * sizeof(T));
     if (value_type_.count(index) > 0) {
       // not a tensor
-      auto out = tensor.data().ToString(type_id, input_shapes_[index], true);
+      auto out = tensor.DataToString(true);
       if (value_type_[index] != 0) {
         // tuple, not scalar
         (void)std::replace(out.begin(), out.end(), '[', '(');

@@ -454,11 +454,11 @@ int UpdateTensorDataAndSize(const AnfNodePtr &node, const tensor::TensorPtr &wei
   MS_CHECK_TRUE_RET(weight != nullptr, RET_NULL_PTR);
   MS_CHECK_TRUE_RET(new_size > 0, RET_NULL_PTR);
   weight->set_data_type(new_data_type);
-  if (new_size != static_cast<size_t>(weight->data().nbytes())) {
+  if (new_size != static_cast<size_t>(weight->DataNBytes())) {
     MS_LOG(ERROR) << "Data size of tensor info is error.";
     return RET_ERROR;
   }
-  if (memcpy_s(weight->data_c(), weight->data().nbytes(), quant_datas, new_size) != EOK) {
+  if (memcpy_s(weight->data_c(), weight->DataNBytes(), quant_datas, new_size) != EOK) {
     MS_LOG(ERROR) << "memcpy data failed.";
     return RET_ERROR;
   }

@@ -19,10 +19,18 @@
 #ifndef MINDSPORE_CORE_IR_DTYPE_TYPE_ID_H_
 #define MINDSPORE_CORE_IR_DTYPE_TYPE_ID_H_
 
+#include <cstddef>
 #if __has_include("include/mindapi/base/type_id.h")
 #include "include/mindapi/base/type_id.h"
 #else
 #include "mindapi/base/type_id.h"
 #endif
+#include "mindapi/base/macros.h"
+
+namespace mindspore {
+namespace abstract {
+MS_CORE_API size_t TypeIdSize(TypeId data_type);
+}  // namespace abstract
+}  // namespace mindspore
 
 #endif  // MINDSPORE_CORE_IR_DTYPE_TYPE_ID_H_

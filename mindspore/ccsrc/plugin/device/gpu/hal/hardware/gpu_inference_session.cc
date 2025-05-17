@@ -52,8 +52,7 @@ void GpuInferenceSession::LoadInputData(const std::shared_ptr<KernelGraph> &kern
       tensor = inputs[no_weight_input++];
       MS_EXCEPTION_IF_NULL(tensor);
       if (!device_address->SyncHostToDevice(AnfAlgo::GetRuntimePaddingShape(pk_node, 0),
-                                            LongToSize(tensor->data().nbytes()), tensor->data_type(),
-                                            tensor->data_c())) {
+                                            LongToSize(tensor->DataNBytes()), tensor->data_type(), tensor->data_c())) {
         MS_LOG(EXCEPTION) << "SyncHostToDevice failed.";
       }
     }

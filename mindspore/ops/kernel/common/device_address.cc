@@ -197,8 +197,6 @@ void DeviceAddress::set_status(DeviceAddressStatus status) { status_ = status; }
 
 DeviceAddressStatus DeviceAddress::status() const { return status_; }
 
-DeviceType DeviceAddress::GetDeviceType() const { return DeviceType::kUnknown; }
-
 void *DeviceAddress::GetMutablePtr() const {
   std::lock_guard<std::recursive_mutex> lock(ptr_mutex_);
   return GetDevicePtr();

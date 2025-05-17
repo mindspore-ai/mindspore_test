@@ -25,6 +25,7 @@
 #include "utils/shape_utils.h"
 #include "ir/tensor_storage_info.h"
 #include "ir/tensor_data.h"
+#include "ir/device_type.h"
 
 using std::string;
 
@@ -63,10 +64,14 @@ class DeviceSync {
   virtual size_t ref_count() const = 0;
   virtual void ResetRefCount() = 0;
 
+  virtual void set_deleter(const std::function<void(uint8_t *)> &deleter) = 0;
+
   virtual ~DeviceSync() {}
 
   virtual const UserDataPtr &user_data() const { MS_LOG(EXCEPTION) << "Not implement exception"; }
   virtual void set_user_data(const UserDataPtr &user_data) { MS_LOG(EXCEPTION) << "Not implement exception"; }
+
+  virtual device::DeviceType GetDeviceType() const { return device::DeviceType::kUnknown; }
 };
 using DeviceSyncPtr = std::shared_ptr<DeviceSync>;
 }  // namespace mindspore

@@ -97,7 +97,7 @@ tensor::TensorPtr CreateTensorInfo(const void *data, size_t data_size, const std
     return nullptr;
   }
   MS_CHECK_TRUE_MSG(tensor_info->Size() == data_size, nullptr, "invalid const tensor");
-  auto ret = memcpy_s(tensor_info->data_c(), tensor_info->data().nbytes(), data, data_size);
+  auto ret = memcpy_s(tensor_info->data_c(), tensor_info->DataNBytes(), data, data_size);
   if (ret != EOK) {
     MS_LOG(ERROR) << "memcpy_s error : " << ret;
     return nullptr;
@@ -149,7 +149,7 @@ int SetTensorData(const tensor::TensorPtr &tensor_info, const void *data, size_t
     return RET_ERROR;
   }
   MS_CHECK_TRUE_MSG(tensor_info->Size() == data_size, RET_ERROR, "invalid const tensor");
-  auto ret = memcpy_s(tensor_info->data_c(), tensor_info->data().nbytes(), data, data_size);
+  auto ret = memcpy_s(tensor_info->data_c(), tensor_info->DataNBytes(), data, data_size);
   if (ret != EOK) {
     MS_LOG(ERROR) << "memcpy_s error : " << ret;
     return RET_ERROR;
@@ -192,9 +192,9 @@ int UpdateTensorTFromTensorInfo(const tensor::TensorPtr &src_tensor, std::unique
                        [](const int64_t &value) { return static_cast<int32_t>(value); });
   schema_tensor->dims = dims;
   if (src_tensor->data().data() != nullptr) {
-    schema_tensor->data.resize(src_tensor->data().nbytes());
+    schema_tensor->data.resize(src_tensor->DataNBytes());
     if (EOK != memcpy_s(schema_tensor->data.data(), schema_tensor->data.size(), src_tensor->data().data(),
-                        src_tensor->data().nbytes())) {
+                        src_tensor->DataNBytes())) {
       MS_LOG(ERROR) << "memcpy_s failed.";
       return RET_ERROR;
     }

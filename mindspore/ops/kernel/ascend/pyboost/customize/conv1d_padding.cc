@@ -107,7 +107,7 @@ tensor::TensorPtr Conv1DPaddingAscendCustomize(const std::shared_ptr<OpRunner> &
   }
   std::vector<int64_t> pad_vector = {0};
   if (padding_enum_imm == PadMode::SAME) {
-    auto k = weight_tensor->data().ndim();
+    auto k = weight_tensor->DataNDim();
     auto dim = static_cast<size_t>(k - 2);
     auto weight_sizes = weight_tensor->shape();
     auto input_sizes = input_tensor->shape();
