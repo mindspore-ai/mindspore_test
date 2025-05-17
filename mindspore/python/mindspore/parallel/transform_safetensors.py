@@ -1358,10 +1358,11 @@ def _load_parallel_checkpoint(file_info):
             end_time = time.time()
             cost_time = end_time - start_time
             total_io_cost_time += cost_time
+        slice_param_copy = np.copy(slice_param)
         if dtype_need_changed:
-            total_param[param_name] = Parameter(Tensor(slice_param, dtype=changed_dtype))
+            total_param[param_name] = Parameter(Tensor(slice_param_copy, dtype=changed_dtype))
         else:
-            total_param[param_name] = Parameter(Tensor.from_numpy(slice_param))
+            total_param[param_name] = Parameter(Tensor.from_numpy(slice_param_copy))
     vlog_print("1", "ME", __file__, sys._getframe().f_lineno,
                f"load distributed safetensors io cost time:{total_io_cost_time}.")
     total_param = _process_hyper_params(file_list, total_safetensors_dir, total_param)
