@@ -564,6 +564,15 @@ class _DatasetIter:
                 self.sink_size = dataset.__loop_size__
             create_data_info_queue = (
                 sink_size == 1 and self.sink_count == 1 and dataset.get_dataset_size() != 1)
+
+            # Don't enable dynamic shape(multi-subgraph) feature in pp/data_broadcast mode,
+            # otherwise get_data_info will stuck since some rank do not consume data.
+            use_pipeline_parallel = (context.get_auto_parallel_context("pipeline_stages") > 1)
+            data_broadcast = enable_data_broadcast()
+
+            if use_pipeline_parallel or data_broadcast:
+                create_data_info_queue = False
+
             dataset.__transfer_dataset__ = _exec_datagraph(dataset, self.sink_size,
                                                            create_data_info_queue=create_data_info_queue)
 
