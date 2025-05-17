@@ -1279,7 +1279,7 @@ bool GeKernelExecutor::MemoryCopyAsync(const CNodePtr &node, const std::vector<K
 
 void GeKernelExecutor::DoAsyncCkpt(const CNodePtr &kernel) const {
   static bool disable_ckpt_d2h_async = common::GetEnv("MS_ENABLE_CKPT_D2H_ASYNC") != "1";
-  if (disable_ckpt_d2h_async) {
+  if (MS_LIKELY(disable_ckpt_d2h_async)) {
     return;
   }
   auto ms_context = MsContext::GetInstance();
@@ -1333,7 +1333,7 @@ bool GeKernelExecutor::LaunchKernel(const CNodePtr &kernel, const std::vector<Ke
       silentcheck::ascend::SilentChecker::GetInstance().ExecuteCheck(kernel_mod, inputs[0], stream);
     }
 
-    if (UCEException::IsEnableUCE()) {
+    if (MS_UNLIKELY(UCEException::IsEnableUCE())) {
       bool is_opt_start_kernel = OptimizerEventInfo::GetInstance().IsOptimizerStartKernelMod(kernel_mod, kernel);
       bool is_opt_end_kernel = OptimizerEventInfo::GetInstance().IsOptimizerEndKernelMod(kernel_mod, kernel);
       if (is_opt_start_kernel || is_opt_end_kernel) {
@@ -1355,7 +1355,7 @@ bool GeKernelExecutor::LaunchKernel(const CNodePtr &kernel, const std::vector<Ke
     }
   }
   // for PyNative and KBK Sync Run mode
-  if (mindspore::runtime::RuntimeConf::GetInstance()->launch_blocking()) {
+  if (MS_UNLIKELY(mindspore::runtime::RuntimeConf::GetInstance()->launch_blocking())) {
     if (!AscendStreamMng::GetInstance().SyncStream(stream)) {
       MS_LOG_WITH_NODE(EXCEPTION, kernel)
         << "Sync run failed, detail: " << CALL_ASCEND_API(aclGetRecentErrMsg) << trace::DumpSourceLines(kernel);
