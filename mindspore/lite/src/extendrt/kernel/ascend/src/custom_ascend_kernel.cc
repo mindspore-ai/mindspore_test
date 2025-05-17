@@ -112,6 +112,17 @@ AclModelOptionsPtr CustomAscendKernelMod::GenAclOptions() {
     auto val = GetValue<bool>(weightspace_workspace_key);
     acl_options_ptr->share_weightspace_workspace = val;
   }
+
+  auto pids_key = primitive_->GetAttr(lite::kInnerPids);
+  if (pids_key != nullptr) {
+    auto val = GetValue<std::string>(pids_key);
+    acl_options_ptr->pids = val;
+  }
+  auto sharable_handle_key = primitive_->GetAttr(lite::kInnerSharableHandle);
+  if (sharable_handle_key != nullptr) {
+    auto val = GetValue<uint64_t>(sharable_handle_key);
+    acl_options_ptr->sharable_handle = val;
+  }
   auto bundle_model = primitive_->GetAttr(lite::kBundleModel);
   if (bundle_model != nullptr) {
     auto val = GetValue<bool>(bundle_model);
@@ -173,6 +184,8 @@ bool CustomAscendKernelMod::Init(const std::vector<KernelTensor *> &inputs,
     MS_LOG(ERROR) << "Load om data failed.";
     return false;
   }
+  auto sharable_handle = model_infer_->GetSharableHandle();
+  primitive_->set_attr(lite::kInnerSharableHandle, MakeValue<uint64_t>(sharable_handle));
 
   SaveOM(om_data->addr, om_data->size, "./");
 
@@ -188,7 +201,6 @@ bool CustomAscendKernelMod::Init(const std::vector<KernelTensor *> &inputs,
   AclEnvGuard::AddModel(model_infer_);
   return true;
 }
-
 int CustomAscendKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
                                   const std::vector<KernelTensor *> &outputs) {
   if (!load_model_) {

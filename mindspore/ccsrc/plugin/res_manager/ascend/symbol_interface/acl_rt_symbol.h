@@ -79,6 +79,11 @@ ORIGIN_METHOD_WITH_SIMU(aclrtGetMemUceInfo, aclError, int32_t, aclrtMemUceInfo *
 ORIGIN_METHOD_WITH_SIMU(aclrtDeviceTaskAbort, aclError, int32_t, uint32_t)
 ORIGIN_METHOD_WITH_SIMU(aclrtMemUceRepair, aclError, int32_t, aclrtMemUceInfo *, size_t)
 ORIGIN_METHOD_WITH_SIMU(aclrtEventGetTimestamp, aclError, aclrtEvent, uint64_t *)
+ORIGIN_METHOD_WITH_SIMU(aclrtDeviceGetBareTgid, aclError, int32_t *)
+ORIGIN_METHOD_WITH_SIMU(aclrtMemExportToShareableHandle, aclError, aclrtDrvMemHandle, aclrtMemHandleType, uint64_t,
+                        uint64_t *)
+ORIGIN_METHOD_WITH_SIMU(aclrtMemSetPidToShareableHandle, aclError, uint64_t, int32_t *, size_t)
+ORIGIN_METHOD_WITH_SIMU(aclrtMemImportFromShareableHandle, aclError, uint64_t, int32_t, aclrtDrvMemHandle *)
 
 void LoadAclRtApiSymbol(const std::string &ascend_path);
 void LoadSimulationRtApi();
