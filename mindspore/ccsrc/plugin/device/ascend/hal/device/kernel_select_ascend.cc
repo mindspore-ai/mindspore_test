@@ -457,7 +457,7 @@ inline bool NeedTransDataWhenInferBoost(const CNodePtr &kernel, const KernelType
   if (soc_version == kAscendVersion310p) {
     return kernel_type == KernelType::INTERNAL_KERNEL ||
            IsOneOfPrimitiveCNode(kernel, {prim::kPrimReshapeExt, prim::kPrimReshape, prim::kPrimGroupedMatmul});
-  } else if (soc_version == kAscendVersion910b || soc_version == kAscendVersion910_93) {
+  } else if (soc_version == kAscendVersion910b) {
     if (IsOneOfPrimitiveCNode(kernel, {prim::kPrimGroupedMatmulV4})) {
       auto x_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(kernel, 0);
       auto weight_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(kernel, 1);
