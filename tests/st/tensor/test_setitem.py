@@ -468,114 +468,93 @@ def setitem_check_iadd_grad(x, index, value, np_expected, capture_mode=None):
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('capture_mode', [None, 'ast', 'bytecode'])
-def test_setitem_grad_with_iadd(capture_mode):
+@pytest.mark.parametrize(
+    'index',
+    [
+        # 0-3: base index
+        slice(0, 2),
+        False,
+        ...,
+        [0, 1],
+        # 4-5: tensor index
+        slice(Tensor(0), Tensor(2)),
+        Tensor([0, 1]),
+        # 6-9: fancy index
+        ([0, 1], [0, 1]),
+        (Tensor([0, 1]), Tensor([0, 1])),
+        ([0, 1], ..., [0, 1]),
+        (Tensor([0, 1]), ..., Tensor([0, 1])),
+    ],
+)
+def test_setitem_grad_with_iadd(capture_mode, index):
     """
     Feature: tensor setitem grad
     Description: Verify the result of tensor setitem grad with iadd
     Expectation: success
     """
-    if capture_mode in ['ast', 'bytecode']:
-        pytest.skip(f"Tests with capture_mode={capture_mode} are skipped!!!")
-
-    index_skips = {
-        None: [],
-        'ast': [
-            Tensor(0),
-            Tensor(True),
-            (0, slice(0, 2), True),
-            (0, None, ...),
-            ([0, 1], 0, [0, 1]),
-            (Tensor([0, 1]), Tensor(0), Tensor([0, 1])),
-            (0, [0, 1], [0, 1]),
-            (Tensor(0), Tensor([0, 1]), Tensor([0, 1])),
-            ([0, 1], slice(0, 2), [0, 1]),
-            (Tensor([0, 1]), slice(0, 2), Tensor([0, 1])),
-            ([0, 1], True, [0, 1]),
-            (Tensor([0, 1]), Tensor(True), Tensor([0, 1])),
-            ([0, 1], None, [0, 1]),
-            (Tensor([0, 1]), None, Tensor([0, 1])),
-        ],
-        'bytecode': [
-            Tensor(0),
-            Tensor(True),
-            (0, slice(0, 2), True),
-            (0, None, ...),
-            ([0, 1], 0, [0, 1]),
-            (Tensor([0, 1]), Tensor(0), Tensor([0, 1])),
-            (0, [0, 1], [0, 1]),
-            (Tensor(0), Tensor([0, 1]), Tensor([0, 1])),
-            ([0, 1], slice(0, 2), [0, 1]),
-            (Tensor([0, 1]), slice(0, 2), Tensor([0, 1])),
-            ([0, 1], True, [0, 1]),
-            (Tensor([0, 1]), Tensor(True), Tensor([0, 1])),
-            ([0, 1], None, [0, 1]),
-            (Tensor([0, 1]), None, Tensor([0, 1])),
-        ],
-    }
-
     os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
     if capture_mode is not None:
         os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
 
-    # Base index
-    iadd_indices = [0, slice(0, 2), True, False, ..., None, [0, 1]]
     np_expected = np.array([[[0., 1., 1., 1.], [1., 1., 1., 1.], [1., 1., 1., 1.]],
                             [[1., 1., 1., 1.], [1., 1., 1., 1.], [1., 1., 1., 1.]]])
-    for index in iadd_indices:
-        if is_index_need_skip(index, index_skips[capture_mode]):
-            print(f"!!! skip index: {index} in capture mode: {capture_mode}")
-            continue
-        ms_x = Tensor(np.arange(2 * 3 * 4).reshape((2, 3, 4)).astype(np.float32))
-        value = -1
-        setitem_check_iadd_grad(ms_x, index, value, np_expected, capture_mode)
-
     ms_x = Tensor(np.arange(2 * 3 * 4).reshape((2, 3, 4)).astype(np.float32))
-    index = [0, 1]
-    value = -1.0
+    value = -1
     setitem_check_iadd_grad(ms_x, index, value, np_expected, capture_mode)
 
-    # Tensor index
-    tensor_indices = [Tensor(0), Tensor(True), Tensor(False), slice(Tensor(0), Tensor(2)), Tensor([0, 1])]
-    value = -1
-    for index in tensor_indices:
-        if is_index_need_skip(index, index_skips[capture_mode]):
-            print(f"!!! skip index: {index} in capture mode: {capture_mode}")
-            continue
-        setitem_check_iadd_grad(ms_x, index, value, np_expected, capture_mode)
 
-    # Tuple index
-    tuple_indices = [(0, slice(0, 2), True), (0, None, ...)]
-    value = -1
-    for index in tuple_indices:
-        if is_index_need_skip(index, index_skips[capture_mode]):
-            print(f"!!! skip index: {index} in capture mode: {capture_mode}")
-            continue
-        setitem_check_iadd_grad(ms_x, index, value, np_expected, capture_mode)
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('capture_mode', [None, 'ast',
+                                          pytest.param('bytecode', marks=pytest.mark.skip(reason="Unsupported now"))])
+@pytest.mark.parametrize(
+    'index',
+    [
+        # 0-2: base index
+        0,
+        True,
+        None,
+        # 3-5: tensor index
+        Tensor(0),
+        Tensor(True),
+        Tensor(False),
+        # 6-7: tuple index
+        (0, None, ...),
+        (0, slice(0, 2), True),
+        # 8-17: fancy index
+        ([0, 1], 0, [0, 1]),
+        (Tensor([0, 1]), Tensor(0), Tensor([0, 1])),
+        (0, [0, 1], [0, 1]),
+        (Tensor(0), Tensor([0, 1]), Tensor([0, 1])),
+        ([0, 1], slice(0, 2), [0, 1]),
+        (Tensor([0, 1]), slice(0, 2), Tensor([0, 1])),
+        ([0, 1], True, [0, 1]),
+        (Tensor([0, 1]), Tensor(True), Tensor([0, 1])),
+        ([0, 1], None, [0, 1]),
+        (Tensor([0, 1]), None, Tensor([0, 1])),
+    ],
+)
+def test_setitem_grad_with_iadd_jit_invalid(capture_mode, index):
+    """
+    Feature: tensor setitem grad
+    Description: Verify the result of tensor setitem grad with iadd
+    Expectation: Raise exception
+    """
+    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
+    if capture_mode is not None:
+        os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
 
-    # Fancy index
-    fancy_indices = [([0, 1], [0, 1]),
-                     (Tensor([0, 1]), Tensor([0, 1])),
-                     ([0, 1], 0, [0, 1]),
-                     (Tensor([0, 1]), Tensor(0), Tensor([0, 1])),
-                     (0, [0, 1], [0, 1]),
-                     (Tensor(0), Tensor([0, 1]), Tensor([0, 1])),
-                     ([0, 1], slice(0, 2), [0, 1]),
-                     (Tensor([0, 1]), slice(0, 2), Tensor([0, 1])),
-                     ([0, 1], True, [0, 1]),
-                     (Tensor([0, 1]), Tensor(True), Tensor([0, 1])),
-                     ([0, 1], None, [0, 1]),
-                     (Tensor([0, 1]), None, Tensor([0, 1])),
-                     ([0, 1], ..., [0, 1]),
-                     (Tensor([0, 1]), ..., Tensor([0, 1]))]
+    np_expected = np.array([[[0., 1., 1., 1.], [1., 1., 1., 1.], [1., 1., 1., 1.]],
+                            [[1., 1., 1., 1.], [1., 1., 1., 1.], [1., 1., 1., 1.]]])
+    ms_x = Tensor(np.arange(2 * 3 * 4).reshape((2, 3, 4)).astype(np.float32))
     value = -1
-    for index in fancy_indices:
-        if is_index_need_skip(index, index_skips[capture_mode]):
-            print(f"!!! skip index: {index} in capture mode: {capture_mode}")
-            continue
+    if capture_mode is None:
         setitem_check_iadd_grad(ms_x, index, value, np_expected, capture_mode)
-
-    if index_skips[capture_mode]:
-        pytest.skip(f"Some tests are skipped in capture mode {capture_mode} and need to be solved!!!")
+    else:
+        with pytest.raises(RuntimeError) as err:
+            setitem_check_iadd_grad(ms_x, index, value, np_expected, capture_mode)
+        assert "When performing an in-place operation on an object generated by a view operation, " \
+                "it is currently not supported to compute gradients for the " \
+                "other inputs of this in-place operator" in str(err.value)
 
 
 class NetSetitemImul(nn.Cell):
@@ -620,9 +599,6 @@ def test_setitem_grad_with_imul(capture_mode):
     Description: Verify the result of tensor setitem grad with imul
     Expectation: success
     """
-    if capture_mode in ['ast', 'bytecode']:
-        pytest.skip(f"Tests with capture_mode={capture_mode} are skipped!!!")
-
     os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
     if capture_mode is not None:
         os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
@@ -632,7 +608,14 @@ def test_setitem_grad_with_imul(capture_mode):
     for index in iadd_indices:
         ms_x = Tensor(np.arange(2 * 3 * 4).reshape((2, 3, 4)).astype(np.float32))
         value = 3
-        setitem_check_imul_grad(ms_x, index, value, np_expected, capture_mode)
+        if capture_mode is None:
+            setitem_check_imul_grad(ms_x, index, value, np_expected, capture_mode)
+        else:
+            with pytest.raises(RuntimeError) as err:
+                setitem_check_imul_grad(ms_x, index, value, np_expected, capture_mode)
+            assert "When performing an in-place operation on an object generated by a view operation, " \
+                   "it is currently not supported to compute gradients for the " \
+                   "other inputs of this in-place operator" in str(err.value)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
