@@ -705,12 +705,6 @@ py::array TensorPybind::SyncAsNumpy(const Tensor &tensor) {
       tensor_for_copy.data_sync();
     }
     const_cast<Tensor &>(tensor).set_copy_done_flag(false);
-
-    // To be deleted
-    // Release device address of graph output tensor.
-    if (tensor.need_release_device_mem()) {
-      const_cast<Tensor &>(tensor).set_device_address(nullptr);
-    }
   }
   return AsNumpy(tensor_for_copy);
 }

@@ -420,7 +420,6 @@ void OutputActor::RunOpData(OpData<KernelTensor> *const input_data, OpContext<Ke
   if (tensor == nullptr) {
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR(*context, "Create output tensor failed.");
   }
-  tensor->set_need_release_device_mem(true);
   outputs_[output_position] = tensor;
   if (!flatten_stub_nodes_.empty()) {
     const auto &stub_node = flatten_stub_nodes_.at(output_position);
@@ -573,7 +572,6 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
     old_to_new_device_address_[device_tensor] = tensor_device_address;
   }
 
-  tensor->set_need_release_device_mem(true);
   if (output_kernel_tensor->tensor_storage_info()) {
     tensor->set_contiguous_callback([this](const DeviceSyncPtr &address) -> DeviceSyncPtr {
       return MakeTensorContiguousCallback(address, address->GetTensorStorageInfo());
