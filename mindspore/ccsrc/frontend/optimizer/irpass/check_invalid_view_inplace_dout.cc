@@ -31,7 +31,7 @@ namespace mindspore {
 namespace opt {
 namespace irpass {
 
-constexpr auto kInvalidInplaceDout = "Invalid_inplace_dout";
+constexpr auto kInvalidInplaceDout = "invalid_inplace_dout";
 constexpr auto kFlagNeedCheckViewInplaceDoutBprop = "need_check_view_inplace_dout_bprop";
 
 namespace {
@@ -88,7 +88,7 @@ void ResetUselessFuncGraph(const FuncGraphPtr &func_graph, const std::vector<boo
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
   if (context->CanDump(kIntroductory)) {
-    DumpIR("Check_invalid_dout_before_reset_useless_index_" + func_graph->ToString() + ".ir", func_graph);
+    DumpIR("opt_check_invalid_dout_before_reset_useless_index_" + func_graph->ToString() + ".ir", func_graph);
   }
 #endif
   auto bprop_output = func_graph->output();
@@ -106,7 +106,7 @@ void ResetUselessFuncGraph(const FuncGraphPtr &func_graph, const std::vector<boo
   }
 #ifdef ENABLE_DUMP_IR
   if (context->CanDump(kIntroductory)) {
-    DumpIR("Check_invalid_dout_after_reset_useless_index_" + func_graph->ToString() + ".ir", func_graph);
+    DumpIR("opt_check_invalid_dout_after_reset_useless_index_" + func_graph->ToString() + ".ir", func_graph);
   }
 #endif
 }
@@ -153,7 +153,12 @@ void SetAbstractSeqElementsUseFlags(const AbstractBasePtr &abstract) {
     return;
   }
   auto seq_abstract = abstract->cast<abstract::AbstractSequencePtr>();
-  for (auto seq_node : (*seq_abstract->sequence_nodes())) {
+  MS_EXCEPTION_IF_NULL(seq_abstract);
+  auto seq_nodes = seq_abstract->sequence_nodes();
+  if (seq_nodes == nullptr) {
+    return;
+  }
+  for (auto seq_node : *seq_nodes) {
     auto indexes = GetSequenceNodeElementsUseFlags(seq_node.lock());
     bool no_need_reset = std::all_of((*indexes).begin(), (*indexes).end(), [](const auto index) { return index; });
     if (!no_need_reset) {
@@ -247,7 +252,12 @@ bool EraseUnUsedNode(const FuncGraphPtr &func_graph) {
     }
     auto cnode = node->cast<CNodePtr>();
     auto abstract = cnode->abstract()->cast<abstract::AbstractSequencePtr>();
-    for (auto seq_node : (*abstract->sequence_nodes())) {
+    MS_EXCEPTION_IF_NULL(abstract);
+    auto seq_nodes = abstract->sequence_nodes();
+    if (seq_nodes == nullptr) {
+      continue;
+    }
+    for (auto seq_node : *seq_nodes) {
       const auto &indexes = GetSequenceNodeElementsUseFlags(seq_node.lock());
       for (size_t i = 0; i < (*indexes).size(); ++i) {
         // Set unused node as I64(0)
@@ -261,42 +271,47 @@ bool EraseUnUsedNode(const FuncGraphPtr &func_graph) {
   return is_changed;
 }
 
-void CheckInvalidDoutFromElementsUseFlag(const FuncGraphPtr &func_graph) {
-#ifdef ENABLE_DUMP_IR
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
-  if (context->CanDump(kIntroductory)) {
-    DumpIR("Check_invalid_dout_01_before_first_check" + func_graph->ToString() + ".ir", func_graph);
-  }
-#endif
-
+void CheckInvalidDoutFromElementsUseFlag(const FuncGraphPtr &func_graph, bool need_clone = false) {
   // Check invalid dout for the first time
   // If passed, just return
   // If has invalid dout, do second check to avoid incorrect element_use_flag
   if (!CheckInvalidDoutOfBprop(func_graph, false)) {
     return;
   }
+
+  FuncGraphPtr check_func_graph = func_graph;
+  if (need_clone) {
+    check_func_graph = BasicClone(func_graph);
+  }
+
+#ifdef ENABLE_DUMP_IR
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  if (context->CanDump(kIntroductory)) {
+    DumpIR("opt_check_invalid_dout_before_first_check" + check_func_graph->ToString() + ".ir", check_func_graph);
+  }
+#endif
+
   // Remark element use flag and remove unused nodes until not change
   bool is_changed = true;
   while (is_changed) {
-    ReMarkElementsUseFlag(func_graph);
-    is_changed = EraseUnUsedNode(func_graph);
+    ReMarkElementsUseFlag(check_func_graph);
+    is_changed = EraseUnUsedNode(check_func_graph);
   }
 
 #ifdef ENABLE_DUMP_IR
   if (context->CanDump(kIntroductory)) {
-    DumpIR("Check_invalid_dout_02_before_second_check" + func_graph->ToString() + ".ir", func_graph);
+    DumpIR("opt_check_invalid_dout_before_second_check" + check_func_graph->ToString() + ".ir", check_func_graph);
   }
 #endif
-  CheckInvalidDoutOfBprop(func_graph);
+  CheckInvalidDoutOfBprop(check_func_graph);
 }
 }  // namespace
 
 // For GraphMode and grad under @jit
 bool CheckInvalidViewInplaceDout::operator()(const FuncGraphPtr &root, const OptimizerPtr &opt) {
   MS_EXCEPTION_IF_NULL(root);
-  auto cur_func_graph = BasicClone(root);
-  CheckInvalidDoutFromElementsUseFlag(cur_func_graph);
+  CheckInvalidDoutFromElementsUseFlag(root, true);
   return false;
 }
 
@@ -355,7 +370,7 @@ void MarkInvalidInplaceOpDout(const FuncGraphPtr &fprop_graph) {
     auto context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(context);
     if (context->CanDump(kIntroductory)) {
-      DumpIR("Mark_invalid_dout_" + fprop_graph->ToString() + ".ir", fprop_graph);
+      DumpIR("opt_check_invalid_dout_mark_invalid_dout_" + fprop_graph->ToString() + ".ir", fprop_graph);
     }
 #endif
   }

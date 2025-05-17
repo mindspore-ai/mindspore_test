@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
+#include "frontend/optimizer/inplace_input_replace.h"
+
 #include <map>
 #include <string>
 #include <vector>
 #include <utility>
-
-#include "frontend/optimizer/inplace_input_replace.h"
 #include "mindspore/ops/op_def/other_ops.h"
 
 namespace mindspore {
@@ -120,13 +120,31 @@ void ChangeInplaceInputInner(const FuncGraphPtr &func_graph) {
 
 void DoInplaceInputReplace(const FuncGraphPtr &func_graph, const OptimizerPtr &optimizer) {
   const auto &all_nodes = TopoSort(func_graph->return_node(), SuccDeeperSimple);
-  if (std::any_of(all_nodes.begin(), all_nodes.end(), IsInplaceCNode)) {
-    ChangeInplaceInputInner(func_graph);
-    const auto &sub_graphs = func_graph->func_graphs_used_total();
-    for (auto sub_graph : sub_graphs) {
-      ChangeInplaceInputInner(sub_graph);
-    }
+  bool exist_inplace_nodes = std::any_of(all_nodes.begin(), all_nodes.end(), IsInplaceCNode);
+  if (!exist_inplace_nodes) {
+    return;
   }
+
+#ifdef ENABLE_DUMP_IR
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  if (context->CanDump(kIntroductory)) {
+    DumpIR("opt_before_do_inplace_input_replace_" + func_graph->ToString() + ".ir", func_graph);
+  }
+#endif
+
+  // Do inplace input replace for func_graph and sub_graphs
+  ChangeInplaceInputInner(func_graph);
+  const auto &sub_graphs = func_graph->func_graphs_used_total();
+  for (auto sub_graph : sub_graphs) {
+    ChangeInplaceInputInner(sub_graph);
+  }
+
+#ifdef ENABLE_DUMP_IR
+  if (context->CanDump(kIntroductory)) {
+    DumpIR("opt_after_do_inplace_input_replace_" + func_graph->ToString() + ".ir", func_graph);
+  }
+#endif
 }
 }  // namespace opt
 }  // namespace mindspore
