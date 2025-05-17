@@ -6,7 +6,7 @@ mindspore.parallel.nn.PipelineGradReducer
     函数式训练场景下，实现流水线并行的梯度规约及累加。
 
     参数：
-        - **parameters** (list) - 将进行pp并行的网络。
+        - **parameters** (list) - 将进行pp并行的网络参数。
         - **scale_sense** (float，可选) - 梯度的尺度感知。默认值： ``1.0``。
         - **opt_shard** (bool，可选) - 如果使用优化器，需要配置为True。默认值： ``None``。
 
