@@ -23,6 +23,7 @@ from mindspore import Tensor
 from mindspore.ops.operations.comm_ops import ReduceScatterV
 from mindspore.communication.management import init, get_group_size, get_rank
 from mindspore import context
+from mindspore.ops.operations.comm_ops import ReduceOp
 
 np.random.seed(1)
 context.set_context(jit_level='O0')
@@ -32,10 +33,11 @@ init()
 this_rank = get_rank()
 world_size = get_group_size()
 
+
 class ReduceScatterVNet(nn.Cell):
-    def __init__(self):
+    def __init__(self, op=ReduceOp.SUM):
         super(ReduceScatterVNet, self).__init__()
-        self.reduce_scatterv = ReduceScatterV()
+        self.reduce_scatterv = ReduceScatterV(op)
 
     def construct(self, x, input_split_sizes):
         return self.reduce_scatterv(x, input_split_sizes)
@@ -52,6 +54,30 @@ def test_hccl_reduce_scatter_tensor_v_list():
     net = ReduceScatterVNet()
     output = net(Tensor(data, dtype=ms.int32), input_split_sizes)
     expect_output = [this_rank * 2]
+    if isinstance(output, tuple):
+        assert np.allclose(output[0].asnumpy(), expect_output)
+    else:
+        assert np.allclose(output.asnumpy(), expect_output)
+
+
+def test_hccl_reduce_scatter_tensor_v_op():
+    """
+    Feature: test 'ReduceScatterV' communication operator.
+    Description: test 'ReduceScatterV' communication operator.
+    Expectation: expect correct result.
+    """
+    data = [i for i in range(world_size)]
+    input_split_sizes = [1 for _ in range(world_size)]
+    net = ReduceScatterVNet(ReduceOp.MAX)
+    output = net(Tensor(data, dtype=ms.int32), input_split_sizes)
+    expect_output = [this_rank * 1]
+    if isinstance(output, tuple):
+        assert np.allclose(output[0].asnumpy(), expect_output)
+    else:
+        assert np.allclose(output.asnumpy(), expect_output)
+    net = ReduceScatterVNet(ReduceOp.MIN)
+    output = net(Tensor(data, dtype=ms.int32), input_split_sizes)
+    expect_output = [this_rank * 1]
     if isinstance(output, tuple):
         assert np.allclose(output[0].asnumpy(), expect_output)
     else:
