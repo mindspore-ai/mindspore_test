@@ -114,12 +114,12 @@ py::object PYNATIVE_EXPORT ${func_name}_Base(const PrimitivePtr &prim, const py:
                                                          register_function_body=register_func_str,
                                                          function_class_register=function_class_register)
         save_path = os.path.join(work_path, K.PIPELINE_PYBOOST_FUNC_GEN_PATH)
-        file_name = "pyboost_functions.cc"
+        file_name = "pyboost_registry.cc"
         save_file(save_path, file_name, pyboost_func_file)
 
         pyboost_function_base_str = self.get_pyboost_function_base_str(op_protos)
         save_path = os.path.join(work_path, K.PIPELINE_PYBOOST_FUNC_GEN_PATH)
-        file_name = "pyboost_op_base.cc"
+        file_name = "pyboost_api.cc"
         save_file(save_path, file_name, pyboost_function_base_str)
 
     def get_pyboost_function_base_str(self, op_protos):
