@@ -1411,16 +1411,7 @@ class Cell(Cell_):
                                      "Please set a unique name for the parameter.".format(value, item.name))
                 exist_names.add(item.name)
 
-            if context._get_mode() == context.PYNATIVE_MODE:
-                if name in self.__dict__:
-                    del self.__dict__[name]
-                params = self.__dict__.get('_params')
-                if name in params:
-                    del params[name]
-                params_list = self.__dict__.get('_params_list')
-                params_list[name] = value
-            else:
-                object.__setattr__(self, name, value)
+            object.__setattr__(self, name, value)
 
     def _set_attr_for_parameter_in_list_or_tuple(self, name, value):
         """Set attr for parameter in list or tuple."""
@@ -1598,12 +1589,7 @@ class Cell(Cell_):
 
         if not kwargs:
             self._dynamic_shape_inputs = inputs
-            if context._get_mode() == context.PYNATIVE_MODE:
-                _pynative_executor.set_dynamic_input(self, *self._dynamic_shape_inputs)
-            else:
-                self._check_construct_args(*inputs)
-                # TODO(tronzhang): It may error for no actually args here. So just set in fullmode,
-                #                  which means that incremental mode is lacking dynamic input.
+            _pynative_executor.set_dynamic_input(self, *self._dynamic_shape_inputs)
         else:
             self._dynamic_shape_inputs = _process_dyn_args(self.construct, kwargs)
 
@@ -3637,8 +3623,7 @@ class Cell(Cell_):
                 introduced by optimizer shard are recomputed in auto parallel or semi auto parallel mode.
                 Default: ``False`` .
         """
-        if context.get_context("mode") == context.PYNATIVE_MODE:
-            self._recompute_cell = recompute_registry.get()(self.construct)
+        self._recompute_cell = recompute_registry.get()(self.construct)
         self._recompute()
         if 'mp_comm_recompute' in kwargs.keys():
             self._mp_comm_recompute(kwargs.get('mp_comm_recompute', False))

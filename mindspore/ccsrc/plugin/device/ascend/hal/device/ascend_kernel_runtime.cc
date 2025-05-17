@@ -216,13 +216,6 @@ void AscendKernelRuntime::PreInit() {
 bool AscendKernelRuntime::Init() {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  auto execution_mode = ms_context->get_param<int>(MS_CTX_EXECUTION_MODE);
-  auto profiler_manager = profiler::ProfilerManager::GetInstance();
-  MS_EXCEPTION_IF_NULL(profiler_manager);
-  auto profiling_flag = profiler_manager->GetProfilingEnableFlag();
-  if (execution_mode == kPynativeMode && profiling_flag) {
-    pynative_mode_profiling_flag_ = true;
-  }
   if (initialized_) {
     SetContextForce();
     return true;
