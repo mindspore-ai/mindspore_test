@@ -28,6 +28,8 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore::graphkernel {
 namespace {
@@ -130,9 +132,12 @@ AnfNodePtr NewCastNode(const FuncGraphPtr &func_graph, const AnfNodePtr &input_n
 const HashMap<std::string, std::vector<size_t>> kNeedKeepBF16Ops = {{ops::kNameAssign, {kIndex2}},
                                                                     {ops::kNameMatMul, {kIndex1, kIndex2}},
                                                                     {ops::kNameBatchMatMul, {kIndex1, kIndex2}},
+                                                                    {ops::kNameGroupedMatmul, {kIndex1, kIndex2}},
+                                                                    {ops::kNameStridedSlice, {kIndex1}},
+                                                                    {ops::kNameSlice, {kIndex1}},
                                                                     {ops::kNameCast, {kIndex1}}};
 
-const HashSet<std::string> kCanKeepBF16Ops = {ops::kNameReshape, kTransposeOpName};
+const HashSet<std::string> kCanKeepBF16Ops = {ops::kNameReshape, kTupleGetItemOpName};
 
 inline bool NeedKeepBF16(const CNodePtr &cnode) {
   const auto &prim = GetCNodePrimitive(cnode);
@@ -270,7 +275,11 @@ bool ConvertBFloat16::Process(const FuncGraphPtr &func_graph) {
         continue;
       }
       if (can_keep_bf16) {
-        auto cur_input_type = cb->GetOutputType(cnode->input(i + 1), 0);
+        auto input_node = cnode->input(i + 1);
+        if (input_node->isa<ValueNode>()) {
+          continue;
+        }
+        auto cur_input_type = cb->GetOutputType(input_node, 0);
         if (cur_input_type != ori_input_type) {
           need_update = changed = true;
         }
