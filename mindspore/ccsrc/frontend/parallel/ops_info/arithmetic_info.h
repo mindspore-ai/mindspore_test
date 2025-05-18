@@ -500,6 +500,86 @@ class RemainderTensorTensorInfo : public XdivyInfo {
       : XdivyInfo(name, inputs_shape, outputs_shape, attrs) {}
   ~RemainderTensorTensorInfo() override = default;
 };
+
+class InplaceAddExtInfo : public ArithmeticBase {
+ public:
+  InplaceAddExtInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+                    const PrimitiveAttrs &attrs)
+      : ArithmeticBase(name, inputs_shape, outputs_shape, attrs, std::make_shared<MulCost>()) {}
+  ~InplaceAddExtInfo() override = default;
+};
+
+class InplaceSubExtInfo : public ArithmeticBase {
+ public:
+  InplaceSubExtInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+                    const PrimitiveAttrs &attrs)
+      : ArithmeticBase(name, inputs_shape, outputs_shape, attrs, std::make_shared<MulCost>()) {}
+  ~InplaceSubExtInfo() override = default;
+};
+
+class InplaceMulInfo : public ArithmeticBase {
+ public:
+  InplaceMulInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+                 const PrimitiveAttrs &attrs)
+      : ArithmeticBase(name, inputs_shape, outputs_shape, attrs, std::make_shared<MulCost>()) {}
+  ~InplaceMulInfo() override = default;
+};
+
+class InplaceDivInfo : public ArithmeticBase {
+ public:
+  InplaceDivInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+                 const PrimitiveAttrs &attrs)
+      : ArithmeticBase(name, inputs_shape, outputs_shape, attrs, std::make_shared<MulCost>()) {}
+  ~InplaceDivInfo() override = default;
+};
+
+class InplaceFloorDivideInfo : public ArithmeticBase {
+ public:
+  InplaceFloorDivideInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+                         const PrimitiveAttrs &attrs)
+      : ArithmeticBase(name, inputs_shape, outputs_shape, attrs, std::make_shared<MulCost>()) {}
+  ~InplaceFloorDivideInfo() override = default;
+};
+
+class InplaceAddsExtInfo : public ArithmeticScalarBase {
+ public:
+  InplaceAddsExtInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+                     const PrimitiveAttrs &attrs)
+      : ArithmeticScalarBase(name, inputs_shape, outputs_shape, attrs, std::make_shared<MulsCost>()) {}
+  ~InplaceAddsExtInfo() override = default;
+};
+
+class InplaceSubScalarInfo : public ArithmeticScalarBase {
+ public:
+  InplaceSubScalarInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+                       const PrimitiveAttrs &attrs)
+      : ArithmeticScalarBase(name, inputs_shape, outputs_shape, attrs, std::make_shared<MulsCost>()) {}
+  ~InplaceSubScalarInfo() override = default;
+};
+
+class InplaceMulsInfo : public ArithmeticScalarBase {
+ public:
+  InplaceMulsInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+                  const PrimitiveAttrs &attrs)
+      : ArithmeticScalarBase(name, inputs_shape, outputs_shape, attrs, std::make_shared<MulsCost>()) {}
+  ~InplaceMulsInfo() override = default;
+};
+
+class InplaceDivsInfo : public ArithmeticScalarBase {
+ public:
+  InplaceDivsInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+                  const PrimitiveAttrs &attrs)
+      : ArithmeticScalarBase(name, inputs_shape, outputs_shape, attrs, std::make_shared<MulsCost>()) {}
+  ~InplaceDivsInfo() override = default;
+};
+
+class InplaceFloorDividesInfo : public ArithmeticScalarBase {
+ public:
+  InplaceFloorDividesInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+                          const PrimitiveAttrs &attrs)
+      : ArithmeticScalarBase(name, inputs_shape, outputs_shape, attrs, std::make_shared<MulsCost>()) {}
+  ~InplaceFloorDividesInfo() override = default;
+};
 }  // namespace parallel
 }  // namespace mindspore
 
