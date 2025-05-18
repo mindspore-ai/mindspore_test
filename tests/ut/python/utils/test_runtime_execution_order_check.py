@@ -258,10 +258,10 @@ class TestDetectCycleInGraph(unittest.TestCase):
 
     def test_cycle_in_graph(self):
         ranks_map = {
-            '1': ['A', 'B', 'C', 'A']  # A -> B -> C -> A
+            '1': ['A', 'B', 'C', 'A']
         }
         cycle_path, cycle_ranks = detect_cycle_in_graph(ranks_map)
-        self.assertEqual(cycle_path, ['A', 'B', 'C'])
+        self.assertEqual(cycle_path, ['A', 'B', 'C', 'A'])
         self.assertEqual(cycle_ranks, ['1 A -> B', '1 B -> C', '1 C -> A'])
 
     def test_no_cycle_in_graph(self):
@@ -276,14 +276,14 @@ class TestDetectCycleInGraph(unittest.TestCase):
     def test_multiple_cycles(self):
         # Graph with two different cycles
         ranks_map = {
-            '1': ['A', 'B', 'C', 'A'],  # Cycle A -> B -> C -> A
-            '2': ['D', 'E', 'D']  # Cycle D -> E -> D
+            '1': ['A', 'B', 'C', 'A'],
+            '2': ['D', 'E', 'D']
         }
         cycle_path, cycle_ranks = detect_cycle_in_graph(ranks_map)
-        self.assertTrue(cycle_path in [['A', 'B', 'C'], ['D', 'E']])
-        if cycle_path == ['A', 'B', 'C']:
+        self.assertTrue(cycle_path in [['A', 'B', 'C', 'A'], ['D', 'E', 'D']])
+        if cycle_path == ['A', 'B', 'C', 'A']:
             self.assertEqual(cycle_ranks, ['1 A -> B', '1 B -> C', '1 C -> A'])
-        elif cycle_path == ['D', 'E']:
+        elif cycle_path == ['D', 'E', 'D']:
             self.assertEqual(cycle_ranks, ['2 D -> E', '2 E -> D'])
 
     def test_empty_graph(self):
@@ -302,13 +302,53 @@ class TestDetectCycleInGraph(unittest.TestCase):
 
     def test_cross_rank_cycle(self):
         ranks_map = {
-            '1': ['A', 'B'],  # A -> B
-            '2': ['B', 'A']  # B -> A
+            '1': ['A', 'B'],
+            '2': ['B', 'A']
         }
         cycle_path, cycle_ranks = detect_cycle_in_graph(ranks_map)
-        # The cycle is A -> B -> A
-        self.assertEqual(cycle_path, ['A', 'B'])
+        self.assertEqual(cycle_path, ['A', 'B', 'A'])
         self.assertEqual(cycle_ranks, ['1 A -> B', '2 B -> A'])
+
+        ranks_map = {
+            '1': ['A', 'B'],
+            '2': ['B', 'C'],
+            '3': ['C', 'A']
+        }
+        cycle_path, cycle_ranks = detect_cycle_in_graph(ranks_map)
+        self.assertEqual(cycle_path, ['A', 'B', 'C', 'A'])
+        self.assertEqual(cycle_ranks, ['1 A -> B', '2 B -> C', '3 C -> A'])
+
+        ranks_map = {
+            '1': ['A', 'B'],
+            '2': ['B', 'C'],
+            '3': ['C', 'D']
+        }
+        cycle_path, cycle_ranks = detect_cycle_in_graph(ranks_map)
+        self.assertIsNone(cycle_path)
+        self.assertIsNone(cycle_ranks)
+
+        ranks_map = {
+            '1': ['A', 'A']
+        }
+        cycle_path, cycle_ranks = detect_cycle_in_graph(ranks_map)
+        self.assertEqual(cycle_path, ['A', 'A'])
+        self.assertEqual(cycle_ranks, ['1 A -> A'])
+
+        ranks_map = {
+            '1': ['A', 'B'],
+            '2': ['B', 'C'],
+            '3': ['C', 'B']
+        }
+        cycle_path, cycle_ranks = detect_cycle_in_graph(ranks_map)
+        self.assertEqual(cycle_path, ['B', 'C', 'B'])
+        self.assertEqual(cycle_ranks, ['2 B -> C', '3 C -> B'])
+
+        ranks_map = {
+            '1': ['A']
+        }
+        cycle_path, cycle_ranks = detect_cycle_in_graph(ranks_map)
+        self.assertIsNone(cycle_path)
+        self.assertIsNone(cycle_ranks)
 
 
 if __name__ == "__main__":
