@@ -25,7 +25,7 @@ import mindspore.common.dtype as mstype
 from mindspore.common.parameter import Parameter
 from mindspore.common.initializer import initializer, HeUniform, Uniform, _calculate_fan_in_and_fan_out
 from mindspore import _checkparam as Validator
-from mindspore._checkparam import once, twice, triple
+from mindspore._checkparam import once_sequence, twice_sequence, triple_sequence
 from mindspore._extends import cell_attr_register
 from mindspore.nn.cell import Cell
 from mindspore.ops.functional import isconstant
@@ -52,12 +52,11 @@ class _Conv(Cell):
                  dtype=mstype.float32):
         """Initialize _Conv."""
         super(_Conv, self).__init__()
-        if groups <= 0:
-            raise ValueError('groups must be a positive integer.')
-        self.in_channels = in_channels
+        self.groups = Validator.check_positive_int(groups)
+        self.in_channels = Validator.check_non_negative_int(in_channels)
+        self.out_channels = Validator.check_non_negative_int(out_channels)
         if self.in_channels % groups != 0:
             raise ValueError('in_channels must be divisible by groups.')
-        self.out_channels = out_channels
         if self.out_channels % groups != 0:
             raise ValueError('out_channels must be divisible by groups.')
         valid_padding_strings = {'same', 'valid'}
@@ -75,7 +74,6 @@ class _Conv(Cell):
             raise ValueError(f"The value of 'padding_mode' must be one of '{valid_padding_modes}', "
                              f"but got {padding_mode}.")
         self.transposed = transposed
-        self.groups = Validator.check_positive_int(groups)
         self.output_padding = output_padding
         self.padding_mode = padding_mode
         self.kernel_size = kernel_size
@@ -292,14 +290,14 @@ class Conv1d(_Conv):
                  padding_mode='zeros',
                  dtype=None):
         """Initialize Conv1d."""
-        kernel_size_ = once(kernel_size)
-        stride_ = once(stride)
-        padding_ = padding if isinstance(padding, str) else once(padding)
-        dilation_ = once(dilation)
+        kernel_size_ = once_sequence(kernel_size)
+        stride_ = once_sequence(stride)
+        padding_ = padding if isinstance(padding, str) else once_sequence(padding)
+        dilation_ = once_sequence(dilation)
         if not dtype:
             dtype = mstype.float32
         super(Conv1d, self).__init__(in_channels, out_channels, kernel_size_, stride_, padding_, dilation_, False,
-                                     once(0), groups, bias, padding_mode, dtype)
+                                     once_sequence(0), groups, bias, padding_mode, dtype)
         if isinstance(padding, str) and padding_mode == "zeros":
             self.conv1d = conv1d_padding_op
         else:
@@ -488,14 +486,14 @@ class Conv2d(_Conv):
                  padding_mode='zeros',
                  dtype=None):
         """Initialize Conv2d."""
-        kernel_size_ = twice(kernel_size)
-        stride_ = twice(stride)
-        padding_ = padding if isinstance(padding, str) else twice(padding)
-        dilation_ = twice(dilation)
+        kernel_size_ = twice_sequence(kernel_size)
+        stride_ = twice_sequence(stride)
+        padding_ = padding if isinstance(padding, str) else twice_sequence(padding)
+        dilation_ = twice_sequence(dilation)
         if not dtype:
             dtype = mstype.float32
         super(Conv2d, self).__init__(in_channels, out_channels, kernel_size_, stride_, padding_, dilation_, False,
-                                     twice(0), groups, bias, padding_mode, dtype)
+                                     twice_sequence(0), groups, bias, padding_mode, dtype)
         if isinstance(padding, str) and padding_mode == "zeros":
             self.conv2d = conv2d_padding_op
         else:
@@ -621,12 +619,12 @@ class Conv3d(_Conv):
 
         .. math::
             \begin{array}{ll} \\
-                D_{out} = \left \lceil{\frac{D_{in} - \text{dilation[0]} \times (\text{kernel_size[0]} - 1) }
-                {\text{stride[0]}}} \right \rceil \\
-                H_{out} = \left \lceil{\frac{H_{in} - \text{dilation[1]} \times (\text{kernel_size[1]} - 1) }
-                {\text{stride[1]}}} \right \rceil \\
-                W_{out} = \left \lceil{\frac{W_{in} - \text{dilation[2]} \times (\text{kernel_size[2]} - 1) }
-                {\text{stride[2]}}} \right \rceil \\
+                D_{out} = \left \lfloor{\frac{D_{in} - \text{dilation[0]} \times (\text{kernel_size[0]} - 1) - 1}
+                {\text{stride[0]}}} \right \rfloor + 1 \\
+                H_{out} = \left \lfloor{\frac{H_{in} - \text{dilation[1]} \times (\text{kernel_size[1]} - 1) - 1}
+                {\text{stride[1]}}} \right \rfloor + 1 \\
+                W_{out} = \left \lfloor{\frac{W_{in} - \text{dilation[2]} \times (\text{kernel_size[2]} - 1) - 1}
+                {\text{stride[2]}}} \right \rfloor + 1 \\
             \end{array}
 
         padding is int or tuple/list:
@@ -673,14 +671,14 @@ class Conv3d(_Conv):
                  padding_mode='zeros',
                  dtype=None):
         """Initialize Conv3d."""
-        kernel_size_ = triple(kernel_size)
-        stride_ = triple(stride)
-        padding_ = padding if isinstance(padding, str) else triple(padding)
-        dilation_ = triple(dilation)
+        kernel_size_ = triple_sequence(kernel_size)
+        stride_ = triple_sequence(stride)
+        padding_ = padding if isinstance(padding, str) else triple_sequence(padding)
+        dilation_ = triple_sequence(dilation)
         if not dtype:
             dtype = mstype.float32
         super(Conv3d, self).__init__(in_channels, out_channels, kernel_size_, stride_, padding_, dilation_, False,
-                                     triple(0), groups, bias, padding_mode, dtype)
+                                     triple_sequence(0), groups, bias, padding_mode, dtype)
         if isinstance(padding, str) and padding_mode == "zeros":
             self.conv3d = conv3d_padding_op
         else:
