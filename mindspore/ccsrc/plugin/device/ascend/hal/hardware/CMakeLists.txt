@@ -16,7 +16,6 @@ file(GLOB_RECURSE MS_HARDWARE_910B RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "ascend_graph_optimization.cc"
         "acl_somas.cc"
         "acl_stream_assign.cc"
-        "gpto.cc"
         "stress_detect.cc"
         "ascend_device_address_maker.cc"
         )
@@ -24,4 +23,6 @@ file(GLOB_RECURSE MS_HARDWARE_910B RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
 set_property(SOURCE ${MS_HARDWARE_910B} PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_DEVICE)
 
 add_library(_mindspore_plugin_device_ascend_hal_hardware_910b_obj OBJECT ${MS_HARDWARE_910B})
-
+add_library(gpto OBJECT gpto.cc)
+target_include_directories(gpto PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(mindspore_frontend PRIVATE gpto)

@@ -54,7 +54,7 @@
 #include "backend/common/pass/other/hcom/insert_tensor_move_for_hccl_op_ge.h"
 #include "backend/common/pass/other/resize_bilinear_add_attr.h"
 #include "backend/common/pass/custom_defined_depend.h"
-
+#include "plugin/device/ascend/hal/hardware/gpto.h"
 namespace mindspore {
 namespace opt {
 void AclAfterCreateKernel(const KernelGraphPtr &kernel_graph) {
@@ -273,10 +273,13 @@ void AscendAfterInlineOptimize(const KernelGraphPtr &kernel_graph) {
   after_inline_pm->AddPass(std::make_shared<InsertPreFetchDepend>());
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->get_param<bool>(MS_CTX_ENABLE_GRAD_COMM_OPT)) {
-    after_inline_pm->AddPass(std::make_shared<OverlapGradReduce>());
+  if (!gpto::IsPassDisableForGPTO()) {
+    if (ms_context->get_param<bool>(MS_CTX_ENABLE_GRAD_COMM_OPT)) {
+      after_inline_pm->AddPass(std::make_shared<OverlapGradReduce>());
+    }
+    after_inline_pm->AddPass(std::make_shared<Overlap1b1f>());
   }
-  after_inline_pm->AddPass(std::make_shared<Overlap1b1f>());
+
   optimizer->AddPassManager(after_inline_pm);
   (void)optimizer->Optimize(kernel_graph);
   PROF_END(AscendAfterInlineOptimize);

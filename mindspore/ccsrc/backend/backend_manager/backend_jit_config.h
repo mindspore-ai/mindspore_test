@@ -66,15 +66,19 @@ struct BackendJitConfig {
       }
     }
 
+    std::string gpto_options_str = common::GetEnv("MS_GPTO_OPTIONS");
+    if (!gpto_options_str.empty()) {
+      nlohmann::json gpto_options_json = nlohmann::json::parse(gpto_options_str);
+      gpto_options_json.get_to(backend_jit_config.gpto_options);
+    }
+
     return backend_jit_config;
   }
 
   nlohmann::json to_json() const {
-    auto ret = nlohmann::json{{"jit_level", jit_level},
-                              {"backend", backend},
-                              {"disable_format_transform", disable_format_transform},
-                              {"exec_order", exec_order},
-                              {"ge_options", ge_options}};
+    auto ret = nlohmann::json{
+      {"jit_level", jit_level},   {"backend", backend},       {"disable_format_transform", disable_format_transform},
+      {"exec_order", exec_order}, {"ge_options", ge_options}, {"gpto_options", gpto_options}};
     return ret;
   }
 
@@ -84,6 +88,7 @@ struct BackendJitConfig {
     j.at("disable_format_transform").get_to(disable_format_transform);
     j.at("exec_order").get_to(exec_order);
     j.at("ge_options").get_to(ge_options);
+    j.at("gpto_options").get_to(gpto_options);
   }
 
   // jit level, O0/O1
@@ -96,6 +101,8 @@ struct BackendJitConfig {
   std::string exec_order = "";
   // GE options, {"graph":{option:value}, "session":{option:value}, "graph":{option:value}}
   std::map<std::string, std::map<std::string, std::string> > ge_options = {};
+  // GPTO options, {"option":"value", ...}
+  std::map<std::string, std::string> gpto_options = {};
 };
 }  // namespace backend
 }  // namespace mindspore
