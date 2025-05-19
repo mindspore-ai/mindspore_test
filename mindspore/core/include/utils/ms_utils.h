@@ -91,7 +91,6 @@ const char kRuntimePipeline[] = "pipeline";
 const char kRuntimeGraphPipeline[] = "graph_pipeline";
 const char kRuntimeKbkSubGraphMode[] = "kbk_sub_graph_mode";
 const char kRuntimeCommunicationLaunchGroup[] = "communication_launch_group";
-const char kRuntimeView[] = "view";
 const char kRuntimeInsertTensorMove[] = "insert_tensormove";
 const char kRuntimeAllfinite[] = "all_finite";
 const char kRuntimeParalletAssignAddOpt[] = "parallel_assignadd_opt";
