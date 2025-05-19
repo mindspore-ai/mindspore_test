@@ -88,7 +88,7 @@ void CommonCommAscendFunc(const std::shared_ptr<OpRunner> &op, const TensorPtr &
 
     static runtime::KernelCache &cache = runtime::KernelCache::GetInstance();
     if (cache.need_add) {
-      cache.AddPyboostKernel(op->primitive()->ToString(), group_str, tensor::ShapeToString(input_tensor->shape()),
+      cache.AddPyboostKernel(op->primitive()->name(), group_str, tensor::ShapeToString(input_tensor->shape()),
                              tensor::ShapeToString(op->output(0)->shape()), rank);
     }
     if (EnableExecuteOrderDump()) {

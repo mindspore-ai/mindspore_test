@@ -29,6 +29,19 @@ sys.setrecursionlimit(10000)
 # support hccl group 150000 card
 csv.field_size_limit(1024 * 1024)
 
+
+def comm_exec_order_check(action):
+    """
+    Call the CommExecOrderCheck class to start or stop the collection of communication operator execution sequences.
+
+    Args:
+        action (str): Control command - 'start' to begin collection, 'end' to stop and validate.
+    """
+    if not isinstance(action, str):
+        raise TypeError("The 'action' parameter must be a string.")
+    checker = CommExecOrderCheck()
+    checker(action)
+
 class CommExecOrderCheck:
     """Controller for communication execution order verification.
 
@@ -37,28 +50,32 @@ class CommExecOrderCheck:
     order tracking.
     """
     _instance = None
-    _initialized = False
 
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self, action):
-        if not self._initialized:
+    def __init__(self):
+        if not hasattr(self, 'initialized'):
             self.action = None
             self.order_checker = CommExecOrderChecker.get_instance()
             self.is_collecting = False
-            self._initialized = True
-        if not isinstance(action, str):
-            raise TypeError(f"Action must be a string, got {type(action).__name__}")
-        if action not in ("start", "end"):
-            raise ValueError(f"Invalid action '{action}'. Use 'start' or 'end'.")
+            self.initialized = True
+
+    def __call__(self, action):
+        """
+        Args:
+            action (str): Control command - 'start' to begin collection,
+                        'end' to stop and validate
+        """
         self.action = action
         if action == "start":
             self.start_function()
         elif action == "end":
             self.end_function()
+        else:
+            raise ValueError("Invalid action. Please use 'start' or 'end'.")
 
     def start_function(self):
         if self.is_collecting:
@@ -73,6 +90,7 @@ class CommExecOrderCheck:
             return
         self.is_collecting = False
         self.order_checker.stop_collect_exec_order()
+
 
 class ExecuteOrder:
     """Represents a single record from the execute_order.csv file."""
