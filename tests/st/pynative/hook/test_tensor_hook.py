@@ -334,6 +334,8 @@ def test_tensor_backward_hook_multi_output():
         y1, y2 = ops.split(x, 2)
         y1.register_hook(hook_fn)
         y2.register_hook(hook_fn_2)
+        assert len(y1.hooks()) == 1
+        assert len(y2.hooks()) == 1
         return y1 + y2
 
     input_x = Tensor(np.arange(4).astype("float32"), dtype=ms.float32)
