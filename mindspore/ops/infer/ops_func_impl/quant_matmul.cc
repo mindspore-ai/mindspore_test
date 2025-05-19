@@ -23,6 +23,7 @@ namespace ops {
 int32_t QuantMatmulFuncImpl::CheckValidation(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
   auto &scale = input_infos[kIndex2];
   auto &offset = input_infos[kIndex3];
+  auto &pertoken_scale = input_infos[kIndex4];
   if (MS_UNLIKELY(scale->IsDynamicRank())) {
     return OP_CHECK_RETRY;
   }
@@ -35,6 +36,9 @@ int32_t QuantMatmulFuncImpl::CheckValidation(const PrimitivePtr &primitive, cons
     MS_CHECK_VALUE(offset->GetShape().size() == 1, "For QuantMatmul, 'offset' must be a 1D tensor, but got shape " +
                                                      ShapeVectorToStr(offset->GetShape()));
   }
+
+  MS_CHECK_VALUE(!pertoken_scale->IsNone(), "For QuantMatmul, 'pertoken_scale' can't be None.");
+
   return OP_CHECK_SUCCESS;
 }
 
@@ -69,6 +73,9 @@ std::vector<TypeId> QuantMatmulFuncImpl::InferType(const PrimitivePtr &primitive
   auto x1_dtype = input_infos[kIndex0]->GetType();
   MS_CHECK_VALUE(x1_dtype != kNumberTypeInt32 && x1_dtype != kNumberTypeInt8,
                  "For QuantMatmul, the dtype of 'x1' can't be Int32 or Int8, but got " + TypeIdToString(x1_dtype));
+  auto x2_dtype = input_infos[kIndex1]->GetType();
+  MS_CHECK_VALUE(x1_dtype == x2_dtype, "For QuantMatmul, the dtype of 'x1' and 'x2' must be same, but got x1 " +
+                                         TypeIdToString(x1_dtype) + ", x2 " + TypeIdToString(x2_dtype));
   auto output_dtype = kNumberTypeInt8;
   if (!input_infos[kIndex6]->IsNone()) {
     auto output_dtype_opt = input_infos[kIndex6]->GetScalarValue<int64_t>();
