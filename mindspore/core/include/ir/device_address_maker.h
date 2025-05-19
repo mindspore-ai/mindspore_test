@@ -66,7 +66,7 @@ class MS_CORE_API DeviceAddressMaker {
 
 MS_CORE_API DeviceSyncPtr MakeDeviceAddress(TypeId data_type, const ShapeVector &shape);
 MS_CORE_API DeviceSyncPtr MakeDeviceAddress(TypeId data_type, const ShapeVector &shape,
-                                            tensor::TensorDataPtr &&tensor_data);
+                                            const tensor::TensorDataPtr &tensor_data);
 
 }  // namespace mindspore
 

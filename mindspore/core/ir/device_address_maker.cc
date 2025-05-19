@@ -55,7 +55,7 @@ DeviceSyncPtr MakeDeviceAddress(TypeId data_type, const ShapeVector &shape) {
     .make_device_address();
 }
 
-DeviceSyncPtr MakeDeviceAddress(TypeId data_type, const ShapeVector &shape, tensor::TensorDataPtr &&tensor_data) {
+DeviceSyncPtr MakeDeviceAddress(TypeId data_type, const ShapeVector &shape, const tensor::TensorDataPtr &tensor_data) {
   return DeviceAddressMaker(tensor_data->data(), data_type, shape)
     .set_deleter([tensor_data](void *) {})
     .set_maker(GetDeviceAddressMaker(device::DeviceType::kCPU))

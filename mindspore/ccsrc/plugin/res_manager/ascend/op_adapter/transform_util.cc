@@ -24,6 +24,7 @@
 #include "include/common/utils/utils.h"
 #include "utils/shape_utils.h"
 #include "plugin/res_manager/ascend/op_adapter/op_adapter_util.h"
+#include "ir/device_address_maker.h"
 
 #ifndef ENABLE_LITE_ACL
 #include "include/common/utils/python_adapter.h"
@@ -533,7 +534,7 @@ MeTensorPtr TransformUtil::GenerateMeTensor(const GeTensorPtr &ge_tensor, const 
     ssize_t itemsize = MeTensor(me_type, ShapeVector()).DataItemSize();
     ssize_t ndim = static_cast<ssize_t>(me_dims.size());
     auto ref_data = std::make_shared<TensorRefData>(data, data_size, itemsize, ndim);
-    return make_shared<MeTensor>(me_type, me_dims, ref_data);
+    return make_shared<MeTensor>(me_type, me_dims, MakeDeviceAddress(me_type, me_dims, ref_data));
   } else {
     MeTensor me_tensor(me_type, me_dims);
 
