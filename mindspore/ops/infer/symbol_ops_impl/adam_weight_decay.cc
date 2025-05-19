@@ -20,17 +20,12 @@
 namespace mindspore {
 namespace symshape {
 namespace ops {
-SymbolPtr AdamWeigtDecayShapeBuilder(OperationBuilder *b) {
-  // var, m, v
-  return ListSymbol::Make({b->GetInputShape(kIndex0), b->GetInputShape(kIndex1), b->GetInputShape(kIndex2)});
-}
-
 REG_SYMBOL_OP_BUILDER("AdamWeightDecay")
   .SetShapeDepend({DependOn::kShape, DependOn::kShape, DependOn::kShape})
-  .SetShapeFunc(AdamWeigtDecayShapeBuilder);
+  .SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("AdamW")
   .SetShapeDepend({DependOn::kShape, DependOn::kShape, DependOn::kShape})
-  .SetShapeFunc(AdamWeigtDecayShapeBuilder);
+  .SetShapeFunc(TransparentInput);
 }  // namespace ops
 }  // namespace symshape
 }  // namespace mindspore

@@ -90,6 +90,7 @@ REG_SYMBOL_OP_BUILDER("Div").SetShapeDependN<DependOn::kShape, 2>().SetShapeFunc
 REG_SYMBOL_OP_BUILDER("DivMod").SetShapeDependN<DependOn::kShape, 2>().SetShapeFuncWith<ElemwiseBinop>();
 REG_SYMBOL_OP_BUILDER("Equal").SetShapeDependN<DependOn::kShape, 2>().SetShapeFuncWith<ElemwiseBinop>();
 REG_SYMBOL_OP_BUILDER("FloorDiv").SetShapeDependN<DependOn::kShape, 2>().SetShapeFuncWith<ElemwiseBinop>();
+REG_SYMBOL_OP_BUILDER("FmodTensor").SetShapeDependN<DependOn::kShape, 2>().SetShapeFuncWith<ElemwiseBinop>();
 REG_SYMBOL_OP_BUILDER("Greater").SetShapeDependN<DependOn::kShape, 2>().SetShapeFuncWith<ElemwiseBinop>();
 REG_SYMBOL_OP_BUILDER("GreaterEqual").SetShapeDependN<DependOn::kShape, 2>().SetShapeFuncWith<ElemwiseBinop>();
 REG_SYMBOL_OP_BUILDER("IsClose").SetShapeDependN<DependOn::kShape, 2>().SetShapeFuncWith<ElemwiseBinop>();
@@ -129,7 +130,9 @@ REG_SYMBOL_OP_BUILDER("AddN").SetShapeDependN<DependOn::kShape>().SetShapeFunc([
   return AddnBuildShape(b, inputs->symbols());
 });
 REG_SYMBOL_OP_BUILDER("Addcdiv").SetShapeDependN<DependOn::kShape, 4>().SetShapeFunc(GeneralBuildShape);
+REG_SYMBOL_OP_BUILDER("AddcdivExt").SetShapeDependN<DependOn::kShape, 3>().SetShapeFunc(GeneralBuildShape);
 REG_SYMBOL_OP_BUILDER("Addcmul").SetShapeDependN<DependOn::kShape, 4>().SetShapeFunc(GeneralBuildShape);
+REG_SYMBOL_OP_BUILDER("AddcmulExt").SetShapeDependN<DependOn::kShape, 3>().SetShapeFunc(GeneralBuildShape);
 REG_SYMBOL_OP_BUILDER("Select").SetShapeDependN<DependOn::kShape, 3>().SetShapeFunc(GeneralBuildShape);
 }  // namespace ops
 }  // namespace symshape

@@ -56,6 +56,38 @@ SymbolPtr Gather::Eval() {
   return ResultIntList(std::move(result));
 }
 
+class OPS_API GatherNd : public InferShapeOp {
+ public:
+  using InferShapeOp::InferShapeOp;
+  GatherNd(const SymbolPtr &x, const SymbolPtr &indices) : InferShapeOp({x, indices}) {}
+  ~GatherNd() override = default;
+  MS_DECLARE_PARENT(GatherNd, InferShapeOp)
+ protected:
+  SymbolPtr Eval() override;
+};
+
+SymbolPtr GatherNd::Eval() {
+  auto input_x_shape = input_as<ListSymbol>(kIndex0);
+  auto indices_shape = input_as<ListSymbol>(kIndex1);
+  if (!input_x_shape->HasData() || !indices_shape->HasData()) {
+    return GenVList();
+  }
+  size_t indices_rank = indices_shape->size();
+  auto indices_end_value = indices_rank > 0 ? indices_shape->symbols().back()->as_sptr<IntSymbol>() : kSym1;
+  if (!indices_end_value->HasData()) {
+    return GenVList();
+  }
+  DoNotEvalOnRun();
+  SymbolPtrList output_shape;
+  for (size_t i = 0; i + 1 < indices_rank; i++) {
+    (void)output_shape.emplace_back(indices_shape->symbols()[i]);
+  }
+  for (size_t i = LongToSize(indices_end_value->value()); i < input_x_shape->size(); i++) {
+    (void)output_shape.emplace_back(input_x_shape->symbols()[i]);
+  }
+  return ResultIntList(std::move(output_shape));
+}
+
 REG_SYMBOL_OP_BUILDER("Gather")
   .SetShapeDepend({DependOn::kShape, DependOn::kShape, DependOn::kValue, DependOn::kValue})
   .SetShapeFunc([](OperationBuilder *b) -> SymbolPtr {
@@ -70,6 +102,8 @@ REG_SYMBOL_OP_BUILDER("Gather")
 REG_SYMBOL_OP_BUILDER("GatherD")
   .SetShapeDepend({DependOn::kNone, DependOn::kNone, DependOn::kShape})
   .SetShapeFunc(TransparentInput);
+
+REG_SYMBOL_OP_BUILDER("GatherNd").SetShapeDependN<DependOn::kShape, 2>().SetShapeFuncWith<GatherNd>();
 }  // namespace ops
 }  // namespace symshape
 }  // namespace mindspore

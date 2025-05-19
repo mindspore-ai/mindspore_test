@@ -21,9 +21,7 @@ namespace symshape {
 namespace ops {
 REG_SYMBOL_OP_BUILDER("ApplyRotaryPosEmb")
   .SetShapeDepend({DependOn::kShape, DependOn::kShape})
-  .SetShapeFunc([](OperationBuilder *b) {
-    return ListSymbol::Make({b->GetInputShape(kIndex0), b->GetInputShape(kIndex1)});
-  });
+  .SetShapeFunc(TransparentInput);
 }  // namespace ops
 }  // namespace symshape
 }  // namespace mindspore
