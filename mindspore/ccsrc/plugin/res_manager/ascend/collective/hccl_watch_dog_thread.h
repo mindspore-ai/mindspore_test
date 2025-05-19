@@ -48,7 +48,6 @@ class EXPORT_WRAPPER HcclWatchDogHandler {
   void WatchDogProcess();
   void SetException(std::string *error_info, bool *disable);
   void HandleException();
-  void DestroyHcclComm();
   void DoProcess();
   uint32_t rank_id_;
   std::string group_name_;

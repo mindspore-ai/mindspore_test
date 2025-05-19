@@ -108,12 +108,6 @@ bool HcclWatchDogHandler::can_stop(bool stop) {
   return can_stop_;
 }
 
-void HcclWatchDogHandler::DestroyHcclComm() {
-  std::unique_lock<std::mutex> lock(mutex_);
-  MS_LOG(INFO) << "Destroy hccl comm, group name: " << group_name_ << ", rank id: " << rank_id_;
-  (void)HcclCommDestroy(hcom_);
-}
-
 void HcclWatchDogHandler::HandleException() {
   if (exception_) {
     std::rethrow_exception(exception_);
@@ -143,12 +137,10 @@ void HcclWatchDogHandler::DoProcess() {
     if (exception_) {
       MS_LOG(ERROR) << "Watchdog thread got hccl error, try to stop training. rank: " << rank_id_
                     << ", group name:" << group_name_;
-      DestroyHcclComm();
       HandleException();
       Terminate();
     }
   }
-  exit_.store(true, std::memory_order_acq_rel);
 }
 
 void HcclWatchDogHandler::WatchDogProcess() {
@@ -174,7 +166,8 @@ void HcclWatchDogHandler::WatchDogProcess() {
     auto exp = std::make_exception_ptr(std::runtime_error(msg));
     MsException::Instance().SetException(exp);
   }
-  MS_LOG(INFO) << "end";
+  exit_.store(true, std::memory_order_acq_rel);
+  MS_LOG(INFO) << "Watchdog thread for group:" << group_name_ << " execute end.";
 }
 }  // namespace ascend
 }  // namespace device
