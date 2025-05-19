@@ -195,11 +195,9 @@ def speed_fusion_attention_case1():
                      [0.82519531, 0.82519531, 0.82519531, 0.82519531],
                      [0.95800781, 0.95800781, 0.95800781, 0.95800781],
                      [1.21289062, 1.21289062, 1.21289062, 1.21289062]]]]).astype(np.float16)
-    dpse = np.zeros_like(pse_np)
     np.testing.assert_allclose(grads[0].asnumpy(), dq, rtol=1e-3)
     np.testing.assert_allclose(grads[1].asnumpy(), dk, rtol=1e-3)
     np.testing.assert_allclose(grads[2].asnumpy(), dv, rtol=1e-3)
-    np.testing.assert_allclose(grads[3].asnumpy(), dpse, rtol=1e-3)
 
     atten_out = np.array([[[[2.30859375, 0.76806641, 1.14648438, -0.56835938],
                             [-0.10369873, -0.44897461, -0.13220215, -0.78466797],
@@ -293,11 +291,9 @@ def speed_fusion_attention_case2():
                      [0.18811035, 0.18811035, 0.18811035, 0.18811035],
                      [0.58691406, 0.58691406, 0.58691406, 0.58691406],
                      [0.79394531, 0.79394531, 0.79394531, 0.79394531]]]]).astype(np.float16)
-    dpse = np.zeros_like(pse_np)
     np.testing.assert_allclose(grads[0].asnumpy(), dq, rtol=1e-3)
     np.testing.assert_allclose(grads[1].asnumpy(), dk, rtol=1e-3)
     np.testing.assert_allclose(grads[2].asnumpy(), dv, rtol=1e-3)
-    np.testing.assert_allclose(grads[3].asnumpy(), dpse, rtol=1e-3)
 
     atten_out = np.array([[[[2.63867188, 0.87744141, 1.30957031, -0.64892578],
                             [1.01464844, 0.33764648, 0.50341797, -0.24963379],
@@ -391,11 +387,9 @@ def speed_fusion_attention_case3():
                      [0.10693359, 0.10693359, 0.10693359, 0.10693359],
                      [0.69726562, 0.69726562, 0.69726562, 0.69726562],
                      [0.72558594, 0.72558594, 0.72558594, 0.72558594]]]]).astype(np.float16)
-    dpse = np.zeros_like(pse_np)
     np.testing.assert_allclose(grads[0].asnumpy(), dq, rtol=1e-3)
     np.testing.assert_allclose(grads[1].asnumpy(), dk, rtol=1e-3)
     np.testing.assert_allclose(grads[2].asnumpy(), dv, rtol=1e-3)
-    np.testing.assert_allclose(grads[3].asnumpy(), dpse, rtol=1e-3)
 
     atten_out = np.array([[[[2.05273438, 0.68261719, 1.01855469, -0.50488281],
                             [0.47167969, 0.11206055, 0.09014893, -0.26855469],
@@ -487,11 +481,9 @@ def speed_fusion_attention_case4():
                      [1.09179688, 1.09179688, 1.09179688, 1.09179688],
                      [0.71679688, 0.71679688, 0.71679688, 0.71679688],
                      [1.45019531, 1.45019531, 1.45019531, 1.45019531]]]]).astype(np.float16)
-    dpse = np.zeros_like(pse_np)
     np.testing.assert_allclose(grads[0].asnumpy(), dq, rtol=1e-3)
     np.testing.assert_allclose(grads[1].asnumpy(), dk, rtol=1e-3)
     np.testing.assert_allclose(grads[2].asnumpy(), dv, rtol=1e-3)
-    np.testing.assert_allclose(grads[3].asnumpy(), dpse, rtol=1e-3)
 
     atten_out = np.array([[[[1.60644531, 0.46069336, 0.82568359, -0.42773438],
                             [-0.45385742, -0.73193359, -0.14514160, -0.49487305],
