@@ -421,7 +421,7 @@ void GradExecutor::HandleInputArgsForTopCell(const InputArgsInfoPtr &input_args_
     const auto &v = input_value[i];
     auto tensor = PyNativeAlgo::Common::GetTensorFromSparseTensor(v);
     if (tensor != nullptr) {
-      if (tensor->auto_grad_meta_data() != nullptr && autograd::impl::get_unsafe_grad_node_impl(tensor) == nullptr) {
+      if (tensor->auto_grad_meta_data() != nullptr && autograd::impl::GetUnsafeGradNodeImpl(tensor) == nullptr) {
         tensor->auto_grad_meta_data()->set_input_type(InputType::kInput);
       }
       (void)AutoGradUtil::SetValueGradInfo(tensor, InputType::kInput);
@@ -790,6 +790,7 @@ py::object GradExecutor::RunGradFunc(const autograd::GradAttr &grad_attr, const 
   auto cur_top_cell = top_cell_;
   auto engine = std::make_shared<autograd::AutoDiff>(top_input_args_info_->out_value,
                                                      cur_top_cell->is_high_order_top_cell(), is_run_recompute_);
+  autograd::AutoDiffGuard auto_diff_guard(engine);
   top_cell_->set_grad_is_running(true);
   auto grads = engine->RunBackward(top_input_args_info_->input_arg_value_vec, w_args, p_args, grad_attr,
                                    collect_default_weights, has_aux, sens);
