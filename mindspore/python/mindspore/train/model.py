@@ -2303,6 +2303,7 @@ class Model:
 
         Examples:
             >>> import numpy as np
+            >>> import mindspore as ms
             >>> import mindspore.nn as nn
             >>> from mindspore import Tensor
             >>> from mindspore.train import Model
@@ -2312,28 +2313,28 @@ class Model:
             >>> from mindspore.parallel.auto_parallel import AutoParallel
             >>>
             >>> class Net(nn.Cell):
-            >>>     def __init__(self):
-            >>>         super(Net, self).__init__()
-            >>>         self.fc1 = nn.Dense(128, 768, activation='relu')
-            >>>         self.fc2 = nn.Dense(128, 768, activation='relu')
-            >>>         self.fc3 = nn.Dense(128, 768, activation='relu')
-            >>>         self.fc4 = nn.Dense(768, 768, activation='relu')
-            >>>         self.relu4 = nn.ReLU()
-            >>>         self.relu5 = nn.ReLU()
-            >>>         self.transpose = P.Transpose()
-            >>>         self.matmul1 = P.MatMul()
-            >>>         self.matmul2 = P.MatMul()
-            >>>
-            >>>     def construct(self, x):
-            >>>         q = self.fc1(x)
-            >>>         k = self.fc2(x)
-            >>>         v = self.fc3(x)
-            >>>         k = self.transpose(k, (1, 0))
-            >>>         c = self.relu4(self.matmul1(q, k))
-            >>>         s = self.relu5(self.matmul2(c, v))
-            >>>         s = self.fc4(s)
-            >>>         return s
-            >>>
+            ...     def __init__(self):
+            ...         super(Net, self).__init__()
+            ...         self.fc1 = nn.Dense(128, 768, activation='relu')
+            ...         self.fc2 = nn.Dense(128, 768, activation='relu')
+            ...         self.fc3 = nn.Dense(128, 768, activation='relu')
+            ...         self.fc4 = nn.Dense(768, 768, activation='relu')
+            ...         self.relu4 = nn.ReLU()
+            ...         self.relu5 = nn.ReLU()
+            ...         self.transpose = P.Transpose()
+            ...         self.matmul1 = P.MatMul()
+            ...         self.matmul2 = P.MatMul()
+            ...
+            ...     def construct(self, x):
+            ...         q = self.fc1(x)
+            ...         k = self.fc2(x)
+            ...         v = self.fc3(x)
+            ...         k = self.transpose(k, (1, 0))
+            ...         c = self.relu4(self.matmul1(q, k))
+            ...         s = self.relu5(self.matmul2(c, v))
+            ...         s = self.fc4(s)
+            ...         return s
+            ...
             >>> ms.set_context(mode=ms.GRAPH_MODE)
             >>> init()
             >>> inputs = Tensor(np.ones([32, 128]).astype(np.float32))

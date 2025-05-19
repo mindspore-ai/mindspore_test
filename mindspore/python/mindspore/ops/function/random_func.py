@@ -1007,7 +1007,7 @@ def gamma(shape, alpha, beta, seed=None):
         (3, 2, 2)
         >>> # case 2: alpha_shape is (2, 3), so shape is (3, 1, 3)
         >>> shape = (3, 1, 3)
-        >>> alpha = mindspore.tensor([[1, 3, 4], [2, 5, 6]]), mindspore.float32)
+        >>> alpha = mindspore.tensor([[1, 3, 4], [2, 5, 6]], mindspore.float32)
         >>> beta = mindspore.tensor([1.0], mindspore.float32)
         >>> output = mindspore.ops.gamma(shape, alpha, beta, seed=5)
         >>> result = output.shape
