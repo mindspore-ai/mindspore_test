@@ -390,7 +390,7 @@ CNodePtr DFunctor::CalculateDoutTuple(const CNodePtr &cnode_morph, const CNodePt
   }
 
   auto caller = node_adjoint->caller();
-  auto node_users_map = resources_->manager()->node_users();
+  const auto &node_users_map = resources_->manager()->node_users();
   // For Some ops of Framework:
   if (IsPrimitiveCNode(cnode_morph, prim::kPrimDepend) && (index == 1)) {
     if (IsLastNodeOfGraph(cnode_morph, node_users_map)) {
@@ -408,24 +408,21 @@ CNodePtr DFunctor::CalculateDoutTuple(const CNodePtr &cnode_morph, const CNodePt
       {NewValueNode(prim::kPrimTupleGetItem), node_adjoint->real_dout(), NewValueNode(int64_t(index - 1))});
   }
 
-  auto k = node_adjoint->k();
-  if (!IsPrimitiveCNode(k, prim::kPrimTupleGetItem)) {
-    return din_tuple;
-  }
-  auto k_cnode = k->cast<CNodePtr>();
-  auto fprop_input_cnode = k_cnode->input(1)->cast<CNodePtr>();
-  if (fprop_input_cnode == nullptr) {
+  auto k_app = node_adjoint->k_app();
+  if (k_app == nullptr) {
     return din_tuple;
   }
 
   if (IsPrimitiveCNode(cnode_morph, prim::kPrimTupleGetItem) && (index == 1)) {
+    constexpr size_t kInputIndex = 1;
+    constexpr size_t kIdxIndex = 2;
     auto dout_temp =
-      caller->NewCNodeInOrder({NewValueNode(prim::GetPythonOps("zeros_like")), fprop_input_cnode->input(1)});
+      caller->NewCNodeInOrder({NewValueNode(prim::GetPythonOps("zeros_like")), k_app->input(kInputIndex)});
     auto generate_dout_tuple = std::make_shared<prim::GenerateBpropOutTuple>("generate_dout_tuple");
     generate_dout_tuple->set_ops_type(prim::OpsType::Type_Variable);
     auto dout_tuple_tmp = caller->NewCNodeInOrder({NewValueNode(generate_dout_tuple), dout_temp});
     return caller->NewCNodeInOrder(
-      {NewValueNode(prim::kPrimTupleSetItem), dout_tuple_tmp, fprop_input_cnode->input(2), node_adjoint->real_dout()});
+      {NewValueNode(prim::kPrimTupleSetItem), dout_tuple_tmp, k_app->input(kIdxIndex), node_adjoint->real_dout()});
   }
 
   // Get Din/dmask/ops_type from din_tuple: (din, (dmask, ops_tye));
@@ -459,7 +456,7 @@ CNodePtr DFunctor::CalculateDoutTuple(const CNodePtr &cnode_morph, const CNodePt
 
     constexpr size_t input_begin_index = 2;
     AnfNodePtrList viewed_mask_nodes{NewValueNode(prim), ori_mask};
-    std::copy(fprop_input_cnode->inputs().begin() + input_begin_index, fprop_input_cnode->inputs().end() - 1,
+    std::copy(k_app->inputs().begin() + input_begin_index, k_app->inputs().end() - 1,
               std::back_inserter(viewed_mask_nodes));
     auto mask_viewed = caller->NewCNodeInOrder(viewed_mask_nodes);
     auto mask_viewed_true = caller->NewCNodeInOrder(
@@ -549,7 +546,7 @@ void DFunctor::BackPropagate(const CNodePtr &cnode_morph, const AdjointPtr &node
       continue;
     }
     auto node_input = cnode_morph->input(i);
-    auto node_users_map = resources_->manager()->node_users();
+    const auto &node_users_map = resources_->manager()->node_users();
     constexpr auto kNeedGradFlag = "need_grad";
     bool need_grad = node_input->has_user_data(kNeedGradFlag) && *node_input->user_data<bool>(kNeedGradFlag);
     if (InplaceUsedByUpdateStateOnly(node_input, node_users_map) && need_grad) {
