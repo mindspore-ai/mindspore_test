@@ -1345,7 +1345,7 @@ KernelTensorPtr FetchParameter(const std::pair<KernelWithIndex, size_t> &paramet
   // Return device tensor from graph parameter store if data prepared.
   static std::shared_mutex mtx;
   std::shared_lock<std::shared_mutex> read_lock(mtx);
-  auto kernel_tensor = graph_parameter_store->Fetch(outer_index, inner_index, device_context->GetDeviceType());
+  auto kernel_tensor = graph_parameter_store->Fetch(outer_index, inner_index, real_device_context->GetDeviceType());
   if (graph_parameter_store->GetDeviceTensorPrepared(outer_index, inner_index)) {
     MS_EXCEPTION_IF_NULL(kernel_tensor);
     return kernel_tensor;
@@ -1353,7 +1353,7 @@ KernelTensorPtr FetchParameter(const std::pair<KernelWithIndex, size_t> &paramet
 
   read_lock.unlock();
   std::unique_lock<std::shared_mutex> write_lock(mtx);
-  auto prepared_kernel_tensor = PrepareParameter(parameter_index, device_context, context, from_aid);
+  auto prepared_kernel_tensor = PrepareParameter(parameter_index, real_device_context, context, from_aid);
   MS_EXCEPTION_IF_NULL(prepared_kernel_tensor);
   bool is_non_weight_parameter =
     front_node->isa<Parameter>() && (!common::AnfAlgo::IsParameterWeight(front_node->cast<ParameterPtr>()));
