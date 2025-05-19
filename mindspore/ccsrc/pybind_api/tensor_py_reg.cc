@@ -659,24 +659,8 @@ static PyObject *TensorIndex_getitem_index_info(PyObject *self, PyObject *args) 
 
 static PyObject *TensorIndex_is_flattened(PyObject *self, PyObject *args) {
   HANDLE_MS_EXCEPTION
-  PyObject *tensor_list;
-  if (!PyArg_ParseTuple(args, "O", &tensor_list)) {
-    PyErr_SetString(PyExc_TypeError, "Expected a list of TensorPy objects.");
-    return nullptr;
-  }
-
-  if (!PyList_Check(tensor_list)) {
-    PyErr_SetString(PyExc_TypeError, "Argument must be a list.");
-    return nullptr;
-  }
-  TensorPtrList tensors;
-  for (Py_ssize_t i = 0; i < PyList_Size(tensor_list); i++) {
-    PyObject *item = PyList_GetItem(tensor_list, i);
-    PyType<TensorPy> *tensor_py_type = reinterpret_cast<PyType<TensorPy> *>(item);
-    tensors.emplace_back(tensor_py_type->value.GetTensor());
-  }
-  bool result = Tensor::IsFlattened(tensors);
-  return PyBool_FromLong(result);
+  // todo: delete is api.
+  return PyBool_FromLong(false);
   HANDLE_MS_EXCEPTION_END
 }
 
