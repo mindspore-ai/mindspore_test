@@ -19,36 +19,22 @@
 #include <set>
 #include "infer/ops_func_impl/bitwise_and_scalar.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
-#include "utils/check_convert_utils.h"
-#include "ops/ops_func_impl/simple_infer.h"
-#include "ops_utils/op_constants.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 
 namespace mindspore {
 namespace ops {
-BaseShapePtr BitwiseAndScalarFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                                  const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
-  return BroadCastInferShape(primitive->name(), input_args);
+std::vector<TypeId> BitwiseAndScalarFuncImpl::InferType(const PrimitivePtr &primitive,
+                                                        const InferInfoPtrList &input_infos) const {
+  auto x_type = input_infos[kIndex0]->GetType();
+  auto other_type = input_infos[kIndex1]->GetType();
+  if (x_type == kNumberTypeBool && common_integral_type_ids.count(other_type) != 0) {
+    return {kNumberTypeInt64};
+  }
+  return {x_type};
 }
 
-TypePtr BitwiseAndScalarFuncImpl::InferType(const PrimitivePtr &primitive,
-                                            const std::vector<AbstractBasePtr> &input_args) const {
-  return input_args[kIndex0]->GetType();
+ShapeArray BitwiseAndScalarFuncImpl::InferShape(const PrimitivePtr &primitive,
+                                                const InferInfoPtrList &input_infos) const {
+  return {input_infos[kIndex0]->GetShape()};
 }
-
-TypePtrList BitwiseAndScalarFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
-  MS_EXCEPTION_IF_NULL(x_tensor);
-  const auto &input_type = x_tensor->Dtype();
-  return {input_type};
-}
-
-ShapeArray BitwiseAndScalarFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
-  MS_EXCEPTION_IF_NULL(x_tensor);
-  return {x_tensor->shape()};
-}
-REGISTER_SIMPLE_INFER(kNameBitwiseAndScalar, BitwiseAndScalarFuncImpl)
 }  // namespace ops
 }  // namespace mindspore

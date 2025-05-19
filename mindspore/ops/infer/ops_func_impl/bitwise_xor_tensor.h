@@ -17,19 +17,11 @@
 #ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_BITWISE_XOR_TENSOR_H_
 #define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_BITWISE_XOR_TENSOR_H_
 
-#include <vector>
-#include "ops/ops_func_impl/op_func_impl.h"
+#include "infer/ops_func_impl/bitwise_and_tensor.h"
 
 namespace mindspore {
 namespace ops {
-class OPS_API BitwiseXorTensorFuncImpl : public OpFuncImpl {
- public:
-  BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-  TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-  // simply infer
-  ShapeArray InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const override;
-  TypePtrList InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const override;
-};
+class OPS_API BitwiseXorTensorFuncImpl : public BitwiseAndTensorFuncImpl {};
 }  // namespace ops
 }  // namespace mindspore
 
