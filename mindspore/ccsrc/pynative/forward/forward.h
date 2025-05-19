@@ -54,8 +54,6 @@ class PYNATIVE_EXPORT ForwardExecutor {
 
   void DispatchFrontendTask(const FrontendOpRunInfoPtr &op_run_info);
   void RunOpFrontend(const FrontendOpRunInfoPtr &op_run_info);
-  // If sub is true, this function will not convert StubTensor to Tensor.
-  // Used to reduce the overhead of StubTensor WaitValue.
   FrontendOpRunInfoPtr GenerateOpRunInfo(const py::args &args, bool stub = false);
   ValuePtr RunSliceOpFrontend(const std::vector<ValuePtr> &input_values,
                               const std::vector<SliceOpInfoPtr> &slice_op_infos, bool requires_grad,

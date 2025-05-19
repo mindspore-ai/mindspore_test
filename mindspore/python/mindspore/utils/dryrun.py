@@ -17,7 +17,6 @@ import traceback
 import os
 from mindspore.common import Tensor
 from mindspore import log as logger
-from mindspore.common._stub_tensor import StubTensor
 from mindspore.common import dtype as mstype
 from mindspore._checkparam import is_stub_tensor
 
@@ -78,12 +77,7 @@ def set_simulation():
     Tensor._getitem = obj.inject(Tensor._getitem)
     Tensor.is_contiguous = obj.inject(Tensor.is_contiguous)
     Tensor.flush_from_cache = obj.inject(Tensor.flush_from_cache)
-    StubTensor.asnumpy = obj.inject(StubTensor.asnumpy)
-    StubTensor._getitem = obj.inject(StubTensor._getitem)
-    StubTensor.is_contiguous = obj.inject(StubTensor.is_contiguous)
-    StubTensor.flush_from_cache = obj.inject(StubTensor.flush_from_cache)
     Tensor.__str__ = no_inject_traceback_for_print
-    StubTensor.__str__ = no_inject_traceback_for_print
     Tensor.tolist = obj.inject(Tensor.tolist)
     Tensor.__int__ = obj.inject(Tensor.__int__)
     Tensor.__float__ = obj.inject(Tensor.__float__)

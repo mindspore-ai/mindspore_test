@@ -29,6 +29,8 @@ PyTypeObject *TensorPy_Type;
 
 TensorPy::TensorPy(const TensorPtr &input) { tensor_ = input; }
 
+TensorPy::TensorPy(const stub::StubNodePtr &stub_node) { stub_ = stub_node; }
+
 TensorPy::TensorPy(int64_t input, const TypePtr &data_type) { tensor_ = std::make_shared<Tensor>(input, data_type); }
 
 TensorPy::TensorPy(int32_t input, const TypePtr &data_type) { tensor_ = std::make_shared<Tensor>(input, data_type); }
@@ -480,6 +482,20 @@ PyObject *PackTensor(const TensorPtr &tensor) {
   }
   auto result = (PyType<TensorPy> *)obj;
   new (&result->value) TensorPy(tensor);
+  result->value.SetInitFinished(true);
+  return reinterpret_cast<PyObject *>(result);
+}
+
+PyObject *PackStubTensor(const stub::StubNodePtr &stub_node) {
+  PyObject *python_tensor_class = PyObject_GetAttrString(PyObjManager::Get().GetTensorModule(), "Tensor");
+  auto tensor_py_type = reinterpret_cast<PyTypeObject *>(python_tensor_class);
+  PyObject *obj = tensor_py_type->tp_alloc(tensor_py_type, 0);
+  if (obj == nullptr) {
+    PyErr_SetString(PyExc_RuntimeError, "Failed to create TensorPy object");
+    return nullptr;
+  }
+  auto result = (PyType<TensorPy> *)obj;
+  new (&result->value) TensorPy(stub_node);
   result->value.SetInitFinished(true);
   return reinterpret_cast<PyObject *>(result);
 }

@@ -523,9 +523,6 @@ bool CheckListType(const py::object &obj, int &idx, bool fullcheck = false) {
 }
 
 bool IsTensor(const py::object &obj) {
-  if (IsStubTensor(obj)) {
-    return true;
-  }
   if (mindspore::tensor::IsTensorPy(obj)) {
     return true;
   }
@@ -931,10 +928,6 @@ bool ListTypeCheck(const py::object &obj, const ops::OP_DTYPE &type, int &idx, b
 bool TypeCheck(const py::object &obj, const ops::OP_DTYPE &type, int &idx, ConvertPair &convert_type) {
   switch (type) {
     case OP_DTYPE::DT_TENSOR:
-      if (IsStubTensor(obj)) {
-        convert_type.first = OP_DTYPE::DT_TENSOR;
-        return true;
-      }
       return IsTensor(obj);
     case OP_DTYPE::DT_NUMBER:
       return py::isinstance<py::float_>(obj) || py::isinstance<py::bool_>(obj) || py::isinstance<py::int_>(obj);
@@ -1072,17 +1065,6 @@ ValuePtr ConvertMutableBool(const py::object &obj) {
   return std::make_shared<BoolImm>(obj_bool);
 }
 
-ValuePtr ConvertStubTensor(const py::object &obj) {
-  auto tensor = PyStubNodeCast(obj);
-  if (tensor != nullptr) {
-    if (tensor->isa<tensor::Tensor>()) {
-      tensor->cast<tensor::TensorPtr>()->set_need_pipeline_sync(true);
-    }
-    return tensor;
-  }
-  return tensor;
-}
-
 ValuePtr ConvertSimpleTensor(const py::object &obj) {
   auto tensor = tensor::ConvertToTensor(obj);
   if (tensor != nullptr) {
@@ -1105,7 +1087,6 @@ ValuePtr ConvertTensorList(const py::object &obj) {
 
 static const std::unordered_map<int32_t, OpDefConvertFunc> kParseConverters = {
   {parse::CombineTypesForTypeCast(mindspore::ops::DT_BEGIN, mindspore::ops::DT_TENSOR), ConvertSimpleTensor},
-  {parse::CombineTypesForTypeCast(mindspore::ops::DT_TENSOR, mindspore::ops::DT_TENSOR), ConvertStubTensor},
   {parse::CombineTypesForTypeCast(mindspore::ops::DT_BEGIN, mindspore::ops::DT_TUPLE_TENSOR), ConvertTensorList},
   {parse::CombineTypesForTypeCast(mindspore::ops::DT_BEGIN, mindspore::ops::DT_LIST_TENSOR), ConvertTensorList},
   {parse::CombineTypesForTypeCast(mindspore::ops::DT_BOOL, mindspore::ops::DT_BOOL), ConvertMutableBool},
@@ -1147,9 +1128,7 @@ void ParserArgs::InsertInputTensor(size_t index, const py::object &input) {
 }
 
 ValuePtr UnpackTensor(const py::object &input, const std::string &func_name) {
-  if (IsStubTensor(input)) {
-    return ConvertStubTensor(input);
-  } else if (tensor::IsTensorPy(input)) {
+  if (tensor::IsTensorPy(input)) {
     return ConvertSimpleTensor(input);
   } else {
     MS_EXCEPTION(TypeError) << "Tensor." << func_name << "() doesn't apply to '"

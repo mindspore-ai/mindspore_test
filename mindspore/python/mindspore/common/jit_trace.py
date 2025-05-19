@@ -24,10 +24,8 @@ from mindspore import log as logger
 from mindspore import context
 from mindspore.common.jit_context import JitContext, set_jit_context, jit_context
 from mindspore.common.tensor import Tensor as PythonTensor
-from mindspore._checkparam import is_stub_tensor
 from mindspore._c_expression import TraceRecorder as tr
 from mindspore._c_expression import JitExecutor_
-from mindspore._c_expression import TensorNode
 from mindspore._c_expression import TensorPy as Tensor, CSRTensor, COOTensor
 from mindspore._c_expression import typing
 
@@ -46,10 +44,6 @@ class TraceJitContext(JitContext):
         return self._is_nested
 
     def args_preprocess(self, prim_name, prim_res, *args):
-        if isinstance(prim_res, TensorNode):
-            prim_res = prim_res.get_value()
-        prim_res = _sync_stub_tensor(prim_res)
-        args = tuple(_sync_stub_tensor(arg) for arg in args)
         args = tuple(_convert_arg_for_operators(arg, prim_name)
                      for arg in args)
         file_names, linenos = _get_caller_lines()
@@ -70,10 +64,6 @@ class TraceJitContext(JitContext):
     def run_graph(self, phase, prim_res, *args):
         """Capture func_graph generated from ast"""
         logger.debug(f'phase: {phase}, args: {args}, prim_res: {prim_res}')
-        if isinstance(prim_res, TensorNode):
-            prim_res = prim_res.get_value()
-        prim_res = _sync_stub_tensor(prim_res)
-        args = tuple(_sync_stub_tensor(arg) for arg in args)
         file_names, linenos = _get_caller_lines()
         tr.get_instance().new_fg_node((prim_res, file_names, linenos, phase, self._is_nested), *args)
         return prim_res
@@ -92,20 +82,6 @@ _using_trace = False
 def _set_compile_only(compile_only=True):
     global _compile_only
     _compile_only = compile_only
-
-
-def _sync_stub_tensor(stub):
-    """Synchronize stub tensor"""
-    if is_stub_tensor(stub):
-        real_tensor = stub.stub_sync()
-        logger.debug(f'Convert stub tensor, stub: [{type(stub)}] {id(stub)}/{stub}, '
-                     f'tensor: [{type(real_tensor)}] {id(real_tensor)}/{real_tensor}')
-        return real_tensor
-    if isinstance(stub, tuple):
-        return tuple(_sync_stub_tensor(item) for item in stub)
-    if isinstance(stub, list):
-        return list(_sync_stub_tensor(item) for item in stub)
-    return stub
 
 
 def convert_tensorpy(args):
@@ -143,7 +119,6 @@ def nested_run(obj, cell, *args):
     if res is not tuple:
         res = (res,)
     file_names, linenos = _get_caller_lines()
-    res = _sync_stub_tensor(res)
     set_jit_context(None)
     return file_names, linenos, res
 
@@ -244,6 +219,8 @@ def _get_args_for_run(args):
             new_args.append(arg)
         elif isinstance(arg, dict) and hasattr(arg, "__ms_mutable__"):
             new_args.append(tuple(arg.values()))
+        elif isinstance(arg, (tuple, list)) and hasattr(arg, "__ms_mutable__"):
+            new_args.append(arg)
     return tuple(new_args)
 
 
@@ -288,7 +265,6 @@ def _jit_trace_begin(fn_name, *args):
     logger.debug(f'_jit_trace_begin, args: {args}')
     _trace_jit_context.set_is_nested(False)
     set_jit_context(_trace_jit_context)
-    args = tuple(_sync_stub_tensor(arg) for arg in args)
     for arg in args:
         logger.debug(f'_jit_trace_begin, arg: {arg}, {type(arg)}')
 
@@ -359,7 +335,6 @@ def _jit_trace_end(*output_args):
         logger.debug(f'jit trace result: {output}')
     else:
         logger.debug(f'output_args: {output_args}')
-        output_args = tuple(_sync_stub_tensor(arg) for arg in output_args)
         file_names, linenos = _get_caller_lines()
         tr.get_instance().end_graph(file_names, linenos, *output_args)
         if _compile_only:

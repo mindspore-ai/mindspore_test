@@ -302,7 +302,7 @@ RootTrace::RootTrace(PyObject *pObj, TraceType tt, int index, std::string name, 
   if (pObj == nullptr) {
     return;
   }
-  if (mindspore::tensor::IsTensorPy(py::cast<py::object>(pObj)) || IsStubTensor(py::cast<py::object>(pObj))) {
+  if (mindspore::tensor::IsTensorPy(py::cast<py::object>(pObj))) {
     is_specialized_ = false;
   }
 }

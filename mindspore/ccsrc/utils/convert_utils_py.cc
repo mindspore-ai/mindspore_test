@@ -333,6 +333,56 @@ py::object ValueDictionaryToPyData(const ValueDictionaryPtr &value, const Abstra
 using ConverterFunction = std::function<py::object(const ValuePtr &value, const AbstractBasePtr &abs)>;
 using ValueNameToConverterVector = std::vector<std::pair<uint32_t, ConverterFunction>>;
 
+py::object PackStubNode(const stub::StubNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
+  if (node->isa<stub::TensorNode>()) {
+    return py::reinterpret_steal<py::object>(tensor::PackStubTensor(node));
+  } else if (node->isa<stub::SequenceNode>()) {
+    auto seq = node->cast<std::shared_ptr<stub::SequenceNode>>();
+    MS_EXCEPTION_IF_NULL(seq);
+    auto abs = node->ToAbstract();
+    MS_EXCEPTION_IF_NULL(abs);
+
+    auto &elements = seq->Elements();
+    py::tuple out(elements.size());
+    for (size_t i = 0; i < elements.size(); ++i) {
+      out[i] = PackStubNode(elements[i]);
+    }
+    if (abs->isa<abstract::AbstractTuple>()) {
+      return out;
+    } else if (abs->isa<abstract::AbstractList>()) {
+      return out.cast<py::list>();
+    } else {
+      MS_LOG(EXCEPTION) << "The abstract of SequenceNode should be AbstractTuple or AbstractList, but got: "
+                        << abs->ToString();
+    }
+  } else if (node->isa<stub::StringNode>()) {
+    MS_LOG(DEBUG) << "Begin wait value for stub string node.";
+    const auto &value = node->WaitValue();
+    MS_LOG(DEBUG) << "End wait value for stub string node.";
+    MS_EXCEPTION_IF_NULL(value);
+    const auto &string_value = value->cast<StringImmPtr>();
+    if (!string_value) {
+      MS_LOG(EXCEPTION) << "Expect a StringImm in stub string node, but got: " << value->ToString();
+    }
+    py::str res = string_value->value();
+    return res;
+  } else if (node->isa<stub::ScalarNode>()) {
+    MS_LOG(DEBUG) << "Begin wait value for stub scalar node.";
+    const auto &value = node->WaitValue();
+    MS_LOG(DEBUG) << "End wait value for stub scalar node.";
+    MS_EXCEPTION_IF_NULL(value);
+    const auto &scalar_value = value->cast<ScalarPtr>();
+    if (scalar_value) {
+      return ScalarPtrToPyData(scalar_value);
+    }
+    const auto &tensor = value->cast<tensor::TensorPtr>();
+    MS_EXCEPTION_IF_NULL(tensor);
+    return CheckAndConvertToScalar(tensor, node->ToAbstract());
+  }
+  MS_EXCEPTION(NotSupportError) << "Unsupported stub node: " << node->ToString() << " to py::object.";
+}
+
 // (Value Type Name) -> (Converter Function)
 // The converter function is used to convert Value object to Python data object.
 static ValueNameToConverterVector value_name_to_converter = {
@@ -364,7 +414,7 @@ static ValueNameToConverterVector value_name_to_converter = {
   {stub::StubNode::kTypeId,
    [](const ValuePtr &value, const AbstractBasePtr &) -> py::object {
      auto stub_node = value->cast<stub::StubNodePtr>();
-     return stub::StubNodeToPyObject(stub_node);
+     return PackStubNode(stub_node);
    }},
   // CSRTensor
   {tensor::CSRTensor::kTypeId,
@@ -891,26 +941,6 @@ py::object MakeCOOTensor(const VectorRef &value_list) {
   return ret[0];
 }
 
-bool IsStubTensor(const py::handle &obj) {
-  static PyObject *attr_stub = PyUnicode_FromString(stub::PY_ATTR_STUB);
-  return PyObject_HasAttr(obj.ptr(), attr_stub);
-}
-
-tensor::TensorPtr ConvertStubTensor(const py::handle &obj) {
-  auto py_stub = py::getattr(obj, stub::PY_ATTR_STUB);
-  auto stub = py_stub.cast<stub::StubNodePtr>();
-  if (stub == nullptr) {
-    tensor::TensorPtr tensor = tensor::ConvertToTensor(py::getattr(obj, stub::PY_ATTR_TENSOR));
-    MS_EXCEPTION_IF_NULL(tensor);
-    return tensor;
-  }
-  auto func_sync = obj.attr(stub::PY_ATTR_SYNC);
-  auto res = func_sync();
-  tensor::TensorPtr tensor = tensor::ConvertToTensor(res);
-  MS_EXCEPTION_IF_NULL(tensor);
-  return tensor;
-}
-
 tensor::TensorPtr ConvertTensorAndSyncCompiling(const py::handle &obj) {
   auto tensor = tensor::ConvertToTensor(obj);
   MS_EXCEPTION_IF_NULL(tensor);
@@ -919,24 +949,6 @@ tensor::TensorPtr ConvertTensorAndSyncCompiling(const py::handle &obj) {
     tensor->data_sync();
   }
   return tensor;
-}
-
-tensor::TensorPtr StubNodeToTensor(const py::object &obj) {
-  ValuePtr tensor = nullptr;
-  if (IsStubTensor(obj)) {
-    tensor = PyStubNodeCast(obj);
-  }
-  if (tensor == nullptr) {
-    MS_LOG(EXCEPTION) << "The obj should be a tensor, but got " << py::str(obj);
-  }
-  if (utils::isa<stub::StubNode>(tensor)) {
-    auto stub = utils::cast<stub::StubNodePtr>(tensor);
-    return stub->WaitValue()->cast<tensor::TensorPtr>();
-  }
-  if (tensor->isa<tensor::Tensor>()) {
-    return tensor->cast<tensor::TensorPtr>();
-  }
-  MS_LOG(EXCEPTION) << "It should be stub tensor, but got " << tensor->ToString();
 }
 
 py::object CValueToPybindObj(const ValuePtr &val) {
@@ -953,21 +965,6 @@ ValuePtr PyStubNodeCast(const py::handle &obj) {
     return tensor;
   }
   return stub;
-}
-
-std::pair<ShapeVector, TypePtr> GetStubTensorInfo(const py::handle &obj) {
-  auto py_stub = py::getattr(obj, stub::PY_ATTR_STUB);
-  ValuePtr stub = py_stub.cast<stub::StubNodePtr>();
-  AbstractBasePtr stub_abs;
-  if (stub == nullptr) {
-    auto tensor = tensor::ConvertToTensor(py::getattr(obj, stub::PY_ATTR_TENSOR));
-    MS_EXCEPTION_IF_NULL(tensor);
-    stub_abs = tensor->ToAbstract();
-  } else {
-    stub_abs = stub->ToAbstract();
-  }
-  MS_EXCEPTION_IF_NULL(stub_abs);
-  return {dyn_cast<abstract::Shape>(stub_abs->BuildShape())->shape(), stub_abs->BuildType()};
 }
 
 ValuePtr ConvertTensorNode(const py::object &obj) {
@@ -1032,8 +1029,6 @@ ValuePtr ConvertPyObjectToCObject(const py::object &input_object, bool is_base_t
     output = py::cast<tensor::CSRTensorPtr>(input_object);
   } else if (py::isinstance<tensor::COOTensor>(input_object)) {
     output = py::cast<tensor::COOTensorPtr>(input_object);
-  } else if (IsStubTensor(input_object)) {
-    output = ConvertStubTensor(input_object);
   } else {
     MS_EXCEPTION(TypeError) << "Unreasonable data type: " << input_object.get_type() << ".";
   }

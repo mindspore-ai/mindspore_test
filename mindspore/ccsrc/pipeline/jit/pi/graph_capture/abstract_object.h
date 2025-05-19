@@ -375,7 +375,6 @@ class AbstractTensor : public AbstractObject {
   py::object GetTensor(bool sync);
 
   bool IsMindSporeSupportedType() override { return true; }
-  bool IsStubTensor() const { return is_stub_; }
 
  private:
   bool is_stub_;

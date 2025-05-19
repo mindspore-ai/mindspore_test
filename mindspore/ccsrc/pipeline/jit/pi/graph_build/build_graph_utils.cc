@@ -159,19 +159,12 @@ AbstractBasePtr BuildNodeAbstract(const AnfNodePtr &node) {
   return nullptr;
 }
 
-void SyncStubTensor(const py::handle &obj) {
+void SyncTensor(const py::handle &obj) {
   if (tensor::IsTensorPy(obj)) {
     auto tensor = tensor::ConvertToTensor(obj);
     MS_EXCEPTION_IF_NULL(tensor);
     tensor->data_sync();
-    return;
   }
-
-  if (!IsStubTensor(obj)) {
-    return;
-  }
-  auto tensor = ConvertStubTensor(obj);
-  tensor->data_sync();
 }
 
 bool IsObjectCallable(const py::object &obj) {
@@ -300,7 +293,7 @@ ValuePtr ConvertPyObjToValue(const py::handle &handle) {
   try {
     MS_LOG_TRY_CATCH_SCOPE;
     PyRecursionScope rec_check(obj);
-    SyncStubTensor(handle);
+    SyncTensor(handle);
 
     if (py::list::check_(obj) || py::tuple::check_(obj) || pijit::IsCellList(obj)) {
       std::vector<ValuePtr> elements;

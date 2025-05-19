@@ -328,7 +328,6 @@ void PyNativeExecutor::SetAsyncForGraph(bool flag) const {
 }
 
 void RegPyNativeExecutor(const py::module *m) {
-  stub::RegStubNodes(m);
   autograd::RegFunctionBase(m);
 
   (void)py::class_<PyNativeExecutor, std::shared_ptr<PyNativeExecutor>>(*m, "PyNativeExecutor_")

@@ -956,9 +956,6 @@ std::string PyParser::GetIdByPyObj(const py::object &obj) {
   if (tensor::IsTensorPy(obj)) {
     return tensor::ConvertToTensor(obj)->id();
   }
-  if (IsStubTensor(obj)) {
-    return ConvertStubTensor(obj)->id();
-  }
   if (py::isinstance<Cell>(obj)) {
     return obj.cast<CellPtr>()->id();
   }
@@ -1036,9 +1033,6 @@ void PyParser::SetPrim(const FrontendOpRunInfoPtr &op_run_info, const py::object
 
 std::string PyParser::BuilidPyInputTypeString(const py::object &obj) {
   if (tensor::IsTensorPy(obj)) {
-    return "Tensor";
-  }
-  if (IsStubTensor(obj)) {
     return "Tensor";
   }
   // bool must before int, because bool is a special int
