@@ -3364,24 +3364,7 @@ REG_BPROP_BUILDER("BernoulliExt").FreeUselessValues_IO({i0, i1, i2}, {}).SetBody
   return {dx, ib->OutZeros(seed), ib->OutZeros(offset)};
 });
 
-REG_BPROP_BUILDER("InplaceBernoulliTensor").FreeUselessValues_IO({i0, i2, i3}, {}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto p = ib->GetInput(kIndex1);
-  auto seed = ib->GetInput(kIndex2);
-  auto offset = ib->GetInput(kIndex3);
-  auto dout = ib->GetInput(kIndex5);
-  NodePtr dx = nullptr;
-  NodePtr dp = nullptr;
-  if (x->need_compute_grad_out()) {
-    dx = ib->Emit("ZerosLikeExt", {dout, ib->EmitValue(kNone)});
-  }
-  if (p->need_compute_grad_out()) {
-    dp = ib->Emit("ZerosLikeExt", {p, ib->EmitValue(kNone)});
-  }
-  return {dx, dp, ib->OutZeros(seed), ib->OutZeros(offset)};
-});
-
-REG_BPROP_BUILDER("InplaceBernoulliScalar").FreeUselessValues_IO({i0, i1, i2, i3}, {}).SetBody(BODYFUNC(ib) {
+NodePtrList InplaceBernoulliGrad(BpropBuilder *ib) {
   auto x = ib->GetInput(kIndex0);
   auto p = ib->GetInput(kIndex1);
   auto seed = ib->GetInput(kIndex2);
@@ -3392,7 +3375,9 @@ REG_BPROP_BUILDER("InplaceBernoulliScalar").FreeUselessValues_IO({i0, i1, i2, i3
     dx = ib->Emit("ZerosLikeExt", {dout, ib->EmitValue(kNone)});
   }
   return {dx, ib->OutZeros(p), ib->OutZeros(seed), ib->OutZeros(offset)};
-});
+}
+REG_BPROP_BUILDER("InplaceBernoulliTensor").FreeUselessValues_IO({i0, i1, i2, i3}, {}).SetBody(InplaceBernoulliGrad);
+REG_BPROP_BUILDER("InplaceBernoulliScalar").FreeUselessValues_IO({i0, i1, i2, i3}, {}).SetBody(InplaceBernoulliGrad);
 
 REG_BPROP_BUILDER("ReduceSum").SetUnusedInputs({i0, i4}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
