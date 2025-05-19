@@ -523,6 +523,22 @@ class TensorDataImpl : public TensorData {
   TensorDataImpl(const ShapeVector &shape, Scalar scalar)
       : ndim_(shape.size()), data_size_(SizeOf(shape)), data_(NewData<T>(scalar)) {}
 
+  TensorDataImpl(size_t size, bool has_sub_data) : TensorDataImpl(ShapeVector{static_cast<int64_t>(size)}) {
+    if (!has_sub_data) {
+      MS_LOG(ERROR) << "For Tensor Chunk Data, has_sub_data must be true, but got false";
+    }
+    has_sub_data_ = true;
+  }
+
+  TensorDataImpl(const ShapeVector &shape, bool ref_mem, void *data) : ndim_(shape.size()), data_size_(SizeOf(shape)) {
+    if (!ref_mem) {
+      MS_LOG(ERROR) << "For Tensor Ref Data, ref_mem must be true, but got false";
+    }
+    ref_mem_ = true;
+    external_data_ = static_cast<T *>(data);
+    data_.reset(nullptr);
+  }
+
   ssize_t size() const override { return static_cast<ssize_t>(data_size_); }
 
   ssize_t itemsize() const override { return static_cast<ssize_t>(sizeof(T)); }
@@ -533,9 +549,12 @@ class TensorDataImpl : public TensorData {
 
   bool is_sub_data() const override { return false; }
 
-  bool has_sub_data() const override { return false; }
+  bool has_sub_data() const override { return has_sub_data_; }
 
   void *data() override {
+    if (ref_mem_) {
+      return external_data_;
+    }
     if (data_ != nullptr) {
       return data_.get();
     }
@@ -573,6 +592,9 @@ class TensorDataImpl : public TensorData {
 
   const void *const_data() const override {
     // May return nullptr if data not initialized.
+    if (ref_mem_) {
+      return external_data_;
+    }
     return data_.get();
   }
 
@@ -594,6 +616,9 @@ class TensorDataImpl : public TensorData {
   }
 
   std::string ToString(TypeId type, const ShapeVector &shape, bool use_comma) const override {
+    if (ref_mem_) {
+      return "";
+    }
     TensorStringifier<T> stringifier{data_.get(), data_size_, ndim_};
     return stringifier.ToString(type, shape, use_comma);
   }
@@ -607,10 +632,13 @@ class TensorDataImpl : public TensorData {
     }
   }
 
+  bool has_sub_data_{false};
   size_t ndim_{0};
   size_t data_size_{0};
   std::unique_ptr<T[]> data_;
   std::string file_path_{""};
+  T *external_data_{nullptr};
+  bool ref_mem_{false};
 };
 
 MS_CORE_API std::string GetTensorDataString(TypeId data_type, const ShapeVector &shape, void *data, size_t size,

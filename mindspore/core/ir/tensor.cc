@@ -53,26 +53,6 @@ std::unique_ptr<DeviceInfo> CopyDeviceInfo(const std::unique_ptr<DeviceInfo> &de
   return device_info == nullptr ? nullptr : std::make_unique<DeviceInfo>(device_info);
 }
 
-// Tensor chunk data.
-template <typename T>
-class TensorChunkData : public TensorDataImpl<T> {
- public:
-  explicit TensorChunkData(size_t size) : TensorDataImpl<T>(ShapeVector{static_cast<int64_t>(size)}) {}
-
-  ~TensorChunkData() override = default;
-
-  bool has_sub_data() const override { return true; }
-};
-
-// Tensor compression data.
-template <typename T>
-class CompressionTensorData : public TensorDataImpl<T> {
- public:
-  explicit CompressionTensorData(size_t size) : TensorDataImpl<T>(ShapeVector{static_cast<int64_t>(size)}) {}
-
-  ~CompressionTensorData() override = default;
-};
-
 // TensorSubData is the base class to provide tensor data as a segment from an owner tensor data.
 class TensorSubData : public TensorData {
  public:
@@ -369,15 +349,19 @@ Tensor::Tensor(bool input, const TypePtr &data_type)
 Tensor::Tensor(TypeId data_type, size_t data_size)
     : Tensor(data_type, ShapeVector{static_cast<int64_t>(data_size)},
              MakeDeviceAddress(data_type, ShapeVector{static_cast<int64_t>(data_size)},
-                               MakeTensorData<TensorChunkData>(data_type, data_size))) {}
+                               MakeTensorData(data_type, data_size, true))) {}
 
 Tensor::Tensor(TypeId origin_data_type, const ShapeVector &shape, size_t compression_data_size,
                TensorCompressionType compression_type)
-    : Tensor(origin_data_type, shape,
-             MakeDeviceAddress(kNumberTypeInt8, shape,
-                               MakeTensorData<CompressionTensorData>(kNumberTypeInt8, compression_data_size))) {
+    : Tensor(
+        origin_data_type, shape,
+        MakeDeviceAddress(kNumberTypeInt8, shape,
+                          MakeTensorData(kNumberTypeInt8, ShapeVector{static_cast<int64_t>(compression_data_size)}))) {
   compression_type_ = compression_type;
 }
+
+Tensor::Tensor(TypeId data_type, const ShapeVector &shape, bool ref_mem, void *data)
+    : Tensor(data_type, shape, MakeDeviceAddress(data_type, shape, MakeTensorData(data_type, shape, ref_mem, data))) {}
 
 Tensor::~Tensor() {
   try {
