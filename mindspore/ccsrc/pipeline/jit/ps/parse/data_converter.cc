@@ -665,6 +665,39 @@ void ConvertBackwardHookToFuncGraph(const py::object &obj) {
   return;
 }
 
+FuncGraphPtr CreateShardFuncGraph(const py::object &obj, const FuncGraphPtr &func_graph) {
+  MS_LOG(INFO) << "Create Shard Node for Cell: " << py::str(obj) << ", func_graph: " << func_graph->ToString();
+
+  FuncGraphPtr shard_graph = std::make_shared<FuncGraph>();
+  for (size_t i = 0; i < func_graph->parameters().size(); i++) {
+    shard_graph->add_parameter();
+  }
+
+  auto in_strategy = parse::data_converter::PyDataToValue(py::getattr(obj, CELL_IN_STRATEGY));
+  auto out_strategy = parse::data_converter::PyDataToValue(py::getattr(obj, CELL_OUT_STRATEGY));
+  MS_LOG(INFO) << "in_strategy: " << in_strategy->ToString() << ", out_strategy: " << out_strategy->ToString();
+
+  std::vector<AnfNodePtr> shard_inputs{NewValueNode(prim::kPrimShard),
+                                       NewValueNode(func_graph),
+                                       NewValueNode(in_strategy),
+                                       NewValueNode(out_strategy),
+                                       NewValueNode(MakeValue(kAscendDevice)),
+                                       NewValueNode(MakeValue<int64_t>(0))};
+  auto shard_node = shard_graph->NewCNodeInOrder(shard_inputs);
+
+  std::vector<AnfNodePtr> shard_node_inputs{shard_node};
+  auto shard_graph_params = shard_graph->parameters();
+  (void)std::copy(shard_graph_params.begin(), shard_graph_params.end(), std::back_inserter(shard_node_inputs));
+  auto shard_out = shard_graph->NewCNodeInOrder(shard_node_inputs);
+  shard_graph->set_output(shard_out);
+
+  shard_graph->set_flag(FUNC_GRAPH_FLAG_CORE, true);
+  MS_EXCEPTION_IF_NULL(shard_graph->debug_info());
+  shard_graph->debug_info()->set_name(func_graph->debug_info()->name() + "_with_shard");
+
+  return shard_graph;
+}
+
 ValuePtr ConvertCellObjToFuncGraph(const py::object &obj, const ValuePtrList &args_value_list) {
   if (py::hasattr(obj, "construct")) {
     const auto &construct_obj = py::getattr(obj, "construct");
@@ -708,6 +741,14 @@ ValuePtr ConvertCellObjToFuncGraph(const py::object &obj, const ValuePtrList &ar
   if (common::GetCompileConfig("CELL_PARAMETERS_HOOK") == "1") {
     ConvertForwardHookToFuncGraph(obj);
     ConvertBackwardHookToFuncGraph(obj);
+  }
+
+  if (py::hasattr(obj, CELL_IN_STRATEGY)) {
+    auto cell_in_strategy_obj = py::getattr(obj, CELL_IN_STRATEGY);
+    if (!cell_in_strategy_obj.is_none()) {
+      FuncGraphPtr shard_graph = CreateShardFuncGraph(obj, func_graph);
+      return shard_graph;
+    }
   }
 
   return func_graph;

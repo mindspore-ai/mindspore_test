@@ -199,6 +199,8 @@ const char CELL_PARAMETERS_FORWARD_HOOK[] = "_parameters_forward_hook";
 const char CELL_PARAMETERS_BACKWARD_HOOK[] = "_parameters_backward_hook";
 const char CELL_PARAMETERS_AND_NAMES[] = "parameters_and_names";
 const char CELL_CELLS_AND_NAMES[] = "cells_and_names";
+const char CELL_IN_STRATEGY[] = "_in_strategy";
+const char CELL_OUT_STRATEGY[] = "_out_strategy";
 
 // Define ref tensor user data keys.
 const char REF_TENSOR_BACKWARD_HOOK[] = "backward_hook";

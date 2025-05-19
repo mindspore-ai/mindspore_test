@@ -64,6 +64,5 @@ def test_semi_auto_parallel():
     x2 = ms.Tensor(np.arange(1, 9) * 0.1, dtype=ms.float32)
 
     net = MorpTestNet()
-    net.shard(((get_group_size(),),))
     out = net(x1, x2)
     print("out: ", out)

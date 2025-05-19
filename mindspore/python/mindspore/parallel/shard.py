@@ -394,7 +394,7 @@ class Shard(Shard_):
                 f"The tuple strategy for each dimension should be tuple(int).")
 
 
-def shard(fn, in_strategy, out_strategy=None, parameter_plan=None, device="Ascend", level=0):
+def shard(fn, in_strategy, out_strategy=None, parameter_plan=None):
     """
     Specify the input and output slicing strategy for a Cell or function.
     In PyNative mode, use this method to specify a Cell for distributed
@@ -432,19 +432,12 @@ def shard(fn, in_strategy, out_strategy=None, parameter_plan=None, device="Ascen
                                             has been set, the parameter setting will be ignored. Supported
                                             only when `fn` is a Cell with parameters.
                                             Default: ``None`` .
-        device (str, optional): Select a certain `device` target. It is not in use right now.
-                                Support ["CPU", "GPU", "Ascend"]. Default: ``"Ascend"`` .
-        level (int, optional): Option for parallel strategy infer algorithm, namely the object function,
-            maximize computation
-            over communication ratio, maximize speed performance, minimize memory usage etc. It is not in
-            use right now. Support [0, 1, 2]. Default: ``0`` .
 
     Returns:
         Function, return the function that will be executed under auto parallel process.
 
     Raises:
         AssertionError: If parallel mode is not "auto_parallel" nor "semi_auto_parallel".
-        AssertionError: If device_target it not "Ascend" or "GPU".
         TypeError: If `in_strategy` is not a tuple.
         TypeError: If `out_strategy` is not a tuple or None.
         TypeError: If any element in `in_strategy` is not a tuple(int) or tuple(mindspore.parallel.Layout).
@@ -452,8 +445,6 @@ def shard(fn, in_strategy, out_strategy=None, parameter_plan=None, device="Ascen
         TypeError: If `parameter_plan` is not a dict or None.
         TypeError: If any key in `parameter_plan` is not a str.
         TypeError: If any value in `parameter_plan` is not a tuple(int) or a tuple(mindspore.parallel.Layout).
-        TypeError: If `device` is not a str.
-        TypeError: If `level` is not an integer.
 
     Supported Platforms:
         ``Ascend``
@@ -556,4 +547,5 @@ def shard(fn, in_strategy, out_strategy=None, parameter_plan=None, device="Ascen
     if not isinstance(fn, (ms.nn.Cell)):
         logger.warning("'fn' is not a mindspore.nn.Cell, and its definition cannot involve Parameter; "
                        "otherwise, the result may be incorrect.")
-    return Shard()(fn, in_strategy, out_strategy, parameter_plan, device, level)
+
+    return Shard()(fn, in_strategy, out_strategy, parameter_plan)
