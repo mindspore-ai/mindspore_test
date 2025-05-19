@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 import os
+import subprocess
 from mindspore import context
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
@@ -79,15 +80,20 @@ def test_hccl_get_process_group_ranks_func_8p():
 
 
 @arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="allcards", essential_mark="essential")
-def test_hccl_get_comm_name_func_8p():
+def test_get_comm_name_create_group_with_options_func_8p():
     """
-    Feature: mpi run 8P case
-    Description: mpi run 8P case
+    Feature: msrun 8P case
+    Description: msrun 8P case
     Expectation: success
     """
-    context.set_context(mode=context.PYNATIVE_MODE, device_target="Ascend")
-    return_code = os.system("mpirun --allow-run-as-root -n 8 pytest -s test_get_comm_name.py")
-    assert return_code == 0
+    os.environ['GLOG_v'] = str(2)
+    result = subprocess.getoutput(
+        "export HCCL_BUFFSIZE=300; msrun --worker_num=8 --local_worker_num=8 --master_port=10969 --join=True "\
+        "--log_dir=get_comm_name_create_group_options pytest -s test_get_comm_name_create_group.py"
+    )
+    assert result.find("HcclCommInitRootInfoConfig for group_buffersize_default, hcclBufferSize is 300 MB") != -1
+    assert result.find("HcclCommInitRootInfoConfig for group_buffersize_400, hcclBufferSize is 400 MB") != -1
+    assert result.find("HcclCommInitRootInfoConfig for group_buffersize_100, hcclBufferSize is 100 MB") != -1
 
 
 @arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="allcards", essential_mark="essential")
