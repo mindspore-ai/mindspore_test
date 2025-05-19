@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,7 @@
 #include "frontend/optimizer/irpass/symbol_resolver.h"
 #include "include/common/fallback.h"
 #include "include/common/debug/anf_dump_utils.h"
+#include "include/common/utils/hook.h"
 #include "utils/log_adapter.h"
 #include "include/common/utils/tensor_py.h"
 #include "include/common/utils/tensor_py_wrapper.h"
@@ -52,6 +53,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ccsrc/include/common/pynative/variable.h"
 
 namespace mindspore {
 namespace parse {
@@ -962,6 +964,45 @@ bool ResolveAll(const FuncGraphManagerPtr &manager) {
     }
   }
   return true;
+}
+
+TensorHookMapPtr ResolveTensorHooks(const pipeline::ResourceBasePtr &resource, const tensor::TensorPtr &tensor) {
+  const auto &grad_meta_data = tensor->auto_grad_meta_data();
+  if (grad_meta_data == nullptr) {
+    MS_LOG(DEBUG) << "The grad_meta_data of " << tensor->ToString() << " is nullptr.";
+    return nullptr;
+  }
+
+  const auto &grad_node = grad_meta_data->UnsafeGetGradNodeImpl();
+  if (grad_node == nullptr) {
+    return nullptr;
+  }
+  const auto &backward_hooks = grad_node->py_tensor_pre_hooks();
+
+  TensorHookMapPtr hooks = std::make_shared<TensorHookMap>();
+  for (const auto &[id, hook] : backward_hooks) {
+    py::module mod = python_adapter::GetPyModule(parse::PYTHON_MOD_PARSE_MODULE);
+    py::object wrappered_hook = python_adapter::CallPyModFn(mod, parse::PYTHON_MOD_HOOK_WRAPPER, hook->hook_fn_);
+    auto func = parse::ParsePythonCode(wrappered_hook);
+    MS_EXCEPTION_IF_NULL(func);
+
+    // Hook may have side effects.
+    func->set_flag(mindspore::kFuncGraphFlagBackPropEntry, true);
+    func->set_flag(mindspore::kFuncGraphFlagReAutoMonad, true);
+
+    pipeline::ResourceBasePtr res = (resource != nullptr ? resource : std::make_shared<pipeline::Resource>());
+    (void)parse::ResolveFuncGraph(func, res, false);
+
+    func->set_reserved(true);
+    for (auto &fg : func->func_graphs_used_total()) {
+      MS_EXCEPTION_IF_NULL(fg);
+      fg->set_reserved(true);
+    }
+
+    hooks->emplace(id, func);
+  }
+
+  return hooks;
 }
 
 // If any mixed precision flag add a cast node after the parameter node.

@@ -76,6 +76,15 @@ class JitNet(nn.Cell):
         out = (self.net0(x) + self.net0(y)) * (self.weight1 + self.weight2)
         return out
 
+class NetForHighOrderDerivative(nn.Cell):
+    def __init__(self):
+        super(NetForHighOrderDerivative, self).__init__()
+        self.weight1 = Parameter(Tensor(np_weight1, ms.float32), name="weight1")
+
+    def construct(self, x, y):
+        out = x * x * y * y * self.weight1
+        return out
+
 ground_net = Net(Net0())
 ground_grad_op = ops.GradOperation(get_all=True, get_by_list=True)
 ground_grad_net = ground_grad_op(ground_net, ground_net.trainable_params())
@@ -427,3 +436,50 @@ def test_register_for_different_tensors():
     output2_grad = output2[0][0].asnumpy()
     expected_grad = ground_output2[0][0].asnumpy()
     assert np.allclose(output2_grad, expected_grad)
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_register_hook_with_high_grad():
+    """
+    Feature: Tensor.register_hook(hook_fn) outside graph.
+    Description: Test register hook for the input tensor of a high order derivative function.
+    Expectation: The grad of tensor is changed by hook.
+    """
+    context.set_context(mode=context.GRAPH_MODE)
+    net = NetForHighOrderDerivative()
+    first_derivative = ops.grad(net, grad_position=(0, 1))
+    second_derivative = ops.grad(first_derivative, grad_position=(0, 1))
+    input_x1 = Tensor(np_input_x1, ms.float32)
+    input_x1.register_hook(hook_double)
+
+    input_x2 = Tensor(np_input_x2, ms.float32)
+    input_x2.register_hook(hook_triple)
+
+    output = first_derivative(input_x1, input_x2)
+
+    # df/dx
+    output_grad0 = output[0].asnumpy()
+    expected_grad0 = hook_double(2 * np_weight1 * np_input_x1 * np_input_x2 ** 2)
+    assert np.allclose(output_grad0, expected_grad0)
+
+    # df/dy
+    output_grad1 = output[1].asnumpy()
+    expected_grad1 = hook_triple(2 * np_weight1 * np_input_x2 * np_input_x1 ** 2)
+    assert np.allclose(output_grad1, expected_grad1)
+
+    output = second_derivative(input_x1, input_x2)
+
+    # d²f/(dxdx) + d²f/(dydx)
+    output_grad0 = output[0].asnumpy()
+    expected_grad0 = hook_double(
+        hook_double(2 * np_weight1 * np_input_x2 ** 2) +
+        hook_triple(4 * np_weight1 * np_input_x1 * np_input_x2)
+    )
+    assert np.allclose(output_grad0, expected_grad0)
+
+    # d²f/(dydy) + d²f/(dxdy)
+    output_grad1 = output[1].asnumpy()
+    expected_grad1 = hook_triple(
+        hook_double(4 * np_weight1 * np_input_x1 * np_input_x2) +
+        hook_triple(2 * np_weight1 * np_input_x1 ** 2)
+    )
+    assert np.allclose(output_grad1, expected_grad1)

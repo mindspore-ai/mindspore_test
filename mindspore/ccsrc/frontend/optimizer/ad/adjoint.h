@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@
 
 #include "ir/anf.h"
 #include "frontend/optimizer/opt.h"
+#include "mindspore/ccsrc/pipeline/jit/ps/resource_base.h"
 
 namespace mindspore {
 namespace ad {
@@ -37,9 +38,11 @@ class Adjoint {
   AnfNodePtr dout();
   void AccumulateDout(const AnfNodePtr &dout_factor);
   void RegisterDoutUser(const CNodePtr &user, size_t index);
-  void CallDoutHole();
+  void CallDoutHole(const pipeline::ResourceBasePtr &resources);
 
  private:
+  AnfNodePtr ApplyTensorHookForDout(const pipeline::ResourceBasePtr &resources);
+
   AnfNodePtr primal_;
   FuncGraphPtr caller_;
   // For ```def f(x): return expr```, The representation graph k is ```def kf(kx): return expr, bprop{expr}```.

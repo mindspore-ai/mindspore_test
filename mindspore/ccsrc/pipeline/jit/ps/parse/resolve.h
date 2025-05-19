@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2023 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@
 #include "pipeline/jit/ps/parse/parse_base.h"
 #include "abstract/abstract_value.h"
 #include "utils/log_adapter.h"
+#include "utils/tensor_hook_map.h"
 
 // forward declaration of ResourceBase
 namespace mindspore {
@@ -241,6 +242,8 @@ bool ResolveFuncGraph(const FuncGraphPtr &func_graph, const pipeline::ResourceBa
 // Resolve all graphs in manager which is defined outside of pipeline::Resource.
 // Mainly used for test cases or resolve graphs which will not be managed by manager.
 bool ResolveAll(const FuncGraphManagerPtr &manager);
+
+TensorHookMapPtr ResolveTensorHooks(const pipeline::ResourceBasePtr &resource, const tensor::TensorPtr &tensor);
 
 py::object GetSymbolObject(const NameSpacePtr &name_space, const SymbolPtr &symbol, const AnfNodePtr &node);
 ValuePtr GetParameterValue(const py::object &param_obj);

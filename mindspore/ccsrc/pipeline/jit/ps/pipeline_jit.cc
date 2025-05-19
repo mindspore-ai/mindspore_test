@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -290,7 +290,7 @@ void JitExecutorPy::ConvertArgs(const py::tuple &args, const py::dict &kwargs, c
     if (iter != cur_convert_input_.end()) {
       (void)arguments.emplace_back(iter->second.first);
       (void)args_abs.emplace_back(iter->second.second);
-      SetHookForArgAbstract(args[i], iter->second.second);
+      SetHookForArgAbstract(resource, args[i], iter->second.second);
       continue;
     }
     ValuePtr converted = nullptr;
@@ -303,7 +303,7 @@ void JitExecutorPy::ConvertArgs(const py::tuple &args, const py::dict &kwargs, c
     auto args_abstract_item = ArgsToAbstract(args[i], converted, enable_tuple_broaden_);
     (void)args_abs.emplace_back(args_abstract_item);
     args_abstract_item->set_user_data<size_t>(kActualArgumentIndex, std::make_shared<size_t>(i));
-    SetHookForArgAbstract(args[i], args_abstract_item);
+    SetHookForArgAbstract(resource, args[i], args_abstract_item);
   }
   for (const auto &item : kwargs) {
     auto iter = cur_convert_input_.find(item.first.ptr());
@@ -311,7 +311,7 @@ void JitExecutorPy::ConvertArgs(const py::tuple &args, const py::dict &kwargs, c
       (void)arguments.emplace_back(iter->second.first);
       (void)args_abs.emplace_back(iter->second.second);
       auto keyword_arg_abs = iter->second.second->cast<abstract::AbstractKeywordArgPtr>();
-      SetHookForArgAbstract(py::cast<py::object>(item.second), keyword_arg_abs->get_arg());
+      SetHookForArgAbstract(resource, py::cast<py::object>(item.second), keyword_arg_abs->get_arg());
       continue;
     }
     ValuePtr key = nullptr;
@@ -326,7 +326,7 @@ void JitExecutorPy::ConvertArgs(const py::tuple &args, const py::dict &kwargs, c
     auto keyword_arg_abs = std::make_shared<abstract::AbstractKeywordArg>(GetValue<std::string>(key), value_abs);
     (void)arguments.emplace_back(value);
     (void)args_abs.emplace_back(keyword_arg_abs);
-    SetHookForArgAbstract(py::cast<py::object>(item.second), value_abs);
+    SetHookForArgAbstract(resource, py::cast<py::object>(item.second), value_abs);
   }
   AddManagerForFuncGraphArgs(resource, arguments);
   resource->set_arguments(arguments);

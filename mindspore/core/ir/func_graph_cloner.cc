@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@
 #include "utils/ms_context.h"
 #include "utils/profile.h"
 #include "utils/trace_base.h"
+#include "utils/tensor_hook_map.h"
 
 // namespace to support intermediate representation definition
 namespace mindspore {
@@ -57,6 +58,14 @@ GraphDebugInfoPtr CloneGraphDebugInfo(const GraphDebugInfoPtr &debug_info, const
     trace_info->set_debug_info(debug_info);
   }
   return std::make_shared<GraphDebugInfo>(std::move(trace_info));
+}
+
+void CloneTensorHook(const ParameterPtr &old_param, const ParameterPtr &new_param) {
+  if (old_param->has_user_data(TENSOR_HOOK_MAP)) {
+    auto user_data = old_param->user_data<TensorHookMap>(TENSOR_HOOK_MAP);
+    MS_EXCEPTION_IF_NULL(user_data);
+    new_param->set_user_data(TENSOR_HOOK_MAP, user_data);
+  }
 }
 }  // namespace
 
@@ -97,7 +106,7 @@ void Cloner::CloneNode(const AnfNodePtr &node, const FuncGraphPtr &target) {
 void Cloner::CloneParameter(const AnfNodePtr &node, const FuncGraphPtr &target, bool is_add) {
   MS_EXCEPTION_IF_NULL(node);
   MS_EXCEPTION_IF_NULL(target);
-  auto old_param = node->cast_ptr<Parameter>();
+  auto old_param = node->cast<ParameterPtr>();
   MS_EXCEPTION_IF_NULL(old_param);
   auto debug_info = CloneNodeDebugInfo(node->debug_info(), relation_);
   ParameterPtr new_param;
@@ -118,6 +127,9 @@ void Cloner::CloneParameter(const AnfNodePtr &node, const FuncGraphPtr &target, 
   new_param->set_is_top_graph_param(old_param->is_top_graph_param());
   ScopePtr scope = ((node->scope() == kDefaultScope) && (this->scope() != nullptr)) ? this->scope() : node->scope();
   new_param->set_scope(scope);
+
+  CloneTensorHook(old_param, new_param);
+
   replicated_node_[node] = std::move(new_param);
 }
 
@@ -411,7 +423,7 @@ void Cloner::CloneParameter(const ParameterPtr &param, const AnfNodePtr &node) c
     param->set_abstract(node->abstract());
   }
   if (node->isa<Parameter>()) {
-    auto old_param = node->cast_ptr<Parameter>();
+    auto old_param = node->cast<ParameterPtr>();
     if (old_param->has_default()) {
       // Default parameter can be shared since it is readonly.
       param->set_default_param(old_param->default_param_raw());
@@ -422,6 +434,8 @@ void Cloner::CloneParameter(const ParameterPtr &param, const AnfNodePtr &node) c
     if (lifted != nullptr && *lifted) {
       param->set_user_data<bool>(lifted_user_data_key, std::make_shared<bool>(true));
     }
+
+    CloneTensorHook(old_param, param);
   }
 }
 

@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -135,85 +135,6 @@ bool ContainsAbstractFunction(const abstract::AbstractBasePtr &abs) {
   return false;
 }
 
-ValuePtr CreateInsertGradientOf(const py::function &hook_fn) {
-  auto ops_mod = python_adapter::GetPyModule("mindspore.ops.operations.debug_ops");
-  auto op_class = python_adapter::GetPyObjAttr(ops_mod, "InsertGradientOf");
-
-  auto params = py::tuple(1);
-  params[0] = *hook_fn;
-
-  auto obj = parse::data_converter::CreatePythonObject(op_class, params);
-  if (py::isinstance<py::none>(obj)) {
-    MS_LOG(EXCEPTION) << "Create python object `" << py::str(op_class)
-                      << "` failed, only support to create 'Cell', 'Primitive' or "
-                      << "user-defined class decorated with 'jit_class'.";
-  }
-
-  ValuePtr converted_res = nullptr;
-  bool converted = parse::ConvertData(obj, &converted_res, false);
-  if (!converted) {
-    MS_LOG(INTERNAL_EXCEPTION) << "Convert the python object failed.";
-  }
-  MS_EXCEPTION_IF_NULL(converted_res);
-
-  return converted_res;
-}
-
-bool IsGradFgCaller(const AnfNodePtr &node) {
-  auto cnode = dyn_cast<CNode>(node);
-  if (cnode == nullptr || cnode->empty()) {
-    return false;
-  }
-  auto call_fg = GetValueNode<FuncGraphPtr>(cnode->input(0));
-  return call_fg != nullptr && call_fg->has_flag("grad_fg");
-}
-
-bool IsUsedAsGradFgArgs(const AnfNodePtr &node, const NodeUsersMap &node_users_map) {
-  if (!IsPrimitiveCNode(node, prim::kPrimMakeTuple)) {
-    return IsGradFgCaller(node);
-  }
-  auto node_users_iter = node_users_map.find(node);
-  if (node_users_iter == node_users_map.end()) {
-    return false;
-  }
-  auto node_users = node_users_iter->second;
-  if (node_users.size() != 1) {
-    return false;
-  }
-  return IsGradFgCaller(node_users.begin()->first);
-}
-
-void AddHookNodeForParameter(const FuncGraphPtr &func_graph, const ParameterPtr &param_node) {
-  if (!(param_node->has_default() && param_node->default_param()->has_user_data("backward_hook"))) {
-    return;
-  }
-
-  auto hook_map = param_node->default_param()->user_data<std::map<uint64_t, py::function>>("backward_hook");
-  if (hook_map == nullptr) {
-    MS_LOG(EXCEPTION) << "Invalid hook map for abs: " << param_node->default_param()->ToString() << ".";
-  }
-  for (auto iter = hook_map->begin(); iter != hook_map->end(); iter++) {
-    const auto &hook_fn = iter->second;
-    const auto insert_grad_of = CreateInsertGradientOf(hook_fn);
-    auto value_node = NewValueNode(insert_grad_of);
-    value_node->set_abstract(insert_grad_of->ToAbstract());
-    const auto node_users_map = func_graph->manager()->node_users();
-    auto node_users_iter = node_users_map.find(param_node);
-    if (node_users_iter == node_users_map.end()) {
-      return;
-    }
-    for (const auto &node_and_index : node_users_iter->second) {
-      if (IsUsedAsGradFgArgs(node_and_index.first, node_users_map)) {
-        continue;
-      }
-      const auto &fg = node_and_index.first->func_graph();
-      auto new_node = fg->NewCNode({value_node, param_node});
-      new_node->set_abstract(param_node->abstract());
-      func_graph->manager()->SetEdge(node_and_index.first, node_and_index.second, new_node);
-    }
-  }
-}
-
 void UpdateFuncGraphParameter(const FuncGraphPtr &func_graph, const std::vector<ValuePtr> &arguments) {
   MS_EXCEPTION_IF_NULL(func_graph);
   std::vector<AnfNodePtr> new_paras;
@@ -221,9 +142,6 @@ void UpdateFuncGraphParameter(const FuncGraphPtr &func_graph, const std::vector<
     const auto &param = func_graph->parameters()[i];
     auto param_node = param->cast<ParameterPtr>();
     MS_EXCEPTION_IF_NULL(param_node);
-    if (i >= arguments.size()) {
-      AddHookNodeForParameter(func_graph, param_node);
-    }
 
     if (param_node->has_default()) {
       new_paras.push_back(param_node);
@@ -1191,57 +1109,6 @@ abstract::AbstractBasePtrList GetArgsAbs(const ResourcePtr &resource) {
   return args_abs;
 }
 
-void AddHookNodeForArgs(const ResourcePtr &resource, const FuncGraphPtr &new_fg) {
-  AnfNodePtr j_node = nullptr;
-  for (const auto &node : resource->manager()->all_nodes()) {
-    if (IsPrimitiveCNode(node, prim::kPrimJ)) {
-      j_node = node;
-      break;
-    }
-  }
-
-  if (j_node == nullptr) {
-    MS_LOG(DEBUG) << "No J node is found, so no hook will be added.";
-    return;
-  }
-
-  auto forward_graph = GetValueNode<FuncGraphPtr>(j_node->cast<CNodePtr>()->input(1));
-  for (const auto &param : forward_graph->parameters()) {
-    auto abs = param->abstract();
-    if (abs == nullptr) {
-      MS_LOG(DEBUG) << "Param: " << param->ToString() << " has no abstract.";
-      continue;
-    }
-    if (!((abs->isa<abstract::AbstractTensor>() && abs->has_user_data("backward_hook")) ||
-          (abs->isa<abstract::AbstractKeywordArg>() &&
-           abs->cast<abstract::AbstractKeywordArgPtr>()->get_arg()->has_user_data("backward_hook")))) {
-      MS_LOG(DEBUG) << "param: " << param->ToString() << " with abs(" << abs.get() << "): " << abs
-                    << " has no backward hook or not support register hook.";
-      continue;
-    }
-    MS_LOG(DEBUG) << "Add hooks for param: " << param->ToString() << " with abs(" << abs.get() << "): " << abs;
-
-    AbstractBasePtr tensor_abs;
-    if (abs->isa<abstract::AbstractTensor>()) {
-      tensor_abs = abs;
-    } else if (abs->isa<abstract::AbstractKeywordArg>()) {
-      tensor_abs = abs->cast<abstract::AbstractKeywordArgPtr>()->get_arg();
-    }
-
-    auto hook_vec = tensor_abs->user_data<std::vector<py::function>>("backward_hook");
-    if (hook_vec == nullptr) {
-      MS_LOG(EXCEPTION) << "Invalid hook list for tensor abs: " << tensor_abs->ToString();
-    }
-    for (size_t idx = 0; idx < hook_vec->size(); idx++) {
-      const auto &hook_fn = hook_vec->at(idx);
-      const auto insert_grad_of = CreateInsertGradientOf(hook_fn);
-      auto new_node = forward_graph->NewCNodeInFront({NewValueNode(insert_grad_of), param});
-      new_node->set_abstract(param->abstract());
-      resource->manager()->Replace(param, new_node);
-    }
-  }
-}
-
 bool IsInplaceOpNode(const AnfNodePtr &node) {
   if (!node->isa<CNode>()) {
     return false;
@@ -1425,8 +1292,6 @@ bool TypeInferenceAction(const ResourcePtr &resource) {
   CheckDuplicatedParameterName(new_fg->parameters());
   SetMindIRLoadFlag(resource);
   SetViewInplaceGradFlag(resource);
-
-  AddHookNodeForArgs(resource, new_fg);
 
   MS_LOG(DEBUG) << "End graph: " << new_fg->ToString() << ", return: " << new_fg->get_return()->DebugString(true);
   return true;
@@ -1920,7 +1785,7 @@ void SetRunMode(const ResourcePtr &resource) {
     MS_LOG(INTERNAL_EXCEPTION) << "Current execution mode is 'kernelbykernel', reason: " << kbk_reason
                                << ", but you're launching job using 'ranktable', which "
                                   "does not support 'kernelbykernel' mode.\n Please refer to link: "
-                                  "https://www.mindspore.cn/tutorials/zh-CN/master/parallel/startup_method.html "
+                                  "https://www.mindspore.cn/tutorials/en/master/parallel/startup_method.html "
                                   "and use 'Dynamic cluster'(suggested) or 'mpirun' to launch your job.";
   }
 }

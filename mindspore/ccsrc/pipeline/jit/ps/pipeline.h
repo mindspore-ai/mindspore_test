@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -154,7 +154,7 @@ class FRONTEND_EXPORT GraphExecutorPy : public ExecutorPy {
   bool CompileInner(const FuncGraphPtr &graph, const py::tuple &args, const py::dict &kwargs, const std::string &phase,
                     bool trace_flag) override;
 
-  void ConvertArgs(const py::tuple &args, const py::dict &kwargs, bool is_auto_parallel,
+  void ConvertArgs(const py::tuple &args, const py::dict &kwargs, const ResourcePtr &resource, bool is_auto_parallel,
                    abstract::AbstractBasePtrList *args_abs, std::vector<ValuePtr> *arguments);
   void ConvertSymbolicShape(const py::tuple &args, AbstractBasePtrList *args_abs);
   py::bytes GetOptimizeGraphProto(const std::string &phase);
@@ -289,7 +289,7 @@ void RecordIR(const size_t action_index, const size_t action_size, const std::st
 AbstractBasePtr ArgsToAbstract(const py::object &arg, const ValuePtr &value, bool enable_tuple_broaden = false);
 void AddManagerForFuncGraphArgs(const ResourcePtr &resource, const ValuePtrList &arguments);
 void CheckInterpretNodeLineInfos();
-void SetHookForArgAbstract(const py::object &arg, abstract::AbstractBasePtr abs);
+void SetHookForArgAbstract(const ResourcePtr &resource, const py::object &arg, abstract::AbstractBasePtr abs);
 FRONTEND_EXPORT bool RunJitPipeline();
 FRONTEND_EXPORT void PreJit(const py::object &args, const py::object &kwargs);
 FRONTEND_EXPORT void CleanCache();
