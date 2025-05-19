@@ -340,6 +340,14 @@ class MS_CORE_API Tensor : public MetaTensor {
   Tensor(TypeId origin_data_type, const ShapeVector &shape, size_t compression_data_size,
          TensorCompressionType compression_type);
 
+  /// \brief Create a tensor with external data buffer.
+  ///
+  /// \param[in] data_type [TypeId] Data type of the tensor.
+  /// \param[in] shape The shape represented by ShapeVector of the tensor.
+  /// \param[in] ref_mem The length of data in bytes.
+  /// \param[in] data The input data to be referenced by tensor.
+  Tensor(TypeId data_type, const ShapeVector &shape, bool ref_mem, void *data);
+
   Tensor &operator=(const Tensor &tensor);
 
   /// Destructor of Tensor.
