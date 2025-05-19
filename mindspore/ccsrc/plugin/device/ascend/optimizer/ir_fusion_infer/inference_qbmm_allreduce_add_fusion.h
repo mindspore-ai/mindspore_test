@@ -36,6 +36,8 @@ class QbmmAllReduceAddFusion : public QbmmFusionBase {
  private:
   CNodePtr CreateQbmmAllReduceAddNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
                                       const EquivPtr &equiv) const;
+  CNodePtr CreateDynamicQbmmAllReduceAddNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
+                                             const EquivPtr &equiv) const;
   std::vector<std::string> MustExistPrimitiveName() const override;
 };
 }  // namespace opt

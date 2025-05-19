@@ -34,6 +34,8 @@ class QbmmAddFusion : public QbmmFusionBase {
 
  private:
   CNodePtr CreateQbmmAddNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node, const EquivPtr &equiv) const;
+  CNodePtr CreateDynamicQbmmAddNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
+                                    const EquivPtr &equiv) const;
   std::vector<std::string> MustExistPrimitiveName() const override;
 };
 }  // namespace opt

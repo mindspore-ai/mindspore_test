@@ -36,7 +36,7 @@ class QbmmFusionBase : public PatternProcessPass {
  protected:
   bool PassEnable(const std::string &op_name) const;
   void SetNodes(const EquivPtr &equiv) const;
-  bool CheckValid() const;
+  bool CheckValid(const bool &is_dynamic_quant) const;
   bool Init() const;
   mutable VarPtr x_ = nullptr;
   mutable VarPtr w_ = nullptr;
