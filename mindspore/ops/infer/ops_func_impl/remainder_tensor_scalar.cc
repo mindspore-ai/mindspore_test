@@ -16,44 +16,21 @@
 
 #include <memory>
 #include "infer/ops_func_impl/remainder_tensor_scalar.h"
-#include "mindspore/ops/ops_utils/op_utils.h"
-#include "ops/ops_func_impl/simple_infer.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "ops_utils/op_utils.h"
 
 namespace mindspore::ops {
-BaseShapePtr RemainderTensorScalarFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                                       const std::vector<AbstractBasePtr> &input_args) const {
-  return input_args[kInputIndex0]->GetShape();
-}
-
-TypePtr RemainderTensorScalarFuncImpl::InferType(const PrimitivePtr &primitive,
-                                                 const std::vector<AbstractBasePtr> &input_args) const {
-  auto input_type = input_args[kInputIndex0]->GetType();
-  auto other_type = input_args[kInputIndex1]->GetType();
-  MS_EXCEPTION_IF_NULL(input_type);
-  MS_EXCEPTION_IF_NULL(other_type);
-  auto out_type = PromoteType(input_type, other_type, primitive->name());
-  return std::make_shared<TensorType>(out_type);
-}
-
-// simple infer
-TypePtrList RemainderTensorScalarFuncImpl::InferType(const PrimitivePtr &primitive,
-                                                     const ValuePtrList &input_values) const {
-  const auto &input_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
-  const auto &other_value = input_values[kInputIndex1];
-  MS_EXCEPTION_IF_NULL(input_tensor);
-  MS_EXCEPTION_IF_NULL(other_value);
-  const auto &input_type = input_tensor->Dtype();
-  const auto &other_type = other_value->type();
-  return {PromoteType(input_type, other_type, primitive->name())};
-}
-
 ShapeArray RemainderTensorScalarFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                                     const ValuePtrList &input_values) const {
-  const auto &input_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
-  MS_EXCEPTION_IF_NULL(input_tensor);
-  return {input_tensor->shape()};
+                                                     const std::vector<InferInfoPtr> &input_infos) const {
+  return {input_infos[kIndex0]->GetShape()};
 }
 
-REGISTER_SIMPLE_INFER(kNameRemainderTensorScalar, RemainderTensorScalarFuncImpl)
+std::vector<TypeId> RemainderTensorScalarFuncImpl::InferType(const PrimitivePtr &primitive,
+                                                             const std::vector<InferInfoPtr> &input_infos) const {
+  const auto &x_type = input_infos[kIndex0]->GetType();
+  const auto &other_type = input_infos[kIndex1]->GetType();
+  if (common_float_type_ids.count(x_type) == 0 && common_float_type_ids.count(other_type) != 0) {
+    return {kNumberTypeFloat32};
+  }
+  return {input_infos[kIndex0]->GetType()};
+}
 }  // namespace mindspore::ops
