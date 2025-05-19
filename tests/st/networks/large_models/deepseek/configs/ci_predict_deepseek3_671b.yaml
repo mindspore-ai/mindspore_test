@@ -1,0 +1,116 @@
+seed: 0
+output_dir: './output' # path to save checkpoint/strategy
+run_mode: 'predict'
+use_parallel: True
+
+load_checkpoint: "/path/to/deepseekv3/model.safetensors"
+load_ckpt_format: "safetensors"
+auto_trans_ckpt: True # If true, auto transform load_checkpoint to load in distributed model
+
+# trainer config
+trainer:
+  type: CausalLanguageModelingTrainer
+  model_name: 'DeepSeekV3'
+
+# default parallel of device num = 32 for Atlas 800T A2
+parallel_config:
+  model_parallel: 32
+  pipeline_stage: 1
+  expert_parallel: 1
+  vocab_emb_dp: False
+
+# mindspore context init config
+context:
+  mode: 0 # 0--Graph Mode; 1--Pynative Mode
+  max_device_memory: "59GB"
+  device_id: 0
+  affinity_cpu_list: None
+
+# parallel context config
+parallel:
+  parallel_mode: "STAND_ALONE" # use 'STAND_ALONE' mode for inference with parallelism in frontend
+  full_batch: False
+  strategy_ckpt_save_file: "./ckpt_strategy.ckpt"
+
+# model config
+model:
+  model_config:
+    type: DeepseekV3Config
+    auto_register: deepseek3_config.DeepseekV3Config
+    batch_size: 1 # add for incre predict
+    seq_length: 4096
+    hidden_size: 7168
+    num_layers: 4
+    num_heads: 128
+    max_position_embeddings: 163840
+    intermediate_size: 18432
+    kv_lora_rank:  512
+    q_lora_rank: 1536
+    qk_rope_head_dim: 64
+    v_head_dim: 128
+    qk_nope_head_dim: 128
+    vocab_size: 129280
+    multiple_of: 256
+    rms_norm_eps: 1.0e-6
+    bos_token_id: 0
+    eos_token_id: 1
+    pad_token_id: 1
+    ignore_token_id: -100
+    compute_dtype: "bfloat16"
+    layernorm_compute_type: "bfloat16"
+    softmax_compute_type: "bfloat16"
+    rotary_dtype: "bfloat16"
+    router_dense_type: "bfloat16"
+    param_init_type: "bfloat16"
+    scaling_factor:
+      beta_fast: 32.0
+      beta_slow: 1.0
+      factor: 40.0
+      mscale: 1.0
+      mscale_all_dim: 1.0
+      original_max_position_embeddings: 4096
+    use_past: True
+    extend_method: "YARN"
+    use_flash_attention: True
+    block_size: 16
+    num_blocks: 512
+    offset: 0
+    checkpoint_name_or_path: ""
+    repetition_penalty: 1
+    max_decode_length: 1024
+    top_k: 1
+    top_p: 1
+    theta: 10000.0
+    do_sample: False
+    is_dynamic: True
+    qkv_concat: False
+    ffn_concat: False
+    auto_map:
+      AutoConfig: deepseek3_config.DeepseekV3Config
+      AutoModel: deepseek3.DeepseekV3ForCausalLM
+  arch:
+    type: DeepseekV3ForCausalLM
+    auto_register: deepseek3.DeepseekV3ForCausalLM
+
+moe_config:
+  expert_num: 256
+  num_experts_chosen: 8
+  routing_policy: "TopkRouterV2"
+  shared_expert_num: 1
+  routed_scaling_factor: 2.5
+  first_k_dense_replace: 1
+  moe_intermediate_size: 2048
+  topk_group: 4
+  n_group: 8
+
+processor:
+  return_tensors: ms
+  tokenizer:
+    unk_token: '<unk>'
+    bos_token: '<|begin_of_sentence|>'
+    eos_token: '<|end_of_sentence|>'
+    pad_token: '<|end_of_sentence|>'
+    type: LlamaTokenizerFast
+    vocab_file: '/path/to/deepseekv3/tokenizer.json'
+    tokenizer_file: '/path/to/deepseekv3/tokenizer.json'
+  type: LlamaProcessor
