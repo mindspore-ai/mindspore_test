@@ -1197,22 +1197,20 @@ ValuePtr AutoDiff::GetInputGrads(const ValuePtrList &inputs, bool grad_all_input
 }
 
 ValuePtr AutoDiff::GetTensorGrad(const ValuePtr &val) {
-  auto tensor = PyNativeAlgo::Common::GetTensorFromSparseTensor(val);
+  const auto tensor = PyNativeAlgo::Common::GetTensorFromSparseTensor(val);
   MS_EXCEPTION_IF_NULL(tensor);
-  auto auto_grad_meta_data = tensor->auto_grad_meta_data();
-  if (auto_grad_meta_data == nullptr) {
-    return AutoGradUtil::BuildSpecialValueGrad(val, nullptr, func_impl_.get(), SpecialType::kZerosLikeType);
+  if (const auto grad_node = impl::GetUnsafeGradNodeImpl(tensor)) {
+    const auto iter = gradient_contexts_.find(grad_node.get());
+    if (iter == gradient_contexts_.end()) {
+      MS_LOG(INFO) << "tensor requires grad is true, but not in grad graph";
+      const auto leaf_node = std::dynamic_pointer_cast<LeafNode>(grad_node);
+      MS_EXCEPTION_IF_NULL(leaf_node);
+      return LeafNodeNotInGradButHasTensorHook(leaf_node);
+    }
+    const auto tensor_grad = iter->second.captured_grad->grad;
+    return AutoGradUtil::BuildSpecialValueGrad(tensor, tensor_grad, func_impl_.get(), SpecialType::kZerosLikeType);
   }
-  auto grad_node = auto_grad_meta_data->UnsafeGetGradNodeImpl();
-  auto iter = gradient_contexts_.find(grad_node.get());
-  if (iter == gradient_contexts_.end()) {
-    MS_LOG(INFO) << "tensor requires grad is true, but not in grad graph";
-    auto leaf_node = std::dynamic_pointer_cast<LeafNode>(grad_node);
-    MS_EXCEPTION_IF_NULL(leaf_node);
-    return LeafNodeNotInGradButHasTensorHook(leaf_node);
-  }
-  auto tensor_grad = iter->second.captured_grad->grad;
-  return AutoGradUtil::BuildSpecialValueGrad(tensor, tensor_grad, func_impl_.get(), SpecialType::kZerosLikeType);
+  return AutoGradUtil::BuildSpecialValueGrad(val, nullptr, func_impl_.get(), SpecialType::kZerosLikeType);
 }
 
 ValuePtr AutoDiff::GetLeafNodeGrad(const BackwardNodePtr &grad_node) {
