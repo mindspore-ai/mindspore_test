@@ -3550,10 +3550,10 @@ REG_BPROP_BUILDER("Conv2DBackpropFilter").SetUnusedInputs({i2, i3}).SetBody(BODY
   auto filter_size = ib->GetInput(kIndex2);
   auto dout = ib->GetInput(kIndex4);
   auto x_shape = ib->Shape(x);
-  auto dw_dx = dy->need_compute_grad_out()
+  auto dw_dy = dy->need_compute_grad_out() ? ib->Emit(kConv2DOpName, {x, dout}, Conv2DAttrs(ib)) : ib->OutZeros(dy);
+  auto dw_dx = x->need_compute_grad_out()
                  ? ib->Emit(kConv2DBackpropInputOpName, {dy, dout, x_shape}, Conv2DBackpropAttrs(ib))
-                 : ib->OutZeros(dy);
-  auto dw_dy = x->need_compute_grad_out() ? ib->Emit(kConv2DOpName, {x, dout}, Conv2DAttrs(ib)) : ib->OutZeros(x);
+                 : ib->OutZeros(x);
   return {dw_dy, dw_dx, ib->OutZeros(filter_size)};
 });
 
