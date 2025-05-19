@@ -1773,7 +1773,7 @@ REG_BPROP_BUILDER("TopK").FreeUselessValues_IO({i0, i1}, {i0}).SetBody(BODYFUNC(
   }
 });
 
-REG_BPROP_BUILDER("TopkExt").FreeUselessValues_IO({i3, i4}, {i0}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("TopkExt").FreeUselessValues_IO({i0, i3, i4}, {i0}).SetBody(BODYFUNC(ib) {
   // x, k, dim, largest, sorted, out(values, indices), dout(grad_values, grad_indices)
   auto input_x = ib->GetInput(kIndex0);
   auto out = ib->GetInput(kIndex5);
@@ -3901,7 +3901,7 @@ REG_BPROP_BUILDER("AdaptiveAvgPool3D").SetUnusedInputs({i0, i1}).SetBody(BODYFUN
   return {dx};
 });
 
-REG_BPROP_BUILDER("AdaptiveAvgPool3DExt").SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("AdaptiveAvgPool3DExt").FreeUselessValues_O({}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto output_size = ib->GetInput(kIndex1);
   auto out = ib->GetInput(kIndex2);

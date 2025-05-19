@@ -2346,11 +2346,11 @@ REG_BPROP_BUILDER("CumsumExt").FreeUselessValues_IO({i0, i2}, {}).SetBody(BODYFU
   return {ret, ib->OutZeros(dim), ib->OutZeros(dtype)};
 });
 
-REG_BPROP_BUILDER("Cummax").FreeUselessValues_O({i0}).SetBody(BODYFUNC(ib) { return CumMaxMinGrad(ib); });
+REG_BPROP_BUILDER("Cummax").FreeUselessValues_IO({i0}, {i0}).SetBody(BODYFUNC(ib) { return CumMaxMinGrad(ib); });
 
-REG_BPROP_BUILDER("Cummin").FreeUselessValues_O({i0}).SetBody(BODYFUNC(ib) { return CumMaxMinGrad(ib); });
+REG_BPROP_BUILDER("Cummin").FreeUselessValues_IO({i0}, {i0}).SetBody(BODYFUNC(ib) { return CumMaxMinGrad(ib); });
 
-REG_BPROP_BUILDER("CumminExt").FreeUselessValues_O({i0}).SetBody(BODYFUNC(ib) { return CumMaxMinGrad(ib); });
+REG_BPROP_BUILDER("CumminExt").FreeUselessValues_IO({i0}, {i0}).SetBody(BODYFUNC(ib) { return CumMaxMinGrad(ib); });
 
 REG_BPROP_BUILDER("MulNoNan").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
@@ -3227,7 +3227,7 @@ REG_BPROP_BUILDER("Min").SetBody(BODYFUNC(ib) {
   return {dx};
 });
 
-REG_BPROP_BUILDER("MedianDim").SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("MedianDim").FreeUselessValues_IO({i0}, {i0}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto axis = ib->GetInput(kIndex1);
   auto keep_dims = ib->GetInput(kIndex2);
@@ -3326,7 +3326,7 @@ REG_BPROP_BUILDER("InplaceErfinv").CloneInplaceInput(CloneInplaceInputFuncForInp
 
 REG_BPROP_BUILDER("Bernoulli").FreeUselessValues_IO({}, {}).SetBody(ReturnZeros);
 
-REG_BPROP_BUILDER("BernoulliExt").FreeUselessValues_IO({i1, i2}, {}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("BernoulliExt").FreeUselessValues_IO({i0, i1, i2}, {}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto seed = ib->GetInput(kIndex1);
   auto offset = ib->GetInput(kIndex2);
@@ -3487,7 +3487,7 @@ REG_BPROP_BUILDER("ArgMinWithValue").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) 
   return {dx, ib->OutZeros(axis), ib->OutZeros(keep_dims)};
 });
 
-REG_BPROP_BUILDER("MaxDim").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("MaxDim").FreeUselessValues_IO({i0}, {i0}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto axis = ib->GetInput(kIndex1);
   auto keep_dims = ib->GetInput(kIndex2);
@@ -3497,7 +3497,7 @@ REG_BPROP_BUILDER("MaxDim").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
   return {dx, ib->OutZeros(axis), ib->OutZeros(keep_dims)};
 });
 
-REG_BPROP_BUILDER("MinDim").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("MinDim").FreeUselessValues_IO({i0}, {i0}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto axis = ib->GetInput(kIndex1);
   auto keep_dims = ib->GetInput(kIndex2);
