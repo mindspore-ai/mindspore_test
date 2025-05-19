@@ -27,6 +27,7 @@
 #include "mindspore/ops/op_def/structure_op_name.h"
 #include "utils/log_adapter.h"
 #include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/debug/execute_order_tracker/execute_order_tracker.h"
 #include "include/backend/optimizer/helper.h"
 #include "common/device_type.h"
 #include "include/common/utils/convert_utils.h"
@@ -36,6 +37,7 @@
 #include "runtime/pynative/op_executor.h"
 #include "runtime/pynative/op_compiler.h"
 #include "runtime/graph_scheduler/actor/actor_common.h"
+#include "runtime/graph_scheduler/execution_order_check/kernel_cache.h"
 #include "kernel/framework_utils.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "debug/profiler/profiling.h"
@@ -626,7 +628,15 @@ void LaunchKernels(const KernelGraphPtr &graph, const device::DeviceContext *dev
 
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "PyNative", node->fullname_with_scope(),
                                                    op_run_info->base_op_run_info.op_name);
+    auto &cache = KernelCache::GetInstance();
+    if (cache.need_add) {
+      cache.Add(node);
+    }
 
+    if (EnableExecuteOrderDump()) {
+      auto &execute_order_tracker = ExecuteOrderTracker::GetInstance();
+      execute_order_tracker.ProcessNode(node);
+    }
     if (!MallocForKernelInput(runtime_info, device_context, node)) {
       MS_LOG(EXCEPTION) << "Malloc for kernel input failed, Memory isn't enough, node:" << node->fullname_with_scope();
     }
@@ -918,6 +928,16 @@ void DynamicOpRunner::RunSingleOpGraph(const session::BackendOpRunInfoPtr &op_ru
     const auto &single_op = single_ops[i];
     const CNodePtr &kernel = single_op->kernel_;
     MS_EXCEPTION_IF_NULL(kernel);
+
+    auto &cache = KernelCache::GetInstance();
+    if (cache.need_add) {
+      cache.Add(kernel);
+    }
+
+    if (EnableExecuteOrderDump()) {
+      auto &execute_order_tracker = ExecuteOrderTracker::GetInstance();
+      execute_order_tracker.ProcessNode(kernel);
+    }
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "PyNative", kernel->fullname_with_scope(),
                                                    op_run_info->base_op_run_info.op_name);
 

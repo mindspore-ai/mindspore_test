@@ -19,16 +19,31 @@
 #ifndef MINDSPORE_CCSRC_RUNTIME_FRAMEWORK_EXECUTION_ORDER_CHECK_KERNEL_CACHE_H_
 #define MINDSPORE_CCSRC_RUNTIME_FRAMEWORK_EXECUTION_ORDER_CHECK_KERNEL_CACHE_H_
 
+#include <any>
 #include <vector>
 #include <mutex>
 #include <memory>
+#include <string>
 #include <unordered_map>
 #include "ir/anf.h"
+#include "include/backend/visible.h"
 
 namespace mindspore {
 namespace runtime {
+struct BACKEND_EXPORT CommPyboostKernel {
+  std::string primitive;
+  std::string group;
+  std::string input_shape;
+  std::string output_shape;
+  int64_t rank;
 
-class KernelCache {
+  CommPyboostKernel(const std::string &prim_name, const std::string &group, const std::string &input_shape,
+                    const std::string &output_shape, int64_t rank)
+      : primitive(prim_name), group(group), input_shape(input_shape), output_shape(output_shape), rank(rank) {}
+};
+using CommPyboostKernelPtr = std::shared_ptr<CommPyboostKernel>;
+
+class BACKEND_EXPORT KernelCache {
  public:
   static KernelCache &GetInstance() {
     static KernelCache instance;
@@ -37,9 +52,12 @@ class KernelCache {
 
   inline void Add(const CNodePtr &kernel) { current_buffer_.emplace_back(kernel); }
 
+  void AddPyboostKernel(const std::string &prim_name, const std::string &group, const std::string &input_shape,
+                        const std::string &output_shape, int64_t rank);
+
   void SwapBuffers(int step);
 
-  std::vector<CNodePtr> GetBuffers(int step);
+  std::vector<std::any> GetBuffers(int step);
 
   bool need_add{false};
 
@@ -49,8 +67,8 @@ class KernelCache {
   KernelCache(const KernelCache &) = delete;
   KernelCache &operator=(const KernelCache &) = delete;
 
-  std::vector<CNodePtr> current_buffer_;
-  std::unordered_map<int, std::vector<CNodePtr>> step_buffers_;
+  std::vector<std::any> current_buffer_;
+  std::unordered_map<int, std::vector<std::any>> step_buffers_;
   std::mutex mutex_;
 };
 }  // namespace runtime

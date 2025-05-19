@@ -22,12 +22,57 @@ from multiprocessing import cpu_count
 from typing import List, Dict, Union, Optional
 import sys
 import mindspore.log as logger
+from mindspore._c_expression import CommExecOrderChecker
 
 # Set Recursion Depth Limit
 sys.setrecursionlimit(10000)
 # support hccl group 150000 card
 csv.field_size_limit(1024 * 1024)
 
+class CommExecOrderCheck:
+    """Controller for communication execution order verification.
+
+    Provides interface for starting/stopping the collection of communication
+    operator execution sequences. Integrates with C++ backend for actual
+    order tracking.
+    """
+    _instance = None
+    _initialized = False
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def __init__(self, action):
+        if not self._initialized:
+            self.action = None
+            self.order_checker = CommExecOrderChecker.get_instance()
+            self.is_collecting = False
+            self._initialized = True
+        if not isinstance(action, str):
+            raise TypeError(f"Action must be a string, got {type(action).__name__}")
+        if action not in ("start", "end"):
+            raise ValueError(f"Invalid action '{action}'. Use 'start' or 'end'.")
+        self.action = action
+        if action == "start":
+            self.start_function()
+        elif action == "end":
+            self.end_function()
+
+    def start_function(self):
+        if self.is_collecting:
+            logger.error("The 'start' action cannot be called twice.")
+            return
+        self.is_collecting = True
+        self.order_checker.start_collect_exec_order()
+
+    def end_function(self):
+        if not self.is_collecting:
+            logger.error("The 'end' action cannot be called before the 'start' action.")
+            return
+        self.is_collecting = False
+        self.order_checker.stop_collect_exec_order()
 
 class ExecuteOrder:
     """Represents a single record from the execute_order.csv file."""
@@ -412,44 +457,44 @@ def detect_cycle_in_graph(ranks_map):
 
     # Step 2: Detect cycle using DFS with path and rank tracking
     visited = set()
-    recursion_stack = set()
-    path = []
     cycle_path = []
     cycle_ranks = []
 
-    def dfs(node):
-        if node in recursion_stack:  # Cycle detected
-            # Identify the cycle path from the recursion stack
-            cycle_index = path.index(node)
-            cycle_path.extend(path[cycle_index:])
-            for i in range(cycle_index, len(path) - 1):
-                u, v = path[i], path[i + 1]
-                cycle_ranks.append(f"{rank_edges[(u, v)]} {u} -> {v}")
-            # Add the closing edge for the cycle
-            cycle_ranks.append(f"{rank_edges[(path[-1], node)]} {path[-1]} -> {node}")
-            return True
-
+    for node in graph:
         if node in visited:
-            return False
+            continue
 
-        visited.add(node)
-        recursion_stack.add(node)
-        path.append(node)
+        stack = [(node, None, False)]
+        path = []
+        node_indices = {}
 
-        for neighbor in graph[node]:
-            if dfs(neighbor):
-                return True
+        while stack:
+            current, parent, is_visited = stack.pop()
 
-        # Backtrack
-        recursion_stack.remove(node)
-        path.pop()
-        return False
+            if is_visited:
+                if current in node_indices:
+                    del path[node_indices[current]:]
+                continue
 
-    nodes = list(graph.keys())
-    for node in nodes:
-        if node not in visited:
-            if dfs(node):
+            if current in node_indices:
+                cycle_start = node_indices[current]
+                cycle_path = path[cycle_start:] + [current]
+
+                for i in range(cycle_start, len(path)):
+                    u, v = path[i], path[i+1] if i+1 < len(path) else current
+                    cycle_ranks.append(f"{rank_edges[(u, v)]} {u} -> {v}")
                 return cycle_path, cycle_ranks
+
+            if current in visited:
+                continue
+
+            visited.add(current)
+            node_indices[current] = len(path)
+            path.append(current)
+
+            stack.append((current, parent, True))
+            for neighbor in reversed(graph.get(current, [])):
+                stack.append((neighbor, current, False))
 
     return None, None
 

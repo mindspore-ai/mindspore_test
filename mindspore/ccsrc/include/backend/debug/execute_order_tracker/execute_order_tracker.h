@@ -22,7 +22,9 @@
 #include <mutex>
 #include <tuple>
 #include <unordered_map>
+#include <utility>
 #include "include/backend/visible.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
 #include "ir/anf.h"
 
 namespace mindspore {
@@ -70,6 +72,10 @@ class BACKEND_COMMON_EXPORT ExecuteOrderTracker {
 
   void ProcessNode(const CNodePtr &cnode);
 
+  void ProcessPyboostCommOp(const std::shared_ptr<kernel::pyboost::OpRunner> &op, const std::string &group,
+                            size_t comm_stream_id, const tensor::TensorPtr &input_tensor,
+                            const tensor::TensorPtr &output_tensor, int64_t rank);
+
   // Data is written to disk and cleaned up
   void Clear();
 
@@ -87,11 +93,16 @@ class BACKEND_COMMON_EXPORT ExecuteOrderTracker {
 
   bool IsCommunicationOp(const CNodePtr &cnode) const;
 
+  CommOrderInfoPtr CreateCommOrderInfo(const std::string &index, const std::string &group,
+                                       const std::string &primitive_str, const CNodePtr &cnode,
+                                       const tensor::TensorPtr &input_tensor = nullptr,
+                                       const tensor::TensorPtr &output_tensor = nullptr, int64_t direct_rank = -1);
+
   std::tuple<std::string, std::string, std::string, std::string, size_t, size_t> GetInputOutputShapeAndType(
     const CNodePtr &cnode) const;
 
-  std::tuple<std::string, std::string, std::string> GetCommunicationRanks(
-    const CNodePtr &cnode, const std::vector<uint32_t> &comm_ranks) const;
+  std::string GetCommunicationRanks(const std::variant<int64_t, std::pair<const CNodePtr &, const char *>> &input,
+                                    const std::vector<uint32_t> &comm_ranks) const;
 
   std::mutex mutex_;
   std::string order_path_;

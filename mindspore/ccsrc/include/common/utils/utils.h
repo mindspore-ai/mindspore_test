@@ -319,6 +319,12 @@ constexpr auto kSeqChunk = "seq_chunk";
 constexpr auto kChunk = "chunk";
 constexpr auto kMicro = "micro";
 
+// execute order tracker
+constexpr auto kDistCommSendPrimName = "PrimFunc_DistCommIsend";
+constexpr auto kInnerCommSendPrimName = "PrimFunc_InnerCommIsend";
+constexpr auto kDistCommRecvPrimName = "PrimFunc_DistCommIrecv";
+constexpr auto kInnerCommRecvPrimName = "PrimFunc_InnerCommIrecv";
+
 // User data key.
 
 // pyexecute.

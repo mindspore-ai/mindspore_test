@@ -57,7 +57,7 @@ void DistCommScatterTensorAscendCustomize(const std::shared_ptr<OpRunner> &op, c
       }
     };
 
-    CommonCommAscendFunc(op, input_tensor, group, launch_func, nullptr);
+    CommonCommAscendFunc(op, input_tensor, group, launch_func, nullptr, root);
   };
   CommonCommRunTask(run_func);
 }

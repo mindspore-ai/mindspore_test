@@ -31,7 +31,7 @@ namespace pyboost {
 void CommonCommRunTask(const std::function<void(void)> &run_func);
 void CommonCommAscendFunc(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor, const StringImmPtr &group,
                           const std::function<void(const HcclComm &, void *)> &launch_func,
-                          const std::function<void(const DeviceEventPtr &, size_t)> &post_func);
+                          const std::function<void(const DeviceEventPtr &, size_t)> &post_func, int64_t rank = -1);
 
 // Get device mutable ptr from tensor
 void *GetDevicePtrFromTensor(const std::string &op_name, const tensor::TensorPtr &tensor);

@@ -43,7 +43,7 @@ void DistCommGatherAscendCustomize(const std::shared_ptr<OpRunner> &op, const Te
   }
   PyBoostUtils::PrepareOpOutputs(op->device_context(), kDefaultStreamIndex, op->outputs());
 
-  auto run_func = [op, gather_tensors, input_tensor, local_rank, dst_rank, group, rank_size_imm]() {
+  auto run_func = [op, gather_tensors, input_tensor, local_rank, dst_rank, group, rank_size_imm, dst]() {
     PyBoostUtils::MallocOpInputs(op->device_context(), input_tensor);
     PyBoostUtils::MallocOpOutputs(op->device_context(), op->outputs());
     if (local_rank == dst_rank) {
@@ -82,7 +82,7 @@ void DistCommGatherAscendCustomize(const std::shared_ptr<OpRunner> &op, const Te
                                                                       comm_stream_id, event, input_tensor,
                                                                       op->output(0), gather_tensors);
     };
-    CommonCommAscendFunc(op, input_tensor, group, launch_func, post_func);
+    CommonCommAscendFunc(op, input_tensor, group, launch_func, post_func, dst_rank);
   };
   CommonCommRunTask(run_func);
 }
