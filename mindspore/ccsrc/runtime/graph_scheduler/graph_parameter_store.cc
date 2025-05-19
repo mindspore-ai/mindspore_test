@@ -145,11 +145,13 @@ KernelTensorPtr GraphParameterStore::FetchWithFreshRefMap(size_t outer_index, si
     }
   }
 
-  if (kernel_tensor != nullptr && device::GetDeviceTypeByName(kernel_tensor->device_name()) == value_type) {
+  if (kernel_tensor != nullptr && kernel_tensor->device_address() != nullptr &&
+      kernel_tensor->device_address()->GetDeviceType() == value_type) {
     return kernel_tensor;
   }
 
-  if (heter_kernel_tensor != nullptr && device::GetDeviceTypeByName(heter_kernel_tensor->device_name()) == value_type) {
+  if (heter_kernel_tensor != nullptr && heter_kernel_tensor->device_address() != nullptr &&
+      heter_kernel_tensor->device_address()->GetDeviceType() == value_type) {
     return heter_kernel_tensor;
   }
 
@@ -166,14 +168,14 @@ KernelTensorPtr GraphParameterStore::Fetch(size_t outer_index, size_t inner_inde
   const auto &kernel_tensor_with_info = parameter_kernel_tensors_[outer_index][inner_index];
   const auto &kernel_tensor = kernel_tensor_with_info.first;
   if (kernel_tensor != nullptr && kernel_tensor->device_address() != nullptr &&
-      device::GetDeviceTypeByName(kernel_tensor->device_address()->device_name()) == value_type) {
+      kernel_tensor->device_address()->GetDeviceType() == value_type) {
     return kernel_tensor;
   }
 
   const auto &heter_kernel_tensor_with_info = heter_kernel_tensors_[outer_index][inner_index];
   const auto &heter_kernel_tensor = heter_kernel_tensor_with_info.first;
   if (heter_kernel_tensor != nullptr && heter_kernel_tensor->device_address() != nullptr &&
-      device::GetDeviceTypeByName(heter_kernel_tensor->device_address()->device_name()) == value_type) {
+      heter_kernel_tensor->device_address()->GetDeviceType() == value_type) {
     return heter_kernel_tensor;
   }
 
