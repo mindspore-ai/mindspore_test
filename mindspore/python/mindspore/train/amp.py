@@ -69,6 +69,9 @@ AMP_BLACK_LIST = [
 AMP_AUTO_WHITE_LIST = [
     P.Conv2D,
     P.Conv3D,
+    gen.Conv2DExt,
+    gen.Conv3DExt,
+    gen.ConvTranspose2D,
     P.Conv2DTranspose,
     P.Conv3DTranspose,
     gen.Convolution,
@@ -80,6 +83,10 @@ AMP_AUTO_WHITE_LIST = [
     P.Einsum,
     gen.Dense,
     gen.Addmm,
+    gen.Addbmm,
+    gen.Addmv,
+    gen.Baddbmm,
+    gen.Mv,
 ]
 
 AMP_AUTO_BLACK_LIST = [
@@ -90,8 +97,10 @@ AMP_AUTO_BLACK_LIST = [
     P.Erfinv,
     P.Exp,
     P.Expm1,
-    P.Log,
-    P.Log1p,
+    gen.Log,
+    gen.Log10,
+    gen.Log1p,
+    gen.Log2,
     P.Reciprocal,
     P.Rsqrt,
     P.Sinh,
@@ -113,7 +122,19 @@ AMP_AUTO_BLACK_LIST = [
     P.Pdist,
     P.Cdist,
     P.Renorm,
+    gen.ReduceProd,
+    gen.Softmax,
+    gen.LogSoftmax,
+    gen.LogSoftmaxExt,
+    gen.CumProd,
+    gen.CumSum,
+    gen.CumsumExt,
+    gen.ProdExt,
+    gen.SumExt,
+    gen.L1LossExt,
     gen.MSELossExt,
+    gen.NLLLoss,
+    gen.NLLLoss2d,
 ]
 
 # Indicates which inputs of primitives need to be converted
@@ -423,17 +444,18 @@ def auto_mixed_precision(network, amp_level="O0", dtype=mstype.float16):
 
     Operators in `auto_whitelist` are:
 
-    ``Conv2D``, ``Conv3D``, ``Conv2DTranspose``, ``Conv3DTranspose``, ``Convolution``, ``MatMul``, ``MatMulExt``,
-    ``BatchMatMul``, ``BatchMatMulExt``, ``PReLU``, ``Einsum``, ``Dense``, ``Addmm``
+    ``Conv2D``, ``Conv2DExt``, ``Conv3D``, ``Conv3DExt``, ``Conv2DTranspose``, ``ConvTranspose2D``,
+    ``Conv3DTranspose``, ``Convolution``, ``MatMul``, ``MatMulExt``, ``BatchMatMul``, ``BatchMatMulExt``, ``PReLU``,
+    ``Einsum``, ``Dense``, ``Addmm``, ``Addbmm``, ``Addmv``, ``Baddbmm``, ``Mv``
 
     Operators in `auto_blacklist` are:
 
-    ``Pow``, ``ACos``, ``Asin``, ``Cosh``, ``Erfinv``, ``Exp``, ``Expm1``, ``Log``, ``Log1p``, ``Reciprocal``,
-    ``Rsqrt``, ``Sinh``, ``Tan``, ``Softplus``, ``SoftplusExt``, ``LayerNorm``, ``LayerNormExt``, ``BatchNorm``,
-    ``BatchNormExt``, ``GroupNorm``, ``KLDivLoss``, ``SmoothL1Loss``, ``MultilabelMarginLoss``, ``SoftMarginLoss``,
-    ``TripletMarginLoss``, ``MultiMarginLoss``, ``BCEWithLogitsLoss``, ``Pdist``, ``Cdist``, ``Renorm``,
-    ``ReduceProd``, ``Softmax``, ``LogSoftmax``, ``CumProd``, ``CumSum``, ``CumsumExt``, ``ProdExt``, ``SumExt``,
-    ``Norm``, ``MSELossExt``
+    ``Pow``, ``ACos``, ``Asin``, ``Cosh``, ``Erfinv``, ``Exp``, ``Expm1``, ``Log``, ``Log10``, ``Log1p``, ``Log2``,
+    ``Reciprocal``, ``Rsqrt``, ``Sinh``, ``Tan``, ``Softplus``, ``SoftplusExt``, ``LayerNorm``, ``LayerNormExt``,
+    ``BatchNorm``, ``BatchNormExt``, ``GroupNorm``, ``KLDivLoss``, ``SmoothL1Loss``, ``MultilabelMarginLoss``,
+    ``SoftMarginLoss``, ``TripletMarginLoss``, ``MultiMarginLoss``, ``BCEWithLogitsLoss``, ``Pdist``, ``Cdist``,
+    ``Renorm``, ``ReduceProd``, ``Softmax``, ``LogSoftmax``, ``LogSoftmaxExt``, ``CumProd``, ``CumSum``,
+    ``CumsumExt``, ``ProdExt``, ``SumExt``, ``Norm``, ``L1LossExt``, ``MSELossExt``, ``NLLLoss``, ``NLLLoss2d``
 
     Operators in `promote_list` are:
 
