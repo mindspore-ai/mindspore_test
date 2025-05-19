@@ -492,6 +492,13 @@ class TensorDataImpl : public TensorData {
   TensorDataImpl(const ShapeVector &shape, Scalar scalar)
       : ndim_(shape.size()), data_size_(SizeOf(shape)), data_(NewData<T>(scalar)) {}
 
+  TensorDataImpl(size_t size, bool has_sub_data) : TensorDataImpl(ShapeVector{static_cast<int64_t>(size)}) {
+    if (!has_sub_data) {
+      MS_LOG(ERROR) << "For Tensor Chunk Data, has_sub_data must be true, but got false";
+    }
+    has_sub_data_ = true;
+  }
+
   ssize_t size() const override { return static_cast<ssize_t>(data_size_); }
 
   ssize_t itemsize() const override { return static_cast<ssize_t>(sizeof(T)); }
@@ -502,7 +509,7 @@ class TensorDataImpl : public TensorData {
 
   bool is_sub_data() const override { return false; }
 
-  bool has_sub_data() const override { return false; }
+  bool has_sub_data() const override { return has_sub_data_; }
 
   void *data() override {
     if (data_ != nullptr) {
@@ -576,6 +583,7 @@ class TensorDataImpl : public TensorData {
     }
   }
 
+  bool has_sub_data_{false};
   size_t ndim_{0};
   size_t data_size_{0};
   std::unique_ptr<T[]> data_;
