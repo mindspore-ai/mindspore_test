@@ -730,6 +730,9 @@ class Profile:
               The duration of the operator is the difference between the two timestamps.
             - False: The asynchronous way. The duration of the operator is that of sending from the CPU to the GPU.
               This method can reduce the impact of adding profiler on overall training time.
+        record_shapes (bool, optional): (Ascend only) Whether to collect operator input tensor shapes data, collect
+            when ``True`` . When using this parameter, `activities` must include ``ProfilerActivity.CPU``.
+            Default: ``False``.
         experimental_config (_ExperimentalConfig, optional): expandable parameters can be configured in this
               configuration item. For details, see :class:`mindspore.profiler._ExperimentalConfig` .
     Raises:

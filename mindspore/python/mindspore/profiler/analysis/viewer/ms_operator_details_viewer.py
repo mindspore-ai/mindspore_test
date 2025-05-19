@@ -14,7 +14,6 @@
 # ============================================================================
 """ms operator details viewer"""
 import os
-import struct
 from abc import ABC
 from enum import Enum
 from typing import Dict, Any
@@ -24,13 +23,14 @@ from mindspore.profiler.analysis.viewer.base_viewer import BaseViewer
 from mindspore.profiler.parser.ascend_analysis.tlv_decoder import TLVDecoder
 from mindspore.profiler.common.log import ProfilerLogger
 
+
 class OperatorDetailsIndexEnum(Enum):
     """Operator details index defining."""
 
-    STEP = 0
-    NAME = 1
-    INPUT_SHAPES = 2
-    INPUT_TYPE = 3
+    NAME = 0
+    INPUT_SHAPES = 1
+    INPUT_TYPE = 2
+
 
 class BaseEvent(ABC):
     """Base class for all event types."""
@@ -40,22 +40,11 @@ class BaseEvent(ABC):
             raise TypeError("Input data must be dict.")
         self._origin_data = data
 
+
 class OperatorDetailsEvent(BaseEvent):
     """Operator details event."""
 
-    FIX_DATA_FORMAT = "<"
-    FIX_DATA_SIZE = struct.calcsize(FIX_DATA_FORMAT)
-
-    def __init__(self, data: Dict):
-        super().__init__(data)
-        self.fix_size_data = struct.unpack(
-            self.FIX_DATA_FORMAT, self._origin_data.get("fix_size_bytes")
-        )
-
-    @property
-    def step(self):
-        """Get step."""
-        return self.fix_size_data[OperatorDetailsIndexEnum.STEP.value]
+    FIX_DATA_SIZE = 0
 
     @property
     def name(self):
@@ -78,11 +67,7 @@ class MsOperatorDetailsViewer(BaseViewer):
 
     FWK_BINARY_FILE_NAME = "mindspore.record_shapes"
     _OPERATOR_DETAILS_FILE_NAME = 'operator_details.csv'
-    _COL_NAMES = [
-        'Name', 'Input Shapes', 'Call Stack', 'Host Self Duration(us)', 'Host Total Duration(us)',
-        'Device Self Duration(us)', 'Device Total Duration(us)', 'Device Self Duration With AICore(us)',
-        'Device Total Duration With AICore(us)'
-    ]
+    _COL_NAMES = ['Name', 'Input Shapes']
 
     def __init__(self, **kwargs):
         super().__init__()
@@ -99,7 +84,9 @@ class MsOperatorDetailsViewer(BaseViewer):
         """Process and save operator_details profiling data."""
         self._logger.info("MsOperatorDetailsViewer start")
         try:
-            self._read_fwk_binary_file()
+            file_exist = self._read_fwk_binary_file()
+            if not file_exist:
+                return
             self._calculate_operator_details_data()
             self._write_data()
         except Exception as e: # pylint: disable=W0703
@@ -112,11 +99,15 @@ class MsOperatorDetailsViewer(BaseViewer):
         """
         self._logger.info("Read fwk binary file start")
         fwk_file_path = os.path.join(self._framework_path, self.FWK_BINARY_FILE_NAME)
+        if not os.path.isfile(fwk_file_path):
+            self._logger.warning("Fwk binary file %s does not exist.", fwk_file_path)
+            return False
         raw_bin_data = FileManager.read_file_content(fwk_file_path, mode="rb")
         self._operator_details_events = TLVDecoder.decode(
             raw_bin_data, OperatorDetailsEvent, OperatorDetailsEvent.FIX_DATA_SIZE
         )
         self._logger.info("Read fwk binary file done, %d events", len(self._operator_details_events))
+        return True
 
     def _calculate_operator_details_data(self):
         """

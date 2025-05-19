@@ -52,10 +52,9 @@ enum class PROFILER_EXPORT OpRangeDataType : uint8_t {
 };
 
 enum class PROFILER_EXPORT RecordShapesDataType : uint8_t {
-  STEP = 0,
-  NAME = 1,
-  INPUT_SHAPES = 2,
-  INPUT_TYPE = 3,
+  NAME = 0,
+  INPUT_SHAPES = 1,
+  INPUT_TYPE = 2,
 };
 
 enum class PROFILER_EXPORT ReportFileType : uint32_t {

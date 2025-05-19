@@ -562,6 +562,9 @@ if sys.version_info >= (3, 8):
                   The default value is false, indicating that memory performance data is not collected.
                 - mstx (bool, optional) - Set whether to enable mstx, true indicates that mstx is enabled, false
                   indicates that mstx is disabled. The default value is false, indicating that mstx is not enabled.
+                - analyse (bool, optional) - Set whether to enable online analysis. True indicates that online analysis
+                  is enabled, while false indicates that online analysis is disabled. The default value is false,
+                  indicating that online analysis is not enabled.
                 - analyse_mode (int, optional) - Sets the mode for online analysis, corresponding to the analyse_mode
                   parameter of the mindspore.Profiler.analyse interface, where 0 represents "sync" and 1 represents
                   "async". The default value is -1, indicating that online analysis is not used.
@@ -574,6 +577,9 @@ if sys.version_info >= (3, 8):
                 - data_simplification (bool, optional) - Sets whether to enable data simplification, where true means
                   to enable and false means not to enable. The default value is true, indicating that data
                   simplification is enabled.
+                - record_shapes (bool, optional) - Sets whether to collect operator input tensor shapes data, where true
+                  means that the shape data is collected and false means that the shape data is not collected. The
+                  default value is false, indicating that input tensor shapes data is not collected.
                 - mstx_domain_include (list, optional) - Set the set of enabled domain names when the mstx switch
                   is turned on. The name must be of str type. Default value: ``[]``, indicating that this parameter
                   is not used to control the domain. This parameter is mutually exclusive with the mstx_domain_exclude
@@ -582,6 +588,9 @@ if sys.version_info >= (3, 8):
                 - mstx_domain_exclude (list, optional) - Set the set of domain names that are not enabled when the
                   mstx switch is turned on. The name must be of str type. Default value: ``[]``, indicating that this
                   parameter is not used to control the domain.
+                - prof_path (str, optional) - Output data path of the dynamic profiler. It is the same as the interface
+                  parameter `output_path`. When both are set, `prof_path` takes effect. Default value:
+                  ``"./dyn_profile_data"`` .
 
             output_path (str, optional): (Ascend only) Output data path. Default: ``"./dyn_profile_data"`` .
             poll_interval (int, optional): (Ascend only) The polling period of the monitoring process, in seconds.

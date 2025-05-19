@@ -148,77 +148,56 @@ class DynamicProfilerConfigContext:
     def _parse_profiler_memory(self, json_data):
         """ Parse the profiler_memory from JSON data."""
         if self._is_dyno:
-            profile_memory = json_data.get("profile_memory", False)
-            if isinstance(profile_memory, str):
-                self._profile_memory = self.BOOL_MAP.get(profile_memory.lower(), False)
-            else:
-                self._profile_memory = False
+            profile_memory = json_data.get("profile_memory", "")
+            self._profile_memory = self.BOOL_MAP.get(profile_memory.lower(), False)
         else:
             self._profile_memory = json_data.get("profile_memory", False)
 
     def _parse_mstx(self, json_data):
         """ Parse the mstx from JSON data."""
         if self._is_dyno:
-            mstx = json_data.get("msprof_tx", False)
-            if isinstance(mstx, str):
-                self._mstx = self.BOOL_MAP.get(mstx.lower(), False)
-            else:
-                self._mstx = False
+            mstx = json_data.get("msprof_tx", "")
+            self._mstx = self.BOOL_MAP.get(mstx.lower(), False)
         else:
             self._mstx = json_data.get("mstx", False)
 
     def _parse_with_stack(self, json_data):
         """ Parse the with_stack from JSON data."""
         if self._is_dyno:
-            with_stack = json_data.get("with_stack", False)
-            if isinstance(with_stack, str):
-                self._with_stack = self.BOOL_MAP.get(with_stack.lower(), False)
-            else:
-                self._with_stack = False
+            with_stack = json_data.get("with_stack", "")
+            self._with_stack = self.BOOL_MAP.get(with_stack.lower(), False)
         else:
             self._with_stack = json_data.get("with_stack", False)
 
     def _parse_data_simplification(self, json_data):
         """ Parse the data_simplification from JSON data."""
         if self._is_dyno:
-            data_simplification = json_data.get("data_simplification", False)
-            if isinstance(data_simplification, str):
-                self._data_simplification = self.BOOL_MAP.get(data_simplification.lower(), False)
-            else:
-                self._data_simplification = False
+            data_simplification = json_data.get("data_simplification", "")
+            self._data_simplification = self.BOOL_MAP.get(data_simplification.lower(), False)
         else:
             self._data_simplification = json_data.get("data_simplification", False)
 
     def _parse_l2_cache(self, json_data):
         """ Parse the l2_cach from JSON data."""
         if self._is_dyno:
-            l2_cache = json_data.get("l2_cache", False)
-            if isinstance(l2_cache, str):
-                self._l2_cache = self.BOOL_MAP.get(l2_cache.lower(), False)
-            else:
-                self._l2_cache = False
+            l2_cache = json_data.get("l2_cache", "")
+            self._l2_cache = self.BOOL_MAP.get(l2_cache.lower(), False)
         else:
             self._l2_cache = json_data.get("l2_cache", False)
 
     def _parse_analyse(self, json_data):
         """ Parse the data_simplification from JSON data."""
         if self._is_dyno:
-            analyse = json_data.get("analyse", False)
-            if isinstance(analyse, str):
-                self._analyse = self.BOOL_MAP.get(analyse.lower(), False)
-            else:
-                self._analyse = False
+            analyse = json_data.get("analyse", "")
+            self._analyse = self.BOOL_MAP.get(analyse.lower(), False)
         else:
             self._analyse = json_data.get("analyse", False)
 
     def _parse_record_shapes(self, json_data):
         """ Parse the record_shapes from JSON data."""
         if self._is_dyno:
-            record_shapes = json_data.get("record_shapes", False)
-            if isinstance(record_shapes, str):
-                self._record_shapes = self.BOOL_MAP.get(record_shapes.lower(), False)
-            else:
-                self._record_shapes = False
+            record_shapes = json_data.get("record_shapes", "")
+            self._record_shapes = self.BOOL_MAP.get(record_shapes.lower(), False)
         else:
             self._record_shapes = json_data.get("record_shapes", False)
 

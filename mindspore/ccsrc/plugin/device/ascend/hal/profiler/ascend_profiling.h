@@ -111,18 +111,10 @@ class AscendProfiler : public Profiler {
   void StepStop() override;
   void StepProfilingEnable(const bool enable_flag) override;
   void OpDataProducerEnd() override { return; }
-<<<<<<< HEAD
   void MstxMark(const std::string &message, void *stream = nullptr) override;
   int MstxRangeStart(const std::string &message, void *stream = nullptr) override;
   void MstxRangeEnd(int range_id) override;
-=======
-  void MstxMark(const std::string &message, void *stream = nullptr,
-                const std::string &domain_name = "default") override;
-  int MstxRangeStart(const std::string &message, void *stream = nullptr,
-                     const std::string &domain_name = "default") override;
-  void MstxRangeEnd(int range_id, const std::string &domain_name = "default") override;
   bool EnableRecordShapes();
->>>>>>> d6d80b2394d (profiler recordshape)
 
  protected:
   void SaveProfileData() override { return; }

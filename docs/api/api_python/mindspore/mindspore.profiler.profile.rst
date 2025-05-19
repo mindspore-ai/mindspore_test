@@ -1,7 +1,7 @@
 mindspore.profiler.profile
 ===========================
 
-.. py:class:: mindspore.profiler.profile(activities: list = None, with_stack: bool = False, profile_memory: bool = False, data_process: bool = False, parallel_strategy: bool = False, start_profile: bool = True, hbm_ddr: bool = False, pcie: bool = False, sync_enable: bool = True, schedule: Schedule = None, on_trace_ready: Optional[Callable[..., Any]] = None, experimental_config: Optional[_ExperimentalConfig] = None)
+.. py:class:: mindspore.profiler.profile(activities: list = None, with_stack: bool = False, profile_memory: bool = False, data_process: bool = False, parallel_strategy: bool = False, start_profile: bool = True, hbm_ddr: bool = False, pcie: bool = False, sync_enable: bool = True, record_shapes: bool = False, schedule: Schedule = None, on_trace_ready: Optional[Callable[..., Any]] = None, experimental_config: Optional[_ExperimentalConfig] = None)
 
     MindSpore用户能够通过该类对神经网络的性能进行采集。可以通过导入该类初始化profile对象，
     使用 `profile.start()` 开始分析，并使用 `profile.stop()` 停止收集并分析结果。可通过
@@ -27,6 +27,7 @@ mindspore.profiler.profile
 
           - True：同步方式，在把算子发送到GPU之前，在CPU端记录开始时间戳。然后在算子执行完毕返回到CPU端后，再记录结束时间戳。算子耗时为两个时间戳的差值。
           - False：异步方式，算子耗时为从CPU发送到GPU的耗时。这种方式能减少因增加Profiler对整体训练时间的影响。
+        - **record_shapes** (bool, 可选) -（仅限Ascend）表示是否收集算子输入tensor的shape信息，当值为 ``True`` 时，收集这些数据。使用该参数时， `activities` 必须包含 ``ProfilerActivity.CPU``。默认值： ``False`` 。
         - **experimental_config** (_ExperimentalConfig, 可选) - 可扩展的参数可以在此配置，默认值为 ``None`` ，详细介绍请参考 :class:`mindspore.profiler._ExperimentalConfig` 。
 
     异常：
