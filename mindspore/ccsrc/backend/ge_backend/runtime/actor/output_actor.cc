@@ -15,8 +15,7 @@
  */
 
 #include "backend/ge_backend/runtime/actor/output_actor.h"
-#include "utils/log_adapter.h"
-#include "utils/ms_utils.h"
+#include "utils/ms_context.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
 

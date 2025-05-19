@@ -18,6 +18,7 @@
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/profile.h"
+#include "utils/ms_context.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
 
 namespace mindspore {

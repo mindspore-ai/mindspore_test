@@ -23,8 +23,6 @@
 #include <memory>
 #include <shared_mutex>
 #include "proto/comm.pb.h"
-#include "utils/log_adapter.h"
-#include "include/backend/distributed/constants.h"
 
 namespace mindspore {
 namespace distributed {

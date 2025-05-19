@@ -26,8 +26,6 @@
 #include "abstract/abstract_value.h"
 #include "ir/anf.h"
 #include "ir/func_graph.h"
-#include "include/common/utils/convert_utils.h"
-#include "utils/info.h"
 #include "include/common/visible.h"
 #include "symbolic_shape/symbol_info.h"
 

@@ -21,15 +21,12 @@
 #include <vector>
 #include "ir/anf.h"
 #include "ir/func_graph.h"
-#include "ir/primitive.h"
-#include "ir/graph_utils.h"
-#include "utils/ms_utils.h"
-#include "utils/hash_map.h"
-#include "include/backend/optimizer/pass_manager.h"
 #include "include/backend/optimizer/pattern_engine.h"
 #include "include/backend/optimizer/helper.h"
-#include "include/backend/optimizer/graph_optimizer.h"
 #include "include/backend/visible.h"
+#include "include/backend/optimizer/node_pass.h"
+#include "include/backend/optimizer/graph_optimizer.h"
+#include "include/backend/kernel_graph.h"
 
 namespace mindspore {
 namespace opt {

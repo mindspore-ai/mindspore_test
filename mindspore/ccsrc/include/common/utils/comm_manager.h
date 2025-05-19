@@ -22,7 +22,6 @@
 #include <utility>
 #include <map>
 #include <memory>
-#include "utils/log_adapter.h"
 #include "include/common/visible.h"
 
 namespace mindspore {

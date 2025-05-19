@@ -19,6 +19,7 @@
 #include "backend/ge_backend/runtime/actor/output_actor.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
+#include "utils/ms_context.h"
 
 namespace mindspore {
 namespace ge_backend {

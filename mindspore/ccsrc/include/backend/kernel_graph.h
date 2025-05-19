@@ -29,7 +29,6 @@
 #include "utils/hash_set.h"
 #include "ir/func_graph.h"
 #include "ir/anf.h"
-#include "ir/graph_utils.h"
 #include "include/common/utils/contract.h"
 #include "common/device_type.h"
 #include "include/backend/kernel_info.h"

@@ -22,7 +22,6 @@
 #include <vector>
 #include <map>
 #include "utils/hash_map.h"
-#include "ir/anf.h"
 #include "ir/manager.h"
 #include "include/common/visible.h"
 

@@ -22,7 +22,6 @@
 #include <map>
 #include <vector>
 #include "utils/ms_context.h"
-#include "utils/ms_utils.h"
 #include "include/common/visible.h"
 #include "include/common/runtime_conf/thread_bind_core.h"
 

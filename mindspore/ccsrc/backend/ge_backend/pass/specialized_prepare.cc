@@ -19,6 +19,7 @@
 #include <vector>
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "include/backend/optimizer/helper.h"
 
 namespace mindspore {
 namespace opt {

@@ -21,8 +21,8 @@
 
 #include "distributed/rpc/tcp/tcp_socket_operation.h"
 #include "distributed/rpc/tcp/ssl_socket_operation.h"
-#include "distributed/rpc/tcp/connection_pool.h"
 #include "utils/log_adapter.h"
+#include "utils/convert_utils_base.h"
 
 namespace mindspore {
 namespace distributed {

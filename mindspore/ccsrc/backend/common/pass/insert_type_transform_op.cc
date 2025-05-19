@@ -21,6 +21,7 @@
 #include <vector>
 #include "abstract/ops/primitive_infer_map.h"
 #include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/optimizer/helper.h"
 #include "include/common/utils/anfalgo.h"
 #include "ir/anf.h"
 #include "common/common_utils.h"

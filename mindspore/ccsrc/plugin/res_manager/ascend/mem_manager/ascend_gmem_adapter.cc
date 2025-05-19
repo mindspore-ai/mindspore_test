@@ -24,6 +24,7 @@
 
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "utils/convert_utils_base.h"
+#include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace device {

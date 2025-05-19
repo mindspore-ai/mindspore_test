@@ -15,6 +15,7 @@
  */
 
 #include "include/backend/optimizer/inplace_node_pass.h"
+#include "include/backend/optimizer/helper.h"
 
 namespace mindspore {
 namespace opt {

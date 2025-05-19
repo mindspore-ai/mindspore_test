@@ -24,7 +24,6 @@
 #include <string>
 #include <unordered_map>
 #include "include/backend/mem_reuse/dynamic_mem_pool.h"
-#include "ir/anf.h"
 #include "common/device_address.h"
 #include "runtime/device/res_manager/utils/visible.h"
 

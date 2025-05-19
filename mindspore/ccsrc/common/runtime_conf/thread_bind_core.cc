@@ -30,7 +30,6 @@
 
 #include "utils/ms_utils.h"
 #include "utils/ms_context.h"
-#include "utils/log_adapter.h"
 #include "utils/file_utils.h"
 #include "utils/convert_utils_base.h"
 #include "utils/distributed_meta.h"

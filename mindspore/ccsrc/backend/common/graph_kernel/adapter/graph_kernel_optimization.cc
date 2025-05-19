@@ -81,6 +81,7 @@
 #include "backend/common/graph_kernel/adapter/split_model_cpu.h"
 #include "backend/common/graph_kernel/adapter/split_model_gpu.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "include/backend/optimizer/graph_optimizer.h"
 namespace mindspore::graphkernel {
 using opt::CommonSubexpressionElimination;
 using opt::GetitemTuple;

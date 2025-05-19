@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include "include/common/debug/draw.h"
 #include <iostream>
 #include <iterator>
 #include <vector>
@@ -25,7 +24,8 @@
 #include "ir/graph_utils.h"
 #include "ir/tensor.h"
 #include "include/common/debug/anf_dump_utils.h"
-#include "utils/file_utils.h"
+#include "include/common/debug/draw.h"
+#include "include/common/debug/common.h"
 
 namespace mindspore {
 // namespace to support debug utils

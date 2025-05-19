@@ -23,6 +23,7 @@
 
 #include "plugin/res_manager/cpu/visible.h"
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
+#include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace device {

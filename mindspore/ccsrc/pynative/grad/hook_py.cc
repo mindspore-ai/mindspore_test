@@ -19,6 +19,7 @@
 #include <string>
 #include "include/common/utils/hook.h"
 #include "include/common/pynative/adapter.h"
+#include "include/common/utils/tensor_py.h"
 #include "pipeline/jit/ps/pipeline.h"
 #include "runtime/pipeline/pipeline.h"
 #include "pynative/grad/grad_utils.h"

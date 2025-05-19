@@ -19,6 +19,7 @@
 #include <string>
 #include "distributed/embedding_cache/cache_strategy/lru_cache.h"
 #include "distributed/persistent/storage/local_file.h"
+#include "distributed/persistent/storage/constants.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/backend/distributed/ps/ps_context.h"
 #include "include/backend/distributed/cluster/cluster_context.h"

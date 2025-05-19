@@ -20,6 +20,7 @@
 #include "utils/hash_set.h"
 #include "backend/common/pass/const_input_to_attr.h"
 #include "include/common/utils/anfalgo.h"
+#include "include/backend/optimizer/helper.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {
