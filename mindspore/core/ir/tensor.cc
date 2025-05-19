@@ -209,8 +209,7 @@ Tensor::Tensor(const Tensor &tensor, TypeId data_type)
       init_flag_(tensor.init_flag_),
       cache_enable_(tensor.cache_enable_),
       copy_done_flag_(tensor.copy_done_flag_) {
-  // todo: tensor.astype
-  MS_LOG(EXCEPTION) << "Not support change data type";
+  std::abort();
 }
 
 Tensor &Tensor::operator=(const Tensor &tensor) {
@@ -446,6 +445,21 @@ abstract::AbstractBasePtr Tensor::ToAbstract() {
   return abs_tensor;
 }
 
+bool TensorEqual(const Tensor &self, const Tensor &other) {
+  auto self_cpu = self.cpu();
+  auto other_cpu = self.cpu();
+  auto self_ptr = static_cast<const uint8_t *>(self_cpu->data_c());
+  auto other_ptr = static_cast<const uint8_t *>(other_cpu->data_c());
+  if (self_ptr == nullptr || other_ptr == nullptr) {
+    return false;
+  }
+  if (self_ptr == other_ptr) {
+    return true;
+  }
+  return self.DataNDim() == other.DataNDim() && self.DataNBytes() == other.DataNBytes() &&
+         std::equal(self_ptr, self_ptr + self.DataNBytes(), other_ptr);
+}
+
 bool Tensor::ValueEqual(const Tensor &tensor) const {
   if (is_parameter_ != tensor.is_parameter_) {
     return false;
@@ -453,21 +467,12 @@ bool Tensor::ValueEqual(const Tensor &tensor) const {
   if (is_parameter_ && param_info_->name() != tensor.param_info_->name()) {
     return false;
   }
-  MS_LOG(EXCEPTION) << "Not support!";
-  // todo: tensor.cpu().equal(others.cpu())
-  // return (&tensor == this || (MetaTensor::operator==(tensor) && data_->equals(*tensor.data_)));
+  return (&tensor == this || (MetaTensor::operator==(tensor) && TensorEqual(*this, tensor)));
 }
 
-TypeId Tensor::set_data_type(TypeId data_type) { MS_LOG(EXCEPTION) << "Not support set data_type!"; }
+TypeId Tensor::set_data_type(TypeId data_type) { std::abort(); }
 
-size_t Tensor::set_shape(const ShapeVector &shape) {
-  MS_LOG(EXCEPTION) << "Not support change shape!";
-  // todo: not support change shape.
-  // if (DataSize() != SizeOf(shape)) {
-  //   data_ = MakeTensorData(data_type_, shape);
-  // }
-  // return MetaTensor::set_shape(shape);
-}
+size_t Tensor::set_shape(const ShapeVector &shape) { std::abort(); }
 
 std::string Tensor::GetShapeAndDataTypeInfo() const {
   std::ostringstream buf;
@@ -582,6 +587,33 @@ DeviceSyncPtr Tensor::CallContiguousCallback() const {
   return contiguous_device_address;
 }
 
+TensorPtr Tensor::cpu() const {
+  // todo: check stream id!!!
+  ExecuteLazyTask();
+  DeviceSyncPtr device_address;
+  auto contiguous_address = CallContiguousCallback();
+  if (contiguous_address != nullptr) {
+    device_address = contiguous_address;
+  } else {
+    device_address = device_sync_;
+  }
+  if (device_address->GetDeviceType() == device::DeviceType::kCPU) {
+    return std::make_shared<Tensor>(data_type_, shape_, device_address);
+  }
+  auto dst = MakeDeviceAddress(data_type_, shape_);
+  SyncCopy(dst.get(), device_address.get(), device_address->stream_id());
+  return std::make_shared<Tensor>(data_type_, shape_, dst);
+}
+
+bool Tensor::to_device() {
+  if (to_device_callback_ == nullptr) {
+    return true;
+  }
+  bool ret = to_device_callback_();
+  to_device_callback_ = nullptr;
+  return ret;
+}
+
 void Tensor::data_sync(bool need_wait, bool inpalce, bool sync_on_demand) const {
   if (need_wait) {
     ExecuteLazyTask();
@@ -620,21 +652,20 @@ void Tensor::data_sync(bool need_wait, bool inpalce, bool sync_on_demand) const 
   sync_status_ = kNeedSyncHostToDevice;
 }
 
-TensorData &Tensor::data() {
-  std::abort();
+std::string Tensor::DataToString(bool use_comma) const {
+  if (device_sync_->GetDeviceType() != device::DeviceType::kCPU) {
+    return "[...]";
+  }
+  return GetTensorDataString(data_type_, shape_, device_sync_->GetMutablePtr(), DataSize(), DataDim(), use_comma);
 }
 
-const TensorDataPtr &Tensor::data_ptr() const {
-  std::abort();
-}
+TensorData &Tensor::data() { std::abort(); }
 
-const TensorData &Tensor::data() const {
-  std::abort();
-}
+const TensorDataPtr &Tensor::data_ptr() const { std::abort(); }
 
-void Tensor::set_data(const TensorDataPtr &data) {
-  std::abort();
-}
+const TensorData &Tensor::data() const { std::abort(); }
+
+void Tensor::set_data(const TensorDataPtr &data) { std::abort(); }
 
 void Tensor::ExecuteUpdateValueCallback() const {
   if (update_value_callback_ != nullptr) {
@@ -673,45 +704,34 @@ void Tensor::data_sync_directly(const DeviceSync *const device_sync, bool need_w
 }
 
 bool Tensor::Offload(const std::string &file_path) {
-  // todo: support in device address.
-  //  if (file_path.empty()) {
-  //    return false;
-  //  }
-  //
-  //  auto fs = mindspore::system::Env::GetFileSystem();
-  //  MS_EXCEPTION_IF_NULL(fs);
-  //  MS_EXCEPTION_IF_NULL(data_);
-  //  auto data_ptr = data_->data();
-  //  auto file = fs->CreateWriteFile(file_path);
-  //  MS_EXCEPTION_IF_NULL(file);
-  //  TempFileManager::GetInstance().Register(file_path);
-  //  bool success = file->PWrite(data_ptr, LongToSize(data_->nbytes()), 0);
-  //  if (!file->Close()) {
-  //    MS_LOG(WARNING) << "Close tensor file: " << file_path << " failed!";
-  //  }
-  //  if (!success) {
-  //    MS_LOG(WARNING) << "Tensor write data to file: " << file_path << " failed!";
-  //    return false;
-  //  }
-  //
-  //  if (file_path == GetOffloadFilePath()) {
-  //    data_->set_file_path("");
-  //  }
-  //
-  //  data_ = tensor::MakeTensorData(data_type_, shape_);
-  //  MS_EXCEPTION_IF_NULL(data_);
-  //  data_->set_file_path(file_path);
+  if (file_path.empty()) {
+    return false;
+  }
+
+  auto fs = mindspore::system::Env::GetFileSystem();
+  MS_EXCEPTION_IF_NULL(fs);
+  auto file = fs->CreateWriteFile(file_path);
+  MS_EXCEPTION_IF_NULL(file);
+  TempFileManager::GetInstance().Register(file_path);
+  bool success = file->PWrite(data_c(), DataNBytes(), 0);
+  if (!file->Close()) {
+    MS_LOG(WARNING) << "Close tensor file: " << file_path << " failed!";
+  }
+  if (!success) {
+    MS_LOG(WARNING) << "Tensor write data to file: " << file_path << " failed!";
+    return false;
+  }
+
+  if (file_path == GetOffloadFilePath()) {
+    offload_file_.clear();
+  }
+
+  device_sync_ = MakeDeviceAddress(data_type_, shape_);
+  offload_file_ = file_path;
   return true;
 }
 
-const std::string Tensor::GetOffloadFilePath() const {
-  // todo
-  //  if (data_ == nullptr) {
-  //    return "";
-  //  }
-  //  return data_->file_path();
-  return "";
-}
+const std::string Tensor::GetOffloadFilePath() const { return offload_file_; }
 
 std::pair<void *, size_t> Tensor::GetChunkOffset() const {
   // Get sub-data.

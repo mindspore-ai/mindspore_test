@@ -695,7 +695,7 @@ py::array TensorPybind::SyncAsNumpy(const Tensor &tensor) {
   if (tensor.need_pipeline_sync()) {
     runtime::Pipeline::Get().WaitAll();
   }
-  Tensor tensor_for_copy(tensor);
+  TensorPtr tensor_for_copy = std::make_shared<Tensor>(tensor);
   {
     py::gil_scoped_release gil_release;
 
@@ -712,11 +712,11 @@ py::array TensorPybind::SyncAsNumpy(const Tensor &tensor) {
 
     // To be deleted
     if (!tensor.get_copy_done_flag()) {
-      tensor_for_copy.data_sync();
+      tensor_for_copy = tensor_for_copy->cpu();
     }
     const_cast<Tensor &>(tensor).set_copy_done_flag(false);
   }
-  return AsNumpy(tensor_for_copy);
+  return AsNumpy(*tensor_for_copy);
 }
 
 py::array TensorPybind::AsNumpy(const Tensor &tensor) {

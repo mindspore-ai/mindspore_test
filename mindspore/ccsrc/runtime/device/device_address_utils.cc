@@ -959,17 +959,15 @@ void DeviceAddressUtils::CreateInputTensorAddress(const DeviceContext *device_co
   }
 
   auto addr = tensor->device_address();
-  if (addr != nullptr) {
-    auto device_address = std::static_pointer_cast<device::DeviceAddress>(addr);
-    if (device_address->GetDeviceType() == device_context->GetDeviceType()) {
-      MS_LOG(DEBUG) << "Already have device address of tensor " << tensor->id();
-      return;
-    }
-    MS_LOG(DEBUG) << "Input tensor device type is " << device_address->GetDeviceType()
-                  << " but current device context is " << device_context->GetDeviceType();
-    tensor->data_sync();
-    tensor->set_device_address(nullptr);
+
+  auto tensor_address = std::static_pointer_cast<device::DeviceAddress>(addr);
+  if (tensor_address->GetDeviceType() == device_context->GetDeviceType()) {
+    MS_LOG(DEBUG) << "Already have device address of tensor " << tensor->id();
+    return;
   }
+  MS_LOG(DEBUG) << "Input tensor device type is " << tensor_address->GetDeviceType()
+                << " but current device context is " << device_context->GetDeviceType();
+
   auto tensor_size = LongToSize(tensor->DataNBytes());
   const auto &format = GetFormatByTensorShape(device_context, tensor->shape());
   auto device_address = device_context->device_res_manager_->CreateDeviceAddress(
@@ -979,8 +977,15 @@ void DeviceAddressUtils::CreateInputTensorAddress(const DeviceContext *device_co
   MS_EXCEPTION_IF_NULL(device_address);
   device_address->set_host_shape(tensor->shape());
   device_address->set_from_persistent_mem(tensor->is_parameter());
-  tensor->set_device_address(device_address);
   device_address->set_new_ref_count(SIZE_MAX);
+
+  auto h2d = [addr, device_address]() {
+    return AsyncCopy(device_address.get(), addr.get(), device_address->stream_id());
+  };
+  // keep origin device_address and execute in another thread.
+  tensor->set_to_device(std::move(h2d));
+
+  tensor->set_device_address(device_address);
   MS_LOG(DEBUG) << "Create input tensor device address " << device_address << " for " << index
                 << "th input, Shape: " << tensor->shape() << ", Type: " << TypeIdToType(tensor->data_type())->ToString()
                 << ", Size:" << tensor_size;
@@ -1027,18 +1032,15 @@ void DeviceAddressUtils::MallocForInput(const DeviceContext *device_context, con
     }
   }
 
-  auto tensor_size = LongToSize(tensor->DataNBytes());
   if (device_address->GetDeviceType() == device::DeviceType::kAscend) {
-    OpExecutor::DispatchLaunchTask([=]() {
-      if (!device_address->SyncHostToDevice(tensor->shape(), tensor_size, tensor->data_type(), device_address->format(),
-                                            tensor->data_ptr())) {
-        MS_LOG(EXCEPTION) << "SyncHostToDevice failed";
+    OpExecutor::DispatchLaunchTask([tensor]() {
+      if (!tensor->to_device()) {
+        MS_LOG(EXCEPTION) << "Tensor to device failed";
       }
     });
   } else {
-    if (!device_address->SyncHostToDevice(tensor->shape(), tensor_size, tensor->data_type(), device_address->format(),
-                                          tensor->data_ptr())) {
-      MS_LOG(EXCEPTION) << "SyncHostToDevice failed";
+    if (!tensor->to_device()) {
+      MS_LOG(EXCEPTION) << "Tensor to device failed";
     }
   }
 }

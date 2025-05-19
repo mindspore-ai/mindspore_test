@@ -125,7 +125,8 @@ void OpBackend::RunOpImpl(bool single_op_cache_hit, const OpCompilerInfoPtr &op_
     pynative::OpCompiler::GetInstance().KernelBuild(op_compiler_info, device_context, false);
   }
   const auto &tensors_without_value_mask = runtime::OpRunner::GetTensorWithoutValueMask(op_run_info);
-  runtime::OpRunner::UpdateDeviceAddress(graph, tensors_without_value_mask, device_context, true);
+  runtime::OpRunner::UpdateDeviceAddress(graph, tensors_without_value_mask, device_context, true,
+                                         op_run_info->base_op_run_info.stream_id);
 
   runtime::OpRunner::RunSingleOpGraph(op_run_info, op_compiler_info, tensors_without_value_mask);
 
@@ -163,7 +164,8 @@ void OpBackend::RunOpImplDynamic(bool single_op_cache_hit, const OpCompilerInfoP
   if (!DisableRunOpAsync(op_compiler_info, op_run_info)) {
     MS_LOG(DEBUG) << "Async exec enabled, op: " << op_run_info->base_op_run_info.op_name;
     auto input_tensors = runtime::OpRunner::GetTensorWithoutValueMask(op_run_info);
-    runtime::DynamicOpRunner::UpdateInputDeviceAddress(op_compiler_info, input_tensors, false);
+    runtime::DynamicOpRunner::UpdateInputDeviceAddress(op_compiler_info, input_tensors, false,
+                                                       op_run_info->base_op_run_info.stream_id);
     auto kernel_tensor_list = runtime::DeviceAddressUtils::CreateGraphOutputKernelTensor(
       op_compiler_info, op_run_info->base_op_run_info.abstract, op_run_info->base_op_run_info.stream_id);
     // Create output tensor
@@ -177,7 +179,8 @@ void OpBackend::RunOpImplDynamic(bool single_op_cache_hit, const OpCompilerInfoP
     WaitTasksFinish();
   }
   auto input_tensors = runtime::OpRunner::GetTensorWithoutValueMask(op_run_info);
-  runtime::DynamicOpRunner::UpdateInputDeviceAddress(op_compiler_info, input_tensors, true);
+  runtime::DynamicOpRunner::UpdateInputDeviceAddress(op_compiler_info, input_tensors, true,
+                                                     op_run_info->base_op_run_info.stream_id);
   runtime::DynamicOpRunner::RunSingleOpGraph(op_run_info, op_compiler_info, input_tensors);
 
   if (!op_run_info->is_infer) {
@@ -201,7 +204,8 @@ void OpBackend::DispatchOpTask(bool single_op_cache_hit, VectorRef *outputs, con
   MS_EXCEPTION_IF_NULL(graph);
 
   runtime::OpRunner::UpdateDeviceAddress(graph, runtime::OpRunner::GetTensorWithoutValueMask(op_run_info),
-                                         op_compiler_info->device_context_, false);
+                                         op_compiler_info->device_context_, false,
+                                         op_run_info->base_op_run_info.stream_id);
   // Create output tensor
   post_run_.UpdateOutput(op_compiler_info->graph_output_nodes_, outputs);
 
@@ -303,9 +307,9 @@ void OpBackend::RunViewKernelTask(const pynative::BaseOpRunInfo &base_op_run_inf
   view_backend_.RunViewKernelTask(base_op_run_info, task_type, enable_async);
 }
 
-void OpBackend::RunAllocMemTask(DeviceContext *device_context, const tensor::TensorPtr &tensor, bool enable_async,
-                                bool is_cpu_address_exist) const {
-  view_backend_.RunAllocMemTask(device_context, tensor, enable_async, is_cpu_address_exist);
+void OpBackend::RunAllocMemTask(DeviceContext *device_context, const tensor::TensorPtr &tensor,
+                                bool enable_async) const {
+  view_backend_.RunAllocMemTask(device_context, tensor, enable_async);
 }
 
 void PostRunOp::UpdateOutput(const std::vector<session::KernelWithIndex> &output_nodes, VectorRef *outputs) const {
@@ -569,6 +573,7 @@ void ViewBackend::RunViewKernelTask(const pynative::BaseOpRunInfo &base_op_run_i
   for (size_t idx = 0; idx < base_op_run_info.expanded_input_values.size(); idx++) {
     auto input_tensor = base_op_run_info.expanded_input_values[idx]->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(input_tensor);
+    // always false.
     if (input_tensor->device_address() == nullptr) {
       if (idx == 0) {
         MS_LOG(EXCEPTION) << "First tensor can not be nullptr, op name:" << base_op_run_info.op_name;
@@ -586,13 +591,13 @@ void ViewBackend::RunViewKernelTask(const pynative::BaseOpRunInfo &base_op_run_i
       MS_EXCEPTION_IF_NULL(input_addr);
 
       input_tensor->set_device_address(input_addr);
-      RunAllocMemTask(device_context, input_tensor, enable_async, false);
+      RunAllocMemTask(device_context, input_tensor, enable_async);
       (void)input_addr_list.emplace_back(input_addr);
     } else {
       auto input_addr = std::static_pointer_cast<device::DeviceAddress>(input_tensor->device_address());
       MS_EXCEPTION_IF_NULL(input_addr);
       if (input_addr->GetDeviceType() == device::DeviceType::kCPU) {
-        RunAllocMemTask(device_context, input_tensor, enable_async, true);
+        RunAllocMemTask(device_context, input_tensor, enable_async);
       }
 
       (void)input_addr_list.emplace_back(input_addr);
@@ -614,15 +619,13 @@ void ViewBackend::RunViewKernelTask(const pynative::BaseOpRunInfo &base_op_run_i
   }
 }
 
-void ViewBackend::RunAllocMemTask(DeviceContext *device_context, const tensor::TensorPtr &tensor, bool enable_async,
-                                  bool is_cpu_address_exist) const {
+void ViewBackend::RunAllocMemTask(DeviceContext *device_context, const tensor::TensorPtr &tensor,
+                                  bool enable_async) const {
   if (!enable_async) {
     WaitTasksFinish();
-    return AllocateMemForTensor(tensor, device_context, is_cpu_address_exist);
+    return AllocateMemForTensor(tensor, device_context);
   }
-  auto alloc_mem_func = [this, device_context, tensor, is_cpu_address_exist]() {
-    AllocateMemForTensor(tensor, device_context, is_cpu_address_exist);
-  };
+  auto alloc_mem_func = [this, device_context, tensor]() { AllocateMemForTensor(tensor, device_context); };
   runtime::OpExecutor::GetInstance().PushSimpleOpRunTask(
     std::make_shared<runtime::PassthroughDeviceTask>(alloc_mem_func));
 }
@@ -639,45 +642,29 @@ void ViewBackend::RunViewKernelTaskAsyncImpl(const runtime::KernelTaskType &task
     std::make_shared<runtime::PassthroughDeviceTask>(kernel_task_func));
 }
 
-void ViewBackend::AllocateMemForTensor(const tensor::TensorPtr &tensor, DeviceContext *device_context,
-                                       bool is_cpu_address_exist) const {
+void ViewBackend::AllocateMemForTensor(const tensor::TensorPtr &tensor, DeviceContext *device_context) const {
   MS_EXCEPTION_IF_NULL(tensor);
   MS_EXCEPTION_IF_NULL(device_context);
 
   auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
   MS_EXCEPTION_IF_NULL(device_address);
   device_address->set_is_view(true);
-  if (is_cpu_address_exist) {
-    if (device_address->from_mem_pool()) {
-      // If CPU address is exit, and address from pool, no need to copy.
-      return;
-    } else {
-      // If not from the pool, the lifetime of the device ptr is guaranteed elsewhere.
-      // Before applying for a new address, clear the address. Otherwise a warnging is generated.
-      device_address->set_ptr(nullptr);
-      if (device_context->GetDeviceType() != device_address->GetDeviceType()) {
-        device_context = runtime::OpRunner::GetDeviceContext(kCPUDevice);
-        MS_EXCEPTION_IF_NULL(device_context);
-      }
-    }
-  }
 
+  if (device_address->GetPtr() != nullptr) {
+    MS_LOG(DEBUG) << "Input device address already allocated.";
+    return;
+  }
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "PyNative", "ContiguousAllocMem", "");
   auto mem_type =
     tensor->is_parameter() ? memory::mem_pool::MemType::kWeight : memory::mem_pool::MemType::kPyNativeInput;
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", mem_type, device_address->GetSize(),
                                                  device_address.get());
-  if ((device_address->GetPtr() == nullptr) &&
-      (!device_context->device_res_manager_->AllocateMemory(device_address.get()))) {
+  if (!device_context->device_res_manager_->AllocateMemory(device_address.get())) {
     MS_LOG(EXCEPTION) << "Allocate memory failed";
   }
 
-  auto tensor_size = LongToSize(tensor->DataNBytes());
-  auto tensor_type = tensor->data_type();
-  if (!device_address->SyncHostToDevice(tensor->shape(), tensor_size, tensor_type, "DefaultFormat",
-                                        tensor->data_ptr())) {
-    MS_LOG(EXCEPTION) << "SyncHostToDevice failed";
-  }
+  tensor->to_device();
+
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
     MarkTensorAsOutput, "PyNative", device_address->device_name(), device_address->GetPtr(), device_address->type_id(),
     device_address->GetShapeVector(), device_address->GetTensorStorageInfo());

@@ -431,7 +431,7 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   void set_device_id(uint32_t device_id);
 
   void set_stream_id(uint32_t stream_id);
-  const uint32_t stream_id() const;
+  const uint32_t stream_id() const override;
 
   bool managed_by_somas() const;
   void set_managed_by_somas(bool managed_by_somas);

@@ -41,12 +41,13 @@ ValuePtr PyBoostCastOperation::DoAutoCast(const PyboostOpRunInfoPtr &op_run_info
 tensor::TensorPtr PyBoostCastOperation::DoAutoCast(const PyboostOpRunInfoPtr &op_run_info,
                                                    const std::pair<TypeId, bool> &dst_type, size_t index,
                                                    const tensor::TensorPtr &t) const {
-  if (op_run_info->source_type[index] != ops::OP_DTYPE::DT_BEGIN) {
-    MS_LOG(DEBUG) << "Try cast Source tensor: " << t->ToString();
-    auto dst_tensor = CastUtils::TensorToDstDtypeValue(t, dst_type.first);
-    MS_LOG(DEBUG) << "Cast to dst tensor: " << dst_tensor->ToString() << " without dispatching cast op";
-    return dst_tensor;
-  }
+  // todo: replace with scalar cast.
+  // if (op_run_info->source_type[index] != ops::OP_DTYPE::DT_BEGIN) {
+  //   MS_LOG(DEBUG) << "Try cast Source tensor: " << t->ToString();
+  //   auto dst_tensor = CastUtils::TensorToDstDtypeValue(t, dst_type.first);
+  //   MS_LOG(DEBUG) << "Cast to dst tensor: " << dst_tensor->ToString() << " without dispatching cast op";
+  //   return dst_tensor;
+  // }
   auto type_id64 = std::make_shared<Int64Imm>(static_cast<int64_t>(dst_type.first));
   const auto &cast_run_info = std::make_shared<FrontendOpRunInfo>();
   auto cast_prim = GetPrimByTypeId(dst_type.first);

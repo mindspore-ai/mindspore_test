@@ -399,7 +399,7 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \return The pointer to the object
   void *data_c() const {
     if (device_sync_->GetDeviceType() != device::DeviceType::kCPU) {
-      MS_LOG(EXCEPTION) << "";
+      MS_LOG(EXCEPTION) << "Only cpu Tensor can access data.";
     }
     return device_sync_->GetMutablePtr();
   }
@@ -408,6 +408,13 @@ class MS_CORE_API Tensor : public MetaTensor {
   ///
   /// \return byte size of Tensor data
   size_t Size() const { return DataNBytes(); }
+
+  TensorPtr cpu() const;
+
+  // deprecated api.
+  bool to_device();
+  // deprecated api.
+  void set_to_device(std::function<bool()> &&to_device_callback) { to_device_callback_ = to_device_callback; }
 
   /// \brief To synchronize data with the device, you need to wait for the data to be valid.
   ///
@@ -421,9 +428,7 @@ class MS_CORE_API Tensor : public MetaTensor {
 
   ssize_t DataNDim() const { return shape_.size(); }
 
-  std::string DataToString(bool use_comma) const {
-    return GetTensorDataString(data_type_, shape_, device_sync_->GetMutablePtr(), DataSize(), DataDim(), use_comma);
-  }
+  std::string DataToString(bool use_comma) const;
 
   /// \brief Get the internal data object.
   ///
@@ -859,9 +864,13 @@ class MS_CORE_API Tensor : public MetaTensor {
   std::function<DeviceSyncPtr(const DeviceSyncPtr &)> contiguous_callback_{nullptr};
   std::function<void(const Tensor *)> update_value_callback_{nullptr};
 
+  // keep cpu device address and release it when h2d done.
+  std::function<bool()> to_device_callback_{nullptr};
+
   // string size 32
   std::string id_{""};
   std::string tensor_name_;
+  std::string offload_file_;
 
   // shared_ptr size 16
   Version version_{};
