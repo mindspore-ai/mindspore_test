@@ -87,6 +87,11 @@ if(ENABLE_D)
                 COMPONENT mindspore
                 NAMELINK_SKIP
         )
+        install(
+                TARGETS mindspore_extension_ascend_atb ARCHIVE
+                DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
+                COMPONENT mindspore
+        )
     endif()
     install(
         TARGETS ms_atb_boost
