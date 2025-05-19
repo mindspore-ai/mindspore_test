@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -106,6 +106,7 @@ const char PYTHON_MOD_CHECK_ATTRS[] = "check_attrs";
 const char PYTHON_MOD_CHECK_IS_SUBCLASS[] = "check_is_subclass";
 const char PYTHON_MOD_GET_METHOD_INFO[] = "get_method_info";
 const char PYTHON_MOD_CAN_CONSTANT_FOLD[] = "can_constant_fold";
+const char PYTHON_MOD_HOOK_WRAPPER[] = "hook_wrapper";
 
 const char PYTHON_PARSE_GET_ARGS[] = "get_args";
 const char PYTHON_PARSE_GET_ARGS_DEFAULT_VALUES[] = "get_args_default_values";

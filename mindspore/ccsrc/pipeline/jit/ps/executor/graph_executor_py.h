@@ -55,7 +55,7 @@ class FRONTEND_EXPORT GraphExecutorPy : public ExecutorPy {
   bool CompileInner(const FuncGraphPtr &graph, const py::tuple &args, const py::dict &kwargs, const std::string &phase,
                     bool trace_flag) override;
 
-  void ConvertArgs(const py::tuple &args, const py::dict &kwargs, bool is_auto_parallel,
+  void ConvertArgs(const py::tuple &args, const py::dict &kwargs, const ResourcePtr &resource, bool is_auto_parallel,
                    abstract::AbstractBasePtrList *args_abs, std::vector<ValuePtr> *arguments);
   void ConvertSymbolicShape(const py::tuple &args, AbstractBasePtrList *args_abs);
   py::bytes GetOptimizeGraphProto(const std::string &phase);

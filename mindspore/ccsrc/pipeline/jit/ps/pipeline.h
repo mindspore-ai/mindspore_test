@@ -135,7 +135,7 @@ void RecordIR(const size_t action_index, const size_t action_size, const std::st
 AbstractBasePtr ArgsToAbstract(const py::object &arg, const ValuePtr &value, bool enable_tuple_broaden = false);
 void AddManagerForFuncGraphArgs(const ResourcePtr &resource, const ValuePtrList &arguments);
 void CheckInterpretNodeLineInfos();
-void SetHookForArgAbstract(const py::object &arg, abstract::AbstractBasePtr abs);
+void SetHookForArgAbstract(const ResourcePtr &resource, const py::object &arg, abstract::AbstractBasePtr abs);
 FRONTEND_EXPORT bool RunJitPipeline();
 FRONTEND_EXPORT void PreJit(const py::object &args, const py::object &kwargs);
 }  // namespace pipeline

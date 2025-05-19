@@ -445,17 +445,14 @@ bool IsPhaseLoadFromMindIR(const std::string &phase) {
   return phase.rfind(mindir_graph) != std::string::npos;
 }
 
-void SetHookForArgAbstract(const py::object &arg, abstract::AbstractBasePtr abs) {
+void SetHookForArgAbstract(const ResourcePtr &resource, const py::object &arg, abstract::AbstractBasePtr abs) {
   if (tensor::IsTensorPy(arg)) {
     auto tensor = tensor::ConvertToTensor(arg);
-    if (tensor->has_user_data("backward_hook") && !abs->has_user_data("backward_hook")) {
-      MS_LOG(DEBUG) << "set hooks for arg: " << py::str(arg) << ", abs(" << abs.get() << "): " << abs << ".";
-      auto hook_map = tensor->user_data<std::map<uint64_t, py::function>>("backward_hook");
-      auto hook_fns = std::make_shared<std::vector<py::function>>();
-      for (auto iter = hook_map->begin(); iter != hook_map->end(); iter++) {
-        hook_fns->push_back(iter->second);
-      }
-      abs->set_user_data("backward_hook", hook_fns);
+    MS_EXCEPTION_IF_NULL(tensor);
+    const auto hooks = parse::ResolveTensorHooks(resource, tensor);
+    if (hooks != nullptr) {
+      MS_LOG(DEBUG) << "Set hooks for arg: " << py::str(arg) << ", abstract: " << abs << ".";
+      abs->set_user_data(TENSOR_HOOK_MAP, hooks);
     }
   } else {
     MS_LOG(DEBUG) << "arg: " << py::str(arg) << " is not a Tensor, we only support arg of type Tensor now.";

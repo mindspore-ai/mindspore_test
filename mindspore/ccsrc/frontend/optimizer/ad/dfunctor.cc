@@ -1227,10 +1227,10 @@ void DFunctor::CallDoutHoleOnTape() const {
   // Call dout hole of all adjoint.
   for (auto &f : func_graph_to_functor_) {
     for (auto &adjoint : f.second->anfnode_to_adjoin_) {
-      adjoint.second->CallDoutHole();
+      adjoint.second->CallDoutHole(resources_);
     }
     for (auto &adjoint : f.second->anfnode_to_adjoin_indirect_fv_) {
-      adjoint.second->CallDoutHole();
+      adjoint.second->CallDoutHole(resources_);
     }
   }
 }
