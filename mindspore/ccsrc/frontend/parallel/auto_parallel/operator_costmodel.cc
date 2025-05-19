@@ -1668,7 +1668,17 @@ double GatherCost::GetForwardComputationCost(const std::vector<TensorInfo> &inpu
   Shape input0_slice_shape = inputs[0].slice_shape();
   Shape input1_slice_shape = inputs[1].slice_shape();
   if (inputs_type_lengths_.size() != inputs.size()) {
-    MS_LOG(EXCEPTION) << "Invalid inputs type size " << inputs_type_lengths_.size() << " for gatherv2 cost";
+    if (inputs.size() == 3 && inputs[1].slice_shape().empty()) {
+      /* indexselect input
+        inputs[0]: input(tensor) <-> inputs_type_lengths_[0] float 4
+        inputs[1]: dim(scalar) empty
+        inputs[2]: index(tensor) <-> inputs_type_lengths_[1] float 4
+      */
+      input0_slice_shape = inputs[0].slice_shape();
+      input1_slice_shape = inputs[2].slice_shape();
+    } else {
+      MS_LOG(EXCEPTION) << "Invalid inputs type size " << inputs_type_lengths_.size() << " for gatherv2 cost";
+    }
   }
   // don't split axis
   if (strategy_.at(LongToSize(axis_)) == 1) {
