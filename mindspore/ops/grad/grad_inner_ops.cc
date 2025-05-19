@@ -365,5 +365,11 @@ REG_BPROP_BUILDER("MatrixDiagPart").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFU
   auto assist = GetMatrixDiagPartAssit(ib, shape, dtype);
   return {ib->Emit("MatrixSetDiag", {ib->OutZeros(x), dout, assist}), ib->OutZeros(y)};
 });
+
+REG_BPROP_BUILDER("FormatCast").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
+  auto acl_format = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex3);
+  return {dout, ib->OutZeros(acl_format)};
+});
 REG_BPROP_BUILDERS_END
 }  // namespace mindspore::expander::bprop
