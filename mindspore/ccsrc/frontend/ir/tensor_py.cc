@@ -175,6 +175,14 @@ class TensorDataNumpy : public TensorData {
  public:
   explicit TensorDataNumpy(py::buffer_info &&buffer) : buffer_(std::make_unique<py::buffer_info>(std::move(buffer))) {}
 
+  TensorDataNumpy(py::buffer_info &&buffer, int slice_num, bool is_persistent) : TensorDataNumpy(std::move(buffer)) {
+    if (!is_persistent) {
+      MS_LOG(ERROR) << "For persistent TensorDataNumpy, is_persistent must be true, but got false";
+    }
+    slice_num_ = slice_num;
+    is_persistent_data_ = is_persistent;
+  }
+
   ~TensorDataNumpy() override {
     py::gil_scoped_acquire acquire;
     buffer_.reset();
@@ -192,6 +200,9 @@ class TensorDataNumpy : public TensorData {
   /// Number of dimensions.
   ssize_t ndim() const override { return buffer()->ndim; }
 
+  // Get total silce num of tensor data.
+  int slice_num() const { return slice_num_; }
+
   /// Data pointer.
   void *data() override { return buffer_data(); }
 
@@ -202,6 +213,8 @@ class TensorDataNumpy : public TensorData {
   bool has_sub_data() const override { return false; }
 
   bool is_from_numpy() const override { return true; }
+
+  bool is_persistent_data() const override { return is_persistent_data_; }
 
   const std::vector<ssize_t> &shape() const { return buffer()->shape; }
 
@@ -228,6 +241,27 @@ class TensorDataNumpy : public TensorData {
     return py::array(np_dtype, buffer()->shape, buffer()->strides, buffer()->ptr, owner);
   }
 
+  // Fill data with a special slice tensor data. It will read data from persistent storage.
+  void FillSliceData(const int32_t param_key, const int slice_index) {
+    if (!this->is_persistent_data()) {
+      MS_LOG(ERROR) << "For persistent TensorDataNumpy, is_persistent must be true, but got false";
+    }
+    if (slice_index >= slice_num_) {
+      MS_LOG(ERROR) << "Slice index is out of range, index: " << slice_index;
+      return;
+    }
+    auto emb_store = embedding_storage_manager.Get(param_key);
+    MS_EXCEPTION_IF_NULL(emb_store);
+
+    size_t first_dim = (size_t)this->shape()[0];
+    size_t start_key = slice_index * first_dim;
+    std::vector<int> keys(first_dim);
+    std::iota(keys.begin(), keys.end(), start_key);
+    if (!emb_store->Get({keys.data(), first_dim * sizeof(int)}, {this->data(), LongToSize(this->nbytes())})) {
+      MS_LOG(EXCEPTION) << "Failed to get data from embedding store!";
+    }
+  }
+
  private:
   void *buffer_data() const { return buffer_->ptr; }
   std::unique_ptr<py::buffer_info> const &buffer() const {
@@ -237,44 +271,8 @@ class TensorDataNumpy : public TensorData {
 
   // The internal buffer.
   std::unique_ptr<py::buffer_info> buffer_;
-};
-
-// This class is uesd to get huge tensor data from persistent storage. Tensor data can be got by slice.
-// It used at extend embedding to persistent storage.
-class PersistentTensorDataNumpy : public TensorDataNumpy {
- public:
-  explicit PersistentTensorDataNumpy(py::buffer_info &&buffer, int slice_num)
-      : TensorDataNumpy(std::move(buffer)), slice_num_(slice_num) {}
-
-  ~PersistentTensorDataNumpy() override = default;
-
-  // Fill data with a special slice tensor data. It will read data from persistent storage.
-  void FillSliceData(const int32_t param_key, const int slice_index) {
-    if (slice_index >= slice_num_) {
-      MS_LOG(ERROR) << "Slice index is out of range, index: " << slice_index;
-      return;
-    }
-    auto emb_store = embedding_storage_manager.Get(param_key);
-    MS_EXCEPTION_IF_NULL(emb_store);
-
-    size_t first_dim = (size_t)SliceDataShape()[0];
-    size_t start_key = slice_index * first_dim;
-    std::vector<int> keys(first_dim);
-    std::iota(keys.begin(), keys.end(), start_key);
-    if (!emb_store->Get({keys.data(), first_dim * sizeof(int)}, {this->data(), LongToSize(this->nbytes())})) {
-      MS_LOG(EXCEPTION) << "Failed to get data from embedding store!";
-    }
-  }
-
-  const std::vector<ssize_t> &SliceDataShape() const { return this->shape(); }
-
-  // Get total silce num of tensor data.
-  int slice_num() const { return slice_num_; }
-
-  bool is_persistent_data() const override { return true; }
-
- private:
   int slice_num_{1};
+  bool is_persistent_data_{false};
 };
 
 py::buffer_info TensorPybind::GetPyBufferFromPyArray(const py::array &input) {
@@ -385,8 +383,7 @@ TensorPtr TensorPybind::MakePersistentDataTensorOfNumpy(const py::array &input, 
   // Get tensor shape.
   ShapeVector shape(buf.shape.begin(), buf.shape.end());
   // Make a tensor with shared data with numpy array.
-  // todo: delete PersistentTensorDataNumpy
-  auto tensor_data = std::make_shared<PersistentTensorDataNumpy>(std::move(buf), static_cast<int>(slice_num));
+  auto tensor_data = std::make_shared<TensorDataNumpy>(std::move(buf), static_cast<int>(slice_num), true);
   return std::make_shared<Tensor>(dtype, shape, MakeDeviceAddress(dtype, shape, tensor_data));
 }
 
@@ -875,7 +872,7 @@ TensorPtr TensorPybind::MoveTo(const Tensor &self, const std::string &to, bool b
 py::array TensorPybind::AsNumpyOfSlice(const Tensor &tensor, const int32_t param_key, const int slice_index) {
   py::gil_scoped_acquire acquire;
   py::object owner = py::cast(tensor.data_ptr());
-  auto data_numpy = std::dynamic_pointer_cast<PersistentTensorDataNumpy>(tensor.data_ptr());
+  auto data_numpy = std::dynamic_pointer_cast<TensorDataNumpy>(tensor.data_ptr());
   MS_EXCEPTION_IF_NULL(data_numpy);
 
   data_numpy->FillSliceData(param_key, slice_index);

@@ -55,40 +55,6 @@ class MsTensorRel {
 };
 }  // namespace
 
-class TensorRefData : public tensor::TensorData {
- public:
-  TensorRefData(void *data, ssize_t data_size, ssize_t itemsize, ssize_t ndim)
-      : data_(data), data_size_(data_size), itemsize_(itemsize), ndim_(ndim) {}
-
-  ~TensorRefData() override = default;
-
-  // Total number of elements.
-  ssize_t size() const override { return data_size_; }
-
-  // Byte size of a single element.
-  ssize_t itemsize() const override { return itemsize_; }
-
-  // Total number of bytes.
-  ssize_t nbytes() const override { return size() * itemsize(); }
-
-  // Number of dimensions.
-  ssize_t ndim() const override { return ndim_; }
-
-  void *data() override { return data_; }
-  const void *const_data() const override { return data_; }
-
-  bool is_sub_data() const override { return false; }
-  bool has_sub_data() const override { return false; }
-
-  std::string ToString(TypeId type, const ShapeVector &shape, bool use_comma) const override { return ""; }
-
- protected:
-  void *data_ = nullptr;
-  ssize_t data_size_ = 0;
-  ssize_t itemsize_ = 0;
-  ssize_t ndim_ = 0;
-};
-
 std::vector<int64_t> TransformUtil::ConvertIntToList(int64_t data, int size) {
   std::vector<int64_t> list{};
   if (size <= 0) {
@@ -539,11 +505,7 @@ MeTensorPtr TransformUtil::GenerateMeTensor(const GeTensorPtr &ge_tensor, const 
 
   if (ref_mem) {
     void *data = reinterpret_cast<void *>(const_cast<uint8_t *>(ge_tensor->GetData()));
-    ssize_t data_size = static_cast<ssize_t>(SizeOf(me_dims));
-    ssize_t itemsize = MeTensor(me_type, ShapeVector()).DataItemSize();
-    ssize_t ndim = static_cast<ssize_t>(me_dims.size());
-    auto ref_data = std::make_shared<TensorRefData>(data, data_size, itemsize, ndim);
-    return make_shared<MeTensor>(me_type, me_dims, MakeDeviceAddress(me_type, me_dims, ref_data));
+    return make_shared<MeTensor>(me_type, me_dims, true, data);
   } else {
     MeTensor me_tensor(me_type, me_dims);
 
