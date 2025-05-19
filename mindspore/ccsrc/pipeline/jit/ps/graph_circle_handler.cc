@@ -35,6 +35,18 @@ AnfNodePtrList CollectSortingCircleList(const std::deque<AnfNodePtr> &todo, cons
   }
   return ret;
 }
+
+std::string GenerateCircleDebugString(const AnfNodePtrList &circle, const std::string &pass_name) {
+  if (circle.empty()) {
+    return "";
+  }
+  std::stringstream buffer;
+  buffer << "Encounter graph circle for pass: " << pass_name << ", circles are:\n";
+  for (size_t i = 0; i < circle.size(); ++i) {
+    buffer << std::to_string(i) << ": " << circle[i]->DebugString() << "\n";
+  }
+  return buffer.str();
+}
 }  // namespace
 
 AnfNodePtrList FindGraphCircle(const FuncGraphPtr &fg) {
@@ -80,6 +92,10 @@ AnfNodePtrList FindGraphCircle(const FuncGraphPtr &fg) {
 }
 
 void SetAttrToDepend(const FuncGraphPtr &fg) {
+  std::string disable_recovery = common::GetEnv("MS_DEV_DISABLE_PASS_CIRCLE_RECOVERY");
+  if (disable_recovery == "1") {
+    return;
+  }
   const auto &all_nodes = TopoSort(fg->output(), SuccDeeperSimple);
   for (const auto &node : all_nodes) {
     if (!IsPrimitiveCNode(node, prim::kPrimDepend)) {
@@ -113,7 +129,14 @@ void DetectAndRevertGraphCircle(const FuncGraphPtr &fg, const FuncGraphManagerPt
     MS_LOG(INFO) << "No graph circle for pass: " << pass_name;
     return;
   }
-  MS_LOG(WARNING) << "Encounter graph circle for pass: " << pass_name;
+  const auto &debug_str = GenerateCircleDebugString(circle_nodes, pass_name);
+  std::string disable_recovery = common::GetEnv("MS_DEV_DISABLE_PASS_CIRCLE_RECOVERY");
+  if (disable_recovery == "1") {
+    MS_LOG(EXCEPTION) << debug_str;
+  } else {
+    MS_LOG(WARNING) << debug_str;
+  }
+
   bool succ = RevertDependNode(fg, mng);
   if (!succ) {
     MS_LOG(EXCEPTION) << "Failed to recover circle graph for pass: " << pass_name;
