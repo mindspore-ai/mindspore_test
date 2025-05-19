@@ -12,4 +12,3 @@ gelu:
         disable: True
     dispatch:
         enable: True
-        ascend_kernel: Internal

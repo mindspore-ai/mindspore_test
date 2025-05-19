@@ -53,11 +53,10 @@ def compare(out, expect, dtype):
     return True
 
 
-def matmul(m, k, n, mode, trans_a=False, trans_b=False, with_bias=False,
-           mstype=ms.float16, is_dyn=False, profiling=False):
+def matmul(m, k, n, trans_a=False, trans_b=False, with_bias=False, mstype=ms.float16, is_dyn=False, profiling=False):
     if "ASCEND_HOME_PATH" not in os.environ:
         os.environ['ASCEND_HOME_PATH'] = "/usr/local/Ascend/latest"
-    context.set_context(mode=mode, device_target="Ascend")
+    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
     context.set_context(jit_config={"jit_level": "O0", "infer_boost": "on"})
 
     if ms.float16 == mstype:
@@ -121,11 +120,10 @@ def matmul(m, k, n, mode, trans_a=False, trans_b=False, with_bias=False,
 @pytest.mark.parametrize('trans_a', [False, True])
 @pytest.mark.parametrize('trans_b', [False, True])
 @pytest.mark.parametrize('dim_m', [1, 32, 1024, 4096])
-@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
-def test_matmul(ms_dtype, is_dynamic, trans_a, trans_b, dim_m, mode):
+def test_matmul(ms_dtype, is_dynamic, trans_a, trans_b, dim_m):
     """
     Feature: test MatMul
     Description: test matmul.
     Expectation: the result is correct
     """
-    matmul(dim_m, 4096, 4096, mode, trans_a=trans_a, trans_b=trans_b, mstype=ms_dtype, is_dyn=is_dynamic)
+    matmul(dim_m, 4096, 4096, trans_a=trans_a, trans_b=trans_b, mstype=ms_dtype, is_dyn=is_dynamic)

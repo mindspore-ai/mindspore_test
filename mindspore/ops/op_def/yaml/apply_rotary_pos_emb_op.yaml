@@ -26,4 +26,4 @@ apply_rotary_pos_emb:
         name: apply_rotary_pos_emb_
     dispatch:
         enable: True
-        ascend_kernel: Internal
+        InternalOpAscend: AutoGen

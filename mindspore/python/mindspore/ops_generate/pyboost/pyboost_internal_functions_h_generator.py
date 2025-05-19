@@ -59,9 +59,7 @@ class PyboostInternalFunctionsHeaderGenerator(BaseGenerator):
         for op_proto in op_protos:
             if op_proto.op_dispatch is None or not op_proto.op_dispatch.enable:
                 continue
-            if getattr(op_proto.op_dispatch, 'ascend_kernel') == 'aclnn':
-                continue
-            if op_proto.op_dispatch.ascend_kernel not in ('Internal', 'InternalAscend'):
+            if getattr(op_proto.op_dispatch, 'internal_op_ascend') == 'None':
                 continue
             operator_name = op_proto.op_name
             call_args_with_types = self.get_call_args_with_type(op_proto)
