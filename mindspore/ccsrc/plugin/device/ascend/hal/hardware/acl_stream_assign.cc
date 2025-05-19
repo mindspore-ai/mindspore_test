@@ -29,6 +29,7 @@
 #include "mindspore/ops/op_def/ascend_op_name.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
 #include "frontend/parallel/ops_info/ops_utils.h"
+#include "plugin/device/ascend/hal/hardware/gpto.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/framework_ops.h"
@@ -85,7 +86,7 @@ void AssignStreamForMoveTo(const AnfNodePtr &node) {
     }
     copy_out_stream_id = AscendStreamMng::GetInstance().GetStreamId(copy_out_stream);
     AnfAlgo::SetStreamId(copy_out_stream_id, node.get());
-    common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(copy_out_stream_id), node);
+    common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(static_cast<int32_t>(copy_out_stream_id)), node);
   } else if (dst_str == kToNpu) {
     auto copy_in_stream = AscendStreamMng::GetInstance().GetCopyInStream();
     size_t copy_in_stream_id;
@@ -97,7 +98,7 @@ void AssignStreamForMoveTo(const AnfNodePtr &node) {
     }
     copy_in_stream_id = AscendStreamMng::GetInstance().GetStreamId(copy_in_stream);
     AnfAlgo::SetStreamId(copy_in_stream_id, node.get());
-    common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(copy_in_stream_id), node);
+    common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(static_cast<int32_t>(copy_in_stream_id)), node);
   } else {
     MS_LOG(EXCEPTION) << "Get error MoveTo dst string: " << dst_str;
   }
@@ -127,7 +128,7 @@ void AddStreamIdByGroup(const AnfNodePtr &node, DeviceResManager *device_res_man
       auto group_name = common::AnfAlgo::GetNodeAttr<std::string>(cnode, kAttrGroup);
       size_t comm_stream_id = device_res_manager->GetCommunicationStreamIDByGroup(group_name);
       AnfAlgo::SetStreamId(comm_stream_id, node.get());
-      common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(comm_stream_id), node);
+      common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(static_cast<int32_t>(comm_stream_id)), node);
       MS_LOG(INFO) << "Set stream id by group " << comm_stream_id << " for node " << node->fullname_with_scope()
                    << ", group: " << group_name;
     } else {
@@ -140,10 +141,7 @@ void AddStreamIdByGroup(const AnfNodePtr &node, DeviceResManager *device_res_man
 }
 }  // namespace
 
-void AclStreamAssign::AssignStream(
-  const NotNull<KernelGraphPtr> &kernel_graph,
-  const std::vector<std::pair<CNodePtr, std::tuple<char, size_t, size_t, size_t>>> &mock_exec_order,
-  DeviceResManager *device_res_manager) {
+void AclStreamAssign::AssignStream(const NotNull<KernelGraphPtr> &kernel_graph, DeviceResManager *device_res_manager) {
   auto kernels = kernel_graph->execution_order();
   if (kernels.empty()) {
     return;
@@ -202,7 +200,7 @@ void AclStreamAssign::AssignStream(
       common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(stream_id), kernels[i - 1]);
     }
   }
-  InsertEventForNonTaskSink(kernel_graph, mock_exec_order);
+  InsertEventForNonTaskSink(kernel_graph, device_res_manager);
 }
 
 void AclStreamAssign::CreateEvent(const NotNull<KernelGraphPtr> &kernel_graph) {
@@ -719,13 +717,35 @@ void AclStreamAssign::UpdateGPTOEventsToExecutionOrder(
   kernel_graph->set_execution_order(new_exec_order);
 }
 
-void AclStreamAssign::InsertEventForNonTaskSink(
-  const NotNull<KernelGraphPtr> &kernel_graph,
-  const std::vector<std::pair<CNodePtr, std::tuple<char, size_t, size_t, size_t>>> &mock_exec_order) {
+void AclStreamAssign::InsertEventForNonTaskSink(const NotNull<KernelGraphPtr> &kernel_graph,
+                                                DeviceResManager *device_res_manager) {
   mindspore::HashMap<AnfNodePtr, std::vector<CNodePtr>> kernel_send;
   mindspore::HashMap<AnfNodePtr, std::vector<CNodePtr>> kernel_recv;
   mindspore::HashMap<AnfNodePtr, std::set<size_t>> producer_streams;
   AnfAlgo::SetStreamId(kDefaultStreamIndex, kernel_graph->output().get());
+
+  std::vector<std::pair<CNodePtr, std::tuple<char, size_t, size_t, size_t>>> mock_exec_order;
+
+  // Enable GPTO per stage
+  std::stringstream enable_gpto_stage_var;
+  enable_gpto_stage_var << "MS_ENABLE_GPTO_STAGE_";
+  auto parallel_context = parallel::ParallelContext::GetInstance();
+  auto stages = parallel_context->pipeline_stage_split_num();
+  auto stage_device_num = parallel_context->device_num() / stages;
+  auto stage_id = parallel_context->global_rank() / stage_device_num;
+  enable_gpto_stage_var << stage_id;
+  std::string enable_gpto_per_stage = common::GetEnv(enable_gpto_stage_var.str());
+  bool enable_gpto_opt_per_stage =
+    enable_gpto_per_stage != "" && (enable_gpto_per_stage == "2" || enable_gpto_per_stage == "3");
+
+  // Enable GPTO globally
+  std::string enable_gpto = common::GetEnv("MS_ENABLE_GPTO");
+  bool enable_gpto_opt = enable_gpto == "2" || enable_gpto == "3";
+
+  if (enable_gpto_opt || enable_gpto_opt_per_stage) {
+    MS_LOG(INFO) << "Current Exec Order Algo in MS Context is GPTO";
+    mindspore::gpto::GPTO(device_res_manager, kernel_graph, &mock_exec_order);
+  }
 
   if (mock_exec_order.empty()) {
     GenEventsForParallelOp(kernel_graph, &kernel_send, &kernel_recv, &producer_streams);

@@ -1092,9 +1092,7 @@ kernel::KernelModPtr GeKernelExecutor::CreateKernelMod(const std::string &op_nam
   return kernel_ptr;
 }
 
-void GeKernelExecutor::DoStreamAssign(
-  const KernelGraphPtr &kernel_graph,
-  const std::vector<std::pair<CNodePtr, std::tuple<char, size_t, size_t, size_t>>> &mock_exec_order) const {
+void GeKernelExecutor::DoStreamAssign(const KernelGraphPtr &kernel_graph) const {
   MS_LOG(DEBUG) << "Status record: start stream assign.";
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
@@ -1108,7 +1106,7 @@ void GeKernelExecutor::DoStreamAssign(
   if (common::IsDisableRuntimeConfig(common::kRuntimeMultiStream)) {
     MS_LOG(INFO) << "Force single stream.";
   } else {
-    AclStreamAssign::GetInstance().AssignStream(NOT_NULL(kernel_graph), mock_exec_order, res_manager_);
+    AclStreamAssign::GetInstance().AssignStream(NOT_NULL(kernel_graph), res_manager_);
   }
 #ifdef ENABLE_DUMP_IR
   auto context_ptr = MsContext::GetInstance();
@@ -1237,12 +1235,7 @@ void GeKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const {
     }
   }
   ResetNodeIds({kernel_graph});
-  std::vector<std::pair<CNodePtr, std::tuple<char, size_t, size_t, size_t>>> mock_exec_order;
-  if (common::GetEnv("MS_ENABLE_GPTO") == "1") {
-    MS_LOG(INFO) << "Current Exec Order Algo in MS Context is GPTO";
-    mindspore::gpto::GPTO(res_manager_, kernel_graph, &mock_exec_order);
-  }
-  DoStreamAssign(kernel_graph, mock_exec_order);
+  DoStreamAssign(kernel_graph);
   CreateEventKernelMod(kernel_graph);
   kernel_graph->PrintGraphExecuteOrder();
   DoSomas(NOT_NULL(graph));

@@ -1053,7 +1053,26 @@ bool SymEngOptGroup(const ResourcePtr &resource) { return OptPassGroup(resource,
 bool OptPassGradEpilogueGroup(const ResourcePtr &resource) { return OptPassGroup(resource, "opt_grad_epilogue"); }
 bool OptPassAddAttr(const ResourcePtr &resource) { return OptPassGroup(resource, "add_attr"); }
 
-bool IsPassDisableForGPTO() { return common::GetEnv("MS_ENABLE_GPTO") >= "1"; }
+bool IsPassDisableForGPTO() {
+  // Disable some passes per stage
+  std::stringstream enable_pass_stage_var;
+  enable_pass_stage_var << "MS_ENABLE_GPTO_STAGE_";
+  auto parallel_context = parallel::ParallelContext::GetInstance();
+  auto stages = parallel_context->pipeline_stage_split_num();
+  auto stage_device_num = parallel_context->device_num() / stages;
+  auto stage_id = parallel_context->global_rank() / stage_device_num;
+  enable_pass_stage_var << stage_id;
+  std::string enable_pass_per_stage = common::GetEnv(enable_pass_stage_var.str());
+  if (enable_pass_per_stage != "" && (enable_pass_per_stage == "1" || enable_pass_per_stage == "3")) {
+    return True;
+  }
+  // Disable globally some passes
+  std::string enable_gpto = common::GetEnv("MS_ENABLE_GPTO");
+  if (enable_gpto == "1" || enable_gpto == "3") {
+    return True;
+  }
+  return False;
+}
 
 bool AddRecomputationPass(const ResourcePtr &resource) {
   auto context = MsContext::GetInstance();
@@ -1321,9 +1340,6 @@ bool AddCommOpReusePass(const ResourcePtr &resource) {
 
 bool OverlapOptShardInPipelinePass(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
-  if (IsPassDisableForGPTO()) {
-    return true;
-  }
   parallel::OverlapOptShardInPipeline(resource->func_graph());
   return true;
 }
@@ -1358,9 +1374,6 @@ bool OverlapGradMatmulAndGradAllreduce(const ResourcePtr &resource) {
 
 bool OverlapOptShardGradInPipelinePass(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
-  if (IsPassDisableForGPTO()) {
-    return true;
-  }
   parallel::OverlapOptShardGradInPipeline(resource->func_graph());
   return true;
 }
@@ -1490,9 +1503,6 @@ bool ExpandDumpFlagPass(const ResourcePtr &resource) {
 
 bool ControlDataBroadcastOrderPass(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
-  if (IsPassDisableForGPTO()) {
-    return true;
-  }
   auto graph = resource->func_graph();
   parallel::FreezeParallelOptimizerCommOrder(graph);
   parallel::ReplaceGetnextWithBroadcast(graph);
