@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2023 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,11 @@
 #include "ops_utils/op_constants.h"
 
 namespace mindspore::ops {
-BaseShapePtr MaskedFillFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                            const std::vector<AbstractBasePtr> &input_args) const {
+ShapeArray MaskedFillFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
   auto op_name = primitive->name();
-  auto input_shape = input_args[kIndex0]->GetShape()->GetShapeVector();
-  auto mask_shape = input_args[kIndex1]->GetShape()->GetShapeVector();
-  auto value_shape = input_args[kIndex2]->GetShape()->GetShapeVector();
+  auto input_shape = input_infos[kIndex0]->GetShape();
+  auto mask_shape = input_infos[kIndex1]->GetShape();
+  auto value_shape = input_infos[kIndex2]->GetShape();
   auto broadcast_shape = CalBroadCastShape(input_shape, mask_shape, op_name, "input", "mask");
   int64_t batch_rank = 0;
 
@@ -52,14 +51,14 @@ BaseShapePtr MaskedFillFuncImpl::InferShape(const PrimitivePtr &primitive,
     }
   }
 
-  return std::make_shared<abstract::Shape>(broadcast_shape);
+  return {broadcast_shape};
 }
 
-TypePtr MaskedFillFuncImpl::InferType(const PrimitivePtr &primitive,
-                                      const std::vector<AbstractBasePtr> &input_args) const {
-  auto prim_name = primitive->name();
-  (void)CheckAndConvertUtils::CheckTensorTypeValid("mask", input_args[kIndex1]->GetType(), {kBool}, prim_name);
-
-  return input_args[kIndex0]->GetType()->Clone();
+std::vector<TypeId> MaskedFillFuncImpl::InferType(const PrimitivePtr &primitive,
+                                                  const InferInfoPtrList &input_infos) const {
+  auto op_name = primitive->name();
+  auto mask_type_id = input_infos[kIndex1]->GetType();
+  (void)CheckAndConvertUtils::CheckTypeValid("mask", TypeIdToType(mask_type_id), {kBool}, op_name);
+  return {input_infos[kInputIndex0]->GetType()};
 }
 }  // namespace mindspore::ops
