@@ -545,7 +545,7 @@ def get_group_rank_from_world_rank(world_rank_id, group):
     return _get_group_rank_from_world_rank_helper(world_rank_id=world_rank_id, group=group)
 
 
-def create_group(group, rank_ids):
+def create_group(group, rank_ids, options=None):
     """
     Create a user collective communication group.
 
@@ -593,7 +593,7 @@ def create_group(group, rank_ids):
     if not isinstance(group, str):
         raise TypeError("For 'create_group', the argument 'group' must be type of string, "
                         "but got 'group' type : {}.".format(type(group)))
-    _create_group_helper(group, rank_ids)
+    _create_group_helper(group, rank_ids, options)
 
 
 def destroy_group(group):
