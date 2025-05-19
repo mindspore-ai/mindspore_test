@@ -32,6 +32,7 @@ using ReleaseExecutorCast = int (*)(aclOpExecutor *);
 }  // namespace
 
 static std::mutex init_mutex;
+static std::shared_mutex rw_opapi_mutex;
 static bool aclnn_init = false;
 OPS_ASCEND_API std::vector<std::pair<void *, std::string>> opapi_lib_handle;
 
@@ -42,7 +43,9 @@ void *GetOpApiFunc(const char *api_name) {
     MS_LOG(DEBUG) << "OpApi " << api_name << " hit cache.";
     return res->second;
   }
+  std::shared_lock<std::shared_mutex> read_lock(rw_opapi_mutex);
   if (opapi_lib_handle.size() == 0) {
+    read_lock.unlock();
     LoadOpApiLib();
   }
   for (const auto &handle : opapi_lib_handle) {
@@ -193,6 +196,7 @@ void LoadOpApiLib() {
 
   GetAscendDefaultCustomPath(&cust_path_vec);
 
+  std::unique_lock<std::shared_mutex> write_lock(rw_opapi_mutex);
   for (const auto &cust_lib_path : cust_path_vec) {
     auto cust_handler = GetOpApiLibHandler(cust_lib_path);
     if (cust_handler != nullptr) {
