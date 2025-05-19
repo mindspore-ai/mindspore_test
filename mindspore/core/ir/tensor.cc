@@ -348,6 +348,9 @@ Tensor::Tensor(TypeId origin_data_type, const ShapeVector &shape, size_t compres
   compression_type_ = compression_type;
 }
 
+Tensor::Tensor(TypeId data_type, const ShapeVector &shape, bool ref_mem, void *data)
+    : Tensor(data_type, shape, MakeDeviceAddress(data_type, shape, MakeTensorData(data_type, shape, ref_mem, data))) {}
+
 Tensor::~Tensor() {
   try {
     UnPinMemory();
