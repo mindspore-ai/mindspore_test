@@ -131,7 +131,7 @@ std::string TrackerOperator::ToString() {
   return str;
 }
 
-void GraphTracker::RaceCheck() {
+void TrackerGraph::RaceCheck() {
   MS_LOG(WARNING) << "Begin race check";
   auto race_checker = RaceChecker(GetAllAddresses(), GetStreamSize());
   for (const auto &op : operators_) {
@@ -179,7 +179,7 @@ void GraphTracker::RaceCheck() {
   MS_LOG(WARNING) << "End race check";
 }
 
-void GraphTracker::Dump(const std::string &graph_path) {
+void TrackerGraph::Dump(const std::string &graph_path) {
   std::lock_guard<std::mutex> lock(mutex_);
   RaceCheck();
 
@@ -199,19 +199,19 @@ void GraphTracker::Dump(const std::string &graph_path) {
     graph_file << op->ToString() << std::endl;
     // print log
     if (i > log_threshold) {
-      MS_LOG(WARNING) << "GraphTracker Dump progress: " << (i + 1) * kLogPersentage / operators_.size() << "%";
+      MS_LOG(WARNING) << "TrackerGraph Dump progress: " << (i + 1) * kLogPersentage / operators_.size() << "%";
       log_threshold += operators_.size() / kLogThreshold;
     }
   }
   graph_file.close();
 }
 
-bool GraphTracker::NeedDump() {
+bool TrackerGraph::NeedDump() {
   std::lock_guard<std::mutex> lock(mutex_);
   return !operators_.empty();
 }
 
-TrackerTensorPtr GraphTracker::AddTensor(MemBlockInfoPtr mem_block, DeviceMemPtr device_ptr, TypeId dtype,
+TrackerTensorPtr TrackerGraph::AddTensor(MemBlockInfoPtr mem_block, DeviceMemPtr device_ptr, TypeId dtype,
                                          const ShapeVector &shape, TensorStorageInfoPtr tensor_info) {
   std::lock_guard<std::mutex> lock(mutex_);
   if (begin_race_check_) {
@@ -231,7 +231,7 @@ TrackerTensorPtr GraphTracker::AddTensor(MemBlockInfoPtr mem_block, DeviceMemPtr
   return tensor;
 }
 
-void GraphTracker::AddOperator(TaskInfoPtr task_info) {
+void TrackerGraph::AddOperator(TaskInfoPtr task_info) {
   std::lock_guard<std::mutex> lock(mutex_);
   if (begin_race_check_) {
     MS_LOG(EXCEPTION) << "AddOperator is not allowed when race check is enabled";
@@ -244,7 +244,7 @@ void GraphTracker::AddOperator(TaskInfoPtr task_info) {
   task_operator_map_[task_info] = op;
 }
 
-void GraphTracker::CacheLastTask() {
+void TrackerGraph::CacheLastTask() {
   std::lock_guard<std::mutex> lock(mutex_);
   if (operators_.empty()) {
     cache_ = nullptr;
@@ -254,7 +254,7 @@ void GraphTracker::CacheLastTask() {
   operators_.pop_back();
 }
 
-void GraphTracker::EmptyCache() {
+void TrackerGraph::EmptyCache() {
   std::lock_guard<std::mutex> lock(mutex_);
   if (cache_ == nullptr) {
     return;
@@ -263,7 +263,7 @@ void GraphTracker::EmptyCache() {
   cache_ = nullptr;
 }
 
-void GraphTracker::AddOperatorInput(TaskInfoPtr task_info, TrackerTensorPtr tensor) {
+void TrackerGraph::AddOperatorInput(TaskInfoPtr task_info, TrackerTensorPtr tensor) {
   std::lock_guard<std::mutex> lock(mutex_);
   if (begin_race_check_) {
     MS_LOG(EXCEPTION) << "AddOperatorInput is not allowed when race check is enabled";
@@ -276,7 +276,7 @@ void GraphTracker::AddOperatorInput(TaskInfoPtr task_info, TrackerTensorPtr tens
   op->inputs.push_back(tensor);
 }
 
-void GraphTracker::AddOperatorOutput(TaskInfoPtr task_info, TrackerTensorPtr tensor) {
+void TrackerGraph::AddOperatorOutput(TaskInfoPtr task_info, TrackerTensorPtr tensor) {
   std::lock_guard<std::mutex> lock(mutex_);
   if (begin_race_check_) {
     MS_LOG(EXCEPTION) << "AddOperatorOutput is not allowed when race check is enabled";
@@ -290,7 +290,7 @@ void GraphTracker::AddOperatorOutput(TaskInfoPtr task_info, TrackerTensorPtr ten
 }
 
 // for race checker
-std::vector<uintptr_t> GraphTracker::GetAllAddresses() {
+std::vector<uintptr_t> TrackerGraph::GetAllAddresses() {
   begin_race_check_ = true;
   std::vector<uintptr_t> addresses;
   for (const auto &tensor : tensors_) {
@@ -300,7 +300,7 @@ std::vector<uintptr_t> GraphTracker::GetAllAddresses() {
   return addresses;
 }
 
-int32_t GraphTracker::GetStreamSize() {
+int32_t TrackerGraph::GetStreamSize() {
   begin_race_check_ = true;
   size_t stream_num = 0;
   for (const auto &op : operators_) {
