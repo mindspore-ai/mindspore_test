@@ -604,6 +604,22 @@ void Tensor::data_sync(bool need_wait, bool inpalce, bool sync_on_demand) const 
   sync_status_ = kNeedSyncHostToDevice;
 }
 
+TensorData &Tensor::data() {
+  std::abort();
+}
+
+const TensorDataPtr &Tensor::data_ptr() const {
+  std::abort();
+}
+
+const TensorData &Tensor::data() const {
+  std::abort();
+}
+
+void Tensor::set_data(const TensorDataPtr &data) {
+  std::abort();
+}
+
 void Tensor::ExecuteUpdateValueCallback() const {
   if (update_value_callback_ != nullptr) {
     update_value_callback_(this);

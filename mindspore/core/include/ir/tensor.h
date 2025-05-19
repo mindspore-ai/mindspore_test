@@ -406,19 +406,19 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \brief Get the internal data object.
   ///
   /// \return The reference to internal data object.
-  TensorData &data() { MS_LOG(EXCEPTION) << "Not support!"; }
+  TensorData &data();
 
   /// \brief Get the internal data shared pointer.
   ///
   /// return The reference to internal data object.
-  const TensorDataPtr &data_ptr() const { MS_LOG(EXCEPTION) << "Not support!"; }
+  const TensorDataPtr &data_ptr() const;
 
   /// \brief Get the internal data object.
   ///
   /// \return The reference to internal data object.
-  const TensorData &data() const { MS_LOG(EXCEPTION) << "Not support!"; }
+  const TensorData &data() const;
 
-  void set_data(const TensorDataPtr &data) { MS_LOG(EXCEPTION) << "Not support"; }
+  void set_data(const TensorDataPtr &data);
 
   TypeId set_data_type(TypeId data_type) override;
 
