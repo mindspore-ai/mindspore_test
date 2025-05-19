@@ -22,6 +22,7 @@
 #include "plugin/device/ascend/llm_boost/atb/workspace.h"
 #include "runtime/pynative/op_executor.h"
 #include "utils/singleton.h"
+#include "ir/device_address_maker.h"
 
 // atb
 #include "acl/acl_rt.h"
@@ -290,7 +291,8 @@ const tensor::TensorPtr BoostModelATB::CreateMsTensorFromTensorDesc(const atb::T
     msTensorShape.push_back(tensorDesc.shape.dims[i]);
   }
   tensor::TensorDataPtr data = tensor::MakeTensorData(msTensorType, msTensorShape);
-  tensor::TensorPtr msTensor = std::make_shared<tensor::Tensor>(msTensorType, msTensorShape, data);
+  tensor::TensorPtr msTensor =
+    std::make_shared<tensor::Tensor>(msTensorType, msTensorShape, MakeDeviceAddress(msTensorType, msTensorShape, data));
 
   auto device_sync = msTensor->device_address();
   auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(device_sync);
