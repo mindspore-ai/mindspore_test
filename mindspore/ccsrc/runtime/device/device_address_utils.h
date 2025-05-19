@@ -116,7 +116,6 @@ class BACKEND_EXPORT DeviceAddressUtils {
     auto value = tmp_abs->GetValue();
     auto device_address = device_context->device_res_manager_->CreateDeviceAddress();
     auto kernel_tensor = std::make_shared<kernel::KernelTensor>(device_address, shape, type, value, ShapeVector{});
-    kernel_tensor->set_device_synchronizer(device_address->NewDeviceSynchronizer());
     device_address->set_from_persistent_mem(true);
     device_address->set_new_ref_count(SIZE_MAX);
 

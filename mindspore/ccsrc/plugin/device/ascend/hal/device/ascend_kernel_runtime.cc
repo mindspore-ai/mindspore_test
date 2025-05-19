@@ -33,7 +33,6 @@
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_memory_manager.h"
 #include "plugin/res_manager/ascend/event/ascend_event.h"
-#include "plugin/res_manager/ascend/ascend_device_address/ascend_device_synchronizer.h"
 #include "debug/profiler/profiling.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/debug/data_dump/e2e_dump.h"
@@ -329,7 +328,6 @@ DeviceAddressPtr AscendKernelRuntime::CreateDeviceAddress(void *device_ptr, size
 
   ascend_device_address_ptr->SetNodeIndex(node_index.first, node_index.second);
   ascend_device_address_ptr->set_is_ptr_persisted(true);
-  kernel_tensor->set_device_synchronizer(std::make_shared<AscendDeviceSynchronizer>());
 
   return ascend_device_address_ptr;
 }

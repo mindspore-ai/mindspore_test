@@ -37,19 +37,16 @@
 #include "include/backend/visible.h"
 #include "include/common/utils/utils.h"
 #include "include/common/utils/convert_utils.h"
-#include "include/backend/device_synchronizer.h"
 #include "ir/anf.h"
 #include "ir/dtype.h"
 #include "ir/tensor.h"
 #include "ir/kernel_tensor_value.h"
-#include "mindspore/ccsrc/include/backend/device_synchronizer.h"
 #include "common/kernel_visible.h"
 #include "common/device_address.h"
 
 namespace mindspore {
 namespace kernel {
 using abstract::AbstractBase;
-using device::DeviceSynchronizerPtr;
 using DeviceAddress = device::DeviceAddress;
 using DeviceAddressPtr = device::DeviceAddressPtr;
 
@@ -411,11 +408,6 @@ class OPS_KERNEL_COMMON_API KernelTensor : public AbstractBase {
     device_address_->set_user_data(user_data);
   }
 
-  // Set device synchronizer to the KernelTensor.
-  void set_device_synchronizer(const DeviceSynchronizerPtr &device_synchronizer) {
-    device_synchronizer_ = device_synchronizer;
-  }
-
   HeterogeneousInfoPtr heterogeneous_info() const {
     MS_EXCEPTION_IF_NULL(device_address_);
     return device_address_->heterogeneous_info();
@@ -555,9 +547,6 @@ class OPS_KERNEL_COMMON_API KernelTensor : public AbstractBase {
 
   // The launch index on stream managed by framework.
   std::shared_ptr<int64_t> task_id_on_stream_{nullptr};
-
-  // For synchronizing data between device and host.
-  DeviceSynchronizerPtr device_synchronizer_{nullptr};
 
   // The following two variables are only used in the Lite framework.
   // Device data address.
