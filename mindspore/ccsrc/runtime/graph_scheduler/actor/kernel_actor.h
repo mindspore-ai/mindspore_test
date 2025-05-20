@@ -358,6 +358,7 @@ class KernelActor : public DebugAwareActor {
   // it sets the flag of the branch to true to enable the actor in this branch.
   bool *is_enable_{nullptr};
   bool need_wait_pipeline_{false};
+  bool need_ref_for_storage_info_{true};
 };
 
 using KernelActorPtr = std::shared_ptr<KernelActor>;

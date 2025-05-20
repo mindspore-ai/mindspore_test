@@ -370,6 +370,7 @@ class KernelRunner {
   // it sets the flag of the branch to true to enable the actor in this branch.
   bool *is_enable_{nullptr};
   bool need_wait_pipeline_{false};
+  bool need_ref_for_storage_info_{true};
 
   // The id of debug actor. Send message to it for debug.
   const AID *debug_aid_{nullptr};
