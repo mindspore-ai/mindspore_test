@@ -9,12 +9,12 @@ mindspore.ops.ReduceScatterV
         只支持一维的输入，使用该接口前需要将输入数据展开成一维。
 
     参数：
-        - **op** (str, 可选) - 指定用于元素的规约操作，如SUM和MAX。默认值： ``ReduceOp.SUM`` 。
+        - **op** (str, 可选) - 指定用于元素的规约操作，如SUM、MIN和MAX， 当前不支持PROD。默认值： ``ReduceOp.SUM`` 。
         - **group** (str, 可选) - 要处理的通信组。默认值： ``GlobalComm.WORLD_COMM_group`` 。
 
     输入：
         - **input_x** (Tensor) - 一维待分发的张量，shape为 :math:`(x_1)`。
-        - **input_split_sizes** (Union[tuple[int], list[int], Tensor]) - 一维张量，所有rank的接收数据量列表，基本单位是Tensor的数据类型。
+        - **input_split_sizes** (Union[tuple[int], list[int], Tensor]) - 一维张量，所有rank的接收数据量列表，基本单位是Tensor的数据类型。该数值未作校验，由用户保障其正确性。
 
     输出：
         Tensor，从每张卡上规约并且分发的一维数据结果。如果结果为空，则返回空张量，且值无意义。

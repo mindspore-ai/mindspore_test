@@ -2151,14 +2151,15 @@ class ReduceScatterV(PrimitiveWithInfer):
 
     Args:
         op (str, optional): Specifies an operation used for element-wise reductions,
-            like SUM and MAX. Default: ``ReduceOp.SUM`` .
+            like SUM, MIN and MAX, currently PROD is not supported. Default: ``ReduceOp.SUM`` .
         group (str, optional): The communication group to work on. Default: ``GlobalComm.WORLD_COMM_GROUP`` .
 
     Inputs:
         - **input_x** (Tensor) - One-dimensional tensor to be distributed, with the shape :math:`(x_1)`.
           rank_size refers to the number of cards in the communication group.
         - **input_split_sizes** (Union[tuple[int], list[int], Tensor]) - One-dimensional tensor, a list of
-          received data volumes for all ranks. The basic unit is the data type of Tensor.
+          received data volumes for all ranks. The basic unit is the data type of Tensor. The value is not
+          verified, and the user guarantees its correctness.
 
     Outputs:
         Tensor. Reduces and scatters tensor from remote ranks.

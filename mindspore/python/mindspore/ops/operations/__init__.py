@@ -56,7 +56,7 @@ from .comm_ops import (AllGather, AllReduce, Reduce, NeighborExchange, NeighborE
                        _MirrorOperator, _MirrorMiniStepOperator, _MiniStepAllGather, ReduceOp, _VirtualDataset,
                        _VirtualOutput, _VirtualDiv, _GetTensorSlice, _VirtualAdd, _VirtualAssignAdd, _VirtualAccuGrad,
                        _HostAllGather, _HostReduceScatter, _MirrorMicroStepOperator, _MicroStepAllGather,
-                       _VirtualPipelineEnd, AlltoAllV, ReduceScatter, _VirtualAssignKvCache)
+                       _VirtualPipelineEnd, AlltoAllV, ReduceScatter, _VirtualAssignKvCache, AllGatherV, ReduceScatterV)
 from .control_ops import GeSwitch, Merge
 from .custom_ops import (Custom, CustomOpBuilder)
 from .debug_ops import (ImageSummary, InsertGradientOf, Morph, HookBackward, ScalarSummary,
