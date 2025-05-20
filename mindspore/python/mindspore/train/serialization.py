@@ -1358,8 +1358,8 @@ def load_checkpoint(ckpt_file_name, net=None, strict_load=False, filter_prefix=N
           And using either of those two args will override `choice_func` at the same time.
         - If none of the parameters are loaded from checkpoint file, it will throw ValueError.
         - When loading a checkpoint that has removed redundancy, the network should be compiled.
-        - When net is not None, it will verify whether the remove_redundancy parameter matches the deduplication flag
-          in the loaded safetensors file. If they are different, load the file according to
+        - When `net` is not None, it will verify whether the `remove_redundancy` parameter matches the
+          deduplication flag in the loaded safetensors file. If they are different, load the file according to
           the deduplication flag in the file.
 
     Args:
