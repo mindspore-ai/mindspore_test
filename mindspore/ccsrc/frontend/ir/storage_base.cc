@@ -24,6 +24,19 @@
 #include "mindspore/ccsrc/include/backend/mem_reuse/mem_tracker.h"
 
 namespace mindspore {
+namespace {
+device::DeviceAddressPtr CreateTempDeviceAddress(const device::DeviceAddressPtr &device_address,
+                                                 const DeviceContext *device_context) {
+  ShapeVector shape = {static_cast<int64_t>(device_address->size())};
+  auto new_device_address = device_context->device_res_manager_->CreateDeviceAddress(
+    device_address->GetMutablePtr(), device_address->size(), shape, device_address->address_common()->format_,
+    device_address->type_id(), device_address->device_name(), device_address->device_id(), device_address->stream_id(),
+    device_address->user_data());
+  new_device_address->set_from_mem_pool(false);
+  return new_device_address;
+}
+};  // namespace
+
 StorageBase::~StorageBase() { device_data_ = nullptr; }
 
 uintptr_t StorageBase::DataPtr() const {
@@ -36,6 +49,7 @@ uintptr_t StorageBase::DataPtr() const {
 }
 
 void StorageBase::InplaceReSize(int64_t size) {
+  runtime::Pipeline::Get().WaitForward();
   if (device_data_ != nullptr) {
     if (size == 0) {
       device_data_->ClearDeviceMemory();
@@ -43,15 +57,14 @@ void StorageBase::InplaceReSize(int64_t size) {
       return;
     }
 
-    auto address_comm = device_data_->address_common();
-    device::ResKey res_key{device::GetDeviceTypeByName(address_comm->device_name_), address_comm->device_id_};
+    device::ResKey res_key{device::GetDeviceTypeByName(device_data_->device_name()), device_data_->device_id()};
     auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
     MS_EXCEPTION_IF_NULL(res_manager);
     void *device_ptr = nullptr;
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "ResizeStorage", "ResizeStorage", "");
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "ResizeStorage", memory::mem_pool::MemType::kOther, size,
                                                    device_data_.get());
-    device_ptr = res_manager->AllocateMemory(size, address_comm->stream_id_);
+    device_ptr = res_manager->AllocateMemory(size, device_data_->stream_id());
     if (!device_ptr) {
       return;
     }
@@ -80,19 +93,24 @@ void StorageBase::InplaceCopy(const StorageBasePtr &src, bool non_blocking) {
   }
   runtime::Pipeline::Get().WaitAll();
   if (device_data_ != nullptr && src->device_data_ != nullptr) {
-    auto address_comm = device_data_->address_common();
     auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-      {address_comm->device_name_, address_comm->device_id_});
+      {device_data_->device_name(), device_data_->device_id()});
     MS_EXCEPTION_IF_NULL(device_context);
     device_context->Initialize();
+    auto dst_address = device_data_;
+    auto src_address = src->device_data_;
+    if (device_data_->address_common()->shape_vector_ != src->device_data_->address_common()->shape_vector_) {
+      dst_address = CreateTempDeviceAddress(dst_address, device_context);
+      src_address = CreateTempDeviceAddress(src_address, device_context);
+    }
     if (!device_context->GetKernelExecutor(false)->ExecuteKernelTask(
-          runtime::KernelTaskType::kCOPY_TASK, {device_data_, src->device_data_}, {}, address_comm->stream_id_)) {
+          runtime::KernelTaskType::kCOPY_TASK, {dst_address, src_address}, {}, device_data_->stream_id())) {
       MS_LOG(EXCEPTION) << "ExecuteKernelTask failed, task_type: " << runtime::KernelTaskType::kCOPY_TASK;
     }
     runtime::Pipeline::Get().WaitForward();
     auto &controller = device::HalResManager::GetInstance().GetMultiStreamController(device_context->DeviceName());
     controller->Refresh();
-    (void)controller->SyncStream(address_comm->stream_id_);
+    (void)controller->SyncStream(device_data_->stream_id());
     return;
   }
 
