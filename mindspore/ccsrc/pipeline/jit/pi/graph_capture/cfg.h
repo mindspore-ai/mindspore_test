@@ -186,6 +186,7 @@ class CFG {
   void BuildInst(const uint8_t *begin, const uint8_t *end);
   std::map<int, Block *> BuildBB(const uint8_t *begin, const uint8_t *end);
   void BuildCFG(const std::map<int, Block *> &labels);
+  ExceptionTable::const_iterator FindTryWithStart(ExceptionTable::const_iterator iter) const;
 
   PyCodeWrapper co_;
   std::vector<std::unique_ptr<Instr>> instrs_;

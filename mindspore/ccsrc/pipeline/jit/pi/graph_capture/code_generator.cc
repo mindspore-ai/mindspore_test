@@ -2221,7 +2221,20 @@ static bool FindBlock(int start_bci, const CFG *cfg, int *end_bci, int *stack_ef
 
 py::object MakeCodeFromCodeGen(const GraphBuilderPtr &builder, const GraphAnalyzerPtr &analyzer, PyObject *globals) {
   TimeRecorder time_recorder(__FUNCTION__, kPIJitConfigDefault.GetBoolConfig(GraphJitConfig::kLogPerf));
-  if (analyzer->GetCaptureInfo().captured_.operations.empty() && builder->GetGraph()->GetStopTraceBci() == -1) {
+  int break_bci = builder->GetGraph()->GetStopTraceBci();
+  bool skip_compile = analyzer->GetCaptureInfo().captured_.operations.empty() && break_bci == -1;
+#ifdef IS_PYTHON_3_11_PLUS
+  {
+    const auto &cfg = builder->GetGraph()->GetCFG();
+    auto iter = cfg->FindTryWithBlock(break_bci);
+    auto not_found = cfg->exc_table().end();
+    if (iter == not_found && cfg->FindExcTableItem(break_bci) != not_found) {
+      MS_LOG(INFO) << "not implemented break at try while handle exception";
+      skip_compile = true;
+    }
+  }
+#endif
+  if (skip_compile) {
     MS_LOG(INFO) << "skip graph capture because of no graph in the function";
     return PyCodeWrapper(builder->GetGraph()->GetCodeObj()).DeepCopy();
   }

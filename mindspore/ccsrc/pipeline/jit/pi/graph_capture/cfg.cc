@@ -361,6 +361,39 @@ Block *CFG::GetBlockByBci(int bci) const {
   return iter->get();
 }
 
+ExceptionTable::const_iterator CFG::FindTryWithStart(ExceptionTable::const_iterator ii) const {
+  const auto &map = this->exc_table();
+  const auto &list = this->instr_pool();
+  auto iter = ii;
+  if (iter == map.end()) {
+    return iter;
+  }
+  // find try start by exception item
+  for (int handler = iter->second.jump_; list[handler]->op() != PUSH_EXC_INFO;) {
+    if (iter == map.begin()) {
+      MS_LOG(INFO) << "unknown exception handler pattern";
+      return map.end();
+    }
+    --iter;
+    handler = iter->second.jump_;
+  }
+  if (iter == map.begin()) {
+    return iter;
+  }
+  auto another = iter;
+  --another;
+  another = FindTryWithStart(another);
+  if (another == map.end()) {
+    return iter;
+  }
+  if (another->second.jump_ == iter->second.jump_) {
+    // finally block has duplicate handler. try find again
+    --another;
+    return FindTryWithStart(another);
+  }
+  return another;
+}
+
 ExceptionTable::const_iterator CFG::FindTryWithBlock(int random_bci) const {
   const auto &map = this->exc_table();
   const auto &list = this->instr_pool();
@@ -374,6 +407,10 @@ ExceptionTable::const_iterator CFG::FindTryWithBlock(int random_bci) const {
   auto iter = FindExcTableItem(random_bci);
   if (iter == map.end()) {
     return iter;
+  }
+  auto other_iter = FindTryWithStart(iter);
+  if (other_iter != map.end()) {
+    MS_LOG(DEBUG) << "try begin maybe in " << other_iter->second;
   }
   int handler = iter->second.jump_;
   if (list[handler]->op() != PUSH_EXC_INFO) {
