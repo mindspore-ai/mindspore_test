@@ -713,12 +713,9 @@ class _JitExecutor:
             args_list = args_list[1:]
         phase = ""
         try:
-            if context.get_context("mode") == context.PYNATIVE_MODE:
-                _pynative_executor.set_jit_compile_status(True, phase)
-                phase = self.compile(self.fn.__name__, *args_list, **kwargs)
-                _pynative_executor.set_jit_compile_status(False, phase)
-            else:
-                phase = self.compile(self.fn.__name__, *args_list, **kwargs)
+            _pynative_executor.set_jit_compile_status(True, phase)
+            phase = self.compile(self.fn.__name__, *args_list, **kwargs)
+            _pynative_executor.set_jit_compile_status(False, phase)
         except Exception as err:
             _pynative_executor.clear_res()
             raise err
@@ -727,15 +724,11 @@ class _JitExecutor:
             return None
 
         new_inputs = self._generate_run_args(args_list, kwargs)
-        if context.get_context("mode") == context.PYNATIVE_MODE and not jit_context():
-            output = _pynative_executor.grad_jit(*new_inputs)
-        else:
-            output = self._graph_executor(tuple(new_inputs), phase)
-            if jit_context():
-                if is_stub_tensor(output):
-                    output = output.stub_sync()
-                return jit_context().run_graph(phase, output, *tuple(new_inputs))
-
+        output = _pynative_executor.grad_jit(*new_inputs)
+        if jit_context():
+            if is_stub_tensor(output):
+                output = output.stub_sync()
+            return jit_context().run_graph(phase, output, *tuple(new_inputs))
         return output
 
     def compile(self, method_name, *args, **kwargs):
