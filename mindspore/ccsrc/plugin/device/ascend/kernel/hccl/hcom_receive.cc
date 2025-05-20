@@ -127,6 +127,16 @@ int HcomReceiveKernel::ReceiveShapeForDynamic() {
   return KRET_OK;
 }
 
+bool HcomReceiveKernel::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
+  bool ret = HcclKernel::Init(inputs, outputs);
+  if (!ret) {
+    MS_LOG(EXCEPTION) << "Failed to init HcomReceiveKernel";
+  }
+  auto shape_v = GetValue<std::vector<int64_t>>(primitive_->GetAttr("shape"));
+  is_dynamic_shape_ = (std::count(shape_v.cbegin(), shape_v.cend(), -1) > 0);
+  return true;
+}
+
 int HcomReceiveKernel::Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   if (!CalcTypeShapeAndCount(inputs, outputs)) {
     return KRET_RESIZE_FAILED;
