@@ -1135,6 +1135,7 @@ PYBIND_REGISTER(Stream, 0, ([](const py::module *m) {
 
 PYBIND_REGISTER(Packet, 0, ([](const py::module *m) {
                   (void)py::class_<Packet, std::shared_ptr<Packet>>(*m, "Packet")
+                    .def_property_readonly("is_keyframe", &Packet::IsKeyFrame)
                     .def_property_readonly("pts", ([](Packet &packet) -> py::object {
                                              auto pts = packet.GetPTS();
                                              if (pts == -1) {

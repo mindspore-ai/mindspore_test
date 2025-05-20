@@ -854,6 +854,7 @@ def _read_from_stream_ffmpeg(container, start_offset, end_offset, pts_unit, stre
 
     frames = {}
     max_buffer_size = 5
+    should_buffer = True
     if stream.type == "video":
         # DivX-style packed B-frames can have out-of-order pts (2 frames in a single pkt)
         # so need to buffer some extra frames to sort everything properly
@@ -877,12 +878,12 @@ def _read_from_stream_ffmpeg(container, start_offset, end_offset, pts_unit, stre
 
     # ensure that the results are sorted wrt the pts
     result = [frames[i] for i in sorted(frames) if start_offset <= frames[i].pts <= end_offset]
-    if not frames.empty() and start_offset > 0 and start_offset not in frames:
+    if frames and start_offset > 0 and start_offset not in frames:
         # if there is no frame that exactly matches the pts of start_offset
         # add the last frame smaller than start_offset, to guarantee that
         # we will have all the necessary data. This is most useful for audio
         preceding_frames = [i for i in frames if i < start_offset]
-        if not preceding_frames.empty():
+        if preceding_frames:
             first_frame_pts = max(preceding_frames)
             result.insert(0, frames[first_frame_pts])
     return result
@@ -954,7 +955,7 @@ def _read_video_dvpp(filename, start_pts=0, end_pts=None, pts_unit="pts", output
     else:
         aframes = np.empty((1, 0), dtype=np.float32)
 
-    if output_format == "THWC" and vframes is not None and not vframes.empty():
+    if output_format == "THWC" and vframes is not None and vframes.size != 0:
         # [T,C,H,W] --> [T,H,W,C]
         vframes = vframes.transpose(0, 2, 3, 1)
 
@@ -1141,35 +1142,32 @@ class VideoDecoder:
         type_check(indices, (list,), "indices")
         type_check_list(indices, (int,), "indices")
 
-        if indices is None:
+        if indices == []:
             return np.empty(0, dtype=np.uint8)
         for i, frame_index in enumerate(indices):
             check_value(frame_index, [0, self._metadata["num_frames"]], "Invalid frame index[{0}]={1}".format(
                 i, indices[i]), right_open_interval=True)
         filepath = os.path.realpath(self.source)
 
-        try:
-            with cde.pyav_open(filepath) as container:
-                if container.streams.video:
-                    if container.streams.video[0].name in ("hevc", "h264"):
-                        vframes = self._read_from_stream_dvpp_frames(
-                            filepath,
-                            container,
-                            0,
-                            float("inf"),
-                            container.streams.video[0],
-                            {"video": 0},
-                            indices,
-                        )
-                    else:
-                        raise RuntimeError(f"This video in {filepath} is coding by {container.streams.video[0].name}, "
-                                           "not supported on DVPP backend and will fall back to run on the pyav.")
+        with cde.pyav_open(filepath) as container:
+            if container.streams.video:
+                if container.streams.video[0].name in ("hevc", "h264"):
+                    vframes = self._read_from_stream_dvpp_frames(
+                        filepath,
+                        container,
+                        0,
+                        float("inf"),
+                        container.streams.video[0],
+                        {"video": 0},
+                        indices,
+                    )
                 else:
-                    vframes = np.empty(0, dtype=np.uint8)
-        except FFmpegError:
-            vframes = np.empty(0, dtype=np.uint8)
+                    raise RuntimeError(f"This video in {filepath} is coding by {container.streams.video[0].name}, "
+                                       "not supported on DVPP backend and will fall back to run on the pyav.")
+            else:
+                vframes = np.empty(0, dtype=np.uint8)
 
-        if vframes is not None and not vframes.empty():
+        if vframes is not None and vframes.size != 0:
             # [T,C,H,W] --> [T,H,W,C]
             vframes = vframes.transpose(0, 2, 3, 1)
 
@@ -1202,7 +1200,7 @@ class VideoDecoder:
 
         return frames
 
-    def _get_key_frames_and_first_pts(self, container, stream):
+    def _get_key_frames_and_first_pts(self, container, stream, pts_per_frame):
         """ Get key frames and first pts. """
         key_list = []
         first_pts = None
@@ -1287,7 +1285,7 @@ class VideoDecoder:
             return None
 
         groups = {}
-        key_list, first_pts = self._get_key_frames_and_first_pts(container, stream)
+        key_list, first_pts = self._get_key_frames_and_first_pts(container, stream, pts_per_frame)
 
         for frame in target_frame_list:
             keyframe = max(k for k in key_list if k <= frame)
@@ -1308,7 +1306,7 @@ class VideoDecoder:
         ret_tensor_dvpp = cde.decode_video_stop_get_frame(chn, len(target_frame_list))
 
         # if ret_tensor_dvpp empty, means ret_tensor already filled
-        if ret_tensor_dvpp.numel() != 0:
+        if ret_tensor_dvpp.size() != 0:
             ret_tensor = ret_tensor_dvpp
 
         ret_numpy = np.empty(ret_tensor.shape, dtype=np.uint8)
