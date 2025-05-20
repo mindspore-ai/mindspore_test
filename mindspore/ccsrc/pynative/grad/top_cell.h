@@ -91,7 +91,7 @@ class TopCellInfo {
   inline void set_grad_first(bool grad_first) { grad_first_ = grad_first; }
   bool grad_first() const { return grad_first_; }
   // Add backward final callback
-  void QueueFinalCallback(std::function<void()> callback);
+  PYNATIVE_EXPORT void QueueFinalCallback(std::function<void()> callback);
   void RunFinalCallback();
 
  private:

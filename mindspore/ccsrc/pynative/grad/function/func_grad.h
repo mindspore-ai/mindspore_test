@@ -221,8 +221,8 @@ void CallCustomCFunction(const ValuePtrList &flatten_outputs, const TensorPtrSet
                          const ValuePtrList &inputs, const std::vector<InputType> &input_value_grad_type,
                          const BackwardNodePtr &node);
 
-tensor::TensorPtrList SearchUnusedParameters(const tensor::TensorPtrList &outputs,
-                                             const tensor::TensorPtrList &total_params);
+PYNATIVE_EXPORT tensor::TensorPtrList SearchUnusedParameters(const tensor::TensorPtrList &outputs,
+                                                             const tensor::TensorPtrList &total_params);
 
 struct GradientContext {
   struct CapturedGradient {
