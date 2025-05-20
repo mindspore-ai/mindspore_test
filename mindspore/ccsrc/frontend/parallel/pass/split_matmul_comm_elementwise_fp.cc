@@ -24,6 +24,7 @@
 #include "frontend/parallel/step_parallel.h"
 #include "frontend/parallel/graph_util/graph_info.h"
 #include "include/common/utils/utils.h"
+#include "pipeline/jit/ps/graph_circle_handler.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
@@ -202,10 +203,12 @@ void SplitMatmulCommElementwiseFp(const FuncGraphPtr &func_graph) {
   MS_EXCEPTION_IF_NULL(func_graph);
   auto manager = func_graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
+  circle_handler::SetAttrToDepend(func_graph);
   auto todo = DeepScopedGraphSearchWithFilter(func_graph->get_return(), AlwaysInclude, PatternFilter);
   for (const auto &node : todo) {
     SplitIntoInterleaved(func_graph, manager, node);
   }
+  circle_handler::DetectAndRevertGraphCircle(func_graph, manager, "SplitMatmulCommElementwiseFp");
 }
 }  // namespace parallel
 }  // namespace mindspore
